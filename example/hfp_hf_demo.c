@@ -759,7 +759,7 @@ int btstack_main(int argc, const char * argv[]){
     memset(hfp_service_buffer, 0, sizeof(hfp_service_buffer));
     hfp_hf_create_sdp_record(hfp_service_buffer, sdp_create_service_record_handle(),
                              rfcomm_channel_nr, hfp_hf_service_name, hf_supported_features, wide_band_speech);
-    printf("SDP service record size: %u\n", de_get_len(hfp_service_buffer));
+    btstack_assert(de_get_len( hfp_service_buffer) <= sizeof(hfp_service_buffer));
     sdp_register_service(hfp_service_buffer);
 
     // Configure GAP - discovery / connection

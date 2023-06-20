@@ -115,9 +115,9 @@ static void le_counter_setup(void){
     // init SDP, create record for GATT and register with SDP
     sdp_init();
     memset(gatt_service_buffer, 0, sizeof(gatt_service_buffer));
-    gatt_create_sdp_record(gatt_service_buffer, 0x10001, ATT_SERVICE_GATT_SERVICE_START_HANDLE, ATT_SERVICE_GATT_SERVICE_END_HANDLE);
+    gatt_create_sdp_record(gatt_service_buffer, sdp_create_service_record_handle(), ATT_SERVICE_GATT_SERVICE_START_HANDLE, ATT_SERVICE_GATT_SERVICE_END_HANDLE);
+    btstack_assert(de_get_len( gatt_service_buffer) <= sizeof(gatt_service_buffer));
     sdp_register_service(gatt_service_buffer);
-    printf("SDP service record size: %u\n", de_get_len(gatt_service_buffer));
 
     // configure Classic GAP
     gap_set_local_name("GATT Counter BR/EDR 00:00:00:00:00:00");

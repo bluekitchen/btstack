@@ -62,7 +62,8 @@
 // to enable demo text on POSIX systems
 // #undef HAVE_BTSTACK_STDIN
 
-static uint8_t hid_service_buffer[250];
+static uint8_t hid_service_buffer[270];
+static uint8_t device_id_sdp_service_buffer[100];
 static const char hid_device_name[] = "BTstack HID Mouse";
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static uint16_t hid_cid;
@@ -304,8 +305,7 @@ int btstack_main(int argc, const char * argv[]){
 
     // SDP Server
     sdp_init();
-    memset(hid_service_buffer, 0, sizeof(hid_service_buffer));
-    
+
     uint8_t hid_virtual_cable = 0;
     uint8_t hid_remote_wake = 1;
     uint8_t hid_reconnect_initiate = 1;
@@ -322,11 +322,17 @@ int btstack_main(int argc, const char * argv[]){
         sizeof(hid_descriptor_mouse_boot_mode), 
         hid_device_name
     };
-    
-    hid_create_sdp_record(hid_service_buffer, 0x10001, &hid_params);
 
-    printf("SDP service record size: %u\n", de_get_len( hid_service_buffer));
+    memset(hid_service_buffer, 0, sizeof(hid_service_buffer));
+    hid_create_sdp_record(hid_service_buffer, sdp_create_service_record_handle(), &hid_params);
+    btstack_assert(de_get_len( hid_service_buffer) <= sizeof(hid_service_buffer));
     sdp_register_service(hid_service_buffer);
+
+    // See https://www.bluetooth.com/specifications/assigned-numbers/company-identifiers if you don't have a USB Vendor ID and need a Bluetooth Vendor ID
+    // device info: BlueKitchen GmbH, product 2, version 1
+    device_id_create_sdp_record(device_id_sdp_service_buffer, sdp_create_service_record_handle(), DEVICE_ID_VENDOR_ID_SOURCE_BLUETOOTH, BLUETOOTH_COMPANY_ID_BLUEKITCHEN_GMBH, 2, 1);
+    btstack_assert(de_get_len( device_id_sdp_service_buffer) <= sizeof(device_id_sdp_service_buffer));
+    sdp_register_service(device_id_sdp_service_buffer);
 
     // HID Device
     hid_device_init(hid_boot_device, sizeof(hid_descriptor_mouse_boot_mode), hid_descriptor_mouse_boot_mode);

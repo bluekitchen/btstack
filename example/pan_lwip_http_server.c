@@ -190,8 +190,8 @@ static void pan_bnep_setup(void){
 
     // NAP Network Access Type: Other, 1 MB/s
     pan_create_nap_sdp_record(pan_sdp_record, sdp_create_service_record_handle(), network_packet_types, NULL, NULL, BNEP_SECURITY_NONE, PAN_NET_ACCESS_TYPE_OTHER, 1000000, NULL, NULL);
+    btstack_assert(de_get_len( pan_sdp_record) <= sizeof(pan_sdp_record));
     sdp_register_service(pan_sdp_record);
-    printf("SDP service record size: %u\n", de_get_len((uint8_t*) pan_sdp_record));
 
     // Init BNEP lwIP Adapter
     bnep_lwip_init();

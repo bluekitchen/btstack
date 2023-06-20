@@ -299,9 +299,9 @@ int btstack_main(int argc, const char * argv[])
     // init SDP, create record for SPP and register with SDP
     sdp_init();
     memset(spp_service_buffer, 0, sizeof(spp_service_buffer));
-    spp_create_sdp_record(spp_service_buffer, 0x10001, RFCOMM_SERVER_CHANNEL, "SPP Streamer");
+    spp_create_sdp_record(spp_service_buffer, sdp_create_service_record_handle(), RFCOMM_SERVER_CHANNEL, "SPP Streamer");
+    btstack_assert(de_get_len( spp_service_buffer) <= sizeof(spp_service_buffer));
     sdp_register_service(spp_service_buffer);
-    // printf("SDP service record size: %u\n", de_get_len(spp_service_buffer));
 
     // register for HCI events
     hci_event_callback_registration.callback = &packet_handler;

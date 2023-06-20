@@ -291,7 +291,8 @@ int btstack_main(int argc, const char * argv[]){
     sdp_init();
     // setup AVDTP sink
     memset(sdp_avdtp_sink_service_buffer, 0, sizeof(sdp_avdtp_sink_service_buffer));
-    a2dp_sink_create_sdp_record(sdp_avdtp_sink_service_buffer, 0x10001, AVDTP_SINK_FEATURE_MASK_HEADPHONE, NULL, NULL);
+    a2dp_sink_create_sdp_record(sdp_avdtp_sink_service_buffer, sdp_create_service_record_handle(), AVDTP_SINK_FEATURE_MASK_HEADPHONE, NULL, NULL);
+    btstack_assert(de_get_len( sdp_avdtp_sink_service_buffer) <= sizeof(sdp_avdtp_sink_service_buffer));
     sdp_register_service(sdp_avdtp_sink_service_buffer);
     
     // Create AVRCP service record and register it with SDP.
@@ -301,7 +302,8 @@ int btstack_main(int argc, const char * argv[]){
 #ifdef AVRCP_BROWSING_ENABLED
     supported_features |= AVRCP_FEATURE_MASK_BROWSING;
 #endif
-    avrcp_controller_create_sdp_record(sdp_avrcp_browsing_controller_service_buffer, 0x10002, supported_features, NULL, NULL);
+    avrcp_controller_create_sdp_record(sdp_avrcp_browsing_controller_service_buffer, sdp_create_service_record_handle(), supported_features, NULL, NULL);
+    btstack_assert(de_get_len( sdp_avrcp_browsing_controller_service_buffer) <= sizeof(sdp_avrcp_browsing_controller_service_buffer));
     sdp_register_service(sdp_avrcp_browsing_controller_service_buffer);
     
     // Set local name with a template Bluetooth address, that will be automatically

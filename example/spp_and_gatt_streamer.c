@@ -450,13 +450,15 @@ int btstack_main(int argc, const char * argv[])
     // init SDP, create record for SPP and register with SDP
     sdp_init();
     memset(spp_service_buffer, 0, sizeof(spp_service_buffer));
-    spp_create_sdp_record(spp_service_buffer, 0x10001, RFCOMM_SERVER_CHANNEL, "SPP Streamer");
+    spp_create_sdp_record(spp_service_buffer, sdp_create_service_record_handle(), RFCOMM_SERVER_CHANNEL, "SPP Streamer");
+    btstack_assert(de_get_len( spp_service_buffer) <= sizeof(spp_service_buffer));
     sdp_register_service(spp_service_buffer);
 
 #ifdef ENABLE_GATT_OVER_CLASSIC
     // init SDP, create record for GATT and register with SDP
     memset(gatt_service_buffer, 0, sizeof(gatt_service_buffer));
-    gatt_create_sdp_record(gatt_service_buffer, 0x10001, ATT_SERVICE_GATT_SERVICE_START_HANDLE, ATT_SERVICE_GATT_SERVICE_END_HANDLE);
+    gatt_create_sdp_record(gatt_service_buffer, sdp_create_service_record_handle(), ATT_SERVICE_GATT_SERVICE_START_HANDLE, ATT_SERVICE_GATT_SERVICE_END_HANDLE);
+    btstack_assert(de_get_len( gatt_service_buffer) <= sizeof(gatt_service_buffer));
     sdp_register_service(gatt_service_buffer);
 #endif
 
