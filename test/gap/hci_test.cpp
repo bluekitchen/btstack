@@ -156,7 +156,7 @@ TEST(HCI, gap_whitelist_add_remove){
     CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
 
     status = gap_whitelist_remove(addr_type, addr);
-    CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
+    CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
 
     status = gap_whitelist_remove(BD_ADDR_TYPE_SCO, addr);
     CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
