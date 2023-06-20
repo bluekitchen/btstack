@@ -58,6 +58,9 @@
 #include "le-audio/gatt-service/object_transfer_service_server.h"
 #include "le-audio/le_audio_util.h"
 
+#define OTS_TASK_SEND_OACP_PROCEDURE_RESPONSE                   0x01
+#define OTS_TASK_SEND_OLCP_PROCEDURE_RESPONSE                   0x02
+
 typedef enum {
     OTS_FEATURE_INDEX = 0, 
     OTS_OBJECT_NAME_INDEX, 
@@ -353,6 +356,154 @@ static uint16_t ots_server_read_callback(hci_con_handle_t con_handle, uint16_t a
     return 0;
 }
 
+
+static void ots_server_can_send_now(void * context){
+    ots_server_connection_t * connection = (ots_server_connection_t *) context;
+    if (connection->con_handle == HCI_CON_HANDLE_INVALID){
+        ots_server_reset_connection(connection);
+        return;
+    }
+    
+    if ((connection->scheduled_tasks & OTS_TASK_SEND_OACP_PROCEDURE_RESPONSE) != 0){
+        connection->scheduled_tasks &= ~OTS_TASK_SEND_OACP_PROCEDURE_RESPONSE;
+
+
+        // TODO
+        // uint16_t attribute_handle = ots_server_get_client_configuration_handle(OTS_OBJECT_ACTION_CONTROL_POINT_INDEX)l 
+        // att_server_indicate(connection->con_handle, attribute_handle, &value[0], pos);
+
+    } else if ((connection->scheduled_tasks & OTS_TASK_SEND_OLCP_PROCEDURE_RESPONSE) != 0){
+        connection->scheduled_tasks &= ~OTS_TASK_SEND_OLCP_PROCEDURE_RESPONSE;
+
+        // TODO 
+        // uint16_t attribute_handle = ots_server_get_client_configuration_handle(OTS_OBJECT_LIST_CONTROL_POINT_INDEX)l 
+        // att_server_indicate(connection->con_handle, attribute_handle, &value[0], pos);
+    }
+
+    if (connection->scheduled_tasks != 0){
+        connection->scheduled_tasks_callback.callback = &ots_server_can_send_now;
+        connection->scheduled_tasks_callback.context  = (void*) connection;
+        att_server_register_can_send_now_callback(&connection->scheduled_tasks_callback, connection->con_handle);
+    }
+}
+
+static void ots_server_schedule_task(ots_server_connection_t * connection, uint8_t task){
+    if (connection->con_handle == HCI_CON_HANDLE_INVALID){
+        ots_server_reset_connection(connection);
+        return;
+    }
+
+    uint16_t configuration;
+    switch (task){
+        case OTS_TASK_SEND_OACP_PROCEDURE_RESPONSE:
+            configuration = connection->oacp_configuration;
+            break;
+        case OTS_TASK_SEND_OLCP_PROCEDURE_RESPONSE:
+            configuration = connection->olcp_configuration;
+            break;
+        default:
+            btstack_unreachable();
+            return;
+    }
+
+    if (configuration == 0){
+        return;
+    }
+
+    uint16_t scheduled_tasks = connection->scheduled_tasks;
+    connection->scheduled_tasks |= task;
+
+    log_debug("scheduled tasks 0x%02x", connection->scheduled_tasks);
+
+    if (scheduled_tasks == 0){
+        connection->scheduled_tasks_callback.callback = &ots_server_can_send_now;
+        connection->scheduled_tasks_callback.context  = (void*) connection;
+        att_server_register_can_send_now_callback(&connection->scheduled_tasks_callback, connection->con_handle);
+    }
+}
+
+static int ots_server_handle_action_control_point_write(ots_server_connection_t * connection, uint8_t *buffer, uint16_t buffer_size){
+    if (buffer_size == 0){
+        return ATT_ERROR_RESPONSE_OTS_WRITE_REQUEST_REJECTED;
+    }
+
+    oacp_opcode_t opcode = buffer[0];
+    if (opcode >= OACP_OPCODE_RFU){
+        return ATT_ERROR_RESPONSE_OTS_WRITE_REQUEST_REJECTED;
+    } 
+
+    switch (opcode){
+        case OACP_OPCODE_CREATE:
+            // TODO
+            break;
+        case OACP_OPCODE_DELETE:
+            // TODO
+            break;
+        case OACP_OPCODE_CALCULATE_CHECKSUM:
+            // TODO
+            break;   
+        case OACP_OPCODE_EXECUTE:
+            // TODO
+            break;
+        case OACP_OPCODE_READ:   
+            // TODO
+            break;     
+        case OACP_OPCODE_WRITE:
+            // TODO
+            break;
+        case OACP_OPCODE_ABORT:
+            // TODO
+            break;
+        default:
+            btstack_unreachable();
+            return 0;
+    }
+
+    ots_server_schedule_task(connection, OTS_TASK_SEND_OLCP_PROCEDURE_RESPONSE);
+    return 0;
+}
+
+static int ots_server_handle_list_control_point_write(ots_server_connection_t * connection, uint8_t *buffer, uint16_t buffer_size){
+    if (buffer_size == 0){
+        return ATT_ERROR_RESPONSE_OTS_WRITE_REQUEST_REJECTED;
+    }
+
+    olcp_opcode_t opcode = buffer[0];
+    if (opcode >= OLCP_OPCODE_RFU){
+        return ATT_ERROR_RESPONSE_OTS_WRITE_REQUEST_REJECTED;
+    } 
+
+    switch (opcode){
+        case OLCP_OPCODE_FIRST:
+            // TODO
+            break;
+        case OLCP_OPCODE_LAST:
+            // TODO
+            break;
+        case OLCP_OPCODE_PREVIOUS:
+            // TODO
+            break;   
+        case OLCP_OPCODE_NEXT:
+            // TODO
+            break;
+        case OLCP_OPCODE_GOTO:   
+            // TODO
+            break;     
+        case OLCP_OPCODE_REQUEST_NUMBER_OF_OBJECTS:
+            // TODO
+            break;
+        case OLCP_OPCODE_CLEAR_MARKING:
+            // TODO
+            break;
+        default:
+            btstack_unreachable();
+            return 0;
+    }
+
+    ots_server_schedule_task(connection, OTS_TASK_SEND_OLCP_PROCEDURE_RESPONSE);
+    return 0;
+}
+
 static int ots_server_write_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
     ots_server_connection_t * connection = NULL;
 
@@ -388,11 +539,11 @@ static int ots_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
     }
 
     if (attribute_handle == ots_server_get_client_value_handle_for_index(OTS_OBJECT_ACTION_CONTROL_POINT_INDEX)){
-        // TODO
-    
+        return ots_server_handle_action_control_point_write(connection, buffer, buffer_size);
+
     } else if (attribute_handle == ots_server_get_client_value_handle_for_index(OTS_OBJECT_LIST_CONTROL_POINT_INDEX)){
-        // TODO
-    
+        return ots_server_handle_list_control_point_write(connection, buffer, buffer_size);
+
     } else if (attribute_handle == ots_server_get_client_value_handle_for_index(OTS_OBJECT_NAME_INDEX)){
         uint16_t total_value_len = buffer_size + offset;
         // handle long write
