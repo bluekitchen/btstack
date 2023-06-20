@@ -89,13 +89,13 @@ typedef struct {
     // used for OACP procedures
     olcp_opcode_t       olcp_opcode;
     olcp_result_code_t  olcp_result_code;
-} object_transfer_service_connection_t;
+} ots_server_connection_t;
 
 
 /*
  * @brief Init Object Transfer Service Server with ATT DB
  */
-uint8_t object_transfer_service_server_init(uint32_t oacp_features, uint32_t olcp_features, uint8_t const clients_num, object_transfer_service_connection_t * clients);
+uint8_t object_transfer_service_server_init(uint32_t oacp_features, uint32_t olcp_features, uint8_t const clients_num, ots_server_connection_t * clients);
 
 void object_transfer_service_server_register_packet_handler(btstack_packet_handler_t packet_handler);
 
