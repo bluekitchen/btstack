@@ -64,7 +64,7 @@ typedef struct {
     uint16_t olcp_configuration;
     uint16_t object_changed_configuration;
 
-    uint32_t                    scheduled_tasks;
+    uint8_t                    scheduled_tasks;
     btstack_context_callback_registration_t scheduled_tasks_callback; 
 
     btstack_packet_handler_t event_callback;
