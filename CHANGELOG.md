@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - GATT Server: support GATT over Enhanced LE Bearer
 
 ### Fixed
+- HCI: fix remove le device from whitelist
 - HFP: use 'don't care' to accept SCO connections, fixes issue on ESP32
 - HFP: fix LC3-WB init
  
