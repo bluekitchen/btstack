@@ -11,7 +11,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 - GATT Client: support GATT over Enhanced LE Bearer
 - GATT Server: support GATT over Enhanced LE Bearer
-
+- Port for Zephyr 3.x
+ 
 ### Fixed
 - HCI: fix remove le device from whitelist
 - HFP: use 'don't care' to accept SCO connections, fixes issue on ESP32
@@ -19,7 +20,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
  
 ### Changed
 - btstack_crypto: allow MBEDTLS config via MBEDTLS_CONFIG_FILE
-
+- remove old Zephyr 1.9 port
  
 ## Release v1.5.6
 
