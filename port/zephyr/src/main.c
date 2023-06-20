@@ -111,7 +111,7 @@ static int transport_send_packet(uint8_t packet_type, uint8_t *packet, int size)
 }
 
 static const hci_transport_t transport = {
-    /* const char * name; */                                        "nRF5-Zephyr",
+    /* const char * name; */                                        "zephyr",
     /* void   (*init) (const void *transport_config); */            &transport_init,
     /* int    (*open)(void); */                                     &transport_open,
     /* int    (*close)(void); */                                    &transport_close,
