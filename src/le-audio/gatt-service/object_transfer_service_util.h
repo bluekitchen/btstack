@@ -120,6 +120,7 @@ typedef enum {
 } ots_filter_type_t;
 
 typedef enum {
+    OACP_OPCODE_READY  = 0x00, 
     OACP_OPCODE_CREATE = 0x01,           
     OACP_OPCODE_DELETE,             
     OACP_OPCODE_CALCULATE_CHECKSUM,              
@@ -128,7 +129,7 @@ typedef enum {
     OACP_OPCODE_WRITE,           
     OACP_OPCODE_ABORT,          
     OACP_OPCODE_RFU,
-    OACP_OPCODE_RESPONSE_CODE = 0x60
+    OACP_OPCODE_RESPONSE_CODE = 0x60,
 } oacp_opcode_t;
 
 typedef enum {
