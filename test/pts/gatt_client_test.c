@@ -173,7 +173,8 @@ static uint8_t ui_presentation_format[7];
 static uint16_t ui_aggregate_handle;
 static uint16_t handle = 0;
 
-static bd_addr_t public_pts_address = {0x00, 0x1B, 0xDC, 0x07, 0x32, 0xef};
+static const char * device_addr_string = "00:1A:7D:DA:71:02";
+static bd_addr_t public_pts_address;
 static int       public_pts_address_type = 0;
 static bd_addr_t current_pts_address;
 static int       current_pts_address_type;
@@ -1736,6 +1737,7 @@ int btstack_main(int argc, const char * argv[]){
     // set adv params
     update_advertisement_params();
 
+    sscanf_bd_addr(device_addr_string, public_pts_address);
     memcpy(current_pts_address, public_pts_address, 6);
     current_pts_address_type = public_pts_address_type;
 
@@ -1745,6 +1747,7 @@ int btstack_main(int argc, const char * argv[]){
 
     // allow foor terminal input
     btstack_stdin_setup(stdin_process);
+
 
     // turn on!
     hci_power_control(HCI_POWER_ON);
