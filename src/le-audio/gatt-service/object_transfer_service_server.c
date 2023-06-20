@@ -95,7 +95,7 @@ static ots_characteristic_t  ots_characteristics[OTS_CHARACTERISTICS_NUM];
 static uint32_t ots_oacp_features;
 static uint32_t ots_olcp_features;
 
-static object_transfer_service_connection_t * ots_server_find_connection_for_con_handle(hci_con_handle_t con_handle){
+static ots_server_connection_t * ots_server_find_connection_for_con_handle(hci_con_handle_t con_handle){
     if (con_handle == HCI_CON_HANDLE_INVALID){
         return NULL;
     }
@@ -103,23 +103,41 @@ static object_transfer_service_connection_t * ots_server_find_connection_for_con
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, &ots_connections);
     while (btstack_linked_list_iterator_has_next(&it)){
-        object_transfer_service_connection_t * connection = (object_transfer_service_connection_t*) btstack_linked_list_iterator_next(&it);
+        ots_server_connection_t * connection = (ots_server_connection_t*) btstack_linked_list_iterator_next(&it);
         if (connection->con_handle != con_handle) continue;
         return connection;
     }
     return NULL;
 }
 
-static object_transfer_service_connection_t * ots_server_find_or_add_connection_for_con_handle(hci_con_handle_t con_handle){
+static void ots_server_reset_connection(ots_server_connection_t * connection){
+    connection->con_handle = HCI_CON_HANDLE_INVALID;
+    connection->current_object_locked = false;
+    connection->current_object_object_transfer_in_progress = false;
+    connection->oacp_configuration = 0;
+    connection->olcp_configuration = 0;
+    connection->object_changed_configuration = 0;
+    connection->scheduled_tasks = 0;
+}
+
+static void ots_server_reset_connection_for_con_handle(hci_con_handle_t con_handle){
+    ots_server_connection_t * connection = ots_server_find_connection_for_con_handle(con_handle);
+    if (connection == NULL){
+        return;
+    }
+    ots_server_reset_connection(connection);
+}
+
+static ots_server_connection_t * ots_server_find_or_add_connection_for_con_handle(hci_con_handle_t con_handle){
     if (con_handle == HCI_CON_HANDLE_INVALID){
         return NULL;
     }
-    object_transfer_service_connection_t * free_connection = NULL;
+    ots_server_connection_t * free_connection = NULL;
 
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, &ots_connections);
     while (btstack_linked_list_iterator_has_next(&it)){
-        object_transfer_service_connection_t * connection = (object_transfer_service_connection_t*) btstack_linked_list_iterator_next(&it);
+        ots_server_connection_t * connection = (ots_server_connection_t*) btstack_linked_list_iterator_next(&it);
         
         if (connection->con_handle != HCI_CON_HANDLE_INVALID){
             if (connection->con_handle == con_handle) {
@@ -144,47 +162,47 @@ static uint16_t ots_server_get_client_value_handle_for_index(ots_characteristic_
     return ots_characteristics[index].value_handle;
 }
 
-static void ots_server_reset_current_object_name(object_transfer_service_connection_t * connection){
+static void ots_server_reset_current_object_name(ots_server_connection_t * connection){
     // TODO
 }
 
-static void ots_server_emit_current_object_name_changed(object_transfer_service_connection_t * connection){
+static void ots_server_emit_current_object_name_changed(ots_server_connection_t * connection){
     // TODO
 }
 
-static void ots_server_emit_current_object_first_created_time_changed(object_transfer_service_connection_t * connection){
+static void ots_server_emit_current_object_first_created_time_changed(ots_server_connection_t * connection){
     // TODO
 }
 
-static void ots_server_emit_current_object_last_modified_time_changed(object_transfer_service_connection_t * connection){
+static void ots_server_emit_current_object_last_modified_time_changed(ots_server_connection_t * connection){
     // TODO
 }
 
-static void ots_server_emit_current_object_properties_changed(object_transfer_service_connection_t * connection){
+static void ots_server_emit_current_object_properties_changed(ots_server_connection_t * connection){
     // TODO
 }
 
-static bool ots_current_object_valid_for_filters(object_transfer_service_connection_t * connection){
-    // TODO
-    return true;
-}
-
-static bool ots_current_object_exists(object_transfer_service_connection_t * connection){
+static bool ots_current_object_valid_for_filters(ots_server_connection_t * connection){
     // TODO
     return true;
 }
 
-static void ots_server_emit_current_object_filter_changed(object_transfer_service_connection_t * connection, uint8_t filter_index){
+static bool ots_current_object_exists(ots_server_connection_t * connection){
+    // TODO
+    return true;
+}
+
+static void ots_server_emit_current_object_filter_changed(ots_server_connection_t * connection, uint8_t filter_index){
     // TODO
 }
 
-static void ots_server_reset_long_write_filter(object_transfer_service_connection_t * connection){
+static void ots_server_reset_long_write_filter(ots_server_connection_t * connection){
     connection->temp_filter.type = OTS_FILTER_TYPE_NO_FILTER;
     connection->temp_filter.data_size = 0;
     memset(connection->temp_filter.data, 0, sizeof(connection->temp_filter.data));
 }
 
-static bool ots_current_object_valid(object_transfer_service_connection_t * connection){
+static bool ots_current_object_valid(ots_server_connection_t * connection){
     return ots_current_object_exists(connection) && ots_current_object_valid_for_filters(connection);
 }
 
@@ -232,7 +250,7 @@ static uint16_t ots_server_store_filter_list(const ots_filter_t * filter, uint8_
 }
 
 static uint16_t ots_server_read_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
-    object_transfer_service_connection_t * connection = NULL;
+    ots_server_connection_t * connection = NULL;
 
     if (attribute_handle == ots_server_get_client_value_handle_for_index(OTS_FEATURE_INDEX)){
         ots_server_find_or_add_connection_for_con_handle(con_handle);
@@ -336,7 +354,7 @@ static uint16_t ots_server_read_callback(hci_con_handle_t con_handle, uint16_t a
 }
 
 static int ots_server_write_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
-    object_transfer_service_connection_t * connection = NULL;
+    ots_server_connection_t * connection = NULL;
 
     if (attribute_handle == ots_server_get_client_configuration_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_ACTION_CONTROL_POINT)){
         connection = ots_server_find_or_add_connection_for_con_handle(con_handle);
@@ -499,20 +517,6 @@ static int ots_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
     return 0;
 }
 
-static void ots_server_reset_connection_for_con_handle(hci_con_handle_t con_handle){
-    object_transfer_service_connection_t * connection = ots_server_find_connection_for_con_handle(con_handle);
-    if (connection == NULL){
-        return;
-    }
-    connection->con_handle = HCI_CON_HANDLE_INVALID;
-    connection->current_object_locked = false;
-    connection->current_object_object_transfer_in_progress = false;
-    connection->oacp_configuration = 0;
-    connection->olcp_configuration = 0;
-    connection->object_changed_configuration = 0;
-    connection->scheduled_tasks = 0;
-}
-
 static void ots_server_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(packet);
@@ -531,7 +535,7 @@ static void ots_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
     }
 }
 
-uint8_t object_transfer_service_server_init(uint32_t oacp_features, uint32_t olcp_features, uint8_t const clients_num, object_transfer_service_connection_t * clients){
+uint8_t object_transfer_service_server_init(uint32_t oacp_features, uint32_t olcp_features, uint8_t const clients_num, ots_server_connection_t * clients){
     btstack_assert(clients_num != 0);
     
     uint16_t start_handle = 0;
@@ -587,7 +591,7 @@ uint8_t object_transfer_service_server_init(uint32_t oacp_features, uint32_t olc
     ots_olcp_features = olcp_features;
 
     ots_connections_num = clients_num;
-    memset(clients, 0, sizeof(object_transfer_service_connection_t) * ots_connections_num);
+    memset(clients, 0, sizeof(ots_server_connection_t) * ots_connections_num);
     
     uint16_t i;
     for (i = 0; i < ots_connections_num; i++){
