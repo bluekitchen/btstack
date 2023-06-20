@@ -54,6 +54,10 @@ extern "C" {
 /* API_START */
 
 typedef struct {
+    oacp_result_code_t (*create)(hci_con_handle_t con_handle, uint32_t object_size, uint8_t gatt_uuid_size, uint8_t * gatt_uuid);
+} ots_operations_t;
+
+typedef struct {
     btstack_linked_item_t item;
 
     hci_con_handle_t            con_handle;
@@ -95,7 +99,8 @@ typedef struct {
 /*
  * @brief Init Object Transfer Service Server with ATT DB
  */
-uint8_t object_transfer_service_server_init(uint32_t oacp_features, uint32_t olcp_features, uint8_t const clients_num, ots_server_connection_t * clients);
+uint8_t object_transfer_service_server_init(uint32_t oacp_features, uint32_t olcp_features, 
+    uint8_t clients_num, ots_server_connection_t * clients, const ots_operations_t * ots_operations);
 
 void object_transfer_service_server_register_packet_handler(btstack_packet_handler_t packet_handler);
 
