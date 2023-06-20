@@ -103,7 +103,7 @@ static void setup_advertising(void);
 
 // Object Transfer Server (OTS)
 #define OTS_MAX_CLIENTS_NUM 3
-static  object_transfer_service_connection_t ots_clients[OTS_MAX_CLIENTS_NUM];
+static  ots_server_connection_t ots_clients[OTS_MAX_CLIENTS_NUM];
 
 // Media Player Server (MCS)
 
