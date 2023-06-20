@@ -89,6 +89,7 @@ static uint32_t ots_object_id_counter;
 
 static att_service_handler_t    object_transfer_service_server;
 static btstack_packet_handler_t ots_server_event_callback;
+static const ots_operations_t * ots_server_operations;
 
 static btstack_linked_list_t ots_connections;
 static uint8_t  ots_connections_num = 0;
@@ -367,16 +368,22 @@ static void ots_server_can_send_now(void * context){
     if ((connection->scheduled_tasks & OTS_TASK_SEND_OACP_PROCEDURE_RESPONSE) != 0){
         connection->scheduled_tasks &= ~OTS_TASK_SEND_OACP_PROCEDURE_RESPONSE;
 
-
-        // TODO
-        // uint16_t attribute_handle = ots_server_get_client_configuration_handle(OTS_OBJECT_ACTION_CONTROL_POINT_INDEX)l 
-        // att_server_indicate(connection->con_handle, attribute_handle, &value[0], pos);
+        uint8_t value[3];
+        value[0] = OACP_OPCODE_RESPONSE_CODE; 
+        value[1] = (uint8_t)connection->oacp_opcode;
+        value[2] = (uint8_t)connection->oacp_result_code;
+        
+        // allow next transaction
+        connection->oacp_opcode = OACP_OPCODE_READY;
+        
+        uint16_t attribute_handle = ots_server_get_client_configuration_handle(OTS_OBJECT_ACTION_CONTROL_POINT_INDEX);
+        att_server_indicate(connection->con_handle, attribute_handle, value, sizeof(value));
 
     } else if ((connection->scheduled_tasks & OTS_TASK_SEND_OLCP_PROCEDURE_RESPONSE) != 0){
         connection->scheduled_tasks &= ~OTS_TASK_SEND_OLCP_PROCEDURE_RESPONSE;
 
         // TODO 
-        // uint16_t attribute_handle = ots_server_get_client_configuration_handle(OTS_OBJECT_LIST_CONTROL_POINT_INDEX)l 
+        // uint16_t attribute_handle = ots_server_get_client_configuration_handle(OTS_OBJECT_LIST_CONTROL_POINT_INDEX); 
         // att_server_indicate(connection->con_handle, attribute_handle, &value[0], pos);
     }
 
@@ -422,6 +429,10 @@ static void ots_server_schedule_task(ots_server_connection_t * connection, uint8
     }
 }
 
+static bool ots_server_valid_gatt_uuid_size(uint16_t uuid_size){
+    return (uuid_size == 2) || (uuid_size == 4) || (uuid_size == 16);
+}
+
 static int ots_server_handle_action_control_point_write(ots_server_connection_t * connection, uint8_t *buffer, uint16_t buffer_size){
     if (buffer_size == 0){
         return ATT_ERROR_RESPONSE_OTS_WRITE_REQUEST_REJECTED;
@@ -432,27 +443,102 @@ static int ots_server_handle_action_control_point_write(ots_server_connection_t 
         return ATT_ERROR_RESPONSE_OTS_WRITE_REQUEST_REJECTED;
     } 
 
+    uint32_t object_size;
+
     switch (opcode){
         case OACP_OPCODE_CREATE:
-            // TODO
+            if (buffer_size < 6){
+                return ATT_ERROR_RESPONSE_OTS_WRITE_REQUEST_REJECTED;
+            }
+            if (!ots_server_valid_gatt_uuid_size(buffer_size - 4)){
+                return ATT_ERROR_RESPONSE_OTS_WRITE_REQUEST_REJECTED;
+            }
+
+            if ((ots_oacp_features & OACP_FEATURE_MASK_CREATE) == 0 ){
+                connection->oacp_result_code = OACP_RESULT_CODE_OP_CODE_NOT_SUPPORTED;
+                break;
+            }
+            
+            // allow only a single transaction per time
+            if (connection->oacp_opcode != OACP_OPCODE_READY) {
+                connection->oacp_result_code = OACP_RESULT_CODE_OPERATION_FAILED;
+                break;
+            }
+            object_size = little_endian_read_32(buffer, 0);
+            connection->oacp_result_code = ots_server_operations->create(connection->con_handle, object_size, (uint8_t)buffer_size - 4, &buffer[4]);
             break;
+
         case OACP_OPCODE_DELETE:
             // TODO
+            if ((ots_oacp_features & OACP_FEATURE_MASK_DELETE) == 0 ){
+                connection->oacp_result_code = OACP_RESULT_CODE_OP_CODE_NOT_SUPPORTED;
+                break;
+            }
+            // allow only a single transaction per time
+            if (connection->oacp_opcode != OACP_OPCODE_READY) {
+                connection->oacp_result_code = OACP_RESULT_CODE_OPERATION_FAILED;
+                break;
+            }
             break;
         case OACP_OPCODE_CALCULATE_CHECKSUM:
             // TODO
+            if ((ots_oacp_features & OACP_FEATURE_MASK_CALCULATE_CHECKSUM) == 0 ){
+                connection->oacp_result_code = OACP_RESULT_CODE_OP_CODE_NOT_SUPPORTED;
+                break;
+            }
+            // allow only a single transaction per time
+            if (connection->oacp_opcode != OACP_OPCODE_READY) {
+                connection->oacp_result_code = OACP_RESULT_CODE_OPERATION_FAILED;
+                break;
+            }
             break;   
         case OACP_OPCODE_EXECUTE:
             // TODO
+            if ((ots_oacp_features & OACP_FEATURE_MASK_EXECUTE) == 0 ){
+                connection->oacp_result_code = OACP_RESULT_CODE_OP_CODE_NOT_SUPPORTED;
+                break;
+            }
+            // allow only a single transaction per time
+            if (connection->oacp_opcode != OACP_OPCODE_READY) {
+                connection->oacp_result_code = OACP_RESULT_CODE_OPERATION_FAILED;
+                break;
+            }
             break;
         case OACP_OPCODE_READ:   
             // TODO
+            if ((ots_oacp_features & OACP_FEATURE_MASK_READ) == 0 ){
+                connection->oacp_result_code = OACP_RESULT_CODE_OP_CODE_NOT_SUPPORTED;
+                break;
+            }
+            // allow only a single transaction per time
+            if (connection->oacp_opcode != OACP_OPCODE_READY) {
+                connection->oacp_result_code = OACP_RESULT_CODE_OPERATION_FAILED;
+                break;
+            }
             break;     
         case OACP_OPCODE_WRITE:
             // TODO
+            if ((ots_oacp_features & OACP_FEATURE_MASK_WRITE) == 0 ){
+                connection->oacp_result_code = OACP_RESULT_CODE_OP_CODE_NOT_SUPPORTED;
+                break;
+            }
+            // allow only a single transaction per time
+            if (connection->oacp_opcode != OACP_OPCODE_READY) {
+                connection->oacp_result_code = OACP_RESULT_CODE_OPERATION_FAILED;
+                break;
+            }
             break;
         case OACP_OPCODE_ABORT:
             // TODO
+            if ((ots_oacp_features & OACP_FEATURE_MASK_ABORT) == 0 ){
+                connection->oacp_result_code = OACP_RESULT_CODE_OP_CODE_NOT_SUPPORTED;
+                break;
+            }
+            // allow only a single transaction per time
+            if (connection->oacp_opcode != OACP_OPCODE_READY) {
+                connection->oacp_result_code = OACP_RESULT_CODE_OPERATION_FAILED;
+                break;
+            }
             break;
         default:
             btstack_unreachable();
@@ -686,8 +772,12 @@ static void ots_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
     }
 }
 
-uint8_t object_transfer_service_server_init(uint32_t oacp_features, uint32_t olcp_features, uint8_t const clients_num, ots_server_connection_t * clients){
+uint8_t object_transfer_service_server_init(uint32_t oacp_features, uint32_t olcp_features, 
+    uint8_t clients_num, ots_server_connection_t * clients, const ots_operations_t * operations){
+    
     btstack_assert(clients_num != 0);
+    btstack_assert(clients != NULL);
+    btstack_assert(operations != NULL);
     
     uint16_t start_handle = 0;
     uint16_t end_handle   = 0xffff;
@@ -740,6 +830,7 @@ uint8_t object_transfer_service_server_init(uint32_t oacp_features, uint32_t olc
 
     ots_oacp_features = oacp_features;
     ots_olcp_features = olcp_features;
+    ots_server_operations = operations;
 
     ots_connections_num = clients_num;
     memset(clients, 0, sizeof(ots_server_connection_t) * ots_connections_num);
