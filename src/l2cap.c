@@ -2029,8 +2029,10 @@ static void l2cap_cbm_run_channels(void){
                 channel->local_sig_id = l2cap_next_sig_id();
                 channel->credits_incoming =  channel->new_credits_incoming;
                 channel->new_credits_incoming = 0;
-                mps = btstack_min(l2cap_max_le_mtu(), channel->local_mtu);
-                l2cap_send_le_signaling_packet( channel->con_handle, LE_CREDIT_BASED_CONNECTION_REQUEST, channel->local_sig_id, channel->psm, channel->local_cid, channel->local_mtu, mps, channel->credits_incoming);
+                channel->local_mps = btstack_min(l2cap_max_le_mtu(), channel->local_mtu);
+                l2cap_send_le_signaling_packet( channel->con_handle, LE_CREDIT_BASED_CONNECTION_REQUEST,
+                                                channel->local_sig_id, channel->psm, channel->local_cid, channel->local_mtu,
+                                                channel->local_mps, channel->credits_incoming);
                 break;
             case L2CAP_STATE_WILL_SEND_LE_CONNECTION_RESPONSE_ACCEPT:
                 if (!hci_can_send_acl_packet_now(channel->con_handle)) break;
@@ -2153,6 +2155,7 @@ static void l2cap_ecbm_run_channels(void) {
     uint16_t initial_credits;
     uint16_t signaling_cid;
     L2CAP_STATE new_state;
+    uint16_t local_mps;
 
     // pick first channel that needs to send a combined signaling pdu and setup collection via break
     // then collect all others that belong to the same pdu
@@ -2166,6 +2169,7 @@ static void l2cap_ecbm_run_channels(void) {
                 case L2CAP_STATE_WILL_SEND_ENHANCED_CONNECTION_REQUEST:
                     if (!hci_can_send_acl_packet_now(channel->con_handle)) continue;
                     local_mtu = channel->local_mtu;
+                    local_mps = channel->local_mps;
                     spsm = channel->psm;
                     result = channel->reason;
                     initial_credits = channel->credits_incoming;
@@ -2176,6 +2180,7 @@ static void l2cap_ecbm_run_channels(void) {
                 case L2CAP_STATE_WILL_SEND_ENHANCED_CONNECTION_RESPONSE:
                     if (!hci_can_send_acl_packet_now(channel->con_handle)) continue;
                     local_mtu = channel->local_mtu;
+                    local_mps = channel->local_mps;
                     initial_credits = channel->credits_incoming;
                     sig_id = channel->remote_sig_id;
                     new_state = L2CAP_STATE_OPEN;
@@ -2185,6 +2190,7 @@ static void l2cap_ecbm_run_channels(void) {
                     if (!hci_can_send_acl_packet_now(channel->con_handle)) continue;
                     sig_id = channel->local_sig_id;
                     local_mtu = channel->renegotiate_mtu;
+                    local_mps = channel->local_mps;
                     new_state = L2CAP_STATE_WAIT_ENHANCED_RENEGOTIATION_RESPONSE;
                     match_remote_sig_cid = false;
                     break;
@@ -2253,23 +2259,21 @@ static void l2cap_ecbm_run_channels(void) {
     }
 
     if (con_handle != HCI_CON_HANDLE_INVALID) {
-        // TODO: get MTU for both BR/EDR and LE
-        uint16_t mps = btstack_min(l2cap_enhanced_mps_max, btstack_min(l2cap_max_le_mtu(), local_mtu));
         switch (matching_state) {
             case L2CAP_STATE_WILL_SEND_ENHANCED_CONNECTION_REQUEST:
                 log_info("send combined connection request for %u cids", num_cids);
                 l2cap_send_general_signaling_packet(con_handle, signaling_cid, L2CAP_CREDIT_BASED_CONNECTION_REQUEST,
-                                                    sig_id, spsm, local_mtu, mps, initial_credits, cids);
+                                                    sig_id, spsm, local_mtu, local_mps, initial_credits, cids);
                 break;
             case L2CAP_STATE_WILL_SEND_ENHANCED_CONNECTION_RESPONSE:
                 log_info("send combined connection response for %u cids", num_cids);
                 l2cap_send_general_signaling_packet(con_handle, signaling_cid, L2CAP_CREDIT_BASED_CONNECTION_RESPONSE,
-                                                    sig_id, local_mtu, mps, initial_credits, result, cids);
+                                                    sig_id, local_mtu, local_mps, initial_credits, result, cids);
                 break;
             case L2CAP_STATE_WILL_SEND_EHNANCED_RENEGOTIATION_REQUEST:
                 log_info("send combined renegotiation request for %u cids", num_cids);
                 l2cap_send_general_signaling_packet(con_handle, signaling_cid, L2CAP_CREDIT_BASED_RECONFIGURE_REQUEST,
-                                                    sig_id, local_mtu, mps, cids);
+                                                    sig_id, local_mtu, local_mps, cids);
                 break;
             default:
                 break;
@@ -5363,6 +5367,7 @@ uint8_t l2cap_ecbm_create_channels(btstack_packet_handler_t packet_handler, hci_
     btstack_linked_list_t channels = NULL;
     uint8_t status = l2cap_ecbm_setup_channels(&channels, packet_handler, num_channels, connection, psm, mtu,
                                                security_level);
+    uint16_t local_mps = btstack_min(l2cap_enhanced_mps_max, btstack_min(l2cap_max_le_mtu(), mtu));
 
     // add to connections list and set state + local_sig_id
     l2cap_channel_t * channel;
@@ -5373,6 +5378,7 @@ uint8_t l2cap_ecbm_create_channels(btstack_packet_handler_t packet_handler, hci_
         if (channel == NULL) break;
         channel->state              = L2CAP_STATE_WILL_SEND_ENHANCED_CONNECTION_REQUEST;
         channel->local_sig_id       = local_sig_id;
+        channel->local_mps = local_mps;
         channel->cid_index = i;
         channel->num_cids = num_channels;
         channel->credits_incoming   = initial_credits;

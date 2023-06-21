@@ -270,6 +270,7 @@ typedef struct {
     uint16_t   send_sdu_pos;
 
     // max PDU size
+    uint16_t  local_mps;
     uint16_t  remote_mps;
 
     // credits for outgoing traffic
@@ -293,9 +294,6 @@ typedef struct {
 
     // l2cap channel mode: basic or enhanced retransmission mode
     l2cap_channel_mode_t mode;
-    
-    // local mps = size of rx/tx buffers
-    uint16_t local_mps;
 
     // retransmission timer
     btstack_timer_source_t retransmission_timer;
