@@ -3874,8 +3874,12 @@ static int l2cap_ecbm_signaling_handler_dispatch(hci_con_handle_t handle, uint16
                 }
 
                 // security: check encryption
-                // L2CAP.TS.p31 does not check for Connection refused - insufficient encryption which might be send for no encryption
                 if (service->required_security_level >= LEVEL_2) {
+                    if (gap_encryption_key_size(handle) == 0){
+                        l2cap_register_signaling_response(handle, L2CAP_CREDIT_BASED_CONNECTION_REQUEST, sig_id,
+                                                          num_channels_and_signaling_cid, L2CAP_ECBM_CONNECTION_RESULT_ALL_REFUSED_INSUFFICIENT_ENCRYPTION);
+                        return 1;
+                    }
                     if (gap_encryption_key_size(handle) < 16) {
                         l2cap_register_signaling_response(handle, L2CAP_CREDIT_BASED_CONNECTION_REQUEST, sig_id,
                                                           num_channels_and_signaling_cid, L2CAP_ECBM_CONNECTION_RESULT_ALL_REFUSED_ENCYRPTION_KEY_SIZE_TOO_SHORT);
