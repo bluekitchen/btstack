@@ -1,4 +1,4 @@
-# GATT Service Servers Tests: MCS
+# GATT Service Servers Tests: MCS, OTS
 
 Tool: media_player_server_test
 
@@ -125,3 +125,71 @@ Tool: media_player_server_test
 
 - MCS/SR/SPN/BV-01-C: j, OK, J
 - MCS/SR/SPN/BV-02-C: k, OK, K
+
+
+- OTS/SR/SGGIT/SER/BV-01-C: (wait)
+- OTS/SR/SGGIT/CHA/BV-01-C: (wait)
+- OTS/SR/SGGIT/CHA/BV-03-C: (wait)
+- OTS/SR/SGGIT/CHA/BV-04-C: (wait)
+- OTS/SR/SGGIT/CHA/BV-05-C: (wait)
+- OTS/SR/SGGIT/CHA/BV-07-C: (wait)
+- OTS/SR/SGGIT/CHA/BV-09-C: (wait)
+- OTS/SR/SGGIT/CHA/BV-10-C: (wait)
+- OTS/SR/SGGIT/CHA/BV-12-C: (wait)
+- OTS/SR/SGGIT/CHA/BV-13-C: (wait)
+- OTS/SR/SGGIT/CHA/BV-14-C: (wait)
+- OTS/SR/SGGIT/CHA/BV-15-C: (wait)
+
+- OTS/SR/DEC/BV-11-C: (wait)
+
+- OTS/SR/CR/BV-01-C: (wait)
+- OTS/SR/CR/BV-02-C: (wait)
+- OTS/SR/CR/BV-03-C: (wait)
+- OTS/SR/CR/BV-04-C: (wait)
+- OTS/SR/CR/BV-05-C: (wait)
+- OTS/SR/CR/BV-06-C: (wait)
+- OTS/SR/CR/BV-07-C: (wait)
+- OTS/SR/CR/BV-08-C: (wait)
+- OTS/SR/CR/BV-09-C: (wait)
+
+- OTS/SR/CRL/BV-01-C: 
+- OTS/SR/CRL/BV-02-C: 
+
+- OTS/SR/CW/BV-01-C: 
+- OTS/SR/CW/BV-02-C:  
+- OTS/SR/CW/BV-03-C: 
+- OTS/SR/CW/BV-05-C: 
+- OTS/SR/CW/BV-05-C: 
+
+- OTS/SR/CWL/BV-01-C: 
+- OTS/SR/CWL/BV-02-C: 
+
+- OTS/SR/INV/BV-01-C:
+
+- OTS/SR/CON/BV-01-C:
+- OTS/SR/CON/BV-02-C:
+- OTS/SR/CON/BV-03-C:
+- OTS/SR/CON/BV-04-C:
+- OTS/SR/CON/BV-05-C:
+- OTS/SR/CON/BV-06-C:
+- OTS/SR/CON/BV-07-C:
+- OTS/SR/CON/BV-08-C:
+- OTS/SR/CON/BV-09-C:
+- OTS/SR/CON/BV-10-C:
+
+- OTS/SR/OAE/BI-01-C: 
+- OTS/SR/OAE/BI-01-C:
+-  
+- OTS/SR/OAE/BI-02-C:  
+- OTS/SR/OAE/BI-03-C:  
+- OTS/SR/OAE/BI-04-C:  
+- OTS/SR/OAE/BI-05-C:  
+- OTS/SR/OAE/BI-06-C:  
+- OTS/SR/OAE/BI-07-C:  
+- OTS/SR/OAE/BI-08-C:  
+- OTS/SR/OAE/BI-09-C:  
+- OTS/SR/OAE/BI-10-C:  
+- OTS/SR/OAE/BI-11-C:  
+- OTS/SR/OAE/BI-12-C:  
+- OTS/SR/OAE/BI-13-C:
+-   
