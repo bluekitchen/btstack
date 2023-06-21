@@ -721,7 +721,7 @@ static uint16_t mcs_server_read_callback(hci_con_handle_t con_handle, uint16_t a
             return att_read_callback_handle_blob((const uint8_t *)media_player->data.track_title, strlen(media_player->data.track_title), offset, buffer, buffer_size);
         
         case MEDIA_PLAYER_ICON_OBJECT_ID:
-            return att_read_callback_handle_blob(media_player->data.icon_object_id, media_player->data.icon_object_id_len, offset, buffer, buffer_size);
+            return att_read_callback_handle_blob(media_player->data.icon_object_id, OTS_OBJECT_ID_LEN, offset, buffer, buffer_size);
 
 		case MEDIA_PLAYER_ICON_URL:
 			return att_read_callback_handle_blob((const uint8_t *)media_player->data.icon_url, strlen(media_player->data.icon_url), offset, buffer, buffer_size);
@@ -1111,19 +1111,14 @@ uint8_t media_control_service_server_set_media_player_name(uint16_t media_player
 	return ERROR_CODE_SUCCESS;
 }
 
-uint8_t media_control_service_server_set_icon_object_id(uint16_t media_player_id, 
-    const uint8_t * icon_object_id, uint8_t icon_object_id_len){
-	
-	if (icon_object_id_len != 6){
-		return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
-	}
-
+uint8_t media_control_service_server_set_icon_object_id(uint16_t media_player_id, const ots_object_id_t * icon_object_id){
+	btstack_assert(icon_object_id != NULL);
+    
 	media_control_service_server_t * media_player = msc_server_find_media_player_for_id(media_player_id);
 	if (media_player == NULL){
 		return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
 	}
-    media_player->data.icon_object_id_len = icon_object_id_len;
-	memcpy(media_player->data.icon_object_id, icon_object_id, media_player->data.icon_object_id_len);
+	memcpy(media_player->data.icon_object_id, icon_object_id, OTS_OBJECT_ID_LEN);
 	return ERROR_CODE_SUCCESS;
 }
 
