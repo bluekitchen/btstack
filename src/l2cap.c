@@ -5045,13 +5045,28 @@ static void l2cap_credit_based_handle_pdu(l2cap_channel_t * l2cap_channel, const
         pos  += 2u;
         size -= 2u;
     }
+
     uint16_t fragment_size   = size-COMPLETE_L2CAP_HEADER;
-    uint16_t remaining_space = l2cap_channel->local_mtu - l2cap_channel->receive_sdu_pos;
-    if (fragment_size > remaining_space) return;         // SDU would cause buffer overrun
+
+    // check fragment_size
+    if (fragment_size > l2cap_channel->local_mps) {
+        log_info("(e)CBM: fragment larger than local MPS");
+        l2cap_channel->state = L2CAP_STATE_WILL_SEND_DISCONNECT_REQUEST;
+        return;
+    }
+
+    // check sdu overrun
+    if ((l2cap_channel->receive_sdu_pos + fragment_size) > l2cap_channel->receive_sdu_len){
+        log_info("(e)CBM: fragments larger than SDU");
+        l2cap_channel->state = L2CAP_STATE_WILL_SEND_DISCONNECT_REQUEST;
+        return;
+    }
+
     (void)memcpy(&l2cap_channel->receive_sdu_buffer[l2cap_channel->receive_sdu_pos],
                  &packet[COMPLETE_L2CAP_HEADER + pos],
                  fragment_size);
-    l2cap_channel->receive_sdu_pos += size - COMPLETE_L2CAP_HEADER;
+    l2cap_channel->receive_sdu_pos += fragment_size;
+
     // done?
     log_debug("le packet pos %u, len %u", l2cap_channel->receive_sdu_pos, l2cap_channel->receive_sdu_len);
     if (l2cap_channel->receive_sdu_pos >= l2cap_channel->receive_sdu_len){
@@ -5425,6 +5440,9 @@ uint8_t l2cap_ecbm_accept_channels(uint16_t local_cid, uint8_t num_channels, uin
 
         return L2CAP_LOCAL_CID_DOES_NOT_EXIST;
     }
+
+    uint16_t local_mps = btstack_min(l2cap_enhanced_mps_max, btstack_min(l2cap_max_le_mtu(), receive_buffer_size));
+
     //
     hci_con_handle_t  con_handle    = channel->con_handle;
     uint8_t           local_sig_id  = channel->local_sig_id;
@@ -5443,6 +5461,7 @@ uint8_t l2cap_ecbm_accept_channels(uint16_t local_cid, uint8_t num_channels, uin
             out_local_cids[channel_index] = channel->local_cid;
             channel->receive_sdu_buffer = receive_buffers[channel_index];
             channel->local_mtu = receive_buffer_size;
+            channel->local_mps = local_mps;
             channel->credits_incoming   = initial_credits;
             channel->automatic_credits  = initial_credits == L2CAP_LE_AUTOMATIC_CREDITS;
             channel_index++;
