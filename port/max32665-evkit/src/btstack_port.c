@@ -46,7 +46,7 @@
 #include "btstack.h"
 #include "btstack_config.h"
 #include "btstack_run_loop_embedded.h"
-#include "btstack_chipset_cc256x.h"
+
 #include "hci_dump_embedded_stdout.h"
 #include "hci_transport.h"
 #include "hci_transport_h4.h"

@@ -44,7 +44,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include "led.h"
-#include "tmr_utils.h"
+
 #include "btstack_port.h"
 
 /***** Definitions *****/
