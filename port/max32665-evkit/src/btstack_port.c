@@ -39,6 +39,9 @@
 #include "lp.h"
 #include "uart.h"
 #include "board.h"
+#include "mxc_device.h"
+#include "uart_regs.h"
+#include "uart.h"
 #include "led.h"
 
 // BTstack Core
@@ -54,7 +57,8 @@
 // BTstack HALs
 #include "hal_tick.h"
 #include "hal_stdin.h"
-
+// hal_led.h implementation
+#include "hal_led.h"
 #include "btstack_port.h"
 
 #define CC256X_UART_ID             0
@@ -70,20 +74,28 @@ static uint8_t * rx_buffer_ptr = 0;
 static int bytes_to_write = 0;
 static uint8_t * tx_buffer_ptr = 0;
 
-const gpio_cfg_t PAN1326_SLOW_CLK = { PORT_1, PIN_7, GPIO_FUNC_GPIO,
-		GPIO_PAD_NORMAL };
-const gpio_cfg_t PAN1326_nSHUTD = { PORT_1, PIN_6, GPIO_FUNC_GPIO,
-		GPIO_PAD_NORMAL };
-const gpio_cfg_t PAN1326_HCIRTS = { PORT_0, PIN_3, GPIO_FUNC_GPIO,
-		GPIO_PAD_INPUT_PULLUP };
-const gpio_cfg_t PAN1326_HCICTS = { PORT_0, PIN_2, GPIO_FUNC_GPIO,
-		GPIO_PAD_NORMAL };
 
 static void dummy_handler(void) {};
 static void (*rx_done_handler)(void) = dummy_handler;
 static void (*tx_done_handler)(void) = dummy_handler;
-
-
+void UART0_IRQHandler(void)
+{
+    LED_On(0);
+    MXC_UART_AsyncHandler(MXC_UART0);
+    LED_Off(0);
+}
+void UART1_IRQHandler(void)
+{
+    LED_On(0);
+    MXC_UART_AsyncHandler(MXC_UART1);
+    LED_Off(0);
+}
+void UART2_IRQHandler(void)
+{
+    LED_On(0);
+    MXC_UART_AsyncHandler(MXC_UART2);
+    LED_Off(0);
+}
 
 void hal_cpu_disable_irqs(void)
 {
@@ -176,38 +188,31 @@ void hal_btstack_run_loop_execute_once(void)
 
 void hal_uart_init(void)
 {
-	int error = 0;
-	uart_cfg_t cfg;
+	uint8_t uartNum;
+    mxc_uart_regs_t *uart;
+    uint32_t irqn;
+    int result;
 
-	cfg.parity = UART_PARITY_DISABLE;
-	cfg.size = UART_DATA_SIZE_8_BITS;
-	cfg.extra_stop = 0;
-	cfg.cts = 1;
-	cfg.rts = 1;
+    uartNum = HCI_UART;
+    uart = MXC_UART_GET_UART(uartNum);
+    irqn = MXC_UART_GET_IRQ(uartNum);
 
-	cfg.baud = baud_rate;
+    // /* Save the callback */
+    // rxCallback = rxCb;
+    // txCallback = txCb;
 
-	sys_cfg_uart_t sys_cfg;
-	sys_cfg.clk_scale = CLKMAN_SCALE_AUTO;
+    
+        result = MXC_UART_Init(uart, baud_rate, HCI_UART_MAP);
+    
 
-	sys_cfg.io_cfg = (ioman_cfg_t )IOMAN_UART(0,
-			IOMAN_MAP_B, // io_map
-			IOMAN_MAP_B, // cts_map
-			IOMAN_MAP_B, // rts_map
-			1, // io_en
-			1, // cts_en
-			1); //rts_en
+    MXC_UART_SetDataSize(uart, 8);
+    MXC_UART_SetStopBits(uart, MXC_UART_STOP_1);
+    MXC_UART_SetParity(uart, MXC_UART_PARITY_DISABLE);
 
-	if ((error = UART_Init(MXC_UART_GET_UART(CC256X_UART_ID), &cfg, &sys_cfg)) != E_NO_ERROR) {
-		printf("Error initializing UART %d\n", error);
-		while (1);
-	} else {
-		printf("BTSTACK UART Initialized\n");
-	}
+    /* Set the interrupt priority lower than the default */
+    NVIC_SetPriority(irqn, 1);
 
-	MXC_UART_GET_UART(CC256X_UART_ID)->ctrl |= MXC_F_UART_CTRL_CTS_POLARITY | MXC_F_UART_CTRL_RTS_POLARITY;
-	MXC_UART_GET_UART(CC256X_UART_ID)->ctrl &= ~((MXC_UART_FIFO_DEPTH - 4) << (MXC_F_UART_CTRL_RTS_LEVEL_POS));
-	MXC_UART_GET_UART(CC256X_UART_ID)->ctrl |= ((UART_RXFIFO_USABLE) << MXC_F_UART_CTRL_RTS_LEVEL_POS);
+    return result;
 }
 
 int hal_uart_dma_set_baud(uint32_t baud){
@@ -242,11 +247,7 @@ void hal_uart_dma_set_sleep(uint8_t sleep){
 
 void init_slow_clock(void)
 {
-	MXC_PWRSEQ->reg0 &= ~(MXC_F_PWRSEQ_REG0_PWR_RTCEN_RUN | MXC_F_PWRSEQ_REG0_PWR_RTCEN_SLP);
-	MXC_PWRSEQ->reg4 &= ~MXC_F_PWRSEQ_REG4_PWR_PSEQ_32K_EN;
-	MXC_PWRSEQ->reg0 |= MXC_F_PWRSEQ_REG0_PWR_RTCEN_RUN | MXC_F_PWRSEQ_REG0_PWR_RTCEN_SLP; // Enable RTC
-	hal_delay_us(1);
-	MXC_PWRSEQ->reg4 |= MXC_F_PWRSEQ_REG4_PWR_PSEQ_32K_EN; // Enable the RTC out of P1.7
+	
 }
 
 int bt_comm_init() {
@@ -256,31 +257,6 @@ int bt_comm_init() {
 	hal_tick_init();
 	hal_delay_us(1);
 
-	/* HCI module RTS as input with 25k pullup */
-	if ((error = GPIO_Config(&PAN1326_HCIRTS)) != E_NO_ERROR) {
-		printf("Error setting PAN1326_HCIRTS %d\n", error);
-	}
-	GPIO_OutSet(&PAN1326_HCIRTS);
-
-	init_slow_clock();
-	/*
-	 * when enabling the P1.7 RTC output, P1.6 will be hardcoded to an input with 25k pullup enabled.
-	 * There is an internal pullup, so when it is set as an input, it will float high.
-	 * The PAN1326B data sheet says the NSHUTD pin is pulled down, but the input impedance is stated at 1Meg Ohm,
-	 * The so the 25k pullup should be enough to reach the minimum 1.42V to enable the device.
-	 * */
-
-	/* Force PAN1326 shutdown to be output and take it out of reset */
-	if ((error = GPIO_Config(&PAN1326_nSHUTD)) != E_NO_ERROR) {
-		printf("Error setting PAN1326_nSHUTD %d\n", error);
-	}
-	GPIO_OutSet(&PAN1326_nSHUTD);
-
-	/*Check the module is ready to receive data */
-	while (GPIO_InGet(&PAN1326_HCIRTS)) {
-		cnt++;
-	}
-
 	printf("%s CC256X init completed. cnt: %d \n", __func__, cnt);
 	return 0;
 }
@@ -289,31 +265,30 @@ static hci_transport_config_uart_t config = {
 	    HCI_TRANSPORT_CONFIG_UART,
 	    115200,
 	    4000000,
-	    1, // flow control
-	    "max32630fthr",
+	    0, // flow control
+	    "max32665",
 	};
 
-// hal_led.h implementation
-#include "hal_led.h"
+
 void hal_led_off(void){
-	LED_Off(LED_BLUE);
+	LED_Off(0);
 }
 
 void hal_led_on(void){
-	LED_On(LED_BLUE);
+	LED_On(0);
 }
 
 void hal_led_toggle(void){
-	LED_Toggle(LED_BLUE);
+	LED_Toggle(0);
 }
 
 // hal_stdin.h
 static uint8_t stdin_buffer[1];
 static void (*stdin_handler)(char c);
 
-static uart_req_t uart_byte_request;
+static volatile mxc_uart_req_t uart_byte_request;
 
-static void uart_rx_handler(uart_req_t *request, int error)
+static void uart_rx_handler(mxc_uart_req_t *request, int error)
 {
     if (stdin_handler){
         (*stdin_handler)(stdin_buffer[0]);
@@ -326,63 +301,18 @@ void hal_stdin_setup(void (*handler)(char c)){
     stdin_handler = handler;
 
 	/* set input handler */
-	uart_byte_request.callback = uart_rx_handler;
-	uart_byte_request.data = stdin_buffer;
-	uart_byte_request.len = sizeof(uint8_t);
-	UART_ReadAsync(MXC_UART_GET_UART(CONSOLE_UART), &uart_byte_request);
+
+	uart_byte_request.uart = HCI_UART;
+    uart_byte_request.rxData = stdin_buffer;
+    uart_byte_request.txData = NULL;
+    uart_byte_request.rxLen = sizeof(uint8_t);
+    uart_byte_request.txLen = 0;
+    
+	
+	MXC_UART_TransactionAsync(&uart_byte_request);
+	
 }
 
-#if 0
-
-#include "btstack_stdin.h"
-
-static btstack_data_source_t stdin_data_source;
-static void (*stdin_handler)(char c);
-
-static uart_req_t uart_byte_request;
-static volatile int stdin_character_received;
-static uint8_t stdin_buffer[1];
-
-static void stdin_rx_complete(void) {
-    stdin_character_received = 1;
-}
-
-static void uart_rx_handler(uart_req_t *request, int error)
-{
-	stdin_rx_complete();
-}
-
-static void stdin_process(struct btstack_data_source *ds, btstack_data_source_callback_type_t callback_type){
-    if (!stdin_character_received) return;
-    if (stdin_handler){
-        (*stdin_handler)(stdin_buffer[0]);
-    }
-    stdin_character_received = 0;
-	UART_ReadAsync(MXC_UART_GET_UART(CONSOLE_UART), &uart_byte_request);
-}
-
-static void btstack_stdin_handler(char c){
-    stdin_character_received = 1;
-    btstack_run_loop_poll_data_sources_from_irq();
-    printf("Received: %c\n", c);
-}
-
-void btstack_stdin_setup(void (*handler)(char c)){
-    // set handler
-    stdin_handler = handler;
-
-    // set up polling data_source
-    btstack_run_loop_set_data_source_handler(&stdin_data_source, &stdin_process);
-    btstack_run_loop_enable_data_source_callbacks(&stdin_data_source, DATA_SOURCE_CALLBACK_POLL);
-    btstack_run_loop_add_data_source(&stdin_data_source);
-
-	/* set input handler */
-	uart_byte_request.callback = uart_rx_handler;
-	uart_byte_request.data = stdin_buffer;
-	uart_byte_request.len = sizeof(uint8_t);
-	UART_ReadAsync(MXC_UART_GET_UART(CONSOLE_UART), &uart_byte_request);
-}
-#endif
 
 #include "hal_flash_bank_mxc.h"
 #include "btstack_tlv.h"
@@ -401,9 +331,9 @@ static btstack_tlv_flash_bank_t btstack_tlv_flash_bank_context;
 /******************************************************************************/
 int bluetooth_main(void)
 {
-	LED_Off(LED_GREEN);
-	LED_On(LED_RED);
-	LED_Off(LED_BLUE);
+	LED_Off(1);
+	LED_On(1);
+	LED_Off(0);
 
 	bt_comm_init();
 	/* BT Stack Initialization */

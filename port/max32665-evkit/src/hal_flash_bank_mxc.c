@@ -59,7 +59,7 @@ static void hal_flash_bank_mxc_erase(void * context, int bank){
 	if (bank > 1) return;
 
 	// Erase page
-	FLC_PageErase(self->banks[bank], MXC_V_FLC_ERASE_CODE_PAGE_ERASE, MXC_V_FLC_FLSH_UNLOCK_KEY);
+	MXC_FLC_PageErase(self->banks[bank]);
 }
 
 static void hal_flash_bank_mxc_read(void * context, int bank, uint32_t offset, uint8_t * buffer, uint32_t size){
@@ -79,7 +79,7 @@ static void hal_flash_bank_mxc_write(void * context, int bank, uint32_t offset, 
 	if (offset > self->sector_size) return;
 	if ((offset + size) > self->sector_size) return;
 
-	FLC_Write(self->banks[bank] + offset, data, size, MXC_V_FLC_FLSH_UNLOCK_KEY);
+	MXC_FLC_Write(self->banks[bank] + offset, data, size);
 }
 
 static const hal_flash_bank_t hal_flash_bank_mxc_impl = {
@@ -97,7 +97,7 @@ const hal_flash_bank_t * hal_flash_bank_mxc_init_instance(hal_flash_bank_mxc_t *
 	context->banks[1]   = bank_1_addr;
 
 	// prepare FLC
-	FLC_Init();
+	MXC_FLC_Init();
 
 	return &hal_flash_bank_mxc_impl;
 }
