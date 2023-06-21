@@ -46,6 +46,7 @@
 #include <stdint.h>
 #include "le-audio/le_audio.h"
 #include "le-audio/gatt-service/media_control_service_util.h"
+#include "le-audio/gatt-service/object_transfer_service_util.h"
 
 #if defined __cplusplus
 extern "C" {
@@ -113,9 +114,6 @@ typedef struct {
     char track_title[MEDIA_CONTROL_SERVICE_TRACK_TITLE_MAX_LENGTH];
     bool track_title_value_changed;
 
-    uint8_t icon_object_id_len;
-    uint8_t icon_object_id[6];
-
     char icon_url[MEDIA_CONTROL_SERVICE_ICON_URL_MAX_LENGTH];
     
     uint32_t track_duration_10ms;               // 0xFFFFFFFF unknown, or not set
@@ -125,14 +123,16 @@ typedef struct {
     int8_t playback_speed;
     int8_t seeking_speed;
 
-    uint8_t current_track_segments_object_id[6];
-    uint8_t current_track_object_id[6];
-    uint8_t next_track_object_id[6];
-    uint8_t parent_group_object_id[6];
-    uint8_t current_group_object_id[6];
+    ots_object_id_t icon_object_id;
+    ots_object_id_t current_track_segments_object_id;
+    ots_object_id_t current_track_object_id;
+    ots_object_id_t next_track_object_id;
+    ots_object_id_t parent_group_object_id;
+    ots_object_id_t current_group_object_id;
+    
     uint8_t content_control_id;
 
-    uint8_t search_results_object_id[6];
+    ots_object_id_t search_results_object_id;
     uint8_t search_results_object_id_len;
     
     playing_order_t playing_order;
@@ -168,13 +168,12 @@ typedef struct {
 } media_control_service_server_t;
 
 typedef struct {
+    // TODO make const
     uint32_t track_duration_10ms;               // 0xFFFFFFFF unknown, or not set
+    // TODO move global for current track
     uint32_t track_position_10ms;               // 0xFFFFFFFF unknown, or not set
 
-    uint8_t object_id[6];
-
-    // uint8_t parent_group_object_id[6];
-    // uint8_t current_group_object_id[6];
+    ots_object_id_t object_id;
 
     char * title;
 } mcs_track_t;
@@ -194,7 +193,7 @@ uint8_t media_control_service_server_update_current_track_info(uint16_t media_pl
 
 uint8_t media_control_service_server_set_media_player_name(uint16_t media_player_id, char * name);
 
-uint8_t media_control_service_server_set_icon_object_id(uint16_t media_player_id, const uint8_t * icon_object_id, uint8_t icon_object_id_len);
+uint8_t media_control_service_server_set_icon_object_id(uint16_t media_player_id, const ots_object_id_t * icon_object_id);
 
 uint8_t media_control_service_server_set_icon_url(uint16_t media_player_id, const char * icon_url);
 
