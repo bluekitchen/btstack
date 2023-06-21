@@ -158,11 +158,11 @@ static ots_server_connection_t * ots_server_find_or_add_connection_for_con_handl
     return free_connection;
 }
 
-static uint16_t ots_server_get_client_configuration_handle(ots_characteristic_index_t index){
+static uint16_t ots_server_get_client_configuration_handle_for_characteristic_index(ots_characteristic_index_t index){
     return ots_characteristics[index].client_configuration_handle;
 }
 
-static uint16_t ots_server_get_client_value_handle_for_index(ots_characteristic_index_t index){
+static uint16_t ots_server_get_value_handle_for_characteristic_index(ots_characteristic_index_t index){
     return ots_characteristics[index].value_handle;
 }
 
@@ -256,7 +256,9 @@ static uint16_t ots_server_store_filter_list(const ots_filter_t * filter, uint8_
 static uint16_t ots_server_read_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
     ots_server_connection_t * connection = NULL;
 
-    if (attribute_handle == ots_server_get_client_value_handle_for_index(OTS_FEATURE_INDEX)){
+    printf("ots_server_read_callback attribute handle 0x%02x\n", attribute_handle);
+
+    if (attribute_handle == ots_server_get_value_handle_for_characteristic_index(OTS_FEATURE_INDEX)){
         ots_server_find_or_add_connection_for_con_handle(con_handle);
         
         uint8_t ots_features[8];
@@ -266,7 +268,7 @@ static uint16_t ots_server_read_callback(hci_con_handle_t con_handle, uint16_t a
     }
 
     // handle indication
-    if (attribute_handle == ots_server_get_client_configuration_handle(OTS_OBJECT_ACTION_CONTROL_POINT_INDEX)){
+    if (attribute_handle == ots_server_get_client_configuration_handle_for_characteristic_index(OTS_OBJECT_ACTION_CONTROL_POINT_INDEX)){
         connection = ots_server_find_or_add_connection_for_con_handle(con_handle);
         if (connection == NULL){
             return 0;
@@ -274,7 +276,7 @@ static uint16_t ots_server_read_callback(hci_con_handle_t con_handle, uint16_t a
         return att_read_callback_handle_little_endian_16(connection->oacp_configuration, offset, buffer, buffer_size); 
     }
     
-    if (attribute_handle == ots_server_get_client_configuration_handle(OTS_OBJECT_LIST_CONTROL_POINT_INDEX)){
+    if (attribute_handle == ots_server_get_client_configuration_handle_for_characteristic_index(OTS_OBJECT_LIST_CONTROL_POINT_INDEX)){
         connection = ots_server_find_or_add_connection_for_con_handle(con_handle);
         if (connection == NULL){
             return 0;
@@ -282,7 +284,7 @@ static uint16_t ots_server_read_callback(hci_con_handle_t con_handle, uint16_t a
         return att_read_callback_handle_little_endian_16(connection->olcp_configuration, offset, buffer, buffer_size); 
     }
 
-    if (attribute_handle == ots_server_get_client_configuration_handle(OTS_OBJECT_CHANGED_INDEX)){
+    if (attribute_handle == ots_server_get_client_configuration_handle_for_characteristic_index(OTS_OBJECT_CHANGED_INDEX)){
         connection = ots_server_find_or_add_connection_for_con_handle(con_handle);
         if (connection == NULL){
             return 0;
@@ -299,7 +301,7 @@ static uint16_t ots_server_read_callback(hci_con_handle_t con_handle, uint16_t a
         return (uint16_t)ATT_ERROR_RESPONSE_OTS_OBJECT_NOT_SELECTED;
     }
 
-    if (attribute_handle == ots_server_get_client_value_handle_for_index(OTS_OBJECT_NAME_INDEX)){
+    if (attribute_handle == ots_server_get_value_handle_for_characteristic_index(OTS_OBJECT_NAME_INDEX)){
         if (buffer == NULL){
             // get len and check if we have up to date value
             if ((offset != 0) && !ots_current_object_valid(connection)){
@@ -309,7 +311,7 @@ static uint16_t ots_server_read_callback(hci_con_handle_t con_handle, uint16_t a
         return att_read_callback_handle_blob((const uint8_t *)connection->current_object.name, strlen(connection->current_object.name), offset, buffer, buffer_size);
     }
 
-    if (attribute_handle == ots_server_get_client_value_handle_for_index(OTS_OBJECT_TYPE_INDEX)){
+    if (attribute_handle == ots_server_get_value_handle_for_characteristic_index(OTS_OBJECT_TYPE_INDEX)){
         if (connection->current_object.type_uuid16 != 0){
             return att_read_callback_handle_little_endian_16(connection->current_object.type_uuid16, offset, buffer, buffer_size); 
         } else {
@@ -318,31 +320,31 @@ static uint16_t ots_server_read_callback(hci_con_handle_t con_handle, uint16_t a
         return 0;
     } 
 
-    if (attribute_handle == ots_server_get_client_value_handle_for_index(OTS_OBJECT_SIZE_INDEX)){
+    if (attribute_handle == ots_server_get_value_handle_for_characteristic_index(OTS_OBJECT_SIZE_INDEX)){
         uint8_t object_size[8];
         little_endian_store_32(object_size, 0, connection->current_size);
         little_endian_store_32(object_size, 4, connection->current_object.allocated_size);
         return att_read_callback_handle_blob(object_size, sizeof(object_size), offset, buffer, buffer_size); 
     }
 
-    if (attribute_handle == ots_server_get_client_value_handle_for_index(OTS_OBJECT_FIRST_CREATED_INDEX)){
+    if (attribute_handle == ots_server_get_value_handle_for_characteristic_index(OTS_OBJECT_FIRST_CREATED_INDEX)){
         uint8_t time_buffer[7];
         btstack_utc_store_time(&connection->current_object.first_created, &time_buffer[0], sizeof(time_buffer));
         return att_read_callback_handle_blob(time_buffer, sizeof(time_buffer), offset, buffer, buffer_size);
     } 
 
-    if (attribute_handle == ots_server_get_client_value_handle_for_index(OTS_OBJECT_LAST_MODIFIED_INDEX)){
+    if (attribute_handle == ots_server_get_value_handle_for_characteristic_index(OTS_OBJECT_LAST_MODIFIED_INDEX)){
         uint8_t time_buffer[7];
         btstack_utc_store_time(&connection->current_object.last_modified, &time_buffer[0], sizeof(time_buffer));
        
         return att_read_callback_handle_blob(time_buffer, sizeof(time_buffer), offset, buffer, buffer_size);
     } 
 
-    if (attribute_handle == ots_server_get_client_value_handle_for_index(OTS_OBJECT_ID_INDEX)){
+    if (attribute_handle == ots_server_get_value_handle_for_characteristic_index(OTS_OBJECT_ID_INDEX)){
         return att_read_callback_handle_blob((const uint8_t *)connection->current_object.luid, OTS_OBJECT_ID_LEN, offset, buffer, buffer_size);
     
     } 
-    if (attribute_handle == ots_server_get_client_value_handle_for_index(OTS_OBJECT_PROPERTIES_INDEX)){
+    if (attribute_handle == ots_server_get_value_handle_for_characteristic_index(OTS_OBJECT_PROPERTIES_INDEX)){
         uint8_t properties[8];
         little_endian_store_32(properties, 0, connection->current_object.properties);
         return att_read_callback_handle_blob(properties, sizeof(properties), offset, buffer, buffer_size);
@@ -350,7 +352,7 @@ static uint16_t ots_server_read_callback(hci_con_handle_t con_handle, uint16_t a
 
     uint8_t i;
     for (i = 0; i < OTS_MAX_NUM_FILTERS; i++){
-        if (attribute_handle == ots_server_get_client_value_handle_for_index(OTS_OBJECT_LIST_FILTER1_INDEX + i)){
+        if (attribute_handle == ots_server_get_value_handle_for_characteristic_index(OTS_OBJECT_LIST_FILTER1_INDEX + i)){
            return ots_server_store_filter_list(&connection->filters[i], buffer, buffer_size, offset);    
         }
     }
@@ -376,14 +378,14 @@ static void ots_server_can_send_now(void * context){
         // allow next transaction
         connection->oacp_opcode = OACP_OPCODE_READY;
         
-        uint16_t attribute_handle = ots_server_get_client_configuration_handle(OTS_OBJECT_ACTION_CONTROL_POINT_INDEX);
+        uint16_t attribute_handle = ots_server_get_client_configuration_handle_for_characteristic_index(OTS_OBJECT_ACTION_CONTROL_POINT_INDEX);
         att_server_indicate(connection->con_handle, attribute_handle, value, sizeof(value));
 
     } else if ((connection->scheduled_tasks & OTS_TASK_SEND_OLCP_PROCEDURE_RESPONSE) != 0){
         connection->scheduled_tasks &= ~OTS_TASK_SEND_OLCP_PROCEDURE_RESPONSE;
 
         // TODO 
-        // uint16_t attribute_handle = ots_server_get_client_configuration_handle(OTS_OBJECT_LIST_CONTROL_POINT_INDEX); 
+        // uint16_t attribute_handle = ots_server_get_client_configuration_handle_for_characteristic_index(OTS_OBJECT_LIST_CONTROL_POINT_INDEX); 
         // att_server_indicate(connection->con_handle, attribute_handle, &value[0], pos);
     }
 
@@ -593,21 +595,30 @@ static int ots_server_handle_list_control_point_write(ots_server_connection_t * 
 static int ots_server_write_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
     ots_server_connection_t * connection = NULL;
 
-    if (attribute_handle == ots_server_get_client_configuration_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_ACTION_CONTROL_POINT)){
+    if (attribute_handle == ots_server_get_client_configuration_handle_for_characteristic_index(OTS_OBJECT_ACTION_CONTROL_POINT_INDEX)){
+        if (buffer_size != 2){
+            return 0;
+        }
         connection = ots_server_find_or_add_connection_for_con_handle(con_handle);
         if (connection != NULL){
             connection->oacp_configuration = little_endian_read_16(buffer, 0);
         }
         return 0;
     
-    } else if (attribute_handle == ots_server_get_client_configuration_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_LIST_CONTROL_POINT)){
+    } else if (attribute_handle == ots_server_get_client_configuration_handle_for_characteristic_index(OTS_OBJECT_LIST_CONTROL_POINT_INDEX)){
+        if (buffer_size != 2){
+            return 0;
+        }
         connection = ots_server_find_or_add_connection_for_con_handle(con_handle);
         if (connection != NULL){
             connection->olcp_configuration = little_endian_read_16(buffer, 0);
         }
         return 0;
 
-    } else if (attribute_handle == ots_server_get_client_configuration_handle(ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_CHANGED)){
+    } else if (attribute_handle == ots_server_get_client_configuration_handle_for_characteristic_index(OTS_OBJECT_CHANGED_INDEX)){
+        if (buffer_size != 2){
+            return 0;
+        }
         connection = ots_server_find_or_add_connection_for_con_handle(con_handle);
         if (connection != NULL){
             connection->object_changed_configuration = little_endian_read_16(buffer, 0);
@@ -624,13 +635,13 @@ static int ots_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
         return 0;
     }
 
-    if (attribute_handle == ots_server_get_client_value_handle_for_index(OTS_OBJECT_ACTION_CONTROL_POINT_INDEX)){
+    if (attribute_handle == ots_server_get_value_handle_for_characteristic_index(OTS_OBJECT_ACTION_CONTROL_POINT_INDEX)){
         return ots_server_handle_action_control_point_write(connection, buffer, buffer_size);
 
-    } else if (attribute_handle == ots_server_get_client_value_handle_for_index(OTS_OBJECT_LIST_CONTROL_POINT_INDEX)){
+    } else if (attribute_handle == ots_server_get_value_handle_for_characteristic_index(OTS_OBJECT_LIST_CONTROL_POINT_INDEX)){
         return ots_server_handle_list_control_point_write(connection, buffer, buffer_size);
 
-    } else if (attribute_handle == ots_server_get_client_value_handle_for_index(OTS_OBJECT_NAME_INDEX)){
+    } else if (attribute_handle == ots_server_get_value_handle_for_characteristic_index(OTS_OBJECT_NAME_INDEX)){
         uint16_t total_value_len = buffer_size + offset;
         // handle long write
         switch (transaction_mode){
@@ -661,17 +672,17 @@ static int ots_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
                 return 0;
         }
         
-    } else if (attribute_handle == ots_server_get_client_value_handle_for_index(OTS_OBJECT_PROPERTIES_INDEX)){
+    } else if (attribute_handle == ots_server_get_value_handle_for_characteristic_index(OTS_OBJECT_PROPERTIES_INDEX)){
         if (buffer_size >= 4){
             connection->current_object.properties = little_endian_read_32(buffer, 0);
             ots_server_emit_current_object_properties_changed(connection);
         }
-    } else if (attribute_handle == ots_server_get_client_value_handle_for_index(OTS_OBJECT_FIRST_CREATED_INDEX)){
+    } else if (attribute_handle == ots_server_get_value_handle_for_characteristic_index(OTS_OBJECT_FIRST_CREATED_INDEX)){
         if (buffer_size >= 7){
             btstack_utc_read_time(buffer, buffer_size, &connection->current_object.first_created);
             ots_server_emit_current_object_first_created_time_changed(connection);
         }
-    } else if (attribute_handle == ots_server_get_client_value_handle_for_index(OTS_OBJECT_LAST_MODIFIED_INDEX)){
+    } else if (attribute_handle == ots_server_get_value_handle_for_characteristic_index(OTS_OBJECT_LAST_MODIFIED_INDEX)){
         if (buffer_size >= 7){
             btstack_utc_read_time(buffer, buffer_size, &connection->current_object.last_modified);
             ots_server_emit_current_object_last_modified_time_changed(connection);
@@ -681,7 +692,7 @@ static int ots_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
 
         uint8_t i;
         for (i = 0; i < OTS_MAX_NUM_FILTERS; i++){
-            if (attribute_handle == ots_server_get_client_value_handle_for_index(OTS_OBJECT_LIST_FILTER1_INDEX + i)){
+            if (attribute_handle == ots_server_get_value_handle_for_characteristic_index(OTS_OBJECT_LIST_FILTER1_INDEX + i)){
                 switch (transaction_mode){
                     case ATT_TRANSACTION_MODE_NONE:
                         if (buffer_size > strlen(connection->current_object.name)){
@@ -884,4 +895,39 @@ void object_transfer_service_server_get_next_object_id(ots_object_id_t * object_
     }
     memset((uint8_t *)object_id_out, 0, OTS_OBJECT_ID_LEN);
     little_endian_store_32((uint8_t *)object_id_out, 2, ots_object_id_counter);
+}
+
+uint8_t object_transfer_service_server_set_current_object(hci_con_handle_t con_handle, ots_object_t * object){
+    ots_server_connection_t * connection = ots_server_find_connection_for_con_handle(con_handle);
+    if (connection == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+
+    memcpy(connection->current_object.luid, object->luid, OTS_OBJECT_ID_LEN);
+    memcpy(connection->current_object.type_uuid128, object->type_uuid128, 16);
+    btstack_strcpy(connection->current_object.name, OTS_MAX_NAME_LENGHT, object->name);
+    
+    connection->current_object.properties     = object->properties;
+    connection->current_object.allocated_size = object->allocated_size;
+    connection->current_object.first_created  = object->first_created;
+    connection->current_object.last_modified  = object->last_modified;
+    
+    connection->current_object_initialized = true;
+    connection->current_object_locked = false;
+    connection->current_object_object_transfer_in_progress = false;
+    
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t object_transfer_service_server_reset_current_object(hci_con_handle_t con_handle){
+    ots_server_connection_t * connection = ots_server_find_connection_for_con_handle(con_handle);
+    if (connection == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    memset((void *) &connection->current_object, 0, sizeof(ots_object_t));
+    connection->current_object_initialized = false;
+    connection->current_object_locked = false;
+    connection->current_object_object_transfer_in_progress = false;
+    
+    return ERROR_CODE_SUCCESS;
 }
