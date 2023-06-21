@@ -5031,7 +5031,11 @@ static void l2cap_credit_based_handle_pdu(l2cap_channel_t * l2cap_channel, const
     if (!l2cap_channel->receive_sdu_len){
         if (size < (COMPLETE_L2CAP_HEADER + 2)) return;
         uint16_t sdu_len = little_endian_read_16(packet, COMPLETE_L2CAP_HEADER);
-        if(sdu_len > l2cap_channel->local_mtu) return;   // SDU would be larger than our buffer
+        if (sdu_len > l2cap_channel->local_mtu) {
+            log_info("(e)CBM: packet received larger than MTU");
+            l2cap_channel->state = L2CAP_STATE_WILL_SEND_DISCONNECT_REQUEST;
+            return;
+        }
         l2cap_channel->receive_sdu_len = sdu_len;
         l2cap_channel->receive_sdu_pos = 0;
         pos  += 2u;
