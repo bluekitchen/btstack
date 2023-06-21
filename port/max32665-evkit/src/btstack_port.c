@@ -65,7 +65,7 @@
 #define UART_RXFIFO_USABLE (MXC_UART_FIFO_DEPTH - 3)
 
 static uint32_t baud_rate;
-
+volatile mxc_uart_req_t  hci_request;
 // rx state
 static int bytes_to_read = 0;
 static uint8_t *rx_buffer_ptr = 0;
@@ -110,17 +110,56 @@ void hal_cpu_enable_irqs_and_sleep(void)
 	__enable_irq();
 	/* TODO: Add sleep mode */
 }
+static void send_handler()
+{
+	printf("Send handler");
+	(*tx_done_handler)();
+}
 
 void hal_uart_dma_send_block(const uint8_t *buffer, uint16_t len)
 {
+	
 	tx_buffer_ptr = (uint8_t *)buffer;
 	bytes_to_write = len;
-}
 
+	hci_request.callback = send_handler;
+	hci_request.uart = MXC_UART_GET_UART(HCI_UART);
+	hci_request.txData = tx_buffer_ptr;
+	hci_request.txLen = bytes_to_write;
+	hci_request.rxData = NULL;
+	hci_request.rxLen = 0;
+
+	int ret = MXC_UART_TransactionAsync(&hci_request);
+
+	if(ret != E_NO_ERROR)
+	{
+		printf("Failed to start transaction");
+	}
+}
+static void read_handler()
+{
+	(*rx_done_handler)();
+}
 void hal_uart_dma_receive_block(uint8_t *buffer, uint16_t len)
 {
+	// printf("DMA RXX BLOCK\r\n");
 	rx_buffer_ptr = buffer;
 	bytes_to_read = len;
+
+
+	hci_request.callback = read_handler;
+	hci_request.uart = MXC_UART_GET_UART(HCI_UART);
+	hci_request.rxData = rx_buffer_ptr;
+	hci_request.rxLen = bytes_to_read;
+	hci_request.txData = NULL;
+	hci_request.txLen = 0;
+
+	int ret = MXC_UART_TransactionAsync(&hci_request);
+
+	if(ret != E_NO_ERROR)
+	{
+		printf("Failed to start transaction");
+	}
 }
 
 void hal_btstack_run_loop_execute_once(void)
@@ -202,9 +241,6 @@ void hal_uart_init(void)
 	uart = MXC_UART_GET_UART(uartNum);
 	irqn = MXC_UART_GET_IRQ(uartNum);
 
-	// /* Save the callback */
-	// rxCallback = rxCb;
-	// txCallback = txCb;
 
 	result = MXC_UART_Init(uart, baud_rate, HCI_UART_MAP);
 
@@ -264,7 +300,7 @@ int bt_comm_init()
 	hal_tick_init();
 	hal_delay_us(1);
 
-	printf("%s CC256X init completed. cnt: %d \n", __func__, cnt);
+	
 	return 0;
 }
 
@@ -313,7 +349,7 @@ void hal_stdin_setup(void (*handler)(char c))
 
 	/* set input handler */
 
-	uart_byte_request.uart = HCI_UART;
+	uart_byte_request.uart = CONSOLE_UART;
 	uart_byte_request.rxData = stdin_buffer;
 	uart_byte_request.txData = NULL;
 	uart_byte_request.rxLen = sizeof(uint8_t);

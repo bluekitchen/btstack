@@ -56,10 +56,13 @@
 // *****************************************************************************
 int main(void)
 {
-    printf("max32630fthr btstack example\n");
+    printf("max32665 btstack example\n");
 	  bluetooth_main();
+    
+    btstack_run_loop_execute();
 
-    while(1) {
-		hal_btstack_run_loop_execute_once();
-    }
+    // while(1) {
+		
+    // hal_btstack_run_loop_execute_once();
+    // }
 }
