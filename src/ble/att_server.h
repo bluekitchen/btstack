@@ -55,7 +55,7 @@ extern "C" {
 /* API_START */
 /*
  * @brief setup ATT server
- * @param db attribute database created by compile-gatt.ph
+ * @param db attribute database created by compile-gatt.py
  * @param read_callback, see att_db.h, can be NULL
  * @param write_callback, see attl.h, can be NULL
  */
