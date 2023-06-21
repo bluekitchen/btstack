@@ -74,6 +74,7 @@ typedef struct {
     btstack_packet_handler_t event_callback;
 
     ots_object_t current_object;
+    bool current_object_initialized;
     bool current_object_locked;
     bool current_object_object_transfer_in_progress;
 
@@ -105,6 +106,9 @@ uint8_t object_transfer_service_server_init(uint32_t oacp_features, uint32_t olc
 void object_transfer_service_server_register_packet_handler(btstack_packet_handler_t packet_handler);
 
 void object_transfer_service_server_get_next_object_id(ots_object_id_t * object_id_out);
+
+uint8_t object_transfer_service_server_set_current_object(hci_con_handle_t con_handle, ots_object_t * object);
+uint8_t object_transfer_service_server_reset_current_object(hci_con_handle_t con_handle);
 
 /* API_END */
 
