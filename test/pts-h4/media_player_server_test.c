@@ -71,8 +71,8 @@ static uint8_t adv_data[] = {
     0x02, BLUETOOTH_DATA_TYPE_FLAGS, APP_AD_FLAGS,
     // RSI
     0x07, BLUETOOTH_DATA_TYPE_RESOLVABLE_SET_IDENTIFIER, 0x28, 0x31, 0xB6, 0x4C, 0x39, 0xCC,
-    // CSIS
-    0x03, BLUETOOTH_DATA_TYPE_INCOMPLETE_LIST_OF_16_BIT_SERVICE_CLASS_UUIDS, 0x46, 0x18,
+    // CSIS, OTS
+    0x05, BLUETOOTH_DATA_TYPE_INCOMPLETE_LIST_OF_16_BIT_SERVICE_CLASS_UUIDS, 0x46, 0x18, 0x25, 0x18,
     // Name
     0x04, BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME, 'I', 'U', 'T', 
 };
@@ -83,7 +83,7 @@ static uint8_t       adv_handle = 0;
 static le_advertising_set_t le_advertising_set;
 
 static const le_extended_advertising_parameters_t extended_params = {
-        .advertising_event_properties = 1,  // connectable
+        .advertising_event_properties = 0x13,  //  scannable & connectable
         .primary_advertising_interval_min = 0x4b0, // 750 ms
         .primary_advertising_interval_max = 0x4b0, // 750 ms
         .primary_advertising_channel_map = 7,
@@ -102,8 +102,14 @@ static const le_extended_advertising_parameters_t extended_params = {
 static void setup_advertising(void);
 
 // Object Transfer Server (OTS)
-#define OTS_MAX_CLIENTS_NUM 3
-static  ots_server_connection_t ots_clients[OTS_MAX_CLIENTS_NUM];
+static oacp_result_code_t ots_server_operation_create(hci_con_handle_t con_handle, uint32_t object_size, uint8_t gatt_uuid_size, uint8_t * gatt_uuid);
+
+#define OTS_SERVER_MAX_NUM_CLIENTS 3
+static  ots_server_connection_t ots_server_connections[OTS_SERVER_MAX_NUM_CLIENTS];
+
+static const ots_operations_t ots_server_operations_impl = {
+    .create = &ots_server_operation_create,
+};
 
 // Media Player Server (MCS)
 
@@ -119,8 +125,8 @@ static mcs_speed_values_mapping_t mcs_speed_values_mapping[] = {
 };
 
 typedef struct {
-    uint8_t parent_group_object_id[6];
-    uint8_t current_group_object_id[6];
+    ots_object_id_t parent_group_object_id;
+    ots_object_id_t current_group_object_id;
 
     uint8_t tracks_num;
     mcs_track_t * tracks;
@@ -187,6 +193,14 @@ static void setup_advertising(void) {
     gap_extended_advertising_set_adv_data(adv_handle, sizeof(adv_data), adv_data);
     gap_extended_advertising_start(adv_handle, 0, 0);
 }
+
+
+// OTS Server Operations - START
+static oacp_result_code_t ots_server_operation_create(hci_con_handle_t con_handle, uint32_t object_size, uint8_t gatt_uuid_size, uint8_t * gatt_uuid){
+    return OACP_RESULT_CODE_SUCCESS;
+}
+
+// OTS Server Operations - END
 
 static mcs_media_player_t * mcs_get_media_player_for_id(uint16_t media_player_id){
     if (media_player_id == media_player1.id){
@@ -1291,7 +1305,7 @@ int btstack_main(void)
     att_server_init(profile_data, att_read_callback, att_write_callback);    
 
     // setup OTS
-    object_transfer_service_server_init(0x3FF, 0x0F, OTS_MAX_CLIENTS_NUM, ots_clients);
+    object_transfer_service_server_init(0x3FF, 0x0F, OTS_SERVER_MAX_NUM_CLIENTS, ots_server_connections, &ots_server_operations_impl);
     object_transfer_service_server_register_packet_handler(&ots_server_packet_handler);
 
     // setup MCS
@@ -1319,7 +1333,7 @@ int btstack_main(void)
         &mcs_server_packet_handler, 0x1FFFFF, 
         &media_player1.id);
     media_control_service_server_set_media_player_name(media_player1.id, "BK Player1");
-    media_control_service_server_set_icon_object_id(media_player1.id, icon_object_id, sizeof(icon_object_id));
+    media_control_service_server_set_icon_object_id(media_player1.id, &icon_object_id);
     media_control_service_server_set_icon_url(media_player1.id, icon_url);
 
     media_control_service_server_set_track_title(media_player1.id, current_track->title);
