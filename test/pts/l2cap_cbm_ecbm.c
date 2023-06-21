@@ -60,7 +60,8 @@
 #include "hci_dump.h"
 #include "l2cap.h"
 #include "btstack_stdin.h"
- 
+#include "bluetooth_psm.h"
+
 static void show_usage(void);
 
 #define TEST_PACKET_SIZE       100
@@ -69,6 +70,14 @@ static void show_usage(void);
 #define TSPX_LE_PSM          0x25
 #define TSPX_ENHANCED_PSM    0x27
 #define TSPX_PSM_UNSUPPORTED 0xf1
+#define TSPX_PSM_AUTHENTICATED 0xf2
+#define TSPX_PSM_AUTHORIZED    0xf3
+#define TSPX_PSM_ENCRYPTION_KEY_SIZE 0xf4
+#define TSPX_PSM_ENCRYPTION_REQ 0xf5
+
+// not in IXIT
+#define TSPX_SPSM_AUTHENTICATION_PENDING 0x02
+
 #define TSPX_L2CA_CBMPS_MIN    64
 
 #define MTU_MIN                64
@@ -76,11 +85,13 @@ static void show_usage(void);
 #define ENHANCED_MTU_INITIAL (TEST_PACKET_SIZE-1)
 #define ENHANCED_MTU_RECONFIGURE (TEST_PACKET_SIZE)
 
+#define NUM_EATT_CHANNELS 4
+
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static btstack_packet_callback_registration_t sm_event_callback_registration;
 
 // static bd_addr_t pts_address = { 0x00, 0x1a, 0x7d, 0xda, 0x71, 0x0a};
-static bd_addr_t pts_address = { 0x00, 0x1b, 0xdc, 0x08, 0x0a, 0xa5};
+static bd_addr_t pts_address = { 0x00, 0x1b, 0xdc, 0x08, 0xe2, 0x5c};
 
 static int pts_address_type = 0;
 static int master_addr_type = 0;
@@ -107,19 +118,16 @@ static uint8_t buffer_x[500];
 static uint16_t cid_classic;
 static uint16_t cid_credit_based;
 
-uint8_t receive_buffer_X[100];
+uint8_t receive_buffer_X[1000];
 
-static uint8_t data_channel_buffer_1[TEST_PACKET_SIZE];
-static uint8_t data_channel_buffer_2[TEST_PACKET_SIZE];
-
-static uint8_t * receive_buffers_2[] = { data_channel_buffer_1, data_channel_buffer_2 };
+static uint8_t   receive_buffer_storage[TEST_PACKET_SIZE * NUM_EATT_CHANNELS];
+static uint8_t * receive_buffers[NUM_EATT_CHANNELS];
 
 static bool enhanced_data_channel;
 
 static uint16_t enhanced_reconfigure_index = 0;
 static uint16_t enhanced_reconfigure_mps[] = { TEST_PACKET_SIZE, TEST_PACKET_SIZE - 2 };
 static uint16_t enhanced_reconfigure_choices = sizeof (enhanced_reconfigure_mps) / sizeof(uint16_t);
-static bool     enhanced_authorization_required = false;
 static uint16_t enhanced_remote_mtu;
 static bool     enhanced_insufficient_key_size;
 
@@ -131,7 +139,7 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
     uint16_t psm;
     uint16_t cid;
     hci_con_handle_t handle;
-    uint16_t cids[2];
+    uint16_t cids[NUM_EATT_CHANNELS];
     uint8_t status;
 
     switch (packet_type) {
@@ -203,8 +211,7 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                 case L2CAP_EVENT_CBM_INCOMING_CONNECTION: 
                     psm = l2cap_event_cbm_incoming_connection_get_psm(packet);
                     cid = l2cap_event_cbm_incoming_connection_get_local_cid(packet);
-                    if (psm != TSPX_LE_PSM) break;
-                    printf("L2CAP: Accepting incoming LE connection request for 0x%02x, PSM %02x\n", cid, psm); 
+                    printf("L2CAP: Accepting incoming LE connection request for 0x%02x, PSM %02x\n", cid, psm);
                     l2cap_cbm_accept_connection(cid, receive_buffer_X, sizeof(receive_buffer_X), initial_credits);
                     break;
 
@@ -234,6 +241,7 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     if (todo_send_long){
                         todo_send_long = 0;                        
                         if (enhanced_data_channel){
+                            btstack_assert(sizeof(receive_buffer_X) >= enhanced_remote_mtu);
                             memset(receive_buffer_X, 0x33, enhanced_remote_mtu);
                             l2cap_send(cid_credit_based, (uint8_t *) receive_buffer_X, enhanced_remote_mtu);
                         } else {
@@ -261,17 +269,12 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                 case L2CAP_EVENT_ECBM_INCOMING_CONNECTION:
                     printf("L2CAP_EVENT_ECBM_INCOMING_CONNECTION\n");
                     cid = l2cap_event_ecbm_incoming_connection_get_local_cid(packet);
-                    if (enhanced_authorization_required){
-                        enhanced_authorization_required = false;
-                        l2cap_ecbm_decline_channels(cid, 0x0006);
-                        break;
-                    }
                     if (enhanced_insufficient_key_size){
                         enhanced_insufficient_key_size = false;
                         l2cap_ecbm_decline_channels(cid, 0x0007);
                         break;
                     }
-                    l2cap_ecbm_accept_channels(cid, 2, initial_credits, ENHANCED_MTU_INITIAL, receive_buffers_2, cids);
+                    l2cap_ecbm_accept_channels(cid, NUM_EATT_CHANNELS, initial_credits, ENHANCED_MTU_INITIAL, receive_buffers, cids);
                     break;
 
                 case L2CAP_EVENT_ECBM_RECONFIGURED:
@@ -289,7 +292,7 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     // display number
                     master_addr_type = packet[4];
                     reverse_bd_addr(&packet[5], event_address);
-                    printf("\nGAP Bonding %s (%u): Enter 6 digit passkey: '", bd_addr_to_str(pts_address), master_addr_type);
+                    printf("\nGAP Bonding %s (%u): Enter 6 digit passkey: ", bd_addr_to_str(pts_address), master_addr_type);
                     fflush(stdout);
                     ui_passkey = 0;
                     ui_digits_for_passkey = 6;
@@ -297,7 +300,8 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
 
                 case SM_EVENT_PASSKEY_DISPLAY_NUMBER:
                     // display number
-                    printf("\nGAP Bonding %s (%u): Display Passkey '%06u\n", bd_addr_to_str(pts_address), master_addr_type, little_endian_read_32(packet, 11));
+                    printf("\nGAP Bonding %s (%u): Display Passkey %06u\n", bd_addr_to_str(pts_address), master_addr_type,
+                           sm_event_passkey_display_number_get_passkey(packet));
                     break;
 
                 case SM_EVENT_PASSKEY_DISPLAY_CANCEL: 
@@ -307,6 +311,10 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                 case SM_EVENT_AUTHORIZATION_REQUEST:
                     // auto-authorize connection if requested
                     sm_authorization_grant(little_endian_read_16(packet, 2));
+                    break;
+
+                case SM_EVENT_PAIRING_COMPLETE:
+                    l2cap_ecbm_trigger_pending_connection_responses(sm_event_pairing_complete_get_handle(packet));
                     break;
 
                 default:
@@ -328,10 +336,10 @@ void show_usage(void){
     printf("b - connect to PSM 0x%02x  CFC (TSPX_LE_PSM - LE)\n", TSPX_LE_PSM);
     printf("B - connect to PSM 0x%02x  CFC (TSPX_PSM_UNSUPPORTED - LE)\n", TSPX_PSM_UNSUPPORTED);
     printf("c - send 10 credits\n");
+    printf("C - enable Bonding\n");
     printf("d - connect to PSM 0x%02x ECFC (TSPX_LE_PSM)\n", TSPX_LE_PSM);
     printf("D - connect to PSM 0x%02x ECFC (TSPX_PSM_UNSUPPORTED - LE)\n", TSPX_PSM_UNSUPPORTED);
-    printf("e - require encrypted connection for ECFC / insufficint key size - LEVEL_2\n");
-    printf("E - require authenticated connection for ECFC - LEVEL_3\n");
+    printf("e - require encrypted connection for ECFC / insufficient key size - LEVEL_2\n");
     printf("f - require authorized connection for ECFC\n");
     printf("m - enable manual credit management (incoming connections only)\n");
     printf("r - send EFCF Reconfigure Request for MTU %u\n", ENHANCED_MTU_RECONFIGURE);
@@ -360,7 +368,7 @@ static void stdin_process(char buffer){
         return;
     }
 
-    uint16_t cids[2];
+    uint16_t cids[NUM_EATT_CHANNELS];
 
     switch (buffer){
         case 'a':
@@ -386,17 +394,22 @@ static void stdin_process(char buffer){
                                     sizeof(buffer_x), L2CAP_LE_AUTOMATIC_CREDITS, LEVEL_0, &cid_credit_based);
             break;
 
+        case 'C':
+            printf("Enable bonding\n");
+            gap_set_bondable_mode(1);
+            break;
+
         case 'd':
             if (handle_le != HCI_CON_HANDLE_INVALID){
                 printf("Connect to PSM 0x%02x - ECFC LE\n", TSPX_LE_PSM);
                 l2cap_ecbm_create_channels(&app_packet_handler, handle_le, LEVEL_0, TSPX_ENHANCED_PSM,
-                                               2, L2CAP_LE_AUTOMATIC_CREDITS, ENHANCED_MTU_INITIAL, receive_buffers_2, cids);
+                                           NUM_EATT_CHANNELS, L2CAP_LE_AUTOMATIC_CREDITS, ENHANCED_MTU_INITIAL, receive_buffers, cids);
                 break;
             }
             if (handle_classic != HCI_CON_HANDLE_INVALID){
                 printf("Connect to PSM 0x%02x - ECFC Classic\n", TSPX_LE_PSM);
                 l2cap_ecbm_create_channels(&app_packet_handler, handle_classic, LEVEL_0, TSPX_ENHANCED_PSM,
-                                               2, L2CAP_LE_AUTOMATIC_CREDITS, ENHANCED_MTU_INITIAL, receive_buffers_2, cids);
+                                           NUM_EATT_CHANNELS, L2CAP_LE_AUTOMATIC_CREDITS, ENHANCED_MTU_INITIAL, receive_buffers, cids);
                 break;
             }
             printf("Neither Classic nor LE connected\n");
@@ -405,7 +418,7 @@ static void stdin_process(char buffer){
         case 'D':
             printf("Creating connection to %s 0x%02x - ECFC LE\n", bd_addr_to_str(pts_address), TSPX_PSM_UNSUPPORTED);
             l2cap_ecbm_create_channels(&app_packet_handler, handle_le, LEVEL_0, TSPX_PSM_UNSUPPORTED,
-                                           2, L2CAP_LE_AUTOMATIC_CREDITS, ENHANCED_MTU_INITIAL, receive_buffers_2, cids);
+                                       NUM_EATT_CHANNELS, L2CAP_LE_AUTOMATIC_CREDITS, ENHANCED_MTU_INITIAL, receive_buffers, cids);
             break;
 
         case 'c':
@@ -418,23 +431,8 @@ static void stdin_process(char buffer){
             break;
 
         case 'e':
-            printf("Re-register L2CAP ECFC channel as LEVEL_2 / insufficient key size\n");
-            l2cap_ecbm_unregister_service(TSPX_ENHANCED_PSM);
-            l2cap_ecbm_register_service(&app_packet_handler, TSPX_ENHANCED_PSM, MTU_MIN, LEVEL_2);
+            printf("Prepare insufficient key size\n");
             enhanced_insufficient_key_size = true;
-            break;
-
-        case 'E':
-            printf("Re-register L2CAP ECFC channel as LEVEL_3\n");
-            l2cap_ecbm_unregister_service(TSPX_ENHANCED_PSM);
-            l2cap_ecbm_register_service(&app_packet_handler, TSPX_ENHANCED_PSM, MTU_MIN, LEVEL_3);
-            break;
-
-        case 'f':
-            printf("Require Authentication for ECFC\n");
-            l2cap_ecbm_unregister_service(TSPX_ENHANCED_PSM);
-            l2cap_ecbm_register_service(&app_packet_handler, TSPX_ENHANCED_PSM, MTU_MIN, LEVEL_2);
-            enhanced_authorization_required = true;
             break;
 
         case 'm':
@@ -445,7 +443,7 @@ static void stdin_process(char buffer){
         case 'r':
             printf("Reconfigure MTU = %u, MPS = %u\n", ENHANCED_MTU_RECONFIGURE, enhanced_reconfigure_mps[enhanced_reconfigure_index]);
             l2cap_ecbm_mps_set_max(enhanced_reconfigure_mps[enhanced_reconfigure_index++]);
-            l2cap_ecbm_reconfigure_channels(1, &cid_credit_based, ENHANCED_MTU_RECONFIGURE, receive_buffers_2);
+            l2cap_ecbm_reconfigure_channels(1, &cid_credit_based, ENHANCED_MTU_RECONFIGURE, receive_buffers);
             if (enhanced_reconfigure_index == enhanced_reconfigure_choices){
                 enhanced_reconfigure_index = 0;
             }
@@ -464,8 +462,8 @@ static void stdin_process(char buffer){
             break;
 
         case 'y':
-            printf("Creating connection to %s 0x%02x - Classic\n", bd_addr_to_str(pts_address), TSPX_PSM);
-            l2cap_create_channel(&app_packet_handler, pts_address, TSPX_PSM, 100, &cid_classic);
+            printf("Creating connection to %s 0x%02x - Classic\n", bd_addr_to_str(pts_address), BLUETOOTH_PSM_ATT);
+            l2cap_create_channel(&app_packet_handler, pts_address, BLUETOOTH_PSM_ATT, 100, &cid_classic);
             break;
 
         case 'z':
@@ -513,20 +511,31 @@ int btstack_main(int argc, const char * argv[]){
 
     btstack_stdin_setup(stdin_process);
 
-    // gap_random_address_set_update_period(5000);
-    // gap_random_address_set_mode(GAP_RANDOM_ADDRESS_RESOLVABLE);
     gap_advertisements_set_data(sizeof(adv_general_discoverable), adv_general_discoverable);
     gap_advertisements_enable(1);
-    sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
-    sm_set_authentication_requirements(0);
+    gap_set_bondable_mode(0);
 
-    // le data channel setup
+    // le data channel / CBM setup
     l2cap_cbm_register_service(&app_packet_handler, TSPX_LE_PSM, LEVEL_0);
 
-    // l2cap data channel setup
-    l2cap_ecbm_register_service(&app_packet_handler, TSPX_ENHANCED_PSM, MTU_MIN, LEVEL_0);
+    // le data channel on enhanced PSM for L2CAP/LE/CID/BV-02-C
+    l2cap_cbm_register_service(&app_packet_handler, TSPX_ENHANCED_PSM, LEVEL_0);
 
+    // l2cap data channels / ECBM setup
+    uint8_t i;
+    uint8_t * storage = receive_buffer_storage;
+    for (i = 0; i < NUM_EATT_CHANNELS; i++){
+        receive_buffers[i] = storage;
+        storage += TEST_PACKET_SIZE;
+    }
     l2cap_ecbm_mps_set_min(TSPX_L2CA_CBMPS_MIN);
+
+    l2cap_ecbm_register_service(&app_packet_handler, TSPX_ENHANCED_PSM, MTU_MIN, LEVEL_0, false);
+    l2cap_ecbm_register_service(&app_packet_handler, TSPX_PSM_AUTHENTICATED, MTU_MIN, LEVEL_3, false);
+    l2cap_ecbm_register_service(&app_packet_handler, TSPX_PSM_AUTHORIZED, MTU_MIN, LEVEL_3, true);
+    l2cap_ecbm_register_service(&app_packet_handler, TSPX_PSM_ENCRYPTION_KEY_SIZE, MTU_MIN, LEVEL_2, false);
+    l2cap_ecbm_register_service(&app_packet_handler, TSPX_PSM_ENCRYPTION_REQ, MTU_MIN, LEVEL_2, false);
+
     // classic data channel setup
     l2cap_register_service(&app_packet_handler, TSPX_PSM, 100, LEVEL_0);
 
