@@ -134,7 +134,7 @@ void hal_btstack_run_loop_execute_once(void)
 	int ret;
 
     while (bytes_to_read) {
-		rx_avail = UART_NumReadAvail(MXC_UART_GET_UART(CC256X_UART_ID));
+		rx_avail = MXC_UART_GetRXFIFOAvailable(MXC_UART_GET_UART(HCI_UART));
 		if (!rx_avail)
 			break;
 
@@ -143,12 +143,12 @@ void hal_btstack_run_loop_execute_once(void)
 		else
 			num_rx_bytes = bytes_to_read;
 
-		ret = UART_Read(MXC_UART_GET_UART(CC256X_UART_ID), rx_buffer_ptr, num_rx_bytes, &rx_bytes);
+		ret = MXC_UART_Read(MXC_UART_GET_UART(HCI_UART), rx_buffer_ptr, &num_rx_bytes);
 		if (ret < 0)
 			break;
 
-		rx_buffer_ptr += rx_bytes;
-        bytes_to_read -= rx_bytes;
+		rx_buffer_ptr += num_rx_bytes;
+        bytes_to_read -= num_rx_bytes;
 
 		 if (bytes_to_read < 0) {
 			bytes_to_read = 0;
@@ -160,7 +160,7 @@ void hal_btstack_run_loop_execute_once(void)
      }
 
      while (bytes_to_write) {
-		tx_avail = UART_NumWriteAvail(MXC_UART_GET_UART(CC256X_UART_ID));
+		tx_avail = MXC_UART_GetTXFIFOAvailable(MXC_UART_GET_UART(HCI_UART));
 		if (!tx_avail)
 			break;
 
@@ -169,7 +169,7 @@ void hal_btstack_run_loop_execute_once(void)
 		else
 			tx_bytes = bytes_to_write;
 
-		ret = UART_Write(MXC_UART_GET_UART(CC256X_UART_ID), tx_buffer_ptr, tx_bytes);
+		ret = MXC_UART_Write(MXC_UART_GET_UART(HCI_UART), tx_buffer_ptr, tx_bytes);
 		if (ret < 0)
 			break;
 		bytes_to_write -= tx_bytes;
@@ -346,7 +346,10 @@ int bluetooth_main(void)
 	/* Init HCI */
 	const hci_transport_t * transport = hci_transport_h4_instance(btstack_uart_block_embedded_instance());
 	hci_init(transport, &config);
-	hci_set_chipset(btstack_chipset_cc256x_instance());
+
+
+	/*Dont need to do this*/
+	// hci_set_chipset(btstack_chipset_cc256x_instance());
 
     // setup TLV Flash Bank implementation
     const hal_flash_bank_t * hal_flash_bank_impl = hal_flash_bank_mxc_init_instance(
