@@ -801,7 +801,7 @@ static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uin
 // returns 0 if unexpected error or no other link options remained, otherwise 1
 static int hfp_handle_failed_sco_connection(uint8_t status){
                    
-    if (!hfp_sco_establishment_active){
+    if (hfp_sco_establishment_active->accept_sco != 0){
         log_info("(e)SCO Connection failed but not started by us");
         return 0;
     }
