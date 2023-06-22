@@ -52,7 +52,8 @@
 
 #define HIDS_DEVICE_ERROR_CODE_INAPPROPRIATE_CONNECTION_PARAMETERS    0x80
 
-static hids_device_report_t hid_reports_storage[3];
+// storage for 'generic' HID Device with single Input, Output, and Feature Report
+static hids_device_report_t hid_reports_generic_storage[3];
 
 typedef struct{
     uint16_t        con_handle;
@@ -349,7 +350,7 @@ void hids_device_init_with_storage(uint8_t hid_country_code, const uint8_t * hid
             break;
         }
 
-        hids_device_report_t * report = &hid_reports_storage[assigned_reports_num];
+        hids_device_report_t * report = &report_storage[assigned_reports_num];
         report->value_handle = chr_value_handle;
         report->client_configuration_handle = chr_client_configuration_handle;
         report->client_configuration_value = 0;
@@ -390,8 +391,8 @@ void hids_device_init_with_storage(uint8_t hid_country_code, const uint8_t * hid
  * @brief Set up HIDS Device
  */
 void hids_device_init(uint8_t country_code, const uint8_t * descriptor, uint16_t descriptor_size){
-    uint16_t hid_reports_num = sizeof(hid_reports_storage)/sizeof(hids_device_report_t);
-    hids_device_init_with_storage(country_code, descriptor, descriptor_size, hid_reports_num, &hid_reports_storage[0]);
+    uint16_t hid_reports_num = sizeof(hid_reports_generic_storage) / sizeof(hids_device_report_t);
+    hids_device_init_with_storage(country_code, descriptor, descriptor_size, hid_reports_num, hid_reports_generic_storage);
 }
 
 /**
