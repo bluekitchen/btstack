@@ -839,6 +839,7 @@ static int hfp_handle_failed_sco_connection(uint8_t status){
     log_info("e)SCO Connection: try new link_setting %d", next_setting);
     hfp_sco_establishment_active->establish_audio_connection = 1;
     hfp_sco_establishment_active->link_setting = next_setting;
+    hfp_sco_establishment_active->accept_sco = 0;
     hfp_sco_establishment_active = NULL;
     return 1;
 }
@@ -893,6 +894,8 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
                 
                 hfp_connection = hfp_sco_establishment_active;
                 if (hfp_handle_failed_sco_connection(status)) break;
+
+                hfp_connection->accept_sco = 0;
                 hfp_connection->establish_audio_connection = 0;
                 hfp_connection->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
                 hfp_sco_establishment_active = NULL;
@@ -908,9 +911,9 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
             
             status = hci_event_synchronous_connection_complete_get_status(packet);
             if (status != ERROR_CODE_SUCCESS){
-                hfp_connection->accept_sco = 0;
                 if (hfp_handle_failed_sco_connection(status)) break;
 
+                hfp_connection->accept_sco = 0;
                 hfp_connection->establish_audio_connection = 0;
                 hfp_connection->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
                 hfp_sco_establishment_active = NULL;
@@ -953,8 +956,9 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
                 break;
             }
             hfp_connection->sco_handle = sco_handle;
+            hfp_connection->accept_sco = 0;
             hfp_connection->establish_audio_connection = 0;
-            
+
             hfp_connection->state = HFP_AUDIO_CONNECTION_ESTABLISHED;
             
             switch (hfp_connection->vra_state){

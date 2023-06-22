@@ -828,7 +828,6 @@ static void hfp_hf_run_for_context(hfp_connection_t * hfp_connection){
 
     if (hfp_connection->accept_sco && (hfp_sco_setup_active() == false)){
         bool incoming_eSCO = hfp_connection->accept_sco == 2;
-        hfp_connection->accept_sco = 0;
         // notify about codec selection if not done already
         if (hfp_connection->negotiated_codec == 0){
             hfp_connection->negotiated_codec = HFP_CODEC_CVSD;

@@ -1122,7 +1122,6 @@ static int hfp_ag_run_for_audio_connection(hfp_connection_t * hfp_connection){
         }
         //
         bool incoming_eSCO = hfp_connection->accept_sco == 2;
-        hfp_connection->accept_sco = 0;
         hfp_connection->state = HFP_W4_SCO_CONNECTED;
         hfp_accept_synchronous_connection(hfp_connection, incoming_eSCO);
         return 1;
