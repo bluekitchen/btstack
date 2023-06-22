@@ -879,7 +879,6 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
                     hfp_connection->rtk_send_sco_config = true;
 #endif
                     log_info("accept sco %u\n", hfp_connection->accept_sco);
-                    hfp_sco_establishment_active = hfp_connection;
                     break;
                 default:
                     break;                    
@@ -896,6 +895,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
                 if (hfp_handle_failed_sco_connection(status)) break;
                 hfp_connection->establish_audio_connection = 0;
                 hfp_connection->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
+                hfp_sco_establishment_active = NULL;
                 hfp_emit_sco_connection_established(hfp_connection, status,
                                                     hfp_connection->negotiated_codec, 0, 0);
             }
@@ -903,12 +903,8 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
 
         case HCI_EVENT_SYNCHRONOUS_CONNECTION_COMPLETE:{
             if (hfp_sco_establishment_active == NULL) break;
-            hci_event_synchronous_connection_complete_get_bd_addr(packet, event_addr);
-            hfp_connection = get_hfp_connection_context_for_bd_addr(event_addr, local_role);
-            if (!hfp_connection) {
-                log_error("HFP: connection does not exist for remote with addr %s.", bd_addr_to_str(event_addr));
-                return;
-            }
+
+            hfp_connection = hfp_sco_establishment_active;
             
             status = hci_event_synchronous_connection_complete_get_status(packet);
             if (status != ERROR_CODE_SUCCESS){
@@ -917,6 +913,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
 
                 hfp_connection->establish_audio_connection = 0;
                 hfp_connection->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
+                hfp_sco_establishment_active = NULL;
                 hfp_emit_sco_connection_established(hfp_connection, status,
                                                     hfp_connection->negotiated_codec, 0, 0);
                 break;
@@ -968,6 +965,9 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
                     hfp_connection->ag_audio_connection_opened_before_vra = true;
                     break;
             }
+
+            hfp_sco_establishment_active = NULL;
+
             hfp_emit_sco_connection_established(hfp_connection, status,
                                                 hfp_connection->negotiated_codec, rx_packet_length, tx_packet_length);
             break;                
@@ -1908,10 +1908,12 @@ bool hfp_sco_setup_active(void){
 }
 
 void hfp_setup_synchronous_connection(hfp_connection_t * hfp_connection){
+
+    hfp_sco_establishment_active = hfp_connection;
+
     // all packet types, fixed bandwidth
     int setting = hfp_connection->link_setting;
     log_info("hfp_setup_synchronous_connection using setting nr %u", setting);
-    hfp_sco_establishment_active = hfp_connection;
     uint16_t sco_voice_setting = hci_get_sco_voice_setting();
     if (hfp_connection->negotiated_codec != HFP_CODEC_CVSD){
 #ifdef ENABLE_BCM_PCM_WBS
@@ -1930,6 +1932,8 @@ void hfp_setup_synchronous_connection(hfp_connection_t * hfp_connection){
 }
 
 void hfp_accept_synchronous_connection(hfp_connection_t * hfp_connection, bool use_eSCO){
+
+    hfp_sco_establishment_active = hfp_connection;
 
     // use "don't care" where possible
     uint16_t max_latency           = 0xffff;

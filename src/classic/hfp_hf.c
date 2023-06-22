@@ -725,6 +725,7 @@ static int hfp_hf_run_for_audio_connection(hfp_connection_t * hfp_connection){
     if (done) return 1;
     
     if (hfp_connection->codecs_state != HFP_CODECS_EXCHANGED) return 0;
+    if (hfp_sco_setup_active()) return 0;
     if (hci_can_send_command_packet_now() == false) return 0;
     if (hfp_connection->establish_audio_connection){
         hfp_connection->state = HFP_W4_SCO_CONNECTED;
@@ -825,7 +826,7 @@ static void hfp_hf_run_for_context(hfp_connection_t * hfp_connection){
     }
 #endif
 
-    if (hfp_connection->accept_sco){
+    if (hfp_connection->accept_sco && (hfp_sco_setup_active() == false)){
         bool incoming_eSCO = hfp_connection->accept_sco == 2;
         hfp_connection->accept_sco = 0;
         // notify about codec selection if not done already

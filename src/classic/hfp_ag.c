@@ -1115,7 +1115,7 @@ static int hfp_ag_run_for_audio_connection(hfp_connection_t * hfp_connection){
     }
 
     // accept incoming audio connection (codec negotiation is not used)
-    if (hfp_connection->accept_sco){
+    if (hfp_connection->accept_sco && (hfp_sco_setup_active() == false)){
         // notify about codec selection if not done already
         if (hfp_connection->negotiated_codec == 0){
             hfp_connection->negotiated_codec = HFP_CODEC_CVSD;
@@ -1133,6 +1133,7 @@ static int hfp_ag_run_for_audio_connection(hfp_connection_t * hfp_connection){
     if (sent) return 1;
 
     if (hfp_connection->codecs_state != HFP_CODECS_EXCHANGED) return 0;
+    if (hfp_sco_setup_active()) return 0;
     if (hci_can_send_command_packet_now() == false) return 0;
     if (hfp_connection->establish_audio_connection){
         hfp_connection->state = HFP_W4_SCO_CONNECTED;
