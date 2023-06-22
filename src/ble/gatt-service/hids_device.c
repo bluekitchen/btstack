@@ -103,8 +103,9 @@ static hids_device_t * hids_device_create_instance(void){
 }
 
 static hids_device_report_t * hids_device_get_report_for_client_configuration_handle(hids_device_t * device, uint16_t client_configuration_handle){
-    uint8_t pos = 0;
-    while (pos < (device->hid_input_reports_num + device->hid_output_reports_num + device->hid_feature_reports_num)){
+    uint8_t pos;
+    uint8_t total_reports =  device->hid_input_reports_num + device->hid_output_reports_num + device->hid_feature_reports_num;
+    for (pos = 0 ; pos < total_reports ; pos++){
         if (device->hid_reports[pos].client_configuration_handle == client_configuration_handle){
             return &device->hid_reports[pos];
         }
@@ -113,8 +114,9 @@ static hids_device_report_t * hids_device_get_report_for_client_configuration_ha
 }
 
 static hids_device_report_t * hids_device_get_report_for_id(hids_device_t * device, uint16_t report_id){
-    uint8_t pos = 0;
-    while (pos < (device->hid_input_reports_num + device->hid_output_reports_num + device->hid_feature_reports_num)){
+    uint8_t pos;
+    uint8_t total_reports =  device->hid_input_reports_num + device->hid_output_reports_num + device->hid_feature_reports_num;
+    for (pos = 0 ; pos < total_reports ; pos++){
         if (device->hid_reports[pos].id == report_id){
             return &device->hid_reports[pos];
         }
