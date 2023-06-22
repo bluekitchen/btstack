@@ -73,8 +73,7 @@ typedef struct {
 
     btstack_packet_handler_t event_callback;
 
-    ots_object_t current_object;
-    bool current_object_initialized;
+    ots_object_t * current_object;
     bool current_object_locked;
     bool current_object_object_transfer_in_progress;
 
@@ -101,13 +100,18 @@ typedef struct {
  * @brief Init Object Transfer Service Server with ATT DB
  */
 uint8_t object_transfer_service_server_init(uint32_t oacp_features, uint32_t olcp_features, 
-    uint8_t clients_num, ots_server_connection_t * clients, const ots_operations_t * ots_operations);
+    uint8_t clients_num, ots_server_connection_t * clients, 
+    uint16_t objects_num, ots_object_t * objects,
+    const ots_operations_t * ots_operations);
 
 void object_transfer_service_server_register_packet_handler(btstack_packet_handler_t packet_handler);
 
-void object_transfer_service_server_get_next_object_id(ots_object_id_t * object_id_out);
+uint8_t object_transfer_service_server_create_object_with_type_uuid16(
+    ots_object_id_t * object_id, char * name, 
+    uint32_t properties, uint16_t type_uuid16, uint32_t allocated_size, 
+    btstack_utc_t * first_created, btstack_utc_t * last_modified);
 
-uint8_t object_transfer_service_server_set_current_object(hci_con_handle_t con_handle, ots_object_t * object);
+uint8_t object_transfer_service_server_set_current_object(hci_con_handle_t con_handle, ots_object_id_t * luid);
 uint8_t object_transfer_service_server_reset_current_object(hci_con_handle_t con_handle);
 
 /* API_END */

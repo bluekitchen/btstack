@@ -190,10 +190,13 @@ typedef struct {
 } ots_filter_t;
 
 typedef struct {
+    btstack_linked_item_t item;
     // metadata
 
     // Locally Unique Identifier: 0x000000000000 - Directory Listing Object, [0x000000000001, 0x0000000000FF] - RFU
     // luid >= 0x000000000100
+    bool used;
+
     ots_object_id_t luid;                   
 
     uint32_t properties;
@@ -203,6 +206,7 @@ typedef struct {
     uint16_t type_uuid16;
     uint8_t  type_uuid128[16];
 
+    // allocated_size = 0 if object not initialized
     uint32_t allocated_size;
 
     btstack_utc_t first_created;
