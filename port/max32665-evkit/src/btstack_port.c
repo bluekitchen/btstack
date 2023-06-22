@@ -74,7 +74,9 @@
 
 static uint32_t baud_rate;
 volatile uint8_t transaction_complete = 1;
-volatile mxc_uart_req_t hci_request;
+volatile mxc_uart_req_t hci_tx_request;
+volatile mxc_uart_req_t hci_rx_request;
+
 // rx state
 static int bytes_to_read = 0;
 static uint8_t *rx_buffer_ptr = 0;
@@ -86,7 +88,7 @@ static uint8_t *tx_buffer_ptr = 0;
 static void dummy_handler(void){};
 static void (*rx_done_handler)(void) = dummy_handler;
 static void (*tx_done_handler)(void) = dummy_handler;
-void DMA0_IRQHandler(void)
+void DMA_Handler(void)
 {
 	MXC_DMA_Handler(MXC_DMA0);
 }
@@ -132,32 +134,21 @@ static void send_handler()
 
 void hal_uart_dma_send_block(const uint8_t *buffer, uint16_t len)
 {
-	// while (!transaction_complete)
-	// 	;
-	// MXC_UART_WriteTXFIFODMA(MXC_UART_GET_UART(HCI_UART),MXC_DMA0, buffer, len,send_handler);
-	// MXC_UART_ReadRXFIFODMA(MXC_UART_GET_UART(HCI_UART), MXC_DMA0, buffer,len,read_handler);
 
-	// // printf("SEND");
-	tx_buffer_ptr = (uint8_t *)buffer;
-	bytes_to_write = len;
+	hci_tx_request.callback = send_handler;
+	hci_tx_request.uart = MXC_UART_GET_UART(HCI_UART);
+	hci_tx_request.txData = buffer;
+	hci_tx_request.txLen = len;
+	hci_tx_request.rxData = NULL;
+	hci_tx_request.rxLen = 0;
 
-	hci_request.callback = send_handler;
-	hci_request.uart = MXC_UART_GET_UART(HCI_UART);
-	hci_request.txData = tx_buffer_ptr;
-	hci_request.txLen = bytes_to_write;
-	hci_request.rxData = NULL;
-	hci_request.rxLen = 0;
-
-	int ret = MXC_UART_TransactionAsync(&hci_request);
+	int ret = MXC_UART_TransactionAsync(&hci_tx_request);
 
 	if (ret != E_NO_ERROR)
 	{
 		printf("Failed to start transaction");
 	}
 
-	// transaction_complete = 0;
-	// while (!transaction_complete)
-	// 	;
 }
 static void read_handler(mxc_uart_req_t *req, int error)
 {
@@ -167,24 +158,10 @@ static void read_handler(mxc_uart_req_t *req, int error)
 void hal_uart_dma_receive_block(uint8_t *buffer, uint16_t len)
 {
 
-	// printf("DMA Reading %u\r\n", len);
+	
 	rx_buffer_ptr = buffer;
 	bytes_to_read = len;
 
-	// MXC_UART_ReadRXFIFODMA(MXC_UART_GET_UART(HCI_UART), MXC_DMA0, buffer,len,read_handler);
-	// hci_request.callback = read_handler;
-	// hci_request.uart = MXC_UART_GET_UART(HCI_UART);
-	// hci_request.rxData = rx_buffer_ptr;
-	// hci_request.rxLen = bytes_to_read;
-
-	// int ret = MXC_UART_TransactionAsync(&hci_request);
-
-	// if(ret != E_NO_ERROR)
-	// {
-	// 	printf("Failed to start transaction");
-	// }
-	// transaction_complete = 0;
-	// while(!transaction_complete)	;
 }
 
 void hal_uart_init(void)
@@ -194,9 +171,9 @@ void hal_uart_init(void)
 	uint32_t irqn;
 	int result;
 
-	MXC_DMA_ReleaseChannel(0);
+	// MXC_DMA_ReleaseChannel(0);
 	// MXC_NVIC_SetVector(DMA0_IRQn, DMA_Handler);
-	NVIC_EnableIRQ(DMA0_IRQn);
+	// NVIC_EnableIRQ(DMA0_IRQn);
 
 	uartNum = HCI_UART;
 	uart = MXC_UART_GET_UART(uartNum);
@@ -253,33 +230,7 @@ void hal_btstack_run_loop_execute_once(void)
 		}
 	}
 
-	// while (bytes_to_write)
-	// {
-	// 	tx_avail = UART_NumWriteAvail(MXC_UART_GET_UART(CC256X_UART_ID));
-	// 	if (!tx_avail)
-	// 		break;
-
-	// 	if (bytes_to_write > tx_avail)
-	// 		tx_bytes = tx_avail;
-	// 	else
-	// 		tx_bytes = bytes_to_write;
-
-	// 	ret = UART_Write(MXC_UART_GET_UART(CC256X_UART_ID), tx_buffer_ptr, tx_bytes);
-	// 	if (ret < 0)
-	// 		break;
-	// 	bytes_to_write -= tx_bytes;
-	// 	tx_buffer_ptr += tx_bytes;
-	// 	if (bytes_to_write < 0)
-	// 	{
-	// 		bytes_to_write = 0;
-	// 	}
-
-	// 	if (bytes_to_write == 0)
-	// 	{
-	// 		(*tx_done_handler)();
-	// 	}
-	// }
-
+	
 	btstack_run_loop_embedded_execute_once();
 }
 
