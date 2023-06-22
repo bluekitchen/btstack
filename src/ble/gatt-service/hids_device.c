@@ -465,20 +465,6 @@ void hids_device_send_input_report(hci_con_handle_t con_handle, const uint8_t * 
 }
 
 /**
- * @brief Send HID Report: Output
- */
-void hids_device_send_output_report(hci_con_handle_t con_handle, const uint8_t * report, uint16_t report_len){
-    (void)hids_device_send_report_with_type(con_handle, report, report_len, HID_REPORT_TYPE_OUTPUT);
-}
-
-/**
- * @brief Send HID Report: Feature
- */
-void hids_device_send_feature_report(hci_con_handle_t con_handle, const uint8_t * report, uint16_t report_len){
-    (void)hids_device_send_report_with_type(con_handle, report, report_len, HID_REPORT_TYPE_FEATURE);
-}
-
-/**
  * @brief Send HID Boot Mouse Input Report
  */
 void hids_device_send_boot_mouse_input_report(hci_con_handle_t con_handle, const uint8_t * report, uint16_t report_len){

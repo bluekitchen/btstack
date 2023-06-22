@@ -103,16 +103,6 @@ uint8_t hids_device_send_report_with_id(hci_con_handle_t con_handle, uint16_t re
 void hids_device_send_input_report(hci_con_handle_t con_handle, const uint8_t * report, uint16_t report_len);
 
 /**
- * @brief Send HID Report: Output
- */
-void hids_device_send_output_report(hci_con_handle_t con_handle, const uint8_t * report, uint16_t report_len);
-
-/**
- * @brief Send HID Report: Feature
- */
-void hids_device_send_feature_report(hci_con_handle_t con_handle, const uint8_t * report, uint16_t report_len);
-
-/**
  * @brief Send HID Boot Mouse Input Report
  */
 void hids_device_send_boot_mouse_input_report(hci_con_handle_t con_handle, const uint8_t * report, uint16_t report_len);
