@@ -247,6 +247,10 @@ static uint16_t ots_server_store_filter_list(const ots_filter_t * filter, uint8_
     stored_bytes += le_audio_util_virtual_memcpy_helper(field_data, 1, filters_offset, buffer, buffer_size, buffer_offset);
     filters_offset++;
 
+    if (filter->data_size == 0){
+        return stored_bytes;
+    }
+
     field_data[0] = filter->data_size;
     stored_bytes += le_audio_util_virtual_memcpy_helper(field_data, 1, filters_offset, buffer, buffer_size, buffer_offset);
     filters_offset++;
@@ -347,7 +351,7 @@ static uint16_t ots_server_read_callback(hci_con_handle_t con_handle, uint16_t a
     
     } 
     if (attribute_handle == ots_server_get_value_handle_for_characteristic_index(OTS_OBJECT_PROPERTIES_INDEX)){
-        uint8_t properties[8];
+        uint8_t properties[4];
         little_endian_store_32(properties, 0, connection->current_object->properties);
         return att_read_callback_handle_blob(properties, sizeof(properties), offset, buffer, buffer_size);
     } 
@@ -355,7 +359,7 @@ static uint16_t ots_server_read_callback(hci_con_handle_t con_handle, uint16_t a
     uint8_t i;
     for (i = 0; i < OTS_MAX_NUM_FILTERS; i++){
         if (attribute_handle == ots_server_get_value_handle_for_characteristic_index(OTS_OBJECT_LIST_FILTER1_INDEX + i)){
-           return ots_server_store_filter_list(&connection->filters[i], buffer, buffer_size, offset);    
+            return ots_server_store_filter_list(&connection->filters[i], buffer, buffer_size, offset);    
         }
     }
     return 0;
