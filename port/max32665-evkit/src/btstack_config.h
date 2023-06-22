@@ -6,7 +6,7 @@
 #include <stdint.h>
 
 // Port related features
-#define HAVE_BTSTACK_STDIN
+// #define HAVE_BTSTACK_STDIN
 #define HAVE_EMBEDDED_TIME_MS
 #define HAVE_INIT_SCRIPT
 

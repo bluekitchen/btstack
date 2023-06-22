@@ -49,6 +49,7 @@
 #include "btstack.h"
 #include "btstack_config.h"
 #include "btstack_run_loop_embedded.h"
+#include "btstack_tlv_none.h"
 
 #include "hci_dump_embedded_stdout.h"
 #include "hci_transport.h"
@@ -61,11 +62,19 @@
 #include "hal_led.h"
 #include "btstack_port.h"
 
-#define CC256X_UART_ID 0
-#define UART_RXFIFO_USABLE (MXC_UART_FIFO_DEPTH - 3)
+#include "hal_flash_bank_mxc.h"
+#include "btstack_tlv.h"
+#include "btstack_tlv_flash_bank.h"
+#include "btstack_link_key_db_tlv.h"
+#include "le_device_db_tlv.h"
+
+#define HAL_FLASH_BANK_SIZE 0x2000
+#define HAL_FLASH_BANK_1_ADDR 0x1007FFFF
+#define HAL_FLASH_BANK_0_ADDR 0x10080000
 
 static uint32_t baud_rate;
-volatile mxc_uart_req_t  hci_request;
+volatile uint8_t transaction_complete = 1;
+volatile mxc_uart_req_t hci_request;
 // rx state
 static int bytes_to_read = 0;
 static uint8_t *rx_buffer_ptr = 0;
@@ -77,6 +86,10 @@ static uint8_t *tx_buffer_ptr = 0;
 static void dummy_handler(void){};
 static void (*rx_done_handler)(void) = dummy_handler;
 static void (*tx_done_handler)(void) = dummy_handler;
+void DMA0_IRQHandler(void)
+{
+	MXC_DMA_Handler(MXC_DMA0);
+}
 void UART0_IRQHandler(void)
 {
 	LED_On(0);
@@ -112,13 +125,19 @@ void hal_cpu_enable_irqs_and_sleep(void)
 }
 static void send_handler()
 {
-	printf("Send handler");
+
+	transaction_complete = 1;
 	(*tx_done_handler)();
 }
 
 void hal_uart_dma_send_block(const uint8_t *buffer, uint16_t len)
 {
-	
+	// while (!transaction_complete)
+	// 	;
+	// MXC_UART_WriteTXFIFODMA(MXC_UART_GET_UART(HCI_UART),MXC_DMA0, buffer, len,send_handler);
+	// MXC_UART_ReadRXFIFODMA(MXC_UART_GET_UART(HCI_UART), MXC_DMA0, buffer,len,read_handler);
+
+	// // printf("SEND");
 	tx_buffer_ptr = (uint8_t *)buffer;
 	bytes_to_write = len;
 
@@ -131,35 +150,69 @@ void hal_uart_dma_send_block(const uint8_t *buffer, uint16_t len)
 
 	int ret = MXC_UART_TransactionAsync(&hci_request);
 
-	if(ret != E_NO_ERROR)
+	if (ret != E_NO_ERROR)
 	{
 		printf("Failed to start transaction");
 	}
+
+	// transaction_complete = 0;
+	// while (!transaction_complete)
+	// 	;
 }
-static void read_handler()
+static void read_handler(mxc_uart_req_t *req, int error)
 {
+	transaction_complete = 1;
 	(*rx_done_handler)();
 }
 void hal_uart_dma_receive_block(uint8_t *buffer, uint16_t len)
 {
-	// printf("DMA RXX BLOCK\r\n");
+
+	// printf("DMA Reading %u\r\n", len);
 	rx_buffer_ptr = buffer;
 	bytes_to_read = len;
 
+	// MXC_UART_ReadRXFIFODMA(MXC_UART_GET_UART(HCI_UART), MXC_DMA0, buffer,len,read_handler);
+	// hci_request.callback = read_handler;
+	// hci_request.uart = MXC_UART_GET_UART(HCI_UART);
+	// hci_request.rxData = rx_buffer_ptr;
+	// hci_request.rxLen = bytes_to_read;
 
-	hci_request.callback = read_handler;
-	hci_request.uart = MXC_UART_GET_UART(HCI_UART);
-	hci_request.rxData = rx_buffer_ptr;
-	hci_request.rxLen = bytes_to_read;
-	hci_request.txData = NULL;
-	hci_request.txLen = 0;
+	// int ret = MXC_UART_TransactionAsync(&hci_request);
 
-	int ret = MXC_UART_TransactionAsync(&hci_request);
+	// if(ret != E_NO_ERROR)
+	// {
+	// 	printf("Failed to start transaction");
+	// }
+	// transaction_complete = 0;
+	// while(!transaction_complete)	;
+}
 
-	if(ret != E_NO_ERROR)
-	{
-		printf("Failed to start transaction");
-	}
+void hal_uart_init(void)
+{
+	uint8_t uartNum;
+	mxc_uart_regs_t *uart;
+	uint32_t irqn;
+	int result;
+
+	MXC_DMA_ReleaseChannel(0);
+	// MXC_NVIC_SetVector(DMA0_IRQn, DMA_Handler);
+	NVIC_EnableIRQ(DMA0_IRQn);
+
+	uartNum = HCI_UART;
+	uart = MXC_UART_GET_UART(uartNum);
+	irqn = MXC_UART_GET_IRQ(uartNum);
+
+	result = MXC_UART_Init(uart, baud_rate, HCI_UART_MAP);
+
+	MXC_UART_SetDataSize(uart, 8);
+	MXC_UART_SetStopBits(uart, MXC_UART_STOP_1);
+	MXC_UART_SetParity(uart, MXC_UART_PARITY_DISABLE);
+
+	NVIC_EnableIRQ(irqn);
+	/* Set the interrupt priority lower than the default */
+	NVIC_SetPriority(irqn, 1);
+
+	return result;
 }
 
 void hal_btstack_run_loop_execute_once(void)
@@ -171,38 +224,38 @@ void hal_btstack_run_loop_execute_once(void)
 	int tx_bytes;
 	int ret;
 
-	// while (bytes_to_read)
-	// {
-	// 	rx_avail = MXC_UART_GetRXFIFOAvailable(MXC_UART_GET_UART(HCI_UART));
-	// 	if (!rx_avail)
-	// 		break;
+	while (bytes_to_read)
+	{
+		rx_avail = MXC_UART_GetRXFIFOAvailable(MXC_UART_GET_UART(HCI_UART));
+		if (!rx_avail)
+			break;
 
-	// 	if (bytes_to_read > rx_avail)
-	// 		num_rx_bytes = rx_avail;
-	// 	else
-	// 		num_rx_bytes = bytes_to_read;
+		if (bytes_to_read > rx_avail)
+			num_rx_bytes = rx_avail;
+		else
+			num_rx_bytes = bytes_to_read;
 
-	// 	ret = MXC_UART_Read(MXC_UART_GET_UART(HCI_UART), rx_buffer_ptr, &num_rx_bytes);
-	// 	if (ret < 0)
-	// 		break;
+		ret = MXC_UART_Read(MXC_UART_GET_UART(HCI_UART), rx_buffer_ptr, &num_rx_bytes);
+		if (ret < 0)
+			break;
 
-	// 	rx_buffer_ptr += num_rx_bytes;
-	// 	bytes_to_read -= num_rx_bytes;
+		rx_buffer_ptr += num_rx_bytes;
+		bytes_to_read -= num_rx_bytes;
 
-	// 	if (bytes_to_read < 0)
-	// 	{
-	// 		bytes_to_read = 0;
-	// 	}
+		if (bytes_to_read < 0)
+		{
+			bytes_to_read = 0;
+		}
 
-	// 	if (bytes_to_read == 0)
-	// 	{
-	// 		(*rx_done_handler)();
-	// 	}
-	// }
+		if (bytes_to_read == 0)
+		{
+			(*rx_done_handler)();
+		}
+	}
 
 	// while (bytes_to_write)
 	// {
-	// 	tx_avail = MXC_UART_GetTXFIFOAvailable(MXC_UART_GET_UART(HCI_UART));
+	// 	tx_avail = UART_NumWriteAvail(MXC_UART_GET_UART(CC256X_UART_ID));
 	// 	if (!tx_avail)
 	// 		break;
 
@@ -211,7 +264,7 @@ void hal_btstack_run_loop_execute_once(void)
 	// 	else
 	// 		tx_bytes = bytes_to_write;
 
-	// 	ret = MXC_UART_Write(MXC_UART_GET_UART(HCI_UART), tx_buffer_ptr, tx_bytes);
+	// 	ret = UART_Write(MXC_UART_GET_UART(CC256X_UART_ID), tx_buffer_ptr, tx_bytes);
 	// 	if (ret < 0)
 	// 		break;
 	// 	bytes_to_write -= tx_bytes;
@@ -228,30 +281,6 @@ void hal_btstack_run_loop_execute_once(void)
 	// }
 
 	btstack_run_loop_embedded_execute_once();
-}
-
-void hal_uart_init(void)
-{
-	uint8_t uartNum;
-	mxc_uart_regs_t *uart;
-	uint32_t irqn;
-	int result;
-
-	uartNum = HCI_UART;
-	uart = MXC_UART_GET_UART(uartNum);
-	irqn = MXC_UART_GET_IRQ(uartNum);
-
-
-	result = MXC_UART_Init(uart, baud_rate, HCI_UART_MAP);
-
-	MXC_UART_SetDataSize(uart, 8);
-	MXC_UART_SetStopBits(uart, MXC_UART_STOP_1);
-	MXC_UART_SetParity(uart, MXC_UART_PARITY_DISABLE);
-
-	/* Set the interrupt priority lower than the default */
-	NVIC_SetPriority(irqn, 1);
-
-	return result;
 }
 
 int hal_uart_dma_set_baud(uint32_t baud)
@@ -300,15 +329,14 @@ int bt_comm_init()
 	hal_tick_init();
 	hal_delay_us(1);
 
-	
 	return 0;
 }
 
 static hci_transport_config_uart_t config = {
 	HCI_TRANSPORT_CONFIG_UART,
 	115200,
-	4000000,
-	0, // flow control
+	0,
+	1, // flow control
 	"max32665",
 };
 
@@ -349,24 +377,14 @@ void hal_stdin_setup(void (*handler)(char c))
 
 	/* set input handler */
 
-	uart_byte_request.uart = CONSOLE_UART;
+	uart_byte_request.uart = MXC_UART_GET_UART(CONSOLE_UART);
 	uart_byte_request.rxData = stdin_buffer;
 	uart_byte_request.txData = NULL;
 	uart_byte_request.rxLen = sizeof(uint8_t);
 	uart_byte_request.txLen = 0;
 
-	MXC_UART_TransactionAsync(&uart_byte_request);
+	MXC_UART_Transaction(&uart_byte_request);
 }
-
-#include "hal_flash_bank_mxc.h"
-#include "btstack_tlv.h"
-#include "btstack_tlv_flash_bank.h"
-#include "btstack_link_key_db_tlv.h"
-#include "le_device_db_tlv.h"
-
-#define HAL_FLASH_BANK_SIZE 0x2000
-#define HAL_FLASH_BANK_1_ADDR 0x1007FFFF
-#define HAL_FLASH_BANK_0_ADDR 0x100FFFFF
 
 static hal_flash_bank_mxc_t hal_flash_bank_context;
 static btstack_tlv_flash_bank_t btstack_tlv_flash_bank_context;
@@ -378,39 +396,53 @@ int bluetooth_main(void)
 	LED_On(1);
 	LED_Off(0);
 
+
+	
 	bt_comm_init();
 	/* BT Stack Initialization */
 	btstack_memory_init();
 	btstack_run_loop_init(btstack_run_loop_embedded_get_instance());
-
+	gap_discoverable_control(1);
+	
 	// enable packet logger
-	// hci_dump_init(hci_dump_embedded_stdout_get_instance());
+	hci_dump_init(hci_dump_embedded_stdout_get_instance());
+
+	
 
 	/* Init HCI */
 	const hci_transport_t *transport = hci_transport_h4_instance(btstack_uart_block_embedded_instance());
-	hci_init(transport, &config);
 
-	/*Dont need to do this*/
-	// hci_set_chipset(btstack_chipset_cc256x_instance());
+	
 
 	// setup TLV Flash Bank implementation
-	const hal_flash_bank_t *hal_flash_bank_impl = hal_flash_bank_mxc_init_instance(
-		&hal_flash_bank_context,
-		HAL_FLASH_BANK_SIZE,
-		HAL_FLASH_BANK_0_ADDR,
-		HAL_FLASH_BANK_1_ADDR);
 
+#if 0
+	// const hal_flash_bank_t *hal_flash_bank_impl = hal_flash_bank_mxc_init_instance(
+	// 	&hal_flash_bank_context,
+	// 	HAL_FLASH_BANK_SIZE,
+	// 	HAL_FLASH_BANK_0_ADDR,
+	// 	HAL_FLASH_BANK_1_ADDR);
 	// const btstack_tlv_t *btstack_tlv_impl = btstack_tlv_flash_bank_init_instance(
 	// 	&btstack_tlv_flash_bank_context,
 	// 	hal_flash_bank_impl,
 	// 	&hal_flash_bank_context);
-
-	// setup Link Key DB using TLV
+	// // setup Link Key DB using TLV
 	// const btstack_link_key_db_t *btstack_link_key_db = btstack_link_key_db_tlv_get_instance(btstack_tlv_impl, &btstack_tlv_flash_bank_context);
 	// hci_set_link_key_db(btstack_link_key_db);
 
-	// setup LE Device DB using TLV
+	// // setup LE Device DB using TLV
 	// le_device_db_tlv_configure(btstack_tlv_impl, &btstack_tlv_flash_bank_context);
+#else
+
+	const btstack_tlv_t *btstack_tlv_impl = btstack_tlv_none_init_instance();
+	// setup global tlv
+	btstack_tlv_set_instance(btstack_tlv_impl, NULL);
+
+	// setup LE Device DB using TLV
+	le_device_db_tlv_configure(btstack_tlv_impl, NULL);
+#endif
+	// hci_set_chipset(btstack_chipset_cc256x_instance());
+	hci_init(transport, &config);
 
 	// go
 	btstack_main(0, (void *)NULL);

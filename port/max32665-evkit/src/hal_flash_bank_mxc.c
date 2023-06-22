@@ -65,6 +65,9 @@ static void hal_flash_bank_mxc_erase(void * context, int bank){
 static void hal_flash_bank_mxc_read(void * context, int bank, uint32_t offset, uint8_t * buffer, uint32_t size){
 	hal_flash_bank_mxc_t * self = (hal_flash_bank_mxc_t *) context;
 
+
+	
+
 	if (bank > 1) return;
 	if (offset > self->sector_size) return;
 	if ((offset + size) > self->sector_size) return;

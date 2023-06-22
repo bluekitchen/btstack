@@ -59,10 +59,12 @@ int main(void)
     printf("max32665 btstack example\n");
 	  bluetooth_main();
     
-    btstack_run_loop_execute();
-
-    // while(1) {
-		
-    // hal_btstack_run_loop_execute_once();
-    // }
+    // btstack_run_loop_execute();
+    
+    while(1)
+    {
+        hal_btstack_run_loop_execute_once();
+    }
+    
+    
 }
