@@ -442,15 +442,16 @@ uint8_t hids_device_send_report_with_id(hci_con_handle_t con_handle, uint16_t re
 }
 
 static uint8_t hids_device_send_report_with_type(hci_con_handle_t con_handle, const uint8_t * report, uint16_t report_len, hid_report_type_t report_type){
-    hids_device_t * instance = hids_device_get_instance_for_con_handle(con_handle);
-    if (!instance){
+    hids_device_t * device = hids_device_get_instance_for_con_handle(con_handle);
+    if (!device){
         log_error("no instance for handle 0x%02x", con_handle);
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
 
-    uint8_t pos = 0;
-    while (pos < (instance->hid_input_reports_num + instance->hid_output_reports_num + instance->hid_feature_reports_num)){
-        hids_device_report_t * report_storage = &instance->hid_reports[pos];
+    uint8_t pos;
+    uint8_t total_reports =  device->hid_input_reports_num + device->hid_output_reports_num + device->hid_feature_reports_num;
+    for (pos = 0 ; pos < total_reports ; pos++){
+        hids_device_report_t * report_storage = &device->hid_reports[pos];
 
         if (report_storage->type == report_type){
             return att_server_notify(con_handle, report_storage->value_handle, report, report_len);
