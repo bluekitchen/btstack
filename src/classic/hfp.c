@@ -1903,6 +1903,10 @@ uint8_t hfp_trigger_release_audio_connection(hfp_connection_t * hfp_connection){
     return ERROR_CODE_SUCCESS;
 }
 
+bool hfp_sco_setup_active(void){
+    return hfp_sco_establishment_active != NULL;
+}
+
 void hfp_setup_synchronous_connection(hfp_connection_t * hfp_connection){
     // all packet types, fixed bandwidth
     int setting = hfp_connection->link_setting;

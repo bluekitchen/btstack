@@ -866,8 +866,12 @@ uint8_t hfp_trigger_release_audio_connection(hfp_connection_t * hfp_connection);
 
 void hfp_reset_context_flags(hfp_connection_t * hfp_connection);
 
+// @returns if an SCO setup is active in either role
+bool hfp_sco_setup_active(void);
+
 void hfp_setup_synchronous_connection(hfp_connection_t * hfp_connection);
 void hfp_accept_synchronous_connection(hfp_connection_t * hfp_connection, bool incoming_eSCO);
+
 int hfp_supports_codec(uint8_t codec, int codecs_nr, uint8_t * codecs);
 void hfp_hf_drop_mSBC_if_eSCO_not_supported(uint8_t * codecs, uint8_t * codecs_nr);
 void hfp_init_link_settings(hfp_connection_t * hfp_connection, uint8_t eSCO_S4_supported);
