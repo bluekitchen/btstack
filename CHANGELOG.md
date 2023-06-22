@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 - GATT Client: support GATT over Enhanced LE Bearer
 - GATT Server: support GATT over Enhanced LE Bearer
+- LE Device DB: le_device_db_dump dumps LTK
 - Port for Zephyr 3.x
  
 ### Fixed
