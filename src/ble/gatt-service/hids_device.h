@@ -98,6 +98,7 @@ void hids_device_request_can_send_now_event(hci_con_handle_t con_handle);
  * @param report_id
  * @param report
  * @param report_len
+ * @returns status
  */
 uint8_t hids_device_send_input_report_for_id(hci_con_handle_t con_handle, uint16_t report_id, const uint8_t * report, uint16_t report_len);
 
@@ -106,18 +107,27 @@ uint8_t hids_device_send_input_report_for_id(hci_con_handle_t con_handle, uint16
  * @param con_handle
  * @param report
  * @param report_len
+ * @returns status
  */
-void hids_device_send_input_report(hci_con_handle_t con_handle, const uint8_t * report, uint16_t report_len);
+uint8_t hids_device_send_input_report(hci_con_handle_t con_handle, const uint8_t * report, uint16_t report_len);
 
 /**
  * @brief Send HID Boot Mouse Input Report
+ * @param con_handle
+ * @param report
+ * @param report_len
+ * @returns status
  */
-void hids_device_send_boot_mouse_input_report(hci_con_handle_t con_handle, const uint8_t * report, uint16_t report_len);
+uint8_t hids_device_send_boot_mouse_input_report(hci_con_handle_t con_handle, const uint8_t * report, uint16_t report_len);
 
 /**
  * @brief Send HID Boot Mouse Input Report
+ * @param con_handle
+ * @param report
+ * @param report_len
+ * @returns status
  */
-void hids_device_send_boot_keyboard_input_report(hci_con_handle_t con_handle, const uint8_t * report, uint16_t report_len);
+uint8_t hids_device_send_boot_keyboard_input_report(hci_con_handle_t con_handle, const uint8_t * report, uint16_t report_len);
 
 /* API_END */
 

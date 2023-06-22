@@ -448,7 +448,7 @@ uint8_t hids_device_send_input_report_for_id(hci_con_handle_t con_handle, uint16
     return att_server_notify(con_handle, report_storage->value_handle, report, report_len);
 }
 
-static uint8_t hids_device_send_report_with_type(hci_con_handle_t con_handle, const uint8_t * report, uint16_t report_len, hid_report_type_t report_type){
+uint8_t hids_device_send_input_report(hci_con_handle_t con_handle, const uint8_t * report, uint16_t report_len){
     hids_device_t * device = hids_device_get_instance_for_con_handle(con_handle);
     if (!device){
         log_error("no instance for handle 0x%02x", con_handle);
@@ -459,38 +459,33 @@ static uint8_t hids_device_send_report_with_type(hci_con_handle_t con_handle, co
     uint8_t total_reports =  device->hid_input_reports_num + device->hid_output_reports_num + device->hid_feature_reports_num;
     for (pos = 0 ; pos < total_reports ; pos++){
         hids_device_report_t * report_storage = &device->hid_reports[pos];
-
-        if (report_storage->type == report_type){
+        if (report_storage->type == HID_REPORT_TYPE_INPUT){
             return att_server_notify(con_handle, report_storage->value_handle, report, report_len);
         }
     }
     return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
 }
 
-void hids_device_send_input_report(hci_con_handle_t con_handle, const uint8_t * report, uint16_t report_len){
-    (void)hids_device_send_report_with_type(con_handle, report, report_len, HID_REPORT_TYPE_INPUT);
+/**
+ * @brief Send HID Boot Mouse Input Report
+ */
+uint8_t hids_device_send_boot_mouse_input_report(hci_con_handle_t con_handle, const uint8_t * report, uint16_t report_len){
+    hids_device_t * instance = hids_device_get_instance_for_con_handle(con_handle);
+    if (!instance){
+        log_error("no instance for handle 0x%02x", con_handle);
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    return att_server_notify(con_handle, instance->hid_boot_mouse_input_value_handle, report, report_len);
 }
 
 /**
  * @brief Send HID Boot Mouse Input Report
  */
-void hids_device_send_boot_mouse_input_report(hci_con_handle_t con_handle, const uint8_t * report, uint16_t report_len){
+uint8_t hids_device_send_boot_keyboard_input_report(hci_con_handle_t con_handle, const uint8_t * report, uint16_t report_len){
     hids_device_t * instance = hids_device_get_instance_for_con_handle(con_handle);
     if (!instance){
         log_error("no instance for handle 0x%02x", con_handle);
-        return;
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    att_server_notify(con_handle, instance->hid_boot_mouse_input_value_handle, report, report_len);
-}
-
-/**
- * @brief Send HID Boot Mouse Input Report
- */
-void hids_device_send_boot_keyboard_input_report(hci_con_handle_t con_handle, const uint8_t * report, uint16_t report_len){
-    hids_device_t * instance = hids_device_get_instance_for_con_handle(con_handle);
-    if (!instance){
-        log_error("no instance for handle 0x%02x", con_handle);
-        return;
-    }
-    att_server_notify(con_handle, instance->hid_boot_keyboard_input_value_handle, report, report_len);
+    return att_server_notify(con_handle, instance->hid_boot_keyboard_input_value_handle, report, report_len);
 }
