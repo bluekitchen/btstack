@@ -142,6 +142,24 @@ static void hids_device_emit_event_with_uint8(uint8_t event, hci_con_handle_t co
     (*packet_handler)(HCI_EVENT_PACKET, 0, buffer, sizeof(buffer));
 }
 
+static void hids_device_emit_event_with_uint8_uint8_t(uint8_t event, hci_con_handle_t con_handle, uint8_t value_1, uint8_t value_2){
+    hids_device_t * instance = hids_device_get_instance_for_con_handle(con_handle);
+    if (!instance){
+        log_error("no instance for handle 0x%02x", con_handle);
+        return;
+    }
+
+    if (!packet_handler) return;
+    uint8_t buffer[7];
+    buffer[0] = HCI_EVENT_HIDS_META;
+    buffer[1] = 4;
+    buffer[2] = event;
+    little_endian_store_16(buffer, 3, (uint16_t) con_handle);
+    buffer[5] = value_1;
+    buffer[6] = value_2;
+    (*packet_handler)(HCI_EVENT_PACKET, 0, buffer, sizeof(buffer));
+}
+
 static void hids_device_emit_event(uint8_t event, hci_con_handle_t con_handle){
     hids_device_t * instance = hids_device_get_instance_for_con_handle(con_handle);
     if (!instance){
@@ -268,13 +286,13 @@ static int att_write_callback(hci_con_handle_t con_handle, uint16_t att_handle, 
 
         switch (report->type){
             case HID_REPORT_TYPE_INPUT:
-                hids_device_emit_event_with_uint8(HIDS_SUBEVENT_INPUT_REPORT_ENABLE, con_handle, (uint8_t) new_value);
+                hids_device_emit_event_with_uint8_uint8_t(HIDS_SUBEVENT_INPUT_REPORT_ENABLE, con_handle, report->id, (uint8_t) new_value);
                 break;
             case HID_REPORT_TYPE_OUTPUT:
-                hids_device_emit_event_with_uint8(HIDS_SUBEVENT_OUTPUT_REPORT_ENABLE, con_handle, (uint8_t) new_value);
+                hids_device_emit_event_with_uint8_uint8_t(HIDS_SUBEVENT_OUTPUT_REPORT_ENABLE, con_handle, report->id, (uint8_t) new_value);
                 break;
             case HID_REPORT_TYPE_FEATURE:
-                hids_device_emit_event_with_uint8(HIDS_SUBEVENT_FEATURE_REPORT_ENABLE, con_handle, (uint8_t) new_value);
+                hids_device_emit_event_with_uint8_uint8_t(HIDS_SUBEVENT_FEATURE_REPORT_ENABLE, con_handle, report->id, (uint8_t) new_value);
                 break;
             default:
                 btstack_unreachable();

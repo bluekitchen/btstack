@@ -12378,13 +12378,22 @@ static inline uint16_t hids_subevent_input_report_enable_get_con_handle(const ui
     return little_endian_read_16(event, 3);
 }
 /**
+ * @brief Get field report_id from event HIDS_SUBEVENT_INPUT_REPORT_ENABLE
+ * @param event packet
+ * @return report_id
+ * @note: btstack_type 1
+ */
+static inline uint8_t hids_subevent_input_report_enable_get_report_id(const uint8_t * event){
+    return event[5];
+}
+/**
  * @brief Get field enable from event HIDS_SUBEVENT_INPUT_REPORT_ENABLE
  * @param event packet
  * @return enable
  * @note: btstack_type 1
  */
 static inline uint8_t hids_subevent_input_report_enable_get_enable(const uint8_t * event){
-    return event[5];
+    return event[6];
 }
 
 /**
@@ -12397,13 +12406,22 @@ static inline uint16_t hids_subevent_output_report_enable_get_con_handle(const u
     return little_endian_read_16(event, 3);
 }
 /**
+ * @brief Get field report_id from event HIDS_SUBEVENT_OUTPUT_REPORT_ENABLE
+ * @param event packet
+ * @return report_id
+ * @note: btstack_type 1
+ */
+static inline uint8_t hids_subevent_output_report_enable_get_report_id(const uint8_t * event){
+    return event[5];
+}
+/**
  * @brief Get field enable from event HIDS_SUBEVENT_OUTPUT_REPORT_ENABLE
  * @param event packet
  * @return enable
  * @note: btstack_type 1
  */
 static inline uint8_t hids_subevent_output_report_enable_get_enable(const uint8_t * event){
-    return event[5];
+    return event[6];
 }
 
 /**
@@ -12416,13 +12434,22 @@ static inline uint16_t hids_subevent_feature_report_enable_get_con_handle(const 
     return little_endian_read_16(event, 3);
 }
 /**
+ * @brief Get field report_id from event HIDS_SUBEVENT_FEATURE_REPORT_ENABLE
+ * @param event packet
+ * @return report_id
+ * @note: btstack_type 1
+ */
+static inline uint8_t hids_subevent_feature_report_enable_get_report_id(const uint8_t * event){
+    return event[5];
+}
+/**
  * @brief Get field enable from event HIDS_SUBEVENT_FEATURE_REPORT_ENABLE
  * @param event packet
  * @return enable
  * @note: btstack_type 1
  */
 static inline uint8_t hids_subevent_feature_report_enable_get_enable(const uint8_t * event){
-    return event[5];
+    return event[6];
 }
 
 /**
