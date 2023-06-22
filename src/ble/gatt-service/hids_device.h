@@ -93,12 +93,19 @@ void hids_device_register_packet_handler(btstack_packet_handler_t callback);
 void hids_device_request_can_send_now_event(hci_con_handle_t con_handle);
 
 /**
- * @brief Send HID Report with given ID
+ * @brief Send HID Input Report for Report ID
+ * @param con_handle
+ * @param report_id
+ * @param report
+ * @param report_len
  */
-uint8_t hids_device_send_report_with_id(hci_con_handle_t con_handle, uint16_t report_id, const uint8_t * report, uint16_t report_len);
+uint8_t hids_device_send_input_report_for_id(hci_con_handle_t con_handle, uint16_t report_id, const uint8_t * report, uint16_t report_len);
 
 /**
- * @brief Send HID Report: Input
+ * @brief Send HID Input Report for first Input Report
+ * @param con_handle
+ * @param report
+ * @param report_len
  */
 void hids_device_send_input_report(hci_con_handle_t con_handle, const uint8_t * report, uint16_t report_len);
 
