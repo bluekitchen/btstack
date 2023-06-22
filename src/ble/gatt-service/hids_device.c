@@ -125,17 +125,6 @@ hids_device_get_report_for_id_and_type(hids_device_t *device, uint16_t report_id
     return NULL;
 }
 
-static hids_device_report_t * hids_device_get_report_for_id(hids_device_t * device, uint16_t report_id){
-    uint8_t pos;
-    uint8_t total_reports =  device->hid_input_reports_num + device->hid_output_reports_num + device->hid_feature_reports_num;
-    for (pos = 0 ; pos < total_reports ; pos++){
-        if (device->hid_reports[pos].id == report_id){
-            return &device->hid_reports[pos];
-        }
-    }
-    return NULL;
-}
-
 static void hids_device_emit_event_with_uint8(uint8_t event, hci_con_handle_t con_handle, uint8_t value){
     hids_device_t * instance = hids_device_get_instance_for_con_handle(con_handle);
     if (!instance){
