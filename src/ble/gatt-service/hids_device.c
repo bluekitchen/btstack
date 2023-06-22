@@ -113,7 +113,8 @@ static hids_device_report_t * hids_device_get_report_for_client_configuration_ha
     return NULL;
 }
 
-static hids_device_report_t * hids_device_get_report_for_type_and_id(hids_device_t * device, hid_report_type_t type, uint16_t report_id){
+static hids_device_report_t *
+hids_device_get_report_for_id_and_type(hids_device_t *device, uint16_t report_id, hid_report_type_t type) {
     uint8_t pos;
     uint8_t total_reports =  device->hid_input_reports_num + device->hid_output_reports_num + device->hid_feature_reports_num;
     for (pos = 0 ; pos < total_reports ; pos++){
@@ -440,7 +441,8 @@ uint8_t hids_device_send_input_report_for_id(hci_con_handle_t con_handle, uint16
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
 
-    hids_device_report_t * report_storage = hids_device_get_report_for_type_and_id(instance, HID_REPORT_TYPE_INPUT, report_id);
+    hids_device_report_t * report_storage = hids_device_get_report_for_id_and_type(instance, report_id,
+                                                                                   HID_REPORT_TYPE_INPUT);
     if (report_storage == NULL){
         return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
     }
