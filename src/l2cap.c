@@ -3929,10 +3929,18 @@ static int l2cap_ecbm_signaling_handler_dispatch(hci_con_handle_t handle, uint16
                     }
                 }
 
-                if (security_status != L2CAP_ECBM_CONNECTION_RESULT_ALL_SUCCESS){
-                    l2cap_register_signaling_response(handle, L2CAP_CREDIT_BASED_CONNECTION_REQUEST, sig_id,
-                                                      num_channels_and_signaling_cid, security_status);
-                    return 1;
+                // check if authentication is possible
+                bool send_pending = false;
+                if (security_status != L2CAP_ECBM_CONNECTION_RESULT_ALL_SUCCESS) {
+                    if (gap_get_bondable_mode() != 0) {
+                        // if possible, send pending and continue
+                        send_pending = true;
+                    } else {
+                        // otherwise, send refused and abort
+                        l2cap_register_signaling_response(handle, L2CAP_CREDIT_BASED_CONNECTION_REQUEST, sig_id,
+                                                          num_channels_and_signaling_cid, L2CAP_ECBM_CONNECTION_RESULT_ALL_PENDING_AUTHENTICATION);
+                        return 1;
+                    }
                 }
 
                 // report the last result code != 0
@@ -4008,7 +4016,7 @@ static int l2cap_ecbm_signaling_handler_dispatch(hci_con_handle_t handle, uint16
                 // if security is pending, send intermediate response, otherwise, ask user
                 if (send_pending){
                     l2cap_register_signaling_response(handle, L2CAP_CREDIT_BASED_CONNECTION_REQUEST, sig_id,
-                                                      num_channels_and_signaling_cid, security_status);
+                                                      num_channels_and_signaling_cid, L2CAP_ECBM_CONNECTION_RESULT_ALL_PENDING_AUTHENTICATION);
                 } else {
                     l2cap_ecbm_handle_security_level_incoming_sufficient(a_channel);
                 }
