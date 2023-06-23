@@ -2863,40 +2863,44 @@ static void l2cap_handle_security_level(hci_con_handle_t handle, gap_security_le
         }
     }
 
-    btstack_linked_list_iterator_t it;
-    btstack_linked_list_iterator_init(&it, &l2cap_channels);
-    while (btstack_linked_list_iterator_has_next(&it)){
-        l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
-        if (!l2cap_is_dynamic_channel_type(channel->channel_type)) continue;
-        if (channel->con_handle != handle) continue;
+    bool done = false;
+    while (!done){
+        done = true;
+        btstack_linked_list_iterator_t it;
+        btstack_linked_list_iterator_init(&it, &l2cap_channels);
+        while (btstack_linked_list_iterator_has_next(&it)){
+            l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
+            if (!l2cap_is_dynamic_channel_type(channel->channel_type)) continue;
+            if (channel->con_handle != handle) continue;
 
-        gap_security_level_t required_level = channel->required_security_level;
+            gap_security_level_t required_level = channel->required_security_level;
 
-        log_info("channel %p, cid %04x - state %u: actual %u >= required %u?", channel, channel->local_cid, channel->state, actual_level, required_level);
+            log_info("channel %p, cid %04x - state %u: actual %u >= required %u?", channel, channel->local_cid, channel->state, actual_level, required_level);
 
-        switch (channel->state){
-            case L2CAP_STATE_WAIT_INCOMING_SECURITY_LEVEL_UPDATE:
-                if (actual_level >= required_level){
-                    l2cap_handle_security_level_incoming_sufficient(channel);
-                } else {
-                    channel->reason = L2CAP_CONNECTION_RESULT_SECURITY_BLOCK;
-                    channel->state = L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_DECLINE;
-                }
-                break;
+            switch (channel->state){
+                case L2CAP_STATE_WAIT_INCOMING_SECURITY_LEVEL_UPDATE:
+                    if (actual_level >= required_level){
+                        l2cap_handle_security_level_incoming_sufficient(channel);
+                    } else {
+                        channel->reason = L2CAP_CONNECTION_RESULT_SECURITY_BLOCK;
+                        channel->state = L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_DECLINE;
+                    }
+                    break;
 
-            case L2CAP_STATE_WAIT_OUTGOING_SECURITY_LEVEL_UPDATE:
-                if (actual_level >= required_level){
-                    l2cap_ready_to_connect(channel);
-                } else {
-                    // security level insufficient, report error and free channel
-                    l2cap_handle_channel_open_failed(channel, L2CAP_CONNECTION_RESPONSE_RESULT_REFUSED_SECURITY);
-                    btstack_linked_list_remove(&l2cap_channels, (btstack_linked_item_t  *) channel);
-                    l2cap_free_channel_entry(channel);
-                }
-                break;
+                case L2CAP_STATE_WAIT_OUTGOING_SECURITY_LEVEL_UPDATE:
+                    if (actual_level >= required_level){
+                        l2cap_ready_to_connect(channel);
+                    } else {
+                        // security level insufficient, report error and free channel
+                        l2cap_handle_channel_open_failed(channel, L2CAP_CONNECTION_RESPONSE_RESULT_REFUSED_SECURITY);
+                        btstack_linked_list_remove(&l2cap_channels, (btstack_linked_item_t  *) channel);
+                        l2cap_free_channel_entry(channel);
+                    }
+                    break;
 
-            default:
-                break;
+                default:
+                    break;
+            }
         }
     }
 }
@@ -4001,8 +4005,13 @@ static int l2cap_ecbm_signaling_handler_dispatch(hci_con_handle_t handle, uint16
                     return 1;
                 }
 
-                l2cap_ecbm_handle_security_level_incoming_sufficient(a_channel);
-
+                // if security is pending, send intermediate response, otherwise, ask user
+                if (send_pending){
+                    l2cap_register_signaling_response(handle, L2CAP_CREDIT_BASED_CONNECTION_REQUEST, sig_id,
+                                                      num_channels_and_signaling_cid, security_status);
+                } else {
+                    l2cap_ecbm_handle_security_level_incoming_sufficient(a_channel);
+                }
 
             } else {
                 l2cap_register_signaling_response(handle, L2CAP_CREDIT_BASED_CONNECTION_REQUEST, sig_id,
