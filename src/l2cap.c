@@ -3868,27 +3868,31 @@ static int l2cap_ecbm_signaling_handler_dispatch(hci_con_handle_t handle, uint16
                     return 1;
                 }
 
+                // check security in increasing error priority
+                uint8_t security_status = L2CAP_ECBM_CONNECTION_RESULT_ALL_SUCCESS;
+
+                // security: check encryption
+                if (service->required_security_level >= LEVEL_2) {
+                    if (gap_encryption_key_size(handle) < 16) {
+                        security_status = L2CAP_ECBM_CONNECTION_RESULT_ALL_REFUSED_ENCYRPTION_KEY_SIZE_TOO_SHORT;
+                    }
+                    if (gap_encryption_key_size(handle) == 0){
+                        security_status = L2CAP_ECBM_CONNECTION_RESULT_ALL_REFUSED_INSUFFICIENT_ENCRYPTION;
+                    }
+                }
+
                 // security: check authentication
                 if (service->required_security_level >= LEVEL_3) {
                     if (!gap_authenticated(handle)) {
-                        l2cap_register_signaling_response(handle, L2CAP_CREDIT_BASED_CONNECTION_REQUEST, sig_id,
-                                                          num_channels_and_signaling_cid, L2CAP_ECBM_CONNECTION_RESULT_ALL_REFUSED_INSUFFICIENT_AUTHENTICATION);
+                        security_status = L2CAP_ECBM_CONNECTION_RESULT_ALL_REFUSED_INSUFFICIENT_AUTHENTICATION;
                         return 1;
                     }
                 }
 
-                // security: check encryption
-                if (service->required_security_level >= LEVEL_2) {
-                    if (gap_encryption_key_size(handle) == 0){
-                        l2cap_register_signaling_response(handle, L2CAP_CREDIT_BASED_CONNECTION_REQUEST, sig_id,
-                                                          num_channels_and_signaling_cid, L2CAP_ECBM_CONNECTION_RESULT_ALL_REFUSED_INSUFFICIENT_ENCRYPTION);
-                        return 1;
-                    }
-                    if (gap_encryption_key_size(handle) < 16) {
-                        l2cap_register_signaling_response(handle, L2CAP_CREDIT_BASED_CONNECTION_REQUEST, sig_id,
-                                                          num_channels_and_signaling_cid, L2CAP_ECBM_CONNECTION_RESULT_ALL_REFUSED_ENCYRPTION_KEY_SIZE_TOO_SHORT);
-                        return 1;
-                    }
+                if (security_status != L2CAP_ECBM_CONNECTION_RESULT_ALL_SUCCESS){
+                    l2cap_register_signaling_response(handle, L2CAP_CREDIT_BASED_CONNECTION_REQUEST, sig_id,
+                                                      num_channels_and_signaling_cid, security_status);
+                    return 1;
                 }
 
                 // report the last result code != 0
