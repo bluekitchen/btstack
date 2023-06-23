@@ -3831,6 +3831,27 @@ l2cap_ecbm_emit_incoming_connection(l2cap_channel_t *channel, uint8_t num_channe
     (*channel->packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
+static void l2cap_ecbm_handle_security_level_incoming_sufficient(l2cap_channel_t * channel){
+    // count number of l2cap_channels in state L2CAP_STATE_WAIT_INCOMING_SECURITY_LEVEL_UPDATE with same remote_sig_id
+    uint8_t sig_id = channel->remote_sig_id;
+    hci_con_handle_t con_handle = channel->con_handle;
+
+    uint8_t num_channels;
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &l2cap_channels);
+    while (btstack_linked_list_iterator_has_next(&it)) {
+        l2cap_channel_t *channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
+        if (!l2cap_is_dynamic_channel_type(channel->channel_type)) continue;
+        if (channel->con_handle != con_handle) continue;
+        if (channel->remote_sig_id != sig_id) continue;
+        if (channel->state != L2CAP_STATE_WAIT_INCOMING_SECURITY_LEVEL_UPDATE) continue;
+        channel->state = L2CAP_STATE_WAIT_CLIENT_ACCEPT_OR_REJECT;
+        num_channels++;
+    }
+
+   l2cap_ecbm_emit_incoming_connection(channel, num_channels);
+}
+
 static int l2cap_ecbm_signaling_handler_dispatch(hci_con_handle_t handle, uint16_t signaling_cid, uint8_t *command,
                                                  uint8_t sig_id) {
 
@@ -3954,7 +3975,7 @@ static int l2cap_ecbm_signaling_handler_dispatch(hci_con_handle_t handle, uint16
                     }
 
                     // setup state
-                    channel->state = L2CAP_STATE_WAIT_CLIENT_ACCEPT_OR_REJECT;
+                    channel->state = L2CAP_STATE_WAIT_INCOMING_SECURITY_LEVEL_UPDATE;
                     channel->state_var |= L2CAP_CHANNEL_STATE_VAR_INCOMING;
                     channel->con_handle = connection->con_handle;
                     channel->remote_sig_id = sig_id;
@@ -3980,7 +4001,7 @@ static int l2cap_ecbm_signaling_handler_dispatch(hci_con_handle_t handle, uint16
                     return 1;
                 }
 
-                l2cap_ecbm_emit_incoming_connection(a_channel, num_channels);
+                l2cap_ecbm_handle_security_level_incoming_sufficient(a_channel);
 
 
             } else {
