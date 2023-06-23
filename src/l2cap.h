@@ -801,6 +801,13 @@ uint8_t l2cap_ecbm_request_can_send_now_event(uint16_t local_cid);
 uint8_t l2cap_ecbm_reconfigure_channels(uint8_t num_cids, uint16_t * local_cids, int16_t receive_buffer_size, uint8_t ** receive_buffers);
 
 /**
+ * @brief Trigger pending connection responses after pairing completed
+ * @note Must be called after receiving an SM_PAIRING_COMPLETE event, will be removed eventually
+ * @param con_handle
+ */
+void l2cap_ecbm_trigger_pending_connection_responses(hci_con_handle_t con_handle);
+
+/**
  * @brief De-Init L2CAP
  */
 void l2cap_deinit(void);

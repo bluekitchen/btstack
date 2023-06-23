@@ -3897,6 +3897,24 @@ static void l2cap_ecbm_handle_security_level_incoming(l2cap_channel_t * channel)
     }
 }
 
+void l2cap_ecbm_trigger_pending_connection_responses(hci_con_handle_t con_handle){
+    bool done = false;
+    while (!done) {
+        done = true;
+        btstack_linked_list_iterator_t it;
+        btstack_linked_list_iterator_init(&it, &l2cap_channels);
+        while (btstack_linked_list_iterator_has_next(&it)) {
+            l2cap_channel_t *channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
+            if (channel->channel_type != L2CAP_CHANNEL_TYPE_CHANNEL_ECBM) continue;
+            if (channel->con_handle != con_handle) continue;
+            if  (channel->state == L2CAP_STATE_WAIT_INCOMING_SECURITY_LEVEL_UPDATE) {
+                l2cap_ecbm_handle_security_level_incoming(channel);
+                done = false;
+            };
+        }
+    }
+}
+
 static int l2cap_ecbm_signaling_handler_dispatch(hci_con_handle_t handle, uint16_t signaling_cid, uint8_t *command,
                                                  uint8_t sig_id) {
 
