@@ -3816,6 +3816,21 @@ static inline uint8_t l2cap_ecbm_status_for_result(uint16_t result) {
     }
 }
 
+static void
+l2cap_ecbm_emit_incoming_connection(l2cap_channel_t *channel, uint8_t num_channels) {
+    uint8_t event[16];
+    event[0] = L2CAP_EVENT_ECBM_INCOMING_CONNECTION;
+    event[1] = sizeof(event) - 2;
+    event[2] = channel->address_type;
+    reverse_bd_addr(channel->address, &event[3]);
+    little_endian_store_16(event, 9, channel->con_handle);
+    little_endian_store_16(event, 11, channel->psm);
+    event[13] = num_channels;
+    little_endian_store_16(event, 14, channel->local_cid);
+    hci_dump_packet(HCI_EVENT_PACKET, 1, event, sizeof(event));
+    (*channel->packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
 static int l2cap_ecbm_signaling_handler_dispatch(hci_con_handle_t handle, uint16_t signaling_cid, uint8_t *command,
                                                  uint8_t sig_id) {
 
@@ -3897,8 +3912,8 @@ static int l2cap_ecbm_signaling_handler_dispatch(hci_con_handle_t handle, uint16
 
                 // report the last result code != 0
                 result = 0;
-                // store one of the local cids for the event
-                uint16_t a_local_cid = 0;
+                // store one of the local channels for the event
+                l2cap_channel_t * a_channel = NULL;
                 for (i = 0; i < num_channels; i++) {
 
                     // check source cids
@@ -3955,28 +3970,18 @@ static int l2cap_ecbm_signaling_handler_dispatch(hci_con_handle_t handle, uint16
 
                     btstack_linked_list_add_tail(&l2cap_channels, (btstack_linked_item_t *) channel);
 
-                    a_local_cid = channel->local_cid;
+                    a_channel = channel;
                 }
 
                 // if no channels have been created, all have been refused, and we can respond right away
-                if (a_local_cid == 0) {
+                if (a_channel == NULL) {
                     l2cap_register_signaling_response(handle, L2CAP_CREDIT_BASED_CONNECTION_REQUEST, sig_id,
                                                       num_channels_and_signaling_cid, result);
                     return 1;
                 }
 
-                // emit incoming data connection event
-                uint8_t event[16];
-                event[0] = L2CAP_EVENT_ECBM_INCOMING_CONNECTION;
-                event[1] = sizeof(event) - 2;
-                event[2] = connection->address_type;
-                reverse_bd_addr(connection->address, &event[3]);
-                little_endian_store_16(event, 9, connection->con_handle);
-                little_endian_store_16(event, 11, spsm);
-                event[13] = num_channels;
-                little_endian_store_16(event, 14, a_local_cid);
-                hci_dump_packet(HCI_EVENT_PACKET, 1, event, sizeof(event));
-                (*service->packet_handler)(HCI_EVENT_PACKET, a_local_cid, event, sizeof(event));
+                l2cap_ecbm_emit_incoming_connection(a_channel, num_channels);
+
 
             } else {
                 l2cap_register_signaling_response(handle, L2CAP_CREDIT_BASED_CONNECTION_REQUEST, sig_id,
