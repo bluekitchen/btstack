@@ -202,6 +202,7 @@ static void l2cap_ertm_monitor_timeout_callback(btstack_timer_source_t * ts);
 static void l2cap_ertm_retransmission_timeout_callback(btstack_timer_source_t * ts);
 #endif
 #ifdef ENABLE_L2CAP_ENHANCED_CREDIT_BASED_FLOW_CONTROL_MODE
+static void l2cap_ecbm_handle_security_level_incoming(l2cap_channel_t *channel);
 static int l2cap_ecbm_signaling_handler_dispatch(hci_con_handle_t handle, uint16_t signaling_cid, uint8_t * command, uint8_t sig_id);
 static void l2cap_run_trigger_callback(void * context);
 #endif
@@ -3858,12 +3859,15 @@ static uint8_t l2cap_ecbm_security_status_for_connection_request(hci_con_handle_
     return security_status;
 }
 
-static void l2cap_ecbm_handle_security_level_incoming_sufficient(l2cap_channel_t * channel){
+static void l2cap_ecbm_handle_security_level_incoming(l2cap_channel_t * channel){
     // count number of l2cap_channels in state L2CAP_STATE_WAIT_INCOMING_SECURITY_LEVEL_UPDATE with same remote_sig_id
     uint8_t sig_id = channel->remote_sig_id;
     hci_con_handle_t con_handle = channel->con_handle;
 
-    uint8_t num_channels;
+    uint8_t security_status = l2cap_ecbm_security_status_for_connection_request(channel->con_handle, channel->required_security_level);
+    bool security_sufficient = security_status == L2CAP_ECBM_CONNECTION_RESULT_ALL_SUCCESS;
+
+    uint8_t num_channels = 0;
     btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, &l2cap_channels);
     while (btstack_linked_list_iterator_has_next(&it)) {
@@ -3872,11 +3876,25 @@ static void l2cap_ecbm_handle_security_level_incoming_sufficient(l2cap_channel_t
         if (channel->con_handle != con_handle) continue;
         if (channel->remote_sig_id != sig_id) continue;
         if (channel->state != L2CAP_STATE_WAIT_INCOMING_SECURITY_LEVEL_UPDATE) continue;
-        channel->state = L2CAP_STATE_WAIT_CLIENT_ACCEPT_OR_REJECT;
         num_channels++;
+
+        if (security_sufficient){
+            channel->state = L2CAP_STATE_WAIT_CLIENT_ACCEPT_OR_REJECT;
+        } else {
+            btstack_linked_list_iterator_remove(&it);
+            btstack_memory_l2cap_channel_free(channel);
+        }
     }
 
-   l2cap_ecbm_emit_incoming_connection(channel, num_channels);
+    if (security_sufficient){
+        l2cap_ecbm_emit_incoming_connection(channel, num_channels);
+    } else {
+        // combine signaling cid and number channels for l2cap_register_signaling_response
+        uint16_t signaling_cid = L2CAP_CID_SIGNALING;
+        uint16_t num_channels_and_signaling_cid = (num_channels << 8) | signaling_cid;
+        l2cap_register_signaling_response(con_handle, L2CAP_CREDIT_BASED_CONNECTION_REQUEST, sig_id,
+                                          num_channels_and_signaling_cid, security_status);
+    }
 }
 
 static int l2cap_ecbm_signaling_handler_dispatch(hci_con_handle_t handle, uint16_t signaling_cid, uint8_t *command,
@@ -4021,7 +4039,7 @@ static int l2cap_ecbm_signaling_handler_dispatch(hci_con_handle_t handle, uint16
                     l2cap_register_signaling_response(handle, L2CAP_CREDIT_BASED_CONNECTION_REQUEST, sig_id,
                                                       num_channels_and_signaling_cid, L2CAP_ECBM_CONNECTION_RESULT_ALL_PENDING_AUTHENTICATION);
                 } else {
-                    l2cap_ecbm_handle_security_level_incoming_sufficient(a_channel);
+                    l2cap_ecbm_handle_security_level_incoming(a_channel);
                 }
 
             } else {
