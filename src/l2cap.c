@@ -4098,6 +4098,7 @@ static int l2cap_ecbm_signaling_handler_dispatch(hci_con_handle_t handle, uint16
             num_channels = (len - 8) / sizeof(uint16_t);
             btstack_linked_list_iterator_init(&it, &l2cap_channels);
             while (btstack_linked_list_iterator_has_next(&it)) {
+                uint8_t channel_status = status;
                 l2cap_channel_t *channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
                 if (!l2cap_is_dynamic_channel_type(channel->channel_type)) continue;
                 if (channel->con_handle != handle) continue;
@@ -4106,17 +4107,24 @@ static int l2cap_ecbm_signaling_handler_dispatch(hci_con_handle_t handle, uint16
                 if (channel->cid_index < num_channels) {
                     uint16_t remote_cid = little_endian_read_16(command, 12 + channel->cid_index * sizeof(uint16_t));
                     if (remote_cid != 0) {
-                        channel->state = L2CAP_STATE_OPEN;
-                        channel->remote_cid = remote_cid;
-                        channel->remote_mtu = new_mtu;
-                        channel->remote_mps = new_mps;
-                        channel->credits_outgoing = initial_credits;
-                        l2cap_ecbm_emit_channel_opened(channel, ERROR_CODE_SUCCESS);
-                        continue;
+                        // check for duplicate remote CIDs
+                        l2cap_channel_t * original_channel = l2cap_get_channel_for_remote_handle_and_cid(handle, remote_cid);
+                        if (original_channel == NULL){
+                            channel->state = L2CAP_STATE_OPEN;
+                            channel->remote_cid = remote_cid;
+                            channel->remote_mtu = new_mtu;
+                            channel->remote_mps = new_mps;
+                            channel->credits_outgoing = initial_credits;
+                            l2cap_ecbm_emit_channel_opened(channel, ERROR_CODE_SUCCESS);
+                            continue;
+                        }
+                        // close original channel
+                        original_channel->state = L2CAP_STATE_WILL_SEND_DISCONNECT_REQUEST;
+                        channel_status = ERROR_CODE_ACL_CONNECTION_ALREADY_EXISTS;
                     }
                 }
                 // open failed
-                l2cap_ecbm_emit_channel_opened(channel, status);
+                l2cap_ecbm_emit_channel_opened(channel, channel_status);
                 // drop failed channel
                 btstack_linked_list_iterator_remove(&it);
                 btstack_memory_l2cap_channel_free(channel);
