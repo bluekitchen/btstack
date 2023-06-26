@@ -3836,7 +3836,9 @@ l2cap_ecbm_emit_incoming_connection(l2cap_channel_t *channel, uint8_t num_channe
     (*channel->packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-static uint8_t l2cap_ecbm_security_status_for_connection_request(hci_con_handle_t handle, gap_security_level_t required_security_level) {
+static uint8_t
+l2cap_ecbm_security_status_for_connection_request(hci_con_handle_t handle, gap_security_level_t required_security_level,
+                                                  bool requires_authorization) {
     // check security in increasing error priority
     uint8_t security_status = L2CAP_ECBM_CONNECTION_RESULT_ALL_SUCCESS;
 
@@ -3853,7 +3855,9 @@ static uint8_t l2cap_ecbm_security_status_for_connection_request(hci_con_handle_
     // security: check authentication
     if (required_security_level >= LEVEL_3) {
         if (!gap_authenticated(handle)) {
-            security_status = L2CAP_ECBM_CONNECTION_RESULT_ALL_REFUSED_INSUFFICIENT_AUTHENTICATION;
+            security_status = requires_authorization ?
+                    L2CAP_ECBM_CONNECTION_RESULT_ALL_REFUSED_INSUFFICIENT_AUTHORIZATION :
+                    L2CAP_ECBM_CONNECTION_RESULT_ALL_REFUSED_INSUFFICIENT_AUTHENTICATION;
         }
     }
     return security_status;
@@ -3864,7 +3868,9 @@ static void l2cap_ecbm_handle_security_level_incoming(l2cap_channel_t * channel)
     uint8_t sig_id = channel->remote_sig_id;
     hci_con_handle_t con_handle = channel->con_handle;
 
-    uint8_t security_status = l2cap_ecbm_security_status_for_connection_request(channel->con_handle, channel->required_security_level);
+    uint8_t security_status = l2cap_ecbm_security_status_for_connection_request(channel->con_handle,
+                                                                                channel->required_security_level,
+                                                                                false);
     bool security_sufficient = security_status == L2CAP_ECBM_CONNECTION_RESULT_ALL_SUCCESS;
 
     uint8_t num_channels = 0;
@@ -3969,7 +3975,9 @@ static int l2cap_ecbm_signaling_handler_dispatch(hci_con_handle_t handle, uint16
 
                 // check if authentication is required and possible
                 bool send_pending = false;
-                uint8_t security_status = l2cap_ecbm_security_status_for_connection_request(handle, service->required_security_level);
+                uint8_t security_status = l2cap_ecbm_security_status_for_connection_request(handle,
+                                                                                            service->required_security_level,
+                                                                                            service->requires_authorization);
                 if (security_status != L2CAP_ECBM_CONNECTION_RESULT_ALL_SUCCESS) {
                     if (gap_get_bondable_mode() != 0) {
                         // if possible, send pending and continue
@@ -4057,6 +4065,11 @@ static int l2cap_ecbm_signaling_handler_dispatch(hci_con_handle_t handle, uint16
                     l2cap_register_signaling_response(handle, L2CAP_CREDIT_BASED_CONNECTION_REQUEST, sig_id,
                                                       num_channels_and_signaling_cid, L2CAP_ECBM_CONNECTION_RESULT_ALL_PENDING_AUTHENTICATION);
                 } else {
+                    // if security is ok but authorization is required, send intermediate response and ask user
+                    if (service->requires_authorization){
+                        l2cap_register_signaling_response(handle, L2CAP_CREDIT_BASED_CONNECTION_REQUEST, sig_id,
+                                                          num_channels_and_signaling_cid, L2CAP_ECBM_CONNECTION_RESULT_ALL_PENDING_AUTHORIZATION);
+                    }
                     l2cap_ecbm_handle_security_level_incoming(a_channel);
                 }
 
