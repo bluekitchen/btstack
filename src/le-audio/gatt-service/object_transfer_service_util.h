@@ -85,7 +85,7 @@ extern "C" {
 #define OBJECT_PROPERTY_MASK_MARK                                       0x0080
 
 
-#define OTS_MAX_NAME_LENGHT         32
+#define OTS_MAX_NAME_LENGHT         60
 #define OTS_MAX_NUM_FILTERS          3
 #define OTS_OBJECT_ID_LEN            6
 /**
