@@ -152,13 +152,13 @@ Tool: media_player_server_test
 - OTS/SR/CR/BV-08-C: (wait)
 - OTS/SR/CR/BV-09-C: (wait)
 
-- OTS/SR/CRL/BV-01-C: 
-- OTS/SR/CRL/BV-02-C: 
+- OTS/SR/CRL/BV-01-C: k
+- OTS/SR/CRL/BV-02-C: 7
 
 - OTS/SR/CW/BV-01-C: 
 - OTS/SR/CW/BV-02-C:  
 - OTS/SR/CW/BV-03-C: 
-- OTS/SR/CW/BV-05-C: 
+- OTS/SR/CW/BV-04-C: 
 - OTS/SR/CW/BV-05-C: 
 
 - OTS/SR/CWL/BV-01-C: 
