@@ -112,7 +112,9 @@ uint8_t object_transfer_service_server_create_object_with_type_uuid16(
     btstack_utc_t * first_created, btstack_utc_t * last_modified);
 
 uint8_t object_transfer_service_server_set_current_object(hci_con_handle_t con_handle, ots_object_id_t * luid);
+uint8_t object_transfer_service_server_update_current_object_name(hci_con_handle_t con_handle, ots_object_id_t * luid, char * name);
 uint8_t object_transfer_service_server_reset_current_object(hci_con_handle_t con_handle);
+uint8_t object_transfer_service_server_update_current_object_filter(hci_con_handle_t con_handle, uint8_t filter_index, ots_filter_t * filter);
 
 /* API_END */
 
