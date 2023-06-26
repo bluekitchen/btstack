@@ -652,18 +652,22 @@ static int ots_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
         // handle long write
         switch (transaction_mode){
             case ATT_TRANSACTION_MODE_NONE:
-                if (buffer_size > strlen(connection->current_object->name)){
+                if (buffer_size > OTS_MAX_NAME_LENGHT){
                     return ATT_ERROR_RESPONSE_OTS_WRITE_REQUEST_REJECTED;
                 }
-                btstack_strcpy(&connection->current_object->name[0], buffer_size, (const char *)buffer);
+                btstack_strcpy(&connection->current_object->name[0], OTS_MAX_NAME_LENGHT, (const char *)buffer);
                 break;
 
             case ATT_TRANSACTION_MODE_ACTIVE:
-                if (total_value_len > strlen(connection->current_object->name)){
+                if (total_value_len >= (OTS_MAX_NAME_LENGHT - 1)){
                     ots_server_reset_current_object_name(connection);
                     return ATT_ERROR_RESPONSE_OTS_WRITE_REQUEST_REJECTED;
                 }
-                btstack_strcpy(&connection->current_object->name[offset], buffer_size, (const char *)buffer);
+                if (offset == 0){
+                    memset(connection->current_object->name, 0, OTS_MAX_NAME_LENGHT);
+                }
+                memcpy(&connection->current_object->name[offset], (const char *)buffer, buffer_size);
+                printf("name %s\n", connection->current_object->name);
                 return 0;
 
             case ATT_TRANSACTION_MODE_CANCEL:
@@ -733,9 +737,9 @@ static int ots_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
                                 ots_server_reset_long_write_filter(connection);
                                 return ATT_ERROR_RESPONSE_OTS_WRITE_REQUEST_REJECTED;
                             }
-                            
                             connection->temp_filter.data_size = buffer[1];
-                            if (connection->temp_filter.data_size > sizeof(connection->temp_filter.data)){
+                            
+                            if ( connection->temp_filter.data_size > sizeof(connection->temp_filter.data)){
                                 ots_server_reset_long_write_filter(connection);
                                 return ATT_ERROR_RESPONSE_OTS_WRITE_REQUEST_REJECTED;
                             }
@@ -743,7 +747,7 @@ static int ots_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
                             connection->filters[i].data_size = connection->temp_filter.data_size;
                             memcpy(connection->filters[i].data, &buffer[2], connection->temp_filter.data_size);
                         } else {
-                            memcpy(&connection->filters[i].data[offset], &buffer[offset], connection->temp_filter.data_size);
+                            memcpy(&connection->filters[i].data[offset], &buffer, buffer_size);
                         }
                         return 0;
 
@@ -984,6 +988,62 @@ uint8_t object_transfer_service_server_set_current_object(hci_con_handle_t con_h
     connection->current_object = object;
     connection->current_object_locked = false;
     connection->current_object_object_transfer_in_progress = false;    
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t object_transfer_service_server_update_current_object_name(hci_con_handle_t con_handle, ots_object_id_t * luid, char * name){
+    if (con_handle == HCI_CON_HANDLE_INVALID){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    ots_server_connection_t * connection = ots_server_find_or_add_connection_for_con_handle(con_handle);
+    if (connection == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+
+    ots_object_t * object = ots_server_find_object_for_luid(luid);
+    if (object == NULL){
+        return AVRCP_BROWSING_ERROR_CODE_INVALID_PARAMETER;
+    }
+    uint16_t name_length = strlen(name);
+    if (name_length > OTS_MAX_NAME_LENGHT){
+        return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+    }
+
+    btstack_strcpy(object->name, OTS_MAX_NAME_LENGHT, name);
+    connection->current_object = object;
+    connection->current_object_locked = false;
+    connection->current_object_object_transfer_in_progress = false;
+    printf("current object name %s\n", connection->current_object->name);    
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t object_transfer_service_server_update_current_object_filter(hci_con_handle_t con_handle, uint8_t filter_index, ots_filter_t * filter){
+    if (con_handle == HCI_CON_HANDLE_INVALID){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    ots_server_connection_t * connection = ots_server_find_or_add_connection_for_con_handle(con_handle);
+    if (connection == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+
+    if (filter_index >= OTS_MAX_NUM_FILTERS){
+        return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+    }
+    if (filter->type >= OTS_FILTER_TYPE_RFU){
+        return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+    }
+
+    if (filter->data_size > OTS_MAX_NAME_LENGHT){
+        return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+    }
+
+    connection->filters[filter_index].type = filter->type;
+    connection->filters[filter_index].data_size = filter->data_size;
+
+    if (filter->data_size > 0){
+        memcpy(connection->filters[filter_index].data, filter->data, filter->data_size);
+    }
+     
     return ERROR_CODE_SUCCESS;
 }
 
