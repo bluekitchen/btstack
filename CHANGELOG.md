@@ -9,11 +9,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## Unreleased
 
 ### Added
+- L2CAP: additional authorization_required param in l2cap_ecbm_register_service  
 - GATT Client: support GATT over Enhanced LE Bearer
 - GATT Server: support GATT over Enhanced LE Bearer
 - LE Device DB: le_device_db_dump dumps LTK
 - Port for Zephyr 3.x
- 
 ### Fixed
 - HCI: fix remove le device from whitelist
 - HFP: use 'don't care' to accept SCO connections, fixes issue on ESP32

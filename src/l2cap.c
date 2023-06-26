@@ -5245,6 +5245,7 @@ uint8_t l2cap_cbm_register_service(btstack_packet_handler_t packet_handler, uint
     service->mtu = 0;
     service->packet_handler = packet_handler;
     service->required_security_level = security_level;
+    service->requires_authorization = false;
 
     // add to services list
     btstack_linked_list_add(&l2cap_le_services, (btstack_linked_item_t *) service);
@@ -5406,7 +5407,8 @@ uint8_t l2cap_cbm_provide_credits(uint16_t local_cid, uint16_t credits){
 
 #ifdef ENABLE_L2CAP_ENHANCED_CREDIT_BASED_FLOW_CONTROL_MODE
 
-uint8_t l2cap_ecbm_register_service(btstack_packet_handler_t packet_handler, uint16_t psm, uint16_t min_remote_mtu, gap_security_level_t security_level){
+uint8_t l2cap_ecbm_register_service(btstack_packet_handler_t packet_handler, uint16_t psm, uint16_t min_remote_mtu,
+                                    gap_security_level_t security_level, bool authorization_required) {
 
     // check for already registered psm
     l2cap_service_t *service = l2cap_cbm_get_service(psm);
@@ -5426,6 +5428,7 @@ uint8_t l2cap_ecbm_register_service(btstack_packet_handler_t packet_handler, uin
     service->mtu = min_remote_mtu;
     service->packet_handler = packet_handler;
     service->required_security_level = security_level;
+    service->requires_authorization = authorization_required;
 
     // add to services list
     btstack_linked_list_add(&l2cap_enhanced_services, (btstack_linked_item_t *) service);

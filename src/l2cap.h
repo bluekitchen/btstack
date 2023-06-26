@@ -418,6 +418,9 @@ typedef struct {
     // required security level
     gap_security_level_t required_security_level;
 
+    // requires authorization
+    bool requires_authorization;
+
 } l2cap_service_t;
 
 
@@ -709,9 +712,11 @@ uint8_t l2cap_cbm_provide_credits(uint16_t local_cid, uint16_t credits);
  * @param psm
  * @param min_remote_mtu
  * @param security_level
+ * @oaram authorization_required
  * @return status
  */
-uint8_t l2cap_ecbm_register_service(btstack_packet_handler_t packet_handler, uint16_t psm, uint16_t min_remote_mtu, gap_security_level_t security_level);
+uint8_t l2cap_ecbm_register_service(btstack_packet_handler_t packet_handler, uint16_t psm, uint16_t min_remote_mtu,
+                                    gap_security_level_t security_level, bool authorization_required);
 
 /**
  * @brief Unregister L2CAP service in Enhanced Credit-Based Flow-Control Mode
