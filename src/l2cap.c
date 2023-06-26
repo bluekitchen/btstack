@@ -1878,8 +1878,8 @@ static void l2cap_run_signaling_response(void) {
         uint8_t  sig_id        = l2cap_signaling_responses[0].sig_id;
         uint8_t  response_code = l2cap_signaling_responses[0].code;
         uint16_t result        = l2cap_signaling_responses[0].data;  // CONNECTION_REQUEST, COMMAND_REJECT, REJECT_SM_PAIRING, L2CAP_CREDIT_BASED_CONNECTION_REQUEST
-        uint8_t  buffer[2];                                          // REJECT_SM_PAIRING
-        uint16_t source_cid    = l2cap_signaling_responses[0].cid;   // CONNECTION_REQUEST, REJECT_SM_PAIRING
+        uint8_t  buffer[4];                                          // REJECT_SM_PAIRING
+        uint16_t source_cid    = l2cap_signaling_responses[0].cid;   // CONNECTION_REQUEST, REJECT_SM_PAIRING, DISCONNECT_REQUEST
 #ifdef ENABLE_CLASSIC
         uint16_t info_type     = l2cap_signaling_responses[0].data;  // INFORMATION_REQUEST
 #endif
@@ -1947,6 +1947,12 @@ static void l2cap_run_signaling_response(void) {
 #ifdef ENABLE_BLE
             case LE_CREDIT_BASED_CONNECTION_REQUEST:
                 l2cap_send_le_signaling_packet(handle, LE_CREDIT_BASED_CONNECTION_RESPONSE, sig_id, 0, 0, 0, 0, result);
+                break;
+            case DISCONNECTION_REQUEST:
+                // Invalid CID, local cid, remote cid
+                little_endian_store_16(buffer, 0, result);
+                little_endian_store_16(buffer, 2, source_cid);
+                l2cap_send_le_signaling_packet(handle, COMMAND_REJECT, sig_id, 0x0002, 4, buffer);
                 break;
             case COMMAND_REJECT_LE:
                 l2cap_send_le_signaling_packet(handle, COMMAND_REJECT, sig_id, result, 0, NULL);
@@ -4490,7 +4496,6 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
             return l2cap_credit_based_handle_credit_indication(handle, command, len) ? 1 : 0;
 
         case DISCONNECTION_REQUEST:
-
             // check size
             if (len < 4u) return 0u;
 
@@ -4498,7 +4503,8 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
             local_cid = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET + 0);
             channel = l2cap_get_channel_for_local_cid_and_handle(local_cid, handle);
             if (!channel) {
-                log_error("credit: no channel for cid 0x%02x", local_cid);
+                l2cap_register_signaling_response(handle, DISCONNECTION_REQUEST, sig_id,
+                                                  little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET + 2), local_cid);
                 break;
             }
             channel->remote_sig_id = sig_id;
