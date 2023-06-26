@@ -5438,7 +5438,7 @@ uint8_t l2cap_ecbm_register_service(btstack_packet_handler_t packet_handler, uin
                                     gap_security_level_t security_level, bool authorization_required) {
 
     // check for already registered psm
-    l2cap_service_t *service = l2cap_cbm_get_service(psm);
+    l2cap_service_t *service = l2cap_ecbm_get_service(psm);
     if (service) {
         return L2CAP_SERVICE_ALREADY_REGISTERED;
     }
@@ -5465,7 +5465,7 @@ uint8_t l2cap_ecbm_register_service(btstack_packet_handler_t packet_handler, uin
 }
 
 uint8_t l2cap_ecbm_unregister_service(uint16_t psm) {
-    l2cap_service_t *service = l2cap_cbm_get_service(psm);
+    l2cap_service_t *service = l2cap_ecbm_get_service(psm);
     if (!service) return L2CAP_SERVICE_DOES_NOT_EXIST;
 
     btstack_linked_list_remove(&l2cap_enhanced_services, (btstack_linked_item_t *) service);
