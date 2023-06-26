@@ -105,7 +105,10 @@ static void setup_advertising(void);
 static oacp_result_code_t ots_server_operation_create(hci_con_handle_t con_handle, uint32_t object_size, uint8_t gatt_uuid_size, uint8_t * gatt_uuid);
 
 #define OTS_SERVER_MAX_NUM_CLIENTS 3
-static  ots_server_connection_t ots_server_connections[OTS_SERVER_MAX_NUM_CLIENTS];
+#define OTS_SERVER_MAX_NUM_OBJECTS 100
+
+static  ots_server_connection_t ots_server_connections_storage[OTS_SERVER_MAX_NUM_CLIENTS];
+static  ots_object_t ots_server_objects_storage[OTS_SERVER_MAX_NUM_OBJECTS];
 
 static const ots_operations_t ots_server_operations_impl = {
     .create = &ots_server_operation_create,
@@ -590,6 +593,11 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     
                     gap_advertisements_set_data(adv_data_len, (uint8_t*) adv_data);
                     gap_advertisements_enable(1);
+
+                    mcs_track_t * track = mcs_get_current_track_for_media_player_id(current_media_player_id);
+                    if (track != NULL){
+                        object_transfer_service_server_update_current_object_name(bap_app_server_con_handle, &track->object_id, long_string1);
+                    }
                     break;
                 default:
                     return;
@@ -1195,7 +1203,8 @@ static void stdin_process(char cmd){
     
     mcs_media_player_t * media_player = mcs_get_media_player_for_id(current_media_player_id);
     btstack_assert(media_player != NULL);
-
+    ots_filter_t filter;
+            
     switch (cmd){
         case '0':
             printf(" - Set INACTIVE state\n");
@@ -1267,11 +1276,32 @@ static void stdin_process(char cmd){
             break;
         case 'k':
             status = media_control_service_server_set_track_title(current_media_player_id, long_string1);
+            if (status == ERROR_CODE_SUCCESS){
+                mcs_track_t * track = mcs_get_current_track_for_media_player_id(current_media_player_id);
+                if (track != NULL){
+                    status = object_transfer_service_server_update_current_object_name(bap_app_server_con_handle, &track->object_id, track->title);
+                }
+            }
             break;
         case 'K':
             status = media_control_service_server_set_track_title(current_media_player_id, long_string2);
+            if (status == ERROR_CODE_SUCCESS){
+                mcs_track_t * track = mcs_get_current_track_for_media_player_id(current_media_player_id);
+                if (track != NULL){
+                    object_transfer_service_server_update_current_object_name(bap_app_server_con_handle, &track->object_id, track->title);
+                }
+            }
             break;
         
+        case '7':
+            printf("set long filter\n");
+            filter.type = OTS_FILTER_TYPE_NAME_STARTS_WITH;
+            filter.data_size = strlen(long_string2) - 10;
+            memcpy(filter.data, (uint8_t *)long_string2, filter.data_size - 1);
+            filter.data[filter.data_size] = '0';
+            object_transfer_service_server_update_current_object_filter(bap_app_server_con_handle, 0, &filter);
+            break;
+
         case '\n':
         case '\r':
             break;
@@ -1303,10 +1333,6 @@ int btstack_main(void)
     sm_allow_ltk_reconstruction_without_le_device_db_entry(0);
     // setup ATT server
     att_server_init(profile_data, att_read_callback, att_write_callback);    
-
-    // setup OTS
-    object_transfer_service_server_init(0x3FF, 0x0F, OTS_SERVER_MAX_NUM_CLIENTS, ots_server_connections, &ots_server_operations_impl);
-    object_transfer_service_server_register_packet_handler(&ots_server_packet_handler);
 
     // setup MCS
     media_control_service_server_init();
@@ -1345,7 +1371,40 @@ int btstack_main(void)
 
     current_media_player_id = media_player1.id;
     mcs_seeking_speed_timer_start(current_media_player_id);
+    
+        // setup OTS
+    object_transfer_service_server_init(0x3FF, 0x0F, 
+        OTS_SERVER_MAX_NUM_CLIENTS, ots_server_connections_storage, 
+        OTS_SERVER_MAX_NUM_OBJECTS, ots_server_objects_storage,
+        &ots_server_operations_impl);
+    object_transfer_service_server_register_packet_handler(&ots_server_packet_handler);
 
+
+    mcs_media_player_t * current_media_player = &media_player1;
+    uint16_t i;
+    for (i = 0; i <  current_media_player->track_groups_num; i++){
+        mcs_track_group_t * track_group = &current_media_player->track_groups[i];
+        
+        uint16_t j;
+        for (j = 0; j < track_group->tracks_num; j++){
+            mcs_track_t * track = &track_group->tracks[j];
+            
+            btstack_utc_t first_created = {2023, 6, 22, 10, 59, 00};
+            btstack_utc_t last_modified = {2023, 6, 22, 10, 59, 00};
+            uint32_t properties = 0xFF;
+            uint16_t type_uuid16 = 0x2ACA; // unspecified
+
+            object_transfer_service_server_create_object_with_type_uuid16(
+                &track->object_id,
+                track->title,
+                properties,
+                type_uuid16,
+                sizeof(mcs_track_t), 
+                &first_created, 
+                &last_modified);
+
+        }
+    }
     // register for HCI events
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
