@@ -234,6 +234,7 @@ EXAMPLES_LE_ONLY=           		\
 	hog_host_demo      		        \
 	hog_keyboard_demo       		\
 	hog_mouse_demo          		\
+	hog_mouse_kbd_joystick  		\
 	le_credit_based_flow_control_mode_client  		\
 	le_credit_based_flow_control_mode_server  		\
 	le_mitm                 		\
@@ -265,6 +266,7 @@ EXAMPLES_GATT_FILES =           		\
 	gatt_streamer_server.gatt   		\
 	hog_keyboard_demo.gatt      		\
 	hog_mouse_demo.gatt         		\
+	hog_mouse_kbd_joystick.gatt  		\
 	le_credit_based_flow_control_mode_server.gatt 		\
 	nordic_spp_le_counter.gatt  		\
 	nordic_spp_le_streamer.gatt 		\
@@ -339,6 +341,12 @@ hog_mouse_demo.o: hog_mouse_demo.h hog_mouse_demo.c
 	${CC} ${CFLAGS} -c $(filter-out hog_mouse_demo.h,$^) -o $@
 
 hog_mouse_demo: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} battery_service_server.o device_information_service_server.o hids_device.o hog_mouse_demo.o
+	${CC} $^ ${LDFLAGS} -o $@
+
+hog_mouse_kbd_joystick.o: hog_mouse_kbd_joystick.h hog_mouse_kbd_joystick.c
+	${CC} ${CFLAGS} -c $(filter-out hog_mouse_kbd_joystick.h,$^) -o $@
+
+hog_mouse_kbd_joystick: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} battery_service_server.o device_information_service_server.o hids_device.o hog_mouse_kbd_joystick.o
 	${CC} $^ ${LDFLAGS} -o $@
 
 

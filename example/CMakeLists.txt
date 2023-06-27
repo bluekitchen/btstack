@@ -52,6 +52,7 @@ set(EXAMPLES_LE_ONLY
 	hog_host_demo
 	hog_keyboard_demo      
 	hog_mouse_demo
+	hog_mouse_kbd_joystick
 	le_credit_based_flow_control_mode_client 
 	le_credit_based_flow_control_mode_server 
 	le_mitm
@@ -85,6 +86,7 @@ set(EXAMPLES_GATT_FILES
 	gatt_streamer_server.gatt  
 	hog_keyboard_demo.gatt     
 	hog_mouse_demo.gatt
+	hog_mouse_kbd_joystick.gatt
 	le_credit_based_flow_control_mode_server.gatt
 	nordic_spp_le_counter.gatt 
 	nordic_spp_le_streamer.gatt

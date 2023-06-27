@@ -49,6 +49,8 @@ hog_keyboard_demo
 hog_keyboard_demo.h
 hog_mouse_demo
 hog_mouse_demo.h
+hog_mouse_kbd_joystick
+hog_mouse_kbd_joystick.h
 hsp_ag_demo
 hsp_hs_demo
 l2cap_test
