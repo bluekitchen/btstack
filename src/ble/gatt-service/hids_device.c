@@ -354,30 +354,40 @@ void hids_device_init_with_storage(uint8_t hid_country_code, const uint8_t * hid
     uint16_t start_chr_handle = start_handle;
     
     while ( (start_chr_handle < end_handle) && (assigned_reports_num < hid_reports_num)) {
+        // mandatory
         uint16_t chr_value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(start_chr_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_REPORT);
         if (chr_value_handle == 0){
             break;
         }
 
+        // optional
         uint16_t chr_client_configuration_handle = gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(start_chr_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_REPORT);
+
+        // mandatory
         uint16_t report_reference_handle = gatt_server_get_descriptor_handle_for_characteristic_with_uuid16(start_chr_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_REPORT, ORG_BLUETOOTH_DESCRIPTOR_REPORT_REFERENCE);
+        if (report_reference_handle == 0){
+            break;
+        }
+
+        // get report id and type from report reference
         uint16_t report_reference_value_len;
         const uint8_t * report_reference_value = gatt_server_get_const_value_for_handle(report_reference_handle, &report_reference_value_len);
-
         if (report_reference_value == NULL){
             break;
         }
         if (report_reference_value_len != 2){
             break;
         }
+        uint8_t report_id = report_reference_value[0];
+        hid_report_type_t report_type = (hid_report_type_t) report_reference_value[1];
 
+        // store report info
         hids_device_report_t * report = &report_storage[assigned_reports_num];
         report->value_handle = chr_value_handle;
         report->client_configuration_handle = chr_client_configuration_handle;
         report->client_configuration_value = 0;
-
-        report->id = report_reference_value[0];
-        report->type = (hid_report_type_t)report_reference_value[1];
+        report->id   = report_id;
+        report->type = report_type;
         
         switch (report->type){
             case HID_REPORT_TYPE_INPUT:
@@ -394,10 +404,12 @@ void hids_device_init_with_storage(uint8_t hid_country_code, const uint8_t * hid
                 return;
         }
         log_info("hid_report_value_handle                       0x%02x, id %u, type %u", report->value_handle, report->id, (uint8_t)report->type);
-        log_info("hid_report_client_configuration_handle        0x%02x", report->client_configuration_handle);
+        if (report->client_configuration_handle != 0){
+            log_info("hid_report_client_configuration_handle        0x%02x", report->client_configuration_handle);
+        }
         
         assigned_reports_num++;
-        start_chr_handle = chr_client_configuration_handle + 1;
+        start_chr_handle = report_reference_handle + 1;
     }
  
     // register service with ATT Server
