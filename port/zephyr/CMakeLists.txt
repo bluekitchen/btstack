@@ -36,9 +36,6 @@ list(APPEND INCLUDES_PATH 3rd-party/rijndael)
 list(APPEND INCLUDES_PATH 3rd-party/yxml)
 list(APPEND INCLUDES_PATH 3rd-party/tinydir)
 list(APPEND INCLUDES_PATH src)
-#list(APPEND INCLUDES_PATH chipset/realtek)
-#list(APPEND INCLUDES_PATH chipset/zephyr)
-#list(APPEND INCLUDES_PATH platform/posix)
 list(APPEND INCLUDES_PATH platform/embedded)
 list(APPEND INCLUDES_PATH platform/lwip)
 list(APPEND INCLUDES_PATH platform/lwip/port)
@@ -47,8 +44,6 @@ list(APPEND INCLUDES_PATH . )
 include_directories( ${INCLUDES_PATH} )
 
 file(GLOB SOURCES_SRC       "${BTSTACK_ROOT}/src/*.c" ) #"${BTSTACK_ROOT}/example/sco_demo_util.c")
-
-#message("${SOURCES_SRC}")
 
 file(GLOB SOURCES_BLE       "${BTSTACK_ROOT}/src/ble/*.c")
 file(GLOB SOURCES_GATT      "${BTSTACK_ROOT}/src/ble/gatt-service/*.c")
@@ -61,10 +56,7 @@ file(GLOB SOURCES_YXML      "${BTSTACK_ROOT}/3rd-party/yxml/yxml.c")
 file(GLOB SOURCES_HXCMOD    "${BTSTACK_ROOT}/3rd-party/hxcmod-player/*.c"  "../../3rd-party/hxcmod-player/mods/*.c")
 file(GLOB SOURCES_RIJNDAEL  "${BTSTACK_ROOT}/3rd-party/rijndael/rijndael.c")
 file(GLOB SOURCES_EMBEDDED   "${BTSTACK_ROOT}/platform/embedded/*.c")
-#file(GLOB SOURCES_ZEPHYR    "${CMAKE_SOURCE_DIR}/src/main.c")
-#file(GLOB SOURCES_ZEPHYR    "${BTSTACK_ROOT}/chipset/zephyr/*.c")
-#file(GLOB SOURCES_REALTEK   "${BTSTACK_ROOT}/chipset/realtek/*.c")
-#file(GLOB SOURCES_LC3_GOOGLE "${BTSTACK_ROOT}/3rd-party/lc3-google/src/*.c")
+file(GLOB SOURCES_LC3_GOOGLE "${BTSTACK_ROOT}/3rd-party/lc3-google/src/*.c")
 
 set(LWIP_CORE_SRC
 	3rd-party/lwip/core/src/core/def.c
@@ -125,12 +117,7 @@ set(SOURCES
 	${SOURCES_SRC}
 	${SOURCES_BLE}
 	${SOURCES_GATT}
-    #	${SOURCES_MESH}
-    #   ${SOURCES_CLASSIC}
 	${SOURCES_UECC}
-    #	${SOURCES_HXCMOD}
-    #	${SOURCES_REALTEK}
-    #	${SOURCES_ZEPHYR}
 )
 list(SORT SOURCES)
 
@@ -162,6 +149,7 @@ string( REGEX REPLACE "\\$<TARGET_PROPERTY:compiler,imacros>\\$<SEMICOLON>([^\\$
      _all_options ${external_project_cflags} )
 
 target_compile_options( btstack PUBLIC ${_all_options})
+target_compile_options( btstack PUBLIC -std=c11 )
 
 set(EXAMPLES "gatt_counter" )
 if(DEFINED ENV{EXAMPLE})
@@ -206,8 +194,6 @@ foreach(EXAMPLE ${EXAMPLES})
 	else()
 		message("example ${EXAMPLE}")
 	endif()
-    #	add_executable(${EXAMPLE} ${SOURCES_EXAMPLE} )
     target_sources( app PRIVATE ${SOURCES_EXAMPLE} )
-    #    target_link_libraries(${EXAMPLE} btstack)
     target_link_libraries( app PRIVATE btstack )
 endforeach(EXAMPLE)

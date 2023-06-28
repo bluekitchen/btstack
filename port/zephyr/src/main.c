@@ -227,7 +227,7 @@ void bt_ctlr_assert_handle(char *file, uint32_t line)
 }
 #endif /* CONFIG_BT_CTLR_ASSERT_HANDLER */
 
-void main(void)
+int main(void)
 {
 	// configure console UART by replacing CONFIG_UART_NRF5_BAUD_RATE with 115200 in uart_console.c
 
@@ -268,4 +268,5 @@ void main(void)
     btstack_run_loop_execute();
 
     while (1){};
+    return 0;
 }
