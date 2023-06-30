@@ -504,7 +504,12 @@ typedef struct {
     btstack_linked_list_t   indication_requests;
 
 #if defined(ENABLE_GATT_OVER_CLASSIC) || defined(ENABLE_GATT_OVER_EATT)
+    // unified (client + server) att bearer
     uint16_t                l2cap_cid;
+    bool                    send_requests[2];
+    bool                    outgoing_connection_active;
+    bool                    incoming_connection_request;
+    bool                    eatt_outgoing_active;
 #endif
 
     uint16_t                request_size;
