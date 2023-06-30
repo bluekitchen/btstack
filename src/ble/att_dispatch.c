@@ -128,12 +128,16 @@ void att_dispatch_register_server(btstack_packet_handler_t packet_handler){
     l2cap_register_fixed_channel(att_packet_handler, L2CAP_CID_ATTRIBUTE_PROTOCOL);
 }
 
-bool att_dispatch_client_can_send_now(hci_con_handle_t con_handle){
+static bool att_dispatch_can_send_now(hci_con_handle_t con_handle) {
     return l2cap_can_send_fixed_channel_packet_now(con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL);
 }
 
+bool att_dispatch_client_can_send_now(hci_con_handle_t con_handle){
+    return att_dispatch_can_send_now(con_handle);
+}
+
 bool att_dispatch_server_can_send_now(hci_con_handle_t con_handle){
-    return l2cap_can_send_fixed_channel_packet_now(con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL);
+    return att_dispatch_can_send_now(con_handle);
 }
 
 void att_dispatch_client_request_can_send_now_event(hci_con_handle_t con_handle){
