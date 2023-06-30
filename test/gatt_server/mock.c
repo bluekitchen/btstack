@@ -299,7 +299,7 @@ void att_dispatch_register_server(btstack_packet_handler_t packet_handler){
     att_server_packet_handler = packet_handler;
 }
 
-int att_dispatch_server_can_send_now(hci_con_handle_t con_handle){
+bool att_dispatch_server_can_send_now(hci_con_handle_t con_handle){
     UNUSED(con_handle);
     return l2cap_can_send_fixed_channel_packet_now_status;
 }

@@ -68,13 +68,13 @@ void att_dispatch_register_server(btstack_packet_handler_t packet_handler);
  * @brief can send packet for client
  * @param con_handle
  */
-int att_dispatch_client_can_send_now(hci_con_handle_t con_handle);
+bool att_dispatch_client_can_send_now(hci_con_handle_t con_handle);
 
 /**
  * @brief can send packet for server
  * @param con_handle
  */
-int att_dispatch_server_can_send_now(hci_con_handle_t con_handle);
+bool att_dispatch_server_can_send_now(hci_con_handle_t con_handle);
 
 /** 
  * @brief Request emission of L2CAP_EVENT_CAN_SEND_NOW as soon as possible for client
