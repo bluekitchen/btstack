@@ -46,6 +46,7 @@
 #include "ble/core.h"
 #include "btstack_debug.h"
 #include "l2cap.h"
+#include "btstack_event.h"
 
 #define ATT_SERVER 0u
 #define ATT_CLIENT 1u
@@ -82,29 +83,34 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
             subscriptions[index].packet_handler(packet_type, handle, packet, size);
             break;
         case HCI_EVENT_PACKET:
-            if (packet[0] != L2CAP_EVENT_CAN_SEND_NOW) break;
-            can_send_now_pending = false;
-            for (i = 0u; i < ATT_MAX; i++){
-                index = (att_round_robin + i) & 1u;
-                if ( (subscriptions[index].packet_handler != NULL) && subscriptions[index].waiting_for_can_send){
-                    subscriptions[index].waiting_for_can_send = false;
-                    subscriptions[index].packet_handler(packet_type, handle, packet, size);
-                    // fairness: prioritize next service
-                    att_round_robin = (index + 1u) % ATT_MAX;
-                    // stop if client cannot send anymore
-                    if (!hci_can_send_acl_le_packet_now()) break;
-                }
-            }
-            // check if more can send now events are needed
-            if (!can_send_now_pending){
-                for (i = 0u; i < ATT_MAX; i++){
-                    if ((subscriptions[i].packet_handler != NULL) && subscriptions[i].waiting_for_can_send){
-                        can_send_now_pending = true;        
-                        // note: con_handle is not used, so we can pass in anything
-                        l2cap_request_can_send_fix_channel_now_event(0, L2CAP_CID_ATTRIBUTE_PROTOCOL);
-                        break;
+            switch (hci_event_packet_get_type(packet)) {
+                case L2CAP_EVENT_CAN_SEND_NOW:
+                    can_send_now_pending = false;
+                    for (i = 0u; i < ATT_MAX; i++){
+                        index = (att_round_robin + i) & 1u;
+                        if ( (subscriptions[index].packet_handler != NULL) && subscriptions[index].waiting_for_can_send){
+                            subscriptions[index].waiting_for_can_send = false;
+                            subscriptions[index].packet_handler(packet_type, handle, packet, size);
+                            // fairness: prioritize next service
+                            att_round_robin = (index + 1u) % ATT_MAX;
+                            // stop if client cannot send anymore
+                            if (!hci_can_send_acl_le_packet_now()) break;
+                        }
                     }
-                }
+                    // check if more can send now events are needed
+                    if (!can_send_now_pending){
+                        for (i = 0u; i < ATT_MAX; i++){
+                            if ((subscriptions[i].packet_handler != NULL) && subscriptions[i].waiting_for_can_send){
+                                can_send_now_pending = true;
+                                // note: con_handle is not used, so we can pass in anything
+                                l2cap_request_can_send_fix_channel_now_event(0, L2CAP_CID_ATTRIBUTE_PROTOCOL);
+                                break;
+                            }
+                        }
+                    }
+                    break;
+                default:
+                    break;
             }
             break;
         default:
