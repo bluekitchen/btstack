@@ -129,6 +129,16 @@ void att_dispatch_register_server(btstack_packet_handler_t packet_handler){
 }
 
 static bool att_dispatch_can_send_now(hci_con_handle_t con_handle) {
+#ifdef ENABLE_GATT_OVER_CLASSIC
+    // get l2cap_cid from att_server in hci_connection
+    hci_connection_t * hci_connection = hci_connection_for_handle(con_handle);
+    if (hci_connection != NULL){
+        uint16_t l2cap_cid = hci_connection->att_server.l2cap_cid;
+        if (l2cap_cid != 0){
+            return l2cap_can_send_packet_now(l2cap_cid);
+        }
+    }
+#endif
     return l2cap_can_send_fixed_channel_packet_now(con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL);
 }
 
