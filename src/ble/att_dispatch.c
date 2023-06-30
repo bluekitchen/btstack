@@ -150,20 +150,20 @@ bool att_dispatch_server_can_send_now(hci_con_handle_t con_handle){
     return att_dispatch_can_send_now(con_handle);
 }
 
-void att_dispatch_client_request_can_send_now_event(hci_con_handle_t con_handle){
-    subscriptions[ATT_CLIENT].waiting_for_can_send = true;
-    if (!can_send_now_pending){
-        can_send_now_pending = true;        
+static void att_dispatch_request_can_send_now_event(hci_con_handle_t con_handle, uint8_t type) {
+    subscriptions[type].waiting_for_can_send = true;
+    if (!can_send_now_pending) {
+        can_send_now_pending = true;
         l2cap_request_can_send_fix_channel_now_event(con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL);
     }
 }
 
+void att_dispatch_client_request_can_send_now_event(hci_con_handle_t con_handle){
+    att_dispatch_request_can_send_now_event(con_handle, ATT_CLIENT);
+}
+
 void att_dispatch_server_request_can_send_now_event(hci_con_handle_t con_handle){
-    subscriptions[ATT_SERVER].waiting_for_can_send = true;
-    if (!can_send_now_pending){
-        can_send_now_pending = true;        
-        l2cap_request_can_send_fix_channel_now_event(con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL);
-    }
+    att_dispatch_request_can_send_now_event(con_handle, ATT_SERVER);
 }
 
 static void emit_mtu_exchange_complete(btstack_packet_handler_t packet_handler, hci_con_handle_t con_handle, uint16_t new_mtu){
