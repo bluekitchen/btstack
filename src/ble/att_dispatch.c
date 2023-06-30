@@ -112,46 +112,24 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
     }
 }
 
-/**
- * @brief reset att dispatchter
- * @param packet_hander for ATT client packets
- */
 void att_dispatch_register_client(btstack_packet_handler_t packet_handler){
     subscriptions[ATT_CLIENT].packet_handler = packet_handler;
     l2cap_register_fixed_channel(att_packet_handler, L2CAP_CID_ATTRIBUTE_PROTOCOL);
 }
 
-/**
- * @brief reset att dispatchter
- * @param packet_hander for ATT server packets
- */
 void att_dispatch_register_server(btstack_packet_handler_t packet_handler){
     subscriptions[ATT_SERVER].packet_handler = packet_handler;
     l2cap_register_fixed_channel(att_packet_handler, L2CAP_CID_ATTRIBUTE_PROTOCOL);
 }
 
-/**
- * @brief can send packet for client
- * @param handle
- */
 int att_dispatch_client_can_send_now(hci_con_handle_t con_handle){
     return l2cap_can_send_fixed_channel_packet_now(con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL);
 }
 
-/**
- * @brief can send packet for server
- * @param handle
- */
 int att_dispatch_server_can_send_now(hci_con_handle_t con_handle){
     return l2cap_can_send_fixed_channel_packet_now(con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL);
 }
 
-/** 
- * @brief Request emission of L2CAP_EVENT_CAN_SEND_NOW as soon as possible for client
- * @note L2CAP_EVENT_CAN_SEND_NOW might be emitted during call to this function
- *       so packet handler should be ready to handle it
- * @param con_handle
- */
 void att_dispatch_client_request_can_send_now_event(hci_con_handle_t con_handle){
     subscriptions[ATT_CLIENT].waiting_for_can_send = true;
     if (!can_send_now_pending){
@@ -160,12 +138,6 @@ void att_dispatch_client_request_can_send_now_event(hci_con_handle_t con_handle)
     }
 }
 
-/** 
- * @brief Request emission of L2CAP_EVENT_CAN_SEND_NOW as soon as possible for server
- * @note L2CAP_EVENT_CAN_SEND_NOW might be emitted during call to this function
- *       so packet handler should be ready to handle it
- * @param con_handle
- */
 void att_dispatch_server_request_can_send_now_event(hci_con_handle_t con_handle){
     subscriptions[ATT_SERVER].waiting_for_can_send = true;
     if (!can_send_now_pending){

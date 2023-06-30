@@ -53,14 +53,14 @@ extern "C" {
 #endif
 
 /**
- * @brief reset att dispatchter
- * @param packet_hander for ATT client packets
+ * @brief Register packet handler for ATT Client PDUs
+ * @param packet_handler
  */
 void att_dispatch_register_client(btstack_packet_handler_t packet_handler);
 
 /**
- * @brief reset att dispatchter
- * @param packet_hander for ATT server packets
+ * @brief Register packet handler for ATT Server PDUs
+ * @param packet_handler
  */
 void att_dispatch_register_server(btstack_packet_handler_t packet_handler);
 
