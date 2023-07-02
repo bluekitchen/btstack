@@ -157,17 +157,14 @@ static bool att_server_connections_for_state(att_server_state_t state, att_serve
 static void att_server_request_can_send_now(att_server_t * att_server, att_connection_t * att_connection ){
     switch (att_server->bearer_type){
         case ATT_BEARER_UNENHANCED_LE:
-            att_dispatch_server_request_can_send_now_event(att_connection->con_handle);
-            break;
-#if defined (ENABLE_GATT_OVER_CLASSIC) || defined (ENABLE_GATT_OVER_EATT)
 #ifdef ENABLE_GATT_OVER_CLASSIC
         case ATT_BEARER_UNENHANCED_CLASSIC:
             /* fall through */
 #endif
+            att_dispatch_server_request_can_send_now_event(att_connection->con_handle);
+            break;
 #ifdef ENABLE_GATT_OVER_EATT
         case ATT_BEARER_ENHANCED_LE:
-            /* fall through */
-#endif
             l2cap_request_can_send_now_event(att_server->l2cap_cid);
             break;
 #endif
@@ -180,15 +177,13 @@ static void att_server_request_can_send_now(att_server_t * att_server, att_conne
 static bool att_server_can_send_packet(att_server_t * att_server, att_connection_t * att_connection){
     switch (att_server->bearer_type) {
         case ATT_BEARER_UNENHANCED_LE:
-            return att_dispatch_server_can_send_now(att_connection->con_handle) != 0;
-#if defined (ENABLE_GATT_OVER_CLASSIC) || defined (ENABLE_GATT_OVER_EATT)
 #ifdef ENABLE_GATT_OVER_CLASSIC
         case ATT_BEARER_UNENHANCED_CLASSIC:
             /* fall through */
 #endif
+            return att_dispatch_server_can_send_now(att_connection->con_handle);
 #ifdef ENABLE_GATT_OVER_EATT
         case ATT_BEARER_ENHANCED_LE:
-#endif
             return l2cap_can_send_packet_now(att_server->l2cap_cid);
 #endif
         default:
