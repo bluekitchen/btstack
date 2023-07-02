@@ -78,6 +78,12 @@ static void gatt_client_report_error_if_pending(gatt_client_t *gatt_client, uint
 static void att_signed_write_handle_cmac_result(uint8_t hash[8]);
 #endif
 
+#ifdef ENABLE_GATT_OVER_CLASSIC
+static gatt_client_t * gatt_client_get_context_for_l2cap_cid(uint16_t l2cap_cid);
+static void gatt_client_classic_handle_connected(gatt_client_t * gatt_client, uint8_t status);
+static void gatt_client_classic_handle_disconnected(gatt_client_t * gatt_client);
+#endif
+
 #ifdef ENABLE_GATT_OVER_EATT
 static bool gatt_client_le_enhanced_handle_can_send_query(gatt_client_t * gatt_client);
 #endif
@@ -2101,42 +2107,76 @@ static void gatt_client_handle_att_response(gatt_client_t * gatt_client, uint8_t
 
 static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size) {
     gatt_client_t *gatt_client;
+    hci_connection_t * hci_connection;
+    uint8_t status;
     if (size < 1u) return;
+    switch (packet_type){
+        case HCI_EVENT_PACKET:
+            switch (hci_event_packet_get_type(packet)) {
+#ifdef ENABLE_GATT_OVER_CLASSIC
+                case L2CAP_EVENT_CHANNEL_OPENED:
+                    status = l2cap_event_channel_opened_get_status(packet);
+                    gatt_client = gatt_client_get_context_for_l2cap_cid(l2cap_event_channel_opened_get_local_cid(packet));
+                    btstack_assert(gatt_client != NULL);
+                    // if status != 0, gatt_client will be discarded
+                    gatt_client->gatt_client_state = P_READY;
+                    gatt_client->con_handle = l2cap_event_channel_opened_get_handle(packet);
+                    gatt_client->mtu = l2cap_event_channel_opened_get_remote_mtu(packet);
+                    gatt_client_classic_handle_connected(gatt_client, status);
+                    break;
+                case L2CAP_EVENT_CHANNEL_CLOSED:
+                    gatt_client = gatt_client_get_context_for_l2cap_cid(l2cap_event_channel_closed_get_local_cid(packet));
+                    // clear l2cap cid in hci_connection->att_server
+                    hci_connection = hci_connection_for_handle(gatt_client->con_handle);
+                    hci_connection->att_server.l2cap_cid = 0;
+                    // discard gatt client object
+                    gatt_client_classic_handle_disconnected(gatt_client);
+                    break;
+#endif
+                case L2CAP_EVENT_CAN_SEND_NOW:
+                    gatt_client_run();
+                    break;
+                    // att_server has negotiated the mtu for this connection, cache if context exists
+                case ATT_EVENT_MTU_EXCHANGE_COMPLETE:
+                    if (size < 6u) break;
+                    gatt_client = gatt_client_get_context_for_handle(handle);
+                    if (gatt_client == NULL) break;
+                    gatt_client->mtu = little_endian_read_16(packet, 4);
+                    break;
+                default:
+                    break;
+            }
+            break;
 
-    if (packet_type == HCI_EVENT_PACKET) {
-        switch (packet[0]) {
-            case L2CAP_EVENT_CAN_SEND_NOW:
+        case ATT_DATA_PACKET:
+            // special cases: notifications & indications motivate creating context
+            switch (packet[0]) {
+                case ATT_HANDLE_VALUE_NOTIFICATION:
+                case ATT_HANDLE_VALUE_INDICATION:
+                    gatt_client_provide_context_for_handle(handle, &gatt_client);
+                    break;
+                default:
+                    gatt_client = gatt_client_get_context_for_handle(handle);
+                    break;
+            }
+
+            if (gatt_client != NULL) {
+                gatt_client_handle_att_response(gatt_client, packet, size);
                 gatt_client_run();
-                break;
-                // att_server has negotiated the mtu for this connection, cache if context exists
-            case ATT_EVENT_MTU_EXCHANGE_COMPLETE:
-                if (size < 6u) break;
-                gatt_client = gatt_client_get_context_for_handle(handle);
-                if (gatt_client == NULL) break;
-                gatt_client->mtu = little_endian_read_16(packet, 4);
-                break;
-            default:
-                break;
-        }
-        return;
-    }
-
-    if (packet_type != ATT_DATA_PACKET) return;
-
-    // special cases: notifications & indications motivate creating context
-    switch (packet[0]) {
-        case ATT_HANDLE_VALUE_NOTIFICATION:
-        case ATT_HANDLE_VALUE_INDICATION:
-            gatt_client_provide_context_for_handle(handle, &gatt_client);
+            }
             break;
+
+#ifdef ENABLE_GATT_OVER_CLASSIC
+        case L2CAP_DATA_PACKET:
+            gatt_client = gatt_client_get_context_for_l2cap_cid(handle);
+            btstack_assert(gatt_client != NULL);
+            gatt_client_handle_att_response(gatt_client, packet, size);
+            gatt_client_run();
+            break;
+#endif
+
         default:
-            gatt_client = gatt_client_get_context_for_handle(handle);
             break;
-    }
-
-    if (gatt_client != NULL) {
-        gatt_client_handle_att_response(gatt_client, packet, size);
-        gatt_client_run();
     }
 }
 
@@ -2867,46 +2907,6 @@ static void gatt_client_classic_handle_disconnected(gatt_client_t * gatt_client)
     (*callback)(HCI_EVENT_PACKET, 0, buffer, len);
 }
 
-static void gatt_client_l2cap_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    gatt_client_t * gatt_client = NULL;
-    uint8_t status;
-    hci_connection_t * hci_connection;
-    switch (packet_type){
-        case HCI_EVENT_PACKET:
-            switch (hci_event_packet_get_type(packet)) {
-                case L2CAP_EVENT_CHANNEL_OPENED:
-                    status = l2cap_event_channel_opened_get_status(packet);
-                    gatt_client = gatt_client_get_context_for_l2cap_cid(l2cap_event_channel_opened_get_local_cid(packet));
-                    btstack_assert(gatt_client != NULL);
-                    // if status != 0, gatt_client will be discarded
-                    gatt_client->gatt_client_state = P_READY;
-                    gatt_client->con_handle = l2cap_event_channel_opened_get_handle(packet);
-                    gatt_client->mtu = l2cap_event_channel_opened_get_remote_mtu(packet);
-                    gatt_client_classic_handle_connected(gatt_client, status);
-                    break;
-                case L2CAP_EVENT_CHANNEL_CLOSED:
-                    gatt_client = gatt_client_get_context_for_l2cap_cid(l2cap_event_channel_closed_get_local_cid(packet));
-                    // clear l2cap cid in hci_connection->att_server
-                    hci_connection = hci_connection_for_handle(gatt_client->con_handle);
-                    hci_connection->att_server.l2cap_cid = 0;
-                    // discard gatt client object
-                    gatt_client_classic_handle_disconnected(gatt_client);
-                    break;
-                default:
-                    break;
-            }
-            break;
-        case L2CAP_DATA_PACKET:
-            gatt_client = gatt_client_get_context_for_l2cap_cid(channel);
-            btstack_assert(gatt_client != NULL);
-            gatt_client_handle_att_response(gatt_client, packet, size);
-            gatt_client_run();
-            break;
-        default:
-            break;
-    }
-}
-
 static void gatt_client_handle_sdp_client_query_attribute_value(gatt_client_t * connection, uint8_t *packet){
     des_iterator_t des_list_it;
     des_iterator_t prot_it;
@@ -2979,8 +2979,7 @@ static void gatt_client_classic_sdp_handler(uint8_t packet_type, uint16_t handle
     // done
     if (status == ERROR_CODE_SUCCESS){
         gatt_client->gatt_client_state = P_W4_L2CAP_CONNECTION;
-        status = l2cap_create_channel(gatt_client_l2cap_handler, gatt_client->addr, gatt_client->l2cap_psm, 0xffff,
-                             &gatt_client->l2cap_cid);
+        status = att_dispatch_classic_connect(gatt_client->addr, gatt_client->l2cap_psm, &gatt_client->l2cap_cid);
     }
     if (status != ERROR_CODE_SUCCESS) {
         gatt_client_classic_handle_connected(gatt_client, status);
