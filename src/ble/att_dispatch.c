@@ -160,8 +160,23 @@ bool att_dispatch_server_can_send_now(hci_con_handle_t con_handle){
 }
 
 static void att_dispatch_request_can_send_now_event(hci_con_handle_t con_handle, uint8_t type) {
+#ifdef ENABLE_GATT_OVER_CLASSIC
+    hci_connection_t * hci_connection = hci_connection_for_handle(con_handle);
+    if (hci_connection != NULL) {
+        att_server_t * att_server = &hci_connection->att_server;
+        if (att_server->l2cap_cid != 0){
+            bool send_request_pending = att_server->send_requests[ATT_CLIENT]
+                                     || att_server->send_requests[ATT_SERVER];
+            att_server->send_requests[type] = true;
+            if (send_request_pending == false){
+                l2cap_request_can_send_now_event(att_server->l2cap_cid);
+            }
+            return;
+        }
+    }
+#endif
     subscriptions[type].waiting_for_can_send = true;
-    if (!can_send_now_pending) {
+    if (can_send_now_pending == false) {
         can_send_now_pending = true;
         l2cap_request_can_send_fix_channel_now_event(con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL);
     }
