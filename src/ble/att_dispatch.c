@@ -270,4 +270,9 @@ void att_dispatch_client_mtu_exchanged(hci_con_handle_t con_handle, uint16_t new
 void att_dispatch_classic_register_service(void){
     l2cap_register_service(&att_packet_handler, PSM_ATT, 0xffff, gap_get_security_level());
 }
+uint8_t att_dispatch_classic_connect(bd_addr_t address, uint16_t l2cap_psm, uint16_t *out_cid) {
+    return  l2cap_create_channel(&att_packet_handler, address, l2cap_psm, 0xffff,
+                                                 out_cid);
+}
+
 #endif

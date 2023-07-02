@@ -71,6 +71,14 @@ void att_dispatch_register_server(btstack_packet_handler_t packet_handler);
 void att_dispatch_classic_register_service(void);
 
 /**
+ * @brief Create L2CAP ATT Connection
+ * @note ENABLE_GATT_OVER_CLASSIC
+ * @param address
+ * @param l2cap_psm
+ */
+uint8_t att_dispatch_classic_connect(bd_addr_t address, uint16_t l2cap_psm, uint16_t *out_cid);
+
+/**
  * @brief can send packet for client
  * @param con_handle
  */
