@@ -63,13 +63,41 @@ static uint8_t att_round_robin;
 // track can send now requests
 static bool can_send_now_pending;
 
-static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size){
-    uint8_t index;
+static void att_dispatch_handle_can_send_now(uint8_t *packet, uint16_t size){
     uint8_t i;
+    uint8_t index;
+    can_send_now_pending = false;
+    uint16_t l2cap_cid = l2cap_event_can_send_now_get_local_cid(packet);
+    for (i = 0u; i < ATT_MAX; i++){
+        index = (att_round_robin + i) & 1u;
+        if ( (subscriptions[index].packet_handler != NULL) && subscriptions[index].waiting_for_can_send){
+            subscriptions[index].waiting_for_can_send = false;
+            subscriptions[index].packet_handler(HCI_EVENT_PACKET, l2cap_cid, packet, size);
+            // fairness: prioritize next service
+            att_round_robin = (index + 1u) % ATT_MAX;
+            // stop if client cannot send anymore
+            if (!hci_can_send_acl_le_packet_now()) break;
+        }
+    }
+    // check if more can send now events are needed
+    if (!can_send_now_pending){
+        for (i = 0u; i < ATT_MAX; i++){
+            if ((subscriptions[i].packet_handler != NULL) && subscriptions[i].waiting_for_can_send){
+                can_send_now_pending = true;
+                // note: con_handle is not used, so we can pass in anything
+                l2cap_request_can_send_fix_channel_now_event(0, L2CAP_CID_ATTRIBUTE_PROTOCOL);
+                break;
+            }
+        }
+    }
+}
+
+static void att_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     uint8_t opcode;
     uint8_t method;
     bool for_server;
     bool invalid;
+    uint8_t index;
     switch (packet_type){
         case ATT_DATA_PACKET:
             // parse opcode
@@ -80,34 +108,12 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
             for_server = ((method & 1u) == 0u) || invalid;
             index = for_server ? ATT_SERVER : ATT_CLIENT;
             if (!subscriptions[index].packet_handler) return;
-            subscriptions[index].packet_handler(packet_type, handle, packet, size);
+            subscriptions[index].packet_handler(packet_type, channel, packet, size);
             break;
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)) {
                 case L2CAP_EVENT_CAN_SEND_NOW:
-                    can_send_now_pending = false;
-                    for (i = 0u; i < ATT_MAX; i++){
-                        index = (att_round_robin + i) & 1u;
-                        if ( (subscriptions[index].packet_handler != NULL) && subscriptions[index].waiting_for_can_send){
-                            subscriptions[index].waiting_for_can_send = false;
-                            subscriptions[index].packet_handler(packet_type, handle, packet, size);
-                            // fairness: prioritize next service
-                            att_round_robin = (index + 1u) % ATT_MAX;
-                            // stop if client cannot send anymore
-                            if (!hci_can_send_acl_le_packet_now()) break;
-                        }
-                    }
-                    // check if more can send now events are needed
-                    if (!can_send_now_pending){
-                        for (i = 0u; i < ATT_MAX; i++){
-                            if ((subscriptions[i].packet_handler != NULL) && subscriptions[i].waiting_for_can_send){
-                                can_send_now_pending = true;
-                                // note: con_handle is not used, so we can pass in anything
-                                l2cap_request_can_send_fix_channel_now_event(0, L2CAP_CID_ATTRIBUTE_PROTOCOL);
-                                break;
-                            }
-                        }
-                    }
+                    att_dispatch_handle_can_send_now(packet, size);
                     break;
                 default:
                     break;
