@@ -1401,7 +1401,7 @@ static void gatt_client_run(void){
                 while (btstack_linked_list_iterator_has_next(&it_eatt)) {
                     gatt_client_t * eatt_client = (gatt_client_t *) btstack_linked_list_iterator_next(&it_eatt);
                     if (eatt_client->gatt_client_state != P_READY){
-                        if (l2cap_can_send_packet_now(eatt_client->l2cap_cid)){
+                        if (att_dispatch_client_can_send_now(gatt_client->con_handle)){
                             gatt_client_run_for_gatt_client(eatt_client);
                         }
                     }
@@ -1429,8 +1429,8 @@ static void gatt_client_run(void){
                 }
 
                 // handle GATT over BR/EDR
-                if (l2cap_can_send_packet_now(gatt_client->l2cap_cid) == false){
-                    l2cap_request_can_send_now_event(gatt_client->l2cap_cid);
+                if (att_dispatch_client_can_send_now(gatt_client->con_handle) == false) {
+                    att_dispatch_client_request_can_send_now_event(gatt_client->con_handle);
                     return;
                 }
                 packet_sent = gatt_client_run_for_gatt_client(gatt_client);
