@@ -314,11 +314,6 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
             switch (hci_event_packet_get_type(packet)) {
                 
 #ifdef ENABLE_GATT_OVER_CLASSIC
-                case L2CAP_EVENT_INCOMING_CONNECTION:
-                    l2cap_event_incoming_connection_get_address(packet, address); 
-                    l2cap_accept_connection(channel);
-                    log_info("Accept incoming connection from %s", bd_addr_to_str(address));
-                    break;
                 case L2CAP_EVENT_CHANNEL_OPENED:
                     con_handle = l2cap_event_channel_opened_get_handle(packet);
                     hci_connection = hci_connection_for_handle(con_handle);
@@ -1290,7 +1285,7 @@ void att_server_init(uint8_t const * db, att_read_callback_t read_callback, att_
 
 #ifdef ENABLE_GATT_OVER_CLASSIC
     // setup l2cap service
-    l2cap_register_service(&att_event_packet_handler, PSM_ATT, 0xffff, gap_get_security_level());
+    att_dispatch_classic_register_service();
 #endif
 
     att_set_db(db);
