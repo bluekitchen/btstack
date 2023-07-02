@@ -130,6 +130,10 @@ static void att_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
     bool for_server;
     bool invalid;
     uint8_t index;
+#ifdef ENABLE_GATT_OVER_EATT
+    bd_addr_t address;
+    uint16_t l2cap_cid;
+#endif
     switch (packet_type){
         case ATT_DATA_PACKET:
             // parse opcode
@@ -147,6 +151,22 @@ static void att_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                 case L2CAP_EVENT_CAN_SEND_NOW:
                     att_dispatch_handle_can_send_now(packet, size);
                     break;
+#ifdef ENABLE_GATT_OVER_CLASSIC
+                case L2CAP_EVENT_INCOMING_CONNECTION:
+                    l2cap_event_incoming_connection_get_address(packet, address);
+                    l2cap_cid = l2cap_event_incoming_connection_get_local_cid(packet);
+                    l2cap_accept_connection(l2cap_cid);
+                    log_info("Accept incoming connection from %s", bd_addr_to_str(address));
+                    break;
+                case L2CAP_EVENT_CHANNEL_OPENED:
+                    // dispatch to all roles
+                    for (index = 0; index < ATT_MAX; index++){
+                        if (subscriptions[index].packet_handler != NULL){
+                            subscriptions[index].packet_handler(packet_type, channel, packet, size);
+                        }
+                    }
+                    break;
+#endif
                 default:
                     break;
             }
@@ -245,3 +265,9 @@ void att_dispatch_server_mtu_exchanged(hci_con_handle_t con_handle, uint16_t new
 void att_dispatch_client_mtu_exchanged(hci_con_handle_t con_handle, uint16_t new_mtu){
     emit_mtu_exchange_complete(subscriptions[ATT_SERVER].packet_handler, con_handle, new_mtu);
 }
+
+#ifdef ENABLE_GATT_OVER_CLASSIC
+void att_dispatch_classic_register_service(void){
+    l2cap_register_service(&att_packet_handler, PSM_ATT, 0xffff, gap_get_security_level());
+}
+#endif

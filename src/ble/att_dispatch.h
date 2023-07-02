@@ -65,6 +65,12 @@ void att_dispatch_register_client(btstack_packet_handler_t packet_handler);
 void att_dispatch_register_server(btstack_packet_handler_t packet_handler);
 
 /**
+ * @brief Register L2CAP ATT Service with fixed PSM
+ * @note requires ENABLE_GATT_OVER_CLASSIC
+ */
+void att_dispatch_classic_register_service(void);
+
+/**
  * @brief can send packet for client
  * @param con_handle
  */
