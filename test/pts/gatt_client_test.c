@@ -447,7 +447,8 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
     switch(packet[0]){
         case GATT_EVENT_CONNECTED:
             handle = gatt_event_connected_get_handle(packet);
-            printf("GATT Client connected via BR/EDR, con handle 0x%04x\n", handle);
+            status = gatt_event_connected_get_status(packet);
+            printf("GATT Client connected via BR/EDR, con handle 0x%04x, status 0x%02x\n", handle, status);
             break;
         case GATT_EVENT_SERVICE_QUERY_RESULT:
             switch (central_state){
@@ -1339,6 +1340,7 @@ static int ui_process_data_request(char buffer){
 
 static void ui_process_command(char buffer){
     int res;
+    uint8_t status;
     switch (buffer){
         case '1':
             printf("Enabling non-resolvable private address\n");
@@ -1383,8 +1385,8 @@ static void ui_process_command(char buffer){
             show_usage();
             break;
         case '9':
-            printf("Setup Unenhanced BR/EDR Bearer to %s\n", bd_addr_to_str(public_pts_address));
-            gatt_client_classic_connect(&handle_gatt_client_event, public_pts_address);
+            status = gatt_client_classic_connect(&handle_gatt_client_event, public_pts_address);
+            printf("Setup Unenhanced BR/EDR Bearer to %s, status 0x%02x\n", bd_addr_to_str(public_pts_address), status);
             break;
         case 'a':
             hci_send_cmd(&hci_le_set_advertise_enable, 1);
