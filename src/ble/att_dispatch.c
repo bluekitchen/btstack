@@ -144,6 +144,11 @@ static void att_dispatch_handle_att_pdu(uint8_t packet_type, uint16_t channel, u
 
 static void att_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     uint8_t index;
+#ifdef ENABLE_GATT_OVER_CLASSIC
+    hci_connection_t * hci_connection;
+    hci_con_handle_t con_handle;
+    bool outgoing_active;
+#endif
 #ifdef ENABLE_GATT_OVER_EATT
     bd_addr_t address;
     uint16_t l2cap_cid;
@@ -166,8 +171,20 @@ static void att_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                 case L2CAP_EVENT_INCOMING_CONNECTION:
                     l2cap_event_incoming_connection_get_address(packet, address);
                     l2cap_cid = l2cap_event_incoming_connection_get_local_cid(packet);
-                    l2cap_accept_connection(l2cap_cid);
-                    log_info("Accept incoming connection from %s", bd_addr_to_str(address));
+                    // reject if outgoing l2cap connection active, L2CAP/TIM/BV-01-C
+                    con_handle = l2cap_event_incoming_connection_get_handle(packet);
+                    hci_connection = hci_connection_for_handle(con_handle);
+                    outgoing_active = false;
+                    if (hci_connection != NULL){
+                        outgoing_active = hci_connection->att_server.l2cap_cid != 0;
+                    }
+                    if (outgoing_active) {
+                        l2cap_decline_connection(l2cap_cid);
+                        log_info("Decline incoming connection from %s", bd_addr_to_str(address));
+                    } else {
+                        l2cap_accept_connection(l2cap_cid);
+                        log_info("Accept incoming connection from %s", bd_addr_to_str(address));
+                    }
                     break;
                 case L2CAP_EVENT_CHANNEL_OPENED:
                     // dispatch to all roles
@@ -282,8 +299,17 @@ void att_dispatch_classic_register_service(void){
     l2cap_register_service(&att_packet_handler, PSM_ATT, 0xffff, gap_get_security_level());
 }
 uint8_t att_dispatch_classic_connect(bd_addr_t address, uint16_t l2cap_psm, uint16_t *out_cid) {
-    return  l2cap_create_channel(&att_packet_handler, address, l2cap_psm, 0xffff,
-                                                 out_cid);
+    uint16_t l2cap_cid;
+    uint8_t status = l2cap_create_channel(&att_packet_handler, address, l2cap_psm, 0xffff, &l2cap_cid);
+    // store l2cap_cid in hci_connection
+    if (status == ERROR_CODE_SUCCESS){
+        hci_connection_t * hci_connection = hci_connection_for_bd_addr_and_type(address, BD_ADDR_TYPE_ACL);
+        if (hci_connection != NULL) {
+            hci_connection->att_server.l2cap_cid = l2cap_cid;
+        }
+    }
+    *out_cid = l2cap_cid;
+    return status;
 }
 
 #endif
