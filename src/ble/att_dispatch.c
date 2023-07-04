@@ -179,6 +179,7 @@ static void att_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                         outgoing_active = hci_connection->att_server.l2cap_cid != 0;
                     }
                     if (outgoing_active) {
+                        hci_connection->att_server.incoming_connection_request = true;
                         l2cap_decline_connection(l2cap_cid);
                         log_info("Decline incoming connection from %s", bd_addr_to_str(address));
                     } else {
@@ -306,6 +307,7 @@ uint8_t att_dispatch_classic_connect(bd_addr_t address, uint16_t l2cap_psm, uint
         hci_connection_t * hci_connection = hci_connection_for_bd_addr_and_type(address, BD_ADDR_TYPE_ACL);
         if (hci_connection != NULL) {
             hci_connection->att_server.l2cap_cid = l2cap_cid;
+            hci_connection->att_server.incoming_connection_request = false;
         }
     }
     *out_cid = l2cap_cid;
