@@ -379,7 +379,7 @@ static uint16_t att_read_callback(hci_con_handle_t con_handle, uint16_t attribut
                 buffer[0] = client_supported_features_value;
             }
             return 1;
-        case ATT_CHARACTERISTIC_FFF2_01_VALUE_HANDLE:
+        case ATT_CHARACTERISTIC_FFF1_01_VALUE_HANDLE:
             // Value with size mtu - 1, buffer has size mtu - 1
             if (buffer){
                 memset(buffer, 'x', buffer_size);
