@@ -82,6 +82,7 @@ static void att_signed_write_handle_cmac_result(uint8_t hash[8]);
 static gatt_client_t * gatt_client_get_context_for_l2cap_cid(uint16_t l2cap_cid);
 static void gatt_client_classic_handle_connected(gatt_client_t * gatt_client, uint8_t status);
 static void gatt_client_classic_handle_disconnected(gatt_client_t * gatt_client);
+static void gatt_client_classic_retry(btstack_timer_source_t * ts);
 #endif
 
 #ifdef ENABLE_GATT_OVER_EATT
@@ -2109,6 +2110,10 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
     gatt_client_t *gatt_client;
     hci_connection_t * hci_connection;
     uint8_t status;
+#ifdef ENABLE_GATT_OVER_CLASSIC
+    hci_con_handle_t con_handle;
+#endif
+
     if (size < 1u) return;
     switch (packet_type){
         case HCI_EVENT_PACKET:
@@ -2118,6 +2123,17 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
                     status = l2cap_event_channel_opened_get_status(packet);
                     gatt_client = gatt_client_get_context_for_l2cap_cid(l2cap_event_channel_opened_get_local_cid(packet));
                     btstack_assert(gatt_client != NULL);
+                    con_handle = l2cap_event_channel_opened_get_handle(packet);
+                    hci_connection = hci_connection_for_handle(con_handle);
+                    if ((status == L2CAP_CONNECTION_RESPONSE_RESULT_REFUSED_RESOURCES) && hci_connection->att_server.incoming_connection_request){
+                        log_info("Collision, retry in 100ms");
+                        gatt_client->state = P_W2_L2CAP_CONNECT;
+                        // set timer for retry
+                        btstack_run_loop_set_timer(&gatt_client->gc_timeout, 100);
+                        btstack_run_loop_set_timer_handler(&gatt_client->gc_timeout, gatt_client_classic_retry);
+                        btstack_run_loop_add_timer(&gatt_client->gc_timeout);
+                        break;
+                    }
                     // if status != 0, gatt_client will be discarded
                     gatt_client->state = P_READY;
                     gatt_client->con_handle = l2cap_event_channel_opened_get_handle(packet);
@@ -2894,6 +2910,14 @@ static void gatt_client_classic_handle_connected(gatt_client_t * gatt_client, ui
         btstack_memory_gatt_client_free(gatt_client);
     }
     gatt_client_emit_connected(callback, status, addr, con_handle);
+}
+
+static void gatt_client_classic_retry(btstack_timer_source_t * ts){
+    gatt_client_t * gatt_client = gatt_client_for_timer(ts);
+    if (gatt_client != NULL){
+        gatt_client->state = P_W4_L2CAP_CONNECTION;
+        att_dispatch_classic_connect(gatt_client->addr, gatt_client->l2cap_psm, &gatt_client->l2cap_cid);
+    }
 }
 
 static void gatt_client_classic_handle_disconnected(gatt_client_t * gatt_client){
