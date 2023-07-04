@@ -173,7 +173,7 @@ static uint8_t ui_presentation_format[7];
 static uint16_t ui_aggregate_handle;
 static uint16_t handle = 0;
 
-static const char * device_addr_string = "00:1A:7D:DA:71:02";
+static const char * device_addr_string = "00:1B:DC:08:E2:5C";
 static bd_addr_t public_pts_address;
 static int       public_pts_address_type = 0;
 static bd_addr_t current_pts_address;
@@ -445,6 +445,10 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
     uint8_t             status;
 
     switch(packet[0]){
+        case GATT_EVENT_CONNECTED:
+            handle = gatt_event_connected_get_handle(packet);
+            printf("GATT Client connected via BR/EDR, con handle 0x%04x\n", handle);
+            break;
         case GATT_EVENT_SERVICE_QUERY_RESULT:
             switch (central_state){
                 case CENTRAL_W4_PRIMARY_SERVICES:
@@ -887,7 +891,7 @@ static void show_usage(void){
     printf_row("1   - enable privacy using random non-resolvable private address");
     printf_row("2   - clear Peripheral Privacy Flag on PTS");
     printf_row("3   - set Peripheral Privacy Flag on PTS");
-    printf_row("9   - create HCI Classic connection to addr %s", bd_addr_to_str(public_pts_address));
+    printf_row("9   - setup BR/EDR ATT bearer to addr %s", bd_addr_to_str(public_pts_address));
     printf_row("s/S - passive/active scanning");
     printf_row("a   - enable Advertisements");
     printf_row("b   - start bonding");
@@ -1379,8 +1383,8 @@ static void ui_process_command(char buffer){
             show_usage();
             break;
         case '9':
-            printf("Creating HCI Classic Connection to %s\n", bd_addr_to_str(public_pts_address));
-            hci_send_cmd(&hci_create_connection, public_pts_address, hci_usable_acl_packet_types(), 0, 0, 0, 1);
+            printf("Setup Unenhanced BR/EDR Bearer to %s\n", bd_addr_to_str(public_pts_address));
+            gatt_client_classic_connect(&handle_gatt_client_event, public_pts_address);
             break;
         case 'a':
             hci_send_cmd(&hci_le_set_advertise_enable, 1);
