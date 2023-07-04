@@ -2877,14 +2877,14 @@ static void gatt_client_classic_handle_connected(gatt_client_t * gatt_client, ui
     memcpy(addr, gatt_client->addr, 6);
     hci_con_handle_t con_handle = gatt_client->con_handle;
     btstack_packet_handler_t callback = gatt_client->callback;
-    if (status != ERROR_CODE_SUCCESS){
+    if (status == ERROR_CODE_SUCCESS){
+        // store l2cap cid in hci_connection->att_server
+        hci_connection_t * hci_connection = hci_connection_for_handle(con_handle);
+        hci_connection->att_server.l2cap_cid = gatt_client->l2cap_cid;
+    } else {
         btstack_linked_list_remove(&gatt_client_connections, (btstack_linked_item_t *) gatt_client);
         btstack_memory_gatt_client_free(gatt_client);
     }
-
-    // store l2cap cid in hci_connection->att_server
-    hci_connection_t * hci_connection = hci_connection_for_handle(con_handle);
-    hci_connection->att_server.l2cap_cid = gatt_client->l2cap_cid;
 
     uint8_t buffer[20];
     uint16_t len = hci_event_create_from_template_and_arguments(buffer, sizeof(buffer), &gatt_client_connected, status, addr,
