@@ -2996,6 +2996,14 @@ static void gatt_client_classic_sdp_start(void * context){
     sdp_client_query_uuid16(gatt_client_classic_sdp_handler, gatt_client_classic_active_sdp_query->addr, ORG_BLUETOOTH_SERVICE_GENERIC_ATTRIBUTE);
 }
 
+static void gatt_client_classic_emit_connected(void * context){
+    gatt_client_t * gatt_client = (gatt_client_t *) context;
+    gatt_client->gatt_client_state = P_READY;
+    hci_connection_t * hci_connection = hci_connection_for_handle(gatt_client->con_handle);
+    btstack_assert(hci_connection != NULL);
+    gatt_client_emit_connected(gatt_client->callback, ERROR_CODE_SUCCESS, hci_connection->address, gatt_client->con_handle);
+}
+
 uint8_t gatt_client_classic_connect(btstack_packet_handler_t callback, bd_addr_t addr){
     gatt_client_t * gatt_client = gatt_client_get_context_for_classic_addr(addr);
     if (gatt_client != NULL){
@@ -3012,15 +3020,31 @@ uint8_t gatt_client_classic_connect(btstack_packet_handler_t callback, bd_addr_t
     gatt_client->mtu = ATT_DEFAULT_MTU;
     gatt_client->security_level = LEVEL_0;
     gatt_client->mtu_state = MTU_AUTO_EXCHANGE_DISABLED;
-    gatt_client->gatt_client_state = P_W2_SDP_QUERY;
-    gatt_client->sdp_query_request.callback = &gatt_client_classic_sdp_start;
-    gatt_client->sdp_query_request.context = gatt_client;
     gatt_client->callback = callback;
 #ifdef ENABLE_GATT_OVER_EATT
     gatt_client->eatt_state = GATT_CLIENT_EATT_IDLE;
 #endif
     btstack_linked_list_add(&gatt_client_connections, (btstack_linked_item_t*)gatt_client);
-    sdp_client_register_query_callback(&gatt_client->sdp_query_request);
+
+    // schedule emitted event if already connected, otherwise
+    bool already_connected = false;
+    hci_connection_t * hci_connection = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
+    if (hci_connection != NULL){
+        if (hci_connection->att_server.l2cap_cid != 0){
+            already_connected = true;
+        }
+    }
+    gatt_client->sdp_query_request.context = gatt_client;
+    if (already_connected){
+        gatt_client->con_handle = hci_connection->con_handle;
+        gatt_client->sdp_query_request.callback = &gatt_client_classic_emit_connected;
+        gatt_client->gatt_client_state = P_W2_EMIT_CONNECTED;
+        btstack_run_loop_execute_on_main_thread(&gatt_client->sdp_query_request);
+    } else {
+        gatt_client->sdp_query_request.callback = &gatt_client_classic_sdp_start;
+        gatt_client->gatt_client_state = P_W2_SDP_QUERY;
+        sdp_client_register_query_callback(&gatt_client->sdp_query_request);
+    }
     return ERROR_CODE_SUCCESS;
 }
 

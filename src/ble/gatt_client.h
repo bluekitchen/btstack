@@ -137,6 +137,7 @@ typedef enum {
     P_W2_SDP_QUERY,
     P_W4_SDP_QUERY,
     P_W4_L2CAP_CONNECTION,
+    P_W2_EMIT_CONNECTED,
 } gatt_client_state_t;
     
     
