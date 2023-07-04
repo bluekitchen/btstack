@@ -289,7 +289,7 @@ static void att_handle_value_indication_timeout(btstack_timer_source_t *ts){
     att_handle_value_indication_notify_client((uint8_t)ATT_HANDLE_VALUE_INDICATION_TIMEOUT, att_connection->con_handle, att_handle);
 }
 
-static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void att_server_event_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 
     UNUSED(channel); // ok: there is no channel
     UNUSED(size);    // ok: handling own l2cap events
@@ -307,52 +307,6 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
             
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)) {
-                
-#ifdef ENABLE_GATT_OVER_CLASSIC
-                case L2CAP_EVENT_CHANNEL_OPENED:
-                    con_handle = l2cap_event_channel_opened_get_handle(packet);
-                    hci_connection = hci_connection_for_handle(con_handle);
-                    if (!hci_connection) break;
-                    att_server = &hci_connection->att_server;
-                    // store connection info
-                    att_server->bearer_type = ATT_BEARER_UNENHANCED_CLASSIC;
-                    att_server->peer_addr_type = BD_ADDR_TYPE_ACL;
-                    l2cap_event_channel_opened_get_address(packet, att_server->peer_address);
-                    att_connection = &hci_connection->att_connection;
-                    att_connection->con_handle = con_handle;
-                    att_server->l2cap_cid = l2cap_event_channel_opened_get_local_cid(packet);
-                    // reset connection properties
-                    att_server->state = ATT_SERVER_IDLE;
-                    att_connection->mtu = l2cap_event_channel_opened_get_remote_mtu(packet);
-                    att_connection->max_mtu = l2cap_max_mtu();
-                    if (att_connection->max_mtu > ATT_REQUEST_BUFFER_SIZE){
-                        att_connection->max_mtu = ATT_REQUEST_BUFFER_SIZE;
-                    }
-
-                    log_info("Connection opened %s, l2cap cid %04x, mtu %u", bd_addr_to_str(address), att_server->l2cap_cid, att_connection->mtu);
-
-                    // update security params
-                    att_connection->encryption_key_size = gap_encryption_key_size(con_handle);
-                    att_connection->authenticated = gap_authenticated(con_handle);
-                    att_connection->secure_connection = gap_secure_connection(con_handle);
-                    log_info("encrypted key size %u, authenticated %u, secure connection %u",
-                        att_connection->encryption_key_size, att_connection->authenticated, att_connection->secure_connection);
-
-                    // notify connection opened
-                    att_emit_connected_event(att_server, att_connection);
-
-                    // restore persisten ccc if encrypted
-                    if ( gap_security_level(con_handle) >= LEVEL_2){
-                        att_server_persistent_ccc_restore(att_server, att_connection);
-                    }
-                    // TODO: what to do about le device db?
-                    att_server->pairing_active = 0;
-                    break;
-                case L2CAP_EVENT_CAN_SEND_NOW:
-                    att_server_handle_can_send_now();
-                    break;
-
-#endif
                 case HCI_EVENT_LE_META:
                     switch (packet[2]) {
                         case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
@@ -528,21 +482,6 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                     break;
             }
             break;
-#ifdef ENABLE_GATT_OVER_CLASSIC
-        case L2CAP_DATA_PACKET:
-            hci_connections_get_iterator(&it);
-            while(btstack_linked_list_iterator_has_next(&it)){
-                hci_connection = (hci_connection_t *) btstack_linked_list_iterator_next(&it);
-                att_server = &hci_connection->att_server;
-                att_connection = &hci_connection->att_connection;
-                if (att_server->l2cap_cid == channel) {
-                    att_server_handle_att_pdu(att_server, att_connection, packet, size);
-                    break;
-                }
-            }
-            break;
-#endif
-
         default:
             break;
     }
@@ -960,20 +899,66 @@ static void att_server_handle_att_pdu(att_server_t * att_server, att_connection_
     att_run_for_context(att_server, att_connection);
 }
 
-static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size){
+static void att_server_dispatch_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     hci_connection_t * hci_connection;
     att_connection_t * att_connection;
     att_server_t     * att_server;
+#ifdef ENABLE_GATT_OVER_CLASSIC
+    hci_con_handle_t con_handle;
+    bd_addr_t        address;
+    btstack_linked_list_iterator_t it;
+#endif
 
     switch (packet_type){
         case HCI_EVENT_PACKET:
             switch (packet[0]){
+#ifdef ENABLE_GATT_OVER_CLASSIC
+                case L2CAP_EVENT_CHANNEL_OPENED:
+                    con_handle = l2cap_event_channel_opened_get_handle(packet);
+                    hci_connection = hci_connection_for_handle(con_handle);
+                    if (!hci_connection) break;
+                    att_server = &hci_connection->att_server;
+                    // store connection info
+                    att_server->bearer_type = ATT_BEARER_UNENHANCED_CLASSIC;
+                    att_server->peer_addr_type = BD_ADDR_TYPE_ACL;
+                    l2cap_event_channel_opened_get_address(packet, att_server->peer_address);
+                    att_connection = &hci_connection->att_connection;
+                    att_connection->con_handle = con_handle;
+                    att_server->l2cap_cid = l2cap_event_channel_opened_get_local_cid(packet);
+                    // reset connection properties
+                    att_server->state = ATT_SERVER_IDLE;
+                    att_connection->mtu = l2cap_event_channel_opened_get_remote_mtu(packet);
+                    att_connection->max_mtu = l2cap_max_mtu();
+                    if (att_connection->max_mtu > ATT_REQUEST_BUFFER_SIZE){
+                        att_connection->max_mtu = ATT_REQUEST_BUFFER_SIZE;
+                    }
+
+                    log_info("Connection opened %s, l2cap cid %04x, mtu %u", bd_addr_to_str(address), att_server->l2cap_cid, att_connection->mtu);
+
+                    // update security params
+                    att_connection->encryption_key_size = gap_encryption_key_size(con_handle);
+                    att_connection->authenticated = gap_authenticated(con_handle);
+                    att_connection->secure_connection = gap_secure_connection(con_handle);
+                    log_info("encrypted key size %u, authenticated %u, secure connection %u",
+                             att_connection->encryption_key_size, att_connection->authenticated, att_connection->secure_connection);
+
+                    // notify connection opened
+                    att_emit_connected_event(att_server, att_connection);
+
+                    // restore persisten ccc if encrypted
+                    if ( gap_security_level(con_handle) >= LEVEL_2){
+                        att_server_persistent_ccc_restore(att_server, att_connection);
+                    }
+                    // TODO: what to do about le device db?
+                    att_server->pairing_active = 0;
+                    break;
+#endif
                 case L2CAP_EVENT_CAN_SEND_NOW:
                     att_server_handle_can_send_now();
                     break;
                 case ATT_EVENT_MTU_EXCHANGE_COMPLETE:
                     // GATT client has negotiated the mtu for this connection
-                    hci_connection = hci_connection_for_handle(handle);
+                    hci_connection = hci_connection_for_handle(channel);
                     if (!hci_connection) break;
                     att_connection = &hci_connection->att_connection;
                     att_connection->mtu = little_endian_read_16(packet, 4);
@@ -984,15 +969,30 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
             break;
 
         case ATT_DATA_PACKET:
-            log_debug("ATT Packet, handle 0x%04x", handle);
-            hci_connection = hci_connection_for_handle(handle);
+            log_debug("ATT Packet, handle 0x%04x", channel);
+            hci_connection = hci_connection_for_handle(channel);
             if (!hci_connection) break;
 
             att_server = &hci_connection->att_server;
             att_connection = &hci_connection->att_connection;
             att_server_handle_att_pdu(att_server, att_connection, packet, size);
             break;
-            
+
+#ifdef ENABLE_GATT_OVER_CLASSIC
+        case L2CAP_DATA_PACKET:
+            hci_connections_get_iterator(&it);
+            while(btstack_linked_list_iterator_has_next(&it)){
+                hci_connection = (hci_connection_t *) btstack_linked_list_iterator_next(&it);
+                att_server = &hci_connection->att_server;
+                att_connection = &hci_connection->att_connection;
+                if (att_server->l2cap_cid == channel) {
+                    att_server_handle_att_pdu(att_server, att_connection, packet, size);
+                    break;
+                }
+            }
+            break;
+#endif
+
         default:
             break;
     }
@@ -1268,15 +1268,15 @@ void att_server_init(uint8_t const * db, att_read_callback_t read_callback, att_
     att_server_client_write_callback = write_callback;
 
     // register for HCI Events
-    hci_event_callback_registration.callback = &att_event_packet_handler;
+    hci_event_callback_registration.callback = &att_server_event_packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
 
     // register for SM events
-    sm_event_callback_registration.callback = &att_event_packet_handler;
+    sm_event_callback_registration.callback = &att_server_event_packet_handler;
     sm_add_event_handler(&sm_event_callback_registration);
 
     // and L2CAP ATT Server PDUs
-    att_dispatch_register_server(att_packet_handler);
+    att_dispatch_register_server(att_server_dispatch_packet_handler);
 
 #ifdef ENABLE_GATT_OVER_CLASSIC
     // setup l2cap service
