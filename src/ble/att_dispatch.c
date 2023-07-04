@@ -124,11 +124,25 @@ static void att_dispatch_handle_can_send_now(uint8_t *packet, uint16_t size){
     }
 }
 
-static void att_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void att_dispatch_handle_att_pdu(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    uint8_t index;
     uint8_t opcode;
     uint8_t method;
     bool for_server;
     bool invalid;
+
+    // parse opcode
+    opcode  = packet[0u];
+    method  = opcode & 0x03fu;
+    invalid = method > ATT_MULTIPLE_HANDLE_VALUE_NTF;
+    // odd PDUs are sent from server to client - even PDUs are sent from client to server, also let server handle invalid ones
+    for_server = ((method & 1u) == 0u) || invalid;
+    index = for_server ? ATT_SERVER : ATT_CLIENT;
+    if (!subscriptions[index].packet_handler) return;
+    subscriptions[index].packet_handler(packet_type, channel, packet, size);
+}
+
+static void att_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     uint8_t index;
 #ifdef ENABLE_GATT_OVER_EATT
     bd_addr_t address;
@@ -136,15 +150,7 @@ static void att_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
 #endif
     switch (packet_type){
         case ATT_DATA_PACKET:
-            // parse opcode
-            opcode  = packet[0u];
-            method  = opcode & 0x03fu;
-            invalid = method > ATT_MULTIPLE_HANDLE_VALUE_NTF;
-            // odd PDUs are sent from server to client - even PDUs are sent from client to server, also let server handle invalid ones
-            for_server = ((method & 1u) == 0u) || invalid;
-            index = for_server ? ATT_SERVER : ATT_CLIENT;
-            if (!subscriptions[index].packet_handler) return;
-            subscriptions[index].packet_handler(packet_type, channel, packet, size);
+            att_dispatch_handle_att_pdu(packet_type, channel, packet, size);
             break;
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)) {
