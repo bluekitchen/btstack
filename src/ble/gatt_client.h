@@ -167,7 +167,7 @@ typedef enum {
 typedef struct gatt_client{
     btstack_linked_item_t    item;
     // TODO: rename gatt_client_state -> state
-    gatt_client_state_t gatt_client_state;
+    gatt_client_state_t state;
 
     // user callback 
     btstack_packet_handler_t callback;
@@ -189,7 +189,7 @@ typedef struct gatt_client{
     bd_addr_t addr;
     uint16_t  l2cap_psm;
     uint16_t  l2cap_cid;
-    btstack_context_callback_registration_t sdp_query_request;
+    btstack_context_callback_registration_t callback_request;
 #endif
 
 #ifdef ENABLE_GATT_OVER_EATT
