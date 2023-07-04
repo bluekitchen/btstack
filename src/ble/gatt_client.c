@@ -2836,6 +2836,14 @@ static const hci_event_t gatt_client_connected = {
 static const hci_event_t gatt_client_disconnected = {
         GATT_EVENT_DISCONNECTED, 0, "H"
 };
+
+static void gatt_client_emit_connected(btstack_packet_handler_t callback, uint8_t status, bd_addr_t addr,
+                                       hci_con_handle_t con_handle) {
+    uint8_t buffer[20];
+    uint16_t len = hci_event_create_from_template_and_arguments(buffer, sizeof(buffer), &gatt_client_connected, status, addr, con_handle);
+    (*callback)(HCI_EVENT_PACKET, 0, buffer, len);
+}
+
 #endif
 
 #ifdef ENABLE_GATT_OVER_CLASSIC
@@ -2885,11 +2893,7 @@ static void gatt_client_classic_handle_connected(gatt_client_t * gatt_client, ui
         btstack_linked_list_remove(&gatt_client_connections, (btstack_linked_item_t *) gatt_client);
         btstack_memory_gatt_client_free(gatt_client);
     }
-
-    uint8_t buffer[20];
-    uint16_t len = hci_event_create_from_template_and_arguments(buffer, sizeof(buffer), &gatt_client_connected, status, addr,
-                                                                con_handle);
-    (*callback)(HCI_EVENT_PACKET, 0, buffer, len);
+    gatt_client_emit_connected(callback, status, addr, con_handle);
 }
 
 static void gatt_client_classic_handle_disconnected(gatt_client_t * gatt_client){
@@ -3056,10 +3060,7 @@ static void gatt_client_le_enhanced_handle_connected(gatt_client_t * gatt_client
         gatt_client->eatt_state = GATT_CLIENT_EATT_IDLE;
     }
 
-    uint8_t buffer[20];
-    uint16_t len = hci_event_create_from_template_and_arguments(buffer, sizeof(buffer), &gatt_client_connected, status, gatt_client->addr,
-                                                                gatt_client->con_handle);
-    (*gatt_client->callback)(HCI_EVENT_PACKET, 0, buffer, len);
+    gatt_client_emit_connected(gatt_client->callback, status,  gatt_client->addr, gatt_client->con_handle);
 }
 
 // single channel disconnected
