@@ -152,6 +152,11 @@ static void att_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
         case ATT_DATA_PACKET:
             att_dispatch_handle_att_pdu(packet_type, channel, packet, size);
             break;
+#ifdef ENABLE_GATT_OVER_CLASSIC
+        case L2CAP_DATA_PACKET:
+            att_dispatch_handle_att_pdu(packet_type, channel, packet, size);
+            break;
+#endif
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)) {
                 case L2CAP_EVENT_CAN_SEND_NOW:
