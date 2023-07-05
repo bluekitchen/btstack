@@ -453,12 +453,12 @@ static int ots_server_handle_action_control_point_write(ots_server_connection_t 
 
     if ((ots_oacp_features & (1 << opcode)) == 0 ){
         connection->oacp_result_code = OACP_RESULT_CODE_OP_CODE_NOT_SUPPORTED;
-        break;
+        return 0;
     }
     // allow only a single transaction per time
     if (connection->oacp_opcode != OACP_OPCODE_READY) {
         connection->oacp_result_code = OACP_RESULT_CODE_OPERATION_FAILED;
-        break;
+        return 0;
     }
 
     uint32_t object_size;
