@@ -236,7 +236,7 @@ static void btstack_utc_read_time(uint8_t * time_buffer, uint16_t time_buffer_si
     time_out->seconds = time_buffer[6];
 }
 
-static uint16_t ots_server_store_filter_list(const ots_filter_t * filter, uint8_t * buffer, uint16_t buffer_size, uint16_t buffer_offset){
+static uint16_t ots_server_store_filter_list(const ots_filter_t * filter, uint8_t i, uint8_t * buffer, uint16_t buffer_size, uint16_t buffer_offset){
     uint8_t  field_data[5];
     uint16_t filters_offset = 0;
     uint16_t stored_bytes = 0;
@@ -255,7 +255,9 @@ static uint16_t ots_server_store_filter_list(const ots_filter_t * filter, uint8_
     stored_bytes += le_audio_util_virtual_memcpy_helper(field_data, 1, filters_offset, buffer, buffer_size, buffer_offset);
     filters_offset++;
 
-    stored_bytes += le_audio_util_virtual_memcpy_helper(filter->data, filter->data_size, filters_offset, buffer, buffer_size, buffer_offset);
+    uint16_t data_size = strlen((char*)&filter->data[0]);
+    stored_bytes += le_audio_util_virtual_memcpy_helper(filter->data, data_size, filters_offset, buffer, buffer_size, buffer_offset);
+    printf_hexdump(buffer, buffer_size);
     return stored_bytes;
 }
 
@@ -359,7 +361,7 @@ static uint16_t ots_server_read_callback(hci_con_handle_t con_handle, uint16_t a
     uint8_t i;
     for (i = 0; i < OTS_MAX_NUM_FILTERS; i++){
         if (attribute_handle == ots_server_get_value_handle_for_characteristic_index(OTS_OBJECT_LIST_FILTER1_INDEX + i)){
-            return ots_server_store_filter_list(&connection->filters[i], buffer, buffer_size, offset);    
+            return ots_server_store_filter_list(&connection->filters[i], i, buffer, buffer_size, offset);
         }
     }
     return 0;
@@ -656,6 +658,7 @@ static int ots_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
             if (attribute_handle == ots_server_get_value_handle_for_characteristic_index(OTS_OBJECT_LIST_FILTER1_INDEX + i)){
                 switch (transaction_mode){
                     case ATT_TRANSACTION_MODE_NONE:
+                        printf("ATT_TRANSACTION_MODE_NONE\n");
                         if (buffer_size > strlen(connection->current_object->name)){
                             return ATT_ERROR_WRITE_REQUEST_REJECTED;
                         }
@@ -678,6 +681,7 @@ static int ots_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
                         break;
 
                     case ATT_TRANSACTION_MODE_ACTIVE:
+                        printf("ATT_TRANSACTION_MODE_ACTIVE\n");
                         if (total_value_len > (2 + sizeof(connection->temp_filter.data))){
                             return ATT_ERROR_RESPONSE_OTS_WRITE_REQUEST_REJECTED;
                         }
@@ -692,18 +696,22 @@ static int ots_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
                             memset(connection->filters[i].data, 0, sizeof(connection->filters[i].data));
                             connection->filters[i].type = connection->temp_filter.type;
                             connection->filters[i].data_size = connection->temp_filter.data_size;
-                            memcpy(connection->filters[i].data, &buffer[2], buffer_size);
+                            memcpy(&connection->filters[i].data[offset], &buffer[2], buffer_size);
+                            printf("filter[%d] = %s [%d: %d/%d]\n", i, connection->filters[i].data, offset, buffer_size - 2, connection->temp_filter.data_size);
                         } else {
-                            memcpy(&connection->filters[i].data[offset], buffer, buffer_size);
+                            memcpy(&connection->filters[i].data[offset - 2], buffer, buffer_size);
+                            printf("filter[%d] = %s [%d: %d/%d]\n", i, connection->filters[i].data, offset - 2, total_value_len, connection->temp_filter.data_size);
                         }
-                        printf("filter[%d] = %s\n", i, connection->filters[i].data);
+                        
                         return 0;
 
                     case ATT_TRANSACTION_MODE_CANCEL:
+                        printf("ATT_TRANSACTION_MODE_CANCEL\n");
                         ots_server_reset_long_write_filter(connection);
                         break;
 
                     case ATT_TRANSACTION_MODE_EXECUTE:
+                        printf("ATT_TRANSACTION_MODE_EXECUTE\n");
                         connection->filters[i].type = connection->temp_filter.type;
                         connection->filters[i].data_size = connection->temp_filter.data_size;
                         memcpy(connection->filters[i].data, connection->temp_filter.data, connection->temp_filter.data_size);
