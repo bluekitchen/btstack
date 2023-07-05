@@ -2125,14 +2125,16 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
                     btstack_assert(gatt_client != NULL);
                     con_handle = l2cap_event_channel_opened_get_handle(packet);
                     hci_connection = hci_connection_for_handle(con_handle);
-                    if ((status == L2CAP_CONNECTION_RESPONSE_RESULT_REFUSED_RESOURCES) && hci_connection->att_server.incoming_connection_request){
-                        log_info("Collision, retry in 100ms");
-                        gatt_client->state = P_W2_L2CAP_CONNECT;
-                        // set timer for retry
-                        btstack_run_loop_set_timer(&gatt_client->gc_timeout, 100);
-                        btstack_run_loop_set_timer_handler(&gatt_client->gc_timeout, gatt_client_classic_retry);
-                        btstack_run_loop_add_timer(&gatt_client->gc_timeout);
-                        break;
+                    if (status == L2CAP_CONNECTION_RESPONSE_RESULT_REFUSED_RESOURCES){
+                        if ((hci_connection != NULL) && hci_connection->att_server.incoming_connection_request) {
+                            log_info("Collision, retry in 100ms");
+                            gatt_client->state = P_W2_L2CAP_CONNECT;
+                            // set timer for retry
+                            btstack_run_loop_set_timer(&gatt_client->gc_timeout, 100);
+                            btstack_run_loop_set_timer_handler(&gatt_client->gc_timeout, gatt_client_classic_retry);
+                            btstack_run_loop_add_timer(&gatt_client->gc_timeout);
+                            break;
+                        }
                     }
                     // if status != 0, gatt_client will be discarded
                     gatt_client->state = P_READY;
