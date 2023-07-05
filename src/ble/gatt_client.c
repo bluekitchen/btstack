@@ -2142,9 +2142,6 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
                     break;
                 case L2CAP_EVENT_CHANNEL_CLOSED:
                     gatt_client = gatt_client_get_context_for_l2cap_cid(l2cap_event_channel_closed_get_local_cid(packet));
-                    // clear l2cap cid in hci_connection->att_server
-                    hci_connection = hci_connection_for_handle(gatt_client->con_handle);
-                    hci_connection->att_server.l2cap_cid = 0;
                     // discard gatt client object
                     gatt_client_classic_handle_disconnected(gatt_client);
                     break;
@@ -2901,11 +2898,7 @@ static void gatt_client_classic_handle_connected(gatt_client_t * gatt_client, ui
     memcpy(addr, gatt_client->addr, 6);
     hci_con_handle_t con_handle = gatt_client->con_handle;
     btstack_packet_handler_t callback = gatt_client->callback;
-    if (status == ERROR_CODE_SUCCESS){
-        // store l2cap cid in hci_connection->att_server
-        hci_connection_t * hci_connection = hci_connection_for_handle(con_handle);
-        hci_connection->att_server.l2cap_cid = gatt_client->l2cap_cid;
-    } else {
+    if (status != ERROR_CODE_SUCCESS){
         btstack_linked_list_remove(&gatt_client_connections, (btstack_linked_item_t *) gatt_client);
         btstack_memory_gatt_client_free(gatt_client);
     }

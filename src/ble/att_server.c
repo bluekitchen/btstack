@@ -924,7 +924,6 @@ static void att_server_dispatch_packet_handler(uint8_t packet_type, uint16_t cha
                     l2cap_event_channel_opened_get_address(packet, att_server->peer_address);
                     att_connection = &hci_connection->att_connection;
                     att_connection->con_handle = con_handle;
-                    att_server->l2cap_cid = l2cap_event_channel_opened_get_local_cid(packet);
                     // reset connection properties
                     att_server->state = ATT_SERVER_IDLE;
                     att_connection->mtu = l2cap_event_channel_opened_get_remote_mtu(packet);

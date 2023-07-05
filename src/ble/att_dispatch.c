@@ -143,15 +143,16 @@ static void att_dispatch_handle_att_pdu(uint8_t packet_type, uint16_t channel, u
 }
 
 static void att_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    uint8_t index;
 #ifdef ENABLE_GATT_OVER_CLASSIC
     hci_connection_t * hci_connection;
     hci_con_handle_t con_handle;
     bool outgoing_active;
+    uint8_t index;
 #endif
-#ifdef ENABLE_GATT_OVER_EATT
+#if defined(ENABLE_GATT_OVER_CLASSIC) || defined(ENABLE_GATT_OVER_EATT)
     bd_addr_t address;
     uint16_t l2cap_cid;
+    uint8_t  status;
 #endif
     switch (packet_type){
         case ATT_DATA_PACKET:
@@ -174,10 +175,8 @@ static void att_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                     // reject if outgoing l2cap connection active, L2CAP/TIM/BV-01-C
                     con_handle = l2cap_event_incoming_connection_get_handle(packet);
                     hci_connection = hci_connection_for_handle(con_handle);
-                    outgoing_active = false;
-                    if (hci_connection != NULL){
-                        outgoing_active = hci_connection->att_server.l2cap_cid != 0;
-                    }
+                    btstack_assert(hci_connection != NULL);
+                    outgoing_active = hci_connection->att_server.l2cap_cid != 0;
                     if (outgoing_active) {
                         hci_connection->att_server.incoming_connection_request = true;
                         l2cap_decline_connection(l2cap_cid);
@@ -188,6 +187,18 @@ static void att_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                     }
                     break;
                 case L2CAP_EVENT_CHANNEL_OPENED:
+                    // store l2cap_cid in att_server
+                    status = l2cap_event_channel_opened_get_status(packet);
+                    con_handle = l2cap_event_channel_opened_get_handle(packet);
+                    hci_connection = hci_connection_for_handle(con_handle);
+                    if (status == ERROR_CODE_SUCCESS){
+                        btstack_assert(hci_connection != NULL);
+                        hci_connection->att_server.l2cap_cid = l2cap_event_channel_opened_get_local_cid(packet);
+                    } else {
+                        if (hci_connection != NULL){
+                            hci_connection->att_server.l2cap_cid = 0;
+                        }
+                    }
                     // dispatch to all roles
                     for (index = 0; index < ATT_MAX; index++){
                         if (subscriptions[index].packet_handler != NULL){
@@ -196,6 +207,10 @@ static void att_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                     }
                     break;
                 case L2CAP_EVENT_CHANNEL_CLOSED:
+                    // clear l2cap cid in hci_connection->att_server
+                    con_handle = l2cap_event_incoming_connection_get_handle(packet);
+                    hci_connection = hci_connection_for_handle(con_handle);
+                    hci_connection->att_server.l2cap_cid = 0;
                     // dispatch to all roles
                     for (index = 0; index < ATT_MAX; index++){
                         if (subscriptions[index].packet_handler != NULL){
