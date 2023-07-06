@@ -10,11 +10,11 @@ Tools:
 - L2CAP/CLS/CLR/BV-01-C: l2cap_test - c, u, t
 - L2CAP/COS/CFD/BV-14-C: l2cap_test - (wait)
   
-- L2CAP/FIX/BV-01-C:
-- L2CAP/EXF/BV-05-C:
+- L2CAP/FIX/BV-01-C: C, 9
+- L2CAP/EXF/BV-05-C: g
 
-?? - L2CAP/TIM/BV-01-C: not implemented: back of request collision EATT
-?? - L2CAP/TIM/BV-03-C: not implemented: back of request collision EATT 
+- L2CAP/TIM/BV-01-C: gatt_client_test - 
+- L2CAP/TIM/BV-03-C: l2cap_cbm_ecbm - 
 
 - L2CAP/LE/CID/BV-01-C: l2cap_cbm_ecbm - y, b, z, s
 - L2CAP/LE/CID/BV-02-C: l2cap_cbm_ecbm - z, s
