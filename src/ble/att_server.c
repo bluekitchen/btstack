@@ -298,10 +298,6 @@ static void att_server_event_packet_handler (uint8_t packet_type, uint16_t chann
     att_connection_t * att_connection;
     hci_con_handle_t con_handle;
     hci_connection_t * hci_connection;
-#ifdef ENABLE_GATT_OVER_CLASSIC
-    bd_addr_t address;
-    btstack_linked_list_iterator_t it;
-#endif
 
     switch (packet_type) {
             
@@ -1507,6 +1503,8 @@ static void att_server_eatt_handler(uint8_t packet_type, uint16_t channel, uint8
     att_server_eatt_bearer_t * eatt_bearer;
     att_server_t * att_server;
     att_connection_t * att_connection;
+    hci_con_handle_t con_handle;
+    hci_connection_t * hci_connection;
 
     switch (packet_type) {
 
@@ -1543,24 +1541,35 @@ static void att_server_eatt_handler(uint8_t packet_type, uint16_t channel, uint8
 
                 case L2CAP_EVENT_ECBM_INCOMING_CONNECTION:
                     cid = l2cap_event_ecbm_incoming_connection_get_local_cid(packet);
-                    num_requested_bearers = l2cap_event_ecbm_incoming_connection_get_num_channels(packet);
-                    for (i = 0; i < num_requested_bearers; i++){
-                        eatt_bearers[i] = (att_server_eatt_bearer_t *) btstack_linked_list_pop(&att_server_eatt_bearer_pool);
-                        if (eatt_bearers[i] == NULL) {
-                            break;
+
+                    // reject if outgoing l2cap connection active, L2CAP/TIM/BV-01-C
+                    con_handle = l2cap_event_ecbm_incoming_connection_get_handle(packet);
+                    hci_connection = hci_connection_for_handle(con_handle);
+                    btstack_assert(hci_connection != NULL);
+                    if (hci_connection->att_server.eatt_outgoing_active) {
+                        hci_connection->att_server.incoming_connection_request = true;
+                        l2cap_ecbm_decline_channels(cid, L2CAP_ECBM_CONNECTION_RESULT_SOME_REFUSED_INSUFFICIENT_RESOURCES_AVAILABLE );
+                        log_info("Decline incoming connection from %s", bd_addr_to_str(hci_connection->address));
+                    } else {
+                        num_requested_bearers = l2cap_event_ecbm_incoming_connection_get_num_channels(packet);
+                        for (i = 0; i < num_requested_bearers; i++){
+                            eatt_bearers[i] = (att_server_eatt_bearer_t *) btstack_linked_list_pop(&att_server_eatt_bearer_pool);
+                            if (eatt_bearers[i] == NULL) {
+                                break;
+                            }
+                            eatt_bearers[i]->att_connection.con_handle = l2cap_event_ecbm_incoming_connection_get_handle(packet);
+                            eatt_bearers[i]->att_server.bearer_type = ATT_BEARER_ENHANCED_LE;
+                            receive_buffers[i] = eatt_bearers[i]->receive_buffer;
+                            btstack_linked_list_add(&att_server_eatt_bearer_active, (btstack_linked_item_t *) eatt_bearers[i]);
                         }
-                        eatt_bearers[i]->att_connection.con_handle = l2cap_event_ecbm_incoming_connection_get_handle(packet);
-                        eatt_bearers[i]->att_server.bearer_type = ATT_BEARER_ENHANCED_LE;
-                        receive_buffers[i] = eatt_bearers[i]->receive_buffer;
-                        btstack_linked_list_add(&att_server_eatt_bearer_active, (btstack_linked_item_t *) eatt_bearers[i]);
-                    }
-                    num_accepted_bearers = i;
-                    status = l2cap_ecbm_accept_channels(cid, num_accepted_bearers, initial_credits, att_server_eatt_receive_buffer_size, receive_buffers, cids);
-                    btstack_assert(status == ERROR_CODE_SUCCESS);
-                    log_info("requested %u, accepted %u", num_requested_bearers, num_accepted_bearers);
-                    for (i=0;i<num_accepted_bearers;i++){
-                        log_info("eatt l2cap cid: 0x%04x", cids[i]);
-                        eatt_bearers[i]->att_server.l2cap_cid = cids[i];
+                        num_accepted_bearers = i;
+                        status = l2cap_ecbm_accept_channels(cid, num_accepted_bearers, initial_credits, att_server_eatt_receive_buffer_size, receive_buffers, cids);
+                        btstack_assert(status == ERROR_CODE_SUCCESS);
+                        log_info("requested %u, accepted %u", num_requested_bearers, num_accepted_bearers);
+                        for (i=0;i<num_accepted_bearers;i++){
+                            log_info("eatt l2cap cid: 0x%04x", cids[i]);
+                            eatt_bearers[i]->att_server.l2cap_cid = cids[i];
+                        }
                     }
                     break;
 
