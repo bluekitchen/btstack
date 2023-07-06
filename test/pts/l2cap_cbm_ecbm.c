@@ -131,8 +131,14 @@ static uint16_t enhanced_reconfigure_choices = sizeof (enhanced_reconfigure_mps)
 static uint16_t enhanced_remote_mtu;
 static bool     enhanced_insufficient_key_size;
 
+static bool eatt_outgoing_active;
+static bool eatt_incoming_request;
+static btstack_timer_source_t eatt_retry_timer;
+
 static void gap_run(void){
 }
+
+static void eatt_retry_timer_handler(btstack_timer_source_t *ts);
 
 static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     bd_addr_t event_address;
@@ -204,7 +210,7 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     break;
                 case L2CAP_EVENT_CHANNEL_CLOSED:
                     cid = l2cap_event_channel_closed_get_local_cid(packet);
-                    printf("L2CAP: Clasic Channel closed 0x%02x\n", cid); 
+                    printf("L2CAP: Channel closed 0x%02x\n", cid);
                     break;
 
                 // LE CBM
@@ -262,6 +268,15 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     if (l2cap_event_channel_opened_get_status(packet) == 0){
                         cid_credit_based = cid;
                         enhanced_remote_mtu = l2cap_event_ecbm_channel_opened_get_remote_mtu(packet);
+                    } else {
+                        if (eatt_incoming_request){
+                            eatt_incoming_request = false;
+                            // set retry timer
+                            btstack_run_loop_set_timer(&eatt_retry_timer, 100);
+                            btstack_run_loop_set_timer_handler(&eatt_retry_timer, &eatt_retry_timer_handler);
+                            btstack_run_loop_add_timer(&eatt_retry_timer);
+                            break;
+                        }
                     }
                     printf("L2CAP_EVENT_ECBM_CHANNEL_OPENED - cid 0x%04x mtu %u, status 0x%02x\n", cid, enhanced_remote_mtu, status);
                     break;
@@ -272,6 +287,12 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     if (enhanced_insufficient_key_size){
                         enhanced_insufficient_key_size = false;
                         l2cap_ecbm_decline_channels(cid, 0x0007);
+                        break;
+                    }
+                    eatt_incoming_request = true;
+                    if (eatt_outgoing_active){
+                        printf("EATT setup collision, back-off\n");
+                        l2cap_ecbm_decline_channels(cid, L2CAP_ECBM_CONNECTION_RESULT_SOME_REFUSED_INSUFFICIENT_RESOURCES_AVAILABLE);
                         break;
                     }
                     l2cap_ecbm_accept_channels(cid, NUM_EATT_CHANNELS, initial_credits, ENHANCED_MTU_INITIAL, receive_buffers, cids);
@@ -324,6 +345,13 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
     gap_run();
 }
 
+static void eatt_retry_timer_handler(btstack_timer_source_t *ts) {
+    uint16_t cids[NUM_EATT_CHANNELS];
+    printf("Retry Creating connection to 00:1B:DC:08:E2:5C EATT - ECFC LE\n");
+    l2cap_ecbm_create_channels(&app_packet_handler, handle_le, LEVEL_0, BLUETOOTH_PSM_EATT,
+                               1, L2CAP_LE_AUTOMATIC_CREDITS, ENHANCED_MTU_INITIAL, receive_buffers, cids);
+}
+
 void show_usage(void){
     bd_addr_t iut_address;
     uint8_t uit_addr_type;
@@ -339,6 +367,7 @@ void show_usage(void){
     printf("C - enable Bonding\n");
     printf("d - connect to PSM 0x%02x ECFC (TSPX_LE_PSM)\n", TSPX_LE_PSM);
     printf("D - connect to PSM 0x%02x ECFC (TSPX_PSM_UNSUPPORTED - LE)\n", TSPX_PSM_UNSUPPORTED);
+    printf("g - connect to EATT PSM\n");
     printf("e - require encrypted connection for ECFC / insufficient key size - LEVEL_2\n");
     printf("f - require authorized connection for ECFC\n");
     printf("m - enable manual credit management (incoming connections only)\n");
@@ -419,6 +448,13 @@ static void stdin_process(char buffer){
             printf("Creating connection to %s 0x%02x - ECFC LE\n", bd_addr_to_str(pts_address), TSPX_PSM_UNSUPPORTED);
             l2cap_ecbm_create_channels(&app_packet_handler, handle_le, LEVEL_0, TSPX_PSM_UNSUPPORTED,
                                        NUM_EATT_CHANNELS, L2CAP_LE_AUTOMATIC_CREDITS, ENHANCED_MTU_INITIAL, receive_buffers, cids);
+            break;
+
+        case 'g':
+            printf("Creating connection to %s EATT - ECFC LE\n", bd_addr_to_str(pts_address));
+            eatt_outgoing_active = true;
+            l2cap_ecbm_create_channels(&app_packet_handler, handle_le, LEVEL_0, BLUETOOTH_PSM_EATT,
+                                       1, L2CAP_LE_AUTOMATIC_CREDITS, ENHANCED_MTU_INITIAL, receive_buffers, cids);
             break;
 
         case 'c':
