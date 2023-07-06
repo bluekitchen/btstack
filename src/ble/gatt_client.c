@@ -87,6 +87,7 @@ static void gatt_client_classic_retry(btstack_timer_source_t * ts);
 
 #ifdef ENABLE_GATT_OVER_EATT
 static bool gatt_client_le_enhanced_handle_can_send_query(gatt_client_t * gatt_client);
+static void gatt_client_le_enhanced_retry(btstack_timer_source_t * ts);
 #endif
 
 void gatt_client_init(void){
@@ -3124,8 +3125,21 @@ static void gatt_client_le_enhanced_handle_connected(gatt_client_t * gatt_client
                 }
             }
         } else {
-            gatt_client->eatt_state = GATT_CLIENT_EATT_IDLE;
-            status = ERROR_CODE_CONNECTION_REJECTED_DUE_TO_LIMITED_RESOURCES;
+            hci_connection_t * hci_connection = hci_connection_for_handle(gatt_client->con_handle);
+            btstack_assert(hci_connection != NULL);
+            if (hci_connection->att_server.incoming_connection_request){
+                hci_connection->att_server.incoming_connection_request = false;
+                log_info("Collision, retry in 100ms");
+                gatt_client->state = P_W2_L2CAP_CONNECT;
+                // set timer for retry
+                btstack_run_loop_set_timer(&gatt_client->gc_timeout, 100);
+                btstack_run_loop_set_timer_handler(&gatt_client->gc_timeout, gatt_client_le_enhanced_retry);
+                btstack_run_loop_add_timer(&gatt_client->gc_timeout);
+                return;
+            } else {
+                gatt_client->eatt_state = GATT_CLIENT_EATT_IDLE;
+                status = ERROR_CODE_CONNECTION_REJECTED_DUE_TO_LIMITED_RESOURCES;
+            }
         }
     } else {
         gatt_client_eatt_finalize(gatt_client);
@@ -3225,6 +3239,14 @@ static void gatt_client_le_enhanced_setup_l2cap_channel(gatt_client_t * gatt_cli
         gatt_client->eatt_state = GATT_CLIENT_EATT_L2CAP_SETUP;
     } else {
         gatt_client_le_enhanced_handle_connected(gatt_client, status);
+    }
+}
+
+static void gatt_client_le_enhanced_retry(btstack_timer_source_t * ts){
+    gatt_client_t * gatt_client = gatt_client_for_timer(ts);
+    if (gatt_client != NULL){
+        gatt_client->state = P_W4_L2CAP_CONNECTION;
+        gatt_client_le_enhanced_setup_l2cap_channel(gatt_client);
     }
 }
 
