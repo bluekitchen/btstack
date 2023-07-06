@@ -61,6 +61,9 @@
 #include "bluetooth_sdp.h"
 #include "classic/sdp_util.h"
 
+// L2CAP Test Spec p35 defines a minimum of 100 ms, but PTS might indicate an error if we sent after 100 ms
+#define GATT_CLIENT_COLLISION_BACKOFF_MS 150
+
 static btstack_linked_list_t gatt_client_connections;
 static btstack_linked_list_t gatt_client_value_listeners;
 static btstack_packet_callback_registration_t hci_event_callback_registration;
@@ -284,11 +287,6 @@ uint8_t gatt_client_get_mtu(hci_con_handle_t con_handle, uint16_t * mtu){
     *mtu = ATT_DEFAULT_MTU;
     return GATT_CLIENT_IN_WRONG_STATE;
 }
-
-#ifdef ENABLE_GATT_OVER_CLASSIC
-    // TODO: re-use single buffer for all eatt channels
-static uint8_t gatt_client_le_enhanced_request_buffer[512];
-#endif
 
 static uint8_t *gatt_client_reserve_request_buffer(gatt_client_t *gatt_client) {
     switch (gatt_client->bearer_type){
@@ -2109,9 +2107,9 @@ static void gatt_client_handle_att_response(gatt_client_t * gatt_client, uint8_t
 
 static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size) {
     gatt_client_t *gatt_client;
-    hci_connection_t * hci_connection;
-    uint8_t status;
 #ifdef ENABLE_GATT_OVER_CLASSIC
+    uint8_t status;
+    hci_connection_t * hci_connection;
     hci_con_handle_t con_handle;
 #endif
 
@@ -2131,7 +2129,7 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
                             log_info("Collision, retry in 100ms");
                             gatt_client->state = P_W2_L2CAP_CONNECT;
                             // set timer for retry
-                            btstack_run_loop_set_timer(&gatt_client->gc_timeout, 100);
+                            btstack_run_loop_set_timer(&gatt_client->gc_timeout, GATT_CLIENT_COLLISION_BACKOFF_MS);
                             btstack_run_loop_set_timer_handler(&gatt_client->gc_timeout, gatt_client_classic_retry);
                             btstack_run_loop_add_timer(&gatt_client->gc_timeout);
                             break;
@@ -3132,7 +3130,7 @@ static void gatt_client_le_enhanced_handle_connected(gatt_client_t * gatt_client
                 log_info("Collision, retry in 100ms");
                 gatt_client->state = P_W2_L2CAP_CONNECT;
                 // set timer for retry
-                btstack_run_loop_set_timer(&gatt_client->gc_timeout, 100);
+                btstack_run_loop_set_timer(&gatt_client->gc_timeout, GATT_CLIENT_COLLISION_BACKOFF_MS);
                 btstack_run_loop_set_timer_handler(&gatt_client->gc_timeout, gatt_client_le_enhanced_retry);
                 btstack_run_loop_add_timer(&gatt_client->gc_timeout);
                 return;

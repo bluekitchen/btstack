@@ -45,6 +45,8 @@
 
 #include "hci.h"
 
+// spec defines 100 ms, PTS might indicate an error if we sent after 100 ms
+#define GATT_CLIENT_COLLISION_BACKOFF_MS 150
 #if defined __cplusplus
 extern "C" {
 #endif
