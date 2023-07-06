@@ -206,6 +206,7 @@ static void ots_server_reset_long_write_filter(ots_server_connection_t * connect
     connection->temp_filter.type = OTS_FILTER_TYPE_NO_FILTER;
     connection->temp_filter.data_size = 0;
     memset(connection->temp_filter.data, 0, sizeof(connection->temp_filter.data));
+    connection->temp_attribute_handle = 0;
 }
 
 static bool ots_current_object_valid(ots_server_connection_t * connection){
@@ -546,7 +547,7 @@ static int ots_server_handle_list_control_point_write(ots_server_connection_t * 
     return 0;
 }
 
-static uint8_t ots_server_filter_buffer_valid(uint8_t * buffer, uint16_t buffer_size, uint16_t offset, ots_filter_t * filter_out) {
+static uint8_t ots_server_filter_buffer_valid_write(uint8_t * buffer, uint16_t buffer_size, uint16_t offset, ots_filter_t * filter_out) {
     if (buffer_size < 1){
         return ATT_ERROR_WRITE_REQUEST_REJECTED;
     }
@@ -643,6 +644,44 @@ static int ots_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
         return 0;
     }
 
+    uint8_t i;
+    switch (transaction_mode){
+        case ATT_TRANSACTION_MODE_CANCEL:
+            ots_server_reset_long_write_filter(connection);
+            break;
+
+        case ATT_TRANSACTION_MODE_EXECUTE:
+            for (i = 0; i < OTS_MAX_NUM_FILTERS; i++) {
+                if (connection->temp_attribute_handle ==
+                    ots_server_get_value_handle_for_characteristic_index(OTS_OBJECT_LIST_FILTER1_INDEX + i)) {
+                    connection->filters[i].type = connection->temp_filter.type;
+                    connection->filters[i].data_size = connection->temp_filter.data_size;
+
+                    memset(connection->filters[i].data, 0, sizeof(connection->filters[i].data));
+                    memcpy(connection->filters[i].data, connection->temp_filter.data, connection->filters[i].data_size);
+
+                    ots_server_reset_long_write_filter(connection);
+                    return 0;
+                }
+            }
+            break;
+        case ATT_TRANSACTION_MODE_ACTIVE:
+            if (offset == 0){
+                if (connection->temp_attribute_handle != 0){
+                    return ATT_ERROR_INSUFFICIENT_RESOURCES;
+                }
+                connection->temp_attribute_handle = attribute_handle;
+            } else {
+                if (connection->temp_attribute_handle != attribute_handle){
+                    return ATT_ERROR_INSUFFICIENT_RESOURCES;
+                }
+            }
+            break;
+
+        default:
+            break;
+    }
+
     if (attribute_handle == ots_server_get_value_handle_for_characteristic_index(OTS_OBJECT_ACTION_CONTROL_POINT_INDEX)){
         return ots_server_handle_action_control_point_write(connection, buffer, buffer_size);
 
@@ -701,10 +740,9 @@ static int ots_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
         }
     } else {
         uint8_t status;
-        uint8_t i;
         for (i = 0; i < OTS_MAX_NUM_FILTERS; i++){
             if (attribute_handle == ots_server_get_value_handle_for_characteristic_index(OTS_OBJECT_LIST_FILTER1_INDEX + i)){
-                status = ots_server_filter_buffer_valid(buffer, buffer_size, offset, &connection->temp_filter);
+                status = ots_server_filter_buffer_valid_write(buffer, buffer_size, offset, &connection->temp_filter);
                 if (status != ATT_ERROR_SUCCESS){
                     return status;
                 }
@@ -717,44 +755,21 @@ static int ots_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
                         break;
 
                     case ATT_TRANSACTION_MODE_ACTIVE:
-                        printf("ATT_TRANSACTION_MODE_ACTIVE\n");
-
                         if (offset == 0){
                             memset(connection->temp_filter.data, 0, sizeof(connection->temp_filter.data));
                             memcpy(connection->temp_filter.data, &buffer[1], connection->temp_filter.data_size);
                         } else {
                             memcpy(&connection->temp_filter.data[offset - 1], buffer, buffer_size);
                         }
-                        connection->filters[i].type = connection->temp_filter.type;
-                        connection->filters[i].data_size = connection->temp_filter.data_size;
-
-                        memset(connection->filters[i].data, 0, sizeof(connection->filters[i].data));
-                        memcpy(connection->filters[i].data, connection->temp_filter.data, connection->filters[i].data_size);
                         break;
 
-                    case ATT_TRANSACTION_MODE_CANCEL:
-                        printf("ATT_TRANSACTION_MODE_CANCEL\n");
-                        ots_server_reset_long_write_filter(connection);
-                        break;
-
-                    case ATT_TRANSACTION_MODE_EXECUTE:
-                        printf("ATT_TRANSACTION_MODE_EXECUTE\n");
-                        connection->filters[i].type = connection->temp_filter.type;
-                        connection->filters[i].data_size = connection->temp_filter.data_size;
-                        memcpy(connection->filters[i].data, connection->temp_filter.data, connection->temp_filter.data_size);
-                        ots_server_reset_long_write_filter(connection);
-
-                        ots_server_emit_current_object_filter_changed(connection, i);
-                        break;
-                                            
                     default:
                         break;
-                } 
-               return 0;    
+                }
+                return 0;
             }
         }
     }
-    
     return 0;
 }
 
