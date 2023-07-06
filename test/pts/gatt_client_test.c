@@ -198,7 +198,8 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 static btstack_packet_callback_registration_t sm_event_callback_registration;
 static gatt_client_notification_t gatt_client_notification;
 
-static uint8_t eatt_buffer[1000];
+static uint8_t eatt_buffer_client[1000];
+static uint8_t eatt_buffer_server[10000];
 
 static void show_usage(void);
 ///
@@ -1549,7 +1550,7 @@ static void ui_process_command(char buffer){
         case 'H':
             // setup eatt
             printf("Setup EATT Bearer over LE\n");
-            gatt_client_le_enhanced_connect(handle_gatt_client_event, handle, 2, eatt_buffer, sizeof(eatt_buffer));
+            gatt_client_le_enhanced_connect(handle_gatt_client_event, handle, 2, eatt_buffer_client, sizeof(eatt_buffer_client));
             break;
         case 'j':
             central_state = CENTRAL_W4_READ_CHARACTERISTIC_VALUE_BY_HANDLE;
@@ -1734,7 +1735,8 @@ int btstack_main(int argc, const char * argv[]){
     gatt_client_listen_for_characteristic_value_updates(&gatt_client_notification, &handle_gatt_client_event, GATT_CLIENT_ANY_CONNECTION, NULL);
 
     // Setup ATT/GATT Server
-    att_server_init(profile_data, att_read_callback, NULL);    
+    att_server_init(profile_data, att_read_callback, NULL);
+    att_server_eatt_init(5, eatt_buffer_server, sizeof(eatt_buffer_server));
     att_server_register_packet_handler(app_packet_handler);
 
     // Setup LE Device DB
