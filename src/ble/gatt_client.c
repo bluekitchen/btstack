@@ -3108,18 +3108,21 @@ static void gatt_client_le_enhanced_handle_connected(gatt_client_t * gatt_client
 
 // single channel disconnected
 static void gatt_client_le_enhanced_handle_ecbm_disconnected(gatt_client_t * gatt_client, gatt_client_t * eatt_client) {
-    if (gatt_client->eatt_state == GATT_CLIENT_EATT_READY) {
 
-        // report error
-        gatt_client_report_error_if_pending(eatt_client, ATT_ERROR_HCI_DISCONNECT_RECEIVED);
+    // report error
+    gatt_client_report_error_if_pending(eatt_client, ATT_ERROR_HCI_DISCONNECT_RECEIVED);
 
-        // free memory
-        btstack_linked_list_remove(&gatt_client->eatt_clients, (btstack_linked_item_t *) eatt_client);
-        btstack_memory_gatt_client_free(eatt_client);
+    // free memory
+    btstack_linked_list_remove(&gatt_client->eatt_clients, (btstack_linked_item_t *) eatt_client);
+    btstack_memory_gatt_client_free(eatt_client);
 
-        // report disconnected if last channel closed
-        if (btstack_linked_list_empty(&gatt_client->eatt_clients)){
-            // emit disconnected when last eatt client is gone
+    // last channel
+    if (btstack_linked_list_empty(&gatt_client->eatt_clients)){
+        hci_connection_t * hci_connection = hci_connection_for_handle(gatt_client->con_handle);
+        hci_connection->att_server.eatt_outgoing_active = false;
+
+        if (gatt_client->eatt_state == GATT_CLIENT_EATT_READY) {
+            // report disconnected if last channel closed
             uint8_t buffer[20];
             uint16_t len = hci_event_create_from_template_and_arguments(buffer, sizeof(buffer), &gatt_client_disconnected, gatt_client->con_handle);
             (*gatt_client->callback)(HCI_EVENT_PACKET, 0, buffer, len);
@@ -3396,6 +3399,9 @@ uint8_t gatt_client_le_enhanced_connect(btstack_packet_handler_t callback, hci_c
         }
         return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
     }
+
+    hci_connection_t * hci_connection = hci_connection_for_handle(con_handle);
+    hci_connection->att_server.eatt_outgoing_active = true;
 
     gatt_client->callback = callback;
     gatt_client->eatt_num_clients   = num_channels;
