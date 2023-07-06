@@ -3083,6 +3083,19 @@ uint8_t gatt_client_classic_disconnect(btstack_packet_handler_t callback, hci_co
 
 static void gatt_client_le_enhanced_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
+static uint8_t gatt_client_le_enhanced_num_eatt_clients_in_state(gatt_client_t * gatt_client, gatt_client_state_t state){
+    uint8_t num_clients = 0;
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &gatt_client->eatt_clients);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        gatt_client_t * eatt_client = (gatt_client_t *) btstack_linked_list_iterator_next(&it);
+        if (eatt_client->state == state){
+            num_clients++;
+        }
+    }
+    return num_clients;
+}
+
 static void gatt_client_eatt_finalize(gatt_client_t * gatt_client) {
     // free eatt clients
     btstack_linked_list_iterator_t it;
@@ -3097,7 +3110,23 @@ static void gatt_client_eatt_finalize(gatt_client_t * gatt_client) {
 // all channels connected
 static void gatt_client_le_enhanced_handle_connected(gatt_client_t * gatt_client, uint8_t status) {
     if (status == ERROR_CODE_SUCCESS){
-        gatt_client->eatt_state = GATT_CLIENT_EATT_READY;
+        uint8_t num_ready = gatt_client_le_enhanced_num_eatt_clients_in_state(gatt_client, P_READY);
+        if (num_ready > 0){
+            gatt_client->eatt_state = GATT_CLIENT_EATT_READY;
+            // free unused channels
+            btstack_linked_list_iterator_t it;
+            btstack_linked_list_iterator_init(&it, &gatt_client_connections);
+            while (btstack_linked_list_iterator_has_next(&it)) {
+                gatt_client_t *eatt_client = (gatt_client_t *) btstack_linked_list_iterator_next(&it);
+                if (eatt_client->state == P_L2CAP_CLOSED){
+                    btstack_linked_list_iterator_remove(&it);
+                    btstack_memory_gatt_client_free(eatt_client);
+                }
+            }
+        } else {
+            gatt_client->eatt_state = GATT_CLIENT_EATT_IDLE;
+            status = ERROR_CODE_CONNECTION_REJECTED_DUE_TO_LIMITED_RESOURCES;
+        }
     } else {
         gatt_client_eatt_finalize(gatt_client);
         gatt_client->eatt_state = GATT_CLIENT_EATT_IDLE;
@@ -3207,6 +3236,8 @@ static void gatt_client_le_enhanced_packet_handler(uint8_t packet_type, uint16_t
     uint8_t status;
     gatt_client_characteristic_t characteristic;
     gatt_client_service_t service;
+    btstack_linked_list_iterator_t it;
+    uint8_t num_pending_channels;
     switch (packet_type) {
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)) {
@@ -3282,11 +3313,10 @@ static void gatt_client_le_enhanced_packet_handler(uint8_t packet_type, uint16_t
                         eatt_client->state = P_READY;
                         eatt_client->mtu = l2cap_event_channel_opened_get_remote_mtu(packet);
                     } else {
-                        gatt_client_le_enhanced_handle_ecbm_disconnected(gatt_client, eatt_client);
+                        eatt_client->state = P_L2CAP_CLOSED;
                     }
-                    // all channels opened?
-                    gatt_client->eatt_num_clients--;
-                    if (gatt_client->eatt_num_clients == 0){
+                    // connected if opened event for all channels received
+                    if (gatt_client_le_enhanced_num_eatt_clients_in_state(gatt_client, P_W4_L2CAP_CONNECTION) == 0){
                         gatt_client_le_enhanced_handle_connected(gatt_client, ERROR_CODE_SUCCESS);
                     }
                     break;

@@ -139,6 +139,7 @@ typedef enum {
     P_W2_L2CAP_CONNECT,
     P_W4_L2CAP_CONNECTION,
     P_W2_EMIT_CONNECTED,
+    P_L2CAP_CLOSED,
 } gatt_client_state_t;
     
     
