@@ -125,6 +125,12 @@ static void ots_server_reset_connection(ots_server_connection_t * connection){
     connection->olcp_configuration = 0;
     connection->object_changed_configuration = 0;
     connection->scheduled_tasks = 0;
+
+    uint8_t i;
+    for (i = 0; i < OTS_MAX_NUM_FILTERS; i++){
+        memset(&connection->filters[i], 0, sizeof(ots_filter_t));
+        connection->filters[i].type = OTS_FILTER_TYPE_NO_FILTER;
+    }
 }
 
 static void ots_server_reset_connection_for_con_handle(hci_con_handle_t con_handle){
@@ -857,7 +863,7 @@ uint8_t object_transfer_service_server_init(uint32_t oacp_features, uint32_t olc
     memset(storage_clients, 0, sizeof(ots_server_connection_t) * ots_connections_num);
     uint16_t i;
     for (i = 0; i < ots_connections_num; i++){
-        storage_clients[i].con_handle = HCI_CON_HANDLE_INVALID;
+        ots_server_reset_connection(&storage_clients[i]);
         btstack_linked_list_add(&ots_connections, (btstack_linked_item_t *) &storage_clients[i]);
     }
 
@@ -954,8 +960,7 @@ uint8_t object_transfer_service_server_create_object_with_type_uuid16(ots_object
     }
 
     memcpy(&object->luid, object_id, sizeof(ots_object_id_t));
-    printf("add %s\n", bd_addr_to_str(object->luid));
-
+   
     object->used = true;
     object->properties = properties;
     btstack_strcpy(object->name, OTS_MAX_NAME_LENGHT, name);
@@ -1009,7 +1014,6 @@ uint8_t object_transfer_service_server_update_current_object_name(hci_con_handle
     connection->current_object = object;
     connection->current_object_locked = false;
     connection->current_object_object_transfer_in_progress = false;
-    printf("current object name %s\n", connection->current_object->name);    
     return ERROR_CODE_SUCCESS;
 }
 
@@ -1037,6 +1041,7 @@ uint8_t object_transfer_service_server_update_current_object_filter(hci_con_hand
     connection->filters[filter_index].data_size = filter->data_size;
 
     if (filter->data_size > 0){
+        memset(connection->filters[filter_index].data, 0, sizeof(connection->filters[filter_index].data));
         memcpy(connection->filters[filter_index].data, filter->data, filter->data_size);
     }
      
