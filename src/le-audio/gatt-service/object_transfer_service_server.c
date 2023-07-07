@@ -203,10 +203,10 @@ static void ots_server_emit_current_object_filter_changed(ots_server_connection_
 }
 
 static void ots_server_reset_long_write_filter(ots_server_connection_t * connection){
-    connection->temp_filter.type = OTS_FILTER_TYPE_NO_FILTER;
-    connection->temp_filter.data_size = 0;
-    memset(connection->temp_filter.data, 0, sizeof(connection->temp_filter.data));
-    connection->temp_attribute_handle = 0;
+    connection->long_write_filter_type = OTS_FILTER_TYPE_NO_FILTER;
+    connection->long_write_data_size = 0;
+    memset(connection->long_write_data, 0, sizeof(connection->long_write_data));
+    connection->long_write_attribute_handle = 0;
 }
 
 static bool ots_current_object_valid(ots_server_connection_t * connection){
@@ -547,47 +547,47 @@ static int ots_server_handle_list_control_point_write(ots_server_connection_t * 
     return 0;
 }
 
-static uint8_t ots_server_filter_buffer_valid_write(uint8_t * buffer, uint16_t buffer_size, uint16_t offset, ots_filter_t * filter_out) {
+static uint8_t ots_server_filter_buffer_valid_write(uint8_t * buffer, uint16_t buffer_size, uint16_t offset, ots_server_connection_t * connection){
     if (buffer_size < 1){
         return ATT_ERROR_WRITE_REQUEST_REJECTED;
     }
     uint8_t data_size = (uint8_t)buffer_size + (uint8_t)offset - 1;
-    uint8_t max_data_size = sizeof(filter_out->data);
+    uint8_t max_data_size = sizeof(connection->long_write_data);
 
     if (data_size > max_data_size){
         return ATT_ERROR_RESPONSE_OTS_WRITE_REQUEST_REJECTED;
     }
-    filter_out->data_size = data_size;
 
+    connection->long_write_data_size = data_size;
     if (offset != 0){
         return ATT_ERROR_SUCCESS;
     }
 
-    filter_out->type = (ots_filter_type_t) buffer[0];
+    connection->long_write_filter_type = (ots_filter_type_t) buffer[0];
 
-    if (filter_out->type >= OTS_FILTER_TYPE_RFU){
+    if (connection->long_write_filter_type >= OTS_FILTER_TYPE_RFU){
         return ATT_ERROR_RESPONSE_OTS_WRITE_REQUEST_REJECTED;
     }
 
     uint8_t status = ATT_ERROR_SUCCESS;
-    switch (filter_out->type){
+    switch (connection->long_write_filter_type){
         case OTS_FILTER_TYPE_NO_FILTER:
         case OTS_FILTER_TYPE_MARKED_OBJECTS:
-            if (filter_out->data_size != 0){
+            if (connection->long_write_data_size != 0){
                 status =  ATT_ERROR_RESPONSE_OTS_WRITE_REQUEST_REJECTED;
             }
             break;
 
         case OTS_FILTER_TYPE_CREATED_BETWEEN:
         case OTS_FILTER_TYPE_MODIFIED_BETWEEN:
-            if (filter_out->data_size != 14){
+            if (connection->long_write_data_size != 14){
                 status = ATT_ERROR_RESPONSE_OTS_WRITE_REQUEST_REJECTED;
             }
             break;
 
         case OTS_FILTER_TYPE_CURRENT_SIZE_BETWEEN:
         case OTS_FILTER_TYPE_ALLOCATED_SIZE_BETWEEN:
-            if (filter_out->data_size != 8){
+            if (connection->long_write_data_size != 8){
                 status = ATT_ERROR_RESPONSE_OTS_WRITE_REQUEST_REJECTED;
             }
             break;
@@ -651,28 +651,34 @@ static int ots_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
             break;
 
         case ATT_TRANSACTION_MODE_EXECUTE:
-            for (i = 0; i < OTS_MAX_NUM_FILTERS; i++) {
-                if (connection->temp_attribute_handle ==
-                    ots_server_get_value_handle_for_characteristic_index(OTS_OBJECT_LIST_FILTER1_INDEX + i)) {
-                    connection->filters[i].type = connection->temp_filter.type;
-                    connection->filters[i].data_size = connection->temp_filter.data_size;
+            for (i = 0; i < OTS_MAX_NUM_FILTERS; i++){
+                uint16_t filter_value_handle = ots_server_get_value_handle_for_characteristic_index(OTS_OBJECT_LIST_FILTER1_INDEX + i);
 
+                if (connection->long_write_attribute_handle == filter_value_handle){
                     memset(connection->filters[i].data, 0, sizeof(connection->filters[i].data));
-                    memcpy(connection->filters[i].data, connection->temp_filter.data, connection->filters[i].data_size);
-
-                    ots_server_reset_long_write_filter(connection);
-                    return 0;
+                    connection->filters[i].type = connection->long_write_filter_type;
+                    connection->filters[i].data_size = connection->long_write_data_size;
+                    memcpy(connection->filters[i].data, connection->long_write_data, connection->long_write_data_size);
+                    ots_server_emit_current_object_filter_changed(connection, i);
+                    break;
                 }
             }
-            break;
+
+            if (connection->long_write_attribute_handle == ots_server_get_value_handle_for_characteristic_index(OTS_OBJECT_NAME_INDEX)) {
+                memcpy(connection->current_object->name, connection->long_write_data, connection->long_write_data_size);
+                ots_server_emit_current_object_name_changed(connection);
+            }
+            ots_server_reset_long_write_filter(connection);
+            return 0;
+
         case ATT_TRANSACTION_MODE_ACTIVE:
             if (offset == 0){
-                if (connection->temp_attribute_handle != 0){
+                if (connection->long_write_attribute_handle != 0){
                     return ATT_ERROR_INSUFFICIENT_RESOURCES;
                 }
-                connection->temp_attribute_handle = attribute_handle;
+                connection->long_write_attribute_handle = attribute_handle;
             } else {
-                if (connection->temp_attribute_handle != attribute_handle){
+                if (connection->long_write_attribute_handle != attribute_handle){
                     return ATT_ERROR_INSUFFICIENT_RESOURCES;
                 }
             }
@@ -705,22 +711,13 @@ static int ots_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
                     return ATT_ERROR_RESPONSE_OTS_WRITE_REQUEST_REJECTED;
                 }
                 if (offset == 0){
-                    memset(connection->current_object->name, 0, OTS_MAX_NAME_LENGHT);
+                    memset(connection->long_write_data, 0, OTS_MAX_NAME_LENGHT);
                 }
-                memcpy(&connection->current_object->name[offset], (const char *)buffer, buffer_size);
-                printf("name %s\n", connection->current_object->name);
-                return 0;
-
-            case ATT_TRANSACTION_MODE_CANCEL:
-                ots_server_reset_current_object_name(connection);
-                break;
-
-            case ATT_TRANSACTION_MODE_EXECUTE:
-                ots_server_emit_current_object_name_changed(connection);
+                memcpy(&connection->long_write_data[offset], (const char *)buffer, buffer_size);
                 break;
 
             default:
-                return 0;
+                break;
         }
         
     } else if (attribute_handle == ots_server_get_value_handle_for_characteristic_index(OTS_OBJECT_PROPERTIES_INDEX)){
@@ -742,24 +739,25 @@ static int ots_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
         uint8_t status;
         for (i = 0; i < OTS_MAX_NUM_FILTERS; i++){
             if (attribute_handle == ots_server_get_value_handle_for_characteristic_index(OTS_OBJECT_LIST_FILTER1_INDEX + i)){
-                status = ots_server_filter_buffer_valid_write(buffer, buffer_size, offset, &connection->temp_filter);
+                status = ots_server_filter_buffer_valid_write(buffer, buffer_size, offset, connection);
                 if (status != ATT_ERROR_SUCCESS){
+                    ots_server_reset_long_write_filter(connection);
                     return status;
                 }
 
                 switch (transaction_mode){
                     case ATT_TRANSACTION_MODE_NONE:
-                        connection->filters[i].data_size   = connection->temp_filter.data_size;
-                        connection->filters[i].type = connection->temp_filter.type;
+                        connection->filters[i].data_size   = connection->long_write_data_size;
+                        connection->filters[i].type = connection->long_write_filter_type;
                         memcpy(connection->filters[i].data, &buffer[1], connection->filters[i].data_size);
                         break;
 
                     case ATT_TRANSACTION_MODE_ACTIVE:
                         if (offset == 0){
-                            memset(connection->temp_filter.data, 0, sizeof(connection->temp_filter.data));
-                            memcpy(connection->temp_filter.data, &buffer[1], connection->temp_filter.data_size);
+                            memset(connection->long_write_data, 0, sizeof(connection->long_write_data));
+                            memcpy(connection->long_write_data, &buffer[1], connection->long_write_data_size);
                         } else {
-                            memcpy(&connection->temp_filter.data[offset - 1], buffer, buffer_size);
+                            memcpy(&connection->long_write_data[offset - 1], buffer, buffer_size);
                         }
                         break;
 
@@ -772,8 +770,6 @@ static int ots_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
     }
     return 0;
 }
-
-
 
 static void ots_server_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
