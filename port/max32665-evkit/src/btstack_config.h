@@ -1,5 +1,4 @@
-// Maxim Max32630FTHR Port
-//
+
 #ifndef BTSTACK_CONFIG_H
 #define BTSTACK_CONFIG_H
 

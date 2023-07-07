@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2016 Maxim Integrated Products, Inc., All Rights Reserved.
+ * Copyright (C) Analog Devices, Inc., All Rights Reserved.
  * Author: Ismail H. Kose <ismail.kose@maximintegrated.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -27,7 +27,7 @@
  * The mere transfer of this software does not imply any licenses
  * of trade secrets, proprietary technology, copyrights, patents,
  * trademarks, maskwork rights, or any other form of intellectual
- * property whatsoever. Maxim Integrated Products, Inc. retains all
+ * property whatsoever. Analog Devices, Inc. retains all
  * ownership rights.
  *******************************************************************************
  */

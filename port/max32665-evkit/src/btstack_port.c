@@ -1,36 +1,37 @@
-/*******************************************************************************
- * Copyright (C) 2016 Maxim Integrated Products, Inc., All Rights Reserved.
- * Author: Ismail H. Kose <ismail.kose@maximintegrated.com>
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"),
- * to deal in the Software without restriction, including without limitation
- * the rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included
- * in all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
- * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
- * IN NO EVENT SHALL MAXIM INTEGRATED BE LIABLE FOR ANY CLAIM, DAMAGES
- * OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
- * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
- * OTHER DEALINGS IN THE SOFTWARE.
- *
- * Except as contained in this notice, the name of Maxim Integrated
- * Products, Inc. shall not be used except as stated in the Maxim Integrated
- * Products, Inc. Branding Policy.
- *
- * The mere transfer of this software does not imply any licenses
- * of trade secrets, proprietary technology, copyrights, patents,
- * trademarks, maskwork rights, or any other form of intellectual
- * property whatsoever. Maxim Integrated Products, Inc. retains all
- * ownership rights.
- *******************************************************************************
- */
+/* *****************************************************************************
+* Copyright (C) Analog Devices, All rights Reserved.
+*
+* This software is protected by copyright laws of the United States and
+* of foreign countries. This material may also be protected by patent laws
+* and technology transfer regulations of the United States and of foreign
+* countries. This software is furnished under a license agreement and/or a
+* nondisclosure agreement and may only be used or reproduced in accordance
+* with the terms of those agreements. Dissemination of this information to
+* any party or parties not specified in the license agreement and/or
+* nondisclosure agreement is expressly prohibited.
+*
+* The above copyright notice and this permission notice shall be included
+* in all copies or substantial portions of the Software.
+*
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+* OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+* MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+* IN NO EVENT SHALL MAXIM INTEGRATED BE LIABLE FOR ANY CLAIM, DAMAGES
+* OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+* ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+* OTHER DEALINGS IN THE SOFTWARE.
+*
+* Except as contained in this notice, the name of Maxim Integrated
+* Products, Inc. shall not be used except as stated in the Maxim Integrated
+* Products, Inc. Branding Policy.
+*
+* The mere transfer of this software does not imply any licenses
+* of trade secrets, proprietary technology, copyrights, patents,
+* trademarks, maskwork rights, or any other form of intellectual
+* property whatsoever. Analog Devices, Inc. retains all
+* ownership rights.
+**************************************************************************** */
+
 
 #include <stdio.h>
 #include <string.h>
@@ -367,23 +368,6 @@ int bluetooth_main(void)
 
 	// setup TLV Flash Bank implementation
 
-#if 0
-	// const hal_flash_bank_t *hal_flash_bank_impl = hal_flash_bank_mxc_init_instance(
-	// 	&hal_flash_bank_context,
-	// 	HAL_FLASH_BANK_SIZE,
-	// 	HAL_FLASH_BANK_0_ADDR,
-	// 	HAL_FLASH_BANK_1_ADDR);
-	// const btstack_tlv_t *btstack_tlv_impl = btstack_tlv_flash_bank_init_instance(
-	// 	&btstack_tlv_flash_bank_context,
-	// 	hal_flash_bank_impl,
-	// 	&hal_flash_bank_context);
-	// // setup Link Key DB using TLV
-	// const btstack_link_key_db_t *btstack_link_key_db = btstack_link_key_db_tlv_get_instance(btstack_tlv_impl, &btstack_tlv_flash_bank_context);
-	// hci_set_link_key_db(btstack_link_key_db);
-
-	// // setup LE Device DB using TLV
-	// le_device_db_tlv_configure(btstack_tlv_impl, &btstack_tlv_flash_bank_context);
-#else
 
 	const btstack_tlv_t *btstack_tlv_impl = btstack_tlv_none_init_instance();
 	// setup global tlv
@@ -391,7 +375,7 @@ int bluetooth_main(void)
 
 	// setup LE Device DB using TLV
 	le_device_db_tlv_configure(btstack_tlv_impl, NULL);
-#endif
+
 	// hci_set_chipset(btstack_chipset_cc256x_instance());
 	hci_init(transport, &config);
 
