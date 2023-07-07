@@ -140,6 +140,8 @@ SRCS += stdio.c
 SRCS += led.c
 SRCS += pb.c
 SRCS += mxc_assert.c
+SRCS += btstack_tlv_none.c
+SRCS += mx25.c
 
 # Where to find BSP source files
 VPATH += $(BOARD_DIR)/Source
@@ -152,7 +154,6 @@ PERIPH_DRIVER_DIR=$(LIBS_DIR)/PeriphDrivers
 include $(PERIPH_DRIVER_DIR)/$(TARGET_LC)_files.mk
 IPATH+=$(PERIPH_DRIVER_INCLUDE_DIR)
 SRCS += $(PERIPH_DRIVER_C_FILES)
-$(info $(SRCS))
 
 # BTstack
 BTSTACK_ROOT ?= ../../../..
@@ -199,7 +200,7 @@ PROJ_CFLAGS += \
 	-I${BTSTACK_ROOT}/3rd-party/hxcmod-player \
 	-I${BTSTACK_ROOT}/3rd-party/lwip/core/src/include \
 	-I${BTSTACK_ROOT}/3rd-party/lwip/dhcp-server \
-
+    -DEXT_FLASH_MX25 \
 
 CORE = \
     ad_parser.o \
@@ -211,7 +212,6 @@ CORE = \
     l2cap.o \
     l2cap_signaling.o \
     btstack_run_loop_embedded.o \
-	$(CC2564B) \
     hci_transport_h4.o
 
 COMMON = \
@@ -227,8 +227,7 @@ COMMON = \
     btstack_tlv_flash_bank.o  \
     btstack_stdin_embedded.o  \
     btstack_crypto.o          \
-    btstack_tlv_none_init_instance.o \
-    
+
 CLASSIC = \
     btstack_link_key_db_tlv.o \
     hid_device.o              \
