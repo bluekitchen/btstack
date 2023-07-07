@@ -83,8 +83,10 @@ typedef struct {
     ots_filter_t filters[OTS_MAX_NUM_FILTERS];
 
     // used in write callback
-    ots_filter_t temp_filter;
-    uint16_t     temp_attribute_handle;
+    ots_filter_type_t long_write_filter_type;
+    uint8_t           long_write_data_size;
+    uint8_t           long_write_data[OTS_MAX_NAME_LENGHT];
+    uint16_t          long_write_attribute_handle;
 
     // used for OACP procedures
     oacp_opcode_t       oacp_opcode;
