@@ -111,7 +111,7 @@ typedef struct {
 } a2dp_media_sending_context_t;
 
 static  uint8_t media_sbc_codec_capabilities[] = {
-    (AVDTP_SBC_44100 << 4) | AVDTP_SBC_STEREO,
+    (AVDTP_SBC_44100 << 4) | (AVDTP_SBC_48000 << 4) | AVDTP_SBC_STEREO,
     0xFF,//(AVDTP_SBC_BLOCK_LENGTH_16 << 4) | (AVDTP_SBC_SUBBANDS_8 << 2) | AVDTP_SBC_ALLOCATION_METHOD_LOUDNESS,
     2, 53
 }; 
@@ -266,6 +266,8 @@ static int a2dp_source_and_avrcp_services_init(void){
         return 1;
     }
 
+    avdtp_set_preferred_sampling_frequency(local_stream_endpoint, 44100);
+
     // Store stream enpoint's SEP ID, as it is used by A2DP API to indentify the stream endpoint
     media_tracker.local_seid = avdtp_local_seid(local_stream_endpoint);
     avdtp_source_register_delay_reporting_category(media_tracker.local_seid);
@@ -324,7 +326,6 @@ static int a2dp_source_and_avrcp_services_init(void){
     hci_event_callback_registration.callback = &hci_packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
 
-    a2dp_demo_hexcmod_configure_sample_rate(current_sample_rate);
     data_source = STREAM_MOD;
 
     // Parse human readable Bluetooth address.
@@ -654,7 +655,10 @@ static void a2dp_source_packet_handler(uint8_t packet_type, uint16_t channel, ui
             }
             dump_sbc_configuration(&sbc_configuration);
 
-            btstack_sbc_encoder_init(&sbc_encoder_state, SBC_MODE_STANDARD, 
+            current_sample_rate = sbc_configuration.sampling_frequency;
+            a2dp_demo_hexcmod_configure_sample_rate(current_sample_rate);
+
+             btstack_sbc_encoder_init(&sbc_encoder_state, SBC_MODE_STANDARD,
                 sbc_configuration.block_length, sbc_configuration.subbands, 
                 sbc_configuration.allocation_method, sbc_configuration.sampling_frequency, 
                 sbc_configuration.max_bitpool_value,
