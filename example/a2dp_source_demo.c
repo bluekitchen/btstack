@@ -75,6 +75,9 @@
 
 //#define AVRCP_BROWSING_ENABLED
 
+// select preferred audio sampling rate: 44100 or 48000
+#define A2DP_SOURCE_DEMO_PREFERRED_SAMPLING_RATE 44100
+
 #define NUM_CHANNELS                2
 #define BYTES_PER_AUDIO_SAMPLE      (2*NUM_CHANNELS)
 #define AUDIO_TIMEOUT_MS            10 
@@ -266,7 +269,7 @@ static int a2dp_source_and_avrcp_services_init(void){
         return 1;
     }
 
-    avdtp_set_preferred_sampling_frequency(local_stream_endpoint, 44100);
+    avdtp_set_preferred_sampling_frequency(local_stream_endpoint, A2DP_SOURCE_DEMO_PREFERRED_SAMPLING_RATE);
 
     // Store stream enpoint's SEP ID, as it is used by A2DP API to indentify the stream endpoint
     media_tracker.local_seid = avdtp_local_seid(local_stream_endpoint);
