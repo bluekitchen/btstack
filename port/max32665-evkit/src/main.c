@@ -29,16 +29,10 @@
  * trademarks, maskwork rights, or any other form of intellectual
  * property whatsoever. Analog Devices, Inc. retains all
  * ownership rights.
- *
- * $Date: 2016-03-11 10:46:02 -0700 (Fri, 11 Mar 2016) $
- * $Revision: 21838 $
+
  *
  ******************************************************************************/
 
-/**
- * @file    main.c
- * @brief   Max32630 CC2564B btstack Example
- */
 
 /***** Includes *****/
 #include <stdio.h>
