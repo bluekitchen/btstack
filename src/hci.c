@@ -7348,7 +7348,6 @@ uint8_t hci_send_cmd_packet(uint8_t *packet, int size){
             (void) memcpy(hci_stack->outgoing_addr, addr, 6);
             break;
 
-#if defined (ENABLE_SCO_OVER_HCI) || defined (HAVE_SCO_TRANSPORT)
         case HCI_OPCODE_HCI_SETUP_SYNCHRONOUS_CONNECTION:
             conn = hci_connection_for_handle(little_endian_read_16(packet, 3));
             if (conn == NULL) {
@@ -7407,7 +7406,6 @@ uint8_t hci_send_cmd_packet(uint8_t *packet, int size){
             // TODO: compare to current setting if sco connection already active
             hci_stack->sco_voice_setting_active = little_endian_read_16(packet, 19);
             break;
-#endif
 #endif
 
 #ifdef ENABLE_BLE
