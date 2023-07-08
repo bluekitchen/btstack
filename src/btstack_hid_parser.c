@@ -445,7 +445,6 @@ int btstack_hid_get_report_size_for_id(int report_id, hid_report_type_t report_t
                         report_count = item.item_value;
                         break;
                     case ReportSize:
-                        if (current_report_id != report_id) break;
                         report_size = item.item_value;
                         break;
                     default:
@@ -478,6 +477,10 @@ int btstack_hid_get_report_size_for_id(int report_id, hid_report_type_t report_t
             default:
                 break;
         }
+
+        if (total_report_size > 0)
+            break;
+
         hid_descriptor_len -= item.item_size;
         hid_descriptor += item.item_size;
     }
