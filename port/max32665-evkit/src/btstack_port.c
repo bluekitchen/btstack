@@ -172,10 +172,6 @@ void hal_uart_init(void)
 	uint32_t irqn;
 	int result;
 
-	// MXC_DMA_ReleaseChannel(0);
-	// MXC_NVIC_SetVector(DMA0_IRQn, DMA_Handler);
-	// NVIC_EnableIRQ(DMA0_IRQn);
-
 	uartNum = HCI_UART;
 	uart = MXC_UART_GET_UART(uartNum);
 	irqn = MXC_UART_GET_IRQ(uartNum);
