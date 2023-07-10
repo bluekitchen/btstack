@@ -73,6 +73,7 @@ static uint8_t lc3plus_fraunhofer_decoder_configure(void * context, uint32_t sam
     instance->sample_rate = sample_rate;
     instance->frame_duration = frame_duration;
     instance->octets_per_frame = octets_per_frame;
+    instance->samples_per_frame = btstack_lc3_samples_per_frame(sample_rate, frame_duration);
 
     LC3PLUS_Error error;
     error = lc3plus_dec_init(decoder, sample_rate, 1, LC3PLUS_PLC_ADVANCED, 0);
