@@ -214,7 +214,11 @@ static inline void list_del( list_head_t *entry ) {
 }
 
 static inline bool list_empty( list_head_t *head ) {
-    return head->next == head;
+    if (head)
+    {
+        return head->next == head;
+    }
+    return true;
 }
 
 static inline list_head_t *list_pop_front( list_head_t *head ) {
