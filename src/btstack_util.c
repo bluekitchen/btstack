@@ -466,6 +466,7 @@ uint8_t btstack_clz(uint32_t value) {
     }
 #else
     // divide-and-conquer implementation for 32-bit integers
+    uint32_t x = value;
     if (x == 0) return 32;
     uint8_t r = 0;
     if ((x & 0xffff0000u) == 0) {
