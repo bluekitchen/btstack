@@ -4691,6 +4691,14 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             break;
 
 #ifdef ENABLE_CROSS_TRANSPORT_KEY_DERIVATION
+
+        case SM_BR_EDR_W4_ENCRYPTION_COMPLETE:
+            // GAP/DM/LEP/BI-02-C - reject CTKD if P-192 encryption is used
+            if (sm_pdu_code == SM_CODE_PAIRING_REQUEST){
+                sm_pairing_error(sm_conn, SM_REASON_CROSS_TRANSPORT_KEY_DERIVATION_NOT_ALLOWED);
+            }
+            break;
+
         case SM_BR_EDR_INITIATOR_W4_PAIRING_RESPONSE:
 
             // dedicated bonding complete
