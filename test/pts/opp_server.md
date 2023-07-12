@@ -1,5 +1,7 @@
 # OPP Server
 
+We don't use 'Send SRMP Header', 
+
 ## Tool: opp_server_demo
 - OPP/SR/OPH/BV-01-I: wait
 - OPP/SR/OPH/BV-02-I: wait
@@ -49,6 +51,8 @@
 - OPP/SR/GOEP/SRM/BV-04-C: wait
 - OPP/SR/GOEP/SRM/BI-05-C: wait
 - OPP/SR/GOEP/SRM/BV-08-C: wait
+
+- OPP/SR/GOEP/SRMP/BV-02-C: wait
 
 # Info
 - Filetype - PTS does not seem to send file type. INFO
