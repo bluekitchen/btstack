@@ -196,7 +196,6 @@ typedef struct {
 } ots_filter_t;
 
 typedef struct {
-    btstack_linked_item_t item;
     // metadata
 
     // Locally Unique Identifier: 0x000000000000 - Directory Listing Object, [0x000000000001, 0x0000000000FF] - RFU
