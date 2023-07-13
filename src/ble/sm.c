@@ -3948,10 +3948,12 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
 
                         case SM_PH2_W4_CONNECTION_ENCRYPTED:
                             if (!sm_conn->sm_connection_encrypted) break;
+                            // handler for HCI_EVENT_ENCRYPTION_KEY_REFRESH_COMPLETE
+                            // contains the same code for this state
                             sm_conn->sm_connection_sc = setup->sm_use_secure_connections;
                             if (IS_RESPONDER(sm_conn->sm_role)){
                                 // slave
-                                if (setup->sm_use_secure_connections){
+                                if (sm_conn->sm_connection_sc){
                                     sm_conn->sm_engine_state = SM_PH3_DISTRIBUTE_KEYS;
                                 } else {
                                     btstack_crypto_random_generate(&sm_crypto_random_request, sm_random_data, 8, &sm_handle_random_result_ph3_random, (void *)(uintptr_t) sm_conn->sm_handle);
@@ -4019,12 +4021,25 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                             sm_done_for_handle(sm_conn->sm_handle);
                             break;
                         case SM_PH2_W4_CONNECTION_ENCRYPTED:
+                            // handler for HCI_EVENT_ENCRYPTION_CHANGE
+                            // contains the same code for this state
+                            sm_conn->sm_connection_sc = setup->sm_use_secure_connections;
                             if (IS_RESPONDER(sm_conn->sm_role)){
                                 // slave
-                                btstack_crypto_random_generate(&sm_crypto_random_request, sm_random_data, 8, &sm_handle_random_result_ph3_random, (void *)(uintptr_t) sm_conn->sm_handle);
+                                if (sm_conn->sm_connection_sc){
+                                    sm_conn->sm_engine_state = SM_PH3_DISTRIBUTE_KEYS;
+                                } else {
+                                    btstack_crypto_random_generate(&sm_crypto_random_request, sm_random_data, 8, &sm_handle_random_result_ph3_random, (void *)(uintptr_t) sm_conn->sm_handle);
+                                }
                             } else {
                                 // master
-                                sm_conn->sm_engine_state = SM_PH3_RECEIVE_KEYS;
+                                if (sm_key_distribution_all_received()){
+                                    // skip receiving keys as there are none
+                                    sm_key_distribution_handle_all_received(sm_conn);
+                                    btstack_crypto_random_generate(&sm_crypto_random_request, sm_random_data, 8, &sm_handle_random_result_ph3_random, (void *)(uintptr_t) sm_conn->sm_handle);
+                                } else {
+                                    sm_conn->sm_engine_state = SM_PH3_RECEIVE_KEYS;
+                                }
                             }
                             break;
                         default:
