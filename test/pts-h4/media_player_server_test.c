@@ -104,14 +104,25 @@ static void setup_advertising(void);
 // Object Transfer Server (OTS)
 static oacp_result_code_t ots_server_operation_create(hci_con_handle_t con_handle, uint32_t object_size, uint8_t gatt_uuid_size, uint8_t * gatt_uuid);
 
+// View operations
+static olcp_result_code_t ots_server_operation_first(hci_con_handle_t con_handle);
+static olcp_result_code_t ots_server_operation_last(hci_con_handle_t con_handle);
+static olcp_result_code_t ots_server_operation_next(hci_con_handle_t con_handle);
+static olcp_result_code_t ots_server_operation_previous(hci_con_handle_t con_handle);
+
 #define OTS_SERVER_MAX_NUM_CLIENTS 3
 #define OTS_SERVER_MAX_NUM_OBJECTS 100
 
 static  ots_server_connection_t ots_server_connections_storage[OTS_SERVER_MAX_NUM_CLIENTS];
-static  ots_object_t ots_server_objects_storage[OTS_SERVER_MAX_NUM_OBJECTS];
 
 static const ots_operations_t ots_server_operations_impl = {
     .create = &ots_server_operation_create,
+
+    // view operations
+    .first    = &ots_server_operation_first,
+    .last     = &ots_server_operation_last,
+    .next     = &ots_server_operation_next,
+    .previous = &ots_server_operation_previous,
 };
 
 // Media Player Server (MCS)
@@ -199,6 +210,55 @@ static void setup_advertising(void) {
 
 
 // OTS Server Operations - START
+static  ots_object_t ots_objects[OTS_SERVER_MAX_NUM_OBJECTS];
+
+static ots_object_t * ots_server_find_free_object(void){
+    int i;
+    for (i = 0; i < OTS_SERVER_MAX_NUM_OBJECTS; i++){
+        if (ots_objects[i].allocated_size == 0){
+            return &ots_objects[i];
+        } 
+    }
+    return NULL;
+}
+
+static ots_object_t * ots_server_find_object_for_luid(ots_object_id_t * luid){
+    int i;
+    for (i = 0; i < OTS_SERVER_MAX_NUM_OBJECTS; i++){
+        if (memcmp(ots_objects[i].luid, luid, sizeof(ots_object_id_t)) == 0){
+            return &ots_objects[i];
+        } 
+    }
+    return NULL;
+}
+
+uint8_t ots_server_add_object_with_type_uuid16(ots_object_id_t * object_id, char * name, uint32_t properties, uint16_t type_uuid16,
+    uint32_t allocated_size, btstack_utc_t * first_created, btstack_utc_t * last_modified){
+
+    ots_object_t * object = ots_server_find_object_for_luid(object_id);
+    if (object != NULL){
+        return AVRCP_BROWSING_ERROR_CODE_INVALID_PARAMETER;
+    }
+
+    object = ots_server_find_free_object();
+    if (object == NULL){
+        return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
+    }
+    
+    if (strlen(name) > OTS_MAX_NAME_LENGHT){
+        return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+    }
+
+    memcpy(&object->luid, object_id, sizeof(ots_object_id_t));
+   
+    object->properties = properties;
+    btstack_strcpy(object->name, OTS_MAX_NAME_LENGHT, name);
+    object->type_uuid16 = type_uuid16;
+    object->allocated_size = allocated_size;
+    memcpy(&object->first_created, first_created, sizeof(btstack_utc_t));
+    memcpy(&object->last_modified, first_created, sizeof(btstack_utc_t));
+    return ERROR_CODE_SUCCESS;
+}
 
 static bool ots_server_supports_gatt_uuid( uint8_t gatt_uuid_size, uint8_t * gatt_uuid){
     // TODO
@@ -218,8 +278,21 @@ static oacp_result_code_t ots_server_operation_create(hci_con_handle_t con_handl
     if (!ots_server_can_store_object_of_size(object_size)){
         return OACP_RESULT_CODE_INSUFFICIENT_RESOURCES;
     }
-    
+
     return OACP_RESULT_CODE_SUCCESS;
+}
+
+static olcp_result_code_t ots_server_operation_first(hci_con_handle_t con_handle){
+    return OLCP_RESULT_CODE_SUCCESS;
+}
+static olcp_result_code_t ots_server_operation_last(hci_con_handle_t con_handle){
+    return OLCP_RESULT_CODE_SUCCESS;
+}
+static olcp_result_code_t ots_server_operation_next(hci_con_handle_t con_handle){
+    return OLCP_RESULT_CODE_SUCCESS;
+}
+static olcp_result_code_t ots_server_operation_previous(hci_con_handle_t con_handle){
+    return OLCP_RESULT_CODE_SUCCESS;
 }
 
 // OTS Server Operations - END
@@ -615,7 +688,11 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 
                     mcs_track_t * track = mcs_get_current_track_for_media_player_id(current_media_player_id);
                     if (track != NULL){
-                        object_transfer_service_server_update_current_object_name(bap_app_server_con_handle, &track->object_id, long_string1);
+                        ots_object_t * ots_object = ots_server_find_object_for_luid(&track->object_id);
+                        if (ots_object != NULL){
+                            object_transfer_service_server_set_current_object(bap_app_server_con_handle, ots_object);
+                            object_transfer_service_server_update_current_object_name(bap_app_server_con_handle, long_string1);
+                        }
                     }
                     break;
                 default:
@@ -1298,7 +1375,11 @@ static void stdin_process(char cmd){
             if (status == ERROR_CODE_SUCCESS){
                 mcs_track_t * track = mcs_get_current_track_for_media_player_id(current_media_player_id);
                 if (track != NULL){
-                    status = object_transfer_service_server_update_current_object_name(bap_app_server_con_handle, &track->object_id, track->title);
+                    ots_object_t * ots_object = ots_server_find_object_for_luid(&track->object_id);
+                    if (ots_object != NULL){
+                        object_transfer_service_server_set_current_object(bap_app_server_con_handle, ots_object);
+                        status = object_transfer_service_server_update_current_object_name(bap_app_server_con_handle, long_string1);
+                    }
                 }
             }
             break;
@@ -1307,7 +1388,11 @@ static void stdin_process(char cmd){
             if (status == ERROR_CODE_SUCCESS){
                 mcs_track_t * track = mcs_get_current_track_for_media_player_id(current_media_player_id);
                 if (track != NULL){
-                    object_transfer_service_server_update_current_object_name(bap_app_server_con_handle, &track->object_id, track->title);
+                    ots_object_t * ots_object = ots_server_find_object_for_luid(&track->object_id);
+                    if (ots_object != NULL){
+                        object_transfer_service_server_set_current_object(bap_app_server_con_handle, ots_object);
+                        status = object_transfer_service_server_update_current_object_name(bap_app_server_con_handle, long_string1);
+                    }
                 }
             }
             break;
@@ -1393,9 +1478,7 @@ int btstack_main(void)
     
         // setup OTS
     object_transfer_service_server_init(0x3FF, 0x0F, 
-        OTS_SERVER_MAX_NUM_CLIENTS, ots_server_connections_storage, 
-        OTS_SERVER_MAX_NUM_OBJECTS, ots_server_objects_storage,
-        &ots_server_operations_impl);
+        OTS_SERVER_MAX_NUM_CLIENTS, ots_server_connections_storage, &ots_server_operations_impl);
     object_transfer_service_server_register_packet_handler(&ots_server_packet_handler);
 
 
@@ -1413,7 +1496,7 @@ int btstack_main(void)
             uint32_t properties = 0xFF;
             uint16_t type_uuid16 = 0x2ACA; // unspecified
 
-            object_transfer_service_server_create_object_with_type_uuid16(
+            ots_server_add_object_with_type_uuid16(
                 &track->object_id,
                 track->title,
                 properties,
