@@ -243,21 +243,29 @@ GAP/SEC/SEM/BI-05-C
 - GAP/DM/LEP/BV-06-C: p - Test requires LE-only dongle on PTS side
 - GAP/DM/LEP/BV-07-C: C, a,
 - GAP/DM/LEP/BV-08-C: C, a,
-- GAP/DM/LEP/BV-11:C: C, wait quite a while, p, t
-- GAP/DM/LEP/BV-12:C: NEW CTKD LE -> BR/EDR
-- GAP/DM/LEP/BV-13:C: NEW CTKD Upgrade
-- GAP/DM/LEP/BV-14:C: NEW CTKD LE -> BR/EDR
-- GAP/DM/LEP/BV-15:C: NEW CTKD LE -> BR/EDR
-- GAP/DM/LEP/BV-16:C: NEW CTKD LE -> BR/EDR
-- GAP/DM/LEP/BV-17:C: NEW CTKD BR/EDR -> LE
-- GAP/DM/LEP/BV-18:C: NEW CTKD BR/EDR -> LE
-- GAP/DM/LEP/BV-19:C: NEW CTKD BR/EDR -> LE
-- GAP/DM/LEP/BV-20:C: NEW CTKD BR/EDR -> LE - don't overwrite stronger key
-- GAP/DM/LEP/BV-21:C: NEW CTKD BR/EDR -> LE - don't overwrite stronger key
-- GAP/DM/LEP/BV-22:C: NEW CTKD LE -> BR/EDR - don't overwrite stronger key
-- GAP/DM/LEP/BV-23:C: NEW CTKD LE -> BR/EDR - don't overwrite stronger key
-- GAP/DM/LEP/BI-01:C: NEW CTKD BR/EDR -> LE - P192 not sufficient
-- GAP/DM/LEP/BI-02:C: NEW CTKD BR/EDR -> LE - P192 not sufficient
+- GAP/DM/LEP/BV-09-C: p, 9, t
+- GAP/DM/LEP/BV-10-C: C, a, i, 9, 
+- GAP/DM/LEP/BV-11:C: C, p, t
+- GAP/DM/LEP/BV-12:C: p, 4, b, t, 9
+- GAP/DM/LEP/BV-13-C: F, J, p, 4, b, t, 9, M, ok, ok, N, t, p, b
+- GAP/DM/LEP/BV-14-C: C, a, 4, b, t, 9
+- GAP/DM/LEP/BV-15-C: p, 4, b, 9, t
+- GAP/DM/LEP/BV-16-C: C, a
+- 
+- GAP/DM/LEP/BV-17-C: F, 9, N, t, p, b
+- GAP/DM/LEP/BV-18-C: F, J, 9, N, t, p, b, 4, M, b, t
+- GAP/DM/LEP/BV-19-C: C, a, 
+- 
+- ??? GAP/DM/LEP/BV-20:C: F, J, p, 4, b, t, 9, N, t, 
+- - NEW CTKD BR/EDR -> LE - don't overwrite stronger key
+- - ??? GAP/DM/LEP/BV-21:C: F, J, C, a, 
+- NEW CTKD BR/EDR -> LE - don't overwrite stronger key
+- ??? GAP/DM/LEP/BV-22:C: 9, N 
+- NEW CTKD LE -> BR/EDR - don't overwrite stronger key
+- 
+- GAP/DM/LEP/BV-23:C: C, a
+- GAP/DM/LEP/BI-01:C: F, J, t
+- GAP/DM/LEP/BI-02:C: F, J, C, ok, a
 
 - GAP/MOD/* -> GAP Peripheral
 
