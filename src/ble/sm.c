@@ -4050,6 +4050,11 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                                 }
                             }
                             break;
+#ifdef ENABLE_CROSS_TRANSPORT_KEY_DERIVATION
+                        case SM_BR_EDR_W4_ENCRYPTION_COMPLETE:
+                            sm_event_handle_classic_encryption_event(sm_conn, con_handle);
+                            break;
+#endif
                         default:
                             break;
                     }
