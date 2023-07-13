@@ -1283,6 +1283,7 @@ static void sm_address_resolution_handle_event(address_resolution_event_t event)
     bool have_ltk;
 #ifdef ENABLE_LE_CENTRAL
     bool trigger_pairing;
+    int authenticated;
 #endif
     switch (mode){
         case ADDRESS_RESOLUTION_GENERAL:
@@ -1302,7 +1303,7 @@ static void sm_address_resolution_handle_event(address_resolution_event_t event)
                     sm_connection->sm_le_db_index = matched_device_id;
                     log_info("ADDRESS_RESOLUTION_SUCCEEDED, index %d", sm_connection->sm_le_db_index);
 
-                    le_device_db_encryption_get(sm_connection->sm_le_db_index, NULL, NULL, ltk, NULL, NULL, NULL, NULL);
+                    le_device_db_encryption_get(sm_connection->sm_le_db_index, NULL, NULL, ltk, NULL, &authenticated, NULL, NULL);
                     have_ltk = !sm_is_null_key(ltk);
 
                     if (sm_connection->sm_role) {
@@ -1341,6 +1342,8 @@ static void sm_address_resolution_handle_event(address_resolution_event_t event)
 #ifdef ENABLE_LE_CENTRAL
                         // check if pairing already requested and reset requests
                         trigger_pairing = sm_connection->sm_pairing_requested || sm_connection->sm_security_request_received;
+                        bool auth_required = sm_auth_req & SM_AUTHREQ_MITM_PROTECTION;
+
                         log_info("central: pairing request local %u, remote %u => trigger_pairing %u. have_ltk %u",
                                  sm_connection->sm_pairing_requested, sm_connection->sm_security_request_received, (int) trigger_pairing, (int) have_ltk);
                         sm_connection->sm_security_request_received = 0;
@@ -1348,15 +1351,16 @@ static void sm_address_resolution_handle_event(address_resolution_event_t event)
                         bool trigger_reencryption = false;
 
                         if (have_ltk){
-#ifdef ENABLE_LE_PROACTIVE_AUTHENTICATION
-                            trigger_reencryption = true;
-#else
                             if (trigger_pairing){
-                                trigger_reencryption = true;
+                                // if pairing is requested, re-encryption is sufficient, if ltk is already authenticated or we don't require authentication
+                                trigger_reencryption = (authenticated != 0) || (auth_required == false);
                             } else {
+#ifdef ENABLE_LE_PROACTIVE_AUTHENTICATION
+                                trigger_reencryption = true;
+#else
                                 log_info("central: defer enabling encryption for bonded device");
-                            }
 #endif
+                            }
                         }
 
                         if (trigger_reencryption){
@@ -5010,6 +5014,9 @@ void sm_request_pairing(hci_con_handle_t con_handle){
 
     bool have_ltk;
     uint8_t ltk[16];
+    bool auth_required;
+    int authenticated;
+    bool trigger_reencryption;
     log_info("sm_request_pairing in role %u, state %u", sm_conn->sm_role, sm_conn->sm_engine_state);
     if (IS_RESPONDER(sm_conn->sm_role)){
         switch (sm_conn->sm_engine_state){
@@ -5048,10 +5055,13 @@ void sm_request_pairing(hci_con_handle_t con_handle){
             case SM_INITIATOR_CONNECTED:
                 switch (sm_conn->sm_irk_lookup_state){
                     case IRK_LOOKUP_SUCCEEDED:
-                        le_device_db_encryption_get(sm_conn->sm_le_db_index, NULL, NULL, ltk, NULL, NULL, NULL, NULL);
+                        le_device_db_encryption_get(sm_conn->sm_le_db_index, NULL, NULL, ltk, NULL, &authenticated, NULL, NULL);
                         have_ltk = !sm_is_null_key(ltk);
-                        log_info("have ltk %u", have_ltk);
-                        if (have_ltk){
+                        auth_required = sm_auth_req & SM_AUTHREQ_MITM_PROTECTION;
+                        // re-encrypt is sufficient if we have ltk and that is either already authenticated or we don't require authentication
+                        trigger_reencryption = have_ltk && ((authenticated != 0) || (auth_required == false));
+                        log_info("have ltk %u, authenticated %u, auth required %u => reencrypt %u", have_ltk, authenticated, auth_required, trigger_reencryption);
+                        if (trigger_reencryption){
                             sm_conn->sm_pairing_requested = 1;
                             sm_conn->sm_engine_state = SM_INITIATOR_PH4_HAS_LTK;
                             break;
