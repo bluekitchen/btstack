@@ -102,7 +102,16 @@ static const le_extended_advertising_parameters_t extended_params = {
 static void setup_advertising(void);
 
 // Object Transfer Server (OTS)
+
+// Object operations
 static oacp_result_code_t ots_server_operation_create(hci_con_handle_t con_handle, uint8_t *buffer, uint16_t buffer_size);
+static oacp_result_code_t ots_server_operation_delete(hci_con_handle_t con_handle);
+static oacp_result_code_t ots_server_operation_calculate_checksum(hci_con_handle_t con_handle, uint8_t *buffer, uint16_t buffer_size);
+static oacp_result_code_t ots_server_operation_execute(hci_con_handle_t con_handle, uint8_t *buffer, uint16_t buffer_size);
+static oacp_result_code_t ots_server_operation_read(hci_con_handle_t con_handle, uint8_t *buffer, uint16_t buffer_size);
+static oacp_result_code_t ots_server_operation_write(hci_con_handle_t con_handle, uint8_t *buffer, uint16_t buffer_size);
+static oacp_result_code_t ots_server_operation_abort(hci_con_handle_t con_handle);
+
 
 // View operations
 static olcp_result_code_t ots_server_operation_first(hci_con_handle_t con_handle);
@@ -116,7 +125,14 @@ static olcp_result_code_t ots_server_operation_previous(hci_con_handle_t con_han
 static  ots_server_connection_t ots_server_connections_storage[OTS_SERVER_MAX_NUM_CLIENTS];
 
 static const ots_operations_t ots_server_operations_impl = {
-    .create = &ots_server_operation_create,
+    // object operations
+    .create   = &ots_server_operation_create,
+    .delete   = &ots_server_operation_delete,
+    .calculate_checksum = &ots_server_operation_calculate_checksum,
+    .execute  = &ots_server_operation_execute,
+    .read     = &ots_server_operation_read,
+    .write    = &ots_server_operation_write,
+    .abort    = &ots_server_operation_abort,
 
     // view operations
     .first    = &ots_server_operation_first,
@@ -297,7 +313,7 @@ static oacp_result_code_t ots_server_operation_create(hci_con_handle_t con_handl
     uint8_t  gatt_uuid_size = buffer_size - 4;
     gatt_uuid_type_t type_uuid16;
 
-    // 1. Unsupported Type
+    // 1. Unsupported Type - The Server does not accept an object of the type specified in the Type parameter.
     if (gatt_uuid_size == 2){
         type_uuid16 = (gatt_uuid_type_t)little_endian_read_16(buffer, 4);
         if (!ots_server_supports_gatt_uuid16(type_uuid16)){
@@ -305,7 +321,7 @@ static oacp_result_code_t ots_server_operation_create(hci_con_handle_t con_handl
         }  
     }
 
-    // 2. Insufficient Resources
+    // 2. Insufficient Resources - The Server cannot accept an object of the size specified in the Size parameter.
     ots_object_t * object = ots_server_find_free_object();
     if (object == NULL){
         return OACP_RESULT_CODE_INSUFFICIENT_RESOURCES;
@@ -315,7 +331,7 @@ static oacp_result_code_t ots_server_operation_create(hci_con_handle_t con_handl
         return OACP_RESULT_CODE_INSUFFICIENT_RESOURCES;
     }
 
-    // 3. Invalid Parameter
+    // 3. Invalid Parameter - The Parameter received does not meet the requirements of the service
     if (object_size == 0){
         return OACP_RESULT_CODE_INVALID_PARAMETER;
     }
@@ -333,6 +349,136 @@ static oacp_result_code_t ots_server_operation_create(hci_con_handle_t con_handl
     object_transfer_service_server_reset_filters(con_handle);
     return OACP_RESULT_CODE_SUCCESS;
 }
+
+    // OACP_RESULT_CODE_SUCCESS = 0x01,
+    // OACP_RESULT_CODE_OP_CODE_NOT_SUPPORTED,
+    // OACP_RESULT_CODE_INVALID_PARAMETER,
+    // OACP_RESULT_CODE_INSUFFICIENT_RESOURCES,
+    // OACP_RESULT_CODE_INVALID_OBJECT,
+    // OACP_RESULT_CODE_CHANNEL_UNAVAILABLE,
+    // OACP_RESULT_CODE_UNSUPPORTED_TYPE,
+    // OACP_RESULT_CODE_PROCEDURE_NOT_PERMITTED,
+    // OACP_RESULT_CODE_OBJECT_LOCKED,
+    // OACP_RESULT_CODE_OPERATION_FAILED,
+    // OACP_RESULT_CODE_OPERATION_RFU
+
+static oacp_result_code_t ots_server_operation_delete(hci_con_handle_t con_handle){
+    // 1. Invalid Object
+    if (!object_transfer_service_server_current_object_valid(con_handle)){
+        return OACP_RESULT_CODE_INVALID_OBJECT;
+    }
+
+    // 2. Procedure Not Permitted - The object’s properties do not permit deletion of the object.
+    if (!object_transfer_service_server_current_object_procedure_permitted(con_handle, OBJECT_PROPERTY_MASK_DELETE)){
+        return OACP_RESULT_CODE_PROCEDURE_NOT_PERMITTED;
+    }
+
+    // 3. Object Locked by server
+    if (object_transfer_service_server_current_object_locked(con_handle)){
+        return OACP_RESULT_CODE_OBJECT_LOCKED;
+    }
+
+    // 4. Object Locked - An object transfer is in progress that is using the Current Object
+    if (object_transfer_service_server_current_object_transfer_in_progress(con_handle)){
+        return OACP_RESULT_CODE_OBJECT_LOCKED;
+    }
+
+    object_transfer_service_server_delete_current_object(con_handle);
+    return OACP_RESULT_CODE_SUCCESS;
+}
+
+static oacp_result_code_t ots_server_operation_calculate_checksum(hci_con_handle_t con_handle, uint8_t *buffer, uint16_t buffer_size){
+    // 1. Invalid Object
+
+    // 2. Invalid Parameter
+    // 3. Object Locked by server
+    // 4. Object Locked - An object transfer is in progress that is using the Current Object
+    return OACP_RESULT_CODE_SUCCESS;
+}
+
+static oacp_result_code_t ots_server_operation_execute(hci_con_handle_t con_handle, uint8_t *buffer, uint16_t buffer_size){
+    // 1. Invalid Object
+    if (!object_transfer_service_server_current_object_valid(con_handle)){
+        return OACP_RESULT_CODE_INVALID_OBJECT;
+    }
+
+    // 2. Procedure Not Permitted - The object’s properties do not permit execution of the object.
+    if (!object_transfer_service_server_current_object_procedure_permitted(con_handle, OBJECT_PROPERTY_MASK_EXECUTE)){
+        return OACP_RESULT_CODE_PROCEDURE_NOT_PERMITTED;
+    }
+
+    // 3. Object Locked by server
+    if (object_transfer_service_server_current_object_locked(con_handle)){
+        return OACP_RESULT_CODE_OBJECT_LOCKED;
+    }
+
+    return OACP_RESULT_CODE_SUCCESS;
+}
+
+static oacp_result_code_t ots_server_operation_read(hci_con_handle_t con_handle, uint8_t *buffer, uint16_t buffer_size){
+    // 1. Invalid Object
+    if (!object_transfer_service_server_current_object_valid(con_handle)){
+        return OACP_RESULT_CODE_INVALID_OBJECT;
+    }
+
+    // 2. Procedure Not Permitted - The object’s properties do not permit reading the object
+    if (!object_transfer_service_server_current_object_procedure_permitted(con_handle, OBJECT_PROPERTY_MASK_READ)){
+        return OACP_RESULT_CODE_PROCEDURE_NOT_PERMITTED;
+    }
+
+    // 3. Channel Unavailable - An Object Transfer Channel was not available for use
+    // 4. Invalid Parameter - The value of the Offset parameter exceeds the value of the Current Size field of the Object Size characteristic
+    // 5. Invalid Parameter - The sum of the values of the Offset and Length parameters exceeds the value of the Current Size field of the Object Size characteristic.
+    // 6. Insufficient Resources - The value of the Length parameter exceeds the number of octets that the Server has the capacity to read from the object.
+    // 7. Object Locked - An object transfer is in progress that is using the Current Object
+    return OACP_RESULT_CODE_SUCCESS;
+}
+
+static oacp_result_code_t ots_server_operation_write(hci_con_handle_t con_handle, uint8_t *buffer, uint16_t buffer_size){
+    // 1. Invalid Object
+    if (!object_transfer_service_server_current_object_valid(con_handle)){
+        return OACP_RESULT_CODE_INVALID_OBJECT;
+    }
+
+    // 2. Procedure Not Permitted - The object’s properties do not permit writing to the object
+    if (!object_transfer_service_server_current_object_procedure_permitted(con_handle, OBJECT_PROPERTY_MASK_WRITE)){
+        return OACP_RESULT_CODE_PROCEDURE_NOT_PERMITTED;
+    }
+
+    // 3. Procedure Not Permitted - Patching was attempted but patching is not supported by the Server.
+    // OBJECT_PROPERTY_MASK_PATCH
+
+    // 4. Procedure Not Permitted - Truncation was attempted but the object’s properties do not permit truncation of the object contents.
+    // OBJECT_PROPERTY_MASK_TRUNCATE
+
+    // 5. Channel Unavailable - An Object Transfer Channel was not available for use
+    // 6. Invalid Parameter - The Mode parameter contains an RFU value.
+    // 7. Invalid Parameter - The value of the Offset parameter exceeds the value of the Current Size field of the Object Size characteristic.
+    // 8. Invalid Parameter - The sum of the values of the Offset and Length parameters exceeds the value of the Allocated Size field
+    //                        of the Object Size characteristic AND the Server does NOT support appending additional data to an object.
+    // 9. Insufficient Resources - The value of the Length parameter exceeds the number of octets that the Server has the capacity to write to the object.
+    // 10. Object Locked - The Current Object is locked by the Server.
+    if (object_transfer_service_server_current_object_locked(con_handle)){
+        return OACP_RESULT_CODE_OBJECT_LOCKED;
+    }
+
+    // 11. Object Locked - An object transfer is in progress that is using the Current Object
+   return OACP_RESULT_CODE_SUCCESS;
+}
+
+static oacp_result_code_t ots_server_operation_abort(hci_con_handle_t con_handle){
+    // 1. Procedure Not Permitted - The object’s properties do not permit appending data to the object. 
+    if (!object_transfer_service_server_current_object_procedure_permitted(con_handle, OBJECT_PROPERTY_MASK_DELETE)){
+        return OACP_RESULT_CODE_PROCEDURE_NOT_PERMITTED;
+    }
+
+    // 2. Insufficient Resources - The sum of the values of the Offset and Length parameters exceeds the capability of the Server 
+    //                             to increase the object allocated size, owing to resource constraints.
+    
+    return OACP_RESULT_CODE_SUCCESS;
+}
+
+
 
 static olcp_result_code_t ots_server_operation_first(hci_con_handle_t con_handle){
     return OLCP_RESULT_CODE_SUCCESS;
