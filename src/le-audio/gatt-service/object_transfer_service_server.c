@@ -85,7 +85,6 @@ typedef struct {
     uint16_t  client_configuration_handle;
 } ots_characteristic_t;
 
-static uint32_t ots_object_id_counter;
 
 static att_service_handler_t    object_transfer_service_server;
 static btstack_packet_handler_t ots_server_event_callback;
@@ -453,7 +452,7 @@ static bool ots_server_valid_gatt_uuid_size(uint16_t uuid_size){
     return (uuid_size == 2) || (uuid_size == 16);
 }
 
-static int ots_server_handle_action_control_point_write(ots_server_connection_t * connection, uint8_t *buffer, uint16_t buffer_size){
+int ots_server_handle_action_control_point_write(ots_server_connection_t * connection, uint8_t *buffer, uint16_t buffer_size){
     if (buffer_size == 0){
         connection->oacp_result_code = OACP_RESULT_CODE_INVALID_PARAMETER;
         return 0;
@@ -477,25 +476,20 @@ static int ots_server_handle_action_control_point_write(ots_server_connection_t 
         return 0;
     }
 
-    uint32_t object_size;
-    uint8_t gatt_uuid_size;
+    uint16_t data_size = buffer_size - pos;
 
     switch (connection->oacp_opcode){
         case OACP_OPCODE_CREATE:
-            if ((buffer_size - pos) < 6){
-                connection->oacp_result_code = OACP_RESULT_CODE_INVALID_PARAMETER;
-                return 0;
+            if (data_size < 6){
+                return OACP_RESULT_CODE_OPERATION_FAILED;
             }
 
-            gatt_uuid_size = buffer_size - pos - 4;
-            if (!ots_server_valid_gatt_uuid_size(gatt_uuid_size)) {
-                connection->oacp_result_code = OACP_RESULT_CODE_INVALID_PARAMETER;
+            if (!ots_server_valid_gatt_uuid_size(data_size - 4)) {
+                connection->oacp_result_code = OACP_RESULT_CODE_OPERATION_FAILED;
                 return 0;
             }
-            object_size = little_endian_read_32(buffer, pos);
-            pos += 4;
-
-            connection->oacp_result_code = ots_server_operations->create(connection->con_handle, object_size, gatt_uuid_size, &buffer[pos]);
+    
+            connection->oacp_result_code = ots_server_operations->create(connection->con_handle, &buffer[pos], data_size);
             break;
 
         case OACP_OPCODE_DELETE:
@@ -950,16 +944,6 @@ void object_transfer_service_server_register_packet_handler(btstack_packet_handl
     ots_server_event_callback = packet_handler;
 }
 
-static void object_transfer_service_server_get_next_object_id(ots_object_id_t * object_id_out){
-    ots_object_id_counter++;
-    if (ots_object_id_counter < 0x0100) {
-        ots_object_id_counter = 0x0100;
-    }
-    memset((uint8_t *)object_id_out, 0, OTS_OBJECT_ID_LEN);
-    little_endian_store_32((uint8_t *)object_id_out, 2, ots_object_id_counter);
-}
-
-
 uint8_t object_transfer_service_server_update_current_object_filter(hci_con_handle_t con_handle, uint8_t filter_index, ots_filter_t * filter){
     if (con_handle == HCI_CON_HANDLE_INVALID){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
@@ -1008,7 +992,7 @@ uint8_t object_transfer_service_server_set_current_object(hci_con_handle_t con_h
     if (con_handle == HCI_CON_HANDLE_INVALID){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    ots_server_connection_t * connection = ots_server_find_connection_for_con_handle(con_handle);
+    ots_server_connection_t * connection = ots_server_find_or_add_connection_for_con_handle(con_handle);
     if (connection == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
@@ -1018,6 +1002,22 @@ uint8_t object_transfer_service_server_set_current_object(hci_con_handle_t con_h
     connection->current_object_object_transfer_in_progress = false;    
     return ERROR_CODE_SUCCESS;
 }
+
+uint8_t object_transfer_service_server_reset_filters(hci_con_handle_t con_handle){
+    if (con_handle == HCI_CON_HANDLE_INVALID){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+
+    ots_server_connection_t * connection = ots_server_find_connection_for_con_handle(con_handle);
+    if (connection == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+
+    memset(connection->filters, 0, sizeof(connection->filters));
+
+    return ERROR_CODE_SUCCESS;
+}
+
 
 uint8_t object_transfer_service_server_update_current_object_name(hci_con_handle_t con_handle, char * name){
     if (con_handle == HCI_CON_HANDLE_INVALID){

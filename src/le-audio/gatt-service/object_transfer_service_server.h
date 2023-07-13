@@ -54,7 +54,7 @@ extern "C" {
 /* API_START */
 
 typedef struct {
-    oacp_result_code_t (*create)(hci_con_handle_t con_handle, uint32_t object_size, uint8_t gatt_uuid_size, uint8_t * gatt_uuid);
+    oacp_result_code_t (*create)(hci_con_handle_t con_handle, uint8_t *buffer, uint16_t buffer_size);
 
     // View operations
     olcp_result_code_t (*first)(hci_con_handle_t con_handle);
@@ -114,6 +114,8 @@ uint8_t object_transfer_service_server_init(uint32_t oacp_features, uint32_t olc
 void object_transfer_service_server_register_packet_handler(btstack_packet_handler_t packet_handler);
 
 uint8_t object_transfer_service_server_set_current_object(hci_con_handle_t con_handle, ots_object_t * object);
+uint8_t object_transfer_service_server_reset_filters(hci_con_handle_t con_handle);
+
 uint8_t object_transfer_service_server_update_current_object_name(hci_con_handle_t con_handle, char * name);
 
 uint8_t object_transfer_service_server_reset_current_object(hci_con_handle_t con_handle);
