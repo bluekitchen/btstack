@@ -2551,6 +2551,31 @@ static bool sm_ctkd_from_le(sm_connection_t *sm_connection) {
 #endif
 }
 
+#ifdef ENABLE_CROSS_TRANSPORT_KEY_DERIVATION
+static bool sm_ctkd_from_classic(sm_connection_t * sm_connection){
+    hci_connection_t * hci_connection = hci_connection_for_handle(sm_connection->sm_handle);
+    btstack_assert(hci_connection != NULL);
+    // requirements to derive ltk from BR/EDR:
+    // - BR/EDR uses secure connections
+    if (gap_secure_connection_for_link_key_type(hci_connection->link_key_type) == false) return false;
+    // - bonding needs to be enabled:
+    bool bonding_enabled = (sm_pairing_packet_get_auth_req(setup->sm_m_preq) & sm_pairing_packet_get_auth_req(setup->sm_s_pres) & SM_AUTHREQ_BONDING ) != 0u;
+    if (!bonding_enabled) return false;
+    // - there is no stored LTK or the derived key has at least the same level of authentication (bail if LTK is authenticated but Link Key isn't)
+    bool link_key_authenticated = gap_authenticated_for_link_key_type(hci_connection->link_key_type);
+    if (link_key_authenticated) return true;
+    int index = sm_le_device_db_index_lookup(BD_ADDR_TYPE_LE_PUBLIC, hci_connection->address);
+    if (index >= 0){
+        int ltk_authenticated;
+        sm_key_t ltk;
+        le_device_db_encryption_get(sm_connection->sm_le_db_index, NULL, NULL, ltk, NULL, &ltk_authenticated, NULL, NULL);
+        bool have_ltk = !sm_is_null_key(ltk);
+        if (have_ltk && ltk_authenticated) return false;
+    }
+    return true;
+}
+#endif
+
 static void sm_key_distribution_complete_responder(sm_connection_t * connection){
     if (sm_ctkd_from_le(connection)){
         bool use_h7 = (sm_pairing_packet_get_auth_req(setup->sm_m_preq) & sm_pairing_packet_get_auth_req(setup->sm_s_pres) & SM_AUTHREQ_CT2) != 0;
@@ -4785,7 +4810,11 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
                 break;
             }
             // trigger response
-            sm_conn->sm_engine_state = SM_BR_EDR_RESPONDER_PAIRING_REQUEST_RECEIVED;
+            if (sm_ctkd_from_classic(sm_conn)){
+                sm_conn->sm_engine_state = SM_BR_EDR_RESPONDER_PAIRING_REQUEST_RECEIVED;
+            } else {
+                sm_pairing_error(sm_conn, SM_REASON_CROSS_TRANSPORT_KEY_DERIVATION_NOT_ALLOWED);
+            }
             break;
 
         case SM_BR_EDR_RECEIVE_KEYS:
