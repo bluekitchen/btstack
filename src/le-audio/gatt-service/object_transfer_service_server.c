@@ -94,9 +94,6 @@ static const ots_operations_t * ots_server_operations;
 static btstack_linked_list_t ots_connections;
 static uint8_t  ots_connections_num = 0;
 
-static btstack_linked_list_t ots_objects;
-static uint16_t  ots_objects_num = 0;
-
 static ots_characteristic_t  ots_characteristics[OTS_CHARACTERISTICS_NUM];
 
 static uint32_t ots_oacp_features;
@@ -548,47 +545,36 @@ static int ots_server_handle_list_control_point_write(ots_server_connection_t * 
         connection->olcp_result_code = OLCP_RESULT_CODE_OP_CODE_NOT_SUPPORTED;
         return 0;
     }
-    btstack_linked_list_iterator_t it;
+   
     switch (connection->olcp_opcode){
         case OLCP_OPCODE_FIRST:
-            connection->olcp_result_code = OLCP_RESULT_CODE_NO_OBJECT;
-            connection->current_object = NULL;
+            // btstack_linked_list_iterator_t it;
+            // connection->olcp_result_code = OLCP_RESULT_CODE_NO_OBJECT;
+            // connection->current_object = NULL;
 
-            btstack_linked_list_iterator_init(&it, &ots_objects);
-            while (btstack_linked_list_iterator_has_next(&it)){
-                ots_object_t * object = (ots_object_t*) btstack_linked_list_iterator_next(&it);
-                if (object->allocated_size != 0){
-                    if (!ots_server_object_passes_filters(connection, object)){
-                        continue;
-                    }
-                    connection->current_object = object;
-                    connection->olcp_result_code = OLCP_RESULT_CODE_SUCCESS;
-                    break;
-                }
-            }
+            // btstack_linked_list_iterator_init(&it, &ots_objects);
+            // while (btstack_linked_list_iterator_has_next(&it)){
+            //     ots_object_t * object = (ots_object_t*) btstack_linked_list_iterator_next(&it);
+            //     if (object->allocated_size != 0){
+            //         if (!ots_server_object_passes_filters(connection, object)){
+            //             continue;
+            //         }
+            //         connection->current_object = object;
+            //         connection->olcp_result_code = OLCP_RESULT_CODE_SUCCESS;
+            //         break;
+            //     }
+            // }
+            connection->olcp_result_code = ots_server_operations->first(connection->con_handle);
             break;
 
         case OLCP_OPCODE_LAST:
-            // TODO
+            connection->olcp_result_code = ots_server_operations->last(connection->con_handle);
             break;
         case OLCP_OPCODE_PREVIOUS:
-            // TODO
+            connection->olcp_result_code = ots_server_operations->previous(connection->con_handle);
             break;   
         case OLCP_OPCODE_NEXT:
-            connection->olcp_result_code = OLCP_RESULT_CODE_NO_OBJECT;
-            connection->current_object = NULL;
-
-            while (btstack_linked_list_iterator_has_next(&it)){
-                ots_object_t * object = (ots_object_t*) btstack_linked_list_iterator_next(&it);
-                if (object->allocated_size != 0){
-                    if (!ots_server_object_passes_filters(connection, object)){
-                        continue;
-                    }
-                    connection->current_object = object;
-                    connection->olcp_result_code = OLCP_RESULT_CODE_SUCCESS;
-                    break;
-                }
-            }
+            connection->olcp_result_code = ots_server_operations->next(connection->con_handle);
             break;
         case OLCP_OPCODE_GOTO:   
             // TODO
@@ -860,14 +846,11 @@ static void ots_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
 }
 
 uint8_t object_transfer_service_server_init(uint32_t oacp_features, uint32_t olcp_features, 
-    uint8_t storage_clients_num, ots_server_connection_t * storage_clients, 
-    uint16_t storage_objects_num, ots_object_t * storage_objects,
+    uint8_t storage_connections_num, ots_server_connection_t * storage_connections, 
     const ots_operations_t * operations){
     
-    btstack_assert(storage_clients_num != 0);
-    btstack_assert(storage_clients != NULL);
-    btstack_assert(storage_objects_num != 0);
-    btstack_assert(storage_objects != NULL);
+    btstack_assert(storage_connections_num != 0);
+    btstack_assert(storage_connections != NULL);
     btstack_assert(operations != NULL);
     
     uint16_t start_handle = 0;
@@ -923,18 +906,12 @@ uint8_t object_transfer_service_server_init(uint32_t oacp_features, uint32_t olc
     ots_olcp_features = olcp_features;
     ots_server_operations = operations;
 
-    ots_connections_num = storage_clients_num;
-    memset(storage_clients, 0, sizeof(ots_server_connection_t) * ots_connections_num);
+    ots_connections_num = storage_connections_num;
+    memset(storage_connections, 0, sizeof(ots_server_connection_t) * ots_connections_num);
     uint16_t i;
     for (i = 0; i < ots_connections_num; i++){
-        ots_server_reset_connection(&storage_clients[i]);
-        btstack_linked_list_add(&ots_connections, (btstack_linked_item_t *) &storage_clients[i]);
-    }
-
-    ots_objects_num = storage_objects_num;
-    memset(storage_objects, 0, sizeof(ots_object_t) * ots_objects_num);
-    for (i = 0; i < ots_objects_num; i++){
-        btstack_linked_list_add(&ots_objects, (btstack_linked_item_t *) &storage_objects[i]);
+        ots_server_reset_connection(&storage_connections[i]);
+        btstack_linked_list_add(&ots_connections, (btstack_linked_item_t *) &storage_connections[i]);
     }
 
     uint16_t ots_services_end_handle = end_handle;
@@ -982,103 +959,6 @@ static void object_transfer_service_server_get_next_object_id(ots_object_id_t * 
     little_endian_store_32((uint8_t *)object_id_out, 2, ots_object_id_counter);
 }
 
-static ots_object_t * ots_server_find_free_object(void){
-    btstack_linked_list_iterator_t it;    
-    btstack_linked_list_iterator_init(&it, &ots_objects);
-    while (btstack_linked_list_iterator_has_next(&it)){
-        ots_object_t * object = (ots_object_t*) btstack_linked_list_iterator_next(&it);
-        if (object->allocated_size == 0){
-            return object;
-        } 
-    }
-    return NULL;
-}
-
-static ots_object_t * ots_server_find_object_for_luid(ots_object_id_t * luid){
-    btstack_linked_list_iterator_t it;    
-    btstack_linked_list_iterator_init(&it, &ots_objects);
-    while (btstack_linked_list_iterator_has_next(&it)){
-        ots_object_t * object = (ots_object_t*) btstack_linked_list_iterator_next(&it);
-        if (memcmp(object->luid, luid, sizeof(ots_object_id_t)) == 0){
-            return object;
-        } 
-    }
-    return NULL;
-}
-
-uint8_t object_transfer_service_server_create_object_with_type_uuid16(ots_object_id_t * object_id, char * name, uint32_t properties, uint16_t type_uuid16,
-    uint32_t allocated_size, btstack_utc_t * first_created, btstack_utc_t * last_modified){
-
-    ots_object_t * object = ots_server_find_object_for_luid(object_id);
-    if (object != NULL){
-        return AVRCP_BROWSING_ERROR_CODE_INVALID_PARAMETER;
-    }
-
-    object = ots_server_find_free_object();
-    if (object == NULL){
-        return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
-    }
-    
-    if (strlen(name) > OTS_MAX_NAME_LENGHT){
-        return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
-    }
-
-    memcpy(&object->luid, object_id, sizeof(ots_object_id_t));
-   
-    object->properties = properties;
-    btstack_strcpy(object->name, OTS_MAX_NAME_LENGHT, name);
-    object->type_uuid16 = type_uuid16;
-    object->allocated_size = allocated_size;
-    memcpy(&object->first_created, first_created, sizeof(btstack_utc_t));
-    memcpy(&object->last_modified, first_created, sizeof(btstack_utc_t));
-    btstack_linked_list_add(&ots_objects, (btstack_linked_item_t *) object);
-    return ERROR_CODE_SUCCESS;
-}
-
-uint8_t object_transfer_service_server_set_current_object(hci_con_handle_t con_handle, ots_object_id_t * luid){
-    if (con_handle == HCI_CON_HANDLE_INVALID){
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    }
-    ots_server_connection_t * connection = ots_server_find_or_add_connection_for_con_handle(con_handle);
-    if (connection == NULL){
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    }
-
-    ots_object_t * object = ots_server_find_object_for_luid(luid);
-    if (object == NULL){
-        return AVRCP_BROWSING_ERROR_CODE_INVALID_PARAMETER;
-    }
-
-    connection->current_object = object;
-    connection->current_object_locked = false;
-    connection->current_object_object_transfer_in_progress = false;    
-    return ERROR_CODE_SUCCESS;
-}
-
-uint8_t object_transfer_service_server_update_current_object_name(hci_con_handle_t con_handle, ots_object_id_t * luid, char * name){
-    if (con_handle == HCI_CON_HANDLE_INVALID){
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    }
-    ots_server_connection_t * connection = ots_server_find_or_add_connection_for_con_handle(con_handle);
-    if (connection == NULL){
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    }
-
-    ots_object_t * object = ots_server_find_object_for_luid(luid);
-    if (object == NULL){
-        return AVRCP_BROWSING_ERROR_CODE_INVALID_PARAMETER;
-    }
-    uint16_t name_length = strlen(name);
-    if (name_length > OTS_MAX_NAME_LENGHT){
-        return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
-    }
-
-    btstack_strcpy(object->name, OTS_MAX_NAME_LENGHT, name);
-    connection->current_object = object;
-    connection->current_object_locked = false;
-    connection->current_object_object_transfer_in_progress = false;
-    return ERROR_CODE_SUCCESS;
-}
 
 uint8_t object_transfer_service_server_update_current_object_filter(hci_con_handle_t con_handle, uint8_t filter_index, ots_filter_t * filter){
     if (con_handle == HCI_CON_HANDLE_INVALID){
@@ -1121,5 +1001,46 @@ uint8_t object_transfer_service_server_reset_current_object(hci_con_handle_t con
     connection->current_object_locked = false;
     connection->current_object_object_transfer_in_progress = false;
     
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t object_transfer_service_server_set_current_object(hci_con_handle_t con_handle, ots_object_t * object){
+    if (con_handle == HCI_CON_HANDLE_INVALID){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    ots_server_connection_t * connection = ots_server_find_connection_for_con_handle(con_handle);
+    if (connection == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+
+    connection->current_object = object;
+    connection->current_object_locked = false;
+    connection->current_object_object_transfer_in_progress = false;    
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t object_transfer_service_server_update_current_object_name(hci_con_handle_t con_handle, char * name){
+    if (con_handle == HCI_CON_HANDLE_INVALID){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    ots_server_connection_t * connection = ots_server_find_or_add_connection_for_con_handle(con_handle);
+    if (connection == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+
+    if (connection->current_object == NULL){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+    
+    if (connection->current_object_locked || connection->current_object_object_transfer_in_progress){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+    
+    uint16_t name_length = strlen(name);
+    if (name_length > OTS_MAX_NAME_LENGHT){
+        return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+    }
+
+    btstack_strcpy(connection->current_object->name, OTS_MAX_NAME_LENGHT, name);
     return ERROR_CODE_SUCCESS;
 }
