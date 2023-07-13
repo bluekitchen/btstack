@@ -251,17 +251,13 @@ GAP/SEC/SEM/BI-05-C
 - GAP/DM/LEP/BV-14-C: C, a, 4, b, t, 9
 - GAP/DM/LEP/BV-15-C: p, 4, b, 9, t
 - GAP/DM/LEP/BV-16-C: C, a
-- 
 - GAP/DM/LEP/BV-17-C: F, 9, N, t, p, b
 - GAP/DM/LEP/BV-18-C: F, J, 9, N, t, p, b, 4, M, b, t
 - GAP/DM/LEP/BV-19-C: C, a, 
+- GAP/DM/LEP/BV-20:C: F, J, p, 4, M, b, t, 9, N, wait 50 seconds for next request, t, p, b, t
+- GAP/DM/LEP/BV-21:C: F, J, M, 5, C, a, 
 - 
-- ??? GAP/DM/LEP/BV-20:C: F, J, p, 4, b, t, 9, N, t, 
-- - NEW CTKD BR/EDR -> LE - don't overwrite stronger key
-- - ??? GAP/DM/LEP/BV-21:C: F, J, C, a, 
-- NEW CTKD BR/EDR -> LE - don't overwrite stronger key
-- ??? GAP/DM/LEP/BV-22:C: 9, N 
-- NEW CTKD LE -> BR/EDR - don't overwrite stronger key
+- ??? GAP/DM/LEP/BV-22-C: F, J, N, t, p, b, 9, t
 - 
 - GAP/DM/LEP/BV-23:C: C, a
 - GAP/DM/LEP/BI-01:C: F, J, t
