@@ -183,9 +183,8 @@ static uint8_t ui_presentation_format[7];
 static uint16_t ui_aggregate_handle;
 static uint16_t handle = 0;
 
-//static bd_addr_t public_pts_address = {0x00, 0x1B, 0xDC, 0x07, 0x32, 0xef};
-//static bd_addr_t public_pts_address = {0x00, 0x1B, 0xDC, 0x08, 0xe2, 0x72};
-static bd_addr_t public_pts_address = {0x00, 0x1B, 0xDC, 0x08, 0xe2, 0x5C};
+static bd_addr_t public_pts_address;
+static const char * public_pts_address_string = "00:1B:DC:08:E2:5C";
 
 static int       public_pts_address_type = 0;
 static bd_addr_t current_pts_address;
@@ -1843,12 +1842,14 @@ int btstack_main(int argc, const char * argv[]){
 
     update_security_level(LEVEL_2);
 
+    sscanf_bd_addr(public_pts_address_string, public_pts_address);
     memcpy(current_pts_address, public_pts_address, 6);
     current_pts_address_type = public_pts_address_type;
 
     // classic discoverable / connectable
     gap_connectable_control(0);
     gap_discoverable_control(1);
+
 
     // allow for terminal input
     btstack_stdin_setup(stdin_process);
