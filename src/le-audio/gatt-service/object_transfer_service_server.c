@@ -388,15 +388,26 @@ static void ots_server_can_send_now(void * context){
         // allow next transaction
         connection->oacp_opcode = OACP_OPCODE_READY;
         
-        uint16_t attribute_handle = ots_server_get_client_configuration_handle_for_characteristic_index(OTS_OBJECT_ACTION_CONTROL_POINT_INDEX);
+        uint16_t attribute_handle = ots_server_get_value_handle_for_characteristic_index(OTS_OBJECT_ACTION_CONTROL_POINT_INDEX);
+        printf("OTS_TASK_SEND_OACP_PROCEDURE_RESPONSE 0x%02x\n", attribute_handle);
+
         att_server_indicate(connection->con_handle, attribute_handle, value, sizeof(value));
 
     } else if ((connection->scheduled_tasks & OTS_TASK_SEND_OLCP_PROCEDURE_RESPONSE) != 0){
         connection->scheduled_tasks &= ~OTS_TASK_SEND_OLCP_PROCEDURE_RESPONSE;
 
-        // TODO 
-        // uint16_t attribute_handle = ots_server_get_client_configuration_handle_for_characteristic_index(OTS_OBJECT_LIST_CONTROL_POINT_INDEX); 
-        // att_server_indicate(connection->con_handle, attribute_handle, &value[0], pos);
+        uint8_t value[3];
+        value[0] = OLCP_OPCODE_RESPONSE_CODE;
+        value[1] = (uint8_t)connection->olcp_opcode;
+        value[2] = (uint8_t)connection->olcp_result_code;
+
+        // allow next transaction
+        connection->olcp_opcode = OLCP_OPCODE_READY;
+
+        uint16_t attribute_handle = ots_server_get_value_handle_for_characteristic_index(OTS_OBJECT_LIST_CONTROL_POINT_INDEX);
+        printf("OTS_TASK_SEND_OLCP_PROCEDURE_RESPONSE 0x%02x\n", attribute_handle);
+
+        att_server_indicate(connection->con_handle, attribute_handle, value, sizeof(value));
     }
 
     if (connection->scheduled_tasks != 0){
@@ -432,7 +443,7 @@ static void ots_server_schedule_task(ots_server_connection_t * connection, uint8
     uint16_t scheduled_tasks = connection->scheduled_tasks;
     connection->scheduled_tasks |= task;
 
-    log_debug("scheduled tasks 0x%02x", connection->scheduled_tasks);
+    printf("scheduled tasks 0x%02x\n", connection->scheduled_tasks);
 
     if (scheduled_tasks == 0){
         connection->scheduled_tasks_callback.callback = &ots_server_can_send_now;
@@ -442,42 +453,52 @@ static void ots_server_schedule_task(ots_server_connection_t * connection, uint8
 }
 
 static bool ots_server_valid_gatt_uuid_size(uint16_t uuid_size){
-    return (uuid_size == 2) || (uuid_size == 4) || (uuid_size == 16);
+    return (uuid_size == 2) || (uuid_size == 16);
 }
 
 static int ots_server_handle_action_control_point_write(ots_server_connection_t * connection, uint8_t *buffer, uint16_t buffer_size){
     if (buffer_size == 0){
-        return ATT_ERROR_RESPONSE_OTS_WRITE_REQUEST_REJECTED;
-    }
-
-    oacp_opcode_t opcode = buffer[0];
-    if (opcode >= OACP_OPCODE_RFU){
-        return ATT_ERROR_RESPONSE_OTS_WRITE_REQUEST_REJECTED;
-    } 
-
-    if ((ots_oacp_features & (1 << opcode)) == 0 ){
-        connection->oacp_result_code = OACP_RESULT_CODE_OP_CODE_NOT_SUPPORTED;
+        connection->oacp_result_code = OACP_RESULT_CODE_INVALID_PARAMETER;
         return 0;
     }
+
     // allow only a single transaction per time
     if (connection->oacp_opcode != OACP_OPCODE_READY) {
         connection->oacp_result_code = OACP_RESULT_CODE_OPERATION_FAILED;
         return 0;
     }
 
-    uint32_t object_size;
+    uint8_t pos = 0;
+    connection->oacp_opcode = buffer[pos++];
+    if ((connection->oacp_opcode == OACP_OPCODE_READY) || (connection->oacp_opcode >= OACP_OPCODE_RFU)){
+        connection->oacp_result_code = OACP_RESULT_CODE_OP_CODE_NOT_SUPPORTED;
+        return 0;
+    } 
 
-    switch (opcode){
+    if ((ots_oacp_features & (1 << connection->oacp_opcode)) == 0 ){
+        connection->oacp_result_code = OACP_RESULT_CODE_OP_CODE_NOT_SUPPORTED;
+        return 0;
+    }
+
+    uint32_t object_size;
+    uint8_t gatt_uuid_size;
+
+    switch (connection->oacp_opcode){
         case OACP_OPCODE_CREATE:
-            if (buffer_size < 6){
-                return ATT_ERROR_RESPONSE_OTS_WRITE_REQUEST_REJECTED;
+            if ((buffer_size - pos) < 6){
+                connection->oacp_result_code = OACP_RESULT_CODE_INVALID_PARAMETER;
+                return 0;
             }
-            if (!ots_server_valid_gatt_uuid_size(buffer_size - 4)){
-                return ATT_ERROR_RESPONSE_OTS_WRITE_REQUEST_REJECTED;
+
+            gatt_uuid_size = buffer_size - pos - 4;
+            if (!ots_server_valid_gatt_uuid_size(gatt_uuid_size)) {
+                connection->oacp_result_code = OACP_RESULT_CODE_INVALID_PARAMETER;
+                return 0;
             }
-            
-            object_size = little_endian_read_32(buffer, 0);
-            connection->oacp_result_code = ots_server_operations->create(connection->con_handle, object_size, (uint8_t)buffer_size - 4, &buffer[4]);
+            object_size = little_endian_read_32(buffer, pos);
+            pos += 4;
+
+            connection->oacp_result_code = ots_server_operations->create(connection->con_handle, object_size, gatt_uuid_size, &buffer[pos]);
             break;
 
         case OACP_OPCODE_DELETE:
@@ -512,20 +533,41 @@ static int ots_server_handle_action_control_point_write(ots_server_connection_t 
     return 0;
 }
 
+static bool ots_server_object_passes_filters(ots_server_connection_t * connection, ots_object_t * object){
+    return true;
+}
+
 static int ots_server_handle_list_control_point_write(ots_server_connection_t * connection, uint8_t *buffer, uint16_t buffer_size){
     if (buffer_size == 0){
-        return ATT_ERROR_RESPONSE_OTS_WRITE_REQUEST_REJECTED;
+        connection->olcp_result_code = OLCP_RESULT_CODE_INVALID_PARAMETER;
+        return 0;
     }
 
-    olcp_opcode_t opcode = buffer[0];
-    if (opcode >= OLCP_OPCODE_RFU){
-        return ATT_ERROR_RESPONSE_OTS_WRITE_REQUEST_REJECTED;
-    } 
-
-    switch (opcode){
+    connection->olcp_opcode = buffer[0];
+    if ((connection->olcp_opcode == OLCP_OPCODE_READY) || (connection->olcp_opcode >= OLCP_OPCODE_RFU)){
+        connection->olcp_result_code = OLCP_RESULT_CODE_OP_CODE_NOT_SUPPORTED;
+        return 0;
+    }
+    btstack_linked_list_iterator_t it;
+    switch (connection->olcp_opcode){
         case OLCP_OPCODE_FIRST:
-            // TODO
+            connection->olcp_result_code = OLCP_RESULT_CODE_NO_OBJECT;
+            connection->current_object = NULL;
+
+            btstack_linked_list_iterator_init(&it, &ots_objects);
+            while (btstack_linked_list_iterator_has_next(&it)){
+                ots_object_t * object = (ots_object_t*) btstack_linked_list_iterator_next(&it);
+                if (object->allocated_size != 0){
+                    if (!ots_server_object_passes_filters(connection, object)){
+                        continue;
+                    }
+                    connection->current_object = object;
+                    connection->olcp_result_code = OLCP_RESULT_CODE_SUCCESS;
+                    break;
+                }
+            }
             break;
+
         case OLCP_OPCODE_LAST:
             // TODO
             break;
@@ -533,7 +575,20 @@ static int ots_server_handle_list_control_point_write(ots_server_connection_t * 
             // TODO
             break;   
         case OLCP_OPCODE_NEXT:
-            // TODO
+            connection->olcp_result_code = OLCP_RESULT_CODE_NO_OBJECT;
+            connection->current_object = NULL;
+
+            while (btstack_linked_list_iterator_has_next(&it)){
+                ots_object_t * object = (ots_object_t*) btstack_linked_list_iterator_next(&it);
+                if (object->allocated_size != 0){
+                    if (!ots_server_object_passes_filters(connection, object)){
+                        continue;
+                    }
+                    connection->current_object = object;
+                    connection->olcp_result_code = OLCP_RESULT_CODE_SUCCESS;
+                    break;
+                }
+            }
             break;
         case OLCP_OPCODE_GOTO:   
             // TODO
@@ -694,11 +749,20 @@ static int ots_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
             break;
     }
 
+    uint8_t att_status;
     if (attribute_handle == ots_server_get_value_handle_for_characteristic_index(OTS_OBJECT_ACTION_CONTROL_POINT_INDEX)){
-        return ots_server_handle_action_control_point_write(connection, buffer, buffer_size);
+        att_status = ots_server_handle_action_control_point_write(connection, buffer, buffer_size);
+        if (att_status == 0){
+            ots_server_schedule_task(connection, OTS_TASK_SEND_OACP_PROCEDURE_RESPONSE);
+        }
+        return att_status;
 
     } else if (attribute_handle == ots_server_get_value_handle_for_characteristic_index(OTS_OBJECT_LIST_CONTROL_POINT_INDEX)){
-        return ots_server_handle_list_control_point_write(connection, buffer, buffer_size);
+        att_status = ots_server_handle_list_control_point_write(connection, buffer, buffer_size);
+        if (att_status == 0){
+            ots_server_schedule_task(connection, OTS_TASK_SEND_OLCP_PROCEDURE_RESPONSE);
+        }
+        return att_status;
 
     } else if (attribute_handle == ots_server_get_value_handle_for_characteristic_index(OTS_OBJECT_NAME_INDEX)){
         uint16_t total_value_len = buffer_size + offset;
@@ -918,12 +982,12 @@ static void object_transfer_service_server_get_next_object_id(ots_object_id_t * 
     little_endian_store_32((uint8_t *)object_id_out, 2, ots_object_id_counter);
 }
 
-static ots_object_t * ots_server_find_unused_object(void){
+static ots_object_t * ots_server_find_free_object(void){
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, &ots_objects);
     while (btstack_linked_list_iterator_has_next(&it)){
         ots_object_t * object = (ots_object_t*) btstack_linked_list_iterator_next(&it);
-        if (!object->used){
+        if (object->allocated_size == 0){
             return object;
         } 
     }
@@ -950,7 +1014,7 @@ uint8_t object_transfer_service_server_create_object_with_type_uuid16(ots_object
         return AVRCP_BROWSING_ERROR_CODE_INVALID_PARAMETER;
     }
 
-    object = ots_server_find_unused_object();
+    object = ots_server_find_free_object();
     if (object == NULL){
         return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
     }
@@ -961,7 +1025,6 @@ uint8_t object_transfer_service_server_create_object_with_type_uuid16(ots_object
 
     memcpy(&object->luid, object_id, sizeof(ots_object_id_t));
    
-    object->used = true;
     object->properties = properties;
     btstack_strcpy(object->name, OTS_MAX_NAME_LENGHT, name);
     object->type_uuid16 = type_uuid16;
