@@ -102,7 +102,7 @@ static const le_extended_advertising_parameters_t extended_params = {
 static void setup_advertising(void);
 
 // Object Transfer Server (OTS)
-static oacp_result_code_t ots_server_operation_create(hci_con_handle_t con_handle, uint32_t object_size, uint8_t gatt_uuid_size, uint8_t * gatt_uuid);
+static oacp_result_code_t ots_server_operation_create(hci_con_handle_t con_handle, uint8_t *buffer, uint16_t buffer_size);
 
 // View operations
 static olcp_result_code_t ots_server_operation_first(hci_con_handle_t con_handle);
@@ -211,6 +211,7 @@ static void setup_advertising(void) {
 
 // OTS Server Operations - START
 static  ots_object_t ots_objects[OTS_SERVER_MAX_NUM_OBJECTS];
+static uint32_t ots_object_id_counter = 0;
 
 static ots_object_t * ots_server_find_free_object(void){
     int i;
@@ -230,6 +231,33 @@ static ots_object_t * ots_server_find_object_for_luid(ots_object_id_t * luid){
         } 
     }
     return NULL;
+}
+
+static void ots_server_server_set_next_object_id(ots_object_id_t * object_id_out){
+    ots_object_id_counter++;
+    if (ots_object_id_counter < 0x0100) {
+        ots_object_id_counter = 0x0100;
+    }
+    memset((uint8_t *)object_id_out, 0, OTS_OBJECT_ID_LEN);
+    little_endian_store_32((uint8_t *)object_id_out, 2, ots_object_id_counter);
+}
+
+static bool ots_server_supports_gatt_uuid16(gatt_uuid_type_t type_uuid16){
+    // switch (type_uuid16){
+    //     case GATT_UUID_TYPE_UNSPECIFIED:
+    //     case GATT_UUID_TYPE_DIRECTORY_LISTING:
+    //         return true;
+    //     default:
+    //         return false;
+    // }
+    // TODO
+    printf("GATT UUID type 0x%04x\n", type_uuid16);
+    return true;
+}
+
+static bool ots_server_can_store_object_of_size(uint32_t object_size){
+    // TODO
+    return true;
 }
 
 uint8_t ots_server_add_object_with_type_uuid16(ots_object_id_t * object_id, char * name, uint32_t properties, uint16_t type_uuid16,
@@ -260,25 +288,49 @@ uint8_t ots_server_add_object_with_type_uuid16(ots_object_id_t * object_id, char
     return ERROR_CODE_SUCCESS;
 }
 
-static bool ots_server_supports_gatt_uuid( uint8_t gatt_uuid_size, uint8_t * gatt_uuid){
-    // TODO
-    return true;
-}
 
-static bool ots_server_can_store_object_of_size(uint32_t object_size){
-    // TODO
-    return true;
-}
+static oacp_result_code_t ots_server_operation_create(hci_con_handle_t con_handle, uint8_t *buffer, uint16_t buffer_size){
+    btstack_assert(buffer_size >= 6);
 
-static oacp_result_code_t ots_server_operation_create(hci_con_handle_t con_handle, uint32_t object_size, uint8_t gatt_uuid_size, uint8_t * gatt_uuid){
-    if (!ots_server_supports_gatt_uuid(gatt_uuid_size, gatt_uuid)){
-        return OACP_RESULT_CODE_UNSUPPORTED_TYPE;
-    }  
+    uint32_t object_size = little_endian_read_32(buffer, 0);
+
+    uint8_t  gatt_uuid_size = buffer_size - 4;
+    gatt_uuid_type_t type_uuid16;
+
+    // 1. Unsupported Type
+    if (gatt_uuid_size == 2){
+        type_uuid16 = (gatt_uuid_type_t)little_endian_read_16(buffer, 4);
+        if (!ots_server_supports_gatt_uuid16(type_uuid16)){
+            return OACP_RESULT_CODE_UNSUPPORTED_TYPE;
+        }  
+    }
+
+    // 2. Insufficient Resources
+    ots_object_t * object = ots_server_find_free_object();
+    if (object == NULL){
+        return OACP_RESULT_CODE_INSUFFICIENT_RESOURCES;
+    }
 
     if (!ots_server_can_store_object_of_size(object_size)){
         return OACP_RESULT_CODE_INSUFFICIENT_RESOURCES;
     }
 
+    // 3. Invalid Parameter
+    if (object_size == 0){
+        return OACP_RESULT_CODE_INVALID_PARAMETER;
+    }
+
+    memset(object, 0, sizeof(ots_object_t));
+
+    object->allocated_size = object_size;
+    if (gatt_uuid_size == 2){
+        object->type_uuid16 = type_uuid16;
+    }
+    object->properties |= OBJECT_PROPERTY_MASK_WRITE;
+    ots_server_server_set_next_object_id(&object->luid);
+
+    object_transfer_service_server_set_current_object(con_handle, object);
+    object_transfer_service_server_reset_filters(con_handle);
     return OACP_RESULT_CODE_SUCCESS;
 }
 

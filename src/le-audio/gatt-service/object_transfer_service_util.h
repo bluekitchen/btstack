@@ -207,7 +207,7 @@ typedef struct {
 
     char name[OTS_MAX_NAME_LENGHT];
 
-    uint16_t type_uuid16;
+    gatt_uuid_type_t type_uuid16;
     uint8_t  type_uuid128[16];
 
     // allocated_size = 0 if object not initialized
