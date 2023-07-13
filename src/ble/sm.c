@@ -3709,6 +3709,37 @@ static void sm_connection_init(sm_connection_t * sm_conn, hci_con_handle_t con_h
     sm_conn->sm_engine_state = SM_GENERAL_IDLE;
 }
 
+#ifdef ENABLE_CROSS_TRANSPORT_KEY_DERIVATION
+static void sm_event_handle_classic_encryption_event(sm_connection_t * sm_conn, hci_con_handle_t con_handle){
+    // CTKD requires BR/EDR Secure Connection
+    if (sm_conn->sm_connection_encrypted != 2) return;
+    // prepare for pairing request
+    if (IS_RESPONDER(sm_conn->sm_role)){
+        sm_conn->sm_engine_state = SM_BR_EDR_RESPONDER_W4_PAIRING_REQUEST;
+    } else if (sm_conn->sm_pairing_requested){
+        // check if remote supports fixed channels
+        bool defer = true;
+        const hci_connection_t * hci_connection = hci_connection_for_handle(con_handle);
+        if (hci_connection->l2cap_state.information_state == L2CAP_INFORMATION_STATE_DONE){
+            // check if remote supports SMP over BR/EDR
+            if ((hci_connection->l2cap_state.fixed_channels_supported & (1 << L2CAP_CID_BR_EDR_SECURITY_MANAGER)) != 0){
+                log_info("CTKD: SM_BR_EDR_INITIATOR_SEND_PAIRING_REQUEST");
+                sm_conn->sm_engine_state = SM_BR_EDR_INITIATOR_SEND_PAIRING_REQUEST;
+            } else {
+                defer = false;
+            }
+        } else {
+            // wait for fixed channel info
+            log_info("CTKD: SM_BR_EDR_INITIATOR_W4_FIXED_CHANNEL_MASK");
+            sm_conn->sm_engine_state = SM_BR_EDR_INITIATOR_W4_FIXED_CHANNEL_MASK;
+        }
+        if (defer){
+            hci_dedicated_bonding_defer_disconnect(con_handle, true);
+        }
+    }
+}
+#endif
+
 static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 
     UNUSED(channel);    // ok: there is no channel
@@ -3972,30 +4003,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
 
 #ifdef ENABLE_CROSS_TRANSPORT_KEY_DERIVATION
                         case SM_BR_EDR_W4_ENCRYPTION_COMPLETE:
-                            // CTKD requires BR/EDR Secure Connection
-                            if (sm_conn->sm_connection_encrypted != 2) break;
-                            // prepare for pairing request
-                            if (IS_RESPONDER(sm_conn->sm_role)){
-                                sm_conn->sm_engine_state = SM_BR_EDR_RESPONDER_W4_PAIRING_REQUEST;
-                            } else if (sm_conn->sm_pairing_requested){
-                                // check if remote supports fixed channels
-                                bool defer = true;
-                                const hci_connection_t * hci_connection = hci_connection_for_handle(con_handle);
-                                if (hci_connection->l2cap_state.information_state == L2CAP_INFORMATION_STATE_DONE){
-                                    // check if remote supports SMP over BR/EDR
-                                    if ((hci_connection->l2cap_state.fixed_channels_supported & (1 << L2CAP_CID_BR_EDR_SECURITY_MANAGER)) != 0){
-                                        sm_conn->sm_engine_state = SM_BR_EDR_INITIATOR_SEND_PAIRING_REQUEST;
-                                    } else {
-                                        defer = false;
-                                    }
-                                } else {
-                                    // wait for fixed channel info
-                                    sm_conn->sm_engine_state = SM_BR_EDR_INITIATOR_W4_FIXED_CHANNEL_MASK;
-                                }
-                                if (defer){
-                                    hci_dedicated_bonding_defer_disconnect(con_handle, true);
-                                }
-                            }
+                            sm_event_handle_classic_encryption_event(sm_conn, con_handle);
                             break;
 #endif
                         default:
