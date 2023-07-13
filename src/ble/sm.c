@@ -1534,15 +1534,15 @@ static void sm_pairing_error(sm_connection_t * sm_conn, uint8_t reason){
     sm_conn->sm_engine_state = SM_GENERAL_SEND_PAIRING_FAILED;
 }
 
-static int sm_lookup_by_address(void) {
+static int sm_le_device_db_index_lookup(bd_addr_type_t address_type, bd_addr_t address){
     int i;
     for (i=0; i < le_device_db_max_count(); i++){
-        bd_addr_t address;
-        int address_type = BD_ADDR_TYPE_UNKNOWN;
-        le_device_db_info(i, &address_type, address, NULL);
+        bd_addr_t db_address;
+        int db_address_type = BD_ADDR_TYPE_UNKNOWN;
+        le_device_db_info(i, &db_address_type, db_address, NULL);
         // skip unused entries
         if (address_type == BD_ADDR_TYPE_UNKNOWN) continue;
-        if ((address_type == BD_ADDR_TYPE_LE_PUBLIC) && (memcmp(address, setup->sm_peer_address, 6) == 0)){
+        if ((address_type == db_address_type) && (memcmp(address, db_address, 6) == 0)){
             return i;
         }
     }
@@ -1561,7 +1561,7 @@ static void sm_remove_le_device_db_entry(uint16_t i) {
 static uint8_t sm_key_distribution_validate_received(sm_connection_t * sm_conn){
     // if identity is provided, abort if we have bonding with same address but different irk
     if (setup->sm_key_distribution_received_set & SM_KEYDIST_FLAG_IDENTITY_INFORMATION){
-        int index = sm_lookup_by_address();
+        int index = sm_le_device_db_index_lookup(BD_ADDR_TYPE_LE_PUBLIC, setup->sm_peer_address);
         if (index >= 0){
             sm_key_t irk;
             le_device_db_info(index, NULL, NULL, irk);
@@ -5424,16 +5424,8 @@ const uint8_t * gap_get_persistent_irk(void){
 }
 
 void gap_delete_bonding(bd_addr_type_t address_type, bd_addr_t address){
-    uint16_t i;
-    for (i=0; i < le_device_db_max_count(); i++){
-        bd_addr_t entry_address;
-        int entry_address_type = BD_ADDR_TYPE_UNKNOWN;
-        le_device_db_info(i, &entry_address_type, entry_address, NULL);
-        // skip unused entries
-        if (entry_address_type == (int) BD_ADDR_TYPE_UNKNOWN) continue;
-        if ((entry_address_type == (int) address_type) && (memcmp(entry_address, address, 6) == 0)){
-            sm_remove_le_device_db_entry(i);
-            break;
-        }
+    int index = sm_le_device_db_index_lookup(address_type, address);
+    if (index >= 0){
+        sm_remove_le_device_db_entry(index);
     }
 }
