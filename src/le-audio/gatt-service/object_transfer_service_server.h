@@ -92,7 +92,7 @@ typedef struct {
     oacp_opcode_t       oacp_opcode;
     oacp_result_code_t  oacp_result_code;
     
-    // used for OACP procedures
+    // used for OLCP procedures
     olcp_opcode_t       olcp_opcode;
     olcp_result_code_t  olcp_result_code;
 } ots_server_connection_t;
