@@ -55,6 +55,12 @@ extern "C" {
 
 typedef struct {
     oacp_result_code_t (*create)(hci_con_handle_t con_handle, uint8_t *buffer, uint16_t buffer_size);
+    oacp_result_code_t (*delete)(hci_con_handle_t con_handle);
+    oacp_result_code_t (*calculate_checksum)(hci_con_handle_t con_handle, uint8_t *buffer, uint16_t buffer_size);
+    oacp_result_code_t (*execute)(hci_con_handle_t con_handle, uint8_t *buffer, uint16_t buffer_size);
+    oacp_result_code_t (*read) (hci_con_handle_t con_handle, uint8_t *buffer, uint16_t buffer_size);
+    oacp_result_code_t (*write)(hci_con_handle_t con_handle, uint8_t *buffer, uint16_t buffer_size);
+    oacp_result_code_t (*abort)(hci_con_handle_t con_handle);
 
     // View operations
     olcp_result_code_t (*first)(hci_con_handle_t con_handle);
@@ -118,8 +124,17 @@ uint8_t object_transfer_service_server_reset_filters(hci_con_handle_t con_handle
 
 uint8_t object_transfer_service_server_update_current_object_name(hci_con_handle_t con_handle, char * name);
 
-uint8_t object_transfer_service_server_reset_current_object(hci_con_handle_t con_handle);
+uint8_t object_transfer_service_server_delete_current_object(hci_con_handle_t con_handle);
 uint8_t object_transfer_service_server_update_current_object_filter(hci_con_handle_t con_handle, uint8_t filter_index, ots_filter_t * filter);
+
+bool object_transfer_service_server_current_object_valid(hci_con_handle_t con_handle);
+bool object_transfer_service_server_current_object_procedure_permitted(hci_con_handle_t con_handle, uint32_t object_property_mask);
+
+bool object_transfer_service_server_current_object_locked(hci_con_handle_t con_handle);
+bool object_transfer_service_server_current_object_transfer_in_progress(hci_con_handle_t con_handle);
+
+uint8_t object_transfer_service_server_current_object_set_lock(hci_con_handle_t con_handle, bool locked);
+uint8_t object_transfer_service_server_current_object_set_transfer_in_progress(hci_con_handle_t con_handle, bool transfer_in_progress);
 
 /* API_END */
 
