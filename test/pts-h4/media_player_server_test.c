@@ -199,7 +199,26 @@ static void setup_advertising(void) {
 
 
 // OTS Server Operations - START
+
+static bool ots_server_supports_gatt_uuid( uint8_t gatt_uuid_size, uint8_t * gatt_uuid){
+    // TODO
+    return true;
+}
+
+static bool ots_server_can_store_object_of_size(uint32_t object_size){
+    // TODO
+    return true;
+}
+
 static oacp_result_code_t ots_server_operation_create(hci_con_handle_t con_handle, uint32_t object_size, uint8_t gatt_uuid_size, uint8_t * gatt_uuid){
+    if (!ots_server_supports_gatt_uuid(gatt_uuid_size, gatt_uuid)){
+        return OACP_RESULT_CODE_UNSUPPORTED_TYPE;
+    }  
+
+    if (!ots_server_can_store_object_of_size(object_size)){
+        return OACP_RESULT_CODE_INSUFFICIENT_RESOURCES;
+    }
+    
     return OACP_RESULT_CODE_SUCCESS;
 }
 
@@ -1297,8 +1316,8 @@ static void stdin_process(char cmd){
             printf("set long filter\n");
             filter.type = OTS_FILTER_TYPE_NAME_STARTS_WITH;
             filter.data_size = strlen(long_string2) - 10;
+            memset(filter.data, 0, sizeof(filter.data));
             memcpy(filter.data, (uint8_t *)long_string2, filter.data_size - 1);
-            filter.data[filter.data_size] = '0';
             object_transfer_service_server_update_current_object_filter(bap_app_server_con_handle, 0, &filter);
             break;
 
