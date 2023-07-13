@@ -95,6 +95,11 @@ typedef uint8_t ots_object_id_t[OTS_OBJECT_ID_LEN];
 
 /* API_START */
 
+typedef enum{
+    GATT_UUID_TYPE_UNSPECIFIED = 0x2ACA,
+    GATT_UUID_TYPE_DIRECTORY_LISTING
+} gatt_uuid_type_t;
+
 typedef struct {
     uint16_t year;
     uint8_t  month;
@@ -147,7 +152,8 @@ typedef enum {
 } oacp_result_code_t;
 
 typedef enum {
-    OLCP_OPCODE_FIRST = 0x01,           
+    OLCP_OPCODE_READY = 0x00,
+    OLCP_OPCODE_FIRST = 0x01,
     OLCP_OPCODE_LAST,             
     OLCP_OPCODE_PREVIOUS,              
     OLCP_OPCODE_NEXT,            
@@ -195,9 +201,7 @@ typedef struct {
 
     // Locally Unique Identifier: 0x000000000000 - Directory Listing Object, [0x000000000001, 0x0000000000FF] - RFU
     // luid >= 0x000000000100
-    bool used;
-
-    ots_object_id_t luid;                   
+    ots_object_id_t luid;
 
     uint32_t properties;
 
