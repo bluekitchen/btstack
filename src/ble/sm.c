@@ -2083,9 +2083,16 @@ static void sm_ctkd_fetch_br_edr_link_key(sm_connection_t * sm_conn){
     setup->sm_link_key_type =  hci_connection->link_key_type;
 }
 
-static void sm_ctkd_start_from_br_edr(sm_connection_t * connection){
-    bool use_h7 = (sm_pairing_packet_get_auth_req(setup->sm_m_preq) & sm_pairing_packet_get_auth_req(setup->sm_s_pres) & SM_AUTHREQ_CT2) != 0;
-    connection->sm_engine_state = use_h7 ? SM_BR_EDR_W2_CALCULATE_ILK_USING_H7 : SM_BR_EDR_W2_CALCULATE_ILK_USING_H6;
+static void sm_ctkd_start_from_br_edr(sm_connection_t * sm_conn){
+    // only derive LTK if EncKey is set by both
+    bool derive_ltk = (sm_pairing_packet_get_initiator_key_distribution(setup->sm_s_pres) &
+                              sm_pairing_packet_get_responder_key_distribution(setup->sm_s_pres) & SM_KEYDIST_ENC_KEY) != 0;
+    if (derive_ltk){
+        bool use_h7 = (sm_pairing_packet_get_auth_req(setup->sm_m_preq) & sm_pairing_packet_get_auth_req(setup->sm_s_pres) & SM_AUTHREQ_CT2) != 0;
+        sm_conn->sm_engine_state = use_h7 ? SM_BR_EDR_W2_CALCULATE_ILK_USING_H7 : SM_BR_EDR_W2_CALCULATE_ILK_USING_H6;
+    } else {
+        sm_done_for_handle(sm_conn->sm_handle);
+    }
 }
 
 #endif
