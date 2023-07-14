@@ -1038,7 +1038,7 @@ uint8_t gap_auto_connection_stop_all(void);
  * @param phy_options 0 = no preferred coding for Coded, 1 = S=2 coding (500 kbit), 2 = S=8 coding (125 kbit)
  * @return 0 if ok
  */
-uint8_t gap_le_set_phy(hci_con_handle_t con_handle, uint8_t all_phys, uint8_t tx_phys, uint8_t rx_phys, uint8_t phy_options);
+uint8_t gap_le_set_phy(hci_con_handle_t con_handle, uint8_t all_phys, uint8_t tx_phys, uint8_t rx_phys, uint16_t phy_options);
 
 /**
  * @brief Get connection interval

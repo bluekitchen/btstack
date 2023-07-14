@@ -8626,14 +8626,14 @@ uint8_t gap_request_role(const bd_addr_t addr, hci_role_t role){
 
 #ifdef ENABLE_BLE
 
-uint8_t gap_le_set_phy(hci_con_handle_t con_handle, uint8_t all_phys, uint8_t tx_phys, uint8_t rx_phys, uint8_t phy_options){
+uint8_t gap_le_set_phy(hci_con_handle_t con_handle, uint8_t all_phys, uint8_t tx_phys, uint8_t rx_phys, uint16_t phy_options){
     hci_connection_t * conn = hci_connection_for_handle(con_handle);
     if (!conn) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
 
     conn->le_phy_update_all_phys    = all_phys;
     conn->le_phy_update_tx_phys     = tx_phys;
     conn->le_phy_update_rx_phys     = rx_phys;
-    conn->le_phy_update_phy_options = phy_options;
+    conn->le_phy_update_phy_options = (uint8_t) phy_options;
 
     hci_run();
 
