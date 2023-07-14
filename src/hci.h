@@ -677,6 +677,7 @@ typedef struct {
 
 #ifdef ENABLE_LE_PERIODIC_ADVERTISING
     hci_con_handle_t le_past_sync_handle;
+    uint8_t          le_past_advertising_handle;
     uint16_t         le_past_service_data;
 #endif
 

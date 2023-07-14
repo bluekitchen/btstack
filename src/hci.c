@@ -325,6 +325,7 @@ create_connection_for_bd_addr_and_type(const bd_addr_t addr, bd_addr_type_t addr
     conn->role = role;
 #ifdef ENABLE_LE_PERIODIC_ADVERTISING
     conn->le_past_sync_handle = HCI_CON_HANDLE_INVALID;
+    conn->le_past_advertising_handle = 0xff;
 #endif
     btstack_linked_list_add(&hci_stack->connections, (btstack_linked_item_t *) conn);
 
@@ -7266,6 +7267,12 @@ static bool hci_run_general_pending_commands(void){
             hci_send_cmd(&hci_le_periodic_advertising_sync_transfer, connection->con_handle, connection->le_past_service_data, sync_handle);
             return true;
         }
+        if (connection->le_past_advertising_handle != 0xff){
+            uint8_t advertising_handle = connection->le_past_advertising_handle;
+            connection->le_past_advertising_handle = 0xff;
+            hci_send_cmd(&hci_le_periodic_advertising_set_info_transfer, connection->con_handle, connection->le_past_service_data, advertising_handle);
+            return true;
+        }
 #endif
 #endif
     }
@@ -8583,6 +8590,17 @@ uint8_t gap_periodic_advertising_sync_transfer_send(hci_con_handle_t con_handle,
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     hci_connection->le_past_sync_handle = sync_handle;
+    hci_connection->le_past_service_data = service_data;
+    hci_run();
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t gap_periodic_advertising_set_info_transfer_send(hci_con_handle_t con_handle, uint16_t service_data, uint8_t advertising_handle){
+    hci_connection_t * hci_connection = hci_connection_for_handle(con_handle);
+    if (hci_connection == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    hci_connection->le_past_advertising_handle = advertising_handle;
     hci_connection->le_past_service_data = service_data;
     hci_run();
     return ERROR_CODE_SUCCESS;
