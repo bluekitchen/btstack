@@ -3019,7 +3019,7 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
                                     break;
                                 }
                                 if (iso_stream->max_sdu_c_to_p > 0){
-                                    iso_stream->state = HCI_ISO_STREAM_STATE_W2_SETUP_ISO_INPUT;
+                                    iso_stream->state = HCI_ISO_STREAM_STATE_W2_SETUP_ISO_OUTPUT;
                                 } else {
                                     emit_cis_created = true;
                                 }
