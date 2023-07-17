@@ -54,8 +54,11 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 static btstack_packet_callback_registration_t sm_event_callback_registration;
 static void show_usage(void);
 
-static const char * pts_address_string = "C007E8E1F1FD";
+static const char * pts_address_string = "C0:07:E8:4B:78:FB";
 static const char * tspx_periodic_advertising_data = "0201040503001801180D095054532D4741502D3036423803190000";
+
+static bool gap_discoverable;
+static bool gap_limited_discoverable;
 
 static bd_addr_type_t   pts_address_type;
 static bd_addr_t        pts_address;
@@ -86,7 +89,7 @@ static const le_extended_advertising_parameters_t extended_params_periodic = {
 };
 
 static le_extended_advertising_parameters_t extended_params_regular = {
-        .advertising_event_properties = 1,  // connectable
+        .advertising_event_properties = 0x13,  // legacy, Connectable and scannable undirected
         .primary_advertising_interval_min = 0x30, // xx ms
         .primary_advertising_interval_max = 0x30, // xx ms
         .primary_advertising_channel_map = 7,
@@ -108,10 +111,84 @@ static const le_periodic_advertising_parameters_t periodic_params = {
         .periodic_advertising_properties = 0
 };
 
-static const uint8_t extended_adv_data[] = {
-        // name
-        7, BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME, 'S', 'o', 'u', 'r', 'c', 'e'
+static uint8_t extended_adv_data[32];
+static uint8_t extended_adv_data_len = 8;
+
+// general discoverable flags
+static uint8_t adv_general_discoverable[] = { 2, 01, 02 };
+
+// limited discoverable flags
+static uint8_t adv_limited_discoverable[] = { 2, 01, 01 };
+
+// non discoverable flags
+static uint8_t adv_non_discoverable[] = { 2, 01, 00 };
+
+
+// AD Manufacturer Specific Data - Ericsson, 1, 2, 3, 4
+static uint8_t adv_data_1[] = { 7, 0xff, 0x00, 0x00, 1, 2, 3, 4 };
+// AD Local Name - 'BTstack'
+static uint8_t adv_data_2[] = { 8, 0x09, 'B', 'T', 's', 't', 'a', 'c', 'k' };
+// AD Flags - 2 - General Discoverable mode -- flags are always prepended
+static uint8_t adv_data_3[] = {  };
+// AD Service Data - 0x1812 HID over LE
+static uint8_t adv_data_4[] = { 3, 0x16, 0x12, 0x18 };
+// AD Service Solicitation -  0x1812 HID over LE
+static uint8_t adv_data_5[] = { 3, 0x14, 0x12, 0x18 };
+// AD Services
+static uint8_t adv_data_6[] = { 3, 0x03, 0x12, 0x18 };
+// AD Slave Preferred Connection Interval Range - no min, no max
+static uint8_t adv_data_7[] = { 5, 0x12, 0xff, 0xff, 0xff, 0xff };
+// AD Tx Power Level - +4 dBm
+static uint8_t adv_data_8[] = { 2, 0x0a, 4 };
+// AD OOB
+static uint8_t adv_data_9[] = { 2, 0x11, 3 };
+// AD TK Value
+static uint8_t adv_data_0[] = { 17, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+// AD LE Bluetooth Device Address - 66:55:44:33:22:11  public address
+static uint8_t adv_data_le_bd_addr[] = { 8, 0x1b, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x00};
+// AD Appearance
+static uint8_t adv_data_appearance[] = { 3, 0x19, 0x00, 0x00};
+// AD LE Role - Peripheral only
+static uint8_t adv_data_le_role[] = {2 , 0x1c, 0x00};
+// AD Public Target Address
+static uint8_t adv_data_public_target_address[] = { 7, 0x17,  0x11, 0x22, 0x33, 0x44, 0x55, 0x66};
+// AD Random Target Address
+static uint8_t adv_data_random_target_address[] = { 7, 0x18,  0x11, 0x22, 0x33, 0x44, 0x55, 0x66};
+// AD Advertising Interval
+static uint8_t adv_data_advertising_interval[] =  { 3, BLUETOOTH_DATA_TYPE_ADVERTISING_INTERVAL, 0x00, 0x80};
+// AD URI
+static uint8_t adv_data_uri[] = {21, BLUETOOTH_DATA_TYPE_URI, 0x016,0x2F,0x2F,0x77,0x77,0x77,0x2E,0x62,0x6C,0x75,0x65,0x74,0x6F,0x6F,0x74,0x68,0x2E,0x63,0x6F,0x6D};
+
+static uint8_t scan_data_len;
+static uint8_t scan_data[32];
+
+typedef struct {
+    uint16_t len;
+    uint8_t * data;
+} advertisement_t;
+
+#define ADV(a) { sizeof(a), &a[0]}
+static advertisement_t advertisements[] = {
+        ADV(adv_data_0),
+        ADV(adv_data_1),
+        ADV(adv_data_2),
+        ADV(adv_data_3),
+        ADV(adv_data_4),
+        ADV(adv_data_5),
+        ADV(adv_data_6),
+        ADV(adv_data_7),
+        ADV(adv_data_8),
+        ADV(adv_data_9),
+        ADV(adv_data_le_bd_addr),
+        ADV(adv_data_appearance),
+        ADV(adv_data_le_role),
+        ADV(adv_data_public_target_address),
+        ADV(adv_data_random_target_address),
+        ADV(adv_data_advertising_interval),
+        ADV(adv_data_uri)
 };
+
+static int advertisement_index = 2;
 
 static uint8_t period_adv_data[255];
 static uint16_t period_adv_data_len;
@@ -144,16 +221,73 @@ static int btstack_parse_hex(const char * string, uint16_t len, uint8_t * buffer
     return 1;
 }
 
-static void start_extended_adv(void){
-    if (adv_handle_regular == 0xff){
-        gap_extended_advertising_setup(&le_advertising_set_regular, &extended_params_regular, &adv_handle_regular);
-    }
-    if ((extended_params_regular.advertising_event_properties & 0x04) == 0){
-        gap_extended_advertising_set_adv_data(adv_handle_regular, sizeof(extended_adv_data), extended_adv_data);
-        gap_extended_advertising_start(adv_handle_regular, 0, 0);
+void update_advertisements(void){
+
+    // update adv data
+    memset(extended_adv_data, 0, 32);
+    extended_adv_data_len = 0;
+
+    // scan_data_len = 0;
+
+    // add "Flags" to advertisements
+    if (gap_discoverable){
+        memcpy(extended_adv_data, adv_general_discoverable, sizeof(adv_general_discoverable));
+        extended_adv_data_len += sizeof(adv_general_discoverable);
+    } else if (gap_limited_discoverable){
+        memcpy(extended_adv_data, adv_limited_discoverable, sizeof(adv_limited_discoverable));
+        extended_adv_data_len += sizeof(adv_limited_discoverable);
     } else {
-        gap_extended_advertising_start(adv_handle_regular, 100, 0);
+        memcpy(extended_adv_data, adv_non_discoverable, sizeof(adv_non_discoverable));
+        extended_adv_data_len += sizeof(adv_non_discoverable);
     }
+
+    // append selected adv data
+    memcpy(&extended_adv_data[extended_adv_data_len], advertisements[advertisement_index].data, advertisements[advertisement_index].len);
+    extended_adv_data_len += advertisements[advertisement_index].len;
+
+    memcpy(&scan_data[scan_data_len], advertisements[advertisement_index].data, advertisements[advertisement_index].len);
+    scan_data_len += advertisements[advertisement_index].len;
+
+    // set as adv + scan response data
+    if ((extended_params_regular.advertising_event_properties & 0x04) == 0){
+        gap_extended_advertising_set_adv_data(adv_handle_regular, extended_adv_data_len, extended_adv_data);
+    }
+    // gap_scan_response_set_data(scan_data_len, scan_data);
+
+#if 0
+    // update advertisement params
+    uint8_t adv_type = gap_adv_type();
+
+    bd_addr_t null_addr;
+    memset(null_addr, 0, 6);
+    uint16_t adv_int_min = 0x800;
+    uint16_t adv_int_max = 0x800;
+    uint8_t channel_map = 1;
+    switch (adv_type){
+        case 0:
+        case 2:
+        case 3:
+            gap_advertisements_set_params(adv_int_min, adv_int_max, adv_type, 0, null_addr, channel_map, gap_adv_filter_policy);
+            break;
+        case 1:
+        case 4:
+            gap_advertisements_set_params(adv_int_min, adv_int_max, adv_type, tester_address_type, tester_address, channel_map, gap_adv_filter_policy);
+            break;
+    }
+    gap_discoverable_control(gap_discoverable);
+    gap_connectable_control(gap_connectable);
+    if (gap_limited_discoverable){
+        gap_set_class_of_device(0x202408);
+    } else {
+        gap_set_class_of_device(0x200408);
+    }
+#endif
+}
+
+static void start_extended_adv(void){
+    gap_extended_advertising_set_params(adv_handle_regular, &extended_params_regular);
+    uint16_t timeout = ((extended_params_regular.advertising_event_properties & 0x04) == 0) ? 0 : 100;
+    gap_extended_advertising_start(adv_handle_regular, timeout, 0);
 }
 
 static void setup_periodic_advertising(void) {
@@ -370,6 +504,8 @@ static void show_usage(void){
     printf("---\n");
     printf("a   - start connectable advertising\n");
     printf("c   - connect to %s\n", bd_addr_to_str(pts_address));
+    printf("d/D - discoverable off/on\n");
+    printf("t/T - limited discoverable off/on\n");
     printf("X   - disconnect\n");
     printf("1   - start periodic advertising\n");
     printf("2   - start periodic advertising sync without extended advertising\n");
@@ -388,7 +524,16 @@ static void stdin_process(char cmd){
             printf("Connecting...\n");
             status = gap_connect(pts_address, 0);
             break;
-        
+        case 'd':
+            printf("d - discoverable off\n");
+            gap_discoverable = false;
+            update_advertisements();
+            break;
+        case 'D':
+            printf("D - discoverable on\n");
+            gap_discoverable = true;
+            update_advertisements();
+            break;
         case 'X':
             printf("Disconnect...\n");
             status = gap_disconnect(pts_con_handle);
@@ -413,6 +558,18 @@ static void stdin_process(char cmd){
             printf("Start extended advertising\n");
             start_extended_adv();
             break;
+        case 't':
+            printf("t - limited discoverable off\n");
+            hci_send_cmd(&hci_write_current_iac_lap_two_iacs, 2, GAP_IAC_GENERAL_INQUIRY, GAP_IAC_GENERAL_INQUIRY);
+            gap_limited_discoverable = 0;
+            update_advertisements();
+            break;
+        case 'T':
+            printf("T - limited discoverable on\n");
+            gap_limited_discoverable = 1;
+            hci_send_cmd(&hci_write_current_iac_lap_two_iacs, 2, GAP_IAC_LIMITED_INQUIRY, GAP_IAC_GENERAL_INQUIRY);
+            update_advertisements();
+            break;
         case 'x':
             printf("x - directed connectable on\n");
             extended_params_regular.advertising_event_properties = 0x1d;    // legacy, high duty-cycle
@@ -422,6 +579,8 @@ static void stdin_process(char cmd){
         case 'R':
             printf("Use Resolvable Private Address\n");
             extended_params_regular.own_address_type = BD_ADDR_TYPE_LE_PUBLIC_IDENTITY;
+            memcpy(extended_params_regular.peer_address, pts_address, 6);
+            extended_params_regular.peer_address_type = pts_address_type;
             break;
         case '\n':
         case '\r':
@@ -448,12 +607,17 @@ int btstack_main(int argc, const char * argv[]){
 
     sm_init();
     sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
-    sm_set_authentication_requirements(SM_AUTHREQ_SECURE_CONNECTION);
+    sm_set_authentication_requirements(SM_AUTHREQ_SECURE_CONNECTION | SM_AUTHREQ_BONDING);
     sm_event_callback_registration.callback = &hci_event_handler;
     sm_add_event_handler(&sm_event_callback_registration);
 
     hci_event_callback_registration.callback = &hci_event_handler;
     hci_add_event_handler(&hci_event_callback_registration);
+
+    //
+    gap_discoverable = true;
+    gap_extended_advertising_setup(&le_advertising_set_regular, &extended_params_regular, &adv_handle_regular);
+    update_advertisements();
 
     // parse human readable Bluetooth address
     sscanf_bd_addr(pts_address_string, pts_address);
