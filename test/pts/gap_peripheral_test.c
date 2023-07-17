@@ -714,7 +714,14 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
 }
 
 void show_usage(void){
+    bd_addr_t iut_address;
+    gap_local_bd_addr(iut_address);
+
     printf("\n--- CLI for LE Peripheral ---\n");
+    printf("TSPX_bd_addr_iut: ");
+    for (uint8_t i=0;i<6;i++) printf("%02x", iut_address[i]);
+    printf("\n");
+
     printf("GAP: discoverable %u, connectable %u, bondable %u, directed connectable %u, random addr %u, ads enabled %u, adv type %u \n",
         gap_discoverable, gap_connectable, gap_bondable, gap_directed_connectable, gap_random, gap_advertisements, gap_adv_type());
     printf("ADV: "); printf_hexdump(adv_data, adv_data_len);
