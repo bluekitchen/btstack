@@ -947,12 +947,17 @@ static void show_usage(void){
     uint8_t iut_address_type;
     bd_addr_t      iut_address;
     gap_le_get_own_address(&iut_address_type, iut_address);
+    char addr_string[20];
+    for (uint8_t i=0;i<6;i++) {
+        snprintf(&addr_string[2*i], sizeof(addr_string), "%02x", iut_address[i]);
+    }
+    addr_string[12] = 0;
 
     reset_screen();
 
     print_line("--- CLI for BR/EDR/LE Central ---");
     print_line("PTS: addr type %u, addr %s", current_pts_address_type, bd_addr_to_str(current_pts_address));
-    print_line("IUT: addr type %u, addr %s", iut_address_type, bd_addr_to_str(iut_address));
+    print_line("TSPX_bd_addr_iut: %s", addr_string);
     print_line("--------------------------");
     print_line("GAP: connectable %u, bondable %u", gap_connectable, gap_bondable);
     print_line("SM: %s, MITM protection %u, SC %u - SC-only Mode %u", sm_io_capabilities, sm_mitm_protection, sm_sc, sm_sc_only_mode);
