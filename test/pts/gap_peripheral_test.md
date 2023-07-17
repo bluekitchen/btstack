@@ -8,7 +8,7 @@ Set TSPX_iut_private_address_interval to 60000 (default 5 seconds, but GAP/BROB/
 - GAP/BROB/BCST/BV-01-C: 2, A
 - GAP/BROB/BCST/BV-02-C: A
 - GAP/BROB/BCST/BV-03-C: C, A, R, Z
-- GAP/BROB/BCST/BV-04-C: c, r, A
+- GAP/BROB/BCST/BV-04-C: c, r, A, wait for random address update (up to 60 seconds)
 - GAP/BROB/BCST/BV-05-C: C, A, wait for connect and pairing, L, R, wait for request to add, q, "OK" (fragile!, random update set to 60 seconds)
 
 - GAP/BROB/OBSV/BV-01-C -> GAP Central
@@ -22,7 +22,7 @@ Set TSPX_iut_private_address_interval to 60000 (default 5 seconds, but GAP/BROB/
 - GAP/DISC/LIMM/BV-01-C: T, A, a (wait 30 sec)
 - GAP/DISC/LIMM/BV-02-C: T, C, A, a (wait 30 sec)
 
-- GAP/DISC/GENM/BV-01-C: D, a, d
+- GAP/DISC/GENM/BV-01-C: D, c, A
 - GAP/DISC/GENM/BV-02-C: D, A, C
 
 - GAP/DISC/LIMP/BV-01-C -> GAP Central 
@@ -56,12 +56,15 @@ Set TSPX_iut_private_address_interval to 60000 (default 5 seconds, but GAP/BROB/
 - GAP/CONN/NCON/BV-02-C: c, D, A
 - GAP/CONN/NCON/BV-03-C: T, c, A
 
-- GAP/CONN/DCON/BV-01-C: C, A
+- GAP/CONN/DCON/BV-01-C: X, C, A
+- 
+- GAP/CONN/DCON/BV-04-C -> pts-h4/gap_test
+- GAP/CONN/DCON/BV-05-C -> pts-h4/gap_test
 
 - GAP/CONN/UCON/BV-01-C: d, C, A
-- GAP/CONN/UCON/BV-02-C: (wait)
-- GAP/CONN/UCON/BV-03-C: (wait)
-- GAP/CONN/UCON/BV-06-C: C, A, R, Z, wait 60 seconds (see TSPX_iut_private_address_interval)
+- GAP/CONN/UCON/BV-02-C: D, C, A
+- GAP/CONN/UCON/BV-03-C: T, C, A
+- GAP/CONN/UCON/BV-06-C: C, A, wait for connect & pairing, R, Z, wait 60 seconds (see TSPX_iut_private_address_interval)
 
 - GAP/CONN/ACEP/BV-01-C -> GAP Central
 
