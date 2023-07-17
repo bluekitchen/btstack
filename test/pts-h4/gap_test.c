@@ -57,11 +57,12 @@ static void show_usage(void);
 static const char * pts_address_string = "C007E8E1F1FD";
 static const char * tspx_periodic_advertising_data = "0201040503001801180D095054532D4741502D3036423803190000";
 
+static bd_addr_type_t   pts_address_type;
 static bd_addr_t        pts_address;
 static hci_con_handle_t pts_con_handle;
 
 static const uint8_t adv_sid = 0;
-static uint8_t adv_handle_regular = 0;
+static uint8_t adv_handle_regular = 0xff;
 static uint8_t adv_handle_periodic = 0;
 
 static le_advertising_set_t le_advertising_set_regular;
@@ -84,7 +85,7 @@ static const le_extended_advertising_parameters_t extended_params_periodic = {
         .scan_request_notification_enable = 0,
 };
 
-static const le_extended_advertising_parameters_t extended_params_regular = {
+static le_extended_advertising_parameters_t extended_params_regular = {
         .advertising_event_properties = 1,  // connectable
         .primary_advertising_interval_min = 0x30, // xx ms
         .primary_advertising_interval_max = 0x30, // xx ms
@@ -142,10 +143,17 @@ static int btstack_parse_hex(const char * string, uint16_t len, uint8_t * buffer
     }
     return 1;
 }
+
 static void start_extended_adv(void){
-    gap_extended_advertising_setup(&le_advertising_set_regular, &extended_params_regular, &adv_handle_regular);
-    gap_extended_advertising_set_adv_data(adv_handle_regular, sizeof(extended_adv_data), extended_adv_data);
-    gap_extended_advertising_start(adv_handle_regular, 0, 0);
+    if (adv_handle_regular == 0xff){
+        gap_extended_advertising_setup(&le_advertising_set_regular, &extended_params_regular, &adv_handle_regular);
+    }
+    if ((extended_params_regular.advertising_event_properties & 0x04) == 0){
+        gap_extended_advertising_set_adv_data(adv_handle_regular, sizeof(extended_adv_data), extended_adv_data);
+        gap_extended_advertising_start(adv_handle_regular, 0, 0);
+    } else {
+        gap_extended_advertising_start(adv_handle_regular, 100, 0);
+    }
 }
 
 static void setup_periodic_advertising(void) {
@@ -280,6 +288,7 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
             switch (hci_event_le_meta_get_subevent_code(packet)){
                 case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
                     pts_con_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
+                    pts_address_type = hci_subevent_le_connection_complete_get_peer_address_type(packet);
                     hci_subevent_le_connection_complete_get_peer_address(packet, pts_address);
                     printf("Connection to %s established, con_handle 0x%04x\n", bd_addr_to_str(pts_address), pts_con_handle);
                     break;
@@ -365,7 +374,9 @@ static void show_usage(void){
     printf("1   - start periodic advertising\n");
     printf("2   - start periodic advertising sync without extended advertising\n");
     printf("3   - start periodic advertising sync using extended advertising\n");
+    printf("x   - enable directed connectable \n");
     printf("4   - send periodic advertisement set info transfer information\n");
+    printf("R   - use resolvable private address\n");
     printf("---\n");
 }
 
@@ -401,6 +412,16 @@ static void stdin_process(char cmd){
         case 'a':
             printf("Start extended advertising\n");
             start_extended_adv();
+            break;
+        case 'x':
+            printf("x - directed connectable on\n");
+            extended_params_regular.advertising_event_properties = 0x1d;    // legacy, high duty-cycle
+            memcpy(extended_params_regular.peer_address, pts_address, 6);
+            extended_params_regular.peer_address_type = pts_address_type;
+            break;
+        case 'R':
+            printf("Use Resolvable Private Address\n");
+            extended_params_regular.own_address_type = BD_ADDR_TYPE_LE_PUBLIC_IDENTITY;
             break;
         case '\n':
         case '\r':
