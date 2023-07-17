@@ -3410,6 +3410,12 @@ static void event_handler(uint8_t *packet, uint16_t size){
     le_audio_big_t   * big;
     le_audio_big_sync_t * big_sync;
 #endif
+#if defined(ENABLE_LE_ISOCHRONOUS_STREAMS) || defined(ENABLE_LE_EXTENDED_ADVERTISING)
+    btstack_linked_list_iterator_t it;
+#endif
+#ifdef ENABLE_LE_EXTENDED_ADVERTISING
+    uint8_t advertising_handle;
+#endif
 
     // log_info("HCI:EVENT:%02x", hci_event_packet_get_type(packet));
     
@@ -3992,7 +3998,6 @@ static void event_handler(uint8_t *packet, uint16_t size){
             }
 
             // finalize iso stream(s) for ACL handle
-            btstack_linked_list_iterator_t it;
             btstack_linked_list_iterator_init(&it, &hci_stack->iso_streams);
             while (btstack_linked_list_iterator_has_next(&it)){
                 hci_iso_stream_t * iso_stream = (hci_iso_stream_t *) btstack_linked_list_iterator_next(&it);
@@ -4107,6 +4112,16 @@ static void event_handler(uint8_t *packet, uint16_t size){
                 case HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_SYNC_ESTABLISHMENT:
                     hci_stack->le_periodic_sync_request = LE_CONNECTING_IDLE;
                     hci_stack->le_periodic_sync_state = LE_CONNECTING_IDLE;
+                    break;
+                case HCI_SUBEVENT_LE_ADVERTISING_SET_TERMINATED:
+                    advertising_handle = hci_subevent_le_advertising_set_terminated_get_advertising_handle(packet);
+                    btstack_linked_list_iterator_init(&it, &hci_stack->le_advertising_sets);
+                    while (btstack_linked_list_iterator_has_next(&it)) {
+                        le_advertising_set_t *advertising_set = (le_advertising_set_t *) btstack_linked_list_iterator_next(&it);
+                        if (advertising_set->advertising_handle == advertising_handle){
+                            advertising_set->state &= ~(LE_ADVERTISEMENT_STATE_ACTIVE | LE_ADVERTISEMENT_STATE_ENABLED);
+                        }
+                    }
                     break;
 #endif
 #endif
