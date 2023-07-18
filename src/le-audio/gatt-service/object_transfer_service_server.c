@@ -54,6 +54,7 @@
 #include "btstack_event.h"
 #include "btstack_linked_list.h"
 #include "btstack_util.h"
+#include "l2cap.h"
 
 #include "le-audio/gatt-service/object_transfer_service_server.h"
 #include "le-audio/le_audio_util.h"
@@ -96,6 +97,12 @@ static ots_characteristic_t  ots_characteristics[OTS_CHARACTERISTICS_NUM];
 
 static uint32_t ots_oacp_features;
 static uint32_t ots_olcp_features;
+
+
+#define TSPX_LE_PSM          0x25
+static uint8_t  receive_buffer_X[100];
+static uint16_t initial_credits = L2CAP_LE_AUTOMATIC_CREDITS;
+static uint16_t cid_credit_based;
 
 static ots_server_connection_t * ots_server_find_connection_for_con_handle(hci_con_handle_t con_handle){
     if (con_handle == HCI_CON_HANDLE_INVALID){
@@ -217,15 +224,19 @@ bool object_transfer_service_server_current_object_valid(hci_con_handle_t con_ha
     return ots_current_object_valid(connection);
 }
 
+static bool ots_server_current_object_procedure_permitted(ots_server_connection_t * connection, uint32_t object_property_mask){
+    if (!ots_current_object_valid(connection)){
+        return false;
+    }
+    return (connection->current_object->properties & (1 << object_property_mask) ) != 0;
+}
+
 bool object_transfer_service_server_current_object_procedure_permitted(hci_con_handle_t con_handle, uint32_t object_property_mask){
     ots_server_connection_t * connection = ots_server_find_connection_for_con_handle(con_handle);
     if (connection == NULL){
         return false;
     }
-    if (!ots_current_object_valid(connection)){
-        return false;
-    }
-    return (connection->current_object->properties & (1 << object_property_mask) ) != 0;
+    return ots_server_current_object_procedure_permitted(connection, object_property_mask);
 }
 
 bool object_transfer_service_server_current_object_locked(hci_con_handle_t con_handle){
@@ -388,7 +399,7 @@ static uint16_t ots_server_read_callback(hci_con_handle_t con_handle, uint16_t a
 
     if (attribute_handle == ots_server_get_value_handle_for_characteristic_index(OTS_OBJECT_SIZE_INDEX)){
         uint8_t object_size[8];
-        little_endian_store_32(object_size, 0, connection->current_size);
+        little_endian_store_32(object_size, 0, connection->current_object_size);
         little_endian_store_32(object_size, 4, connection->current_object->allocated_size);
         return att_read_callback_handle_blob(object_size, sizeof(object_size), offset, buffer, buffer_size); 
     }
@@ -436,18 +447,27 @@ static void ots_server_can_send_now(void * context){
     if ((connection->scheduled_tasks & OTS_TASK_SEND_OACP_PROCEDURE_RESPONSE) != 0){
         connection->scheduled_tasks &= ~OTS_TASK_SEND_OACP_PROCEDURE_RESPONSE;
 
-        uint8_t value[3];
+        uint8_t value[3 + 4];
+        uint16_t value_length = 3;
         value[0] = OACP_OPCODE_RESPONSE_CODE; 
         value[1] = (uint8_t)connection->oacp_opcode;
         value[2] = (uint8_t)connection->oacp_result_code;
         
+        uint16_t attribute_handle = ots_server_get_value_handle_for_characteristic_index(OTS_OBJECT_ACTION_CONTROL_POINT_INDEX);
+        
+        switch (connection->oacp_opcode){
+            case OACP_OPCODE_CALCULATE_CHECKSUM:
+                little_endian_store_32(value, 3, connection->oacp_result_crc);
+                value_length = 7;
+                break;
+            default:
+                break;
+        }
+        
         // allow next transaction
         connection->oacp_opcode = OACP_OPCODE_READY;
-        
-        uint16_t attribute_handle = ots_server_get_value_handle_for_characteristic_index(OTS_OBJECT_ACTION_CONTROL_POINT_INDEX);
-        printf("OTS_TASK_SEND_OACP_PROCEDURE_RESPONSE 0x%02x\n", attribute_handle);
-
-        att_server_indicate(connection->con_handle, attribute_handle, value, sizeof(value));
+        // printf("OTS_TASK_SEND_OACP_PROCEDURE_RESPONSE 0x%02x\n", attribute_handle);
+        att_server_indicate(connection->con_handle, attribute_handle, value, value_length);
 
     } else if ((connection->scheduled_tasks & OTS_TASK_SEND_OLCP_PROCEDURE_RESPONSE) != 0){
         connection->scheduled_tasks &= ~OTS_TASK_SEND_OLCP_PROCEDURE_RESPONSE;
@@ -498,8 +518,6 @@ static void ots_server_schedule_task(ots_server_connection_t * connection, uint8
 
     uint16_t scheduled_tasks = connection->scheduled_tasks;
     connection->scheduled_tasks |= task;
-
-    printf("scheduled tasks 0x%02x\n", task);
 
     if (scheduled_tasks == 0){
         connection->scheduled_tasks_callback.callback = &ots_server_can_send_now;
@@ -553,12 +571,14 @@ int ots_server_handle_action_control_point_write(ots_server_connection_t * conne
             break;
 
         case OACP_OPCODE_DELETE:
-            printf("delete %p\n", connection->current_object);
             connection->oacp_result_code = ots_server_operations->delete(connection->con_handle);
             break;
         
         case OACP_OPCODE_CALCULATE_CHECKSUM:
-            connection->oacp_result_code = ots_server_operations->calculate_checksum(connection->con_handle, &buffer[pos], data_size);
+            if (data_size < 8){
+                return OACP_RESULT_CODE_OPERATION_FAILED;
+            }
+            connection->oacp_result_code = ots_server_operations->calculate_checksum(connection->con_handle, &buffer[pos], data_size, &connection->oacp_result_crc);
             break;
         
         case OACP_OPCODE_EXECUTE:
@@ -566,11 +586,34 @@ int ots_server_handle_action_control_point_write(ots_server_connection_t * conne
             break;
         
         case OACP_OPCODE_READ:   
-            connection->oacp_result_code = ots_server_operations->read(connection->con_handle, &buffer[pos], data_size);
+            if (data_size < 8){
+                return OACP_RESULT_CODE_OPERATION_FAILED;
+            }
+
+            // 1. Invalid Object
+            if (!ots_current_object_valid(connection)){
+                connection->oacp_result_code = OACP_RESULT_CODE_INVALID_OBJECT;
+                break;
+            }
+
+            // 2. Procedure Not Permitted - The object’s properties do not permit reading the object
+            if (!ots_server_current_object_procedure_permitted(connection, OBJECT_PROPERTY_MASK_READ)){
+                connection->oacp_result_code = OACP_RESULT_CODE_INVALID_OBJECT;
+                break;
+            }
+
+            // 3. Channel Unavailable - An Object Transfer Channel was not available for use
+            if (cid_credit_based == 0){
+                printf("OACP_RESULT_CODE_CHANNEL_UNAVAILABLE \n");
+                connection->oacp_result_code = OACP_RESULT_CODE_CHANNEL_UNAVAILABLE;
+                break;
+            }
+
+            connection->oacp_result_code = ots_server_operations->read(connection->con_handle, cid_credit_based, &buffer[pos], data_size);
             break;
         
         case OACP_OPCODE_WRITE:
-            connection->oacp_result_code = ots_server_operations->write(connection->con_handle, &buffer[pos], data_size);
+            connection->oacp_result_code = ots_server_operations->write(connection->con_handle, cid_credit_based, &buffer[pos], data_size);
             break;
         
         case OACP_OPCODE_ABORT:
@@ -796,7 +839,6 @@ static int ots_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
             break;
     }
 
-    uint8_t att_status;
     if (attribute_handle == ots_server_get_value_handle_for_characteristic_index(OTS_OBJECT_ACTION_CONTROL_POINT_INDEX)){
         return ots_server_handle_action_control_point_write(connection, buffer, buffer_size);
 
@@ -880,18 +922,61 @@ static int ots_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
     return 0;
 }
 
+
 static void ots_server_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
-    UNUSED(packet);
     UNUSED(size);
 
     if (packet_type != HCI_EVENT_PACKET){
         return;
     }
 
+    bd_addr_t event_address;
+    uint16_t psm;
+    uint16_t cid;
+    hci_con_handle_t handle;
+
     switch (hci_event_packet_get_type(packet)) {
         case HCI_EVENT_DISCONNECTION_COMPLETE:
             ots_server_reset_connection_for_con_handle(hci_event_disconnection_complete_get_connection_handle(packet));
+            break;
+
+        // LE CBM
+        case L2CAP_EVENT_CBM_INCOMING_CONNECTION: 
+            psm = l2cap_event_cbm_incoming_connection_get_psm(packet);
+            cid = l2cap_event_cbm_incoming_connection_get_local_cid(packet);
+            if (psm != TSPX_LE_PSM) break;
+            printf("L2CAP: Accepting incoming LE connection request for 0x%02x, PSM %02x\n", cid, psm); 
+            l2cap_cbm_accept_connection(cid, receive_buffer_X, sizeof(receive_buffer_X), initial_credits);
+            break;
+
+
+        case L2CAP_EVENT_CBM_CHANNEL_OPENED:
+            // inform about new l2cap connection
+            l2cap_event_cbm_channel_opened_get_address(packet, event_address);
+            psm = l2cap_event_cbm_channel_opened_get_psm(packet);
+            cid = l2cap_event_cbm_channel_opened_get_local_cid(packet);
+            handle = l2cap_event_cbm_channel_opened_get_handle(packet);
+            
+            if (l2cap_event_cbm_channel_opened_get_status(packet) == ERROR_CODE_SUCCESS) {
+                printf("L2CAP: LE Data Channel successfully opened: %s, handle 0x%02x, psm 0x%02x, local cid 0x%02x, remote cid 0x%02x\n",
+                       bd_addr_to_str(event_address), handle, psm, cid,  little_endian_read_16(packet, 15));
+                cid_credit_based = cid;
+            } else {
+                printf("L2CAP: LE Data Channel connection to device %s failed. status code %u\n", bd_addr_to_str(event_address), packet[2]);
+            }
+            break;
+
+        case L2CAP_EVENT_CAN_SEND_NOW:
+            cid = l2cap_event_can_send_now_get_local_cid(packet);
+
+            // l2cap_send(cid_credit_based, ots_server_serial, strlen(data_long));
+            printf("L2CAP: L2CAP_EVENT_CAN_SEND_NOW sent0x%02x\n", cid); 
+            break;
+
+       case L2CAP_EVENT_PACKET_SENT:
+            cid = l2cap_event_packet_sent_get_local_cid(packet);
+            printf("L2CAP: LE Data Channel Packet sent0x%02x\n", cid); 
             break;
         default:
             break;
@@ -913,7 +998,14 @@ uint8_t object_transfer_service_server_init(uint32_t oacp_features, uint32_t olc
     if (!service_found){
         return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
     }
+
     log_info("Found OTS service 0x%02x-0x%02x", start_handle, end_handle);
+
+    // le data channel setup
+    uint8_t status = l2cap_cbm_register_service(&ots_server_packet_handler, TSPX_LE_PSM, LEVEL_0);
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
+    }
 
 #ifdef ENABLE_TESTING_SUPPORT
     printf("Found OTS Service 0x%02x - 0x%02x \n", start_handle, end_handle);
@@ -995,6 +1087,7 @@ uint8_t object_transfer_service_server_init(uint32_t oacp_features, uint32_t olc
     object_transfer_service_server.write_callback = &ots_server_write_callback;
     object_transfer_service_server.packet_handler = ots_server_packet_handler;
     att_server_register_service_handler(&object_transfer_service_server);
+
     return ERROR_CODE_SUCCESS;
 }
 
@@ -1049,7 +1142,7 @@ uint8_t object_transfer_service_server_delete_current_object(hci_con_handle_t co
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t object_transfer_service_server_set_current_object(hci_con_handle_t con_handle, ots_object_t * object){
+uint8_t object_transfer_service_server_set_current_object(hci_con_handle_t con_handle, ots_object_t * object, uint32_t object_size){
     if (con_handle == HCI_CON_HANDLE_INVALID){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
@@ -1061,6 +1154,7 @@ uint8_t object_transfer_service_server_set_current_object(hci_con_handle_t con_h
     connection->current_object = object;
     connection->current_object_locked = false;
     connection->current_object_object_transfer_in_progress = false;    
+    connection->current_object_size = object_size;
     return ERROR_CODE_SUCCESS;
 }
 
@@ -1105,3 +1199,34 @@ uint8_t object_transfer_service_server_update_current_object_name(hci_con_handle
     btstack_strcpy(connection->current_object->name, OTS_MAX_NAME_LENGHT, name);
     return ERROR_CODE_SUCCESS;
 }
+
+uint32_t object_transfer_service_server_current_object_size(hci_con_handle_t con_handle){
+    if (con_handle == HCI_CON_HANDLE_INVALID){
+        return 0;
+    }
+    ots_server_connection_t * connection = ots_server_find_or_add_connection_for_con_handle(con_handle);
+    if (connection == NULL){
+        return 0;
+    }
+
+    if (connection->current_object == NULL){
+        return 0;
+    }
+    return connection->current_object_size;
+}
+
+char * object_transfer_service_server_current_object_name(hci_con_handle_t con_handle){
+    if (con_handle == HCI_CON_HANDLE_INVALID){
+        return NULL;
+    }
+    ots_server_connection_t * connection = ots_server_find_or_add_connection_for_con_handle(con_handle);
+    if (connection == NULL){
+        return NULL;
+    }
+
+    if (connection->current_object == NULL){
+        return NULL;
+    }
+    return connection->current_object->name;
+}
+
