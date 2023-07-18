@@ -1374,7 +1374,7 @@ static const struct {
         { 32, SCO_PACKET_TYPES_EV4 },                           // EV4 packets
         { 45, SCO_PACKET_TYPES_2EV3 | SCO_PACKET_TYPES_2EV5 },  // EDR eSCO 2 Mb/s
         { 46, SCO_PACKET_TYPES_3EV3 | SCO_PACKET_TYPES_3EV5 },  // EDR eSCO 3 Mb/s
-        { 47, SCO_PACKET_TYPES_2EV3 | SCO_PACKET_TYPES_3EV3 },  // 3-slot EDR eSCO packets
+        { 47, SCO_PACKET_TYPES_2EV5 | SCO_PACKET_TYPES_3EV5 },  // 3-slot EDR eSCO packets, 2-EV3/3-EV3 use single slot
 };
 
 static uint16_t hci_sco_packet_types_for_features(const uint8_t * local_supported_features){
