@@ -109,6 +109,9 @@ with open (outfile, 'wb') as fout:
 			try:
 				# try to deal with windows 16-bit unicode by dropping \0 characters
 				line = ''.join([c for c in line if c != '\0'])
+				# drop Segger RTT console prefix
+				if line.startswith('00> '):
+					line = line[4:]
 				line_conter += 1
 				timestamp = None
 				# strip newlines
