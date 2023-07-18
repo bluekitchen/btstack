@@ -47,6 +47,7 @@
 #include "le-audio/le_audio.h"
 #include "le-audio/gatt-service/object_transfer_service_util.h"
 
+
 #if defined __cplusplus
 extern "C" {
 #endif
@@ -56,10 +57,10 @@ extern "C" {
 typedef struct {
     oacp_result_code_t (*create)(hci_con_handle_t con_handle, uint8_t *buffer, uint16_t buffer_size);
     oacp_result_code_t (*delete)(hci_con_handle_t con_handle);
-    oacp_result_code_t (*calculate_checksum)(hci_con_handle_t con_handle, uint8_t *buffer, uint16_t buffer_size);
+    oacp_result_code_t (*calculate_checksum)(hci_con_handle_t con_handle, uint8_t *buffer, uint16_t buffer_size, uint32_t * crc_out);
     oacp_result_code_t (*execute)(hci_con_handle_t con_handle, uint8_t *buffer, uint16_t buffer_size);
-    oacp_result_code_t (*read) (hci_con_handle_t con_handle, uint8_t *buffer, uint16_t buffer_size);
-    oacp_result_code_t (*write)(hci_con_handle_t con_handle, uint8_t *buffer, uint16_t buffer_size);
+    oacp_result_code_t (*read) (hci_con_handle_t con_handle, uint16_t cid, uint8_t *buffer, uint16_t buffer_size);
+    oacp_result_code_t (*write)(hci_con_handle_t con_handle, uint16_t cid, uint8_t *buffer, uint16_t buffer_size);
     oacp_result_code_t (*abort)(hci_con_handle_t con_handle);
 
     // View operations
@@ -88,9 +89,10 @@ typedef struct {
     ots_object_t * current_object;
     bool current_object_locked;
     bool current_object_object_transfer_in_progress;
+    uint32_t current_object_size;
 
     // offset, used in OACP write procedure
-    uint32_t current_size;
+    // uint32_t current_size;
 
     ots_filter_t filters[OTS_MAX_NUM_FILTERS];
 
@@ -103,6 +105,7 @@ typedef struct {
     // used for OACP procedures
     oacp_opcode_t       oacp_opcode;
     oacp_result_code_t  oacp_result_code;
+    uint32_t oacp_result_crc;
     
     // used for OLCP procedures
     olcp_opcode_t       olcp_opcode;
@@ -119,7 +122,7 @@ uint8_t object_transfer_service_server_init(uint32_t oacp_features, uint32_t olc
 
 void object_transfer_service_server_register_packet_handler(btstack_packet_handler_t packet_handler);
 
-uint8_t object_transfer_service_server_set_current_object(hci_con_handle_t con_handle, ots_object_t * object);
+uint8_t object_transfer_service_server_set_current_object(hci_con_handle_t con_handle, ots_object_t * object, uint32_t current_size);
 uint8_t object_transfer_service_server_reset_filters(hci_con_handle_t con_handle);
 
 uint8_t object_transfer_service_server_update_current_object_name(hci_con_handle_t con_handle, char * name);
@@ -135,6 +138,9 @@ bool object_transfer_service_server_current_object_transfer_in_progress(hci_con_
 
 uint8_t object_transfer_service_server_current_object_set_lock(hci_con_handle_t con_handle, bool locked);
 uint8_t object_transfer_service_server_current_object_set_transfer_in_progress(hci_con_handle_t con_handle, bool transfer_in_progress);
+
+uint32_t object_transfer_service_server_current_object_size(hci_con_handle_t con_handle);
+char * object_transfer_service_server_current_object_name(hci_con_handle_t con_handle);
 
 /* API_END */
 
