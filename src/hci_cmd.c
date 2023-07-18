@@ -1645,7 +1645,7 @@ const hci_cmd_t hci_le_set_default_phy = {
  * @param phy_options
  */
 const hci_cmd_t hci_le_set_phy = {
-    HCI_OPCODE_HCI_LE_SET_PHY, "H1111"
+    HCI_OPCODE_HCI_LE_SET_PHY, "H1112"
 // LE PHY Update Complete is generated on completion
 };
 
