@@ -601,8 +601,8 @@ uint32_t btstack_crc32_init(void){
     return 0xffffffff;
 }
 
-uint32_t btstack_crc32_update(uint32_t crc, const uint8_t *data, uint32_t data_len){
-    const unsigned char *d = (const unsigned char *)data;
+uint32_t btstack_crc32_update(uint32_t crc, const uint8_t * data, uint32_t data_len){
+    const uint8_t *d = data;
     uint32_t tbl_idx;
 
     while (data_len--) {

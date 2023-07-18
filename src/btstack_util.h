@@ -341,7 +341,7 @@ uint32_t btstack_crc32_init(void);
  * @param data_len Number of bytes in the \a data buffer.
  * @return             The updated crc value.
  */
-uint32_t btstack_crc32_update(uint32_t crc, const uint8_t *data, uint32_t data_len);
+uint32_t btstack_crc32_update(uint32_t crc, const uint8_t * data, uint32_t data_len);
 
 /**
  * @brief Calculate the final CRC32 value.
