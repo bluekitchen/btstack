@@ -448,6 +448,11 @@ static oacp_result_code_t ots_server_operation_delete(hci_con_handle_t con_handl
     return OACP_RESULT_CODE_SUCCESS;
 }
 
+static const uint8_t * ots_server_get_current_object_bytes(hci_con_handle_t con_handle){
+    // TODO; get object data
+    return (const uint8_t *)object_transfer_service_server_current_object_name(con_handle);
+}
+
 static oacp_result_code_t ots_server_operation_calculate_checksum(hci_con_handle_t con_handle, uint8_t *buffer, uint16_t buffer_size, uint32_t * crc_out){
     btstack_assert(buffer_size >= 8);
 
@@ -460,7 +465,7 @@ static oacp_result_code_t ots_server_operation_calculate_checksum(hci_con_handle
     uint32_t offset = little_endian_read_32(buffer, 0);
     uint32_t length = little_endian_read_32(buffer, 4);
     
-    if ( (offset + length) > object_transfer_service_server_current_object_size(con_handle)){
+    if ((offset + length) > object_transfer_service_server_current_object_size(con_handle)){
         return OACP_RESULT_CODE_INVALID_PARAMETER;
     }
 
@@ -474,17 +479,15 @@ static oacp_result_code_t ots_server_operation_calculate_checksum(hci_con_handle
         return OACP_RESULT_CODE_OBJECT_LOCKED;
     }
     
+    const uint8_t * data = ots_server_get_current_object_bytes(con_handle);
+    
     uint32_t crc;
-    unsigned char * name = (unsigned char *)"123456789"; //(unsigned char *)object_transfer_service_server_current_object_name(con_handle);
-    printf("CRC  \n");
-    printf_hexdump(&name[offset], length);
-
     crc = btstack_crc32_init();
-    crc = btstack_crc32_update(crc, &name[offset], length);
+    crc = btstack_crc32_update(crc, &data[offset], length);
     crc = btstack_crc32_finalize(crc);
     *crc_out = crc;
 
-    printf("CRC 0x%lx (%s[offset %d/%d])\n", (unsigned long)crc, name, offset, length);
+    printf("CRC 0x%lx (%s[offset %d/%d])\n", (unsigned long)crc, data, offset, length);
 
     return OACP_RESULT_CODE_SUCCESS;
 }
