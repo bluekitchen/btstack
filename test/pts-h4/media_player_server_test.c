@@ -37,11 +37,11 @@
 
 #define BTSTACK_FILE__ "media_player_server_test.c"
 
+#include <inttypes.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <inttypes.h>
 
 #include "media_player_server_test.h"
 #include "btstack.h"
@@ -106,10 +106,10 @@ static void setup_advertising(void);
 // Object operations
 static oacp_result_code_t ots_server_operation_create(hci_con_handle_t con_handle, uint8_t *buffer, uint16_t buffer_size);
 static oacp_result_code_t ots_server_operation_delete(hci_con_handle_t con_handle);
-static oacp_result_code_t ots_server_operation_calculate_checksum(hci_con_handle_t con_handle, uint8_t *buffer, uint16_t buffer_size);
+static oacp_result_code_t ots_server_operation_calculate_checksum(hci_con_handle_t con_handle, uint8_t *buffer, uint16_t buffer_size, uint32_t * crc_out);
 static oacp_result_code_t ots_server_operation_execute(hci_con_handle_t con_handle, uint8_t *buffer, uint16_t buffer_size);
-static oacp_result_code_t ots_server_operation_read(hci_con_handle_t con_handle, uint8_t *buffer, uint16_t buffer_size);
-static oacp_result_code_t ots_server_operation_write(hci_con_handle_t con_handle, uint8_t *buffer, uint16_t buffer_size);
+static oacp_result_code_t ots_server_operation_read( hci_con_handle_t con_handle, uint16_t cid, uint8_t *buffer, uint16_t buffer_size);
+static oacp_result_code_t ots_server_operation_write(hci_con_handle_t con_handle, uint16_t cid, uint8_t *buffer, uint16_t buffer_size);
 static oacp_result_code_t ots_server_operation_abort(hci_con_handle_t con_handle);
 
 
@@ -190,7 +190,7 @@ static uint32_t previous_group_index;
 
 // MCS Test
 static mcs_track_t tracksA[] = {
-    {18000, 0, {0x11, 0x11, 0x11, 0x11, 0x11, 0x11}, "Track1"}, //{0xFE, 0xFE, 0xFE, 0xFE, 0xFE, 0xFE}, {0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB}},
+    {18000, 0, {0x11, 0x11, 0x11, 0x11, 0x11, 0x11}, "Object 2"}, //{0xFE, 0xFE, 0xFE, 0xFE, 0xFE, 0xFE}, {0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB}},
     {15000, 0, {0x22, 0x22, 0x22, 0x22, 0x22, 0x22}, "Track2"}, //{0xFE, 0xFE, 0xFE, 0xFE, 0xFE, 0xFE}, {0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB}},
     {12000, 0, {0x33, 0x33, 0x33, 0x33, 0x33, 0x33}, "Track3"}, //{0xFE, 0xFE, 0xFE, 0xFE, 0xFE, 0xFE}, {0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB}},
 };
@@ -228,6 +228,62 @@ static void setup_advertising(void) {
 // OTS Server Operations - START
 static  ots_object_t ots_objects[OTS_SERVER_MAX_NUM_OBJECTS];
 static uint32_t ots_object_id_counter = 0;
+
+static int ots_object_index = 0;
+
+static ots_object_t * ots_object_iterator_first(void){
+    int i = 0;
+
+    while ((i < OTS_SERVER_MAX_NUM_OBJECTS) && (ots_objects[i].allocated_size == 0)){
+        i++; 
+    }
+    if (i < OTS_SERVER_MAX_NUM_OBJECTS){
+        ots_object_index = i;
+        return &ots_objects[ots_object_index];
+    }
+    return NULL;
+}
+
+static ots_object_t * ots_object_iterator_last(void){
+    int i = OTS_SERVER_MAX_NUM_OBJECTS - 1;
+
+    while ((i >= 0) && (ots_objects[i].allocated_size == 0)){
+        i--; 
+    }
+
+    if (i >= 0){
+        ots_object_index = i;
+        return &ots_objects[ots_object_index];
+    }
+    return NULL;
+}
+
+static ots_object_t * ots_object_iterator_next(void){
+    int i = ots_object_index + 1;
+
+    while ((i < OTS_SERVER_MAX_NUM_OBJECTS) && (ots_objects[i].allocated_size == 0)){
+        i++; 
+    }
+    if (i < OTS_SERVER_MAX_NUM_OBJECTS){
+        ots_object_index = i;
+        return &ots_objects[ots_object_index];
+    }
+    return NULL;
+}
+
+static ots_object_t * ots_object_iterator_previous(void){
+    int i = OTS_SERVER_MAX_NUM_OBJECTS - 1;
+
+    while ((i >= 0) && (ots_objects[i].allocated_size == 0)){
+        i--; 
+    }
+    if (i >= 0){
+        ots_object_index = i;
+        return &ots_objects[ots_object_index];
+    }
+    return NULL;
+}
+
 
 static ots_object_t * ots_server_find_free_object(void){
     int i;
@@ -276,6 +332,12 @@ static bool ots_server_can_store_object_of_size(uint32_t object_size){
     return true;
 }
 
+static uint32_t ots_server_get_object_current_size(ots_object_t * object){
+    btstack_assert(object != NULL);
+    // TOOD
+    return strlen(object->name);
+}
+
 uint8_t ots_server_add_object_with_type_uuid16(ots_object_id_t * object_id, char * name, uint32_t properties, uint16_t type_uuid16,
     uint32_t allocated_size, btstack_utc_t * first_created, btstack_utc_t * last_modified){
 
@@ -303,7 +365,6 @@ uint8_t ots_server_add_object_with_type_uuid16(ots_object_id_t * object_id, char
     memcpy(&object->last_modified, first_created, sizeof(btstack_utc_t));
     return ERROR_CODE_SUCCESS;
 }
-
 
 static oacp_result_code_t ots_server_operation_create(hci_con_handle_t con_handle, uint8_t *buffer, uint16_t buffer_size){
     btstack_assert(buffer_size >= 6);
@@ -345,7 +406,7 @@ static oacp_result_code_t ots_server_operation_create(hci_con_handle_t con_handl
     object->properties |= OBJECT_PROPERTY_MASK_WRITE;
     ots_server_server_set_next_object_id(&object->luid);
 
-    object_transfer_service_server_set_current_object(con_handle, object);
+    object_transfer_service_server_set_current_object(con_handle, object, ots_server_get_object_current_size(object));
     object_transfer_service_server_reset_filters(con_handle);
     return OACP_RESULT_CODE_SUCCESS;
 }
@@ -387,12 +448,44 @@ static oacp_result_code_t ots_server_operation_delete(hci_con_handle_t con_handl
     return OACP_RESULT_CODE_SUCCESS;
 }
 
-static oacp_result_code_t ots_server_operation_calculate_checksum(hci_con_handle_t con_handle, uint8_t *buffer, uint16_t buffer_size){
-    // 1. Invalid Object
+static oacp_result_code_t ots_server_operation_calculate_checksum(hci_con_handle_t con_handle, uint8_t *buffer, uint16_t buffer_size, uint32_t * crc_out){
+    btstack_assert(buffer_size >= 8);
 
-    // 2. Invalid Parameter
+    // 1. Invalid Object
+    if (!object_transfer_service_server_current_object_valid(con_handle)){
+        return OACP_RESULT_CODE_INVALID_OBJECT;
+    }
+    // 2. Invalid Parameter - The sum of the values of the Offset and Length parameters 
+    //                        exceeds the value of the Current Size field of the Object Size characteristic.
+    uint32_t offset = little_endian_read_32(buffer, 0);
+    uint32_t length = little_endian_read_32(buffer, 4);
+    
+    if ( (offset + length) > object_transfer_service_server_current_object_size(con_handle)){
+        return OACP_RESULT_CODE_INVALID_PARAMETER;
+    }
+
     // 3. Object Locked by server
+    if (object_transfer_service_server_current_object_locked(con_handle)){
+        return OACP_RESULT_CODE_OBJECT_LOCKED;
+    }
+
     // 4. Object Locked - An object transfer is in progress that is using the Current Object
+    if (object_transfer_service_server_current_object_transfer_in_progress(con_handle)){
+        return OACP_RESULT_CODE_OBJECT_LOCKED;
+    }
+    
+    uint32_t crc;
+    unsigned char * name = (unsigned char *)"123456789"; //(unsigned char *)object_transfer_service_server_current_object_name(con_handle);
+    printf("CRC  \n");
+    printf_hexdump(&name[offset], length);
+
+    crc = btstack_crc32_init();
+    crc = btstack_crc32_update(crc, &name[offset], length);
+    crc = btstack_crc32_finalize(crc);
+    *crc_out = crc;
+
+    printf("CRC 0x%lx (%s[offset %d/%d])\n", (unsigned long)crc, name, offset, length);
+
     return OACP_RESULT_CODE_SUCCESS;
 }
 
@@ -415,26 +508,42 @@ static oacp_result_code_t ots_server_operation_execute(hci_con_handle_t con_hand
     return OACP_RESULT_CODE_SUCCESS;
 }
 
-static oacp_result_code_t ots_server_operation_read(hci_con_handle_t con_handle, uint8_t *buffer, uint16_t buffer_size){
-    // 1. Invalid Object
-    if (!object_transfer_service_server_current_object_valid(con_handle)){
-        return OACP_RESULT_CODE_INVALID_OBJECT;
-    }
+static oacp_result_code_t ots_server_operation_read(hci_con_handle_t con_handle, uint16_t cid, uint8_t *buffer, uint16_t buffer_size){
+    printf("ots_server_operation_read\n");
+    btstack_assert(buffer_size >= 8);
 
-    // 2. Procedure Not Permitted - The object’s properties do not permit reading the object
-    if (!object_transfer_service_server_current_object_procedure_permitted(con_handle, OBJECT_PROPERTY_MASK_READ)){
-        return OACP_RESULT_CODE_PROCEDURE_NOT_PERMITTED;
-    }
+    uint32_t offset = little_endian_read_32(buffer, 0);
+    uint32_t length = little_endian_read_32(buffer, 4);
 
-    // 3. Channel Unavailable - An Object Transfer Channel was not available for use
     // 4. Invalid Parameter - The value of the Offset parameter exceeds the value of the Current Size field of the Object Size characteristic
+    if (offset > object_transfer_service_server_current_object_size(con_handle)){
+        return OACP_RESULT_CODE_INVALID_PARAMETER;
+    }
+
     // 5. Invalid Parameter - The sum of the values of the Offset and Length parameters exceeds the value of the Current Size field of the Object Size characteristic.
+    if ((offset + length) > object_transfer_service_server_current_object_size(con_handle)){
+        return OACP_RESULT_CODE_INVALID_PARAMETER;
+    }
+
     // 6. Insufficient Resources - The value of the Length parameter exceeds the number of octets that the Server has the capacity to read from the object.
+    // if (length > l2cap_get_remote_mtu_for_local_cid(con_handle)){
+    //     return OACP_RESULT_CODE_INSUFFICIENT_RESOURCES;
+    // }
+    
     // 7. Object Locked - An object transfer is in progress that is using the Current Object
+    if (object_transfer_service_server_current_object_transfer_in_progress(con_handle)){
+        return OACP_RESULT_CODE_OBJECT_LOCKED;
+    }
+    
+    unsigned char * name = (unsigned char *)"123456789";
+    // uint8_t * name = (uint8_t *)object_transfer_service_server_current_object_name(con_handle);
+    printf("Send \n");
+    printf_hexdump(&name[offset], length);
+    l2cap_send(cid, &name[offset], length);
     return OACP_RESULT_CODE_SUCCESS;
 }
 
-static oacp_result_code_t ots_server_operation_write(hci_con_handle_t con_handle, uint8_t *buffer, uint16_t buffer_size){
+static oacp_result_code_t ots_server_operation_write(hci_con_handle_t con_handle, uint16_t cid, uint8_t *buffer, uint16_t buffer_size){
     // 1. Invalid Object
     if (!object_transfer_service_server_current_object_valid(con_handle)){
         return OACP_RESULT_CODE_INVALID_OBJECT;
@@ -481,15 +590,38 @@ static oacp_result_code_t ots_server_operation_abort(hci_con_handle_t con_handle
 
 
 static olcp_result_code_t ots_server_operation_first(hci_con_handle_t con_handle){
+    ots_object_t * object = ots_object_iterator_first();
+    if (object == NULL){
+        return OLCP_RESULT_CODE_NO_OBJECT;
+    }
+    object_transfer_service_server_set_current_object(con_handle, object, ots_server_get_object_current_size(object));
     return OLCP_RESULT_CODE_SUCCESS;
 }
+
 static olcp_result_code_t ots_server_operation_last(hci_con_handle_t con_handle){
+    ots_object_t * object = ots_object_iterator_last();
+    if (object == NULL){
+        return OLCP_RESULT_CODE_NO_OBJECT;
+    }
+    object_transfer_service_server_set_current_object(con_handle, object, ots_server_get_object_current_size(object));
     return OLCP_RESULT_CODE_SUCCESS;
 }
+
 static olcp_result_code_t ots_server_operation_next(hci_con_handle_t con_handle){
+    ots_object_t * object = ots_object_iterator_next();
+    if (object == NULL){
+        return OLCP_RESULT_CODE_NO_OBJECT;
+    }
+    object_transfer_service_server_set_current_object(con_handle, object, ots_server_get_object_current_size(object));
     return OLCP_RESULT_CODE_SUCCESS;
 }
+
 static olcp_result_code_t ots_server_operation_previous(hci_con_handle_t con_handle){
+    ots_object_t * object = ots_object_iterator_previous();
+    if (object == NULL){
+        return OLCP_RESULT_CODE_NO_OBJECT;
+    }
+    object_transfer_service_server_set_current_object(con_handle, object, ots_server_get_object_current_size(object));
     return OLCP_RESULT_CODE_SUCCESS;
 }
 
@@ -886,9 +1018,9 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 
                     mcs_track_t * track = mcs_get_current_track_for_media_player_id(current_media_player_id);
                     if (track != NULL){
-                        ots_object_t * ots_object = ots_server_find_object_for_luid(&track->object_id);
-                        if (ots_object != NULL){
-                            object_transfer_service_server_set_current_object(bap_app_server_con_handle, ots_object);
+                        ots_object_t * object = ots_server_find_object_for_luid(&track->object_id);
+                        if (object != NULL){
+                            object_transfer_service_server_set_current_object(bap_app_server_con_handle, object, ots_server_get_object_current_size(object));
                             object_transfer_service_server_update_current_object_name(bap_app_server_con_handle, long_string1);
                         }
                     }
@@ -1573,9 +1705,9 @@ static void stdin_process(char cmd){
             if (status == ERROR_CODE_SUCCESS){
                 mcs_track_t * track = mcs_get_current_track_for_media_player_id(current_media_player_id);
                 if (track != NULL){
-                    ots_object_t * ots_object = ots_server_find_object_for_luid(&track->object_id);
-                    if (ots_object != NULL){
-                        object_transfer_service_server_set_current_object(bap_app_server_con_handle, ots_object);
+                    ots_object_t * object = ots_server_find_object_for_luid(&track->object_id);
+                    if (object != NULL){
+                        object_transfer_service_server_set_current_object(bap_app_server_con_handle, object, ots_server_get_object_current_size(object));
                         status = object_transfer_service_server_update_current_object_name(bap_app_server_con_handle, long_string1);
                     }
                 }
@@ -1586,9 +1718,9 @@ static void stdin_process(char cmd){
             if (status == ERROR_CODE_SUCCESS){
                 mcs_track_t * track = mcs_get_current_track_for_media_player_id(current_media_player_id);
                 if (track != NULL){
-                    ots_object_t * ots_object = ots_server_find_object_for_luid(&track->object_id);
-                    if (ots_object != NULL){
-                        object_transfer_service_server_set_current_object(bap_app_server_con_handle, ots_object);
+                    ots_object_t * object = ots_server_find_object_for_luid(&track->object_id);
+                    if (object != NULL){
+                        object_transfer_service_server_set_current_object(bap_app_server_con_handle, object, ots_server_get_object_current_size(object));
                         status = object_transfer_service_server_update_current_object_name(bap_app_server_con_handle, long_string1);
                     }
                 }
@@ -1705,6 +1837,7 @@ int btstack_main(void)
 
         }
     }
+
     // register for HCI events
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
@@ -1715,7 +1848,7 @@ int btstack_main(void)
     gap_periodic_advertising_sync_transfer_set_default_parameters(2, 0, 0x2000, 0);
 
     btstack_stdin_setup(stdin_process);
-
+    
     // turn on!
 	hci_power_control(HCI_POWER_ON);
 	    
