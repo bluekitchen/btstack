@@ -102,7 +102,8 @@ static uint32_t ots_olcp_features;
 #define TSPX_LE_PSM          0x25
 static uint8_t  receive_buffer_X[100];
 static uint16_t initial_credits = L2CAP_LE_AUTOMATIC_CREDITS;
-static uint16_t cid_credit_based;
+static uint16_t ots_server_credit_based_cid;
+static uint16_t ots_server_remote_mtu;
 
 static ots_server_connection_t * ots_server_find_connection_for_con_handle(hci_con_handle_t con_handle){
     if (con_handle == HCI_CON_HANDLE_INVALID){
@@ -603,17 +604,17 @@ int ots_server_handle_action_control_point_write(ots_server_connection_t * conne
             }
 
             // 3. Channel Unavailable - An Object Transfer Channel was not available for use
-            if (cid_credit_based == 0){
+            if (ots_server_credit_based_cid == 0){
                 printf("OACP_RESULT_CODE_CHANNEL_UNAVAILABLE \n");
                 connection->oacp_result_code = OACP_RESULT_CODE_CHANNEL_UNAVAILABLE;
                 break;
             }
 
-            connection->oacp_result_code = ots_server_operations->read(connection->con_handle, cid_credit_based, &buffer[pos], data_size);
+            connection->oacp_result_code = ots_server_operations->read(connection->con_handle, ots_server_credit_based_cid, &buffer[pos], data_size);
             break;
         
         case OACP_OPCODE_WRITE:
-            connection->oacp_result_code = ots_server_operations->write(connection->con_handle, cid_credit_based, &buffer[pos], data_size);
+            connection->oacp_result_code = ots_server_operations->write(connection->con_handle, ots_server_credit_based_cid, &buffer[pos], data_size);
             break;
         
         case OACP_OPCODE_ABORT:
@@ -934,11 +935,23 @@ static void ots_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
     bd_addr_t event_address;
     uint16_t psm;
     uint16_t cid;
+    uint16_t mtu;
     hci_con_handle_t handle;
 
     switch (hci_event_packet_get_type(packet)) {
+        case L2CAP_EVENT_CHANNEL_CLOSED:
+            handle = l2cap_event_channel_closed_get_local_cid(packet);
+            if (ots_server_credit_based_cid == ots_server_credit_based_cid){
+                printf("L2CAP: L2CAP_EVENT_CHANNEL_CLOSED, con_handle 0x%02x\n", handle); 
+                ots_server_credit_based_cid = 0;
+                ots_server_remote_mtu = 0;
+                break;
+            }
+            break;
+
         case HCI_EVENT_DISCONNECTION_COMPLETE:
-            ots_server_reset_connection_for_con_handle(hci_event_disconnection_complete_get_connection_handle(packet));
+            handle = hci_event_disconnection_complete_get_connection_handle(packet);
+            ots_server_reset_connection_for_con_handle(handle);
             break;
 
         // LE CBM
@@ -957,11 +970,13 @@ static void ots_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
             psm = l2cap_event_cbm_channel_opened_get_psm(packet);
             cid = l2cap_event_cbm_channel_opened_get_local_cid(packet);
             handle = l2cap_event_cbm_channel_opened_get_handle(packet);
-            
+            mtu = l2cap_event_cbm_channel_opened_get_remote_mtu(packet);
+
             if (l2cap_event_cbm_channel_opened_get_status(packet) == ERROR_CODE_SUCCESS) {
-                printf("L2CAP: LE Data Channel successfully opened: %s, handle 0x%02x, psm 0x%02x, local cid 0x%02x, remote cid 0x%02x\n",
-                       bd_addr_to_str(event_address), handle, psm, cid,  little_endian_read_16(packet, 15));
-                cid_credit_based = cid;
+                printf("L2CAP: LE Data Channel successfully opened: %s, handle 0x%02x, psm 0x%02x, local cid 0x%02x, remote cid 0x%02x, remote mtu 0x%02x\n",
+                       bd_addr_to_str(event_address), handle, psm, cid, little_endian_read_16(packet, 15), mtu);
+                ots_server_credit_based_cid = cid;
+                ots_server_remote_mtu = mtu;
             } else {
                 printf("L2CAP: LE Data Channel connection to device %s failed. status code %u\n", bd_addr_to_str(event_address), packet[2]);
             }
@@ -970,7 +985,7 @@ static void ots_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
         case L2CAP_EVENT_CAN_SEND_NOW:
             cid = l2cap_event_can_send_now_get_local_cid(packet);
 
-            // l2cap_send(cid_credit_based, ots_server_serial, strlen(data_long));
+            // l2cap_send(ots_server_credit_based_cid, ots_server_serial, strlen(data_long));
             printf("L2CAP: L2CAP_EVENT_CAN_SEND_NOW sent0x%02x\n", cid); 
             break;
 
