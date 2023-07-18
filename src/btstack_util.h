@@ -324,6 +324,33 @@ uint8_t btstack_crc8_check(uint8_t * data, uint16_t len, uint8_t check_sum);
  */
 uint8_t btstack_crc8_calc(uint8_t * data, uint16_t len);
 
+
+/**
+ * @brief Calculate the initial CRC32 value using ISO 3309 (HDLC), polynomial (normal) 0x04c11db7
+ * @note Used by OTS Service. 
+ * 
+ * @return  The initial crc value.
+ */
+uint32_t btstack_crc32_init(void);
+
+/**
+ * @brief Update the CRC32 value with new data.
+ *
+ * @param crc      The current crc value.
+ * @param data     Pointer to a buffer of \a data_len bytes.
+ * @param data_len Number of bytes in the \a data buffer.
+ * @return             The updated crc value.
+ */
+uint32_t btstack_crc32_update(uint32_t crc, const uint8_t *data, uint32_t data_len);
+
+/**
+ * @brief Calculate the final CRC32 value.
+ *
+ * @param crc  The current crc value.
+ * @return     The final crc value.
+ */
+uint32_t btstack_crc32_finalize(uint32_t crc);
+
 /**
  * @brief Get next cid
  * @param current_cid
