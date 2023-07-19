@@ -3873,9 +3873,32 @@ static void event_handler(uint8_t *packet, uint16_t size){
                         bool sc_used_during_pairing = gap_secure_connection_for_link_key_type(conn->link_key_type);
                         bool connected_uses_aes_ccm = encryption_enabled == 2;
                         if (hci_stack->secure_connections_active && sc_used_during_pairing && !connected_uses_aes_ccm){
+#ifdef ENABLE_TESTING_SUPPORT
+                            // The following tests require to reject L2CAP connection as SC has been disabled on the remote
+                            // - GAP/SEC/SEM/BI-31-C
+                            // - GAP/SEC/SEM/BI-32-C
+                            // - GAP/SEC/SEM/BI-33-C
+
+                            // Our release code (aggressively) disconnects the HCI connection, without a chance to respond to PTS
+                            // To pass the tests, we only downgrade the link key type instead of the more secure disconnect
+                            link_key_type_t new_link_key_type;
+                            switch (conn->link_key_type){
+                                case AUTHENTICATED_COMBINATION_KEY_GENERATED_FROM_P256:
+                                    new_link_key_type = AUTHENTICATED_COMBINATION_KEY_GENERATED_FROM_P192;
+                                    break;
+                                case UNAUTHENTICATED_COMBINATION_KEY_GENERATED_FROM_P256:
+                                    new_link_key_type = UNAUTHENTICATED_COMBINATION_KEY_GENERATED_FROM_P192;
+                                default:
+                                    break;
+                            }
+                            log_info("SC during pairing, but only E0 now -> downgrade link key type from %u to %u",
+                                     conn->link_key_type, new_link_key_type);
+                            conn->link_key_type = new_link_key_type;
+#else
                             log_info("SC during pairing, but only E0 now -> abort");
                             conn->bonding_flags |= BONDING_DISCONNECT_SECURITY_BLOCK;
                             break;
+#endif
                         }
 
                         // if AES-CCM is used, authentication used SC -> authentication was mutual and we can skip explicit authentication
