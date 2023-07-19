@@ -203,25 +203,28 @@ GAP/SEC/SEM/BI-05-C
 - GAP/SEC/SEM/BI-28-C: F, ok, 9, N, yes
 - GAP/SEC/SEM/BI-29-C: F, ok, 9, N, yes
 - GAP/SEC/SEM/BI-30-C: F, ok, 9, N, yes
-- 
-- GAP/SEC/SEM/BI-31-C: F, K, C, ok, 
-- GAP/SEC/SEM/BI-32-C: F, ok, 9, N, yes
-- GAP/SEC/SEM/BI-33-C: F, ok, 9, N, yes
-- 
+- GAP/SEC/SEM/BI-31-C: F, K, C, ok - sending l2cap reject failed before, running test without any comments did work once
+- GAP/SEC/SEM/BI-32-C: F, K, N, t, N 
+- GAP/SEC/SEM/BI-33-C: F, K, N, t, N
+
 - GAP/SEC/AUT/BV-02-C -> GAP Peripheral
 - GAP/SEC/AUT/BV-11-C -> GAP Peripheral
-- GAP/SEC/AUT/BV-12-C: M, 5, p, 000b, "enter secure id"
-- GAP/SEC/AUT/BV-13-C: M, 5, p, 000b, "enter secure id"
+- GAP/SEC/AUT/BV-12-C: M, 5, p, 000d, "enter secure id"
+- GAP/SEC/AUT/BV-13-C: M, 5, p, 000d, "enter secure id"
 - GAP/SEC/AUT/BV-14-C -> GAP Peripheral
 - GAP/SEC/AUT/BV-17-C: p, HANDLE, p, g, HANDLE
 - GAP/SEC/AUT/BV-18-C  a, g, HANDLE, b, g, HANDLE
 - GAP/SEC/AUT/BV-19-C: p, b, p, g, HANDLE, b, g, HANDLE, t
-- GAP/SEC/AUT/BV-20-C: C, a, g, HANDLE, b, g, HANDLE
+- GAP/SEC/AUT/BV-20-C: C, a, g, HANDLE, b, g, HANDLEF
 - GAP/SEC/AUT/BV-21-C: p, b, p, b, t
 - GAP/SEC/AUT/BV-22-C: C, a, b
 - GAP/SEC/AUT/BV-23-C -> GAP Peripheral
 - GAP/SEC/AUT/BV-24-C: 5, M, p, t, p, 0009, 
-
+- GAP/SEC/AUT/BV-25-C: F, 5, M, p, b, secureid, ok, p, g0007, b, no
+- GAP/SEC/AUT/BV-26-C: F, 5, M, C, a, b, ok, g0007, secureid, g0007
+- GAP/SEC/AUT/BV-27-C: F, p, b, ok, p, g0007, b, no
+- GAP/SEC/AUT/BV-28-C: F, C, a, g0007, g0007
+ 
 - GAP/SEC/CSIGN/BV-01-C: p, b, "enter secure id", p, w
 - GAP/SEC/CSIGN/BV-02-C: p, b, p, 1
 - GAP/SEC/CSIGN/BI-01-C: p, b, p, 1, t    (signature is invalid)

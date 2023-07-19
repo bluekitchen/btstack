@@ -524,6 +524,12 @@ static void stdin_process(char cmd){
             printf("Connecting...\n");
             status = gap_connect(pts_address, 0);
             break;
+        case 'p':
+            gap_whitelist_add(0, pts_address);
+            gap_whitelist_add(1, pts_address);
+            status = gap_connect_with_whitelist();
+            printf("Auto Connection Establishment to type %u, addr %s -> %x\n", 0, bd_addr_to_str(pts_address), status);
+            break;
         case 'd':
             printf("d - discoverable off\n");
             gap_discoverable = false;
