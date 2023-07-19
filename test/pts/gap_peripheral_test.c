@@ -1187,7 +1187,7 @@ int btstack_main(int argc, const char * argv[]){
     hci_disable_l2cap_timeout_check();
 
     // provide L2CAP Service
-    gap_security_level_t security_level = LEVEL_2;
+    gap_security_level_t security_level = LEVEL_4;
     gap_set_security_level(security_level);
     l2cap_register_service(l2cap_packet_handler, 0x1001, 100, security_level);
 
