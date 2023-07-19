@@ -618,6 +618,7 @@ int btstack_main(int argc, const char * argv[]){
     gap_discoverable = true;
     gap_extended_advertising_setup(&le_advertising_set_regular, &extended_params_regular, &adv_handle_regular);
     update_advertisements();
+    gap_extended_advertising_set_resolvable_private_address_update(30);
 
     // parse human readable Bluetooth address
     sscanf_bd_addr(pts_address_string, pts_address);

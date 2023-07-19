@@ -23,4 +23,9 @@ Set TSPX_bd_addr_iut for GAP Profile in IXIT
 - GAP/CONN/UCON/BV-01-C: a
 - GAP/CONN/UCON/BV-02-C: d, a
 - GAP/CONN/UCON/BV-03-C: a
-- GAP/CONN/UCON/BV-06-C: a, X, R, a - private address update intervala
+- GAP/CONN/UCON/BV-06-C: a, X, R, a - wait for uRPA update, X
+
+- GAP/CONN/ACEP/BV-01-C: a
+- GAP/CONN/ACEP/BV-03-C:
+- GAP/CONN/ACEP/BV-04-C:
+- 
