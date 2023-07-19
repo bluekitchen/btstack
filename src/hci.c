@@ -3913,6 +3913,8 @@ static void event_handler(uint8_t *packet, uint16_t size){
                     conn->bonding_flags |= BONDING_DISCONNECT_DEDICATED_DONE;
                     conn->bonding_status = status;
                 }
+                // trigger security update -> level 0
+                hci_handle_mutual_authentication_completed(conn);
             }
 
             break;
