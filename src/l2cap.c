@@ -3103,12 +3103,19 @@ static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig
         return;
     }
 
-    // alloc structure
+    // if SC only mode is active and service requires encryption, reject connection if SC not active or use security level
     gap_security_level_t required_level = service->required_security_level;
     if (gap_get_secure_connections_only_mode() && (required_level != LEVEL_0)){
-        required_level = LEVEL_4;
+        if (gap_secure_connection(handle)){
+            required_level = LEVEL_4;
+        } else {
+            l2cap_register_signaling_response(handle, CONNECTION_REQUEST, sig_id, source_cid, L2CAP_CONNECTION_RESULT_SECURITY_BLOCK);
+            return;
+        }
     }
-    l2cap_channel_t * channel = l2cap_create_channel_entry(service->packet_handler, L2CAP_CHANNEL_TYPE_CLASSIC, hci_connection->address, BD_ADDR_TYPE_ACL, 
+
+    // alloc structure
+    l2cap_channel_t * channel = l2cap_create_channel_entry(service->packet_handler, L2CAP_CHANNEL_TYPE_CLASSIC, hci_connection->address, BD_ADDR_TYPE_ACL,
     psm, service->mtu, required_level);
     if (!channel){
         l2cap_register_signaling_response(handle, CONNECTION_REQUEST, sig_id, source_cid, L2CAP_CONNECTION_RESULT_NO_RESOURCES_AVAILABLE);
