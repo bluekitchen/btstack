@@ -184,7 +184,8 @@ static uint16_t ui_aggregate_handle;
 static uint16_t handle = 0;
 
 static bd_addr_t public_pts_address;
-static const char * public_pts_address_string = "00:1B:DC:08:E2:5C";
+// static const char * public_pts_address_string = "C0:07:E8:4B:78:FB";
+static const char * public_pts_address_string = "00:1B:DC:08:E2:72";
 
 static int       public_pts_address_type = 0;
 static bd_addr_t current_pts_address;
@@ -192,6 +193,7 @@ static int       current_pts_address_type;
 static int       reconnection_address_set = 0;
 static bd_addr_t our_private_address;
 static bool      connect_to_resolvable_address;
+static bool      central_address_resolution = 1;
 
 static uint16_t pts_signed_write_characteristic_uuid = 0xb00d;
 static uint16_t pts_signed_write_characteristic_handle = 0x00b1;
@@ -879,6 +881,8 @@ const char * lines[100];
 const char * empty_string = "";
 const int width = 70;
 
+static const int TSPX_psm = 0x1001;
+
 static void reset_screen(void){
     // free memory
     int i = 0;
@@ -1497,8 +1501,8 @@ static void ui_process_command(char buffer){
             hci_send_cmd(&hci_create_connection, public_pts_address, hci_usable_acl_packet_types(), 0, 0, 0, 1);
             break;
         case 'N':
-            printf("Creating L2CAP Connection to PSM 0x1001\n");
-            l2cap_create_channel(&app_packet_handler, public_pts_address, 0x1001, 100, NULL);
+            printf("Creating L2CAP Connection to PSM 0x%04x\n", TSPX_psm);
+            l2cap_create_channel(&app_packet_handler, public_pts_address, TSPX_psm, 100, NULL);
             break;
         case 'a':
             gap_advertisements_enable(1);
@@ -1763,17 +1767,22 @@ static int get_oob_data_callback(uint8_t addres_type, bd_addr_t addr, uint8_t * 
 static uint16_t att_read_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
     UNUSED(con_handle);
     UNUSED(attribute_handle);
-    printf("READ Callback, handle %04x, offset %u, buffer size %u\n", handle, offset, buffer_size);
+    uint16_t uuid16 = att_uuid_for_handle(attribute_handle);
+    printf("READ Callback, handle %04x (uuid: 0x%04x, offset %u, buffer size %u\n", attribute_handle, uuid16, offset, buffer_size);
     uint16_t  att_value_len;
 
-    uint16_t uuid16 = att_uuid_for_handle(handle);
     switch (uuid16){
         case 0x2a00:
             att_value_len = strlen(gap_device_name);
             if (buffer) {
                 memcpy(buffer, gap_device_name, att_value_len);
             }
-            return att_value_len;        
+            return att_value_len;
+        case 0x2aa6:
+            if (buffer){
+                buffer[0] = (uint8_t) central_address_resolution;
+            }
+            return 1;
         default:
             break;
     }
@@ -1784,6 +1793,13 @@ static int att_write_callback(hci_con_handle_t con_handle, uint16_t attribute_ha
     UNUSED(con_handle);
     printf("WRITE Callback, handle %04x, mode %u, offset %u, data: ", attribute_handle, transaction_mode, offset);
     printf_hexdump(buffer, buffer_size);
+    uint16_t uuid16 = att_uuid_for_handle(attribute_handle);
+    switch (uuid16){
+        case 0x2aa6:
+            central_address_resolution = (bool) buffer[0];
+            printf("Central Address Resolution: %u\n", central_address_resolution);
+            break;
+    }
     return 0;
 }
 
@@ -1855,6 +1871,8 @@ int btstack_main(int argc, const char * argv[]){
     gap_connectable_control(0);
     gap_discoverable_control(1);
 
+    // l2cap service with LEVEL_4 requirements
+    l2cap_register_service(app_packet_handler, TSPX_psm, 0xffff, LEVEL_4);
 
     // allow for terminal input
     btstack_stdin_setup(stdin_process);
