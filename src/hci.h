@@ -1267,6 +1267,7 @@ typedef struct {
     btstack_linked_list_t le_advertising_sets;
     uint16_t le_maximum_advertising_data_length;
     uint8_t  le_advertising_set_in_current_command;
+    uint16_t le_resolvable_private_address_update_s;
 #endif
 #endif
 

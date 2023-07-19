@@ -5882,6 +5882,15 @@ static bool hci_run_general_gap_le(void){
 
     btstack_linked_list_iterator_t lit;
 
+#ifdef ENABLE_LE_EXTENDED_ADVERTISING
+    if (hci_stack->le_resolvable_private_address_update_s > 0){
+        uint16_t update_s = hci_stack->le_resolvable_private_address_update_s;
+        hci_stack->le_resolvable_private_address_update_s = 0;
+        hci_send_cmd(&hci_le_set_resolvable_private_address_timeout, update_s);
+        return true;
+    }
+#endif
+
     // Phase 1: collect what to stop
 
 #ifdef ENABLE_LE_CENTRAL
@@ -8422,6 +8431,12 @@ static le_advertising_set_t * hci_advertising_set_for_handle(uint8_t advertising
         }
     }
     return NULL;
+}
+
+uint8_t gap_extended_advertising_set_resolvable_private_address_update(uint16_t update_s){
+    hci_stack->le_resolvable_private_address_update_s = update_s;
+    hci_run();
+    return ERROR_CODE_SUCCESS;
 }
 
 uint8_t gap_extended_advertising_setup(le_advertising_set_t * storage, const le_extended_advertising_parameters_t * advertising_parameters, uint8_t * out_advertising_handle){
