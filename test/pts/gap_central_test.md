@@ -74,21 +74,21 @@ GAP/SEC/SEM/BI-05-C
 - GAP/CONN/UCON/BV-04-C -> GAP Peripheral
 
 - GAP/CONN/ACEP/BV-01-C: p, t
-- GAP/CONN/ACEP/BV-03-C: TODO - PTS "Selected device doesn't support EXTENDED features (EXT ADV, EXT SCAN). Selected test case can not execute with selected device" 
+- GAP/CONN/ACEP/BV-03-C: F, t, P
 - GAP/CONN/ACEP/BV-04-C: TODO - PTS "Selected device doesn't support EXTENDED features (EXT ADV, EXT SCAN). Selected test case can not execute with selected device"
 
-- GAP/CONN/GCEP/BV-01-C: p, t
+- GAP/CONN/GCEP/BV-01-C: p
 - GAP/CONN/GCEP/BV-02-C: p, t
-- GAP/CONN/GCEP/BV-05-C: TODO - PTS "Selected device doesn't support EXTENDED features (EXT ADV, EXT SCAN). Selected test case can not execute with selected device"
-- GAP/CONN/GCEP/BV-06-C: TODO - PTS "Selected device doesn't support EXTENDED features (EXT ADV, EXT SCAN). Selected test case can not execute with selected device"
+- GAP/CONN/GCEP/BV-05-C: F, p, t, P
+- GAP/CONN/GCEP/BV-06-C: F, p, t, P
 
 - GAP/CONN/SCEP/BV-01-C: p, t
-- GAP/CONN/SCEP/BV-03-C: TODO - PTS "Selected device doesn't support EXTENDED features (EXT ADV, EXT SCAN). Selected test case can not execute with selected device"
+- GAP/CONN/SCEP/BV-03-C: F, p, t, P
 
 - GAP/CONN/DCEP/BV-01-C: p, t (if it fails, retry)
 - GAP/CONN/DCEP/BV-03-C: p, t (if it fails, retry)
-- GAP/CONN/DCEP/BV-05-C: TODO - PTS "Selected device doesn't support EXTENDED features (EXT ADV, EXT SCAN). Selected test case can not execute with selected device"
-- GAP/CONN/DCEP/BV-06-C: TODO - PTS "Selected device doesn't support EXTENDED features (EXT ADV, EXT SCAN). Selected test case can not execute with selected device"
+- GAP/CONN/DCEP/BV-05-C: F, p, t, P
+- GAP/CONN/DCEP/BV-06-C: F, p, t, P
 
 # BV-1 to BV-3 are NOT 21_9 - Connection Parameter Update Procedure
 - GAP/CONN/CPUP/BV-01-C: C, a, z
@@ -96,12 +96,12 @@ GAP/SEC/SEM/BI-05-C
 - GAP/CONN/CPUP/BV-03-C: C, a
 - GAP/CONN/CPUP/BV-04-C: p, t (restart if connect fails when adv are still on)
 - GAP/CONN/CPUP/BV-05-C: p, t
+- GAP/CONN/CPUP/BV-10-C: C, a, Z
  
 # The selected test case requires to have LE only device to turn off the Connection Parameters Request Procedure LL feature bit to 0
 - GAP/CONN/CPUP/BV-06-C: p, Z, t
-- 
-- GAP/CONN/CPUP/BV-08-C: C, a
-- GAP/CONN/CPUP/BV-10-C: C, a
+- GAP/CONN/CPUP/BV-08-C: C, a - requires second generation, e.g. CYW20704
+- GAP/CONN/CPUP/BV-10-C: C, a, Z
 
 - GAP/CONN/TERM/BV-01-C: p, t
 
@@ -185,7 +185,7 @@ GAP/SEC/SEM/BI-05-C
   GAP/SEC/SEM/BI-11-C -> GAP Peripheral
 - GAP/SEC/SEM/BI-12-C: delete link keys, N, N, N, N, N, N
 - GAP/SEC/SEM/BI-13-C: not supported yet - LE Security Mode 3
-- GAP/SEC/SEM/BV-45-C: NEW LE
+- GAP/SEC/SEM/BV-45-C: F, J, D, p, b, ok, p, b, 'no'
 - GAP/SEC/SEM/BI-14-C -> GAP Peripheral
 - GAP/SEC/SEM/BI-14-C -> GAP Peripheral
 - GAP/SEC/SEM/BI-15-C -> GAP Peripheral
@@ -197,7 +197,17 @@ GAP/SEC/SEM/BI-05-C
 - GAP/SEC/SEM/BI-21-C: C, K, a
 - GAP/SEC/SEM/BI-22-C: C, K,  { p, b, t }
 - GAP/SEC/SEM/BI-23-C: C, K,  { p, b, t }
- 
+- GAP/SEC/SEM/BI-25-C: F, ok, 9, N, yes
+- GAP/SEC/SEM/BI-26-C: F, ok, 9, N, yes
+- GAP/SEC/SEM/BI-27-C: F, ok, 9, N, yes
+- GAP/SEC/SEM/BI-28-C: F, ok, 9, N, yes
+- GAP/SEC/SEM/BI-29-C: F, ok, 9, N, yes
+- GAP/SEC/SEM/BI-30-C: F, ok, 9, N, yes
+- 
+- GAP/SEC/SEM/BI-31-C: F, K, C, ok, 
+- GAP/SEC/SEM/BI-32-C: F, ok, 9, N, yes
+- GAP/SEC/SEM/BI-33-C: F, ok, 9, N, yes
+- 
 - GAP/SEC/AUT/BV-02-C -> GAP Peripheral
 - GAP/SEC/AUT/BV-11-C -> GAP Peripheral
 - GAP/SEC/AUT/BV-12-C: M, 5, p, 000b, "enter secure id"
