@@ -408,7 +408,7 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     break;
 
                 case SM_EVENT_PASSKEY_DISPLAY_NUMBER:
-                    printf("\nGAP Bonding: Display Passkey '%06u\n", sm_event_passkey_display_number_get_passkey(packet));
+                    printf("\nGAP Bonding: Display Passkey %06u\n", sm_event_passkey_display_number_get_passkey(packet));
                     break;
 
                 case SM_EVENT_PASSKEY_DISPLAY_CANCEL: 
