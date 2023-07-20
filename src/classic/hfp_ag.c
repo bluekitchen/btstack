@@ -765,8 +765,8 @@ static int hfp_ag_run_for_context_service_level_connection(hfp_connection_t * hf
 
         case HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS_STATE:
             if (hfp_connection->state != HFP_W4_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS) break;
-            hfp_ag_slc_established(hfp_connection);
             hfp_ag_send_retrieve_initital_supported_generic_status_indicators_cmd(hfp_connection->rfcomm_cid);
+            hfp_ag_slc_established(hfp_connection);
             return 1;
         default:
             break;
