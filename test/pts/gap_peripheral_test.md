@@ -215,7 +215,7 @@ Set TSPX_iut_private_address_interval to 60000 (default 5 seconds, but GAP/BROB/
 - GAP/ADV/BV-03-C: 3, A
 - GAP/ADV/BV-04-C: 1, A
 - GAP/ADV/BV-05-C: 8, A
-- GAP/ADV/BV-08-C: 7, A 
+- GAP/ADV/BV-08-C: 7, A C
 - GAP/ADV/BV-09-C: 5, A
 - GAP/ADV/BV-10-C: 4, A
 - GAP/ADV/BV-11-C: -, A 
@@ -223,6 +223,8 @@ Set TSPX_iut_private_address_interval to 60000 (default 5 seconds, but GAP/BROB/
 - GAP/ADV/BV-13-C: /, A
 - GAP/ADV/BV-14-C: #, A
 - GAP/ADV/BV-17-C: *, A
+- GAP/ADV/BV-18-C: (, A
+- GAP/ADV/BV-19-C: ), A
 
 - GAP/GAT/BV-04-C: C, A
 - GAP/GAT/BV-05-C: C, A

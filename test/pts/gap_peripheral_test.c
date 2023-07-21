@@ -35,7 +35,7 @@
  *
  */
 
-#define BTSTACK_FILE__ "ble_peripheral_test.c"
+#define BTSTACK_FILE__ "gap_peripheral_test.c"
 
 /*
  * ble_peripheral_test.c : Tool for testig BLE peripheral
@@ -77,7 +77,7 @@ static uint8_t gatt_service_buffer[70];
 #define HEARTBEAT_PERIOD_MS 1000
 
 // test profile
-#include "gatt_server_test.h"
+#include "gap_peripheral_test.h"
 
 ///------
 static int gap_advertisements = 0;
@@ -180,8 +180,41 @@ static uint8_t adv_data_public_target_address[] = { 7, 0x17,  0x11, 0x22, 0x33, 
 static uint8_t adv_data_random_target_address[] = { 7, 0x18,  0x11, 0x22, 0x33, 0x44, 0x55, 0x66};
 // AD Advertising Interval
 static uint8_t adv_data_advertising_interval[] =  { 3, BLUETOOTH_DATA_TYPE_ADVERTISING_INTERVAL, 0x00, 0x80};
-// AD URI
-static uint8_t adv_data_uri[] = {21, BLUETOOTH_DATA_TYPE_URI, 0x016,0x2F,0x2F,0x77,0x77,0x77,0x2E,0x62,0x6C,0x75,0x65,0x74,0x6F,0x6F,0x74,0x68,0x2E,0x63,0x6F,0x6D};
+// AD URI - first two bytes Unicode code point U+0001, trailing \0
+static uint8_t adv_data_uri[31];
+static char *  adv_data_uri_value = "000168747470733A2F2F7777772E626C7565746F6F74682E636F6D00";
+// AD Advertising Interval Long
+static uint8_t adv_data_advertising_interval_long[] =  { 4, BLUETOOTH_DATA_TYPE_ADVERTISING_INTERVAL_LONG, 0x00, 0x00, 0x01};
+// AD LE Supported Features
+static uint8_t adv_data_le_supported_features[] =  { 2, BLUETOOTH_DATA_TYPE_LE_SUPPORTED_FEATURES, 0x01};
+
+static int scan_hex_byte(const char * byte_string){
+    int upper_nibble = nibble_for_char(*byte_string++);
+    if (upper_nibble < 0) return -1;
+    int lower_nibble = nibble_for_char(*byte_string);
+    if (lower_nibble < 0) return -1;
+    return (upper_nibble << 4) | lower_nibble;
+}
+
+static int btstack_parse_hex(const char * string, uint16_t len, uint8_t * buffer){
+    int i;
+    for (i = 0; i < len; i++) {
+        int single_byte = scan_hex_byte(string);
+        if (single_byte < 0) return 0;
+        string += 2;
+        buffer[i] = (uint8_t)single_byte;
+        // don't check seperator after last byte
+        if (i == len - 1) {
+            return 1;
+        }
+        // optional seperator
+        char separator = *string;
+        if (separator == ':' && separator == '-' && separator == ' ') {
+            string++;
+        }
+    }
+    return 1;
+}
 
 static uint8_t adv_data_len;
 static uint8_t adv_data[32];
@@ -212,7 +245,9 @@ static advertisement_t advertisements[] = {
     ADV(adv_data_public_target_address),
     ADV(adv_data_random_target_address),
     ADV(adv_data_advertising_interval),
-    ADV(adv_data_uri)
+    ADV(adv_data_uri),
+    ADV(adv_data_advertising_interval_long),
+    ADV(adv_data_le_supported_features)
 };
 
 static int advertisement_index = 2;
@@ -746,7 +781,8 @@ void show_usage(void){
     printf("3   - AD flags                | 9 - AD SM OOB             | # - AD Advertising interval\n");
     printf("4   - AD Service Data         | 0 - AD SM TK              | & - AD LE Role\n");
     printf("5   - AD Service Solicitation | + - AD LE BD_ADDR         | * - AD URI\n");
-    printf("6   - AD Services             | - - AD Appearance\n");
+    printf("6   - AD Services             | - - AD Appearance         | ( - AD Advertising long\n");
+    printf(")   - AD LE Supported Features\n");
     printf("---\n");
     printf("p/P - privacy flag off\n");
     printf("F   - delete bonding information\n");
@@ -781,16 +817,18 @@ void update_advertisements(void){
     adv_data_len = 0;
     scan_data_len = 0;
 
-    // add "Flags" to advertisements
-    if (gap_discoverable){
-        memcpy(adv_data, adv_general_discoverable, sizeof(adv_general_discoverable));
-        adv_data_len += sizeof(adv_general_discoverable);
-    } else if (gap_limited_discoverable){
-        memcpy(adv_data, adv_limited_discoverable, sizeof(adv_limited_discoverable));
-        adv_data_len += sizeof(adv_limited_discoverable);
-    } else {
-        memcpy(adv_data, adv_non_discoverable, sizeof(adv_non_discoverable));
-        adv_data_len += sizeof(adv_non_discoverable);
+    // add "Flags" to advertisements if possible
+    if (advertisements[advertisement_index].len <= 28){
+        if (gap_discoverable){
+            memcpy(adv_data, adv_general_discoverable, sizeof(adv_general_discoverable));
+            adv_data_len += sizeof(adv_general_discoverable);
+        } else if (gap_limited_discoverable){
+            memcpy(adv_data, adv_limited_discoverable, sizeof(adv_limited_discoverable));
+            adv_data_len += sizeof(adv_limited_discoverable);
+        } else {
+            memcpy(adv_data, adv_non_discoverable, sizeof(adv_non_discoverable));
+            adv_data_len += sizeof(adv_non_discoverable);
+        }
     }
 
     // append selected adv data
@@ -809,8 +847,8 @@ void update_advertisements(void){
     
     bd_addr_t null_addr;
     memset(null_addr, 0, 6);
-    uint16_t adv_int_min = 0x800;
-    uint16_t adv_int_max = 0x800;
+    uint16_t adv_int_min = 0x0030;
+    uint16_t adv_int_max = 0x0030;
     uint8_t channel_map = 1;
     switch (adv_type){
         case 0:
@@ -868,8 +906,16 @@ static char * adv_name[]= {
     "= - AD Public Target Address",
     "/ - AD Random Target Address",
     "# - AD Advertising interval",
-    "* - AD URI"
+    "* - AD URI",
+    "( - AD Advertising interval long",
+    ") - LE Supported Features"
 };
+
+static void set_advertising_index(uint16_t index){
+    advertisement_index = index;
+    printf("%s\n", (char*)adv_name[advertisement_index]);
+    update_advertisements();
+}
 
 static void stdin_process(char c){
     // passkey input
@@ -989,44 +1035,38 @@ static void stdin_process(char c){
         case '8':
         case '9':
         case '0':
-            advertisement_index = c - '0';
-            printf("%s\n", (char*)adv_name[advertisement_index]);
-            update_advertisements();
+            set_advertising_index(c - '0');
             break;
         case '+':
-            advertisement_index = 10;
-            printf("%s\n", (char*)adv_name[advertisement_index]);
-            update_advertisements();
+            set_advertising_index(10);
             break;
         case '-':
-            advertisement_index = 11;
-            printf("%s\n", (char*)adv_name[advertisement_index]);
-            update_advertisements();
+            set_advertising_index(11);
             break;
         case '&':
-            advertisement_index = 12;
-            printf("%s\n", (char*)adv_name[advertisement_index]);
-            update_advertisements();
+            set_advertising_index(12);
             break;
         case '=':
-            advertisement_index = 13;
-            printf("%s\n", (char*)adv_name[advertisement_index]);
-            update_advertisements();
+            set_advertising_index(13);
             break;
         case '/':
-            advertisement_index = 14;
-            printf("%s\n", (char*)adv_name[advertisement_index]);
-            update_advertisements();
+            set_advertising_index(14);
             break;
         case '#':
-            advertisement_index = 15;
-            printf("%s\n", (char*)adv_name[advertisement_index]);
-            update_advertisements();
+            set_advertising_index(15);
+            break;
+        case '(':
+            set_advertising_index(17);
+            break;
+        case ')':
+            set_advertising_index(18);
             break;
         case '*':
-            advertisement_index = 16;
-            printf("%s\n", (char*)adv_name[advertisement_index]);
-            update_advertisements();
+            adv_data_uri[0] = strlen(adv_data_uri_value) / 2;
+            adv_data_uri[1] = BLUETOOTH_DATA_TYPE_URI;
+            btstack_parse_hex(adv_data_uri_value, strlen(adv_data_uri_value) / 2, &adv_data_uri[2]);
+            advertisements[16].len = 2 + strlen(adv_data_uri_value) / 2;
+            set_advertising_index(16);
             break;
 
         case 's':
