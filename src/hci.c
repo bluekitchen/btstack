@@ -3327,6 +3327,24 @@ static void hci_ssp_assess_security_on_io_cap_request(hci_connection_t * conn){
         return;
     }
 
+    // assess bonding requirements: abort if remote in dedicated bonding mode but we are non-bonding
+    // - GAP/MOD/NBON/BV-02-C
+    // - GAP/DM/NBON/BV-01-C
+    if (conn->authentication_flags & AUTH_FLAG_RECV_IO_CAPABILITIES_RESPONSE){
+        switch (conn->io_cap_response_auth_req){
+            case SSP_IO_AUTHREQ_MITM_PROTECTION_NOT_REQUIRED_DEDICATED_BONDING:
+            case SSP_IO_AUTHREQ_MITM_PROTECTION_REQUIRED_DEDICATED_BONDING:
+                if (hci_stack->bondable == false){
+                    log_info("Dedicated vs. non-bondable -> abort");
+                    hci_pairing_complete(conn, ERROR_CODE_INSUFFICIENT_SECURITY);
+                    connectionSetAuthenticationFlags(conn, AUTH_FLAG_SEND_IO_CAPABILITIES_NEGATIVE_REPLY);
+                    return;
+                }
+            default:
+                break;
+        }
+    }
+
     // assess security based on io capabilities
     if (conn->authentication_flags & AUTH_FLAG_RECV_IO_CAPABILITIES_RESPONSE){
         // responder: fully validate io caps of both sides as well as OOB data
