@@ -46,15 +46,20 @@
 
 #include "btstack.h"
 #include "btstack_config.h"
+#include "le-audio/le_audio_base_parser.h"
 
 // Random Broadcast ID, valid for lifetime of BIG
 #define BROADCAST_ID (0x112233u)
+
+#define MAX_NUM_BIS 2
+#define MAX_SAMPLES_PER_FRAME 480
+#define MAX_LC3_FRAME_BYTES   155
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static btstack_packet_callback_registration_t sm_event_callback_registration;
 static void show_usage(void);
 
-static const char * pts_address_string = "C0:07:E8:4B:78:FB";
+static const char * pts_address_string = "C0:07:E8:23:C5:47";
 static const char * tspx_periodic_advertising_data = "0201040503001801180D095054532D4741502D3036423803190000";
 
 static bool gap_discoverable;
@@ -70,6 +75,25 @@ static uint8_t adv_handle_periodic = 0;
 
 static le_advertising_set_t le_advertising_set_regular;
 static le_advertising_set_t le_advertising_set_periodic;
+
+
+static le_audio_big_t big_storage;
+static le_audio_big_params_t big_params;
+
+static bool have_base;
+static bool have_big_info;
+
+// broadcast info
+static const uint8_t    big_handle = 1;
+static hci_con_handle_t sync_handle;
+
+// BIG Sync
+static le_audio_big_sync_t        big_sync_storage;
+static le_audio_big_sync_params_t big_sync_params;
+
+static hci_con_handle_t bis_con_handles[MAX_NUM_BIS];
+static uint16_t packet_sequence_numbers[MAX_NUM_BIS];
+static uint8_t iso_payload[MAX_NUM_BIS * MAX_LC3_FRAME_BYTES];
 
 static const le_extended_advertising_parameters_t extended_params_periodic = {
         .advertising_event_properties = 0,
@@ -292,7 +316,7 @@ static void start_extended_adv(void){
 
 static void setup_periodic_advertising(void) {
     gap_extended_advertising_setup(&le_advertising_set_periodic, &extended_params_periodic, &adv_handle_periodic);
-    gap_extended_advertising_set_adv_data(adv_handle_periodic, sizeof(extended_adv_data), extended_adv_data);
+    gap_extended_advertising_set_adv_data(adv_handle_periodic, extended_adv_data_len, extended_adv_data);
     gap_periodic_advertising_set_params(adv_handle_periodic, &periodic_params);
     gap_periodic_advertising_set_data(adv_handle_periodic, period_adv_data_len, period_adv_data);
     gap_periodic_advertising_start(adv_handle_periodic, 0);
@@ -313,10 +337,103 @@ static void start_periodic_adv_sync_using_extended_adv(void){
     gap_periodic_advertising_create_sync(0x00, remote_sid, BD_ADDR_TYPE_LE_PUBLIC, pts_address, 0, 1000, 0);
 }
 
+static uint8_t num_bis = 1;
+static uint16_t octets_per_frame = 26;
+static uint16_t sampling_frequency_hz = 8000;
+static btstack_lc3_frame_duration_t frame_duration = BTSTACK_LC3_FRAME_DURATION_7500US;
+
+// encryption
+static uint8_t encryption = 0;
+static uint8_t broadcast_code [] = {0x01, 0x02, 0x68, 0x05, 0x53, 0xF1, 0x41, 0x5A, 0xA2, 0x65, 0xBB, 0xAF, 0xC6, 0xEA, 0x03, 0xB8, };
+
+static void setup_big(void){
+    // Create BIG
+    big_params.big_handle = 0;
+    big_params.advertising_handle = adv_handle_periodic;
+    big_params.num_bis = num_bis;
+    big_params.max_sdu = octets_per_frame;
+    big_params.max_transport_latency_ms = 31;
+    big_params.rtn = 2;
+    big_params.phy = 2;
+    big_params.packing = 0;
+    big_params.encryption = encryption;
+    if (encryption) {
+        memcpy(big_params.broadcast_code, &broadcast_code[0], 16);
+    } else {
+        memset(big_params.broadcast_code, 0, 16);
+    }
+    if (sampling_frequency_hz == 44100){
+        // same config as for 48k -> frame is longer by 48/44.1
+        big_params.sdu_interval_us = frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US ? 8163 : 10884;
+        big_params.framing = 1;
+    } else {
+        big_params.sdu_interval_us = frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US ? 7500 : 10000;
+        big_params.framing = 0;
+    }
+    gap_big_create(&big_storage, &big_params);
+}
+
+static void handle_big_info(const uint8_t * packet, uint16_t size){
+    printf("BIG Info advertising report\n");
+    sync_handle = hci_subevent_le_biginfo_advertising_report_get_sync_handle(packet);
+    encryption = hci_subevent_le_biginfo_advertising_report_get_encryption(packet);
+    if (encryption) {
+        printf("Stream is encrypted\n");
+    }
+    have_big_info = true;
+}
+
+static void enter_create_big_sync(void){
+    // stop scanning
+    gap_stop_scan();
+
+    big_sync_params.big_handle = big_handle;
+    big_sync_params.sync_handle = sync_handle;
+    big_sync_params.encryption = encryption;
+    if (encryption) {
+        memcpy(big_sync_params.broadcast_code, &broadcast_code[0], 16);
+    } else {
+        memset(big_sync_params.broadcast_code, 0, 16);
+    }
+    big_sync_params.mse = 0;
+    big_sync_params.big_sync_timeout_10ms = 100;
+    big_sync_params.num_bis = num_bis;
+    uint8_t i;
+    printf("BIG Create Sync for BIS: ");
+    for (i=0;i<num_bis;i++){
+        big_sync_params.bis_indices[i] = i + 1;
+        printf("%u ", big_sync_params.bis_indices[i]);
+    }
+    printf("\n");
+    gap_big_sync_create(&big_sync_storage, &big_sync_params);
+}
+
+static void send_iso_packet(uint8_t bis_index) {
+
+    bool ok = hci_reserve_packet_buffer();
+    btstack_assert(ok);
+    uint8_t * buffer = hci_get_outgoing_packet_buffer();
+    // complete SDU, no TimeStamp
+    little_endian_store_16(buffer, 0, bis_con_handles[bis_index] | (2 << 12));
+    // len
+    little_endian_store_16(buffer, 2, 0 + 4 + octets_per_frame);
+    // TimeStamp if TS flag is set
+    // packet seq nr
+    little_endian_store_16(buffer, 4, packet_sequence_numbers[bis_index]);
+    // iso sdu len
+    little_endian_store_16(buffer, 6, octets_per_frame);
+    // copy encoded payload
+    memcpy(&buffer[8], &iso_payload[bis_index * MAX_LC3_FRAME_BYTES], octets_per_frame);
+    // send
+    hci_send_iso_packet_buffer(4 + 0 + 4 + octets_per_frame);
+    packet_sequence_numbers[bis_index]++;
+}
+
 static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
     uint8_t sync_handle;
+    uint8_t bis_index;
 
     if (packet_type != HCI_EVENT_PACKET) return;
     bd_addr_t addr;
@@ -431,10 +548,32 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
                     printf("Periodic advertising sync with handle 0x%04x established\n", sync_handle);
                     break;
                 case HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_REPORT:
+                    if (have_base) break;
+                    have_base = true;
                     printf("Periodic advertising report received\n");
+                    // handle_periodic_advertisement(packet, size);
+                    if (have_base & have_big_info){
+                        enter_create_big_sync();
+                    }
+                    break;
+                case HCI_SUBEVENT_LE_BIGINFO_ADVERTISING_REPORT:
+                    if (have_big_info) break;
+                    handle_big_info(packet, size);
+                    if (have_base & have_big_info){
+                        enter_create_big_sync();
+                    }
                     break;
                 default:
                     return;
+            }
+            break;
+
+        case HCI_EVENT_BIS_CAN_SEND_NOW:
+            bis_index = hci_event_bis_can_send_now_get_bis_index(packet);
+            send_iso_packet(bis_index);
+            bis_index++;
+            if (bis_index == num_bis){
+                hci_request_bis_can_send_now_events(big_params.big_handle);
             }
             break;
 
@@ -481,11 +620,31 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
                     }
 #endif
                     break;
-                default:
+                case GAP_SUBEVENT_BIG_CREATED:
+                    printf("BIG Created with BIS Connection handles: \n");
+                    for (bis_index=0;bis_index<num_bis;bis_index++){
+                        bis_con_handles[bis_index] = gap_subevent_big_created_get_bis_con_handles(packet, bis_index);
+                        printf("0x%04x ", bis_con_handles[bis_index]);
+                    }
+                    printf("\n");
+                    printf("Start streaming\n");
+                    hci_request_bis_can_send_now_events(big_params.big_handle);
+                    break;
+                case GAP_SUBEVENT_BIG_SYNC_CREATED: {
+                    printf("BIG Sync created with BIS Connection handles: ");
+                    uint8_t i;
+                    for (i=0;i<num_bis;i++){
+                        bis_con_handles[i] = gap_subevent_big_sync_created_get_bis_con_handles(packet, i);
+                        printf("0x%04x ", bis_con_handles[i]);
+                    }
+                    printf("\n");
+                    printf("Start receiving\n");
+                    break;
+                }
+            default:
                     break;
             }
             break;
-
         default:
             break;
     }
@@ -513,6 +672,7 @@ static void show_usage(void){
     printf("x   - enable directed connectable \n");
     printf("4   - send periodic advertisement set info transfer information\n");
     printf("R   - use resolvable private address\n");
+    printf("b   - setup BIG\n");
     printf("---\n");
 }
 
@@ -547,6 +707,10 @@ static void stdin_process(char cmd){
         case '1':
             printf("Start periodic advertising\n");
             setup_periodic_advertising();
+            break;
+        case 'b':
+            printf("Setup BIG\n");
+            setup_big();
             break;
         case '2':
             printf("Start periodic advertising sync without extended advertising\n");
