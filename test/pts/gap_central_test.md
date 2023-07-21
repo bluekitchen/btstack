@@ -234,16 +234,19 @@ GAP/SEC/SEM/BI-05-C
 
 - GAP/PRIV/CONN/BV-10-C -> GAP Peripheral
 - GAP/PRIV/CONN/BV-11-C: p, b, P
+- GAP/PRIV/CONN/BV-11-C: C, a, t, t
 
 - GAP/ADV/XXX -> GAP Peripheral
 
 - GAP/GAT/BV-04-C -> GAP Peripheral
 - GAP/GAT/BV-05-C -> GAP Peripheral
 - GAP/GAT/BV-06-C -> GAP Peripheral
-
+- GAP/GAT/BV-12-C: p
+- GAP/GAT/BV-13-C: C, a
+ 
 - GAP/DM/NCON/BV-01-C: c, a (we need to enable non-connectable advertisements)
 - GAP/DM/CON/BV-01-C: C, a
-- GAP/DM/NBON/BV-01-C: F - restart tester - C, d, p, p, p
+- GAP/DM/NBON/BV-01-C: F, C, d, p, p, p
 - GAP/DM/BON/BV-01-C: C, D, N, t, p, b, p, b
 - GAP/DM/GIN/BV-01-C: i, s
 - GAP/DM/LIN/BV-01-C: I, wait for PTS to show up, s, "OK" if "LE Limited Discoverable Mode"
@@ -269,8 +272,7 @@ GAP/SEC/SEM/BI-05-C
 - GAP/DM/LEP/BV-19-C: C, a, 
 - GAP/DM/LEP/BV-20:C: F, J, p, 4, M, b, t, 9, N, wait 50 seconds for next request, t, p, b, t
 - GAP/DM/LEP/BV-21:C: F, J, M, 5, C, a, 
-- 
-- ??? GAP/DM/LEP/BV-22-C: F, J, N, t, p, b, 9, t
+- GAP/DM/LEP/BV-22-C: F, J, N, t, p, b, 9, t
 - 
 - GAP/DM/LEP/BV-23:C: C, a
 - GAP/DM/LEP/BI-01:C: F, J, t
