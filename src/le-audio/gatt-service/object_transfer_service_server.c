@@ -198,9 +198,9 @@ static void ots_server_emit_current_object_properties_changed(ots_server_connect
     // TODO
 }
 
-static bool ots_current_object_valid_for_filters(ots_server_connection_t * connection){
-    return true;
-}
+// static bool ots_current_object_valid_for_filters(ots_server_connection_t * connection){
+//     return true;
+// }
 
 static void ots_server_emit_current_object_filter_changed(ots_server_connection_t * connection, uint8_t filter_index){
     // TODO
@@ -229,7 +229,11 @@ static bool ots_server_current_object_procedure_permitted(ots_server_connection_
     if (!ots_current_object_valid(connection)){
         return false;
     }
-    return (connection->current_object->properties & (1 << object_property_mask) ) != 0;
+    if ( (object_property_mask < OBJECT_PROPERTY_MASK_DELETE) || (object_property_mask > OBJECT_PROPERTY_MASK_MARK)){
+        return false;
+    }
+
+    return (connection->current_object->properties & object_property_mask ) != 0;
 }
 
 bool object_transfer_service_server_current_object_procedure_permitted(hci_con_handle_t con_handle, uint32_t object_property_mask){
@@ -531,6 +535,8 @@ static bool ots_server_gatt_uuid_size_valid(uint16_t uuid_size){
     return (uuid_size == 2) || (uuid_size == 16);
 }
 
+static hci_con_handle_t active_con_handle;
+
 int ots_server_handle_action_control_point_write(ots_server_connection_t * connection, uint8_t *buffer, uint16_t buffer_size){
     if (buffer_size == 0){
         connection->oacp_result_code = OACP_RESULT_CODE_INVALID_PARAMETER;
@@ -556,6 +562,9 @@ int ots_server_handle_action_control_point_write(ots_server_connection_t * conne
     }
 
     uint16_t data_size = buffer_size - pos;
+    uint8_t mode;
+    uint32_t offset;
+    uint32_t length;
 
     switch (connection->oacp_opcode){
         case OACP_OPCODE_CREATE:
@@ -599,7 +608,7 @@ int ots_server_handle_action_control_point_write(ots_server_connection_t * conne
 
             // 2. Procedure Not Permitted - The object’s properties do not permit reading the object
             if (!ots_server_current_object_procedure_permitted(connection, OBJECT_PROPERTY_MASK_READ)){
-                connection->oacp_result_code = OACP_RESULT_CODE_INVALID_OBJECT;
+                connection->oacp_result_code = OACP_RESULT_CODE_PROCEDURE_NOT_PERMITTED;
                 break;
             }
 
@@ -614,7 +623,92 @@ int ots_server_handle_action_control_point_write(ots_server_connection_t * conne
             break;
         
         case OACP_OPCODE_WRITE:
-            connection->oacp_result_code = ots_server_operations->write(connection->con_handle, ots_server_credit_based_cid, &buffer[pos], data_size);
+            if (data_size < 9){
+                return OACP_RESULT_CODE_OPERATION_FAILED;
+            }
+            offset = little_endian_read_32(buffer, pos);
+            pos += 4;
+            length = little_endian_read_32(buffer, pos);
+            pos += 4;
+
+            mode = buffer[pos++];
+
+
+            // 1. Invalid Object
+            if (!ots_current_object_valid(connection)){
+                connection->oacp_result_code = OACP_RESULT_CODE_INVALID_OBJECT;
+                break;
+            }
+
+            // 2. Procedure Not Permitted - The object’s properties do not permit writing the object
+            if (!ots_server_current_object_procedure_permitted(connection, OBJECT_PROPERTY_MASK_WRITE)){
+                connection->oacp_result_code = OACP_RESULT_CODE_PROCEDURE_NOT_PERMITTED;
+                break;
+            }
+
+            // 3. Procedure Not Permitted - Patching was attempted but patching is not supported by the Server.
+            // OBJECT_PROPERTY_MASK_PATCH
+
+            // 4. Procedure Not Permitted - Truncation was attempted but the object’s properties do not permit truncation of the object contents.
+            // OBJECT_PROPERTY_MASK_TRUNCATE
+
+            // 5. Channel Unavailable - An Object Transfer Channel was not available for use
+            if (ots_server_credit_based_cid == 0){
+                printf("OACP_RESULT_CODE_CHANNEL_UNAVAILABLE \n");
+                connection->oacp_result_code = OACP_RESULT_CODE_CHANNEL_UNAVAILABLE;
+                break;
+            }
+
+            // 6. Invalid Parameter - The Mode parameter contains an RFU value.
+            if ((mode != 0) && (mode != 0x0010)){
+                connection->oacp_result_code = OACP_RESULT_CODE_INVALID_PARAMETER;
+                break;
+            }
+
+
+            // 7. Invalid Parameter - The value of the Offset parameter exceeds the value of the Current Size field of the Object Size characteristic.
+            if (offset > connection->current_object_size){
+                return OACP_RESULT_CODE_INVALID_PARAMETER;
+            }
+
+            // 8. Invalid Parameter - The sum of the values of the Offset and Length parameters exceeds the value of the Allocated Size field
+            //                        of the Object Size characteristic AND the Server does NOT support appending additional data to an object.
+            if ((offset + length) > connection->current_object->allocated_size){
+                if (!ots_server_current_object_procedure_permitted(connection, OBJECT_PROPERTY_MASK_APPEND)){
+                    return OACP_RESULT_CODE_INVALID_PARAMETER;
+                }
+
+                // 9. Insufficient Resources - The value of the Length parameter exceeds the number of octets that the Server has the capacity to write to the object.
+                connection->oacp_result_code = ots_server_operations->update_current_size(connection->con_handle, offset + length);
+                if (connection->oacp_result_code != OACP_RESULT_CODE_SUCCESS){
+                    return connection->oacp_result_code;
+                }
+                connection->current_object_size = offset + length;
+            }
+
+            // 10. Object Locked - The Current Object is locked by the Server.
+            if (connection->current_object_locked){
+                return OACP_RESULT_CODE_OBJECT_LOCKED;
+            }
+
+            // 11. Object Locked - An object transfer is in progress that is using the Current Object
+            if (connection->current_object_object_transfer_in_progress){
+                return OACP_RESULT_CODE_OBJECT_LOCKED;
+            }
+
+            if (mode == 0x0010){
+                connection->oacp_result_code = ots_server_operations->update_current_size(connection->con_handle, offset);
+                if (connection->oacp_result_code != OACP_RESULT_CODE_SUCCESS){
+                    return connection->oacp_result_code;
+                }
+                connection->current_object_size = offset;
+            }
+
+            active_con_handle = connection->con_handle;
+            connection->oacp_length = length;
+            connection->oacp_offset = offset;
+            connection->oacp_truncate = mode == 0x0010;
+            connection->oacp_result_code = OACP_RESULT_CODE_SUCCESS;
             break;
         
         case OACP_OPCODE_ABORT:
@@ -630,9 +724,9 @@ int ots_server_handle_action_control_point_write(ots_server_connection_t * conne
     return 0;
 }
 
-static bool ots_server_object_passes_filters(ots_server_connection_t * connection, ots_object_t * object){
-    return true;
-}
+// static bool ots_server_object_passes_filters(ots_server_connection_t * connection, ots_object_t * object){
+//     return true;
+// }
 
 static int ots_server_handle_list_control_point_write(ots_server_connection_t * connection, uint8_t *buffer, uint16_t buffer_size){
     if (buffer_size == 0){
@@ -928,73 +1022,90 @@ static void ots_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
     UNUSED(channel);
     UNUSED(size);
 
-    if (packet_type != HCI_EVENT_PACKET){
-        return;
-    }
-
     bd_addr_t event_address;
     uint16_t psm;
     uint16_t cid;
     uint16_t mtu;
     hci_con_handle_t handle;
+    ots_server_connection_t * connection;
+    uint8_t status;
 
-    switch (hci_event_packet_get_type(packet)) {
-        case L2CAP_EVENT_CHANNEL_CLOSED:
-            handle = l2cap_event_channel_closed_get_local_cid(packet);
-            if (ots_server_credit_based_cid == ots_server_credit_based_cid){
-                printf("L2CAP: L2CAP_EVENT_CHANNEL_CLOSED, con_handle 0x%02x\n", handle); 
-                ots_server_credit_based_cid = 0;
-                ots_server_remote_mtu = 0;
+    switch (packet_type){
+        case HCI_EVENT_PACKET:
+            switch (hci_event_packet_get_type(packet)) {
+                case L2CAP_EVENT_CHANNEL_CLOSED:
+                    cid = l2cap_event_channel_closed_get_local_cid(packet);
+                    if (ots_server_credit_based_cid == cid){
+                        printf("L2CAP: L2CAP_EVENT_CHANNEL_CLOSED, cid 0x%02x\n", cid); 
+                        ots_server_credit_based_cid = 0;
+                        ots_server_remote_mtu = 0;
+                        break;
+                    }
+                    break;
+
+                case HCI_EVENT_DISCONNECTION_COMPLETE:
+                    handle = hci_event_disconnection_complete_get_connection_handle(packet);
+                    ots_server_reset_connection_for_con_handle(handle);
+                    break;
+
+                // LE CBM
+                case L2CAP_EVENT_CBM_INCOMING_CONNECTION: 
+                    psm = l2cap_event_cbm_incoming_connection_get_psm(packet);
+                    cid = l2cap_event_cbm_incoming_connection_get_local_cid(packet);
+                    if (psm != TSPX_LE_PSM) break;
+                    printf("L2CAP: Accepting incoming LE connection request for 0x%02x, PSM %02x\n", cid, psm); 
+                    l2cap_cbm_accept_connection(cid, receive_buffer_X, sizeof(receive_buffer_X), initial_credits);
+                    break;
+
+
+                case L2CAP_EVENT_CBM_CHANNEL_OPENED:
+                    // inform about new l2cap connection
+                    l2cap_event_cbm_channel_opened_get_address(packet, event_address);
+                    psm = l2cap_event_cbm_channel_opened_get_psm(packet);
+                    cid = l2cap_event_cbm_channel_opened_get_local_cid(packet);
+                    handle = l2cap_event_cbm_channel_opened_get_handle(packet);
+                    mtu = l2cap_event_cbm_channel_opened_get_remote_mtu(packet);
+
+                    if (l2cap_event_cbm_channel_opened_get_status(packet) == ERROR_CODE_SUCCESS) {
+                        printf("L2CAP: LE Data Channel successfully opened: %s, handle 0x%02x, psm 0x%02x, local cid 0x%02x, remote cid 0x%02x, remote mtu 0x%02x\n",
+                               bd_addr_to_str(event_address), handle, psm, cid, little_endian_read_16(packet, 15), mtu);
+                        ots_server_credit_based_cid = cid;
+                        ots_server_remote_mtu = mtu;
+                    } else {
+                        printf("L2CAP: LE Data Channel connection to device %s failed. status code %u\n", bd_addr_to_str(event_address), packet[2]);
+                    }
+                    break;
+
+                case L2CAP_EVENT_CAN_SEND_NOW:
+                    cid = l2cap_event_can_send_now_get_local_cid(packet);
+
+                    // l2cap_send(ots_server_credit_based_cid, ots_server_serial, strlen(data_long));
+                    printf("L2CAP: L2CAP_EVENT_CAN_SEND_NOW sent0x%02x\n", cid); 
+                    break;
+
+               case L2CAP_EVENT_PACKET_SENT:
+                    cid = l2cap_event_packet_sent_get_local_cid(packet);
+                    printf("L2CAP: LE Data Channel Packet sent0x%02x\n", cid); 
+                    break;
+                default:
+                    break;
+            }
+            break;
+
+        case L2CAP_DATA_PACKET:
+            connection = ots_server_find_connection_for_con_handle(active_con_handle);
+            if (connection == NULL){
                 break;
             }
-            break;
-
-        case HCI_EVENT_DISCONNECTION_COMPLETE:
-            handle = hci_event_disconnection_complete_get_connection_handle(packet);
-            ots_server_reset_connection_for_con_handle(handle);
-            break;
-
-        // LE CBM
-        case L2CAP_EVENT_CBM_INCOMING_CONNECTION: 
-            psm = l2cap_event_cbm_incoming_connection_get_psm(packet);
-            cid = l2cap_event_cbm_incoming_connection_get_local_cid(packet);
-            if (psm != TSPX_LE_PSM) break;
-            printf("L2CAP: Accepting incoming LE connection request for 0x%02x, PSM %02x\n", cid, psm); 
-            l2cap_cbm_accept_connection(cid, receive_buffer_X, sizeof(receive_buffer_X), initial_credits);
-            break;
-
-
-        case L2CAP_EVENT_CBM_CHANNEL_OPENED:
-            // inform about new l2cap connection
-            l2cap_event_cbm_channel_opened_get_address(packet, event_address);
-            psm = l2cap_event_cbm_channel_opened_get_psm(packet);
-            cid = l2cap_event_cbm_channel_opened_get_local_cid(packet);
-            handle = l2cap_event_cbm_channel_opened_get_handle(packet);
-            mtu = l2cap_event_cbm_channel_opened_get_remote_mtu(packet);
-
-            if (l2cap_event_cbm_channel_opened_get_status(packet) == ERROR_CODE_SUCCESS) {
-                printf("L2CAP: LE Data Channel successfully opened: %s, handle 0x%02x, psm 0x%02x, local cid 0x%02x, remote cid 0x%02x, remote mtu 0x%02x\n",
-                       bd_addr_to_str(event_address), handle, psm, cid, little_endian_read_16(packet, 15), mtu);
-                ots_server_credit_based_cid = cid;
-                ots_server_remote_mtu = mtu;
-            } else {
-                printf("L2CAP: LE Data Channel connection to device %s failed. status code %u\n", bd_addr_to_str(event_address), packet[2]);
+//            printf_hexdump(packet, size);
+            status = ots_server_operations->write(connection->con_handle, connection->oacp_offset, connection->oacp_length, packet, size);
+            if (status == OACP_RESULT_CODE_SUCCESS){
+                printf("write done, length %d\n", connection->current_object_size);
             }
             break;
 
-        case L2CAP_EVENT_CAN_SEND_NOW:
-            cid = l2cap_event_can_send_now_get_local_cid(packet);
-
-            // l2cap_send(ots_server_credit_based_cid, ots_server_serial, strlen(data_long));
-            printf("L2CAP: L2CAP_EVENT_CAN_SEND_NOW sent0x%02x\n", cid); 
-            break;
-
-       case L2CAP_EVENT_PACKET_SENT:
-            cid = l2cap_event_packet_sent_get_local_cid(packet);
-            printf("L2CAP: LE Data Channel Packet sent0x%02x\n", cid); 
-            break;
         default:
-            break;
+            break;;
     }
 }
 
@@ -1228,6 +1339,21 @@ uint32_t object_transfer_service_server_current_object_size(hci_con_handle_t con
         return 0;
     }
     return connection->current_object_size;
+}
+
+uint32_t object_transfer_service_server_current_object_allocated_size(hci_con_handle_t con_handle){
+    if (con_handle == HCI_CON_HANDLE_INVALID){
+        return 0;
+    }
+    ots_server_connection_t * connection = ots_server_find_or_add_connection_for_con_handle(con_handle);
+    if (connection == NULL){
+        return 0;
+    }
+
+    if (connection->current_object == NULL){
+        return 0;
+    }
+    return connection->current_object->allocated_size;
 }
 
 char * object_transfer_service_server_current_object_name(hci_con_handle_t con_handle){
