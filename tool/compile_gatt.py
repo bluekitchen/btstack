@@ -1113,7 +1113,7 @@ try:
     print('Created %s' % filename)
 
 except IOError as e:
-
+    parser.print_help() 
     print(e)
     sys.exit(1)
 
