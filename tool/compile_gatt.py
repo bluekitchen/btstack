@@ -1114,7 +1114,7 @@ try:
 
 except IOError as e:
 
-    print(usage)
+    print(e)
     sys.exit(1)
 
 print('Compilation successful!\n')
