@@ -441,11 +441,9 @@ int btstack_hid_get_report_size_for_id(int report_id, hid_report_type_t report_t
                         current_report_id = item.item_value;
                         break;
                     case ReportCount:
-                        if (current_report_id != report_id) break;
                         report_count = item.item_value;
                         break;
                     case ReportSize:
-                        if (current_report_id != report_id) break;
                         report_size = item.item_value;
                         break;
                     default:
@@ -472,12 +470,11 @@ int btstack_hid_get_report_size_for_id(int report_id, hid_report_type_t report_t
                 }
                 if (!valid_report_type) break;
                 total_report_size += report_count * report_size;
-                report_size = 0;
-                report_count = 0;
                 break;
             default:
                 break;
         }
+		if (total_report_size > 0 && current_report_id != report_id) break;
         hid_descriptor_len -= item.item_size;
         hid_descriptor += item.item_size;
     }
