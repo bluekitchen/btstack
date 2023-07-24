@@ -272,6 +272,61 @@ void de_add_uuid128(uint8_t * seq, uint8_t * uuid){
     big_endian_store_16(seq, 1, data_size+1+16);
 }
 
+// optimise the finished data to potentially save size.
+// optimisation is done "in place" on the data passed in.
+uint32_t de_optimise(uint8_t* element){
+	de_type_t et = de_get_element_type(element);
+	uint32_t element_size = de_get_len(element);
+	if (et == DE_DES){
+		// this can potentially be optimised.
+		// first optimise all sub-entries in the data sequence,
+		// then optimise the header size on this data sequence.
+		de_size_t st = de_get_size_type(element);
+		uint32_t element_hdr_size = de_get_header_size(element);
+		uint32_t element_data_size = de_get_data_size(element);
+		uint32_t element_data_off = 0;
+		uint32_t element_data_size_new = 0;
+		while (element_data_off < element_data_size){
+			uint8_t* p_src_element = element + element_hdr_size + element_data_off;
+			uint8_t* p_dst_element = element + element_hdr_size + element_data_size_new;
+			uint32_t curr_size = de_get_len(p_src_element);
+
+			uint32_t curr_size_new = de_optimise(p_src_element);
+			if (curr_size_new < curr_size || p_dst_element != p_src_element ){
+				memmove(p_dst_element, p_src_element, curr_size_new);
+			}
+
+			element_data_off += curr_size;
+			element_data_size_new += curr_size_new;
+		}
+
+		// fix up element header
+		if (element_data_size_new < 0x100 && st > DE_SIZE_VAR_8){
+			// reduce "data element size" from 32bit or 16bit to 8bit
+			uint32_t hdr_size_new = 1 + 1;
+			de_store_descriptor_with_len(element, et, DE_SIZE_VAR_8, element_data_size_new);
+			memmove(element + hdr_size_new, element + element_hdr_size, element_data_size_new);
+			element_hdr_size = hdr_size_new;
+		}
+		else if (element_data_size_new < 0x10000 && st > DE_SIZE_VAR_16){
+			// reduce "data element size" from 32bit to 16bit
+			uint32_t hdr_size_new = 1 + 2;
+			de_store_descriptor_with_len(element, et, DE_SIZE_VAR_16, element_data_size_new);
+			memmove(element + hdr_size_new, element + element_hdr_size, element_data_size_new);
+			element_hdr_size = hdr_size_new;
+		}
+		else if (element_data_size_new < element_data_size){
+			// update optimised size, without changing "data element size"
+			de_store_descriptor_with_len(element, et, st, element_data_size_new);
+		}
+		return element_hdr_size + element_data_size_new;
+	}
+	else{
+		// nothing to optimise
+		return element_size;
+	}
+}
+
 // MARK: DES iterator
 bool des_iterator_init(des_iterator_t * it, uint8_t * element){
     de_type_t type = de_get_element_type(element);

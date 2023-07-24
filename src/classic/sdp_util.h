@@ -121,6 +121,8 @@ void      de_add_uuid128(uint8_t * seq, uint8_t * uuid);
 // returns data element  len if date element is smaller than size
 uint32_t de_get_len_safe(const uint8_t * header, uint32_t size);
 
+uint32_t de_optimise(uint8_t* element);
+
 // MARK: DES iterator
 typedef struct {
     uint8_t * element;
