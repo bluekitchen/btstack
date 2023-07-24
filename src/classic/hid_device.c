@@ -421,7 +421,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
     uint16_t local_cid;
     int pos = 0;
     int report_size;
-    uint8_t report[48];
+    uint8_t report[HCI_ACL_PAYLOAD_SIZE - L2CAP_HEADER_SIZE];
     hid_message_type_t message_type;
 
     switch (packet_type){
