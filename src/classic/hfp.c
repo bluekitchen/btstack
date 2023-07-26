@@ -2010,7 +2010,7 @@ void hfp_bcm_prepare_for_sco(hfp_connection_t * hfp_connection){
 void hfp_bcm_write_i2spcm_interface_param(hfp_connection_t * hfp_connection){
     uint8_t sample_rate = (hfp_connection->negotiated_codec == HFP_CODEC_MSBC) ? 1 : 0;
     // i2s enable, master, 8/16 kHz, 512 kHz
-    hci_send_cmd(&hci_bcm_write_i2spcm_interface_paramhci_bcm_write_i2spcm_interface_param, 1, 1, sample_rate, 2);
+    hci_send_cmd(&hci_bcm_write_i2spcm_interface_param, 1, 1, sample_rate, 2);
 }
 #endif
 
