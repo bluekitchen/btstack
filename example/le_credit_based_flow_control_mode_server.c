@@ -136,21 +136,21 @@ static void test_track_data(le_cbm_connection_t * context, int bytes_transferred
  /* LISTING_START(streamer): Streaming code */
 static void streamer(void){
 
-    if (le_data_channel_connection.cid == 0) return;
+    if (le_cbm_connection.cid == 0) return;
 
     // create test data
-    le_data_channel_connection.counter++;
-    if (le_data_channel_connection.counter > 'Z') le_data_channel_connection.counter = 'A';
-    memset(le_data_channel_connection.test_data, le_data_channel_connection.counter, le_data_channel_connection.test_data_len);
+    le_cbm_connection.counter++;
+    if (le_cbm_connection.counter > 'Z') le_cbm_connection.counter = 'A';
+    memset(le_cbm_connection.test_data, le_cbm_connection.counter, le_cbm_connection.test_data_len);
 
     // send
-    l2cap_cbm_send_data(le_data_channel_connection.cid, (uint8_t *) le_data_channel_connection.test_data, le_data_channel_connection.test_data_len);
+    l2cap_send(le_cbm_connection.cid, (uint8_t *) le_cbm_connection.test_data, le_cbm_connection.test_data_len);
 
     // track
-    test_track_data(&le_data_channel_connection, le_data_channel_connection.test_data_len);
+    test_track_data(&le_cbm_connection, le_cbm_connection.test_data_len);
 
     // request another packet
-    l2cap_cbm_request_can_send_now_event(le_data_channel_connection.cid);
+    l2cap_request_can_send_now_event(le_cbm_connection.cid);
 } 
 /* LISTING_END */
 #endif
@@ -247,7 +247,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                         printf("Test packet size: %u\n", le_cbm_connection.test_data_len);
                         test_reset(&le_cbm_connection);
 #ifdef TEST_STREAM_DATA
-                        l2cap_cbm_request_can_send_now_event(le_data_channel_connection.cid);
+                        l2cap_request_can_send_now_event(le_cbm_connection.cid);
 #endif
                     } else {
                         printf("L2CAP: Connection to device %s failed, status 0x%02x\n", bd_addr_to_str(event_address), status);
@@ -260,7 +260,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     break;
 
 #ifdef TEST_STREAM_DATA
-                case L2CAP_EVENT_CBM_CAN_SEND_NOW:
+                case L2CAP_EVENT_CAN_SEND_NOW:
                     streamer();
                     break;
 #endif
