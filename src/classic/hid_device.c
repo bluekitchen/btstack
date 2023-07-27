@@ -943,6 +943,7 @@ uint8_t hid_device_connect(bd_addr_t addr, uint16_t * hid_cid){
     hid_device->control_cid   = 0;
     hid_device->interrupt_cid = 0;
     hid_device->con_handle    = HCI_CON_HANDLE_INVALID;
+    hid_device->protocol_mode = HID_PROTOCOL_MODE_REPORT;
 
     // create l2cap control using fixed HID L2CAP PSM
     log_info("Create outgoing HID Control");
