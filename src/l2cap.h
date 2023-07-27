@@ -836,10 +836,10 @@ uint8_t l2cap_le_create_channel(btstack_packet_handler_t packet_handler, hci_con
 // @deprecated - please use l2cap_cbm_decline_connection
 uint8_t l2cap_le_provide_credits(uint16_t local_cid, uint16_t credits);
 
-// @deprecated - please use l2cap_cbm_can_send_now
+// @deprecated - please use l2cap_can_send_now
 bool l2cap_le_can_send_now(uint16_t local_cid);
 
-// @deprecated - please use l2cap_cbm_request_can_send_now_event
+// @deprecated - please use l2cap_request_can_send_now_event
 uint8_t l2cap_le_request_can_send_now_event(uint16_t local_cid);
 
 // @deprecated - please use l2cap_send_data
