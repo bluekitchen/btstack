@@ -147,12 +147,21 @@ static hid_device_t * hid_device_get_instance_for_hid_cid(uint16_t hid_cid){
     return NULL;
 }
 
+static void hid_device_setup_instance(hid_device_t *hid_device, const uint8_t *bd_addr) {
+    (void)memcpy(hid_device->bd_addr, bd_addr, 6);
+    hid_device->cid = hid_device_get_next_cid();
+    // reset state
+    hid_device->protocol_mode = HID_PROTOCOL_MODE_REPORT;
+    hid_device->con_handle    = HCI_CON_HANDLE_INVALID;
+    hid_device->incoming      = 0;
+    hid_device->connected     = 0;
+    hid_device->control_cid   = 0;
+    hid_device->interrupt_cid = 0;
+}
+
 static hid_device_t * hid_device_provide_instance_for_bd_addr(bd_addr_t bd_addr){
     if (!hid_device_singleton.cid){
-        (void)memcpy(hid_device_singleton.bd_addr, bd_addr, 6);
-        hid_device_singleton.cid = hid_device_get_next_cid();
-        hid_device_singleton.protocol_mode = HID_PROTOCOL_MODE_REPORT;
-        hid_device_singleton.con_handle = HCI_CON_HANDLE_INVALID;
+        hid_device_setup_instance(&hid_device_singleton, bd_addr);
     }
     return &hid_device_singleton;
 }
@@ -930,19 +939,10 @@ uint8_t hid_device_connect(bd_addr_t addr, uint16_t * hid_cid){
         log_error("hid_device_connect: could not create a hid device instace");
         return BTSTACK_MEMORY_ALLOC_FAILED; 
     }
-    // assign hic_cid
-    *hid_cid = hid_device_get_next_cid();
 
-    // store address
-    (void)memcpy(hid_device->bd_addr, addr, 6);
-
-    // reset state
-    hid_device->cid           = *hid_cid;
-    hid_device->incoming      = 0;
-    hid_device->connected     = 0;
-    hid_device->control_cid   = 0;
-    hid_device->interrupt_cid = 0;
-    hid_device->con_handle    = HCI_CON_HANDLE_INVALID;
+    // setup instance
+    hid_device_setup_instance(hid_device, addr);
+    *hid_cid = hid_device->cid;
 
     // create l2cap control using fixed HID L2CAP PSM
     log_info("Create outgoing HID Control");
