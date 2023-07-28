@@ -833,7 +833,7 @@ uint8_t l2cap_le_create_channel(btstack_packet_handler_t packet_handler, hci_con
                                 uint16_t psm, uint8_t * receive_sdu_buffer, uint16_t mtu, uint16_t initial_credits, gap_security_level_t security_level,
                                 uint16_t * out_local_cid);
 
-// @deprecated - please use l2cap_cbm_decline_connection
+// @deprecated - please use l2cap_cbm_provide_credits
 uint8_t l2cap_le_provide_credits(uint16_t local_cid, uint16_t credits);
 
 // @deprecated - please use l2cap_can_send_now
@@ -842,17 +842,11 @@ bool l2cap_le_can_send_now(uint16_t local_cid);
 // @deprecated - please use l2cap_request_can_send_now_event
 uint8_t l2cap_le_request_can_send_now_event(uint16_t local_cid);
 
-// @deprecated - please use l2cap_send_data
+// @deprecated - please use l2cap_send
 uint8_t l2cap_le_send_data(uint16_t local_cid, const uint8_t * data, uint16_t size);
 
 // @deprecated - please use l2cap_disconnect
 uint8_t l2cap_le_disconnect(uint16_t local_cid);
-
-// @deprecated - please use l2cap_can_send_now
-bool l2cap_cbm_can_send_now(uint16_t local_cid);
-
-// @deprecated - please use l2cap_request_can_send_now_event
-uint8_t l2cap_cbm_request_can_send_now_event(uint16_t local_cid);
 
 
 #if defined __cplusplus
