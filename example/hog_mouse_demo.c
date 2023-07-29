@@ -167,7 +167,7 @@ static void hog_mouse_setup(void){
 
 // HID Report sending
 static void send_report(uint8_t buttons, int8_t dx, int8_t dy){
-    uint8_t report[] = { buttons, (uint8_t) dx, (uint8_t) dy, 0};
+    uint8_t report[] = { buttons, (uint8_t) dx, (uint8_t) dy };
     switch (protocol_mode){
         case 0:
             hids_device_send_boot_mouse_input_report(con_handle, report, sizeof(report));
