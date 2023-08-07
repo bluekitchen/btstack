@@ -2425,10 +2425,9 @@ const hci_cmd_t hci_bcm_write_sco_pcm_int = {
  * @param is_master is 0 for slave, is 1 for master
  * @param sample_rate is 0 for 8 kHz, 1 for 16 kHz, 2 for 4 kHz
  * @param clock_rate is 0 for 128 kz, 1 for 256 kHz, 2 for 512 khz, 3 for 1024 kHz, 4 for 2048 khz
- * @param clock_mode is 0 for slave and 1 for master
  */
 const hci_cmd_t hci_bcm_write_i2spcm_interface_param = {
-    HCI_OPCODE_HCI_BCM_WRITE_I2SPCM_INTERFACE_PARAM, "11111"
+    HCI_OPCODE_HCI_BCM_WRITE_I2SPCM_INTERFACE_PARAM, "1111"
         // return: status
 };
 
