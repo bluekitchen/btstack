@@ -1730,6 +1730,12 @@ static void hci_run_gap_tasks_classic(void){
         hci_send_cmd(&hci_write_inquiry_scan_activity, hci_stack->inquiry_scan_interval, hci_stack->inquiry_scan_window);
         return;
     }
+    // send write inquiry transmit power level
+    if ((hci_stack->gap_tasks_classic & GAP_TASK_WRITE_INQUIRY_TX_POWER_LEVEL) != 0) {
+        hci_stack->gap_tasks_classic &= ~GAP_TASK_WRITE_INQUIRY_TX_POWER_LEVEL;
+        hci_send_cmd(&hci_write_inquiry_transmit_power_level, hci_stack->inquiry_tx_power_level);
+        return;
+    }
 }
 #endif
 
@@ -8916,6 +8922,13 @@ void gap_inquiry_set_scan_activity(uint16_t inquiry_scan_interval, uint16_t inqu
     hci_stack->inquiry_scan_interval = inquiry_scan_interval;
     hci_stack->inquiry_scan_window   = inquiry_scan_window;
     hci_stack->gap_tasks_classic |= GAP_TASK_WRITE_INQUIRY_SCAN_ACTIVITY;
+    hci_run();
+}
+
+void gap_inquiry_set_transmit_power_level(int8_t tx_power)
+{
+    hci_stack->inquiry_tx_power_level = tx_power;
+    hci_stack->gap_tasks_classic |= GAP_TASK_WRITE_INQUIRY_TX_POWER_LEVEL;
     hci_run();
 }
 

@@ -896,15 +896,16 @@ typedef enum hci_init_state{
 
 } hci_substate_t;
 
-#define GAP_TASK_SET_LOCAL_NAME               0x01
-#define GAP_TASK_SET_EIR_DATA                 0x02
-#define GAP_TASK_SET_CLASS_OF_DEVICE          0x04
-#define GAP_TASK_SET_DEFAULT_LINK_POLICY      0x08
-#define GAP_TASK_WRITE_SCAN_ENABLE            0x10
-#define GAP_TASK_WRITE_PAGE_SCAN_ACTIVITY     0x20
-#define GAP_TASK_WRITE_PAGE_SCAN_TYPE         0x40
-#define GAP_TASK_WRITE_PAGE_TIMEOUT           0x80
-#define GAP_TASK_WRITE_INQUIRY_SCAN_ACTIVITY 0x100
+#define GAP_TASK_SET_LOCAL_NAME                 0x01
+#define GAP_TASK_SET_EIR_DATA                   0x02
+#define GAP_TASK_SET_CLASS_OF_DEVICE            0x04
+#define GAP_TASK_SET_DEFAULT_LINK_POLICY        0x08
+#define GAP_TASK_WRITE_SCAN_ENABLE              0x10
+#define GAP_TASK_WRITE_PAGE_SCAN_ACTIVITY       0x20
+#define GAP_TASK_WRITE_PAGE_SCAN_TYPE           0x40
+#define GAP_TASK_WRITE_PAGE_TIMEOUT             0x80
+#define GAP_TASK_WRITE_INQUIRY_SCAN_ACTIVITY   0x100
+#define GAP_TASK_WRITE_INQUIRY_TX_POWER_LEVEL  0x200
 
 enum {
     // Tasks
@@ -1072,6 +1073,7 @@ typedef struct {
     uint32_t            inquiry_lap;      // GAP_IAC_GENERAL_INQUIRY or GAP_IAC_LIMITED_INQUIRY
     uint16_t            inquiry_scan_interval;
     uint16_t            inquiry_scan_window;
+    int8_t              inquiry_tx_power_level;
     
     bool                gap_secure_connections_only_mode;
 #endif
