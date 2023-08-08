@@ -206,70 +206,79 @@ void de_create_sequence(uint8_t *header){
     de_store_descriptor_with_len( header, DE_DES, DE_SIZE_VAR_16, 0); // DES, 2 Byte Length
 }
 
+static inline void de_assert_des_16bit(uint8_t * element){
+    btstack_assert(element[0] == ((DE_DES << 3) | DE_SIZE_VAR_16));
+}
+
 /* starts a sub-sequence, @return handle for sub-sequence */
-uint8_t * de_push_sequence(uint8_t *header){
-    int element_len = de_get_len(header);
-    de_store_descriptor_with_len(header+element_len, DE_DES, DE_SIZE_VAR_16, 0); // DES, 2 Byte Length
-    return header + element_len;
+uint8_t * de_push_sequence(uint8_t *sequence){
+    de_assert_des_16bit(sequence);
+    int element_len = de_get_len(sequence);
+    de_store_descriptor_with_len(sequence + element_len, DE_DES, DE_SIZE_VAR_16, 0); // DES, 2 Byte Length
+    return sequence + element_len;
 }
 
 /* closes the current sequence and updates the parent sequence */
 void de_pop_sequence(uint8_t * parent, uint8_t * child){
+    de_assert_des_16bit(parent);
     int child_len = de_get_len(child);
     int data_size_parent = big_endian_read_16(parent,1);
     big_endian_store_16(parent, 1, data_size_parent + child_len);
 }
 
 /* adds a single number value and 16+32 bit UUID to the sequence */
-void de_add_number(uint8_t *seq, de_type_t type, de_size_t size, uint32_t value){
-    int data_size   = big_endian_read_16(seq,1);
+void de_add_number(uint8_t *sequence, de_type_t type, de_size_t size, uint32_t value){
+    de_assert_des_16bit(sequence);
+    int data_size   = big_endian_read_16(sequence, 1);
     int element_size = 1;   // e.g. for DE_TYPE_NIL
-    de_store_descriptor(seq+3+data_size, type, size); 
+    de_store_descriptor(sequence + 3 + data_size, type, size);
     switch (size){
         case DE_SIZE_8:
             if (type != DE_NIL){
-                seq[4+data_size] = value;
+                sequence[4 + data_size] = value;
                 element_size = 2;
             }
             break;
         case DE_SIZE_16:
-            big_endian_store_16(seq, 4+data_size, value);
+            big_endian_store_16(sequence, 4 + data_size, value);
             element_size = 3;
             break;
         case DE_SIZE_32:
-            big_endian_store_32(seq, 4+data_size, value);
+            big_endian_store_32(sequence, 4 + data_size, value);
             element_size = 5;
             break;
         default:
             break;
     }
-    big_endian_store_16(seq, 1, data_size+element_size);
+    big_endian_store_16(sequence, 1, data_size + element_size);
 }
 
 /* add a single block of data, e.g. as DE_STRING, DE_URL */
-void de_add_data( uint8_t *seq, de_type_t type, uint16_t size, uint8_t *data){
-    int data_size   = big_endian_read_16(seq,1);
+void de_add_data(uint8_t *sequence, de_type_t type, uint16_t size, uint8_t *data){
+    de_assert_des_16bit(sequence);
+    int data_size   = big_endian_read_16(sequence, 1);
     if (size > 0xff) {
-        // use 16-bit lengh information (3 byte header)
-        de_store_descriptor_with_len(seq+3+data_size, type, DE_SIZE_VAR_16, size); 
+        // use 16-bit length information (3 byte header)
+        de_store_descriptor_with_len(sequence + 3 + data_size, type, DE_SIZE_VAR_16, size);
         data_size += 3;
     } else {
-        // use 8-bit lengh information (2 byte header)
-        de_store_descriptor_with_len(seq+3+data_size, type, DE_SIZE_VAR_8, size); 
+        // use 8-bit length information (2 byte header)
+        de_store_descriptor_with_len(sequence + 3 + data_size, type, DE_SIZE_VAR_8, size);
         data_size += 2;
     }
     if (size > 0){
-		(void)memcpy(seq + 3 + data_size, data, size);
+		(void)memcpy(sequence + 3 + data_size, data, size);
 		data_size += size;
     }
-    big_endian_store_16(seq, 1, data_size);
+    big_endian_store_16(sequence, 1, data_size);
 }
 
-void de_add_uuid128(uint8_t * seq, uint8_t * uuid){
-    int data_size   = big_endian_read_16(seq,1);
-    de_store_descriptor(seq+3+data_size, DE_UUID, DE_SIZE_128); 
-    (void)memcpy(seq + 4 + data_size, uuid, 16);
-    big_endian_store_16(seq, 1, data_size+1+16);
+void de_add_uuid128(uint8_t * sequence, uint8_t * uuid){
+    de_assert_des_16bit(sequence);
+    int data_size   = big_endian_read_16(sequence, 1);
+    de_store_descriptor(sequence + 3 + data_size, DE_UUID, DE_SIZE_128);
+    (void)memcpy(sequence + 4 + data_size, uuid, 16);
+    big_endian_store_16(sequence, 1, data_size + 1 + 16);
 }
 
 // MARK: DES iterator
