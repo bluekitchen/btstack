@@ -918,7 +918,7 @@ const hci_cmd_t hci_write_num_broadcast_retransmissions = {
  * @param type 0 = current transmit level, 1 = max transmit level
  */
 const hci_cmd_t hci_read_transmit_power_level = {
-    HCI_OPCODE_HCI_READ_TRANSMIT_POWER_LEVEL, "11"
+    HCI_OPCODE_HCI_READ_TRANSMIT_POWER_LEVEL, "H1"
 };
 
 /**
