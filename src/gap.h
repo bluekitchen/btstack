@@ -1206,6 +1206,12 @@ void gap_inquiry_set_lap(uint32_t lap);
 void gap_inquiry_set_scan_activity(uint16_t inquiry_scan_interval, uint16_t inquiry_scan_window);
 
 /**
+ * @brief Set Inquiry Transmit Power Level
+ * @param inq_tx_pwr_level range: -70 to 20 dBm
+ */
+void gap_inquiry_set_transmit_power_level(int8_t inq_tx_pwr_level);
+
+/**
  * @brief Remote Name Request
  * @param addr
  * @param page_scan_repetition_mode
