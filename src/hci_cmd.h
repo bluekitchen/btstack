@@ -177,6 +177,8 @@ typedef enum {
     HCI_OPCODE_HCI_WRITE_EXTENDED_INQUIRY_RESPONSE = HCI_OPCODE (OGF_CONTROLLER_BASEBAND, 0x52),
     HCI_OPCODE_HCI_WRITE_SIMPLE_PAIRING_MODE = HCI_OPCODE (OGF_CONTROLLER_BASEBAND, 0x56),
     HCI_OPCODE_HCI_READ_LOCAL_OOB_DATA = HCI_OPCODE (OGF_CONTROLLER_BASEBAND, 0x57),
+    HCI_OPCODE_HCI_READ_INQUIRY_RESPONSE_TRANSMIT_POWER_LEVEL = HCI_OPCODE (OGF_CONTROLLER_BASEBAND, 0x58),
+    HCI_OPCODE_HCI_WRITE_INQUIRY_TRANSMIT_POWER_LEVEL = HCI_OPCODE (OGF_CONTROLLER_BASEBAND, 0x59),
     HCI_OPCODE_HCI_WRITE_DEFAULT_ERRONEOUS_DATA_REPORTING = HCI_OPCODE (OGF_CONTROLLER_BASEBAND, 0x5B),
     HCI_OPCODE_HCI_SET_EVENT_MASK_2 = HCI_OPCODE (OGF_CONTROLLER_BASEBAND, 0x63),
     HCI_OPCODE_HCI_READ_LE_HOST_SUPPORTED = HCI_OPCODE (OGF_CONTROLLER_BASEBAND, 0x6c),
@@ -404,6 +406,8 @@ extern const hci_cmd_t hci_read_link_supervision_timeout;
 extern const hci_cmd_t hci_read_local_extended_oob_data;
 extern const hci_cmd_t hci_read_local_name;
 extern const hci_cmd_t hci_read_local_oob_data;
+extern const hci_cmd_t hci_read_inquiry_response_transmit_power_level;
+extern const hci_cmd_t hci_write_inquiry_transmit_power_level;
 extern const hci_cmd_t hci_read_local_supported_commands;
 extern const hci_cmd_t hci_read_local_supported_features;
 extern const hci_cmd_t hci_read_local_version_information;

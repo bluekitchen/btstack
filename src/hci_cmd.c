@@ -1042,6 +1042,20 @@ const hci_cmd_t hci_read_local_oob_data = {
 };
 
 /**
+ */
+const hci_cmd_t hci_read_inquiry_response_transmit_power_level = {
+    HCI_OPCODE_HCI_READ_INQUIRY_RESPONSE_TRANSMIT_POWER_LEVEL, ""
+    // return status, pwr level
+};
+
+/**
+ */
+const hci_cmd_t hci_write_inquiry_transmit_power_level = {
+    HCI_OPCODE_HCI_WRITE_INQUIRY_TRANSMIT_POWER_LEVEL, "1"
+    // return status
+};
+
+/**
  * @param mode (0 = off, 1 = on)
  */
 const hci_cmd_t hci_write_default_erroneous_data_reporting = {
