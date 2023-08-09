@@ -660,6 +660,7 @@ typedef struct hfp_connection {
     uint8_t ag_call_hold_action;
     uint8_t ag_response_and_hold_action;
     uint8_t ag_dtmf_code;
+    bool    ag_in_band_ring_tone_active;
     bool    ag_send_no_carrier;
     bool    ag_vra_send_command;
     bool    ag_send_in_band_ring_tone_setting;
