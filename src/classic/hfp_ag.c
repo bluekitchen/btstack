@@ -1072,6 +1072,10 @@ static int hfp_ag_voice_recognition_state_machine(hfp_connection_t * hfp_connect
 }
 
 static int hfp_ag_run_for_context_service_level_connection_queries(hfp_connection_t * hfp_connection){
+    if (hfp_connection->state < HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED) {
+        return 0;
+    }
+
     int sent = codecs_exchange_state_machine(hfp_connection);
     if (sent) return 1;
 
