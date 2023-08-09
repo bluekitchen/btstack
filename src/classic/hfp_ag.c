@@ -174,7 +174,8 @@ static hfp_connection_t * get_hfp_ag_connection_context_for_acl_handle(uint16_t 
     return NULL;
 }
 
-static int use_in_band_tone(void){
+static int use_in_band_tone(hfp_connection_t *hfp_connection) {
+    UNUSED(hfp_connection);
     return get_bit(hfp_ag_supported_features, HFP_AGSF_IN_BAND_RING_TONE);
 }
 
@@ -198,12 +199,12 @@ static int has_hf_indicators_feature(hfp_connection_t * hfp_connection){
 
 /* unsolicited responses */
 
-static int hfp_ag_send_change_in_band_ring_tone_setting_cmd(uint16_t cid){
+static int hfp_ag_send_change_in_band_ring_tone_setting_cmd(hfp_connection_t * hfp_connection){
     char buffer[20];
     snprintf(buffer, sizeof(buffer), "\r\n%s: %d\r\n",
-             HFP_CHANGE_IN_BAND_RING_TONE_SETTING, use_in_band_tone());
+             HFP_CHANGE_IN_BAND_RING_TONE_SETTING, use_in_band_tone(hfp_connection));
     buffer[sizeof(buffer) - 1] = 0;
-    return send_str_over_rfcomm(cid, buffer);
+    return send_str_over_rfcomm(hfp_connection->rfcomm_cid, buffer);
 }
 
 static int hfp_ag_exchange_supported_features_cmd(uint16_t cid){
@@ -1067,7 +1068,7 @@ static int hfp_ag_run_for_context_service_level_connection_queries(hfp_connectio
 
     if (hfp_connection->ag_send_in_band_ring_tone_setting){
         hfp_connection->ag_send_in_band_ring_tone_setting = false;
-        hfp_ag_send_change_in_band_ring_tone_setting_cmd(hfp_connection->rfcomm_cid);
+        hfp_ag_send_change_in_band_ring_tone_setting_cmd(hfp_connection);
         return 1;
     }
 
@@ -1166,7 +1167,7 @@ static void hfp_ag_set_callheld_indicator(void){
 //
 
 static void hfp_ag_hf_start_ringing_incoming(hfp_connection_t * hfp_connection){
-    if (use_in_band_tone()){
+    if (use_in_band_tone(hfp_connection)){
         hfp_connection->call_state = HFP_CALL_W4_AUDIO_CONNECTION_FOR_IN_BAND_RING;
         hfp_ag_establish_audio_connection(hfp_connection->acl_handle);
     } else {
@@ -1369,7 +1370,7 @@ static void hfp_ag_hf_accept_call(hfp_connection_t * source){
 
         if (hfp_connection == source){
 
-            if (use_in_band_tone()){
+            if (use_in_band_tone(hfp_connection)){
                 hfp_connection->call_state = HFP_CALL_ACTIVE;
             } else {
                 hfp_connection->call_state = HFP_CALL_W4_AUDIO_CONNECTION_FOR_ACTIVE;
