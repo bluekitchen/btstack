@@ -97,6 +97,9 @@ static btstack_packet_callback_registration_t hfp_ag_hci_event_callback_registra
 
 static uint16_t hfp_ag_supported_features;
 
+// in-band ring tone is active on SLC if supported
+static bool hfp_ag_in_band_ring_tone_active;
+
 // codecs
 static uint8_t hfp_ag_codecs_nr;
 static uint8_t hfp_ag_codecs[HFP_MAX_NUM_CODECS];
@@ -174,9 +177,12 @@ static hfp_connection_t * get_hfp_ag_connection_context_for_acl_handle(uint16_t 
     return NULL;
 }
 
+static bool has_in_band_ring_tone(void){
+    return get_bit(hfp_ag_supported_features, HFP_AGSF_IN_BAND_RING_TONE) != 0;
+}
+
 static int use_in_band_tone(hfp_connection_t *hfp_connection) {
-    UNUSED(hfp_connection);
-    return get_bit(hfp_ag_supported_features, HFP_AGSF_IN_BAND_RING_TONE);
+    return hfp_connection->ag_in_band_ring_tone_active ? 1 : 0;
 }
 
 static int has_codec_negotiation_feature(hfp_connection_t * hfp_connection){
@@ -661,6 +667,9 @@ static void hfp_ag_slc_established(hfp_connection_t * hfp_connection){
     hfp_connection->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
     hfp_emit_slc_connection_event(hfp_connection->local_role, 0, hfp_connection->acl_handle, hfp_connection->remote_addr);
 
+    // in-band ring tone is active if supported
+    hfp_connection->ag_in_band_ring_tone_active = has_in_band_ring_tone();
+
     // HFP 4.35: "When [...] a new Service Level Connection is established all indicators are activated by default."
     uint16_t i;
     for (i=0;i<hfp_connection->ag_indicators_nr;i++){
@@ -1066,10 +1075,12 @@ static int hfp_ag_run_for_context_service_level_connection_queries(hfp_connectio
     int sent = codecs_exchange_state_machine(hfp_connection);
     if (sent) return 1;
 
-    if (hfp_connection->ag_send_in_band_ring_tone_setting){
-        hfp_connection->ag_send_in_band_ring_tone_setting = false;
-        hfp_ag_send_change_in_band_ring_tone_setting_cmd(hfp_connection);
-        return 1;
+    if (has_in_band_ring_tone()){
+        if (hfp_connection->ag_in_band_ring_tone_active != hfp_ag_in_band_ring_tone_active) {
+            hfp_connection->ag_in_band_ring_tone_active = hfp_ag_in_band_ring_tone_active;
+            hfp_ag_send_change_in_band_ring_tone_setting_cmd(hfp_connection);
+            return 1;
+        }
     }
 
     switch(hfp_connection->command){
@@ -2602,6 +2613,7 @@ void hfp_ag_init_codecs(int codecs_nr, const uint8_t * codecs){
 
 void hfp_ag_init_supported_features(uint32_t supported_features){
     hfp_ag_supported_features = supported_features;
+    hfp_ag_in_band_ring_tone_active = has_in_band_ring_tone();
 }
 
 void hfp_ag_init_ag_indicators(int ag_indicators_nr, const hfp_ag_indicator_t * ag_indicators){
@@ -2632,6 +2644,7 @@ void hfp_ag_init(uint8_t rfcomm_channel_nr){
     hfp_ag_indicators_nr = 0;
     hfp_ag_codecs_nr = 0;
     hfp_ag_supported_features = HFP_DEFAULT_AG_SUPPORTED_FEATURES;
+    hfp_ag_in_band_ring_tone_active = has_in_band_ring_tone();
     hfp_ag_subscriber_numbers = NULL;
     hfp_ag_subscriber_numbers_count = 0;
 
@@ -2768,12 +2781,15 @@ uint8_t hfp_ag_release_audio_connection(hci_con_handle_t acl_handle){
  * @brief Enable in-band ring tone
  */
 void hfp_ag_set_use_in_band_ring_tone(int use_in_band_ring_tone){
-    if (get_bit(hfp_ag_supported_features, HFP_AGSF_IN_BAND_RING_TONE) == use_in_band_ring_tone){
+    if (has_in_band_ring_tone() == false){
+        return;
+    }
+    if (hfp_ag_in_band_ring_tone_active == use_in_band_ring_tone){
         return;
     }
 
-    hfp_ag_supported_features = store_bit(hfp_ag_supported_features, HFP_AGSF_IN_BAND_RING_TONE, use_in_band_ring_tone);
-        
+    hfp_ag_in_band_ring_tone_active = use_in_band_ring_tone;
+
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, hfp_get_connections());
     while (btstack_linked_list_iterator_has_next(&it)){
