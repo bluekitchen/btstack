@@ -2446,7 +2446,6 @@ static void hfp_ag_handle_rfcomm_data(hfp_connection_t * hfp_connection, uint8_t
                 
                 if (get_bit(hfp_ag_supported_features, HFP_AGSF_EC_NR_FUNCTION)){
                     hfp_connection->ok_pending = 1;
-                    hfp_ag_supported_features = store_bit(hfp_ag_supported_features, HFP_AGSF_EC_NR_FUNCTION, hfp_connection->ag_echo_and_noise_reduction);
                     status = ERROR_CODE_SUCCESS;
                 } else {
                     hfp_connection->send_error = 1;
