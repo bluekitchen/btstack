@@ -2,16 +2,14 @@
 
 ## Overview
 
-This port targets any platform supported by Zephyr that either contains a built-in Bluetooth Controller 
+This port targets any platform supported by Zephyr that either contains a built-in Bluetooth Controller
 or is connected to an external Controller via one of the supported Zephyr HCI Transports drivers (see `zephyr/drivers/bluetooth/hci`)
 
 ## Status
 
-Tested with nRF52 DK (PCA10040) and nRF52840 DK (PC10056) boards only. It uses the fixed static random BD ADDR stored in NRF_FICR, which will not compile on non nRF SoCs.
+Tested with nRF52 DK (PCA10040), nRF52840 DK (PC10056) and nRF5340 DK (PCA10095) boards only. It uses the fixed static random BD ADDR stored in NRF_FICR/NRF_FICR_S, which will not compile on non nRF SoCs.
 
-
-## Building and Running
-
+## Build Environment
 The first step needs to done once. Step two is needed every time to setup the environment.
 
 ### 1. Build Environment Preconditions
@@ -29,6 +27,8 @@ To setup your environment to build a BTstack example, run the provided setup in 
 ```sh
 source env.sh
 ```
+
+## Building and Running on nRF52840
 
 ### 3. Build Example
 
@@ -57,10 +57,38 @@ To flash a connected board:
 west flash
 ```
 
+## Buiding and Running on nRF5340
+
+The nrf5340 is a dual core SOC, where one core is used for Bluetooth HCI functionality and
+the other for the high level application logic. So both cores need to be programmed separately.
+Using the nRF5340-DK for example allowes debug output on both cores to separate UART ports.
+
+### Building the application
+build using:
+```sh
+west build -b nrf5340dk_nrf5340_cpuapp
+```
+with debug:
+```sh
+west build -b nrf5340dk_nrf5340_cpuapp -- -DOVERLAY_CONFIG=debug_overlay.conf
+```
+
+### Using zephyr network core image
+the `hci_rgmsg` application needs to be loaded first to the network core
+```sh
+west build -b nrf5340dk_nrf5340_cpunet
+west flash
+```
+
+### Using Packetcraft binary network core image
+for nrf5340 the latest netcore firmware is located at [sdk-nrf](https://github.com/nrfconnect/sdk-nrf/tree/main/lib/bin/bt_ll_acs_nrf53/bin)
+to program it:
+```sh
+nrfjprog --program ble5-ctr-rpmsg_<version number>.hex --chiperase --coprocessor CP_NETWORK -r
+```
 
 ## TODO
 
-- Read NRF_FICR on Nordic SoCs
 - Allow/document use of Zephyr HCI Drivers
 
 
