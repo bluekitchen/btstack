@@ -47,8 +47,8 @@ static void (*transport_packet_handler)(uint8_t packet_type, uint8_t *packet, ui
  * @param transport_config
  */
 static void transport_init(const void *transport_config){
-	/* startup Controller */
-	bt_enable_raw(&rx_queue);
+    /* startup Controller */
+    bt_enable_raw(&rx_queue);
 }
 
 /**
@@ -80,27 +80,27 @@ static void send_hardware_error(uint8_t error_code){
 }
 
 static int transport_send_packet(uint8_t packet_type, uint8_t *packet, int size){
-	struct net_buf *buf;
+    struct net_buf *buf;
     switch (packet_type){
         case HCI_COMMAND_DATA_PACKET:
-		    buf = bt_buf_get_tx(BT_BUF_CMD, K_NO_WAIT, packet, size);
-			if (!buf) {
-				log_error("No available command buffers!\n");
+            buf = bt_buf_get_tx(BT_BUF_CMD, K_NO_WAIT, packet, size);
+            if (!buf) {
+                log_error("No available command buffers!\n");
                 break;
-			}
+            }
 
-			memcpy(net_buf_add(buf, size), packet, size);
-			bt_send(buf);
+            memcpy(net_buf_add(buf, size), packet, size);
+            bt_send(buf);
             break;
         case HCI_ACL_DATA_PACKET:
-		    buf = bt_buf_get_tx(BT_BUF_ACL_OUT, K_NO_WAIT, packet, size);
-			if (!buf) {
-				log_error("No available ACL buffers!\n");
+            buf = bt_buf_get_tx(BT_BUF_ACL_OUT, K_NO_WAIT, packet, size);
+            if (!buf) {
+                log_error("No available ACL buffers!\n");
                 break;
-			}
+            }
 
-			memcpy(net_buf_add(buf, size), packet, size);
-			bt_send(buf);
+            memcpy(net_buf_add(buf, size), packet, size);
+            bt_send(buf);
             break;
         default:
             send_hardware_error(0x01);  // invalid HCI packet
@@ -123,24 +123,24 @@ static const hci_transport_t transport = {
 };
 
 static const hci_transport_t * transport_get_instance(void){
-	return &transport;
+    return &transport;
 }
 
 static void transport_deliver_controller_packet(struct net_buf * buf){
-		uint16_t    size = buf->len;
-		uint8_t * packet = buf->data;
-		switch (bt_buf_get_type(buf)) {
-			case BT_BUF_ACL_IN:
-				transport_packet_handler(HCI_ACL_DATA_PACKET, packet, size);
-				break;
-			case BT_BUF_EVT:
-				transport_packet_handler(HCI_EVENT_PACKET, packet, size);
-				break;
-			default:
-				log_error("Unknown type %u\n", bt_buf_get_type(buf));
-				break;
-		}
-		net_buf_unref(buf);
+        uint16_t    size = buf->len;
+        uint8_t * packet = buf->data;
+        switch (bt_buf_get_type(buf)) {
+            case BT_BUF_ACL_IN:
+                transport_packet_handler(HCI_ACL_DATA_PACKET, packet, size);
+                break;
+            case BT_BUF_EVT:
+                transport_packet_handler(HCI_EVENT_PACKET, packet, size);
+                break;
+            default:
+                log_error("Unknown type %u\n", bt_buf_get_type(buf));
+                break;
+        }
+        net_buf_unref(buf);
 }
 
 // btstack_run_loop_zephry.c
@@ -150,7 +150,7 @@ static void transport_deliver_controller_packet(struct net_buf * buf){
 
 // TODO: handle 32 bit ms time overrun
 static uint32_t btstack_run_loop_zephyr_get_time_ms(void){
-	return  k_uptime_get_32();
+    return  k_uptime_get_32();
 }
 
 static void btstack_run_loop_zephyr_set_timer(btstack_timer_source_t *ts, uint32_t timeout_in_ms){
@@ -175,10 +175,10 @@ static void btstack_run_loop_zephyr_execute(void) {
 
         // process RX fifo only
         struct net_buf *buf = net_buf_get(&rx_queue, timeout);
-		if (buf){
-			transport_deliver_controller_packet(buf);
-		}
-	}
+        if (buf){
+            transport_deliver_controller_packet(buf);
+        }
+    }
 }
 
 static void btstack_run_loop_zephyr_btstack_run_loop_init(void){
@@ -221,19 +221,19 @@ int btstack_main(void);
 #if defined(CONFIG_BT_CTLR_ASSERT_HANDLER)
 void bt_ctlr_assert_handle(char *file, uint32_t line)
 {
-	printf("CONFIG_BT_CTLR_ASSERT_HANDLER: file %s, line %u\n", file, line);
-	while (1) {
-	}
+    printf("CONFIG_BT_CTLR_ASSERT_HANDLER: file %s, line %u\n", file, line);
+    while (1) {
+    }
 }
 #endif /* CONFIG_BT_CTLR_ASSERT_HANDLER */
 
 int main(void)
 {
-	// configure console UART by replacing CONFIG_UART_NRF5_BAUD_RATE with 115200 in uart_console.c
+    // configure console UART by replacing CONFIG_UART_NRF5_BAUD_RATE with 115200 in uart_console.c
 
-	printf("BTstack booting up..\n");
+    printf("BTstack booting up..\n");
 
-	// start with BTstack init - especially configure HCI Transport
+    // start with BTstack init - especially configure HCI Transport
     btstack_memory_init();
     btstack_run_loop_init(btstack_run_loop_zephyr_get_instance());
 
