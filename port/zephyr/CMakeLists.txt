@@ -36,6 +36,7 @@ list(APPEND INCLUDES_PATH 3rd-party/rijndael)
 list(APPEND INCLUDES_PATH 3rd-party/yxml)
 list(APPEND INCLUDES_PATH 3rd-party/tinydir)
 list(APPEND INCLUDES_PATH src)
+list(APPEND INCLUDES_PATH chipset/zephyr)
 list(APPEND INCLUDES_PATH platform/embedded)
 list(APPEND INCLUDES_PATH platform/lwip)
 list(APPEND INCLUDES_PATH platform/lwip/port)
@@ -43,20 +44,21 @@ list(TRANSFORM INCLUDES_PATH PREPEND ${BTSTACK_ROOT}/)
 list(APPEND INCLUDES_PATH . )
 include_directories( ${INCLUDES_PATH} )
 
-file(GLOB SOURCES_SRC       "${BTSTACK_ROOT}/src/*.c" ) #"${BTSTACK_ROOT}/example/sco_demo_util.c")
+file(GLOB SOURCES_SRC            "${BTSTACK_ROOT}/src/*.c" ) #"${BTSTACK_ROOT}/example/sco_demo_util.c")
 
-file(GLOB SOURCES_BLE       "${BTSTACK_ROOT}/src/ble/*.c")
-file(GLOB SOURCES_GATT      "${BTSTACK_ROOT}/src/ble/gatt-service/*.c")
-file(GLOB SOURCES_CLASSIC   "${BTSTACK_ROOT}/src/classic/*.c")
-file(GLOB SOURCES_MESH      "${BTSTACK_ROOT}/src/mesh/*.c" "${BTSTACK_ROOT}/src/mesh/gatt-service/*.c")
-file(GLOB SOURCES_BLUEDROID "${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/srce/*.c" "${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/srce/*.c")
-file(GLOB SOURCES_MD5       "${BTSTACK_ROOT}/3rd-party/md5/md5.c")
-file(GLOB SOURCES_UECC      "${BTSTACK_ROOT}/3rd-party/micro-ecc/uECC.c")
-file(GLOB SOURCES_YXML      "${BTSTACK_ROOT}/3rd-party/yxml/yxml.c")
-file(GLOB SOURCES_HXCMOD    "${BTSTACK_ROOT}/3rd-party/hxcmod-player/*.c"  "../../3rd-party/hxcmod-player/mods/*.c")
-file(GLOB SOURCES_RIJNDAEL  "${BTSTACK_ROOT}/3rd-party/rijndael/rijndael.c")
-file(GLOB SOURCES_EMBEDDED   "${BTSTACK_ROOT}/platform/embedded/*.c")
-file(GLOB SOURCES_LC3_GOOGLE "${BTSTACK_ROOT}/3rd-party/lc3-google/src/*.c")
+file(GLOB SOURCES_BLE            "${BTSTACK_ROOT}/src/ble/*.c")
+file(GLOB SOURCES_GATT           "${BTSTACK_ROOT}/src/ble/gatt-service/*.c")
+file(GLOB SOURCES_CLASSIC        "${BTSTACK_ROOT}/src/classic/*.c")
+file(GLOB SOURCES_MESH           "${BTSTACK_ROOT}/src/mesh/*.c" "${BTSTACK_ROOT}/src/mesh/gatt-service/*.c")
+file(GLOB SOURCES_BLUEDROID      "${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/srce/*.c" "${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/srce/*.c")
+file(GLOB SOURCES_MD5            "${BTSTACK_ROOT}/3rd-party/md5/md5.c")
+file(GLOB SOURCES_UECC           "${BTSTACK_ROOT}/3rd-party/micro-ecc/uECC.c")
+file(GLOB SOURCES_YXML           "${BTSTACK_ROOT}/3rd-party/yxml/yxml.c")
+file(GLOB SOURCES_HXCMOD         "${BTSTACK_ROOT}/3rd-party/hxcmod-player/*.c"  "../../3rd-party/hxcmod-player/mods/*.c")
+file(GLOB SOURCES_RIJNDAEL       "${BTSTACK_ROOT}/3rd-party/rijndael/rijndael.c")
+file(GLOB SOURCES_EMBEDDED       "${BTSTACK_ROOT}/platform/embedded/*.c")
+file(GLOB SOURCES_CHIPSET_ZEPHYR "${BTSTACK_ROOT}/chipset/zephyr/*.c")
+file(GLOB SOURCES_LC3_GOOGLE     "${BTSTACK_ROOT}/3rd-party/lc3-google/src/*.c")
 
 set(LWIP_CORE_SRC
     3rd-party/lwip/core/src/core/def.c
@@ -118,6 +120,7 @@ set(SOURCES
     ${SOURCES_BLE}
     ${SOURCES_GATT}
     ${SOURCES_UECC}
+    ${SOURCES_CHIPSET_ZEPHYR}
 )
 list(SORT SOURCES)
 

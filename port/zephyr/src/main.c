@@ -28,11 +28,17 @@
 #include "hci_dump.h"
 #include "hci_dump_embedded_stdout.h"
 #include "hci_transport.h"
+#include "bluetooth_company_id.h"
+#include "btstack_chipset_zephyr.h"
 
 #include "btstack_tlv.h"
 #include "btstack_tlv_none.h"
 #include "ble/le_device_db_tlv.h"
 
+#define HCI_OPCODE_ZEPHYR_READ_STATIC_ADDRESS 0xFC09
+const hci_cmd_t hci_zephyr_read_static_address = {
+        HCI_OPCODE_ZEPHYR_READ_STATIC_ADDRESS, ""
+};
 static K_FIFO_DEFINE(tx_queue);
 static K_FIFO_DEFINE(rx_queue);
 
@@ -49,6 +55,7 @@ static void (*transport_packet_handler)(uint8_t packet_type, uint8_t *packet, ui
 static void transport_init(const void *transport_config){
     /* startup Controller */
     bt_enable_raw(&rx_queue);
+    bt_hci_raw_set_mode( BT_HCI_RAW_MODE_PASSTHROUGH );
 }
 
 /**
@@ -89,7 +96,6 @@ static int transport_send_packet(uint8_t packet_type, uint8_t *packet, int size)
                 break;
             }
 
-            memcpy(net_buf_add(buf, size), packet, size);
             bt_send(buf);
             break;
         case HCI_ACL_DATA_PACKET:
@@ -99,7 +105,6 @@ static int transport_send_packet(uint8_t packet_type, uint8_t *packet, int size)
                 break;
             }
 
-            memcpy(net_buf_add(buf, size), packet, size);
             bt_send(buf);
             break;
         default:
@@ -207,13 +212,84 @@ const btstack_run_loop_t * btstack_run_loop_zephyr_get_instance(void){
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
-static bd_addr_t static_address;
+static bd_addr_t local_addr;
+
+void nrf_get_static_random_addr( bd_addr_t addr ) {
+    // nRF5 chipsets don't have an official public address
+    // Instead, a Static Random Address is assigned during manufacturing
+    // let's use it as well
+#if defined(CONFIG_SOC_SERIES_NRF51X) || defined(CONFIG_SOC_SERIES_NRF52X)
+    big_endian_store_16(addr, 0, NRF_FICR->DEVICEADDR[1] | 0xc000);
+    big_endian_store_32(addr, 2, NRF_FICR->DEVICEADDR[0]);
+#elif defined(CONFIG_SOC_SERIES_NRF53X)
+    // Using TrustZone this will only work in secure mode
+    big_endian_store_16(addr, 0, NRF_FICR_S->INFO.DEVICEID[1] | 0xc000 );
+    big_endian_store_32(addr, 2, NRF_FICR_S->INFO.DEVICEID[0]);
+#endif
+}
+
+static void local_version_information_handler(uint8_t * packet){
+    printf("Local version information:\n");
+    uint16_t hci_version    = packet[6];
+    uint16_t hci_revision   = little_endian_read_16(packet, 7);
+    uint16_t lmp_version    = packet[9];
+    uint16_t manufacturer   = little_endian_read_16(packet, 10);
+    uint16_t lmp_subversion = little_endian_read_16(packet, 12);
+    printf("- HCI Version    %#04x\n", hci_version);
+    printf("- HCI Revision   %#04x\n", hci_revision);
+    printf("- LMP Version    %#04x\n", lmp_version);
+    printf("- LMP Subversion %#04x\n", lmp_subversion);
+    printf("- Manufacturer   %#04x\n", manufacturer);
+    switch (manufacturer){
+        case BLUETOOTH_COMPANY_ID_NORDIC_SEMICONDUCTOR_ASA:
+        case BLUETOOTH_COMPANY_ID_THE_LINUX_FOUNDATION:
+            printf("Nordic Semiconductor nRF5 chipset.\n");
+            hci_set_chipset(btstack_chipset_zephyr_instance());
+            break;
+        case BLUETOOTH_COMPANY_ID_PACKETCRAFT_INC:
+            printf("PacketCraft HCI Controller\n");
+            nrf_get_static_random_addr( local_addr );
+            gap_random_address_set( local_addr );
+            break;
+        default:
+            printf("Unknown manufacturer.\n");
+            nrf_get_static_random_addr( local_addr );
+            gap_random_address_set( local_addr );
+            break;
+    }
+}
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     if (packet_type != HCI_EVENT_PACKET) return;
-    if (hci_event_packet_get_type(packet) != BTSTACK_EVENT_STATE) return;
-    if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) return;
-    printf("BTstack up and running as %s.\n", bd_addr_to_str(static_address));
+    switch (hci_event_packet_get_type(packet)){
+        case BTSTACK_EVENT_STATE:
+            switch(btstack_event_state_get_state(packet)){
+                case HCI_STATE_WORKING:
+                    printf("BTstack up and running on %s.\n", bd_addr_to_str(local_addr));
+                    break;
+                case HCI_STATE_OFF:
+                    log_info("Good bye, see you.\n");
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case HCI_EVENT_COMMAND_COMPLETE:
+            switch (hci_event_command_complete_get_command_opcode(packet)){
+                case HCI_OPCODE_HCI_READ_LOCAL_VERSION_INFORMATION:
+                    local_version_information_handler(packet);
+                    break;
+                case HCI_OPCODE_ZEPHYR_READ_STATIC_ADDRESS:
+                    reverse_48(&packet[7], local_addr);
+                    gap_random_address_set(local_addr);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        default:
+            break;
+    }
 }
 
 int btstack_main(void);
@@ -229,16 +305,16 @@ void bt_ctlr_assert_handle(char *file, uint32_t line)
 
 int main(void)
 {
-    // configure console UART by replacing CONFIG_UART_NRF5_BAUD_RATE with 115200 in uart_console.c
-
     printf("BTstack booting up..\n");
 
     // start with BTstack init - especially configure HCI Transport
     btstack_memory_init();
     btstack_run_loop_init(btstack_run_loop_zephyr_get_instance());
 
+#ifdef ENABLE_HCI_DUMP
     // enable full log output while porting
     hci_dump_init(hci_dump_embedded_stdout_get_instance());
+#endif
 
     const btstack_tlv_t * btstack_tlv_impl = btstack_tlv_none_init_instance();
     // setup global tlv
@@ -249,13 +325,6 @@ int main(void)
 
     // init HCI
     hci_init(transport_get_instance(), NULL);
-
-    // nRF5 chipsets don't have an official public address
-    // Instead, a Static Random Address is assigned during manufacturing
-    // let's use it as well
-    big_endian_store_16(static_address, 0, NRF_FICR->DEVICEADDR[1] | 0xc000);
-    big_endian_store_32(static_address, 2, NRF_FICR->DEVICEADDR[0]);
-    gap_random_address_set(static_address);
 
     // inform about BTstack state
     hci_event_callback_registration.callback = &packet_handler;
