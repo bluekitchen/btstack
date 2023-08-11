@@ -898,6 +898,9 @@ void hfp_cc256x_write_codec_config(hfp_connection_t * hfp_connection);
 void hfp_bcm_prepare_for_sco(hfp_connection_t * hfp_connection);
 void hfp_bcm_write_i2spcm_interface_param (hfp_connection_t * hfp_connection);
 #endif
+#ifdef ENABLE_RTK_PCM_WBS
+void hfp_rtk_prepare_for_sco(hfp_connection_t * hfp_connection);
+#endif
 
 /**
  * @brief Set packet types for SCO connections

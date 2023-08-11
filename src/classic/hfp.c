@@ -877,7 +877,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
                     hfp_bcm_prepare_for_sco(hfp_connection);
 #endif
 #ifdef ENABLE_RTK_PCM_WBS
-                    hfp_connection->rtk_send_sco_config = true;
+                    hfp_rtk_prepare_for_sco(hfp_connection);
 #endif
                     log_info("accept sco %u\n", hfp_connection->accept_sco);
                     break;
@@ -2011,6 +2011,12 @@ void hfp_bcm_write_i2spcm_interface_param(hfp_connection_t * hfp_connection){
     uint8_t sample_rate = (hfp_connection->negotiated_codec == HFP_CODEC_MSBC) ? 1 : 0;
     // i2s enable, master, 8/16 kHz, 512 kHz
     hci_send_cmd(&hci_bcm_write_i2spcm_interface_param, 1, 1, sample_rate, 2);
+}
+#endif
+
+#ifdef ENABLE_RTK_PCM_WBS
+void hfp_rtk_prepare_for_sco(hfp_connection_t * hfp_connection){
+    hfp_connection->rtk_send_sco_config = true;
 }
 #endif
 
