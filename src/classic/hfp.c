@@ -2000,7 +2000,6 @@ void hfp_prepare_for_sco(hfp_connection_t * hfp_connection){
     if (hfp_connection->negotiated_codec == HFP_CODEC_MSBC){
         hfp_connection->cc256x_send_wbs_associate = true;
     }
-}
 #endif
 
 #ifdef ENABLE_BCM_PCM_WBS
