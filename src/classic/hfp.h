@@ -897,6 +897,10 @@ const char * hfp_enhanced_call_mpty2str(uint16_t index);
  */
 void hfp_prepare_for_sco(hfp_connection_t * hfp_connection);
 
+#ifdef ENABLE_BCM_PCM_WBS
+void hfp_bcm_write_i2spcm_interface_param (hfp_connection_t * hfp_connection);
+#endif
+
 /**
  * @brief Set packet types for SCO connections
  * @param common single packet_types: HFP_SCO_PACKET_TYPES_*
