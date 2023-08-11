@@ -20,7 +20,7 @@ until you are able to build an example.
 Then update the `ZEPHYR_ROOT` variable in `env.sh` to point to your `zephyrproject`. Defaults to `~/zephyrproject`
 
 
-### 2. Prepare the build environmet
+### 2. Prepare the build environment
 
 To setup your environment to build a BTstack example, run the provided setup in `env.sh`.
 
@@ -30,7 +30,7 @@ source env.sh
 
 ## Building and Running on nRF52840
 
-### 3. Build Example
+### 1. Build Example
 
 You can build an example using:
 ```sh
@@ -50,7 +50,7 @@ To build a different example, e.g. the `gatt_streamer_server`, set the EXAMPLE e
 EXAMPLE=gatt_streamer_server west build -b nrf52840dk_nrf52840
 ```
 
-### 4. Flash Example
+### 2. Flash Example
 
 To flash a connected board:
 ```sh
@@ -59,11 +59,13 @@ west flash
 
 ## Buiding and Running on nRF5340
 
-The nrf5340 is a dual core SOC, where one core is used for Bluetooth HCI functionality and
+The nrf5340 is a dual core SoC, where one core is used for Bluetooth HCI functionality and
 the other for the high level application logic. So both cores need to be programmed separately.
-Using the nRF5340-DK for example allowes debug output on both cores to separate UART ports.
+Using the nRF5340-DK for example allows debug output on both cores to separate UART ports.
+For the nRF5340 a network core firmware is required, which one depends on the use-case.
+With 2a and 2b two options are given.
 
-### Building the application
+### 1. Building the application
 build using:
 ```sh
 west build -b nrf5340dk_nrf5340_cpuapp
@@ -73,14 +75,27 @@ with debug:
 west build -b nrf5340dk_nrf5340_cpuapp -- -DOVERLAY_CONFIG=debug_overlay.conf
 ```
 
-### Using zephyr network core image
-the `hci_rgmsg` application needs to be loaded first to the network core
+### 2a. Using zephyr network core image
+the `hci_rgmsg` application needs to be loaded first to the network core.
+Configure network core by selecting the appropriate config file, for example `nrf5340_cpunet_iso-bt_ll_sw_split.conf`.
+```sh
+cp nrf5340_cpunet_iso-bt_ll_sw_split.conf prj.conf
+```
+additionaly it's required to increase the main stack size from
+```sh
+CONFIG_MAIN_STACK_SIZE=512
+```
+to
+```sh
+CONFIG_MAIN_STACK_SIZE=4096
+```
+then the network core image can be compiled and flashed
 ```sh
 west build -b nrf5340dk_nrf5340_cpunet
 west flash
 ```
 
-### Using Packetcraft binary network core image
+### 2b. Using Packetcraft binary network core image
 for nrf5340 the latest netcore firmware is located at [sdk-nrf](https://github.com/nrfconnect/sdk-nrf/tree/main/lib/bin/bt_ll_acs_nrf53/bin)
 to program it:
 ```sh
