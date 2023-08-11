@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - HFP: use 'don't care' to accept SCO connections, fixes issue on ESP32
 - HFP: fix LC3-WB init
 - HFP AG: fix setup of audio connection in service level established event
+- HFP AG: fix BCM WBS setup
 - HID Device: set Report Mode as default
 
 ### Changed

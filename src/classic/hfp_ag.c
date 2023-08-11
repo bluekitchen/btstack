@@ -653,6 +653,9 @@ static int codecs_exchange_state_machine(hfp_connection_t * hfp_connection){
 #ifdef ENABLE_CC256X_ASSISTED_HFP
             hfp_cc256x_prepare_for_sco(hfp_connection);
 #endif
+#ifdef ENABLE_BCM_PCM_WBS
+            hfp_bcm_prepare_for_sco(hfp_connection);
+#endif
 #ifdef ENABLE_RTK_PCM_WBS
             hfp_connection->rtk_send_sco_config = true;
 #endif
