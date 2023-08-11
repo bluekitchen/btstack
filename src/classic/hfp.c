@@ -2008,7 +2008,6 @@ void hfp_prepare_for_sco(hfp_connection_t * hfp_connection){
     if (hfp_connection->negotiated_codec == HFP_CODEC_MSBC){
         hfp_connection->bcm_send_enable_wbs = true;
     }
-}
 #endif
 
 #ifdef ENABLE_RTK_PCM_WBS
