@@ -870,15 +870,8 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
                     } else {
                         hfp_connection->accept_sco = 1;
                     }
-#ifdef ENABLE_CC256X_ASSISTED_HFP
-                    hfp_cc256x_prepare_for_sco(hfp_connection);
-#endif
-#ifdef ENABLE_BCM_PCM_WBS
-                    hfp_bcm_prepare_for_sco(hfp_connection);
-#endif
-#ifdef ENABLE_RTK_PCM_WBS
-                    hfp_rtk_prepare_for_sco(hfp_connection);
-#endif
+                    // configure SBC coded if needed
+                    hfp_prepare_for_sco(hfp_connection);
                     log_info("accept sco %u\n", hfp_connection->accept_sco);
                     break;
                 default:
@@ -1966,13 +1959,6 @@ void hfp_accept_synchronous_connection(hfp_connection_t * hfp_connection, bool u
 }
 
 #ifdef ENABLE_CC256X_ASSISTED_HFP
-void hfp_cc256x_prepare_for_sco(hfp_connection_t * hfp_connection){
-    hfp_connection->cc256x_send_write_codec_config = true;
-    if (hfp_connection->negotiated_codec == HFP_CODEC_MSBC){
-        hfp_connection->cc256x_send_wbs_associate = true;
-    }
-}
-
 void hfp_cc256x_write_codec_config(hfp_connection_t * hfp_connection){
     uint32_t sample_rate_hz;
     uint16_t clock_rate_khz;
@@ -2001,12 +1987,6 @@ void hfp_cc256x_write_codec_config(hfp_connection_t * hfp_connection){
 #endif
 
 #ifdef ENABLE_BCM_PCM_WBS
-void hfp_bcm_prepare_for_sco(hfp_connection_t * hfp_connection){
-    hfp_connection->bcm_send_write_i2spcm_interface_param = true;
-    if (hfp_connection->negotiated_codec == HFP_CODEC_MSBC){
-        hfp_connection->bcm_send_enable_wbs = true;
-    }
-}
 void hfp_bcm_write_i2spcm_interface_param(hfp_connection_t * hfp_connection){
     uint8_t sample_rate = (hfp_connection->negotiated_codec == HFP_CODEC_MSBC) ? 1 : 0;
     // i2s enable, master, 8/16 kHz, 512 kHz
@@ -2014,11 +1994,27 @@ void hfp_bcm_write_i2spcm_interface_param(hfp_connection_t * hfp_connection){
 }
 #endif
 
-#ifdef ENABLE_RTK_PCM_WBS
-void hfp_rtk_prepare_for_sco(hfp_connection_t * hfp_connection){
-    hfp_connection->rtk_send_sco_config = true;
+void hfp_prepare_for_sco(hfp_connection_t * hfp_connection){
+#ifdef ENABLE_CC256X_ASSISTED_HFP
+    hfp_connection->cc256x_send_write_codec_config = true;
+    if (hfp_connection->negotiated_codec == HFP_CODEC_MSBC){
+        hfp_connection->cc256x_send_wbs_associate = true;
+    }
 }
 #endif
+
+#ifdef ENABLE_BCM_PCM_WBS
+    hfp_connection->bcm_send_write_i2spcm_interface_param = true;
+    if (hfp_connection->negotiated_codec == HFP_CODEC_MSBC){
+        hfp_connection->bcm_send_enable_wbs = true;
+    }
+}
+#endif
+
+#ifdef ENABLE_RTK_PCM_WBS
+    hfp_connection->rtk_send_sco_config = true;
+#endif
+}
 
 void hfp_set_hf_callback(btstack_packet_handler_t callback){
     hfp_hf_callback = callback;

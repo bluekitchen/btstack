@@ -650,15 +650,8 @@ static int codecs_exchange_state_machine(hfp_connection_t * hfp_connection){
             hfp_ag_send_ok(hfp_connection->rfcomm_cid);           
             // now, pick link settings
             hfp_init_link_settings(hfp_connection, hfp_ag_esco_s4_supported(hfp_connection));
-#ifdef ENABLE_CC256X_ASSISTED_HFP
-            hfp_cc256x_prepare_for_sco(hfp_connection);
-#endif
-#ifdef ENABLE_BCM_PCM_WBS
-            hfp_bcm_prepare_for_sco(hfp_connection);
-#endif
-#ifdef ENABLE_RTK_PCM_WBS
-            hfp_rtk_prepare_for_sco(hfp_connection);
-#endif
+            // configure SBC coded if needed
+            hfp_prepare_for_sco(hfp_connection);
             return 1;
         default:
             break;
