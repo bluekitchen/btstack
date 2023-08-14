@@ -780,14 +780,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                                 break;
                             }
                             
-                            // if (report_size > l2cap_max_mtu()){
-                            //     report[0] = (HID_MESSAGE_TYPE_HANDSHAKE << 4) | HID_HANDSHAKE_PARAM_TYPE_ERR_INVALID_PARAMETER;
-                            //     hid_device_send_control_message(device->cid, &report[0], 1);
-                            //     break;
-                            // }
-
                             hid_device_send_control_message(device->cid, &report[0], device->report_size);
-                            //     device->state = HID_DEVICE_IDLE;
                             break;
                         }
                         case HID_DEVICE_W2_SET_REPORT:
