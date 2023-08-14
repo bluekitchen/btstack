@@ -447,7 +447,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
     bool need_report_id;
     bool need_size;
     uint16_t response_size;
-    uint16_t host_buffer_size;
 
     switch (packet_type){
         case L2CAP_DATA_PACKET:
@@ -495,26 +494,23 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                         break;
                     }
 
+                    // calculate response size
+                    device->expected_report_size = hid_get_report_size_for_id(device->cid, device->report_id, device->report_type, hid_device_descriptor_len, hid_device_descriptor);
+                    response_size = device->expected_report_size + pos; // DATA [+ ReportID]
+
                     // if size bit is set in header, next two bytes indicate host buffer size
                     need_size = (packet[0] & 0x08) != 0;
                     if (need_size){
                         if (packet_size >= (pos + 2)) {
-                            host_buffer_size = little_endian_read_16(packet, pos);
+                            uint16_t host_buffer_size = little_endian_read_16(packet, pos);
+                            // host buffer size does not include the DATA header
+                            response_size = btstack_min(response_size, host_buffer_size + 1);
                         } else {
                             device->report_status = HID_HANDSHAKE_PARAM_TYPE_ERR_INVALID_PARAMETER;
                             l2cap_request_can_send_now_event(device->control_cid);
                             break;
                         }
                     }
-
-                    // calculate response size
-                    device->expected_report_size = hid_get_report_size_for_id(device->cid, device->report_id, device->report_type, hid_device_descriptor_len, hid_device_descriptor);
-                    response_size = device->expected_report_size + pos; // DATA + [ReportID]
-                    // host buffer size does not include the DATA header
-                    if (need_size){
-                        response_size = btstack_min(response_size, host_buffer_size + 1);
-                    }
-                    // we store total payload in report_size field
                     device->response_size = response_size;
 
                     l2cap_request_can_send_now_event(device->control_cid);
