@@ -347,6 +347,12 @@ static inline void hid_device_emit_event(hid_device_t * context, uint8_t subeven
     hid_device_callback(HCI_EVENT_PACKET, context->cid, &event[0], pos);
 }
 
+static void hid_device_trigger_user_request_if_pending(const hid_device_t *hid_device) {// request user can send now if pending
+    if (hid_device->user_request_can_send_now){
+        l2cap_request_can_send_now_event((hid_device->control_cid));
+    }
+}
+
 static int hid_report_size_valid(uint16_t cid, int report_id, hid_report_type_t report_type, int report_size){
     if (!report_size) return 0;
     if (hid_device_in_boot_protocol_mode(cid)){
@@ -914,10 +920,7 @@ void hid_device_send_control_message(uint16_t hid_cid, const uint8_t * message, 
     hid_device_t * hid_device = hid_device_get_instance_for_hid_cid(hid_cid);
     if (!hid_device || !hid_device->control_cid) return;
     l2cap_send(hid_device->control_cid, (uint8_t*) message, message_len);
-    // request user can send now if pending
-    if (hid_device->user_request_can_send_now){
-        l2cap_request_can_send_now_event((hid_device->control_cid));
-    }
+    hid_device_trigger_user_request_if_pending(hid_device);
 }
 
 /*
