@@ -2625,3 +2625,57 @@ const hci_cmd_t hci_rtk_configure_sco_routing = {
 const hci_cmd_t hci_rtk_read_card_info = {
     HCI_OPCODE_HCI_RTK_READ_CARD_INFO, "11111"
 };
+
+
+/**
+ * @param voice_path 0x00 - transport, 0x01 - I2S/PCM
+ */
+const hci_cmd_t hci_nxp_set_sco_data_path = {
+        HCI_OPCODE_HCI_NXP_SET_SCO_DATA_PATH, "1"
+};
+
+/**
+ * @param settings bits 7-5: reserved, bit 4: pcm clock on, bit 3: reserved, bit 2: pcm sync source, bit 1: master/slave, bit 0: pcm direction
+ */
+const hci_cmd_t hci_nxp_write_pcm_i2s_settings = {
+        HCI_OPCODE_HCI_NXP_WRITE_PCM_I2S_SETTINGS, "1"
+};
+
+/**
+ * @param sync_settings_1 bits 7-2: reserved, bit 1: ISR, bit 0: ISR
+ * @param sync_settings_2 bits 15-11: reserved, bit 10: 16k synchronization, bit 9: clock setting, bit 8: main clock, bits 7-5: reserved, bit 4: i2s sent in right channel, bit 3: clock alignment DIN, bit 2: clock alignment DOUT, bits 1-0: mode
+ */
+const hci_cmd_t hci_nxp_write_pcm_i2s_sync_settings = {
+        HCI_OPCODE_HCI_NXP_WRITE_PCM_I2S_SYNC_SETTINGS, "12"
+};
+
+/**
+ * @param settings bits 15-14: reserved, bit 13-10: each bit == one PCM time slot,, bits 9-2: slot relative to PCM synchronization, bits 1-0: PCM slots to be used
+ */
+const hci_cmd_t hci_nxp_write_pcm_link_settings = {
+        HCI_OPCODE_HCI_NXP_WRITE_PCM_LINK_SETTINGS, "2"
+};
+
+/**
+ * @param next_connection_wbs 0: CVSD, 1: mSBC
+ */
+const hci_cmd_t hci_nxp_set_wbs_connection = {
+        HCI_OPCODE_HCI_NXP_SET_WBS_CONNECTION, "1"
+};
+
+/**
+ * @param action
+ * @param operation mode
+ * @param sco_handle_1
+ * @param sco_handle_2
+ */
+const hci_cmd_t hci_nxp_host_pcm_i2s_audio_config = {
+        HCI_OPCODE_HCI_NXP_HOST_PCM_I2S_AUDIO_CONFIG, "11HH"
+};
+
+/**
+ * @param action
+ */
+const hci_cmd_t hci_nxp_host_pcm_i2s_control_enable = {
+        HCI_OPCODE_HCI_NXP_HOST_PCM_I2S_CONTROL_ENABLE, "1"
+};

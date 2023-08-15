@@ -333,6 +333,7 @@ typedef enum {
     HCI_OPCODE_HCI_LE_SET_TRANSMIT_POWER_REPORTING_ENABLE = HCI_OPCODE (OGF_LE_CONTROLLER, 0x7a),
     HCI_OPCODE_HCI_LE_TRANSMITTER_TEST_V4 = HCI_OPCODE (OGF_LE_CONTROLLER, 0x7B),
 
+    // Broadcom/Cypress/Infineon/Synaptics
     HCI_OPCODE_HCI_BCM_WRITE_SCO_PCM_INT = HCI_OPCODE (0x3f, 0x1c),
     HCI_OPCODE_HCI_BCM_SET_SLEEP_MODE = HCI_OPCODE (0x3f, 0x27),
     HCI_OPCODE_HCI_BCM_WRITE_I2SPCM_INTERFACE_PARAM = HCI_OPCODE (0x3f, 0x6d),
@@ -340,10 +341,23 @@ typedef enum {
     HCI_OPCODE_HCI_BCM_WRITE_TX_POWER_TABLE = HCI_OPCODE (0x3f, 0x1C9),
     HCI_OPCODE_HCI_BCM_SET_TX_PWR = HCI_OPCODE (0x3f, 0x1A5),
 
+    // Texas Instruments
     HCI_OPCODE_HCI_TI_VS_CONFIGURE_DDIP = 0xFD55,
 
+    // Realtek
     HCI_OPCODE_HCI_RTK_CONFIGURE_SCO_ROUTING = HCI_OPCODE (0x3f, 0x93),
     HCI_OPCODE_HCI_RTK_READ_CARD_INFO = 0xFC61,
+
+    // Marvell/NXP
+    HCI_OPCODE_HCI_NXP_WRITE_PCM_I2S_SETTINGS      = 0xFC07,
+    HCI_OPCODE_HCI_NXP_SET_SCO_DATA_PATH	       = 0xFC1D,
+    HCI_OPCODE_HCI_NXP_SET_BDADDR		           = 0xFC22,
+    HCI_OPCODE_HCI_NXP_WRITE_PCM_I2S_SYNC_SETTINGS = 0xFC28,
+    HCI_OPCODE_HCI_NXP_WRITE_PCM_LINK_SETTINGS     = 0xFC29,
+    HCI_OPCODE_HCI_NXP_SET_WBS_CONNECTION          = 0xFC73,
+    HCI_OPCODE_HCI_NXP_HOST_PCM_I2S_AUDIO_CONFIG   = 0xFC6F,
+    HCI_OPCODE_HCI_NXP_HOST_PCM_I2S_CONTROL_ENABLE = 0xFC70,
+
 } hci_opcode_t;
 
 // HCI Commands - see hci_cmd.c for info on parameters
@@ -600,9 +614,18 @@ extern const hci_cmd_t hci_ti_write_codec_config;
 extern const hci_cmd_t hci_ti_write_hardware_register;
 
 
-// Relatek specific HCI commands
+// Realtek specific HCI commands
 extern const hci_cmd_t hci_rtk_configure_sco_routing;
 extern const hci_cmd_t hci_rtk_read_card_info;
+
+// Marvell/NXP specific HCI commands
+extern const hci_cmd_t hci_nxp_set_sco_data_path;
+extern const hci_cmd_t hci_nxp_write_pcm_i2s_settings;
+extern const hci_cmd_t hci_nxp_write_pcm_i2s_sync_settings;
+extern const hci_cmd_t hci_nxp_write_pcm_link_settings;
+extern const hci_cmd_t hci_nxp_set_wbs_connection;
+extern const hci_cmd_t hci_nxp_host_pcm_i2s_audio_config;
+extern const hci_cmd_t hci_nxp_host_pcm_i2s_control_enable;
 
 /**
  * construct HCI Command based on template
