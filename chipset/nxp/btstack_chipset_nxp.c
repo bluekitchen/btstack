@@ -453,6 +453,10 @@ void btstack_chipset_nxp_download_firmware_with_uart(const btstack_uart_t *uart_
 // init script support
 static enum {
     NXP_INIT_SEND_SCO_CONFIG,
+    NXP_INIT_SEND_HOST_CONTROL_ENABLE,
+    NXP_INIT_SEND_WRITE_PCM_SETTINGS,
+    NXP_INIT_SEND_WRITE_PCM_SYNC_SETTINGS,
+    NXP_INIT_SEND_WRITE_PCM_LINK_SETTINGS,
     NXP_INIT_DONE,
 } nxp_init_state;
 
@@ -475,8 +479,35 @@ static btstack_chipset_result_t nxp_next_command(uint8_t * hci_cmd_buffer) {
     switch (nxp_init_state){
         case NXP_INIT_SEND_SCO_CONFIG:
 #if defined(ENABLE_SCO_OVER_HCI) || defined(ENABLE_SCO_OVER_PCM)
-            nxp_init_state = NXP_INIT_DONE;
+            nxp_init_state = NXP_INIT_SEND_HOST_CONTROL_ENABLE;
             hci_cmd_create_from_template_with_vargs(hci_cmd_buffer, &hci_nxp_set_sco_data_path, nxp_chipset_sco_routing_path);
+            return BTSTACK_CHIPSET_VALID_COMMAND;
+#endif
+#ifdef ENABLE_SCO_OVER_PCM
+        case NXP_INIT_SEND_HOST_CONTROL_ENABLE:
+            nxp_init_state = NXP_INIT_SEND_WRITE_PCM_SETTINGS;
+            // Host Control enabled
+            hci_cmd_create_from_template_with_vargs(hci_cmd_buffer, &hci_nxp_host_pcm_i2s_control_enable, 1);
+            return BTSTACK_CHIPSET_VALID_COMMAND;
+        case NXP_INIT_SEND_WRITE_PCM_SETTINGS:
+            nxp_init_state = NXP_INIT_SEND_WRITE_PCM_SYNC_SETTINGS;
+            // PCM/I2S master mode
+            hci_cmd_create_from_template_with_vargs(hci_cmd_buffer, &hci_nxp_write_pcm_i2s_settings, 0x02);
+            return BTSTACK_CHIPSET_VALID_COMMAND;
+        case NXP_INIT_SEND_WRITE_PCM_SYNC_SETTINGS:
+            nxp_init_state = NXP_INIT_SEND_WRITE_PCM_LINK_SETTINGS;
+#ifdef ENABLE_NXP_PCM_WBS
+            // 16 kHz sync, 2048 kHz, data in left channel, DIN sampled on rising edge, DOUT driven on falling edge, I2Sa
+            hci_cmd_create_from_template_with_vargs(hci_cmd_buffer, &hci_nxp_write_pcm_i2s_sync_settings, 0x03, 0x071e);
+#else
+            //  8 kHz sync, 2048 kHz, data in left channel, DIN sampled on rising edge, DOUT driven on falling edge, I2S
+            hci_cmd_create_from_template_with_vargs(hci_cmd_buffer, &hci_nxp_write_pcm_i2s_sync_settings, 0x03, 0x031e);
+#endif
+            return BTSTACK_CHIPSET_VALID_COMMAND;
+        case NXP_INIT_SEND_WRITE_PCM_LINK_SETTINGS:
+            nxp_init_state = NXP_INIT_DONE;
+            // 1st SCO Link PCM Logical Slot 0, PCM start slot 1
+            hci_cmd_create_from_template_with_vargs(hci_cmd_buffer, &hci_nxp_write_pcm_link_settings, 0x0004);
             return BTSTACK_CHIPSET_VALID_COMMAND;
 #endif
         default:
