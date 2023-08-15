@@ -983,6 +983,7 @@ static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
     uint8_t  status;
     bool decline_connection;
     bool outoing_active;
+    bool connection_already_established;
     hci_con_handle_t con_handle;
 
     avrcp_connection_t * connection_controller;
@@ -1002,11 +1003,16 @@ static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
                     con_handle = l2cap_event_incoming_connection_get_handle(packet);
 
                     outoing_active = false;
+                    connection_already_established = false;
+
                     connection_target = avrcp_get_connection_for_bd_addr_for_role(AVRCP_TARGET, event_addr);
                     if (connection_target != NULL){
                         if (connection_target->state == AVCTP_CONNECTION_W4_L2CAP_CONNECTED){
                             outoing_active = true;
                             connection_target->incoming_declined = true;
+                        }
+                        if (connection_target->state >= AVCTP_CONNECTION_OPENED){
+                            connection_already_established = true;
                         }
                     }
                     
@@ -1016,9 +1022,12 @@ static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
                             outoing_active = true;
                             connection_controller->incoming_declined = true;
                         }
+                        if (connection_controller->state >= AVCTP_CONNECTION_OPENED){
+                            connection_already_established = true;
+                        }
                     }
 
-                    decline_connection = outoing_active;
+                    decline_connection = outoing_active || connection_already_established;
                     if (decline_connection == false){
                         uint16_t avrcp_cid;
                         if ((connection_controller == NULL) || (connection_target == NULL)){
@@ -1040,9 +1049,10 @@ static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
                         }
                     }
                     if (decline_connection){
+                        log_info("Decline connection 0x%04x: outgoing active %u, connection already established: %u", local_cid, outoing_active, connection_already_established);
                         l2cap_decline_connection(local_cid);
                     } else {
-                        log_info("AVRCP: L2CAP_EVENT_INCOMING_CONNECTION local cid 0x%02x, state %d", local_cid, connection_controller->state);
+                        log_info("AVRCP: L2CAP_EVENT_INCOMING_CONNECTION local cid 0x%04x, state %d", local_cid, connection_controller->state);
                         l2cap_accept_connection(local_cid);
                     }
                     break;
