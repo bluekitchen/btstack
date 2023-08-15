@@ -606,6 +606,9 @@ extern const hci_cmd_t hci_rtk_read_card_info;
 
 /**
  * construct HCI Command based on template
+ * @param hci_cmd_buffer for command
+ * @param cmd describing command opcode and format
+ * @param argptr for command arguments
  *
  * Format:
  *   1,2,3,4: one to four byte value
@@ -617,10 +620,21 @@ extern const hci_cmd_t hci_rtk_read_card_info;
  *   P: 16 byte Pairing code
  *   A: 31 bytes advertising data
  *   S: Service Record (Data Element Sequence)
+ * @returns size of command
  */
 
 uint16_t hci_cmd_create_from_template(uint8_t *hci_cmd_buffer, const hci_cmd_t *cmd, va_list argptr);
-    
+
+/**
+ * construct HCI Command based on template
+ * Same as hci_cmd_create_from_template but with variable arguments
+ *
+ * @param hci_cmd_buffer for command
+ * @param cmd describing command opcode and format
+ * @returns size of command
+ */
+uint16_t hci_cmd_create_from_template_with_vargs(uint8_t * hci_cmd_buffer, const hci_cmd_t * cmd, ...);
+
 #if defined __cplusplus
 }
 #endif

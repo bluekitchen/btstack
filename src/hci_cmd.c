@@ -288,6 +288,15 @@ uint16_t hci_cmd_create_from_template(uint8_t *hci_cmd_buffer, const hci_cmd_t *
     return pos;
 }
 
+
+uint16_t hci_cmd_create_from_template_with_vargs(uint8_t * hci_cmd_buffer, const hci_cmd_t * cmd, ...){
+    va_list argptr;
+    va_start(argptr, cmd);
+    uint16_t size = hci_cmd_create_from_template(hci_cmd_buffer, cmd, argptr);
+    va_end(argptr);
+    return size;
+}
+
 /**
  *  Link Control Commands 
  */
