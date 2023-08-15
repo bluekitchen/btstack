@@ -659,6 +659,11 @@ static hfp_connection_t * hfp_create_connection(bd_addr_t bd_addr, hfp_role_t lo
     hfp_connection->local_role = local_role;
     log_info("Create HFP context %p: role %u, addr %s", hfp_connection, local_role, bd_addr_to_str(bd_addr));
 
+#ifdef ENABLE_NXP_PCM_WBS
+    hfp_connection->nxp_start_audio_handle = HCI_CON_HANDLE_INVALID;
+    hfp_connection->nxp_stop_audio_handle = HCI_CON_HANDLE_INVALID;
+#endif
+
     return hfp_connection;
 }
 
@@ -981,7 +986,11 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
 
             hfp_emit_sco_connection_established(hfp_connection, status,
                                                 hfp_connection->negotiated_codec, rx_packet_length, tx_packet_length);
-            break;                
+
+#ifdef ENABLE_NXP_PCM_WBS
+            hfp_connection->nxp_start_audio_handle = hfp_connection->sco_handle;
+#endif
+            break;
         }
 
         case HCI_EVENT_DISCONNECTION_COMPLETE:
@@ -996,6 +1005,10 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
 #ifdef ENABLE_BCM_PCM_WBS
             hfp_connection->bcm_send_disable_wbs = true;
 #endif
+#ifdef ENABLE_NXP_PCM_WBS
+            hfp_connection->nxp_stop_audio_handle = hfp_connection->sco_handle;
+#endif
+
             if (hfp_connection->sco_handle == handle){
                 hfp_connection->sco_handle = HCI_CON_HANDLE_INVALID;
                 hfp_connection->release_audio_connection = 0;

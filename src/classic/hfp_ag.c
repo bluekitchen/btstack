@@ -2285,6 +2285,20 @@ static void hfp_ag_run_for_context(hfp_connection_t *hfp_connection){
             return;
         }
 #endif
+#ifdef ENABLE_NXP_PCM_WBS
+        if (hfp_connection->nxp_start_audio_handle != HCI_CON_HANDLE_INVALID){
+            hci_con_handle_t sco_handle = hfp_connection->nxp_start_audio_handle;
+            hfp_connection->nxp_start_audio_handle = HCI_CON_HANDLE_INVALID;
+            hci_send_cmd(&hci_nxp_host_pcm_i2s_audio_config, 0, 0, sco_handle, 0);
+            return;
+        }
+        if (hfp_connection->nxp_stop_audio_handle != HCI_CON_HANDLE_INVALID){
+            hci_con_handle_t sco_handle = hfp_connection->nxp_stop_audio_handle;
+            hfp_connection->nxp_stop_audio_handle = HCI_CON_HANDLE_INVALID;
+            hci_send_cmd(&hci_nxp_host_pcm_i2s_audio_config, 1, 0, sco_handle, 0);
+            return;
+        }
+#endif
     }
 
 #if defined (ENABLE_CC256X_ASSISTED_HFP) || defined (ENABLE_BCM_PCM_WBS)

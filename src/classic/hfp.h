@@ -744,6 +744,10 @@ typedef struct hfp_connection {
 #ifdef ENABLE_RTK_PCM_WBS
     bool rtk_send_sco_config;
 #endif
+#ifdef ENABLE_NXP_PCM_WBS
+    hci_con_handle_t nxp_start_audio_handle;
+    hci_con_handle_t nxp_stop_audio_handle;
+#endif
 } hfp_connection_t;
 
 /**

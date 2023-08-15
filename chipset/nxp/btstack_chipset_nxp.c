@@ -479,7 +479,11 @@ static btstack_chipset_result_t nxp_next_command(uint8_t * hci_cmd_buffer) {
     switch (nxp_init_state){
         case NXP_INIT_SEND_SCO_CONFIG:
 #if defined(ENABLE_SCO_OVER_HCI) || defined(ENABLE_SCO_OVER_PCM)
+#ifdef ENABLE_NXP_PCM_WBS
             nxp_init_state = NXP_INIT_SEND_HOST_CONTROL_ENABLE;
+#else
+            nxp_init_state = NXP_INIT_SEND_WRITE_PCM_SETTINGS;
+#endif
             hci_cmd_create_from_template_with_vargs(hci_cmd_buffer, &hci_nxp_set_sco_data_path, nxp_chipset_sco_routing_path);
             return BTSTACK_CHIPSET_VALID_COMMAND;
 #endif
