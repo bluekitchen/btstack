@@ -40,6 +40,7 @@
 #include "btstack_chipset_nxp.h"
 #include "btstack_debug.h"
 #include "btstack_event.h"
+#include "hci_cmd.h"
 
 #include <stdio.h>
 
@@ -71,10 +72,6 @@
 #define NXP_FIRMWARE_IW612	"uartspi_n61x_v1.bin.se"
 
 #define NXP_MAX_RESEND_COUNT 5
-
-// vendor commands
-#define NXP_OPCODE_SET_SCO_DATA_PATH	0xFC1D
-#define NXP_OPCODE_SET_BDADDR		    0xFC22
 
 // prototypes
 static void nxp_done_with_status(uint8_t status);
@@ -459,6 +456,16 @@ static enum {
     NXP_INIT_DONE,
 } nxp_init_state;
 
+#ifdef ENABLE_SCO_OVER_HCI
+// Voice Path: Host
+static const uint8_t nxp_chipset_sco_routing_path = 0;
+#endif
+
+#ifdef ENABLE_SCO_OVER_PCM
+// Voice Path: PCM/I2S
+static const uint8_t nxp_chipset_sco_routing_path = 1;
+#endif
+
 static void nxp_init(const void *transport_config){
     UNUSED(transport_config);
     nxp_init_state = NXP_INIT_SEND_SCO_CONFIG;
@@ -468,20 +475,11 @@ static btstack_chipset_result_t nxp_next_command(uint8_t * hci_cmd_buffer) {
     switch (nxp_init_state){
         case NXP_INIT_SEND_SCO_CONFIG:
 #if defined(ENABLE_SCO_OVER_HCI) || defined(ENABLE_SCO_OVER_PCM)
-            little_endian_store_16(hci_cmd_buffer, 0, NXP_OPCODE_SET_SCO_DATA_PATH);
-            hci_cmd_buffer[2] = 1;
-#ifdef ENABLE_SCO_OVER_HCI
-            // Voice Path: Host
-            hci_cmd_buffer[3] = 0;
-#else
-            // Voice Path: PCM/I2S
-            hci_cmd_buffer[3] = 1;
-#endif
-            nxp_init_state = NXP_INIT_DONE;
+            nxp_init_state = NXP_INIT_SEND_WRITE_PCM_SYNC_SETTINGS;
+            hci_cmd_create_from_template_with_vargs(hci_cmd_buffer, &hci_nxp_set_sco_data_path, nxp_chipset_sco_routing_path);
             return BTSTACK_CHIPSET_VALID_COMMAND;
 #endif
-            break;
-        case NXP_INIT_DONE:
+        default:
             break;
     }
     return BTSTACK_CHIPSET_DONE;
