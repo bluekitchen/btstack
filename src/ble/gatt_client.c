@@ -691,16 +691,11 @@ static void gatt_client_notify_can_send_query(gatt_client_t * gatt_client){
 
 // test if notification/indication should be delivered to application (BLESA)
 static bool gatt_client_accept_server_message(gatt_client_t *gatt_client) {
-#ifdef ENABLE_LE_PROACTIVE_AUTHENTICATION
     // ignore messages until re-encryption is complete
     if (gap_reconnect_security_setup_active(gatt_client->con_handle)) return false;
 
 	// after that ignore if bonded but not encrypted
 	return !gap_bonded(gatt_client->con_handle) || (gap_encryption_key_size(gatt_client->con_handle) > 0);
-#else
-    UNUSED(gatt_client);
-    return true;
-#endif
 }
 
 static void emit_event_new(btstack_packet_handler_t callback, uint8_t * packet, uint16_t size){
