@@ -184,8 +184,7 @@ static uint16_t ui_aggregate_handle;
 static uint16_t handle = 0;
 
 static bd_addr_t public_pts_address;
-// static const char * public_pts_address_string = "C0:07:E8:4B:78:FB";
-static const char * public_pts_address_string = "00:1B:DC:08:E2:72";
+static const char * public_pts_address_string = "C007E8CEB0A6";
 
 static int       public_pts_address_type = 0;
 static bd_addr_t current_pts_address;
