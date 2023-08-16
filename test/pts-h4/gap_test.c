@@ -59,8 +59,9 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 static btstack_packet_callback_registration_t sm_event_callback_registration;
 static void show_usage(void);
 
-static const char * pts_address_string = "C0:07:E8:23:C5:47";
+static const char * pts_address_string = "C007E87E555F";
 static const char * tspx_periodic_advertising_data = "0201040503001801180D095054532D4741502D3036423803190000";
+static const char * tspx_broadcast_code = "8ED03323D1205E2D58191BF6285C3182";
 
 static bool gap_discoverable;
 static bool gap_limited_discoverable;
@@ -326,15 +327,25 @@ static void setup_periodic_advertising(void) {
 static void start_periodic_adv_sync_without_extended_adv(void){
     gap_set_scan_params(1, 0x30, 0x30, 0);
     gap_start_scan();
+
     uint8_t remote_sid = 0;
-    gap_periodic_advertising_create_sync(0x02, remote_sid, BD_ADDR_TYPE_LE_PUBLIC, pts_address, 0, 1000, 0);
+
+    // sync to PA
+    gap_periodic_advertiser_list_clear();
+    gap_periodic_advertiser_list_add(BD_ADDR_TYPE_LE_PUBLIC, pts_address, remote_sid);
+    gap_periodic_advertising_create_sync(0x01, remote_sid, BD_ADDR_TYPE_LE_PUBLIC, pts_address, 0, 1000, 0);
 }
 
 static void start_periodic_adv_sync_using_extended_adv(void){
     gap_set_scan_params(1, 0x30, 0x30, 0);
     gap_start_scan();
+
     uint8_t remote_sid = 0;
-    gap_periodic_advertising_create_sync(0x00, remote_sid, BD_ADDR_TYPE_LE_PUBLIC, pts_address, 0, 1000, 0);
+
+    // sync to PA
+    gap_periodic_advertiser_list_clear();
+    gap_periodic_advertiser_list_add(BD_ADDR_TYPE_LE_PUBLIC, pts_address, remote_sid);
+    gap_periodic_advertising_create_sync(0x01, remote_sid, BD_ADDR_TYPE_LE_PUBLIC, pts_address, 0, 1000, 0);
 }
 
 static uint8_t num_bis = 1;
@@ -344,7 +355,7 @@ static btstack_lc3_frame_duration_t frame_duration = BTSTACK_LC3_FRAME_DURATION_
 
 // encryption
 static uint8_t encryption = 0;
-static uint8_t broadcast_code [] = {0x01, 0x02, 0x68, 0x05, 0x53, 0xF1, 0x41, 0x5A, 0xA2, 0x65, 0xBB, 0xAF, 0xC6, 0xEA, 0x03, 0xB8, };
+static uint8_t broadcast_code[16];
 
 static void setup_big(void){
     // Create BIG
@@ -376,11 +387,15 @@ static void setup_big(void){
 static void handle_big_info(const uint8_t * packet, uint16_t size){
     printf("BIG Info advertising report\n");
     sync_handle = hci_subevent_le_biginfo_advertising_report_get_sync_handle(packet);
-    encryption = hci_subevent_le_biginfo_advertising_report_get_encryption(packet);
-    if (encryption) {
-        printf("Stream is encrypted\n");
+    uint8_t big_info_encrypted = hci_subevent_le_biginfo_advertising_report_get_encryption(packet);
+    if (encryption == big_info_encrypted){
+        have_big_info = true;
+        if (encryption) {
+            printf("Stream is encrypted\n");
+        }
+    } else {
+        printf("Encryption differs (expected %u, actual %u) -> reject BIGInfo\n", encryption, big_info_encrypted);
     }
-    have_big_info = true;
 }
 
 static void enter_create_big_sync(void){
@@ -551,7 +566,6 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
                     if (have_base) break;
                     have_base = true;
                     printf("Periodic advertising report received\n");
-                    // handle_periodic_advertisement(packet, size);
                     if (have_base & have_big_info){
                         enter_create_big_sync();
                     }
@@ -559,6 +573,7 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
                 case HCI_SUBEVENT_LE_BIGINFO_ADVERTISING_REPORT:
                     if (have_big_info) break;
                     handle_big_info(packet, size);
+                    printf("BIGInfo received\n");
                     if (have_base & have_big_info){
                         enter_create_big_sync();
                     }
@@ -650,6 +665,36 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
     }
 }
 
+static void iso_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+
+    uint16_t header = little_endian_read_16(packet, 0);
+    // hci_con_handle_t con_handle = header & 0x0fff;
+    // uint8_t pb_flag = (header >> 12) & 3;
+    uint8_t ts_flag = (header >> 14) & 1;
+    // uint16_t iso_load_len = little_endian_read_16(packet, 2);
+
+    uint16_t offset = 4;
+    // uint32_t time_stamp = 0;
+    if (ts_flag){
+        // time_stamp = little_endian_read_32(packet, offset);
+        offset += 4;
+    }
+
+    uint16_t packet_sequence_number = little_endian_read_16(packet, offset);
+    offset += 2;
+
+    uint16_t header_2 = little_endian_read_16(packet, offset);
+    uint16_t iso_sdu_length = header_2 & 0x3fff;
+    // uint8_t packet_status_flag = (uint8_t) (header_2 >> 14);
+    offset += 2;
+
+    if (iso_sdu_length == 0) return;
+
+    // print current packet
+    printf("%04x ", packet_sequence_number);
+    printf_hexdump(&packet[offset], size - offset);
+}
+
 static void show_usage(void){
     bd_addr_t iut_address;
     gap_local_bd_addr(iut_address);
@@ -660,6 +705,8 @@ static void show_usage(void){
     printf("TSPX_bd_addr_pts: ");
     for (uint8_t i=0;i<6;i++) printf("%02x", pts_address[i]);
     printf("\n");
+    printf("TSPX_broadcast_code: ");
+    printf_hexdump(broadcast_code, 16);
     printf("---\n");
     printf("a   - start connectable advertising\n");
     printf("c   - connect to %s\n", bd_addr_to_str(pts_address));
@@ -673,6 +720,7 @@ static void show_usage(void){
     printf("4   - send periodic advertisement set info transfer information\n");
     printf("R   - use resolvable private address\n");
     printf("b   - setup BIG\n");
+    printf("B   - enable Broadcast Code for BIG\n");
     printf("---\n");
 }
 
@@ -709,8 +757,12 @@ static void stdin_process(char cmd){
             setup_periodic_advertising();
             break;
         case 'b':
-            printf("Setup BIG\n");
+            printf("Setup BIG using encryption %u\n", encryption);
             setup_big();
+            break;
+        case 'B':
+            printf("Enable encryption for BIG\n");
+            encryption = 1;
             break;
         case '2':
             printf("Start periodic advertising sync without extended advertising\n");
@@ -784,6 +836,9 @@ int btstack_main(int argc, const char * argv[]){
     hci_event_callback_registration.callback = &hci_event_handler;
     hci_add_event_handler(&hci_event_callback_registration);
 
+    // register for ISO Packet
+    hci_register_iso_packet_handler(&iso_packet_handler);
+
     //
     gap_discoverable = true;
     gap_extended_advertising_setup(&le_advertising_set_regular, &extended_params_regular, &adv_handle_regular);
@@ -797,6 +852,9 @@ int btstack_main(int argc, const char * argv[]){
     // parse padv data
     period_adv_data_len = strlen(tspx_periodic_advertising_data)/2;
     btstack_parse_hex(tspx_periodic_advertising_data, period_adv_data_len, period_adv_data);
+
+    // parse broadcast code
+    btstack_parse_hex(tspx_broadcast_code, sizeof(broadcast_code), broadcast_code);
 
     // turn on!
     hci_power_control(HCI_POWER_ON);

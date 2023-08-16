@@ -159,6 +159,12 @@ GAP/SEC/SEM/BI-05-C
 - GAP/SEC/SEM/BV-23-C: M, J, K, C, a, G0009, 00, b
 - GAP/SEC/SEM/BV-24-C: C, a, 000f
 - GAP/SEC/SEM/BV-25-C: J, K, M, C, a, G0009, 00, b, (PTS waits for Write request, ignore Read request), t, confirm
+- GAP/SEC/SEM/BV-56-C: C, a, G000D, 02 00
+- GAP/SEC/SEM/BV-57-C: 5, M, J, C, a, G000D, 02 00
+- GAP/SEC/SEM/BV-58-C: 5, M, J, C, a, G000D, 02 00
+- GAP/SEC/SEM/BV-59-C: C, a, G000D, 01 00
+- GAP/SEC/SEM/BV-60-C: 5, M, J, C, a, G000D, 01 00
+- GAP/SEC/SEM/BV-61-C: 5, M, J, C, a, G000D, 01 00
 - GAP/SEC/SEM/BV-26-C: F, 5, M, J, p, g0009, b
 - GAP/SEC/SEM/BV-41-C: F, 5, m, J, p, g0009, b
 - GAP/SEC/SEM/BV-42-C: F, 5, M, J, p, g0009, b
@@ -168,6 +174,14 @@ GAP/SEC/SEM/BI-05-C
 - GAP/SEC/SEM/BV-28-C: K, p, G0009, b
 - GAP/SEC/SEM/BV-29-C: K, p, 000f
 - GAP/SEC/SEM/BV-30-C: p, G0009, 00, b, N
+- GAP/SEC/SEM/BV-62-C: F, p, b, G000D, 02 00, ok, p       - note: we mayreceive connection encrypted after the indication
+- GAP/SEC/SEM/BV-63-C: F, J, M, p, b, G000D, 02 00, ok, p - note: we may receive connection encrypted after the indication
+- GAP/SEC/SEM/BV-64-C: F, J, M, p, b, G000D, 02 00, ok, p - note: we may receive connection encrypted after the indication
+- GAP/SEC/SEM/BV-65-C: F, p, b, G000D, 01 00, ok, p - note: we may receive connection encrypted after the indication
+- GAP/SEC/SEM/BV-66-C: F, J, M, p, b, G000D, 01 00, ok, p - note: we may receive connection encrypted after the indication
+
+
+
 - GAP/SEC/SEM/BV-31-C: not supported yet - LE Security Mode 3
 - GAP/SEC/SEM/BV-32-C: not supported yet - LE Security Mode 3
 - GAP/SEC/SEM/BV-34-C: not supported yet - LE Security Mode 3

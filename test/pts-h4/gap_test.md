@@ -29,3 +29,9 @@ Set TSPX_bd_addr_iut for GAP Profile in IXIT
 
 - GAP/BIS/BSE/BV-01-C: 3, 
 - GAP/BIS/BBM/BV-01-C: 1, b
+
+- GAP/SEC/SEM/BV-32-C: 2,
+- GAP/SEC/SEM/BV-33-C: B, 2 
+- GAP/SEC/SEM/BV-34-C: 1, b
+- GAP/SEC/SEM/BV-35-C: 1, B, b
+- GAP/SEC/SEM/BI-13-C: B, 2 -- expect 'reject BIGInfo' on stdout
