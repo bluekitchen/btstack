@@ -178,26 +178,26 @@ void btstack_run_loop_base_add_data_source(btstack_data_source_t * data_source);
 /**
  * @brief Remove data source from run loop
  * @param data_source to remove
- * @return true if data srouce was removed
+ * @return true if data source was removed
  */
 bool btstack_run_loop_base_remove_data_source(btstack_data_source_t * data_source);
 
 /**
  * @brief Enable callbacks for a data source
- * @param data_source to remove
+ * @param data_source to enable
  * @param callback_types to enable
  */
 void btstack_run_loop_base_enable_data_source_callbacks(btstack_data_source_t * data_source, uint16_t callback_types);
 
 /**
- * @brief Enable callbacks for a data source
- * @param data_source to remove
+ * @brief Disable callbacks for a data source
+ * @param data_source to disable
  * @param callback_types to disable
  */
 void btstack_run_loop_base_disable_data_source_callbacks(btstack_data_source_t * data_source, uint16_t callback_types);
 
 /**
- * @brief Poll data sources. It calls the procss function for all data sources where DATA_SOURCE_CALLBACK_POLL is set
+ * @brief Poll data sources. It calls the process function for all data sources where DATA_SOURCE_CALLBACK_POLL is set
  */
 void btstack_run_loop_base_poll_data_sources(void);
 
@@ -272,7 +272,7 @@ void btstack_run_loop_set_data_source_handler(btstack_data_source_t * data_sourc
  * @brief Set data source file descriptor. 
  * @param data_source
  * @param fd file descriptor
- * @note No effect if port doensn't have file descriptors
+ * @note No effect if port doesn't have file descriptors
  */
 void btstack_run_loop_set_data_source_fd(btstack_data_source_t * data_source, int fd);
 
@@ -286,7 +286,7 @@ int btstack_run_loop_get_data_source_fd(btstack_data_source_t * data_source);
  * @brief Set data source file descriptor. 
  * @param data_source
  * @param handle
- * @note No effect if port doensn't have file descriptors
+ * @note No effect if port doesn't have file descriptors
  */
 void btstack_run_loop_set_data_source_handle(btstack_data_source_t * data_source, void * handle);
 
@@ -339,10 +339,10 @@ void btstack_run_loop_execute(void);
 /**
  * @brief Registers callback with run loop and mark main thread as ready
  * @note If callback is already registered, the call will be ignored.
- *       This function allows to implement, e.g., a quque-based message passing mechanism:
+ *       This function allows to implement, e.g., a queue-based message passing mechanism:
  *       The external thread puts an item into a queue and call this function to trigger
  *       processing by the BTstack main thread. If this happens multiple times, it is
- *       guranteed that the callback will run at least once after the last item was added.
+ *       guaranteed that the callback will run at least once after the last item was added.
  * @param callback_registration
  */
 void btstack_run_loop_execute_on_main_thread(btstack_context_callback_registration_t * callback_registration);
