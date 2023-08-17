@@ -16,7 +16,7 @@ BTstack supports the Central and the Peripheral Role of Bluetooth 5 Low Energy s
 
 BTstack is free for non-commercial use. However, for commercial use, <a href="mailto:contact@bluekitchen-gmbh.com">tell us</a> a bit about your project to get a quote.
 
-**Documentation:** [HTML](https://bluekitchen-gmbh.com/btstack/master/), [PDF](https://bluekitchen-gmbh.com/btstack.pdf)
+**Documentation:** [HTML](https://bluekitchen-gmbh.com/btstack/), [PDF](https://bluekitchen-gmbh.com/btstack.pdf)
 
 **Third-party libraries (FOSS):** [List of used libraries and their licenses](https://github.com/bluekitchen/btstack/blob/master/3rd-party/README.md)
 
