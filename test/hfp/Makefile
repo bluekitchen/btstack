@@ -2,7 +2,10 @@
 
 BTSTACK_ROOT = ../..
 POSIX_ROOT= ${BTSTACK_ROOT}/platform/posix
-CPPUTEST_HOME = ${BTSTACK_ROOT}/test/cpputest
+
+# CppuTest from pkg-config
+CFLAGS  += ${shell pkg-config --cflags CppuTest}
+LDFLAGS += ${shell pkg-config --libs   CppuTest}
 
 include ${BTSTACK_ROOT}/example/Makefile.inc
 
@@ -39,7 +42,7 @@ MOCK = \
     hci_dump.c     				\
     sdp_util.c	                \
 
-CFLAGS  = -DUNIT_TEST -g -Wall -Wnarrowing -Wconversion-null
+CFLAGS  += -DUNIT_TEST -g -Wall -Wnarrowing -Wconversion-null
 CFLAGS  += -I. -I../
 CFLAGS  += -I${BTSTACK_ROOT}/src
 CFLAGS  += -I${BTSTACK_ROOT}/src/classic

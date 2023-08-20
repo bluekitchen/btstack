@@ -1,9 +1,12 @@
 # Requirements: cpputest.github.io
 
 BTSTACK_ROOT =  ../..
-CPPUTEST_HOME = ${BTSTACK_ROOT}/test/cpputest
+# CppuTest from pkg-config
+CFLAGS  += ${shell pkg-config --cflags CppuTest}
+LDFLAGS += ${shell pkg-config --libs   CppuTest}
 
-CFLAGS  = -g -Wall -I. -I../ -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/include
+CFLAGS += -DUNIT_TEST -g -Wall -Wnarrowing -Wconversion-null -Ibuild-coverage -I./
+
 LDFLAGS += -lCppUTest -lCppUTestExt
 
 CFLAGS_COVERAGE = ${CFLAGS} -fprofile-arcs -ftest-coverage

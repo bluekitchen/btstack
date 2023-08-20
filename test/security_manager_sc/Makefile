@@ -1,6 +1,10 @@
 # Makefile for libusb based PTS tests
 BTSTACK_ROOT = ../..
 
+# CppuTest from pkg-config
+CFLAGS  += ${shell pkg-config --cflags CppuTest}
+LDFLAGS += ${shell pkg-config --libs   CppuTest}
+
 CORE += \
 	btstack_memory.c            \
 	btstack_linked_list.c	    \

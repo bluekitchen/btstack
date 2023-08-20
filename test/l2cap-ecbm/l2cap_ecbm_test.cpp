@@ -322,7 +322,7 @@ TEST(L2CAP_CHANNELS, incoming_classic_no_service){
 
 TEST(L2CAP_CHANNELS, incoming_1){
     hci_setup_test_connections_fuzz();
-    l2cap_ecbm_register_service(&l2cap_channel_packet_handler, TEST_PSM, TEST_PACKET_SIZE, LEVEL_0);
+    l2cap_ecbm_register_service(&l2cap_channel_packet_handler, TEST_PSM, TEST_PACKET_SIZE, LEVEL_0, false);
     l2cap_channel_accept_incoming = false;
     mock_hci_transport_receive_packet(HCI_ACL_DATA_PACKET, l2cap_enhanced_data_channel_le_conn_request_1, sizeof(l2cap_enhanced_data_channel_le_conn_request_1));
     CHECK_EQUAL(0, num_l2cap_channel_opened);
@@ -330,7 +330,7 @@ TEST(L2CAP_CHANNELS, incoming_1){
 
 TEST(L2CAP_CHANNELS, incoming_2){
     hci_setup_test_connections_fuzz();
-    l2cap_ecbm_register_service(&l2cap_channel_packet_handler, TEST_PSM, TEST_PACKET_SIZE, LEVEL_0);
+    l2cap_ecbm_register_service(&l2cap_channel_packet_handler, TEST_PSM, TEST_PACKET_SIZE, LEVEL_0, false);
     l2cap_channel_accept_incoming = true;
     mock_hci_transport_receive_packet(HCI_ACL_DATA_PACKET, l2cap_enhanced_data_channel_le_conn_request_1, sizeof(l2cap_enhanced_data_channel_le_conn_request_1));
     CHECK_EQUAL(2, num_l2cap_channel_opened);

@@ -2,7 +2,11 @@
 
 BTSTACK_ROOT =  ../..
 
-CFLAGS  = -DUNIT_TEST -g -Wall -Wnarrowing -Wconversion-null
+# CppuTest from pkg-config
+CFLAGS  += ${shell pkg-config --cflags CppuTest}
+LDFLAGS += ${shell pkg-config --libs   CppuTest}
+
+CFLAGS += -DUNIT_TEST -g -Wall -Wnarrowing -Wconversion-null
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/rijndael
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/micro-ecc
 CFLAGS += -I${BTSTACK_ROOT}/platform/embedded

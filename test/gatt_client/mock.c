@@ -56,6 +56,10 @@ uint8_t gap_encryption_key_size(hci_con_handle_t con_handle){
 	UNUSED(con_handle);
 	return 0;
 }
+bool gap_bonded(hci_con_handle_t con_handle){
+	UNUSED(con_handle);
+	return true;
+}
 void sm_request_pairing(hci_con_handle_t con_handle){
 	UNUSED(con_handle);
 }

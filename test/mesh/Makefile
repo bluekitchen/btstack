@@ -1,6 +1,10 @@
  # Makefile for libusb based examples
 BTSTACK_ROOT = ../..
 
+# CppuTest from pkg-config
+CFLAGS  += ${shell pkg-config --cflags CppuTest}
+LDFLAGS += ${shell pkg-config --libs   CppuTest}
+
 ATT  += \
 	att_dispatch.c       	    \
 	att_db.c 				 	\
