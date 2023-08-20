@@ -215,7 +215,7 @@ static void hci_emit_dedicated_bonding_result(bd_addr_t address, uint8_t status)
 static void hci_emit_event(uint8_t * event, uint16_t size, int dump);
 static void hci_emit_acl_packet(uint8_t * packet, uint16_t size);
 static void hci_run(void);
-static int  hci_is_le_connection(hci_connection_t * connection);
+static bool hci_is_le_connection(hci_connection_t * connection);
 
 #ifdef ENABLE_CLASSIC
 static int hci_have_usb_transport(void);
@@ -616,7 +616,7 @@ static bool hci_is_le_connection_type(bd_addr_type_t address_type){
     }
 }
 
-static int hci_is_le_connection(hci_connection_t * connection){
+static bool hci_is_le_connection(hci_connection_t * connection){
     return hci_is_le_connection_type(connection->address_type);
 }
 
