@@ -3949,14 +3949,18 @@ static void event_handler(uint8_t *packet, uint16_t size){
                     conn->authentication_flags &= ~AUTH_FLAG_CONNECTION_ENCRYPTED;
                 }
             } else {
-                uint8_t status = hci_event_encryption_change_get_status(packet);
-                if ((conn->bonding_flags & BONDING_DEDICATED) != 0){
-                    conn->bonding_flags &= ~BONDING_DEDICATED;
-                    conn->bonding_flags |= BONDING_DISCONNECT_DEDICATED_DONE;
-                    conn->bonding_status = status;
+#ifdef ENABLE_CLASSIC
+                if (!hci_is_le_connection(conn)){
+                    uint8_t status = hci_event_encryption_change_get_status(packet);
+                    if ((conn->bonding_flags & BONDING_DEDICATED) != 0){
+                        conn->bonding_flags &= ~BONDING_DEDICATED;
+                        conn->bonding_flags |= BONDING_DISCONNECT_DEDICATED_DONE;
+                        conn->bonding_status = status;
+                    }
+                    // trigger security update -> level 0
+                    hci_handle_mutual_authentication_completed(conn);
                 }
-                // trigger security update -> level 0
-                hci_handle_mutual_authentication_completed(conn);
+#endif
             }
 
             break;
