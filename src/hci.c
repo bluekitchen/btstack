@@ -3900,15 +3900,9 @@ static void event_handler(uint8_t *packet, uint16_t size){
 
                             // Our release code (aggressively) disconnects the HCI connection, without a chance to respond to PTS
                             // To pass the tests, we only downgrade the link key type instead of the more secure disconnect
-                            link_key_type_t new_link_key_type;
-                            switch (conn->link_key_type){
-                                case AUTHENTICATED_COMBINATION_KEY_GENERATED_FROM_P256:
-                                    new_link_key_type = AUTHENTICATED_COMBINATION_KEY_GENERATED_FROM_P192;
-                                    break;
-                                case UNAUTHENTICATED_COMBINATION_KEY_GENERATED_FROM_P256:
-                                    new_link_key_type = UNAUTHENTICATED_COMBINATION_KEY_GENERATED_FROM_P192;
-                                default:
-                                    break;
+                            link_key_type_t new_link_key_type = UNAUTHENTICATED_COMBINATION_KEY_GENERATED_FROM_P192;
+                            if (conn->link_key_type == AUTHENTICATED_COMBINATION_KEY_GENERATED_FROM_P256){
+                                new_link_key_type = AUTHENTICATED_COMBINATION_KEY_GENERATED_FROM_P192;
                             }
                             log_info("SC during pairing, but only E0 now -> downgrade link key type from %u to %u",
                                      conn->link_key_type, new_link_key_type);
