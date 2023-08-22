@@ -1502,8 +1502,9 @@ typedef uint8_t sm_key_t[16];
 #define GATT_EVENT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT        0xA9u
 
 /**
- * @format H2LV
+ * @format H22LV
  * @param handle
+ * @param descriptor_handle
  * @param descriptor_offset
  * @param descriptor_length
  * @param descriptor
