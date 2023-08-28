@@ -71,7 +71,7 @@
 #error "Please define either ENABLE_TLV_FLASH_EXPLICIT_DELETE_FIELD or ENABLE_TLV_FLASH_WRITE_ONCE"
 #endif
 
-#define BTSTACK_TLV_HEADER_LEN 8
+#define BTSTACK_TLV_BANK_HEADER_LEN 8
 
 #ifndef BTSTACK_FLASH_ALIGNMENT_MAX
 #define BTSTACK_FLASH_ALIGNMENT_MAX 8
@@ -166,7 +166,7 @@ static void btstack_tlv_flash_bank_iterator_fetch_tag_len(btstack_tlv_flash_bank
 static void btstack_tlv_flash_bank_iterator_init(btstack_tlv_flash_bank_t * self, tlv_iterator_t * it, int bank){
 	memset(it, 0, sizeof(tlv_iterator_t));
 	it->bank = bank;
-	it->offset = BTSTACK_TLV_HEADER_LEN;
+	it->offset = BTSTACK_TLV_BANK_HEADER_LEN;
     it->size = self->hal_flash_bank_impl->get_size(self->hal_flash_bank_context);
 	btstack_tlv_flash_bank_iterator_fetch_tag_len(self, it);
 }
@@ -197,27 +197,27 @@ static void tlv_iterator_fetch_next(btstack_tlv_flash_bank_t * self, tlv_iterato
 // check both banks for headers and pick the one with the higher epoch % 4
 // @returns bank or -1 if something is invalid
 static int btstack_tlv_flash_bank_get_latest_bank(btstack_tlv_flash_bank_t * self){
- 	uint8_t header0[BTSTACK_TLV_HEADER_LEN];
- 	uint8_t header1[BTSTACK_TLV_HEADER_LEN];
- 	btstack_tlv_flash_bank_read(self, 0, 0, &header0[0], BTSTACK_TLV_HEADER_LEN);
- 	btstack_tlv_flash_bank_read(self, 1, 0, &header1[0], BTSTACK_TLV_HEADER_LEN);
- 	int valid0 = memcmp(header0, btstack_tlv_header_magic, BTSTACK_TLV_HEADER_LEN-1) == 0;
- 	int valid1 = memcmp(header1, btstack_tlv_header_magic, BTSTACK_TLV_HEADER_LEN-1) == 0;
+ 	uint8_t header0[BTSTACK_TLV_BANK_HEADER_LEN];
+ 	uint8_t header1[BTSTACK_TLV_BANK_HEADER_LEN];
+ 	btstack_tlv_flash_bank_read(self, 0, 0, &header0[0], BTSTACK_TLV_BANK_HEADER_LEN);
+ 	btstack_tlv_flash_bank_read(self, 1, 0, &header1[0], BTSTACK_TLV_BANK_HEADER_LEN);
+ 	int valid0 = memcmp(header0, btstack_tlv_header_magic, BTSTACK_TLV_BANK_HEADER_LEN-1) == 0;
+ 	int valid1 = memcmp(header1, btstack_tlv_header_magic, BTSTACK_TLV_BANK_HEADER_LEN-1) == 0;
 	if (!valid0 && !valid1) return -1;
 	if ( valid0 && !valid1) return 0;
 	if (!valid0 &&  valid1) return 1;
-	int epoch0 = header0[BTSTACK_TLV_HEADER_LEN-1] & 0x03;
-	int epoch1 = header1[BTSTACK_TLV_HEADER_LEN-1] & 0x03;
+	int epoch0 = header0[BTSTACK_TLV_BANK_HEADER_LEN-1] & 0x03;
+	int epoch1 = header1[BTSTACK_TLV_BANK_HEADER_LEN-1] & 0x03;
 	if (epoch0 == ((epoch1 + 1) & 0x03)) return 0;
 	if (epoch1 == ((epoch0 + 1) & 0x03)) return 1;
 	return -1;	// invalid, must not happen
 }
 
 static void btstack_tlv_flash_bank_write_header(btstack_tlv_flash_bank_t * self, int bank, int epoch){
-	uint8_t header[BTSTACK_TLV_HEADER_LEN];
-	memcpy(&header[0], btstack_tlv_header_magic, BTSTACK_TLV_HEADER_LEN-1);
-	header[BTSTACK_TLV_HEADER_LEN-1] = epoch;
-	btstack_tlv_flash_bank_write(self, bank, 0, header, BTSTACK_TLV_HEADER_LEN);
+	uint8_t header[BTSTACK_TLV_BANK_HEADER_LEN];
+	memcpy(&header[0], btstack_tlv_header_magic, BTSTACK_TLV_BANK_HEADER_LEN-1);
+	header[BTSTACK_TLV_BANK_HEADER_LEN-1] = epoch;
+	btstack_tlv_flash_bank_write(self, bank, 0, header, BTSTACK_TLV_BANK_HEADER_LEN);
 }
 
 /**
@@ -259,7 +259,7 @@ static void btstack_tlv_flash_bank_migrate(btstack_tlv_flash_bank_t * self){
 	log_info("migrate bank %u -> bank %u", self->current_bank, next_bank);
 	// erase bank (if needed)
 	btstack_tlv_flash_bank_erase_bank(self, next_bank);
-	int next_write_pos = 8;
+	int next_write_pos = BTSTACK_TLV_BANK_HEADER_LEN;
 
 	tlv_iterator_t it;
 	btstack_tlv_flash_bank_iterator_init(self, &it, self->current_bank);
@@ -323,7 +323,7 @@ static void btstack_tlv_flash_bank_migrate(btstack_tlv_flash_bank_t * self){
 
 	// prepare new one
 	uint8_t epoch_buffer;
-	btstack_tlv_flash_bank_read(self, self->current_bank, BTSTACK_TLV_HEADER_LEN-1, &epoch_buffer, 1);
+	btstack_tlv_flash_bank_read(self, self->current_bank, BTSTACK_TLV_BANK_HEADER_LEN-1, &epoch_buffer, 1);
 	btstack_tlv_flash_bank_write_header(self, next_bank, (epoch_buffer + 1) & 3);
 	self->current_bank = next_bank;
 	self->write_offset = next_write_pos;
@@ -535,7 +535,7 @@ const btstack_tlv_t * btstack_tlv_flash_bank_init_instance(btstack_tlv_flash_ban
 		btstack_tlv_flash_bank_erase_bank(self, 0);
 		self->current_bank = 0;
 		btstack_tlv_flash_bank_write_header(self, self->current_bank, 0);	// epoch = 0;
-		self->write_offset = 8;
+		self->write_offset = BTSTACK_TLV_BANK_HEADER_LEN;
 	}
 
 	log_info("write offset %" PRIx32, self->write_offset);
