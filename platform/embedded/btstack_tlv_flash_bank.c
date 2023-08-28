@@ -99,8 +99,8 @@ static uint32_t btstack_tlv_flash_bank_align_size(btstack_tlv_flash_bank_t * sel
 static void btstack_tlv_flash_bank_read(btstack_tlv_flash_bank_t * self, int bank, uint32_t offset, uint8_t * buffer, uint32_t size){
 
 	// read main data
-	uint32_t aligment = self->hal_flash_bank_impl->get_alignment(self->hal_flash_bank_context);
-	uint32_t lower_bits = size & (aligment - 1);
+	uint32_t alignment = self->hal_flash_bank_impl->get_alignment(self->hal_flash_bank_context);
+	uint32_t lower_bits = size & (alignment - 1);
 	uint32_t size_aligned = size - lower_bits;
 	if (size_aligned){
 		self->hal_flash_bank_impl->read(self->hal_flash_bank_context, bank, offset, buffer, size_aligned);
@@ -111,17 +111,17 @@ static void btstack_tlv_flash_bank_read(btstack_tlv_flash_bank_t * self, int ban
 
 	// read last part
 	if (size == 0) return;
-	uint8_t aligment_block[BTSTACK_FLASH_ALIGNMENT_MAX];
-	self->hal_flash_bank_impl->read(self->hal_flash_bank_context, bank, offset, aligment_block, aligment);
-	uint32_t bytes_to_copy = btstack_min(aligment - lower_bits, size);
-	memcpy(buffer, aligment_block, bytes_to_copy);
+	uint8_t alignment_block[BTSTACK_FLASH_ALIGNMENT_MAX];
+	self->hal_flash_bank_impl->read(self->hal_flash_bank_context, bank, offset, alignment_block, alignment);
+	uint32_t bytes_to_copy = btstack_min(alignment - lower_bits, size);
+	memcpy(buffer, alignment_block, bytes_to_copy);
 }
 
 static void btstack_tlv_flash_bank_write(btstack_tlv_flash_bank_t * self, int bank, uint32_t offset, const uint8_t * buffer, uint32_t size){
 
 	// write main data
-	uint32_t aligment = self->hal_flash_bank_impl->get_alignment(self->hal_flash_bank_context);
-	uint32_t lower_bits = size & (aligment - 1);
+	uint32_t alignment = self->hal_flash_bank_impl->get_alignment(self->hal_flash_bank_context);
+	uint32_t lower_bits = size & (alignment - 1);
 	uint32_t size_aligned = size - lower_bits;
 	if (size_aligned){
 		self->hal_flash_bank_impl->write(self->hal_flash_bank_context, bank, offset, buffer, size_aligned);
@@ -132,10 +132,10 @@ static void btstack_tlv_flash_bank_write(btstack_tlv_flash_bank_t * self, int ba
 
 	// write last part
 	if (size == 0) return;
-	uint8_t aligment_block[BTSTACK_FLASH_ALIGNMENT_MAX];
-	memset(aligment_block, 0xff, aligment);
-	memcpy(aligment_block, buffer, lower_bits);
-	self->hal_flash_bank_impl->write(self->hal_flash_bank_context, bank, offset, aligment_block, aligment);
+	uint8_t alignment_block[BTSTACK_FLASH_ALIGNMENT_MAX];
+	memset(alignment_block, 0xff, alignment);
+	memcpy(alignment_block, buffer, lower_bits);
+	self->hal_flash_bank_impl->write(self->hal_flash_bank_context, bank, offset, alignment_block, alignment);
 }
 
 
@@ -481,8 +481,8 @@ const btstack_tlv_t * btstack_tlv_flash_bank_init_instance(btstack_tlv_flash_ban
 		return NULL;
 	}
 	// set delete tag len
-	uint32_t aligment = self->hal_flash_bank_impl->get_alignment(self->hal_flash_bank_context);
-	self->delete_tag_len = (uint8_t) btstack_max(4, aligment);
+	uint32_t alignment = self->hal_flash_bank_impl->get_alignment(self->hal_flash_bank_context);
+	self->delete_tag_len = (uint8_t) btstack_max(4, alignment);
 	log_info("delete tag len %u", self->delete_tag_len);
 #endif
 
