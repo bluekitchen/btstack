@@ -71,7 +71,8 @@
 #error "Please define either ENABLE_TLV_FLASH_EXPLICIT_DELETE_FIELD or ENABLE_TLV_FLASH_WRITE_ONCE"
 #endif
 
-#define BTSTACK_TLV_BANK_HEADER_LEN 8
+#define BTSTACK_TLV_BANK_HEADER_LEN  8
+#define BTSTACK_TLV_ENTRY_HEADER_LEN 8
 
 #ifndef BTSTACK_FLASH_ALIGNMENT_MAX
 #define BTSTACK_FLASH_ALIGNMENT_MAX 8
@@ -143,20 +144,20 @@ static void btstack_tlv_flash_bank_write(btstack_tlv_flash_bank_t * self, int ba
 
 static void btstack_tlv_flash_bank_iterator_fetch_tag_len(btstack_tlv_flash_bank_t * self, tlv_iterator_t * it){
     // abort if header doesn't fit into remaining space
-    if (it->offset + 8 + self->delete_tag_len >= self->hal_flash_bank_impl->get_size(self->hal_flash_bank_context)){
+    if (it->offset + BTSTACK_TLV_ENTRY_HEADER_LEN + self->delete_tag_len >= self->hal_flash_bank_impl->get_size(self->hal_flash_bank_context)){
         it->tag = 0xffffffff;
         return;
     }
 
-	uint8_t entry[8];
-	btstack_tlv_flash_bank_read(self, it->bank, it->offset, entry, 8);
+	uint8_t entry[BTSTACK_TLV_ENTRY_HEADER_LEN];
+	btstack_tlv_flash_bank_read(self, it->bank, it->offset, entry, BTSTACK_TLV_ENTRY_HEADER_LEN);
 	it->tag = big_endian_read_32(entry, 0);
 	it->len = big_endian_read_32(entry, 4);
 
 #ifdef ENABLE_TLV_FLASH_EXPLICIT_DELETE_FIELD
 	// clear tag, if delete field is set
 	uint32_t delete_tag;
-	btstack_tlv_flash_bank_read(self, it->bank, it->offset + 8, (uint8_t *) &delete_tag, 4);
+	btstack_tlv_flash_bank_read(self, it->bank, it->offset + BTSTACK_TLV_ENTRY_HEADER_LEN, (uint8_t *) &delete_tag, 4);
 	if (delete_tag == 0){
 		it->tag = 0;
 	}
@@ -177,7 +178,7 @@ static bool btstack_tlv_flash_bank_iterator_has_next(btstack_tlv_flash_bank_t * 
 }
 
 static void tlv_iterator_fetch_next(btstack_tlv_flash_bank_t * self, tlv_iterator_t * it){
-	it->offset += 8 + btstack_tlv_flash_bank_align_size(self, it->len);
+	it->offset += BTSTACK_TLV_ENTRY_HEADER_LEN + btstack_tlv_flash_bank_align_size(self, it->len);
 
 #ifdef ENABLE_TLV_FLASH_EXPLICIT_DELETE_FIELD
 	// skip delete field
@@ -294,11 +295,11 @@ static void btstack_tlv_flash_bank_migrate(btstack_tlv_flash_bank_t * self){
                          (unsigned int) tag_index, (unsigned int) it.tag, (unsigned int) tag_len, next_write_pos);
 
                 // copy header
-                uint8_t header_buffer[8];
-                btstack_tlv_flash_bank_read(self, self->current_bank, tag_index, header_buffer, 8);
-                btstack_tlv_flash_bank_write(self, next_bank, next_write_pos, header_buffer, 8);
-                tag_index += 8;
-                next_write_pos += 8;
+                uint8_t header_buffer[BTSTACK_TLV_ENTRY_HEADER_LEN];
+                btstack_tlv_flash_bank_read(self, self->current_bank, tag_index, header_buffer, BTSTACK_TLV_ENTRY_HEADER_LEN);
+                btstack_tlv_flash_bank_write(self, next_bank, next_write_pos, header_buffer, BTSTACK_TLV_ENTRY_HEADER_LEN);
+                tag_index      += BTSTACK_TLV_ENTRY_HEADER_LEN;
+                next_write_pos += BTSTACK_TLV_ENTRY_HEADER_LEN;
 
 #ifdef ENABLE_TLV_FLASH_EXPLICIT_DELETE_FIELD
                 // skip delete field
@@ -340,8 +341,8 @@ static void btstack_tlv_flash_bank_delete_tag_until_offset(btstack_tlv_flash_ban
 			// mark entry as invalid
 			uint32_t zero_value = 0;
 #ifdef ENABLE_TLV_FLASH_EXPLICIT_DELETE_FIELD
-			// write delete field at offset 8
-			btstack_tlv_flash_bank_write(self, self->current_bank, it.offset+8, (uint8_t*) &zero_value, sizeof(zero_value));
+			// write delete field after entry header
+			btstack_tlv_flash_bank_write(self, self->current_bank, it.offset+BTSTACK_TLV_ENTRY_HEADER_LEN, (uint8_t*) &zero_value, sizeof(zero_value));
 #else
 			// overwrite tag with zero value
 			btstack_tlv_flash_bank_write(self, self->current_bank, it.offset, (uint8_t*) &zero_value, sizeof(zero_value));
@@ -382,7 +383,7 @@ static int btstack_tlv_flash_bank_get_tag(void * context, uint32_t tag, uint8_t 
 	if (tag_index == 0) return 0;
 	if (!buffer) return tag_len;
 	int copy_size = btstack_min(buffer_size, tag_len);
-	uint32_t value_offset = tag_index + 8;
+	uint32_t value_offset = tag_index + BTSTACK_TLV_ENTRY_HEADER_LEN;
 #ifdef ENABLE_TLV_FLASH_EXPLICIT_DELETE_FIELD
 	// skip delete field
 	value_offset += self->delete_tag_len;
@@ -402,7 +403,7 @@ static int btstack_tlv_flash_bank_store_tag(void * context, uint32_t tag, const 
 	btstack_tlv_flash_bank_t * self = (btstack_tlv_flash_bank_t *) context;
 
 	// trigger migration if not enough space
-	uint32_t required_space = 8 + self->delete_tag_len + data_size;
+	uint32_t required_space = BTSTACK_TLV_ENTRY_HEADER_LEN + self->delete_tag_len + data_size;
 	if (self->write_offset + required_space > self->hal_flash_bank_impl->get_size(self->hal_flash_bank_context)){
 		btstack_tlv_flash_bank_migrate(self);
 	}
@@ -413,13 +414,13 @@ static int btstack_tlv_flash_bank_store_tag(void * context, uint32_t tag, const 
 	}
 
 	// prepare entry
-	uint8_t entry[8];
+	uint8_t entry[BTSTACK_TLV_ENTRY_HEADER_LEN];
 	big_endian_store_32(entry, 0, tag);
 	big_endian_store_32(entry, 4, data_size);
 
 	log_info("write '%" PRIx32 "', len %" PRIu32 " at %" PRIx32, tag, data_size, self->write_offset);
 
-	uint32_t value_offset = self->write_offset + 8;
+	uint32_t value_offset = self->write_offset + BTSTACK_TLV_ENTRY_HEADER_LEN;
 #ifdef ENABLE_TLV_FLASH_EXPLICIT_DELETE_FIELD
 	// skip delete field
 	value_offset += self->delete_tag_len;
