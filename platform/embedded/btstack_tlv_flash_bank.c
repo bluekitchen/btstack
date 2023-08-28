@@ -487,6 +487,9 @@ const btstack_tlv_t * btstack_tlv_flash_bank_init_instance(btstack_tlv_flash_ban
 	log_info("delete tag len %u", self->delete_tag_len);
 #endif
 
+    // set aligned entry header len
+    self->entry_header_len = btstack_tlv_flash_bank_align_size(self, BTSTACK_TLV_ENTRY_HEADER_LEN);
+
 	// try to find current bank
 	self->current_bank = btstack_tlv_flash_bank_get_latest_bank(self);
 	log_info("found bank %d", self->current_bank);

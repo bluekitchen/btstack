@@ -52,7 +52,8 @@ typedef struct {
 	void *   hal_flash_bank_context;
     uint32_t write_offset;
 	int8_t   current_bank;
-    uint8_t  delete_tag_len;
+    uint16_t  delete_tag_len;
+    uint16_t  entry_header_len;
 } btstack_tlv_flash_bank_t;
 
 /**
