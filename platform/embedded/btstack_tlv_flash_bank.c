@@ -354,7 +354,7 @@ static void btstack_tlv_flash_bank_delete_tag_until_offset(btstack_tlv_flash_ban
 			uint32_t zero_value = 0;
 #ifdef ENABLE_TLV_FLASH_EXPLICIT_DELETE_FIELD
 			// write delete field after entry header
-			btstack_tlv_flash_bank_write(self, self->current_bank, it.offset+BTSTACK_TLV_ENTRY_HEADER_LEN, (uint8_t*) &zero_value, sizeof(zero_value));
+			btstack_tlv_flash_bank_write(self, self->current_bank, it.offset+self->entry_header_len, (uint8_t*) &zero_value, sizeof(zero_value));
 #else
             uint32_t alignment = self->hal_flash_bank_impl->get_alignment(self->hal_flash_bank_context);
             if (alignment <= 4){
@@ -408,7 +408,7 @@ static int btstack_tlv_flash_bank_get_tag(void * context, uint32_t tag, uint8_t 
 	if (tag_index == 0) return 0;
 	if (!buffer) return tag_len;
 	int copy_size = btstack_min(buffer_size, tag_len);
-	uint32_t value_offset = tag_index + BTSTACK_TLV_ENTRY_HEADER_LEN;
+	uint32_t value_offset = tag_index + self->entry_header_len;
 #ifdef ENABLE_TLV_FLASH_EXPLICIT_DELETE_FIELD
 	// skip delete field
 	value_offset += self->delete_tag_len;
@@ -428,7 +428,7 @@ static int btstack_tlv_flash_bank_store_tag(void * context, uint32_t tag, const 
 	btstack_tlv_flash_bank_t * self = (btstack_tlv_flash_bank_t *) context;
 
 	// trigger migration if not enough space
-	uint32_t required_space = BTSTACK_TLV_ENTRY_HEADER_LEN + self->delete_tag_len + data_size;
+	uint32_t required_space = self->entry_header_len + self->delete_tag_len + data_size;
 	if (self->write_offset + required_space > self->hal_flash_bank_impl->get_size(self->hal_flash_bank_context)){
 		btstack_tlv_flash_bank_migrate(self);
 	}
@@ -445,7 +445,7 @@ static int btstack_tlv_flash_bank_store_tag(void * context, uint32_t tag, const 
 
 	log_info("write '%" PRIx32 "', len %" PRIu32 " at %" PRIx32, tag, data_size, self->write_offset);
 
-	uint32_t value_offset = self->write_offset + BTSTACK_TLV_ENTRY_HEADER_LEN;
+	uint32_t value_offset = self->write_offset + self->entry_header_len;
 #ifdef ENABLE_TLV_FLASH_EXPLICIT_DELETE_FIELD
 	// skip delete field
 	value_offset += self->delete_tag_len;
