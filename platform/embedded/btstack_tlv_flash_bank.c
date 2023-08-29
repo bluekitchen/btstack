@@ -97,14 +97,14 @@ static uint32_t btstack_tlv_flash_bank_align_size(btstack_tlv_flash_bank_t * sel
 	return (size + alignment - 1) & ~(alignment - 1);
 }
 
-static uint32_t btstack_tlv_flash_bank_aligned_entry_size(btstack_tlv_flash_bank_t * self, uint32_t size){
-    // entry_header_len is already padded
-    uint32_t aligned_size = self->entry_header_len + btstack_tlv_flash_bank_align_size(self, size);
+static uint32_t btstack_tlv_flash_bank_aligned_entry_size(btstack_tlv_flash_bank_t * self, uint32_t size) {
 #ifdef ENABLE_TLV_FLASH_EXPLICIT_DELETE_FIELD
-    // delete_tag_len is already padded
-    aligned_size += self->delete_tag_len;
+    // entry header and delete fields are already padded
+    return self->entry_header_len + self->delete_tag_len + btstack_tlv_flash_bank_align_size(self, size);
+#else
+    // otherwise, data starts right after entry header
+    return btstack_tlv_flash_bank_align_size(self, self->entry_header_len + size);
 #endif
-    return aligned_size;
 }
 
 // support unaligned flash read/writes
@@ -307,28 +307,38 @@ static void btstack_tlv_flash_bank_migrate(btstack_tlv_flash_bank_t * self){
                 log_info("migrate pos %u, tag '%x' len %u -> new pos %u",
                          (unsigned int) tag_index, (unsigned int) it.tag, (unsigned int) tag_len, next_write_pos);
 
+                uint32_t write_offset = next_write_pos;
+                uint32_t bytes_to_copy;
+                uint32_t entry_size = btstack_tlv_flash_bank_aligned_entry_size(self, tag_len);
+
+#ifdef ENABLE_TLV_FLASH_EXPLICIT_DELETE_FIELD
+                // copy in two steps to skip delete field
+
                 // copy header
                 uint8_t header_buffer[BTSTACK_TLV_ENTRY_HEADER_LEN];
                 btstack_tlv_flash_bank_read(self, self->current_bank, tag_index, header_buffer, BTSTACK_TLV_ENTRY_HEADER_LEN);
-                btstack_tlv_flash_bank_write(self, next_bank, next_write_pos, header_buffer, BTSTACK_TLV_ENTRY_HEADER_LEN);
-                tag_index      += self->entry_header_len;
-                uint32_t write_offset = next_write_pos + self->entry_header_len;
-#ifdef ENABLE_TLV_FLASH_EXPLICIT_DELETE_FIELD
-                // skip delete field
-                tag_index      += self->delete_tag_len;
+                btstack_tlv_flash_bank_write(self, next_bank, next_write_pos,    header_buffer, BTSTACK_TLV_ENTRY_HEADER_LEN);
+                tag_index    += self->entry_header_len + self->delete_tag_len;
+                write_offset += self->entry_header_len + self->delete_tag_len;
+
+                // preparee copy value
+                bytes_to_copy = tag_len;
+#else
+                // copy everything as one block
+                bytes_to_copy = entry_size;
 #endif
+
                 // copy value
-                int bytes_to_copy = tag_len;
                 uint8_t copy_buffer[32];
-                while (bytes_to_copy) {
-                    int bytes_this_iteration = btstack_min(bytes_to_copy, sizeof(copy_buffer));
+                while (bytes_to_copy > 0) {
+                    uint32_t bytes_this_iteration = btstack_min(bytes_to_copy, sizeof(copy_buffer));
                     btstack_tlv_flash_bank_read(self, self->current_bank, tag_index, copy_buffer, bytes_this_iteration);
                     btstack_tlv_flash_bank_write(self, next_bank, write_offset, copy_buffer, bytes_this_iteration);
                     tag_index     += bytes_this_iteration;
                     write_offset  += bytes_this_iteration;
                     bytes_to_copy -= bytes_this_iteration;
                 }
-                next_write_pos += btstack_tlv_flash_bank_aligned_entry_size(self, tag_len);
+                next_write_pos += entry_size;
             }
 		}
 		tlv_iterator_fetch_next(self, &it);
@@ -438,24 +448,44 @@ static int btstack_tlv_flash_bank_store_tag(void * context, uint32_t tag, const 
 		return 2;
 	}
 
-	// prepare entry
-	uint8_t entry[BTSTACK_TLV_ENTRY_HEADER_LEN];
-	big_endian_store_32(entry, 0, tag);
-	big_endian_store_32(entry, 4, data_size);
+    // prepare entry
+    log_info("write '%" PRIx32 "', len %" PRIu32 " at %" PRIx32, tag, data_size, self->write_offset);
 
-	log_info("write '%" PRIx32 "', len %" PRIu32 " at %" PRIx32, tag, data_size, self->write_offset);
+    uint8_t alignment_buffer[BTSTACK_FLASH_ALIGNMENT_MAX];
+    memset(alignment_buffer, 0, sizeof(alignment_buffer));
+    big_endian_store_32(alignment_buffer, 0, tag);
+    big_endian_store_32(alignment_buffer, 4, data_size);
 
-	uint32_t value_offset = self->write_offset + self->entry_header_len;
+    uint32_t header_len = BTSTACK_TLV_ENTRY_HEADER_LEN;
+    uint32_t value_size = data_size;
+    uint32_t value_offset = self->write_offset + self->entry_header_len;
 #ifdef ENABLE_TLV_FLASH_EXPLICIT_DELETE_FIELD
-	// skip delete field
-	value_offset += self->delete_tag_len;
+    // skip delete field
+    value_offset += self->delete_tag_len;
+#else
+    uint32_t alignment = self->hal_flash_bank_impl->get_alignment(self->hal_flash_bank_context);
+
+    // if alignment is larger than the entry header, store parts from value in alignment buffer
+    if (alignment > BTSTACK_TLV_ENTRY_HEADER_LEN){
+        // calculated number of value bytes to store in alignment buffer
+        uint32_t bytes_from_value = btstack_min(alignment - BTSTACK_TLV_ENTRY_HEADER_LEN, value_size);
+
+        // store parts from value in alignment buffer and update remaining value
+        memcpy(&alignment_buffer[header_len], data, bytes_from_value);
+        header_len += bytes_from_value;
+        data       += bytes_from_value;
+        value_size -= bytes_from_value;
+        value_offset = self->write_offset + alignment;
+    }
 #endif
 
-	// write value first
-	btstack_tlv_flash_bank_write(self, self->current_bank, value_offset, data, data_size);
+    // write value first
+    if (value_size > 0){
+        btstack_tlv_flash_bank_write(self, self->current_bank, value_offset, data, value_size);
+    }
 
-	// then entry
-	btstack_tlv_flash_bank_write(self, self->current_bank, self->write_offset, entry, sizeof(entry));
+    // then entry
+    btstack_tlv_flash_bank_write(self, self->current_bank, self->write_offset, alignment_buffer, header_len);
 
 #ifndef ENABLE_TLV_FLASH_WRITE_ONCE
 	// overwrite old entries (if exists)
@@ -463,12 +493,7 @@ static int btstack_tlv_flash_bank_store_tag(void * context, uint32_t tag, const 
 #endif
 
 	// done
-	self->write_offset += sizeof(entry) + btstack_tlv_flash_bank_align_size(self, data_size);
-
-#ifdef ENABLE_TLV_FLASH_EXPLICIT_DELETE_FIELD
-	// skip delete field
-	self->write_offset += self->delete_tag_len;
-#endif
+	self->write_offset += btstack_tlv_flash_bank_aligned_entry_size(self, data_size);
 
 	return 0;
 }
@@ -510,10 +535,13 @@ const btstack_tlv_t * btstack_tlv_flash_bank_init_instance(btstack_tlv_flash_ban
 	uint32_t alignment = self->hal_flash_bank_impl->get_alignment(self->hal_flash_bank_context);
 	self->delete_tag_len = (uint8_t) btstack_max(4, alignment);
 	log_info("delete tag len %u", self->delete_tag_len);
-#endif
 
     // set aligned entry header len
     self->entry_header_len = btstack_tlv_flash_bank_align_size(self, BTSTACK_TLV_ENTRY_HEADER_LEN);
+#else
+    // data starts right after entry header
+    self->entry_header_len = BTSTACK_TLV_ENTRY_HEADER_LEN;
+#endif
 
 	// try to find current bank
 	self->current_bank = btstack_tlv_flash_bank_get_latest_bank(self);
