@@ -263,6 +263,7 @@ EXAMPLES_GATT_FILES =           		\
 	gatt_counter.gatt           		\
 	gatt_device_information_query.gatt 	\
 	gatt_streamer_server.gatt   		\
+	hog_host_demo.gatt          		\
 	hog_keyboard_demo.gatt      		\
 	hog_mouse_demo.gatt         		\
 	le_credit_based_flow_control_mode_server.gatt 		\
@@ -346,6 +347,8 @@ hog_boot_host_demo: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} hog_
 	${CC} $^ ${LDFLAGS} -o $@
 
 
+hog_host_demo.o: hog_host_demo.h hog_host_demo.c
+	${CC} ${CFLAGS} -c $(filter-out hog_host_demo.h,$^) -o $@
 
 hog_host_demo: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} btstack_hid_parser.o btstack_hid.o hog_host_demo.o
 	${CC} $^ ${LDFLAGS} -o $@
