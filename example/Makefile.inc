@@ -350,7 +350,7 @@ hog_boot_host_demo: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} hog_
 hog_host_demo.o: hog_host_demo.h hog_host_demo.c
 	${CC} ${CFLAGS} -c $(filter-out hog_host_demo.h,$^) -o $@
 
-hog_host_demo: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} btstack_hid_parser.o btstack_hid.o hog_host_demo.o
+hog_host_demo: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} btstack_hid_parser.o btstack_hid.o hog_host_demo.o
 	${CC} $^ ${LDFLAGS} -o $@
 
 
