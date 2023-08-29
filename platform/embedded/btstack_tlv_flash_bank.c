@@ -49,11 +49,15 @@
 // Entries
 // - Tag: 32 bit
 // - Len: 32 bit
-// - Delete: 32 delete field - only used with ENABLE_TLV_FLASH_EXPLICIT_DELETE_FIELD 
+// - if ENABLE_TLV_FLASH_EXPLICIT_DELETE_FIELD is used
+//    - padding to align delete field
+//    - Delete: 32 bit
+//    - padding to align value field
 // - Value: Len in bytes
 
 // Alignment
-// Tag and Delete (if it exists) are aligned to the alignment from hal_flash_bank_t
+// Tag is aligned to the alignment from hal_flash_bank_t
+// If ENABLE_TLV_FLASH_EXPLICIT_DELETE_FIELD is used, both Delete and Value are aligned, too
 
 // ENABLE_TLV_FLASH_EXPLICIT_DELETE_FIELD 
 // 
@@ -62,8 +66,8 @@
 // - write value (1s -> 0s)
 // - overwrite value with zero (remaining 1s -> 0s)
 //
-// We use the ability to overwrite a value with zeros to mark deleted enttries (by writing zero into the tag field).
-// Some targets, E.g. Kinetix K64F, do enot allow for that.
+// We use the ability to overwrite a value with zeros to mark deleted entries (by writing zero into the tag field).
+// Some targets, E.g. Kinetix K64F, do not allow for that.
 //
 // With ENABLE_TLV_FLASH_EXPLICIT_DELETE_FIELD an extra field is reserved to indicate a deleted tag, while keeping main logic
 //
@@ -78,7 +82,7 @@
 #define BTSTACK_TLV_ENTRY_HEADER_LEN 8
 
 #ifndef BTSTACK_FLASH_ALIGNMENT_MAX
-#define BTSTACK_FLASH_ALIGNMENT_MAX 8
+#define BTSTACK_FLASH_ALIGNMENT_MAX 16
 #endif
 
 static const char * btstack_tlv_header_magic = "BTstack";
@@ -180,7 +184,7 @@ static void btstack_tlv_flash_bank_iterator_fetch_tag_len(btstack_tlv_flash_bank
 static void btstack_tlv_flash_bank_iterator_init(btstack_tlv_flash_bank_t * self, tlv_iterator_t * it, int bank){
 	memset(it, 0, sizeof(tlv_iterator_t));
 	it->bank = bank;
-	it->offset = BTSTACK_TLV_BANK_HEADER_LEN;
+	it->offset = btstack_tlv_flash_bank_align_size(self, BTSTACK_TLV_BANK_HEADER_LEN);
     it->size = self->hal_flash_bank_impl->get_size(self->hal_flash_bank_context);
 	btstack_tlv_flash_bank_iterator_fetch_tag_len(self, it);
 }
@@ -522,23 +526,24 @@ static const btstack_tlv_t btstack_tlv_flash_bank = {
  */
 const btstack_tlv_t * btstack_tlv_flash_bank_init_instance(btstack_tlv_flash_bank_t * self, const hal_flash_bank_t * hal_flash_bank_impl, void * hal_flash_bank_context){
 
-	self->hal_flash_bank_impl    = hal_flash_bank_impl;
-	self->hal_flash_bank_context = hal_flash_bank_context;
-	self->delete_tag_len = 0;
+    self->hal_flash_bank_impl    = hal_flash_bank_impl;
+    self->hal_flash_bank_context = hal_flash_bank_context;
+    self->delete_tag_len = 0;
+
+    // BTSTACK_FLASH_ALIGNMENT_MAX must be larger than alignment
+    uint32_t alignment = self->hal_flash_bank_impl->get_alignment(self->hal_flash_bank_context);
+    btstack_assert(BTSTACK_FLASH_ALIGNMENT_MAX >= alignment);
 
 #ifdef ENABLE_TLV_FLASH_EXPLICIT_DELETE_FIELD
-	if (hal_flash_bank_impl->get_alignment(hal_flash_bank_context) > 8){
-		log_error("Flash alignment > 8 with ENABLE_TLV_FLASH_EXPLICIT_DELETE_FIELD not supported");
-		return NULL;
-	}
 	// set delete tag len
-	uint32_t alignment = self->hal_flash_bank_impl->get_alignment(self->hal_flash_bank_context);
 	self->delete_tag_len = (uint8_t) btstack_max(4, alignment);
 	log_info("delete tag len %u", self->delete_tag_len);
 
     // set aligned entry header len
     self->entry_header_len = btstack_tlv_flash_bank_align_size(self, BTSTACK_TLV_ENTRY_HEADER_LEN);
+	log_info("entry header len %u", self->entry_header_len);
 #else
+    UNUSED(alignment);
     // data starts right after entry header
     self->entry_header_len = BTSTACK_TLV_ENTRY_HEADER_LEN;
 #endif
@@ -592,7 +597,7 @@ const btstack_tlv_t * btstack_tlv_flash_bank_init_instance(btstack_tlv_flash_ban
 		btstack_tlv_flash_bank_erase_bank(self, 0);
 		self->current_bank = 0;
 		btstack_tlv_flash_bank_write_header(self, self->current_bank, 0);	// epoch = 0;
-		self->write_offset = BTSTACK_TLV_BANK_HEADER_LEN;
+        self->write_offset = btstack_tlv_flash_bank_align_size (self, BTSTACK_TLV_BANK_HEADER_LEN);
 	}
 
 	log_info("write offset %" PRIx32, self->write_offset);
