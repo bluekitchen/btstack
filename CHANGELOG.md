@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - GATT Server: support GATT over Enhanced LE Bearer
 - LE Device DB: le_device_db_dump dumps LTK
 - Port for Zephyr 3.x
+
 ### Fixed
 - HCI: fix remove le device from whitelist
 - HFP: use 'don't care' to accept SCO connections, fixes issue on ESP32
@@ -23,6 +24,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - HID Device: set Report Mode as default
 - AVRCP: reject incoming second l2cap connection
 - GATT Client: ignore notifications/indications until re-encrypted for bonded device without ENABLE_LE_PROACTIVE_AUTHENTICATION
+- btstack_flash_bank: support alignment larger than 4
  
 ### Changed
 - btstack_crypto: allow MBEDTLS config via MBEDTLS_CONFIG_FILE
