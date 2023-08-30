@@ -131,8 +131,7 @@ static void btstack_tlv_flash_bank_read(btstack_tlv_flash_bank_t * self, int ban
 	if (size == 0) return;
 	uint8_t alignment_block[BTSTACK_FLASH_ALIGNMENT_MAX];
 	self->hal_flash_bank_impl->read(self->hal_flash_bank_context, bank, offset, alignment_block, alignment);
-	uint32_t bytes_to_copy = btstack_min(alignment - lower_bits, size);
-	memcpy(buffer, alignment_block, bytes_to_copy);
+	memcpy(buffer, alignment_block, size);
 }
 
 static void btstack_tlv_flash_bank_write(btstack_tlv_flash_bank_t * self, int bank, uint32_t offset, const uint8_t * buffer, uint32_t size){
@@ -277,7 +276,7 @@ static void btstack_tlv_flash_bank_migrate(btstack_tlv_flash_bank_t * self){
 	log_info("migrate bank %u -> bank %u", self->current_bank, next_bank);
 	// erase bank (if needed)
 	btstack_tlv_flash_bank_erase_bank(self, next_bank);
-	int next_write_pos = BTSTACK_TLV_BANK_HEADER_LEN;
+	uint32_t next_write_pos = btstack_tlv_flash_bank_align_size (self, BTSTACK_TLV_BANK_HEADER_LEN);;
 
 	tlv_iterator_t it;
 	btstack_tlv_flash_bank_iterator_init(self, &it, self->current_bank);
