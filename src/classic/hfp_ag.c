@@ -206,7 +206,7 @@ static int has_hf_indicators_feature(hfp_connection_t * hfp_connection){
 /* unsolicited responses */
 
 static int hfp_ag_send_change_in_band_ring_tone_setting_cmd(hfp_connection_t * hfp_connection){
-    char buffer[20];
+    char buffer[22];
     snprintf(buffer, sizeof(buffer), "\r\n%s: %d\r\n",
              HFP_CHANGE_IN_BAND_RING_TONE_SETTING, use_in_band_tone(hfp_connection));
     buffer[sizeof(buffer) - 1] = 0;
