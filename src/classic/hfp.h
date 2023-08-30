@@ -879,6 +879,7 @@ void hfp_init_link_settings(hfp_connection_t * hfp_connection, uint8_t eSCO_S4_s
 hfp_link_settings_t hfp_next_link_setting(hfp_link_settings_t current_setting, uint16_t local_sco_packet_types,
                                           uint16_t remote_sco_packet_types, bool eSCO_s4_supported,
                                           uint8_t negotiated_codec);
+hfp_link_settings_t hfp_safe_settings_for_context(bool use_eSCO, uint8_t negotiated_codec, bool secure_connection_in_use);
 
 const char * hfp_hf_feature(int index);
 const char * hfp_ag_feature(int index);
