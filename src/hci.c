@@ -7387,6 +7387,7 @@ static void hci_run(void){
     hci_run_general_pending_commands();
 }
 
+#ifdef ENABLE_CLASSIC
 static void hci_set_sco_payload_length_for_flipped_packet_types(hci_connection_t * hci_connection, uint16_t flipped_packet_types){
     // bits 6-9 are 'don't use'
     uint16_t packet_types = flipped_packet_types ^ 0x03c0;
@@ -7396,6 +7397,7 @@ static void hci_set_sco_payload_length_for_flipped_packet_types(hci_connection_t
     hci_connection->sco_payload_length = hci_sco_payload_length_for_packet_types(packet_types);
     log_info("Possible SCO packet types 0x%04x => payload length %u", packet_types, hci_connection->sco_payload_length);
 }
+#endif
 
 uint8_t hci_send_cmd_packet(uint8_t *packet, int size){
     // house-keeping
