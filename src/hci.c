@@ -9284,6 +9284,7 @@ static int hci_have_usb_transport(void){
 static uint16_t hci_sco_packet_length_for_payload_length(uint16_t payload_size){
     uint16_t sco_packet_length = 0;
 
+#if defined(ENABLE_SCO_OVER_HCI) || defined (HAVE_SCO_TRANSPORT)
     // Transparent = mSBC => 1, CVSD with 16-bit samples requires twice as much bytes
     int multiplier;
     if (((hci_stack->sco_voice_setting_active & 0x03) != 0x03) &&
@@ -9292,6 +9293,8 @@ static uint16_t hci_sco_packet_length_for_payload_length(uint16_t payload_size){
     } else {
         multiplier = 1;
     }
+#endif
+
 #ifdef ENABLE_SCO_OVER_HCI
     if (hci_have_usb_transport()){
         // see Core Spec for H2 USB Transfer.
