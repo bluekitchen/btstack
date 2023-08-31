@@ -9279,14 +9279,9 @@ static int hci_have_usb_transport(void){
     return (transport_name[0] == 'H') && (transport_name[1] == '2');
 }
 
-/** @brief Get SCO packet length for current SCO Voice setting
- *  @note  Using SCO packets of the exact length is required for USB transfer
- *  @return Length of SCO packets in bytes (not audio frames)
- */
-uint16_t hci_get_sco_packet_length(void){
+static uint16_t hci_sco_packet_length_for_payload_length(uint16_t payload_size){
     uint16_t sco_packet_length = 0;
 
-#ifdef ENABLE_SCO_OVER_HCI
     // Transparent = mSBC => 1, CVSD with 16-bit samples requires twice as much bytes
     int multiplier;
     if (((hci_stack->sco_voice_setting_active & 0x03) != 0x03) &&
@@ -9295,29 +9290,50 @@ uint16_t hci_get_sco_packet_length(void){
     } else {
         multiplier = 1;
     }
-
-
+#ifdef ENABLE_SCO_OVER_HCI
     if (hci_have_usb_transport()){
-        // see Core Spec for H2 USB Transfer. 
+        // see Core Spec for H2 USB Transfer.
         // 3 byte SCO header + 24 bytes per connection
-        int num_sco_connections = btstack_max(1, hci_number_sco_connections());
-        sco_packet_length = 3 + 24 * num_sco_connections * multiplier;
+        // @note multiple sco connections not supported currently
+        sco_packet_length = 3 + 24 * multiplier;
     } else {
-        // 3 byte SCO header + SCO packet size over the air (60 bytes)
-        sco_packet_length = 3 + 60 * multiplier;
+        // 3 byte SCO header + SCO packet length over the air
+        sco_packet_length = 3 + payload_size * multiplier;
         // assert that it still fits inside an SCO buffer
         if (sco_packet_length > (hci_stack->sco_data_packet_length + 3)){
-            sco_packet_length = 3 + 60;
+            sco_packet_length = 3 + hci_stack->sco_data_packet_length;
         }
     }
 #endif
-
 #ifdef HAVE_SCO_TRANSPORT
-    // Transparent = mSBC => 1, CVSD with 16-bit samples requires twice as much bytes
-    int multiplier = ((hci_stack->sco_voice_setting_active & 0x03) == 0x03) ? 1 : 2;
-    sco_packet_length = 3 + 60 * multiplier;
+    // 3 byte SCO header + SCO packet length over the air
+    sco_packet_length = 3 + payload_size * multiplier;
+    // assert that it still fits inside an SCO buffer
+    if (sco_packet_length > (hci_stack->sco_data_packet_length + 3)){
+        sco_packet_length = 3 + hci_stack->sco_data_packet_length;
+    }
 #endif
     return sco_packet_length;
+}
+
+uint16_t hci_get_sco_packet_length_for_connection(hci_con_handle_t sco_con_handle){
+    hci_connection_t * connection = hci_connection_for_handle(sco_con_handle);
+    if (connection != NULL){
+        return hci_sco_packet_length_for_payload_length(connection->sco_payload_length);
+    }
+    return 0;
+}
+
+uint16_t hci_get_sco_packet_length(void){
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &hci_stack->connections);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        hci_connection_t * connection = (hci_connection_t *) btstack_linked_list_iterator_next(&it);
+        if ( connection->address_type == BD_ADDR_TYPE_SCO ) {
+            return hci_sco_packet_length_for_payload_length(connection->sco_payload_length);;
+        }
+    }
+    return 0;
 }
 
 /**

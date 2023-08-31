@@ -1446,7 +1446,15 @@ uint8_t hci_send_cmd(const hci_cmd_t * cmd, ...);
 
 // Sending SCO Packets
 
-/** @brief Get SCO packet length for current SCO Voice setting
+/** @brief Get SCO payload length for existing SCO connection and current SCO Voice setting
+ *  @note  Using SCO packets of the exact length is required for USB transfer in general and some H4 controllers as well
+ *  @param sco_con_handle
+ *  @return Length of SCO payload in bytes (not audio frames) incl. 3 byte header
+ */
+uint16_t hci_get_sco_packet_length_for_connection(hci_con_handle_t sco_con_handle);
+
+/** @brief Get SCO packet length for one of the existing SCO connections and current SCO Voice setting
+ *  @deprecated Please use hci_get_sco_packet_length_for_connection instead
  *  @note  Using SCO packets of the exact length is required for USB transfer
  *  @return Length of SCO packets in bytes (not audio frames) incl. 3 byte header
  */
