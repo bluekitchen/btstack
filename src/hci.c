@@ -1378,6 +1378,23 @@ static const struct {
         { 47, SCO_PACKET_TYPES_2EV5 | SCO_PACKET_TYPES_3EV5 },  // 3-slot EDR eSCO packets, 2-EV3/3-EV3 use single slot
 };
 
+// map packet types to payload length, prefer eSCO over SCO and large over small packets
+static const struct {
+    uint16_t type;
+    uint16_t payload_length;
+} hci_sco_packet_type_to_payload_length[] = {
+        {SCO_PACKET_TYPES_3EV5, HCI_SCO_3EV5_SIZE}, // 540
+        {SCO_PACKET_TYPES_2EV5, HCI_SCO_2EV5_SIZE}, // 360
+        {SCO_PACKET_TYPES_EV5,  HCI_SCO_EV5_SIZE},  // 180
+        {SCO_PACKET_TYPES_EV4,  HCI_SCO_EV4_SIZE},  // 120
+        {SCO_PACKET_TYPES_3EV3, HCI_SCO_3EV3_SIZE}, //  90
+        {SCO_PACKET_TYPES_2EV3, HCI_SCO_2EV3_SIZE}, //  60
+        {SCO_PACKET_TYPES_EV3,  HCI_SCO_EV3_SIZE},  //  30
+        {SCO_PACKET_TYPES_HV3,  HCI_SCO_HV3_SIZE},  //  30
+        {SCO_PACKET_TYPES_HV2,  HCI_SCO_HV2_SIZE},  //  20
+        {SCO_PACKET_TYPES_HV1,  HCI_SCO_HV1_SIZE}   //  10
+};
+
 static uint16_t hci_sco_packet_types_for_features(const uint8_t * local_supported_features){
     uint16_t packet_types = SCO_PACKET_TYPES_ALL;
     unsigned int i;
@@ -1394,6 +1411,16 @@ static uint16_t hci_sco_packet_types_for_features(const uint8_t * local_supporte
 
 uint16_t hci_usable_sco_packet_types(void){
     return hci_stack->usable_packet_types_sco;
+}
+
+static uint16_t hci_sco_payload_length_for_packet_types(uint16_t packet_types){
+    uint8_t i;
+    for (i=0;i<sizeof(hci_sco_packet_type_to_payload_length)/sizeof(hci_sco_packet_type_to_payload_length[0]);i++){
+        if ((hci_sco_packet_type_to_payload_length[i].type & packet_types) != 0){
+            return hci_sco_packet_type_to_payload_length[i].payload_length;
+        }
+    }
+    return 0;
 }
 
 #endif
@@ -3586,6 +3613,12 @@ static void event_handler(uint8_t *packet, uint16_t size){
             if (link_type == HCI_LINK_TYPE_ESCO){
                 conn->remote_supported_features[0] |= 1;
             }
+            // propagate remote supported sco packet packets from existing ACL to new SCO connection
+            if (addr_type == BD_ADDR_TYPE_SCO){
+                hci_connection_t * acl_conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
+                btstack_assert(acl_conn != NULL);
+                conn->remote_supported_sco_packets = acl_conn->remote_supported_sco_packets;
+            }
             hci_run();
             break;
             
@@ -3653,6 +3686,12 @@ static void event_handler(uint8_t *packet, uint16_t size){
 
             conn->state = OPEN;
             conn->con_handle = little_endian_read_16(packet, 3);            
+
+            // update sco payload length for eSCO connections
+            if (hci_event_synchronous_connection_complete_get_tx_packet_length(packet) > 0){
+                conn->sco_payload_length = hci_event_synchronous_connection_complete_get_tx_packet_length(packet);
+                log_info("eSCO Complete, set payload len %u", conn->sco_payload_length);
+            }
 
 #ifdef ENABLE_SCO_OVER_HCI
             // update SCO
@@ -7348,6 +7387,16 @@ static void hci_run(void){
     hci_run_general_pending_commands();
 }
 
+static void hci_set_sco_payload_length_for_flipped_packet_types(hci_connection_t * hci_connection, uint16_t flipped_packet_types){
+    // bits 6-9 are 'don't use'
+    uint16_t packet_types = flipped_packet_types ^ 0x03c0;
+
+    // restrict packet types to local and remote supported
+    packet_types &= hci_connection->remote_supported_sco_packets & hci_stack->usable_packet_types_sco;
+    hci_connection->sco_payload_length = hci_sco_payload_length_for_packet_types(packet_types);
+    log_info("Possible SCO packet types 0x%04x => payload length %u", packet_types, hci_connection->sco_payload_length);
+}
+
 uint8_t hci_send_cmd_packet(uint8_t *packet, int size){
     // house-keeping
     
@@ -7425,18 +7474,23 @@ uint8_t hci_send_cmd_packet(uint8_t *packet, int size){
                 // neither SCO nor ACL connection for con handle
                 return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
             } else {
+                uint16_t remote_supported_sco_packets;
                 switch (conn->address_type){
                     case BD_ADDR_TYPE_ACL:
                         // assert SCO connection does not exit
                         if (hci_connection_for_bd_addr_and_type(conn->address, BD_ADDR_TYPE_SCO) != NULL){
                             return ERROR_CODE_COMMAND_DISALLOWED;
                         }
+                        // cache remote sco packet types
+                        remote_supported_sco_packets = conn->remote_supported_sco_packets;
+
                         // allocate connection struct
                         conn = create_connection_for_bd_addr_and_type(conn->address, BD_ADDR_TYPE_SCO,
                                                                       HCI_ROLE_MASTER);
                         if (!conn) {
                             return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
                         }
+                        conn->remote_supported_sco_packets = remote_supported_sco_packets;
                         break;
                     case BD_ADDR_TYPE_SCO:
                         // update of existing SCO connection
@@ -7457,6 +7511,9 @@ uint8_t hci_send_cmd_packet(uint8_t *packet, int size){
             // setup_synchronous_connection? Voice setting at offset 22
             // TODO: compare to current setting if sco connection already active
             hci_stack->sco_voice_setting_active = little_endian_read_16(packet, 15);
+
+            // derive sco payload length from packet types
+            hci_set_sco_payload_length_for_flipped_packet_types(conn, little_endian_read_16(packet, 18));
             break;
 
         case HCI_OPCODE_HCI_ACCEPT_SYNCHRONOUS_CONNECTION:
@@ -7476,6 +7533,9 @@ uint8_t hci_send_cmd_packet(uint8_t *packet, int size){
             // accept_synchronous_connection? Voice setting at offset 18
             // TODO: compare to current setting if sco connection already active
             hci_stack->sco_voice_setting_active = little_endian_read_16(packet, 19);
+
+            // derive sco payload length from packet types
+            hci_set_sco_payload_length_for_flipped_packet_types(conn, little_endian_read_16(packet, 22));
             break;
 #endif
 

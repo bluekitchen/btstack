@@ -615,6 +615,9 @@ typedef struct {
     // generate sco can send now based on received packets, using timeout below
     uint8_t  sco_tx_ready;
 
+    // SCO payload length
+    uint16_t sco_payload_length;
+
     // request role switch
     hci_role_t request_role;
 
