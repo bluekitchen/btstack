@@ -608,9 +608,8 @@ typedef struct {
 
 #ifdef ENABLE_SCO_OVER_HCI
     // track SCO rx event
-    uint32_t sco_rx_ms;
-    uint8_t  sco_rx_count;
-    uint8_t  sco_rx_valid;
+    uint32_t sco_established_ms;
+    uint8_t  sco_tx_active;
 #endif
     // generate sco can send now based on received packets, using timeout below
     uint8_t  sco_tx_ready;

@@ -715,7 +715,7 @@ static int hci_number_free_sco_slots(void){
         }
         return hci_stack->sco_packets_total_num - num_sco_packets_sent;
     } else {
-        // implicit flow control -- TODO
+        // implicit flow control
         int num_ready = 0;
         for (it = (btstack_linked_item_t *) hci_stack->connections; it ; it = it->next){
             hci_connection_t * connection = (hci_connection_t *) it;
@@ -3710,6 +3710,12 @@ static void event_handler(uint8_t *packet, uint16_t size){
             if (hci_have_usb_transport()){
                 hci_stack->sco_can_send_now = true;
             }
+
+            // setup implict sco flow control
+            conn->sco_tx_ready = 0;
+            conn->sco_tx_active  = 0;
+            conn->sco_established_ms = btstack_run_loop_get_time_ms();
+
 #endif
 #ifdef HAVE_SCO_TRANSPORT
             // configure sco transport
@@ -4477,45 +4483,6 @@ static void event_handler(uint8_t *packet, uint16_t size){
 
 #ifdef ENABLE_CLASSIC
 
-#ifdef ENABLE_SCO_OVER_HCI
-static void sco_tx_timeout_handler(btstack_timer_source_t * ts);
-static void sco_schedule_tx(hci_connection_t * conn);
-
-static void sco_tx_timeout_handler(btstack_timer_source_t * ts){
-    log_debug("SCO TX Timeout");
-    hci_con_handle_t con_handle = (hci_con_handle_t) (uintptr_t) btstack_run_loop_get_timer_context(ts);
-    hci_connection_t * conn = hci_connection_for_handle(con_handle);
-    if (!conn) return;
-
-    // trigger send
-    conn->sco_tx_ready = 1;
-    // extra packet if CVSD but SCO buffer is too short
-    if (((hci_stack->sco_voice_setting_active & 0x03) != 0x03) && (hci_stack->sco_data_packet_length < 123)){
-        conn->sco_tx_ready++;
-    }
-    hci_notify_if_sco_can_send_now();
-}
-
-
-#define SCO_TX_AFTER_RX_MS (6)
-
-static void sco_schedule_tx(hci_connection_t * conn){
-
-    uint32_t now = btstack_run_loop_get_time_ms();
-    uint32_t sco_tx_ms = conn->sco_rx_ms + SCO_TX_AFTER_RX_MS;
-    int time_delta_ms = sco_tx_ms - now;
-
-    btstack_timer_source_t * timer = (conn->sco_rx_count & 1) ? &conn->timeout : &conn->timeout_sco;
-
-    // log_error("SCO TX at %u in %u", (int) sco_tx_ms, time_delta_ms);
-    btstack_run_loop_remove_timer(timer);
-    btstack_run_loop_set_timer(timer, time_delta_ms);
-    btstack_run_loop_set_timer_context(timer, (void *) (uintptr_t) conn->con_handle);
-    btstack_run_loop_set_timer_handler(timer, &sco_tx_timeout_handler);
-    btstack_run_loop_add_timer(timer);
-}
-#endif
-
 static void sco_handler(uint8_t * packet, uint16_t size){
     // lookup connection struct
     hci_con_handle_t con_handle = READ_SCO_CONNECTION_HANDLE(packet);
@@ -4537,29 +4504,20 @@ static void sco_handler(uint8_t * packet, uint16_t size){
     } else {
         // log_debug("sco flow %u, handle 0x%04x, packets sent %u, bytes send %u", hci_stack->synchronous_flow_control_enabled, (int) con_handle, conn->num_packets_sent, conn->num_sco_bytes_sent);
         if (hci_stack->synchronous_flow_control_enabled == 0){
-            uint32_t now = btstack_run_loop_get_time_ms();
-
-            if (!conn->sco_rx_valid){
-                // ignore first 10 packets
-                conn->sco_rx_count++;
-                // log_debug("sco rx count %u", conn->sco_rx_count);
-                if (conn->sco_rx_count == 10) {
-                    // use first timestamp as is and pretent it just started
-                    conn->sco_rx_ms = now;
-                    conn->sco_rx_valid = 1;
-                    conn->sco_rx_count = 0;
-                    sco_schedule_tx(conn);
+            // ignore received SCO packets for the first 10 ms, then allow for max two HCI_SCO_2EV3_SIZE packets
+            uint16_t max_sco_packets = btstack_min(2 * HCI_SCO_2EV3_SIZE / conn->sco_payload_length, hci_stack->sco_packets_total_num);
+            if (conn->sco_tx_active == 0){
+                if (btstack_time_delta(btstack_run_loop_get_time_ms(), conn->sco_established_ms) > 10){
+                    conn->sco_tx_active = 1;
+                    conn->sco_tx_ready = max_sco_packets;
+                    log_info("Start SCO sending, %u packets", conn->sco_tx_ready);
+                    hci_notify_if_sco_can_send_now();
                 }
             } else {
-                // track expected arrival timme
-                conn->sco_rx_count++;
-                conn->sco_rx_ms += 7;
-                int delta = (int32_t) (now - conn->sco_rx_ms);
-                if (delta > 0){
-                    conn->sco_rx_ms++;
+                if (conn->sco_tx_ready < max_sco_packets){
+                    conn->sco_tx_ready++;
                 }
-                // log_debug("sco rx %u", conn->sco_rx_ms);
-                sco_schedule_tx(conn);
+                hci_notify_if_sco_can_send_now();
             }
         }
     }

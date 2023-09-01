@@ -31,8 +31,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - windows: fix timestamps in packet logs
 - 
 ### Changed
+- HCI: simplified implicit SCO flow control
 - btstack_crypto: allow MBEDTLS config via MBEDTLS_CONFIG_FILE
 - remove old Zephyr 1.9 port
+
  
 ## Release v1.5.6
 
