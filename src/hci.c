@@ -6774,7 +6774,7 @@ static bool hci_run_iso_tasks(void){
                 return true;
             case LE_AUDIO_BIG_STATE_SETUP_ISO_PATH:
                 big->state = LE_AUDIO_BIG_STATE_W4_SETUP_ISO_PATH;
-                hci_send_cmd(&hci_le_setup_iso_data_path, big->bis_con_handles[big->state_vars.next_bis], 0, 0,  0, 0, 0,  0, 0, NULL);
+                hci_send_cmd(&hci_le_setup_iso_data_path, big->bis_con_handles[big->state_vars.next_bis], 0, 0, HCI_AUDIO_CODING_FORMAT_TRANSPARENT, 0, 0,  0, 0, NULL);
                 return true;
             case LE_AUDIO_BIG_STATE_SETUP_ISO_PATHS_FAILED:
                 big->state = LE_AUDIO_BIG_STATE_W4_TERMINATED_AFTER_SETUP_FAILED;
@@ -6810,7 +6810,7 @@ static bool hci_run_iso_tasks(void){
                 return true;
             case LE_AUDIO_BIG_STATE_SETUP_ISO_PATH:
                 big_sync->state = LE_AUDIO_BIG_STATE_W4_SETUP_ISO_PATH;
-                hci_send_cmd(&hci_le_setup_iso_data_path, big_sync->bis_con_handles[big_sync->state_vars.next_bis], 1, 0, 0, 0, 0, 0, 0, NULL);
+                hci_send_cmd(&hci_le_setup_iso_data_path, big_sync->bis_con_handles[big_sync->state_vars.next_bis], 1, 0, HCI_AUDIO_CODING_FORMAT_TRANSPARENT, 0, 0, 0, 0, NULL);
                 return true;
             case LE_AUDIO_BIG_STATE_SETUP_ISO_PATHS_FAILED:
                 big_sync->state = LE_AUDIO_BIG_STATE_W4_TERMINATED_AFTER_SETUP_FAILED;
@@ -6904,7 +6904,7 @@ static bool hci_run_iso_tasks(void){
                         hci_stack->iso_active_operation_group_id = cig->params->cig_id;
                         hci_stack->iso_active_operation_type = HCI_ISO_TYPE_CIS;
                         cig->state = LE_AUDIO_CIG_STATE_W4_SETUP_ISO_PATH;
-                        hci_send_cmd(&hci_le_setup_iso_data_path, cig->cis_con_handles[cis_index], cis_direction, 0, 0, 0, 0, 0, 0, NULL);
+                        hci_send_cmd(&hci_le_setup_iso_data_path, cig->cis_con_handles[cis_index], cis_direction, 0, HCI_AUDIO_CODING_FORMAT_TRANSPARENT, 0, 0, 0, 0, NULL);
                         return true;
                     }
                     cig->state_vars.next_cis++;
@@ -6939,13 +6939,13 @@ static bool hci_run_iso_tasks(void){
                 hci_stack->iso_active_operation_group_id = HCI_ISO_GROUP_ID_SINGLE_CIS;
                 hci_stack->iso_active_operation_type = HCI_ISO_TYPE_CIS;
                 iso_stream->state = HCI_ISO_STREAM_STATE_W4_ISO_SETUP_INPUT;
-                hci_send_cmd(&hci_le_setup_iso_data_path, iso_stream->cis_handle, 0, 0, 0, 0, 0, 0, 0, NULL);
+                hci_send_cmd(&hci_le_setup_iso_data_path, iso_stream->cis_handle, 0, 0, HCI_AUDIO_CODING_FORMAT_TRANSPARENT, 0, 0, 0, 0, NULL);
                 break;
             case HCI_ISO_STREAM_STATE_W2_SETUP_ISO_OUTPUT:
                 hci_stack->iso_active_operation_group_id = HCI_ISO_GROUP_ID_SINGLE_CIS;
                 hci_stack->iso_active_operation_type = HCI_ISO_TYPE_CIS;
                 iso_stream->state = HCI_ISO_STREAM_STATE_W4_ISO_SETUP_OUTPUT;
-                hci_send_cmd(&hci_le_setup_iso_data_path, iso_stream->cis_handle, 1, 0, 0, 0, 0, 0, 0, NULL);
+                hci_send_cmd(&hci_le_setup_iso_data_path, iso_stream->cis_handle, 1, 0, HCI_AUDIO_CODING_FORMAT_TRANSPARENT, 0, 0, 0, 0, NULL);
                 break;
             default:
                 break;
