@@ -32,4 +32,4 @@ The easiest way to try BTstack is on a regular desktop setup like macOS, Linux o
 For macOS and Linux, please see [libusb](../ports/existing_ports.md#libusbPort) port.
 For Windows, please see [windows-winusb](../ports/existing_ports.md#windows-winusbPort) port.
 
-Or checkout the [list of existing ports]()ports/existing_ports.md)
+Or checkout the [list of existing ports](../ports/existing_ports.md)
