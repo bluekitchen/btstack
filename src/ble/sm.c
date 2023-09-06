@@ -486,6 +486,18 @@ static bool sm_is_null_key(uint8_t * key){
     return btstack_is_null(key, 16);
 }
 
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
+static bool sm_is_ff(const uint8_t * buffer, uint16_t size){
+    uint16_t i;
+    for (i=0; i < size ; i++){
+        if (buffer[i] != 0xff) {
+            return false;
+        }
+    }
+    return true;
+}
+#endif
+
 // sm_trigger_run allows to schedule callback from main run loop // reduces stack depth
 static void sm_run_timer_handler(btstack_timer_source_t * ts){
 	UNUSED(ts);
@@ -1947,6 +1959,13 @@ static void sm_sc_dhkey_calculated(void * arg){
     hci_con_handle_t con_handle = (hci_con_handle_t) (uintptr_t) arg;
     sm_connection_t * sm_conn = sm_get_connection_for_handle(con_handle);
     if (sm_conn == NULL) return;
+
+    // check for invalid public key detected by Controller
+    if (sm_is_ff(setup->sm_dhkey, 32)){
+        log_info("sm: peer public key invalid");
+        sm_pairing_error(sm_conn, SM_REASON_DHKEY_CHECK_FAILED);
+        return;
+    }
 
     log_info("dhkey");
     log_info_hexdump(&setup->sm_dhkey[0], 32);
