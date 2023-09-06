@@ -27,7 +27,7 @@ After the new driver was installed, your device is shown in the Device Manager w
 
 ## Visual Studio 2022
 
-Visual Studio can directly open the provided `port/windows-windows-h4-zephyr/CMakeLists.txt` and allows to compile and run all examples.
+Visual Studio can directly open the provided `port/windows-winusb-intel/CMakeLists.txt` and allows to compile and run all examples.
 
 ## mingw64 
 
