@@ -1160,8 +1160,11 @@ static void btstack_crypto_event_handler(uint8_t packet_type, uint16_t cid, uint
                     btstack_crypto_wait_for_hci_result = 0;
                     if (hci_subevent_le_generate_dhkey_complete_get_status(packet)){
                         log_error("Generate DHKEY failed -> abort");
+                        // set DHKEY to 0xff..ff
+                        memset(btstack_crypto_ec_p192->dhkey, 0xff, 32);
+                    } else {
+                        hci_subevent_le_generate_dhkey_complete_get_dhkey(packet, btstack_crypto_ec_p192->dhkey);
                     }
-                    hci_subevent_le_generate_dhkey_complete_get_dhkey(packet, btstack_crypto_ec_p192->dhkey);
                     // done
                     btstack_linked_list_pop(&btstack_crypto_operations);
                     (*btstack_crypto_ec_p192->btstack_crypto.context_callback.callback)(btstack_crypto_ec_p192->btstack_crypto.context_callback.context);                    
