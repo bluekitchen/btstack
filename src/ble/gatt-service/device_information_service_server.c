@@ -40,7 +40,7 @@
 /**
  * Implementation of the Device Information Service Server 
  *
- * To use with your application, add '#import <device_information_sevice.gatt' to your .gatt file
+ * To use with your application, add `#import <device_information_sevice.gatt>` to your .gatt file
  * and call all functions below. All strings and blobs need to stay valid after calling the functions.
  *
  * @note: instead of calling all setters, you can create a local copy of the .gatt file and remove

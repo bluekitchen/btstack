@@ -56,7 +56,7 @@ extern "C" {
 /**
  * @text The Nordic SPP Service is implementation of the Nordic SPP-like profile.
  *
- * To use with your application, add `#import <nordic_spp_service.gatt` to your .gatt file
+ * To use with your application, add `#import <nordic_spp_service.gatt>` to your .gatt file
  * and call all functions below. All strings and blobs need to stay valid after calling the functions.
  */
 

@@ -40,7 +40,7 @@
 
 /**
  * Implementation of the GATT TX Power Service Server 
- * To use with your application, add '#import <tx_power_service.gatt' to your .gatt file
+ * To use with your application, add `#import <tx_power_service.gatt>` to your .gatt file
  */
 
 #include "btstack_defines.h"

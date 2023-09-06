@@ -39,7 +39,7 @@
 
 /**
  * Implementation of the GATT Battery Service Server 
- * To use with your application, add '#import <battery_service.gatt' to your .gatt file
+ * To use with your application, add `#import <battery_service.gatt>` to your .gatt file
  */
 
 #include "btstack_defines.h"
