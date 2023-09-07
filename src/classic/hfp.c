@@ -1847,8 +1847,14 @@ static void hfp_handle_start_sdp_client_query(void * context){
 
 uint8_t hfp_establish_service_level_connection(bd_addr_t bd_addr, uint16_t service_uuid, hfp_role_t local_role){
     hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr, local_role);
-    if (connection){
-        return ERROR_CODE_COMMAND_DISALLOWED;
+    if (connection != NULL){
+        // allow to call hfp_establish_service_level_connection after SLC was triggered remotely
+        // @note this also allows to call hfp_establish_service_level_connection again before SLC is complete
+        if (connection->state < HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED){
+            return ERROR_CODE_SUCCESS;
+        } else {
+            return ERROR_CODE_COMMAND_DISALLOWED;
+        }
     }
 
     connection = hfp_create_connection(bd_addr, local_role);
