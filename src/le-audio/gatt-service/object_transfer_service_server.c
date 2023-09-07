@@ -104,6 +104,7 @@ static uint8_t  receive_buffer_X[100];
 static uint16_t initial_credits = L2CAP_LE_AUTOMATIC_CREDITS;
 static uint16_t ots_server_credit_based_cid;
 static uint16_t ots_server_remote_mtu;
+static hci_con_handle_t ots_server_cbm_con_handle;
 
 static ots_server_connection_t * ots_server_find_connection_for_con_handle(hci_con_handle_t con_handle){
     if (con_handle == HCI_CON_HANDLE_INVALID){
@@ -404,7 +405,7 @@ static uint16_t ots_server_read_callback(hci_con_handle_t con_handle, uint16_t a
 
     if (attribute_handle == ots_server_get_value_handle_for_characteristic_index(OTS_OBJECT_SIZE_INDEX)){
         uint8_t object_size[8];
-        little_endian_store_32(object_size, 0, connection->current_object_size);
+        little_endian_store_32(object_size, 0, connection->current_object->current_size);
         little_endian_store_32(object_size, 4, connection->current_object->allocated_size);
         return att_read_callback_handle_blob(object_size, sizeof(object_size), offset, buffer, buffer_size); 
     }
@@ -619,7 +620,30 @@ int ots_server_handle_action_control_point_write(ots_server_connection_t * conne
                 break;
             }
 
-            connection->oacp_result_code = ots_server_operations->read(connection->con_handle, ots_server_credit_based_cid, &buffer[pos], data_size);
+            offset = little_endian_read_32(buffer, pos);
+            length = little_endian_read_32(buffer, pos + 4);
+
+            // 4. Invalid Parameter - The value of the Offset parameter exceeds the value of the Current Size field of the Object Size characteristic
+            if (offset > connection->current_object->current_size){
+                return OACP_RESULT_CODE_INVALID_PARAMETER;
+            }
+
+            // 5. Invalid Parameter - The sum of the values of the Offset and Length parameters exceeds the value of the Current Size field of the Object Size characteristic.
+            if ((offset + length) >connection->current_object->current_size){
+                return OACP_RESULT_CODE_INVALID_PARAMETER;
+            }
+
+            // 6. Insufficient Resources - The value of the Length parameter exceeds the number of octets that the Server has the capacity to read from the object.
+            if (length > ots_server_remote_mtu){
+                return OACP_RESULT_CODE_INSUFFICIENT_RESOURCES;
+            }
+
+            // 7. Object Locked - An object transfer is in progress that is using the Current Object
+            if (connection->current_object_object_transfer_in_progress){
+                return OACP_RESULT_CODE_OBJECT_LOCKED;
+            }
+
+            connection->oacp_result_code = ots_server_operations->read(connection->con_handle, ots_server_credit_based_cid, offset, length);
             break;
         
         case OACP_OPCODE_WRITE:
@@ -660,14 +684,14 @@ int ots_server_handle_action_control_point_write(ots_server_connection_t * conne
             }
 
             // 6. Invalid Parameter - The Mode parameter contains an RFU value.
-            if ((mode != 0) && (mode != 0x0010)){
+            if ((mode != 0) && (mode != 2)){
                 connection->oacp_result_code = OACP_RESULT_CODE_INVALID_PARAMETER;
                 break;
             }
 
 
             // 7. Invalid Parameter - The value of the Offset parameter exceeds the value of the Current Size field of the Object Size characteristic.
-            if (offset > connection->current_object_size){
+            if (offset > connection->current_object->current_size){
                 return OACP_RESULT_CODE_INVALID_PARAMETER;
             }
 
@@ -683,7 +707,10 @@ int ots_server_handle_action_control_point_write(ots_server_connection_t * conne
                 if (connection->oacp_result_code != OACP_RESULT_CODE_SUCCESS){
                     return connection->oacp_result_code;
                 }
-                connection->current_object_size = offset + length;
+                connection->current_object->current_size = offset + length;
+                if (connection->current_object->current_size < connection->current_object->allocated_size){
+                    connection->current_object->allocated_size = connection->current_object->current_size;
+                }
             }
 
             // 10. Object Locked - The Current Object is locked by the Server.
@@ -696,22 +723,31 @@ int ots_server_handle_action_control_point_write(ots_server_connection_t * conne
                 return OACP_RESULT_CODE_OBJECT_LOCKED;
             }
 
-            if (mode == 0x0010){
+            connection->current_object_locked = true;
+            connection->current_object_object_transfer_in_progress = true;
+            
+            if (mode == 2){
                 connection->oacp_result_code = ots_server_operations->update_current_size(connection->con_handle, offset);
                 if (connection->oacp_result_code != OACP_RESULT_CODE_SUCCESS){
+                    connection->current_object_locked = false;
+                    connection->current_object_object_transfer_in_progress = false;
                     return connection->oacp_result_code;
                 }
-                connection->current_object_size = offset;
+                connection->current_object->current_size = offset;
             }
 
             active_con_handle = connection->con_handle;
             connection->oacp_length = length;
             connection->oacp_offset = offset;
-            connection->oacp_truncate = mode == 0x0010;
+            connection->oacp_truncate = mode == 2;
             connection->oacp_result_code = OACP_RESULT_CODE_SUCCESS;
             break;
         
         case OACP_OPCODE_ABORT:
+            // 1. No OACP Read operation is in progress – there is nothing to abort.
+            // 2. The Abort Op Code was not sent by the same Client who started the OACP Read operation.
+            // 3. The requested procedure failed for a reason other than those enumerated above in this table.
+
             connection->oacp_result_code = ots_server_operations->abort(connection->con_handle);
             break;
         
@@ -1039,6 +1075,7 @@ static void ots_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
                         printf("L2CAP: L2CAP_EVENT_CHANNEL_CLOSED, cid 0x%02x\n", cid); 
                         ots_server_credit_based_cid = 0;
                         ots_server_remote_mtu = 0;
+                        ots_server_cbm_con_handle = HCI_CON_HANDLE_INVALID;
                         break;
                     }
                     break;
@@ -1069,6 +1106,7 @@ static void ots_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
                     if (l2cap_event_cbm_channel_opened_get_status(packet) == ERROR_CODE_SUCCESS) {
                         printf("L2CAP: LE Data Channel successfully opened: %s, handle 0x%02x, psm 0x%02x, local cid 0x%02x, remote cid 0x%02x, remote mtu 0x%02x\n",
                                bd_addr_to_str(event_address), handle, psm, cid, little_endian_read_16(packet, 15), mtu);
+                        ots_server_cbm_con_handle = handle;
                         ots_server_credit_based_cid = cid;
                         ots_server_remote_mtu = mtu;
                     } else {
@@ -1097,11 +1135,24 @@ static void ots_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
             if (connection == NULL){
                 break;
             }
-//            printf_hexdump(packet, size);
+//          printf_hexdump(packet, size);
+            connection->current_object_locked = true;
+            connection->current_object_object_transfer_in_progress = true;
+            
             status = ots_server_operations->write(connection->con_handle, connection->oacp_offset, connection->oacp_length, packet, size);
+
             if (status == OACP_RESULT_CODE_SUCCESS){
-                printf("write done, length %d\n", connection->current_object_size);
+                printf("write done, length %d\n", connection->current_object->current_size);
+                if (connection->oacp_truncate){
+                    connection->oacp_result_code = ots_server_operations->update_current_size(connection->con_handle, connection->oacp_offset + connection->oacp_length);
+                    if (connection->oacp_result_code == OACP_RESULT_CODE_SUCCESS){
+                        connection->current_object->current_size = connection->oacp_offset + connection->oacp_length;
+                    }
+                }
             }
+            connection->current_object_locked = false;
+            connection->current_object_object_transfer_in_progress = false;
+            
             break;
 
         default:
@@ -1279,8 +1330,8 @@ uint8_t object_transfer_service_server_set_current_object(hci_con_handle_t con_h
 
     connection->current_object = object;
     connection->current_object_locked = false;
-    connection->current_object_object_transfer_in_progress = false;    
-    connection->current_object_size = object_size;
+    connection->current_object_object_transfer_in_progress = false;
+    connection->current_object->current_size = object_size;
     return ERROR_CODE_SUCCESS;
 }
 
@@ -1338,7 +1389,19 @@ uint32_t object_transfer_service_server_current_object_size(hci_con_handle_t con
     if (connection->current_object == NULL){
         return 0;
     }
-    return connection->current_object_size;
+    return connection->current_object->current_size;
+}
+
+uint8_t object_transfer_service_server_current_object_update_current_size(hci_con_handle_t con_handle, uint32_t size){
+    ots_server_connection_t * connection = ots_server_find_or_add_connection_for_con_handle(con_handle);
+    if (connection == NULL){
+        return 0;
+    }
+
+    if (connection->current_object == NULL){
+        return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+    }
+    return connection->current_object->current_size = size;
 }
 
 uint32_t object_transfer_service_server_current_object_allocated_size(hci_con_handle_t con_handle){
@@ -1371,3 +1434,9 @@ char * object_transfer_service_server_current_object_name(hci_con_handle_t con_h
     return connection->current_object->name;
 }
 
+uint16_t object_transfer_service_server_get_cbm_channel_remote_mtu(hci_con_handle_t con_handle){
+    if (con_handle == ots_server_cbm_con_handle){
+        return ots_server_remote_mtu;
+    }
+    return 0;
+}
