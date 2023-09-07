@@ -114,8 +114,8 @@ static void hci_dump_windows_fs_log_packet(uint8_t packet_type, uint8_t in, uint
 	now_time.LowPart = file_time.dwLowDateTime;
 	now_time.HighPart = file_time.dwHighDateTime;
 
-	tv_sec  = (uint32_t) ((now_time.QuadPart / 10000) - EPOCH_DIFF);
-	tv_us = (now_time.QuadPart % 10000) / 10;
+	tv_sec  = (uint32_t) ((now_time.QuadPart / 10000000ULL) - EPOCH_DIFF);
+	tv_us = (now_time.QuadPart % 10000000ULL) / 10ULL;
 
     uint16_t header_len = 0;
     switch (dump_format){
