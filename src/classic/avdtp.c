@@ -316,7 +316,13 @@ static void avdtp_handle_start_sdp_client_query(void * context){
 uint8_t avdtp_connect(bd_addr_t remote, avdtp_role_t role, uint16_t * avdtp_cid){
     avdtp_connection_t * connection = avdtp_get_connection_for_bd_addr(remote);
     if (connection){
-        return ERROR_CODE_COMMAND_DISALLOWED;
+        // allow to call avdtp_connect after signaling connection was triggered remotely
+        // @note this also allows to call avdtp_connect again before SLC is complete
+        if (connection->state < AVDTP_SIGNALING_CONNECTION_OPENED){
+            return ERROR_CODE_SUCCESS;
+        } else {
+            return ERROR_CODE_COMMAND_DISALLOWED;
+        }
     }
 
     uint16_t cid = avdtp_get_next_cid();
