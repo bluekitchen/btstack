@@ -1205,12 +1205,26 @@ uint8_t avrcp_connect(bd_addr_t remote_addr, uint16_t * avrcp_cid){
     btstack_assert(avrcp_target_packet_handler != NULL);
 
     avrcp_connection_t * connection_controller = avrcp_get_connection_for_bd_addr_for_role(AVRCP_CONTROLLER, remote_addr);
+    bool setup_active = false;
     if (connection_controller){
-        return ERROR_CODE_COMMAND_DISALLOWED;
+        // allow to call avrcp_connect after signaling connection was triggered remotely
+        // @note this also allows to call avrcp_connect again before SLC is complete
+        if (connection_controller->state < AVCTP_CONNECTION_OPENED){
+            setup_active = true;
+        } else {
+            return ERROR_CODE_COMMAND_DISALLOWED;
+        }
     }
     avrcp_connection_t * connection_target = avrcp_get_connection_for_bd_addr_for_role(AVRCP_TARGET, remote_addr);
     if (connection_target){
-        return ERROR_CODE_COMMAND_DISALLOWED;
+        if (connection_target->state < AVCTP_CONNECTION_OPENED){
+            setup_active = true;
+        } else {
+            return ERROR_CODE_COMMAND_DISALLOWED;
+        }
+    }
+    if (setup_active){
+        return ERROR_CODE_SUCCESS;
     }
 
     uint16_t cid = avrcp_get_next_cid(AVRCP_CONTROLLER);
