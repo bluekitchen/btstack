@@ -47,11 +47,8 @@
 
 
 
-#include <stdint.h>
 #include <stdio.h>
-
-#include "btstack_run_loop.h"
-#include "btstack_defines.h"
+#include "btstack.h"
 #include "hal_led.h"
 
 #define HEARTBEAT_PERIOD_MS 1000
@@ -72,10 +69,12 @@ static void heartbeat_handler(btstack_timer_source_t *ts){
     UNUSED(ts);
 
     // increment counter
-    char lineBuffer[30];
-    snprintf(lineBuffer, sizeof(lineBuffer), "BTstack counter %04u\n\r", ++counter);
-    puts(lineBuffer);
-    
+    counter++;
+
+    // print and log
+    log_info("BTstack Counter %u",     counter);
+    printf("BTstack counter %04u\n\r", counter);
+
     // toggle LED
     hal_led_toggle();
 
