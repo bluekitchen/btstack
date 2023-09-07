@@ -108,7 +108,7 @@ static oacp_result_code_t ots_server_operation_create(hci_con_handle_t con_handl
 static oacp_result_code_t ots_server_operation_delete(hci_con_handle_t con_handle);
 static oacp_result_code_t ots_server_operation_calculate_checksum(hci_con_handle_t con_handle, uint8_t *buffer, uint16_t buffer_size, uint32_t * crc_out);
 static oacp_result_code_t ots_server_operation_execute(hci_con_handle_t con_handle, uint8_t *buffer, uint16_t buffer_size);
-static oacp_result_code_t ots_server_operation_read( hci_con_handle_t con_handle, uint16_t cid, uint8_t *buffer, uint16_t buffer_size);
+static oacp_result_code_t ots_server_operation_read( hci_con_handle_t con_handle, uint16_t cid, uint32_t offset, uint32_t lenght);
 static oacp_result_code_t ots_server_operation_write(hci_con_handle_t con_handle, uint32_t offset, uint32_t lenght, uint8_t *buffer, uint16_t buffer_size);
 static oacp_result_code_t ots_server_operation_update_current_size(hci_con_handle_t con_handle, uint32_t lenght);
 static oacp_result_code_t ots_server_operation_abort(hci_con_handle_t con_handle);
@@ -193,8 +193,8 @@ static uint8_t ots_object_test_data[] = {
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
       
 };
-static uint32_t ots_object_test_data_current_size = 256;
-static uint32_t ots_object_test_data_allocated_size = 512;
+//static uint32_t ots_object_test_data_current_size = 256;
+//static uint32_t ots_object_test_data_allocated_size = 256;
 
 
 // Media Player Server (MCS)
@@ -390,12 +390,11 @@ static bool ots_server_can_store_object_of_size(uint32_t object_size){
 
 static uint32_t ots_server_get_object_current_size(ots_object_t * object){
     btstack_assert(object != NULL);
-    // TOOD
-    return ots_object_test_data_current_size;
+    return object->current_size;
 }
 
 uint8_t ots_server_add_object_with_type_uuid16(ots_object_id_t * object_id, char * name, uint32_t properties, uint16_t type_uuid16,
-    uint32_t allocated_size, btstack_utc_t * first_created, btstack_utc_t * last_modified){
+    uint32_t allocated_size, uint32_t current_size, btstack_utc_t * first_created, btstack_utc_t * last_modified){
 
     ots_object_t * object = ots_server_find_object_for_luid(object_id);
     if (object != NULL){
@@ -419,6 +418,7 @@ uint8_t ots_server_add_object_with_type_uuid16(ots_object_id_t * object_id, char
     object->allocated_size = allocated_size;
     memcpy(&object->first_created, first_created, sizeof(btstack_utc_t));
     memcpy(&object->last_modified, first_created, sizeof(btstack_utc_t));
+    object->current_size = current_size;
     return ERROR_CODE_SUCCESS;
 }
 
@@ -567,47 +567,30 @@ static oacp_result_code_t ots_server_operation_execute(hci_con_handle_t con_hand
     return OACP_RESULT_CODE_SUCCESS;
 }
 
-static oacp_result_code_t ots_server_operation_read(hci_con_handle_t con_handle, uint16_t cid, uint8_t *buffer, uint16_t buffer_size){
+static oacp_result_code_t ots_server_operation_read(hci_con_handle_t con_handle, uint16_t cid, uint32_t offset, uint32_t length){
     printf("ots_server_operation_read\n");
-    btstack_assert(buffer_size >= 8);
 
-    uint32_t offset = little_endian_read_32(buffer, 0);
-    uint32_t length = little_endian_read_32(buffer, 4);
+    object_transfer_service_server_current_object_set_lock(con_handle, true);
+    object_transfer_service_server_current_object_set_transfer_in_progress(con_handle, true);
 
-    // 4. Invalid Parameter - The value of the Offset parameter exceeds the value of the Current Size field of the Object Size characteristic
-    if (offset > object_transfer_service_server_current_object_size(con_handle)){
-        return OACP_RESULT_CODE_INVALID_PARAMETER;
-    }
-
-    // 5. Invalid Parameter - The sum of the values of the Offset and Length parameters exceeds the value of the Current Size field of the Object Size characteristic.
-    if ((offset + length) > object_transfer_service_server_current_object_size(con_handle)){
-        return OACP_RESULT_CODE_INVALID_PARAMETER;
-    }
-
-    // 6. Insufficient Resources - The value of the Length parameter exceeds the number of octets that the Server has the capacity to read from the object.
-    // if (length > l2cap_get_remote_mtu_for_local_cid(con_handle)){
-    //     return OACP_RESULT_CODE_INSUFFICIENT_RESOURCES;
-    // }
-    
-    printf("Read operation, remote MTU: %d\n", l2cap_get_remote_mtu_for_local_cid(con_handle));
-
-    // 7. Object Locked - An object transfer is in progress that is using the Current Object
-    if (object_transfer_service_server_current_object_transfer_in_progress(con_handle)){
-        return OACP_RESULT_CODE_OBJECT_LOCKED;
-    }
-    
     const uint8_t * data = ots_server_get_current_object_bytes(con_handle);
     l2cap_send(cid, &data[offset], length);
-
+    
+    if ((offset + length) == object_transfer_service_server_current_object_size(con_handle)){
+        object_transfer_service_server_current_object_set_lock(con_handle, false);
+        object_transfer_service_server_current_object_set_transfer_in_progress(con_handle, false);
+    }
     return OACP_RESULT_CODE_SUCCESS;
 }
 
 static uint32_t current_bytes_written = 0;
 
 static oacp_result_code_t ots_server_operation_write(hci_con_handle_t con_handle, uint32_t offset, uint32_t length, uint8_t *buffer, uint16_t buffer_size){
+    printf("Write operation, offset %d, chunk length %d, size to write %d, total size %d\n", offset, buffer_size, length, object_transfer_service_server_current_object_size(con_handle));
     
-    printf("Write operation, offset %d, chunk length %d, size to write %d, total size %d\n", offset, buffer_size, length, ots_object_test_data_current_size);
-    
+    object_transfer_service_server_current_object_set_lock(con_handle, true);
+    object_transfer_service_server_current_object_set_transfer_in_progress(con_handle, true);
+
     memcpy(&ots_object_test_data[offset + current_bytes_written], buffer, buffer_size);
 
     current_bytes_written += buffer_size;
@@ -615,34 +598,29 @@ static oacp_result_code_t ots_server_operation_write(hci_con_handle_t con_handle
     if (current_bytes_written == length){
         printf("Write done\n");
         current_bytes_written = 0;
+        object_transfer_service_server_current_object_set_lock(con_handle, false);
+        object_transfer_service_server_current_object_set_transfer_in_progress(con_handle, false);
     }
+    
     return OACP_RESULT_CODE_SUCCESS;
 }
 
 static oacp_result_code_t ots_server_operation_update_current_size(hci_con_handle_t con_handle, uint32_t lenght){
-    printf("before update current size %d, allocated_size %d\n", ots_object_test_data_current_size, ots_object_test_data_allocated_size);
+    printf("before update current size %d, allocated_size %d\n", object_transfer_service_server_current_object_size(con_handle), object_transfer_service_server_current_object_allocated_size(con_handle));
     
-    if (lenght > sizeof(ots_object_test_data)){
+    if (lenght > object_transfer_service_server_current_object_allocated_size(con_handle)){
         return OACP_RESULT_CODE_INSUFFICIENT_RESOURCES;
-    } else if (lenght > ots_object_test_data_allocated_size) {
-        ots_object_test_data_allocated_size = lenght;
-
     }
-    ots_object_test_data_current_size = lenght;
 
-    printf("after update current size %d, allocated_size %d\n", ots_object_test_data_current_size, ots_object_test_data_allocated_size);
+    object_transfer_service_server_current_object_update_current_size(con_handle, lenght);
+
+    printf("after update current size %d, allocated_size %d\n", object_transfer_service_server_current_object_size(con_handle), object_transfer_service_server_current_object_allocated_size(con_handle));
     return OACP_RESULT_CODE_SUCCESS;
 }
 
 static oacp_result_code_t ots_server_operation_abort(hci_con_handle_t con_handle){
-    // 1. Procedure Not Permitted - The object’s properties do not permit appending data to the object. 
-    if (!object_transfer_service_server_current_object_procedure_permitted(con_handle, OBJECT_PROPERTY_MASK_DELETE)){
-        return OACP_RESULT_CODE_PROCEDURE_NOT_PERMITTED;
-    }
-
-    // 2. Insufficient Resources - The sum of the values of the Offset and Length parameters exceeds the capability of the Server 
-    //                             to increase the object allocated size, owing to resource constraints.
-    
+    object_transfer_service_server_current_object_set_lock(con_handle, false);
+    object_transfer_service_server_current_object_set_transfer_in_progress(con_handle, false);
     return OACP_RESULT_CODE_SUCCESS;
 }
 
@@ -1890,11 +1868,13 @@ int btstack_main(void)
                 track->title,
                 properties,
                 type_uuid16,
-                ots_object_test_data_allocated_size, 
+                1024,
+                256,
                 &first_created, 
                 &last_modified);
 
         }
+
     }
 
     // register for HCI events
