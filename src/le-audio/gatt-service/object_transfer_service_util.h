@@ -211,6 +211,7 @@ typedef struct {
 
     // allocated_size = 0 if object not initialized
     uint32_t allocated_size;
+    uint32_t current_size;
 
     btstack_utc_t first_created;
     btstack_utc_t last_modified;
