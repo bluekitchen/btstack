@@ -78,10 +78,7 @@ west build -b nrf5340dk_nrf5340_cpuapp -- -DOVERLAY_CONFIG=debug_overlay.conf
 ### 2a. Using zephyr network core image
 the `hci_rgmsg` application needs to be loaded first to the network core.
 Configure network core by selecting the appropriate config file, for example `nrf5340_cpunet_iso-bt_ll_sw_split.conf`.
-```sh
-cp nrf5340_cpunet_iso-bt_ll_sw_split.conf prj.conf
-```
-additionaly it's required to increase the main stack size from
+additionally it's required to increase the main stack size from
 ```sh
 CONFIG_MAIN_STACK_SIZE=512
 ```
@@ -91,7 +88,12 @@ CONFIG_MAIN_STACK_SIZE=4096
 ```
 then the network core image can be compiled and flashed
 ```sh
-west build -b nrf5340dk_nrf5340_cpunet
+west build -b nrf5340dk_nrf5340_cpunet -- -DCONF_FILE=nrf5340_cpunet_iso-bt_ll_sw_split.conf
+west flash
+```
+or with debugging
+```sh
+west build -b nrf5340dk_nrf5340_cpunet -- -DCONF_FILE=nrf5340_cpunet_iso-bt_ll_sw_split.conf -DOVERLAY_CONFIG=debug_overlay.conf
 west flash
 ```
 
