@@ -76,12 +76,12 @@ static const uint8_t adv_sid = 0;
 
 static le_advertising_set_t le_advertising_set;
 
-static const le_extended_advertising_parameters_t extended_params = {
+static le_extended_advertising_parameters_t extended_params = {
         .advertising_event_properties = 0,
         .primary_advertising_interval_min = 0x4b0, // 750 ms
         .primary_advertising_interval_max = 0x4b0, // 750 ms
         .primary_advertising_channel_map = 7,
-        .own_address_type = 0,
+        .own_address_type = BD_ADDR_TYPE_LE_PUBLIC,
         .peer_address_type = 0,
         .peer_address =  { 0 },
         .advertising_filter_policy = 0,
@@ -419,8 +419,26 @@ static void generate_audio_and_encode(void){
     }
 }
 
+static bool is_zero_bd_addr( bd_addr_t address ) {
+    int sum = 0;
+    for( int i=0; i<6; ++i ) {
+        sum += address[i];
+    }
+    return (sum>0)?false:true;
+}
+
 static void setup_advertising() {
+    bd_addr_t local_addr;
+    gap_local_bd_addr(local_addr);
+    bool local_address_invalid = is_zero_bd_addr( local_addr );
+    if( local_address_invalid ) {
+        extended_params.own_address_type = BD_ADDR_TYPE_LE_RANDOM;
+    }
     gap_extended_advertising_setup(&le_advertising_set, &extended_params, &adv_handle);
+    if( local_address_invalid ) {
+        bd_addr_t random_address = { 0xC1, 0x01, 0x01, 0x01, 0x01, 0x01 };
+        gap_extended_advertising_set_random_address( adv_handle, random_address );
+    }
     gap_extended_advertising_set_adv_data(adv_handle, sizeof(extended_adv_data), extended_adv_data);
     gap_periodic_advertising_set_params(adv_handle, &periodic_params);
     gap_periodic_advertising_set_data(adv_handle, period_adv_data_len, period_adv_data);
