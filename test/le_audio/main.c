@@ -48,6 +48,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
+#include <limits.h>
+#include <libgen.h>
 
 #include "btstack_config.h"
 
@@ -70,11 +72,7 @@
 #include "hci_transport.h"
 #include "hci_transport_h4.h"
 #include "btstack_chipset_bcm.h"
-
-#define HCI_OPCODE_ZEPHYR_READ_STATIC_ADDRESS 0xFC09
-const hci_cmd_t hci_zephyr_read_static_address = {
-        HCI_OPCODE_ZEPHYR_READ_STATIC_ADDRESS, ""
-};
+#include "btstack_chipset_zephyr.h"
 
 #define TLV_DB_PATH_PREFIX "/tmp/btstack_"
 #define TLV_DB_PATH_POSTFIX ".tlv"
@@ -84,9 +82,10 @@ static btstack_tlv_posix_t   tlv_context;
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
-static bool is_zephyr;
-static bool zephyr_read_static_address;
-static bd_addr_t zephyr_static_address;
+static bd_addr_t static_address;
+
+// random MAC address for the device, used if nothing else is available 
+static const bd_addr_t random_address = { 0xC1, 0x01, 0x01, 0x01, 0x01, 0x01 };
 
 // shutdown
 static bool shutdown_triggered;
@@ -118,18 +117,21 @@ static void setup_tlv(bd_addr_t addr){
 }
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    bd_addr_t local_addr;
+    const uint8_t *params;
     if (packet_type != HCI_EVENT_PACKET) return;
     switch (hci_event_packet_get_type(packet)){
         case BTSTACK_EVENT_STATE:
             switch(btstack_event_state_get_state(packet)){
                 case HCI_STATE_WORKING:
-                    if (is_zephyr){
-                        zephyr_read_static_address = true;
-                    } else {
-                        bd_addr_t local_addr;
-                        gap_local_bd_addr(local_addr);
-                        setup_tlv(local_addr);
+                    gap_local_bd_addr(local_addr);
+                    if( btstack_is_null_bd_addr(local_addr) && !btstack_is_null_bd_addr(static_address) ) {
+                        memcpy(local_addr, static_address, sizeof(bd_addr_t));
+                    } else if( btstack_is_null_bd_addr(local_addr ) && btstack_is_null_bd_addr(static_address) ) {
+                        memcpy(local_addr, random_address, sizeof(bd_addr_t));
+                        gap_random_address_set(local_addr);
                     }
+                    setup_tlv(local_addr);
                     break;
                 case HCI_STATE_OFF:
                     btstack_tlv_posix_deinit(&tlv_context);
@@ -140,7 +142,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     exit(0);
                     break;
                 default:
-                    break;                    
+                    break;
             }
             break;
         case HCI_EVENT_COMMAND_COMPLETE:
@@ -148,10 +150,14 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 case HCI_OPCODE_HCI_READ_LOCAL_VERSION_INFORMATION:
                     local_version_information_handler(packet);
                     break;
-                case HCI_OPCODE_ZEPHYR_READ_STATIC_ADDRESS:
-                    reverse_48(&packet[7], zephyr_static_address);
-                    gap_random_address_set(zephyr_static_address);
-                    setup_tlv(zephyr_static_address);
+                case HCI_OPCODE_HCI_ZEPHYR_READ_STATIC_ADDRESS:
+                    params = hci_event_command_complete_get_return_parameters(packet);
+                    if(params[0] != 0)
+                        break;
+                    if(size < 13)
+                        break;
+                    reverse_48(&params[2], static_address);
+                    gap_random_address_set(static_address);
                     break;
                 default:
                     break;
@@ -159,11 +165,6 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             break;
         default:
             break;
-    }
-
-    if (zephyr_read_static_address && hci_can_send_command_packet_now()){
-        zephyr_read_static_address = false;
-        hci_send_cmd(&hci_zephyr_read_static_address);
     }
 }
 
@@ -198,7 +199,8 @@ static void local_version_information_handler(uint8_t * packet){
             break;
         case BLUETOOTH_COMPANY_ID_THE_LINUX_FOUNDATION:
             printf("Zephyr HCI Controller\n");
-            is_zephyr = true;
+            printf("WARNING - untested probably won't work!\n");
+            hci_set_chipset(btstack_chipset_zephyr_instance());
             break;
         case BLUETOOTH_COMPANY_ID_INFINEON_TECHNOLOGIES_AG:
         case BLUETOOTH_COMPANY_ID_BROADCOM_CORPORATION:
@@ -217,7 +219,6 @@ int main(int argc, const char * argv[]){
 	/// GET STARTED with BTstack ///
 	btstack_memory_init();
     btstack_run_loop_init(btstack_run_loop_posix_get_instance());
-	    
 
     // pre-select serial device
     config.device_name = "/dev/tty.usbmodemEA7EB9D612C31"; // BL654 with PTS Firmware
@@ -233,13 +234,15 @@ int main(int argc, const char * argv[]){
     printf("H4 device: %s\n", config.device_name);
 
     // log into file using HCI_DUMP_BTSNOOP format
-    char * pklg_path = "/tmp/hci_dump.btsnoop";
-    if (strcmp(config.device_name, "/dev/tty.usbmodemEF437DF524C51") == 0){
-        pklg_path = "/tmp/hci_dump_source.btsnoop";
-    }
-    if (strcmp(config.device_name, "/dev/tty.usbmodemE6589B44933B1") == 0){
-        pklg_path = "/tmp/hci_dump_sink.btsnoop";
-    }
+    char *app_name = strndup( argv[0], PATH_MAX );
+    char *base_name = basename( app_name );
+    const char *pklg_postfix = ".btsnoop";
+    char pklg_path[PATH_MAX] = "/tmp/hci_dump_";
+
+    btstack_strcat( pklg_path, sizeof(pklg_path), base_name );
+    btstack_strcat( pklg_path, sizeof(pklg_path), pklg_postfix );
+    free( app_name );
+
     hci_dump_posix_fs_open(pklg_path, HCI_DUMP_BTSNOOP);
     const hci_dump_t * hci_dump_impl = hci_dump_posix_fs_get_instance();
     hci_dump_init(hci_dump_impl);
@@ -266,7 +269,7 @@ int main(int argc, const char * argv[]){
     btstack_main(argc, argv);
 
     // go
-    btstack_run_loop_execute();    
+    btstack_run_loop_execute();
 
     return 0;
 }

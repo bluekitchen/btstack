@@ -81,7 +81,6 @@ static hci_transport_config_uart_t config = {
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
-static const uint8_t read_static_address_command_complete_prefix[] = { 0x0e, 0x1b, 0x01, 0x09, 0xfc };
 static bd_addr_t static_address;
 
 #define TLV_DB_PATH_PREFIX "btstack_"
@@ -92,6 +91,7 @@ static btstack_tlv_windows_t   tlv_context;
 static bool shutdown_triggered;
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    const uint8_t *params
     if (packet_type != HCI_EVENT_PACKET) return;
     switch (hci_event_packet_get_type(packet)){
         case BTSTACK_EVENT_STATE:
@@ -120,9 +120,18 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             }
             break;
         case HCI_EVENT_COMMAND_COMPLETE:
-            if (memcmp(packet, read_static_address_command_complete_prefix, sizeof(read_static_address_command_complete_prefix)) == 0){
-                reverse_48(&packet[7], static_address);
-                gap_random_address_set(static_address);
+            switch (hci_event_command_complete_get_command_opcode(packet)){
+                case HCI_OPCODE_HCI_ZEPHYR_READ_STATIC_ADDRESS:
+                    params = hci_event_command_complete_get_return_parameters(packet);
+                    if(params[0] != 0)
+                        break;
+                    if(size < 13)
+                        break;
+                    reverse_48(&params[2], static_address);
+                    gap_random_address_set(static_address);
+                    break;
+                default:
+                    break;
             }
             break;
         default:

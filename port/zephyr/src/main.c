@@ -35,10 +35,6 @@
 #include "btstack_tlv_none.h"
 #include "ble/le_device_db_tlv.h"
 
-#define HCI_OPCODE_ZEPHYR_READ_STATIC_ADDRESS 0xFC09
-const hci_cmd_t hci_zephyr_read_static_address = {
-        HCI_OPCODE_ZEPHYR_READ_STATIC_ADDRESS, ""
-};
 static K_FIFO_DEFINE(tx_queue);
 static K_FIFO_DEFINE(rx_queue);
 
@@ -206,7 +202,7 @@ static const btstack_run_loop_t btstack_run_loop_zephyr = {
 /**
  * @brief Provide btstack_run_loop_posix instance for use with btstack_run_loop_init
  */
-const btstack_run_loop_t * btstack_run_loop_zephyr_get_instance(void){
+static const btstack_run_loop_t * btstack_run_loop_zephyr_get_instance(void){
     return &btstack_run_loop_zephyr;
 }
 
@@ -260,6 +256,7 @@ static void local_version_information_handler(uint8_t * packet){
 }
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    const uint8_t *params;
     if (packet_type != HCI_EVENT_PACKET) return;
     switch (hci_event_packet_get_type(packet)){
         case BTSTACK_EVENT_STATE:
@@ -279,8 +276,13 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 case HCI_OPCODE_HCI_READ_LOCAL_VERSION_INFORMATION:
                     local_version_information_handler(packet);
                     break;
-                case HCI_OPCODE_ZEPHYR_READ_STATIC_ADDRESS:
-                    reverse_48(&packet[7], local_addr);
+                case HCI_OPCODE_HCI_ZEPHYR_READ_STATIC_ADDRESS:
+                    params = hci_event_command_complete_get_return_parameters(packet);
+                    if(params[0] != 0)
+                        break;
+                    if(size < 13)
+                        break;
+                    reverse_48(&params[2], local_addr);
                     gap_random_address_set(local_addr);
                     break;
                 default:
