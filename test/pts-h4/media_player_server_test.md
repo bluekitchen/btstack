@@ -155,21 +155,25 @@ Tool: media_player_server_test
 - OTS/SR/CRL/BV-01-C: k
 - OTS/SR/CRL/BV-02-C: 7
 
-- OTS/SR/CW/BV-01-C: 
-- OTS/SR/CW/BV-02-C:  
-- OTS/SR/CW/BV-03-C: 
-- OTS/SR/CW/BV-04-C: 
-- OTS/SR/CW/BV-05-C: 
+- OTS/SR/CW/BV-01-C: (wait)
+- OTS/SR/CW/BV-02-C: (wait)
+- OTS/SR/CW/BV-03-C: (wait)
+- OTS/SR/CW/BV-04-C: (wait)
+- OTS/SR/CW/BV-05-C: (wait)
 
 - OTS/SR/CWL/BV-01-C: (wait)
 - OTS/SR/CWL/BV-02-C: (wait)
 
 - OTS/SR/INV/BV-01-C: (wait)
 
-- OTS/SR/OASP/BV-01-C:
-- OTS/SR/OASP/BV-02-C:
-- OTS/SR/OASP/BV-03-C:
-- OTS/SR/OASP/BV-04-C:
+- OTS/SR/CON/BV-01-C: (wait)
+- OTS/SR/CON/BV-02-C: (wait)
+- OTS/SR/CON/BV-03-C: (wait)
+
+- OTS/SR/OASP/BV-01-C: (wait)
+- OTS/SR/OASP/BV-02-C: (wait)
+- OTS/SR/OASP/BV-03-C: (wait)
+- OTS/SR/OASP/BV-04-C: (wait)
 - OTS/SR/OASP/BV-05-C:
 - OTS/SR/OASP/BV-06-C:
 - OTS/SR/OASP/BV-07-C:
@@ -206,4 +210,5 @@ Tool: media_player_server_test
 - OTS/SR/OME/BV-01-C: 
 - OTS/SR/OME/BV-02-C: 
 - OTS/SR/OME/BV-03-C: 
+ 
  
