@@ -2443,6 +2443,19 @@ const hci_cmd_t hci_bcm_write_sco_pcm_int = {
 };
 
 /**
+ * @brief Configure PCM Data Format (BCM)
+ * @param lsb_position 0x00 – LSB last/MSB first, 0x01 – LSB first/MSB last
+ * @param fill_bits_value three bit value defines the fill bits used by the PCM interface,only if fill_data_selection == programmable
+ * @param fill_data_selection 0x00 zeros, 0x01 ones, 0x02 sign bit, 0x03 programmable
+ * @param number_of_fill_bits 0..3
+ * @param right_left_justification 0x00 left justified, 0x01 right justified
+ */
+const hci_cmd_t hci_bcm_write_pcm_data_format_param = {
+        HCI_OPCODE_HCI_BCM_WRITE_PCM_DATA_FORMAT_PARAM, "11111"
+        // return: status
+};
+
+/**
  * @brief Configure the I2S/PCM interface (BCM)
  * @param i2s_enable is 0 for off, 1 for on
  * @param is_master is 0 for slave, is 1 for master
