@@ -160,27 +160,32 @@ static bool hids_client_descriptor_storage_store(hids_client_t * client, uint8_t
 
 static void hids_client_descriptor_storage_delete(hids_client_t * client){
     uint8_t service_index = 0;
+    uint16_t first_offset = 0;
     uint16_t next_offset = 0;
+    uint16_t del_len = 0;
 
     for (service_index = 0; service_index < client->num_instances; service_index++){
-        next_offset += client->services[service_index].hid_descriptor_offset + client->services[service_index].hid_descriptor_len;
+        if (service_index == 0) {
+            first_offset = client->services[0].hid_descriptor_offset;
+        }
+        next_offset = client->services[service_index].hid_descriptor_offset + client->services[service_index].hid_descriptor_len;
         client->services[service_index].hid_descriptor_len = 0;
         client->services[service_index].hid_descriptor_offset = 0;
     }
-
-    memmove(&hids_client_descriptor_storage[client->services[0].hid_descriptor_offset], 
+    del_len = next_offset - first_offset;
+    memmove(&hids_client_descriptor_storage[first_offset],
             &hids_client_descriptor_storage[next_offset],
             hids_client_descriptor_storage_len - next_offset);
-    
+
     uint8_t i;
     btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, &clients);
     while (btstack_linked_list_iterator_has_next(&it)){
         hids_client_t * conn = (hids_client_t *)btstack_linked_list_iterator_next(&it);
+        if (conn == client) continue;
         for (i = 0; i < client->num_instances; i++){
             if (conn->services[i].hid_descriptor_offset >= next_offset){
-                conn->services[i].hid_descriptor_offset = next_offset;
-                next_offset += conn->services[service_index].hid_descriptor_len;
+                conn->services[i].hid_descriptor_offset -= del_len;
             }
         }
     }

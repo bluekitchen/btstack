@@ -136,6 +136,7 @@ static bool hid_descriptor_storage_store(hid_host_connection_t * connection, uin
 
 static void hid_descriptor_storage_delete(hid_host_connection_t * connection){
     uint16_t next_offset = connection->hid_descriptor_offset + connection->hid_descriptor_len;
+    int del_len = connection->hid_descriptor_len;
 
     memmove(&hid_host_descriptor_storage[connection->hid_descriptor_offset], 
             &hid_host_descriptor_storage[next_offset],
@@ -148,9 +149,9 @@ static void hid_descriptor_storage_delete(hid_host_connection_t * connection){
     btstack_linked_list_iterator_init(&it, &hid_host_connections);
     while (btstack_linked_list_iterator_has_next(&it)){
         hid_host_connection_t * conn = (hid_host_connection_t *)btstack_linked_list_iterator_next(&it);
+        if (conn == connection) continue;
         if (conn->hid_descriptor_offset >= next_offset){
-            conn->hid_descriptor_offset = next_offset;
-            next_offset += conn->hid_descriptor_len;
+            conn->hid_descriptor_offset -= del_len;
         }
     }
 }
