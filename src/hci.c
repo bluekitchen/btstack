@@ -2179,6 +2179,14 @@ static void hci_initializing_run(void){
 #endif
                 break;
             }
+        case HCI_INIT_BCM_WRITE_PCM_DATA_FORMAT_PARAM:
+            if (hci_classic_supported() && (hci_stack->manufacturer == BLUETOOTH_COMPANY_ID_BROADCOM_CORPORATION)){
+                hci_stack->substate = HCI_INIT_W4_BCM_WRITE_PCM_DATA_FORMAT_PARAM;
+                log_info("BCM: Config PCM Data format");
+                // msb first, fill bits 0, left justified
+                hci_send_cmd(&hci_bcm_write_pcm_data_format_param, 0, 0, 3, 3, 0);
+                break;
+            }
 #endif
 #endif
 
