@@ -483,18 +483,10 @@ static void start_scanning() {
     printf("Start scan..\n");
 }
 
-static bool is_zero_bd_addr( bd_addr_t address ) {
-    int sum = 0;
-    for( int i=0; i<6; ++i ) {
-        sum += address[i];
-    }
-    return (sum>0)?false:true;
-}
-
 static void setup_advertising() {
     bd_addr_t local_addr;
     gap_local_bd_addr(local_addr);
-    bool local_address_invalid = is_zero_bd_addr( local_addr );
+    bool local_address_invalid = btstack_is_null_bd_addr( local_addr );
     if( local_address_invalid ) {
         extended_params.own_address_type = BD_ADDR_TYPE_LE_RANDOM;
     }

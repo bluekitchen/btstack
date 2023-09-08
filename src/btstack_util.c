@@ -178,6 +178,10 @@ bool btstack_is_null(const uint8_t * buffer, uint16_t size){
     return true;
 }
 
+bool btstack_is_null_bd_addr( const bd_addr_t addr ){
+    return btstack_is_null( addr, sizeof(bd_addr_t) );
+}
+
 uint32_t btstack_min(uint32_t a, uint32_t b){
     return (a < b) ? a : b;
 }

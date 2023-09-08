@@ -195,6 +195,13 @@ void reverse_bd_addr(const bd_addr_t src, bd_addr_t dest);
  */
 bool btstack_is_null(const uint8_t * buffer, uint16_t size);
 
+/**
+ * @brief Check if all bytes in a bd_addr_t are zero
+ * @param addr
+ * @return true if all bytes in addr are zero
+ */
+bool btstack_is_null_bd_addr( const bd_addr_t addr );
+
 /** 
  * @brief ASCII character for 4-bit nibble
  * @return character
