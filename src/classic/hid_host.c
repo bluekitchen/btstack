@@ -121,12 +121,15 @@ static hid_host_connection_t * hid_host_get_connection_for_l2cap_cid(uint16_t l2
 }
 
 static void hid_descriptor_storage_init(hid_host_connection_t * connection){
+    // reserve remaining space for this connection
+    uint16_t available_space = hid_descriptor_storage_get_available_space();
     connection->hid_descriptor_len = 0;
-    connection->hid_descriptor_max_len = hid_descriptor_storage_get_available_space();
-    connection->hid_descriptor_offset = hid_host_descriptor_storage_len - connection->hid_descriptor_max_len;
+    connection->hid_descriptor_max_len = available_space;
+    connection->hid_descriptor_offset  = hid_host_descriptor_storage_len - available_space;
 }
 
 static bool hid_descriptor_storage_store(hid_host_connection_t * connection, uint8_t byte){
+    // store single hid descriptor byte
     if (connection->hid_descriptor_len >= connection->hid_descriptor_max_len) return false;
 
     hid_host_descriptor_storage[connection->hid_descriptor_offset + connection->hid_descriptor_len] = byte;
@@ -135,24 +138,31 @@ static bool hid_descriptor_storage_store(hid_host_connection_t * connection, uin
 }
 
 static void hid_descriptor_storage_delete(hid_host_connection_t * connection){
-    uint16_t next_offset = connection->hid_descriptor_offset + connection->hid_descriptor_len;
+    uint16_t descriptor_len = connection->hid_descriptor_len;
 
-    memmove(&hid_host_descriptor_storage[connection->hid_descriptor_offset], 
-            &hid_host_descriptor_storage[next_offset],
-            hid_host_descriptor_storage_len - next_offset);
+    if (descriptor_len > 0){
+        uint16_t next_offset = connection->hid_descriptor_offset + connection->hid_descriptor_len;
 
-    connection->hid_descriptor_len = 0;
-    connection->hid_descriptor_offset = 0;
+        // move higher descriptors down
+        memmove(&hid_host_descriptor_storage[connection->hid_descriptor_offset],
+                &hid_host_descriptor_storage[next_offset],
+                hid_host_descriptor_storage_len - next_offset);
 
-    btstack_linked_list_iterator_t it;    
-    btstack_linked_list_iterator_init(&it, &hid_host_connections);
-    while (btstack_linked_list_iterator_has_next(&it)){
-        hid_host_connection_t * conn = (hid_host_connection_t *)btstack_linked_list_iterator_next(&it);
-        if (conn->hid_descriptor_offset >= next_offset){
-            conn->hid_descriptor_offset = next_offset;
-            next_offset += conn->hid_descriptor_len;
+        // fix descriptor offset of higher descriptors
+        btstack_linked_list_iterator_t it;
+        btstack_linked_list_iterator_init(&it, &hid_host_connections);
+        while (btstack_linked_list_iterator_has_next(&it)){
+            hid_host_connection_t * conn = (hid_host_connection_t *)btstack_linked_list_iterator_next(&it);
+            if (conn == connection) continue;
+            if (conn->hid_descriptor_offset >= next_offset){
+                conn->hid_descriptor_offset -= descriptor_len;
+            }
         }
     }
+
+    // clear descriptor
+    connection->hid_descriptor_len = 0;
+    connection->hid_descriptor_offset = 0;
 }
 
 const uint8_t * hid_descriptor_storage_get_descriptor_data(uint16_t hid_cid){
