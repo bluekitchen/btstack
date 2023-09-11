@@ -643,7 +643,12 @@ int ots_server_handle_action_control_point_write(ots_server_connection_t * conne
                 return OACP_RESULT_CODE_OBJECT_LOCKED;
             }
 
-            connection->oacp_result_code = ots_server_operations->read(connection->con_handle, ots_server_credit_based_cid, offset, length);
+            connection->current_object_locked = true;
+
+            active_con_handle = connection->con_handle;
+            connection->oacp_length = length;
+            connection->oacp_offset = offset;
+            connection->oacp_result_code = OACP_RESULT_CODE_SUCCESS;
             break;
         
         case OACP_OPCODE_WRITE:
@@ -671,10 +676,18 @@ int ots_server_handle_action_control_point_write(ots_server_connection_t * conne
             }
 
             // 3. Procedure Not Permitted - Patching was attempted but patching is not supported by the Server.
-            // OBJECT_PROPERTY_MASK_PATCH
+            if (((length + offset) < connection->current_object->current_size) &&
+                !ots_server_current_object_procedure_permitted(connection, OBJECT_PROPERTY_MASK_PATCH)){
+                connection->oacp_result_code = OACP_RESULT_CODE_PROCEDURE_NOT_PERMITTED;
+                break;
+            }
 
             // 4. Procedure Not Permitted - Truncation was attempted but the object’s properties do not permit truncation of the object contents.
-            // OBJECT_PROPERTY_MASK_TRUNCATE
+            if ((mode == 2) &&
+                !ots_server_current_object_procedure_permitted(connection, OBJECT_PROPERTY_MASK_TRUNCATE)){
+                connection->oacp_result_code = OACP_RESULT_CODE_PROCEDURE_NOT_PERMITTED;
+                break;
+            }
 
             // 5. Channel Unavailable - An Object Transfer Channel was not available for use
             if (ots_server_credit_based_cid == 0){
@@ -703,7 +716,7 @@ int ots_server_handle_action_control_point_write(ots_server_connection_t * conne
                 }
 
                 // 9. Insufficient Resources - The value of the Length parameter exceeds the number of octets that the Server has the capacity to write to the object.
-                connection->oacp_result_code = ots_server_operations->update_current_size(connection->con_handle, offset + length);
+                connection->oacp_result_code = ots_server_operations->increase_allocated_size(connection->con_handle, offset + length);
                 if (connection->oacp_result_code != OACP_RESULT_CODE_SUCCESS){
                     return connection->oacp_result_code;
                 }
@@ -724,31 +737,31 @@ int ots_server_handle_action_control_point_write(ots_server_connection_t * conne
             }
 
             connection->current_object_locked = true;
-            connection->current_object_object_transfer_in_progress = true;
-            
-            if (mode == 2){
-                connection->oacp_result_code = ots_server_operations->update_current_size(connection->con_handle, offset);
-                if (connection->oacp_result_code != OACP_RESULT_CODE_SUCCESS){
-                    connection->current_object_locked = false;
-                    connection->current_object_object_transfer_in_progress = false;
-                    return connection->oacp_result_code;
-                }
-                connection->current_object->current_size = offset;
-            }
 
             active_con_handle = connection->con_handle;
             connection->oacp_length = length;
             connection->oacp_offset = offset;
             connection->oacp_truncate = mode == 2;
+            connection->oacp_write_offset = 0;
             connection->oacp_result_code = OACP_RESULT_CODE_SUCCESS;
             break;
         
         case OACP_OPCODE_ABORT:
             // 1. No OACP Read operation is in progress – there is nothing to abort.
+            if (!connection->current_object_object_read_transfer_in_progress){
+                return OACP_RESULT_CODE_OPERATION_FAILED;
+            }
+
             // 2. The Abort Op Code was not sent by the same Client who started the OACP Read operation.
             // 3. The requested procedure failed for a reason other than those enumerated above in this table.
 
-            connection->oacp_result_code = ots_server_operations->abort(connection->con_handle);
+            if (ots_server_credit_based_cid == 0) {
+                printf("OACP_RESULT_CODE_CHANNEL_UNAVAILABLE \n");
+                connection->oacp_result_code = OACP_RESULT_CODE_CHANNEL_UNAVAILABLE;
+                break;
+            }
+            connection->oacp_abort_read = true;
+            connection->oacp_result_code = OACP_RESULT_CODE_SUCCESS;
             break;
         
         default:
@@ -757,6 +770,9 @@ int ots_server_handle_action_control_point_write(ots_server_connection_t * conne
     }
 
     ots_server_schedule_task(connection, OTS_TASK_SEND_OACP_PROCEDURE_RESPONSE);
+    if (connection->oacp_opcode == OACP_OPCODE_READ){
+        l2cap_request_can_send_now_event(ots_server_credit_based_cid);
+    }
     return 0;
 }
 
@@ -1064,7 +1080,6 @@ static void ots_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
     uint16_t mtu;
     hci_con_handle_t handle;
     ots_server_connection_t * connection;
-    uint8_t status;
 
     switch (packet_type){
         case HCI_EVENT_PACKET:
@@ -1116,9 +1131,37 @@ static void ots_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
 
                 case L2CAP_EVENT_CAN_SEND_NOW:
                     cid = l2cap_event_can_send_now_get_local_cid(packet);
+                    connection = ots_server_find_connection_for_con_handle(active_con_handle);
+                    if (connection == NULL){
+                        break;
+                    }
 
-                    // l2cap_send(ots_server_credit_based_cid, ots_server_serial, strlen(data_long));
-                    printf("L2CAP: L2CAP_EVENT_CAN_SEND_NOW sent0x%02x\n", cid); 
+                    if (connection->oacp_abort_read){
+                        connection->oacp_abort_read = false;
+                        connection->oacp_offset = 0;
+                        connection->oacp_length = 0;
+                        connection->current_object_object_transfer_in_progress = false;
+                        connection->current_object_object_read_transfer_in_progress = false;
+                        connection->current_object_locked = false;
+                        break;
+                    }
+
+                    if (!connection->current_object_locked){
+                        break;
+                    }
+
+                    connection->current_object_object_transfer_in_progress = true;
+                    connection->current_object_object_read_transfer_in_progress = true;
+
+                    ots_server_operations->read(connection->con_handle, ots_server_credit_based_cid,
+                                                    connection->oacp_offset, connection->oacp_length);
+                    connection->oacp_offset = 0;
+                    connection->oacp_length = 0;
+                    connection->current_object_object_transfer_in_progress = false;
+                    connection->current_object_object_read_transfer_in_progress = false;
+                    connection->current_object_locked = false;
+
+                    printf("L2CAP: L2CAP_EVENT_CAN_SEND_NOW sent0x%02x\n", cid);
                     break;
 
                case L2CAP_EVENT_PACKET_SENT:
@@ -1136,23 +1179,41 @@ static void ots_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
                 break;
             }
 //          printf_hexdump(packet, size);
-            connection->current_object_locked = true;
+            if (!connection->current_object_locked){
+                break;
+            }
             connection->current_object_object_transfer_in_progress = true;
             
-            status = ots_server_operations->write(connection->con_handle, connection->oacp_offset, connection->oacp_length, packet, size);
-
-            if (status == OACP_RESULT_CODE_SUCCESS){
-                printf("write done, length %d\n", connection->current_object->current_size);
-                if (connection->oacp_truncate){
-                    connection->oacp_result_code = ots_server_operations->update_current_size(connection->con_handle, connection->oacp_offset + connection->oacp_length);
-                    if (connection->oacp_result_code == OACP_RESULT_CODE_SUCCESS){
-                        connection->current_object->current_size = connection->oacp_offset + connection->oacp_length;
-                    }
-                }
+            if ((connection->oacp_write_offset + size) <= connection->oacp_length){
+                ots_server_operations->write(connection->con_handle, connection->oacp_write_offset +  connection->oacp_offset, packet, size);
+                connection->oacp_write_offset += size;
+            } else {
+                // TODO
+                // In the event that the Server receives data via the Object Transfer Channel in excess of the expected number of octets,
+                // the Server shall close the Object Transfer Channel to prevent the Client from sending further data through the
+                // Object Transfer Channel. The Server may discard the data it has received.
+                break;
             }
-            connection->current_object_locked = false;
-            connection->current_object_object_transfer_in_progress = false;
-            
+
+            if (connection->oacp_write_offset == connection->oacp_length) {
+                uint32_t data_size = connection->oacp_offset + connection->oacp_length;
+                if (connection->oacp_truncate){
+                    connection->current_object->current_size = data_size;
+                }
+                if (data_size > connection->current_object->current_size) {
+                    if (data_size > connection->current_object->allocated_size) {
+                        connection->current_object->allocated_size = data_size;
+                    }
+                    connection->current_object->current_size = data_size;
+                }
+
+                connection->oacp_offset = 0;
+                connection->oacp_length = 0;
+                connection->current_object_locked = false;
+                connection->current_object_object_transfer_in_progress = false;
+//                connection->oacp_result_code = OACP_RESULT_CODE_SUCCESS;
+//                ots_server_schedule_task(connection, OTS_TASK_SEND_OACP_PROCEDURE_RESPONSE);
+            }
             break;
 
         default:
@@ -1392,7 +1453,7 @@ uint32_t object_transfer_service_server_current_object_size(hci_con_handle_t con
     return connection->current_object->current_size;
 }
 
-uint8_t object_transfer_service_server_current_object_update_current_size(hci_con_handle_t con_handle, uint32_t size){
+uint8_t object_transfer_service_server_current_object_increase_allocated_size(hci_con_handle_t con_handle, uint32_t size){
     ots_server_connection_t * connection = ots_server_find_or_add_connection_for_con_handle(con_handle);
     if (connection == NULL){
         return 0;
