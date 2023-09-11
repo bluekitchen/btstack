@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 - HCI: fix remove le device from whitelist
+- L2CAP: make l2cap_get_remote_mtu_for_local_cid available to LE-only builds
 - HFP: use 'don't care' to accept SCO connections, fixes issue on ESP32
 - HFP: fix LC3-WB init
 - HFP AG: fix setup of audio connection in service level established event
