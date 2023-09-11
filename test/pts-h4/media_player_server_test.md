@@ -174,11 +174,11 @@ Tool: media_player_server_test
 - OTS/SR/OASP/BV-02-C: (wait)
 - OTS/SR/OASP/BV-03-C: (wait)
 - OTS/SR/OASP/BV-04-C: (wait)
-- OTS/SR/OASP/BV-05-C:
-- OTS/SR/OASP/BV-06-C:
-- OTS/SR/OASP/BV-07-C:
-- OTS/SR/OASP/BV-08-C:
-- OTS/SR/OASP/BV-09-C:
+- OTS/SR/OASP/BV-05-C: (wait)
+- OTS/SR/OASP/BV-06-C: (wait)
+- OTS/SR/OASP/BV-07-C: (wait)
+- OTS/SR/OASP/BV-08-C: (wait), expects current and allocated size to be equalt o the IXIT/write_offset (120)
+- OTS/SR/OASP/BV-09-C: (wait)
 - OTS/SR/OASP/BV-10-C:
 
 - OTS/SR/OAE/BI-01-C:
