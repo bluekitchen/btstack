@@ -369,6 +369,7 @@ typedef enum {
     AVCTP_W2_SEND_RESPONSE,
     AVCTP_W2_RECEIVE_PRESS_RESPONSE,
     AVCTP_W2_RECEIVE_RESPONSE,
+    AVCTP_W2_SEND_GET_ELEMENT_ATTRIBUTES_REQUEST,
     //AVCTP_W2_SEND_AVCTP_FRAGMENTED_MESSAGE
 } avctp_connection_state_t;
 
@@ -595,6 +596,9 @@ typedef struct {
     uint16_t controller_initial_status_reported;
     uint16_t controller_notifications_to_register;
     uint16_t controller_notifications_to_deregister;
+
+    // used for avrcp_controller_get_element_attributes
+    uint16_t controller_element_attributes;
 
     // PTS requires definition of max num fragments
     uint8_t controller_max_num_fragments;

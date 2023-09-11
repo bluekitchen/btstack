@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - HFP AG: fix BCM WBS setup
 - HID Device: set Report Mode as default
 - AVRCP: reject incoming second l2cap connection
+- AVRCP: generate command for avrcp_controller_get_element_attributes dynamically
 - GATT Client: ignore notifications/indications until re-encrypted for bonded device without ENABLE_LE_PROACTIVE_AUTHENTICATION
 - btstack_flash_bank: support alignment larger than 4
 - windows: fix timestamps in packet logs

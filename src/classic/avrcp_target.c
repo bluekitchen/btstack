@@ -1229,6 +1229,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
 }
 
 static void avrcp_target_notification_init(avrcp_connection_t * connection, avrcp_notification_event_id_t notification_id, uint8_t * value, uint16_t value_len){
+    btstack_assert(value_len + 1 < AVRCP_MAX_COMMAND_PARAMETER_LENGTH);
     avrcp_target_vendor_dependent_response_data_init(connection, AVRCP_CTYPE_RESPONSE_CHANGED_STABLE, AVRCP_PDU_ID_REGISTER_NOTIFICATION);
     connection->transaction_id = avrcp_target_get_transaction_label_for_notification(connection, notification_id);
 
