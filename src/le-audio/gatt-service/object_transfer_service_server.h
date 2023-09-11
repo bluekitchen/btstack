@@ -60,8 +60,8 @@ typedef struct {
     oacp_result_code_t (*calculate_checksum)(hci_con_handle_t con_handle, uint8_t *buffer, uint16_t buffer_size, uint32_t * crc_out);
     oacp_result_code_t (*execute)(hci_con_handle_t con_handle, uint8_t *buffer, uint16_t buffer_size);
     oacp_result_code_t (*read) (hci_con_handle_t con_handle, uint16_t cid, uint32_t offset, uint32_t length);
-    oacp_result_code_t (*write)(hci_con_handle_t con_handle, uint32_t offset, uint32_t length, uint8_t *buffer, uint16_t buffer_size);
-    oacp_result_code_t (*update_current_size)(hci_con_handle_t con_handle, uint32_t length);
+    oacp_result_code_t (*write)(hci_con_handle_t con_handle, uint32_t offset, uint8_t *buffer, uint16_t buffer_size);
+    oacp_result_code_t (*increase_allocated_size)(hci_con_handle_t con_handle, uint32_t allocated_size);
     oacp_result_code_t (*abort)(hci_con_handle_t con_handle);
 
     // View operations
@@ -90,10 +90,7 @@ typedef struct {
     ots_object_t * current_object;
     bool current_object_locked;
     bool current_object_object_transfer_in_progress;
-    // uint32_t current_object_size;
-
-    // offset, used in OACP write procedure
-    // uint32_t current_size;
+    bool current_object_object_read_transfer_in_progress;
 
     ots_filter_t filters[OTS_MAX_NUM_FILTERS];
 
@@ -109,6 +106,9 @@ typedef struct {
     uint32_t oacp_result_crc;
     uint32_t oacp_offset;
     uint32_t oacp_length;
+    uint32_t oacp_write_offset;
+    bool oacp_abort_read;
+
     bool oacp_truncate;
 
     // used for OLCP procedures
@@ -144,7 +144,7 @@ uint8_t object_transfer_service_server_current_object_set_lock(hci_con_handle_t 
 uint8_t object_transfer_service_server_current_object_set_transfer_in_progress(hci_con_handle_t con_handle, bool transfer_in_progress);
 
 uint32_t object_transfer_service_server_current_object_size(hci_con_handle_t con_handle);
-uint8_t object_transfer_service_server_current_object_update_current_size(hci_con_handle_t con_handle, uint32_t size);
+uint8_t object_transfer_service_server_current_object_increase_allocated_size(hci_con_handle_t con_handle, uint32_t size);
 uint32_t object_transfer_service_server_current_object_allocated_size(hci_con_handle_t con_handle);
 char * object_transfer_service_server_current_object_name(hci_con_handle_t con_handle);
 uint16_t object_transfer_service_server_get_cbm_channel_remote_mtu(hci_con_handle_t con_handle);
