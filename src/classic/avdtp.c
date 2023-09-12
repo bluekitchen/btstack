@@ -688,7 +688,7 @@ static void avdtp_handle_sdp_query_succeeded(avdtp_connection_t * connection){
             break;
         default:
             connection->state = AVDTP_SIGNALING_CONNECTION_W4_L2CAP_CONNECTED;
-            l2cap_create_channel(avdtp_packet_handler, connection->remote_addr, connection->avdtp_l2cap_psm, l2cap_max_mtu(), NULL);
+            l2cap_create_channel(avdtp_packet_handler, connection->remote_addr, connection->avdtp_l2cap_psm, AVDTP_L2CAP_MTU, NULL);
             break;
     }
 }
@@ -1621,7 +1621,7 @@ uint8_t is_avdtp_remote_seid_registered(avdtp_stream_endpoint_t * stream_endpoin
 void avdtp_init(void){
     if (!avdtp_l2cap_registered){
         avdtp_l2cap_registered = true;
-        l2cap_register_service(&avdtp_packet_handler, BLUETOOTH_PSM_AVDTP, 0xffff, gap_get_security_level());
+        l2cap_register_service(&avdtp_packet_handler, BLUETOOTH_PSM_AVDTP, AVDTP_L2CAP_MTU, gap_get_security_level());
     }
 }
 

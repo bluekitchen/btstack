@@ -56,6 +56,9 @@
 extern "C" {
 #endif
 
+// Limit L2CAP MTU to fit largest packet for BR/EDR
+#define AVDTP_L2CAP_MTU (HCI_ACL_3DH5_SIZE - L2CAP_HEADER_SIZE)
+
 #define AVDTP_MAX_NUM_SEPS 10
 #define AVDTP_MAX_CSRC_NUM 15
 #define AVDTP_MAX_CONTENT_PROTECTION_TYPE_VALUE_LEN 10
