@@ -800,7 +800,7 @@ static void avdtp_retry_timer_timeout_handler(btstack_timer_source_t * timer){
 
     if (connection->state == AVDTP_SIGNALING_CONNECTION_W2_L2CAP_RETRY){
         connection->state = AVDTP_SIGNALING_CONNECTION_W4_L2CAP_CONNECTED;
-        l2cap_create_channel(&avdtp_packet_handler, connection->remote_addr, connection->avdtp_l2cap_psm, l2cap_max_mtu(), NULL);
+        l2cap_create_channel(&avdtp_packet_handler, connection->remote_addr, connection->avdtp_l2cap_psm, AVDTP_L2CAP_MTU, NULL);
     } 
 }
 
