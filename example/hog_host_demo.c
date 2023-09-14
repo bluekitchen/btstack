@@ -456,6 +456,8 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
 
     if (packet_type != HCI_EVENT_PACKET) return;
 
+    bool connect_to_service = false;
+
     switch (hci_event_packet_get_type(packet)) {
         case SM_EVENT_JUST_WORKS_REQUEST:
             printf("Just works requested\n");
@@ -472,11 +474,7 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
             switch (sm_event_pairing_complete_get_status(packet)){
                 case ERROR_CODE_SUCCESS:
                     printf("Pairing complete, success\n");
-
-                    // continue - query primary services
-                    printf("Search for HID service.\n");
-                    app_state = W4_HID_CLIENT_CONNECTED;
-                    hids_client_connect(connection_handle, handle_gatt_client_event, protocol_mode, &hids_cid);
+                    connect_to_service = true;
                     break;
                 case ERROR_CODE_CONNECTION_TIMEOUT:
                     printf("Pairing failed, timeout\n");
@@ -491,8 +489,19 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
                     break;
             }
             break;
+        case SM_EVENT_REENCRYPTION_COMPLETE:
+            printf("Re-encryption complete, success\n");
+            connect_to_service = true;
+            break;
         default:
             break;
+    }
+
+    if (connect_to_service){
+        // continue - query primary services
+        printf("Search for HID service.\n");
+        app_state = W4_HID_CLIENT_CONNECTED;
+        hids_client_connect(connection_handle, handle_gatt_client_event, protocol_mode, &hids_cid);
     }
 }
 /* LISTING_END */
@@ -505,6 +514,21 @@ int btstack_main(int argc, const char * argv[]){
 
     /* LISTING_START(HogBootHostSetup): HID-over-GATT Host Setup */
 
+    l2cap_init();
+
+    // setup SM: Display only
+    sm_init();
+    sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_ONLY);
+    sm_set_authentication_requirements(SM_AUTHREQ_SECURE_CONNECTION | SM_AUTHREQ_BONDING);
+
+    //
+    gatt_client_init();
+
+    // setup ATT server - only needed if LE Peripheral does ATT queries on its own, e.g. Android and iOS
+    att_server_init(profile_data, NULL, NULL);
+
+    hids_client_init(hid_descriptor_storage, sizeof(hid_descriptor_storage));
+
     // register for events from HCI
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
@@ -512,16 +536,7 @@ int btstack_main(int argc, const char * argv[]){
     // register for events from Security Manager
     sm_event_callback_registration.callback = &sm_packet_handler;
     sm_add_event_handler(&sm_event_callback_registration);
-
-    //
-    l2cap_init();
-    sm_init();
-    gatt_client_init();
-
-    // setup ATT server - only needed if LE Peripheral does ATT queries on its own, e.g. Android and iOS
-    att_server_init(profile_data, NULL, NULL);
-
-    hids_client_init(hid_descriptor_storage, sizeof(hid_descriptor_storage));
+    sm_set_authentication_requirements( SM_AUTHREQ_BONDING);
 
     /* LISTING_END */
 

@@ -463,6 +463,10 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
                     break;
             }
             break;
+        case SM_EVENT_REENCRYPTION_COMPLETE:
+            connection_handle = sm_event_reencryption_complete_get_handle(packet);
+            printf("[-] %s Re-encryption complete, success\n", mitm_name_for_handle(connection_handle));
+            break;
         default:
             break;
     }
