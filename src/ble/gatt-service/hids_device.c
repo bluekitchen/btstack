@@ -237,9 +237,12 @@ static uint16_t att_read_callback(hci_con_handle_t con_handle, uint16_t att_hand
 }
 
 static int att_write_callback(hci_con_handle_t con_handle, uint16_t att_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
-    UNUSED(transaction_mode);
     UNUSED(buffer_size);
     UNUSED(offset);
+
+    if (transaction_mode != ATT_TRANSACTION_MODE_NONE){
+        return 0;
+    }
 
     hids_device_t * instance = hids_device_get_instance_for_con_handle(con_handle);
     if (!instance){

@@ -77,10 +77,13 @@ static uint16_t tx_power_service_read_callback(hci_con_handle_t con_handle, uint
 
 
 static int tx_power_service_write_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
-    UNUSED(transaction_mode);
     UNUSED(offset);
     UNUSED(buffer_size);
     UNUSED(con_handle);
+
+    if (transaction_mode != ATT_TRANSACTION_MODE_NONE){
+        return 0;
+    }
 
     if (attribute_handle == tx_power_level_client_configuration_handle){
         tx_power_level_client_configuration = little_endian_read_16(buffer, 0);

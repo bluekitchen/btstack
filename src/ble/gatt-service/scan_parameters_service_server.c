@@ -108,9 +108,12 @@ static uint16_t scan_parameters_service_read_callback(hci_con_handle_t con_handl
 }
 
 static int scan_parameters_service_write_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
-    UNUSED(transaction_mode);
     UNUSED(offset);
     UNUSED(buffer_size);
+
+    if (transaction_mode != ATT_TRANSACTION_MODE_NONE){
+        return 0;
+    }
 
     if (attribute_handle == scan_interval_window_value_handle){
         if (buffer_size == 4){
