@@ -102,6 +102,17 @@ static hids_device_t * hids_device_create_instance(void){
     return &hids_device;
 }
 
+static hids_device_report_t * hids_device_get_report_for_value_handle(hids_device_t * device, uint16_t client_configuration_handle){
+    uint8_t pos;
+    uint8_t total_reports =  device->hid_input_reports_num + device->hid_output_reports_num + device->hid_feature_reports_num;
+    for (pos = 0 ; pos < total_reports ; pos++){
+        if (device->hid_reports[pos].value_handle == client_configuration_handle){
+            return &device->hid_reports[pos];
+        }
+    }
+    return NULL;
+}
+
 static hids_device_report_t * hids_device_get_report_for_client_configuration_handle(hids_device_t * device, uint16_t client_configuration_handle){
     uint8_t pos;
     uint8_t total_reports =  device->hid_input_reports_num + device->hid_output_reports_num + device->hid_feature_reports_num;
@@ -281,7 +292,31 @@ static int att_write_callback(hci_con_handle_t con_handle, uint16_t att_handle, 
         }
     }
 
-    hids_device_report_t * report = hids_device_get_report_for_client_configuration_handle(instance, att_handle);
+    hids_device_report_t * report;
+    report = hids_device_get_report_for_value_handle(instance, att_handle);
+    if (report != NULL){
+        // assemble event in buffer
+        uint8_t event[257];
+        uint16_t pos = 0;
+        event[pos++] = HCI_EVENT_HIDS_META;
+        // skip length
+        pos++;
+        event[pos++] = HIDS_SUBEVENT_SET_REPORT;
+        little_endian_store_16(event, pos, con_handle);
+        pos += 2;
+        event[pos++] = report->id;
+        event[pos++] = (uint8_t) report->type;
+        uint8_t length_to_copy = btstack_min(buffer_size, 250);
+        event[pos++] = length_to_copy;
+        memcpy(&event[pos], buffer, length_to_copy);
+        pos += length_to_copy;
+        // set event length
+        event[1] = pos - 2;
+        (*packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
+        return 0;
+    }
+
+    report = hids_device_get_report_for_client_configuration_handle(instance, att_handle);
     if (report != NULL){
         uint16_t new_value = little_endian_read_16(buffer, 0);
         report->client_configuration_value = new_value;
