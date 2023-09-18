@@ -3905,6 +3905,17 @@ typedef uint8_t sm_key_t[16];
 #define HIDS_SUBEVENT_EXIT_SUSPEND                                          0x09u
 
 /**
+ * @format 1211JV
+ * @param subevent_code
+ * @param con_handle
+ * @param report_id
+ * @param report_type
+ * @param report_length
+ * @param report_data
+*/
+#define HIDS_SUBEVENT_SET_REPORT                                            0x0au
+
+/**
  * @format 1211
  * @param subevent_code
  * @param con_handle

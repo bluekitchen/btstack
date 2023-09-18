@@ -12482,6 +12482,52 @@ static inline uint16_t hids_subevent_exit_suspend_get_con_handle(const uint8_t *
 }
 
 /**
+ * @brief Get field con_handle from event HIDS_SUBEVENT_SET_REPORT
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type 2
+ */
+static inline uint16_t hids_subevent_set_report_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field report_id from event HIDS_SUBEVENT_SET_REPORT
+ * @param event packet
+ * @return report_id
+ * @note: btstack_type 1
+ */
+static inline uint8_t hids_subevent_set_report_get_report_id(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field report_type from event HIDS_SUBEVENT_SET_REPORT
+ * @param event packet
+ * @return report_type
+ * @note: btstack_type 1
+ */
+static inline uint8_t hids_subevent_set_report_get_report_type(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field report_length from event HIDS_SUBEVENT_SET_REPORT
+ * @param event packet
+ * @return report_length
+ * @note: btstack_type J
+ */
+static inline uint8_t hids_subevent_set_report_get_report_length(const uint8_t * event){
+    return event[7];
+}
+/**
+ * @brief Get field report_data from event HIDS_SUBEVENT_SET_REPORT
+ * @param event packet
+ * @return report_data
+ * @note: btstack_type V
+ */
+static inline const uint8_t * hids_subevent_set_report_get_report_data(const uint8_t * event){
+    return &event[8];
+}
+
+/**
  * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_CYCLING_POWER_START_CALIBRATION
  * @param event packet
  * @return con_handle
