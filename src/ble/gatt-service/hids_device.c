@@ -49,6 +49,7 @@
 #include "bluetooth_gatt.h"
 #include "btstack_util.h"
 #include "btstack_debug.h"
+#include "btstack_hid_parser.h"
 
 #define HIDS_DEVICE_ERROR_CODE_INAPPROPRIATE_CONNECTION_PARAMETERS    0x80
 
@@ -90,6 +91,7 @@ static hids_device_t hids_device;
 
 static btstack_packet_handler_t packet_handler;
 static att_service_handler_t hid_service;
+static void (*hids_device_get_report_callback)(hci_con_handle_t hid_cid, hid_report_type_t report_type, uint16_t report_id, uint16_t max_report_size, uint8_t * out_report);
 
 // TODO: store hids device connection into list
 static hids_device_t * hids_device_get_instance_for_con_handle(uint16_t con_handle){
@@ -239,8 +241,47 @@ static uint16_t att_read_callback(hci_con_handle_t con_handle, uint16_t att_hand
         } 
         return 1;
     }
-    
-    hids_device_report_t * report = hids_device_get_report_for_client_configuration_handle(instance, att_handle);
+
+    uint8_t boot_report_size = 0;
+    if (att_handle == instance->hid_boot_mouse_input_value_handle){
+        boot_report_size = 3;
+    }
+    if (att_handle == instance->hid_boot_keyboard_input_value_handle){
+        boot_report_size = 8;
+    }
+    if (boot_report_size != 0){
+        // no callback, no report
+        if (hids_device_get_report_callback == NULL){
+            return 0;
+        }
+        // answer length request by ATT Server
+        if (buffer == NULL){
+            return boot_report_size;
+        } else {
+            // Report ID 0, Type Input
+            (*hids_device_get_report_callback)(con_handle, HID_REPORT_TYPE_INPUT, 0, boot_report_size, buffer);
+            return boot_report_size;
+        }
+    }
+
+    hids_device_report_t * report;
+    report = hids_device_get_report_for_value_handle(instance, att_handle);
+    if (report != NULL){
+        // no callback, no report
+        if (hids_device_get_report_callback == NULL){
+            return 0;
+        }
+        // answer length request by ATT Server
+        if (buffer == NULL){
+            return report->size;
+        } else {
+            uint16_t max_size = btstack_min(report->size, buffer_size);
+            (*hids_device_get_report_callback)(con_handle, report->type, report->id, max_size, buffer);
+            return report->size;
+        }
+    }
+
+    report = hids_device_get_report_for_client_configuration_handle(instance, att_handle);
     if (report != NULL){
         return att_read_callback_handle_little_endian_16(report->client_configuration_value, offset, buffer, buffer_size);
     }
@@ -426,7 +467,8 @@ void hids_device_init_with_storage(uint8_t hid_country_code, const uint8_t * hid
         report->client_configuration_value = 0;
         report->id   = report_id;
         report->type = report_type;
-        
+        report->size = btstack_hid_get_report_size_for_id(report_id, report_type, hid_descriptor_size, hid_descriptor);
+
         switch (report->type){
             case HID_REPORT_TYPE_INPUT:
                 instance->hid_input_reports_num++;
@@ -472,6 +514,10 @@ void hids_device_init(uint8_t country_code, const uint8_t * descriptor, uint16_t
  */
 void hids_device_register_packet_handler(btstack_packet_handler_t callback){
     packet_handler = callback;
+}
+
+void hids_device_register_get_report_callback(void (*callback)(hci_con_handle_t con_handle, hid_report_type_t report_type, uint16_t report_id, uint16_t max_report_size, uint8_t * out_report)){
+    hids_device_get_report_callback = callback;
 }
 
 /**

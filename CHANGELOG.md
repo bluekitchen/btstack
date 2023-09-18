@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - GATT Client: support GATT over Enhanced LE Bearer
 - GATT Server: support GATT over Enhanced LE Bearer
 - HOG Device: emit HIDS_SUBEVENT_SET_REPORT
+- HOG Device: provide report for GET REPORT operation via callback
 - LE Device DB: le_device_db_dump dumps LTK
 - Port for Zephyr 3.x
 

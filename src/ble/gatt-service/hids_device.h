@@ -60,7 +60,8 @@ typedef struct {
     uint16_t client_configuration_value;
 
     hid_report_type_t type;
-    uint16_t id;
+    uint8_t id;
+    uint8_t size;
 } hids_device_report_t;
 
 /**
@@ -84,6 +85,12 @@ void hids_device_init_with_storage(uint8_t hid_country_code, const uint8_t * hid
  * @param callback
  */
 void hids_device_register_packet_handler(btstack_packet_handler_t callback);
+
+/**
+ * @brief Register report callback for Get Report operation
+ * @param callback
+ */
+void hids_device_register_get_report_callback(void (*callback)(hci_con_handle_t con_handle, hid_report_type_t report_type, uint16_t report_id, uint16_t max_report_size, uint8_t * out_report));
 
 /**
  * @brief Request can send now event to send HID Report
