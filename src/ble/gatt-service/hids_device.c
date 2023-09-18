@@ -83,7 +83,7 @@ typedef struct{
     uint16_t        hid_control_point_value_handle;
     uint8_t         hid_control_point_suspend;
 
-    btstack_context_callback_registration_t  battery_callback;
+    btstack_context_callback_registration_t  can_send_now_callback;
 } hids_device_t;
 
 static hids_device_t hids_device;
@@ -451,9 +451,9 @@ void hids_device_request_can_send_now_event(hci_con_handle_t con_handle){
         return;
     }
 
-    instance->battery_callback.callback = &hids_device_can_send_now;
-    instance->battery_callback.context  = (void*) (uintptr_t) con_handle;
-    att_server_register_can_send_now_callback(&instance->battery_callback, con_handle);
+    instance->can_send_now_callback.callback = &hids_device_can_send_now;
+    instance->can_send_now_callback.context  = (void*) (uintptr_t) con_handle;
+    att_server_register_can_send_now_callback(&instance->can_send_now_callback, con_handle);
 }
 
 uint8_t hids_device_send_input_report_for_id(hci_con_handle_t con_handle, uint16_t report_id, const uint8_t * report, uint16_t report_len){
