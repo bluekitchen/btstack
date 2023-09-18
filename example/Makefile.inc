@@ -332,14 +332,14 @@ att_delayed_response: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} at
 hog_keyboard_demo.o: hog_keyboard_demo.h hog_keyboard_demo.c
 	${CC} ${CFLAGS} -c $(filter-out hog_keyboard_demo.h,$^) -o $@
 
-hog_keyboard_demo: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} battery_service_server.o device_information_service_server.o hids_device.o btstack_ring_buffer.o hog_keyboard_demo.o
+hog_keyboard_demo: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} battery_service_server.o device_information_service_server.o btstack_hid_parser.o hids_device.o btstack_ring_buffer.o hog_keyboard_demo.o
 	${CC} $^ ${LDFLAGS} -o $@
 
 
 hog_mouse_demo.o: hog_mouse_demo.h hog_mouse_demo.c
 	${CC} ${CFLAGS} -c $(filter-out hog_mouse_demo.h,$^) -o $@
 
-hog_mouse_demo: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} battery_service_server.o device_information_service_server.o hids_device.o hog_mouse_demo.o
+hog_mouse_demo: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} battery_service_server.o device_information_service_server.o btstack_hid_parser.o hids_device.o hog_mouse_demo.o
 	${CC} $^ ${LDFLAGS} -o $@
 
 
