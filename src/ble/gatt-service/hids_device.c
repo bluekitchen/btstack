@@ -191,6 +191,28 @@ static void hids_device_emit_event(uint8_t event, hci_con_handle_t con_handle){
     (*packet_handler)(HCI_EVENT_PACKET, 0, buffer, sizeof(buffer));
 }
 
+static void hids_device_emit_report(hci_con_handle_t con_handle, const uint8_t report_id, const uint8_t report_type,
+                                    const uint8_t *buffer, uint16_t buffer_size) {
+    // assemble event in buffer
+    uint8_t event[257];
+    uint16_t pos = 0;
+    event[pos++] = HCI_EVENT_HIDS_META;
+    // skip length
+    pos++;
+    event[pos++] = HIDS_SUBEVENT_SET_REPORT;
+    little_endian_store_16(event, pos, con_handle);
+    pos += 2;
+    event[pos++] = report_id;
+    event[pos++] = report_type;
+    uint8_t length_to_copy = btstack_min(buffer_size, 250);
+    event[pos++] = length_to_copy;
+    memcpy(&event[pos], buffer, length_to_copy);
+    pos += length_to_copy;
+    // set event length
+    event[1] = pos - 2;
+    (*packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
+}
+
 static void hids_device_can_send_now(void * context){
     hci_con_handle_t con_handle = (hci_con_handle_t) (uintptr_t) context;
     // notify client
@@ -244,19 +266,25 @@ static uint16_t att_read_callback(hci_con_handle_t con_handle, uint16_t att_hand
         return 1;
     }
 
-    if (att_handle == instance->hid_boot_keyboard_output_value_handle){
-        // TODO
-        return 0;
-    }
-    
     uint8_t boot_report_size = 0;
+    // avoid "value unused" warning by smart compiler
+    // not so smart compiler will complain that value is used without initialization
+    UNUSED(boot_report_size);
+    uint8_t boot_report_id = 0;
+    hid_report_type_t boot_report_type = HID_REPORT_TYPE_RESERVED;
     if (att_handle == instance->hid_boot_mouse_input_value_handle){
+        boot_report_type = HID_REPORT_TYPE_INPUT;
         boot_report_size = 3;
     }
     if (att_handle == instance->hid_boot_keyboard_input_value_handle){
+        boot_report_type = HID_REPORT_TYPE_INPUT;
         boot_report_size = 8;
     }
-    if (boot_report_size != 0){
+    if (att_handle == instance->hid_boot_keyboard_output_value_handle){
+        boot_report_type = HID_REPORT_TYPE_OUTPUT;
+        boot_report_size = 1;
+    }
+    if (boot_report_type != HID_REPORT_TYPE_RESERVED){
         // no callback, no report
         if (hids_device_get_report_callback == NULL){
             return 0;
@@ -266,7 +294,7 @@ static uint16_t att_read_callback(hci_con_handle_t con_handle, uint16_t att_hand
             return boot_report_size;
         } else {
             // Report ID 0, Type Input
-            (*hids_device_get_report_callback)(con_handle, HID_REPORT_TYPE_INPUT, 0, boot_report_size, buffer);
+            (*hids_device_get_report_callback)(con_handle, boot_report_type, boot_report_id, boot_report_size, buffer);
             return boot_report_size;
         }
     }
@@ -345,31 +373,14 @@ static int att_write_callback(hci_con_handle_t con_handle, uint16_t att_handle, 
     }
 
     if (att_handle == instance->hid_boot_keyboard_output_value_handle){
-        // TODO
+        hids_device_emit_report(con_handle, 0, HID_REPORT_TYPE_OUTPUT, buffer, buffer_size);
         return 0;
     }
 
     hids_device_report_t * report;
     report = hids_device_get_report_for_value_handle(instance, att_handle);
     if (report != NULL){
-        // assemble event in buffer
-        uint8_t event[257];
-        uint16_t pos = 0;
-        event[pos++] = HCI_EVENT_HIDS_META;
-        // skip length
-        pos++;
-        event[pos++] = HIDS_SUBEVENT_SET_REPORT;
-        little_endian_store_16(event, pos, con_handle);
-        pos += 2;
-        event[pos++] = report->id;
-        event[pos++] = (uint8_t) report->type;
-        uint8_t length_to_copy = btstack_min(buffer_size, 250);
-        event[pos++] = length_to_copy;
-        memcpy(&event[pos], buffer, length_to_copy);
-        pos += length_to_copy;
-        // set event length
-        event[1] = pos - 2;
-        (*packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
+        hids_device_emit_report(con_handle, report->id, (uint8_t) report->type, buffer, buffer_size);
         return 0;
     }
 
