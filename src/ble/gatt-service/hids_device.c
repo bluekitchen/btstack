@@ -104,11 +104,11 @@ static hids_device_t * hids_device_create_instance(void){
     return &hids_device;
 }
 
-static hids_device_report_t * hids_device_get_report_for_value_handle(hids_device_t * device, uint16_t client_configuration_handle){
+static hids_device_report_t * hids_device_get_report_for_value_handle(hids_device_t * device, uint16_t value_handle){
     uint8_t pos;
     uint8_t total_reports =  device->hid_input_reports_num + device->hid_output_reports_num + device->hid_feature_reports_num;
     for (pos = 0 ; pos < total_reports ; pos++){
-        if (device->hid_reports[pos].value_handle == client_configuration_handle){
+        if (device->hid_reports[pos].value_handle == value_handle){
             return &device->hid_reports[pos];
         }
     }
