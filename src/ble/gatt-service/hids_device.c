@@ -306,17 +306,20 @@ static int att_write_callback(hci_con_handle_t con_handle, uint16_t att_handle, 
         uint16_t new_value = little_endian_read_16(buffer, 0);
         instance->hid_boot_mouse_input_client_configuration_value = new_value;
         hids_device_emit_event_with_uint8(HIDS_SUBEVENT_BOOT_MOUSE_INPUT_REPORT_ENABLE, con_handle, (uint8_t) new_value);
+        return 0;
     }
     if (att_handle == instance->hid_boot_keyboard_input_client_configuration_handle){
         uint16_t new_value = little_endian_read_16(buffer, 0);
         instance->hid_boot_keyboard_input_client_configuration_value = new_value;
         hids_device_emit_event_with_uint8(HIDS_SUBEVENT_BOOT_KEYBOARD_INPUT_REPORT_ENABLE, con_handle, (uint8_t) new_value);
+        return 0;
     }
 
     if (att_handle == instance->hid_protocol_mode_value_handle){
         instance->hid_protocol_mode = buffer[0];
         log_info("Set protocol mode: %u", instance->hid_protocol_mode);
         hids_device_emit_event_with_uint8(HIDS_SUBEVENT_PROTOCOL_MODE, con_handle, instance->hid_protocol_mode);
+        return 0;
     }
     
     if (att_handle == instance->hid_control_point_value_handle){
@@ -331,6 +334,8 @@ static int att_write_callback(hci_con_handle_t con_handle, uint16_t att_handle, 
         } else if (instance->hid_control_point_suspend == 1u){ 
             hids_device_emit_event(HIDS_SUBEVENT_EXIT_SUSPEND, con_handle);
         }
+        return 0;
+    }
     }
 
     hids_device_report_t * report;
