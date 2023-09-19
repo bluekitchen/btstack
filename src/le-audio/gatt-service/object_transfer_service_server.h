@@ -59,7 +59,7 @@ typedef struct {
     oacp_result_code_t (*delete)(hci_con_handle_t con_handle);
     oacp_result_code_t (*calculate_checksum)(hci_con_handle_t con_handle, uint8_t *buffer, uint16_t buffer_size, uint32_t * crc_out);
     oacp_result_code_t (*execute)(hci_con_handle_t con_handle, uint8_t *buffer, uint16_t buffer_size);
-    oacp_result_code_t (*read) (hci_con_handle_t con_handle, uint16_t cid, uint32_t offset, uint32_t length);
+    oacp_result_code_t (*read) (hci_con_handle_t con_handle, uint32_t offset, uint32_t length, const uint8_t * out_buffer);
     oacp_result_code_t (*write)(hci_con_handle_t con_handle, uint32_t offset, uint8_t *buffer, uint16_t buffer_size);
     oacp_result_code_t (*increase_allocated_size)(hci_con_handle_t con_handle, uint32_t allocated_size);
     oacp_result_code_t (*abort)(hci_con_handle_t con_handle);
@@ -107,6 +107,7 @@ typedef struct {
     uint32_t oacp_offset;
     uint32_t oacp_length;
     uint32_t oacp_write_offset;
+    uint32_t oacp_read_offset;
     bool oacp_abort_read;
 
     bool oacp_truncate;
