@@ -42,6 +42,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+#include <unistd.h>
 
 #include "media_player_server_test.h"
 #include "btstack.h"
@@ -108,7 +110,7 @@ static oacp_result_code_t ots_server_operation_create(hci_con_handle_t con_handl
 static oacp_result_code_t ots_server_operation_delete(hci_con_handle_t con_handle);
 static oacp_result_code_t ots_server_operation_calculate_checksum(hci_con_handle_t con_handle, uint8_t *buffer, uint16_t buffer_size, uint32_t * crc_out);
 static oacp_result_code_t ots_server_operation_execute(hci_con_handle_t con_handle, uint8_t *buffer, uint16_t buffer_size);
-static oacp_result_code_t ots_server_operation_read( hci_con_handle_t con_handle, uint16_t cid, uint32_t offset, uint32_t lenght);
+static oacp_result_code_t ots_server_operation_read( hci_con_handle_t con_handle, uint32_t offset, uint32_t lenght, const uint8_t * out_buffer);
 static oacp_result_code_t ots_server_operation_write(hci_con_handle_t con_handle, uint32_t offset, uint8_t *buffer, uint16_t buffer_size);
 static oacp_result_code_t ots_server_operation_increase_allocated_size(hci_con_handle_t con_handle, uint32_t lenght);
 static oacp_result_code_t ots_server_operation_abort(hci_con_handle_t con_handle);
@@ -594,15 +596,14 @@ static oacp_result_code_t ots_server_operation_execute(hci_con_handle_t con_hand
     return OACP_RESULT_CODE_SUCCESS;
 }
 
-static oacp_result_code_t ots_server_operation_read(hci_con_handle_t con_handle, uint16_t cid, uint32_t offset, uint32_t length){
+static oacp_result_code_t ots_server_operation_read(hci_con_handle_t con_handle, uint32_t offset, uint32_t length, const uint8_t * out_buffer){
     printf("ots_server_operation_read\n");
-
-    if ( (offset + length) <= object_transfer_service_server_current_object_size(con_handle)){
-        const uint8_t * data = ots_server_get_current_object_bytes(con_handle);
-        l2cap_send(cid, &data[offset], length);
+    out_buffer = NULL;
+    if ((offset + length) <= object_transfer_service_server_current_object_size(con_handle)){
+        out_buffer = ots_server_get_current_object_bytes(con_handle);
+        // sleep(1000);
         return OACP_RESULT_CODE_SUCCESS;
     }
-
     return OACP_RESULT_CODE_OPERATION_FAILED;
 }
 
@@ -1731,6 +1732,10 @@ static void stdin_process(char cmd){
             }
             mcs_goto_group(current_media_player_id, 2);
             break;
+        case '8':
+            printf(" - Reset filters\n");
+            object_transfer_service_server_reset_filters(bap_app_server_con_handle);
+            break;
 
         case 'j':
             status = media_control_service_server_set_media_player_name(current_media_player_id, long_string1);
@@ -1828,7 +1833,7 @@ int btstack_main(void)
     btstack_assert(current_track != NULL);
 
     media_control_service_server_register_media_player(&media_player1.media_server, 
-        &mcs_server_packet_handler, 0x1FFFFF, 
+        &mcs_server_packet_handler, 0, //0x1FFFFF,
         &media_player1.id);
     media_control_service_server_set_media_player_name(media_player1.id, "BK Player1");
     media_control_service_server_set_icon_object_id(media_player1.id, &icon_object_id);
@@ -1869,8 +1874,9 @@ int btstack_main(void)
                 track->title,
                 properties,
                 type_uuid16,
-                120,
-                120,
+
+                sizeof(ots_object_test_data),
+                sizeof(ots_object_test_data),
                 &first_created, 
                 &last_modified);
 
