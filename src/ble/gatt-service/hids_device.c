@@ -75,6 +75,8 @@ typedef struct{
     uint16_t        hid_boot_keyboard_input_client_configuration_handle;
     uint16_t        hid_boot_keyboard_input_client_configuration_value;
 
+    uint16_t        hid_boot_keyboard_output_value_handle;
+
     hids_device_report_t * hid_reports;
 
     uint8_t         hid_input_reports_num;
@@ -242,6 +244,11 @@ static uint16_t att_read_callback(hci_con_handle_t con_handle, uint16_t att_hand
         return 1;
     }
 
+    if (att_handle == instance->hid_boot_keyboard_output_value_handle){
+        // TODO
+        return 0;
+    }
+    
     uint8_t boot_report_size = 0;
     if (att_handle == instance->hid_boot_mouse_input_value_handle){
         boot_report_size = 3;
@@ -336,6 +343,10 @@ static int att_write_callback(hci_con_handle_t con_handle, uint16_t att_handle, 
         }
         return 0;
     }
+
+    if (att_handle == instance->hid_boot_keyboard_output_value_handle){
+        // TODO
+        return 0;
     }
 
     hids_device_report_t * report;
@@ -421,6 +432,8 @@ void hids_device_init_with_storage(uint8_t hid_country_code, const uint8_t * hid
     instance->hid_boot_keyboard_input_value_handle                = gatt_server_get_value_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_BOOT_KEYBOARD_INPUT_REPORT);
     instance->hid_boot_keyboard_input_client_configuration_handle = gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_BOOT_KEYBOARD_INPUT_REPORT);
 
+    instance->hid_boot_keyboard_output_value_handle               = gatt_server_get_value_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_BOOT_KEYBOARD_OUTPUT_REPORT);
+
     instance->hid_control_point_value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_HID_CONTROL_POINT);
     
     log_info("hid_report_map_handle                               0x%02x", instance->hid_report_map_handle);
@@ -428,6 +441,7 @@ void hids_device_init_with_storage(uint8_t hid_country_code, const uint8_t * hid
     log_info("hid_boot_mouse_input_value_handle                   0x%02x", instance->hid_boot_mouse_input_value_handle);
     log_info("hid_boot_mouse_input_client_configuration_handle    0x%02x", instance->hid_boot_mouse_input_client_configuration_handle);
     log_info("hid_boot_keyboard_input_value_handle                0x%02x", instance->hid_boot_keyboard_input_value_handle);
+    log_info("hid_boot_keyboard_output_value_handle               0x%02x", instance->hid_boot_keyboard_output_value_handle);
     log_info("hid_boot_keyboard_input_client_configuration_handle 0x%02x", instance->hid_boot_keyboard_input_client_configuration_handle);
     log_info("hid_control_point_value_handle                      0x%02x", instance->hid_control_point_value_handle);
 
