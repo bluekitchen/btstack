@@ -34,6 +34,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - 
 ### Changed
 - HCI: simplified implicit SCO flow control
+- AVRCP: shorten default SDP Service and Provider Names
 - btstack_crypto: allow MBEDTLS config via MBEDTLS_CONFIG_FILE
 - remove old Zephyr 1.9 port
 
