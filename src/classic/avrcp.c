@@ -47,9 +47,9 @@
 #include "btstack_debug.h"
 #include "btstack_event.h"
 #include "btstack_memory.h"
+#include "classic/avrcp.h"
 #include "classic/sdp_client.h"
 #include "classic/sdp_util.h"
-#include "classic/avrcp.h"
 
 
 typedef struct {
@@ -250,8 +250,8 @@ uint8_t avrcp_cmd_opcode(uint8_t *packet, uint16_t size){
     return packet[cmd_opcode_index];
 }
 
-void avrcp_create_sdp_record(uint8_t controller, uint8_t * service, uint32_t service_record_handle, uint8_t browsing, uint16_t supported_features, 
-    const char * service_name, const char * service_provider_name){
+void avrcp_create_sdp_record(bool controller, uint8_t * service, uint32_t service_record_handle, uint8_t browsing, uint16_t supported_features,
+                             const char * service_name, const char * service_provider_name){
     uint8_t* attribute;
     de_create_sequence(service);
 
@@ -365,7 +365,7 @@ void avrcp_create_sdp_record(uint8_t controller, uint8_t * service, uint32_t ser
     }
 
     // 0x0311 "Supported Features"
-    de_add_number(service, DE_UINT, DE_SIZE_16, 0x0311);
+    de_add_number(service, DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_SUPPORTED_FEATURES);
     de_add_number(service, DE_UINT, DE_SIZE_16, supported_features);
 }
 

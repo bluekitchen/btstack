@@ -1354,7 +1354,7 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
 }
 
 void avrcp_controller_create_sdp_record(uint8_t * service, uint32_t service_record_handle, uint16_t supported_features, const char * service_name, const char * service_provider_name){
-    avrcp_create_sdp_record(1, service, service_record_handle, avrcp_controller_supports_browsing(supported_features), supported_features, service_name, service_provider_name);
+    avrcp_create_sdp_record(true, service, service_record_handle, avrcp_controller_supports_browsing(supported_features), supported_features, service_name, service_provider_name);
 }
 
 void avrcp_controller_init(void){

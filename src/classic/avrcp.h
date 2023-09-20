@@ -45,6 +45,7 @@
 
 #include <stdint.h>
 
+#include "btstack_bool.h"
 #include "btstack_run_loop.h"
 #include "btstack_linked_list.h"
 #include "l2cap.h"
@@ -709,7 +710,7 @@ avrcp_connection_t * get_avrcp_connection_for_browsing_cid_for_role(avrcp_role_t
 avrcp_connection_t * get_avrcp_connection_for_browsing_l2cap_cid_for_role(avrcp_role_t role, uint16_t browsing_l2cap_cid);
 avrcp_browsing_connection_t * get_avrcp_browsing_connection_for_l2cap_cid_for_role(avrcp_role_t role, uint16_t l2cap_cid);
 // SDP query
-void    avrcp_create_sdp_record(uint8_t controller, uint8_t * service, uint32_t service_record_handle, uint8_t browsing, uint16_t supported_features, const char * service_name, const char * service_provider_name);
+void    avrcp_create_sdp_record(bool controller, uint8_t * service, uint32_t service_record_handle, uint8_t browsing, uint16_t supported_features, const char * service_name, const char * service_provider_name);
 void avrcp_trigger_sdp_query(avrcp_connection_t *connection_controller, avrcp_connection_t *connection_target);
 
 

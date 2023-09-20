@@ -68,7 +68,7 @@ static int avrcp_target_supports_browsing(uint16_t target_supported_features){
 }
 
 void avrcp_target_create_sdp_record(uint8_t * service, uint32_t service_record_handle, uint16_t supported_features, const char * service_name, const char * service_provider_name){
-    avrcp_create_sdp_record(0, service, service_record_handle, avrcp_target_supports_browsing(supported_features), supported_features, service_name, service_provider_name);
+    avrcp_create_sdp_record(false, service, service_record_handle, avrcp_target_supports_browsing(supported_features), supported_features, service_name, service_provider_name);
 }
 
 static void
