@@ -121,9 +121,12 @@ static olcp_result_code_t ots_server_operation_first(hci_con_handle_t con_handle
 static olcp_result_code_t ots_server_operation_last(hci_con_handle_t con_handle);
 static olcp_result_code_t ots_server_operation_next(hci_con_handle_t con_handle);
 static olcp_result_code_t ots_server_operation_previous(hci_con_handle_t con_handle);
+static olcp_result_code_t ots_server_operation_goto(hci_con_handle_t con_handle, ots_object_id_t * luid);
+static olcp_result_code_t ots_server_operation_sort(hci_con_handle_t con_handle, olcp_list_sort_order_t order);
 
 #define OTS_SERVER_MAX_NUM_CLIENTS 3
-#define OTS_SERVER_MAX_NUM_OBJECTS 100
+#define OTS_SERVER_MAX_NUM_OBJECTS 10
+
 
 static  ots_server_connection_t ots_server_connections_storage[OTS_SERVER_MAX_NUM_CLIENTS];
 
@@ -143,6 +146,8 @@ static const ots_operations_t ots_server_operations_impl = {
     .last     = &ots_server_operation_last,
     .next     = &ots_server_operation_next,
     .previous = &ots_server_operation_previous,
+    .go_to    = &ots_server_operation_goto,
+    .sort     = &ots_server_operation_sort,
 };
 
 static uint8_t ots_object_test_data[] = {
@@ -273,6 +278,9 @@ static uint32_t previous_track_position_10ms;
 static uint32_t previous_track_index;
 static uint32_t previous_group_index;
 
+static olcp_list_sort_order_t   active_ots_objects_sort_order;
+static uint32_t * active_ots_objects_indexes;
+
 // MCS Test
 static mcs_track_t tracksA[] = {
     {18000, 0, {0x11, 0x11, 0x11, 0x11, 0x11, 0x11}, "Object 2"}, //{0xFE, 0xFE, 0xFE, 0xFE, 0xFE, 0xFE}, {0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB}},
@@ -298,10 +306,33 @@ static mcs_track_group_t  track_groups[] = {
     {{0xFE, 0xFE, 0xFE, 0xFE, 0xFE, 0xFE},{0x0C, 0x0C, 0x0C, 0x0C, 0x0C, 0x0C}, 2, tracksC}
 };
 
+static uint32_t ots_indexes[10][OTS_SERVER_MAX_NUM_OBJECTS] = {
+        // OLCP_LIST_SORT_ORDER_BY_FIRST_NAME_ASCENDING
+        {0,1,2,3,4,5,6,7,8,9},
+        // OLCP_LIST_SORT_ORDER_BY_OBJECT_TYPE_ASCENDING
+        {0,1,2,3,4,5,6,7,8,9},
+        // OLCP_LIST_SORT_ORDER_BY_OBJECT_CURRENT_SIZE_ASCENDING
+        {0,1,2,3,4,5,6,7,8,9},
+        // OLCP_LIST_SORT_ORDER_BY_FIRST_CREATED_ASCENDING
+        {0,1,2,3,4,5,6,7,8,9},
+        // OLCP_LIST_SORT_ORDER_BY_LAST_CREATED_ASCENDING
+        {0,1,2,3,4,5,6,7,8,9},
+        // OLCP_LIST_SORT_ORDER_BY_FIRST_NAME_DESCENDING
+        {9,8,7,6,5,4,3,2,1,0},
+        // OLCP_LIST_SORT_ORDER_BY_OBJECT_TYPE_DESCENDING
+        {9,8,7,6,5,4,3,2,1,0},
+        // OLCP_LIST_SORT_ORDER_BY_OBJECT_CURRENT_SIZE_DESCENDING
+        {9,8,7,6,5,4,3,2,1,0},
+        // OLCP_LIST_SORT_ORDER_BY_FIRST_CREATED_DESCENDING
+        {9,8,7,6,5,4,3,2,1,0},
+        // OLCP_LIST_SORT_ORDER_BY_LAST_CREATED_DESCENDING
+        {9,8,7,6,5,4,3,2,1,0}
+};
+
 static mcs_media_player_t media_player1;
 
-static char * long_string1 = "abcdefghijkabcdefghijkabcdefghijkabcdefghijkabcdefghijk";
-static char * long_string2 = "ghijkabcdefghijkabcdefghijkabcdefghijkabcdefghijkabcdefgfgfgf";
+static char * long_string1 = "Object 3 abcdefghijkabcdefghijkabcdefghijkabcdefghijkab";
+static char * long_string2 = "Object 3 ghijkabcdefghijkabcdefghijkabcdefghijkabcdefghijkab";
 
 static void setup_advertising(void) {
     gap_extended_advertising_setup(&le_advertising_set, &extended_params, &adv_handle);
@@ -314,57 +345,76 @@ static void setup_advertising(void) {
 static  ots_object_t ots_objects[OTS_SERVER_MAX_NUM_OBJECTS];
 static uint32_t ots_object_id_counter = 0;
 
-static int ots_object_index = 0;
+static int active_ots_object_index = 0;
+
+static int ots_active_index_get(void){
+    return ots_indexes[(int) active_ots_objects_sort_order][active_ots_object_index];
+}
+
+static ots_object_t * ots_object_for_active_index(void){
+    ots_object_t * object = &ots_objects[ots_active_index_get()];
+    printf("%s\n", object->name);
+    return object;
+}
+
+static ots_object_t * ots_object_for_index(int index){
+    int i = ots_indexes[(int) active_ots_objects_sort_order][index];
+    return &ots_objects[i];
+}
+
+static void ots_active_index_set(int index){
+    active_ots_object_index = index;
+}
 
 static ots_object_t * ots_object_iterator_first(void){
     int i = 0;
-
-    while ((i < OTS_SERVER_MAX_NUM_OBJECTS) && (ots_objects[i].allocated_size == 0)){
+    printf("first: ");
+    while ((i < OTS_SERVER_MAX_NUM_OBJECTS) && (ots_object_for_index(i)->allocated_size == 0)){
         i++; 
     }
     if (i < OTS_SERVER_MAX_NUM_OBJECTS){
-        ots_object_index = i;
-        return &ots_objects[ots_object_index];
+        ots_active_index_set(i);
+        return ots_object_for_active_index();
     }
     return NULL;
 }
 
 static ots_object_t * ots_object_iterator_last(void){
     int i = OTS_SERVER_MAX_NUM_OBJECTS - 1;
-
-    while ((i >= 0) && (ots_objects[i].allocated_size == 0)){
+    printf("last: ");
+    while ((i >= 0) && (ots_object_for_index(i)->allocated_size == 0)){
         i--; 
     }
 
     if (i >= 0){
-        ots_object_index = i;
-        return &ots_objects[ots_object_index];
+        ots_active_index_set(i);
+        return ots_object_for_active_index();
     }
     return NULL;
 }
 
 static ots_object_t * ots_object_iterator_next(void){
-    int i = ots_object_index + 1;
-
-    while ((i < OTS_SERVER_MAX_NUM_OBJECTS) && (ots_objects[i].allocated_size == 0)){
+    int i = ots_active_index_get() + 1;
+    printf("next: ");
+    while ((i < OTS_SERVER_MAX_NUM_OBJECTS) && (ots_object_for_index(i)->allocated_size == 0)){
         i++; 
     }
     if (i < OTS_SERVER_MAX_NUM_OBJECTS){
-        ots_object_index = i;
-        return &ots_objects[ots_object_index];
+        ots_active_index_set(i);
+        return ots_object_for_active_index();
     }
     return NULL;
 }
 
 static ots_object_t * ots_object_iterator_previous(void){
-    int i = OTS_SERVER_MAX_NUM_OBJECTS - 1;
+    int i = ots_active_index_get() - 1;
 
-    while ((i >= 0) && (ots_objects[i].allocated_size == 0)){
+    while ((i >= 0) && (ots_object_for_index(i)->allocated_size == 0)){
         i--; 
     }
     if (i >= 0){
-        ots_object_index = i;
-        return &ots_objects[ots_object_index];
+        ots_active_index_set(i);
+        return ots_object_for_active_index();
     }
     return NULL;
 }
@@ -373,8 +423,8 @@ static ots_object_t * ots_object_iterator_previous(void){
 static ots_object_t * ots_server_find_free_object(void){
     int i;
     for (i = 0; i < OTS_SERVER_MAX_NUM_OBJECTS; i++){
-        if (ots_objects[i].allocated_size == 0){
-            return &ots_objects[i];
+        if (ots_object_for_index(i)->allocated_size == 0){
+            return ots_object_for_index(i);
         } 
     }
     return NULL;
@@ -383,8 +433,8 @@ static ots_object_t * ots_server_find_free_object(void){
 static ots_object_t * ots_server_find_object_for_luid(ots_object_id_t * luid){
     int i;
     for (i = 0; i < OTS_SERVER_MAX_NUM_OBJECTS; i++){
-        if (memcmp(ots_objects[i].luid, luid, sizeof(ots_object_id_t)) == 0){
-            return &ots_objects[i];
+        if (memcmp(ots_object_for_index(i)->luid, luid, sizeof(ots_object_id_t)) == 0){
+            return ots_object_for_index(i);
         } 
     }
     return NULL;
@@ -649,7 +699,7 @@ static olcp_result_code_t ots_server_operation_last(hci_con_handle_t con_handle)
 static olcp_result_code_t ots_server_operation_next(hci_con_handle_t con_handle){
     ots_object_t * object = ots_object_iterator_next();
     if (object == NULL){
-        return OLCP_RESULT_CODE_NO_OBJECT;
+        return OLCP_RESULT_CODE_OUT_OF_BOUNDS;
     }
     object_transfer_service_server_set_current_object(con_handle, object, ots_server_get_object_current_size(object));
     return OLCP_RESULT_CODE_SUCCESS;
@@ -658,9 +708,96 @@ static olcp_result_code_t ots_server_operation_next(hci_con_handle_t con_handle)
 static olcp_result_code_t ots_server_operation_previous(hci_con_handle_t con_handle){
     ots_object_t * object = ots_object_iterator_previous();
     if (object == NULL){
-        return OLCP_RESULT_CODE_NO_OBJECT;
+        return OLCP_RESULT_CODE_OUT_OF_BOUNDS;
     }
     object_transfer_service_server_set_current_object(con_handle, object, ots_server_get_object_current_size(object));
+    return OLCP_RESULT_CODE_SUCCESS;
+}
+
+static olcp_result_code_t ots_server_operation_goto(hci_con_handle_t con_handle, ots_object_id_t * luid){
+    int i = 0;
+    bool found = false;
+    while ((i < OTS_SERVER_MAX_NUM_OBJECTS) && !found){
+        if ( (ots_object_for_index(i)->allocated_size != 0) && (memcmp(ots_object_for_index(i)->luid, luid, 6) == 0) ){
+            found = true;
+        } else {
+            i++;
+        }
+    }
+    if (found){
+        ots_active_index_set(i);
+        object_transfer_service_server_set_current_object(con_handle, ots_object_for_index(i), ots_server_get_object_current_size(ots_object_for_index(i)));
+        return OLCP_RESULT_CODE_SUCCESS;
+    }
+    return OLCP_RESULT_CODE_OUT_OF_BOUNDS;
+}
+
+static char * ots_sort_order2string(olcp_list_sort_order_t order){
+    switch (order){
+        case OLCP_LIST_SORT_ORDER_BY_FIRST_NAME_ASCENDING:
+            return "FIRST_NAME_ASCENDING";
+        case OLCP_LIST_SORT_ORDER_BY_OBJECT_TYPE_ASCENDING:
+            return "OBJECT_TYPE_ASCENDING";
+        case OLCP_LIST_SORT_ORDER_BY_OBJECT_CURRENT_SIZE_ASCENDING:
+            return "OBJECT_CURRENT_SIZE_ASCENDING";
+        case OLCP_LIST_SORT_ORDER_BY_FIRST_CREATED_ASCENDING:
+            return "FIRST_CREATED_ASCENDING";
+        case OLCP_LIST_SORT_ORDER_BY_LAST_CREATED_ASCENDING:
+            return "LAST_CREATED_ASCENDING";
+        case OLCP_LIST_SORT_ORDER_BY_FIRST_NAME_DESCENDING:
+            return "FIRST_NAME_DESCENDING";
+        case OLCP_LIST_SORT_ORDER_BY_OBJECT_TYPE_DESCENDING:
+            return "OBJECT_TYPE_DESCENDING";
+        case OLCP_LIST_SORT_ORDER_BY_OBJECT_CURRENT_SIZE_DESCENDING:
+            return "OBJECT_CURRENT_SIZE_DESCENDING";
+        case OLCP_LIST_SORT_ORDER_BY_FIRST_CREATED_DESCENDING:
+            return "FIRST_CREATED_DESCENDING";
+        case OLCP_LIST_SORT_ORDER_BY_LAST_CREATED_DESCENDING:
+            return "LAST_CREATED_DESCENDING";
+        default:
+            btstack_unreachable();
+            break;
+    }
+}
+static olcp_result_code_t ots_server_operation_sort(hci_con_handle_t con_handle, olcp_list_sort_order_t order){
+    printf("Sort: %s\n", ots_sort_order2string(order));
+
+    switch (order){
+        case OLCP_LIST_SORT_ORDER_BY_FIRST_NAME_ASCENDING:
+            active_ots_objects_sort_order = 0;
+            break;
+        case OLCP_LIST_SORT_ORDER_BY_OBJECT_TYPE_ASCENDING:
+            active_ots_objects_sort_order = 1;
+            break;
+        case OLCP_LIST_SORT_ORDER_BY_OBJECT_CURRENT_SIZE_ASCENDING:
+            active_ots_objects_sort_order = 2;
+            break;
+        case OLCP_LIST_SORT_ORDER_BY_FIRST_CREATED_ASCENDING:
+            active_ots_objects_sort_order = 3;
+            break;
+        case OLCP_LIST_SORT_ORDER_BY_LAST_CREATED_ASCENDING:
+            active_ots_objects_sort_order = 4;
+            break;
+        case OLCP_LIST_SORT_ORDER_BY_FIRST_NAME_DESCENDING:
+            active_ots_objects_sort_order = 5;
+            break;
+        case OLCP_LIST_SORT_ORDER_BY_OBJECT_TYPE_DESCENDING:
+            active_ots_objects_sort_order = 6;
+            break;
+        case OLCP_LIST_SORT_ORDER_BY_OBJECT_CURRENT_SIZE_DESCENDING:
+            active_ots_objects_sort_order = 7;
+            break;
+        case OLCP_LIST_SORT_ORDER_BY_FIRST_CREATED_DESCENDING:
+            active_ots_objects_sort_order = 8;
+            break;
+        case OLCP_LIST_SORT_ORDER_BY_LAST_CREATED_DESCENDING:
+            active_ots_objects_sort_order = 9;
+            break;
+        default:
+            btstack_unreachable();
+            break;
+    }
+    active_ots_objects_indexes = &ots_indexes[active_ots_objects_sort_order][0];
     return OLCP_RESULT_CODE_SUCCESS;
 }
 
@@ -1864,8 +2001,8 @@ int btstack_main(void)
         for (j = 0; j < track_group->tracks_num; j++){
             mcs_track_t * track = &track_group->tracks[j];
             
-            btstack_utc_t first_created = {2023, 6, 22, 10, 59, 00};
-            btstack_utc_t last_modified = {2023, 6, 22, 10, 59, 00};
+            btstack_utc_t first_created = {2023, 6, 22, 10, 59, i * 5};
+            btstack_utc_t last_modified = {2023, 6, 22, 10, 59, i * 5};
             uint32_t properties = 0xFF;
             uint16_t type_uuid16 = 0x2ACA; // unspecified
 
@@ -1875,8 +2012,8 @@ int btstack_main(void)
                 properties,
                 type_uuid16,
 
-                sizeof(ots_object_test_data),
-                sizeof(ots_object_test_data),
+                sizeof(ots_object_test_data - 100 + i * 20),
+                sizeof(ots_object_test_data - 100 + i * 20),
                 &first_created, 
                 &last_modified);
 
