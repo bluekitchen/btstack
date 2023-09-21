@@ -487,7 +487,6 @@ static void ots_server_can_send_now(void * context){
         connection->olcp_opcode = OLCP_OPCODE_READY;
 
         uint16_t attribute_handle = ots_server_get_value_handle_for_characteristic_index(OTS_OBJECT_LIST_CONTROL_POINT_INDEX);
-        printf("OTS_TASK_SEND_OLCP_PROCEDURE_RESPONSE 0x%02x\n", attribute_handle);
 
         att_server_indicate(connection->con_handle, attribute_handle, value, sizeof(value));
     }
@@ -805,15 +804,19 @@ int ots_server_handle_action_control_point_operation(ots_server_connection_t * c
 static int ots_server_handle_list_control_point_write(ots_server_connection_t * connection, uint8_t *buffer, uint16_t buffer_size){
     if (buffer_size == 0){
         connection->olcp_result_code = OLCP_RESULT_CODE_INVALID_PARAMETER;
+        ots_server_schedule_task(connection, OTS_TASK_SEND_OLCP_PROCEDURE_RESPONSE);
         return 0;
     }
 
     connection->olcp_opcode = buffer[0];
     if ((connection->olcp_opcode == OLCP_OPCODE_READY) || (connection->olcp_opcode >= OLCP_OPCODE_RFU)){
         connection->olcp_result_code = OLCP_RESULT_CODE_OP_CODE_NOT_SUPPORTED;
+        ots_server_schedule_task(connection, OTS_TASK_SEND_OLCP_PROCEDURE_RESPONSE);
         return 0;
     }
-   
+
+    olcp_list_sort_order_t order;
+
     switch (connection->olcp_opcode){
         case OLCP_OPCODE_FIRST:
             // btstack_linked_list_iterator_t it;
@@ -844,9 +847,27 @@ static int ots_server_handle_list_control_point_write(ots_server_connection_t * 
         case OLCP_OPCODE_NEXT:
             connection->olcp_result_code = ots_server_operations->next(connection->con_handle);
             break;
-        case OLCP_OPCODE_GOTO:   
-            // TODO
-            break;     
+        case OLCP_OPCODE_GOTO:
+            if (buffer_size < 7){
+                connection->olcp_result_code = OLCP_RESULT_CODE_INVALID_PARAMETER;
+                break;
+            }
+            connection->olcp_result_code = ots_server_operations->go_to(connection->con_handle, (ots_object_id_t *)&buffer[1]);
+            break;
+
+        case OLCP_OPCODE_ORDER:
+            if (buffer_size < 2){
+                connection->olcp_result_code = OLCP_RESULT_CODE_INVALID_PARAMETER;
+                break;
+            }
+
+            order = (olcp_list_sort_order_t)buffer[1];
+            if ((order == OLCP_LIST_SORT_ORDER_NONE) && (order >= OLCP_LIST_SORT_ORDER_RFU)){
+                connection->olcp_result_code = OLCP_RESULT_CODE_INVALID_PARAMETER;
+                break;
+            }
+            connection->olcp_result_code = ots_server_operations->sort(connection->con_handle, order);
+            break;
         case OLCP_OPCODE_REQUEST_NUMBER_OF_OBJECTS:
             // TODO
             break;
