@@ -69,6 +69,8 @@ typedef struct {
     olcp_result_code_t (*last)(hci_con_handle_t con_handle);
     olcp_result_code_t (*next)(hci_con_handle_t con_handle);
     olcp_result_code_t (*previous)(hci_con_handle_t con_handle);
+    olcp_result_code_t (*go_to)(hci_con_handle_t con_handle, ots_object_id_t * luid);
+    olcp_result_code_t (*sort)(hci_con_handle_t con_handle,  olcp_list_sort_order_t order);
 } ots_operations_t;
 
 typedef struct {
