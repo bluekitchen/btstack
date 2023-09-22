@@ -83,7 +83,7 @@ void btstack_assert_failed(const char * file, uint16_t line_nr);
 #endif
 #else /* ENABLE_BTSTACK_ASSERT */
 // asserts off
-#define btstack_assert(condition)         {}
+#define btstack_assert(condition)         {(void)(condition);}
 #endif /* btstack_assert */
 #endif /* HAVE_ASSERT */
 
