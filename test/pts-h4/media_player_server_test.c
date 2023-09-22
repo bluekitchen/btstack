@@ -101,6 +101,10 @@ static const le_extended_advertising_parameters_t extended_params = {
 static void setup_advertising(void);
 
 // Object Transfer Server (OTS)
+typedef enum {
+    OTS_DATABANK_TYPE_EMPTY = 0,
+    OTS_DATABANK_TYPE_POPULATED
+} ots_databank_type_t;
 
 // Object operations
 static oacp_result_code_t ots_server_operation_create(hci_con_handle_t con_handle, uint8_t *buffer, uint16_t buffer_size);
@@ -127,7 +131,8 @@ static olcp_result_code_t ots_server_operation_clear_marking(hci_con_handle_t co
 #define OTS_SERVER_MAX_NUM_OBJECTS 10
 
 
-static  ots_server_connection_t ots_server_connections_storage[OTS_SERVER_MAX_NUM_CLIENTS];
+static ots_server_connection_t ots_server_connections_storage[OTS_SERVER_MAX_NUM_CLIENTS];
+static ots_databank_type_t ots_databank_type;
 
 static const ots_operations_t ots_server_operations_impl = {
     // object operations
@@ -353,16 +358,33 @@ static uint32_t ots_object_id_counter = 0;
 static int active_ots_object_index = 0;
 
 static int ots_active_index_get(void){
+    switch (ots_databank_type){
+        case OTS_DATABANK_TYPE_EMPTY:
+            return -1;
+        default:
+            break;
+    }
     return ots_indexes[(int) active_ots_objects_sort_order][active_ots_object_index];
 }
 
 static ots_object_t * ots_object_for_active_index(void){
-    ots_object_t * object = &ots_objects[ots_active_index_get()];
+    int index = ots_active_index_get();
+    if (index < 0){
+        return NULL;
+    }
+
+    ots_object_t * object = &ots_objects[index];
     printf("%s\n", object->name);
     return object;
 }
 
 static ots_object_t * ots_object_for_index(int index){
+    switch (ots_databank_type){
+        case OTS_DATABANK_TYPE_EMPTY:
+            return NULL;
+        default:
+            break;
+    }
     int i = ots_indexes[(int) active_ots_objects_sort_order][index];
     return &ots_objects[i];
 }
@@ -374,9 +396,20 @@ static void ots_active_index_set(int index){
 static ots_object_t * ots_object_iterator_first(void){
     int i = 0;
     printf("first: ");
-    while ((i < OTS_SERVER_MAX_NUM_OBJECTS) && (ots_object_for_index(i)->allocated_size == 0)){
-        i++; 
+    ots_object_t * object = ots_object_for_index(i);
+    if (object == NULL){
+        printf("NULL\n");
+        return NULL;
     }
+
+    while ( (object != NULL) && (i < OTS_SERVER_MAX_NUM_OBJECTS) && (object->allocated_size == 0)){
+        i++;
+        object = ots_object_for_index(i);
+    }
+    if (object == NULL){
+        return NULL;
+    }
+
     if (i < OTS_SERVER_MAX_NUM_OBJECTS){
         ots_active_index_set(i);
         return ots_object_for_active_index();
@@ -387,8 +420,19 @@ static ots_object_t * ots_object_iterator_first(void){
 static ots_object_t * ots_object_iterator_last(void){
     int i = OTS_SERVER_MAX_NUM_OBJECTS - 1;
     printf("last: ");
-    while ((i >= 0) && (ots_object_for_index(i)->allocated_size == 0)){
-        i--; 
+    ots_object_t * object = ots_object_for_index(i);
+    if (object == NULL){
+        printf("NULL\n");
+        return NULL;
+    }
+
+    while ((object != NULL) && (i >= 0) && (object->allocated_size == 0)){
+        i--;
+        object = ots_object_for_index(i);
+    }
+
+    if (object == NULL){
+        return NULL;
     }
 
     if (i >= 0){
@@ -399,7 +443,12 @@ static ots_object_t * ots_object_iterator_last(void){
 }
 
 static ots_object_t * ots_object_iterator_next(void){
-    int i = ots_active_index_get() + 1;
+    int index = ots_active_index_get();
+    if (index < 0){
+        return NULL;
+    }
+
+    int i = index + 1;
     printf("next: ");
     while ((i < OTS_SERVER_MAX_NUM_OBJECTS) && (ots_object_for_index(i)->allocated_size == 0)){
         i++; 
@@ -412,6 +461,11 @@ static ots_object_t * ots_object_iterator_next(void){
 }
 
 static ots_object_t * ots_object_iterator_previous(void){
+    int index = ots_active_index_get();
+    if (index < 0){
+        return NULL;
+    }
+
     int i = ots_active_index_get() - 1;
 
     while ((i >= 0) && (ots_object_for_index(i)->allocated_size == 0)){
@@ -427,7 +481,12 @@ static ots_object_t * ots_object_iterator_previous(void){
 
 static ots_object_t * ots_server_find_free_object(void){
     int i;
+
     for (i = 0; i < OTS_SERVER_MAX_NUM_OBJECTS; i++){
+        ots_object_t * object = ots_object_for_index(i);
+        if (object == NULL){
+            continue;
+        }
         if (ots_object_for_index(i)->allocated_size == 0){
             return ots_object_for_index(i);
         } 
@@ -438,8 +497,13 @@ static ots_object_t * ots_server_find_free_object(void){
 static ots_object_t * ots_server_find_object_for_luid(ots_object_id_t * luid){
     int i;
     for (i = 0; i < OTS_SERVER_MAX_NUM_OBJECTS; i++){
-        if (memcmp(ots_object_for_index(i)->luid, luid, sizeof(ots_object_id_t)) == 0){
-            return ots_object_for_index(i);
+        ots_object_t * object = ots_object_for_index(i);
+        if (object == NULL){
+            continue;
+        }
+
+        if (memcmp(object->luid, luid, sizeof(ots_object_id_t)) == 0){
+            return object;
         } 
     }
     return NULL;
@@ -723,6 +787,11 @@ static olcp_result_code_t ots_server_operation_goto(hci_con_handle_t con_handle,
     int i = 0;
     bool found = false;
     while ((i < OTS_SERVER_MAX_NUM_OBJECTS) && !found){
+        ots_object_t * object = ots_object_for_index(i);
+        if (object == NULL){
+            continue;
+        }
+
         if ( (ots_object_for_index(i)->allocated_size != 0) && (memcmp(ots_object_for_index(i)->luid, luid, 6) == 0) ){
             found = true;
         } else {
@@ -734,7 +803,7 @@ static olcp_result_code_t ots_server_operation_goto(hci_con_handle_t con_handle,
         object_transfer_service_server_set_current_object(con_handle, ots_object_for_index(i), ots_server_get_object_current_size(ots_object_for_index(i)));
         return OLCP_RESULT_CODE_SUCCESS;
     }
-    return OLCP_RESULT_CODE_OUT_OF_BOUNDS;
+    return OLCP_RESULT_CODE_OBJECT_ID_NOT_FOUND;
 }
 
 static char * ots_sort_order2string(olcp_list_sort_order_t order){
@@ -1896,7 +1965,10 @@ static void stdin_process(char cmd){
             printf(" - Reset filters\n");
             object_transfer_service_server_reset_filters(bap_app_server_con_handle);
             break;
-
+        case '9':
+            printf("Use empty databank\n");
+            ots_databank_type = OTS_DATABANK_TYPE_EMPTY;
+            break;
         case 'j':
             status = media_control_service_server_set_media_player_name(current_media_player_id, long_string1);
             break;
@@ -2016,6 +2088,7 @@ int btstack_main(void)
 
     active_ots_objects_sort_order = OLCP_LIST_SORT_ORDER_NONE;
     active_ots_objects_num = 0;
+    ots_databank_type = OTS_DATABANK_TYPE_POPULATED;
 
     mcs_media_player_t * current_media_player = &media_player1;
     uint16_t i;
