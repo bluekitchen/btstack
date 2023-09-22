@@ -470,25 +470,29 @@ static void ots_server_can_send_now(void * context){
                 break;
         }
         
+        att_server_indicate(connection->con_handle, attribute_handle, value, value_length);
+
         // allow next transaction
         connection->oacp_opcode = OACP_OPCODE_READY;
-        // printf("OTS_TASK_SEND_OACP_PROCEDURE_RESPONSE 0x%02x\n", attribute_handle);
-        att_server_indicate(connection->con_handle, attribute_handle, value, value_length);
 
     } else if ((connection->scheduled_tasks & OTS_TASK_SEND_OLCP_PROCEDURE_RESPONSE) != 0){
         connection->scheduled_tasks &= ~OTS_TASK_SEND_OLCP_PROCEDURE_RESPONSE;
 
-        uint8_t value[3];
-        value[0] = OLCP_OPCODE_RESPONSE_CODE;
-        value[1] = (uint8_t)connection->olcp_opcode;
-        value[2] = (uint8_t)connection->olcp_result_code;
+        uint8_t value[7];
+        uint8_t pos = 0;
+        value[pos++] = OLCP_OPCODE_RESPONSE_CODE;
+        value[pos++] = (uint8_t)connection->olcp_opcode;
+        value[pos++] = (uint8_t)connection->olcp_result_code;
+
+        if (connection->olcp_opcode == OLCP_OPCODE_REQUEST_NUMBER_OF_OBJECTS){
+            little_endian_store_32(value, pos, connection->olcp_result_num_objects);
+            pos += 4;
+        }
+        uint16_t attribute_handle = ots_server_get_value_handle_for_characteristic_index(OTS_OBJECT_LIST_CONTROL_POINT_INDEX);
+        att_server_indicate(connection->con_handle, attribute_handle, value, pos);
 
         // allow next transaction
         connection->olcp_opcode = OLCP_OPCODE_READY;
-
-        uint16_t attribute_handle = ots_server_get_value_handle_for_characteristic_index(OTS_OBJECT_LIST_CONTROL_POINT_INDEX);
-
-        att_server_indicate(connection->con_handle, attribute_handle, value, sizeof(value));
     }
 
     if (connection->scheduled_tasks != 0){
@@ -869,7 +873,7 @@ static int ots_server_handle_list_control_point_write(ots_server_connection_t * 
             connection->olcp_result_code = ots_server_operations->sort(connection->con_handle, order);
             break;
         case OLCP_OPCODE_REQUEST_NUMBER_OF_OBJECTS:
-            // TODO
+            connection->olcp_result_code = ots_server_operations->number_of_objects(connection->con_handle, &connection->olcp_result_num_objects);
             break;
         case OLCP_OPCODE_CLEAR_MARKING:
             // TODO
