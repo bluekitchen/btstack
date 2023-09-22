@@ -5962,6 +5962,60 @@ static inline hci_con_handle_t gap_subevent_cis_created_get_cis_con_handle(const
 static inline hci_con_handle_t gap_subevent_cis_created_get_acl_con_handle(const uint8_t * event){
     return little_endian_read_16(event, 8);
 }
+/**
+ * @brief Get field iso_interval_1250us from event GAP_SUBEVENT_CIS_CREATED
+ * @param event packet
+ * @return iso_interval_1250us
+ * @note: btstack_type 2
+ */
+static inline uint16_t gap_subevent_cis_created_get_iso_interval_1250us(const uint8_t * event){
+    return little_endian_read_16(event, 10);
+}
+/**
+ * @brief Get field number_of_subevents from event GAP_SUBEVENT_CIS_CREATED
+ * @param event packet
+ * @return number_of_subevents
+ * @note: btstack_type 1
+ */
+static inline uint8_t gap_subevent_cis_created_get_number_of_subevents(const uint8_t * event){
+    return event[12];
+}
+/**
+ * @brief Get field burst_number_c_to_p from event GAP_SUBEVENT_CIS_CREATED
+ * @param event packet
+ * @return burst_number_c_to_p
+ * @note: btstack_type 1
+ */
+static inline uint8_t gap_subevent_cis_created_get_burst_number_c_to_p(const uint8_t * event){
+    return event[13];
+}
+/**
+ * @brief Get field burst_number_p_to_c from event GAP_SUBEVENT_CIS_CREATED
+ * @param event packet
+ * @return burst_number_p_to_c
+ * @note: btstack_type 1
+ */
+static inline uint8_t gap_subevent_cis_created_get_burst_number_p_to_c(const uint8_t * event){
+    return event[14];
+}
+/**
+ * @brief Get field flush_timeout_c_to_p from event GAP_SUBEVENT_CIS_CREATED
+ * @param event packet
+ * @return flush_timeout_c_to_p
+ * @note: btstack_type 1
+ */
+static inline uint8_t gap_subevent_cis_created_get_flush_timeout_c_to_p(const uint8_t * event){
+    return event[15];
+}
+/**
+ * @brief Get field flush_timeout_p_to_c from event GAP_SUBEVENT_CIS_CREATED
+ * @param event packet
+ * @return flush_timeout_p_to_c
+ * @note: btstack_type 1
+ */
+static inline uint8_t gap_subevent_cis_created_get_flush_timeout_p_to_c(const uint8_t * event){
+    return event[16];
+}
 
 /**
  * @brief Get field acl_handle from event HSP_SUBEVENT_RFCOMM_CONNECTION_COMPLETE
