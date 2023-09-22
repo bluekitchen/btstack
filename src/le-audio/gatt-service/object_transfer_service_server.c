@@ -876,7 +876,7 @@ static int ots_server_handle_list_control_point_write(ots_server_connection_t * 
             connection->olcp_result_code = ots_server_operations->number_of_objects(connection->con_handle, &connection->olcp_result_num_objects);
             break;
         case OLCP_OPCODE_CLEAR_MARKING:
-            // TODO
+            connection->olcp_result_code = ots_server_operations->clear_marking(connection->con_handle);
             break;
         default:
             btstack_unreachable();

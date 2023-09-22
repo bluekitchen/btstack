@@ -72,6 +72,7 @@ typedef struct {
     olcp_result_code_t (*go_to)(hci_con_handle_t con_handle, ots_object_id_t * luid);
     olcp_result_code_t (*sort)(hci_con_handle_t con_handle,  olcp_list_sort_order_t order);
     olcp_result_code_t (*number_of_objects)(hci_con_handle_t con_handle, uint32_t * num_objects);
+    olcp_result_code_t (*clear_marking)(hci_con_handle_t con_handle);
 } ots_operations_t;
 
 typedef struct {
