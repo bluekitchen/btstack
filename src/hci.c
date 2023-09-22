@@ -2713,13 +2713,16 @@ static void hci_store_local_supported_commands(const uint8_t * packet){
 static void handle_command_complete_event(uint8_t * packet, uint16_t size){
     UNUSED(size);
 
+    uint8_t status = 0;
+    if( size > OFFSET_OF_DATA_IN_COMMAND_COMPLETE ) {
+        status = hci_event_command_complete_get_return_parameters(packet)[0];
+    }
     uint16_t manufacturer;
 #ifdef ENABLE_CLASSIC
-    hci_con_handle_t handle;
     hci_connection_t * conn;
 #endif
 #if defined(ENABLE_CLASSIC) || (defined(ENABLE_BLE) && defined(ENABLE_LE_ISOCHRONOUS_STREAMS))
-    uint8_t status;
+    hci_con_handle_t handle;
 #endif
 #ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
     le_audio_cig_t * cig;
@@ -2731,7 +2734,7 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
     uint16_t opcode = hci_event_command_complete_get_command_opcode(packet);
     switch (opcode){
         case HCI_OPCODE_HCI_READ_LOCAL_NAME:
-            if (packet[5]) break;
+            if (status) break;
             // terminate, name 248 chars
             packet[6+248] = 0;
             log_info("local name: %s", &packet[6]);
@@ -2755,7 +2758,7 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
             }
             break;
         case HCI_OPCODE_HCI_READ_RSSI:
-            if (packet[5] == ERROR_CODE_SUCCESS){
+            if (status == ERROR_CODE_SUCCESS){
                 uint8_t event[5];
                 event[0] = GAP_EVENT_RSSI_MEASUREMENT;
                 event[1] = 3;
@@ -2819,9 +2822,8 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
                 le_advertising_set_t * advertising_set = hci_advertising_set_for_handle(hci_stack->le_advertising_set_in_current_command);
                 hci_stack->le_advertising_set_in_current_command = 0;
                 if (advertising_set == NULL) break;
-                uint8_t adv_status = packet[5];
-                uint8_t event[] = { HCI_EVENT_META_GAP, 3, GAP_SUBEVENT_ADVERTISING_SET_REMOVED, hci_stack->le_advertising_set_in_current_command, adv_status };
-                if (adv_status == 0){
+                uint8_t event[] = { HCI_EVENT_META_GAP, 3, GAP_SUBEVENT_ADVERTISING_SET_REMOVED, hci_stack->le_advertising_set_in_current_command, status };
+                if (status == 0){
                     btstack_linked_list_remove(&hci_stack->le_advertising_sets, (btstack_linked_item_t *) advertising_set);
                 }
                 hci_emit_event(event, sizeof(event), 1);
@@ -2831,7 +2833,7 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
 #endif
         case HCI_OPCODE_HCI_READ_BD_ADDR:
             reverse_bd_addr(&packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE + 1], hci_stack->local_bd_addr);
-            log_info("Local Address, Status: 0x%02x: Addr: %s", packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE], bd_addr_to_str(hci_stack->local_bd_addr));
+            log_info("Local Address, Status: 0x%02x: Addr: %s", status, bd_addr_to_str(hci_stack->local_bd_addr));
 #ifdef ENABLE_CLASSIC
             if (hci_stack->link_key_db){
                 hci_stack->link_key_db->set_local_bd_addr(hci_stack->local_bd_addr);
@@ -2843,7 +2845,6 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
             hci_emit_scan_mode_changed(hci_stack->discoverable, hci_stack->connectable);
             break;
         case HCI_OPCODE_HCI_PERIODIC_INQUIRY_MODE:
-            status = hci_event_command_complete_get_return_parameters(packet)[0];
             if (status == ERROR_CODE_SUCCESS) {
                 hci_stack->inquiry_state = GAP_INQUIRY_STATE_PERIODIC;
             } else {
@@ -2895,11 +2896,10 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
             break;
 #ifdef ENABLE_CLASSIC
         case HCI_OPCODE_HCI_WRITE_SYNCHRONOUS_FLOW_CONTROL_ENABLE:
-            if (packet[5]) return;
+            if (status) return;
             hci_stack->synchronous_flow_control_enabled = 1;
             break;
         case HCI_OPCODE_HCI_READ_ENCRYPTION_KEY_SIZE:
-            status = packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE];
             handle = little_endian_read_16(packet, OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1);
             conn   = hci_connection_for_handle(handle);
             if (conn != NULL) {
@@ -2933,7 +2933,7 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
             event[0] = GAP_EVENT_LOCAL_OOB_DATA;
             event[1] = 65;
             (void)memset(&event[2], 0, 65);
-            if (packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE] == ERROR_CODE_SUCCESS){
+            if (status == ERROR_CODE_SUCCESS){
                 (void)memcpy(&event[3], &packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1], 32);
                 if (opcode == HCI_OPCODE_HCI_READ_LOCAL_EXTENDED_OOB_DATA){
                     event[2] = 3;
@@ -2961,7 +2961,6 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
             // lookup CIG
             cig = hci_cig_for_id(hci_stack->iso_active_operation_group_id);
             if (cig != NULL){
-                status = packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE];
                 uint8_t i = 0;
                 if (status == ERROR_CODE_SUCCESS){
                     // assign CIS handles to pre-allocated CIS
@@ -2987,13 +2986,11 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
             hci_stack->iso_active_operation_type = HCI_ISO_TYPE_INVALID;
             break;
         case HCI_OPCODE_HCI_LE_CREATE_CIS:
-            status = packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE];
             if (status != ERROR_CODE_SUCCESS){
                 hci_iso_stream_requested_finalize(HCI_ISO_GROUP_ID_INVALID);
             }
             break;
         case HCI_OPCODE_HCI_LE_ACCEPT_CIS_REQUEST:
-            status = packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE];
             if (status != ERROR_CODE_SUCCESS){
                 hci_iso_stream_requested_finalize(HCI_ISO_GROUP_ID_INVALID);
             }
@@ -3005,7 +3002,6 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
             while (btstack_linked_list_iterator_has_next(&it)) {
                 le_audio_big_t *big = (le_audio_big_t *) btstack_linked_list_iterator_next(&it);
                 if (big->state == LE_AUDIO_BIG_STATE_W4_SETUP_ISO_PATH){
-                    status = packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE];
                     if (status == ERROR_CODE_SUCCESS){
                         big->state_vars.next_bis++;
                         if (big->state_vars.next_bis == big->num_bis){
@@ -3025,7 +3021,6 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
             while (btstack_linked_list_iterator_has_next(&it)) {
                 le_audio_big_sync_t *big_sync = (le_audio_big_sync_t *) btstack_linked_list_iterator_next(&it);
                 if (big_sync->state == LE_AUDIO_BIG_STATE_W4_SETUP_ISO_PATH){
-                    status = packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE];
                     if (status == ERROR_CODE_SUCCESS){
                         big_sync->state_vars.next_bis++;
                         if (big_sync->state_vars.next_bis == big_sync->num_bis){
@@ -3049,7 +3044,6 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
                     // lookup CIS by state
                     btstack_linked_list_iterator_t it;
                     btstack_linked_list_iterator_init(&it, &hci_stack->iso_streams);
-                    status = packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE];
                     while (btstack_linked_list_iterator_has_next(&it)){
                         hci_iso_stream_t * iso_stream = (hci_iso_stream_t *) btstack_linked_list_iterator_next(&it);
                         handle = iso_stream->cis_handle;
