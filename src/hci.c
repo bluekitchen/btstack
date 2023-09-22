@@ -4274,9 +4274,15 @@ static void event_handler(uint8_t *packet, uint16_t size){
                         uint8_t status = hci_subevent_le_cis_established_get_status(packet);
                         iso_stream = hci_iso_stream_for_con_handle(handle);
                         btstack_assert(iso_stream != NULL);
-                        // track SDU
-                        iso_stream->max_sdu_c_to_p = hci_subevent_le_cis_established_get_max_pdu_c_to_p(packet);
-                        iso_stream->max_sdu_p_to_c = hci_subevent_le_cis_established_get_max_pdu_p_to_c(packet);
+                        // track connection info
+                        iso_stream->number_of_subevents  = hci_subevent_le_cis_established_get_nse(packet);
+                        iso_stream->burst_number_c_to_p  = hci_subevent_le_cis_established_get_bn_c_to_p(packet);
+                        iso_stream->burst_number_p_to_c  = hci_subevent_le_cis_established_get_bn_p_to_c(packet);
+                        iso_stream->flush_timeout_c_to_p = hci_subevent_le_cis_established_get_ft_c_to_p(packet);
+                        iso_stream->flush_timeout_p_to_c = hci_subevent_le_cis_established_get_ft_p_to_c(packet);
+                        iso_stream->max_sdu_c_to_p       = hci_subevent_le_cis_established_get_max_pdu_c_to_p(packet);
+                        iso_stream->max_sdu_p_to_c       = hci_subevent_le_cis_established_get_max_pdu_p_to_c(packet);
+                        iso_stream->iso_interval_1250us  = hci_subevent_le_cis_established_get_iso_interval(packet);
                         if (hci_stack->iso_active_operation_group_id == HCI_ISO_GROUP_ID_SINGLE_CIS){
                             // CIS Accept by Peripheral
                             if (status == ERROR_CODE_SUCCESS){
@@ -9898,13 +9904,20 @@ static uint16_t hci_setup_cis_created(uint8_t * event, hci_iso_stream_t * iso_st
     pos += 2;
     little_endian_store_16(event, pos, iso_stream->acl_handle);
     pos += 2;
+    little_endian_store_16(event, pos, iso_stream->iso_interval_1250us);
+    pos += 2;
+    event[pos++] = iso_stream->number_of_subevents;
+    event[pos++] = iso_stream->burst_number_c_to_p;
+    event[pos++] = iso_stream->burst_number_p_to_c;
+    event[pos++] = iso_stream->flush_timeout_c_to_p;
+    event[pos++] = iso_stream->flush_timeout_p_to_c;
     return pos;
 }
 
 // emits GAP_SUBEVENT_CIS_CREATED after calling hci_iso_finalize
 static void hci_cis_handle_created(hci_iso_stream_t * iso_stream, uint8_t status){
     // cache data before finalizing struct
-    uint8_t event [10];
+    uint8_t event [17];
     uint16_t pos = hci_setup_cis_created(event, iso_stream, status);
     btstack_assert(pos <= sizeof(event));
     if (status != ERROR_CODE_SUCCESS){

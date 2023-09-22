@@ -743,8 +743,14 @@ typedef struct {
     hci_con_handle_t acl_handle;
 
     // connection info
+    uint8_t  number_of_subevents;
+    uint8_t  burst_number_c_to_p;
+    uint8_t  burst_number_p_to_c;
+    uint8_t  flush_timeout_c_to_p;
+    uint8_t  flush_timeout_p_to_c;
     uint16_t max_sdu_c_to_p;
     uint16_t max_sdu_p_to_c;
+    uint16_t iso_interval_1250us;
 
     // re-assembly buffer
     uint16_t reassembly_pos;
