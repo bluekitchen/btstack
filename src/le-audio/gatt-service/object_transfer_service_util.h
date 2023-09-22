@@ -54,7 +54,7 @@ extern "C" {
 #define ATT_ERROR_RESPONSE_OTS_OBJECT_NOT_SELECTED                      0x81
 #define ATT_ERROR_RESPONSE_OTS_CONCURRENCY_LIMIT_EXCEEDED               0x82
 #define ATT_ERROR_RESPONSE_OTS_OBJECT_NAME_ALREADY_EXISTS               0x83
-
+#define ATT_ERROR_RESPONSE_ATT_ERROR_CCCD_IMPROPERLY_CONFIGURED         0xFD
 
 // OACP (Object Action Control Point) feature masks
 #define OACP_FEATURE_MASK_CREATE                                        0x0001

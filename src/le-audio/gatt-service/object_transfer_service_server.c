@@ -569,6 +569,10 @@ int ots_server_handle_action_control_point_operation(ots_server_connection_t * c
         return 0;
     }
 
+    if (connection->oacp_configuration < 1 || connection->oacp_configuration > 2){
+        return ATT_ERROR_RESPONSE_ATT_ERROR_CCCD_IMPROPERLY_CONFIGURED;
+    }
+
     uint16_t data_size = buffer_size - pos;
     uint8_t mode;
     uint32_t offset;
@@ -819,26 +823,13 @@ static int ots_server_handle_list_control_point_write(ots_server_connection_t * 
         return 0;
     }
 
+    if (connection->olcp_configuration < 1 || connection->olcp_configuration > 2){
+        return ATT_ERROR_RESPONSE_ATT_ERROR_CCCD_IMPROPERLY_CONFIGURED;
+    }
     olcp_list_sort_order_t order;
 
     switch (connection->olcp_opcode){
         case OLCP_OPCODE_FIRST:
-            // btstack_linked_list_iterator_t it;
-            // connection->olcp_result_code = OLCP_RESULT_CODE_NO_OBJECT;
-            // connection->current_object = NULL;
-
-            // btstack_linked_list_iterator_init(&it, &ots_objects);
-            // while (btstack_linked_list_iterator_has_next(&it)){
-            //     ots_object_t * object = (ots_object_t*) btstack_linked_list_iterator_next(&it);
-            //     if (object->allocated_size != 0){
-            //         if (!ots_server_object_passes_filters(connection, object)){
-            //             continue;
-            //         }
-            //         connection->current_object = object;
-            //         connection->olcp_result_code = OLCP_RESULT_CODE_SUCCESS;
-            //         break;
-            //     }
-            // }
             connection->olcp_result_code = ots_server_operations->first(connection->con_handle);
             break;
 
@@ -866,7 +857,7 @@ static int ots_server_handle_list_control_point_write(ots_server_connection_t * 
             }
 
             order = (olcp_list_sort_order_t)buffer[1];
-            if ((order == OLCP_LIST_SORT_ORDER_NONE) && (order >= OLCP_LIST_SORT_ORDER_RFU)){
+            if ((order == OLCP_LIST_SORT_ORDER_NONE) || (order >= OLCP_LIST_SORT_ORDER_RFU)){
                 connection->olcp_result_code = OLCP_RESULT_CODE_INVALID_PARAMETER;
                 break;
             }
