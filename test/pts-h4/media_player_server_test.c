@@ -40,10 +40,7 @@
 #include <inttypes.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
-#include <unistd.h>
 
 #include "media_player_server_test.h"
 #include "btstack.h"
@@ -123,6 +120,7 @@ static olcp_result_code_t ots_server_operation_next(hci_con_handle_t con_handle)
 static olcp_result_code_t ots_server_operation_previous(hci_con_handle_t con_handle);
 static olcp_result_code_t ots_server_operation_goto(hci_con_handle_t con_handle, ots_object_id_t * luid);
 static olcp_result_code_t ots_server_operation_sort(hci_con_handle_t con_handle, olcp_list_sort_order_t order);
+static olcp_result_code_t ots_server_operation_number_of_objects(hci_con_handle_t con_handle, uint32_t * out_num_objects);
 
 #define OTS_SERVER_MAX_NUM_CLIENTS 3
 #define OTS_SERVER_MAX_NUM_OBJECTS 10
@@ -148,6 +146,7 @@ static const ots_operations_t ots_server_operations_impl = {
     .previous = &ots_server_operation_previous,
     .go_to    = &ots_server_operation_goto,
     .sort     = &ots_server_operation_sort,
+    .number_of_objects = &ots_server_operation_number_of_objects
 };
 
 static uint8_t ots_object_test_data[] = {
@@ -280,6 +279,7 @@ static uint32_t previous_group_index;
 
 static olcp_list_sort_order_t   active_ots_objects_sort_order;
 static uint32_t * active_ots_objects_indexes;
+static uint32_t   active_ots_objects_num;
 
 // MCS Test
 static mcs_track_t tracksA[] = {
@@ -306,7 +306,10 @@ static mcs_track_group_t  track_groups[] = {
     {{0xFE, 0xFE, 0xFE, 0xFE, 0xFE, 0xFE},{0x0C, 0x0C, 0x0C, 0x0C, 0x0C, 0x0C}, 2, tracksC}
 };
 
-static uint32_t ots_indexes[10][OTS_SERVER_MAX_NUM_OBJECTS] = {
+
+static uint32_t ots_indexes[11][OTS_SERVER_MAX_NUM_OBJECTS] = {
+        // OLCP_LIST_SORT_ORDER_NONE
+        {0,1,2,3,4,5,6,7,8,9},
         // OLCP_LIST_SORT_ORDER_BY_FIRST_NAME_ASCENDING
         {0,1,2,3,4,5,6,7,8,9},
         // OLCP_LIST_SORT_ORDER_BY_OBJECT_TYPE_ASCENDING
@@ -763,35 +766,38 @@ static olcp_result_code_t ots_server_operation_sort(hci_con_handle_t con_handle,
     printf("Sort: %s\n", ots_sort_order2string(order));
 
     switch (order){
-        case OLCP_LIST_SORT_ORDER_BY_FIRST_NAME_ASCENDING:
+        case OLCP_LIST_SORT_ORDER_NONE:
             active_ots_objects_sort_order = 0;
             break;
-        case OLCP_LIST_SORT_ORDER_BY_OBJECT_TYPE_ASCENDING:
+        case OLCP_LIST_SORT_ORDER_BY_FIRST_NAME_ASCENDING:
             active_ots_objects_sort_order = 1;
             break;
-        case OLCP_LIST_SORT_ORDER_BY_OBJECT_CURRENT_SIZE_ASCENDING:
+        case OLCP_LIST_SORT_ORDER_BY_OBJECT_TYPE_ASCENDING:
             active_ots_objects_sort_order = 2;
             break;
-        case OLCP_LIST_SORT_ORDER_BY_FIRST_CREATED_ASCENDING:
+        case OLCP_LIST_SORT_ORDER_BY_OBJECT_CURRENT_SIZE_ASCENDING:
             active_ots_objects_sort_order = 3;
             break;
-        case OLCP_LIST_SORT_ORDER_BY_LAST_CREATED_ASCENDING:
+        case OLCP_LIST_SORT_ORDER_BY_FIRST_CREATED_ASCENDING:
             active_ots_objects_sort_order = 4;
             break;
-        case OLCP_LIST_SORT_ORDER_BY_FIRST_NAME_DESCENDING:
+        case OLCP_LIST_SORT_ORDER_BY_LAST_CREATED_ASCENDING:
             active_ots_objects_sort_order = 5;
             break;
-        case OLCP_LIST_SORT_ORDER_BY_OBJECT_TYPE_DESCENDING:
+        case OLCP_LIST_SORT_ORDER_BY_FIRST_NAME_DESCENDING:
             active_ots_objects_sort_order = 6;
             break;
-        case OLCP_LIST_SORT_ORDER_BY_OBJECT_CURRENT_SIZE_DESCENDING:
+        case OLCP_LIST_SORT_ORDER_BY_OBJECT_TYPE_DESCENDING:
             active_ots_objects_sort_order = 7;
             break;
-        case OLCP_LIST_SORT_ORDER_BY_FIRST_CREATED_DESCENDING:
+        case OLCP_LIST_SORT_ORDER_BY_OBJECT_CURRENT_SIZE_DESCENDING:
             active_ots_objects_sort_order = 8;
             break;
-        case OLCP_LIST_SORT_ORDER_BY_LAST_CREATED_DESCENDING:
+        case OLCP_LIST_SORT_ORDER_BY_FIRST_CREATED_DESCENDING:
             active_ots_objects_sort_order = 9;
+            break;
+        case OLCP_LIST_SORT_ORDER_BY_LAST_CREATED_DESCENDING:
+            active_ots_objects_sort_order = 10;
             break;
         default:
             btstack_unreachable();
@@ -801,6 +807,10 @@ static olcp_result_code_t ots_server_operation_sort(hci_con_handle_t con_handle,
     return OLCP_RESULT_CODE_SUCCESS;
 }
 
+static olcp_result_code_t ots_server_operation_number_of_objects(hci_con_handle_t con_handle, uint32_t * out_num_objects){
+    *out_num_objects = active_ots_objects_num;
+    return OLCP_RESULT_CODE_SUCCESS;
+}
 // OTS Server Operations - END
 
 static mcs_media_player_t * mcs_get_media_player_for_id(uint16_t media_player_id){
@@ -1991,6 +2001,8 @@ int btstack_main(void)
         OTS_SERVER_MAX_NUM_CLIENTS, ots_server_connections_storage, &ots_server_operations_impl);
     object_transfer_service_server_register_packet_handler(&ots_server_packet_handler);
 
+    active_ots_objects_sort_order = OLCP_LIST_SORT_ORDER_NONE;
+    active_ots_objects_num = 0;
 
     mcs_media_player_t * current_media_player = &media_player1;
     uint16_t i;
@@ -2016,9 +2028,8 @@ int btstack_main(void)
                 sizeof(ots_object_test_data - 100 + i * 20),
                 &first_created, 
                 &last_modified);
-
+            active_ots_objects_num++;
         }
-
     }
 
     // register for HCI events
