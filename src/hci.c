@@ -9886,34 +9886,31 @@ static void hci_emit_cig_created(const le_audio_cig_t * cig, uint8_t status){
     hci_emit_event(event, pos, 0);
 }
 
-static void hci_emit_cis_created(uint8_t status, uint8_t cig_id, uint8_t cis_id, hci_con_handle_t cis_con_handle,
-                     hci_con_handle_t acl_con_handle) {
-    uint8_t event [10];
+static uint16_t hci_setup_cis_created(uint8_t * event, hci_iso_stream_t * iso_stream, uint8_t status) {
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_META_GAP;
     event[pos++] = 8;
     event[pos++] = GAP_SUBEVENT_CIS_CREATED;
     event[pos++] = status;
-    event[pos++] = cig_id;
-    event[pos++] = cis_id;
-    little_endian_store_16(event, pos, cis_con_handle);
+    event[pos++] = iso_stream->group_id;
+    event[pos++] = iso_stream->stream_id;
+    little_endian_store_16(event, pos, iso_stream->cis_handle);
     pos += 2;
-    little_endian_store_16(event, pos, acl_con_handle);
+    little_endian_store_16(event, pos, iso_stream->acl_handle);
     pos += 2;
-    hci_emit_event(event, pos, 0);
+    return pos;
 }
 
 // emits GAP_SUBEVENT_CIS_CREATED after calling hci_iso_finalize
 static void hci_cis_handle_created(hci_iso_stream_t * iso_stream, uint8_t status){
     // cache data before finalizing struct
-    uint8_t cig_id              = iso_stream->group_id;
-    uint8_t cis_id              = iso_stream->stream_id;
-    hci_con_handle_t cis_handle = iso_stream->cis_handle;
-    hci_con_handle_t acl_handle = iso_stream->acl_handle;
+    uint8_t event [10];
+    uint16_t pos = hci_setup_cis_created(event, iso_stream, status);
+    btstack_assert(pos <= sizeof(event));
     if (status != ERROR_CODE_SUCCESS){
         hci_iso_stream_finalize(iso_stream);
     }
-    hci_emit_cis_created(status, cig_id, cis_id, cis_handle, acl_handle);
+    hci_emit_event(event, pos, 0);
 }
 
 static void hci_emit_big_terminated(const le_audio_big_t * big){
