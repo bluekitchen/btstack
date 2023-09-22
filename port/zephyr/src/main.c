@@ -18,7 +18,10 @@
 #include <zephyr/bluetooth/hci_raw.h>
 
 // Nordic NDK
+#if defined(CONFIG_HAS_NORDIC_DRIVERS)
 #include "nrf.h"
+#include <nrfx_clock.h>
+#endif
 
 // BTstack
 #include "btstack_debug.h"
@@ -147,7 +150,6 @@ static void transport_deliver_controller_packet(struct net_buf * buf){
 // btstack_run_loop_zephry.c
 
 // the run loop
-//static btstack_linked_list_t timers;
 
 // TODO: handle 32 bit ms time overrun
 static uint32_t btstack_run_loop_zephyr_get_time_ms(void){
@@ -208,7 +210,7 @@ static const btstack_run_loop_t * btstack_run_loop_zephyr_get_instance(void){
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
-static bd_addr_t local_addr;
+static bd_addr_t local_addr = { 0 };
 
 void nrf_get_static_random_addr( bd_addr_t addr ) {
     // nRF5 chipsets don't have an official public address
@@ -218,9 +220,8 @@ void nrf_get_static_random_addr( bd_addr_t addr ) {
     big_endian_store_16(addr, 0, NRF_FICR->DEVICEADDR[1] | 0xc000);
     big_endian_store_32(addr, 2, NRF_FICR->DEVICEADDR[0]);
 #elif defined(CONFIG_SOC_SERIES_NRF53X)
-    // Using TrustZone this will only work in secure mode
-    big_endian_store_16(addr, 0, NRF_FICR_S->INFO.DEVICEID[1] | 0xc000 );
-    big_endian_store_32(addr, 2, NRF_FICR_S->INFO.DEVICEID[0]);
+    big_endian_store_16(addr, 0, NRF_FICR->INFO.DEVICEID[1] | 0xc000 );
+    big_endian_store_32(addr, 2, NRF_FICR->INFO.DEVICEID[0]);
 #endif
 }
 
@@ -307,6 +308,11 @@ void bt_ctlr_assert_handle(char *file, uint32_t line)
 
 int main(void)
 {
+#if defined(CONFIG_SOC_SERIES_NRF53X)
+    // switch the nrf5340_cpuapp to 128MHz
+    nrfx_clock_divider_set(NRF_CLOCK_DOMAIN_HFCLK, NRF_CLOCK_HFCLK_DIV_1);
+#endif
+
     printf("BTstack booting up..\n");
 
     // start with BTstack init - especially configure HCI Transport
