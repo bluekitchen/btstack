@@ -121,6 +121,7 @@ static olcp_result_code_t ots_server_operation_previous(hci_con_handle_t con_han
 static olcp_result_code_t ots_server_operation_goto(hci_con_handle_t con_handle, ots_object_id_t * luid);
 static olcp_result_code_t ots_server_operation_sort(hci_con_handle_t con_handle, olcp_list_sort_order_t order);
 static olcp_result_code_t ots_server_operation_number_of_objects(hci_con_handle_t con_handle, uint32_t * out_num_objects);
+static olcp_result_code_t ots_server_operation_clear_marking(hci_con_handle_t con_handle);
 
 #define OTS_SERVER_MAX_NUM_CLIENTS 3
 #define OTS_SERVER_MAX_NUM_OBJECTS 10
@@ -140,13 +141,14 @@ static const ots_operations_t ots_server_operations_impl = {
     .abort    = &ots_server_operation_abort,
 
     // view operations
-    .first    = &ots_server_operation_first,
-    .last     = &ots_server_operation_last,
-    .next     = &ots_server_operation_next,
-    .previous = &ots_server_operation_previous,
-    .go_to    = &ots_server_operation_goto,
-    .sort     = &ots_server_operation_sort,
-    .number_of_objects = &ots_server_operation_number_of_objects
+    .first              = &ots_server_operation_first,
+    .last               = &ots_server_operation_last,
+    .next               = &ots_server_operation_next,
+    .previous           = &ots_server_operation_previous,
+    .go_to              = &ots_server_operation_goto,
+    .sort               = &ots_server_operation_sort,
+    .number_of_objects  = &ots_server_operation_number_of_objects,
+    .clear_marking      = &ots_server_operation_clear_marking
 };
 
 static uint8_t ots_object_test_data[] = {
@@ -811,6 +813,17 @@ static olcp_result_code_t ots_server_operation_number_of_objects(hci_con_handle_
     *out_num_objects = active_ots_objects_num;
     return OLCP_RESULT_CODE_SUCCESS;
 }
+
+static olcp_result_code_t ots_server_operation_clear_marking(hci_con_handle_t con_handle){
+    int i;
+    for (i = 0; i < OTS_SERVER_MAX_NUM_OBJECTS; i++){
+        printf("propertis: 0x%04X -> ", ots_objects[i].properties);
+        ots_objects[i].properties &= ~OBJECT_PROPERTY_MASK_MARK;
+        printf("0x%04X \n", ots_objects[i].properties);
+    }
+    return OLCP_RESULT_CODE_SUCCESS;
+}
+
 // OTS Server Operations - END
 
 static mcs_media_player_t * mcs_get_media_player_for_id(uint16_t media_player_id){
