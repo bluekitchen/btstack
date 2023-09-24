@@ -312,7 +312,7 @@ void hsp_ag_init(uint8_t rfcomm_channel_nr){
 
     rfcomm_register_service(packet_handler, rfcomm_channel_nr, 0xffff);  // reserved channel, mtu limited by l2cap
 
-    hsp_ag_sco_packet_types = SCO_PACKET_TYPES_ALL;
+    hsp_ag_sco_packet_types = SCO_PACKET_TYPES_EV3 | SCO_PACKET_TYPES_2EV3 | SCO_PACKET_TYPES_HV3;
     hsp_ag_reset_state();
 }
 
