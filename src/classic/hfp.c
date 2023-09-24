@@ -2198,7 +2198,9 @@ void hfp_prepare_for_sco(hfp_connection_t * hfp_connection){
 #endif
 
 #ifdef ENABLE_BCM_PCM_WBS
+#ifndef HAVE_BCM_PCM_NBS_16KHZ
     hfp_connection->bcm_send_write_i2spcm_interface_param = true;
+#endif
     if (hfp_connection->negotiated_codec == HFP_CODEC_MSBC){
         hfp_connection->bcm_send_enable_wbs = true;
     }

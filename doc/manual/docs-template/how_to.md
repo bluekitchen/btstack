@@ -72,6 +72,12 @@ POSIX platform properties:
 <!-- a name "lst:btstackFeatureConfiguration"></a-->
 <!-- -->
 
+Chipset properties:
+
+| \#define               | Description                                           |
+|------------------------|-------------------------------------------------------|
+| HAVE_BCM_PCM_NBS_16KHZ | NBS is up/downsampled, use 16 kHz sample rate for NBS |
+
 ### ENABLE_* directives {#sec:enableDirectives}
 BTstack properties:
 
