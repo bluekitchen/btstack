@@ -181,6 +181,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
 
     switch (packet_type){
         case HCI_SCO_DATA_PACKET:
+            // forward received SCO / audio packets to SCO component
+            if (READ_SCO_CONNECTION_HANDLE(event) != sco_handle) break;
             sco_demo_receive(event, event_size);
             break;
         case HCI_EVENT_PACKET:
@@ -190,7 +192,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                     show_usage();
                     break;
                 case HCI_EVENT_SCO_CAN_SEND_NOW:
-                    if (READ_SCO_CONNECTION_HANDLE(event) != sco_handle) break;
                     sco_demo_send(sco_handle);
                     break;
                 case HCI_EVENT_HSP_META:
