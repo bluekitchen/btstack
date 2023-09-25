@@ -49,12 +49,13 @@ file(GLOB SOURCES_SRC            "${BTSTACK_ROOT}/src/*.c" ) #"${BTSTACK_ROOT}/e
 file(GLOB SOURCES_BLE            "${BTSTACK_ROOT}/src/ble/*.c")
 file(GLOB SOURCES_GATT           "${BTSTACK_ROOT}/src/ble/gatt-service/*.c")
 file(GLOB SOURCES_CLASSIC        "${BTSTACK_ROOT}/src/classic/*.c")
+file(GLOB SOURCES_LE_AUDIO       "${BTSTACK_ROOT}/src/le-audio/*.c" "${BTSTACK_ROOT}/src/le-audio/gatt-service/*.c")
 file(GLOB SOURCES_MESH           "${BTSTACK_ROOT}/src/mesh/*.c" "${BTSTACK_ROOT}/src/mesh/gatt-service/*.c")
 file(GLOB SOURCES_BLUEDROID      "${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/srce/*.c" "${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/srce/*.c")
 file(GLOB SOURCES_MD5            "${BTSTACK_ROOT}/3rd-party/md5/md5.c")
 file(GLOB SOURCES_UECC           "${BTSTACK_ROOT}/3rd-party/micro-ecc/uECC.c")
 file(GLOB SOURCES_YXML           "${BTSTACK_ROOT}/3rd-party/yxml/yxml.c")
-file(GLOB SOURCES_HXCMOD         "${BTSTACK_ROOT}/3rd-party/hxcmod-player/*.c"  "../../3rd-party/hxcmod-player/mods/*.c")
+file(GLOB SOURCES_HXCMOD         "${BTSTACK_ROOT}/3rd-party/hxcmod-player/*.c"  "${BTSTACK_ROOT}/3rd-party/hxcmod-player/mods/*.c")
 file(GLOB SOURCES_RIJNDAEL       "${BTSTACK_ROOT}/3rd-party/rijndael/rijndael.c")
 file(GLOB SOURCES_EMBEDDED       "${BTSTACK_ROOT}/platform/embedded/*.c")
 file(GLOB SOURCES_CHIPSET_ZEPHYR "${BTSTACK_ROOT}/chipset/zephyr/*.c")
@@ -119,7 +120,9 @@ set(SOURCES
     ${SOURCES_SRC}
     ${SOURCES_BLE}
     ${SOURCES_GATT}
+    ${SOURCES_LE_AUDIO}
     ${SOURCES_UECC}
+    ${SOURCES_HXCMOD}
     ${SOURCES_CHIPSET_ZEPHYR}
 )
 list(SORT SOURCES)
@@ -162,10 +165,6 @@ endif()
 list(SORT EXAMPLES)
 file(GLOB EXAMPLES_GATT "${BTSTACK_ROOT}/example/*.gatt")
 
-# remove some
-file(GLOB EXAMPLES_OFF  "../../example/sco_demo_util.c" "../../example/ant_test.c" "../../example/avrcp_browsing_client.c")
-list(REMOVE_ITEM EXAMPLES_C ${EXAMPLES_OFF})
-
 # on Mac 10.14, adding lwip to libstack results in a yet not understood link error
 # workaround: add lwip sources only to lwip_examples
 set (LWIP_EXAMPLES pan_lwip_http_server)
@@ -174,8 +173,12 @@ set (LWIP_EXAMPLES pan_lwip_http_server)
 foreach(EXAMPLE ${EXAMPLES})
     #   get_filename_component(EXAMPLE ${EXAMPLE_FILE} NAME_WE)
 
-    # get c file
-    set (SOURCES_EXAMPLE ${BTSTACK_ROOT}/example/${EXAMPLE}.c)
+    # get c file, either from examples or local
+    if( EXISTS "${BTSTACK_ROOT}/example/${EXAMPLE}.c" )
+        set (SOURCES_EXAMPLE ${BTSTACK_ROOT}/example/${EXAMPLE}.c)
+    else()
+        set (SOURCES_EXAMPLE ${EXAMPLE}.c)
+    endif()
     list(APPEND SOURCES_EXAMPLE "${CMAKE_SOURCE_DIR}/src/main.c")
     message("${BTSTACK_ROOT}")
     message("${SOURCES_EXAMPLE}")
