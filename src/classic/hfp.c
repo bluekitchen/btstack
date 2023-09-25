@@ -2052,12 +2052,22 @@ void hfp_accept_synchronous_connection(hfp_connection_t * hfp_connection, bool u
     bool secure_connection_in_use = gap_secure_connection(hfp_connection->acl_handle);
 
     // lookup safe settings based on SCO type, SC use and Codec type
-    hfp_link_settings_t link_setting = hfp_safe_settings_for_context(use_eSCO, hfp_connection->negotiated_codec, secure_connection_in_use);
-    btstack_assert(link_setting != HFP_LINK_SETTINGS_NONE);
+    uint16_t max_latency;
+    uint16_t packet_types;
+    uint16_t retransmission_effort;
+    hfp_link_settings_t link_setting = HFP_LINK_SETTINGS_NONE;
 
-    uint16_t max_latency             = hfp_link_settings[(uint8_t) link_setting].max_latency;
-    uint16_t packet_types            = hfp_link_settings[(uint8_t) link_setting].packet_types;
-    uint16_t retransmission_effort   = hfp_link_settings[(uint8_t) link_setting].retransmission_effort;
+    // fallback for non-CVSD codec and SCO connection
+    if ((hfp_connection->negotiated_codec != HFP_CODEC_CVSD) && (use_eSCO == false)){
+        max_latency           = 0xffff;
+        retransmission_effort = 0xff;
+        packet_types          = SCO_PACKET_TYPES_HV3 | SCO_PACKET_TYPES_HV1;
+    } else {
+        link_setting = hfp_safe_settings_for_context(use_eSCO, hfp_connection->negotiated_codec, secure_connection_in_use);
+        max_latency             = hfp_link_settings[(uint8_t) link_setting].max_latency;
+        retransmission_effort   = hfp_link_settings[(uint8_t) link_setting].retransmission_effort;
+        packet_types            = hfp_link_settings[(uint8_t) link_setting].packet_types;
+    }
 
     // transparent data for non-CVSD connections or if codec provided by Controller
     uint16_t sco_voice_setting = hci_get_sco_voice_setting();
