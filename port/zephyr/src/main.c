@@ -106,7 +106,16 @@ static int transport_send_packet(uint8_t packet_type, uint8_t *packet, int size)
 
             bt_send(buf);
             break;
-        default:
+        case HCI_ISO_DATA_PACKET:
+            buf = bt_buf_get_tx(BT_BUF_ISO_OUT, K_NO_WAIT, packet, size);
+            if (!buf) {
+                log_error("No available ISO buffers!\n");
+                break;
+            }
+
+            bt_send(buf);
+            break;
+       default:
             send_hardware_error(0x01);  // invalid HCI packet
             break;
     }
@@ -134,6 +143,9 @@ static void transport_deliver_controller_packet(struct net_buf * buf){
         uint16_t    size = buf->len;
         uint8_t * packet = buf->data;
         switch (bt_buf_get_type(buf)) {
+            case BT_BUF_ISO_IN:
+                transport_packet_handler(HCI_ISO_DATA_PACKET, packet, size);
+                break;
             case BT_BUF_ACL_IN:
                 transport_packet_handler(HCI_ACL_DATA_PACKET, packet, size);
                 break;
