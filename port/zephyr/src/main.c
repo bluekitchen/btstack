@@ -29,7 +29,13 @@
 #include "btstack_memory.h"
 #include "hci.h"
 #include "hci_dump.h"
+#ifdef ENABLE_HCI_DUMP
+#ifdef ENABLE_SEGGER_RTT_BINARY
+#include "hci_dump_segger_rtt_binary.h"
+#else
 #include "hci_dump_embedded_stdout.h"
+#endif
+#endif
 #include "hci_transport.h"
 #include "bluetooth_company_id.h"
 #include "btstack_chipset_zephyr.h"
@@ -333,7 +339,12 @@ int main(void)
 
 #ifdef ENABLE_HCI_DUMP
     // enable full log output while porting
-    hci_dump_init(hci_dump_embedded_stdout_get_instance());
+#ifdef ENABLE_SEGGER_RTT_BINARY
+    hci_dump_segger_rtt_binary_open( HCI_DUMP_PACKETLOGGER );
+    hci_dump_init(hci_dump_segger_rtt_binary_get_instance());
+#else
+     hci_dump_init(hci_dump_embedded_stdout_get_instance());
+#endif
 #endif
 
     const btstack_tlv_t * btstack_tlv_impl = btstack_tlv_none_init_instance();
