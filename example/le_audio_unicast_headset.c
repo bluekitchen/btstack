@@ -199,7 +199,8 @@ static int16_t pcm[MAX_CHANNELS * MAX_SAMPLES_PER_FRAME];
 static btstack_lc3_decoder_google_t google_decoder_contexts[MAX_CHANNELS];
 static void * decoder_contexts[MAX_NR_BIS];
 
-// playback
+// playback - volume in 0..255 to match VCS
+static uint8_t  playback_volume = 255;
 static uint16_t playback_start_threshold_bytes;
 static bool     playback_active;
 static uint8_t  playback_buffer_storage[PLAYBACK_BUFFER_SIZE];
@@ -287,6 +288,13 @@ static void setup_lc3_decoder(void){
     btstack_assert(number_samples_per_frame <= MAX_SAMPLES_PER_FRAME);
 }
 
+static void update_playback_volume(void){
+    const btstack_audio_sink_t * sink = btstack_audio_sink_get_instance();
+    if (sink != NULL){
+        sink->set_volume(playback_volume / 2);
+    }
+}
+
 static void enter_streaming(void){
 
     // switch to lc3plus if requested and possible
@@ -321,6 +329,7 @@ static void enter_streaming(void){
     if (sink != NULL){
         sink->init(num_channels, sampling_frequency_hz, le_audio_connection_sink_playback);
         sink->start_stream();
+        update_playback_volume();
     }
 
     // reset PLC
@@ -600,6 +609,11 @@ static void vcs_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
     if (hci_event_packet_get_type(packet) != HCI_EVENT_GATTSERVICE_META) return;
 
     switch (hci_event_gattservice_meta_get_subevent_code(packet)){
+        case GATTSERVICE_SUBEVENT_VCS_SERVER_VOLUME_STATE:
+            playback_volume = gattservice_subevent_vcs_server_volume_state_get_volume_setting(packet);
+            update_playback_volume();
+            printf("VCS Server: set volume %3u\n", playback_volume);
+            break;
         default:
             break;
     }
@@ -789,10 +803,13 @@ static void show_usage(void){
     printf(" l - configure as LEFT speaker and start advertising\n");
     printf(" r - configure as RIGHT speaker and start advertising\n");
     printf(" b - configure as STEREO speaker and start advertising\n");
+    printf(" [ - volume down\n");
+    printf(" ] - volume up\n");
     printf("---\n");
 }
 
 static void stdin_process(char c){
+    uint8_t volume_step = 10;
     switch (c){
         case 'b':
             printf("Configured as STEREO speaker\n");
@@ -811,6 +828,27 @@ static void stdin_process(char c){
             sink_pac_records[0].codec_capability.supported_audio_channel_counts_mask =
                     LE_AUDIO_CODEC_AUDIO_CHANNEL_COUNT_MASK_1;
             setup_sink_and_start_advertising(LE_AUDIO_LOCATION_MASK_FRONT_RIGHT);
+            break;
+        case '[':
+            if (playback_volume > volume_step){
+                playback_volume -= volume_step;
+            } else {
+                playback_volume = 0;
+            }
+            volume_control_service_server_set_volume_state(playback_volume, VCS_MUTE_OFF);
+            update_playback_volume();
+            break;
+        case ']':
+            if (playback_volume < (255 - volume_step)){
+                playback_volume += volume_step;
+            } else {
+                playback_volume = 255;
+            }
+            volume_control_service_server_set_volume_state(playback_volume, VCS_MUTE_OFF);
+            if (btstack_audio_sink_get_instance() != NULL){
+                btstack_audio_sink_get_instance()->set_volume(playback_volume / 2);
+            }
+            update_playback_volume();
             break;
         case '\n':
         case '\r':
