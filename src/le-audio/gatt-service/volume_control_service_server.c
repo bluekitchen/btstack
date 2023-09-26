@@ -110,20 +110,22 @@ static void vcs_server_update_change_counter(void){
     vcs_volume_state_change_counter++;
 }
 
-static void vcs_server_volume_up(void){
-    if (vcs_volume_state_volume_setting < (255 - vcs_volume_change_step_size)){
-        vcs_volume_state_volume_setting += vcs_volume_change_step_size;
+static uint8_t vcs_server_volume_up(uint8_t volume, uint8_t volume_step){
+    if (volume < (255 - volume_step)){
+        volume += volume_step;
     } else {
-        vcs_volume_state_volume_setting = 255;
+        volume = 255;
     }
+    return volume;
 } 
 
-static void vcs_server_volume_down(void){
-    if (vcs_volume_state_volume_setting > vcs_volume_change_step_size){
-        vcs_volume_state_volume_setting -= vcs_volume_change_step_size;
+static uint8_t vcs_server_volume_down(uint8_t volume, uint8_t volume_step){
+    if (volume > volume_step){
+        volume -= vcs_volume_change_step_size;
     } else {
-        vcs_volume_state_volume_setting = 0;
+        volume = 0;
     }
+    return volume;
 } 
 
 static void vcs_server_mute(void){
@@ -252,20 +254,20 @@ static int vcs_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
 
         switch (opcode){
             case VCS_OPCODE_RELATIVE_VOLUME_DOWN:  
-                vcs_server_volume_down();
+                volume_setting = vcs_server_volume_down(vcs_volume_state_volume_setting, vcs_volume_change_step_size);
                 break;
 
             case VCS_OPCODE_RELATIVE_VOLUME_UP:
-                vcs_server_volume_up();
+                volume_setting = vcs_server_volume_up(vcs_volume_state_volume_setting, vcs_volume_change_step_size);
                 break;
 
             case VCS_OPCODE_UNMUTE_RELATIVE_VOLUME_DOWN:
-                vcs_server_volume_down();
+                volume_setting = vcs_server_volume_down(vcs_volume_state_volume_setting, vcs_volume_change_step_size);
                 vcs_server_unmute();
                 break;
 
-            case VCS_OPCODE_UNMUTE_RELATIVE_VOLUME_UP:     
-                vcs_server_volume_up();
+            case VCS_OPCODE_UNMUTE_RELATIVE_VOLUME_UP:
+                volume_setting = vcs_server_volume_up(vcs_volume_state_volume_setting, vcs_volume_change_step_size);
                 vcs_server_unmute();
                 break;
 
@@ -273,7 +275,7 @@ static int vcs_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
                 if (buffer_size != 3){
                     return VOLUME_CONTROL_OPCODE_NOT_SUPPORTED;
                 }
-                vcs_volume_state_volume_setting = buffer[2];
+                volume_setting = buffer[2];
                 break;
             
             case VCS_OPCODE_UNMUTE:                    
