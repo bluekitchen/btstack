@@ -129,7 +129,7 @@ const uint8_t adv_data[] = {
         // Flags general discoverable
         2, BLUETOOTH_DATA_TYPE_FLAGS, APP_AD_FLAGS,
         // Name
-        13, BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME, 'U', 'n', 'i', 'c', 'a', 's', 't', ' ', 'S', 'i', 'n', 'k',
+        16, BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME, 'U', 'n', 'i', 'c', 'a', 's', 't', ' ', 'H', 'e', 'a', 'd', 's', 'e', 't'
 };
 const uint8_t adv_data_len = sizeof(adv_data);
 
