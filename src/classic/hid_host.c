@@ -941,7 +941,8 @@ static void hid_host_packet_handler(uint8_t packet_type, uint16_t channel, uint8
                             case HID_HOST_W4_INTERRUPT_CONNECTION_ESTABLISHED:
                                 if (connection->set_protocol){
                                     connection->set_protocol = false;
-                                    uint8_t header = (HID_MESSAGE_TYPE_SET_PROTOCOL << 4) | connection->requested_protocol_mode;
+                                    uint8_t protocol_mode = connection->requested_protocol_mode == HID_PROTOCOL_MODE_BOOT ? 0 : 1;
+                                    uint8_t header = (HID_MESSAGE_TYPE_SET_PROTOCOL << 4) | protocol_mode;
                                     uint8_t report[] = {header};
                                     connection->w4_set_protocol_response = true;
                                     l2cap_send(connection->control_cid, (uint8_t*) report, sizeof(report));
