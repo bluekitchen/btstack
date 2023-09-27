@@ -341,6 +341,7 @@ typedef enum {
     HCI_OPCODE_HCI_BCM_SET_SLEEP_MODE = HCI_OPCODE (0x3f, 0x27),
     HCI_OPCODE_HCI_BCM_WRITE_I2SPCM_INTERFACE_PARAM = HCI_OPCODE (0x3f, 0x6d),
     HCI_OPCODE_HCI_BCM_ENABLE_WBS = HCI_OPCODE(0x3f, 0x7e),
+    HCI_OPCODE_HCI_BCM_PCM2_SETUP = HCI_OPCODE (0x3f, 0xae),
     HCI_OPCODE_HCI_BCM_WRITE_TX_POWER_TABLE = HCI_OPCODE (0x3f, 0x1C9),
     HCI_OPCODE_HCI_BCM_SET_TX_PWR = HCI_OPCODE (0x3f, 0x1A5),
 
@@ -603,6 +604,7 @@ extern const hci_cmd_t hci_opcode_hci_le_read_buffer_size_v2;
 
 // Broadcom / Cypress specific HCI commands
 extern const hci_cmd_t hci_bcm_enable_wbs;
+extern const hci_cmd_t hci_bcm_pcm2_setup;
 extern const hci_cmd_t hci_bcm_write_pcm_data_format_param;
 extern const hci_cmd_t hci_bcm_set_sleep_mode;
 extern const hci_cmd_t hci_bcm_write_i2spcm_interface_param;

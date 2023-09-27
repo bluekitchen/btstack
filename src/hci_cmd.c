@@ -2430,6 +2430,37 @@ const hci_cmd_t hci_bcm_enable_wbs = {
 };
 
 /**
+ * @brief Configure PCM2, see Cypress AN214937
+ * @param action
+ * @param test_options
+ * @param op_mode
+ * @param sync_and_clock_options
+ * @param pcm_clock_freq
+ * @param sync_signal_width
+ * @param slot_width
+ * @param number_of_slots
+ * @param bank_0_fill_mode
+ * @param bank_0_number_of_fill_bits
+ * @param bank_0_programmable_fill_data
+ * @param bank_1_fill_mode
+ * @param bank_1_number_of_fill_bits
+ * @param bank_1_programmable_fill_data
+ * @param data_justify_and_bit_order_options
+ * @param ch_0_slot_number
+ * @param ch_1_slot_number
+ * @param ch_2_slot_number
+ * @param ch_3_slot_number
+ * @param ch_4_slot_number
+ * @param ch_0_period
+ * @param ch_1_period
+ * @param ch_2_period
+*
+ */
+const hci_cmd_t hci_bcm_pcm2_setup = {
+        HCI_OPCODE_HCI_BCM_PCM2_SETUP, "11114111111111111111111"
+};
+
+/**
  * @brief Configure SCO Routing (BCM)
  * @param sco_routing is 0 for PCM, 1 for Transport, 2 for Codec and 3 for I2S
  * @param pcm_interface_rate is 0 for 128KBps, 1 for 256 KBps, 2 for 512KBps, 3 for 1024KBps, and 4 for 2048Kbps
