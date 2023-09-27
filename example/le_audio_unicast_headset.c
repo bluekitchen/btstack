@@ -82,6 +82,7 @@
 #include "le-audio/le_audio_util.h"
 #include "le-audio/gatt-service/published_audio_capabilities_service_server.h"
 #include "le-audio/gatt-service/volume_control_service_server.h"
+#include "le-audio/gatt-service/media_control_service_client.h"
 
 #endif
 
@@ -619,6 +620,32 @@ static void vcs_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
     }
 }
 
+// MCS Client Handler
+#define MCS_CHARACTERISTICS_COUNT 16
+static uint16_t mcs_cid;
+static mcs_client_connection_t mcs_client_connection;
+static gatt_service_client_characteristic_t mcs_client_characteristics[MCS_CHARACTERISTICS_COUNT];
+
+static void mcs_client_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    printf("MCS Client: ");
+    printf_hexdump(packet, size);
+}
+
+void mcs_client_connect(hci_con_handle_t con_handle){
+    if (mcs_cid == 0) {
+        printf("MCS Client: connect\n");
+        media_control_service_client_connect(con_handle, &mcs_client_connection, mcs_client_characteristics,
+                                             MCS_CHARACTERISTICS_COUNT, mcs_client_packet_handler, &mcs_cid);
+    }
+}
+void mcs_client_disconnect(hci_con_handle_t con_handle) {
+    if (mcs_cid != 0) {
+        printf("MCS Client: disconnect\n");
+        media_control_service_client_disconnect(mcs_cid);
+    }
+}
+
+// ANCS Server Handler
 static void ascs_server_released_timer_handler(btstack_timer_source_t * ts){
     UNUSED(ts);
     printf("ASCS Server Released triggered by timer\n");
@@ -643,10 +670,12 @@ static void ascs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
             con_handle = gattservice_subevent_ascs_server_connected_get_con_handle(packet);
             status =     gattservice_subevent_ascs_server_connected_get_status(packet);
             printf("ASCS Server: connected, con_handle 0x%04x\n", con_handle);
+            mcs_client_connect(con_handle);
             break;
         case GATTSERVICE_SUBEVENT_ASCS_SERVER_DISCONNECTED:
             con_handle = gattservice_subevent_ascs_server_disconnected_get_con_handle(packet);
             printf("ASCS Server: disconnected, con_handle 0x%04xn\n", con_handle);
+            mcs_client_disconnect(con_handle);
             break;
         case GATTSERVICE_SUBEVENT_ASCS_SERVER_CODEC_CONFIGURATION:
             ase_id = gattservice_subevent_ascs_server_codec_configuration_get_ase_id(packet);
@@ -875,6 +904,9 @@ int btstack_main(int argc, const char * argv[]){
     // setup ATT server
     att_server_init(profile_data, NULL, NULL);
 
+    // gatt client
+    gatt_client_init();
+
     // register for HCI events
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
@@ -893,6 +925,9 @@ int btstack_main(int argc, const char * argv[]){
     // VCS Server
     volume_control_service_server_init(255, VCS_MUTE_OFF, 0, NULL, 0, NULL);
     volume_control_service_server_register_packet_handler(vcs_server_packet_handler);
+
+    // MCS Client
+    media_control_service_client_init();
 
     // turn on!
     hci_power_control(HCI_POWER_ON);
