@@ -1,5 +1,5 @@
 PRIMARY_SERVICE, GAP_SERVICE
-CHARACTERISTIC, GAP_DEVICE_NAME, READ, "LE Audio Unicast Sink"
+CHARACTERISTIC, GAP_DEVICE_NAME, READ, "Unicast Headset"
 
 // Published Audio Capabilities Service
 #import <published_audio_capabilities_service.gatt>
