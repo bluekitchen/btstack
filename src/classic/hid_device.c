@@ -747,6 +747,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                     device = hid_device_get_instance_for_l2cap_cid(local_cid);
                     if (!device) return;
 
+                    l2cap_reserve_packet_buffer();
                     outgoing_buffer = l2cap_get_outgoing_buffer();
 
                     switch (device->state){
@@ -788,10 +789,9 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                             if (device->report_status != HID_HANDSHAKE_PARAM_TYPE_SUCCESSFUL){
                                 outgoing_buffer[0] = (HID_MESSAGE_TYPE_HANDSHAKE << 4) | device->report_status;
                                 hid_device_send_prepared_control_message(device, 1);
-                                break;
+                            } else {
+                                hid_device_send_prepared_control_message(device, device->response_size);
                             }
-
-                            hid_device_send_prepared_control_message(device, device->response_size);
                             break;
                         }
                         case HID_DEVICE_W2_SET_REPORT:
@@ -803,17 +803,18 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                             if (device->report_status != HID_HANDSHAKE_PARAM_TYPE_SUCCESSFUL){
                                 outgoing_buffer[0] = (HID_MESSAGE_TYPE_HANDSHAKE << 4) | device->report_status;
                                 hid_device_send_prepared_control_message(device, 1);
-                                break;
+                            } else {
+                                outgoing_buffer[0] = (HID_MESSAGE_TYPE_DATA << 4);
+                                outgoing_buffer[1] =  device->protocol_mode;
+                                hid_device_send_prepared_control_message(device, 2);
                             }
-                            outgoing_buffer[0] = (HID_MESSAGE_TYPE_DATA << 4);
-                            outgoing_buffer[1] =  device->protocol_mode;
-                            hid_device_send_prepared_control_message(device, 2);
                             break;
                         case HID_DEVICE_W2_SEND_UNSUPPORTED_REQUEST:
                             outgoing_buffer[0] = (HID_MESSAGE_TYPE_HANDSHAKE << 4) | HID_HANDSHAKE_PARAM_TYPE_ERR_UNSUPPORTED_REQUEST;
                             hid_device_send_prepared_control_message(device, 1);
                             break;
                         default:
+                            l2cap_release_packet_buffer();
                             if (device->user_request_can_send_now){
                                 device->user_request_can_send_now = 0;
                                 hid_device_emit_event(device, HID_SUBEVENT_CAN_SEND_NOW);
