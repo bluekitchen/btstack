@@ -55,6 +55,9 @@ extern "C" {
 /* API_START */
 
 typedef struct {
+    bool (*find_name)(hci_con_handle_t con_handle, uint8_t *buffer, uint16_t buffer_size);
+    ots_filter_t * (*get_filter)(hci_con_handle_t con_handle, uint8_t filter_index);
+
     oacp_result_code_t (*create)(hci_con_handle_t con_handle, uint8_t *buffer, uint16_t buffer_size);
     oacp_result_code_t (*delete)(hci_con_handle_t con_handle);
     oacp_result_code_t (*calculate_checksum)(hci_con_handle_t con_handle, uint8_t *buffer, uint16_t buffer_size, uint32_t * crc_out);
@@ -96,11 +99,10 @@ typedef struct {
     bool current_object_object_transfer_in_progress;
     bool current_object_object_read_transfer_in_progress;
 
-    ots_filter_t filters[OTS_MAX_NUM_FILTERS];
-
     // used in write callback
     ots_filter_type_t long_write_filter_type;
-    uint8_t           long_write_data_size;
+    uint8_t           long_write_filter_index;
+    uint8_t           long_write_data_length;
     uint8_t           long_write_data[OTS_MAX_NAME_LENGHT];
     uint16_t          long_write_attribute_handle;
 
@@ -132,8 +134,7 @@ uint8_t object_transfer_service_server_init(uint32_t oacp_features, uint32_t olc
 
 void object_transfer_service_server_register_packet_handler(btstack_packet_handler_t packet_handler);
 
-uint8_t object_transfer_service_server_set_current_object(hci_con_handle_t con_handle, ots_object_t * object, uint32_t current_size);
-uint8_t object_transfer_service_server_reset_filters(hci_con_handle_t con_handle);
+uint8_t object_transfer_service_server_set_current_object(hci_con_handle_t con_handle, ots_object_t * object);
 
 uint8_t object_transfer_service_server_update_current_object_name(hci_con_handle_t con_handle, char * name);
 
@@ -155,6 +156,7 @@ uint32_t object_transfer_service_server_current_object_allocated_size(hci_con_ha
 char * object_transfer_service_server_current_object_name(hci_con_handle_t con_handle);
 uint16_t object_transfer_service_server_get_cbm_channel_remote_mtu(hci_con_handle_t con_handle);
 
+char * ots_filter_type2str(ots_filter_type_t filter_type);
 /* API_END */
 
 #if defined __cplusplus
