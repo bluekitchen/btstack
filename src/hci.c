@@ -2187,8 +2187,53 @@ static void hci_initializing_run(void){
                 hci_send_cmd(&hci_bcm_write_pcm_data_format_param, 0, 0, 3, 3, 0);
                 break;
             }
+#ifdef HAVE_BCM_PCM2
+        case HCI_INIT_BCM_PCM2_SETUP:
+            if (hci_classic_supported() && (hci_stack->manufacturer == BLUETOOTH_COMPANY_ID_BROADCOM_CORPORATION)) {
+                hci_stack->substate = HCI_INIT_W4_BCM_PCM2_SETUP;
+                uint8_t  op_mode = 0;  // Op_Mode = 0 = PCM, 1 = I2S
+                uint32_t pcm_clock_freq;
+                uint8_t  ch_0_period;
+#ifdef ENABLE_BCM_PCM_WBS
+                // 512 kHz, resample 8 kHz to 16 khz
+                pcm_clock_freq = 512000;
+                ch_0_period = 1;
+#else
+                // 256 khz, 8 khz output
+                pcm_clock_freq = 256000;
+                ch_0_period = 0;
 #endif
+                log_info("BCM: Config PCM2 - op mode %u, pcm clock %" PRIu32 ", ch0_period %u", op_mode, pcm_clock_freq, ch_0_period);
+                hci_send_cmd(&hci_bcm_pcm2_setup,
+                             0x00, // Action = Write
+                             0x00, // Test_Options = None
+                             op_mode, // Op_Mode
+                             0x1D, // Sync_and_Clock_Options Sync = Signal | Sync Output Enable | Generate PCM_CLK | Tristate When Idle
+                             pcm_clock_freq, // PCM_Clock_Freq
+                             0x01, // Sync_Signal_Width
+                             0x0F, // Slot_Width
+                             0x01, // NumberOfSlots
+                             0x00, // Bank_0_Fill_Mode = 0s
+                             0x00, // Bank_0_Number_of_Fill_Bits
+                             0x00, // Bank_0_Programmable_Fill_Data
+                             0x00, // Bank_1_Fill_Mode = 0s
+                             0x00, // Bank_1_Number_of_Fill_Bits
+                             0x00, // Bank_1_Programmable_Fill_Data
+                             0x00, // Data_Justify_And_Bit_Order_Options = Left Justify
+                             0x00, // Ch_0_Slot_Number
+                             0x01, // Ch_1_Slot_Number
+                             0x02, // Ch_2_Slot_Number
+                             0x03, // Ch_3_Slot_Number
+                             0x04, // Ch_4_Slot_Number
+                             ch_0_period, // Ch_0_Period
+                             0x00, // Ch_1_Period
+                             0x00  // Ch_2_Period
+                );
+                break;
+            }
 #endif
+#endif /* ENABLE_SCO_OVER_PCM */
+#endif /* ENABLE_CLASSIC */
 
 #ifdef ENABLE_BLE
             /* fall through */

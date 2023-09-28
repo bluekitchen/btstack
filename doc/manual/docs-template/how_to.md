@@ -76,6 +76,7 @@ Chipset properties:
 
 | \#define               | Description                                           |
 |------------------------|-------------------------------------------------------|
+| HAVE_BCM_PCM2          | PCM2 is used and requires additional configuration    |
 | HAVE_BCM_PCM_NBS_16KHZ | NBS is up/downsampled, use 16 kHz sample rate for NBS |
 
 ### ENABLE_* directives {#sec:enableDirectives}
