@@ -5414,6 +5414,16 @@ typedef uint8_t sm_key_t[16];
  */
 #define GATTSERVICE_SUBEVENT_MCS_SERVER_VALUE_CHANGED                                   0x9Au
 
+/**
+ * @format 1H11JV
+ * @param subevent_code
+ * @param con_handle
+ * @param filter_index
+ * @param filter_type
+ * @param data_length
+ * @param data
+ */
+#define GATTSERVICE_SUBEVENT_OTS_SERVER_FILTER                                          0x9Bu
 
 // MAP Meta Event Group
 

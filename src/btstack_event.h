@@ -17753,6 +17753,52 @@ static inline uint8_t gattservice_subevent_mcs_server_value_changed_get_characte
 }
 
 /**
+ * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_OTS_SERVER_FILTER
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t gattservice_subevent_ots_server_filter_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field filter_index from event GATTSERVICE_SUBEVENT_OTS_SERVER_FILTER
+ * @param event packet
+ * @return filter_index
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_ots_server_filter_get_filter_index(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field filter_type from event GATTSERVICE_SUBEVENT_OTS_SERVER_FILTER
+ * @param event packet
+ * @return filter_type
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_ots_server_filter_get_filter_type(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field data_length from event GATTSERVICE_SUBEVENT_OTS_SERVER_FILTER
+ * @param event packet
+ * @return data_length
+ * @note: btstack_type J
+ */
+static inline uint8_t gattservice_subevent_ots_server_filter_get_data_length(const uint8_t * event){
+    return event[7];
+}
+/**
+ * @brief Get field data from event GATTSERVICE_SUBEVENT_OTS_SERVER_FILTER
+ * @param event packet
+ * @return data
+ * @note: btstack_type V
+ */
+static inline const uint8_t * gattservice_subevent_ots_server_filter_get_data(const uint8_t * event){
+    return &event[8];
+}
+
+/**
  * @brief Get field map_cid from event MAP_SUBEVENT_CONNECTION_OPENED
  * @param event packet
  * @return map_cid
