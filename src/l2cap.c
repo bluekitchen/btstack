@@ -1927,7 +1927,7 @@ static void l2cap_run_signaling_response(void) {
                             memset(map, 0, 8);
                             // L2CAP Signaling Channel + Connectionless reception
                             map[0] = (1 << L2CAP_CID_SIGNALING) | (1 << L2CAP_CID_CONNECTIONLESS_CHANNEL);
-#if defined(ENABLE_BLE) || defined (ENABLE_EXPLICIT_BR_EDR_SECURITY_MANAGER)
+#if defined (ENABLE_EXPLICIT_BR_EDR_SECURITY_MANAGER) || (defined(ENABLE_BLE) && defined(ENABLE_CROSS_TRANSPORT_KEY_DERIVATION))
                             // BR/EDR Security Manager (bit 7) if BR/EDR Secure Connections possible
                             if (gap_secure_connections_active()){
                                 map[0] |= (1 << L2CAP_CID_BR_EDR_SECURITY_MANAGER);
