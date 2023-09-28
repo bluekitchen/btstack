@@ -194,8 +194,8 @@ typedef enum {
 
 typedef struct {
     ots_filter_type_t type;
-    uint8_t data_size;
-    uint8_t data[OTS_MAX_NAME_LENGHT];
+    uint8_t value_length;
+    uint8_t value[OTS_MAX_NAME_LENGHT];
 } ots_filter_t;
 
 typedef struct {
