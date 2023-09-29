@@ -63,39 +63,48 @@ static uint8_t att_round_robin;
 // track can send now requests
 static bool can_send_now_pending;
 
+#ifdef ENABLE_GATT_OVER_CLASSIC
+static att_server_t * att_dispatch_att_server_for_l2cap_cid(uint16_t l2cap_cid){
+    btstack_linked_list_iterator_t it;
+    hci_connections_get_iterator(&it);
+    while(btstack_linked_list_iterator_has_next(&it)) {
+        hci_connection_t *hci_connection = (hci_connection_t *) btstack_linked_list_iterator_next(&it);
+        att_server_t *att_server = &hci_connection->att_server;
+        if (att_server->l2cap_cid == l2cap_cid){
+            return att_server;
+        }
+    }
+    return NULL;
+}
+#endif
+
 static void att_dispatch_handle_can_send_now(uint8_t *packet, uint16_t size){
     uint8_t i;
     uint8_t index;
     uint16_t l2cap_cid = l2cap_event_can_send_now_get_local_cid(packet);
 #ifdef ENABLE_GATT_OVER_CLASSIC
     if (l2cap_cid != L2CAP_CID_ATTRIBUTE_PROTOCOL){
-        // lookup att_server in hci_connection for l2cap_cid
-        btstack_linked_list_iterator_t it;
-        hci_connections_get_iterator(&it);
-        while(btstack_linked_list_iterator_has_next(&it)) {
-            hci_connection_t *hci_connection = (hci_connection_t *) btstack_linked_list_iterator_next(&it);
-            att_server_t * att_server = &hci_connection->att_server;
-            if (att_server->l2cap_cid == l2cap_cid){
-                for (i = 0u; i < ATT_MAX; i++) {
-                    index = (att_round_robin + i) & 1u;
-                    if (att_server->send_requests[index]) {
-                        att_server->send_requests[index] = false;
-                        // registered packet handlers from Unenhanced LE
-                        subscriptions[index].packet_handler(HCI_EVENT_PACKET, l2cap_cid, packet, size);
-                        // fairness: prioritize next service
-                        att_round_robin = (index + 1u) % ATT_MAX;
-                        // stop if client cannot send anymore
-                        if (!l2cap_can_send_packet_now(l2cap_cid)) break;
-                    }
+        att_server_t * att_server = att_dispatch_att_server_for_l2cap_cid(l2cap_cid);
+        if (att_server != NULL){
+            for (i = 0u; i < ATT_MAX; i++) {
+                index = (att_round_robin + i) & 1u;
+                if (att_server->send_requests[index]) {
+                    att_server->send_requests[index] = false;
+                    // registered packet handlers from Unenhanced LE
+                    subscriptions[index].packet_handler(HCI_EVENT_PACKET, l2cap_cid, packet, size);
+                    // fairness: prioritize next service
+                    att_round_robin = (index + 1u) % ATT_MAX;
+                    // stop if client cannot send anymore
+                    if (!l2cap_can_send_packet_now(l2cap_cid)) break;
                 }
-                // check if more can send now events are needed
-                bool send_request_pending = att_server->send_requests[ATT_CLIENT]
-                                            || att_server->send_requests[ATT_SERVER];
-                if (send_request_pending){
-                    l2cap_request_can_send_now_event(att_server->l2cap_cid);
-                }
-                return;
             }
+            // check if more can send now events are needed
+            bool send_request_pending = att_server->send_requests[ATT_CLIENT]
+                                        || att_server->send_requests[ATT_SERVER];
+            if (send_request_pending){
+                l2cap_request_can_send_now_event(att_server->l2cap_cid);
+            }
+            return;
         }
     }
 #endif
