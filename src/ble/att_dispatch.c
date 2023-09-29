@@ -218,7 +218,7 @@ static void att_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                     break;
                 case L2CAP_EVENT_CHANNEL_CLOSED:
                     // clear l2cap_cid in att_server
-                    l2cap_cid = l2cap_event_incoming_connection_get_handle(packet);
+                    l2cap_cid = l2cap_event_channel_closed_get_local_cid(packet);
                     att_server = att_dispatch_att_server_for_l2cap_cid(l2cap_cid);
                     att_server->l2cap_cid = 0;
                     // dispatch to all roles
