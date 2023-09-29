@@ -154,6 +154,7 @@ static void att_dispatch_handle_att_pdu(uint8_t packet_type, uint16_t channel, u
 static void att_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 #ifdef ENABLE_GATT_OVER_CLASSIC
     hci_connection_t * hci_connection;
+    att_server_t * att_server;
     hci_con_handle_t con_handle;
     bool outgoing_active;
     uint8_t index;
@@ -216,10 +217,10 @@ static void att_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                     }
                     break;
                 case L2CAP_EVENT_CHANNEL_CLOSED:
-                    // clear l2cap cid in hci_connection->att_server
-                    con_handle = l2cap_event_incoming_connection_get_handle(packet);
-                    hci_connection = hci_connection_for_handle(con_handle);
-                    hci_connection->att_server.l2cap_cid = 0;
+                    // clear l2cap_cid in att_server
+                    l2cap_cid = l2cap_event_incoming_connection_get_handle(packet);
+                    att_server = att_dispatch_att_server_for_l2cap_cid(l2cap_cid);
+                    att_server->l2cap_cid = 0;
                     // dispatch to all roles
                     for (index = 0; index < ATT_MAX; index++){
                         if (subscriptions[index].packet_handler != NULL){
