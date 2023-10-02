@@ -1564,6 +1564,22 @@ uint8_t avdtp_choose_sbc_block_length(avdtp_stream_endpoint_t * stream_endpoint,
     return block_length;
 }
 
+uint16_t avdtp_get_highest_sampling_frequency(uint8_t sampling_frequency_bitmap){
+    if (sampling_frequency_bitmap & AVDTP_SBC_48000){
+        return 48000;
+    }
+    if (sampling_frequency_bitmap & AVDTP_SBC_44100){
+        return 44100;
+    }
+    if (sampling_frequency_bitmap & AVDTP_SBC_32000){
+        return 32000;
+    }
+    if (sampling_frequency_bitmap & AVDTP_SBC_16000){
+        return 16000;
+    }
+    return 0;
+}
+
 uint16_t avdtp_choose_sbc_sampling_frequency(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_sampling_frequency_bitmap){
     if (!stream_endpoint) return 0;
     uint8_t * media_codec = stream_endpoint->sep.capabilities.media_codec.media_codec_information;
@@ -1584,19 +1600,12 @@ uint16_t avdtp_choose_sbc_sampling_frequency(avdtp_stream_endpoint_t * stream_en
     }
 
     // otherwise, use highest available
-    if (supported_sampling_frequency_bitmap & AVDTP_SBC_48000){
-        return 48000;
+    uint16_t sampling_frequency = avdtp_get_highest_sampling_frequency(supported_sampling_frequency_bitmap);
+    if (sampling_frequency != 0){
+        return sampling_frequency;
+    } else {
+        return 44100; // some default
     }
-    if (supported_sampling_frequency_bitmap & AVDTP_SBC_44100){
-        return 44100;
-    }
-    if (supported_sampling_frequency_bitmap & AVDTP_SBC_32000){
-        return 32000;
-    }
-    if (supported_sampling_frequency_bitmap & AVDTP_SBC_16000){
-        return 16000;
-    } 
-    return 44100; // some default
 }
 
 uint8_t avdtp_choose_sbc_max_bitpool_value(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_max_bitpool_value){
