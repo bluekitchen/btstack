@@ -171,7 +171,7 @@ list(SORT EXAMPLES_C)
 file(GLOB EXAMPLES_GATT "../../example/*.gatt")
 
 # remove some
-file(GLOB EXAMPLES_OFF  "../../example/sco_demo_util.c" "../../example/ant_test.c" "../../example/avrcp_browsing_client.c")
+file(GLOB EXAMPLES_OFF  "../../example/*demo_util*.c" "../../example/ant_test.c" "../../example/avrcp_browsing_client.c")
 list(REMOVE_ITEM EXAMPLES_C ${EXAMPLES_OFF})
 
 # on Mac 10.14, adding lwip to libstack results in a yet not understood link error

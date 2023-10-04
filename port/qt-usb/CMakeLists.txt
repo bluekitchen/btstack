@@ -174,7 +174,7 @@ list(SORT EXAMPLES_C)
 file(GLOB EXAMPLES_GATT "${BTSTACK_ROOT}/example/*.gatt")
 
 # remove some
-file(GLOB EXAMPLES_OFF  "${BTSTACK_ROOT}/example/panu_demo.c" "${BTSTACK_ROOT}/example/sco_demo_util.c" "${BTSTACK_ROOT}/example/ant_test.c" "${BTSTACK_ROOT}/example/avrcp_browsing_client.c")
+file(GLOB EXAMPLES_OFF  "${BTSTACK_ROOT}/example/panu_demo.c" "${BTSTACK_ROOT}/example/*demo_util*.c" "${BTSTACK_ROOT}/example/ant_test.c" "${BTSTACK_ROOT}/example/avrcp_browsing_client.c")
 list(REMOVE_ITEM EXAMPLES_C ${EXAMPLES_OFF})
 
 # on Mac 10.14, adding lwip to libstack results in a yet not understood link error
