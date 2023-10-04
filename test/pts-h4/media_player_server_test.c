@@ -107,14 +107,15 @@ typedef enum {
 } ots_databank_type_t;
 
 // Other Operations
-static bool ots_server_name_exists(hci_con_handle_t con_handle, uint8_t *buffer, uint16_t buffer_size);
-static ots_filter_t * ots_server_get_filter(hci_con_handle_t con_handle, uint8_t filter_index);
+static bool ots_server_operation_find_object_with_name(hci_con_handle_t con_handle, const char * name);
+static ots_filter_t * ots_server_operation_read_filter(hci_con_handle_t con_handle, uint8_t filter_index);
+static bool ots_server_operation_can_allocate_object_of_size(hci_con_handle_t con_handle, uint32_t object_size);
 
 // Object operations
-static oacp_result_code_t ots_server_operation_create(hci_con_handle_t con_handle, uint8_t *buffer, uint16_t buffer_size);
+static oacp_result_code_t ots_server_operation_create(hci_con_handle_t con_handle, uint32_t object_size, gatt_uuid_type_t type_uuid16);
 static oacp_result_code_t ots_server_operation_delete(hci_con_handle_t con_handle);
-static oacp_result_code_t ots_server_operation_calculate_checksum(hci_con_handle_t con_handle, uint8_t *buffer, uint16_t buffer_size, uint32_t * crc_out);
-static oacp_result_code_t ots_server_operation_execute(hci_con_handle_t con_handle, uint8_t *buffer, uint16_t buffer_size);
+static oacp_result_code_t ots_server_operation_calculate_checksum(hci_con_handle_t con_handle, uint32_t offset, uint32_t length, uint32_t * crc_out);
+static oacp_result_code_t ots_server_operation_execute(hci_con_handle_t con_handle);
 static oacp_result_code_t ots_server_operation_read( hci_con_handle_t con_handle, uint32_t offset, uint32_t lenght, const uint8_t * out_buffer);
 static oacp_result_code_t ots_server_operation_write(hci_con_handle_t con_handle, uint32_t offset, uint8_t *buffer, uint16_t buffer_size);
 static oacp_result_code_t ots_server_operation_increase_allocated_size(hci_con_handle_t con_handle, uint32_t lenght);
@@ -136,13 +137,16 @@ static olcp_result_code_t ots_server_operation_clear_marking(hci_con_handle_t co
 
 
 static ots_server_connection_t ots_server_connections_storage[OTS_SERVER_MAX_NUM_CLIENTS];
-static ots_databank_type_t ots_databank_type;
+
+
 static ots_filter_t ots_filters[OTS_MAX_NUM_FILTERS];
-static uint8_t      ots_active_filters_bitmap = 0;
+
+static uint32_t     ots_operations_object_id_counter = 0;
 
 static const ots_operations_t ots_server_operations_impl = {
-    .find_name = &ots_server_name_exists,
-    .get_filter = &ots_server_get_filter,
+    .find_object_with_name = &ots_server_operation_find_object_with_name,
+    .get_filter = &ots_server_operation_read_filter,
+    .can_allocate_object_of_size = &ots_server_operation_can_allocate_object_of_size,
 
     // object operations
     .create   = &ots_server_operation_create,
@@ -165,7 +169,7 @@ static const ots_operations_t ots_server_operations_impl = {
     .clear_marking      = &ots_server_operation_clear_marking
 };
 
-static uint8_t ots_object_test_data[] = {
+static uint8_t ots_object_dummy_data[] = {
     0x00, 0x91, 0xE3, 0x72, 0x07, 0x96, 0xE4, 0x75, 0x0E, 0x9F, 0xED, 0x7C, 0x09, 0x98, 0xEA, 0x7B,
     0x1C, 0x8D, 0xFF, 0x6E, 0x1B, 0x8A, 0xF8, 0x69, 0x12, 0x83, 0xF1, 0x60, 0x15, 0x84, 0xF6, 0x67,
     0x38, 0xA9, 0xDB, 0x4A, 0x3F, 0xAE, 0xDC, 0x4D, 0x36, 0xA7, 0xD5, 0x44, 0x31, 0xA0, 0xD2, 0x43,
@@ -285,7 +289,8 @@ typedef struct {
 
 static uint16_t current_media_player_id;
 static btstack_timer_source_t mcs_seeking_speed_timer;
-    
+static mcs_media_player_t media_player1;
+
 static void mcs_seeking_speed_timer_stop(uint16_t media_player_id);
 static void mcs_seeking_speed_timer_start(uint16_t media_player_id);
 
@@ -296,9 +301,9 @@ static uint32_t previous_group_index;
 
 // MCS Test
 static mcs_track_t tracksA[] = {
-    {18000, 0, {0x11, 0x11, 0x11, 0x11, 0x11, 0x11}, "Object 2"}, //{0xFE, 0xFE, 0xFE, 0xFE, 0xFE, 0xFE}, {0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB}},
-    {15000, 0, {0x22, 0x22, 0x22, 0x22, 0x22, 0x22}, "Track2"}, //{0xFE, 0xFE, 0xFE, 0xFE, 0xFE, 0xFE}, {0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB}},
-    {12000, 0, {0x33, 0x33, 0x33, 0x33, 0x33, 0x33}, "Track3"}, //{0xFE, 0xFE, 0xFE, 0xFE, 0xFE, 0xFE}, {0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB}},
+    {18000, 0, {0x11, 0x11, 0x11, 0x11, 0x11, 0x11}, "Object 0"}, //{0xFE, 0xFE, 0xFE, 0xFE, 0xFE, 0xFE}, {0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB}},
+    {15000, 0, {0x22, 0x22, 0x22, 0x22, 0x22, 0x22}, "Object 1"}, //{0xFE, 0xFE, 0xFE, 0xFE, 0xFE, 0xFE}, {0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB}},
+    {12000, 0, {0x33, 0x33, 0x33, 0x33, 0x33, 0x33}, "Object 2"}, //{0xFE, 0xFE, 0xFE, 0xFE, 0xFE, 0xFE}, {0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB}},
 };
 
 static mcs_track_t tracksB[] = {
@@ -319,10 +324,14 @@ static mcs_track_group_t  track_groups[] = {
     {{0xFE, 0xFE, 0xFE, 0xFE, 0xFE, 0xFE},{0x0C, 0x0C, 0x0C, 0x0C, 0x0C, 0x0C}, 2, tracksC}
 };
 
-// applied sorting
-static olcp_list_sort_order_t   active_ots_objects_sort_order;
 
-static uint32_t ots_indexes_sorted[11][OTS_SERVER_MAX_NUM_OBJECTS] = {
+static uint32_t     ots_db_objects_num;
+static ots_object_t ots_db_objects[OTS_SERVER_MAX_NUM_OBJECTS];
+static olcp_list_sort_order_t  ots_db_sort_order;
+static ots_databank_type_t ots_db_type;
+
+// precomputed views of sorted indices
+static uint32_t ots_db_object_indices_sorted[11][OTS_SERVER_MAX_NUM_OBJECTS] = {
         // OLCP_LIST_SORT_ORDER_NONE
         {0,1,2,3,4,5,6,7,8,9},
         // OLCP_LIST_SORT_ORDER_BY_FIRST_NAME_ASCENDING
@@ -346,16 +355,23 @@ static uint32_t ots_indexes_sorted[11][OTS_SERVER_MAX_NUM_OBJECTS] = {
         // OLCP_LIST_SORT_ORDER_BY_LAST_CREATED_DESCENDING
         {9,8,7,6,5,4,3,2,1,0}
 };
-// storage for filtered objects
-static uint32_t ots_indexes_filtered[OTS_SERVER_MAX_NUM_OBJECTS];
 
-static uint32_t * active_ots_objects_indexes;
-static uint32_t   active_ots_objects_num;
+// active sorted view
+static uint32_t * ots_db_object_indices_sorted_view;
 
-static mcs_media_player_t media_player1;
+// active filters to apply
+static uint8_t  ots_db_active_filters_bitmap;
 
-static char * long_string1 = "Object 3 abcdefghijkabcdefghijkabcdefghijkabcdefghijkab";
-static char * long_string2 = "Object 3 ghijkabcdefghijkabcdefghijkabcdefghijkabcdefghijkab";
+// storage for filtered and sorted = final object indices
+static uint32_t ots_db_object_current_indices[OTS_SERVER_MAX_NUM_OBJECTS];
+static uint32_t ots_db_object_current_num;
+
+// index into ots_db_object_current_indices
+static int ots_db_object_current_index = -1;
+
+static char * long_string1 = "Object 0 abcdefghijkabcdefghijkabcdefghijkabcdefghijkab";
+static char * long_string2 = "Object 0 ghijkabcdefghijkabcdefghijkabcdefghijkabcdefghijkab";
+
 
 static void setup_advertising(void) {
     gap_extended_advertising_setup(&le_advertising_set, &extended_params, &adv_handle);
@@ -363,77 +379,129 @@ static void setup_advertising(void) {
     gap_extended_advertising_start(adv_handle, 0, 0);
 }
 
-
-// OTS Server Operations - START
-static  ots_object_t ots_objects[OTS_SERVER_MAX_NUM_OBJECTS];
-static uint32_t ots_object_id_counter = 0;
-
-static int active_ots_object_index = 0;
-
-static void ots_filters_reset(void) {
-    memset(ots_filters, 0, sizeof(ots_filters));
-    ots_active_filters_bitmap = 0;
-    active_ots_object_index = 0;
+static void ots_dump_object(ots_object_t * object){
+    printf("%d / %d, 0x%04x, %s\n", object->current_size, object->allocated_size, object->type_uuid16, object->name);
+}
+static void ots_dump_selection(void){
+    printf("\n");
+    int i;
+    for (i = 0; i < ots_db_object_current_num; i++){
+        ots_dump_object(&ots_db_objects[ots_db_object_current_indices[i]]);
+    }
+    printf("\n");
 }
 
-static int ots_active_index_get(void){
-    switch (ots_databank_type){
-        case OTS_DATABANK_TYPE_EMPTY:
-            return -1;
+static void ots_db_reset_filters(void) {
+    memset(ots_filters, 0, sizeof(ots_filters));
+    ots_db_active_filters_bitmap = 0;
+    int j;
+    for (j = 0; j < OTS_SERVER_MAX_NUM_OBJECTS ; j++){
+        ots_db_object_current_indices[j] = ots_db_object_indices_sorted_view[j];
+    }
+    ots_db_object_current_num = OTS_SERVER_MAX_NUM_OBJECTS;
+}
+
+static void ots_db_sort(olcp_list_sort_order_t order){
+    switch (order){
+        case OLCP_LIST_SORT_ORDER_NONE:
+            ots_db_sort_order = 0;
+            break;
+        case OLCP_LIST_SORT_ORDER_BY_FIRST_NAME_ASCENDING:
+            ots_db_sort_order = 1;
+            break;
+        case OLCP_LIST_SORT_ORDER_BY_OBJECT_TYPE_ASCENDING:
+            ots_db_sort_order = 2;
+            break;
+        case OLCP_LIST_SORT_ORDER_BY_OBJECT_CURRENT_SIZE_ASCENDING:
+            ots_db_sort_order = 3;
+            break;
+        case OLCP_LIST_SORT_ORDER_BY_FIRST_CREATED_ASCENDING:
+            ots_db_sort_order = 4;
+            break;
+        case OLCP_LIST_SORT_ORDER_BY_LAST_CREATED_ASCENDING:
+            ots_db_sort_order = 5;
+            break;
+        case OLCP_LIST_SORT_ORDER_BY_FIRST_NAME_DESCENDING:
+            ots_db_sort_order = 6;
+            break;
+        case OLCP_LIST_SORT_ORDER_BY_OBJECT_TYPE_DESCENDING:
+            ots_db_sort_order = 7;
+            break;
+        case OLCP_LIST_SORT_ORDER_BY_OBJECT_CURRENT_SIZE_DESCENDING:
+            ots_db_sort_order = 8;
+            break;
+        case OLCP_LIST_SORT_ORDER_BY_FIRST_CREATED_DESCENDING:
+            ots_db_sort_order = 9;
+            break;
+        case OLCP_LIST_SORT_ORDER_BY_LAST_CREATED_DESCENDING:
+            ots_db_sort_order = 10;
+            break;
         default:
+            btstack_unreachable();
             break;
     }
-    if ((active_ots_object_index < 0) || (active_ots_object_index > OTS_SERVER_MAX_NUM_OBJECTS)){
-        return -1;
-    }
-    return active_ots_objects_indexes[active_ots_object_index];
+    ots_db_object_indices_sorted_view = ots_db_object_indices_sorted[ots_db_sort_order];
+    ots_db_object_current_num = ots_db_objects_num;
+    ots_db_object_current_index = 0;
+    ots_db_reset_filters();
+    printf("Sort: num objects in list %d, index %d\n", ots_db_object_current_num, ots_db_object_current_index);
 }
+static void ots_db_filter(){
+    // clear current view
+    ots_db_object_current_num = 0;
 
-static void ots_apply_filters(){
-    if (ots_active_filters_bitmap == 0){
-        return;
-    }
+    // add objects that match filter
+    uint8_t i;
+    for (i = 0; i < ots_db_objects_num; i++){
+        uint32_t object_index = ots_db_object_indices_sorted_view[i];
+        const ots_object_t * object = &ots_db_objects[object_index];
 
-    // filter active
-    memset(ots_indexes_filtered, 0, sizeof(ots_indexes_filtered));
+        gatt_uuid_type_t uuid_type;
+        uint32_t min_size;
+        uint32_t max_size;
 
-    int filter_index;
-    int fitlered_objects_num = 0;
-    uint32_t filtered_indexes[OTS_SERVER_MAX_NUM_OBJECTS];
-
-    for (filter_index = 0; filter_index < OTS_MAX_NUM_FILTERS; filter_index++){
-        ots_filter_t filter = ots_filters[filter_index];
-        if (filter.type == OTS_FILTER_TYPE_NO_FILTER){
-            continue;
-        }
-
-        int i;
-        for (i = 0; i < active_ots_objects_num; i++){
-            uint32_t object_index = active_ots_objects_indexes[i];
-            ots_object_t object = ots_objects[object_index];
-
-            bool keep_index = true;
-            switch (filter.type){
+        uint8_t filter_index;
+        bool keep_object = true;
+        for (filter_index = 0; filter_index < OTS_MAX_NUM_FILTERS; filter_index++) {
+            if (keep_object == false){
+                continue;
+            }
+            const ots_filter_t * filter = &ots_filters[filter_index];
+            switch (filter->type){
                 case OTS_FILTER_TYPE_NAME_STARTS_WITH: // var
-                    if (strncmp(object.name, (const char *)filter.value, filter.value_length) != 0){
-                        keep_index = false;
+                    if (strncmp(object->name, (const char *)filter->value, filter->value_length) != 0){
+                        keep_object = false;
                     }
                     break;
-// TODO
+                case OTS_FILTER_TYPE_NAME_CONTAINS:    // var
+                    if (strstr(object->name, (const char *)filter->value) == NULL) {
+                        keep_object = false;
+                    }
+                    break;
+                case OTS_FILTER_TYPE_NAME_IS_EXACTLY:  // var
+                    if (strcmp(object->name, (const char *)filter->value) != 0){
+                        keep_object = false;
+                    }
+                    break;
 //                case OTS_FILTER_TYPE_NAME_ENDS_WITH:   // var
 //                    break;
-//                case OTS_FILTER_TYPE_NAME_CONTAINS:    // var
-//                    break;
-//                case OTS_FILTER_TYPE_NAME_IS_EXACTLY:  // var
-//                    break;
-//                case OTS_FILTER_TYPE_OBJECT_TYPE:      // 6
-//                    break;
+                case OTS_FILTER_TYPE_OBJECT_TYPE:   // 2
+                    uuid_type = (gatt_uuid_type_t)little_endian_read_16(filter->value, 0);
+                    if (object->type_uuid16 != uuid_type){
+                        keep_object = false;
+                    }
+                    break;
 //                case OTS_FILTER_TYPE_CREATED_BETWEEN:  // 14
 //                    break;
 //                case OTS_FILTER_TYPE_MODIFIED_BETWEEN: // 14
 //                    break;
-//                case OTS_FILTER_TYPE_CURRENT_SIZE_BETWEEN:   // 8
-//                    break;
+                case OTS_FILTER_TYPE_CURRENT_SIZE_BETWEEN:   // 8
+                    min_size = little_endian_read_32(filter->value, 0);
+                    max_size = little_endian_read_32(filter->value, 4);
+                    if ((object->current_size < min_size) || (object->current_size > max_size)){
+                        keep_object = false;
+                    }
+                    break;
 //                case OTS_FILTER_TYPE_ALLOCATED_SIZE_BETWEEN: // 8
 //                    break;
 //                case OTS_FILTER_TYPE_MARKED_OBJECTS:
@@ -441,215 +509,82 @@ static void ots_apply_filters(){
                 default:
                     break;
             }
-
-            if (keep_index){
-                filtered_indexes[fitlered_objects_num] = object_index;
-                fitlered_objects_num++;
-            }
+        }
+        if (keep_object){
+            ots_db_object_current_indices[ots_db_object_current_num++] = object_index;
         }
     }
 
-    memcpy(ots_indexes_filtered, filtered_indexes, fitlered_objects_num);
-    active_ots_objects_indexes = &ots_indexes_filtered[0];
-    active_ots_objects_num = fitlered_objects_num;
-    if (active_ots_objects_num > 0){
-        active_ots_object_index = 0;
+    // set current index to first object if not empty
+    if (ots_db_object_current_num > 0){
+        ots_db_object_current_index = 0;
     } else {
-        active_ots_object_index = -1;
+        ots_db_object_current_index = -1;
     }
-}
-
-static void ots_apply_sorting_order(olcp_list_sort_order_t order){
-    switch (order){
-        case OLCP_LIST_SORT_ORDER_NONE:
-            active_ots_objects_sort_order = 0;
-            break;
-        case OLCP_LIST_SORT_ORDER_BY_FIRST_NAME_ASCENDING:
-            active_ots_objects_sort_order = 1;
-            break;
-        case OLCP_LIST_SORT_ORDER_BY_OBJECT_TYPE_ASCENDING:
-            active_ots_objects_sort_order = 2;
-            break;
-        case OLCP_LIST_SORT_ORDER_BY_OBJECT_CURRENT_SIZE_ASCENDING:
-            active_ots_objects_sort_order = 3;
-            break;
-        case OLCP_LIST_SORT_ORDER_BY_FIRST_CREATED_ASCENDING:
-            active_ots_objects_sort_order = 4;
-            break;
-        case OLCP_LIST_SORT_ORDER_BY_LAST_CREATED_ASCENDING:
-            active_ots_objects_sort_order = 5;
-            break;
-        case OLCP_LIST_SORT_ORDER_BY_FIRST_NAME_DESCENDING:
-            active_ots_objects_sort_order = 6;
-            break;
-        case OLCP_LIST_SORT_ORDER_BY_OBJECT_TYPE_DESCENDING:
-            active_ots_objects_sort_order = 7;
-            break;
-        case OLCP_LIST_SORT_ORDER_BY_OBJECT_CURRENT_SIZE_DESCENDING:
-            active_ots_objects_sort_order = 8;
-            break;
-        case OLCP_LIST_SORT_ORDER_BY_FIRST_CREATED_DESCENDING:
-            active_ots_objects_sort_order = 9;
-            break;
-        case OLCP_LIST_SORT_ORDER_BY_LAST_CREATED_DESCENDING:
-            active_ots_objects_sort_order = 10;
-            break;
-        default:
-            btstack_unreachable();
-            break;
-    }
-
-    active_ots_objects_indexes = &ots_indexes_sorted[active_ots_objects_sort_order][0];
-    active_ots_objects_num = sizeof(ots_indexes_sorted[active_ots_objects_sort_order])/sizeof(uint32_t);
-    active_ots_object_index = 0;
-
-    if (ots_active_filters_bitmap != 0){
-        ots_apply_filters();
-    }
-}
-
-
-static ots_object_t * ots_object_for_active_index(void){
-    int index = ots_active_index_get();
-    if (index < 0){
-        return NULL;
-    }
-
-    ots_object_t * object = &ots_objects[index];
-    printf("%s\n", object->name);
-    return object;
-}
-
-static ots_object_t * ots_object_for_index(int index){
-    switch (ots_databank_type){
-        case OTS_DATABANK_TYPE_EMPTY:
-            return NULL;
-        default:
-            break;
-    }
-    if (index == -1){
-        return NULL;
-    }
-    if (active_ots_objects_num == 0){
-        return NULL;
-    }
-    int i = active_ots_objects_indexes[index];
-    return &ots_objects[i];
-}
-
-static void ots_active_index_set(int index){
-    active_ots_object_index = index;
+    printf("Filter: num objects in list %d, index %d\n", ots_db_object_current_num, ots_db_object_current_index);
+    ots_dump_selection();
 }
 
 static ots_object_t * ots_object_iterator_first(void){
-    int i = 0;
-    printf("first: ");
-    ots_object_t * object = ots_object_for_index(i);
-    if (object == NULL){
+    if (ots_db_object_current_num == 0){
         printf("NULL\n");
         return NULL;
     }
-
-    while ( (object != NULL) && (i < OTS_SERVER_MAX_NUM_OBJECTS) && (object->allocated_size == 0)){
-        i++;
-        object = ots_object_for_index(i);
-    }
-    if (object == NULL){
-        return NULL;
-    }
-
-    if (i < OTS_SERVER_MAX_NUM_OBJECTS){
-        ots_active_index_set(i);
-        return ots_object_for_active_index();
-    }
-    return NULL;
+    ots_db_object_current_index = 0;
+    return &ots_db_objects[ots_db_object_current_indices[ots_db_object_current_index]];
 }
 
 static ots_object_t * ots_object_iterator_last(void){
-    int i = OTS_SERVER_MAX_NUM_OBJECTS - 1;
-    printf("last: ");
-    ots_object_t * object = ots_object_for_index(i);
-    if (object == NULL){
+    if (ots_db_object_current_num == 0){
         printf("NULL\n");
         return NULL;
     }
-
-    while ((object != NULL) && (i >= 0) && (object->allocated_size == 0)){
-        i--;
-        object = ots_object_for_index(i);
-    }
-
-    if (object == NULL){
-        return NULL;
-    }
-
-    if (i >= 0){
-        ots_active_index_set(i);
-        return ots_object_for_active_index();
-    }
-    return NULL;
+    ots_db_object_current_index = ots_db_object_current_num - 1;
+    return &ots_db_objects[ots_db_object_current_indices[ots_db_object_current_index]];
 }
 
 static ots_object_t * ots_object_iterator_next(void){
-    int index = ots_active_index_get();
-    if (index < 0){
+    if (ots_db_object_current_num < 2){
+        printf("NULL\n");
         return NULL;
     }
-
-    int i = index + 1;
-    printf("next: ");
-    while ((i < OTS_SERVER_MAX_NUM_OBJECTS) && (ots_object_for_index(i)->allocated_size == 0)){
-        i++; 
+    if (ots_db_object_current_index >= (ots_db_object_current_num - 1)){
+        printf("NULL\n");
+        return NULL;
     }
-    if (i < OTS_SERVER_MAX_NUM_OBJECTS){
-        ots_active_index_set(i);
-        return ots_object_for_active_index();
-    }
-    return NULL;
+    ots_db_object_current_index++;
+    return &ots_db_objects[ots_db_object_current_indices[ots_db_object_current_index]];
 }
 
 static ots_object_t * ots_object_iterator_previous(void){
-    int index = ots_active_index_get();
-    if (index < 0){
+    if (ots_db_object_current_num < 2){
+        printf("NULL\n");
         return NULL;
     }
-
-    int i = ots_active_index_get() - 1;
-
-    while ((i >= 0) && (ots_object_for_index(i)->allocated_size == 0)){
-        i--; 
+    if (ots_db_object_current_index == 0){
+        printf("NULL\n");
+        return NULL;
     }
-    if (i >= 0){
-        ots_active_index_set(i);
-        return ots_object_for_active_index();
+    ots_db_object_current_index--;
+    return &ots_db_objects[ots_db_object_current_indices[ots_db_object_current_index]];
+}
+
+static ots_object_t * ots_object_iterator_goto(ots_object_id_t * luid){
+    int i;
+    for (i = 0; i < ots_db_object_current_num; i++){
+        ots_object_t * object = &ots_db_objects[ots_db_object_current_indices[i]];
+        if (memcmp(object->luid, luid, sizeof(ots_object_id_t)) == 0){
+            ots_db_object_current_index = i;
+            return object;
+        }
     }
     return NULL;
 }
 
-
-static ots_object_t * ots_server_find_free_object(void){
+static ots_object_t * ots_db_find_object_with_luid(ots_object_id_t * luid){
     int i;
-
-    for (i = 0; i < OTS_SERVER_MAX_NUM_OBJECTS; i++){
-        ots_object_t * object = ots_object_for_index(i);
-        if (object == NULL){
-            continue;
-        }
-        if (ots_object_for_index(i)->allocated_size == 0){
-            return ots_object_for_index(i);
-        } 
-    }
-    return NULL;
-}
-
-static ots_object_t * ots_server_find_object_for_luid(ots_object_id_t * luid){
-    int i;
-    for (i = 0; i < OTS_SERVER_MAX_NUM_OBJECTS; i++){
-        ots_object_t * object = ots_object_for_index(i);
-        if (object == NULL){
-            continue;
-        }
-
+    for (i = 0; i < ots_db_objects_num; i++){
+        ots_object_t * object = &ots_db_objects[i];
         if (memcmp(object->luid, luid, sizeof(ots_object_id_t)) == 0){
             return object;
         } 
@@ -657,176 +592,148 @@ static ots_object_t * ots_server_find_object_for_luid(ots_object_id_t * luid){
     return NULL;
 }
 
-static void ots_server_server_set_next_object_id(ots_object_id_t * object_id_out){
-    ots_object_id_counter++;
-    if (ots_object_id_counter < 0x0100) {
-        ots_object_id_counter = 0x0100;
+static ots_object_t * ots_db_find_object_with_name(const char * name){
+    int i;
+    for (i = 0; i < OTS_SERVER_MAX_NUM_OBJECTS; i++){
+        if (strcpy(ots_db_objects[i].name, name) == 0){
+            return &ots_db_objects[i];
+        }
+    }
+    return NULL;
+}
+
+static void ots_db_get_next_object_id(ots_object_id_t * object_id_out){
+    ots_operations_object_id_counter++;
+    if (ots_operations_object_id_counter < 0x0100) {
+        ots_operations_object_id_counter = 0x0100;
     }
     memset((uint8_t *)object_id_out, 0, OTS_OBJECT_ID_LEN);
-    little_endian_store_32((uint8_t *)object_id_out, 2, ots_object_id_counter);
+    little_endian_store_32((uint8_t *)object_id_out, 2, ots_operations_object_id_counter);
 }
 
-static bool ots_server_supports_gatt_uuid16(gatt_uuid_type_t type_uuid16){
-    // switch (type_uuid16){
-    //     case GATT_UUID_TYPE_UNSPECIFIED:
-    //     case GATT_UUID_TYPE_DIRECTORY_LISTING:
-    //         return true;
-    //     default:
-    //         return false;
-    // }
-    // TODO
-    printf("GATT UUID type 0x%04x\n", type_uuid16);
-    return true;
+static ots_object_t * ots_db_allocate_object_of_size(uint32_t object_size){
+    if (ots_db_objects_num < OTS_SERVER_MAX_NUM_OBJECTS){
+        ots_object_t * object = &ots_db_objects[ots_db_objects_num];
+        object->allocated_size = object_size;
+        ots_db_objects_num++;
+        return object;
+    }
+    return NULL;
 }
 
-static bool ots_server_can_store_object_of_size(uint32_t object_size){
-    // TODO
-    return true;
-}
+uint8_t ots_db_object_add(ots_object_id_t * object_id, char * name, uint32_t properties, uint16_t type_uuid16,
+                          uint32_t allocated_size, uint32_t current_size, btstack_utc_t * first_created, btstack_utc_t * last_modified){
 
-uint8_t ots_server_add_object_with_type_uuid16(ots_object_id_t * object_id, char * name, uint32_t properties, uint16_t type_uuid16,
-    uint32_t allocated_size, uint32_t current_size, btstack_utc_t * first_created, btstack_utc_t * last_modified){
-
-    ots_object_t * object = ots_server_find_object_for_luid(object_id);
+    ots_object_t * object = ots_db_find_object_with_luid(object_id);
     if (object != NULL){
         return AVRCP_BROWSING_ERROR_CODE_INVALID_PARAMETER;
     }
 
-    object = ots_server_find_free_object();
-    if (object == NULL){
-        return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
-    }
-    
     if (strlen(name) > OTS_MAX_NAME_LENGHT){
         return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
     }
 
+    object = ots_db_allocate_object_of_size(allocated_size);
+    if (object == NULL){
+        return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
+    }
+
     memcpy(&object->luid, object_id, sizeof(ots_object_id_t));
-   
-    object->properties = properties;
     btstack_strcpy(object->name, OTS_MAX_NAME_LENGHT, name);
+    object->properties = properties;
     object->type_uuid16 = type_uuid16;
-    object->allocated_size = allocated_size;
-    memcpy(&object->first_created, first_created, sizeof(btstack_utc_t));
-    memcpy(&object->last_modified, first_created, sizeof(btstack_utc_t));
     object->current_size = current_size;
+    memcpy(&object->first_created, first_created, sizeof(btstack_utc_t));
+    memcpy(&object->last_modified, last_modified, sizeof(btstack_utc_t));
     return ERROR_CODE_SUCCESS;
 }
-static bool ots_server_name_exists(hci_con_handle_t con_handle, uint8_t *buffer, uint16_t buffer_size){
-    int i;
-    for (i = 0; i < OTS_SERVER_MAX_NUM_OBJECTS; i++){
-        if (memcmp(ots_objects[i].name, buffer, buffer_size) == 0){
-            return true;
+
+static void ots_db_load_from_memory(uint8_t track_groups_num, mcs_track_group_t * track_groups){
+    ots_db_type = OTS_DATABANK_TYPE_POPULATED;
+
+    uint16_t i;
+    for (i = 0; i <  track_groups_num; i++){
+        mcs_track_group_t * track_group = &track_groups[i];
+
+        uint16_t j;
+        for (j = 0; j < track_group->tracks_num; j++){
+            mcs_track_t * track = &track_group->tracks[j];
+
+            btstack_utc_t first_created = {2023, 6, 22, 10, 59, i * 5};
+            btstack_utc_t last_modified = {2023, 6, 22, 10, 59, i * 5};
+            uint32_t properties = 0xFF;
+            uint16_t type_uuid16 = 0x2ACA; // unspecified
+            uint32_t allocated_size = sizeof(ots_object_dummy_data) - 100 + i * 20 + j;
+            uint32_t current_size = 30 + i * 20 + j;
+
+            ots_db_object_add(
+                    &track->object_id,
+                    track->title,
+                    properties,
+                    type_uuid16,
+                    // simulate increase of size to test sorting by size
+                    allocated_size,
+                    current_size,
+                    &first_created,
+                    &last_modified);
         }
+
     }
-    return false;
+
+    ots_db_sort(ots_db_sort_order);
+    ots_db_reset_filters();
+    ots_dump_selection();
 }
 
-static ots_filter_t * ots_server_get_filter(hci_con_handle_t con_handle, uint8_t filter_index){
+static void ots_db_init(void) {
+    ots_db_sort_order = OLCP_LIST_SORT_ORDER_NONE;
+    ots_db_objects_num = 0;
+    ots_db_type = OTS_DATABANK_TYPE_EMPTY;
+
+    ots_db_active_filters_bitmap = 0;
+    ots_db_object_current_num = 0;
+    ots_db_object_current_index = -1;
+}
+
+
+// OTS server operations
+
+static bool ots_server_operation_find_object_with_name(hci_con_handle_t con_handle, const char * name){
+    UNUSED(con_handle);
+    return ots_db_find_object_with_name(name) != NULL;
+}
+
+static ots_filter_t * ots_server_operation_read_filter(hci_con_handle_t con_handle, uint8_t filter_index){
+    UNUSED(con_handle);
     return &ots_filters[filter_index];
 }
 
-static oacp_result_code_t ots_server_operation_create(hci_con_handle_t con_handle, uint8_t *buffer, uint16_t buffer_size){
-    btstack_assert(buffer_size >= 6);
+static bool ots_server_operation_can_allocate_object_of_size(hci_con_handle_t con_handle, uint32_t object_size){
+    return ots_db_allocate_object_of_size(object_size) != NULL;
+}
 
-    uint32_t object_size = little_endian_read_32(buffer, 0);
-
-    uint8_t  gatt_uuid_size = buffer_size - 4;
-    gatt_uuid_type_t type_uuid16;
-
-    // 1. Unsupported Type - The Server does not accept an object of the type specified in the Type parameter.
-    if (gatt_uuid_size == 2){
-        type_uuid16 = (gatt_uuid_type_t)little_endian_read_16(buffer, 4);
-        if (!ots_server_supports_gatt_uuid16(type_uuid16)){
-            return OACP_RESULT_CODE_UNSUPPORTED_TYPE;
-        }  
-    }
-
-    // 2. Insufficient Resources - The Server cannot accept an object of the size specified in the Size parameter.
-    ots_object_t * object = ots_server_find_free_object();
-    if (object == NULL){
-        return OACP_RESULT_CODE_INSUFFICIENT_RESOURCES;
-    }
-
-    if (!ots_server_can_store_object_of_size(object_size)){
-        return OACP_RESULT_CODE_INSUFFICIENT_RESOURCES;
-    }
-
-    // 3. Invalid Parameter - The Parameter received does not meet the requirements of the service
-    if (object_size == 0){
-        return OACP_RESULT_CODE_INVALID_PARAMETER;
-    }
-
-    memset(object, 0, sizeof(ots_object_t));
-
-    object->allocated_size = object_size;
-    if (gatt_uuid_size == 2){
-        object->type_uuid16 = type_uuid16;
-    }
+static oacp_result_code_t ots_server_operation_create(hci_con_handle_t con_handle, uint32_t object_size, gatt_uuid_type_t type_uuid16){
+    UNUSED(con_handle);
+    ots_object_t * object = ots_db_allocate_object_of_size(object_size);
+    object->type_uuid16 = type_uuid16;
     object->properties |= OBJECT_PROPERTY_MASK_WRITE;
-    ots_server_server_set_next_object_id(&object->luid);
+    ots_db_get_next_object_id(&object->luid);
     object_transfer_service_server_set_current_object(con_handle, object);
-    ots_filters_reset();
-
+    ots_db_reset_filters();
     return OACP_RESULT_CODE_SUCCESS;
 }
 
 static oacp_result_code_t ots_server_operation_delete(hci_con_handle_t con_handle){
-    // 1. Invalid Object
-    if (!object_transfer_service_server_current_object_valid(con_handle)){
-        return OACP_RESULT_CODE_INVALID_OBJECT;
-    }
-
-    // 2. Procedure Not Permitted - The object’s properties do not permit deletion of the object.
-    if (!object_transfer_service_server_current_object_procedure_permitted(con_handle, OBJECT_PROPERTY_MASK_DELETE)){
-        return OACP_RESULT_CODE_PROCEDURE_NOT_PERMITTED;
-    }
-
-    // 3. Object Locked by server
-    if (object_transfer_service_server_current_object_locked(con_handle)){
-        return OACP_RESULT_CODE_OBJECT_LOCKED;
-    }
-
-    // 4. Object Locked - An object transfer is in progress that is using the Current Object
-    if (object_transfer_service_server_current_object_transfer_in_progress(con_handle)){
-        return OACP_RESULT_CODE_OBJECT_LOCKED;
-    }
-
-    object_transfer_service_server_delete_current_object(con_handle);
+    // TODO
     return OACP_RESULT_CODE_SUCCESS;
 }
 
 static const uint8_t * ots_server_get_current_object_bytes(hci_con_handle_t con_handle){
     // TODO; get object data
-    return (const uint8_t *)ots_object_test_data;
+    return (const uint8_t *)ots_object_dummy_data;
 }
 
-static oacp_result_code_t ots_server_operation_calculate_checksum(hci_con_handle_t con_handle, uint8_t *buffer, uint16_t buffer_size, uint32_t * crc_out){
-    btstack_assert(buffer_size >= 8);
-
-    // 1. Invalid Object
-    if (!object_transfer_service_server_current_object_valid(con_handle)){
-        return OACP_RESULT_CODE_INVALID_OBJECT;
-    }
-    // 2. Invalid Parameter - The sum of the values of the Offset and Length parameters 
-    //                        exceeds the value of the Current Size field of the Object Size characteristic.
-    uint32_t offset = little_endian_read_32(buffer, 0);
-    uint32_t length = little_endian_read_32(buffer, 4);
-    
-    if ((offset + length) > object_transfer_service_server_current_object_size(con_handle)){
-        return OACP_RESULT_CODE_INVALID_PARAMETER;
-    }
-
-    // 3. Object Locked by server
-    if (object_transfer_service_server_current_object_locked(con_handle)){
-        return OACP_RESULT_CODE_OBJECT_LOCKED;
-    }
-
-    // 4. Object Locked - An object transfer is in progress that is using the Current Object
-    if (object_transfer_service_server_current_object_transfer_in_progress(con_handle)){
-        return OACP_RESULT_CODE_OBJECT_LOCKED;
-    }
-    
+static oacp_result_code_t ots_server_operation_calculate_checksum(hci_con_handle_t con_handle, uint32_t offset, uint32_t length, uint32_t * crc_out){
     const uint8_t * data = ots_server_get_current_object_bytes(con_handle);
     
     uint32_t crc;
@@ -840,22 +747,8 @@ static oacp_result_code_t ots_server_operation_calculate_checksum(hci_con_handle
     return OACP_RESULT_CODE_SUCCESS;
 }
 
-static oacp_result_code_t ots_server_operation_execute(hci_con_handle_t con_handle, uint8_t *buffer, uint16_t buffer_size){
-    // 1. Invalid Object
-    if (!object_transfer_service_server_current_object_valid(con_handle)){
-        return OACP_RESULT_CODE_INVALID_OBJECT;
-    }
-
-    // 2. Procedure Not Permitted - The object’s properties do not permit execution of the object.
-    if (!object_transfer_service_server_current_object_procedure_permitted(con_handle, OBJECT_PROPERTY_MASK_EXECUTE)){
-        return OACP_RESULT_CODE_PROCEDURE_NOT_PERMITTED;
-    }
-
-    // 3. Object Locked by server
-    if (object_transfer_service_server_current_object_locked(con_handle)){
-        return OACP_RESULT_CODE_OBJECT_LOCKED;
-    }
-
+static oacp_result_code_t ots_server_operation_execute(hci_con_handle_t con_handle){
+    // TODO
     return OACP_RESULT_CODE_SUCCESS;
 }
 
@@ -872,12 +765,12 @@ static oacp_result_code_t ots_server_operation_read(hci_con_handle_t con_handle,
 
 static oacp_result_code_t ots_server_operation_write(hci_con_handle_t con_handle, uint32_t offset, uint8_t *buffer, uint16_t buffer_size){
     printf("Write operation, offset %d, chunk length %d\n", offset, buffer_size);
-    memcpy(&ots_object_test_data[offset], buffer, buffer_size);
+    memcpy(&ots_object_dummy_data[offset], buffer, buffer_size);
     return OACP_RESULT_CODE_SUCCESS;
 }
 
 static oacp_result_code_t ots_server_operation_increase_allocated_size(hci_con_handle_t con_handle, uint32_t lenght){
-    if (lenght > sizeof(ots_object_test_data)){
+    if (lenght > sizeof(ots_object_dummy_data)){
         return OACP_RESULT_CODE_INSUFFICIENT_RESOURCES;
     }
     return OACP_RESULT_CODE_SUCCESS;
@@ -889,13 +782,13 @@ static oacp_result_code_t ots_server_operation_abort(hci_con_handle_t con_handle
     return OACP_RESULT_CODE_SUCCESS;
 }
 
-
-
 static olcp_result_code_t ots_server_operation_first(hci_con_handle_t con_handle){
     ots_object_t * object = ots_object_iterator_first();
     if (object == NULL){
         return OLCP_RESULT_CODE_NO_OBJECT;
     }
+    printf("first: ");
+    ots_dump_object(object);
     object_transfer_service_server_set_current_object(con_handle, object);
     return OLCP_RESULT_CODE_SUCCESS;
 }
@@ -905,6 +798,8 @@ static olcp_result_code_t ots_server_operation_last(hci_con_handle_t con_handle)
     if (object == NULL){
         return OLCP_RESULT_CODE_NO_OBJECT;
     }
+    printf("last: ");
+    ots_dump_object(object);
     object_transfer_service_server_set_current_object(con_handle, object);
     return OLCP_RESULT_CODE_SUCCESS;
 }
@@ -914,6 +809,8 @@ static olcp_result_code_t ots_server_operation_next(hci_con_handle_t con_handle)
     if (object == NULL){
         return OLCP_RESULT_CODE_OUT_OF_BOUNDS;
     }
+    printf("next: ");
+    ots_dump_object(object);
     object_transfer_service_server_set_current_object(con_handle, object);
     return OLCP_RESULT_CODE_SUCCESS;
 }
@@ -923,31 +820,21 @@ static olcp_result_code_t ots_server_operation_previous(hci_con_handle_t con_han
     if (object == NULL){
         return OLCP_RESULT_CODE_OUT_OF_BOUNDS;
     }
+    printf("previous: ");
+    ots_dump_object(object);
     object_transfer_service_server_set_current_object(con_handle, object);
     return OLCP_RESULT_CODE_SUCCESS;
 }
 
 static olcp_result_code_t ots_server_operation_goto(hci_con_handle_t con_handle, ots_object_id_t * luid){
-    int i = 0;
-    bool found = false;
-    while ((i < OTS_SERVER_MAX_NUM_OBJECTS) && !found){
-        ots_object_t * object = ots_object_for_index(i);
-        if (object == NULL){
-            continue;
-        }
-
-        if ( (ots_object_for_index(i)->allocated_size != 0) && (memcmp(ots_object_for_index(i)->luid, luid, 6) == 0) ){
-            found = true;
-        } else {
-            i++;
-        }
+    ots_object_t * object = ots_object_iterator_goto(luid);
+    if (object == NULL){
+        return OLCP_RESULT_CODE_OBJECT_ID_NOT_FOUND;
     }
-    if (found){
-        ots_active_index_set(i);
-        object_transfer_service_server_set_current_object(con_handle, ots_object_for_index(i));
-        return OLCP_RESULT_CODE_SUCCESS;
-    }
-    return OLCP_RESULT_CODE_OBJECT_ID_NOT_FOUND;
+    printf("goto: ");
+    ots_dump_object(object);
+    object_transfer_service_server_set_current_object(con_handle, object);
+    return OLCP_RESULT_CODE_SUCCESS;
 }
 
 static char * ots_sort_order2string(olcp_list_sort_order_t order){
@@ -980,21 +867,23 @@ static char * ots_sort_order2string(olcp_list_sort_order_t order){
 static olcp_result_code_t ots_server_operation_sort(hci_con_handle_t con_handle, olcp_list_sort_order_t order) {
     // TODO move to event
     printf("Sort: %s\n", ots_sort_order2string(order));
-    ots_apply_sorting_order(order);
+    ots_db_sort_order = order;
+    ots_db_sort(ots_db_sort_order);
+    ots_dump_selection();
     return OLCP_RESULT_CODE_SUCCESS;
 }
 
 static olcp_result_code_t ots_server_operation_number_of_objects(hci_con_handle_t con_handle, uint32_t * out_num_objects){
-    *out_num_objects = active_ots_objects_num;
+    *out_num_objects = ots_db_object_current_num;
     return OLCP_RESULT_CODE_SUCCESS;
 }
 
 static olcp_result_code_t ots_server_operation_clear_marking(hci_con_handle_t con_handle){
     int i;
     for (i = 0; i < OTS_SERVER_MAX_NUM_OBJECTS; i++){
-        printf("propertis: 0x%04X -> ", ots_objects[i].properties);
-        ots_objects[i].properties &= ~OBJECT_PROPERTY_MASK_MARK;
-        printf("0x%04X \n", ots_objects[i].properties);
+        printf("propertis: 0x%04X -> ", ots_db_objects[i].properties);
+        ots_db_objects[i].properties &= ~OBJECT_PROPERTY_MASK_MARK;
+        printf("0x%04X \n", ots_db_objects[i].properties);
     }
     return OLCP_RESULT_CODE_SUCCESS;
 }
@@ -1392,7 +1281,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 
                     mcs_track_t * track = mcs_get_current_track_for_media_player_id(current_media_player_id);
                     if (track != NULL){
-                        ots_object_t * object = ots_server_find_object_for_luid(&track->object_id);
+                        ots_object_t * object = ots_db_find_object_with_luid(&track->object_id);
                         if (object != NULL){
                             object_transfer_service_server_set_current_object(bap_app_server_con_handle, object);
                             object_transfer_service_server_update_current_object_name(bap_app_server_con_handle, long_string1);
@@ -1760,6 +1649,8 @@ static void mcs_server_execute_track_operation(mcs_media_player_t * media_player
     } 
 }
 
+static void ots_dump_filter(uint8_t filter_index);
+
 static void ots_server_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
@@ -1778,24 +1669,52 @@ static void ots_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
             ots_filters[filter_index].type = (ots_filter_type_t)gattservice_subevent_ots_server_filter_get_filter_type(packet);
             ots_filters[filter_index].value_length = (ots_filter_type_t)gattservice_subevent_ots_server_filter_get_data_length(packet);
             memcpy(ots_filters[filter_index].value, gattservice_subevent_ots_server_filter_get_data(packet), ots_filters[filter_index].value_length);
-            printf("received filter[%d]: %s [%s]\n", filter_index, ots_filter_type2str(ots_filters[filter_index].type), ots_filters[filter_index].value);
 
             if (ots_filters[filter_index].type == OTS_FILTER_TYPE_NO_FILTER){
-                ots_active_filters_bitmap &= ~(1 << filter_index);
+                ots_db_active_filters_bitmap &= ~(1 << filter_index);
             } else {
-                ots_active_filters_bitmap |=  (1 << filter_index);
-            }
-            printf("received filter[%d/0x%02x]: %s [%s]\n", filter_index, ots_active_filters_bitmap, ots_filter_type2str(ots_filters[filter_index].type), ots_filters[filter_index].value);
-            if (ots_active_filters_bitmap != 0){
-                ots_apply_filters();
-             } else {
-                ots_apply_sorting_order(active_ots_objects_sort_order);
+                ots_db_active_filters_bitmap |=  (1 << filter_index);
             }
 
+            ots_dump_filter(filter_index);
+            ots_db_filter();
             object = ots_object_iterator_first();
             object_transfer_service_server_set_current_object(gattservice_subevent_ots_server_filter_get_con_handle(packet), object);
             break;
         default:
+            break;
+    }
+}
+
+static void ots_dump_filter(uint8_t filter_index) {
+    printf("received filter[%d/0x%02x]: %s ", filter_index, ots_db_active_filters_bitmap, ots_filter_type2str(ots_filters[filter_index].type));
+
+
+    switch (ots_filters[filter_index].type){
+        case OTS_FILTER_TYPE_NAME_STARTS_WITH: // var
+        case OTS_FILTER_TYPE_NAME_CONTAINS:    // var
+        case OTS_FILTER_TYPE_NAME_IS_EXACTLY:  // var
+        case OTS_FILTER_TYPE_NAME_ENDS_WITH:   // var
+            printf("\"%s\"\n", ots_filters[filter_index].value);
+            break;
+
+        case OTS_FILTER_TYPE_OBJECT_TYPE:   // 2
+            printf("0x%4x\n", (gatt_uuid_type_t)little_endian_read_16(ots_filters[filter_index].value, 0));
+            break;
+        case OTS_FILTER_TYPE_CURRENT_SIZE_BETWEEN:   // 8
+            printf("[%d, %d]\n", little_endian_read_32(ots_filters[filter_index].value, 0), little_endian_read_32(ots_filters[filter_index].value, 4));
+            break;
+
+//                case OTS_FILTER_TYPE_CREATED_BETWEEN:  // 14
+//                    break;
+//                case OTS_FILTER_TYPE_MODIFIED_BETWEEN: // 14
+//                    break;
+//                case OTS_FILTER_TYPE_ALLOCATED_SIZE_BETWEEN: // 8
+//                    break;
+//                case OTS_FILTER_TYPE_MARKED_OBJECTS:
+//                    break;
+        default:
+            printf("\n");
             break;
     }
 }
@@ -2105,11 +2024,11 @@ static void stdin_process(char cmd){
             break;
         case '8':
             printf(" - Reset filters\n");
-            ots_filters_reset();
+            ots_db_reset_filters();
             break;
         case '9':
             printf("Use empty databank\n");
-            ots_databank_type = OTS_DATABANK_TYPE_EMPTY;
+            ots_db_type = OTS_DATABANK_TYPE_EMPTY;
             break;
         case 'j':
             status = media_control_service_server_set_media_player_name(current_media_player_id, long_string1);
@@ -2122,7 +2041,7 @@ static void stdin_process(char cmd){
             if (status == ERROR_CODE_SUCCESS){
                 mcs_track_t * track = mcs_get_current_track_for_media_player_id(current_media_player_id);
                 if (track != NULL){
-                    ots_object_t * object = ots_server_find_object_for_luid(&track->object_id);
+                    ots_object_t * object = ots_db_find_object_with_luid(&track->object_id);
                     if (object != NULL){
                         object_transfer_service_server_set_current_object(bap_app_server_con_handle, object);
                         status = object_transfer_service_server_update_current_object_name(bap_app_server_con_handle, long_string1);
@@ -2135,7 +2054,7 @@ static void stdin_process(char cmd){
             if (status == ERROR_CODE_SUCCESS){
                 mcs_track_t * track = mcs_get_current_track_for_media_player_id(current_media_player_id);
                 if (track != NULL){
-                    ots_object_t * object = ots_server_find_object_for_luid(&track->object_id);
+                    ots_object_t * object = ots_db_find_object_with_luid(&track->object_id);
                     if (object != NULL){
                         object_transfer_service_server_set_current_object(bap_app_server_con_handle, object);
                         status = object_transfer_service_server_update_current_object_name(bap_app_server_con_handle, long_string1);
@@ -2155,7 +2074,7 @@ static void stdin_process(char cmd){
 
         case 'I':
             printf("Invalidate current object\n");
-            active_ots_object_index = -1;
+            ots_db_object_current_index = -1;
             break;
         case '\n':
         case '\r':
@@ -2171,6 +2090,9 @@ static void stdin_process(char cmd){
 }
 
 int btstack_main(void);
+
+void ots_db_init();
+
 int btstack_main(void)
 {
     
@@ -2226,46 +2148,15 @@ int btstack_main(void)
 
     current_media_player_id = media_player1.id;
     mcs_seeking_speed_timer_start(current_media_player_id);
-    
+
+    mcs_media_player_t * current_media_player = &media_player1;
         // setup OTS
     object_transfer_service_server_init(0x3FF, 0x0F, 
         OTS_SERVER_MAX_NUM_CLIENTS, ots_server_connections_storage, &ots_server_operations_impl);
     object_transfer_service_server_register_packet_handler(&ots_server_packet_handler);
 
-    active_ots_objects_sort_order = OLCP_LIST_SORT_ORDER_NONE;
-    active_ots_objects_num = 0;
-    ots_databank_type = OTS_DATABANK_TYPE_POPULATED;
-
-    mcs_media_player_t * current_media_player = &media_player1;
-    active_ots_objects_indexes = &ots_indexes_sorted[0][0];
-
-    uint16_t i;
-    for (i = 0; i <  current_media_player->track_groups_num; i++){
-        mcs_track_group_t * track_group = &current_media_player->track_groups[i];
-        
-        uint16_t j;
-        for (j = 0; j < track_group->tracks_num; j++){
-            mcs_track_t * track = &track_group->tracks[j];
-            
-            btstack_utc_t first_created = {2023, 6, 22, 10, 59, i * 5};
-            btstack_utc_t last_modified = {2023, 6, 22, 10, 59, i * 5};
-            uint32_t properties = 0xFF;
-            uint16_t type_uuid16 = 0x2ACA; // unspecified
-
-            ots_server_add_object_with_type_uuid16(
-                &track->object_id,
-                track->title,
-                properties,
-                type_uuid16,
-
-                sizeof(ots_object_test_data - 100 + i * 20),
-                sizeof(ots_object_test_data - 100 + i * 20),
-                &first_created, 
-                &last_modified);
-            active_ots_objects_num++;
-        }
-    }
-
+    ots_db_init();
+    ots_db_load_from_memory(current_media_player->track_groups_num, current_media_player->track_groups);
 
     // register for HCI events
     hci_event_callback_registration.callback = &packet_handler;
