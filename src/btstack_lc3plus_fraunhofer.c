@@ -114,6 +114,7 @@ static uint8_t lc3plus_fraunhofer_decoder_decode_signed_16(void * context, const
     if (stride > 1){
         uint16_t i;
         for (i = 0; i < instance->samples_per_frame; i++){
+            // cppcheck-suppress uninitvar ; for stride > 1, output_samples[0] = temp_out, which is initialized by lc3plus_dec16
             pcm_out [i * stride] = temp_out[i];
         }
     }
