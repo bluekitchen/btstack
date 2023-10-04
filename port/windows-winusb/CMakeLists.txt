@@ -17,21 +17,6 @@ elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "MSVC")
 	# using Visual Studio C++
 endif()
 
-# pkgconfig
-find_package(PkgConfig QUIET)
-
-# portaudio
-if (PkgConfig_FOUND)
-	pkg_check_modules(PORTAUDIO REQUIRED portaudio-2.0)
-	if(PORTAUDIO_FOUND)
-		message("HAVE_PORTAUDIO")
-		include_directories(${PORTAUDIO_INCLUDE_DIRS})
-		link_directories(${PORTAUDIO_LIBRARY_DIRS})
-		link_libraries(${PORTAUDIO_LIBRARIES})
-		# CMake 3.12 - add_compile_definitions(HAVE_PORTAUDIO)
-		SET(CMAKE_C_FLAGS  "-DHAVE_PORTAUDIO")
-	endif()
-endif()
 
 # to generate .h from .gatt files
 find_package (Python REQUIRED COMPONENTS Interpreter)
@@ -73,8 +58,6 @@ file(GLOB SOURCES_YXML      "../../3rd-party/yxml/yxml.c")
 file(GLOB SOURCES_BLE_OFF "../../src/ble/le_device_db_memory.c")
 list(REMOVE_ITEM SOURCES_BLE   ${SOURCES_BLE_OFF})
 
-
-
 set(SOURCES
 	${SOURCES_BLE}
 	${SOURCES_BLUEDROID}
@@ -94,6 +77,23 @@ list(SORT SOURCES)
 
 # create static lib
 add_library(btstack STATIC ${SOURCES})
+
+# pkgconfig
+find_package(PkgConfig QUIET)
+
+# portaudio
+if (PkgConfig_FOUND)
+	pkg_check_modules(PORTAUDIO REQUIRED portaudio-2.0)
+	if(PORTAUDIO_FOUND)
+		message("HAVE_PORTAUDIO")
+		include_directories(${PORTAUDIO_INCLUDE_DIRS})
+		link_directories(${PORTAUDIO_LIBRARY_DIRS})
+		link_libraries(${PORTAUDIO_LIBRARIES})
+		# CMake 3.12 - add_compile_definitions(HAVE_PORTAUDIO)
+		SET(CMAKE_C_FLAGS  "-DHAVE_PORTAUDIO")
+	endif()
+endif()
+
 
 # get list of examples, skipping mesh_node_demo
 include(../../example/CMakeLists.txt)

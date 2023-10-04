@@ -7,33 +7,6 @@ project(BTstack-libusb)
 
 SET(BTSTACK_ROOT ${CMAKE_SOURCE_DIR}/../..)
 
-# pkgconfig
-find_package(PkgConfig REQUIRED)
-
-
-# libusb
-pkg_check_modules(LIBUSB REQUIRED libusb-1.0)
-include_directories(${LIBUSB_INCLUDE_DIRS})
-link_directories(${LIBUSB_LIBRARY_DIRS})
-link_libraries(${LIBUSB_LIBRARIES})
-
-
-# portaudio
-pkg_check_modules(PORTAUDIO REQUIRED portaudio-2.0)
-if(PORTAUDIO_FOUND)
-	message("HAVE_PORTAUDIO")
-	include_directories(${PORTAUDIO_INCLUDE_DIRS})
-	link_directories(${PORTAUDIO_LIBRARY_DIRS})
-	link_libraries(${PORTAUDIO_LIBRARIES})
-	# CMake 3.12 - add_compile_definitions(HAVE_PORTAUDIO)
-	SET(CMAKE_C_FLAGS  "-DHAVE_PORTAUDIO")
-endif()
-
-# pthread
-find_package(Threads)
-link_libraries(${CMAKE_THREAD_LIBS_INIT})
-
-
 # extra compiler warnings
 if ("${CMAKE_C_COMPILER_ID}" MATCHES ".*Clang.*")
 	# using Clang
@@ -164,6 +137,31 @@ list(SORT SOURCES)
 
 # create static lib
 add_library(btstack STATIC ${SOURCES})
+
+# pkgconfig
+find_package(PkgConfig REQUIRED)
+
+# libusb
+pkg_check_modules(LIBUSB REQUIRED libusb-1.0)
+include_directories(${LIBUSB_INCLUDE_DIRS})
+link_directories(${LIBUSB_LIBRARY_DIRS})
+link_libraries(${LIBUSB_LIBRARIES})
+
+# portaudio
+pkg_check_modules(PORTAUDIO REQUIRED portaudio-2.0)
+if(PORTAUDIO_FOUND)
+	message("HAVE_PORTAUDIO")
+	include_directories(${PORTAUDIO_INCLUDE_DIRS})
+	link_directories(${PORTAUDIO_LIBRARY_DIRS})
+	link_libraries(${PORTAUDIO_LIBRARIES})
+	# CMake 3.12 - add_compile_definitions(HAVE_PORTAUDIO)
+	SET(CMAKE_C_FLAGS  "-DHAVE_PORTAUDIO")
+endif()
+
+# pthread
+find_package(Threads)
+link_libraries(${CMAKE_THREAD_LIBS_INIT})
+
 
 # create targets for all examples
 file(GLOB EXAMPLES_C    "../../example/*.c")
