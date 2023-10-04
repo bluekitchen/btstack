@@ -98,6 +98,8 @@ static ots_characteristic_t  ots_characteristics[OTS_CHARACTERISTICS_NUM];
 static uint32_t ots_oacp_features;
 static uint32_t ots_olcp_features;
 
+static hci_con_handle_t active_con_handle;
+
 
 #define TSPX_LE_PSM          0x25
 static uint8_t  receive_buffer_X[100];
@@ -287,28 +289,31 @@ uint8_t object_transfer_service_server_current_object_set_transfer_in_progress(h
 }
 
 
-static void btstack_utc_store_time(btstack_utc_t * time, uint8_t * time_buffer_out, uint16_t time_buffer_out_size){
+static void btstack_utc_store_time(btstack_utc_t * time_value, uint8_t * time_buffer_out, uint16_t time_buffer_out_size){
     if (time_buffer_out_size < 7){
         return;
     }
-    little_endian_store_16(time_buffer_out, 0, time->year);
-    time_buffer_out[2] = time->month;
-    time_buffer_out[3] = time->day;
-    time_buffer_out[4] = time->hours;
-    time_buffer_out[5] = time->minutes;
-    time_buffer_out[6] = time->seconds;
+    little_endian_store_16(time_buffer_out, 0, time_value->year);
+    time_buffer_out[2] = time_value->month;
+    time_buffer_out[3] = time_value->day;
+    time_buffer_out[4] = time_value->hours;
+    time_buffer_out[5] = time_value->minutes;
+    time_buffer_out[6] = time_value->seconds;
+//    printf("Read %4d-%02d-%02d\n", time_value->year, time_value->month, time_value->day);
 }
 
 static void btstack_utc_read_time(uint8_t * time_buffer, uint16_t time_buffer_size, btstack_utc_t * time_out){
     if (time_buffer_size < 7){
         return;
     }
+
     time_out->year    = little_endian_read_16(time_buffer, 0);
     time_out->month   = time_buffer[2];
     time_out->day     = time_buffer[3];
     time_out->hours   = time_buffer[4];
     time_out->minutes = time_buffer[5];
     time_out->seconds = time_buffer[6];
+//    printf("Write %4d-%02d-%02d\n", time_out->year, time_out->month, time_out->day);
 }
 
 static uint16_t ots_server_store_filter_list(const ots_filter_t * filter, uint8_t i, uint8_t * buffer, uint16_t buffer_size, uint16_t buffer_offset){
@@ -420,7 +425,6 @@ static uint16_t ots_server_read_callback(hci_con_handle_t con_handle, uint16_t a
 
     if (attribute_handle == ots_server_get_value_handle_for_characteristic_index(OTS_OBJECT_ID_INDEX)){
         return att_read_callback_handle_blob((const uint8_t *)connection->current_object->luid, OTS_OBJECT_ID_LEN, offset, buffer, buffer_size);
-    
     } 
     if (attribute_handle == ots_server_get_value_handle_for_characteristic_index(OTS_OBJECT_PROPERTIES_INDEX)){
         uint8_t properties[4];
@@ -534,7 +538,15 @@ static bool ots_server_gatt_uuid_size_valid(uint16_t uuid_size){
     return (uuid_size == 2) || (uuid_size == 16);
 }
 
-static hci_con_handle_t active_con_handle;
+static bool ots_server_supports_gatt_uuid16(gatt_uuid_type_t type_uuid16){
+    switch (type_uuid16){
+        case GATT_UUID_TYPE_UNSPECIFIED:
+        case GATT_UUID_TYPE_DIRECTORY_LISTING:
+            return true;
+        default:
+            return false;
+    }
+}
 
 int ots_server_handle_action_control_point_operation(ots_server_connection_t * connection, uint8_t *buffer, uint16_t buffer_size){
     if (buffer_size == 0){
@@ -572,6 +584,9 @@ int ots_server_handle_action_control_point_operation(ots_server_connection_t * c
     uint8_t mode;
     uint32_t offset;
     uint32_t length;
+    uint32_t object_size;
+    gatt_uuid_type_t type_uuid16;
+    uint8_t  gatt_uuid_size;
 
     switch (connection->oacp_opcode){
         case OACP_OPCODE_CREATE:
@@ -584,7 +599,29 @@ int ots_server_handle_action_control_point_operation(ots_server_connection_t * c
                 connection->oacp_result_code = OACP_RESULT_CODE_OPERATION_FAILED;
                 break;
             }
-            connection->oacp_result_code = ots_server_operations->create(connection->con_handle, &buffer[pos], data_size);
+
+            object_size = little_endian_read_32(buffer, 0);
+            gatt_uuid_size = buffer_size - 4;
+
+            // 1. Unsupported Type - The Server does not accept an object of the type specified in the Type parameter.
+            if (gatt_uuid_size == 2){
+                type_uuid16 = (gatt_uuid_type_t)little_endian_read_16(buffer, 4);
+                if (!ots_server_supports_gatt_uuid16(type_uuid16)){
+                    return OACP_RESULT_CODE_UNSUPPORTED_TYPE;
+                }
+            }
+
+            // 2. Insufficient Resources - The Server cannot accept an object of the size specified in the Size parameter.
+            if (ots_server_operations->can_allocate_object_of_size(connection->con_handle, object_size)){
+                return OACP_RESULT_CODE_INSUFFICIENT_RESOURCES;
+            }
+
+            // 3. Invalid Parameter - The Parameter received does not meet the requirements of the service
+            if (object_size == 0){
+                return OACP_RESULT_CODE_INVALID_PARAMETER;
+            }
+
+            connection->oacp_result_code = ots_server_operations->create(connection->con_handle, object_size, type_uuid16);
             break;
 
         case OACP_OPCODE_DELETE:
@@ -592,7 +629,34 @@ int ots_server_handle_action_control_point_operation(ots_server_connection_t * c
                 connection->oacp_result_code = OACP_RESULT_CODE_INVALID_OBJECT;
                 break;
             }
+            // 1. Invalid Object
+            if (!object_transfer_service_server_current_object_valid(connection->con_handle)){
+                return OACP_RESULT_CODE_INVALID_OBJECT;
+            }
+
+            // 2. Procedure Not Permitted - The object’s properties do not permit deletion of the object.
+            if (!object_transfer_service_server_current_object_procedure_permitted(connection->con_handle, OBJECT_PROPERTY_MASK_DELETE)){
+                return OACP_RESULT_CODE_PROCEDURE_NOT_PERMITTED;
+            }
+
+            // 3. Object Locked by server
+            if (object_transfer_service_server_current_object_locked(connection->con_handle)){
+                return OACP_RESULT_CODE_OBJECT_LOCKED;
+            }
+
+            // 4. Object Locked - An object transfer is in progress that is using the Current Object
+            if (object_transfer_service_server_current_object_transfer_in_progress(connection->con_handle)){
+                return OACP_RESULT_CODE_OBJECT_LOCKED;
+            }
+
             connection->oacp_result_code = ots_server_operations->delete(connection->con_handle);
+
+            if (connection->oacp_result_code == OACP_RESULT_CODE_SUCCESS){
+                memset(connection->current_object, 0, sizeof(ots_object_t));
+                connection->current_object = NULL;
+                connection->current_object_locked = false;
+                connection->current_object_object_transfer_in_progress = false;
+            }
             break;
         
         case OACP_OPCODE_CALCULATE_CHECKSUM:
@@ -600,11 +664,49 @@ int ots_server_handle_action_control_point_operation(ots_server_connection_t * c
                 connection->oacp_result_code = OACP_RESULT_CODE_OPERATION_FAILED;
                 break;
             }
-            connection->oacp_result_code = ots_server_operations->calculate_checksum(connection->con_handle, &buffer[pos], data_size, &connection->oacp_result_crc);
+
+            // 1. Invalid Object
+            if (!object_transfer_service_server_current_object_valid(connection->con_handle)){
+                return OACP_RESULT_CODE_INVALID_OBJECT;
+            }
+            // 2. Invalid Parameter - The sum of the values of the Offset and Length parameters
+            //                        exceeds the value of the Current Size field of the Object Size characteristic.
+            offset = little_endian_read_32(buffer, 0);
+            length = little_endian_read_32(buffer, 4);
+
+            if ((offset + length) > object_transfer_service_server_current_object_size(connection->con_handle)){
+                return OACP_RESULT_CODE_INVALID_PARAMETER;
+            }
+
+            // 3. Object Locked by server
+            if (object_transfer_service_server_current_object_locked(connection->con_handle)){
+                return OACP_RESULT_CODE_OBJECT_LOCKED;
+            }
+
+            // 4. Object Locked - An object transfer is in progress that is using the Current Object
+            if (object_transfer_service_server_current_object_transfer_in_progress(connection->con_handle)){
+                return OACP_RESULT_CODE_OBJECT_LOCKED;
+            }
+
+            connection->oacp_result_code = ots_server_operations->calculate_checksum(connection->con_handle, offset, length, &connection->oacp_result_crc);
             break;
         
         case OACP_OPCODE_EXECUTE:
-            connection->oacp_result_code = ots_server_operations->execute(connection->con_handle, &buffer[pos], data_size);
+            // 1. Invalid Object
+            if (!object_transfer_service_server_current_object_valid(connection->con_handle)){
+                return OACP_RESULT_CODE_INVALID_OBJECT;
+            }
+
+            // 2. Procedure Not Permitted - The object’s properties do not permit execution of the object.
+            if (!object_transfer_service_server_current_object_procedure_permitted(connection->con_handle, OBJECT_PROPERTY_MASK_EXECUTE)){
+                return OACP_RESULT_CODE_PROCEDURE_NOT_PERMITTED;
+            }
+
+            // 3. Object Locked by server
+            if (object_transfer_service_server_current_object_locked(connection->con_handle)){
+                return OACP_RESULT_CODE_OBJECT_LOCKED;
+            }
+            connection->oacp_result_code = ots_server_operations->execute(connection->con_handle);
             break;
         
         case OACP_OPCODE_READ:   
@@ -916,10 +1018,21 @@ static uint8_t ots_server_filter_buffer_valid_write(uint8_t * buffer, uint16_t b
         case OTS_FILTER_TYPE_ALLOCATED_SIZE_BETWEEN:
             if (connection->long_write_data_length != 8){
                 status = ATT_ERROR_RESPONSE_OTS_WRITE_REQUEST_REJECTED;
+            } else {
+                uint32_t min_size = little_endian_read_32(buffer, 1);
+                uint32_t max_size = little_endian_read_32(buffer, 5);
+                if (min_size > max_size){
+                    status = ATT_ERROR_RESPONSE_OTS_WRITE_REQUEST_REJECTED;
+                }
             }
             break;
 
         case OTS_FILTER_TYPE_OBJECT_TYPE:
+            if (connection->long_write_data_length != 2){
+                status = ATT_ERROR_RESPONSE_OTS_WRITE_REQUEST_REJECTED;
+            }
+
+            // TODO allow 16B values as well
             break;
 
         default:
@@ -1054,7 +1167,7 @@ static int ots_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
                     return ATT_ERROR_RESPONSE_OTS_WRITE_REQUEST_REJECTED;
                 }
 
-                if (ots_server_operations->find_name(con_handle, buffer, buffer_size)){
+                if (ots_server_operations->find_object_with_name(con_handle, (const char*)buffer)){
                     return ATT_ERROR_RESPONSE_OTS_OBJECT_NAME_ALREADY_EXISTS;
                 }
 
@@ -1338,7 +1451,7 @@ uint8_t object_transfer_service_server_init(uint32_t oacp_features, uint32_t olc
         ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_SIZE                , 
         ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_FIRST_CREATED       , 
         ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_LAST_MODIFIED       , 
-        ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_ID                  , 
+        ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_ID                  ,
         ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_PROPERTIES          , 
         ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_ACTION_CONTROL_POINT, 
         ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_LIST_CONTROL_POINT  , 
