@@ -8802,6 +8802,14 @@ uint8_t gap_le_set_phy(hci_con_handle_t con_handle, uint8_t all_phys, uint8_t tx
 }
 
 static uint8_t hci_whitelist_add(bd_addr_type_t address_type, const bd_addr_t address){
+
+#if !defined(HAVE_MALLOC) && (!defined(MAX_NR_WHITELIST_ENTRIES) || (MAX_NR_WHITELIST_ENTRIES == 0))
+    // incorrect configuration:
+    // - as MAX_NR_WHITELIST_ENTRIES is not defined or zero this function always fails
+    // - please set MAX_NR_WHITELIST_ENTRIES in btstack_config.h
+    btstack_assert(false);
+#endif
+
     // check if already in list
     btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, &hci_stack->le_whitelist);
@@ -9615,6 +9623,14 @@ void gap_set_peer_privacy_mode(le_privacy_mode_t privacy_mode ){
 #ifdef ENABLE_LE_EXTENDED_ADVERTISING
 
 static uint8_t hci_periodic_advertiser_list_add(bd_addr_type_t address_type, const bd_addr_t address, uint8_t advertising_sid){
+
+#if !defined(HAVE_MALLOC) && (!defined(MAX_NR_PERIODIC_ADVERTISER_LIST_ENTRIES) || (MAX_NR_PERIODIC_ADVERTISER_LIST_ENTRIES == 0))
+    // incorrect configuration:
+    // - as MAX_NR_PERIODIC_ADVERTISER_LIST_ENTRIES is not defined or zero this function always fails
+    // - please set MAX_NR_PERIODIC_ADVERTISER_LIST_ENTRIES in btstack_config.h
+    btstack_assert(false);
+#endif
+
     // check if already in list
     btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, &hci_stack->le_periodic_advertiser_list);
