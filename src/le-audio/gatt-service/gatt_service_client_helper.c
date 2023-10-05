@@ -154,7 +154,7 @@ static bool gatt_service_client_next_index_for_notification_query(gatt_service_c
     return next_query_found;
 }
 
-static uint8_t gatt_service_client_register_notification(gatt_service_client_helper_t *client_helper,
+static uint8_t gatt_service_client_register_notification(gatt_service_client_helper_t * client,
                                                          gatt_service_client_connection_helper_t *connection) {
     gatt_client_characteristic_t characteristic;
     uint8_t status = ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
@@ -165,7 +165,7 @@ static uint8_t gatt_service_client_register_notification(gatt_service_client_hel
         characteristic.properties = connection->characteristics[connection->characteristic_index].properties;
 
         status = gatt_client_write_client_characteristic_configuration(
-                gatt_service_client_get_packet_handler_trampoline(client_helper),
+                gatt_service_client_get_packet_handler_trampoline(client),
                 connection->con_handle,
                 &characteristic,
                 GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION);
@@ -264,18 +264,18 @@ static void gatt_service_client_run_for_client(gatt_service_client_helper_t * cl
 }
 
 // @return true if client valid / run function should be called
-static bool gatt_service_client_handle_query_complete(gatt_service_client_helper_t *client_helper,
+static bool gatt_service_client_handle_query_complete(gatt_service_client_helper_t *client,
                                                       gatt_service_client_connection_helper_t *connection,
                                                       uint8_t status) {
-    btstack_assert(client_helper != NULL);
+    btstack_assert(client != NULL);
     btstack_assert(connection != NULL);
 
     if (status != ATT_ERROR_SUCCESS){
         switch (connection->state){
             case GATT_SERVICE_CLIENT_STATE_W4_SERVICE_RESULT:
             case GATT_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTICS:
-                gatt_service_client_emit_connected(client_helper->packet_handler, connection->con_handle, connection->cid, status);
-                gatt_service_client_finalize_connection(client_helper, connection);
+                gatt_service_client_emit_connected(client->packet_handler, connection->con_handle, connection->cid, status);
+                gatt_service_client_finalize_connection(client, connection);
                 return false;
             default:
                 break;
@@ -285,8 +285,8 @@ static bool gatt_service_client_handle_query_complete(gatt_service_client_helper
     switch (connection->state){
         case GATT_SERVICE_CLIENT_STATE_W4_SERVICE_RESULT:
             if (connection->service_instances_num == 0){
-                gatt_service_client_emit_connected(client_helper->packet_handler, connection->con_handle, connection->cid, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE);
-                gatt_service_client_finalize_connection(client_helper, connection);
+                gatt_service_client_emit_connected(client->packet_handler, connection->con_handle, connection->cid, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE);
+                gatt_service_client_finalize_connection(client, connection);
                 return false;
             }
             connection->state = GATT_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTICS;
@@ -310,7 +310,7 @@ static bool gatt_service_client_handle_query_complete(gatt_service_client_helper
             } else {
                 connection->characteristic_index = 0;
                 connection->state = GATT_SERVICE_CLIENT_STATE_CONNECTED;
-                gatt_service_client_emit_connected(client_helper->packet_handler, connection->con_handle, connection->cid, ERROR_CODE_SUCCESS);
+                gatt_service_client_emit_connected(client->packet_handler, connection->con_handle, connection->cid, ERROR_CODE_SUCCESS);
             }
             break;
 
@@ -322,7 +322,7 @@ static bool gatt_service_client_handle_query_complete(gatt_service_client_helper
 
             connection->characteristic_index = 0;
             connection->state = GATT_SERVICE_CLIENT_STATE_CONNECTED;
-            gatt_service_client_emit_connected(client_helper->packet_handler, connection->con_handle, connection->cid, ERROR_CODE_SUCCESS);
+            gatt_service_client_emit_connected(client->packet_handler, connection->con_handle, connection->cid, ERROR_CODE_SUCCESS);
             break;
 
         default:
@@ -348,13 +348,11 @@ static uint8_t gatt_service_client_get_characteristic_index_for_uuid16(
         return index;
 }
 
-void gatt_service_client_hci_event_handler(gatt_service_client_helper_t * client_helper, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-
-    UNUSED(packet_type);
+void gatt_service_client_trampoline_packet_handler(gatt_service_client_helper_t * client, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
     
-    btstack_assert(client_helper != NULL);
+    btstack_assert(client != NULL);
 
     if (packet_type != HCI_EVENT_PACKET) return;
 
@@ -369,21 +367,21 @@ void gatt_service_client_hci_event_handler(gatt_service_client_helper_t * client
     switch (hci_event_packet_get_type(packet)){
         case HCI_EVENT_DISCONNECTION_COMPLETE:
             con_handle = hci_event_disconnection_complete_get_connection_handle(packet);
-            connection = gatt_service_client_get_connection_for_con_handle(client_helper, con_handle);
+            connection = gatt_service_client_get_connection_for_con_handle(client, con_handle);
             if (connection != NULL){
-                gatt_service_client_emit_disconnected(client_helper->packet_handler, connection->con_handle, connection->cid);
-                gatt_service_client_finalize_connection(client_helper, connection);
+                gatt_service_client_emit_disconnected(client->packet_handler, connection->con_handle, connection->cid);
+                gatt_service_client_finalize_connection(client, connection);
             }
             break;
 
         case GATT_EVENT_MTU:
-            connection = gatt_service_client_get_connection_for_con_handle(client_helper, gatt_event_mtu_get_handle(packet));
+            connection = gatt_service_client_get_connection_for_con_handle(client, gatt_event_mtu_get_handle(packet));
             btstack_assert(connection != NULL);
             connection->mtu = gatt_event_mtu_get_MTU(packet);
             break;
 
         case GATT_EVENT_SERVICE_QUERY_RESULT:
-            connection = gatt_service_client_get_connection_for_con_handle(client_helper, gatt_event_service_query_result_get_handle(packet));
+            connection = gatt_service_client_get_connection_for_con_handle(client, gatt_event_service_query_result_get_handle(packet));
             btstack_assert(connection != NULL);
 
             if (connection->service_instances_num < 1){
@@ -401,12 +399,12 @@ void gatt_service_client_hci_event_handler(gatt_service_client_helper_t * client
             break;
  
         case GATT_EVENT_CHARACTERISTIC_QUERY_RESULT:
-            connection = gatt_service_client_get_connection_for_con_handle(client_helper, gatt_event_characteristic_query_result_get_handle(packet));
+            connection = gatt_service_client_get_connection_for_con_handle(client, gatt_event_characteristic_query_result_get_handle(packet));
             btstack_assert(connection != NULL);
             gatt_event_characteristic_query_result_get_characteristic(packet, &characteristic);
       
-            characteristic_index = gatt_service_client_get_characteristic_index_for_uuid16(client_helper, characteristic.uuid16);
-            if (characteristic_index < client_helper->characteristics_desc16_num){
+            characteristic_index = gatt_service_client_get_characteristic_index_for_uuid16(client, characteristic.uuid16);
+            if (characteristic_index < client->characteristics_desc16_num){
                 connection->characteristics[characteristic_index].value_handle = characteristic.value_handle;
                 connection->characteristics[characteristic_index].properties = characteristic.properties;
                 connection->characteristics[characteristic_index].end_handle = characteristic.end_handle;
@@ -421,7 +419,7 @@ void gatt_service_client_hci_event_handler(gatt_service_client_helper_t * client
             break;
 
         case GATT_EVENT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT:
-            connection = gatt_service_client_get_connection_for_con_handle(client_helper, gatt_event_all_characteristic_descriptors_query_result_get_handle(packet));
+            connection = gatt_service_client_get_connection_for_con_handle(client, gatt_event_all_characteristic_descriptors_query_result_get_handle(packet));
             btstack_assert(connection != NULL);
             gatt_event_all_characteristic_descriptors_query_result_get_characteristic_descriptor(packet, &characteristic_descriptor);
             
@@ -441,9 +439,9 @@ void gatt_service_client_hci_event_handler(gatt_service_client_helper_t * client
             break;
 
         case GATT_EVENT_QUERY_COMPLETE:
-            connection = gatt_service_client_get_connection_for_con_handle(client_helper, gatt_event_query_complete_get_handle(packet));
+            connection = gatt_service_client_get_connection_for_con_handle(client, gatt_event_query_complete_get_handle(packet));
             btstack_assert(connection != NULL);
-            call_run = gatt_service_client_handle_query_complete(client_helper, connection, gatt_event_query_complete_get_att_status(packet));
+            call_run = gatt_service_client_handle_query_complete(client, connection, gatt_event_query_complete_get_att_status(packet));
             break;
 
         default:
@@ -452,8 +450,12 @@ void gatt_service_client_hci_event_handler(gatt_service_client_helper_t * client
     }
 
     if (call_run){
-        gatt_service_client_run_for_client(client_helper, connection);
+        gatt_service_client_run_for_client(client, connection);
     }
+}
+
+void gatt_service_client_hci_event_handler(gatt_service_client_helper_t * client, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    gatt_service_client_trampoline_packet_handler(client, packet_type, channel, packet, size);
 }
 
 void gatt_service_client_init(
