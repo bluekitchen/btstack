@@ -286,16 +286,18 @@ static void gatt_service_client_run_for_client(gatt_service_client_helper_t * cl
 }
 
 // @return true if client valid / run function should be called
-static bool gatt_service_client_handle_query_complete(gatt_service_client_connection_helper_t * connection, uint8_t status){
-    btstack_assert(gatt_service_active_client != NULL);
+static bool gatt_service_client_handle_query_complete(gatt_service_client_helper_t *client_helper,
+                                                      gatt_service_client_connection_helper_t *connection,
+                                                      uint8_t status) {
+    btstack_assert(client_helper != NULL);
     btstack_assert(connection != NULL);
 
     if (status != ATT_ERROR_SUCCESS){
         switch (connection->state){
             case GATT_SERVICE_CLIENT_STATE_W4_SERVICE_RESULT:
             case GATT_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTICS:
-                gatt_service_client_emit_connected(gatt_service_active_client->packet_handler, connection->con_handle, connection->cid, status);
-                gatt_service_client_finalize_connection(gatt_service_active_client, connection);
+                gatt_service_client_emit_connected(client_helper->packet_handler, connection->con_handle, connection->cid, status);
+                gatt_service_client_finalize_connection(client_helper, connection);
                 return false;
             default:
                 break;
@@ -305,8 +307,8 @@ static bool gatt_service_client_handle_query_complete(gatt_service_client_connec
     switch (connection->state){
         case GATT_SERVICE_CLIENT_STATE_W4_SERVICE_RESULT:
             if (connection->service_instances_num == 0){
-                gatt_service_client_emit_connected(gatt_service_active_client->packet_handler, connection->con_handle, connection->cid, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE);
-                gatt_service_client_finalize_connection(gatt_service_active_client, connection);
+                gatt_service_client_emit_connected(client_helper->packet_handler, connection->con_handle, connection->cid, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE);
+                gatt_service_client_finalize_connection(client_helper, connection);
                 return false;
             }
             connection->state = GATT_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTICS;
@@ -330,7 +332,7 @@ static bool gatt_service_client_handle_query_complete(gatt_service_client_connec
             } else {
                 connection->characteristic_index = 0;
                 connection->state = GATT_SERVICE_CLIENT_STATE_CONNECTED;
-                gatt_service_client_emit_connected(gatt_service_active_client->packet_handler, connection->con_handle, connection->cid, ERROR_CODE_SUCCESS);
+                gatt_service_client_emit_connected(client_helper->packet_handler, connection->con_handle, connection->cid, ERROR_CODE_SUCCESS);
             }
             break;
 
@@ -342,7 +344,7 @@ static bool gatt_service_client_handle_query_complete(gatt_service_client_connec
 
             connection->characteristic_index = 0;
             connection->state = GATT_SERVICE_CLIENT_STATE_CONNECTED;
-            gatt_service_client_emit_connected(gatt_service_active_client->packet_handler, connection->con_handle, connection->cid, ERROR_CODE_SUCCESS);
+            gatt_service_client_emit_connected(client_helper->packet_handler, connection->con_handle, connection->cid, ERROR_CODE_SUCCESS);
             break;
 
         default:
@@ -451,7 +453,7 @@ static void gatt_service_client_handle_gatt_client_event_for_client(gatt_service
         case GATT_EVENT_QUERY_COMPLETE:
             connection = gatt_service_client_get_connection_for_con_handle(client_helper, gatt_event_query_complete_get_handle(packet));
             btstack_assert(connection != NULL);
-            call_run = gatt_service_client_handle_query_complete(connection, gatt_event_query_complete_get_att_status(packet));
+            call_run = gatt_service_client_handle_query_complete(client_helper, connection, gatt_event_query_complete_get_att_status(packet));
             break;
 
         default:
