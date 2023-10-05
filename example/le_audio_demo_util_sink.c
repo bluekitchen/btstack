@@ -165,28 +165,6 @@ static void le_audio_connection_sink_playback(int16_t * buffer, uint16_t num_sam
     }
 }
 
-static void setup_lc3_decoder(void){
-    uint8_t channel;
-    for (channel = 0 ; channel < le_audio_demo_sink_num_channels ; channel++){
-        // pick decoder
-        void * decoder_context = NULL;
-#ifdef HAVE_LC3PLUS
-        if (use_lc3plus_decoder){
-            decoder_context = &fraunhofer_decoder_contexts[channel];
-            lc3_decoder = btstack_lc3plus_fraunhofer_decoder_init_instance(decoder_context);
-        }
-        else
-#endif
-        {
-            decoder_context = &google_decoder_contexts[channel];
-            lc3_decoder = btstack_lc3_decoder_google_init_instance(decoder_context);
-        }
-        decoder_contexts[channel] = decoder_context;
-        lc3_decoder->configure(decoder_context, le_audio_demo_sink_sampling_frequency_hz, le_audio_demo_sink_frame_duration, le_audio_demo_sink_octets_per_frame);
-    }
-    btstack_assert(le_audio_demo_sink_num_samples_per_frame <= MAX_SAMPLES_PER_FRAME);
-}
-
 static void store_samples_in_ringbuffer(void){
     // check if we have all channels
     uint8_t channel;
@@ -286,6 +264,28 @@ void le_audio_demo_util_sink_enable_lc3plus(bool enable){
     le_audio_demo_lc3plus_decoder_requested = enable;
 }
 
+static void setup_lc3_decoder(void){
+    uint8_t channel;
+    for (channel = 0 ; channel < le_audio_demo_sink_num_channels ; channel++){
+        // pick decoder
+        void * decoder_context = NULL;
+#ifdef HAVE_LC3PLUS
+        if (use_lc3plus_decoder){
+            decoder_context = &fraunhofer_decoder_contexts[channel];
+            lc3_decoder = btstack_lc3plus_fraunhofer_decoder_init_instance(decoder_context);
+        }
+        else
+#endif
+        {
+            decoder_context = &google_decoder_contexts[channel];
+            lc3_decoder = btstack_lc3_decoder_google_init_instance(decoder_context);
+        }
+        decoder_contexts[channel] = decoder_context;
+        lc3_decoder->configure(decoder_context, le_audio_demo_sink_sampling_frequency_hz, le_audio_demo_sink_frame_duration, le_audio_demo_sink_octets_per_frame);
+    }
+    btstack_assert(le_audio_demo_sink_num_samples_per_frame <= MAX_SAMPLES_PER_FRAME);
+}
+
 void le_audio_demo_util_sink_configure_general(uint8_t num_streams, uint8_t num_channels_per_stream,
                                                uint32_t sampling_frequency_hz,
                                                btstack_lc3_frame_duration_t frame_duration, uint16_t octets_per_frame,
@@ -301,6 +301,13 @@ void le_audio_demo_util_sink_configure_general(uint8_t num_streams, uint8_t num_
     btstack_assert((le_audio_demo_sink_num_channels == 1) || (le_audio_demo_sink_num_channels == 2));
 
     le_audio_demo_sink_lc3_frames = 0;
+
+    group_last_packet_received = false;
+    uint8_t i;
+    for (i=0;i<MAX_CHANNELS;i++){
+        stream_last_packet_received[i] = false;
+        have_pcm[i] = false;
+    }
 
     le_audio_demo_sink_num_samples_per_frame = btstack_lc3_samples_per_frame(le_audio_demo_sink_sampling_frequency_hz, le_audio_demo_sink_frame_duration);
 
@@ -339,8 +346,8 @@ void le_audio_demo_util_sink_configure_unicast(uint8_t num_streams, uint8_t num_
     le_audio_demo_sink_type = HCI_ISO_TYPE_CIS;
     le_audio_demo_sink_flush_timeout = flush_timeout;
 
-    // set playback start: FT * ISO Interval + 10 ms
-    uint16_t playback_start_ms = flush_timeout * (iso_interval_1250us * 5 / 4) + 10;
+    // set playback start: FT * ISO Interval + max(10 ms, 1/2 ISO Interval)
+    uint16_t playback_start_ms = flush_timeout * (iso_interval_1250us * 5 / 4) + btstack_max(10, iso_interval_1250us * 5 / 2);
     uint16_t playback_start_samples = sampling_frequency_hz / 1000 * playback_start_ms;
     playback_start_threshold_bytes = playback_start_samples * num_streams * num_channels_per_stream * 2;
     printf("Playback: start %u ms (%u samples, %u bytes)\n", playback_start_ms, playback_start_samples, playback_start_threshold_bytes);
@@ -407,13 +414,6 @@ void le_audio_demo_util_sink_receive(uint8_t stream_index, uint8_t *packet, uint
     uint8_t packet_status_flag = (uint8_t) (header_2 >> 14);
     offset += 2;
 
-    if (iso_sdu_length == 0) return;
-
-    if (iso_sdu_length != le_audio_demo_sink_num_channels_per_stream * le_audio_demo_sink_octets_per_frame) {
-        printf("ISO Length %u != %u * %u\n", iso_sdu_length, le_audio_demo_sink_num_channels_per_stream, le_audio_demo_sink_octets_per_frame);
-        return;
-    }
-
     // start with first packet on first stream
     if (group_last_packet_received == false){
         if (stream_index != 0){
@@ -446,17 +446,33 @@ void le_audio_demo_util_sink_receive(uint8_t stream_index, uint8_t *packet, uint
 
     plc_check(packet_sequence_number);
 
-    uint8_t i;
-    for (i = 0 ; i < le_audio_demo_sink_num_channels_per_stream ; i++){
-        // decode codec frame
-        uint8_t tmp_BEC_detect;
-        uint8_t BFI = 0;
-        uint8_t effective_channel = stream_index + i;
-        (void) lc3_decoder->decode_signed_16(decoder_contexts[effective_channel], &packet[offset], BFI,
-                                             &pcm[effective_channel], le_audio_demo_sink_num_channels,
-                                             &tmp_BEC_detect);
-        offset += le_audio_demo_sink_octets_per_frame;
-        have_pcm[stream_index + i] = true;
+    // either empty packets or num channels * num octets
+    if ((iso_sdu_length != 0) && (iso_sdu_length != le_audio_demo_sink_num_channels_per_stream * le_audio_demo_sink_octets_per_frame)) {
+        printf("ISO Length %u != %u * %u\n", iso_sdu_length, le_audio_demo_sink_num_channels_per_stream, le_audio_demo_sink_octets_per_frame);
+        log_info("ISO Length %u != %u * %u", iso_sdu_length, le_audio_demo_sink_num_channels_per_stream, le_audio_demo_sink_octets_per_frame);
+        return;
+    }
+
+    if (iso_sdu_length == 0) {
+        // empty packet -> generate silence
+        memset(pcm, 0, sizeof(pcm));
+        uint8_t i;
+        for (i = 0 ; i < le_audio_demo_sink_num_channels_per_stream ; i++) {
+            have_pcm[stream_index + i] = true;
+        }
+    } else {
+        // regular packet -> decode codec frame
+        uint8_t i;
+        for (i = 0 ; i < le_audio_demo_sink_num_channels_per_stream ; i++){
+            uint8_t tmp_BEC_detect;
+            uint8_t BFI = 0;
+            uint8_t effective_channel = stream_index + i;
+            (void) lc3_decoder->decode_signed_16(decoder_contexts[effective_channel], &packet[offset], BFI,
+                                                 &pcm[effective_channel], le_audio_demo_sink_num_channels,
+                                                 &tmp_BEC_detect);
+            offset += le_audio_demo_sink_octets_per_frame;
+            have_pcm[stream_index + i] = true;
+        }
     }
 
     store_samples_in_ringbuffer();
