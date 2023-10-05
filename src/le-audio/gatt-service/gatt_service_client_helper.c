@@ -179,7 +179,8 @@ static bool gatt_service_client_next_index_for_notification_query(gatt_service_c
     return next_query_found;
 }
 
-static uint8_t gatt_service_client_register_notification(gatt_service_client_connection_helper_t * connection){
+static uint8_t gatt_service_client_register_notification(gatt_service_client_helper_t *client_helper,
+                                                         gatt_service_client_connection_helper_t *connection) {
     gatt_client_characteristic_t characteristic;
     uint8_t status = ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
     
@@ -262,7 +263,7 @@ static void gatt_service_client_run_for_client(gatt_service_client_helper_t * cl
                 connection->characteristics[connection->characteristic_index].client_configuration_handle);
 #endif
             connection->state = GATT_SERVICE_CLIENT_STATE_W4_NOTIFICATION_REGISTERED;
-            status = gatt_service_client_register_notification(connection);
+            status = gatt_service_client_register_notification(client, connection);
             connection->characteristic_index++;
     
 #ifdef ENABLE_TESTING_SUPPORT
