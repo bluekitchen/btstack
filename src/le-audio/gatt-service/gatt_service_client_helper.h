@@ -129,10 +129,21 @@ typedef struct {
 /**
  * @brief Initialize GATT Client Helper
  * @param client
- * @param hci_event_handler_trampoline packet handler that calls gatt_service_client_hci_event_handler with client
+ * @param trampoline_packet_handler packet handler that calls gatt_service_client_trampoline_packet_handler with client
  */
 void gatt_service_client_init(gatt_service_client_helper_t * client,
-     void (*hci_event_handler_trampoline)(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size));
+     void (*trampoline_packet_handler)(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size));
+
+/**
+ * @brief Packet Handler to be called by trampoline registered with gatt_service_client_init
+ * @deprecated Please call gatt_service_client_trampoline_packet_handler instead
+ * @param client
+ * @param packet_type
+ * @param channel
+ * @param packet
+ * @param size
+ */
+void gatt_service_client_hci_event_handler(gatt_service_client_helper_t * client, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 /**
  * @brief Packet Handler to be called by trampoline registered with gatt_service_client_init
@@ -142,7 +153,7 @@ void gatt_service_client_init(gatt_service_client_helper_t * client,
  * @param packet
  * @param size
  */
-void gatt_service_client_hci_event_handler(gatt_service_client_helper_t * client, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+void gatt_service_client_trampoline_packet_handler(gatt_service_client_helper_t * client, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 /**
  * @brief Register callback for the GATT client. 
