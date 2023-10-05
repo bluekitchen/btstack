@@ -111,6 +111,8 @@ static bool     stream_last_packet_received[MAX_CHANNELS];
 static uint16_t stream_last_packet_sequence[MAX_CHANNELS];
 static uint16_t group_last_packet_sequence;
 static bool     group_last_packet_received;
+static uint16_t plc_timeout_initial_ms;
+static uint16_t plc_timeout_subsequent_ms;
 
 static uint32_t le_audio_demo_sink_lc3_frames;
 static uint32_t samples_received;
@@ -257,13 +259,23 @@ static void plc_check(uint16_t packet_sequence_number) {
 
 static void plc_timeout(btstack_timer_source_t * timer) {
     // Restart timer. This will loose sync with ISO interval, but if we stop caring if we loose that many packets
-    uint32_t frame_duration_ms = le_audio_demo_sink_frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US ? 8 : 10;
-    btstack_run_loop_set_timer(timer, frame_duration_ms);
+    btstack_run_loop_set_timer(timer, plc_timeout_subsequent_ms);
     btstack_run_loop_set_timer_handler(timer, plc_timeout);
     btstack_run_loop_add_timer(timer);
 
-    // assume no packet received in iso interval
-    plc_check(group_last_packet_sequence + 1);
+    switch (le_audio_demo_sink_type){
+        case HCI_ISO_TYPE_CIS:
+            // assume no packet received in iso interval => FT packets missed
+            plc_check(group_last_packet_sequence + le_audio_demo_sink_flush_timeout);
+            break;
+        case HCI_ISO_TYPE_BIS:
+            // assume PTO not used => 1 packet missed
+            plc_check(group_last_packet_sequence + 1);
+            break;
+        default:
+            btstack_unreachable();
+            break;
+    }
 }
 
 void le_audio_demo_util_sink_init(const char * filename_wav){
@@ -326,6 +338,22 @@ void le_audio_demo_util_sink_configure_unicast(uint8_t num_streams, uint8_t num_
                                                uint32_t iso_interval_1250us, uint8_t flush_timeout){
     le_audio_demo_sink_type = HCI_ISO_TYPE_CIS;
     le_audio_demo_sink_flush_timeout = flush_timeout;
+
+    // set playback start: FT * ISO Interval + 10 ms
+    uint16_t playback_start_ms = flush_timeout * (iso_interval_1250us * 5 / 4) + 10;
+    uint16_t playback_start_samples = sampling_frequency_hz / 1000 * playback_start_ms;
+    playback_start_threshold_bytes = playback_start_samples * num_streams * num_channels_per_stream * 2;
+    printf("Playback: start %u ms (%u samples, %u bytes)\n", playback_start_ms, playback_start_samples, playback_start_threshold_bytes);
+
+    // set subsequent plc timeout: FT * ISO Interval
+    plc_timeout_subsequent_ms = flush_timeout * iso_interval_1250us * 5 / 4;
+
+    // set initial plc timeout:FT * ISO Interval + 4 ms
+    plc_timeout_initial_ms = plc_timeout_subsequent_ms + 4;
+
+    printf("PLC: initial timeout    %u ms\n", plc_timeout_initial_ms);
+    printf("PLC: subsequent timeout %u ms\n", plc_timeout_subsequent_ms);
+
     le_audio_demo_util_sink_configure_general(num_streams, num_channels_per_stream, sampling_frequency_hz,
                                               frame_duration, octets_per_frame, iso_interval_1250us);
 }
@@ -335,6 +363,22 @@ void le_audio_demo_util_sink_configure_broadcast(uint8_t num_streams, uint8_t nu
                                                uint32_t iso_interval_1250us, uint8_t pre_transmission_offset) {
     le_audio_demo_sink_type = HCI_ISO_TYPE_BIS;
     le_audio_demo_sink_pre_transmission_offset = pre_transmission_offset;
+
+    // set playback start: ISO Interval + 10 ms
+    uint16_t playback_start_ms = (iso_interval_1250us * 5 / 4) + 10;
+    uint16_t playback_start_samples = sampling_frequency_hz / 1000 * playback_start_ms;
+    playback_start_threshold_bytes = playback_start_samples * num_streams * num_channels_per_stream * 2;
+    printf("Playback: start %u ms (%u samples, %u bytes)\n", playback_start_ms, playback_start_samples, playback_start_threshold_bytes);
+
+    // set subsequent plc timeout: ISO Interval
+    plc_timeout_subsequent_ms = iso_interval_1250us * 5 / 4;
+
+    // set initial plc timeout: ISO Interval + 4 ms
+    plc_timeout_initial_ms = plc_timeout_subsequent_ms + 4;
+
+    printf("PLC: initial timeout    %u ms\n", plc_timeout_initial_ms);
+    printf("PLC: subsequent timeout %u ms\n", plc_timeout_subsequent_ms);
+
     le_audio_demo_util_sink_configure_unicast(num_streams, num_channels_per_stream, sampling_frequency_hz, frame_duration,
                                               octets_per_frame, iso_interval_1250us, pre_transmission_offset);
 }
@@ -422,10 +466,8 @@ void le_audio_demo_util_sink_receive(uint8_t stream_index, uint8_t *packet, uint
     le_audio_demo_sink_lc3_frames++;
 
     // PLC
-    uint32_t frame_duration_ms = le_audio_demo_sink_frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US ? 8 : 10;
-    uint32_t timeout_ms = frame_duration_ms * 5 / 2;
     btstack_run_loop_remove_timer(&next_packet_timer);
-    btstack_run_loop_set_timer(&next_packet_timer, timeout_ms);
+    btstack_run_loop_set_timer(&next_packet_timer, plc_timeout_initial_ms);
     btstack_run_loop_set_timer_handler(&next_packet_timer, plc_timeout);
     btstack_run_loop_add_timer(&next_packet_timer);
 
