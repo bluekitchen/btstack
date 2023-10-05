@@ -35,11 +35,10 @@
  *
  */
 
-#define BTSTACK_FILE__ "le_audio_unicast_sink.c"
+#define BTSTACK_FILE__ "le_audio_unicast_headset.c"
 
 /*
  * LE Audio Unicast Sink
- * Until GATT Services are available, we encode LC3 config in advertising
  */
 
 
@@ -49,14 +48,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
-#include <inttypes.h>
-#include <fcntl.h>        // open
-#include <errno.h>
 
 #include "ad_parser.h"
 #include "bluetooth_data_types.h"
-#include "bluetooth_company_id.h"
 #include "bluetooth_gatt.h"
 #include "btstack_debug.h"
 #include "btstack_audio.h"
@@ -71,10 +65,11 @@
 #include "btstack_lc3.h"
 #include "btstack_lc3_google.h"
 
+#include "le_audio_demo_util_sink.h"
+#include "le_audio_demo_util_source.h"
+
 #include "le_audio_unicast_sink.h"
 
-#ifdef HAVE_POSIX_FILE_IO
-#include "wav_util.h"
 #include "le-audio/gatt-service/audio_stream_control_service_server.h"
 #include "ble/att_server.h"
 #include "ble/sm.h"
@@ -84,7 +79,7 @@
 #include "le-audio/gatt-service/volume_control_service_server.h"
 #include "le-audio/gatt-service/media_control_service_client.h"
 
-#endif
+#define ENABLE_MCS_CLIENT
 
 //#define DEBUG_PLC
 #ifdef DEBUG_PLC
@@ -187,40 +182,17 @@ static uint8_t  flush_timeout;
 // lc3 codec config
 static uint16_t sampling_frequency_hz;
 static btstack_lc3_frame_duration_t frame_duration;
-static uint16_t number_samples_per_frame;
 static uint16_t octets_per_frame;
 static uint8_t  num_channels;
 
 // lc3 decoder
-static bool request_lc3plus_decoder = false;
 static bool use_lc3plus_decoder = false;
 static const btstack_lc3_decoder_t * lc3_decoder;
 static int16_t pcm[MAX_CHANNELS * MAX_SAMPLES_PER_FRAME];
 
-static btstack_lc3_decoder_google_t google_decoder_contexts[MAX_CHANNELS];
-static void * decoder_contexts[MAX_NR_BIS];
-
 // playback - volume in 0..255 to match VCS
 static uint8_t  playback_volume = 255;
-static uint16_t playback_start_threshold_bytes;
 static bool     playback_active;
-static uint8_t  playback_buffer_storage[PLAYBACK_BUFFER_SIZE];
-static btstack_ring_buffer_t playback_buffer;
-
-// statistics
-static bool     last_packet_received[MAX_CHANNELS];
-static uint16_t last_packet_sequence[MAX_CHANNELS];
-static uint32_t last_packet_time_ms[MAX_CHANNELS];
-
-static uint32_t lc3_frames;
-static uint32_t samples_received;
-static uint32_t samples_played;
-static uint32_t samples_dropped;
-
-// PLC state
-static uint16_t               plc_timeout_ms;
-static btstack_timer_source_t plc_next_packet_timer;
-static uint16_t               plc_cached_iso_sdu_len;
 
 // PACS Server
 static pacs_streamendpoint_t sink_node;
@@ -237,58 +209,6 @@ static le_audio_metadata_t     ascs_server_audio_metadata;
 static hci_con_handle_t ascs_server_current_client_con_handle;
 static uint8_t ascs_server_current_ase_id;
 
-
-static void le_audio_connection_sink_playback(int16_t * buffer, uint16_t num_samples){
-    // called from lower-layer but guaranteed to be on main thread
-    log_info("Playback: need %u, have %u samples", num_samples, btstack_ring_buffer_bytes_available(&playback_buffer) / (num_channels * 2));
-
-    samples_played += num_samples;
-
-    uint32_t bytes_needed = num_samples * num_channels * 2;
-    if (playback_active == false){
-        if (btstack_ring_buffer_bytes_available(&playback_buffer) >= playback_start_threshold_bytes) {
-            log_info("Playback started");
-            playback_active = true;
-        }
-    } else {
-        if (bytes_needed > btstack_ring_buffer_bytes_available(&playback_buffer)) {
-#ifdef DEBUG_AUDIO_BUFFER
-            printf("Playback Underrun\n");
-#endif
-            log_info("Playback underrun");
-            // empty buffer
-            uint32_t bytes_read;
-            btstack_ring_buffer_read(&playback_buffer, (uint8_t *) buffer, bytes_needed, &bytes_read);
-            playback_active = false;
-        }
-    }
-
-    if (playback_active){
-        uint32_t bytes_read;
-        btstack_ring_buffer_read(&playback_buffer, (uint8_t *) buffer, bytes_needed, &bytes_read);
-        btstack_assert(bytes_read == bytes_needed);
-    } else {
-        memset(buffer, 0, bytes_needed);
-    }
-}
-
-static void setup_lc3_decoder(void){
-    uint8_t channel;
-    for (channel = 0 ; channel < num_channels ; channel++){
-        // pick decoder
-        void * decoder_context = NULL;
-        {
-            decoder_context = &google_decoder_contexts[channel];
-            lc3_decoder = btstack_lc3_decoder_google_init_instance(decoder_context);
-        }
-        decoder_contexts[channel] = decoder_context;
-        printf("LC3: channel #%u, samplerate %u, octets per frame %u\n", channel, sampling_frequency_hz, octets_per_frame);
-        lc3_decoder->configure(decoder_context, sampling_frequency_hz, frame_duration, octets_per_frame);
-    }
-    number_samples_per_frame = btstack_lc3_samples_per_frame(sampling_frequency_hz, frame_duration);
-    btstack_assert(number_samples_per_frame <= MAX_SAMPLES_PER_FRAME);
-}
-
 static void update_playback_volume(void){
     const btstack_audio_sink_t * sink = btstack_audio_sink_get_instance();
     if (sink != NULL){
@@ -297,62 +217,15 @@ static void update_playback_volume(void){
 }
 
 static void enter_streaming(void){
-
-    // switch to lc3plus if requested and possible
-    use_lc3plus_decoder = request_lc3plus_decoder && (frame_duration == BTSTACK_LC3_FRAME_DURATION_10000US);
-
-    // init decoder
-    setup_lc3_decoder();
-
-    printf("Configure: %u channels, sampling rate %u, samples per frame %u, lc3plus %u\n", num_channels, sampling_frequency_hz, number_samples_per_frame, use_lc3plus_decoder);
-
-#ifdef HAVE_POSIX_FILE_IO
-    // create wav file
-    printf("WAV file: %s\n", filename_wav);
-    wav_writer_open(filename_wav, num_channels, sampling_frequency_hz);
-#endif
-
-    // init playback buffer
-    btstack_ring_buffer_init(&playback_buffer, playback_buffer_storage, PLAYBACK_BUFFER_SIZE);
-
-    // set playback start: FT * ISO Interval + 10 ms
-    uint16_t playback_start_ms = flush_timeout * (iso_interval_1250us / 4 * 5) + 10;
-    uint16_t playback_start_samples = sampling_frequency_hz / 1000 * playback_start_ms;
-    playback_start_threshold_bytes = playback_start_samples * num_channels * 2;
-    printf("Playback: start %u ms (%u samples, %u bytes)\n", playback_start_ms, playback_start_samples, playback_start_threshold_bytes);
-
-    // set plc timeout: (FT + 0.5) * ISO Interval
-    plc_timeout_ms = flush_timeout * iso_interval_1250us * 15 / 8;
-    printf("PLC: timeout %u ms\n", plc_timeout_ms);
-
-    // start playback
-    const btstack_audio_sink_t * sink = btstack_audio_sink_get_instance();
-    if (sink != NULL){
-        sink->init(num_channels, sampling_frequency_hz, le_audio_connection_sink_playback);
-        sink->start_stream();
-        update_playback_volume();
-    }
-
-    // reset PLC
-    memset(last_packet_received, 0, sizeof(last_packet_received));
-    memset(last_packet_sequence, 0, sizeof(last_packet_sequence));
+    // init sink
+    le_audio_demo_util_sink_configure_unicast(1, num_channels, sampling_frequency_hz,
+                                              frame_duration, octets_per_frame, iso_interval_1250us, flush_timeout);
+    playback_active = true;
 }
 
 static void stop_streaming(void){
-    // stop PLC timer
-    btstack_run_loop_remove_timer(&plc_next_packet_timer);
-
-    // stop playback
-    const btstack_audio_sink_t * sink = btstack_audio_sink_get_instance();
-    if (sink != NULL){
-        sink->stop_stream();
-    }
-
-    // close files
-#ifdef HAVE_POSIX_FILE_IO
-    printf("Close files\n");
-    wav_writer_close();
-#endif
+    le_audio_demo_util_sink_close();
+    playback_active = false;
 }
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -438,149 +311,17 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     }
 }
 
-static void store_samples_in_ringbuffer(void){
-#ifdef HAVE_POSIX_FILE_IO
-    // write wav samples
-    wav_writer_write_int16(num_channels * number_samples_per_frame, pcm);
-#endif
-    // store samples in playback buffer
-    uint32_t bytes_to_store = num_channels * number_samples_per_frame * 2;
-    samples_received += number_samples_per_frame;
-    uint32_t bytes_free = btstack_ring_buffer_bytes_free(&playback_buffer);
-    if (bytes_to_store <= bytes_free) {
-        btstack_ring_buffer_write(&playback_buffer, (uint8_t *) pcm, bytes_to_store);
-    } else {
-#ifdef DEBUG_AUDIO_BUFFER
-        printf("Samples dropped\n");
-#endif
-        log_info("Samples dropped: to store %u, free %u", bytes_to_store, bytes_free);
-        samples_dropped += number_samples_per_frame;
-    }
-}
-
-static void plc_do(void) {
-    // inject packet
-    uint8_t tmp_BEC_detect;
-    uint8_t BFI = 1;
-    uint8_t channel;
-    for (channel = 0; channel < num_channels; channel++){
-        (void) lc3_decoder->decode_signed_16(decoder_contexts[channel], NULL, BFI,
-                                             &pcm[channel], num_channels,
-                                             &tmp_BEC_detect);
-    }
-
-    store_samples_in_ringbuffer();
-}
-
-static void plc_timeout(btstack_timer_source_t * timer) {
-    // set timer again
-    btstack_run_loop_set_timer(&plc_next_packet_timer, plc_timeout_ms);
-    btstack_run_loop_set_timer_handler(&plc_next_packet_timer, plc_timeout);
-    btstack_run_loop_add_timer(&plc_next_packet_timer);
-    printf_plc("- ISO, PLC for timeout\n");
-    plc_do();
-}
-
 static void iso_packet_handler(uint8_t packet_type, uint16_t a_channel, uint8_t *packet, uint16_t size){
+
+    if (playback_active == false) return;
 
     uint16_t header = little_endian_read_16(packet, 0);
     hci_con_handle_t con_handle = header & 0x0fff;
-    // uint8_t pb_flag = (header >> 12) & 3;
-    uint8_t ts_flag = (header >> 14) & 1;
-    // uint16_t iso_load_len = little_endian_read_16(packet, 2);
 
-    uint16_t offset = 4;
-    uint32_t time_stamp = 0;
-    if (ts_flag){
-        time_stamp = little_endian_read_32(packet, offset);
-        offset += 4;
-    }
+    // infer stream from con handle - only works for up to 2 channels
+    uint8_t stream_index = (con_handle == cis_con_handles[0]) ? 0 : 1;
 
-    uint32_t receive_time_ms = btstack_run_loop_get_time_ms();
-
-    uint16_t packet_sequence_number = little_endian_read_16(packet, offset);
-    offset += 2;
-
-    uint16_t header_2 = little_endian_read_16(packet, offset);
-    uint16_t iso_sdu_length = header_2 & 0x3fff;
-    // uint8_t packet_status_flag = (uint8_t) (header_2 >> 14);
-    offset += 2;
-
-    if (iso_sdu_length == 0) return;
-
-    if (iso_sdu_length != num_channels * octets_per_frame) {
-        printf("ISO Length %u != %u * %u\n", iso_sdu_length, num_channels, octets_per_frame);
-    }
-
-    // infer channel from con handle - only works for up to 2 channels
-    uint8_t cis_channel = (con_handle == cis_con_handles[0]) ? 0 : 1;
-
-    if (last_packet_received[cis_channel]) {
-        printf_plc("ISO, receive %u\n", packet_sequence_number);
-
-        int16_t packet_sequence_delta = btstack_time16_delta(packet_sequence_number,
-                                                             last_packet_sequence[cis_channel]);
-        if (packet_sequence_delta < 1) {
-            // drop delayed packet that had already been generated by PLC
-            printf_plc("- dropping delayed packet. Current sequence number %u, last received or generated by PLC: %u\n",
-                       packet_sequence_number, last_packet_sequence[cis_channel]);
-            return;
-        }
-        // simple check
-        if (packet_sequence_number != last_packet_sequence[cis_channel] + 1) {
-            printf_plc("- BIS #%u, missing %u\n", cis_channel, last_packet_sequence[cis_channel] + 1);
-        }
-    } else {
-        printf_plc("CIS %u, first packet seq number %u\n", cis_channel, packet_sequence_number);
-        last_packet_received[cis_channel] = true;
-        last_packet_sequence[cis_channel] = packet_sequence_number - 1;
-    }
-
-    // PLC for missing packets
-    while (true) {
-        uint16_t expected = last_packet_sequence[cis_channel]+1;
-        if (expected == packet_sequence_number){
-            break;
-        }
-        printf_plc("- ISO, PLC for %u\n", expected);
-        plc_do();
-        last_packet_sequence[cis_channel] = expected;
-    }
-
-    uint8_t channel;
-    for (channel = 0 ; channel < num_channels ; channel++){
-
-        // decode codec frame
-        uint8_t tmp_BEC_detect;
-        uint8_t BFI = 0;
-        (void) lc3_decoder->decode_signed_16(decoder_contexts[channel], &packet[offset], BFI,
-                                   &pcm[channel], num_channels,
-                                   &tmp_BEC_detect);
-        offset += octets_per_frame;
-    }
-
-    store_samples_in_ringbuffer();
-
-    log_info("Samples in playback buffer %5u", btstack_ring_buffer_bytes_available(&playback_buffer) / (num_channels * 2));
-
-    lc3_frames++;
-
-    // PLC
-    plc_cached_iso_sdu_len = iso_sdu_length;
-    btstack_run_loop_remove_timer(&plc_next_packet_timer);
-    btstack_run_loop_set_timer(&plc_next_packet_timer, plc_timeout_ms);
-    btstack_run_loop_set_timer_handler(&plc_next_packet_timer, plc_timeout);
-    btstack_run_loop_add_timer(&plc_next_packet_timer);
-
-    if (samples_received >= sampling_frequency_hz){
-        printf("LC3 Frames: %4u - samples received %5u, played %5u, dropped %5u\n", lc3_frames, samples_received, samples_played, samples_dropped);
-        samples_received = 0;
-        samples_dropped  =  0;
-        samples_played = 0;
-    }
-
-    last_packet_time_ms[cis_channel]  = receive_time_ms;
-    last_packet_sequence[cis_channel] = packet_sequence_number;
+    le_audio_demo_util_sink_receive(stream_index, packet, size);
 }
 
 // PACS Server Handler
@@ -620,6 +361,7 @@ static void vcs_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
     }
 }
 
+#ifdef ENABLE_MCS_CLIENT
 // MCS Client Handler
 #define MCS_CHARACTERISTICS_COUNT 16
 static uint16_t mcs_cid;
@@ -644,6 +386,7 @@ void mcs_client_disconnect(hci_con_handle_t con_handle) {
         media_control_service_client_disconnect(mcs_cid);
     }
 }
+#endif
 
 // ANCS Server Handler
 static void ascs_server_released_timer_handler(btstack_timer_source_t * ts){
@@ -670,12 +413,16 @@ static void ascs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
             con_handle = gattservice_subevent_ascs_server_connected_get_con_handle(packet);
             status =     gattservice_subevent_ascs_server_connected_get_status(packet);
             printf("ASCS Server: connected, con_handle 0x%04x\n", con_handle);
+#ifdef ENABLE_MCS_CLIENT
             mcs_client_connect(con_handle);
+#endif
             break;
         case GATTSERVICE_SUBEVENT_ASCS_SERVER_DISCONNECTED:
             con_handle = gattservice_subevent_ascs_server_disconnected_get_con_handle(packet);
             printf("ASCS Server: disconnected, con_handle 0x%04xn\n", con_handle);
+#ifdef ENABLE_MCS_CLIENT
             mcs_client_disconnect(con_handle);
+#endif
             break;
         case GATTSERVICE_SUBEVENT_ASCS_SERVER_CODEC_CONFIGURATION:
             ase_id = gattservice_subevent_ascs_server_codec_configuration_get_ase_id(packet);
@@ -926,8 +673,14 @@ int btstack_main(int argc, const char * argv[]){
     volume_control_service_server_init(255, VCS_MUTE_OFF, 0, NULL, 0, NULL);
     volume_control_service_server_register_packet_handler(vcs_server_packet_handler);
 
+#ifdef ENABLE_MCS_CLIENT
     // MCS Client
     media_control_service_client_init();
+#endif
+
+    // setup audio processing
+    le_audio_demo_util_sink_init("le_audio_unicast_headset.wav");
+    le_audio_demo_util_source_init();
 
     // turn on!
     hci_power_control(HCI_POWER_ON);
