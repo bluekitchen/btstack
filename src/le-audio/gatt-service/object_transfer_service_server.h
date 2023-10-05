@@ -117,6 +117,9 @@ typedef struct {
     uint32_t oacp_read_offset;
     bool oacp_abort_read;
 
+    // used for OBJECT CHANGED indication
+    ots_object_changed_flag_t change_flag;
+
     bool oacp_truncate;
 
     // used for OLCP procedures
