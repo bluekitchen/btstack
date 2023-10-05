@@ -61,6 +61,7 @@
 
 #define OTS_TASK_SEND_OACP_PROCEDURE_RESPONSE                   0x01
 #define OTS_TASK_SEND_OLCP_PROCEDURE_RESPONSE                   0x02
+#define OTS_TASK_SEND_OBJECT_CHANGED_RESPONSE                   0x04
 
 typedef enum {
     OTS_FEATURE_INDEX = 0, 
@@ -492,6 +493,17 @@ static void ots_server_can_send_now(void * context){
 
         // allow next transaction
         connection->olcp_opcode = OLCP_OPCODE_READY;
+
+    } else if ((connection->scheduled_tasks & OTS_TASK_SEND_OBJECT_CHANGED_RESPONSE) != 0) {
+        connection->scheduled_tasks &= ~OTS_TASK_SEND_OBJECT_CHANGED_RESPONSE;
+        if (connection->current_object != NULL){
+            uint8_t value[7];
+            value[0] = connection->change_flag;
+            reverse_48(&value[1], (uint8_t *)connection->current_object->luid);
+
+            uint16_t attribute_handle = ots_server_get_value_handle_for_characteristic_index(OTS_OBJECT_CHANGED_INDEX);
+            att_server_indicate(connection->con_handle, attribute_handle, value, sizeof(value));
+        }
     }
 
     if (connection->scheduled_tasks != 0){
@@ -514,6 +526,9 @@ static void ots_server_schedule_task(ots_server_connection_t * connection, uint8
             break;
         case OTS_TASK_SEND_OLCP_PROCEDURE_RESPONSE:
             configuration = connection->olcp_configuration;
+            break;
+        case OTS_TASK_SEND_OBJECT_CHANGED_RESPONSE:
+            configuration = connection->object_changed_configuration;
             break;
         default:
             btstack_unreachable();
@@ -1589,6 +1604,8 @@ uint8_t object_transfer_service_server_update_current_object_name(hci_con_handle
     }
 
     btstack_strcpy(connection->current_object->name, OTS_MAX_NAME_LENGHT, name);
+    connection->change_flag = OTS_TASK_SEND_OBJECT_CHANGED_RESPONSE;
+    ots_server_schedule_task(connection, OTS_TASK_SEND_OBJECT_CHANGED_RESPONSE);
     return ERROR_CODE_SUCCESS;
 }
 
