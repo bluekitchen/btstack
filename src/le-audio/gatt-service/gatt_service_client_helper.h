@@ -126,9 +126,23 @@ typedef struct {
 
 /* API_START */
 
+/**
+ * @brief Initialize GATT Client Helper
+ * @param client
+ * @param hci_event_handler_trampoline packet handler that calls gatt_service_client_hci_event_handler with client
+ */
 void gatt_service_client_init(gatt_service_client_helper_t * client,
      void (*hci_event_handler_trampoline)(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size));
 
+/**
+ * @brief Packet Handler to be called by trampoline registered with gatt_service_client_init
+ * @param client
+ * @param packet_type
+ * @param channel
+ * @param packet
+ * @param size
+ */
+void gatt_service_client_hci_event_handler(gatt_service_client_helper_t * client, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 /**
  * @brief Register callback for the GATT client. 
@@ -145,7 +159,6 @@ uint8_t gatt_service_client_connect(
         gatt_service_client_characteristic_t * characteristics, uint8_t characteristics_num,
         btstack_packet_handler_t packet_handler, uint16_t * connection_cid);
 
-void gatt_service_client_hci_event_handler(gatt_service_client_helper_t * client, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 uint8_t gatt_service_client_disconnect(gatt_service_client_helper_t * client, uint16_t connection_cid);
 
