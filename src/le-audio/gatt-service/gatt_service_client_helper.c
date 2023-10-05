@@ -368,12 +368,13 @@ static uint8_t gatt_service_client_get_characteristic_index_for_uuid16(
         return index;
 }
 
-static void gatt_service_client_handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void gatt_service_client_handle_gatt_client_event_for_client(gatt_service_client_helper_t * client_helper,
+                                                                    uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(packet_type); 
     UNUSED(channel);
     UNUSED(size);
     
-    btstack_assert(gatt_service_active_client != NULL);
+    btstack_assert(client_helper != NULL);
 
     gatt_service_client_connection_helper_t * connection = NULL;
     gatt_client_service_t service;
@@ -384,13 +385,13 @@ static void gatt_service_client_handle_gatt_client_event(uint8_t packet_type, ui
 
     switch (hci_event_packet_get_type(packet)){
         case GATT_EVENT_MTU:
-            connection = gatt_service_client_get_connection_for_con_handle(gatt_service_active_client, gatt_event_mtu_get_handle(packet));
+            connection = gatt_service_client_get_connection_for_con_handle(client_helper, gatt_event_mtu_get_handle(packet));
             btstack_assert(connection != NULL);
             connection->mtu = gatt_event_mtu_get_MTU(packet);
             break;
 
         case GATT_EVENT_SERVICE_QUERY_RESULT:
-            connection = gatt_service_client_get_connection_for_con_handle(gatt_service_active_client, gatt_event_service_query_result_get_handle(packet));
+            connection = gatt_service_client_get_connection_for_con_handle(client_helper, gatt_event_service_query_result_get_handle(packet));
             btstack_assert(connection != NULL);
 
             if (connection->service_instances_num < 1){
@@ -408,12 +409,12 @@ static void gatt_service_client_handle_gatt_client_event(uint8_t packet_type, ui
             break;
  
         case GATT_EVENT_CHARACTERISTIC_QUERY_RESULT:
-            connection = gatt_service_client_get_connection_for_con_handle(gatt_service_active_client, gatt_event_characteristic_query_result_get_handle(packet));
+            connection = gatt_service_client_get_connection_for_con_handle(client_helper, gatt_event_characteristic_query_result_get_handle(packet));
             btstack_assert(connection != NULL);
             gatt_event_characteristic_query_result_get_characteristic(packet, &characteristic);
       
-            characteristic_index = gatt_service_client_get_characteristic_index_for_uuid16(gatt_service_active_client, characteristic.uuid16);
-            if (characteristic_index < gatt_service_active_client->characteristics_desc16_num){
+            characteristic_index = gatt_service_client_get_characteristic_index_for_uuid16(client_helper, characteristic.uuid16);
+            if (characteristic_index < client_helper->characteristics_desc16_num){
                 connection->characteristics[characteristic_index].value_handle = characteristic.value_handle;
                 connection->characteristics[characteristic_index].properties = characteristic.properties;
                 connection->characteristics[characteristic_index].end_handle = characteristic.end_handle;
@@ -428,7 +429,7 @@ static void gatt_service_client_handle_gatt_client_event(uint8_t packet_type, ui
             break;
 
         case GATT_EVENT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT:
-            connection = gatt_service_client_get_connection_for_con_handle(gatt_service_active_client, gatt_event_all_characteristic_descriptors_query_result_get_handle(packet));
+            connection = gatt_service_client_get_connection_for_con_handle(client_helper, gatt_event_all_characteristic_descriptors_query_result_get_handle(packet));
             btstack_assert(connection != NULL);
             gatt_event_all_characteristic_descriptors_query_result_get_characteristic_descriptor(packet, &characteristic_descriptor);
             
@@ -448,7 +449,7 @@ static void gatt_service_client_handle_gatt_client_event(uint8_t packet_type, ui
             break;
 
         case GATT_EVENT_QUERY_COMPLETE:
-            connection = gatt_service_client_get_connection_for_con_handle(gatt_service_active_client, gatt_event_query_complete_get_handle(packet));
+            connection = gatt_service_client_get_connection_for_con_handle(client_helper, gatt_event_query_complete_get_handle(packet));
             btstack_assert(connection != NULL);
             call_run = gatt_service_client_handle_query_complete(connection, gatt_event_query_complete_get_att_status(packet));
             break;
@@ -458,8 +459,12 @@ static void gatt_service_client_handle_gatt_client_event(uint8_t packet_type, ui
     }
 
     if (call_run && (connection != NULL)){
-        gatt_service_client_run_for_client(gatt_service_active_client, connection);
+        gatt_service_client_run_for_client(client_helper, connection);
     }
+}
+
+static void gatt_service_client_handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) {
+    gatt_service_client_handle_gatt_client_event_for_client(gatt_service_active_client, packet_type, channel, packet, size);
 }
 
 void gatt_service_client_init(
