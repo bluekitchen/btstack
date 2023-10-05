@@ -64,6 +64,10 @@ static gatt_service_client_helper_t * gatt_service_active_client;
 
 static void gatt_service_client_handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
+static btstack_packet_handler_t gatt_service_client_get_packet_handler_trampoline(gatt_service_client_helper_t * client){
+    return client->hci_event_callback_registration.callback;
+}
+
 // LE Audio Service Client helper functions
 static void gatt_service_client_finalize_connection(gatt_service_client_helper_t * client, gatt_service_client_connection_helper_t * connection){
     if (client == NULL){
