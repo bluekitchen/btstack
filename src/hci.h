@@ -752,9 +752,9 @@ typedef struct {
     uint16_t max_sdu_p_to_c;
     uint16_t iso_interval_1250us;
 
-    // re-assembly buffer
+    // re-assembly buffer (includes ISO packet header with timestamp)
     uint16_t reassembly_pos;
-    uint8_t  reassembly_buffer[HCI_ISO_PAYLOAD_SIZE];
+    uint8_t  reassembly_buffer[12 + HCI_ISO_PAYLOAD_SIZE];
 
     // number packets sent to controller
     uint8_t num_packets_sent;
