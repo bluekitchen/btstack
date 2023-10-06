@@ -118,7 +118,7 @@ static void spp_create_sdp_record_internal(uint8_t *service, uint32_t service_re
 		uint8_t *sppProfile = de_push_sequence(attribute);
 		{
 			de_add_number(sppProfile,  DE_UUID, DE_SIZE_16, BLUETOOTH_SERVICE_CLASS_SERIAL_PORT);
-			de_add_number(sppProfile,  DE_UINT, DE_SIZE_16, BLUETOOTH_SERVICE_CLASS_LAN_ACCESS_USING_PPP);
+			de_add_number(sppProfile,  DE_UINT, DE_SIZE_16, 0x0102);
 		}
 		de_pop_sequence(attribute, sppProfile);
 	}
