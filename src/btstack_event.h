@@ -17799,6 +17799,16 @@ static inline const uint8_t * gattservice_subevent_ots_server_filter_get_data(co
 }
 
 /**
+ * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_OTS_SERVER_DISCONNECT
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t gattservice_subevent_ots_server_disconnect_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+
+/**
  * @brief Get field map_cid from event MAP_SUBEVENT_CONNECTION_OPENED
  * @param event packet
  * @return map_cid
