@@ -243,7 +243,7 @@ static void hci_iso_stream_finalize_by_type_and_group_id(hci_iso_type_t iso_type
 static hci_iso_stream_t * hci_iso_stream_for_con_handle(hci_con_handle_t con_handle);
 static void hci_iso_stream_requested_finalize(uint8_t big_handle);
 static void hci_iso_stream_requested_confirm(uint8_t big_handle);
-static void hci_iso_packet_handler(uint8_t * packet, uint16_t size);
+static void hci_iso_packet_handler(hci_iso_stream_t *iso_stream, uint8_t *packet, uint16_t size);
 static le_audio_big_t * hci_big_for_handle(uint8_t big_handle);
 static le_audio_cig_t * hci_cig_for_id(uint8_t cig_id);
 static void hci_iso_notify_can_send_now(void);
@@ -4615,7 +4615,11 @@ static void packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
 #endif
 #ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
         case HCI_ISO_DATA_PACKET:
-            hci_iso_packet_handler(packet, size);
+            if ((iso_stream == NULL) && (size >= HCI_ISO_HEADER_SIZE)){
+                hci_con_handle_t con_handle = READ_ISO_CONNECTION_HANDLE(packet);
+                iso_stream = hci_iso_stream_for_con_handle(con_handle);
+            }
+            hci_iso_packet_handler(iso_stream, packet, size);
             break;
 #endif
         default:
@@ -9861,20 +9865,20 @@ static bool hci_iso_sdu_complete(uint8_t * packet, uint16_t size){
     return (sdu_len_offset + 2 + sdu_len) == size;
 }
 
-static void hci_iso_packet_handler(uint8_t * packet, uint16_t size){
-    if (hci_stack->iso_packet_handler == NULL) {
+static void hci_iso_packet_handler(hci_iso_stream_t *iso_stream, uint8_t *packet, uint16_t size) {
+    if (iso_stream == NULL){
+        log_error("acl_handler called with non-registered handle %u!" , READ_ISO_CONNECTION_HANDLE(packet));
         return;
     }
-    if (size < 4) {
+
+    if (hci_stack->iso_packet_handler == NULL) {
         return;
     }
 
     // parse header
     uint16_t conn_handle_and_flags = little_endian_read_16(packet, 0);
     uint16_t iso_data_len = little_endian_read_16(packet, 2);
-    hci_con_handle_t cis_handle = (hci_con_handle_t) (conn_handle_and_flags & 0xfff);
-    hci_iso_stream_t * iso_stream = hci_iso_stream_for_con_handle(cis_handle);
-    uint8_t pb_flag = (conn_handle_and_flags >> 12) & 3;
+    uint8_t  pb_flag = (conn_handle_and_flags >> 12) & 3;
 
     // assert packet is complete
     if ((iso_data_len + 4u) != size){
