@@ -133,7 +133,7 @@ static olcp_result_code_t ots_server_operation_number_of_objects(hci_con_handle_
 static olcp_result_code_t ots_server_operation_clear_marking(hci_con_handle_t con_handle);
 
 #define OTS_SERVER_MAX_NUM_CLIENTS 3
-#define OTS_SERVER_MAX_NUM_OBJECTS 10
+#define OTS_SERVER_MAX_NUM_OBJECTS 20
 
 
 static ots_server_connection_t ots_server_connections_storage[OTS_SERVER_MAX_NUM_CLIENTS];
@@ -395,10 +395,9 @@ static void ots_db_reset_filters(void) {
     memset(ots_filters, 0, sizeof(ots_filters));
     ots_db_active_filters_bitmap = 0;
     int j;
-    for (j = 0; j < OTS_SERVER_MAX_NUM_OBJECTS ; j++){
+    for (j = 0; j < ots_db_object_current_num ; j++){
         ots_db_object_current_indices[j] = ots_db_object_indices_sorted_view[j];
     }
-    ots_db_object_current_num = OTS_SERVER_MAX_NUM_OBJECTS;
 }
 
 static void ots_db_sort(olcp_list_sort_order_t order){
@@ -611,6 +610,20 @@ static void ots_db_get_next_object_id(ots_object_id_t * object_id_out){
     little_endian_store_32((uint8_t *)object_id_out, 2, ots_operations_object_id_counter);
 }
 
+static ots_object_t * ots_db_delete_malformed_objects(void){
+    int i;
+    uint32_t num_deleted_objects = 0;
+    for (i = 0; i < ots_db_objects_num; i++){
+        ots_object_t * object = &ots_db_objects[i];
+        if (object->first_created.year == 0 || (strlen(object->name) == 0)){
+            object->allocated_size = 0;
+            num_deleted_objects++;
+        }
+    }
+    ots_db_objects_num -= num_deleted_objects;
+}
+
+
 static ots_object_t * ots_db_allocate_object_of_size(uint32_t object_size){
     if (ots_db_objects_num < OTS_SERVER_MAX_NUM_OBJECTS){
         ots_object_t * object = &ots_db_objects[ots_db_objects_num];
@@ -621,21 +634,21 @@ static ots_object_t * ots_db_allocate_object_of_size(uint32_t object_size){
     return NULL;
 }
 
-uint8_t ots_db_object_add(ots_object_id_t * object_id, char * name, uint32_t properties, uint16_t type_uuid16,
+ots_object_t * ots_db_object_add(ots_object_id_t * object_id, char * name, uint32_t properties, uint16_t type_uuid16,
                           uint32_t allocated_size, uint32_t current_size, btstack_utc_t * first_created, btstack_utc_t * last_modified){
 
     ots_object_t * object = ots_db_find_object_with_luid(object_id);
     if (object != NULL){
-        return AVRCP_BROWSING_ERROR_CODE_INVALID_PARAMETER;
+        return NULL;
     }
 
     if (strlen(name) > OTS_MAX_NAME_LENGHT){
-        return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+        return NULL;
     }
 
     object = ots_db_allocate_object_of_size(allocated_size);
     if (object == NULL){
-        return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
+        return NULL;
     }
 
     memcpy(&object->luid, object_id, sizeof(ots_object_id_t));
@@ -645,7 +658,7 @@ uint8_t ots_db_object_add(ots_object_id_t * object_id, char * name, uint32_t pro
     object->current_size = current_size;
     memcpy(&object->first_created, first_created, sizeof(btstack_utc_t));
     memcpy(&object->last_modified, last_modified, sizeof(btstack_utc_t));
-    return ERROR_CODE_SUCCESS;
+    return object;
 }
 
 static void ots_db_load_from_memory(uint8_t track_groups_num, mcs_track_group_t * track_groups){
@@ -714,17 +727,33 @@ static bool ots_server_operation_can_allocate_object_of_size(hci_con_handle_t co
 
 static oacp_result_code_t ots_server_operation_create(hci_con_handle_t con_handle, uint32_t object_size, gatt_uuid_type_t type_uuid16){
     UNUSED(con_handle);
-    ots_object_t * object = ots_db_allocate_object_of_size(object_size);
-    object->type_uuid16 = type_uuid16;
-    object->properties |= OBJECT_PROPERTY_MASK_WRITE;
-    ots_db_get_next_object_id(&object->luid);
+
+    ots_object_id_t uuid;
+    ots_db_get_next_object_id(&uuid);
+    btstack_utc_t first_created = {0,0,0,0,0,0}; // data not valid
+    btstack_utc_t last_modified = {0,0,0,0,0,0};
+
+    ots_object_t * object = ots_db_object_add(
+            &uuid,
+            "",
+            OBJECT_PROPERTY_MASK_WRITE,
+            type_uuid16,
+            // simulate increase of size to test sorting by size
+            object_size,
+            0,
+            &first_created,
+            &last_modified);
+
     object_transfer_service_server_set_current_object(con_handle, object);
     ots_db_reset_filters();
+    printf("Create: size %d, type 0x%04x, %s\n", object_size, type_uuid16, bd_addr_to_str(object->luid));
+
     return OACP_RESULT_CODE_SUCCESS;
 }
 
 static oacp_result_code_t ots_server_operation_delete(hci_con_handle_t con_handle){
     // TODO
+    printf("Delete\n");
     return OACP_RESULT_CODE_SUCCESS;
 }
 
@@ -1680,6 +1709,9 @@ static void ots_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
             ots_db_filter();
             object = ots_object_iterator_first();
             object_transfer_service_server_set_current_object(gattservice_subevent_ots_server_filter_get_con_handle(packet), object);
+            break;
+        case GATTSERVICE_SUBEVENT_OTS_SERVER_DISCONNECT:
+            ots_db_delete_malformed_objects();
             break;
         default:
             break;
