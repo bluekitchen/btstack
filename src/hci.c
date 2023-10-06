@@ -9893,10 +9893,7 @@ static void hci_iso_packet_handler(hci_iso_stream_t *iso_stream, uint8_t *packet
             }
         } else {
             // The ISO_Data_Load field contains a header and the first fragment of a fragmented SDU.
-            if (iso_stream == NULL){
-                return;
-            }
-            if (size > HCI_ISO_PAYLOAD_SIZE){
+            if (size > sizeof(iso_stream->reassembly_buffer)){
                 return;
             }
             memcpy(iso_stream->reassembly_buffer, packet, size);
@@ -9906,18 +9903,16 @@ static void hci_iso_packet_handler(hci_iso_stream_t *iso_stream, uint8_t *packet
         }
     } else {
         // iso_data_load contains continuation or last fragment of an SDU
-        uint8_t  ts_flag = (conn_handle_and_flags >> 14) & 1;
+        uint8_t ts_flag = (conn_handle_and_flags >> 14) & 1;
         if (ts_flag != 0){
            return;
         }
         // append fragment
-        if (iso_stream == NULL){
-            return;
-        }
         if (iso_stream->reassembly_pos == 0){
             return;
         }
-        if ((iso_stream->reassembly_pos + iso_data_len) > size){
+
+        if ((iso_stream->reassembly_pos + iso_data_len) > sizeof(iso_stream->reassembly_buffer)){
             // reset reassembly buffer
             iso_stream->reassembly_pos = 0;
             return;
@@ -9928,6 +9923,8 @@ static void hci_iso_packet_handler(hci_iso_stream_t *iso_stream, uint8_t *packet
         // deliver if last fragment and SDU complete
         if (pb_flag == 0x03){
             if (hci_iso_sdu_complete(iso_stream->reassembly_buffer, iso_stream->reassembly_pos)){
+                // fix iso_data_len
+                little_endian_store_16(iso_stream->reassembly_buffer, 2, iso_stream->reassembly_pos - HCI_ISO_HEADER_SIZE);
                 (hci_stack->iso_packet_handler)(HCI_ISO_DATA_PACKET, 0, iso_stream->reassembly_buffer, iso_stream->reassembly_pos);
             }
             iso_stream->reassembly_pos = 0;
