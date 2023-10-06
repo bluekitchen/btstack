@@ -5425,6 +5425,13 @@ typedef uint8_t sm_key_t[16];
  */
 #define GATTSERVICE_SUBEVENT_OTS_SERVER_FILTER                                          0x9Bu
 
+/**
+ * @format 1H
+ * @param subevent_code
+ * @param con_handle
+ */
+#define GATTSERVICE_SUBEVENT_OTS_SERVER_DISCONNECT                                      0x99u
+
 // MAP Meta Event Group
 
 /**
