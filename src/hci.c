@@ -4588,6 +4588,18 @@ static void sco_handler(uint8_t * packet, uint16_t size){
 #endif
 
 static void packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
+#ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
+    // propagate ISO packets received as ACL
+    hci_iso_stream_t * iso_stream;
+    if ((packet_type == HCI_ACL_DATA_PACKET) && (size >= HCI_ACL_HEADER_SIZE)){
+        hci_con_handle_t con_handle = READ_ACL_CONNECTION_HANDLE(packet);
+        iso_stream = hci_iso_stream_for_con_handle(con_handle);
+        if (iso_stream != NULL){
+            packet_type = HCI_ISO_DATA_PACKET;
+        }
+    }
+#endif
+
     hci_dump_packet(packet_type, 1, packet, size);
     switch (packet_type) {
         case HCI_EVENT_PACKET:
