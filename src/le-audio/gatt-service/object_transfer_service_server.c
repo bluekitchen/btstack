@@ -614,20 +614,21 @@ int ots_server_handle_action_control_point_operation(ots_server_connection_t * c
                 connection->oacp_result_code = OACP_RESULT_CODE_OPERATION_FAILED;
                 break;
             }
-
-            object_size = little_endian_read_32(buffer, 0);
-            gatt_uuid_size = buffer_size - 4;
+            printf_hexdump(buffer, buffer_size);
+            object_size = little_endian_read_32(buffer, pos);
+            pos += 4;
+            gatt_uuid_size = buffer_size - pos;
 
             // 1. Unsupported Type - The Server does not accept an object of the type specified in the Type parameter.
             if (gatt_uuid_size == 2){
-                type_uuid16 = (gatt_uuid_type_t)little_endian_read_16(buffer, 4);
+                type_uuid16 = (gatt_uuid_type_t)little_endian_read_16(buffer, pos);
                 if (!ots_server_supports_gatt_uuid16(type_uuid16)){
                     return OACP_RESULT_CODE_UNSUPPORTED_TYPE;
                 }
             }
 
             // 2. Insufficient Resources - The Server cannot accept an object of the size specified in the Size parameter.
-            if (ots_server_operations->can_allocate_object_of_size(connection->con_handle, object_size)){
+            if (!ots_server_operations->can_allocate_object_of_size(connection->con_handle, object_size)){
                 return OACP_RESULT_CODE_INSUFFICIENT_RESOURCES;
             }
 
