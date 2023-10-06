@@ -165,7 +165,7 @@ allocated in two different manners:
 -   dynamically using the *malloc/free* functions, if HAVE_MALLOC is
     defined in btstack_config.h file.
 
-For each HCI connection, a buffer of size HCI_ACL_PAYLOAD_SIZE is reserved. For fast data transfer, however, a large ACL buffer of 1021 bytes is recommend. The large ACL buffer is required for 3-DH5 packets to be used.
+For each HCI connection, a buffer of size HCI_ACL_PAYLOAD_SIZE is reserved. For fast data transfer, however, a large ACL buffer of 1021 bytes is recommended. The large ACL buffer is required for 3-DH5 packets to be used.
 
 <!-- a name "lst:memoryConfiguration"></a-->
 <!-- -->
@@ -177,7 +177,6 @@ For each HCI connection, a buffer of size HCI_ACL_PAYLOAD_SIZE is reserved. For 
 | HCI_INCOMING_PRE_BUFFER_SIZE              | Number of bytes reserved before actual data for incoming HCI packets       |
 | MAX_NR_BNEP_CHANNELS                      | Max number of BNEP channels                                                |
 | MAX_NR_BNEP_SERVICES                      | Max number of BNEP services                                                |
-| MAX_NR_BTSTACK_LINK_KEY_DB_MEMORY_ENTRIES | Max number of link key entries cached in RAM                               |
 | MAX_NR_GATT_CLIENTS                       | Max number of GATT clients                                                 |
 | MAX_NR_HCI_CONNECTIONS                    | Max number of HCI connections                                              |
 | MAX_NR_HFP_CONNECTIONS                    | Max number of HFP connections                                              |
@@ -189,7 +188,6 @@ For each HCI connection, a buffer of size HCI_ACL_PAYLOAD_SIZE is reserved. For 
 | MAX_NR_SERVICE_RECORD_ITEMS               | Max number of SDP service records                                          |
 | MAX_NR_SM_LOOKUP_ENTRIES                  | Max number of items in Security Manager lookup queue                       |
 | MAX_NR_WHITELIST_ENTRIES                  | Max number of items in GAP LE Whitelist to connect to                      |
-| MAX_NR_LE_DEVICE_DB_ENTRIES               | Max number of items in LE Device DB                                        |
 
 The memory is set up by calling *btstack_memory_init* function:
 
@@ -207,11 +205,11 @@ Here's the memory configuration for a basic SPP server.
     #define MAX_NR_RFCOMM_MULTIPLEXERS 1
     #define MAX_NR_RFCOMM_SERVICES 1
     #define MAX_NR_RFCOMM_CHANNELS 1
-    #define MAX_NR_BTSTACK_LINK_KEY_DB_MEMORY_ENTRIES  3
+    #define NVM_NUM_LINK_KEYS  3
 
 Listing: Memory configuration for a basic SPP server. {#lst:memoryConfigurationSPP}
 
-In this example, the size of ACL packets is limited to the minimum of 52 bytes, resulting in an L2CAP MTU of 48 bytes. Only a singleHCI connection can be established at any time. On it, two L2CAP services are provided, which can be active at the same time. Here, these two can be RFCOMM and SDP. Then, memory for one RFCOMM multiplexer is reserved over which one connection can be active. Finally, up to three link keys can be cached in RAM.
+In this example, the size of ACL packets is limited to the minimum of 52 bytes, resulting in an L2CAP MTU of 48 bytes. Only a singleHCI connection can be established at any time. On it, two L2CAP services are provided, which can be active at the same time. Here, these two can be RFCOMM and SDP. Then, memory for one RFCOMM multiplexer is reserved over which one connection can be active. Finally, up to three link keys can be stored in persistent memory.
 
 <!-- -->
 
