@@ -68,7 +68,7 @@
 #include "le_audio_demo_util_sink.h"
 #include "le_audio_demo_util_source.h"
 
-#include "le_audio_unicast_sink.h"
+#include "le_audio_unicast_headset.h"
 
 #include "le-audio/gatt-service/audio_stream_control_service_server.h"
 #include "ble/att_server.h"
