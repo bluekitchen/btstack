@@ -559,7 +559,7 @@ static bool ots_server_supports_gatt_uuid16(gatt_uuid_type_t type_uuid16){
         case GATT_UUID_TYPE_DIRECTORY_LISTING:
             return true;
         default:
-            return false;
+            return true;
     }
 }
 
@@ -1077,6 +1077,22 @@ static void ots_server_emit_filter_event(ots_server_connection_t * connection, u
     (*ots_server_event_callback)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
+static void ots_server_emit_disconnect_event(hci_con_handle_t con_handle){
+    btstack_assert(ots_server_event_callback != NULL);
+
+    uint8_t event[5];
+
+    uint8_t pos = 0;
+    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = GATTSERVICE_SUBEVENT_OTS_SERVER_DISCONNECT;
+    little_endian_store_16(event, pos, con_handle);
+    pos += 2;
+
+    (*ots_server_event_callback)(HCI_EVENT_PACKET, 0, event, pos);
+}
+
+
 static int ots_server_write_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
     ots_server_connection_t * connection = NULL;
 
@@ -1298,6 +1314,7 @@ static void ots_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
                     handle = hci_event_disconnection_complete_get_connection_handle(packet);
                     ots_server_reset_connection_for_con_handle(handle);
+                    ots_server_emit_disconnect_event(handle);
                     break;
 
                 // LE CBM
