@@ -464,7 +464,7 @@ static void ascs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
                 if (codec_configuration.specific_codec_configuration.audio_channel_allocation_mask == 3){
                     num_channels = 2;
                 }
-                printf("- channel allocation: 0x%02x -> %u channels\n", codec_configuration.specific_codec_configuration.audio_channel_allocation_mask);
+                printf("- channel allocation: 0x%02x -> %u channels\n", codec_configuration.specific_codec_configuration.audio_channel_allocation_mask, num_channels);
             }
             if (codec_configuration.specific_codec_configuration.codec_configuration_mask & (1 <<LE_AUDIO_CODEC_CONFIGURATION_TYPE_OCTETS_PER_CODEC_FRAME)){
                 printf("- octets per codec frame: %3u\n", codec_configuration.specific_codec_configuration.octets_per_codec_frame);
