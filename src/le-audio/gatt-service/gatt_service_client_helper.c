@@ -368,7 +368,9 @@ void gatt_service_client_trampoline_packet_handler(gatt_service_client_helper_t 
         case HCI_EVENT_DISCONNECTION_COMPLETE:
             con_handle = hci_event_disconnection_complete_get_connection_handle(packet);
             connection = gatt_service_client_get_connection_for_con_handle(client, con_handle);
-            if (connection != NULL){
+            if (connection == NULL) {
+                call_run = false;
+            } else {
                 gatt_service_client_emit_disconnected(client->packet_handler, connection->con_handle, connection->cid);
                 gatt_service_client_finalize_connection(client, connection);
             }
