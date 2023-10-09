@@ -744,7 +744,7 @@ void hfp_create_sdp_record(uint8_t * service, uint32_t service_record_handle, ui
         uint8_t *sppProfile = de_push_sequence(attribute);
         {
             de_add_number(sppProfile,  DE_UUID, DE_SIZE_16, BLUETOOTH_SERVICE_CLASS_HANDSFREE); 
-            de_add_number(sppProfile,  DE_UINT, DE_SIZE_16, 0x0108); // Verision 1.8
+            de_add_number(sppProfile,  DE_UINT, DE_SIZE_16, 0x0109); // Version 1.9
         }
         de_pop_sequence(attribute, sppProfile);
     }
