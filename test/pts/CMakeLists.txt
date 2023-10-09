@@ -1,75 +1,6 @@
 cmake_minimum_required (VERSION 3.12)
 project(BTstack-PTS)
 
-# fink pkgconfig
-find_package(PkgConfig REQUIRED)
-
-# libusb
-pkg_check_modules(LIBUSB REQUIRED libusb-1.0)
-include_directories(${LIBUSB_INCLUDE_DIRS})
-link_directories(${LIBUSB_LIBRARY_DIRS})
-link_libraries(${LIBUSB_LIBRARIES})
-
-# portaudio
-pkg_check_modules(PORTAUDIO portaudio-2.0)
-if(PORTAUDIO_FOUND)
-    include_directories(${PORTAUDIO_INCLUDE_DIRS})
-    link_directories(${PORTAUDIO_LIBRARY_DIRS})
-    link_libraries(${PORTAUDIO_LIBRARIES})
-    add_compile_definitions(HAVE_PORTAUDIO)
-endif()
-
-# fdk-aac
-pkg_check_modules(FDK_AAC fdk-aac)
-if(FDK_AAC_FOUND)
-	message("HAVE_AAC_FDK")
-	include_directories(${FDK_AAC_INCLUDE_DIRS})
-	link_directories(${FDK_AAC_LIBRARY_DIRS})
-	link_libraries(${FDK_AAC_LIBRARIES})
-	add_compile_definitions(HAVE_AAC_FDK)
-endif()
-
-# ldac encoder
-pkg_check_modules(LDAC_ENCODER ldacBT-enc)
-if (LDAC_ENCODER_FOUND)
-	message("HAVE_LDAC_ENCODER")
-    include_directories(${LDAC_ENCODER_INCLUDE_DIRS})
-    link_directories(${LDAC_ENCODER_LIBRARY_DIRS})
-    link_libraries(${LDAC_ENCODER_LIBRARIES})
-	add_compile_definitions(HAVE_LDAC_ENCODER)
-endif()
-
-# ldac decoder
-pkg_check_modules(LDAC_DECODER libldacdec)
-if (LDAC_DECODER_FOUND)
-    message("HAVE_LDAC_DECODER")
-    include_directories(${LDAC_DECODER_INCLUDE_DIRS})
-    link_directories(${LDAC_DECODER_LIBRARY_DIRS})
-    link_libraries(${LDAC_DECODER_LIBRARIES})
-    add_compile_definitions(HAVE_LDAC_DECODER)
-endif()
-
-# openaptx
-pkg_check_modules(APTX libopenaptx)
-if (APTX_FOUND)
-    message("HAVE_APTX")
-    include_directories(${APTX_INCLUDE_DIRS})
-    link_directories(${APTX_LIBRARY_DIRS})
-    link_libraries(${APTX_LIBRARIES})
-    add_compile_definitions(HAVE_APTX)
-endif()
-
-# lc3plus
-pkg_check_modules(LC3PLUS LC3plus)
-if(LC3PLUS_FOUND)
-	message("HAVE_LC3PLUS")
-	include_directories(${LC3PLUS_INCLUDE_DIRS})
-	link_directories(${LC3PLUS_LIBRARY_DIRS})
-	link_libraries(${LC3PLUS_LIBRARIES})
-	add_definitions(${LC3PLUS_CFLAGS})
-	add_compile_definitions(HAVE_LC3PLUS)
-endif()
-
 # enable optional features
 add_compile_definitions(ENABLE_TESTING_SUPPORT ENABLE_LE_SIGNED_WRITE)
 
@@ -191,6 +122,75 @@ add_link_options(       -fsanitize=address)
 
 # create static lib
 add_library(btstack STATIC ${SOURCES})
+
+# fink pkgconfig
+find_package(PkgConfig REQUIRED)
+
+# libusb
+pkg_check_modules(LIBUSB REQUIRED libusb-1.0)
+include_directories(${LIBUSB_INCLUDE_DIRS})
+link_directories(${LIBUSB_LIBRARY_DIRS})
+link_libraries(${LIBUSB_LIBRARIES})
+
+# portaudio
+pkg_check_modules(PORTAUDIO portaudio-2.0)
+if(PORTAUDIO_FOUND)
+    include_directories(${PORTAUDIO_INCLUDE_DIRS})
+    link_directories(${PORTAUDIO_LIBRARY_DIRS})
+    link_libraries(${PORTAUDIO_LIBRARIES})
+    add_compile_definitions(HAVE_PORTAUDIO)
+endif()
+
+# fdk-aac
+pkg_check_modules(FDK_AAC fdk-aac)
+if(FDK_AAC_FOUND)
+	message("HAVE_AAC_FDK")
+	include_directories(${FDK_AAC_INCLUDE_DIRS})
+	link_directories(${FDK_AAC_LIBRARY_DIRS})
+	link_libraries(${FDK_AAC_LIBRARIES})
+	add_compile_definitions(HAVE_AAC_FDK)
+endif()
+
+# ldac encoder
+pkg_check_modules(LDAC_ENCODER ldacBT-enc)
+if (LDAC_ENCODER_FOUND)
+	message("HAVE_LDAC_ENCODER")
+    include_directories(${LDAC_ENCODER_INCLUDE_DIRS})
+    link_directories(${LDAC_ENCODER_LIBRARY_DIRS})
+    link_libraries(${LDAC_ENCODER_LIBRARIES})
+	add_compile_definitions(HAVE_LDAC_ENCODER)
+endif()
+
+# ldac decoder
+pkg_check_modules(LDAC_DECODER libldacdec)
+if (LDAC_DECODER_FOUND)
+    message("HAVE_LDAC_DECODER")
+    include_directories(${LDAC_DECODER_INCLUDE_DIRS})
+    link_directories(${LDAC_DECODER_LIBRARY_DIRS})
+    link_libraries(${LDAC_DECODER_LIBRARIES})
+    add_compile_definitions(HAVE_LDAC_DECODER)
+endif()
+
+# openaptx
+pkg_check_modules(APTX libopenaptx)
+if (APTX_FOUND)
+    message("HAVE_APTX")
+    include_directories(${APTX_INCLUDE_DIRS})
+    link_directories(${APTX_LIBRARY_DIRS})
+    link_libraries(${APTX_LIBRARIES})
+    add_compile_definitions(HAVE_APTX)
+endif()
+
+# lc3plus
+pkg_check_modules(LC3PLUS LC3plus)
+if(LC3PLUS_FOUND)
+	message("HAVE_LC3PLUS")
+	include_directories(${LC3PLUS_INCLUDE_DIRS})
+	link_directories(${LC3PLUS_LIBRARY_DIRS})
+	link_libraries(${LC3PLUS_LIBRARIES})
+	add_definitions(${LC3PLUS_CFLAGS})
+	add_compile_definitions(HAVE_LC3PLUS)
+endif()
 
 # create targets for all examples
 file(GLOB EXAMPLES_C    "*.c")
