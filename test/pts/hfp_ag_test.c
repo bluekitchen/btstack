@@ -76,7 +76,7 @@ static const char * device_addr_string = "00:1B:DC:08:E2:5C";
 // configuration
 static const int wide_band_speech = 1;
 
-static uint8_t codecs[] = {HFP_CODEC_CVSD, HFP_CODEC_MSBC};
+static uint8_t codecs[] = {HFP_CODEC_CVSD, HFP_CODEC_MSBC, HFP_CODEC_LC3_SWB};
 
 static uint8_t negotiated_codec = HFP_CODEC_CVSD;
 
@@ -112,9 +112,9 @@ enum STATE {INIT, W4_INQUIRY_MODE_COMPLETE, ACTIVE} ;
 enum STATE state = INIT;
 
 static void dump_supported_codecs(void){
-    unsigned int i;
-    int mSBC_skipped = 0;
+    bool transparent_codecs_skipped = false;
     printf("Supported codecs: ");
+    unsigned int i;
     for (i = 0; i < sizeof(codecs); i++){
         switch(codecs[i]){
             case HFP_CODEC_CVSD:
@@ -124,7 +124,14 @@ static void dump_supported_codecs(void){
                 if (hci_extended_sco_link_supported()){
                     printf(", mSBC");
                 } else {
-                    mSBC_skipped = 1;
+                    transparent_codecs_skipped = true;
+                }
+                break;
+            case HFP_CODEC_LC3_SWB:
+                if (hci_extended_sco_link_supported()){
+                    printf(", LC3");
+                } else {
+                    transparent_codecs_skipped = true;
                 }
                 break;
             default:
@@ -133,8 +140,8 @@ static void dump_supported_codecs(void){
         }
     }
     printf("\n");
-    if (mSBC_skipped){
-        printf("mSBC codec disabled because eSCO not supported by local controller.\n");
+    if (transparent_codecs_skipped){
+        printf("mSBC/LC3 codecs disabled because eSCO not supported by local controller.\n");
     }
 }
 
