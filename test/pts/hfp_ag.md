@@ -130,8 +130,22 @@ HFP/AG/ACC/BI-12-I: c, b, b, C, A
 HFP/AG/ACC/BI-13-I: c, b, C, A
 HFP/AG/ACC/BI-14-I: c, b, C, A
 HFP/AG/ACC/BV-15-I: c, b, C, A
+HFP/AG/ACC/BV-24-C: doesn't start
+HFP/AG/ACC/BV-25-C: c, C
+HFP/AG/ACC/BV-26-C: b
+HFP/AG/ACC/BV-27-C: wait
+HFP/AG/ACC/BV-28-C: b
+HFP/AG/ACC/BV-29-C: c - TODO ?? 
+HFP/AG/ACC/BV-30-C: c, C, t
+HFP/AG/ACC/BV-31-C: c, C, t
+HFP/AG/ACC/BV-32-C: b, 
+HFP/AG/ACC/BV-33-C: b
+HFP/AG/ACC/BV-34-C: b
+HFP/AG/ACC/BV-35-C: b
 
 HFP/AG/WBS/BV-01-I: wait
+
+HFP/AG/SWB/BV-01-C: wait
 
 HFP/AG/DIS/BV-01-I: rm /tmp/btstack_*.tlv, a, t
 
@@ -179,3 +193,5 @@ HFP/AG/OCA/BV-01-I: a, M, j, C, A
 IOPT/CL/HFP-AG/COD/BV-02-I: rm /tmp/btstack_*.tlv, a, t, D, a, t, D, a, t, D, a, t, D
 
 IOPT/CL/HFP-AG/SFC/BV-13-I: rm /tmp/btstack_*.tlv, a, t
+
+HFP/AG/TDS/BV-01-C: c, b, t
