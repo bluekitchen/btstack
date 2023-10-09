@@ -355,7 +355,7 @@ static void stdin_process(char c){
 #ifdef HAVE_LC3PLUS
         case 'q':
             printf("Use LC3 Plust for 10 ms frames\n");
-            le_audio_demo_sink_enable_lc3plus(true);
+            le_audio_demo_util_sink_enable_lc3plus(true);
             break;
 #endif
         case 'm':
