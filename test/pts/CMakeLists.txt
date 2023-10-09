@@ -16,6 +16,7 @@ include_directories(../../3rd-party/bluedroid/encoder/include)
 include_directories(../../3rd-party/md5)
 include_directories(../../3rd-party/hxcmod-player)
 include_directories(../../3rd-party/hxcmod-player/mod)
+include_directories(../../3rd-party/lc3-google/include)
 include_directories(../../3rd-party/lwip/core/src/include)
 include_directories(../../3rd-party/lwip/dhcp-server)
 include_directories(../../3rd-party/rijndael)
@@ -39,6 +40,7 @@ file(GLOB SOURCES_LE_AUDIO  "../../src/le-audio/*.c" "../../src/le-audio/gatt-se
 file(GLOB SOURCES_MESH      "../../src/mesh/*.c")
 file(GLOB SOURCES_BLUEDROID "../../3rd-party/bluedroid/encoder/srce/*.c" "../../3rd-party/bluedroid/decoder/srce/*.c")
 file(GLOB SOURCES_MD5       "../../3rd-party/md5/md5.c")
+file(GLOB SOURCES_LC3_GOOGLE "../../3rd-party/lc3-google/src/*.c")
 file(GLOB SOURCES_UECC      "../../3rd-party/micro-ecc/uECC.c")
 file(GLOB SOURCES_YXML      "../../3rd-party/yxml/yxml.c")
 file(GLOB SOURCES_HXCMOD    "../../3rd-party/hxcmod-player/*.c"  "../../3rd-party/hxcmod-player/mods/*.c")
@@ -100,6 +102,7 @@ set(SOURCES
 	${SOURCES_MD5}
 	${SOURCES_YXML}
 	${SOURCES_BLUEDROID}
+	${SOURCES_LC3_GOOGLE}
 	${SOURCES_POSIX}
 	${SOURCES_RIJNDAEL}
 	${SOURCES_LIBUSB}
