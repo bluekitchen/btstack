@@ -62,20 +62,14 @@
 #include "btstack_stdin.h"
 #endif
 
-// uncomment to temp disable mSBC codec
-// #undef ENABLE_HFP_WIDE_BAND_SPEECH
-
 uint8_t hfp_service_buffer[150];
 const uint8_t    rfcomm_channel_nr = 1;
 const char hfp_ag_service_name[] = "HFP AG Demo";
 
 static bd_addr_t device_addr;
-// static const char * device_addr_string = "00:80:98:09:0B:32";
 static const char * device_addr_string = "00:1B:DC:08:E2:5C";
 
 // configuration
-static const int wide_band_speech = 1;
-
 static uint8_t codecs[] = {HFP_CODEC_CVSD, HFP_CODEC_MSBC, HFP_CODEC_LC3_SWB};
 
 static uint8_t negotiated_codec = HFP_CODEC_CVSD;
@@ -694,7 +688,8 @@ int btstack_main(int argc, const char * argv[]){
     // SDP Server
     sdp_init();
     memset(hfp_service_buffer, 0, sizeof(hfp_service_buffer));
-    hfp_ag_create_sdp_record( hfp_service_buffer, 0x10001, rfcomm_channel_nr, hfp_ag_service_name, 0, supported_features, wide_band_speech);
+    hfp_ag_create_sdp_record_with_codecs( hfp_service_buffer, 0x10001, rfcomm_channel_nr, hfp_ag_service_name, 0, supported_features,
+                                          sizeof(codecs), codecs);
     printf("SDP service record size: %u\n", de_get_len( hfp_service_buffer));
     sdp_register_service(hfp_service_buffer);
     
