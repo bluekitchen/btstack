@@ -177,6 +177,9 @@ typedef struct {
     uint8_t  streaming;
     int      max_media_payload_size;
 
+    uint32_t rtp_timestamp_now;
+    uint32_t rtp_timestamp_pdu;
+
     uint8_t  codec_storage[1030];
     uint16_t codec_storage_count;
     uint8_t  codec_ready_to_send;
@@ -335,7 +338,15 @@ static void a2dp_demo_send_media_packet_sbc(void){
     int bytes_in_storage = media_tracker.codec_storage_count;
     uint8_t num_frames = bytes_in_storage / num_bytes_in_frame;
     
-    avdtp_source_stream_send_media_payload(media_tracker.avdtp_cid, media_tracker.local_seid, media_tracker.codec_storage, bytes_in_storage, num_frames, 0);
+    // Prepend SBC Header
+    media_tracker.codec_storage[0] = num_frames;  // (fragmentation << 7) | (starting_packet << 6) | (last_packet << 5) | num_frames;
+    a2dp_source_stream_send_media_payload_rtp(media_tracker.avdtp_cid, media_tracker.local_seid, 0,
+                                              media_tracker.rtp_timestamp_pdu,
+                                              media_tracker.codec_storage, bytes_in_storage + 1);
+
+    // update rtp_timestamp
+    media_tracker.rtp_timestamp_pdu = media_tracker.rtp_timestamp_now;
+
     media_tracker.codec_storage_count = 0;
     media_tracker.codec_ready_to_send = 0;
 }
@@ -346,7 +357,12 @@ static void a2dp_demo_send_media_packet_aac(void) {
         bytes_to_send = media_tracker.max_media_payload_size;
     else
         bytes_to_send = media_tracker.codec_storage_count;
-    a2dp_source_stream_send_media_payload_rtp(media_tracker.avdtp_cid, media_tracker.local_seid, 0, media_tracker.codec_storage, bytes_to_send);
+    a2dp_source_stream_send_media_payload_rtp(media_tracker.avdtp_cid, media_tracker.local_seid, 0,
+                                              media_tracker.rtp_timestamp_pdu, media_tracker.codec_storage, bytes_to_send);
+
+    // update rtp_timestamp
+    media_tracker.rtp_timestamp_pdu = media_tracker.rtp_timestamp_now;
+
     media_tracker.codec_storage_count -= bytes_to_send;
     memcpy(media_tracker.codec_storage, &media_tracker.codec_storage[bytes_to_send], media_tracker.codec_storage_count);
     media_tracker.codec_ready_to_send = 0;
@@ -355,7 +371,11 @@ static void a2dp_demo_send_media_packet_aac(void) {
 static void a2dp_demo_send_media_packet_ldac(void) {
     uint8_t num_frames = media_tracker.codec_num_frames;
     media_tracker.codec_storage[0] = num_frames; // frames in first byte
-    a2dp_source_stream_send_media_payload_rtp(media_tracker.avdtp_cid, media_tracker.local_seid, 0, media_tracker.codec_storage, media_tracker.codec_storage_count);
+    a2dp_source_stream_send_media_payload_rtp(media_tracker.avdtp_cid, media_tracker.local_seid, 0,
+                                              media_tracker.rtp_timestamp_pdu, media_tracker.codec_storage, media_tracker.codec_storage_count);
+    // update rtp_timestamp
+    media_tracker.rtp_timestamp_pdu = media_tracker.rtp_timestamp_now;
+
     media_tracker.codec_storage_count = 0;
     media_tracker.codec_ready_to_send = 0;
 }
@@ -367,7 +387,12 @@ static void a2dp_send_aptx(void) {
 }
 
 static void a2dp_send_aptx_hd(void) {
-    a2dp_source_stream_send_media_payload_rtp(media_tracker.avdtp_cid, media_tracker.local_seid, 0, media_tracker.codec_storage, media_tracker.codec_storage_count);
+    a2dp_source_stream_send_media_payload_rtp(media_tracker.avdtp_cid, media_tracker.local_seid, 0,
+                                              media_tracker.rtp_timestamp_pdu, media_tracker.codec_storage, media_tracker.codec_storage_count);
+
+    // update rtp_timestamp
+    media_tracker.rtp_timestamp_pdu = media_tracker.rtp_timestamp_now;
+
     media_tracker.codec_storage_count = 0;
     media_tracker.codec_ready_to_send = 0;
 }
@@ -410,12 +435,14 @@ static void a2dp_send_lc3plus(void) {
     media_tracker.codec_storage[0] |= media_tracker.codec_num_frames;
 
     a2dp_source_stream_send_media_payload_rtp(media_tracker.avdtp_cid, media_tracker.local_seid, 0,
+        media_tracker.rtp_timestamp_pdu,
         media_tracker.codec_storage, bytes_to_send);
+
 
     media_tracker.codec_storage_count -= bytes_to_send;
     if (media_tracker.codec_storage_count) {
         // fragmented
-        memcpy(media_tracker.codec_storage + 1, &media_tracker.codec_storage[bytes_to_send],
+        memmove(media_tracker.codec_storage + 1, &media_tracker.codec_storage[bytes_to_send],
                media_tracker.codec_storage_count);
         media_tracker.codec_num_frames--;
         media_tracker.codec_storage_count++; // header has to be sent again
@@ -423,6 +450,9 @@ static void a2dp_send_lc3plus(void) {
     } else {
         media_tracker.codec_num_frames = 0;
         media_tracker.codec_ready_to_send = 0;
+
+        // update rtp_timestamp
+        media_tracker.rtp_timestamp_pdu = media_tracker.rtp_timestamp_now;
     }
 }
 
@@ -512,7 +542,6 @@ static int fill_sbc_audio_buffer(a2dp_media_sending_context_t * context){
     while (context->samples_ready >= num_audio_samples_per_sbc_buffer
         && (context->max_media_payload_size - context->codec_storage_count) >= btstack_sbc_encoder_sbc_buffer_length()){
 
-        // uint8_t pcm_frame[ 256 * bytes_per_audio_sample()];
         int16_t pcm_frame[256*2];
 
         produce_sine_audio((int16_t *) pcm_frame, num_audio_samples_per_sbc_buffer);
@@ -522,9 +551,12 @@ static int fill_sbc_audio_buffer(a2dp_media_sending_context_t * context){
         uint8_t * sbc_frame = btstack_sbc_encoder_sbc_buffer();
         
         total_num_bytes_read += num_audio_samples_per_sbc_buffer;
-        memcpy(&context->codec_storage[context->codec_storage_count], sbc_frame, sbc_frame_size);
+        // first byte in sbc storage contains sbc media header
+        memcpy(&context->codec_storage[1 + context->codec_storage_count], sbc_frame, sbc_frame_size);
         context->codec_storage_count += sbc_frame_size;
         context->samples_ready -= num_audio_samples_per_sbc_buffer;
+
+        media_tracker.rtp_timestamp_now += num_audio_samples_per_sbc_buffer;
     }
     return total_num_bytes_read;
 }
@@ -580,6 +612,8 @@ static int fill_aac_audio_buffer(a2dp_media_sending_context_t *context) {
         total_samples_read += num_audio_samples_per_aac_buffer;
         context->codec_storage_count += out_args.numOutBytes;
         context->samples_ready -= num_audio_samples_per_aac_buffer;
+
+        media_tracker.rtp_timestamp_now += num_audio_samples_per_aac_buffer;
     }
     return total_samples_read;
 }
@@ -609,6 +643,8 @@ static int a2dp_demo_fill_ldac_audio_buffer(a2dp_media_sending_context_t *contex
         context->codec_storage_count += encoded;
         context->codec_num_frames += frames;
         context->samples_ready -= consumed;
+
+        media_tracker.rtp_timestamp_now += consumed;
     }
     return total_samples_read;
 }
@@ -652,6 +688,8 @@ static int a2dp_demo_fill_aptx_audio_buffer(a2dp_media_sending_context_t *contex
         total_num_bytes_read += num_audio_samples_per_aptx_buffer;
         context->codec_storage_count += out_size;  // LLRR  for aptx or LLLRRR for aptx hd
         context->samples_ready -= num_audio_samples_per_aptx_buffer;
+
+        media_tracker.rtp_timestamp_now += num_audio_samples_per_aptx_buffer;
     }
     return total_num_bytes_read;
 }
@@ -690,6 +728,8 @@ static int a2dp_demo_fill_lc3plus_audio_buffer(a2dp_media_sending_context_t *con
         context->codec_storage_count += bytes_out;
         context->codec_num_frames++;
         context->samples_ready -= input_samples;
+
+        media_tracker.rtp_timestamp_now += input_samples;
 
         if ((context->max_media_payload_size - context->codec_storage_count) < lc3plus_enc_get_num_bytes(lc3plus_handle)) {
             return total_samples_read;
