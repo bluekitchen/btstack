@@ -611,16 +611,19 @@ static void ots_db_get_next_object_id(ots_object_id_t * object_id_out){
 }
 
 static ots_object_t * ots_db_delete_malformed_objects(void){
-    int i;
+    ots_object_t * object = NULL;
     uint32_t num_deleted_objects = 0;
+
+    int i;
     for (i = 0; i < ots_db_objects_num; i++){
-        ots_object_t * object = &ots_db_objects[i];
+        object = &ots_db_objects[i];
         if (object->first_created.year == 0 || (strlen(object->name) == 0)){
             object->allocated_size = 0;
             num_deleted_objects++;
         }
     }
     ots_db_objects_num -= num_deleted_objects;
+    return object;
 }
 
 
@@ -675,7 +678,7 @@ static void ots_db_load_from_memory(uint8_t track_groups_num, mcs_track_group_t 
             btstack_utc_t first_created = {2023, 6, 22, 10, 59, i * 5};
             btstack_utc_t last_modified = {2023, 6, 22, 10, 59, i * 5};
             uint32_t properties = 0xFF;
-            uint16_t type_uuid16 = 0x2ACA; // unspecified
+            uint16_t type_uuid16 = GATT_UUID_TYPE_UNSPECIFIED; // unspecified
             uint32_t allocated_size = sizeof(ots_object_dummy_data) - 100 + i * 20 + j;
             uint32_t current_size = 30 + i * 20 + j;
 
