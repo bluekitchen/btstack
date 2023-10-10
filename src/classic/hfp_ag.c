@@ -2613,13 +2613,11 @@ static void hfp_ag_hci_event_packet_handler(uint8_t packet_type, uint16_t channe
     hfp_ag_run();
 }
 
-void hfp_ag_init_codecs(int codecs_nr, const uint8_t * codecs){
-    if (codecs_nr > HFP_MAX_NUM_CODECS){
-        log_error("hfp_init: codecs_nr (%d) > HFP_MAX_NUM_CODECS (%d)", codecs_nr, HFP_MAX_NUM_CODECS);
-        return;
-    }
-    int i;
+void hfp_ag_init_codecs(uint8_t codecs_nr, const uint8_t * codecs){
+    btstack_assert(codecs_nr <= HFP_MAX_NUM_CODECS);
+
     hfp_ag_codecs_nr = codecs_nr;
+    uint8_t i;
     for (i=0; i < codecs_nr; i++){
         hfp_ag_codecs[i] = codecs[i];
     }
@@ -3220,42 +3218,71 @@ uint8_t hfp_ag_notify_incoming_call_waiting(hci_con_handle_t acl_handle){
     hfp_ag_run_for_context(hfp_connection);
     return ERROR_CODE_SUCCESS;
 }
+void hfp_ag_create_sdp_record_with_codecs(uint8_t * service, uint32_t service_record_handle, int rfcomm_channel_nr,
+                                          const char * name, uint8_t ability_to_reject_call, uint16_t supported_features,
+                                          uint8_t codecs_nr, const uint8_t * codecs){
+    if (!name){
+        name = hfp_ag_default_service_name;
+    }
+    hfp_create_sdp_record(service, service_record_handle, BLUETOOTH_SERVICE_CLASS_HANDSFREE_AUDIO_GATEWAY, rfcomm_channel_nr, name);
 
-void hfp_ag_create_sdp_record(uint8_t * service, uint32_t service_record_handle, int rfcomm_channel_nr, const char * name, uint8_t ability_to_reject_call, uint16_t supported_features, int wide_band_speech){
-	if (!name){
-		name = hfp_ag_default_service_name;
-	}
-	hfp_create_sdp_record(service, service_record_handle, BLUETOOTH_SERVICE_CLASS_HANDSFREE_AUDIO_GATEWAY, rfcomm_channel_nr, name);
+    /*
+     * 0x01 – Ability to reject a call
+     * 0x00 – No ability to reject a call
+     */
+    de_add_number(service, DE_UINT, DE_SIZE_16, 0x0301);    // Hands-Free Profile - Network
+    de_add_number(service, DE_UINT, DE_SIZE_8, ability_to_reject_call);
 
-	/*
-	 * 0x01 – Ability to reject a call
-	 * 0x00 – No ability to reject a call
-	 */
-	de_add_number(service, DE_UINT, DE_SIZE_16, 0x0301);    // Hands-Free Profile - Network
-	de_add_number(service, DE_UINT, DE_SIZE_8, ability_to_reject_call);
-
-	// Construct SupportedFeatures for SDP bitmap:
-	//
-	// "The values of the “SupportedFeatures” bitmap given in Table 5.4 shall be the same as the values
-	//  of the Bits 0 to 4 of the unsolicited result code +BRSF"
-	//
-	// Wide band speech (bit 5) requires Codec negotiation
-	//
-	uint16_t sdp_features = supported_features & 0x1f;
-	if ( (wide_band_speech == 1) && (supported_features & (1 << HFP_AGSF_CODEC_NEGOTIATION))){
-		sdp_features |= 1 << 5;
-	}
+    // Construct SupportedFeatures for SDP bitmap:
+    //
+    // "The values of the “SupportedFeatures” bitmap given in Table 5.4 shall be the same as the values
+    //  of the Bits 0 to 4 of the unsolicited result code +BRSF"
+    //
+    // Wide band speech (bit 5) and LC3-SWB (bit 8) require Codec negotiation
+    //
+    uint16_t sdp_features = supported_features & 0x1f;
 
     if (supported_features & (1 << HFP_AGSF_ENHANCED_VOICE_RECOGNITION_STATUS)){
         sdp_features |= 1 << 6;
     }
-    
+
     if (supported_features & (1 << HFP_AGSF_VOICE_RECOGNITION_TEXT)){
         sdp_features |= 1 << 7;
     }
-    
-	de_add_number(service, DE_UINT, DE_SIZE_16, 0x0311);    // Hands-Free Profile - SupportedFeatures
-	de_add_number(service, DE_UINT, DE_SIZE_16, sdp_features);
+
+    // codecs
+    if ((supported_features & (1 << HFP_HFSF_CODEC_NEGOTIATION)) != 0){
+        uint8_t i;
+        for (i=0;i<codecs_nr;i++){
+            switch (codecs[i]){
+                case HFP_CODEC_MSBC:
+                    sdp_features |= 1 << 5;
+                    break;
+                case HFP_CODEC_LC3_SWB:
+                    sdp_features |= 1 << 8;
+                    break;
+            }
+        }
+    }
+
+    de_add_number(service, DE_UINT, DE_SIZE_16, 0x0311);    // Hands-Free Profile - SupportedFeatures
+    de_add_number(service, DE_UINT, DE_SIZE_16, sdp_features);
+}
+
+void hfp_ag_create_sdp_record(uint8_t * service, uint32_t service_record_handle, int rfcomm_channel_nr, const char * name,
+                              uint8_t ability_to_reject_call, uint16_t supported_features, int wide_band_speech){
+    uint8_t codecs_nr;
+    const uint8_t * codecs;
+    const uint8_t wide_band_codecs[] = { HFP_CODEC_MSBC };
+    if (wide_band_speech == 0){
+        codecs_nr = 0;
+        codecs = NULL;
+    } else {
+        codecs_nr = 1;
+        codecs = wide_band_codecs;
+    }
+    hfp_ag_create_sdp_record_with_codecs(service, service_record_handle, rfcomm_channel_nr, name,
+                                         ability_to_reject_call, supported_features, codecs_nr, codecs);
 }
 
 void hfp_ag_register_packet_handler(btstack_packet_handler_t callback){

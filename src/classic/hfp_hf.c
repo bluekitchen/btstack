@@ -1566,11 +1566,11 @@ void hfp_hf_deinit(void){
     (void) memset(hfp_hf_phone_number, 0, sizeof(hfp_hf_phone_number));
 }
 
-void hfp_hf_init_codecs(int codecs_nr, const uint8_t * codecs){
+void hfp_hf_init_codecs(uint8_t codecs_nr, const uint8_t * codecs){
     btstack_assert(codecs_nr <= HFP_MAX_NUM_CODECS);
 
     hfp_hf_codecs_nr = codecs_nr;
-    int i;
+    uint8_t i;
     for (i=0; i<codecs_nr; i++){
         hfp_hf_codecs[i] = codecs[i];
     }
@@ -2269,34 +2269,62 @@ int hfp_hf_in_band_ringtone_active(hci_con_handle_t acl_handle){
     return get_bit(hfp_connection->remote_supported_features, HFP_AGSF_IN_BAND_RING_TONE);
 }
 
-void hfp_hf_create_sdp_record(uint8_t * service, uint32_t service_record_handle, int rfcomm_channel_nr, const char * name, uint16_t supported_features, int wide_band_speech){
-	if (!name){
-		name = hfp_hf_default_service_name;
-	}
-	hfp_create_sdp_record(service, service_record_handle, BLUETOOTH_SERVICE_CLASS_HANDSFREE, rfcomm_channel_nr, name);
+void hfp_hf_create_sdp_record_with_codecs(uint8_t * service, uint32_t service_record_handle, int rfcomm_channel_nr,
+                                          const char * name, uint16_t supported_features, uint8_t codecs_nr, const uint8_t * codecs){
+    if (!name){
+        name = hfp_hf_default_service_name;
+    }
+    hfp_create_sdp_record(service, service_record_handle, BLUETOOTH_SERVICE_CLASS_HANDSFREE, rfcomm_channel_nr, name);
 
-	// Construct SupportedFeatures for SDP bitmap:
-	//
-	// "The values of the “SupportedFeatures” bitmap given in Table 5.4 shall be the same as the values
-	//  of the Bits 0 to 4 of the unsolicited result code +BRSF"
-	//
-	// Wide band speech (bit 5) requires Codec negotiation
-	//
-	uint16_t sdp_features = supported_features & 0x1f;
-	if ( (wide_band_speech != 0) && (supported_features & (1 << HFP_HFSF_CODEC_NEGOTIATION))){
-		sdp_features |= 1 << 5;
-	}
-    
+    // Construct SupportedFeatures for SDP bitmap:
+    //
+    // "The values of the “SupportedFeatures” bitmap given in Table 5.4 shall be the same as the values
+    //  of the Bits 0 to 4 of the unsolicited result code +BRSF"
+    //
+    // Wide band speech (bit 5) and LC3-SWB (bit 8) require Codec negotiation
+    //
+    uint16_t sdp_features = supported_features & 0x1f;
+
     if (supported_features & (1 << HFP_HFSF_ENHANCED_VOICE_RECOGNITION_STATUS)){
         sdp_features |= 1 << 6;
     }
-    
+
     if (supported_features & (1 << HFP_HFSF_VOICE_RECOGNITION_TEXT)){
         sdp_features |= 1 << 7;
     }
-    
-	de_add_number(service, DE_UINT, DE_SIZE_16, 0x0311);    // Hands-Free Profile - SupportedFeatures
-	de_add_number(service, DE_UINT, DE_SIZE_16, sdp_features);
+
+    // codecs
+    if ((supported_features & (1 << HFP_HFSF_CODEC_NEGOTIATION)) != 0){
+        uint8_t i;
+        for (i=0;i<codecs_nr;i++){
+            switch (codecs[i]){
+                case HFP_CODEC_MSBC:
+                    sdp_features |= 1 << 5;
+                    break;
+                case HFP_CODEC_LC3_SWB:
+                    sdp_features |= 1 << 8;
+                    break;
+            }
+        }
+    }
+
+    de_add_number(service, DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_SUPPORTED_FEATURES);
+    de_add_number(service, DE_UINT, DE_SIZE_16, sdp_features);
+}
+
+// @deprecated, call new API
+void hfp_hf_create_sdp_record(uint8_t * service, uint32_t service_record_handle, int rfcomm_channel_nr, const char * name, uint16_t supported_features, int wide_band_speech){
+    uint8_t codecs_nr;
+    const uint8_t * codecs;
+    const uint8_t wide_band_codecs[] = { HFP_CODEC_MSBC };
+    if (wide_band_speech == 0){
+        codecs_nr = 0;
+        codecs = NULL;
+    } else {
+        codecs_nr = 1;
+        codecs = wide_band_codecs;
+    }
+    hfp_hf_create_sdp_record_with_codecs(service, service_record_handle, rfcomm_channel_nr, name, supported_features, codecs_nr, codecs);
 }
 
 void hfp_hf_register_custom_at_command(hfp_custom_at_command_t * custom_at_command){
