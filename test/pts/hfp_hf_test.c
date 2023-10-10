@@ -65,21 +65,12 @@
 uint8_t hfp_service_buffer[150];
 const uint8_t   rfcomm_channel_nr = 1;
 const char hfp_hf_service_name[] = "HFP HF Demo";
-static const int wide_band_speech = 1;
-    
-#ifdef HAVE_BTSTACK_STDIN
-// static const char * device_addr_string = "6C:72:E7:10:22:EE";
-// static const char * device_addr_string = "00:80:98:09:0B:32";
+
 static const char * device_addr_string = "00:1B:DC:08:E2:5C";
-#endif
 
 static bd_addr_t device_addr;
 
-#ifdef HAVE_BTSTACK_STDIN
-// 80:BE:05:D5:28:48
-// prototypes
 static void show_usage(void);
-#endif
 static hci_con_handle_t acl_handle = HCI_CON_HANDLE_INVALID;
 static hci_con_handle_t sco_handle = HCI_CON_HANDLE_INVALID;
 
@@ -123,9 +114,7 @@ static void dump_supported_codecs(void){
     }
 }
 
-#ifdef HAVE_BTSTACK_STDIN
-
-// Testig User Interface 
+// Testing User Interface
 static void show_usage(void){
     bd_addr_t iut_address;
     gap_local_bd_addr(iut_address);
@@ -394,7 +383,6 @@ static void stdin_process(char c){
             break;
     }
 }
-#endif
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * event, uint16_t event_size){
     UNUSED(channel);
@@ -599,7 +587,7 @@ int btstack_main(int argc, const char * argv[]){
     
     sdp_init();    
     memset(hfp_service_buffer, 0, sizeof(hfp_service_buffer));
-    hfp_hf_create_sdp_record(hfp_service_buffer, 0x10001, rfcomm_channel_nr, hfp_hf_service_name, hf_supported_features, wide_band_speech);
+    hfp_hf_create_sdp_record_with_codecs(hfp_service_buffer, 0x10001, rfcomm_channel_nr, hfp_hf_service_name, hf_supported_features, sizeof(codecs), codecs);
     printf("SDP service record size: %u\n", de_get_len(hfp_service_buffer));
     sdp_register_service(hfp_service_buffer);
 
@@ -612,11 +600,10 @@ int btstack_main(int argc, const char * argv[]){
     // register for HFP events
     hfp_hf_register_packet_handler(packet_handler);
 
-#ifdef HAVE_BTSTACK_STDIN
     // parse human readable Bluetooth address
     sscanf_bd_addr(device_addr_string, device_addr);
     btstack_stdin_setup(stdin_process);
-#endif
+
     // turn on!
     hci_power_control(HCI_POWER_ON);
     return 0;
