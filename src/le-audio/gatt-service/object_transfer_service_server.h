@@ -126,6 +126,8 @@ typedef struct {
     olcp_opcode_t       olcp_opcode;
     olcp_result_code_t  olcp_result_code;
     uint32_t            olcp_result_num_objects;
+
+    btstack_timer_source_t operation_timer;
 } ots_server_connection_t;
 
 
