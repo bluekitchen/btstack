@@ -264,7 +264,7 @@ void le_audio_demo_util_sink_enable_lc3plus(bool enable){
     le_audio_demo_lc3plus_decoder_requested = enable;
 }
 
-static void setup_lc3_decoder(void){
+static void setup_lc3_decoder(bool use_lc3plus_decoder){
     uint8_t channel;
     for (channel = 0 ; channel < le_audio_demo_sink_num_channels ; channel++){
         // pick decoder
@@ -315,7 +315,7 @@ void le_audio_demo_util_sink_configure_general(uint8_t num_streams, uint8_t num_
     bool use_lc3plus_decoder = le_audio_demo_lc3plus_decoder_requested && (frame_duration == BTSTACK_LC3_FRAME_DURATION_10000US);
 
     // init decoder
-    setup_lc3_decoder();
+    setup_lc3_decoder(use_lc3plus_decoder);
 
     printf("Configure: %u streams, %u channels per stream, sampling rate %u, samples per frame %u, lc3plus %u\n",
            num_streams, num_channels_per_stream, sampling_frequency_hz, le_audio_demo_sink_num_samples_per_frame, use_lc3plus_decoder);
