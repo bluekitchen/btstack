@@ -70,7 +70,14 @@ static bd_addr_t device_addr;
 static const char * device_addr_string = "00:1B:DC:08:E2:5C";
 
 // configuration
-static uint8_t codecs[] = {HFP_CODEC_CVSD, HFP_CODEC_MSBC, HFP_CODEC_LC3_SWB};
+static uint8_t codecs[] = {HFP_CODEC_CVSD,
+#ifdef ENABLE_HFP_WIDE_BAND_SPEECH
+                           HFP_CODEC_MSBC,
+#endif
+#ifdef ENABLE_HFP_SUPER_WIDE_BAND
+                           HFP_CODEC_LC3_SWB
+#endif
+};
 
 static uint8_t negotiated_codec = HFP_CODEC_CVSD;
 
