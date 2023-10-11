@@ -1536,6 +1536,16 @@ static int call_setup_state_machine(hfp_connection_t * hfp_connection){
     return 0;
 }
 
+// queue 'error' to HF
+static void hfp_ag_queue_error(hfp_connection_t * hfp_connection){
+    hfp_connection->send_error = 1;
+}
+
+// queue 'ok' to HF
+static void hfp_ag_queue_ok(hfp_connection_t * hfp_connection){
+    hfp_connection->ok_pending = 1;
+}
+
 // functions extracted from hfp_ag_call_sm below
 static void hfp_ag_handle_reject_outgoing_call(void){
     hfp_connection_t * hfp_connection = hfp_ag_connection_for_call_state(HFP_CALL_OUTGOING_INITIATED);
@@ -1546,7 +1556,7 @@ static void hfp_ag_handle_reject_outgoing_call(void){
 
     hfp_gsm_handler(HFP_AG_OUTGOING_CALL_REJECTED, 0, 0, NULL);
     hfp_connection->call_state = HFP_CALL_IDLE;
-    hfp_connection->send_error = 1;
+    hfp_ag_queue_error(hfp_connection);
     hfp_ag_run_for_context(hfp_connection);
 }
 
@@ -1657,7 +1667,7 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * hfp_con
                             hfp_ag_set_callsetup_indicator();
                             hfp_ag_set_call_indicator();
                             hfp_ag_hf_accept_call(hfp_connection);
-                            hfp_connection->ok_pending = 1;
+                            hfp_ag_queue_ok(hfp_connection);
                             log_info("HF answers call, accept call by GSM");
                             hfp_emit_simple_event(hfp_connection, HFP_SUBEVENT_CALL_ANSWERED);
                             break;
@@ -1838,8 +1848,8 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * hfp_con
         case HFP_AG_OUTGOING_CALL_INITIATED_BY_HF:
             // directly reject call if number of free slots is exceeded
             if (!hfp_gsm_call_possible()){
-                hfp_connection->send_error = 1;
-                hfp_ag_run_for_context(hfp_connection);  
+                hfp_ag_queue_error(hfp_connection);
+                hfp_ag_run_for_context(hfp_connection);
                 break;
             }
 
@@ -1884,8 +1894,8 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * hfp_con
         case HFP_AG_OUTGOING_REDIAL_INITIATED:{
             // directly reject call if number of free slots is exceeded
             if (!hfp_gsm_call_possible()){
-                hfp_connection->send_error = 1;
-                hfp_ag_run_for_context(hfp_connection);  
+                hfp_ag_queue_error(hfp_connection);
+                hfp_ag_run_for_context(hfp_connection);
                 break;
             }
 
@@ -1915,7 +1925,7 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * hfp_con
                 break;
             }
             
-            hfp_connection->ok_pending = 1;
+            hfp_ag_queue_ok(hfp_connection);
             hfp_ag_handle_outgoing_call_accepted(hfp_connection);
             break;
         }
@@ -2082,7 +2092,7 @@ static int hfp_ag_send_commands(hfp_connection_t *hfp_connection){
         } else {
             // TODO: this code should be removed. check a) before setting send_status_of_current_calls, or b) right before hfp_ag_send_call_status above
             hfp_connection->next_call_index = 0;
-            hfp_connection->ok_pending = 1;
+            hfp_ag_queue_ok(hfp_connection);
             hfp_connection->send_status_of_current_calls = 0;
         }
     } 
@@ -2145,7 +2155,7 @@ static int hfp_ag_send_commands(hfp_connection_t *hfp_connection){
     if (hfp_connection->send_phone_number_for_voice_tag){
         hfp_connection->send_phone_number_for_voice_tag = 0;
         hfp_connection->command = HFP_CMD_NONE;
-        hfp_connection->ok_pending = 1;
+        hfp_ag_queue_ok(hfp_connection);
         hfp_ag_send_phone_number_for_voice_tag_cmd(hfp_connection->rfcomm_cid);
         return 1;
     }
@@ -2385,7 +2395,7 @@ static void hfp_ag_handle_rfcomm_data(hfp_connection_t * hfp_connection, uint8_t
                 if (hfp_ag_response_and_hold_active){
                     hfp_connection->send_response_and_hold_status = HFP_RESPONSE_AND_HOLD_INCOMING_ON_HOLD + 1;
                 }
-                hfp_connection->ok_pending = 1;
+                hfp_ag_queue_ok(hfp_connection);
                 break;
             case HFP_CMD_RESPONSE_AND_HOLD_COMMAND:
                 hfp_connection->command = HFP_CMD_NONE;
@@ -2402,7 +2412,7 @@ static void hfp_ag_handle_rfcomm_data(hfp_connection_t * hfp_connection, uint8_t
                     default:
                         break;
                 }
-                hfp_connection->ok_pending = 1;
+                hfp_ag_queue_ok(hfp_connection);
                 break;
             case HFP_CMD_HF_INDICATOR_STATUS:
                 hfp_connection->command = HFP_CMD_NONE;
@@ -2412,26 +2422,26 @@ static void hfp_ag_handle_rfcomm_data(hfp_connection_t * hfp_connection, uint8_t
                     switch (indicator->uuid){
                         case HFP_HF_INDICATOR_UUID_ENHANCED_SAFETY: 
                             if (hfp_connection->parser_indicator_value > 1) {
-                                hfp_connection->send_error = 1;
+                                hfp_ag_queue_error(hfp_connection);
                                 break;
                             }
-                            hfp_connection->ok_pending = 1;
+                            hfp_ag_queue_ok(hfp_connection);
                             hfp_ag_emit_hf_indicator_value(hfp_connection, indicator->uuid, hfp_connection->parser_indicator_value);
                             break;
                         case HFP_HF_INDICATOR_UUID_BATTERY_LEVEL: 
                             if (hfp_connection->parser_indicator_value > 100){
-                                hfp_connection->send_error = 1;
+                                hfp_ag_queue_error(hfp_connection);
                                 break;
                             }
-                            hfp_connection->ok_pending = 1;
+                            hfp_ag_queue_ok(hfp_connection);
                             hfp_ag_emit_hf_indicator_value(hfp_connection, indicator->uuid, hfp_connection->parser_indicator_value);
                             break;
                         default:
-                            hfp_connection->send_error = 1;
+                            hfp_ag_queue_error(hfp_connection);
                             break;
                     }
                 } else {
-                    hfp_connection->send_error = 1;
+                    hfp_ag_queue_error(hfp_connection);
                 }
                 break;
             case HFP_CMD_RETRIEVE_AG_INDICATORS_STATUS:
@@ -2471,10 +2481,10 @@ static void hfp_ag_handle_rfcomm_data(hfp_connection_t * hfp_connection, uint8_t
                 hfp_connection->command = HFP_CMD_NONE;
                 
                 if (get_bit(hfp_ag_supported_features, HFP_AGSF_EC_NR_FUNCTION)){
-                    hfp_connection->ok_pending = 1;
+                    hfp_ag_queue_ok(hfp_connection);
                     status = ERROR_CODE_SUCCESS;
                 } else {
-                    hfp_connection->send_error = 1;
+                    hfp_ag_queue_error(hfp_connection);
                     status = ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
                 }
                 hfp_emit_event(hfp_connection, HFP_SUBEVENT_ECHO_CANCELING_AND_NOISE_REDUCTION_DEACTIVATE, status);
@@ -2486,12 +2496,12 @@ static void hfp_ag_handle_rfcomm_data(hfp_connection_t * hfp_connection, uint8_t
                 break;
             case HFP_CMD_HANG_UP_CALL:
                 hfp_connection->command = HFP_CMD_NONE;
-                hfp_connection->ok_pending = 1;
+                hfp_ag_queue_ok(hfp_connection);
                 hfp_ag_call_sm(HFP_AG_TERMINATE_CALL_BY_HF, hfp_connection);
                 break;
             case HFP_CMD_CALL_HOLD: {
                 hfp_connection->command = HFP_CMD_NONE;
-                hfp_connection->ok_pending = 1;
+                hfp_ag_queue_ok(hfp_connection);
 
                 switch (hfp_connection->ag_call_hold_action){
                     case 0:
@@ -2535,22 +2545,22 @@ static void hfp_ag_handle_rfcomm_data(hfp_connection_t * hfp_connection, uint8_t
             case HFP_CMD_ENABLE_CLIP:
                 hfp_connection->command = HFP_CMD_NONE;
                 log_info("hfp: clip set, now: %u", hfp_connection->clip_enabled);
-                hfp_connection->ok_pending = 1;
+                hfp_ag_queue_ok(hfp_connection);
                 break;
             case HFP_CMD_ENABLE_CALL_WAITING_NOTIFICATION:
                 hfp_connection->command = HFP_CMD_NONE;
                 log_info("hfp: call waiting notification set, now: %u", hfp_connection->call_waiting_notification_enabled);
-                hfp_connection->ok_pending = 1;
+                hfp_ag_queue_ok(hfp_connection);
                 break;
             case HFP_CMD_SET_SPEAKER_GAIN:
                 hfp_connection->command = HFP_CMD_NONE;
-                hfp_connection->ok_pending = 1;
+                hfp_ag_queue_ok(hfp_connection);
                 log_info("HF speaker gain = %u", hfp_connection->speaker_gain);
                 hfp_emit_event(hfp_connection, HFP_SUBEVENT_SPEAKER_VOLUME, hfp_connection->speaker_gain);
                 break;
             case HFP_CMD_SET_MICROPHONE_GAIN:
                 hfp_connection->command = HFP_CMD_NONE;
-                hfp_connection->ok_pending = 1;
+                hfp_ag_queue_ok(hfp_connection);
                 log_info("HF microphone gain = %u", hfp_connection->microphone_gain);
                 hfp_emit_event(hfp_connection, HFP_SUBEVENT_MICROPHONE_VOLUME, hfp_connection->microphone_gain);
                 break;
@@ -2562,7 +2572,7 @@ static void hfp_ag_handle_rfcomm_data(hfp_connection_t * hfp_connection, uint8_t
                 break;
             case HFP_CMD_UNKNOWN:
                 hfp_connection->command = HFP_CMD_NONE;
-                hfp_connection->send_error = 1;
+                hfp_ag_queue_error(hfp_connection);
                 break;
             default:
                 break;
@@ -3150,7 +3160,7 @@ uint8_t hfp_ag_reject_phone_number_for_voice_tag(hci_con_handle_t acl_handle){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
 
-    hfp_connection->send_error = 1;
+    hfp_ag_queue_error(hfp_connection);
     return ERROR_CODE_SUCCESS;
 }
 
@@ -3160,7 +3170,7 @@ uint8_t hfp_ag_send_dtmf_code_done(hci_con_handle_t acl_handle){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
 
-    hfp_connection->ok_pending = 1;
+    hfp_ag_queue_ok(hfp_connection);
     return ERROR_CODE_SUCCESS;
 }
 
@@ -3183,9 +3193,9 @@ uint8_t hfp_ag_send_command_result_code(hci_con_handle_t acl_handle, bool ok){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     if (ok){
-        hfp_connection->ok_pending = 1;
+        hfp_ag_queue_ok(hfp_connection);
     } else {
-        hfp_connection->send_error = 1;
+        hfp_ag_queue_error(hfp_connection);
     }
     hfp_ag_run_for_context(hfp_connection);
     return ERROR_CODE_SUCCESS;
