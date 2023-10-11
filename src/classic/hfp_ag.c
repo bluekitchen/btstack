@@ -2188,6 +2188,12 @@ static int hfp_ag_send_commands(hfp_connection_t *hfp_connection){
         return 1;
     }
 
+    if (hfp_connection->extended_audio_gateway_error){
+        uint8_t extended_audio_gateway_error = hfp_connection->extended_audio_gateway_error;
+        hfp_connection->extended_audio_gateway_error = 0;
+        hfp_ag_send_report_extended_audio_gateway_error(hfp_connection->rfcomm_cid, extended_audio_gateway_error);
+
+    }
     return 0;
 }
 
@@ -2714,7 +2720,6 @@ uint8_t hfp_ag_report_extended_audio_gateway_error_result_code(hci_con_handle_t 
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
 
-    hfp_connection->extended_audio_gateway_error = 0;
     if (!hfp_connection->enable_extended_audio_gateway_error_report){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
