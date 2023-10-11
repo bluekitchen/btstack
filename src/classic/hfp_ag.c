@@ -1098,11 +1098,6 @@ static int hfp_ag_run_for_context_service_level_connection_queries(hfp_connectio
             hfp_ag_send_ok(hfp_connection->rfcomm_cid);
             return 1;
         case HFP_CMD_ENABLE_EXTENDED_AUDIO_GATEWAY_ERROR:
-            if (hfp_connection->extended_audio_gateway_error){
-                hfp_connection->extended_audio_gateway_error = 0;
-                hfp_ag_send_report_extended_audio_gateway_error(hfp_connection->rfcomm_cid, hfp_connection->extended_audio_gateway_error_value);
-                return 1;
-            }
             break;
         case HFP_CMD_ENABLE_INDICATOR_STATUS_UPDATE:
             hfp_ag_send_ok(hfp_connection->rfcomm_cid);
