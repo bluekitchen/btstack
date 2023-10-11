@@ -41,6 +41,8 @@ HFP/HF/TCA/BV-02-I: f
 HFP/HF/TCA/BV-03-I: f
 HFP/HF/TCA/BV-04-I: i, F
 
+HFP/HF/TDS/BV-01-C: (wait)
+
 HFP/HF/TDS/BV-01-I: (confirm)
 
 HFP/HF/ATH/BV-03-I: a, b
@@ -127,8 +129,17 @@ HFP/HF/ACC/BV-05-I: (wait)
 HFP/HF/ACC/BV-06-I: (wait)
 HFP/HF/ACC/BV-07-I: (wait)
 
+HFP/HF/ACC/BV-14-C: f, b
+HFP/HF/ACC/BV-15-C: b
+HFP/HF/ACC/BV-16-C: f, b
+HFP/HF/ACC/BV-17-C: (wait)
+HFP/HF/ACC/BV-18-C: (wait)
+
 HFP/HF/WBS/BV-02-I: (wait)
 HFP/HF/WBS/BV-03-I: (wait)
+
+HFP/HF/SWB/BV-01-C: (wait)
+HFP/HF/SWB/BV-02-C: (wait)
 
 HFP/HF/DIS/BV-01-I: rm /tmp/btstack*.tlv, (wait)
 HFP/HF/DIS/BV-02-I: rm /tmp/btstack*.tlv, (wait)
