@@ -2080,7 +2080,6 @@ static void hfp_ag_send_call_status(hfp_connection_t * hfp_connection, int call_
 // sends pending command, returns if command was sent
 static int hfp_ag_send_commands(hfp_connection_t *hfp_connection){
     if (hfp_connection->send_status_of_current_calls){
-        hfp_connection->ok_pending = 0; 
         if (hfp_connection->next_call_index < hfp_gsm_get_number_of_calls()){
             hfp_connection->next_call_index++;
             hfp_ag_send_call_status(hfp_connection, hfp_connection->next_call_index);
