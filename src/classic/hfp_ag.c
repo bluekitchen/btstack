@@ -1098,7 +1098,8 @@ static int hfp_ag_run_for_context_service_level_connection_queries(hfp_connectio
             hfp_ag_send_ok(hfp_connection->rfcomm_cid);
             return 1;
         case HFP_CMD_ENABLE_EXTENDED_AUDIO_GATEWAY_ERROR:
-            break;
+            hfp_ag_send_ok(hfp_connection->rfcomm_cid);
+            return 1;
         case HFP_CMD_ENABLE_INDICATOR_STATUS_UPDATE:
             hfp_ag_send_ok(hfp_connection->rfcomm_cid);
             return 1;
