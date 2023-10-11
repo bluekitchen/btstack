@@ -128,7 +128,6 @@ typedef struct {
 static opp_server_t opp_server_singleton;
 
 static void opp_server_handle_get_request(opp_server_t * opp_server, bool first);
-static void opp_server_build_response(opp_server_t * opp_server);
 
 #define ENTER_STATE(opp, s) \
     do { log_info ("entering state %s", #s); opp->state = s; } while (0)
@@ -823,15 +822,6 @@ uint8_t opp_server_init(btstack_packet_handler_t packet_handler, uint8_t rfcomm_
 }
 
 void opp_server_deinit(void){
-}
-
-static void opp_server_build_response(opp_server_t * opp_server){
-    if (opp_server->response.code == 0){
-        // set interim response code
-        opp_server->response.code = OBEX_RESP_SUCCESS;
-        goep_server_response_create_general(opp_server->goep_cid);
-        opp_server_add_srm_headers(opp_server);
-    }
 }
 
 void opp_server_abort_request (uint16_t opp_cid, uint8_t response_code) {
