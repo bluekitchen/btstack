@@ -1538,12 +1538,12 @@ static int call_setup_state_machine(hfp_connection_t * hfp_connection){
 
 // queue 'error' to HF
 static void hfp_ag_queue_error(hfp_connection_t * hfp_connection){
-    hfp_connection->send_error = 1;
+    hfp_connection->send_error++;
 }
 
 // queue 'ok' to HF
 static void hfp_ag_queue_ok(hfp_connection_t * hfp_connection){
-    hfp_connection->ok_pending = 1;
+    hfp_connection->ok_pending++;
 }
 
 // functions extracted from hfp_ag_call_sm below
@@ -2103,8 +2103,8 @@ static int hfp_ag_send_commands(hfp_connection_t *hfp_connection){
         return 1;
     }
 
-    if (hfp_connection->send_error){
-        hfp_connection->send_error = 0;
+    if (hfp_connection->send_error > 0){
+        hfp_connection->send_error--;
         hfp_connection->command = HFP_CMD_NONE;
         hfp_ag_send_error(hfp_connection->rfcomm_cid); 
         return 1;
@@ -2127,8 +2127,8 @@ static int hfp_ag_send_commands(hfp_connection_t *hfp_connection){
         return 1;
     }
 
-    if (hfp_connection->ok_pending){
-        hfp_connection->ok_pending = 0;
+    if (hfp_connection->ok_pending > 0){
+        hfp_connection->ok_pending--;
         hfp_connection->command = HFP_CMD_NONE;
         hfp_ag_send_ok(hfp_connection->rfcomm_cid);
         return 1;
