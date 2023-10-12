@@ -1226,14 +1226,43 @@ const hci_cmd_t hci_read_bd_addr = {
 };
 
 /**
- * Status Paramters
+ * Status Paramteers
  */
+
+/**
+ * @param handle
+ */
+const hci_cmd_t hci_read_failed_contact_counter = {
+    HCI_OPCODE_HCI_READ_FAILED_CONTACT_COUNTER, "H"
+};
+
+/**
+ * @param handle
+ */
+const hci_cmd_t hci_reset_failed_contact_counter = {
+    HCI_OPCODE_HCI_RESET_FAILED_CONTACT_COUNTER, "H"
+};
+
+/**
+ * @param handle
+ */
+const hci_cmd_t hci_read_link_quality = {
+    HCI_OPCODE_HCI_READ_LINK_QUALITY, "H"
+};
 
 /**
  * @param handle
  */
 const hci_cmd_t hci_read_rssi = {
     HCI_OPCODE_HCI_READ_RSSI, "H"
+};
+
+/**
+ * @param handle
+ * @param which_clock
+ */
+const hci_cmd_t hci_read_clock = {
+    HCI_OPCODE_HCI_READ_CLOCK, "H1"
 };
 
 /**

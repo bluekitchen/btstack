@@ -208,7 +208,11 @@ typedef enum {
     HCI_OPCODE_HCI_READ_BD_ADDR = HCI_OPCODE (OGF_INFORMATIONAL_PARAMETERS, 0x09),
 
     // Status Parameters
+    HCI_OPCODE_HCI_READ_FAILED_CONTACT_COUNTER = HCI_OPCODE (OGF_STATUS_PARAMETERS, 0x01),
+    HCI_OPCODE_HCI_RESET_FAILED_CONTACT_COUNTER = HCI_OPCODE (OGF_STATUS_PARAMETERS, 0x02),
+    HCI_OPCODE_HCI_READ_LINK_QUALITY = HCI_OPCODE (OGF_STATUS_PARAMETERS, 0x03),
     HCI_OPCODE_HCI_READ_RSSI = HCI_OPCODE (OGF_STATUS_PARAMETERS, 0x05),
+    HCI_OPCODE_HCI_READ_CLOCK = HCI_OPCODE (OGF_STATUS_PARAMETERS, 0x07),
     HCI_OPCODE_HCI_READ_ENCRYPTION_KEY_SIZE = HCI_OPCODE (OGF_STATUS_PARAMETERS, 0x08),
 
     // LE Controller
@@ -413,6 +417,9 @@ extern const hci_cmd_t hci_read_local_name;
 extern const hci_cmd_t hci_read_local_oob_data;
 extern const hci_cmd_t hci_read_inquiry_response_transmit_power_level;
 extern const hci_cmd_t hci_write_inquiry_transmit_power_level;
+extern const hci_cmd_t hci_read_clock;
+extern const hci_cmd_t hci_read_failed_contact_counter;
+extern const hci_cmd_t hci_read_link_quality;
 extern const hci_cmd_t hci_read_local_supported_commands;
 extern const hci_cmd_t hci_read_local_supported_features;
 extern const hci_cmd_t hci_read_local_version_information;
@@ -433,6 +440,7 @@ extern const hci_cmd_t hci_remote_oob_data_request_negative_reply;
 extern const hci_cmd_t hci_remote_oob_data_request_reply;
 extern const hci_cmd_t hci_remote_oob_extended_data_request_reply;
 extern const hci_cmd_t hci_reset;
+extern const hci_cmd_t hci_reset_failed_contact_counter;
 extern const hci_cmd_t hci_role_discovery;
 extern const hci_cmd_t hci_set_connection_encryption;
 extern const hci_cmd_t hci_set_controller_to_host_flow_control;
