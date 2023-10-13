@@ -308,7 +308,8 @@ static void btstack_tlv_flash_bank_migrate(btstack_tlv_flash_bank_t * self){
             if (tag_valid) {
 
                 log_info("migrate pos %u, tag '%x' len %u -> new pos %u",
-                         (unsigned int) tag_index, (unsigned int) it.tag, (unsigned int) tag_len, next_write_pos);
+                         (unsigned int) tag_index, (unsigned int) it.tag, (unsigned int) tag_len,
+                         (unsigned int) next_write_pos);
 
                 uint32_t write_offset = next_write_pos;
                 uint32_t bytes_to_copy;
