@@ -711,7 +711,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
 
                     // connect HID Interrupt for outgoing
                     if ((device->incoming == 0) && (psm == PSM_HID_CONTROL)){
-                        status = l2cap_create_channel(packet_handler, device->bd_addr, PSM_HID_INTERRUPT, 48, &device->interrupt_cid);
+                        status = l2cap_create_channel(packet_handler, device->bd_addr, PSM_HID_INTERRUPT, l2cap_max_mtu(), &device->interrupt_cid);
                         break;
                     }
 
@@ -945,7 +945,7 @@ uint8_t hid_device_connect(bd_addr_t addr, uint16_t * hid_cid){
 
     // create l2cap control using fixed HID L2CAP PSM
     log_info("Create outgoing HID Control");
-    uint8_t status = l2cap_create_channel(packet_handler, hid_device->bd_addr, PSM_HID_CONTROL, 48, &hid_device->control_cid);
+    uint8_t status = l2cap_create_channel(packet_handler, hid_device->bd_addr, PSM_HID_CONTROL, l2cap_max_mtu(), &hid_device->control_cid);
     return status;
 }
 
