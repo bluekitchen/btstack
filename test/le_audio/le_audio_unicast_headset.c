@@ -261,7 +261,6 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
         case HCI_EVENT_LE_META:
             switch(hci_event_le_meta_get_subevent_code(packet)) {
                 case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
-                    enter_streaming();
                     hci_subevent_le_connection_complete_get_peer_address(packet, event_addr);
                     remote_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
                     printf("Connected, remote %s, handle %04x\n", bd_addr_to_str(event_addr), remote_handle);
@@ -309,6 +308,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                         if (complete) {
                             printf("All CIS Established\n");
                             app_state = APP_STREAMING;
+                            enter_streaming();
                             // start sending
                             if (microphone_enable){
                                 hci_request_cis_can_send_now_events(cis_con_handles[0]);
