@@ -130,7 +130,7 @@ HFP/AG/ACC/BI-12-I: c, b, b, C, A
 HFP/AG/ACC/BI-13-I: c, b, C, A
 HFP/AG/ACC/BI-14-I: c, b, C, A
 HFP/AG/ACC/BV-15-I: c, b, C, A
-HFP/AG/ACC/BV-24-C: doesn't start
+HFP/AG/ACC/BV-24-C: c, C, t
 HFP/AG/ACC/BV-25-C: c, C
 HFP/AG/ACC/BV-26-C: b
 HFP/AG/ACC/BV-27-C: wait
