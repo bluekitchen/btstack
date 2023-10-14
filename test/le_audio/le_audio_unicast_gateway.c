@@ -383,7 +383,17 @@ static void stdin_process(char c){
 
             break;
         case 't':
-            audio_source = 1 - audio_source;
+            switch (audio_source){
+                case AUDIO_SOURCE_MODPLAYER:
+                    audio_source = AUDIO_SOURCE_SINE;
+                    break;
+                case AUDIO_SOURCE_SINE:
+                    audio_source = AUDIO_SOURCE_MODPLAYER;
+                    break;
+                default:
+                    btstack_unreachable();
+                    break;
+            }
             print_config();
             break;
         case '\n':
