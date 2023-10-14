@@ -60,7 +60,10 @@
 
 //#define DEBUG_PLC
 #ifdef DEBUG_PLC
-#define printf_plc(...) printf(__VA_ARGS__)
+#define printf_plc(...) { \
+    printf(__VA_ARGS__);  \
+    log_info(__VA_ARGS__);\
+}
 #else
 #define printf_plc(...)  (void)(0);
 #endif
@@ -244,6 +247,7 @@ static void plc_timeout(btstack_timer_source_t * timer) {
     switch (le_audio_demo_sink_type){
         case HCI_ISO_TYPE_CIS:
             // assume no packet received in iso interval => FT packets missed
+            printf_plc("PLC: timeout cis, group %u, FT %u", group_last_packet_sequence, le_audio_demo_sink_flush_timeout);
             plc_check(group_last_packet_sequence + le_audio_demo_sink_flush_timeout);
             break;
         case HCI_ISO_TYPE_BIS:
