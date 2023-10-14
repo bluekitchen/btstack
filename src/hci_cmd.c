@@ -476,7 +476,14 @@ const hci_cmd_t hci_read_remote_version_information = {
     HCI_OPCODE_HCI_READ_REMOTE_VERSION_INFORMATION, "H"
 };
 
-/** 
+/**
+ * @param handle
+ */
+const hci_cmd_t hci_read_clock_offset = {
+        HCI_OPCODE_HCI_READ_CLOCK_OFFSET, "H"
+};
+
+/**
  * @param handle
  * @param transmit_bandwidth 8000(64kbps)
  * @param receive_bandwidth  8000(64kbps)

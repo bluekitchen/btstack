@@ -110,6 +110,7 @@ typedef enum {
     HCI_OPCODE_HCI_READ_REMOTE_SUPPORTED_FEATURES_COMMAND = HCI_OPCODE (OGF_LINK_CONTROL, 0x1B),
     HCI_OPCODE_HCI_READ_REMOTE_EXTENDED_FEATURES_COMMAND = HCI_OPCODE (OGF_LINK_CONTROL, 0x1C),
     HCI_OPCODE_HCI_READ_REMOTE_VERSION_INFORMATION = HCI_OPCODE (OGF_LINK_CONTROL, 0x1D),
+    HCI_OPCODE_HCI_READ_CLOCK_OFFSET = HCI_OPCODE (OGF_LINK_CONTROL, 0x1F),
     HCI_OPCODE_HCI_SETUP_SYNCHRONOUS_CONNECTION = HCI_OPCODE (OGF_LINK_CONTROL, 0x0028),
     HCI_OPCODE_HCI_ACCEPT_SYNCHRONOUS_CONNECTION = HCI_OPCODE (OGF_LINK_CONTROL, 0x0029),
     HCI_OPCODE_HCI_IO_CAPABILITY_REQUEST_REPLY = HCI_OPCODE (OGF_LINK_CONTROL, 0x2b),
@@ -405,6 +406,7 @@ extern const hci_cmd_t hci_pin_code_request_reply;
 extern const hci_cmd_t hci_qos_setup;
 extern const hci_cmd_t hci_read_bd_addr;
 extern const hci_cmd_t hci_read_buffer_size;
+extern const hci_cmd_t hci_read_clock_offset;
 extern const hci_cmd_t hci_read_encryption_key_size;
 extern const hci_cmd_t hci_read_extended_inquiry_length;
 extern const hci_cmd_t hci_read_extended_page_timeout;
