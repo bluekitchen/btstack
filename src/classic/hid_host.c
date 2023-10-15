@@ -53,7 +53,9 @@
 #include "classic/sdp_util.h"
 #include "classic/sdp_client.h"
 
-#define MAX_ATTRIBUTE_VALUE_SIZE 300
+#ifndef HID_HOST_SDP_MAX_ATTRIBUTE_VALUE_SIZE
+#define HID_HOST_SDP_MAX_ATTRIBUTE_VALUE_SIZE 32
+#endif
 
 #define CONTROL_MESSAGE_BITMASK_SUSPEND             1
 #define CONTROL_MESSAGE_BITMASK_EXIT_SUSPEND        2
@@ -69,8 +71,8 @@ static uint8_t * hid_host_descriptor_storage;
 static uint16_t  hid_host_descriptor_storage_len;
 
 // SDP
-static uint8_t            hid_host_sdp_attribute_value[MAX_ATTRIBUTE_VALUE_SIZE];
-static const unsigned int hid_host_sdp_attribute_value_buffer_size = MAX_ATTRIBUTE_VALUE_SIZE;
+static uint8_t            hid_host_sdp_attribute_value[HID_HOST_SDP_MAX_ATTRIBUTE_VALUE_SIZE];
+static const unsigned int hid_host_sdp_attribute_value_buffer_size = HID_HOST_SDP_MAX_ATTRIBUTE_VALUE_SIZE;
 static uint16_t           hid_host_sdp_context_control_cid = 0;
 
 // connections
