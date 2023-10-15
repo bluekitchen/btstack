@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - HFP AG: fix setup of audio connection in service level established event
 - HFP AG: fix BCM WBS setup
 - HID Device: set Report Mode as default
+- HID Host: support large HID Descriptors
 - AVDTP: limit L2CAP MTU to largest BR/EDR packet, fixes A2DP Sink role for some Samsung TV
 - AVRCP: reject incoming second l2cap connection
 - AVRCP: generate command for avrcp_controller_get_element_attributes dynamically
