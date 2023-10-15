@@ -412,16 +412,22 @@ static void hid_host_handle_sdp_client_query_result(uint8_t packet_type, uint16_
     }
 
     btstack_assert(connection->state == HID_HOST_W4_SDP_QUERY_RESULT);
-    
+
+    uint16_t  attribute_id;
+    uint16_t  attribute_offset;
+    uint8_t   attribute_data;
     switch (hci_event_packet_get_type(packet)){
         case SDP_EVENT_QUERY_ATTRIBUTE_VALUE:
 
+            attribute_id = sdp_event_query_attribute_byte_get_attribute_id(packet);
+            attribute_offset = sdp_event_query_attribute_byte_get_data_offset(packet);
+            attribute_data = sdp_event_query_attribute_byte_get_data(packet);
             if (sdp_event_query_attribute_byte_get_attribute_length(packet) <= hid_host_sdp_attribute_value_buffer_size) {
 
-                hid_host_sdp_attribute_value[sdp_event_query_attribute_byte_get_data_offset(packet)] = sdp_event_query_attribute_byte_get_data(packet);
+                hid_host_sdp_attribute_value[attribute_offset] = attribute_data;
 
-                if ((uint16_t)(sdp_event_query_attribute_byte_get_data_offset(packet)+1) == sdp_event_query_attribute_byte_get_attribute_length(packet)) {
-                    switch(sdp_event_query_attribute_byte_get_attribute_id(packet)) {
+                if ((uint16_t)(attribute_offset + 1) == sdp_event_query_attribute_byte_get_attribute_length(packet)) {
+                    switch(attribute_id) {
                         
                         case BLUETOOTH_ATTRIBUTE_PROTOCOL_DESCRIPTOR_LIST:
                             for (des_iterator_init(&attribute_list_it, hid_host_sdp_attribute_value); des_iterator_has_more(&attribute_list_it); des_iterator_next(&attribute_list_it)) {
