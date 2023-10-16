@@ -882,9 +882,11 @@ static void ascs_server_control_point_operation_prepare_response_for_stop_ready(
 }
 
 static int ascs_server_write_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
-    UNUSED(transaction_mode);
     UNUSED(offset);
-    
+
+    // only handle regular write request/write without response
+    if (transaction_mode != ATT_TRANSACTION_MODE_NONE) return 0;
+
     if (attribute_handle == ascs_ase_control_point_handle){
         // write without response
         if (buffer_size < 1){
