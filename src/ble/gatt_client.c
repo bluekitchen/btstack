@@ -249,7 +249,7 @@ static uint8_t gatt_client_provide_context_for_request(hci_con_handle_t con_hand
     }
 #endif
 
-    if (is_ready(gatt_client) == 0){
+    if (is_ready(gatt_client) == false){
         return GATT_CLIENT_IN_WRONG_STATE;
     }
 
@@ -1455,7 +1455,7 @@ static void gatt_client_run(void){
 }
 
 static void gatt_client_report_error_if_pending(gatt_client_t *gatt_client, uint8_t att_error_code) {
-    if (is_ready(gatt_client) == 1) return;
+    if (is_ready(gatt_client)) return;
     gatt_client_handle_transaction_complete(gatt_client, att_error_code);
 }
 
