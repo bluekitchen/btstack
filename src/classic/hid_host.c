@@ -391,8 +391,8 @@ static void hid_host_finalize_connection(hid_host_connection_t * connection){
 
 static void hid_host_handle_sdp_hid_descriptor_list(hid_host_connection_t * connection, uint16_t attribute_offset, uint8_t data){
     // state machine
-    static uint16_t bytes_needed   = 0;
-    static uint16_t bytes_received = 0;
+    static uint32_t bytes_needed   = 0;
+    static uint32_t bytes_received = 0;
     static enum {
         HID_DESCRIPTOR_LIST_ERROR,
         HID_DESCRIPTOR_LIST_W4_DES_DESCRIPTOR_LIST_START,
@@ -428,7 +428,7 @@ static void hid_host_handle_sdp_hid_descriptor_list(hid_host_connection_t * conn
             break;
         case HID_DESCRIPTOR_LIST_W4_DES_DESCRIPTOR_LIST_HEADER:
             hid_host_sdp_attribute_value[bytes_received++] = data;
-            if (bytes_received == bytes_needed) {
+            if (bytes_received >= bytes_needed) {
                 bytes_received = 0;
                 state = HID_DESCRIPTOR_LIST_W4_DES_DESCRIPTOR_START;
             }
@@ -444,26 +444,17 @@ static void hid_host_handle_sdp_hid_descriptor_list(hid_host_connection_t * conn
             break;
         case HID_DESCRIPTOR_LIST_W4_DES_DESCRIPTOR_HEADER:
             hid_host_sdp_attribute_value[bytes_received++] = data;
-            if (bytes_received == bytes_needed) {
-                bytes_received = 0;
-                state = HID_DESCRIPTOR_LIST_W4_ITEM_START;
-            }
-            break;
-        case HID_DESCRIPTOR_LIST_W4_ITEM_COMPLETE:
-            // ignore data for non-string item
-            bytes_received++;
-            if (bytes_received == bytes_needed) {
+            if (bytes_received >= bytes_needed) {
                 bytes_received = 0;
                 state = HID_DESCRIPTOR_LIST_W4_ITEM_START;
             }
             break;
         case HID_DESCRIPTOR_LIST_W4_ITEM_START:
             hid_host_sdp_attribute_value[bytes_received++] = data;
+            bytes_needed = de_get_header_size(hid_host_sdp_attribute_value);
             if (de_get_element_type(hid_host_sdp_attribute_value) == DE_STRING){
-                bytes_needed = de_get_header_size(hid_host_sdp_attribute_value);
                 state = HID_DESCRIPTOR_LIST_W4_STRING_HEADER;
             } else {
-                bytes_needed = de_get_header_size(hid_host_sdp_attribute_value);
                 if (bytes_needed > 1){
                     state = HID_DESCRIPTOR_LIST_W4_ITEM_HEADER;
                 } else {
@@ -474,14 +465,22 @@ static void hid_host_handle_sdp_hid_descriptor_list(hid_host_connection_t * conn
             break;
         case HID_DESCRIPTOR_LIST_W4_ITEM_HEADER:
             hid_host_sdp_attribute_value[bytes_received++] = data;
-            if (bytes_received == bytes_needed) {
+            if (bytes_received >= bytes_needed) {
                 bytes_needed = de_get_len(hid_host_sdp_attribute_value);
                 state = HID_DESCRIPTOR_LIST_W4_ITEM_COMPLETE;
             }
             break;
+        case HID_DESCRIPTOR_LIST_W4_ITEM_COMPLETE:
+            // ignore data for non-string item
+            bytes_received++;
+            if (bytes_received >= bytes_needed) {
+                bytes_received = 0;
+                state = HID_DESCRIPTOR_LIST_W4_ITEM_START;
+            }
+            break;
         case HID_DESCRIPTOR_LIST_W4_STRING_HEADER:
             hid_host_sdp_attribute_value[bytes_received++] = data;
-            if (bytes_received == bytes_needed) {
+            if (bytes_received >= bytes_needed) {
                 bytes_received = 0;
                 bytes_needed = de_get_data_size(hid_host_sdp_attribute_value);
                 state = HID_DESCRIPTOR_LIST_W4_STRING_COMPLETE;
@@ -491,7 +490,7 @@ static void hid_host_handle_sdp_hid_descriptor_list(hid_host_connection_t * conn
             stored = hid_descriptor_storage_store(connection, data);
             if (stored) {
                 bytes_received++;
-                if (bytes_received == bytes_needed) {
+                if (bytes_received >= bytes_needed) {
                     connection->hid_descriptor_status = ERROR_CODE_SUCCESS;
                     log_info_hexdump(&hid_host_descriptor_storage[connection->hid_descriptor_offset],
                                      connection->hid_descriptor_len);
@@ -512,8 +511,6 @@ static void hid_host_handle_sdp_hid_descriptor_list(hid_host_connection_t * conn
 
     if (error){
         log_info("Descriptor List invalid, state %u", (int) state);
-        bytes_received = 0;
-        bytes_needed   = 0;
         state = HID_DESCRIPTOR_LIST_ERROR;
         connection->hid_descriptor_status = ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
     }
