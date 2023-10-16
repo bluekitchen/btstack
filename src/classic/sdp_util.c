@@ -384,7 +384,7 @@ static int sdp_traversal_attributeID_search(uint8_t * element, de_type_t type, d
     return 0;
 }
 
-bool sdp_attribute_list_constains_id(uint8_t *attributeIDList, uint16_t attributeID){
+bool sdp_attribute_list_contains_id(uint8_t *attributeIDList, uint16_t attributeID){
     struct sdp_context_attributeID_search attributeID_search;
     attributeID_search.result = false;
     attributeID_search.attributeID = attributeID;
@@ -406,7 +406,7 @@ static int sdp_traversal_append_attributes(uint16_t attributeID, uint8_t * attri
     UNUSED(de_type);
     UNUSED(de_size);
     struct sdp_context_append_attributes * context = (struct sdp_context_append_attributes *) my_context;
-    if (sdp_attribute_list_constains_id(context->attributeIDList, attributeID)) {
+    if (sdp_attribute_list_contains_id(context->attributeIDList, attributeID)) {
         // DES_HEADER(3) + DES_DATA + (UINT16(3) + attribute)
         uint16_t data_size = big_endian_read_16(context->buffer, 1);
         int attribute_len = de_get_len(attributeValue);
@@ -469,7 +469,7 @@ static int sdp_traversal_filter_attributes(uint16_t attributeID, uint8_t * attri
 
     struct sdp_context_filter_attributes * context = (struct sdp_context_filter_attributes *) my_context;
 
-    if (!sdp_attribute_list_constains_id(context->attributeIDList, attributeID)) return 0;
+    if (!sdp_attribute_list_contains_id(context->attributeIDList, attributeID)) return 0;
 
     // { Attribute ID (Descriptor, big endian 16-bit ID), AttributeValue (data)}
 
@@ -530,13 +530,13 @@ static int sdp_traversal_get_filtered_size(uint16_t attributeID, uint8_t * attri
     UNUSED(de_size);
 
     struct sdp_context_get_filtered_size * context = (struct sdp_context_get_filtered_size *) my_context;
-    if (sdp_attribute_list_constains_id(context->attributeIDList, attributeID)) {
+    if (sdp_attribute_list_contains_id(context->attributeIDList, attributeID)) {
         context->size += 3 + de_get_len(attributeValue);
     }
     return 0;
 }
 
-uint16_t spd_get_filtered_size(uint8_t *record, uint8_t *attributeIDList){
+uint16_t sdp_get_filtered_size(uint8_t *record, uint8_t *attributeIDList){
     struct sdp_context_get_filtered_size context;
     context.size = 0;
     context.attributeIDList = attributeIDList;
