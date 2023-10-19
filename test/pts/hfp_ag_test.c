@@ -74,7 +74,7 @@ static uint8_t codecs[] = {HFP_CODEC_CVSD,
 #ifdef ENABLE_HFP_WIDE_BAND_SPEECH
                            HFP_CODEC_MSBC,
 #endif
-#ifdef ENABLE_HFP_SUPER_WIDE_BAND
+#ifdef ENABLE_HFP_SUPER_WIDE_BAND_SPEECH
                            HFP_CODEC_LC3_SWB
 #endif
 };
