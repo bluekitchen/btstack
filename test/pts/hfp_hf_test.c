@@ -74,7 +74,15 @@ static void show_usage(void);
 static hci_con_handle_t acl_handle = HCI_CON_HANDLE_INVALID;
 static hci_con_handle_t sco_handle = HCI_CON_HANDLE_INVALID;
 
-static uint8_t codecs[] = {HFP_CODEC_CVSD, HFP_CODEC_MSBC, HFP_CODEC_LC3_SWB};
+static uint8_t codecs[] = {HFP_CODEC_CVSD,
+#ifdef ENABLE_HFP_WIDE_BAND_SPEECH
+                           HFP_CODEC_MSBC,
+#endif
+#ifdef ENABLE_HFP_SUPER_WIDE_BAND_SPEECH
+                           HFP_CODEC_LC3_SWB
+#endif
+};
+
 static uint16_t indicators[1] = {0x01};
 static uint8_t  negotiated_codec = HFP_CODEC_CVSD;
 static btstack_packet_callback_registration_t hci_event_callback_registration;
