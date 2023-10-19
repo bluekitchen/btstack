@@ -37,6 +37,8 @@
 
 #define BTSTACK_FILE__ "le_audio_demo_util_sink.c"
 
+#include <stdio.h>
+
 #include "le_audio_demo_util_sink.h"
 
 #include "btstack_bool.h"
@@ -48,6 +50,9 @@
 #include "btstack_audio.h"
 #include "btstack_lc3_google.h"
 #include "btstack_lc3plus_fraunhofer.h"
+
+#include "btstack_sample_rate_compensation.h"
+#include "btstack_resample.h"
 
 #include "hxcmod.h"
 #include "mods/mod.h"
@@ -89,6 +94,12 @@
 // SINK
 
 static const char * le_audio_demo_sink_filename_wav;
+static btstack_sample_rate_compensation_t sample_rate_compensation;
+static btstack_resample_t resample_instance;
+static bool sink_receive_streaming;
+
+static int16_t pcm_resample[MAX_CHANNELS * MAX_SAMPLES_PER_FRAME * 2];
+
 
 static btstack_lc3_frame_duration_t le_audio_demo_sink_frame_duration;
 static hci_iso_type_t               le_audio_demo_sink_type;
@@ -179,10 +190,12 @@ static void store_samples_in_ringbuffer(void){
     wav_writer_write_int16(le_audio_demo_sink_num_channels * le_audio_demo_sink_num_samples_per_frame, pcm);
 #endif
     // store samples in playback buffer
-    uint32_t bytes_to_store = le_audio_demo_sink_num_channels * le_audio_demo_sink_num_samples_per_frame * 2;
     samples_received += le_audio_demo_sink_num_samples_per_frame;
+    uint32_t resampled_frames = btstack_resample_block(&resample_instance, pcm, le_audio_demo_sink_num_samples_per_frame, pcm_resample);
+    uint32_t bytes_to_store = resampled_frames * le_audio_demo_sink_num_channels * 2;
+
     if (btstack_ring_buffer_bytes_free(&playback_buffer) >= bytes_to_store) {
-        btstack_ring_buffer_write(&playback_buffer, (uint8_t *) pcm, bytes_to_store);
+        btstack_ring_buffer_write(&playback_buffer, (uint8_t *) pcm_resample, bytes_to_store);
     } else {
         printf("Samples dropped\n");
         samples_dropped += le_audio_demo_sink_num_samples_per_frame;
@@ -301,6 +314,8 @@ void le_audio_demo_util_sink_configure_general(uint8_t num_streams, uint8_t num_
     le_audio_demo_sink_num_streams = num_streams;
     le_audio_demo_sink_num_channels_per_stream = num_channels_per_stream;
 
+    sink_receive_streaming = false;
+
     le_audio_demo_sink_num_channels = le_audio_demo_sink_num_streams * le_audio_demo_sink_num_channels_per_stream;
     btstack_assert((le_audio_demo_sink_num_channels == 1) || (le_audio_demo_sink_num_channels == 2));
 
@@ -339,6 +354,8 @@ void le_audio_demo_util_sink_configure_general(uint8_t num_streams, uint8_t num_
     // start playback
     const btstack_audio_sink_t * sink = btstack_audio_sink_get_instance();
     if (sink != NULL){
+        btstack_sample_rate_compensation_reset( &sample_rate_compensation, btstack_run_loop_get_time_ms() );
+        btstack_resample_init(&resample_instance, le_audio_demo_sink_num_channels_per_stream);
         sink->init(le_audio_demo_sink_num_channels, le_audio_demo_sink_sampling_frequency_hz, le_audio_connection_sink_playback);
         sink->start_stream();
     }
@@ -463,6 +480,21 @@ void le_audio_demo_util_sink_receive(uint8_t stream_index, uint8_t *packet, uint
         return;
     }
 
+    const btstack_audio_sink_t * sink = btstack_audio_sink_get_instance();
+    if( (sink != NULL) && (iso_sdu_length>0)) {
+        if( !sink_receive_streaming && playback_active ) {
+            btstack_sample_rate_compensation_init( &sample_rate_compensation, receive_time_ms,
+                    le_audio_demo_sink_sampling_frequency_hz, FLOAT_TO_Q15(1.f) );
+            sink_receive_streaming = true;
+        }
+        if( sink_receive_streaming ) {
+            uint32_t resampling_factor = btstack_sample_rate_compensation_update( &sample_rate_compensation, receive_time_ms,
+                    le_audio_demo_sink_num_samples_per_frame, sink->get_samplerate() );
+            btstack_resample_set_factor(&resample_instance, resampling_factor);
+        }
+    }
+
+
     if (iso_sdu_length == 0) {
         // empty packet -> generate silence
         memset(pcm, 0, sizeof(pcm));
@@ -520,6 +552,7 @@ void le_audio_demo_util_sink_close(void){
     if (sink != NULL){
         sink->stop_stream();
     }
+    sink_receive_streaming = false;
     // stop timer
     btstack_run_loop_remove_timer(&next_packet_timer);
 }
