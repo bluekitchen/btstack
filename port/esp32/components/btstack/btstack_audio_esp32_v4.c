@@ -442,7 +442,16 @@ static void btstack_audio_esp32_source_process_buffer(void){
 
     uint16_t data_len = btstack_audio_esp32_samples_per_dma_buffer * BYTES_PER_SAMPLE_STEREO;
     i2s_read(BTSTACK_AUDIO_I2S_NUM, buffer, data_len, &bytes_read, 0);
-    btstack_assert(bytes_read == data_len);
+
+    // check if full buffer is ready. tolerate reading zero bytes (->retry), but assert on partial read
+    if (bytes_read == 0){
+        ESP_LOGW(LOG_TAG, "i2s_read: no data after I2S_EVENT_RX_DONE\n");
+        return;
+    } else if (bytes_read < data_len){
+        ESP_LOGE(LOG_TAG, "i2s_read: only %u of %u!!!\n", (int) bytes_read, data_len);
+        btstack_assert(false);
+        return;
+    }
 
     int16_t * buffer16 = (int16_t *) buffer;
     if (btstack_audio_esp32_source_state == BTSTACK_AUDIO_ESP32_STREAMING) {
