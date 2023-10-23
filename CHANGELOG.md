@@ -77,6 +77,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - A2DP: use samples as timestamp, fixes issue with Apple Airpods Pro 2nd Gen
 - AVDTP Source: avdtp_source_stream_send_media_payload was removed, use avdtp_source_stream_send_media_payload_rtp instead
 - AVRCP: re-register for notification
+- BNEP: validate UUID32 and UUID128 service in connect request
 - HFP: fix setup/accept of synchronous connection
 - HFP: use mandatory safe settings considering BR/EDR Secure Connections to accept synchronous connections
 - HFP: avoid SCO packet types not supported either locally or remotely
