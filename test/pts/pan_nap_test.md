@@ -1,0 +1,20 @@
+# PAN NAP Tests
+
+## Tool
+pan_nap_test
+
+## Sequences
+- PAN/NAP/BNEP/BROADCAST-0/BV-01-C: yes, ok, ok, ok
+- PAN/NAP/BNEP/BROADCAST-1/BV-02-C: b
+- PAN/NAP/BNEP/MULTICAST-0/BV-03-C: yes, ok, ok, ok
+- PAN/NAP/BNEP/MULTICAST-0/BV-04-C: g
+- PAN/NAP/BNEP/FORWARD-UNICAST/BV-05-C: yes, ok, ok, ok
+- PAN/NAP/BNEP/FORWARD-UNICAST/BV-06-C: e
+- PAN/NAP/IP/LLMNR/BV-01-I: 7
+- PAN/NAP/IP/LLMNR/BV-02-I: 8
+- // PAN/NAP/IP/DNS/BV-01-I: requires DNS server
+- PAN/NAP/IP/APP/BV-03-I: 2
+- PAN/NAP/IP/APP/BV-05-I: wait
+- PAN/NAP/MISC/UUID/BV-01-C: wait
+- PAN/NAP/MISC/UUID/BV-02-C: wait
+- PAN/NAP/SDP/BV-01-C: wait
