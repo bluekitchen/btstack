@@ -1343,7 +1343,7 @@ static bool gatt_client_run_for_gatt_client(gatt_client_t * gatt_client){
             break;
 
         case P_W2_SEND_SIGNED_WRITE: {
-            gatt_client->state = P_W4_SEND_SINGED_WRITE_DONE;
+            gatt_client->state = P_W4_SEND_SIGNED_WRITE_DONE;
             // bump local signing counter
             uint32_t sign_counter = le_device_db_local_counter_get(gatt_client->le_device_index);
             le_device_db_local_counter_set(gatt_client->le_device_index, sign_counter + 1);

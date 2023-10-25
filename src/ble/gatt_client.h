@@ -134,7 +134,7 @@ typedef enum {
     P_W4_CMAC_READY,
     P_W4_CMAC_RESULT,
     P_W2_SEND_SIGNED_WRITE,
-    P_W4_SEND_SINGED_WRITE_DONE,
+    P_W4_SEND_SIGNED_WRITE_DONE,
 
     P_W2_SDP_QUERY,
     P_W4_SDP_QUERY,
@@ -170,7 +170,7 @@ typedef enum {
 
 typedef struct gatt_client{
     btstack_linked_item_t    item;
-    // TODO: rename gatt_client_state -> state
+
     gatt_client_state_t state;
 
     // user callback 
