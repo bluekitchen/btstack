@@ -6624,7 +6624,7 @@ static bool hci_run_general_gap_le(void){
             periodic_advertiser_list_entry_t * entry = (periodic_advertiser_list_entry_t*) btstack_linked_list_iterator_next(&lit);
             if (entry->state & LE_PERIODIC_ADVERTISER_LIST_ENTRY_REMOVE_FROM_CONTROLLER){
                 entry->state &= ~LE_PERIODIC_ADVERTISER_LIST_ENTRY_REMOVE_FROM_CONTROLLER;
-                hci_send_cmd(&hci_le_remove_device_from_periodic_advertiser_list, entry->address_type, entry->address);
+                hci_send_cmd(&hci_le_remove_device_from_periodic_advertiser_list, entry->address_type, entry->address, entry->sid);
                 return true;
             }
             if (entry->state & LE_PERIODIC_ADVERTISER_LIST_ENTRY_ADD_TO_CONTROLLER){
