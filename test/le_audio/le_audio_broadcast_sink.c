@@ -571,7 +571,7 @@ static void stdin_process(char c){
 #ifdef HAVE_LC3PLUS
         case 'q':
             printf("Use LC3plus decoder for 10 ms ISO interval...\n");
-            request_lc3plus_decoder = true;
+            le_audio_demo_util_sink_enable_lc3plus(true);
             break;
 #endif
         case 't':
