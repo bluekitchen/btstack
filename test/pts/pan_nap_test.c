@@ -215,23 +215,20 @@ static void set_multicast_filter(void){
 */
 
 static void send_arp_probe_ipv4(void){
-
     // "random address"
-    static uint8_t requested_address[4] = {169, 254, 1, 0};
-    requested_address[3]++;
-
-    int pos = setup_ethernet_header(local_addr, broadcast_addr, NETWORK_TYPE_IPv4);
+    static uint8_t requested_address[4] = {192, 168, 167, 152};
+    int pos = setup_ethernet_header(local_addr, broadcast_addr, NETWORK_TYPE_ARP);
     big_endian_store_16(network_buffer, pos, HARDWARE_TYPE_ETHERNET);
     pos += 2;
     big_endian_store_16(network_buffer, pos, NETWORK_TYPE_IPv4);
     pos += 2;
     network_buffer[pos++] = 6; // Hardware length (HLEN) - 6 MAC  Address
     network_buffer[pos++] = 4; // Protocol length (PLEN) - 4 IPv4 Address
-    big_endian_store_16(network_buffer, pos, ARP_OPERATION_REQUEST); 
+    big_endian_store_16(network_buffer, pos, ARP_OPERATION_REQUEST);
     pos += 2;
     bd_addr_copy(&network_buffer[pos], local_addr); // Sender Hardware Address (SHA)
     pos += 6;
-    memset(&network_buffer[pos], 0, 4);                 // Sender Protocol Adress (SPA)
+    memset(&network_buffer[pos], 0, 4);            // Sender Protocol Address (SPA)
     pos += 4;
     bd_addr_copy(&network_buffer[pos], other_addr); // Target Hardware Address (THA) (ignored for requests)
     pos += 6;
@@ -389,23 +386,27 @@ static void send_ping_request_ipv6(void){
 static void send_ndp_probe_ipv6(void){
 
     uint8_t ipv6_header[] = {
-        // ip
-        0x60, 0x00, 0x00, 0x00, // version (6) + traffic class (8) + flow label (24)
-        0x00, 0x00,   58, 0x01, // payload length(16), next header = IPv6-ICMP, hop limit
-        0x00, 0x00, 0x00, 0x00, // source IP address
-        0x00, 0x00, 0x00, 0x00, // source IP address
-        0x00, 0x00, 0x00, 0x00, // source IP address
-        0x00, 0x00, 0x00, 0x00, // source IP address
-        0xfe, 0x80, 0x00, 0x00, // destination IP address
-        0x00, 0x00, 0x00, 0x00, // destination IP address
-        0x00, 0x00, 0x00, 0x00, // destination IP address
-        0x00, 0x00, 0x00, 0x00, // destination IP address
+            // ip
+            0x60, 0x00, 0x00, 0x00, // version (6) + traffic class (8) + flow label (24)
+            0x00, 0x00,   58, 0x01, // payload length(16), next header = IPv6-ICMP, hop limit
+            0x00, 0x00, 0x00, 0x00, // source IP address
+            0x00, 0x00, 0x00, 0x00, // source IP address
+            0x00, 0x00, 0x00, 0x00, // source IP address
+            0x00, 0x00, 0x00, 0x00, // source IP address
+            0xfe, 0x80, 0x00, 0x00, // destination IP address
+            0x00, 0x00, 0x00, 0x00, // destination IP address
+            0x00, 0x00, 0x00, 0x00, // destination IP address
+            0x00, 0x00, 0x00, 0x00, // destination IP address
     };
 
     uint8_t icmp_packet[] = {
-        // icmp
-        0x87, 0x00, 0x00, 0x00, // type: 0x80 PING Request, code = 0, checksum(16)
-        0x00, 0x00, 0x00, 0x00  // message
+            // icmp
+            ICMP_V6_TYPE_NEIGHBOR_SOLICITATION, 0x00, 0x00, 0x00, // type: 0x87 Neighbor Solicitation, code = 0, checksum(16)
+            0x00, 0x00, 0x00, 0x00,  // reserved
+            0x00, 0x00, 0x00, 0x00, // source IP address
+            0x00, 0x00, 0x00, 0x00, // source IP address
+            0x00, 0x00, 0x00, 0x00, // source IP address
+            0x00, 0x00, 0x00, 0x00, // source IP address
     };
 
     // ethernet header
@@ -414,6 +415,7 @@ static void send_ndp_probe_ipv6(void){
     // ipv6
     int payload_length = sizeof(icmp_packet);
     big_endian_store_16(ipv6_header, 4, payload_length);
+#if 0
     // source address ::
     // dest addresss - Modified EUI-64
     // ipv6_header[24..31] = FE80::
@@ -425,20 +427,23 @@ static void send_ndp_probe_ipv6(void){
     ipv6_header[37] = local_addr[3];
     ipv6_header[38] = local_addr[4];
     ipv6_header[39] = local_addr[5];
-    int checksum = calc_internet_checksum(&ipv6_header[8], 32);
-    checksum = sum_ones_complement(checksum, payload_length);
-    checksum = sum_ones_complement(checksum, ipv6_header[6] << 8);
+#else
+    // TSPX_iut_ipv6: FE80000000000000 5D 89 ED DE 11 07 EE 5D
+    uint8_t   TSPX_iut_ipv6[] = { 0x5d, 0x89, 0xed, 0xde, 0x11, 0x07, 0xee, 0x5D };
+    memcpy(&ipv6_header[32],TSPX_iut_ipv6, sizeof(TSPX_iut_ipv6));
+#endif
     memcpy(&network_buffer[pos], ipv6_header, sizeof(ipv6_header));
     pos += sizeof(ipv6_header);
 
-    // icmp
+    // icmp - copy source address
+    memcpy(&icmp_packet[8], &ipv6_header[24], 16);
     uint16_t icmp_checksum = calc_internet_checksum(icmp_packet, sizeof(icmp_packet));
-    big_endian_store_16(icmp_packet, 2, icmp_checksum);    
+    big_endian_store_16(icmp_packet, 2, icmp_checksum);
     memcpy(&network_buffer[pos], icmp_packet, sizeof(icmp_packet));
     pos += sizeof(icmp_packet);
 
     // send
-    send_buffer(pos);    
+    send_buffer(pos);
 }
 
 static void send_llmnr_request_ipv4(void){

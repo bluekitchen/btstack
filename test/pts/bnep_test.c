@@ -75,10 +75,9 @@
 #define NETWORK_TYPE_ARP        0x0806
 #define NETWORK_TYPE_IPv6       0x86DD
 
-#define IP_PROTOCOL_ICMP_IPv4   0x0001
-#define IP_PROTOCOL_ICMP_IPv6   0x003a
-#define IP_PROTOCOL_UDP         0x0011
-#define IPv4_
+#define IP_PROTOCOL_ICMP_IPv4   0x01
+#define IP_PROTOCOL_ICMP_IPv6   0x3a
+#define IP_PROTOCOL_UDP         0x11
 
 #define ICMP_V4_TYPE_PING_REQUEST  0x08
 #define ICMP_V4_TYPE_PING_RESPONSE 0x00
@@ -97,9 +96,7 @@ static void show_usage(void);
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 // Configuration for PTS
-static bd_addr_t pts_addr = {0x00,0x1b,0xDC,0x07,0x32,0xEF};
-//static bd_addr_t pts_addr = {0xE0,0x06,0xE6,0xBB,0x95,0x79}; // Ole Thinkpad
-// static bd_addr_t other_addr = { 0x33, 0x33, 0x00, 0x00, 0x00, 0x16};
+static bd_addr_t pts_addr = {0x00,0x1b,0xDC,0x08,0xe2,0x5c};
 static bd_addr_t other_addr = { 0,0,0,0,0,0};
 
 // broadcast
@@ -232,10 +229,9 @@ static void set_multicast_filter(void){
 static void send_arp_probe_ipv4(void){
 
     // "random address"
-    static uint8_t requested_address[4] = {169, 254, 1, 0};
-    requested_address[3]++;
+    static uint8_t requested_address[4] = {192, 168, 167, 152};
 
-    int pos = setup_ethernet_header(1, 0, 1, NETWORK_TYPE_IPv4); 
+    int pos = setup_ethernet_header(1, 0, 1, NETWORK_TYPE_ARP);
     big_endian_store_16(network_buffer, pos, HARDWARE_TYPE_ETHERNET);
     pos += 2;
     big_endian_store_16(network_buffer, pos, NETWORK_TYPE_IPv4);
@@ -246,7 +242,7 @@ static void send_arp_probe_ipv4(void){
     pos += 2;
     bd_addr_copy(&network_buffer[pos], local_addr); // Sender Hardware Address (SHA)
     pos += 6;
-    memset(&network_buffer[pos], 0, 4);                 // Sender Protocol Adress (SPA)
+    memset(&network_buffer[pos], 0, 4);            // Sender Protocol Address (SPA)
     pos += 4;
     bd_addr_copy(&network_buffer[pos], other_addr); // Target Hardware Address (THA) (ignored for requests)
     pos += 6;
@@ -321,7 +317,7 @@ static void send_ping_response_ipv4(void){
         // ip
         0x45, 0x00, 0x00, 0x00,   // version + ihl, dscp } ecn, total len
         0x00, 0x00, 0x00, 0x00, // identification (16), flags + fragment offset
-        0x01, 0x01, 0x00, 0x00, // time to live, procotol: icmp, checksum (16),
+        0x01, 0x01, 0x00, 0x00, // time to live, protocol: icmp, checksum (16),
         0x00, 0x00, 0x00, 0x00, // source IP address
         0x00, 0x00, 0x00, 0x00, // destination IP address
     };
@@ -373,7 +369,7 @@ static void send_ping_request_ipv6(void){
 
     uint8_t icmp_packet[] = {
         // icmp
-        0x80, 0x00, 0x00, 0x00, // type: 0x80 PING Request, codde = 0, checksum(16)
+        ICMP_V6_TYPE_PING_REQUEST, 0x00, 0x00, 0x00, // type: 0x80 PING Request, codde = 0, checksum(16)
         0x00, 0x00, 0x00, 0x00  // message
     };
 
@@ -401,6 +397,52 @@ static void send_ping_request_ipv6(void){
     send_buffer(pos);
 }
 
+static void send_ping_response_ipv6(void){
+
+    uint8_t ipv6_header[] = {
+            // ip
+            0x60, 0x00, 0x00, 0x00, // version (4) + traffic class (8) + flow label (24)
+            0x00, 0x00,   58, 0x01, // payload length(16), next header = IPv6-ICMP, hop limit
+            0x00, 0x00, 0x00, 0x00, // source IP address
+            0x00, 0x00, 0x00, 0x00, // source IP address
+            0x00, 0x00, 0x00, 0x00, // source IP address
+            0x00, 0x00, 0x00, 0x00, // source IP address
+            0x00, 0x00, 0x00, 0x00, // destination IP address
+            0x00, 0x00, 0x00, 0x00, // destination IP address
+            0x00, 0x00, 0x00, 0x00, // destination IP address
+            0x00, 0x00, 0x00, 0x00, // destination IP address
+    };
+
+    uint8_t icmp_packet[] = {
+            // icmp
+            ICMP_V6_TYPE_PING_RESPONSE, 0x00, 0x00, 0x00, // type: 0x81 PING Ressponse, codde = 0, checksum(16)
+            0x00, 0x00, 0x00, 0x00  // message
+    };
+
+    // ethernet header
+    int pos = setup_ethernet_header(1, 0, 0, NETWORK_TYPE_IPv6);
+
+    // ipv6
+    int payload_length = sizeof(icmp_packet);
+    big_endian_store_16(ipv6_header, 4, payload_length);
+    // TODO: also set src/dest ip address
+    int checksum = calc_internet_checksum(&ipv6_header[8], 32);
+    checksum = sum_ones_complement(checksum, payload_length);
+    checksum = sum_ones_complement(checksum, 58 << 8);
+    big_endian_store_16(icmp_packet, 2, checksum);
+    memcpy(&network_buffer[pos], ipv6_header, sizeof(ipv6_header));
+    pos += sizeof(ipv6_header);
+
+    // icmp
+    uint16_t icmp_checksum = calc_internet_checksum(icmp_packet, sizeof(icmp_packet));
+    big_endian_store_16(icmp_packet, 2, icmp_checksum);
+    memcpy(&network_buffer[pos], icmp_packet, sizeof(icmp_packet));
+    pos += sizeof(icmp_packet);
+
+    // send
+    send_buffer(pos);
+}
+
 static void send_ndp_probe_ipv6(void){
 
     uint8_t ipv6_header[] = {
@@ -419,8 +461,12 @@ static void send_ndp_probe_ipv6(void){
 
     uint8_t icmp_packet[] = {
         // icmp
-        0x87, 0x00, 0x00, 0x00, // type: 0x80 PING Request, code = 0, checksum(16)
-        0x00, 0x00, 0x00, 0x00  // message
+            ICMP_V6_TYPE_NEIGHBOR_SOLICITATION, 0x00, 0x00, 0x00, // type: 0x87 Neighbor Solicitation, code = 0, checksum(16)
+        0x00, 0x00, 0x00, 0x00,  // reserved
+        0x00, 0x00, 0x00, 0x00, // source IP address
+        0x00, 0x00, 0x00, 0x00, // source IP address
+        0x00, 0x00, 0x00, 0x00, // source IP address
+        0x00, 0x00, 0x00, 0x00, // source IP address
     };
 
     // ethernet header
@@ -429,6 +475,7 @@ static void send_ndp_probe_ipv6(void){
     // ipv6
     int payload_length = sizeof(icmp_packet);
     big_endian_store_16(ipv6_header, 4, payload_length);
+#if 0
     // source address ::
     // dest addresss - Modified EUI-64
     // ipv6_header[24..31] = FE80::
@@ -440,13 +487,16 @@ static void send_ndp_probe_ipv6(void){
     ipv6_header[37] = local_addr[3];
     ipv6_header[38] = local_addr[4];
     ipv6_header[39] = local_addr[5];
-    int checksum = calc_internet_checksum(&ipv6_header[8], 32);
-    checksum = sum_ones_complement(checksum, payload_length);
-    checksum = sum_ones_complement(checksum, ipv6_header[6] << 8);
+#else
+    // TSPX_iut_ipv6: FE80000000000000 5D 89 ED DE 11 07 EE 5D
+    uint8_t   TSPX_iut_ipv6[] = { 0x5d, 0x89, 0xed, 0xde, 0x11, 0x07, 0xee, 0x5D };
+    memcpy(&ipv6_header[32],TSPX_iut_ipv6, sizeof(TSPX_iut_ipv6));
+#endif
     memcpy(&network_buffer[pos], ipv6_header, sizeof(ipv6_header));
     pos += sizeof(ipv6_header);
 
-    // icmp
+    // icmp - copy source address
+    memcpy(&icmp_packet[8], &ipv6_header[24], 16);
     uint16_t icmp_checksum = calc_internet_checksum(icmp_packet, sizeof(icmp_packet));
     big_endian_store_16(icmp_packet, 2, icmp_checksum);    
     memcpy(&network_buffer[pos], icmp_packet, sizeof(icmp_packet));
@@ -572,6 +622,87 @@ static void send_llmnr_request_ipv6(void){
     send_buffer(pos);
 }
 
+static void send_dhcp_ipv4(const uint8_t * dhcp_header, uint16_t dhcp_len){
+
+    uint8_t ipv4_header[] = {
+            0x45, 0x00, 0x00, 0x00, // version + ihl, dscp } ecn, total len
+            0x00, 0x00, 0x00, 0x00, // identification (16), flags + fragment offset
+            0x01, IP_PROTOCOL_UDP, 0x00, 0x00, // time to live, protocol: UDP, checksum (16),
+            192,   168, 167,  152,  // source IP address
+            224,     0,   0,  252,  // destination IP address
+    };
+
+    uint8_t udp_header[8];
+
+    // ethernet header
+    int pos = setup_ethernet_header(1, 0, 0, NETWORK_TYPE_IPv4); // IPv4
+
+    // ipv4
+    int total_length = sizeof(ipv4_header) + sizeof(udp_header) + dhcp_len;
+    big_endian_store_16(ipv4_header, 2, total_length);
+    uint16_t ipv4_checksum = calc_internet_checksum(ipv4_header, sizeof(ipv4_header));
+    big_endian_store_16(ipv4_header, 10, ~ipv4_checksum);
+    // TODO: also set src/dest ip address
+    memcpy(&network_buffer[pos], ipv4_header, sizeof(ipv4_header));
+    pos += sizeof(ipv4_header);
+
+    // udp packet
+    big_endian_store_16(udp_header, 0, 68);   // source port
+    big_endian_store_16(udp_header, 2, 67);   // destination port
+    big_endian_store_16(udp_header, 4, sizeof(udp_header) + dhcp_len);
+    big_endian_store_16(udp_header, 6, 0);      // no checksum
+    memcpy(&network_buffer[pos], udp_header, sizeof(udp_header));
+    pos += sizeof(udp_header);
+
+    // dhcp packet - TODO
+    memcpy(&network_buffer[pos], dhcp_header, dhcp_len);
+    pos += dhcp_len;
+
+    // send
+    send_buffer(pos);
+}
+
+// DHCP packets from https://wiki.wireshark.org/uploads/__moin_import__/attachments/SampleCaptures/dhcp.pcap
+static uint8_t dhcp_discover[] = {
+        0x01, 0x01, 0x06, 0x00, 0x00, 0x00, 0x3d, 0x1d, 0x00, 0x00, 0x00,0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0b, 0x82,0x01,
+        0xfc, 0x42, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x63, 0x82, 0x53, 0x63,
+        0x35, 0x01, 0x01, 0x3d, 0x07, 0x01, 0x00, 0x0b, 0x82, 0x01, 0xfc, 0x42, 0x32, 0x04, 0x00, 0x00,
+        0x00, 0x00, 0x37, 0x04, 0x01, 0x03, 0x06, 0x2a, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+};
+
+static uint8_t dhcp_request[] = {
+        0x01, 0x01, 0x06, 0x00, 0x00, 0x00, 0x3d, 0x1e, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0b, 0x82,
+        0x01, 0xfc, 0x42, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+        , 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x63, 0x82, 0x53, 0x63,
+        0x35, 0x01, 0x03, 0x3d, 0x07, 0x01, 0x00, 0x0b, 0x82, 0x01, 0xfc, 0x42, 0x32, 0x04, 0xc0, 0xa8,
+        0x00, 0x0a, 0x36, 0x04, 0xc0, 0xa8, 0x00, 0x01, 0x37, 0x04, 0x01, 0x03, 0x06, 0x2a, 0xff, 0x00,
+};
+
 static void show_usage(void){
 
     printf("\n--- Bluetooth BNEP Test Console ---\n");
@@ -590,7 +721,7 @@ static void show_usage(void){
     printf("1 - send ICMP Ping Request IPv4\n");
     printf("2 - send ICMP Ping Request IPv6\n");
     printf("4 - send IPv4 ARP request\n");
-    printf("6 - send IPv6 NDP request\n");
+    printf("6 - send IPv6 ARP (Neighur Solicitiation) request\n");
     printf("7 - send IPv4 LLMNR request\n");
     printf("8 - send IPv6 LLMNR request\n");
     printf("---\n");
@@ -639,6 +770,10 @@ static void stdin_process(char c){
         case '4':
             printf("Sending IPv4 ARP Probe\n");
             send_arp_probe_ipv4();
+            break;
+        case '5':
+            printf("Start IPv4 DHCP Client\n");
+            send_dhcp_ipv4(dhcp_discover, sizeof(dhcp_discover));
             break;
         case '6':
             printf("Sending IPv6 ARP Probe\n");
@@ -762,7 +897,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     // protocol
                     protocol_type = packet[14 + 9]; // offset 9 into IPv4
                     switch (protocol_type){
-                        case 0x01:  // ICMP
+                        case IP_PROTOCOL_ICMP_IPv4:  // ICMP
                             icmp_type = packet[payload_offset];
                             hexdumpf(&packet[payload_offset], size - payload_offset);
                             printf("ICMP packet of type %x\n", icmp_type);
@@ -773,9 +908,23 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                                     break;
                                 break;
                             }
-                        case 0x11:  // UDP
-                            printf("UDP IPv4 packet\n");                        
-                            hexdumpf(&packet[payload_offset], size - payload_offset);
+                        case IP_PROTOCOL_UDP:  // UDP
+                            // DHCP Message Type (hard-coded offset from PTS packet)
+                            switch (packet[284]){
+                                case 0x02:
+                                    // DHCP Offer
+                                    printf("DHCP Offer -> DHCP Request\n");
+                                    send_dhcp_ipv4(dhcp_request, sizeof(dhcp_request));
+                                    break;
+                                case 0x05:
+                                    printf("DHCP ACK -> DONE\n");
+                                    break;
+                                default:
+                                    printf("UDP IPv4 packet\n");
+                                    // hexdumpf(&packet[payload_offset], size - payload_offset);
+                                    hexdumpf(&packet[280], 16);
+                                    break;
+                            }
                             break;
                         default:
                             printf("Unknown IPv4 protocol type %x", protocol_type);
@@ -783,15 +932,26 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     }
                     break;
                 case NETWORK_TYPE_IPv6:
-                    protocol_type = packet[6];
+                    protocol_type = packet[14 + 6]; // ofset 6 into IPv6
                     switch(protocol_type){
-                        case 0x11: // UDP
+                        case IP_PROTOCOL_UDP: // UDP
                             printf("UDP IPv6 packet\n");
                             payload_offset = 40;    // fixed
                             hexdumpf(&packet[payload_offset], size - payload_offset);
-
-                            // send response
-
+                            break;
+                        case IP_PROTOCOL_ICMP_IPv6: // ICMPv6
+                            payload_offset = 14 + 40;    // fixed
+                            icmp_type = packet[payload_offset];
+                            hexdumpf(&packet[payload_offset], size - payload_offset);
+                            printf("ICMP packet of type %x\n", icmp_type);
+                            switch (icmp_type){
+                                case ICMP_V6_TYPE_PING_REQUEST:
+                                    printf("IPv6 Ping Request received, sending pong\n");
+                                    send_ping_response_ipv6();
+                                    break;
+                                default:
+                                    break;
+                            }
                             break;
                         default:
                             printf("IPv6 packet of protocol 0x%02x\n", protocol_type);
