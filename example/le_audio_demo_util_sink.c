@@ -196,6 +196,7 @@ static void store_samples_in_ringbuffer(void){
 
     if (btstack_ring_buffer_bytes_free(&playback_buffer) >= bytes_to_store) {
         btstack_ring_buffer_write(&playback_buffer, (uint8_t *) pcm_resample, bytes_to_store);
+        log_info("Samples in playback buffer %5u", btstack_ring_buffer_bytes_available(&playback_buffer) / (le_audio_demo_sink_num_channels * 2));
     } else {
         printf("Samples dropped\n");
         samples_dropped += le_audio_demo_sink_num_samples_per_frame;
@@ -518,8 +519,6 @@ void le_audio_demo_util_sink_receive(uint8_t stream_index, uint8_t *packet, uint
     }
 
     store_samples_in_ringbuffer();
-
-    log_info("Samples in playback buffer %5u", btstack_ring_buffer_bytes_available(&playback_buffer) / (le_audio_demo_sink_num_channels * 2));
 
     le_audio_demo_sink_lc3_frames++;
 
