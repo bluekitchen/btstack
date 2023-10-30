@@ -81,6 +81,10 @@ HFP/AG/VRA/BV-02-I: a, N, n, t
 HFP/AG/VRA/BI-01-I: N, n, A
 HFP/AG/VRA/BV-03-I: a, t 
 
+HFP/AG/VRA/BV-04-I: a
+HFP/AG/VRA/BV-05-I: ??? test buggy
+
+
 HFP/AG/VTG/BV-01-I: a, A
 
 HFP/AG/TDC/BV-01-I: a, c, C, A
@@ -112,6 +116,7 @@ HFP/AG/RHH/BV-08-I: c, w, a, C, t
 
 HFP/AG/NUM/BV-01-I: a, t
 
+HFP/AG/SLC/BI-01-C: a, t
 HFP/AG/SLC/BV-01-C: t
 HFP/AG/SLC/BV-02-C: a, t
 HFP/AG/SLC/BV-03-C: t 
@@ -120,7 +125,9 @@ HFP/AG/SLC/BV-05-C: t
 HFP/AG/SLC/BV-06-C: a, t 
 HFP/AG/SLC/BV-07-C: t 
 HFP/AG/SLC/BV-09-C: a, t 
-HFP/AG/SLC/BV-10-C: a, t 
+HFP/AG/SLC/BV-10-C: a, t
+
+HFP/AG/SLC/BV-11-C: test doesn't start ???
 
 HFP/AG/ACC/BV-08-I: c, C, t
 HFP/AG/ACC/BV-09-I: c, C, t 
@@ -130,6 +137,16 @@ HFP/AG/ACC/BI-12-I: c, b, b, C, A
 HFP/AG/ACC/BI-13-I: c, b, C, A
 HFP/AG/ACC/BI-14-I: c, b, C, A
 HFP/AG/ACC/BV-15-I: c, b, C, A
+HFP/AG/ACC/BV-16-I: c, C, t
+HFP/AG/ACC/BV-17-I: c, C, t
+
+HFP/AG/ACC/BV-18-I: ??? unclear
+HFP/AG/ACC/BV-19-I: ??? unclear
+HFP/AG/ACC/BV-20-I: ??? unclear
+HFP/AG/ACC/BV-21-I: ??? unclear
+HFP/AG/ACC/BV-22-I: ??? maybe bug
+HFP/AG/ACC/BV-23-I: ??? unclear
+
 HFP/AG/ACC/BV-24-C: c, C, t
 HFP/AG/ACC/BV-25-C: c, C
 HFP/AG/ACC/BV-26-C: b
