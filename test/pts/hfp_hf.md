@@ -128,7 +128,12 @@ HFP/HF/ACC/BV-04-I: (wait)
 HFP/HF/ACC/BV-05-I: (wait)
 HFP/HF/ACC/BV-06-I: (wait)
 HFP/HF/ACC/BV-07-I: (wait)
-
+HFP/HF/ACC/BV-08-I: (wait)
+HFP/HF/ACC/BV-09-I: (wait)
+HFP/HF/ACC/BV-10-I: b
+HFP/HF/ACC/BV-11-I: b
+HFP/HF/ACC/BV-12-I: (wait)
+HFP/HF/ACC/BV-13-I: (wait)
 HFP/HF/ACC/BV-14-C: f, b
 HFP/HF/ACC/BV-15-C: b
 HFP/HF/ACC/BV-16-C: f, b
