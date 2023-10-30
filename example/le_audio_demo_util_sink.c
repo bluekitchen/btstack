@@ -368,7 +368,7 @@ void le_audio_demo_util_sink_configure_unicast(uint8_t num_streams, uint8_t num_
     le_audio_demo_sink_flush_timeout = flush_timeout;
 
     // set playback start: FT * ISO Interval + max(10 ms, 1/2 ISO Interval)
-    uint16_t playback_start_ms = flush_timeout * (iso_interval_1250us * 5 / 4) + btstack_max(10, iso_interval_1250us * 5 / 2);
+    uint16_t playback_start_ms = flush_timeout * (iso_interval_1250us * 5 / 4) + btstack_max(10, iso_interval_1250us * 5 / 8);
     uint16_t playback_start_samples = sampling_frequency_hz / 1000 * playback_start_ms;
     playback_start_threshold_bytes = playback_start_samples * num_streams * num_channels_per_stream * 2;
     printf("Playback: start %u ms (%u samples, %u bytes)\n", playback_start_ms, playback_start_samples, playback_start_threshold_bytes);
