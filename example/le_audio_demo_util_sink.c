@@ -214,6 +214,7 @@ static void plc_do(uint8_t stream_index) {
         (void) lc3_decoder->decode_signed_16(decoder_contexts[effective_channel], NULL, BFI,
                                              &pcm[effective_channel], le_audio_demo_sink_num_channels,
                                              &tmp_BEC_detect);
+        have_pcm[i] = true;
     }
     // and store in ringbuffer when PCM for all channels is available
     store_samples_in_ringbuffer();
@@ -240,9 +241,12 @@ static void plc_check(uint16_t packet_sequence_number) {
                 continue;
             }
 
-            // missing packet if big sequence counter is higher than bis sequence counter
+            // missing packet if group sequence counter is higher than stream sequence counter
             if (btstack_time16_delta(group_last_packet_sequence, stream_last_packet_sequence[i]) > 0) {
                 printf_plc("- ISO #%u, PLC for %u\n", i, group_last_packet_sequence);
+#ifndef DEBUG_PLC
+                log_info("PLC for packet 0x%04x, stream #%u", group_last_packet_sequence, i);
+#endif
                 plc_do(i);
                 btstack_assert((stream_last_packet_sequence[i] + 1) == group_last_packet_sequence);
                 stream_last_packet_sequence[i] = group_last_packet_sequence;
