@@ -129,6 +129,7 @@ static uint16_t plc_timeout_initial_ms;
 static uint16_t plc_timeout_subsequent_ms;
 
 static uint32_t le_audio_demo_sink_lc3_frames;
+static uint32_t le_audio_demo_sink_zero_frames;
 static uint32_t samples_received;
 static uint32_t samples_played;
 static uint32_t samples_dropped;
@@ -476,7 +477,9 @@ void le_audio_demo_util_sink_receive(uint8_t stream_index, uint8_t *packet, uint
         stream_last_packet_received[stream_index] = true;
     }
 
-    plc_check(packet_sequence_number);
+    if (sink_receive_streaming){
+        plc_check(packet_sequence_number);
+    }
 
     // either empty packets or num channels * num octets
     if ((iso_sdu_length != 0) && (iso_sdu_length != le_audio_demo_sink_num_channels_per_stream * le_audio_demo_sink_octets_per_frame)) {
@@ -501,14 +504,27 @@ void le_audio_demo_util_sink_receive(uint8_t stream_index, uint8_t *packet, uint
 
 
     if (iso_sdu_length == 0) {
-        // empty packet -> generate silence
-        memset(pcm, 0, sizeof(pcm));
-        uint8_t i;
-        for (i = 0 ; i < le_audio_demo_sink_num_channels_per_stream ; i++) {
-            have_pcm[stream_index + i] = true;
+        if (sink_receive_streaming){
+            // empty packet -> generate silence
+            memset(pcm, 0, sizeof(pcm));
+            uint8_t i;
+            for (i = 0 ; i < le_audio_demo_sink_num_channels_per_stream ; i++) {
+                have_pcm[stream_index + i] = true;
+            }
+            le_audio_demo_sink_zero_frames++;
+            // pause detection (1000 ms for 10 ms, 750 ms for 7.5 ms frames)
+            if (le_audio_demo_sink_zero_frames > 100){
+                printf("Pause detected, stopping audio\n");
+                log_info("Pause detected, stopping audio");
+                // pause/reset audio
+                btstack_ring_buffer_init(&playback_buffer, playback_buffer_storage, PLAYBACK_BUFFER_SIZE);
+                sink_receive_streaming = false;
+                playback_active = false;
+            }
         }
     } else {
         // regular packet -> decode codec frame
+        le_audio_demo_sink_zero_frames = 0;
         uint8_t i;
         for (i = 0 ; i < le_audio_demo_sink_num_channels_per_stream ; i++){
             uint8_t tmp_BEC_detect;
