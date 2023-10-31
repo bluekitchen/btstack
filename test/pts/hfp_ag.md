@@ -1,5 +1,6 @@
 Tool: hfp_ag_test
 
+
 HFP/AG/OOR/BV-01-I: a, c, A, B, (wait 30sec), a, b, C, A
 HFP/AG/OOR/BV-02-I: a, c, A, B, (wait 30sec), C, A
 
@@ -80,10 +81,8 @@ HFP/AG/VRA/BV-01-I: a, t
 HFP/AG/VRA/BV-02-I: a, N, n, t 
 HFP/AG/VRA/BI-01-I: N, n, A
 HFP/AG/VRA/BV-03-I: a, t 
-
 HFP/AG/VRA/BV-04-I: a
-HFP/AG/VRA/BV-05-I: ??? test buggy
-
+HFP/AG/VRA/BV-05-I: a, N, n, t
 
 HFP/AG/VTG/BV-01-I: a, A
 
@@ -126,8 +125,7 @@ HFP/AG/SLC/BV-06-C: a, t
 HFP/AG/SLC/BV-07-C: t 
 HFP/AG/SLC/BV-09-C: a, t 
 HFP/AG/SLC/BV-10-C: a, t
-
-HFP/AG/SLC/BV-11-C: test doesn't start ???
+HFP/AG/SLC/BV-11-C: T, A
 
 HFP/AG/ACC/BV-08-I: c, C, t
 HFP/AG/ACC/BV-09-I: c, C, t 
@@ -140,19 +138,19 @@ HFP/AG/ACC/BV-15-I: c, b, C, A
 HFP/AG/ACC/BV-16-I: c, C, t
 HFP/AG/ACC/BV-17-I: c, C, t
 
-HFP/AG/ACC/BV-18-I: ??? unclear
-HFP/AG/ACC/BV-19-I: ??? unclear
-HFP/AG/ACC/BV-20-I: ??? unclear
-HFP/AG/ACC/BV-21-I: ??? unclear
-HFP/AG/ACC/BV-22-I: ??? maybe bug
-HFP/AG/ACC/BV-23-I: ??? unclear
+HFP/AG/ACC/BV-18-I: HFP_NEW - c, C, t
+HFP/AG/ACC/BV-19-I: HFP_NEW - c, C, t
+HFP/AG/ACC/BV-20-I: HFP NEW - b, b, B, t
+HFP/AG/ACC/BV-21-I: HFP NEW - b, b, B, t
+HFP/AG/ACC/BV-22-I: HFP_NEW - c, C, t
+HFP/AG/ACC/BV-23-I: HFP_NEW - c, C, t
 
 HFP/AG/ACC/BV-24-C: c, C, t
 HFP/AG/ACC/BV-25-C: c, C
 HFP/AG/ACC/BV-26-C: b
 HFP/AG/ACC/BV-27-C: wait
 HFP/AG/ACC/BV-28-C: b
-HFP/AG/ACC/BV-29-C: c - TODO ?? 
+HFP/AG/ACC/BV-29-C: HFP_NEW - b, b, B, t
 HFP/AG/ACC/BV-30-C: c, C, t
 HFP/AG/ACC/BV-31-C: c, C, t
 HFP/AG/ACC/BV-32-C: b, 
