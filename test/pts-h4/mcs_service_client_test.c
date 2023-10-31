@@ -222,6 +222,11 @@ static void mcs_client_event_handler(uint8_t packet_type, uint16_t channel, uint
     if (packet_type != HCI_EVENT_PACKET) return;
     if (hci_event_packet_get_type(packet) != HCI_EVENT_GATTSERVICE_META) return;
 
+    uint32_t duration_ms;
+    uint32_t position_ms;
+    int speed;
+    int seeking_speed;
+
     switch (hci_event_gattservice_meta_get_subevent_code(packet)){
         case GATTSERVICE_SUBEVENT_MCS_CLIENT_CONNECTED:
             if (bap_app_client_con_handle != gattservice_subevent_mcs_client_connected_get_con_handle(packet)){
@@ -242,46 +247,98 @@ static void mcs_client_event_handler(uint8_t packet_type, uint16_t channel, uint
         case GATTSERVICE_SUBEVENT_MCS_CLIENT_MEDIA_PLAYER_NAME:
             printf("MCS Client: Media Player Name \"%s\"\n", (char *) gattservice_subevent_mcs_client_media_player_name_get_value(packet));
             break;
+        
         case GATTSERVICE_SUBEVENT_MCS_CLIENT_MEDIA_PLAYER_ICON_OBJECT_ID:
+            printf("MCS Client: Media Player Icon Object ID \"%s\"\n", (char *) gattservice_subevent_mcs_client_media_player_icon_object_id_get_value(packet));
             break;
-        case GATTSERVICE_SUBEVENT_MCS_CLIENT_MEDIA_PLAYER_ICON_OBJECT_URL:
+        
+        case GATTSERVICE_SUBEVENT_MCS_CLIENT_MEDIA_PLAYER_ICON_URI:
+            printf("MCS Client: Media Player Icon URI\"%s\"\n", (char *) gattservice_subevent_mcs_client_media_player_icon_uri_get_value(packet));
             break;
+        
         case GATTSERVICE_SUBEVENT_MCS_CLIENT_TRACK_CHANGED:
+            printf("MCS Client: Media Player Track Changed\n");
             break;
+        
         case GATTSERVICE_SUBEVENT_MCS_CLIENT_TRACK_TITLE:
+            printf("MCS Client: Media Player Name \"%s\"\n", (char *) gattservice_subevent_mcs_client_track_title_get_value(packet));
             break;
+        
         case GATTSERVICE_SUBEVENT_MCS_CLIENT_TRACK_DURATION:
+            duration_ms = gattservice_subevent_mcs_client_track_duration_get_duration_10ms(packet) * 10;
+            printf("MCS Client: Media Player Track Duration %d ms\n", duration_ms * 10);
             break;
+        
         case GATTSERVICE_SUBEVENT_MCS_CLIENT_TRACK_POSITION:
+            position_ms = gattservice_subevent_mcs_client_track_position_get_position_10ms(packet) * 10;
+            printf("MCS Client: Media Player Track Position %d ms\n", position_ms);
             break;
-        // case GATTSERVICE_SUBEVENT_MSC_CLIENT_TRACK_SPEED:
-            // break;
-        case GATTSERVICE_SUBEVENT_MSC_CLIENT_SEEKING_SPEED:
+
+        case GATTSERVICE_SUBEVENT_MCS_CLIENT_PLAYBACK_SPEED:
+            speed = (int)gattservice_subevent_mcs_client_playback_speed_get_speed(packet);
+            printf("MCS Client: Media Player Playback Speed %d \n", speed);
             break;
+        
+        case GATTSERVICE_SUBEVENT_MCS_CLIENT_SEEKING_SPEED:
+            seeking_speed = (int)gattservice_subevent_mcs_client_seeking_speed_get_multiplier(packet);
+            printf("MCS Client: Media Player Seeking Speed %d \n", seeking_speed);
+            break;
+
         case GATTSERVICE_SUBEVENT_MCS_CLIENT_CURRENT_TRACK_SEGMENTS_OBJECT_ID:
+            printf("MCS Client: Current Track Segments Object ID \"%s\"\n", (char *) gattservice_subevent_mcs_client_current_track_segments_object_id_get_value(packet));
             break;
+
         case GATTSERVICE_SUBEVENT_MCS_CLIENT_CURRENT_TRACK_OBJECT_ID:
+            printf("MCS Client: Current Track Object ID \"%s\"\n", (char *) gattservice_subevent_mcs_client_current_track_object_id_get_value(packet));
             break;
+        
         case GATTSERVICE_SUBEVENT_MCS_CLIENT_NEXT_TRACK_OBJECT_ID:
+            printf("MCS Client: Next Track Object ID \"%s\"\n", (char *) gattservice_subevent_mcs_client_next_track_object_id_get_value(packet));
             break;
+        
         case GATTSERVICE_SUBEVENT_MCS_CLIENT_PARENT_GROUP_OBJECT_ID:
+            printf("MCS Client: Parent Group Object ID \"%s\"\n", (char *) gattservice_subevent_mcs_client_parent_group_object_id_get_value(packet));
             break;
+
+        case GATTSERVICE_SUBEVENT_MCS_CLIENT_CURRENT_GROUP_OBJECT_ID:
+            printf("MCS Client: Current Group Object ID \"%s\"\n", (char *) gattservice_subevent_mcs_client_current_group_object_id_get_value(packet));
+            break;
+
         case GATTSERVICE_SUBEVENT_MCS_CLIENT_PLAYING_ORDER:
+            printf("MCS Client: Playing Order 0x%02x\n", gattservice_subevent_mcs_client_playing_order_get_order(packet));
             break;
+        
         case GATTSERVICE_SUBEVENT_MCS_CLIENT_PLAYING_ORDER_SUPPORTED:
-            break;         
+            printf("MCS Client: Playing Order Supported 0x%04x\n", gattservice_subevent_mcs_client_playing_order_supported_get_bitmap(packet));
+            break;  
+
         case GATTSERVICE_SUBEVENT_MCS_CLIENT_MEDIA_STATE:
+            printf("MCS Client: Media State 0x%02x\n", gattservice_subevent_mcs_client_media_state_get_state(packet));
             break;
+
         case GATTSERVICE_SUBEVENT_MCS_CLIENT_CONTROL_POINT_OPCODES_SUPPORTED:
+            printf("MCS Client: Control Point Opcodes Supported 0x%04x\n", gattservice_subevent_mcs_client_control_point_opcodes_supported_get_bitmap(packet));
             break;
+
         case GATTSERVICE_SUBEVENT_MCS_CLIENT_CONTROL_POINT_NOTIFICATION:
+            printf("Control Point Notification Opcode 0x%02x, Result Code 0x%02x\n", 
+                gattservice_subevent_mcs_client_control_point_notification_get_requested_opcode(packet),
+                gattservice_subevent_mcs_client_control_point_notification_get_result_code(packet));
             break;
+
         case GATTSERVICE_SUBEVENT_MCS_CLIENT_SEARCH_CONTROL_POINT_NOTIFICATION:
-            break;
+            printf("Search Control Point Notification Opcode 0x%02x\n", 
+                gattservice_subevent_mcs_client_search_control_point_notification_get_requested_opcode(packet));
+                break;
+
         case GATTSERVICE_SUBEVENT_MCS_CLIENT_SEARCH_RESULT_OBJECT_ID:
+            printf("MCS Client: Search Result Object ID \"%s\"\n", (char *) gattservice_subevent_mcs_client_search_result_object_id_get_value(packet));
             break;
+        
         case GATTSERVICE_SUBEVENT_MCS_CLIENT_CONTENT_CONTROL_ID:
+            printf("MCS Client: Content Control ID 0x%02x\n", gattservice_subevent_mcs_client_content_control_id_get_ccid(packet));
             break;
+        
         case GATTSERVICE_SUBEVENT_MCS_CLIENT_DISCONNECTED:
             mcs_cid = 0;
             printf("MCS Client: disconnected\n");
@@ -295,12 +352,57 @@ static void show_usage(void){
     bd_addr_t      iut_address;
     gap_local_bd_addr(iut_address);
     printf("\n--- BAP Client Test Console %s ---\n", bd_addr_to_str(iut_address));
-    printf("c   - connect to %s\n", bap_app_server_addr_string);    
-    printf("X   - disconnect from %s\n", bap_app_server_addr_string);       
+    printf("a   - connect to %s\n", bap_app_server_addr_string);    
+    printf("A   - disconnect from %s\n", bap_app_server_addr_string);       
     
     printf("\n--- MCS Client Test Console %s ---\n", bd_addr_to_str(iut_address));
-    printf("a   - connect to %s\n", bap_app_server_addr_string);
-    printf("b   - get media player name\n");
+    printf("b   - connect to %s\n", bap_app_server_addr_string);
+    printf("B   - get media player name\n");
+    printf("c   - get icon object ID\n");
+    printf("C   - get icon URI\n");
+    printf("d   - get track title\n");
+    printf("D   - get track duration\n");
+    printf("e/E - get/set track position\n");
+    printf("f/F - get/set playback speed\n");
+    printf("g   - get seeking speed\n");
+    printf("G   - get current track segments object id\n");
+    printf("h/H - get/set current track object id\n");
+    printf("i/I - get/set next track object id\n");
+    printf("j   - get parent group object id\n");
+    printf("k/K - get/set current group object id\n");
+
+    printf("l/L - get/set playing order\n");
+    printf("J   - get playing order supported\n");
+    printf("m   - get media state\n");
+    printf("M   - get media control point opcodes supported\n");
+    printf("n   - get media search results object id\n");
+    printf("N   - get media content control id\n");
+
+
+    printf("o   - play\n");
+    printf("O   - pause\n");
+    printf("p   - fast rewind\n");
+    printf("P   - fast forward\n");
+    printf("q   - stop\n");
+    printf("Q   - move relative\n");
+    printf("r   - previous segment\n");
+    printf("R   - next segment\n");
+    printf("s   - first segment\n");
+    printf("S   - last segment\n");
+    printf("t   - goto segment\n");
+    printf("T   - previous track\n");
+
+    printf("u   - next track\n");
+    printf("U   - first track\n");
+    printf("v   - last track\n");
+    printf("V   - goto track\n");
+    printf("z   - previous group\n");
+    printf("Z   - next group\n");
+    printf("x   - first group\n");
+    printf("X   - last group\n");
+    printf("y   - goto group\n");
+
+
     printf("\n");
     printf(" \n");
     printf(" \n");
@@ -313,19 +415,23 @@ static void stdin_process(char cmd){
     operation_cmd = cmd;
     
     switch (cmd){
-        case 'c':
+        case 'a':
             printf("Connecting...\n");
             bap_app_client_state = BAP_APP_CLIENT_STATE_W4_GAP_CONNECTED;
             status = gap_connect(bap_app_server_addr, 0);
             break;
         
-        case 'X':
+        case 'A':
             printf("Disconnect...\n");
             bap_app_client_state = BAP_APP_CLIENT_STATE_W4_GAP_DISCONNECTED;
             status = gap_disconnect(bap_app_client_con_handle);
             break;
 
-        case 'a':
+        case 'b':
+            if (bap_app_client_state < BAP_APP_CLIENT_STATE_CONNECTED){
+                printf("Not connected yet. Call first \"c\"\n");
+                break;
+            }
             printf("MCS: connect 0x%02x\n", bap_app_client_con_handle);
             bap_app_client_state = BAP_APP_CLIENT_STATE_W4_MCS_CONNECTED;
             status = media_control_service_client_connect(
@@ -334,10 +440,217 @@ static void stdin_process(char cmd){
                 &mcs_client_event_handler, &mcs_cid);
             break;
 
-        case 'b':
-            printf("MCS: get media player name\n");
+        case 'B':
+            printf("MCS: get - Media Player Name\n");
             media_control_service_client_get_media_player_name(mcs_cid);
             break;
+
+        case 'c':
+            printf("MCS: get - Media Player Icon Object ID\n");
+            media_control_service_client_get_media_player_icon_object_id(mcs_cid);
+            break;
+
+        case 'C':
+            printf("MCS: get - Media Player Icon URI\n");
+            media_control_service_client_get_media_player_icon_uri(mcs_cid);
+            break;
+
+        case 'd':
+            printf("MCS: get - Media Player Track Title\n");
+            media_control_service_client_get_track_title(mcs_cid);
+            break;
+
+        case 'D':
+            printf("MCS: get - Media Player Track Duration\n");
+            media_control_service_client_get_track_duration(mcs_cid);
+            break;
+        
+        case 'e':
+            printf("MCS: get - Media Player Track Position\n");
+            media_control_service_client_get_track_position(mcs_cid);
+            break;
+
+        case 'E':
+            printf("MCS: set - Media Player Track Position\n");
+            media_control_service_client_set_track_position(mcs_cid, 10000);
+            break;
+
+        case 'f':
+            printf("MCS: get - Media Player Playback Speed\n");
+            media_control_service_client_get_playback_speed(mcs_cid);
+            break;
+
+        case 'F':
+            printf("MCS: set - Media Player Playback Speed\n");
+            media_control_service_client_set_playback_speed(mcs_cid, 64);
+            break;
+        
+        case 'g':
+            printf("MCS: get - Media Player Seeking Speed\n");
+            media_control_service_client_get_seeking_speed(mcs_cid);
+            break;
+
+        case 'G':
+            printf("MCS: get - Current Track Segments Object ID\n");
+            media_control_service_client_get_current_track_segments_object_id(mcs_cid);
+            break;
+
+        case 'h':
+            printf("MCS: get - Current Track Object ID\n");
+            media_control_service_client_get_current_track_object_id(mcs_cid);
+            break;
+
+        case 'H':
+            printf("MCS: set - Current Track Object ID\n");
+            media_control_service_client_set_current_track_object_id(mcs_cid, "12345");
+            break;
+
+        case 'i':
+            printf("MCS: get - Next Track Object ID\n");
+            media_control_service_client_get_next_track_object_id(mcs_cid);
+            break;
+
+        case 'I':
+            printf("MCS: set - Next Track Object ID\n");
+            media_control_service_client_set_next_track_object_id(mcs_cid, "12345");
+            break;
+
+        case 'j':
+            printf("MCS: get - Parent Group Object ID\n");
+            media_control_service_client_get_parent_group_object_id(mcs_cid);
+            break;
+
+        case 'k':
+            printf("MCS: get - Current Group Object ID\n");
+            media_control_service_client_get_current_group_object_id(mcs_cid);
+            break;
+
+        case 'K':
+            printf("MCS: set - Current Group Object ID\n");
+            media_control_service_client_set_current_group_object_id(mcs_cid, "12345");
+            break;  
+
+        case 'l':
+            printf("MCS: get - playing order\n");
+            media_control_service_client_get_playing_order(mcs_cid);
+            break;
+
+        case 'L':
+            printf("MCS: set - playing order\n");
+            media_control_service_client_set_playing_order(mcs_cid, 0x02);
+            break;
+        
+        case 'J':
+            printf("MCS: get - playing order supported\n");
+            media_control_service_client_get_playing_orders_supported(mcs_cid);
+            break;
+
+        case 'm':
+            printf("MCS: get - media state\n");
+            media_control_service_client_get_media_state(mcs_cid);
+            break;
+
+        case 'M':
+            printf("MCS: get - media control point opcodes supported\n");
+            media_control_service_client_get_media_control_point_opcodes_supported(mcs_cid);
+            break;
+
+        case 'n':
+            printf("MCS: get - media search results object id\n");
+            media_control_service_client_get_search_results_object_id(mcs_cid);
+            break;
+
+        case 'N':
+            printf("MCS: get - media content control id\n");
+            media_control_service_client_get_content_control_id(mcs_cid);
+            break;
+
+        case 'o':
+           printf("MCS: play\n");
+           media_control_service_client_command_play(mcs_cid);
+           break;
+        case 'O':
+           printf("MCS: pause\n");
+           media_control_service_client_command_pause(mcs_cid);
+           break;
+        case 'p':
+           printf("MCS: fast rewind\n");
+           media_control_service_client_command_fast_rewind(mcs_cid);
+           break;
+        case 'P':
+           printf("MCS: fast forward\n");
+           media_control_service_client_command_fast_forward(mcs_cid);
+           break;
+        case 'q':
+           printf("MCS: stop\n");
+           media_control_service_client_command_stop(mcs_cid);
+           break;
+        case 'Q':
+           printf("MCS: move relative\n");
+           media_control_service_client_command_move_relative(mcs_cid, 0);
+           break;
+        case 'r':
+           printf("MCS: previous segment\n");
+           media_control_service_client_command_previous_segment(mcs_cid);
+           break;
+        case 'R':
+           printf("MCS: next segment\n");
+           media_control_service_client_command_next_segment(mcs_cid);
+           break;
+        case 's':
+           printf("MCS: first segment\n");
+           media_control_service_client_command_first_segment(mcs_cid);
+           break;
+        case 'S':
+           printf("MCS: last segment\n");
+           media_control_service_client_command_last_segment(mcs_cid);
+           break;
+        case 't':
+           printf("MCS: goto segment\n");
+           media_control_service_client_command_goto_segment(mcs_cid, 2);
+           break;
+        case 'T':
+           printf("MCS: previous track\n");
+           media_control_service_client_command_previous_track(mcs_cid);
+           break;
+        case 'u':
+           printf("MCS: next track\n");
+           media_control_service_client_command_next_track(mcs_cid);
+           break;
+        case 'U':
+           printf("MCS: first track\n");
+           media_control_service_client_command_first_track(mcs_cid);
+           break;
+        case 'v':
+           printf("MCS: last track\n");
+           media_control_service_client_command_last_track(mcs_cid);
+           break;
+        case 'V':
+           printf("MCS: goto track\n");
+           media_control_service_client_command_goto_track(mcs_cid, 2);
+           break;
+        case 'z':
+           printf("MCS: previous group\n");
+           media_control_service_client_command_previous_group(mcs_cid);
+           break;
+        case 'Z':
+           printf("MCS: next group\n");
+           media_control_service_client_command_next_group(mcs_cid);
+           break;
+        case 'x':
+           printf("MCS: first group\n");
+           media_control_service_client_command_first_group(mcs_cid);
+           break;
+        case 'X':
+           printf("MCS: last group\n");
+           media_control_service_client_command_last_group(mcs_cid);
+           break;
+        case 'y':
+           printf("MCS: goto group\n");
+           media_control_service_client_command_goto_group(mcs_cid, 2);
+           break;
+
+
         case '\n':
         case '\r':
             break;
@@ -347,10 +660,12 @@ static void stdin_process(char cmd){
             break;
     }
 
+
     if (status != ERROR_CODE_SUCCESS){
         printf("Command '%c' failed with status 0x%02x\n", cmd, status);
     }
 }
+
 
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
