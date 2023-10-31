@@ -107,6 +107,22 @@ static hfp_generic_status_indicator_t hf_indicators[] = {
     {2, 1},
 };
 
+static uint16_t supported_features                   =
+        (1<<HFP_AGSF_EC_NR_FUNCTION)              |
+        (1<<HFP_AGSF_ESCO_S4)                     |
+        (1<<HFP_AGSF_HF_INDICATORS)               |
+        (1<<HFP_AGSF_CODEC_NEGOTIATION)           |
+        (1<<HFP_AGSF_EXTENDED_ERROR_RESULT_CODES) |
+        (1<<HFP_AGSF_ENHANCED_CALL_CONTROL)       |
+        (1<<HFP_AGSF_ENHANCED_CALL_STATUS)        |
+        (1<<HFP_AGSF_ABILITY_TO_REJECT_A_CALL)    |
+        (1<<HFP_AGSF_IN_BAND_RING_TONE)           |
+        (1<<HFP_AGSF_VOICE_RECOGNITION_FUNCTION)  |
+        (1<<HFP_AGSF_THREE_WAY_CALLING)           |
+        (1<<HFP_AGSF_ATTACH_A_NUMBER_TO_A_VOICE_TAG)    |
+        (1<<HFP_AGSF_ENHANCED_VOICE_RECOGNITION_STATUS) |
+        (1<<HFP_AGSF_VOICE_RECOGNITION_TEXT);
+
 #define INQUIRY_INTERVAL 5
 
 enum STATE {INIT, W4_INQUIRY_MODE_COMPLETE, ACTIVE} ;
@@ -156,7 +172,7 @@ static void show_usage(void){
     printf("\n");
     
     printf("a - establish HFP connection to %s\n", bd_addr_to_str(device_addr));
-    // printf("A - release HFP connection\n");
+    printf("A - establish HCI connection to %s\n", bd_addr_to_str(device_addr));
     
     printf("b - establish AUDIO connection          | B - release AUDIO connection\n");
     printf("c - simulate incoming call from 1234567 | C - simulate call from 1234567 dropped\n");
@@ -187,13 +203,12 @@ static void show_usage(void){
     printf("9 - eAVR Msg Processing Input\n");
     printf("* - eAVR Msg, Status ready_for_input\n");
     printf("@ - eAVR Msg, Status ready_for_input\n");
-        
 
     printf("o - Set speaker volume to 0  (minimum)  | O - Set speaker volume to 9  (default)\n");
     printf("p - Set speaker volume to 12 (higher)   | P - Set speaker volume to 15 (maximum)\n");
     printf("q - Set microphone gain to 0  (minimum) | Q - Set microphone gain to 9  (default)\n");
     printf("s - Set microphone gain to 12 (higher)  | S - Set microphone gain to 15 (maximum)\n");
-    printf("t - terminate connection\n");
+    printf("t - terminate connection                | T - Disable Three-Way Calling support\n");
     printf("u - join held call\n");
     printf("v - discover nearby HF units\n");
     printf("w - put incoming call on hold (Response and Hold)\n");
@@ -209,8 +224,8 @@ static void stdin_process(char cmd){
             hfp_ag_establish_service_level_connection(device_addr);
             break;
         case 'A':
-            printf("Release HFP service level connection.\n");
-            hfp_ag_release_service_level_connection(acl_handle);
+            printf("Establish HCI connection.\n");
+            gap_connect(device_addr, BD_ADDR_TYPE_ACL);
             break;
         case 'Z':
             printf("Release HFP service level connection to %s...\n", bd_addr_to_str(device_addr));
@@ -442,6 +457,10 @@ static void stdin_process(char cmd){
             printf("Terminate HCI connection. 0x%2x\n", acl_handle);
             gap_disconnect(acl_handle);
             break;
+        case 'T':
+            printf("Disable Three-Way Calling\n");
+            hfp_ag_init_supported_features(supported_features & ~(1<<HFP_AGSF_THREE_WAY_CALLING));
+            break;
         case 'u':
             printf("Join held call\n");
             hfp_ag_join_held_call();
@@ -665,22 +684,6 @@ int btstack_main(int argc, const char * argv[]){
 
     // L2CAP
     l2cap_init();
-
-    uint16_t supported_features                   =
-        (1<<HFP_AGSF_EC_NR_FUNCTION)              |
-        (1<<HFP_AGSF_ESCO_S4)                     |
-        (1<<HFP_AGSF_HF_INDICATORS)               |
-        (1<<HFP_AGSF_CODEC_NEGOTIATION)           |
-        (1<<HFP_AGSF_EXTENDED_ERROR_RESULT_CODES) |
-        (1<<HFP_AGSF_ENHANCED_CALL_CONTROL)       |
-        (1<<HFP_AGSF_ENHANCED_CALL_STATUS)        |
-        (1<<HFP_AGSF_ABILITY_TO_REJECT_A_CALL)    |
-        (1<<HFP_AGSF_IN_BAND_RING_TONE)           |
-        (1<<HFP_AGSF_VOICE_RECOGNITION_FUNCTION)  |
-        (1<<HFP_AGSF_THREE_WAY_CALLING)           |
-        (1<<HFP_AGSF_ATTACH_A_NUMBER_TO_A_VOICE_TAG)    |
-        (1<<HFP_AGSF_ENHANCED_VOICE_RECOGNITION_STATUS) |
-        (1<<HFP_AGSF_VOICE_RECOGNITION_TEXT);
 
     // HFP
     rfcomm_init();
