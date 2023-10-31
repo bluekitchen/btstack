@@ -3290,7 +3290,6 @@ static void event_handle_le_connection_complete(const uint8_t * packet){
 		if (status == ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER){
 		    // reset state
             hci_stack->le_connecting_state   = LE_CONNECTING_IDLE;
-            hci_stack->le_connecting_request = LE_CONNECTING_IDLE;
 			// get outgoing connection conn struct for direct connect
 			conn = gap_get_outgoing_connection();
 		}
