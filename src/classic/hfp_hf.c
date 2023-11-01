@@ -2304,6 +2304,8 @@ void hfp_hf_create_sdp_record_with_codecs(uint8_t * service, uint32_t service_re
                 case HFP_CODEC_LC3_SWB:
                     sdp_features |= 1 << 8;
                     break;
+                default:
+                    break;
             }
         }
     }
