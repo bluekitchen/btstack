@@ -130,21 +130,23 @@ list(SORT SOURCES)
 add_library(btstack STATIC ${SOURCES})
 
 # pkgconfig
-find_package(PkgConfig QUIET)
+find_package(PkgConfig)
 
 # portaudio
 if (PkgConfig_FOUND)
-	pkg_check_modules(PORTAUDIO QUIET portaudio-2.0)
+	pkg_check_modules(PORTAUDIO portaudio-2.0)
 	if(PORTAUDIO_FOUND)
 		message("HAVE_PORTAUDIO")
 		include_directories(${PORTAUDIO_INCLUDE_DIRS})
 		link_directories(${PORTAUDIO_LIBRARY_DIRS})
 		link_libraries(${PORTAUDIO_LIBRARIES})
-		# CMake 3.12 - add_compile_definitions(HAVE_PORTAUDIO)
-		SET(CMAKE_C_FLAGS  "-DHAVE_PORTAUDIO")
+		add_compile_definitions(HAVE_PORTAUDIO)
 	endif()
 endif()
 
+# pthread
+find_package(Threads)
+link_libraries(${CMAKE_THREAD_LIBS_INIT})
 
 # Add NXP Support
 include(${BTSTACK_ROOT}/chipset/nxp/nxp.cmake)
