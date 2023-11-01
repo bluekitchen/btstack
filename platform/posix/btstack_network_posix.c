@@ -46,6 +46,15 @@
 #include "btstack_network.h"
 
 #include "btstack_config.h"
+#include "btstack_debug.h"
+#include "btstack_run_loop.h"
+
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/time.h>
+#include <sys/ioctl.h>
+#include <sys/param.h>
+#include <sys/stat.h>
 
 #include <arpa/inet.h>
 #include <errno.h>
@@ -65,18 +74,10 @@
 #include <netinet/in.h>
 #endif
 
-#include <sys/ioctl.h>
-#include <sys/param.h>
-#include <sys/socket.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-
 #ifdef __linux
 #include <linux/if.h>
 #include <linux/if_tun.h>
 #endif
-
-#include "btstack.h"
 
 static int  tap_fd = -1;
 static uint8_t network_buffer[BNEP_MTU_MIN];
@@ -180,7 +181,7 @@ int btstack_network_up(bd_addr_t network_address){
     }  
     strcpy(tap_dev_name, ifr.ifr_name);
 #endif
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__FreeBSD__)
     strcpy(tap_dev_name, tap_dev_name_template);
 #endif    
 

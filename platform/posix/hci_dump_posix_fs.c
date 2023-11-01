@@ -53,19 +53,25 @@
 // enable POSIX functions (needed for -std=c99)
 #define _POSIX_C_SOURCE 200809
 
+#ifdef __FreeBSD__
+// FreeBSD does not set __BSD_VISIBLE or __XSI_VISIBLE if _POSIX_C_SOURCE is defined
+#define __BSD_VISIBLE 1
+#define __XSI_VISIBLE 1
+#endif
+
 #include "hci_dump_posix_fs.h"
 
 #include "btstack_debug.h"
 #include "btstack_util.h"
-#include "hci_cmd.h"
+
+#include <sys/time.h>     // for timestamps
+#include <sys/stat.h>     // file modes
 
 #include <time.h>
 #include <stdio.h>        // printf
 #include <fcntl.h>        // open
 #include <unistd.h>       // write
 #include <errno.h>        // errno
-#include <sys/time.h>     // for timestamps
-#include <sys/stat.h>     // file modes
 
 static int  dump_file = -1;
 static int  dump_format;
