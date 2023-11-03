@@ -226,8 +226,9 @@ static void mcs_client_event_handler(uint8_t packet_type, uint16_t channel, uint
     uint32_t position_ms;
     int speed;
     int seeking_speed;
+    uint8_t subevent = hci_event_gattservice_meta_get_subevent_code(packet);
 
-    switch (hci_event_gattservice_meta_get_subevent_code(packet)){
+    switch (subevent){
         case GATTSERVICE_SUBEVENT_MCS_CLIENT_CONNECTED:
             if (bap_app_client_con_handle != gattservice_subevent_mcs_client_connected_get_con_handle(packet)){
                 printf("MCS Client: expected con handle 0x%04x, received 0x%04x\n", bap_app_client_con_handle, gattservice_subevent_mcs_client_connected_get_con_handle(packet));
@@ -320,19 +321,20 @@ static void mcs_client_event_handler(uint8_t packet_type, uint16_t channel, uint
             printf("MCS Client: Control Point Opcodes Supported 0x%04x\n", gattservice_subevent_mcs_client_control_point_opcodes_supported_get_bitmap(packet));
             break;
 
-        case GATTSERVICE_SUBEVENT_MCS_CLIENT_CONTROL_POINT_NOTIFICATION:
-            printf("Control Point Notification Opcode 0x%02x, Result Code 0x%02x\n", 
-                gattservice_subevent_mcs_client_control_point_notification_get_requested_opcode(packet),
-                gattservice_subevent_mcs_client_control_point_notification_get_result_code(packet));
+        case GATTSERVICE_SUBEVENT_MCS_CLIENT_MEDIA_CONTROL_POINT_NOTIFICATION_RESULT:
+            printf("MCS Client: Control Point Notification Opcode 0x%02x, Result Code 0x%02x\n",
+                   gattservice_subevent_mcs_client_media_control_point_notification_result_get_opcode(packet),
+                   gattservice_subevent_mcs_client_media_control_point_notification_result_get_result_code(packet));
             break;
 
-        case GATTSERVICE_SUBEVENT_MCS_CLIENT_SEARCH_CONTROL_POINT_NOTIFICATION:
-            printf("Search Control Point Notification Opcode 0x%02x\n", 
-                gattservice_subevent_mcs_client_search_control_point_notification_get_requested_opcode(packet));
+        case GATTSERVICE_SUBEVENT_MCS_CLIENT_SEARCH_CONTROL_POINT_NOTIFICATION_RESULT:
+            printf("MCS Client: Search Control Point Notification, Result Code 0x%02x\n",
+                   gattservice_subevent_mcs_client_search_control_point_notification_result_get_result_code(packet));
                 break;
 
         case GATTSERVICE_SUBEVENT_MCS_CLIENT_SEARCH_RESULT_OBJECT_ID:
             printf("MCS Client: Search Result Object ID \"%s\"\n", (char *) gattservice_subevent_mcs_client_search_result_object_id_get_value(packet));
+            printf_hexdump(gattservice_subevent_mcs_client_search_result_object_id_get_value(packet), gattservice_subevent_mcs_client_search_result_object_id_get_value_len(packet));
             break;
         
         case GATTSERVICE_SUBEVENT_MCS_CLIENT_CONTENT_CONTROL_ID:
@@ -344,6 +346,7 @@ static void mcs_client_event_handler(uint8_t packet_type, uint16_t channel, uint
             printf("MCS Client: disconnected\n");
             break;
         default:
+            printf("MCS Client: subevent 0x%02X\n", subevent);
             break;
     }
 }
@@ -370,15 +373,13 @@ static void show_usage(void){
     printf("i/I - get/set next track object id\n");
     printf("j   - get parent group object id\n");
     printf("k/K - get/set current group object id\n");
-
     printf("l/L - get/set playing order\n");
     printf("J   - get playing order supported\n");
     printf("m   - get media state\n");
     printf("M   - get media control point opcodes supported\n");
     printf("n   - get media search results object id\n");
     printf("N   - get media content control id\n");
-
-
+    printf("\n");
     printf("o   - play\n");
     printf("O   - pause\n");
     printf("p   - fast rewind\n");
@@ -391,7 +392,6 @@ static void show_usage(void){
     printf("S   - last segment\n");
     printf("t   - goto segment\n");
     printf("T   - previous track\n");
-
     printf("u   - next track\n");
     printf("U   - first track\n");
     printf("v   - last track\n");
@@ -401,7 +401,16 @@ static void show_usage(void){
     printf("x   - first group\n");
     printf("X   - last group\n");
     printf("y   - goto group\n");
-
+    printf("\n");
+    printf("1   - search track name\n");
+    printf("2   - search artist_name\n");
+    printf("3   - search album_name\n");
+    printf("4   - search group_name\n");
+    printf("5   - search earliest_year\n");
+    printf("6   - search latest_year\n");
+    printf("7   - search genre\n");
+    printf("8   - search only_tracks\n");
+    printf("9   - search only_groups\n");
 
     printf("\n");
     printf(" \n");
@@ -413,7 +422,8 @@ static void show_usage(void){
 static void stdin_process(char cmd){
     uint8_t status = ERROR_CODE_SUCCESS;
     operation_cmd = cmd;
-    
+    char * search_data;
+
     switch (cmd){
         case 'a':
             printf("Connecting...\n");
@@ -650,6 +660,77 @@ static void stdin_process(char cmd){
            media_control_service_client_command_goto_group(mcs_cid, 2);
            break;
 
+        case '1':
+            search_data = "Track";
+            printf("MCS: search track name %s\n", search_data);
+            media_control_service_client_search_control_command_init(mcs_cid);
+            media_control_service_client_search_control_command_add(mcs_cid, SEARCH_CONTROL_POINT_TYPE_TRACK_NAME, (const char *) search_data);
+            media_control_service_client_search_control_command_execute(mcs_cid);
+            break;
+        
+        case '2':
+            search_data = "Artist";
+            printf("MCS: search artist name %s\n", search_data);
+            media_control_service_client_search_control_command_init(mcs_cid);
+            media_control_service_client_search_control_command_add(mcs_cid, SEARCH_CONTROL_POINT_TYPE_ARTIST_NAME, (const char *) search_data);
+            media_control_service_client_search_control_command_execute(mcs_cid);
+            break;
+
+        case '3':
+            search_data = "Album";
+            printf("MCS: search album name %s\n", search_data);
+            media_control_service_client_search_control_command_init(mcs_cid);
+            media_control_service_client_search_control_command_add(mcs_cid, SEARCH_CONTROL_POINT_TYPE_ALBUM_NAME, (const char *) search_data);
+            media_control_service_client_search_control_command_execute(mcs_cid);
+            break;
+
+        case '4':
+            search_data = "Group";
+            printf("MCS: search group name %s\n", search_data);
+            media_control_service_client_search_control_command_init(mcs_cid);
+            media_control_service_client_search_control_command_add(mcs_cid, SEARCH_CONTROL_POINT_TYPE_GROUP_NAME, (const char *) search_data);
+            media_control_service_client_search_control_command_execute(mcs_cid);
+            break;
+
+        case '5':
+            search_data = "1998";
+            printf("MCS: search earliest year %s\n", search_data);
+            media_control_service_client_search_control_command_init(mcs_cid);
+            media_control_service_client_search_control_command_add(mcs_cid, SEARCH_CONTROL_POINT_TYPE_EARLIEST_YEAR, (const char *) search_data);
+            media_control_service_client_search_control_command_execute(mcs_cid);
+            break;
+
+        case '6':
+            search_data = "2022";
+            printf("MCS: search latest year %s\n", search_data);
+            media_control_service_client_search_control_command_init(mcs_cid);
+            media_control_service_client_search_control_command_add(mcs_cid, SEARCH_CONTROL_POINT_TYPE_LATEST_YEAR, (const char *) search_data);
+            media_control_service_client_search_control_command_execute(mcs_cid);
+            break;
+
+        case '7':
+            search_data = "Genre";
+            printf("MCS: search genre %s\n", search_data);
+            media_control_service_client_search_control_command_init(mcs_cid);
+            media_control_service_client_search_control_command_add(mcs_cid, SEARCH_CONTROL_POINT_TYPE_GENRE, (const char *) search_data);
+            media_control_service_client_search_control_command_execute(mcs_cid);
+            break;
+
+        case '8':
+            search_data = "";
+            printf("MCS: search only tracks %s\n", search_data);
+            media_control_service_client_search_control_command_init(mcs_cid);
+            media_control_service_client_search_control_command_add(mcs_cid, SEARCH_CONTROL_POINT_TYPE_ONLY_TRACKS, (const char *) search_data);
+            media_control_service_client_search_control_command_execute(mcs_cid);
+            break;
+
+        case '9':
+            search_data = "";
+            printf("MCS: search only groups %s\n", search_data);
+            media_control_service_client_search_control_command_init(mcs_cid);
+            media_control_service_client_search_control_command_add(mcs_cid, SEARCH_CONTROL_POINT_TYPE_ONLY_GROUPS, (const char *) search_data);
+            media_control_service_client_search_control_command_execute(mcs_cid);
+            break;
 
         case '\n':
         case '\r':
