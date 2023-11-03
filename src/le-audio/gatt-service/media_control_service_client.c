@@ -889,6 +889,8 @@ uint8_t media_control_service_client_search_control_command_add(uint16_t mcs_cid
         } else {
             connection->write_buffer[connection->write_buffer_length++] = 1 + strlen(data);
             connection->write_buffer[connection->write_buffer_length++] = (uint8_t) type;
+            memcpy(&connection->write_buffer[connection->write_buffer_length], data, strlen(data));
+            connection->write_buffer_length += strlen(data);
         }
     }
     return ERROR_CODE_SUCCESS;
