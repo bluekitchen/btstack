@@ -62,8 +62,7 @@ typedef enum {
     MEDIA_CONTROL_SERVICE_CLIENT_STATE_READY,
     MEDIA_CONTROL_SERVICE_CLIENT_STATE_W2_READ_CHARACTERISTIC_VALUE,
     MEDIA_CONTROL_SERVICE_CLIENT_STATE_W4_READ_CHARACTERISTIC_VALUE_RESULT,
-    MEDIA_CONTROL_SERVICE_CLIENT_STATE_W2_WRITE_CHARACTERISTIC_VALUE,
-    MEDIA_CONTROL_SERVICE_CLIENT_STATE_W4_WRITE_CHARACTERISTIC_VALUE_RESULT,    
+    MEDIA_CONTROL_SERVICE_CLIENT_STATE_W2_WRITE_CHARACTERISTIC_VALUE_WITHOUT_RESPONSE    
 } media_service_client_state_t;
 
 typedef struct {
@@ -148,7 +147,7 @@ uint8_t media_control_service_client_get_media_player_icon_object_id(uint16_t mc
 
 /**
  * @brief Get the media player icon object url. 
- * The value is reported via the GATTSERVICE_SUBEVENT_MCS_CLIENT_MEDIA_PLAYER_ICON_OBJECT_URL event.  
+ * The value is reported via the GATTSERVICE_SUBEVENT_MCS_CLIENT_MEDIA_PLAYER_ICON_URI event.  
  * If the name size is greater than ATT_MTU-3, then the first ATT_MTU-3 octets shall be returned. 
  *
  * @param mcs_cid
@@ -157,7 +156,7 @@ uint8_t media_control_service_client_get_media_player_icon_object_id(uint16_t mc
  *      - ERROR_CODE_COMMAND_DISALLOWED if client is not done with previous queries, or
  *      - ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE if the corresponding characteristic is not found on server side.
  */
-uint8_t media_control_service_client_get_media_player_icon_url(uint16_t mcs_cid);
+uint8_t media_control_service_client_get_media_player_icon_uri(uint16_t mcs_cid);
 
 /**
  * @brief Get the track title. 
