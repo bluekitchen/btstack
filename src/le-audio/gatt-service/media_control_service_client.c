@@ -277,7 +277,8 @@ static void mcs_client_emit_string_value(uint16_t cid, btstack_packet_handler_t 
     pos++;                      // reserve event[5] for value size
 
     uint16_t data_length = btstack_strcpy((char *)&event[pos], sizeof(event) - pos, (const char *)data);
-    
+    pos += data_length;
+
     event[1] = pos - 2;         // store subevent size
     event[5] = data_length;     // store value size
     (*event_callback)(HCI_EVENT_PACKET, 0, event, pos);
