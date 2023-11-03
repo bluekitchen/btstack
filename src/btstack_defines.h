@@ -5161,7 +5161,7 @@ typedef uint8_t sm_key_t[16];
  * @param value_len
  * @param value
  */
-#define GATTSERVICE_SUBEVENT_MCS_CLIENT_MEDIA_PLAYER_ICON_OBJECT_URL                 0x81u
+#define GATTSERVICE_SUBEVENT_MCS_CLIENT_MEDIA_PLAYER_ICON_URI                      0x81u
 
 /**
  * @format 12
@@ -5202,7 +5202,7 @@ typedef uint8_t sm_key_t[16];
  * @param mcs_cid
  * @param speed
  */
-#define GATTSERVICE_SUBEVENT_MSC_CLIENT_PLAYBACK_SPEED                                   0x86u
+#define GATTSERVICE_SUBEVENT_MCS_CLIENT_PLAYBACK_SPEED                                   0x86u
 
 /**
  * @format 121
@@ -5210,7 +5210,7 @@ typedef uint8_t sm_key_t[16];
  * @param mcs_cid
  * @param multiplier
  */
-#define GATTSERVICE_SUBEVENT_MSC_CLIENT_SEEKING_SPEED                                 0x87u
+#define GATTSERVICE_SUBEVENT_MCS_CLIENT_SEEKING_SPEED                                 0x87u
 
 /**
  * @format 12JV
@@ -5332,6 +5332,7 @@ typedef uint8_t sm_key_t[16];
  * @param att_status
  */
 #define GATTSERVICE_SUBEVENT_MCS_CLIENT_WRITE_DONE                                      0x95u
+
 /**
  * @format 1H1
  * @param subevent_code
