@@ -115,6 +115,7 @@ typedef enum {
     MCS_CLIENT_CHARACTERISTIC_INDEX_SEARCH_RESULTS_OBJECT_ID,
     MCS_CLIENT_CHARACTERISTIC_INDEX_SEARCH_CONTROL_POINT,
     MCS_CLIENT_CHARACTERISTIC_INDEX_CONTENT_CONTROL_ID,
+    MCS_CLIENT_CHARACTERISTIC_INDEX_RFU
 } mcs_client_characteristic_index_t;
 
 static void mcs_client_replace_subevent_id_and_emit(btstack_packet_handler_t callback, uint8_t * packet, uint16_t size, uint8_t subevent_id){
@@ -224,12 +225,12 @@ static void mcs_client_run_for_connection(void * context){
                 mcs_client_value_handle_for_index(connection));
             break;
 
-        case MEDIA_CONTROL_SERVICE_CLIENT_STATE_W2_WRITE_CHARACTERISTIC_VALUE:
-            connection->state = MEDIA_CONTROL_SERVICE_CLIENT_STATE_W4_WRITE_CHARACTERISTIC_VALUE_RESULT;
+        case MEDIA_CONTROL_SERVICE_CLIENT_STATE_W2_WRITE_CHARACTERISTIC_VALUE_WITHOUT_RESPONSE:
+            connection->state = MEDIA_CONTROL_SERVICE_CLIENT_STATE_READY;
 
-            value_length = mcs_client_serialize_characteristic_value_for_write(connection, value);
-            (void) gatt_client_write_value_of_characteristic(
-                &mcs_client_handle_gatt_client_event, con_handle, 
+            value_length = mcs_client_serialize_characteristic_value_for_write(connection, &value);
+            (void) gatt_client_write_value_of_characteristic_without_response(
+                con_handle, 
                 mcs_client_value_handle_for_index(connection),
                 value_length, value);
             
@@ -588,8 +589,8 @@ static uint8_t mcs_client_request_read_characteristic(uint16_t mcs_cid, mcs_clie
     return mcs_client_request_send_gatt_query(connection, characteristic_index);
 }
 
-static uint8_t mcs_client_request_write_characteristic(mcs_client_connection_t * connection, mcs_client_characteristic_index_t characteristic_index){
-    connection->state = MEDIA_CONTROL_SERVICE_CLIENT_STATE_W2_WRITE_CHARACTERISTIC_VALUE;
+static uint8_t mcs_client_request_write_characteristic_without_response(mcs_client_connection_t * connection, mcs_client_characteristic_index_t characteristic_index){
+    connection->state = MEDIA_CONTROL_SERVICE_CLIENT_STATE_W2_WRITE_CHARACTERISTIC_VALUE_WITHOUT_RESPONSE;
     return mcs_client_request_send_gatt_query(connection, characteristic_index);
 }
 
@@ -681,7 +682,7 @@ uint8_t media_control_service_client_set_track_position(uint16_t mcs_cid, uint32
         return status;
     }
     connection->data.data_32 = position_10ms;
-    return mcs_client_request_write_characteristic(connection, index);
+    return mcs_client_request_write_characteristic_without_response(connection, index);
 }
 
 uint8_t media_control_service_client_set_playback_speed(uint16_t mcs_cid, uint16_t playback_speed){
@@ -696,7 +697,7 @@ uint8_t media_control_service_client_set_playback_speed(uint16_t mcs_cid, uint16
         return status;
     }
     connection->data.data_16 = playback_speed;
-    return mcs_client_request_write_characteristic(connection, index);
+    return mcs_client_request_write_characteristic_without_response(connection, index);
 }
 
 uint8_t media_control_service_client_set_current_track_object_id(uint16_t mcs_cid, const char * object_id){
@@ -711,7 +712,7 @@ uint8_t media_control_service_client_set_current_track_object_id(uint16_t mcs_ci
         return status;
     }
     connection->data.data_string = object_id;
-    return mcs_client_request_write_characteristic(connection, index);
+    return mcs_client_request_write_characteristic_without_response(connection, index);
 }
 
 uint8_t media_control_service_client_set_next_track_object_id(uint16_t mcs_cid, const char * object_id){
@@ -726,7 +727,7 @@ uint8_t media_control_service_client_set_next_track_object_id(uint16_t mcs_cid, 
         return status;
     }
     connection->data.data_string = object_id;
-    return mcs_client_request_write_characteristic(connection, index);
+    return mcs_client_request_write_characteristic_without_response(connection, index);
 }
 
 uint8_t media_control_service_client_set_current_group_object_id(uint16_t mcs_cid, const char * object_id){
@@ -741,7 +742,7 @@ uint8_t media_control_service_client_set_current_group_object_id(uint16_t mcs_ci
         return status;
     }
     connection->data.data_string = object_id;
-    return mcs_client_request_write_characteristic(connection, index);
+    return mcs_client_request_write_characteristic_without_response(connection, index);
 }
 
 uint8_t media_control_service_client_set_playing_order(uint16_t mcs_cid, uint8_t playing_order){
@@ -756,7 +757,7 @@ uint8_t media_control_service_client_set_playing_order(uint16_t mcs_cid, uint8_t
         return status;
     }
     connection->data.data_8 = playing_order;
-    return mcs_client_request_write_characteristic(connection, index);
+    return mcs_client_request_write_characteristic_without_response(connection, index);
 
 }
 
@@ -773,7 +774,7 @@ static uint8_t media_control_service_client_media_control_command(uint16_t mcs_c
     }
     connection->data.data_8 = media_control_opcode;
     connection->media_control_command_param = media_control_command_param;
-    return mcs_client_request_write_characteristic(connection, index);
+    return mcs_client_request_write_characteristic_without_response(connection, index);
 }
 
 uint8_t media_control_service_client_command_play(uint16_t mcs_cid){
@@ -907,7 +908,7 @@ uint8_t media_control_service_client_search_control_command_execute(uint16_t mcs
     if (status != ERROR_CODE_SUCCESS){
         return status;
     }
-    return mcs_client_request_write_characteristic(connection, index);
+    return mcs_client_request_write_characteristic_without_response(connection, index);
 }
 
 
