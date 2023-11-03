@@ -118,6 +118,32 @@ typedef enum {
     MCS_CLIENT_CHARACTERISTIC_INDEX_RFU
 } mcs_client_characteristic_index_t;
 
+static char * mcs_client_characteristic_name[] = {
+    "MEDIA_PLAYER_NAME",
+    "MEDIA_PLAYER_ICON_OBJECT_ID",
+    "MEDIA_PLAYER_ICON_URI",
+    "TRACK_CHANGED",
+    "TRACK_TITLE",
+    "TRACK_DURATION",
+    "TRACK_POSITION",
+    "PLAYBACK_SPEED",
+    "SEEKING_SPEED",
+    "CURRENT_TRACK_SEGMENTS_OBJECT_ID",
+    "CURRENT_TRACK_OBJECT_ID",
+    "NEXT_TRACK_OBJECT_ID",
+    "PARENT_GROUP_OBJECT_ID",
+    "CURRENT_GROUP_OBJECT_ID",
+    "PLAYING_ORDER",
+    "PLAYING_ORDERS_SUPPORTED",
+    "MEDIA_STATE",
+    "MEDIA_CONTROL_POINT",
+    "MEDIA_CONTROL_POINT_OPCODES_SUPPORTED",
+    "SEARCH_RESULTS_OBJECT_ID",
+    "SEARCH_CONTROL_POINT",
+    "CONTENT_CONTROL_ID",
+    "RFU"
+};
+
 static void mcs_client_replace_subevent_id_and_emit(btstack_packet_handler_t callback, uint8_t * packet, uint16_t size, uint8_t subevent_id){
     UNUSED(size);
     btstack_assert(callback != NULL);
@@ -126,35 +152,23 @@ static void mcs_client_replace_subevent_id_and_emit(btstack_packet_handler_t cal
     (*callback)(HCI_EVENT_PACKET, 0, packet, size);
 }
 
-static void mcs_client_packet_handler_internal(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    UNUSED(channel);
-    UNUSED(size);
-
-    if (packet_type != HCI_EVENT_PACKET) return;
-    if (hci_event_packet_get_type(packet) != HCI_EVENT_GATTSERVICE_META) return;
-
-    gatt_service_client_connection_helper_t * connection;
-
-    switch (hci_event_gattservice_meta_get_subevent_code(packet)){
-        case GATTSERVICE_SUBEVENT_CLIENT_CONNECTED:
-            connection = gatt_service_client_get_connection_for_cid(&mcs_client, gattservice_subevent_client_connected_get_cid(packet));
-            btstack_assert(connection != NULL);
-            mcs_client_replace_subevent_id_and_emit(connection->event_callback, packet, size, GATTSERVICE_SUBEVENT_MCS_CLIENT_CONNECTED);
-            break;
-
-        case GATTSERVICE_SUBEVENT_CLIENT_DISCONNECTED:
-            connection = gatt_service_client_get_connection_for_cid(&mcs_client, gattservice_subevent_client_disconnected_get_cid(packet));
-            btstack_assert(connection != NULL);
-            mcs_client_replace_subevent_id_and_emit(connection->event_callback, packet, size, GATTSERVICE_SUBEVENT_MCS_CLIENT_DISCONNECTED);
-            break;
-
-        default:
-            break;
-    }
-}
 
 static uint16_t mcs_client_value_handle_for_index(mcs_client_connection_t * connection){
     return connection->basic_connection.characteristics[connection->characteristic_index].value_handle;
+}
+
+static uint16_t gatt_service_client_characteristic_index2uuid16(const gatt_service_client_helper_t * client, uint8_t index){
+    return client->characteristics_desc16[index].uuid16;
+}
+
+static uint16_t gatt_service_client_characteristic_value_handle2uuid16(mcs_client_connection_t * connection, uint16_t value_handle) {
+    int i;
+    for (i = 0; i < connection->basic_connection.characteristics_num; i++){
+        if (connection->basic_connection.characteristics[i].value_handle == value_handle) {
+            return connection->basic_connection.characteristics[i].uuid16;
+        }
+    }
+    return 0;
 }
 
 static uint16_t mcs_client_serialize_characteristic_value_for_write(mcs_client_connection_t * connection, uint8_t ** out_value){
@@ -203,6 +217,17 @@ static uint16_t mcs_client_serialize_characteristic_value_for_write(mcs_client_c
             break;
     }
     return 0;
+}
+
+static gatt_service_client_connection_helper_t * gatt_service_client_get_connection_for_con_handle(gatt_service_client_helper_t * client, hci_con_handle_t con_handle){
+    btstack_linked_list_iterator_t it;    
+    btstack_linked_list_iterator_init(&it, (btstack_linked_list_t *) &client->connections);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        gatt_service_client_connection_helper_t * connection = (gatt_service_client_connection_helper_t *)btstack_linked_list_iterator_next(&it);
+        if (connection->con_handle != con_handle) continue;
+        return connection;
+    }
+    return NULL;
 }
 
 static void mcs_client_run_for_connection(void * context){
@@ -280,10 +305,10 @@ static void mcs_client_emit_number(uint16_t cid, btstack_packet_handler_t event_
 }
 
 static void mcs_client_emit_done_event(mcs_client_connection_t * connection, uint8_t index, uint8_t status){
-    btstack_packet_handler_t event_callback = gatt_service_client_get_event_callback_for_connection(&connection->basic_connection);
+    btstack_packet_handler_t event_callback = connection->basic_connection.event_callback;
     btstack_assert(event_callback != NULL);
 
-    uint16_t cid = gatt_service_client_get_cid_for_connection(&connection->basic_connection);
+    uint16_t cid = connection->basic_connection.cid;
     uint16_t characteristic_uuid16 = gatt_service_client_characteristic_index2uuid16(&mcs_client, index);
 
     uint8_t event[8];
@@ -344,10 +369,10 @@ static void mcs_client_emit_read_event(mcs_client_connection_t * connection, uin
         return;
     }
 
-    btstack_packet_handler_t event_callback = gatt_service_client_get_event_callback_for_connection(&connection->basic_connection);
+    btstack_packet_handler_t event_callback = connection->basic_connection.event_callback; 
     btstack_assert(event_callback != NULL);
 
-    uint16_t cid = gatt_service_client_get_cid_for_connection(&connection->basic_connection);
+    uint16_t cid = connection->basic_connection.cid;
     uint16_t characteristic_uuid16 = gatt_service_client_characteristic_index2uuid16(&mcs_client, index);
 
     switch (characteristic_uuid16){
@@ -413,19 +438,21 @@ static void mcs_client_emit_read_event(mcs_client_connection_t * connection, uin
     }
 }
 
-static void mcs_client_emit_notify_event(mcs_client_connection_t * connection, uint8_t index, uint8_t status, const uint8_t * data, uint16_t data_size){
+static void mcs_client_emit_notify_event(mcs_client_connection_t * connection, uint16_t value_handle, uint8_t status, const uint8_t * data, uint16_t data_size){
     if ((data_size > 0) && (data == NULL)){
         return;
     }
 
-    btstack_packet_handler_t event_callback = gatt_service_client_get_event_callback_for_connection(&connection->basic_connection);
+    btstack_packet_handler_t event_callback = connection->basic_connection.event_callback;
     btstack_assert(event_callback != NULL);
 
-    uint16_t cid = gatt_service_client_get_cid_for_connection(&connection->basic_connection);
-    uint16_t characteristic_uuid16 = gatt_service_client_characteristic_index2uuid16(&mcs_client, index);
+    uint16_t cid = connection->basic_connection.cid;
+    uint16_t characteristic_uuid16 = gatt_service_client_characteristic_value_handle2uuid16(connection, value_handle);
 
     switch (characteristic_uuid16){
-
+        case ORG_BLUETOOTH_CHARACTERISTIC_MEDIA_PLAYER_NAME:
+            mcs_client_emit_string_value(cid, event_callback, GATTSERVICE_SUBEVENT_MCS_CLIENT_MEDIA_PLAYER_NAME, data, data_size);
+            break;
         case ORG_BLUETOOTH_CHARACTERISTIC_TRACK_TITLE:
             mcs_client_emit_string_value(cid, event_callback, GATTSERVICE_SUBEVENT_MCS_CLIENT_TRACK_TITLE, data, data_size);
             break;
@@ -481,6 +508,58 @@ static void mcs_client_emit_notify_event(mcs_client_connection_t * connection, u
 }
 
 
+static void mcs_client_packet_handler_internal(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+    UNUSED(size);
+
+    if (packet_type != HCI_EVENT_PACKET) return;
+    gatt_service_client_connection_helper_t * connection_helper;
+    mcs_client_connection_t * connection;
+    int i;
+    hci_con_handle_t con_handle;
+
+    switch(hci_event_packet_get_type(packet)){
+        case HCI_EVENT_GATTSERVICE_META:
+            switch (hci_event_gattservice_meta_get_subevent_code(packet)){
+                case GATTSERVICE_SUBEVENT_CLIENT_CONNECTED:
+                    connection_helper = gatt_service_client_get_connection_for_cid(&mcs_client, gattservice_subevent_client_connected_get_cid(packet));
+                    btstack_assert(connection_helper != NULL);
+
+#ifdef ENABLE_TESTING_SUPPORT
+                    for (i = MCS_CLIENT_CHARACTERISTIC_INDEX_MEDIA_PLAYER_NAME; i < MCS_CLIENT_CHARACTERISTIC_INDEX_RFU; i++){
+                        printf("0x%04X %s\n", connection_helper->characteristics[i].value_handle, mcs_client_characteristic_name[i]);
+
+                    }
+#endif
+                    mcs_client_replace_subevent_id_and_emit(connection_helper->event_callback, packet, size, GATTSERVICE_SUBEVENT_MCS_CLIENT_CONNECTED);
+                    break;
+
+                case GATTSERVICE_SUBEVENT_CLIENT_DISCONNECTED:
+                    connection_helper = gatt_service_client_get_connection_for_cid(&mcs_client, gattservice_subevent_client_disconnected_get_cid(packet));
+                    btstack_assert(connection_helper != NULL);
+                    mcs_client_replace_subevent_id_and_emit(connection_helper->event_callback, packet, size, GATTSERVICE_SUBEVENT_MCS_CLIENT_DISCONNECTED);
+                    break;
+
+                default:
+                    break;
+            }
+            break;
+
+        case GATT_EVENT_NOTIFICATION:
+            con_handle = (hci_con_handle_t)gatt_event_notification_get_handle(packet);
+            connection = (mcs_client_connection_t *)gatt_service_client_get_connection_for_con_handle(&mcs_client, con_handle);
+
+            btstack_assert(connection != NULL);
+
+            mcs_client_emit_notify_event(connection, gatt_event_notification_get_value_handle(packet), ATT_ERROR_SUCCESS,
+                                         gatt_event_notification_get_value(packet),
+                                         gatt_event_notification_get_value_length(packet));
+            break;
+        default:
+            break;
+    }
+}
+
 static void mcs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(packet_type); 
     UNUSED(channel);
@@ -511,17 +590,6 @@ static void mcs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t ch
             mcs_client_emit_done_event(connection, connection->characteristic_index, gatt_event_query_complete_get_att_status(packet));
             break;
 
-        case GATT_EVENT_NOTIFICATION:
-            con_handle = (hci_con_handle_t)gatt_event_notification_get_handle(packet);
-            connection = (mcs_client_connection_t *)gatt_service_client_get_connection_for_con_handle(&mcs_client, con_handle);
-           
-            btstack_assert(connection != NULL);
-
-            mcs_client_emit_notify_event(connection, connection->characteristic_index, ATT_ERROR_SUCCESS, 
-                gatt_event_notification_get_value(packet), 
-                gatt_event_notification_get_value_length(packet));
-            break;
-
         default:
             break;
     }
@@ -550,7 +618,19 @@ uint8_t media_control_service_client_connect(hci_con_handle_t con_handle, mcs_cl
     btstack_assert(mcs_client.characteristics_desc16_num > 0);
     return gatt_service_client_connect(con_handle,
         &mcs_client, &connection->basic_connection, 
-        characteristics, characteristics_num, packet_handler, mcs_cid);
+        characteristics, characteristics_num, packet_handler,
+        mcs_cid);
+}
+
+static bool gatt_service_client_can_query_characteristic(gatt_service_client_connection_helper_t * connection, uint8_t characteristic_index){
+    if (connection->state != GATT_SERVICE_CLIENT_STATE_CONNECTED){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+
+    if (connection->characteristics[characteristic_index].value_handle == 0){
+        return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
+    }
+    return ERROR_CODE_SUCCESS;
 }
 
 static bool mcs_client_can_query_characteristic(mcs_client_connection_t * connection, mcs_client_characteristic_index_t characteristic_index){
