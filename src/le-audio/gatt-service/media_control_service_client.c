@@ -95,7 +95,7 @@ static const gatt_service_client_characteristic_desc16_t mcs_characteristics_des
 typedef enum {
     MCS_CLIENT_CHARACTERISTIC_INDEX_MEDIA_PLAYER_NAME = 0,
     MCS_CLIENT_CHARACTERISTIC_INDEX_MEDIA_PLAYER_ICON_OBJECT_ID,
-    MCS_CLIENT_CHARACTERISTIC_INDEX_MEDIA_PLAYER_ICON_URL,
+    MCS_CLIENT_CHARACTERISTIC_INDEX_MEDIA_PLAYER_ICON_URI,
     MCS_CLIENT_CHARACTERISTIC_INDEX_TRACK_CHANGED,
     MCS_CLIENT_CHARACTERISTIC_INDEX_TRACK_TITLE,
     MCS_CLIENT_CHARACTERISTIC_INDEX_TRACK_DURATION,
@@ -360,7 +360,7 @@ static void mcs_client_emit_read_event(mcs_client_connection_t * connection, uin
             mcs_client_emit_string_value(cid, event_callback, GATTSERVICE_SUBEVENT_MCS_CLIENT_MEDIA_PLAYER_ICON_OBJECT_ID, data, data_size);
             break;
         case ORG_BLUETOOTH_CHARACTERISTIC_MEDIA_PLAYER_ICON_URL:
-            mcs_client_emit_string_value(cid, event_callback, GATTSERVICE_SUBEVENT_MCS_CLIENT_MEDIA_PLAYER_ICON_OBJECT_URL, data, data_size);
+            mcs_client_emit_string_value(cid, event_callback, GATTSERVICE_SUBEVENT_MCS_CLIENT_MEDIA_PLAYER_ICON_URI, data, data_size);
             break;
         case ORG_BLUETOOTH_CHARACTERISTIC_TRACK_TITLE:
             mcs_client_emit_string_value(cid, event_callback, GATTSERVICE_SUBEVENT_MCS_CLIENT_TRACK_TITLE, data, data_size);
@@ -601,8 +601,8 @@ uint8_t media_control_service_client_get_media_player_icon_object_id(uint16_t mc
     return mcs_client_request_read_characteristic(mcs_cid, MCS_CLIENT_CHARACTERISTIC_INDEX_MEDIA_PLAYER_ICON_OBJECT_ID); 
 }
 
-uint8_t media_control_service_client_get_media_player_icon_url(uint16_t mcs_cid){
-    return mcs_client_request_read_characteristic(mcs_cid, MCS_CLIENT_CHARACTERISTIC_INDEX_MEDIA_PLAYER_ICON_URL); 
+uint8_t media_control_service_client_get_media_player_icon_uri(uint16_t mcs_cid){
+    return mcs_client_request_read_characteristic(mcs_cid, MCS_CLIENT_CHARACTERISTIC_INDEX_MEDIA_PLAYER_ICON_URI); 
 }
 
 uint8_t media_control_service_client_get_track_title(uint16_t mcs_cid){
