@@ -2056,9 +2056,9 @@ void hfp_accept_synchronous_connection(hfp_connection_t * hfp_connection, bool u
     uint16_t max_latency;
     uint16_t packet_types;
     uint16_t retransmission_effort;
-    hfp_link_settings_t link_setting = HFP_LINK_SETTINGS_NONE;
 
 #ifdef ENABLE_HFP_HF_SAFE_SETTINGS
+    hfp_link_settings_t link_setting = HFP_LINK_SETTINGS_NONE;
     // fallback for non-CVSD codec and SCO connection
     if ((hfp_connection->negotiated_codec != HFP_CODEC_CVSD) && (use_eSCO == false)){
         max_latency           = 0xffff;
@@ -2100,8 +2100,8 @@ void hfp_accept_synchronous_connection(hfp_connection_t * hfp_connection, bool u
     // bits 6-9 are 'don't allow'
     uint16_t packet_types_flipped = packet_types ^ 0x3c0;
 
-    log_info("Sending hci_accept_connection_request for link settings %u: packet types 0x%04x, sco_voice_setting 0x%02x",
-             (uint8_t) link_setting, packet_types, sco_voice_setting);
+    log_info("Sending hci_accept_connection_request: packet types 0x%04x, sco_voice_setting 0x%02x",
+            packet_types, sco_voice_setting);
 
 #if defined(ENABLE_SCO_OVER_PCM) && defined(ENABLE_NXP_PCM_WBS)
     uint8_t radio_coding_format = 3;
