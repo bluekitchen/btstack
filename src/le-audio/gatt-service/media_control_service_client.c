@@ -157,30 +157,27 @@ static uint16_t mcs_client_value_handle_for_index(mcs_client_connection_t * conn
     return connection->basic_connection.characteristics[connection->characteristic_index].value_handle;
 }
 
-static uint16_t mcs_client_serialize_characteristic_value_for_write(mcs_client_connection_t * connection, uint8_t * out_value){
+static uint16_t mcs_client_serialize_characteristic_value_for_write(mcs_client_connection_t * connection, uint8_t ** out_value){
     uint16_t characteristic_uuid16 = gatt_service_client_characteristic_index2uuid16(&mcs_client, connection->characteristic_index);
-    out_value = NULL;
-    
+    *out_value = connection->write_buffer;
+
     switch (characteristic_uuid16){
         case ORG_BLUETOOTH_CHARACTERISTIC_CURRENT_TRACK_OBJECT_ID:
         case ORG_BLUETOOTH_CHARACTERISTIC_NEXT_TRACK_OBJECT_ID:
         case ORG_BLUETOOTH_CHARACTERISTIC_CURRENT_GROUP_OBJECT_ID:
-            out_value = (uint8_t *) connection->data.data_string;
+            *out_value = (uint8_t *) connection->data.data_string;
             return strlen(connection->data.data_string);
         
         case ORG_BLUETOOTH_CHARACTERISTIC_TRACK_POSITION:
             little_endian_store_32(connection->write_buffer, 0, connection->data.data_32);
-            out_value = connection->write_buffer;
             return 4;
 
         case ORG_BLUETOOTH_CHARACTERISTIC_PLAYBACK_SPEED:
             little_endian_store_16(connection->write_buffer, 0, connection->data.data_16);
-            out_value = connection->write_buffer;
             return 2;
         
         case ORG_BLUETOOTH_CHARACTERISTIC_PLAYING_ORDER:
             connection->write_buffer[0] = connection->data.data_8;
-            out_value = connection->write_buffer;
             return 1;
 
         case ORG_BLUETOOTH_CHARACTERISTIC_MEDIA_CONTROL_POINT:
