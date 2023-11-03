@@ -372,10 +372,10 @@ static void mcs_client_emit_read_event(mcs_client_connection_t * connection, uin
             mcs_client_emit_number(cid, event_callback, GATTSERVICE_SUBEVENT_MCS_CLIENT_TRACK_POSITION, data, data_size, 4);
             break;
         case ORG_BLUETOOTH_CHARACTERISTIC_PLAYBACK_SPEED:
-            mcs_client_emit_number(cid, event_callback, GATTSERVICE_SUBEVENT_MSC_CLIENT_PLAYBACK_SPEED, data, data_size, 2);
+            mcs_client_emit_number(cid, event_callback, GATTSERVICE_SUBEVENT_MCS_CLIENT_PLAYBACK_SPEED, data, data_size, 2);
             break;
         case ORG_BLUETOOTH_CHARACTERISTIC_SEEKING_SPEED:
-            mcs_client_emit_number(cid, event_callback, GATTSERVICE_SUBEVENT_MSC_CLIENT_SEEKING_SPEED, data, data_size, 1);
+            mcs_client_emit_number(cid, event_callback, GATTSERVICE_SUBEVENT_MCS_CLIENT_SEEKING_SPEED, data, data_size, 1);
             break;
         case ORG_BLUETOOTH_CHARACTERISTIC_CURRENT_TRACK_SEGMENTS_OBJECT_ID:
             mcs_client_emit_string_value(cid, event_callback, GATTSERVICE_SUBEVENT_MCS_CLIENT_CURRENT_TRACK_SEGMENTS_OBJECT_ID, data, data_size);
@@ -438,10 +438,10 @@ static void mcs_client_emit_notify_event(mcs_client_connection_t * connection, u
             mcs_client_emit_number(cid, event_callback, GATTSERVICE_SUBEVENT_MCS_CLIENT_TRACK_POSITION, data, data_size, 4);
             break;
         case ORG_BLUETOOTH_CHARACTERISTIC_PLAYBACK_SPEED:
-            mcs_client_emit_number(cid, event_callback, GATTSERVICE_SUBEVENT_MSC_CLIENT_PLAYBACK_SPEED, data, data_size, 2);
+            mcs_client_emit_number(cid, event_callback, GATTSERVICE_SUBEVENT_MCS_CLIENT_PLAYBACK_SPEED, data, data_size, 2);
             break;
         case ORG_BLUETOOTH_CHARACTERISTIC_SEEKING_SPEED:
-            mcs_client_emit_number(cid, event_callback, GATTSERVICE_SUBEVENT_MSC_CLIENT_SEEKING_SPEED, data, data_size, 1);
+            mcs_client_emit_number(cid, event_callback, GATTSERVICE_SUBEVENT_MCS_CLIENT_SEEKING_SPEED, data, data_size, 1);
             break;
         case ORG_BLUETOOTH_CHARACTERISTIC_CURRENT_TRACK_OBJECT_ID:
             mcs_client_emit_string_value(cid, event_callback, GATTSERVICE_SUBEVENT_MCS_CLIENT_CURRENT_TRACK_OBJECT_ID, data, data_size);
