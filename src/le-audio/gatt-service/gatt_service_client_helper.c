@@ -174,7 +174,7 @@ static uint8_t gatt_service_client_register_notification(gatt_service_client_hel
         if (status == ERROR_CODE_SUCCESS){
             gatt_client_listen_for_characteristic_value_updates(
                 &connection->characteristics[connection->characteristic_index].notification_listener, 
-                connection->handle_gatt_server_notification,
+                client->packet_handler,
                 connection->con_handle, &characteristic);
         }
     }
