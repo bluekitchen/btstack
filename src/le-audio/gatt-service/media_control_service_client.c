@@ -157,10 +157,6 @@ static uint16_t mcs_client_value_handle_for_index(mcs_client_connection_t * conn
     return connection->basic_connection.characteristics[connection->characteristic_index].value_handle;
 }
 
-static uint16_t gatt_service_client_characteristic_index2uuid16(const gatt_service_client_helper_t * client, uint8_t index){
-    return client->characteristics_desc16[index].uuid16;
-}
-
 static uint16_t gatt_service_client_characteristic_value_handle2uuid16(mcs_client_connection_t * connection, uint16_t value_handle) {
     int i;
     for (i = 0; i < connection->basic_connection.characteristics_num; i++){
@@ -217,17 +213,6 @@ static uint16_t mcs_client_serialize_characteristic_value_for_write(mcs_client_c
             break;
     }
     return 0;
-}
-
-static gatt_service_client_connection_helper_t * gatt_service_client_get_connection_for_con_handle(gatt_service_client_helper_t * client, hci_con_handle_t con_handle){
-    btstack_linked_list_iterator_t it;    
-    btstack_linked_list_iterator_init(&it, (btstack_linked_list_t *) &client->connections);
-    while (btstack_linked_list_iterator_has_next(&it)){
-        gatt_service_client_connection_helper_t * connection = (gatt_service_client_connection_helper_t *)btstack_linked_list_iterator_next(&it);
-        if (connection->con_handle != con_handle) continue;
-        return connection;
-    }
-    return NULL;
 }
 
 static void mcs_client_run_for_connection(void * context){
@@ -621,17 +606,6 @@ uint8_t media_control_service_client_connect(hci_con_handle_t con_handle, mcs_cl
         &mcs_client, &connection->basic_connection, 
         characteristics, characteristics_num, packet_handler,
         mcs_cid);
-}
-
-static bool gatt_service_client_can_query_characteristic(gatt_service_client_connection_helper_t * connection, uint8_t characteristic_index){
-    if (connection->state != GATT_SERVICE_CLIENT_STATE_CONNECTED){
-        return ERROR_CODE_COMMAND_DISALLOWED;
-    }
-
-    if (connection->characteristics[characteristic_index].value_handle == 0){
-        return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
-    }
-    return ERROR_CODE_SUCCESS;
 }
 
 static bool mcs_client_can_query_characteristic(mcs_client_connection_t * connection, mcs_client_characteristic_index_t characteristic_index){
