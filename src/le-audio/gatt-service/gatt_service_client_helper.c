@@ -521,6 +521,17 @@ uint8_t gatt_service_client_connect(
     return ERROR_CODE_SUCCESS;
 }
 
+bool gatt_service_client_can_query_characteristic(gatt_service_client_connection_helper_t * connection, uint8_t characteristic_index){
+    if (connection->state != GATT_SERVICE_CLIENT_STATE_CONNECTED){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+
+    if (connection->characteristics[characteristic_index].value_handle == 0){
+        return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
+    }
+    return ERROR_CODE_SUCCESS;
+}
+
 uint8_t gatt_service_client_disconnect(gatt_service_client_helper_t * client, uint16_t connection_cid){
     btstack_assert(client != NULL);
 
