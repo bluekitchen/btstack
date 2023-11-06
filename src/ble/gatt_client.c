@@ -2301,7 +2301,7 @@ static void gatt_client_handle_att_response(gatt_client_t * gatt_client, uint8_t
                                 gatt_client->state = P_W2_EXECUTE_PREPARED_WRITE_CHARACTERISTIC_DESCRIPTOR;
                                 break;
 #ifdef ENABLE_LE_SIGNED_WRITE
-                            case P_W4_SEND_SINGED_WRITE_DONE:
+                            case P_W4_SEND_SIGNED_WRITE_DONE:
                                 gatt_client->state = P_W2_SEND_SIGNED_WRITE;
                                 break;
 #endif
