@@ -169,6 +169,7 @@ uint8_t gatt_service_client_connect(
         gatt_service_client_characteristic_t * characteristics, uint8_t characteristics_num,
         btstack_packet_handler_t packet_handler, uint16_t * connection_cid);
 
+bool gatt_service_client_can_query_characteristic(gatt_service_client_connection_helper_t * connection, uint8_t characteristic_index);
 
 uint8_t gatt_service_client_disconnect(gatt_service_client_helper_t * client, uint16_t connection_cid);
 
