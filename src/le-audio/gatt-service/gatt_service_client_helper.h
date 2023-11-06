@@ -105,8 +105,6 @@ typedef struct {
 } gatt_service_client_characteristic_desc16_t;
 
 typedef struct {
-    btstack_linked_item_t item;
-
     btstack_linked_list_t connections;
     uint16_t cid_counter;
 
