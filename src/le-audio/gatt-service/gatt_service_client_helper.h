@@ -113,8 +113,6 @@ typedef struct {
     // characteristics
     uint8_t  characteristics_desc16_num;
     const gatt_service_client_characteristic_desc16_t * characteristics_desc16;
-    // control point
-    uint16_t control_point_uuid;
     
     btstack_packet_callback_registration_t hci_event_callback_registration;
     
