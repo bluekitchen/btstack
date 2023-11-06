@@ -165,7 +165,7 @@ static uint16_t gatt_service_client_characteristic_value_handle2uuid16(mcs_clien
     int i;
     for (i = 0; i < connection->basic_connection.characteristics_num; i++){
         if (connection->basic_connection.characteristics[i].value_handle == value_handle) {
-            return connection->basic_connection.characteristics[i].uuid16;
+            return gatt_service_client_characteristic_index2uuid16(&mcs_client, i);
         }
     }
     return 0;
