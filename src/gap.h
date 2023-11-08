@@ -344,6 +344,7 @@ void gap_local_bd_addr(bd_addr_t address_buffer);
 /**
  * @brief Disconnect connection with handle
  * @param handle
+ * @return status
  */
 uint8_t gap_disconnect(hci_con_handle_t handle);
 
@@ -793,13 +794,13 @@ uint8_t gap_periodic_advertising_stop(uint8_t advertising_handle);
  * @param mode 0 = ignore (default), 1 = periodic advertising events disabled
  *             2 = periodic advertising events enabled with duplicate filtering
  *             3 = periodic advertising events enabled with duplicate filtering
- * @return status
  * @param skip The number of periodic advertising packets that can be skipped after a successful receive
  * @param sync_timeout Range: 0x000A to 0x4000, Time = N*10 ms, Time Range: 100 ms to 163.84 s
  * @param cte_type  bit 0 = Do not sync to packets with an AoA Constant Tone Extension
  *                  bit 1 = Do not sync to packets with an AoD Constant Tone Extension with 1 μs slots
  *                  bit 2 = Do not sync to packets with an AoD Constant Tone Extension with 2 μs slots
  *                  bit 3 = Do not sync to packets without a Constant Tone Extension
+ * @return status
  */
 uint8_t gap_periodic_advertising_sync_transfer_set_default_parameters(uint8_t mode, uint16_t skip, uint16_t sync_timeout, uint8_t cte_type);
 
@@ -808,7 +809,7 @@ uint8_t gap_periodic_advertising_sync_transfer_set_default_parameters(uint8_t mo
  * @param con_handle of connected device
  * @param service_data 16-bit data to transfer to remote host
  * @param sync_handle of synchronized periodic advertising train to transfer
- * @return
+ * @return status
  */
 uint8_t gap_periodic_advertising_sync_transfer_send(hci_con_handle_t con_handle, uint16_t service_data, hci_con_handle_t sync_handle);
 
@@ -817,7 +818,7 @@ uint8_t gap_periodic_advertising_sync_transfer_send(hci_con_handle_t con_handle,
  * @param con_handle of connected device
  * @param service_data 16-bit data to transfer to remote host
  * @param advertising_handle of local periodic advertising train to transfer
- * @return
+ * @return status
  */
 uint8_t gap_periodic_advertising_set_info_transfer_send(hci_con_handle_t con_handle, uint16_t service_data, uint8_t advertising_handle);
 
@@ -842,7 +843,7 @@ uint8_t gap_big_create(le_audio_big_t * storage, le_audio_big_params_t * big_par
  * @brief Terminate Broadcast Isochronous Group (BIG)
  * @param big_handle
  * @return status
- * @events: GAP_SUBEVENT_BIG_TERMINATED
+ * @events GAP_SUBEVENT_BIG_TERMINATED
  */
 uint8_t gap_big_terminate(uint8_t big_handle);
 
@@ -986,7 +987,7 @@ void gap_set_max_number_peripheral_connections(int max_peripheral_connections);
  * @brief Add Device to Whitelist
  * @param address_typ
  * @param address
- * @return 0 if ok
+ * @return status
  */
 uint8_t gap_whitelist_add(bd_addr_type_t address_type, const bd_addr_t address);
 
@@ -994,30 +995,32 @@ uint8_t gap_whitelist_add(bd_addr_type_t address_type, const bd_addr_t address);
  * @brief Remove Device from Whitelist
  * @param address_typ
  * @param address
- * @return 0 if ok
+ * @return status
  */
 uint8_t gap_whitelist_remove(bd_addr_type_t address_type, const bd_addr_t address);
 
 /**
  * @brief Clear Whitelist
- * @return 0 if ok
+ * @return status
  */
 uint8_t gap_whitelist_clear(void);
 
 /**
  * @brief Connect to remote LE device
+ * @return status
  */
 uint8_t gap_connect(const bd_addr_t addr, bd_addr_type_t addr_type);
 
 /**
- *  @brief Connect with Whitelist
- *  @note Explicit whitelist management and this connect with whitelist replace deprecated gap_auto_connection_* functions
- *  @return - if ok
+ * @brief Connect with Whitelist
+ * @note Explicit whitelist management and this connect with whitelist replace deprecated gap_auto_connection_* functions
+ * @return status
  */
 uint8_t gap_connect_with_whitelist(void);
 
 /**
  * @brief Cancel connection process initiated by gap_connect
+ * @return status
  */
 uint8_t gap_connect_cancel(void);
 
@@ -1026,7 +1029,7 @@ uint8_t gap_connect_cancel(void);
  * @deprecated Please setup Whitelist with gap_whitelist_* and start connecting with gap_connect_with_whitelist
  * @param address_type
  * @param address
- * @return 0 if ok
+ * @return status
  */
 uint8_t gap_auto_connection_start(bd_addr_type_t address_type, const bd_addr_t address);
 
@@ -1035,7 +1038,7 @@ uint8_t gap_auto_connection_start(bd_addr_type_t address_type, const bd_addr_t a
  * @deprecated Please setup Whitelist with gap_whitelist_* and start connecting with gap_connect_with_whitelist
  * @param address_type
  * @param address
- * @return 0 if ok
+ * @return status
  */
 uint8_t gap_auto_connection_stop(bd_addr_type_t address_type, const bd_addr_t address);
 
@@ -1043,6 +1046,7 @@ uint8_t gap_auto_connection_stop(bd_addr_type_t address_type, const bd_addr_t ad
  * @brief Auto Connection Establishment - Stop everything
  * @deprecated Please setup Whitelist with gap_whitelist_* and start connecting with gap_connect_with_whitelist
  * @note  Convenience function to stop all active auto connection attempts
+ * @return status
  */
 uint8_t gap_auto_connection_stop_all(void);
 
@@ -1053,7 +1057,7 @@ uint8_t gap_auto_connection_stop_all(void);
  * @param tx_phys 1 = 1M, 2 = 2M, 4 = Coded
  * @param rx_phys 1 = 1M, 2 = 2M, 4 = Coded
  * @param phy_options 0 = no preferred coding for Coded, 1 = S=2 coding (500 kbit), 2 = S=8 coding (125 kbit)
- * @return 0 if ok
+ * @return status
  */
 uint8_t gap_le_set_phy(hci_con_handle_t con_handle, uint8_t all_phys, uint8_t tx_phys, uint8_t rx_phys, uint16_t phy_options);
 
@@ -1075,14 +1079,14 @@ uint8_t gap_encryption_key_size(hci_con_handle_t con_handle);
 /**
  * @brief Get authentication property.
  * @param con_handle
- * @return 1 if bonded with OOB/Passkey (AND MITM protection)
+ * @return true if bonded with OOB/Passkey (AND MITM protection)
  */
 bool gap_authenticated(hci_con_handle_t con_handle);
 
 /**
  * @brief Get secure connection property
  * @param con_handle
- * @return 1 if bonded usiung LE Secure Connections
+ * @return true if bonded usiung LE Secure Connections
  */
 bool gap_secure_connection(hci_con_handle_t con_handle);
 
@@ -1187,7 +1191,7 @@ void gap_link_key_iterator_done(btstack_link_key_iterator_t * it);
 /**
  * @brief Start GAP Classic Inquiry
  * @param duration in 1.28s units
- * @return 0 if ok
+ * @return status
  * @events: GAP_EVENT_INQUIRY_RESULT, GAP_EVENT_INQUIRY_COMPLETE
  */
 int gap_inquiry_start(uint8_t duration_in_1280ms_units);
@@ -1197,7 +1201,7 @@ int gap_inquiry_start(uint8_t duration_in_1280ms_units);
  * @param duration in 1.28s units
  * @param max_period_length between consecutive inquiries in 1.28s units
  * @param min_period_length between consecutive inquiries in 1.28s units
- * @return 0 if ok
+ * @return status
  * @events: GAP_EVENT_INQUIRY_RESULT, GAP_EVENT_INQUIRY_COMPLETE
  */
 uint8_t gap_inquiry_periodic_start(uint8_t duration, uint16_t max_period_length, uint16_t min_period_length);
@@ -1205,7 +1209,7 @@ uint8_t gap_inquiry_periodic_start(uint8_t duration, uint16_t max_period_length,
 /**
  * @brief Stop GAP Classic Inquiry (regular or periodic)
  * @return 0 if ok
- * @events: GAP_EVENT_INQUIRY_COMPLETE
+ * @events GAP_EVENT_INQUIRY_COMPLETE
  */
 int gap_inquiry_stop(void);
 
@@ -1233,7 +1237,7 @@ void gap_inquiry_set_transmit_power_level(int8_t tx_power);
  * @param addr
  * @param page_scan_repetition_mode
  * @param clock_offset only used when bit 15 is set - pass 0 if not known
- * @events: HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE
+ * @events HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE
  */
 int gap_remote_name_request(const bd_addr_t addr, uint8_t page_scan_repetition_mode, uint16_t clock_offset);
 
@@ -1310,6 +1314,7 @@ void gap_ssp_generate_oob_data(void);
  * @param r_192 Simple Pairing Randomizer derived from P-192 public key
  * @param c_256 Simple Pairing Hash C derived from P-256 public key
  * @param r_256 Simple Pairing Randomizer derived from P-256 public key
+ * @return status
  */
 uint8_t gap_ssp_remote_oob_data(const bd_addr_t addr, const uint8_t * c_192, const uint8_t * r_192, const uint8_t * c_256, const uint8_t * r_256);
 
@@ -1317,7 +1322,7 @@ uint8_t gap_ssp_remote_oob_data(const bd_addr_t addr, const uint8_t * c_192, con
  * Send SSP IO Capabilities Reply
  * @note IO Capabilities (Negative) Reply is sent automatically unless ENABLE_EXPLICIT_IO_CAPABILITIES_REPLY
  * @param addr
- * @return 0 if ok
+ * @return status
  */
 uint8_t gap_ssp_io_capabilities_response(const bd_addr_t addr);
 
@@ -1325,7 +1330,7 @@ uint8_t gap_ssp_io_capabilities_response(const bd_addr_t addr);
  * Send SSP IO Capabilities Negative Reply
  * @note IO Capabilities (Negative) Reply is sent automatically unless ENABLE_EXPLICIT_IO_CAPABILITIES_REPLY
  * @param addr
- * @return 0 if ok
+ * @return status
  */
 uint8_t gap_ssp_io_capabilities_negative(const bd_addr_t addr);
 
@@ -1335,7 +1340,7 @@ uint8_t gap_ssp_io_capabilities_negative(const bd_addr_t addr);
  * @param addr
  * @param link_key
  * @param type or INVALID_LINK_KEY if link key not available
- * @return 0 if ok
+ * @return status
  */
  uint8_t gap_send_link_key_response(const bd_addr_t addr, link_key_t link_key, link_key_type_t type);
 
@@ -1346,14 +1351,14 @@ uint8_t gap_ssp_io_capabilities_negative(const bd_addr_t addr);
  * @param sniff_max_interval range: 0x0002 to 0xFFFE; only even values are valid, Time = N * 0.625 ms
  * @param sniff_attempt Number of Baseband receive slots for sniff attempt.
  * @param sniff_timeout Number of Baseband receive slots for sniff timeout.
- @ @return 0 if ok
+ * @return status
  */
 uint8_t gap_sniff_mode_enter(hci_con_handle_t con_handle, uint16_t sniff_min_interval, uint16_t sniff_max_interval, uint16_t sniff_attempt, uint16_t sniff_timeout);
 
 /**
  * @brief Exit Sniff mode
  * @param con_handle
- @ @return 0 if ok
+ * @return status
  */
 uint8_t gap_sniff_mode_exit(hci_con_handle_t con_handle);
 
@@ -1363,7 +1368,7 @@ uint8_t gap_sniff_mode_exit(hci_con_handle_t con_handle);
  * @param max_latency range: 0x0002 to 0xFFFE; Time = N * 0.625 ms
  * @param min_remote_timeout range:  0x0002 to 0xFFFE; Time = N * 0.625 ms
  * @param min_local_timeout range:  0x0002 to 0xFFFE; Time = N * 0.625 ms
- @ @return 0 if ok
+ * @return status
  */
 uint8_t gap_sniff_subrating_configure(hci_con_handle_t con_handle, uint16_t max_latency, uint16_t min_remote_timeout, uint16_t min_local_timeout);
 
@@ -1375,7 +1380,7 @@ uint8_t gap_sniff_subrating_configure(hci_con_handle_t con_handle, uint16_t max_
  * @param peak_bandwidth
  * @param latency
  * @param delay_variation
- @ @return 0 if ok
+ * @return status
  */
 uint8_t gap_qos_set(hci_con_handle_t con_handle, hci_service_type_t service_type, uint32_t token_rate, uint32_t peak_bandwidth, uint32_t latency, uint32_t delay_variation);
 
