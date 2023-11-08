@@ -5482,11 +5482,19 @@ typedef uint8_t sm_key_t[16];
 #define MAP_SUBEVENT_MESSAGE_LISTING_ITEM                                 0x05u
 
 /**
+ * @format 12P
+ * @param subevent_code
+ * @param map_cid
+ * @param id
+ */
+#define MAP_SUBEVENT_CONVERSATION_LISTING_ITEM                            0x06u
+
+/**
  * @format 12
  * @param subevent_code
  * @param map_cid
  */
-#define MAP_SUBEVENT_PARSING_DONE                                         0x06u
+#define MAP_SUBEVENT_PARSING_DONE                                         0x07u
 
 /**
  * @format 1214
@@ -5495,7 +5503,7 @@ typedef uint8_t sm_key_t[16];
  * @param mas_instance_id
  * @param length
  */
-#define MAP_SUBEVENT_NOTIFICATION_EVENT                                   0x07u
+#define MAP_SUBEVENT_NOTIFICATION_EVENT                                   0x08u
 
 // MESH Meta Event Group
 
