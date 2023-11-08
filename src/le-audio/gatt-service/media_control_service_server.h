@@ -176,6 +176,9 @@ typedef struct {
     ots_object_id_t object_id;
 
     char * title;
+    
+    ots_object_id_t icon_object_id;
+    char * icon_url;
 } mcs_track_t;
 
 /**
