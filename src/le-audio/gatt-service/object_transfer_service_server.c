@@ -307,7 +307,6 @@ static void btstack_utc_store_time(btstack_utc_t * time_value, uint8_t * time_bu
     time_buffer_out[4] = time_value->hours;
     time_buffer_out[5] = time_value->minutes;
     time_buffer_out[6] = time_value->seconds;
-//    printf("Read %4d-%02d-%02d\n", time_value->year, time_value->month, time_value->day);
 }
 
 static void btstack_utc_read_time(uint8_t * time_buffer, uint16_t time_buffer_size, btstack_utc_t * time_out){
@@ -321,7 +320,6 @@ static void btstack_utc_read_time(uint8_t * time_buffer, uint16_t time_buffer_si
     time_out->hours   = time_buffer[4];
     time_out->minutes = time_buffer[5];
     time_out->seconds = time_buffer[6];
-//    printf("Write %4d-%02d-%02d\n", time_out->year, time_out->month, time_out->day);
 }
 
 static uint16_t ots_server_store_filter_list(const ots_filter_t * filter, uint8_t i, uint8_t * buffer, uint16_t buffer_size, uint16_t buffer_offset){
@@ -346,8 +344,6 @@ static uint16_t ots_server_store_filter_list(const ots_filter_t * filter, uint8_
 
 static uint16_t ots_server_read_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
     ots_server_connection_t * connection = NULL;
-
-    // printf("ots_server_read_callback attribute handle 0x%02x\n", attribute_handle);
 
     if (attribute_handle == ots_server_get_value_handle_for_characteristic_index(OTS_FEATURE_INDEX)){
         ots_server_find_or_add_connection_for_con_handle(con_handle);
@@ -621,7 +617,7 @@ int ots_server_handle_action_control_point_operation(ots_server_connection_t * c
                 connection->oacp_result_code = OACP_RESULT_CODE_OPERATION_FAILED;
                 break;
             }
-            printf_hexdump(buffer, buffer_size);
+
             object_size = little_endian_read_32(buffer, pos);
             pos += 4;
             gatt_uuid_size = buffer_size - pos;
@@ -769,7 +765,6 @@ int ots_server_handle_action_control_point_operation(ots_server_connection_t * c
 
             // 3. Channel Unavailable - An Object Transfer Channel was not available for use
             if (ots_server_credit_based_cid == 0){
-                printf_testing("OACP_RESULT_CODE_CHANNEL_UNAVAILABLE \n");
                 connection->oacp_result_code = OACP_RESULT_CODE_CHANNEL_UNAVAILABLE;
                 break;
             }
@@ -852,7 +847,6 @@ int ots_server_handle_action_control_point_operation(ots_server_connection_t * c
 
             // 5. Channel Unavailable - An Object Transfer Channel was not available for use
             if (ots_server_credit_based_cid == 0){
-                printf_testing("OACP_RESULT_CODE_CHANNEL_UNAVAILABLE \n");
                 connection->oacp_result_code = OACP_RESULT_CODE_CHANNEL_UNAVAILABLE;
                 break;
             }
@@ -922,7 +916,6 @@ int ots_server_handle_action_control_point_operation(ots_server_connection_t * c
             // 3. The requested procedure failed for a reason other than those enumerated above in this table.
 
             if (ots_server_credit_based_cid == 0) {
-                printf_testing("OACP_RESULT_CODE_CHANNEL_UNAVAILABLE \n");
                 connection->oacp_result_code = OACP_RESULT_CODE_CHANNEL_UNAVAILABLE;
                 break;
             }
@@ -1348,7 +1341,6 @@ static void ots_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
                 case L2CAP_EVENT_CHANNEL_CLOSED:
                     cid = l2cap_event_channel_closed_get_local_cid(packet);
                     if (ots_server_credit_based_cid == cid){
-                        printf_testing("L2CAP: L2CAP_EVENT_CHANNEL_CLOSED, cid 0x%02x\n", cid);
                         ots_server_credit_based_cid = 0;
                         ots_server_remote_mtu = 0;
                         ots_server_cbm_con_handle = HCI_CON_HANDLE_INVALID;
@@ -1367,7 +1359,7 @@ static void ots_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
                     psm = l2cap_event_cbm_incoming_connection_get_psm(packet);
                     cid = l2cap_event_cbm_incoming_connection_get_local_cid(packet);
                     if (psm != TSPX_LE_PSM) break;
-                    printf_testing("L2CAP: Accepting incoming LE connection request for 0x%02x, PSM %02x\n", cid, psm);
+                    log_info("L2CAP: Accepting incoming LE connection request for 0x%02x, PSM %02x", cid, psm); 
                     l2cap_cbm_accept_connection(cid, receive_buffer_X, sizeof(receive_buffer_X), initial_credits);
                     break;
 
@@ -1381,13 +1373,13 @@ static void ots_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
                     mtu = l2cap_event_cbm_channel_opened_get_remote_mtu(packet);
 
                     if (l2cap_event_cbm_channel_opened_get_status(packet) == ERROR_CODE_SUCCESS) {
-                        printf_testing("L2CAP: LE Data Channel successfully opened: %s, handle 0x%02x, psm 0x%02x, local cid 0x%02x, remote cid 0x%02x, remote mtu 0x%02x\n",
+                        log_info("L2CAP: LE Data Channel successfully opened: %s, handle 0x%02x, psm 0x%02x, local cid 0x%02x, remote cid 0x%02x, remote mtu 0x%02x",
                                bd_addr_to_str(event_address), handle, psm, cid, little_endian_read_16(packet, 15), mtu);
                         ots_server_cbm_con_handle = handle;
                         ots_server_credit_based_cid = cid;
                         ots_server_remote_mtu = mtu;
                     } else {
-                        printf_testing("L2CAP: LE Data Channel connection to device %s failed. status code %u\n", bd_addr_to_str(event_address), packet[2]);
+                        log_info("L2CAP: LE Data Channel connection to device %s failed. status code %u", bd_addr_to_str(event_address), packet[2]);
                     }
                     break;
 
@@ -1438,13 +1430,10 @@ static void ots_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
                     connection->current_object_object_read_transfer_in_progress = false;
                     connection->current_object_locked = false;
                     btstack_run_loop_remove_timer(&connection->operation_timer);
-
-                    printf_testing("L2CAP: L2CAP_EVENT_CAN_SEND_NOW sent0x%02x\n", cid);
                     break;
 
                case L2CAP_EVENT_PACKET_SENT:
                     cid = l2cap_event_packet_sent_get_local_cid(packet);
-                    printf_testing("L2CAP: LE Data Channel Packet sent0x%02x\n", cid);
                     break;
                 default:
                     break;
@@ -1456,7 +1445,6 @@ static void ots_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
             if (connection == NULL){
                 break;
             }
-//          printf_hexdump(packet, size);
             if (!connection->current_object_locked){
                 break;
             }
