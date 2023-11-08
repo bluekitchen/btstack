@@ -17949,6 +17949,25 @@ static inline uint8_t map_subevent_message_listing_item_get_read(const uint8_t *
 }
 
 /**
+ * @brief Get field map_cid from event MAP_SUBEVENT_CONVERSATION_LISTING_ITEM
+ * @param event packet
+ * @return map_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t map_subevent_conversation_listing_item_get_map_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field id from event MAP_SUBEVENT_CONVERSATION_LISTING_ITEM
+ * @param event packet
+ * @return id
+ * @note: btstack_type P
+ */
+static inline const uint8_t * map_subevent_conversation_listing_item_get_id(const uint8_t * event){
+    return (const uint8_t *) &event[5];
+}
+
+/**
  * @brief Get field map_cid from event MAP_SUBEVENT_PARSING_DONE
  * @param event packet
  * @return map_cid
