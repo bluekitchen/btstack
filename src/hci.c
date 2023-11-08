@@ -8256,10 +8256,8 @@ uint8_t gap_connect(const bd_addr_t addr, bd_addr_type_t addr_type){
         log_info("gap_connect: no connection exists yet, creating context");
         conn = create_connection_for_bd_addr_and_type(addr, addr_type, HCI_ROLE_MASTER);
         if (!conn){
-            // notify client that alloc failed
-            hci_emit_le_connection_complete(addr_type, addr, 0, BTSTACK_MEMORY_ALLOC_FAILED);
             log_info("gap_connect: failed to alloc hci_connection_t");
-            return GATT_CLIENT_NOT_CONNECTED; // don't sent packet to controller
+            return BTSTACK_MEMORY_ALLOC_FAILED; // don't sent packet to controller
         }
 
         // set le connecting state
