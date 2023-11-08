@@ -186,6 +186,12 @@ typedef struct {
  */
 void media_control_service_server_init(void);
 
+uint8_t media_control_service_server_register_generic_media_player(
+    media_control_service_server_t * media_player, 
+    btstack_packet_handler_t packet_handler, 
+    uint32_t media_control_point_opcodes_supported, 
+    uint16_t * media_player_id);
+
 uint8_t media_control_service_server_register_media_player(
     media_control_service_server_t * media_player, 
     btstack_packet_handler_t packet_handler, 

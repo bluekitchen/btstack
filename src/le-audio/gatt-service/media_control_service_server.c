@@ -973,71 +973,72 @@ void media_control_service_server_init(void){
 	mcs_media_players = NULL;
 }
 
-uint8_t media_control_service_server_register_media_player(media_control_service_server_t * media_player, btstack_packet_handler_t packet_handler, uint32_t media_control_point_opcodes_supported, uint16_t * media_player_id){
-	// search service with global start handle
-	btstack_assert(media_player != NULL);
+static uint8_t media_control_service_server_register_player(uint16_t service_uuid, media_control_service_server_t * media_player, 
+    btstack_packet_handler_t packet_handler, uint32_t media_control_point_opcodes_supported, uint16_t * media_player_id){
+    // search service with global start handle
+    btstack_assert(media_player != NULL);
     btstack_assert(packet_handler != NULL);
-	
+    
 
-	const uint16_t msc_characteristic_uuids[] = {
-		ORG_BLUETOOTH_CHARACTERISTIC_MEDIA_PLAYER_NAME                    ,
-		ORG_BLUETOOTH_CHARACTERISTIC_MEDIA_PLAYER_ICON_OBJECT_ID          ,
-		ORG_BLUETOOTH_CHARACTERISTIC_MEDIA_PLAYER_ICON_URL                ,
-		ORG_BLUETOOTH_CHARACTERISTIC_TRACK_CHANGED                        ,
-		ORG_BLUETOOTH_CHARACTERISTIC_TRACK_TITLE                          ,
-		ORG_BLUETOOTH_CHARACTERISTIC_TRACK_DURATION                       ,
-		ORG_BLUETOOTH_CHARACTERISTIC_TRACK_POSITION                       ,
-		ORG_BLUETOOTH_CHARACTERISTIC_PLAYBACK_SPEED                       ,
-		ORG_BLUETOOTH_CHARACTERISTIC_SEEKING_SPEED                        ,
-		ORG_BLUETOOTH_CHARACTERISTIC_CURRENT_TRACK_SEGMENTS_OBJECT_ID     ,
-		ORG_BLUETOOTH_CHARACTERISTIC_CURRENT_TRACK_OBJECT_ID              ,
-		ORG_BLUETOOTH_CHARACTERISTIC_NEXT_TRACK_OBJECT_ID                 ,
-		ORG_BLUETOOTH_CHARACTERISTIC_PARENT_GROUP_OBJECT_ID               ,
-		ORG_BLUETOOTH_CHARACTERISTIC_CURRENT_GROUP_OBJECT_ID              ,
-		ORG_BLUETOOTH_CHARACTERISTIC_PLAYING_ORDER                        ,
-		ORG_BLUETOOTH_CHARACTERISTIC_PLAYING_ORDERS_SUPPORTED             ,
-		ORG_BLUETOOTH_CHARACTERISTIC_MEDIA_STATE                          ,
-		ORG_BLUETOOTH_CHARACTERISTIC_MEDIA_CONTROL_POINT                  ,
-		ORG_BLUETOOTH_CHARACTERISTIC_MEDIA_CONTROL_POINT_OPCODES_SUPPORTED,
-		ORG_BLUETOOTH_CHARACTERISTIC_SEARCH_RESULTS_OBJECT_ID             ,
-		ORG_BLUETOOTH_CHARACTERISTIC_SEARCH_CONTROL_POINT                 ,
-		ORG_BLUETOOTH_CHARACTERISTIC_CONTENT_CONTROL_ID                   
-	};
+    const uint16_t msc_characteristic_uuids[] = {
+        ORG_BLUETOOTH_CHARACTERISTIC_MEDIA_PLAYER_NAME                    ,
+        ORG_BLUETOOTH_CHARACTERISTIC_MEDIA_PLAYER_ICON_OBJECT_ID          ,
+        ORG_BLUETOOTH_CHARACTERISTIC_MEDIA_PLAYER_ICON_URL                ,
+        ORG_BLUETOOTH_CHARACTERISTIC_TRACK_CHANGED                        ,
+        ORG_BLUETOOTH_CHARACTERISTIC_TRACK_TITLE                          ,
+        ORG_BLUETOOTH_CHARACTERISTIC_TRACK_DURATION                       ,
+        ORG_BLUETOOTH_CHARACTERISTIC_TRACK_POSITION                       ,
+        ORG_BLUETOOTH_CHARACTERISTIC_PLAYBACK_SPEED                       ,
+        ORG_BLUETOOTH_CHARACTERISTIC_SEEKING_SPEED                        ,
+        ORG_BLUETOOTH_CHARACTERISTIC_CURRENT_TRACK_SEGMENTS_OBJECT_ID     ,
+        ORG_BLUETOOTH_CHARACTERISTIC_CURRENT_TRACK_OBJECT_ID              ,
+        ORG_BLUETOOTH_CHARACTERISTIC_NEXT_TRACK_OBJECT_ID                 ,
+        ORG_BLUETOOTH_CHARACTERISTIC_PARENT_GROUP_OBJECT_ID               ,
+        ORG_BLUETOOTH_CHARACTERISTIC_CURRENT_GROUP_OBJECT_ID              ,
+        ORG_BLUETOOTH_CHARACTERISTIC_PLAYING_ORDER                        ,
+        ORG_BLUETOOTH_CHARACTERISTIC_PLAYING_ORDERS_SUPPORTED             ,
+        ORG_BLUETOOTH_CHARACTERISTIC_MEDIA_STATE                          ,
+        ORG_BLUETOOTH_CHARACTERISTIC_MEDIA_CONTROL_POINT                  ,
+        ORG_BLUETOOTH_CHARACTERISTIC_MEDIA_CONTROL_POINT_OPCODES_SUPPORTED,
+        ORG_BLUETOOTH_CHARACTERISTIC_SEARCH_RESULTS_OBJECT_ID             ,
+        ORG_BLUETOOTH_CHARACTERISTIC_SEARCH_CONTROL_POINT                 ,
+        ORG_BLUETOOTH_CHARACTERISTIC_CONTENT_CONTROL_ID                   
+    };
 
 #ifdef ENABLE_TESTING_SUPPORT
-	const char * msc_characteristic_uuid_names[]= {
-		"media_player_name                    ",
-		"media_player_icon_object_id          ",
-		"media_player_icon_url                ",
-		"track_changed                        ",
-		"track_title                          ",
-		"track_duration                       ",
-		"track_position                       ",
-		"playback_speed                       ",
-		"seeking_speed                        ",
-		"current_track_segments_object_id     ",
-		"current_track_object_id              ",
-		"next_track_object_id                 ",
-		"parent_group_object_id               ",
-		"current_group_object_id              ",
-		"playing_order                        ",
-		"playing_orders_supported             ",
-		"media_state                          ",
-		"media_control_point                  ",
-		"media_control_point_opcodes_supported",
-		"search_results_object_id             ",
-		"search_control_point                 ",
-		"content_control_id                   "
-	};
+    const char * msc_characteristic_uuid_names[]= {
+        "media_player_name                    ",
+        "media_player_icon_object_id          ",
+        "media_player_icon_url                ",
+        "track_changed                        ",
+        "track_title                          ",
+        "track_duration                       ",
+        "track_position                       ",
+        "playback_speed                       ",
+        "seeking_speed                        ",
+        "current_track_segments_object_id     ",
+        "current_track_object_id              ",
+        "next_track_object_id                 ",
+        "parent_group_object_id               ",
+        "current_group_object_id              ",
+        "playing_order                        ",
+        "playing_orders_supported             ",
+        "media_state                          ",
+        "media_control_point                  ",
+        "media_control_point_opcodes_supported",
+        "search_results_object_id             ",
+        "search_control_point                 ",
+        "content_control_id                   "
+    };
 #endif
     
     if (mcs_services_start_handle == 0xffff) {
         return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
     }
-	
+    
     uint16_t mcs_services_end_handle   = 0xffff;
-    bool     service_found = gatt_server_get_handle_range_for_service_with_uuid16(ORG_BLUETOOTH_SERVICE_MEDIA_CONTROL_SERVICE, &mcs_services_start_handle, &mcs_services_end_handle);
-	
+    bool     service_found = gatt_server_get_handle_range_for_service_with_uuid16(service_uuid, &mcs_services_start_handle, &mcs_services_end_handle);
+    
     if (!service_found){
         mcs_services_start_handle = 0xffff;
         return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
@@ -1048,56 +1049,76 @@ uint8_t media_control_service_server_register_media_player(media_control_service
         return ERROR_CODE_REPEATED_ATTEMPTS;
     }
 
-	log_info("Found MCS service 0x%02x-0x%02x", mcs_services_start_handle, mcs_services_end_handle);
+    log_info("Found %s service 0x%02x-0x%02x", service_uuid == ORG_BLUETOOTH_SERVICE_MEDIA_CONTROL_SERVICE ? "MCS":"GMCS", mcs_services_start_handle, mcs_services_end_handle);
 
 #ifdef ENABLE_TESTING_SUPPORT
-	printf("Found MCS service 0x%02x-0x%02x\n", mcs_services_start_handle, mcs_services_end_handle);
+    printf("Found %s service 0x%02x-0x%02x\n", service_uuid == ORG_BLUETOOTH_SERVICE_MEDIA_CONTROL_SERVICE ? "MCS":"GMCS", mcs_services_start_handle, mcs_services_end_handle);
 #endif
-	mcs_server_reset_media_player(media_player);
-	
-	media_player->service.start_handle   = mcs_services_start_handle;
-	media_player->service.end_handle     = mcs_services_end_handle;
-	media_player->data.media_control_point_opcodes_supported = media_control_point_opcodes_supported;
-	// get characteristic value handles
-	uint16_t i;
-	for (i = 0; i < NUM_MCS_CHARACTERISTICS; i++){
-		media_player->characteristics[i].value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(mcs_services_start_handle, mcs_services_end_handle, msc_characteristic_uuids[i]);
-		media_player->characteristics[i].client_configuration_handle = gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(mcs_services_start_handle, mcs_services_end_handle, msc_characteristic_uuids[i]);
+    mcs_server_reset_media_player(media_player);
+    
+    media_player->service.start_handle   = mcs_services_start_handle;
+    media_player->service.end_handle     = mcs_services_end_handle;
+    media_player->data.media_control_point_opcodes_supported = media_control_point_opcodes_supported;
+    // get characteristic value handles
+    uint16_t i;
+    for (i = 0; i < NUM_MCS_CHARACTERISTICS; i++){
+        media_player->characteristics[i].value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(mcs_services_start_handle, mcs_services_end_handle, msc_characteristic_uuids[i]);
+        media_player->characteristics[i].client_configuration_handle = gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(mcs_services_start_handle, mcs_services_end_handle, msc_characteristic_uuids[i]);
 
-		if (media_player->characteristics[i].client_configuration_handle != 0){
+        if (media_player->characteristics[i].client_configuration_handle != 0){
             mcs_services_start_handle = media_player->characteristics[i].client_configuration_handle + 1;
-		} else {
+        } else {
             mcs_services_start_handle = media_player->characteristics[i].value_handle + 1;
-		}
+        }
 
 #ifdef ENABLE_TESTING_SUPPORT
-		printf("    %s      0x%02x\n", msc_characteristic_uuid_names[i], media_player->characteristics[i].value_handle);
-		if (media_player->characteristics[i].client_configuration_handle != 0){
-			printf("    %s CCC  0x%02x\n", msc_characteristic_uuid_names[i], media_player->characteristics[i].client_configuration_handle);
-		}
+        printf("    %s      0x%02x\n", msc_characteristic_uuid_names[i], media_player->characteristics[i].value_handle);
+        if (media_player->characteristics[i].client_configuration_handle != 0){
+            printf("    %s CCC  0x%02x\n", msc_characteristic_uuid_names[i], media_player->characteristics[i].client_configuration_handle);
+        }
 #endif
-	}
-	
-	uint16_t player_id = msc_server_get_next_media_player_id();
+    }
+    
+    uint16_t player_id = msc_server_get_next_media_player_id();
     if (media_player_id != NULL) {
         *media_player_id = player_id;
     }
 
     media_player->event_callback = packet_handler;
 
-	// register service with ATT Server
-	media_player->player_id = player_id;
-	media_player->service.read_callback  = &mcs_server_read_callback;
-	media_player->service.write_callback = &mcs_server_write_callback;
-	media_player->service.packet_handler = mcs_server_packet_handler;
-	att_server_register_service_handler(&media_player->service);
-	
+    // register service with ATT Server
+    media_player->player_id = player_id;
+    media_player->service.read_callback  = &mcs_server_read_callback;
+    media_player->service.write_callback = &mcs_server_write_callback;
+    media_player->service.packet_handler = mcs_server_packet_handler;
+    att_server_register_service_handler(&media_player->service);
+    
     // add to media player list
     btstack_linked_list_add(&mcs_media_players, (btstack_linked_item_t *)media_player);
 
     // prepare for the next service
     mcs_services_start_handle = media_player->service.end_handle;
     return ERROR_CODE_SUCCESS;
+}
+
+uint8_t media_control_service_server_register_generic_media_player(
+    media_control_service_server_t * media_player, 
+    btstack_packet_handler_t packet_handler, 
+    uint32_t media_control_point_opcodes_supported, 
+    uint16_t * media_player_id){
+    
+    return media_control_service_server_register_player(ORG_BLUETOOTH_SERVICE_GENERIC_MEDIA_CONTROL_SERVICE, 
+        media_player, packet_handler, media_control_point_opcodes_supported, media_player_id);
+}
+
+uint8_t media_control_service_server_register_media_player(
+    media_control_service_server_t * media_player, 
+    btstack_packet_handler_t packet_handler, 
+    uint32_t media_control_point_opcodes_supported, 
+    uint16_t * media_player_id){
+
+    return media_control_service_server_register_player(ORG_BLUETOOTH_SERVICE_MEDIA_CONTROL_SERVICE, 
+        media_player, packet_handler, media_control_point_opcodes_supported, media_player_id);
 }
 
 uint8_t media_control_service_server_set_media_player_name(uint16_t media_player_id, char * name){
