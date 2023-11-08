@@ -42,8 +42,10 @@
 #ifndef BTSTACK_SBC_BLUEDROID_H
 #define BTSTACK_SBC_BLUEDROID_H
 
-#include "classic/btstack_sbc.h"
 #include "sbc_encoder.h"
+#include "oi_codec_sbc.h"
+
+#include "classic/btstack_sbc.h"
 
 #if defined __cplusplus
 extern "C" {
@@ -54,11 +56,46 @@ typedef struct {
     SBC_ENC_PARAMS           params;
 } btstack_sbc_encoder_bluedroid_t;
 
+#define DECODER_DATA_SIZE (SBC_MAX_CHANNELS*SBC_MAX_BLOCKS*SBC_MAX_BANDS * 4 + SBC_CODEC_MIN_FILTER_BUFFERS*SBC_MAX_BANDS*SBC_MAX_CHANNELS * 2)
+
+typedef struct {
+    btstack_sbc_mode_t mode;
+
+    OI_UINT32 bytes_in_frame_buffer;
+    OI_CODEC_SBC_DECODER_CONTEXT decoder_context;
+
+    uint8_t   frame_buffer[SBC_MAX_FRAME_LEN];
+    int16_t   pcm_plc_data[SBC_MAX_CHANNELS * SBC_MAX_BANDS * SBC_MAX_BLOCKS];
+    int16_t   pcm_data[SBC_MAX_CHANNELS * SBC_MAX_BANDS * SBC_MAX_BLOCKS];
+    uint32_t  pcm_bytes;
+    OI_UINT32 decoder_data[(DECODER_DATA_SIZE+3)/4];
+    int       first_good_frame_found;
+    int       h2_sequence_nr;
+    uint16_t  msbc_bad_bytes;
+
+    void (*handle_pcm_data)(int16_t * data, int num_samples, int num_channels, int sample_rate, void * context);
+    void * callback_context;
+
+    btstack_sbc_plc_state_t plc_state;
+
+    // summary of processed good, bad and zero frames
+    int good_frames_nr;
+    int bad_frames_nr;
+    int zero_frames_nr;
+
+} btstack_sbc_decoder_bluedroid_t;
+
+/**
+ * Init SBC Encoder Instance
+ * @param context for Bluedroid SBC Encoder
+ */
+const btstack_sbc_encoder_t * btstack_sbc_encoder_bluedroid_init_instance(btstack_sbc_encoder_bluedroid_t * context);
+
 /**
  * Init SBC Decoder Instance
  * @param context for Bluedroid SBC decoder
  */
-const btstack_sbc_encoder_t * btstack_sbc_encoder_bluedroid_init_instance(btstack_sbc_encoder_bluedroid_t * context);
+const btstack_sbc_decoder_t * btstack_sbc_decoder_bluedroid_init_instance(btstack_sbc_decoder_bluedroid_t * context);
 
 #if defined __cplusplus
 }
