@@ -87,6 +87,72 @@ typedef struct {
     btstack_sbc_mode_t mode;
 } btstack_sbc_encoder_state_t;
 
+typedef struct {
+    /**
+     * Configure Encoder
+     * @param encoder_context
+     * @param mode
+     * @param blocks
+     * @param subbands
+     * @param allocation_method
+     * @param sample_rate
+     * @param bitpool
+     * @param channel_mode
+     * @return status
+     */
+    uint8_t (*configure)(void * encoder_context, btstack_sbc_mode_t mode,
+                         uint8_t blocks, uint8_t subbands, btstack_sbc_allocation_method_t allocation_method,
+                         uint16_t sample_rate, uint8_t bitpool, btstack_sbc_channel_mode_t channel_mode);
+
+    /**
+     * @brief Return number of audio frames required for one SBC packet
+     * @param encoder_context
+     * @note  each audio frame contains 2 sample values in stereo modes
+     */
+    uint16_t (*num_audio_frames)(void * encoder_context);
+
+    /**
+     * @brief Return SBC frame length
+     * @param encoder_context
+     */
+    uint16_t (*sbc_buffer_length)(void * encoder_context);
+
+    /**
+     * @brief Encode PCM data
+     * @param encoder_context
+     * @param pcm_in with samples in host endianess
+     * @param sbc_out
+     * @return status
+     */
+    uint8_t (*encode_signed_16)(void * encoder_context, const int16_t* pcm_in, uint8_t * sbc_out);
+
+} btstack_sbc_encoder_t;
+
+typedef struct {
+    /**
+     * @brief Init SBC decoder
+     * @param decoder_context
+     * @param mode
+     * @param callback_handler for decoded PCM data in host endianess
+     * @param callback_context provided as context in call to callback_handler
+     */
+    void (*configure)(void * decoder_context,
+            btstack_sbc_mode_t mode,
+            void (*callback_handler)(int16_t * data, int num_samples, int num_channels,
+                             int sample_rate, void * context),
+            void * callback_context);
+
+    /**
+     * @brief Process received SBC data and deliver pcm via context_callback
+     * @param decoder_context
+     * @param packet_status_flag from SCO packet: 0 = OK, 1 = possibly invalid data, 2 = no data received, 3 = data partially lost
+     * @param buffer
+     * @param size
+     */
+    void (*decode_signed_16)(void * decoder_context, uint8_t packet_status_flag, const uint8_t * buffer, uint16_t size);
+
+ } btstack_sbc_decoder_t;
+
 /* API_START */
 
 /* BTstack SBC decoder */
