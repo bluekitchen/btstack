@@ -85,6 +85,8 @@ typedef struct {
 
 } btstack_sbc_decoder_bluedroid_t;
 
+/* API_START */
+
 /**
  * Init SBC Encoder Instance
  * @param context for Bluedroid SBC Encoder
@@ -96,6 +98,12 @@ const btstack_sbc_encoder_t * btstack_sbc_encoder_bluedroid_init_instance(btstac
  * @param context for Bluedroid SBC decoder
  */
 const btstack_sbc_decoder_t * btstack_sbc_decoder_bluedroid_init_instance(btstack_sbc_decoder_bluedroid_t * context);
+
+/* API_END */
+
+// testing only
+void btstack_sbc_decoder_bluedroid_test_set_plc_enabled(int plc_enabled);
+void btstack_sbc_decoder_bluedroid_test_simulate_corrupt_frames(int period);
 
 #if defined __cplusplus
 }
