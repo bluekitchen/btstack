@@ -385,6 +385,10 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             switch(btstack_event_state_get_state(packet)) {
                 case HCI_STATE_WORKING:
                     app_state = APP_IDLE;
+                    // setup advertising and allow to receive periodic advertising sync transfers
+                    setup_advertising();
+                    gap_periodic_advertising_sync_transfer_set_default_parameters(2, 0, 0x2000, 0);
+
 #ifdef ENABLE_DEMO_MODE
                     start_scanning();
 #else
