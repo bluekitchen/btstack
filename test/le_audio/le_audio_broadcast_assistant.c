@@ -239,6 +239,9 @@ static void start_scanning() {
 static void have_base_and_big_info(void){
     printf("Connecting to Scan Delegator/Sink!\n");
 
+    // stop scanning
+    gap_stop_scan();
+
     // todo: connect to scan delegator
     app_state = APP_W4_SCAN_DELEGATOR_CONNECTION;
     gap_connect(scan_delegator, scan_delegator_type);
