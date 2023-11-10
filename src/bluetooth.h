@@ -79,6 +79,11 @@ typedef uint8_t bd_addr_t[BD_ADDR_LEN];
     BD_ADDR_TYPE_UNKNOWN   = 0xfe,  // also used as 'invalid'
 } bd_addr_type_t;
 
+ /**
+  * Pin Codde
+  */
+#define PIN_CODE_LEN 16
+
 /**
  * Link types for BR/EDR Connections
  */

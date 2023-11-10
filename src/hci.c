@@ -5796,7 +5796,7 @@ static bool hci_run_general_gap_classic(void){
     // pairing
     if (hci_stack->gap_pairing_state != GAP_PAIRING_STATE_IDLE){
         uint8_t state = hci_stack->gap_pairing_state;
-        uint8_t pin_code[16];
+        uint8_t pin_code[PIN_CODE_LEN];
         switch (state){
             case GAP_PAIRING_STATE_SEND_PIN:
                 hci_stack->gap_pairing_state = GAP_PAIRING_STATE_IDLE;
@@ -9142,6 +9142,7 @@ static int gap_pairing_set_state_and_run(const bd_addr_t addr, uint8_t state){
  */
 int gap_pin_code_response_binary(const bd_addr_t addr, const uint8_t * pin_data, uint8_t pin_len){
     if (hci_stack->gap_pairing_state != GAP_PAIRING_STATE_IDLE) return ERROR_CODE_COMMAND_DISALLOWED;
+    if (pin_len > PIN_CODE_LEN) return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
     hci_stack->gap_pairing_input.gap_pairing_pin = pin_data;
     hci_stack->gap_pairing_pin_len = pin_len;
     return gap_pairing_set_state_and_run(addr, GAP_PAIRING_STATE_SEND_PIN);
