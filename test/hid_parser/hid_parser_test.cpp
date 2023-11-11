@@ -260,6 +260,147 @@ const uint8_t tank_mouse_descriptor[] = {
     // 89 bytes
 };
 
+// Xbox Wireless Controller FW 5.17.3202.0
+const uint8_t xbox_wireless_descriptor[] = {
+    0x05, 0x01,        // Usage Page (Generic Desktop Ctrls)
+    0x09, 0x05,        // Usage (Game Pad)
+    0xA1, 0x01,        // Collection (Application)
+    0x85, 0x01,        //   Report ID (1)
+    0x09, 0x01,        //   Usage (Pointer)
+    0xA1, 0x00,        //   Collection (Physical)
+    0x09, 0x30,        //     Usage (X)
+    0x09, 0x31,        //     Usage (Y)
+    0x15, 0x00,        //     Logical Minimum (0)
+    0x27, 0xFF, 0xFF, 0x00, 0x00,  //     Logical Maximum (65534)
+    0x95, 0x02,        //     Report Count (2)
+    0x75, 0x10,        //     Report Size (16)
+    0x81, 0x02,        //     Input (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
+    0xC0,              //   End Collection
+    0x09, 0x01,        //   Usage (Pointer)
+    0xA1, 0x00,        //   Collection (Physical)
+    0x09, 0x32,        //     Usage (Z)
+    0x09, 0x35,        //     Usage (Rz)
+    0x15, 0x00,        //     Logical Minimum (0)
+    0x27, 0xFF, 0xFF, 0x00, 0x00,  //     Logical Maximum (65534)
+    0x95, 0x02,        //     Report Count (2)
+    0x75, 0x10,        //     Report Size (16)
+    0x81, 0x02,        //     Input (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
+    0xC0,              //   End Collection
+    0x05, 0x02,        //   Usage Page (Sim Ctrls)
+    0x09, 0xC5,        //   Usage (Brake)
+    0x15, 0x00,        //   Logical Minimum (0)
+    0x26, 0xFF, 0x03,  //   Logical Maximum (1023)
+    0x95, 0x01,        //   Report Count (1)
+    0x75, 0x0A,        //   Report Size (10)
+    0x81, 0x02,        //   Input (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
+    0x15, 0x00,        //   Logical Minimum (0)
+    0x25, 0x00,        //   Logical Maximum (0)
+    0x75, 0x06,        //   Report Size (6)
+    0x95, 0x01,        //   Report Count (1)
+    0x81, 0x03,        //   Input (Const,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
+    0x05, 0x02,        //   Usage Page (Sim Ctrls)
+    0x09, 0xC4,        //   Usage (Accelerator)
+    0x15, 0x00,        //   Logical Minimum (0)
+    0x26, 0xFF, 0x03,  //   Logical Maximum (1023)
+    0x95, 0x01,        //   Report Count (1)
+    0x75, 0x0A,        //   Report Size (10)
+    0x81, 0x02,        //   Input (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
+    0x15, 0x00,        //   Logical Minimum (0)
+    0x25, 0x00,        //   Logical Maximum (0)
+    0x75, 0x06,        //   Report Size (6)
+    0x95, 0x01,        //   Report Count (1)
+    0x81, 0x03,        //   Input (Const,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
+    0x05, 0x01,        //   Usage Page (Generic Desktop Ctrls)
+    0x09, 0x39,        //   Usage (Hat switch)
+    0x15, 0x01,        //   Logical Minimum (1)
+    0x25, 0x08,        //   Logical Maximum (8)
+    0x35, 0x00,        //   Physical Minimum (0)
+    0x46, 0x3B, 0x01,  //   Physical Maximum (315)
+    0x66, 0x14, 0x00,  //   Unit (System: English Rotation, Length: Centimeter)
+    0x75, 0x04,        //   Report Size (4)
+    0x95, 0x01,        //   Report Count (1)
+    0x81, 0x42,        //   Input (Data,Var,Abs,No Wrap,Linear,Preferred State,Null State)
+    0x75, 0x04,        //   Report Size (4)
+    0x95, 0x01,        //   Report Count (1)
+    0x15, 0x00,        //   Logical Minimum (0)
+    0x25, 0x00,        //   Logical Maximum (0)
+    0x35, 0x00,        //   Physical Minimum (0)
+    0x45, 0x00,        //   Physical Maximum (0)
+    0x65, 0x00,        //   Unit (None)
+    0x81, 0x03,        //   Input (Const,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
+    0x05, 0x09,        //   Usage Page (Button)
+    0x19, 0x01,        //   Usage Minimum (0x01)
+    0x29, 0x0F,        //   Usage Maximum (0x0F)
+    0x15, 0x00,        //   Logical Minimum (0)
+    0x25, 0x01,        //   Logical Maximum (1)
+    0x75, 0x01,        //   Report Size (1)
+    0x95, 0x0F,        //   Report Count (15)
+    0x81, 0x02,        //   Input (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
+    0x15, 0x00,        //   Logical Minimum (0)
+    0x25, 0x00,        //   Logical Maximum (0)
+    0x75, 0x01,        //   Report Size (1)
+    0x95, 0x01,        //   Report Count (1)
+    0x81, 0x03,        //   Input (Const,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
+    0x05, 0x0C,        //   Usage Page (Consumer)
+    0x0A, 0xB2, 0x00,  //   Usage (Record)
+    0x15, 0x00,        //   Logical Minimum (0)
+    0x25, 0x01,        //   Logical Maximum (1)
+    0x95, 0x01,        //   Report Count (1)
+    0x75, 0x01,        //   Report Size (1)
+    0x81, 0x02,        //   Input (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
+    0x15, 0x00,        //   Logical Minimum (0)
+    0x25, 0x00,        //   Logical Maximum (0)
+    0x75, 0x07,        //   Report Size (7)
+    0x95, 0x01,        //   Report Count (1)
+    0x81, 0x03,        //   Input (Const,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
+    0x05, 0x0F,        //   Usage Page (PID Page)
+    0x09, 0x21,        //   Usage (0x21)
+    0x85, 0x03,        //   Report ID (3)
+    0xA1, 0x02,        //   Collection (Logical)
+    0x09, 0x97,        //     Usage (0x97)
+    0x15, 0x00,        //     Logical Minimum (0)
+    0x25, 0x01,        //     Logical Maximum (1)
+    0x75, 0x04,        //     Report Size (4)
+    0x95, 0x01,        //     Report Count (1)
+    0x91, 0x02,        //     Output (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position,Non-volatile)
+    0x15, 0x00,        //     Logical Minimum (0)
+    0x25, 0x00,        //     Logical Maximum (0)
+    0x75, 0x04,        //     Report Size (4)
+    0x95, 0x01,        //     Report Count (1)
+    0x91, 0x03,        //     Output (Const,Var,Abs,No Wrap,Linear,Preferred State,No Null Position,Non-volatile)
+    0x09, 0x70,        //     Usage (0x70)
+    0x15, 0x00,        //     Logical Minimum (0)
+    0x25, 0x64,        //     Logical Maximum (100)
+    0x75, 0x08,        //     Report Size (8)
+    0x95, 0x04,        //     Report Count (4)
+    0x91, 0x02,        //     Output (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position,Non-volatile)
+    0x09, 0x50,        //     Usage (0x50)
+    0x66, 0x01, 0x10,  //     Unit (System: SI Linear, Time: Seconds)
+    0x55, 0x0E,        //     Unit Exponent (-2)
+    0x15, 0x00,        //     Logical Minimum (0)
+    0x26, 0xFF, 0x00,  //     Logical Maximum (255)
+    0x75, 0x08,        //     Report Size (8)
+    0x95, 0x01,        //     Report Count (1)
+    0x91, 0x02,        //     Output (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position,Non-volatile)
+    0x09, 0xA7,        //     Usage (0xA7)
+    0x15, 0x00,        //     Logical Minimum (0)
+    0x26, 0xFF, 0x00,  //     Logical Maximum (255)
+    0x75, 0x08,        //     Report Size (8)
+    0x95, 0x01,        //     Report Count (1)
+    0x91, 0x02,        //     Output (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position,Non-volatile)
+    0x65, 0x00,        //     Unit (None)
+    0x55, 0x00,        //     Unit Exponent (0)
+    0x09, 0x7C,        //     Usage (0x7C)
+    0x15, 0x00,        //     Logical Minimum (0)
+    0x26, 0xFF, 0x00,  //     Logical Maximum (255)
+    0x75, 0x08,        //     Report Size (8)
+    0x95, 0x01,        //     Report Count (1)
+    0x91, 0x02,        //     Output (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position,Non-volatile)
+    0xC0,              //   End Collection
+    0xC0,              // End Collection
+    // 283 bytes
+};
+
 const uint8_t mouse_report_without_id_positive_xy[]    = {       0x03, 0x02, 0x03 };
 const uint8_t mouse_report_without_id_negative_xy[]    = {       0x03, 0xFE, 0xFD };
 const uint8_t mouse_report_with_id_1[]    = { 0x01, 0x03, 0x02, 0x03 };
@@ -270,7 +411,7 @@ const uint8_t combo_report1[]    = { 0x01, 0x03, 0x02, 0x03 };
 const uint8_t combo_report2[]    = { 0x02, 0x01, 0x00,  0x04, 0x05, 0x06, 0x00, 0x00, 0x00 };
 
 const uint8_t tank_mouse_report[] = { 0x03, 0x03, 0xFD, 0xFF, 0xF6, 0xFF, 0x00};
-
+const uint8_t xbox_wireless_report[] = {0x01, 0xB9, 0xF0, 0xFB, 0xC3, 0xE3, 0x80, 0x97, 0x81, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x20, 0x00};
 
 
 static void expect_field(btstack_hid_parser_t * parser, uint16_t expected_usage_page, uint16_t expected_usage, int32_t expected_value){
@@ -394,6 +535,37 @@ TEST(HID, TankMouse){
     expect_field(&hid_parser, 1, 0x31, -10);
     expect_field(&hid_parser, 1, 0x38, 0);
     CHECK_EQUAL(56, hid_parser.report_pos_in_bit);
+    CHECK_EQUAL(0, btstack_hid_parser_has_more(&hid_parser));
+}
+
+TEST(HID, XboxWireless){
+    static btstack_hid_parser_t hid_parser;
+    CHECK_EQUAL(16, btstack_hid_get_report_size_for_id(1, HID_REPORT_TYPE_INPUT, sizeof(xbox_wireless_descriptor), xbox_wireless_descriptor));
+    btstack_hid_parser_init(&hid_parser, xbox_wireless_descriptor, sizeof(xbox_wireless_descriptor), HID_REPORT_TYPE_INPUT, xbox_wireless_report, sizeof(xbox_wireless_report));
+    expect_field(&hid_parser, 1, 0x30, 0xf0b9);
+    expect_field(&hid_parser, 1, 0x31, 0xc3fb);
+    expect_field(&hid_parser, 1, 0x32, 0x80e3);
+    expect_field(&hid_parser, 1, 0x35, 0x8197);
+    expect_field(&hid_parser, 2, 0xc5, 0);
+    expect_field(&hid_parser, 2, 0xc4, 0);
+    expect_field(&hid_parser, 1, 0x39, 0);
+    expect_field(&hid_parser, 9, 1, 0);
+    expect_field(&hid_parser, 9, 2, 0);
+    expect_field(&hid_parser, 9, 3, 0);
+    expect_field(&hid_parser, 9, 4, 0);
+    expect_field(&hid_parser, 9, 5, 0);
+    expect_field(&hid_parser, 9, 6, 0);
+    expect_field(&hid_parser, 9, 7, 0);
+    expect_field(&hid_parser, 9, 8, 0);
+    expect_field(&hid_parser, 9, 9, 0);
+    expect_field(&hid_parser, 9, 10, 0);
+    expect_field(&hid_parser, 9, 11, 0);
+    expect_field(&hid_parser, 9, 12, 0);
+    expect_field(&hid_parser, 9, 13, 0);
+    expect_field(&hid_parser, 9, 14, 1);
+    expect_field(&hid_parser, 9, 15, 0);
+    expect_field(&hid_parser, 12, 0xb2, 0);
+    CHECK_EQUAL(136, hid_parser.report_pos_in_bit);
     CHECK_EQUAL(0, btstack_hid_parser_has_more(&hid_parser));
 }
 
