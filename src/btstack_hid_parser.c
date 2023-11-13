@@ -37,8 +37,6 @@
 
 #define BTSTACK_FILE__ "btstack_hid_parser.c"
 
-#define ENABLE_LOG_DEBUG
-
 #include <string.h>
 
 #include "btstack_hid_parser.h"
@@ -260,7 +258,7 @@ static void hid_find_next_usage(btstack_hid_parser_t * parser){
                 parser->available_usages = parser->usage_maximum - parser->usage_minimum + 1u;
                 parser->usage_range = true;
                 if (parser->available_usages < parser->required_usages){
-                    log_debug("Usage Min - Usage Max [%04x..%04x] < Report Count %u", parser->usage_minimum, parser->usage_maximum, parser->required_usages);
+                    log_debug("Usage Min - Usage Max [%04x..%04x] < Report Count %u", parser->usage_minimum & 0xffff, parser->usage_maximum & 0xffff, parser->required_usages);
                 }
             }
         }
