@@ -127,7 +127,7 @@ extern "C" {
  * @param service_record_handle
  * @param rfcomm_channel_nr
  * @param l2cap_psm
- * @param name
+ * @param name or NULL for default value. Provide "" (empty string) to skip attribute
  */
 void pbap_server_create_sdp_record(uint8_t *service, uint32_t service_record_handle, uint8_t rfcomm_channel_nr,
                                    uint16_t l2cap_psm, const char *name, uint8_t supported_repositories,
