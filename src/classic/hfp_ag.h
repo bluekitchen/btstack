@@ -62,7 +62,7 @@ typedef struct {
  * @brief Create HFP Audio Gateway (AG) SDP service record. 
  * @param service
  * @param rfcomm_channel_nr
- * @param name
+ * @param name or NULL for default value. Provide "" (empty string) to skip attribute
  * @param ability_to_reject_call
  * @param supported_features 32-bit bitmap, see HFP_AGSF_* values in hfp.h
  * @param codecs_nr

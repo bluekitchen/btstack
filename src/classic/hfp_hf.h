@@ -57,8 +57,8 @@ extern "C" {
  * @brief Create HFP Hands-Free (HF) SDP service record.
  * @param service
  * @param rfcomm_channel_nr
- * @param name
- * @param suported_features 32-bit bitmap, see HFP_HFSF_* values in hfp.h
+ * @param name or NULL for default value. Provide "" (empty string) to skip attribute
+ * @param supported_features 32-bit bitmap, see HFP_HFSF_* values in hfp.h
  * @param codecs_nr  number of codecs in codecs argument
  * @param codecs
  */
