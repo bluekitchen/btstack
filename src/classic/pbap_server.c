@@ -179,6 +179,8 @@ static struct {
     {"pb", PBAP_SERVER_DIR_SIM_TELECOM, "SIM1/telecom/pb.vcf"}
 };
 
+static const char pbap_server_default_service_name[] = "PBAP";
+
 // 796135f0-f0c5-11d8-0966- 0800200c9a66
 static const uint8_t pbap_uuid[] = { 0x79, 0x61, 0x35, 0xf0, 0xf0, 0xc5, 0x11, 0xd8, 0x09, 0x66, 0x08, 0x00, 0x20, 0x0c, 0x9a, 0x66};
 
@@ -258,8 +260,13 @@ void pbap_server_create_sdp_record(uint8_t *service, uint32_t service_record_han
     de_pop_sequence(service, attribute);
 
     // 0x0100 "Service Name"
-    de_add_number(service,  DE_UINT, DE_SIZE_16, 0x0100);
-    de_add_data(service,  DE_STRING, strlen(name), (uint8_t *) name);
+    if (name == NULL) {
+        name = pbap_server_default_service_name;
+    }
+    if (strlen(name) > 0) {
+        de_add_number(service,  DE_UINT, DE_SIZE_16, 0x0100);
+        de_add_data(service,  DE_STRING, strlen(name), (uint8_t *) name);
+    }
 
 #ifdef ENABLE_GOEP_L2CAP
     // 0x0200 "GOEP L2CAP PSM"
