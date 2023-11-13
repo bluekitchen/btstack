@@ -89,8 +89,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - A2DP: support SDP record without service name and/or provider
 - AVRCP: support SDP record without service name and/or provider
 - HFP: hfp_hf_create_sdp_record_with_codecs and hfp_hf_create_sdp_record_with_codecs
-- HFP: support SDP record without service name
 - HFP: support for LC3-SWB
+- HFP: support SDP record without service name
+- PABP Server: support SDP record without service name
 - SPP Server: support SDP record without service name
 - HOG Device: emit HIDS_SUBEVENT_SET_REPORT
 - HOG Device: provide report for GET REPORT operation via callback
