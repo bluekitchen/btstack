@@ -37,6 +37,8 @@
 
 #define BTSTACK_FILE__ "btstack_hid_parser.c"
 
+#define ENABLE_LOG_DEBUG
+
 #include <string.h>
 
 #include "btstack_hid_parser.h"
@@ -226,6 +228,9 @@ static void btstack_hid_handle_global_item(btstack_hid_parser_t * parser, hid_de
 }
 
 static void hid_find_next_usage(btstack_hid_parser_t * parser){
+    bool have_usage_min = false;
+    bool have_usage_max = false;
+    parser->usage_range = false;
     while ((parser->available_usages == 0u) && (parser->usage_pos < parser->descriptor_pos)){
         hid_descriptor_item_t usage_item;
         // parser->usage_pos < parser->descriptor_pos < parser->descriptor_len
@@ -242,22 +247,21 @@ static void hid_find_next_usage(btstack_hid_parser_t * parser){
                     break;
                 case UsageMinimum:
                     parser->usage_minimum = usage_value;
-                    parser->have_usage_min = 1;
+                    have_usage_min = true;
                     break;
                 case UsageMaximum:
                     parser->usage_maximum = usage_value;
-                    parser->have_usage_max = 1;
+                    have_usage_max = true;
                     break;
                 default:
                     break;
             }
-            if (parser->have_usage_min && parser->have_usage_max){
+            if (have_usage_min && have_usage_max){
                 parser->available_usages = parser->usage_maximum - parser->usage_minimum + 1u;
+                parser->usage_range = true;
                 if (parser->available_usages < parser->required_usages){
                     log_debug("Usage Min - Usage Max [%04x..%04x] < Report Count %u", parser->usage_minimum, parser->usage_maximum, parser->required_usages);
                 }
-                parser->have_usage_min = 0;
-                parser->have_usage_max = 0;
             }
         }
         parser->usage_pos += usage_item.item_size;
@@ -405,7 +409,7 @@ void btstack_hid_parser_get_field(btstack_hid_parser_t * parser, uint16_t * usag
     if (is_variable){
         parser->usage_minimum++;
         parser->available_usages--;
-        if (parser->usage_minimum > parser->usage_maximum){
+        if (parser->usage_range && (parser->usage_minimum > parser->usage_maximum)){
             // usage min - max range smaller than report count, ignore remaining bit in report
             log_debug("Ignoring %u items without Usage", parser->required_usages);
             parser->report_pos_in_bit += parser->global_report_size * parser->required_usages;
