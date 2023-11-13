@@ -16,6 +16,7 @@
 
 #include "btstack_hid_parser.h"
 #include "hci_dump_posix_fs.h"
+#include "hci_dump_posix_stdout.h"
 
 const uint8_t mouse_descriptor_without_report_id[] = {
     0x05, 0x01, /*  Usage Page (Desktop),               */
@@ -413,11 +414,14 @@ TEST(HID, GetReportSize){
 
 
 int main (int argc, const char * argv[]){
+#if 1
     // log into file using HCI_DUMP_PACKETLOGGER format
     const char * pklg_path = "hci_dump.pklg";
     hci_dump_posix_fs_open(pklg_path, HCI_DUMP_PACKETLOGGER);
     hci_dump_init(hci_dump_posix_fs_get_instance());
     printf("Packet Log: %s\n", pklg_path);
-
+#else
+    hci_dump_init(hci_dump_posix_stdout_get_instance());
+#endif
     return CommandLineTestRunner::RunAllTests(argc, argv);
 }

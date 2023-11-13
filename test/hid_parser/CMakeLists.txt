@@ -1,6 +1,6 @@
 cmake_minimum_required (VERSION 3.13)
 
-project(hid_parser)
+project(BTstack-test-hid_parser)
 
 set (BTSTACK_ROOT ${CMAKE_SOURCE_DIR}/../../)
 
@@ -9,7 +9,7 @@ include_directories(../../3rd-party/rijndael)
 include_directories(../../platform/embedded)
 include_directories(../../platform/posix)
 include_directories(../../src)
-include_directories(..)
+include_directories(.)
 
 # Enable ASAN
 add_compile_options( -g -fsanitize=address)
@@ -30,6 +30,7 @@ add_executable(hid_parser_test
     ${BTSTACK_ROOT}/src/btstack_hid_parser.c
     ${BTSTACK_ROOT}/src/hci_dump.c
     ${BTSTACK_ROOT}/platform/posix/hci_dump_posix_fs.c
+    ${BTSTACK_ROOT}/platform/posix/hci_dump_posix_stdout.c
 )
 
 
