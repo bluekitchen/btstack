@@ -53,6 +53,8 @@
 #include "classic/core.h"
 #include "classic/sdp_util.h"
 
+static const char * spp_server_default_sdp_service_name = "SPP";
+
 static void spp_create_sdp_record_internal(uint8_t *service, uint32_t service_record_handle, const uint8_t * service_uuid128, int rfcomm_channel, const char *name){
 	
 	uint8_t* attribute;
@@ -125,8 +127,13 @@ static void spp_create_sdp_record_internal(uint8_t *service, uint32_t service_re
 	de_pop_sequence(service, attribute);
 	
 	// 0x0100 "ServiceName"
-	de_add_number(service,  DE_UINT, DE_SIZE_16, 0x0100);
-	de_add_data(service,  DE_STRING, (uint16_t) strlen(name), (uint8_t *) name);
+    if (name == NULL){
+        name = spp_server_default_sdp_service_name;
+    }
+    if (strlen(name) > 0){
+        de_add_number(service,  DE_UINT, DE_SIZE_16, 0x0100);
+        de_add_data(service,  DE_STRING, (uint16_t) strlen(name), (uint8_t *) name);
+    }
 }
 
 void spp_create_sdp_record(uint8_t *service, uint32_t service_record_handle, int rfcomm_channel, const char *name){

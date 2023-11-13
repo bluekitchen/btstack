@@ -58,7 +58,7 @@ extern "C" {
  * @param service buffer - needs to large enough
  * @param service_record_handle
  * @param rfcomm_channel
- * @param name
+ * @param name or NULL for default value. Provide "" (empty string) to skip attribute
  */
 void spp_create_sdp_record(uint8_t *service, uint32_t service_record_handle, int rfcomm_channel, const char *name);
 
