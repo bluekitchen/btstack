@@ -67,11 +67,6 @@ typedef struct {
 static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static void avrcp_start_next_sdp_query(void);
 
-static const char * avrcp_default_controller_service_name = "AVRCP Controller";
-static const char * avrcp_default_controller_service_provider_name = "BlueKitchen";
-static const char * avrcp_default_target_service_name = "AVRCP Target";
-static const char * avrcp_default_target_service_provider_name = "BlueKitchen";
-
 static const char * avrcp_subunit_type_name[] = {
         "MONITOR", "AUDIO", "PRINTER", "DISC", "TAPE_RECORDER_PLAYER", "TUNER",
         "CA", "CAMERA", "RESERVED", "PANEL", "BULLETIN_BOARD", "CAMERA_STORAGE",
@@ -341,27 +336,15 @@ void avrcp_create_sdp_record(bool controller, uint8_t * service, uint32_t servic
 
 
     // 0x0100 "Service Name"
-    de_add_number(service,  DE_UINT, DE_SIZE_16, 0x0100);
-    if (service_name){
+    if (strlen(service_name) > 0){
+        de_add_number(service,  DE_UINT, DE_SIZE_16, 0x0100);
         de_add_data(service,  DE_STRING, (uint16_t) strlen(service_name), (uint8_t *) service_name);
-    } else {
-        if (controller){
-            de_add_data(service, DE_STRING, (uint16_t) strlen(avrcp_default_controller_service_name), (uint8_t *) avrcp_default_controller_service_name);
-        } else {
-            de_add_data(service, DE_STRING, (uint16_t) strlen(avrcp_default_target_service_name), (uint8_t *) avrcp_default_target_service_name);
-        }
     }
 
     // 0x0100 "Provider Name"
-    de_add_number(service,  DE_UINT, DE_SIZE_16, 0x0102);
-    if (service_provider_name){
+    if (strlen(service_provider_name) > 0){
+        de_add_number(service,  DE_UINT, DE_SIZE_16, 0x0102);
         de_add_data(service,  DE_STRING, (uint16_t) strlen(service_provider_name), (uint8_t *) service_provider_name);
-    } else {
-        if (controller){
-            de_add_data(service, DE_STRING, (uint16_t) strlen(avrcp_default_controller_service_provider_name), (uint8_t *) avrcp_default_controller_service_provider_name);
-        } else {
-            de_add_data(service, DE_STRING, (uint16_t) strlen(avrcp_default_target_service_provider_name), (uint8_t *) avrcp_default_target_service_provider_name);
-        }
     }
 
     // 0x0311 "Supported Features"

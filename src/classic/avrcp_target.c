@@ -57,6 +57,9 @@
 static const uint8_t AVRCP_NOTIFICATION_TRACK_SELECTED[] = {0,0,0,0,0,0,0,0};
 static const uint8_t AVRCP_NOTIFICATION_TRACK_NOT_SELECTED[] = {0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
 
+static const char * avrcp_default_target_service_name = "AVRCP Target";
+static const char * avrcp_default_target_service_provider_name = "BlueKitchen";
+
 avrcp_context_t avrcp_target_context;
 
 static uint32_t default_companies[] = {
@@ -68,6 +71,12 @@ static int avrcp_target_supports_browsing(uint16_t target_supported_features){
 }
 
 void avrcp_target_create_sdp_record(uint8_t * service, uint32_t service_record_handle, uint16_t supported_features, const char * service_name, const char * service_provider_name){
+    if (service_name == NULL){
+        service_name = avrcp_default_target_service_name;
+    }
+    if (service_provider_name == NULL){
+        service_provider_name = avrcp_default_target_service_provider_name;
+    }
     avrcp_create_sdp_record(false, service, service_record_handle, avrcp_target_supports_browsing(supported_features), supported_features, service_name, service_provider_name);
 }
 
