@@ -206,7 +206,7 @@ int16_t btstack_time16_delta(uint16_t time_a, uint16_t time_b){
     return (int16_t)(time_a - time_b);
 }
 
-char char_for_nibble(int nibble){
+char char_for_nibble(uint8_t nibble){
 
     static const char * char_to_nibble = "0123456789ABCDEF";
 

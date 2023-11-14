@@ -206,7 +206,7 @@ bool btstack_is_null_bd_addr( const bd_addr_t addr );
  * @brief ASCII character for 4-bit nibble
  * @return character
  */
-char char_for_nibble(int nibble);
+char char_for_nibble(uint8_t nibble);
 
 /**
  * @brif 4-bit nibble from ASCII character
