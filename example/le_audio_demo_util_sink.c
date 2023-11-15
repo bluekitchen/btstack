@@ -404,7 +404,7 @@ void le_audio_demo_util_sink_receive(uint8_t stream_index, uint8_t *packet, uint
     uint16_t offset = 4;
     uint32_t time_stamp = 0;
     if (ts_flag){
-        uint32_t time_stamp = little_endian_read_32(packet, offset);
+        time_stamp = little_endian_read_32(packet, offset);
         offset += 4;
     }
 
@@ -417,6 +417,12 @@ void le_audio_demo_util_sink_receive(uint8_t stream_index, uint8_t *packet, uint
     uint16_t iso_sdu_length = header_2 & 0x3fff;
     uint8_t packet_status_flag = (uint8_t) (header_2 >> 14);
     offset += 2;
+
+    // avoid warning for (yet) unused fields
+    UNUSED(con_handle);
+    UNUSED(pb_flag);
+    UNUSED(iso_load_len);
+    UNUSED(packet_status_flag);
 
     // start with first packet on first stream
     if (group_last_packet_received == false){
