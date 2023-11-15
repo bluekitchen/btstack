@@ -118,6 +118,7 @@ typedef enum {
     MCS_CLIENT_CHARACTERISTIC_INDEX_RFU
 } mcs_client_characteristic_index_t;
 
+#ifdef ENABLE_TESTING_SUPPORT
 static char * mcs_client_characteristic_name[] = {
     "MEDIA_PLAYER_NAME",
     "MEDIA_PLAYER_ICON_OBJECT_ID",
@@ -143,6 +144,7 @@ static char * mcs_client_characteristic_name[] = {
     "CONTENT_CONTROL_ID",
     "RFU"
 };
+#endif
 
 static void mcs_client_replace_subevent_id_and_emit(btstack_packet_handler_t callback, uint8_t * packet, uint16_t size, uint8_t subevent_id){
     UNUSED(size);
@@ -501,7 +503,6 @@ static void mcs_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
     if (packet_type != HCI_EVENT_PACKET) return;
     gatt_service_client_connection_helper_t * connection_helper;
     mcs_client_connection_t * connection;
-    int i;
     hci_con_handle_t con_handle;
 
     switch(hci_event_packet_get_type(packet)){
@@ -512,10 +513,13 @@ static void mcs_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
                     btstack_assert(connection_helper != NULL);
 
 #ifdef ENABLE_TESTING_SUPPORT
-                    for (i = MCS_CLIENT_CHARACTERISTIC_INDEX_MEDIA_PLAYER_NAME; i < MCS_CLIENT_CHARACTERISTIC_INDEX_RFU; i++){
-                        printf("0x%04X %s\n", connection_helper->characteristics[i].value_handle, mcs_client_characteristic_name[i]);
+                    {
+                        uint8_t i;
+                        for (i = MCS_CLIENT_CHARACTERISTIC_INDEX_MEDIA_PLAYER_NAME; i < MCS_CLIENT_CHARACTERISTIC_INDEX_RFU; i++){
+                            printf("0x%04X %s\n", connection_helper->characteristics[i].value_handle, mcs_client_characteristic_name[i]);
 
-                    }
+                        }
+                    };
 #endif
                     mcs_client_replace_subevent_id_and_emit(connection_helper->event_callback, packet, size, GATTSERVICE_SUBEVENT_MCS_CLIENT_CONNECTED);
                     break;
