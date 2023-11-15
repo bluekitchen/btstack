@@ -110,8 +110,6 @@
 
 static void show_usage(void);
 
-static const char * filename_wav = "le_audio_unicast_sink.wav";
-
 static enum {
     APP_W4_WORKING,
     APP_W4_CIG_COMPLETE,
@@ -184,11 +182,6 @@ static uint16_t sampling_frequency_hz;
 static btstack_lc3_frame_duration_t frame_duration;
 static uint16_t octets_per_frame;
 static uint8_t  num_channels;
-
-// lc3 decoder
-static bool use_lc3plus_decoder = false;
-static const btstack_lc3_decoder_t * lc3_decoder;
-static int16_t pcm[MAX_CHANNELS * MAX_SAMPLES_PER_FRAME];
 
 // playback - volume in 0..255 to match VCS
 static uint8_t  playback_volume = 255;
