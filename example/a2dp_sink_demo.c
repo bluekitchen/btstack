@@ -68,6 +68,7 @@
 #include <string.h>
 
 #include "btstack.h"
+
 #include "btstack_resample.h"
 
 //#define AVRCP_BROWSING_ENABLED
@@ -121,8 +122,8 @@ static char * wav_filename = "a2dp_sink_demo.wav";
 #endif
 
 // SBC Decoder for WAV file or live playback
-static btstack_sbc_decoder_state_t state;
-static btstack_sbc_mode_t mode = SBC_MODE_STANDARD;
+static const btstack_sbc_decoder_t *   sbc_decoder_instance;
+static btstack_sbc_decoder_bluedroid_t sbc_decoder_context;
 
 // ring buffer for SBC Frames
 // below 30: add samples, 30-40: fine, above 40: drop samples
@@ -397,7 +398,7 @@ static void playback_handler(int16_t * buffer, uint16_t num_audio_frames){
         // decode frame
         uint8_t sbc_frame[MAX_SBC_FRAME_SIZE];
         btstack_ring_buffer_read(&sbc_frame_ring_buffer, sbc_frame, sbc_frame_size, &bytes_read);
-        btstack_sbc_decoder_process_data(&state, 0, sbc_frame, sbc_frame_size);
+        sbc_decoder_instance->decode_signed_16(&sbc_decoder_context, 0, sbc_frame, sbc_frame_size);
     }
 
 #ifdef STORE_TO_WAV_FILE
@@ -442,7 +443,8 @@ static void handle_pcm_data(int16_t * data, int num_audio_frames, int num_channe
 
 static int media_processing_init(media_codec_configuration_sbc_t * configuration){
     if (media_initialized) return 0;
-    btstack_sbc_decoder_init(&state, mode, handle_pcm_data, NULL);
+    sbc_decoder_instance = btstack_sbc_decoder_bluedroid_init_instance(&sbc_decoder_context);
+    sbc_decoder_instance->configure(&sbc_decoder_context, SBC_MODE_STANDARD, handle_pcm_data, NULL);
 
 #ifdef STORE_TO_WAV_FILE
     wav_writer_open(wav_filename, configuration->num_channels, configuration->sampling_frequency);
@@ -507,9 +509,9 @@ static void media_processing_close(void){
 
 #ifdef STORE_TO_WAV_FILE                 
     wav_writer_close();
-    uint32_t total_frames_nr = state.good_frames_nr + state.bad_frames_nr + state.zero_frames_nr;
+    uint32_t total_frames_nr = sbc_decoder_context.good_frames_nr + sbc_decoder_context.bad_frames_nr + sbc_decoder_context.zero_frames_nr;
 
-    printf("WAV Writer: Decoding done. Processed %u SBC frames:\n - %d good\n - %d bad\n", total_frames_nr, state.good_frames_nr, total_frames_nr - state.good_frames_nr);
+    printf("WAV Writer: Decoding done. Processed %u SBC frames:\n - %d good\n - %d bad\n", total_frames_nr, sbc_decoder_context.good_frames_nr, total_frames_nr - sbc_decoder_context.good_frames_nr);
     printf("WAV Writer: Wrote %u audio frames to wav file: %s\n", audio_frame_count, wav_filename);
 #endif
 
@@ -548,10 +550,9 @@ static void handle_l2cap_media_data_packet(uint8_t seid, uint8_t *packet, uint16
     const btstack_audio_sink_t * audio = btstack_audio_sink_get_instance();
     // process data right away if there's no audio implementation active, e.g. on posix systems to store as .wav
     if (!audio){
-        btstack_sbc_decoder_process_data(&state, 0, packet_begin, packet_length);
+        sbc_decoder_instance->decode_signed_16(&sbc_decoder_context, 0, packet_begin, packet_length);
         return;
     }
-
 
     // store sbc frame size for buffer management
     sbc_frame_size = packet_length / sbc_header.num_frames;
