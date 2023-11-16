@@ -399,8 +399,8 @@ static uint16_t ots_server_read_callback(hci_con_handle_t con_handle, uint16_t a
     }
 
     if (attribute_handle == ots_server_get_value_handle_for_characteristic_index(OTS_OBJECT_TYPE_INDEX)){
-        if (connection->current_object->type_uuid16 != 0){
-            return att_read_callback_handle_little_endian_16(connection->current_object->type_uuid16, offset, buffer, buffer_size); 
+        if (connection->current_object->type != 0){
+            return att_read_callback_handle_little_endian_16(connection->current_object->type, offset, buffer, buffer_size);
         } else {
             att_read_callback_handle_blob((const uint8_t *)connection->current_object->type_uuid128, sizeof(connection->current_object->type_uuid128), offset, buffer, buffer_size);
         }
@@ -556,13 +556,16 @@ static bool ots_server_gatt_uuid_size_valid(uint16_t uuid_size){
     return (uuid_size == 2) || (uuid_size == 16);
 }
 
-static bool ots_server_supports_gatt_uuid16(gatt_uuid_type_t type_uuid16){
-    switch (type_uuid16){
-        case GATT_UUID_TYPE_UNSPECIFIED:
-        case GATT_UUID_TYPE_DIRECTORY_LISTING:
+static bool ots_server_supports_object_type(ots_object_type_t object_type){
+    switch (object_type){
+        case OTS_OBJECT_TYPE_GROUP:
+        case OTS_OBJECT_TYPE_MEDIA_PLAYER_ICON:
+        case OTS_OBJECT_TYPE_TRACK_SEGMENTS:
+        case OTS_OBJECT_TYPE_TRACK:
+        case OTS_OBJECT_TYPE_DIRECTORY_LISTING:
             return true;
         default:
-            return (type_uuid16 == 0x7FB1);
+            return false;
     }
 }
 
@@ -603,7 +606,7 @@ int ots_server_handle_action_control_point_operation(ots_server_connection_t * c
     uint32_t offset;
     uint32_t length;
     uint32_t object_size;
-    gatt_uuid_type_t type_uuid16;
+    ots_object_type_t object_type;
     uint8_t  gatt_uuid_size;
 
     switch (connection->oacp_opcode){
@@ -1639,6 +1642,18 @@ uint8_t object_transfer_service_server_set_current_object(hci_con_handle_t con_h
     if (object){
         connection->current_object->current_size = object->current_size;
     }
+
+    switch (object->type) {
+        case OTS_OBJECT_TYPE_GROUP:
+            connection->current_group = object;
+            break;
+        case OTS_OBJECT_TYPE_TRACK:
+            connection->current_track = object;
+            break;
+        default:
+            break;
+    }
+
     return ERROR_CODE_SUCCESS;
 }
 
