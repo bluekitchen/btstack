@@ -180,7 +180,9 @@ static uint8_t sdp_avrcp_controller_service_buffer[200];
 static uint8_t device_id_sdp_service_buffer[100];
 
 static media_codec_configuration_sbc_t sbc_configuration;
-static btstack_sbc_encoder_state_t sbc_encoder_state;
+
+static const btstack_sbc_encoder_t *   sbc_encoder_instance;
+static btstack_sbc_encoder_bluedroid_t sbc_decoder_context;
 
 static uint8_t media_sbc_codec_configuration[4];
 static a2dp_media_sending_context_t media_tracker;
@@ -615,12 +617,12 @@ static void a2dp_source_packet_handler(uint8_t packet_type, uint16_t channel, ui
             printf("A2DP Source: Connected to address %s, a2dp cid 0x%02x, local seid 0x%02x.\n", bd_addr_to_str(address), media_tracker.a2dp_cid, media_tracker.local_seid);
             break;
 
-         case A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION:{
+        case A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION:
             cid  = avdtp_subevent_signaling_media_codec_sbc_configuration_get_avdtp_cid(packet);
             if (cid != media_tracker.a2dp_cid) return;
 
             media_tracker.remote_seid = a2dp_subevent_signaling_media_codec_sbc_configuration_get_remote_seid(packet);
-            
+
             sbc_configuration.reconfigure = a2dp_subevent_signaling_media_codec_sbc_configuration_get_reconfigure(packet);
             sbc_configuration.num_channels = a2dp_subevent_signaling_media_codec_sbc_configuration_get_num_channels(packet);
             sbc_configuration.sampling_frequency = a2dp_subevent_signaling_media_codec_sbc_configuration_get_sampling_frequency(packet);
@@ -628,15 +630,15 @@ static void a2dp_source_packet_handler(uint8_t packet_type, uint16_t channel, ui
             sbc_configuration.subbands = a2dp_subevent_signaling_media_codec_sbc_configuration_get_subbands(packet);
             sbc_configuration.min_bitpool_value = a2dp_subevent_signaling_media_codec_sbc_configuration_get_min_bitpool_value(packet);
             sbc_configuration.max_bitpool_value = a2dp_subevent_signaling_media_codec_sbc_configuration_get_max_bitpool_value(packet);
-            
+
             channel_mode = (avdtp_channel_mode_t) a2dp_subevent_signaling_media_codec_sbc_configuration_get_channel_mode(packet);
             allocation_method = a2dp_subevent_signaling_media_codec_sbc_configuration_get_allocation_method(packet);
-            
-            printf("A2DP Source: Received SBC codec configuration, sampling frequency %u, a2dp_cid 0x%02x, local seid 0x%02x, remote seid 0x%02x.\n", 
+
+            printf("A2DP Source: Received SBC codec configuration, sampling frequency %u, a2dp_cid 0x%02x, local seid 0x%02x, remote seid 0x%02x.\n",
                 sbc_configuration.sampling_frequency, cid,
                    a2dp_subevent_signaling_media_codec_sbc_configuration_get_local_seid(packet),
                    a2dp_subevent_signaling_media_codec_sbc_configuration_get_remote_seid(packet));
-            
+
             // Adapt Bluetooth spec definition to SBC Encoder expected input
             sbc_configuration.allocation_method = (btstack_sbc_allocation_method_t)(allocation_method - 1);
             switch (channel_mode){
@@ -662,12 +664,11 @@ static void a2dp_source_packet_handler(uint8_t packet_type, uint16_t channel, ui
             a2dp_demo_hexcmod_configure_sample_rate(current_sample_rate);
 
              btstack_sbc_encoder_init(&sbc_encoder_state, SBC_MODE_STANDARD,
-                sbc_configuration.block_length, sbc_configuration.subbands, 
-                sbc_configuration.allocation_method, sbc_configuration.sampling_frequency, 
+                sbc_configuration.block_length, sbc_configuration.subbands,
+                sbc_configuration.allocation_method, sbc_configuration.sampling_frequency,
                 sbc_configuration.max_bitpool_value,
                 sbc_configuration.channel_mode);
             break;
-        }  
 
         case A2DP_SUBEVENT_SIGNALING_DELAY_REPORTING_CAPABILITY:
             printf("A2DP Source: remote supports delay report, remote seid %d\n", 
