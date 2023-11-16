@@ -428,7 +428,10 @@ static uint16_t ots_server_read_callback(hci_con_handle_t con_handle, uint16_t a
     } 
 
     if (attribute_handle == ots_server_get_value_handle_for_characteristic_index(OTS_OBJECT_ID_INDEX)){
-        return att_read_callback_handle_blob((const uint8_t *)connection->current_object->luid, OTS_OBJECT_ID_LEN, offset, buffer, buffer_size);
+        uint8_t object_id[6];
+        reverse_48((const uint8_t *)connection->current_object->luid, object_id);
+
+        return att_read_callback_handle_blob((const uint8_t *)object_id, OTS_OBJECT_ID_LEN, offset, buffer, buffer_size);
     } 
     if (attribute_handle == ots_server_get_value_handle_for_characteristic_index(OTS_OBJECT_PROPERTIES_INDEX)){
         uint8_t properties[4];
@@ -960,6 +963,7 @@ static int ots_server_handle_list_control_point_write(ots_server_connection_t * 
         return ATT_ERROR_RESPONSE_ATT_ERROR_CCCD_IMPROPERLY_CONFIGURED;
     }
     olcp_list_sort_order_t order;
+    uint8_t object_id[6];
 
     switch (connection->olcp_opcode){
         case OLCP_OPCODE_FIRST:
@@ -980,7 +984,8 @@ static int ots_server_handle_list_control_point_write(ots_server_connection_t * 
                 connection->olcp_result_code = OLCP_RESULT_CODE_INVALID_PARAMETER;
                 break;
             }
-            connection->olcp_result_code = ots_server_operations->go_to(connection->con_handle, (ots_object_id_t *)&buffer[1]);
+            reverse_48(&buffer[1], object_id);
+            connection->olcp_result_code = ots_server_operations->go_to(connection->con_handle, (ots_object_id_t *)object_id);
             break;
 
         case OLCP_OPCODE_ORDER:
