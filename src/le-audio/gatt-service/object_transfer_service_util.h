@@ -201,6 +201,23 @@ typedef enum {
     OLCP_LIST_SORT_ORDER_RFU
 } olcp_list_sort_order_t;
 
+typedef enum {
+    OTS_OBJECT_TYPE_DIRECTORY_LISTING = 0x2ACB,
+    OTS_OBJECT_TYPE_MEDIA_PLAYER_ICON = 0x2BA9,
+    OTS_OBJECT_TYPE_TRACK_SEGMENTS = 0x2BAA,
+    OTS_OBJECT_TYPE_TRACK = 0x2BAB,
+    OTS_OBJECT_TYPE_GROUP = 0x2BAC
+} ots_object_type_t;
+
+//Current Group Object ID
+//Current Time
+//Current Track Object ID
+//Current Track Segments Object ID
+//0x2BA0
+//0x2A2B
+//0x2B9D
+//0x2B9C
+
 typedef struct {
     ots_filter_type_t type;
     uint8_t value_length;
@@ -217,8 +234,7 @@ typedef struct {
     uint32_t properties;
 
     char name[OTS_MAX_NAME_LENGHT];
-
-    gatt_uuid_type_t type_uuid16;
+    ots_object_type_t type;
     uint8_t  type_uuid128[16];
 
     // allocated_size = 0 if object not initialized
