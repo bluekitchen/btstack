@@ -112,7 +112,7 @@ static ots_filter_t * ots_server_operation_read_filter(hci_con_handle_t con_hand
 static bool ots_server_operation_can_allocate_object_of_size(hci_con_handle_t con_handle, uint32_t object_size);
 
 // Object operations
-static oacp_result_code_t ots_server_operation_create(hci_con_handle_t con_handle, uint32_t object_size, gatt_uuid_type_t type_uuid16);
+static oacp_result_code_t ots_server_operation_create(hci_con_handle_t con_handle, uint32_t object_size, ots_object_type_t object_type);
 static oacp_result_code_t ots_server_operation_delete(hci_con_handle_t con_handle);
 static oacp_result_code_t ots_server_operation_calculate_checksum(hci_con_handle_t con_handle, uint32_t offset, uint32_t length, uint32_t * crc_out);
 static oacp_result_code_t ots_server_operation_execute(hci_con_handle_t con_handle);
@@ -283,6 +283,10 @@ typedef struct {
     uint8_t current_track_index;
     uint8_t current_group_index;
 
+    uint32_t previous_track_position_10ms;
+    uint32_t previous_track_index;
+    uint32_t previous_group_index;
+
     uint8_t track_groups_num;
     mcs_track_group_t * track_groups;
 } mcs_media_player_t;
@@ -290,13 +294,11 @@ typedef struct {
 static uint16_t current_media_player_id;
 static btstack_timer_source_t mcs_seeking_speed_timer;
 static mcs_media_player_t media_player1;
+static mcs_media_player_t generic_media_player;
 
 static void mcs_seeking_speed_timer_stop(uint16_t media_player_id);
 static void mcs_seeking_speed_timer_start(uint16_t media_player_id);
 
-static uint32_t previous_track_position_10ms;
-static uint32_t previous_track_index;
-static uint32_t previous_group_index;
 
 // MCS Test
 static mcs_track_t tracksA[] = {
@@ -317,10 +319,13 @@ static mcs_track_t tracksC[] = {
     {32000, 0, {0x99, 0x99, 0x99, 0x99, 0x99, 0x99}, "Track9", {0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF}, "https://www.bluetooth.com/icon_url"}, //{0xFE, 0xFE, 0xFE, 0xFE, 0xFE, 0xFE}, {0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB}},
 };
 
+//The Object ID value 0x000000000000 is reserved for the Directory Listing Object as described in Section 4.1.
+//The Object ID values 0x000000000001 to 0x0000000000FF are reserved for future use.
+
 static mcs_track_group_t  track_groups[] = {
-    {{0xFE, 0xFE, 0xFE, 0xFE, 0xFE, 0xFE},{0x0A, 0x0A, 0x0A, 0x0A, 0x0A, 0x0A}, 3, tracksA},
-    {{0xFE, 0xFE, 0xFE, 0xFE, 0xFE, 0xFE},{0x0B, 0x0B, 0x0B, 0x0B, 0x0B, 0x0B}, 4, tracksB},
-    {{0xFE, 0xFE, 0xFE, 0xFE, 0xFE, 0xFE},{0x0C, 0x0C, 0x0C, 0x0C, 0x0C, 0x0C}, 2, tracksC}
+    {{0x00, 0x00, 0x00, 0x00, 0x00, 0x00},{0x00, 0x00, 0x00, 0x00, 0x01, 0x00}, 3, tracksA},
+    {{0x00, 0x00, 0x00, 0x00, 0x00, 0x00},{0x00, 0x00, 0x00, 0x00, 0x02, 0x00}, 4, tracksB},
+    {{0x00, 0x00, 0x00, 0x00, 0x00, 0x00},{0x00, 0x00, 0x00, 0x00, 0x03, 0x00}, 2, tracksC}
 };
 
 
@@ -367,6 +372,8 @@ static uint32_t ots_db_object_current_num;
 
 // index into ots_db_object_current_indices
 static int ots_db_object_current_index = -1;
+static int ots_db_group_current_index = -1;
+static uint32_t ots_db_group_current_num;
 
 static char * long_string1 = "Object 0 abcdefghijkabcdefghijkabcdefghijkabcdefghijkab";
 static char * long_string2 = "Object 0 ghijkabcdefghijkabcdefghijkabcdefghijkabcdefghijkab";
@@ -379,7 +386,7 @@ static void setup_advertising(void) {
 }
 
 static void ots_dump_object(ots_object_t * object){
-    printf("%d / %d, 0x%04x, %s\n", object->current_size, object->allocated_size, object->type_uuid16, object->name);
+    printf("%d / %d, 0x%04x, %s\n", object->current_size, object->allocated_size, object->type, object->name);
 }
 static void ots_dump_selection(void){
     printf("\n");
@@ -454,7 +461,7 @@ static void ots_db_filter(){
         uint32_t object_index = ots_db_object_indices_sorted_view[i];
         const ots_object_t * object = &ots_db_objects[object_index];
 
-        gatt_uuid_type_t uuid_type;
+        ots_object_type_t object_type;
         uint32_t min_size;
         uint32_t max_size;
 
@@ -484,8 +491,8 @@ static void ots_db_filter(){
 //                case OTS_FILTER_TYPE_NAME_ENDS_WITH:   // var
 //                    break;
                 case OTS_FILTER_TYPE_OBJECT_TYPE:   // 2
-                    uuid_type = (gatt_uuid_type_t)little_endian_read_16(filter->value, 0);
-                    if (object->type_uuid16 != uuid_type){
+                    object_type = (ots_object_type_t )little_endian_read_16(filter->value, 0);
+                    if (object->type != object_type){
                         keep_object = false;
                     }
                     break;
@@ -571,7 +578,7 @@ static ots_object_t * ots_object_iterator_goto(ots_object_id_t * luid){
     int i;
     for (i = 0; i < ots_db_object_current_num; i++){
         ots_object_t * object = &ots_db_objects[ots_db_object_current_indices[i]];
-        if (memcmp(object->luid, luid, sizeof(ots_object_id_t)) == 0){
+        if (memcmp(object->luid, *luid, sizeof(ots_object_id_t)) == 0){
             ots_db_object_current_index = i;
             return object;
         }
@@ -636,7 +643,7 @@ static ots_object_t * ots_db_allocate_object_of_size(uint32_t object_size){
     return NULL;
 }
 
-ots_object_t * ots_db_object_add(ots_object_id_t * object_id, char * name, uint32_t properties, uint16_t type_uuid16,
+ots_object_t * ots_db_object_add(ots_object_id_t * object_id, char * name, uint32_t properties, ots_object_type_t type_uuid16,
                           uint32_t allocated_size, uint32_t current_size, btstack_utc_t * first_created, btstack_utc_t * last_modified){
 
     ots_object_t * object = ots_db_find_object_with_luid(object_id);
@@ -656,43 +663,55 @@ ots_object_t * ots_db_object_add(ots_object_id_t * object_id, char * name, uint3
     memcpy(&object->luid, object_id, sizeof(ots_object_id_t));
     btstack_strcpy(object->name, OTS_MAX_NAME_LENGHT, name);
     object->properties = properties;
-    object->type_uuid16 = type_uuid16;
+    object->type = type_uuid16;
     object->current_size = current_size;
     memcpy(&object->first_created, first_created, sizeof(btstack_utc_t));
     memcpy(&object->last_modified, last_modified, sizeof(btstack_utc_t));
     return object;
 }
 
-static void ots_db_load_from_memory(uint8_t track_groups_num, mcs_track_group_t * track_groups){
+static void ots_db_load_from_memory(uint8_t track_groups_num, mcs_track_group_t * groups){
     ots_db_type = OTS_DATABANK_TYPE_POPULATED;
-
+    uint32_t properties = 0xFF;
     uint16_t i;
+
+    btstack_utc_t first_created = {2023, 6, 22, 10, 59, 30};
+    btstack_utc_t last_modified = {2023, 6, 22, 10, 59, 30};
+
     for (i = 0; i <  track_groups_num; i++){
-        mcs_track_group_t * track_group = &track_groups[i];
+        mcs_track_group_t * track_group = &groups[i];
+        
+        ots_db_object_add(
+                &track_group->current_group_object_id,
+                "Group",
+                properties,
+                OTS_OBJECT_TYPE_GROUP,
+                // simulate increase of size to test sorting by size
+                20,
+                track_group->tracks_num,
+                &first_created,
+                &last_modified);
 
         uint16_t j;
         for (j = 0; j < track_group->tracks_num; j++){
             mcs_track_t * track = &track_group->tracks[j];
 
-            btstack_utc_t first_created = {2023, 6, 22, 10, 59, i * 5};
-            btstack_utc_t last_modified = {2023, 6, 22, 10, 59, i * 5};
-            uint32_t properties = 0xFF;
-            uint16_t type_uuid16 = GATT_UUID_TYPE_UNSPECIFIED; // unspecified
             uint32_t allocated_size = sizeof(ots_object_dummy_data) - 100 + i * 20 + j;
             uint32_t current_size = 30 + i * 20 + j;
+            first_created.seconds = i * 5;
+            last_modified.seconds = i * 5;
 
             ots_db_object_add(
                     &track->object_id,
                     track->title,
                     properties,
-                    type_uuid16,
+                    OTS_OBJECT_TYPE_TRACK,
                     // simulate increase of size to test sorting by size
                     allocated_size,
                     current_size,
                     &first_created,
                     &last_modified);
         }
-
     }
 
     ots_db_sort(ots_db_sort_order);
@@ -708,6 +727,9 @@ static void ots_db_init(void) {
     ots_db_active_filters_bitmap = 0;
     ots_db_object_current_num = 0;
     ots_db_object_current_index = -1;
+
+    ots_db_group_current_index = -1;
+    ots_db_group_current_num = 0;
 }
 
 
@@ -727,7 +749,7 @@ static bool ots_server_operation_can_allocate_object_of_size(hci_con_handle_t co
     return ots_db_allocate_object_of_size(object_size) != NULL;
 }
 
-static oacp_result_code_t ots_server_operation_create(hci_con_handle_t con_handle, uint32_t object_size, gatt_uuid_type_t type_uuid16){
+static oacp_result_code_t ots_server_operation_create(hci_con_handle_t con_handle, uint32_t object_size, ots_object_type_t object_type){
     UNUSED(con_handle);
 
     ots_object_id_t uuid;
@@ -735,11 +757,12 @@ static oacp_result_code_t ots_server_operation_create(hci_con_handle_t con_handl
     btstack_utc_t first_created = {0,0,0,0,0,0}; // data not valid
     btstack_utc_t last_modified = {0,0,0,0,0,0};
 
+    // add directory listing
     ots_object_t * object = ots_db_object_add(
             &uuid,
             "",
             OBJECT_PROPERTY_MASK_WRITE,
-            type_uuid16,
+            object_type,
             // simulate increase of size to test sorting by size
             object_size,
             0,
@@ -748,7 +771,7 @@ static oacp_result_code_t ots_server_operation_create(hci_con_handle_t con_handl
 
     object_transfer_service_server_set_current_object(con_handle, object);
     ots_db_reset_filters();
-    printf("Create: size %d, type 0x%04x, %s\n", object_size, type_uuid16, bd_addr_to_str(object->luid));
+    printf("Create: size %d, type 0x%04x, %s\n", object_size, object_type, bd_addr_to_str(object->luid));
 
     return OACP_RESULT_CODE_SUCCESS;
 }
@@ -856,17 +879,47 @@ static olcp_result_code_t ots_server_operation_previous(hci_con_handle_t con_han
     object_transfer_service_server_set_current_object(con_handle, object);
     return OLCP_RESULT_CODE_SUCCESS;
 }
+static void mcs_goto_first_track(uint16_t media_player_id);
+static mcs_track_t * mcs_get_current_track_for_media_player(mcs_media_player_t * media_player);
+static mcs_media_player_t * mcs_get_media_player_for_id(uint16_t media_player_id);
+
+
+static void mcs_change_current_track_for_luid(mcs_media_player_t * media_player, ots_object_id_t * luid);
+static void mcs_change_current_group_for_luid(mcs_media_player_t * media_player, ots_object_id_t * luid);
+
 
 static olcp_result_code_t ots_server_operation_goto(hci_con_handle_t con_handle, ots_object_id_t * luid){
     ots_object_t * object = ots_object_iterator_goto(luid);
     if (object == NULL){
         return OLCP_RESULT_CODE_OBJECT_ID_NOT_FOUND;
     }
-    printf("goto: ");
-    ots_dump_object(object);
+    mcs_track_t * current_track;
+    mcs_media_player_t * media_player = mcs_get_media_player_for_id(current_media_player_id);
+    switch (object->type) {
+        case OTS_OBJECT_TYPE_GROUP:
+            printf("MTS APP: ots_server_operation_goto, goto group: ");
+            printf_hexdump(object->luid, 6);
+            mcs_change_current_group_for_luid(media_player, luid);
+            break;
+
+        case OTS_OBJECT_TYPE_TRACK:
+            printf("MTS APP: , ots_server_operation_goto, goto track: ");
+            printf_hexdump(object->luid, 6);
+            mcs_change_current_track_for_luid(media_player, luid);
+            break;
+
+        default:
+            break;
+    }
+    
+    current_track = mcs_get_current_track_for_media_player(media_player);
+    btstack_assert(current_track != NULL);
+
     object_transfer_service_server_set_current_object(con_handle, object);
+
     return OLCP_RESULT_CODE_SUCCESS;
 }
+
 
 static char * ots_sort_order2string(olcp_list_sort_order_t order){
     switch (order){
@@ -925,6 +978,9 @@ static mcs_media_player_t * mcs_get_media_player_for_id(uint16_t media_player_id
     if (media_player_id == media_player1.id){
         return &media_player1;
     }
+    if (media_player_id == generic_media_player.id){
+        return &generic_media_player;
+    }
     return NULL;
 }
 
@@ -937,7 +993,7 @@ static mcs_track_t * mcs_get_current_track_for_media_player(mcs_media_player_t *
         return NULL;
     }
     mcs_track_group_t * current_track_group = mcs_get_current_group_for_media_player(media_player);
-    
+
     if (current_track_group == NULL){
         return NULL;
     }
@@ -952,18 +1008,34 @@ static mcs_track_t * mcs_get_current_track_for_media_player_id(uint16_t media_pl
 static void mcs_reset_current_track(mcs_media_player_t * media_player){
     mcs_track_t * current_track = mcs_get_current_track_for_media_player(media_player);
     // reset current track
+    media_control_service_server_set_track_title(media_player->id, current_track->title);
+    media_control_service_server_set_track_duration(media_player->id, current_track->track_duration_10ms);
+    media_control_service_server_set_track_position(media_player->id, current_track->track_position_10ms);
+    media_control_service_server_set_current_track_id(media_player->id, &current_track->object_id);
+
     current_track->track_position_10ms = 0;
+    mcs_track_t * track = mcs_get_current_track_for_media_player_id(current_media_player_id);
+
+    printf("Change track: group [%d]: ", media_player->current_group_index);
+    printf_hexdump(media_player->track_groups[media_player->current_group_index].current_group_object_id, 6);
+    printf("Change track:  track[%d]: ", media_player->current_track_index);
+    printf_hexdump(track->object_id, 6);
 }
+
 
 static void mcs_change_current_track(mcs_media_player_t * media_player, uint32_t track_index){
     if (media_player->current_track_index == track_index){
         return;
     }
+    if (media_player->track_groups[media_player->current_group_index].tracks_num >= track_index){
+        return;
+    }
+
     printf(" * change_current_track: previous %d, current %d\n", media_player->current_track_index, track_index);
-    previous_track_index = media_player->current_track_index;
+    media_player->previous_track_index = media_player->current_track_index;
     // reset current
     mcs_reset_current_track(media_player);
-    
+
     // change track
     media_player->current_track_index = track_index;
     mcs_reset_current_track(media_player);
@@ -973,20 +1045,54 @@ static void mcs_change_current_group(mcs_media_player_t * media_player, uint32_t
     if (media_player->current_group_index == group_index){
         return;
     }
+    if (media_player->track_groups_num >= group_index){
+        return;
+    }
     printf(" * change_current_group: previous %d, current %d\n", media_player->current_group_index, group_index);
-    previous_group_index = media_player->current_track_index;
+    media_player->previous_group_index = media_player->current_group_index;
     mcs_reset_current_track(media_player);
     // change group
     media_player->current_group_index = group_index;
     media_player->current_track_index = 0;
+
+    printf("Change group: [%d]: ", media_player->current_group_index);
+    printf_hexdump(media_player->track_groups[media_player->current_group_index].current_group_object_id, 6);
     mcs_reset_current_track(media_player);
+}
+
+static void mcs_change_current_track_for_luid(mcs_media_player_t * media_player, ots_object_id_t * luid){
+    uint32_t track_index = media_player->current_track_index;
+    mcs_track_group_t * track_group = &track_groups[media_player->current_group_index];
+
+    int i;
+    for (i = 0; i < track_group->tracks_num; i++){
+        mcs_track_t * track = &track_group->tracks[i];
+
+        if (memcmp(track->object_id, luid, 6) == 0){
+            track_index = i;
+        }
+    }
+    mcs_change_current_track(media_player, track_index);
+}
+
+static void mcs_change_current_group_for_luid(mcs_media_player_t * media_player, ots_object_id_t * luid){
+    uint32_t group_index = media_player->current_group_index;
+    int i;
+    for (i = 0; i < media_player->track_groups_num; i++){
+        mcs_track_group_t * track_group = &track_groups[i];
+        
+        if (memcmp(track_group->current_group_object_id, luid, 6) == 0){
+            group_index = i;
+        }
+    }
+    mcs_change_current_group(media_player, group_index);
 }
 
 static void mcs_goto_first_track(uint16_t media_player_id) {
     mcs_media_player_t * media_player = mcs_get_media_player_for_id(media_player_id);
     if (media_player == NULL){
         return;
-    }                            
+    }
 
     if (media_player->current_track_index == 0){
         return;
@@ -1007,7 +1113,7 @@ static void mcs_goto_last_track(uint16_t media_player_id) {
     if (current_track_group->tracks_num == 0){
         return;
     }
-    
+
     mcs_change_current_track(media_player, current_track_group->tracks_num - 1);
 }
 
@@ -1044,7 +1150,7 @@ static void mcs_goto_previous_track(uint16_t media_player_id){
     if (current_track_group->tracks_num == 0){
         return;
     }
-    
+
     if (media_player->current_track_index == 0){
         return;
     }
@@ -1059,18 +1165,20 @@ static void mcs_goto_track(uint16_t media_player_id, int32_t track_index){
     mcs_track_group_t * current_track_group = mcs_get_current_group_for_media_player(media_player);
     if (current_track_group == NULL){
         return;
-    }    
+    }
     if (current_track_group->tracks_num == 0){
         return;
     }
-    
+    if (media_player->current_track_index == track_index){
+        return;
+    }
     uint32_t new_track_index = media_player->current_track_index;
-        
+
     if (track_index != 0){
         if (track_index > 0){
             track_index--;
-        } 
-        
+        }
+
         if (track_index >= 0){
             if (track_index < current_track_group->tracks_num){
                 new_track_index = track_index;
@@ -1094,12 +1202,12 @@ static bool mcs_goto_group(uint16_t media_player_id, int32_t group_index){
         return NULL;
     }
 
-    int32_t previous_group_index = media_player->current_group_index;
+    media_player->previous_group_index = media_player->current_group_index;
     if (group_index != 0){
 
         if (group_index > 0 ){
             group_index--;
-        } 
+        }
 
         if (media_player->current_group_index != group_index){
             if (group_index >= 0 ){
@@ -1115,8 +1223,8 @@ static bool mcs_goto_group(uint16_t media_player_id, int32_t group_index){
         }
     }
 
-    printf(" * mcs_goto_group: previous %d, current %d\n", previous_group_index, media_player->current_group_index);
-    return  previous_group_index != media_player->current_group_index;
+    printf(" * mcs_goto_group: previous %d, current %d\n",  media_player->previous_group_index, media_player->current_group_index);
+    return   media_player->previous_group_index != media_player->current_group_index;
 }
 
 static void mcs_goto_previous_group(uint16_t media_player_id){
@@ -1216,8 +1324,8 @@ static void mcs_current_track_goto_first_segment(mcs_track_t * track) {
     int32_t old_position = track->track_position_10ms;
     track->track_position_10ms = 0;
 
-    printf("mcs_current_track_goto_first_segment: duration %d, num_segments %d, current segment %d, old position %d, new position %d\n", 
-        track->track_duration_10ms, mcs_track_num_segments(track), mcs_track_current_segment(track), old_position, 
+    printf("mcs_current_track_goto_first_segment: duration %d, num_segments %d, current segment %d, old position %d, new position %d\n",
+        track->track_duration_10ms, mcs_track_num_segments(track), mcs_track_current_segment(track), old_position,
         track->track_position_10ms);
 }
 
@@ -1226,8 +1334,8 @@ static void mcs_current_track_go_from_backward_for_num_steps(mcs_track_t * track
     uint32_t old_position = track->track_position_10ms;
     track->track_position_10ms = track->track_duration_10ms - step_10ms;
 
-    printf("mcs_current_track_go_from_backward_for_num_steps: duration %d, num_segments %d, current segment %d, old position %d, backward_steps_num %d [%d], new position %d\n", 
-        track->track_duration_10ms, mcs_track_num_segments(track), mcs_track_current_segment(track), old_position, 
+    printf("mcs_current_track_go_from_backward_for_num_steps: duration %d, num_segments %d, current segment %d, old position %d, backward_steps_num %d [%d], new position %d\n",
+        track->track_duration_10ms, mcs_track_num_segments(track), mcs_track_current_segment(track), old_position,
         backward_steps_num, step_10ms, track->track_position_10ms);
 }
 
@@ -1236,15 +1344,15 @@ static void mcs_current_track_go_from_begining_for_num_steps(mcs_track_t * track
     uint32_t old_position = track->track_position_10ms;
     track->track_position_10ms = step_10ms;
 
-    printf("mcs_current_track_go_from_begining_for_num_steps: duration %d, num_segments %d, current segment %d, old position %d, forward_steps_num %d [%d], new position %d\n", 
-        track->track_duration_10ms, mcs_track_num_segments(track), mcs_track_current_segment(track), old_position, 
+    printf("mcs_current_track_go_from_begining_for_num_steps: duration %d, num_segments %d, current segment %d, old position %d, forward_steps_num %d [%d], new position %d\n",
+        track->track_duration_10ms, mcs_track_num_segments(track), mcs_track_current_segment(track), old_position,
         forward_steps_num, step_10ms, track->track_position_10ms);
 }
 
 static void mcs_current_track_goto_last_segment(mcs_track_t * track) {
     uint32_t old_position = track->track_position_10ms;
-    printf("mcs_current_track_goto_last_segment: duration %d, num_segments %d, current segment %d, old position %d, new position %d\n", 
-        track->track_duration_10ms, mcs_track_num_segments(track), mcs_track_current_segment(track), old_position, 
+    printf("mcs_current_track_goto_last_segment: duration %d, num_segments %d, current segment %d, old position %d, new position %d\n",
+        track->track_duration_10ms, mcs_track_num_segments(track), mcs_track_current_segment(track), old_position,
         track->track_position_10ms);
 
     mcs_current_track_go_from_backward_for_num_steps(track, 1);
@@ -1307,6 +1415,13 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     hci_subevent_le_connection_complete_get_peer_address(packet, bap_app_client_addr);
                     printf("BAP Server: Connection to %s established\n", bd_addr_to_str(bap_app_client_addr));
                     mcs_track_t * track = mcs_get_current_track_for_media_player_id(current_media_player_id);
+                    mcs_media_player_t * media_player = mcs_get_media_player_for_id(current_media_player_id);
+
+                    printf("BAP Server: current group[%d]: ", media_player->current_group_index);
+                    printf_hexdump(media_player->track_groups[media_player->current_group_index].current_group_object_id, 6);
+                    printf("BAP Server: current track[%d]: ", media_player->current_track_index);
+                    printf_hexdump(track->object_id, 6);
+
                     if (track != NULL){
                         ots_object_t * object = ots_db_find_object_with_luid(&track->object_id);
                         if (object != NULL){
@@ -1328,7 +1443,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             bap_app_server_con_handle = HCI_CON_HANDLE_INVALID;
             bap_app_server_state      = BAP_APP_SERVER_STATE_IDLE;
             printf("BAP Server: Disconnected from %s\n", bd_addr_to_str(bap_app_client_addr));
-            
+
             mcs_seeking_speed_timer_stop(current_media_player_id);
             break;
 
@@ -1337,11 +1452,11 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
     }
 }
 
-    
+
 static float mcs_playing_speed_step(mcs_media_player_t * media_player){
     mcs_track_t * current_track = mcs_get_current_track_for_media_player(media_player);
     btstack_assert(current_track != NULL);
-    
+
     float playback_speed = mcs_speed_values_mapping[media_player->playback_speed_index].s_value;
     uint32_t track_duration_ms = current_track->track_duration_10ms * 10;
     uint32_t playing_speed_delta = (uint32_t)(((float)track_duration_ms / MCS_MEDIA_PLAYER_TIMEOUT_IN_MS) * playback_speed);
@@ -1360,13 +1475,13 @@ static bool mcs_next_track_index(mcs_media_player_t * media_player, bool next_fo
     // TODO: set new track, respect playing order, and/or stop seeking at the end
     mcs_track_group_t * current_group = mcs_get_current_group_for_media_player(media_player);
     btstack_assert(current_group != NULL);
-    
+
     if (next_forward){
         if ((media_player->current_track_index + 1) < current_group->tracks_num){
             *track_index = media_player->current_track_index + 1;
         } else {
             *track_index = 0;
-        }    
+        }
     } else {
         if (media_player->current_track_index <= 1){
             *track_index = current_group->tracks_num - 1;
@@ -1429,7 +1544,7 @@ static void mcs_seek_backward(mcs_media_player_t * media_player){
     // printf("try seek backward, index %d, duration %d, position %d, step %d, remaining %d \n", media_player->current_track_index, track_duration_ms, track_position_ms, seeking_speed_delta_ms, remaining_track_ms);
     if (seeking_speed_delta_ms > remaining_track_ms){
          // printf("- switch to the previous track\n");
-        
+
         mcs_reset_current_track(media_player);
 
         uint32_t track_index;
@@ -1442,27 +1557,27 @@ static void mcs_seek_backward(mcs_media_player_t * media_player){
 
             uint32_t remaining_seeking_speed_delta_ms = seeking_speed_delta_ms - remaining_track_ms;
             current_track->track_position_10ms = current_track->track_duration_10ms - remaining_seeking_speed_delta_ms/10;
-            // printf("- go backward, index %d, duration %d, position %d, remaining %d \n", 
-                // media_player->current_track_index, current_track->track_duration_10ms, 
-                // current_track->track_position_10ms, 
+            // printf("- go backward, index %d, duration %d, position %d, remaining %d \n",
+                // media_player->current_track_index, current_track->track_duration_10ms,
+                // current_track->track_position_10ms,
                 // remaining_seeking_speed_delta_ms);
-        }        
+        }
     } else {
         // printf("- go backward with the same track\n");
         current_track->track_position_10ms -= seeking_speed_delta_ms/10;
-    } 
+    }
 }
 
 static void mcs_server_trigger_notifications_for_opcode(mcs_media_player_t * media_player, media_control_point_opcode_t opcode){
     mcs_track_t * track = mcs_get_current_track_for_media_player(media_player);
     btstack_assert(track != NULL);
 
-    bool mcs_track_changed = (previous_group_index != media_player->current_group_index) || (previous_track_index != media_player->current_track_index);
-    bool mcs_position_changed = (previous_track_index == media_player->current_track_index) && (previous_track_position_10ms != track->track_position_10ms);
+    bool mcs_track_changed = ( media_player->previous_group_index != media_player->current_group_index) || ( media_player->previous_track_index != media_player->current_track_index);
+    bool mcs_position_changed = ( media_player->previous_track_index == media_player->current_track_index) && (media_player->previous_track_position_10ms != track->track_position_10ms);
 
     bool notify_track_change = mcs_track_changed;
     bool notify_track_position_change = mcs_position_changed;
-    
+
     switch (opcode){
         // track operation
         case MEDIA_CONTROL_POINT_OPCODE_MOVE_RELATIVE:
@@ -1515,11 +1630,15 @@ static void mcs_server_trigger_notifications_for_opcode(mcs_media_player_t * med
     // printf("Update track info, title %s, length %d, pos %d\n", track->title, track->track_duration_10ms, track->track_position_10ms);
     media_control_service_server_update_current_track_info(media_player->id, track);
 
+    if (media_player->previous_group_index != media_player->current_group_index){
+        media_control_service_server_set_current_group_object_id(media_player->id, &media_player->track_groups[media_player->current_group_index].current_group_object_id);
+    }
+
     if (notify_track_change){
-        media_control_service_server_set_media_track_changed(media_player->id); 
+        media_control_service_server_set_media_track_changed(media_player->id);
         media_control_service_server_set_track_duration(media_player->id, track->track_duration_10ms);
         media_control_service_server_set_track_title(media_player->id, track->title);
-    } 
+    }
 
     if (notify_track_position_change){
         media_control_service_server_set_track_position(media_player->id, track->track_position_10ms);
@@ -1556,16 +1675,16 @@ static void mcs_seeking_speed_timer_timeout_handler(btstack_timer_source_t * tim
 
     // enforce fixed interval
 #if 0
-    btstack_run_loop_set_timer(&mcs_seeking_speed_timer, MCS_MEDIA_PLAYER_TIMEOUT_IN_MS); 
+    btstack_run_loop_set_timer(&mcs_seeking_speed_timer, MCS_MEDIA_PLAYER_TIMEOUT_IN_MS);
 #else
 #ifdef ENABLE_TESTING_SUPPORT_REPLAY
         mcs_seeking_speed_timer.timeout += MCS_MEDIA_PLAYER_TIMEOUT_IN_MS * 1000;
 #else
         mcs_seeking_speed_timer.timeout += MCS_MEDIA_PLAYER_TIMEOUT_IN_MS;
-#endif    
+#endif
 #endif
     btstack_run_loop_add_timer(&mcs_seeking_speed_timer);
-    
+
 }
 
 static void mcs_seeking_speed_timer_start(uint16_t media_player_id){
@@ -1577,7 +1696,7 @@ static void mcs_seeking_speed_timer_start(uint16_t media_player_id){
     btstack_run_loop_set_timer_handler(&mcs_seeking_speed_timer, mcs_seeking_speed_timer_timeout_handler);
     btstack_run_loop_set_timer_context(&mcs_seeking_speed_timer, (void *)(uintptr_t)media_player_id);
 
-    btstack_run_loop_set_timer(&mcs_seeking_speed_timer, MCS_MEDIA_PLAYER_TIMEOUT_IN_MS); 
+    btstack_run_loop_set_timer(&mcs_seeking_speed_timer, MCS_MEDIA_PLAYER_TIMEOUT_IN_MS);
     btstack_run_loop_add_timer(&mcs_seeking_speed_timer);
     log_info("timer start");
 }
@@ -1587,7 +1706,7 @@ static void mcs_seeking_speed_timer_stop(uint16_t media_player_id){
     log_info("timer stop");
 }
 
-static void mcs_server_execute_track_operation(mcs_media_player_t * media_player, 
+static void mcs_server_execute_track_operation(mcs_media_player_t * media_player,
     media_control_point_opcode_t opcode, uint8_t * packet, uint16_t packet_size){
 
     int32_t value_int32;
@@ -1597,7 +1716,7 @@ static void mcs_server_execute_track_operation(mcs_media_player_t * media_player
         return;
     }
     mcs_seeking_speed_timer_stop(media_player->id);
-    
+
     switch (opcode){
         case MEDIA_CONTROL_POINT_OPCODE_FIRST_TRACK:
             mcs_goto_first_track(media_player->id);
@@ -1653,7 +1772,7 @@ static void mcs_server_execute_track_operation(mcs_media_player_t * media_player
             value_int32 = (int32_t) gattservice_subevent_mcs_server_media_control_point_notification_task_get_data(packet);
             mcs_goto_group(media_player->id, value_int32);
             break;
-        
+
         case MEDIA_CONTROL_POINT_OPCODE_MOVE_RELATIVE:
             value_int32 = (int32_t) gattservice_subevent_mcs_server_media_control_point_notification_task_get_data(packet);
             mcs_current_track_apply_relative_offset(media_player->id, value_int32);
@@ -1675,7 +1794,7 @@ static void mcs_server_execute_track_operation(mcs_media_player_t * media_player
             break;
         default:
             break;
-    } 
+    }
 }
 
 static void ots_dump_filter(uint8_t filter_index);
@@ -1777,19 +1896,19 @@ static void mcs_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
         case GATTSERVICE_SUBEVENT_MCS_SERVER_SEARCH_CONTROL_POINT_NOTIFICATION_TASK:
             media_player_id = gattservice_subevent_mcs_server_search_control_point_notification_task_get_media_player_id(packet);
             media_player = mcs_get_media_player_for_id(media_player_id);
-            
+
             if (media_player == NULL){
                 return;
             }
             search_data     = gattservice_subevent_mcs_server_search_control_point_notification_task_get_data(packet);
             search_data_len = gattservice_subevent_mcs_server_search_control_point_notification_task_get_data_length(packet);
-            
+
             printf("MCS Server App: Search Notification, data len %d\n", search_data_len);
-            
+
             pos = 0;
             while (pos < search_data_len){
                 printf_hexdump(search_data + pos, search_data_len - pos);
-                
+
                 uint8_t search_field_length = search_data[pos++] - 2;
                 search_control_point_type_t search_field_type = (search_control_point_type_t)search_data[pos++];
 
@@ -1809,13 +1928,13 @@ static void mcs_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
             opcode = (media_control_point_opcode_t)gattservice_subevent_mcs_server_media_control_point_notification_task_get_opcode(packet);
             media_player_id = gattservice_subevent_mcs_server_media_control_point_notification_task_get_media_player_id(packet);
             media_player = mcs_get_media_player_for_id(media_player_id);
-            
+
             if (media_player == NULL){
                 return;
             }
 
-            printf("MCS Server App: Control Notification, opcode %s, state %s\n", 
-                mcs_server_media_control_opcode2str(opcode), 
+            printf("MCS Server App: Control Notification, opcode %s, state %s\n",
+                mcs_server_media_control_opcode2str(opcode),
                 mcs_server_media_state2str(media_player->media_state));
 
             if (media_player->media_state == MCS_MEDIA_STATE_INACTIVE){
@@ -1823,7 +1942,7 @@ static void mcs_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
                     case MEDIA_CONTROL_POINT_OPCODE_PLAY:
                     case MEDIA_CONTROL_POINT_OPCODE_PAUSE:
                         // the application should deal with this state below
-                        break; 
+                        break;
                     default:
                         media_control_service_server_media_control_point_response(media_player_id, opcode, MEDIA_CONTROL_POINT_ERROR_CODE_MEDIA_PLAYER_INACTIVE);
                         return;
@@ -1832,12 +1951,12 @@ static void mcs_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
 
             // accept command
             media_control_service_server_media_control_point_response(media_player_id, opcode, MEDIA_CONTROL_POINT_ERROR_CODE_SUCCESS);
-            
+
             switch (opcode){
                 case MEDIA_CONTROL_POINT_OPCODE_FAST_REWIND:
                 case MEDIA_CONTROL_POINT_OPCODE_FAST_FORWARD:
                     mcs_seeking_speed_timer_stop(media_player_id);
-                    
+
                     if (opcode == MEDIA_CONTROL_POINT_OPCODE_FAST_FORWARD){
                         media_player->seeking_forward = true;
                     } else {
@@ -1848,7 +1967,7 @@ static void mcs_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
                     if (status != ERROR_CODE_SUCCESS){
                         return;
                     }
-                    
+
                     status = media_control_service_server_set_media_state(media_player_id, MCS_MEDIA_STATE_SEEKING);
                     if (status == ERROR_CODE_SUCCESS){
                         media_player->media_state = MCS_MEDIA_STATE_SEEKING;
@@ -1881,7 +2000,7 @@ static void mcs_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
                     }
                     mcs_server_trigger_notifications_for_opcode(media_player, opcode);
                     return;
-                        
+
                 case MEDIA_CONTROL_POINT_OPCODE_STOP:
                     status = media_control_service_server_set_media_state(media_player_id, MCS_MEDIA_STATE_PAUSED);
                     if (status == ERROR_CODE_SUCCESS){
@@ -1926,7 +2045,7 @@ static void mcs_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
                 default:
                     break;
             }
-            
+
             break;
 
         default:
@@ -1966,7 +2085,7 @@ static void show_usage(void){
     printf("IUT: addr type %u, addr %s", iut_address_type, bd_addr_to_str(iut_address));
 
     char * current_media_state = mcs_server_media_state2str(media_control_service_server_get_media_state(current_media_player_id));
-    
+
     printf("\n## MCS\n");
     printf("0 - set INACTIVE state, current %s\n", current_media_state);
     printf("1 - set PLAYING  state, current %s\n", current_media_state);
@@ -1976,11 +2095,56 @@ static void show_usage(void){
     printf("4 - goto 5th segment\n");
     printf("5 - goto last song\n");
     printf("6 - goto second group\n");
+    printf("7 - set long filter\n");
+    printf("8 - Reset filters\n");
+    printf("9 - Use empty databank\n");
+
+    printf("I - Invalidate current object\n");
 
     printf("j - set long media player name 1\n");
     printf("J - set long media player name 2\n");
     printf("k - set long track title 1\n");
     printf("K - set long track title 2\n");
+
+    printf("G - set generic media player as current media_player\n");
+
+}
+
+static void mcs_server_init_media_player(mcs_media_player_t * media_player){
+    media_player->playback_speed_index = 2;            // 1
+    media_player->seeking_speed_index  = 3;            // 2.0
+    media_player->track_groups = track_groups;
+    media_player->track_groups_num =  3;
+    media_player->seeking_forward = true;
+
+    media_player->previous_track_position_10ms = 0;
+    media_player->previous_track_index = 1;
+    media_player->previous_group_index = 2;
+
+    media_player->current_track_index = media_player->previous_track_index;
+    media_player->current_group_index = 1;
+
+    mcs_track_t * current_track = mcs_get_current_track_for_media_player(media_player);
+    btstack_assert(current_track != NULL);
+
+    media_control_service_server_set_media_player_name(media_player->id, "BK Player1");
+    media_control_service_server_set_icon_object_id(media_player->id, &current_track->icon_object_id);
+    media_control_service_server_set_icon_url(media_player->id, current_track->icon_url);
+
+    media_control_service_server_set_track_title(media_player->id, current_track->title);
+    media_control_service_server_set_track_duration(media_player->id, current_track->track_duration_10ms);
+    media_control_service_server_set_track_position(media_player->id, current_track->track_position_10ms);
+    media_control_service_server_set_current_track_id(media_player->id, &current_track->object_id);
+    media_control_service_server_set_current_group_object_id(media_player->id, &media_player->track_groups[media_player->current_group_index].current_group_object_id);
+
+    media_control_service_server_set_playing_orders_supported(media_player->id, 0x3FF);
+    media_control_service_server_set_playing_order(media_player->id, PLAYING_ORDER_IN_ORDER_ONCE);
+}
+
+static void mcs_server_set_current_media_player(mcs_media_player_t * media_player){
+    mcs_seeking_speed_timer_stop(current_media_player_id);
+    current_media_player_id = media_player->id;
+    mcs_seeking_speed_timer_start(current_media_player_id);
 }
 
 static void stdin_process(char cmd){
@@ -2108,6 +2272,11 @@ static void stdin_process(char cmd){
             printf("Invalidate current object\n");
             ots_db_object_current_index = -1;
             break;
+
+        case 'G':
+            mcs_server_set_current_media_player(&generic_media_player);
+            break;
+
         case '\n':
         case '\r':
             break;
@@ -2121,31 +2290,6 @@ static void stdin_process(char cmd){
     }
 }
 
-static void mcs_server_init_media_player(mcs_media_player_t * media_player){
-    media_player->playback_speed_index = 2;            // 1
-    media_player->seeking_speed_index  = 3;            // 2.0 
-    media_player->current_track_index = previous_track_index;
-    media_player->track_groups = track_groups;
-    media_player->track_groups_num = previous_group_index;
-    media_player->seeking_forward = true;
-
-    mcs_track_t * current_track = mcs_get_current_track_for_media_player(media_player);
-    btstack_assert(current_track != NULL);
-
-    media_control_service_server_register_media_player(&media_player->media_server, 
-        &mcs_server_packet_handler, 0, //0x1FFFFF,
-        &media_player->id);
-    media_control_service_server_set_media_player_name(media_player->id, "BK Player1");
-    media_control_service_server_set_icon_object_id(media_player->id, &current_track->icon_object_id);
-    media_control_service_server_set_icon_url(media_player->id, current_track->icon_url);
-
-    media_control_service_server_set_track_title(media_player->id, current_track->title);
-    media_control_service_server_set_track_duration(media_player->id, current_track->track_duration_10ms);
-    media_control_service_server_set_track_position(media_player->id, current_track->track_position_10ms);
-    
-    media_control_service_server_set_playing_orders_supported(media_player->id, 0x3FF);
-    media_control_service_server_set_playing_order(media_player->id, PLAYING_ORDER_IN_ORDER_ONCE);
-}
 
 int btstack_main(void);
 void ots_db_init();
@@ -2172,23 +2316,27 @@ int btstack_main(void)
     // setup MCS
     media_control_service_server_init();
 
-    previous_track_position_10ms = 0;
-    previous_track_index = 1;
-    previous_group_index = 3;
+    media_control_service_server_register_media_player(&media_player1.media_server, 
+        &mcs_server_packet_handler, 0, //0x1FFFFF,
+        &media_player1.id);
 
     mcs_server_init_media_player(&media_player1);
 
-    current_media_player_id = media_player1.id;
-    mcs_seeking_speed_timer_start(current_media_player_id);
+    media_control_service_server_register_generic_media_player(&generic_media_player.media_server, 
+        &mcs_server_packet_handler, 0, //0x1FFFFF,
+        &generic_media_player.id);
 
-    mcs_media_player_t * current_media_player = &media_player1;
-        // setup OTS
+    mcs_server_init_media_player(&generic_media_player);
+
+    mcs_server_set_current_media_player(&media_player1);
+
+    // setup OTS
     object_transfer_service_server_init(0x3FF, 0x0F, 
         OTS_SERVER_MAX_NUM_CLIENTS, ots_server_connections_storage, &ots_server_operations_impl);
     object_transfer_service_server_register_packet_handler(&ots_server_packet_handler);
 
     ots_db_init();
-    ots_db_load_from_memory(current_media_player->track_groups_num, current_media_player->track_groups);
+    ots_db_load_from_memory(sizeof(track_groups)/sizeof(mcs_track_group_t), track_groups);
 
     // register for HCI events
     hci_event_callback_registration.callback = &packet_handler;
