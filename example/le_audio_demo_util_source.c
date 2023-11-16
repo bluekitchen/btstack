@@ -233,7 +233,7 @@ void le_audio_demo_util_source_generate_iso_frame(le_audio_demo_source_generator
             hxcmod_fillbuffer(&le_audio_demo_source_hxcmod_context, (unsigned short *) le_audio_demo_source_pcm, le_audio_demo_source_num_samples_per_frame, &le_audio_demo_source_hxcmod_trkbuf);
             if (le_audio_demo_source_num_channels == 1) {
                 // stereo -> mono
-                uint8_t i;
+                uint16_t i;
                 for (i=0;i<le_audio_demo_source_num_samples_per_frame;i++){
                     le_audio_demo_source_pcm[i] = (le_audio_demo_source_pcm[2*i] / 2) + (le_audio_demo_source_pcm[2*i+1] / 2);
                 }
