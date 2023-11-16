@@ -1647,18 +1647,6 @@ uint8_t object_transfer_service_server_set_current_object(hci_con_handle_t con_h
     if (object){
         connection->current_object->current_size = object->current_size;
     }
-
-    switch (object->type) {
-        case OTS_OBJECT_TYPE_GROUP:
-            connection->current_group = object;
-            break;
-        case OTS_OBJECT_TYPE_TRACK:
-            connection->current_track = object;
-            break;
-        default:
-            break;
-    }
-
     return ERROR_CODE_SUCCESS;
 }
 
