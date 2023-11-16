@@ -421,7 +421,7 @@ static void mcs_server_set_con_handle(media_control_service_server_t * media_pla
         media_player->con_handle = HCI_CON_HANDLE_INVALID;
     } else {
         media_player->con_handle = con_handle;
-        mcs_server_schedule_task(media_player, characteristic_index);
+        //mcs_server_schedule_task(media_player, characteristic_index);
     }
 }
 
@@ -691,7 +691,7 @@ static uint16_t mcs_server_read_callback(hci_con_handle_t con_handle, uint16_t a
 		default:
 			break;
 	}
-
+    uint8_t value[6];
 	switch (characteristic_id){
 		case MEDIA_PLAYER_NAME:
             if (buffer == NULL){
@@ -740,19 +740,25 @@ static uint16_t mcs_server_read_callback(hci_con_handle_t con_handle, uint16_t a
             return att_read_callback_handle_byte(media_player->data.seeking_speed, offset, buffer, buffer_size);
 
         case CURRENT_TRACK_SEGMENTS_OBJECT_ID:
-            return att_read_callback_handle_blob((const uint8_t *)media_player->data.current_track_segments_object_id, 6, offset, buffer, buffer_size);
+            reverse_48(media_player->data.current_track_segments_object_id, value);
+            return att_read_callback_handle_blob((const uint8_t *)value, sizeof(value), offset, buffer, buffer_size);
 
         case CURRENT_TRACK_OBJECT_ID:
-            return att_read_callback_handle_blob((const uint8_t *)media_player->data.current_track_object_id, 6, offset, buffer, buffer_size);
+            reverse_48(media_player->data.current_track_object_id, value);
+            return att_read_callback_handle_blob((const uint8_t *)value, sizeof(value), offset, buffer, buffer_size);
 
         case NEXT_TRACK_OBJECT_ID:
-            return att_read_callback_handle_blob((const uint8_t *)media_player->data.next_track_object_id, 6, offset, buffer, buffer_size);
+            reverse_48(media_player->data.next_track_object_id, value);
+            return att_read_callback_handle_blob((const uint8_t *)value, sizeof(value), offset, buffer, buffer_size);
 
         case PARENT_GROUP_OBJECT_ID:
-            return att_read_callback_handle_blob((const uint8_t *)media_player->data.parent_group_object_id, 6, offset, buffer, buffer_size);
+            reverse_48(media_player->data.parent_group_object_id, value);
+            return att_read_callback_handle_blob((const uint8_t *)value, sizeof(value), offset, buffer, buffer_size);
 
         case CURRENT_GROUP_OBJECT_ID:
-            return att_read_callback_handle_blob((const uint8_t *)media_player->data.current_group_object_id, 6, offset, buffer, buffer_size);
+            reverse_48(media_player->data.current_group_object_id, value);
+            return att_read_callback_handle_blob((const uint8_t *)value, sizeof(value), offset, buffer, buffer_size);
+
 
         case PLAYING_ORDER:
             return att_read_callback_handle_byte(media_player->data.playing_order, offset, buffer, buffer_size);
@@ -870,7 +876,7 @@ static int mcs_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
             if (buffer_size != 6){
                 break;
             }
-            reverse_64(buffer, media_player->data.current_track_object_id);
+            reverse_48(buffer, media_player->data.current_track_object_id);
             mcs_server_emit_media_value_changed(media_player, characteristic_id);
             break;
         
@@ -878,7 +884,7 @@ static int mcs_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
             if (buffer_size != 6){
                 break;
             }
-            reverse_64(buffer, media_player->data.next_track_object_id);
+            reverse_48(buffer, media_player->data.next_track_object_id);
             mcs_server_emit_media_value_changed(media_player, characteristic_id);
             break;
 
@@ -886,7 +892,7 @@ static int mcs_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
             if (buffer_size != 6){
                 break;
             }
-            reverse_64(buffer, media_player->data.current_group_object_id);
+            reverse_48(buffer, media_player->data.current_group_object_id);
             mcs_server_emit_media_value_changed(media_player, characteristic_id);
             break;
 
