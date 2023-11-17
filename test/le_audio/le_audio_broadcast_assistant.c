@@ -393,54 +393,9 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     break;
             }
             break;
-        case GAP_EVENT_ADVERTISING_REPORT:{
-            if (app_state != APP_W4_BROADCAST_SINK_AND_SCAN_DELEGATOR_ADV) break;
-
-            uint8_t adv_size = gap_event_advertising_report_get_data_length(packet);
-            const uint8_t * adv_data = gap_event_advertising_report_get_data(packet);
-
-            ad_context_t context;
-            bool found_scan_delegator = false;
-            char adv_name[31];
-            adv_name[0] = 0;
-            for (ad_iterator_init(&context, adv_size, adv_data) ; ad_iterator_has_more(&context) ; ad_iterator_next(&context)) {
-                uint8_t data_type = ad_iterator_get_data_type(&context);
-                uint8_t size = ad_iterator_get_data_len(&context);
-                const uint8_t *data = ad_iterator_get_data(&context);
-                switch (data_type){
-                    case BLUETOOTH_DATA_TYPE_SHORTENED_LOCAL_NAME:
-                    case BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME:
-                        size = btstack_min(sizeof(adv_name) - 1, size);
-                        memcpy(adv_name, data, size);
-                        adv_name[size] = 0;
-                        // detect scan delegator by name
-                        if (strncmp(adv_name, test_device_name, sizeof(test_device_name)) == 0){
-                            found_scan_delegator = true;
-                        }
-                        break;
-                    default:
-                        break;
-                }
-            }
-
-            if (found_scan_delegator == false) break;
-
-            if ((have_scan_delegator == false) && found_scan_delegator){
-                have_scan_delegator = true;
-                bd_addr_t addr;
-                gap_event_advertising_report_get_address(packet, addr);
-                bd_addr_type_t addr_type = (bd_addr_type_t) gap_event_advertising_report_get_address_type(packet);
-                le_audio_broadcast_assistant_found_scan_delegator(&addr_type, addr, adv_name);
-            }
-
-            if ((have_broadcast_source && have_scan_delegator) == false) break;
-
-            le_audio_broadcast_assistant_start_periodic_sync();
-            break;
-        }
         case GAP_EVENT_EXTENDED_ADVERTISING_REPORT:
         {
-            if (app_state != APP_W4_BROADCAST_SINK_AND_SCAN_DELEGATOR_ADV) break;
+            if (app_state != APP_W4_BROADCAST_SOURCE_AND_SCAN_DELEGATOR_ADV) break;
 
             uint8_t adv_size = gap_event_extended_advertising_report_get_data_length(packet);
             const uint8_t * adv_data = gap_event_extended_advertising_report_get_data(packet);
@@ -574,6 +529,7 @@ static void show_usage(void){
     printf("\n--- LE Audio Broadcast Assistant Test Console ---\n");
     printf("s - setup LE Broadcast Sink with Broadcast Source via Scan Delegator\n");
     printf("c - scan and connect to Scan Delegator\n");
+    printf("d - scan for Broadcast sources\n");
     printf("a - add source with BIS Sync 0x%08x\n", bis_sync_mask);
     printf("A - add source with BIS Sync 0x00000000 (do not sync)\n");
     printf("m - modify source to PA Sync = 0, bis sync = 0x00000000\n");
