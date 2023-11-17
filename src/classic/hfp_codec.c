@@ -57,6 +57,7 @@
 #include "btstack_sbc.h"
 #define FRAME_SIZE_MSBC 57
 static void hfp_codec_encode_msbc(hfp_codec_t * hfp_codec, int16_t * pcm_samples);
+static void hfp_codec_encode_msbc_with_codec(hfp_codec_t * hfp_codec, int16_t * pcm_samples);
 #endif
 
 #ifdef ENABLE_HFP_SUPER_WIDE_BAND_SPEECH
@@ -91,25 +92,37 @@ static void hfp_codec_reset_sco_buffer(hfp_codec_t *hfp_codec) {
     hfp_codec->write_pos = 0;
 }
 
-#ifdef ENABLE_HFP_WIDE_BAND_SPEECH
-void hfp_codec_init_msbc(hfp_codec_t * hfp_codec, btstack_sbc_encoder_state_t * msbc_encoder_context){
+#if defined(ENABLE_HFP_WIDE_BAND_SPEECH) || defined(ENABLE_HFP_SUPER_WIDE_BAND_SPEECH)
+static void hfp_codec_init_helper(hfp_codec_t *hfp_codec, void (*encode)(struct hfp_codec *, int16_t *),
+                                  uint16_t samples_per_buffer) {
     memset(hfp_codec, 0, sizeof(hfp_codec_t));
     hfp_h2_framing_init(&hfp_codec->h2_framing);
     hfp_codec_reset_sco_buffer(hfp_codec);
-    hfp_codec->samples_per_frame = 120;
-    hfp_codec->encode = &hfp_codec_encode_msbc;
+    hfp_codec->samples_per_frame = samples_per_buffer;
+    hfp_codec->encode = encode;
+}
+#endif
+
+#ifdef ENABLE_HFP_WIDE_BAND_SPEECH
+// old
+void hfp_codec_init_msbc(hfp_codec_t * hfp_codec, btstack_sbc_encoder_state_t * msbc_encoder_context){
+    hfp_codec_init_helper(hfp_codec, &hfp_codec_encode_msbc, 120);
     hfp_codec->msbc_encoder_context = msbc_encoder_context;
     btstack_sbc_encoder_init(hfp_codec->msbc_encoder_context, SBC_MODE_mSBC, 16, 8, SBC_ALLOCATION_METHOD_LOUDNESS, 16000, 26, SBC_CHANNEL_MODE_MONO);
+}
+// new
+void hfp_codec_init_msbc_with_codec(hfp_codec_t * hfp_codec, const btstack_sbc_encoder_t * sbc_encoder, void * sbc_encoder_context){
+    hfp_codec_init_helper(hfp_codec, &hfp_codec_encode_msbc_with_codec, 120);
+    // init sbc encoder
+    hfp_codec->sbc_encoder_instance = sbc_encoder;
+    hfp_codec->sbc_encoder_context = sbc_encoder_context;
+    hfp_codec->sbc_encoder_instance->configure(hfp_codec->sbc_encoder_context, SBC_MODE_mSBC, 16, 8, SBC_ALLOCATION_METHOD_LOUDNESS, 16000, 26, SBC_CHANNEL_MODE_MONO);
 }
 #endif
 
 #ifdef ENABLE_HFP_SUPER_WIDE_BAND_SPEECH
 void hfp_codec_init_lc3_swb(hfp_codec_t * hfp_codec, const btstack_lc3_encoder_t * lc3_encoder, void * lc3_encoder_context){
-    memset(hfp_codec, 0, sizeof(hfp_codec_t));
-    hfp_h2_framing_init(&hfp_codec->h2_framing);
-    hfp_codec_reset_sco_buffer(hfp_codec);
-    hfp_codec->samples_per_frame = 240;
-    hfp_codec->encode = &hfp_codec_encode_lc3swb;
+    hfp_codec_init_helper(hfp_codec, &hfp_codec_encode_lc3swb, 240);
     // init lc3 encoder
     hfp_codec->lc3_encoder = lc3_encoder;
     hfp_codec->lc3_encoder_context = lc3_encoder_context;
@@ -126,10 +139,19 @@ uint16_t hfp_codec_num_audio_samples_per_frame(const hfp_codec_t * hfp_codec){
 }
 
 #ifdef ENABLE_HFP_WIDE_BAND_SPEECH
+// old
 static void hfp_codec_encode_msbc(hfp_codec_t * hfp_codec, int16_t * pcm_samples){
     // Encode SBC Frame
     btstack_sbc_encoder_process_data(pcm_samples);
     (void)memcpy(&hfp_codec->sco_packet[hfp_codec->write_pos], btstack_sbc_encoder_sbc_buffer(), FRAME_SIZE_MSBC);
+    hfp_codec->write_pos += FRAME_SIZE_MSBC;
+    // Final padding to use SCO_FRAME_SIZE bytes
+    hfp_codec->sco_packet[hfp_codec->write_pos++] = 0;
+}
+// new
+static void hfp_codec_encode_msbc_with_codec(hfp_codec_t * hfp_codec, int16_t * pcm_samples){
+    // Encode SBC Frame
+    hfp_codec->sbc_encoder_instance->encode_signed_16(hfp_codec->sbc_encoder_context, pcm_samples, &hfp_codec->sco_packet[hfp_codec->write_pos]);
     hfp_codec->write_pos += FRAME_SIZE_MSBC;
     // Final padding to use SCO_FRAME_SIZE bytes
     hfp_codec->sco_packet[hfp_codec->write_pos++] = 0;
