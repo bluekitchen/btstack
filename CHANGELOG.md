@@ -16,9 +16,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - AVRCP: support SDP record without service name and/or provider
 - HFP: hfp_hf_create_sdp_record_with_codecs and hfp_hf_create_sdp_record_with_codecs
 - HFP: support SDP record without service name
+  HFP: support for LC3-SWB
 - SPP Server: support SDP record without service name
 - HOG Device: emit HIDS_SUBEVENT_SET_REPORT
 - HOG Device: provide report for GET REPORT operation via callback
+- SBC Codec: new interface allows for multiple instances
 - LE Device DB: le_device_db_dump dumps LTK
 - Port for Zephyr 3.x
 
@@ -45,7 +47,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - HCI: simplified implicit SCO flow control
 - AVRCP: shorten default SDP Service and Provider Names
 - GATT Client: emit query complete event for gatt_client_discover_characteristic_descriptors in next run loop iteration
-- HFP: report 1.9 in SDP record
+- HFP: report HFP Version 1.9 in SDP record
 - HID Parser: ignore Report Items without Usage
 - btstack_crypto: allow MBEDTLS config via MBEDTLS_CONFIG_FILE
 - remove old Zephyr 1.9 port
