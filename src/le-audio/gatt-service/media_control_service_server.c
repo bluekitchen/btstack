@@ -1172,6 +1172,20 @@ uint8_t media_control_service_server_set_current_track_id(uint16_t media_player_
     return ERROR_CODE_SUCCESS;
 }
 
+uint8_t media_control_service_server_set_current_track_segment_id(uint16_t media_player_id, const ots_object_id_t * object_id){
+    media_control_service_server_t * media_player = msc_server_find_media_player_for_id(media_player_id);
+    if (media_player == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if (object_id != NULL){
+        memcpy(media_player->data.current_track_segments_object_id, object_id, OTS_OBJECT_ID_LEN);
+    } else {
+        ots_object_id_t null_object_id = {0,0,0,0,0,0};
+        memcpy(media_player->data.current_track_segments_object_id, &null_object_id, OTS_OBJECT_ID_LEN);
+    }
+    return ERROR_CODE_SUCCESS;
+}
+
 uint8_t media_control_service_server_set_icon_url(uint16_t media_player_id, const char * icon_url){
 	media_control_service_server_t * media_player = msc_server_find_media_player_for_id(media_player_id);
 	if (media_player == NULL){
