@@ -168,6 +168,13 @@ typedef struct {
 } media_control_service_server_t;
 
 typedef struct {
+    uint32_t duration_10ms;               // 0xFFFFFFFF unknown, or not set
+    uint32_t position_10ms;               // 0xFFFFFFFF unknown, or not set
+    ots_object_id_t object_id;
+    char * title;
+} msc_track_segment_t;
+
+typedef struct {
     // TODO make const
     uint32_t track_duration_10ms;               // 0xFFFFFFFF unknown, or not set
     // TODO move global for current track
@@ -179,6 +186,9 @@ typedef struct {
     
     ots_object_id_t icon_object_id;
     char * icon_url;
+
+    uint16_t segments_num;
+    msc_track_segment_t segments[5];
 } mcs_track_t;
 
 /**
@@ -208,6 +218,7 @@ uint8_t media_control_service_server_set_icon_url(uint16_t media_player_id, cons
 
 uint8_t media_control_service_server_set_current_group_object_id(uint16_t media_player_id, const ots_object_id_t * object_id);
 uint8_t media_control_service_server_set_current_track_id(uint16_t media_player_id, const ots_object_id_t * object_id);
+uint8_t media_control_service_server_set_current_track_segment_id(uint16_t media_player_id, const ots_object_id_t * object_id);
 
 uint8_t media_control_service_server_set_media_track_changed(uint16_t media_player_id);
 
