@@ -72,7 +72,7 @@ static void show_usage(void);
 
 static enum {
     APP_W4_WORKING,
-    APP_W4_BROADCAST_SINK_AND_SCAN_DELEGATOR_ADV,
+    APP_W4_BROADCAST_SOURCE_AND_SCAN_DELEGATOR_ADV,
     APP_W4_PA_AND_BIG_INFO,
     APP_W4_BIG_SYNC_ESTABLISHED,
     APP_W4_SCAN_DELEGATOR_CONNECTION,
@@ -90,12 +90,17 @@ static bool have_big_info;
 static bool manual_mode;
 
 // broadcast sink info
-static char broadcast_source_name[20];
-static bd_addr_t broadcast_source;
-static bd_addr_type_t broadcast_source_type;
-static uint8_t broadcast_source_sid;
-static uint32_t broadcast_id;
-static uint16_t broadcast_source_pa_interval;
+#define NUM_BROADCAST_SOURCES 5
+#define BROADCAST_SOURCE_NAME_LEN 20
+struct {
+    char name[BROADCAST_SOURCE_NAME_LEN];
+    bd_addr_t addr;
+    bd_addr_type_t addr_type;
+    uint8_t sid;
+    uint32_t broadcast_id;
+    uint16_t pa_interval;
+} broadcast_sources[NUM_BROADCAST_SOURCES];
+static uint8_t broadcast_source_current = 0;
 
 // broadcast info
 static hci_con_handle_t sync_handle;
@@ -228,7 +233,7 @@ static void handle_periodic_advertisement(const uint8_t * packet, uint16_t size)
 }
 
 static void start_scanning() {
-    app_state = APP_W4_BROADCAST_SINK_AND_SCAN_DELEGATOR_ADV;
+    app_state = APP_W4_BROADCAST_SOURCE_AND_SCAN_DELEGATOR_ADV;
     have_base = false;
     have_big_info = false;
     gap_set_scan_params(1, 0x30, 0x30, 0);
@@ -259,12 +264,12 @@ static void handle_big_info(const uint8_t * packet, uint16_t size){
 
 static void add_source() {// setup bass source info
     printf("BASS Client: add source with BIS Sync 0x%04x\n", bass_source_data.subgroups[0].bis_sync_state);
-    bass_source_data.address_type = broadcast_source_type;
-    memcpy(bass_source_data.address, broadcast_source, 6);
-    bass_source_data.adv_sid = broadcast_source_sid;
-    bass_source_data.broadcast_id = broadcast_id;
+    bass_source_data.address_type = broadcast_sources[broadcast_source_current].addr_type;
+    memcpy(bass_source_data.address, broadcast_sources[broadcast_source_current].addr, 6);
+    bass_source_data.adv_sid = broadcast_sources[broadcast_source_current].sid;
+    bass_source_data.broadcast_id = broadcast_sources[broadcast_source_current].broadcast_id;
     bass_source_data.pa_sync = LE_AUDIO_PA_SYNC_SYNCHRONIZE_TO_PA_PAST_AVAILABLE;
-    bass_source_data.pa_interval = broadcast_source_pa_interval;
+    bass_source_data.pa_interval = broadcast_sources[broadcast_source_current].pa_interval;
     // bass_source_new.subgroups_num set in BASE parser
     // bass_source_new.subgroup[i].* set in BASE parser
 
@@ -351,9 +356,9 @@ static void le_audio_broadcast_assistant_start_periodic_sync() {
     gap_set_scan_params(1, 0x30, 0x30, 1);
     // sync to PA
     gap_periodic_advertiser_list_clear();
-    gap_periodic_advertiser_list_add(broadcast_source_type, broadcast_source, broadcast_source_sid);
+    gap_periodic_advertiser_list_add(broadcast_sources[broadcast_source_current].addr_type, broadcast_sources[broadcast_source_current].addr, broadcast_sources[broadcast_source_current].sid);
     app_state = APP_W4_PA_AND_BIG_INFO;
-    gap_periodic_advertising_create_sync(0x01, broadcast_source_sid, broadcast_source_type, broadcast_source, 0, 1000, 0);
+    gap_periodic_advertising_create_sync(0x01, broadcast_sources[broadcast_source_current].sid, broadcast_sources[broadcast_source_current].addr_type, broadcast_sources[broadcast_source_current].addr, 0, 1000, 0);
 }
 
 static void
@@ -456,7 +461,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                         uuid = little_endian_read_16(data, 0);
                         switch (uuid){
                             case ORG_BLUETOOTH_SERVICE_BROADCAST_AUDIO_ANNOUNCEMENT_SERVICE:
-                                broadcast_id = little_endian_read_24(data, 2);
+                                broadcast_sources[broadcast_source_current].broadcast_id = little_endian_read_24(data, 2);
                                 found_broadcast_source = true;
                                 break;
                             case ORG_BLUETOOTH_SERVICE_BROADCAST_AUDIO_SCAN_SERVICE:
@@ -489,12 +494,12 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 
             if ((have_broadcast_source == false) && found_broadcast_source){
                 have_broadcast_source = true;
-                gap_event_extended_advertising_report_get_address(packet, broadcast_source);
-                broadcast_source_type = gap_event_extended_advertising_report_get_address_type(packet);
-                broadcast_source_sid = gap_event_extended_advertising_report_get_advertising_sid(packet);
-                btstack_strcpy(broadcast_source_name,  sizeof(broadcast_source_name), (const char *) adv_name);
-                printf("Broadcast source found, addr %s, name: '%s'\n", bd_addr_to_str(broadcast_source), broadcast_source_name);
-                gap_whitelist_add(broadcast_source_type, broadcast_source);
+                gap_event_extended_advertising_report_get_address(packet, broadcast_sources[broadcast_source_current].addr);
+                broadcast_sources[broadcast_source_current].addr_type = gap_event_extended_advertising_report_get_address_type(packet);
+                broadcast_sources[broadcast_source_current].sid = gap_event_extended_advertising_report_get_advertising_sid(packet);
+                btstack_strcpy(broadcast_sources[broadcast_source_current].name,  BROADCAST_SOURCE_NAME_LEN, (const char *) adv_name);
+                printf("Broadcast source found, addr %s, name: '%s'\n", bd_addr_to_str(broadcast_sources[broadcast_source_current].addr), broadcast_sources[broadcast_source_current].name);
+                gap_whitelist_add(broadcast_sources[broadcast_source_current].addr_type, broadcast_sources[broadcast_source_current].addr);
             }
 
             if ((have_broadcast_source && have_scan_delegator) == false) break;
@@ -507,7 +512,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             switch(hci_event_le_meta_get_subevent_code(packet)) {
                 case HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_SYNC_ESTABLISHMENT:
                     sync_handle = hci_subevent_le_periodic_advertising_sync_establishment_get_sync_handle(packet);
-                    broadcast_source_pa_interval = hci_subevent_le_periodic_advertising_sync_establishment_get_periodic_advertising_interval(packet);
+                    broadcast_sources[broadcast_source_current].pa_interval = hci_subevent_le_periodic_advertising_sync_establishment_get_periodic_advertising_interval(packet);
                     printf("Periodic advertising sync with handle 0x%04x established\n", sync_handle);
                     break;
                 case HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_REPORT:
