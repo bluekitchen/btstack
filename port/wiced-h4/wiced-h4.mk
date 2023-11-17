@@ -14,6 +14,8 @@ GLOBAL_INCLUDES += \
 	../../platform/embedded \
 	../../platform/wiced \
 	../../chipset/bcm \
+	../../3rd-party/bluedroid/decoder/include \
+	../../3rd-party/bluedroid/encoder/include \
 	../../../../
 
 # micro-ecc of WICED tree used for SECP256R1 in LE Secure Connections
