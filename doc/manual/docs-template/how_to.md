@@ -98,6 +98,7 @@ BTstack properties:
 | ENABLE_LE_PERIPHERAL                                      | Enable support for LE Peripheral Role in HCI and Security Manager                                                           |
 | ENABLE_LE_CENTRAL                                         | Enable support for LE Central Role in HCI and Security Manager                                                              |
 | ENABLE_LE_SECURE_CONNECTIONS                              | Enable LE Secure Connections                                                                                                |
+| ENABLE_LE_SECURE_CONNECTIONS_DEBUG_KEY                    | Enable support for LE Secure Connection debug keys for testing                                                     |
 | ENABLE_LE_PROACTIVE_AUTHENTICATION                        | Enable automatic encryption for bonded devices on re-connect                                                                |
 | ENABLE_GATT_CLIENT_PAIRING                                | Enable GATT Client to start pairing and retry operation on security error                                                   |
 | ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS                | Use [micro-ecc library](https://github.com/kmackay/micro-ecc) for ECC operations                                            |

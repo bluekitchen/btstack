@@ -206,6 +206,9 @@ static bool sm_sc_only_mode;
 static uint8_t sm_sc_oob_random[16];
 static void (*sm_sc_oob_callback)(const uint8_t * confirm_value, const uint8_t * random_value);
 static sm_sc_oob_state_t sm_sc_oob_state;
+#ifdef ENABLE_LE_SECURE_CONNECTIONS_DEBUG_KEY
+static bool sm_sc_debug_keys_enabled;
+#endif
 #endif
 
 
@@ -4964,10 +4967,30 @@ static void sm_ec_generated(void * arg){
     // trigger pairing if pending for ec key
     sm_trigger_run();
 }
-static void sm_ec_generate_new_key(void){
+static void sm_ec_generate_new_key(void) {
     log_info("sm: generate new ec key");
-    ec_key_generation_state = EC_KEY_GENERATION_ACTIVE;
-    btstack_crypto_ecc_p256_generate_key(&sm_crypto_ecc_p256_request, ec_q, &sm_ec_generated, NULL);
+#ifdef ENABLE_LE_SECURE_CONNECTIONS_DEBUG_KEY
+    // LE Secure Connections Debug Key
+    const uint8_t debug_key_public[64] = {
+        0x20, 0xb0, 0x03, 0xd2, 0xf2, 0x97, 0xbe, 0x2c, 0x5e, 0x2c, 0x83, 0xa7, 0xe9, 0xf9, 0xa5, 0xb9,
+        0xef, 0xf4, 0x91, 0x11, 0xac, 0xf4, 0xfd, 0xdb, 0xcc, 0x03, 0x01, 0x48, 0x0e, 0x35, 0x9d, 0xe6,
+        0xdc, 0x80, 0x9c, 0x49, 0x65, 0x2a, 0xeb, 0x6d, 0x63, 0x32, 0x9a, 0xbf, 0x5a, 0x52, 0x15, 0x5c,
+        0x76, 0x63, 0x45, 0xc2, 0x8f, 0xed, 0x30, 0x24, 0x74, 0x1c, 0x8e, 0xd0, 0x15, 0x89, 0xd2, 0x8b
+    };
+    const uint8_t debug_key_private[32] = {
+        0x3f, 0x49, 0xf6, 0xd4, 0xa3, 0xc5, 0x5f, 0x38, 0x74, 0xc9, 0xb3, 0xe3, 0xd2, 0x10, 0x3f, 0x50,
+        0x4a, 0xff, 0x60, 0x7b, 0xeb, 0x40, 0xb7, 0x99, 0x58, 0x99, 0xb8, 0xa6, 0xcd, 0x3c, 0x1a, 0xbd
+    };
+    if (sm_sc_debug_keys_enabled) {
+        memcpy(ec_q, debug_key_public, 64);
+        btstack_crypto_ecc_p256_set_key(debug_key_public, debug_key_private);
+        ec_key_generation_state = EC_KEY_GENERATION_DONE;
+    } else
+#endif
+    {
+        ec_key_generation_state = EC_KEY_GENERATION_ACTIVE;
+        btstack_crypto_ecc_p256_generate_key(&sm_crypto_ecc_p256_request, ec_q, &sm_ec_generated, NULL);
+    }
 }
 #endif
 
@@ -5051,6 +5074,9 @@ void sm_init(void){
 void sm_deinit(void){
     sm_initialized = false;
     btstack_run_loop_remove_timer(&sm_run_timer);
+#if defined(ENABLE_LE_SECURE_CONNECTIONS) || defined (ENABLE_LE_SECURE_CONNECTION_DEBUG_KEY)
+    sm_sc_debug_keys_enabled = false;
+#endif
 }
 
 void sm_use_fixed_passkey_in_display_role(uint32_t passkey){
@@ -5473,6 +5499,15 @@ void sm_set_secure_connections_only_mode(bool enable){
     btstack_assert(enable == false);
 #endif
 }
+
+#if defined(ENABLE_LE_SECURE_CONNECTIONS) || defined (ENABLE_LE_SECURE_CONNECTION_DEBUG_KEY)
+void sm_test_enable_secure_connections_debug_keys(void) {
+    log_info("Enable LE Secure Connection Debug Keys for testing");
+    sm_sc_debug_keys_enabled = true;
+    // set debug key
+    sm_ec_generate_new_key();
+}
+#endif
 
 const uint8_t * gap_get_persistent_irk(void){
     return sm_persistent_irk;

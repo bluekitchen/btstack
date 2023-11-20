@@ -291,9 +291,16 @@ void sm_register_ltk_callback( bool (*get_ltk_callback)(hci_con_handle_t con_han
  */
 void sm_deinit(void);
 
+/**
+ * @brief Use Debug Keys for LE Secure Connections for testing until restart
+ * @note Requires ENABLE_LE_SECURE_CONNECTIONS and ENABLE_LE_SECURE_CONNECTIONS_DEBUG_KEY
+ */
+void sm_test_enable_secure_connections_debug_keys(void);
+
 // PTS testing
 void sm_test_set_irk(sm_key_t irk);
 void sm_test_use_fixed_local_csrk(void);
+
 
 #ifdef ENABLE_TESTING_SUPPORT
 void sm_test_set_pairing_failure(int reason);
