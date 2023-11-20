@@ -5074,7 +5074,7 @@ void sm_init(void){
 void sm_deinit(void){
     sm_initialized = false;
     btstack_run_loop_remove_timer(&sm_run_timer);
-#if defined(ENABLE_LE_SECURE_CONNECTIONS) || defined (ENABLE_LE_SECURE_CONNECTION_DEBUG_KEY)
+#if defined(ENABLE_LE_SECURE_CONNECTIONS) && defined (ENABLE_LE_SECURE_CONNECTION_DEBUG_KEY)
     sm_sc_debug_keys_enabled = false;
 #endif
 }
@@ -5500,7 +5500,7 @@ void sm_set_secure_connections_only_mode(bool enable){
 #endif
 }
 
-#if defined(ENABLE_LE_SECURE_CONNECTIONS) || defined (ENABLE_LE_SECURE_CONNECTION_DEBUG_KEY)
+#if defined(ENABLE_LE_SECURE_CONNECTIONS) && defined (ENABLE_LE_SECURE_CONNECTION_DEBUG_KEY)
 void sm_test_enable_secure_connections_debug_keys(void) {
     log_info("Enable LE Secure Connection Debug Keys for testing");
     sm_sc_debug_keys_enabled = true;
