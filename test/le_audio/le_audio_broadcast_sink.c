@@ -377,6 +377,19 @@ static void got_base_and_big_info() {
     }
 }
 
+static void start_pa_sync(bd_addr_type_t source_type, bd_addr_t source_addr) {
+    // ignore other advertisements
+    gap_whitelist_add(source_type, source_addr);
+    gap_set_scan_params(1, 0x30, 0x30, 1);
+    // sync to PA
+    gap_periodic_advertiser_list_clear();
+    gap_periodic_advertiser_list_add(source_type, source_addr, remote_sid);
+    app_state = APP_W4_PA_AND_BIG_INFO;
+    printf("Start Periodic Advertising Sync\n");
+    gap_periodic_advertising_create_sync(0x01, remote_sid, source_type, source_addr, 0, 1000, 0);
+    gap_start_scan();
+}
+
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     if (packet_type != HCI_EVENT_PACKET) return;
@@ -449,15 +462,6 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             pts_mode = strncmp("PTS-", remote_name, 4) == 0;
             count_mode = strncmp("COUNT", remote_name, 5) == 0;
             printf("Broadcast sink found, addr %s, name: '%s' (pts-mode: %u, count: %u), Broadcast_ID 0%06x\n", bd_addr_to_str(remote), remote_name, pts_mode, count_mode, broadcast_id);
-            // ignore other advertisements
-            gap_whitelist_add(remote_type, remote);
-            gap_set_scan_params(1, 0x30, 0x30, 1);
-            // sync to PA
-            gap_periodic_advertiser_list_clear();
-            gap_periodic_advertiser_list_add(remote_type, remote, remote_sid);
-            app_state = APP_W4_PA_AND_BIG_INFO;
-            printf("Start Periodic Advertising Sync\n");
-            gap_periodic_advertising_create_sync(0x01, remote_sid, remote_type, remote, 0, 1000, 0);
 
             // setup bass source info
             bass_source_new.address_type = remote_type;
@@ -466,6 +470,9 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             bass_source_new.broadcast_id = broadcast_id;
             bass_source_new.pa_sync = LE_AUDIO_PA_SYNC_SYNCHRONIZE_TO_PA_PAST_AVAILABLE;
             bass_source_new.pa_interval = gap_event_extended_advertising_report_get_periodic_advertising_interval(packet);
+
+            // start pa sync
+            start_pa_sync(remote_type, remote);
             break;
         }
 
@@ -625,12 +632,14 @@ static void bass_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t 
     UNUSED(channel);
     btstack_assert (packet_type == HCI_EVENT_PACKET);
     btstack_assert(hci_event_packet_get_type(packet) == HCI_EVENT_GATTSERVICE_META);
+    uint8_t source_id;
     printf("BASS Event 0x%02x: ", hci_event_gattservice_meta_get_subevent_code(packet));
     printf_hexdump(packet, size);
     switch (hci_event_gattservice_meta_get_subevent_code(packet)){
         case GATTSERVICE_SUBEVENT_BASS_SERVER_SOURCE_ADDED:
+            source_id = gattservice_subevent_bass_server_source_added_get_source_id(packet);
             printf("GATTSERVICE_SUBEVENT_BASS_SOURCE_ADDED, source_id 0x%04x, pa_sync %u\n",
-                   gattservice_subevent_bass_server_source_added_get_source_id(packet),
+                   source_id,
                    gattservice_subevent_bass_server_source_added_get_pa_sync(packet));
             switch (gattservice_subevent_bass_server_source_added_get_pa_sync(packet)){
                 case LE_AUDIO_PA_SYNC_SYNCHRONIZE_TO_PA_PAST_AVAILABLE:
@@ -640,6 +649,10 @@ static void bass_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t 
                     btstack_run_loop_set_timer_handler(&broadcast_sink_pa_sync_timer, broadcast_sync_pa_sync_timeout_handler);
                     btstack_run_loop_set_timer(&broadcast_sink_pa_sync_timer, 10000);   // 10 seconds
                     btstack_run_loop_add_timer(&broadcast_sink_pa_sync_timer);
+                    break;
+                case LE_AUDIO_PA_SYNC_SYNCHRONIZE_TO_PA_PAST_NOT_AVAILABLE:
+                    printf("LE_AUDIO_PA_SYNC_SYNCHRONIZE_TO_PA_PAST_AVAILABLE -> Start Periodic Advertising Sync\n");
+                    start_pa_sync(bass_sources[source_id].data.address_type, bass_sources[source_id].data.address);
                     break;
             }
             break;
@@ -654,6 +667,10 @@ static void bass_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t 
                 bass_sources[0].data.subgroups[0].bis_sync_state = 0;
                 broadcast_audio_scan_service_server_set_pa_sync_state(0, LE_AUDIO_PA_SYNC_STATE_SYNCHRONIZED_TO_PA);
             }
+            break;
+        case GATTSERVICE_SUBEVENT_BASS_SERVER_SOURCE_DELETED:
+            printf("GATTSERVICE_SUBEVENT_BASS_SERVER_SOURCE_DELETED, source_id 0x%04x\n",
+                   gattservice_subevent_bass_server_source_deleted_get_source_id(packet));
             break;
         case GATTSERVICE_SUBEVENT_BASS_SERVER_BROADCAST_CODE:
             gattservice_subevent_bass_server_broadcast_code_get_broadcast_code(packet, broadcast_code);
