@@ -93,6 +93,12 @@
 
 // SINK
 
+static enum {
+    LE_AUDIO_SINK_IDLE,
+    LE_AUDIO_SINK_INIT,
+    LE_AUDIO_SINK_CONFIGURED,
+} le_audio_demo_util_sink_state = LE_AUDIO_SINK_IDLE;
+
 static const char * le_audio_demo_sink_filename_wav;
 static btstack_sample_rate_compensation_t sample_rate_compensation;
 static uint32_t le_audio_demo_sink_received_samples;
@@ -286,6 +292,7 @@ static void plc_timeout(btstack_timer_source_t * timer) {
 
 void le_audio_demo_util_sink_init(const char * filename_wav){
     le_audio_demo_sink_filename_wav = filename_wav;
+    le_audio_demo_util_sink_state = LE_AUDIO_SINK_INIT;
 }
 
 void le_audio_demo_util_sink_enable_lc3plus(bool enable){
@@ -326,6 +333,7 @@ void le_audio_demo_util_sink_configure_general(uint8_t num_streams, uint8_t num_
     le_audio_demo_sink_num_channels_per_stream = num_channels_per_stream;
 
     sink_receive_streaming = false;
+    le_audio_demo_util_sink_state = LE_AUDIO_SINK_CONFIGURED;
 
     le_audio_demo_sink_num_channels = le_audio_demo_sink_num_streams * le_audio_demo_sink_num_channels_per_stream;
     btstack_assert((le_audio_demo_sink_num_channels == 1) || (le_audio_demo_sink_num_channels == 2));
@@ -426,6 +434,9 @@ void le_audio_demo_util_sink_configure_broadcast(uint8_t num_streams, uint8_t nu
 }
 
 void le_audio_demo_util_sink_receive(uint8_t stream_index, uint8_t *packet, uint16_t size) {
+
+    if (le_audio_demo_util_sink_state != LE_AUDIO_SINK_CONFIGURED) return;
+
     uint16_t header = little_endian_read_16(packet, 0);
     hci_con_handle_t con_handle = header & 0x0fff;
     uint8_t pb_flag = (header >> 12) & 3;
@@ -582,6 +593,7 @@ void le_audio_demo_util_sink_close(void){
     if (sink != NULL){
         sink->stop_stream();
     }
+    le_audio_demo_util_sink_state = LE_AUDIO_SINK_INIT;
     sink_receive_streaming = false;
     // stop timer
     btstack_run_loop_remove_timer(&next_packet_timer);
