@@ -390,6 +390,20 @@ static void start_pa_sync(bd_addr_type_t source_type, bd_addr_t source_addr) {
     gap_start_scan();
 }
 
+static void stop_pa_sync(void) {
+    app_state = APP_IDLE;
+    le_audio_demo_util_sink_close();
+    printf("Terminate BIG SYNC\n");
+    gap_big_sync_terminate(big_handle);
+    int i;
+    for (i=0;i<num_bis;i++){
+        if (bis_con_handles[i] != HCI_CON_HANDLE_INVALID) {
+            gap_disconnect(bis_con_handles[i]);
+        }
+    }
+
+}
+
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     if (packet_type != HCI_EVENT_PACKET) return;
@@ -590,10 +604,7 @@ static void stdin_process(char c){
             switch (app_state){
                 case APP_STREAMING:
                 case APP_W4_BIG_SYNC_ESTABLISHED:
-                    app_state = APP_IDLE;
-                    le_audio_demo_util_sink_close();
-                    printf("Terminate BIG SYNC\n");
-                    gap_big_sync_terminate(big_handle);
+                    stop_pa_sync();
                     break;
                 default:
                     break;
@@ -663,9 +674,10 @@ static void bass_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t 
             // handle 'bis sync == 0'
             printf("PA Sync %u, bis_sync[0] = %u\n", bass_sources[0].data.pa_sync, bass_sources[0].data.subgroups[0].bis_sync);
             if (bass_sources[0].data.subgroups[0].bis_sync == 0){
-                printf("Simulate BIS Sync has stopped\n");
+                printf("Stop PA Sync\n");
+                stop_pa_sync();
                 bass_sources[0].data.subgroups[0].bis_sync_state = 0;
-                broadcast_audio_scan_service_server_set_pa_sync_state(0, LE_AUDIO_PA_SYNC_STATE_SYNCHRONIZED_TO_PA);
+                broadcast_audio_scan_service_server_set_pa_sync_state(0, LE_AUDIO_PA_SYNC_STATE_NOT_SYNCHRONIZED_TO_PA);
             }
             break;
         case GATTSERVICE_SUBEVENT_BASS_SERVER_SOURCE_DELETED:
