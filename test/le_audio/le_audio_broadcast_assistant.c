@@ -590,7 +590,7 @@ static void show_usage(void){
                     printf("a - add source with BIS Sync 0x%08x\n", bis_sync_mask);
                     printf("A - add source with BIS Sync 0x00000000 (do not sync)\n");
                     printf("m - modify source to PA Sync = 0, bis sync = 0x00000000\n");
-                    printf("M - modify source to PA Sync = 1, bis sync = 0x%08x\n", bis_sync_mask);
+                    printf("M - modify source to PA Sync = 2, bis sync = 0x%08x\n", bis_sync_mask);
                     printf("b - send Broadcast Code: ");
                     printf_hexdump(broadcast_code, sizeof(broadcast_code));
                     printf("r - remove source\n");
@@ -673,7 +673,7 @@ static void stdin_process(char c){
             broadcast_audio_scan_service_client_modify_source(bass_cid, bass_source_id, &bass_source_data);
             break;
         case 'M':
-            bass_source_data.pa_sync = LE_AUDIO_PA_SYNC_SYNCHRONIZE_TO_PA_PAST_NOT_AVAILABLE;
+            bass_source_data.pa_sync = LE_AUDIO_PA_SYNC_SYNCHRONIZE_TO_PA_PAST_AVAILABLE;
             bass_source_data.subgroups[0].bis_sync_state = bis_sync_mask;
             broadcast_audio_scan_service_client_modify_source(bass_cid, bass_source_id, &bass_source_data);
             break;
