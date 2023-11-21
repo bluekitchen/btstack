@@ -216,6 +216,7 @@ uint8_t media_control_service_server_set_icon_object_id(uint16_t media_player_id
 
 uint8_t media_control_service_server_set_icon_url(uint16_t media_player_id, const char * icon_url);
 
+uint8_t media_control_service_server_set_parent_group_object_id(uint16_t media_player_id, const ots_object_id_t * object_id);
 uint8_t media_control_service_server_set_current_group_object_id(uint16_t media_player_id, const ots_object_id_t * object_id);
 uint8_t media_control_service_server_set_current_track_id(uint16_t media_player_id, const ots_object_id_t * object_id);
 uint8_t media_control_service_server_set_next_track_id(uint16_t media_player_id, const ots_object_id_t * object_id);
