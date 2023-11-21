@@ -393,6 +393,12 @@ static void start_pa_sync(bd_addr_type_t source_type, bd_addr_t source_addr) {
     gap_start_scan();
 }
 
+static void pa_sync_established() {
+    have_base = false;
+    have_big_info = false;
+    app_state = APP_W4_PA_AND_BIG_INFO;
+}
+
 static void stop_pa_sync(void) {
     app_state = APP_IDLE;
     le_audio_demo_util_sink_close();
@@ -497,15 +503,16 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             switch(hci_event_le_meta_get_subevent_code(packet)) {
                 case HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_SYNC_TRANSFER_RECEIVED:
                     // PAST implies broadcast source has been added by client
-                    printf("Periodic advertising sync transfer received\n");
-                    btstack_run_loop_remove_timer(&broadcast_sink_pa_sync_timer);
+                    sync_handle = hci_subevent_le_periodic_advertising_sync_transfer_received_get_sync_handle(packet);
                     broadcast_audio_scan_service_server_set_pa_sync_state(0, LE_AUDIO_PA_SYNC_STATE_SYNCHRONIZED_TO_PA);
-                    app_state = APP_W4_PA_AND_BIG_INFO;
+                    btstack_run_loop_remove_timer(&broadcast_sink_pa_sync_timer);
+                    printf("Periodic advertising sync transfer with handle 0x%04x received\n", sync_handle);
+                    pa_sync_established();
                     break;
                 case HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_SYNC_ESTABLISHMENT:
                     sync_handle = hci_subevent_le_periodic_advertising_sync_establishment_get_sync_handle(packet);
                     printf("Periodic advertising sync with handle 0x%04x established\n", sync_handle);
-                    app_state = APP_W4_PA_AND_BIG_INFO;
+                    pa_sync_established();
                     break;
                 case HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_REPORT:
                     if (app_state != APP_W4_PA_AND_BIG_INFO) break;
@@ -552,6 +559,9 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     printf("\n");
                     app_state = APP_STREAMING;
                     printf("Start receiving\n");
+
+                    printf("Terminate PA Sync\n");
+                    gap_periodic_advertising_terminate_sync(sync_handle);
 
                     // update BIS Sync state
                     bass_sources[0].data.subgroups[0].bis_sync_state = bis_sync_mask;
