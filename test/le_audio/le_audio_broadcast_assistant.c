@@ -104,7 +104,8 @@ struct {
     uint32_t broadcast_id;
     uint16_t pa_interval;
 } broadcast_sources[NUM_BROADCAST_SOURCES];
-static uint8_t broadcast_source_current = 0;
+static uint8_t broadcast_source_current;
+static bool broadcast_source_selected;
 static uint8_t broadcast_source_count = 0;
 static btstack_timer_source_t broadcast_source_scan_timer;
 static bool broadcast_source_synced;
@@ -154,6 +155,7 @@ static void stop_scanning() {
 static void broadcast_source_scan_timeout_handler(btstack_timer_source_t * ts) {
     stop_scanning();
     printf("Scanning done, found %u Broadcast Sources\n", broadcast_source_count);
+    show_usage();
 }
 
 /* Scan Delegator */
@@ -191,6 +193,7 @@ static void le_audio_broadcast_assistant_start_periodic_sync() {
     gap_periodic_advertiser_list_add(broadcast_sources[broadcast_source_current].addr_type, broadcast_sources[broadcast_source_current].addr, broadcast_sources[broadcast_source_current].sid);
     app_state = APP_W4_PA_AND_BIG_INFO;
     gap_periodic_advertising_create_sync(0x01, broadcast_sources[broadcast_source_current].sid, broadcast_sources[broadcast_source_current].addr_type, broadcast_sources[broadcast_source_current].addr, 0, 1000, 0);
+    gap_start_scan();
 }
 
 static void handle_periodic_advertisement(const uint8_t * packet, uint16_t size){
@@ -297,9 +300,9 @@ static void handle_periodic_advertisement(const uint8_t * packet, uint16_t size)
 }
 
 static void have_base_and_big_info(void){
-    printf("Connecting to Scan Delegator/Sink!\n");
     stop_scanning();
-    connect_to_scan_delegator();
+    broadcast_source_synced = true;
+    show_usage();
 }
 
 static void handle_big_info(const uint8_t * packet, uint16_t size){
@@ -566,7 +569,7 @@ static void show_usage(void){
             printf("c - scan and connect to Scan Delegator\n");
             break;
         case APP_CONNECTED:
-            if (broadcast_source_count > broadcast_source_current) {
+            if (broadcast_source_selected) {
                 printf("Selected Broadcast source: addr %s, type %u, name: %s, synced %u\n",
                     bd_addr_to_str(broadcast_sources[broadcast_source_current].addr),
                     broadcast_sources[broadcast_source_current].addr_type,
@@ -574,7 +577,7 @@ static void show_usage(void){
                     broadcast_source_synced);
             }
             printf("d - scan for Broadcast sources (%u s)\n", broadcast_source_scan_duration_s);
-            if (broadcast_source_count > broadcast_source_current) {
+            if (broadcast_source_count > 0) {
                 printf("1..%u select one of the Broadcast Sources:\n", broadcast_source_count);
                 uint8_t i;
                 for (i=0;i<broadcast_source_count;i++) {
@@ -583,13 +586,15 @@ static void show_usage(void){
                         broadcast_sources[broadcast_source_current].addr_type,
                         broadcast_sources[broadcast_source_current].name);
                 }
-                printf("a - add source with BIS Sync 0x%08x\n", bis_sync_mask);
-                printf("A - add source with BIS Sync 0x00000000 (do not sync)\n");
-                printf("m - modify source to PA Sync = 0, bis sync = 0x00000000\n");
-                printf("M - modify source to PA Sync = 1, bis sync = 0x%08x\n", bis_sync_mask);
-                printf("b - send Broadcast Code: ");
-                printf_hexdump(broadcast_code, sizeof(broadcast_code));
-                printf("r - remove source\n");
+                if (broadcast_source_synced) {
+                    printf("a - add source with BIS Sync 0x%08x\n", bis_sync_mask);
+                    printf("A - add source with BIS Sync 0x00000000 (do not sync)\n");
+                    printf("m - modify source to PA Sync = 0, bis sync = 0x00000000\n");
+                    printf("M - modify source to PA Sync = 1, bis sync = 0x%08x\n", bis_sync_mask);
+                    printf("b - send Broadcast Code: ");
+                    printf_hexdump(broadcast_code, sizeof(broadcast_code));
+                    printf("r - remove source\n");
+                }
             }
             break;
         default:
@@ -626,11 +631,13 @@ static void stdin_process(char c){
                 uint8_t digit = c - '0';
                 if (digit <= broadcast_source_count) {
                     broadcast_source_synced = false;
+                    broadcast_source_selected = true;
                     broadcast_source_current = digit-1;
                     printf("Selected  addr  %s, type %u, name: %s\n",
                         bd_addr_to_str(broadcast_sources[broadcast_source_current].addr),
                         broadcast_sources[broadcast_source_current].addr_type,
                         broadcast_sources[broadcast_source_current].name);
+                    le_audio_broadcast_assistant_start_periodic_sync();
                 }
                 break;
             }
