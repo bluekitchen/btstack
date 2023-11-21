@@ -367,6 +367,9 @@ static void got_base_and_big_info() {
         broadcast_audio_scan_service_server_set_pa_sync_state(0, LE_AUDIO_PA_SYNC_STATE_SYNCHRONIZED_TO_PA);
     }
 
+    // update num subgroups from BASE
+    bass_sources[0].data.subgroups_num = bass_source_new.subgroups_num;
+
     if ((encryption == false) || have_broadcast_code){
         enter_create_big_sync();
     } else {
@@ -444,8 +447,8 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             uint16_t uuid;
             uint32_t broadcast_id;
             for (ad_iterator_init(&context, adv_size, adv_data) ; ad_iterator_has_more(&context) ; ad_iterator_next(&context)) {
-                uint8_t data_type = ad_iterator_get_data_type(&context);
-                uint8_t size = ad_iterator_get_data_len(&context);
+                const uint8_t data_type = ad_iterator_get_data_type(&context);
+                uint8_t data_size = ad_iterator_get_data_len(&context);
                 const uint8_t *data = ad_iterator_get_data(&context);
                 switch (data_type){
                     case BLUETOOTH_DATA_TYPE_SERVICE_DATA_16_BIT_UUID:
@@ -457,9 +460,9 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                         break;
                     case BLUETOOTH_DATA_TYPE_SHORTENED_LOCAL_NAME:
                     case BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME:
-                        size = btstack_min(sizeof(remote_name) - 1, size);
-                        memcpy(remote_name, data, size);
-                        remote_name[size] = 0;
+                        data_size = btstack_min(sizeof(remote_name) - 1, data_size);
+                        memcpy(remote_name, data, data_size);
+                        remote_name[data_size] = 0;
                         // support for nRF5340 Audio DK
                         if (strncmp("NRF5340", remote_name, 7) == 0){
                             nrf5340_audio_demo = true;
