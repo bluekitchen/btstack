@@ -760,7 +760,6 @@ static uint16_t mcs_server_read_callback(hci_con_handle_t con_handle, uint16_t a
             reverse_48(media_player->data.current_group_object_id, value);
             return att_read_callback_handle_blob((const uint8_t *)value, sizeof(value), offset, buffer, buffer_size);
 
-
         case PLAYING_ORDER:
             return att_read_callback_handle_byte(media_player->data.playing_order, offset, buffer, buffer_size);
 
@@ -1149,6 +1148,17 @@ uint8_t media_control_service_server_set_icon_object_id(uint16_t media_player_id
 	}
 	memcpy(media_player->data.icon_object_id, object_id, OTS_OBJECT_ID_LEN);
 	return ERROR_CODE_SUCCESS;
+}
+
+uint8_t media_control_service_server_set_parent_group_object_id(uint16_t media_player_id, const ots_object_id_t * object_id){
+    btstack_assert(object_id != NULL);
+
+    media_control_service_server_t * media_player = msc_server_find_media_player_for_id(media_player_id);
+    if (media_player == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    memcpy(media_player->data.parent_group_object_id, object_id, OTS_OBJECT_ID_LEN);
+    return ERROR_CODE_SUCCESS;
 }
 
 uint8_t media_control_service_server_set_current_group_object_id(uint16_t media_player_id, const ots_object_id_t * object_id){
