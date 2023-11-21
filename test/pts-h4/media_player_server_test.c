@@ -302,7 +302,6 @@ static mcs_media_player_t generic_media_player;
 static void mcs_seeking_speed_timer_stop(uint16_t media_player_id);
 static void mcs_seeking_speed_timer_start(uint16_t media_player_id);
 
-
 // MCS Test
 static mcs_track_t tracksA[] = {
     {18000, 0, {0x11, 0x11, 0x11, 0x11, 0x11, 0x11}, "Object 0", {0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF}, "https://www.bluetooth.com/icon_url", 1, {{18000, 0, {0x00, 0x00, 0x00, 0x00, 0x00, 0xA1}, "Segment 00"}} },
@@ -1057,13 +1056,25 @@ static mcs_track_t * mcs_get_current_track_for_media_player_id(uint16_t media_pl
     return mcs_get_current_track_for_media_player(mcs_get_media_player_for_id(media_player_id));
 }
 
+static bool mcs_next_track_index(mcs_media_player_t * media_player, bool next_forward, uint32_t * track_index);
+
 static void mcs_reset_current_track(mcs_media_player_t * media_player){
     mcs_track_t * current_track = mcs_get_current_track_for_media_player(media_player);
+    uint32_t next_track_index;
+    mcs_next_track_index(media_player, true, &next_track_index);
+
     // reset current track
     media_control_service_server_set_track_title(media_player->id, current_track->title);
     media_control_service_server_set_track_duration(media_player->id, current_track->track_duration_10ms);
     media_control_service_server_set_track_position(media_player->id, current_track->track_position_10ms);
     media_control_service_server_set_current_track_id(media_player->id, &current_track->object_id);
+    media_control_service_server_set_next_track_id(media_player->id, &media_player->track_groups[media_player->current_group_index].tracks[next_track_index].object_id);
+
+    if (current_track->segments_num != 0){
+        media_control_service_server_set_current_track_segment_id(media_player->id, &current_track->segments[0].object_id);
+    } else {
+        media_control_service_server_set_current_track_segment_id(media_player->id, NULL);
+    }
 
     current_track->track_position_10ms = 0;
     mcs_track_t * track = mcs_get_current_track_for_media_player_id(current_media_player_id);
@@ -1728,6 +1739,9 @@ static void mcs_server_trigger_notifications_for_opcode(mcs_media_player_t * med
     if (notify_track_position_change){
         media_control_service_server_set_track_position(media_player->id, track->track_position_10ms);
     }
+
+    media_player->previous_group_index = media_player->current_group_index;
+    media_player->previous_track_index = media_player->current_track_index;
 }
 
 static void mcs_server_trigger_notifications(mcs_media_player_t * media_player){
@@ -2219,8 +2233,15 @@ static void mcs_server_init_media_player(mcs_media_player_t * media_player){
     media_control_service_server_set_track_title(media_player->id, current_track->title);
     media_control_service_server_set_track_duration(media_player->id, current_track->track_duration_10ms);
     media_control_service_server_set_track_position(media_player->id, current_track->track_position_10ms);
-    media_control_service_server_set_current_track_id(media_player->id, &current_track->object_id);
+
     media_control_service_server_set_current_group_object_id(media_player->id, &media_player->track_groups[media_player->current_group_index].current_group_object_id);
+    media_control_service_server_set_current_track_id(media_player->id, &current_track->object_id);
+    media_control_service_server_set_current_track_segment_id(media_player->id, &current_track->segments[0].object_id);
+
+    uint32_t next_track_index;
+    mcs_next_track_index(media_player, true, &next_track_index);
+    media_control_service_server_set_next_track_id(media_player->id, &media_player->track_groups[media_player->current_group_index].tracks[next_track_index].object_id);
+
 
     media_control_service_server_set_playing_orders_supported(media_player->id, 0x3FF);
     media_control_service_server_set_playing_order(media_player->id, PLAYING_ORDER_IN_ORDER_ONCE);
