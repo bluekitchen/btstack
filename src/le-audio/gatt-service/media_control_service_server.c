@@ -1173,6 +1173,17 @@ uint8_t media_control_service_server_set_current_track_id(uint16_t media_player_
     return ERROR_CODE_SUCCESS;
 }
 
+uint8_t media_control_service_server_set_next_track_id(uint16_t media_player_id, const ots_object_id_t * object_id){
+    btstack_assert(object_id != NULL);
+
+    media_control_service_server_t * media_player = msc_server_find_media_player_for_id(media_player_id);
+    if (media_player == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    memcpy(media_player->data.next_track_object_id, object_id, OTS_OBJECT_ID_LEN);
+    return ERROR_CODE_SUCCESS;
+}
+
 uint8_t media_control_service_server_set_current_track_segment_id(uint16_t media_player_id, const ots_object_id_t * object_id){
     media_control_service_server_t * media_player = msc_server_find_media_player_for_id(media_player_id);
     if (media_player == NULL){
