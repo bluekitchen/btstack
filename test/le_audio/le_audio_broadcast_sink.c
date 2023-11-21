@@ -641,6 +641,31 @@ static void broadcast_sync_pa_sync_timeout_handler(btstack_timer_source_t * ts){
     broadcast_audio_scan_service_server_set_pa_sync_state(0, LE_AUDIO_PA_SYNC_STATE_NO_PAST);
 }
 
+static void handle_new_pa_sync(uint8_t source_id, le_audio_pa_sync_t pa_sync) {
+    switch (pa_sync){
+        case LE_AUDIO_PA_SYNC_DO_NOT_SYNCHRONIZE_TO_PA:
+            printf("Stop PA Sync\n");
+            stop_pa_sync();
+            bass_sources[0].data.subgroups[0].bis_sync_state = 0;
+            broadcast_audio_scan_service_server_set_pa_sync_state(0, LE_AUDIO_PA_SYNC_STATE_NOT_SYNCHRONIZED_TO_PA);
+            break;
+        case LE_AUDIO_PA_SYNC_SYNCHRONIZE_TO_PA_PAST_AVAILABLE:
+            printf("LE_AUDIO_PA_SYNC_SYNCHRONIZE_TO_PA_PAST_AVAILABLE -> Request SyncInfo\n");
+            broadcast_audio_scan_service_server_set_pa_sync_state(source_id, LE_AUDIO_PA_SYNC_STATE_SYNCINFO_REQUEST);
+            // start timeout
+            btstack_run_loop_set_timer_handler(&broadcast_sink_pa_sync_timer, broadcast_sync_pa_sync_timeout_handler);
+            btstack_run_loop_set_timer(&broadcast_sink_pa_sync_timer, 10000);   // 10 seconds
+            btstack_run_loop_add_timer(&broadcast_sink_pa_sync_timer);
+            break;
+        case LE_AUDIO_PA_SYNC_SYNCHRONIZE_TO_PA_PAST_NOT_AVAILABLE:
+            printf("LE_AUDIO_PA_SYNC_SYNCHRONIZE_TO_PA_PAST_AVAILABLE -> Start Periodic Advertising Sync\n");
+            start_pa_sync(bass_sources[source_id].data.address_type, bass_sources[source_id].data.address);
+            break;
+        default:
+            break;
+    }
+}
+
 static void bass_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(packet_type);
     UNUSED(channel);
@@ -649,39 +674,19 @@ static void bass_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t 
     uint8_t source_id;
     printf("BASS Event 0x%02x: ", hci_event_gattservice_meta_get_subevent_code(packet));
     printf_hexdump(packet, size);
+    uint8_t pa_sync;
     switch (hci_event_gattservice_meta_get_subevent_code(packet)){
         case GATTSERVICE_SUBEVENT_BASS_SERVER_SOURCE_ADDED:
+            pa_sync = gattservice_subevent_bass_server_source_added_get_pa_sync(packet);
             source_id = gattservice_subevent_bass_server_source_added_get_source_id(packet);
-            printf("GATTSERVICE_SUBEVENT_BASS_SOURCE_ADDED, source_id 0x%04x, pa_sync %u\n",
-                   source_id,
-                   gattservice_subevent_bass_server_source_added_get_pa_sync(packet));
-            switch (gattservice_subevent_bass_server_source_added_get_pa_sync(packet)){
-                case LE_AUDIO_PA_SYNC_SYNCHRONIZE_TO_PA_PAST_AVAILABLE:
-                    printf("LE_AUDIO_PA_SYNC_SYNCHRONIZE_TO_PA_PAST_AVAILABLE -> Request SyncInfo\n");
-                    broadcast_audio_scan_service_server_set_pa_sync_state(0, LE_AUDIO_PA_SYNC_STATE_SYNCINFO_REQUEST);
-                    // start timeout
-                    btstack_run_loop_set_timer_handler(&broadcast_sink_pa_sync_timer, broadcast_sync_pa_sync_timeout_handler);
-                    btstack_run_loop_set_timer(&broadcast_sink_pa_sync_timer, 10000);   // 10 seconds
-                    btstack_run_loop_add_timer(&broadcast_sink_pa_sync_timer);
-                    break;
-                case LE_AUDIO_PA_SYNC_SYNCHRONIZE_TO_PA_PAST_NOT_AVAILABLE:
-                    printf("LE_AUDIO_PA_SYNC_SYNCHRONIZE_TO_PA_PAST_AVAILABLE -> Start Periodic Advertising Sync\n");
-                    start_pa_sync(bass_sources[source_id].data.address_type, bass_sources[source_id].data.address);
-                    break;
-            }
+            printf("GATTSERVICE_SUBEVENT_BASS_SOURCE_ADDED, source_id 0x%04x, pa_sync %u\n", source_id, pa_sync);
+            handle_new_pa_sync(source_id, pa_sync);
             break;
         case GATTSERVICE_SUBEVENT_BASS_SERVER_SOURCE_MODIFIED:
-            printf("GATTSERVICE_SUBEVENT_BASS_SOURCE_MODIFIED, source_id 0x%04x, pa_sync %u\n",
-                   gattservice_subevent_bass_server_source_added_get_source_id(packet),
-                   gattservice_subevent_bass_server_source_added_get_pa_sync(packet));
-            // handle 'bis sync == 0'
-            printf("PA Sync %u, bis_sync[0] = %u\n", bass_sources[0].data.pa_sync, bass_sources[0].data.subgroups[0].bis_sync);
-            if (bass_sources[0].data.subgroups[0].bis_sync == 0){
-                printf("Stop PA Sync\n");
-                stop_pa_sync();
-                bass_sources[0].data.subgroups[0].bis_sync_state = 0;
-                broadcast_audio_scan_service_server_set_pa_sync_state(0, LE_AUDIO_PA_SYNC_STATE_NOT_SYNCHRONIZED_TO_PA);
-            }
+            pa_sync = gattservice_subevent_bass_server_source_added_get_pa_sync(packet);
+            source_id = gattservice_subevent_bass_server_source_added_get_source_id(packet);
+            printf("GATTSERVICE_SUBEVENT_BASS_SOURCE_MODIFIED, source_id 0x%04x, pa_sync %u\n", source_id, pa_sync);
+            handle_new_pa_sync(source_id, pa_sync);
             break;
         case GATTSERVICE_SUBEVENT_BASS_SERVER_SOURCE_DELETED:
             printf("GATTSERVICE_SUBEVENT_BASS_SERVER_SOURCE_DELETED, source_id 0x%04x\n",
