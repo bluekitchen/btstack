@@ -133,7 +133,7 @@ static olcp_result_code_t ots_server_operation_number_of_objects(hci_con_handle_
 static olcp_result_code_t ots_server_operation_clear_marking(hci_con_handle_t con_handle);
 
 #define OTS_SERVER_MAX_NUM_CLIENTS 3
-#define OTS_SERVER_MAX_NUM_OBJECTS 20
+#define OTS_SERVER_MAX_NUM_OBJECTS 50
 
 
 static ots_server_connection_t ots_server_connections_storage[OTS_SERVER_MAX_NUM_CLIENTS];
@@ -340,27 +340,27 @@ static ots_databank_type_t ots_db_type;
 // precomputed views of sorted indices
 static uint32_t ots_db_object_indices_sorted[11][OTS_SERVER_MAX_NUM_OBJECTS] = {
         // OLCP_LIST_SORT_ORDER_NONE
-        {0,1,2,3,4,5,6,7,8,9},
+        {0,1,2,3,4,5,6,7,8,9, 10, 11, 12, 13, 14, 15, 16, 17, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29},
         // OLCP_LIST_SORT_ORDER_BY_FIRST_NAME_ASCENDING
-        {0,1,2,3,4,5,6,7,8,9},
+        {0,1,2,3,4,5,6,7,8,9, 10, 11, 12, 13, 14, 15, 16, 17, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29},
         // OLCP_LIST_SORT_ORDER_BY_OBJECT_TYPE_ASCENDING
-        {0,1,2,3,4,5,6,7,8,9},
+        {0,1,2,3,4,5,6,7,8,9, 10, 11, 12, 13, 14, 15, 16, 17, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29},
         // OLCP_LIST_SORT_ORDER_BY_OBJECT_CURRENT_SIZE_ASCENDING
-        {0,1,2,3,4,5,6,7,8,9},
+        {0,1,2,3,4,5,6,7,8,9, 10, 11, 12, 13, 14, 15, 16, 17, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29},
         // OLCP_LIST_SORT_ORDER_BY_FIRST_CREATED_ASCENDING
-        {0,1,2,3,4,5,6,7,8,9},
+        {0,1,2,3,4,5,6,7,8,9, 10, 11, 12, 13, 14, 15, 16, 17, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29},
         // OLCP_LIST_SORT_ORDER_BY_LAST_CREATED_ASCENDING
-        {0,1,2,3,4,5,6,7,8,9},
+        {0,1,2,3,4,5,6,7,8,9, 10, 11, 12, 13, 14, 15, 16, 17, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29},
         // OLCP_LIST_SORT_ORDER_BY_FIRST_NAME_DESCENDING
-        {9,8,7,6,5,4,3,2,1,0},
+        {9,8,7,6,5,4,3,2,1,0, 10, 11, 12, 13, 14, 15, 16, 17, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29},
         // OLCP_LIST_SORT_ORDER_BY_OBJECT_TYPE_DESCENDING
-        {9,8,7,6,5,4,3,2,1,0},
+        {9,8,7,6,5,4,3,2,1,0, 10, 11, 12, 13, 14, 15, 16, 17, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29},
         // OLCP_LIST_SORT_ORDER_BY_OBJECT_CURRENT_SIZE_DESCENDING
-        {9,8,7,6,5,4,3,2,1,0},
+        {9,8,7,6,5,4,3,2,1,0, 10, 11, 12, 13, 14, 15, 16, 17, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29},
         // OLCP_LIST_SORT_ORDER_BY_FIRST_CREATED_DESCENDING
-        {9,8,7,6,5,4,3,2,1,0},
+        {9,8,7,6,5,4,3,2,1,0, 10, 11, 12, 13, 14, 15, 16, 17, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29},
         // OLCP_LIST_SORT_ORDER_BY_LAST_CREATED_DESCENDING
-        {9,8,7,6,5,4,3,2,1,0}
+        {9,8,7,6,5,4,3,2,1,0, 10, 11, 12, 13, 14, 15, 16, 17, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29}
 };
 
 // active sorted view
@@ -389,7 +389,8 @@ static void setup_advertising(void) {
 }
 
 static void ots_dump_object(ots_object_t * object){
-    printf("%d / %d, 0x%04x, %s\n", object->current_size, object->allocated_size, object->type, object->name);
+    printf("%2d / %4d, 0x%04x, %10s.......... ", object->current_size, object->allocated_size, object->type, object->name);
+    printf_hexdump(&object->luid, 6);
 }
 static void ots_dump_selection(void){
     printf("\n");
@@ -579,9 +580,13 @@ static ots_object_t * ots_object_iterator_previous(void){
 
 static ots_object_t * ots_object_iterator_goto(ots_object_id_t * luid){
     int i;
+//    printf("GOTO: Search for ");
+    printf_hexdump(*luid, 6);
+
     for (i = 0; i < ots_db_object_current_num; i++){
         ots_object_t * object = &ots_db_objects[ots_db_object_current_indices[i]];
-        if (memcmp(object->luid, *luid, sizeof(ots_object_id_t)) == 0){
+//        printf("................."); printf_hexdump(&object->luid, 6);
+        if (memcmp(&object->luid, *luid, sizeof(ots_object_id_t)) == 0){
             ots_db_object_current_index = i;
             return object;
         }
@@ -643,6 +648,7 @@ static ots_object_t * ots_db_allocate_object_of_size(uint32_t object_size){
         ots_db_objects_num++;
         return object;
     }
+    printf("Could not allocate space for object in OTS DB\n");
     return NULL;
 }
 
@@ -695,9 +701,14 @@ static void ots_db_load_from_memory(uint8_t track_groups_num, mcs_track_group_t 
             &first_created,
             &last_modified);
 
+        printf("add group     ");
+        printf_hexdump(&track_group->current_group_object_id, 6);
+
         uint16_t j;
         for (j = 0; j < track_group->tracks_num; j++){
             mcs_track_t * track = &track_group->tracks[j];
+            printf("  add track   ");
+            printf_hexdump(&track->object_id, 6);
 
             uint32_t allocated_size = sizeof(ots_object_dummy_data) - 100 + i * 20 + j;
             uint32_t current_size = 30 + i * 20 + j;
@@ -715,9 +726,23 @@ static void ots_db_load_from_memory(uint8_t track_groups_num, mcs_track_group_t 
                 &first_created,
                 &last_modified);
 
+            printf("  add icon    ");
+            printf_hexdump(&track->icon_object_id, 6);
+            ots_db_object_add(
+                    &track->icon_object_id,
+                    "Icon",
+                    properties,
+                    OTS_OBJECT_TYPE_MEDIA_PLAYER_ICON,
+                    allocated_size,
+                    current_size,
+                    &first_created,
+                    &last_modified);
+
             uint16_t z;
             for (z = 0; z < track->segments_num; z++){
                 msc_track_segment_t * segment = &track->segments[z];
+                printf("    add trseg ");
+                printf_hexdump(&segment->object_id, 6);
 
                 ots_db_object_add(
                     &segment->object_id,
@@ -749,7 +774,6 @@ static void ots_db_init(void) {
     ots_db_group_current_index = -1;
     ots_db_group_current_num = 0;
 }
-
 
 // OTS server operations
 
@@ -904,7 +928,7 @@ static mcs_media_player_t * mcs_get_media_player_for_id(uint16_t media_player_id
 
 static void mcs_change_current_track_for_luid(mcs_media_player_t * media_player, ots_object_id_t * luid);
 static void mcs_change_current_group_for_luid(mcs_media_player_t * media_player, ots_object_id_t * luid);
-
+static void mcs_change_current_track_segment_for_luid(mcs_media_player_t * media_player, ots_object_id_t * luid);
 
 static olcp_result_code_t ots_server_operation_goto(hci_con_handle_t con_handle, ots_object_id_t * luid){
     ots_object_t * object = ots_object_iterator_goto(luid);
@@ -915,17 +939,27 @@ static olcp_result_code_t ots_server_operation_goto(hci_con_handle_t con_handle,
     mcs_media_player_t * media_player = mcs_get_media_player_for_id(current_media_player_id);
     switch (object->type) {
         case OTS_OBJECT_TYPE_GROUP:
-            printf("MTS APP: ots_server_operation_goto, goto group: ");
+            printf("MTS APP: ots_server_operation_goto GROUP: ");
             printf_hexdump(object->luid, 6);
             mcs_change_current_group_for_luid(media_player, luid);
             break;
 
         case OTS_OBJECT_TYPE_TRACK:
-            printf("MTS APP: , ots_server_operation_goto, goto track: ");
+            printf("MTS APP: , ots_server_operation_goto TRACK: ");
             printf_hexdump(object->luid, 6);
             mcs_change_current_track_for_luid(media_player, luid);
             break;
 
+        case OTS_OBJECT_TYPE_TRACK_SEGMENTS:
+            printf("MTS APP: , ots_server_operation_goto TRACK SEGMENT: ");
+            printf_hexdump(object->luid, 6);
+            mcs_change_current_track_segment_for_luid(media_player, luid);
+            break;
+
+        case OTS_OBJECT_TYPE_MEDIA_PLAYER_ICON:
+            printf("MTS APP: , ots_server_operation_goto MEDIA_PLAYER_ICON: ");
+            printf_hexdump(object->luid, 6);
+            break;
         default:
             break;
     }
@@ -1059,6 +1093,35 @@ static void mcs_change_current_track(mcs_media_player_t * media_player, uint32_t
     mcs_reset_current_track(media_player);
 }
 
+static void mcs_change_current_track_segment(mcs_media_player_t * media_player, uint32_t track_index, uint32_t track_segment_index){
+    printf(" * mcs_change_current_track_segment: previous %d, current %d\n", media_player->current_track_segment_index, track_segment_index);
+    media_player->previous_track_segment_index = media_player->current_track_segment_index;
+    // change track segment
+    media_player->current_track_segment_index = track_segment_index;
+    mcs_track_t * current_track = mcs_get_current_track_for_media_player(media_player);
+    if (current_track->segments_num != 0){
+        media_control_service_server_set_current_track_segment_id(media_player->id, &current_track->segments[0].object_id);
+    } else {
+        media_control_service_server_set_current_track_segment_id(media_player->id, NULL);
+    }
+}
+
+static void mcs_change_current_track_segment_for_luid(mcs_media_player_t * media_player, ots_object_id_t * luid){
+    mcs_track_group_t * track_group = &track_groups[media_player->current_group_index];
+    mcs_track_t * track = &track_group->tracks[media_player->current_track_index];
+
+    uint32_t segment_index = media_player->current_track_segment_index;
+    int i;
+    for (i = 0; i < track->segments_num; i++){
+        msc_track_segment_t * segment = &track->segments[i];
+        if (memcmp(segment->object_id, luid, 6) == 0){
+            segment_index = i;
+            break;
+        }
+    }
+    mcs_change_current_track_segment(media_player, media_player->current_track_index, segment_index);
+}
+
 static void mcs_change_current_group(mcs_media_player_t * media_player, uint32_t group_index){
     if (media_player->current_group_index == group_index){
         return;
@@ -1088,6 +1151,7 @@ static void mcs_change_current_track_for_luid(mcs_media_player_t * media_player,
 
         if (memcmp(track->object_id, luid, 6) == 0){
             track_index = i;
+            break;
         }
     }
     mcs_change_current_track(media_player, track_index);
@@ -1101,6 +1165,7 @@ static void mcs_change_current_group_for_luid(mcs_media_player_t * media_player,
         
         if (memcmp(track_group->current_group_object_id, luid, 6) == 0){
             group_index = i;
+            break;
         }
     }
     mcs_change_current_group(media_player, group_index);
@@ -1439,6 +1504,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     printf_hexdump(media_player->track_groups[media_player->current_group_index].current_group_object_id, 6);
                     printf("BAP Server: current track[%d]: ", media_player->current_track_index);
                     printf_hexdump(track->object_id, 6);
+                    printf("BAP Server: current track segment[%d]: ", media_player->current_track_segment_index);
+                    printf_hexdump(track->segments[media_player->current_track_segment_index].object_id, 6);
 
                     if (track != NULL){
                         ots_object_t * object = ots_db_find_object_with_luid(&track->object_id);
