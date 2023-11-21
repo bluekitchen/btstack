@@ -722,7 +722,8 @@ static uint16_t mcs_server_read_callback(hci_con_handle_t con_handle, uint16_t a
             return att_read_callback_handle_blob((const uint8_t *)media_player->data.track_title, strlen(media_player->data.track_title), offset, buffer, buffer_size);
         
         case MEDIA_PLAYER_ICON_OBJECT_ID:
-            return att_read_callback_handle_blob(media_player->data.icon_object_id, OTS_OBJECT_ID_LEN, offset, buffer, buffer_size);
+            reverse_48(media_player->data.icon_object_id, value);
+            return att_read_callback_handle_blob(value, OTS_OBJECT_ID_LEN, offset, buffer, buffer_size);
 
 		case MEDIA_PLAYER_ICON_URL:
 			return att_read_callback_handle_blob((const uint8_t *)media_player->data.icon_url, strlen(media_player->data.icon_url), offset, buffer, buffer_size);
