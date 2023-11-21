@@ -325,9 +325,9 @@ static mcs_track_t tracksC[] = {
 //The Object ID values 0x000000000001 to 0x0000000000FF are reserved for future use.
 
 static mcs_track_group_t  track_groups[] = {
-    {{0x00, 0x00, 0x00, 0x00, 0x00, 0x00},{0x00, 0x00, 0x00, 0x00, 0x01, 0x00}, 3, tracksA},
-    {{0x00, 0x00, 0x00, 0x00, 0x00, 0x00},{0x00, 0x00, 0x00, 0x00, 0x02, 0x00}, 4, tracksB},
-    {{0x00, 0x00, 0x00, 0x00, 0x00, 0x00},{0x00, 0x00, 0x00, 0x00, 0x03, 0x00}, 2, tracksC}
+    {{0x00, 0x00, 0x00, 0x00, 0x01, 0x01},{0x00, 0x00, 0x00, 0x00, 0x01, 0x00}, 3, tracksA},
+    {{0x00, 0x00, 0x00, 0x00, 0x01, 0x01},{0x00, 0x00, 0x00, 0x00, 0x02, 0x00}, 4, tracksB},
+    {{0x00, 0x00, 0x00, 0x00, 0x01, 0x01},{0x00, 0x00, 0x00, 0x00, 0x03, 0x00}, 2, tracksC}
 };
 
 
@@ -685,6 +685,17 @@ static void ots_db_load_from_memory(uint8_t track_groups_num, mcs_track_group_t 
 
     btstack_utc_t first_created = {2023, 6, 22, 10, 59, 30};
     btstack_utc_t last_modified = {2023, 6, 22, 10, 59, 30};
+
+    ots_db_object_add(
+            &groups[0].parent_group_object_id,
+            "Parent Group",
+            properties,
+            OTS_OBJECT_TYPE_GROUP,
+            // simulate increase of size to test sorting by size
+            20,
+            20,
+            &first_created,
+            &last_modified);
 
     for (i = 0; i <  track_groups_num; i++){
         mcs_track_group_t * track_group = &groups[i];
@@ -1727,6 +1738,7 @@ static void mcs_server_trigger_notifications_for_opcode(mcs_media_player_t * med
     media_control_service_server_update_current_track_info(media_player->id, track);
 
     if (media_player->previous_group_index != media_player->current_group_index){
+        media_control_service_server_set_parent_group_object_id(media_player->id, &media_player->track_groups[media_player->current_group_index].parent_group_object_id);
         media_control_service_server_set_current_group_object_id(media_player->id, &media_player->track_groups[media_player->current_group_index].current_group_object_id);
     }
 
@@ -2234,6 +2246,7 @@ static void mcs_server_init_media_player(mcs_media_player_t * media_player){
     media_control_service_server_set_track_duration(media_player->id, current_track->track_duration_10ms);
     media_control_service_server_set_track_position(media_player->id, current_track->track_position_10ms);
 
+    media_control_service_server_set_parent_group_object_id(media_player->id, &media_player->track_groups[media_player->current_group_index].parent_group_object_id);
     media_control_service_server_set_current_group_object_id(media_player->id, &media_player->track_groups[media_player->current_group_index].current_group_object_id);
     media_control_service_server_set_current_track_id(media_player->id, &current_track->object_id);
     media_control_service_server_set_current_track_segment_id(media_player->id, &current_track->segments[0].object_id);
