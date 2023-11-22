@@ -45,6 +45,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - 
 ### Changed
 - HCI: simplified implicit SCO flow control
+- HCI: return ERROR_CODE_COMMAND_DISALLOWED for outgoing connections in gap_connect
 - AVRCP: shorten default SDP Service and Provider Names
 - GATT Client: emit query complete event for gatt_client_discover_characteristic_descriptors in next run loop iteration
 - HFP: report HFP Version 1.9 in SDP record

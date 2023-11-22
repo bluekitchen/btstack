@@ -8244,51 +8244,40 @@ void gap_set_scan_phys(uint8_t phys){
     hci_stack->le_scan_phys = phys & 0x05;
 }
 
-uint8_t gap_connect(const bd_addr_t addr, bd_addr_type_t addr_type){
+uint8_t gap_connect(const bd_addr_t addr, bd_addr_type_t addr_type) {
+    // disallow le connection if outgoing already active
+    if (hci_is_le_connection_type(addr_type) && hci_stack->le_connecting_request != LE_CONNECTING_IDLE){
+        log_error("le connect already active");
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+
     hci_connection_t * conn = hci_connection_for_bd_addr_and_type(addr, addr_type);
-    if (!conn){
-        // disallow if le connection is already outgoing
-        if (hci_is_le_connection_type(addr_type) && hci_stack->le_connecting_request != LE_CONNECTING_IDLE){
-            log_error("le connection already active");
-            return ERROR_CODE_COMMAND_DISALLOWED;
-        }
-
-        log_info("gap_connect: no connection exists yet, creating context");
+    if (conn == NULL) {
         conn = create_connection_for_bd_addr_and_type(addr, addr_type, HCI_ROLE_MASTER);
-        if (!conn){
+        if (conn == false){
+            // alloc failed
             log_info("gap_connect: failed to alloc hci_connection_t");
-            return BTSTACK_MEMORY_ALLOC_FAILED; // don't sent packet to controller
+            return BTSTACK_MEMORY_ALLOC_FAILED;
         }
-
-        // set le connecting state
-        if (hci_is_le_connection_type(addr_type)){
-            hci_stack->le_connecting_request = LE_CONNECTING_DIRECT;
+    } else {
+        switch (conn->state) {
+            case RECEIVED_DISCONNECTION_COMPLETE:
+                // connection was just disconnected, reset state and allow re-connect
+                conn->role = HCI_ROLE_MASTER;
+                break;
+            default:
+                return ERROR_CODE_COMMAND_DISALLOWED;
         }
-
-        conn->state = SEND_CREATE_CONNECTION;
-        log_info("gap_connect: send create connection next");
-        hci_run();
-        return ERROR_CODE_SUCCESS;
-    }
-    
-    if (!hci_is_le_connection(conn) ||
-        (conn->state == SEND_CREATE_CONNECTION) ||
-        (conn->state == SENT_CREATE_CONNECTION)) {
-        hci_emit_le_connection_complete(conn->address_type, conn->address, 0, ERROR_CODE_COMMAND_DISALLOWED);
-        log_error("gap_connect: classic connection or connect is already being created");
-        return GATT_CLIENT_IN_WRONG_STATE;
     }
 
-    // check if connection was just disconnected
-    if (conn->state == RECEIVED_DISCONNECTION_COMPLETE){
-        log_info("gap_connect: send create connection (again)");
-        conn->state = SEND_CREATE_CONNECTION;
-        hci_run();
-        return ERROR_CODE_SUCCESS;
+    // set le connecting state
+    if (hci_is_le_connection_type(addr_type)){
+        hci_stack->le_connecting_request = LE_CONNECTING_DIRECT;
     }
 
-    log_info("gap_connect: context exists with state %u", conn->state);
-    hci_emit_le_connection_complete(conn->address_type, conn->address, conn->con_handle, ERROR_CODE_SUCCESS);
+    // trigger connect
+    log_info("gap_connect: send create connection next");
+    conn->state = SEND_CREATE_CONNECTION;
     hci_run();
     return ERROR_CODE_SUCCESS;
 }
