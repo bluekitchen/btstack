@@ -210,16 +210,16 @@ static void hci_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
             break;
 
         /* LISTING_RESUME */
-        case HCI_EVENT_LE_META:
+        case HCI_EVENT_META_GAP:
             // wait for connection complete
-            if (hci_event_le_meta_get_subevent_code(packet) !=  HCI_SUBEVENT_LE_CONNECTION_COMPLETE) break;
+            if (hci_event_gap_meta_get_subevent_code(packet) !=  GAP_SUBEVENT_LE_CONNECTION_COMPLETE) break;
             
             /* LISTING_PAUSE */
             if (app_state != APP_STATE_W4_CONNECT) return;
             
             /* LISTING_RESUME */
             // get connection handle from event
-            connection_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
+            connection_handle = gap_subevent_le_connection_complete_get_connection_handle(packet);
             
             // Connect to remote Device Information Service. The client will query the remote service and emit events,
             // that will be passed on to gatt_client_event_handler.

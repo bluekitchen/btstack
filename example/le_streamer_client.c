@@ -419,22 +419,34 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
             le_stream_server_found();
             break;
 #endif
+        case HCI_EVENT_META_GAP:
+            switch (hci_event_gap_meta_get_subevent_code(packet)) {
+                case GAP_SUBEVENT_LE_CONNECTION_COMPLETE:
+                    switch (hci_event_gap_meta_get_subevent_code(packet)) {
+                        case GAP_SUBEVENT_LE_CONNECTION_COMPLETE:
+                            if (state != TC_W4_CONNECT) return;
+                            connection_handle = gap_subevent_le_connection_complete_get_connection_handle(packet);
+                            // print connection parameters (without using float operations)
+                            conn_interval = gap_subevent_le_connection_complete_get_conn_interval(packet);
+                            printf("Connection Interval: %u.%02u ms\n", conn_interval * 125 / 100, 25 * (conn_interval & 3));
+                            printf("Connection Latency: %u\n", gap_subevent_le_connection_complete_get_conn_latency(packet));
+                            // initialize gatt client context with handle, and add it to the list of active clients
+                            // query primary services
+                            printf("Search for LE Streamer service.\n");
+                            state = TC_W4_SERVICE_RESULT;
+                            gatt_client_discover_primary_services_by_uuid128(handle_gatt_client_event, connection_handle, le_streamer_service_uuid);
+                            break;
+                        default:
+                            break;
+                    }
+                break;
+                default:
+                    break;
+            }
+            break;
         case HCI_EVENT_LE_META:
             // wait for connection complete
             switch (hci_event_le_meta_get_subevent_code(packet)){
-                case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
-                    if (state != TC_W4_CONNECT) return;
-                    connection_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
-                    // print connection parameters (without using float operations)
-                    conn_interval = hci_subevent_le_connection_complete_get_conn_interval(packet);
-                    printf("Connection Interval: %u.%02u ms\n", conn_interval * 125 / 100, 25 * (conn_interval & 3));
-                    printf("Connection Latency: %u\n", hci_subevent_le_connection_complete_get_conn_latency(packet));
-                    // initialize gatt client context with handle, and add it to the list of active clients
-                    // query primary services
-                    printf("Search for LE Streamer service.\n");
-                    state = TC_W4_SERVICE_RESULT;
-                    gatt_client_discover_primary_services_by_uuid128(handle_gatt_client_event, connection_handle, le_streamer_service_uuid);
-                    break;
                 case HCI_SUBEVENT_LE_DATA_LENGTH_CHANGE:
                     con_handle = hci_subevent_le_data_length_change_get_connection_handle(packet);
                     printf("- LE Connection 0x%04x: data length change - max %u bytes per packet\n", con_handle,
