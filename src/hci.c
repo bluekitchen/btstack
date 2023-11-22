@@ -3245,43 +3245,47 @@ static void handle_command_status_event(uint8_t * packet, uint16_t size) {
 }
 
 #ifdef ENABLE_BLE
-static void event_handle_le_connection_complete(const uint8_t * packet){
+static void hci_create_gap_connection_complete_event(const uint8_t * hci_event, uint8_t * generic_event) {
+    generic_event[0] = HCI_EVENT_META_GAP;
+    generic_event[1] = sizeof(generic_event) - 2;
+    generic_event[2] = GAP_SUBEVENT_LE_CONNECTION_COMPLETE;
+    switch (hci_event[2]){
+        case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
+            memcpy(&generic_event[3],  &hci_event[3], 11);
+            memset(&generic_event[14], 0, 12);
+            memcpy(&generic_event[26], &hci_event[14], 7);
+            memset(&generic_event[33], 0xff, 3);
+            break;
+        case HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE_V1:
+            memcpy(&generic_event[3],  &hci_event[3], 30);
+            memset(&generic_event[33], 0xff, 3);
+            break;
+        case HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE_V2:
+            memcpy(&generic_event[3],  &hci_event[3], 33);
+            break;
+        default:
+            btstack_unreachable();
+            break;
+    }
+}
+
+static void event_handle_le_connection_complete(const uint8_t * hci_event){
 	bd_addr_t addr;
 	bd_addr_type_t addr_type;
 	hci_connection_t * conn;
 
     // create GAP_SUBEVENT_LE_CONNECTION_COMPLETE
-    uint8_t generic_event[36];
-    generic_event[0] = HCI_EVENT_META_GAP;
-    generic_event[1] = sizeof(generic_event) - 2;
-    generic_event[2] = GAP_SUBEVENT_LE_CONNECTION_COMPLETE;
-    switch (packet[2]){
-        case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
-            memcpy(&generic_event[3],  &packet[3], 11);
-            memset(&generic_event[14], 0, 12);
-            memcpy(&generic_event[26], &packet[14], 7);
-            memset(&generic_event[33], 0xff, 3);
-            break;
-        case HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE_V1:
-            memcpy(&generic_event[3],  &packet[3], 30);
-            memset(&generic_event[33], 0xff, 3);
-            break;
-        case HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE_V2:
-            memcpy(&generic_event[3],  &packet[3], 33);
-            break;
-        default:
-            btstack_unreachable();
-            return;
-    }
+    uint8_t gap_event[36];
+    hci_create_gap_connection_complete_event(hci_event, gap_event);
 
     // read fields
-    uint8_t status = gap_subevent_le_connection_complete_get_status(generic_event);
-    hci_role_t role = (hci_role_t) gap_subevent_le_connection_complete_get_role(generic_event);
-    uint16_t conn_interval = gap_subevent_le_connection_complete_get_conn_interval(generic_event);
+    uint8_t status = gap_subevent_le_connection_complete_get_status(gap_event);
+    hci_role_t role = (hci_role_t) gap_subevent_le_connection_complete_get_role(gap_event);
+    uint16_t conn_interval = gap_subevent_le_connection_complete_get_conn_interval(gap_event);
 
 	// Connection management
-    gap_subevent_le_connection_complete_get_peer_addresss(generic_event, addr);
-	addr_type = (bd_addr_type_t) gap_subevent_le_connection_complete_get_peer_address_type(generic_event);
+    gap_subevent_le_connection_complete_get_peer_address(gap_event, addr);
+	addr_type = (bd_addr_type_t) gap_subevent_le_connection_complete_get_peer_address_type(gap_event);
     log_info("LE Connection_complete (status=%u) type %u, %s", status, addr_type, bd_addr_to_str(addr));
 	conn = hci_connection_for_bd_addr_and_type(addr, addr_type);
 
@@ -3338,7 +3342,7 @@ static void event_handle_le_connection_complete(const uint8_t * packet){
 	}
 
 	conn->state = OPEN;
-	conn->con_handle             = hci_subevent_le_connection_complete_get_connection_handle(packet);
+	conn->con_handle             = gap_subevent_le_connection_complete_get_connection_handle(gap_event);
     conn->le_connection_interval = conn_interval;
 
     // workaround: PAST doesn't work without LE Read Remote Features on PacketCraft Controller with LMP 568B
@@ -3363,7 +3367,7 @@ static void event_handle_le_connection_complete(const uint8_t * packet){
 	log_info("New connection: handle %u, %s", conn->con_handle, bd_addr_to_str(conn->address));
 
     // emit GAP_SUBEVENT_LE_CONNECTION_COMPLETE
-    hci_emit_event(generic_event, sizeof(generic_event), 1);
+    hci_emit_event(gap_event, sizeof(gap_event), 1);
 
     // emit BTSTACK_EVENT_NR_CONNECTIONS_CHANGED;
 	hci_emit_nr_connections_changed();
