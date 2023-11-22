@@ -304,6 +304,10 @@ static void hci_connection_init(hci_connection_t * conn){
     conn->classic_oob_c_256 = NULL;
     conn->classic_oob_r_256 = NULL;
 #endif
+#ifdef ENABLE_LE_PERIODIC_ADVERTISING
+    conn->le_past_sync_handle = HCI_CON_HANDLE_INVALID;
+    conn->le_past_advertising_handle = 0xff;
+#endif
 }
 
 /**
@@ -323,10 +327,6 @@ create_connection_for_bd_addr_and_type(const bd_addr_t addr, bd_addr_type_t addr
     conn->address_type = addr_type;
     conn->con_handle = HCI_CON_HANDLE_INVALID;
     conn->role = role;
-#ifdef ENABLE_LE_PERIODIC_ADVERTISING
-    conn->le_past_sync_handle = HCI_CON_HANDLE_INVALID;
-    conn->le_past_advertising_handle = 0xff;
-#endif
     btstack_linked_list_add(&hci_stack->connections, (btstack_linked_item_t *) conn);
 
     return conn;
