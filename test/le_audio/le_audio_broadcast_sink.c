@@ -156,6 +156,10 @@ static bool count_mode;
 static bool pts_mode;
 static bool nrf5340_audio_demo;
 
+// broadcast assistant
+static hci_con_handle_t commander_acl_handle;
+static bd_addr_t        commander_address;
+static bd_addr_type_t   commander_type;
 
 // broadcast info
 static const uint8_t    big_handle = 1;
@@ -341,7 +345,11 @@ static void start_scanning() {
     printf("Start scan..\n");
 }
 
-static void setup_advertising() {
+static void start_advertising(void) {
+    gap_extended_advertising_start(adv_handle, 0, 0);
+}
+
+static void setup_advertising(void) {
     bd_addr_t local_addr;
     gap_local_bd_addr(local_addr);
     bool local_address_invalid = btstack_is_null_bd_addr( local_addr );
@@ -354,7 +362,7 @@ static void setup_advertising() {
         gap_extended_advertising_set_random_address( adv_handle, random_address );
     }
     gap_extended_advertising_set_adv_data(adv_handle, sizeof(extended_adv_data), extended_adv_data);
-    gap_extended_advertising_start(adv_handle, 0, 0);
+    start_advertising();
 }
 
 static void got_base_and_big_info() {
@@ -499,8 +507,22 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             break;
         }
 
+        case HCI_EVENT_DISCONNECTION_COMPLETE:
+            // restart advertisements on disconnect
+            if (hci_event_disconnection_complete_get_connection_handle(packet) == commander_acl_handle) {
+                printf("Broadcast Assistant disconnected\n");
+                commander_acl_handle = HCI_CON_HANDLE_INVALID;
+                start_advertising();
+            }
+            break;
         case HCI_EVENT_LE_META:
             switch(hci_event_le_meta_get_subevent_code(packet)) {
+                case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
+                    commander_acl_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
+                    commander_type = hci_subevent_le_connection_complete_get_peer_address_type(packet);
+                    hci_subevent_le_connection_complete_get_peer_address(packet, commander_address);
+                    printf("Broadcast Assistant connected, handle 0x%04x - %s type %u\n", commander_acl_handle, bd_addr_to_str(commander_address), commander_type);
+                    break;
                 case HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_SYNC_TRANSFER_RECEIVED:
                     // PAST implies broadcast source has been added by client
                     sync_handle = hci_subevent_le_periodic_advertising_sync_transfer_received_get_sync_handle(packet);
