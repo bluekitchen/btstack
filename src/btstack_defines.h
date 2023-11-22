@@ -1996,6 +1996,29 @@ typedef uint8_t sm_key_t[16];
 
 #define GAP_SUBEVENT_CIS_CREATED                                 0x07u
 
+/**
+ * Generic version of
+ * - HCI_SUBEVENT_LE_CONNECTION_COMPLETE
+ * - HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE_V1
+ * - HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE_V2
+ * @format 11H11BBB22211H
+ * @param subevent_code
+ * @param status
+ * @param connection_handle
+ * @param role
+ * @param peer_address_type
+ * @param peer_address
+ * @param local_resolvable_private_address - 00..00 if not valid
+ * @param peer_resolvable_private_address  - 00..00 if not valid
+ * @param conn_interval
+ * @param conn_latency
+ * @param supervision_timeout
+ * @param master_clock_accuracy
+ * @param advertising_handle - 0xff   if not set
+ * @param sync_handle        - 0xffff if not set
+ */
+#define GAP_SUBEVENT_LE_CONNECTION_COMPLETE                     0x08u
+
 /** HSP Subevent */
 
 /**
