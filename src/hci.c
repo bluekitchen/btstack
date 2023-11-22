@@ -3250,32 +3250,38 @@ static void event_handle_le_connection_complete(const uint8_t * packet){
 	bd_addr_type_t addr_type;
 	hci_connection_t * conn;
 
-    // read fields
-    uint8_t status = packet[3];
-    hci_role_t role = (hci_role_t) packet[6];
-
-    // support different connection complete events
-    uint16_t conn_interval;
+    // create GAP_SUBEVENT_LE_CONNECTION_COMPLETE
+    uint8_t generic_event[36];
+    generic_event[0] = HCI_EVENT_META_GAP;
+    generic_event[1] = sizeof(generic_event) - 2;
+    generic_event[2] = GAP_SUBEVENT_LE_CONNECTION_COMPLETE;
     switch (packet[2]){
         case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
-            conn_interval = hci_subevent_le_connection_complete_get_conn_interval(packet);
+            memcpy(&generic_event[3],  &packet[3], 11);
+            memset(&generic_event[14], 0, 12);
+            memcpy(&generic_event[26], &packet[14], 7);
+            memset(&generic_event[33], 0xff, 3);
             break;
-#ifdef ENABLE_LE_EXTENDED_ADVERTISING
         case HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE_V1:
-            conn_interval = hci_subevent_le_enhanced_connection_complete_v1_get_conn_interval(packet);
+            memcpy(&generic_event[3],  &packet[3], 30);
+            memset(&generic_event[33], 0xff, 3);
             break;
         case HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE_V2:
-            conn_interval = hci_subevent_le_enhanced_connection_complete_v2_get_conn_interval(packet);
+            memcpy(&generic_event[3],  &packet[3], 33);
             break;
-#endif
         default:
             btstack_unreachable();
             return;
     }
 
+    // read fields
+    uint8_t status = gap_subevent_le_connection_complete_get_status(generic_event);
+    hci_role_t role = (hci_role_t) gap_subevent_le_connection_complete_get_role(generic_event);
+    uint16_t conn_interval = gap_subevent_le_connection_complete_get_conn_interval(generic_event);
+
 	// Connection management
-	reverse_bd_addr(&packet[8], addr);
-	addr_type = (bd_addr_type_t)packet[7];
+    gap_subevent_le_connection_complete_get_peer_addresss(generic_event, addr);
+	addr_type = (bd_addr_type_t) gap_subevent_le_connection_complete_get_peer_address_type(generic_event);
     log_info("LE Connection_complete (status=%u) type %u, %s", status, addr_type, bd_addr_to_str(addr));
 	conn = hci_connection_for_bd_addr_and_type(addr, addr_type);
 
@@ -3356,6 +3362,10 @@ static void event_handle_le_connection_complete(const uint8_t * packet){
 
 	log_info("New connection: handle %u, %s", conn->con_handle, bd_addr_to_str(conn->address));
 
+    // emit GAP_SUBEVENT_LE_CONNECTION_COMPLETE
+    hci_emit_event(generic_event, sizeof(generic_event), 1);
+
+    // emit BTSTACK_EVENT_NR_CONNECTIONS_CHANGED;
 	hci_emit_nr_connections_changed();
 }
 #endif
