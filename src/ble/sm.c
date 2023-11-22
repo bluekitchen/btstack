@@ -3898,43 +3898,48 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
 			        break;
 #endif
 
-                case HCI_EVENT_LE_META:
-                    switch (packet[2]) {
-                        case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
-                            // ignore if connection failed
-                            if (packet[3]) return;
+			    case HCI_EVENT_META_GAP:
+			        switch (hci_event_gap_meta_get_subevent_code(packet)) {
+			            case GAP_SUBEVENT_LE_CONNECTION_COMPLETE:
+			                // ignore if connection failed
+			                if (gap_subevent_le_connection_complete_get_status(packet) != ERROR_CODE_SUCCESS) break;
 
-                            con_handle = little_endian_read_16(packet, 4);
-                            sm_conn = sm_get_connection_for_handle(con_handle);
-                            if (!sm_conn) break;
+			                con_handle = gap_subevent_le_connection_complete_get_connection_handle(packet);
+			                sm_conn = sm_get_connection_for_handle(con_handle);
+			                if (!sm_conn) break;
 
-                            hci_subevent_le_connection_complete_get_peer_address(packet, addr);
-                            sm_connection_init(sm_conn,
+			                gap_subevent_le_connection_complete_get_peer_address(packet, addr);
+			                sm_connection_init(sm_conn,
                                                con_handle,
-                                               hci_subevent_le_connection_complete_get_role(packet),
-                                               hci_subevent_le_connection_complete_get_peer_address_type(packet),
+                                               gap_subevent_le_connection_complete_get_role(packet),
+                                               gap_subevent_le_connection_complete_get_peer_address_type(packet),
                                                addr);
-                            sm_conn->sm_cid = L2CAP_CID_SECURITY_MANAGER_PROTOCOL;
+			                sm_conn->sm_cid = L2CAP_CID_SECURITY_MANAGER_PROTOCOL;
 
-                            // track our addr used for this connection and set state
-#ifdef ENABLE_LE_PERIPHERAL
-                            if (hci_subevent_le_connection_complete_get_role(packet) != 0){
-                                // responder - use own address from advertisements
-                                gap_le_get_own_advertisements_address(&sm_conn->sm_own_addr_type, sm_conn->sm_own_address);
-                                sm_conn->sm_engine_state = SM_RESPONDER_IDLE;
-                            }
-#endif
-#ifdef ENABLE_LE_CENTRAL
-                            if (hci_subevent_le_connection_complete_get_role(packet) == 0){
-                                // initiator - use own address from create connection
-                                gap_le_get_own_connection_address(&sm_conn->sm_own_addr_type, sm_conn->sm_own_address);
-                                sm_conn->sm_engine_state = SM_INITIATOR_CONNECTED;
-                            }
-#endif
-                            break;
-
+			                // track our addr used for this connection and set state
+    #ifdef ENABLE_LE_PERIPHERAL
+			                if (gap_subevent_le_connection_complete_get_role(packet) != 0){
+			                    // responder - use own address from advertisements
+			                    gap_le_get_own_advertisements_address(&sm_conn->sm_own_addr_type, sm_conn->sm_own_address);
+			                    sm_conn->sm_engine_state = SM_RESPONDER_IDLE;
+			                }
+    #endif
+    #ifdef ENABLE_LE_CENTRAL
+			                if (gap_subevent_le_connection_complete_get_role(packet) == 0){
+			                    // initiator - use own address from create connection
+			                    gap_le_get_own_connection_address(&sm_conn->sm_own_addr_type, sm_conn->sm_own_address);
+			                    sm_conn->sm_engine_state = SM_INITIATOR_CONNECTED;
+			                }
+    #endif
+			                break;
+			            default:
+			                break;
+			        }
+			        break;
+                case HCI_EVENT_LE_META:
+                    switch (hci_event_le_meta_get_subevent_code(packet)) {
                         case HCI_SUBEVENT_LE_LONG_TERM_KEY_REQUEST:
-                            con_handle = little_endian_read_16(packet, 3);
+                            con_handle = hci_subevent_le_long_term_key_request_get_connection_handle(packet);
                             sm_conn = sm_get_connection_for_handle(con_handle);
                             if (!sm_conn) break;
 
@@ -3951,7 +3956,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
 
                             // store rand and ediv
                             reverse_64(&packet[5], sm_conn->sm_local_rand);
-                            sm_conn->sm_local_ediv = little_endian_read_16(packet, 13);
+                            sm_conn->sm_local_ediv = hci_subevent_le_long_term_key_request_get_encryption_diversifier(packet);
 
                             // For Legacy Pairing (<=> EDIV != 0 || RAND != NULL), we need to recalculated our LTK as a
                             // potentially stored LTK is from the master

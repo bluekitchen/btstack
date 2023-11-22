@@ -326,10 +326,10 @@ static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
 
     // handle connect / disconncet events first
     switch (hci_event_packet_get_type(packet)) {
-        case HCI_EVENT_LE_META:
-            switch (packet[2]) {
-                case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
-                    gc_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
+        case HCI_EVENT_META_GAP:
+            switch (hci_event_gap_meta_get_subevent_code(packet)) {
+                case GAP_SUBEVENT_LE_CONNECTION_COMPLETE:
+                    gc_handle = gap_subevent_le_connection_complete_get_connection_handle(packet);
                     log_info("Connection handle 0x%04x, request encryption", gc_handle);
 
                     // we need to be paired to enable notifications

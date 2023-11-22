@@ -303,16 +303,16 @@ static void att_server_event_packet_handler (uint8_t packet_type, uint16_t chann
             
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)) {
-                case HCI_EVENT_LE_META:
-                    switch (packet[2]) {
-                        case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
-                            con_handle = little_endian_read_16(packet, 4);
+                case HCI_EVENT_META_GAP:
+                    switch (hci_event_gap_meta_get_subevent_code(packet)) {
+                        case GAP_SUBEVENT_LE_CONNECTION_COMPLETE:
+                            con_handle = gap_subevent_le_connection_complete_get_connection_handle(packet);
                             hci_connection = hci_connection_for_handle(con_handle);
                             if (!hci_connection) break;
                             att_server = &hci_connection->att_server;
                         	// store connection info
-                        	att_server->peer_addr_type = packet[7];
-                            reverse_bd_addr(&packet[8], att_server->peer_address);
+                        	att_server->peer_addr_type = gap_subevent_le_connection_complete_get_peer_address_type(packet);
+                            gap_subevent_le_connection_complete_get_peer_address(packet, att_server->peer_address);
                             att_connection = &hci_connection->att_connection;
                             att_connection->con_handle = con_handle;
                             // reset connection properties
@@ -335,7 +335,6 @@ static void att_server_event_packet_handler (uint8_t packet_type, uint16_t chann
                             // notify all - new
                             att_emit_connected_event(att_server, att_connection);
                             break;
-
                         default:
                             break;
                     }
