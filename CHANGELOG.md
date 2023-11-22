@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## Unreleased
 
 ### Added
+- GAP: generic GAP_SUBEVENT_LE_CONNECTION_COMPLETE
 - L2CAP: additional authorization_required param in l2cap_ecbm_register_service  
 - GATT Client: support GATT over Enhanced LE Bearer
 - GATT Server: support GATT over Enhanced LE Bearer
@@ -42,7 +43,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - GATT Client: ignore notifications/indications until re-encrypted for bonded device without ENABLE_LE_PROACTIVE_AUTHENTICATION
 - btstack_flash_bank: support alignment larger than 4
 - windows: fix timestamps in packet logs
-- 
+
 ### Changed
 - HCI: simplified implicit SCO flow control
 - HCI: return ERROR_CODE_COMMAND_DISALLOWED for outgoing connections in gap_connect

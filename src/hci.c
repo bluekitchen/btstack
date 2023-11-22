@@ -7891,20 +7891,24 @@ static void hci_emit_l2cap_check_timeout(hci_connection_t *conn){
 #ifdef ENABLE_BLE
 #ifdef ENABLE_LE_CENTRAL
 static void hci_emit_le_connection_complete(uint8_t address_type, const bd_addr_t address, hci_con_handle_t con_handle, uint8_t status){
-    uint8_t event[21];
-    event[0] = HCI_EVENT_LE_META;
-    event[1] = sizeof(event) - 2u;
-    event[2] = HCI_SUBEVENT_LE_CONNECTION_COMPLETE;
-    event[3] = status;
-    little_endian_store_16(event, 4, con_handle);
-    event[6] = 0; // TODO: role
-    event[7] = address_type;
-    reverse_bd_addr(address, &event[8]);
-    little_endian_store_16(event, 14, 0); // interval
-    little_endian_store_16(event, 16, 0); // latency
-    little_endian_store_16(event, 18, 0); // supervision timeout
-    event[20] = 0; // master clock accuracy
-    hci_emit_event(event, sizeof(event), 1);
+    uint8_t hci_event[21];
+    hci_event[0] = HCI_EVENT_LE_META;
+    hci_event[1] = sizeof(hci_event) - 2u;
+    hci_event[2] = HCI_SUBEVENT_LE_CONNECTION_COMPLETE;
+    hci_event[3] = status;
+    little_endian_store_16(hci_event, 4, con_handle);
+    hci_event[6] = 0; // TODO: role
+    hci_event[7] = address_type;
+    reverse_bd_addr(address, &hci_event[8]);
+    little_endian_store_16(hci_event, 14, 0); // interval
+    little_endian_store_16(hci_event, 16, 0); // latency
+    little_endian_store_16(hci_event, 18, 0); // supervision timeout
+    hci_event[20] = 0; // master clock accuracy
+    hci_emit_event(hci_event, sizeof(hci_event), 1);
+    // emit GAP event, too
+    uint8_t gap_event[36];
+    hci_create_gap_connection_complete_event(hci_event, gap_event);
+    hci_emit_event(gap_event, sizeof(gap_event), 1);
 }
 #endif
 #endif
