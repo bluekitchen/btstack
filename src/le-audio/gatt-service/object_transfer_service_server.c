@@ -1422,7 +1422,7 @@ static void ots_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
                         if (connection->oacp_bytes_read == 0){
                             ots_server_operations_start_timer(connection);
                         }
-                        result_code = ots_server_operations->read(connection->con_handle, connection->oacp_offset + connection->oacp_bytes_read, bytes_to_read, data);
+                        result_code = ots_server_operations->read(connection->con_handle, connection->oacp_offset + connection->oacp_bytes_read, bytes_to_read, &data);
                         if (result_code == OACP_RESULT_CODE_SUCCESS){
                             connection->oacp_bytes_read += bytes_to_read;
                             l2cap_send(ots_server_credit_based_cid, data, bytes_to_read);
