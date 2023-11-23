@@ -478,9 +478,10 @@ static void ots_server_can_send_now(void * context){
         
         att_server_indicate(connection->con_handle, attribute_handle, value, value_length);
 
-        // allow next transaction
+        if (( connection->oacp_opcode == OACP_OPCODE_READ) && (connection->oacp_result_code == OACP_RESULT_CODE_SUCCESS)) {
+            l2cap_request_can_send_now_event(ots_server_credit_based_cid);
+        }
         connection->oacp_opcode = OACP_OPCODE_READY;
-
     } else if ((connection->scheduled_tasks & OTS_TASK_SEND_OLCP_PROCEDURE_RESPONSE) != 0){
         connection->scheduled_tasks &= ~OTS_TASK_SEND_OLCP_PROCEDURE_RESPONSE;
 
@@ -935,9 +936,6 @@ int ots_server_handle_action_control_point_operation(ots_server_connection_t * c
     }
 
     ots_server_schedule_task(connection, OTS_TASK_SEND_OACP_PROCEDURE_RESPONSE);
-    if ( (connection->oacp_opcode == OACP_OPCODE_READ) && (connection->oacp_result_code == OACP_RESULT_CODE_SUCCESS)){
-        l2cap_request_can_send_now_event(ots_server_credit_based_cid);
-    }
     return 0;
 }
 
