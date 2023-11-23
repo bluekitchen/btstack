@@ -807,7 +807,7 @@ int ots_server_handle_action_control_point_operation(ots_server_connection_t * c
             active_con_handle = connection->con_handle;
             connection->oacp_length = length;
             connection->oacp_offset = offset;
-            connection->oacp_read_offset = offset;
+            connection->oacp_bytes_read = offset;
             connection->oacp_result_code = OACP_RESULT_CODE_SUCCESS;
             break;
         
@@ -1419,12 +1419,12 @@ static void ots_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
                     bytes_to_read = btstack_min(CHUNK_SIZE,  connection->oacp_length + connection->oacp_offset - connection->oacp_read_offset);
 
                     if (bytes_to_read > 0){
-                        if (connection->oacp_read_offset == 0){
+                        if (connection->oacp_bytes_read == 0){
                             ots_server_operations_start_timer(connection);
                         }
-                        result_code = ots_server_operations->read(connection->con_handle, connection->oacp_read_offset, bytes_to_read, data);
+                        result_code = ots_server_operations->read(connection->con_handle, connection->oacp_offset + connection->oacp_bytes_read, bytes_to_read, data);
                         if (result_code == OACP_RESULT_CODE_SUCCESS){
-                            connection->oacp_read_offset -= bytes_to_read;
+                            connection->oacp_bytes_read += bytes_to_read;
                             l2cap_send(ots_server_credit_based_cid, data, bytes_to_read);
                             l2cap_request_can_send_now_event(ots_server_credit_based_cid);
                             break;
