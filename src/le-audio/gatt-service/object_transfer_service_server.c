@@ -805,9 +805,9 @@ int ots_server_handle_action_control_point_operation(ots_server_connection_t * c
             connection->current_object_locked = true;
 
             active_con_handle = connection->con_handle;
-            connection->oacp_length = length;
-            connection->oacp_offset = offset;
-            connection->oacp_bytes_read = offset;
+            connection->oacp_data_chunk_length = length;
+            connection->oacp_data_chunk_offset = offset;
+            connection->oacp_data_bytes_read = 0;
             connection->oacp_result_code = OACP_RESULT_CODE_SUCCESS;
             break;
         
@@ -904,8 +904,8 @@ int ots_server_handle_action_control_point_operation(ots_server_connection_t * c
             connection->current_object_locked = true;
 
             active_con_handle = connection->con_handle;
-            connection->oacp_length = length;
-            connection->oacp_offset = offset;
+            connection->oacp_data_chunk_length = length;
+            connection->oacp_data_chunk_offset = offset;
             connection->oacp_truncate = mode == 2;
             connection->oacp_write_offset = 0;
             connection->oacp_result_code = OACP_RESULT_CODE_SUCCESS;
@@ -1397,18 +1397,6 @@ static void ots_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
                     if (connection == NULL){
                         break;
                     }
-
-                    if (connection->oacp_abort_read){
-                        connection->oacp_abort_read = false;
-                        connection->oacp_offset = 0;
-                        connection->oacp_length = 0;
-                        connection->current_object_object_transfer_in_progress = false;
-                        connection->current_object_object_read_transfer_in_progress = false;
-                        connection->current_object_locked = false;
-                        btstack_run_loop_remove_timer(&connection->operation_timer);
-                        break;
-                    }
-
                     if (!connection->current_object_locked){
                         break;
                     }
@@ -1419,21 +1407,19 @@ static void ots_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
                     bytes_to_read = btstack_min(CHUNK_SIZE,  connection->oacp_length + connection->oacp_offset - connection->oacp_read_offset);
 
                     if (bytes_to_read > 0){
-                        if (connection->oacp_bytes_read == 0){
-                            ots_server_operations_start_timer(connection);
-                        }
-                        result_code = ots_server_operations->read(connection->con_handle, connection->oacp_offset + connection->oacp_bytes_read, bytes_to_read, &data);
+                        result_code = ots_server_operations->read(connection->con_handle,  connection->oacp_data_chunk_offset + connection->oacp_data_bytes_read, bytes_to_read, &data);
                         if (result_code == OACP_RESULT_CODE_SUCCESS){
-                            connection->oacp_bytes_read += bytes_to_read;
+                            connection->oacp_data_bytes_read += bytes_to_read;
                             l2cap_send(ots_server_credit_based_cid, data, bytes_to_read);
                             l2cap_request_can_send_now_event(ots_server_credit_based_cid);
                             break;
                         }
-
+                        // TODO send indication?
                     }
 
-                    connection->oacp_offset = 0;
-                    connection->oacp_length = 0;
+                    connection->oacp_data_chunk_offset = 0;
+                    connection->oacp_data_chunk_length = 0;
+                    connection->oacp_data_bytes_read = 0;
                     connection->current_object_object_transfer_in_progress = false;
                     connection->current_object_object_read_transfer_in_progress = false;
                     connection->current_object_locked = false;
@@ -1461,8 +1447,8 @@ static void ots_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
                 connection->current_object_object_transfer_in_progress = true;
             }
 
-            if ((connection->oacp_write_offset + size) <= connection->oacp_length){
-                ots_server_operations->write(connection->con_handle, connection->oacp_write_offset +  connection->oacp_offset, packet, size);
+            if ((connection->oacp_write_offset + size) <= connection->oacp_data_chunk_length){
+                ots_server_operations->write(connection->con_handle, connection->oacp_write_offset +  connection->oacp_data_chunk_offset, packet, size);
                 connection->oacp_write_offset += size;
             } else {
                 // TODO
@@ -1472,8 +1458,8 @@ static void ots_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
                 break;
             }
 
-            if (connection->oacp_write_offset == connection->oacp_length) {
-                uint32_t data_size = connection->oacp_offset + connection->oacp_length;
+            if (connection->oacp_write_offset == connection->oacp_data_chunk_length) {
+                uint32_t data_size = connection->oacp_data_chunk_offset + connection->oacp_data_chunk_length;
                 if (connection->oacp_truncate){
                     connection->current_object->current_size = data_size;
                 }
@@ -1484,8 +1470,8 @@ static void ots_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
                     connection->current_object->current_size = data_size;
                 }
 
-                connection->oacp_offset = 0;
-                connection->oacp_length = 0;
+                connection->oacp_data_chunk_offset = 0;
+                connection->oacp_data_chunk_length = 0;
                 connection->current_object_locked = false;
                 connection->current_object_object_transfer_in_progress = false;
                 btstack_run_loop_remove_timer(&connection->operation_timer);
