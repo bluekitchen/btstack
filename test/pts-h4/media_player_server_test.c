@@ -116,7 +116,7 @@ static oacp_result_code_t ots_server_operation_create(hci_con_handle_t con_handl
 static oacp_result_code_t ots_server_operation_delete(hci_con_handle_t con_handle);
 static oacp_result_code_t ots_server_operation_calculate_checksum(hci_con_handle_t con_handle, uint32_t offset, uint32_t length, uint32_t * crc_out);
 static oacp_result_code_t ots_server_operation_execute(hci_con_handle_t con_handle);
-static oacp_result_code_t ots_server_operation_read( hci_con_handle_t con_handle, uint32_t offset, uint32_t lenght, const uint8_t * out_buffer);
+static oacp_result_code_t ots_server_operation_read( hci_con_handle_t con_handle, uint32_t offset, uint32_t length, const uint8_t ** out_buffer);
 static oacp_result_code_t ots_server_operation_write(hci_con_handle_t con_handle, uint32_t offset, uint8_t *buffer, uint16_t buffer_size);
 static oacp_result_code_t ots_server_operation_increase_allocated_size(hci_con_handle_t con_handle, uint32_t lenght);
 static oacp_result_code_t ots_server_operation_abort(hci_con_handle_t con_handle);
@@ -858,11 +858,12 @@ static oacp_result_code_t ots_server_operation_execute(hci_con_handle_t con_hand
     return OACP_RESULT_CODE_SUCCESS;
 }
 
-static oacp_result_code_t ots_server_operation_read(hci_con_handle_t con_handle, uint32_t offset, uint32_t length, const uint8_t * out_buffer){
+static oacp_result_code_t ots_server_operation_read(hci_con_handle_t con_handle, uint32_t offset, uint32_t length, const uint8_t ** out_buffer){
     printf("ots_server_operation_read\n");
-    out_buffer = NULL;
+    *out_buffer = NULL;
     if ((offset + length) <= object_transfer_service_server_current_object_size(con_handle)){
-        out_buffer = ots_server_get_current_object_bytes(con_handle);
+        const uint8_t * data = ots_server_get_current_object_bytes(con_handle);
+        *out_buffer = &data[offset];
         // sleep(1000);
         return OACP_RESULT_CODE_SUCCESS;
     }
