@@ -112,7 +112,6 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
             }
             break;
 
-
         case HCI_EVENT_DISCONNECTION_COMPLETE:
             bap_client_reset();
             printf("BAP  Client: disconnected from %s\n", bd_addr_to_str(bap_app_server_addr));
@@ -160,49 +159,12 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
             }
             break;
 
-        // case GAP_EVENT_EXTENDED_ADVERTISING_REPORT:
-        // {
-        //     gap_event_extended_advertising_report_get_address(packet, source_data1.address);
-        //     source_data1.address_type = gap_event_extended_advertising_report_get_address_type(packet);
-        //     source_data1.adv_sid = gap_event_extended_advertising_report_get_advertising_sid(packet);
-
-        //     uint8_t adv_size = gap_event_extended_advertising_report_get_data_length(packet);
-        //     const uint8_t * adv_data = gap_event_extended_advertising_report_get_data(packet);
-
-        //     ad_context_t context;
-        //     bool found = false;
-        //     remote_name[0] = '\0';
-        //     uint16_t uuid;
-        //     for (ad_iterator_init(&context, adv_size, adv_data) ; ad_iterator_has_more(&context) ; ad_iterator_next(&context)) {
-        //         uint8_t data_type = ad_iterator_get_data_type(&context);
-        //         const uint8_t *data = ad_iterator_get_data(&context);
-        //         switch (data_type){
-        //             case BLUETOOTH_DATA_TYPE_SERVICE_DATA_16_BIT_UUID:
-        //                 uuid = little_endian_read_16(data, 0);
-        //                 if (uuid == ORG_BLUETOOTH_SERVICE_BROADCAST_AUDIO_ANNOUNCEMENT_SERVICE){
-        //                     found = true;
-        //                 }
-        //                 break;
-        //             default:
-        //                 break;
-        //         }
-        //     }
-        //     if (!found) break;
-        //     remote_type = gap_event_extended_advertising_report_get_address_type(packet);
-        //     remote_sid = gap_event_extended_advertising_report_get_advertising_sid(packet);
-        //     pts_mode = strncmp("PTS-", remote_name, 4) == 0;
-        //     count_mode = strncmp("COUNT", remote_name, 5) == 0;
-        //     printf("Remote Broadcast sink found, addr %s, name: '%s' (pts-mode: %u, count: %u)\n", bd_addr_to_str(remote), remote_name, pts_mode, count_mode);
-        //     gap_stop_scan();
-        //     break;
-        // }
-
-        case HCI_EVENT_LE_META:
-            switch (hci_event_le_meta_get_subevent_code(packet)){
-                case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
-                    bap_app_client_con_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
+        case HCI_EVENT_META_GAP:
+            switch (hci_event_gap_meta_get_subevent_code(packet)){
+                case GAP_SUBEVENT_LE_CONNECTION_COMPLETE:
+                    bap_app_client_con_handle = gap_subevent_le_connection_complete_get_connection_handle(packet);
                     bap_app_client_state      = BAP_APP_CLIENT_STATE_CONNECTED;
-                    hci_subevent_le_connection_complete_get_peer_address(packet, bap_app_server_addr);
+                    gap_subevent_le_connection_complete_get_peer_address(packet, bap_app_server_addr);
                     printf("BAP  Client: connection to %s established, con_handle 0x%04x\n", bd_addr_to_str(bap_app_server_addr), bap_app_client_con_handle);
                     break;
                 default:
