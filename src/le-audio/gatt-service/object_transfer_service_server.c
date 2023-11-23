@@ -707,8 +707,8 @@ int ots_server_handle_action_control_point_operation(ots_server_connection_t * c
             }
             // 2. Invalid Parameter - The sum of the values of the Offset and Length parameters
             //                        exceeds the value of the Current Size field of the Object Size characteristic.
-            offset = little_endian_read_32(buffer, 0);
-            length = little_endian_read_32(buffer, 4);
+            offset = little_endian_read_32(buffer, pos);
+            length = little_endian_read_32(buffer, pos+4);
 
             if ((offset + length) > object_transfer_service_server_current_object_size(connection->con_handle)){
                 connection->oacp_result_code = OACP_RESULT_CODE_INVALID_PARAMETER;
