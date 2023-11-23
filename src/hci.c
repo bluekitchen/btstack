@@ -2272,7 +2272,11 @@ static void hci_initializing_run(void){
         case HCI_INIT_LE_SET_EVENT_MASK:
             if (hci_le_supported()){
                 hci_stack->substate = HCI_INIT_W4_LE_SET_EVENT_MASK;
+#ifdef ENABLE_LE_ENHANCED_CONNECTION_COMPLETE_EVENT
+                hci_send_cmd(&hci_le_set_event_mask, 0xffffffff, 0x07); // all events from core v5.3
+#else
                 hci_send_cmd(&hci_le_set_event_mask, 0xfffffdff, 0x07); // all events from core v5.3 without LE Enhanced Connection Complete
+#endif
                 break;
             }
 #endif
