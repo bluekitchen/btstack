@@ -407,21 +407,21 @@ static void btstack_packet_handler (uint8_t packet_type, uint16_t channel, uint8
                              remote_att_connection.encryption_key_size, remote_att_connection.authenticated, remote_att_connection.secure_connection);
                     break;
 
-                case HCI_EVENT_LE_META:
+                case HCI_EVENT_META_GAP:
                     // wait for connection complete
-                    switch (hci_event_le_meta_get_subevent_code(packet)){
-                        case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
+                    switch (hci_event_gap_meta_get_subevent_code(packet)){
+                        case GAP_SUBEVENT_LE_CONNECTION_COMPLETE:
                             // send connect response if pending
                             gap_connect_send_response();
 
                             // Assume success
-                            remote_handle          = hci_subevent_le_connection_complete_get_connection_handle(packet);
-                            remote_addr_type       = hci_subevent_le_connection_complete_get_peer_address_type(packet);
-                            hci_subevent_le_connection_complete_get_peer_address(packet, remote_addr);
-                            connection_role               = hci_subevent_le_connection_complete_get_role(packet);
-                            uint16_t conn_interval = hci_subevent_le_connection_complete_get_conn_interval(packet);
-                            uint16_t conn_latency  = hci_subevent_le_connection_complete_get_conn_latency(packet);
-                            uint16_t supervision_timeout = hci_subevent_le_connection_complete_get_supervision_timeout(packet);
+                            remote_handle          = gap_subevent_le_connection_complete_get_connection_handle(packet);
+                            remote_addr_type       = gap_subevent_le_connection_complete_get_peer_address_type(packet);
+                            gap_subevent_le_connection_complete_get_peer_address(packet, remote_addr);
+                            connection_role               = gap_subevent_le_connection_complete_get_role(packet);
+                            uint16_t conn_interval = gap_subevent_le_connection_complete_get_conn_interval(packet);
+                            uint16_t conn_latency  = gap_subevent_le_connection_complete_get_conn_latency(packet);
+                            uint16_t supervision_timeout = gap_subevent_le_connection_complete_get_supervision_timeout(packet);
                             
                             printf("Connected LE to %s with con handle 0x%04x\n", bd_addr_to_str(remote_addr), remote_handle);
 
