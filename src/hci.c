@@ -3254,23 +3254,23 @@ static void handle_command_status_event(uint8_t * packet, uint16_t size) {
 }
 
 #ifdef ENABLE_BLE
-static void hci_create_gap_connection_complete_event(const uint8_t * hci_event, uint8_t * generic_event) {
-    generic_event[0] = HCI_EVENT_META_GAP;
-    generic_event[1] = sizeof(generic_event) - 2;
-    generic_event[2] = GAP_SUBEVENT_LE_CONNECTION_COMPLETE;
+static void hci_create_gap_connection_complete_event(const uint8_t * hci_event, uint8_t * gap_event) {
+    gap_event[0] = HCI_EVENT_META_GAP;
+    gap_event[1] = 36 - 2;
+    gap_event[2] = GAP_SUBEVENT_LE_CONNECTION_COMPLETE;
     switch (hci_event[2]){
         case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
-            memcpy(&generic_event[3],  &hci_event[3], 11);
-            memset(&generic_event[14], 0, 12);
-            memcpy(&generic_event[26], &hci_event[14], 7);
-            memset(&generic_event[33], 0xff, 3);
+            memcpy(&gap_event[3], &hci_event[3], 11);
+            memset(&gap_event[14], 0, 12);
+            memcpy(&gap_event[26], &hci_event[14], 7);
+            memset(&gap_event[33], 0xff, 3);
             break;
         case HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE_V1:
-            memcpy(&generic_event[3],  &hci_event[3], 30);
-            memset(&generic_event[33], 0xff, 3);
+            memcpy(&gap_event[3], &hci_event[3], 30);
+            memset(&gap_event[33], 0xff, 3);
             break;
         case HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE_V2:
-            memcpy(&generic_event[3],  &hci_event[3], 33);
+            memcpy(&gap_event[3], &hci_event[3], 33);
             break;
         default:
             btstack_unreachable();
