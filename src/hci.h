@@ -1136,6 +1136,9 @@ typedef struct {
     // usable ACL packet types given HCI_ACL_BUFFER_SIZE and local supported features
     uint16_t usable_packet_types_acl;
 
+    // enabled ACL packet types
+    uint16_t enabled_packet_types_acl;
+
     // usable SCO packet types given local supported features
     uint16_t usable_packet_types_sco;
 
@@ -1614,6 +1617,12 @@ uint16_t hci_max_acl_data_packet_length(void);
  * Get supported ACL packet types. Already flipped for create connection. Called by L2CAP
  */
 uint16_t hci_usable_acl_packet_types(void);
+
+/**
+ * Set filter for set of ACL packet types returned by hci_usable_acl_packet_types
+ * @param packet_types see CL_PACKET_TYPES_* in bluetooth.h, default: ACL_PACKET_TYPES_ALL
+ */
+void hci_enable_acl_packet_types(uint16_t packet_types);
 
 /**
  * Get supported SCO packet types. Not flipped. Called by HFP

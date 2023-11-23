@@ -1361,8 +1361,13 @@ static uint16_t hci_acl_packet_types_for_buffer_size_and_local_features(uint16_t
 }
 
 uint16_t hci_usable_acl_packet_types(void){
+    uint16_t active_packet_types = (hci_stack->usable_packet_types_acl &  hci_stack->enabled_packet_types_acl);
     // flip bits for "may not be used"
-    return hci_stack->usable_packet_types_acl ^ 0x3306;
+    return  active_packet_types ^ 0x3306;
+}
+
+void hci_enable_acl_packet_types(uint16_t packet_types){
+    hci_stack->enabled_packet_types_acl = packet_types;
 }
 
 static const struct {
@@ -4812,6 +4817,8 @@ void hci_init(const hci_transport_t *transport, const void *config){
     // Link Supervision Timeout
     hci_stack->link_supervision_timeout = HCI_LINK_SUPERVISION_TIMEOUT_DEFAULT;
 
+    // All ACL packet types are enabledh
+    hci_stack->enabled_packet_types_acl = ACL_PACKET_TYPES_ALL;
 #endif
 
     // Secure Simple Pairing default: enable, no I/O capabilities, general bonding, mitm not required, auto accept 
