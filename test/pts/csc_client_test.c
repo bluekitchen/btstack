@@ -511,15 +511,15 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
             printf("Stop scan. Connect to device with addr %s.\n", bd_addr_to_str(csc_server_addr));
             gap_connect(csc_server_addr,csc_server_addr_type);
             break;
-        case HCI_EVENT_LE_META:
+        case HCI_EVENT_META_GAP:
             // wait for connection complete
-            if (hci_event_le_meta_get_subevent_code(packet) !=  HCI_SUBEVENT_LE_CONNECTION_COMPLETE) break;
+            if (hci_event_gap_meta_get_subevent_code(packet) != GAP_SUBEVENT_LE_CONNECTION_COMPLETE) break;
             if (state != TC_W4_CONNECT) return;
-            connection_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
+            connection_handle = gap_subevent_le_connection_complete_get_connection_handle(packet);
             // print connection parameters (without using float operations)
-            conn_interval = hci_subevent_le_connection_complete_get_conn_interval(packet);
+            conn_interval = gap_subevent_le_connection_complete_get_conn_interval(packet);
             printf("Connection Interval: %u.%02u ms\n", conn_interval * 125 / 100, 25 * (conn_interval & 3));
-            printf("Connection Latency: %u\n", hci_subevent_le_connection_complete_get_conn_latency(packet));  
+            printf("Connection Latency: %u\n", gap_subevent_le_connection_complete_get_conn_latency(packet));
             state = TC_CONNECTED;
             // TODO: find better way to re-register listeners. Re-register notification listener if Characteristic is known
             notification_listener_registered = 0;
