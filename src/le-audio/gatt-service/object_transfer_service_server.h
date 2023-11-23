@@ -114,7 +114,7 @@ typedef struct {
     uint32_t oacp_offset;
     uint32_t oacp_length;
     uint32_t oacp_write_offset;
-    uint32_t oacp_read_offset;
+    uint32_t oacp_bytes_read;
     bool oacp_abort_read;
 
     // used for OBJECT CHANGED indication
