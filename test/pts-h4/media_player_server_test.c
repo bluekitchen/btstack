@@ -118,7 +118,7 @@ static oacp_result_code_t ots_server_operation_calculate_checksum(hci_con_handle
 static oacp_result_code_t ots_server_operation_execute(hci_con_handle_t con_handle);
 static oacp_result_code_t ots_server_operation_read( hci_con_handle_t con_handle, uint32_t offset, uint32_t length, const uint8_t ** out_buffer);
 static oacp_result_code_t ots_server_operation_write(hci_con_handle_t con_handle, uint32_t offset, uint8_t *buffer, uint16_t buffer_size);
-static oacp_result_code_t ots_server_operation_increase_allocated_size(hci_con_handle_t con_handle, uint32_t lenght);
+static oacp_result_code_t ots_server_operation_increase_allocated_size(hci_con_handle_t con_handle, uint32_t length);
 static oacp_result_code_t ots_server_operation_abort(hci_con_handle_t con_handle);
 
 
@@ -721,7 +721,7 @@ static void ots_db_load_from_memory(uint8_t track_groups_num, mcs_track_group_t 
             printf_hexdump(&track->object_id, 6);
 
             uint32_t allocated_size = sizeof(ots_object_dummy_data) - 100 + i * 20 + j;
-            uint32_t current_size = 30 + i * 20 + j;
+            uint32_t current_size = 32 + i * 20 + j;
             first_created.seconds = i * 5;
             last_modified.seconds = i * 5;
 
@@ -847,7 +847,8 @@ static oacp_result_code_t ots_server_operation_calculate_checksum(hci_con_handle
     crc = btstack_crc32_update(crc, &data[offset], length);
     crc = btstack_crc32_finalize(crc);
     *crc_out = crc;
-
+    printf("ots_server_operation_calculate_checksum\n");
+    printf_hexdump(&data[offset], length);
     printf("CRC 0x%x\n", crc);
 
     return OACP_RESULT_CODE_SUCCESS;
