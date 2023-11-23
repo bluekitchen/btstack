@@ -320,19 +320,25 @@ static void send_report(int modifier, int keycode){
         case HIDS_INPUT_REPORT:
             hids_device_send_input_report(con_handle, report, sizeof(report));
             break;
+#if 0
+        // output Y& feature reports are not implemented yet
+
         case HIDS_OUTPUT_REPORT:
             hids_device_send_output_report(con_handle, report, sizeof(report));
             break;
         case HIDS_FEATURE_REPORT:
             hids_device_send_feature_report(con_handle, report, sizeof(report));
-            break; 
+            break;
+#endif
         case HIDS_BOOT_KEYBOARD_INPUT_REPORT:
             hids_device_send_boot_keyboard_input_report(con_handle, report, sizeof(report));
             break;
-        case HIDS_BOOT_MOUSE_INPUT_REPORT:{
+        case HIDS_BOOT_MOUSE_INPUT_REPORT:
             hids_device_send_boot_mouse_input_report(con_handle, report, sizeof(report));
             break;
-        }   
+        default:
+            btstack_unreachable();
+            break;
     }
     
 }
