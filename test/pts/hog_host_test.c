@@ -282,11 +282,11 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     printf("\nDisconnected\n");
                     break;
                 
-                case HCI_EVENT_LE_META:
+                case HCI_EVENT_META_GAP:
                     // wait for connection complete
-                    if (hci_event_le_meta_get_subevent_code(packet) != HCI_SUBEVENT_LE_CONNECTION_COMPLETE) break;
+                    if (hci_event_gap_meta_get_subevent_code(packet) != GAP_SUBEVENT_LE_CONNECTION_COMPLETE) break;
                     if (app_state != W4_CONNECTED) return;
-                    connection_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
+                    connection_handle = gap_subevent_le_connection_complete_get_connection_handle(packet);
                     // request security
                     app_state = W4_ENCRYPTED;
                     sm_request_pairing(connection_handle);

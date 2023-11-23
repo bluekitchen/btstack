@@ -146,12 +146,12 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
             gap_connect(report.address,report.address_type);
             break;
 
-        case HCI_EVENT_LE_META:
+        case HCI_EVENT_META_GAP:
             // Wait for connection complete
-            if (hci_event_le_meta_get_subevent_code(packet) !=  HCI_SUBEVENT_LE_CONNECTION_COMPLETE) break;
+            if (hci_event_gap_meta_get_subevent_code(packet) !=  GAP_SUBEVENT_LE_CONNECTION_COMPLETE) break;
             
             // Get connection handle from event
-            connection_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
+            connection_handle = gap_subevent_le_connection_complete_get_connection_handle(packet);
             
             (void) microphone_control_service_client_connect(connection_handle, gatt_client_event_handler, &mips_cid);
 

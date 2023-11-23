@@ -160,20 +160,13 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
 #endif
         }
 
-        case HCI_EVENT_LE_META:
-            switch (hci_event_le_meta_get_subevent_code(packet)){
-                case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
-                    pts_con_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
-                    hci_subevent_le_connection_complete_get_peer_address(packet, pts_address);
-                    printf("BAP  Client: connection to %s established, con_handle 0x%04x\n", bd_addr_to_str(pts_address), pts_con_handle);
-                    break;
-                default:
-                    return;
-            }
-            break;
-
         case HCI_EVENT_META_GAP:
             switch (hci_event_gap_meta_get_subevent_code(packet)){
+                case GAP_SUBEVENT_LE_CONNECTION_COMPLETE:
+                    pts_con_handle = gap_subevent_le_connection_complete_get_connection_handle(packet);
+                    gap_subevent_le_connection_complete_get_peer_address(packet, pts_address);
+                    printf("BAP  Client: connection to %s established, con_handle 0x%04x\n", bd_addr_to_str(pts_address), pts_con_handle);
+                    break;
                 case GAP_SUBEVENT_CIG_CREATED:
 #if 0
                     if (bap_app_client_state == BAP_APP_W4_CIG_COMPLETE){

@@ -323,22 +323,14 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
             break;
         }
 
-        case HCI_EVENT_LE_META:
-            switch (hci_event_le_meta_get_subevent_code(packet)){
-                case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
-                    bap_app_client_con_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
-                    bap_app_client_state      = BAP_APP_CLIENT_STATE_CONNECTED;
-                    hci_subevent_le_connection_complete_get_peer_address(packet, bap_app_server_addr);
-                    printf("BAP  Client: connection to %s established, con_handle 0x%04x\n", bd_addr_to_str(bap_app_server_addr), bap_app_client_con_handle);
-                    break;
-                default:
-                    return;
-            }
-            break;
-
-
         case HCI_EVENT_META_GAP:
             switch (hci_event_gap_meta_get_subevent_code(packet)){
+                case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
+                    bap_app_client_con_handle = gap_subevent_le_connection_complete_get_connection_handle(packet);
+                    bap_app_client_state      = BAP_APP_CLIENT_STATE_CONNECTED;
+                    gap_subevent_le_connection_complete_get_peer_address(packet, bap_app_server_addr);
+                    printf("BAP  Client: connection to %s established, con_handle 0x%04x\n", bd_addr_to_str(bap_app_server_addr), bap_app_client_con_handle);
+                    break;
                 case GAP_SUBEVENT_CIG_CREATED:
                     if (bap_app_client_state == BAP_APP_W4_CIG_COMPLETE){
                         bap_app_client_state = BAP_APP_CLIENT_STATE_CONNECTED;
