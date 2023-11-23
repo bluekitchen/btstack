@@ -792,10 +792,10 @@ int ots_server_handle_action_control_point_operation(ots_server_connection_t * c
             }
 
             // 6. Insufficient Resources - The value of the Length parameter exceeds the number of octets that the Server has the capacity to read from the object.
-//            if (length > ots_server_remote_mtu){
-//                connection->oacp_result_code = OACP_RESULT_CODE_INSUFFICIENT_RESOURCES;
-//                break;
-//            }
+            if (length > ots_server_remote_mtu){
+                connection->oacp_result_code = OACP_RESULT_CODE_INSUFFICIENT_RESOURCES;
+                break;
+            }
 
             // 7. Object Locked - An object transfer is in progress that is using the Current Object
             if (connection->current_object_object_transfer_in_progress){
