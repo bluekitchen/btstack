@@ -1556,10 +1556,7 @@ void hfp_hf_init_codecs(int codecs_nr, const uint8_t * codecs){
     btstack_assert(codecs_nr <= HFP_MAX_NUM_CODECS);
 
     hfp_hf_codecs_nr = codecs_nr;
-    int i;
-    for (i=0; i<codecs_nr; i++){
-        hfp_hf_codecs[i] = codecs[i];
-    }
+    memcpy(hfp_hf_codecs, codecs, codecs_nr);
 }
 
 void hfp_hf_init_supported_features(uint32_t supported_features){
