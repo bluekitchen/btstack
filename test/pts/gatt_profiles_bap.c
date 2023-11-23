@@ -487,7 +487,7 @@ static void ascs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
             codec_configuration.specific_codec_configuration.codec_frame_blocks_per_sdu = gattservice_subevent_ascs_server_codec_configuration_get_frame_blocks_per_sdu(packet);
 
             printf("ASCS: CODEC_CONFIGURATION_RECEIVED ase_id %d, con_handle 0x%02x\n", ase_id, con_handle);
-            audio_stream_control_service_server_streamendpoint_configure_codec(con_handle, ase_id, codec_configuration);
+            audio_stream_control_service_server_streamendpoint_configure_codec(con_handle, ase_id, &codec_configuration);
             break;
 
         case GATTSERVICE_SUBEVENT_ASCS_SERVER_QOS_CONFIGURATION:
@@ -505,7 +505,7 @@ static void ascs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
             qos_configuration.presentation_delay_us = gattservice_subevent_ascs_server_qos_configuration_get_presentation_delay_us(packet);
 
             printf("ASCS: QOS_CONFIGURATION_RECEIVED ase_id %d\n", ase_id);
-            audio_stream_control_service_server_streamendpoint_configure_qos(con_handle, ase_id, qos_configuration);
+            audio_stream_control_service_server_streamendpoint_configure_qos(con_handle, ase_id, &qos_configuration);
             break;
 
         case GATTSERVICE_SUBEVENT_ASCS_SERVER_METADATA:
@@ -769,10 +769,10 @@ static void stdin_process(char cmd){
             bass_sources[0].big_encryption = LE_AUDIO_BIG_ENCRYPTION_DECRYPTING;
             break;
             case 'o':
-            broadcast_audio_scan_service_server_add_source(source_data1, &source_id);
+            broadcast_audio_scan_service_server_add_source(&source_data1, &source_id);
             break;
         case 'x':
-            broadcast_audio_scan_service_server_add_source(source_data1, &source_id);
+            broadcast_audio_scan_service_server_add_source(&source_data1, &source_id);
             bass_sources[0].big_encryption = LE_AUDIO_BIG_ENCRYPTION_BROADCAST_CODE_REQUIRED;
             break;
         case 'y':
@@ -783,11 +783,11 @@ static void stdin_process(char cmd){
             
         case 'e':
             printf("Set Codec Config SNK, 0x%02X\n", bap_app_server_con_handle);
-            audio_stream_control_service_server_streamendpoint_configure_codec(bap_app_server_con_handle, 1, ascs_codec_configuration);
+            audio_stream_control_service_server_streamendpoint_configure_codec(bap_app_server_con_handle, 1, &ascs_codec_configuration);
             break;
         case 'E':
             printf("Set Codec Config SRC, 0x%02X\n", bap_app_server_con_handle);
-            audio_stream_control_service_server_streamendpoint_configure_codec(bap_app_server_con_handle, 3, ascs_codec_configuration);
+            audio_stream_control_service_server_streamendpoint_configure_codec(bap_app_server_con_handle, 3, &ascs_codec_configuration);
             break;
         case 'f':
             printf("Disable SNK 1, 0x%02X\n", bap_app_server_con_handle);
@@ -935,7 +935,7 @@ int btstack_main(void)
         &mcs_server_packet_handler, 0xFFFF, 
         &media_player_id1);
     media_control_service_server_set_media_player_name(media_player_id1, "BK Player1");
-    media_control_service_server_set_icon_object_id(media_player_id1, icon_object_id, sizeof(icon_object_id));
+    media_control_service_server_set_icon_object_id(media_player_id1, icon_object_id);
     media_control_service_server_set_icon_url(media_player_id1, icon_url);
     media_control_service_server_set_track_title(media_player_id1, "Track Title 1");
     media_control_service_server_set_playing_orders_supported(media_player_id1, 0x3FF);
