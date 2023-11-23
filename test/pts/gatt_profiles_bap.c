@@ -333,12 +333,12 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             sm_numeric_comparison_confirm(sm_event_passkey_display_number_get_handle(packet));
             break;
 
-        case HCI_EVENT_LE_META:
-            switch (hci_event_le_meta_get_subevent_code(packet)){
-                case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
-                    bap_app_server_con_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
+        case HCI_EVENT_META_GAP:
+            switch (hci_event_gap_meta_get_subevent_code(packet)){
+                case GAP_SUBEVENT_LE_CONNECTION_COMPLETE:
+                    bap_app_server_con_handle = gap_subevent_le_connection_complete_get_connection_handle(packet);
                     bap_app_server_state      = BAP_APP_SERVER_STATE_CONNECTED;
-                    hci_subevent_le_connection_complete_get_peer_address(packet, bap_app_client_addr);
+                    gap_subevent_le_connection_complete_get_peer_address(packet, bap_app_client_addr);
                     printf("BAP Server: Connection to %s established\n", bd_addr_to_str(bap_app_client_addr));
                     break;
                 default:
