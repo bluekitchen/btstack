@@ -533,9 +533,15 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     // start over
                     start_scanning();
                     break;
-                case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
-                    if (hci_subevent_le_connection_complete_get_status(packet) != ERROR_CODE_SUCCESS) break;
-                    scan_delegator_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
+                default:
+                    break;
+            }
+            break;
+        case HCI_EVENT_META_GAP:
+            switch (hci_event_gap_meta_get_subevent_code(packet)){
+                case GAP_SUBEVENT_LE_CONNECTION_COMPLETE:
+                    if (gap_subevent_le_connection_complete_get_status(packet) != ERROR_CODE_SUCCESS) break;
+                    scan_delegator_handle = gap_subevent_le_connection_complete_get_connection_handle(packet);
                     printf("Connection complete, handle 0x%04x\n", scan_delegator_handle);
                     broadcast_audio_scan_service_client_connect(&bass_connection,
                                                                 bass_sources,

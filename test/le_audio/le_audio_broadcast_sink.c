@@ -517,12 +517,6 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             break;
         case HCI_EVENT_LE_META:
             switch(hci_event_le_meta_get_subevent_code(packet)) {
-                case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
-                    commander_acl_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
-                    commander_type = hci_subevent_le_connection_complete_get_peer_address_type(packet);
-                    hci_subevent_le_connection_complete_get_peer_address(packet, commander_address);
-                    printf("Broadcast Assistant connected, handle 0x%04x - %s type %u\n", commander_acl_handle, bd_addr_to_str(commander_address), commander_type);
-                    break;
                 case HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_SYNC_TRANSFER_RECEIVED:
                     // PAST implies broadcast source has been added by client
                     sync_handle = hci_subevent_le_periodic_advertising_sync_transfer_received_get_sync_handle(packet);
@@ -571,6 +565,12 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             break;
         case HCI_EVENT_META_GAP:
             switch (hci_event_gap_meta_get_subevent_code(packet)){
+                case GAP_SUBEVENT_LE_CONNECTION_COMPLETE:
+                    commander_acl_handle = gap_subevent_le_connection_complete_get_connection_handle(packet);
+                    commander_type = gap_subevent_le_connection_complete_get_peer_address_type(packet);
+                    gap_subevent_le_connection_complete_get_peer_address(packet, commander_address);
+                    printf("Broadcast Assistant connected, handle 0x%04x - %s type %u\n", commander_acl_handle, bd_addr_to_str(commander_address), commander_type);
+                    break;
                 case GAP_SUBEVENT_BIG_SYNC_CREATED: {
                     printf("BIG Sync created with BIS Connection handles: ");
                     uint8_t i;
