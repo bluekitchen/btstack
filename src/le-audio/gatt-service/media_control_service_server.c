@@ -773,7 +773,7 @@ static uint16_t mcs_server_read_callback(hci_con_handle_t con_handle, uint16_t a
             return att_read_callback_handle_little_endian_32(media_player->data.media_control_point_opcodes_supported, offset, buffer, buffer_size);
 
         case SEARCH_RESULTS_OBJECT_ID:
-            return att_read_callback_handle_blob((const uint8_t *)media_player->data.search_results_object_id, 6, offset, buffer, buffer_size);
+            return att_read_callback_handle_blob((const uint8_t *)media_player->data.search_results_object_id, media_player->data.search_results_object_id_len, offset, buffer, buffer_size);
 
         case CONTENT_CONTROL_ID:
             return att_read_callback_handle_byte(media_player->data.content_control_id, offset, buffer, buffer_size);
@@ -916,8 +916,9 @@ static int mcs_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
                 mcs_server_emit_search_control_notification_task(media_player, buffer, buffer_size);
             } else {
                 media_player->data.search_control_point_result_code = SEARCH_CONTROL_POINT_ERROR_CODE_FAILURE;
+                media_player->data.search_results_object_id_len = 0;
+                memset(media_player->data.search_results_object_id, 0, sizeof(media_player->data.search_results_object_id));
                 mcs_server_schedule_task(media_player, characteristic_id);
-                media_control_service_server_search_control_point_response(media_player->player_id, NULL);
             }
             return 0;
         
