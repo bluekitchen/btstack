@@ -2262,7 +2262,9 @@ static bool sm_run_csrk(void){
 
             log_info("LE Device Lookup: device %u of %u", sm_address_resolution_test, le_device_db_max_count());
 
-            if ((sm_address_resolution_addr_type == addr_type) && (memcmp(addr, sm_address_resolution_address, 6) == 0)){
+            // map resolved identiry addresses to regular addresses
+            int regular_addr_type = sm_address_resolution_addr_type & 1;
+            if ((regular_addr_type == addr_type) && (memcmp(addr, sm_address_resolution_address, 6) == 0)){
                 log_info("LE Device Lookup: found by { addr_type, address} ");
                 sm_address_resolution_handle_event(ADDRESS_RESOLUTION_SUCCEEDED);
                 break;
