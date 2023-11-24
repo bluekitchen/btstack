@@ -504,6 +504,11 @@ uint8_t gatt_service_client_connect(
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
+    if (characteristics_num < client->characteristics_desc16_num){
+        log_info("At least %u characteristics needed", client->characteristics_desc16_num);
+        return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
+    }
+
     uint16_t cid = gatt_service_client_get_next_cid(client);
     if (connection_cid != NULL) {
         *connection_cid = cid;
