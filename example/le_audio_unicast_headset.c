@@ -362,8 +362,24 @@ static mcs_client_connection_t mcs_client_connection;
 static gatt_service_client_characteristic_t mcs_client_characteristics[MCS_CHARACTERISTICS_COUNT];
 
 static void mcs_client_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+    UNUSED(size);
+
+    if (packet_type != HCI_EVENT_PACKET) return;
+    if (hci_event_packet_get_type(packet) != HCI_EVENT_GATTSERVICE_META) return;
+
     printf("MCS Client: ");
     printf_hexdump(packet, size);
+
+    switch (hci_event_gattservice_meta_get_subevent_code(packet)){
+        case GATTSERVICE_SUBEVENT_MCS_CLIENT_CONNECTED:
+            printf("MCS Client: connected, status 0x%02x, mcs id %u\n",
+                   gattservice_subevent_mcs_client_connected_get_status(packet),
+                   gattservice_subevent_client_connected_get_cid(packet));
+            break;
+        default:
+            break;
+    }
 }
 
 void mcs_client_connect(hci_con_handle_t con_handle){
@@ -574,11 +590,18 @@ static void show_usage(void){
     printf(" b - configure as STEREO speaker and start advertising\n");
     printf(" [ - volume down\n");
     printf(" ] - volume up\n");
+    printf(" k - play\n");
+    printf(" K - stop\n");
+    printf(" L - pause\n");
+    printf(" i - next track\n");
+    printf(" I - previous track\n");
     printf("---\n");
 }
 
 static void stdin_process(char c){
     uint8_t volume_step = 10;
+    uint8_t status = ERROR_CODE_SUCCESS;
+    printf("STDIN: %c\n", c);
     switch (c){
         case 'b':
             printf("Configured as STEREO speaker\n");
@@ -618,6 +641,26 @@ static void stdin_process(char c){
                 btstack_audio_sink_get_instance()->set_volume(playback_volume / 2);
             }
             update_playback_volume();
+            break;
+        case 'k':
+            status = media_control_service_client_command_play(mcs_cid);
+            printf("MCS Client: play (0x%02x)\n", status);
+            break;
+        case 'K':
+            status = media_control_service_client_command_stop(mcs_cid);
+            printf("MCS Client: stop (0x%02x)\n", status);
+            break;
+        case 'L':
+            status = media_control_service_client_command_pause(mcs_cid);
+            printf("MCS Client: pause (0x%02x)\n", status);
+            break;
+        case 'i':
+            status = media_control_service_client_command_next_track(mcs_cid);
+            printf("MCS Client: next track (0x%02x)\n", status);
+            break;
+        case 'I':
+            status = media_control_service_client_command_previous_track(mcs_cid);
+            printf("MCS Client: previous track (0x%02x)\n", status);
             break;
         case '\n':
         case '\r':
