@@ -55,6 +55,9 @@
 extern "C" {
 #endif
 
+// number of characteristics in Media Control Service
+#define MEDIA_CONTROL_SERVICE_CLIENT_NUM_CHARACTERISTICS 22
+
 /** 
  * @text The Media Control Service Client 
  */
@@ -109,7 +112,7 @@ void media_control_service_client_init(void);
  * @param con_handle
  * @param connection
  * @param characteristics       storage for characteristics
- * @param characteristics_num
+ * @param characteristics_num >= MEDIA_CONTROL_SERVICE_CLIENT_NUM_CHARACTERISTICS
  * @param packet_handler
  * @param mcs_cid
  * @return status ERROR_CODE_SUCCESS on success, otherwise ERROR_CODE_COMMAND_DISALLOWED if there is already a client associated with con_handle, or BTSTACK_MEMORY_ALLOC_FAILED 
