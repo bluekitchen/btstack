@@ -67,7 +67,7 @@ static void mcs_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
 static void mcs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 // list of uuids
-static const gatt_service_client_characteristic_desc16_t mcs_characteristics_desc16[] = {
+static const gatt_service_client_characteristic_desc16_t mcs_characteristics_desc16[MEDIA_CONTROL_SERVICE_CLIENT_NUM_CHARACTERISTICS] = {
     ORG_BLUETOOTH_CHARACTERISTIC_MEDIA_PLAYER_NAME,
     ORG_BLUETOOTH_CHARACTERISTIC_MEDIA_PLAYER_ICON_OBJECT_ID,
     ORG_BLUETOOTH_CHARACTERISTIC_MEDIA_PLAYER_ICON_URL,
