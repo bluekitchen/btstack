@@ -202,6 +202,14 @@ static le_audio_metadata_t     ascs_server_audio_metadata;
 static hci_con_handle_t ascs_server_current_client_con_handle;
 static uint8_t ascs_server_current_ase_id;
 
+#ifdef ENABLE_MCS_CLIENT
+// MCS Client Handler
+#define MCS_CHARACTERISTICS_COUNT 30
+static uint16_t mcs_cid;
+static mcs_client_connection_t mcs_client_connection;
+static gatt_service_client_characteristic_t mcs_client_characteristics[MEDIA_CONTROL_SERVICE_CLIENT_NUM_CHARACTERISTICS];
+#endif
+
 static void update_playback_volume(void){
     const btstack_audio_sink_t * sink = btstack_audio_sink_get_instance();
     if (sink != NULL){
@@ -355,12 +363,6 @@ static void vcs_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
 }
 
 #ifdef ENABLE_MCS_CLIENT
-// MCS Client Handler
-#define MCS_CHARACTERISTICS_COUNT 16
-static uint16_t mcs_cid;
-static mcs_client_connection_t mcs_client_connection;
-static gatt_service_client_characteristic_t mcs_client_characteristics[MCS_CHARACTERISTICS_COUNT];
-
 static void mcs_client_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
