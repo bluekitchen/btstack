@@ -1208,7 +1208,7 @@ typedef struct {
     uint16_t le_minimum_ce_length;
     uint16_t le_maximum_ce_length;
 
-#ifdef ENABLE_HCI_COMMAND_STATUS_DISCARDED_FOR_FAILED_CONNECTIONS
+#ifdef ENABLE_HCI_COMMAND_STATUS_DISCARDED_FOR_FAILED_CONNECTIONS_WORKAROUND
     hci_con_handle_t hci_command_con_handle;
 #endif
 #endif

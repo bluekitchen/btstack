@@ -2781,7 +2781,7 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
 #ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
     le_audio_cig_t * cig;
 #endif
-#if defined(ENABLE_BLE) && defined (ENABLE_HCI_COMMAND_STATUS_DISCARDED_FOR_FAILED_CONNECTIONS WORKAROUND)
+#if defined(ENABLE_BLE) && defined(ENABLE_HCI_COMMAND_STATUS_DISCARDED_FOR_FAILED_CONNECTIONS_WORKAROUND)
     hci_stack->hci_command_con_handle = HCI_CON_HANDLE_INVALID;
 #endif
 
@@ -3199,7 +3199,7 @@ static void handle_command_status_event(uint8_t * packet, uint16_t size) {
     bd_addr_t addr;
 #endif
 
-#if defined(ENABLE_BLE) && defined (ENABLE_HCI_COMMAND_STATUS_DISCARDED_FOR_FAILED_CONNECTIONS)
+#if defined(ENABLE_BLE) && defined (ENABLE_HCI_COMMAND_STATUS_DISCARDED_FOR_FAILED_CONNECTIONS_WORKAROUND)
     hci_stack->hci_command_con_handle = HCI_CON_HANDLE_INVALID;
 #endif
 
@@ -4163,7 +4163,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
             }
 #endif
 
-#if defined(ENABLE_BLE) && defined (ENABLE_HCI_COMMAND_STATUS_DISCARDED_FOR_FAILED_CONNECTIONS WORKAROUND)
+#if defined(ENABLE_BLE) && defined (ENABLE_HCI_COMMAND_STATUS_DISCARDED_FOR_FAILED_CONNECTIONS_WORKAROUND)
             if ((handle != HCI_CON_HANDLE_INVALID) && (handle == hci_stack->hci_command_con_handle)){
                 // we did not receive a HCI Command Complete or HCI Command Status event for the disconnected connection
                 // if needed, we could also track the hci command opcode and simulate a hci command complete with status
@@ -4766,7 +4766,7 @@ static void hci_state_reset(void){
     hci_stack->iso_active_operation_type = HCI_ISO_TYPE_INVALID;
     hci_stack->iso_active_operation_group_id = HCI_ISO_GROUP_ID_INVALID;
 #endif
-#ifdef ENABLE_HCI_COMMAND_STATUS_DISCARDED_FOR_FAILED_CONNECTIONS WORKAROUND
+#ifdef ENABLE_HCI_COMMAND_STATUS_DISCARDED_FOR_FAILED_CONNECTIONS_WORKAROUND
     hci_stack->hci_command_con_handle = HCI_CON_HANDLE_INVALID;
 #endif
 }
@@ -7657,7 +7657,7 @@ uint8_t hci_send_cmd_packet(uint8_t *packet, int size){
             hci_stack->le_connecting_state = LE_CONNECTING_CANCEL;
             break;
 #endif
-#ifdef ENABLE_HCI_COMMAND_STATUS_DISCARDED_FOR_FAILED_CONNECTIONS WORKAROUND
+#ifdef ENABLE_HCI_COMMAND_STATUS_DISCARDED_FOR_FAILED_CONNECTIONS_WORKAROUND
         case HCI_OPCODE_HCI_LE_CONNECTION_UPDATE:
         case HCI_OPCODE_HCI_LE_READ_REMOTE_USED_FEATURES:
         case HCI_OPCODE_HCI_LE_START_ENCRYPTION:
