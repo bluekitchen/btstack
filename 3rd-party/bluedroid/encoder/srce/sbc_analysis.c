@@ -163,8 +163,8 @@
     ps32X=(SINT32 *)(pstrEncParams->s16X+pstrEncParams->EncMaxShiftCounter+38);                                 \
     for (i=0;i<9;i++)                                                               \
     {                                                                               \
-        *ps32X=*(ps32X-2-(ShiftCounter>>1));  ps32X--;                                 \
-        *ps32X=*(ps32X-2-(ShiftCounter>>1));  ps32X--;                                 \
+        *ps32X=*(ps32X-2-(pstrEncParams->ShiftCounter>>1));  ps32X--;                                 \
+        *ps32X=*(ps32X-2-(pstrEncParams->ShiftCounter>>1));  ps32X--;                                 \
     }                                                                               \
 }
 #define SHIFTUP_X4_2                                                              \
@@ -173,8 +173,8 @@
     ps32X2=(SINT32 *)(pstrEncParams->s16X+(pstrEncParams->EncMaxShiftCounter<<1)+78);                             \
     for (i=0;i<9;i++)                                                               \
     {                                                                               \
-        *ps32X=*(ps32X-2-(ShiftCounter>>1));  *(ps32X2)=*(ps32X2-2-(ShiftCounter>>1)); ps32X--;  ps32X2--;                     \
-        *ps32X=*(ps32X-2-(ShiftCounter>>1));  *(ps32X2)=*(ps32X2-2-(ShiftCounter>>1)); ps32X--;  ps32X2--;                     \
+        *ps32X=*(ps32X-2-(pstrEncParams->ShiftCounter>>1));  *(ps32X2)=*(ps32X2-2-(pstrEncParams->ShiftCounter>>1)); ps32X--;  ps32X2--;                     \
+        *ps32X=*(ps32X-2-(pstrEncParams->ShiftCounter>>1));  *(ps32X2)=*(ps32X2-2-(pstrEncParams->ShiftCounter>>1)); ps32X--;  ps32X2--;                     \
     }                                                                               \
 }
 
@@ -184,10 +184,10 @@
     ps32X=(SINT32 *)(pstrEncParams->s16X+pstrEncParams->EncMaxShiftCounter+78);                                 \
     for (i=0;i<9;i++)                                                               \
     {                                                                               \
-        *ps32X=*(ps32X-4-(ShiftCounter>>1));  ps32X--;                                 \
-        *ps32X=*(ps32X-4-(ShiftCounter>>1));  ps32X--;                                 \
-        *ps32X=*(ps32X-4-(ShiftCounter>>1));  ps32X--;                                 \
-        *ps32X=*(ps32X-4-(ShiftCounter>>1));  ps32X--;                                 \
+        *ps32X=*(ps32X-4-(pstrEncParams->ShiftCounter>>1));  ps32X--;                                 \
+        *ps32X=*(ps32X-4-(pstrEncParams->ShiftCounter>>1));  ps32X--;                                 \
+        *ps32X=*(ps32X-4-(pstrEncParams->ShiftCounter>>1));  ps32X--;                                 \
+        *ps32X=*(ps32X-4-(pstrEncParams->ShiftCounter>>1));  ps32X--;                                 \
     }                                                                               \
 }
 #define SHIFTUP_X8_2                                                               \
@@ -196,10 +196,10 @@
     ps32X2=(SINT32 *)(pstrEncParams->s16X+(pstrEncParams->EncMaxShiftCounter<<1)+158);                             \
     for (i=0;i<9;i++)                                                               \
     {                                                                               \
-        *ps32X=*(ps32X-4-(ShiftCounter>>1));  *(ps32X2)=*(ps32X2-4-(ShiftCounter>>1)); ps32X--;  ps32X2--;                     \
-        *ps32X=*(ps32X-4-(ShiftCounter>>1));  *(ps32X2)=*(ps32X2-4-(ShiftCounter>>1)); ps32X--;  ps32X2--;                     \
-        *ps32X=*(ps32X-4-(ShiftCounter>>1));  *(ps32X2)=*(ps32X2-4-(ShiftCounter>>1)); ps32X--;  ps32X2--;                     \
-        *ps32X=*(ps32X-4-(ShiftCounter>>1));  *(ps32X2)=*(ps32X2-4-(ShiftCounter>>1)); ps32X--;  ps32X2--;                     \
+        *ps32X=*(ps32X-4-(pstrEncParams->ShiftCounter>>1));  *(ps32X2)=*(ps32X2-4-(pstrEncParams->ShiftCounter>>1)); ps32X--;  ps32X2--;                     \
+        *ps32X=*(ps32X-4-(pstrEncParams->ShiftCounter>>1));  *(ps32X2)=*(ps32X2-4-(pstrEncParams->ShiftCounter>>1)); ps32X--;  ps32X2--;                     \
+        *ps32X=*(ps32X-4-(pstrEncParams->ShiftCounter>>1));  *(ps32X2)=*(ps32X2-4-(pstrEncParams->ShiftCounter>>1)); ps32X--;  ps32X2--;                     \
+        *ps32X=*(ps32X-4-(pstrEncParams->ShiftCounter>>1));  *(ps32X2)=*(ps32X2-4-(pstrEncParams->ShiftCounter>>1)); ps32X--;  ps32X2--;                     \
     }                                                                               \
 }
 
@@ -887,8 +887,6 @@
 #endif
 #endif
 
-static SINT16 ShiftCounter=0;
-
 /****************************************************************************
 * SbcAnalysisFilter - performs Analysis of the input audio stream
 *
@@ -930,7 +928,7 @@ void SbcAnalysisFilter4(SBC_ENC_PARAMS *pstrEncParams)
     
     for (s32Blk=0; s32Blk <s32NumOfBlocks; s32Blk++)
     {
-        Offset=(SINT32)(pstrEncParams->EncMaxShiftCounter-ShiftCounter);
+        Offset=(SINT32)(pstrEncParams->EncMaxShiftCounter-pstrEncParams->ShiftCounter);
         /* Store new samples */
         if (s32NumOfChannels==1)
         {
@@ -962,26 +960,26 @@ void SbcAnalysisFilter4(SBC_ENC_PARAMS *pstrEncParams)
         }
         if (s32NumOfChannels==1)
         {
-            if (ShiftCounter>=pstrEncParams->EncMaxShiftCounter)
+            if (pstrEncParams->ShiftCounter>=pstrEncParams->EncMaxShiftCounter)
             {
                 SHIFTUP_X4;
-                ShiftCounter=0;
+                pstrEncParams->ShiftCounter=0;
             }
             else
             {
-                ShiftCounter+=SUB_BANDS_4;
+                pstrEncParams->ShiftCounter+=SUB_BANDS_4;
             }
         }
         else
         {
-            if (ShiftCounter>=pstrEncParams->EncMaxShiftCounter)
+            if (pstrEncParams->ShiftCounter>=pstrEncParams->EncMaxShiftCounter)
             {
                 SHIFTUP_X4_2;
-                ShiftCounter=0;
+                pstrEncParams->ShiftCounter=0;
             }
             else
             {
-                ShiftCounter+=SUB_BANDS_4;
+                pstrEncParams->ShiftCounter+=SUB_BANDS_4;
             }
         }
     }
@@ -1022,7 +1020,7 @@ void SbcAnalysisFilter8 (SBC_ENC_PARAMS *pstrEncParams)
     Offset2=(SINT32)(pstrEncParams->EncMaxShiftCounter+80);
     for (s32Blk=0; s32Blk <s32NumOfBlocks; s32Blk++)
     {
-        Offset=(SINT32)(pstrEncParams->EncMaxShiftCounter-ShiftCounter);
+        Offset=(SINT32)(pstrEncParams->EncMaxShiftCounter-pstrEncParams->ShiftCounter);
         /* Store new samples */
         if (s32NumOfChannels==1)
         {
@@ -1066,26 +1064,26 @@ void SbcAnalysisFilter8 (SBC_ENC_PARAMS *pstrEncParams)
         }
         if (s32NumOfChannels==1)
         {
-            if (ShiftCounter>=pstrEncParams->EncMaxShiftCounter)
+            if (pstrEncParams->ShiftCounter>=pstrEncParams->EncMaxShiftCounter)
             {
                 SHIFTUP_X8;
-                ShiftCounter=0;
+                pstrEncParams->ShiftCounter=0;
             }
             else
             {
-                ShiftCounter+=SUB_BANDS_8;
+                pstrEncParams->ShiftCounter+=SUB_BANDS_8;
             }
         }
         else
         {
-            if (ShiftCounter>=pstrEncParams->EncMaxShiftCounter)
+            if (pstrEncParams->ShiftCounter>=pstrEncParams->EncMaxShiftCounter)
             {
                 SHIFTUP_X8_2;
-                ShiftCounter=0;
+                pstrEncParams->ShiftCounter=0;
             }
             else
             {
-                ShiftCounter+=SUB_BANDS_8;
+                pstrEncParams->ShiftCounter+=SUB_BANDS_8;
             }
         }
     }
@@ -1093,7 +1091,7 @@ void SbcAnalysisFilter8 (SBC_ENC_PARAMS *pstrEncParams)
 
 void SbcAnalysisInit (SBC_ENC_PARAMS *pstrEncParams)
 {
-    ShiftCounter=0;
+    pstrEncParams->ShiftCounter=0;
 
     // s16X must be 32 bits aligned cf
     pstrEncParams->s16X = (SINT16*) (pstrEncParams->s32X);
