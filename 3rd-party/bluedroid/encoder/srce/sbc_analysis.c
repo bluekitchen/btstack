@@ -160,7 +160,7 @@
 /* This macro is for 4 subbands */
 #define SHIFTUP_X4                                                               \
 {                                                                                   \
-    ps32X=(SINT32 *)(pstrEncParams->s16X+EncMaxShiftCounter+38);                                 \
+    ps32X=(SINT32 *)(pstrEncParams->s16X+pstrEncParams->EncMaxShiftCounter+38);                                 \
     for (i=0;i<9;i++)                                                               \
     {                                                                               \
         *ps32X=*(ps32X-2-(ShiftCounter>>1));  ps32X--;                                 \
@@ -169,8 +169,8 @@
 }
 #define SHIFTUP_X4_2                                                              \
 {                                                                                   \
-    ps32X=(SINT32 *)(pstrEncParams->s16X+EncMaxShiftCounter+38);                                   \
-    ps32X2=(SINT32 *)(pstrEncParams->s16X+(EncMaxShiftCounter<<1)+78);                             \
+    ps32X=(SINT32 *)(pstrEncParams->s16X+pstrEncParams->EncMaxShiftCounter+38);                                   \
+    ps32X2=(SINT32 *)(pstrEncParams->s16X+(pstrEncParams->EncMaxShiftCounter<<1)+78);                             \
     for (i=0;i<9;i++)                                                               \
     {                                                                               \
         *ps32X=*(ps32X-2-(ShiftCounter>>1));  *(ps32X2)=*(ps32X2-2-(ShiftCounter>>1)); ps32X--;  ps32X2--;                     \
@@ -181,7 +181,7 @@
 /* This macro is for 8 subbands */
 #define SHIFTUP_X8                                                               \
 {                                                                                   \
-    ps32X=(SINT32 *)(pstrEncParams->s16X+EncMaxShiftCounter+78);                                 \
+    ps32X=(SINT32 *)(pstrEncParams->s16X+pstrEncParams->EncMaxShiftCounter+78);                                 \
     for (i=0;i<9;i++)                                                               \
     {                                                                               \
         *ps32X=*(ps32X-4-(ShiftCounter>>1));  ps32X--;                                 \
@@ -192,8 +192,8 @@
 }
 #define SHIFTUP_X8_2                                                               \
 {                                                                                   \
-    ps32X=(SINT32 *)(pstrEncParams->s16X+EncMaxShiftCounter+78);                                   \
-    ps32X2=(SINT32 *)(pstrEncParams->s16X+(EncMaxShiftCounter<<1)+158);                             \
+    ps32X=(SINT32 *)(pstrEncParams->s16X+pstrEncParams->EncMaxShiftCounter+78);                                   \
+    ps32X2=(SINT32 *)(pstrEncParams->s16X+(pstrEncParams->EncMaxShiftCounter<<1)+158);                             \
     for (i=0;i<9;i++)                                                               \
     {                                                                               \
         *ps32X=*(ps32X-4-(ShiftCounter>>1));  *(ps32X2)=*(ps32X2-4-(ShiftCounter>>1)); ps32X--;  ps32X2--;                     \
@@ -888,7 +888,7 @@
 #endif
 
 static SINT16 ShiftCounter=0;
-extern SINT16 EncMaxShiftCounter;
+
 /****************************************************************************
 * SbcAnalysisFilter - performs Analysis of the input audio stream
 *
@@ -926,11 +926,11 @@ void SbcAnalysisFilter4(SBC_ENC_PARAMS *pstrEncParams)
     ps16PcmBuf = pstrEncParams->ps16NextPcmBuffer;
 
     ps32SbBuf  = pstrEncParams->s32SbBuffer;
-    Offset2=(SINT32)(EncMaxShiftCounter+40);
+    Offset2=(SINT32)(pstrEncParams->EncMaxShiftCounter+40);
     
     for (s32Blk=0; s32Blk <s32NumOfBlocks; s32Blk++)
     {
-        Offset=(SINT32)(EncMaxShiftCounter-ShiftCounter);
+        Offset=(SINT32)(pstrEncParams->EncMaxShiftCounter-ShiftCounter);
         /* Store new samples */
         if (s32NumOfChannels==1)
         {
@@ -962,7 +962,7 @@ void SbcAnalysisFilter4(SBC_ENC_PARAMS *pstrEncParams)
         }
         if (s32NumOfChannels==1)
         {
-            if (ShiftCounter>=EncMaxShiftCounter)
+            if (ShiftCounter>=pstrEncParams->EncMaxShiftCounter)
             {
                 SHIFTUP_X4;
                 ShiftCounter=0;
@@ -974,7 +974,7 @@ void SbcAnalysisFilter4(SBC_ENC_PARAMS *pstrEncParams)
         }
         else
         {
-            if (ShiftCounter>=EncMaxShiftCounter)
+            if (ShiftCounter>=pstrEncParams->EncMaxShiftCounter)
             {
                 SHIFTUP_X4_2;
                 ShiftCounter=0;
@@ -1019,10 +1019,10 @@ void SbcAnalysisFilter8 (SBC_ENC_PARAMS *pstrEncParams)
     ps16PcmBuf = pstrEncParams->ps16NextPcmBuffer;
 
     ps32SbBuf  = pstrEncParams->s32SbBuffer;
-    Offset2=(SINT32)(EncMaxShiftCounter+80);
+    Offset2=(SINT32)(pstrEncParams->EncMaxShiftCounter+80);
     for (s32Blk=0; s32Blk <s32NumOfBlocks; s32Blk++)
     {
-        Offset=(SINT32)(EncMaxShiftCounter-ShiftCounter);
+        Offset=(SINT32)(pstrEncParams->EncMaxShiftCounter-ShiftCounter);
         /* Store new samples */
         if (s32NumOfChannels==1)
         {
@@ -1066,7 +1066,7 @@ void SbcAnalysisFilter8 (SBC_ENC_PARAMS *pstrEncParams)
         }
         if (s32NumOfChannels==1)
         {
-            if (ShiftCounter>=EncMaxShiftCounter)
+            if (ShiftCounter>=pstrEncParams->EncMaxShiftCounter)
             {
                 SHIFTUP_X8;
                 ShiftCounter=0;
@@ -1078,7 +1078,7 @@ void SbcAnalysisFilter8 (SBC_ENC_PARAMS *pstrEncParams)
         }
         else
         {
-            if (ShiftCounter>=EncMaxShiftCounter)
+            if (ShiftCounter>=pstrEncParams->EncMaxShiftCounter)
             {
                 SHIFTUP_X8_2;
                 ShiftCounter=0;

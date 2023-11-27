@@ -294,16 +294,16 @@ void SBC_Encoder_Init(SBC_ENC_PARAMS *pstrEncParams)
     if (pstrEncParams->s16NumOfSubBands==4)
     {
         if (pstrEncParams->s16NumOfChannels==1)
-            EncMaxShiftCounter=((ENC_VX_BUFFER_SIZE-(4*10))>>2)<<2;
+            pstrEncParams->EncMaxShiftCounter=((ENC_VX_BUFFER_SIZE-(4*10))>>2)<<2;
         else
-            EncMaxShiftCounter=((ENC_VX_BUFFER_SIZE-(4*10*2))>>3)<<2;
+            pstrEncParams->EncMaxShiftCounter=((ENC_VX_BUFFER_SIZE-(4*10*2))>>3)<<2;
     }
     else
     {
         if (pstrEncParams->s16NumOfChannels==1)
-            EncMaxShiftCounter=((ENC_VX_BUFFER_SIZE-(8*10))>>3)<<3;
+            pstrEncParams->EncMaxShiftCounter=((ENC_VX_BUFFER_SIZE-(8*10))>>3)<<3;
         else
-            EncMaxShiftCounter=((ENC_VX_BUFFER_SIZE-(8*10*2))>>4)<<3;
+            pstrEncParams->EncMaxShiftCounter=((ENC_VX_BUFFER_SIZE-(8*10*2))>>4)<<3;
     }
 
     // APPL_TRACE_EVENT("SBC_Encoder_Init : bitrate %d, bitpool %d",
