@@ -75,7 +75,7 @@
 #define SCO_DEMO_MODE_MODPLAYER  2
 
 // SCO demo configuration
-#define SCO_DEMO_MODE               SCO_DEMO_MODE_SINE
+#define SCO_DEMO_MODE               SCO_DEMO_MODE_MICROPHONE
 
 // number of sco packets until 'report' on console
 #define SCO_REPORT_PERIOD           100
