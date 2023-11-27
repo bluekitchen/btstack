@@ -40,7 +40,7 @@ extern const SINT32 gas32CoeffFor8SBs[];
 extern void sbc_enc_bit_alloc_mono(SBC_ENC_PARAMS *CodecParams);
 extern void sbc_enc_bit_alloc_ste(SBC_ENC_PARAMS *CodecParams);
 
-extern void SbcAnalysisInit (void);
+extern void SbcAnalysisInit (SBC_ENC_PARAMS *CodecParams);
 
 extern void SbcAnalysisFilter4(SBC_ENC_PARAMS *strEncParams);
 extern void SbcAnalysisFilter8(SBC_ENC_PARAMS *strEncParams);

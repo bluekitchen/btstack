@@ -1097,7 +1097,7 @@ void SbcAnalysisFilter8 (SBC_ENC_PARAMS *pstrEncParams)
     }
 }
 
-void SbcAnalysisInit (void)
+void SbcAnalysisInit (SBC_ENC_PARAMS *pstrEncParams)
 {
     memset(s16X,0,ENC_VX_BUFFER_SIZE*sizeof(SINT16));
     ShiftCounter=0;

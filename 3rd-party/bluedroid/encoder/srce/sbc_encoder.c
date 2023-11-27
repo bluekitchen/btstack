@@ -309,5 +309,5 @@ void SBC_Encoder_Init(SBC_ENC_PARAMS *pstrEncParams)
     // APPL_TRACE_EVENT("SBC_Encoder_Init : bitrate %d, bitpool %d",
     //         pstrEncParams->u16BitRate, pstrEncParams->s16BitPool);
 
-    SbcAnalysisInit();
+    SbcAnalysisInit(pstrEncParams);
 }
