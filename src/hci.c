@@ -2781,6 +2781,9 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
 #ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
     le_audio_cig_t * cig;
 #endif
+#if defined(ENABLE_BLE) && defined (ENABLE_HCI_COMMAND_STATUS_DISCARDED_FOR_FAILED_CONNECTIONS WORKAROUND)
+    hci_stack->hci_command_con_handle = HCI_CON_HANDLE_INVALID;
+#endif
 
     // get num cmd packets - limit to 1 to reduce complexity
     hci_stack->num_cmd_packets = packet[2] ? 1 : 0;
@@ -3194,6 +3197,10 @@ static void handle_command_status_event(uint8_t * packet, uint16_t size) {
 #if defined(ENABLE_CLASSIC) || defined(ENABLE_LE_CENTRAL)
     bd_addr_type_t addr_type;
     bd_addr_t addr;
+#endif
+
+#if defined(ENABLE_BLE) && defined (ENABLE_HCI_COMMAND_STATUS_DISCARDED_FOR_FAILED_CONNECTIONS)
+    hci_stack->hci_command_con_handle = HCI_CON_HANDLE_INVALID;
 #endif
 
     switch (opcode){
@@ -4156,6 +4163,15 @@ static void event_handler(uint8_t *packet, uint16_t size){
             }
 #endif
 
+#if defined(ENABLE_BLE) && defined (ENABLE_HCI_COMMAND_STATUS_DISCARDED_FOR_FAILED_CONNECTIONS WORKAROUND)
+            if ((handle != HCI_CON_HANDLE_INVALID) && (handle == hci_stack->hci_command_con_handle)){
+                // we did not receive a HCI Command Complete or HCI Command Status event for the disconnected connection
+                // if needed, we could also track the hci command opcode and simulate a hci command complete with status
+                // but the connection has failed anyway, so for now, we only set the num hci commands back to 1
+                hci_stack->num_cmd_packets = 1;
+            }
+#endif
+
             conn = hci_connection_for_handle(handle);
             if (!conn) break;
 #ifdef ENABLE_CLASSIC
@@ -4749,6 +4765,9 @@ static void hci_state_reset(void){
 #ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
     hci_stack->iso_active_operation_type = HCI_ISO_TYPE_INVALID;
     hci_stack->iso_active_operation_group_id = HCI_ISO_GROUP_ID_INVALID;
+#endif
+#ifdef ENABLE_HCI_COMMAND_STATUS_DISCARDED_FOR_FAILED_CONNECTIONS WORKAROUND
+    hci_stack->hci_command_con_handle = HCI_CON_HANDLE_INVALID;
 #endif
 }
 
@@ -7636,6 +7655,21 @@ uint8_t hci_send_cmd_packet(uint8_t *packet, int size){
 #endif
         case HCI_OPCODE_HCI_LE_CREATE_CONNECTION_CANCEL:
             hci_stack->le_connecting_state = LE_CONNECTING_CANCEL;
+            break;
+#endif
+#ifdef ENABLE_HCI_COMMAND_STATUS_DISCARDED_FOR_FAILED_CONNECTIONS WORKAROUND
+        case HCI_OPCODE_HCI_LE_CONNECTION_UPDATE:
+        case HCI_OPCODE_HCI_LE_READ_REMOTE_USED_FEATURES:
+        case HCI_OPCODE_HCI_LE_START_ENCRYPTION:
+        case HCI_OPCODE_HCI_LE_LONG_TERM_KEY_REQUEST_REPLY:
+        case HCI_OPCODE_HCI_LE_LONG_TERM_KEY_NEGATIVE_REPLY:
+        case HCI_OPCODE_HCI_LE_REMOTE_CONNECTION_PARAMETER_REQUEST_REPLY:
+        case HCI_OPCODE_HCI_LE_REMOTE_CONNECTION_PARAMETER_REQUEST_NEGATIVE_REPLY:
+        case HCI_OPCODE_HCI_LE_SET_DATA_LENGTH:
+        case HCI_OPCODE_HCI_LE_READ_PHY:
+        case HCI_OPCODE_HCI_LE_SET_PHY:
+            // conection handle is first command parameter
+            hci_stack->hci_command_con_handle = little_endian_read_16(packet, 3);
             break;
 #endif
 #endif /* ENABLE_BLE */
