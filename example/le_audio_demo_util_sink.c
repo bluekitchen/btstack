@@ -465,6 +465,7 @@ void le_audio_demo_util_sink_receive(uint8_t stream_index, uint8_t *packet, uint
     UNUSED(pb_flag);
     UNUSED(iso_load_len);
     UNUSED(packet_status_flag);
+    UNUSED(time_stamp);
 
     // start with first packet on first stream
     if (group_last_packet_received == false){
