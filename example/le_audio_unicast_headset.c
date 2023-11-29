@@ -423,7 +423,7 @@ static void ascs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
         case GATTSERVICE_SUBEVENT_ASCS_SERVER_CONNECTED:
             con_handle = gattservice_subevent_ascs_server_connected_get_con_handle(packet);
             status =     gattservice_subevent_ascs_server_connected_get_status(packet);
-            printf("ASCS Server: connected, con_handle 0x%04x\n", con_handle);
+            printf("ASCS Server: connected, con_handle 0x%04x\n, status 0x%02x", con_handle, status);
 #ifdef ENABLE_MCS_CLIENT
             mcs_client_connect(con_handle);
 #endif
