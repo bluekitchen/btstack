@@ -569,7 +569,9 @@ static void mcs_server_can_send_now(void * context){
     
     } else if ((media_player->scheduled_tasks & MCS_NOTIFICATION_TASK_CURRENT_GROUP_OBJECT_ID) != 0){
         media_player->scheduled_tasks &= ~MCS_NOTIFICATION_TASK_CURRENT_GROUP_OBJECT_ID;
-        
+
+        uint8_t value[6];
+        reverse_48(media_player->data.current_group_object_id, value);
         att_server_notify(media_player->con_handle, 
             media_player->characteristics[CURRENT_GROUP_OBJECT_ID].value_handle, 
             media_player->data.current_group_object_id, 
@@ -577,11 +579,11 @@ static void mcs_server_can_send_now(void * context){
     
     } else if ((media_player->scheduled_tasks & MCS_NOTIFICATION_TASK_SEARCH_RESULTS_OBJECT_ID) != 0){
         media_player->scheduled_tasks &= ~MCS_NOTIFICATION_TASK_SEARCH_RESULTS_OBJECT_ID;
-        
+        uint8_t value[6];
+        reverse_48(media_player->data.search_results_object_id, value);
         att_server_notify(media_player->con_handle, 
-            media_player->characteristics[SEARCH_RESULTS_OBJECT_ID].value_handle, 
-            media_player->data.search_results_object_id, 
-            media_player->data.search_results_object_id_len);
+            media_player->characteristics[SEARCH_RESULTS_OBJECT_ID].value_handle,
+                          value, media_player->data.search_results_object_id_len);
     
     } else if ((media_player->scheduled_tasks & MCS_NOTIFICATION_TASK_PLAYING_ORDER) != 0){
         media_player->scheduled_tasks &= ~MCS_NOTIFICATION_TASK_PLAYING_ORDER;
