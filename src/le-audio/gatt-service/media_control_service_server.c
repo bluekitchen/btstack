@@ -793,7 +793,7 @@ static bool mcs_search_control_buffer_is_valid(uint8_t * search_data, uint16_t s
     }
 
     uint8_t pos = 0;
-    while (pos < (search_data_len - 1)){
+    while (pos < search_data_len){
         if ( (pos + 2) >= search_data_len ){
             return false;        
         }
@@ -804,9 +804,9 @@ static bool mcs_search_control_buffer_is_valid(uint8_t * search_data, uint16_t s
             (search_field_type >= SEARCH_CONTROL_POINT_TYPE_RFU)){
             return false;
         }
-        pos += search_field_length;
+        pos += search_field_length + 1;
     }
-    return (pos == (search_data_len - 1));
+    return (pos == search_data_len);
 }
 
 static int mcs_server_write_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
