@@ -78,6 +78,7 @@
 #include "le-audio/gatt-service/published_audio_capabilities_service_server.h"
 #include "le-audio/gatt-service/volume_control_service_server.h"
 #include "le-audio/gatt-service/media_control_service_client.h"
+#include "le-audio/gatt-service/coordinated_set_identification_service_server.h"
 
 #define ENABLE_MCS_CLIENT
 #define ENABLE_MICROPHONE
@@ -226,6 +227,16 @@ static bool     playback_active;
 static pacs_streamendpoint_t sink_node;
 #ifdef ENABLE_MICROPHONE
 static pacs_streamendpoint_t source_node;
+#endif
+
+// CSIS Server
+#ifdef ENABLE_CSIS_SERVER
+#define CSIS_NUM_CLIENTS 1
+static csis_server_connection_t csis_coordinators[CSIS_NUM_CLIENTS];
+static uint8_t sirk[] = {
+    0x83, 0x8E, 0x68, 0x05, 0x53, 0xF1, 0x41, 0x5A,
+    0xA2, 0x65, 0xBB, 0xAF, 0xC6, 0xEA, 0x03, 0xB8
+};
 #endif
 
 // ASCS Server
@@ -417,6 +428,29 @@ static void pacs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
             printf("PACS: audio location received\n");
             break;
 
+        default:
+            break;
+    }
+}
+
+// CSIS Server Handler
+static void csis_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) {
+    if (packet_type != HCI_EVENT_PACKET) return;
+    if (hci_event_packet_get_type(packet) != HCI_EVENT_GATTSERVICE_META) return;
+
+    switch (hci_event_gattservice_meta_get_subevent_code(packet)){
+        case GATTSERVICE_SUBEVENT_CSIS_SERVER_CONNECTED:
+            printf("CSIS: GATTSERVICE_SUBEVENT_CSIS_SERVER_CONNECTED\n");
+            break;
+        case GATTSERVICE_SUBEVENT_CSIS_SERVER_MEMBER_LOCK:
+            printf("CSIS: GATTSERVICE_SUBEVENT_CSIS_SERVER_MEMBER_LOCK\n");
+        break;
+        case GATTSERVICE_SUBEVENT_CSIS_SERVER_COORDINATED_SET_SIZE:
+            printf("CSIS: GATTSERVICE_SUBEVENT_CSIS_SERVER_COORDINATED_SET_SIZE\n");
+            break;
+        case GATTSERVICE_SUBEVENT_CSIS_RSI:
+            printf("CSIS: GATTSERVICE_SUBEVENT_CSIS_RSI\n");
+            break;
         default:
             break;
     }
@@ -742,6 +776,13 @@ int btstack_main(int argc, const char * argv[]){
     // VCS Server
     volume_control_service_server_init(255, VCS_MUTE_OFF, 0, NULL, 0, NULL);
     volume_control_service_server_register_packet_handler(vcs_server_packet_handler);
+
+#ifdef ENABLE_CSIS_SERVER
+    // Coordinated Set Server
+    coordinated_set_identification_service_server_init(CSIS_NUM_CLIENTS, csis_coordinators, 1, 1);
+    coordinated_set_identification_service_server_register_packet_handler(&csis_packet_handler);
+    coordinated_set_identification_service_server_set_sirk(CSIS_SIRK_TYPE_PUBLIC, &sirk[0], false);
+#endif
 
 #ifdef ENABLE_MCS_CLIENT
     // MCS Client
