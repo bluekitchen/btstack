@@ -250,7 +250,7 @@ static void generic_level_status_handler(mesh_model_t *mesh_model, mesh_pdu_t * 
     mesh_access_message_processed(pdu);
 }
 
-const static mesh_operation_t mesh_generic_level_model_operations[] = {
+static const mesh_operation_t mesh_generic_level_model_operations[] = {
     { MESH_GENERIC_LEVEL_STATUS, 0, generic_level_status_handler },
     { 0, 0, NULL }
 };

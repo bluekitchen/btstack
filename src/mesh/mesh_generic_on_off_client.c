@@ -171,7 +171,7 @@ static void generic_on_off_status_handler(mesh_model_t *mesh_model, mesh_pdu_t *
     mesh_access_message_processed(pdu);
 }
 
-const static mesh_operation_t mesh_generic_on_off_model_operations[] = {
+static const mesh_operation_t mesh_generic_on_off_model_operations[] = {
     { MESH_GENERIC_ON_OFF_STATUS, 0, generic_on_off_status_handler },
     { 0, 0, NULL }
 };

@@ -198,7 +198,7 @@ static void generic_on_off_set_unacknowledged_handler(mesh_model_t *generic_on_o
 }
 
 // Generic On Off Message
-const static mesh_operation_t mesh_generic_on_off_model_operations[] = {
+static const mesh_operation_t mesh_generic_on_off_model_operations[] = {
     { MESH_GENERIC_ON_OFF_GET,                                   0, generic_on_off_get_handler },
     { MESH_GENERIC_ON_OFF_SET,                                   2, generic_on_off_set_handler },
     { MESH_GENERIC_ON_OFF_SET_UNACKNOWLEDGED,                    2, generic_on_off_set_unacknowledged_handler },

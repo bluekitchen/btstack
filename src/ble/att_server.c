@@ -485,6 +485,7 @@ static void att_server_event_packet_handler (uint8_t packet_type, uint16_t chann
 static uint8_t
 att_server_send_prepared(const att_server_t *att_server, const att_connection_t *att_connection, uint8_t *buffer,
                          uint16_t size) {
+    UNUSED(buffer);
     uint8_t status = ERROR_CODE_SUCCESS;
     switch (att_server->bearer_type) {
         case ATT_BEARER_UNENHANCED_LE:

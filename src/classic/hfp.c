@@ -2216,6 +2216,7 @@ void hfp_bcm_write_i2spcm_interface_param(hfp_connection_t * hfp_connection){
 #endif
 
 void hfp_prepare_for_sco(hfp_connection_t * hfp_connection){
+    UNUSED(hfp_connection);
 #ifdef ENABLE_CC256X_ASSISTED_HFP
     hfp_connection->cc256x_send_write_codec_config = true;
     if (hfp_connection->negotiated_codec == HFP_CODEC_MSBC){

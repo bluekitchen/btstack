@@ -1557,7 +1557,7 @@ static int sm_le_device_db_index_lookup(bd_addr_type_t address_type, bd_addr_t a
         le_device_db_info(i, &db_address_type, db_address, NULL);
         // skip unused entries
         if (address_type == BD_ADDR_TYPE_UNKNOWN) continue;
-        if ((address_type == db_address_type) && (memcmp(address, db_address, 6) == 0)){
+        if ((address_type == (unsigned int)db_address_type) && (memcmp(address, db_address, 6) == 0)){
             return i;
         }
     }

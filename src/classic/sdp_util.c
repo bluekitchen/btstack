@@ -672,8 +672,8 @@ bool sdp_record_matches_service_search_pattern(uint8_t *record, uint8_t *service
 // context { indent }
 #ifdef ENABLE_SDP_DES_DUMP
 static int de_traversal_dump_data(uint8_t * element, de_type_t de_type, de_size_t de_size, void *my_context){
-    int indent = *(int*) my_context;
-    int i;
+    unsigned int indent = *(int*) my_context;
+    unsigned int i;
     for (i=0; i<indent;i++) printf("    ");
     unsigned int pos     = de_get_header_size(element);
     unsigned int end_pos = de_get_len(element);
@@ -698,7 +698,7 @@ static int de_traversal_dump_data(uint8_t * element, de_type_t de_type, de_size_
         }
         printf(", len %2u, value: '", len);
         for (i=0;i<len;i++){
-            char c = element[pos + i];
+            uint8_t c = element[pos + i];
             printf("%c", (c >= 0x20 && c <= 0x7f) ? c : '.');
         }
         printf("'\n");
@@ -727,7 +727,7 @@ static int de_traversal_dump_data(uint8_t * element, de_type_t de_type, de_size_
 
 void de_dump_data_element(const uint8_t * record){
 #ifdef ENABLE_SDP_DES_DUMP
-    int indent = 0;
+    unsigned int indent = 0;
     // hack to get root DES, too.
     de_type_t type = de_get_element_type(record);
     de_size_t size = de_get_size_type(record);

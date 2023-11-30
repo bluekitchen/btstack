@@ -1528,7 +1528,7 @@ static void mesh_configuration_client_network_transmit_handler(mesh_model_t *mes
     mesh_access_message_processed(pdu);
 }
 
-const static mesh_operation_t mesh_configuration_client_model_operations[] = {
+static const mesh_operation_t mesh_configuration_client_model_operations[] = {
     { MESH_FOUNDATION_OPERATION_BEACON_STATUS,                      1, mesh_configuration_client_beacon_status_handler },
     { MESH_FOUNDATION_OPERATION_COMPOSITION_DATA_STATUS,           10, mesh_configuration_client_composition_data_status_handler },
     { MESH_FOUNDATION_OPERATION_DEFAULT_TTL_STATUS,                 1, mesh_configuration_client_default_ttl_handler },
