@@ -330,10 +330,20 @@ static void att_server_event_packet_handler (uint8_t packet_type, uint16_t chann
                             att_server->ir_le_device_db_index = sm_le_device_index(con_handle);
                             att_server->ir_lookup_active = 0u;
                             att_server->pairing_active = 0u;
-                            // notify all - old
-                            att_emit_event_to_all(packet, size);
                             // notify all - new
                             att_emit_connected_event(att_server, att_connection);
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+
+                case HCI_EVENT_LE_META:
+                    switch (hci_event_le_meta_get_subevent_code(packet)) {
+                        case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
+                            // forward LE Connection Complete event to keep backward compatibility
+                            // deprecated: please register hci handler with hci_add_event_handler or handle ATT_EVENT_CONNECTED
+                            att_emit_event_to_all(packet, size);
                             break;
                         default:
                             break;
