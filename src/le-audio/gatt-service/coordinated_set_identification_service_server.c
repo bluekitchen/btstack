@@ -394,18 +394,26 @@ static csis_server_connection_t * csis_get_lock_owner_coordinator(void){
 static void csis_server_can_send_now(void * context){
     csis_server_connection_t * coordinator = (csis_server_connection_t *) context;
 
-    if ((coordinator->scheduled_tasks & CSIS_TASK_SEND_MEMBER_LOCK) != 0) {
+    if ((coordinator->scheduled_tasks & CSIS_TASK_SEND_SIRK) != 0) {
+        coordinator->scheduled_tasks &= ~CSIS_TASK_SEND_SIRK;
+        uint8_t value[17];
+        value[0] = (uint8_t) csis_sirk_type;
+        if (csis_sirk_type == CSIS_SIRK_TYPE_ENCRYPTED) {
+            reverse_128(coordinator->encrypted_sirk, &value[1]);
+        } else {
+            reverse_128(csis_sirk, &value[1]);
+        }
+        att_server_notify(coordinator->con_handle, member_lock_handle, &value[0], sizeof(value));
+    } else if ((coordinator->scheduled_tasks & CSIS_TASK_SEND_MEMBER_LOCK) != 0) {
         coordinator->scheduled_tasks &= ~CSIS_TASK_SEND_MEMBER_LOCK;
         uint8_t value[1];
         value[0] = csis_member_lock;
         att_server_notify(coordinator->con_handle, member_lock_handle, &value[0], sizeof(value));
-    
     } else if ((coordinator->scheduled_tasks & CSIS_TASK_SEND_COORDINATED_SET_SIZE) != 0) {
         coordinator->scheduled_tasks &= ~CSIS_TASK_SEND_COORDINATED_SET_SIZE;
         uint8_t value[1];
         value[0] = csis_coordinated_set_size;
         att_server_notify(coordinator->con_handle, member_lock_handle, &value[0], sizeof(value));
-    
     } else if ((coordinator->scheduled_tasks & CSIS_TASK_SEND_MEMBER_RANK) != 0) {
         coordinator->scheduled_tasks &= ~CSIS_TASK_SEND_MEMBER_RANK;
         uint8_t value[1];
@@ -672,7 +680,18 @@ void coordinated_set_identification_service_server_set_sirk(csis_sirk_type_t sir
     csis_sirk_exposed_via_oob = exposed_via_oob;
     csis_sirk_type = sirk_type;
     memcpy(csis_sirk, sirk, sizeof(csis_sirk));
-    csis_server_set_callback(CSIS_TASK_SEND_SIRK);
+    switch (sirk_type) {
+        case CSIS_SIRK_TYPE_PUBLIC:
+            csis_server_set_callback(CSIS_TASK_SEND_SIRK);
+            break;
+        case CSIS_SIRK_TYPE_ENCRYPTED:
+            log_error("Not implemented yet");
+            btstack_unreachable();
+            break;
+        default:
+            btstack_unreachable();
+            break;
+    }
 }
 
 void coordinated_set_identification_service_server_set_size(uint8_t coordinated_set_size){
