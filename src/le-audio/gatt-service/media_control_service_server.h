@@ -187,8 +187,9 @@ typedef struct {
     ots_object_id_t icon_object_id;
     char * icon_url;
 
+    ots_object_id_t segments_object_id;
     uint16_t segments_num;
-    msc_track_segment_t segments[5];
+    msc_track_segment_t segments[15];
 } mcs_track_t;
 
 /**
