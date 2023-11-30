@@ -439,13 +439,12 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
                         default:
                             break;
                     }
-                break;
+                    break;
                 default:
                     break;
             }
             break;
         case HCI_EVENT_LE_META:
-            // wait for connection complete
             switch (hci_event_le_meta_get_subevent_code(packet)){
                 case HCI_SUBEVENT_LE_DATA_LENGTH_CHANGE:
                     con_handle = hci_subevent_le_data_length_change_get_connection_handle(packet);

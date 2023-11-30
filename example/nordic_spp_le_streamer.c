@@ -182,22 +182,16 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
         case HCI_EVENT_META_GAP:
             switch (hci_event_gap_meta_get_subevent_code(packet)) {
                 case GAP_SUBEVENT_LE_CONNECTION_COMPLETE:
-                    switch (hci_event_gap_meta_get_subevent_code(packet)) {
-                        case GAP_SUBEVENT_LE_CONNECTION_COMPLETE:
-                            // print connection parameters (without using float operations)
-                            con_handle    = gap_subevent_le_connection_complete_get_connection_handle(packet);
-                            conn_interval = gap_subevent_le_connection_complete_get_conn_interval(packet);
-                            printf("LE Connection - Connection Interval: %u.%02u ms\n", conn_interval * 125 / 100, 25 * (conn_interval & 3));
-                            printf("LE Connection - Connection Latency: %u\n", gap_subevent_le_connection_complete_get_conn_latency(packet));
+                    // print connection parameters (without using float operations)
+                    con_handle    = gap_subevent_le_connection_complete_get_connection_handle(packet);
+                    conn_interval = gap_subevent_le_connection_complete_get_conn_interval(packet);
+                    printf("LE Connection - Connection Interval: %u.%02u ms\n", conn_interval * 125 / 100, 25 * (conn_interval & 3));
+                    printf("LE Connection - Connection Latency: %u\n", gap_subevent_le_connection_complete_get_conn_latency(packet));
 
-                            // request min con interval 15 ms for iOS 11+
-                            printf("LE Connection - Request 15 ms connection interval\n");
-                            gap_request_connection_parameter_update(con_handle, 12, 12, 4, 0x0048);
-                            break;
-                        default:
-                            break;
-                    }
-                break;
+                    // request min con interval 15 ms for iOS 11+
+                    printf("LE Connection - Request 15 ms connection interval\n");
+                    gap_request_connection_parameter_update(con_handle, 12, 12, 4, 0x0048);
+                    break;
                 default:
                     break;
             }
