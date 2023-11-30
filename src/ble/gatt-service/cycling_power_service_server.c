@@ -924,16 +924,10 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
         case HCI_EVENT_META_GAP:
             switch (hci_event_gap_meta_get_subevent_code(packet)) {
                 case GAP_SUBEVENT_LE_CONNECTION_COMPLETE:
-                    switch (hci_event_gap_meta_get_subevent_code(packet)) {
-                        case GAP_SUBEVENT_LE_CONNECTION_COMPLETE:
-                            instance->con_handle = gap_subevent_le_connection_complete_get_connection_handle(packet);
-                            // print connection parameters (without using float operations)
-                            instance->con_interval = gap_subevent_le_connection_complete_get_conn_interval(packet);
-                            instance->con_interval_status = CP_CONNECTION_INTERVAL_STATUS_RECEIVED;
-                            break;
-                        default:
-                            break;
-                    }
+                    instance->con_handle = gap_subevent_le_connection_complete_get_connection_handle(packet);
+                    // print connection parameters (without using float operations)
+                    instance->con_interval = gap_subevent_le_connection_complete_get_conn_interval(packet);
+                    instance->con_interval_status = CP_CONNECTION_INTERVAL_STATUS_RECEIVED;
                     break;
                 default:
                     break;
