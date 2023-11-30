@@ -4168,6 +4168,8 @@ static void event_handler(uint8_t *packet, uint16_t size){
                 // we did not receive a HCI Command Complete or HCI Command Status event for the disconnected connection
                 // if needed, we could also track the hci command opcode and simulate a hci command complete with status
                 // but the connection has failed anyway, so for now, we only set the num hci commands back to 1
+                log_info("Disconnect for conn handle 0x%04x in pending HCI command, assume command failed", handle);
+                hci_stack->hci_command_con_handle = HCI_CON_HANDLE_INVALID;
                 hci_stack->num_cmd_packets = 1;
             }
 #endif
