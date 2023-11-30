@@ -638,6 +638,7 @@ static void ots_db_sort(olcp_list_sort_order_t order){
     ots_db_reset_filters();
     printf("Sort: num objects in list %d, index %d\n", ots_db_object_current_num, ots_db_object_current_index);
 }
+
 static void ots_db_filter(){
     // clear current view
     ots_db_object_current_num = 0;
@@ -717,6 +718,7 @@ static void ots_db_filter(){
     ots_dump_selection();
 }
 
+
 static ots_object_t * ots_object_iterator_first(void){
     if (ots_db_object_current_num == 0){
         printf("NULL\n");
@@ -763,7 +765,7 @@ static ots_object_t * ots_object_iterator_previous(void){
 
 static ots_object_t * ots_object_iterator_goto(ots_object_id_t * luid){
     int i;
-//    printf("GOTO: Search for ");
+    printf("OTS Server: GOTO ");
     printf_hexdump(*luid, 6);
 
     for (i = 0; i < ots_db_object_current_num; i++){
@@ -1045,10 +1047,8 @@ static oacp_result_code_t ots_server_operation_calculate_checksum(hci_con_handle
     crc = btstack_crc32_update(crc, &data[offset], length);
     crc = btstack_crc32_finalize(crc);
     *crc_out = crc;
-    printf("ots_server_operation_calculate_checksum\n");
-    printf_hexdump(&data[offset], length);
-    printf("CRC 0x%x\n", crc);
 
+    printf("OTS Server: CRC 0x%x\n", crc);
     return OACP_RESULT_CODE_SUCCESS;
 }
 
@@ -1058,7 +1058,7 @@ static oacp_result_code_t ots_server_operation_execute(hci_con_handle_t con_hand
 }
 
 static oacp_result_code_t ots_server_operation_read(hci_con_handle_t con_handle, uint32_t offset, uint32_t length, const uint8_t ** out_buffer){
-    printf("ots_server_operation_read\n");
+    printf("OTS Server: read[offset %d, len %d]\n", offset, length);
     *out_buffer = NULL;
     if ((offset + length) <= object_transfer_service_server_current_object_size(con_handle)){
         const uint8_t * data = ots_server_get_current_object_bytes(con_handle);
@@ -1070,8 +1070,8 @@ static oacp_result_code_t ots_server_operation_read(hci_con_handle_t con_handle,
 }
 
 static oacp_result_code_t ots_server_operation_write(hci_con_handle_t con_handle, uint32_t offset, uint8_t *buffer, uint16_t buffer_size){
-    printf("Write operation, offset %d, chunk length %d\n", offset, buffer_size);
-    memcpy(&ots_object_dummy_data[offset], buffer, buffer_size);
+    printf("OTS Server: write[offset %d, len %d]\n", offset, buffer_size);
+    memcpy(&ots_object_track_data[offset], buffer, buffer_size);
     return OACP_RESULT_CODE_SUCCESS;
 }
 
@@ -1155,7 +1155,7 @@ static olcp_result_code_t ots_server_operation_goto(hci_con_handle_t con_handle,
             break;
 
         case OTS_OBJECT_TYPE_TRACK:
-            printf("MTS APP: , ots_server_operation_goto TRACK: ");
+            printf("MTS APP: ots_server_operation_goto TRACK: ");
             printf_hexdump(object->luid, 6);
             mcs_change_current_track_for_luid(media_player, luid);
             break;
@@ -1482,6 +1482,7 @@ static void mcs_goto_track(uint16_t media_player_id, int32_t track_index){
 }
 
 static bool mcs_goto_group(uint16_t media_player_id, int32_t group_index){
+    printf("   ** mcs_goto_group: %d\n",  group_index);
     mcs_media_player_t *media_player = mcs_get_media_player_for_id(media_player_id);
     if (media_player == NULL){
         return NULL;
@@ -1709,8 +1710,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     printf_hexdump(media_player->track_groups[media_player->current_group_index].current_group_object_id, 6);
                     printf("BAP Server: current track[%d]: ", media_player->current_track_index);
                     printf_hexdump(track->object_id, 6);
-                    printf("BAP Server: current track segment[%d]: ", media_player->current_track_segment_index);
-                    printf_hexdump(track->segments[media_player->current_track_segment_index].object_id, 6);
+                    printf("BAP Server: current track segments ID[%d]: ", media_player->current_track_segment_index);
+                    printf_hexdump(track->segments_object_id, 6);
 
                     if (track != NULL){
                         ots_object_t * object = ots_db_find_object_with_luid(&track->object_id);
@@ -2162,6 +2163,27 @@ static void ots_dump_filter(uint8_t filter_index) {
             printf("\n");
             break;
     }
+}
+
+static char * search_field_type_str[] = {
+        "FIRST_FIELD",
+        "TRACK_NAME",
+        "ARTIST_NAME",
+        "ALBUM_NAME",
+        "GROUP_NAME",
+        "EARLIEST_YEAR",
+        "LATEST_YEAR",
+        "GENRE",
+        "ONLY_TRACKS",
+        "ONLY_GROUPS",
+        "RFU"
+};
+
+static char * mcs_server_search_type2str(search_control_point_type_t index){
+    if (index > SEARCH_CONTROL_POINT_TYPE_RFU){
+        return search_field_type_str[SEARCH_CONTROL_POINT_TYPE_RFU];
+    }
+    return search_field_type_str[index];
 }
 
 static void mcs_server_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
