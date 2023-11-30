@@ -550,13 +550,6 @@ void le_audio_demo_util_sink_receive(uint8_t stream_index, uint8_t *packet, uint
         plc_check(packet_sequence_number);
     }
 
-    // either empty packets or num channels * num octets
-    if ((iso_sdu_length != 0) && (iso_sdu_length != le_audio_demo_sink_num_channels_per_stream * le_audio_demo_sink_octets_per_frame)) {
-        printf("ISO Length %u != %u * %u\n", iso_sdu_length, le_audio_demo_sink_num_channels_per_stream, le_audio_demo_sink_octets_per_frame);
-        log_info("ISO Length %u != %u * %u", iso_sdu_length, le_audio_demo_sink_num_channels_per_stream, le_audio_demo_sink_octets_per_frame);
-        return;
-    }
-
     const btstack_audio_sink_t * sink = btstack_audio_sink_get_instance();
     if( (sink != NULL) && (iso_sdu_length>0)) {
         if (!sink_receive_streaming && playback_active) {
@@ -587,7 +580,12 @@ void le_audio_demo_util_sink_receive(uint8_t stream_index, uint8_t *packet, uint
             }
         }
     } else {
-        // regular packet -> decode codec frame
+        // regular packet -> decode codec frame if size ok
+        uint8_t BFI = 0;
+        if (iso_sdu_length != le_audio_demo_sink_num_channels_per_stream * le_audio_demo_sink_octets_per_frame) {
+            // incorrect size. we assume that we received this packet on time but cannot decode it, so we use PLC
+            BFI = 1;
+        }
         le_audio_demo_sink_zero_frames = 0;
         uint8_t i;
         for (i = 0 ; i < le_audio_demo_sink_num_channels_per_stream ; i++){
