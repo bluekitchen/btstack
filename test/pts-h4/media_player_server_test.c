@@ -799,7 +799,7 @@ static ots_object_t * ots_db_find_object_with_luid(ots_object_id_t * luid){
     int i;
     for (i = 0; i < ots_db_objects_num; i++){
         ots_object_t * object = &ots_db_objects[i];
-        if (memcmp(object->luid, luid, sizeof(ots_object_id_t)) == 0){
+        if (memcmp(object->luid, *luid, sizeof(ots_object_id_t)) == 0){
             return object;
         } 
     }
@@ -1282,9 +1282,10 @@ static void mcs_reset_current_track(mcs_media_player_t * media_player){
     media_control_service_server_set_next_track_id(media_player->id, &media_player->track_groups[media_player->current_group_index].tracks[next_track_index].object_id);
 
     if (current_track->segments_num != 0){
-        media_control_service_server_set_current_track_segment_id(media_player->id, &current_track->segments[0].object_id);
+        media_control_service_server_set_current_track_segments_id(media_player->id,
+                                                                   &current_track->segments_object_id);
     } else {
-        media_control_service_server_set_current_track_segment_id(media_player->id, NULL);
+        media_control_service_server_set_current_track_segments_id(media_player->id, NULL);
     }
 
     current_track->track_position_10ms = 0;
@@ -2454,7 +2455,7 @@ static void mcs_server_init_media_player(mcs_media_player_t * media_player){
     media_control_service_server_set_parent_group_object_id(media_player->id, &media_player->track_groups[media_player->current_group_index].parent_group_object_id);
     media_control_service_server_set_current_group_object_id(media_player->id, &media_player->track_groups[media_player->current_group_index].current_group_object_id);
     media_control_service_server_set_current_track_id(media_player->id, &current_track->object_id);
-    media_control_service_server_set_current_track_segment_id(media_player->id, &current_track->segments[0].object_id);
+    media_control_service_server_set_current_track_segments_id(media_player->id, &current_track->segments_object_id);
 
     uint32_t next_track_index;
     mcs_next_track_index(media_player, true, &next_track_index);
