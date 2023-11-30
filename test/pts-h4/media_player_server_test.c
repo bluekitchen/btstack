@@ -577,12 +577,19 @@ static void ots_dump_selection(void){
     printf("\n");
 }
 
+static uint32_t ots_db_get_object_index_from_sorted_view(uint32_t i) {
+    if (i > 10){
+        return i;
+    }
+    return ots_db_object_indices_sorted_view[i];
+}
+
 static void ots_db_reset_filters(void) {
     memset(ots_filters, 0, sizeof(ots_filters));
     ots_db_active_filters_bitmap = 0;
     int j;
     for (j = 0; j < ots_db_object_current_num ; j++){
-        ots_db_object_current_indices[j] = ots_db_object_indices_sorted_view[j];
+        ots_db_object_current_indices[j] = ots_db_get_object_index_from_sorted_view(j);
     }
 }
 
@@ -638,7 +645,7 @@ static void ots_db_filter(){
     // add objects that match filter
     uint8_t i;
     for (i = 0; i < ots_db_objects_num; i++){
-        uint32_t object_index = ots_db_object_indices_sorted_view[i];
+        uint32_t object_index = ots_db_get_object_index_from_sorted_view(i);
         const ots_object_t * object = &ots_db_objects[object_index];
 
         ots_object_type_t object_type;
@@ -1131,7 +1138,7 @@ static mcs_media_player_t * mcs_get_media_player_for_id(uint16_t media_player_id
 
 static void mcs_change_current_track_for_luid(mcs_media_player_t * media_player, ots_object_id_t * luid);
 static void mcs_change_current_group_for_luid(mcs_media_player_t * media_player, ots_object_id_t * luid);
-static void mcs_change_current_track_segment_for_luid(mcs_media_player_t * media_player, ots_object_id_t * luid);
+static void mcs_change_current_track_segments_to_luid(mcs_media_player_t * media_player, ots_object_id_t * luid);
 
 static olcp_result_code_t ots_server_operation_goto(hci_con_handle_t con_handle, ots_object_id_t * luid){
     ots_object_t * object = ots_object_iterator_goto(luid);
@@ -1154,13 +1161,13 @@ static olcp_result_code_t ots_server_operation_goto(hci_con_handle_t con_handle,
             break;
 
         case OTS_OBJECT_TYPE_TRACK_SEGMENTS:
-            printf("MTS APP: , ots_server_operation_goto TRACK SEGMENT: ");
+            printf("MTS APP: ots_server_operation_goto TRACK SEGMENT: ");
             printf_hexdump(object->luid, 6);
-            mcs_change_current_track_segment_for_luid(media_player, luid);
+            mcs_change_current_track_segments_to_luid(media_player, luid);
             break;
 
         case OTS_OBJECT_TYPE_MEDIA_PLAYER_ICON:
-            printf("MTS APP: , ots_server_operation_goto MEDIA_PLAYER_ICON: ");
+            printf("MTS APP: ots_server_operation_goto MEDIA_PLAYER_ICON: ");
             printf_hexdump(object->luid, 6);
             break;
         default:
@@ -1308,33 +1315,16 @@ static void mcs_change_current_track(mcs_media_player_t * media_player, uint32_t
     mcs_reset_current_track(media_player);
 }
 
-static void mcs_change_current_track_segment(mcs_media_player_t * media_player, uint32_t track_index, uint32_t track_segment_index){
-    printf(" * mcs_change_current_track_segment: previous %d, current %d\n", media_player->current_track_segment_index, track_segment_index);
-    media_player->previous_track_segment_index = media_player->current_track_segment_index;
-    // change track segment
-    media_player->current_track_segment_index = track_segment_index;
-    mcs_track_t * current_track = mcs_get_current_track_for_media_player(media_player);
-    if (current_track->segments_num != 0){
-        media_control_service_server_set_current_track_segment_id(media_player->id, &current_track->segments[0].object_id);
-    } else {
-        media_control_service_server_set_current_track_segment_id(media_player->id, NULL);
-    }
-}
-
-static void mcs_change_current_track_segment_for_luid(mcs_media_player_t * media_player, ots_object_id_t * luid){
+static void mcs_change_current_track_segments_to_luid(mcs_media_player_t * media_player, ots_object_id_t * luid){
     mcs_track_group_t * track_group = &track_groups[media_player->current_group_index];
     mcs_track_t * track = &track_group->tracks[media_player->current_track_index];
 
-    uint32_t segment_index = media_player->current_track_segment_index;
-    int i;
-    for (i = 0; i < track->segments_num; i++){
-        msc_track_segment_t * segment = &track->segments[i];
-        if (memcmp(segment->object_id, luid, 6) == 0){
-            segment_index = i;
-            break;
-        }
+    if (track->segments_num != 0){
+        media_control_service_server_set_current_track_segments_id(media_player->id,
+                                                                   &track->segments_object_id);
+    } else {
+        media_control_service_server_set_current_track_segments_id(media_player->id, NULL);
     }
-    mcs_change_current_track_segment(media_player, media_player->current_track_index, segment_index);
 }
 
 static void mcs_change_current_group(mcs_media_player_t * media_player, uint32_t group_index){
