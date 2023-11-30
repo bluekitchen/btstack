@@ -220,7 +220,7 @@ uint8_t media_control_service_server_set_parent_group_object_id(uint16_t media_p
 uint8_t media_control_service_server_set_current_group_object_id(uint16_t media_player_id, const ots_object_id_t * object_id);
 uint8_t media_control_service_server_set_current_track_id(uint16_t media_player_id, const ots_object_id_t * object_id);
 uint8_t media_control_service_server_set_next_track_id(uint16_t media_player_id, const ots_object_id_t * object_id);
-uint8_t media_control_service_server_set_current_track_segment_id(uint16_t media_player_id, const ots_object_id_t * object_id);
+uint8_t media_control_service_server_set_current_track_segments_id(uint16_t media_player_id, const ots_object_id_t * object_id);
 
 uint8_t media_control_service_server_set_media_track_changed(uint16_t media_player_id);
 
