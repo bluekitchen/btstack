@@ -133,7 +133,7 @@ static olcp_result_code_t ots_server_operation_number_of_objects(hci_con_handle_
 static olcp_result_code_t ots_server_operation_clear_marking(hci_con_handle_t con_handle);
 
 #define OTS_SERVER_MAX_NUM_CLIENTS 3
-#define OTS_SERVER_MAX_NUM_OBJECTS 50
+#define OTS_SERVER_MAX_NUM_OBJECTS 150
 
 
 static ots_server_connection_t ots_server_connections_storage[OTS_SERVER_MAX_NUM_CLIENTS];
@@ -2223,24 +2223,47 @@ static void mcs_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
 
             printf("MCS Server App: Search Notification, data len %d\n", search_data_len);
 
+            int num_search_params = 0;
+            search_control_point_type_t search_field_type[3];
+
             pos = 0;
             while (pos < search_data_len){
-                printf_hexdump(search_data + pos, search_data_len - pos);
-
-                uint8_t search_field_length = search_data[pos++] - 2;
-                search_control_point_type_t search_field_type = (search_control_point_type_t)search_data[pos++];
+                uint8_t search_field_data_len = search_data[pos] - 1;
+                search_field_type[num_search_params] = (search_control_point_type_t)search_data[pos+1];
 
                 const char * search_field_data;
-                if (search_field_length > 0){
-                    search_field_data = (const char *)&search_data[pos];
+                if (search_field_data_len > 0){
+                    search_field_data = (const char *)&search_data[pos+2];
                 }
 
-                printf("  ** Search field len %d, type %d, data %s\n",  search_field_length, search_field_type, search_field_length > 0 ? search_field_data : "");
-                pos += search_field_length + 2;
+                if (search_field_data_len > 0){
+                    printf("  ** Search field len %d, type %s, data %s\n", search_field_data_len, mcs_server_search_type2str(search_field_type[num_search_params]), search_field_data);
+                } else {
+                    printf("  ** Search field len %d, type %s\n", search_field_data_len, mcs_server_search_type2str(search_field_type[num_search_params]));
+                }
+                pos += search_field_data_len + 2;
+                num_search_params++;
             }
-            media_control_service_server_search_control_point_response(media_player_id, tracksA[0].object_id);
+            // TODO shortcut for PTS test
+                switch (search_field_type[0]){
+                    case SEARCH_CONTROL_POINT_TYPE_GENRE:
+                        media_control_service_server_search_control_point_response(media_player_id, tracksA[0].object_id);
+                        break;
+                    case SEARCH_CONTROL_POINT_TYPE_GROUP_NAME:
+                        media_control_service_server_search_control_point_response(media_player_id, track_groups[0].current_group_object_id);
+                        break;
+                    case SEARCH_CONTROL_POINT_TYPE_ONLY_GROUPS:
+                        media_control_service_server_search_control_point_response(media_player_id, track_groups[0].current_group_object_id);
+                        break;
+                    case SEARCH_CONTROL_POINT_TYPE_ONLY_TRACKS:
+                        media_control_service_server_search_control_point_response(media_player_id, tracksA[0].object_id);
+                        break;
+                    default:
+                        media_control_service_server_search_control_point_response(media_player_id, tracksA[0].object_id);
+                        break;
+                }
 
-            break;
+        break;
 
         case GATTSERVICE_SUBEVENT_MCS_SERVER_MEDIA_CONTROL_POINT_NOTIFICATION_TASK:
             opcode = (media_control_point_opcode_t)gattservice_subevent_mcs_server_media_control_point_notification_task_get_opcode(packet);
