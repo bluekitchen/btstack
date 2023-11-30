@@ -557,6 +557,10 @@ static uint32_t ots_db_group_current_num;
 static char * long_string1 = "Object 0 abcdefghijkabcdefghijkabcdefghijkabcdefghijkab";
 static char * long_string2 = "Object 0 ghijkabcdefghijkabcdefghijkabcdefghijkabcdefghijkab";
 
+#define MCS_TRACK_SEGMENT_DURATION_10MS 2000
+static uint32_t mcs_track_num_segments(mcs_track_t * track) {
+    return track->segments_num;
+}
 
 static void setup_advertising(void) {
     gap_extended_advertising_setup(&le_advertising_set, &extended_params, &adv_handle);
@@ -1599,10 +1603,7 @@ static void mcs_current_track_apply_relative_offset(uint16_t media_player_id, in
     printf("current %d\n", track->track_position_10ms);
 }
 
-#define MCS_TRACK_SEGMENT_DURATION_10MS 1500
-static uint32_t mcs_track_num_segments(mcs_track_t * track) {
-    return track->track_duration_10ms/MCS_TRACK_SEGMENT_DURATION_10MS;
-}
+
 
 static uint32_t mcs_track_current_segment(mcs_track_t * track) {
     // uint32_t num_segments = mcs_track_num_segments(track);
