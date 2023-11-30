@@ -80,6 +80,7 @@
 #include "le-audio/gatt-service/media_control_service_client.h"
 
 #define ENABLE_MCS_CLIENT
+#define ENABLE_MICROPHONE
 
 //#define DEBUG_PLC
 #ifdef DEBUG_PLC
@@ -128,39 +129,73 @@ const uint8_t adv_data[] = {
 const uint8_t adv_data_len = sizeof(adv_data);
 
 static pacs_record_t sink_pac_records[] = {
-        // sink_record_0
+    // sink_record_0
+    {
+        // codec ID
+        {HCI_AUDIO_CODING_FORMAT_LC3, 0x0000, 0x0000},
+        // capabilities
         {
-                // codec ID
-                {HCI_AUDIO_CODING_FORMAT_LC3, 0x0000, 0x0000},
-                // capabilities
-                {
-                        0x3E,
-                        LE_AUDIO_CODEC_SAMPLING_FREQUENCY_MASK_8000_HZ |
-                        LE_AUDIO_CODEC_SAMPLING_FREQUENCY_MASK_16000_HZ |
-                        LE_AUDIO_CODEC_SAMPLING_FREQUENCY_MASK_24000_HZ |
-                        LE_AUDIO_CODEC_SAMPLING_FREQUENCY_MASK_32000_HZ |
-                        LE_AUDIO_CODEC_SAMPLING_FREQUENCY_MASK_44100_HZ |
-                        LE_AUDIO_CODEC_SAMPLING_FREQUENCY_MASK_48000_HZ,
-                        LE_AUDIO_CODEC_FRAME_DURATION_MASK_7500US | LE_AUDIO_CODEC_FRAME_DURATION_MASK_10000US,
-                        LE_AUDIO_CODEC_AUDIO_CHANNEL_COUNT_MASK_1,
-                        26,
-                        155,
-                        2
-                },
-                // metadata length
-                45,
-                // metadata
-                {
-                        // all metadata set
-                        0x0FFE,
-                        // (2) preferred_audio_contexts_mask
-                        LE_AUDIO_CONTEXT_MASK_UNSPECIFIED,
-                        // (2) streaming_audio_contexts_mask
-                        LE_AUDIO_CONTEXT_MASK_UNSPECIFIED,
-                }
+            0x3E,
+            LE_AUDIO_CODEC_SAMPLING_FREQUENCY_MASK_8000_HZ |
+            LE_AUDIO_CODEC_SAMPLING_FREQUENCY_MASK_16000_HZ |
+            LE_AUDIO_CODEC_SAMPLING_FREQUENCY_MASK_24000_HZ |
+            LE_AUDIO_CODEC_SAMPLING_FREQUENCY_MASK_32000_HZ |
+            LE_AUDIO_CODEC_SAMPLING_FREQUENCY_MASK_44100_HZ |
+            LE_AUDIO_CODEC_SAMPLING_FREQUENCY_MASK_48000_HZ,
+            LE_AUDIO_CODEC_FRAME_DURATION_MASK_7500US | LE_AUDIO_CODEC_FRAME_DURATION_MASK_10000US,
+            LE_AUDIO_CODEC_AUDIO_CHANNEL_COUNT_MASK_1,
+            26,
+            155,
+            2
+        },
+        // metadata length
+        45,
+        // metadata
+        {
+            // all metadata set
+            0x0FFE,
+            // (2) preferred_audio_contexts_mask
+            LE_AUDIO_CONTEXT_MASK_UNSPECIFIED,
+            // (2) streaming_audio_contexts_mask
+            LE_AUDIO_CONTEXT_MASK_UNSPECIFIED,
         }
+    }
 };
 
+#ifdef ENABLE_MICROPHONE
+static pacs_record_t source_pac_records[] = {
+    {
+        // codec ID
+        {HCI_AUDIO_CODING_FORMAT_LC3, 0x0000, 0x0000},
+        // capabilities
+        {
+            0x3E,
+            LE_AUDIO_CODEC_SAMPLING_FREQUENCY_MASK_8000_HZ |
+            LE_AUDIO_CODEC_SAMPLING_FREQUENCY_MASK_16000_HZ |
+            LE_AUDIO_CODEC_SAMPLING_FREQUENCY_MASK_24000_HZ |
+            LE_AUDIO_CODEC_SAMPLING_FREQUENCY_MASK_32000_HZ |
+            LE_AUDIO_CODEC_SAMPLING_FREQUENCY_MASK_44100_HZ |
+            LE_AUDIO_CODEC_SAMPLING_FREQUENCY_MASK_48000_HZ,
+            LE_AUDIO_CODEC_FRAME_DURATION_MASK_7500US | LE_AUDIO_CODEC_FRAME_DURATION_MASK_10000US,
+            LE_AUDIO_CODEC_AUDIO_CHANNEL_COUNT_MASK_1,
+            26,
+            155,
+            1
+        },
+        // metadata length
+        45,
+        // metadata
+        {
+            // all metadata set
+            0x0FFE,
+            // (2) preferred_audio_contexts_mask
+            LE_AUDIO_CONTEXT_MASK_UNSPECIFIED,
+            // (2) streaming_audio_contexts_mask
+            LE_AUDIO_CONTEXT_MASK_UNSPECIFIED,
+        }
+    }
+};
+#endif
 
 //
 static btstack_packet_callback_registration_t hci_event_callback_registration;
@@ -189,6 +224,9 @@ static bool     playback_active;
 
 // PACS Server
 static pacs_streamendpoint_t sink_node;
+#ifdef ENABLE_MICROPHONE
+static pacs_streamendpoint_t source_node;
+#endif
 
 // ASCS Server
 #define ASCS_NUM_STREAMENDPOINT_CHARACTERISTICS 5
@@ -558,8 +596,9 @@ static void ascs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
     }
 }
 
-void setup_sink_and_start_advertising(uint8_t audio_location_mask) {
+void setup_pacs_and_start_advertising(uint8_t audio_location_mask) {
     // PACS Server
+    // - sinks
     sink_node.records_num = 1;
     sink_node.records = &sink_pac_records[0];
     sink_node.audio_locations_mask = audio_location_mask;
@@ -570,7 +609,17 @@ void setup_sink_and_start_advertising(uint8_t audio_location_mask) {
         channel_count_mask = LE_AUDIO_CODEC_AUDIO_CHANNEL_COUNT_MASK_2;
     }
     sink_pac_records[0].codec_capability.supported_audio_channel_counts_mask = channel_count_mask;
-    published_audio_capabilities_service_server_init(&sink_node, NULL);
+    // - sources
+    pacs_streamendpoint_t * sources = NULL;
+#ifdef ENABLE_MICROPHONE
+    sources = &source_node;
+    source_node.records_num = 1;
+    source_node.records = &source_pac_records[0];
+    source_node.audio_locations_mask = 1;
+    source_node.available_audio_contexts_mask = LE_AUDIO_CONTEXT_MASK_UNSPECIFIED;
+    source_node.supported_audio_contexts_mask = LE_AUDIO_CONTEXT_MASK_UNSPECIFIED;
+#endif
+    published_audio_capabilities_service_server_init(&sink_node, sources);
     published_audio_capabilities_service_server_register_packet_handler(&pacs_server_packet_handler);
 
     // setup advertisements
@@ -609,19 +658,19 @@ static void stdin_process(char c){
             printf("Configured as STEREO speaker\n");
             sink_pac_records[0].codec_capability.supported_audio_channel_counts_mask =
                     LE_AUDIO_CODEC_AUDIO_CHANNEL_COUNT_MASK_2;
-            setup_sink_and_start_advertising(LE_AUDIO_LOCATION_MASK_FRONT_LEFT | LE_AUDIO_LOCATION_MASK_FRONT_RIGHT);
+            setup_pacs_and_start_advertising(LE_AUDIO_LOCATION_MASK_FRONT_LEFT | LE_AUDIO_LOCATION_MASK_FRONT_RIGHT);
             break;
         case 'l':
             printf("Configured as LEFT speaker\n");
             sink_pac_records[0].codec_capability.supported_audio_channel_counts_mask =
                     LE_AUDIO_CODEC_AUDIO_CHANNEL_COUNT_MASK_1;
-            setup_sink_and_start_advertising(LE_AUDIO_LOCATION_MASK_FRONT_LEFT);
+            setup_pacs_and_start_advertising(LE_AUDIO_LOCATION_MASK_FRONT_LEFT);
             break;
         case 'r':
             printf("Configured as RIGHT speaker\n");
             sink_pac_records[0].codec_capability.supported_audio_channel_counts_mask =
                     LE_AUDIO_CODEC_AUDIO_CHANNEL_COUNT_MASK_1;
-            setup_sink_and_start_advertising(LE_AUDIO_LOCATION_MASK_FRONT_RIGHT);
+            setup_pacs_and_start_advertising(LE_AUDIO_LOCATION_MASK_FRONT_RIGHT);
             break;
         case '[':
             if (playback_volume > volume_step){
