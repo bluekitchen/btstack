@@ -2618,9 +2618,13 @@ int btstack_main(void)
     // setup MCS
     media_control_service_server_init();
 
-    media_control_service_server_register_media_player(&media_player1.media_server, 
-        &mcs_server_packet_handler, 0, //0x1FFFFF,
-        &media_player1.id);
+    media_control_service_server_register_generic_media_player(&media_player1.media_server,
+                                                               &mcs_server_packet_handler, 0x1FFFFF,
+                                                               &media_player1.id);
+
+//    media_control_service_server_register_media_player(&media_player1.media_server,
+//        &mcs_server_packet_handler, 0, //0x1FFFFF,
+//        &media_player1.id);
 
     mcs_server_init_media_player(&media_player1);
 
