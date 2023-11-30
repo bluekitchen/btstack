@@ -3,7 +3,7 @@ CHARACTERISTIC, GAP_DEVICE_NAME, READ, "GATT Media Player Server"
 
 #import <object_transfer_service.gatt>
 
-#import <media_control_service.gatt>
+#import <generic_media_control_service.gatt>
 INCLUDE_SERVICE, ORG_BLUETOOTH_SERVICE_OBJECT_TRANSFER
 
 #import <generic_media_control_service.gatt>
