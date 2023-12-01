@@ -593,8 +593,6 @@ void media_control_service_client_init(void){
     gatt_service_client_init(&mcs_client, &mcs_client_packet_handler_trampoline);
     gatt_service_client_register_packet_handler(&mcs_client, &mcs_client_packet_handler_internal);
 
-    mcs_client.service_uuid16      = ORG_BLUETOOTH_SERVICE_MEDIA_CONTROL_SERVICE;
-
     mcs_client.characteristics_desc16_num = sizeof(mcs_characteristics_desc16)/sizeof(gatt_service_client_characteristic_desc16_t);
     mcs_client.characteristics_desc16 = mcs_characteristics_desc16;
 
@@ -607,7 +605,8 @@ uint8_t media_control_service_client_connect_media_player(hci_con_handle_t con_h
 
     btstack_assert(mcs_client.characteristics_desc16_num > 0);
     return gatt_service_client_connect(con_handle,
-        &mcs_client, &connection->basic_connection, 
+        &mcs_client, &connection->basic_connection,
+        ORG_BLUETOOTH_SERVICE_MEDIA_CONTROL_SERVICE,
         characteristics, characteristics_num, packet_handler,
         mcs_cid);
 }
