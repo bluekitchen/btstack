@@ -425,10 +425,11 @@ static void mcs_client_packet_handler(uint8_t packet_type, uint16_t channel, uin
 void mcs_client_connect(hci_con_handle_t con_handle){
     if (mcs_cid == 0) {
         printf("MCS Client: connect\n");
-        media_control_service_client_connect(con_handle, &mcs_client_connection, mcs_client_characteristics,
-                                             MCS_CHARACTERISTICS_COUNT, mcs_client_packet_handler, &mcs_cid);
+        media_control_service_client_connect_generic_player(con_handle, mcs_client_packet_handler,
+            &mcs_client_connection, mcs_client_characteristics, MCS_CHARACTERISTICS_COUNT, &mcs_cid);
     }
 }
+
 void mcs_client_disconnect(hci_con_handle_t con_handle) {
     if (mcs_cid != 0) {
         printf("MCS Client: disconnect\n");
