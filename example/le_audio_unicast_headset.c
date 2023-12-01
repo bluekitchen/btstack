@@ -143,7 +143,7 @@ static pacs_record_t sink_pac_records[] = {
             LE_AUDIO_CODEC_SAMPLING_FREQUENCY_MASK_44100_HZ |
             LE_AUDIO_CODEC_SAMPLING_FREQUENCY_MASK_48000_HZ,
             LE_AUDIO_CODEC_FRAME_DURATION_MASK_7500US | LE_AUDIO_CODEC_FRAME_DURATION_MASK_10000US,
-            LE_AUDIO_CODEC_AUDIO_CHANNEL_COUNT_MASK_1,
+            LE_AUDIO_CODEC_AUDIO_CHANNEL_COUNT_MASK_2,
             26,
             155,
             2
@@ -248,6 +248,46 @@ static mcs_client_connection_t mcs_client_connection;
 static gatt_service_client_characteristic_t mcs_client_characteristics[MEDIA_CONTROL_SERVICE_CLIENT_NUM_CHARACTERISTICS];
 #endif
 
+static void pacs_server_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+
+void setup_pacs_and_start_advertising(uint8_t audio_location_mask) {
+    // PACS Server
+    // - sinks
+    sink_node.records_num = 1;
+    sink_node.records = &sink_pac_records[0];
+    sink_node.audio_locations_mask = audio_location_mask;
+    sink_node.available_audio_contexts_mask = LE_AUDIO_CONTEXT_MASK_UNSPECIFIED;
+    sink_node.supported_audio_contexts_mask = LE_AUDIO_CONTEXT_MASK_UNSPECIFIED;
+    uint8_t channel_count_mask = LE_AUDIO_CODEC_AUDIO_CHANNEL_COUNT_MASK_1;
+    if (audio_location_mask == (LE_AUDIO_LOCATION_MASK_FRONT_LEFT | LE_AUDIO_LOCATION_MASK_FRONT_RIGHT)){
+        channel_count_mask = LE_AUDIO_CODEC_AUDIO_CHANNEL_COUNT_MASK_2;
+    }
+    sink_pac_records[0].codec_capability.supported_audio_channel_counts_mask = channel_count_mask;
+    // - sources
+    pacs_streamendpoint_t * sources = NULL;
+#ifdef ENABLE_MICROPHONE
+    sources = &source_node;
+    source_node.records_num = 1;
+    source_node.records = &source_pac_records[0];
+    source_node.audio_locations_mask = 1;
+    source_node.available_audio_contexts_mask = LE_AUDIO_CONTEXT_MASK_UNSPECIFIED;
+    source_node.supported_audio_contexts_mask = LE_AUDIO_CONTEXT_MASK_UNSPECIFIED;
+#endif
+    published_audio_capabilities_service_server_init(&sink_node, sources);
+    published_audio_capabilities_service_server_register_packet_handler(&pacs_server_packet_handler);
+
+    // setup advertisements
+    uint16_t adv_int_min = 0x0030;
+    uint16_t adv_int_max = 0x0030;
+    uint8_t adv_type = 0;
+    bd_addr_t null_addr;
+    memset(null_addr, 0, 6);
+    gap_advertisements_set_params(adv_int_min, adv_int_max, adv_type, 0, null_addr, 0x07, 0x00);
+    gap_advertisements_set_data(adv_data_len, (uint8_t*) adv_data);
+    gap_advertisements_enable(1);
+    printf("Start Advertising, waiting for connection\n");
+}
+
 static void update_playback_volume(void){
     const btstack_audio_sink_t * sink = btstack_audio_sink_get_instance();
     if (sink != NULL){
@@ -278,7 +318,8 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
         case BTSTACK_EVENT_STATE:
             switch(btstack_event_state_get_state(packet)) {
                 case HCI_STATE_WORKING:
-                    printf("Ready, press 'b', 'l' or 'r' to configure as STEREO/LEFT/RIGHT speaker and start advertising\n");
+                    printf("Configured as STEREO speaker\n");
+                    setup_pacs_and_start_advertising(LE_AUDIO_LOCATION_MASK_FRONT_LEFT | LE_AUDIO_LOCATION_MASK_FRONT_RIGHT);
                     break;
                 default:
                     break;
@@ -597,53 +638,12 @@ static void ascs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
     }
 }
 
-void setup_pacs_and_start_advertising(uint8_t audio_location_mask) {
-    // PACS Server
-    // - sinks
-    sink_node.records_num = 1;
-    sink_node.records = &sink_pac_records[0];
-    sink_node.audio_locations_mask = audio_location_mask;
-    sink_node.available_audio_contexts_mask = LE_AUDIO_CONTEXT_MASK_UNSPECIFIED;
-    sink_node.supported_audio_contexts_mask = LE_AUDIO_CONTEXT_MASK_UNSPECIFIED;
-    uint8_t channel_count_mask = LE_AUDIO_CODEC_AUDIO_CHANNEL_COUNT_MASK_1;
-    if (audio_location_mask == (LE_AUDIO_LOCATION_MASK_FRONT_LEFT | LE_AUDIO_LOCATION_MASK_FRONT_RIGHT)){
-        channel_count_mask = LE_AUDIO_CODEC_AUDIO_CHANNEL_COUNT_MASK_2;
-    }
-    sink_pac_records[0].codec_capability.supported_audio_channel_counts_mask = channel_count_mask;
-    // - sources
-    pacs_streamendpoint_t * sources = NULL;
-#ifdef ENABLE_MICROPHONE
-    sources = &source_node;
-    source_node.records_num = 1;
-    source_node.records = &source_pac_records[0];
-    source_node.audio_locations_mask = 1;
-    source_node.available_audio_contexts_mask = LE_AUDIO_CONTEXT_MASK_UNSPECIFIED;
-    source_node.supported_audio_contexts_mask = LE_AUDIO_CONTEXT_MASK_UNSPECIFIED;
-#endif
-    published_audio_capabilities_service_server_init(&sink_node, sources);
-    published_audio_capabilities_service_server_register_packet_handler(&pacs_server_packet_handler);
-
-    // setup advertisements
-    uint16_t adv_int_min = 0x0030;
-    uint16_t adv_int_max = 0x0030;
-    uint8_t adv_type = 0;
-    bd_addr_t null_addr;
-    memset(null_addr, 0, 6);
-    gap_advertisements_set_params(adv_int_min, adv_int_max, adv_type, 0, null_addr, 0x07, 0x00);
-    gap_advertisements_set_data(adv_data_len, (uint8_t*) adv_data);
-    gap_advertisements_enable(1);
-    printf("Start Advertising, waiting for connection\n");
-}
-
 static void show_usage(void){
     printf("\n--- LE Audio Unicast Sink Test Console ---\n");
-    printf(" l - configure as LEFT speaker and start advertising\n");
-    printf(" r - configure as RIGHT speaker and start advertising\n");
-    printf(" b - configure as STEREO speaker and start advertising\n");
     printf(" [ - volume down\n");
     printf(" ] - volume up\n");
     printf(" k - play\n");
-    printf(" K - stop\n");
+    printf(" K - stop (only works in paused mode)\n");
     printf(" L - pause\n");
     printf(" i - next track\n");
     printf(" I - previous track\n");
@@ -655,24 +655,6 @@ static void stdin_process(char c){
     uint8_t status = ERROR_CODE_SUCCESS;
     printf("STDIN: %c\n", c);
     switch (c){
-        case 'b':
-            printf("Configured as STEREO speaker\n");
-            sink_pac_records[0].codec_capability.supported_audio_channel_counts_mask =
-                    LE_AUDIO_CODEC_AUDIO_CHANNEL_COUNT_MASK_2;
-            setup_pacs_and_start_advertising(LE_AUDIO_LOCATION_MASK_FRONT_LEFT | LE_AUDIO_LOCATION_MASK_FRONT_RIGHT);
-            break;
-        case 'l':
-            printf("Configured as LEFT speaker\n");
-            sink_pac_records[0].codec_capability.supported_audio_channel_counts_mask =
-                    LE_AUDIO_CODEC_AUDIO_CHANNEL_COUNT_MASK_1;
-            setup_pacs_and_start_advertising(LE_AUDIO_LOCATION_MASK_FRONT_LEFT);
-            break;
-        case 'r':
-            printf("Configured as RIGHT speaker\n");
-            sink_pac_records[0].codec_capability.supported_audio_channel_counts_mask =
-                    LE_AUDIO_CODEC_AUDIO_CHANNEL_COUNT_MASK_1;
-            setup_pacs_and_start_advertising(LE_AUDIO_LOCATION_MASK_FRONT_RIGHT);
-            break;
         case '[':
             if (playback_volume > volume_step){
                 playback_volume -= volume_step;
