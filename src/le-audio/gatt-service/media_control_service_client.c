@@ -601,7 +601,7 @@ void media_control_service_client_init(void){
     mcs_client_handle_can_send_now.callback = &mcs_client_run_for_connection;
 }
 
-uint8_t media_control_service_client_connect(hci_con_handle_t con_handle, mcs_client_connection_t * connection, 
+uint8_t media_control_service_client_connect_media_player(hci_con_handle_t con_handle, mcs_client_connection_t * connection,
     gatt_service_client_characteristic_t * characteristics, uint8_t characteristics_num,
     btstack_packet_handler_t packet_handler, uint16_t * mcs_cid){
 
