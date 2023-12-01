@@ -117,7 +117,7 @@ void media_control_service_client_init(void);
  * @param mcs_cid
  * @return status ERROR_CODE_SUCCESS on success, otherwise ERROR_CODE_COMMAND_DISALLOWED if there is already a client associated with con_handle, or BTSTACK_MEMORY_ALLOC_FAILED 
  */
-uint8_t media_control_service_client_connect(
+uint8_t media_control_service_client_connect_media_player(
     hci_con_handle_t con_handle, mcs_client_connection_t * connection, 
     gatt_service_client_characteristic_t * characteristics, uint8_t characteristics_num,
     btstack_packet_handler_t packet_handler, uint16_t * mcs_cid);
