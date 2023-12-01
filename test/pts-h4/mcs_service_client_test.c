@@ -406,10 +406,10 @@ static void stdin_process(char cmd){
             }
             printf("MCS: connect 0x%02x\n", bap_app_client_con_handle);
             bap_app_client_state = BAP_APP_CLIENT_STATE_W4_MCS_CONNECTED;
-            status = media_control_service_client_connect(
-                bap_app_client_con_handle, 
+            status = media_control_service_client_connect_media_player(
+                bap_app_client_con_handle, 0, &mcs_client_event_handler,
                 &mcs_connection, mcs_connection_characteristics, MCS_CLIENT_CHARACTERISTICS_MAX_NUM,
-                &mcs_client_event_handler, &mcs_cid);
+                &mcs_cid);
             break;
 
         case 'B':
