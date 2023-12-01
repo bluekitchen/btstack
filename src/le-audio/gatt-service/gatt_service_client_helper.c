@@ -197,18 +197,18 @@ static void gatt_service_client_run_for_client(gatt_service_client_helper_t * cl
             status = gatt_client_discover_primary_services_by_uuid16(
                     gatt_service_client_get_packet_handler_trampoline(client),
                 connection->con_handle, 
-                client->service_uuid16);
+                connection->service_uuid16);
             break;
 
         case GATT_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTICS:
 #ifdef ENABLE_TESTING_SUPPORT
-            printf("Read characteristics [service 0x%04x]:\n", client->service_uuid16);
+            printf("Read characteristics [service 0x%04x]:\n", connection->service_uuid16);
 #endif
             connection->state = GATT_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_RESULT;
 
             service.start_group_handle = connection->start_handle;
             service.end_group_handle = connection->end_handle;
-            service.uuid16 = client->service_uuid16;
+            service.uuid16 = connection->service_uuid16;
 
             status = gatt_client_discover_characteristics_for_service(
                 gatt_service_client_get_packet_handler_trampoline(client),
@@ -490,10 +490,10 @@ void gatt_service_client_register_packet_handler(gatt_service_client_helper_t * 
 }
 
 uint8_t gatt_service_client_connect(
-        hci_con_handle_t con_handle,
-        gatt_service_client_helper_t * client, gatt_service_client_connection_helper_t * connection, 
-        gatt_service_client_characteristic_t * characteristics, uint8_t characteristics_num,
-        btstack_packet_handler_t packet_handler, uint16_t * connection_cid){
+        hci_con_handle_t con_handle, gatt_service_client_helper_t * client,
+        gatt_service_client_connection_helper_t * connection,
+        uint16_t service_uuid16, uint8_t service_index, gatt_service_client_characteristic_t * characteristics,
+        uint8_t characteristics_num, btstack_packet_handler_t packet_handler, uint16_t * connection_cid){
     
     btstack_assert(client          != NULL);
     btstack_assert(connection      != NULL);
@@ -517,6 +517,8 @@ uint8_t gatt_service_client_connect(
     connection->state = GATT_SERVICE_CLIENT_STATE_W2_QUERY_SERVICE;
     connection->cid                 = *connection_cid;
     connection->con_handle          = con_handle;
+    connection->service_uuid16      = service_uuid16;
+    connection->service_index       = service_index;
     connection->characteristics_num = 0;
     connection->characteristics     = characteristics;
     connection->event_callback = packet_handler;

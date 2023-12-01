@@ -89,6 +89,8 @@ typedef struct {
 
     // service
     // used to restrict the number of found services to 1
+    uint16_t service_uuid16;
+    uint8_t  service_index;
     uint16_t service_instances_num;
     uint16_t start_handle;
     uint16_t end_handle;
@@ -108,8 +110,6 @@ typedef struct {
     btstack_linked_list_t connections;
     uint16_t cid_counter;
 
-    // service
-    uint16_t service_uuid16;
     // characteristics
     uint8_t  characteristics_desc16_num;
     const gatt_service_client_characteristic_desc16_t * characteristics_desc16;
@@ -165,7 +165,8 @@ uint16_t gatt_service_client_get_cid_for_connection(const gatt_service_client_co
 
 uint8_t gatt_service_client_connect(
         hci_con_handle_t con_handle,
-        gatt_service_client_helper_t * client, gatt_service_client_connection_helper_t * connection, 
+        gatt_service_client_helper_t * client, gatt_service_client_connection_helper_t * connection,
+        uint16_t service_uuid, uint8_t service_index,
         gatt_service_client_characteristic_t * characteristics, uint8_t characteristics_num,
         btstack_packet_handler_t packet_handler, uint16_t * connection_cid);
 
