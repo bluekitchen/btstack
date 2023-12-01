@@ -600,13 +600,13 @@ void media_control_service_client_init(void){
 }
 
 uint8_t media_control_service_client_connect_media_player(hci_con_handle_t con_handle, mcs_client_connection_t * connection,
-    gatt_service_client_characteristic_t * characteristics, uint8_t characteristics_num,
+    uint8_t service_index, gatt_service_client_characteristic_t * characteristics, uint8_t characteristics_num,
     btstack_packet_handler_t packet_handler, uint16_t * mcs_cid){
 
     btstack_assert(mcs_client.characteristics_desc16_num > 0);
     return gatt_service_client_connect(con_handle,
         &mcs_client, &connection->basic_connection,
-        ORG_BLUETOOTH_SERVICE_MEDIA_CONTROL_SERVICE,
+        ORG_BLUETOOTH_SERVICE_MEDIA_CONTROL_SERVICE, service_index,
         characteristics, characteristics_num, packet_handler,
         mcs_cid);
 }
