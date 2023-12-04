@@ -521,7 +521,7 @@ static void send_gatt_services_request(gatt_client_t *gatt_client){
 }
 
 static void send_gatt_by_uuid_request(gatt_client_t *gatt_client, uint16_t attribute_group_type){
-    if (gatt_client->uuid16){
+    if (gatt_client->uuid16 != 0u){
         uint8_t uuid16[2];
         little_endian_store_16(uuid16, 0, gatt_client->uuid16);
         att_find_by_type_value_request(gatt_client, ATT_FIND_BY_TYPE_VALUE_REQUEST, attribute_group_type,
@@ -564,7 +564,7 @@ static void send_gatt_read_characteristic_value_request(gatt_client_t *gatt_clie
 }
 
 static void send_gatt_read_by_type_request(gatt_client_t * gatt_client){
-    if (gatt_client->uuid16){
+    if (gatt_client->uuid16 != 0u){
         att_read_by_type_or_group_request_for_uuid16(gatt_client, ATT_READ_BY_TYPE_REQUEST,
                                                      gatt_client->uuid16, gatt_client->start_group_handle,
                                                      gatt_client->end_group_handle);
@@ -1003,7 +1003,7 @@ static void report_gatt_all_characteristic_descriptors(gatt_client_t * gatt_clie
     
 }
 
-static int is_query_done(gatt_client_t * gatt_client, uint16_t last_result_handle){
+static bool is_query_done(gatt_client_t * gatt_client, uint16_t last_result_handle){
     return last_result_handle >= gatt_client->end_group_handle;
 }
 
@@ -1156,7 +1156,7 @@ static bool gatt_client_run_for_gatt_client(gatt_client_t * gatt_client){
     }
 
     if (gatt_client->send_confirmation){
-        gatt_client->send_confirmation = 0;
+        gatt_client->send_confirmation = false;
         att_confirmation(gatt_client);
         return true;
     }
@@ -1799,7 +1799,7 @@ static void gatt_client_handle_att_response(gatt_client_t * gatt_client, uint8_t
         case ATT_HANDLE_VALUE_INDICATION:
             if (size < 3u) break;
             report_gatt_indication(gatt_client, little_endian_read_16(packet, 1u), &packet[3], size - 3u);
-            gatt_client->send_confirmation = 1;
+            gatt_client->send_confirmation = true;
             break;
         case ATT_READ_BY_TYPE_RESPONSE:
             gatt_client_handle_att_read_by_type_response(gatt_client, packet, size);

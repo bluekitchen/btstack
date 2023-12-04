@@ -237,7 +237,7 @@ typedef struct gatt_client{
     uint8_t  client_characteristic_configuration_value[2];
     
     bool     filter_with_uuid;
-    uint8_t  send_confirmation;
+    bool     send_confirmation;
 
     int      le_device_index;
     uint8_t  cmac[8];
