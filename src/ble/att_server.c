@@ -328,8 +328,8 @@ static void att_server_event_packet_handler (uint8_t packet_type, uint16_t chann
 		                	att_connection->authorized = 0u;
                             // workaround: identity resolving can already be complete, at least store result
                             att_server->ir_le_device_db_index = sm_le_device_index(con_handle);
-                            att_server->ir_lookup_active = 0u;
-                            att_server->pairing_active = 0u;
+                            att_server->ir_lookup_active = false;
+                            att_server->pairing_active = false;
                             // notify all - new
                             att_emit_connected_event(att_server, att_connection);
                             break;
@@ -384,7 +384,7 @@ static void att_server_event_packet_handler (uint8_t packet_type, uint16_t chann
                     att_connection = &hci_connection->att_connection;
                     att_clear_transaction_queue(att_connection);
                     att_connection->con_handle = 0;
-                    att_server->pairing_active = 0;
+                    att_server->pairing_active = false;
                     att_server->state = ATT_SERVER_IDLE;
                     if (att_server->value_indication_handle != 0u){
                         btstack_run_loop_remove_timer(&att_server->value_indication_timer);
@@ -405,7 +405,7 @@ static void att_server_event_packet_handler (uint8_t packet_type, uint16_t chann
                     if (!hci_connection) break;
                     att_server = &hci_connection->att_server;
                     log_info("SM_EVENT_IDENTITY_RESOLVING_STARTED");
-                    att_server->ir_lookup_active = 1;
+                    att_server->ir_lookup_active = true;
                     break;
                 case SM_EVENT_IDENTITY_RESOLVING_SUCCEEDED:
                     con_handle = sm_event_identity_created_get_handle(packet);
@@ -413,7 +413,7 @@ static void att_server_event_packet_handler (uint8_t packet_type, uint16_t chann
                     if (!hci_connection) return;
                     att_connection = &hci_connection->att_connection;
                     att_server = &hci_connection->att_server;
-                    att_server->ir_lookup_active = 0;
+                    att_server->ir_lookup_active = false;
                     att_server->ir_le_device_db_index = sm_event_identity_resolving_succeeded_get_index(packet);
                     log_info("SM_EVENT_IDENTITY_RESOLVING_SUCCEEDED");
                     att_run_for_context(att_server, att_connection);
@@ -425,7 +425,7 @@ static void att_server_event_packet_handler (uint8_t packet_type, uint16_t chann
                     att_connection = &hci_connection->att_connection;
                     att_server = &hci_connection->att_server;
                     log_info("SM_EVENT_IDENTITY_RESOLVING_FAILED");
-                    att_server->ir_lookup_active = 0;
+                    att_server->ir_lookup_active = false;
                     att_server->ir_le_device_db_index = -1;
                     att_run_for_context(att_server, att_connection);
                     break;
@@ -442,7 +442,7 @@ static void att_server_event_packet_handler (uint8_t packet_type, uint16_t chann
                     if (!hci_connection) break;
                     att_server = &hci_connection->att_server;
                     log_info("SM Pairing started");
-                    att_server->pairing_active = 1;
+                    att_server->pairing_active = true;
                     if (att_server->ir_le_device_db_index < 0) break;
                     att_server_persistent_ccc_clear(att_server);
                     // index not valid anymore
@@ -456,7 +456,7 @@ static void att_server_event_packet_handler (uint8_t packet_type, uint16_t chann
                     if (!hci_connection) return;
                     att_connection = &hci_connection->att_connection;
                     att_server = &hci_connection->att_server;
-                    att_server->pairing_active = 0;
+                    att_server->pairing_active = false;
                     att_server->ir_le_device_db_index = sm_event_identity_created_get_index(packet);
                     att_run_for_context(att_server, att_connection);
                     break;
@@ -468,7 +468,7 @@ static void att_server_event_packet_handler (uint8_t packet_type, uint16_t chann
                     if (!hci_connection) return;
                     att_connection = &hci_connection->att_connection;
                     att_server = &hci_connection->att_server;
-                    att_server->pairing_active = 0;
+                    att_server->pairing_active = false;
                     att_run_for_context(att_server, att_connection);
                     break;
 

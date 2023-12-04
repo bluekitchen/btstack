@@ -45,6 +45,7 @@
 
 #include "btstack_config.h"
 
+#include "btstack_bool.h"
 #include "btstack_chipset.h"
 #include "btstack_control.h"
 #include "btstack_linked_list.h"
@@ -494,8 +495,8 @@ typedef struct {
     att_bearer_type_t       bearer_type;
 
     int                     ir_le_device_db_index;
-    uint8_t                 ir_lookup_active;
-    uint8_t                 pairing_active;
+    bool                    ir_lookup_active;
+    bool                    pairing_active;
 
     uint16_t                value_indication_handle;    
     btstack_timer_source_t  value_indication_timer;
