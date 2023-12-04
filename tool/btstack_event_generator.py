@@ -209,7 +209,7 @@ param_read = {
     'Y' : 'gatt_client_deserialize_characteristic(event, {offset}, {result_name});',
     'Z' : 'gatt_client_deserialize_characteristic_descriptor(event, {offset}, {result_name});',
     'V' : 'return &event[{offset}];',
-    'C' : 'return little_endian_read_16(event, {offset} + (2 * (int) index)));'
+    'C' : 'return little_endian_read_16(event, {offset} + (2 * (int) index));'
 }
 
 def c_type_for_btstack_type(type):

@@ -5818,7 +5818,7 @@ static inline uint8_t gap_subevent_big_created_get_num_bis(const uint8_t * event
  * @note: btstack_type C
  */
 static inline uint16_t gap_subevent_big_created_get_bis_con_handles(const uint8_t * event, uint8_t index){
-    return little_endian_read_16(event, 6 + (2 * (int) index)));
+    return little_endian_read_16(event, 6 + (2 * (int) index));
 }
 
 /**
@@ -5866,7 +5866,7 @@ static inline uint8_t gap_subevent_big_sync_created_get_num_bis(const uint8_t * 
  * @note: btstack_type C
  */
 static inline uint16_t gap_subevent_big_sync_created_get_bis_con_handles(const uint8_t * event, uint8_t index){
-    return little_endian_read_16(event, 6 + (2 * (int) index)));
+    return little_endian_read_16(event, 6 + (2 * (int) index));
 }
 
 /**
@@ -5914,7 +5914,7 @@ static inline uint8_t gap_subevent_cig_created_get_num_cis(const uint8_t * event
  * @note: btstack_type C
  */
 static inline uint16_t gap_subevent_cig_created_get_cis_con_handles(const uint8_t * event, uint8_t index){
-    return little_endian_read_16(event, 6 + (2 * (int) index)));
+    return little_endian_read_16(event, 6 + (2 * (int) index));
 }
 
 /**
