@@ -1083,12 +1083,12 @@ void gatt_client_stop_listening_for_characteristic_value_updates(gatt_client_not
     btstack_linked_list_remove(&gatt_client_value_listeners, (btstack_linked_item_t*) notification);
 }
 
-static int is_value_valid(gatt_client_t *gatt_client, uint8_t *packet, uint16_t size){
+static bool is_value_valid(gatt_client_t *gatt_client, uint8_t *packet, uint16_t size){
     uint16_t attribute_handle = little_endian_read_16(packet, 1);
     uint16_t value_offset = little_endian_read_16(packet, 3);
     
-    if (gatt_client->attribute_handle != attribute_handle) return 0;
-    if (gatt_client->attribute_offset != value_offset) return 0;
+    if (gatt_client->attribute_handle != attribute_handle) return false;
+    if (gatt_client->attribute_offset != value_offset) return false;
     return memcmp(&gatt_client->attribute_value[gatt_client->attribute_offset], &packet[5], size - 5u) == 0u;
 }
 
