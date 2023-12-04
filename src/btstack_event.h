@@ -5818,7 +5818,7 @@ static inline uint8_t gap_subevent_big_created_get_num_bis(const uint8_t * event
  * @note: btstack_type C
  */
 static inline uint16_t gap_subevent_big_created_get_bis_con_handles(const uint8_t * event, uint8_t index){
-    return little_endian_read_16(event, 6 + (2 * index));
+    return little_endian_read_16(event, 6 + (2 * (int) index)));
 }
 
 /**
@@ -5866,7 +5866,7 @@ static inline uint8_t gap_subevent_big_sync_created_get_num_bis(const uint8_t * 
  * @note: btstack_type C
  */
 static inline uint16_t gap_subevent_big_sync_created_get_bis_con_handles(const uint8_t * event, uint8_t index){
-    return little_endian_read_16(event, 6 + (2 * index));
+    return little_endian_read_16(event, 6 + (2 * (int) index)));
 }
 
 /**
@@ -5914,7 +5914,7 @@ static inline uint8_t gap_subevent_cig_created_get_num_cis(const uint8_t * event
  * @note: btstack_type C
  */
 static inline uint16_t gap_subevent_cig_created_get_cis_con_handles(const uint8_t * event, uint8_t index){
-    return little_endian_read_16(event, 6 + (2 * index));
+    return little_endian_read_16(event, 6 + (2 * (int) index)));
 }
 
 /**
@@ -13766,7 +13766,7 @@ static inline const uint8_t * gattservice_subevent_bass_client_notify_receive_st
  * @note: btstack_type 3
  */
 static inline uint32_t gattservice_subevent_bass_client_notify_receive_state_subgroup_get_language_code(const uint8_t * event){
-    return little_endian_read_24(event, 16u + event[15]);
+    return little_endian_read_24(event, (int)(16u + event[15]));
 }
 /**
  * @brief Get field ccids_num from event GATTSERVICE_SUBEVENT_BASS_CLIENT_NOTIFY_RECEIVE_STATE_SUBGROUP
@@ -13820,7 +13820,7 @@ static inline const uint8_t * gattservice_subevent_bass_client_notify_receive_st
  * @note: btstack_type 2
  */
 static inline uint16_t gattservice_subevent_bass_client_notify_receive_state_subgroup_get_extended_metadata_type(const uint8_t * event){
-    return little_endian_read_16(event, 16u + event[15] + 3u + 1u + event[16u + event[15] + 3u] + 1u + 1u + event[16u + event[15] + 3u + 1u + event[16u + event[15] + 3u] + 1u]);
+    return little_endian_read_16(event, (int)(16u + event[15] + 3u + 1u + event[16u + event[15] + 3u] + 1u + 1u + event[16u + event[15] + 3u + 1u + event[16u + event[15] + 3u] + 1u]));
 }
 /**
  * @brief Get field extended_metadata_value_length from event GATTSERVICE_SUBEVENT_BASS_CLIENT_NOTIFY_RECEIVE_STATE_SUBGROUP
@@ -13847,7 +13847,7 @@ static inline const uint8_t * gattservice_subevent_bass_client_notify_receive_st
  * @note: btstack_type 2
  */
 static inline uint16_t gattservice_subevent_bass_client_notify_receive_state_subgroup_get_vendor_specific_metadata_type(const uint8_t * event){
-    return little_endian_read_16(event, 16u + event[15] + 3u + 1u + event[16u + event[15] + 3u] + 1u + 1u + event[16u + event[15] + 3u + 1u + event[16u + event[15] + 3u] + 1u] + 2u + 1u + event[16u + event[15] + 3u + 1u + event[16u + event[15] + 3u] + 1u + 1u + event[16u + event[15] + 3u + 1u + event[16u + event[15] + 3u] + 1u] + 2u]);
+    return little_endian_read_16(event, (int)(16u + event[15] + 3u + 1u + event[16u + event[15] + 3u] + 1u + 1u + event[16u + event[15] + 3u + 1u + event[16u + event[15] + 3u] + 1u] + 2u + 1u + event[16u + event[15] + 3u + 1u + event[16u + event[15] + 3u] + 1u + 1u + event[16u + event[15] + 3u + 1u + event[16u + event[15] + 3u] + 1u] + 2u]));
 }
 /**
  * @brief Get field vendor_specific_metadata_value_length from event GATTSERVICE_SUBEVENT_BASS_CLIENT_NOTIFY_RECEIVE_STATE_SUBGROUP

@@ -209,7 +209,7 @@ param_read = {
     'Y' : 'gatt_client_deserialize_characteristic(event, {offset}, {result_name});',
     'Z' : 'gatt_client_deserialize_characteristic_descriptor(event, {offset}, {result_name});',
     'V' : 'return &event[{offset}];',
-    'C' : 'return little_endian_read_16(event, {offset} + (2 * index));'
+    'C' : 'return little_endian_read_16(event, {offset} + (2 * (int) index)));'
 }
 
 def c_type_for_btstack_type(type):
@@ -252,7 +252,7 @@ def all_fields_supported(format):
             return False
     return True
 
-def create_getter(event_name, field_name, field_type, offset, supported):
+def create_getter(event_name, field_name, field_type, offset, offset_is_number, supported):
     global c_prototoype_unsupported
     global param_read
 
@@ -268,7 +268,11 @@ def create_getter(event_name, field_name, field_type, offset, supported):
     code = ''
     if supported and field_type in param_read:
         template = template_for_type(field_type)
-        code = param_read[field_type].format(offset=offset, result_name=result_name)
+        read_code = param_read[field_type]
+        requires_signed = 'little_endian' in read_code or 'gatt_client_deserialize' in read_code
+        if requires_signed and not offset_is_number:
+            offset = '(int)(%s)' % offset
+        code = read_code.format(offset=offset, result_name=result_name)
     return template.format(description=description, fn_name=fn_name, result_name=result_name, result_type=result_type, code=code, format=field_type)
 
 def is_le_event(event_group):
@@ -317,7 +321,7 @@ def create_events(events):
                     print("Param after variable length field without preceding 'J' length field")
                     break
                 field_type = f 
-                text = create_getter(base_name, field_name, field_type, offset, supported)
+                text = create_getter(base_name, field_name, field_type, offset, offset_is_number, supported)
                 fout.write(text)
                 if field_type in 'RT':
                     break
