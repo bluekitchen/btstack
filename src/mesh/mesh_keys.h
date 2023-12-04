@@ -35,8 +35,8 @@
  *
  */
 
-#ifndef __MESH_KEYS_H
-#define __MESH_KEYS_H
+#ifndef MESH_KEYS_H
+#define MESH_KEYS_H
 
 #include <stdint.h>
 

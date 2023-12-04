@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "main.c"
+#define BTSTACK_FILE__ "main.c"
 
 #ifndef WICED_HAVE_MBEDTLS
 

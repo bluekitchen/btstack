@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "main.c"
+#define BTSTACK_FILE__ "main.c"
 
 #include "btstack.h"
 #include "btstack_chipset_bcm.h"

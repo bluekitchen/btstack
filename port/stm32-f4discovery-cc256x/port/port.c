@@ -1,4 +1,4 @@
-#define __BTSTACK_FILE__ "port.c"
+#define BTSTACK_FILE__ "port.c"
 
 // include STM32 first to avoid warning about redefinition of UNUSED
 #include "stm32f4xx_hal.h"
