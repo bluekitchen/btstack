@@ -165,10 +165,9 @@ bool de_get_normalized_uuid(uint8_t *uuid128, const uint8_t *element){
 // @return 0 if no UUID16 or UUID32 is present, and UUID32 otherwise
 uint32_t de_get_uuid32(const uint8_t * element){
     uint8_t uuid128[16];
-    int validUuid128 = de_get_normalized_uuid(uuid128, element);
-    if (!validUuid128) return 0;
-    int hasBlueoothBaseUuid = uuid_has_bluetooth_prefix(uuid128);
-    if (!hasBlueoothBaseUuid) return 0;
+    int valid_uuid128 = de_get_normalized_uuid(uuid128, element);
+    if (!valid_uuid128) return 0;
+    if (uuid_has_bluetooth_prefix(uuid128) == false) return 0;
     return big_endian_read_32(uuid128, 0);
 }
 
