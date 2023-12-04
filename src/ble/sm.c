@@ -322,7 +322,7 @@ typedef struct sm_setup_context {
     stk_generation_method_t sm_stk_generation_method;
     sm_key_t  sm_tk;
     uint8_t   sm_have_oob_data;
-    uint8_t   sm_use_secure_connections;
+    bool      sm_use_secure_connections;
 
     sm_key_t  sm_c1_t3_value;   // c1 calculation
     sm_pairing_packet_t sm_m_preq; // pairing request - needed only for c1
@@ -429,7 +429,7 @@ static void sm_cmac_message_start(const sm_key_t key, uint16_t message_len, cons
 static void sm_ec_generate_new_key(void);
 static void sm_handle_random_result_sc_next_w2_cmac_for_confirmation(void * arg);
 static void sm_handle_random_result_sc_next_send_pairing_random(void * arg);
-static int sm_passkey_entry(stk_generation_method_t method);
+static bool sm_passkey_entry(stk_generation_method_t method);
 #endif
 static void sm_pairing_complete(sm_connection_t * sm_conn, uint8_t status, uint8_t reason);
 
@@ -853,7 +853,7 @@ static void sm_setup_tk(void){
                                        & sm_pairing_packet_get_auth_req(setup->sm_s_pres)
                                        & SM_AUTHREQ_SECURE_CONNECTION ) != 0u;
 #else
-    setup->sm_use_secure_connections = 0;
+    setup->sm_use_secure_connections = false;
 #endif
     log_info("Secure pairing: %u", setup->sm_use_secure_connections);
 
@@ -4207,14 +4207,14 @@ static int sm_passkey_used(stk_generation_method_t method){
     }
 }
 
-static int sm_passkey_entry(stk_generation_method_t method){
+static bool sm_passkey_entry(stk_generation_method_t method){
     switch (method){
         case PK_RESP_INPUT:
         case PK_INIT_INPUT:
         case PK_BOTH_INPUT:
-            return 1;
+            return true;
         default:
-            return 0;
+            return false;
     }
 }
 
