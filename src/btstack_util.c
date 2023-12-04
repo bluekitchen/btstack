@@ -333,7 +333,7 @@ void uuid_add_bluetooth_prefix(uint8_t * uuid128, uint32_t short_uuid){
     big_endian_store_32(uuid128, 0, short_uuid);
 }
 
-int uuid_has_bluetooth_prefix(const uint8_t * uuid128){
+bool uuid_has_bluetooth_prefix(const uint8_t * uuid128){
     return memcmp(&uuid128[4], &bluetooth_base_uuid[4], 12) == 0;
 }
 

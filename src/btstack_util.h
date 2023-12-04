@@ -282,9 +282,9 @@ void uuid_add_bluetooth_prefix(uint8_t * uuid128, uint32_t short_uuid);
 /**
  * @brief Checks if UUID128 has Bluetooth base UUID prefix
  * @param uui128 to test
- * @return 1 if it can be expressed as UUID32
+ * @return true if it can be expressed as UUID32
  */
-int  uuid_has_bluetooth_prefix(const uint8_t * uuid128);
+bool uuid_has_bluetooth_prefix(const uint8_t * uuid128);
 
 /**
  * @brief Parse unsigned number 
