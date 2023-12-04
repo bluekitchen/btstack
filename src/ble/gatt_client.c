@@ -2321,7 +2321,7 @@ uint8_t gatt_client_discover_characteristics_for_service(btstack_packet_handler_
     gatt_client->callback = callback;
     gatt_client->start_group_handle = service->start_group_handle;
     gatt_client->end_group_handle   = service->end_group_handle;
-    gatt_client->filter_with_uuid = 0;
+    gatt_client->filter_with_uuid = false;
     gatt_client->characteristic_start_handle = 0;
     gatt_client->state = P_W2_SEND_ALL_CHARACTERISTICS_OF_SERVICE_QUERY;
     gatt_client_run();
@@ -2354,7 +2354,7 @@ uint8_t gatt_client_discover_characteristics_for_handle_range_by_uuid16(btstack_
     gatt_client->callback = callback;
     gatt_client->start_group_handle = start_handle;
     gatt_client->end_group_handle   = end_handle;
-    gatt_client->filter_with_uuid = 1;
+    gatt_client->filter_with_uuid = true;
     gatt_client->uuid16 = uuid16;
     uuid_add_bluetooth_prefix((uint8_t*) &(gatt_client->uuid128), uuid16);
     gatt_client->characteristic_start_handle = 0;
@@ -2373,7 +2373,7 @@ uint8_t gatt_client_discover_characteristics_for_handle_range_by_uuid128(btstack
     gatt_client->callback = callback;
     gatt_client->start_group_handle = start_handle;
     gatt_client->end_group_handle   = end_handle;
-    gatt_client->filter_with_uuid = 1;
+    gatt_client->filter_with_uuid = true;
     gatt_client->uuid16 = 0;
     (void)memcpy(gatt_client->uuid128, uuid128, 16);
     gatt_client->characteristic_start_handle = 0;
