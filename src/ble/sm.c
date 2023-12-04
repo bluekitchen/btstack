@@ -5472,26 +5472,26 @@ void gap_advertisements_set_params(uint16_t adv_int_min, uint16_t adv_int_max, u
 }
 #endif
 
-int gap_reconnect_security_setup_active(hci_con_handle_t con_handle){
+bool gap_reconnect_security_setup_active(hci_con_handle_t con_handle){
     sm_connection_t * sm_conn = sm_get_connection_for_handle(con_handle);
      // wrong connection
-    if (!sm_conn) return 0;
+    if (!sm_conn) return false;
     // already encrypted
-    if (sm_conn->sm_connection_encrypted) return 0;
+    if (sm_conn->sm_connection_encrypted) return false;
     // irk status?
     switch(sm_conn->sm_irk_lookup_state){
         case IRK_LOOKUP_FAILED:
             // done, cannot setup encryption
-            return 0;
+            return false;
         case IRK_LOOKUP_SUCCEEDED:
             break;
         default:
             // IR Lookup pending
-            return 1;
+            return true;
     }
     // IRK Lookup Succeeded, re-encryption should be initiated. When done, state gets reset or indicates failure
-    if (sm_conn->sm_engine_state == SM_GENERAL_REENCRYPTION_FAILED) return 0;
-    if (sm_conn->sm_role){
+    if (sm_conn->sm_engine_state == SM_GENERAL_REENCRYPTION_FAILED) return false;
+    if (sm_conn->sm_role != 0){
         return sm_conn->sm_engine_state != SM_RESPONDER_IDLE;
     } else {
         return sm_conn->sm_engine_state != SM_INITIATOR_CONNECTED;

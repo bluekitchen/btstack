@@ -1409,7 +1409,7 @@ void gap_le_get_own_connection_address(uint8_t * addr_type, bd_addr_t addr);
  * @param con_handle
  * @return 1 if security setup is active
  */
-int gap_reconnect_security_setup_active(hci_con_handle_t con_handle);
+bool gap_reconnect_security_setup_active(hci_con_handle_t con_handle);
 
 /**
  * @brief Delete bonding information for remote device
