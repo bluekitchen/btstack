@@ -56,7 +56,7 @@ typedef enum {
 } att_operation_t;
 
 
-static int is_Bluetooth_Base_UUID(uint8_t const *uuid){
+static bool is_Bluetooth_Base_UUID(uint8_t const *uuid){
     // Bluetooth Base UUID 00000000-0000-1000-8000-00805F9B34FB in little endian
     static const uint8_t bluetooth_base_uuid[] = { 0xfb, 0x34, 0x9b, 0x5f, 0x80, 0x00, 0x00, 0x80, 0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 
@@ -141,22 +141,22 @@ static void att_iterator_fetch_next(att_iterator_t *it){
     it->att_ptr += it->size;
 }
 
-static int att_iterator_match_uuid16(att_iterator_t *it, uint16_t uuid){
+static bool att_iterator_match_uuid16(att_iterator_t *it, uint16_t uuid){
     if (it->handle == 0u){
-        return 0u;
+        return false;
     }
-    if (it->flags & (uint16_t)ATT_PROPERTY_UUID128){
+    if ((it->flags & (uint16_t)ATT_PROPERTY_UUID128) != 0u){
         if (!is_Bluetooth_Base_UUID(it->uuid)){
-            return 0;
+            return false;
         }
         return little_endian_read_16(it->uuid, 12) == uuid;
     }
     return little_endian_read_16(it->uuid, 0)  == uuid;
 }
 
-static int att_iterator_match_uuid(att_iterator_t *it, uint8_t *uuid, uint16_t uuid_len){
+static bool att_iterator_match_uuid(att_iterator_t *it, uint8_t *uuid, uint16_t uuid_len){
     if (it->handle == 0u){
-        return 0u;
+        return false;
     }
     // input: UUID16
     if (uuid_len == 2u) {
@@ -168,31 +168,30 @@ static int att_iterator_match_uuid(att_iterator_t *it, uint8_t *uuid, uint16_t u
     }
     // input: UUID128, db: UUID16
     if (!is_Bluetooth_Base_UUID(uuid)){
-        return 0;
+        return false;
     }
     return little_endian_read_16(uuid, 12) == little_endian_read_16(it->uuid, 0);
 }
 
 
-static int att_find_handle(att_iterator_t *it, uint16_t handle){
+static bool att_find_handle(att_iterator_t *it, uint16_t handle){
     if (handle == 0u){
-        return 0u;
+        return false;
     }
     att_iterator_init(it);
     while (att_iterator_has_next(it)){
         att_iterator_fetch_next(it);
-        if (it->handle != handle){
-            continue;
+        if (it->handle == handle){
+            return true;
         }
-        return 1;
     }
-    return 0;
+    return false;
 }
 
 // experimental client API
 uint16_t att_uuid_for_handle(uint16_t attribute_handle){
     att_iterator_t it;
-    int ok = att_find_handle(&it, attribute_handle);
+    bool ok = att_find_handle(&it, attribute_handle);
     if (!ok){
         return 0u;
     }
@@ -204,7 +203,7 @@ uint16_t att_uuid_for_handle(uint16_t attribute_handle){
 
 const uint8_t * gatt_server_get_const_value_for_handle(uint16_t attribute_handle, uint16_t * out_value_len){
     att_iterator_t it;
-    int ok = att_find_handle(&it, attribute_handle);
+    bool ok = att_find_handle(&it, attribute_handle);
     if (!ok){
         return 0u;
     }
@@ -747,7 +746,7 @@ static uint16_t handle_read_request2(att_connection_t * att_connection, uint8_t 
     uint8_t request_type = ATT_READ_REQUEST;
     
     att_iterator_t it;
-    int ok = att_find_handle(&it, handle);
+    bool ok = att_find_handle(&it, handle);
     if (!ok){
         return setup_error_invalid_handle(response_buffer, request_type, handle);
     }
@@ -805,7 +804,7 @@ static uint16_t handle_read_blob_request2(att_connection_t * att_connection, uin
     uint8_t request_type = ATT_READ_BLOB_REQUEST;
 
     att_iterator_t it;
-    int ok = att_find_handle(&it, handle);
+    bool ok = att_find_handle(&it, handle);
     if (!ok){
         return setup_error_invalid_handle(response_buffer, request_type, handle);
     }
@@ -890,7 +889,7 @@ static uint16_t handle_read_multiple_request2(att_connection_t * att_connection,
 
         att_iterator_t it;
 
-        int ok = att_find_handle(&it, handle);
+        bool ok = att_find_handle(&it, handle);
         if (!ok){
             return setup_error_invalid_handle(response_buffer, request_type, handle);
         }
@@ -1119,7 +1118,7 @@ static uint16_t handle_write_request(att_connection_t * att_connection, uint8_t 
 
     uint16_t handle = little_endian_read_16(request_buffer, 1);
     att_iterator_t it;
-    int ok = att_find_handle(&it, handle);
+    bool ok = att_find_handle(&it, handle);
     if (!ok) {
         return setup_error_invalid_handle(response_buffer, request_type, handle);
     }
@@ -1170,7 +1169,7 @@ static uint16_t handle_prepare_write_request(att_connection_t * att_connection, 
         return setup_error_write_not_permitted(response_buffer, request_type, handle);
     }
     att_iterator_t it;
-    if (att_find_handle(&it, handle) == 0) {
+    if (att_find_handle(&it, handle) == false) {
         return setup_error_invalid_handle(response_buffer, request_type, handle);
     }
     if ((it.flags & (uint16_t)ATT_PROPERTY_WRITE) == 0u) {
@@ -1274,7 +1273,7 @@ static void handle_write_command(att_connection_t * att_connection, uint8_t * re
     }
 
     att_iterator_t it;
-    int ok = att_find_handle(&it, handle);
+    bool ok = att_find_handle(&it, handle);
     if (!ok){
         return;
     }
@@ -1585,7 +1584,7 @@ uint16_t gatt_server_get_client_configuration_handle_for_characteristic_with_uui
     reverse_128(uuid128, attribute_value);
     att_iterator_t it;
     att_iterator_init(&it);
-    int characteristic_found = 0;
+    bool characteristic_found = false;
     while (att_iterator_has_next(&it)){
         att_iterator_fetch_next(&it);
         if ((it.handle != 0u) && (it.handle < start_handle)){
@@ -1598,7 +1597,7 @@ uint16_t gatt_server_get_client_configuration_handle_for_characteristic_with_uui
             break;
         }
         if (att_iterator_match_uuid(&it, attribute_value, 16)){
-            characteristic_found = 1;
+            characteristic_found = true;
             continue;
         }
         if (att_iterator_match_uuid16(&it, GATT_PRIMARY_SERVICE_UUID) 
@@ -1658,7 +1657,7 @@ static void att_persistent_ccc_cache(att_iterator_t * it){
 bool att_is_persistent_ccc(uint16_t handle){
     if (handle != att_persistent_ccc_handle){
         att_iterator_t it;
-        int ok = att_find_handle(&it, handle);
+        bool ok = att_find_handle(&it, handle);
         if (!ok){
             return false;
         }
@@ -1834,7 +1833,7 @@ uint16_t btp_att_get_attributes_by_uuid128(uint16_t start_handle, uint16_t end_h
 
 uint16_t btp_att_get_attribute_value(att_connection_t * att_connection, uint16_t attribute_handle, uint8_t * response_buffer, uint16_t response_buffer_size){
     att_iterator_t it;
-    int ok = att_find_handle(&it, attribute_handle);
+    bool ok = att_find_handle(&it, attribute_handle);
     if (!ok){
         return 0;
     }
