@@ -1128,7 +1128,7 @@ static bool gatt_client_run_for_gatt_client(gatt_client_t * gatt_client){
     }
     if (client_request_pending && (gatt_client_required_security_level > gatt_client->security_level) && check_security){
         log_info("Trigger pairing, current security level %u, required %u\n", gatt_client->security_level, gatt_client_required_security_level);
-        gatt_client->wait_for_authentication_complete = 1;
+        gatt_client->wait_for_authentication_complete = true;
         // set att error code for pairing failure based on required level
         switch (gatt_client_required_security_level){
             case LEVEL_4:
@@ -1483,7 +1483,7 @@ static void gatt_client_handle_reencryption_complete(const uint8_t * packet){
 
     gatt_client->reencryption_result = sm_event_reencryption_complete_get_status(packet);
     gatt_client->reencryption_active = false;
-    gatt_client->wait_for_authentication_complete = 0;
+    gatt_client->wait_for_authentication_complete = false;
 
     if (gatt_client->state == P_READY) return;
 
@@ -1555,7 +1555,7 @@ static void gatt_client_event_packet_handler(uint8_t packet_type, uint16_t chann
             gatt_client->security_level = gatt_client_le_security_level_for_connection(con_handle);
 
             if (gatt_client->wait_for_authentication_complete){
-                gatt_client->wait_for_authentication_complete = 0;
+                gatt_client->wait_for_authentication_complete = false;
                 if (sm_event_pairing_complete_get_status(packet)){
                     log_info("pairing failed, report previous error 0x%x", gatt_client->pending_error_code);
                     gatt_client_report_error_if_pending(gatt_client, gatt_client->pending_error_code);
@@ -2098,7 +2098,7 @@ static void gatt_client_handle_att_response(gatt_client_t * gatt_client, uint8_t
                         log_info("security error, start pairing");
 
                         // start pairing for higher security level
-                        gatt_client->wait_for_authentication_complete = 1;
+                        gatt_client->wait_for_authentication_complete = true;
                         gatt_client->pending_error_code = att_status;
                         sm_request_pairing(gatt_client->con_handle);
                         break;
