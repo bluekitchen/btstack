@@ -1232,7 +1232,7 @@ static uint16_t handle_execute_write_request(att_connection_t * att_connection, 
         return setup_error_write_not_permitted(response_buffer, request_type, 0);
     }
 
-    if (request_buffer[1]) {
+    if (request_buffer[1] != 0) {
         // validate queued write
         if (att_prepare_write_error_code == 0){
             att_prepare_write_error_code = (*att_write_callback)(att_connection->con_handle, 0, ATT_TRANSACTION_MODE_VALIDATE, 0, NULL, 0);
@@ -1283,7 +1283,7 @@ static void handle_write_command(att_connection_t * att_connection, uint8_t * re
     if ((it.flags & required_flags) == 0u){
         return;
     }
-    if (att_validate_security(att_connection, ATT_WRITE, &it)){
+    if (att_validate_security(att_connection, ATT_WRITE, &it) != ATT_ERROR_SUCCESS){
         return;
     }
     att_persistent_ccc_cache(&it);
@@ -1647,7 +1647,7 @@ bool gatt_server_get_included_service_with_uuid16(uint16_t start_handle, uint16_
 // 1-item cache to optimize query during write_callback
 static void att_persistent_ccc_cache(att_iterator_t * it){
     att_persistent_ccc_handle = it->handle;
-    if (it->flags & (uint16_t)ATT_PROPERTY_UUID128){
+    if ((it->flags & (uint16_t)ATT_PROPERTY_UUID128) != 0u){
         att_persistent_ccc_uuid16 = 0u;
     } else {
         att_persistent_ccc_uuid16 = little_endian_read_16(it->uuid, 0);

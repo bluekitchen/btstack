@@ -1087,7 +1087,7 @@ static void att_server_persistent_ccc_write(hci_con_handle_t con_handle, uint16_
     uint32_t tag_to_use = 0u;
     if (tag_for_empty != 0u){
         tag_to_use = tag_for_empty;
-    } else if (tag_for_lowest_seq_nr){
+    } else if (tag_for_lowest_seq_nr != 0){
         tag_to_use = tag_for_lowest_seq_nr;
     } else {
         // should not happen
@@ -1251,11 +1251,11 @@ static int att_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
  */
 void att_server_register_service_handler(att_service_handler_t * handler){
     bool att_server_registered = false;
-    if (att_service_handler_for_handle(handler->start_handle)){
+    if (att_service_handler_for_handle(handler->start_handle) != NULL){
         att_server_registered = true;
     }
 
-    if (att_service_handler_for_handle(handler->end_handle)){
+    if (att_service_handler_for_handle(handler->end_handle) != NULL){
         att_server_registered = true;
     }
     

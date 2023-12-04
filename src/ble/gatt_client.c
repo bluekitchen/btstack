@@ -1373,7 +1373,7 @@ static bool gatt_client_run_for_gatt_client(gatt_client_t * gatt_client){
     }
 
     // requested can send now old
-    if (gatt_client->write_without_response_callback){
+    if (gatt_client->write_without_response_callback != NULL){
         btstack_packet_handler_t packet_handler = gatt_client->write_without_response_callback;
         gatt_client->write_without_response_callback = NULL;
         uint8_t event[4];
@@ -1556,7 +1556,7 @@ static void gatt_client_event_packet_handler(uint8_t packet_type, uint16_t chann
 
             if (gatt_client->wait_for_authentication_complete){
                 gatt_client->wait_for_authentication_complete = false;
-                if (sm_event_pairing_complete_get_status(packet)){
+                if (sm_event_pairing_complete_get_status(packet) != ERROR_CODE_SUCCESS){
                     log_info("pairing failed, report previous error 0x%x", gatt_client->pending_error_code);
                     gatt_client_report_error_if_pending(gatt_client, gatt_client->pending_error_code);
                 } else {

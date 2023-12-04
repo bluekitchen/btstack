@@ -564,7 +564,7 @@ static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
         case HCI_EVENT_DISCONNECTION_COMPLETE:
             con_handle = hci_event_disconnection_complete_get_connection_handle(packet);
             client = battery_service_get_client_for_con_handle(con_handle);
-            if (client){
+            if (client != NULL){
                 // finalize
                 uint16_t cid = client->cid;
                 battery_service_finalize_client(client);

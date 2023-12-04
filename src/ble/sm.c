@@ -72,14 +72,14 @@
 #endif
 
 #if defined(ENABLE_LE_PERIPHERAL) && defined(ENABLE_LE_CENTRAL)
-#define IS_RESPONDER(role) (role)
+#define IS_RESPONDER(role) (role == HCI_ROLE_SLAVE)
 #else
 #ifdef ENABLE_LE_CENTRAL
 // only central - never responder (avoid 'unused variable' warnings)
-#define IS_RESPONDER(role) (0 && role)
+#define IS_RESPONDER(role) (0 && (role == HCI_ROLE_SLAVE))
 #else
 // only peripheral - always responder (avoid 'unused variable' warnings)
-#define IS_RESPONDER(role) (1 || role)
+#define IS_RESPONDER(role) (1 || (role == HCI_ROLE_SLAVE))
 #endif
 #endif
 
@@ -912,15 +912,15 @@ static void sm_setup_tk(void){
 
 static int sm_key_distribution_flags_for_set(uint8_t key_set){
     int flags = 0;
-    if (key_set & SM_KEYDIST_ENC_KEY){
+    if ((key_set & SM_KEYDIST_ENC_KEY) != 0u){
         flags |= SM_KEYDIST_FLAG_ENCRYPTION_INFORMATION;
         flags |= SM_KEYDIST_FLAG_MASTER_IDENTIFICATION;
     }
-    if (key_set & SM_KEYDIST_ID_KEY){
+    if ((key_set & SM_KEYDIST_ID_KEY) != 0u){
         flags |= SM_KEYDIST_FLAG_IDENTITY_INFORMATION;
         flags |= SM_KEYDIST_FLAG_IDENTITY_ADDRESS_INFORMATION;
     }
-    if (key_set & SM_KEYDIST_SIGN){
+    if ((key_set & SM_KEYDIST_SIGN) != 0u){
         flags |= SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION;
     }
     return flags;
@@ -960,7 +960,7 @@ int sm_address_resolution_lookup(uint8_t address_type, bd_addr_t address){
     while(btstack_linked_list_iterator_has_next(&it)){
         entry = (sm_lookup_entry_t *) btstack_linked_list_iterator_next(&it);
         if (entry->address_type != address_type) continue;
-        if (memcmp(entry->address, address, 6))  continue;
+        if (memcmp(entry->address, address, 6) != 0)  continue;
         // already in list
         return BTSTACK_BUSY;
     }
@@ -1121,7 +1121,7 @@ static void sm_master_pairing_success(sm_connection_t *connection) {// master ->
 static int sm_key_distribution_flags_for_auth_req(void){
 
     int flags = SM_KEYDIST_ID_KEY;
-    if (sm_auth_req & SM_AUTHREQ_BONDING){
+    if ((sm_auth_req & SM_AUTHREQ_BONDING) != 0u){
         // encryption and signing information only if bonding requested
         flags |= SM_KEYDIST_ENC_KEY;
 #ifdef ENABLE_LE_SIGNED_WRITE
@@ -1321,7 +1321,7 @@ static void sm_address_resolution_handle_event(address_resolution_event_t event)
                     le_device_db_encryption_get(sm_connection->sm_le_db_index, NULL, NULL, ltk, NULL, &authenticated, NULL, NULL);
                     have_ltk = !sm_is_null_key(ltk);
 
-                    if (sm_connection->sm_role) {
+                    if (IS_RESPONDER(sm_connection->sm_role)) {
 #ifdef ENABLE_LE_PERIPHERAL
                         // IRK required before, continue
                         if (sm_connection->sm_engine_state == SM_RESPONDER_PH0_RECEIVED_LTK_W4_IRK){
@@ -1394,7 +1394,7 @@ static void sm_address_resolution_handle_event(address_resolution_event_t event)
                     break;
                 case ADDRESS_RESOLUTION_FAILED:
                     sm_connection->sm_irk_lookup_state = IRK_LOOKUP_FAILED;
-                    if (sm_connection->sm_role) {
+                    if (IS_RESPONDER(sm_connection->sm_role)) {
 #ifdef ENABLE_LE_PERIPHERAL
                         // LTK request received before, IRK required -> negative LTK reply
                         if (sm_connection->sm_engine_state == SM_RESPONDER_PH0_RECEIVED_LTK_W4_IRK){
@@ -1444,7 +1444,7 @@ static void sm_store_bonding_information(sm_connection_t * sm_conn){
     int le_db_index = -1;
 
     // lookup device based on IRK
-    if (setup->sm_key_distribution_received_set & SM_KEYDIST_FLAG_IDENTITY_INFORMATION){
+    if ((setup->sm_key_distribution_received_set & SM_KEYDIST_FLAG_IDENTITY_INFORMATION) != 0u){
         int i;
         for (i=0; i < le_device_db_max_count(); i++){
             sm_key_t irk;
@@ -1575,7 +1575,7 @@ static void sm_remove_le_device_db_entry(uint16_t i) {
 
 static uint8_t sm_key_distribution_validate_received(sm_connection_t * sm_conn){
     // if identity is provided, abort if we have bonding with same address but different irk
-    if (setup->sm_key_distribution_received_set & SM_KEYDIST_FLAG_IDENTITY_INFORMATION){
+    if ((setup->sm_key_distribution_received_set & SM_KEYDIST_FLAG_IDENTITY_INFORMATION) != 0u){
         int index = sm_le_device_db_index_lookup(BD_ADDR_TYPE_LE_PUBLIC, setup->sm_peer_address);
         if (index >= 0){
             sm_key_t irk;
@@ -1726,7 +1726,7 @@ static void sm_sc_cmac_done(uint8_t * hash){
             (void)memcpy(setup->sm_local_dhkey_check, hash, 16);
             if (IS_RESPONDER(sm_conn->sm_role)){
                 // responder
-                if (setup->sm_state_vars & SM_STATE_VAR_DHKEY_COMMAND_RECEIVED){
+                if ((setup->sm_state_vars & SM_STATE_VAR_DHKEY_COMMAND_RECEIVED) != 0u){
                     sm_conn->sm_engine_state = SM_SC_W2_CALCULATE_F6_TO_VERIFY_DHKEY_CHECK;
                 } else {
                     sm_conn->sm_engine_state = SM_SC_W4_DHKEY_CHECK_COMMAND;
@@ -1948,11 +1948,10 @@ static void sm_sc_calculate_remote_confirm(sm_connection_t * sm_conn){
 }
 
 static void sm_sc_prepare_dhkey_check(sm_connection_t * sm_conn){
-    log_info("sm_sc_prepare_dhkey_check, DHKEY calculated %u", (setup->sm_state_vars & SM_STATE_VAR_DHKEY_CALCULATED) ? 1 : 0);
+    log_info("sm_sc_prepare_dhkey_check, DHKEY calculated %u", (setup->sm_state_vars & SM_STATE_VAR_DHKEY_CALCULATED) != 0 ? 1 : 0);
 
-    if (setup->sm_state_vars & SM_STATE_VAR_DHKEY_CALCULATED){
+    if ((setup->sm_state_vars & SM_STATE_VAR_DHKEY_CALCULATED) != 0u){
         sm_conn->sm_engine_state = SM_SC_W2_CALCULATE_F5_SALT;
-        return;
     } else {
         sm_conn->sm_engine_state = SM_SC_W4_CALCULATE_DHKEY;
     }
