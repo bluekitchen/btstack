@@ -539,20 +539,20 @@ static void sm_er_ir_set_default(void){
     }
 }
 
-static int sm_er_is_default(void){
+static bool sm_er_is_default(void){
     int i;
     for (i=0;i<16;i++){
-        if (sm_persistent_er[i] != (0x30+i)) return 0;
+        if (sm_persistent_er[i] != (0x30+i)) return true;
     }
-    return 1;
+    return false;
 }
 
-static int sm_ir_is_default(void){
+static bool sm_ir_is_default(void){
     int i;
     for (i=0;i<16;i++){
-        if (sm_persistent_ir[i] != (0x90+i)) return 0;
+        if (sm_persistent_ir[i] != (0x90+i)) return true;
     }
-    return 1;
+    return false;
 }
 
 static void sm_dispatch_event(uint8_t packet_type, uint16_t channel, uint8_t * packet, uint16_t size){
@@ -939,7 +939,7 @@ static void sm_setup_key_distribution(uint8_t keys_to_send, uint8_t keys_to_rece
 // CSRK Key Lookup
 
 
-static int sm_address_resolution_idle(void){
+static bool sm_address_resolution_idle(void){
     return sm_address_resolution_mode == ADDRESS_RESOLUTION_IDLE;
 }
 
@@ -1618,8 +1618,8 @@ static inline void sm_pdu_received_in_wrong_state(sm_connection_t * sm_conn){
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
 
 static void sm_sc_prepare_dhkey_check(sm_connection_t * sm_conn);
-static int sm_passkey_used(stk_generation_method_t method);
-static int sm_just_works_or_numeric_comparison(stk_generation_method_t method);
+static bool sm_passkey_used(stk_generation_method_t method);
+static bool sm_just_works_or_numeric_comparison(stk_generation_method_t method);
 
 static void sm_sc_start_calculating_local_confirm(sm_connection_t * sm_conn){
     if (setup->sm_stk_generation_method == OOB){
@@ -2430,7 +2430,7 @@ static void sm_run_send_keypress_notification(sm_connection_t * connection){
     uint8_t num_actions = setup->sm_keypress_notification >> 5;
     uint8_t action = 0;
     for (i=SM_KEYPRESS_PASSKEY_ENTRY_STARTED;i<=SM_KEYPRESS_PASSKEY_ENTRY_COMPLETED;i++){
-        if (flags & (1u<<i)){
+        if ((flags & (1u<<i)) != 0u){
             bool clear_flag = true;
             switch (i){
                 case SM_KEYPRESS_PASSKEY_ENTRY_STARTED:
@@ -2464,7 +2464,7 @@ static void sm_run_send_keypress_notification(sm_connection_t * connection){
 }
 
 static void sm_run_distribute_keys(sm_connection_t * connection){
-    if (setup->sm_key_distribution_send_set &   SM_KEYDIST_FLAG_ENCRYPTION_INFORMATION){
+    if ((setup->sm_key_distribution_send_set &   SM_KEYDIST_FLAG_ENCRYPTION_INFORMATION) != 0u){
         setup->sm_key_distribution_send_set &= ~SM_KEYDIST_FLAG_ENCRYPTION_INFORMATION;
         setup->sm_key_distribution_sent_set |=  SM_KEYDIST_FLAG_ENCRYPTION_INFORMATION;
         uint8_t buffer[17];
@@ -2474,7 +2474,7 @@ static void sm_run_distribute_keys(sm_connection_t * connection){
         sm_timeout_reset(connection);
         return;
     }
-    if (setup->sm_key_distribution_send_set &   SM_KEYDIST_FLAG_MASTER_IDENTIFICATION){
+    if ((setup->sm_key_distribution_send_set &   SM_KEYDIST_FLAG_MASTER_IDENTIFICATION) != 0u){
         setup->sm_key_distribution_send_set &= ~SM_KEYDIST_FLAG_MASTER_IDENTIFICATION;
         setup->sm_key_distribution_sent_set |=  SM_KEYDIST_FLAG_MASTER_IDENTIFICATION;
         uint8_t buffer[11];
@@ -2485,7 +2485,7 @@ static void sm_run_distribute_keys(sm_connection_t * connection){
         sm_timeout_reset(connection);
         return;
     }
-    if (setup->sm_key_distribution_send_set &   SM_KEYDIST_FLAG_IDENTITY_INFORMATION){
+    if ((setup->sm_key_distribution_send_set &   SM_KEYDIST_FLAG_IDENTITY_INFORMATION) != 0u){
         setup->sm_key_distribution_send_set &= ~SM_KEYDIST_FLAG_IDENTITY_INFORMATION;
         setup->sm_key_distribution_sent_set |=  SM_KEYDIST_FLAG_IDENTITY_INFORMATION;
         uint8_t buffer[17];
@@ -2495,7 +2495,7 @@ static void sm_run_distribute_keys(sm_connection_t * connection){
         sm_timeout_reset(connection);
         return;
     }
-    if (setup->sm_key_distribution_send_set &   SM_KEYDIST_FLAG_IDENTITY_ADDRESS_INFORMATION){
+    if ((setup->sm_key_distribution_send_set &   SM_KEYDIST_FLAG_IDENTITY_ADDRESS_INFORMATION) != 0u){
         setup->sm_key_distribution_send_set &= ~SM_KEYDIST_FLAG_IDENTITY_ADDRESS_INFORMATION;
         setup->sm_key_distribution_sent_set |=  SM_KEYDIST_FLAG_IDENTITY_ADDRESS_INFORMATION;
         bd_addr_t local_address;
@@ -2522,7 +2522,7 @@ static void sm_run_distribute_keys(sm_connection_t * connection){
         sm_timeout_reset(connection);
         return;
     }
-    if (setup->sm_key_distribution_send_set &   SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION){
+    if ((setup->sm_key_distribution_send_set &   SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION) != 0u){
         setup->sm_key_distribution_send_set &= ~SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION;
         setup->sm_key_distribution_sent_set |=  SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION;
 
@@ -2830,7 +2830,7 @@ static void sm_run(void){
         }
 
         // send keypress notifications
-        if (setup->sm_keypress_notification){
+        if (setup->sm_keypress_notification != 0u){
             sm_run_send_keypress_notification(connection);
             return;
         }
@@ -3494,7 +3494,7 @@ static void sm_handle_encryption_result_enc_csrk(void *arg){
 
     sm_aes128_state = SM_AES128_IDLE;
     log_info_key("csrk", setup->sm_local_csrk);
-    if (setup->sm_key_distribution_send_set){
+    if (setup->sm_key_distribution_send_set != 0u){
         connection->sm_engine_state = SM_PH3_DISTRIBUTE_KEYS;
     } else {
         // no keys to send, just continue
@@ -4011,9 +4011,9 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
 
                         case SM_PH4_W4_CONNECTION_ENCRYPTED:
                             // encryption change event concludes re-encryption for bonded devices (even if it fails)
-                            if (sm_conn->sm_connection_encrypted) {
+                            if (sm_conn->sm_connection_encrypted != 0u) {
                                 status = ERROR_CODE_SUCCESS;
-                                if (sm_conn->sm_role){
+                                if (IS_RESPONDER(sm_conn->sm_role)){
                                     sm_conn->sm_engine_state = SM_RESPONDER_IDLE;
                                 } else {
                                     sm_conn->sm_engine_state = SM_INITIATOR_CONNECTED;
@@ -4081,7 +4081,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                     // continue if part of initial pairing
                     switch (sm_conn->sm_engine_state){
                         case SM_PH4_W4_CONNECTION_ENCRYPTED:
-                            if (sm_conn->sm_role){
+                            if (IS_RESPONDER(sm_conn->sm_role)){
                                 sm_conn->sm_engine_state = SM_RESPONDER_IDLE;
                             } else {
                                 sm_conn->sm_engine_state = SM_INITIATOR_CONNECTED;
@@ -4186,21 +4186,21 @@ static inline int sm_calc_actual_encryption_key_size(int other){
 
 
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
-static int sm_just_works_or_numeric_comparison(stk_generation_method_t method){
+static bool sm_just_works_or_numeric_comparison(stk_generation_method_t method){
     switch (method){
         case JUST_WORKS:
         case NUMERIC_COMPARISON:
-            return 1;
+            return true;
         default:
-            return 0;
+            return false;
     }
 }
 // responder
 
-static int sm_passkey_used(stk_generation_method_t method){
+static bool sm_passkey_used(stk_generation_method_t method){
     switch (method){
         case PK_RESP_INPUT:
-            return 1;
+            return true;
         default:
             return 0;
     }
@@ -5319,7 +5319,7 @@ void sm_keypress_notification(hci_con_handle_t con_handle, uint8_t action){
             flags = (flags & 0x19u) | (1u << SM_KEYPRESS_PASSKEY_CLEARED);
             break;
         case SM_KEYPRESS_PASSKEY_DIGIT_ENTERED:
-            if (flags & (1u << SM_KEYPRESS_PASSKEY_DIGIT_ERASED)){
+            if ((flags & (1u << SM_KEYPRESS_PASSKEY_DIGIT_ERASED)) != 0u){
                 // erase actions queued
                 num_actions--;
                 if (num_actions == 0u){
@@ -5332,7 +5332,7 @@ void sm_keypress_notification(hci_con_handle_t con_handle, uint8_t action){
             flags |= (1u << SM_KEYPRESS_PASSKEY_DIGIT_ENTERED);
             break;
         case SM_KEYPRESS_PASSKEY_DIGIT_ERASED:
-            if (flags & (1u << SM_KEYPRESS_PASSKEY_DIGIT_ENTERED)){
+            if ((flags & (1u << SM_KEYPRESS_PASSKEY_DIGIT_ENTERED)) != 0u){
                 // enter actions queued
                 num_actions--;
                 if (num_actions == 0u){
