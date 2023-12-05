@@ -335,7 +335,7 @@ static uint16_t att_db_util_hash_offset;
 static uint16_t att_db_util_hash_bytes_available;
 
 static void att_db_util_hash_fetch_next_attribute(void){
-    while (1){
+    while (true){
         uint16_t size = little_endian_read_16(att_db_util_hash_att_ptr, 0);
         btstack_assert(size != 0);
         UNUSED(size);
