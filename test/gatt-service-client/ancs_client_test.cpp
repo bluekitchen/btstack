@@ -47,21 +47,48 @@ static void hci_emit_event(uint8_t * event, uint16_t size, int dump){
     (*ancs_callback_registration->callback)(HCI_EVENT_PACKET, 0, event, size);
 }
 
+static void hci_create_gap_connection_complete_event(const uint8_t * hci_event, uint8_t * gap_event) {
+    gap_event[0] = HCI_EVENT_META_GAP;
+    gap_event[1] = 36 - 2;
+    gap_event[2] = GAP_SUBEVENT_LE_CONNECTION_COMPLETE;
+    switch (hci_event[2]){
+        case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
+            memcpy(&gap_event[3], &hci_event[3], 11);
+        memset(&gap_event[14], 0, 12);
+        memcpy(&gap_event[26], &hci_event[14], 7);
+        memset(&gap_event[33], 0xff, 3);
+        break;
+        case HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE_V1:
+            memcpy(&gap_event[3], &hci_event[3], 30);
+        memset(&gap_event[33], 0xff, 3);
+        break;
+        case HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE_V2:
+            memcpy(&gap_event[3], &hci_event[3], 33);
+        break;
+        default:
+            btstack_unreachable();
+        break;
+    }
+}
+
 static void hci_emit_le_connection_complete(uint8_t address_type, const bd_addr_t address, hci_con_handle_t con_handle, uint8_t status){
-    uint8_t event[21];
-    event[0] = HCI_EVENT_LE_META;
-    event[1] = sizeof(event) - 2u;
-    event[2] = HCI_SUBEVENT_LE_CONNECTION_COMPLETE;
-    event[3] = status;
-    little_endian_store_16(event, 4, con_handle);
-    event[6] = 0; // TODO: role
-    event[7] = address_type;
-    reverse_bd_addr(address, &event[8]);
-    little_endian_store_16(event, 14, 0); // interval
-    little_endian_store_16(event, 16, 0); // latency
-    little_endian_store_16(event, 18, 0); // supervision timeout
-    event[20] = 0; // master clock accuracy
-    hci_emit_event(event, sizeof(event), 1);
+    uint8_t hci_event[21];
+    hci_event[0] = HCI_EVENT_LE_META;
+    hci_event[1] = sizeof(hci_event) - 2u;
+    hci_event[2] = HCI_SUBEVENT_LE_CONNECTION_COMPLETE;
+    hci_event[3] = status;
+    little_endian_store_16(hci_event, 4, con_handle);
+    hci_event[6] = 0; // TODO: role
+    hci_event[7] = address_type;
+    reverse_bd_addr(address, &hci_event[8]);
+    little_endian_store_16(hci_event, 14, 0); // interval
+    little_endian_store_16(hci_event, 16, 0); // latency
+    little_endian_store_16(hci_event, 18, 0); // supervision timeout
+    hci_event[20] = 0; // master clock accuracy
+    // emit GAP event, too
+    uint8_t gap_event[36];
+    hci_create_gap_connection_complete_event(hci_event, gap_event);
+    hci_emit_event(gap_event, sizeof(gap_event), 1);
 }
 
 static void hci_emit_connection_encrypted(hci_con_handle_t con_handle, uint8_t encrypted){

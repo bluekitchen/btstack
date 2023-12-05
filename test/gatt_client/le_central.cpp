@@ -53,9 +53,9 @@ static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
             gap_connect(address, (bd_addr_type_t)packet[3]);
             break;
         }
-        case HCI_EVENT_LE_META:
+        case HCI_EVENT_META_GAP:
             // wait for connection complete
-            if (hci_event_le_meta_get_subevent_code(packet) !=  HCI_SUBEVENT_LE_CONNECTION_COMPLETE) break;
+            if (hci_event_le_meta_get_subevent_code(packet) !=  GAP_SUBEVENT_LE_CONNECTION_COMPLETE) break;
             connected = 1;
             break;
         case HCI_EVENT_DISCONNECTION_COMPLETE:
