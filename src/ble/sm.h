@@ -130,9 +130,10 @@ void sm_set_secure_connections_only_mode(bool enable);
 
 /**
  * @brief Let Peripheral request an encrypted connection right after connecting
+ * @param enable
  * @note Not used normally. Bonding is triggered by access to protected attributes in ATT Server
  */
-void sm_set_request_security(int enable);
+void sm_set_request_security(bool enable);
 
 /** 
  * @brief Trigger Security Request

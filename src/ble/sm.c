@@ -198,7 +198,7 @@ static uint32_t sm_fixed_passkey_in_display_role;
 static bool sm_reconstruct_ltk_without_le_device_db_entry;
 
 #ifdef ENABLE_LE_PERIPHERAL
-static uint8_t sm_slave_request_security;
+static bool sm_slave_request_security;
 #endif
 
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
@@ -1332,7 +1332,7 @@ static void sm_address_resolution_handle_event(address_resolution_event_t event)
                             sm_connection->sm_engine_state = SM_RESPONDER_PH1_PAIRING_REQUEST_RECEIVED;
                             break;
                         }
-                        bool trigger_security_request = sm_connection->sm_pairing_requested || (sm_slave_request_security != 0);
+                        bool trigger_security_request = sm_connection->sm_pairing_requested || sm_slave_request_security;
                         sm_connection->sm_pairing_requested = false;
 #ifdef ENABLE_LE_PROACTIVE_AUTHENTICATION
                         // trigger security request for Proactive Authentication if LTK available
@@ -1401,7 +1401,7 @@ static void sm_address_resolution_handle_event(address_resolution_event_t event)
                             sm_connection->sm_engine_state = SM_RESPONDER_PH0_SEND_LTK_REQUESTED_NEGATIVE_REPLY;
                         }
                         // send security request if requested
-                        bool trigger_security_request = sm_connection->sm_pairing_requested || (sm_slave_request_security != 0);
+                        bool trigger_security_request = sm_connection->sm_pairing_requested || sm_slave_request_security;
                         sm_connection->sm_pairing_requested = false;
                         if (trigger_security_request){
                             sm_connection->sm_engine_state = SM_RESPONDER_SEND_SECURITY_REQUEST;
@@ -4942,7 +4942,7 @@ void sm_set_io_capabilities(io_capability_t io_capability){
 }
 
 #ifdef ENABLE_LE_PERIPHERAL
-void sm_set_request_security(int enable){
+void sm_set_request_security(bool enable){
     sm_slave_request_security = enable;
 }
 #endif
