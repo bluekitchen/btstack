@@ -99,9 +99,9 @@ uint8_t gap_connect(const bd_addr_t addr, bd_addr_type_t addr_type){
 void gap_set_scan_parameters(uint8_t scan_type, uint16_t scan_interval, uint16_t scan_window){
 }
 
-int gap_reconnect_security_setup_active(hci_con_handle_t con_handle){
+bool gap_reconnect_security_setup_active(hci_con_handle_t con_handle){
 	UNUSED(con_handle);
-	return 0;
+	return false;
 }
 
 static void att_init_connection(att_connection_t * att_connection){
