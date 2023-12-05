@@ -9531,7 +9531,7 @@ bool gap_secure_connection(hci_con_handle_t con_handle){
         case BD_ADDR_TYPE_LE_PUBLIC:
         case BD_ADDR_TYPE_LE_RANDOM:
             if (hci_connection->sm_connection.sm_connection_encrypted == 0) return false; // unencrypted connection cannot be authenticated
-            return hci_connection->sm_connection.sm_connection_sc != 0;
+            return hci_connection->sm_connection.sm_connection_sc;
 #endif
 #ifdef ENABLE_CLASSIC
         case BD_ADDR_TYPE_SCO:

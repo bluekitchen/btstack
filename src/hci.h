@@ -458,7 +458,7 @@ typedef struct sm_connection {
     uint8_t                  sm_pairing_failed_reason;
     uint8_t                  sm_connection_encrypted;       // [0..2]
     uint8_t                  sm_connection_authenticated;   // [0..1]
-    uint8_t                  sm_connection_sc;
+    bool                     sm_connection_sc;
     uint8_t                  sm_actual_encryption_key_size;
     sm_pairing_packet_t      sm_m_preq;  // only used during c1
     authorization_state_t    sm_connection_authorization_state;

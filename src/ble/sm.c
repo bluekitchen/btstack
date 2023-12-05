@@ -2143,7 +2143,7 @@ static void sm_load_security_info(sm_connection_t * sm_connection){
     sm_connection->sm_actual_encryption_key_size = encryption_key_size;
     sm_connection->sm_connection_authenticated = authenticated;
     sm_connection->sm_connection_authorization_state = authorized ? AUTHORIZATION_GRANTED : AUTHORIZATION_UNKNOWN;
-    sm_connection->sm_connection_sc = secure_connection;
+    sm_connection->sm_connection_sc = secure_connection != 0;
 }
 #endif
 
@@ -2157,7 +2157,7 @@ static void sm_start_calculating_ltk_from_ediv_and_rand(sm_connection_t * sm_con
     // no db for authenticated flag hack: flag is stored in bit 4 of LSB
     sm_connection->sm_connection_authenticated = (setup->sm_local_rand[7u] & 0x10u) >> 4u;
     // Legacy paring -> not SC
-    sm_connection->sm_connection_sc = 0;
+    sm_connection->sm_connection_sc = false;
     log_info("sm: received ltk request with key size %u, authenticated %u",
             sm_connection->sm_actual_encryption_key_size, sm_connection->sm_connection_authenticated);
 }
