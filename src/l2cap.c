@@ -2029,11 +2029,11 @@ static void l2cap_cbm_run_channels(void){
         l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
 
         if (channel->channel_type != L2CAP_CHANNEL_TYPE_CHANNEL_CBM) continue;
+        if (!hci_can_send_acl_packet_now(channel->con_handle)) continue;
 
         // log_info("l2cap_run: channel %p, state %u, var 0x%02x", channel, channel->state, channel->state_var);
         switch (channel->state){
             case L2CAP_STATE_WILL_SEND_LE_CONNECTION_REQUEST:
-                if (!hci_can_send_acl_packet_now(channel->con_handle)) break;
                 channel->state = L2CAP_STATE_WAIT_LE_CONNECTION_RESPONSE;
                 // le psm, source cid, mtu, mps, initial credits
                 channel->local_sig_id = l2cap_next_sig_id();
@@ -2045,7 +2045,6 @@ static void l2cap_cbm_run_channels(void){
                                                 channel->local_mps, channel->credits_incoming);
                 break;
             case L2CAP_STATE_WILL_SEND_LE_CONNECTION_RESPONSE_ACCEPT:
-                if (!hci_can_send_acl_packet_now(channel->con_handle)) break;
                 // TODO: support larger MPS
                 channel->state = L2CAP_STATE_OPEN;
                 channel->credits_incoming =  channel->new_credits_incoming;
@@ -2056,7 +2055,6 @@ static void l2cap_cbm_run_channels(void){
                 l2cap_cbm_emit_channel_opened(channel, ERROR_CODE_SUCCESS);
                 break;
             case L2CAP_STATE_WILL_SEND_LE_CONNECTION_RESPONSE_DECLINE:
-                if (!hci_can_send_acl_packet_now(channel->con_handle)) break;
                 channel->state = L2CAP_STATE_INVALID;
                 l2cap_send_le_signaling_packet(channel->con_handle, LE_CREDIT_BASED_CONNECTION_RESPONSE, channel->remote_sig_id, 0, 0, 0, 0, channel->reason);
                 // discard channel - l2cap_finialize_channel_close without sending l2cap close event
@@ -2064,19 +2062,16 @@ static void l2cap_cbm_run_channels(void){
                 l2cap_free_channel_entry(channel);
                 break;
             case L2CAP_STATE_OPEN:
-                if (!hci_can_send_acl_packet_now(channel->con_handle)) break;
                 if (channel->new_credits_incoming){
                     l2cap_credit_based_send_credits(channel);
                 }
                 break;
             case L2CAP_STATE_WILL_SEND_DISCONNECT_REQUEST:
-                if (!hci_can_send_acl_packet_now(channel->con_handle)) break;
                 channel->local_sig_id = l2cap_next_sig_id();
                 channel->state = L2CAP_STATE_WAIT_DISCONNECT;
                 l2cap_send_le_signaling_packet( channel->con_handle, DISCONNECTION_REQUEST, channel->local_sig_id, channel->remote_cid, channel->local_cid);
                 break;
             case L2CAP_STATE_WILL_SEND_DISCONNECT_RESPONSE:
-                if (!hci_can_send_acl_packet_now(channel->con_handle)) break;
                 channel->state = L2CAP_STATE_INVALID;
                 l2cap_send_le_signaling_packet( channel->con_handle, DISCONNECTION_RESPONSE, channel->remote_sig_id, channel->local_cid, channel->remote_cid);
                 l2cap_cbm_finialize_channel_close(channel);  // -- remove from list
