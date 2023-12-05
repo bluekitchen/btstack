@@ -10,6 +10,7 @@
 #include "rijndael.h"
 #include "btstack_linked_list.h"
 #include "btstack_run_loop_embedded.h"
+#include "btstack_debug.h"
 
 static btstack_packet_handler_t le_data_handler;
 
@@ -113,9 +114,36 @@ void mock_simulate_hci_state_working(void){
 	mock_simulate_hci_event((uint8_t *)&packet, sizeof(packet));
 }
 
+
+static void hci_create_gap_connection_complete_event(const uint8_t * hci_event, uint8_t * gap_event) {
+	gap_event[0] = HCI_EVENT_META_GAP;
+	gap_event[1] = 36 - 2;
+	gap_event[2] = GAP_SUBEVENT_LE_CONNECTION_COMPLETE;
+	switch (hci_event[2]){
+		case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
+			memcpy(&gap_event[3], &hci_event[3], 11);
+			memset(&gap_event[14], 0, 12);
+			memcpy(&gap_event[26], &hci_event[14], 7);
+			memset(&gap_event[33], 0xff, 3);
+			break;
+		case HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE_V1:
+			memcpy(&gap_event[3], &hci_event[3], 30);
+			memset(&gap_event[33], 0xff, 3);
+			break;
+		case HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE_V2:
+			memcpy(&gap_event[3], &hci_event[3], 33);
+			break;
+		default:
+			btstack_unreachable();
+			break;
+	}
+}
+
 void mock_simulate_connected(void){
     uint8_t packet[] = { 0x3e, 0x13, 0x01, 0x00, 0x40, 0x00, 0x01, 0x01, 0x18, 0x12, 0x5e, 0x68, 0xc9, 0x73, 0x18, 0x00, 0x00, 0x00, 0x48, 0x00, 0x05};
-	mock_simulate_hci_event((uint8_t *)&packet, sizeof(packet));
+	uint8_t gap_event[36];
+	hci_create_gap_connection_complete_event(packet, gap_event);
+	mock_simulate_hci_event(gap_event, sizeof(gap_event));
 }
 
 void att_init_connection(att_connection_t * att_connection){
