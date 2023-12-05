@@ -1360,8 +1360,8 @@ static void sm_address_resolution_handle_event(address_resolution_event_t event)
                         bool auth_required = sm_auth_req & SM_AUTHREQ_MITM_PROTECTION;
 
                         log_info("central: pairing request local %u, remote %u => trigger_pairing %u. have_ltk %u",
-                                 sm_connection->sm_pairing_requested, sm_connection->sm_security_request_received, (int) trigger_pairing, (int) have_ltk);
-                        sm_connection->sm_security_request_received = 0;
+                                 sm_connection->sm_pairing_requested, (int) sm_connection->sm_security_request_received, (int) trigger_pairing, (int) have_ltk);
+                        sm_connection->sm_security_request_received = false;
                         sm_connection->sm_pairing_requested = 0;
                         bool trigger_reencryption = false;
 
@@ -1411,8 +1411,8 @@ static void sm_address_resolution_handle_event(address_resolution_event_t event)
 #endif
                     }
 #ifdef ENABLE_LE_CENTRAL
-                    if (!sm_connection->sm_pairing_requested && !sm_connection->sm_security_request_received) break;
-                    sm_connection->sm_security_request_received = 0;
+                    if (!sm_connection->sm_pairing_requested && (sm_connection->sm_security_request_received == false)) break;
+                    sm_connection->sm_security_request_received = false;
                     sm_connection->sm_pairing_requested = 0;
                     sm_connection->sm_engine_state = SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST;
 #endif
@@ -4277,7 +4277,7 @@ static void sm_initiator_connected_handle_security_request(sm_connection_t * sm_
             break;
         default:
             // otherwise, store security request
-            sm_conn->sm_security_request_received = 1;
+            sm_conn->sm_security_request_received = true;
             break;
     }
 }
