@@ -97,19 +97,19 @@ static void btstack_uart_embedded_process(btstack_data_source_t *ds, btstack_dat
         case DATA_SOURCE_CALLBACK_POLL:
             if (send_complete){
                 send_complete = false;
-                if (block_sent){
+                if (block_sent !+ NULL){
                     block_sent();
                 }
             }
             if (receive_complete){
                 receive_complete = false;
-                if (block_received){
+                if (block_received != NULL){
                     block_received();
                 }
             }
             if (wakeup_event){
                 wakeup_event = false;
-                if (wakeup_handler){
+                if (wakeup_handler !=){
                     wakeup_handler();
                 }
             }
