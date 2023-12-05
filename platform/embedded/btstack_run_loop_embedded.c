@@ -85,7 +85,7 @@
 static volatile uint32_t system_ticks;
 #endif
 
-static int trigger_event_received = 0;
+static bool trigger_event_received;
 
 static bool run_loop_exit_requested;
 
@@ -129,7 +129,7 @@ void btstack_run_loop_embedded_execute_once(void) {
     // disable IRQs and check if run loop iteration has been requested. if not, go to sleep
     hal_cpu_disable_irqs();
     if (trigger_event_received){
-        trigger_event_received = 0;
+        trigger_event_received = false;
         hal_cpu_enable_irqs();
     } else {
         hal_cpu_enable_irqs_and_sleep();
@@ -152,7 +152,7 @@ static void btstack_run_loop_embedded_trigger_exit(void){
 #ifdef HAVE_EMBEDDED_TICK
 static void btstack_run_loop_embedded_tick_handler(void){
     system_ticks++;
-    trigger_event_received = 1;
+    trigger_event_received = true;
 }
 
 uint32_t btstack_run_loop_embedded_get_ticks(void){
@@ -176,11 +176,11 @@ static uint32_t btstack_run_loop_embedded_get_time_ms(void){
 
 static void btstack_run_loop_embedded_execute_on_main_thread(btstack_context_callback_registration_t * callback_registration){
     btstack_run_loop_base_add_callback(callback_registration);
-    trigger_event_received = 1;
+    trigger_event_received = true;
 }
 
 static void btstack_run_loop_embedded_poll_data_sources_from_irq(void){
-    trigger_event_received = 1;
+    trigger_event_received = true;
 }
 
 // @deprecated Use btstack_run_loop_poll_data_sources_from_irq() instead
@@ -201,25 +201,24 @@ static void btstack_run_loop_embedded_init(void){
 /**
  * Provide btstack_run_loop_embedded instance 
  */
-
-static const btstack_run_loop_t btstack_run_loop_embedded = {
-    &btstack_run_loop_embedded_init,
-    &btstack_run_loop_base_add_data_source,
-    &btstack_run_loop_base_remove_data_source,
-    &btstack_run_loop_base_enable_data_source_callbacks,
-    &btstack_run_loop_base_disable_data_source_callbacks,
-    &btstack_run_loop_embedded_set_timer,
-    &btstack_run_loop_base_add_timer,
-    &btstack_run_loop_base_remove_timer,
-    &btstack_run_loop_embedded_execute,
-    &btstack_run_loop_base_dump_timer,
-    &btstack_run_loop_embedded_get_time_ms,
-    &btstack_run_loop_embedded_poll_data_sources_from_irq,
-    &btstack_run_loop_embedded_execute_on_main_thread,
-    &btstack_run_loop_embedded_trigger_exit,
-};
-
 const btstack_run_loop_t * btstack_run_loop_embedded_get_instance(void){
+    static const btstack_run_loop_t btstack_run_loop_embedded = {
+        &btstack_run_loop_embedded_init,
+        &btstack_run_loop_base_add_data_source,
+        &btstack_run_loop_base_remove_data_source,
+        &btstack_run_loop_base_enable_data_source_callbacks,
+        &btstack_run_loop_base_disable_data_source_callbacks,
+        &btstack_run_loop_embedded_set_timer,
+        &btstack_run_loop_base_add_timer,
+        &btstack_run_loop_base_remove_timer,
+        &btstack_run_loop_embedded_execute,
+        &btstack_run_loop_base_dump_timer,
+        &btstack_run_loop_embedded_get_time_ms,
+        &btstack_run_loop_embedded_poll_data_sources_from_irq,
+        &btstack_run_loop_embedded_execute_on_main_thread,
+        &btstack_run_loop_embedded_trigger_exit,
+    };
+
     return &btstack_run_loop_embedded;
 }
 
