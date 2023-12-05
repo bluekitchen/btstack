@@ -9487,7 +9487,7 @@ uint8_t gap_encryption_key_size(hci_con_handle_t con_handle){
     if (hci_is_le_connection(hci_connection)){
 #ifdef ENABLE_BLE
         sm_connection_t * sm_conn = &hci_connection->sm_connection;
-        if (sm_conn->sm_connection_encrypted) {
+        if (sm_conn->sm_connection_encrypted != 0u) {
             return sm_conn->sm_actual_encryption_key_size;
         }
 #endif
@@ -9570,9 +9570,9 @@ bool gap_bonded(hci_con_handle_t con_handle){
 #ifdef ENABLE_BLE
 authorization_state_t gap_authorization_state(hci_con_handle_t con_handle){
     sm_connection_t * sm_conn = sm_get_connection_for_handle(con_handle);
-    if (!sm_conn) return AUTHORIZATION_UNKNOWN;     // wrong connection
-    if (!sm_conn->sm_connection_encrypted)               return AUTHORIZATION_UNKNOWN; // unencrypted connection cannot be authorized
-    if (!sm_conn->sm_connection_authenticated)           return AUTHORIZATION_UNKNOWN; // unauthenticatd connection cannot be authorized
+    if (sm_conn == NULL)                             return AUTHORIZATION_UNKNOWN; // wrong connection
+    if (sm_conn->sm_connection_encrypted == 0u)      return AUTHORIZATION_UNKNOWN; // unencrypted connection cannot be authorized
+    if (sm_conn->sm_connection_authenticated == 0u)  return AUTHORIZATION_UNKNOWN; // unauthenticatd connection cannot be authorized
     return sm_conn->sm_connection_authorization_state;
 }
 #endif
