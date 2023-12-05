@@ -14,6 +14,7 @@ LDFLAGS += -lCppUTest -lCppUTestExt
 
 VPATH += ${BTSTACK_ROOT}/src/ble 
 VPATH += ${BTSTACK_ROOT}/src
+VPATH += ${BTSTACK_ROOT}/src/classic
 VPATH += ${BTSTACK_ROOT}/platform/posix
 
 VPATH  += ${BTSTACK_ROOT}/3rd-party/yxml
@@ -27,6 +28,7 @@ COMMON = \
     btstack_util.c \
     hci_dump.c \
     map_util.c  \
+    sdp_util.c  \
     btstack_util.c \
 
 CFLAGS_COVERAGE = ${CFLAGS} -fprofile-arcs -ftest-coverage
