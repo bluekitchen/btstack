@@ -59,8 +59,8 @@ typedef struct {
     ots_filter_t * (*get_filter)(hci_con_handle_t con_handle, uint8_t filter_index);
     bool (*can_allocate_object_of_size)(hci_con_handle_t con_handle, uint32_t object_size);
 
-    oacp_result_code_t (*create)(hci_con_handle_t con_handle, uint32_t object_size, gatt_uuid_type_t type_uuid16);
-    oacp_result_code_t (*delete)(hci_con_handle_t con_handle);
+    oacp_result_code_t (*create_object)(hci_con_handle_t con_handle, uint32_t object_size, gatt_uuid_type_t type_uuid16);
+    oacp_result_code_t (*delete_object)(hci_con_handle_t con_handle);
     oacp_result_code_t (*calculate_checksum)(hci_con_handle_t con_handle, uint32_t offset, uint32_t length, uint32_t * crc_out);
     oacp_result_code_t (*execute)(hci_con_handle_t con_handle);
     oacp_result_code_t (*read) (hci_con_handle_t con_handle, uint32_t offset, uint32_t length, const uint8_t * out_buffer);
