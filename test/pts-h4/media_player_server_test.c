@@ -149,8 +149,8 @@ static const ots_operations_t ots_server_operations_impl = {
     .can_allocate_object_of_size = &ots_server_operation_can_allocate_object_of_size,
 
     // object operations
-    .create   = &ots_server_operation_create,
-    .delete   = &ots_server_operation_delete,
+    .create_object   = &ots_server_operation_create,
+    .delete_object   = &ots_server_operation_delete,
     .calculate_checksum = &ots_server_operation_calculate_checksum,
     .execute  = &ots_server_operation_execute,
     .read     = &ots_server_operation_read,

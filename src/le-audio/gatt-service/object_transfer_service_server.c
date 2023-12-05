@@ -647,7 +647,7 @@ int ots_server_handle_action_control_point_operation(ots_server_connection_t * c
                 break;
             }
 
-            connection->oacp_result_code = ots_server_operations->create(connection->con_handle, object_size, type_uuid16);
+            connection->oacp_result_code = ots_server_operations->create_object(connection->con_handle, object_size, type_uuid16);
             break;
 
         case OACP_OPCODE_DELETE:
@@ -679,7 +679,7 @@ int ots_server_handle_action_control_point_operation(ots_server_connection_t * c
                 break;
             }
 
-            connection->oacp_result_code = ots_server_operations->delete(connection->con_handle);
+            connection->oacp_result_code = ots_server_operations->delete_object(connection->con_handle);
 
             if (connection->oacp_result_code == OACP_RESULT_CODE_SUCCESS){
                 memset(connection->current_object, 0, sizeof(ots_object_t));
