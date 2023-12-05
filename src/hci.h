@@ -448,7 +448,7 @@ typedef struct sm_connection {
     uint16_t                 sm_cid;
     uint8_t                  sm_role;   // 0 - IamMaster, 1 = IamSlave
     bool                     sm_security_request_received;
-    uint8_t                  sm_pairing_requested;
+    bool                     sm_pairing_requested;
     uint8_t                  sm_peer_addr_type;
     bd_addr_t                sm_peer_address;
     uint8_t                  sm_own_addr_type;
