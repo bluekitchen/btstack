@@ -72,14 +72,14 @@
 #endif
 
 #if defined(ENABLE_LE_PERIPHERAL) && defined(ENABLE_LE_CENTRAL)
-#define IS_RESPONDER(role) (role == HCI_ROLE_SLAVE)
+#define IS_RESPONDER(role) ((role) == HCI_ROLE_SLAVE)
 #else
 #ifdef ENABLE_LE_CENTRAL
 // only central - never responder (avoid 'unused variable' warnings)
-#define IS_RESPONDER(role) (0 && (role == HCI_ROLE_SLAVE))
+#define IS_RESPONDER(role) (0 && ((role) == HCI_ROLE_SLAVE))
 #else
 // only peripheral - always responder (avoid 'unused variable' warnings)
-#define IS_RESPONDER(role) (1 || (role == HCI_ROLE_SLAVE))
+#define IS_RESPONDER(role) (1 || ((role) == HCI_ROLE_SLAVE))
 #endif
 #endif
 
