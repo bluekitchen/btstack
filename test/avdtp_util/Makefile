@@ -8,6 +8,8 @@ LDFLAGS += ${shell pkg-config --libs   CppuTest}
 
 CFLAGS += -DUNIT_TEST -g -Wall -Wnarrowing -Wconversion-null
 CFLAGS += -I${BTSTACK_ROOT}/src
+CFLAGS += -I${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/include
+CFLAGS += -I${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/include
 CFLAGS += -I..
 
 VPATH += ${BTSTACK_ROOT}/src

@@ -74,6 +74,7 @@ void mock_simulate_scan_response(void){
 	uint8_t packet[] = {GAP_EVENT_ADVERTISING_REPORT, 0x13, 0xE2, 0x01, 0x34, 0xB1, 0xF7, 0xD1, 0x77, 0x9B, 0xCC, 0x09, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08};
 	registered_hci_event_handler(HCI_EVENT_PACKET, 0, (uint8_t *)&packet, sizeof(packet));
 }
+
 bool gap_authenticated(hci_con_handle_t con_handle){
 	UNUSED(con_handle);
 	return false;
@@ -266,22 +267,10 @@ void hci_setup_le_connection(uint16_t con_handle){
     hci_setup_connection(con_handle, BD_ADDR_TYPE_LE_PUBLIC);
 }
 
-// int hci_send_cmd(const hci_cmd_t *cmd, ...){
-// //	printf("hci_send_cmd opcode 0x%02x\n", cmd->opcode);	
-// 	return 0;
-// }
-
-// int hci_can_send_packet_now_using_packet_buffer(uint8_t packet_type){
-// 	return 1;
-// }
-
-// void hci_disconnect_security_block(hci_con_handle_t con_handle){
-// 	printf("hci_disconnect_security_block \n");	
-// }
-
-// void hci_dump_log(const char * format, ...){
-// 	printf("hci_disconnect_security_block \n");	
-// }
-
 void l2cap_run(void){
+}
+#include "btstack_run_loop.h"
+
+void btstack_run_loop_execute_on_main_thread(btstack_context_callback_registration_t * callback_registration){
+	callback_registration->callback(callback_registration->context);
 }

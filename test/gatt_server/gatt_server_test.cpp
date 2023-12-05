@@ -359,6 +359,7 @@ TEST(ATT_SERVER, att_packet_handler_ATT_WRITE_COMMAND_signed_write_confirmation)
 
     buffer[0] = SM_EVENT_IDENTITY_RESOLVING_SUCCEEDED;
     buffer[1] = 18; // H1B1B2
+    little_endian_store_16(buffer, 18, 0);
     mock_call_att_packet_handler(HCI_EVENT_PACKET, 0, &buffer[0], 11);
 }
 
@@ -542,7 +543,7 @@ TEST(ATT_SERVER, sm_event_identity_resolving_succeeded_event) {
     uint8_t buffer[20];
     buffer[0] = SM_EVENT_IDENTITY_RESOLVING_SUCCEEDED;
     buffer[1] = 18; // H1B1B2
-
+    little_endian_store_16(buffer, 18, 0);
     test_hci_event_encryption_events(att_con_handle, 2, buffer, sizeof(buffer));
 }
 

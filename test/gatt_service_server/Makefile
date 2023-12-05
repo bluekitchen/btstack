@@ -24,6 +24,7 @@ VPATH += ${BTSTACK_ROOT}/test/mock
 COMMON = 										\
 	ad_parser.c                 				\
 	att_db.c 				 	    			\
+	btstack_hid_parser.c						\
 	battery_service_server.c 					\
 	btstack_linked_list.c       				\
 	btstack_memory.c            				\

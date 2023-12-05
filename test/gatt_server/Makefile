@@ -28,7 +28,8 @@ COMMON = \
 	att_db.c                    \
 	att_db_util.c 				\
 	att_server.c                \
-	battery_service_server.c \
+	btstack_hid_parser.c        \
+	battery_service_server.c    \
 	btstack_crypto.c            \
 	btstack_linked_list.c       \
 	btstack_memory.c            \
