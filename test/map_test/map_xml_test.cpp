@@ -1,12 +1,12 @@
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/CommandLineTestRunner.h"
 #include "yxml.h"
-#include "map.h"
 #include "btstack_defines.h"
 #include "btstack_util.h"
 #include "btstack_debug.h"
 #include "btstack_event.h"
-#include "map_util.h"
+#include "classic/map.h"
+#include "classic/map_util.h"
 
 const static char * folders = 
 "<?xml version='1.0' encoding='utf-8' standalone='yes' ?>"
@@ -68,6 +68,7 @@ const static char * message =
 
 /* xml parser */
 static int num_found_items;
+static map_util_xml_parser map_parser;
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
@@ -115,12 +116,14 @@ TEST_GROUP(MAP_XML){
 };
 
 TEST(MAP_XML, Folders){
-    map_client_parse_folder_listing(map_callback, map_cid, (const uint8_t *) folders, strlen(folders));
+    map_util_xml_parser_init(&map_parser, MAP_UTIL_PARSER_TYPE_FOLDER_LISTING, map_callback, map_cid);
+    map_util_xml_parser_parse(&map_parser, (const uint8_t *) folders, strlen(folders));
     CHECK_EQUAL(num_found_items, num_expected_folders);
 }
 
 TEST(MAP_XML, Messages){
-    map_client_parse_message_listing(map_callback, map_cid, (const uint8_t *) messages, strlen(messages));
+    map_util_xml_parser_init(&map_parser, MAP_UTIL_PARSER_TYPE_MESSAGE_LISTING, map_callback, map_cid);
+    map_util_xml_parser_parse(&map_parser, (const uint8_t *) messages, strlen(messages));
     CHECK_EQUAL(num_found_items, num_expected_message_handles);
 }
 
