@@ -507,6 +507,11 @@ void hfp_gsm_handler(hfp_ag_call_event_t event, uint8_t index, uint8_t type, con
             }
             if (initiated_call_index != -1){
                 delete_call(initiated_call_index);
+                break;
+            }
+            if (held_call_index != -1) {
+                delete_call(held_call_index);
+                break;
             }
             break;
 
