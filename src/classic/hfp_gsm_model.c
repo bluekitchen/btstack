@@ -267,6 +267,7 @@ static void delete_call(int delete_index_in_table){
 
 static void create_call(hfp_enhanced_call_dir_t direction){
     int next_free_slot = get_next_free_slot();
+    btstack_assert(next_free_slot >= 0);
     hfp_gsm_model_calls[next_free_slot].direction = direction;
     hfp_gsm_model_calls[next_free_slot].index = next_call_index();
     set_enhanced_call_status_initiated(next_free_slot);
@@ -421,6 +422,10 @@ void hfp_gsm_handler(hfp_ag_call_event_t event, uint8_t index, uint8_t type, con
 
         case HFP_AG_INCOMING_CALL:
             if (hfp_gsm_callsetup_status() != HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS) break;
+            if (next_free_slot == -1){
+                log_error("gsm: max call nr exceeded");
+                return;
+            }
             set_callsetup_status(HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS);
             create_call(HFP_ENHANCED_CALL_DIR_INCOMING);
             break;
