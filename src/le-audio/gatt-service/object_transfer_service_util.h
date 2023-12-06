@@ -209,14 +209,10 @@ typedef enum {
     OTS_OBJECT_TYPE_GROUP = 0x2BAC
 } ots_object_type_t;
 
-//Current Group Object ID
-//Current Time
-//Current Track Object ID
-//Current Track Segments Object ID
-//0x2BA0
-//0x2A2B
-//0x2B9D
-//0x2B9C
+typedef enum {
+    OTS_GROUP_OBJECT_TYPE_TRACK = 0,
+    OTS_GROUP_OBJECT_TYPE_GROUP
+} ots_group_object_type_t;
 
 typedef struct {
     ots_filter_type_t type;
