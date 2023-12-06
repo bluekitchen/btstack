@@ -250,27 +250,34 @@ static uint8_t ots_object_track_data[] = {
 };
 
 static uint8_t ots_object_group_data[] = {
-        (uint8_t)OTS_OBJECT_TYPE_TRACK, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11,
-        (uint8_t)OTS_OBJECT_TYPE_TRACK, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22,
-        (uint8_t)OTS_OBJECT_TYPE_TRACK, 0x33, 0x33, 0x33, 0x33, 0x33, 0x33
+        (uint8_t)OTS_GROUP_OBJECT_TYPE_TRACK, 0x44, 0x44, 0x44, 0x44, 0x44, 0x44,
+        (uint8_t)OTS_GROUP_OBJECT_TYPE_TRACK, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55,
+        (uint8_t)OTS_GROUP_OBJECT_TYPE_TRACK, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66,
+        (uint8_t)OTS_GROUP_OBJECT_TYPE_TRACK, 0x77, 0x77, 0x77, 0x77, 0x77, 0x77
 };
 
+//static uint8_t ots_object_group_data[] = {
+//        (uint8_t)OTS_OBJECT_TYPE_GROUP, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00,
+//        (uint8_t)OTS_OBJECT_TYPE_GROUP, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00,
+//        (uint8_t)OTS_OBJECT_TYPE_GROUP, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00
+//};
+
 static uint8_t ots_object_segments_list_data[] = {
-        0x0D, 0x53, 0x65, 0x67, 0x6d, 0x65, 0x6e, 0x74, 0x20, 0x31, 0x31, 0x2d, 0x45, 0x31, 0x00, 0x00, 0x00, 0x00,
-        0x0D, 0x53, 0x65, 0x67, 0x6d, 0x65, 0x6e, 0x74, 0x20, 0x31, 0x31, 0x2d, 0x45, 0x32, 0x00, 0x00, 0x00, 0x00,
-        0x0D, 0x53, 0x65, 0x67, 0x6d, 0x65, 0x6e, 0x74, 0x20, 0x31, 0x31, 0x2d, 0x45, 0x33, 0x00, 0x00, 0x00, 0x00,
-        0x0D, 0x53, 0x65, 0x67, 0x6d, 0x65, 0x6e, 0x74, 0x20, 0x31, 0x31, 0x2d, 0x45, 0x34, 0x00, 0x00, 0x00, 0x00,
-        0x0D, 0x53, 0x65, 0x67, 0x6d, 0x65, 0x6e, 0x74, 0x20, 0x31, 0x31, 0x2d, 0x45, 0x35, 0x00, 0x00, 0x00, 0x00,
-        0x0D, 0x53, 0x65, 0x67, 0x6d, 0x65, 0x6e, 0x74, 0x20, 0x31, 0x31, 0x2d, 0x45, 0x36, 0x00, 0x00, 0x00, 0x00,
-        0x0D, 0x53, 0x65, 0x67, 0x6d, 0x65, 0x6e, 0x74, 0x20, 0x31, 0x31, 0x2d, 0x45, 0x37, 0x00, 0x00, 0x00, 0x00,
-        0x0D, 0x53, 0x65, 0x67, 0x6d, 0x65, 0x6e, 0x74, 0x20, 0x31, 0x31, 0x2d, 0x45, 0x38, 0x00, 0x00, 0x00, 0x00,
-        0x0D, 0x53, 0x65, 0x67, 0x6d, 0x65, 0x6e, 0x74, 0x20, 0x31, 0x31, 0x2d, 0x45, 0x39, 0x00, 0x00, 0x00, 0x00,
-        0x0D, 0x53, 0x65, 0x67, 0x6d, 0x65, 0x6e, 0x74, 0x20, 0x31, 0x31, 0x2d, 0x45, 0x3A, 0x00, 0x00, 0x00, 0x00,
-        0x0D, 0x53, 0x65, 0x67, 0x6d, 0x65, 0x6e, 0x74, 0x20, 0x31, 0x31, 0x2d, 0x45, 0x3B, 0x00, 0x00, 0x00, 0x00,
-        0x0D, 0x53, 0x65, 0x67, 0x6d, 0x65, 0x6e, 0x74, 0x20, 0x31, 0x31, 0x2d, 0x45, 0x3C, 0x00, 0x00, 0x00, 0x00,
-        0x0D, 0x53, 0x65, 0x67, 0x6d, 0x65, 0x6e, 0x74, 0x20, 0x31, 0x31, 0x2d, 0x45, 0x3D, 0x00, 0x00, 0x00, 0x00,
-        0x0D, 0x53, 0x65, 0x67, 0x6d, 0x65, 0x6e, 0x74, 0x20, 0x31, 0x31, 0x2d, 0x45, 0x3E, 0x00, 0x00, 0x00, 0x00,
-        0x0D, 0x53, 0x65, 0x67, 0x6d, 0x65, 0x6e, 0x74, 0x20, 0x31, 0x31, 0x2d, 0x45, 0x3F, 0x00, 0x00, 0x00, 0x00,
+        0x0D, 0x53, 0x65, 0x67, 0x6d, 0x65, 0x6e, 0x74, 0x20, 0x31, 0x31, 0x2d, 0x45, 0x31, 0x00, 0x00, 0x00, 0x00, 
+        0x0D, 0x53, 0x65, 0x67, 0x6d, 0x65, 0x6e, 0x74, 0x20, 0x31, 0x31, 0x2d, 0x45, 0x32, 0xD1, 0x07, 0x00, 0x00, 
+        0x0D, 0x53, 0x65, 0x67, 0x6d, 0x65, 0x6e, 0x74, 0x20, 0x31, 0x31, 0x2d, 0x45, 0x33, 0xA1, 0x0F, 0x00, 0x00, 
+        0x0D, 0x53, 0x65, 0x67, 0x6d, 0x65, 0x6e, 0x74, 0x20, 0x31, 0x31, 0x2d, 0x45, 0x34, 0x71, 0x17, 0x00, 0x00, 
+        0x0D, 0x53, 0x65, 0x67, 0x6d, 0x65, 0x6e, 0x74, 0x20, 0x31, 0x31, 0x2d, 0x45, 0x35, 0x41, 0x1F, 0x00, 0x00, 
+        0x0D, 0x53, 0x65, 0x67, 0x6d, 0x65, 0x6e, 0x74, 0x20, 0x31, 0x31, 0x2d, 0x45, 0x36, 0x11, 0x27, 0x00, 0x00, 
+        0x0D, 0x53, 0x65, 0x67, 0x6d, 0x65, 0x6e, 0x74, 0x20, 0x31, 0x31, 0x2d, 0x45, 0x37, 0xE1, 0x2E, 0x00, 0x00, 
+        0x0D, 0x53, 0x65, 0x67, 0x6d, 0x65, 0x6e, 0x74, 0x20, 0x31, 0x31, 0x2d, 0x45, 0x38, 0xB1, 0x36, 0x00, 0x00, 
+        0x0D, 0x53, 0x65, 0x67, 0x6d, 0x65, 0x6e, 0x74, 0x20, 0x31, 0x31, 0x2d, 0x45, 0x39, 0x81, 0x3E, 0x00, 0x00, 
+        0x0D, 0x53, 0x65, 0x67, 0x6d, 0x65, 0x6e, 0x74, 0x20, 0x31, 0x31, 0x2d, 0x45, 0x3A, 0x51, 0x46, 0x00, 0x00, 
+        0x0D, 0x53, 0x65, 0x67, 0x6d, 0x65, 0x6e, 0x74, 0x20, 0x31, 0x31, 0x2d, 0x45, 0x3B, 0x21, 0x4E, 0x00, 0x00, 
+        0x0D, 0x53, 0x65, 0x67, 0x6d, 0x65, 0x6e, 0x74, 0x20, 0x31, 0x31, 0x2d, 0x45, 0x3C, 0xF1, 0x55, 0x00, 0x00, 
+        0x0D, 0x53, 0x65, 0x67, 0x6d, 0x65, 0x6e, 0x74, 0x20, 0x31, 0x31, 0x2d, 0x45, 0x3D, 0xC1, 0x5D, 0x00, 0x00, 
+        0x0D, 0x53, 0x65, 0x67, 0x6d, 0x65, 0x6e, 0x74, 0x20, 0x31, 0x31, 0x2d, 0x45, 0x3E, 0x91, 0x65, 0x00, 0x00, 
+        0x0D, 0x53, 0x65, 0x67, 0x6d, 0x65, 0x6e, 0x74, 0x20, 0x31, 0x31, 0x2d, 0x45, 0x3F, 0x61, 0x6D, 0x00, 0x00, 
 };
 
 static uint8_t * ots_object_current_data = ots_object_track_data;
@@ -896,7 +903,7 @@ static void ots_db_load_from_memory(uint8_t track_groups_num, mcs_track_group_t 
             &groups[0].parent_group_object_id,
             "Parent Group",
             properties,
-            OTS_OBJECT_TYPE_GROUP,
+            OTS_OBJECT_TYPE_DIRECTORY_LISTING,
             // simulate increase of size to test sorting by size
             100,
             sizeof(ots_object_group_data),
@@ -1279,6 +1286,7 @@ static void mcs_reset_current_track(mcs_media_player_t * media_player){
     mcs_next_track_index(media_player, true, &next_track_index);
 
     // reset current track
+    current_track->track_position_10ms = 0;
     media_control_service_server_set_track_title(media_player->id, current_track->title);
     media_control_service_server_set_track_duration(media_player->id, current_track->track_duration_10ms);
     media_control_service_server_set_track_position(media_player->id, current_track->track_position_10ms);
@@ -1292,7 +1300,7 @@ static void mcs_reset_current_track(mcs_media_player_t * media_player){
         media_control_service_server_set_current_track_segments_id(media_player->id, NULL);
     }
 
-    current_track->track_position_10ms = 0;
+
     mcs_track_t * track = mcs_get_current_track_for_media_player_id(current_media_player_id);
 
     printf("Change track: group [%d]: ", media_player->current_group_index);
@@ -1303,10 +1311,10 @@ static void mcs_reset_current_track(mcs_media_player_t * media_player){
 
 
 static void mcs_change_current_track(mcs_media_player_t * media_player, uint32_t track_index){
-    if (media_player->current_track_index == track_index){
-        return;
-    }
-    if (media_player->track_groups[media_player->current_group_index].tracks_num >= track_index){
+    //    if (media_player->current_track_index == track_index){
+    //        return;
+    //    }
+    if (media_player->track_groups[media_player->current_group_index].tracks_num <= track_index){
         return;
     }
 
@@ -1348,7 +1356,8 @@ static void mcs_change_current_group(mcs_media_player_t * media_player, uint32_t
 
     printf("Change group: [%d]: ", media_player->current_group_index);
     printf_hexdump(media_player->track_groups[media_player->current_group_index].current_group_object_id, 6);
-    mcs_reset_current_track(media_player);
+    mcs_change_current_track(media_player, 0);
+//    mcs_reset_current_track(media_player);
 }
 
 static void mcs_change_current_track_for_luid(mcs_media_player_t * media_player, ots_object_id_t * luid){
@@ -1631,7 +1640,7 @@ static void mcs_current_track_go_from_backward_for_num_steps(mcs_track_t * track
 }
 
 static void mcs_current_track_go_from_begining_for_num_steps(mcs_track_t * track, uint32_t forward_steps_num) {
-    uint32_t step_10ms = forward_steps_num * MCS_TRACK_SEGMENT_DURATION_10MS;
+    uint32_t step_10ms = forward_steps_num * MCS_TRACK_SEGMENT_DURATION_10MS + 1;
     uint32_t old_position = track->track_position_10ms;
     track->track_position_10ms = step_10ms;
 
@@ -1642,14 +1651,13 @@ static void mcs_current_track_go_from_begining_for_num_steps(mcs_track_t * track
 
 static void mcs_current_track_goto_last_segment(mcs_track_t * track) {
     uint32_t old_position = track->track_position_10ms;
-    printf("mcs_current_track_goto_last_segment: duration %d, num_segments %d, current segment %d, old position %d, new position %d\n",
-        track->track_duration_10ms, mcs_track_num_segments(track), mcs_track_current_segment(track), old_position,
-        track->track_position_10ms);
-
-    mcs_current_track_go_from_backward_for_num_steps(track, 1);
+    track->track_position_10ms = track->track_duration_10ms - MCS_TRACK_SEGMENT_DURATION_10MS + 1;
+            printf("mcs_current_track_goto_last_segment: duration %d, num_segments %d, current segment %d, old position %d, new position %d\n",
+        track->track_duration_10ms, mcs_track_num_segments(track), mcs_track_current_segment(track), old_position, track->track_position_10ms);
 }
 
 static void mcs_current_track_goto_segment(mcs_track_t * track, int32_t segment_index) {
+
     if (segment_index > 0) {
         if (segment_index < mcs_track_num_segments(track)){
             printf("    1: ");
@@ -1809,8 +1817,8 @@ static void mcs_move_forward_with_speed_ms(mcs_media_player_t * media_player, ui
             // printf("- go forward 1, index %d, position %d, remaining %d \n", media_player->current_track_index, track_position_ms, remaining_playing_speed_delta_ms);
         }
     } else {
-        // printf("- advance with the same track\n");
         current_track->track_position_10ms += speed_delta_ms/10;
+        // printf("- advance with the same track, new pos %d\n", current_track->track_position_10ms);
     }
 }
 
@@ -1884,6 +1892,7 @@ static void mcs_server_trigger_notifications_for_opcode(mcs_media_player_t * med
         case MEDIA_CONTROL_POINT_OPCODE_FIRST_SEGMENT:
         case MEDIA_CONTROL_POINT_OPCODE_LAST_SEGMENT:
         case MEDIA_CONTROL_POINT_OPCODE_GOTO_SEGMENT:
+            notify_track_change = true;
             switch (media_player->media_state){
                 case MCS_MEDIA_STATE_SEEKING:
                 case MCS_MEDIA_STATE_PAUSED:
@@ -1920,21 +1929,52 @@ static void mcs_server_trigger_notifications_for_opcode(mcs_media_player_t * med
             break;
     }
 
-    // printf("Update track info, title %s, length %d, pos %d\n", track->title, track->track_duration_10ms, track->track_position_10ms);
     media_control_service_server_update_current_track_info(media_player->id, track);
 
     if (media_player->previous_group_index != media_player->current_group_index){
+        media_player->previous_group_index = media_player->current_group_index;
+
+        // change group
+        media_player->current_track_index = 0;
+        track = mcs_get_current_track_for_media_player(media_player);
+
+
         media_control_service_server_set_parent_group_object_id(media_player->id, &media_player->track_groups[media_player->current_group_index].parent_group_object_id);
         media_control_service_server_set_current_group_object_id(media_player->id, &media_player->track_groups[media_player->current_group_index].current_group_object_id);
+        notify_track_change = true;
     }
 
     if (notify_track_change){
+        notify_track_position_change = false;
+        printf("Update track info, title %s, length %d, pos %d\n", track->title, track->track_duration_10ms, track->track_position_10ms);
+        track->track_position_10ms = 0;
         media_control_service_server_set_media_track_changed(media_player->id);
         media_control_service_server_set_track_duration(media_player->id, track->track_duration_10ms);
         media_control_service_server_set_track_title(media_player->id, track->title);
+        media_control_service_server_set_track_position(media_player->id, track->track_position_10ms);
+        media_control_service_server_set_current_track_id(media_player->id, &track->object_id);
+        media_control_service_server_set_current_track_segments_id(media_player->id, &track->segments_object_id);
+
+        uint32_t next_track_index;
+        mcs_next_track_index(media_player, true, &next_track_index);
+        media_control_service_server_set_next_track_id(media_player->id, &media_player->track_groups[media_player->current_group_index].tracks[next_track_index].object_id);
+
+        if (media_player->media_state == MCS_MEDIA_STATE_SEEKING){
+            uint8_t status = media_control_service_server_set_media_state(media_player->id, MCS_MEDIA_STATE_PLAYING);
+            if (status == ERROR_CODE_SUCCESS){
+                media_player->media_state = MCS_MEDIA_STATE_PLAYING;
+            }
+        }
+
+        ots_object_t * object = ots_db_find_object_with_luid(&track->object_id);
+        if (object != NULL){
+            object_transfer_service_server_set_current_object(bap_app_server_con_handle, object);
+            object_transfer_service_server_update_current_object_name(bap_app_server_con_handle, track->title);
+        }
     }
 
     if (notify_track_position_change){
+        notify_track_position_change = false;
         media_control_service_server_set_track_position(media_player->id, track->track_position_10ms);
     }
 
