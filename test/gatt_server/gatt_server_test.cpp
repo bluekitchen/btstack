@@ -489,6 +489,24 @@ static void test_hci_event_encryption_events(hci_con_handle_t con_handle, uint8_
     mock_call_att_packet_handler(HCI_EVENT_PACKET, 0, &buffer[0], buffer_size);
 }
 
+TEST(ATT_SERVER, att_server_multiple_notify) {
+
+    const uint16_t attribute_handles[] = {gatt_server_get_value_handle_for_characteristic_with_uuid16(0, 0xffff, ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_LEVEL)};
+    const uint16_t value_lens[] = { 1};
+    static uint8_t battery_value[] = {0x55};
+    const uint8_t * value_data[]  = {battery_value };
+    uint8_t num_attributes = 1;
+
+    hci_setup_le_connection(att_con_handle);
+    // correct command
+    uint8_t status = att_server_multiple_notify(att_con_handle, 1, attribute_handles, value_data, value_lens);
+    CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
+
+    // invalid con handle
+    status = att_server_multiple_notify(HCI_CON_HANDLE_INVALID, 1, attribute_handles, value_data, value_lens);
+    CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
+}
+
 TEST(ATT_SERVER, hci_event_encryption_key_refresh_complete_event) {
     uint8_t buffer[5];
     buffer[0] = HCI_EVENT_ENCRYPTION_KEY_REFRESH_COMPLETE;

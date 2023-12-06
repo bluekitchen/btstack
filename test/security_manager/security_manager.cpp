@@ -263,6 +263,13 @@ TEST(SecurityManager, CallFunctions){
     sm_use_fixed_passkey_in_display_role(1000);
     sm_allow_ltk_reconstruction_without_le_device_db_entry(1);
     sm_numeric_comparison_confirm(HCI_CON_HANDLE_INVALID);
+    sm_send_security_request(HCI_CON_HANDLE_INVALID);
+    gap_get_persistent_irk();
+    bd_addr_t address = {0,0,0,0,0,0};
+    gap_delete_bonding(BD_ADDR_TYPE_UNKNOWN, address);
+    sm_identity_resolving_state(HCI_CON_HANDLE_INVALID);
+    sm_authorization_decline(HCI_CON_HANDLE_INVALID);
+    sm_request_pairing(HCI_CON_HANDLE_INVALID);
 }
 
 TEST(SecurityManager, MainTest){
