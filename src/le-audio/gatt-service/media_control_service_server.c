@@ -1183,6 +1183,7 @@ uint8_t media_control_service_server_set_current_track_id(uint16_t media_player_
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     memcpy(media_player->data.current_track_object_id, object_id, OTS_OBJECT_ID_LEN);
+    mcs_server_schedule_task(media_player, CURRENT_TRACK_OBJECT_ID);
     return ERROR_CODE_SUCCESS;
 }
 
@@ -1194,6 +1195,7 @@ uint8_t media_control_service_server_set_next_track_id(uint16_t media_player_id,
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     memcpy(media_player->data.next_track_object_id, object_id, OTS_OBJECT_ID_LEN);
+    mcs_server_schedule_task(media_player, NEXT_TRACK_OBJECT_ID);
     return ERROR_CODE_SUCCESS;
 }
 
@@ -1208,6 +1210,7 @@ uint8_t media_control_service_server_set_current_track_segments_id(uint16_t medi
         ots_object_id_t null_object_id = {0,0,0,0,0,0};
         memcpy(media_player->data.current_track_segments_object_id, &null_object_id, OTS_OBJECT_ID_LEN);
     }
+    mcs_server_schedule_task(media_player, CURRENT_TRACK_SEGMENTS_OBJECT_ID);
     return ERROR_CODE_SUCCESS;
 }
 
