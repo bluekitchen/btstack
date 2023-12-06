@@ -86,25 +86,25 @@ static void set_callsetup_status(hfp_callsetup_status_t status){
 }
 
 static inline void set_enhanced_call_status_active(int index_in_table){
-    if ((index_in_table < 0) || (index_in_table > HFP_GSM_MAX_NR_CALLS)) return;
+    if ((index_in_table < 0) || (index_in_table >= HFP_GSM_MAX_NR_CALLS)) return;
     hfp_gsm_model_calls[index_in_table].enhanced_status = HFP_ENHANCED_CALL_STATUS_ACTIVE;
     hfp_gsm_model_calls[index_in_table].used_slot = true;
 }
 
 static inline void set_enhanced_call_status_held(int index_in_table){
-    if ((index_in_table < 0) || (index_in_table > HFP_GSM_MAX_NR_CALLS)) return;
+    if ((index_in_table < 0) || (index_in_table >= HFP_GSM_MAX_NR_CALLS)) return;
     hfp_gsm_model_calls[index_in_table].enhanced_status = HFP_ENHANCED_CALL_STATUS_HELD;
     hfp_gsm_model_calls[index_in_table].used_slot = true;
 }
 
 static inline void set_enhanced_call_status_response_hold(int index_in_table){
-    if ((index_in_table < 0) || (index_in_table > HFP_GSM_MAX_NR_CALLS)) return;
+    if ((index_in_table < 0) || (index_in_table >= HFP_GSM_MAX_NR_CALLS)) return;
     hfp_gsm_model_calls[index_in_table].enhanced_status = HFP_ENHANCED_CALL_STATUS_CALL_HELD_BY_RESPONSE_AND_HOLD;
     hfp_gsm_model_calls[index_in_table].used_slot = true;
 }
 
 static inline void set_enhanced_call_status_initiated(int index_in_table){
-    if ((index_in_table < 0) || (index_in_table > HFP_GSM_MAX_NR_CALLS)) return;
+    if ((index_in_table < 0) || (index_in_table >= HFP_GSM_MAX_NR_CALLS)) return;
     if (hfp_gsm_model_calls[index_in_table].direction == HFP_ENHANCED_CALL_DIR_OUTGOING){
         hfp_gsm_model_calls[index_in_table].enhanced_status = HFP_ENHANCED_CALL_STATUS_OUTGOING_DIALING;
     } else {
@@ -118,18 +118,18 @@ static inline void set_enhanced_call_status_initiated(int index_in_table){
 }
 
 static int get_enhanced_call_status(int index_in_table){
-    if ((index_in_table < 0) || (index_in_table > HFP_GSM_MAX_NR_CALLS)) return -1;
+    if ((index_in_table < 0) || (index_in_table >= HFP_GSM_MAX_NR_CALLS)) return -1;
     if (!hfp_gsm_model_calls[index_in_table].used_slot) return -1;
     return hfp_gsm_model_calls[index_in_table].enhanced_status;
 }
 
 static inline int is_enhanced_call_status_active(int index_in_table){
-    if ((index_in_table < 0) || (index_in_table > HFP_GSM_MAX_NR_CALLS)) return 0;
+    if ((index_in_table < 0) || (index_in_table >= HFP_GSM_MAX_NR_CALLS)) return 0;
     return get_enhanced_call_status(index_in_table) == HFP_ENHANCED_CALL_STATUS_ACTIVE;
 }
 
 static inline int is_enhanced_call_status_initiated(int index_in_table){
-    if ((index_in_table < 0) || (index_in_table > HFP_GSM_MAX_NR_CALLS)) return 0;
+    if ((index_in_table < 0) || (index_in_table >= HFP_GSM_MAX_NR_CALLS)) return 0;
     switch (get_enhanced_call_status(index_in_table)){
         case HFP_ENHANCED_CALL_STATUS_OUTGOING_DIALING:
         case HFP_ENHANCED_CALL_STATUS_OUTGOING_ALERTING:
@@ -142,7 +142,7 @@ static inline int is_enhanced_call_status_initiated(int index_in_table){
 }
 
 static void free_call_slot(int index_in_table){
-    if ((index_in_table < 0) || (index_in_table > HFP_GSM_MAX_NR_CALLS)) return;
+    if ((index_in_table < 0) || (index_in_table >= HFP_GSM_MAX_NR_CALLS)) return;
     hfp_gsm_model_calls[index_in_table].used_slot = false;
 }
 
