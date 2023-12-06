@@ -635,6 +635,7 @@ static int codecs_exchange_state_machine(hfp_connection_t * hfp_connection){
         case HFP_CMD_TRIGGER_CODEC_CONNECTION_SETUP:
             hfp_connection->codecs_state = HFP_CODECS_RECEIVED_TRIGGER_CODEC_EXCHANGE;
             hfp_connection->establish_audio_connection = 1;
+            hfp_connection->sco_for_msbc_failed = 0;
             hfp_ag_send_ok(hfp_connection->rfcomm_cid);
             return 1;
         
@@ -2738,6 +2739,7 @@ static uint8_t hfp_ag_setup_audio_connection(hfp_connection_t * hfp_connection){
     }
         
     hfp_connection->establish_audio_connection = 1;
+    hfp_connection->sco_for_msbc_failed = 0;
     if (!has_codec_negotiation_feature(hfp_connection)){
         log_info("hfp_ag_establish_audio_connection - no codec negotiation feature, using CVSD");
         hfp_connection->negotiated_codec = HFP_CODEC_CVSD;
