@@ -33,7 +33,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - SBC Codec: new interface allows for multiple instances
 - LE Device DB: le_device_db_dump dumps LTK
 - Port for Zephyr 3.x
-- Port for FreeBSD that uses kernel ng_hci node 
+- Port for FreeBSD that uses kernel netgraph HCI node 
 
 ### Fixed
 - HCI: fix remove le device from whitelist and periodic advertiser list
