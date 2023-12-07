@@ -7,10 +7,18 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ---
 
 ## Unreleased
+### Added
+### Fixed
+### Changed
+
+
+## Release v1.6
 
 ### Added
-- HCI: configure Classic ACL packet types with hci_enable_acl_packet_types
-- GAP: generic GAP_SUBEVENT_LE_CONNECTION_COMPLETE
+- HCI: allow to configure Classic ACL packet types with hci_enable_acl_packet_types
+- GAP: emit generic GAP_SUBEVENT_LE_CONNECTION_COMPLETE for any LE Connection Complete
+- GAP: ENABLE_LE_ENHANCED_CONNECTION_COMPLETE_EVENT enables enhanced LE Connection Complete events
+- SM: support LE Secure Connection debug keys for testing
 - L2CAP: additional authorization_required param in l2cap_ecbm_register_service  
 - GATT Client: support GATT over Enhanced LE Bearer
 - GATT Server: support GATT over Enhanced LE Bearer
@@ -18,23 +26,26 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - AVRCP: support SDP record without service name and/or provider
 - HFP: hfp_hf_create_sdp_record_with_codecs and hfp_hf_create_sdp_record_with_codecs
 - HFP: support SDP record without service name
-  HFP: support for LC3-SWB
+- HFP: support for LC3-SWB
 - SPP Server: support SDP record without service name
 - HOG Device: emit HIDS_SUBEVENT_SET_REPORT
 - HOG Device: provide report for GET REPORT operation via callback
 - SBC Codec: new interface allows for multiple instances
 - LE Device DB: le_device_db_dump dumps LTK
 - Port for Zephyr 3.x
+- Port for FreeBSD that uses kernel ng_hci node 
 
 ### Fixed
-- HCI: fix remove le device from whitelist
+- HCI: fix remove le device from whitelist and periodic advertiser list
 - HCI: fix restart connect with whitelist after whitelist modification
+- GAP: store classic link keys independent from peer bonding request
+- SM: directly detect invalid Public key when Controller ECC is used 
 - L2CAP: make l2cap_get_remote_mtu_for_local_cid available to LE-only builds
 - HFP: use 'don't care' to accept SCO connections, fixes issue on ESP32
 - HFP: fix LC3-WB init
 - HFP AG: fix setup of audio connection in service level established event
 - HFP AG: fix BCM WBS setup
-- HFP AG: allow use of mSBC in subsequent audio connections after CSVD setup
+- HFP AG: allow use of mSBC in subsequent audio connections after CSVD downgrade
 - HFP AG: fix terminate held call
 - HFP HF: send 'deactivate EC/NR' if supported in AG
 - HID Device: set Report Mode as default
@@ -50,13 +61,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Changed
 - HCI: simplified implicit SCO flow control
 - HCI: return ERROR_CODE_COMMAND_DISALLOWED for outgoing connections in gap_connect
+- GAP: only return status code for errors in gap_connect
 - AVRCP: shorten default SDP Service and Provider Names
 - GATT Client: emit query complete event for gatt_client_discover_characteristic_descriptors in next run loop iteration
 - HFP: report HFP Version 1.9 in SDP record
 - HID Parser: ignore Report Items without Usage
 - btstack_crypto: allow MBEDTLS config via MBEDTLS_CONFIG_FILE
 - remove old Zephyr 1.9 port
-
+- ports: require CMake 3.12 for CMake projects
  
 ## Release v1.5.6
 
@@ -813,7 +825,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Changed
 - FreeRTOS: use freertos/.. prefix to include FreeRTOS headers if HAVE_FREERTOS_INCLUDE_PREFIX is defined
 - BNEP: add Connection Handle to BNEP_EVENT_CHANNEL_OPENED
-- Examples: renamed le_counter to gatt_counter and le_streamer to le_streamer_server to indicate suppport for GATT over BR/EDR
+- Examples: renamed le_counter to gatt_counter and le_streamer to le_streamer_server to indicate support for GATT over BR/EDR
 
 ### Fixed
 - BNEP: Bluetooth address is stored in little-endian format for all BNEP_EVENT_*
