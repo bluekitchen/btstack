@@ -45,12 +45,15 @@
 
 #include "hci.h"
 
+// spec defines 100 ms, PTS might indicate an error if we sent after 100 ms
+#define GATT_CLIENT_COLLISION_BACKOFF_MS 150
 #if defined __cplusplus
 extern "C" {
 #endif
 
 typedef enum {
     P_READY,
+    P_W2_EMIT_QUERY_COMPLETE_EVENT,
     P_W2_SEND_SERVICE_QUERY,
     P_W4_SERVICE_QUERY_RESULT,
     P_W2_SEND_SERVICE_WITH_UUID_QUERY,
@@ -80,6 +83,9 @@ typedef enum {
     
     P_W2_SEND_READ_MULTIPLE_REQUEST,
     P_W4_READ_MULTIPLE_RESPONSE,
+
+    P_W2_SEND_READ_MULTIPLE_VARIABLE_REQUEST,
+    P_W4_READ_MULTIPLE_VARIABLE_RESPONSE,
 
     P_W2_SEND_WRITE_CHARACTERISTIC_VALUE,
     P_W4_WRITE_CHARACTERISTIC_VALUE_RESULT,
@@ -129,11 +135,14 @@ typedef enum {
     P_W4_CMAC_READY,
     P_W4_CMAC_RESULT,
     P_W2_SEND_SIGNED_WRITE,
-    P_W4_SEND_SINGED_WRITE_DONE,
+    P_W4_SEND_SIGNED_WRITE_DONE,
 
     P_W2_SDP_QUERY,
     P_W4_SDP_QUERY,
+    P_W2_L2CAP_CONNECT,
     P_W4_L2CAP_CONNECTION,
+    P_W2_EMIT_CONNECTED,
+    P_L2CAP_CLOSED,
 } gatt_client_state_t;
     
     
@@ -144,10 +153,26 @@ typedef enum{
     MTU_AUTO_EXCHANGE_DISABLED
 } gatt_client_mtu_t;
 
+#ifdef ENABLE_GATT_OVER_EATT
+typedef enum {
+    GATT_CLIENT_EATT_IDLE,
+    GATT_CLIENT_EATT_DISCOVER_GATT_SERVICE_W2_SEND,
+    GATT_CLIENT_EATT_DISCOVER_GATT_SERVICE_W4_DONE,
+    GATT_CLIENT_EATT_READ_SERVER_SUPPORTED_FEATURES_W2_SEND,
+    GATT_CLIENT_EATT_READ_SERVER_SUPPORTED_FEATURES_W4_DONE,
+    GATT_CLIENT_EATT_FIND_CLIENT_SUPPORTED_FEATURES_W2_SEND,
+    GATT_CLIENT_EATT_FIND_CLIENT_SUPPORTED_FEATURES_W4_DONE,
+    GATT_CLIENT_EATT_WRITE_ClIENT_SUPPORTED_FEATURES_W2_SEND,
+    GATT_CLIENT_EATT_WRITE_ClIENT_SUPPORTED_FEATURES_W4_DONE,
+    GATT_CLIENT_EATT_L2CAP_SETUP,
+    GATT_CLIENT_EATT_READY,
+} gatt_client_eatt_state_t;
+#endif
+
 typedef struct gatt_client{
     btstack_linked_item_t    item;
-    // TODO: rename gatt_client_state -> state
-    gatt_client_state_t gatt_client_state;
+
+    gatt_client_state_t state;
 
     // user callback 
     btstack_packet_handler_t callback;
@@ -163,11 +188,25 @@ typedef struct gatt_client{
 
     hci_con_handle_t con_handle;
 
+    att_bearer_type_t bearer_type;
+
 #ifdef ENABLE_GATT_OVER_CLASSIC
     bd_addr_t addr;
     uint16_t  l2cap_psm;
     uint16_t  l2cap_cid;
-    btstack_context_callback_registration_t sdp_query_request;
+    btstack_context_callback_registration_t callback_request;
+#endif
+
+#ifdef ENABLE_GATT_OVER_EATT
+    gatt_client_eatt_state_t eatt_state;
+    btstack_linked_list_t eatt_clients;
+    uint8_t * eatt_storage_buffer;
+    uint16_t eatt_storage_size;
+    uint8_t  eatt_num_clients;
+    uint8_t  gatt_server_supported_features;
+    uint16_t gatt_service_start_group_handle;
+    uint16_t gatt_service_end_group_handle;
+    uint16_t gatt_client_supported_features_handle;
 #endif
 
     uint16_t          mtu;
@@ -197,8 +236,8 @@ typedef struct gatt_client{
     uint16_t client_characteristic_configuration_handle;
     uint8_t  client_characteristic_configuration_value[2];
     
-    uint8_t  filter_with_uuid;
-    uint8_t  send_confirmation;
+    bool     filter_with_uuid;
+    bool     send_confirmation;
 
     int      le_device_index;
     uint8_t  cmac[8];
@@ -206,7 +245,7 @@ typedef struct gatt_client{
     btstack_timer_source_t gc_timeout;
 
     uint8_t  security_counter;
-    uint8_t  wait_for_authentication_complete;
+    bool     wait_for_authentication_complete;
     uint8_t  pending_error_code;
 
     bool     reencryption_active;
@@ -283,6 +322,17 @@ uint8_t gatt_client_classic_connect(btstack_packet_handler_t callback, bd_addr_t
  * @return status
  */
 uint8_t gatt_client_classic_disconnect(btstack_packet_handler_t callback, hci_con_handle_t con_handle);
+
+/**
+ * @brief Setup Enhanced LE Bearer with up to 5 channels on existing LE connection
+ * @param callback for GATT_EVENT_CONNECTED and GATT_EVENT_DISCONNECTED events
+ * @param con_handle
+ * @param num_channels
+ * @param storage_buffer for L2CAP connection
+ * @param storage_size - each channel requires (2 * ATT MTU) + 10 bytes
+ * @return
+ */
+uint8_t gatt_client_le_enhanced_connect(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint8_t num_channels, uint8_t * storage_buffer, uint16_t storage_size);
 
 /**
  * @brief MTU is available after the first query has completed. If status is equal to ERROR_CODE_SUCCESS, it returns the real value, 
@@ -588,7 +638,21 @@ uint8_t gatt_client_read_long_value_of_characteristic_using_value_handle_with_of
  */
 uint8_t gatt_client_read_multiple_characteristic_values(btstack_packet_handler_t callback, hci_con_handle_t con_handle, int num_value_handles, uint16_t * value_handles);
 
-/** 
+/*
+ * @brief Read multiple varaible characteristic values. Only supported over LE Enhanced Bearer
+ * The all results are emitted via single GATT_EVENT_CHARACTERISTIC_VALUE_QUERY_RESULT event,
+ * followed by the GATT_EVENT_QUERY_COMPLETE event, which marks the end of read.
+ * @param  callback
+ * @param  con_handle
+ * @param  num_value_handles
+ * @param  value_handles list of handles
+ * @return status BTSTACK_MEMORY_ALLOC_FAILED, if no GATT client for con_handle is found
+ *                GATT_CLIENT_IN_WRONG_STATE , if GATT client is not ready
+ *                ERROR_CODE_SUCCESS         , if query is successfully registered
+ */
+uint8_t gatt_client_read_multiple_variable_characteristic_values(btstack_packet_handler_t callback, hci_con_handle_t con_handle, int num_value_handles, uint16_t * value_handles);
+
+/**
  * @brief Writes the characteristic value using the characteristic's value handle without 
  * an acknowledgment that the write was successfully performed.
  * @param  con_handle   

@@ -121,6 +121,7 @@
 #include "classic/bnep.h"
 #include "classic/btstack_link_key_db.h"
 #include "classic/btstack_sbc.h"
+#include "classic/btstack_sbc_bluedroid.h"
 #include "classic/device_id_server.h"
 #include "classic/gatt_sdp.h"
 #include "classic/goep_client.h"

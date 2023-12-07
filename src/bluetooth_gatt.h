@@ -436,6 +436,14 @@
 #define ORG_BLUETOOTH_CHARACTERISTIC_AVAILABLE_AUDIO_CONTEXTS                                                         0x2BCD // Available Audio Contexts
 #define ORG_BLUETOOTH_CHARACTERISTIC_SUPPORTED_AUDIO_CONTEXTS                                                         0x2BCE // Supported Audio Contexts
 
+#define ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_CRITCAL_STATUS                                                           0x2BE9 // Battery Critical Status
+#define ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_HEALTH_STATUS                                                            0x2BEA // Battery Health Status
+#define ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_HEALTH_INFORMATION                                                       0x2BEB // Battery Health Information
+#define ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_INFORMATION                                                              0x2BEC // Battery Health Information
+#define ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_LEVEL_STATUS                                                             0x2BED // Battery Level Status
+#define ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_TIME_STATUS                                                              0x2BEE // Battery Time Status
+#define ORG_BLUETOOTH_CHARACTERISTIC_ESTIMATED_SERVICE_DATE                                                           0x2BEF // Estimated Service Date
+#define ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_ENERGY_STATUS                                                            0x2BF0 // Battery Energy Status
 
 /**
  * Assigned numbers from www.bluetooth.com/specifications/gatt/descriptors

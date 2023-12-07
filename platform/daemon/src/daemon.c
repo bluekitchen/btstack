@@ -249,7 +249,7 @@ static const char * btstack_server_storage_path;
 
 // GAP command buffer
 #ifdef ENABLE_CLASSIC
-static uint8_t daemon_gap_pin_code[16];
+static uint8_t daemon_gap_pin_code[PIN_CODE_LEN];
 #endif
 
 // TLV
@@ -1153,7 +1153,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             break;
         case GAP_PIN_CODE_RESPONSE:
             reverse_bd_addr(&packet[3], addr);
-            memcpy(daemon_gap_pin_code, &packet[10], 16);
+            memcpy(daemon_gap_pin_code, &packet[10], PIN_CODE_LEN);
             gap_pin_code_response_binary(addr, daemon_gap_pin_code, packet[9]);
             break;
         case GAP_PIN_CODE_NEGATIVE:

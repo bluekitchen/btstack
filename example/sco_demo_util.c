@@ -50,6 +50,7 @@
 #include "btstack_ring_buffer.h"
 #include "classic/btstack_cvsd_plc.h"
 #include "classic/btstack_sbc.h"
+#include "classic/btstack_sbc_bluedroid.h"
 #include "classic/hfp.h"
 #include "classic/hfp_codec.h"
 
@@ -142,8 +143,10 @@ static int count_received = 0;
 static btstack_cvsd_plc_state_t cvsd_plc_state;
 
 #ifdef ENABLE_HFP_WIDE_BAND_SPEECH
-static btstack_sbc_encoder_state_t msbc_encoder_state;
-static btstack_sbc_decoder_state_t msbc_decoder_state;
+static const btstack_sbc_decoder_t *   sbc_decoder_instance;
+static btstack_sbc_decoder_bluedroid_t sbc_decoder_context;
+static const btstack_sbc_encoder_t *   sbc_encoder_instance;
+static btstack_sbc_encoder_bluedroid_t sbc_encoder_context;
 #endif
 
 #ifdef ENABLE_HFP_SUPER_WIDE_BAND_SPEECH
@@ -452,16 +455,18 @@ static void handle_pcm_data(int16_t * data, int num_samples, int num_channels, i
 
 static void sco_demo_msbc_init(void){
     printf("SCO Demo: Init mSBC\n");
-    btstack_sbc_decoder_init(&msbc_decoder_state, SBC_MODE_mSBC, &handle_pcm_data, NULL);
-    hfp_codec_init_msbc(&hfp_codec, &msbc_encoder_state);
+    sbc_decoder_instance = btstack_sbc_decoder_bluedroid_init_instance(&sbc_decoder_context);
+    sbc_decoder_instance->configure(&sbc_decoder_context, SBC_MODE_mSBC, &handle_pcm_data, NULL);
+    sbc_encoder_instance = btstack_sbc_encoder_bluedroid_init_instance(&sbc_encoder_context);
+    hfp_codec_init_msbc_with_codec(&hfp_codec, sbc_encoder_instance, &sbc_encoder_context);
 }
 
 static void sco_demo_msbc_receive(const uint8_t * packet, uint16_t size){
-    btstack_sbc_decoder_process_data(&msbc_decoder_state, (packet[1] >> 4) & 3, packet + 3, size - 3);
+    sbc_decoder_instance->decode_signed_16(&sbc_decoder_context, (packet[1] >> 4) & 3, packet + 3, size - 3);
 }
 
 static void sco_demo_msbc_close(void){
-    printf("Used mSBC with PLC, number of processed frames: \n - %d good frames, \n - %d zero frames, \n - %d bad frames.\n", msbc_decoder_state.good_frames_nr, msbc_decoder_state.zero_frames_nr, msbc_decoder_state.bad_frames_nr);
+    printf("Used mSBC with PLC, number of processed frames: \n - %d good frames, \n - %d zero frames, \n - %d bad frames.\n", sbc_decoder_context.good_frames_nr, sbc_decoder_context.zero_frames_nr, sbc_decoder_context.bad_frames_nr);
 }
 
 static const codec_support_t codec_msbc = {
@@ -516,7 +521,7 @@ static void sco_demo_lc3swb_init(void){
     printf("SCO Demo: Init LC3-SWB\n");
 
     hfp_codec.lc3_encoder_context = &lc3_encoder_context;
-    const btstack_lc3_encoder_t * lc3_encoder = btstack_lc3_encoder_google_init_instance((btstack_lc3_encoder_google_t *) hfp_codec.lc3_encoder_context);
+    const btstack_lc3_encoder_t * lc3_encoder = btstack_lc3_encoder_google_init_instance( &lc3_encoder_context);
     hfp_codec_init_lc3_swb(&hfp_codec, lc3_encoder, &lc3_encoder_context);
 
     // init lc3 decoder
@@ -640,7 +645,7 @@ void sco_demo_send(hci_con_handle_t sco_handle){
 
     if (sco_handle == HCI_CON_HANDLE_INVALID) return;
 
-    int sco_packet_length = hci_get_sco_packet_length();
+    int sco_packet_length = hci_get_sco_packet_length_for_connection(sco_handle);
     int sco_payload_length = sco_packet_length - 3;
 
     hci_reserve_packet_buffer();

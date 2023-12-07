@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "provisioner.c"
+#define BTSTACK_FILE__ "provisioner.c"
 
 #include <stdint.h>
 #include <stdio.h>

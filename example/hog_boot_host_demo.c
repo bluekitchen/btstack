@@ -503,12 +503,12 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     btstack_run_loop_set_timer_handler(&connection_timer, &hog_reconnect_timeout);
                     btstack_run_loop_add_timer(&connection_timer);
                     break;
-                case HCI_EVENT_LE_META:
+                case HCI_EVENT_META_GAP:
                     // wait for connection complete
-                    if (hci_event_le_meta_get_subevent_code(packet) != HCI_SUBEVENT_LE_CONNECTION_COMPLETE) break;
+                    if (hci_event_gap_meta_get_subevent_code(packet) != GAP_SUBEVENT_LE_CONNECTION_COMPLETE) break;
                     if (app_state != W4_CONNECTED) return;
                     btstack_run_loop_remove_timer(&connection_timer);
-                    connection_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
+                    connection_handle = gap_subevent_le_connection_complete_get_connection_handle(packet);
                     // request security
                     app_state = W4_ENCRYPTED;
                     sm_request_pairing(connection_handle);
@@ -538,6 +538,8 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
 
     if (packet_type != HCI_EVENT_PACKET) return;
 
+    bool connect_to_service = false;
+
     switch (hci_event_packet_get_type(packet)) {
         case SM_EVENT_JUST_WORKS_REQUEST:
             printf("Just works requested\n");
@@ -554,10 +556,7 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
             switch (sm_event_pairing_complete_get_status(packet)){
                 case ERROR_CODE_SUCCESS:
                     printf("Pairing complete, success\n");
-                    // continue - query primary services
-                    printf("Search for HID service.\n");
-                    app_state = W4_HID_SERVICE_FOUND;
-                    gatt_client_discover_primary_services_by_uuid16(handle_gatt_client_event, connection_handle, ORG_BLUETOOTH_SERVICE_HUMAN_INTERFACE_DEVICE);
+                    connect_to_service = true;
                     break;
                 case ERROR_CODE_CONNECTION_TIMEOUT:
                     printf("Pairing failed, timeout\n");
@@ -572,8 +571,19 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
                     break;
             }
             break;
+        case SM_EVENT_REENCRYPTION_COMPLETE:
+            printf("Re-encryption complete, success\n");
+            connect_to_service = true;
+            break;
         default:
             break;
+    }
+
+    if (connect_to_service){
+        // continue - query primary services
+        printf("Search for HID service.\n");
+        app_state = W4_HID_SERVICE_FOUND;
+        gatt_client_discover_primary_services_by_uuid16(handle_gatt_client_event, connection_handle, ORG_BLUETOOTH_SERVICE_HUMAN_INTERFACE_DEVICE);
     }
 }
 /* LISTING_END */
@@ -586,6 +596,16 @@ int btstack_main(int argc, const char * argv[]){
 
     /* LISTING_START(HogBootHostSetup): HID-over-GATT Boot Host Setup */
 
+    l2cap_init();
+
+    // setup SM: Display only
+    sm_init();
+    sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_ONLY);
+    sm_set_authentication_requirements(SM_AUTHREQ_SECURE_CONNECTION | SM_AUTHREQ_BONDING);
+
+    //
+    gatt_client_init();
+
     // register for events from HCI
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
@@ -593,11 +613,6 @@ int btstack_main(int argc, const char * argv[]){
     // register for events from Security Manager
     sm_event_callback_registration.callback = &sm_packet_handler;
     sm_add_event_handler(&sm_event_callback_registration);
-
-    //
-    l2cap_init();
-    sm_init();
-    gatt_client_init();
 
     /* LISTING_END */
 

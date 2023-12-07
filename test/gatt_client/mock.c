@@ -39,15 +39,42 @@ void mock_simulate_hci_state_working(void){
 	registered_hci_event_handler(HCI_EVENT_PACKET, 0, (uint8_t *)&packet, 3);
 }
 
+static void hci_create_gap_connection_complete_event(const uint8_t * hci_event, uint8_t * gap_event) {
+	gap_event[0] = HCI_EVENT_META_GAP;
+	gap_event[1] = 36 - 2;
+	gap_event[2] = GAP_SUBEVENT_LE_CONNECTION_COMPLETE;
+	switch (hci_event[2]){
+		case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
+			memcpy(&gap_event[3], &hci_event[3], 11);
+			memset(&gap_event[14], 0, 12);
+			memcpy(&gap_event[26], &hci_event[14], 7);
+			memset(&gap_event[33], 0xff, 3);
+			break;
+		case HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE_V1:
+			memcpy(&gap_event[3], &hci_event[3], 30);
+			memset(&gap_event[33], 0xff, 3);
+			break;
+		case HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE_V2:
+			memcpy(&gap_event[3], &hci_event[3], 33);
+			break;
+		default:
+			btstack_unreachable();
+			break;
+	}
+}
+
 void mock_simulate_connected(void){
 	uint8_t packet[] = {HCI_EVENT_LE_META, 0x13, 0x01, 0x00, 0x40, 0x00, 0x00, 0x00, 0x9B, 0x77, 0xD1, 0xF7, 0xB1, 0x34, 0x50, 0x00, 0x00, 0x00, 0xD0, 0x07, 0x05};
-	registered_hci_event_handler(HCI_EVENT_PACKET, 0, (uint8_t *)&packet, sizeof(packet));
+	uint8_t gap_event[36];
+	hci_create_gap_connection_complete_event(packet, gap_event);
+	registered_hci_event_handler(HCI_EVENT_PACKET, 0, gap_event, sizeof(gap_event));
 }
 
 void mock_simulate_scan_response(void){
 	uint8_t packet[] = {GAP_EVENT_ADVERTISING_REPORT, 0x13, 0xE2, 0x01, 0x34, 0xB1, 0xF7, 0xD1, 0x77, 0x9B, 0xCC, 0x09, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08};
 	registered_hci_event_handler(HCI_EVENT_PACKET, 0, (uint8_t *)&packet, sizeof(packet));
 }
+
 bool gap_authenticated(hci_con_handle_t con_handle){
 	UNUSED(con_handle);
 	return false;
@@ -55,6 +82,10 @@ bool gap_authenticated(hci_con_handle_t con_handle){
 uint8_t gap_encryption_key_size(hci_con_handle_t con_handle){
 	UNUSED(con_handle);
 	return 0;
+}
+bool gap_bonded(hci_con_handle_t con_handle){
+	UNUSED(con_handle);
+	return true;
 }
 void sm_request_pairing(hci_con_handle_t con_handle){
 	UNUSED(con_handle);
@@ -69,9 +100,9 @@ uint8_t gap_connect(const bd_addr_t addr, bd_addr_type_t addr_type){
 void gap_set_scan_parameters(uint8_t scan_type, uint16_t scan_interval, uint16_t scan_window){
 }
 
-int gap_reconnect_security_setup_active(hci_con_handle_t con_handle){
+bool gap_reconnect_security_setup_active(hci_con_handle_t con_handle){
 	UNUSED(con_handle);
-	return 0;
+	return false;
 }
 
 static void att_init_connection(att_connection_t * att_connection){
@@ -236,22 +267,10 @@ void hci_setup_le_connection(uint16_t con_handle){
     hci_setup_connection(con_handle, BD_ADDR_TYPE_LE_PUBLIC);
 }
 
-// int hci_send_cmd(const hci_cmd_t *cmd, ...){
-// //	printf("hci_send_cmd opcode 0x%02x\n", cmd->opcode);	
-// 	return 0;
-// }
-
-// int hci_can_send_packet_now_using_packet_buffer(uint8_t packet_type){
-// 	return 1;
-// }
-
-// void hci_disconnect_security_block(hci_con_handle_t con_handle){
-// 	printf("hci_disconnect_security_block \n");	
-// }
-
-// void hci_dump_log(const char * format, ...){
-// 	printf("hci_disconnect_security_block \n");	
-// }
-
 void l2cap_run(void){
+}
+#include "btstack_run_loop.h"
+
+void btstack_run_loop_execute_on_main_thread(btstack_context_callback_registration_t * callback_registration){
+	callback_registration->callback(callback_registration->context);
 }

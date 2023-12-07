@@ -324,8 +324,8 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
             }
             break;
             
-        case HCI_EVENT_LE_META:
-            if (hci_event_le_meta_get_subevent_code(packet) !=  HCI_SUBEVENT_LE_CONNECTION_COMPLETE) break;
+        case HCI_EVENT_META_GAP:
+            if (hci_event_gap_meta_get_subevent_code(packet) !=  GAP_SUBEVENT_LE_CONNECTION_COMPLETE) break;
             // disable PB_GATT
             mesh_proxy_stop_advertising_unprovisioned_device();
             break;

@@ -1,6 +1,10 @@
 BTSTACK_ROOT =  ../..
 
-CFLAGS  = -DUNIT_TEST -g -Wall -Wnarrowing -Wconversion-null
+# CppuTest from pkg-config
+CFLAGS  += ${shell pkg-config --cflags CppuTest}
+LDFLAGS += ${shell pkg-config --libs   CppuTest}
+
+CFLAGS += -DUNIT_TEST -g -Wall -Wnarrowing -Wconversion-null
 CFLAGS += -I${BTSTACK_ROOT}/src
 CFLAGS += -I..
 

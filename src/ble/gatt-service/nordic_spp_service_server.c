@@ -40,7 +40,7 @@
 /**
  * Implementation of the Nordic SPP-like profile
  *
- * To use with your application, add '#import <nordic_spp_service.gatt' to your .gatt file
+ * To use with your application, add `#import <nordic_spp_service.gatt>` to your .gatt file
  * and call all functions below. All strings and blobs need to stay valid after calling the functions.
  */
 
@@ -91,11 +91,14 @@ static uint16_t nordic_spp_service_read_callback(hci_con_handle_t con_handle, ui
 }
 
 static int nordic_spp_service_write_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
-	UNUSED(transaction_mode);
 	UNUSED(offset);
 	UNUSED(buffer_size);
-	
-	if (attribute_handle == nordic_spp_rx_value_handle){
+
+    if (transaction_mode != ATT_TRANSACTION_MODE_NONE){
+        return 0;
+    }
+
+    if (attribute_handle == nordic_spp_rx_value_handle){
         (*client_packet_handler)(RFCOMM_DATA_PACKET, (uint16_t) con_handle, buffer, buffer_size);
 	}
 

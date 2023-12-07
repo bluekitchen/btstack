@@ -39,7 +39,7 @@
  * Basic Mesh Node demo
  */
 
-#define __BTSTACK_FILE__ "mesh_node_demo.c"
+#define BTSTACK_FILE__ "mesh_node_demo.c"
 
 #include <stdint.h>
 #include <stdio.h>

@@ -93,6 +93,7 @@ TEST_GROUP(LE_DEVICE_DB_TLV){
 
 TEST(LE_DEVICE_DB_TLV, Empty){
     CHECK_EQUAL(0, le_device_db_count());
+    le_device_db_dump();
 }
 
 TEST(LE_DEVICE_DB_TLV, AddZero){
@@ -100,6 +101,22 @@ TEST(LE_DEVICE_DB_TLV, AddZero){
 
     CHECK_TRUE(index >= 0);
     CHECK_EQUAL(1, le_device_db_count());
+    le_device_db_dump();
+    le_device_db_tlv_configure(btstack_tlv_impl, &btstack_tlv_context);
+}
+
+TEST(LE_DEVICE_DB_TLV, AddZero2){
+    int index = le_device_db_add(BD_ADDR_TYPE_LE_PUBLIC, addr_zero, sm_key_zero);
+    CHECK_TRUE(index >= 0);
+    CHECK_EQUAL(1, le_device_db_count());
+
+    index = le_device_db_add(BD_ADDR_TYPE_LE_PUBLIC, addr_zero, sm_key_zero);
+    CHECK_TRUE(index >= 0);
+    CHECK_EQUAL(1, le_device_db_count());
+
+    index = le_device_db_add(BD_ADDR_TYPE_LE_RANDOM, addr_zero, sm_key_zero);
+    CHECK_TRUE(index >= 0);
+    CHECK_EQUAL(2, le_device_db_count());
 }
 
 TEST(LE_DEVICE_DB_TLV, AddOne){
@@ -109,12 +126,17 @@ TEST(LE_DEVICE_DB_TLV, AddOne){
 }
 
 TEST(LE_DEVICE_DB_TLV, RetrieveOne){
-    int index = le_device_db_add(BD_ADDR_TYPE_LE_PUBLIC, addr_aa, sm_key_aa);
-    CHECK_TRUE(index >= 0);
-    CHECK_EQUAL(1, le_device_db_count());
     bd_addr_t addr;
     sm_key_t sm_key;
     int addr_type;
+
+    le_device_db_info(0, NULL, addr, sm_key);
+    le_device_db_info(0, &addr_type, NULL, sm_key);
+    
+    int index = le_device_db_add(BD_ADDR_TYPE_LE_PUBLIC, addr_aa, sm_key_aa);
+    CHECK_TRUE(index >= 0);
+    CHECK_EQUAL(1, le_device_db_count());
+
     le_device_db_info((uint16_t) index, &addr_type, addr, sm_key);
     MEMCMP_EQUAL(sm_key_aa, sm_key, 16);
     MEMCMP_EQUAL(addr_aa, addr, 6);

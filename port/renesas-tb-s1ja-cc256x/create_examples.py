@@ -60,7 +60,9 @@ def create_examples(port_folder, suffix):
     for file in example_files:
         if not file.endswith(".c"):
             continue
-        if file in ['panu_demo.c', 'sco_demo_util.c', 'ant_test.c', 'audio_duplex.c', 'mod_player.c']:
+        if file in ['panu_demo.c', 'ant_test.c', 'audio_duplex.c', 'mod_player.c']:
+            continue
+        if 'demo_util' in file:
             continue
         if file in ['a2dp_sink_demo.c', 'a2dp_source_demo.c', 'hfp_hf_demo.c', 'hfp_ag_demo.c', 'hsp_hs_demo.c', 'hsp_ag_demo.c']:
             continue

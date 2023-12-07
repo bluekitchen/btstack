@@ -317,7 +317,7 @@ int sdp_handle_service_attribute_request(uint8_t * packet, uint16_t remote_mtu){
     if (continuation_offset == 0){
         
         // get size of this record
-        uint16_t filtered_attributes_size = spd_get_filtered_size(item->service_record, attributeIDList);
+        uint16_t filtered_attributes_size = sdp_get_filtered_size(item->service_record, attributeIDList);
         
         // store DES
         de_store_descriptor_with_len(&sdp_response_buffer[pos], DE_DES, DE_SIZE_VAR_16, filtered_attributes_size);
@@ -359,7 +359,7 @@ static uint16_t sdp_get_size_for_service_search_attribute_response(uint8_t * ser
         if (!sdp_record_matches_service_search_pattern(item->service_record, serviceSearchPattern)) continue;
         
         // for all service records that match
-        total_response_size += 3 + spd_get_filtered_size(item->service_record, attributeIDList);
+        total_response_size += 3 + sdp_get_filtered_size(item->service_record, attributeIDList);
     }
     return total_response_size;
 }
@@ -434,7 +434,7 @@ int sdp_handle_service_search_attribute_request(uint8_t * packet, uint16_t remot
         if (continuation_offset == 0){
             
             // get size of this record
-            uint16_t filtered_attributes_size = spd_get_filtered_size(item->service_record, attributeIDList);
+            uint16_t filtered_attributes_size = sdp_get_filtered_size(item->service_record, attributeIDList);
             
             // stop if complete record doesn't fits into response but we already have a partial response
             if (((filtered_attributes_size + 3) > maximumAttributeByteCount) && !first_answer) {

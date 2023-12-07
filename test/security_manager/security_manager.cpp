@@ -213,6 +213,17 @@ static uint8_t m[128];
 
 #define VALIDATE_MESSAGE(NAME) validate_message(#NAME, NAME##_string, cmac_##NAME##_string)
 
+
+bool get_ltk_callback(hci_con_handle_t con_handle, uint8_t address_type, bd_addr_t addr, uint8_t * ltk){
+    UNUSED(con_handle);
+    UNUSED(address_type);
+    UNUSED(addr);
+    UNUSED(ltk);
+    
+    return true;
+}
+
+
 TEST_GROUP(SecurityManager){
 	void setup(void){
         static int first = 1;
@@ -235,6 +246,31 @@ TEST_GROUP(SecurityManager){
         printf("Packet Log: %s\n", log_path);
     }
 };
+
+TEST(SecurityManager, CallFunctions){
+    sm_register_ltk_callback(&get_ltk_callback);
+    sm_remove_event_handler(NULL);
+    sm_set_accepted_stk_generation_methods(0);
+    sm_set_encryption_key_size_range(16, 128);
+#ifdef ENABLE_LE_PERIPHERAL
+    sm_set_request_security(true);
+#endif
+    sm_key_t key = {1,2,3,4,5,6,7,8,8,10,11,12,13,14,15,16};
+    sm_set_er(key);
+    sm_set_ir(key);
+    sm_test_set_irk(key);
+    sm_test_use_fixed_local_csrk();
+    sm_use_fixed_passkey_in_display_role(1000);
+    sm_allow_ltk_reconstruction_without_le_device_db_entry(1);
+    sm_numeric_comparison_confirm(HCI_CON_HANDLE_INVALID);
+    sm_send_security_request(HCI_CON_HANDLE_INVALID);
+    gap_get_persistent_irk();
+    bd_addr_t address = {0,0,0,0,0,0};
+    gap_delete_bonding(BD_ADDR_TYPE_UNKNOWN, address);
+    sm_identity_resolving_state(HCI_CON_HANDLE_INVALID);
+    sm_authorization_decline(HCI_CON_HANDLE_INVALID);
+    sm_request_pairing(HCI_CON_HANDLE_INVALID);
+}
 
 TEST(SecurityManager, MainTest){
 
@@ -410,6 +446,14 @@ TEST(SecurityManager, MainTest){
 
 	// expect send LE SMP Code Signing Information Command
     CHECK_ACL_PACKET(test_acl_packet_22);
+}
+
+TEST(SecurityManager, AddressResolutionLookup){
+    int status;
+    bd_addr_t address = {0,0,0,0,0,0};
+
+    status = sm_address_resolution_lookup((uint8_t) BD_ADDR_TYPE_LE_PUBLIC, address);
+    CHECK_EQUAL(status, 0);
 }
 
 int main (int argc, const char * argv[]){

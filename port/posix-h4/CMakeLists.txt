@@ -17,21 +17,6 @@ elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "MSVC")
 	# using Visual Studio C++
 endif()
 
-# pkgconfig
-find_package(PkgConfig QUIET)
-
-# portaudio
-if (PkgConfig_FOUND)
-	pkg_check_modules(PORTAUDIO REQUIRED portaudio-2.0)
-	if(PORTAUDIO_FOUND)
-		message("HAVE_PORTAUDIO")
-		include_directories(${PORTAUDIO_INCLUDE_DIRS})
-		link_directories(${PORTAUDIO_LIBRARY_DIRS})
-		link_libraries(${PORTAUDIO_LIBRARIES})
-		# CMake 3.12 - add_compile_definitions(HAVE_PORTAUDIO)
-		SET(CMAKE_C_FLAGS  "-DHAVE_PORTAUDIO")
-	endif()
-endif()
 
 # to generate .h from .gatt files
 find_package (Python REQUIRED COMPONENTS Interpreter)
@@ -166,6 +151,25 @@ list(SORT SOURCES)
 # create static lib
 add_library(btstack STATIC ${SOURCES})
 
+# pkgconfig
+find_package(PkgConfig)
+
+# portaudio
+if (PkgConfig_FOUND)
+	pkg_check_modules(PORTAUDIO portaudio-2.0)
+	if(PORTAUDIO_FOUND)
+		message("HAVE_PORTAUDIO")
+		include_directories(${PORTAUDIO_INCLUDE_DIRS})
+		link_directories(${PORTAUDIO_LIBRARY_DIRS})
+		link_libraries(${PORTAUDIO_LIBRARIES})
+		add_compile_definitions(HAVE_PORTAUDIO)
+	endif()
+endif()
+
+# pthread
+find_package(Threads)
+link_libraries(${CMAKE_THREAD_LIBS_INIT})
+
 # Add CC256x Support and specify init script
 set (CC256X_INIT_SCRIPT bluetooth_init_cc2564C_1.5.c)
 include(${BTSTACK_ROOT}/chipset/cc256x/cc256x.cmake)
@@ -198,5 +202,5 @@ foreach(EXAMPLE ${EXAMPLES})
 		message("example ${EXAMPLE}")
 	endif()
 	add_executable(${EXAMPLE} ${SOURCES_EXAMPLE})
-	target_link_libraries(${EXAMPLE} btstack)
+	target_link_libraries(${EXAMPLE} btstack pthread)
 endforeach(EXAMPLE)

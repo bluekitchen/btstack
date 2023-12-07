@@ -87,8 +87,6 @@ static bd_addr_t             local_addr;
 
 int btstack_main(int argc, const char * argv[]);
 
-static const uint8_t read_static_address_command_complete_prefix[] = { 0x0e, 0x1b, 0x01, 0x09, 0xfc };
-
 static bd_addr_t static_address;
 static int using_static_address;
 
@@ -130,6 +128,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     const uint8_t * usb_path;
     uint16_t product_id;
     uint16_t vendor_id;
+    const uint8_t * params;
 
     if (packet_type != HCI_EVENT_PACKET) return;
 
@@ -198,13 +197,22 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             }
             break;
         case HCI_EVENT_COMMAND_COMPLETE:
-            if (hci_event_command_complete_get_command_opcode(packet) == HCI_OPCODE_HCI_READ_LOCAL_VERSION_INFORMATION){
-                local_version_information_handler(packet);
-            }
-            if (memcmp(packet, read_static_address_command_complete_prefix, sizeof(read_static_address_command_complete_prefix)) == 0){
-                reverse_48(&packet[7], static_address);
-                gap_random_address_set(static_address);
-                using_static_address = 1;
+            switch (hci_event_command_complete_get_command_opcode(packet)){
+                case HCI_OPCODE_HCI_READ_LOCAL_VERSION_INFORMATION:
+                    local_version_information_handler(packet);
+                    break;
+                case HCI_OPCODE_HCI_ZEPHYR_READ_STATIC_ADDRESS:
+                    params = hci_event_command_complete_get_return_parameters(packet);
+                    if(params[0] != 0)
+                        break;
+                    if(size < 13)
+                        break;
+                    reverse_48(&params[2], static_address);
+                    gap_random_address_set(static_address);
+                    using_static_address = 1;
+                    break;
+                default:
+                    break;
             }
             break;
         default:

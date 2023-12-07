@@ -62,6 +62,12 @@ typedef struct {
 const btstack_tlv_t * btstack_tlv_posix_init_instance(btstack_tlv_posix_t * context, const char * db_path);
 
 /**
+ * Disable writing to TLV file
+ * @note must be called before btstack_tlv_posix_init_instance
+ */
+void btstack_tlv_posix_set_read_only(void);
+
+/**
  * Free TLV entries
  * @param self
  */

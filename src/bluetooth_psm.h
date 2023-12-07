@@ -1,15 +1,10 @@
-
 /**
- * bluetooth_psm.h generated from Bluetooth SIG website for BTstack by tool/bluetooth_psm.py
- * 2019-09-26 22:33:48.712449
+ * Assigned numbers from www.bluetooth.com/specifications/assigned-numbers/
  */
 
 #ifndef BLUETOOTH_PSM_H
 #define BLUETOOTH_PSM_H
 
-/**
- * Assigned numbers from www.bluetooth.com/specifications/assigned-numbers/logical-link-control/
- */
 #define BLUETOOTH_PSM_SDP                                                                0x0001
 #define BLUETOOTH_PSM_RFCOMM                                                             0x0003
 #define BLUETOOTH_PSM_TCS_BIN                                                            0x0005
@@ -26,5 +21,6 @@
 #define BLUETOOTH_PSM_3DSP                                                               0x0021
 #define BLUETOOTH_PSM_LE_PSM_IPSP                                                        0x0023
 #define BLUETOOTH_PSM_OTS                                                                0x0025
+#define BLUETOOTH_PSM_EATT                                                               0x0027
 
 #endif

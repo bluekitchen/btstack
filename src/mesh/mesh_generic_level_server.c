@@ -344,7 +344,7 @@ static void generic_move_set_unacknowledged_handler(mesh_model_t *generic_level_
 }
 
 // Generic On Off Message
-const static mesh_operation_t mesh_generic_level_model_operations[] = {
+static const mesh_operation_t mesh_generic_level_model_operations[] = {
     { MESH_GENERIC_LEVEL_GET,                                   0, generic_level_get_handler },
     { MESH_GENERIC_LEVEL_SET,                                   3, generic_level_set_handler },
     { MESH_GENERIC_LEVEL_SET_UNACKNOWLEDGED,                    3, generic_level_set_unacknowledged_handler },

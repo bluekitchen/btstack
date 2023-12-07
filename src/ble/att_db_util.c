@@ -263,16 +263,16 @@ static uint16_t att_db_util_encode_permissions(uint16_t properties, uint8_t read
         final_write_permission = write_permission;
     }
     // encode read/write security levels
-    if (final_read_permission & 1u){
+    if ((final_read_permission & 1u) != 0u){
     	flags |= (uint16_t)ATT_PROPERTY_READ_PERMISSION_BIT_0;
     }
-    if (final_read_permission & 2u){
+    if ((final_read_permission & 2u) != 0u){
     	flags |= (uint16_t)ATT_PROPERTY_READ_PERMISSION_BIT_1;
     }
-    if (final_write_permission & 1u){
+    if ((final_write_permission & 1u) != 0u){
     	flags |= (uint16_t)ATT_PROPERTY_WRITE_PERMISSION_BIT_0;
     }
-    if (final_write_permission & 2u){
+    if ((final_write_permission & 2u) != 0u){
     	flags |= (uint16_t)ATT_PROPERTY_WRITE_PERMISSION_BIT_1;
     }
 	return flags;
@@ -287,7 +287,7 @@ uint16_t att_db_util_add_characteristic_uuid16(uint16_t uuid16, uint16_t propert
 	uint16_t flags = att_db_util_encode_permissions(properties, read_permission, write_permission);	
 	uint16_t value_handle = att_db_next_handle;
 	att_db_util_add_attribute_uuid16(uuid16, flags, data, data_len);
-	if (properties & (uint8_t)(ATT_PROPERTY_NOTIFY | ATT_PROPERTY_INDICATE)){
+	if ((properties & (uint8_t)(ATT_PROPERTY_NOTIFY | ATT_PROPERTY_INDICATE)) != 0u){
 		att_db_util_add_client_characteristic_configuration(flags);
 	}
 	return value_handle;
@@ -302,7 +302,7 @@ uint16_t att_db_util_add_characteristic_uuid128(const uint8_t * uuid128, uint16_
 	uint16_t flags = att_db_util_encode_permissions(properties, read_permission, write_permission);	
 	uint16_t value_handle = att_db_next_handle;
 	att_db_util_add_attribute_uuid128(uuid128, flags, data, data_len);
-	if (properties & (uint8_t)(ATT_PROPERTY_NOTIFY | ATT_PROPERTY_INDICATE)){
+	if ((properties & (uint8_t)(ATT_PROPERTY_NOTIFY | ATT_PROPERTY_INDICATE)) != 0u){
 		att_db_util_add_client_characteristic_configuration(flags);
 	}
 	return value_handle;
@@ -335,7 +335,7 @@ static uint16_t att_db_util_hash_offset;
 static uint16_t att_db_util_hash_bytes_available;
 
 static void att_db_util_hash_fetch_next_attribute(void){
-    while (1){
+    while (true){
         uint16_t size = little_endian_read_16(att_db_util_hash_att_ptr, 0);
         btstack_assert(size != 0);
         UNUSED(size);

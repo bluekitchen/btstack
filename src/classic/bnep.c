@@ -852,6 +852,28 @@ static int bnep_handle_connection_request(bnep_channel_t *channel, uint8_t *pack
             break;
     }
 
+    /* Check bits 16-31 of UUID */
+    if (uuid_size > 2){
+        uint16_t dest_prefix = big_endian_read_16(packet, 2);
+        if (dest_prefix != 0){
+            response_code = BNEP_RESP_SETUP_INVALID_DEST_UUID;
+        }
+        uint16_t src_prefix = big_endian_read_16(packet, 2 + uuid_size);
+        if (src_prefix != 0){
+            response_code = BNEP_RESP_SETUP_INVALID_SOURCE_UUID;
+        }
+    }
+
+    /* check bits 32-127 of UUID */
+    if (uuid_size == 16){
+        if (uuid_has_bluetooth_prefix(&packet[2]) == false){
+            response_code = BNEP_RESP_SETUP_INVALID_DEST_UUID;
+        }
+        if (uuid_has_bluetooth_prefix(&packet[2+16]) == false){
+            response_code = BNEP_RESP_SETUP_INVALID_SOURCE_UUID;
+        }
+    }
+
     /* Check source and destination UUIDs for valid combinations */
     if (response_code == BNEP_RESP_SETUP_SUCCESS) {
         channel->uuid_dest = big_endian_read_16(packet, 2 + uuid_offset);

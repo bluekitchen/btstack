@@ -137,8 +137,8 @@ static void panu_setup(void){
     // NAP Network Access Type: Other, 1 MB/s
     pan_create_nap_sdp_record(panu_sdp_record, sdp_create_service_record_handle(), network_packet_types, NULL, NULL, BNEP_SECURITY_NONE, PAN_NET_ACCESS_TYPE_OTHER, 1000000, NULL, NULL);
 #endif
+    btstack_assert(de_get_len( panu_sdp_record) <= sizeof(panu_sdp_record));
     sdp_register_service(panu_sdp_record);
-    printf("SDP service record size: %u\n", de_get_len((uint8_t*) panu_sdp_record));
 
     // Initialize network interface
     btstack_network_init(&network_send_packet_callback);

@@ -327,7 +327,7 @@ static mesh_pdu_t * mesh_health_server_publish_state_fn(struct mesh_model * mesh
 }
 
 // Health Message
-const static mesh_operation_t mesh_health_model_operations[] = {
+static const mesh_operation_t mesh_health_model_operations[] = {
     { MESH_FOUNDATION_OPERATION_HEALTH_FAULT_GET,                                   2, health_fault_get_handler },
     { MESH_FOUNDATION_OPERATION_HEALTH_FAULT_CLEAR,                                 2, health_fault_clear_handler },
     { MESH_FOUNDATION_OPERATION_HEALTH_FAULT_CLEAR_UNACKNOWLEDGED,                  2, health_fault_clear_unacknowledged_handler },

@@ -303,8 +303,8 @@ int btstack_main(int argc, const char * argv[]){
     sdp_init();
 
     memset((uint8_t *)hsp_service_buffer, 0, sizeof(hsp_service_buffer));
-    hsp_ag_create_sdp_record(hsp_service_buffer, 0x10001, rfcomm_channel_nr, hsp_ag_service_name);
-    printf("SDP service record size: %u\n", de_get_len(hsp_service_buffer));
+    hsp_ag_create_sdp_record(hsp_service_buffer, sdp_create_service_record_handle(), rfcomm_channel_nr, hsp_ag_service_name);
+    btstack_assert(de_get_len( hsp_service_buffer) <= sizeof(hsp_service_buffer));
     sdp_register_service(hsp_service_buffer);
     
     rfcomm_init();

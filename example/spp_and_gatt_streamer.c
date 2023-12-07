@@ -221,20 +221,26 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     printf("SSP User Confirmation Auto accept\n");
                     break;
 
-                case HCI_EVENT_LE_META:
-                    switch (hci_event_le_meta_get_subevent_code(packet)) {
-                        case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
+                case HCI_EVENT_META_GAP:
+                    switch (hci_event_gap_meta_get_subevent_code(packet)) {
+                        case GAP_SUBEVENT_LE_CONNECTION_COMPLETE:
                             // print connection parameters (without using float operations)
-                            con_handle    = hci_subevent_le_connection_complete_get_connection_handle(packet);
-                            conn_interval = hci_subevent_le_connection_complete_get_conn_interval(packet);
+                            con_handle    = gap_subevent_le_connection_complete_get_connection_handle(packet);
+                            conn_interval = gap_subevent_le_connection_complete_get_conn_interval(packet);
                             printf("LE Connection - Connection Interval: %u.%02u ms\n", conn_interval * 125 / 100, 25 * (conn_interval & 3));
-                            printf("LE Connection - Connection Latency: %u\n", hci_subevent_le_connection_complete_get_conn_latency(packet));
+                            printf("LE Connection - Connection Latency: %u\n", gap_subevent_le_connection_complete_get_conn_latency(packet));
 
-                            // request min con interval 15 ms for iOS 11+ 
+                            // request min con interval 15 ms for iOS 11+
                             printf("LE Connection - Request 15 ms connection interval\n");
                             gap_request_connection_parameter_update(con_handle, 12, 12, 4, 0x0048);
                             break;
+                        default:
+                            break;
+                    }
+                    break;
 
+                case HCI_EVENT_LE_META:
+                    switch (hci_event_le_meta_get_subevent_code(packet)) {
                         case HCI_SUBEVENT_LE_CONNECTION_UPDATE_COMPLETE:
                             // print connection parameters (without using float operations)
                             con_handle    = hci_subevent_le_connection_update_complete_get_connection_handle(packet);
@@ -450,13 +456,15 @@ int btstack_main(int argc, const char * argv[])
     // init SDP, create record for SPP and register with SDP
     sdp_init();
     memset(spp_service_buffer, 0, sizeof(spp_service_buffer));
-    spp_create_sdp_record(spp_service_buffer, 0x10001, RFCOMM_SERVER_CHANNEL, "SPP Streamer");
+    spp_create_sdp_record(spp_service_buffer, sdp_create_service_record_handle(), RFCOMM_SERVER_CHANNEL, "SPP Streamer");
+    btstack_assert(de_get_len( spp_service_buffer) <= sizeof(spp_service_buffer));
     sdp_register_service(spp_service_buffer);
 
 #ifdef ENABLE_GATT_OVER_CLASSIC
     // init SDP, create record for GATT and register with SDP
     memset(gatt_service_buffer, 0, sizeof(gatt_service_buffer));
-    gatt_create_sdp_record(gatt_service_buffer, 0x10001, ATT_SERVICE_GATT_SERVICE_START_HANDLE, ATT_SERVICE_GATT_SERVICE_END_HANDLE);
+    gatt_create_sdp_record(gatt_service_buffer, sdp_create_service_record_handle(), ATT_SERVICE_GATT_SERVICE_START_HANDLE, ATT_SERVICE_GATT_SERVICE_END_HANDLE);
+    btstack_assert(de_get_len( gatt_service_buffer) <= sizeof(gatt_service_buffer));
     sdp_register_service(gatt_service_buffer);
 #endif
 

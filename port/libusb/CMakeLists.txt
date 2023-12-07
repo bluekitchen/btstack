@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.5)
+cmake_minimum_required (VERSION 3.12)
 
 SET(CMAKE_OSX_SYSROOT /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk)
 SET(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -6,33 +6,6 @@ SET(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 project(BTstack-libusb)
 
 SET(BTSTACK_ROOT ${CMAKE_SOURCE_DIR}/../..)
-
-# pkgconfig
-find_package(PkgConfig REQUIRED)
-
-
-# libusb
-pkg_check_modules(LIBUSB REQUIRED libusb-1.0)
-include_directories(${LIBUSB_INCLUDE_DIRS})
-link_directories(${LIBUSB_LIBRARY_DIRS})
-link_libraries(${LIBUSB_LIBRARIES})
-
-
-# portaudio
-pkg_check_modules(PORTAUDIO REQUIRED portaudio-2.0)
-if(PORTAUDIO_FOUND)
-	message("HAVE_PORTAUDIO")
-	include_directories(${PORTAUDIO_INCLUDE_DIRS})
-	link_directories(${PORTAUDIO_LIBRARY_DIRS})
-	link_libraries(${PORTAUDIO_LIBRARIES})
-	# CMake 3.12 - add_compile_definitions(HAVE_PORTAUDIO)
-	SET(CMAKE_C_FLAGS  "-DHAVE_PORTAUDIO")
-endif()
-
-# pthread
-find_package(Threads)
-link_libraries(${CMAKE_THREAD_LIBS_INIT})
-
 
 # extra compiler warnings
 if ("${CMAKE_C_COMPILER_ID}" MATCHES ".*Clang.*")
@@ -165,13 +138,36 @@ list(SORT SOURCES)
 # create static lib
 add_library(btstack STATIC ${SOURCES})
 
+# pkgconfig required to link libusb
+find_package(PkgConfig REQUIRED)
+
+# libusb
+pkg_check_modules(LIBUSB REQUIRED libusb-1.0)
+include_directories(${LIBUSB_INCLUDE_DIRS})
+link_directories(${LIBUSB_LIBRARY_DIRS})
+link_libraries(${LIBUSB_LIBRARIES})
+
+# portaudio
+pkg_check_modules(PORTAUDIO portaudio-2.0)
+if(PORTAUDIO_FOUND)
+	message("HAVE_PORTAUDIO")
+	include_directories(${PORTAUDIO_INCLUDE_DIRS})
+	link_directories(${PORTAUDIO_LIBRARY_DIRS})
+	link_libraries(${PORTAUDIO_LIBRARIES})
+	add_compile_definitions(HAVE_PORTAUDIO)
+endif()
+
+# pthread
+find_package(Threads)
+link_libraries(${CMAKE_THREAD_LIBS_INIT})
+
 # create targets for all examples
 file(GLOB EXAMPLES_C    "../../example/*.c")
 list(SORT EXAMPLES_C)
 file(GLOB EXAMPLES_GATT "../../example/*.gatt")
 
 # remove some
-file(GLOB EXAMPLES_OFF  "../../example/sco_demo_util.c" "../../example/ant_test.c" "../../example/avrcp_browsing_client.c")
+file(GLOB EXAMPLES_OFF  "../../example/*demo_util*.c" "../../example/ant_test.c" "../../example/avrcp_browsing_client.c")
 list(REMOVE_ITEM EXAMPLES_C ${EXAMPLES_OFF})
 
 # on Mac 10.14, adding lwip to libstack results in a yet not understood link error

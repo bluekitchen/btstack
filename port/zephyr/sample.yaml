@@ -1,0 +1,12 @@
+sample:
+  name: Bluetooth btstack
+tests:
+  sample.bluetooth.btstack:
+    harness: bluetooth
+    platform_allow:
+      - bbc_microbit
+      - qemu_x86
+      - nrf52840dk_nrf52840
+    integration_platforms:
+      - qemu_x86
+    tags: bluetooth

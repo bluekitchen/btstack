@@ -331,15 +331,21 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
         case L2CAP_EVENT_CONNECTION_PARAMETER_UPDATE_RESPONSE:
             printf("L2CAP Connection Parameter Update Complete, response: %x\n", l2cap_event_connection_parameter_update_response_get_result(packet));
             break;
-        case HCI_EVENT_LE_META:
-            switch (hci_event_le_meta_get_subevent_code(packet)) {
-                case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
+        case HCI_EVENT_META_GAP:
+            switch (hci_event_gap_meta_get_subevent_code(packet)) {
+                case GAP_SUBEVENT_LE_CONNECTION_COMPLETE:
                     // print connection parameters (without using float operations)
-                    conn_interval = hci_subevent_le_connection_complete_get_conn_interval(packet);
+                    conn_interval = gap_subevent_le_connection_complete_get_conn_interval(packet);
                     printf("LE Connection Complete:\n");
                     printf("- Connection Interval: %u.%02u ms\n", conn_interval * 125 / 100, 25 * (conn_interval & 3));
-                    printf("- Connection Latency: %u\n", hci_subevent_le_connection_complete_get_conn_latency(packet));
+                    printf("- Connection Latency: %u\n", gap_subevent_le_connection_complete_get_conn_latency(packet));
                     break;
+                default:
+                    break;
+            }
+            break;
+        case HCI_EVENT_LE_META:
+            switch (hci_event_le_meta_get_subevent_code(packet)) {
                 case HCI_SUBEVENT_LE_CONNECTION_UPDATE_COMPLETE:
                     // print connection parameters (without using float operations)
                     conn_interval = hci_subevent_le_connection_update_complete_get_conn_interval(packet);

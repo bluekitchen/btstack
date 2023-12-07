@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "btstack_uart_posix.c"
+#define BTSTACK_FILE__ "btstack_uart_posix.c"
 
 /*
  *  btstack_uart_block_posix.c

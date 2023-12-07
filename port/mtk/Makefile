@@ -15,6 +15,8 @@ CFLAGS += -I$(BTSTACK_ROOT)/src/
 CFLAGS += -I$(BTSTACK_ROOT)/ble
 CFLAGS += -I$(BTSTACK_ROOT)/platform/daemon/src
 CFLAGS += -I$(BTSTACK_ROOT)/platform/posix
+CFLAGS += -I${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/include
+CFLAGS += -I${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/include
 CFLAGS += -I$(BTSTACK_ROOT)/3rd-party/md5
 CFLAGS += -I.
 

@@ -398,13 +398,13 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
             if (hci_event_command_complete_get_return_parameters(packet)[0] == ERROR_CODE_SUCCESS) break;
             printf("%s", adv_failed_warning);
             break;
-        case HCI_EVENT_LE_META:
+        case HCI_EVENT_META_GAP:
             // wait for connection complete
-            if (hci_event_le_meta_get_subevent_code(packet) !=  HCI_SUBEVENT_LE_CONNECTION_COMPLETE) break;
+            if (hci_event_gap_meta_get_subevent_code(packet) !=  GAP_SUBEVENT_LE_CONNECTION_COMPLETE) break;
             switch (state){
                 case TC_W4_CONNECT:
                     state = TC_CONNECTED;
-                    remote_peripheral_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
+                    remote_peripheral_handle = gap_subevent_le_connection_complete_get_connection_handle(packet);
                     printf("[-] Peripheral connected\n");
                     mitm_start_advertising();
                     printf ("You can connect now!\n");
@@ -412,7 +412,7 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
                     mitm_console_connected_menu();
                     break;
                 case TC_CONNECTED:
-                    remote_central_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
+                    remote_central_handle = gap_subevent_le_connection_complete_get_connection_handle(packet);
                     printf("[-] Central connected!\n");
                     break;
                 default:
@@ -462,6 +462,10 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
                 default:
                     break;
             }
+            break;
+        case SM_EVENT_REENCRYPTION_COMPLETE:
+            connection_handle = sm_event_reencryption_complete_get_handle(packet);
+            printf("[-] %s Re-encryption complete, success\n", mitm_name_for_handle(connection_handle));
             break;
         default:
             break;

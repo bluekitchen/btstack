@@ -46,6 +46,7 @@
 #define BTSTACK_HID_PARSER_H
 
 #include <stdint.h>
+#include "btstack_bool.h"
 #include "btstack_hid.h"
 
 #if defined __cplusplus
@@ -137,10 +138,9 @@ typedef struct {
     uint32_t        usage_minimum;
     uint32_t        usage_maximum;
     uint16_t        available_usages;    
-    uint8_t         required_usages;
+    uint16_t        required_usages;
+    bool            usage_range;
     uint8_t         active_record;
-    uint8_t         have_usage_min;
-    uint8_t         have_usage_max;
 
     // global
     int32_t         global_logical_minimum;

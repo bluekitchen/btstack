@@ -2,7 +2,11 @@
 
 BTSTACK_ROOT =  ../..
 
-CFLAGS  = -DUNIT_TEST -g
+# CppuTest from pkg-config
+CFLAGS  += ${shell pkg-config --cflags CppuTest}
+LDFLAGS += ${shell pkg-config --libs   CppuTest}
+
+CFLAGS += -DUNIT_TEST -g
 CPPFLAGS = -Wall -Wno-unused -fno-exceptions
 CFLAGS += -I. -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/platform/posix
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/mbedtls/include

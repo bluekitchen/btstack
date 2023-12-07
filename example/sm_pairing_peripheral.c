@@ -181,11 +181,11 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     uint8_t status;
 
     switch (hci_event_packet_get_type(packet)) {
-        case HCI_EVENT_LE_META:
-            switch (hci_event_le_meta_get_subevent_code(packet)) {
-                case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
+        case HCI_EVENT_META_GAP:
+            switch (hci_event_gap_meta_get_subevent_code(packet)) {
+                case GAP_SUBEVENT_LE_CONNECTION_COMPLETE:
                     printf("Connection complete\n");
-                    con_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
+                    con_handle = gap_subevent_le_connection_complete_get_connection_handle(packet);
                     UNUSED(con_handle);
 
                     // for testing, choose one of the following actions

@@ -118,7 +118,7 @@ typedef struct {
 
     // Cycling Power Measurement 
     uint16_t measurement_value_handle;
-    int16_t  instantaneous_power_watt;
+    int16_t  instantaneous_power_W;
 
     cycling_power_pedal_power_balance_reference_t  pedal_power_balance_reference; 
     uint8_t  pedal_power_balance_percentage;    // percentage, resolution 1/2, 
@@ -126,7 +126,7 @@ typedef struct {
                                                 // the power balance is calculated as [LeftPower/(LeftPower + RightPower)]*100 in units of percent
     
     cycling_power_torque_source_t torque_source;
-    uint16_t accumulated_torque_m;              // meters, resolution 1/32, 
+    uint16_t accumulated_torque_Nm;             // newton-meters, resolution 1/32,
                                                 // The Accumulated Torque value may decrease
     // wheel revolution data:
     uint32_t cumulative_wheel_revolutions;      // CANNOT roll over
@@ -135,16 +135,16 @@ typedef struct {
     uint16_t cumulative_crank_revolutions;
     uint16_t last_crank_event_time_s;           // seconds, resolution 1/1024
     // extreme force magnitudes
-    int16_t  maximum_force_magnitude_newton;
-    int16_t  minimum_force_magnitude_newton;
-    int16_t  maximum_torque_magnitude_newton_m;     // newton meters, resolution 1/32
-    int16_t  minimum_torque_magnitude_newton_m;     // newton meters, resolution 1/32
+    int16_t  maximum_force_magnitude_N;
+    int16_t  minimum_force_magnitude_N;
+    int16_t  maximum_torque_magnitude_Nm;       // newton-meters, resolution 1/32
+    int16_t  minimum_torque_magnitude_Nm;       // newton-meters, resolution 1/32
     // extreme angles
-    uint16_t maximum_angle_deg;                 // 12bit, degrees
-    uint16_t minimum_angle_deg;                 // 12bit, degrees, concatenated with previous into 3 octets
+    uint16_t maximum_angle_degree;                 // 12bit, degrees
+    uint16_t minimum_angle_degree;                 // 12bit, degrees, concatenated with previous into 3 octets
                                                 // i.e. if the Maximum Angle is 0xABC and the Minimum Angle is 0x123, the transmitted value is 0x123ABC.
-    uint16_t top_dead_spot_angle_deg;
-    uint16_t bottom_dead_spot_angle_deg;            // The Bottom Dead Spot Angle field represents the crank angle when the value of the Instantaneous Power value becomes negative.
+    uint16_t top_dead_spot_angle_degree;
+    uint16_t bottom_dead_spot_angle_degree;            // The Bottom Dead Spot Angle field represents the crank angle when the value of the Instantaneous Power value becomes negative.
     uint16_t accumulated_energy_kJ;             // kilojoules; CANNOT roll over
 
     // uint8_t  offset_compensation;
@@ -177,10 +177,10 @@ typedef struct {
     
     gatt_date_time_t factory_calibration_date;
     
-    uint8_t  sampling_rate_hz;                          // resolution 1 Herz
+    uint8_t  sampling_rate_Hz;                          // resolution 1 Herz
     
-    int16_t  current_force_magnitude_newton;
-    int16_t  current_torque_magnitude_newton_m;     // newton meters, resolution 1/32
+    int16_t  current_force_magnitude_N;
+    int16_t  current_torque_magnitude_Nm;               // newton-meters, resolution 1/32
     uint16_t manufacturer_company_id;
     uint8_t num_manufacturer_specific_data;
     uint8_t * manufacturer_specific_data;
@@ -188,11 +188,11 @@ typedef struct {
     // Cycling Power Vector
     uint16_t vector_value_handle;
     uint16_t vector_cumulative_crank_revolutions;
-    uint16_t vector_last_crank_event_time_s;                            // seconds, resolution 1/1024
-    uint16_t vector_first_crank_measurement_angle_deg;
-    int16_t  * vector_instantaneous_force_magnitude_newton_array;           // newton
+    uint16_t vector_last_crank_event_time_s;                           // seconds, resolution 1/1024
+    uint16_t vector_first_crank_measurement_angle_degree;
+    int16_t  * vector_instantaneous_force_magnitude_N_array;           // newton
     int force_magnitude_count;
-    int16_t  * vector_instantaneous_torque_magnitude_newton_per_m_array;    // newton per meter, resolution 1/32
+    int16_t  * vector_instantaneous_torque_magnitude_Nm_array;         // newton-meter, resolution 1/32
     int torque_magnitude_count;
     cycling_power_instantaneous_measurement_direction_t vector_instantaneous_measurement_direction;
 
@@ -369,10 +369,10 @@ static void cycling_power_service_vector_can_send_now(void * context){
                     bytes_left = btstack_min(sizeof(value), att_mtu - 3u - pos);
                 }
                 while ((bytes_left > 2u) && instance->force_magnitude_count){
-                    little_endian_store_16(value, pos, instance->vector_instantaneous_force_magnitude_newton_array[0]);
+                    little_endian_store_16(value, pos, instance->vector_instantaneous_force_magnitude_N_array[0]);
                     pos += 2;
                     bytes_left -= 2u;
-                    instance->vector_instantaneous_force_magnitude_newton_array++;
+                    instance->vector_instantaneous_force_magnitude_N_array++;
                     instance->force_magnitude_count--;
                 }
                 break;
@@ -385,16 +385,16 @@ static void cycling_power_service_vector_can_send_now(void * context){
                 }
 
                 while ((bytes_left > 2u) && instance->torque_magnitude_count){
-                    little_endian_store_16(value, pos, instance->vector_instantaneous_torque_magnitude_newton_per_m_array[0]);
+                    little_endian_store_16(value, pos, instance->vector_instantaneous_torque_magnitude_Nm_array[0]);
                     pos += 2;
                     bytes_left -= 2u;
-                    instance->vector_instantaneous_torque_magnitude_newton_per_m_array++;
+                    instance->vector_instantaneous_torque_magnitude_Nm_array++;
                     instance->torque_magnitude_count--;
                 }
                 break;
             }
             case CP_VECTOR_FLAG_FIRST_CRANK_MEASUREMENT_ANGLE_PRESENT:
-                little_endian_store_16(value, pos, instance->vector_first_crank_measurement_angle_deg);
+                little_endian_store_16(value, pos, instance->vector_first_crank_measurement_angle_degree);
                 pos += 2;
                 break;
             case CP_VECTOR_FLAG_INSTANTANEOUS_MEASUREMENT_DIRECTION:
@@ -438,7 +438,7 @@ static int cycling_power_store_measurement_flag_value(cycling_power_t * instance
             value[pos++] = instance->pedal_power_balance_percentage;
             break;
         case CP_MEASUREMENT_FLAG_ACCUMULATED_TORQUE_PRESENT:
-            little_endian_store_16(value, pos, instance->accumulated_torque_m);
+            little_endian_store_16(value, pos, instance->accumulated_torque_Nm);
             pos += 2;
             break;
         case CP_MEASUREMENT_FLAG_WHEEL_REVOLUTION_DATA_PRESENT:
@@ -454,27 +454,27 @@ static int cycling_power_store_measurement_flag_value(cycling_power_t * instance
             pos += 2;
             break;
         case CP_MEASUREMENT_FLAG_EXTREME_FORCE_MAGNITUDES_PRESENT:
-            little_endian_store_16(value, pos, (uint16_t)instance->maximum_force_magnitude_newton);
+            little_endian_store_16(value, pos, (uint16_t)instance->maximum_force_magnitude_N);
             pos += 2;
-            little_endian_store_16(value, pos, (uint16_t)instance->minimum_force_magnitude_newton);
+            little_endian_store_16(value, pos, (uint16_t)instance->minimum_force_magnitude_N);
             pos += 2;
             break;
         case CP_MEASUREMENT_FLAG_EXTREME_TORQUE_MAGNITUDES_PRESENT:
-            little_endian_store_16(value, pos, (uint16_t)instance->maximum_torque_magnitude_newton_m);
+            little_endian_store_16(value, pos, (uint16_t)instance->maximum_torque_magnitude_Nm);
             pos += 2;
-            little_endian_store_16(value, pos, (uint16_t)instance->minimum_torque_magnitude_newton_m);
+            little_endian_store_16(value, pos, (uint16_t)instance->minimum_torque_magnitude_Nm);
             pos += 2;
             break;
         case CP_MEASUREMENT_FLAG_EXTREME_ANGLES_PRESENT:
-            little_endian_store_24(value, pos, (instance->maximum_angle_deg << 12) | instance->minimum_angle_deg);
+            little_endian_store_24(value, pos, (instance->maximum_angle_degree << 12) | instance->minimum_angle_degree);
             pos += 3;
             break;
         case CP_MEASUREMENT_FLAG_TOP_DEAD_SPOT_ANGLE_PRESENT:
-            little_endian_store_16(value, pos, (uint16_t)instance->top_dead_spot_angle_deg);
+            little_endian_store_16(value, pos, (uint16_t)instance->top_dead_spot_angle_degree);
             pos += 2;
             break;
         case CP_MEASUREMENT_FLAG_BOTTOM_DEAD_SPOT_ANGLE_PRESENT:
-            little_endian_store_16(value, pos, (uint16_t)instance->bottom_dead_spot_angle_deg);
+            little_endian_store_16(value, pos, (uint16_t)instance->bottom_dead_spot_angle_degree);
             pos += 2;
             break;
         case CP_MEASUREMENT_FLAG_ACCUMULATED_ENERGY_PRESENT:
@@ -496,7 +496,7 @@ static int cycling_power_store_measurement(cycling_power_t * instance, uint8_t *
     int pos = 0;
     little_endian_store_16(value, 0, measurement_flags);
     pos += 2;
-    little_endian_store_16(value, 2, instance->instantaneous_power_watt);
+    little_endian_store_16(value, 2, instance->instantaneous_power_W);
     pos += 2;
     int flag_index;
     uint16_t bytes_left = max_value_size - pos;
@@ -512,25 +512,25 @@ static int cycling_power_store_measurement(cycling_power_t * instance, uint8_t *
     return pos;
 }
 
-int cycling_power_get_measurement_adv(uint16_t adv_interval, uint8_t * broadcast_adv, uint16_t max_value_size){
-    if (max_value_size < 12u) return 0u;
+int cycling_power_get_measurement_adv(uint16_t adv_interval, uint8_t * adv_buffer, uint16_t adv_size){
+    if (adv_size < 12u) return 0u;
     cycling_power_t * instance =  &cycling_power;
     int pos = 0;
     // adv flags
-    broadcast_adv[pos++] = 2;
-    broadcast_adv[pos++] = BLUETOOTH_DATA_TYPE_FLAGS;
-    broadcast_adv[pos++] = 0x4;
+    adv_buffer[pos++] = 2;
+    adv_buffer[pos++] = BLUETOOTH_DATA_TYPE_FLAGS;
+    adv_buffer[pos++] = 0x4;
 
     // adv interval
-    broadcast_adv[pos++] = 3;
-    broadcast_adv[pos++] = BLUETOOTH_DATA_TYPE_ADVERTISING_INTERVAL;
-    little_endian_store_16(broadcast_adv, pos, adv_interval);
+    adv_buffer[pos++] = 3;
+    adv_buffer[pos++] = BLUETOOTH_DATA_TYPE_ADVERTISING_INTERVAL;
+    little_endian_store_16(adv_buffer, pos, adv_interval);
     pos += 2;
     //
-    int value_len = cycling_power_store_measurement(instance, &broadcast_adv[pos+4], CYCLING_POWER_MAX_BROACAST_MSG_SIZE - (pos + 4));
-    broadcast_adv[pos++] = 3 + value_len;
-    broadcast_adv[pos++] = BLUETOOTH_DATA_TYPE_SERVICE_DATA_16_BIT_UUID;
-    little_endian_store_16(broadcast_adv, pos, ORG_BLUETOOTH_SERVICE_CYCLING_POWER);
+    int value_len = cycling_power_store_measurement(instance, &adv_buffer[pos + 4], CYCLING_POWER_MAX_BROACAST_MSG_SIZE - (pos + 4));
+    adv_buffer[pos++] = 3 + value_len;
+    adv_buffer[pos++] = BLUETOOTH_DATA_TYPE_SERVICE_DATA_16_BIT_UUID;
+    little_endian_store_16(adv_buffer, pos, ORG_BLUETOOTH_SERVICE_CYCLING_POWER);
     pos += 2;
     // value data already in place cycling_power_get_measurement
     pos += value_len;
@@ -619,16 +619,16 @@ static void cycling_power_service_response_can_send_now(void * context){
                 value[pos++] = instance->factory_calibration_date.seconds;
                 break;
             case CP_OPCODE_REQUEST_SAMPLING_RATE:
-                value[pos++] = instance->sampling_rate_hz;
+                value[pos++] = instance->sampling_rate_Hz;
                 break;
             case CP_OPCODE_START_OFFSET_COMPENSATION:
             case CP_OPCODE_START_ENHANCED_OFFSET_COMPENSATION:{
                 uint16_t calibrated_value = 0xffff;
                 if (has_feature(CP_FEATURE_FLAG_EXTREME_MAGNITUDES_SUPPORTED)){
                     if (has_feature(CP_FEATURE_FLAG_SENSOR_MEASUREMENT_CONTEXT) == CP_SENSOR_MEASUREMENT_CONTEXT_FORCE) {
-                        calibrated_value = instance->current_force_magnitude_newton;
+                        calibrated_value = instance->current_force_magnitude_N;
                     } else if (has_feature(CP_FEATURE_FLAG_SENSOR_MEASUREMENT_CONTEXT) == CP_SENSOR_MEASUREMENT_CONTEXT_TORQUE){
-                        calibrated_value = instance->current_torque_magnitude_newton_m;
+                        calibrated_value = instance->current_torque_magnitude_Nm;
                     }
                 }
                 
@@ -671,12 +671,15 @@ static void cycling_power_service_response_can_send_now(void * context){
 
 static int cycling_power_service_write_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
     UNUSED(con_handle);
-    UNUSED(transaction_mode);
     UNUSED(offset);
     UNUSED(buffer_size);
     int i;
     cycling_power_sensor_location_t location;
     cycling_power_t * instance = &cycling_power;
+
+    if (transaction_mode != ATT_TRANSACTION_MODE_NONE){
+        return 0;
+    }
 
     if (attribute_handle == instance->measurement_client_configuration_descriptor_handle){
         if (buffer_size < 2u){
@@ -864,8 +867,8 @@ static int cycling_power_service_write_callback(hci_con_handle_t con_handle, uin
                     (*instance->calibration_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
                     return 0;
                 }
-                instance->current_force_magnitude_newton = 0xffff;
-                instance->current_torque_magnitude_newton_m = 0xffff;
+                instance->current_force_magnitude_N = 0xffff;
+                instance->current_torque_magnitude_Nm = 0xffff;
                 break; 
 
             case CP_OPCODE_MASK_CYCLING_POWER_MEASUREMENT_CHARACTERISTIC_CONTENT:{
@@ -918,15 +921,20 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 
     if (packet_type != HCI_EVENT_PACKET) return;
     switch (event_type){
-        case HCI_EVENT_LE_META:
-            switch (hci_event_le_meta_get_subevent_code(packet)){
-                case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
-                    instance->con_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
+        case HCI_EVENT_META_GAP:
+            switch (hci_event_gap_meta_get_subevent_code(packet)) {
+                case GAP_SUBEVENT_LE_CONNECTION_COMPLETE:
+                    instance->con_handle = gap_subevent_le_connection_complete_get_connection_handle(packet);
                     // print connection parameters (without using float operations)
-                    instance->con_interval = hci_subevent_le_connection_complete_get_conn_interval(packet);
+                    instance->con_interval = gap_subevent_le_connection_complete_get_conn_interval(packet);
                     instance->con_interval_status = CP_CONNECTION_INTERVAL_STATUS_RECEIVED;
                     break;
-
+                default:
+                    break;
+            }
+            break;
+        case HCI_EVENT_LE_META:
+            switch (hci_event_le_meta_get_subevent_code(packet)){
 #ifdef ENABLE_ATT_DELAYED_RESPONSE
                 case HCI_SUBEVENT_LE_CONNECTION_UPDATE_COMPLETE:
                     if (instance->con_interval_status != CP_CONNECTION_INTERVAL_STATUS_W4_UPDATE) return;
@@ -986,10 +994,10 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
      }
 }
 
-void cycling_power_service_server_init(uint32_t feature_flags, 
-    cycling_power_pedal_power_balance_reference_t reference, cycling_power_torque_source_t torque_source,
-    cycling_power_sensor_location_t * supported_sensor_locations, uint16_t num_supported_sensor_locations,
-    cycling_power_sensor_location_t   current_sensor_location){
+void cycling_power_service_server_init(uint32_t feature_flags,
+                                       cycling_power_pedal_power_balance_reference_t pedal_power_balance_reference, cycling_power_torque_source_t torque_source,
+                                       cycling_power_sensor_location_t * supported_sensor_locations, uint16_t num_supported_sensor_locations,
+                                       cycling_power_sensor_location_t   current_sensor_location){
 
     cycling_power_t * instance = &cycling_power;
     // TODO: remove hardcoded initialization
@@ -1014,7 +1022,7 @@ void cycling_power_service_server_init(uint32_t feature_flags,
     instance->feature_flags = feature_flags;
     instance->default_measurement_flags = CYCLING_POWER_MEASUREMENT_FLAGS_CLEARED;
     instance->masked_measurement_flags  = CYCLING_POWER_MEASUREMENT_FLAGS_CLEARED;
-    instance->pedal_power_balance_reference = reference;
+    instance->pedal_power_balance_reference = pedal_power_balance_reference;
     instance->torque_source = torque_source;
 
     // get service handle range
@@ -1067,9 +1075,9 @@ void cycling_power_service_server_init(uint32_t feature_flags,
 }
 
 
-void cycling_power_service_server_add_torque(int16_t torque_m){
+void cycling_power_service_server_add_torque(int16_t torque_Nm){
     cycling_power_t * instance = &cycling_power;
-    instance->accumulated_torque_m += torque_m;
+    instance->accumulated_torque_Nm += torque_Nm;
 }
 
 void cycling_power_service_server_add_wheel_revolution(int32_t wheel_revolution, uint16_t wheel_event_time_s){
@@ -1106,9 +1114,9 @@ void cycling_power_service_add_energy(uint16_t energy_kJ){
     }
 } 
 
-void cycling_power_service_server_set_instantaneous_power(int16_t instantaneous_power_watt){
+void cycling_power_service_server_set_instantaneous_power(int16_t instantaneous_power_W){
     cycling_power_t * instance = &cycling_power;
-    instance->instantaneous_power_watt = instantaneous_power_watt;
+    instance->instantaneous_power_W = instantaneous_power_W;
 }
 
 void cycling_power_service_server_set_pedal_power_balance(uint8_t pedal_power_balance_percentage){
@@ -1116,21 +1124,21 @@ void cycling_power_service_server_set_pedal_power_balance(uint8_t pedal_power_ba
     instance->pedal_power_balance_percentage = pedal_power_balance_percentage;
 }
 
-void cycling_power_service_server_set_force_magnitude_values(int force_magnitude_count, int16_t * force_magnitude_newton_array){
+void cycling_power_service_server_set_force_magnitude_values(int force_magnitude_count, int16_t * force_magnitude_N_array){
     cycling_power_t * instance = &cycling_power;
     instance->force_magnitude_count = force_magnitude_count;
-    instance->vector_instantaneous_force_magnitude_newton_array = force_magnitude_newton_array;
+    instance->vector_instantaneous_force_magnitude_N_array = force_magnitude_N_array;
 }
 
-void cycling_power_service_server_set_torque_magnitude_values(int torque_magnitude_count, int16_t * torque_magnitude_newton_array){
+void cycling_power_service_server_set_torque_magnitude_values(int torque_magnitude_count, int16_t * torque_magnitude_Nm_array){
     cycling_power_t * instance = &cycling_power;
     instance->torque_magnitude_count = torque_magnitude_count;
-    instance->vector_instantaneous_torque_magnitude_newton_per_m_array = torque_magnitude_newton_array;
+    instance->vector_instantaneous_torque_magnitude_Nm_array = torque_magnitude_Nm_array;
 }
 
-void cycling_power_service_server_set_first_crank_measurement_angle(uint16_t first_crank_measurement_angle_deg){
+void cycling_power_service_server_set_first_crank_measurement_angle(uint16_t first_crank_measurement_angle_degree){
     cycling_power_t * instance = &cycling_power;
-    instance->vector_first_crank_measurement_angle_deg = first_crank_measurement_angle_deg;
+    instance->vector_first_crank_measurement_angle_degree = first_crank_measurement_angle_degree;
 }
 
 void cycling_power_service_server_set_instantaneous_measurement_direction(cycling_power_instantaneous_measurement_direction_t direction){
@@ -1138,32 +1146,32 @@ void cycling_power_service_server_set_instantaneous_measurement_direction(cyclin
     instance->vector_instantaneous_measurement_direction = direction;
 }
 
-void cycling_power_service_server_set_force_magnitude(int16_t min_force_magnitude_newton, int16_t max_force_magnitude_newton){
+void cycling_power_service_server_set_force_magnitude(int16_t min_force_magnitude_N, int16_t max_force_magnitude_N){
     cycling_power_t * instance = &cycling_power;
-    instance->minimum_force_magnitude_newton = min_force_magnitude_newton;
-    instance->maximum_force_magnitude_newton = max_force_magnitude_newton;
+    instance->minimum_force_magnitude_N = min_force_magnitude_N;
+    instance->maximum_force_magnitude_N = max_force_magnitude_N;
 } 
 
-void cycling_power_service_server_set_torque_magnitude(int16_t min_torque_magnitude_newton, int16_t max_torque_magnitude_newton){
+void cycling_power_service_server_set_torque_magnitude(int16_t min_torque_magnitude_Nm, int16_t max_torque_magnitude_Nm){
     cycling_power_t * instance = &cycling_power;
-    instance->minimum_torque_magnitude_newton_m = min_torque_magnitude_newton;
-    instance->maximum_torque_magnitude_newton_m = max_torque_magnitude_newton;
+    instance->minimum_torque_magnitude_Nm = min_torque_magnitude_Nm;
+    instance->maximum_torque_magnitude_Nm = max_torque_magnitude_Nm;
 } 
 
-void cycling_power_service_server_set_angle(uint16_t min_angle_deg, uint16_t max_angle_deg){
+void cycling_power_service_server_set_angle(uint16_t min_angle_degree, uint16_t max_angle_degree){
     cycling_power_t * instance = &cycling_power;
-    instance->minimum_angle_deg = min_angle_deg;
-    instance->maximum_angle_deg = max_angle_deg;
+    instance->minimum_angle_degree = min_angle_degree;
+    instance->maximum_angle_degree = max_angle_degree;
 } 
 
-void cycling_power_service_server_set_top_dead_spot_angle(uint16_t top_dead_spot_angle_deg){
+void cycling_power_service_server_set_top_dead_spot_angle(uint16_t top_dead_spot_angle_degree){
     cycling_power_t * instance = &cycling_power;
-    instance->top_dead_spot_angle_deg = top_dead_spot_angle_deg;
+    instance->top_dead_spot_angle_degree = top_dead_spot_angle_degree;
 } 
 
-void cycling_power_service_server_set_bottom_dead_spot_angle(uint16_t bottom_dead_spot_angle_deg){
+void cycling_power_service_server_set_bottom_dead_spot_angle(uint16_t bottom_dead_spot_angle_degree){
     cycling_power_t * instance = &cycling_power;
-    instance->bottom_dead_spot_angle_deg = bottom_dead_spot_angle_deg;
+    instance->bottom_dead_spot_angle_degree = bottom_dead_spot_angle_degree;
 } 
 
 static int gatt_date_is_valid(gatt_date_time_t date){
@@ -1185,9 +1193,9 @@ int cycling_power_service_server_set_factory_calibration_date(gatt_date_time_t d
     return 1;
 }
 
-void cycling_power_service_server_set_sampling_rate(uint8_t sampling_rate_hz){
+void cycling_power_service_server_set_sampling_rate(uint8_t sampling_rate_Hz){
     cycling_power_t * instance = &cycling_power;
-    instance->sampling_rate_hz = sampling_rate_hz;
+    instance->sampling_rate_Hz = sampling_rate_Hz;
 }
 
 
@@ -1231,10 +1239,10 @@ void cycling_power_server_calibration_done(cycling_power_sensor_measurement_cont
     
     switch (measurement_type){
         case CP_SENSOR_MEASUREMENT_CONTEXT_FORCE:
-            instance->current_force_magnitude_newton = calibrated_value;
+            instance->current_force_magnitude_N = calibrated_value;
             break;
         case CP_SENSOR_MEASUREMENT_CONTEXT_TORQUE:
-            instance->current_torque_magnitude_newton_m = calibrated_value;
+            instance->current_torque_magnitude_Nm = calibrated_value;
             break;
         default:
             instance->response_value = CP_RESPONSE_VALUE_INVALID_PARAMETER;
@@ -1269,10 +1277,10 @@ void cycling_power_server_enhanced_calibration_done(cycling_power_sensor_measure
     
     switch (measurement_type){
         case CP_SENSOR_MEASUREMENT_CONTEXT_FORCE:
-            instance->current_force_magnitude_newton = calibrated_value;
+            instance->current_force_magnitude_N = calibrated_value;
             break;
         case CP_SENSOR_MEASUREMENT_CONTEXT_TORQUE:
-            instance->current_torque_magnitude_newton_m = calibrated_value;
+            instance->current_torque_magnitude_Nm = calibrated_value;
             break;
         default:
             instance->response_value = CP_RESPONSE_VALUE_INVALID_PARAMETER;

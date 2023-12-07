@@ -115,9 +115,9 @@ static void le_counter_setup(void){
     // init SDP, create record for GATT and register with SDP
     sdp_init();
     memset(gatt_service_buffer, 0, sizeof(gatt_service_buffer));
-    gatt_create_sdp_record(gatt_service_buffer, 0x10001, ATT_SERVICE_GATT_SERVICE_START_HANDLE, ATT_SERVICE_GATT_SERVICE_END_HANDLE);
+    gatt_create_sdp_record(gatt_service_buffer, sdp_create_service_record_handle(), ATT_SERVICE_GATT_SERVICE_START_HANDLE, ATT_SERVICE_GATT_SERVICE_END_HANDLE);
+    btstack_assert(de_get_len( gatt_service_buffer) <= sizeof(gatt_service_buffer));
     sdp_register_service(gatt_service_buffer);
-    printf("SDP service record size: %u\n", de_get_len(gatt_service_buffer));
 
     // configure Classic GAP
     gap_set_local_name("GATT Counter BR/EDR 00:00:00:00:00:00");
@@ -252,20 +252,28 @@ static uint16_t att_read_callback(hci_con_handle_t connection_handle, uint16_t a
 /*
  * @section ATT Write
  *
- * @text The only valid ATT write in this example is to the Client Characteristic Configuration, which configures notification
- * and indication. If the ATT handle matches the client configuration handle, the new configuration value is stored and used
- * in the heartbeat handler to decide if a new value should be sent. See Listing attWrite.
+ * @text The only valid ATT writes in this example are to the Client Characteristic Configuration, which configures notification
+ * and indication and to the the Characteristic Value.
+ * If the ATT handle matches the client configuration handle, the new configuration value is stored and used
+ * in the heartbeat handler to decide if a new value should be sent.
+ * If the ATT handle matches the characteristic value handle, we print the write as hexdump
+ * See Listing attWrite.
  */
 
 /* LISTING_START(attWrite): ATT Write */
 static int att_write_callback(hci_con_handle_t connection_handle, uint16_t att_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
-    UNUSED(transaction_mode);
-    UNUSED(offset);
-    UNUSED(buffer_size);
-    
-    if (att_handle != ATT_CHARACTERISTIC_0000FF11_0000_1000_8000_00805F9B34FB_01_CLIENT_CONFIGURATION_HANDLE) return 0;
-    le_notification_enabled = little_endian_read_16(buffer, 0) == GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION;
-    con_handle = connection_handle;
+    switch (att_handle){
+        case ATT_CHARACTERISTIC_0000FF11_0000_1000_8000_00805F9B34FB_01_CLIENT_CONFIGURATION_HANDLE:
+            le_notification_enabled = little_endian_read_16(buffer, 0) == GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION;
+            con_handle = connection_handle;
+            break;
+        case ATT_CHARACTERISTIC_0000FF11_0000_1000_8000_00805F9B34FB_01_VALUE_HANDLE:
+            printf("Write: transaction mode %u, offset %u, data (%u bytes): ", transaction_mode, offset, buffer_size);
+            printf_hexdump(buffer, buffer_size);
+            break;
+        default:
+            break;
+    }
     return 0;
 }
 /* LISTING_END */

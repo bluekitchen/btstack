@@ -53,6 +53,8 @@
 #include "classic/core.h"
 #include "classic/sdp_util.h"
 
+static const char * spp_server_default_sdp_service_name = "SPP";
+
 static void spp_create_sdp_record_internal(uint8_t *service, uint32_t service_record_handle, const uint8_t * service_uuid128, int rfcomm_channel, const char *name){
 	
 	uint8_t* attribute;
@@ -118,15 +120,20 @@ static void spp_create_sdp_record_internal(uint8_t *service, uint32_t service_re
 		uint8_t *sppProfile = de_push_sequence(attribute);
 		{
 			de_add_number(sppProfile,  DE_UUID, DE_SIZE_16, BLUETOOTH_SERVICE_CLASS_SERIAL_PORT);
-			de_add_number(sppProfile,  DE_UINT, DE_SIZE_16, BLUETOOTH_SERVICE_CLASS_LAN_ACCESS_USING_PPP);
+			de_add_number(sppProfile,  DE_UINT, DE_SIZE_16, 0x0102);
 		}
 		de_pop_sequence(attribute, sppProfile);
 	}
 	de_pop_sequence(service, attribute);
 	
 	// 0x0100 "ServiceName"
-	de_add_number(service,  DE_UINT, DE_SIZE_16, 0x0100);
-	de_add_data(service,  DE_STRING, (uint16_t) strlen(name), (uint8_t *) name);
+    if (name == NULL){
+        name = spp_server_default_sdp_service_name;
+    }
+    if (strlen(name) > 0){
+        de_add_number(service,  DE_UINT, DE_SIZE_16, 0x0100);
+        de_add_data(service,  DE_STRING, (uint16_t) strlen(name), (uint8_t *) name);
+    }
 }
 
 void spp_create_sdp_record(uint8_t *service, uint32_t service_record_handle, int rfcomm_channel, const char *name){

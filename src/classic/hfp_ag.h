@@ -62,12 +62,15 @@ typedef struct {
  * @brief Create HFP Audio Gateway (AG) SDP service record. 
  * @param service
  * @param rfcomm_channel_nr
- * @param name
+ * @param name or NULL for default value. Provide "" (empty string) to skip attribute
  * @param ability_to_reject_call
- * @param suported_features 32-bit bitmap, see HFP_AGSF_* values in hfp.h
- * @param wide_band_speech supported 
+ * @param supported_features 32-bit bitmap, see HFP_AGSF_* values in hfp.h
+ * @param codecs_nr
+ * @param codecs
  */
-void hfp_ag_create_sdp_record(uint8_t * service, uint32_t service_record_handle, int rfcomm_channel_nr, const char * name, uint8_t ability_to_reject_call, uint16_t supported_features, int wide_band_speech);
+void hfp_ag_create_sdp_record_with_codecs(uint8_t * service, uint32_t service_record_handle, int rfcomm_channel_nr,
+                                          const char * name, uint8_t ability_to_reject_call, uint16_t supported_features,
+                                          uint8_t codecs_nr, const uint8_t * codecs);
 
 /**
  * @brief Set up HFP Audio Gateway (AG) device without additional supported features.
@@ -80,7 +83,7 @@ void hfp_ag_init(uint8_t rfcomm_channel_nr);
  * @param codecs_nr
  * @param codecs
  */
-void hfp_ag_init_codecs(int codecs_nr, const uint8_t * codecs);
+void hfp_ag_init_codecs(uint8_t codecs_nr, const uint8_t * codecs);
 
 /**
  * @brief Set supported features.
@@ -505,6 +508,18 @@ uint8_t hfp_ag_send_command_result_code(hci_con_handle_t acl_handle, bool ok);
  * @brief De-Init HFP AG
  */
 void hfp_ag_deinit(void);
+
+/**
+ * @brief Create HFP Audio Gateway (AG) SDP service record.
+ * @deprecated Use hfp_ag_create_sdp_record_with_codecs instead
+ * @param service
+ * @param rfcomm_channel_nr
+ * @param name
+ * @param ability_to_reject_call
+ * @param suported_features 32-bit bitmap, see HFP_AGSF_* values in hfp.h
+ * @param wide_band_speech supported
+ */
+void hfp_ag_create_sdp_record(uint8_t * service, uint32_t service_record_handle, int rfcomm_channel_nr, const char * name, uint8_t ability_to_reject_call, uint16_t supported_features, int wide_band_speech);
 
 /* API_END */
 

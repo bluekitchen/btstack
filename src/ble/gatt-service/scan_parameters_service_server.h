@@ -56,7 +56,7 @@ extern "C" {
 /**
  * @text The Scan Parameters Service enables a remote GATT Client to store the LE scan parameters it is using locally. These parameters can be utilized by the application to optimize power consumption and/or reconnection latency.
  *
- * To use with your application, add `#import <scan_parameters_service.gatt` to your .gatt file
+ * To use with your application, add `#import <scan_parameters_service.gatt>` to your .gatt file
  * and call all functions below. All strings and blobs need to stay valid after calling the functions.
  */
 

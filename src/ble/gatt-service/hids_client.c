@@ -128,29 +128,37 @@ static hids_client_t * hids_get_client_for_cid(uint16_t hids_cid){
 
 // START Descriptor Storage Util
 
+static uint16_t hids_client_descriptors_len(hids_client_t * client){
+    uint16_t descriptors_len = 0;
+    uint8_t service_index;
+    for (service_index = 0; service_index < client->num_instances; service_index++){
+        descriptors_len += client->services[service_index].hid_descriptor_len;
+    }
+    return descriptors_len;
+}
+
 static uint16_t hids_client_descriptor_storage_get_available_space(void){
     // assumes all descriptors are back to back
     uint16_t free_space = hids_client_descriptor_storage_len;
-    uint8_t i;
-    
-    btstack_linked_list_iterator_t it;    
+    btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, &clients);
     while (btstack_linked_list_iterator_has_next(&it)){
         hids_client_t * client = (hids_client_t *)btstack_linked_list_iterator_next(&it);
-        for (i = 0; i < client->num_instances; i++){
-            free_space -= client->services[i].hid_descriptor_len;
-        }
+        free_space -= hids_client_descriptors_len(client);
     }
     return free_space;
 }
 
 static void hids_client_descriptor_storage_init(hids_client_t * client, uint8_t service_index){
+    // reserve remaining space for this connection
+    uint16_t available_space = hids_client_descriptor_storage_get_available_space();
     client->services[service_index].hid_descriptor_len = 0;
-    client->services[service_index].hid_descriptor_max_len = hids_client_descriptor_storage_get_available_space();
-    client->services[service_index].hid_descriptor_offset = hids_client_descriptor_storage_len - client->services[service_index].hid_descriptor_max_len;
+    client->services[service_index].hid_descriptor_max_len = available_space;
+    client->services[service_index].hid_descriptor_offset = hids_client_descriptor_storage_len - available_space;
 }
 
 static bool hids_client_descriptor_storage_store(hids_client_t * client, uint8_t service_index, uint8_t byte){
+    // store single hid descriptor byte
     if (client->services[service_index].hid_descriptor_len >= client->services[service_index].hid_descriptor_max_len) return false;
 
     hids_client_descriptor_storage[client->services[service_index].hid_descriptor_offset + client->services[service_index].hid_descriptor_len] = byte;
@@ -159,30 +167,36 @@ static bool hids_client_descriptor_storage_store(hids_client_t * client, uint8_t
 }
 
 static void hids_client_descriptor_storage_delete(hids_client_t * client){
-    uint8_t service_index = 0;
-    uint16_t next_offset = 0;
+    uint8_t service_index;
 
-    for (service_index = 0; service_index < client->num_instances; service_index++){
-        next_offset += client->services[service_index].hid_descriptor_offset + client->services[service_index].hid_descriptor_len;
-        client->services[service_index].hid_descriptor_len = 0;
-        client->services[service_index].hid_descriptor_offset = 0;
-    }
+    // calculate descriptors len
+    uint16_t descriptors_len = hids_client_descriptors_len(client);
 
-    memmove(&hids_client_descriptor_storage[client->services[0].hid_descriptor_offset], 
-            &hids_client_descriptor_storage[next_offset],
-            hids_client_descriptor_storage_len - next_offset);
-    
-    uint8_t i;
-    btstack_linked_list_iterator_t it;
-    btstack_linked_list_iterator_init(&it, &clients);
-    while (btstack_linked_list_iterator_has_next(&it)){
-        hids_client_t * conn = (hids_client_t *)btstack_linked_list_iterator_next(&it);
-        for (i = 0; i < client->num_instances; i++){
-            if (conn->services[i].hid_descriptor_offset >= next_offset){
-                conn->services[i].hid_descriptor_offset = next_offset;
-                next_offset += conn->services[service_index].hid_descriptor_len;
+    if (descriptors_len > 0){
+        // move higher descriptors down
+        uint16_t next_offset = client->services[0].hid_descriptor_offset + descriptors_len;
+        memmove(&hids_client_descriptor_storage[client->services[0].hid_descriptor_offset],
+                &hids_client_descriptor_storage[next_offset],
+                hids_client_descriptor_storage_len - next_offset);
+
+        // fix descriptor offset of higher descriptors
+        btstack_linked_list_iterator_t it;
+        btstack_linked_list_iterator_init(&it, &clients);
+        while (btstack_linked_list_iterator_has_next(&it)){
+            hids_client_t * conn = (hids_client_t *)btstack_linked_list_iterator_next(&it);
+            if (conn == client) continue;
+            for (service_index = 0; service_index < client->num_instances; service_index++){
+                if (conn->services[service_index].hid_descriptor_offset >= next_offset){
+                    conn->services[service_index].hid_descriptor_offset -= descriptors_len;
+                }
             }
         }
+    }
+
+    // clear descriptors
+    for (service_index = 0; service_index < client->num_instances; service_index++){
+        client->services[service_index].hid_descriptor_len = 0;
+        client->services[service_index].hid_descriptor_offset = 0;
     }
 }
 

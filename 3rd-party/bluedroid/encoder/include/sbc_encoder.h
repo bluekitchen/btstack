@@ -196,6 +196,13 @@ typedef struct SBC_ENC_PARAMS_TAG
     UINT16 u16PacketLength;
     /* BK4BTSTACK_CHANGE START */
     UINT8  mSBCEnabled;
+    // from sbc_analysis
+    SINT32 s32DCTY[16];//  = {0};
+    SINT32 s32X[ENC_VX_BUFFER_SIZE/2];
+    SINT16 *s16X;//=(SINT16*) s32X;      /* s16X must be 32 bits aligned cf  SHIFTUP_X8_2*/
+    SINT16 ShiftCounter;
+    // from sbc_encoder
+    SINT16 EncMaxShiftCounter;
     /* BK4BTSTACK_CHANGE END */
 }SBC_ENC_PARAMS;
 

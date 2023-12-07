@@ -53,6 +53,7 @@ extern "C" {
 typedef struct {
     btstack_lc3_frame_duration_t    frame_duration;
     uint16_t                        octets_per_frame;
+    uint16_t                        samples_per_frame;
     uint32_t                        sample_rate;
     // decoder must be 4-byte aligned
     uint8_t                         decoder[LC3PLUS_DEC_MAX_SIZE];

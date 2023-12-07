@@ -270,6 +270,7 @@ typedef struct {
     uint16_t   send_sdu_pos;
 
     // max PDU size
+    uint16_t  local_mps;
     uint16_t  remote_mps;
 
     // credits for outgoing traffic
@@ -293,9 +294,6 @@ typedef struct {
 
     // l2cap channel mode: basic or enhanced retransmission mode
     l2cap_channel_mode_t mode;
-    
-    // local mps = size of rx/tx buffers
-    uint16_t local_mps;
 
     // retransmission timer
     btstack_timer_source_t retransmission_timer;
@@ -419,6 +417,9 @@ typedef struct {
 
     // required security level
     gap_security_level_t required_security_level;
+
+    // requires authorization
+    bool requires_authorization;
 
 } l2cap_service_t;
 
@@ -711,9 +712,11 @@ uint8_t l2cap_cbm_provide_credits(uint16_t local_cid, uint16_t credits);
  * @param psm
  * @param min_remote_mtu
  * @param security_level
+ * @oaram authorization_required
  * @return status
  */
-uint8_t l2cap_ecbm_register_service(btstack_packet_handler_t packet_handler, uint16_t psm, uint16_t min_remote_mtu, gap_security_level_t security_level);
+uint8_t l2cap_ecbm_register_service(btstack_packet_handler_t packet_handler, uint16_t psm, uint16_t min_remote_mtu,
+                                    gap_security_level_t security_level, bool authorization_required);
 
 /**
  * @brief Unregister L2CAP service in Enhanced Credit-Based Flow-Control Mode
@@ -803,6 +806,13 @@ uint8_t l2cap_ecbm_request_can_send_now_event(uint16_t local_cid);
 uint8_t l2cap_ecbm_reconfigure_channels(uint8_t num_cids, uint16_t * local_cids, int16_t receive_buffer_size, uint8_t ** receive_buffers);
 
 /**
+ * @brief Trigger pending connection responses after pairing completed
+ * @note Must be called after receiving an SM_PAIRING_COMPLETE event, will be removed eventually
+ * @param con_handle
+ */
+void l2cap_ecbm_trigger_pending_connection_responses(hci_con_handle_t con_handle);
+
+/**
  * @brief De-Init L2CAP
  */
 void l2cap_deinit(void);
@@ -833,26 +843,20 @@ uint8_t l2cap_le_create_channel(btstack_packet_handler_t packet_handler, hci_con
                                 uint16_t psm, uint8_t * receive_sdu_buffer, uint16_t mtu, uint16_t initial_credits, gap_security_level_t security_level,
                                 uint16_t * out_local_cid);
 
-// @deprecated - please use l2cap_cbm_decline_connection
+// @deprecated - please use l2cap_cbm_provide_credits
 uint8_t l2cap_le_provide_credits(uint16_t local_cid, uint16_t credits);
 
-// @deprecated - please use l2cap_cbm_can_send_now
+// @deprecated - please use l2cap_can_send_now
 bool l2cap_le_can_send_now(uint16_t local_cid);
 
-// @deprecated - please use l2cap_cbm_request_can_send_now_event
+// @deprecated - please use l2cap_request_can_send_now_event
 uint8_t l2cap_le_request_can_send_now_event(uint16_t local_cid);
 
-// @deprecated - please use l2cap_send_data
+// @deprecated - please use l2cap_send
 uint8_t l2cap_le_send_data(uint16_t local_cid, const uint8_t * data, uint16_t size);
 
 // @deprecated - please use l2cap_disconnect
 uint8_t l2cap_le_disconnect(uint16_t local_cid);
-
-// @deprecated - please use l2cap_can_send_now
-bool l2cap_cbm_can_send_now(uint16_t local_cid);
-
-// @deprecated - please use l2cap_request_can_send_now_event
-uint8_t l2cap_cbm_request_can_send_now_event(uint16_t local_cid);
 
 
 #if defined __cplusplus

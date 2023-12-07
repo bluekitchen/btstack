@@ -744,6 +744,10 @@ typedef struct hfp_connection {
 #ifdef ENABLE_RTK_PCM_WBS
     bool rtk_send_sco_config;
 #endif
+#ifdef ENABLE_NXP_PCM_WBS
+    hci_con_handle_t nxp_start_audio_handle;
+    hci_con_handle_t nxp_stop_audio_handle;
+#endif
 } hfp_connection_t;
 
 /**
@@ -867,14 +871,19 @@ uint8_t hfp_trigger_release_audio_connection(hfp_connection_t * hfp_connection);
 
 void hfp_reset_context_flags(hfp_connection_t * hfp_connection);
 
+// @returns if an SCO setup is active in either role
+bool hfp_sco_setup_active(void);
+
 void hfp_setup_synchronous_connection(hfp_connection_t * hfp_connection);
 void hfp_accept_synchronous_connection(hfp_connection_t * hfp_connection, bool incoming_eSCO);
+
 int hfp_supports_codec(uint8_t codec, int codecs_nr, uint8_t * codecs);
 void hfp_hf_drop_mSBC_if_eSCO_not_supported(uint8_t * codecs, uint8_t * codecs_nr);
 void hfp_init_link_settings(hfp_connection_t * hfp_connection, uint8_t eSCO_S4_supported);
 hfp_link_settings_t hfp_next_link_setting(hfp_link_settings_t current_setting, uint16_t local_sco_packet_types,
                                           uint16_t remote_sco_packet_types, bool eSCO_s4_supported,
                                           uint8_t negotiated_codec);
+hfp_link_settings_t hfp_safe_settings_for_context(bool use_eSCO, uint8_t negotiated_codec, bool secure_connection_in_use);
 
 const char * hfp_hf_feature(int index);
 const char * hfp_ag_feature(int index);
@@ -886,12 +895,14 @@ const char * hfp_enhanced_call_status2str(uint16_t index);
 const char * hfp_enhanced_call_mode2str(uint16_t index);
 const char * hfp_enhanced_call_mpty2str(uint16_t index);
 
-#ifdef ENABLE_CC256X_ASSISTED_HFP
-void hfp_cc256x_prepare_for_sco(hfp_connection_t * hfp_connection);
-void hfp_cc256x_write_codec_config(hfp_connection_t * hfp_connection);
-#endif
+/**
+ * @brief Prepare for immediate SCO connection.
+ *        Triggers sending of vendor-specific commands to enable mSBC Codec in Controller
+ * @param hfp_connection
+ */
+void hfp_prepare_for_sco(hfp_connection_t * hfp_connection);
+
 #ifdef ENABLE_BCM_PCM_WBS
-void hfp_bcm_prepare_for_sco(hfp_connection_t * hfp_connection);
 void hfp_bcm_write_i2spcm_interface_param (hfp_connection_t * hfp_connection);
 #endif
 

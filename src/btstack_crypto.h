@@ -206,6 +206,8 @@ void btstack_crypto_ecc_p256_generate_key(btstack_crypto_ecc_p256_t * request, u
 
 /**
  * Calculate Diffie-Hellman Key based on local private key and remote public key
+ * @note Bluetooth Core v5.1+ requires the Controller to return an error if the public key is invalid
+ *       In this case, dhkey will be set to 0xff..ff
  * @param request
  * @param public_key (64 bytes)
  * @param dhkey (32 bytes)
@@ -215,7 +217,8 @@ void btstack_crypto_ecc_p256_generate_key(btstack_crypto_ecc_p256_t * request, u
 void btstack_crypto_ecc_p256_calculate_dhkey(btstack_crypto_ecc_p256_t * request, const uint8_t * public_key, uint8_t * dhkey, void (* callback)(void * arg), void * callback_arg);
 
 /*
- * Validate public key (not implemented for LE Controller ECC)
+ * Validate public key
+ * @note Not implemented for ECC in Controller. @see btstack_crypto_ecc_p256_calculate_dhkey
  * @param public_key (64 bytes)
  * @result 0 == valid
  */

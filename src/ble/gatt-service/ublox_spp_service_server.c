@@ -40,7 +40,7 @@
 /**
  * Implementation of the ublox SPP-like profile
  *
- * To use with your application, add '#import <ublox_spp_service.gatt' to your .gatt file
+ * To use with your application, add `#import <ublox_spp_service.gatt>` to your .gatt file
  * and call all functions below. All strings and blobs need to stay valid after calling the functions.
  */
 
@@ -144,10 +144,16 @@ static uint16_t ublox_spp_service_read_callback(hci_con_handle_t con_handle, uin
 
 
 static int ublox_spp_service_write_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
-    UNUSED(transaction_mode);
     UNUSED(offset);
+
+    if (transaction_mode != ATT_TRANSACTION_MODE_NONE){
+        return 0;
+    }
+
     ublox_spp_service_t * instance = ublox_get_instance_for_con_handle(con_handle);
-    if (!instance) return 0; 
+    if (instance == NULL){
+        return 0;
+    }
 
     if (attribute_handle == instance->fifo_value_handle){
         instance->client_packet_handler(RFCOMM_DATA_PACKET, (uint16_t) con_handle, &buffer[0], buffer_size);

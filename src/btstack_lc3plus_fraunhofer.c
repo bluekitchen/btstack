@@ -44,6 +44,8 @@
 
 #ifdef HAVE_LC3PLUS
 
+#define MAX_SAMPLES_PER_FRAME 480
+
 static uint8_t lc3plus_farunhofer_scratch[LC3PLUS_DEC_MAX_SCRATCH_SIZE];
 
 static uint16_t lc3_frame_duration_in_us(btstack_lc3_frame_duration_t frame_duration){
@@ -73,9 +75,14 @@ static uint8_t lc3plus_fraunhofer_decoder_configure(void * context, uint32_t sam
     instance->sample_rate = sample_rate;
     instance->frame_duration = frame_duration;
     instance->octets_per_frame = octets_per_frame;
+    instance->samples_per_frame = btstack_lc3_samples_per_frame(sample_rate, frame_duration);
 
     LC3PLUS_Error error;
+#ifdef ENABLE_HR_MODE
     error = lc3plus_dec_init(decoder, sample_rate, 1, LC3PLUS_PLC_ADVANCED, 0);
+#else
+    error = lc3plus_dec_init(decoder, sample_rate, 1, LC3PLUS_PLC_ADVANCED);
+#endif
     btstack_assert(error == LC3PLUS_OK);
 
     error = lc3plus_dec_set_frame_dms(decoder, duration_us / 100);
@@ -84,13 +91,20 @@ static uint8_t lc3plus_fraunhofer_decoder_configure(void * context, uint32_t sam
     return ERROR_CODE_SUCCESS;
 }
 
-static uint8_t lc3plus_fraunhofer_decoder_decode_signed_16(void * context, const uint8_t *bytes, uint8_t BFI, int16_t* pcm_out, uint16_t stride, uint8_t * BEC_detect){
-    btstack_lc3plus_fraunhofer_decoder_t * instance = (btstack_lc3plus_fraunhofer_decoder_t *) context;
-    LC3PLUS_Dec * decoder = (LC3PLUS_Dec*) instance->decoder;
+static uint8_t lc3plus_fraunhofer_decoder_decode_signed_16(void * context, const uint8_t *bytes, uint8_t BFI, int16_t* pcm_out, uint16_t stride, uint8_t * BEC_detect) {
+    btstack_lc3plus_fraunhofer_decoder_t *instance = (btstack_lc3plus_fraunhofer_decoder_t *) context;
+    LC3PLUS_Dec *decoder = (LC3PLUS_Dec *) instance->decoder;
 
-    // output_samples: array of channel buffers.
-    int16_t * output_samples[1];
-    output_samples[0] = pcm_out;
+    // temporary output buffer to interleave samples for caller
+    int16_t temp_out[MAX_SAMPLES_PER_FRAME];
+
+    // output_samples: array of channel buffers. use temp_out if stride is used
+    int16_t *output_samples[1];
+    if (stride > 1) {
+        output_samples[0] = temp_out;
+    } else {
+        output_samples[0] = pcm_out;
+    }
 
     // trigger plc if BFI by passing 0 valid input bytes
     uint16_t byte_count = instance->octets_per_frame;
@@ -99,6 +113,15 @@ static uint8_t lc3plus_fraunhofer_decoder_decode_signed_16(void * context, const
     }
 
     LC3PLUS_Error error = lc3plus_dec16(decoder, (void*) bytes, byte_count, output_samples, lc3plus_farunhofer_scratch, BFI);
+
+    // store samples
+    if (stride > 1){
+        uint16_t i;
+        for (i = 0; i < instance->samples_per_frame; i++){
+            // cppcheck-suppress uninitvar ; for stride > 1, output_samples[0] = temp_out, which is initialized by lc3plus_dec16
+            pcm_out [i * stride] = temp_out[i];
+        }
+    }
 
     // map error
     switch (error){

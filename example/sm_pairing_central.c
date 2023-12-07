@@ -196,10 +196,10 @@ static void hci_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
             gap_connect(address,address_type);
             break;
         }
-        case HCI_EVENT_LE_META:
+        case HCI_EVENT_META_GAP:
             // wait for connection complete
-            if (hci_event_le_meta_get_subevent_code(packet) != HCI_SUBEVENT_LE_CONNECTION_COMPLETE) break;
-            con_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
+            if (hci_event_gap_meta_get_subevent_code(packet) != GAP_SUBEVENT_LE_CONNECTION_COMPLETE) break;
+            con_handle = gap_subevent_le_connection_complete_get_connection_handle(packet);
             printf("Connection complete\n");
 
             // for testing, choose one of the following actions

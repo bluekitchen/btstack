@@ -139,7 +139,7 @@ static void generic_default_transition_time_status_handler(mesh_model_t *mesh_mo
     mesh_access_message_processed(pdu);
 }
 
-const static mesh_operation_t mesh_generic_default_transition_time_model_operations[] = {
+static const mesh_operation_t mesh_generic_default_transition_time_model_operations[] = {
     { MESH_GENERIC_DEFAULT_TRANSITION_TIME_STATUS, 0, generic_default_transition_time_status_handler },
     { 0, 0, NULL }
 };

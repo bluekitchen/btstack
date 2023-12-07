@@ -292,10 +292,10 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                         sm_generate_sc_oob_data(sc_local_oob_generated_callback);
                     }
                     break;
-                case HCI_EVENT_LE_META:
-                    switch (hci_event_le_meta_get_subevent_code(packet)) {
-                        case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
-                            connection_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
+                case HCI_EVENT_META_GAP:
+                    switch (hci_event_gap_meta_get_subevent_code(packet)) {
+                        case GAP_SUBEVENT_LE_CONNECTION_COMPLETE:
+                            connection_handle = gap_subevent_le_connection_complete_get_connection_handle(packet);
                             printf("CONNECTED: Connection handle 0x%04x\n", connection_handle);
                             break;
                         default:

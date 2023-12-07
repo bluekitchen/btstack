@@ -39,7 +39,7 @@
 
 /**
  * Implementation of the GATT Battery Service Server 
- * To use with your application, add '#import <battery_service.gatt' to your .gatt file
+ * To use with your application, add `#import <battery_service.gatt>` to your .gatt file
  */
 
 #include "btstack_defines.h"
@@ -76,11 +76,14 @@ static uint16_t battery_service_read_callback(hci_con_handle_t con_handle, uint1
 }
 
 static int battery_service_write_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
-	UNUSED(transaction_mode);
 	UNUSED(offset);
 	UNUSED(buffer_size);
 
-	if (attribute_handle == battery_value_client_configuration_handle){
+    if (transaction_mode != ATT_TRANSACTION_MODE_NONE){
+        return 0;
+    }
+
+    if (attribute_handle == battery_value_client_configuration_handle){
 		battery_value_client_configuration = little_endian_read_16(buffer, 0);
 		battery_value_client_configuration_connection = con_handle;
 	}

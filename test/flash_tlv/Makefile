@@ -1,5 +1,8 @@
 BTSTACK_ROOT = ../..
-CPPUTEST_HOME = ${BTSTACK_ROOT}/test/cpputest
+
+# CppuTest from pkg-config
+CFLAGS  += ${shell pkg-config --cflags CppuTest}
+LDFLAGS += ${shell pkg-config --libs   CppuTest}
 
 COMMON = \
 	btstack_tlv_flash_bank.c \
@@ -15,7 +18,7 @@ VPATH = \
 	${BTSTACK_ROOT}/platform/embedded \
 	${BTSTACK_ROOT}/platform/posix \
 
-CFLAGS  = -DUNIT_TEST -g -Wall -Wnarrowing -Wconversion-null
+CFLAGS += -DUNIT_TEST -g -Wall -Wnarrowing -Wconversion-null
 CFLAGS += -I${BTSTACK_ROOT}/src
 CFLAGS += -I${BTSTACK_ROOT}/platform/embedded
 CFLAGS += -I${BTSTACK_ROOT}/platform/posix

@@ -38,7 +38,7 @@
 #define BTSTACK_FILE__ "nordic_spp_le_counter.c"
 
 // *****************************************************************************
-/* EXAMPLE_START(nordic_le_counter): LE Nordic SPP-like Heartbeat Server 
+/* EXAMPLE_START(nordic_ssp_le_counter): LE Nordic SPP-like Heartbeat Server 
  *
  */
  // *****************************************************************************
@@ -64,7 +64,7 @@
  *
  * @text Listing MainConfiguration shows main application code.
  * It initializes L2CAP, the Security Manager and configures the ATT Server with the pre-compiled
- * ATT Database generated from $nordic_le_counter.gatt$. 
+ * ATT Database generated from $nordic_ssp_le_counter.gatt$. 
  * Additionally, it enables the Battery Service Server with the current battery level.
  * Finally, it configures the advertisements 
  * and the heartbeat handler and boots the Bluetooth stack. 

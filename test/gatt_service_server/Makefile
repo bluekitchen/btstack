@@ -2,7 +2,11 @@
 
 BTSTACK_ROOT =  ../..
 
-CFLAGS  = -DUNIT_TEST -x c++ -g -Wall -Wnarrowing -Wconversion-null 
+# CppuTest from pkg-config
+CFLAGS  += ${shell pkg-config --cflags CppuTest}
+LDFLAGS += ${shell pkg-config --libs   CppuTest}
+
+CFLAGS += -DUNIT_TEST -x c++ -g -Wall -Wnarrowing -Wconversion-null 
 CFLAGS += -I../
 
 CFLAGS += -I${BTSTACK_ROOT}/src
@@ -20,6 +24,7 @@ VPATH += ${BTSTACK_ROOT}/test/mock
 COMMON = 										\
 	ad_parser.c                 				\
 	att_db.c 				 	    			\
+	btstack_hid_parser.c						\
 	battery_service_server.c 					\
 	btstack_linked_list.c       				\
 	btstack_memory.c            				\

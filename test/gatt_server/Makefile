@@ -2,7 +2,11 @@
 
 BTSTACK_ROOT =  ../..
 
-CFLAGS  = -DUNIT_TEST -g -Wall -Wnarrowing -Wconversion-null
+# CppuTest from pkg-config
+CFLAGS  += ${shell pkg-config --cflags CppuTest}
+LDFLAGS += ${shell pkg-config --libs   CppuTest}
+
+CFLAGS += -DUNIT_TEST -g -Wall -Wnarrowing -Wconversion-null
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/rijndael
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/micro-ecc
 CFLAGS += -I${BTSTACK_ROOT}/platform/embedded
@@ -24,7 +28,8 @@ COMMON = \
 	att_db.c                    \
 	att_db_util.c 				\
 	att_server.c                \
-	battery_service_server.c \
+	btstack_hid_parser.c        \
+	battery_service_server.c    \
 	btstack_crypto.c            \
 	btstack_linked_list.c       \
 	btstack_memory.c            \

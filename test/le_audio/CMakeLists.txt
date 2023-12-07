@@ -2,68 +2,6 @@ cmake_minimum_required (VERSION 3.12)
 project(BTstack-LE-Audio)
 set (CMAKE_CXX_STANDARD 11)
 
-# fink pkgconfig
-find_package(PkgConfig REQUIRED)
-
-# portaudio
-pkg_check_modules(PORTAUDIO portaudio-2.0)
-if(PORTAUDIO_FOUND)
-    include_directories(${PORTAUDIO_INCLUDE_DIRS})
-    link_directories(${PORTAUDIO_LIBRARY_DIRS})
-    link_libraries(${PORTAUDIO_LIBRARIES})
-    add_compile_definitions(HAVE_PORTAUDIO)
-endif()
-
-# fdk-aac
-pkg_check_modules(FDK_AAC fdk-aac)
-if(FDK_AAC_FOUND)
-	message("HAVE_AAC_FDK")
-	include_directories(${FDK_AAC_INCLUDE_DIRS})
-	link_directories(${FDK_AAC_LIBRARY_DIRS})
-	link_libraries(${FDK_AAC_LIBRARIES})
-	add_compile_definitions(HAVE_AAC_FDK)
-endif()
-
-# ldac encoder
-pkg_check_modules(LDAC_ENCODER ldacBT-enc)
-if (LDAC_ENCODER_FOUND)
-	message("HAVE_LDAC_ENCODER")
-    include_directories(${LDAC_ENCODER_INCLUDE_DIRS})
-    link_directories(${LDAC_ENCODER_LIBRARY_DIRS})
-    link_libraries(${LDAC_ENCODER_LIBRARIES})
-	add_compile_definitions(HAVE_LDAC_ENCODER)
-endif()
-
-# ldac decoder
-pkg_check_modules(LDAC_DECODER libldacdec)
-if (LDAC_DECODER_FOUND)
-    message("HAVE_LDAC_DECODER")
-    include_directories(${LDAC_DECODER_INCLUDE_DIRS})
-    link_directories(${LDAC_DECODER_LIBRARY_DIRS})
-    link_libraries(${LDAC_DECODER_LIBRARIES})
-    add_compile_definitions(HAVE_LDAC_DECODER)
-endif()
-
-# openaptx
-pkg_check_modules(APTX libopenaptx)
-if (APTX_FOUND)
-    message("HAVE_APTX")
-    include_directories(${APTX_INCLUDE_DIRS})
-    link_directories(${APTX_LIBRARY_DIRS})
-    link_libraries(${APTX_LIBRARIES})
-    add_compile_definitions(HAVE_APTX)
-endif()
-
-# lc3plus
-pkg_check_modules(LC3PLUS LC3plus)
-if(LC3PLUS_FOUND)
-	message("HAVE_LC3PLUS")
-	include_directories(${LC3PLUS_INCLUDE_DIRS})
-	link_directories(${LC3PLUS_LIBRARY_DIRS})
-	link_libraries(${LC3PLUS_LIBRARIES})
-	add_definitions(${LC3PLUS_CFLAGS})
-	add_compile_definitions(HAVE_LC3PLUS)
-endif()
 
 # enable optional features
 add_compile_definitions(ENABLE_TESTING_SUPPORT)
@@ -99,7 +37,7 @@ file(GLOB SOURCES_SRC       "../../src/*.c" "../../src/*.cpp" "../../example/sco
 file(GLOB SOURCES_BLE       "../../src/ble/*.c")
 file(GLOB SOURCES_GATT      "../../src/ble/gatt-service/*.c")
 file(GLOB SOURCES_CLASSIC   "../../src/classic/*.c")
-file(GLOB SOURCES_LE_AUDIO  "../../src/le-audio/*.c" "../../src/le-audio/gatt-service/*.c")
+file(GLOB SOURCES_LE_AUDIO  "../../src/le-audio/*.c" "../../src/le-audio/gatt-service/*.c" "../../example/le_audio_demo_util_*".c)
 file(GLOB SOURCES_MESH      "../../src/mesh/*.c")
 file(GLOB SOURCES_MD5       "../../3rd-party/md5/md5.c")
 file(GLOB SOURCES_UECC      "../../3rd-party/micro-ecc/uECC.c")
@@ -107,7 +45,7 @@ file(GLOB SOURCES_YXML      "../../3rd-party/yxml/yxml.c")
 file(GLOB SOURCES_HXCMOD    "../../3rd-party/hxcmod-player/*.c"  "../../3rd-party/hxcmod-player/mods/*.c")
 file(GLOB SOURCES_RIJNDAEL  "../../3rd-party/rijndael/rijndael.c")
 file(GLOB SOURCES_POSIX     "../../platform/posix/*.c")
-file(GLOB SOURCES_MAIN      "main.c" "btstack_lc3plus_fraunhofer.c")
+file(GLOB SOURCES_MAIN      main.c)
 file(GLOB SOURCES_ZEPHYR    "../../chipset/zephyr/*.c")
 file(GLOB SOURCES_BCM       "../../chipset/bcm/*.c")
 file(GLOB SOURCES_LC3_GOOGLE "../../3rd-party/lc3-google/src/*.c")
@@ -140,6 +78,69 @@ list(SORT SOURCES)
 
 # create static lib
 add_library(btstack STATIC ${SOURCES})
+
+# find pkgconfig
+find_package(PkgConfig REQUIRED)
+
+# portaudio
+pkg_check_modules(PORTAUDIO portaudio-2.0)
+if(PORTAUDIO_FOUND)
+	include_directories(${PORTAUDIO_INCLUDE_DIRS})
+	target_link_directories(btstack PUBLIC ${PORTAUDIO_LIBRARY_DIRS})
+	target_link_libraries(btstack ${PORTAUDIO_LIBRARIES})
+	add_compile_definitions(HAVE_PORTAUDIO)
+endif()
+
+# fdk-aac
+pkg_check_modules(FDK_AAC fdk-aac)
+if(FDK_AAC_FOUND)
+	message("HAVE_AAC_FDK")
+	include_directories(${FDK_AAC_INCLUDE_DIRS})
+	target_link_directories(btstack PUBLIC ${FDK_AAC_LIBRARY_DIRS})
+	target_link_libraries(btstack ${FDK_AAC_LIBRARIES})
+	add_compile_definitions(HAVE_AAC_FDK)
+endif()
+
+# ldac encoder
+pkg_check_modules(LDAC_ENCODER ldacBT-enc)
+if (LDAC_ENCODER_FOUND)
+	message("HAVE_LDAC_ENCODER")
+	include_directories(${LDAC_ENCODER_INCLUDE_DIRS})
+	target_link_directories(btstack PUBLIC ${LDAC_ENCODER_LIBRARY_DIRS})
+	target_link_libraries(btstack ${LDAC_ENCODER_LIBRARIES})
+	add_compile_definitions(HAVE_LDAC_ENCODER)
+endif()
+
+# ldac decoder
+pkg_check_modules(LDAC_DECODER libldacdec)
+if (LDAC_DECODER_FOUND)
+	message("HAVE_LDAC_DECODER")
+	include_directories(${LDAC_DECODER_INCLUDE_DIRS})
+	target_link_directories(btstack PUBLIC ${LDAC_DECODER_LIBRARY_DIRS})
+	target_link_libraries(btstack ${LDAC_DECODER_LIBRARIES})
+	add_compile_definitions(HAVE_LDAC_DECODER)
+endif()
+
+# openaptx
+pkg_check_modules(APTX libopenaptx)
+if (APTX_FOUND)
+	message("HAVE_APTX")
+	include_directories(${APTX_INCLUDE_DIRS})
+	target_link_directories(btstack PUBLIC ${APTX_LIBRARY_DIRS})
+	target_link_libraries(btstack ${APTX_LIBRARIES})
+	add_compile_definitions(HAVE_APTX)
+endif()
+
+# lc3plus
+pkg_check_modules(LC3PLUS LC3plus)
+if(LC3PLUS_FOUND)
+	message("HAVE_LC3PLUS")
+	include_directories(${LC3PLUS_INCLUDE_DIRS})
+	target_link_directories(btstack PUBLIC ${LC3PLUS_LIBRARY_DIRS})
+	target_link_libraries(btstack ${LC3PLUS_LIBRARIES})
+	add_definitions(${LC3PLUS_CFLAGS})
+	add_compile_definitions(HAVE_LC3PLUS)
+endif()
 
 # create targets for all examples
 file(GLOB EXAMPLES_C    "le_audio_*.c" "lc3_*.c")

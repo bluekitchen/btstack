@@ -745,7 +745,7 @@ int btstack_main(int argc, const char * argv[]){
         (1<<HFP_HFSF_VOICE_RECOGNITION_TEXT) |
         (1<<HFP_HFSF_EC_NR_FUNCTION) |
         (1<<HFP_HFSF_REMOTE_VOLUME_CONTROL);
-    int wide_band_speech = 1;
+
     hfp_hf_init(rfcomm_channel_nr);
     hfp_hf_init_supported_features(hf_supported_features);
     hfp_hf_init_hf_indicators(sizeof(indicators)/sizeof(uint16_t), indicators);
@@ -757,9 +757,9 @@ int btstack_main(int argc, const char * argv[]){
 
     // - Create and register HFP HF service record
     memset(hfp_service_buffer, 0, sizeof(hfp_service_buffer));
-    hfp_hf_create_sdp_record(hfp_service_buffer, sdp_create_service_record_handle(),
-                             rfcomm_channel_nr, hfp_hf_service_name, hf_supported_features, wide_band_speech);
-    printf("SDP service record size: %u\n", de_get_len(hfp_service_buffer));
+    hfp_hf_create_sdp_record_with_codecs(hfp_service_buffer, sdp_create_service_record_handle(),
+                             rfcomm_channel_nr, hfp_hf_service_name, hf_supported_features, sizeof(codecs), codecs);
+    btstack_assert(de_get_len( hfp_service_buffer) <= sizeof(hfp_service_buffer));
     sdp_register_service(hfp_service_buffer);
 
     // Configure GAP - discovery / connection

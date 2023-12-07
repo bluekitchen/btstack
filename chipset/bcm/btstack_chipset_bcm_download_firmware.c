@@ -42,7 +42,7 @@
 // supports higher baudrate for patch upload
 
 #include <string.h>
-#include <printf.h>
+#include <stdio.h>
 #include <unistd.h>
 
 #include "hci_dump.h"

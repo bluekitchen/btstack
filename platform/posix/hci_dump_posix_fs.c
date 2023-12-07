@@ -53,19 +53,25 @@
 // enable POSIX functions (needed for -std=c99)
 #define _POSIX_C_SOURCE 200809
 
+#ifdef __FreeBSD__
+// FreeBSD does not set __BSD_VISIBLE or __XSI_VISIBLE if _POSIX_C_SOURCE is defined
+#define __BSD_VISIBLE 1
+#define __XSI_VISIBLE 1
+#endif
+
 #include "hci_dump_posix_fs.h"
 
 #include "btstack_debug.h"
 #include "btstack_util.h"
-#include "hci_cmd.h"
+
+#include <sys/time.h>     // for timestamps
+#include <sys/stat.h>     // file modes
 
 #include <time.h>
 #include <stdio.h>        // printf
 #include <fcntl.h>        // open
 #include <unistd.h>       // write
 #include <errno.h>        // errno
-#include <sys/time.h>     // for timestamps
-#include <sys/stat.h>     // file modes
 
 static int  dump_file = -1;
 static int  dump_format;
@@ -90,12 +96,17 @@ static uint16_t hci_dump_iso_summary(uint8_t in,  uint8_t *packet, uint16_t len)
         time_stamp = little_endian_read_32(packet, pos);
         pos += 4;
     }
-    uint16_t packet_sequence = little_endian_read_16(packet, pos);
-    pos += 2;
-    uint16_t iso_sdu_len = little_endian_read_16(packet, pos);
-    uint8_t packet_status_flag = packet[pos+1] >> 6;
-    return snprintf(log_message_buffer,sizeof(log_message_buffer), "ISO %s, handle %04x, pb %u, ts 0x%08x, sequence 0x%04x, packet status %u, iso len %u",
-                    in ? "IN" : "OUT", conn_handle, pb, time_stamp, packet_sequence, packet_status_flag, iso_sdu_len);
+    if ((pb & 1) == 0) {
+        uint16_t packet_sequence = little_endian_read_16(packet, pos);
+        pos += 2;
+        uint16_t iso_sdu_len = little_endian_read_16(packet, pos);
+        uint8_t packet_status_flag = packet[pos+1] >> 6;
+        return snprintf(log_message_buffer,sizeof(log_message_buffer), "ISO %s, handle %04x, pb %u, ts 0x%08x, size %u, sequence 0x%04x, packet status %u, iso pdu len %u",
+                        in ? "IN" : "OUT", conn_handle, pb, time_stamp, len, packet_sequence, packet_status_flag, iso_sdu_len);
+    } else {
+        return snprintf(log_message_buffer,sizeof(log_message_buffer), "ISO %s, handle %04x, pb %u, ts 0x%08x, size %u",
+                        in ? "IN" : "OUT", conn_handle, pb, time_stamp, len);
+    }
 }
 
 static void hci_dump_posix_fs_log_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t len) {

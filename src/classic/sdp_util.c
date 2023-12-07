@@ -116,7 +116,7 @@ uint32_t de_get_data_size(const uint8_t * header){
     return result;    
 }
 
-int de_get_len(const uint8_t *header){
+uint32_t de_get_len(const uint8_t *header){
     return de_get_header_size(header) + de_get_data_size(header); 
 }
 
@@ -133,17 +133,17 @@ uint32_t de_get_len_safe(const uint8_t * header, uint32_t size){
 }
 
 // @return OK, if UINT16 value was read
-int de_element_get_uint16(const uint8_t * element, uint16_t * value){
-    if (de_get_size_type(element) != DE_SIZE_16) return 0;
+bool de_element_get_uint16(const uint8_t * element, uint16_t * value){
+    if (de_get_size_type(element) != DE_SIZE_16) return false;
     *value = big_endian_read_16(element, de_get_header_size(element));
-    return 1;
+    return true;
 }
 
 // @return: element is valid UUID
-int de_get_normalized_uuid(uint8_t *uuid128, const uint8_t *element){
+bool de_get_normalized_uuid(uint8_t *uuid128, const uint8_t *element){
     de_type_t uuidType = de_get_element_type(element);
     de_size_t uuidSize = de_get_size_type(element);
-    if (uuidType != DE_UUID) return 0;
+    if (uuidType != DE_UUID) return false;
     uint32_t shortUUID;
     switch (uuidSize){
         case DE_SIZE_16:
@@ -154,21 +154,20 @@ int de_get_normalized_uuid(uint8_t *uuid128, const uint8_t *element){
             break;
         case DE_SIZE_128:
             (void)memcpy(uuid128, element + 1, 16);
-            return 1;
+            return true;
         default:
-            return 0;
+            return false;
     }
     uuid_add_bluetooth_prefix(uuid128, shortUUID);
-    return 1;
+    return true;
 }
 
 // @return 0 if no UUID16 or UUID32 is present, and UUID32 otherwise
 uint32_t de_get_uuid32(const uint8_t * element){
     uint8_t uuid128[16];
-    int validUuid128 = de_get_normalized_uuid(uuid128, element);
-    if (!validUuid128) return 0;
-    int hasBlueoothBaseUuid = uuid_has_bluetooth_prefix(uuid128);
-    if (!hasBlueoothBaseUuid) return 0;
+    int valid_uuid128 = de_get_normalized_uuid(uuid128, element);
+    if (!valid_uuid128) return 0;
+    if (uuid_has_bluetooth_prefix(uuid128) == false) return 0;
     return big_endian_read_32(uuid128, 0);
 }
 
@@ -206,70 +205,79 @@ void de_create_sequence(uint8_t *header){
     de_store_descriptor_with_len( header, DE_DES, DE_SIZE_VAR_16, 0); // DES, 2 Byte Length
 }
 
+static inline void de_assert_des_16bit(uint8_t * element){
+    btstack_assert(element[0] == ((DE_DES << 3) | DE_SIZE_VAR_16));
+}
+
 /* starts a sub-sequence, @return handle for sub-sequence */
-uint8_t * de_push_sequence(uint8_t *header){
-    int element_len = de_get_len(header);
-    de_store_descriptor_with_len(header+element_len, DE_DES, DE_SIZE_VAR_16, 0); // DES, 2 Byte Length
-    return header + element_len;
+uint8_t * de_push_sequence(uint8_t *sequence){
+    de_assert_des_16bit(sequence);
+    int element_len = de_get_len(sequence);
+    de_store_descriptor_with_len(sequence + element_len, DE_DES, DE_SIZE_VAR_16, 0); // DES, 2 Byte Length
+    return sequence + element_len;
 }
 
 /* closes the current sequence and updates the parent sequence */
 void de_pop_sequence(uint8_t * parent, uint8_t * child){
+    de_assert_des_16bit(parent);
     int child_len = de_get_len(child);
     int data_size_parent = big_endian_read_16(parent,1);
     big_endian_store_16(parent, 1, data_size_parent + child_len);
 }
 
 /* adds a single number value and 16+32 bit UUID to the sequence */
-void de_add_number(uint8_t *seq, de_type_t type, de_size_t size, uint32_t value){
-    int data_size   = big_endian_read_16(seq,1);
+void de_add_number(uint8_t *sequence, de_type_t type, de_size_t size, uint32_t value){
+    de_assert_des_16bit(sequence);
+    int data_size   = big_endian_read_16(sequence, 1);
     int element_size = 1;   // e.g. for DE_TYPE_NIL
-    de_store_descriptor(seq+3+data_size, type, size); 
+    de_store_descriptor(sequence + 3 + data_size, type, size);
     switch (size){
         case DE_SIZE_8:
             if (type != DE_NIL){
-                seq[4+data_size] = value;
+                sequence[4 + data_size] = value;
                 element_size = 2;
             }
             break;
         case DE_SIZE_16:
-            big_endian_store_16(seq, 4+data_size, value);
+            big_endian_store_16(sequence, 4 + data_size, value);
             element_size = 3;
             break;
         case DE_SIZE_32:
-            big_endian_store_32(seq, 4+data_size, value);
+            big_endian_store_32(sequence, 4 + data_size, value);
             element_size = 5;
             break;
         default:
             break;
     }
-    big_endian_store_16(seq, 1, data_size+element_size);
+    big_endian_store_16(sequence, 1, data_size + element_size);
 }
 
 /* add a single block of data, e.g. as DE_STRING, DE_URL */
-void de_add_data( uint8_t *seq, de_type_t type, uint16_t size, uint8_t *data){
-    int data_size   = big_endian_read_16(seq,1);
+void de_add_data(uint8_t *sequence, de_type_t type, uint16_t size, uint8_t *data){
+    de_assert_des_16bit(sequence);
+    int data_size   = big_endian_read_16(sequence, 1);
     if (size > 0xff) {
-        // use 16-bit lengh information (3 byte header)
-        de_store_descriptor_with_len(seq+3+data_size, type, DE_SIZE_VAR_16, size); 
+        // use 16-bit length information (3 byte header)
+        de_store_descriptor_with_len(sequence + 3 + data_size, type, DE_SIZE_VAR_16, size);
         data_size += 3;
     } else {
-        // use 8-bit lengh information (2 byte header)
-        de_store_descriptor_with_len(seq+3+data_size, type, DE_SIZE_VAR_8, size); 
+        // use 8-bit length information (2 byte header)
+        de_store_descriptor_with_len(sequence + 3 + data_size, type, DE_SIZE_VAR_8, size);
         data_size += 2;
     }
     if (size > 0){
-		(void)memcpy(seq + 3 + data_size, data, size);
+		(void)memcpy(sequence + 3 + data_size, data, size);
 		data_size += size;
     }
-    big_endian_store_16(seq, 1, data_size);
+    big_endian_store_16(sequence, 1, data_size);
 }
 
-void de_add_uuid128(uint8_t * seq, uint8_t * uuid){
-    int data_size   = big_endian_read_16(seq,1);
-    de_store_descriptor(seq+3+data_size, DE_UUID, DE_SIZE_128); 
-    (void)memcpy(seq + 4 + data_size, uuid, 16);
-    big_endian_store_16(seq, 1, data_size+1+16);
+void de_add_uuid128(uint8_t * sequence, uint8_t * uuid){
+    de_assert_des_16bit(sequence);
+    int data_size   = big_endian_read_16(sequence, 1);
+    de_store_descriptor(sequence + 3 + data_size, DE_UUID, DE_SIZE_128);
+    (void)memcpy(sequence + 4 + data_size, uuid, 16);
+    big_endian_store_16(sequence, 1, data_size + 1 + 16);
 }
 
 // MARK: DES iterator
@@ -349,7 +357,7 @@ static void sdp_attribute_list_traverse_sequence(uint8_t * element, sdp_attribut
 // attribute ID in AttributeIDList
 // context { result, attributeID }
 struct sdp_context_attributeID_search {
-    int result;
+    bool result;
     uint16_t attributeID;
 };
 static int sdp_traversal_attributeID_search(uint8_t * element, de_type_t type, de_size_t size, void *my_context){
@@ -358,14 +366,14 @@ static int sdp_traversal_attributeID_search(uint8_t * element, de_type_t type, d
     switch (size) {
         case DE_SIZE_16:
             if (big_endian_read_16(element, 1) == context->attributeID) {
-                context->result = 1;
+                context->result = true;
                 return 1;
             }
             break;
         case DE_SIZE_32:
             if ((big_endian_read_16(element, 1) <= context->attributeID)
             &&  (context->attributeID <= big_endian_read_16(element, 3))) {
-                context->result = 1;
+                context->result = true;
                 return 1;
             }
             break;
@@ -375,9 +383,9 @@ static int sdp_traversal_attributeID_search(uint8_t * element, de_type_t type, d
     return 0;
 }
 
-int sdp_attribute_list_constains_id(uint8_t *attributeIDList, uint16_t attributeID){
+bool sdp_attribute_list_contains_id(uint8_t *attributeIDList, uint16_t attributeID){
     struct sdp_context_attributeID_search attributeID_search;
-    attributeID_search.result = 0;
+    attributeID_search.result = false;
     attributeID_search.attributeID = attributeID;
     de_traverse_sequence(attributeIDList, sdp_traversal_attributeID_search, &attributeID_search);
     return attributeID_search.result;
@@ -397,7 +405,7 @@ static int sdp_traversal_append_attributes(uint16_t attributeID, uint8_t * attri
     UNUSED(de_type);
     UNUSED(de_size);
     struct sdp_context_append_attributes * context = (struct sdp_context_append_attributes *) my_context;
-    if (sdp_attribute_list_constains_id(context->attributeIDList, attributeID)) {
+    if (sdp_attribute_list_contains_id(context->attributeIDList, attributeID)) {
         // DES_HEADER(3) + DES_DATA + (UINT16(3) + attribute)
         uint16_t data_size = big_endian_read_16(context->buffer, 1);
         int attribute_len = de_get_len(attributeValue);
@@ -435,7 +443,7 @@ struct sdp_context_filter_attributes {
     uint16_t maxBytes;
     uint16_t usedBytes;
     uint8_t *attributeIDList;
-    int      complete;
+    bool     complete;
 };
 
 // copy data with given start offset and max bytes, returns OK if all data has been copied
@@ -460,7 +468,7 @@ static int sdp_traversal_filter_attributes(uint16_t attributeID, uint8_t * attri
 
     struct sdp_context_filter_attributes * context = (struct sdp_context_filter_attributes *) my_context;
 
-    if (!sdp_attribute_list_constains_id(context->attributeIDList, attributeID)) return 0;
+    if (!sdp_attribute_list_contains_id(context->attributeIDList, attributeID)) return 0;
 
     // { Attribute ID (Descriptor, big endian 16-bit ID), AttributeValue (data)}
 
@@ -474,7 +482,7 @@ static int sdp_traversal_filter_attributes(uint16_t attributeID, uint8_t * attri
         
         int ok = spd_append_range(context, 3, idBuffer);
         if (!ok) {
-            context->complete = 0;
+            context->complete = false;
             return 1;
         }
     }
@@ -488,13 +496,13 @@ static int sdp_traversal_filter_attributes(uint16_t attributeID, uint8_t * attri
     
     int ok = spd_append_range(context, attribute_len, attributeValue);
     if (!ok) {
-        context->complete = 0;
+        context->complete = false;
         return 1;
     }
     return 0;
 }
 
-int sdp_filter_attributes_in_attributeIDList(uint8_t *record, uint8_t *attributeIDList, uint16_t startOffset, uint16_t maxBytes, uint16_t *usedBytes, uint8_t *buffer){
+bool sdp_filter_attributes_in_attributeIDList(uint8_t *record, uint8_t *attributeIDList, uint16_t startOffset, uint16_t maxBytes, uint16_t *usedBytes, uint8_t *buffer){
 
     struct sdp_context_filter_attributes context;
     context.buffer = buffer;
@@ -502,7 +510,7 @@ int sdp_filter_attributes_in_attributeIDList(uint8_t *record, uint8_t *attribute
     context.usedBytes = 0;
     context.startOffset = startOffset;
     context.attributeIDList = attributeIDList;
-    context.complete = 1;
+    context.complete = true;
 
     sdp_attribute_list_traverse_sequence(record, sdp_traversal_filter_attributes, &context);
 
@@ -521,13 +529,13 @@ static int sdp_traversal_get_filtered_size(uint16_t attributeID, uint8_t * attri
     UNUSED(de_size);
 
     struct sdp_context_get_filtered_size * context = (struct sdp_context_get_filtered_size *) my_context;
-    if (sdp_attribute_list_constains_id(context->attributeIDList, attributeID)) {
+    if (sdp_attribute_list_contains_id(context->attributeIDList, attributeID)) {
         context->size += 3 + de_get_len(attributeValue);
     }
     return 0;
 }
 
-int spd_get_filtered_size(uint8_t *record, uint8_t *attributeIDList){
+uint16_t sdp_get_filtered_size(uint8_t *record, uint8_t *attributeIDList){
     struct sdp_context_get_filtered_size context;
     context.size = 0;
     context.attributeIDList = attributeIDList;
@@ -565,12 +573,12 @@ uint8_t * sdp_get_attribute_value_for_attribute_id(uint8_t * record, uint16_t at
 struct sdp_context_set_attribute_for_id {
     uint16_t  attributeID;
     uint32_t  attributeValue;
-    uint8_t   attributeFound;
+    bool      attributeFound;
 };
 static int sdp_traversal_set_attribute_for_id(uint16_t attributeID, uint8_t * attributeValue, de_type_t attributeType, de_size_t size, void *my_context){
     struct sdp_context_set_attribute_for_id * context = (struct sdp_context_set_attribute_for_id *) my_context;
     if (attributeID == context->attributeID) {
-        context->attributeFound = 1;
+        context->attributeFound = true;
         switch (size){
             case DE_SIZE_8:
                 if (attributeType != DE_NIL){
@@ -591,11 +599,11 @@ static int sdp_traversal_set_attribute_for_id(uint16_t attributeID, uint8_t * at
     }
     return 0;
 }
-uint8_t sdp_set_attribute_value_for_attribute_id(uint8_t * record, uint16_t attributeID, uint32_t value){
+bool sdp_set_attribute_value_for_attribute_id(uint8_t * record, uint16_t attributeID, uint32_t value){
     struct sdp_context_set_attribute_for_id context;
     context.attributeID = attributeID;
     context.attributeValue = value;
-    context.attributeFound = 0;
+    context.attributeFound = false;
     sdp_attribute_list_traverse_sequence(record, sdp_traversal_set_attribute_for_id, &context);
     return context.attributeFound;
 }
@@ -635,10 +643,10 @@ int sdp_record_contains_UUID128(uint8_t *record, uint8_t *uuid128){
 // context { result, record }
 struct sdp_context_match_pattern {
     uint8_t * record;
-    int result;
+    bool result;
 };
 
-int sdp_traversal_match_pattern(uint8_t * element, de_type_t de_type, de_size_t de_size, void *my_context){
+static int sdp_traversal_match_pattern(uint8_t * element, de_type_t de_type, de_size_t de_size, void *my_context){
     UNUSED(de_type);
     UNUSED(de_size);
     
@@ -646,15 +654,15 @@ int sdp_traversal_match_pattern(uint8_t * element, de_type_t de_type, de_size_t 
     uint8_t normalizedUUID[16];
     uint8_t uuidOK = de_get_normalized_uuid(normalizedUUID, element);
     if (!uuidOK || !sdp_record_contains_UUID128(context->record, normalizedUUID)){
-        context->result = 0;
+        context->result = false;
         return 1;
     }
     return 0;
 }
-int sdp_record_matches_service_search_pattern(uint8_t *record, uint8_t *serviceSearchPattern){
+bool sdp_record_matches_service_search_pattern(uint8_t *record, uint8_t *serviceSearchPattern){
     struct sdp_context_match_pattern context;
     context.record = record;
-    context.result = 1;
+    context.result = true;
     de_traverse_sequence(serviceSearchPattern, sdp_traversal_match_pattern, &context);
     return context.result;
 }
@@ -663,8 +671,8 @@ int sdp_record_matches_service_search_pattern(uint8_t *record, uint8_t *serviceS
 // context { indent }
 #ifdef ENABLE_SDP_DES_DUMP
 static int de_traversal_dump_data(uint8_t * element, de_type_t de_type, de_size_t de_size, void *my_context){
-    int indent = *(int*) my_context;
-    int i;
+    unsigned int indent = *(int*) my_context;
+    unsigned int i;
     for (i=0; i<indent;i++) printf("    ");
     unsigned int pos     = de_get_header_size(element);
     unsigned int end_pos = de_get_len(element);
@@ -689,7 +697,7 @@ static int de_traversal_dump_data(uint8_t * element, de_type_t de_type, de_size_
         }
         printf(", len %2u, value: '", len);
         for (i=0;i<len;i++){
-            char c = element[pos + i];
+            uint8_t c = element[pos + i];
             printf("%c", (c >= 0x20 && c <= 0x7f) ? c : '.');
         }
         printf("'\n");
@@ -718,7 +726,7 @@ static int de_traversal_dump_data(uint8_t * element, de_type_t de_type, de_size_
 
 void de_dump_data_element(const uint8_t * record){
 #ifdef ENABLE_SDP_DES_DUMP
-    int indent = 0;
+    unsigned int indent = 0;
     // hack to get root DES, too.
     de_type_t type = de_get_element_type(record);
     de_size_t size = de_get_size_type(record);

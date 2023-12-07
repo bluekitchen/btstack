@@ -202,7 +202,7 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t *connection, uint8_t
                     stream_endpoint_for_event = stream_endpoint;
                     stream_endpoint->state = AVDTP_STREAM_ENDPOINT_W4_L2CAP_FOR_MEDIA_CONNECTED;
                     connection->initiator_local_seid = stream_endpoint->sep.seid;
-                    l2cap_create_channel(avdtp_packet_handler, connection->remote_addr, BLUETOOTH_PSM_AVDTP, 0xffff, NULL);
+                    l2cap_create_channel(avdtp_packet_handler, connection->remote_addr, BLUETOOTH_PSM_AVDTP, AVDTP_L2CAP_MTU, NULL);
                     return;
                 case AVDTP_SI_START:
                     if (!stream_endpoint){

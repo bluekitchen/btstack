@@ -54,14 +54,16 @@ extern "C" {
 /* API_START */
 
 /**
- * @brief Create HFP Hands-Free (HF) SDP service record. 
+ * @brief Create HFP Hands-Free (HF) SDP service record.
  * @param service
  * @param rfcomm_channel_nr
- * @param name
- * @param suported_features 32-bit bitmap, see HFP_HFSF_* values in hfp.h
- * @param wide_band_speech supported
+ * @param name or NULL for default value. Provide "" (empty string) to skip attribute
+ * @param supported_features 32-bit bitmap, see HFP_HFSF_* values in hfp.h
+ * @param codecs_nr  number of codecs in codecs argument
+ * @param codecs
  */
-void hfp_hf_create_sdp_record(uint8_t * service, uint32_t service_record_handle, int rfcomm_channel_nr, const char * name, uint16_t supported_features, int wide_band_speech);
+void hfp_hf_create_sdp_record_with_codecs(uint8_t * service, uint32_t service_record_handle, int rfcomm_channel_nr,
+                                           const char * name, uint16_t supported_features, uint8_t codecs_nr, const uint8_t * codecs);
 
 /**
  * @brief Set up HFP Hands-Free (HF) device without additional supported features. 
@@ -75,10 +77,10 @@ uint8_t hfp_hf_init(uint8_t rfcomm_channel_nr);
 
 /**
  * @brief Set codecs. 
- * @param codecs_nr
+ * @param codecs_nr  number of codecs in codecs argument
  * @param codecs
  */
-void hfp_hf_init_codecs(int codecs_nr, const uint8_t * codecs);
+void hfp_hf_init_codecs(uint8_t codecs_nr, const uint8_t * codecs);
 
 /**
  * @brief Set supported features.
@@ -569,6 +571,17 @@ void hfp_hf_register_custom_at_command(hfp_custom_at_command_t * custom_at_comma
  * @brief De-Init HFP HF
  */
 void hfp_hf_deinit(void);
+
+/**
+ * @brief Create HFP Hands-Free (HF) SDP service record.
+ * @deprecated Use hfp_hf_create_sdp_record_with_codecs instead
+ * @param service
+ * @param rfcomm_channel_nr
+ * @param name
+ * @param suported_features 32-bit bitmap, see HFP_HFSF_* values in hfp.h
+ * @param wide_band_speech supported
+ */
+void hfp_hf_create_sdp_record(uint8_t * service, uint32_t service_record_handle, int rfcomm_channel_nr, const char * name, uint16_t supported_features, int wide_band_speech);
 
 /* API_END */
 

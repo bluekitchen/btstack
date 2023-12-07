@@ -181,6 +181,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
 
     switch (packet_type){
         case HCI_SCO_DATA_PACKET:
+            // forward received SCO / audio packets to SCO component
+            if (READ_SCO_CONNECTION_HANDLE(event) != sco_handle) break;
             sco_demo_receive(event, event_size);
             break;
         case HCI_EVENT_PACKET:
@@ -190,7 +192,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                     show_usage();
                     break;
                 case HCI_EVENT_SCO_CAN_SEND_NOW:
-                    if (READ_SCO_CONNECTION_HANDLE(event) != sco_handle) break;
                     sco_demo_send(sco_handle);
                     break;
                 case HCI_EVENT_HSP_META:
@@ -284,7 +285,8 @@ int btstack_main(int argc, const char * argv[]){
 
     sdp_init();
     memset(hsp_service_buffer, 0, sizeof(hsp_service_buffer));
-    hsp_hs_create_sdp_record(hsp_service_buffer, 0x10001, rfcomm_channel_nr, hsp_hs_service_name, 0);
+    hsp_hs_create_sdp_record(hsp_service_buffer, sdp_create_service_record_handle(), rfcomm_channel_nr, hsp_hs_service_name, 0);
+    btstack_assert(de_get_len( hsp_service_buffer) <= sizeof(hsp_service_buffer));
     sdp_register_service(hsp_service_buffer);
 
     rfcomm_init();

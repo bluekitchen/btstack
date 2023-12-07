@@ -725,6 +725,7 @@ static int hfp_hf_run_for_audio_connection(hfp_connection_t * hfp_connection){
     if (done) return 1;
     
     if (hfp_connection->codecs_state != HFP_CODECS_EXCHANGED) return 0;
+    if (hfp_sco_setup_active()) return 0;
     if (hci_can_send_command_packet_now() == false) return 0;
     if (hfp_connection->establish_audio_connection){
         hfp_connection->state = HFP_W4_SCO_CONNECTED;
@@ -818,6 +819,20 @@ static void hfp_hf_run_for_context(hfp_connection_t * hfp_connection){
         return;
     }
 #endif
+#ifdef ENABLE_NXP_PCM_WBS
+    if (hfp_connection->nxp_start_audio_handle != HCI_CON_HANDLE_INVALID){
+        hci_con_handle_t sco_handle = hfp_connection->nxp_start_audio_handle;
+        hfp_connection->nxp_start_audio_handle = HCI_CON_HANDLE_INVALID;
+        hci_send_cmd(&hci_nxp_host_pcm_i2s_audio_config, 0, 0, sco_handle, 0);
+        return;
+    }
+    if (hfp_connection->nxp_stop_audio_handle != HCI_CON_HANDLE_INVALID){
+        hci_con_handle_t sco_handle = hfp_connection->nxp_stop_audio_handle;
+        hfp_connection->nxp_stop_audio_handle = HCI_CON_HANDLE_INVALID;
+        hci_send_cmd(&hci_nxp_host_pcm_i2s_audio_config, 1, 0, sco_handle, 0);
+        return;
+    }
+#endif
 #if defined (ENABLE_CC256X_ASSISTED_HFP) || defined (ENABLE_BCM_PCM_WBS)
     if (hfp_connection->state == HFP_W4_WBS_SHUTDOWN){
         hfp_finalize_connection_context(hfp_connection);
@@ -825,9 +840,8 @@ static void hfp_hf_run_for_context(hfp_connection_t * hfp_connection){
     }
 #endif
 
-    if (hfp_connection->accept_sco){
+    if (hfp_connection->accept_sco && (hfp_sco_setup_active() == false)){
         bool incoming_eSCO = hfp_connection->accept_sco == 2;
-        hfp_connection->accept_sco = 0;
         // notify about codec selection if not done already
         if (hfp_connection->negotiated_codec == 0){
             hfp_connection->negotiated_codec = HFP_CODEC_CVSD;
@@ -1552,11 +1566,11 @@ void hfp_hf_deinit(void){
     (void) memset(hfp_hf_phone_number, 0, sizeof(hfp_hf_phone_number));
 }
 
-void hfp_hf_init_codecs(int codecs_nr, const uint8_t * codecs){
+void hfp_hf_init_codecs(uint8_t codecs_nr, const uint8_t * codecs){
     btstack_assert(codecs_nr <= HFP_MAX_NUM_CODECS);
 
     hfp_hf_codecs_nr = codecs_nr;
-    int i;
+    uint8_t i;
     for (i=0; i<codecs_nr; i++){
         hfp_hf_codecs[i] = codecs[i];
     }
@@ -1953,18 +1967,12 @@ uint8_t hfp_hf_deactivate_calling_line_notification(hci_con_handle_t acl_handle)
     return ERROR_CODE_SUCCESS;
 }
 
-static bool hfp_hf_echo_canceling_and_noise_reduction_supported(hfp_connection_t * hfp_connection){
-    int ag = get_bit(hfp_connection->remote_supported_features, HFP_AGSF_EC_NR_FUNCTION);
-    int hf = get_bit(hfp_hf_supported_features, HFP_HFSF_EC_NR_FUNCTION);
-    return hf && ag;
-}
-
 uint8_t hfp_hf_deactivate_echo_canceling_and_noise_reduction(hci_con_handle_t acl_handle){
     hfp_connection_t * hfp_connection = get_hfp_hf_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection) {
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    if (!hfp_hf_echo_canceling_and_noise_reduction_supported(hfp_connection)){
+    if (get_bit(hfp_connection->remote_supported_features, HFP_AGSF_EC_NR_FUNCTION) == 0){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
@@ -2255,34 +2263,64 @@ int hfp_hf_in_band_ringtone_active(hci_con_handle_t acl_handle){
     return get_bit(hfp_connection->remote_supported_features, HFP_AGSF_IN_BAND_RING_TONE);
 }
 
-void hfp_hf_create_sdp_record(uint8_t * service, uint32_t service_record_handle, int rfcomm_channel_nr, const char * name, uint16_t supported_features, int wide_band_speech){
-	if (!name){
-		name = hfp_hf_default_service_name;
-	}
-	hfp_create_sdp_record(service, service_record_handle, BLUETOOTH_SERVICE_CLASS_HANDSFREE, rfcomm_channel_nr, name);
+void hfp_hf_create_sdp_record_with_codecs(uint8_t * service, uint32_t service_record_handle, int rfcomm_channel_nr,
+                                          const char * name, uint16_t supported_features, uint8_t codecs_nr, const uint8_t * codecs){
+    if (!name){
+        name = hfp_hf_default_service_name;
+    }
+    hfp_create_sdp_record(service, service_record_handle, BLUETOOTH_SERVICE_CLASS_HANDSFREE, rfcomm_channel_nr, name);
 
-	// Construct SupportedFeatures for SDP bitmap:
-	//
-	// "The values of the “SupportedFeatures” bitmap given in Table 5.4 shall be the same as the values
-	//  of the Bits 0 to 4 of the unsolicited result code +BRSF"
-	//
-	// Wide band speech (bit 5) requires Codec negotiation
-	//
-	uint16_t sdp_features = supported_features & 0x1f;
-	if ( (wide_band_speech != 0) && (supported_features & (1 << HFP_HFSF_CODEC_NEGOTIATION))){
-		sdp_features |= 1 << 5;
-	}
-    
+    // Construct SupportedFeatures for SDP bitmap:
+    //
+    // "The values of the “SupportedFeatures” bitmap given in Table 5.4 shall be the same as the values
+    //  of the Bits 0 to 4 of the unsolicited result code +BRSF"
+    //
+    // Wide band speech (bit 5) and LC3-SWB (bit 8) require Codec negotiation
+    //
+    uint16_t sdp_features = supported_features & 0x1f;
+
     if (supported_features & (1 << HFP_HFSF_ENHANCED_VOICE_RECOGNITION_STATUS)){
         sdp_features |= 1 << 6;
     }
-    
+
     if (supported_features & (1 << HFP_HFSF_VOICE_RECOGNITION_TEXT)){
         sdp_features |= 1 << 7;
     }
-    
-	de_add_number(service, DE_UINT, DE_SIZE_16, 0x0311);    // Hands-Free Profile - SupportedFeatures
-	de_add_number(service, DE_UINT, DE_SIZE_16, sdp_features);
+
+    // codecs
+    if ((supported_features & (1 << HFP_HFSF_CODEC_NEGOTIATION)) != 0){
+        uint8_t i;
+        for (i=0;i<codecs_nr;i++){
+            switch (codecs[i]){
+                case HFP_CODEC_MSBC:
+                    sdp_features |= 1 << 5;
+                    break;
+                case HFP_CODEC_LC3_SWB:
+                    sdp_features |= 1 << 8;
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+
+    de_add_number(service, DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_SUPPORTED_FEATURES);
+    de_add_number(service, DE_UINT, DE_SIZE_16, sdp_features);
+}
+
+// @deprecated, call new API
+void hfp_hf_create_sdp_record(uint8_t * service, uint32_t service_record_handle, int rfcomm_channel_nr, const char * name, uint16_t supported_features, int wide_band_speech){
+    uint8_t codecs_nr;
+    const uint8_t * codecs;
+    const uint8_t wide_band_codecs[] = { HFP_CODEC_MSBC };
+    if (wide_band_speech == 0){
+        codecs_nr = 0;
+        codecs = NULL;
+    } else {
+        codecs_nr = 1;
+        codecs = wide_band_codecs;
+    }
+    hfp_hf_create_sdp_record_with_codecs(service, service_record_handle, rfcomm_channel_nr, name, supported_features, codecs_nr, codecs);
 }
 
 void hfp_hf_register_custom_at_command(hfp_custom_at_command_t * custom_at_command){

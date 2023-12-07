@@ -200,11 +200,11 @@ static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
             gap_stop_scan();
             gap_connect(report.address,report.address_type);
             break;
-        case HCI_EVENT_LE_META:
+        case HCI_EVENT_META_GAP:
             // wait for connection complete
-            if (hci_event_le_meta_get_subevent_code(packet) !=  HCI_SUBEVENT_LE_CONNECTION_COMPLETE) break;
+            if (hci_event_gap_meta_get_subevent_code(packet) !=  GAP_SUBEVENT_LE_CONNECTION_COMPLETE) break;
             printf("\nGATT browser - CONNECTED\n");
-            connection_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
+            connection_handle = gap_subevent_le_connection_complete_get_connection_handle(packet);
             // query primary services
             gatt_client_discover_primary_services(handle_gatt_client_event, connection_handle);
             break;

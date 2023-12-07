@@ -207,12 +207,15 @@ static void cycling_speed_and_cadence_service_response_can_send_now(void * conte
 
 static int cycling_speed_and_cadence_service_write_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
 	UNUSED(con_handle);
-	UNUSED(transaction_mode);
 	UNUSED(offset);
 	UNUSED(buffer_size);
 	cycling_speed_and_cadence_t * instance = &cycling_speed_and_cadence;
 
-	if (attribute_handle == instance->measurement_client_configuration_descriptor_handle){
+    if (transaction_mode != ATT_TRANSACTION_MODE_NONE){
+        return 0;
+    }
+
+    if (attribute_handle == instance->measurement_client_configuration_descriptor_handle){
 		if (buffer_size < 2u){
 			return ATT_ERROR_INVALID_OFFSET;
 		}

@@ -297,7 +297,7 @@ static uint16_t bass_server_read_callback(hci_con_handle_t con_handle, uint16_t 
 }
 
 static bool bass_server_source_remote_modify_source_buffer_valid(uint8_t *buffer, uint16_t buffer_size){
-    if (buffer_size < 10){ 
+    if (buffer_size < 5){
         log_info("Modify Source opcode, buffer too small");
         return false;
     }

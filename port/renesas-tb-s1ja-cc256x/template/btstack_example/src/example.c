@@ -251,19 +251,25 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     con_handle = hci_event_disconnection_complete_get_connection_handle(packet);
                     printf("- LE Connection %04x: disconnect, reason %02x\n", con_handle, hci_event_disconnection_complete_get_reason(packet));                    
                     break;
-                case HCI_EVENT_LE_META:
-                    switch (hci_event_le_meta_get_subevent_code(packet)) {
-                        case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
+                case HCI_EVENT_META_GAP:
+                    // wait for connection complete
+                    switch (hci_event_gap_meta_get_subevent_code(packet)) {
+                        case GAP_SUBEVENT_LE_CONNECTION_COMPLETE:
                             // print connection parameters (without using float operations)
-                            con_handle    = hci_subevent_le_connection_complete_get_connection_handle(packet); 
-                            conn_interval = hci_subevent_le_connection_complete_get_conn_interval(packet);
+                            con_handle    = gap_subevent_le_connection_complete_get_connection_handle(packet);
+                            conn_interval = gap_subevent_le_connection_complete_get_conn_interval(packet);
                             printf("- LE Connection %04x: connected - connection interval %u.%02u ms, latency %u\n", con_handle, conn_interval * 125 / 100,
-                                25 * (conn_interval & 3), hci_subevent_le_connection_complete_get_conn_latency(packet));
-
-                            // request min con interval 15 ms for iOS 11+ 
+                                   25 * (conn_interval & 3), gap_subevent_le_connection_complete_get_conn_latency(packet));
+                            // request min con interval 15 ms for iOS 11+
                             // printf("- LE Connection %04x: request 15 ms connection interval\n", con_handle);
                             // gap_request_connection_parameter_update(con_handle, 12, 12, 0, 0x0048);
                             break;
+                        default:
+                            break;
+                    }
+                    break;
+                case HCI_EVENT_LE_META:
+                    switch (hci_event_le_meta_get_subevent_code(packet)) {
                         case HCI_SUBEVENT_LE_CONNECTION_UPDATE_COMPLETE:
                             // print connection parameters (without using float operations)
                             con_handle    = hci_subevent_le_connection_update_complete_get_connection_handle(packet);

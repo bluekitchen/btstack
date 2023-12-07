@@ -53,7 +53,9 @@
 #include "classic/sdp_util.h"
 #include "classic/sdp_client.h"
 
-#define MAX_ATTRIBUTE_VALUE_SIZE 300
+#ifndef HID_HOST_SDP_MAX_ATTRIBUTE_VALUE_SIZE
+#define HID_HOST_SDP_MAX_ATTRIBUTE_VALUE_SIZE 32
+#endif
 
 #define CONTROL_MESSAGE_BITMASK_SUSPEND             1
 #define CONTROL_MESSAGE_BITMASK_EXIT_SUSPEND        2
@@ -69,8 +71,8 @@ static uint8_t * hid_host_descriptor_storage;
 static uint16_t  hid_host_descriptor_storage_len;
 
 // SDP
-static uint8_t            hid_host_sdp_attribute_value[MAX_ATTRIBUTE_VALUE_SIZE];
-static const unsigned int hid_host_sdp_attribute_value_buffer_size = MAX_ATTRIBUTE_VALUE_SIZE;
+static uint8_t            hid_host_sdp_attribute_value[HID_HOST_SDP_MAX_ATTRIBUTE_VALUE_SIZE];
+static const unsigned int hid_host_sdp_attribute_value_buffer_size = HID_HOST_SDP_MAX_ATTRIBUTE_VALUE_SIZE;
 static uint16_t           hid_host_sdp_context_control_cid = 0;
 
 // connections
@@ -121,12 +123,15 @@ static hid_host_connection_t * hid_host_get_connection_for_l2cap_cid(uint16_t l2
 }
 
 static void hid_descriptor_storage_init(hid_host_connection_t * connection){
+    // reserve remaining space for this connection
+    uint16_t available_space = hid_descriptor_storage_get_available_space();
     connection->hid_descriptor_len = 0;
-    connection->hid_descriptor_max_len = hid_descriptor_storage_get_available_space();
-    connection->hid_descriptor_offset = hid_host_descriptor_storage_len - connection->hid_descriptor_max_len;
+    connection->hid_descriptor_max_len = available_space;
+    connection->hid_descriptor_offset  = hid_host_descriptor_storage_len - available_space;
 }
 
 static bool hid_descriptor_storage_store(hid_host_connection_t * connection, uint8_t byte){
+    // store single hid descriptor byte
     if (connection->hid_descriptor_len >= connection->hid_descriptor_max_len) return false;
 
     hid_host_descriptor_storage[connection->hid_descriptor_offset + connection->hid_descriptor_len] = byte;
@@ -135,24 +140,31 @@ static bool hid_descriptor_storage_store(hid_host_connection_t * connection, uin
 }
 
 static void hid_descriptor_storage_delete(hid_host_connection_t * connection){
-    uint16_t next_offset = connection->hid_descriptor_offset + connection->hid_descriptor_len;
+    uint16_t descriptor_len = connection->hid_descriptor_len;
 
-    memmove(&hid_host_descriptor_storage[connection->hid_descriptor_offset], 
-            &hid_host_descriptor_storage[next_offset],
-            hid_host_descriptor_storage_len - next_offset);
+    if (descriptor_len > 0){
+        uint16_t next_offset = connection->hid_descriptor_offset + connection->hid_descriptor_len;
 
-    connection->hid_descriptor_len = 0;
-    connection->hid_descriptor_offset = 0;
+        // move higher descriptors down
+        memmove(&hid_host_descriptor_storage[connection->hid_descriptor_offset],
+                &hid_host_descriptor_storage[next_offset],
+                hid_host_descriptor_storage_len - next_offset);
 
-    btstack_linked_list_iterator_t it;    
-    btstack_linked_list_iterator_init(&it, &hid_host_connections);
-    while (btstack_linked_list_iterator_has_next(&it)){
-        hid_host_connection_t * conn = (hid_host_connection_t *)btstack_linked_list_iterator_next(&it);
-        if (conn->hid_descriptor_offset >= next_offset){
-            conn->hid_descriptor_offset = next_offset;
-            next_offset += conn->hid_descriptor_len;
+        // fix descriptor offset of higher descriptors
+        btstack_linked_list_iterator_t it;
+        btstack_linked_list_iterator_init(&it, &hid_host_connections);
+        while (btstack_linked_list_iterator_has_next(&it)){
+            hid_host_connection_t * conn = (hid_host_connection_t *)btstack_linked_list_iterator_next(&it);
+            if (conn == connection) continue;
+            if (conn->hid_descriptor_offset >= next_offset){
+                conn->hid_descriptor_offset -= descriptor_len;
+            }
         }
     }
+
+    // clear descriptor
+    connection->hid_descriptor_len = 0;
+    connection->hid_descriptor_offset = 0;
 }
 
 const uint8_t * hid_descriptor_storage_get_descriptor_data(uint16_t hid_cid){
@@ -376,7 +388,134 @@ static void hid_host_finalize_connection(hid_host_connection_t * connection){
     btstack_linked_list_remove(&hid_host_connections, (btstack_linked_item_t*) connection);
     btstack_memory_hid_host_connection_free(connection);
 }
- 
+
+static void hid_host_handle_sdp_hid_descriptor_list(hid_host_connection_t * connection, uint16_t attribute_offset, uint8_t data){
+    // state machine
+    static uint32_t bytes_needed   = 0;
+    static uint32_t bytes_received = 0;
+    static enum {
+        HID_DESCRIPTOR_LIST_ERROR,
+        HID_DESCRIPTOR_LIST_W4_DES_DESCRIPTOR_LIST_START,
+        HID_DESCRIPTOR_LIST_W4_DES_DESCRIPTOR_LIST_HEADER,
+        HID_DESCRIPTOR_LIST_W4_DES_DESCRIPTOR_START,
+        HID_DESCRIPTOR_LIST_W4_DES_DESCRIPTOR_HEADER,
+        HID_DESCRIPTOR_LIST_W4_ITEM_START,
+        HID_DESCRIPTOR_LIST_W4_ITEM_HEADER,
+        HID_DESCRIPTOR_LIST_W4_ITEM_COMPLETE,
+        HID_DESCRIPTOR_LIST_W4_STRING_HEADER,
+        HID_DESCRIPTOR_LIST_W4_STRING_COMPLETE,
+        HID_DESCRIPTOR_LIST_COMPLETE,
+    } state = HID_DESCRIPTOR_LIST_ERROR;
+
+    // init state machine
+    if (attribute_offset == 0){
+        state = HID_DESCRIPTOR_LIST_W4_DES_DESCRIPTOR_LIST_START;
+        bytes_received = 0;
+    }
+
+    // next step
+    bool stored;
+    bool error = false;
+    switch (state){
+        case HID_DESCRIPTOR_LIST_W4_DES_DESCRIPTOR_LIST_START:
+            hid_host_sdp_attribute_value[bytes_received++] = data;
+            if (de_get_element_type(hid_host_sdp_attribute_value) == DE_DES){
+                bytes_needed = de_get_header_size(hid_host_sdp_attribute_value);
+                state = HID_DESCRIPTOR_LIST_W4_DES_DESCRIPTOR_LIST_HEADER;
+            } else {
+                error = true;
+            }
+            break;
+        case HID_DESCRIPTOR_LIST_W4_DES_DESCRIPTOR_LIST_HEADER:
+            hid_host_sdp_attribute_value[bytes_received++] = data;
+            if (bytes_received >= bytes_needed) {
+                bytes_received = 0;
+                state = HID_DESCRIPTOR_LIST_W4_DES_DESCRIPTOR_START;
+            }
+            break;
+        case HID_DESCRIPTOR_LIST_W4_DES_DESCRIPTOR_START:
+            hid_host_sdp_attribute_value[bytes_received++] = data;
+            if (de_get_element_type(hid_host_sdp_attribute_value) == DE_DES){
+                bytes_needed = de_get_header_size(hid_host_sdp_attribute_value);
+                state = HID_DESCRIPTOR_LIST_W4_DES_DESCRIPTOR_HEADER;
+            } else {
+                error = true;
+            }
+            break;
+        case HID_DESCRIPTOR_LIST_W4_DES_DESCRIPTOR_HEADER:
+            hid_host_sdp_attribute_value[bytes_received++] = data;
+            if (bytes_received >= bytes_needed) {
+                bytes_received = 0;
+                state = HID_DESCRIPTOR_LIST_W4_ITEM_START;
+            }
+            break;
+        case HID_DESCRIPTOR_LIST_W4_ITEM_START:
+            hid_host_sdp_attribute_value[bytes_received++] = data;
+            bytes_needed = de_get_header_size(hid_host_sdp_attribute_value);
+            if (de_get_element_type(hid_host_sdp_attribute_value) == DE_STRING){
+                state = HID_DESCRIPTOR_LIST_W4_STRING_HEADER;
+            } else {
+                if (bytes_needed > 1){
+                    state = HID_DESCRIPTOR_LIST_W4_ITEM_HEADER;
+                } else {
+                    bytes_needed = de_get_len(hid_host_sdp_attribute_value);
+                    state = HID_DESCRIPTOR_LIST_W4_ITEM_COMPLETE;
+                }
+            }
+            break;
+        case HID_DESCRIPTOR_LIST_W4_ITEM_HEADER:
+            hid_host_sdp_attribute_value[bytes_received++] = data;
+            if (bytes_received >= bytes_needed) {
+                bytes_needed = de_get_len(hid_host_sdp_attribute_value);
+                state = HID_DESCRIPTOR_LIST_W4_ITEM_COMPLETE;
+            }
+            break;
+        case HID_DESCRIPTOR_LIST_W4_ITEM_COMPLETE:
+            // ignore data for non-string item
+            bytes_received++;
+            if (bytes_received >= bytes_needed) {
+                bytes_received = 0;
+                state = HID_DESCRIPTOR_LIST_W4_ITEM_START;
+            }
+            break;
+        case HID_DESCRIPTOR_LIST_W4_STRING_HEADER:
+            hid_host_sdp_attribute_value[bytes_received++] = data;
+            if (bytes_received >= bytes_needed) {
+                bytes_received = 0;
+                bytes_needed = de_get_data_size(hid_host_sdp_attribute_value);
+                state = HID_DESCRIPTOR_LIST_W4_STRING_COMPLETE;
+            }
+            break;
+        case HID_DESCRIPTOR_LIST_W4_STRING_COMPLETE:
+            stored = hid_descriptor_storage_store(connection, data);
+            if (stored) {
+                bytes_received++;
+                if (bytes_received >= bytes_needed) {
+                    connection->hid_descriptor_status = ERROR_CODE_SUCCESS;
+                    log_info_hexdump(&hid_host_descriptor_storage[connection->hid_descriptor_offset],
+                                     connection->hid_descriptor_len);
+                    state = HID_DESCRIPTOR_LIST_COMPLETE;
+                }
+            } else {
+                error = true;
+            }
+            break;
+        case HID_DESCRIPTOR_LIST_ERROR:
+        case HID_DESCRIPTOR_LIST_COMPLETE:
+            // ignore data
+            break;
+        default:
+            btstack_unreachable();
+            break;
+    }
+
+    if (error){
+        log_info("Descriptor List invalid, state %u", (int) state);
+        state = HID_DESCRIPTOR_LIST_ERROR;
+        connection->hid_descriptor_status = ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
+    }
+}
+
 static void hid_host_handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) {
     UNUSED(packet_type);
     UNUSED(channel);
@@ -400,16 +539,29 @@ static void hid_host_handle_sdp_client_query_result(uint8_t packet_type, uint16_
     }
 
     btstack_assert(connection->state == HID_HOST_W4_SDP_QUERY_RESULT);
-    
+
+    uint16_t  attribute_id;
+    uint16_t  attribute_offset;
+    uint8_t   attribute_data;
     switch (hci_event_packet_get_type(packet)){
         case SDP_EVENT_QUERY_ATTRIBUTE_VALUE:
 
+            attribute_id = sdp_event_query_attribute_byte_get_attribute_id(packet);
+            attribute_offset = sdp_event_query_attribute_byte_get_data_offset(packet);
+            attribute_data = sdp_event_query_attribute_byte_get_data(packet);
+
+            // process BLUETOOTH_ATTRIBUTE_HID_DESCRIPTOR_LIST with state machine
+            if (attribute_id == BLUETOOTH_ATTRIBUTE_HID_DESCRIPTOR_LIST){
+                hid_host_handle_sdp_hid_descriptor_list(connection, attribute_offset, attribute_data);
+                break;
+            }
+
             if (sdp_event_query_attribute_byte_get_attribute_length(packet) <= hid_host_sdp_attribute_value_buffer_size) {
 
-                hid_host_sdp_attribute_value[sdp_event_query_attribute_byte_get_data_offset(packet)] = sdp_event_query_attribute_byte_get_data(packet);
+                hid_host_sdp_attribute_value[attribute_offset] = attribute_data;
 
-                if ((uint16_t)(sdp_event_query_attribute_byte_get_data_offset(packet)+1) == sdp_event_query_attribute_byte_get_attribute_length(packet)) {
-                    switch(sdp_event_query_attribute_byte_get_attribute_id(packet)) {
+                if ((uint16_t)(attribute_offset + 1) == sdp_event_query_attribute_byte_get_attribute_length(packet)) {
+                    switch(attribute_id) {
                         
                         case BLUETOOTH_ATTRIBUTE_PROTOCOL_DESCRIPTOR_LIST:
                             for (des_iterator_init(&attribute_list_it, hid_host_sdp_attribute_value); des_iterator_has_more(&attribute_list_it); des_iterator_next(&attribute_list_it)) {
@@ -456,32 +608,6 @@ static void hid_host_handle_sdp_client_query_result(uint8_t packet_type, uint16_
                             }
                             break;
                         
-                        case BLUETOOTH_ATTRIBUTE_HID_DESCRIPTOR_LIST:
-                            for (des_iterator_init(&attribute_list_it, hid_host_sdp_attribute_value); des_iterator_has_more(&attribute_list_it); des_iterator_next(&attribute_list_it)) {
-                                if (des_iterator_get_type(&attribute_list_it) != DE_DES) continue;
-                                des_element = des_iterator_get_element(&attribute_list_it);
-                                for (des_iterator_init(&additional_des_it, des_element); des_iterator_has_more(&additional_des_it); des_iterator_next(&additional_des_it)) {                                    
-                                    if (des_iterator_get_type(&additional_des_it) != DE_STRING) continue;
-                                    element = des_iterator_get_element(&additional_des_it);
-                                    
-                                    const uint8_t * descriptor = de_get_string(element);
-                                    uint16_t descriptor_len = de_get_data_size(element);
-                                    
-                                    uint16_t i;
-                                    bool stored = false;
-                                    
-                                    connection->hid_descriptor_status = ERROR_CODE_SUCCESS;
-                                    for (i = 0; i < descriptor_len; i++){
-                                        stored = hid_descriptor_storage_store(connection, descriptor[i]);
-                                        if (!stored){
-                                            connection->hid_descriptor_status = ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
-                                            break;
-                                        }
-                                    }
-                                }
-                            }                        
-                            break;
-
                         case BLUETOOTH_ATTRIBUTE_HIDSSR_HOST_MAX_LATENCY:
                             if (de_get_element_type(hid_host_sdp_attribute_value) == DE_UINT) {
                                 uint16_t host_max_latency;
@@ -931,7 +1057,8 @@ static void hid_host_packet_handler(uint8_t packet_type, uint16_t channel, uint8
                             case HID_HOST_W4_INTERRUPT_CONNECTION_ESTABLISHED:
                                 if (connection->set_protocol){
                                     connection->set_protocol = false;
-                                    uint8_t header = (HID_MESSAGE_TYPE_SET_PROTOCOL << 4) | connection->requested_protocol_mode;
+                                    uint8_t protocol_mode = connection->requested_protocol_mode == HID_PROTOCOL_MODE_BOOT ? 0 : 1;
+                                    uint8_t header = (HID_MESSAGE_TYPE_SET_PROTOCOL << 4) | protocol_mode;
                                     uint8_t report[] = {header};
                                     connection->w4_set_protocol_response = true;
                                     l2cap_send(connection->control_cid, (uint8_t*) report, sizeof(report));

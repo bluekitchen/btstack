@@ -61,8 +61,8 @@
 
 static float rcos[CVSD_OLAL] = {
     0.99148655f,0.92510857f,
-    0.80131732f,0.63683150f, 
-    0.45386582f,0.27713082f, 
+    0.80131732f,0.63683150f,
+    0.45386582f,0.27713082f,
     0.13049554f,0.03376389f};
 
 float btstack_cvsd_plc_rcos(int index){
@@ -78,7 +78,7 @@ static float sqrt3(const float x){
         float x;
     } u;
     u.x = x;
-    u.i = (1<<29) + (u.i >> 1) - (1<<22); 
+    u.i = (1<<29) + (u.i >> 1) - (1<<22);
 
     // Two Babylonian Steps (simplified from:)
     // u.x = 0.5f * (u.x + x/u.x);
@@ -95,10 +95,10 @@ static float btstack_cvsd_plc_absolute(float x){
 }
 
 static float btstack_cvsd_plc_cross_correlation(BTSTACK_CVSD_PLC_SAMPLE_FORMAT *x, BTSTACK_CVSD_PLC_SAMPLE_FORMAT *y){
-    float num = 0;
-    float den = 0;
-    float x2 = 0;
-    float y2 = 0;
+    float num = 0.f;
+    float den = 0.f;
+    float x2 = 0.f;
+    float y2 = 0.f;
     int   m;
     for (m=0;m<CVSD_M;m++){
         num+=((float)x[m])*y[m];
@@ -110,15 +110,15 @@ static float btstack_cvsd_plc_cross_correlation(BTSTACK_CVSD_PLC_SAMPLE_FORMAT *
 }
 
 int btstack_cvsd_plc_pattern_match(BTSTACK_CVSD_PLC_SAMPLE_FORMAT *y){
-    float maxCn = -999999.0;  // large negative number
+    float maxCn = -999999.f;  // large negative number
     int   bestmatch = 0;
     float Cn;
     int   n;
     for (n=0;n<CVSD_N;n++){
-        Cn = btstack_cvsd_plc_cross_correlation(&y[CVSD_LHIST-CVSD_M], &y[n]); 
+        Cn = btstack_cvsd_plc_cross_correlation(&y[CVSD_LHIST-CVSD_M], &y[n]);
         if (Cn>maxCn){
             bestmatch=n;
-            maxCn = Cn; 
+            maxCn = Cn;
         }
     }
     return bestmatch;
@@ -127,10 +127,10 @@ int btstack_cvsd_plc_pattern_match(BTSTACK_CVSD_PLC_SAMPLE_FORMAT *y){
 float btstack_cvsd_plc_amplitude_match(btstack_cvsd_plc_state_t *plc_state, uint16_t num_samples, BTSTACK_CVSD_PLC_SAMPLE_FORMAT *y, BTSTACK_CVSD_PLC_SAMPLE_FORMAT bestmatch){
     UNUSED(plc_state);
     int   i;
-    float sumx = 0;
+    float sumx = 0.f;
     float sumy = 0.000001f;
     float sf;
-    
+
     for (i=0;i<num_samples;i++){
         sumx += btstack_cvsd_plc_absolute(y[CVSD_LHIST-num_samples+i]);
         sumy += btstack_cvsd_plc_absolute(y[bestmatch+i]);
@@ -138,14 +138,14 @@ float btstack_cvsd_plc_amplitude_match(btstack_cvsd_plc_state_t *plc_state, uint
     sf = sumx/sumy;
     // This is not in the paper, but limit the scaling factor to something reasonable to avoid creating artifacts 
     if (sf<0.75f) sf=0.75f;
-    if (sf>1.0) sf=1.0f;
+    if (sf>1.f) sf=1.f;
     return sf;
 }
 
 BTSTACK_CVSD_PLC_SAMPLE_FORMAT btstack_cvsd_plc_crop_sample(float val){
     float croped_val = val;
-    if (croped_val > 32767.0)  croped_val= 32767.0;
-    if (croped_val < -32768.0) croped_val=-32768.0; 
+    if (croped_val > 32767.f)  croped_val= 32767.f;
+    if (croped_val < -32768.f) croped_val=-32768.f;
     return (BTSTACK_CVSD_PLC_SAMPLE_FORMAT) croped_val;
 }
 
@@ -196,7 +196,7 @@ static FILE * open_octave_file(btstack_cvsd_plc_state_t *plc_state, octave_frame
              octave_base_name, plc_state->frame_count,
              octave_frame_type2str(octave_frame_type));
     oct_file_name[sizeof(oct_file_name) - 1] = 0;
-    
+
     FILE * oct_file = fopen(oct_file_name, "wb");
     if (oct_file == NULL){
         printf("OCTAVE: could not open file %s\n", oct_file_name);
@@ -211,13 +211,13 @@ static void octave_fprintf_plot_history_frame(btstack_cvsd_plc_state_t *plc_stat
     char hist_name[10];
     snprintf(hist_name, sizeof(hist_name), "hist%d", plc_state->nbf);
     hist_name[sizeof(hist_name) - 1] = 0;
-            
+
     octave_fprintf_array_int16(oct_file, hist_name, CVSD_LHIST, plc_state->hist);
 
     fprintf(oct_file, "y = [min(%s):1000:max(%s)];\n", hist_name, hist_name);
     fprintf(oct_file, "x = zeros(1, size(y,2));\n");
     fprintf(oct_file, "b = [0: %d];\n", CVSD_LHIST+CVSD_FS+CVSD_RT+CVSD_OLAL);
-    
+
     int pos = CVSD_FS;
     fprintf(oct_file, "shift_x = x + %d;\n", pos);
 
@@ -233,48 +233,48 @@ static void octave_fprintf_plot_history_frame(btstack_cvsd_plc_state_t *plc_stat
     fprintf(oct_file, "lhist_rt_x = x + %d;\n", pos);
 
     fprintf(oct_file, "pattern_window_x = x + %d;\n", CVSD_LHIST - CVSD_M);
-    
+
     fprintf(oct_file, "hf = figure();\n");
     snprintf(title, sizeof(title), "PLC %s frame %d",
              octave_frame_type2str(octave_frame_type), frame_nr);
     title[sizeof(title) - 1] = 0;
-    
+
     fprintf(oct_file, "hold on;\n");
     fprintf(oct_file, "h1 = plot(%s); \n", hist_name);
-    
-    fprintf(oct_file, "title(\"%s\");\n", title); 
-    
-    fprintf(oct_file, "plot(lhist_x, y, 'k'); \n"); 
-    fprintf(oct_file, "text(max(lhist_x) - 10, max(y)+1000, 'lhist'); \n"); 
+
+    fprintf(oct_file, "title(\"%s\");\n", title);
+
+    fprintf(oct_file, "plot(lhist_x, y, 'k'); \n");
+    fprintf(oct_file, "text(max(lhist_x) - 10, max(y)+1000, 'lhist'); \n");
 
     fprintf(oct_file, "plot(lhist_olal1_x, y, 'k'); \n");
-    fprintf(oct_file, "text(max(lhist_olal1_x) - 10, max(y)+1000, 'OLAL'); \n"); 
+    fprintf(oct_file, "text(max(lhist_olal1_x) - 10, max(y)+1000, 'OLAL'); \n");
 
     fprintf(oct_file, "plot(lhist_fs_x, y, 'k'); \n");
-    fprintf(oct_file, "text(max(lhist_fs_x) - 10, max(y)+1000, 'FS'); \n"); 
+    fprintf(oct_file, "text(max(lhist_fs_x) - 10, max(y)+1000, 'FS'); \n");
 
     fprintf(oct_file, "plot(lhist_olal2_x, y, 'k'); \n");
-    fprintf(oct_file, "text(max(lhist_olal2_x) - 10, max(y)+1000, 'OLAL'); \n"); 
+    fprintf(oct_file, "text(max(lhist_olal2_x) - 10, max(y)+1000, 'OLAL'); \n");
 
     fprintf(oct_file, "plot(lhist_rt_x, y, 'k');\n");
-    fprintf(oct_file, "text(max(lhist_rt_x) - 10, max(y)+1000, 'RT'); \n"); 
+    fprintf(oct_file, "text(max(lhist_rt_x) - 10, max(y)+1000, 'RT'); \n");
 
     if (octave_frame_type == OCTAVE_FRAME_TYPE_GOOD) return;
 
     int x0 = plc_state->bestlag;
     int x1 = plc_state->bestlag + CVSD_M - 1;
     fprintf(oct_file, "plot(b(%d:%d), %s(%d:%d), 'rd'); \n", x0, x1, hist_name, x0, x1);
-    fprintf(oct_file, "text(%d - 10, -10, 'bestlag'); \n", x0); 
+    fprintf(oct_file, "text(%d - 10, -10, 'bestlag'); \n", x0);
 
     x0 = plc_state->bestlag + CVSD_M ;
     x1 = plc_state->bestlag + CVSD_M + CVSD_FS - 1;
     fprintf(oct_file, "plot(b(%d:%d), %s(%d:%d), 'kd'); \n", x0, x1, hist_name, x0, x1);
-    
+
     x0 = CVSD_LHIST - CVSD_M;
     x1 = CVSD_LHIST - 1;
     fprintf(oct_file, "plot(b(%d:%d), %s(%d:%d), 'rd'); \n", x0, x1, hist_name, x0, x1);
     fprintf(oct_file, "plot(pattern_window_x, y, 'g'); \n");
-    fprintf(oct_file, "text(max(pattern_window_x) - 10, max(y)+1000, 'M'); \n"); 
+    fprintf(oct_file, "text(max(pattern_window_x) - 10, max(y)+1000, 'M'); \n");
 }
 
 static void octave_fprintf_plot_output(btstack_cvsd_plc_state_t *plc_state, FILE * oct_file){
@@ -317,7 +317,7 @@ void btstack_cvsd_plc_bad_frame(btstack_cvsd_plc_state_t *plc_state, uint16_t nu
     int   i;
     float sf = 1;
     plc_state->nbf++;
-    
+
     if (plc_state->max_consecutive_bad_frames_nr < plc_state->nbf){
         plc_state->max_consecutive_bad_frames_nr = plc_state->nbf;
     }
@@ -330,26 +330,26 @@ void btstack_cvsd_plc_bad_frame(btstack_cvsd_plc_state_t *plc_state, uint16_t nu
 #ifdef OCTAVE_OUTPUT
     FILE * oct_file = open_octave_file(plc_state, OCTAVE_FRAME_TYPE_BAD);
     if (oct_file){
-        octave_fprintf_plot_history_frame(plc_state, oct_file, plc_state->frame_count);   
+        octave_fprintf_plot_history_frame(plc_state, oct_file, plc_state->frame_count);
     }
 #endif
 
     if (plc_state->nbf==1){
         // the replication begins after the template match
-        plc_state->bestlag += CVSD_M; 
-        
+        plc_state->bestlag += CVSD_M;
+
         // Compute Scale Factor to Match Amplitude of Substitution Packet to that of Preceding Packet
         sf = btstack_cvsd_plc_amplitude_match(plc_state, num_samples, plc_state->hist, plc_state->bestlag);
         for (i=0; i<CVSD_OLAL; i++){
             val = sf*plc_state->hist[plc_state->bestlag+i];
             plc_state->hist[CVSD_LHIST+i] = btstack_cvsd_plc_crop_sample(val);
         }
-        
+
         for (i=CVSD_OLAL; i<num_samples; i++){
-            val = sf*plc_state->hist[plc_state->bestlag+i]; 
+            val = sf*plc_state->hist[plc_state->bestlag+i];
             plc_state->hist[CVSD_LHIST+i] = btstack_cvsd_plc_crop_sample(val);
         }
-        
+
         for (i=num_samples; i<(num_samples+CVSD_OLAL); i++){
             float left  = sf*plc_state->hist[plc_state->bestlag+i];
             float right = plc_state->hist[plc_state->bestlag+i];
@@ -369,7 +369,7 @@ void btstack_cvsd_plc_bad_frame(btstack_cvsd_plc_state_t *plc_state, uint16_t nu
     for (i=0; i<num_samples; i++){
         out[i] = plc_state->hist[CVSD_LHIST+i];
     }
-    
+
     // shift the history buffer 
     for (i=0; i<(CVSD_LHIST+CVSD_RT+CVSD_OLAL); i++){
         plc_state->hist[i] = plc_state->hist[i+num_samples];
@@ -399,7 +399,7 @@ void btstack_cvsd_plc_good_frame(btstack_cvsd_plc_state_t *plc_state, uint16_t n
         for (i=0;i<CVSD_RT;i++){
             out[i] = plc_state->hist[CVSD_LHIST+i];
         }
-            
+
         for (i=CVSD_RT;i<(CVSD_RT+CVSD_OLAL);i++){
             float left  = plc_state->hist[CVSD_LHIST+i];
             float right = in[i];
@@ -498,7 +498,7 @@ void btstack_cvsd_plc_process_data(btstack_cvsd_plc_state_t * plc_state, bool is
         plc_state->good_frames_nr++;
         if (plc_state->good_frames_nr == 1){
             log_info("First good frame at index %d\n", plc_state->frame_count-1);
-        } 
+        }
         plc_state->good_samples += num_samples;
     }
 }
@@ -507,5 +507,5 @@ void btstack_cvsd_dump_statistics(btstack_cvsd_plc_state_t * state){
     log_info("Good frames: %d\n", state->good_frames_nr);
     log_info("Bad frames: %d\n", state->bad_frames_nr);
     log_info("Zero frames: %d\n", state->zero_frames_nr);
-    log_info("Max Consecutive bad frames: %d\n", state->max_consecutive_bad_frames_nr);   
+    log_info("Max Consecutive bad frames: %d\n", state->max_consecutive_bad_frames_nr);
 }

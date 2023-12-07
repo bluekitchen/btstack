@@ -97,8 +97,8 @@ TEST(SDPRecordBuilder, A2DP_SINK){
     const char * service_provider_name;
     int expected_len;
 
-    service_name = "";
-    service_provider_name = "";
+    service_name = ".";
+    service_provider_name = ".";
     expected_len = a2dp_sink_record_size(service_name, service_provider_name);
     a2dp_sink_create_sdp_record(service_buffer, 0, 0, service_name, service_provider_name);
     CHECK_EQUAL(de_get_len(service_buffer), expected_len);
@@ -122,20 +122,8 @@ TEST(SDPRecordBuilder, A2DP_SOURCE){
     const char * service_provider_name;
     int expected_len;
 
-    service_name = "";
-    service_provider_name = "";
-    expected_len = a2dp_source_record_size(service_name, service_provider_name);
-    a2dp_source_create_sdp_record(service_buffer, 0, 0, service_name, service_provider_name);
-    CHECK_EQUAL(de_get_len(service_buffer), expected_len);
-
-    service_name = NULL;
-    service_provider_name = "";
-    expected_len = a2dp_source_record_size(service_name, service_provider_name);
-    a2dp_source_create_sdp_record(service_buffer, 0, 0, service_name, service_provider_name);
-    CHECK_EQUAL(de_get_len(service_buffer), expected_len);
-
-    service_name = NULL;
-    service_provider_name = NULL;
+    service_name = ".";
+    service_provider_name = ".";
     expected_len = a2dp_source_record_size(service_name, service_provider_name);
     a2dp_source_create_sdp_record(service_buffer, 0, 0, service_name, service_provider_name);
     CHECK_EQUAL(de_get_len(service_buffer), expected_len);
@@ -162,8 +150,8 @@ TEST(SDPRecordBuilder, AVRCP_TARGET){
     int expected_len;
     int descriptor_size;
 
-    service_name = "";
-    service_provider_name = "";
+    service_name = ".";
+    service_provider_name = ".";
     descriptor_size = 0;
     expected_len = avrcp_target_record_size(service_name, service_provider_name);
     avrcp_target_create_sdp_record(service_buffer, 0, 0, service_name, service_provider_name);
@@ -191,8 +179,8 @@ TEST(SDPRecordBuilder, AVRCP_CONTROLLER){
     int expected_len;
     int descriptor_size;
 
-    service_name = "";
-    service_provider_name = "";
+    service_name = ".";
+    service_provider_name = ".";
     descriptor_size = 0;
     expected_len = avrcp_controller_record_size(service_name, service_provider_name);
     avrcp_controller_create_sdp_record(service_buffer, 0, 0, service_name, service_provider_name);
@@ -238,7 +226,7 @@ TEST(SDPRecordBuilder, HFP_HF){
     const char * name;
     int expected_len;
 
-    name = "";
+    name = ".";
     expected_len = hfp_hf_record_size(name);
     hfp_hf_create_sdp_record(service_buffer, 0, 0, name, 0, 0);
     CHECK_EQUAL(de_get_len(service_buffer), expected_len);
@@ -263,7 +251,7 @@ TEST(SDPRecordBuilder, HFP_AG){
     const char * name;
     int expected_len;
 
-    name = "";
+    name = ".";
     expected_len = hfp_ag_record_size(name);
     hfp_ag_create_sdp_record(service_buffer, 0, 0, name, 0, 0, 0);
     CHECK_EQUAL(de_get_len(service_buffer), expected_len);

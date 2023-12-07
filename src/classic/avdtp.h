@@ -56,6 +56,9 @@
 extern "C" {
 #endif
 
+// Limit L2CAP MTU to fit largest packet for BR/EDR
+#define AVDTP_L2CAP_MTU (HCI_ACL_3DH5_SIZE - L2CAP_HEADER_SIZE)
+
 #define AVDTP_MAX_NUM_SEPS 10
 #define AVDTP_MAX_CSRC_NUM 15
 #define AVDTP_MAX_CONTENT_PROTECTION_TYPE_VALUE_LEN 10
@@ -670,6 +673,13 @@ void    avdtp_set_preferred_sampling_frequency(avdtp_stream_endpoint_t * stream_
 void    avdtp_set_preferred_channel_mode(avdtp_stream_endpoint_t * stream_endpoint, uint8_t channel_mode);
 
 void    avdtp_set_preferred_sbc_channel_mode(avdtp_stream_endpoint_t * stream_endpoint, uint32_t sampling_frequency);
+
+/**
+ * @brief Get highest sampling frequency
+ * @param sampling_frequency_bitmap
+ * @return highest frequency or 0
+ */
+uint16_t avdtp_get_highest_sampling_frequency(uint8_t sampling_frequency_bitmap);
 
 avdtp_channel_mode_t avdtp_choose_sbc_channel_mode(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_channel_mode_bitmap);
 avdtp_sbc_allocation_method_t avdtp_choose_sbc_allocation_method(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_allocation_method_bitmap);

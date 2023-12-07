@@ -269,9 +269,9 @@ int btstack_main(void)
     // init SDP, create record for SPP and register with SDP
     sdp_init();
     memset(spp_service_buffer, 0, sizeof(spp_service_buffer));
-    spp_create_sdp_record(spp_service_buffer, 0x10001, RFCOMM_SERVER_CHANNEL, "SPP Counter");
+    spp_create_sdp_record(spp_service_buffer, sdp_create_service_record_handle(), RFCOMM_SERVER_CHANNEL, "SPP Counter");
+    btstack_assert(de_get_len( spp_service_buffer) <= sizeof(spp_service_buffer));
     sdp_register_service(spp_service_buffer);
-    printf("SDP service record size: %u\n", de_get_len(spp_service_buffer));
 
 #ifdef ENABLE_GATT_OVER_CLASSIC
     // init SDP, create record for GATT and register with SDP

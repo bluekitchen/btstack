@@ -58,7 +58,9 @@ def create_examples(script_path, suffix):
     for file in os.listdir(examples_embedded):
         if not file.endswith(".c"):
             continue
-        if file in ['panu_demo.c', 'sco_demo_util.c', 'ant_test.c']:
+        if file in ['panu_demo.c', 'ant_test.c']:
+            continue
+        if 'demo_util' in file:
             continue
 
         example = file[:-2]

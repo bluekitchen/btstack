@@ -311,7 +311,7 @@ TEST_GROUP(GATTClient){
 
 	void reset_query_state(void){
 		gatt_client_t * gatt_client = get_gatt_client(gatt_client_handle);
-		gatt_client->gatt_client_state = P_READY;
+		gatt_client->state = P_READY;
 		
 		gatt_client_set_required_security_level(LEVEL_0);
 		gatt_client_mtu_enable_auto_negotiation(1);
@@ -324,7 +324,7 @@ TEST_GROUP(GATTClient){
 	void set_wrong_gatt_client_state(void){
 		gatt_client_t * gatt_client = get_gatt_client(gatt_client_handle);
 	    CHECK_TRUE(gatt_client != NULL);
-	    gatt_client->gatt_client_state = P_W2_SEND_SERVICE_QUERY;
+	    gatt_client->state = P_W2_SEND_SERVICE_QUERY;
 	}
 };
 

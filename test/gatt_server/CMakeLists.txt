@@ -1,14 +1,14 @@
 cmake_minimum_required (VERSION 3.5)
 project(gatt_server)
 
-# fink pkgconfig
+# pkgconfig
 find_package(PkgConfig REQUIRED)
 
-# add CppUTest
-include_directories("/usr/local/include")
-link_directories("/usr/local/lib")
-link_libraries( CppUTest )
-link_libraries( CppUTestExt )
+# CppuTest
+pkg_check_modules(CPPUTEST REQUIRED CppuTest)
+include_directories(${CPPUTEST_INCLUDE_DIRS})
+link_directories(${CPPUTEST_LIBRARY_DIRS})
+link_libraries(${CPPUTEST_LIBRARIES})
 
 include_directories(.)
 include_directories(../mock/)

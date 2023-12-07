@@ -453,15 +453,14 @@ int btstack_main(int argc, const char * argv[]){
         hid_device_name
     };
     
-    hid_create_sdp_record(hid_service_buffer, 0x10001, &hid_params);
-
-    printf("HID service record size: %u\n", de_get_len( hid_service_buffer));
+    hid_create_sdp_record(hid_service_buffer, sdp_create_service_record_handle(), &hid_params);
+    btstack_assert(de_get_len( hid_service_buffer) <= sizeof(hid_service_buffer));
     sdp_register_service(hid_service_buffer);
 
     // See https://www.bluetooth.com/specifications/assigned-numbers/company-identifiers if you don't have a USB Vendor ID and need a Bluetooth Vendor ID
     // device info: BlueKitchen GmbH, product 1, version 1
-    device_id_create_sdp_record(device_id_sdp_service_buffer, 0x10003, DEVICE_ID_VENDOR_ID_SOURCE_BLUETOOTH, BLUETOOTH_COMPANY_ID_BLUEKITCHEN_GMBH, 1, 1);
-    printf("Device ID SDP service record size: %u\n", de_get_len((uint8_t*)device_id_sdp_service_buffer));
+    device_id_create_sdp_record(device_id_sdp_service_buffer, sdp_create_service_record_handle(), DEVICE_ID_VENDOR_ID_SOURCE_BLUETOOTH, BLUETOOTH_COMPANY_ID_BLUEKITCHEN_GMBH, 1, 1);
+    btstack_assert(de_get_len( device_id_sdp_service_buffer) <= sizeof(device_id_sdp_service_buffer));
     sdp_register_service(device_id_sdp_service_buffer);
 
     // HID Device

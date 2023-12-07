@@ -741,7 +741,6 @@ int btstack_main(int argc, const char * argv[]){
         (1<<HFP_AGSF_VOICE_RECOGNITION_TEXT) |
         (1<<HFP_AGSF_EC_NR_FUNCTION) |
         (1<<HFP_AGSF_THREE_WAY_CALLING);
-    int wide_band_speech = 1;
 
     // HFP
     rfcomm_init();
@@ -756,8 +755,9 @@ int btstack_main(int argc, const char * argv[]){
     // SDP Server
     sdp_init();
     memset(hfp_service_buffer, 0, sizeof(hfp_service_buffer));
-    hfp_ag_create_sdp_record( hfp_service_buffer, 0x10001, rfcomm_channel_nr, hfp_ag_service_name, 0, supported_features, wide_band_speech);
-    printf("SDP service record size: %u\n", de_get_len( hfp_service_buffer));
+    hfp_ag_create_sdp_record_with_codecs( hfp_service_buffer, sdp_create_service_record_handle(),
+                                          rfcomm_channel_nr, hfp_ag_service_name, 0, supported_features, sizeof(codecs), codecs);
+    btstack_assert(de_get_len( hfp_service_buffer) <= sizeof(hfp_service_buffer));
     sdp_register_service(hfp_service_buffer);
     
     // register for HCI events and SCO packets

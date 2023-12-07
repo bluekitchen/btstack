@@ -1133,7 +1133,7 @@ static void ll_handle_control(ll_pdu_t * rx_packet){
             ctx.channel_map_update_pending   = true;
             break;
         case PDU_DATA_LLCTRL_TYPE_CONN_UPDATE_IND:
-            ctx.conn_param_update_win_size        = tx_packet->payload[1];
+            ctx.conn_param_update_win_size        = rx_packet->payload[1];
             ctx.conn_param_update_win_offset      = little_endian_read_16(rx_packet->payload, 2);
             ctx.conn_param_update_interval_1250us = little_endian_read_16(rx_packet->payload, 4);
             ctx.conn_param_update_latency         = little_endian_read_16(rx_packet->payload, 6);

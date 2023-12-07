@@ -2219,7 +2219,7 @@ static void config_node_identity_set_handler(mesh_model_t *mesh_model, mesh_pdu_
 
 //
 
-const static mesh_operation_t mesh_configuration_server_model_operations[] = {
+static const mesh_operation_t mesh_configuration_server_model_operations[] = {
     { MESH_FOUNDATION_OPERATION_APPKEY_ADD,                                  19, config_appkey_add_handler },
     { MESH_FOUNDATION_OPERATION_APPKEY_DELETE,                                3, config_appkey_delete_handler },
     { MESH_FOUNDATION_OPERATION_APPKEY_GET,                                   2, config_appkey_get_handler },

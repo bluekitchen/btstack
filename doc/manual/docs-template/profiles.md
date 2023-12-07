@@ -630,8 +630,8 @@ identify a Characteristic without hard-coding the attribute ID, the GATT
 compiler creates a list of defines in the generated \*.h file.
 
 Similar to other protocols, it might be not possible to send any time.
-To send a Notification, you can call *att_server_request_can_send_now*
-to receive a ATT_EVENT_CAN_SEND_NOW event.
+To send a Notification, you can call *att_server_request_to_send_notification*
+to request a callback, when yuo can send the Notification.
 
 If your application cannot handle an ATT Read Request in the *att_read_callback*
 in some situations, you can enable support for this by adding ENABLE_ATT_DELAYED_RESPONSE
@@ -718,7 +718,7 @@ Step 4:
 As described [above](#sec:GATTServerProfiles) all read/write requests are handled by the application.
 To implement the new services as a reusable module, it's necessary to get access to all read/write requests related to this service.
 
-For this, the ATT DB allows to register read/write callbacks for a specific handle range with *att_server_register_can_send_now_callback()*.
+For this, the ATT DB allows to register read/write callbacks for a specific handle range with *att_server_register_service_handler()*.
 
 Since the handle range depends on the application's .gatt file, the handle range for Primary and Secondary Services can be queried with *gatt_server_get_get_handle_range_for_service_with_uuid16*.
 

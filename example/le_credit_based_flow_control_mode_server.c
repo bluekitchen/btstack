@@ -136,21 +136,21 @@ static void test_track_data(le_cbm_connection_t * context, int bytes_transferred
  /* LISTING_START(streamer): Streaming code */
 static void streamer(void){
 
-    if (le_data_channel_connection.cid == 0) return;
+    if (le_cbm_connection.cid == 0) return;
 
     // create test data
-    le_data_channel_connection.counter++;
-    if (le_data_channel_connection.counter > 'Z') le_data_channel_connection.counter = 'A';
-    memset(le_data_channel_connection.test_data, le_data_channel_connection.counter, le_data_channel_connection.test_data_len);
+    le_cbm_connection.counter++;
+    if (le_cbm_connection.counter > 'Z') le_cbm_connection.counter = 'A';
+    memset(le_cbm_connection.test_data, le_cbm_connection.counter, le_cbm_connection.test_data_len);
 
     // send
-    l2cap_cbm_send_data(le_data_channel_connection.cid, (uint8_t *) le_data_channel_connection.test_data, le_data_channel_connection.test_data_len);
+    l2cap_send(le_cbm_connection.cid, (uint8_t *) le_cbm_connection.test_data, le_cbm_connection.test_data_len);
 
     // track
-    test_track_data(&le_data_channel_connection, le_data_channel_connection.test_data_len);
+    test_track_data(&le_cbm_connection, le_cbm_connection.test_data_len);
 
     // request another packet
-    l2cap_cbm_request_can_send_now_event(le_data_channel_connection.cid);
+    l2cap_request_can_send_now_event(le_cbm_connection.cid);
 } 
 /* LISTING_END */
 #endif
@@ -189,20 +189,26 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     printf("%c: Disconnect, reason 0x%02x\n", le_cbm_connection.name, hci_event_disconnection_complete_get_reason(packet));
                     le_cbm_connection.connection_handle = HCI_CON_HANDLE_INVALID;
                     break;
-                case HCI_EVENT_LE_META:
-                    switch (hci_event_le_meta_get_subevent_code(packet)) {
-                        case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
+                case HCI_EVENT_META_GAP:
+                    switch (hci_event_gap_meta_get_subevent_code(packet)) {
+                        case GAP_SUBEVENT_LE_CONNECTION_COMPLETE:
                             // print connection parameters (without using float operations)
-                            conn_interval = hci_subevent_le_connection_complete_get_conn_interval(packet);
+                            conn_interval = gap_subevent_le_connection_complete_get_conn_interval(packet);
                             printf("%c: Connection Interval: %u.%02u ms\n", le_cbm_connection.name, conn_interval * 125 / 100, 25 * (conn_interval & 3));
-                            printf("%c: Connection Latency: %u\n", le_cbm_connection.name, hci_subevent_le_connection_complete_get_conn_latency(packet));
+                            printf("%c: Connection Latency: %u\n", le_cbm_connection.name, gap_subevent_le_connection_complete_get_conn_latency(packet));
 
-                            // min con interval 15 ms - supported from iOS 11 
+                            // min con interval 15 ms - supported from iOS 11
                             gap_request_connection_parameter_update(le_cbm_connection.connection_handle, 12, 12, 4, 0x0048);
                             printf("Connected, requesting conn param update for handle 0x%04x\n", le_cbm_connection.connection_handle);
-                            // 
+                            //
                             test_reset(&le_cbm_connection);
                             break;
+                        default:
+                            break;
+                    }
+                    break;
+                case HCI_EVENT_LE_META:
+                    switch (hci_event_le_meta_get_subevent_code(packet)) {
                         case HCI_SUBEVENT_LE_CONNECTION_UPDATE_COMPLETE:
                             // print connection parameters (without using float operations)
                             conn_interval = hci_subevent_le_connection_update_complete_get_conn_interval(packet);
@@ -247,7 +253,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                         printf("Test packet size: %u\n", le_cbm_connection.test_data_len);
                         test_reset(&le_cbm_connection);
 #ifdef TEST_STREAM_DATA
-                        l2cap_cbm_request_can_send_now_event(le_data_channel_connection.cid);
+                        l2cap_request_can_send_now_event(le_cbm_connection.cid);
 #endif
                     } else {
                         printf("L2CAP: Connection to device %s failed, status 0x%02x\n", bd_addr_to_str(event_address), status);
@@ -260,7 +266,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     break;
 
 #ifdef TEST_STREAM_DATA
-                case L2CAP_EVENT_CBM_CAN_SEND_NOW:
+                case L2CAP_EVENT_CAN_SEND_NOW:
                     streamer();
                     break;
 #endif

@@ -195,11 +195,18 @@ void reverse_bd_addr(const bd_addr_t src, bd_addr_t dest);
  */
 bool btstack_is_null(const uint8_t * buffer, uint16_t size);
 
+/**
+ * @brief Check if all bytes in a bd_addr_t are zero
+ * @param addr
+ * @return true if all bytes in addr are zero
+ */
+bool btstack_is_null_bd_addr( const bd_addr_t addr );
+
 /** 
  * @brief ASCII character for 4-bit nibble
  * @return character
  */
-char char_for_nibble(int nibble);
+char char_for_nibble(uint8_t nibble);
 
 /**
  * @brif 4-bit nibble from ASCII character
@@ -275,9 +282,9 @@ void uuid_add_bluetooth_prefix(uint8_t * uuid128, uint32_t short_uuid);
 /**
  * @brief Checks if UUID128 has Bluetooth base UUID prefix
  * @param uui128 to test
- * @return 1 if it can be expressed as UUID32
+ * @return true if it can be expressed as UUID32
  */
-int  uuid_has_bluetooth_prefix(const uint8_t * uuid128);
+bool uuid_has_bluetooth_prefix(const uint8_t * uuid128);
 
 /**
  * @brief Parse unsigned number 
@@ -316,6 +323,33 @@ uint8_t btstack_crc8_check(uint8_t * data, uint16_t len, uint8_t check_sum);
  * @param len
  */
 uint8_t btstack_crc8_calc(uint8_t * data, uint16_t len);
+
+
+/**
+ * @brief Calculate the initial CRC32 value using ISO 3309 (HDLC), polynomial (normal) 0x04c11db7
+ * @note Used by OTS Service. 
+ * 
+ * @return  The initial crc value.
+ */
+uint32_t btstack_crc32_init(void);
+
+/**
+ * @brief Update the CRC32 value with new data.
+ *
+ * @param crc      The current crc value.
+ * @param data     Pointer to a buffer of \a data_len bytes.
+ * @param data_len Number of bytes in the \a data buffer.
+ * @return             The updated crc value.
+ */
+uint32_t btstack_crc32_update(uint32_t crc, const uint8_t * data, uint32_t data_len);
+
+/**
+ * @brief Calculate the final CRC32 value.
+ *
+ * @param crc  The current crc value.
+ * @return     The final crc value.
+ */
+uint32_t btstack_crc32_finalize(uint32_t crc);
 
 /**
  * @brief Get next cid

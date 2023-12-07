@@ -38,7 +38,7 @@ GATT Services are in general easy to implement and require short development tim
 **In Development:** LE Audio and more.
 
 It has been qualified with the Bluetooth SIG (QDID 166433) for A2DP 1.3.2, AVCTP 1.4, AVDTP 1.3, AVRCP 1.6.2, DID 1.3, GAVDP 1.3, HFP 1.8, HSP 1.2, PAN 1.0, PBAP Client 1.2, RFCOMM 1.2, SPP 1.2 BR/EDR protocol/profiles, 
-BAS 1.0, CPP 1.1, CPS 1.1, CSCP 1.0, CSCS 1.0, DIS 1.1, HIDS 1.0, HOGP 1.0, HRP 1.0, HRS 1.0, SCPP 1.0, SCPS 1.0 GATT profiles as well as and GAP, GATT, IOP, SM of the Bluetooth Core 5.2 specification. 
+BAS 1.0, CPP 1.1, CPS 1.1, CSCP 1.0, CSCS 1.0, DIS 1.1, HIDS 1.0, HOGP 1.0, HRP 1.0, HRS 1.0, SCPP 1.0, SCPS 1.0 GATT profiles as well as and ATT, GAP, GATT, IOP, L2CAP, SDP, SM of the Bluetooth Core 5.2 specification. 
 
 For information on Apple's MFi/iAP2 and Find My profiles, please <a href="mailto:contact@bluekitchen-gmbh.com">contact us directly</a>.
 
@@ -61,6 +61,7 @@ For information on Apple's MFi/iAP2 and Find My profiles, please <a href="mailto
 #### Other Platforms:     
 | Status                                                                                                                                                                       | Port                                                                                                  | Platform                                                                                                   |
 |------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------|
+| No build server                                                                                                                                                              | [freebsd-netgraph](https://github.com/bluekitchen/btstack/tree/master/port/freebsd-netgraph)                   | FreeBSD port that uses kernel netgraph HCI node 
 | [<img src="https://buildbot.bluekitchen-gmbh.com/btstack/badges/port-libusb-master.svg">](https://buildbot.bluekitchen-gmbh.com/btstack/#/builders/port-libusb-master)     | [libusb](https://github.com/bluekitchen/btstack/tree/master/port/libusb)                             | Unix-based system with dedicated USB Bluetooth dongle                                                      |
 | No build server                                                                                                                                                              | [libusb-intel](https://github.com/bluekitchen/btstack/tree/master/port/libusb-intel)                 | Unix-based system with Intel Wireless 8260/8265 Controller                                                 |
 | [<img src="https://buildbot.bluekitchen-gmbh.com/btstack/badges/port-posix-h4-master.svg">](https://buildbot.bluekitchen-gmbh.com/btstack/#/builders/port-posix-h4-master) | [posix-h4](https://github.com/bluekitchen/btstack/tree/master/port/posix-h4)                         | Unix-based system connected to Bluetooth module via H4 over serial port                                    |

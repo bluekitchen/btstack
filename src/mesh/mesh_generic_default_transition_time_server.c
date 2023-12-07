@@ -121,7 +121,7 @@ static void generic_default_transition_time_set_unacknowledged_handler(mesh_mode
 }
 
 // Generic On Off Message
-const static mesh_operation_t mesh_generic_default_transition_time_model_operations[] = {
+static const mesh_operation_t mesh_generic_default_transition_time_model_operations[] = {
     { MESH_GENERIC_DEFAULT_TRANSITION_TIME_GET,                                   0, generic_default_transition_time_get_handler },
     { MESH_GENERIC_DEFAULT_TRANSITION_TIME_SET,                                   1, generic_default_transition_time_set_handler },
     { MESH_GENERIC_DEFAULT_TRANSITION_TIME_SET_UNACKNOWLEDGED,                    1, generic_default_transition_time_set_unacknowledged_handler },
