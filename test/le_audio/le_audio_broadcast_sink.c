@@ -694,6 +694,9 @@ int btstack_main(int argc, const char * argv[]){
     setup_advertising();
     gap_periodic_advertising_sync_transfer_set_default_parameters(2, 0, 0x2000, 0);
 
+    // setup audio processing
+    le_audio_demo_util_sink_init("le_audio_broadcast_sink.wav");
+
     // turn on!
     hci_power_control(HCI_POWER_ON);
 
