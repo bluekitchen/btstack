@@ -5,6 +5,8 @@ prefix  = @prefix@
 CC      = @CC@
 LDFLAGS = @LDFLAGS@
 CFLAGS  = @CFLAGS@ \
+    -I ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/include \
+    -I ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/include \
     -I ${BTSTACK_ROOT}/3rd-party/micro-ecc \
     -I ${BTSTACK_ROOT}/3rd-party/rijndael  \
     -I ${BTSTACK_ROOT}/chipset/intel \
