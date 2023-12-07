@@ -429,8 +429,7 @@ void le_audio_demo_util_sink_configure_broadcast(uint8_t num_streams, uint8_t nu
     printf("PLC: initial timeout    %u ms\n", plc_timeout_initial_ms);
     printf("PLC: subsequent timeout %u ms\n", plc_timeout_subsequent_ms);
 
-    le_audio_demo_util_sink_configure_unicast(num_streams, num_channels_per_stream, sampling_frequency_hz, frame_duration,
-                                              octets_per_frame, iso_interval_1250us, pre_transmission_offset);
+    le_audio_demo_util_sink_configure_general(num_streams, num_channels_per_stream, sampling_frequency_hz, frame_duration, octets_per_frame, iso_interval_1250us);
 }
 
 void le_audio_demo_util_sink_receive(uint8_t stream_index, uint8_t *packet, uint16_t size) {
