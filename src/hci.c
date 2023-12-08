@@ -4496,7 +4496,20 @@ static void event_handler(uint8_t *packet, uint16_t size){
                             uint8_t num_bis = btstack_min(big_sync->num_bis, packet[16]);
                             uint8_t i;
                             for (i=0;i<num_bis;i++){
-                                big_sync->bis_con_handles[i] = little_endian_read_16(packet, 17 + (2 * i));
+                                hci_con_handle_t bis_handle = little_endian_read_16(packet, 17 + (2 * i));
+                                big_sync->bis_con_handles[i] = bis_handle;
+                                // setup iso_stream_t
+                                btstack_linked_list_iterator_t it;
+                                btstack_linked_list_iterator_init(&it, &hci_stack->iso_streams);
+                                while (btstack_linked_list_iterator_has_next(&it)){
+                                    hci_iso_stream_t * iso_stream = (hci_iso_stream_t *) btstack_linked_list_iterator_next(&it);
+                                    if ((iso_stream->state == HCI_ISO_STREAM_STATE_REQUESTED ) &&
+                                        (iso_stream->group_id == big_sync->big_handle)){
+                                        iso_stream->cis_handle = bis_handle;
+                                        iso_stream->state = HCI_ISO_STREAM_STATE_ESTABLISHED;
+                                        break;
+                                    }
+                                }
                             }
                             if (big_sync->state == LE_AUDIO_BIG_STATE_W4_ESTABLISHED) {
                                 // trigger iso path setup
@@ -10301,6 +10314,23 @@ uint8_t gap_big_sync_create(le_audio_big_sync_t * storage, le_audio_big_sync_par
     }
     if (big_sync_params->num_bis > MAX_NR_BIS){
         return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
+
+    // reserve ISO Streams
+    uint8_t i;
+    uint8_t status = ERROR_CODE_SUCCESS;
+    for (i=0;i<big_sync_params->num_bis;i++){
+        hci_iso_stream_t * iso_stream = hci_iso_stream_create(HCI_ISO_TYPE_BIS, HCI_ISO_STREAM_STATE_REQUESTED, big_sync_params->big_handle, i);
+        if (iso_stream == NULL) {
+            status = ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
+            break;
+        }
+    }
+
+    // free structs on error
+    if (status != ERROR_CODE_SUCCESS){
+        hci_iso_stream_finalize_by_type_and_group_id(HCI_ISO_TYPE_BIS, big_sync_params->big_handle);
+        return status;
     }
 
     le_audio_big_sync_t * big_sync = storage;
