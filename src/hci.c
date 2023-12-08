@@ -10245,7 +10245,11 @@ static void hci_iso_notify_can_send_now(void){
 }
 
 uint8_t gap_big_create(le_audio_big_t * storage, le_audio_big_params_t * big_params){
+    // make big handle unique and usuable for big and big sync
     if (hci_big_for_handle(big_params->big_handle) != NULL){
+        return ERROR_CODE_ACL_CONNECTION_ALREADY_EXISTS;
+    }
+    if (hci_big_sync_for_handle(big_params->big_handle) != NULL){
         return ERROR_CODE_ACL_CONNECTION_ALREADY_EXISTS;
     }
     if (big_params->num_bis == 0){
@@ -10285,6 +10289,10 @@ uint8_t gap_big_create(le_audio_big_t * storage, le_audio_big_params_t * big_par
 }
 
 uint8_t gap_big_sync_create(le_audio_big_sync_t * storage, le_audio_big_sync_params_t * big_sync_params){
+    // make big handle unique and usuable for big and big sync
+    if (hci_big_for_handle(big_sync_params->big_handle) != NULL){
+        return ERROR_CODE_ACL_CONNECTION_ALREADY_EXISTS;
+    }
     if (hci_big_sync_for_handle(big_sync_params->big_handle) != NULL){
         return ERROR_CODE_ACL_CONNECTION_ALREADY_EXISTS;
     }
