@@ -4425,7 +4425,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
                         uint8_t status = packet[3];
                         if (status == ERROR_CODE_SUCCESS){
                             // store bis_con_handles and trigger iso path setup
-                            uint8_t num_bis = btstack_min(MAX_NR_BIS, packet[20]);
+                            uint8_t num_bis = btstack_min(big->num_bis, packet[20]);
                             uint8_t i;
                             for (i=0;i<num_bis;i++){
                                 hci_con_handle_t bis_handle = (hci_con_handle_t) little_endian_read_16(packet, 21 + (2 * i));
@@ -4493,7 +4493,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
                         uint8_t big_handle = packet[4];
                         if (status == ERROR_CODE_SUCCESS){
                             // store bis_con_handles and trigger iso path setup
-                            uint8_t num_bis = btstack_min(MAX_NR_BIS, packet[16]);
+                            uint8_t num_bis = btstack_min(big_sync->num_bis, packet[16]);
                             uint8_t i;
                             for (i=0;i<num_bis;i++){
                                 big_sync->bis_con_handles[i] = little_endian_read_16(packet, 17 + (2 * i));
