@@ -10257,26 +10257,26 @@ static void hci_iso_notify_can_send_now(void){
     }
 }
 
-uint8_t gap_big_create(le_audio_big_t * storage, le_audio_big_params_t * big_params){
+static uint8_t gap_big_setup_iso_streams(uint8_t num_bis, uint8_t big_handle){
     // make big handle unique and usuable for big and big sync
-    if (hci_big_for_handle(big_params->big_handle) != NULL){
+    if (hci_big_for_handle(big_handle) != NULL){
         return ERROR_CODE_ACL_CONNECTION_ALREADY_EXISTS;
     }
-    if (hci_big_sync_for_handle(big_params->big_handle) != NULL){
+    if (hci_big_sync_for_handle(big_handle) != NULL){
         return ERROR_CODE_ACL_CONNECTION_ALREADY_EXISTS;
     }
-    if (big_params->num_bis == 0){
+    if (num_bis == 0){
         return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
     }
-    if (big_params->num_bis > MAX_NR_BIS){
+    if (num_bis > MAX_NR_BIS){
         return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
     }
 
     // reserve ISO Streams
     uint8_t i;
     uint8_t status = ERROR_CODE_SUCCESS;
-    for (i=0;i<big_params->num_bis;i++){
-        hci_iso_stream_t * iso_stream = hci_iso_stream_create(HCI_ISO_TYPE_BIS, HCI_ISO_STREAM_STATE_REQUESTED, big_params->big_handle, i);
+    for (i=0;i<num_bis;i++){
+        hci_iso_stream_t * iso_stream = hci_iso_stream_create(HCI_ISO_TYPE_BIS, HCI_ISO_STREAM_STATE_REQUESTED, big_handle, i);
         if (iso_stream == NULL) {
             status = ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
             break;
@@ -10285,7 +10285,15 @@ uint8_t gap_big_create(le_audio_big_t * storage, le_audio_big_params_t * big_par
 
     // free structs on error
     if (status != ERROR_CODE_SUCCESS){
-        hci_iso_stream_finalize_by_type_and_group_id(HCI_ISO_TYPE_BIS, big_params->big_handle);
+        hci_iso_stream_finalize_by_type_and_group_id(HCI_ISO_TYPE_BIS, big_handle);
+    }
+
+    return status;
+}
+
+uint8_t gap_big_create(le_audio_big_t * storage, le_audio_big_params_t * big_params){
+    uint8_t status = gap_big_setup_iso_streams(big_params->num_bis, big_params->big_handle);
+    if (status != ERROR_CODE_SUCCESS){
         return status;
     }
 
@@ -10302,34 +10310,8 @@ uint8_t gap_big_create(le_audio_big_t * storage, le_audio_big_params_t * big_par
 }
 
 uint8_t gap_big_sync_create(le_audio_big_sync_t * storage, le_audio_big_sync_params_t * big_sync_params){
-    // make big handle unique and usuable for big and big sync
-    if (hci_big_for_handle(big_sync_params->big_handle) != NULL){
-        return ERROR_CODE_ACL_CONNECTION_ALREADY_EXISTS;
-    }
-    if (hci_big_sync_for_handle(big_sync_params->big_handle) != NULL){
-        return ERROR_CODE_ACL_CONNECTION_ALREADY_EXISTS;
-    }
-    if (big_sync_params->num_bis == 0){
-        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
-    }
-    if (big_sync_params->num_bis > MAX_NR_BIS){
-        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
-    }
-
-    // reserve ISO Streams
-    uint8_t i;
-    uint8_t status = ERROR_CODE_SUCCESS;
-    for (i=0;i<big_sync_params->num_bis;i++){
-        hci_iso_stream_t * iso_stream = hci_iso_stream_create(HCI_ISO_TYPE_BIS, HCI_ISO_STREAM_STATE_REQUESTED, big_sync_params->big_handle, i);
-        if (iso_stream == NULL) {
-            status = ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
-            break;
-        }
-    }
-
-    // free structs on error
+    uint8_t status = gap_big_setup_iso_streams(big_sync_params->num_bis, big_sync_params->big_handle);
     if (status != ERROR_CODE_SUCCESS){
-        hci_iso_stream_finalize_by_type_and_group_id(HCI_ISO_TYPE_BIS, big_sync_params->big_handle);
         return status;
     }
 
