@@ -10398,7 +10398,7 @@ uint8_t gap_cig_create(le_audio_cig_t * storage, le_audio_cig_params_t * cig_par
     if (cig_params->num_cis == 0){
         return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
     }
-    if (cig_params->num_cis > MAX_NR_BIS){
+    if (cig_params->num_cis > MAX_NR_CIS){
         return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
     }
 
