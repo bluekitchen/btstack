@@ -492,6 +492,10 @@ static void mcs_client_packet_handler(uint8_t packet_type, uint16_t channel, uin
                    gattservice_subevent_mcs_client_connected_get_status(packet),
                    gattservice_subevent_client_connected_get_cid(packet));
             break;
+        case GATTSERVICE_SUBEVENT_MCS_CLIENT_DISCONNECTED:
+            printf("MCS Client: disconnected\n");
+            mcs_cid = 0;
+            break;
         default:
             break;
     }
