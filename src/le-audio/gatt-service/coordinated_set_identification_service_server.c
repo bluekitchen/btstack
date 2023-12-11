@@ -35,6 +35,9 @@
  *
  */
 
+// this service won't work without following define
+#ifdef ENABLE_ATT_DELAYED_RESPONSE
+
 #define BTSTACK_FILE__ "coordinated_set_identification_service_server.c"
 
 #include "ble/att_db.h"
@@ -712,4 +715,6 @@ uint8_t coordinated_set_identification_service_server_simulate_member_connected(
     }
     return ERROR_CODE_SUCCESS;
 }
+
+#endif
 
