@@ -62,6 +62,9 @@
 #include "mods/mod.h"
 #include "le_audio_demo_util_source.h"
 
+// Interoperability with Nordic LE Audio demo
+//#define NRF5340_BROADCAST_MODE
+
 // PTS mode
 // #define PTS_MODE
 
@@ -105,11 +108,17 @@ static const uint8_t extended_adv_data[] = {
         BROADCAST_ID & 0xff,
         // name
 #ifdef PTS_MODE
-        7, BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME, 'P', 'T', 'S', '-', 'x', 'x'
+         7, BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME, 'P', 'T', 'S', '-', 'x', 'x',
+         7, BLUETOOTH_DATA_TYPE_BROADCAST_NAME ,     'P', 'T', 'S', '-', 'x', 'x',
 #elif defined(COUNT_MODE)
-        6, BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME, 'C', 'O', 'U', 'N', 'T'
+         6, BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME, 'C', 'O', 'U', 'N', 'T',
+         6, BLUETOOTH_DATA_TYPE_BROADCAST_NAME,      'C', 'O', 'U', 'N', 'T',
+#elif defined(NRF5340_BROADCAST_MODE)
+        20, BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME, 'N','R','F','5','3','4','0','_','B','R','O','A','D','C','A','S','T','E','R',
+        20, BLUETOOTH_DATA_TYPE_BROADCAST_NAME,      'N','R','F','5','3','4','0','_','B','R','O','A','D','C','A','S','T','E','R',
 #else
-        7, BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME, 'S', 'o', 'u', 'r', 'c', 'e'
+         7, BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME, 'S', 'o', 'u', 'r', 'c', 'e',
+         7, BLUETOOTH_DATA_TYPE_BROADCAST_NAME,      'S', 'o', 'u', 'r', 'c', 'e',
 #endif
 };
 
@@ -162,7 +171,11 @@ static uint8_t encryption = 0;
 static uint8_t broadcast_code [] = {0x01, 0x02, 0x68, 0x05, 0x53, 0xF1, 0x41, 0x5A, 0xA2, 0x65, 0xBB, 0xAF, 0xC6, 0xEA, 0x03, 0xB8, };
 
 // audio producer
+#ifdef COUNT_MODE
+static le_audio_demo_source_generator audio_source = AUDIO_SOURCE_COUNTER;
+#else
 static le_audio_demo_source_generator audio_source = AUDIO_SOURCE_MODPLAYER;
+#endif
 
 static enum {
     APP_IDLE,
@@ -323,7 +336,7 @@ static void start_broadcast() {// use values from table
             0x05, 0x03, 0x02, 0x00, 0x00, 0x00
     };
     le_audio_base_builder_t builder;
-    le_audio_base_builder_init(&builder, period_adv_data, sizeof(period_adv_data), 40);
+    le_audio_base_builder_init(&builder, period_adv_data, sizeof(period_adv_data), 20000);
     le_audio_base_builder_add_subgroup(&builder, codec_id,
                                        sizeof(subgroup_codec_specific_configuration),
                                        subgroup_codec_specific_configuration,
@@ -358,6 +371,10 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     menu_sampling_frequency = 5;
                     menu_variant = 4;
                     start_broadcast();
+#elif defined( NRF5340_BROADCAST_MODE )
+                    num_bis = 1;
+                    menu_sampling_frequency = 5;
+                    menu_variant = 1;
 #else
                     show_usage();
                     printf("Please select sample frequency and variation, then start broadcast\n");

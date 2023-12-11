@@ -87,8 +87,6 @@
 
 static void show_usage(void);
 
-static const char * filename_wav = "le_audio_broadcast_sink.wav";
-
 static enum {
     APP_W4_WORKING,
     APP_W4_BROADCAST_ADV,
@@ -177,7 +175,6 @@ static le_audio_big_sync_params_t big_sync_params;
 // lc3 codec config
 static uint16_t sampling_frequency_hz;
 static btstack_lc3_frame_duration_t frame_duration;
-static uint16_t number_samples_per_frame;
 static uint16_t octets_per_frame;
 static uint8_t  num_bis;
 
@@ -656,13 +653,20 @@ static void stdin_process(char c){
 }
 
 static void iso_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) {
+    void (*packet_receive)(uint8_t stream_index, uint8_t *packet, uint16_t size) = le_audio_demo_util_sink_receive;
+
     // get stream_index from con_handle
     uint16_t header = little_endian_read_16(packet, 0);
     hci_con_handle_t con_handle = header & 0x0fff;
     uint8_t i;
+
+    if (count_mode){
+        packet_receive = le_audio_demo_util_sink_count;
+    }
+
     for (i=0;i<num_bis;i++){
         if (bis_con_handles[i] == con_handle) {
-            le_audio_demo_util_sink_receive(i, packet, size);
+            packet_receive(i, packet, size);
         }
     }
 }
