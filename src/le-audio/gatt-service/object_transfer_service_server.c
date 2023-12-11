@@ -506,7 +506,7 @@ static void ots_server_can_send_now(void * context){
         if (connection->current_object != NULL){
             uint8_t value[7];
             value[0] = connection->change_flag;
-            reverse_48(&value[1], (uint8_t *)connection->current_object->luid);
+            reverse_48((uint8_t *)connection->current_object->luid, &value[1]);
 
             uint16_t attribute_handle = ots_server_get_value_handle_for_characteristic_index(OTS_OBJECT_CHANGED_INDEX);
             att_server_indicate(connection->con_handle, attribute_handle, value, sizeof(value));

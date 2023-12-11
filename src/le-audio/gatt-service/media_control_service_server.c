@@ -346,6 +346,7 @@ static msc_characteristic_id_t msc_server_find_index_for_attribute_handle(media_
 		}
 	}
 	btstack_assert(false);
+    return -1;
 }
 
 static void mcs_server_emit_media_value_changed(media_control_service_server_t * media_player, msc_characteristic_id_t characteristic_id){
@@ -681,7 +682,7 @@ static uint16_t mcs_server_read_callback(hci_con_handle_t con_handle, uint16_t a
 		return 0;
 	}
 
-	handle_type_t type;
+	handle_type_t type = -1;
 	msc_characteristic_id_t characteristic_id = msc_server_find_index_for_attribute_handle(media_player, attribute_handle, &type);
 
 	switch (type){
@@ -812,7 +813,7 @@ static int mcs_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
 		return 0;
 	}
 	
-	handle_type_t type;
+	handle_type_t type = -1;
 	msc_characteristic_id_t characteristic_id = msc_server_find_index_for_attribute_handle(media_player, attribute_handle, &type);
     media_control_point_opcode_t      media_control_point_opcode;
     media_control_point_error_code_t  media_control_point_result_code;
