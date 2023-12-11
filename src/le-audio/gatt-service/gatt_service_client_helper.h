@@ -103,16 +103,12 @@ typedef struct {
 } gatt_service_client_connection_helper_t;
 
 typedef struct {
-    uint16_t uuid16;
-} gatt_service_client_characteristic_desc16_t;
-
-typedef struct {
     btstack_linked_list_t connections;
     uint16_t cid_counter;
 
     // characteristics
     uint8_t  characteristics_desc16_num;
-    const gatt_service_client_characteristic_desc16_t * characteristics_desc16;
+    const uint16_t * characteristics_desc16;
     
     btstack_packet_callback_registration_t hci_event_callback_registration;
     
@@ -170,7 +166,7 @@ uint8_t gatt_service_client_connect(
         gatt_service_client_characteristic_t * characteristics, uint8_t characteristics_num,
         btstack_packet_handler_t packet_handler, uint16_t * connection_cid);
 
-bool gatt_service_client_can_query_characteristic(gatt_service_client_connection_helper_t * connection, uint8_t characteristic_index);
+uint8_t gatt_service_client_can_query_characteristic(gatt_service_client_connection_helper_t * connection, uint8_t characteristic_index);
 
 uint8_t gatt_service_client_disconnect(gatt_service_client_helper_t * client, uint16_t connection_cid);
 
