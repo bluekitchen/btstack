@@ -9,7 +9,7 @@ find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 
 project(BTstack-Zephyr)
 
-set(BTSTACK_ROOT ${CMAKE_SOURCE_DIR}/../../)
+set(BTSTACK_ROOT ${CMAKE_SOURCE_DIR}/../..)
 if( DEFINED ENV{BTSTACK_ROOT} )
     set(BTSTACK_ROOT $ENV{BTSTACK_ROOT})
 endif()
@@ -40,6 +40,7 @@ list(APPEND INCLUDES_PATH chipset/zephyr)
 list(APPEND INCLUDES_PATH platform/embedded)
 list(APPEND INCLUDES_PATH platform/lwip)
 list(APPEND INCLUDES_PATH platform/lwip/port)
+list(APPEND INCLUDES_PATH example )
 list(TRANSFORM INCLUDES_PATH PREPEND ${BTSTACK_ROOT}/)
 list(APPEND INCLUDES_PATH . )
 include_directories( ${INCLUDES_PATH} )
@@ -163,7 +164,7 @@ if(DEFINED ENV{EXAMPLE})
 endif()
 
 list(SORT EXAMPLES)
-file(GLOB EXAMPLES_GATT "${BTSTACK_ROOT}/example/*.gatt")
+file(GLOB EXAMPLES_GATT "${BTSTACK_ROOT}/example/*.gatt" "${BTSTACK_ROOT}/test/le_audio/*.gatt")
 
 # on Mac 10.14, adding lwip to libstack results in a yet not understood link error
 # workaround: add lwip sources only to lwip_examples
@@ -179,27 +180,35 @@ foreach(EXAMPLE ${EXAMPLES})
     else()
         set (SOURCES_EXAMPLE ${EXAMPLE}.c)
     endif()
+
     list(APPEND SOURCES_EXAMPLE "${CMAKE_SOURCE_DIR}/src/main.c")
-    message("${BTSTACK_ROOT}")
-    message("${SOURCES_EXAMPLE}")
+    list(APPEND SOURCES_EXAMPLE "${BTSTACK_ROOT}/example/le_audio_demo_util_sink.c")
+    list(APPEND SOURCES_EXAMPLE "${BTSTACK_ROOT}/example/le_audio_demo_util_source.c")
+
     # add lwip sources for lwip examples
     if ( "${LWIP_EXAMPLES}" MATCHES ${EXAMPLE} )
         list(APPEND SOURCES_EXAMPLE ${SOURCES_LWIP})
     endif()
 
     # add GATT DB creation
-    if ( "${EXAMPLES_GATT}" MATCHES ${EXAMPLE} )
+    foreach ( GATT ${EXAMPLES_GATT} )
+        if( GATT MATCHES ${EXAMPLE} )
         message("example ${EXAMPLE} -- with GATT DB")
+        get_filename_component( out_f ${GATT} NAME )
+        set(out_f "${CMAKE_CURRENT_BINARY_DIR}/${out_f}")
+        string(REGEX REPLACE "\\.[^.]*$" ".h" out_f ${out_f})
+        message( ${out_f} )
         add_custom_command(
-            OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
-            DEPENDS ${BTSTACK_ROOT}/example/${EXAMPLE}.gatt
+            OUTPUT ${out_f}
+            DEPENDS ${GATT}
             COMMAND ${Python_EXECUTABLE}
-            ARGS ${BTSTACK_ROOT}/tool/compile_gatt.py ${BTSTACK_ROOT}/example/${EXAMPLE}.gatt ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
+            ARGS ${BTSTACK_ROOT}/tool/compile_gatt.py ${GATT} ${out_f}
+            COMMENT "Generate ${out_f}"
+            VERBATIM
         )
-        list(APPEND SOURCES_EXAMPLE ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h)
-    else()
-        message("example ${EXAMPLE}")
+        list(APPEND SOURCES_EXAMPLE ${out_f})
     endif()
+    endforeach(GATT)
     target_sources( app PRIVATE ${SOURCES_EXAMPLE} )
     target_link_libraries( app PRIVATE btstack )
 endforeach(EXAMPLE)
