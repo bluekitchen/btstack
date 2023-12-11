@@ -62,14 +62,6 @@ typedef enum {
     CSIS_CHARACTERISTIC_INDEX_RFU                   
 } csis_characteristic_index_t;
 
-static char * csis_characteristic_index_name[] = {
-    "SIRK",
-    "SIZE", 
-    "LOCK", 
-    "RANK",
-    "RFU"
-};
-
 // SIRK Calculation
 static btstack_crypto_aes128_cmac_t aes128_cmac_request;
 static uint8_t  s1[16];
@@ -97,12 +89,22 @@ static uint16_t                 csis_client_cid_counter = 0;
 static void csis_client_handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static btstack_packet_callback_registration_t csis_client_hci_event_callback_registration;
 
+#ifdef ENABLE_TESTING_SUPPORT
+static char * csis_characteristic_index_name[] = {
+    "SIRK",
+    "SIZE",
+    "LOCK",
+    "RANK",
+    "RFU"
+};
+
 static char * characteristic_index2name(csis_characteristic_index_t index){
     if (index >= CSIS_CHARACTERISTIC_INDEX_RFU){
         return csis_characteristic_index_name[4];
     }
     return csis_characteristic_index_name[(uint8_t) index];
 }
+#endif
 
 static uint16_t csis_client_get_next_cid(void){
     csis_client_cid_counter = btstack_next_cid_ignoring_zero(csis_client_cid_counter);
@@ -449,7 +451,7 @@ static void csis_client_run_for_connection(csis_client_connection_t * connection
     uint8_t status;
     gatt_client_characteristic_t characteristic;
     gatt_client_service_t service;
-    uint8_t value[0];
+    uint8_t value[1];
 
     switch (connection->state){
         case COORDINATED_SET_IDENTIFICATION_SERVICE_CLIENT_STATE_W2_QUERY_SERVICE:
