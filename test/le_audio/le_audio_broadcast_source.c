@@ -66,10 +66,10 @@
 //#define NRF5340_BROADCAST_MODE
 
 // PTS mode
-// #define PTS_MODE
+//#define PTS_MODE
 
 // Count mode - send packet count as test data for manual analysis
-// #define COUNT_MODE
+//#define COUNT_MODE
 
 // max config
 #define MAX_NUM_BIS 2
