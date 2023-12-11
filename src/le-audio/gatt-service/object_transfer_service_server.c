@@ -103,7 +103,7 @@ static uint32_t ots_oacp_features;
 static uint32_t ots_olcp_features;
 
 static hci_con_handle_t active_con_handle;
-
+#define CHUNK_SIZE  32
 
 #define TSPX_LE_PSM          0x25
 static uint8_t  receive_buffer_X[100];
@@ -627,12 +627,15 @@ int ots_server_handle_action_control_point_operation(ots_server_connection_t * c
             gatt_uuid_size = buffer_size - pos;
 
             // 1. Unsupported Type - The Server does not accept an object of the type specified in the Type parameter.
-            if (gatt_uuid_size == 2){
-                type_uuid16 = (gatt_uuid_type_t)little_endian_read_16(buffer, pos);
-                if (!ots_server_supports_gatt_uuid16(type_uuid16)){
-                    connection->oacp_result_code =  OACP_RESULT_CODE_UNSUPPORTED_TYPE;
-                    break;
-                }
+            if (gatt_uuid_size != 2) {
+                connection->oacp_result_code =  OACP_RESULT_CODE_UNSUPPORTED_TYPE;
+                break;
+            }
+
+            type_uuid16 = (gatt_uuid_type_t)little_endian_read_16(buffer, pos);
+            if (!ots_server_supports_gatt_uuid16(type_uuid16)){
+                connection->oacp_result_code =  OACP_RESULT_CODE_UNSUPPORTED_TYPE;
+                break;
             }
 
             // 2. Insufficient Resources - The Server cannot accept an object of the size specified in the Size parameter.
@@ -1335,7 +1338,7 @@ static void ots_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
     uint16_t mtu;
     hci_con_handle_t handle;
     ots_server_connection_t * connection;
-    const uint8_t * data;
+    uint8_t data[CHUNK_SIZE];
     oacp_result_code_t result_code;
     uint32_t bytes_to_read;
 
@@ -1413,7 +1416,7 @@ static void ots_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
                     connection->current_object_object_transfer_in_progress = true;
                     connection->current_object_object_read_transfer_in_progress = true;
 
-                    bytes_to_read = btstack_min(32,  connection->oacp_length + connection->oacp_offset - connection->oacp_read_offset);
+                    bytes_to_read = btstack_min(CHUNK_SIZE,  connection->oacp_length + connection->oacp_offset - connection->oacp_read_offset);
 
                     if (bytes_to_read > 0){
                         if (connection->oacp_read_offset == 0){
