@@ -96,6 +96,14 @@ void le_audio_demo_util_sink_configure_broadcast(uint8_t num_streams, uint8_t nu
 void le_audio_demo_util_sink_receive(uint8_t stream_index, uint8_t *packet, uint16_t size);
 
 /**
+ * @brief Analyze counting ISO packets
+ * @param stream_index
+ * @param packet
+ * @param size
+ */
+void le_audio_demo_util_sink_count(uint8_t stream_index, uint8_t *packet, uint16_t size);
+
+/**
  * @brief Close sink: close wav file, stop playbacl
  */
 void le_audio_demo_util_sink_close(void);

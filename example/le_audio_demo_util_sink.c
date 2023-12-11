@@ -38,13 +38,14 @@
 #define BTSTACK_FILE__ "le_audio_demo_util_sink.c"
 
 #include <stdio.h>
+#include <inttypes.h>
 
 #include "le_audio_demo_util_sink.h"
 
 #include "btstack_bool.h"
 #include "btstack_config.h"
 #include <btstack_debug.h>
-#include <printf.h>
+#include <stdio.h>
 
 #include "hci.h"
 #include "btstack_audio.h"
@@ -57,10 +58,9 @@
 #include "hxcmod.h"
 #include "mods/mod.h"
 
+#include "btstack_ring_buffer.h"
 #ifdef HAVE_POSIX_FILE_IO
 #include "wav_util.h"
-#include "btstack_ring_buffer.h"
-
 #endif
 
 //#define DEBUG_PLC
@@ -83,6 +83,9 @@
 #define PLAYBACK_BUFFER_SIZE (MAX_NUM_LC3_FRAMES * MAX_SAMPLES_PER_FRAME * MAX_CHANNELS * MAX_BYTES_PER_SAMPLE)
 #define PLAYBACK_START_MS (MAX_NUM_LC3_FRAMES * 20 / 3)
 
+// analysis
+#define PACKET_PREFIX_LEN 10
+
 #define ANSI_COLOR_RED     "\x1b[31m"
 #define ANSI_COLOR_GREEN   "\x1b[32m"
 #define ANSI_COLOR_YELLOW  "\x1b[33m"
@@ -90,6 +93,11 @@
 #define ANSI_COLOR_MAGENTA "\x1b[35m"
 #define ANSI_COLOR_CYAN    "\x1b[36m"
 #define ANSI_COLOR_RESET   "\x1b[0m"
+
+// statistics
+static uint16_t last_packet_sequence[MAX_CHANNELS];
+static uint32_t last_packet_time_ms[MAX_CHANNELS];
+static uint8_t  last_packet_prefix[MAX_CHANNELS * PACKET_PREFIX_LEN];
 
 // SINK
 
@@ -430,6 +438,48 @@ void le_audio_demo_util_sink_configure_broadcast(uint8_t num_streams, uint8_t nu
     printf("PLC: subsequent timeout %u ms\n", plc_timeout_subsequent_ms);
 
     le_audio_demo_util_sink_configure_general(num_streams, num_channels_per_stream, sampling_frequency_hz, frame_duration, octets_per_frame, iso_interval_1250us);
+}
+
+void le_audio_demo_util_sink_count(uint8_t stream_index, uint8_t *packet, uint16_t size) {
+    // check for missing packet
+    uint16_t header = little_endian_read_16(packet, 0);
+    uint8_t ts_flag = (header >> 14) & 1;
+
+    uint16_t offset = 4;
+    uint32_t time_stamp = 0;
+    if (ts_flag){
+        time_stamp = little_endian_read_32(packet, offset);
+        offset += 4;
+    }
+
+    uint32_t receive_time_ms = btstack_run_loop_get_time_ms();
+
+    uint16_t packet_sequence_number = little_endian_read_16(packet, offset);
+    offset += 4;
+
+    uint16_t last_seq_no = last_packet_sequence[stream_index];
+    bool packet_missed = (last_seq_no != 0) && ((last_seq_no + 1) != packet_sequence_number);
+    if (packet_missed){
+        // print last packet
+        printf("\n");
+        printf("%04x %10"PRIu32" %u ", last_seq_no, last_packet_time_ms[stream_index], stream_index);
+        printf_hexdump(&last_packet_prefix[le_audio_demo_sink_num_streams*PACKET_PREFIX_LEN], PACKET_PREFIX_LEN);
+        last_seq_no++;
+
+        printf(ANSI_COLOR_RED);
+        while (last_seq_no < packet_sequence_number){
+            printf("%04x            %u MISSING\n", last_seq_no, stream_index);
+            last_seq_no++;
+        }
+        printf(ANSI_COLOR_RESET);
+
+        // print current packet
+        printf("%04x %10"PRIu32" %u ", packet_sequence_number, receive_time_ms, stream_index);
+        printf_hexdump(&packet[offset], PACKET_PREFIX_LEN);
+    }
+
+    // cache current packet
+    memcpy(&last_packet_prefix[le_audio_demo_sink_num_streams*PACKET_PREFIX_LEN], &packet[offset], PACKET_PREFIX_LEN);
 }
 
 void le_audio_demo_util_sink_receive(uint8_t stream_index, uint8_t *packet, uint16_t size) {
