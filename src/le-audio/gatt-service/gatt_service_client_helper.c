@@ -220,7 +220,7 @@ static void gatt_service_client_run_for_client(gatt_service_client_helper_t * cl
 #ifdef ENABLE_TESTING_SUPPORT
             printf("Read client characteristic descriptors for characteristic[%u, uuid16 0x%04x, value_handle 0x%04x]:\n", 
                 connection->characteristic_index, 
-                client->characteristics_desc16[connection->characteristic_index].uuid16,
+                client->characteristics_desc16[connection->characteristic_index],
                 connection->characteristics[connection->characteristic_index].value_handle);
 #endif
             connection->state = GATT_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_DESCRIPTORS_RESULT;
@@ -238,7 +238,7 @@ static void gatt_service_client_run_for_client(gatt_service_client_helper_t * cl
 #ifdef ENABLE_TESTING_SUPPORT
             printf("Register notification for characteristic[%u, uuid16 0x%04x, ccd handle 0x%04x]:\n", 
                 connection->characteristic_index, 
-                client->characteristics_desc16[connection->characteristic_index].uuid16,
+                client->characteristics_desc16[connection->characteristic_index],
                 connection->characteristics[connection->characteristic_index].client_configuration_handle);
 #endif
             connection->state = GATT_SERVICE_CLIENT_STATE_W4_NOTIFICATION_REGISTERED;
