@@ -95,7 +95,7 @@ gatt_service_client_connection_helper_t * gatt_service_client_get_connection_for
 }
 
 uint16_t gatt_service_client_characteristic_index2uuid16(const gatt_service_client_helper_t * client, uint8_t index){
-    return client->characteristics_desc16[index].uuid16;
+    return client->characteristics_desc16[index];
 }
 
 static void gatt_service_client_emit_connected(btstack_packet_handler_t event_callback, hci_con_handle_t con_handle, uint16_t cid, uint8_t status){
@@ -344,7 +344,7 @@ static uint8_t gatt_service_client_get_characteristic_index_for_uuid16(
 
         uint8_t i;
         for (i = 0; i < client->characteristics_desc16_num; i++){
-            if (client->characteristics_desc16[i].uuid16 == uuid16){
+            if (client->characteristics_desc16[i] == uuid16){
                 index = i;
                 break;
             }
@@ -528,7 +528,7 @@ uint8_t gatt_service_client_connect(
     return ERROR_CODE_SUCCESS;
 }
 
-bool gatt_service_client_can_query_characteristic(gatt_service_client_connection_helper_t * connection, uint8_t characteristic_index){
+uint8_t gatt_service_client_can_query_characteristic(gatt_service_client_connection_helper_t * connection, uint8_t characteristic_index){
     if (connection->state != GATT_SERVICE_CLIENT_STATE_CONNECTED){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }

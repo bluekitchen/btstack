@@ -67,7 +67,7 @@ static void mcs_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
 static void mcs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 // list of uuids
-static const gatt_service_client_characteristic_desc16_t mcs_characteristics_desc16[MEDIA_CONTROL_SERVICE_CLIENT_NUM_CHARACTERISTICS] = {
+static const uint16_t mcs_characteristics_desc16[MEDIA_CONTROL_SERVICE_CLIENT_NUM_CHARACTERISTICS] = {
     ORG_BLUETOOTH_CHARACTERISTIC_MEDIA_PLAYER_NAME,
     ORG_BLUETOOTH_CHARACTERISTIC_MEDIA_PLAYER_ICON_OBJECT_ID,
     ORG_BLUETOOTH_CHARACTERISTIC_MEDIA_PLAYER_ICON_URL,
@@ -593,7 +593,7 @@ void media_control_service_client_init(void){
     gatt_service_client_init(&mcs_client, &mcs_client_packet_handler_trampoline);
     gatt_service_client_register_packet_handler(&mcs_client, &mcs_client_packet_handler_internal);
 
-    mcs_client.characteristics_desc16_num = sizeof(mcs_characteristics_desc16)/sizeof(gatt_service_client_characteristic_desc16_t);
+    mcs_client.characteristics_desc16_num = sizeof(mcs_characteristics_desc16)/sizeof(uint16_t);
     mcs_client.characteristics_desc16 = mcs_characteristics_desc16;
 
     mcs_client_handle_can_send_now.callback = &mcs_client_run_for_connection;
@@ -627,7 +627,7 @@ uint8_t media_control_service_client_connect_media_player(hci_con_handle_t con_h
         mcs_cid);
 }
 
-static bool mcs_client_can_query_characteristic(mcs_client_connection_t * connection, mcs_client_characteristic_index_t characteristic_index){
+static uint8_t mcs_client_can_query_characteristic(mcs_client_connection_t * connection, mcs_client_characteristic_index_t characteristic_index){
     uint8_t status = gatt_service_client_can_query_characteristic(&connection->basic_connection, (uint8_t) characteristic_index);
     if (status != ERROR_CODE_SUCCESS){
         return status;
