@@ -41,6 +41,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - GAP: store classic link keys independent from peer bonding request
 - SM: directly detect invalid Public key when Controller ECC is used 
 - L2CAP: make l2cap_get_remote_mtu_for_local_cid available to LE-only builds
+- L2CAP: handle all signaling requests and responses in closed state
 - HFP: use 'don't care' to accept SCO connections, fixes issue on ESP32
 - HFP: fix LC3-WB init
 - HFP AG: fix setup of audio connection in service level established event
