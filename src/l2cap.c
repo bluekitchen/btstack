@@ -3747,26 +3747,28 @@ static void l2cap_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t * 
             break;
     }
     
-    // Get potential destination CID
-    uint16_t dest_cid = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET);
-    
-    // Find channel for this sig_id and connection handle
-    btstack_linked_list_iterator_init(&it, &l2cap_channels);
-    while (btstack_linked_list_iterator_has_next(&it)){
-        l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
-        if (!l2cap_is_dynamic_channel_type(channel->channel_type)) continue;
-        if (channel->con_handle != handle) continue;
-        if (code & 1) {
-            // match odd commands (responses) by previous signaling identifier 
-            if (channel->local_sig_id == sig_id) {
-                l2cap_signaling_handler_channel(channel, command);
-                return;
-            }
-        } else {
-            // match even commands (requests) by local channel id
-            if (channel->local_cid == dest_cid) {
-                l2cap_signaling_handler_channel(channel, command);
-                return;
+    if (cmd_len >= 2){
+        // Get potential destination CID
+        uint16_t dest_cid = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET);
+
+        // Find channel for this sig_id and connection handle
+        btstack_linked_list_iterator_init(&it, &l2cap_channels);
+        while (btstack_linked_list_iterator_has_next(&it)){
+            l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
+            if (!l2cap_is_dynamic_channel_type(channel->channel_type)) continue;
+            if (channel->con_handle != handle) continue;
+            if (code & 1) {
+                // match odd commands (responses) by previous signaling identifier
+                if (channel->local_sig_id == sig_id) {
+                    l2cap_signaling_handler_channel(channel, command);
+                    return;
+                }
+            } else {
+                // match even commands (requests) by local channel id
+                if (channel->local_cid == dest_cid) {
+                    l2cap_signaling_handler_channel(channel, command);
+                    return;
+                }
             }
         }
     }
@@ -3778,16 +3780,20 @@ static void l2cap_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t * 
         case CONFIGURE_RESPONSE:
         case DISCONNECTION_RESPONSE:
             // Ignore request
-            break;
+            return;
         case CONFIGURE_REQUEST:
-            // send command reject with reason invalid cid
-            l2cap_register_signaling_response(handle, CONFIGURE_REQUEST, sig_id, dest_cid, L2CAP_REJ_INVALID_CID);
+            if (cmd_len >= 2){
+                uint16_t dest_cid = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET);
+                // send command reject with reason invalid cid
+                l2cap_register_signaling_response(handle, CONFIGURE_REQUEST, sig_id, dest_cid, L2CAP_REJ_INVALID_CID);
+                return;
+            }
             break;
         default:
-            // send command reject with reason unknown command
-            l2cap_register_signaling_response(handle, COMMAND_REJECT, sig_id, 0, L2CAP_REJ_CMD_UNKNOWN);
             break;
     }
+    // otherwise send command reject with reason unknown command
+    l2cap_register_signaling_response(handle, COMMAND_REJECT, sig_id, 0, L2CAP_REJ_CMD_UNKNOWN);
 }
 #endif
 
