@@ -108,7 +108,9 @@ typedef enum {
 
 // L2CAP Reject Result Codes
 #define L2CAP_REJ_CMD_UNKNOWN                      0x0000
-    
+#define L2CAP_REJ_MTU_EXCEEDED                     0x0001
+#define L2CAP_REJ_INVALID_CID                      0x0002
+
 // Response Timeout eXpired
 #define L2CAP_RTX_TIMEOUT_MS   10000
 
