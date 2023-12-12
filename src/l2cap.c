@@ -1883,8 +1883,8 @@ static void l2cap_run_signaling_response(void) {
         uint8_t  sig_id        = l2cap_signaling_responses[0].sig_id;
         uint8_t  response_code = l2cap_signaling_responses[0].code;
         uint16_t result        = l2cap_signaling_responses[0].data;  // CONNECTION_REQUEST, COMMAND_REJECT, REJECT_SM_PAIRING, L2CAP_CREDIT_BASED_CONNECTION_REQUEST
-        uint8_t  buffer[4];                                          // REJECT_SM_PAIRING
-        uint16_t source_cid    = l2cap_signaling_responses[0].cid;   // CONNECTION_REQUEST, REJECT_SM_PAIRING, DISCONNECT_REQUEST
+        uint8_t  buffer[4];                                          // REJECT_SM_PAIRING, CONFIGURE_REQUEST
+        uint16_t source_cid    = l2cap_signaling_responses[0].cid;   // CONNECTION_REQUEST, REJECT_SM_PAIRING, DISCONNECT_REQUEST, CONFIGURE_REQUEST
 #ifdef ENABLE_CLASSIC
         uint16_t info_type     = l2cap_signaling_responses[0].data;  // INFORMATION_REQUEST
 #endif
@@ -1906,6 +1906,11 @@ static void l2cap_run_signaling_response(void) {
 #ifdef ENABLE_CLASSIC
             case CONNECTION_REQUEST:
                 l2cap_send_classic_signaling_packet(handle, CONNECTION_RESPONSE, sig_id, source_cid, 0, result, 0);
+                break;
+            case CONFIGURE_REQUEST:
+                little_endian_store_16(buffer, 0, source_cid);
+                little_endian_store_16(buffer, 2, 0);
+                l2cap_send_classic_signaling_packet(handle, COMMAND_REJECT, sig_id, result, 4, buffer);
                 break;
             case ECHO_REQUEST:
                 l2cap_send_classic_signaling_packet(handle, ECHO_RESPONSE, sig_id, 0, NULL);
@@ -3773,6 +3778,10 @@ static void l2cap_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t * 
         case CONFIGURE_RESPONSE:
         case DISCONNECTION_RESPONSE:
             // Ignore request
+            break;
+        case CONFIGURE_REQUEST:
+            // send command reject with reason invalid cid
+            l2cap_register_signaling_response(handle, CONFIGURE_REQUEST, sig_id, dest_cid, L2CAP_REJ_INVALID_CID);
             break;
         default:
             // send command reject with reason unknown command
