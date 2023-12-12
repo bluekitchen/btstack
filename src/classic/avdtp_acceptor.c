@@ -432,7 +432,6 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t *connection, uint8_t 
                     break;
                 case AVDTP_SI_SUSPEND:
                     switch (stream_endpoint->state){
-                        case AVDTP_STREAM_ENDPOINT_OPENED:
                         case AVDTP_STREAM_ENDPOINT_STREAMING:
                             stream_endpoint->state = AVDTP_STREAM_ENDPOINT_OPENED;
                             connection->num_suspended_seids--;
