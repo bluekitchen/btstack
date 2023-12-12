@@ -1913,7 +1913,7 @@ static void l2cap_run_signaling_response(void) {
                 little_endian_store_16(buffer, 2, 0);
                 l2cap_send_classic_signaling_packet(handle, COMMAND_REJECT, sig_id, result, 4, buffer);
                 break;
-            case DISCONNECTION_REQUEST:
+            case DISCONNECTION_RESPONSE:
                 l2cap_send_classic_signaling_packet(handle, DISCONNECTION_RESPONSE, sig_id, dest_cid, source_cid);
                 break;
             case ECHO_REQUEST:
@@ -3790,7 +3790,7 @@ static void l2cap_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t * 
                 // send disconnect response for received dest and source cids
                 uint16_t dest_cid = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET);
                 uint16_t source_cid = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET+2);
-                l2cap_register_signaling_response(handle, DISCONNECTION_REQUEST, sig_id, source_cid, dest_cid);
+                l2cap_register_signaling_response(handle, DISCONNECTION_RESPONSE, sig_id, source_cid, dest_cid);
                 return;
             }
             break;
