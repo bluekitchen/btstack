@@ -3766,8 +3766,19 @@ static void l2cap_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t * 
         }
     }
 
-    // send command reject
-    l2cap_register_signaling_response(handle, COMMAND_REJECT, sig_id, 0, L2CAP_REJ_CMD_UNKNOWN);
+    // If dynamic channel cannot be found, either never set-up or already finalized, assume state CLOSED
+    // Handle events as described in Core 5.4, Vol 3. Host, 6.1.1 CLOSED state
+    switch (code){
+        case CONNECTION_RESPONSE:
+        case CONFIGURE_RESPONSE:
+        case DISCONNECTION_RESPONSE:
+            // Ignore request
+            break;
+        default:
+            // send command reject with reason unknown command
+            l2cap_register_signaling_response(handle, COMMAND_REJECT, sig_id, 0, L2CAP_REJ_CMD_UNKNOWN);
+            break;
+    }
 }
 #endif
 
