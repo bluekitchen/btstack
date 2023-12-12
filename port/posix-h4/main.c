@@ -50,6 +50,8 @@
 #include <signal.h>
 #include <unistd.h>
 #include <getopt.h>
+#include <libgen.h>
+#include <limits.h>
 
 #include "btstack_config.h"
 
@@ -361,9 +363,18 @@ int main(int argc, const char * argv[]){
 	btstack_memory_init();
     btstack_run_loop_init(btstack_run_loop_posix_get_instance());
 	    
+    char pklg_path[PATH_MAX] = "/tmp/hci_dump_";
     // log into file using HCI_DUMP_PACKETLOGGER format
     if (log_file_path == NULL){
-        log_file_path = "/tmp/hci_dump.pklg";
+        char *app_name = strndup( argv[0], PATH_MAX );
+        char *base_name = basename( app_name );
+        const char *pklg_postfix = ".pklg";
+
+        btstack_strcat( pklg_path, sizeof(pklg_path), base_name );
+        btstack_strcat( pklg_path, sizeof(pklg_path), pklg_postfix );
+        free( app_name );
+
+        log_file_path = pklg_path;
     }
     hci_dump_posix_fs_open(log_file_path, HCI_DUMP_PACKETLOGGER);
     const hci_dump_t * hci_dump_impl = hci_dump_posix_fs_get_instance();
