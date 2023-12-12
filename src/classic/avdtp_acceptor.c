@@ -555,6 +555,7 @@ void avdtp_acceptor_stream_config_subsm_run(avdtp_connection_t *connection) {
     stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_STREAM_CONFIG_IDLE;
     uint8_t * out_buffer;
     uint16_t pos;
+    avdtp_sep_t * remote_sep;
 
     bool emit_accept = false;
     bool emit_reject = false;
@@ -610,10 +611,9 @@ void avdtp_acceptor_stream_config_subsm_run(avdtp_connection_t *connection) {
             avdtp_acceptor_send_accept_response(cid, trid, AVDTP_SI_RECONFIGURE);
             emit_accept = true;
             break;
-
-        case AVDTP_ACCEPTOR_W2_ACCEPT_GET_CONFIGURATION:{
-            avdtp_sep_t sep = stream_endpoint->remote_sep;
-            avdtp_prepare_capabilities(&connection->acceptor_signaling_packet, trid, sep.configured_service_categories, sep.configuration, AVDTP_SI_GET_CONFIGURATION);
+        case AVDTP_ACCEPTOR_W2_ACCEPT_GET_CONFIGURATION:
+            remote_sep = &stream_endpoint->remote_sep;
+            avdtp_prepare_capabilities(&connection->acceptor_signaling_packet, trid, remote_sep->configured_service_categories, remote_sep->configuration, AVDTP_SI_GET_CONFIGURATION);
             l2cap_reserve_packet_buffer();
             out_buffer = l2cap_get_outgoing_buffer();
             pos = avdtp_signaling_create_fragment(cid, &connection->acceptor_signaling_packet, out_buffer);
@@ -626,7 +626,6 @@ void avdtp_acceptor_stream_config_subsm_run(avdtp_connection_t *connection) {
             }
             l2cap_send_prepared(cid, pos);
             break;
-        }
         case AVDTP_ACCEPTOR_W2_ACCEPT_OPEN_STREAM:
             log_info("DONE");
             avdtp_acceptor_send_accept_response(cid, trid, AVDTP_SI_OPEN);
