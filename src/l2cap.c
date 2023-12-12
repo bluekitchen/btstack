@@ -1884,7 +1884,8 @@ static void l2cap_run_signaling_response(void) {
         uint8_t  response_code = l2cap_signaling_responses[0].code;
         uint16_t result        = l2cap_signaling_responses[0].data;  // CONNECTION_REQUEST, COMMAND_REJECT, REJECT_SM_PAIRING, L2CAP_CREDIT_BASED_CONNECTION_REQUEST
         uint8_t  buffer[4];                                          // REJECT_SM_PAIRING, CONFIGURE_REQUEST
-        uint16_t source_cid    = l2cap_signaling_responses[0].cid;   // CONNECTION_REQUEST, REJECT_SM_PAIRING, DISCONNECT_REQUEST, CONFIGURE_REQUEST
+        uint16_t source_cid    = l2cap_signaling_responses[0].cid;   // CONNECTION_REQUEST, REJECT_SM_PAIRING, DISCONNECT_REQUEST, CONFIGURE_REQUEST, DISCONNECT_REQUEST
+        uint16_t dest_cid      = l2cap_signaling_responses[0].data;  // DISCONNECT_REQUEST
 #ifdef ENABLE_CLASSIC
         uint16_t info_type     = l2cap_signaling_responses[0].data;  // INFORMATION_REQUEST
 #endif
@@ -1911,6 +1912,9 @@ static void l2cap_run_signaling_response(void) {
                 little_endian_store_16(buffer, 0, source_cid);
                 little_endian_store_16(buffer, 2, 0);
                 l2cap_send_classic_signaling_packet(handle, COMMAND_REJECT, sig_id, result, 4, buffer);
+                break;
+            case DISCONNECTION_REQUEST:
+                l2cap_send_classic_signaling_packet(handle, DISCONNECTION_RESPONSE, sig_id, dest_cid, source_cid);
                 break;
             case ECHO_REQUEST:
                 l2cap_send_classic_signaling_packet(handle, ECHO_RESPONSE, sig_id, 0, NULL);
@@ -3781,10 +3785,19 @@ static void l2cap_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t * 
         case DISCONNECTION_RESPONSE:
             // Ignore request
             return;
+        case DISCONNECTION_REQUEST:
+            if (cmd_len == 4){
+                // send disconnect response for received dest and source cids
+                uint16_t dest_cid = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET);
+                uint16_t source_cid = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET+2);
+                l2cap_register_signaling_response(handle, DISCONNECTION_REQUEST, sig_id, source_cid, dest_cid);
+                return;
+            }
+            break;
         case CONFIGURE_REQUEST:
             if (cmd_len >= 2){
-                uint16_t dest_cid = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET);
                 // send command reject with reason invalid cid
+                uint16_t dest_cid = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET);
                 l2cap_register_signaling_response(handle, CONFIGURE_REQUEST, sig_id, dest_cid, L2CAP_REJ_INVALID_CID);
                 return;
             }
