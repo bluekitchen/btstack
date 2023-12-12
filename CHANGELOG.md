@@ -53,6 +53,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - AVDTP: limit L2CAP MTU to largest BR/EDR packet, fixes A2DP Sink role for some Samsung TV
 - AVDTP: fix Get Stream Configuration
 - AVDTP: reject suspend in state endpoint open
+- AVDTP: return error in avdtp_suspend_stream if state is not streaming
 - AVRCP: reject incoming second l2cap connection
 - AVRCP: generate command for avrcp_controller_get_element_attributes dynamically
 - SPP Server: fix SPP version in SDP record

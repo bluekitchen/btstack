@@ -1300,7 +1300,11 @@ uint8_t avdtp_suspend_stream(uint16_t avdtp_cid, uint8_t local_seid){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     
-    if (!is_avdtp_remote_seid_registered(stream_endpoint) || stream_endpoint->suspend_stream){
+    if (!is_avdtp_remote_seid_registered(stream_endpoint)){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+
+    if (stream_endpoint->state != AVDTP_STREAM_ENDPOINT_STREAMING){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
