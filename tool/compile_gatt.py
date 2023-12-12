@@ -167,7 +167,7 @@ def read_defines(infile):
     defines = dict()
     with open (infile, 'rt') as fin:
         for line in fin:
-            parts = re.match('#define\s+(\w+)\s+(\w+)',line)
+            parts = re.match('#define\\s+(\\w+)\\s+(\\w+)',line)
             if parts and len(parts.groups()) == 2:
                 (key, value) = parts.groups()
                 defines[key] = int(value, 16)
@@ -875,10 +875,10 @@ def parseLines(fname_in, fin, fout):
 
         if line.startswith("#import"):
             imported_file = ''
-            parts = re.match('#import\s+<(.*)>\w*',line)
+            parts = re.match('#import\\s+<(.*)>\\w*',line)
             if parts and len(parts.groups()) == 1:
                 imported_file = parts.groups()[0]
-            parts = re.match('#import\s+"(.*)"\w*',line)
+            parts = re.match('#import\\s+"(.*)"\\w*',line)
             if parts and len(parts.groups()) == 1:
                 imported_file = parts.groups()[0]
             if len(imported_file) == 0:
