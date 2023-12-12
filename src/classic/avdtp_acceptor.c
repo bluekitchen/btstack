@@ -164,7 +164,10 @@ avdtp_acceptor_handle_configuration_command(avdtp_connection_t *connection, int 
 	// if media codec configuration set, copy configuration and emit event
 	if ((sep.configured_service_categories & (1 << AVDTP_MEDIA_CODEC)) != 0){
 		if  (stream_endpoint->media_codec_configuration_len == sep.configuration.media_codec.media_codec_information_len){
-			(void) memcpy(stream_endpoint->media_codec_configuration_info, sep.configuration.media_codec.media_codec_information, stream_endpoint->media_codec_configuration_len);
+            (void) memcpy(stream_endpoint->media_codec_configuration_info, sep.configuration.media_codec.media_codec_information, stream_endpoint->media_codec_configuration_len);
+            // update media codec info to point to user configuration
+            stream_endpoint->remote_sep.configuration.media_codec.media_codec_information = stream_endpoint->media_codec_configuration_info;
+            // emit event
             avdtp_signaling_emit_configuration(stream_endpoint, connection->avdtp_cid, 0, &sep.configuration, sep.configured_service_categories);
 		}
 	}
