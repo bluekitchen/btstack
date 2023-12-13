@@ -572,7 +572,8 @@ void le_audio_demo_util_sink_receive(uint8_t stream_index, uint8_t *packet, uint
             memset(pcm, 0, sizeof(pcm));
             uint8_t i;
             for (i = 0 ; i < le_audio_demo_sink_num_channels_per_stream ; i++) {
-                have_pcm[stream_index + i] = true;
+                uint8_t effective_channel = (stream_index * le_audio_demo_sink_num_channels_per_stream) + i;
+                have_pcm[effective_channel] = true;
             }
             le_audio_demo_sink_zero_frames++;
             // pause detection (1000 ms for 10 ms, 750 ms for 7.5 ms frames)
@@ -592,12 +593,12 @@ void le_audio_demo_util_sink_receive(uint8_t stream_index, uint8_t *packet, uint
         for (i = 0 ; i < le_audio_demo_sink_num_channels_per_stream ; i++){
             uint8_t tmp_BEC_detect;
             uint8_t BFI = 0;
-            uint8_t effective_channel = stream_index + i;
+            uint8_t effective_channel = (stream_index * le_audio_demo_sink_num_channels_per_stream) + i;
             (void) lc3_decoder->decode_signed_16(decoder_contexts[effective_channel], &packet[offset], BFI,
                                                  &pcm[effective_channel], le_audio_demo_sink_num_channels,
                                                  &tmp_BEC_detect);
             offset += le_audio_demo_sink_octets_per_frame;
-            have_pcm[stream_index + i] = true;
+            have_pcm[effective_channel] = true;
         }
     }
 
