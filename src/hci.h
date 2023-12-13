@@ -1537,7 +1537,7 @@ uint8_t* hci_get_outgoing_packet_buffer(void);
 
 /**
  * Release outgoing packet buffer\
- * @note only called instead of hci_send_preparared
+ * @note only called instead of hci_send_prepared
  */
 void hci_release_packet_buffer(void);
 
@@ -1546,6 +1546,21 @@ void hci_release_packet_buffer(void);
 * @param policy (0: attempt to become master, 1: let connecting device decide)
 */
 void hci_set_master_slave_policy(uint8_t policy);
+
+
+/**
+ * @brief Check if Controller supports BR/EDR (Bluetooth Classic)
+ * @return true if supported
+ * @note only valid in working state
+ */
+bool hci_classic_supported(void);
+
+/**
+ * @brief Check if Controller supports LE (Bluetooth Low Energy)
+ * @return true if supported
+ * @note only valid in working state
+ */
+bool hci_le_supported(void);
 
 /* API_END */
 

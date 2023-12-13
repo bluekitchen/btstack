@@ -1458,7 +1458,7 @@ static bool gap_ssp_supported(void){
 }
 #endif
 
-static bool hci_classic_supported(void){
+bool hci_classic_supported(void){
 #ifdef ENABLE_CLASSIC    
     // No. 37, byte 4, bit 5, = No BR/EDR Support
     return (hci_stack->local_supported_features[4] & (1 << 5)) == 0;
@@ -1467,7 +1467,7 @@ static bool hci_classic_supported(void){
 #endif
 }
 
-static bool hci_le_supported(void){
+bool hci_le_supported(void){
 #ifdef ENABLE_BLE
     // No. 37, byte 4, bit 6 = LE Supported (Controller)
     return (hci_stack->local_supported_features[4u] & (1u << 6u)) != 0u;
