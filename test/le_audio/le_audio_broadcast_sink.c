@@ -768,10 +768,6 @@ int btstack_main(int argc, const char * argv[]){
     broadcast_audio_scan_service_server_init(BASS_NUM_SOURCES, bass_sources, BASS_NUM_CLIENTS, bass_clients);
     broadcast_audio_scan_service_server_register_packet_handler(&bass_packet_handler);
 
-    // setup advertising and allow to receive periodic advertising sync trasnfers
-    setup_advertising();
-    gap_periodic_advertising_sync_transfer_set_default_parameters(2, 0, 0x2000, 0);
-
     // setup audio processing
     le_audio_demo_util_sink_init("le_audio_broadcast_sink.wav");
 

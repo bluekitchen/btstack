@@ -160,7 +160,7 @@ static void broadcast_source_scan_timeout_handler(btstack_timer_source_t * ts) {
 /* Scan Delegator */
 
 static void connect_to_scan_delegator(void) {
-    printf("Connect to Scan Delegator %s type %u - %s", bd_addr_to_str(scan_delegator), scan_delegator_type, scan_delegator_name);
+    printf("Connect to Scan Delegator %s type %u - %s\n", bd_addr_to_str(scan_delegator), scan_delegator_type, scan_delegator_name);
     app_state = APP_W4_SCAN_DELEGATOR_CONNECTION;
     gap_connect(scan_delegator, scan_delegator_type);
 }
@@ -393,9 +393,18 @@ static void bass_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     if (packet_type != HCI_EVENT_PACKET) return;
+    uint8_t adv_size;
+    const uint8_t * adv_data;
+    bool found_scan_delegator = false;
+    bool found_broadcast_source = false;
+    bool add_broadcast_source = false;
+    char adv_name[31];
+    uint16_t uuid;
+    ad_context_t context;
+
     switch (packet[0]) {
         case BTSTACK_EVENT_STATE:
-            switch(btstack_event_state_get_state(packet)) {
+            switch (btstack_event_state_get_state(packet)) {
                 case HCI_STATE_WORKING:
                     app_state = APP_IDLE;
 #ifdef ENABLE_DEMO_MODE
@@ -412,18 +421,13 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     break;
             }
             break;
-        case GAP_EVENT_EXTENDED_ADVERTISING_REPORT:
-        {
-            uint8_t adv_size = gap_event_extended_advertising_report_get_data_length(packet);
-            const uint8_t * adv_data = gap_event_extended_advertising_report_get_data(packet);
 
-            ad_context_t context;
-            bool found_scan_delegator = false;
-            bool found_broadcast_source = false;
-            char adv_name[31];
+        case GAP_EVENT_ADVERTISING_REPORT:
+            // TODO: contains partial copy of GAP_EVENT_EXTENDED_ADVERTISING_REPORT below
+            adv_size = gap_event_advertising_report_get_data_length(packet);
+            adv_data = gap_event_advertising_report_get_data(packet);
             adv_name[0] = 0;
 
-            uint16_t uuid;
             for (ad_iterator_init(&context, adv_size, adv_data) ; ad_iterator_has_more(&context) ; ad_iterator_next(&context)) {
                 uint8_t data_type = ad_iterator_get_data_type(&context);
                 uint8_t size = ad_iterator_get_data_len(&context);
@@ -465,7 +469,54 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 bd_addr_type_t addr_type = (bd_addr_type_t) gap_event_extended_advertising_report_get_address_type(packet);
                 le_audio_broadcast_assistant_found_scan_delegator(&addr_type, addr, adv_name);
             }
-            bool add_broadcast_source = false;
+            break;
+
+        case GAP_EVENT_EXTENDED_ADVERTISING_REPORT:
+            adv_size = gap_event_extended_advertising_report_get_data_length(packet);
+            adv_data = gap_event_extended_advertising_report_get_data(packet);
+            adv_name[0] = 0;
+
+            for (ad_iterator_init(&context, adv_size, adv_data) ; ad_iterator_has_more(&context) ; ad_iterator_next(&context)) {
+                uint8_t data_type = ad_iterator_get_data_type(&context);
+                uint8_t size = ad_iterator_get_data_len(&context);
+                const uint8_t *data = ad_iterator_get_data(&context);
+                switch (data_type){
+                    case BLUETOOTH_DATA_TYPE_SERVICE_DATA_16_BIT_UUID:
+                        uuid = little_endian_read_16(data, 0);
+                        switch (uuid){
+                            case ORG_BLUETOOTH_SERVICE_BROADCAST_AUDIO_ANNOUNCEMENT_SERVICE:
+                                if (scan_for_broadcast_source) {
+                                    broadcast_sources[broadcast_source_count].broadcast_id = little_endian_read_24(data, 2);
+                                    found_broadcast_source = true;
+                                }
+                                break;
+                            case ORG_BLUETOOTH_SERVICE_BROADCAST_AUDIO_SCAN_SERVICE:
+                                if (scan_for_scan_delegator) {
+                                    found_scan_delegator = true;
+                                }
+                                break;
+                            default:
+                                break;
+                        }
+                        break;
+                    case BLUETOOTH_DATA_TYPE_SHORTENED_LOCAL_NAME:
+                    case BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME:
+                        size = btstack_min(sizeof(adv_name) - 1, size);
+                        memcpy(adv_name, data, size);
+                        adv_name[size] = 0;
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            if ((have_scan_delegator == false) && found_scan_delegator){
+                have_scan_delegator = true;
+                bd_addr_t addr;
+                gap_event_extended_advertising_report_get_address(packet, addr);
+                bd_addr_type_t addr_type = (bd_addr_type_t) gap_event_extended_advertising_report_get_address_type(packet);
+                le_audio_broadcast_assistant_found_scan_delegator(&addr_type, addr, adv_name);
+            }
             if (found_broadcast_source){
                 have_broadcast_source = true;
                 bd_addr_t addr;
@@ -489,7 +540,6 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 broadcast_source_count++;
             }
             break;
-        }
 
         case HCI_EVENT_LE_META:
             switch(hci_event_le_meta_get_subevent_code(packet)) {

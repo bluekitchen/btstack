@@ -309,10 +309,6 @@ static void start_broadcast() {// use values from table
 
     number_samples_per_frame = btstack_lc3_samples_per_frame(sampling_frequency_hz, frame_duration);
 
-    printf("LC3 Encoder config: %u hz, frame duration %s ms, num samples %u, num octets %u\n",
-           sampling_frequency_hz, frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US ? "7.5" : "10",
-           number_samples_per_frame, octets_per_frame);
-
     le_audio_demo_util_source_configure(num_bis, 1, sampling_frequency_hz, frame_duration, octets_per_frame);
     le_audio_demo_util_source_generate_iso_frame(audio_source);
 
