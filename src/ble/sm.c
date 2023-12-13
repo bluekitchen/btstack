@@ -1128,8 +1128,8 @@ static int sm_key_distribution_flags_for_auth_req(void){
         flags |= SM_KEYDIST_SIGN;
 #endif
 #ifdef ENABLE_CROSS_TRANSPORT_KEY_DERIVATION
-        // LinkKey for CTKD requires SC
-        if (sm_auth_req & SM_AUTHREQ_SECURE_CONNECTION){
+        // LinkKey for CTKD requires SC and BR/EDR Support
+        if (hci_classic_supported() && ((sm_auth_req & SM_AUTHREQ_SECURE_CONNECTION) != 0)){
         	flags |= SM_KEYDIST_LINK_KEY;
         }
 #endif
@@ -3030,7 +3030,7 @@ static void sm_run(void){
                 key_distribution_flags = sm_key_distribution_flags_for_auth_req();
 
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
-                // LTK (= encyrption information & master identification) only exchanged for LE Legacy Connection
+                // LTK (= encryption information & master identification) only exchanged for LE Legacy Connection
                 if (setup->sm_use_secure_connections){
                     key_distribution_flags &= ~SM_KEYDIST_ENC_KEY;
                 }
