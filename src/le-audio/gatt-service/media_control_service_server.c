@@ -633,15 +633,28 @@ static void mcs_server_can_send_now(void * context){
 
     } else if ((media_player->scheduled_tasks & MCS_NOTIFICATION_TASK_MEDIA_PLAYER_ICON_OBJECT_ID) != 0){
         media_player->scheduled_tasks &= ~MCS_NOTIFICATION_TASK_MEDIA_PLAYER_ICON_OBJECT_ID;
+        uint8_t value[6];
+        reverse_48(media_player->data.icon_object_id, value);
+
+        att_server_notify(media_player->con_handle,
+                          media_player->characteristics[MEDIA_PLAYER_ICON_OBJECT_ID].value_handle,
+                          (uint8_t *)value, sizeof(value));
+
+    } else if ((media_player->scheduled_tasks & MCS_NOTIFICATION_TASK_CURRENT_TRACK_SEGMENTS_OBJECT_ID) != 0){
+        media_player->scheduled_tasks &= ~MCS_NOTIFICATION_TASK_CURRENT_TRACK_SEGMENTS_OBJECT_ID;
+        media_player->scheduled_tasks &= ~MCS_NOTIFICATION_TASK_CURRENT_TRACK_SEGMENTS_OBJECT_ID;
+        uint8_t value[6];
+        reverse_48(media_player->data.current_track_segments_object_id, value);
+
+        att_server_notify(media_player->con_handle,
+                          media_player->characteristics[CURRENT_TRACK_SEGMENTS_OBJECT_ID].value_handle,
+                          (uint8_t *)value, sizeof(value));
+
+    } else if ((media_player->scheduled_tasks & MCS_NOTIFICATION_TASK_CONTENT_CONTROL_ID) != 0){
+        media_player->scheduled_tasks &= ~MCS_NOTIFICATION_TASK_CONTENT_CONTROL_ID;
         // TODO
     } else if ((media_player->scheduled_tasks & MCS_NOTIFICATION_TASK_MEDIA_PLAYER_ICON_URL) != 0){
         media_player->scheduled_tasks &= ~MCS_NOTIFICATION_TASK_MEDIA_PLAYER_ICON_URL;
-        // TODO
-    } else if ((media_player->scheduled_tasks & MCS_NOTIFICATION_TASK_CURRENT_TRACK_SEGMENTS_OBJECT_ID) != 0){
-        media_player->scheduled_tasks &= ~MCS_NOTIFICATION_TASK_CURRENT_TRACK_SEGMENTS_OBJECT_ID;
-        // TODO
-    } else if ((media_player->scheduled_tasks & MCS_NOTIFICATION_TASK_CONTENT_CONTROL_ID) != 0){
-        media_player->scheduled_tasks &= ~MCS_NOTIFICATION_TASK_CONTENT_CONTROL_ID;
         // TODO
     }
 
@@ -1150,6 +1163,7 @@ uint8_t media_control_service_server_set_icon_object_id(uint16_t media_player_id
 		return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
 	}
 	memcpy(media_player->data.icon_object_id, object_id, OTS_OBJECT_ID_LEN);
+    mcs_server_schedule_task(media_player, MEDIA_PLAYER_ICON_OBJECT_ID);
 	return ERROR_CODE_SUCCESS;
 }
 
@@ -1161,6 +1175,7 @@ uint8_t media_control_service_server_set_parent_group_object_id(uint16_t media_p
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     memcpy(media_player->data.parent_group_object_id, object_id, OTS_OBJECT_ID_LEN);
+    mcs_server_schedule_task(media_player, PARENT_GROUP_OBJECT_ID);
     return ERROR_CODE_SUCCESS;
 }
 
@@ -1172,6 +1187,7 @@ uint8_t media_control_service_server_set_current_group_object_id(uint16_t media_
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     memcpy(media_player->data.current_group_object_id, object_id, OTS_OBJECT_ID_LEN);
+    mcs_server_schedule_task(media_player, CURRENT_GROUP_OBJECT_ID);
     return ERROR_CODE_SUCCESS;
 }
 
