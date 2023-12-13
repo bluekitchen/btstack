@@ -4815,7 +4815,7 @@ static void l2cap_acl_classic_handler(hci_con_handle_t handle, uint8_t *packet, 
         case L2CAP_CID_SIGNALING: {
             if (broadcast_flag != 0) break;
             uint32_t command_offset = 8;
-            while ((command_offset + L2CAP_SIGNALING_COMMAND_DATA_OFFSET) < size) {
+            while ((command_offset + L2CAP_SIGNALING_COMMAND_DATA_OFFSET) <= size) {
                 // assert signaling command is fully inside packet
                 uint16_t data_len = little_endian_read_16(packet, command_offset + L2CAP_SIGNALING_COMMAND_LENGTH_OFFSET);
                 uint32_t next_command_offset = command_offset + L2CAP_SIGNALING_COMMAND_DATA_OFFSET + data_len;
