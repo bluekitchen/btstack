@@ -1452,27 +1452,27 @@ bool hci_non_flushable_packet_boundary_flag_supported(void){
 }
 
 #ifdef ENABLE_CLASSIC
-static int gap_ssp_supported(void){
+static bool gap_ssp_supported(void){
     // No. 51, byte 6, bit 3
     return (hci_stack->local_supported_features[6u] & (1u << 3u)) != 0u;
 }
 #endif
 
-static int hci_classic_supported(void){
+static bool hci_classic_supported(void){
 #ifdef ENABLE_CLASSIC    
     // No. 37, byte 4, bit 5, = No BR/EDR Support
     return (hci_stack->local_supported_features[4] & (1 << 5)) == 0;
 #else
-    return 0;
+    return false;
 #endif
 }
 
-static int hci_le_supported(void){
+static bool hci_le_supported(void){
 #ifdef ENABLE_BLE
     // No. 37, byte 4, bit 6 = LE Supported (Controller)
     return (hci_stack->local_supported_features[4u] & (1u << 6u)) != 0u;
 #else
-    return 0;
+    return false;
 #endif    
 }
 
