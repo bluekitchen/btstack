@@ -272,7 +272,8 @@ void le_audio_demo_util_source_send(uint8_t stream_index, hci_con_handle_t con_h
     // copy encoded payload
     uint8_t i;
     for (i=0; i<le_audio_demo_source_num_channels_per_stream;i++) {
-        memcpy(&buffer[offset], &le_audio_demo_source_iso_payload[i * MAX_LC3_FRAME_BYTES], le_audio_demo_source_octets_per_frame);
+        uint8_t effective_channel = (stream_index * le_audio_demo_source_num_channels_per_stream) + i;
+        memcpy(&buffer[offset], &le_audio_demo_source_iso_payload[effective_channel * MAX_LC3_FRAME_BYTES], le_audio_demo_source_octets_per_frame);
         offset += le_audio_demo_source_octets_per_frame;
     }
     // send
