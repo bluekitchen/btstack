@@ -103,7 +103,6 @@ static uint32_t ots_oacp_features;
 static uint32_t ots_olcp_features;
 
 static hci_con_handle_t active_con_handle;
-#define CHUNK_SIZE  32
 
 #define TSPX_LE_PSM          0x25
 static uint8_t  receive_buffer_X[100];
@@ -560,8 +559,8 @@ static bool ots_server_gatt_uuid_size_valid(uint16_t uuid_size){
     return (uuid_size == 2) || (uuid_size == 16);
 }
 
-static bool ots_server_supports_object_type(ots_object_type_t object_type){
-    switch (object_type){
+static bool ots_server_supports_gatt_uuid16(uint16_t uuid16){
+    switch (uuid16){
         case OTS_OBJECT_TYPE_GROUP:
         case OTS_OBJECT_TYPE_MEDIA_PLAYER_ICON:
         case OTS_OBJECT_TYPE_TRACK_SEGMENTS:
@@ -610,7 +609,7 @@ int ots_server_handle_action_control_point_operation(ots_server_connection_t * c
     uint32_t offset;
     uint32_t length;
     uint32_t object_size;
-    ots_object_type_t object_type;
+    gatt_uuid_type_t type_uuid16;
     uint8_t  gatt_uuid_size;
 
     switch (connection->oacp_opcode){
@@ -1337,7 +1336,7 @@ static void ots_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
     uint16_t mtu;
     hci_con_handle_t handle;
     ots_server_connection_t * connection;
-    uint8_t data[CHUNK_SIZE];
+    const uint8_t * data;
     oacp_result_code_t result_code;
     uint32_t bytes_to_read;
 
@@ -1402,7 +1401,7 @@ static void ots_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
                     connection->current_object_object_transfer_in_progress = true;
                     connection->current_object_object_read_transfer_in_progress = true;
 
-                    bytes_to_read = btstack_min(CHUNK_SIZE,  connection->oacp_length + connection->oacp_offset - connection->oacp_read_offset);
+                    bytes_to_read = btstack_min(ots_server_remote_mtu, connection->oacp_data_chunk_length - connection->oacp_data_bytes_read);
 
                     if (bytes_to_read > 0){
                         result_code = ots_server_operations->read(connection->con_handle,  connection->oacp_data_chunk_offset + connection->oacp_data_bytes_read, bytes_to_read, &data);
