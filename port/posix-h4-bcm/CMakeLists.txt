@@ -153,8 +153,8 @@ link_libraries(${CMAKE_THREAD_LIBS_INIT})
 include(${BTSTACK_ROOT}/chipset/bcm/bcm.cmake)
 
 # CYW55573
-file(DOWNLOAD https://github.com/murata-wireless/meta-murata-wireless/raw/imx-kirkstone-fafnir/recipes-connectivity/murata-binaries/murata-binaries/CYW55560A1_001.002.087.0108.0000.sLNA.hcd
-		${CMAKE_CURRENT_BINARY_DIR}/CYW55560A1_001.002.087.0108.0000.sLNA.hcd)
+file(DOWNLOAD https://github.com/Infineon/combo-bluetooth-firmware/raw/master/CYW5557x/FCBGA/CYW55560A1_001.002.087.0225.0000_Generic_UART_37_4MHz_fcbga_iPA_sLNA_ANT0.hcd
+		${CMAKE_CURRENT_BINARY_DIR}/CYW55560A1_001.002.087.0225.0000_Generic_UART_37_4MHz_fcbga_iPA_sLNA_ANT0.hcd)
 
 # get list of examples, skipping mesh_node_demo
 include(../../example/CMakeLists.txt)
