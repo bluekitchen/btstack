@@ -1295,22 +1295,18 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             printf("Accept Just Works\n");
             sm_just_works_confirm(sm_event_just_works_request_get_handle(packet));
             break;
-        case SM_EVENT_NUMERIC_COMPARISON_REQUEST:
+       case SM_EVENT_NUMERIC_COMPARISON_REQUEST:
             printf("Confirming numeric comparison: %"PRIu32"\n", sm_event_numeric_comparison_request_get_passkey(packet));
             sm_numeric_comparison_confirm(sm_event_passkey_display_number_get_handle(packet));
             break;
 
-        case HCI_EVENT_LE_META:
+       case HCI_EVENT_LE_META:
             switch (hci_event_le_meta_get_subevent_code(packet)){
                 case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
                     bap_app_server_con_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
                     bap_app_server_state      = BAP_APP_SERVER_STATE_CONNECTED;
                     hci_subevent_le_connection_complete_get_peer_address(packet, bap_app_client_addr);
                     printf("BAP Server: Connection to %s established\n", bd_addr_to_str(bap_app_client_addr));
-                    
-                    gap_advertisements_set_data(adv_data_len, (uint8_t*) adv_data);
-                    gap_advertisements_enable(1);
-
                     mcs_track_t * track = mcs_get_current_track_for_media_player_id(current_media_player_id);
                     if (track != NULL){
                         ots_object_t * object = ots_db_find_object_with_luid(&track->object_id);
@@ -1319,6 +1315,10 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             object_transfer_service_server_update_current_object_name(bap_app_server_con_handle, long_string1);
                         }
                     }
+                    break;
+                case HCI_SUBEVENT_LE_ADVERTISING_SET_TERMINATED:
+                    // restart advertising
+                    gap_extended_advertising_start(adv_handle, 0, 0);
                     break;
                 default:
                     return;
@@ -1331,8 +1331,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             printf("BAP Server: Disconnected from %s\n", bd_addr_to_str(bap_app_client_addr));
             
             mcs_seeking_speed_timer_stop(current_media_player_id);
-            gap_advertisements_set_data(adv_data_len, (uint8_t*) adv_data);
-            gap_advertisements_enable(1);
             break;
 
         default:
