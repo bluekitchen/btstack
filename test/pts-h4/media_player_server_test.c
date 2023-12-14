@@ -83,8 +83,8 @@ static le_advertising_set_t le_advertising_set;
 
 static const le_extended_advertising_parameters_t extended_params = {
         .advertising_event_properties = 0x13,  //  scannable & connectable
-        .primary_advertising_interval_min = 0x4b0, // 750 ms
-        .primary_advertising_interval_max = 0x4b0, // 750 ms
+        .primary_advertising_interval_min = 0x030, // 30 ms
+        .primary_advertising_interval_max = 0x030, // 30 ms
         .primary_advertising_channel_map = 7,
         .own_address_type = 0,
         .peer_address_type = 0,
