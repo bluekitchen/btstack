@@ -357,6 +357,7 @@ static int btstack_uart_posix_open(void){
     // wait a bit - at least cheap FTDI232 clones might send the first byte out incorrectly
     usleep(100000);
 
+    log_info("Open tty %s", device_name);
     return 0;
 } 
 
