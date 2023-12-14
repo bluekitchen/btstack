@@ -8494,6 +8494,15 @@ int gap_request_connection_parameter_update(hci_con_handle_t con_handle, uint16_
 
 #ifdef ENABLE_LE_PERIPHERAL
 
+#ifdef ENABLE_LE_EXTENDED_ADVERTISING
+static void hci_assert_advertisement_set_0_ready(void){
+    // force advertising set creation for legacy LE Advertising
+    if ((hci_stack->le_advertisements_state & LE_ADVERTISEMENT_STATE_PARAMS_SET) == 0){
+        hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_SET_PARAMS;
+    }
+}
+#endif
+
 /**
  * @brief Set Advertisement Data
  * @param advertising_data_length
@@ -8504,6 +8513,9 @@ void gap_advertisements_set_data(uint8_t advertising_data_length, uint8_t * adve
     hci_stack->le_advertisements_data_len = advertising_data_length;
     hci_stack->le_advertisements_data = advertising_data;
     hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_SET_ADV_DATA;
+#ifdef ENABLE_LE_EXTENDED_ADVERTISING
+    hci_assert_advertisement_set_0_ready();
+#endif
     hci_run();
 }
 
@@ -8517,6 +8529,9 @@ void gap_scan_response_set_data(uint8_t scan_response_data_length, uint8_t * sca
     hci_stack->le_scan_response_data_len = scan_response_data_length;
     hci_stack->le_scan_response_data = scan_response_data;
     hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_SET_SCAN_DATA;
+#ifdef ENABLE_LE_EXTENDED_ADVERTISING
+    hci_assert_advertisement_set_0_ready();
+#endif
     hci_run();
 }
 
@@ -8792,10 +8807,7 @@ void hci_le_random_address_set(const bd_addr_t random_address){
     hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_SET_ADDRESS;
 #ifdef ENABLE_LE_EXTENDED_ADVERTISING
     if (hci_extended_advertising_supported()){
-        // force advertising set creation for LE Set Advertising Set Random Address
-        if ((hci_stack->le_advertisements_state & LE_ADVERTISEMENT_STATE_PARAMS_SET) == 0){
-            hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_SET_PARAMS;
-        }
+        hci_assert_advertisement_set_0_ready();
         hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_SET_ADDRESS_SET_0;
     }
 #endif
