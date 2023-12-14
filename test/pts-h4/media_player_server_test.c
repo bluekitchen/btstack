@@ -292,6 +292,13 @@ static uint8_t ots_object_parent_group_data[] = {
         (uint8_t)OTS_GROUP_OBJECT_TYPE_GROUP, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00
 };
 
+static uint8_t ots_object_directory_listing_data[] = {
+        (uint8_t)OTS_GROUP_OBJECT_TYPE_GROUP, 0x00, 0xFF, 0x00, 0x00, 0x00, 0x00,
+};
+
+
+static ots_object_id_t directory_listing = {0,0,0,0,0,0};
+
 static uint8_t ots_object_segments_list_data[] = {
         0x0D, 0x53, 0x65, 0x67, 0x6d, 0x65, 0x6e, 0x74, 0x20, 0x31, 0x31, 0x2d, 0x45, 0x31, 0x00, 0x00, 0x00, 0x00, 
         0x0D, 0x53, 0x65, 0x67, 0x6d, 0x65, 0x6e, 0x74, 0x20, 0x31, 0x31, 0x2d, 0x45, 0x32, 0xD1, 0x07, 0x00, 0x00, 
@@ -838,9 +845,13 @@ static ots_object_t * ots_object_iterator_goto(ots_object_id_t * luid){
                 case OTS_OBJECT_TYPE_TRACK_SEGMENTS:
                     ots_object_current_data = ots_object_segments_list_data;
                     break;
-
+                case OTS_OBJECT_TYPE_DIRECTORY_LISTING:
+                    if (memcmp(&object->luid, directory_listing, sizeof(ots_object_id_t)) == 0) {
+                        ots_object_current_data = ots_object_directory_listing_data;
+                    }
+                    break;
                 default:
-                    ots_object_current_data = ots_object_track_data;
+                    btstack_assert(false);
                     break;
             }
 
@@ -942,6 +953,17 @@ static void ots_db_load_from_memory(uint8_t track_groups_num, mcs_track_group_t 
 
     btstack_utc_t first_created = {2023, 6, 22, 10, 59, 30};
     btstack_utc_t last_modified = {2023, 6, 22, 10, 59, 30};
+
+    ots_db_object_add(
+            &directory_listing,
+            "Directory Listing",
+            OBJECT_PROPERTY_MASK_READ,
+            OTS_OBJECT_TYPE_DIRECTORY_LISTING,
+            // simulate increase of size to test sorting by size
+            100,
+            sizeof(ots_object_directory_listing_data),
+            &first_created,
+            &last_modified);
 
     ots_db_object_add(
             &groups[0].parent_group_object_id,
@@ -2066,7 +2088,7 @@ static void mcs_server_trigger_notifications_for_opcode(mcs_media_player_t * med
     }
 
     if (ots_change_to_group_object){
-        ots_object_t * object = ots_db_find_object_with_luid(media_player->track_groups[media_player->current_group_index].current_group_object_id);
+        ots_object_t * object = ots_db_find_object_with_luid(&media_player->track_groups[media_player->current_group_index].current_group_object_id);
         if (object != NULL){
             object_transfer_service_server_set_current_object(bap_app_server_con_handle, object);
             //object_transfer_service_server_update_current_object_name(bap_app_server_con_handle, track->title);
@@ -2285,7 +2307,7 @@ static void ots_dump_filter(uint8_t filter_index) {
             break;
 
         case OTS_FILTER_TYPE_OBJECT_TYPE:   // 2
-            printf("0x%4x\n", (gatt_uuid_type_t)little_endian_read_16(ots_filters[filter_index].value, 0));
+            printf("0x%4x\n", little_endian_read_16(ots_filters[filter_index].value, 0));
             break;
         case OTS_FILTER_TYPE_CURRENT_SIZE_BETWEEN:   // 8
             printf("[%d, %d]\n", little_endian_read_32(ots_filters[filter_index].value, 0), little_endian_read_32(ots_filters[filter_index].value, 4));
