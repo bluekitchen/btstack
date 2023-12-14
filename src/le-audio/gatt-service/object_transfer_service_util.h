@@ -95,11 +95,6 @@ typedef uint8_t ots_object_id_t[OTS_OBJECT_ID_LEN];
 
 /* API_START */
 
-typedef enum{
-    GATT_UUID_TYPE_UNSPECIFIED = 0x2ACA,
-    GATT_UUID_TYPE_DIRECTORY_LISTING
-} gatt_uuid_type_t;
-
 typedef struct {
     uint16_t year;
     uint8_t  month;
