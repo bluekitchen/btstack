@@ -2860,7 +2860,7 @@ int btstack_main(void)
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
 
-
+    gap_set_max_number_peripheral_connections(2);
     // setup advertisements
     setup_advertising();
     gap_periodic_advertising_sync_transfer_set_default_parameters(2, 0, 0x2000, 0);
