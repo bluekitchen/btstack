@@ -385,7 +385,7 @@ void le_audio_demo_util_sink_configure_general(uint8_t num_streams, uint8_t num_
     const btstack_audio_sink_t * sink = btstack_audio_sink_get_instance();
     if (sink != NULL){
         btstack_sample_rate_compensation_reset( &sample_rate_compensation, btstack_run_loop_get_time_ms() );
-        btstack_resample_init(&resample_instance, le_audio_demo_sink_num_channels_per_stream);
+        btstack_resample_init(&resample_instance, le_audio_demo_sink_num_channels);
         sink->init(le_audio_demo_sink_num_channels, le_audio_demo_sink_sampling_frequency_hz, le_audio_connection_sink_playback);
         sink->start_stream();
     }
