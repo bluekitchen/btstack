@@ -559,8 +559,8 @@ static bool ots_server_gatt_uuid_size_valid(uint16_t uuid_size){
     return (uuid_size == 2) || (uuid_size == 16);
 }
 
-static bool ots_server_supports_gatt_uuid16(uint16_t uuid16){
-    switch (uuid16){
+static bool ots_server_supports_object_type(ots_object_type_t object_type){
+    switch (object_type){
         case OTS_OBJECT_TYPE_GROUP:
         case OTS_OBJECT_TYPE_MEDIA_PLAYER_ICON:
         case OTS_OBJECT_TYPE_TRACK_SEGMENTS:
@@ -609,7 +609,7 @@ int ots_server_handle_action_control_point_operation(ots_server_connection_t * c
     uint32_t offset;
     uint32_t length;
     uint32_t object_size;
-    gatt_uuid_type_t type_uuid16;
+    ots_object_type_t type_uuid16;
     uint8_t  gatt_uuid_size;
 
     switch (connection->oacp_opcode){
@@ -634,8 +634,8 @@ int ots_server_handle_action_control_point_operation(ots_server_connection_t * c
                 break;
             }
 
-            type_uuid16 = (gatt_uuid_type_t)little_endian_read_16(buffer, pos);
-            if (!ots_server_supports_gatt_uuid16(type_uuid16)){
+            type_uuid16 = (ots_object_type_t)little_endian_read_16(buffer, pos);
+            if (!ots_server_supports_object_type(type_uuid16)){
                 connection->oacp_result_code =  OACP_RESULT_CODE_UNSUPPORTED_TYPE;
                 break;
             }
