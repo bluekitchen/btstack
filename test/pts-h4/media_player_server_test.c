@@ -76,7 +76,6 @@ static uint8_t adv_data[] = {
     0x04, BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME, 'I', 'U', 'T', 
 };
 
-static const uint8_t adv_data_len = sizeof(adv_data);
 static const uint8_t adv_sid = 0;
 static uint8_t       adv_handle = 0;
 static le_advertising_set_t le_advertising_set;
@@ -1223,7 +1222,6 @@ static mcs_media_player_t * mcs_get_media_player_for_id(uint16_t media_player_id
 
 
 static void mcs_change_current_track_for_luid(mcs_media_player_t * media_player, ots_object_id_t * luid);
-static void mcs_change_current_group_for_luid(mcs_media_player_t * media_player, ots_object_id_t * luid);
 static void mcs_change_current_track_segments_to_luid(mcs_media_player_t * media_player, ots_object_id_t * luid);
 
 static olcp_result_code_t ots_server_operation_goto(hci_con_handle_t con_handle, ots_object_id_t * luid){
@@ -1471,20 +1469,6 @@ static void mcs_change_current_track_for_luid(mcs_media_player_t * media_player,
         }
     }
     mcs_change_current_track(media_player, track_index);
-}
-
-static void mcs_change_current_group_for_luid(mcs_media_player_t * media_player, ots_object_id_t * luid){
-    uint32_t group_index = media_player->current_group_index;
-    int i;
-    for (i = 0; i < media_player->track_groups_num; i++){
-        mcs_track_group_t * track_group = &track_groups[i];
-        
-        if (memcmp(track_group->current_group_object_id, luid, 6) == 0){
-            group_index = i;
-            break;
-        }
-    }
-    mcs_change_current_group(media_player, group_index);
 }
 
 static void mcs_goto_first_track(uint16_t media_player_id) {
