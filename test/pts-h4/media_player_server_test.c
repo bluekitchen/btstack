@@ -45,6 +45,8 @@
 #include "media_player_server_test.h"
 #include "btstack.h"
 
+#define BAP_SERVER_APP_MAX_NUM_CONNECTIONS 2
+
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static uint16_t att_read_callback(hci_con_handle_t con_handle, uint16_t att_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size);
 static int att_write_callback(hci_con_handle_t con_handle, uint16_t att_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size);
@@ -55,11 +57,75 @@ static btstack_packet_callback_registration_t sm_event_callback_registration;
 typedef enum {
     BAP_APP_SERVER_STATE_IDLE = 0,
     BAP_APP_SERVER_STATE_CONNECTED
-} bap_app_server_state_t; 
+} bap_app_server_state_t;
 
-static bap_app_server_state_t  bap_app_server_state      = BAP_APP_SERVER_STATE_IDLE;
-static hci_con_handle_t        bap_app_server_con_handle = HCI_CON_HANDLE_INVALID;
-static bd_addr_t               bap_app_client_addr;
+typedef struct {
+    hci_con_handle_t        con_handle;
+    bap_app_server_state_t  state;
+    bd_addr_t               client_addr;
+} bap_app_server_connection_t;
+
+static bap_app_server_connection_t connections[BAP_SERVER_APP_MAX_NUM_CONNECTIONS];
+
+hci_con_handle_t bap_app_server_get_active_con_handle(void){
+    return connections[0].con_handle;
+}
+
+static void bap_app_server_connection_reset(bap_app_server_connection_t * connection){
+    connection->con_handle = HCI_CON_HANDLE_INVALID;
+    connection->state = BAP_APP_SERVER_STATE_IDLE;
+    memset(connection->client_addr, 0, sizeof(bd_addr_t));
+}
+
+static bap_app_server_connection_t * bap_server_app_connections_find(hci_con_handle_t con_handle) {
+    uint8_t i;
+    for (i = 0; i < BAP_SERVER_APP_MAX_NUM_CONNECTIONS; i++){
+        if (connections[i].con_handle == con_handle){
+            return &connections[i];
+        }
+    }
+    return NULL;
+}
+
+static uint8_t bap_app_server_connection_delete(hci_con_handle_t con_handle){
+    if (con_handle == HCI_CON_HANDLE_INVALID){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+    bap_app_server_connection_t * connection = bap_server_app_connections_find(con_handle);
+    if (connection == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    bap_app_server_connection_reset(connection);
+    return ERROR_CODE_SUCCESS;
+}
+
+static uint8_t bap_app_server_connection_add(hci_con_handle_t con_handle, bd_addr_t * address){
+    if (con_handle == HCI_CON_HANDLE_INVALID){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+    bap_app_server_connection_t * connection = bap_server_app_connections_find(con_handle);
+    if (connection != NULL){
+        return ERROR_CODE_REPEATED_ATTEMPTS;
+    }
+    connection = bap_server_app_connections_find(HCI_CON_HANDLE_INVALID);
+    if (connection == NULL){
+        return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
+    }
+
+    connection->con_handle = con_handle;
+    connection->state = BAP_APP_SERVER_STATE_CONNECTED;
+    memcpy(connection->client_addr, address, sizeof(bd_addr_t));
+
+    return ERROR_CODE_SUCCESS;
+}
+
+static void bap_server_app_connections_init() {
+    uint8_t i;
+    for (i = 0; i < BAP_SERVER_APP_MAX_NUM_CONNECTIONS; i++){
+        bap_app_server_connection_reset(&connections[i]);
+    }
+}
+
 
 // Advertisement
 
@@ -1778,6 +1844,11 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 
     if (packet_type != HCI_EVENT_PACKET) return;
 
+    hci_con_handle_t con_handle;
+    bd_addr_t client_address;
+    uint8_t status;
+    bap_app_server_connection_t * connection;
+
     switch (hci_event_packet_get_type(packet)) {
         case ATT_EVENT_CAN_SEND_NOW:
             // att_server_notify(con_handle, ATT_CHARACTERISTIC_0000FF11_0000_1000_8000_00805F9B34FB_01_VALUE_HANDLE, (uint8_t*) counter_string, counter_string_len);
@@ -1794,10 +1865,16 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
        case HCI_EVENT_LE_META:
             switch (hci_event_le_meta_get_subevent_code(packet)){
                 case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
-                    bap_app_server_con_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
-                    bap_app_server_state      = BAP_APP_SERVER_STATE_CONNECTED;
-                    hci_subevent_le_connection_complete_get_peer_address(packet, bap_app_client_addr);
-                    printf("BAP Server: Connection to %s established\n", bd_addr_to_str(bap_app_client_addr));
+                    con_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
+                    hci_subevent_le_connection_complete_get_peer_address(packet, client_address);
+
+                    status = bap_app_server_connection_add(con_handle, &client_address);
+                    if (status != ERROR_CODE_SUCCESS){
+                        printf("BAP Server: Connection to %s failed, error 0x%02x\n", bd_addr_to_str(client_address), status);
+                        break;
+                    }
+
+                    printf("BAP Server: Connection to %s established\n", bd_addr_to_str(client_address));
                     mcs_track_t * track = mcs_get_current_track_for_media_player_id(current_media_player_id);
                     mcs_media_player_t * media_player = mcs_get_media_player_for_id(current_media_player_id);
 
@@ -1811,8 +1888,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     if (track != NULL){
                         ots_object_t * object = ots_db_find_object_with_luid(&track->object_id);
                         if (object != NULL){
-                            object_transfer_service_server_set_current_object(bap_app_server_con_handle, object);
-                            object_transfer_service_server_update_current_object_name(bap_app_server_con_handle, long_string1);
+                            object_transfer_service_server_set_current_object(con_handle, object);
+                            object_transfer_service_server_update_current_object_name(con_handle, long_string1);
                         }
                     }
                     break;
@@ -1826,10 +1903,13 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             break;
 
         case HCI_EVENT_DISCONNECTION_COMPLETE:
-            bap_app_server_con_handle = HCI_CON_HANDLE_INVALID;
-            bap_app_server_state      = BAP_APP_SERVER_STATE_IDLE;
-            printf("BAP Server: Disconnected from %s\n", bd_addr_to_str(bap_app_client_addr));
-
+            con_handle = hci_event_disconnection_complete_get_connection_handle(packet);
+            connection = bap_server_app_connections_find(con_handle);
+            if (connection == NULL){
+                break;
+            }
+            printf("BAP Server: Disconnected from %s\n", bd_addr_to_str(connection->client_addr));
+            bap_app_server_connection_delete(con_handle);
             mcs_seeking_speed_timer_stop(current_media_player_id);
             break;
 
@@ -2059,8 +2139,8 @@ static void mcs_server_trigger_notifications_for_opcode(mcs_media_player_t * med
         if (ots_change_to_group_object == false){
             ots_object_t * object = ots_db_find_object_with_luid(&track->object_id);
             if (object != NULL){
-                object_transfer_service_server_set_current_object(bap_app_server_con_handle, object);
-                object_transfer_service_server_update_current_object_name(bap_app_server_con_handle, track->title);
+                object_transfer_service_server_set_current_object(bap_app_server_get_active_con_handle(), object);
+                object_transfer_service_server_update_current_object_name(bap_app_server_get_active_con_handle(), track->title);
             }
         }
 
@@ -2074,7 +2154,7 @@ static void mcs_server_trigger_notifications_for_opcode(mcs_media_player_t * med
     if (ots_change_to_group_object){
         ots_object_t * object = ots_db_find_object_with_luid(&media_player->track_groups[media_player->current_group_index].current_group_object_id);
         if (object != NULL){
-            object_transfer_service_server_set_current_object(bap_app_server_con_handle, object);
+            object_transfer_service_server_set_current_object(bap_app_server_get_active_con_handle(), object);
             //object_transfer_service_server_update_current_object_name(bap_app_server_con_handle, track->title);
         }
     }
@@ -2732,8 +2812,8 @@ static void stdin_process(char cmd){
                 if (track != NULL){
                     ots_object_t * object = ots_db_find_object_with_luid(&track->object_id);
                     if (object != NULL){
-                        object_transfer_service_server_set_current_object(bap_app_server_con_handle, object);
-                        status = object_transfer_service_server_update_current_object_name(bap_app_server_con_handle, long_string1);
+                        object_transfer_service_server_set_current_object(bap_app_server_get_active_con_handle(), object);
+                        status = object_transfer_service_server_update_current_object_name(bap_app_server_get_active_con_handle(), long_string1);
                     }
                 }
             }
@@ -2745,8 +2825,8 @@ static void stdin_process(char cmd){
                 if (track != NULL){
                     ots_object_t * object = ots_db_find_object_with_luid(&track->object_id);
                     if (object != NULL){
-                        object_transfer_service_server_set_current_object(bap_app_server_con_handle, object);
-                        status = object_transfer_service_server_update_current_object_name(bap_app_server_con_handle, long_string1);
+                        object_transfer_service_server_set_current_object(bap_app_server_get_active_con_handle(), object);
+                        status = object_transfer_service_server_update_current_object_name(bap_app_server_get_active_con_handle(), long_string1);
                     }
                 }
             }
@@ -2792,6 +2872,8 @@ static void stdin_process(char cmd){
 int btstack_main(void);
 void ots_db_init();
 
+
+void bap_server_app_connections_init();
 
 int btstack_main(void)
 {
@@ -2849,6 +2931,8 @@ int btstack_main(void)
     setup_advertising();
     gap_periodic_advertising_sync_transfer_set_default_parameters(2, 0, 0x2000, 0);
 
+    bap_server_app_connections_init();
+
     btstack_stdin_setup(stdin_process);
     
     // turn on!
@@ -2856,3 +2940,4 @@ int btstack_main(void)
 	    
     return 0;
 }
+
