@@ -4820,13 +4820,18 @@ static void l2cap_acl_classic_handler(hci_con_handle_t handle, uint8_t *packet, 
                 uint16_t data_len = little_endian_read_16(packet, command_offset + L2CAP_SIGNALING_COMMAND_LENGTH_OFFSET);
                 uint32_t next_command_offset = command_offset + L2CAP_SIGNALING_COMMAND_DATA_OFFSET + data_len;
                 if (next_command_offset > size){
-                    log_error("l2cap signaling command len invalid -> drop");
+                    log_error("signaling command incomplete -> drop");
                     break;
                 }
                 // handle signaling command
                 l2cap_signaling_handler_dispatch(handle, &packet[command_offset]);
                 // go to next command
                 command_offset = next_command_offset;
+            }
+            // handle incomplete packet
+            if (command_offset < size) {
+                log_error("signaling command incomplete -> reject");
+                l2cap_register_signaling_response(handle, COMMAND_REJECT, 0, 0, L2CAP_REJ_CMD_UNKNOWN);
             }
             break;
         }
