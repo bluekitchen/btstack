@@ -9536,6 +9536,8 @@ bool gap_authenticated(hci_con_handle_t con_handle){
 #ifdef ENABLE_BLE
         case BD_ADDR_TYPE_LE_PUBLIC:
         case BD_ADDR_TYPE_LE_RANDOM:
+        case BD_ADDR_TYPE_LE_PUBLIC_IDENTITY:
+        case BD_ADDR_TYPE_LE_RANDOM_IDENTITY:
             if (hci_connection->sm_connection.sm_connection_encrypted == 0) return 0; // unencrypted connection cannot be authenticated
             return hci_connection->sm_connection.sm_connection_authenticated != 0;
 #endif
@@ -9557,6 +9559,8 @@ bool gap_secure_connection(hci_con_handle_t con_handle){
 #ifdef ENABLE_BLE
         case BD_ADDR_TYPE_LE_PUBLIC:
         case BD_ADDR_TYPE_LE_RANDOM:
+        case BD_ADDR_TYPE_LE_PUBLIC_IDENTITY:
+        case BD_ADDR_TYPE_LE_RANDOM_IDENTITY:
             if (hci_connection->sm_connection.sm_connection_encrypted == 0) return false; // unencrypted connection cannot be authenticated
             return hci_connection->sm_connection.sm_connection_sc;
 #endif
@@ -9582,7 +9586,9 @@ bool gap_bonded(hci_con_handle_t con_handle){
 #ifdef ENABLE_BLE
 		case BD_ADDR_TYPE_LE_PUBLIC:
 		case BD_ADDR_TYPE_LE_RANDOM:
-			return hci_connection->sm_connection.sm_le_db_index >= 0;
+	    case BD_ADDR_TYPE_LE_PUBLIC_IDENTITY:
+        case BD_ADDR_TYPE_LE_RANDOM_IDENTITY:
+            return hci_connection->sm_connection.sm_le_db_index >= 0;
 #endif
 #ifdef ENABLE_CLASSIC
 		case BD_ADDR_TYPE_SCO:
