@@ -4472,7 +4472,7 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
 
                 // allocate channel
                 channel = l2cap_create_channel_entry(service->packet_handler, L2CAP_CHANNEL_TYPE_CHANNEL_CBM, connection->address,
-                                                     BD_ADDR_TYPE_LE_RANDOM, le_psm, service->mtu, service->required_security_level);
+                                                     connection->address_type, le_psm, service->mtu, service->required_security_level);
                 if (!channel){
                     l2cap_register_signaling_response(handle, LE_CREDIT_BASED_CONNECTION_REQUEST, sig_id, source_cid, L2CAP_CBM_CONNECTION_RESULT_NO_RESOURCES_AVAILABLE);
                     return 1;
