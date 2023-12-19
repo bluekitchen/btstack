@@ -8,7 +8,7 @@ CHARACTERISTIC, GAP_DEVICE_NAME, READ, "Unicast Headset"
 #import <volume_control_service.gatt>
 
 // Coordinated Set Identification Service
-#import <coordinated_set_identification_service.gatt>
+// #import <coordinated_set_identification_service.gatt>
 
 // Audio Stream Control Service 0x184E
 PRIMARY_SERVICE, ORG_BLUETOOTH_SERVICE_AUDIO_STREAM_CONTROL_SERVICE
