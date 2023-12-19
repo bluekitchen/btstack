@@ -604,7 +604,7 @@ void gap_link_key_iterator_done(btstack_link_key_iterator_t * it){
 }
 #endif
 
-static bool hci_is_le_connection_type(bd_addr_type_t address_type){
+bool hci_is_le_connection_type(bd_addr_type_t address_type){
     switch (address_type){
         case BD_ADDR_TYPE_LE_PUBLIC:
         case BD_ADDR_TYPE_LE_RANDOM:
