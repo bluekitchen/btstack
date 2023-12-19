@@ -17,7 +17,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 - HCI: allow to configure Classic ACL packet types with hci_enable_acl_packet_types
 - GAP: emit generic GAP_SUBEVENT_LE_CONNECTION_COMPLETE for any LE Connection Complete
-- GAP: ENABLE_LE_ENHANCED_CONNECTION_COMPLETE_EVENT enables enhanced LE Connection Complete events
 - SM: support LE Secure Connection debug keys for testing
 - L2CAP: additional authorization_required param in l2cap_ecbm_register_service  
 - GATT Client: support GATT over Enhanced LE Bearer
