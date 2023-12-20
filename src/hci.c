@@ -604,7 +604,7 @@ void gap_link_key_iterator_done(btstack_link_key_iterator_t * it){
 }
 #endif
 
-static bool hci_is_le_connection_type(bd_addr_type_t address_type){
+bool hci_is_le_connection_type(bd_addr_type_t address_type){
     switch (address_type){
         case BD_ADDR_TYPE_LE_PUBLIC:
         case BD_ADDR_TYPE_LE_RANDOM:
@@ -1452,27 +1452,27 @@ bool hci_non_flushable_packet_boundary_flag_supported(void){
 }
 
 #ifdef ENABLE_CLASSIC
-static int gap_ssp_supported(void){
+static bool gap_ssp_supported(void){
     // No. 51, byte 6, bit 3
     return (hci_stack->local_supported_features[6u] & (1u << 3u)) != 0u;
 }
 #endif
 
-static int hci_classic_supported(void){
+bool hci_classic_supported(void){
 #ifdef ENABLE_CLASSIC    
     // No. 37, byte 4, bit 5, = No BR/EDR Support
     return (hci_stack->local_supported_features[4] & (1 << 5)) == 0;
 #else
-    return 0;
+    return false;
 #endif
 }
 
-static int hci_le_supported(void){
+bool hci_le_supported(void){
 #ifdef ENABLE_BLE
     // No. 37, byte 4, bit 6 = LE Supported (Controller)
     return (hci_stack->local_supported_features[4u] & (1u << 6u)) != 0u;
 #else
-    return 0;
+    return false;
 #endif    
 }
 
@@ -4425,7 +4425,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
                         uint8_t status = packet[3];
                         if (status == ERROR_CODE_SUCCESS){
                             // store bis_con_handles and trigger iso path setup
-                            uint8_t num_bis = btstack_min(MAX_NR_BIS, packet[20]);
+                            uint8_t num_bis = btstack_min(big->num_bis, packet[20]);
                             uint8_t i;
                             for (i=0;i<num_bis;i++){
                                 hci_con_handle_t bis_handle = (hci_con_handle_t) little_endian_read_16(packet, 21 + (2 * i));
@@ -4493,10 +4493,23 @@ static void event_handler(uint8_t *packet, uint16_t size){
                         uint8_t big_handle = packet[4];
                         if (status == ERROR_CODE_SUCCESS){
                             // store bis_con_handles and trigger iso path setup
-                            uint8_t num_bis = btstack_min(MAX_NR_BIS, packet[16]);
+                            uint8_t num_bis = btstack_min(big_sync->num_bis, packet[16]);
                             uint8_t i;
                             for (i=0;i<num_bis;i++){
-                                big_sync->bis_con_handles[i] = little_endian_read_16(packet, 17 + (2 * i));
+                                hci_con_handle_t bis_handle = little_endian_read_16(packet, 17 + (2 * i));
+                                big_sync->bis_con_handles[i] = bis_handle;
+                                // setup iso_stream_t
+                                btstack_linked_list_iterator_t it;
+                                btstack_linked_list_iterator_init(&it, &hci_stack->iso_streams);
+                                while (btstack_linked_list_iterator_has_next(&it)){
+                                    hci_iso_stream_t * iso_stream = (hci_iso_stream_t *) btstack_linked_list_iterator_next(&it);
+                                    if ((iso_stream->state == HCI_ISO_STREAM_STATE_REQUESTED ) &&
+                                        (iso_stream->group_id == big_sync->big_handle)){
+                                        iso_stream->cis_handle = bis_handle;
+                                        iso_stream->state = HCI_ISO_STREAM_STATE_ESTABLISHED;
+                                        break;
+                                    }
+                                }
                             }
                             if (big_sync->state == LE_AUDIO_BIG_STATE_W4_ESTABLISHED) {
                                 // trigger iso path setup
@@ -8481,6 +8494,15 @@ int gap_request_connection_parameter_update(hci_con_handle_t con_handle, uint16_
 
 #ifdef ENABLE_LE_PERIPHERAL
 
+#ifdef ENABLE_LE_EXTENDED_ADVERTISING
+static void hci_assert_advertisement_set_0_ready(void){
+    // force advertising set creation for legacy LE Advertising
+    if ((hci_stack->le_advertisements_state & LE_ADVERTISEMENT_STATE_PARAMS_SET) == 0){
+        hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_SET_PARAMS;
+    }
+}
+#endif
+
 /**
  * @brief Set Advertisement Data
  * @param advertising_data_length
@@ -8491,6 +8513,9 @@ void gap_advertisements_set_data(uint8_t advertising_data_length, uint8_t * adve
     hci_stack->le_advertisements_data_len = advertising_data_length;
     hci_stack->le_advertisements_data = advertising_data;
     hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_SET_ADV_DATA;
+#ifdef ENABLE_LE_EXTENDED_ADVERTISING
+    hci_assert_advertisement_set_0_ready();
+#endif
     hci_run();
 }
 
@@ -8504,6 +8529,9 @@ void gap_scan_response_set_data(uint8_t scan_response_data_length, uint8_t * sca
     hci_stack->le_scan_response_data_len = scan_response_data_length;
     hci_stack->le_scan_response_data = scan_response_data;
     hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_SET_SCAN_DATA;
+#ifdef ENABLE_LE_EXTENDED_ADVERTISING
+    hci_assert_advertisement_set_0_ready();
+#endif
     hci_run();
 }
 
@@ -8779,10 +8807,7 @@ void hci_le_random_address_set(const bd_addr_t random_address){
     hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_SET_ADDRESS;
 #ifdef ENABLE_LE_EXTENDED_ADVERTISING
     if (hci_extended_advertising_supported()){
-        // force advertising set creation for LE Set Advertising Set Random Address
-        if ((hci_stack->le_advertisements_state & LE_ADVERTISEMENT_STATE_PARAMS_SET) == 0){
-            hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_SET_PARAMS;
-        }
+        hci_assert_advertisement_set_0_ready();
         hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_SET_ADDRESS_SET_0;
     }
 #endif
@@ -8825,6 +8850,8 @@ gap_connection_type_t gap_get_connection_type(hci_con_handle_t connection_handle
     switch (conn->address_type){
         case BD_ADDR_TYPE_LE_PUBLIC:
         case BD_ADDR_TYPE_LE_RANDOM:
+        case BD_ADDR_TYPE_LE_PUBLIC_IDENTITY:
+        case BD_ADDR_TYPE_LE_RANDOM_IDENTITY:
             return GAP_CONNECTION_LE;
         case BD_ADDR_TYPE_SCO:
             return GAP_CONNECTION_SCO;
@@ -9509,6 +9536,8 @@ bool gap_authenticated(hci_con_handle_t con_handle){
 #ifdef ENABLE_BLE
         case BD_ADDR_TYPE_LE_PUBLIC:
         case BD_ADDR_TYPE_LE_RANDOM:
+        case BD_ADDR_TYPE_LE_PUBLIC_IDENTITY:
+        case BD_ADDR_TYPE_LE_RANDOM_IDENTITY:
             if (hci_connection->sm_connection.sm_connection_encrypted == 0) return 0; // unencrypted connection cannot be authenticated
             return hci_connection->sm_connection.sm_connection_authenticated != 0;
 #endif
@@ -9530,6 +9559,8 @@ bool gap_secure_connection(hci_con_handle_t con_handle){
 #ifdef ENABLE_BLE
         case BD_ADDR_TYPE_LE_PUBLIC:
         case BD_ADDR_TYPE_LE_RANDOM:
+        case BD_ADDR_TYPE_LE_PUBLIC_IDENTITY:
+        case BD_ADDR_TYPE_LE_RANDOM_IDENTITY:
             if (hci_connection->sm_connection.sm_connection_encrypted == 0) return false; // unencrypted connection cannot be authenticated
             return hci_connection->sm_connection.sm_connection_sc;
 #endif
@@ -9555,7 +9586,9 @@ bool gap_bonded(hci_con_handle_t con_handle){
 #ifdef ENABLE_BLE
 		case BD_ADDR_TYPE_LE_PUBLIC:
 		case BD_ADDR_TYPE_LE_RANDOM:
-			return hci_connection->sm_connection.sm_le_db_index >= 0;
+	    case BD_ADDR_TYPE_LE_PUBLIC_IDENTITY:
+        case BD_ADDR_TYPE_LE_RANDOM_IDENTITY:
+            return hci_connection->sm_connection.sm_le_db_index >= 0;
 #endif
 #ifdef ENABLE_CLASSIC
 		case BD_ADDR_TYPE_SCO:
@@ -10244,22 +10277,26 @@ static void hci_iso_notify_can_send_now(void){
     }
 }
 
-uint8_t gap_big_create(le_audio_big_t * storage, le_audio_big_params_t * big_params){
-    if (hci_big_for_handle(big_params->big_handle) != NULL){
+static uint8_t gap_big_setup_iso_streams(uint8_t num_bis, uint8_t big_handle){
+    // make big handle unique and usuable for big and big sync
+    if (hci_big_for_handle(big_handle) != NULL){
         return ERROR_CODE_ACL_CONNECTION_ALREADY_EXISTS;
     }
-    if (big_params->num_bis == 0){
+    if (hci_big_sync_for_handle(big_handle) != NULL){
+        return ERROR_CODE_ACL_CONNECTION_ALREADY_EXISTS;
+    }
+    if (num_bis == 0){
         return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
     }
-    if (big_params->num_bis > MAX_NR_BIS){
+    if (num_bis > MAX_NR_BIS){
         return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
     }
 
     // reserve ISO Streams
     uint8_t i;
     uint8_t status = ERROR_CODE_SUCCESS;
-    for (i=0;i<big_params->num_bis;i++){
-        hci_iso_stream_t * iso_stream = hci_iso_stream_create(HCI_ISO_TYPE_BIS, HCI_ISO_STREAM_STATE_REQUESTED, big_params->big_handle, i);
+    for (i=0;i<num_bis;i++){
+        hci_iso_stream_t * iso_stream = hci_iso_stream_create(HCI_ISO_TYPE_BIS, HCI_ISO_STREAM_STATE_REQUESTED, big_handle, i);
         if (iso_stream == NULL) {
             status = ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
             break;
@@ -10268,7 +10305,15 @@ uint8_t gap_big_create(le_audio_big_t * storage, le_audio_big_params_t * big_par
 
     // free structs on error
     if (status != ERROR_CODE_SUCCESS){
-        hci_iso_stream_finalize_by_type_and_group_id(HCI_ISO_TYPE_BIS, big_params->big_handle);
+        hci_iso_stream_finalize_by_type_and_group_id(HCI_ISO_TYPE_BIS, big_handle);
+    }
+
+    return status;
+}
+
+uint8_t gap_big_create(le_audio_big_t * storage, le_audio_big_params_t * big_params){
+    uint8_t status = gap_big_setup_iso_streams(big_params->num_bis, big_params->big_handle);
+    if (status != ERROR_CODE_SUCCESS){
         return status;
     }
 
@@ -10285,14 +10330,9 @@ uint8_t gap_big_create(le_audio_big_t * storage, le_audio_big_params_t * big_par
 }
 
 uint8_t gap_big_sync_create(le_audio_big_sync_t * storage, le_audio_big_sync_params_t * big_sync_params){
-    if (hci_big_sync_for_handle(big_sync_params->big_handle) != NULL){
-        return ERROR_CODE_ACL_CONNECTION_ALREADY_EXISTS;
-    }
-    if (big_sync_params->num_bis == 0){
-        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
-    }
-    if (big_sync_params->num_bis > MAX_NR_BIS){
-        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    uint8_t status = gap_big_setup_iso_streams(big_sync_params->num_bis, big_sync_params->big_handle);
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
     }
 
     le_audio_big_sync_t * big_sync = storage;
@@ -10390,7 +10430,7 @@ uint8_t gap_cig_create(le_audio_cig_t * storage, le_audio_cig_params_t * cig_par
     if (cig_params->num_cis == 0){
         return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
     }
-    if (cig_params->num_cis > MAX_NR_BIS){
+    if (cig_params->num_cis > MAX_NR_CIS){
         return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
     }
 

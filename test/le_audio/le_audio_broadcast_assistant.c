@@ -65,17 +65,19 @@
 #include "hci.h"
 #include "l2cap.h"
 #include "le-audio/gatt-service/broadcast_audio_scan_service_client.h"
+#include "le-audio/le_audio_util.h"
 #include "le-audio/le_audio_base_parser.h"
 
 static void show_usage(void);
 
 static enum {
     APP_W4_WORKING,
-    APP_W4_BROADCAST_SINK_AND_SCAN_DELEGATOR_ADV,
+    APP_IDLE,
+    APP_W4_SCAN_DELEGATOR_CONNECTION,
+    APP_CONNECTED,
+    APP_W4_SCAN_BROADCAST_SOURCES,
     APP_W4_PA_AND_BIG_INFO,
     APP_W4_BIG_SYNC_ESTABLISHED,
-    APP_W4_SCAN_DELEGATOR_CONNECTION,
-    APP_IDLE
 } app_state = APP_W4_WORKING;
 
 //
@@ -86,18 +88,29 @@ static bool have_scan_delegator;
 static bool have_broadcast_source;
 static bool have_base;
 static bool have_big_info;
-static bool manual_mode;
+static bool scan_for_scan_delegator;
+static bool scan_for_broadcast_source;
+static uint16_t broadcast_source_scan_duration_s = 10;
 
 // broadcast sink info
-static char broadcast_source_name[20];
-static bd_addr_t broadcast_source;
-static bd_addr_type_t broadcast_source_type;
-static uint8_t broadcast_source_sid;
-static uint32_t broadcast_id;
-static uint16_t broadcast_source_pa_interval;
+#define NUM_BROADCAST_SOURCES 5
+#define BROADCAST_SOURCE_NAME_LEN 20
+struct {
+    char name[BROADCAST_SOURCE_NAME_LEN];
+    bd_addr_t addr;
+    bd_addr_type_t addr_type;
+    uint8_t sid;
+    uint32_t broadcast_id;
+    uint16_t pa_interval;
+} broadcast_sources[NUM_BROADCAST_SOURCES];
+static uint8_t broadcast_source_current;
+static bool broadcast_source_selected;
+static uint8_t broadcast_source_count = 0;
+static btstack_timer_source_t broadcast_source_scan_timer;
+static bool broadcast_source_synced;
 
 // broadcast info
-static hci_con_handle_t sync_handle;
+static hci_con_handle_t sync_handle = HCI_CON_HANDLE_INVALID;
 static uint8_t          encryption;
 static uint8_t          broadcast_code [] = {0x01, 0x02, 0x68, 0x05, 0x53, 0xF1, 0x41, 0x5A, 0xA2, 0x65, 0xBB, 0xAF, 0xC6, 0xEA, 0x03, 0xB8, };
 static uint8_t          num_bis;
@@ -122,6 +135,66 @@ static uint8_t  bass_source_id;
 
 // test device name
 static const char test_device_name[] = "OnePlus Buds Pro 2";
+
+/* Scanning */
+
+static void start_scanning() {
+    have_base = false;
+    have_big_info = false;
+    gap_set_scan_params(1, 0x30, 0x30, 0);
+    gap_start_scan();
+    printf("Start scan..\n");
+}
+
+static void stop_scanning() {
+    gap_stop_scan();
+    app_state = APP_CONNECTED;
+}
+
+static void broadcast_source_scan_timeout_handler(btstack_timer_source_t * ts) {
+    stop_scanning();
+    printf("Scanning done, found %u Broadcast Sources\n", broadcast_source_count);
+    show_usage();
+}
+
+/* Scan Delegator */
+
+static void connect_to_scan_delegator(void) {
+    printf("Connect to Scan Delegator %s type %u - %s\n", bd_addr_to_str(scan_delegator), scan_delegator_type, scan_delegator_name);
+    app_state = APP_W4_SCAN_DELEGATOR_CONNECTION;
+    gap_connect(scan_delegator, scan_delegator_type);
+}
+
+static void
+le_audio_broadcast_assistant_found_scan_delegator(bd_addr_type_t *addr_type, const uint8_t *addr,
+                                                  const char *adv_name) {
+    memcpy(scan_delegator, addr, 6);
+    scan_delegator_type = (*addr_type);
+    btstack_strcpy(scan_delegator_name,  sizeof(scan_delegator_name), (const char *) adv_name);
+    printf("Broadcast sink found, addr %s, name: '%s'\n", bd_addr_to_str(scan_delegator), scan_delegator_name);
+    gap_whitelist_add(scan_delegator_type, scan_delegator);
+
+    stop_scanning();
+    connect_to_scan_delegator();
+}
+
+/* Broadcast Sources */
+
+static void le_audio_broadcast_assistant_start_periodic_sync() {
+    printf("Start Periodic Advertising Sync\n");
+
+    have_base = false;
+    have_big_info = false;
+
+    // ignore other advertisements
+    gap_set_scan_params(1, 0x30, 0x30, 1);
+    // sync to PA
+    gap_periodic_advertiser_list_clear();
+    gap_periodic_advertiser_list_add(broadcast_sources[broadcast_source_current].addr_type, broadcast_sources[broadcast_source_current].addr, broadcast_sources[broadcast_source_current].sid);
+    app_state = APP_W4_PA_AND_BIG_INFO;
+    gap_periodic_advertising_create_sync(0x01, broadcast_sources[broadcast_source_current].sid, broadcast_sources[broadcast_source_current].addr_type, broadcast_sources[broadcast_source_current].addr, 0, 1000, 0);
+    gap_start_scan();
+}
 
 static void handle_periodic_advertisement(const uint8_t * packet, uint16_t size){
 
@@ -181,8 +254,8 @@ static void handle_periodic_advertisement(const uint8_t * packet, uint16_t size)
                     break;
                 case 0x02: // 0 = 7.5, 1 = 10 ms
                     frame_duration_index =  codec_specific_configuration[codec_offset+1];
-                    frame_duration = (frame_duration_index == 0) ? BTSTACK_LC3_FRAME_DURATION_7500US : BTSTACK_LC3_FRAME_DURATION_10000US;
-                    printf("    - frame duration[%u]: %s ms\n", i, (frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US) ? "7.5" : "10");
+                    frame_duration = le_audio_util_get_btstack_lc3_frame_duration(frame_duration_index);
+                    printf("    - frame duration[%u]: %u us\n", i, le_audio_get_frame_duration_us(frame_duration_index));
                     break;
                 case 0x04:  // octets per coding frame
                     octets_per_frame = little_endian_read_16(codec_specific_configuration, codec_offset+1);
@@ -226,21 +299,10 @@ static void handle_periodic_advertisement(const uint8_t * packet, uint16_t size)
     }
 }
 
-static void start_scanning() {
-    app_state = APP_W4_BROADCAST_SINK_AND_SCAN_DELEGATOR_ADV;
-    have_base = false;
-    have_big_info = false;
-    gap_set_scan_params(1, 0x30, 0x30, 0);
-    gap_start_scan();
-    printf("Start scan..\n");
-}
-
 static void have_base_and_big_info(void){
-    printf("Connecting to Scan Delegator/Sink!\n");
-
-    // todo: connect to scan delegator
-    app_state = APP_W4_SCAN_DELEGATOR_CONNECTION;
-    gap_connect(scan_delegator, scan_delegator_type);
+    stop_scanning();
+    broadcast_source_synced = true;
+    show_usage();
 }
 
 static void handle_big_info(const uint8_t * packet, uint16_t size){
@@ -253,20 +315,23 @@ static void handle_big_info(const uint8_t * packet, uint16_t size){
     have_big_info = true;
 }
 
-static void add_source() {// setup bass source info
+static void add_source() {
+    // setup bass source info
     printf("BASS Client: add source with BIS Sync 0x%04x\n", bass_source_data.subgroups[0].bis_sync_state);
-    bass_source_data.address_type = broadcast_source_type;
-    memcpy(bass_source_data.address, broadcast_source, 6);
-    bass_source_data.adv_sid = broadcast_source_sid;
-    bass_source_data.broadcast_id = broadcast_id;
-    bass_source_data.pa_sync = LE_AUDIO_PA_SYNC_SYNCHRONIZE_TO_PA_PAST_AVAILABLE;
-    bass_source_data.pa_interval = broadcast_source_pa_interval;
+    bass_source_data.address_type = broadcast_sources[broadcast_source_current].addr_type;
+    memcpy(bass_source_data.address, broadcast_sources[broadcast_source_current].addr, 6);
+    bass_source_data.adv_sid = broadcast_sources[broadcast_source_current].sid;
+    bass_source_data.broadcast_id = broadcast_sources[broadcast_source_current].broadcast_id;
+    bass_source_data.pa_sync = broadcast_source_synced ? LE_AUDIO_PA_SYNC_SYNCHRONIZE_TO_PA_PAST_AVAILABLE : LE_AUDIO_PA_SYNC_SYNCHRONIZE_TO_PA_PAST_NOT_AVAILABLE;
+    bass_source_data.pa_interval = broadcast_sources[broadcast_source_current].pa_interval;
     // bass_source_new.subgroups_num set in BASE parser
     // bass_source_new.subgroup[i].* set in BASE parser
 
     // add bass source
     broadcast_audio_scan_service_client_add_source(bass_cid, &bass_source_data);
 }
+
+/* Packet Handlers */
 
 static void bass_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
@@ -286,18 +351,12 @@ static void bass_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
                 return;
             }
             printf("BASS client connected, cid 0x%02x\n", bass_cid);
-
-            if ((have_big_info == false) || (have_base == false)) break;
-            if (manual_mode) return;
-
-            bass_source_data.subgroups[0].bis_sync_state = bis_sync_mask;
-            bass_source_data.subgroups[0].bis_sync       = bis_sync_mask;
-            add_source();
+            app_state = APP_CONNECTED;
             break;
         case GATTSERVICE_SUBEVENT_BASS_CLIENT_SOURCE_OPERATION_COMPLETE:
             if (gattservice_subevent_bass_client_source_operation_complete_get_status(packet) != ERROR_CODE_SUCCESS){
                 printf("BASS client source operation failed, status 0x%02x\n", gattservice_subevent_bass_client_source_operation_complete_get_status(packet));
-                return;
+                break;
             }
 
             if ( gattservice_subevent_bass_client_source_operation_complete_get_opcode(packet) == (uint8_t)BASS_OPCODE_ADD_SOURCE ){
@@ -323,51 +382,29 @@ static void bass_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
                 default:
                     break;
             }
-
-            // check if Broadcast Code is requested
-            if (manual_mode == false){
-                le_audio_big_encryption_t big_encryption;
-                uint8_t bad_code[16];
-                broadcast_audio_scan_service_client_get_encryption_state(bass_cid, bass_source_id, &big_encryption, bad_code);
-                if (big_encryption == LE_AUDIO_BIG_ENCRYPTION_BROADCAST_CODE_REQUIRED){
-                    printf("LE_AUDIO_BIG_ENCRYPTION_BROADCAST_CODE_REQUIRED -> send Broadcast Code\n");
-                    broadcast_audio_scan_service_client_set_broadcast_code(bass_cid, bass_source_id, broadcast_code);
-                }
-            }
+            break;
+        case GATTSERVICE_SUBEVENT_BASS_CLIENT_DISCONNECTED:
             break;
         default:
             break;
     }
 }
 
-static void le_audio_broadcast_assistant_start_periodic_sync() {
-    printf("Start Periodic Advertising Sync\n");
-
-    // ignore other advertisements
-    gap_set_scan_params(1, 0x30, 0x30, 1);
-    // sync to PA
-    gap_periodic_advertiser_list_clear();
-    gap_periodic_advertiser_list_add(broadcast_source_type, broadcast_source, broadcast_source_sid);
-    app_state = APP_W4_PA_AND_BIG_INFO;
-    gap_periodic_advertising_create_sync(0x01, broadcast_source_sid, broadcast_source_type, broadcast_source, 0, 1000, 0);
-}
-
-static void
-le_audio_broadcast_assistant_found_scan_delegator(bd_addr_type_t *addr_type, const uint8_t *addr,
-                                                  const char *adv_name) {
-    memcpy(scan_delegator, addr, 6);
-    scan_delegator_type = (*addr_type);
-    btstack_strcpy(scan_delegator_name,  sizeof(scan_delegator_name), (const char *) adv_name);
-    printf("Broadcast sink found, addr %s, name: '%s'\n", bd_addr_to_str(scan_delegator), scan_delegator_name);
-    gap_whitelist_add(scan_delegator_type, scan_delegator);
-}
-
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     if (packet_type != HCI_EVENT_PACKET) return;
+    uint8_t adv_size;
+    const uint8_t * adv_data;
+    bool found_scan_delegator = false;
+    bool found_broadcast_source = false;
+    bool add_broadcast_source = false;
+    char adv_name[31];
+    uint16_t uuid;
+    ad_context_t context;
+
     switch (packet[0]) {
         case BTSTACK_EVENT_STATE:
-            switch(btstack_event_state_get_state(packet)) {
+            switch (btstack_event_state_get_state(packet)) {
                 case HCI_STATE_WORKING:
                     app_state = APP_IDLE;
 #ifdef ENABLE_DEMO_MODE
@@ -384,65 +421,13 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     break;
             }
             break;
-        case GAP_EVENT_ADVERTISING_REPORT:{
-            if (app_state != APP_W4_BROADCAST_SINK_AND_SCAN_DELEGATOR_ADV) break;
 
-            uint8_t adv_size = gap_event_advertising_report_get_data_length(packet);
-            const uint8_t * adv_data = gap_event_advertising_report_get_data(packet);
-
-            ad_context_t context;
-            bool found_scan_delegator = false;
-            char adv_name[31];
-            adv_name[0] = 0;
-            for (ad_iterator_init(&context, adv_size, adv_data) ; ad_iterator_has_more(&context) ; ad_iterator_next(&context)) {
-                uint8_t data_type = ad_iterator_get_data_type(&context);
-                uint8_t size = ad_iterator_get_data_len(&context);
-                const uint8_t *data = ad_iterator_get_data(&context);
-                switch (data_type){
-                    case BLUETOOTH_DATA_TYPE_SHORTENED_LOCAL_NAME:
-                    case BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME:
-                        size = btstack_min(sizeof(adv_name) - 1, size);
-                        memcpy(adv_name, data, size);
-                        adv_name[size] = 0;
-                        // detect scan delegator by name
-                        if (strncmp(adv_name, test_device_name, sizeof(test_device_name)) == 0){
-                            found_scan_delegator = true;
-                        }
-                        break;
-                    default:
-                        break;
-                }
-            }
-
-            if (found_scan_delegator == false) break;
-
-            if ((have_scan_delegator == false) && found_scan_delegator){
-                have_scan_delegator = true;
-                bd_addr_t addr;
-                gap_event_advertising_report_get_address(packet, addr);
-                bd_addr_type_t addr_type = (bd_addr_type_t) gap_event_advertising_report_get_address_type(packet);
-                le_audio_broadcast_assistant_found_scan_delegator(&addr_type, addr, adv_name);
-            }
-
-            if ((have_broadcast_source && have_scan_delegator) == false) break;
-
-            le_audio_broadcast_assistant_start_periodic_sync();
-            break;
-        }
-        case GAP_EVENT_EXTENDED_ADVERTISING_REPORT:
-        {
-            if (app_state != APP_W4_BROADCAST_SINK_AND_SCAN_DELEGATOR_ADV) break;
-
-            uint8_t adv_size = gap_event_extended_advertising_report_get_data_length(packet);
-            const uint8_t * adv_data = gap_event_extended_advertising_report_get_data(packet);
-
-            ad_context_t context;
-            bool found_scan_delegator = false;
-            bool found_broadcast_source = false;
-            char adv_name[31];
+        case GAP_EVENT_ADVERTISING_REPORT:
+            // TODO: contains partial copy of GAP_EVENT_EXTENDED_ADVERTISING_REPORT below
+            adv_size = gap_event_advertising_report_get_data_length(packet);
+            adv_data = gap_event_advertising_report_get_data(packet);
             adv_name[0] = 0;
 
-            uint16_t uuid;
             for (ad_iterator_init(&context, adv_size, adv_data) ; ad_iterator_has_more(&context) ; ad_iterator_next(&context)) {
                 uint8_t data_type = ad_iterator_get_data_type(&context);
                 uint8_t size = ad_iterator_get_data_len(&context);
@@ -452,11 +437,15 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                         uuid = little_endian_read_16(data, 0);
                         switch (uuid){
                             case ORG_BLUETOOTH_SERVICE_BROADCAST_AUDIO_ANNOUNCEMENT_SERVICE:
-                                broadcast_id = little_endian_read_24(data, 2);
-                                found_broadcast_source = true;
+                                if (scan_for_broadcast_source) {
+                                    broadcast_sources[broadcast_source_count].broadcast_id = little_endian_read_24(data, 2);
+                                    found_broadcast_source = true;
+                                }
                                 break;
                             case ORG_BLUETOOTH_SERVICE_BROADCAST_AUDIO_SCAN_SERVICE:
-                                found_scan_delegator = true;
+                                if (scan_for_scan_delegator) {
+                                    found_scan_delegator = true;
+                                }
                                 break;
                             default:
                                 break;
@@ -473,7 +462,53 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 }
             }
 
-            if ((found_scan_delegator == false) && (found_broadcast_source == false)) break;
+            if ((have_scan_delegator == false) && found_scan_delegator){
+                have_scan_delegator = true;
+                bd_addr_t addr;
+                gap_event_extended_advertising_report_get_address(packet, addr);
+                bd_addr_type_t addr_type = (bd_addr_type_t) gap_event_extended_advertising_report_get_address_type(packet);
+                le_audio_broadcast_assistant_found_scan_delegator(&addr_type, addr, adv_name);
+            }
+            break;
+
+        case GAP_EVENT_EXTENDED_ADVERTISING_REPORT:
+            adv_size = gap_event_extended_advertising_report_get_data_length(packet);
+            adv_data = gap_event_extended_advertising_report_get_data(packet);
+            adv_name[0] = 0;
+
+            for (ad_iterator_init(&context, adv_size, adv_data) ; ad_iterator_has_more(&context) ; ad_iterator_next(&context)) {
+                uint8_t data_type = ad_iterator_get_data_type(&context);
+                uint8_t size = ad_iterator_get_data_len(&context);
+                const uint8_t *data = ad_iterator_get_data(&context);
+                switch (data_type){
+                    case BLUETOOTH_DATA_TYPE_SERVICE_DATA_16_BIT_UUID:
+                        uuid = little_endian_read_16(data, 0);
+                        switch (uuid){
+                            case ORG_BLUETOOTH_SERVICE_BROADCAST_AUDIO_ANNOUNCEMENT_SERVICE:
+                                if (scan_for_broadcast_source) {
+                                    broadcast_sources[broadcast_source_count].broadcast_id = little_endian_read_24(data, 2);
+                                    found_broadcast_source = true;
+                                }
+                                break;
+                            case ORG_BLUETOOTH_SERVICE_BROADCAST_AUDIO_SCAN_SERVICE:
+                                if (scan_for_scan_delegator) {
+                                    found_scan_delegator = true;
+                                }
+                                break;
+                            default:
+                                break;
+                        }
+                        break;
+                    case BLUETOOTH_DATA_TYPE_SHORTENED_LOCAL_NAME:
+                    case BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME:
+                        size = btstack_min(sizeof(adv_name) - 1, size);
+                        memcpy(adv_name, data, size);
+                        adv_name[size] = 0;
+                        break;
+                    default:
+                        break;
+                }
+            }
 
             if ((have_scan_delegator == false) && found_scan_delegator){
                 have_scan_delegator = true;
@@ -482,28 +517,35 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 bd_addr_type_t addr_type = (bd_addr_type_t) gap_event_extended_advertising_report_get_address_type(packet);
                 le_audio_broadcast_assistant_found_scan_delegator(&addr_type, addr, adv_name);
             }
-
-            if ((have_broadcast_source == false) && found_broadcast_source){
+            if (found_broadcast_source){
                 have_broadcast_source = true;
-                gap_event_extended_advertising_report_get_address(packet, broadcast_source);
-                broadcast_source_type = gap_event_extended_advertising_report_get_address_type(packet);
-                broadcast_source_sid = gap_event_extended_advertising_report_get_advertising_sid(packet);
-                btstack_strcpy(broadcast_source_name,  sizeof(broadcast_source_name), (const char *) adv_name);
-                printf("Broadcast source found, addr %s, name: '%s'\n", bd_addr_to_str(broadcast_source), broadcast_source_name);
-                gap_whitelist_add(broadcast_source_type, broadcast_source);
+                bd_addr_t addr;
+                gap_event_extended_advertising_report_get_address(packet, addr);
+                bd_addr_type_t type = gap_event_extended_advertising_report_get_address_type(packet);
+                uint8_t i;
+                add_broadcast_source = true;
+                for (i=0;i<broadcast_source_count;i++) {
+                    if (memcmp(addr, broadcast_sources[i].addr, 6) != 0) continue;
+                    if (type != broadcast_sources[i].addr_type) continue;
+                    add_broadcast_source = false;
+                }
             }
-
-            if ((have_broadcast_source && have_scan_delegator) == false) break;
-
-            le_audio_broadcast_assistant_start_periodic_sync();
+            if (add_broadcast_source && (broadcast_source_count < NUM_BROADCAST_SOURCES)) {
+                gap_event_extended_advertising_report_get_address(packet, broadcast_sources[broadcast_source_count].addr);
+                broadcast_sources[broadcast_source_count].addr_type = gap_event_extended_advertising_report_get_address_type(packet);
+                broadcast_sources[broadcast_source_count].sid = gap_event_extended_advertising_report_get_advertising_sid(packet);
+                btstack_strcpy(broadcast_sources[broadcast_source_count].name,  BROADCAST_SOURCE_NAME_LEN, (const char *) adv_name);
+                printf("Broadcast source found, addr %s, name: '%s'\n", bd_addr_to_str(broadcast_sources[broadcast_source_count].addr), broadcast_sources[broadcast_source_count].name);
+                gap_whitelist_add(broadcast_sources[broadcast_source_count].addr_type, broadcast_sources[broadcast_source_count].addr);
+                broadcast_source_count++;
+            }
             break;
-        }
 
         case HCI_EVENT_LE_META:
             switch(hci_event_le_meta_get_subevent_code(packet)) {
                 case HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_SYNC_ESTABLISHMENT:
                     sync_handle = hci_subevent_le_periodic_advertising_sync_establishment_get_sync_handle(packet);
-                    broadcast_source_pa_interval = hci_subevent_le_periodic_advertising_sync_establishment_get_periodic_advertising_interval(packet);
+                    broadcast_sources[broadcast_source_current].pa_interval = hci_subevent_le_periodic_advertising_sync_establishment_get_periodic_advertising_interval(packet);
                     printf("Periodic advertising sync with handle 0x%04x established\n", sync_handle);
                     break;
                 case HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_REPORT:
@@ -532,9 +574,15 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     // start over
                     start_scanning();
                     break;
-                case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
-                    if (hci_subevent_le_connection_complete_get_status(packet) != ERROR_CODE_SUCCESS) break;
-                    scan_delegator_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
+                default:
+                    break;
+            }
+            break;
+        case HCI_EVENT_META_GAP:
+            switch (hci_event_gap_meta_get_subevent_code(packet)){
+                case GAP_SUBEVENT_LE_CONNECTION_COMPLETE:
+                    if (gap_subevent_le_connection_complete_get_status(packet) != ERROR_CODE_SUCCESS) break;
+                    scan_delegator_handle = gap_subevent_le_connection_complete_get_connection_handle(packet);
                     printf("Connection complete, handle 0x%04x\n", scan_delegator_handle);
                     broadcast_audio_scan_service_client_connect(&bass_connection,
                                                                 bass_sources,
@@ -555,43 +603,117 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     }
 }
 
+/* UI */
+
 static void show_usage(void){
     printf("\n--- LE Audio Broadcast Assistant Test Console ---\n");
-    printf("s - setup LE Broadcast Sink with Broadcast Source via Scan Delegator\n");
-    printf("c - scan and connect to Scan Delegator\n");
-    printf("a - add source with BIS Sync 0x%08x\n", bis_sync_mask);
-    printf("A - add source with BIS Sync 0x00000000 (do not sync)\n");
-    printf("m - modify source to PA Sync = 0, bis sync = 0x00000000\n");
-    printf("b - send Broadcast Code: ");
-    printf_hexdump(broadcast_code, sizeof(broadcast_code));
-    printf("r - remove source\n");
+    switch (app_state) {
+        case APP_IDLE:
+            // printf("s - setup LE Broadcast Sink with Broadcast Source via Scan Delegator\n");
+            printf("c - scan and connect to Scan Delegator\n");
+            break;
+        case APP_CONNECTED:
+            if (broadcast_source_selected) {
+                printf("Selected Broadcast source: addr %s, type %u, name: %s, synced %u\n",
+                    bd_addr_to_str(broadcast_sources[broadcast_source_current].addr),
+                    broadcast_sources[broadcast_source_current].addr_type,
+                    broadcast_sources[broadcast_source_current].name,
+                    broadcast_source_synced);
+            }
+            printf("d - scan for Broadcast sources (%u s)\n", broadcast_source_scan_duration_s);
+            if (broadcast_source_count > 0) {
+                printf("1..%u select one of the Broadcast Sources:\n", broadcast_source_count);
+                uint8_t i;
+                for (i=0;i<broadcast_source_count;i++) {
+                    printf("%u. addr  %s, type %u, name: %s\n", i+1,
+                        bd_addr_to_str(broadcast_sources[broadcast_source_current].addr),
+                        broadcast_sources[broadcast_source_current].addr_type,
+                        broadcast_sources[broadcast_source_current].name);
+                }
+                if (broadcast_source_synced) {
+                    printf("a - add source with BIS Sync 0x%08x\n", bis_sync_mask);
+                    printf("A - add source with BIS Sync 0x00000000 (do not sync)\n");
+                    printf("m - modify source to PA Sync = 0, bis sync = 0x00000000\n");
+                    printf("M - modify source to PA Sync = 2, bis sync = 0x%08x\n", bis_sync_mask);
+                    printf("b - send Broadcast Code: ");
+                    printf_hexdump(broadcast_code, sizeof(broadcast_code));
+                    printf("r - remove source\n");
+                }
+            }
+            break;
+        default:
+            printf("[LE Audio Broadcast Assistant busy]\n");
+            break;
+    }
     printf("---\n");
 }
 
 static void stdin_process(char c){
+    switch (app_state) {
+        case APP_IDLE:
+            switch (c) {
+                case 'c':
+                    scan_for_scan_delegator = true;
+                    scan_for_broadcast_source = false;
+                    start_scanning();
+                    app_state = APP_W4_SCAN_DELEGATOR_CONNECTION;
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case APP_CONNECTED:
+            if ((c >= '1') && (c <= '9')){
+                uint8_t digit = c - '0';
+                if (digit <= broadcast_source_count) {
+                    if (sync_handle != HCI_CON_HANDLE_INVALID) {
+                        gap_periodic_advertising_terminate_sync(sync_handle);
+                    }
+                    broadcast_source_synced   = false;
+                    broadcast_source_selected = true;
+                    broadcast_source_current = digit-1;
+                    printf("Selected  addr  %s, type %u, name: %s\n",
+                        bd_addr_to_str(broadcast_sources[broadcast_source_current].addr),
+                        broadcast_sources[broadcast_source_current].addr_type,
+                        broadcast_sources[broadcast_source_current].name);
+                    le_audio_broadcast_assistant_start_periodic_sync();
+                }
+                break;
+            }
+            switch (c) {
+                case 'd':
+                    scan_for_scan_delegator = false;
+                    scan_for_broadcast_source = true;
+                    start_scanning();
+                    btstack_run_loop_set_timer(&broadcast_source_scan_timer, broadcast_source_scan_duration_s * 1000);
+                    btstack_run_loop_set_timer_handler(&broadcast_source_scan_timer, broadcast_source_scan_timeout_handler);
+                    btstack_run_loop_add_timer(&broadcast_source_scan_timer);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        default:
+            break;
+    }
+
     switch (c){
-        case 's':
-            if (app_state != APP_IDLE) break;
-            manual_mode = false;
-            start_scanning();
-            break;
-        case 'c':
-            manual_mode = true;
-            start_scanning();
-            break;
         case 'a':
-            bass_source_data.subgroups[0].bis_sync_state = bis_sync_mask;
-            bass_source_data.subgroups[0].bis_sync       = bis_sync_mask;
+            bass_source_data.subgroups[0].bis_sync = bis_sync_mask;
             add_source();
             break;
         case 'A':
-            bass_source_data.subgroups[0].bis_sync_state = 0;
-            bass_source_data.subgroups[0].bis_sync       = 0;
+            bass_source_data.subgroups[0].bis_sync = 0;
             add_source();
             break;
         case 'm':
             bass_source_data.pa_sync = LE_AUDIO_PA_SYNC_DO_NOT_SYNCHRONIZE_TO_PA;
             bass_source_data.subgroups[0].bis_sync_state = 0;
+            broadcast_audio_scan_service_client_modify_source(bass_cid, bass_source_id, &bass_source_data);
+            break;
+        case 'M':
+            bass_source_data.pa_sync = LE_AUDIO_PA_SYNC_SYNCHRONIZE_TO_PA_PAST_AVAILABLE;
+            bass_source_data.subgroups[0].bis_sync_state = bis_sync_mask;
             broadcast_audio_scan_service_client_modify_source(bass_cid, bass_source_id, &bass_source_data);
             break;
         case 'r':

@@ -53,6 +53,7 @@
 #define BLUETOOTH_DATA_TYPE_MESH_BEACON                                        0x2B // Mesh Beacon
 #define BLUETOOTH_DATA_TYPE_RESOLVABLE_SET_IDENTIFIER                          0x2E // Resolvable Set Identifier
 #define BLUETOOTH_DATA_TYPE_ADVERTISING_INTERVAL_LONG                          0x2F // Advertising Interval - long
+#define BLUETOOTH_DATA_TYPE_BROADCAST_NAME                                     0x30 // Broadcast Name
 #define BLUETOOTH_DATA_TYPE_3D_INFORMATION_DATA                                0x3D // 3D Information Data
 #define BLUETOOTH_DATA_TYPE_MANUFACTURER_SPECIFIC_DATA                         0xFF // Manufacturer Specific Data
 

@@ -432,6 +432,9 @@ Listing [below](#lst:RFCOMMremoteService).
 
 ~~~~ 
 
+The RFCOMM channel will stay open until either side closes it with rfcomm_disconnect.
+BTstack will close the multiplexer after 60 seconds without an active RFCOMM channel.
+
 ### Provide an RFCOMM service {#sec:rfcommServiceProtocols}
 
 To provide an RFCOMM service, the application on a local Bluetooth

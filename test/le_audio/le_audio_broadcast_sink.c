@@ -69,6 +69,7 @@
 #include "btstack_lc3_google.h"
 #include "btstack_lc3plus_fraunhofer.h"
 #include "l2cap.h"
+#include "le-audio/le_audio_util.h"
 #include "le-audio/le_audio_base_parser.h"
 #include "le-audio/gatt-service/broadcast_audio_scan_service_server.h"
 
@@ -85,8 +86,6 @@
 #define PLAYBACK_BUFFER_SIZE (MAX_NUM_LC3_FRAMES * MAX_SAMPLES_PER_FRAME * MAX_BYTES_PER_SAMPLE)
 
 static void show_usage(void);
-
-static const char * filename_wav = "le_audio_broadcast_sink.wav";
 
 static enum {
     APP_W4_WORKING,
@@ -155,6 +154,10 @@ static bool count_mode;
 static bool pts_mode;
 static bool nrf5340_audio_demo;
 
+// broadcast assistant
+static hci_con_handle_t commander_acl_handle;
+static bd_addr_t        commander_address;
+static bd_addr_type_t   commander_type;
 
 // broadcast info
 static const uint8_t    big_handle = 1;
@@ -172,7 +175,6 @@ static le_audio_big_sync_params_t big_sync_params;
 // lc3 codec config
 static uint16_t sampling_frequency_hz;
 static btstack_lc3_frame_duration_t frame_duration;
-static uint16_t number_samples_per_frame;
 static uint16_t octets_per_frame;
 static uint8_t  num_bis;
 
@@ -244,8 +246,8 @@ static void handle_periodic_advertisement(const uint8_t * packet, uint16_t size)
                     break;
                 case 0x02: // 0 = 7.5, 1 = 10 ms
                     frame_duration_index =  codec_specific_configuration[codec_offset+1];
-                    frame_duration = (frame_duration_index == 0) ? BTSTACK_LC3_FRAME_DURATION_7500US : BTSTACK_LC3_FRAME_DURATION_10000US;
-                    printf("      - frame duration[%u]: %s ms\n", i, (frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US) ? "7.5" : "10");
+                    frame_duration = le_audio_util_get_btstack_lc3_frame_duration(frame_duration_index);
+                    printf("      - frame duration[%u]: %u us\n", i, le_audio_get_frame_duration_us(frame_duration_index));
                     break;
                 case 0x04:  // octets per coding frame
                     octets_per_frame = little_endian_read_16(codec_specific_configuration, codec_offset+1);
@@ -340,7 +342,11 @@ static void start_scanning() {
     printf("Start scan..\n");
 }
 
-static void setup_advertising() {
+static void start_advertising(void) {
+    gap_extended_advertising_start(adv_handle, 0, 0);
+}
+
+static void setup_advertising(void) {
     bd_addr_t local_addr;
     gap_local_bd_addr(local_addr);
     bool local_address_invalid = btstack_is_null_bd_addr( local_addr );
@@ -353,7 +359,7 @@ static void setup_advertising() {
         gap_extended_advertising_set_random_address( adv_handle, random_address );
     }
     gap_extended_advertising_set_adv_data(adv_handle, sizeof(extended_adv_data), extended_adv_data);
-    gap_extended_advertising_start(adv_handle, 0, 0);
+    start_advertising();
 }
 
 static void got_base_and_big_info() {
@@ -366,6 +372,9 @@ static void got_base_and_big_info() {
         broadcast_audio_scan_service_server_set_pa_sync_state(0, LE_AUDIO_PA_SYNC_STATE_SYNCHRONIZED_TO_PA);
     }
 
+    // update num subgroups from BASE
+    bass_sources[0].data.subgroups_num = bass_source_new.subgroups_num;
+
     if ((encryption == false) || have_broadcast_code){
         enter_create_big_sync();
     } else {
@@ -376,6 +385,39 @@ static void got_base_and_big_info() {
     }
 }
 
+static void start_pa_sync(bd_addr_type_t source_type, bd_addr_t source_addr) {
+    // ignore other advertisements
+    gap_whitelist_add(source_type, source_addr);
+    gap_set_scan_params(1, 0x30, 0x30, 1);
+    // sync to PA
+    gap_periodic_advertiser_list_clear();
+    gap_periodic_advertiser_list_add(source_type, source_addr, remote_sid);
+    app_state = APP_W4_PA_AND_BIG_INFO;
+    printf("Start Periodic Advertising Sync\n");
+    gap_periodic_advertising_create_sync(0x01, remote_sid, source_type, source_addr, 0, 1000, 0);
+    gap_start_scan();
+}
+
+static void pa_sync_established() {
+    have_base = false;
+    have_big_info = false;
+    app_state = APP_W4_PA_AND_BIG_INFO;
+}
+
+static void stop_pa_sync(void) {
+    app_state = APP_IDLE;
+    le_audio_demo_util_sink_close();
+    printf("Terminate BIG SYNC\n");
+    gap_big_sync_terminate(big_handle);
+    int i;
+    for (i=0;i<num_bis;i++){
+        if (bis_con_handles[i] != HCI_CON_HANDLE_INVALID) {
+            gap_disconnect(bis_con_handles[i]);
+        }
+    }
+
+}
+
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     if (packet_type != HCI_EVENT_PACKET) return;
@@ -384,6 +426,10 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             switch(btstack_event_state_get_state(packet)) {
                 case HCI_STATE_WORKING:
                     app_state = APP_IDLE;
+                    // setup advertising and allow to receive periodic advertising sync transfers
+                    setup_advertising();
+                    gap_periodic_advertising_sync_transfer_set_default_parameters(2, 0, 0x2000, 0);
+
 #ifdef ENABLE_DEMO_MODE
                     start_scanning();
 #else
@@ -412,8 +458,8 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             uint16_t uuid;
             uint32_t broadcast_id;
             for (ad_iterator_init(&context, adv_size, adv_data) ; ad_iterator_has_more(&context) ; ad_iterator_next(&context)) {
-                uint8_t data_type = ad_iterator_get_data_type(&context);
-                uint8_t size = ad_iterator_get_data_len(&context);
+                const uint8_t data_type = ad_iterator_get_data_type(&context);
+                uint8_t data_size = ad_iterator_get_data_len(&context);
                 const uint8_t *data = ad_iterator_get_data(&context);
                 switch (data_type){
                     case BLUETOOTH_DATA_TYPE_SERVICE_DATA_16_BIT_UUID:
@@ -425,9 +471,9 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                         break;
                     case BLUETOOTH_DATA_TYPE_SHORTENED_LOCAL_NAME:
                     case BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME:
-                        size = btstack_min(sizeof(remote_name) - 1, size);
-                        memcpy(remote_name, data, size);
-                        remote_name[size] = 0;
+                        data_size = btstack_min(sizeof(remote_name) - 1, data_size);
+                        memcpy(remote_name, data, data_size);
+                        remote_name[data_size] = 0;
                         // support for nRF5340 Audio DK
                         if (strncmp("NRF5340", remote_name, 7) == 0){
                             nrf5340_audio_demo = true;
@@ -444,15 +490,6 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             pts_mode = strncmp("PTS-", remote_name, 4) == 0;
             count_mode = strncmp("COUNT", remote_name, 5) == 0;
             printf("Broadcast sink found, addr %s, name: '%s' (pts-mode: %u, count: %u), Broadcast_ID 0%06x\n", bd_addr_to_str(remote), remote_name, pts_mode, count_mode, broadcast_id);
-            // ignore other advertisements
-            gap_whitelist_add(remote_type, remote);
-            gap_set_scan_params(1, 0x30, 0x30, 1);
-            // sync to PA
-            gap_periodic_advertiser_list_clear();
-            gap_periodic_advertiser_list_add(remote_type, remote, remote_sid);
-            app_state = APP_W4_PA_AND_BIG_INFO;
-            printf("Start Periodic Advertising Sync\n");
-            gap_periodic_advertising_create_sync(0x01, remote_sid, remote_type, remote, 0, 1000, 0);
 
             // setup bass source info
             bass_source_new.address_type = remote_type;
@@ -461,22 +498,34 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             bass_source_new.broadcast_id = broadcast_id;
             bass_source_new.pa_sync = LE_AUDIO_PA_SYNC_SYNCHRONIZE_TO_PA_PAST_AVAILABLE;
             bass_source_new.pa_interval = gap_event_extended_advertising_report_get_periodic_advertising_interval(packet);
+
+            // start pa sync
+            start_pa_sync(remote_type, remote);
             break;
         }
 
+        case HCI_EVENT_DISCONNECTION_COMPLETE:
+            // restart advertisements on disconnect
+            if (hci_event_disconnection_complete_get_connection_handle(packet) == commander_acl_handle) {
+                printf("Broadcast Assistant disconnected\n");
+                commander_acl_handle = HCI_CON_HANDLE_INVALID;
+                start_advertising();
+            }
+            break;
         case HCI_EVENT_LE_META:
             switch(hci_event_le_meta_get_subevent_code(packet)) {
                 case HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_SYNC_TRANSFER_RECEIVED:
                     // PAST implies broadcast source has been added by client
-                    printf("Periodic advertising sync transfer received\n");
-                    btstack_run_loop_remove_timer(&broadcast_sink_pa_sync_timer);
+                    sync_handle = hci_subevent_le_periodic_advertising_sync_transfer_received_get_sync_handle(packet);
                     broadcast_audio_scan_service_server_set_pa_sync_state(0, LE_AUDIO_PA_SYNC_STATE_SYNCHRONIZED_TO_PA);
-                    app_state = APP_W4_PA_AND_BIG_INFO;
+                    btstack_run_loop_remove_timer(&broadcast_sink_pa_sync_timer);
+                    printf("Periodic advertising sync transfer with handle 0x%04x received\n", sync_handle);
+                    pa_sync_established();
                     break;
                 case HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_SYNC_ESTABLISHMENT:
                     sync_handle = hci_subevent_le_periodic_advertising_sync_establishment_get_sync_handle(packet);
                     printf("Periodic advertising sync with handle 0x%04x established\n", sync_handle);
-                    app_state = APP_W4_PA_AND_BIG_INFO;
+                    pa_sync_established();
                     break;
                 case HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_REPORT:
                     if (app_state != APP_W4_PA_AND_BIG_INFO) break;
@@ -513,6 +562,12 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             break;
         case HCI_EVENT_META_GAP:
             switch (hci_event_gap_meta_get_subevent_code(packet)){
+                case GAP_SUBEVENT_LE_CONNECTION_COMPLETE:
+                    commander_acl_handle = gap_subevent_le_connection_complete_get_connection_handle(packet);
+                    commander_type = gap_subevent_le_connection_complete_get_peer_address_type(packet);
+                    gap_subevent_le_connection_complete_get_peer_address(packet, commander_address);
+                    printf("Broadcast Assistant connected, handle 0x%04x - %s type %u\n", commander_acl_handle, bd_addr_to_str(commander_address), commander_type);
+                    break;
                 case GAP_SUBEVENT_BIG_SYNC_CREATED: {
                     printf("BIG Sync created with BIS Connection handles: ");
                     uint8_t i;
@@ -523,6 +578,9 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     printf("\n");
                     app_state = APP_STREAMING;
                     printf("Start receiving\n");
+
+                    printf("Terminate PA Sync\n");
+                    gap_periodic_advertising_terminate_sync(sync_handle);
 
                     // update BIS Sync state
                     bass_sources[0].data.subgroups[0].bis_sync_state = bis_sync_mask;
@@ -578,10 +636,7 @@ static void stdin_process(char c){
             switch (app_state){
                 case APP_STREAMING:
                 case APP_W4_BIG_SYNC_ESTABLISHED:
-                    app_state = APP_IDLE;
-                    le_audio_demo_util_sink_close();
-                    printf("Terminate BIG SYNC\n");
-                    gap_big_sync_terminate(big_handle);
+                    stop_pa_sync();
                     break;
                 default:
                     break;
@@ -598,13 +653,20 @@ static void stdin_process(char c){
 }
 
 static void iso_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) {
+    void (*packet_receive)(uint8_t stream_index, uint8_t *packet, uint16_t size) = le_audio_demo_util_sink_receive;
+
     // get stream_index from con_handle
     uint16_t header = little_endian_read_16(packet, 0);
     hci_con_handle_t con_handle = header & 0x0fff;
     uint8_t i;
+
+    if (count_mode){
+        packet_receive = le_audio_demo_util_sink_count;
+    }
+
     for (i=0;i<num_bis;i++){
         if (bis_con_handles[i] == con_handle) {
-            le_audio_demo_util_sink_receive(i, packet, size);
+            packet_receive(i, packet, size);
         }
     }
 }
@@ -615,40 +677,56 @@ static void broadcast_sync_pa_sync_timeout_handler(btstack_timer_source_t * ts){
     broadcast_audio_scan_service_server_set_pa_sync_state(0, LE_AUDIO_PA_SYNC_STATE_NO_PAST);
 }
 
+static void handle_new_pa_sync(uint8_t source_id, le_audio_pa_sync_t pa_sync) {
+    switch (pa_sync){
+        case LE_AUDIO_PA_SYNC_DO_NOT_SYNCHRONIZE_TO_PA:
+            printf("Stop PA Sync\n");
+            stop_pa_sync();
+            bass_sources[0].data.subgroups[0].bis_sync_state = 0;
+            broadcast_audio_scan_service_server_set_pa_sync_state(0, LE_AUDIO_PA_SYNC_STATE_NOT_SYNCHRONIZED_TO_PA);
+            break;
+        case LE_AUDIO_PA_SYNC_SYNCHRONIZE_TO_PA_PAST_AVAILABLE:
+            printf("LE_AUDIO_PA_SYNC_SYNCHRONIZE_TO_PA_PAST_AVAILABLE -> Request SyncInfo\n");
+            broadcast_audio_scan_service_server_set_pa_sync_state(source_id, LE_AUDIO_PA_SYNC_STATE_SYNCINFO_REQUEST);
+            // start timeout
+            btstack_run_loop_set_timer_handler(&broadcast_sink_pa_sync_timer, broadcast_sync_pa_sync_timeout_handler);
+            btstack_run_loop_set_timer(&broadcast_sink_pa_sync_timer, 10000);   // 10 seconds
+            btstack_run_loop_add_timer(&broadcast_sink_pa_sync_timer);
+            break;
+        case LE_AUDIO_PA_SYNC_SYNCHRONIZE_TO_PA_PAST_NOT_AVAILABLE:
+            printf("LE_AUDIO_PA_SYNC_SYNCHRONIZE_TO_PA_PAST_AVAILABLE -> Start Periodic Advertising Sync\n");
+            start_pa_sync(bass_sources[source_id].data.address_type, bass_sources[source_id].data.address);
+            break;
+        default:
+            break;
+    }
+}
+
 static void bass_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(packet_type);
     UNUSED(channel);
     btstack_assert (packet_type == HCI_EVENT_PACKET);
     btstack_assert(hci_event_packet_get_type(packet) == HCI_EVENT_GATTSERVICE_META);
+    uint8_t source_id;
     printf("BASS Event 0x%02x: ", hci_event_gattservice_meta_get_subevent_code(packet));
     printf_hexdump(packet, size);
+    uint8_t pa_sync;
     switch (hci_event_gattservice_meta_get_subevent_code(packet)){
         case GATTSERVICE_SUBEVENT_BASS_SERVER_SOURCE_ADDED:
-            printf("GATTSERVICE_SUBEVENT_BASS_SOURCE_ADDED, source_id 0x%04x, pa_sync %u\n",
-                   gattservice_subevent_bass_server_source_added_get_source_id(packet),
-                   gattservice_subevent_bass_server_source_added_get_pa_sync(packet));
-            switch (gattservice_subevent_bass_server_source_added_get_pa_sync(packet)){
-                case LE_AUDIO_PA_SYNC_SYNCHRONIZE_TO_PA_PAST_AVAILABLE:
-                    printf("LE_AUDIO_PA_SYNC_SYNCHRONIZE_TO_PA_PAST_AVAILABLE -> Request SyncInfo\n");
-                    broadcast_audio_scan_service_server_set_pa_sync_state(0, LE_AUDIO_PA_SYNC_STATE_SYNCINFO_REQUEST);
-                    // start timeout
-                    btstack_run_loop_set_timer_handler(&broadcast_sink_pa_sync_timer, broadcast_sync_pa_sync_timeout_handler);
-                    btstack_run_loop_set_timer(&broadcast_sink_pa_sync_timer, 10000);   // 10 seconds
-                    btstack_run_loop_add_timer(&broadcast_sink_pa_sync_timer);
-                    break;
-            }
+            pa_sync = gattservice_subevent_bass_server_source_added_get_pa_sync(packet);
+            source_id = gattservice_subevent_bass_server_source_added_get_source_id(packet);
+            printf("GATTSERVICE_SUBEVENT_BASS_SOURCE_ADDED, source_id 0x%04x, pa_sync %u\n", source_id, pa_sync);
+            handle_new_pa_sync(source_id, pa_sync);
             break;
         case GATTSERVICE_SUBEVENT_BASS_SERVER_SOURCE_MODIFIED:
-            printf("GATTSERVICE_SUBEVENT_BASS_SOURCE_MODIFIED, source_id 0x%04x, pa_sync %u\n",
-                   gattservice_subevent_bass_server_source_added_get_source_id(packet),
-                   gattservice_subevent_bass_server_source_added_get_pa_sync(packet));
-            // handle 'bis sync == 0'
-            printf("PA Sync %u, bis_sync[0] = %u\n", bass_sources[0].data.pa_sync, bass_sources[0].data.subgroups[0].bis_sync);
-            if (bass_sources[0].data.subgroups[0].bis_sync == 0){
-                printf("Simulate BIS Sync has stopped\n");
-                bass_sources[0].data.subgroups[0].bis_sync_state = 0;
-                broadcast_audio_scan_service_server_set_pa_sync_state(0, LE_AUDIO_PA_SYNC_STATE_SYNCHRONIZED_TO_PA);
-            }
+            pa_sync = gattservice_subevent_bass_server_source_added_get_pa_sync(packet);
+            source_id = gattservice_subevent_bass_server_source_added_get_source_id(packet);
+            printf("GATTSERVICE_SUBEVENT_BASS_SOURCE_MODIFIED, source_id 0x%04x, pa_sync %u\n", source_id, pa_sync);
+            handle_new_pa_sync(source_id, pa_sync);
+            break;
+        case GATTSERVICE_SUBEVENT_BASS_SERVER_SOURCE_DELETED:
+            printf("GATTSERVICE_SUBEVENT_BASS_SERVER_SOURCE_DELETED, source_id 0x%04x\n",
+                   gattservice_subevent_bass_server_source_deleted_get_source_id(packet));
             break;
         case GATTSERVICE_SUBEVENT_BASS_SERVER_BROADCAST_CODE:
             gattservice_subevent_bass_server_broadcast_code_get_broadcast_code(packet, broadcast_code);
@@ -689,10 +767,6 @@ int btstack_main(int argc, const char * argv[]){
     // setup BASS Server
     broadcast_audio_scan_service_server_init(BASS_NUM_SOURCES, bass_sources, BASS_NUM_CLIENTS, bass_clients);
     broadcast_audio_scan_service_server_register_packet_handler(&bass_packet_handler);
-
-    // setup advertising and allow to receive periodic advertising sync trasnfers
-    setup_advertising();
-    gap_periodic_advertising_sync_transfer_set_default_parameters(2, 0, 0x2000, 0);
 
     // setup audio processing
     le_audio_demo_util_sink_init("le_audio_broadcast_sink.wav");

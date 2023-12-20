@@ -108,7 +108,9 @@ typedef enum {
 
 // L2CAP Reject Result Codes
 #define L2CAP_REJ_CMD_UNKNOWN                      0x0000
-    
+#define L2CAP_REJ_MTU_EXCEEDED                     0x0001
+#define L2CAP_REJ_INVALID_CID                      0x0002
+
 // Response Timeout eXpired
 #define L2CAP_RTX_TIMEOUT_MS   10000
 
@@ -1881,8 +1883,9 @@ static void l2cap_run_signaling_response(void) {
         uint8_t  sig_id        = l2cap_signaling_responses[0].sig_id;
         uint8_t  response_code = l2cap_signaling_responses[0].code;
         uint16_t result        = l2cap_signaling_responses[0].data;  // CONNECTION_REQUEST, COMMAND_REJECT, REJECT_SM_PAIRING, L2CAP_CREDIT_BASED_CONNECTION_REQUEST
-        uint8_t  buffer[4];                                          // REJECT_SM_PAIRING
-        uint16_t source_cid    = l2cap_signaling_responses[0].cid;   // CONNECTION_REQUEST, REJECT_SM_PAIRING, DISCONNECT_REQUEST
+        uint8_t  buffer[4];                                          // REJECT_SM_PAIRING, CONFIGURE_REQUEST
+        uint16_t source_cid    = l2cap_signaling_responses[0].cid;   // CONNECTION_REQUEST, REJECT_SM_PAIRING, DISCONNECT_REQUEST, CONFIGURE_REQUEST, DISCONNECT_REQUEST
+        uint16_t dest_cid      = l2cap_signaling_responses[0].data;  // DISCONNECT_REQUEST
 #ifdef ENABLE_CLASSIC
         uint16_t info_type     = l2cap_signaling_responses[0].data;  // INFORMATION_REQUEST
 #endif
@@ -1904,6 +1907,14 @@ static void l2cap_run_signaling_response(void) {
 #ifdef ENABLE_CLASSIC
             case CONNECTION_REQUEST:
                 l2cap_send_classic_signaling_packet(handle, CONNECTION_RESPONSE, sig_id, source_cid, 0, result, 0);
+                break;
+            case CONFIGURE_REQUEST:
+                little_endian_store_16(buffer, 0, source_cid);
+                little_endian_store_16(buffer, 2, 0);
+                l2cap_send_classic_signaling_packet(handle, COMMAND_REJECT, sig_id, result, 4, buffer);
+                break;
+            case DISCONNECTION_RESPONSE:
+                l2cap_send_classic_signaling_packet(handle, DISCONNECTION_RESPONSE, sig_id, dest_cid, source_cid);
                 break;
             case ECHO_REQUEST:
                 l2cap_send_classic_signaling_packet(handle, ECHO_RESPONSE, sig_id, 0, NULL);
@@ -2345,7 +2356,7 @@ static void l2cap_run(void){
     hci_connections_get_iterator(&it);
     while(btstack_linked_list_iterator_has_next(&it)){
         hci_connection_t * connection = (hci_connection_t *) btstack_linked_list_iterator_next(&it);
-        if ((connection->address_type != BD_ADDR_TYPE_LE_PUBLIC) && (connection->address_type != BD_ADDR_TYPE_LE_RANDOM)) continue;
+        if (!hci_is_le_connection_type(connection->address_type)) continue;
         if (!hci_can_send_acl_packet_now(connection->con_handle)) continue;
         switch (connection->le_con_parameter_update_state){
             case CON_PARAMETER_UPDATE_SEND_REQUEST:
@@ -3740,31 +3751,61 @@ static void l2cap_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t * 
             break;
     }
     
-    // Get potential destination CID
-    uint16_t dest_cid = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET);
-    
-    // Find channel for this sig_id and connection handle
-    btstack_linked_list_iterator_init(&it, &l2cap_channels);
-    while (btstack_linked_list_iterator_has_next(&it)){
-        l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
-        if (!l2cap_is_dynamic_channel_type(channel->channel_type)) continue;
-        if (channel->con_handle != handle) continue;
-        if (code & 1) {
-            // match odd commands (responses) by previous signaling identifier 
-            if (channel->local_sig_id == sig_id) {
-                l2cap_signaling_handler_channel(channel, command);
-                return;
-            }
-        } else {
-            // match even commands (requests) by local channel id
-            if (channel->local_cid == dest_cid) {
-                l2cap_signaling_handler_channel(channel, command);
-                return;
+    if (cmd_len >= 2){
+        // Get potential destination CID
+        uint16_t dest_cid = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET);
+
+        // Find channel for this sig_id and connection handle
+        btstack_linked_list_iterator_init(&it, &l2cap_channels);
+        while (btstack_linked_list_iterator_has_next(&it)){
+            l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
+            if (!l2cap_is_dynamic_channel_type(channel->channel_type)) continue;
+            if (channel->con_handle != handle) continue;
+            if (code & 1) {
+                // match odd commands (responses) by previous signaling identifier
+                if (channel->local_sig_id == sig_id) {
+                    l2cap_signaling_handler_channel(channel, command);
+                    return;
+                }
+            } else {
+                // match even commands (requests) by local channel id
+                if (channel->local_cid == dest_cid) {
+                    l2cap_signaling_handler_channel(channel, command);
+                    return;
+                }
             }
         }
     }
 
-    // send command reject
+    // If dynamic channel cannot be found, either never set-up or already finalized, assume state CLOSED
+    // Handle events as described in Core 5.4, Vol 3. Host, 6.1.1 CLOSED state
+    switch (code){
+        case CONNECTION_RESPONSE:
+        case CONFIGURE_RESPONSE:
+        case DISCONNECTION_RESPONSE:
+            // Ignore request
+            return;
+        case DISCONNECTION_REQUEST:
+            if (cmd_len == 4){
+                // send disconnect response for received dest and source cids
+                uint16_t dest_cid = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET);
+                uint16_t source_cid = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET+2);
+                l2cap_register_signaling_response(handle, DISCONNECTION_RESPONSE, sig_id, source_cid, dest_cid);
+                return;
+            }
+            break;
+        case CONFIGURE_REQUEST:
+            if (cmd_len >= 2){
+                // send command reject with reason invalid cid
+                uint16_t dest_cid = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET);
+                l2cap_register_signaling_response(handle, CONFIGURE_REQUEST, sig_id, dest_cid, L2CAP_REJ_INVALID_CID);
+                return;
+            }
+            break;
+        default:
+            break;
+    }
+    // otherwise send command reject with reason unknown command
     l2cap_register_signaling_response(handle, COMMAND_REJECT, sig_id, 0, L2CAP_REJ_CMD_UNKNOWN);
 }
 #endif
@@ -4431,7 +4472,7 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
 
                 // allocate channel
                 channel = l2cap_create_channel_entry(service->packet_handler, L2CAP_CHANNEL_TYPE_CHANNEL_CBM, connection->address,
-                                                     BD_ADDR_TYPE_LE_RANDOM, le_psm, service->mtu, service->required_security_level);
+                                                     connection->address_type, le_psm, service->mtu, service->required_security_level);
                 if (!channel){
                     l2cap_register_signaling_response(handle, LE_CREDIT_BASED_CONNECTION_REQUEST, sig_id, source_cid, L2CAP_CBM_CONNECTION_RESULT_NO_RESOURCES_AVAILABLE);
                     return 1;
@@ -4774,18 +4815,23 @@ static void l2cap_acl_classic_handler(hci_con_handle_t handle, uint8_t *packet, 
         case L2CAP_CID_SIGNALING: {
             if (broadcast_flag != 0) break;
             uint32_t command_offset = 8;
-            while ((command_offset + L2CAP_SIGNALING_COMMAND_DATA_OFFSET) < size) {
+            while ((command_offset + L2CAP_SIGNALING_COMMAND_DATA_OFFSET) <= size) {
                 // assert signaling command is fully inside packet
                 uint16_t data_len = little_endian_read_16(packet, command_offset + L2CAP_SIGNALING_COMMAND_LENGTH_OFFSET);
                 uint32_t next_command_offset = command_offset + L2CAP_SIGNALING_COMMAND_DATA_OFFSET + data_len;
                 if (next_command_offset > size){
-                    log_error("l2cap signaling command len invalid -> drop");
+                    log_error("signaling command incomplete -> drop");
                     break;
                 }
                 // handle signaling command
                 l2cap_signaling_handler_dispatch(handle, &packet[command_offset]);
                 // go to next command
                 command_offset = next_command_offset;
+            }
+            // handle incomplete packet
+            if (command_offset < size) {
+                log_error("signaling command incomplete -> reject");
+                l2cap_register_signaling_response(handle, COMMAND_REJECT, 0, 0, L2CAP_REJ_CMD_UNKNOWN);
             }
             break;
         }

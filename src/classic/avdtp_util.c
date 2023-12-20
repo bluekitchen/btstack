@@ -247,8 +247,7 @@ int avdtp_pack_service_capabilities(uint8_t *buffer, int size, avdtp_capabilitie
 static int avdtp_unpack_service_capabilities_has_errors(avdtp_connection_t * connection, avdtp_signal_identifier_t signal_identifier, avdtp_service_category_t category, uint8_t cap_len){
     connection->error_code = 0;
     
-    if ((category == AVDTP_SERVICE_CATEGORY_INVALID_0) || 
-        ((category == AVDTP_SERVICE_CATEGORY_INVALID_FF) && (signal_identifier == AVDTP_SI_RECONFIGURE))){
+    if ((category == AVDTP_SERVICE_CATEGORY_INVALID_0) || (category > AVDTP_DELAY_REPORTING)){
         log_info("    ERROR: BAD SERVICE CATEGORY %d\n", category);
         connection->reject_service_category = category;
         connection->error_code = AVDTP_ERROR_CODE_BAD_SERV_CATEGORY;

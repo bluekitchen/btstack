@@ -164,7 +164,10 @@ avdtp_acceptor_handle_configuration_command(avdtp_connection_t *connection, int 
 	// if media codec configuration set, copy configuration and emit event
 	if ((sep.configured_service_categories & (1 << AVDTP_MEDIA_CODEC)) != 0){
 		if  (stream_endpoint->media_codec_configuration_len == sep.configuration.media_codec.media_codec_information_len){
-			(void) memcpy(stream_endpoint->media_codec_configuration_info, sep.configuration.media_codec.media_codec_information, stream_endpoint->media_codec_configuration_len);
+            (void) memcpy(stream_endpoint->media_codec_configuration_info, sep.configuration.media_codec.media_codec_information, stream_endpoint->media_codec_configuration_len);
+            // update media codec info to point to user configuration
+            stream_endpoint->remote_sep.configuration.media_codec.media_codec_information = stream_endpoint->media_codec_configuration_info;
+            // emit event
             avdtp_signaling_emit_configuration(stream_endpoint, connection->avdtp_cid, 0, &sep.configuration, sep.configured_service_categories);
 		}
 	}
@@ -429,7 +432,6 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t *connection, uint8_t 
                     break;
                 case AVDTP_SI_SUSPEND:
                     switch (stream_endpoint->state){
-                        case AVDTP_STREAM_ENDPOINT_OPENED:
                         case AVDTP_STREAM_ENDPOINT_STREAMING:
                             stream_endpoint->state = AVDTP_STREAM_ENDPOINT_OPENED;
                             connection->num_suspended_seids--;
@@ -555,6 +557,7 @@ void avdtp_acceptor_stream_config_subsm_run(avdtp_connection_t *connection) {
     stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_STREAM_CONFIG_IDLE;
     uint8_t * out_buffer;
     uint16_t pos;
+    avdtp_sep_t * remote_sep;
 
     bool emit_accept = false;
     bool emit_reject = false;
@@ -610,10 +613,9 @@ void avdtp_acceptor_stream_config_subsm_run(avdtp_connection_t *connection) {
             avdtp_acceptor_send_accept_response(cid, trid, AVDTP_SI_RECONFIGURE);
             emit_accept = true;
             break;
-
-        case AVDTP_ACCEPTOR_W2_ACCEPT_GET_CONFIGURATION:{
-            avdtp_sep_t sep = stream_endpoint->remote_sep;
-            avdtp_prepare_capabilities(&connection->acceptor_signaling_packet, trid, sep.configured_service_categories, sep.configuration, AVDTP_SI_GET_CONFIGURATION);
+        case AVDTP_ACCEPTOR_W2_ACCEPT_GET_CONFIGURATION:
+            remote_sep = &stream_endpoint->remote_sep;
+            avdtp_prepare_capabilities(&connection->acceptor_signaling_packet, trid, remote_sep->configured_service_categories, remote_sep->configuration, AVDTP_SI_GET_CONFIGURATION);
             l2cap_reserve_packet_buffer();
             out_buffer = l2cap_get_outgoing_buffer();
             pos = avdtp_signaling_create_fragment(cid, &connection->acceptor_signaling_packet, out_buffer);
@@ -626,7 +628,6 @@ void avdtp_acceptor_stream_config_subsm_run(avdtp_connection_t *connection) {
             }
             l2cap_send_prepared(cid, pos);
             break;
-        }
         case AVDTP_ACCEPTOR_W2_ACCEPT_OPEN_STREAM:
             log_info("DONE");
             avdtp_acceptor_send_accept_response(cid, trid, AVDTP_SI_OPEN);

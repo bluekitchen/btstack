@@ -21,7 +21,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 - HCI: allow to configure Classic ACL packet types with hci_enable_acl_packet_types
 - GAP: emit generic GAP_SUBEVENT_LE_CONNECTION_COMPLETE for any LE Connection Complete
-- GAP: ENABLE_LE_ENHANCED_CONNECTION_COMPLETE_EVENT enables enhanced LE Connection Complete events
 - SM: support LE Secure Connection debug keys for testing
 - L2CAP: additional authorization_required param in l2cap_ecbm_register_service  
 - GATT Client: support GATT over Enhanced LE Bearer
@@ -44,7 +43,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - HCI: fix restart connect with whitelist after whitelist modification
 - GAP: store classic link keys independent from peer bonding request
 - SM: directly detect invalid Public key when Controller ECC is used 
+- SM: sm: only set LinkKey flag in Pairing Request/Response if BR/EDR supported locally
 - L2CAP: make l2cap_get_remote_mtu_for_local_cid available to LE-only builds
+- L2CAP: handle all signaling requests and responses in closed state
 - HFP: use 'don't care' to accept SCO connections, fixes issue on ESP32
 - HFP: fix LC3-WB init
 - HFP AG: fix setup of audio connection in service level established event
@@ -55,6 +56,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - HID Device: set Report Mode as default
 - HID Host: support large HID Descriptors
 - AVDTP: limit L2CAP MTU to largest BR/EDR packet, fixes A2DP Sink role for some Samsung TV
+- AVDTP: fix Get Stream Configuration
+- AVDTP: reject suspend in state endpoint open
+- AVDTP: return error in avdtp_suspend_stream if state is not streaming
 - AVRCP: reject incoming second l2cap connection
 - AVRCP: generate command for avrcp_controller_get_element_attributes dynamically
 - SPP Server: fix SPP version in SDP record
