@@ -35,10 +35,12 @@
  *
  */
 
-// this service won't work without following define
-#ifdef ENABLE_ATT_DELAYED_RESPONSE
-
 #define BTSTACK_FILE__ "coordinated_set_identification_service_server.c"
+
+#include "btstack_config.h"
+
+// this service requires ENABLE_ATT_DELAYED_RESPONSE to be enabled
+#ifdef ENABLE_ATT_DELAYED_RESPONSE
 
 #include "ble/att_db.h"
 #include "ble/att_server.h"
