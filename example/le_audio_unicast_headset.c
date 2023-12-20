@@ -82,6 +82,7 @@
 
 #define ENABLE_MCS_CLIENT
 #define ENABLE_MICROPHONE
+#define ENABLE_CSIS_SERVER
 
 //#define DEBUG_PLC
 #ifdef DEBUG_PLC
@@ -121,13 +122,17 @@ static enum {
 } app_state = APP_W4_WORKING;
 
 #define APP_AD_FLAGS 0x06
-const uint8_t adv_data[] = {
-        // Flags general discoverable
-        2, BLUETOOTH_DATA_TYPE_FLAGS, APP_AD_FLAGS,
-        // Name
-        16, BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME, 'U', 'n', 'i', 'c', 'a', 's', 't', ' ', 'H', 'e', 'a', 'd', 's', 'e', 't'
+static uint8_t adv_data[] = {
+    // offset 0 - Flags general discoverable
+    2, BLUETOOTH_DATA_TYPE_FLAGS, APP_AD_FLAGS,
+#ifdef ENABLE_CSIS_SERVER
+    // offset 3 - RSI
+    7, BLUETOOTH_DATA_TYPE_RESOLVABLE_SET_IDENTIFIER, 0, 0, 0, 0, 0, 0,
+#endif
+    // name
+    16, BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME, 'U', 'n', 'i', 'c', 'a', 's', 't', ' ', 'H', 'e', 'a', 'd', 's', 'e', 't'
 };
-const uint8_t adv_data_len = sizeof(adv_data);
+static const uint8_t adv_data_len = sizeof(adv_data);
 
 static pacs_record_t sink_pac_records[] = {
     // sink_record_0
@@ -233,10 +238,13 @@ static pacs_streamendpoint_t source_node;
 #ifdef ENABLE_CSIS_SERVER
 #define CSIS_NUM_CLIENTS 1
 static csis_server_connection_t csis_coordinators[CSIS_NUM_CLIENTS];
+// TODO: random SIRK used for BTstack examples, each consumer device need a unique SIRK
 static uint8_t sirk[] = {
     0x83, 0x8E, 0x68, 0x05, 0x53, 0xF1, 0x41, 0x5A,
     0xA2, 0x65, 0xBB, 0xAF, 0xC6, 0xEA, 0x03, 0xB8
 };
+static bool rsi_ready;
+static uint8_t rsi[6];
 #endif
 
 // ASCS Server
@@ -261,7 +269,29 @@ static gatt_service_client_characteristic_t mcs_client_characteristics[MEDIA_CON
 
 static void pacs_server_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
-void setup_pacs_and_start_advertising(uint8_t audio_location_mask) {
+static void start_advertising(void) {
+
+#ifdef ENABLE_CSIS_SERVER
+    if (rsi_ready == false) return;
+    uint8_t offset = 3 + 2;
+    printf("RSI in advertisements at offset %u: ", offset);
+    printf_hexdump(rsi, 6);
+    memcpy(&adv_data[offset], rsi, 6);
+#endif
+
+    // setup advertisements
+    uint16_t adv_int_min = 0x0030;
+    uint16_t adv_int_max = 0x0030;
+    uint8_t adv_type = 0;
+    bd_addr_t null_addr;
+    memset(null_addr, 0, 6);
+    gap_advertisements_set_params(adv_int_min, adv_int_max, adv_type, 0, null_addr, 0x07, 0x00);
+    gap_advertisements_set_data(adv_data_len, (uint8_t*) adv_data);
+    gap_advertisements_enable(1);
+    printf("Start Advertising, waiting for connection\n");
+}
+
+void setup_pacs(uint8_t audio_location_mask) {
     // PACS Server
     // - sinks
     sink_node.records_num = 1;
@@ -286,17 +316,6 @@ void setup_pacs_and_start_advertising(uint8_t audio_location_mask) {
 #endif
     published_audio_capabilities_service_server_init(&sink_node, sources);
     published_audio_capabilities_service_server_register_packet_handler(&pacs_server_packet_handler);
-
-    // setup advertisements
-    uint16_t adv_int_min = 0x0030;
-    uint16_t adv_int_max = 0x0030;
-    uint8_t adv_type = 0;
-    bd_addr_t null_addr;
-    memset(null_addr, 0, 6);
-    gap_advertisements_set_params(adv_int_min, adv_int_max, adv_type, 0, null_addr, 0x07, 0x00);
-    gap_advertisements_set_data(adv_data_len, (uint8_t*) adv_data);
-    gap_advertisements_enable(1);
-    printf("Start Advertising, waiting for connection\n");
 }
 
 static void update_playback_volume(void){
@@ -330,7 +349,8 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             switch(btstack_event_state_get_state(packet)) {
                 case HCI_STATE_WORKING:
                     printf("Configured as STEREO speaker\n");
-                    setup_pacs_and_start_advertising(LE_AUDIO_LOCATION_MASK_FRONT_LEFT | LE_AUDIO_LOCATION_MASK_FRONT_RIGHT);
+                    setup_pacs(LE_AUDIO_LOCATION_MASK_FRONT_LEFT | LE_AUDIO_LOCATION_MASK_FRONT_RIGHT);
+                    start_advertising();
                     break;
                 default:
                     break;
@@ -449,7 +469,9 @@ static void csis_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
             printf("CSIS: GATTSERVICE_SUBEVENT_CSIS_SERVER_COORDINATED_SET_SIZE\n");
             break;
         case GATTSERVICE_SUBEVENT_CSIS_RSI:
-            printf("CSIS: GATTSERVICE_SUBEVENT_CSIS_RSI\n");
+            gattservice_subevent_csis_rsi_get_rsi(packet, rsi);
+            rsi_ready = true;
+            start_advertising();
             break;
         default:
             break;
@@ -782,10 +804,12 @@ int btstack_main(int argc, const char * argv[]){
     volume_control_service_server_register_packet_handler(vcs_server_packet_handler);
 
 #ifdef ENABLE_CSIS_SERVER
+    btstack_assert(adv_data_len <= 31);
     // Coordinated Set Server
     coordinated_set_identification_service_server_init(CSIS_NUM_CLIENTS, csis_coordinators, 1, 1);
     coordinated_set_identification_service_server_register_packet_handler(&csis_packet_handler);
     coordinated_set_identification_service_server_set_sirk(CSIS_SIRK_TYPE_PUBLIC, &sirk[0], false);
+    coordinated_set_identification_service_server_generate_rsi();
 #endif
 
 #ifdef ENABLE_MCS_CLIENT
