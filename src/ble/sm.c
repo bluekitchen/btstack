@@ -1201,6 +1201,9 @@ static void sm_init_setup(sm_connection_t * sm_conn){
         sm_pairing_packet_set_responder_key_distribution(setup->sm_m_preq, key_distribution_flags);
     }
 
+    log_info("our  address %s type %u", bd_addr_to_str(sm_conn->sm_own_address), sm_conn->sm_own_addr_type);
+    log_info("peer address %s type %u", bd_addr_to_str(sm_conn->sm_peer_address), sm_conn->sm_peer_addr_type);
+
     uint8_t auth_req = sm_auth_req & ~SM_AUTHREQ_CT2;
     uint8_t max_encryption_key_size = sm_max_encryption_key_size;
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
