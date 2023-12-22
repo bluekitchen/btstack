@@ -65,6 +65,7 @@
 #define CSIS_NOTIFY_MEMBER_RANK                  0x08
 
 #define CSIS_TASK_TRIGGER_SIRK_READ              0x01
+#define CSIS_TASK_TRIGGER_SIRK_NOTIFY            0x02
 
 static att_service_handler_t    coordinated_set_identification_service;
 static btstack_packet_handler_t csis_server_event_callback;
@@ -109,6 +110,7 @@ static csis_server_connection_t * csis_server_active_coordinator;
 
 static void csis_server_trigger_next_sirk_calculation(void);
 static void csis_server_can_send_now(void * context);
+static void csis_server_set_callback(uint8_t notification);
 
 static void csis_server_emit_rsi(const uint8_t * rsi){
     btstack_assert(csis_server_event_callback != NULL);
@@ -191,6 +193,14 @@ static void csis_server_handle_k1(void * context){
         csis_server_active_coordinator->tasks &= ~CSIS_TASK_TRIGGER_SIRK_READ;
         (void)att_server_response_ready(csis_server_active_coordinator->con_handle);
     }
+    if ((csis_server_active_coordinator->tasks & CSIS_TASK_TRIGGER_SIRK_NOTIFY) != 0){
+        // notify
+        csis_server_active_coordinator->tasks &= ~CSIS_TASK_TRIGGER_SIRK_NOTIFY;
+        if (csis_server_active_coordinator->sirk_configuration != 0){
+            csis_server_set_callback(CSIS_NOTIFY_SIRK);
+        }
+    }
+
     csis_server_active_coordinator = NULL;
     csis_server_trigger_next_sirk_calculation();
 }
@@ -581,6 +591,7 @@ static void csis_server_coordinator_reset(csis_server_connection_t * coordinator
         csis_server_active_coordinator = NULL;
     }
     coordinator->encrypted_sirk_state = CSIS_SIRK_CALCULATION_STATE_IDLE;
+    coordinator->tasks = 0;
     coordinator->scheduled_notifications = 0;
     coordinator->con_handle = HCI_CON_HANDLE_INVALID;
 }
@@ -689,13 +700,22 @@ void coordinated_set_identification_service_server_set_sirk(csis_sirk_type_t sir
     csis_sirk_exposed_via_oob = exposed_via_oob;
     csis_sirk_type = sirk_type;
     memcpy(csis_sirk, sirk, sizeof(csis_sirk));
+    uint8_t i;
     switch (sirk_type) {
         case CSIS_SIRK_TYPE_PUBLIC:
             csis_server_set_callback(CSIS_NOTIFY_SIRK);
             break;
         case CSIS_SIRK_TYPE_ENCRYPTED:
-            log_error("Not implemented yet");
-            btstack_unreachable();
+            // recalculate SIRK for all coordinators
+            for (i = 0; i < csis_coordinators_max_num; i++){
+                if (csis_coordinators[i].con_handle == HCI_CON_HANDLE_INVALID){
+                    continue;
+                }
+                // start encryption and schedule notify
+                csis_coordinators[i].encrypted_sirk_state = CSIS_SIRK_CALCULATION_W2_START;
+                csis_coordinators[i].tasks |= CSIS_TASK_TRIGGER_SIRK_NOTIFY;
+            }
+            csis_server_trigger_next_sirk_calculation();
             break;
         default:
             btstack_unreachable();
