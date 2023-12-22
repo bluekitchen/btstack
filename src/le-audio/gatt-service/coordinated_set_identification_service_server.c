@@ -59,10 +59,10 @@
 #include <stdio.h>
 #endif
 
-#define CSIS_TASK_SEND_SIRK                         0x01
-#define CSIS_TASK_SEND_COORDINATED_SET_SIZE         0x02
-#define CSIS_TASK_SEND_MEMBER_LOCK                  0x04
-#define CSIS_TASK_SEND_MEMBER_RANK                  0x08
+#define CSIS_NOTIFY_SIRK                         0x01
+#define CSIS_NOTIFY_COORDINATED_SET_SIZE         0x02
+#define CSIS_NOTIFY_MEMBER_LOCK                  0x04
+#define CSIS_NOTIFY_MEMBER_RANK                  0x08
 
 
 static att_service_handler_t    coordinated_set_identification_service;
@@ -107,6 +107,7 @@ static uint8_t key_ltk[16];
 static csis_server_connection_t * csis_server_active_coordinator;
 
 static void csis_server_trigger_next_sirk_calculation(void);
+static void csis_server_can_send_now(void * context);
 
 static void csis_server_emit_rsi(const uint8_t * rsi){
     btstack_assert(csis_server_event_callback != NULL);
@@ -393,11 +394,19 @@ static csis_server_connection_t * csis_get_lock_owner_coordinator(void){
     return NULL;
 }
 
+static void csis_trigger_can_send_now_if_needed(csis_server_connection_t *coordinator) {
+    if (coordinator->scheduled_notifications == 0){
+        coordinator->scheduled_notifications_callback.callback = &csis_server_can_send_now;
+        coordinator->scheduled_notifications_callback.context  = coordinator;
+        att_server_register_can_send_now_callback(&coordinator->scheduled_notifications_callback, coordinator->con_handle);
+    }
+}
+
 static void csis_server_can_send_now(void * context){
     csis_server_connection_t * coordinator = (csis_server_connection_t *) context;
 
-    if ((coordinator->scheduled_tasks & CSIS_TASK_SEND_SIRK) != 0) {
-        coordinator->scheduled_tasks &= ~CSIS_TASK_SEND_SIRK;
+    if ((coordinator->scheduled_notifications & CSIS_NOTIFY_SIRK) != 0) {
+        coordinator->scheduled_notifications &= ~CSIS_NOTIFY_SIRK;
         uint8_t value[17];
         value[0] = (uint8_t) csis_sirk_type;
         if (csis_sirk_type == CSIS_SIRK_TYPE_ENCRYPTED) {
@@ -406,51 +415,42 @@ static void csis_server_can_send_now(void * context){
             reverse_128(csis_sirk, &value[1]);
         }
         att_server_notify(coordinator->con_handle, member_lock_handle, &value[0], sizeof(value));
-    } else if ((coordinator->scheduled_tasks & CSIS_TASK_SEND_MEMBER_LOCK) != 0) {
-        coordinator->scheduled_tasks &= ~CSIS_TASK_SEND_MEMBER_LOCK;
+    } else if ((coordinator->scheduled_notifications & CSIS_NOTIFY_MEMBER_LOCK) != 0) {
+        coordinator->scheduled_notifications &= ~CSIS_NOTIFY_MEMBER_LOCK;
         uint8_t value[1];
         value[0] = csis_member_lock;
         att_server_notify(coordinator->con_handle, member_lock_handle, &value[0], sizeof(value));
-    } else if ((coordinator->scheduled_tasks & CSIS_TASK_SEND_COORDINATED_SET_SIZE) != 0) {
-        coordinator->scheduled_tasks &= ~CSIS_TASK_SEND_COORDINATED_SET_SIZE;
+    } else if ((coordinator->scheduled_notifications & CSIS_NOTIFY_COORDINATED_SET_SIZE) != 0) {
+        coordinator->scheduled_notifications &= ~CSIS_NOTIFY_COORDINATED_SET_SIZE;
         uint8_t value[1];
         value[0] = csis_coordinated_set_size;
         att_server_notify(coordinator->con_handle, member_lock_handle, &value[0], sizeof(value));
-    } else if ((coordinator->scheduled_tasks & CSIS_TASK_SEND_MEMBER_RANK) != 0) {
-        coordinator->scheduled_tasks &= ~CSIS_TASK_SEND_MEMBER_RANK;
+    } else if ((coordinator->scheduled_notifications & CSIS_NOTIFY_MEMBER_RANK) != 0) {
+        coordinator->scheduled_notifications &= ~CSIS_NOTIFY_MEMBER_RANK;
         uint8_t value[1];
         value[0] = csis_coordinated_set_member_rank;
         att_server_notify(coordinator->con_handle, member_lock_handle, &value[0], sizeof(value));
     }
 
-    if (coordinator->scheduled_tasks != 0){
-        coordinator->scheduled_tasks_callback.callback = &csis_server_can_send_now;
-        coordinator->scheduled_tasks_callback.context  = coordinator;
-        att_server_register_can_send_now_callback(&coordinator->scheduled_tasks_callback, coordinator->con_handle);
-    }
+    csis_trigger_can_send_now_if_needed(coordinator);
 }
 
-static void csis_server_set_callback(uint8_t task){
+static void csis_server_set_callback(uint8_t notification){
     uint8_t i;
     for (i = 0; i < csis_coordinators_max_num; i++){
         csis_server_connection_t * coordinator = &csis_coordinators[i];
 
         if (coordinator->con_handle == HCI_CON_HANDLE_INVALID){
-            coordinator->scheduled_tasks &= ~task;
+            coordinator->scheduled_notifications &= ~notification;
             continue;
         }
     
-        if ((task == CSIS_TASK_SEND_MEMBER_LOCK) && coordinator->is_lock_owner){
+        if ((notification == CSIS_NOTIFY_MEMBER_LOCK) && coordinator->is_lock_owner){
             continue;
         }
 
-        uint8_t scheduled_tasks = coordinator->scheduled_tasks;
-        coordinator->scheduled_tasks |= task;
-        if (scheduled_tasks == 0){
-            coordinator->scheduled_tasks_callback.callback = &csis_server_can_send_now;
-            coordinator->scheduled_tasks_callback.context  = coordinator;
-            att_server_register_can_send_now_callback(&coordinator->scheduled_tasks_callback, coordinator->con_handle);
-        }
+        coordinator->scheduled_notifications |= notification;
+        csis_trigger_can_send_now_if_needed(coordinator);
     }
 }
 
@@ -459,7 +459,7 @@ static void csis_lock_timer_timeout_handler(btstack_timer_source_t * timer){
     coordinator->is_lock_owner = false;
     csis_member_lock = CSIS_MEMBER_UNLOCKED;
     csis_server_emit_lock(coordinator->con_handle); 
-    csis_server_set_callback(CSIS_TASK_SEND_MEMBER_LOCK);
+    csis_server_set_callback(CSIS_NOTIFY_MEMBER_LOCK);
     btstack_run_loop_remove_timer(&coordinator->lock_timer);
 }
 
@@ -499,7 +499,7 @@ static uint8_t csis_server_set_member_lock(csis_server_connection_t * coordinato
     if (lock == CSIS_MEMBER_LOCKED){
         csis_lock_timer_start(coordinator);
     }
-    csis_server_set_callback(CSIS_TASK_SEND_MEMBER_LOCK);
+    csis_server_set_callback(CSIS_NOTIFY_MEMBER_LOCK);
     return ERROR_CODE_SUCCESS;
 }
 
@@ -522,7 +522,7 @@ static int csis_server_write_callback(hci_con_handle_t con_handle, uint16_t attr
         coordinator->sirk_configuration = little_endian_read_16(buffer, 0);
         if ((coordinator->sirk_configuration != 0) && csis_server_coordinator_bonded(coordinator)) {
             if (!csis_sirk_exposed_via_oob){
-                csis_server_set_callback(CSIS_TASK_SEND_SIRK);
+                csis_server_set_callback(CSIS_NOTIFY_SIRK);
             }
         }
         return 0;
@@ -531,7 +531,7 @@ static int csis_server_write_callback(hci_con_handle_t con_handle, uint16_t attr
     if (attribute_handle == coordinated_set_size_configuration_handle){
         coordinator->coordinated_set_size_configuration = little_endian_read_16(buffer, 0);
         if ((coordinator->coordinated_set_size_configuration != 0) && csis_server_coordinator_bonded(coordinator)) {
-            csis_server_set_callback(CSIS_TASK_SEND_COORDINATED_SET_SIZE);
+            csis_server_set_callback(CSIS_NOTIFY_COORDINATED_SET_SIZE);
         }
         return 0;
     }
@@ -539,7 +539,7 @@ static int csis_server_write_callback(hci_con_handle_t con_handle, uint16_t attr
     if (attribute_handle == member_lock_configuration_handle){
         coordinator->member_lock_configuration = little_endian_read_16(buffer, 0);
         if ((coordinator->member_lock_configuration != 0) && csis_server_coordinator_bonded(coordinator)) {
-            csis_server_set_callback(CSIS_TASK_SEND_MEMBER_LOCK);
+            csis_server_set_callback(CSIS_NOTIFY_MEMBER_LOCK);
         }
         return 0;
     }
@@ -548,7 +548,7 @@ static int csis_server_write_callback(hci_con_handle_t con_handle, uint16_t attr
         uint8_t status = csis_server_set_member_lock(coordinator, (csis_member_lock_t) buffer[0]);
 
         if (status == ERROR_CODE_SUCCESS){
-            csis_server_set_callback(CSIS_TASK_SEND_MEMBER_LOCK);
+            csis_server_set_callback(CSIS_NOTIFY_MEMBER_LOCK);
         }
         return status;
     }
@@ -556,7 +556,7 @@ static int csis_server_write_callback(hci_con_handle_t con_handle, uint16_t attr
     if (attribute_handle == coordinated_set_size_handle){
         csis_coordinated_set_size = buffer[0];
         csis_server_emit_set_size(coordinator->con_handle);
-        csis_server_set_callback(CSIS_TASK_SEND_COORDINATED_SET_SIZE);
+        csis_server_set_callback(CSIS_NOTIFY_COORDINATED_SET_SIZE);
         return 0;
     }
 
@@ -574,7 +574,7 @@ static void csis_server_coordinator_reset(csis_server_connection_t * coordinator
         csis_server_active_coordinator = NULL;
     }
     coordinator->encrypted_sirk_state = CSIS_SIRK_CALCULATION_STATE_IDLE;
-    coordinator->scheduled_tasks = 0;
+    coordinator->scheduled_notifications = 0;
     coordinator->con_handle = HCI_CON_HANDLE_INVALID;
 }
 
@@ -684,7 +684,7 @@ void coordinated_set_identification_service_server_set_sirk(csis_sirk_type_t sir
     memcpy(csis_sirk, sirk, sizeof(csis_sirk));
     switch (sirk_type) {
         case CSIS_SIRK_TYPE_PUBLIC:
-            csis_server_set_callback(CSIS_TASK_SEND_SIRK);
+            csis_server_set_callback(CSIS_NOTIFY_SIRK);
             break;
         case CSIS_SIRK_TYPE_ENCRYPTED:
             log_error("Not implemented yet");
@@ -699,13 +699,13 @@ void coordinated_set_identification_service_server_set_sirk(csis_sirk_type_t sir
 void coordinated_set_identification_service_server_set_size(uint8_t coordinated_set_size){
     btstack_assert(coordinated_set_size > 0u);
     csis_coordinated_set_size = coordinated_set_size;
-    csis_server_set_callback(CSIS_TASK_SEND_COORDINATED_SET_SIZE);
+    csis_server_set_callback(CSIS_NOTIFY_COORDINATED_SET_SIZE);
 }
 
 void coordinated_set_identification_service_server_set_rank(uint8_t coordinated_set_member_rank){
     btstack_assert(coordinated_set_member_rank > 0u);
     csis_coordinated_set_member_rank = coordinated_set_member_rank;
-    csis_server_set_callback(CSIS_TASK_SEND_MEMBER_RANK);
+    csis_server_set_callback(CSIS_NOTIFY_MEMBER_RANK);
 }
 
 uint8_t coordinated_set_identification_service_server_simulate_set_lock(hci_con_handle_t con_handle, csis_member_lock_t coordinated_set_member_lock){
