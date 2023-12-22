@@ -52,6 +52,7 @@
 #include "ble/att_db.h"
 #include "ble/att_server.h"
 #include "bluetooth_gatt.h"
+#include "bluetooth_psm.h"
 #include "btstack_debug.h"
 #include "btstack_defines.h"
 #include "btstack_event.h"
@@ -104,7 +105,6 @@ static uint32_t ots_olcp_features;
 
 static hci_con_handle_t active_con_handle;
 
-#define TSPX_LE_PSM          0x25
 static uint8_t  receive_buffer_X[100];
 static uint16_t initial_credits = L2CAP_LE_AUTOMATIC_CREDITS;
 static uint16_t ots_server_credit_based_cid;
@@ -1331,7 +1331,6 @@ static void ots_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
     UNUSED(size);
 
     bd_addr_t event_address;
-    uint16_t psm;
     uint16_t cid;
     uint16_t mtu;
     hci_con_handle_t handle;
@@ -1361,10 +1360,8 @@ static void ots_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
 
                 // LE CBM
                 case L2CAP_EVENT_CBM_INCOMING_CONNECTION: 
-                    psm = l2cap_event_cbm_incoming_connection_get_psm(packet);
                     cid = l2cap_event_cbm_incoming_connection_get_local_cid(packet);
-                    if (psm != TSPX_LE_PSM) break;
-                    log_info("L2CAP: Accepting incoming LE connection request for 0x%02x, PSM %02x", cid, psm); 
+                    log_info("L2CAP: Accepting incoming LE connection request for 0x%02x", cid);
                     l2cap_cbm_accept_connection(cid, receive_buffer_X, sizeof(receive_buffer_X), initial_credits);
                     break;
 
@@ -1372,14 +1369,13 @@ static void ots_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
                 case L2CAP_EVENT_CBM_CHANNEL_OPENED:
                     // inform about new l2cap connection
                     l2cap_event_cbm_channel_opened_get_address(packet, event_address);
-                    psm = l2cap_event_cbm_channel_opened_get_psm(packet);
                     cid = l2cap_event_cbm_channel_opened_get_local_cid(packet);
                     handle = l2cap_event_cbm_channel_opened_get_handle(packet);
                     mtu = l2cap_event_cbm_channel_opened_get_remote_mtu(packet);
 
                     if (l2cap_event_cbm_channel_opened_get_status(packet) == ERROR_CODE_SUCCESS) {
-                        log_info("L2CAP: LE Data Channel successfully opened: %s, handle 0x%02x, psm 0x%02x, local cid 0x%02x, remote cid 0x%02x, remote mtu 0x%02x",
-                               bd_addr_to_str(event_address), handle, psm, cid, little_endian_read_16(packet, 15), mtu);
+                        log_info("L2CAP: LE Data Channel successfully opened: %s, handle 0x%02x, local cid 0x%02x, remote cid 0x%02x, remote mtu 0x%02x",
+                               bd_addr_to_str(event_address), handle, cid, little_endian_read_16(packet, 15), mtu);
                         ots_server_cbm_con_handle = handle;
                         ots_server_credit_based_cid = cid;
                         ots_server_remote_mtu = mtu;
@@ -1502,7 +1498,7 @@ uint8_t object_transfer_service_server_init(uint32_t oacp_features, uint32_t olc
     log_info("Found OTS service 0x%02x-0x%02x", start_handle, end_handle);
 
     // le data channel setup
-    uint8_t status = l2cap_cbm_register_service(&ots_server_packet_handler, TSPX_LE_PSM, LEVEL_0);
+    uint8_t status = l2cap_cbm_register_service(&ots_server_packet_handler, BLUETOOTH_PSM_OTS, LEVEL_0);
     if (status != ERROR_CODE_SUCCESS){
         return status;
     }
