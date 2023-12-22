@@ -1570,7 +1570,7 @@ uint8_t object_transfer_service_server_init(uint32_t oacp_features, uint32_t olc
     log_info("Found OTS service 0x%02x-0x%02x", start_handle, end_handle);
 
     // le data channel setup
-    uint8_t status = l2cap_cbm_register_service(&ots_server_packet_handler, BLUETOOTH_PSM_OTS, LEVEL_0);
+    uint8_t status = l2cap_cbm_register_service(&ots_server_packet_handler, BLUETOOTH_PSM_OTS, LEVEL_2);
     if (status != ERROR_CODE_SUCCESS){
         return status;
     }
