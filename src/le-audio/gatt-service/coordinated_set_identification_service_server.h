@@ -69,6 +69,7 @@ typedef struct {
     bool     is_lock_owner;
     btstack_timer_source_t lock_timer;
 
+    uint8_t  tasks;
     uint8_t  scheduled_notifications;
     btstack_context_callback_registration_t scheduled_notifications_callback;
 
