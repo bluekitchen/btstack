@@ -64,6 +64,7 @@
 #define CSIS_NOTIFY_MEMBER_LOCK                  0x04
 #define CSIS_NOTIFY_MEMBER_RANK                  0x08
 
+#define CSIS_TASK_TRIGGER_SIRK_READ              0x01
 
 static att_service_handler_t    coordinated_set_identification_service;
 static btstack_packet_handler_t csis_server_event_callback;
@@ -183,9 +184,14 @@ static void csis_server_handle_k1(void * context){
     }
 
     csis_server_active_coordinator->encrypted_sirk_state = CSIS_SIRK_CALCULATION_STATE_READY;
-    (void)att_server_response_ready(csis_server_active_coordinator->con_handle);
-    csis_server_active_coordinator = NULL;
 
+    // encrypted SIRK ready, use it
+    if ((csis_server_active_coordinator->tasks & CSIS_TASK_TRIGGER_SIRK_READ) != 0){
+        // delayed read response
+        csis_server_active_coordinator->tasks &= ~CSIS_TASK_TRIGGER_SIRK_READ;
+        (void)att_server_response_ready(csis_server_active_coordinator->con_handle);
+    }
+    csis_server_active_coordinator = NULL;
     csis_server_trigger_next_sirk_calculation();
 }
 
@@ -345,6 +351,7 @@ static uint16_t csis_server_read_callback(hci_con_handle_t con_handle, uint16_t 
                         reverse_128(coordinator->encrypted_sirk, &value[1]);
                         break;
                     default:
+                        coordinator->tasks |= CSIS_TASK_TRIGGER_SIRK_READ;
                         return ATT_READ_RESPONSE_PENDING;
                 }
                 break;
