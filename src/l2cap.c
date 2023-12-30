@@ -5798,3 +5798,49 @@ uint8_t l2cap_le_disconnect(uint16_t local_cid){
     return l2cap_disconnect(local_cid);
 }
 #endif
+
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+static void fuzz_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) {
+}
+void l2cap_setup_test_channels_fuzz(void) {
+    bd_addr_t address;
+    l2cap_channel_t * channel;
+
+    // 0x41 1setup classic basic
+    channel = l2cap_create_channel_entry(fuzz_packet_handler, L2CAP_CHANNEL_TYPE_CLASSIC, address,
+        BD_ADDR_TYPE_ACL, 0x01, 100, LEVEL_4);
+    btstack_linked_list_add_tail(&l2cap_channels, (btstack_linked_item_t *) channel);
+
+    // 0x42 setup le cbm
+    channel = l2cap_create_channel_entry(fuzz_packet_handler, L2CAP_CHANNEL_TYPE_CHANNEL_CBM, address,
+        BD_ADDR_TYPE_LE_PUBLIC, 0x03, 100, LEVEL_4);
+    btstack_linked_list_add_tail(&l2cap_channels, (btstack_linked_item_t *) channel);
+
+    // 0x43 setup le ecbm
+    channel = l2cap_create_channel_entry(fuzz_packet_handler, L2CAP_CHANNEL_TYPE_CHANNEL_ECBM,
+        address, BD_ADDR_TYPE_LE_PUBLIC, 0x05, 100, LEVEL_4);
+    btstack_linked_list_add_tail(&l2cap_channels, (btstack_linked_item_t *) channel);
+}
+
+void l2cap_free_channels_fuzz(void){
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &l2cap_channels);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        l2cap_channel_t * channel = (l2cap_channel_t*) btstack_linked_list_iterator_next(&it);
+        bool fixed_channel = false;
+        switch (channel->channel_type) {
+            case L2CAP_CHANNEL_TYPE_FIXED_LE:
+            case L2CAP_CHANNEL_TYPE_FIXED_CLASSIC:
+            case L2CAP_CHANNEL_TYPE_CONNECTIONLESS:
+                fixed_channel = true;
+                break;
+            default:
+                break;
+        }
+        if (fixed_channel == false) {
+            btstack_linked_list_iterator_remove(&it);
+            btstack_memory_l2cap_channel_free(channel);
+        }
+    }
+}
+#endif
