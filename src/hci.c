@@ -3691,9 +3691,11 @@ static void event_handler(uint8_t *packet, uint16_t size){
             }
             // propagate remote supported sco packet packets from existing ACL to new SCO connection
             if (addr_type == BD_ADDR_TYPE_SCO){
-                hci_connection_t * acl_conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
-                btstack_assert(acl_conn != NULL);
-                conn->remote_supported_sco_packets = acl_conn->remote_supported_sco_packets;
+                const hci_connection_t * acl_conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
+                // ACL exists unless fuzzing
+                if (acl_conn != NULL) {
+                    conn->remote_supported_sco_packets = acl_conn->remote_supported_sco_packets;
+                }
             }
             hci_run();
             break;
@@ -3752,7 +3754,9 @@ static void event_handler(uint8_t *packet, uint16_t size){
             reverse_bd_addr(&packet[5], addr);
             conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_SCO);
             log_info("Synchronous Connection Complete for %p (status=%u) %s", conn, packet[2], bd_addr_to_str(addr));
-            btstack_assert(conn != NULL);
+
+            // SCO exists unless fuzzer
+            if (conn == NULL) break;
 
             if (packet[2] != ERROR_CODE_SUCCESS){
                 // connection failed, remove entry
