@@ -213,10 +213,11 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     static int initialized = 0;
     if (initialized == 0){
         initialized = 1;
-        btstack_memory_init();
         btstack_run_loop_init(btstack_run_loop_posix_get_instance());
         hci_connection.con_handle = 0x0000;
     }
+
+    btstack_memory_init();
 
     // prepare test data
     if (size < 5) return 0;
@@ -287,5 +288,8 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
 
     // teardown
     l2cap_free_channels_fuzz();
+
+    btstack_memory_deinit();
+
     return 0;
 }
