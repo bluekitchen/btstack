@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## Unreleased
 ### Added
 ### Fixed
+- HFP HF: send HF Indicator update only if enabled by AG
 ### Changed
 
 

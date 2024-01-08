@@ -1887,6 +1887,15 @@ uint8_t hfp_establish_service_level_connection(bd_addr_t bd_addr, uint16_t servi
     bd_addr_copy(connection->remote_addr, bd_addr);
     connection->service_uuid = service_uuid;
 
+    if (local_role == HFP_ROLE_HF) {
+        // setup HF Indicators
+        uint8_t i;
+        for (i=0; i < hfp_hf_indicators_nr; i++){
+            connection->generic_status_indicators[i].uuid = hfp_hf_indicators[i];
+            connection->generic_status_indicators[i].state = 0;
+        }
+    }
+
     hfp_sdp_query_request.callback = &hfp_handle_start_sdp_client_query;
     // ignore ERROR_CODE_COMMAND_DISALLOWED because in that case, we already have requested an SDP callback
     (void) sdp_client_register_query_callback(&hfp_sdp_query_request);
