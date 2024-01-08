@@ -1588,6 +1588,9 @@ void hfp_hf_init_hf_indicators(int indicators_nr, const uint16_t * indicators){
     for (i = 0; i < hfp_hf_indicators_nr ; i++){
         hfp_hf_indicators[i] = (uint8_t) indicators[i];
     }
+
+    // store copy in hfp to setup generic_status_indicators during SLC
+    hfp_set_hf_indicators(indicators_nr, hfp_hf_indicators);
 }
 
 uint8_t hfp_hf_establish_service_level_connection(bd_addr_t bd_addr){

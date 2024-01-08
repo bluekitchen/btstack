@@ -84,6 +84,9 @@ static btstack_packet_handler_t hfp_ag_callback;
 static btstack_packet_handler_t hfp_hf_rfcomm_packet_handler;
 static btstack_packet_handler_t hfp_ag_rfcomm_packet_handler;
 
+static uint8_t  hfp_hf_indicators_nr;
+static const uint8_t * hfp_hf_indicators;
+
 static uint16_t hfp_allowed_sco_packet_types;
 static hfp_connection_t * hfp_sco_establishment_active;
 
@@ -2252,6 +2255,11 @@ void hfp_set_ag_rfcomm_packet_handler(btstack_packet_handler_t handler){
 
 void hfp_set_hf_rfcomm_packet_handler(btstack_packet_handler_t handler){
     hfp_hf_rfcomm_packet_handler = handler;
+}
+
+void hfp_set_hf_indicators(uint8_t indicators_nr, const uint8_t * indicators) {
+    hfp_hf_indicators_nr = indicators_nr;
+    hfp_hf_indicators = indicators;
 }
 
 void hfp_init(void){
