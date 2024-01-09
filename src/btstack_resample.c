@@ -38,6 +38,7 @@
 #define BTSTACK_FILE__ "btstack_resample.c"
 
 #include "btstack_bool.h"
+#include "btstack_debug.h"
 #include "btstack_resample.h"
 
 void btstack_resample_init(btstack_resample_t * context, int num_channels){
@@ -53,6 +54,8 @@ void btstack_resample_set_factor(btstack_resample_t * context, uint32_t src_step
 }
 
 uint16_t btstack_resample_block(btstack_resample_t * context, const int16_t * input_buffer, uint32_t num_frames, int16_t * output_buffer){
+    btstack_assert(context->num_channels > 0);
+
     uint16_t dest_frames = 0;
     uint16_t dest_samples = 0;
     // samples between last sample of previous block and first sample in current block 
