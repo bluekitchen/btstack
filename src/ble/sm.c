@@ -4339,6 +4339,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
     log_debug("sm_pdu_handler: state %u, pdu 0x%02x", sm_conn->sm_engine_state, sm_pdu_code);
 
     int err;
+    uint8_t max_encryption_key_size;
     UNUSED(err);
 
     if (sm_pdu_code == SM_CODE_KEYPRESS_NOTIFICATION){
@@ -4386,6 +4387,14 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             // store pairing request
             (void)memcpy(&setup->sm_s_pres, packet,
                          sizeof(sm_pairing_packet_t));
+
+            // validate encryption key size
+            max_encryption_key_size = sm_pairing_packet_get_max_encryption_key_size(setup->sm_s_pres);
+            if ((max_encryption_key_size < 7) || (max_encryption_key_size > 16)){
+                sm_pairing_error(sm_conn, SM_REASON_INVALID_PARAMETERS);
+                break;
+            }
+
             err = sm_stk_generation_init(sm_conn);
 
 #ifdef ENABLE_TESTING_SUPPORT
@@ -4484,6 +4493,13 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
 
             // store pairing request
             (void)memcpy(&sm_conn->sm_m_preq, packet, sizeof(sm_pairing_packet_t));
+
+            // validation encryption key size
+            max_encryption_key_size = sm_pairing_packet_get_max_encryption_key_size(sm_conn->sm_m_preq);
+            if ((max_encryption_key_size < 7) || (max_encryption_key_size > 16)){
+                sm_pairing_error(sm_conn, SM_REASON_INVALID_PARAMETERS);
+                break;
+            }
 
             // check if IRK completed
             switch (sm_conn->sm_irk_lookup_state){
@@ -4804,7 +4820,12 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             (void)memcpy(&setup->sm_s_pres, packet, sizeof(sm_pairing_packet_t));
 
             // validate encryption key size
-            sm_conn->sm_actual_encryption_key_size = sm_calc_actual_encryption_key_size(sm_pairing_packet_get_max_encryption_key_size(setup->sm_s_pres));
+            max_encryption_key_size = sm_pairing_packet_get_max_encryption_key_size(setup->sm_s_pres);
+            if ((max_encryption_key_size < 7) || (max_encryption_key_size > 16)){
+                sm_pairing_error(sm_conn, SM_REASON_INVALID_PARAMETERS);
+                break;
+            }
+            sm_conn->sm_actual_encryption_key_size = sm_calc_actual_encryption_key_size(max_encryption_key_size);
             // SC Only mandates 128 bit key size
             if (sm_sc_only_mode && (sm_conn->sm_actual_encryption_key_size < 16)) {
                 sm_conn->sm_actual_encryption_key_size  = 0;
@@ -4832,10 +4853,17 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
                 sm_pdu_received_in_wrong_state(sm_conn);
                 break;
             }
+
             // store pairing request
             (void)memcpy(&sm_conn->sm_m_preq, packet, sizeof(sm_pairing_packet_t));
+
             // validate encryption key size
-            sm_conn->sm_actual_encryption_key_size = sm_calc_actual_encryption_key_size(sm_pairing_packet_get_max_encryption_key_size(sm_conn->sm_m_preq));
+            max_encryption_key_size = sm_pairing_packet_get_max_encryption_key_size(setup->sm_m_preq);
+            if ((max_encryption_key_size < 7) || (max_encryption_key_size > 16)){
+                sm_pairing_error(sm_conn, SM_REASON_INVALID_PARAMETERS);
+                break;
+            }
+            sm_conn->sm_actual_encryption_key_size = sm_calc_actual_encryption_key_size(max_encryption_key_size);
             // SC Only mandates 128 bit key size
             if (sm_sc_only_mode && (sm_conn->sm_actual_encryption_key_size < 16)) {
                 sm_conn->sm_actual_encryption_key_size  = 0;

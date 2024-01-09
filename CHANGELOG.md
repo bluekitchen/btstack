@@ -10,8 +10,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 ### Fixed
 - HFP HF: send HF Indicator update only if enabled by AG
+- SM: abort pairing with invalid parameter error for encryption key size > 16
 ### Changed
-
 
 ## Release v1.6
 
