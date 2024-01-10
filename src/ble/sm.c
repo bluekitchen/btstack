@@ -1291,15 +1291,16 @@ static void sm_address_resolution_handle_event(address_resolution_event_t event)
     sm_address_resolution_mode = ADDRESS_RESOLUTION_IDLE;
     sm_address_resolution_context = NULL;
     sm_address_resolution_test = -1;
-    hci_con_handle_t con_handle = 0;
 
+    hci_con_handle_t con_handle = HCI_CON_HANDLE_INVALID;
     sm_connection_t * sm_connection;
     sm_key_t ltk;
     bool have_ltk;
+    int authenticated;
 #ifdef ENABLE_LE_CENTRAL
     bool trigger_pairing;
-    int authenticated;
 #endif
+
     switch (mode){
         case ADDRESS_RESOLUTION_GENERAL:
             break;
