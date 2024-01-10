@@ -2509,13 +2509,15 @@ static void mcs_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
                         // the application should deal with this state below
                         break;
                     default:
-                        media_control_service_server_media_control_point_response(media_player_id, opcode, MEDIA_CONTROL_POINT_ERROR_CODE_MEDIA_PLAYER_INACTIVE);
+                        media_control_service_server_respond_to_media_control_point_command(media_player_id, opcode,
+                                                                                            MEDIA_CONTROL_POINT_ERROR_CODE_MEDIA_PLAYER_INACTIVE);
                         return;
                 }
             }
 
             // accept command
-            media_control_service_server_media_control_point_response(media_player_id, opcode, MEDIA_CONTROL_POINT_ERROR_CODE_SUCCESS);
+            media_control_service_server_respond_to_media_control_point_command(media_player_id, opcode,
+                                                                                MEDIA_CONTROL_POINT_ERROR_CODE_SUCCESS);
 
             switch (opcode){
                 case MEDIA_CONTROL_POINT_OPCODE_FAST_REWIND:
@@ -2896,19 +2898,19 @@ int btstack_main(void)
     // setup MCS
     media_control_service_server_init();
 
-    media_control_service_server_register_generic_media_player(&media_player1.media_server,
-                                                               &mcs_server_packet_handler, 0x1FFFFF,
-                                                               &media_player1.id);
+    media_control_service_server_register_generic_player(&media_player1.media_server,
+                                                         &mcs_server_packet_handler, 0x1FFFFF,
+                                                         &media_player1.id);
 
-//    media_control_service_server_register_media_player(&media_player1.media_server,
+//    media_control_service_server_register_player(&media_player1.media_server,
 //        &mcs_server_packet_handler, 0, //0x1FFFFF,
 //        &media_player1.id);
 
     mcs_server_init_media_player(&media_player1);
 
-    media_control_service_server_register_generic_media_player(&generic_media_player.media_server, 
-        &mcs_server_packet_handler, 0, //0x1FFFFF,
-        &generic_media_player.id);
+    media_control_service_server_register_generic_player(&generic_media_player.media_server,
+                                                         &mcs_server_packet_handler, 0, //0x1FFFFF,
+                                                         &generic_media_player.id);
 
     mcs_server_init_media_player(&generic_media_player);
 
