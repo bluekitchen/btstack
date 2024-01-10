@@ -108,7 +108,7 @@ typedef struct {
 
 /* API_START */
 typedef struct {
-    char name[MEDIA_CONTROL_SERVICE_MEDIA_PLAYER_NAME_MAX_LENGTH];
+    char * name;
     bool name_value_changed;
     
     char track_title[MEDIA_CONTROL_SERVICE_TRACK_TITLE_MAX_LENGTH];
@@ -195,55 +195,217 @@ typedef struct {
 /**
  * @brief Init media Control Service Server with ATT DB
  */
+
+/**
+ * @brief Initialize Media Control Service (MCS) Server
+ */
 void media_control_service_server_init(void);
 
-uint8_t media_control_service_server_register_generic_media_player(
-    media_control_service_server_t * media_player, 
+/**
+ * @brief Register generic media player
+ * @param generic_player
+ * @param packet_handler
+ * @param media_control_point_opcodes_supported
+ * @param out_generic_player_id
+ * @return ERROR_CODE_SUCCESS on success, otherwise:
+ *       - ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE if no is service found
+ *       - ERROR_CODE_REPEATED_ATTEMPTS if media player is already registered
+ */
+uint8_t media_control_service_server_register_generic_player(
+    media_control_service_server_t * generic_player,
     btstack_packet_handler_t packet_handler, 
     uint32_t media_control_point_opcodes_supported, 
-    uint16_t * media_player_id);
+    uint16_t * out_generic_player_id);
 
-uint8_t media_control_service_server_register_media_player(
-    media_control_service_server_t * media_player, 
+/**
+ * @brief Register media player
+ * @param player
+ * @param packet_handler
+ * @param media_control_point_opcodes_supported
+ * @param out_player_id
+ * @return ERROR_CODE_SUCCESS on success, otherwise:
+ *       - ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE if no is service found
+ *       - ERROR_CODE_REPEATED_ATTEMPTS if media player is already registered
+ */
+uint8_t media_control_service_server_register_player(
+    media_control_service_server_t * player,
     btstack_packet_handler_t packet_handler, 
     uint32_t media_control_point_opcodes_supported, 
-    uint16_t * media_player_id);
+    uint16_t * out_player_id);
 
+/**
+ *
+ * @param media_player_id
+ * @param track
+ * @return
+ */
 uint8_t media_control_service_server_update_current_track_info(uint16_t media_player_id, mcs_track_t * track);
 
+/**
+ *
+ * @param media_player_id
+ * @param name
+ * @return
+ */
 uint8_t media_control_service_server_set_media_player_name(uint16_t media_player_id, char * name);
 
+/**
+ *
+ * @param media_player_id
+ * @param icon_object_id
+ * @return
+ */
 uint8_t media_control_service_server_set_icon_object_id(uint16_t media_player_id, const ots_object_id_t * icon_object_id);
 
+/**
+ *
+ * @param media_player_id
+ * @param icon_url
+ * @return
+ */
 uint8_t media_control_service_server_set_icon_url(uint16_t media_player_id, const char * icon_url);
 
+/**
+ *
+ * @param media_player_id
+ * @param object_id
+ * @return
+ */
 uint8_t media_control_service_server_set_parent_group_object_id(uint16_t media_player_id, const ots_object_id_t * object_id);
+
+/**
+ *
+ * @param media_player_id
+ * @param object_id
+ * @return
+ */
 uint8_t media_control_service_server_set_current_group_object_id(uint16_t media_player_id, const ots_object_id_t * object_id);
+
+/**
+ *
+ * @param media_player_id
+ * @param object_id
+ * @return
+ */
 uint8_t media_control_service_server_set_current_track_id(uint16_t media_player_id, const ots_object_id_t * object_id);
+
+/**
+ *
+ * @param media_player_id
+ * @param object_id
+ * @return
+ */
 uint8_t media_control_service_server_set_next_track_id(uint16_t media_player_id, const ots_object_id_t * object_id);
+
+/**
+ *
+ * @param media_player_id
+ * @param object_id
+ * @return
+ */
 uint8_t media_control_service_server_set_current_track_segments_id(uint16_t media_player_id, const ots_object_id_t * object_id);
 
+/**
+ *
+ * @param media_player_id
+ * @return
+ */
 uint8_t media_control_service_server_set_media_track_changed(uint16_t media_player_id);
 
+/**
+ *
+ * @param media_player_id
+ * @param track_title
+ * @return
+ */
 uint8_t media_control_service_server_set_track_title(uint16_t media_player_id, const char * track_title);
 
+/**
+ *
+ * @param media_player_id
+ * @param track_duration_10ms
+ * @return
+ */
 uint8_t media_control_service_server_set_track_duration(uint16_t media_player_id, uint32_t track_duration_10ms);
 
+/**
+ *
+ * @param media_player_id
+ * @param track_position_10ms
+ * @return
+ */
 uint8_t media_control_service_server_set_track_position(uint16_t media_player_id, int32_t track_position_10ms);
 
+/**
+ *
+ * @param media_player_id
+ * @param playback_speed
+ * @return
+ */
 uint8_t media_control_service_server_set_playback_speed(uint16_t media_player_id, int8_t playback_speed);
+
+/**
+ *
+ * @param media_player_id
+ * @param seeking_speed
+ * @return
+ */
 uint8_t media_control_service_server_set_seeking_speed( uint16_t media_player_id, int8_t seeking_speed);
 
+/**
+ *
+ * @param media_player_id
+ * @param playing_orders_supported
+ * @return
+ */
 uint8_t media_control_service_server_set_playing_orders_supported(uint16_t media_player_id, uint16_t playing_orders_supported);
+
+/**
+ *
+ * @param media_player_id
+ * @param playing_order
+ * @return
+ */
 uint8_t media_control_service_server_support_playing_order(uint16_t media_player_id, playing_order_t playing_order);
+
+/**
+ *
+ * @param media_player_id
+ * @param playing_order
+ * @return
+ */
 uint8_t media_control_service_server_set_playing_order(uint16_t media_player_id, playing_order_t playing_order);
 
+/**
+ *
+ * @param media_player_id
+ * @return
+ */
 mcs_media_state_t media_control_service_server_get_media_state(uint16_t media_player_id);
+
+/**
+ *
+ * @param media_player_id
+ * @param media_state
+ * @return
+ */
 uint8_t media_control_service_server_set_media_state(uint16_t media_player_id, mcs_media_state_t media_state);
 
+/**
+ *
+ * @param media_player
+ * @return
+ */
 uint8_t media_control_service_server_unregister_media_player(media_control_service_server_t * media_player);
 
-uint8_t media_control_service_server_media_control_point_response(
+/**
+ *
+ * @param media_player_id
+ * @param media_control_point_opcode
+ * @param media_control_point_result_code
+ * @return
+ */
+uint8_t media_control_service_server_respond_to_media_control_point_command(
     uint16_t media_player_id, 
     media_control_point_opcode_t      media_control_point_opcode,
     media_control_point_error_code_t  media_control_point_result_code);
