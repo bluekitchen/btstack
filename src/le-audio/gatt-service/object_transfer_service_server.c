@@ -105,7 +105,7 @@ static uint32_t ots_olcp_features;
 static hci_con_handle_t active_con_handle;
 
 #define TSPX_LE_PSM          0x25
-static uint8_t  receive_buffer_X[100];
+static uint8_t  receive_buffer_X[150];
 static uint16_t initial_credits = L2CAP_LE_AUTOMATIC_CREDITS;
 static uint16_t ots_server_credit_based_cid;
 static uint16_t ots_server_remote_mtu;
@@ -127,6 +127,8 @@ static ots_server_connection_t * ots_server_find_connection_for_con_handle(hci_c
 }
 
 static void ots_server_reset_connection(ots_server_connection_t * connection){
+    btstack_run_loop_remove_timer(&connection->operation_timer);
+
     connection->con_handle = HCI_CON_HANDLE_INVALID;
     connection->current_object_locked = false;
     connection->current_object_object_transfer_in_progress = false;
@@ -135,9 +137,15 @@ static void ots_server_reset_connection(ots_server_connection_t * connection){
     connection->object_changed_configuration = 0;
     connection->scheduled_tasks = 0;
 
+    connection->current_object = NULL;
     connection->current_object_locked = false;
     connection->current_object_object_transfer_in_progress = false;
     connection->current_object_object_read_transfer_in_progress = false;
+
+    connection->oacp_abort_read = false;
+    connection->oacp_truncate = false;
+    connection->olcp_opcode = OLCP_OPCODE_READY;
+    connection->oacp_opcode = OACP_OPCODE_READY;
 }
 
 static void ots_server_reset_connection_for_con_handle(hci_con_handle_t con_handle){
@@ -179,7 +187,7 @@ static ots_server_connection_t * ots_server_find_or_add_connection_for_con_handl
     if (free_connection){
         free_connection->con_handle = con_handle;
     }
-
+    btstack_linked_list_add((btstack_linked_list_t *) &ots_connections, (btstack_linked_item_t *) free_connection);
     return free_connection;
 }
 
@@ -431,7 +439,6 @@ static uint16_t ots_server_read_callback(hci_con_handle_t con_handle, uint16_t a
     if (attribute_handle == ots_server_get_value_handle_for_characteristic_index(OTS_OBJECT_LAST_MODIFIED_INDEX)){
         uint8_t time_buffer[7];
         btstack_utc_store_time(&connection->current_object->last_modified, &time_buffer[0], sizeof(time_buffer));
-       
         return att_read_callback_handle_blob(time_buffer, sizeof(time_buffer), offset, buffer, buffer_size);
     } 
 
