@@ -3320,8 +3320,8 @@ static void event_handle_le_connection_complete(const uint8_t * hci_event){
 			conn = gap_get_outgoing_connection();
 		}
 
-		// outgoing le connection establishment is done
-		if (conn){
+		// free connection if cancelled by user (request == IDLE)
+		if ((conn != NULL) && (hci_stack->le_connecting_request == LE_CONNECTING_IDLE)){
 			// remove entry
 			btstack_linked_list_remove(&hci_stack->connections, (btstack_linked_item_t *) conn);
 			btstack_memory_hci_connection_free( conn );
