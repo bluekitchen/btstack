@@ -1425,7 +1425,10 @@ static void ots_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
                             connection->oacp_data_bytes_read += bytes_to_read;
                             l2cap_send(ots_server_credit_based_cid, data, bytes_to_read);
                             l2cap_request_can_send_now_event(ots_server_credit_based_cid);
-                            break;
+                            if (connection->oacp_data_chunk_length > connection->oacp_data_bytes_read){
+                                break;
+                            }
+
                         }
                         // TODO send indication?
                     }
@@ -1491,6 +1494,13 @@ static void ots_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
 
 //                connection->oacp_result_code = OACP_RESULT_CODE_SUCCESS;
 //                ots_server_schedule_task(connection, OTS_TASK_SEND_OACP_PROCEDURE_RESPONSE);
+
+                btstack_linked_list_iterator_t it;
+                btstack_linked_list_iterator_init(&it, &ots_connections);
+                while (btstack_linked_list_iterator_has_next(&it)){
+                    ots_server_connection_t * con = (ots_server_connection_t*) btstack_linked_list_iterator_next(&it);
+                    ots_server_schedule_task(con, OTS_TASK_SEND_OBJECT_CHANGED_RESPONSE);
+                }
             }
             break;
 
