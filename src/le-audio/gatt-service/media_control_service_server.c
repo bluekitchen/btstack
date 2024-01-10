@@ -277,7 +277,8 @@ static bool mcs_media_control_point_opcode_supported(media_control_service_serve
 
 static void mcs_server_reset_media_player(media_control_service_server_t * media_player){
     media_player->con_handle = HCI_CON_HANDLE_INVALID;
-    
+    media_player->scheduled_tasks = 0;
+
     memset(&media_player->data, 0, sizeof(mcs_media_player_data_t));
     media_player->data.track_duration_10ms = 0xFFFFFFFF;    
     media_player->data.track_position_10ms = 0xFFFFFFFF;       
@@ -722,7 +723,7 @@ static uint16_t mcs_server_read_callback(hci_con_handle_t con_handle, uint16_t a
                     return (uint16_t)ATT_READ_ERROR_CODE_OFFSET + (uint16_t)MCS_SEARCH_CONTROL_POINT_ATT_ERROR_RESPONSE_VALUE_CHANGED_DURING_READ_LONG;
                 }
             } else {
-                // actual readl (after everything was validated)
+                // actual read (after everything was validated)
                 if (offset == 0){
                     media_player->data.name_value_changed = false;
                 }
@@ -736,7 +737,7 @@ static uint16_t mcs_server_read_callback(hci_con_handle_t con_handle, uint16_t a
                     return (uint16_t)ATT_READ_ERROR_CODE_OFFSET + (uint16_t)MCS_SEARCH_CONTROL_POINT_ATT_ERROR_RESPONSE_VALUE_CHANGED_DURING_READ_LONG;
                 }
             } else {
-                // actual readl (after everything was validated)
+                // actual read (after everything was validated)
                 if (offset == 0){
                     media_player->data.track_title_value_changed = false;
                 }
@@ -1002,7 +1003,7 @@ void media_control_service_server_init(void){
 	mcs_media_players = NULL;
 }
 
-static uint8_t media_control_service_server_register_player(uint16_t service_uuid, media_control_service_server_t * media_player, 
+static uint8_t mcs_server_register_player(uint16_t service_uuid, media_control_service_server_t * media_player,
     btstack_packet_handler_t packet_handler, uint32_t media_control_point_opcodes_supported, uint16_t * media_player_id){
     // search service with global start handle
     btstack_assert(media_player != NULL);
@@ -1130,24 +1131,24 @@ static uint8_t media_control_service_server_register_player(uint16_t service_uui
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t media_control_service_server_register_generic_media_player(
-    media_control_service_server_t * media_player, 
+uint8_t media_control_service_server_register_generic_player(
+    media_control_service_server_t * generic_player,
     btstack_packet_handler_t packet_handler, 
     uint32_t media_control_point_opcodes_supported, 
-    uint16_t * media_player_id){
+    uint16_t * out_generic_player_id){
     
-    return media_control_service_server_register_player(ORG_BLUETOOTH_SERVICE_GENERIC_MEDIA_CONTROL_SERVICE, 
-        media_player, packet_handler, media_control_point_opcodes_supported, media_player_id);
+    return mcs_server_register_player(ORG_BLUETOOTH_SERVICE_GENERIC_MEDIA_CONTROL_SERVICE,
+                                      generic_player, packet_handler, media_control_point_opcodes_supported, out_generic_player_id);
 }
 
-uint8_t media_control_service_server_register_media_player(
-    media_control_service_server_t * media_player, 
+uint8_t media_control_service_server_register_player(
+    media_control_service_server_t * player,
     btstack_packet_handler_t packet_handler, 
     uint32_t media_control_point_opcodes_supported, 
-    uint16_t * media_player_id){
+    uint16_t * out_player_id){
 
-    return media_control_service_server_register_player(ORG_BLUETOOTH_SERVICE_MEDIA_CONTROL_SERVICE, 
-        media_player, packet_handler, media_control_point_opcodes_supported, media_player_id);
+    return mcs_server_register_player(ORG_BLUETOOTH_SERVICE_MEDIA_CONTROL_SERVICE,
+                                      player, packet_handler, media_control_point_opcodes_supported, out_player_id);
 }
 
 uint8_t media_control_service_server_set_media_player_name(uint16_t media_player_id, char * name){
@@ -1157,7 +1158,7 @@ uint8_t media_control_service_server_set_media_player_name(uint16_t media_player
 	}
 
     media_player->data.name_value_changed = true;
-	btstack_strcpy(media_player->data.name, sizeof(media_player->data.name), name);
+	media_player->data.name = name;
 	mcs_server_schedule_task(media_player, MEDIA_PLAYER_NAME);
 	return ERROR_CODE_SUCCESS;
 }
@@ -1384,7 +1385,7 @@ mcs_media_state_t media_control_service_server_get_media_state(uint16_t media_pl
     return media_player->data.media_state;
 }
 
-uint8_t media_control_service_server_media_control_point_response(
+uint8_t media_control_service_server_respond_to_media_control_point_command(
     uint16_t media_player_id, 
     media_control_point_opcode_t      media_control_point_opcode,
     media_control_point_error_code_t  media_control_point_result_code){
