@@ -148,6 +148,15 @@ static void ots_server_reset_connection_for_con_handle(hci_con_handle_t con_hand
     ots_server_reset_connection(connection);
 }
 
+static void ots_server_remove_connection_for_con_handle(hci_con_handle_t con_handle){
+    ots_server_connection_t * connection = ots_server_find_connection_for_con_handle(con_handle);
+    if (connection == NULL){
+        return;
+    }
+    ots_server_reset_connection(connection);
+    btstack_linked_list_remove((btstack_linked_list_t *) &ots_connections, (btstack_linked_item_t *) connection);
+}
+
 static ots_server_connection_t * ots_server_find_or_add_connection_for_con_handle(hci_con_handle_t con_handle){
     if (con_handle == HCI_CON_HANDLE_INVALID){
         return NULL;
@@ -1355,7 +1364,7 @@ static void ots_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
 
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
                     handle = hci_event_disconnection_complete_get_connection_handle(packet);
-                    ots_server_reset_connection_for_con_handle(handle);
+                    ots_server_remove_connection_for_con_handle(handle);
                     ots_server_emit_disconnect_event(handle);
                     break;
 
