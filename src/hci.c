@@ -3285,7 +3285,7 @@ static void hci_create_gap_connection_complete_event(const uint8_t * hci_event, 
     }
 }
 
-static void event_handle_le_connection_complete(const uint8_t * hci_event){
+static void hci_handle_le_connection_complete_event(const uint8_t * hci_event){
 	bd_addr_t addr;
 	bd_addr_type_t addr_type;
 	hci_connection_t * conn;
@@ -4299,7 +4299,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
                 case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
                 case HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE_V1:
                 case HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE_V2:
-					event_handle_le_connection_complete(packet);
+                    hci_handle_le_connection_complete_event(packet);
                     break;
 
                 // log_info("LE buffer size: %u, count %u", little_endian_read_16(packet,6), packet[8]);
