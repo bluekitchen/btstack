@@ -700,6 +700,11 @@ uint8_t avdtp_start_stream_accept(uint16_t avdtp_cid, uint8_t local_seid);
 uint8_t avdtp_start_stream_reject(uint16_t avdtp_cid, uint8_t local_seid);
 #endif
 
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+void avdtp_init_fuzz(void);
+void avdtp_packet_handler_fuzz(uint8_t *packet, uint16_t size);
+#endif
+
 #if defined __cplusplus
 }
 #endif
