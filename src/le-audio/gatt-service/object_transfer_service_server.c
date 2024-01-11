@@ -102,14 +102,9 @@ static ots_characteristic_t  ots_characteristics[OTS_CHARACTERISTICS_NUM];
 static uint32_t ots_oacp_features;
 static uint32_t ots_olcp_features;
 
-static hci_con_handle_t active_con_handle;
-
 #define TSPX_LE_PSM          0x25
-static uint8_t  receive_buffer_X[150];
-static uint16_t initial_credits = L2CAP_LE_AUTOMATIC_CREDITS;
-static uint16_t ots_server_credit_based_cid;
-static uint16_t ots_server_remote_mtu;
-static hci_con_handle_t ots_server_cbm_con_handle;
+
+static void ots_server_schedule_task(ots_server_connection_t * connection, uint8_t task);
 
 static ots_server_connection_t * ots_server_find_connection_for_con_handle(hci_con_handle_t con_handle){
     if (con_handle == HCI_CON_HANDLE_INVALID){
@@ -126,6 +121,18 @@ static ots_server_connection_t * ots_server_find_connection_for_con_handle(hci_c
     return NULL;
 }
 
+static ots_server_connection_t * ots_server_find_connection_for_credit_based_cid(hci_con_handle_t credit_based_cid){
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &ots_connections);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        ots_server_connection_t * connection = (ots_server_connection_t*) btstack_linked_list_iterator_next(&it);
+
+        if (connection->con_handle == HCI_CON_HANDLE_INVALID) continue;
+        if (connection->credit_based_cid != credit_based_cid) continue;
+        return connection;
+    }
+    return NULL;
+}
 static void ots_server_reset_connection(ots_server_connection_t * connection){
     btstack_run_loop_remove_timer(&connection->operation_timer);
 
@@ -494,7 +501,7 @@ static void ots_server_can_send_now(void * context){
         att_server_indicate(connection->con_handle, attribute_handle, value, value_length);
 
         if (( connection->oacp_opcode == OACP_OPCODE_READ) && (connection->oacp_result_code == OACP_RESULT_CODE_SUCCESS)) {
-            l2cap_request_can_send_now_event(ots_server_credit_based_cid);
+            l2cap_request_can_send_now_event(connection->credit_based_cid);
         }
         connection->oacp_opcode = OACP_OPCODE_READY;
     } else if ((connection->scheduled_tasks & OTS_TASK_SEND_OLCP_PROCEDURE_RESPONSE) != 0){
@@ -786,7 +793,7 @@ int ots_server_handle_action_control_point_operation(ots_server_connection_t * c
             }
 
             // 3. Channel Unavailable - An Object Transfer Channel was not available for use
-            if (ots_server_credit_based_cid == 0){
+            if (connection->credit_based_cid == 0){
                 connection->oacp_result_code = OACP_RESULT_CODE_CHANNEL_UNAVAILABLE;
                 break;
             }
@@ -807,7 +814,7 @@ int ots_server_handle_action_control_point_operation(ots_server_connection_t * c
             }
 
             // 6. Insufficient Resources - The value of the Length parameter exceeds the number of octets that the Server has the capacity to read from the object.
-            if (length > ots_server_remote_mtu){
+            if (length > connection->remote_mtu){
                 connection->oacp_result_code = OACP_RESULT_CODE_INSUFFICIENT_RESOURCES;
                 break;
             }
@@ -820,7 +827,6 @@ int ots_server_handle_action_control_point_operation(ots_server_connection_t * c
 
             connection->current_object_locked = true;
 
-            active_con_handle = connection->con_handle;
             connection->oacp_data_chunk_length = length;
             connection->oacp_data_chunk_offset = offset;
             connection->oacp_data_bytes_read = 0;
@@ -868,7 +874,7 @@ int ots_server_handle_action_control_point_operation(ots_server_connection_t * c
             }
 
             // 5. Channel Unavailable - An Object Transfer Channel was not available for use
-            if (ots_server_credit_based_cid == 0){
+            if (connection->credit_based_cid == 0){
                 connection->oacp_result_code = OACP_RESULT_CODE_CHANNEL_UNAVAILABLE;
                 break;
             }
@@ -906,7 +912,7 @@ int ots_server_handle_action_control_point_operation(ots_server_connection_t * c
             }
 
             // 10. Object Locked - The Current Object is locked by the Server.
-            if (connection->current_object_locked){
+            if (ots_server_is_current_object_locked(connection)){
                 connection->oacp_result_code = OACP_RESULT_CODE_OBJECT_LOCKED;
                 break;
             }
@@ -919,7 +925,6 @@ int ots_server_handle_action_control_point_operation(ots_server_connection_t * c
 
             connection->current_object_locked = true;
 
-            active_con_handle = connection->con_handle;
             connection->oacp_data_chunk_length = length;
             connection->oacp_data_chunk_offset = offset;
             connection->oacp_truncate = mode == 2;
@@ -937,7 +942,7 @@ int ots_server_handle_action_control_point_operation(ots_server_connection_t * c
             // 2. The Abort Op Code was not sent by the same Client who started the OACP Read operation.
             // 3. The requested procedure failed for a reason other than those enumerated above in this table.
 
-            if (ots_server_credit_based_cid == 0) {
+            if (connection->credit_based_cid == 0) {
                 connection->oacp_result_code = OACP_RESULT_CODE_CHANNEL_UNAVAILABLE;
                 break;
             }
@@ -1130,7 +1135,6 @@ static void ots_server_emit_disconnect_event(hci_con_handle_t con_handle){
     (*ots_server_event_callback)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
-
 static int ots_server_write_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
     ots_server_connection_t * connection = NULL;
 
@@ -1169,7 +1173,6 @@ static int ots_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
     if (connection == NULL){
         return 0;
     }
-
     uint8_t i;
     switch (transaction_mode){
         case ATT_TRANSACTION_MODE_CANCEL:
@@ -1331,7 +1334,7 @@ static void ots_server_operations_timer_timeout_handler(btstack_timer_source_t *
     connection->current_object_locked = false;
     connection->current_object_object_transfer_in_progress = false;
     connection->current_object_object_read_transfer_in_progress = false;
-    l2cap_le_disconnect(ots_server_credit_based_cid);
+    l2cap_le_disconnect(connection->credit_based_cid);
 }
 
 static void ots_server_operations_start_timer(ots_server_connection_t * connection){
@@ -1361,10 +1364,10 @@ static void ots_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
             switch (hci_event_packet_get_type(packet)) {
                 case L2CAP_EVENT_CHANNEL_CLOSED:
                     cid = l2cap_event_channel_closed_get_local_cid(packet);
-                    if (ots_server_credit_based_cid == cid){
-                        ots_server_credit_based_cid = 0;
-                        ots_server_remote_mtu = 0;
-                        ots_server_cbm_con_handle = HCI_CON_HANDLE_INVALID;
+                    connection = ots_server_find_connection_for_credit_based_cid(cid);
+                    if (connection != NULL && (connection->credit_based_cid == cid)){
+                        connection->credit_based_cid = 0;
+                        connection->remote_mtu = 0;
                         break;
                     }
                     break;
@@ -1376,17 +1379,28 @@ static void ots_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
                     break;
 
                 // LE CBM
-                case L2CAP_EVENT_CBM_INCOMING_CONNECTION: 
+                case L2CAP_EVENT_CBM_INCOMING_CONNECTION:
+                    handle = l2cap_event_cbm_incoming_connection_get_handle(packet);
+                    connection = ots_server_find_connection_for_con_handle(handle);
+                    if (connection == NULL){
+                        break;
+                    }
                     psm = l2cap_event_cbm_incoming_connection_get_psm(packet);
                     cid = l2cap_event_cbm_incoming_connection_get_local_cid(packet);
                     if (psm != TSPX_LE_PSM) break;
                     log_info("L2CAP: Accepting incoming LE connection request for 0x%02x, PSM %02x", cid, psm); 
-                    l2cap_cbm_accept_connection(cid, receive_buffer_X, sizeof(receive_buffer_X), initial_credits);
+                    l2cap_cbm_accept_connection(cid, connection->receive_buffer, sizeof(connection->receive_buffer), connection->initial_credits);
                     break;
 
 
                 case L2CAP_EVENT_CBM_CHANNEL_OPENED:
                     // inform about new l2cap connection
+                    handle = l2cap_event_cbm_channel_opened_get_handle(packet);
+                    connection = ots_server_find_connection_for_con_handle(handle);
+                    if (connection == NULL){
+                        break;
+                    }
+
                     l2cap_event_cbm_channel_opened_get_address(packet, event_address);
                     psm = l2cap_event_cbm_channel_opened_get_psm(packet);
                     cid = l2cap_event_cbm_channel_opened_get_local_cid(packet);
@@ -1396,9 +1410,8 @@ static void ots_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
                     if (l2cap_event_cbm_channel_opened_get_status(packet) == ERROR_CODE_SUCCESS) {
                         log_info("L2CAP: LE Data Channel successfully opened: %s, handle 0x%02x, psm 0x%02x, local cid 0x%02x, remote cid 0x%02x, remote mtu 0x%02x",
                                bd_addr_to_str(event_address), handle, psm, cid, little_endian_read_16(packet, 15), mtu);
-                        ots_server_cbm_con_handle = handle;
-                        ots_server_credit_based_cid = cid;
-                        ots_server_remote_mtu = mtu;
+                        connection->credit_based_cid = cid;
+                        connection->remote_mtu = mtu;
                     } else {
                         log_info("L2CAP: LE Data Channel connection to device %s failed. status code %u", bd_addr_to_str(event_address), packet[2]);
                     }
@@ -1406,7 +1419,7 @@ static void ots_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
 
                 case L2CAP_EVENT_CAN_SEND_NOW:
                     cid = l2cap_event_can_send_now_get_local_cid(packet);
-                    connection = ots_server_find_connection_for_con_handle(active_con_handle);
+                    connection = ots_server_find_connection_for_credit_based_cid(cid);
                     if (connection == NULL){
                         break;
                     }
@@ -1417,14 +1430,14 @@ static void ots_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
                     connection->current_object_object_transfer_in_progress = true;
                     connection->current_object_object_read_transfer_in_progress = true;
 
-                    bytes_to_read = btstack_min(ots_server_remote_mtu, connection->oacp_data_chunk_length - connection->oacp_data_bytes_read);
+                    bytes_to_read = btstack_min(connection->remote_mtu, connection->oacp_data_chunk_length - connection->oacp_data_bytes_read);
 
                     if (bytes_to_read > 0){
                         result_code = ots_server_operations->read(connection->con_handle,  connection->oacp_data_chunk_offset + connection->oacp_data_bytes_read, bytes_to_read, &data);
                         if (result_code == OACP_RESULT_CODE_SUCCESS){
                             connection->oacp_data_bytes_read += bytes_to_read;
-                            l2cap_send(ots_server_credit_based_cid, data, bytes_to_read);
-                            l2cap_request_can_send_now_event(ots_server_credit_based_cid);
+                            l2cap_send(connection->credit_based_cid, data, bytes_to_read);
+                            l2cap_request_can_send_now_event(connection->credit_based_cid);
                             if (connection->oacp_data_chunk_length > connection->oacp_data_bytes_read){
                                 break;
                             }
@@ -1451,7 +1464,7 @@ static void ots_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
             break;
 
         case L2CAP_DATA_PACKET:
-            connection = ots_server_find_connection_for_con_handle(active_con_handle);
+            connection = ots_server_find_connection_for_credit_based_cid(channel);
             if (connection == NULL){
                 break;
             }
@@ -1491,16 +1504,6 @@ static void ots_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
                 connection->current_object_locked = false;
                 connection->current_object_object_transfer_in_progress = false;
                 btstack_run_loop_remove_timer(&connection->operation_timer);
-
-//                connection->oacp_result_code = OACP_RESULT_CODE_SUCCESS;
-//                ots_server_schedule_task(connection, OTS_TASK_SEND_OACP_PROCEDURE_RESPONSE);
-
-                btstack_linked_list_iterator_t it;
-                btstack_linked_list_iterator_init(&it, &ots_connections);
-                while (btstack_linked_list_iterator_has_next(&it)){
-                    ots_server_connection_t * con = (ots_server_connection_t*) btstack_linked_list_iterator_next(&it);
-                    ots_server_schedule_task(con, OTS_TASK_SEND_OBJECT_CHANGED_RESPONSE);
-                }
             }
             break;
 
@@ -1581,8 +1584,10 @@ uint8_t object_transfer_service_server_init(uint32_t oacp_features, uint32_t olc
     memset(storage_connections, 0, sizeof(ots_server_connection_t) * ots_connections_num);
     uint16_t i;
     for (i = 0; i < ots_connections_num; i++){
-        ots_server_reset_connection(&storage_connections[i]);
-        btstack_linked_list_add(&ots_connections, (btstack_linked_item_t *) &storage_connections[i]);
+        ots_server_connection_t * connection = &storage_connections[i];
+        ots_server_reset_connection(connection);
+        connection->initial_credits = L2CAP_LE_AUTOMATIC_CREDITS;
+        btstack_linked_list_add(&ots_connections, (btstack_linked_item_t *) connection);
     }
 
     uint16_t ots_services_end_handle = end_handle;
@@ -1745,8 +1750,13 @@ char * object_transfer_service_server_current_object_name(hci_con_handle_t con_h
 }
 
 uint16_t object_transfer_service_server_get_cbm_channel_remote_mtu(hci_con_handle_t con_handle){
-    if (con_handle == ots_server_cbm_con_handle){
-        return ots_server_remote_mtu;
+    ots_server_connection_t * connection = ots_server_find_or_add_connection_for_con_handle(con_handle);
+    if (connection == NULL){
+        return 0;
+    }
+
+    if (connection->credit_based_cid != 0){
+        return connection->remote_mtu;
     }
     return 0;
 }
