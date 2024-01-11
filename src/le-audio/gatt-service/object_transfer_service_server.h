@@ -123,7 +123,7 @@ typedef struct {
     bool oacp_abort_read;
 
     // used for OBJECT CHANGED indication
-    ots_object_changed_flag_t change_flag;
+    uint8_t change_flags; // see ots_object_changed_flag_t
 
     bool oacp_truncate;
 

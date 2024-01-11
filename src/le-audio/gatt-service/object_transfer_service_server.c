@@ -133,6 +133,19 @@ static ots_server_connection_t * ots_server_find_connection_for_credit_based_cid
     }
     return NULL;
 }
+
+static void ots_server_register_object_changed(ots_server_connection_t * connection, uint8_t change_flags){
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &ots_connections);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        ots_server_connection_t * con = (ots_server_connection_t*) btstack_linked_list_iterator_next(&it);
+        if (con->con_handle != connection->con_handle){
+            con->change_flags = change_flags;
+            ots_server_schedule_task(con, OTS_TASK_SEND_OBJECT_CHANGED_RESPONSE);
+        }
+    }
+}
+
 static void ots_server_reset_connection(ots_server_connection_t * connection){
     btstack_run_loop_remove_timer(&connection->operation_timer);
 
@@ -161,6 +174,23 @@ static void ots_server_reset_connection_for_con_handle(hci_con_handle_t con_hand
         return;
     }
     ots_server_reset_connection(connection);
+}
+
+static bool ots_server_is_current_object_locked(ots_server_connection_t * connection){
+    if (connection->current_object_locked){
+        return true;
+    }
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &ots_connections);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        ots_server_connection_t * con = (ots_server_connection_t*) btstack_linked_list_iterator_next(&it);
+        if (con->con_handle != connection->con_handle){
+            if (con->current_object_locked) {
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 static void ots_server_remove_connection_for_con_handle(hci_con_handle_t con_handle){
@@ -281,7 +311,7 @@ bool object_transfer_service_server_current_object_locked(hci_con_handle_t con_h
     if (!ots_current_object_valid(connection)){
         return false;
     }
-    return connection->current_object_locked;
+    return ots_server_is_current_object_locked(connection);
 }
 
 bool object_transfer_service_server_current_object_transfer_in_progress(hci_con_handle_t con_handle){
@@ -527,7 +557,7 @@ static void ots_server_can_send_now(void * context){
         connection->scheduled_tasks &= ~OTS_TASK_SEND_OBJECT_CHANGED_RESPONSE;
         if (connection->current_object != NULL){
             uint8_t value[7];
-            value[0] = connection->change_flag;
+            value[0] = connection->change_flags;
             reverse_48((uint8_t *)connection->current_object->luid, &value[1]);
 
             uint16_t attribute_handle = ots_server_get_value_handle_for_characteristic_index(OTS_OBJECT_CHANGED_INDEX);
@@ -594,6 +624,8 @@ static bool ots_server_supports_object_type(ots_object_type_t object_type){
             return false;
     }
 }
+
+
 
 int ots_server_handle_action_control_point_operation(ots_server_connection_t * connection, uint8_t *buffer, uint16_t buffer_size){
     if (buffer_size == 0){
@@ -676,6 +708,10 @@ int ots_server_handle_action_control_point_operation(ots_server_connection_t * c
             }
 
             connection->oacp_result_code = ots_server_operations->create_object(connection->con_handle, object_size, type_uuid16);
+            if (connection->oacp_result_code == OACP_RESULT_CODE_SUCCESS) {
+                ots_server_register_object_changed(connection, (1 << OTS_OBJECT_CHANGED_FLAG_SOURCE_OF_CHANGE) |
+                                                               (1 << OTS_OBJECT_CHANGED_FLAG_OBJECT_CREATED));
+            }
             break;
 
         case OACP_OPCODE_DELETE:
@@ -714,6 +750,7 @@ int ots_server_handle_action_control_point_operation(ots_server_connection_t * c
                 connection->current_object = NULL;
                 connection->current_object_locked = false;
                 connection->current_object_object_transfer_in_progress = false;
+                ots_server_register_object_changed(connection, (1 << OTS_OBJECT_CHANGED_FLAG_SOURCE_OF_CHANGE) | (1 << OTS_OBJECT_CHANGED_FLAG_OBJECT_DELETED));
             }
             break;
         
@@ -1197,6 +1234,7 @@ static int ots_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
             if (connection->long_write_attribute_handle == ots_server_get_value_handle_for_characteristic_index(OTS_OBJECT_NAME_INDEX)){
                 connection->current_object_object_transfer_in_progress = false;
                 memcpy(connection->current_object->name, connection->long_write_data, connection->long_write_data_length);
+                ots_server_register_object_changed(connection, (1 << OTS_OBJECT_CHANGED_FLAG_SOURCE_OF_CHANGE) | (1 << OTS_OBJECT_CHANGED_FLAG_OBJECT_METADATA_CHANGED));
                 ots_server_emit_current_object_name_changed(connection);
             }
             return 0;
@@ -1274,11 +1312,13 @@ static int ots_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
     } else if (attribute_handle == ots_server_get_value_handle_for_characteristic_index(OTS_OBJECT_FIRST_CREATED_INDEX)){
         if (buffer_size >= 7){
             btstack_utc_read_time(buffer, buffer_size, &connection->current_object->first_created);
+            ots_server_register_object_changed(connection, (1 << OTS_OBJECT_CHANGED_FLAG_SOURCE_OF_CHANGE) | (1 << OTS_OBJECT_CHANGED_FLAG_OBJECT_METADATA_CHANGED));
             ots_server_emit_current_object_first_created_time_changed(connection);
         }
     } else if (attribute_handle == ots_server_get_value_handle_for_characteristic_index(OTS_OBJECT_LAST_MODIFIED_INDEX)){
         if (buffer_size >= 7){
             btstack_utc_read_time(buffer, buffer_size, &connection->current_object->last_modified);
+            ots_server_register_object_changed(connection, (1 << OTS_OBJECT_CHANGED_FLAG_SOURCE_OF_CHANGE) | (1 << OTS_OBJECT_CHANGED_FLAG_OBJECT_METADATA_CHANGED));
             ots_server_emit_current_object_last_modified_time_changed(connection);
         }
     } else {
@@ -1443,7 +1483,7 @@ static void ots_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
                             }
 
                         }
-                        // TODO send indication?
+                        ots_server_register_object_changed(connection, (1 << OTS_OBJECT_CHANGED_FLAG_SOURCE_OF_CHANGE) | (1 << OTS_OBJECT_CHANGED_FLAG_OBJECT_CONTENTS_CHANGED));
                     }
 
                     connection->oacp_data_chunk_offset = 0;
@@ -1687,7 +1727,7 @@ uint8_t object_transfer_service_server_update_current_object_name(hci_con_handle
     }
 
     btstack_strcpy(connection->current_object->name, OTS_MAX_NAME_LENGHT, name);
-    connection->change_flag = OTS_TASK_SEND_OBJECT_CHANGED_RESPONSE;
+    connection->change_flags = (0 << OTS_OBJECT_CHANGED_FLAG_SOURCE_OF_CHANGE) | (1 << OTS_OBJECT_CHANGED_FLAG_OBJECT_METADATA_CHANGED);
     ots_server_schedule_task(connection, OTS_TASK_SEND_OBJECT_CHANGED_RESPONSE);
     return ERROR_CODE_SUCCESS;
 }
