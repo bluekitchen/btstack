@@ -2263,9 +2263,10 @@ static bool sm_run_csrk(void){
                 continue;
             }
 
-            log_info("LE Device Lookup: device %u of %u", sm_address_resolution_test, le_device_db_max_count());
+            log_info("LE Device Lookup: device %u of %u - type %u, %s", sm_address_resolution_test,
+                     le_device_db_max_count(), addr_type, bd_addr_to_str(addr));
 
-            // map resolved identiry addresses to regular addresses
+            // map resolved identity addresses to regular addresses
             int regular_addr_type = sm_address_resolution_addr_type & 1;
             if ((regular_addr_type == addr_type) && (memcmp(addr, sm_address_resolution_address, 6) == 0)){
                 log_info("LE Device Lookup: found by { addr_type, address} ");
@@ -2273,8 +2274,8 @@ static bool sm_run_csrk(void){
                 break;
             }
 
-            // if connection type is public, it must be a different one
-            if (sm_address_resolution_addr_type == BD_ADDR_TYPE_LE_PUBLIC){
+            // if connection type is not random (i.e. public or resolved identity), it must be a different entry
+            if (sm_address_resolution_addr_type != BD_ADDR_TYPE_LE_RANDOM){
                 sm_address_resolution_test++;
                 continue;
             }
