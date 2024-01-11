@@ -3333,12 +3333,10 @@ static void hci_handle_le_connection_complete_event(const uint8_t * hci_event){
 	// on success, both hosts receive connection complete event
     if (role == HCI_ROLE_MASTER){
 #ifdef ENABLE_LE_CENTRAL
-		// if we're master on an le connection, it was an outgoing connection and we're done with it
+		// if we're master, it was an outgoing connection and we're done with it
 		// note: no hci_connection_t object exists yet for connect with whitelist
-		if (hci_is_le_connection_type(addr_type)){
-			hci_stack->le_connecting_state   = LE_CONNECTING_IDLE;
-			hci_stack->le_connecting_request = LE_CONNECTING_IDLE;
-		}
+        hci_stack->le_connecting_state   = LE_CONNECTING_IDLE;
+        hci_stack->le_connecting_request = LE_CONNECTING_IDLE;
 #endif
 	} else {
 #ifdef ENABLE_LE_PERIPHERAL
