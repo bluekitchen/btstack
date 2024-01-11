@@ -162,6 +162,9 @@ static void ots_server_reset_connection(ots_server_connection_t * connection){
     connection->current_object_object_transfer_in_progress = false;
     connection->current_object_object_read_transfer_in_progress = false;
 
+    connection->oacp_data_chunk_offset = 0;
+    connection->oacp_data_chunk_length = 0;
+
     connection->oacp_abort_read = false;
     connection->oacp_truncate = false;
     connection->olcp_opcode = OLCP_OPCODE_READY;
@@ -808,7 +811,15 @@ int ots_server_handle_action_control_point_operation(ots_server_connection_t * c
                 connection->oacp_result_code =  OACP_RESULT_CODE_OBJECT_LOCKED;
                 break;
             }
+
             connection->oacp_result_code = ots_server_operations->execute(connection->con_handle);
+            if (connection->oacp_result_code == OACP_RESULT_CODE_SUCCESS){
+                connection->oacp_data_chunk_offset = 0;
+                connection->oacp_data_chunk_length = 0;
+                connection->current_object_locked = false;
+                connection->current_object_object_transfer_in_progress = false;
+                ots_server_register_object_changed(connection, (1 << OTS_OBJECT_CHANGED_FLAG_SOURCE_OF_CHANGE) | (1 << OTS_OBJECT_CHANGED_FLAG_OBJECT_CONTENTS_CHANGED));
+            }
             break;
         
         case OACP_OPCODE_READ:   
@@ -1493,6 +1504,7 @@ static void ots_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
                     connection->current_object_object_read_transfer_in_progress = false;
                     connection->current_object_locked = false;
                     btstack_run_loop_remove_timer(&connection->operation_timer);
+                    ots_server_register_object_changed(connection, (1 << OTS_OBJECT_CHANGED_FLAG_SOURCE_OF_CHANGE) | (1 << OTS_OBJECT_CHANGED_FLAG_OBJECT_METADATA_CHANGED));
                     break;
 
                case L2CAP_EVENT_PACKET_SENT:
@@ -1539,10 +1551,6 @@ static void ots_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
                     connection->current_object->current_size = data_size;
                 }
 
-                connection->oacp_data_chunk_offset = 0;
-                connection->oacp_data_chunk_length = 0;
-                connection->current_object_locked = false;
-                connection->current_object_object_transfer_in_progress = false;
                 btstack_run_loop_remove_timer(&connection->operation_timer);
             }
             break;
