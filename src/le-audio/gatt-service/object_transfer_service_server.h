@@ -84,8 +84,13 @@ typedef struct {
 
     hci_con_handle_t            con_handle;
 
-    // att_service_handler_t       service;
-    
+    // L2CAP data transfer channel
+    uint8_t  receive_buffer[150];
+    //uint16_t  receive_buffer_size;
+    uint16_t initial_credits;
+    uint16_t credit_based_cid;
+    uint16_t remote_mtu;
+
     uint16_t oacp_configuration;
     uint16_t olcp_configuration;
     uint16_t object_changed_configuration;
