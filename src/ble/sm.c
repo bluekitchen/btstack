@@ -2220,11 +2220,11 @@ static bool sm_run_rau(void){
     return false;
 }
 
-// CSRK Lookup
-static bool sm_run_csrk(void){
+// device lookup with IRK
+static bool sm_run_irk_lookup(void){
     btstack_linked_list_iterator_t it;
 
-    // -- if csrk lookup ready, find connection that require csrk lookup
+    // -- if IRK lookup ready, find connection that require csrk lookup
     if (sm_address_resolution_idle()){
         hci_connections_get_iterator(&it);
         while(btstack_linked_list_iterator_has_next(&it)){
@@ -2778,7 +2778,7 @@ static bool sm_run_non_connection_logic(void){
     done = sm_run_rau();
     if (done) return true;
 
-    done = sm_run_csrk();
+    done = sm_run_irk_lookup();
     if (done) return true;
 
     done = sm_run_oob();
