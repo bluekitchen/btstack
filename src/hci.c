@@ -3333,8 +3333,21 @@ static void hci_handle_le_connection_complete_event(const uint8_t * hci_event){
 	// on success, both hosts receive connection complete event
     if (role == HCI_ROLE_MASTER){
 #ifdef ENABLE_LE_CENTRAL
-		// if we're master, it was an outgoing connection and we're done with it
+		// if we're master, it was an outgoing connection
 		// note: no hci_connection_t object exists yet for connect with whitelist
+
+        // if resolvable private addresses are used without enhanced connection complete event,
+        // we will get a random addr in the connection complete event for an outgoing connection.
+        // To avoid duplicate connection structs, fetch outgoing connection
+        conn = gap_get_outgoing_le_connection();
+        // if successful, use (potentially) identity address
+        // note: we don't update hci le subevent connection complete
+        if (conn != NULL){
+            gap_event[7] = conn->address_type;
+            reverse_bd_addr(conn->address, &gap_event[8]);
+        }
+
+        // we're done with it
         hci_stack->le_connecting_state   = LE_CONNECTING_IDLE;
         hci_stack->le_connecting_request = LE_CONNECTING_IDLE;
 #endif
