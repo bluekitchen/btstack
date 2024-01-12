@@ -3265,7 +3265,7 @@ static void hci_create_gap_connection_complete_event(const uint8_t * hci_event, 
     gap_event[0] = HCI_EVENT_META_GAP;
     gap_event[1] = 36 - 2;
     gap_event[2] = GAP_SUBEVENT_LE_CONNECTION_COMPLETE;
-    switch (hci_event[2]){
+    switch (hci_event_le_meta_get_subevent_code(hci_event)){
         case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
             memcpy(&gap_event[3], &hci_event[3], 11);
             memset(&gap_event[14], 0, 12);
@@ -3339,8 +3339,9 @@ static void hci_handle_le_connection_complete_event(const uint8_t * hci_event){
         // if resolvable private addresses are used without enhanced connection complete event,
         // we will get a random addr in the connection complete event for an outgoing connection.
         // To avoid duplicate connection structs, fetch outgoing connection
+        if (hci_subevent_ge)
         conn = gap_get_outgoing_le_connection();
-        // if successful, use (potentially) identity address
+        // if successful, use (potentially) identity address, but also track identity
         // note: we don't update hci le subevent connection complete
         if (conn != NULL){
             gap_event[7] = conn->address_type;
