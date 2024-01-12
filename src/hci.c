@@ -3346,16 +3346,21 @@ static void hci_handle_le_connection_complete_event(const uint8_t * hci_event){
 		// if we're master, it was an outgoing connection
 		// note: no hci_connection_t object exists yet for connect with whitelist
 
-        // if resolvable private addresses are used without enhanced connection complete event,
-        // we will get a random addr in the connection complete event for an outgoing connection.
-        // To avoid duplicate connection structs, fetch outgoing connection
-        if (hci_subevent_ge)
-        conn = gap_get_outgoing_le_connection();
-        // if successful, use (potentially) identity address, but also track identity
-        // note: we don't update hci le subevent connection complete
-        if (conn != NULL){
-            gap_event[7] = conn->address_type;
-            reverse_bd_addr(conn->address, &gap_event[8]);
+        // if a identity addresses was used without enhanced connection complete event,
+        // the connection complete event contains the current random address of the peer device.
+        // This random address is needed in the case of a re-pairing
+        if (hci_event_le_meta_get_subevent_code(hci_event) == HCI_SUBEVENT_LE_CONNECTION_COMPLETE){
+            conn = gap_get_outgoing_le_connection();
+            // if outgoing connection object is available, check if identity address was used.
+            // if yes, track resolved random address and provide rpa
+            // note: we don't update hci le subevent connection complete
+            if (conn != NULL){
+                if (hci_is_le_identity_address_type(conn->address_type)){
+                    memcpy(&gap_event[20], &gap_event[8], 6);
+                    gap_event[7] = conn->address_type;
+                    reverse_bd_addr(conn->address, &gap_event[8]);
+                }
+            }
         }
 
         // we're done with it
