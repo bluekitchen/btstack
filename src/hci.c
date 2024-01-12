@@ -3325,9 +3325,12 @@ static void hci_handle_le_connection_complete_event(const uint8_t * hci_event){
 		//  In either case, the event shall be sent with the error code Unknown Connection Identifier (0x02)."
 		if (status == ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER){
 		    // reset state
-            hci_stack->le_connecting_state   = LE_CONNECTING_IDLE;
+            hci_stack->le_connecting_state = LE_CONNECTING_IDLE;
 			// get outgoing connection conn struct for direct connect
-			conn = gap_get_outgoing_le_connection();
+            if (hci_stack->le_connecting_request == LE_CONNECTING_DIRECT){
+                conn = gap_get_outgoing_le_connection();
+                conn->state = SEND_CREATE_CONNECTION;
+            }
 		}
 
 		// free connection if cancelled by user (request == IDLE)
