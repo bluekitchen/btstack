@@ -6597,7 +6597,7 @@ static bool hci_run_general_gap_le(void){
 
 #ifdef ENABLE_LE_PRIVACY_ADDRESS_RESOLUTION
     // LE Resolving List Management
-    if (resolving_list_supported) {
+    if (resolving_list_modification_pending) {
 		uint16_t i;
 		switch (hci_stack->le_resolving_list_state) {
 			case LE_RESOLVING_LIST_SEND_ENABLE_ADDRESS_RESOLUTION:
@@ -6693,14 +6693,13 @@ static bool hci_run_general_gap_le(void){
                     hci_send_cmd(&hci_le_set_privacy_mode, peer_identity_addr_type, peer_identity_address, hci_stack->le_privacy_mode);
                     return true;
                 }
-				hci_stack->le_resolving_list_state = LE_RESOLVING_LIST_DONE;
 				break;
 
 			default:
 				break;
 		}
+        hci_stack->le_resolving_list_state = LE_RESOLVING_LIST_DONE;
 	}
-    hci_stack->le_resolving_list_state = LE_RESOLVING_LIST_DONE;
 #endif
 
 #ifdef ENABLE_LE_CENTRAL
