@@ -3748,13 +3748,13 @@ static void sm_handle_random_result_er(void *arg){
     }
 }
 
-static void sm_connection_init(sm_connection_t * sm_conn, hci_con_handle_t con_handle, uint8_t role, uint8_t addr_type, bd_addr_t address){
+static void sm_connection_init(sm_connection_t * sm_conn, hci_con_handle_t con_handle, uint8_t role, uint8_t peer_addr_type, bd_addr_t peer_address){
 
     // connection info
     sm_conn->sm_handle = con_handle;
     sm_conn->sm_role = role;
-    sm_conn->sm_peer_addr_type = addr_type;
-    memcpy(sm_conn->sm_peer_address, address, 6);
+    sm_conn->sm_peer_addr_type = peer_addr_type;
+    memcpy(sm_conn->sm_peer_address, peer_address, 6);
 
     // security properties
     sm_conn->sm_connection_encrypted = 0;
