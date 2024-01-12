@@ -1568,6 +1568,12 @@ bool hci_le_supported(void);
  */
 bool hci_is_le_connection_type(bd_addr_type_t address_type);
 
+/** @brief Check if address type corresponds to Identity Address
+ *  @bparam address_type
+ *  @erturn true if LE connection
+ */
+bool hci_is_le_identity_address_type(bd_addr_type_t address_type);
+
 /* API_END */
 
 

@@ -616,6 +616,16 @@ bool hci_is_le_connection_type(bd_addr_type_t address_type){
     }
 }
 
+bool hci_is_le_identity_address_type(bd_addr_type_t address_type){
+    switch (address_type){
+        case BD_ADDR_TYPE_LE_PUBLIC_IDENTITY:
+        case BD_ADDR_TYPE_LE_RANDOM_IDENTITY:
+            return true;
+        default:
+            return false;
+    }
+}
+
 static bool hci_is_le_connection(hci_connection_t * connection){
     return hci_is_le_connection_type(connection->address_type);
 }
