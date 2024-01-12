@@ -3809,6 +3809,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
     hci_con_handle_t  con_handle;
     uint8_t           status;
     bd_addr_t         addr;
+    bd_addr_type_t    addr_type;
 
     switch (packet_type) {
 
@@ -3914,11 +3915,18 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
 			                sm_conn = sm_get_connection_for_handle(con_handle);
 			                if (!sm_conn) break;
 
-			                gap_subevent_le_connection_complete_get_peer_address(packet, addr);
+                            // Get current peer address
+                            addr_type = gap_subevent_le_connection_complete_get_peer_address_type(packet);
+                            if (hci_is_le_identity_address_type(addr_type)){
+                                addr_type = BD_ADDR_TYPE_LE_RANDOM;
+                                gap_subevent_le_connection_complete_get_peer_resolvable_private_address(packet, addr);
+                            } else {
+                                gap_subevent_le_connection_complete_get_peer_address(packet, addr);
+                            }
 			                sm_connection_init(sm_conn,
                                                con_handle,
                                                gap_subevent_le_connection_complete_get_role(packet),
-                                               gap_subevent_le_connection_complete_get_peer_address_type(packet),
+                                               addr_type,
                                                addr);
 			                sm_conn->sm_cid = L2CAP_CID_SECURITY_MANAGER_PROTOCOL;
 
