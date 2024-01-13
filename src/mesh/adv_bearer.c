@@ -389,7 +389,7 @@ void adv_bearer_advertisements_set_params(uint16_t adv_int_min, uint16_t adv_int
     gap_adv_int_ms         = gap_adv_int_min * 625 / 1000;
     gap_adv_type           = adv_type;
     gap_direct_address_typ = direct_address_typ; 
-    (void)memcpy(gap_direct_address, &direct_address, 6);
+    (void)memcpy(gap_direct_address, direct_address, 6);
     gap_channel_map        = channel_map; 
     gap_filter_policy      = filter_policy; 
 
