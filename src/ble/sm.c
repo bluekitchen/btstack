@@ -3931,20 +3931,30 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
 			                sm_conn->sm_cid = L2CAP_CID_SECURITY_MANAGER_PROTOCOL;
 
 			                // track our addr used for this connection and set state
-    #ifdef ENABLE_LE_PERIPHERAL
+#ifdef ENABLE_LE_PERIPHERAL
 			                if (gap_subevent_le_connection_complete_get_role(packet) != 0){
 			                    // responder - use own address from advertisements
-			                    gap_le_get_own_advertisements_address(&sm_conn->sm_own_addr_type, sm_conn->sm_own_address);
+#ifdef ENABLE_LE_EXTENDED_ADVERTISING
+                                if (hci_le_extended_advertising_supported()){
+                                    // cache local resolvable address
+                                    // note: will be overwritten if random or private address was used in adv set by HCI_SUBEVENT_LE_ADVERTISING_SET_TERMINATED
+                                    sm_conn->sm_own_addr_type = BD_ADDR_TYPE_LE_RANDOM;
+                                    gap_subevent_le_connection_complete_get_local_resolvable_private_address(packet,sm_conn->sm_own_address);
+                                } else
+#endif
+                                {
+                                    gap_le_get_own_advertisements_address(&sm_conn->sm_own_addr_type, sm_conn->sm_own_address);
+                                }
 			                    sm_conn->sm_engine_state = SM_RESPONDER_IDLE;
 			                }
-    #endif
-    #ifdef ENABLE_LE_CENTRAL
+#endif
+#ifdef ENABLE_LE_CENTRAL
 			                if (gap_subevent_le_connection_complete_get_role(packet) == 0){
 			                    // initiator - use own address from create connection
 			                    gap_le_get_own_connection_address(&sm_conn->sm_own_addr_type, sm_conn->sm_own_address);
 			                    sm_conn->sm_engine_state = SM_INITIATOR_CONNECTED;
 			                }
-    #endif
+#endif
 			                break;
 			            default:
 			                break;
@@ -3952,6 +3962,20 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
 			        break;
                 case HCI_EVENT_LE_META:
                     switch (hci_event_le_meta_get_subevent_code(packet)) {
+#ifdef ENABLE_LE_PERIPHERAL
+#ifdef ENABLE_LE_EXTENDED_ADVERTISING
+                        case HCI_SUBEVENT_LE_ADVERTISING_SET_TERMINATED:
+                            if (hci_subevent_le_advertising_set_terminated_get_status(packet) == ERROR_CODE_SUCCESS){
+                                uint8_t advertising_handle = hci_subevent_le_advertising_set_terminated_get_advertising_handle(packet);
+                                con_handle = hci_subevent_le_advertising_set_terminated_get_connection_handle(packet);
+                                sm_conn = sm_get_connection_for_handle(con_handle);
+                                gap_le_get_own_advertising_set_address(&sm_conn->sm_own_addr_type, sm_conn->sm_own_address, advertising_handle);
+                                log_info("Adv set %u terminated -> use addr type %u, addr %s for con handle 0x%04x", advertising_handle, sm_conn->sm_own_addr_type,
+                                         bd_addr_to_str(sm_conn->sm_own_address), con_handle);
+                            }
+                            break;
+#endif
+#endif
                         case HCI_SUBEVENT_LE_LONG_TERM_KEY_REQUEST:
                             con_handle = hci_subevent_le_long_term_key_request_get_connection_handle(packet);
                             sm_conn = sm_get_connection_for_handle(con_handle);
