@@ -1566,7 +1566,7 @@ bool hci_le_supported(void);
  * @brief Check if LE Extended Advertising is supported
  * @return true if supported
  */
-bool hci_extended_advertising_supported(void);
+bool hci_le_extended_advertising_supported(void);
 
 /** @brief Check if address type corresponds to LE connection
  *  @bparam address_type

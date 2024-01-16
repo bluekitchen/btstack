@@ -1493,7 +1493,7 @@ static bool hci_command_supported(uint8_t command_index){
 #ifdef ENABLE_BLE
 
 #ifdef ENABLE_LE_EXTENDED_ADVERTISING
-bool hci_extended_advertising_supported(void){
+bool hci_le_extended_advertising_supported(void){
     return hci_command_supported(SUPPORTED_HCI_COMMAND_LE_SET_EXTENDED_ADVERTISING_ENABLE);
 }
 #endif
@@ -2357,7 +2357,7 @@ static void hci_initializing_run(void){
             /* fall through */
 
         case HCI_INIT_LE_READ_MAX_ADV_DATA_LEN:
-            if (hci_extended_advertising_supported()){
+            if (hci_le_extended_advertising_supported()){
                 hci_stack->substate = HCI_INIT_W4_LE_READ_MAX_ADV_DATA_LEN;
                 hci_send_cmd(&hci_le_read_maximum_advertising_data_length);
                 break;
@@ -5519,7 +5519,7 @@ static void hci_halting_run(void) {
             stop_advertismenets = (hci_stack->le_advertisements_state & LE_ADVERTISEMENT_STATE_ACTIVE) != 0;
 
 #ifdef ENABLE_LE_EXTENDED_ADVERTISING
-            if (hci_extended_advertising_supported()){
+            if (hci_le_extended_advertising_supported()){
 #ifdef ENABLE_LE_PERIODIC_ADVERTISING
                 btstack_linked_list_iterator_t it;
                 btstack_linked_list_iterator_init(&it, &hci_stack->le_advertising_sets);
@@ -5966,7 +5966,7 @@ static uint8_t hci_le_num_phys(uint8_t phys){
 #ifdef ENABLE_LE_CENTRAL
 static void hci_le_scan_stop(void){
 #ifdef ENABLE_LE_EXTENDED_ADVERTISING
-    if (hci_extended_advertising_supported()) {
+    if (hci_le_extended_advertising_supported()) {
             hci_send_cmd(&hci_le_set_extended_scan_enable, 0, 0, 0, 0);
     } else
 #endif
@@ -5978,7 +5978,7 @@ static void hci_le_scan_stop(void){
 static void
 hci_send_le_create_connection(uint8_t initiator_filter_policy, bd_addr_type_t address_type, uint8_t *address) {
 #ifdef ENABLE_LE_EXTENDED_ADVERTISING
-    if (hci_extended_advertising_supported()) {
+    if (hci_le_extended_advertising_supported()) {
         // prepare arrays for all phys (LE Coded, LE 1M, LE 2M PHY)
         uint16_t le_connection_scan_interval[3];
         uint16_t le_connection_scan_window[3];
@@ -6219,7 +6219,7 @@ static bool hci_run_general_gap_le(void){
     }
 
 #ifdef ENABLE_LE_EXTENDED_ADVERTISING
-    if (hci_extended_advertising_supported() && (advertising_stop == false)){
+    if (hci_le_extended_advertising_supported() && (advertising_stop == false)){
         btstack_linked_list_iterator_t it;
         btstack_linked_list_iterator_init(&it, &hci_stack->le_advertising_sets);
         while (btstack_linked_list_iterator_has_next(&it)){
@@ -6317,7 +6317,7 @@ static bool hci_run_general_gap_le(void){
 #ifdef ENABLE_LE_PERIPHERAL
     if (advertising_stop){
 #ifdef ENABLE_LE_EXTENDED_ADVERTISING
-        if (hci_extended_advertising_supported()) {
+        if (hci_le_extended_advertising_supported()) {
             uint8_t advertising_stop_handle;
             if (advertising_stop_set != NULL){
                 advertising_stop_handle = advertising_stop_set->advertising_handle;
@@ -6366,7 +6366,7 @@ static bool hci_run_general_gap_le(void){
     if (hci_stack->le_scanning_param_update){
         hci_stack->le_scanning_param_update = false;
 #ifdef ENABLE_LE_EXTENDED_ADVERTISING
-        if (hci_extended_advertising_supported()){
+        if (hci_le_extended_advertising_supported()){
             // prepare arrays for all phys (LE Coded and LE 1M PHY)
             uint8_t  scan_types[2];
             uint16_t scan_intervals[2];
@@ -6396,7 +6396,7 @@ static bool hci_run_general_gap_le(void){
         hci_stack->le_advertisements_todo &= ~LE_ADVERTISEMENT_TASKS_SET_PARAMS;
         hci_stack->le_advertisements_own_addr_type = hci_stack->le_own_addr_type;
 #ifdef ENABLE_LE_EXTENDED_ADVERTISING
-        if (hci_extended_advertising_supported()){
+        if (hci_le_extended_advertising_supported()){
             // map advertisment type to advertising event properties
             uint16_t adv_event_properties = 0;
             const uint16_t mapping[] = { 0b00010011, 0b00010101, 0b00011101, 0b00010010, 0b00010000};
@@ -6454,7 +6454,7 @@ static bool hci_run_general_gap_le(void){
                      hci_stack->le_advertisements_data_len);
         btstack_replace_bd_addr_placeholder(adv_data_clean, hci_stack->le_advertisements_data_len, hci_stack->local_bd_addr);
 #ifdef ENABLE_LE_EXTENDED_ADVERTISING
-        if (hci_extended_advertising_supported()){
+        if (hci_le_extended_advertising_supported()){
             hci_stack->le_advertising_set_in_current_command = 0;
             hci_send_cmd(&hci_le_set_extended_advertising_data, 0, 0x03, 0x01, hci_stack->le_advertisements_data_len, adv_data_clean);
         } else
@@ -6473,7 +6473,7 @@ static bool hci_run_general_gap_le(void){
                      hci_stack->le_scan_response_data_len);
         btstack_replace_bd_addr_placeholder(scan_data_clean, hci_stack->le_scan_response_data_len, hci_stack->local_bd_addr);
 #ifdef ENABLE_LE_EXTENDED_ADVERTISING
-        if (hci_extended_advertising_supported()){
+        if (hci_le_extended_advertising_supported()){
             hci_stack->le_advertising_set_in_current_command = 0;
             hci_send_cmd(&hci_le_set_extended_scan_response_data, 0, 0x03, 0x01, hci_stack->le_scan_response_data_len, scan_data_clean);
         } else
@@ -6485,7 +6485,7 @@ static bool hci_run_general_gap_le(void){
     }
 
 #ifdef ENABLE_LE_EXTENDED_ADVERTISING
-    if (hci_extended_advertising_supported()) {
+    if (hci_le_extended_advertising_supported()) {
         btstack_linked_list_iterator_t it;
         btstack_linked_list_iterator_init(&it, &hci_stack->le_advertising_sets);
         while (btstack_linked_list_iterator_has_next(&it)){
@@ -6801,7 +6801,7 @@ static bool hci_run_general_gap_le(void){
     if ((hci_stack->le_scanning_enabled && !hci_stack->le_scanning_active)){
         hci_stack->le_scanning_active = true;
 #ifdef ENABLE_LE_EXTENDED_ADVERTISING
-        if (hci_extended_advertising_supported()){
+        if (hci_le_extended_advertising_supported()){
             hci_send_cmd(&hci_le_set_extended_scan_enable, 1, hci_stack->le_scan_filter_duplicates, 0, 0);
         } else
 #endif
@@ -6852,7 +6852,7 @@ static bool hci_run_general_gap_le(void){
         hci_get_own_address_for_addr_type(hci_stack->le_advertisements_own_addr_type, hci_stack->le_advertisements_own_address);
 
 #ifdef ENABLE_LE_EXTENDED_ADVERTISING
-        if (hci_extended_advertising_supported()){
+        if (hci_le_extended_advertising_supported()){
             const uint8_t advertising_handles[] = { 0 };
             const uint16_t durations[] = { 0 };
             const uint16_t max_events[] = { 0 };
@@ -6866,7 +6866,7 @@ static bool hci_run_general_gap_le(void){
     }
 
 #ifdef ENABLE_LE_EXTENDED_ADVERTISING
-    if (hci_extended_advertising_supported()) {
+    if (hci_le_extended_advertising_supported()) {
         btstack_linked_list_iterator_t it;
         btstack_linked_list_iterator_init(&it, &hci_stack->le_advertising_sets);
         while (btstack_linked_list_iterator_has_next(&it)) {
@@ -8879,7 +8879,7 @@ void hci_le_random_address_set(const bd_addr_t random_address){
     hci_stack->le_random_address_set = true;
     hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_SET_ADDRESS;
 #ifdef ENABLE_LE_EXTENDED_ADVERTISING
-    if (hci_extended_advertising_supported()){
+    if (hci_le_extended_advertising_supported()){
         hci_assert_advertisement_set_0_ready();
         hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_SET_ADDRESS_SET_0;
     }
