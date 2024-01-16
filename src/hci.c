@@ -1516,6 +1516,33 @@ void gap_le_get_own_advertisements_address(uint8_t * addr_type, bd_addr_t addr){
     *addr_type = hci_stack->le_advertisements_own_addr_type;
     hci_get_own_address_for_addr_type(hci_stack->le_advertisements_own_addr_type, addr);
 };
+#ifdef ENABLE_LE_EXTENDED_ADVERTISING
+void gap_le_get_own_advertising_set_address(uint8_t * addr_type, bd_addr_t addr, uint8_t advertising_handle){
+    if (advertising_handle == 0){
+        gap_le_get_own_advertisements_address(addr_type, addr);
+    } else {
+        le_advertising_set_t * advertising_set = hci_advertising_set_for_handle(advertising_handle);
+        if (advertising_set != NULL){
+            switch (advertising_set->extended_params.own_address_type){
+                case BD_ADDR_TYPE_LE_PUBLIC:
+                    *addr_type = BD_ADDR_TYPE_LE_PUBLIC;
+                    memcpy(addr, hci_stack->local_bd_addr, 6);
+                    break;
+                case BD_ADDR_TYPE_LE_RANDOM:
+                    *addr_type = BD_ADDR_TYPE_LE_RANDOM;
+                    memcpy(addr, advertising_set->random_address, 6);
+                    break;
+                case BD_ADDR_TYPE_LE_PUBLIC_IDENTITY:
+                case BD_ADDR_TYPE_LE_RANDOM_IDENTITY:
+                    // do nothing as random address was already set from enhanced connection complete
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+};
+#endif
 #endif
 
 #ifdef ENABLE_LE_CENTRAL

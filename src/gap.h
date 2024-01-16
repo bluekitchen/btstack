@@ -1399,6 +1399,11 @@ void gap_le_get_own_address(uint8_t * addr_type, bd_addr_t addr);
 void gap_le_get_own_advertisements_address(uint8_t * addr_type, bd_addr_t addr);
 
 /**
+ * @brief Get own addr type and address used for LE Extended Advertisiing (Peripheral)
+ */
+void gap_le_get_own_advertising_set_address(uint8_t * addr_type, bd_addr_t addr, uint8_t advertising_handle);
+
+/**
  * @brief Get own addr type and address used for LE connections (Central)
  */
 void gap_le_get_own_connection_address(uint8_t * addr_type, bd_addr_t addr);
