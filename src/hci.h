@@ -1548,7 +1548,6 @@ void hci_release_packet_buffer(void);
 */
 void hci_set_master_slave_policy(uint8_t policy);
 
-
 /**
  * @brief Check if Controller supports BR/EDR (Bluetooth Classic)
  * @return true if supported
@@ -1562,6 +1561,12 @@ bool hci_classic_supported(void);
  * @note only valid in working state
  */
 bool hci_le_supported(void);
+
+/**
+ * @brief Check if LE Extended Advertising is supported
+ * @return true if supported
+ */
+bool hci_extended_advertising_supported(void);
 
 /** @brief Check if address type corresponds to LE connection
  *  @bparam address_type

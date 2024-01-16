@@ -1493,7 +1493,7 @@ static bool hci_command_supported(uint8_t command_index){
 #ifdef ENABLE_BLE
 
 #ifdef ENABLE_LE_EXTENDED_ADVERTISING
-static bool hci_extended_advertising_supported(void){
+bool hci_extended_advertising_supported(void){
     return hci_command_supported(SUPPORTED_HCI_COMMAND_LE_SET_EXTENDED_ADVERTISING_ENABLE);
 }
 #endif
