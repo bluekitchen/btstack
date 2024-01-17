@@ -173,6 +173,7 @@ int avdtp_read_signaling_header(avdtp_signaling_packet_t * signaling_header, uin
             break;
         case AVDTP_START_PACKET:
             signaling_header->num_packets = packet[pos++];
+            if (pos < 3) return pos;
             signaling_header->size = 0;
             signaling_header->offset = 0;
             break;
