@@ -52,6 +52,7 @@
 #include "ble/sm.h"
 #include "bluetooth_company_id.h"
 #include "bluetooth_data_types.h"
+#include "bluetooth_gatt.h"
 #include "btstack_debug.h"
 #include "btstack_event.h"
 #include "btstack_lc3.h"
@@ -72,7 +73,7 @@
 #include "ble/att_server.h"
 #include "le_audio_demo_util_source.h"
 
-#include "le_audio_unicast_source.h"
+#include "le_audio_unicast_gateway.h"
 
 // max config
 #define MAX_CHANNELS 2
@@ -89,16 +90,21 @@
 // hard-coded
 #define NUM_CIS_RETRANSMISSIONS 2
 
-// test device names
-static const char * test_device_names[] = {
-    "Unicast Headset",
-    "Unicast Sink",
-    "Galaxy Buds2 Pro"
-};
-static uint8_t test_devices_count = sizeof(test_device_names) / sizeof(char *);
-
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static btstack_packet_callback_registration_t sm_event_callback_registration;
+
+static enum {
+    APP_W4_WORKING,
+    APP_IDLE,
+    APP_W4_UNICAST_SINK_ADV,
+    APP_W4_COORDINATED_SET_INFO,
+    APP_W4_COORDINATED_SET_ADV,
+    APP_CONNECT_TO_NEXT_MEMBER,
+    APP_W4_MEMBER_CONNECTED,
+    APP_SET_CONNECTED,
+    APP_CIG_CREATED,
+    APP_STREAMING,
+} app_state = APP_W4_WORKING;
 
 // remote devices
 
@@ -108,6 +114,10 @@ typedef enum {
     SERVER_W4_CONNECTED,
     SERVER_W4_ENCRYPTED,
     SERVER_ENCRYPTED,
+    SERVER_W4_CSIS_CONNECTED,
+    SERVER_CSIS_QUERY_COMPLETED,
+    SERVER_W4_ALL_MEMBERS,
+    SERVER_W2_ASCS_CONNECT,
     SERVER_W4_ASCS_CONNECTED,
     SERVER_ASCS_CONNECTED,
     SERVER_W4_ASCS_CODEC_CONFIGURED,
@@ -135,6 +145,8 @@ typedef struct {
     // csis
     csis_client_connection_t csis_connection;
     uint16_t csis_cid;
+    uint8_t  sirk[16];
+    uint8_t  coordinated_set_size;
 
     // ascs
     uint16_t ascs_cid;
@@ -150,7 +162,16 @@ typedef struct {
 
 static server_t servers[MAX_NUM_SERVERS];
 
-static uint8_t scan_num_devices_found;
+#define MAX_NUM_ADVERTISEMENTS 10
+static struct {
+    bd_addr_t addr;
+    bd_addr_type_t addr_type;
+    uint8_t rsi[6];
+    char remote_name[PEER_NAME_LEN];
+} advertisements[MAX_NUM_ADVERTISEMENTS];
+#define SIRK_MATCH_IDLE 0xff
+static uint8_t active_sirk_match;
+static uint8_t num_active_servers;
 
 // PACS
 // #define PACS_QUERY
@@ -171,6 +192,12 @@ static hci_con_handle_t cis_con_handles[MAX_NUM_CIS];
 static hci_con_handle_t acl_con_handles[MAX_NUM_CIS];
 static bool cis_established[MAX_NUM_CIS];
 
+static uint8_t source_ase_count;
+static uint8_t sink_ase_count;
+
+static ascs_qos_configuration_t ascs_qos_configuration;
+
+
 // sinnk configuration
 static uint8_t num_servers = 1;
 
@@ -186,16 +213,6 @@ static uint8_t menu_variant;
 
 // audio producer
 static le_audio_demo_source_generator audio_source = AUDIO_SOURCE_MODPLAYER;
-
-static enum {
-    APP_W4_WORKING,
-    APP_IDLE,
-    APP_W4_UNICAST_SINK_ADV,
-    APP_READY_TO_CONNECT,
-    APP_W4_ACL_CONNECTION,
-    APP_CIG_CREATED,
-    APP_STREAMING,
-} app_state = APP_W4_WORKING;
 
 // enumerate default codec configs
 static struct {
@@ -256,41 +273,20 @@ static struct {
     },
 };
 
-static uint8_t source_ase_count;
-static uint8_t sink_ase_count;
-
-static ascs_qos_configuration_t ascs_qos_configuration;
-
 static void show_usage(void);
 
 static void print_config(void) {
-    printf("Config '%s_%u' -> %u servers: %u, %s ms, %u octets - %s\n",
+    printf("Config '%s' -> %u, %s ms, %u octets - %s\n",
            codec_configurations[menu_sampling_frequency].variants[menu_variant].name,
-           num_channels, num_servers,
            codec_configurations[menu_sampling_frequency].samplingrate_hz,
            codec_configurations[menu_sampling_frequency].variants[menu_variant].frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US ? "7.5" : "10",
            codec_configurations[menu_sampling_frequency].variants[menu_variant].octets_per_frame,
            audio_source == AUDIO_SOURCE_SINE ? "Sine" : "Modplayer");
 }
 
-static void start_unicast() {
-    // use values from table
-    sampling_frequency_hz = codec_configurations[menu_sampling_frequency].samplingrate_hz;
-    octets_per_frame      = codec_configurations[menu_sampling_frequency].variants[menu_variant].octets_per_frame;
-    frame_duration        = codec_configurations[menu_sampling_frequency].variants[menu_variant].frame_duration;
-
-    uint8_t num_channels_per_stream = num_channels / num_servers;
-    le_audio_demo_util_source_configure(num_servers, num_channels_per_stream, sampling_frequency_hz, frame_duration, octets_per_frame);
-    le_audio_demo_util_source_generate_iso_frame(audio_source);
-
-    // start scanning
-    scan_num_devices_found = 0;
-    gap_start_scan();
-}
-
 static server_t * server_for_acl_con_handle(hci_con_handle_t acl_con_handle){
     uint8_t i;
-    for (i=0;i<scan_num_devices_found;i++){
+    for (i=0; i < num_active_servers; i++){
         server_t * server = &servers[i];
         if (server->acl_con_handle == acl_con_handle){
             return server;
@@ -301,7 +297,7 @@ static server_t * server_for_acl_con_handle(hci_con_handle_t acl_con_handle){
 
 static server_t * server_for_ascs_cid(uint16_t ascs_cid){
     uint8_t i;
-    for (i=0;i<scan_num_devices_found;i++){
+    for (i=0; i < num_active_servers; i++){
         server_t * server = &servers[i];
         if (server->ascs_cid == ascs_cid){
             return server;
@@ -312,7 +308,7 @@ static server_t * server_for_ascs_cid(uint16_t ascs_cid){
 
 static server_t * server_for_csis_cid(uint16_t csis_cid){
     uint8_t i;
-    for (i=0;i<scan_num_devices_found;i++){
+    for (i=0; i < num_active_servers; i++){
         server_t * server = &servers[i];
         if (server->csis_cid == csis_cid){
             return server;
@@ -323,7 +319,7 @@ static server_t * server_for_csis_cid(uint16_t csis_cid){
 
 static bool servers_in_state(server_state_t state){
     uint8_t i;
-    for (i=0;i<scan_num_devices_found;i++){
+    for (i=0; i < num_active_servers; i++){
         server_t * server = &servers[i];
         if (server->server_state != state){
             return false;
@@ -334,38 +330,53 @@ static bool servers_in_state(server_state_t state){
 
 static void servers_set_state(server_state_t state){
     uint8_t i;
-    for (i=0;i<scan_num_devices_found;i++){
+    for (i=0; i < num_active_servers; i++){
         server_t * server = &servers[i];
         server->server_state = state;
     }
 }
 
-static bool all_cis_established(void) {
-    // check for complete
+static void configure_stream(void) {
+    // use values from table
+    sampling_frequency_hz = codec_configurations[menu_sampling_frequency].samplingrate_hz;
+    octets_per_frame      = codec_configurations[menu_sampling_frequency].variants[menu_variant].octets_per_frame;
+    frame_duration        = codec_configurations[menu_sampling_frequency].variants[menu_variant].frame_duration;
+
+    uint8_t num_channels_per_stream = num_channels / num_servers;
+    le_audio_demo_util_source_configure(num_servers, num_channels_per_stream, sampling_frequency_hz, frame_duration, octets_per_frame);
+    le_audio_demo_util_source_generate_iso_frame(audio_source);
+}
+
+static void scan_for_headset(void){
+    // start scanning
     uint8_t i;
-    for (i=0; i < cig_params.num_cis; i++) {
-        if (cis_established[i] == false){
-            return false;
-        }
+    for (i=0;i<MAX_NUM_ADVERTISEMENTS;i++){
+        advertisements[i].addr_type = BD_ADDR_TYPE_UNKNOWN;
     }
-    return true;
+    gap_start_scan();
 }
 
 static void run_for_server(server_t * server){
     uint8_t status;
     switch (server->server_state){
         case SERVER_READY:
-            if (app_state == APP_READY_TO_CONNECT){
-                app_state = APP_W4_ACL_CONNECTION;
-                server->server_state = SERVER_W4_CONNECTED;
-                printf("GAP Client %u: connect to %s (%s)\n",
-                       server->server_id,
-                       bd_addr_to_str(server->remote_addr),
-                       server->remote_type == BD_ADDR_TYPE_LE_PUBLIC ? "public" : "random");
-                gap_connect(server->remote_addr, server->remote_type);
-            }
+            server->server_state = SERVER_W4_CONNECTED;
+            printf("GAP Client %u: connect to %s (%s)\n",
+                   server->server_id,
+                   bd_addr_to_str(server->remote_addr),
+                   server->remote_type == BD_ADDR_TYPE_LE_PUBLIC ? "public" : "random");
+            gap_connect(server->remote_addr, server->remote_type);
             break;
         case SERVER_ENCRYPTED:
+            // connect to CSIS
+            printf("CSIS Client %u: connect\n", server->server_id);
+            server->server_state = SERVER_W4_CSIS_CONNECTED;
+            coordinated_set_identification_service_client_connect(&server->csis_connection,
+                                                        server->acl_con_handle, &server->csis_cid);
+            break;
+        case SERVER_W2_ASCS_CONNECT:
+            // connect to ASCS
+            printf("ASCS Client %u: connect\n", server->server_id);
             server->server_state = SERVER_W4_ASCS_CONNECTED;
             audio_stream_control_service_client_connect(&server->ascs_connection,
                                                         server->streamendpoint_characteristics,
@@ -432,19 +443,185 @@ static void run_for_server(server_t * server){
     }
 }
 
-static void run_all_servers(void){
+static void trigger_next_connect(void){
+    // trigger next idle server
+    btstack_assert(app_state == APP_CONNECT_TO_NEXT_MEMBER);
     uint8_t i;
-    for (i=0;i<scan_num_devices_found;i++){
+    for (i=0;i<num_active_servers;i++){
+        if (servers[i].server_state == SERVER_IDLE){
+            printf("GAP Client %u: trigger connect\n", servers[i].server_id);
+            servers[i].server_state = SERVER_READY;
+            app_state = APP_W4_MEMBER_CONNECTED;
+            break;
+        }
+    }
+}
+
+static void all_members_connected(void){
+    // all connected
+    app_state = APP_SET_CONNECTED;
+    servers_set_state(SERVER_W2_ASCS_CONNECT);
+    printf("[-] CSIS - all members connected\n");
+}
+
+static void app_run(void){
+    // run main
+    uint8_t i;
+    switch (app_state){
+        case APP_W4_COORDINATED_SET_INFO:
+            if (servers[0].server_state == SERVER_CSIS_QUERY_COMPLETED){
+                servers[0].server_state = SERVER_W4_ALL_MEMBERS;
+                uint8_t set_size = servers[0].coordinated_set_size;
+                // select mode based on coordinated set size
+                switch (set_size){
+                    case 1:
+                        printf("CAP client %u: select stereo speaker mode\n", servers[0].server_id);
+                        num_servers  = 1;
+                        num_channels = 2;
+                        break;
+                    case 2:
+                        printf("CAP client %u: select true-wireless mode\n", servers[0].server_id);
+                        num_servers  = 2;
+                        num_channels = 2;
+                        break;
+                    default:
+                        printf("CAP client %u: set size %u not handled\n", servers[0].server_id, set_size);
+                        num_servers = 1;
+                        break;
+                }
+                if (num_servers == 2){
+                    // need more servers
+                    app_state = APP_W4_COORDINATED_SET_ADV;
+                    active_sirk_match = SIRK_MATCH_IDLE;
+                    scan_for_headset();
+                } else {
+                    all_members_connected();
+                }
+            }
+            break;
+        case APP_W4_MEMBER_CONNECTED:
+            // check if CSIS client connected
+            for (i=0;i<num_active_servers;i++){
+                if (servers[i].server_state == SERVER_CSIS_QUERY_COMPLETED){
+                    servers[i].server_state = SERVER_W4_ALL_MEMBERS;
+                    // all connected?
+                    if (servers_in_state(SERVER_W4_ALL_MEMBERS)){
+                        all_members_connected();
+                    } else {
+                        // trigger next idle server
+                        app_state = APP_CONNECT_TO_NEXT_MEMBER;
+                        trigger_next_connect();
+                    }
+                }
+            }
+            break;
+        case APP_CONNECT_TO_NEXT_MEMBER:
+            trigger_next_connect();
+            break;
+        default:
+            break;
+    }
+
+    // run servers
+    for (i=0; i < num_active_servers; i++){
         run_for_server(&servers[i]);
     }
 }
 
+static void try_match_rsi(void){
+    if (active_sirk_match == SIRK_MATCH_IDLE){
+        uint8_t i;
+        for (i=0;i<MAX_NUM_ADVERTISEMENTS;i++){
+            if (advertisements[i].addr_type != BD_ADDR_TYPE_UNKNOWN){
+                printf("[-] CSIS validate RSI: ");
+                printf_hexdump(advertisements[i].rsi, 6);
+                active_sirk_match = i;
+                coordinated_set_identification_service_client_check_rsi(advertisements[i].rsi, servers[0].sirk);
+            }
+        }
+    }
+}
+
+static void rsi_match_handler(bool match){
+    printf("[-] CSIS match: %u\n", (int) match);
+    if (match) {
+        // add coordinated set member
+        printf("[-] CSIS add device %s\n", bd_addr_to_str(advertisements[active_sirk_match].addr));
+        memset(&servers[num_active_servers], 0, sizeof(servers[0]));
+        servers[num_active_servers].server_id = num_active_servers;
+        servers[num_active_servers].server_state = SERVER_IDLE;
+        servers[num_active_servers].remote_type = advertisements[active_sirk_match].addr_type;
+        memcpy(servers[num_active_servers].remote_addr, advertisements[active_sirk_match].addr, 6);
+        memcpy(servers[num_active_servers].remote_name, advertisements[active_sirk_match].remote_name, PEER_NAME_LEN);
+        num_active_servers++;
+        printf("[-] Num active server %u\n",num_active_servers);
+    }
+
+    // free advertisement entry and reset lookup
+    advertisements[active_sirk_match].addr_type = BD_ADDR_TYPE_UNKNOWN;
+    active_sirk_match = SIRK_MATCH_IDLE;
+
+    // all found?
+    if (num_active_servers >= num_servers){
+        // stop scanning and start connecting
+        app_state = APP_CONNECT_TO_NEXT_MEMBER;
+        gap_stop_scan();
+        app_run();
+    } else {
+        // try next
+        try_match_rsi();
+    }
+}
+
+static bool all_cis_established(void) {
+    // check for complete
+    uint8_t i;
+    for (i=0; i < cig_params.num_cis; i++) {
+        if (cis_established[i] == false){
+            return false;
+        }
+    }
+    return true;
+}
+
+static void try_transition_to_streaming() {
+    // CIS Ready?
+    if (all_cis_established() == false) {
+        printf("Transition_to_streaming: not all cis establisehd\n");
+        return;
+    }
+    // Server Ready?
+    if (servers_in_state(SERVER_ASCS_STREAMING) == false){
+        printf("Transition_to_streaming: not all server ready\n");
+        return;
+    }
+
+    printf("All CIS Established and IO Paths setup, start streaming\n");
+
+    app_state = APP_STREAMING;
+    uint8_t i;
+    for (i=0; i < cig_params.num_cis; i++) {
+        hci_request_cis_can_send_now_events(cis_con_handles[i]);
+    }
+}
 
 static void le_audio_unicast_source_handle_adv(bd_addr_type_t adv_addr_type, bd_addr_t adv_addr, const uint8_t * adv_data, uint16_t adv_size){
+    switch (app_state) {
+        case APP_W4_UNICAST_SINK_ADV:
+        case APP_W4_COORDINATED_SET_ADV:
+            break;
+        default:
+            return;
+    }
+
     ad_context_t context;
     bool match = false;
-    char remote_name[PEER_NAME_LEN];
+    bool have_rsi = false;
     uint8_t i;
+    char remote_name[PEER_NAME_LEN];
+    uint8_t rsi[6];
+    memset(rsi, 0, sizeof(rsi));
+    memset(remote_name, 0, sizeof(remote_name));
     for (ad_iterator_init(&context, adv_size, adv_data); ad_iterator_has_more(&context); ad_iterator_next(
             &context)) {
         uint8_t data_type = ad_iterator_get_data_type(&context);
@@ -457,11 +634,18 @@ static void le_audio_unicast_source_handle_adv(bd_addr_type_t adv_addr_type, bd_
                 memcpy(remote_name, data, data_len);
                 remote_name[data_len] = 0;
                 printf("%s - '%s'\n", remote_name, bd_addr_to_str(adv_addr));
-                // match by remote device name
-                for (i=0;i<test_devices_count;i++){
-                    if (strncmp(remote_name, test_device_names[i], data_len) == 0) {
+                break;
+            case BLUETOOTH_DATA_TYPE_RESOLVABLE_SET_IDENTIFIER:
+                if (data_len == 6){
+                    have_rsi = true;
+                    reverse_48(data, rsi);
+                }
+                break;
+            case BLUETOOTH_DATA_TYPE_COMPLETE_LIST_OF_16_BIT_SERVICE_CLASS_UUIDS:
+            case BLUETOOTH_DATA_TYPE_INCOMPLETE_LIST_OF_16_BIT_SERVICE_CLASS_UUIDS:
+                for (i=0;(i+1) < data_len; i++){
+                    if (little_endian_read_16(data, i) == ORG_BLUETOOTH_SERVICE_AUDIO_STREAM_CONTROL_SERVICE){
                         match = true;
-                        break;
                     }
                 }
                 break;
@@ -469,46 +653,70 @@ static void le_audio_unicast_source_handle_adv(bd_addr_type_t adv_addr_type, bd_
                 break;
         }
     }
-    // if name not found, skip
+    // done if not match expectation
     if (!match) return;
 
-    // if already in list, skip
-    for (i=0;i<scan_num_devices_found;i++){
+    // if already in server list, skip
+    for (i=0; i < num_active_servers; i++){
         if (servers[i].remote_type != adv_addr_type)                     continue;
         if (memcmp(servers[i].remote_addr, adv_addr, 6) != 0) continue;
         return;
     }
 
-    // add to list
-    servers[scan_num_devices_found].server_state = SERVER_IDLE;
-    memcpy(servers[scan_num_devices_found].remote_addr, adv_addr, 6);
-    servers[scan_num_devices_found].remote_type = adv_addr_type;
-    memcpy(servers[scan_num_devices_found].remote_name, remote_name, sizeof(remote_name));
-    printf("- Remote Unicast Sink found, addr %s, name: '%s'\n", bd_addr_to_str(servers[scan_num_devices_found].remote_addr), remote_name);
-
-    scan_num_devices_found++;
-
-    // check if enough devices found
-    if (scan_num_devices_found < num_servers){
+    // if already in advertisement list, skip
+    for (i=0; i < MAX_NUM_ADVERTISEMENTS; i++){
+        if (advertisements[i].addr_type != adv_addr_type)                continue;
+        if (memcmp(advertisements[i].addr, adv_addr, 6) != 0) continue;
         return;
     }
 
-    printf("All servers found, start connecting\n");
+    printf("- Remote Unicast Sink found, addr %s, name: '%s'\n", bd_addr_to_str(adv_addr), remote_name);
 
-    // stop scanning
-    app_state = APP_READY_TO_CONNECT;
-    gap_stop_scan();
-
-    // start connecting
-    servers_set_state(SERVER_READY);
-    run_all_servers();
+    switch (app_state){
+        case APP_W4_UNICAST_SINK_ADV:
+            // use as first server
+            memset(&servers[0], 0, sizeof(servers[0]));
+            servers[0].server_state = SERVER_READY;
+            servers[0].remote_type = adv_addr_type;
+            servers[0].server_id = 0;
+            memcpy(servers[0].remote_addr, adv_addr, 6);
+            memcpy(servers[0].remote_name, remote_name, sizeof(remote_name));
+            num_active_servers = 1;
+            // stop scanning and start connecting
+            app_state = APP_W4_COORDINATED_SET_INFO;
+            gap_stop_scan();
+            app_run();
+            break;
+        case APP_W4_COORDINATED_SET_ADV:
+            if (have_rsi){
+                // try to store in advertisment list
+                for (i=0;i<MAX_NUM_ADVERTISEMENTS;i++){
+                    if (advertisements[i].addr_type == BD_ADDR_TYPE_UNKNOWN){
+                        advertisements[i].addr_type = adv_addr_type;
+                        memcpy(advertisements[i].addr, adv_addr, 6);
+                        memcpy(advertisements[i].remote_name, remote_name, sizeof(remote_name));
+                        memcpy(advertisements[i].rsi, rsi, 6);
+                        break;
+                    }
+                }
+                // continue matching
+                try_match_rsi();
+            }
+            break;
+        default:
+            btstack_unreachable();
+            break;
+    }
 }
 
 static void create_cig(void){
+    btstack_assert((num_servers == 1) || (num_channels == 2));
+
     uint8_t i;
 
+    configure_stream();
+
     // TODO: setup CIG
-    btstack_assert((num_servers == 1) || (num_channels == 2));
     cig_params.cig_id =  1;
     cig_params.num_cis = num_servers;
     cig_params.sdu_interval_c_to_p = codec_configuration.specific_codec_configuration.frame_duration_index == LE_AUDIO_CODEC_FRAME_DURATION_INDEX_7500US ? 7500 : 10000;
@@ -544,27 +752,6 @@ static void create_cig(void){
     btstack_assert(status == ERROR_CODE_SUCCESS);
 }
 
-static void transition_to_streaming() {
-    // CIS Ready?
-    if (all_cis_established() == false) {
-        printf("Transition_to_streaming: not all cis establisehd\n");
-        return;
-    }
-    // Server Ready?
-    if (servers_in_state(SERVER_ASCS_STREAMING) == false){
-        printf("Transition_to_streaming: not all server ready\n");
-        return;
-    }
-
-    printf("All CIS Established and IO Paths setup, start streaming\n");
-
-    app_state = APP_STREAMING;
-    uint8_t i;
-    for (i=0; i < cig_params.num_cis; i++) {
-        hci_request_cis_can_send_now_events(cis_con_handles[i]);
-    }
-}
-
 static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     if (packet_type != HCI_EVENT_PACKET) return;
@@ -574,6 +761,8 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
     uint8_t status;
     bd_addr_t adv_addr;
     bd_addr_type_t adv_addr_type;
+    uint8_t adv_size;
+    const uint8_t *adv_data;
 
     switch (packet[0]) {
         case BTSTACK_EVENT_STATE:
@@ -581,10 +770,7 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                 case HCI_STATE_WORKING:
                     app_state = APP_IDLE;
 #ifdef ENABLE_DEMO_MODE
-                    // start unicast automatically, mod player, 48_5_2
-                    num_channels = 2;
-                    menu_sampling_frequency = 5;
-                    menu_variant = 4;
+                    // start unicast automatically, mod player
                     start_unicast();
 #else
                     show_usage();
@@ -600,33 +786,28 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
             }
             break;
         case GAP_EVENT_ADVERTISING_REPORT:
-            if (app_state == APP_W4_UNICAST_SINK_ADV) {
-                uint8_t adv_size = gap_event_advertising_report_get_data_length(packet);
-                const uint8_t *adv_data = gap_event_advertising_report_get_data(packet);
-                gap_event_advertising_report_get_address(packet, adv_addr);
-                adv_addr_type = gap_event_advertising_report_get_address_type(packet);
-                le_audio_unicast_source_handle_adv(adv_addr_type, adv_addr, adv_data, adv_size);
-            }
+            adv_size = gap_event_advertising_report_get_data_length(packet);
+            adv_data = gap_event_advertising_report_get_data(packet);
+            gap_event_advertising_report_get_address(packet, adv_addr);
+            adv_addr_type = gap_event_advertising_report_get_address_type(packet);
+            le_audio_unicast_source_handle_adv(adv_addr_type, adv_addr, adv_data, adv_size);
             break;
         case GAP_EVENT_EXTENDED_ADVERTISING_REPORT:
-            if (app_state == APP_W4_UNICAST_SINK_ADV) {
-                uint8_t adv_size = gap_event_extended_advertising_report_get_data_length(packet);
-                const uint8_t *adv_data = gap_event_extended_advertising_report_get_data(packet);
-                gap_event_extended_advertising_report_get_address(packet, adv_addr);
-                adv_addr_type = gap_event_extended_advertising_report_get_address_type(packet) & 1;
-                le_audio_unicast_source_handle_adv(adv_addr_type, adv_addr, adv_data, adv_size);
-            }
+            adv_size = gap_event_extended_advertising_report_get_data_length(packet);
+            adv_data = gap_event_extended_advertising_report_get_data(packet);
+            gap_event_extended_advertising_report_get_address(packet, adv_addr);
+            adv_addr_type = gap_event_extended_advertising_report_get_address_type(packet) & 1;
+            le_audio_unicast_source_handle_adv(adv_addr_type, adv_addr, adv_data, adv_size);
             break;
         case HCI_EVENT_META_GAP:
             switch (hci_event_gap_meta_get_subevent_code(packet)) {
                 case GAP_SUBEVENT_LE_CONNECTION_COMPLETE:
                     if (gap_subevent_le_connection_complete_get_status(packet) == ERROR_CODE_SUCCESS){
                         // find server
-                        for (i=0;i<scan_num_devices_found;i++){
+                        for (i=0; i < num_active_servers; i++){
                             server_t * server = &servers[i];
                             if (server->server_state == SERVER_W4_CONNECTED){
                                 printf("GAP Client %u: Connected\n", server->server_id);
-                                app_state = APP_READY_TO_CONNECT;
                                 server->acl_con_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
                                 server->server_state = SERVER_W4_ENCRYPTED;
                                 sm_request_pairing(server->acl_con_handle);
@@ -660,7 +841,7 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                                 cis_established[i] = true;
                             }
                         }
-                        transition_to_streaming();
+                        try_transition_to_streaming();
                     }
                     break;
                 }
@@ -686,7 +867,7 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
             break;
     }
 
-    run_all_servers();
+    app_run();
 }
 
 static void sm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -774,9 +955,7 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
             break;
     }
 
-    if (server != NULL){
-        run_for_server(server);
-    }
+    app_run();
 }
 
 static void pacs_client_next_query(void){
@@ -822,6 +1001,8 @@ static void pacs_client_next_query(void){
     if (status != ERROR_CODE_SUCCESS){
         printf("[!] PACS Client: status 0x%02x\n", status);
     }
+
+    app_run();
 }
 
 static void pacs_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -894,6 +1075,8 @@ static void pacs_client_event_handler(uint8_t packet_type, uint16_t channel, uin
         default:
             break;
     }
+
+    app_run();
 }
 
 static void csis_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -904,8 +1087,6 @@ static void csis_client_event_handler(uint8_t packet_type, uint16_t channel, uin
     if (hci_event_packet_get_type(packet) != HCI_EVENT_GATTSERVICE_META) return;
 
     uint8_t status;
-    uint8_t sirk[16];
-
     server_t * server = NULL;
 
     switch (hci_event_gattservice_meta_get_subevent_code(packet)){
@@ -914,78 +1095,88 @@ static void csis_client_event_handler(uint8_t packet_type, uint16_t channel, uin
             if (server != NULL){
 
                 if (gattservice_subevent_csis_client_connected_get_status(packet) != ERROR_CODE_SUCCESS){
-                    printf("CSIS client: connection failed, cid 0x%04x, con_handle 0x%04x, status 0x%02x\n",
-                           server->csis_cid, server->acl_con_handle,
+                    printf("CSIS client %u: connection failed, cid 0x%04x, con_handle 0x%04x, status 0x%02x\n",
+                           server->server_id, server->csis_cid, server->acl_con_handle,
                            gattservice_subevent_csis_client_connected_get_status(packet));
+                    printf("TODO: handle CSIS connection failure\n");
                     return;
                 }
 
-                printf("CSIS client: connected, cid 0x%04x\n", server->csis_cid);
+                printf("CSIS client %u: connected, cid 0x%04x\n", server->server_id, server->csis_cid);
 
-                // read lock
-                printf("CSIS client: read LOCK\n");
-                coordinated_set_identification_service_client_read_member_lock(server->csis_cid);
+                // get coordinated set size
+                coordinated_set_identification_service_client_read_coordinated_set_size(server->csis_cid);
             }
+            break;
+
+        case GATTSERVICE_SUBEVENT_CSIS_CLIENT_COORDINATED_SET_SIZE:
+            server = server_for_csis_cid(gattservice_subevent_csis_client_coordinated_set_size_get_csis_cid(packet));
+            status = gattservice_subevent_csis_client_coordinated_set_size_get_status(packet);
+            if (status != ERROR_CODE_SUCCESS){
+                printf("CSIS client %u: read coordinated set size failed, 0x%02x\n", server->server_id, status);
+            } else {
+                uint8_t set_size = gattservice_subevent_csis_client_coordinated_set_size_get_coordinated_set_size(packet);
+                server->coordinated_set_size = set_size;
+                printf("CSIS client %u: coordinated_set_size %u\n", server->server_id, set_size);
+            }
+            coordinated_set_identification_service_client_read_sirk(server->csis_cid);
+            break;
+
+        case GATTSERVICE_SUBEVENT_CSIS_CLIENT_SIRK:
+            server = server_for_csis_cid(gattservice_subevent_csis_client_sirk_get_csis_cid(packet));
+            status = gattservice_subevent_csis_client_sirk_get_status(packet);
+            if (status != ERROR_CODE_SUCCESS){
+                printf("CSIS client %u: read SIRK failed, 0x%02x\n", server->server_id, status);
+                printf("TODO: handle get sirk failed\n");
+                break;
+            }
+            gattservice_subevent_csis_client_sirk_get_sirk(packet, server->sirk);
+            printf("CSIS client %u: remote SIRK (%s) ", server->server_id,
+                   (csis_sirk_type_t)gattservice_subevent_csis_client_sirk_get_sirk_type(packet) == CSIS_SIRK_TYPE_ENCRYPTED ? "ENCRYPTED" : "PLAIN_TEXT");
+            printf_hexdump(server->sirk, sizeof(server->sirk));
+
+            server->server_state = SERVER_CSIS_QUERY_COMPLETED;
+            break;
+
+        case GATTSERVICE_SUBEVENT_CSIS_RSI_MATCH:
+            rsi_match_handler(gattservice_subevent_csis_rsi_match_get_match(packet) != 0);
             break;
 
         case GATTSERVICE_SUBEVENT_CSIS_CLIENT_LOCK:
             server = server_for_csis_cid(gattservice_subevent_csis_client_lock_get_csis_cid(packet));
             status = gattservice_subevent_csis_client_lock_get_status(packet);
             if (status != ERROR_CODE_SUCCESS){
-                printf("CSIS client: read LOCK failed, 0x%02x\n", status);
+                printf("CSIS client %u: read LOCK failed, 0x%02x\n", server->server_id, status);
                 break;
             }
             if (server != NULL){
-                printf("CSIS client: remote LOCK %u\n", gattservice_subevent_csis_client_lock_get_lock(packet));
+                printf("CSIS client %u: remote LOCK %u\n", server->server_id, gattservice_subevent_csis_client_lock_get_lock(packet));
 
                 // set locked
-                printf("CSIS client: set client LOCK\n");
+                printf("CSIS client %u: set client LOCK\n", server->server_id);
                 coordinated_set_identification_service_client_write_member_lock(server->csis_cid, CSIS_MEMBER_LOCKED);
             }
             break;
 
         case GATTSERVICE_SUBEVENT_CSIS_CLIENT_RANK:
+            server = server_for_csis_cid(gattservice_subevent_csis_client_rank_get_csis_cid(packet));
             status = gattservice_subevent_csis_client_rank_get_status(packet);
             if (status != ERROR_CODE_SUCCESS){
-                printf("CSIS client: read RANK failed, 0x%02x\n", status);
+                printf("CSIS client %u: read RANK failed, 0x%02x\n", status, server->server_id);
                 break;
             }
-            printf("CSIS client: remote member RANK %u\n", gattservice_subevent_csis_client_rank_get_rank(packet));
-            break;
-
-        case GATTSERVICE_SUBEVENT_CSIS_CLIENT_COORDINATED_SET_SIZE:
-            status = gattservice_subevent_csis_client_coordinated_set_size_get_status(packet);
-            if (status != ERROR_CODE_SUCCESS){
-                printf("CSIS client: read COORDINATED_SET_SIZE failed, 0x%02x\n", status);
-                break;
-            }
-            printf("CSIS client: remote COORDINATED_SET_SIZE %u\n", gattservice_subevent_csis_client_coordinated_set_size_get_coordinated_set_size(packet));
-            break;
-
-        case GATTSERVICE_SUBEVENT_CSIS_CLIENT_SIRK:
-            status = gattservice_subevent_csis_client_sirk_get_status(packet);
-            if (status != ERROR_CODE_SUCCESS){
-                printf("CSIS client: read SIRK failed, 0x%02x\n", status);
-                break;
-            }
-            gattservice_subevent_csis_client_sirk_get_sirk(packet, sirk);
-            printf("CSIS client: remote SIRK (%s) ", (csis_sirk_type_t)gattservice_subevent_csis_client_sirk_get_sirk_type(packet) == CSIS_SIRK_TYPE_ENCRYPTED ? "ENCRYPTED" : "PLAIN_TEXT");
-            printf_hexdump(sirk, sizeof(sirk));
+            printf("CSIS client %u: remote member RANK %u\n", server->server_id, gattservice_subevent_csis_client_rank_get_rank(packet));
             break;
 
         case GATTSERVICE_SUBEVENT_CSIS_CLIENT_LOCK_WRITE_COMPLETE:
+            server = server_for_csis_cid(gattservice_subevent_csis_client_lock_write_complete_get_csis_cid(packet));
             status = gattservice_subevent_csis_client_lock_write_complete_get_status(packet);
             if (status != ERROR_CODE_SUCCESS){
-                printf("CSIS client: write LOCK failed, 0x%02x\n", status);
+                printf("CSIS client %u: write LOCK failed, 0x%02x\n", server->server_id, status);
             } else {
-                server = server_for_csis_cid(gattservice_subevent_csis_client_lock_write_complete_get_csis_cid(packet));
                 if (server != NULL){
                     csis_member_lock_t csis_member_lock = (csis_member_lock_t) gattservice_subevent_csis_client_lock_write_complete_get_lock(packet);
-                    printf("CSIS client: remote member %s\n", csis_member_lock == CSIS_MEMBER_UNLOCKED ? "UNLOCKED" : "LOCKED");
-                    audio_stream_control_service_client_connect(&server->ascs_connection,
-                                                                server->streamendpoint_characteristics,
-                                                                ASCS_CLIENT_NUM_STREAMENDPOINTS,
-                                                                server->acl_con_handle, &server->ascs_cid);
+                    printf("CSIS client %u: remote member %s\n", server->server_id, csis_member_lock == CSIS_MEMBER_UNLOCKED ? "UNLOCKED" : "LOCKED");
                 }
             }
             break;
@@ -994,7 +1185,7 @@ static void csis_client_event_handler(uint8_t packet_type, uint16_t channel, uin
             server = server_for_csis_cid(gattservice_subevent_csis_client_disconnected_get_csis_cid(packet));
             if (server != NULL){
                 server->csis_cid = 0;
-                printf("CSIS Client: disconnected\n");
+                printf("CSIS Client %u: disconnected\n", server->server_id);
             }
             break;
 
@@ -1002,9 +1193,7 @@ static void csis_client_event_handler(uint8_t packet_type, uint16_t channel, uin
             break;
     }
 
-    if (server != NULL){
-        run_for_server(server);
-    }
+    app_run();
 }
 
 void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -1153,7 +1342,7 @@ void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                         if (server->server_state == SERVER_ASCS_ENABLING){
                             server->server_state = SERVER_ASCS_STREAMING;
                         }
-                        transition_to_streaming();
+                        try_transition_to_streaming();
                         break;
                     default:
                         break;
@@ -1165,9 +1354,7 @@ void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
             break;
     }
 
-    if (server != NULL){
-        run_for_server(server);
-    }
+    app_run();
 }
 
 static uint16_t att_read_callback(hci_con_handle_t connection_handle, uint16_t att_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
@@ -1191,8 +1378,6 @@ static void show_usage(void){
     printf("\n--- LE Audio Unicast Source Test Console ---\n");
     print_config();
     printf("---\n");
-    printf("c - toggle channels\n");
-    printf("t - toggle num servers (1 or 2, 2 = true wireless)\n");
     printf("f - next sampling frequency\n");
     printf("v - next codec variant\n");
     printf("x - toggle sine / modplayer\n");
@@ -1203,27 +1388,6 @@ static void show_usage(void){
 
 static void stdin_process(char c){
     switch (c){
-        case 'c':
-            if (app_state != APP_IDLE){
-                printf("Codec configuration can only be changed in idle state\n");
-                break;
-            }
-            if (num_servers == 1){
-                num_channels = 3 - num_channels;
-            }
-            print_config();
-            break;
-        case 't':
-            if (app_state != APP_IDLE){
-                printf("Num servers can only be changed in idle state\n");
-                break;
-            }
-            num_servers = 3 - num_servers;
-            if (num_servers == 2){
-                num_channels = 2;
-            }
-            print_config();
-            break;
         case 'f':
             if (app_state != APP_IDLE){
                 printf("Codec configuration can only be changed in idle state\n");
@@ -1254,9 +1418,9 @@ static void stdin_process(char c){
                 printf("Cannot start scanning - not in idle state\n");
                 break;
             }
+            num_active_servers = 0;
             app_state = APP_W4_UNICAST_SINK_ADV;
-            start_unicast();
-
+            scan_for_headset();
             break;
         case 'x':
             switch (audio_source){
@@ -1274,7 +1438,7 @@ static void stdin_process(char c){
             break;
         case 'q':
             servers_set_state(SERVER_DISCONNECT);
-            run_all_servers();
+            app_run();
             break;
         case '\n':
         case '\r':
@@ -1326,6 +1490,10 @@ int btstack_main(int argc, const char * argv[]){
     for (i=0;i<MAX_NUM_SERVERS;i++){
         servers[i].server_id = i;
     }
+
+    // default config
+    menu_sampling_frequency = 5;
+    menu_variant = 3;
 
     // turn on!
     hci_power_control(HCI_POWER_ON);
