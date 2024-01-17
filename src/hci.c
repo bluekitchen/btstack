@@ -6602,6 +6602,9 @@ static bool hci_run_general_gap_le(void){
     // LE Resolving List Management
     if (resolving_list_modification_pending) {
 		uint16_t i;
+        uint8_t null_16[16];
+        uint8_t local_irk_flipped[16];
+        const uint8_t *local_irk;
 		switch (hci_stack->le_resolving_list_state) {
 			case LE_RESOLVING_LIST_SEND_ENABLE_ADDRESS_RESOLUTION:
 				hci_stack->le_resolving_list_state = LE_RESOLVING_LIST_READ_SIZE;
@@ -6612,7 +6615,7 @@ static bool hci_run_general_gap_le(void){
 				hci_send_cmd(&hci_le_read_resolving_list_size);
 				return true;
 			case LE_RESOLVING_LIST_SEND_CLEAR:
-				hci_stack->le_resolving_list_state = LE_RESOLVING_LIST_UPDATES_ENTRIES;
+				hci_stack->le_resolving_list_state = LE_RESOLVING_LIST_SET_IRK;
 				(void) memset(hci_stack->le_resolving_list_add_entries, 0xff,
 							  sizeof(hci_stack->le_resolving_list_add_entries));
                 (void) memset(hci_stack->le_resolving_list_set_privacy_mode, 0xff,
@@ -6621,6 +6624,15 @@ static bool hci_run_general_gap_le(void){
 							  sizeof(hci_stack->le_resolving_list_remove_entries));
 				hci_send_cmd(&hci_le_clear_resolving_list);
 				return true;
+            case LE_RESOLVING_LIST_SET_IRK:
+                // set IRK used by RPA for undirected advertising
+                hci_stack->le_resolving_list_state = LE_RESOLVING_LIST_UPDATES_ENTRIES;
+                local_irk = gap_get_persistent_irk();
+                reverse_128(local_irk, local_irk_flipped);
+                memset(null_16, 0, sizeof(null_16));
+                hci_send_cmd(&hci_le_add_device_to_resolving_list, BD_ADDR_TYPE_LE_PUBLIC, null_16,
+                             null_16, local_irk_flipped);
+                return true;
 			case LE_RESOLVING_LIST_UPDATES_ENTRIES:
                 // first remove old entries
 				for (i = 0; i < MAX_NUM_RESOLVING_LIST_ENTRIES && i < le_device_db_max_count(); i++) {
