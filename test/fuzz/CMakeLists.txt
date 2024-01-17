@@ -3,7 +3,7 @@ cmake_minimum_required (VERSION 3.5)
 set(CMAKE_C_COMPILER clang)
 set(CMAKE_CXX_COMPILER clang)
 
-project(BTstack)
+project(BTstack-Fuzzer)
 
 SET(BTSTACK_ROOT ${CMAKE_SOURCE_DIR}/../..)
 
