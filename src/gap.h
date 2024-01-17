@@ -681,6 +681,7 @@ uint8_t gap_extended_advertising_set_resolvable_private_address_update(uint16_t 
 
 /**
  * @brief Provide storage for new advertising set and setup on Controller
+ * @note Using RPA as own_address_type requires ENABLE_LE_ENHANCED_CONNECTION_COMPLETE_EVENT is required for pairing
  * @param storage to use by stack, needs to stay valid until adv set is removed with gap_extended_advertising_remove
  * @param advertising_parameters
  * @param out_advertising_handle to use with other adv config commands
@@ -691,6 +692,7 @@ uint8_t gap_extended_advertising_setup(le_advertising_set_t * storage, const le_
 
 /**
  * @param Set advertising params for advertising set
+ * @note Using RPA as own_address_type requires ENABLE_LE_ENHANCED_CONNECTION_COMPLETE_EVENT is required for pairing
  * @param advertising_handle
  * @param advertising_parameters
  * @return status
