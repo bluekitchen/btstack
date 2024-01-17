@@ -63,7 +63,7 @@ static inline uint8_t avdtp_header(uint8_t tr_label, avdtp_packet_type_t packet_
     return (tr_label<<4) | ((uint8_t)packet_type<<2) | (uint8_t)msg_type;
 }
 
-avdtp_message_type_t avdtp_get_signaling_packet_type(uint8_t * packet);
+avdtp_message_type_t avdtp_get_signaling_message_type(uint8_t * packet);
 
 int     avdtp_read_signaling_header(avdtp_signaling_packet_t * signaling_header, uint8_t * packet, uint16_t size);
 

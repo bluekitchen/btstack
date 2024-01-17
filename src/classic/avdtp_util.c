@@ -150,7 +150,7 @@ uint16_t store_bit16(uint16_t bitmap, int position, uint8_t value){
     return bitmap;
 }
 
-avdtp_message_type_t avdtp_get_signaling_packet_type(uint8_t * packet){
+avdtp_message_type_t avdtp_get_signaling_message_type(uint8_t * packet){
     return (avdtp_message_type_t) (packet[0] & 0x03);
 }
 

@@ -551,7 +551,7 @@ handle_l2cap_data_packet_for_signaling_connection(avdtp_connection_t *connection
     if (size < 2) return;
 
     uint16_t offset;
-    avdtp_message_type_t message_type = avdtp_get_signaling_packet_type(packet);
+    avdtp_message_type_t message_type = avdtp_get_signaling_message_type(packet);
     switch (message_type){
         case AVDTP_CMD_MSG:
             offset = avdtp_read_signaling_header(&connection->acceptor_signaling_packet, packet, size);
