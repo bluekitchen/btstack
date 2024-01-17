@@ -555,11 +555,15 @@ handle_l2cap_data_packet_for_signaling_connection(avdtp_connection_t *connection
     switch (message_type){
         case AVDTP_CMD_MSG:
             offset = avdtp_read_signaling_header(&connection->acceptor_signaling_packet, packet, size);
-            avdtp_acceptor_stream_config_subsm(connection, packet, size, offset);
+            if (offset > 0){
+                avdtp_acceptor_stream_config_subsm(connection, packet, size, offset);
+            }
             break;
         default:
-            offset = avdtp_read_signaling_header(&connection->initiator_signaling_packet, packet, size);
-            avdtp_initiator_stream_config_subsm(connection, packet, size, offset);
+                offset = avdtp_read_signaling_header(&connection->initiator_signaling_packet, packet, size);
+            if (offset > 0) {
+                avdtp_initiator_stream_config_subsm(connection, packet, size, offset);
+            }
             break;
     }
 }
