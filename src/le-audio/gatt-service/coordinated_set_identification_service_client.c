@@ -256,6 +256,7 @@ static void csis_client_emit_read_remote_rank(csis_client_connection_t * connect
 
 static void csis_client_emit_read_remote_sirk(csis_client_connection_t * connection, uint8_t status, csis_sirk_type_t remote_sirk_type, const uint8_t * sirk){
     btstack_assert(csis_client_event_callback != NULL);
+    btstack_assert(sirk != NULL);
 
     uint8_t event[23];
     memset(event, 0, sizeof(event));
@@ -268,9 +269,7 @@ static void csis_client_emit_read_remote_sirk(csis_client_connection_t * connect
     pos += 2;
     event[pos++] = status;
     event[pos++] = (uint8_t)remote_sirk_type;
-    if (sirk != NULL){
-        reverse_128(sirk, &event[pos]);
-    }
+    reverse_128(sirk, &event[pos]);
     (*csis_client_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
