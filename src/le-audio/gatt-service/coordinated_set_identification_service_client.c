@@ -70,7 +70,6 @@ static uint8_t  k1[16];
 const static uint8_t s1_string[] = { 'S', 'I', 'R', 'K', 'e', 'n', 'c'};
 static uint8_t key_ltk[16];
 
-static uint8_t                        remote_sirk[16];
 static csis_client_connection_t *     csis_client_active_connection;
 static void csis_client_trigger_next_sirk_calculation(void);
 
@@ -281,11 +280,11 @@ static void csis_client_handle_k1(void * context){
     uint8_t decrypted_sirk[16];
     uint8_t i;
     for(i = 0; i < sizeof(k1); i++){
-        decrypted_sirk[i] = k1[i] ^ remote_sirk[i];
+        decrypted_sirk[i] = k1[i] ^ csis_client_active_connection->remote_sirk[i];
     }
-    memcpy(remote_sirk, decrypted_sirk, sizeof(decrypted_sirk));
+    memcpy(csis_client_active_connection->remote_sirk, decrypted_sirk, sizeof(decrypted_sirk));
     csis_client_active_connection->remote_sirk_state = CSIS_SIRK_CALCULATION_STATE_READY;
-    csis_client_emit_read_remote_sirk(csis_client_active_connection, ATT_ERROR_SUCCESS, CSIS_SIRK_TYPE_ENCRYPTED, (const uint8_t *) remote_sirk);
+    csis_client_emit_read_remote_sirk(csis_client_active_connection, ATT_ERROR_SUCCESS, CSIS_SIRK_TYPE_ENCRYPTED, csis_client_active_connection->remote_sirk);
 
     csis_client_active_connection = NULL;
     csis_client_trigger_next_sirk_calculation();
@@ -342,7 +341,7 @@ static void csis_client_handle_value_query_result(csis_client_connection_t * con
         case CSIS_CHARACTERISTIC_INDEX_SIRK:
             if (status == ATT_ERROR_SUCCESS){
                 if (data_size == 17){
-                    reverse_128((uint8_t *)&data[1], remote_sirk);
+                    reverse_128((uint8_t *)&data[1], connection->remote_sirk);
                 } else {
                     connection->read_value_status = ATT_ERROR_VALUE_NOT_ALLOWED;
                 }
@@ -382,12 +381,12 @@ static void csis_client_report_value_query_result(csis_client_connection_t *conn
                     csis_client_trigger_next_sirk_calculation();
                     break;
                 case CSIS_SIRK_TYPE_PUBLIC:
-                    csis_client_emit_read_remote_sirk(connection, ATT_ERROR_SUCCESS, connection->read_value_data, remote_sirk);
+                    csis_client_emit_read_remote_sirk(connection, ATT_ERROR_SUCCESS, connection->read_value_data, connection->remote_sirk);
                     break;
                 default:
                     connection->read_value_data = CSIS_SIRK_TYPE_PROHIBITED;
                     connection->read_value_status = ATT_ERROR_VALUE_NOT_ALLOWED;
-                    csis_client_emit_read_remote_sirk(connection, ATT_ERROR_SUCCESS, connection->read_value_data, remote_sirk);
+                    csis_client_emit_read_remote_sirk(connection, ATT_ERROR_SUCCESS, connection->read_value_data, connection->remote_sirk);
                     break;
             }
             break;
@@ -942,8 +941,6 @@ uint8_t coordinated_set_identification_service_client_check_rsi(const uint8_t * 
     uint8_t prand_prime[16];
     memset(prand_prime, 0, 16);
     memcpy(&prand_prime[13], &rsi[0], 3);
-    // prand_prime[13] &= 0x7F;
-    // prand_prime[13] |= 0x40;
 
     btstack_crypto_aes128_encrypt(&aes128_request, csis_sirk, prand_prime, csis_hash, &csis_client_handle_csis_hash, NULL);
     return ERROR_CODE_SUCCESS;

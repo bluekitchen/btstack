@@ -104,7 +104,9 @@ typedef struct {
     uint8_t  service_instances_num;
     uint8_t  characteristic_index;
 
+    // remote sirk
     csis_sirk_calculation_state_t  remote_sirk_state;
+    uint8_t remote_sirk[16];
 
     // cache remote values
     uint8_t read_value_status;
