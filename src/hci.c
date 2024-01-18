@@ -278,11 +278,11 @@ static void hci_connection_init(hci_connection_t * conn){
     conn->authentication_flags = AUTH_FLAG_NONE;
     conn->bonding_flags = 0;
     conn->requested_security_level = LEVEL_0;
+    conn->link_key_type = INVALID_LINK_KEY;
 #ifdef ENABLE_CLASSIC
     conn->request_role = HCI_ROLE_INVALID;
     conn->sniff_subrating_max_latency = 0xffff;
     conn->qos_service_type = HCI_SERVICE_TYPE_INVALID;
-    conn->link_key_type = INVALID_LINK_KEY;
     btstack_run_loop_set_timer_handler(&conn->timeout, hci_connection_timeout_handler);
     btstack_run_loop_set_timer_context(&conn->timeout, conn);
     hci_connection_timestamp(conn);
