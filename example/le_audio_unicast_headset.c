@@ -276,7 +276,7 @@ static void start_advertising(void) {
     uint8_t offset = 3 + 2;
     printf("RSI in advertisements at offset %u: ", offset);
     printf_hexdump(rsi, 6);
-    memcpy(&adv_data[offset], rsi, 6);
+    reverse_48(rsi, &adv_data[offset]);
 #endif
 
     // setup advertisements
