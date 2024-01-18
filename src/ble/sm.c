@@ -5174,7 +5174,7 @@ static void sm_cache_ltk(sm_connection_t * connection, const sm_key_t ltk){
     hci_connection_t * hci_con = hci_connection_for_handle(connection->sm_handle);
     btstack_assert(hci_con != NULL);
     memcpy(hci_con->link_key, ltk, 16);
-    hci_con->link_key_type = 1;
+    hci_con->link_key_type = COMBINATION_KEY;
 }
 
 #ifdef ENABLE_CROSS_TRANSPORT_KEY_DERIVATION
@@ -5467,7 +5467,7 @@ uint8_t sm_get_ltk(hci_con_handle_t con_handle, sm_key_t ltk){
     if (hci_connection == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    if (hci_connection->link_key_type == 0){
+    if (hci_connection->link_key_type == INVALID_LINK_KEY){
         return ERROR_CODE_PIN_OR_KEY_MISSING;
     }
     memcpy(ltk, hci_connection->link_key, 16);
