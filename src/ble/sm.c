@@ -2901,6 +2901,9 @@ static void sm_run(void){
 				sm_reset_setup();
 				sm_load_security_info(connection);
 
+                // cache key before using
+                sm_cache_ltk(connection, setup->sm_ltk);
+
                 sm_key_t peer_ltk_flipped;
                 reverse_128(setup->sm_peer_ltk, peer_ltk_flipped);
                 connection->sm_engine_state = SM_PH4_W4_CONNECTION_ENCRYPTED;
@@ -3192,6 +3195,9 @@ static void sm_run(void){
 #endif
 #ifdef ENABLE_LE_CENTRAL
             case SM_INITIATOR_PH3_SEND_START_ENCRYPTION: {
+                // cache key before using
+                sm_cache_ltk(connection, setup->sm_ltk);
+
                 sm_key_t stk_flipped;
                 reverse_128(setup->sm_ltk, stk_flipped);
                 connection->sm_engine_state = SM_PH2_W4_CONNECTION_ENCRYPTED;
