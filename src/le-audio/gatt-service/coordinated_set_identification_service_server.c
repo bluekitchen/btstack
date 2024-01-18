@@ -82,6 +82,7 @@ static csis_sirk_type_t  csis_sirk_type;
 
 static bool    csis_rsi_calculation_ongoing = true;
 static uint8_t csis_prand_data[3];
+static uint8_t csis_prand_prime[16];
 static uint8_t csis_hash[16];
 
 static uint8_t  csis_coordinated_set_size;
@@ -146,11 +147,9 @@ static void csis_server_handle_prand_provisioner(void * arg){
     // csis_prand_data[1] = 0xf5;
     // csis_prand_data[2] = 0x63;
     
-    uint8_t prand_prime[16];
-    memset(prand_prime, 0, 16);
-    memcpy(&prand_prime[13], csis_prand_data, 3);
-
-    btstack_crypto_aes128_encrypt(&aes128_request, csis_sirk, prand_prime, csis_hash, &csis_server_handle_csis_hash, NULL);
+    memset(csis_prand_prime, 0, 16);
+    memcpy(&csis_prand_prime[13], csis_prand_data, 3);
+    btstack_crypto_aes128_encrypt(&aes128_request, csis_sirk, csis_prand_prime, csis_hash, &csis_server_handle_csis_hash, NULL);
 }
 
 uint8_t coordinated_set_identification_service_server_generate_rsi(void){
