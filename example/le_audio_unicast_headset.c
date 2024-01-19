@@ -453,6 +453,7 @@ static void pacs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
     }
 }
 
+#ifdef ENABLE_CSIS_SERVER
 // CSIS Server Handler
 static void csis_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) {
     if (packet_type != HCI_EVENT_PACKET) return;
@@ -477,6 +478,7 @@ static void csis_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
             break;
     }
 }
+#endif
 
 // VCS Server Handler
 static void vcs_server_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
