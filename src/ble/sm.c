@@ -2902,7 +2902,7 @@ static void sm_run(void){
 				sm_load_security_info(connection);
 
                 // cache key before using
-                sm_cache_ltk(connection, setup->sm_ltk);
+                sm_cache_ltk(connection, setup->sm_peer_ltk);
 
                 sm_key_t peer_ltk_flipped;
                 reverse_128(setup->sm_peer_ltk, peer_ltk_flipped);
