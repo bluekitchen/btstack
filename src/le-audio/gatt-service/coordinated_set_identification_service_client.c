@@ -69,9 +69,7 @@ static uint8_t   T[16];
 static uint8_t  k1[16];
 const static uint8_t s1_string[] = { 'S', 'I', 'R', 'K', 'e', 'n', 'c'};
 static uint8_t key_ltk[16];
-
-static csis_client_connection_t *     csis_client_active_connection;
-static void csis_client_trigger_next_sirk_calculation(void);
+static bool csis_client_sirk_decryption_ongoing;
 
 // RSI Calculation
 static bool csis_client_rsi_calculation_ongoing;
@@ -85,6 +83,8 @@ static btstack_packet_handler_t csis_client_event_callback;
 static btstack_linked_list_t    csis_connections;
 static uint16_t                 csis_client_cid_counter = 0;
 
+// prototypes
+static void csis_client_trigger_next_sirk_calculation(void);
 static void csis_client_handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static btstack_packet_callback_registration_t csis_client_hci_event_callback_registration;
 
@@ -273,65 +273,60 @@ static void csis_client_emit_read_remote_sirk(csis_client_connection_t * connect
 }
 
 static void csis_client_handle_k1(void * context){
-    if (csis_client_active_connection == NULL){
-        return;
+    // decryption complete
+    csis_client_sirk_decryption_ongoing = false;
+    uint16_t csis_cid = (uint16_t)(uintptr_t)context;
+    csis_client_connection_t * connection = csis_client_get_connection_for_cid(csis_cid);
+    if (connection != NULL) {
+        uint8_t decrypted_sirk[16];
+        uint8_t i;
+        for (i = 0; i < sizeof(k1); i++) {
+            decrypted_sirk[i] = k1[i] ^ connection->remote_sirk[i];
+        }
+        memcpy(connection->remote_sirk, decrypted_sirk, sizeof(decrypted_sirk));
+        connection->remote_sirk_state = CSIS_SIRK_CALCULATION_STATE_READY;
+        csis_client_emit_read_remote_sirk(connection, ATT_ERROR_SUCCESS, CSIS_SIRK_TYPE_ENCRYPTED,
+                                          connection->remote_sirk);
     }
-
-    uint8_t decrypted_sirk[16];
-    uint8_t i;
-    for(i = 0; i < sizeof(k1); i++){
-        decrypted_sirk[i] = k1[i] ^ csis_client_active_connection->remote_sirk[i];
-    }
-    memcpy(csis_client_active_connection->remote_sirk, decrypted_sirk, sizeof(decrypted_sirk));
-    csis_client_active_connection->remote_sirk_state = CSIS_SIRK_CALCULATION_STATE_READY;
-    csis_client_emit_read_remote_sirk(csis_client_active_connection, ATT_ERROR_SUCCESS, CSIS_SIRK_TYPE_ENCRYPTED, csis_client_active_connection->remote_sirk);
-
-    csis_client_active_connection = NULL;
     csis_client_trigger_next_sirk_calculation();
 }
 
-
 static void csis_client_handle_T(void * context){
-    if (csis_client_active_connection == NULL){
-        return;
-    }
     const static uint8_t csis_string[] = { 'c', 's', 'i', 's'};
-    btstack_crypto_aes128_cmac_message(&aes128_cmac_request, T, sizeof(csis_string), csis_string, k1, csis_client_handle_k1, NULL);
+    btstack_crypto_aes128_cmac_message(&aes128_cmac_request, T, sizeof(csis_string), csis_string,
+                                       k1, csis_client_handle_k1, context);
 }
 
 static void csis_client_handle_s1(void * context){
-    if (csis_client_active_connection == NULL){
-        return;
+    uint16_t csis_cid = (uint16_t)(uintptr_t)context;
+    csis_client_connection_t * connection = csis_client_get_connection_for_cid(csis_cid);
+    if (connection == NULL){
+        csis_client_sirk_decryption_ongoing = false;
+    } else {
+        // get connection LTK for decryption
+        sm_get_ltk(connection->con_handle, key_ltk);
+        btstack_crypto_aes128_cmac_message(&aes128_cmac_request, s1, sizeof(key_ltk), key_ltk, T,
+                                           csis_client_handle_T, (void *)(uintptr_t) connection->cid);
     }
-
-    sm_get_ltk(csis_client_active_connection->con_handle, key_ltk);
-    btstack_crypto_aes128_cmac_message(&aes128_cmac_request, s1, sizeof(key_ltk), key_ltk, T, csis_client_handle_T, NULL);
 }
 
-static csis_client_connection_t * csis_client_get_next_connection_for_sirk_calculation(void){
-    btstack_linked_list_iterator_t it;    
+static void csis_client_trigger_next_sirk_calculation(void){
+    if (csis_client_sirk_decryption_ongoing){
+        return;
+    }
+    btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, (btstack_linked_list_t *) &csis_connections);
     while (btstack_linked_list_iterator_has_next(&it)){
         csis_client_connection_t * connection = (csis_client_connection_t *)btstack_linked_list_iterator_next(&it);
         if (connection->remote_sirk_state == CSIS_SIRK_CALCULATION_W2_START){
-            return connection;
+            connection->remote_sirk_state = CSIS_SIRK_CALCULATION_ACTIVE;
+            // start calculation
+            csis_client_sirk_decryption_ongoing = true;
+            btstack_crypto_aes128_cmac_zero(&aes128_cmac_request, sizeof(s1_string), s1_string,
+                                            s1, &csis_client_handle_s1, (void *)(uintptr_t) connection->cid);
+            break;
         }
     }
-    return NULL;
-}
-
-static void csis_client_trigger_next_sirk_calculation(void){
-    if (csis_client_active_connection != NULL){
-        return;
-    }
-
-    csis_client_active_connection = csis_client_get_next_connection_for_sirk_calculation();
-    if (csis_client_active_connection == NULL){
-        return;
-    }
-
-    csis_client_active_connection->remote_sirk_state = CSIS_SIRK_CALCULATION_ACTIVE;
-    btstack_crypto_aes128_cmac_zero(&aes128_cmac_request, sizeof(s1_string), s1_string, s1, &csis_client_handle_s1, NULL);
 }
 
 static void csis_client_handle_value_query_result(csis_client_connection_t * connection, csis_characteristic_index_t index, uint8_t status, const uint8_t * data, uint16_t data_size){
@@ -792,8 +787,6 @@ uint8_t coordinated_set_identification_service_client_connect(csis_client_connec
         *csis_cid = cid;
     }
 
-    csis_client_active_connection = NULL;
-
     memset(connection, 0, sizeof(csis_client_connection_t));
     connection->state = COORDINATED_SET_IDENTIFICATION_SERVICE_CLIENT_STATE_W2_QUERY_SERVICE;
     connection->cid = cid;
@@ -887,25 +880,15 @@ uint8_t coordinated_set_identification_service_client_write_member_lock(uint16_t
 void coordinated_set_identification_service_client_init(btstack_packet_handler_t packet_handler){
     btstack_assert(packet_handler != NULL);
     csis_client_event_callback = packet_handler;
-
     csis_client_rsi_calculation_ongoing = false;
-    csis_client_active_connection = NULL;
-
+    csis_client_sirk_decryption_ongoing = false;
     csis_client_hci_event_callback_registration.callback = &csis_client_hci_event_handler;
     hci_add_event_handler(&csis_client_hci_event_callback_registration);
 }
 
 void coordinated_set_identification_service_client_deinit(void){
     csis_client_event_callback = NULL;
-    csis_client_rsi_calculation_ongoing = false;
-    csis_client_active_connection = NULL;
-    
-    btstack_linked_list_iterator_t it;    
-    btstack_linked_list_iterator_init(&it, (btstack_linked_list_t *) &csis_connections);
-    while (btstack_linked_list_iterator_has_next(&it)){
-        csis_client_connection_t * connection = (csis_client_connection_t *)btstack_linked_list_iterator_next(&it);
-        btstack_linked_list_remove(&csis_connections, (btstack_linked_item_t *)connection);
-    }
+    csis_connections = NULL;
 }
 
 static void csis_client_handle_csis_hash(void * arg){
