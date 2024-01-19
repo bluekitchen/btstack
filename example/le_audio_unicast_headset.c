@@ -82,7 +82,7 @@
 
 #define ENABLE_MCS_CLIENT
 #define ENABLE_MICROPHONE
-#define ENABLE_CSIS_SERVER
+// #define ENABLE_CSIS_SERVER
 
 //#define DEBUG_PLC
 #ifdef DEBUG_PLC
