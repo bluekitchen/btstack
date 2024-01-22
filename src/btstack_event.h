@@ -16724,13 +16724,31 @@ static inline void gattservice_subevent_csis_client_sirk_get_sirk(const uint8_t 
 }
 
 /**
+ * @brief Get field source_address_type from event GATTSERVICE_SUBEVENT_CSIS_RSI_MATCH
+ * @param event packet
+ * @return source_address_type
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_csis_rsi_match_get_source_address_type(const uint8_t * event){
+    return event[3];
+}
+/**
+ * @brief Get field source_address from event GATTSERVICE_SUBEVENT_CSIS_RSI_MATCH
+ * @param event packet
+ * @param Pointer to storage for source_address
+ * @note: btstack_type B
+ */
+static inline void gattservice_subevent_csis_rsi_match_get_source_address(const uint8_t * event, bd_addr_t source_address){
+    reverse_bytes(&event[4], source_address, 6);
+}
+/**
  * @brief Get field match from event GATTSERVICE_SUBEVENT_CSIS_RSI_MATCH
  * @param event packet
  * @return match
  * @note: btstack_type 1
  */
 static inline uint8_t gattservice_subevent_csis_rsi_match_get_match(const uint8_t * event){
-    return event[3];
+    return event[10];
 }
 
 /**

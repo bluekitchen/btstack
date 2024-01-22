@@ -5013,10 +5013,12 @@ typedef uint8_t sm_key_t[16];
 #define GATTSERVICE_SUBEVENT_CSIS_CLIENT_SIRK                                     0x66u
 
 /**
- * @format 11
+ * @format 11B1
  * @param subevent_code
+ * @param source_address_type
+ * @param source_address
  * @param match
-*/
+ */
 #define GATTSERVICE_SUBEVENT_CSIS_RSI_MATCH                                       0x67u
 
 
