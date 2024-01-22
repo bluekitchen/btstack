@@ -82,6 +82,8 @@
 #define MAX_SAMPLES_PER_FRAME 480
 #define MAX_LC3_FRAME_BYTES   155
 
+#define NR_RSI_ENTRIES 5
+
 #define ASCS_CLIENT_COUNT 2
 #define ASCS_CLIENT_NUM_STREAMENDPOINTS 4
 
@@ -134,7 +136,6 @@ typedef enum {
 typedef struct {
     uint8_t server_id;
 
-    char             remote_name[PEER_NAME_LEN];
     bd_addr_t        remote_addr;
     bd_addr_type_t   remote_type;
 
@@ -161,17 +162,10 @@ typedef struct {
 } server_t;
 
 static server_t servers[MAX_NUM_SERVERS];
-
-#define MAX_NUM_ADVERTISEMENTS 10
-static struct {
-    bd_addr_t addr;
-    bd_addr_type_t addr_type;
-    uint8_t rsi[6];
-    char remote_name[PEER_NAME_LEN];
-} advertisements[MAX_NUM_ADVERTISEMENTS];
-#define SIRK_MATCH_IDLE 0xff
-static uint8_t active_sirk_match;
 static uint8_t num_active_servers;
+
+// CSIS Find Set Members
+static csis_client_rsi_entry_t rsi_entries[NR_RSI_ENTRIES];
 
 // PACS
 // #define PACS_QUERY
@@ -347,15 +341,6 @@ static void configure_stream(void) {
     le_audio_demo_util_source_generate_iso_frame(audio_source);
 }
 
-static void scan_for_headset(void){
-    // start scanning
-    uint8_t i;
-    for (i=0;i<MAX_NUM_ADVERTISEMENTS;i++){
-        advertisements[i].addr_type = BD_ADDR_TYPE_UNKNOWN;
-    }
-    gap_start_scan();
-}
-
 static void run_for_server(server_t * server){
     uint8_t status;
     switch (server->server_state){
@@ -492,8 +477,9 @@ static void app_run(void){
                 if (num_servers == 2){
                     // need more servers
                     app_state = APP_W4_COORDINATED_SET_ADV;
-                    active_sirk_match = SIRK_MATCH_IDLE;
-                    scan_for_headset();
+                    coordinated_set_identification_service_client_find_members(rsi_entries, NR_RSI_ENTRIES, servers[0].sirk);
+                    // start scanning
+                    gap_start_scan();
                 } else {
                     all_members_connected();
                 }
@@ -528,38 +514,16 @@ static void app_run(void){
     }
 }
 
-static void try_match_rsi(void){
-    if (active_sirk_match == SIRK_MATCH_IDLE){
-        uint8_t i;
-        for (i=0;i<MAX_NUM_ADVERTISEMENTS;i++){
-            if (advertisements[i].addr_type != BD_ADDR_TYPE_UNKNOWN){
-                printf("[-] CSIS validate RSI: ");
-                printf_hexdump(advertisements[i].rsi, 6);
-                active_sirk_match = i;
-                coordinated_set_identification_service_client_check_rsi(advertisements[i].rsi, servers[0].sirk);
-            }
-        }
-    }
-}
-
-static void rsi_match_handler(bool match){
-    printf("[-] CSIS match: %u\n", (int) match);
-    if (match) {
-        // add coordinated set member
-        printf("[-] CSIS add device %s\n", bd_addr_to_str(advertisements[active_sirk_match].addr));
-        memset(&servers[num_active_servers], 0, sizeof(servers[0]));
-        servers[num_active_servers].server_id = num_active_servers;
-        servers[num_active_servers].server_state = SERVER_IDLE;
-        servers[num_active_servers].remote_type = advertisements[active_sirk_match].addr_type;
-        memcpy(servers[num_active_servers].remote_addr, advertisements[active_sirk_match].addr, 6);
-        memcpy(servers[num_active_servers].remote_name, advertisements[active_sirk_match].remote_name, PEER_NAME_LEN);
-        num_active_servers++;
-        printf("[-] Num active server %u\n",num_active_servers);
-    }
-
-    // free advertisement entry and reset lookup
-    advertisements[active_sirk_match].addr_type = BD_ADDR_TYPE_UNKNOWN;
-    active_sirk_match = SIRK_MATCH_IDLE;
+static void rsi_match_handler(bd_addr_type_t addr_type, bd_addr_t addr){
+    // add coordinated set member
+    printf("[-] CSIS add device %s\n", bd_addr_to_str(addr));
+    memset(&servers[num_active_servers], 0, sizeof(servers[0]));
+    servers[num_active_servers].server_id = num_active_servers;
+    servers[num_active_servers].server_state = SERVER_IDLE;
+    servers[num_active_servers].remote_type = addr_type;
+    memcpy(servers[num_active_servers].remote_addr, addr, 6);
+    num_active_servers++;
+    printf("[-] Num active server %u\n",num_active_servers);
 
     // all found?
     if (num_active_servers >= num_servers){
@@ -567,9 +531,6 @@ static void rsi_match_handler(bool match){
         app_state = APP_CONNECT_TO_NEXT_MEMBER;
         gap_stop_scan();
         app_run();
-    } else {
-        // try next
-        try_match_rsi();
     }
 }
 
@@ -607,8 +568,10 @@ static void try_transition_to_streaming() {
 
 static void le_audio_unicast_source_handle_adv(bd_addr_type_t adv_addr_type, bd_addr_t adv_addr, const uint8_t * adv_data, uint16_t adv_size){
     switch (app_state) {
-        case APP_W4_UNICAST_SINK_ADV:
         case APP_W4_COORDINATED_SET_ADV:
+            coordinated_set_identification_service_client_check_advertisement(adv_addr, adv_addr_type, adv_data, adv_size);
+            return;
+        case APP_W4_UNICAST_SINK_ADV:
             break;
         default:
             return;
@@ -616,7 +579,6 @@ static void le_audio_unicast_source_handle_adv(bd_addr_type_t adv_addr_type, bd_
 
     ad_context_t context;
     bool match = false;
-    bool have_rsi = false;
     uint8_t i;
     char remote_name[PEER_NAME_LEN];
     uint8_t rsi[6];
@@ -634,12 +596,6 @@ static void le_audio_unicast_source_handle_adv(bd_addr_type_t adv_addr_type, bd_
                 memcpy(remote_name, data, data_len);
                 remote_name[data_len] = 0;
                 printf("%s - '%s'\n", remote_name, bd_addr_to_str(adv_addr));
-                break;
-            case BLUETOOTH_DATA_TYPE_RESOLVABLE_SET_IDENTIFIER:
-                if (data_len == 6){
-                    have_rsi = true;
-                    reverse_48(data, rsi);
-                }
                 break;
             case BLUETOOTH_DATA_TYPE_COMPLETE_LIST_OF_16_BIT_SERVICE_CLASS_UUIDS:
             case BLUETOOTH_DATA_TYPE_INCOMPLETE_LIST_OF_16_BIT_SERVICE_CLASS_UUIDS:
@@ -663,50 +619,19 @@ static void le_audio_unicast_source_handle_adv(bd_addr_type_t adv_addr_type, bd_
         return;
     }
 
-    // if already in advertisement list, skip
-    for (i=0; i < MAX_NUM_ADVERTISEMENTS; i++){
-        if (advertisements[i].addr_type != adv_addr_type)                continue;
-        if (memcmp(advertisements[i].addr, adv_addr, 6) != 0) continue;
-        return;
-    }
-
     printf("- Remote Unicast Sink found, addr %s, name: '%s'\n", bd_addr_to_str(adv_addr), remote_name);
 
-    switch (app_state){
-        case APP_W4_UNICAST_SINK_ADV:
-            // use as first server
-            memset(&servers[0], 0, sizeof(servers[0]));
-            servers[0].server_state = SERVER_READY;
-            servers[0].remote_type = adv_addr_type;
-            servers[0].server_id = 0;
-            memcpy(servers[0].remote_addr, adv_addr, 6);
-            memcpy(servers[0].remote_name, remote_name, sizeof(remote_name));
-            num_active_servers = 1;
-            // stop scanning and start connecting
-            app_state = APP_W4_COORDINATED_SET_INFO;
-            gap_stop_scan();
-            app_run();
-            break;
-        case APP_W4_COORDINATED_SET_ADV:
-            if (have_rsi){
-                // try to store in advertisment list
-                for (i=0;i<MAX_NUM_ADVERTISEMENTS;i++){
-                    if (advertisements[i].addr_type == BD_ADDR_TYPE_UNKNOWN){
-                        advertisements[i].addr_type = adv_addr_type;
-                        memcpy(advertisements[i].addr, adv_addr, 6);
-                        memcpy(advertisements[i].remote_name, remote_name, sizeof(remote_name));
-                        memcpy(advertisements[i].rsi, rsi, 6);
-                        break;
-                    }
-                }
-                // continue matching
-                try_match_rsi();
-            }
-            break;
-        default:
-            btstack_unreachable();
-            break;
-    }
+    // use as first server
+    memset(&servers[0], 0, sizeof(servers[0]));
+    servers[0].server_state = SERVER_READY;
+    servers[0].remote_type = adv_addr_type;
+    servers[0].server_id = 0;
+    memcpy(servers[0].remote_addr, adv_addr, 6);
+    num_active_servers = 1;
+    // stop scanning and start connecting
+    app_state = APP_W4_COORDINATED_SET_INFO;
+    gap_stop_scan();
+    app_run();
 }
 
 static void create_cig(void){
@@ -1139,7 +1064,11 @@ static void csis_client_event_handler(uint8_t packet_type, uint16_t channel, uin
             break;
 
         case GATTSERVICE_SUBEVENT_CSIS_RSI_MATCH:
-            rsi_match_handler(gattservice_subevent_csis_rsi_match_get_match(packet) != 0);
+            if (gattservice_subevent_csis_rsi_match_get_match(packet) != 0){
+                bd_addr_t addr;
+                gattservice_subevent_csis_rsi_match_get_source_address(packet, addr);
+                rsi_match_handler(gattservice_subevent_csis_rsi_match_get_source_address_type(packet), addr);
+            }
             break;
 
         case GATTSERVICE_SUBEVENT_CSIS_CLIENT_LOCK:
@@ -1420,7 +1349,8 @@ static void stdin_process(char c){
             }
             num_active_servers = 0;
             app_state = APP_W4_UNICAST_SINK_ADV;
-            scan_for_headset();
+            // start scanning
+            gap_start_scan();
             break;
         case 'x':
             switch (audio_source){
