@@ -115,6 +115,12 @@ typedef struct {
     csis_member_lock_t coordinator_lock;
 } csis_client_connection_t;
 
+typedef struct {
+    bd_addr_t addr;
+    bd_addr_type_t addr_type;
+    uint8_t rsi[6];
+} csis_client_rsi_entry_t;
+
 /* API_START */
 
 /**
@@ -193,6 +199,15 @@ uint8_t coordinated_set_identification_service_client_read_coordinated_set_size(
 uint8_t coordinated_set_identification_service_client_read_member_rank(uint16_t ascs_cid);
 
 /**
+ * @brief Get RSI from advertisement data
+ * @param adv_data
+ * @param adv_len
+ * @param rsi
+ * @return true if RSI was founnd
+ */
+bool coordinated_set_identification_service_client_get_adv_rsi(uint8_t const * const adv_data, uint8_t adv_len, uint8_t * const rsi);
+
+/**
  * @brief Check if the RSI matches the given SIRK value. The result is reported via the GATTSERVICE_SUBEVENT_CSIS_RSI_MATCH event. 
  * @param  rsi
  * @param sirk
@@ -200,6 +215,37 @@ uint8_t coordinated_set_identification_service_client_read_member_rank(uint16_t 
  *                - ERROR_CODE_COMMAND_DISALLOWED if there is an ongoing RSI calculation
  */
 uint8_t coordinated_set_identification_service_client_check_rsi(const uint8_t * rsi, const uint8_t * sirk);
+
+
+/**
+ * @brief Find coordinated set members by SIRK. Prepare engine.
+ * @param rsi_entries storage for buffering RSI from advertisements
+ * @param num_entries number of entries
+ * @param sirk
+ * @return status
+ */
+uint8_t coordinated_set_identification_service_client_find_members(csis_client_rsi_entry_t * entries,
+                                                                  uint8_t num_entries,
+                                                                  uint8_t const * const sirk);
+
+/**
+ * @brief Check if RSI in advertisement matches the given SIRK value. The result is reported via the GATTSERVICE_SUBEVENT_CSIS_RSI_MATCH event.
+ * @param addr      for GATTSERVICE_SUBEVENT_CSIS_RSI_MATCH
+ * @param addr_type for GATTSERVICE_SUBEVENT_CSIS_RSI_MATCH
+ * @param adv_data
+ * @param adv_len
+ * @return status
+ */
+uint8_t coordinated_set_identification_service_client_check_advertisement(bd_addr_t addr, bd_addr_type_t addr_type,
+                                                                     uint8_t const * const adv_data, uint8_t adv_len);
+
+/**
+ * @brief Check if RSI in advertisement matches the given SIRK value. The result is reported via the GATTSERVICE_SUBEVENT_CSIS_RSI_MATCH event.
+ * @param packet
+ * @param size
+ * @return status
+ */
+uint8_t coordinated_set_identification_service_client_check_hci_event(uint8_t const * const packet, uint16_t size);
 
 /**
  * @brief Deinit CSIS Client

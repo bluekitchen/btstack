@@ -49,6 +49,8 @@
 
 #include "le-audio/le_audio_util.h"
 #include "le-audio/gatt-service/coordinated_set_identification_service_client.h"
+#include "ad_parser.h"
+#include "bluetooth_data_types.h"
 
 #ifdef ENABLE_TESTING_SUPPORT
 #include <stdio.h>
@@ -929,3 +931,125 @@ uint8_t coordinated_set_identification_service_client_check_rsi(const uint8_t * 
     return ERROR_CODE_SUCCESS;
 }
 
+bool coordinated_set_identification_service_client_get_adv_rsi(uint8_t const * const adv_data, uint8_t adv_len, uint8_t * const rsi){
+    ad_context_t context;
+    for (ad_iterator_init(&context, adv_len, adv_data); ad_iterator_has_more(&context); ad_iterator_next(&context)) {
+        uint8_t data_type = ad_iterator_get_data_type(&context);
+        uint8_t data_len  = ad_iterator_get_data_len(&context);
+        const uint8_t *data = ad_iterator_get_data(&context);
+        switch (data_type) {
+            case BLUETOOTH_DATA_TYPE_RESOLVABLE_SET_IDENTIFIER:
+                if (data_len == 6){
+                    reverse_48(data, rsi);
+                    return true;
+                }
+                break;
+            default:
+                break;
+        }
+    }
+    return false;
+}
+
+// Find members by SIRK
+static uint16_t csis_client_find_member_epoch;
+static uint8_t const * csis_client_find_member_sirk;
+static uint8_t csis_client_find_member_num_entries;
+static csis_client_rsi_entry_t * csis_client_find_member_entries;
+static uint8_t csis_client_find_member_candidates;
+static uint8_t csis_client_find_member_next_read;
+static uint8_t csis_client_find_member_next_write;
+static uint8_t csis_client_find_member_prand_prime[16];
+
+static void csis_client_find_member_next_check(void);
+
+static void csis_client_find_member_handle_csis_hash(void * arg){
+    // check epoch
+    uint16_t epoch = (uint16_t)(uintptr_t) arg;
+    if (epoch != csis_client_find_member_epoch){
+        return;
+    }
+
+    bool is_match = memcmp(&csis_rsi[3], &csis_hash[13], 3) == 0;
+    csis_client_rsi_calculation_ongoing = false;
+
+    uint8_t event[4];
+    uint16_t pos = 0;
+    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = GATTSERVICE_SUBEVENT_CSIS_RSI_MATCH;
+    event[pos++] = is_match ? 1u : 0u;
+
+    (*csis_client_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+
+    csis_client_find_member_next_check();
+}
+
+static void csis_client_find_member_next_check(void){
+    // find next candidate
+    if ((csis_client_rsi_calculation_ongoing == false) && (csis_client_find_member_candidates > 0)){
+        csis_client_rsi_calculation_ongoing = true;
+
+        memset(csis_client_find_member_prand_prime, 0, 16);
+        memcpy(&csis_client_find_member_prand_prime[13], csis_client_find_member_entries[csis_client_find_member_next_read].rsi, 3);
+
+        btstack_crypto_aes128_encrypt(&aes128_request, csis_client_find_member_sirk, csis_client_find_member_prand_prime, csis_hash,
+                                      &csis_client_find_member_handle_csis_hash, (void *)(uintptr_t) csis_client_find_member_epoch);
+    }
+}
+
+static void coordinated_set_identification_service_client_add_entry(bd_addr_t addr, bd_addr_type_t addr_type, uint8_t const * const rsi){
+    csis_client_find_member_candidates++;
+    csis_client_find_member_entries[csis_client_find_member_next_write].addr_type = addr_type;
+    memcpy(csis_client_find_member_entries[csis_client_find_member_next_write].addr, addr, 6);
+    memcpy(csis_client_find_member_entries[csis_client_find_member_next_write].rsi, rsi, 6);
+    csis_client_find_member_next_write = (csis_client_find_member_next_write + 1) % csis_client_find_member_candidates;
+    csis_client_find_member_next_check();
+}
+
+uint8_t coordinated_set_identification_service_client_find_members(csis_client_rsi_entry_t * entries,
+                                                                   uint8_t num_entries,
+                                                                   uint8_t const * const sirk){
+    btstack_assert(csis_client_event_callback != NULL);
+
+    csis_client_find_member_epoch++;
+    csis_client_find_member_entries = entries;
+    csis_client_find_member_num_entries = num_entries;
+    csis_client_find_member_sirk = sirk;
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t coordinated_set_identification_service_client_check_advertisement(bd_addr_t addr, bd_addr_type_t addr_type,
+                                                                          uint8_t const * const adv_data, uint8_t adv_len){
+    if (csis_client_find_member_candidates < csis_client_find_member_num_entries){
+        uint8_t rsi[6];
+        if (coordinated_set_identification_service_client_get_adv_rsi(adv_data, adv_len, rsi)){
+            coordinated_set_identification_service_client_add_entry(addr, addr_type, rsi);
+        }
+    }
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t coordinated_set_identification_service_client_check_hci_event(uint8_t const * const packet, uint16_t size){
+    bd_addr_t adv_addr;
+    bd_addr_type_t adv_addr_type;
+    uint8_t adv_size;
+    const uint8_t *adv_data;
+    switch (packet[0]) {
+        case GAP_EVENT_ADVERTISING_REPORT:
+            adv_size = gap_event_advertising_report_get_data_length(packet);
+            adv_data = gap_event_advertising_report_get_data(packet);
+            gap_event_advertising_report_get_address(packet, adv_addr);
+            adv_addr_type = gap_event_advertising_report_get_address_type(packet);
+            break;
+        case GAP_EVENT_EXTENDED_ADVERTISING_REPORT:
+            adv_size = gap_event_extended_advertising_report_get_data_length(packet);
+            adv_data = gap_event_extended_advertising_report_get_data(packet);
+            gap_event_extended_advertising_report_get_address(packet, adv_addr);
+            adv_addr_type = gap_event_extended_advertising_report_get_address_type(packet) & 1;
+            break;
+        default:
+            return ERROR_CODE_SUCCESS;
+    }
+    return coordinated_set_identification_service_client_check_advertisement(adv_addr, adv_addr_type, adv_data, adv_size);
+}
