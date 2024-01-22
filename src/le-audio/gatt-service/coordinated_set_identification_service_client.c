@@ -83,10 +83,10 @@ static uint16_t                 csis_client_cid_counter = 0;
 static bool csis_client_rsi_calculation_ongoing;
 static btstack_crypto_aes128_t aes128_request;
 static uint8_t csis_hash[16];
-static uint8_t csis_sirk[16];   //
-static uint8_t csis_rsi[6];     //
-
-// Find members by SIRK
+// - Single check
+static uint8_t csis_sirk[16];   // single check
+static uint8_t csis_rsi[6];     // single check
+// - Find members
 static uint16_t csis_client_find_member_epoch;
 static uint8_t const * csis_client_find_member_sirk;
 static uint8_t csis_client_find_member_num_entries;
