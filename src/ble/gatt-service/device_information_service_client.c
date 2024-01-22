@@ -455,6 +455,10 @@ uint8_t device_information_service_client_query(hci_con_handle_t con_handle, bts
     } 
 
     client = device_information_service_client_get_client();
+
+    if (client->con_handle != HCI_CON_HANDLE_INVALID) {
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
     
     client->con_handle = con_handle;
     client->client_handler = packet_handler; 
