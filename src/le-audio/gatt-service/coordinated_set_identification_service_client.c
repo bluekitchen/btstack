@@ -73,17 +73,30 @@ const static uint8_t s1_string[] = { 'S', 'I', 'R', 'K', 'e', 'n', 'c'};
 static uint8_t key_ltk[16];
 static bool csis_client_sirk_decryption_ongoing;
 
-// RSI Calculation
-static bool csis_client_rsi_calculation_ongoing;
-static btstack_crypto_aes128_t aes128_request;
-static uint8_t csis_hash[16];
-static uint8_t csis_sirk[16];
-static uint8_t csis_rsi[6];
 
 // CSIS Client
 static btstack_packet_handler_t csis_client_event_callback;
 static btstack_linked_list_t    csis_connections;
 static uint16_t                 csis_client_cid_counter = 0;
+
+// RSI Calculation
+static bool csis_client_rsi_calculation_ongoing;
+static btstack_crypto_aes128_t aes128_request;
+static uint8_t csis_hash[16];
+static uint8_t csis_sirk[16];   //
+static uint8_t csis_rsi[6];     //
+
+// Find members by SIRK
+static uint16_t csis_client_find_member_epoch;
+static uint8_t const * csis_client_find_member_sirk;
+static uint8_t csis_client_find_member_num_entries;
+static csis_client_rsi_entry_t * csis_client_find_member_entries;
+static uint8_t csis_client_find_member_candidates;
+static uint8_t csis_client_find_member_next_read;
+static uint8_t csis_client_find_member_next_write;
+static uint8_t csis_client_find_member_prand_prime[16];
+
+static void csis_client_find_member_next_check(void);
 
 // prototypes
 static void csis_client_trigger_next_sirk_calculation(void);
@@ -900,11 +913,13 @@ static void csis_client_handle_csis_hash(void * arg){
     bool is_match = memcmp(&csis_rsi[3], &csis_hash[13], 3) == 0;
     csis_client_rsi_calculation_ongoing = false;
 
-    uint8_t event[4];
+    uint8_t event[11];
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
     event[pos++] = sizeof(event) - 2;
     event[pos++] = GATTSERVICE_SUBEVENT_CSIS_RSI_MATCH;
+    memset(&event[pos], 0, 7);
+    pos += 7;
     event[pos++] = is_match ? 1u : 0u;
     
     (*csis_client_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
@@ -951,36 +966,31 @@ bool coordinated_set_identification_service_client_get_adv_rsi(uint8_t const * c
     return false;
 }
 
-// Find members by SIRK
-static uint16_t csis_client_find_member_epoch;
-static uint8_t const * csis_client_find_member_sirk;
-static uint8_t csis_client_find_member_num_entries;
-static csis_client_rsi_entry_t * csis_client_find_member_entries;
-static uint8_t csis_client_find_member_candidates;
-static uint8_t csis_client_find_member_next_read;
-static uint8_t csis_client_find_member_next_write;
-static uint8_t csis_client_find_member_prand_prime[16];
-
-static void csis_client_find_member_next_check(void);
-
 static void csis_client_find_member_handle_csis_hash(void * arg){
-    // check epoch
+    // check epoch to avoid use after (implicit) free
     uint16_t epoch = (uint16_t)(uintptr_t) arg;
     if (epoch != csis_client_find_member_epoch){
         return;
     }
 
-    bool is_match = memcmp(&csis_rsi[3], &csis_hash[13], 3) == 0;
-    csis_client_rsi_calculation_ongoing = false;
+    bool is_match = memcmp(&csis_client_find_member_entries[csis_client_find_member_next_read].rsi[3], &csis_hash[13], 3) == 0;
+    log_info("is match %u", (int) is_match);
 
-    uint8_t event[4];
+    uint8_t event[11];
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
     event[pos++] = sizeof(event) - 2;
     event[pos++] = GATTSERVICE_SUBEVENT_CSIS_RSI_MATCH;
+    event[pos++] = csis_client_find_member_entries[csis_client_find_member_next_read].addr_type;
+    reverse_bd_addr(csis_client_find_member_entries[csis_client_find_member_next_read].addr, &event[pos]);
+    pos += 6;
     event[pos++] = is_match ? 1u : 0u;
-
     (*csis_client_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+
+    csis_client_rsi_calculation_ongoing = false;
+
+    csis_client_find_member_candidates--;
+    csis_client_find_member_next_read = (csis_client_find_member_next_read + 1) % csis_client_find_member_num_entries;
 
     csis_client_find_member_next_check();
 }
@@ -989,6 +999,8 @@ static void csis_client_find_member_next_check(void){
     // find next candidate
     if ((csis_client_rsi_calculation_ongoing == false) && (csis_client_find_member_candidates > 0)){
         csis_client_rsi_calculation_ongoing = true;
+
+        log_info("check %u of %u", csis_client_find_member_next_read, csis_client_find_member_candidates);
 
         memset(csis_client_find_member_prand_prime, 0, 16);
         memcpy(&csis_client_find_member_prand_prime[13], csis_client_find_member_entries[csis_client_find_member_next_read].rsi, 3);
@@ -1003,7 +1015,9 @@ static void coordinated_set_identification_service_client_add_entry(bd_addr_t ad
     csis_client_find_member_entries[csis_client_find_member_next_write].addr_type = addr_type;
     memcpy(csis_client_find_member_entries[csis_client_find_member_next_write].addr, addr, 6);
     memcpy(csis_client_find_member_entries[csis_client_find_member_next_write].rsi, rsi, 6);
-    csis_client_find_member_next_write = (csis_client_find_member_next_write + 1) % csis_client_find_member_candidates;
+    csis_client_find_member_next_write = (csis_client_find_member_next_write + 1) % csis_client_find_member_num_entries;
+    log_info("add %u -> now %u", csis_client_find_member_next_write, csis_client_find_member_candidates);
+
     csis_client_find_member_next_check();
 }
 
@@ -1013,6 +1027,7 @@ uint8_t coordinated_set_identification_service_client_find_members(csis_client_r
     btstack_assert(csis_client_event_callback != NULL);
 
     csis_client_find_member_epoch++;
+    csis_client_find_member_candidates = 0;
     csis_client_find_member_entries = entries;
     csis_client_find_member_num_entries = num_entries;
     csis_client_find_member_sirk = sirk;
@@ -1024,6 +1039,13 @@ uint8_t coordinated_set_identification_service_client_check_advertisement(bd_add
     if (csis_client_find_member_candidates < csis_client_find_member_num_entries){
         uint8_t rsi[6];
         if (coordinated_set_identification_service_client_get_adv_rsi(adv_data, adv_len, rsi)){
+            // if already in rsi list, skip
+            uint8_t i;
+            for (i=0; i < csis_client_find_member_num_entries; i++){
+                if (csis_client_find_member_entries[i].addr_type != addr_type) continue;
+                if (memcmp(csis_client_find_member_entries[i].addr, addr, 6) != 0) continue;
+                return ERROR_CODE_SUCCESS;
+            }
             coordinated_set_identification_service_client_add_entry(addr, addr_type, rsi);
         }
     }
