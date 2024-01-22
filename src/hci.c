@@ -223,13 +223,15 @@ static void hci_trigger_remote_features_for_connection(hci_connection_t * connec
 #endif
 
 #ifdef ENABLE_BLE
+static bool hci_run_general_gap_le(void);
+static void gap_privacy_clients_handle_ready(void);
+static void gap_privacy_clients_notify(bd_addr_t new_random_address);
 #ifdef ENABLE_LE_CENTRAL
 // called from test/ble_client/advertising_data_parser.c
 void le_handle_advertisement_report(uint8_t *packet, uint16_t size);
 static uint8_t hci_whitelist_remove(bd_addr_type_t address_type, const bd_addr_t address);
 static hci_connection_t * gap_get_outgoing_le_connection(void);
 static void hci_le_scan_stop(void);
-static bool hci_run_general_gap_le(void);
 #endif
 #ifdef ENABLE_LE_PERIPHERAL
 #ifdef ENABLE_LE_EXTENDED_ADVERTISING
@@ -254,7 +256,6 @@ static void hci_emit_big_sync_stopped(uint8_t big_handle);
 static void hci_emit_cig_created(const le_audio_cig_t * cig, uint8_t status);
 static void hci_cis_handle_created(hci_iso_stream_t * iso_stream, uint8_t status);
 static le_audio_big_sync_t * hci_big_sync_for_handle(uint8_t big_handle);
-
 #endif /* ENABLE_LE_ISOCHRONOUS_STREAMS */
 #endif /* ENABLE_BLE */
 
@@ -6354,6 +6355,18 @@ static bool hci_run_general_gap_le(void){
 
     // Phase 3: modify
 
+    if (hci_stack->le_advertisements_todo & LE_ADVERTISEMENT_TASKS_PRIVACY_NOTIFY) {
+        hci_stack->le_advertisements_todo &= ~LE_ADVERTISEMENT_TASKS_PRIVACY_NOTIFY;
+        // GAP Privacy, notify clients upon upcoming random address change
+        hci_stack->le_advertisements_state |= LE_ADVERTISEMENT_STATE_PRIVACY_PENDING;
+        gap_privacy_clients_notify(hci_stack->le_random_address);
+    }
+
+    // - wait until privacy update completed
+    if ((hci_stack->le_advertisements_state & LE_ADVERTISEMENT_STATE_PRIVACY_PENDING) != 0){
+        return false;
+    }
+
     if (hci_stack->le_advertisements_todo & LE_ADVERTISEMENT_TASKS_SET_ADDRESS){
         hci_stack->le_advertisements_todo &= ~LE_ADVERTISEMENT_TASKS_SET_ADDRESS;
         hci_send_cmd(&hci_le_set_random_address, hci_stack->le_random_address);
@@ -8876,9 +8889,10 @@ void hci_le_set_own_address_type(uint8_t own_address_type){
 }
 
 void hci_le_random_address_set(const bd_addr_t random_address){
+    log_info("gap_privacy: hci_le_random_address_set %s", bd_addr_to_str(random_address));
     memcpy(hci_stack->le_random_address, random_address, 6);
     hci_stack->le_random_address_set = true;
-    hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_SET_ADDRESS;
+    hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_SET_ADDRESS | LE_ADVERTISEMENT_TASKS_PRIVACY_NOTIFY;
 #ifdef ENABLE_LE_EXTENDED_ADVERTISING
     if (hci_le_extended_advertising_supported()){
         hci_assert_advertisement_set_0_ready();
@@ -10605,8 +10619,66 @@ uint8_t gap_cis_reject(hci_con_handle_t cis_con_handle){
     return hci_cis_accept_or_reject(cis_con_handle, HCI_ISO_STREAM_W2_REJECT);
 }
 
+#endif /* ENABLE_LE_ISOCHRONOUS_STREAMS */
 
-#endif
+// GAP Privacy - notify clients before random address update
+
+static bool gap_privacy_client_all_ready(void){
+    // check if all ready
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &hci_stack->gap_privacy_clients);
+    while (btstack_linked_list_iterator_has_next(&it)) {
+        gap_privacy_client_t *client = (gap_privacy_client_t *) btstack_linked_list_iterator_next(&it);
+        if (client->state != GAP_PRIVACY_CLIENT_STATE_READY){
+            return false;
+        }
+    }
+    return true;
+}
+
+static void gap_privacy_clients_handle_ready(void){
+    // clear 'ready'
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &hci_stack->gap_privacy_clients);
+    while (btstack_linked_list_iterator_has_next(&it)) {
+        gap_privacy_client_t *client = (gap_privacy_client_t *) btstack_linked_list_iterator_next(&it);
+        client->state = GAP_PRIVACY_CLIENT_STATE_IDLE;
+    }
+    hci_stack->le_advertisements_state &= ~LE_ADVERTISEMENT_STATE_PRIVACY_PENDING;
+    hci_run();
+}
+
+static void gap_privacy_clients_notify(bd_addr_t new_random_address){
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &hci_stack->gap_privacy_clients);
+    while (btstack_linked_list_iterator_has_next(&it)) {
+        gap_privacy_client_t *client = (gap_privacy_client_t *) btstack_linked_list_iterator_next(&it);
+        if (client->state == GAP_PRIVACY_CLIENT_STATE_IDLE){
+            client->state = GAP_PRIVACY_CLIENT_STATE_PENDING;
+            (*client->callback)(client, new_random_address);
+        }
+    }
+    if (gap_privacy_client_all_ready()){
+        gap_privacy_clients_handle_ready();
+    }
+}
+
+void gap_privacy_client_register(gap_privacy_client_t * client){
+    client->state = GAP_PRIVACY_CLIENT_STATE_IDLE;
+    btstack_linked_list_add(&hci_stack->gap_privacy_clients, (btstack_linked_item_t *) client);
+}
+
+void gap_privacy_client_ready(gap_privacy_client_t * client){
+    client->state = GAP_PRIVACY_CLIENT_STATE_READY;
+    if (gap_privacy_client_all_ready()){
+        gap_privacy_clients_handle_ready();
+    }
+}
+
+void gap_privacy_client_unregister(gap_privacy_client_t * client){
+    btstack_linked_list_remove(&hci_stack->gap_privacy_clients, (btstack_linked_item_t *) client);
+}
+
 #endif /* ENABLE_BLE */
 
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION

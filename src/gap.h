@@ -1450,6 +1450,41 @@ void gap_set_peer_privacy_mode(le_privacy_mode_t privacy_mode );
  */
 uint8_t gap_load_resolving_list_from_le_device_db(void);
 
+typedef enum {
+    GAP_PRIVACY_CLIENT_STATE_IDLE,
+    GAP_PRIVACY_CLIENT_STATE_PENDING,
+    GAP_PRIVACY_CLIENT_STATE_READY
+} gap_privacy_client_state_t;
+
+struct gap_privacy_client {
+    btstack_linked_item_t * next;
+    void (*callback)(struct gap_privacy_client * client, bd_addr_t random_addr);
+    gap_privacy_client_state_t state;
+};
+typedef struct gap_privacy_client gap_privacy_client_t;
+
+/**
+ * @brief Register callback that gets executed during random address update
+ * @note gap_privacy_client_ready needs to be called after callback is received
+ * @param client
+ * @return status
+ */
+void gap_privacy_client_register(gap_privacy_client_t * client);
+
+/**
+ * @brief Acknowledge upcoming random address change
+ * @param client
+ * @return status
+ */
+void gap_privacy_client_ready(gap_privacy_client_t * client);
+
+/**
+ * @brief Unregister callback from random address updates
+ * @param client
+ * @return status
+ */
+void gap_privacy_client_unregister(gap_privacy_client_t * client);
+
 /**
  * @brief Get local persistent IRK
  */
