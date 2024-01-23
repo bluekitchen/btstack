@@ -136,7 +136,8 @@ BTstack properties:
 | ENABLE_LE_WHITELIST_TOUCH_AFTER_RESOLVING_LIST_UPDATE                 | Enable Workaround for Controller bug                                                                                        |
 | ENABLE_LE_SET_ADV_PARAMS_ON_RANDOM_ADDRESS_CHANGE                     | Send HCI LE Set Advertising Params after HCI LE Set Random Address - workaround for Controller Bug                          |
 | ENABLE_CONTROLLER_DUMP_PACKETS                                        | Dump number of packets in Controller per type for debugging                                                                 |
-| ENABLE_HCI_COMMAND_STATUS_DISCARDED_FOR_FAILED_CONNECTIONS WORKAROUND | Track connection handle for HCI Commands and assume command has failed if disonnect event for connection is received |
+| ENABLE_HCI_COMMAND_STATUS_DISCARDED_FOR_FAILED_CONNECTIONS WORKAROUND | Track connection handle for HCI Commands and assume command has failed if disonnect event for connection is received        |
+| ENABLE_MUTUAL_AUTHENTICATION_FOR_LEGACY_SECURE_CONNECTIONS            | Re-authentication after connection was encrypted to avoid BIAS Attack. Not needed for min encryption key size of 16         |
 
 Notes:
 

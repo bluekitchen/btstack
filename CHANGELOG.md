@@ -19,6 +19,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - HFP HF: send HF Indicator update only if enabled by AG
 
 ### Changed
+- GAP: mutual authentication for legacy secure connections to prevent BIAS attacks was made optional with 
+       ENABLE_MUTUAL_AUTHENTICATION_FOR_LEGACY_SECURE_CONNECTIONS. Not needed for default encryption key size of 16
 
 
 ## Release v1.6

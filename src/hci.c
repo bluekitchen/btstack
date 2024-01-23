@@ -4089,13 +4089,15 @@ static void event_handler(uint8_t *packet, uint16_t size){
 #endif
                         }
 
+#ifdef ENABLE_MUTUAL_AUTHENTICATION_FOR_LEGACY_SECURE_CONNECTIONS
                         // if AES-CCM is used, authentication used SC -> authentication was mutual and we can skip explicit authentication
                         if (connected_uses_aes_ccm){
                             conn->authentication_flags |= AUTH_FLAG_CONNECTION_AUTHENTICATED;
                         }
-
-#ifdef ENABLE_TESTING_SUPPORT
-                        // work around for issue with PTS dongle
+#else
+                        // We consider even Legacy Secure Connections as authenticated as BTstack mandates encryption
+                        // with encryption key size > hci_stack->gap_required_encyrption_key_size
+                        // for all operations that require any security. See BIAS attacks.
                         conn->authentication_flags |= AUTH_FLAG_CONNECTION_AUTHENTICATED;
 #endif
                         // validate encryption key size

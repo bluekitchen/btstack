@@ -516,8 +516,12 @@ bool gap_secure_connections_active(void);
 void gap_ssp_set_auto_accept(int auto_accept);
 
 /**
- * @brief Set required encryption key size for GAP Levels 1-3 on ccassic connections. Default: 16 bytes
- * @param encryption_key_size in bytes. Valid 7..16
+ * @brief Set required encryption key size for GAP Levels 1-3 on classic connections.
+ * @note If you need to reduce the required encryption key size, please consider enabling
+ *       ENABLE_MUTUAL_AUTHENTICATION_FOR_LEGACY_SECURE_CONNECTIONS to prevent BIAS attacks.
+ *       However, the re-authentication for Legacy Secure Connections can cause a link loss
+ *       in some Controller combinations.
+ * @param encryption_key_size in bytes. Valid 7..16, default: 16
  */
 void gap_set_required_encryption_key_size(uint8_t encryption_key_size);
 
