@@ -59,8 +59,10 @@ extern "C" {
 
 
 typedef enum {
-    GATT_SERVICE_CLIENT_STATE_W2_QUERY_SERVICE,
+    GATT_SERVICE_CLIENT_STATE_W2_QUERY_PRIMARY_SERVICE,
     GATT_SERVICE_CLIENT_STATE_W4_SERVICE_RESULT,
+    GATT_SERVICE_CLIENT_STATE_W2_QUERY_INCLUDED_SERVICES,
+    GATT_SERVICE_CLIENT_STATE_W4_INCLUDED_SERVICES_RESULT,
     GATT_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTICS,
     GATT_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_RESULT,
     GATT_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTIC_DESCRIPTORS,
@@ -88,13 +90,13 @@ typedef struct {
     gatt_service_client_state_t  state;
 
     // service
-    // used to restrict the number of found services to 1
+    // used to restrict the number of found primary services to 1
     uint16_t service_uuid16;
     uint8_t  service_index;
     uint16_t service_instances_num;
     uint16_t start_handle;
     uint16_t end_handle;
-    
+
     uint8_t characteristics_num;
     uint8_t characteristic_index;
     gatt_service_client_characteristic_t * characteristics;
@@ -107,8 +109,8 @@ typedef struct {
     uint16_t cid_counter;
 
     // characteristics
-    uint8_t  characteristics_desc16_num;
-    const uint16_t * characteristics_desc16;
+    uint8_t  characteristics_desc16_num;     // uuid16s_num
+    const uint16_t * characteristics_desc16; // uuid16s
     
     btstack_packet_callback_registration_t hci_event_callback_registration;
     
@@ -162,9 +164,21 @@ uint16_t gatt_service_client_get_cid_for_connection(const gatt_service_client_co
 uint8_t gatt_service_client_connect(
         hci_con_handle_t con_handle,
         gatt_service_client_helper_t * client, gatt_service_client_connection_helper_t * connection,
-        uint16_t service_uuid, uint8_t service_index,
+        uint16_t primary_service_uuid16, uint8_t service_index,
         gatt_service_client_characteristic_t * characteristics, uint8_t characteristics_num,
         btstack_packet_handler_t packet_handler, uint16_t * connection_cid);
+
+uint8_t gatt_service_client_connect_secondary_service(
+        hci_con_handle_t con_handle,
+        gatt_service_client_helper_t * client, gatt_service_client_connection_helper_t * connection,
+        uint16_t primary_service_uuid16, uint8_t service_index,
+        gatt_service_client_characteristic_t * characteristics, uint8_t characteristics_num,
+        btstack_packet_handler_t packet_handler);
+
+
+void gatt_service_client_init_connection_storage_with_service(gatt_service_client_connection_helper_t * basic_connection,
+                              gatt_client_service_t * service);
+
 
 uint8_t gatt_service_client_can_query_characteristic(gatt_service_client_connection_helper_t * connection, uint8_t characteristic_index);
 
