@@ -47,18 +47,16 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "btstack_defines.h"
 #include "ble/att_db.h"
 #include "ble/att_server.h"
-#include "btstack_util.h"
-#include "bluetooth_gatt.h"
 #include "btstack_debug.h"
+#include "btstack_event.h"
 
 #include "ble/gatt-service/nordic_spp_service_server.h"
 
-//
 static att_service_handler_t  nordic_spp_service;
 static btstack_packet_handler_t client_packet_handler;
+static btstack_packet_callback_registration_t nordic_spp_service_hci_event_callback_registration;
 
 static uint16_t nordic_spp_rx_value_handle;
 static uint16_t nordic_spp_tx_value_handle;
@@ -111,6 +109,27 @@ static int nordic_spp_service_write_callback(hci_con_handle_t con_handle, uint16
 	return 0;
 }
 
+static void nordic_spp_service_hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+    UNUSED(size);
+
+    if (packet_type != HCI_EVENT_PACKET) return;
+
+    hci_con_handle_t con_handle;
+
+    switch (hci_event_packet_get_type(packet)){
+        case HCI_EVENT_DISCONNECTION_COMPLETE:
+            if (nordic_spp_tx_client_configuration_value > 0){
+                nordic_spp_tx_client_configuration_value = 0;
+                con_handle = hci_event_disconnection_complete_get_connection_handle(packet);
+                nordic_spp_service_emit_state(con_handle, false);
+            }
+            break;
+        default:
+            break;
+    }
+}
+
 /**
  * @brief Init Nordic SPP Service Server with ATT DB
  * @param callback for tx data from peer
@@ -145,6 +164,10 @@ void nordic_spp_service_server_init(btstack_packet_handler_t packet_handler){
 	nordic_spp_service.read_callback  = &nordic_spp_service_read_callback;
 	nordic_spp_service.write_callback = &nordic_spp_service_write_callback;
 	att_server_register_service_handler(&nordic_spp_service);
+
+    // register HCI packet handler
+    nordic_spp_service_hci_event_callback_registration.callback = &nordic_spp_service_hci_event_handler;
+    hci_add_event_handler(&nordic_spp_service_hci_event_callback_registration);
 }
 
 /** 
