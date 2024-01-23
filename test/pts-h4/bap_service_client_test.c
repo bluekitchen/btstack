@@ -736,19 +736,12 @@ static void csis_client_event_handler(uint8_t packet_type, uint16_t channel, uin
 
     switch (hci_event_gattservice_meta_get_subevent_code(packet)){
         case GATTSERVICE_SUBEVENT_CSIS_CLIENT_CONNECTED:
-            if (bap_app_client_con_handle != gattservice_subevent_csis_client_connected_get_con_handle(packet)){
-                printf("CSIS Client: expected con handle 0x%04x, received 0x%04x\n", bap_app_client_con_handle, gattservice_subevent_csis_client_connected_get_con_handle(packet));
-                return;
-            }
-
             bap_app_client_state = BAP_APP_CLIENT_STATE_CONNECTED;
-
             if (gattservice_subevent_csis_client_connected_get_status(packet) != ERROR_CODE_SUCCESS){
                 printf("CSIS client: connection failed, cid 0x%04x, con_handle 0x%04x, status 0x%02x\n", csis_cid, bap_app_client_con_handle, 
                     gattservice_subevent_csis_client_connected_get_status(packet));
                 return;
             }
-
             printf("CSIS client: connected, cid 0x%04x\n", csis_cid);
             break;
 
@@ -950,6 +943,7 @@ static void stdin_process(char cmd){
 
         case 'b':
             printf("BASS: connect 0x%02x\n", bap_app_client_con_handle);
+            btstack_assert(bap_app_client_con_handle != HCI_CON_HANDLE_INVALID);
             bap_app_client_state = BAP_APP_CLIENT_STATE_W4_BASS_CONNECTED;
             status = broadcast_audio_scan_service_client_connect(&bass_connection, 
                 bass_sources, BASS_CLIENT_NUM_SOURCES, bap_app_client_con_handle, &bass_cid);
@@ -957,7 +951,8 @@ static void stdin_process(char cmd){
 
         case 'd':
             printf("ASCS: connect 0x%02x\n", bap_app_client_con_handle);
-            status = audio_stream_control_service_client_connect(&ascs_connection, 
+            btstack_assert(bap_app_client_con_handle != HCI_CON_HANDLE_INVALID);
+            status = audio_stream_control_service_client_connect(&ascs_connection,
                 streamendpoint_characteristics, ASCS_CLIENT_NUM_STREAMENDPOINTS, bap_app_client_con_handle, &ascs_cid);
             break;
 
@@ -989,8 +984,9 @@ static void stdin_process(char cmd){
             status = broadcast_audio_scan_service_client_add_source(bass_cid, &source_data1);
             break;
         
-         case 'p':
-            printf("PACS Client: Establish connection\n");
+        case 'p':
+            printf("PACS: connect 0x%02x\n", bap_app_client_con_handle);
+            btstack_assert(bap_app_client_con_handle != HCI_CON_HANDLE_INVALID);
             bap_app_client_state = BAP_APP_CLIENT_STATE_W4_PACS_CONNECTED;
             status = published_audio_capabilities_service_client_connect(&pacs_connection, bap_app_client_con_handle, &pacs_cid);
             break;
@@ -1159,7 +1155,8 @@ static void stdin_process(char cmd){
             break;
 
         case 'B':
-            printf("CSIS client: Connect\n");
+            printf("CSIS: connect 0x%02x\n", bap_app_client_con_handle);
+            btstack_assert(bap_app_client_con_handle != HCI_CON_HANDLE_INVALID);
             status = coordinated_set_identification_service_client_connect(&csis_connection, bap_app_client_con_handle, &csis_cid);
             break;
 
@@ -1220,7 +1217,7 @@ int btstack_main(int argc, const char * argv[]){
     
     sm_init();
     sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
-    sm_set_authentication_requirements(SM_AUTHREQ_SECURE_CONNECTION);
+    sm_set_authentication_requirements(SM_AUTHREQ_SECURE_CONNECTION  | SM_AUTHREQ_BONDING);
     sm_event_callback_registration.callback = &hci_event_handler;
     sm_add_event_handler(&sm_event_callback_registration);
 
