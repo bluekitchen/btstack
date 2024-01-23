@@ -76,7 +76,6 @@
 static btstack_timer_source_t heartbeat;
 static hci_con_handle_t con_handle = HCI_CON_HANDLE_INVALID;
 static btstack_context_callback_registration_t send_request;
-static btstack_packet_callback_registration_t  hci_event_callback_registration;
 
 const uint8_t adv_data[] = {
     // Flags general discoverable, BR/EDR not supported
@@ -132,9 +131,10 @@ static void nordic_spp_packet_handler(uint8_t packet_type, uint16_t channel, uin
             switch (hci_event_gattservice_meta_get_subevent_code(packet)){
                 case GATTSERVICE_SUBEVENT_SPP_SERVICE_CONNECTED:
                     con_handle = gattservice_subevent_spp_service_connected_get_con_handle(packet);
-                    printf("Connected with handle 0x%04x\n", con_handle);
+                    printf("Nordic SPP connected, con handle 0x%04x\n", con_handle);
                     break;
                 case GATTSERVICE_SUBEVENT_SPP_SERVICE_DISCONNECTED:
+                    printf("Nordic SPP disconnected, con handle 0x%04x\n", con_handle);
                     con_handle = HCI_CON_HANDLE_INVALID;
                     break;
                 default:
@@ -150,38 +150,9 @@ static void nordic_spp_packet_handler(uint8_t packet_type, uint16_t channel, uin
     }
 }
 
-/* 
- * @section Packet Handler
- *
- * @text The packet handler is used to:
- *        - stop the counter after a disconnect
- */
-
-/* LISTING_START(packetHandler): Packet Handler */
-static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    UNUSED(channel);
-    UNUSED(size);
-
-    if (packet_type != HCI_EVENT_PACKET) return;
-
-    switch (hci_event_packet_get_type(packet)) {
-        case HCI_EVENT_DISCONNECTION_COMPLETE:
-            con_handle = HCI_CON_HANDLE_INVALID;
-            break;
-        default:
-            break;
-    }
-}
-/* LISTING_END */
-
-
 int btstack_main(void);
 int btstack_main(void)
 {
-    // register for HCI events
-    hci_event_callback_registration.callback = &hci_packet_handler;
-    hci_add_event_handler(&hci_event_callback_registration);
-
     l2cap_init();
 
     // setup SM: Display only
