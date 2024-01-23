@@ -1263,6 +1263,8 @@ void att_server_register_service_handler(att_service_handler_t * handler){
         log_error("handler for range 0x%04x-0x%04x already registered", handler->start_handle, handler->end_handle);
         return;
     }
+
+    handler->flags = 0;
     btstack_linked_list_add(&service_handlers, (btstack_linked_item_t*) handler);
 }
 
