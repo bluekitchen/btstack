@@ -7,12 +7,18 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ---
 
 ## Unreleased
+
 ### Added
+- GAP: support coordinated private random address updates
+
 ### Fixed
 - GAP: allow use of own address type different from gap_random_set_mode() incl. RPA in LE Extended Advertising
-- HFP HF: send HF Indicator update only if enabled by AG
 - SM: abort pairing with invalid parameter error for encryption key size > 16
+- ATT Server: support delayed read responses for registered services
+- HFP HF: send HF Indicator update only if enabled by AG
+
 ### Changed
+
 
 ## Release v1.6
 
