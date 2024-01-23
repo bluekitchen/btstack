@@ -68,6 +68,8 @@ static inline uint8_t hci_event_packet_get_type(const uint8_t * event){
     return event[0];
 }
 
+typedef uint8_t* btstack_event_iterator_t;
+
 /***
  * @brief Get subevent code for a2dp event
  * @param event packet
@@ -2953,6 +2955,36 @@ static inline hci_con_handle_t gatt_event_connected_get_handle(const uint8_t * e
  */
 static inline hci_con_handle_t gatt_event_disconnected_get_handle(const uint8_t * event){
     return little_endian_read_16(event, 2);
+}
+#endif
+
+#ifdef ENABLE_BLE
+/**
+ * @brief Get field handle from event GATT_EVENT_SERVICE_CHANGED
+ * @param event packet
+ * @return handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t gatt_event_service_changed_get_handle(const uint8_t * event){
+    return little_endian_read_16(event, 2);
+}
+/**
+ * @brief Get field attribute_handle_start from event GATT_EVENT_SERVICE_CHANGED
+ * @param event packet
+ * @return attribute_handle_start
+ * @note: btstack_type 2
+ */
+static inline uint16_t gatt_event_service_changed_get_attribute_handle_start(const uint8_t * event){
+    return little_endian_read_16(event, 4);
+}
+/**
+ * @brief Get field attribute_handle_end from event GATT_EVENT_SERVICE_CHANGED
+ * @param event packet
+ * @return attribute_handle_end
+ * @note: btstack_type 2
+ */
+static inline uint16_t gatt_event_service_changed_get_attribute_handle_end(const uint8_t * event){
+    return little_endian_read_16(event, 6);
 }
 #endif
 

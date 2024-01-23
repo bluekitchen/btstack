@@ -1541,6 +1541,14 @@ typedef uint8_t sm_key_t[16];
  */
 #define GATT_EVENT_DISCONNECTED                                  0xAEu
 
+/**
+ * @format H22
+ * @param handle
+ * @param attribute_handle_start
+ * @param attribute_handle_end
+ */
+#define GATT_EVENT_SERVICE_CHANGED                               0xAFu
+
 
 /** 
  * @format 1BH
