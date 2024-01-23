@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 BlueKitchen GmbH
+ * Copyright (C) 2024 BlueKitchen GmbH
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -36,7 +36,7 @@
  */
 
 /**
- * @title Microphone Control Service Client
+ * @title Audio Input Control Service Client
  * 
  */
 
@@ -48,109 +48,89 @@
 #include "bluetooth.h"
 #include "btstack_linked_list.h"
 #include "ble/gatt_client.h"
+#include "le-audio/gatt-service/gatt_service_client_helper.h"
+#include "le-audio/gatt-service/microphone_control_service_util.h"
+#include "le-audio/gatt-service/audio_input_control_service_client.h"
 
 #if defined __cplusplus
 extern "C" {
 #endif
 
+// number of characteristics in Media Control Service
+#define MICROPHONE_CONTROL_SERVICE_CLIENT_NUM_CHARACTERISTICS 1
+
 /** 
- * @text The Microphone Control Service Client connects to the Microphone Control Services of a remote device 
- * and it can query or set mute value if mute value on the remote side is enabled. The Mute updates are received via notifications.
+ * @text The Media Control Service Client 
  */
-
 typedef enum {
-    MICROPHONE_CONTROL_SERVICE_CLIENT_STATE_IDLE,
-    MICROPHONE_CONTROL_SERVICE_CLIENT_STATE_W2_QUERY_SERVICE,
-    MICROPHONE_CONTROL_SERVICE_CLIENT_STATE_W4_SERVICE_RESULT,
-    MICROPHONE_CONTROL_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTICS,
-    MICROPHONE_CONTROL_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_RESULT,
-
-#ifdef ENABLE_TESTING_SUPPORT
-    MICROPHONE_CONTROL_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTIC_DESCRIPTORS,
-    MICROPHONE_CONTROL_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_DESCRIPTORS_RESULT,
-#endif
-
-    MICROPHONE_CONTROL_SERVICE_CLIENT_STATE_W2_REGISTER_NOTIFICATION,
-    MICROPHONE_CONTROL_SERVICE_CLIENT_STATE_W4_NOTIFICATION_REGISTERED,
-    MICROPHONE_CONTROL_SERVICE_CLIENT_STATE_CONNECTED,
-
-#ifdef ENABLE_TESTING_SUPPORT
-    MICROPHONE_CONTROL_SERVICE_CLIENT_W2_READ_CHARACTERISTIC_CONFIGURATION,
-    MICROPHONE_CONTROL_SERVICE_CLIENT_W4_CHARACTERISTIC_CONFIGURATION_RESULT,
-#endif
-    MICROPHONE_CONTROL_SERVICE_CLIENT_W2_WRITE_MUTE,
-    MICROPHONE_CONTROL_SERVICE_CLIENT_W4_WRITE_MUTE_RESULT
+    MICROPHONE_CONTROL_SERVICE_CLIENT_STATE_READY,
+    MICROPHONE_CONTROL_SERVICE_CLIENT_STATE_W2_READ_CHARACTERISTIC_VALUE,
+    MICROPHONE_CONTROL_SERVICE_CLIENT_STATE_W4_READ_CHARACTERISTIC_VALUE_RESULT,
+    MICROPHONE_CONTROL_SERVICE_CLIENT_STATE_W2_WRITE_CHARACTERISTIC_VALUE,
+    MICROPHONE_CONTROL_SERVICE_CLIENT_STATE_W4_WRITE_CHARACTERISTIC_VALUE_RESULT
 } microphone_service_client_state_t;
 
-
 typedef struct {
-    // service
-    uint16_t start_handle;
-    uint16_t end_handle;
-    
-    // characteristic
-    uint16_t properties;
-    uint16_t value_handle;
+    gatt_service_client_connection_helper_t basic_connection;
+    microphone_service_client_state_t state;
 
-#ifdef ENABLE_TESTING_SUPPORT
-    uint16_t ccc_handle;
-#endif
-    
-    gatt_client_notification_t notification_listener;
-} mics_service_t;
+    // btstack_packet_handler_t client_handler;
+    // gatt_client_notification_t notification_listener;
 
+    // Used for read characteristic queries
+    uint8_t characteristic_index;
+    // Used to store parameters for write characteristic
+    union {
+        uint8_t  data_8;
+        uint16_t data_16;
+        uint32_t data_32;
+        const char * data_string;
+    } data;
 
-typedef struct {
-    btstack_linked_item_t item;
-    
-    hci_con_handle_t  con_handle;
-    uint16_t          cid;
-    microphone_service_client_state_t  state;
-    btstack_packet_handler_t client_handler;
- 
-    // mics_service_t service;
-    // service
-    uint16_t start_handle;
-    uint16_t end_handle;
+    uint8_t write_buffer[1];
 
-    // characteristic
-    uint16_t properties;
-    uint16_t mute_value_handle;
+    bool included_services_queried;
+    gatt_service_client_characteristic_t * aics_storage_for_characteristics;
+    uint8_t aics_characteristics_max_num;
 
-#ifdef ENABLE_TESTING_SUPPORT
-    uint16_t ccc_handle;
-#endif
-    
-    bool need_polling;
-    uint16_t num_instances;
-    uint8_t  requested_mute;
-
-    gatt_client_notification_t notification_listener;
 } mics_client_connection_t;
 
 /* API_START */
 
     
 /**
- * @brief Initialize Microphone Control Service. 
+ * @brief Initialize Media Control Service. 
  */
 void microphone_control_service_client_init(void);
 
-/**
- * @brief Connect to Microphone Control Services of remote device. The client will automatically register for notifications. 
- * The mute state is received via GATTSERVICE_SUBEVENT_MICS_CLIENT_MUTE event.
- * The mute state can be 0 - off, 1 - on, 2 - disabeled and it is valid if the ATTT status is equal to ATT_ERROR_SUCCESS, 
+ /**
+ * @brief Connect to a Media Control Service instance of remote device. The client will automatically register for notifications.
+ * The mute state is received via GATTSERVICE_SUBEVENT_MCS_CLIENT_MUTE event.
+ * The mute state can be 0 - off, 1 - on, 2 - disabeled and it is valid if the ATT status is equal to ATT_ERROR_SUCCESS,
  * see ATT errors (see bluetooth.h) for other values.
  *   
- * Event GATTSERVICE_SUBEVENT_MICS_CLIENT_CONNECTED is emitted with status ERROR_CODE_SUCCESS on success, otherwise
- * GATT_CLIENT_IN_WRONG_STATE, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE if no microphone control service is found, or ATT errors (see bluetooth.h). 
+ * Event GATTSERVICE_SUBEVENT_MCS_CLIENT_CONNECTED is emitted with status ERROR_CODE_SUCCESS on success, otherwise
+ * GATT_CLIENT_IN_WRONG_STATE, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE if no audio input control service is found, or ATT errors (see bluetooth.h). 
  *
  * @param con_handle
+ * @param service_index         index o media player to connect to
  * @param packet_handler
- * @param mics_cid
- * @return status ERROR_CODE_SUCCESS on success, otherwise ERROR_CODE_COMMAND_DISALLOWED if there is already a client associated with con_handle, or BTSTACK_MEMORY_ALLOC_FAILED 
+ * @param connection
+ * @param characteristics       storage for characteristics
+ * @param characteristics_num >= MEDIA_CONTROL_SERVICE_CLIENT_NUM_CHARACTERISTICS
+ * @return status ERROR_CODE_SUCCESS on success, otherwise ERROR_CODE_COMMAND_DISALLOWED if there is already a client associated with con_handle, or BTSTACK_MEMORY_ALLOC_FAILED
  */
-uint8_t microphone_control_service_client_connect(hci_con_handle_t con_handle, btstack_packet_handler_t packet_handler, uint16_t * mics_cid);
+uint8_t microphone_control_service_client_connect(
+         hci_con_handle_t con_handle,
+         btstack_packet_handler_t packet_handler,
+         mics_client_connection_t * mics_connection,
+         gatt_service_client_characteristic_t * mics_storage_for_characteristics, uint8_t mics_characteristics_max_num,
+         aics_client_connection_t * aics_connections, uint8_t aics_connections_max_num,
+         gatt_service_client_characteristic_t * aics_storage_for_characteristics, uint8_t aics_characteristics_max_num, // for all aics connections
+         uint16_t * mics_cid
+);
+
+//uint8_t microphone_control_service_client_connect_aics_services(uint16_t mics_cid);
 
 /**
  * @brief Read mute state. The mute state is received via GATTSERVICE_SUBEVENT_MICS_CLIENT_MUTE event.
@@ -160,7 +140,7 @@ uint8_t microphone_control_service_client_connect(hci_con_handle_t con_handle, b
 uint8_t microphone_control_service_client_read_mute_state(uint16_t mics_cid);
 
 /**
- * @brief Turn on mute. 
+ * @brief Turn on mute.
  * @param mics_cid
  * @return status
  */
@@ -181,7 +161,14 @@ uint8_t microphone_control_service_client_mute_turn_off(uint16_t mics_cid);
 uint8_t microphone_control_service_client_disconnect(uint16_t mics_cid);
 
 /**
- * @brief De-initialize Microphone Control Service. 
+ * @brief Disconnect.
+ * @param aics_cid
+ * @return status
+ */
+uint8_t microphone_control_service_client_disconnect(uint16_t aics_cid);
+
+/**
+ * @brief De-initialize Media Control Service. 
  */
 void microphone_control_service_client_deinit(void);
 
