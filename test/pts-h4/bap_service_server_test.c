@@ -310,8 +310,10 @@ static bass_source_data_t source_data1 = {
 };
 
 static csis_server_connection_t csis_coordinators[CSIS_COORDINATORS_MAX_NUM];
+static gap_privacy_client_t csis_privacy_client;
+static bool csis_privacy_update_pending;
 
-static uint8_t bad_code[] = {0x01, 0x02, 0x68, 0x05, 0x53, 0xF1, 0x41, 0x5A, 0xA2, 0x65, 0xBB, 0xAF, 0xC6, 0xEA, 0x03, 0xB8}; 
+static uint8_t bad_code[] = {0x01, 0x02, 0x68, 0x05, 0x53, 0xF1, 0x41, 0x5A, 0xA2, 0x65, 0xBB, 0xAF, 0xC6, 0xEA, 0x03, 0xB8};
 static bass_server_connection_t bass_clients[BASS_NUM_CLIENTS];
 
 static le_audio_pa_sync_state_t pa_sync_state = LE_AUDIO_PA_SYNC_STATE_NOT_SYNCHRONIZED_TO_PA;
@@ -568,6 +570,12 @@ static void ascs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
     }
 }
 
+static void csis_privacy_handler(gap_privacy_client_t * client, bd_addr_t random_addr){
+    printf("Privacy: new random address %s\n", bd_addr_to_str(random_addr));
+    csis_privacy_update_pending = true;
+    coordinated_set_identification_service_server_generate_rsi();
+}
+
 static void csis_server_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
@@ -600,6 +608,11 @@ static void csis_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
             //
             gap_advertisements_set_data(adv_data_len, (uint8_t*) adv_data);
             gap_advertisements_enable(1);
+            // report done
+            if (csis_privacy_update_pending){
+                csis_privacy_update_pending = false;
+                gap_privacy_client_ready(&csis_privacy_client);
+            }
             break;
 
         case GATTSERVICE_SUBEVENT_CSIS_SERVER_DISCONNECTED:
@@ -681,8 +694,9 @@ static void show_usage(void){
     printf("G - set Encrypted Sirk\n");
     printf("h - Simulate server locked by another remote coordinator\n");
     printf("H - Simulate server unlock by another remote coordinator\n");
-    printf("i - generate RSI and start advertising\n");
-    printf("I - use encrypted SIRK\n");
+    printf("i - generate RSI for plaintext SIRK and start advertising with public address\n");
+    printf("I - generate RSI for encrypted SIRK and start advertising with public address\n");
+    printf("j - generate RSI for plaintext SIRK and start advertising with random address\n");
 }
 
 static void stdin_process(char cmd){
@@ -845,11 +859,18 @@ static void stdin_process(char cmd){
         }
         
         case 'i':
+            coordinated_set_identification_service_server_set_sirk(CSIS_SIRK_TYPE_PUBLIC, sirk, false);
             coordinated_set_identification_service_server_generate_rsi();
             break;
 
         case 'I':
             coordinated_set_identification_service_server_set_sirk(CSIS_SIRK_TYPE_ENCRYPTED, sirk, false);
+            coordinated_set_identification_service_server_generate_rsi();
+            break;
+
+        case 'j':
+            gap_random_address_set_mode(GAP_RANDOM_ADDRESS_RESOLVABLE);
+            coordinated_set_identification_service_server_set_sirk(CSIS_SIRK_TYPE_PUBLIC, sirk, false);
             coordinated_set_identification_service_server_generate_rsi();
             break;
 
@@ -882,9 +903,7 @@ int btstack_main(void)
     sm_add_event_handler(&sm_event_callback_registration);
     sm_set_authentication_requirements(SM_AUTHREQ_BONDING);
     sm_allow_ltk_reconstruction_without_le_device_db_entry(0);
-    // setup ATT server
-    att_server_init(profile_data, att_read_callback, att_write_callback);    
-    // att_server_register_packet_handler(packet_handler);
+    att_server_init(profile_data, att_read_callback, att_write_callback);
 
     // setup PACS
     sink_node.records = &sink_pac_records[0];
@@ -906,15 +925,18 @@ int btstack_main(void)
     audio_stream_control_service_server_init(ASCS_NUM_STREAMENDPOINT_CHARACTERISTICS, ascs_streamendpoint_characteristics, ASCS_NUM_CLIENTS, ascs_clients);
     audio_stream_control_service_server_register_packet_handler(&ascs_server_packet_handler);
 
+    // setup CSIS
     coordinated_set_identification_service_server_init(CSIS_COORDINATORS_MAX_NUM, &csis_coordinators[0], CSIS_COORDINATORS_MAX_NUM, 1);
     coordinated_set_identification_service_server_register_packet_handler(&csis_server_packet_handler);
-    coordinated_set_identification_service_server_set_sirk(CSIS_SIRK_TYPE_PUBLIC, sirk, false);
+    csis_privacy_client.callback = csis_privacy_handler;
+    gap_privacy_client_register(&csis_privacy_client);
 
     // register for HCI events
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
 
     // setup advertisements
+    gap_random_address_set_update_period(3000);
     setup_advertising();
     gap_periodic_advertising_sync_transfer_set_default_parameters(2, 0, 0x2000, 0);
 
