@@ -325,7 +325,7 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
 
         case HCI_EVENT_META_GAP:
             switch (hci_event_gap_meta_get_subevent_code(packet)){
-                case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
+                case GAP_SUBEVENT_LE_CONNECTION_COMPLETE:
                     bap_app_client_con_handle = gap_subevent_le_connection_complete_get_connection_handle(packet);
                     bap_app_client_state      = BAP_APP_CLIENT_STATE_CONNECTED;
                     gap_subevent_le_connection_complete_get_peer_address(packet, bap_app_server_addr);
