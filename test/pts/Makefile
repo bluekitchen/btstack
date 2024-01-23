@@ -98,8 +98,9 @@ SRC_BLE_GATT_CLIENT_FILES += \
 	le_audio_util.c 					  \
 	microphone_control_service_client.c \
 
+
 SRC_BLE_GATT_SERVICE_FILES += \
-	coordinated_set_identification_service_server.c
+    coordinated_set_identification_service_server.c \
 
 CFLAGS += -g -Wall -Wmissing-prototypes -Wstrict-prototypes -Wshadow -Wunused-variable -Wunused-parameter -Wswitch-default
 CFLAGS += -D ENABLE_TESTING_SUPPORT

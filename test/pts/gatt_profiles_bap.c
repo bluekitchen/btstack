@@ -97,6 +97,13 @@ static csis_server_connection_t csis_coordiantors[CSIS_COORDINATORS_MAX_NUM];
 
 static uint8_t ase_id = 0;
 
+// ASCS
+#define ASCS_NUM_STREAMENDPOINT_CHARACTERISTICS 5
+#define ASCS_NUM_CLIENTS 3
+
+static ascs_streamendpoint_characteristic_t ascs_streamendpoint_characteristics[ASCS_NUM_STREAMENDPOINT_CHARACTERISTICS];
+static ascs_server_connection_t ascs_clients[ASCS_NUM_CLIENTS];
+
 // MCS
 static uint16_t media_player_id1 = 0;
 static media_control_service_server_t media_player1;
@@ -328,19 +335,6 @@ static void stdin_process(char cmd){
             // coordinated_set_identification_service_server_calculate_encrypted_sirk();
             break;
         }
-
-        case 'j':
-            status = media_control_service_server_set_media_player_name(media_player_id1, long_string1);
-            break;
-        case 'J':
-            status = media_control_service_server_set_media_player_name(media_player_id1, long_string2);
-            break;
-        case 'k':
-            status = media_control_service_server_set_track_title(media_player_id1, long_string1);
-            break;
-        case 'K':
-            status = media_control_service_server_set_track_title(media_player_id1, long_string2);
-            break;
 
         case '\n':
         case '\r':
