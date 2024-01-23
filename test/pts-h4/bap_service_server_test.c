@@ -309,8 +309,7 @@ static bass_source_data_t source_data1 = {
     
 };
 
-
-static csis_server_connection_t csis_coordiantors[CSIS_COORDINATORS_MAX_NUM];
+static csis_server_connection_t csis_coordinators[CSIS_COORDINATORS_MAX_NUM];
 
 static uint8_t bad_code[] = {0x01, 0x02, 0x68, 0x05, 0x53, 0xF1, 0x41, 0x5A, 0xA2, 0x65, 0xBB, 0xAF, 0xC6, 0xEA, 0x03, 0xB8}; 
 static bass_server_connection_t bass_clients[BASS_NUM_CLIENTS];
@@ -326,6 +325,7 @@ static uint8_t ase_id = 0;
 static ascs_streamendpoint_characteristic_t ascs_streamendpoint_characteristics[ASCS_NUM_STREAMENDPOINT_CHARACTERISTICS];
 static ascs_server_connection_t ascs_clients[ASCS_NUM_CLIENTS];
 
+// PSPX_sirk
 static uint8_t sirk[] = {
     0x83, 0x8E, 0x68, 0x05, 0x53, 0xF1, 0x41, 0x5A,
     0xA2, 0x65, 0xBB, 0xAF, 0xC6, 0xEA, 0x03, 0xB8   
@@ -681,8 +681,8 @@ static void show_usage(void){
     printf("G - set Encrypted Sirk\n");
     printf("h - Simulate server locked by another remote coordinator\n");
     printf("H - Simulate server unlock by another remote coordinator\n");
-    printf("i - generate RIS\n");
-    printf("I - set SIRK\n");
+    printf("i - generate RSI and start advertising\n");
+    printf("I - use encrypted SIRK\n");
 }
 
 static void stdin_process(char cmd){
@@ -848,12 +848,10 @@ static void stdin_process(char cmd){
             coordinated_set_identification_service_server_generate_rsi();
             break;
 
-        case 'I':{
-            uint8_t test_sirk[] = {0x83, 0x8E, 0x68, 0x05, 0x53, 0xF1, 0x41, 0x5A, 0xA2, 0x65, 0xBB, 0xAF, 0xC6, 0xEA, 0x03, 0xB8}; 
-            coordinated_set_identification_service_server_set_sirk(CSIS_SIRK_TYPE_ENCRYPTED, &test_sirk[0], false);
-            // coordinated_set_identification_service_server_calculate_encrypted_sirk();
+        case 'I':
+            coordinated_set_identification_service_server_set_sirk(CSIS_SIRK_TYPE_ENCRYPTED, sirk, false);
+            coordinated_set_identification_service_server_generate_rsi();
             break;
-        }
 
         case '\n':
         case '\r':
@@ -908,9 +906,10 @@ int btstack_main(void)
     audio_stream_control_service_server_init(ASCS_NUM_STREAMENDPOINT_CHARACTERISTICS, ascs_streamendpoint_characteristics, ASCS_NUM_CLIENTS, ascs_clients);
     audio_stream_control_service_server_register_packet_handler(&ascs_server_packet_handler);
 
-    coordinated_set_identification_service_server_init(CSIS_COORDINATORS_MAX_NUM, &csis_coordiantors[0], CSIS_COORDINATORS_MAX_NUM, 1);
+    coordinated_set_identification_service_server_init(CSIS_COORDINATORS_MAX_NUM, &csis_coordinators[0], CSIS_COORDINATORS_MAX_NUM, 1);
     coordinated_set_identification_service_server_register_packet_handler(&csis_server_packet_handler);
-    coordinated_set_identification_service_server_set_sirk(CSIS_SIRK_TYPE_PUBLIC, &sirk[0], false);
+    coordinated_set_identification_service_server_set_sirk(CSIS_SIRK_TYPE_PUBLIC, sirk, false);
+
     // register for HCI events
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
