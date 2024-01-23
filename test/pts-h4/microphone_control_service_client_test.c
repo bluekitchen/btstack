@@ -38,14 +38,20 @@
 #define BTSTACK_FILE__ "microphone_control_service_client_test.c"
 
 
+#include <inttypes.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <btstack_lc3.h>
 
 #include "btstack.h"
 
 #include "microphone_control_service_client_test.h"
+
+#define MICS_CHARACTERISTICS_MAX_NUM  MICROPHONE_CONTROL_SERVICE_CLIENT_NUM_CHARACTERISTICS
+#define AICS_CONNECTIONS_MAX_NUM 5
+#define AICS_CHARACTERISTICS_MAX_NUM  AICS_CONNECTIONS_MAX_NUM * AUDIO_INPUT_CONTROL_SERVICE_CLIENT_NUM_CHARACTERISTICS
 
 typedef struct advertising_report {
     uint8_t   type;
@@ -64,19 +70,26 @@ static enum {
     APP_STATE_CONNECTED
 } app_state;
 
-static advertising_report_t report;
+static mics_client_connection_t mics_connection;
+static gatt_service_client_characteristic_t mics_storage_for_characteristics[MICS_CHARACTERISTICS_MAX_NUM];
+static aics_client_connection_t aics_connections[AICS_CONNECTIONS_MAX_NUM];
+static gatt_service_client_characteristic_t aics_storage_for_characteristics[AICS_CHARACTERISTICS_MAX_NUM];
 
+static advertising_report_t report;
+static btstack_packet_callback_registration_t sm_event_callback_registration;
 static hci_con_handle_t connection_handle;
 static uint16_t mips_cid;
 
 static bd_addr_t cmdline_addr;
 static int cmdline_addr_found = 0;
 
-static bd_addr_t public_pts_address = {0x00, 0x1B, 0xDC, 0x08, 0xE2, 0x5C};
+static bd_addr_t public_pts_address = {0xC0, 0x07, 0xE8, 0x41, 0x45, 0x91};
 static int       public_pts_address_type = 0;
 static bd_addr_t current_pts_address;
 static int       current_pts_address_type;
 
+
+// AICS
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 static void show_usage(void);
@@ -94,9 +107,14 @@ static void microphone_control_service_client_setup(void){
     gatt_client_init();
     
     microphone_control_service_client_init();
+    audio_input_control_service_client_init();
+
 
     sm_init();
     sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
+    sm_set_authentication_requirements(SM_AUTHREQ_SECURE_CONNECTION | SM_AUTHREQ_BONDING);
+    sm_event_callback_registration.callback = &hci_event_handler;
+    sm_add_event_handler(&sm_event_callback_registration);
 
     hci_event_callback_registration.callback = &hci_event_handler;
     hci_add_event_handler(&hci_event_callback_registration);
@@ -124,13 +142,59 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
 
     if (packet_type != HCI_EVENT_PACKET){
         return;  
-    } 
+    }
 
+    bd_addr_t addr;
     switch (hci_event_packet_get_type(packet)) {
-        
+
+        case SM_EVENT_JUST_WORKS_REQUEST:
+            printf("Just Works requested\n");
+            sm_just_works_confirm(sm_event_just_works_request_get_handle(packet));
+            break;
+        case SM_EVENT_NUMERIC_COMPARISON_REQUEST:
+            printf("Confirming numeric comparison: %"PRIu32"\n", sm_event_numeric_comparison_request_get_passkey(packet));
+            sm_numeric_comparison_confirm(sm_event_passkey_display_number_get_handle(packet));
+            break;
+        case SM_EVENT_PASSKEY_DISPLAY_NUMBER:
+            printf("Display Passkey: %"PRIu32"\n", sm_event_passkey_display_number_get_passkey(packet));
+            break;
+        case SM_EVENT_IDENTITY_CREATED:
+            sm_event_identity_created_get_identity_address(packet, addr);
+            printf("Identity created: type %u address %s\n", sm_event_identity_created_get_identity_addr_type(packet), bd_addr_to_str(addr));
+            break;
+        case SM_EVENT_IDENTITY_RESOLVING_SUCCEEDED:
+            sm_event_identity_resolving_succeeded_get_identity_address(packet, addr);
+            printf("Identity resolved: type %u address %s\n", sm_event_identity_resolving_succeeded_get_identity_addr_type(packet), bd_addr_to_str(addr));
+            break;
+        case SM_EVENT_IDENTITY_RESOLVING_FAILED:
+            sm_event_identity_created_get_address(packet, addr);
+            printf("Identity resolving failed\n");
+            break;
+        case SM_EVENT_PAIRING_COMPLETE:
+            switch (sm_event_pairing_complete_get_status(packet)){
+                case ERROR_CODE_SUCCESS:
+                    printf("Pairing complete, success\n");
+                    break;
+                case ERROR_CODE_CONNECTION_TIMEOUT:
+                    printf("Pairing failed, timeout\n");
+                    break;
+                case ERROR_CODE_REMOTE_USER_TERMINATED_CONNECTION:
+                    printf("Pairing faileed, disconnected\n");
+                    break;
+                case ERROR_CODE_AUTHENTICATION_FAILURE:
+                    printf("Pairing failed, reason = %u\n", sm_event_pairing_complete_get_reason(packet));
+                    break;
+                default:
+                    break;
+            }
+            break;
+
         case BTSTACK_EVENT_STATE:
             // BTstack activated, get started
             if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) break;
+            printf("BTstack activated, start scanning\n");
+            // app_state = APP_STATE_W4_SCAN_RESULT;
+            // gap_start_scan();
             break;
 
         case GAP_EVENT_ADVERTISING_REPORT:
@@ -139,6 +203,9 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
             gap_event_advertising_report_get_address(packet, address);
             dump_advertising_report(packet);
 
+            if (memcmp(address, public_pts_address, 6) != 0){
+                break;
+            }
             // stop scanning, and connect to the device
             app_state = APP_STATE_W4_CONNECT;
             gap_stop_scan();
@@ -152,16 +219,20 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
             
             // Get connection handle from event
             connection_handle = gap_subevent_le_connection_complete_get_connection_handle(packet);
-            
-            (void) microphone_control_service_client_connect(connection_handle, gatt_client_event_handler, &mips_cid);
-
+            gap_stop_scan();
             app_state = APP_STATE_CONNECTED;
-            printf("Microphone Control service connected.\n");
+            printf("GAP connected.\n");
+            (void) microphone_control_service_client_connect(connection_handle, &gatt_client_event_handler,
+                                                             &mics_connection,
+                                                             mics_storage_for_characteristics, MICS_CHARACTERISTICS_MAX_NUM,
+                                                             aics_connections, AICS_CONNECTIONS_MAX_NUM,
+                                                             aics_storage_for_characteristics, AICS_CHARACTERISTICS_MAX_NUM, &mips_cid);
             break;
 
         case HCI_EVENT_DISCONNECTION_COMPLETE:
             connection_handle = HCI_CON_HANDLE_INVALID;
             // Disconnect battery service
+
             microphone_control_service_client_disconnect(mips_cid);
             
             if (cmdline_addr_found){
@@ -172,14 +243,14 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
             printf("Disconnected %s\n", bd_addr_to_str(report.address));
             printf("Restart scan.\n");
             app_state = APP_STATE_W4_SCAN_RESULT;
-            gap_start_scan();
+//            gap_start_scan();
             break;
         default:
             break;
     }
 }
 
-static void gatt_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void gatt_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) {
     UNUSED(packet_type);
     UNUSED(channel);
     UNUSED(size);
@@ -187,14 +258,14 @@ static void gatt_client_event_handler(uint8_t packet_type, uint16_t channel, uin
     uint8_t status;
     uint8_t att_status;
 
-    if (hci_event_packet_get_type(packet) != HCI_EVENT_GATTSERVICE_META){
+    if (hci_event_packet_get_type(packet) != HCI_EVENT_GATTSERVICE_META) {
         return;
     }
-    
-    switch (hci_event_gattservice_meta_get_subevent_code(packet)){
+
+    switch (hci_event_gattservice_meta_get_subevent_code(packet)) {
         case GATTSERVICE_SUBEVENT_MICS_CLIENT_CONNECTED:
             status = gattservice_subevent_mics_client_connected_get_status(packet);
-            switch (status){
+            switch (status) {
                 case ERROR_CODE_SUCCESS:
                     printf("Microphone Control service client connected\n");
                     break;
@@ -206,14 +277,22 @@ static void gatt_client_event_handler(uint8_t packet_type, uint16_t channel, uin
             break;
 
         case GATTSERVICE_SUBEVENT_MICS_CLIENT_MUTE:
-            att_status = gattservice_subevent_mics_client_mute_get_status(packet);
-            if (att_status != ATT_ERROR_SUCCESS){
-                printf("Mute status read failed, ATT Error 0x%02x\n", att_status);
-            } else {
-                printf("Mute status: %d\n", gattservice_subevent_mics_client_mute_get_state(packet));
+            printf("Mute: %d\n", gattservice_subevent_mics_client_mute_get_state(packet));
+            break;
+
+        case GATTSERVICE_SUBEVENT_AICS_CLIENT_CONNECTED:
+            status = gattservice_subevent_aics_client_connected_get_status(packet);
+            switch (status) {
+                case ERROR_CODE_SUCCESS:
+                    printf("Audio Input Control service client connected\n");
+                    break;
+                default:
+                    printf("Audio Input Control service client connection failed, err 0x%02x.\n", status);
+                    gap_disconnect(connection_handle);
+                    break;
             }
             break;
-        
+
         default:
             break;
     }
@@ -225,7 +304,9 @@ static void show_usage(void){
     gap_le_get_own_address(&iut_address_type, iut_address);
 
     printf("--- MICS Client ---\n");
-    printf("c - Connect to %s\n", bd_addr_to_str(current_pts_address));
+    printf("c    - Connect to %s\n", bd_addr_to_str(current_pts_address));
+    printf("r    - Read Mute state\n");
+    printf("m/M  - Mute ON/OFF\n");
 }
 
 static void stdin_process(char c){
@@ -235,7 +316,31 @@ static void stdin_process(char c){
             app_state = APP_STATE_W4_CONNECT;
             gap_connect(current_pts_address, current_pts_address_type);
             break;
-        
+
+        case 'b':
+                (void) microphone_control_service_client_connect(connection_handle, &gatt_client_event_handler,
+                                                                 &mics_connection,
+                                                                 mics_storage_for_characteristics, MICS_CHARACTERISTICS_MAX_NUM,
+                                                                 aics_connections, AICS_CONNECTIONS_MAX_NUM,
+                                                                 aics_storage_for_characteristics, AICS_CHARACTERISTICS_MAX_NUM, &mips_cid);
+
+            break;
+
+        case 'r':
+            printf("Read Mute state\n");
+            microphone_control_service_client_read_mute_state(mips_cid);
+            break;
+
+        case 'm':
+            printf("Mute ON\n");
+            microphone_control_service_client_mute_turn_on(mips_cid);
+            break;
+
+        case 'M':
+            printf("Mute OFF\n");
+            microphone_control_service_client_mute_turn_off(mips_cid);
+            break;
+
         default:
             show_usage();
             break;
@@ -258,7 +363,6 @@ int btstack_main(int argc, const char * argv[]){
 
     // turn on!
     hci_power_control(HCI_POWER_ON);
-
     return 0;
 }
 
