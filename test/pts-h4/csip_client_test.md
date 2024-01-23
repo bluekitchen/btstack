@@ -15,10 +15,10 @@ Tool: pts-h4/bap_service_client_test
 - CSIP/CL/SP/BV-04-C:        c, B, 4, 4
 - CSIP/CL/SP/BV-04-C_LT2:    c, B, 4, 4
 - CSIP/CL/SP/BV-04-C_LT3:    c, B, 4, 4
-- CSIP/CL/SP/BV-06-C:        c, B,
-- CSIP/CL/SP/BV-07-C:        c, B,
-- CSIP/CL/SP/BV-07-C_LT2:    c, B,
-- CSIP/CL/SP/BV-07-C_LT3:    c, B,
+- CSIP/CL/SP/BV-06-C:        c, B, 0,1, 3
+- CSIP/CL/SP/BV-07-C:        c, B
+- CSIP/CL/SP/BV-07-C_LT2:    c, B, X
+- CSIP/CL/SP/BV-07-C_LT3:    c, B, X
 
 - CSIP/CL/SPE/BI-01-C:       c, B, 4, 4
 - CSIP/CL/SPE/BI-01-C_LT2:   c, B, 4
