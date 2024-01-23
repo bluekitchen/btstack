@@ -586,6 +586,11 @@ att_server_process_validated_request(att_server_t *att_server, att_connection_t 
 
 #ifdef ENABLE_ATT_DELAYED_RESPONSE
     if ((att_response_size == ATT_READ_RESPONSE_PENDING) || (att_response_size == ATT_INTERNAL_WRITE_RESPONSE_PENDING)){
+        // free reserved buffer
+        if (eatt_buffer == NULL){
+            l2cap_release_packet_buffer();
+        }
+
         // update state
         att_server->state = ATT_SERVER_RESPONSE_PENDING;
 
@@ -607,11 +612,6 @@ att_server_process_validated_request(att_server_t *att_server, att_connection_t 
                 btstack_assert(att_server_client_read_callback != NULL);
                 (*att_server_client_read_callback)(att_connection->con_handle, ATT_READ_RESPONSE_PENDING, 0, NULL, 0);
             }
-        }
-
-        // free reserved buffer
-        if (eatt_buffer == NULL){
-            l2cap_release_packet_buffer();
         }
         return 0;
     }
