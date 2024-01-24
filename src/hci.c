@@ -4192,6 +4192,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
                     hci_stack->acl_fragmentation_pos = 0;
                     if (release_buffer){
                         hci_release_packet_buffer();
+                        hci_emit_transport_packet_sent();
                     }
                 }
             }
