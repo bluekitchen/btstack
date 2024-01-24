@@ -130,7 +130,8 @@ typedef enum {
     SERVER_ASCS_W4_ENABLING,
     SERVER_ASCS_ENABLING,
     SERVER_ASCS_STREAMING,
-    SERVER_DISCONNECT
+    SERVER_DISCONNECT,
+    SERVER_W4_DISCONNECTED
 } server_state_t;
 
 typedef struct {
@@ -420,7 +421,7 @@ static void run_for_server(server_t * server){
             break;
 
         case SERVER_DISCONNECT:
-            server->server_state = SERVER_IDLE;
+            server->server_state = SERVER_W4_DISCONNECTED;
             gap_disconnect(server->acl_con_handle);
             break;
         default:
@@ -478,6 +479,7 @@ static void app_run(void){
                     // need more servers
                     app_state = APP_W4_COORDINATED_SET_ADV;
                     coordinated_set_identification_service_client_find_members(rsi_entries, NR_RSI_ENTRIES, servers[0].sirk);
+                    printf("CAP client %u: look for %u more Set Members\n", servers[0].server_id, set_size - 1);
                     // start scanning
                     gap_start_scan();
                 } else {
@@ -682,6 +684,7 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
     if (packet_type != HCI_EVENT_PACKET) return;
 
     hci_con_handle_t cis_con_handle;
+    hci_con_handle_t acl_con_handle;
     uint8_t i;
     uint8_t status;
     bd_addr_t adv_addr;
@@ -723,6 +726,25 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
             gap_event_extended_advertising_report_get_address(packet, adv_addr);
             adv_addr_type = gap_event_extended_advertising_report_get_address_type(packet) & 1;
             le_audio_unicast_source_handle_adv(adv_addr_type, adv_addr, adv_data, adv_size);
+            break;
+        case HCI_EVENT_DISCONNECTION_COMPLETE:
+            // identify server / cis
+            acl_con_handle = hci_event_disconnection_complete_get_connection_handle(packet);
+            for (i=0; i < num_active_servers; i++) {
+                server_t *server = &servers[i];
+                if (server->acl_con_handle == acl_con_handle) {
+                    printf("GAP Client %u: Disconnected\n", server->server_id);
+                    server->acl_con_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
+                    server->server_state = SERVER_IDLE;
+                    sm_request_pairing(server->acl_con_handle);
+                }
+            }
+            //
+            if (servers_in_state(SERVER_IDLE)){
+                printf("Headset(s) disconnected\n");
+                app_state = APP_IDLE;
+                // gap_cig_remove(cig_id);
+            }
             break;
         case HCI_EVENT_META_GAP:
             switch (hci_event_gap_meta_get_subevent_code(packet)) {
