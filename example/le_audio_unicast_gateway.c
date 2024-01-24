@@ -89,6 +89,8 @@
 
 #define PEER_NAME_LEN 31
 
+#define CIG_ID_INVALID 0xff
+
 // hard-coded
 #define NUM_CIS_RETRANSMISSIONS 2
 
@@ -182,6 +184,7 @@ static ascs_codec_configuration_t codec_configuration;
 
 static le_audio_cig_t        cig;
 static le_audio_cig_params_t cig_params;
+static uint16_t              cig_id;
 
 static hci_con_handle_t cis_con_handles[MAX_NUM_CIS];
 static hci_con_handle_t acl_con_handles[MAX_NUM_CIS];
@@ -390,7 +393,6 @@ static void run_for_server(server_t * server){
             break;
         case SERVER_ASCS_CODEC_CONFIGURED:
             if (app_state == APP_CIG_CREATED){
-                uint8_t cig_id = 1;
                 uint8_t cis_id = server->cis_id;
                 uint16_t sdu_interval_us = codec_configurations[menu_sampling_frequency].variants[menu_variant].frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US ? 7500 : 10000;
                 uint8_t framing = 0;
@@ -643,8 +645,11 @@ static void create_cig(void){
 
     configure_stream();
 
+    // select cig id
+    cig_id = 1;
+
     // TODO: setup CIG
-    cig_params.cig_id =  1;
+    cig_params.cig_id =  cig_id;
     cig_params.num_cis = num_servers;
     cig_params.sdu_interval_c_to_p = codec_configuration.specific_codec_configuration.frame_duration_index == LE_AUDIO_CODEC_FRAME_DURATION_INDEX_7500US ? 7500 : 10000;
     cig_params.sdu_interval_p_to_c = codec_configuration.specific_codec_configuration.frame_duration_index == LE_AUDIO_CODEC_FRAME_DURATION_INDEX_7500US ? 7500 : 10000;
@@ -767,6 +772,7 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     status = gap_subevent_cig_created_get_status(packet);
                     printf("CIG Created 0x%02x\n", status);
                     if (status == ERROR_CODE_SUCCESS){
+                        cig_id = gap_subevent_cig_created_get_cig_id(packet);
                         printf("CIS Connection Handles: \n");
                         for (i = 0; i < cig.num_cis; i++) {
                             cis_con_handle = gap_subevent_cig_created_get_cis_con_handles(packet, i);
@@ -777,7 +783,7 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     }
                     app_state = APP_CIG_CREATED;
                     break;
-                case GAP_SUBEVENT_CIS_CREATED: {
+                case GAP_SUBEVENT_CIS_CREATED:
                     cis_con_handle = gap_subevent_cis_created_get_cis_con_handle(packet);
                     status = gap_subevent_cis_created_get_status(packet);
                     printf("GAP_SUBEVENT_CIS_CREATED: cis con handle 0x%04x, status 0x%02x\n", cis_con_handle, status);
@@ -789,7 +795,6 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                             }
                         }
                         try_transition_to_streaming();
-                    }
                     break;
                 }
             }
@@ -1284,7 +1289,7 @@ void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                                 for (i=0;i<cig_params.num_cis;i++){
                                     acl_con_handles[i] = servers[i].acl_con_handle;
                                 }
-                                status = gap_cis_create(1, cis_con_handles, acl_con_handles);
+                                status = gap_cis_create(cig_id, cis_con_handles, acl_con_handles);
                                 btstack_assert(status == ERROR_CODE_SUCCESS);
                             }
                         }
@@ -1370,6 +1375,7 @@ static void stdin_process(char c){
                 break;
             }
             num_active_servers = 0;
+            cig_id = CIG_ID_INVALID;
             app_state = APP_W4_UNICAST_SINK_ADV;
             // start scanning
             gap_start_scan();
@@ -1389,6 +1395,9 @@ static void stdin_process(char c){
             print_config();
             break;
         case 'q':
+            if (cig_id != CIG_ID_INVALID){
+                gap_cig_remove(cig_id);
+            }
             servers_set_state(SERVER_DISCONNECT);
             app_run();
             break;
