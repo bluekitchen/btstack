@@ -1016,7 +1016,6 @@ static void coordinated_set_identification_service_client_add_entry(bd_addr_t ad
     memcpy(csis_client_find_member_entries[csis_client_find_member_next_write].addr, addr, 6);
     memcpy(csis_client_find_member_entries[csis_client_find_member_next_write].rsi, rsi, 6);
     csis_client_find_member_next_write = (csis_client_find_member_next_write + 1) % csis_client_find_member_num_entries;
-    log_info("add %u -> now %u", csis_client_find_member_next_write, csis_client_find_member_candidates);
 
     csis_client_find_member_next_check();
 }
@@ -1031,6 +1030,14 @@ uint8_t coordinated_set_identification_service_client_find_members(csis_client_r
     csis_client_find_member_entries = entries;
     csis_client_find_member_num_entries = num_entries;
     csis_client_find_member_sirk = sirk;
+    csis_client_find_member_next_read = 0;
+    csis_client_find_member_next_write = 0;
+    // clear addr type
+    uint8_t i;
+    for (i=0;i<csis_client_find_member_num_entries;i++){
+        csis_client_find_member_entries[i].addr_type = BD_ADDR_TYPE_UNKNOWN;
+    }
+
     return ERROR_CODE_SUCCESS;
 }
 
