@@ -548,7 +548,7 @@ uint8_t gatt_service_client_connect(
 uint8_t gatt_service_client_connect_secondary_service(
         hci_con_handle_t con_handle,
         gatt_service_client_helper_t * client, gatt_service_client_connection_helper_t * connection,
-        uint16_t service_uuid16, uint8_t service_index,
+        uint16_t service_uuid16, uint16_t service_start_handle, uint16_t service_end_handle, uint8_t service_index,
         gatt_service_client_characteristic_t * characteristics, uint8_t characteristics_num,
         btstack_packet_handler_t packet_handler){
 
@@ -573,6 +573,8 @@ uint8_t gatt_service_client_connect_secondary_service(
     connection->con_handle          = con_handle;
     connection->service_uuid16      = service_uuid16;
     connection->service_index       = service_index;
+    connection->start_handle        = service_start_handle;
+    connection->end_handle          = service_end_handle;
     connection->characteristics_num = 0;
     connection->characteristics     = characteristics;
     connection->event_callback = packet_handler;
