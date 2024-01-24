@@ -882,22 +882,22 @@ uint8_t gap_cig_create(le_audio_cig_t * storage, le_audio_cig_params_t * cig_par
 
 /**
  * @brief Remove Connected Isochronous Group (CIG)
- * @param cig_handle
+ * @param cig_id
  * @return status
  * @events GAP_SUBEVENT_CIG_TERMINATED
  */
-uint8_t gap_cig_remove(uint8_t cig_handle);
+uint8_t gap_cig_remove(uint8_t cig_id);
 
 /**
  * @brief Create Connected Isochronous Streams (CIS)
  * @note number of CIS from cig_params in gap_cig_create is used
- * @param cig_handle
+ * @param cig_id
  * @param cis_con_handles array of CIS Connection Handles
  * @param acl_con_handles array of ACL Connection Handles
  * @return status
  * @events GAP_SUBEVENT_CIS_CREATED unless interrupted by call to gap_cig_remove
  */
-uint8_t gap_cis_create(uint8_t cig_handle, hci_con_handle_t cis_con_handles [], hci_con_handle_t acl_con_handles []);
+uint8_t gap_cis_create(uint8_t cig_id, hci_con_handle_t cis_con_handles [], hci_con_handle_t acl_con_handles []);
 
 /**
  * @brief Accept Connected Isochronous Stream (CIS)

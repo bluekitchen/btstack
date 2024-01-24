@@ -10557,8 +10557,8 @@ uint8_t gap_cig_create(le_audio_cig_t * storage, le_audio_cig_params_t * cig_par
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t gap_cis_create(uint8_t cig_handle, hci_con_handle_t cis_con_handles [], hci_con_handle_t acl_con_handles []){
-    le_audio_cig_t * cig = hci_cig_for_id(cig_handle);
+uint8_t gap_cis_create(uint8_t cig_id, hci_con_handle_t cis_con_handles [], hci_con_handle_t acl_con_handles []){
+    le_audio_cig_t * cig = hci_cig_for_id(cig_id);
     if (cig == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
