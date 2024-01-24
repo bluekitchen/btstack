@@ -63,6 +63,10 @@ extern "C" {
  * @text The Media Control Service Client 
  */
 typedef enum {
+    MICROPHONE_CONTROL_SERVICE_CLIENT_STATE_W4_CONNECTION = 0,
+    MICROPHONE_CONTROL_SERVICE_CLIENT_STATE_W2_QUERY_INCLUDED_SERVICES,
+    MICROPHONE_CONTROL_SERVICE_CLIENT_STATE_W4_INCLUDED_SERVICES_RESULT,
+    MICROPHONE_CONTROL_SERVICE_CLIENT_STATE_W4_INCLUDED_SERVICE_CONNECTED,
     MICROPHONE_CONTROL_SERVICE_CLIENT_STATE_READY,
     MICROPHONE_CONTROL_SERVICE_CLIENT_STATE_W2_READ_CHARACTERISTIC_VALUE,
     MICROPHONE_CONTROL_SERVICE_CLIENT_STATE_W4_READ_CHARACTERISTIC_VALUE_RESULT,
@@ -89,10 +93,17 @@ typedef struct {
 
     uint8_t write_buffer[1];
 
-    bool included_services_queried;
-    gatt_service_client_characteristic_t * aics_storage_for_characteristics;
+    bool scheduled_task_query_included_services;
+
+    aics_client_connection_t  * aics_connections_storage;
+    uint8_t aics_connections_max_num;
+    uint8_t aics_connections_num;
+    uint8_t aics_connections_index;
+    gatt_service_client_characteristic_t * aics_characteristics_storage;
     uint8_t aics_characteristics_max_num;
 
+    // Application packet handler
+    btstack_packet_handler_t aics_events_packet_handler;
 } mics_client_connection_t;
 
 /* API_START */
@@ -113,20 +124,24 @@ void microphone_control_service_client_init(void);
  * GATT_CLIENT_IN_WRONG_STATE, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE if no audio input control service is found, or ATT errors (see bluetooth.h). 
  *
  * @param con_handle
- * @param service_index         index o media player to connect to
  * @param packet_handler
- * @param connection
- * @param characteristics       storage for characteristics
- * @param characteristics_num >= MEDIA_CONTROL_SERVICE_CLIENT_NUM_CHARACTERISTICS
+ * @param mics_connection
+ * @param mics_characteristics_storage           storage for characteristics
+ * @param mics_characteristics_num           >= MEDIA_CONTROL_SERVICE_CLIENT_NUM_CHARACTERISTICS
+ * @param aics_client
+ * @param aics_connections
+ * @param aics_connections_num
+ * @param aics_characteristics_storage
+ * @param aics_characteristics_num
  * @return status ERROR_CODE_SUCCESS on success, otherwise ERROR_CODE_COMMAND_DISALLOWED if there is already a client associated with con_handle, or BTSTACK_MEMORY_ALLOC_FAILED
  */
 uint8_t microphone_control_service_client_connect(
          hci_con_handle_t con_handle,
          btstack_packet_handler_t packet_handler,
          mics_client_connection_t * mics_connection,
-         gatt_service_client_characteristic_t * mics_storage_for_characteristics, uint8_t mics_characteristics_max_num,
-         aics_client_connection_t * aics_connections, uint8_t aics_connections_max_num,
-         gatt_service_client_characteristic_t * aics_storage_for_characteristics, uint8_t aics_characteristics_max_num, // for all aics connections
+         gatt_service_client_characteristic_t * mics_characteristics_storage, uint8_t mics_characteristics_num,
+         aics_client_connection_t * aics_connections, uint8_t aics_connections_num,
+         gatt_service_client_characteristic_t * aics_characteristics_storage, uint8_t aics_characteristics_num, // for all aics connections
          uint16_t * mics_cid
 );
 
