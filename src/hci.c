@@ -6997,6 +6997,7 @@ static bool hci_run_iso_tasks(void){
     }
 
     // CIG
+    bool cig_active;
     btstack_linked_list_iterator_init(&it, &hci_stack->le_audio_cigs);
     while (btstack_linked_list_iterator_has_next(&it)) {
         le_audio_cig_t *cig = (le_audio_cig_t *) btstack_linked_list_iterator_next(&it);
@@ -7082,12 +7083,30 @@ static bool hci_run_iso_tasks(void){
                 }
                 // emit done
                 cig->state = LE_AUDIO_CIG_STATE_ACTIVE;
+                break;
+            case LE_AUDIO_CIG_STATE_REMOVE:
+                // check if CIG Active
+                cig_active = false;
+                for (i = 0; i < cig->num_cis; i++) {
+                    if (cig->cis_con_handles[i] != HCI_CON_HANDLE_INVALID){
+                        hci_iso_stream_t * stream = hci_iso_stream_for_con_handle(cig->cis_con_handles[i]);
+                        if (stream != NULL){
+                            cig_active = true;
+                            break;
+                        }
+                    }
+                }
+                if (cig_active == false){
+                    btstack_linked_list_iterator_remove(&it);
+                    hci_send_cmd(&hci_le_remove_cig, cig->cig_id);
+                    return true;
+                }
             default:
                 break;
         }
     }
 
-    // CIS Accept/Reject
+    // CIS Accept/Reject/Setup ISO Path/Close
     btstack_linked_list_iterator_init(&it, &hci_stack->iso_streams);
     while (btstack_linked_list_iterator_has_next(&it)) {
         hci_iso_stream_t *iso_stream = (hci_iso_stream_t *) btstack_linked_list_iterator_next(&it);
@@ -7117,6 +7136,10 @@ static bool hci_run_iso_tasks(void){
                 hci_stack->iso_active_operation_type = HCI_ISO_TYPE_CIS;
                 iso_stream->state = HCI_ISO_STREAM_STATE_W4_ISO_SETUP_OUTPUT;
                 hci_send_cmd(&hci_le_setup_iso_data_path, iso_stream->cis_handle, 1, 0, HCI_AUDIO_CODING_FORMAT_TRANSPARENT, 0, 0, 0, 0, NULL);
+                break;
+            case HCI_ISO_STREAM_STATE_W2_CLOSE:
+                iso_stream->state = HCI_ISO_STREAM_STATE_W4_DISCONNECTED;
+                hci_send_cmd(&hci_disconnect, iso_stream->cis_handle);
                 break;
             default:
                 break;
@@ -10551,6 +10574,27 @@ uint8_t gap_cig_create(le_audio_cig_t * storage, le_audio_cig_params_t * cig_par
         cig->cis_established[i] = false;
     }
     btstack_linked_list_add(&hci_stack->le_audio_cigs, (btstack_linked_item_t *) cig);
+
+    hci_run();
+
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t gap_cig_remove(uint8_t cig_id){
+    le_audio_cig_t * cig = hci_cig_for_id(cig_id);
+    if (cig == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+
+    // close active CIS
+    uint8_t i;
+    for (i=0;i<cig->num_cis;i++){
+        hci_iso_stream_t * stream = hci_iso_stream_for_con_handle(cig->cis_con_handles[i]);
+        if (stream != NULL){
+            stream->state = HCI_ISO_STREAM_STATE_W2_CLOSE;
+        }
+    }
+    cig->state = LE_AUDIO_CIG_STATE_REMOVE;
 
     hci_run();
 
