@@ -89,7 +89,7 @@ static char * aics_client_characteristic_name[] = {
     "AUDIO_INPUT_TYPE",
     "AUDIO_INPUT_STATUS",
     "AUDIO_INPUT_CONTROL_POINT",
-    "AUDIO_INPUT_DESCRIPTION"
+    "AUDIO_INPUT_DESCRIPTION",
     "RFU"
 };
 #endif
@@ -465,14 +465,13 @@ void audio_input_control_service_client_init(void){
 }
 
 uint8_t audio_input_control_service_client_connect(hci_con_handle_t con_handle,
-    btstack_packet_handler_t packet_handler,
-    aics_client_connection_t * connection,
-    gatt_service_client_characteristic_t * characteristics, uint8_t characteristics_num){
+    aics_client_connection_t * connection, uint16_t service_start_handle, uint16_t service_end_handle, uint8_t service_index,
+    gatt_service_client_characteristic_t * characteristics, uint8_t characteristics_num, btstack_packet_handler_t packet_handler){
 
     btstack_assert(characteristics_num > 0);
     return gatt_service_client_connect_secondary_service(con_handle,
         &aics_client, &connection->basic_connection,
-        ORG_BLUETOOTH_SERVICE_AUDIO_INPUT_CONTROL, 0,
+        ORG_BLUETOOTH_SERVICE_AUDIO_INPUT_CONTROL, service_start_handle, service_end_handle, service_index,
         characteristics, characteristics_num, packet_handler);
 }
 
