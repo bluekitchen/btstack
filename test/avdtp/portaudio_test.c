@@ -67,7 +67,7 @@ static uint8_t ring_buffer_storage[3*FRAMES_PER_BUFFER*BYTES_PER_FRAME];
 static btstack_ring_buffer_t ring_buffer;
 
 static int total_num_samples = 0;
-static char * wav_filename = "portaudio_sine.wav";
+static const char * wav_filename = "portaudio_sine.wav";
 
 static void write_wav_data(int16_t * data, int num_frames, int num_channels, int sample_rate){
     (void)sample_rate;
@@ -112,7 +112,7 @@ static int patestCallback( const void *inputBuffer, void *outputBuffer,
     int bytes_per_buffer = framesPerBuffer * BYTES_PER_FRAME;
 
     if (btstack_ring_buffer_bytes_available(&ring_buffer) >= bytes_per_buffer){
-        btstack_ring_buffer_read(&ring_buffer, outputBuffer, bytes_per_buffer, &bytes_read);
+        btstack_ring_buffer_read(&ring_buffer, (uint8_t *) outputBuffer, bytes_per_buffer, &bytes_read);
     } else {
         printf("NOT ENOUGH DATA!\n");
         memset(outputBuffer, 0, bytes_per_buffer);

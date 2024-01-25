@@ -42,10 +42,10 @@
 #include <portaudio.h>
 
 #include "btstack_ring_buffer.h"
-#include "btstack_sbc.h"
+#include "classic/btstack_sbc.h"
 #include "wav_util.h"
-#include "avdtp.h"
-#include "avdtp_source.h"
+#include "classic/avdtp.h"
+#include "classic/avdtp_source.h"
 #include "btstack_stdin.h"
 
 #define NUM_CHANNELS        2
@@ -68,7 +68,7 @@ static uint32_t fill_audio_ring_buffer_timeout = 50; //ms
 static paTestData sin_data;
 // static int total_num_samples = 0;
 
-static char * output_wav_filename = "test_output_ring_sine.wav";
+static const char * output_wav_filename = "test_output_ring_sine.wav";
 // static char * input_wav_filename = "test_input_sine.wav";
 
 static btstack_sbc_decoder_state_t state;
