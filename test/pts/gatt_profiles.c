@@ -61,14 +61,6 @@
 #define ATT_SERVICE_GATT_SERVICE_START_HANDLE 0x000c
 #define ATT_SERVICE_GATT_SERVICE_END_HANDLE 0x000e
 
-#define BASS_NUM_CLIENTS 1
-#define BASS_NUM_SOURCES 2
-static bass_server_source_t bass_source_1;
-static bass_server_source_t bass_source_2;
-static bass_server_source_t bass_sources[BASS_NUM_SOURCES];
-static bass_server_connection_t bass_clients[BASS_NUM_CLIENTS];
-
-
 #define ASCS_NUM_STREAMENDPOINT_CHARACTERISTICS 5
 #define ASCS_NUM_CLIENTS 3
 static ascs_streamendpoint_characteristic_t ascs_streamendpoint_characteristics[ASCS_NUM_STREAMENDPOINT_CHARACTERISTICS];
@@ -545,10 +537,6 @@ int btstack_main(void)
     sink_node.audio_locations_mask = LE_AUDIO_LOCATION_MASK_FRONT_RIGHT;
     
     published_audio_capabilities_service_server_init(&sink_node, NULL);
-
-    bass_sources[0] = bass_source_1;
-    bass_sources[1] = bass_source_2;
-    broadcast_audio_scan_service_server_init(BASS_NUM_SOURCES, bass_sources, BASS_NUM_CLIENTS, bass_clients);
 
     // setup advertisements
     uint16_t adv_int_min = 0x0030;

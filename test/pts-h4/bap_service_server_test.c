@@ -654,7 +654,9 @@ static void show_usage(void){
     bd_addr_t      iut_address;
     gap_le_get_own_address(&iut_address_type, iut_address);
 
-    printf("IUT: addr type %u, addr %s", iut_address_type, bd_addr_to_str(iut_address));
+    printf("TSPX_bd_addr_iut: ");
+    for (uint8_t i=0;i<6;i++) printf("%02x", iut_address[i]);
+    printf("\n");
 
     printf("## PACS\n");
     printf("a - trigger Sink PAC record notification\n");
@@ -936,7 +938,6 @@ int btstack_main(void)
     hci_add_event_handler(&hci_event_callback_registration);
 
     // setup advertisements
-    gap_random_address_set_update_period(3000);
     setup_advertising();
     gap_periodic_advertising_sync_transfer_set_default_parameters(2, 0, 0x2000, 0);
 

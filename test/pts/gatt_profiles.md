@@ -2,6 +2,8 @@
 
 Tool: gatt_profiles
 
+## BASS -> pts-h4/bass.md
+
 ## BMS
 
 - BMS/SEN/SD/BV-01-C: (wait)
