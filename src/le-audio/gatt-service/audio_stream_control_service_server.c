@@ -245,6 +245,19 @@ static bool ascs_server_streamendpoint_can_transit_to_state(ascs_streamendpoint_
     }
 }
 
+static bool ascs_server_streamendpoint_cis_set(ascs_streamendpoint_t * streamendpoint){
+    switch (streamendpoint->state){
+        case ASCS_STATE_CODEC_CONFIGURED:
+        case ASCS_STATE_QOS_CONFIGURED:
+        case ASCS_STATE_ENABLING:
+        case ASCS_STATE_STREAMING:
+        case ASCS_STATE_DISABLING:
+        case ASCS_STATE_RELEASING:
+            return true;
+        default:
+            return false;
+    }
+}
 
 static void ascs_server_reset_client_response(ascs_server_connection_t * connection){
     connection->response_opcode = ASCS_OPCODE_UNSUPPORTED;
@@ -726,7 +739,7 @@ static void ascs_control_point_operation_prepare_response_for_qos_configuration(
             continue;
         }
 
-        if (streamendpoint->state == ASCS_STATE_CODEC_CONFIGURED){
+        if (ascs_server_streamendpoint_cis_set(streamendpoint)){
             if (qos_config.cig_id == connection->streamendpoints[i].qos_configuration.cig_id &&
                 qos_config.cis_id == connection->streamendpoints[i].qos_configuration.cis_id){
                 ascs_server_update_control_point_operation_response(connection, ase_index, ASCS_ERROR_CODE_INVALID_CONFIGURATION_PARAMETER_VALUE, ASCS_REJECT_REASON_INVALID_ASE_CIS_MAPPING);
