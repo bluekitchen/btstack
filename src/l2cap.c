@@ -1054,8 +1054,8 @@ uint8_t *l2cap_get_outgoing_buffer(void){
 }
 
 // only for L2CAP Basic Channels
-bool l2cap_reserve_packet_buffer(void){
-    return hci_reserve_packet_buffer();
+void l2cap_reserve_packet_buffer(void){
+    hci_reserve_packet_buffer();
 }
 
 // only for L2CAP Basic Channels

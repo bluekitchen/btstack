@@ -815,12 +815,9 @@ bool hci_is_packet_buffer_reserved(void){
     return hci_stack->hci_packet_buffer_reserved;
 }
 
-// reserves outgoing packet buffer. 
-// @return 1 if successful
-bool hci_reserve_packet_buffer(void){
+void hci_reserve_packet_buffer(void){
     btstack_assert(hci_stack->hci_packet_buffer_reserved == false);
     hci_stack->hci_packet_buffer_reserved = true;
-    return true;
 }
 
 void hci_release_packet_buffer(void){

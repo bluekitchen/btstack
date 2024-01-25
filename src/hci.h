@@ -1534,9 +1534,10 @@ uint8_t hci_send_iso_packet_buffer(uint16_t size);
 
 /**
  * Reserves outgoing packet buffer.
- * @return true on success
+ * @note Must only be called after a 'can send now' check or event
+ * @note Asserts if packet buffer is already reserved
  */
-bool hci_reserve_packet_buffer(void);
+void hci_reserve_packet_buffer(void);
 
 /**
  * Get pointer for outgoing packet buffer

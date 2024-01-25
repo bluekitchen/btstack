@@ -268,9 +268,8 @@ void hci_add_event_handler(btstack_packet_callback_registration_t * callback_han
 	btstack_linked_list_add(&event_packet_handlers, (btstack_linked_item_t *) callback_handler);
 }
 
-bool l2cap_reserve_packet_buffer(void){
+void l2cap_reserve_packet_buffer(void){
 	printf("l2cap_reserve_packet_buffer\n");
-	return true;
 }
 
 uint8_t l2cap_send_prepared_connectionless(uint16_t handle, uint16_t cid, uint16_t len){
