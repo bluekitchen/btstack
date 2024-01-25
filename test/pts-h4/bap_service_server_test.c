@@ -372,6 +372,9 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             le_notification_enabled = 0;
 
             printf("BAP Server: Disconnected from %s\n", bd_addr_to_str(bap_app_client_addr));
+
+            gap_extended_advertising_start(adv_handle, 0, 0);
+
             break;
 
         default:
@@ -741,7 +744,7 @@ static void stdin_process(char cmd){
             printf("set pa_sync_state[%d] to LE_AUDIO_PA_SYNC_STATE_NOT_SYNCHRONIZED_TO_PA\n", source_id);
             broadcast_audio_scan_service_server_set_pa_sync_state(source_id, LE_AUDIO_PA_SYNC_STATE_NOT_SYNCHRONIZED_TO_PA);
             break;
-        
+
         case '1':
             printf("set pa_sync_state[%d] to LE_AUDIO_PA_SYNC_STATE_SYNCINFO_REQUEST\n", source_id);
             broadcast_audio_scan_service_server_set_pa_sync_state(source_id, LE_AUDIO_PA_SYNC_STATE_SYNCINFO_REQUEST);

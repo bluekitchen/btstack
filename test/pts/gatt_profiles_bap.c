@@ -187,13 +187,6 @@ static csis_server_connection_t csis_coordiantors[CSIS_COORDINATORS_MAX_NUM];
 
 static uint8_t ase_id = 0;
 
-// ASCS
-#define ASCS_NUM_STREAMENDPOINT_CHARACTERISTICS 5
-#define ASCS_NUM_CLIENTS 3
-
-static ascs_streamendpoint_characteristic_t ascs_streamendpoint_characteristics[ASCS_NUM_STREAMENDPOINT_CHARACTERISTICS];
-static ascs_server_connection_t ascs_clients[ASCS_NUM_CLIENTS];
-
 // MCS
 static uint16_t media_player_id1 = 0;
 static media_control_service_server_t media_player1;
@@ -265,127 +258,6 @@ static void pacs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
             printf("PACS: audio location received\n");
             break;
         
-        default:
-            break;
-    }
-}
-
-static void ascs_server_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    UNUSED(channel);
-    UNUSED(size);
-
-    if (packet_type != HCI_EVENT_PACKET) return;
-    if (hci_event_packet_get_type(packet) != HCI_EVENT_GATTSERVICE_META) return;
-
-    hci_con_handle_t con_handle;
-    uint8_t status;
-
-    ascs_codec_configuration_t codec_configuration;
-    ascs_qos_configuration_t   qos_configuration;
-
-
-    switch (hci_event_gattservice_meta_get_subevent_code(packet)){
-        
-        case GATTSERVICE_SUBEVENT_ASCS_SERVER_CONNECTED:
-            con_handle = gattservice_subevent_ascs_server_connected_get_con_handle(packet);
-            status =     gattservice_subevent_ascs_server_connected_get_status(packet);
-
-            if (status != ERROR_CODE_SUCCESS){
-                printf("ASCS Server: connection to client failed, con_handle 0x%02x, status 0x%02x\n", con_handle, status);
-                return;
-            }
-            printf("ASCS Server: connected, con_handle 0x%02x\n", con_handle);
-            break;
-
-        case GATTSERVICE_SUBEVENT_ASCS_SERVER_DISCONNECTED:
-            con_handle = gattservice_subevent_ascs_server_disconnected_get_con_handle(packet);
-            printf("ASCS Server: disconnected, con_handle 0x%02x\n", con_handle);
-            break;
-
-        case GATTSERVICE_SUBEVENT_ASCS_SERVER_CODEC_CONFIGURATION:
-            ase_id = gattservice_subevent_ascs_server_codec_configuration_get_ase_id(packet);
-            con_handle = gattservice_subevent_ascs_server_codec_configuration_get_con_handle(packet);
-            codec_configuration.framing = LE_AUDIO_UNFRAMED_ISOAL_MASK_PDUS_NOT_SUPPORTED;
-            codec_configuration.preferred_phy = LE_AUDIO_SERVER_PHY_MASK_NO_PREFERENCE;
-            codec_configuration.preferred_retransmission_number = 0;
-            codec_configuration.max_transport_latency_ms = 0x0FA0;
-            codec_configuration.presentation_delay_min_us = 0x0005;
-            codec_configuration.presentation_delay_max_us = 0xFFAA;
-            codec_configuration.preferred_presentation_delay_min_us = 0;
-            codec_configuration.preferred_presentation_delay_max_us = 0;
-
-            // codec id:
-            codec_configuration.coding_format =  gattservice_subevent_ascs_server_codec_configuration_get_coding_format(packet);;
-            codec_configuration.company_id = gattservice_subevent_ascs_server_codec_configuration_get_company_id(packet);
-            codec_configuration.vendor_specific_codec_id = gattservice_subevent_ascs_server_codec_configuration_get_vendor_specific_codec_id(packet);
-            
-            codec_configuration.specific_codec_configuration.codec_configuration_mask = gattservice_subevent_ascs_server_codec_configuration_get_specific_codec_configuration_mask(packet);
-            codec_configuration.specific_codec_configuration.sampling_frequency_index = gattservice_subevent_ascs_server_codec_configuration_get_sampling_frequency_index(packet);
-            codec_configuration.specific_codec_configuration.frame_duration_index = gattservice_subevent_ascs_server_codec_configuration_get_frame_duration_index(packet);
-            codec_configuration.specific_codec_configuration.audio_channel_allocation_mask = gattservice_subevent_ascs_server_codec_configuration_get_audio_channel_allocation_mask(packet);
-            codec_configuration.specific_codec_configuration.octets_per_codec_frame = gattservice_subevent_ascs_server_codec_configuration_get_octets_per_frame(packet);
-            codec_configuration.specific_codec_configuration.codec_frame_blocks_per_sdu = gattservice_subevent_ascs_server_codec_configuration_get_frame_blocks_per_sdu(packet);
-
-            printf("ASCS: CODEC_CONFIGURATION_RECEIVED ase_id %d, con_handle 0x%02x\n", ase_id, con_handle);
-            audio_stream_control_service_server_streamendpoint_configure_codec(con_handle, ase_id, &codec_configuration);
-            break;
-
-        case GATTSERVICE_SUBEVENT_ASCS_SERVER_QOS_CONFIGURATION:
-            ase_id = gattservice_subevent_ascs_server_qos_configuration_get_ase_id(packet);
-            con_handle = gattservice_subevent_ascs_server_qos_configuration_get_con_handle(packet);
-
-            qos_configuration.cig_id = gattservice_subevent_ascs_server_qos_configuration_get_cig_id(packet);
-            qos_configuration.cis_id = gattservice_subevent_ascs_server_qos_configuration_get_cis_id(packet);
-            qos_configuration.sdu_interval = gattservice_subevent_ascs_server_qos_configuration_get_sdu_interval(packet);
-            qos_configuration.framing = gattservice_subevent_ascs_server_qos_configuration_get_framing(packet);
-            qos_configuration.phy = gattservice_subevent_ascs_server_qos_configuration_get_phy(packet);
-            qos_configuration.max_sdu = gattservice_subevent_ascs_server_qos_configuration_get_max_sdu(packet);
-            qos_configuration.retransmission_number = gattservice_subevent_ascs_server_qos_configuration_get_retransmission_number(packet);
-            qos_configuration.max_transport_latency_ms = gattservice_subevent_ascs_server_qos_configuration_get_max_transport_latency(packet);
-            qos_configuration.presentation_delay_us = gattservice_subevent_ascs_server_qos_configuration_get_presentation_delay_us(packet);
-
-            printf("ASCS: QOS_CONFIGURATION_RECEIVED ase_id %d\n", ase_id);
-            audio_stream_control_service_server_streamendpoint_configure_qos(con_handle, ase_id, &qos_configuration);
-            break;
-
-        case GATTSERVICE_SUBEVENT_ASCS_SERVER_METADATA:
-            ase_id = gattservice_subevent_ascs_server_metadata_get_ase_id(packet);
-            con_handle = gattservice_subevent_ascs_server_metadata_get_con_handle(packet);
-            printf("ASCS: METADATA_RECEIVED ase_id %d\n", ase_id);
-            audio_stream_control_service_server_streamendpoint_enable(con_handle, ase_id);
-            break;
-        case GATTSERVICE_SUBEVENT_ASCS_SERVER_START_READY:
-            ase_id = gattservice_subevent_ascs_server_start_ready_get_ase_id(packet);
-            con_handle = gattservice_subevent_ascs_server_start_ready_get_con_handle(packet);
-            printf("ASCS: START_READY ase_id %d\n", ase_id);
-            audio_stream_control_service_server_streamendpoint_receiver_start_ready(con_handle, ase_id);
-            break;
-        case GATTSERVICE_SUBEVENT_ASCS_SERVER_STOP_READY:
-            ase_id = gattservice_subevent_ascs_server_stop_ready_get_ase_id(packet);
-            con_handle = gattservice_subevent_ascs_server_stop_ready_get_con_handle(packet);
-            printf("ASCS: STOP_READY ase_id %d\n", ase_id);
-            audio_stream_control_service_server_streamendpoint_receiver_stop_ready(con_handle, ase_id);
-            break;
-        case GATTSERVICE_SUBEVENT_ASCS_SERVER_DISABLE:
-            ase_id = gattservice_subevent_ascs_server_disable_get_ase_id(packet);
-            con_handle = gattservice_subevent_ascs_server_disable_get_con_handle(packet);
-            printf("ASCS: DISABLE ase_id %d\n", ase_id);
-            audio_stream_control_service_server_streamendpoint_disable(con_handle, ase_id);
-            break;
-        case GATTSERVICE_SUBEVENT_ASCS_SERVER_RELEASE:
-            ase_id = gattservice_subevent_ascs_server_release_get_ase_id(packet);
-            con_handle = gattservice_subevent_ascs_server_release_get_con_handle(packet);
-            printf("ASCS: RELEASE ase_id %d\n", ase_id);
-            audio_stream_control_service_server_streamendpoint_release(con_handle, ase_id);
-            break;
-
-        case GATTSERVICE_SUBEVENT_ASCS_SERVER_RELEASED:
-            ase_id = gattservice_subevent_ascs_server_released_get_ase_id(packet);
-            con_handle = gattservice_subevent_ascs_server_released_get_con_handle(packet);
-            printf("ASCS: RELEASED ase_id %d\n", ase_id);
-            audio_stream_control_service_server_streamendpoint_released(con_handle, ase_id, false);
-            break;
-
         default:
             break;
     }
@@ -493,16 +365,6 @@ static void show_usage(void){
     printf("c - set available audio contexts\n");
     printf("d - set supported audio contexts\n");
 
-    printf("\n## ASCS\n");
-    printf("e - set Codec Config, SNK 1\n");
-    printf("E - set Codec Config, SRC 3\n");
-    printf("f - disable SNK 1\n");
-    printf("F - disable SRC 3\n");
-    printf("R - release SNK 1\n");
-    printf("S - release SRC 3\n");
-    printf("M - released SNK 1\n");
-    printf("N - released SRC 3\n");
-
     printf("\n## CSIS\n");
     printf("g - set OOB Sirk only\n");
     printf("G - set Encrypted Sirk\n");
@@ -551,39 +413,6 @@ static void stdin_process(char cmd){
             published_audio_capabilities_service_server_set_supported_audio_contexts(LE_AUDIO_CONTEXT_MASK_UNSPECIFIED|LE_AUDIO_CONTEXT_MASK_MEDIA, LE_AUDIO_CONTEXT_MASK_GAME);
             break;
 
-
-        case 'e':
-            printf("Set Codec Config SNK, 0x%02X\n", bap_app_server_con_handle);
-            audio_stream_control_service_server_streamendpoint_configure_codec(bap_app_server_con_handle, 1, &ascs_codec_configuration);
-            break;
-        case 'E':
-            printf("Set Codec Config SRC, 0x%02X\n", bap_app_server_con_handle);
-            audio_stream_control_service_server_streamendpoint_configure_codec(bap_app_server_con_handle, 3, &ascs_codec_configuration);
-            break;
-        case 'f':
-            printf("Disable SNK 1, 0x%02X\n", bap_app_server_con_handle);
-            audio_stream_control_service_server_streamendpoint_disable(bap_app_server_con_handle, 1);
-            break;
-        case 'F':
-            printf("Disable SRC 3, 0x%02X\n", bap_app_server_con_handle);
-            audio_stream_control_service_server_streamendpoint_disable(bap_app_server_con_handle, 3);
-            break;
-        case 'R':
-            printf("Release SNK 1, 0x%02X\n", bap_app_server_con_handle);
-            audio_stream_control_service_server_streamendpoint_release(bap_app_server_con_handle, 1);
-            break;
-        case 'S':
-            printf("Release SRC 3, 0x%02X\n", bap_app_server_con_handle);
-            audio_stream_control_service_server_streamendpoint_release(bap_app_server_con_handle, 3);
-            break;
-        case 'M':
-            printf("Released SNK 1, 0x%02X\n", bap_app_server_con_handle);
-            audio_stream_control_service_server_streamendpoint_released(bap_app_server_con_handle, 1, false);
-            break;
-        case 'N':
-            printf("Released SRC 3, 0x%02X\n", bap_app_server_con_handle);
-            audio_stream_control_service_server_streamendpoint_released(bap_app_server_con_handle, 3, false);
-            break;
 
         case 'g':
             printf("Set OOB Sirk only\n");
@@ -687,10 +516,6 @@ int btstack_main(void)
 
     published_audio_capabilities_service_server_init(&sink_node, &source_node);
     published_audio_capabilities_service_server_register_packet_handler(&pacs_server_packet_handler);
-
-    // setup ASCS
-    audio_stream_control_service_server_init(ASCS_NUM_STREAMENDPOINT_CHARACTERISTICS, ascs_streamendpoint_characteristics, ASCS_NUM_CLIENTS, ascs_clients);
-    audio_stream_control_service_server_register_packet_handler(&ascs_server_packet_handler);
 
     // setup MCS
     media_control_service_server_init();

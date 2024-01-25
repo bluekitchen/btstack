@@ -61,11 +61,6 @@
 #define ATT_SERVICE_GATT_SERVICE_START_HANDLE 0x000c
 #define ATT_SERVICE_GATT_SERVICE_END_HANDLE 0x000e
 
-#define ASCS_NUM_STREAMENDPOINT_CHARACTERISTICS 5
-#define ASCS_NUM_CLIENTS 3
-static ascs_streamendpoint_characteristic_t ascs_streamendpoint_characteristics[ASCS_NUM_STREAMENDPOINT_CHARACTERISTICS];
-static ascs_server_connection_t ascs_clients[ASCS_NUM_CLIENTS];
-
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static uint16_t att_read_callback(hci_con_handle_t con_handle, uint16_t att_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size);
@@ -530,8 +525,6 @@ int btstack_main(void)
 
     volume_control_service_server_init(vcs_volume_state_setting , vcs_volume_state_mute, aics_info_num, aics_info, vocs_info_num, vocs_info);
     
-    audio_stream_control_service_server_init(ASCS_NUM_STREAMENDPOINT_CHARACTERISTICS, ascs_streamendpoint_characteristics, ASCS_NUM_CLIENTS, ascs_clients);
-
     sink_node.records = &sink_pac_records[0];
     sink_node.records_num = 1;
     sink_node.audio_locations_mask = LE_AUDIO_LOCATION_MASK_FRONT_RIGHT;
