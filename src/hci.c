@@ -826,6 +826,7 @@ bool hci_reserve_packet_buffer(void){
 void hci_release_packet_buffer(void){
     btstack_assert(hci_stack->hci_packet_buffer_reserved);
     hci_stack->hci_packet_buffer_reserved = false;
+    hci_emit_transport_packet_sent();
 }
 
 // assumption: synchronous implementations don't provide can_send_packet_now as they don't keep the buffer after the call
@@ -962,7 +963,6 @@ static uint8_t hci_send_acl_packet_fragments(hci_connection_t *connection){
     if (hci_transport_synchronous()){
         hci_stack->acl_fragmentation_tx_active = 0;
         hci_release_packet_buffer();
-        hci_emit_transport_packet_sent();
     }
 
     return status;
@@ -979,7 +979,6 @@ uint8_t hci_send_acl_packet_buffer(int size){
     if (!connection) {
         log_error("hci_send_acl_packet_buffer called but no connection for handle 0x%04x", con_handle);
         hci_release_packet_buffer();
-        hci_emit_transport_packet_sent();
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
 
@@ -987,7 +986,6 @@ uint8_t hci_send_acl_packet_buffer(int size){
     if (!hci_can_send_prepared_acl_packet_now(con_handle)) {
         log_error("hci_send_acl_packet_buffer called but no free ACL buffers on controller");
         hci_release_packet_buffer();
-        hci_emit_transport_packet_sent();
         return BTSTACK_ACL_BUFFERS_FULL;
     }
 
@@ -1019,7 +1017,6 @@ uint8_t hci_send_sco_packet_buffer(int size){
         if (!hci_can_send_prepared_sco_packet_now()) {
             log_error("hci_send_sco_packet_buffer called but no free SCO buffers on controller");
             hci_release_packet_buffer();
-            hci_emit_transport_packet_sent();
             return BTSTACK_ACL_BUFFERS_FULL;
         }
 
@@ -1028,7 +1025,6 @@ uint8_t hci_send_sco_packet_buffer(int size){
         if (!connection) {
             log_error("hci_send_sco_packet_buffer called but no connection for handle 0x%04x", con_handle);
             hci_release_packet_buffer();
-            hci_emit_transport_packet_sent();
             return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
         }
 
@@ -1056,7 +1052,6 @@ uint8_t hci_send_sco_packet_buffer(int size){
     int err = hci_stack->hci_transport->send_packet(HCI_SCO_DATA_PACKET, packet, size);
     if (hci_transport_synchronous()){
         hci_release_packet_buffer();
-        hci_emit_transport_packet_sent();
     }
 
     if (err != 0){
@@ -4190,7 +4185,6 @@ static void event_handler(uint8_t *packet, uint16_t size){
                     hci_stack->acl_fragmentation_pos = 0;
                     if (release_buffer){
                         hci_release_packet_buffer();
-                        hci_emit_transport_packet_sent();
                     }
                 }
             }
@@ -4298,7 +4292,10 @@ static void event_handler(uint8_t *packet, uint16_t size){
             if (hci_stack->iso_fragmentation_total_size) break;
 #endif
             if (hci_stack->acl_fragmentation_total_size) break;
-            hci_release_packet_buffer();
+
+            // release packet buffer without HCI_EVENT_TRANSPORT_PACKET_SENT (as it will be later)
+            btstack_assert(hci_stack->hci_packet_buffer_reserved);
+            hci_stack->hci_packet_buffer_reserved = false;
 
 #ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
             hci_iso_notify_can_send_now();
@@ -7872,7 +7869,6 @@ uint8_t hci_send_cmd_va_arg(const hci_cmd_t * cmd, va_list argptr){
     // release packet buffer on error or for synchronous transport implementations
     if ((status != ERROR_CODE_SUCCESS) || hci_transport_synchronous()){
         hci_release_packet_buffer();
-        hci_emit_transport_packet_sent();
     }
 
     return status;
