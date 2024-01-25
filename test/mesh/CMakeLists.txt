@@ -79,13 +79,18 @@ foreach(EXAMPLE_FILE ${EXAMPLES_C})
 	target_link_libraries(${EXAMPLE} btstack)
 endforeach(EXAMPLE_FILE)
 
-## hard-coded tests that use CPPUtest
+# pkgconfig required to link cpputest
+find_package(PkgConfig REQUIRED)
+
+# CppuTest
+pkg_check_modules(CPPUTEST REQUIRED CppuTest)
+include_directories(${CPPUTEST_INCLUDE_DIRS})
+link_directories(${CPPUTEST_LIBRARY_DIRS})
+link_libraries(${CPPUTEST_LIBRARIES})
 
 message("example mesh_message_test")
-include_directories( /usr/local/include)
-link_directories( /usr/local/lib)
-link_libraries(CppUTest CppUTestExt)
-add_executable(mesh_message_test 
+
+add_executable(mesh_message_test
 ../../src/mesh/mesh_foundation.c
 ../../src/mesh/mesh_node.c
 ../../src/mesh/mesh_iv_index_seq_number.c

@@ -7,11 +7,11 @@ include_directories(${LIBUSB_INCLUDE_DIRS})
 link_directories(${LIBUSB_LIBRARY_DIRS})
 link_libraries(${LIBUSB_LIBRARIES})
 
-# add CppUTest
-include_directories("/usr/local/include")
-link_directories("/usr/local/lib")
-link_libraries( CppUTest )
-link_libraries( CppUTestExt )
+# CppuTest
+pkg_check_modules(CPPUTEST REQUIRED CppuTest)
+include_directories(${CPPUTEST_INCLUDE_DIRS})
+link_directories(${CPPUTEST_LIBRARY_DIRS})
+link_libraries(${CPPUTEST_LIBRARIES})
 
 include_directories(.)
 include_directories(..)

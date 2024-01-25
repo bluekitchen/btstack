@@ -1,11 +1,14 @@
 cmake_minimum_required (VERSION 3.5)
 project(test-hfp)
 
-# add CppUTest
-include_directories("/usr/local/include")
-link_directories("/usr/local/lib")
-link_libraries( CppUTest )
-link_libraries( CppUTestExt )
+# pkgconfig required to link cpputest
+find_package(PkgConfig REQUIRED)
+
+# CppuTest
+pkg_check_modules(CPPUTEST REQUIRED CppuTest)
+include_directories(${CPPUTEST_INCLUDE_DIRS})
+link_directories(${CPPUTEST_LIBRARY_DIRS})
+link_libraries(${CPPUTEST_LIBRARIES})
 
 include_directories(.)
 include_directories(..)
