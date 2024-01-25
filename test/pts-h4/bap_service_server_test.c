@@ -650,10 +650,9 @@ static int att_write_callback(hci_con_handle_t connection_handle, uint16_t att_h
 }
 
 static void show_usage(void){
-    uint8_t iut_address_type;
-    bd_addr_t      iut_address;
+    uint8_t   iut_address_type;
+    bd_addr_t iut_address;
     gap_le_get_own_address(&iut_address_type, iut_address);
-
     printf("TSPX_bd_addr_iut: ");
     for (uint8_t i=0;i<6;i++) printf("%02x", iut_address[i]);
     printf("\n");
@@ -679,7 +678,9 @@ static void show_usage(void){
     printf("s - set bis_sync[%d] to 0x00000001\n", source_id);
     printf("m - set big_encryption[%d] to 0x01\n", source_id);
     printf("n - set big_encryption[%d] to 0x02\n", source_id);
+    printf("y - set big_encryption[%d] to 0x03\n", source_id);
     printf("o - add source\n");
+    printf("x - ???\n");
 
     printf("\n## ASCS\n");
     printf("e - set Codec Config, SNK 1\n");
@@ -775,24 +776,28 @@ static void stdin_process(char cmd){
             printf("Set big_encryption[%d] to 0x%02x\n", source_id, LE_AUDIO_BIG_ENCRYPTION_BROADCAST_CODE_REQUIRED);
             bass_sources[0].big_encryption = LE_AUDIO_BIG_ENCRYPTION_BROADCAST_CODE_REQUIRED;
             break;
-        
+
         case 'n':
             printf("Set big_encryption[%d] to 0x%02x\n", source_id, LE_AUDIO_BIG_ENCRYPTION_DECRYPTING);
             bass_sources[0].big_encryption = LE_AUDIO_BIG_ENCRYPTION_DECRYPTING;
             break;
-            case 'o':
-            broadcast_audio_scan_service_server_add_source(&source_data1, &source_id);
-            break;
-        case 'x':
-            broadcast_audio_scan_service_server_add_source(&source_data1, &source_id);
-            bass_sources[0].big_encryption = LE_AUDIO_BIG_ENCRYPTION_BROADCAST_CODE_REQUIRED;
-            break;
+
         case 'y':
+            printf("Set big_encryption[%d] to 0x%02x\n", source_id, LE_AUDIO_BIG_ENCRYPTION_BAD_CODE);
             bass_sources[0].big_encryption = LE_AUDIO_BIG_ENCRYPTION_BAD_CODE;
             memcpy(bass_sources[0].bad_code, bad_code, sizeof(bad_code));
             bass_sources[0].data.subgroups[0].bis_sync_state = 0x00000000;
             break;
-            
+
+        case 'o':
+            broadcast_audio_scan_service_server_add_source(&source_data1, &source_id);
+            break;
+
+        case 'x':
+            broadcast_audio_scan_service_server_add_source(&source_data1, &source_id);
+            bass_sources[0].big_encryption = LE_AUDIO_BIG_ENCRYPTION_BROADCAST_CODE_REQUIRED;
+            break;
+
         case 'e':
             printf("Set Codec Config SNK, 0x%02X\n", bap_app_server_con_handle);
             audio_stream_control_service_server_streamendpoint_configure_codec(bap_app_server_con_handle, 1, &ascs_codec_configuration);
