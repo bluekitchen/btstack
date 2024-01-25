@@ -183,116 +183,8 @@ static pacs_record_t source_pac_records[] = {
 static pacs_streamendpoint_t sink_node;
 static pacs_streamendpoint_t source_node;
 
-// BASS
-#define BASS_NUM_CLIENTS 1
-#define BASS_NUM_SOURCES 1
-static bass_server_source_t bass_sources[] = {
-    { 
-        // bass_source_data_t
-        {
-            // address_type, address
-            BD_ADDR_TYPE_LE_PUBLIC, {0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, 
-            // adv_sid
-            0, 
-            // broadcast_id
-            0, 
-            // pa_sync
-            LE_AUDIO_PA_SYNC_DO_NOT_SYNCHRONIZE_TO_PA,
-            // pa_sync_state
-            LE_AUDIO_PA_SYNC_STATE_NOT_SYNCHRONIZED_TO_PA,
-            // pa_interval
-            0,
-            // subgroups_num
-            1,
-            {
-                // bass_subgroup_t
-                {
-                    // bis_sync
-                    0,
-                    // bis_sync_state
-                    0,
-                    // metadata_length
-                    0,
-                    // le_audio_metadata_t
-                    {0}
-                }
-            }
-        },
-        
-    
-        // update_counter, source_id, in_use
-        0, 0, false, 
-        
-        // big_encryption
-        LE_AUDIO_BIG_ENCRYPTION_NOT_ENCRYPTED,
-        // bad_code
-        {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},  
-        // bass_receive_state_handle
-        0x00, 
-        // bass_receive_state_client_configuration_handle
-        0x00, 
-        // bass_receive_state_client_configuration
-        0x00, 
-    }
-};
-
-static bass_source_data_t source_data1 = {
-    // address_type, address
-     
-    BD_ADDR_TYPE_LE_PUBLIC, {0xC0, 0x07, 0xE8, 0x7E, 0x55, 0x5F}, 
-    // adv_sid
-    0x01, 
-    // broadcast_id
-    0, 
-    // pa_sync
-    LE_AUDIO_PA_SYNC_DO_NOT_SYNCHRONIZE_TO_PA,
-    // pa_sync_state
-    LE_AUDIO_PA_SYNC_STATE_NOT_SYNCHRONIZED_TO_PA,
-    // pa_interval
-    0,
-    // subgroups_num
-    1,
-    {
-        {
-            0,
-            0, 
-            45 - 15, 
-            {
-                // all metadata set
-                (1 << LE_AUDIO_METADATA_TYPE_STREAMING_AUDIO_CONTEXTS), 
-                // (2) preferred_audio_contexts_mask
-                LE_AUDIO_CONTEXT_MASK_UNSPECIFIED,
-                // (2) streaming_audio_contexts_mask
-                0x4000,
-                // program_info
-                0, {0},
-                // language_code
-                0x00000,
-                // ccids_num
-                0, {0},
-                // parental_rating
-                LE_AUDIO_PARENTAL_RATING_NO_RATING,
-                // program_info_uri_length
-                0, {0},
-                // extended_metadata_type
-                0x0001, 0, {0},
-                // vendor_specific_metadata_type
-                0x0002, 0, {0},
-            }
-
-        }
-    }
-    
-};
-
-
 static csis_server_connection_t csis_coordiantors[CSIS_COORDINATORS_MAX_NUM];
 
-static uint8_t bad_code[] = {0x01, 0x02, 0x68, 0x05, 0x53, 0xF1, 0x41, 0x5A, 0xA2, 0x65, 0xBB, 0xAF, 0xC6, 0xEA, 0x03, 0xB8}; 
-static bass_server_connection_t bass_clients[BASS_NUM_CLIENTS];
-
-static le_audio_pa_sync_state_t pa_sync_state = LE_AUDIO_PA_SYNC_STATE_NOT_SYNCHRONIZED_TO_PA;
-static uint8_t source_id = 0;
 static uint8_t ase_id = 0;
 
 // ASCS
@@ -373,58 +265,6 @@ static void pacs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
             printf("PACS: audio location received\n");
             break;
         
-        default:
-            break;
-    }
-}
-
-static void bass_server_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    UNUSED(channel);
-    UNUSED(size);
-
-    if (packet_type != HCI_EVENT_PACKET) return;
-    if (hci_event_packet_get_type(packet) != HCI_EVENT_GATTSERVICE_META) return;
-    
-    switch (hci_event_gattservice_meta_get_subevent_code(packet)){
-        case GATTSERVICE_SUBEVENT_BASS_SERVER_SCAN_STOPPED:
-            printf("BASS: remote scan stopped\n");
-            break;
-        case GATTSERVICE_SUBEVENT_BASS_SERVER_SCAN_STARTED:
-            printf("BASS: remote scan started\n");
-            break;
-        
-        case GATTSERVICE_SUBEVENT_BASS_SERVER_SOURCE_ADDED:
-            source_id = gattservice_subevent_bass_server_source_added_get_source_id(packet);
-            printf("BASS: source[%d] added, py_sync %d\n", source_id, gattservice_subevent_bass_server_source_added_get_pa_sync(packet));
-            btstack_assert(source_id < BASS_NUM_SOURCES);
-
-            switch (gattservice_subevent_bass_server_source_added_get_pa_sync(packet)){
-                case LE_AUDIO_PA_SYNC_DO_NOT_SYNCHRONIZE_TO_PA:
-                    bass_sources[source_id].data.pa_sync_state = LE_AUDIO_PA_SYNC_STATE_NOT_SYNCHRONIZED_TO_PA;
-                    break;
-                case LE_AUDIO_PA_SYNC_SYNCHRONIZE_TO_PA_PAST_AVAILABLE:
-                case LE_AUDIO_PA_SYNC_SYNCHRONIZE_TO_PA_PAST_NOT_AVAILABLE:
-                    bass_sources[source_id].data.pa_sync_state = LE_AUDIO_PA_SYNC_STATE_SYNCHRONIZED_TO_PA;
-                    break;
-                default:
-                    btstack_assert(false);
-                    return;
-            }
-            broadcast_audio_scan_service_server_set_pa_sync_state(source_id, bass_sources[source_id].data.pa_sync_state);
-            printf("BASS: source[%d], py_sync_state %d\n", source_id, bass_sources[source_id].data.pa_sync_state);
-            break;
-        
-        case GATTSERVICE_SUBEVENT_BASS_SERVER_SOURCE_MODIFIED:
-            source_id = gattservice_subevent_bass_server_source_modified_get_source_id(packet);
-            printf("BASS: source[%d] modified, py_sync %d\n", source_id, gattservice_subevent_bass_server_source_added_get_pa_sync(packet));
-            break;
-
-        case GATTSERVICE_SUBEVENT_BASS_SERVER_SOURCE_DELETED:
-            source_id = gattservice_subevent_bass_server_source_deleted_get_source_id(packet);
-            printf("BASS: source deleted %d, %d\n", source_id, pa_sync_state);
-            btstack_assert(source_id < BASS_NUM_SOURCES);
-            break;
-
         default:
             break;
     }
@@ -653,19 +493,6 @@ static void show_usage(void){
     printf("c - set available audio contexts\n");
     printf("d - set supported audio contexts\n");
 
-    printf("\n## BASS\n");
-    printf("0 - set pa_sync_state[%d] to NOT_SYNCHRONIZED_TO_PA\n", source_id);
-    printf("1 - set pa_sync_state[%d] to SYNCINFO_REQUEST\n", source_id);
-    printf("2 - set pa_sync_state[%d] to SYNCHRONIZED_TO_PA\n", source_id);
-    printf("3 - set pa_sync_state[%d] to FAILED_TO_SYNCHRONIZE_TO_PA\n", source_id);
-    printf("4 - set pa_sync_state[%d] to NO_PAST\n", source_id);
-
-    printf("r - set bis_sync[%d] to 0x00000000\n", source_id);
-    printf("s - set bis_sync[%d] to 0x00000001\n", source_id);
-    printf("m - set big_encryption[%d] to 0x01\n", source_id);
-    printf("n - set big_encryption[%d] to 0x02\n", source_id);
-    printf("o - add source\n");
-
     printf("\n## ASCS\n");
     printf("e - set Codec Config, SNK 1\n");
     printf("E - set Codec Config, SRC 3\n");
@@ -724,63 +551,7 @@ static void stdin_process(char cmd){
             published_audio_capabilities_service_server_set_supported_audio_contexts(LE_AUDIO_CONTEXT_MASK_UNSPECIFIED|LE_AUDIO_CONTEXT_MASK_MEDIA, LE_AUDIO_CONTEXT_MASK_GAME);
             break;
 
-        case '0':
-            printf("set pa_sync_state[%d] to LE_AUDIO_PA_SYNC_STATE_NOT_SYNCHRONIZED_TO_PA\n", source_id);
-            broadcast_audio_scan_service_server_set_pa_sync_state(source_id, LE_AUDIO_PA_SYNC_STATE_NOT_SYNCHRONIZED_TO_PA);
-            break;
-        
-        case '1':
-            printf("set pa_sync_state[%d] to LE_AUDIO_PA_SYNC_STATE_SYNCINFO_REQUEST\n", source_id);
-            broadcast_audio_scan_service_server_set_pa_sync_state(source_id, LE_AUDIO_PA_SYNC_STATE_SYNCINFO_REQUEST);
-            break;
-        
-        case '2':
-            printf("set pa_sync_state[%d] to LE_AUDIO_PA_SYNC_STATE_SYNCHRONIZED_TO_PA\n", source_id);
-            broadcast_audio_scan_service_server_set_pa_sync_state(source_id, LE_AUDIO_PA_SYNC_STATE_SYNCHRONIZED_TO_PA);
-            break;
 
-        case '3':
-            printf("set pa_sync_state[%d] to LE_AUDIO_PA_SYNC_STATE_FAILED_TO_SYNCHRONIZE_TO_PA\n", source_id);
-            broadcast_audio_scan_service_server_set_pa_sync_state(source_id, LE_AUDIO_PA_SYNC_STATE_FAILED_TO_SYNCHRONIZE_TO_PA);
-            break;
-        
-        case '4':
-            printf("set pa_sync_state[%d] to LE_AUDIO_PA_SYNC_STATE_NO_PAST\n", source_id);
-            broadcast_audio_scan_service_server_set_pa_sync_state(source_id, LE_AUDIO_PA_SYNC_STATE_NO_PAST);
-            break;
-        
-        case 'r':
-            printf("Set bis_sync[%d] to 0x00000000\n", source_id);
-            bass_sources[0].data.subgroups[0].bis_sync_state = 0;
-            break;
-        
-        case 's':
-            printf("Set bis_sync[%d] to 0x00000001\n", source_id);
-            bass_sources[0].data.subgroups[0].bis_sync_state = 0x00000001;
-            break;
-
-        case 'm':
-            printf("Set big_encryption[%d] to 0x%02x\n", source_id, LE_AUDIO_BIG_ENCRYPTION_BROADCAST_CODE_REQUIRED);
-            bass_sources[0].big_encryption = LE_AUDIO_BIG_ENCRYPTION_BROADCAST_CODE_REQUIRED;
-            break;
-        
-        case 'n':
-            printf("Set big_encryption[%d] to 0x%02x\n", source_id, LE_AUDIO_BIG_ENCRYPTION_DECRYPTING);
-            bass_sources[0].big_encryption = LE_AUDIO_BIG_ENCRYPTION_DECRYPTING;
-            break;
-            case 'o':
-            broadcast_audio_scan_service_server_add_source(&source_data1, &source_id);
-            break;
-        case 'x':
-            broadcast_audio_scan_service_server_add_source(&source_data1, &source_id);
-            bass_sources[0].big_encryption = LE_AUDIO_BIG_ENCRYPTION_BROADCAST_CODE_REQUIRED;
-            break;
-        case 'y':
-            bass_sources[0].big_encryption = LE_AUDIO_BIG_ENCRYPTION_BAD_CODE;
-            memcpy(bass_sources[0].bad_code, bad_code, sizeof(bad_code));
-            bass_sources[0].data.subgroups[0].bis_sync_state = 0x00000000;
-            break;
-            
         case 'e':
             printf("Set Codec Config SNK, 0x%02X\n", bap_app_server_con_handle);
             audio_stream_control_service_server_streamendpoint_configure_codec(bap_app_server_con_handle, 1, &ascs_codec_configuration);
@@ -917,10 +688,6 @@ int btstack_main(void)
     published_audio_capabilities_service_server_init(&sink_node, &source_node);
     published_audio_capabilities_service_server_register_packet_handler(&pacs_server_packet_handler);
 
-    // setup BASS
-    broadcast_audio_scan_service_server_init(BASS_NUM_SOURCES, bass_sources, BASS_NUM_CLIENTS, bass_clients);
-    broadcast_audio_scan_service_server_register_packet_handler(&bass_server_packet_handler);
-
     // setup ASCS
     audio_stream_control_service_server_init(ASCS_NUM_STREAMENDPOINT_CHARACTERISTICS, ascs_streamendpoint_characteristics, ASCS_NUM_CLIENTS, ascs_clients);
     audio_stream_control_service_server_register_packet_handler(&ascs_server_packet_handler);
@@ -928,14 +695,14 @@ int btstack_main(void)
     // setup MCS
     media_control_service_server_init();
 
-    uint8_t icon_object_id[6] = {0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF};
+    ots_object_id_t icon_object_id = {0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF};
     char * icon_url = "https://www.bluetooth.com/";
 
     media_control_service_server_register_media_player(&media_player1, 
         &mcs_server_packet_handler, 0xFFFF, 
         &media_player_id1);
     media_control_service_server_set_media_player_name(media_player_id1, "BK Player1");
-    media_control_service_server_set_icon_object_id(media_player_id1, icon_object_id);
+    media_control_service_server_set_icon_object_id(media_player_id1, &icon_object_id);
     media_control_service_server_set_icon_url(media_player_id1, icon_url);
     media_control_service_server_set_track_title(media_player_id1, "Track Title 1");
     media_control_service_server_set_playing_orders_supported(media_player_id1, 0x3FF);
