@@ -818,15 +818,13 @@ bool hci_is_packet_buffer_reserved(void){
 // reserves outgoing packet buffer. 
 // @return 1 if successful
 bool hci_reserve_packet_buffer(void){
-    if (hci_stack->hci_packet_buffer_reserved) {
-        log_error("hci_reserve_packet_buffer called but buffer already reserved");
-        return false;
-    }
+    btstack_assert(hci_stack->hci_packet_buffer_reserved == false);
     hci_stack->hci_packet_buffer_reserved = true;
     return true;
 }
 
 void hci_release_packet_buffer(void){
+    btstack_assert(hci_stack->hci_packet_buffer_reserved);
     hci_stack->hci_packet_buffer_reserved = false;
 }
 
