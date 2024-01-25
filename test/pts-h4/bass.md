@@ -27,8 +27,8 @@ Tool: pts-h4/bap_service_server_test
 - BASS/SR/CP/BV-17-C: le_audio_broadcast_sink, s
 - BASS/SR/CP/BV-18-C: le_audio_broadcast_sink, s
 - BASS/SR/CP/BV-19-C: x, 2, y, 2
-- BASS/SR/CP/BV-20-C: y, 2
-- BASS/SR/CP/BV-20-C: ???
+- BASS/SR/CP/BV-20-C: m, y, 2
+- BASS/SR/CP/BV-21-C: m, press 'ok' within 3 seconds, o, 2
 
 - BASS/SR/SPE/BI-01-C: (wait)
 - BASS/SR/SPE/BI-02-C: (wait)
