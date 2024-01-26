@@ -72,9 +72,6 @@ typedef struct {
     gatt_service_client_connection_helper_t basic_connection;
     audio_input_service_client_state_t state;
 
-    // btstack_packet_handler_t client_handler;
-    // gatt_client_notification_t notification_listener;
-
     // Used for read characteristic queries
     uint8_t characteristic_index;
     // Used to store parameters for write characteristic
@@ -86,7 +83,7 @@ typedef struct {
     } data;
 
     // Used to store param of audio input control point command
-    int32_t  control_point_command_param;
+    // int32_t  control_point_command_param;
 
 } aics_client_connection_t;
 
@@ -122,12 +119,29 @@ uint8_t audio_input_control_service_client_connect(
     gatt_service_client_characteristic_t * characteristics_storage, uint8_t characteristics_num,
     btstack_packet_handler_t packet_handler);
 
+uint8_t audio_input_control_service_client_write_input_state_notification(aics_client_connection_t * connection, bool enable);
+uint8_t audio_input_control_service_client_write_input_description_notification(aics_client_connection_t * connection, bool enable);
+uint8_t audio_input_control_service_client_write_input_status_notification(aics_client_connection_t * connection, bool enable);
+
+uint8_t audio_input_control_service_client_write_mute(aics_client_connection_t * connection, bool enable);
+uint8_t audio_input_control_service_client_write_gain_setting(aics_client_connection_t * connection);
+uint8_t audio_input_control_service_client_write_manual_gain_mode(aics_client_connection_t * connection);
+uint8_t audio_input_control_service_client_write_automatic_gain_mode(aics_client_connection_t * connection);
+uint8_t audio_input_control_service_client_write_input_description(aics_client_connection_t * connection);
+
+uint8_t audio_input_control_service_client_read_input_state(aics_client_connection_t * connection);
+uint8_t audio_input_control_service_client_read_gain_setting_properties(aics_client_connection_t * connection);
+uint8_t audio_input_control_service_client_read_input_type(aics_client_connection_t * connection);
+uint8_t audio_input_control_service_client_read_input_status(aics_client_connection_t * connection);
+uint8_t audio_input_control_service_client_read_input_description(aics_client_connection_t * connection);
+
 /**
  * @brief Disconnect.
  * @param aics_cid
  * @return status
  */
 uint8_t audio_input_control_service_client_disconnect(uint16_t aics_cid);
+
 
 /**
  * @brief De-initialize Media Control Service. 
