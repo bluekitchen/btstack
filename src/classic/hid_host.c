@@ -550,9 +550,23 @@ static void hid_host_handle_sdp_client_query_result(uint8_t packet_type, uint16_
             attribute_offset = sdp_event_query_attribute_byte_get_data_offset(packet);
             attribute_data = sdp_event_query_attribute_byte_get_data(packet);
 
-            // process BLUETOOTH_ATTRIBUTE_HID_DESCRIPTOR_LIST with state machine
-            if (attribute_id == BLUETOOTH_ATTRIBUTE_HID_DESCRIPTOR_LIST){
-                hid_host_handle_sdp_hid_descriptor_list(connection, attribute_offset, attribute_data);
+            // filter attributes
+            bool process_data = false;
+            switch (attribute_id){
+                case BLUETOOTH_ATTRIBUTE_PROTOCOL_DESCRIPTOR_LIST:
+                case BLUETOOTH_ATTRIBUTE_ADDITIONAL_PROTOCOL_DESCRIPTOR_LISTS:
+                case BLUETOOTH_ATTRIBUTE_HIDSSR_HOST_MAX_LATENCY:
+                case BLUETOOTH_ATTRIBUTE_HIDSSR_HOST_MIN_TIMEOUT:
+                    process_data = true;
+                    break;
+                case BLUETOOTH_ATTRIBUTE_HID_DESCRIPTOR_LIST:
+                    // directly process BLUETOOTH_ATTRIBUTE_HID_DESCRIPTOR_LIST with state machine
+                    hid_host_handle_sdp_hid_descriptor_list(connection, attribute_offset, attribute_data);
+                    break;
+                default:
+                    break;
+            }
+            if (process_data == false){
                 break;
             }
 
