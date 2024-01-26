@@ -103,8 +103,6 @@ static aics_info_t aics_info[] = {
 };
 static uint8_t aics_info_num = 3;
 
-static pacs_streamendpoint_t sink_node;
-
 static vocs_info_t vocs_info[] = {
         {
                 10, LE_AUDIO_LOCATION_MASK_FRONT_RIGHT,
@@ -118,50 +116,6 @@ static vocs_info_t vocs_info[] = {
         }
 };
 static uint8_t vocs_info_num = 2;
-
-static pacs_record_t sink_pac_records[] = {
-    // sink_record_0
-    {
-        // codec ID
-        {HCI_AUDIO_CODING_FORMAT_LC3, 0x0000, 0x0000},
-        // capabilities
-        {
-            0x3E,
-            LE_AUDIO_CODEC_SAMPLING_FREQUENCY_MASK_16000_HZ | LE_AUDIO_CODEC_SAMPLING_FREQUENCY_MASK_44100_HZ,
-            LE_AUDIO_CODEC_FRAME_DURATION_MASK_7500US | LE_AUDIO_CODEC_FRAME_DURATION_MASK_10000US,
-            LE_AUDIO_CODEC_AUDIO_CHANNEL_COUNT_MASK_1 | LE_AUDIO_CODEC_AUDIO_CHANNEL_COUNT_MASK_2 | LE_AUDIO_CODEC_AUDIO_CHANNEL_COUNT_MASK_4 | LE_AUDIO_CODEC_AUDIO_CHANNEL_COUNT_MASK_8,
-            0x11AA,
-            0xBB22,
-            2
-        },
-        // metadata length
-       45, 
-        // metadata
-        {   
-            // all metadata set
-            0x0FFE, 
-            // (2) preferred_audio_contexts_mask
-            LE_AUDIO_CONTEXT_MASK_UNSPECIFIED,
-            // (2) streaming_audio_contexts_mask
-            LE_AUDIO_CONTEXT_MASK_UNSPECIFIED,
-            // program_info
-            3, {0xA1, 0xA2, 0xA3},
-            // language_code
-            0x0000DE,
-            // ccids_num
-            3, {0xB1, 0xB2, 0xB3},
-            // parental_rating
-            LE_AUDIO_PARENTAL_RATING_NO_RATING,
-            // program_info_uri_length
-            3, {0xC1, 0xC2, 0xC3},
-            // extended_metadata_type
-            0x0001, 3, {0xD1, 0xD2, 0xD3},
-            // vendor_specific_metadata_type
-            0x0002, 3, {0xE1, 0xE2, 0xE3},
-        }
-    }
-};
-
 
 #ifdef ENABLE_GATT_OVER_CLASSIC
 #include "classic/gatt_sdp.h"
@@ -306,10 +260,13 @@ static int att_write_callback(hci_con_handle_t connection_handle, uint16_t att_h
 /* LISTING_END */
 
 static void show_usage(void){
+
     printf("## BAS\n");
     printf("a - send 50%% Battery level\n");
+
     printf("## TPS\n");
     printf("t - send 10 TX Power level\n");
+
     printf("\n## BMS\n");
     printf("b - enable classic and LE flags\n");
     printf("c - enable classic flag, no auth\n");
@@ -525,12 +482,6 @@ int btstack_main(void)
 
     volume_control_service_server_init(vcs_volume_state_setting , vcs_volume_state_mute, aics_info_num, aics_info, vocs_info_num, vocs_info);
     
-    sink_node.records = &sink_pac_records[0];
-    sink_node.records_num = 1;
-    sink_node.audio_locations_mask = LE_AUDIO_LOCATION_MASK_FRONT_RIGHT;
-    
-    published_audio_capabilities_service_server_init(&sink_node, NULL);
-
     // setup advertisements
     uint16_t adv_int_min = 0x0030;
     uint16_t adv_int_max = 0x0030;
