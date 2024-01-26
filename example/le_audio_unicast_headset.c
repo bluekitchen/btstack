@@ -82,7 +82,7 @@
 
 #define ENABLE_MCS_CLIENT
 #define ENABLE_MICROPHONE
-// #define ENABLE_CSIS_SERVER
+#define ENABLE_CSIS_SERVER
 
 //#define DEBUG_PLC
 #ifdef DEBUG_PLC
@@ -811,6 +811,8 @@ int btstack_main(int argc, const char * argv[]){
     coordinated_set_identification_service_server_init(CSIS_NUM_CLIENTS, csis_coordinators, 1, 1);
     coordinated_set_identification_service_server_register_packet_handler(&csis_packet_handler);
     coordinated_set_identification_service_server_set_sirk(CSIS_SIRK_TYPE_PUBLIC, &sirk[0], false);
+    coordinated_set_identification_service_server_set_size(1);
+    coordinated_set_identification_service_server_set_rank(1);
     coordinated_set_identification_service_server_generate_rsi();
 #endif
 
