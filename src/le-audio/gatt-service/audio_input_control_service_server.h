@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 BlueKitchen GmbH
+ * Copyright (C) 2023 BlueKitchen GmbH
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -46,6 +46,7 @@
 #include <stdint.h>
 
 #include "ble/att_db.h"
+#include "le-audio/gatt-service/audio_input_control_service_util.h"
 
 #if defined __cplusplus
 extern "C" {
@@ -59,72 +60,6 @@ extern "C" {
  *
  */
 #define AICS_MAX_NUM_SERVICES 5
-#define AICS_MAX_AUDIO_INPUT_DESCRIPTION_LENGTH           30
-
-#define AICS_ERROR_CODE_INVALID_CHANGE_COUNTER          0x80
-#define AICS_ERROR_CODE_OPCODE_NOT_SUPPORTED            0x81
-#define AICS_ERROR_CODE_MUTE_DISABLED                   0x82
-#define AICS_ERROR_CODE_VALUE_OUT_OF_RANGE              0x83
-#define AICS_ERROR_CODE_GAIN_MODE_CHANGE_NOT_ALLOWED    0x84
-
-typedef enum {
-    AICS_OPCODE_SET_GAIN_SETTING        = 0x01,
-    AICS_OPCODE_UMUTE                   = 0x02,
-    AICS_OPCODE_MUTE                    = 0x03,
-    AICS_OPCODE_SET_MANUAL_GAIN_MODE    = 0x04,
-    AICS_OPCODE_SET_AUTOMATIC_GAIN_MODE = 0x05
-} aics_opcode_t;
-
-typedef enum {
-    AICS_MUTE_MODE_NOT_MUTED = 0,
-    AICS_MUTE_MODE_MUTED,
-    AICS_MUTE_MODE_DISABLED
-} aics_mute_mode_t;
-
-typedef enum {
-    AICS_GAIN_MODE_MANUAL_ONLY = 0,
-    AICS_GAIN_MODE_AUTOMATIC_ONLY,
-    AICS_GAIN_MODE_MANUAL,
-    AICS_GAIN_MODE_AUTOMATIC
-} aics_gain_mode_t;
-
-typedef enum {
-    AICS_AUDIO_INPUT_STATUS_INACTIVE = 0,
-    AICS_AUDIO_INPUT_STATUS_ACTIVE
-} aics_audio_input_status_t;
-
-typedef enum {
-    AICS_AUDIO_INPUT_TYPE_UNSPECIFIED = 0,
-    AICS_AUDIO_INPUT_TYPE_BLUETOOTH_AUDIO_STREAM,
-    AICS_AUDIO_INPUT_TYPE_MICROPHONE,
-    AICS_AUDIO_INPUT_TYPE_ANALOG_INTERFACE,
-    AICS_AUDIO_INPUT_TYPE_DIGITAL_INTERFACE,
-    AICS_AUDIO_INPUT_TYPE_RADIO,
-    AICS_AUDIO_INPUT_TYPE_STREAMING_AUDIO_SOURCE
-} aics_audio_input_type_t;
-
-typedef struct {
-    int8_t  gain_setting_db;
-    aics_mute_mode_t mute_mode;
-    aics_gain_mode_t gain_mode;
-} aics_audio_input_state_t;
-
-typedef struct {
-    uint8_t  gain_settings_units; // 1 unit == 0.1 dB
-    int8_t   gain_settings_minimum;
-    int8_t   gain_settings_maximum;
-} aics_gain_settings_properties_t;
-
-typedef struct {
-    aics_audio_input_state_t audio_input_state;
-    aics_gain_settings_properties_t gain_settings_properties;
-
-    aics_audio_input_type_t audio_input_type;
-    char audio_input_description[AICS_MAX_AUDIO_INPUT_DESCRIPTION_LENGTH];
-
-    btstack_packet_handler_t packet_handler;
-} aics_info_t;
-
 
 /* API_START */
 typedef struct {
