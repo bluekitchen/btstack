@@ -93,96 +93,6 @@ static ascs_codec_configuration_t ascs_codec_configuration = {
     }
 };
 
-// PACS
-static pacs_record_t sink_pac_records[] = {
-    // sink_record_0
-    {
-        // codec ID
-        {HCI_AUDIO_CODING_FORMAT_LC3, 0x0000, 0x0000},
-        // capabilities
-        {
-            0x3E,
-            LE_AUDIO_CODEC_SAMPLING_FREQUENCY_MASK_16000_HZ | LE_AUDIO_CODEC_SAMPLING_FREQUENCY_MASK_44100_HZ,
-            LE_AUDIO_CODEC_FRAME_DURATION_MASK_7500US | LE_AUDIO_CODEC_FRAME_DURATION_MASK_10000US,
-            LE_AUDIO_CODEC_AUDIO_CHANNEL_COUNT_MASK_1 | LE_AUDIO_CODEC_AUDIO_CHANNEL_COUNT_MASK_2 | LE_AUDIO_CODEC_AUDIO_CHANNEL_COUNT_MASK_4 | LE_AUDIO_CODEC_AUDIO_CHANNEL_COUNT_MASK_8,
-            0x11AA,
-            0xBB22,
-            2
-        },
-        // metadata length
-       45, 
-        // metadata
-        {   
-            // all metadata set
-            0x0FFE, 
-            // (2) preferred_audio_contexts_mask
-            LE_AUDIO_CONTEXT_MASK_UNSPECIFIED,
-            // (2) streaming_audio_contexts_mask
-            LE_AUDIO_CONTEXT_MASK_UNSPECIFIED,
-            // program_info
-            3, {0xA1, 0xA2, 0xA3},
-            // language_code
-            0x0000DE,
-            // ccids_num
-            3, {0xB1, 0xB2, 0xB3},
-            // parental_rating
-            LE_AUDIO_PARENTAL_RATING_NO_RATING,
-            // program_info_uri_length
-            3, {0xC1, 0xC2, 0xC3},
-            // extended_metadata_type
-            0x0001, 3, {0xD1, 0xD2, 0xD3},
-            // vendor_specific_metadata_type
-            0x0002, 3, {0xE1, 0xE2, 0xE3},
-        }
-    }
-};
-
-static pacs_record_t source_pac_records[] = {
-    // sink_record_0
-    {
-        // codec ID
-        {HCI_AUDIO_CODING_FORMAT_LC3, 0x0000, 0x0000},
-        // capabilities
-        {
-            0x3E,
-            LE_AUDIO_CODEC_SAMPLING_FREQUENCY_MASK_16000_HZ | LE_AUDIO_CODEC_SAMPLING_FREQUENCY_MASK_44100_HZ,
-            LE_AUDIO_CODEC_FRAME_DURATION_MASK_7500US | LE_AUDIO_CODEC_FRAME_DURATION_MASK_10000US,
-            LE_AUDIO_CODEC_AUDIO_CHANNEL_COUNT_MASK_1 | LE_AUDIO_CODEC_AUDIO_CHANNEL_COUNT_MASK_2 | LE_AUDIO_CODEC_AUDIO_CHANNEL_COUNT_MASK_4 | LE_AUDIO_CODEC_AUDIO_CHANNEL_COUNT_MASK_8,
-            0x11AA,
-            0xBB22,
-            2
-        },
-        // metadata length
-       45, 
-        // metadata
-        {   
-            // all metadata set
-            0x0FFE, 
-            // (2) preferred_audio_contexts_mask
-            LE_AUDIO_CONTEXT_MASK_UNSPECIFIED,
-            // (2) streaming_audio_contexts_mask
-            LE_AUDIO_CONTEXT_MASK_UNSPECIFIED,
-            // program_info
-            3, {0xA1, 0xA2, 0xA3},
-            // language_code
-            0x0000DE,
-            // ccids_num
-            3, {0xB1, 0xB2, 0xB3},
-            // parental_rating
-            LE_AUDIO_PARENTAL_RATING_NO_RATING,
-            // program_info_uri_length
-            3, {0xC1, 0xC2, 0xC3},
-            // extended_metadata_type
-            0x0001, 3, {0xD1, 0xD2, 0xD3},
-            // vendor_specific_metadata_type
-            0x0002, 3, {0xE1, 0xE2, 0xE3},
-        }
-    }
-};
-
-static pacs_streamendpoint_t sink_node;
-static pacs_streamendpoint_t source_node;
-
 static csis_server_connection_t csis_coordiantors[CSIS_COORDINATORS_MAX_NUM];
 
 static uint8_t ase_id = 0;
@@ -355,16 +265,6 @@ static void show_usage(void){
 
     printf("IUT: addr type %u, addr %s", iut_address_type, bd_addr_to_str(iut_address));
 
-    printf("## PACS\n");
-    printf("a - trigger Sink PAC record notification\n");
-    printf("A - trigger Source PAC record notification\n");
-
-    printf("b - set Sink audio locations\n");
-    printf("B - set Source audio locations\n");
-    
-    printf("c - set available audio contexts\n");
-    printf("d - set supported audio contexts\n");
-
     printf("\n## CSIS\n");
     printf("g - set OOB Sirk only\n");
     printf("G - set Encrypted Sirk\n");
@@ -383,36 +283,6 @@ static void stdin_process(char cmd){
     uint8_t status = ERROR_CODE_SUCCESS;
 
     switch (cmd){
-        case 'a':
-            printf("Trigger Sink PAC record notification\n");
-            sink_pac_records[0].codec_capability.sampling_frequency_mask |= LE_AUDIO_CODEC_SAMPLING_FREQUENCY_MASK_48000_HZ;
-            published_audio_capabilities_service_server_sink_pac_modified();
-            break;
-        case 'A':
-            printf("Trigger Source PAC record notification\n");
-            source_pac_records[0].codec_capability.sampling_frequency_mask |= LE_AUDIO_CODEC_SAMPLING_FREQUENCY_MASK_48000_HZ;
-            published_audio_capabilities_service_server_source_pac_modified();
-            break;
-
-
-        case 'b':
-            printf("Set Sink audio locations\n");
-            published_audio_capabilities_service_server_set_sink_audio_locations(LE_AUDIO_LOCATION_MASK_BOTTOM_FRONT_LEFT | LE_AUDIO_LOCATION_MASK_BOTTOM_FRONT_RIGHT);
-            break;
-        case 'B':
-            printf("Set Source audio locations\n");
-            published_audio_capabilities_service_server_set_source_audio_locations(LE_AUDIO_LOCATION_MASK_BOTTOM_FRONT_LEFT | LE_AUDIO_LOCATION_MASK_BOTTOM_FRONT_RIGHT);
-            break;
-
-        case 'c':
-            printf("Set available audio contexts\n");
-            published_audio_capabilities_service_server_set_available_audio_contexts(LE_AUDIO_CONTEXT_MASK_MEDIA, LE_AUDIO_CONTEXT_MASK_GAME);
-            break;
-        case 'd':
-            printf("Set supported audio contexts\n");
-            published_audio_capabilities_service_server_set_supported_audio_contexts(LE_AUDIO_CONTEXT_MASK_UNSPECIFIED|LE_AUDIO_CONTEXT_MASK_MEDIA, LE_AUDIO_CONTEXT_MASK_GAME);
-            break;
-
 
         case 'g':
             printf("Set OOB Sirk only\n");
@@ -505,18 +375,6 @@ int btstack_main(void)
     att_server_init(profile_data, att_read_callback, att_write_callback);    
     // att_server_register_packet_handler(packet_handler);
 
-    // setup PACS
-    sink_node.records = &sink_pac_records[0];
-    sink_node.records_num = 1;
-    sink_node.audio_locations_mask = LE_AUDIO_LOCATION_MASK_FRONT_RIGHT;
-
-    source_node.records = &source_pac_records[0];
-    source_node.records_num = 1;
-    source_node.audio_locations_mask = LE_AUDIO_LOCATION_MASK_FRONT_RIGHT;
-
-    published_audio_capabilities_service_server_init(&sink_node, &source_node);
-    published_audio_capabilities_service_server_register_packet_handler(&pacs_server_packet_handler);
-
     // setup MCS
     media_control_service_server_init();
 
@@ -532,15 +390,6 @@ int btstack_main(void)
     media_control_service_server_set_track_title(media_player_id1, "Track Title 1");
     media_control_service_server_set_playing_orders_supported(media_player_id1, 0x3FF);
     media_control_service_server_set_playing_order(media_player_id1, PLAYING_ORDER_IN_ORDER_ONCE);
-
-    // media_control_service_server_register_media_player(&media_player2, 
-    //     &mcs_server_packet_handler, 0xFFFF, &media_player_id2);
-    // media_control_service_server_set_media_player_name(media_player_id2, "BK Player2");
-    // media_control_service_server_set_icon_object_id(media_player_id2, icon_object_id, sizeof(icon_object_id));
-    // media_control_service_server_set_icon_url(media_player_id2, icon_url);
-    // media_control_service_server_set_track_title(media_player_id2, "");
-    // media_control_service_server_set_playing_orders_supported(media_player_id2, 0x3FF);
-    // media_control_service_server_set_playing_order(media_player_id2, PLAYING_ORDER_IN_ORDER_ONCE);
 
     coordinated_set_identification_service_server_init(CSIS_COORDINATORS_MAX_NUM, &csis_coordiantors[0], CSIS_COORDINATORS_MAX_NUM, 1);
     coordinated_set_identification_service_server_register_packet_handler(&csis_server_packet_handler);

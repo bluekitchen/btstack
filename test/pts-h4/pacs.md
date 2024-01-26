@@ -1,0 +1,31 @@
+## PACS
+
+Tool: pts-h4/bap_service_server_test
+
+- PACS/SR/SGGIT/SER/BV-01-C: (wait)
+- PACS/SR/SGGIT/CHA/BV-01-C: (wait)
+- PACS/SR/SGGIT/CHA/BV-02-C: (wait)
+- PACS/SR/SGGIT/CHA/BV-03-C: (wait)
+- PACS/SR/SGGIT/CHA/BV-04-C: (wait)
+- PACS/SR/SGGIT/CHA/BV-05-C: (wait)
+- PACS/SR/SGGIT/CHA/BV-06-C: (wait)
+
+- PACS/SR/VAL/BV-01-C: (wait)
+
+- PACS/SR/PCU/BV-01-C: a
+- PACS/SR/PCU/BV-02-C: A
+- PACS/SR/PCU/BV-03-C: b
+- PACS/SR/PCU/BV-04-C: B
+- PACS/SR/PCU/BV-05-C: B
+- PACS/SR/PCU/BV-06-C: (wait)
+- PACS/SR/PCU/BV-07-C: c
+- PACS/SR/PCU/BV-08-C: d
+- PACS/SR/PCU/BV-09-C: a
+- PACS/SR/PCU/BV-10-C: A
+- PACS/SR/PCU/BV-11-C: b
+- PACS/SR/PCU/BV-12-C: B
+- PACS/SR/PCU/BV-13-C: c
+- PACS/SR/PCU/BV-14-C: d
+
+- PACS/SR/SPE/BI-01-C: (wait)
+- PACS/SR/SPE/BI-02-C: (wait)
