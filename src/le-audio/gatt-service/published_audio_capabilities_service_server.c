@@ -39,10 +39,13 @@
 
 #include "ble/att_db.h"
 #include "ble/att_server.h"
+#include "ble/le_device_db.h"
+#include "ble/sm.h"
 #include "bluetooth_gatt.h"
 #include "btstack_debug.h"
 #include "btstack_defines.h"
 #include "btstack_event.h"
+#include "btstack_tlv.h"
 #include "btstack_util.h"
 
 #include "le-audio/le_audio_util.h"
@@ -54,12 +57,15 @@
 
 #define PACS_MAX_NOTIFY_BUFFER_SIZE                             200
 
-#define PACS_TASK_SEND_SINK_AUDIO_LOCATIONS                    0x01
-#define PACS_TASK_SEND_SOURCE_AUDIO_LOCATIONS                  0x02
-#define PACS_TASK_SEND_AVAILABLE_AUDIO_CONTEXTS                0x04
-#define PACS_TASK_SEND_SUPPORTED_AUDIO_CONTEXTS                0x08
-#define PACS_TASK_SEND_SINK_PAC_RECORD                         0x10
-#define PACS_TASK_SEND_SOURCE_PAC_RECORD                       0x20
+typedef enum {
+    PACS_CHARACTERISTIC_SINK_AUDIO_LOCATIONS = 0,
+    PACS_CHARACTERISTIC_SOURCE_AUDIO_LOCATIONS,
+    PACS_CHARACTERISTIC_AVAILABLE_AUDIO_CONTEXTS,
+    PACS_CHARACTERISTIC_SUPPORTED_AUDIO_CONTEXTS,
+    PACS_CHARACTERISTIC_SINK_PAC_RECORD,
+    PACS_CHARACTERISTIC_SOURCE_PAC_RECORD,
+    PACS_CHARACTERISTIC_COUNT
+} pacs_characteristic_t;
 
 // typedef enum {
 //     PAC_RECORD_FIELD_RECORDS_NUM = 0,
@@ -80,39 +86,37 @@
 
 static att_service_handler_t    published_audio_capabilities_service;
 static hci_con_handle_t         pacs_server_con_handle;
+static int                      pacs_server_le_device_db_index;
 static btstack_packet_handler_t pacs_server_event_callback;
 static btstack_context_callback_registration_t  pacs_server_scheduled_tasks_callback;
-static uint8_t pacs_server_scheduled_tasks;
+static uint8_t                  pacs_server_scheduled_tasks;
+static uint8_t                  pacs_server_notifcations_map;
+
+static uint16_t pacs_server_cccd[PACS_CHARACTERISTIC_COUNT];
 
 // characteristic: SINK_PAC                      READ  | NOTIFY  |
 static uint16_t  pacs_sink_pac_handle;
 static uint16_t  pacs_sink_pac_client_configuration_handle;
-static uint16_t  pacs_sink_pac_client_configuration;
 
 // characteristic: SINK_AUDIO_LOCATIONS          READ  | NOTIFY  | WRITE 
 static uint16_t  pacs_sink_audio_locations_handle;
 static uint16_t  pacs_sink_audio_locations_client_configuration_handle;
-static uint16_t  pacs_sink_audio_locations_client_configuration;
 
 // characteristic: SOURCE_PAC                    READ  | NOTIFY  |
 static uint16_t  pacs_source_pac_handle;
 static uint16_t  pacs_source_pac_client_configuration_handle;
-static uint16_t  pacs_source_pac_client_configuration;
 
 // characteristic: SOURCE_AUDIO_LOCATIONS        READ  | NOTIFY  | WRITE 
 static uint16_t  pacs_source_audio_locations_handle;
 static uint16_t  pacs_source_audio_locations_client_configuration_handle;
-static uint16_t  pacs_source_audio_locations_client_configuration;
 
 // characteristic: AVAILABLE_AUDIO_CONTEXTS      READ  |     
 static uint16_t  pacs_available_audio_contexts_handle;
 static uint16_t  pacs_available_audio_contexts_client_configuration_handle;
-static uint16_t  pacs_available_audio_contexts_client_configuration;
 
 // characteristic: SUPPORTED_AUDIO_CONTEXTS      READ  | NOTIFY  |  
 static uint16_t  pacs_supported_audio_contexts_handle;
 static uint16_t  pacs_supported_audio_contexts_client_configuration_handle;
-static uint16_t  pacs_supported_audio_contexts_client_configuration;
 
 // Data
 static const pacs_record_t * pacs_sink_pac_records;
@@ -129,15 +133,14 @@ static uint16_t pacs_sink_supported_audio_contexts_mask;
 static uint16_t pacs_source_available_audio_contexts_mask;
 static uint16_t pacs_source_supported_audio_contexts_mask;
 
+// prototypes
+static void pacs_server_persist_tasks(uint8_t tasks);
+
+
 static void pacs_server_reset_values(void){
     pacs_server_con_handle = HCI_CON_HANDLE_INVALID;
-    pacs_sink_audio_locations_client_configuration = 0;
-    pacs_source_audio_locations_client_configuration = 0;
-    pacs_supported_audio_contexts_client_configuration = 0; 
-}
-
-static void pacs_server_set_con_handle(hci_con_handle_t con_handle, uint16_t configuration){
-    pacs_server_con_handle = (configuration == 0) ? HCI_CON_HANDLE_INVALID : con_handle;
+    pacs_server_le_device_db_index = -1;
+    pacs_server_notifcations_map = 0;
 }
 
 static void pacs_server_emit_audio_locations_received(hci_con_handle_t con_handle, uint32_t audio_locations, le_audio_role_t role){
@@ -245,70 +248,183 @@ static uint16_t pacs_server_store_records(const pacs_record_t * pacs, uint8_t pa
     return stored_bytes;
 }
 
-static void pacs_server_can_send_now(void * context){
-    UNUSED(context);
-
-    if ((pacs_server_scheduled_tasks & PACS_TASK_SEND_SINK_AUDIO_LOCATIONS) != 0) {
-        pacs_server_scheduled_tasks &= ~PACS_TASK_SEND_SINK_AUDIO_LOCATIONS;
-        uint8_t value[4];
-        little_endian_store_32(value, 0, pacs_sink_audio_locations);
-        att_server_notify(pacs_server_con_handle, pacs_sink_audio_locations_handle, &value[0], sizeof(value));
-
-    } else if ((pacs_server_scheduled_tasks & PACS_TASK_SEND_SOURCE_AUDIO_LOCATIONS) != 0) {
-        pacs_server_scheduled_tasks &= ~PACS_TASK_SEND_SOURCE_AUDIO_LOCATIONS;
-        uint8_t value[4];
-        little_endian_store_32(value, 0, pacs_source_audio_locations);
-        att_server_notify(pacs_server_con_handle, pacs_source_audio_locations_handle, &value[0], sizeof(value));
-
-    } else if ((pacs_server_scheduled_tasks & PACS_TASK_SEND_AVAILABLE_AUDIO_CONTEXTS) != 0) {
-        pacs_server_scheduled_tasks &= ~PACS_TASK_SEND_AVAILABLE_AUDIO_CONTEXTS;
-        uint8_t value[4];
-        little_endian_store_16(value, 0, pacs_sink_available_audio_contexts_mask);
-        little_endian_store_16(value, 2, pacs_source_available_audio_contexts_mask);
-        att_server_notify(pacs_server_con_handle, pacs_available_audio_contexts_handle, &value[0], sizeof(value));
-
-    } else if ((pacs_server_scheduled_tasks & PACS_TASK_SEND_SUPPORTED_AUDIO_CONTEXTS) != 0) {
-        pacs_server_scheduled_tasks &= ~PACS_TASK_SEND_SUPPORTED_AUDIO_CONTEXTS;
-        uint8_t value[4];
-        little_endian_store_16(value, 0, pacs_sink_supported_audio_contexts_mask);
-        little_endian_store_16(value, 2, pacs_source_supported_audio_contexts_mask);
-        att_server_notify(pacs_server_con_handle, pacs_supported_audio_contexts_handle, &value[0], sizeof(value));
-    
-    } else if ((pacs_server_scheduled_tasks & PACS_TASK_SEND_SINK_PAC_RECORD) != 0) {
-        pacs_server_scheduled_tasks &= ~PACS_TASK_SEND_SINK_PAC_RECORD;
-        
-        if (att_server_get_mtu(pacs_server_con_handle) >= PACS_MAX_NOTIFY_BUFFER_SIZE){
-            uint8_t value[PACS_MAX_NOTIFY_BUFFER_SIZE];
-            uint16_t bytes_stored = pacs_server_store_records(pacs_sink_pac_records, pacs_sink_pac_records_num, value, sizeof(value), 0);
-            att_server_notify(pacs_server_con_handle, pacs_sink_pac_handle, &value[0], bytes_stored);
+static void pacs_server_request_to_send(void){
+    if (pacs_server_con_handle != HCI_CON_HANDLE_INVALID){
+        if ((pacs_server_scheduled_tasks & pacs_server_notifcations_map) != 0){
+            att_server_register_can_send_now_callback(&pacs_server_scheduled_tasks_callback, pacs_server_con_handle);
         }
-
-    } else if ((pacs_server_scheduled_tasks & PACS_TASK_SEND_SOURCE_PAC_RECORD) != 0) {
-        pacs_server_scheduled_tasks &= ~PACS_TASK_SEND_SOURCE_PAC_RECORD;
-        if (att_server_get_mtu(pacs_server_con_handle) >= PACS_MAX_NOTIFY_BUFFER_SIZE){
-            uint8_t value[PACS_MAX_NOTIFY_BUFFER_SIZE];
-            uint16_t bytes_stored = pacs_server_store_records(pacs_source_pac_records, pacs_source_pac_records_num, value, sizeof(value), 0);
-            att_server_notify(pacs_server_con_handle, pacs_source_pac_handle, &value[0], bytes_stored);
-        }
-    }
-
-    if (pacs_server_scheduled_tasks != 0){
-        att_server_register_can_send_now_callback(&pacs_server_scheduled_tasks_callback, pacs_server_con_handle);
     }
 }
 
-static void pacs_server_set_callback(uint8_t task){
-    if (pacs_server_con_handle == HCI_CON_HANDLE_INVALID){
-        pacs_server_scheduled_tasks &= ~task;
+static void pacs_server_can_send_now(void * context){
+    UNUSED(context);
+
+    uint8_t i;
+    bool sent = false;
+    for (i = 0 ; (i < PACS_CHARACTERISTIC_COUNT) && (sent == false) ; i++){
+        uint8_t task_mask = 1u << i;
+        // check if scheduled_tasks
+        if ((pacs_server_scheduled_tasks & task_mask) != 0){
+            // check if notifications enabled
+            if (pacs_server_cccd[i] != 0){
+                pacs_server_scheduled_tasks &= ~task_mask;
+                uint8_t buffer_32[4];
+                uint8_t buffer_max[PACS_MAX_NOTIFY_BUFFER_SIZE];
+                uint16_t bytes_stored;
+                // notify
+                switch (i){
+                    case PACS_CHARACTERISTIC_SINK_AUDIO_LOCATIONS:
+                        little_endian_store_32(buffer_32, 0, pacs_sink_audio_locations);
+                        att_server_notify(pacs_server_con_handle, pacs_sink_audio_locations_handle, &buffer_32[0], sizeof(buffer_32));
+                        sent = true;
+                        break;
+                    case PACS_CHARACTERISTIC_SOURCE_AUDIO_LOCATIONS:
+                        little_endian_store_32(buffer_32, 0, pacs_source_audio_locations);
+                        att_server_notify(pacs_server_con_handle, pacs_source_audio_locations_handle, &buffer_32[0], sizeof(buffer_32));
+                        sent = true;
+                        break;
+                    case PACS_CHARACTERISTIC_AVAILABLE_AUDIO_CONTEXTS:
+                        little_endian_store_16(buffer_32, 0, pacs_sink_available_audio_contexts_mask);
+                        little_endian_store_16(buffer_32, 2, pacs_source_available_audio_contexts_mask);
+                        att_server_notify(pacs_server_con_handle, pacs_available_audio_contexts_handle, &buffer_32[0], sizeof(buffer_32));
+                        sent = true;
+                        break;
+                    case PACS_CHARACTERISTIC_SUPPORTED_AUDIO_CONTEXTS:
+                        little_endian_store_16(buffer_32, 0, pacs_sink_supported_audio_contexts_mask);
+                        little_endian_store_16(buffer_32, 2, pacs_source_supported_audio_contexts_mask);
+                        att_server_notify(pacs_server_con_handle, pacs_supported_audio_contexts_handle, &buffer_32[0], sizeof(buffer_32));
+                        sent = true;
+                        break;
+                    case PACS_CHARACTERISTIC_SINK_PAC_RECORD:
+                        bytes_stored = pacs_server_store_records(pacs_sink_pac_records, pacs_sink_pac_records_num, buffer_max, sizeof(buffer_max), 0);
+                        if (att_server_get_mtu(pacs_server_con_handle) >= bytes_stored){
+                            att_server_notify(pacs_server_con_handle, pacs_sink_pac_handle, &buffer_max[0], bytes_stored);
+                            sent = true;
+                        }
+                        break;
+                    case PACS_CHARACTERISTIC_SOURCE_PAC_RECORD:
+                        bytes_stored = pacs_server_store_records(pacs_source_pac_records, pacs_source_pac_records_num, buffer_max, sizeof(buffer_max), 0);
+                        if (att_server_get_mtu(pacs_server_con_handle) >= bytes_stored){
+                            att_server_notify(pacs_server_con_handle, pacs_source_pac_handle, &buffer_max[0], bytes_stored);
+                            sent = true;
+                        }
+                        break;
+                    default:
+                        btstack_unreachable();
+                        break;
+                }
+            }
+        }
+    }
+
+    pacs_server_request_to_send();
+}
+
+static void pacs_server_schedule_notify(pacs_characteristic_t characteristic){
+    uint8_t task = 1 << ((int) characteristic);
+    pacs_server_persist_tasks(task);
+    pacs_server_scheduled_tasks |= task;
+    pacs_server_request_to_send();
+}
+
+// -- persistent storage
+
+static uint32_t pacs_server_tag_for_index(uint8_t index){
+    return ('P' << 24u) | ('A' << 16u) | ('C' << 8u) | index;
+}
+
+static void pacs_server_bonded_restore(void){
+    if (pacs_server_le_device_db_index < 0){
         return;
     }
 
-    uint8_t scheduled_tasks = pacs_server_scheduled_tasks;
-    pacs_server_scheduled_tasks |= task;
-    if (scheduled_tasks == 0){
-        pacs_server_scheduled_tasks_callback.callback = &pacs_server_can_send_now;
-        att_server_register_can_send_now_callback(&pacs_server_scheduled_tasks_callback, pacs_server_con_handle);
+    // get btstack_tlv
+    const btstack_tlv_t * tlv_impl = NULL;
+    void * tlv_context;
+    btstack_tlv_get_instance(&tlv_impl, &tlv_context);
+    if (tlv_impl == NULL) {
+        return;
     }
+
+    // get tag and trigger restore
+    uint32_t tag = pacs_server_tag_for_index(pacs_server_le_device_db_index);
+    uint8_t buffer[2];
+    uint16_t data_len = tlv_impl->get_tag(tlv_context, tag, buffer, sizeof(buffer));
+    if (data_len == sizeof(buffer)){
+        uint16_t stored_notifications = little_endian_read_16(buffer, 0);
+        uint8_t i;
+        for (i=0;i<PACS_CHARACTERISTIC_COUNT;i++) {
+            uint8_t task_mask = 1u << i;
+            if ((stored_notifications & task_mask) != 0){
+                pacs_server_schedule_notify((pacs_characteristic_t) i);
+            }
+        }
+        // @note by deleting right away, we accept that a disconnect before notify will cause the notification to get lost
+        tlv_impl->delete_tag(tlv_context, tag);
+    }
+}
+
+static void pacs_server_persist_tasks(uint8_t tasks){
+    // get btstack_tlv
+    const btstack_tlv_t * tlv_impl = NULL;
+    void * tlv_context;
+    btstack_tlv_get_instance(&tlv_impl, &tlv_context);
+    if (tlv_impl == NULL) {
+        return;
+    }
+    // iterate over all bonded devices
+    int i;
+    for (i=0;i<le_device_db_max_count();i++){
+        bd_addr_t entry_address;
+        int entry_address_type = (int) BD_ADDR_TYPE_UNKNOWN;
+        le_device_db_info(i, &entry_address_type, entry_address, NULL);
+        // skip unused entries
+        if (entry_address_type != (int) BD_ADDR_TYPE_UNKNOWN){
+            // skip if bonded device is connected
+            if (i != pacs_server_le_device_db_index) {
+                // update restore tag
+                uint32_t tag = pacs_server_tag_for_index(pacs_server_le_device_db_index);
+                uint8_t buffer[2];
+                uint16_t data_len = tlv_impl->get_tag(tlv_context, tag, buffer, sizeof(buffer));
+                if (data_len == sizeof(buffer)) {
+                    tasks |= little_endian_read_16(buffer, 0);
+                }
+                little_endian_store_16(buffer, 0, tasks);
+                tlv_impl->store_tag(tlv_context, tag, buffer, sizeof(buffer));
+            }
+        }
+    }
+}
+
+// att read/write
+
+static void pacs_server_cccd_write(hci_con_handle_t con_handle, pacs_characteristic_t characteristic, uint16_t configuration) {
+
+    // store con handle
+    pacs_server_con_handle = con_handle;
+
+    // store cccd
+    uint8_t task_mask = 1u << (int)characteristic;
+    if (configuration != 0){
+        pacs_server_notifcations_map |= task_mask;
+    } else {
+        pacs_server_notifcations_map &= ~task_mask;
+    }
+
+    // upon first cccd write, schedule notify for bonded device
+    if (pacs_server_le_device_db_index < 0){
+        pacs_server_le_device_db_index = sm_le_device_index(con_handle);
+        pacs_server_bonded_restore();
+    }
+
+    // try to send
+    pacs_server_request_to_send();
+}
+
+static uint16_t pacs_server_read_cccd(pacs_characteristic_t characteristic, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
+    uint8_t task_mask = 1u << (int)characteristic;
+    uint16_t value = ((pacs_server_notifcations_map & task_mask) != 0) ? 0x100 : 0;
+    return att_read_callback_handle_little_endian_16(value, offset, buffer, buffer_size);
 }
 
 static uint16_t pacs_server_read_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
@@ -354,27 +470,27 @@ static uint16_t pacs_server_read_callback(hci_con_handle_t con_handle, uint16_t 
     }
 
     if (attribute_handle == pacs_sink_pac_client_configuration_handle){
-        return att_read_callback_handle_little_endian_16(pacs_sink_pac_client_configuration, offset, buffer, buffer_size);
+        return pacs_server_read_cccd(PACS_CHARACTERISTIC_SINK_PAC_RECORD, offset, buffer, buffer_size);
     }
 
     if (attribute_handle == pacs_source_pac_client_configuration_handle){
-        return att_read_callback_handle_little_endian_16(pacs_source_pac_client_configuration, offset, buffer, buffer_size);
+        return pacs_server_read_cccd(PACS_CHARACTERISTIC_SOURCE_PAC_RECORD, offset, buffer, buffer_size);
     }
 
     if (attribute_handle == pacs_sink_audio_locations_client_configuration_handle){
-        return att_read_callback_handle_little_endian_16(pacs_sink_audio_locations_client_configuration, offset, buffer, buffer_size);
+        return pacs_server_read_cccd(PACS_CHARACTERISTIC_SINK_AUDIO_LOCATIONS, offset, buffer, buffer_size);
     }
 
     if (attribute_handle == pacs_source_audio_locations_client_configuration_handle){
-        return att_read_callback_handle_little_endian_16(pacs_source_audio_locations_client_configuration, offset, buffer, buffer_size);
+        return pacs_server_read_cccd(PACS_CHARACTERISTIC_SOURCE_AUDIO_LOCATIONS, offset, buffer, buffer_size);
     }
     
     if (attribute_handle == pacs_supported_audio_contexts_client_configuration_handle){
-        return att_read_callback_handle_little_endian_16(pacs_supported_audio_contexts_client_configuration, offset, buffer, buffer_size);
+        return pacs_server_read_cccd(PACS_CHARACTERISTIC_SUPPORTED_AUDIO_CONTEXTS, offset, buffer, buffer_size);
     }
 
     if (attribute_handle == pacs_available_audio_contexts_client_configuration_handle){
-        return att_read_callback_handle_little_endian_16(pacs_available_audio_contexts_client_configuration, offset, buffer, buffer_size);
+        return pacs_server_read_cccd(PACS_CHARACTERISTIC_AVAILABLE_AUDIO_CONTEXTS, offset, buffer, buffer_size);
     }
     return 0;
 }
@@ -410,33 +526,33 @@ static int pacs_server_write_callback(hci_con_handle_t con_handle, uint16_t attr
     }
 
     else if (attribute_handle == pacs_sink_pac_client_configuration_handle){
-        pacs_sink_pac_client_configuration = little_endian_read_16(buffer, 0);
-        pacs_server_set_con_handle(con_handle, pacs_sink_pac_client_configuration);
+        pacs_server_cccd_write(con_handle, PACS_CHARACTERISTIC_SINK_PAC_RECORD,
+                               little_endian_read_16(buffer, 0));
     }
 
     else if (attribute_handle == pacs_source_pac_client_configuration_handle){
-        pacs_source_pac_client_configuration = little_endian_read_16(buffer, 0);
-        pacs_server_set_con_handle(con_handle, pacs_source_pac_client_configuration);
+        pacs_server_cccd_write(con_handle, PACS_CHARACTERISTIC_SOURCE_PAC_RECORD,
+                               little_endian_read_16(buffer, 0));
     }
 
     else if (attribute_handle == pacs_sink_audio_locations_client_configuration_handle){
-        pacs_sink_audio_locations_client_configuration = little_endian_read_16(buffer, 0);
-        pacs_server_set_con_handle(con_handle, pacs_sink_audio_locations_client_configuration);
+        pacs_server_cccd_write(con_handle, PACS_CHARACTERISTIC_SINK_AUDIO_LOCATIONS,
+                               little_endian_read_16(buffer, 0));
     }
 
     else if (attribute_handle == pacs_source_audio_locations_client_configuration_handle){
-        pacs_source_audio_locations_client_configuration = little_endian_read_16(buffer, 0);
-        pacs_server_set_con_handle(con_handle, pacs_source_audio_locations_client_configuration);
+        pacs_server_cccd_write(con_handle, PACS_CHARACTERISTIC_SOURCE_AUDIO_LOCATIONS,
+                               little_endian_read_16(buffer, 0));
     }
     
     else if (attribute_handle == pacs_supported_audio_contexts_client_configuration_handle){
-        pacs_supported_audio_contexts_client_configuration = little_endian_read_16(buffer, 0);
-        pacs_server_set_con_handle(con_handle, pacs_supported_audio_contexts_client_configuration);
+        pacs_server_cccd_write(con_handle, PACS_CHARACTERISTIC_SUPPORTED_AUDIO_CONTEXTS,
+                               little_endian_read_16(buffer, 0));
     }
 
     else if (attribute_handle == pacs_available_audio_contexts_client_configuration_handle){
-        pacs_available_audio_contexts_client_configuration = little_endian_read_16(buffer, 0);
-        pacs_server_set_con_handle(con_handle, pacs_available_audio_contexts_client_configuration);
+        pacs_server_cccd_write(con_handle, PACS_CHARACTERISTIC_AVAILABLE_AUDIO_CONTEXTS,
+                               little_endian_read_16(buffer, 0));
     }
 
     return 0;
@@ -514,6 +630,8 @@ void published_audio_capabilities_service_server_init(pacs_streamendpoint_t * si
     UNUSED(service_found);
 
     pacs_server_reset_values();
+
+    pacs_server_scheduled_tasks_callback.callback = &pacs_server_can_send_now;
 
     btstack_assert((sink_endpoint != NULL) || (source_endpoint != NULL));
 
@@ -597,14 +715,14 @@ void published_audio_capabilities_service_server_set_sink_audio_locations(uint32
     btstack_assert((audio_locations_bitmap   & LE_AUDIO_LOCATION_MASK_RFU) == 0);
 
     pacs_sink_audio_locations = audio_locations_bitmap;
-    pacs_server_set_callback(PACS_TASK_SEND_SINK_AUDIO_LOCATIONS);
+    pacs_server_schedule_notify(PACS_CHARACTERISTIC_SINK_AUDIO_LOCATIONS);
 }
 
 void published_audio_capabilities_service_server_set_source_audio_locations(uint32_t audio_locations_bitmap){
     btstack_assert((audio_locations_bitmap & LE_AUDIO_LOCATION_MASK_RFU) == 0);
     
     pacs_source_audio_locations = audio_locations_bitmap;
-    pacs_server_set_callback(PACS_TASK_SEND_SOURCE_AUDIO_LOCATIONS);
+    pacs_server_schedule_notify(PACS_CHARACTERISTIC_SOURCE_AUDIO_LOCATIONS);
 }
 
 void published_audio_capabilities_service_server_set_available_audio_contexts(
@@ -616,7 +734,7 @@ void published_audio_capabilities_service_server_set_available_audio_contexts(
 
     pacs_sink_available_audio_contexts_mask = available_sink_audio_contexts_bitmap;
     pacs_source_available_audio_contexts_mask = available_source_audio_contexts_bitmap;
-    pacs_server_set_callback(PACS_TASK_SEND_AVAILABLE_AUDIO_CONTEXTS);
+    pacs_server_schedule_notify(PACS_CHARACTERISTIC_AVAILABLE_AUDIO_CONTEXTS);
 }
 
 void published_audio_capabilities_service_server_set_supported_audio_contexts(
@@ -628,19 +746,19 @@ void published_audio_capabilities_service_server_set_supported_audio_contexts(
 
     pacs_sink_supported_audio_contexts_mask = supported_sink_audio_contexts_bitmap;
     pacs_source_supported_audio_contexts_mask = supported_source_audio_contexts_bitmap;
-    pacs_server_set_callback(PACS_TASK_SEND_SUPPORTED_AUDIO_CONTEXTS);
+    pacs_server_schedule_notify(PACS_CHARACTERISTIC_SUPPORTED_AUDIO_CONTEXTS);
 }
 
 /**
  * @brief Trigger notification of Sink PAC record values.
  */
 void published_audio_capabilities_service_server_sink_pac_modified(void){
-    pacs_server_set_callback(PACS_TASK_SEND_SINK_PAC_RECORD);
+    pacs_server_schedule_notify(PACS_CHARACTERISTIC_SINK_PAC_RECORD);
 }
 
 /**
  * @brief Trigger notification of Source PAC record values.
  */
 void published_audio_capabilities_service_server_source_pac_modified(void){
-    pacs_server_set_callback(PACS_TASK_SEND_SOURCE_PAC_RECORD);
+    pacs_server_schedule_notify(PACS_CHARACTERISTIC_SOURCE_PAC_RECORD);
 }
