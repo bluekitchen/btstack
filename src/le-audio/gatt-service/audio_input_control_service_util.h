@@ -78,7 +78,8 @@ typedef enum {
     AICS_GAIN_MODE_MANUAL_ONLY = 0,
     AICS_GAIN_MODE_AUTOMATIC_ONLY,
     AICS_GAIN_MODE_MANUAL,
-    AICS_GAIN_MODE_AUTOMATIC
+    AICS_GAIN_MODE_AUTOMATIC,
+    AICS_GAIN_MODE_RFU
 } aics_gain_mode_t;
 
 typedef enum {
