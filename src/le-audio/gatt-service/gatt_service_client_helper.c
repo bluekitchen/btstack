@@ -101,7 +101,7 @@ uint16_t gatt_service_client_characteristic_index2uuid16(const gatt_service_clie
 static void gatt_service_client_emit_connected(btstack_packet_handler_t event_callback, hci_con_handle_t con_handle, uint16_t cid, uint8_t status){
     btstack_assert(event_callback != NULL);
 
-    uint8_t event[8];
+    uint8_t event[9];
     int pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
     event[pos++] = sizeof(event) - 2;
@@ -110,6 +110,7 @@ static void gatt_service_client_emit_connected(btstack_packet_handler_t event_ca
     pos += 2;
     little_endian_store_16(event, pos, cid);
     pos += 2;
+    event[pos++] = 0; // num included services
     event[pos++] = status;
     (*event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
