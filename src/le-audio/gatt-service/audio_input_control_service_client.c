@@ -282,12 +282,16 @@ static uint8_t aics_client_request_send_gatt_query(aics_client_connection_t * co
 }
 
 static uint8_t aics_client_request_read_characteristic(aics_client_connection_t * connection, aics_client_characteristic_index_t characteristic_index){
-    uint8_t status = aics_client_can_query_characteristic(connection, characteristic_index);
+    btstack_assert(connection == NULL);
+    if (connection->state != AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_READY){
+        return ERROR_CODE_CONTROLLER_BUSY;
+    }
+
+    uint8_t status = gatt_service_client_can_query_characteristic(&connection->basic_connection, (uint8_t) characteristic_index);
     if (status != ERROR_CODE_SUCCESS){
         return status;
     }
-   
-    connection->state = AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_W2_READ_CHARACTERISTIC_VALUE;
+   connection->state = AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_W2_READ_CHARACTERISTIC_VALUE;
     return aics_client_request_send_gatt_query(connection, characteristic_index);
 }
 
@@ -296,7 +300,61 @@ static uint8_t aics_client_request_write_characteristic_without_response(aics_cl
     return aics_client_request_send_gatt_query(connection, characteristic_index);
 }
 
+static uint8_t aics_client_request_write_characteristic(aics_client_connection_t * connection, aics_client_characteristic_index_t characteristic_index){
+    connection->state = AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_W2_WRITE_CHARACTERISTIC_VALUE;
+    return aics_client_request_send_gatt_query(connection, characteristic_index);
+}
 
+static uint8_t aics_control_point_procedure_request(aics_client_connection_t * connection, aics_opcode_t opcode){
+    btstack_assert(connection == NULL);
+    if (connection->state != AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_READY){
+        return ERROR_CODE_CONTROLLER_BUSY;
+    }
+    connection->data.data_bytes[0] = (uint8_t)opcode;
+    connection->data.data_bytes[1] = connection->change_counter;
+    return aics_client_request_write_characteristic(connection, AICS_CLIENT_CHARACTERISTIC_INDEX_AUDIO_INPUT_CONTROL_POINT);
+}
+
+uint8_t audio_input_control_service_client_umute(aics_client_connection_t * connection){
+    return aics_control_point_procedure_request(connection, AICS_OPCODE_UMUTE);
+}
+
+uint8_t audio_input_control_service_client_mute(aics_client_connection_t * connection){
+    return aics_control_point_procedure_request(connection, AICS_OPCODE_MUTE);
+}
+
+uint8_t audio_input_control_service_client_set_manual_gain_mode(aics_client_connection_t * connection){
+    return aics_control_point_procedure_request(connection, AICS_OPCODE_SET_MANUAL_GAIN_MODE);
+}
+
+uint8_t audio_input_control_service_client_set_automatic_gain_mode(aics_client_connection_t * connection){
+    return aics_control_point_procedure_request(connection, AICS_OPCODE_SET_AUTOMATIC_GAIN_MODE);
+}
+
+
+uint8_t audio_input_control_service_client_set_gain_setting(aics_client_connection_t * connection, int8_t gain_setting){
+    btstack_assert(connection == NULL);
+    if (connection->state != AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_READY){
+        return ERROR_CODE_CONTROLLER_BUSY;
+    }
+    connection->data.data_bytes[0] = (uint8_t)AICS_OPCODE_SET_GAIN_SETTING;
+    connection->data.data_bytes[1] = connection->change_counter;
+    connection->data.data_bytes[2] = (uint8_t)gain_setting;
+    return aics_client_request_write_characteristic(connection, AICS_CLIENT_CHARACTERISTIC_INDEX_AUDIO_INPUT_CONTROL_POINT);
+}
+
+
+uint8_t audio_input_control_service_client_write_input_description(aics_client_connection_t * connection, const char * audio_input_description){
+    btstack_assert(connection == NULL);
+    if (connection->state != AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_READY){
+        return ERROR_CODE_CONTROLLER_BUSY;
+    }
+    if (audio_input_description == NULL){
+        return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+    }
+    connection->data.data_string = audio_input_description;
+    return aics_client_request_write_characteristic_without_response(connection, AICS_CLIENT_CHARACTERISTIC_INDEX_AUDIO_INPUT_DESCRIPTION);
+}
 
 uint8_t audio_input_control_service_client_read_input_state(aics_client_connection_t * connection){
     return aics_client_request_read_characteristic(connection, AICS_CLIENT_CHARACTERISTIC_INDEX_AUDIO_INPUT_STATE);
