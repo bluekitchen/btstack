@@ -89,6 +89,12 @@ static void mics_client_replace_subevent_id_and_emit(btstack_packet_handler_t ca
     (*callback)(HCI_EVENT_PACKET, 0, packet, size);
 }
 
+static void mics_client_emit_connected(const gatt_service_client_connection_helper_t *connection_helper, uint8_t num_included_clients,  uint8_t *packet, uint16_t size) {
+    little_endian_store_16(packet, 3, connection_helper->cid);
+    packet[5] = num_included_clients;
+    mics_client_replace_subevent_id_and_emit(connection_helper->event_callback, packet, size,
+                                             GATTSERVICE_SUBEVENT_MICS_CLIENT_CONNECTED);
+}
 
 static uint16_t mics_client_value_handle_for_index(mics_client_connection_t * connection){
     return connection->basic_connection.characteristics[connection->characteristic_index].value_handle;
@@ -228,8 +234,6 @@ static uint8_t mics_client_request_write_characteristic(mics_client_connection_t
     return mics_client_request_send_gatt_query(connection, characteristic_index);
 }
 
-static void mics_client_emit_connected(const  gatt_service_client_connection_helper_t *connection_helper, uint8_t num_included_clients, uint8_t *packet, uint16_t size);
-
 static void mics_client_packet_handler_internal(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
@@ -344,13 +348,6 @@ static void mics_client_packet_handler_internal(uint8_t packet_type, uint16_t ch
         default:
             break;
     }
-}
-
-static void mics_client_emit_connected(const gatt_service_client_connection_helper_t *connection_helper, uint8_t num_included_clients,  uint8_t *packet, uint16_t size) {
-    little_endian_store_16(packet, 3, connection_helper->cid);
-    packet[5] = num_included_clients;
-    mics_client_replace_subevent_id_and_emit(connection_helper->event_callback, packet, size,
-                                             GATTSERVICE_SUBEVENT_MICS_CLIENT_CONNECTED);
 }
 
 static void mics_client_handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
