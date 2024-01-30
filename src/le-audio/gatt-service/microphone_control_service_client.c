@@ -89,11 +89,22 @@ static void mics_client_replace_subevent_id_and_emit(btstack_packet_handler_t ca
     (*callback)(HCI_EVENT_PACKET, 0, packet, size);
 }
 
-static void mics_client_emit_connected(const gatt_service_client_connection_helper_t *connection_helper, uint8_t num_included_clients,  uint8_t *packet, uint16_t size) {
-    little_endian_store_16(packet, 3, connection_helper->cid);
-    packet[5] = num_included_clients;
-    mics_client_replace_subevent_id_and_emit(connection_helper->event_callback, packet, size,
-                                             GATTSERVICE_SUBEVENT_MICS_CLIENT_CONNECTED);
+static void mics_client_emit_connected(const gatt_service_client_connection_helper_t *connection_helper, uint8_t num_included_clients, uint8_t status) {
+    btstack_assert(connection_helper != NULL);
+    btstack_assert(connection_helper->event_callback != NULL);
+
+    uint8_t event[9];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = GATTSERVICE_SUBEVENT_MICS_CLIENT_CONNECTED;
+    little_endian_store_16(event, pos, connection_helper->con_handle);
+    pos += 2;
+    little_endian_store_16(event, pos, connection_helper->cid);
+    pos += 2;
+    event[pos++] = num_included_clients; // num included services
+    event[pos++] = status;
+    (*connection_helper->event_callback)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
 static uint16_t mics_client_value_handle_for_index(mics_client_connection_t * connection){
@@ -265,7 +276,7 @@ static void mics_client_packet_handler_internal(uint8_t packet_type, uint16_t ch
 #endif
 
 #ifdef ENABLE_TESTING_SUPPORT
-                    printf("\nQuery AICS included services\n");
+                    printf("\nMICS Client: Query AICS included services\n");
 #endif
                     connection->state = MICROPHONE_CONTROL_SERVICE_CLIENT_STATE_W2_QUERY_INCLUDED_SERVICES;
                     connection->aics_connections_num = 0;
@@ -275,7 +286,7 @@ static void mics_client_packet_handler_internal(uint8_t packet_type, uint16_t ch
 
                     if (status != ERROR_CODE_SUCCESS){
                         connection->state = MICROPHONE_CONTROL_SERVICE_CLIENT_STATE_READY;
-                        mics_client_emit_connected(connection_helper, connection->aics_connections_num, packet, size);
+                        mics_client_emit_connected(connection_helper, connection->aics_connections_num, status);
                     }
                     break;
 
@@ -291,17 +302,13 @@ static void mics_client_packet_handler_internal(uint8_t packet_type, uint16_t ch
                     btstack_assert(connection_helper != NULL);
                     connection = (mics_client_connection_t *)connection_helper;
 
-                    switch (gattservice_subevent_aics_client_connected_get_att_status(packet)) {
-                        case ERROR_CODE_SUCCESS:
-                            printf("MICS: Audio Input Control service client connected\n");
-                            break;
-                        default:
-                            printf("MICS: Audio Input Control service client connection failed, err 0x%02x.\n", gattservice_subevent_aics_client_connected_get_att_status(packet));
-                            break;
+                    if (gattservice_subevent_aics_client_connected_get_att_status(packet) != ERROR_CODE_SUCCESS) {
+                       printf("MICS: Audio Input Control service client connection failed, err 0x%02x.\n", gattservice_subevent_aics_client_connected_get_att_status(packet));
+                       break;
                     }
 
                     switch (connection->state){
-                        case MICROPHONE_CONTROL_SERVICE_CLIENT_STATE_W4_INCLUDED_SERVICES_RESULT:
+                        case MICROPHONE_CONTROL_SERVICE_CLIENT_STATE_W4_INCLUDED_SERVICE_CONNECTED:
                             if (connection->aics_connections_index < (connection->aics_connections_num-1)) {
                                 connection->aics_connections_index++;
                                 (void) audio_input_control_service_client_connect(
@@ -316,8 +323,9 @@ static void mics_client_packet_handler_internal(uint8_t packet_type, uint16_t ch
                                         &mics_client_packet_handler_internal);
                                 return;
                             }
+
                             connection->state = MICROPHONE_CONTROL_SERVICE_CLIENT_STATE_READY;
-                            mics_client_emit_connected(&connection->basic_connection, connection->aics_connections_num, packet, size);
+                            mics_client_emit_connected(&connection->basic_connection, connection->aics_connections_num, ATT_ERROR_SUCCESS);
                             break;
                         default:
                             break;
