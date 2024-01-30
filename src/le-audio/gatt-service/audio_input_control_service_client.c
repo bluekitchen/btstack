@@ -55,7 +55,6 @@
 #include "btstack_event.h"
 
 static gatt_service_client_helper_t aics_client;
-static btstack_context_callback_registration_t aics_client_handle_can_send_now;
 
 static void aics_client_packet_handler_internal(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static void aics_client_handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
@@ -275,8 +274,7 @@ static void aics_client_emit_notify_event(gatt_service_client_connection_helper_
 static uint8_t aics_client_request_send_gatt_query(aics_client_connection_t * connection, aics_client_characteristic_index_t characteristic_index){
     connection->characteristic_index = characteristic_index;
 
-    aics_client_handle_can_send_now.context = (void *)(uintptr_t)connection->basic_connection.con_handle;
-    uint8_t status = gatt_client_request_to_send_gatt_query(&aics_client_handle_can_send_now, connection->basic_connection.con_handle);
+    uint8_t status = gatt_client_request_to_send_gatt_query(&connection->gatt_query_can_send_now, connection->basic_connection.con_handle);
     if (status != ERROR_CODE_SUCCESS){
         connection->state = AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_READY;
     } 
@@ -465,15 +463,23 @@ static void aics_client_run_for_connection(void * context){
 
         case AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_W2_WRITE_CHARACTERISTIC_VALUE_WITHOUT_RESPONSE:
             connection->state = AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_READY;
-// TODO
-//            value_length = aics_client_serialize_characteristic_value_for_write(connection, &value);
-//            (void) gatt_client_write_value_of_characteristic_without_response(
-//                con_handle,
-//                aics_client_value_handle_for_index(connection),
-//                value_length, value);
+
+            value_length = aics_client_serialize_characteristic_value_for_write(connection, &value);
+            (void) gatt_client_write_value_of_characteristic_without_response(
+                con_handle,
+                aics_client_value_handle_for_index(connection),
+                value_length, value);
             
             break;
+        case AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_W2_WRITE_CHARACTERISTIC_VALUE:
+            connection->state = AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_W4_WRITE_CHARACTERISTIC_VALUE_RESULT;
 
+            value_length = aics_client_serialize_characteristic_value_for_write(connection, &value);
+            (void) gatt_client_write_value_of_characteristic(
+                    &aics_client_handle_gatt_client_event, con_handle,
+                    aics_client_value_handle_for_index(connection),
+                    value_length, value);
+            break;
         default:
             break;
     }
@@ -489,8 +495,6 @@ void audio_input_control_service_client_init(void){
 
     aics_client.characteristics_desc16_num = sizeof(aics_uuid16s)/sizeof(uint16_t);
     aics_client.characteristics_desc16 = aics_uuid16s;
-
-    aics_client_handle_can_send_now.callback = &aics_client_run_for_connection;
 }
 
 uint8_t audio_input_control_service_client_connect(hci_con_handle_t con_handle,
@@ -498,6 +502,11 @@ uint8_t audio_input_control_service_client_connect(hci_con_handle_t con_handle,
     gatt_service_client_characteristic_t * characteristics, uint8_t characteristics_num, btstack_packet_handler_t packet_handler){
 
     btstack_assert(characteristics_num > 0);
+
+    connection->gatt_query_can_send_now.callback = &aics_client_run_for_connection;
+    connection->gatt_query_can_send_now.context = (void *)(uintptr_t)connection->basic_connection.con_handle;
+    connection->change_counter = 0;
+
     return gatt_service_client_connect_secondary_service(con_handle,
         &aics_client, &connection->basic_connection,
         ORG_BLUETOOTH_SERVICE_AUDIO_INPUT_CONTROL, service_start_handle, service_end_handle, service_index,
