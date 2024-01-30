@@ -123,14 +123,20 @@ uint8_t audio_input_control_service_client_connect(
     gatt_service_client_characteristic_t * characteristics_storage, uint8_t characteristics_num,
     btstack_packet_handler_t packet_handler);
 
-uint8_t audio_input_control_service_client_set_gain_setting(aics_client_connection_t * connection, int8_t gain_setting);
-uint8_t audio_input_control_service_client_umute(aics_client_connection_t * connection);
-uint8_t audio_input_control_service_client_mute(aics_client_connection_t * connection);
-uint8_t audio_input_control_service_client_set_manual_gain_mode(aics_client_connection_t * connection);
-uint8_t audio_input_control_service_client_set_automatic_gain_mode(aics_client_connection_t * connection);
-
 uint8_t audio_input_control_service_client_read_input_description(aics_client_connection_t * connection);
 uint8_t audio_input_control_service_client_write_input_description(aics_client_connection_t * connection, const char * audio_input_description);
+
+uint8_t audio_input_control_service_client_read_input_state(aics_client_connection_t * connection);
+uint8_t audio_input_control_service_client_read_gain_setting_properties(aics_client_connection_t * connection);
+uint8_t audio_input_control_service_client_read_input_type(aics_client_connection_t * connection);
+uint8_t audio_input_control_service_client_read_input_status(aics_client_connection_t * connection);
+
+// Control Point procedures
+uint8_t audio_input_control_service_client_write_gain_setting(aics_client_connection_t * connection, int8_t gain_setting);
+uint8_t audio_input_control_service_client_write_umute(aics_client_connection_t * connection);
+uint8_t audio_input_control_service_client_write_mute(aics_client_connection_t * connection);
+uint8_t audio_input_control_service_client_write_manual_gain_mode(aics_client_connection_t * connection);
+uint8_t audio_input_control_service_client_write_automatic_gain_mode(aics_client_connection_t * connection);
 
 /**
  * @brief Disconnect.
