@@ -80,14 +80,10 @@ static btstack_packet_callback_registration_t sm_event_callback_registration;
 static hci_con_handle_t connection_handle;
 static uint16_t mips_cid;
 
-static bd_addr_t cmdline_addr;
-static int cmdline_addr_found = 0;
-
 static bd_addr_t public_pts_address = {0xC0, 0x07, 0xE8, 0x41, 0x45, 0x91};
 static int       public_pts_address_type = 0;
 static bd_addr_t current_pts_address;
 static int       current_pts_address_type;
-
 
 // AICS
 static btstack_packet_callback_registration_t hci_event_callback_registration;
@@ -234,15 +230,10 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
             // Disconnect battery service
 
             microphone_control_service_client_disconnect(mips_cid);
-            
-            if (cmdline_addr_found){
-                printf("Disconnected %s\n", bd_addr_to_str(cmdline_addr));
-                return;
-            }
+            printf("Disconnected\n");
 
-            printf("Disconnected %s\n", bd_addr_to_str(report.address));
-            printf("Restart scan.\n");
-            app_state = APP_STATE_W4_SCAN_RESULT;
+//            printf("Restart scan.\n");
+//            app_state = APP_STATE_W4_SCAN_RESULT;
 //            gap_start_scan();
             break;
         default:
@@ -266,7 +257,8 @@ static void gatt_client_event_handler(uint8_t packet_type, uint16_t channel, uin
             status = gattservice_subevent_mics_client_connected_get_att_status(packet);
             switch (status) {
                 case ERROR_CODE_SUCCESS:
-                    printf("Microphone Control service client connected\n");
+                    printf("Microphone Control service client connected, num included AICS services %d\n",
+                           gattservice_subevent_mics_client_connected_get_aics_services_num(packet));
                     break;
                 default:
                     printf("Microphone Control service client connection failed, err 0x%02x.\n", status);
@@ -279,17 +271,8 @@ static void gatt_client_event_handler(uint8_t packet_type, uint16_t channel, uin
             printf("Mute: %d\n", gattservice_subevent_mics_client_mute_get_state(packet));
             break;
 
-        case GATTSERVICE_SUBEVENT_AICS_CLIENT_CONNECTED:
-            status = gattservice_subevent_aics_client_connected_get_att_status(packet);
-            switch (status) {
-                case ERROR_CODE_SUCCESS:
-                    printf("Audio Input Control service client connected\n");
-                    break;
-                default:
-                    printf("Audio Input Control service client connection failed, err 0x%02x.\n", status);
-                    gap_disconnect(connection_handle);
-                    break;
-            }
+        case GATTSERVICE_SUBEVENT_MICS_CLIENT_DISCONNECTED:
+            printf("Microphone Control service client disconnected\n");
             break;
 
         default:
