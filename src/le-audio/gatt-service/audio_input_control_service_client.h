@@ -65,7 +65,9 @@ typedef enum {
     AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_READY,
     AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_W2_READ_CHARACTERISTIC_VALUE,
     AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_W4_READ_CHARACTERISTIC_VALUE_RESULT,
-    AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_W2_WRITE_CHARACTERISTIC_VALUE_WITHOUT_RESPONSE    
+    AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_W2_WRITE_CHARACTERISTIC_VALUE_WITHOUT_RESPONSE,
+    AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_W2_WRITE_CHARACTERISTIC_VALUE,
+    AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_W4_WRITE_CHARACTERISTIC_VALUE_RESULT
 } audio_input_service_client_state_t;
 
 typedef struct {
@@ -82,9 +84,7 @@ typedef struct {
     } data;
     uint8_t  change_counter;
 
-    // Used to store param of audio input control point command
-    // int32_t  control_point_command_param;
-
+    btstack_context_callback_registration_t gatt_query_can_send_now;
 } aics_client_connection_t;
 
 /* API_START */
