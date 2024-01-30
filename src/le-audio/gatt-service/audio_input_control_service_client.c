@@ -332,23 +332,23 @@ static uint8_t aics_control_point_procedure_request(aics_client_connection_t * c
     return aics_client_request_write_characteristic(connection, AICS_CLIENT_CHARACTERISTIC_INDEX_AUDIO_INPUT_CONTROL_POINT);
 }
 
-uint8_t audio_input_control_service_client_umute(aics_client_connection_t * connection){
+uint8_t audio_input_control_service_client_write_umute(aics_client_connection_t * connection){
     return aics_control_point_procedure_request(connection, AICS_OPCODE_UMUTE);
 }
 
-uint8_t audio_input_control_service_client_mute(aics_client_connection_t * connection){
+uint8_t audio_input_control_service_client_write_mute(aics_client_connection_t * connection){
     return aics_control_point_procedure_request(connection, AICS_OPCODE_MUTE);
 }
 
-uint8_t audio_input_control_service_client_set_manual_gain_mode(aics_client_connection_t * connection){
+uint8_t audio_input_control_service_client_write_manual_gain_mode(aics_client_connection_t * connection){
     return aics_control_point_procedure_request(connection, AICS_OPCODE_SET_MANUAL_GAIN_MODE);
 }
 
-uint8_t audio_input_control_service_client_set_automatic_gain_mode(aics_client_connection_t * connection){
+uint8_t audio_input_control_service_client_write_automatic_gain_mode(aics_client_connection_t * connection){
     return aics_control_point_procedure_request(connection, AICS_OPCODE_SET_AUTOMATIC_GAIN_MODE);
 }
 
-uint8_t audio_input_control_service_client_set_gain_setting(aics_client_connection_t * connection, int8_t gain_setting){
+uint8_t audio_input_control_service_client_write_gain_setting(aics_client_connection_t * connection, int8_t gain_setting){
     btstack_assert(connection == NULL);
     if (connection->state != AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_READY){
         return ERROR_CODE_CONTROLLER_BUSY;
