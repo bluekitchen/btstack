@@ -93,8 +93,6 @@ typedef struct {
 
     uint8_t write_buffer[1];
 
-    bool scheduled_task_query_included_services;
-
     aics_client_connection_t  * aics_connections_storage;
     uint8_t aics_connections_max_num;
     uint8_t aics_connections_num;

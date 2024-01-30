@@ -263,23 +263,17 @@ static void mics_client_packet_handler_internal(uint8_t packet_type, uint16_t ch
                         }
                     };
 #endif
-                    if (connection->scheduled_task_query_included_services){
+
 #ifdef ENABLE_TESTING_SUPPORT
-
-                        printf("\nQuery AICS included services\n");
+                    printf("\nQuery AICS included services\n");
 #endif
-                        connection->scheduled_task_query_included_services = false;
-                        connection->state = MICROPHONE_CONTROL_SERVICE_CLIENT_STATE_W2_QUERY_INCLUDED_SERVICES;
-                        connection->aics_connections_num = 0;
+                    connection->state = MICROPHONE_CONTROL_SERVICE_CLIENT_STATE_W2_QUERY_INCLUDED_SERVICES;
+                    connection->aics_connections_num = 0;
 
-                        mics_client_handle_can_send_now.context = (void *)(uintptr_t)connection->basic_connection.con_handle;
-                        uint8_t status = gatt_client_request_to_send_gatt_query(&mics_client_handle_can_send_now, connection->basic_connection.con_handle);
+                    mics_client_handle_can_send_now.context = (void *)(uintptr_t)connection->basic_connection.con_handle;
+                    uint8_t status = gatt_client_request_to_send_gatt_query(&mics_client_handle_can_send_now, connection->basic_connection.con_handle);
 
-                        if (status != ERROR_CODE_SUCCESS){
-                            connection->state = MICROPHONE_CONTROL_SERVICE_CLIENT_STATE_READY;
-                            mics_client_emit_connected(connection_helper, connection->aics_connections_num, packet, size);
-                        }
-                    } else {
+                    if (status != ERROR_CODE_SUCCESS){
                         connection->state = MICROPHONE_CONTROL_SERVICE_CLIENT_STATE_READY;
                         mics_client_emit_connected(connection_helper, connection->aics_connections_num, packet, size);
                     }
@@ -518,7 +512,6 @@ uint8_t microphone_control_service_client_connect(hci_con_handle_t con_handle,
     btstack_assert(mics_connection != NULL);
     btstack_assert(mics_characteristics_num == MICROPHONE_CONTROL_SERVICE_CLIENT_NUM_CHARACTERISTICS);
 
-    mics_connection->scheduled_task_query_included_services = false;
     mics_connection->aics_connections_max_num = 0;
     mics_connection->aics_characteristics_max_num = 0;
     mics_connection->aics_connections_storage = NULL;
@@ -533,9 +526,6 @@ uint8_t microphone_control_service_client_connect(hci_con_handle_t con_handle,
         mics_connection->aics_connections_max_num = aics_connections_num;
         mics_connection->aics_characteristics_storage = aics_storage_for_characteristics;
         mics_connection->aics_characteristics_max_num = aics_characteristics_num;
-
-//        audio_input_control_service_client_init();
-        mics_connection->scheduled_task_query_included_services = true;
     }
     mics_connection->state = MICROPHONE_CONTROL_SERVICE_CLIENT_STATE_W4_CONNECTION;
     mics_connection->aics_events_packet_handler = packet_handler;
