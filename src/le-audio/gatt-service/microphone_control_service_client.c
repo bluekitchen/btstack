@@ -582,7 +582,7 @@ uint8_t microphone_control_service_client_unmute(uint16_t mics_cid){
     return mics_client_request_write_characteristic(connection, index);
 }
 
-uint8_t microphone_control_service_client_set_gain_setting(uint16_t mics_cid, uint8_t aics_index, int8_t gain_setting){
+uint8_t microphone_control_service_client_write_gain_setting(uint16_t mics_cid, uint8_t aics_index, int8_t gain_setting){
     mics_client_connection_t * connection = (mics_client_connection_t *) gatt_service_client_get_connection_for_cid(&mics_client, mics_cid);
     if (connection == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
@@ -590,10 +590,11 @@ uint8_t microphone_control_service_client_set_gain_setting(uint16_t mics_cid, ui
     if (aics_index >= connection->aics_connections_num){
         return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
     }
-    return audio_input_control_service_client_set_gain_setting(&connection->aics_connections_storage[aics_index], gain_setting);
+    return audio_input_control_service_client_write_gain_setting(&connection->aics_connections_storage[aics_index],
+                                                                 gain_setting);
 }
 
-uint8_t microphone_control_service_client_set_manual_gain_mode(uint16_t mics_cid, uint8_t aics_index){
+uint8_t microphone_control_service_client_write_manual_gain_mode(uint16_t mics_cid, uint8_t aics_index){
     mics_client_connection_t * connection = (mics_client_connection_t *) gatt_service_client_get_connection_for_cid(&mics_client, mics_cid);
     if (connection == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
@@ -601,10 +602,10 @@ uint8_t microphone_control_service_client_set_manual_gain_mode(uint16_t mics_cid
     if (aics_index >= connection->aics_connections_num){
         return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
     }
-    return audio_input_control_service_client_set_manual_gain_mode(&connection->aics_connections_storage[aics_index]);
+    return audio_input_control_service_client_write_manual_gain_mode(&connection->aics_connections_storage[aics_index]);
 }
 
-uint8_t microphone_control_service_client_set_automatic_gain_mode(uint16_t mics_cid, uint8_t aics_index){
+uint8_t microphone_control_service_client_write_automatic_gain_mode(uint16_t mics_cid, uint8_t aics_index){
     mics_client_connection_t * connection = (mics_client_connection_t *) gatt_service_client_get_connection_for_cid(&mics_client, mics_cid);
     if (connection == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
@@ -612,7 +613,8 @@ uint8_t microphone_control_service_client_set_automatic_gain_mode(uint16_t mics_
     if (aics_index >= connection->aics_connections_num){
         return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
     }
-    return audio_input_control_service_client_set_automatic_gain_mode(&connection->aics_connections_storage[aics_index]);
+    return audio_input_control_service_client_write_automatic_gain_mode(
+            &connection->aics_connections_storage[aics_index]);
 }
 
 uint8_t microphone_control_service_client_disconnect(uint16_t aics_cid){
