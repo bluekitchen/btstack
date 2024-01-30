@@ -74,13 +74,13 @@ typedef struct {
 
     // Used for read characteristic queries
     uint8_t characteristic_index;
+
     // Used to store parameters for write characteristic
     union {
-        uint8_t  data_8;
-        uint16_t data_16;
-        uint32_t data_32;
+        uint8_t  data_bytes[4];
         const char * data_string;
     } data;
+    uint8_t  change_counter;
 
     // Used to store param of audio input control point command
     // int32_t  control_point_command_param;
