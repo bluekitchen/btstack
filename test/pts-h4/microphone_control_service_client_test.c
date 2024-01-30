@@ -256,7 +256,6 @@ static void gatt_client_event_handler(uint8_t packet_type, uint16_t channel, uin
     UNUSED(size);
 
     uint8_t status;
-    uint8_t att_status;
 
     if (hci_event_packet_get_type(packet) != HCI_EVENT_GATTSERVICE_META) {
         return;
@@ -264,7 +263,7 @@ static void gatt_client_event_handler(uint8_t packet_type, uint16_t channel, uin
 
     switch (hci_event_gattservice_meta_get_subevent_code(packet)) {
         case GATTSERVICE_SUBEVENT_MICS_CLIENT_CONNECTED:
-            status = gattservice_subevent_mics_client_connected_get_status(packet);
+            status = gattservice_subevent_mics_client_connected_get_att_status(packet);
             switch (status) {
                 case ERROR_CODE_SUCCESS:
                     printf("Microphone Control service client connected\n");
@@ -281,7 +280,7 @@ static void gatt_client_event_handler(uint8_t packet_type, uint16_t channel, uin
             break;
 
         case GATTSERVICE_SUBEVENT_AICS_CLIENT_CONNECTED:
-            status = gattservice_subevent_aics_client_connected_get_status(packet);
+            status = gattservice_subevent_aics_client_connected_get_att_status(packet);
             switch (status) {
                 case ERROR_CODE_SUCCESS:
                     printf("Audio Input Control service client connected\n");
@@ -333,12 +332,12 @@ static void stdin_process(char c){
 
         case 'm':
             printf("Mute ON\n");
-            microphone_control_service_client_mute_turn_on(mips_cid);
+            microphone_control_service_client_mute(mips_cid);
             break;
 
         case 'M':
             printf("Mute OFF\n");
-            microphone_control_service_client_mute_turn_off(mips_cid);
+            microphone_control_service_client_unmute(mips_cid);
             break;
 
         default:
