@@ -543,7 +543,7 @@ uint8_t microphone_control_service_client_read_mute_state(uint16_t mics_cid){
     return mics_client_request_read_characteristic(mics_cid, MICS_CLIENT_CHARACTERISTIC_INDEX_MUTE);
 }
 
-uint8_t microphone_control_service_client_mute_turn_on(uint16_t mics_cid){
+uint8_t microphone_control_service_client_mute(uint16_t mics_cid){
     mics_client_connection_t * connection = (mics_client_connection_t *) gatt_service_client_get_connection_for_cid(&mics_client, mics_cid);
     if (connection == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
@@ -558,7 +558,7 @@ uint8_t microphone_control_service_client_mute_turn_on(uint16_t mics_cid){
     return mics_client_request_write_characteristic(connection, index);
 }
 
-uint8_t microphone_control_service_client_mute_turn_off(uint16_t mics_cid){
+uint8_t microphone_control_service_client_unmute(uint16_t mics_cid){
     mics_client_connection_t * connection = (mics_client_connection_t *) gatt_service_client_get_connection_for_cid(&mics_client, mics_cid);
     if (connection == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
