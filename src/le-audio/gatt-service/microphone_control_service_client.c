@@ -136,7 +136,7 @@ static void mics_client_emit_done_event(mics_client_connection_t * connection, u
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
     event[pos++] = sizeof(event) - 2;
-    // event[pos++] = GATTSERVICE_SUBEVENT_AICS_CLIENT_WRITE_DONE;
+    event[pos++] = GATTSERVICE_SUBEVENT_MICS_CLIENT_WRITE_DONE;
 
     little_endian_store_16(event, pos, cid);
     pos+= 2;
@@ -160,7 +160,7 @@ static void mics_client_emit_read_event(mics_client_connection_t * connection, u
 
     switch (characteristic_uuid16){
         case ORG_BLUETOOTH_CHARACTERISTIC_MUTE:
-            mics_client_emit_number(cid, event_callback, GATTSERVICE_SUBEVENT_MICS_CLIENT_MUTE, data, data_size, 4);
+           mics_client_emit_number(cid, event_callback, GATTSERVICE_SUBEVENT_MICS_CLIENT_MUTE, data, data_size, 4);
            break;
         default:
             btstack_assert(false);
@@ -228,6 +228,8 @@ static uint8_t mics_client_request_write_characteristic(mics_client_connection_t
     return mics_client_request_send_gatt_query(connection, characteristic_index);
 }
 
+static void mics_client_emit_connected(const  gatt_service_client_connection_helper_t *connection_helper, uint8_t num_included_clients, uint8_t *packet, uint16_t size);
+
 static void mics_client_packet_handler_internal(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
@@ -236,7 +238,6 @@ static void mics_client_packet_handler_internal(uint8_t packet_type, uint16_t ch
     gatt_service_client_connection_helper_t * connection_helper;
     mics_client_connection_t * connection;
     hci_con_handle_t con_handle;
-    uint8_t status;
 
     switch(hci_event_packet_get_type(packet)){
         case HCI_EVENT_GATTSERVICE_META:
@@ -259,6 +260,10 @@ static void mics_client_packet_handler_internal(uint8_t packet_type, uint16_t ch
                     };
 #endif
                     if (connection->scheduled_task_query_included_services){
+#ifdef ENABLE_TESTING_SUPPORT
+
+                        printf("\nQuery AICS included services\n");
+#endif
                         connection->scheduled_task_query_included_services = false;
                         connection->state = MICROPHONE_CONTROL_SERVICE_CLIENT_STATE_W2_QUERY_INCLUDED_SERVICES;
                         connection->aics_connections_num = 0;
@@ -268,13 +273,11 @@ static void mics_client_packet_handler_internal(uint8_t packet_type, uint16_t ch
 
                         if (status != ERROR_CODE_SUCCESS){
                             connection->state = MICROPHONE_CONTROL_SERVICE_CLIENT_STATE_READY;
-                            mics_client_replace_subevent_id_and_emit(connection_helper->event_callback, packet, size,
-                                                                     GATTSERVICE_SUBEVENT_MICS_CLIENT_CONNECTED);
+                            mics_client_emit_connected(connection_helper, connection->aics_connections_num, packet, size);
                         }
                     } else {
                         connection->state = MICROPHONE_CONTROL_SERVICE_CLIENT_STATE_READY;
-                        mics_client_replace_subevent_id_and_emit(connection_helper->event_callback, packet, size,
-                                                                 GATTSERVICE_SUBEVENT_MICS_CLIENT_CONNECTED);
+                        mics_client_emit_connected(connection_helper, connection->aics_connections_num, packet, size);
                     }
                     break;
 
@@ -286,12 +289,16 @@ static void mics_client_packet_handler_internal(uint8_t packet_type, uint16_t ch
                     break;
 
                 case GATTSERVICE_SUBEVENT_AICS_CLIENT_CONNECTED:
-                    switch (gattservice_subevent_aics_client_connected_get_status(packet)) {
+                    connection_helper = gatt_service_client_get_connection_for_cid(&mics_client, gattservice_subevent_aics_client_connected_get_aics_cid(packet));
+                    btstack_assert(connection_helper != NULL);
+                    connection = (mics_client_connection_t *)connection_helper;
+
+                    switch (gattservice_subevent_aics_client_connected_get_att_status(packet)) {
                         case ERROR_CODE_SUCCESS:
                             printf("MICS: Audio Input Control service client connected\n");
                             break;
                         default:
-                            printf("MICS: Audio Input Control service client connection failed, err 0x%02x.\n", gattservice_subevent_aics_client_connected_get_status(packet));
+                            printf("MICS: Audio Input Control service client connection failed, err 0x%02x.\n", gattservice_subevent_aics_client_connected_get_att_status(packet));
                             break;
                     }
 
@@ -312,7 +319,7 @@ static void mics_client_packet_handler_internal(uint8_t packet_type, uint16_t ch
                                 return;
                             }
                             connection->state = MICROPHONE_CONTROL_SERVICE_CLIENT_STATE_READY;
-                            mics_client_emit_done_event(connection, connection->characteristic_index, gatt_event_query_complete_get_att_status(packet));
+                            mics_client_emit_connected(&connection->basic_connection, connection->aics_connections_num, packet, size);
                             break;
                         default:
                             break;
@@ -337,6 +344,13 @@ static void mics_client_packet_handler_internal(uint8_t packet_type, uint16_t ch
         default:
             break;
     }
+}
+
+static void mics_client_emit_connected(const gatt_service_client_connection_helper_t *connection_helper, uint8_t num_included_clients,  uint8_t *packet, uint16_t size) {
+    little_endian_store_16(packet, 3, connection_helper->cid);
+    packet[5] = num_included_clients;
+    mics_client_replace_subevent_id_and_emit(connection_helper->event_callback, packet, size,
+                                             GATTSERVICE_SUBEVENT_MICS_CLIENT_CONNECTED);
 }
 
 static void mics_client_handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -573,7 +587,38 @@ uint8_t microphone_control_service_client_unmute(uint16_t mics_cid){
     return mics_client_request_write_characteristic(connection, index);
 }
 
-uint8_t microphone_control_service_client_disconnect(uint16_t mics_cid);
+uint8_t microphone_control_service_client_set_gain_setting(uint16_t mics_cid, uint8_t aics_index, int8_t gain_setting){
+    mics_client_connection_t * connection = (mics_client_connection_t *) gatt_service_client_get_connection_for_cid(&mics_client, mics_cid);
+    if (connection == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if (aics_index >= connection->aics_connections_num){
+        return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+    }
+    return audio_input_control_service_client_set_gain_setting(&connection->aics_connections_storage[aics_index], gain_setting);
+}
+
+uint8_t microphone_control_service_client_set_manual_gain_mode(uint16_t mics_cid, uint8_t aics_index){
+    mics_client_connection_t * connection = (mics_client_connection_t *) gatt_service_client_get_connection_for_cid(&mics_client, mics_cid);
+    if (connection == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if (aics_index >= connection->aics_connections_num){
+        return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+    }
+    return audio_input_control_service_client_set_manual_gain_mode(&connection->aics_connections_storage[aics_index]);
+}
+
+uint8_t microphone_control_service_client_set_automatic_gain_mode(uint16_t mics_cid, uint8_t aics_index){
+    mics_client_connection_t * connection = (mics_client_connection_t *) gatt_service_client_get_connection_for_cid(&mics_client, mics_cid);
+    if (connection == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if (aics_index >= connection->aics_connections_num){
+        return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+    }
+    return audio_input_control_service_client_set_automatic_gain_mode(&connection->aics_connections_storage[aics_index]);
+}
 
 uint8_t microphone_control_service_client_disconnect(uint16_t aics_cid){
     return gatt_service_client_disconnect(&mics_client, aics_cid);
