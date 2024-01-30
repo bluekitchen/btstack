@@ -159,14 +159,14 @@ uint8_t microphone_control_service_client_read_mute_state(uint16_t mics_cid);
  * @param mics_cid
  * @return status
  */
-uint8_t microphone_control_service_client_mute_turn_on(uint16_t mics_cid);
+uint8_t microphone_control_service_client_mute(uint16_t mics_cid);
 
 /**
  * @brief Turn off mute.
  * @param mics_cid
  * @return status
  */
-uint8_t microphone_control_service_client_mute_turn_off(uint16_t mics_cid);
+uint8_t microphone_control_service_client_unmute(uint16_t mics_cid);
 
 /**
  * @brief Disconnect.
@@ -175,12 +175,6 @@ uint8_t microphone_control_service_client_mute_turn_off(uint16_t mics_cid);
  */
 uint8_t microphone_control_service_client_disconnect(uint16_t mics_cid);
 
-/**
- * @brief Turn off mute.
- * @param mics_cid
- * @return status
- */
-uint8_t microphone_control_service_client_mute_turn_off(uint16_t mics_cid);
 /**
  * @brief Disconnect.
  * @param aics_cid
