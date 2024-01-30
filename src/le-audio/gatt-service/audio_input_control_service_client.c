@@ -100,7 +100,6 @@ static void aics_client_replace_subevent_id_and_emit(btstack_packet_handler_t ca
     (*callback)(HCI_EVENT_PACKET, 0, packet, size);
 }
 
-
 static uint16_t aics_client_value_handle_for_index(aics_client_connection_t * connection){
     return connection->basic_connection.characteristics[connection->characteristic_index].value_handle;
 }
@@ -134,6 +133,24 @@ static void aics_client_emit_string_value(gatt_service_client_connection_helper_
     event[pos++] = att_status;
 
     event[1] = pos - 2;         // store subevent size
+    (*connection_helper->event_callback)(HCI_EVENT_PACKET, 0, event, pos);
+}
+
+static void aics_client_emit_connected(gatt_service_client_connection_helper_t * connection_helper, uint8_t status){
+    btstack_assert(connection_helper != NULL);
+    btstack_assert(connection_helper->event_callback != NULL);
+
+    uint8_t event[9];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = GATTSERVICE_SUBEVENT_AICS_CLIENT_CONNECTED;
+    little_endian_store_16(event, pos, connection_helper->con_handle);
+    pos += 2;
+    little_endian_store_16(event, pos, connection_helper->cid);
+    pos += 2;
+    event[pos++] = 0; // num included services
+    event[pos++] = status;
     (*connection_helper->event_callback)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
@@ -291,7 +308,7 @@ static uint8_t aics_client_request_read_characteristic(aics_client_connection_t 
     if (status != ERROR_CODE_SUCCESS){
         return status;
     }
-   connection->state = AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_W2_READ_CHARACTERISTIC_VALUE;
+    connection->state = AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_W2_READ_CHARACTERISTIC_VALUE;
     return aics_client_request_send_gatt_query(connection, characteristic_index);
 }
 
@@ -331,7 +348,6 @@ uint8_t audio_input_control_service_client_set_automatic_gain_mode(aics_client_c
     return aics_control_point_procedure_request(connection, AICS_OPCODE_SET_AUTOMATIC_GAIN_MODE);
 }
 
-
 uint8_t audio_input_control_service_client_set_gain_setting(aics_client_connection_t * connection, int8_t gain_setting){
     btstack_assert(connection == NULL);
     if (connection->state != AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_READY){
@@ -342,7 +358,6 @@ uint8_t audio_input_control_service_client_set_gain_setting(aics_client_connecti
     connection->data.data_bytes[2] = (uint8_t)gain_setting;
     return aics_client_request_write_characteristic(connection, AICS_CLIENT_CHARACTERISTIC_INDEX_AUDIO_INPUT_CONTROL_POINT);
 }
-
 
 uint8_t audio_input_control_service_client_write_input_description(aics_client_connection_t * connection, const char * audio_input_description){
     btstack_assert(connection == NULL);
@@ -376,14 +391,15 @@ uint8_t audio_input_control_service_client_read_input_description(aics_client_co
     return aics_client_request_read_characteristic(connection, AICS_CLIENT_CHARACTERISTIC_INDEX_AUDIO_INPUT_DESCRIPTION);
 }
 
-
 static void aics_client_packet_handler_internal(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
 
     if (packet_type != HCI_EVENT_PACKET) return;
     gatt_service_client_connection_helper_t * connection_helper;
+    aics_client_connection_t * connection;
     hci_con_handle_t con_handle;
+    uint8_t status;
 
     switch(hci_event_packet_get_type(packet)){
         case HCI_EVENT_GATTSERVICE_META:
@@ -396,12 +412,26 @@ static void aics_client_packet_handler_internal(uint8_t packet_type, uint16_t ch
                     {
                         uint8_t i;
                         for (i = AICS_CLIENT_CHARACTERISTIC_INDEX_AUDIO_INPUT_STATE; i < AICS_CLIENT_CHARACTERISTIC_INDEX_RFU; i++){
-                            printf("0x%04X %s\n", connection_helper->characteristics[i].value_handle, aics_client_characteristic_name[i]);
+                            printf("    0x%04X %s\n", connection_helper->characteristics[i].value_handle, aics_client_characteristic_name[i]);
 
                         }
                     };
+                    printf("AICS Client: Query input state to retrieve and cache change counter\n");
 #endif
-                    aics_client_replace_subevent_id_and_emit(connection_helper->event_callback, packet, size, GATTSERVICE_SUBEVENT_AICS_CLIENT_CONNECTED);
+                    connection = (aics_client_connection_t *) connection_helper;
+                    status = gatt_service_client_can_query_characteristic(connection_helper, AICS_CLIENT_CHARACTERISTIC_INDEX_AUDIO_INPUT_STATE);
+
+                    if (status == ERROR_CODE_SUCCESS){
+                        connection->state = AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_W2_QUERY_AICS_CHANGE_COUNTER;
+                        status = aics_client_request_send_gatt_query(connection, AICS_CLIENT_CHARACTERISTIC_INDEX_AUDIO_INPUT_STATE);
+                        if (status == ERROR_CODE_SUCCESS){
+                            break;
+                        }
+                    }
+
+                    // change counter must be retrieved, smth. went wrong
+                    connection->state = AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_UNINITIALISED;
+                    aics_client_emit_connected(connection_helper, status);
                     break;
 
                 case GATTSERVICE_SUBEVENT_CLIENT_DISCONNECTED:
@@ -446,10 +476,40 @@ static void aics_client_handle_gatt_client_event(uint8_t packet_type, uint16_t c
             btstack_assert(connection_helper != NULL);
 
             aics_connection = (aics_client_connection_t *)connection_helper;
-            aics_connection->state = AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_READY;
-            aics_client_emit_read_event(connection_helper, aics_connection->characteristic_index, ATT_ERROR_SUCCESS,
-                gatt_event_characteristic_value_query_result_get_value(packet), 
-                gatt_event_characteristic_value_query_result_get_value_length(packet));
+            switch (aics_connection->state){
+                case AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_W4_AICS_CHANGE_COUNTER_RESULT:
+                    btstack_assert(aics_connection->characteristic_index == AICS_CLIENT_CHARACTERISTIC_INDEX_AUDIO_INPUT_STATE);
+                    if (gatt_event_characteristic_value_query_result_get_value_length(packet) != 4) {
+#ifdef ENABLE_TESTING_SUPPORT
+                        printf("AICS Client: connection failed\n");
+#endif
+                        aics_connection->state = AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_UNINITIALISED;
+                        aics_client_emit_connected(connection_helper, ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH);
+                        break;
+                    }
+
+                    aics_connection->change_counter = gatt_event_characteristic_value_query_result_get_value(packet)[3];
+#ifdef ENABLE_TESTING_SUPPORT
+                    printf("AICS Client: connected, change counter initialized to %d\n", aics_connection->change_counter);
+#endif
+                    aics_connection->state = AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_READY;
+                    // initialize change counter on connect
+                    aics_client_emit_connected(connection_helper, ATT_ERROR_SUCCESS);
+                    break;
+
+                case AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_W4_READ_CHARACTERISTIC_VALUE_RESULT:
+                    aics_connection->state = AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_READY;
+                    aics_client_emit_read_event(connection_helper, aics_connection->characteristic_index, ATT_ERROR_SUCCESS,
+                                                gatt_event_characteristic_value_query_result_get_value(packet),
+                                                gatt_event_characteristic_value_query_result_get_value_length(packet));
+                    break;
+
+                default:
+                    btstack_assert(false);
+                    break;
+            }
+
+
             break;
 
         case GATT_EVENT_QUERY_COMPLETE:
@@ -511,6 +571,13 @@ static void aics_client_run_for_connection(void * context){
     uint8_t * value;
 
     switch (connection->state){
+        case AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_W2_QUERY_AICS_CHANGE_COUNTER:
+            connection->state = AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_W4_AICS_CHANGE_COUNTER_RESULT;
+            (void) gatt_client_read_value_of_characteristic_using_value_handle(
+                    &aics_client_handle_gatt_client_event, con_handle,
+                    aics_client_value_handle_for_index(connection));
+            break;
+
         case AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_W2_READ_CHARACTERISTIC_VALUE:
             connection->state = AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_W4_READ_CHARACTERISTIC_VALUE_RESULT;
 
@@ -564,7 +631,7 @@ uint8_t audio_input_control_service_client_connect(hci_con_handle_t con_handle,
     connection->gatt_query_can_send_now.callback = &aics_client_run_for_connection;
     connection->gatt_query_can_send_now.context = (void *)(uintptr_t)connection->basic_connection.con_handle;
     connection->change_counter = 0;
-
+    connection->state = AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_W4_CONNECTED;
     return gatt_service_client_connect_secondary_service(con_handle,
         &aics_client, &connection->basic_connection,
         ORG_BLUETOOTH_SERVICE_AUDIO_INPUT_CONTROL, service_start_handle, service_end_handle, service_index,
