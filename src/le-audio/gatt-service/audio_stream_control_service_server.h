@@ -176,6 +176,13 @@ void audio_stream_control_service_server_streamendpoint_metadata_update(hci_con_
 void audio_stream_control_service_server_streamendpoint_release(hci_con_handle_t con_handle, uint8_t ase_id);
 
 /**
+ * @brief Report CIS loss for a streamendpoint
+ * @param con_handle
+ * @param ase_id
+ */
+void audio_stream_control_service_server_streamendpoint_cis_lost(hci_con_handle_t con_handle, uint8_t ase_id);
+
+/**
  * @brief Deinit Audio Stream Control Service Server
  */
 void audio_stream_control_service_server_deinit(void);
