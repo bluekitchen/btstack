@@ -629,6 +629,28 @@ uint8_t microphone_control_service_client_unmute(uint16_t mics_cid){
     return mics_client_request_write_characteristic(connection, index);
 }
 
+uint8_t microphone_control_service_client_write_unmute(uint16_t mics_cid, uint8_t aics_index){
+    mics_client_connection_t * connection = (mics_client_connection_t *) gatt_service_client_get_connection_for_cid(&mics_client, mics_cid);
+    if (connection == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if (aics_index >= connection->aics_connections_num){
+        return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+    }
+    return audio_input_control_service_client_write_unmute(&connection->aics_connections_storage[aics_index]);
+}
+
+uint8_t microphone_control_service_client_write_mute(uint16_t mics_cid, uint8_t aics_index){
+    mics_client_connection_t * connection = (mics_client_connection_t *) gatt_service_client_get_connection_for_cid(&mics_client, mics_cid);
+    if (connection == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if (aics_index >= connection->aics_connections_num){
+        return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+    }
+    return audio_input_control_service_client_write_mute(&connection->aics_connections_storage[aics_index]);
+}
+
 uint8_t microphone_control_service_client_write_gain_setting(uint16_t mics_cid, uint8_t aics_index, int8_t gain_setting){
     mics_client_connection_t * connection = (mics_client_connection_t *) gatt_service_client_get_connection_for_cid(&mics_client, mics_cid);
     if (connection == NULL){
