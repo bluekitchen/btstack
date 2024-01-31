@@ -162,6 +162,15 @@ uint8_t microphone_control_service_client_mute(uint16_t mics_cid);
 uint8_t microphone_control_service_client_write_gain_setting(uint16_t mics_cid, uint8_t aics_index, int8_t gain_setting);
 uint8_t microphone_control_service_client_write_manual_gain_mode(uint16_t mics_cid, uint8_t aics_index);
 uint8_t microphone_control_service_client_write_automatic_gain_mode(uint16_t mics_cid, uint8_t aics_index);
+
+uint8_t microphone_control_service_client_read_input_description(uint16_t mics_cid, uint8_t aics_index);
+uint8_t microphone_control_service_client_write_input_description(uint16_t mics_cid, uint8_t aics_index, const char * audio_input_description);
+
+uint8_t microphone_control_service_client_read_input_state(uint16_t mics_cid, uint8_t aics_index);
+uint8_t microphone_control_service_client_read_gain_setting_properties(uint16_t mics_cid, uint8_t aics_index);
+uint8_t microphone_control_service_client_read_input_type(uint16_t mics_cid, uint8_t aics_index);
+uint8_t microphone_control_service_client_read_input_status(uint16_t mics_cid, uint8_t aics_index);
+
 /**
  * @brief Turn off mute.
  * @param mics_cid

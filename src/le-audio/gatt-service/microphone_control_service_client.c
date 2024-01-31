@@ -253,12 +253,14 @@ static void mics_client_packet_handler_internal(uint8_t packet_type, uint16_t ch
     gatt_service_client_connection_helper_t * connection_helper;
     mics_client_connection_t * connection;
     hci_con_handle_t con_handle;
+    uint16_t cid;
 
     switch(hci_event_packet_get_type(packet)){
         case HCI_EVENT_GATTSERVICE_META:
             switch (hci_event_gattservice_meta_get_subevent_code(packet)){
                 case GATTSERVICE_SUBEVENT_CLIENT_CONNECTED:
-                    connection_helper = gatt_service_client_get_connection_for_cid(&mics_client, gattservice_subevent_client_connected_get_cid(packet));
+                    cid = gattservice_subevent_client_connected_get_cid(packet);
+                    connection_helper = gatt_service_client_get_connection_for_cid(&mics_client, cid);
                     btstack_assert(connection_helper != NULL);
                     connection = (mics_client_connection_t *)connection_helper;
 
@@ -292,19 +294,64 @@ static void mics_client_packet_handler_internal(uint8_t packet_type, uint16_t ch
 
                 case GATTSERVICE_SUBEVENT_CLIENT_DISCONNECTED:
                     // TODO reset client
-                    connection_helper = gatt_service_client_get_connection_for_cid(&mics_client, gattservice_subevent_client_disconnected_get_cid(packet));
+                    cid = gattservice_subevent_client_disconnected_get_cid(packet);
+                    connection_helper = gatt_service_client_get_connection_for_cid(&mics_client, cid);
                     btstack_assert(connection_helper != NULL);
                     mics_client_replace_subevent_id_and_emit(connection_helper->event_callback, packet, size, GATTSERVICE_SUBEVENT_MICS_CLIENT_DISCONNECTED);
                     break;
 
+
+                case GATTSERVICE_SUBEVENT_AICS_CLIENT_AUDIO_INPUT_STATE:
+                    cid = gattservice_subevent_aics_client_audio_input_state_get_aics_cid(packet);
+                    connection_helper = gatt_service_client_get_connection_for_cid(&mics_client, cid);
+                    btstack_assert(connection_helper != NULL);
+                    mics_client_replace_subevent_id_and_emit(connection_helper->event_callback, packet, size, GATTSERVICE_SUBEVENT_MICS_CLIENT_AUDIO_INPUT_STATE);
+                    break;
+
+                case GATTSERVICE_SUBEVENT_AICS_CLIENT_GAIN_SETTINGS_PROPERTIES:
+                    cid = gattservice_subevent_aics_client_gain_settings_properties_get_aics_cid(packet);
+                    connection_helper = gatt_service_client_get_connection_for_cid(&mics_client, cid);
+                    btstack_assert(connection_helper != NULL);
+                    mics_client_replace_subevent_id_and_emit(connection_helper->event_callback, packet, size, GATTSERVICE_SUBEVENT_MICS_CLIENT_GAIN_SETTINGS_PROPERTIES);
+                    break;
+
+                case GATTSERVICE_SUBEVENT_AICS_CLIENT_AUDIO_INPUT_TYPE:
+                    cid = gattservice_subevent_aics_client_audio_input_type_get_aics_cid(packet);
+                    connection_helper = gatt_service_client_get_connection_for_cid(&mics_client, cid);
+                    btstack_assert(connection_helper != NULL);
+                    mics_client_replace_subevent_id_and_emit(connection_helper->event_callback, packet, size, GATTSERVICE_SUBEVENT_MICS_CLIENT_AUDIO_INPUT_TYPE);
+                    break;
+
+                case GATTSERVICE_SUBEVENT_AICS_CLIENT_AUDIO_INPUT_STATUS:
+                    cid = gattservice_subevent_aics_client_audio_input_status_get_aics_cid(packet);
+                    connection_helper = gatt_service_client_get_connection_for_cid(&mics_client, cid);
+                    btstack_assert(connection_helper != NULL);
+                    mics_client_replace_subevent_id_and_emit(connection_helper->event_callback, packet, size, GATTSERVICE_SUBEVENT_MICS_CLIENT_AUDIO_INPUT_STATUS);
+                    break;
+
+                case GATTSERVICE_SUBEVENT_AICS_CLIENT_AUDIO_DESCRIPTION:
+                    cid = gattservice_subevent_aics_client_audio_description_get_aics_cid(packet);
+                    connection_helper = gatt_service_client_get_connection_for_cid(&mics_client, cid);
+                    btstack_assert(connection_helper != NULL);
+                    mics_client_replace_subevent_id_and_emit(connection_helper->event_callback, packet, size, GATTSERVICE_SUBEVENT_MICS_CLIENT_AUDIO_DESCRIPTION);
+                    break;
+
+                case GATTSERVICE_SUBEVENT_AICS_CLIENT_WRITE_DONE:
+                    cid = gattservice_subevent_aics_client_write_done_get_aics_cid(packet);
+                    connection_helper = gatt_service_client_get_connection_for_cid(&mics_client, cid);
+                    btstack_assert(connection_helper != NULL);
+                    mics_client_replace_subevent_id_and_emit(connection_helper->event_callback, packet, size, GATTSERVICE_SUBEVENT_MICS_CLIENT_WRITE_DONE);
+                    break;
+
                 case GATTSERVICE_SUBEVENT_AICS_CLIENT_CONNECTED:
-                    connection_helper = gatt_service_client_get_connection_for_cid(&mics_client, gattservice_subevent_aics_client_connected_get_aics_cid(packet));
+                    cid = gattservice_subevent_aics_client_connected_get_aics_cid(packet);
+                    connection_helper = gatt_service_client_get_connection_for_cid(&mics_client, cid);
                     btstack_assert(connection_helper != NULL);
                     connection = (mics_client_connection_t *)connection_helper;
 
                     if (gattservice_subevent_aics_client_connected_get_att_status(packet) != ERROR_CODE_SUCCESS) {
-                       printf("MICS: Audio Input Control service client connection failed, err 0x%02x.\n", gattservice_subevent_aics_client_connected_get_att_status(packet));
-                       break;
+                        printf("MICS: Audio Input Control service client connection failed, err 0x%02x.\n", gattservice_subevent_aics_client_connected_get_att_status(packet));
+                        break;
                     }
 
                     switch (connection->state){
@@ -613,9 +660,75 @@ uint8_t microphone_control_service_client_write_automatic_gain_mode(uint16_t mic
     if (aics_index >= connection->aics_connections_num){
         return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
     }
-    return audio_input_control_service_client_write_automatic_gain_mode(
-            &connection->aics_connections_storage[aics_index]);
+    return audio_input_control_service_client_write_automatic_gain_mode(&connection->aics_connections_storage[aics_index]);
 }
+
+uint8_t microphone_control_service_client_write_input_description(uint16_t mics_cid, uint8_t aics_index, const char * audio_input_description){
+    mics_client_connection_t * connection = (mics_client_connection_t *) gatt_service_client_get_connection_for_cid(&mics_client, mics_cid);
+    if (connection == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if (aics_index >= connection->aics_connections_num){
+        return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+    }
+    return audio_input_control_service_client_write_input_description(&connection->aics_connections_storage[aics_index], audio_input_description);
+}
+
+uint8_t microphone_control_service_client_read_input_description(uint16_t mics_cid, uint8_t aics_index){
+    mics_client_connection_t * connection = (mics_client_connection_t *) gatt_service_client_get_connection_for_cid(&mics_client, mics_cid);
+    if (connection == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if (aics_index >= connection->aics_connections_num){
+        return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+    }
+    return audio_input_control_service_client_read_input_description(&connection->aics_connections_storage[aics_index]);
+}
+
+uint8_t microphone_control_service_client_read_input_state(uint16_t mics_cid, uint8_t aics_index){
+    mics_client_connection_t * connection = (mics_client_connection_t *) gatt_service_client_get_connection_for_cid(&mics_client, mics_cid);
+    if (connection == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if (aics_index >= connection->aics_connections_num){
+        return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+    }
+    return audio_input_control_service_client_read_input_state(&connection->aics_connections_storage[aics_index]);
+}
+
+uint8_t microphone_control_service_client_read_gain_setting_properties(uint16_t mics_cid, uint8_t aics_index){
+    mics_client_connection_t * connection = (mics_client_connection_t *) gatt_service_client_get_connection_for_cid(&mics_client, mics_cid);
+    if (connection == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if (aics_index >= connection->aics_connections_num){
+        return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+    }
+    return audio_input_control_service_client_read_gain_setting_properties(&connection->aics_connections_storage[aics_index]);
+}
+
+uint8_t microphone_control_service_client_read_input_type(uint16_t mics_cid, uint8_t aics_index){
+    mics_client_connection_t * connection = (mics_client_connection_t *) gatt_service_client_get_connection_for_cid(&mics_client, mics_cid);
+    if (connection == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if (aics_index >= connection->aics_connections_num){
+        return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+    }
+    return audio_input_control_service_client_read_input_type(&connection->aics_connections_storage[aics_index]);
+}
+
+uint8_t microphone_control_service_client_read_input_status(uint16_t mics_cid, uint8_t aics_index){
+    mics_client_connection_t * connection = (mics_client_connection_t *) gatt_service_client_get_connection_for_cid(&mics_client, mics_cid);
+    if (connection == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if (aics_index >= connection->aics_connections_num){
+        return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+    }
+    return audio_input_control_service_client_read_input_status(&connection->aics_connections_storage[aics_index]);
+}
+
 
 uint8_t microphone_control_service_client_disconnect(uint16_t aics_cid){
     return gatt_service_client_disconnect(&mics_client, aics_cid);
