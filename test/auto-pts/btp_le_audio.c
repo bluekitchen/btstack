@@ -47,7 +47,7 @@
 #include "btpclient.h"
 #include "btp.h"
 #include "btstack.h"
-#include "gatt_profiles_bap.h"
+#include "bap_service_server_test.h"
 
 #define ASCS_CLIENT_NUM_STREAMENDPOINTS 4
 #define ASCS_CLIENT_COUNT 2
@@ -346,8 +346,8 @@ static void ascs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
             audio_stream_control_service_server_streamendpoint_configure_qos(con_handle, ascs_server_current_ase_id, &qos_configuration);
             break;
         case GATTSERVICE_SUBEVENT_ASCS_SERVER_ENABLE:
-            ascs_server_current_ase_id = gattservice_subevent_ascs_server_disable_get_ase_id(packet);
-            con_handle = gattservice_subevent_ascs_server_disable_get_con_handle(packet);
+            ascs_server_current_ase_id = gattservice_subevent_ascs_server_enable_get_ase_id(packet);
+            con_handle = gattservice_subevent_ascs_server_enable_get_con_handle(packet);
             MESSAGE("ASCS: ENABLE ase_id %d", ascs_server_current_ase_id);
             audio_stream_control_service_server_streamendpoint_enable(con_handle, ascs_server_current_ase_id);
             break;
