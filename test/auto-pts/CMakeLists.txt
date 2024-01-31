@@ -14,8 +14,10 @@ link_libraries(${LIBUSB_LIBRARIES})
 
 # add all directories
 include_directories((../../chipset/realtek))
-include_directories(../../3rd-party/micro-ecc)
+include_directories(../../3rd-party/bluedroid/decoder/include)
+include_directories(../../3rd-party/bluedroid/encoder/include)
 include_directories(../../3rd-party/lc3-google/include)
+include_directories(../../3rd-party/micro-ecc)
 include_directories(../../3rd-party/rijndael)
 include_directories(../../3rd-party/tinydir)
 include_directories(../../chipset/bcm)
@@ -105,12 +107,12 @@ function(compile_gatt PROFILE_GATT PROFILE_H)
 endfunction()
 
 # GATT BAP
-compile_gatt(${CMAKE_SOURCE_DIR}/../pts/gatt_profiles_bap.gatt  ${CMAKE_CURRENT_BINARY_DIR}/gatt_profiles_bap.h)
+compile_gatt(${CMAKE_SOURCE_DIR}/../pts-h4/bap_service_server_test.gatt  ${CMAKE_CURRENT_BINARY_DIR}/bap_service_server_test.h)
 
 # target btpclient-usb
-add_executable(btpclient-usb btpclient.c ../../port/libusb/main.c btp_socket.c btp_le_audio.c ${CMAKE_CURRENT_BINARY_DIR}/gatt_profiles_bap.h)
+add_executable(btpclient-usb btpclient.c ../../port/libusb/main.c btp_socket.c btp_le_audio.c ${CMAKE_CURRENT_BINARY_DIR}/bap_service_server_test.h)
 target_link_libraries(btpclient-usb btstack)
 
 # target btpclient-h4
-add_executable(btpclient-h4 btpclient.c ../../port/posix-h4/main.c btp_socket.c btp_le_audio.c ${CMAKE_CURRENT_BINARY_DIR}/gatt_profiles_bap.h)
+add_executable(btpclient-h4 btpclient.c ../../port/posix-h4/main.c btp_socket.c btp_le_audio.c ${CMAKE_CURRENT_BINARY_DIR}/bap_service_server_test.h)
 target_link_libraries(btpclient-h4 btstack)
