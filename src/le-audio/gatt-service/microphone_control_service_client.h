@@ -171,6 +171,8 @@ uint8_t microphone_control_service_client_read_gain_setting_properties(uint16_t 
 uint8_t microphone_control_service_client_read_input_type(uint16_t mics_cid, uint8_t aics_index);
 uint8_t microphone_control_service_client_read_input_status(uint16_t mics_cid, uint8_t aics_index);
 
+uint8_t microphone_control_service_client_write_mute(uint16_t mics_cid, uint8_t aics_index);
+uint8_t microphone_control_service_client_write_unmute(uint16_t mics_cid, uint8_t aics_index);
 /**
  * @brief Turn off mute.
  * @param mics_cid
