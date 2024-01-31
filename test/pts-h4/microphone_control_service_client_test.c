@@ -78,7 +78,7 @@ static gatt_service_client_characteristic_t aics_storage_for_characteristics[AIC
 static advertising_report_t report;
 static btstack_packet_callback_registration_t sm_event_callback_registration;
 static hci_con_handle_t connection_handle;
-static uint16_t mips_cid;
+static uint16_t mics_cid;
 
 static bd_addr_t public_pts_address = {0xC0, 0x07, 0xE8, 0x41, 0x45, 0x91};
 static int       public_pts_address_type = 0;
@@ -87,6 +87,7 @@ static int       current_pts_address_type;
 
 // AICS
 static btstack_packet_callback_registration_t hci_event_callback_registration;
+const char * audio_input_description = "AICS Client Test";
 
 static void show_usage(void);
 static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
@@ -104,7 +105,6 @@ static void microphone_control_service_client_setup(void){
     
     microphone_control_service_client_init();
     audio_input_control_service_client_init();
-
 
     sm_init();
     sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
@@ -222,14 +222,14 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
                                                              &mics_connection,
                                                              mics_storage_for_characteristics, MICS_CHARACTERISTICS_MAX_NUM,
                                                              aics_connections, AICS_CONNECTIONS_MAX_NUM,
-                                                             aics_storage_for_characteristics, AICS_CHARACTERISTICS_MAX_NUM, &mips_cid);
+                                                             aics_storage_for_characteristics, AICS_CHARACTERISTICS_MAX_NUM, &mics_cid);
             break;
 
         case HCI_EVENT_DISCONNECTION_COMPLETE:
             connection_handle = HCI_CON_HANDLE_INVALID;
             // Disconnect battery service
 
-            microphone_control_service_client_disconnect(mips_cid);
+            microphone_control_service_client_disconnect(mics_cid);
             printf("Disconnected\n");
 
 //            printf("Restart scan.\n");
@@ -252,6 +252,7 @@ static void gatt_client_event_handler(uint8_t packet_type, uint16_t channel, uin
         return;
     }
 
+    uint8_t aics_index;
     switch (hci_event_gattservice_meta_get_subevent_code(packet)) {
         case GATTSERVICE_SUBEVENT_MICS_CLIENT_CONNECTED:
             status = gattservice_subevent_mics_client_connected_get_att_status(packet);
@@ -269,6 +270,72 @@ static void gatt_client_event_handler(uint8_t packet_type, uint16_t channel, uin
 
         case GATTSERVICE_SUBEVENT_MICS_CLIENT_MUTE:
             printf("Mute: %d\n", gattservice_subevent_mics_client_mute_get_state(packet));
+            break;
+
+        case GATTSERVICE_SUBEVENT_MICS_CLIENT_AUDIO_INPUT_STATE:
+            aics_index = gattservice_subevent_mics_client_audio_input_state_get_aics_index(packet);
+            printf("MICS Client Test: received AICS[%d] event AUDIO_INPUT_STATE\n", aics_index);
+            status = gattservice_subevent_mics_client_audio_input_state_get_att_status(packet);
+            if (status != ATT_ERROR_SUCCESS){
+                printf("Read failed, 0%02x", status);
+                break;
+            }
+            break;
+
+        case GATTSERVICE_SUBEVENT_MICS_CLIENT_GAIN_SETTINGS_PROPERTIES:
+            aics_index = gattservice_subevent_mics_client_gain_settings_properties_get_aics_index(packet);
+            printf("MICS Client Test: received AICS[%d] event GAIN_SETTINGS_PROPERTIES\n", aics_index);
+            status = gattservice_subevent_mics_client_gain_settings_properties_get_att_status(packet);
+            if (status != ATT_ERROR_SUCCESS){
+                printf("Read failed, 0%02x", status);
+                break;
+            }
+            printf("Gain Setting Step Size: %d\n", gattservice_subevent_mics_client_gain_settings_properties_get_units(packet));
+            printf("Gain Setting Minimum: %d\n", (int8_t)gattservice_subevent_mics_client_gain_settings_properties_get_minimum_value(packet));
+            printf("Gain Setting Maximum:  %d\n", (int8_t)gattservice_subevent_mics_client_gain_settings_properties_get_maximum_value(packet));
+            break;
+
+        case GATTSERVICE_SUBEVENT_MICS_CLIENT_AUDIO_INPUT_TYPE:
+            aics_index = gattservice_subevent_mics_client_audio_input_type_get_aics_index(packet);
+            printf("MICS Client Test: received AICS[%d] event AUDIO_INPUT_TYPE\n", aics_index);
+            status = gattservice_subevent_mics_client_audio_input_type_get_att_status(packet);
+            if (status != ATT_ERROR_SUCCESS){
+                printf("Read failed, 0%02x", status);
+                break;
+            }
+            printf("Input type:  %d\n", gattservice_subevent_mics_client_audio_input_type_get_input_type(packet));
+            break;
+
+        case GATTSERVICE_SUBEVENT_MICS_CLIENT_AUDIO_INPUT_STATUS:
+            aics_index = gattservice_subevent_mics_client_audio_input_status_get_aics_index(packet);
+            printf("MICS Client Test: received AICS[%d] event AUDIO_INPUT_STATUS\n", aics_index);
+            status = gattservice_subevent_mics_client_audio_input_status_get_att_status(packet);
+            if (status != ATT_ERROR_SUCCESS){
+                printf("Read failed, 0%02x", status);
+                break;
+            }
+            printf("Input status:  %d\n", gattservice_subevent_mics_client_audio_input_status_get_input_status(packet));
+            break;
+
+        case GATTSERVICE_SUBEVENT_MICS_CLIENT_AUDIO_DESCRIPTION:
+            aics_index = gattservice_subevent_mics_client_audio_description_get_aics_index(packet);
+            printf("MICS Client Test: received AICS[%d] event AUDIO_DESCRIPTION\n", aics_index);
+            status = gattservice_subevent_mics_client_audio_description_get_att_status(packet);
+            if (status != ATT_ERROR_SUCCESS){
+                printf("Read failed, 0%02x", status);
+                break;
+            }
+            printf("Audio description:  %s\n", gattservice_subevent_mics_client_audio_description_get_value(packet));
+            break;
+
+        case GATTSERVICE_SUBEVENT_MICS_CLIENT_WRITE_DONE:
+            aics_index = gattservice_subevent_mics_client_write_done_get_aics_index(packet);
+            printf("MICS Client Test: received AICS[%d] event WRITE_DONE\n", aics_index);
+            status = gattservice_subevent_mics_client_write_done_get_att_status(packet);
+            if (status != ATT_ERROR_SUCCESS){
+                printf("Read failed, 0%02x", status);
+                break;
+            }
             break;
 
         case GATTSERVICE_SUBEVENT_MICS_CLIENT_DISCONNECTED:
@@ -289,38 +356,95 @@ static void show_usage(void){
     printf("c    - Connect to %s\n", bd_addr_to_str(current_pts_address));
     printf("r    - Read Mute state\n");
     printf("m/M  - Mute ON/OFF\n");
+    printf("g    - write gain setting\n");
+    printf("G    - write manual gain mode\n");
+    printf("h    - write automatic gain mode\n");
+    printf("H    - read input description\n");
+    printf("i    - write input description\n");
+    printf("I    - read input state\n");
+    printf("j    - read gain setting properties\n");
+    printf("J    - read input type\n");
+    printf("n    - read input status\n");
 }
 
 static void stdin_process(char c){
+    uint8_t status = ERROR_CODE_SUCCESS;
+    uint8_t aics_index = 0;
+
     switch (c){
         case 'c':
             printf("Connect to %s\n", bd_addr_to_str(current_pts_address));
             app_state = APP_STATE_W4_CONNECT;
-            gap_connect(current_pts_address, current_pts_address_type);
+            status = gap_connect(current_pts_address, current_pts_address_type);
             break;
 
         case 'b':
-                (void) microphone_control_service_client_connect(connection_handle, &gatt_client_event_handler,
+            status = microphone_control_service_client_connect(connection_handle, &gatt_client_event_handler,
                                                                  &mics_connection,
                                                                  mics_storage_for_characteristics, MICS_CHARACTERISTICS_MAX_NUM,
                                                                  aics_connections, AICS_CONNECTIONS_MAX_NUM,
-                                                                 aics_storage_for_characteristics, AICS_CHARACTERISTICS_MAX_NUM, &mips_cid);
+                                                                 aics_storage_for_characteristics, AICS_CHARACTERISTICS_MAX_NUM, &mics_cid);
 
             break;
 
         case 'r':
             printf("Read Mute state\n");
-            microphone_control_service_client_read_mute_state(mips_cid);
+            status = microphone_control_service_client_read_mute_state(mics_cid);
             break;
 
         case 'm':
             printf("Mute ON\n");
-            microphone_control_service_client_mute(mips_cid);
+            status = microphone_control_service_client_mute(mics_cid);
             break;
 
         case 'M':
             printf("Mute OFF\n");
-            microphone_control_service_client_unmute(mips_cid);
+            status = microphone_control_service_client_unmute(mics_cid);
+            break;
+
+        case 'g':
+            printf("Write gain setting\n");
+            status = microphone_control_service_client_write_gain_setting(mics_cid, aics_index, 100);
+            break;
+
+        case 'G':
+            printf("Write manual gain mode\n");
+            status = microphone_control_service_client_write_manual_gain_mode(mics_cid, aics_index);
+            break;
+
+        case 'h':
+            printf("Write automatic gain mode\n");
+            status = microphone_control_service_client_write_automatic_gain_mode(mics_cid, aics_index);
+            break;
+
+        case 'H':
+            printf("Read input description\n");
+            status = microphone_control_service_client_read_input_description(mics_cid, aics_index);
+            break;
+
+        case 'i':
+            printf("Write input description\n");
+            status = microphone_control_service_client_write_input_description(mics_cid, aics_index, audio_input_description);
+            break;
+
+        case 'I':
+            printf("Read input state\n");
+            status = microphone_control_service_client_read_input_state(mics_cid, aics_index);
+            break;
+
+        case 'j':
+            printf("Read gain setting properties\n");
+            status = microphone_control_service_client_read_gain_setting_properties(mics_cid, aics_index);
+            break;
+
+        case 'J':
+            printf("Read input type\n");
+            status = microphone_control_service_client_read_input_type(mics_cid, aics_index);
+            break;
+
+        case 'n':
+            printf("Read input status\n");
+            status = microphone_control_service_client_read_input_status(mics_cid, aics_index);
             break;
 
         default:
@@ -328,6 +452,9 @@ static void stdin_process(char c){
             break;
     }
 
+    if (status != ERROR_CODE_SUCCESS){
+        printf("MICS Client Test: command %c failed due to 0%02x\n", c, status);
+    }
 }
 
 int btstack_main(int argc, const char * argv[]);
