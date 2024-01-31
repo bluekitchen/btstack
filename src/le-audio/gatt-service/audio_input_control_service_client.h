@@ -133,7 +133,7 @@ uint8_t audio_input_control_service_client_read_input_status(aics_client_connect
 
 // Control Point procedures
 uint8_t audio_input_control_service_client_write_gain_setting(aics_client_connection_t * connection, int8_t gain_setting);
-uint8_t audio_input_control_service_client_write_umute(aics_client_connection_t * connection);
+uint8_t audio_input_control_service_client_write_unmute(aics_client_connection_t * connection);
 uint8_t audio_input_control_service_client_write_mute(aics_client_connection_t * connection);
 uint8_t audio_input_control_service_client_write_manual_gain_mode(aics_client_connection_t * connection);
 uint8_t audio_input_control_service_client_write_automatic_gain_mode(aics_client_connection_t * connection);
