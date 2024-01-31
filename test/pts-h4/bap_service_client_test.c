@@ -55,7 +55,7 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 static btstack_packet_callback_registration_t sm_event_callback_registration;
 static void show_usage(void);
 
-static const char * bap_app_server_addr_string = "C007E8414591";
+static const char * bap_app_server_addr_string = "C007E833B9E8";
 
 static bd_addr_t        bap_app_server_addr;
 static hci_con_handle_t bap_app_client_con_handle;
@@ -85,7 +85,6 @@ static char remote_name[20];
 static bd_addr_t remote;
 static bd_addr_type_t remote_type;
 static uint8_t remote_sid;
-static bool count_mode;
 static bool pts_mode;
 
 static char operation_cmd = 0;
@@ -288,15 +287,10 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
 
         case GAP_EVENT_EXTENDED_ADVERTISING_REPORT:
         {
-            gap_event_extended_advertising_report_get_address(packet, source_data1.address);
-            source_data1.address_type = gap_event_extended_advertising_report_get_address_type(packet);
-            source_data1.adv_sid = gap_event_extended_advertising_report_get_advertising_sid(packet);
-
             uint8_t adv_size = gap_event_extended_advertising_report_get_data_length(packet);
             const uint8_t * adv_data = gap_event_extended_advertising_report_get_data(packet);
 
             ad_context_t context;
-            bool found = false;
             remote_name[0] = '\0';
             uint16_t uuid;
             for (ad_iterator_init(&context, adv_size, adv_data) ; ad_iterator_has_more(&context) ; ad_iterator_next(&context)) {
@@ -305,21 +299,27 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
                 switch (data_type){
                     case BLUETOOTH_DATA_TYPE_SERVICE_DATA_16_BIT_UUID:
                         uuid = little_endian_read_16(data, 0);
-                        if (uuid == ORG_BLUETOOTH_SERVICE_BROADCAST_AUDIO_ANNOUNCEMENT_SERVICE){
-                            found = true;
+                        switch (uuid){
+                            case ORG_BLUETOOTH_SERVICE_BROADCAST_AUDIO_ANNOUNCEMENT_SERVICE:
+                                gap_event_extended_advertising_report_get_address(packet, source_data1.address);
+                                source_data1.address_type = gap_event_extended_advertising_report_get_address_type(packet);
+                                source_data1.adv_sid = gap_event_extended_advertising_report_get_advertising_sid(packet);
+                                remote_type = gap_event_extended_advertising_report_get_address_type(packet);
+                                remote_sid = gap_event_extended_advertising_report_get_advertising_sid(packet);
+                                pts_mode = strncmp("PTS-", remote_name, 4) == 0;
+                                printf("Remote Broadcast sink found, addr %s, name: '%s' (pts-mode: %u)\n", bd_addr_to_str(remote), remote_name, pts_mode);
+                                break;
+                            case ORG_BLUETOOTH_SERVICE_AUDIO_STREAM_CONTROL_SERVICE:
+                                gap_event_extended_advertising_report_get_address(packet, remote);
+                                printf("Remote device with ASCS found, addr %s\n", bd_addr_to_str(remote));
+                                gap_stop_scan();
+                                break;
                         }
                         break;
                     default:
                         break;
                 }
             }
-            if (!found) break;
-            remote_type = gap_event_extended_advertising_report_get_address_type(packet);
-            remote_sid = gap_event_extended_advertising_report_get_advertising_sid(packet);
-            pts_mode = strncmp("PTS-", remote_name, 4) == 0;
-            count_mode = strncmp("COUNT", remote_name, 5) == 0;
-            printf("Remote Broadcast sink found, addr %s, name: '%s' (pts-mode: %u, count: %u)\n", bd_addr_to_str(remote), remote_name, pts_mode, count_mode);
-            gap_stop_scan();
             break;
         }
 
@@ -816,12 +816,18 @@ static void print_config(void) {
 }
 
 static void show_usage(void){
-    bd_addr_t      iut_address;
-    gap_local_bd_addr(iut_address);
+    uint8_t   iut_address_type;
+    bd_addr_t iut_address;
+    gap_le_get_own_address(&iut_address_type, iut_address);
+
     printf("\n--- BAP Client Test Console %s ---\n", bd_addr_to_str(iut_address));
-    printf("c   - connect to %s\n", bap_app_server_addr_string);    
+    printf("TSPX_bd_addr_iut: ");
+    for (uint8_t i=0;i<6;i++) printf("%02x", iut_address[i]);
+    printf("\n");
+    printf("c   - connect to %s\n", bap_app_server_addr_string);
     printf("X   - disconnect from %s\n", bap_app_server_addr_string);       
-    
+    printf("9   - scan for ASCS\n");
+
     printf("\n--- BASS Client Test Console %s ---\n", bd_addr_to_str(iut_address));
     printf("b   - connect to %s\n", bap_app_server_addr_string);       
     printf("s   - scanning started\n");
@@ -908,6 +914,10 @@ static void stdin_process(char cmd){
             status = gap_disconnect(bap_app_client_con_handle);
             break;
 
+        case '9':
+            gap_start_scan();
+            break;
+
         case 'u':
             if (ase_id >= 4){
                 ase_id = 1;
@@ -962,6 +972,7 @@ static void stdin_process(char cmd){
             gap_set_scan_params(1, 0x30, 0x30, 0);
             gap_start_scan();
             break;
+
         case 'S':
             printf("BASS: Scanning stopped\n");
             status = broadcast_audio_scan_service_client_scanning_stopped(bass_cid);
