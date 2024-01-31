@@ -534,10 +534,8 @@ static void aics_client_handle_gatt_client_event(uint8_t packet_type, uint16_t c
 }
 
 static uint16_t aics_client_serialize_characteristic_value_for_write(aics_client_connection_t * connection, uint8_t ** out_value){
-    uint16_t characteristic_uuid16 = gatt_service_client_characteristic_index2uuid16(&aics_client, connection->characteristic_index);
-
     uint8_t value_length = 0;
-     switch (characteristic_uuid16){
+     switch (connection->characteristic_index){
         case AICS_CLIENT_CHARACTERISTIC_INDEX_AUDIO_INPUT_DESCRIPTION:
             *out_value = (uint8_t *) connection->data.data_string;
             value_length = strlen(connection->data.data_string);
@@ -545,7 +543,7 @@ static uint16_t aics_client_serialize_characteristic_value_for_write(aics_client
 
         case AICS_CLIENT_CHARACTERISTIC_INDEX_AUDIO_INPUT_CONTROL_POINT:
             switch ((aics_opcode_t)connection->data.data_bytes[0]){
-                case AICS_OPCODE_SET_MANUAL_GAIN_MODE:
+                case AICS_OPCODE_SET_GAIN_SETTING:
                     value_length = 3;
                     break;
                 default:
