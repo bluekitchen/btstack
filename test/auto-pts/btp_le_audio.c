@@ -422,9 +422,9 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     }
                     if (ascs_server_current_cis_con_handle == con_handle){
                         // disconnect was for a CIS con handle
-                        MESSAGE("HCI Disconnect for main cis_con_handle 0x%04x-> DISABLE ase %u", con_handle, ascs_server_current_ase_id);
+                        MESSAGE("HCI Disconnect for main cis_con_handle 0x%04x-> CIS lost ase %u", con_handle, ascs_server_current_ase_id);
                         ascs_server_current_cis_con_handle = HCI_CON_HANDLE_INVALID;
-                        audio_stream_control_service_server_streamendpoint_disable(ascs_server_current_client_con_handle,
+                        audio_stream_control_service_server_streamendpoint_cis_lost(ascs_server_current_client_con_handle,
                                                                                    ascs_server_current_ase_id);
                     }
                     break;
