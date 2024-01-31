@@ -255,8 +255,7 @@ void le_audio_demo_util_source_generate_iso_frame(le_audio_demo_source_generator
 void le_audio_demo_util_source_send(uint8_t stream_index, hci_con_handle_t con_handle){
     btstack_assert(le_audio_demo_source_octets_per_frame != 0);
 
-    bool ok = hci_reserve_packet_buffer();
-    btstack_assert(ok);
+    hci_reserve_packet_buffer();
 
     uint8_t * buffer = hci_get_outgoing_packet_buffer();
     // complete SDU, no TimeStamp
