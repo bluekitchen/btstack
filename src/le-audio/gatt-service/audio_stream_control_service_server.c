@@ -1441,6 +1441,32 @@ void audio_stream_control_service_server_streamendpoint_metadata_update(hci_con_
     }
 }
 
+void audio_stream_control_service_server_streamendpoint_cis_lost(hci_con_handle_t con_handle, uint8_t ase_id){
+    ascs_server_connection_t * client = ascs_server_get_remote_client_for_con_handle(con_handle);
+    if (client == NULL){
+        return;
+    }
+    ascs_streamendpoint_t * streamendpoint = ascs_server_get_streamendpoint_for_ase_id(client, ase_id);
+    if (streamendpoint == NULL){
+        return;
+    }
+
+    // If the server detects link loss of a CIS for an ASE in the Streaming state or the Disabling state,
+    // the server shall immediately transition that ASE to the QoS Configured state.
+    // Link loss of a CIS for an ASE in any state other than Streaming or Disabling shall not cause a
+    // transition of the ASE state machine.
+
+    switch (streamendpoint->state){
+        case ASCS_STATE_STREAMING:
+        case ASCS_STATE_DISABLING:
+            streamendpoint->state = ASCS_STATE_QOS_CONFIGURED;
+            ascs_server_streamendpoint_schedule_value_changed_task(client, streamendpoint);
+            break;
+        default:
+            break;
+    }
+}
+
 void audio_stream_control_service_server_deinit(void){
     ascs_server_event_callback = NULL;
 }
