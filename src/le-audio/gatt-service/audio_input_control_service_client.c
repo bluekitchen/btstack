@@ -299,7 +299,7 @@ static uint8_t aics_client_request_send_gatt_query(aics_client_connection_t * co
 }
 
 static uint8_t aics_client_request_read_characteristic(aics_client_connection_t * connection, aics_client_characteristic_index_t characteristic_index){
-    btstack_assert(connection == NULL);
+    btstack_assert(connection != NULL);
     if (connection->state != AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_READY){
         return ERROR_CODE_CONTROLLER_BUSY;
     }
@@ -323,7 +323,7 @@ static uint8_t aics_client_request_write_characteristic(aics_client_connection_t
 }
 
 static uint8_t aics_control_point_procedure_request(aics_client_connection_t * connection, aics_opcode_t opcode){
-    btstack_assert(connection == NULL);
+    btstack_assert(connection != NULL);
     if (connection->state != AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_READY){
         return ERROR_CODE_CONTROLLER_BUSY;
     }
@@ -349,7 +349,7 @@ uint8_t audio_input_control_service_client_write_automatic_gain_mode(aics_client
 }
 
 uint8_t audio_input_control_service_client_write_gain_setting(aics_client_connection_t * connection, int8_t gain_setting){
-    btstack_assert(connection == NULL);
+    btstack_assert(connection != NULL);
     if (connection->state != AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_READY){
         return ERROR_CODE_CONTROLLER_BUSY;
     }
@@ -360,7 +360,7 @@ uint8_t audio_input_control_service_client_write_gain_setting(aics_client_connec
 }
 
 uint8_t audio_input_control_service_client_write_input_description(aics_client_connection_t * connection, const char * audio_input_description){
-    btstack_assert(connection == NULL);
+    btstack_assert(connection != NULL);
     if (connection->state != AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_READY){
         return ERROR_CODE_CONTROLLER_BUSY;
     }
