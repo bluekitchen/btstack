@@ -225,6 +225,13 @@ uint16_t ascs_util_specific_codec_configuration_serialize_to_tlv(
             continue;
         }
 
+        // skip audio allocation if not set
+        // " The absence of the Audio_Channel_Allocation LTV structure
+        //   shall be interpreted as a single channel with no specified Audio Location."
+        if ( (codec_config_type == LE_AUDIO_CODEC_CONFIGURATION_TYPE_AUDIO_CHANNEL_ALLOCATION) && (codec_configuration->audio_channel_allocation_mask == 0) ){
+            continue;
+        }
+
         uint8_t payload_length = ascs_util_get_value_size_for_codec_configuration_type(codec_config_type);
         // ensure that there is enough space in TLV to store length (1), type(1) and payload
         if (remaining_bytes < (2 + payload_length)){
