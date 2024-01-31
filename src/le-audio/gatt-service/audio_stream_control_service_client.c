@@ -670,12 +670,7 @@ static bool ascs_client_handle_query_complete(ascs_client_connection_t * connect
 
         case AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W4_ASE_WRITTEN:
             ascs_client_value_buffer_used = false;
-            if ((connection->command_opcode == ASCS_OPCODE_ENABLE) && (connection->metadata != NULL)){
-                connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W2_ASE_WRITE;
-                connection->command_opcode = ASCS_OPCODE_UPDATE_METADATA;
-            } else {
-                connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_CONNECTED;
-            }
+            connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_CONNECTED;
             break;
 
         case AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_CONNECTED:
