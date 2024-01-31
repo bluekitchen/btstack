@@ -332,7 +332,7 @@ static uint8_t aics_control_point_procedure_request(aics_client_connection_t * c
     return aics_client_request_write_characteristic(connection, AICS_CLIENT_CHARACTERISTIC_INDEX_AUDIO_INPUT_CONTROL_POINT);
 }
 
-uint8_t audio_input_control_service_client_write_umute(aics_client_connection_t * connection){
+uint8_t audio_input_control_service_client_write_unmute(aics_client_connection_t * connection){
     return aics_control_point_procedure_request(connection, AICS_OPCODE_UMUTE);
 }
 
