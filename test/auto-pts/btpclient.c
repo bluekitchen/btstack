@@ -443,34 +443,6 @@ static void btstack_packet_handler (uint8_t packet_type, uint16_t channel, uint8
                             little_endian_store_16(buffer, 11, supervision_timeout);
                             btp_send(BTP_SERVICE_ID_GAP, BTP_GAP_EV_DEVICE_CONNECTED, 0, sizeof(buffer), &buffer[0]);
                             break;
-
-                        case GAP_SUBEVENT_CIG_CREATED:
-                            MESSAGE("CIS Connection Handles: ");
-                            for (i = 0; i < cig_num_cis; i++) {
-                                cis_con_handles[i] = gap_subevent_cig_created_get_cis_con_handles(packet, i);
-                                MESSAGE("0x%04x ", cis_con_handles[i]);
-                            }
-                            MESSAGE("ASCS Client: Configure QoS %u us, ASE[%d]", cig_params.sdu_interval_p_to_c,
-                                   ase_index);
-                            MESSAGE("       NOTE: Only one CIS supported");
-
-                            ascs_qos_configuration.cis_id = cig_params.cis_params[0].cis_id;
-                            ascs_qos_configuration.cig_id = gap_subevent_cig_created_get_cig_id(packet);
-
-                            audio_stream_control_service_client_streamendpoint_configure_qos(ascs_cid, ase_index,
-                                                                                             &ascs_qos_configuration);
-                            break;
-                        case GAP_SUBEVENT_CIS_CREATED:
-                            if (bap_get_ase_role(ase_index) == LE_AUDIO_ROLE_SOURCE){
-                                MESSAGE("CIS Established, remote role source");
-                            } else {
-                                MESSAGE("CIS Established, remote role sink");
-                            }
-                            if (response_op == BTP_LE_AUDIO_OP_ASCS_ENABLE){
-                                btp_send(BTP_SERVICE_ID_LE_AUDIO, response_op, 0, 0, NULL);
-                                response_op = 0;
-                            }
-                            break;
                         default:
                             break;
                     }
