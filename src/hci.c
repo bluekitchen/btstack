@@ -2009,6 +2009,7 @@ static void hci_initializing_run(void){
                 }
 
                 if (send_cmd){
+                    hci_reserve_packet_buffer();
                     int size = 3u + hci_stack->hci_packet_buffer[2u];
                     hci_stack->last_cmd_opcode = little_endian_read_16(hci_stack->hci_packet_buffer, 0);
                     hci_dump_packet(HCI_COMMAND_DATA_PACKET, 0, hci_stack->hci_packet_buffer, size);
