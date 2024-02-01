@@ -5435,6 +5435,25 @@ typedef uint8_t sm_key_t[16];
  */
 #define GATTSERVICE_SUBEVENT_OTS_SERVER_DISCONNECT                                      0x99u
 
+/**
+ * @format 1H211
+ * @param subevent_code
+ * @param con_handle
+ * @param bearer_id
+ * @param bearer_state
+ * @param opcode
+ */
+#define GATTSERVICE_SUBEVENT_TBS_SERVER_CALL_CONTROL_POINT_NOTIFICATION_TASK            0xC0u
+
+/**
+ * @format 1H21
+ * @param subevent_code
+ * @param con_handle
+ * @param bearer_id
+ * @param call_id
+ */
+#define GATTSERVICE_SUBEVENT_TBS_SERVER_CALL_DEREGISTER_DONE            0xC1u
+
 // MAP Meta Event Group
 
 /**
