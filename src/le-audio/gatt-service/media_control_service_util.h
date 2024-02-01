@@ -36,12 +36,12 @@
  */
 
 /**
- * @title Microphone Control Service Client
+ * @title Media Control Service Client
  * 
  */
 
-#ifndef MICROPHONE_CONTROL_SERVICE_UTIL_H
-#define MICROPHONE_CONTROL_SERVICE_UTIL_H
+#ifndef MEDIA_CONTROL_SERVICE_UTIL_H
+#define MEDIA_CONTROL_SERVICE_UTIL_H
 
 #include <stdint.h>
 #include "btstack_defines.h"
