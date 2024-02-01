@@ -165,7 +165,7 @@ enum EventSignals {
     TIME_SIG
 };
 
-// #define AUDIO_FSM_DEBUG
+#define AUDIO_FSM_DEBUGx
 #ifdef AUDIO_FSM_DEBUG
 #define ENUM_TO_TEXT(sig) [sig] = #sig
 #define audio_fsm_debug(format, ...) \
@@ -450,6 +450,8 @@ static btstack_fsm_state_t audio_processing_waiting( audio_processing_t * const 
 }
 
 static void audio_processing_resample( audio_processing_t * const me, data_event_t *e ) {
+    // mark current packet as handled
+    e->data = NULL;
     if( me->have_pcm != ((1<<(le_audio_demo_sink_num_streams*le_audio_demo_sink_num_channels_per_stream))-1) ) {
         return;
     }
@@ -476,7 +478,6 @@ static void audio_processing_resample( audio_processing_t * const me, data_event
         printf("Samples dropped\n");
         samples_dropped += le_audio_demo_sink_num_samples_per_frame;
     }
-    e->data = NULL;
     me->have_pcm = 0;
 }
 
@@ -523,7 +524,12 @@ static btstack_fsm_state_t audio_processing_decode( audio_processing_t * const m
                                                      &data_out[effective_channel], le_audio_demo_sink_num_channels,
                                                      &tmp_BEC_detect);
                 offset += le_audio_demo_sink_octets_per_frame;
-                btstack_assert( !(me->have_pcm & (1<<effective_channel)) );
+                audio_fsm_debug("effective_channel: %d\n", effective_channel );
+                if( (me->have_pcm & (1<<effective_channel)) ) {
+                    audio_fsm_debug("de-syncroniced, resync\n");
+                    status = TRAN(audio_processing_waiting);
+                    break;
+                }
                 me->have_pcm |= (1<<effective_channel);
             }
             audio_processing_resample( me, data_event );
@@ -659,7 +665,8 @@ void le_audio_demo_util_sink_receive(uint8_t stream_index, uint8_t *packet, uint
             .size = iso_sdu_length,
             .receive_time_ms = receive_time_ms,
     };
-    audio_fsm_debug("new data\n");
+
+    audio_fsm_debug("new data\n stream_index: %d\n", stream_index);
     audio_processing_task( &audio_processing, &data_event.super );
 
     le_audio_demo_sink_lc3_frames++;
