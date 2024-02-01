@@ -553,7 +553,6 @@ static int hfp_hf_voice_recognition_state_machine(hfp_connection_t * hfp_connect
     if (hfp_connection->state < HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED) {
         return 0;
     }
-    int done = 0;
 
     if (hfp_connection->ok_pending == 1){
         return 0;
@@ -599,35 +598,25 @@ static int hfp_hf_voice_recognition_state_machine(hfp_connection_t * hfp_connect
         }
         hfp_connection->command = HFP_CMD_NONE;
     }
-    
 
     switch (hfp_connection->vra_state_requested){
         case HFP_VRA_W2_SEND_VOICE_RECOGNITION_OFF:
-            done = hfp_hf_set_voice_recognition_notification_cmd(hfp_connection->rfcomm_cid, 0);
-            if (done != 0){
-                hfp_connection->vra_state_requested = HFP_VRA_W4_VOICE_RECOGNITION_OFF;
-                hfp_connection->ok_pending = 1;
-            }
+            hfp_connection->vra_state_requested = HFP_VRA_W4_VOICE_RECOGNITION_OFF;
+            hfp_connection->ok_pending = 1;
+            hfp_hf_set_voice_recognition_notification_cmd(hfp_connection->rfcomm_cid, 0);
             return 1;
 
-
         case HFP_VRA_W2_SEND_VOICE_RECOGNITION_ACTIVATED:
-            done = hfp_hf_set_voice_recognition_notification_cmd(hfp_connection->rfcomm_cid, 1);
-            if (done != 0){
-                hfp_connection->vra_state_requested = HFP_VRA_W4_VOICE_RECOGNITION_ACTIVATED;
-                hfp_connection->ok_pending = 1;
-                return 1;
-            }
-            break;
+            hfp_connection->vra_state_requested = HFP_VRA_W4_VOICE_RECOGNITION_ACTIVATED;
+            hfp_connection->ok_pending = 1;
+            hfp_hf_set_voice_recognition_notification_cmd(hfp_connection->rfcomm_cid, 1);
+            return 1;
 
         case HFP_VRA_W2_SEND_ENHANCED_VOICE_RECOGNITION_READY_FOR_AUDIO:
-            done = hfp_hf_set_voice_recognition_notification_cmd(hfp_connection->rfcomm_cid, 2);
-            if (done != 0){
-                hfp_connection->vra_state_requested = HFP_VRA_W4_ENHANCED_VOICE_RECOGNITION_READY_FOR_AUDIO;
-                hfp_connection->ok_pending = 1;
-                return 1;
-            }
-            break;
+            hfp_connection->vra_state_requested = HFP_VRA_W4_ENHANCED_VOICE_RECOGNITION_READY_FOR_AUDIO;
+            hfp_connection->ok_pending = 1;
+            hfp_hf_set_voice_recognition_notification_cmd(hfp_connection->rfcomm_cid, 2);
+            return 1;
 
         case HFP_VRA_W4_VOICE_RECOGNITION_OFF:
             hfp_connection->vra_state = HFP_VRA_VOICE_RECOGNITION_OFF;
@@ -673,7 +662,7 @@ static int hfp_hf_voice_recognition_state_machine(hfp_connection_t * hfp_connect
         default:
             break;
     }
-    return done;
+    return 0;
 }
 
 
@@ -742,8 +731,8 @@ static int call_setup_state_machine(hfp_connection_t * hfp_connection){
 	if (hfp_connection->ok_pending) return 0;
 
     if (hfp_connection->hf_answer_incoming_call){
-        hfp_hf_cmd_ata(hfp_connection->rfcomm_cid);
         hfp_connection->hf_answer_incoming_call = 0;
+        hfp_hf_cmd_ata(hfp_connection->rfcomm_cid);
         return 1;
     }
     return 0;
@@ -854,6 +843,9 @@ static void hfp_hf_run_for_context(hfp_connection_t * hfp_connection){
         rfcomm_request_can_send_now_event(hfp_connection->rfcomm_cid);
         return;
     }
+
+    // we can send at least an RFCOMM packet or a HCI Command now
+
     int done = hfp_hf_run_for_context_service_level_connection(hfp_connection);
     if (!done){
         done = hfp_hf_run_for_context_service_level_connection_queries(hfp_connection);
