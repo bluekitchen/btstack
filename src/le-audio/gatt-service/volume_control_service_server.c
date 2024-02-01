@@ -159,7 +159,7 @@ static void vcs_server_emit_volume_flags(void){
     uint8_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_VCS_VOLUME_FLAGS;
+    event[pos++] = GATTSERVICE_SUBEVENT_VCS_SERVER_VOLUME_FLAGS;
     little_endian_store_16(event, pos, vcs_server_con_handle);
     pos += 2;
     event[pos++] = vcs_volume_flags;
