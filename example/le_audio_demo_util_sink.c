@@ -165,7 +165,7 @@ enum EventSignals {
     TIME_SIG
 };
 
-#define AUDIO_FSM_DEBUG
+// #define AUDIO_FSM_DEBUG
 #ifdef AUDIO_FSM_DEBUG
 #define ENUM_TO_TEXT(sig) [sig] = #sig
 #define audio_fsm_debug(format, ...) \
@@ -664,7 +664,7 @@ void le_audio_demo_util_sink_receive(uint8_t stream_index, uint8_t *packet, uint
 
     le_audio_demo_sink_lc3_frames++;
 
-    if (samples_received >= le_audio_demo_sink_sampling_frequency_hz){
+    if (samples_received >= 10 * le_audio_demo_sink_sampling_frequency_hz){
         printf("LC3 Frames: %4u - samples received %5u, played %5u, dropped %5u\n", le_audio_demo_sink_lc3_frames, samples_received, samples_played, samples_dropped);
         samples_received = 0;
         samples_dropped  =  0;
