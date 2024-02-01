@@ -797,6 +797,8 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                         try_transition_to_streaming();
                     break;
                 }
+                default:
+                    break;
             }
             break;
         case HCI_EVENT_CIS_CAN_SEND_NOW:
@@ -948,6 +950,8 @@ static void pacs_client_next_query(void){
                                                                          acl_con_handle, &ascs_cid);
 #endif
 
+            break;
+        default:
             break;
     }
     if (status != ERROR_CODE_SUCCESS){
