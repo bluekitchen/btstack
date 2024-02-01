@@ -35,7 +35,7 @@
  *
  */
 
-#define BTSTACK_FILE__ "audio_control_input_service_server.c"
+#define BTSTACK_FILE__ "volume_offset_control_service_server.c"
 
 #include "btstack_defines.h"
 #include "btstack_event.h"
