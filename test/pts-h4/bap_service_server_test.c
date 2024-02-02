@@ -63,6 +63,7 @@ typedef enum {
 
 static bap_app_server_state_t  bap_app_server_state      = BAP_APP_SERVER_STATE_IDLE;
 static hci_con_handle_t        bap_app_server_con_handle = HCI_CON_HANDLE_INVALID;
+static hci_con_handle_t        bap_app_server_cis_handle = HCI_CON_HANDLE_INVALID;
 static bd_addr_t               bap_app_client_addr;
 
 #define APP_AD_FLAGS 0x06
@@ -72,10 +73,12 @@ static uint8_t adv_data[] = {
     0x02, BLUETOOTH_DATA_TYPE_FLAGS, APP_AD_FLAGS,
     // RSI
     0x07, BLUETOOTH_DATA_TYPE_RESOLVABLE_SET_IDENTIFIER, 0x28, 0x31, 0xB6, 0x4C, 0x39, 0xCC,
+    // ASCS
+    0x09, BLUETOOTH_DATA_TYPE_SERVICE_DATA_16_BIT_UUID, 0x4E, 0x18, 1,  0, 0, 0, 0,  0,
     // CSIS
     0x03, BLUETOOTH_DATA_TYPE_INCOMPLETE_LIST_OF_16_BIT_SERVICE_CLASS_UUIDS, 0x46, 0x18,
     // Name
-    0x04, BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME, 'I', 'U', 'T', 
+    0x04, BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME, 'I', 'U', 'T',
 };
 
 static const uint8_t adv_sid = 0;
@@ -89,7 +92,7 @@ static const le_extended_advertising_parameters_t extended_params = {
         .primary_advertising_interval_min = 0x4b0, // 750 ms
         .primary_advertising_interval_max = 0x4b0, // 750 ms
         .primary_advertising_channel_map = 7,
-        .own_address_type = 0,
+        .own_address_type = 1,
         .peer_address_type = 0,
         .peer_address =  { 0 },
         .advertising_filter_policy = 0,
@@ -103,8 +106,10 @@ static const le_extended_advertising_parameters_t extended_params = {
 
 
 static void setup_advertising(void) {
+    bd_addr_t random_address = { 0xC1, 0x01, 0x01, 0x01, 0x01, 0x01 };
     gap_extended_advertising_setup(&le_advertising_set, &extended_params, &adv_handle);
     gap_extended_advertising_set_adv_data(adv_handle, sizeof(adv_data), adv_data);
+    gap_extended_advertising_set_random_address(adv_handle, random_address);
     gap_extended_advertising_start(adv_handle, 0, 0);
 }
 
@@ -333,6 +338,10 @@ static uint8_t sirk[] = {
     0xA2, 0x65, 0xBB, 0xAF, 0xC6, 0xEA, 0x03, 0xB8   
 };
 
+static void enter_streaming(void){
+    printf("TODO enter streaming\n");
+}
+
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
@@ -347,12 +356,23 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             printf("Accept Just Works\n");
             sm_just_works_confirm(sm_event_just_works_request_get_handle(packet));
             break;
-        case SM_EVENT_NUMERIC_COMPARISON_REQUEST:
+       case SM_EVENT_NUMERIC_COMPARISON_REQUEST:
             printf("Confirming numeric comparison: %"PRIu32"\n", sm_event_numeric_comparison_request_get_passkey(packet));
             sm_numeric_comparison_confirm(sm_event_passkey_display_number_get_handle(packet));
             break;
 
-        case HCI_EVENT_META_GAP:
+       case HCI_EVENT_LE_META:
+            switch(hci_event_le_meta_get_subevent_code(packet)) {
+                case HCI_SUBEVENT_LE_CIS_REQUEST:
+                    bap_app_server_cis_handle = hci_subevent_le_cis_request_get_cis_connection_handle(packet);
+                    gap_cis_accept(bap_app_server_cis_handle);
+                    break;
+                default:
+                    break;
+            }
+            break;
+
+       case HCI_EVENT_META_GAP:
             switch (hci_event_gap_meta_get_subevent_code(packet)){
                 case GAP_SUBEVENT_LE_CONNECTION_COMPLETE:
                     bap_app_server_con_handle = gap_subevent_le_connection_complete_get_connection_handle(packet);
@@ -360,12 +380,17 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     gap_subevent_le_connection_complete_get_peer_address(packet, bap_app_client_addr);
                     printf("BAP Server: Connection to %s established\n", bd_addr_to_str(bap_app_client_addr));
                     break;
+                case GAP_SUBEVENT_CIS_CREATED:
+                    // only look for cis handle
+                    enter_streaming();
+                    audio_stream_control_service_server_streamendpoint_receiver_start_ready(bap_app_server_con_handle, 1);
+                    break;
                 default:
                     return;
             }
             break;
 
-        case HCI_EVENT_DISCONNECTION_COMPLETE:
+       case HCI_EVENT_DISCONNECTION_COMPLETE:
             bap_app_server_con_handle = HCI_CON_HANDLE_INVALID;
             bap_app_server_state      = BAP_APP_SERVER_STATE_IDLE;
 
@@ -377,7 +402,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 
             break;
 
-        default:
+       default:
             break;
     }
 }
@@ -487,7 +512,7 @@ static void ascs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
         case GATTSERVICE_SUBEVENT_ASCS_SERVER_CODEC_CONFIGURATION:
             ase_id = gattservice_subevent_ascs_server_codec_configuration_get_ase_id(packet);
             con_handle = gattservice_subevent_ascs_server_codec_configuration_get_con_handle(packet);
-            codec_configuration.framing = LE_AUDIO_UNFRAMED_ISOAL_MASK_PDUS_NOT_SUPPORTED;
+            codec_configuration.framing = LE_AUDIO_UNFRAMED_ISOAL_MASK_PDUS_SUPPORTED;
             codec_configuration.preferred_phy = LE_AUDIO_SERVER_PHY_MASK_NO_PREFERENCE;
             codec_configuration.preferred_retransmission_number = 0;
             codec_configuration.max_transport_latency_ms = 0x0FA0;
@@ -528,6 +553,12 @@ static void ascs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
 
             printf("ASCS: QOS_CONFIGURATION_RECEIVED ase_id %d\n", ase_id);
             audio_stream_control_service_server_streamendpoint_configure_qos(con_handle, ase_id, &qos_configuration);
+            break;
+        case GATTSERVICE_SUBEVENT_ASCS_SERVER_ENABLE:
+            ase_id = gattservice_subevent_ascs_server_disable_get_ase_id(packet);
+            con_handle = gattservice_subevent_ascs_server_disable_get_con_handle(packet);
+            printf("ASCS: ENABLE ase_id %d\n", ase_id);
+            audio_stream_control_service_server_streamendpoint_enable(con_handle, ase_id);
             break;
 
         case GATTSERVICE_SUBEVENT_ASCS_SERVER_METADATA:
@@ -609,8 +640,8 @@ static void csis_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
             reverse_48(ris, &adv_data[5]);
             printf_hexdump(ris, 6);
             //
-            gap_advertisements_set_data(adv_data_len, (uint8_t*) adv_data);
-            gap_advertisements_enable(1);
+            printf("Setup advertising\n");
+            setup_advertising();
             // report done
             if (csis_privacy_update_pending){
                 csis_privacy_update_pending = false;
@@ -694,6 +725,7 @@ static void show_usage(void){
     printf("S - release SRC 3\n");
     printf("M - released SNK 1\n");
     printf("N - released SRC 3\n");
+    printf("t - set ADV data to Targeted Announcement\n");
 
     printf("\n## CSIS\n");
     printf("g - set OOB Sirk only\n");
@@ -833,7 +865,11 @@ static void stdin_process(char cmd){
             printf("Released SRC 3, 0x%02X\n", bap_app_server_con_handle);
             audio_stream_control_service_server_streamendpoint_released(bap_app_server_con_handle, 3, false);
             break;
-
+        case 't':
+            printf("Set Announcement type to 1\n");
+            adv_data[15] = 1;
+            gap_extended_advertising_set_adv_data(adv_handle, sizeof(adv_data), adv_data);
+            break;
         case 'g':
             printf("Set OOB Sirk only\n");
             coordinated_set_identification_service_server_set_sirk(CSIS_SIRK_TYPE_PUBLIC, &sirk[0], true);
@@ -851,10 +887,9 @@ static void stdin_process(char cmd){
                 printf("Server locked by member with con_handle 0x%02x\n", con_handle);
                 break;
             }        
-        
             printf("Server lock failed, status 0x%02x\n", status);
-            
-        }   
+            break;
+        }
         case 'H':{
             printf("Simulate server unlock by another remote member\n");
             hci_con_handle_t con_handle = 0x00AA;
@@ -946,7 +981,6 @@ int btstack_main(void)
     hci_add_event_handler(&hci_event_callback_registration);
 
     // setup advertisements
-    setup_advertising();
     gap_periodic_advertising_sync_transfer_set_default_parameters(2, 0, 0x2000, 0);
 
     btstack_stdin_setup(stdin_process);
