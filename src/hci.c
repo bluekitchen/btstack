@@ -216,7 +216,7 @@ static void hci_emit_event(uint8_t * event, uint16_t size, int dump);
 static void hci_emit_acl_packet(uint8_t * packet, uint16_t size);
 static void hci_run(void);
 static bool hci_is_le_connection(hci_connection_t * connection);
-static uint8_t hci_send_prepared_cmd_packet();
+static uint8_t hci_send_prepared_cmd_packet(void);
 
 #ifdef ENABLE_CLASSIC
 static int hci_have_usb_transport(void);
@@ -7586,7 +7586,7 @@ static void hci_set_sco_payload_length_for_flipped_packet_types(hci_connection_t
 #endif
 
 // funnel for sending cmd packet using single outgoing buffer
-static uint8_t hci_send_prepared_cmd_packet() {
+static uint8_t hci_send_prepared_cmd_packet(void) {
     btstack_assert(hci_stack->hci_packet_buffer_reserved);
     // cache opcode
     hci_stack->last_cmd_opcode = little_endian_read_16(hci_stack->hci_packet_buffer, 0);
