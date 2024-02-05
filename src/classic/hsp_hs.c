@@ -461,9 +461,9 @@ static void hsp_run(void){
         // pick packet types based on SCO link type (SCO vs. eSCO)
         uint16_t packet_types;
         if (eSCO && hci_extended_sco_link_supported() && hci_remote_esco_supported(hsp_hs_rfcomm_handle)){
-            packet_types = 0x3F8;
+            packet_types = SCO_PACKET_TYPES_EV3 | SCO_PACKET_TYPES_2EV3;
         } else {
-            packet_types = 0x0007;
+            packet_types = SCO_PACKET_TYPES_HV3 | SCO_PACKET_TYPES_HV2 | SCO_PACKET_TYPES_HV1;
         }
 
         // packet type override
