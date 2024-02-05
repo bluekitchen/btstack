@@ -940,6 +940,7 @@ static uint8_t hci_send_acl_packet_fragments(hci_connection_t *connection){
         if (err != 0){
             // no error from HCI Transport expected
             status = ERROR_CODE_HARDWARE_FAILURE;
+            break;
         }
 
 #ifdef ENABLE_CONTROLLER_DUMP_PACKETS
@@ -1048,14 +1049,16 @@ uint8_t hci_send_sco_packet_buffer(int size){
     return 0;
 #else
     int err = hci_stack->hci_transport->send_packet(HCI_SCO_DATA_PACKET, packet, size);
-    if (hci_transport_synchronous()){
+    uint8_t status;
+    if (err == 0){
+        status = ERROR_CODE_SUCCESS;
+    } else {
+        status = ERROR_CODE_HARDWARE_FAILURE;
+    }
+    if ((status != ERROR_CODE_SUCCESS) || hci_transport_synchronous()){
         hci_release_packet_buffer();
     }
-
-    if (err != 0){
-        return ERROR_CODE_HARDWARE_FAILURE;
-    }
-    return ERROR_CODE_SUCCESS;
+    return status;
 #endif
 }
 #endif
@@ -7810,10 +7813,13 @@ uint8_t hci_send_cmd_packet(uint8_t *packet, int size){
 
     hci_dump_packet(HCI_COMMAND_DATA_PACKET, 0, packet, size);
     int err = hci_stack->hci_transport->send_packet(HCI_COMMAND_DATA_PACKET, packet, size);
-    if (err != 0){
-        return ERROR_CODE_HARDWARE_FAILURE;
+    uint8_t status;
+    if (err == 0){
+        status = ERROR_CODE_SUCCESS;
+    } else {
+        status = ERROR_CODE_HARDWARE_FAILURE;
     }
-    return ERROR_CODE_SUCCESS;
+    return status;
 }
 
 // disconnect because of security block
