@@ -1972,6 +1972,7 @@ static void hci_initializing_run(void){
         case HCI_INIT_CUSTOM_PRE_INIT:
             // Custom initialization
             if (hci_stack->chipset && hci_stack->chipset->next_command){
+                hci_reserve_packet_buffer();
                 hci_stack->chipset_result = (*hci_stack->chipset->next_command)(hci_stack->hci_packet_buffer);
                 bool send_cmd = false;
                 switch (hci_stack->chipset_result){
@@ -2012,10 +2013,11 @@ static void hci_initializing_run(void){
                 }
 
                 if (send_cmd){
-                    hci_reserve_packet_buffer();
                     hci_stack->last_cmd_opcode = little_endian_read_16(hci_stack->hci_packet_buffer, 0);
                     hci_send_prepared_cmd_packet();
                     break;
+                } else {
+                    hci_release_packet_buffer();
                 }
                 log_info("Init script done");
 
