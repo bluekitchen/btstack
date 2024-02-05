@@ -1696,8 +1696,6 @@ static void gap_run_set_local_name(void){
     (void)memcpy(&packet[3], hci_stack->local_name, bytes_to_copy);
     // expand '00:00:00:00:00:00' in name with bd_addr
     btstack_replace_bd_addr_placeholder(&packet[3], bytes_to_copy, hci_stack->local_bd_addr);
-
-    hci_stack->last_cmd_opcode = opcode;
     hci_send_prepared_cmd_packet();
 }
 
@@ -1738,8 +1736,6 @@ static void gap_run_set_eir_data(void){
         // expand '00:00:00:00:00:00' in name with bd_addr
         btstack_replace_bd_addr_placeholder(&packet[offset], bytes_to_copy, hci_stack->local_bd_addr);
     }
-
-    hci_stack->last_cmd_opcode = opcode;
     hci_send_prepared_cmd_packet();
 }
 
@@ -1930,7 +1926,6 @@ static void hci_initializing_run(void){
             uint32_t baud_rate = hci_transport_uart_get_main_baud_rate();
             hci_stack->chipset->set_baudrate_command(baud_rate, hci_stack->hci_packet_buffer);
             hci_stack->substate = HCI_INIT_W4_SEND_BAUD_CHANGE_BCM;
-            hci_stack->last_cmd_opcode = little_endian_read_16(hci_stack->hci_packet_buffer, 0);
             hci_send_prepared_cmd_packet();
             break;
         }
@@ -1938,7 +1933,6 @@ static void hci_initializing_run(void){
             log_info("Set Public BD ADDR to %s", bd_addr_to_str(hci_stack->custom_bd_addr));
             hci_stack->chipset->set_bd_addr_command(hci_stack->custom_bd_addr, hci_stack->hci_packet_buffer);
             hci_stack->substate = HCI_INIT_W4_SET_BD_ADDR;
-            hci_stack->last_cmd_opcode = little_endian_read_16(hci_stack->hci_packet_buffer, 0);
             hci_send_prepared_cmd_packet();
             break;
         case HCI_INIT_SEND_READ_LOCAL_NAME:
@@ -1954,7 +1948,6 @@ static void hci_initializing_run(void){
                 uint32_t baud_rate = hci_transport_uart_get_main_baud_rate();
                 hci_stack->chipset->set_baudrate_command(baud_rate, hci_stack->hci_packet_buffer);
                 hci_stack->substate = HCI_INIT_W4_SEND_BAUD_CHANGE;
-                hci_stack->last_cmd_opcode = little_endian_read_16(hci_stack->hci_packet_buffer, 0);
                 hci_send_prepared_cmd_packet();
                 // STLC25000D: baudrate change happens within 0.5 s after command was send,
                 // use timer to update baud rate after 100 ms (knowing exactly, when command was sent is non-trivial)
@@ -2013,7 +2006,6 @@ static void hci_initializing_run(void){
                 }
 
                 if (send_cmd){
-                    hci_stack->last_cmd_opcode = little_endian_read_16(hci_stack->hci_packet_buffer, 0);
                     hci_send_prepared_cmd_packet();
                     break;
                 } else {
@@ -7593,7 +7585,11 @@ static void hci_set_sco_payload_length_for_flipped_packet_types(hci_connection_t
 // funnel for sending cmd packet using single outgoing buffer
 static uint8_t hci_send_prepared_cmd_packet() {
     btstack_assert(hci_stack->hci_packet_buffer_reserved);
+    // cache opcode
+    hci_stack->last_cmd_opcode = little_endian_read_16(hci_stack->hci_packet_buffer, 0);
+    // get size
     uint16_t size = 3u + hci_stack->hci_packet_buffer[2u];
+    // send packet
     uint8_t status = hci_send_cmd_packet(hci_stack->hci_packet_buffer, size);
     // release packet buffer on error or for synchronous transport implementations
     if ((status != ERROR_CODE_SUCCESS) || hci_transport_synchronous()){
@@ -7870,13 +7866,8 @@ uint8_t hci_send_cmd_va_arg(const hci_cmd_t * cmd, va_list argptr){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
-    // for HCI INITIALIZATION
-    // log_info("hci_send_cmd: opcode %04x", cmd->opcode);
-    hci_stack->last_cmd_opcode = cmd->opcode;
-
     hci_reserve_packet_buffer();
-    uint8_t * packet = hci_stack->hci_packet_buffer;
-    uint16_t size = hci_cmd_create_from_template(packet, cmd, argptr);
+    hci_cmd_create_from_template(hci_stack->hci_packet_buffer, cmd, argptr);
     return hci_send_prepared_cmd_packet();
 }
 
