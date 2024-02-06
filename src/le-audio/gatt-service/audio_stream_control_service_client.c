@@ -903,6 +903,7 @@ uint8_t audio_stream_control_service_client_connect(ascs_client_connection_t * c
     connection->max_streamendpoints_num = streamendpoint_characteristics_num;
     uint8_t i;
     for (i = 0; i < connection->max_streamendpoints_num; i++){
+        connection->streamendpoints[i].cis_handle = HCI_CON_HANDLE_INVALID;
         connection->streamendpoints[i].ase_characteristic = &streamendpoint_characteristics[i];
         ascs_client_streamendpoint_reset(&connection->streamendpoints[i]);
     }
