@@ -958,9 +958,10 @@ static int ascs_server_write_callback(hci_con_handle_t con_handle, uint16_t attr
                 }
                 ascs_server_schedule_task(connection, ASCS_TASK_SEND_CONTROL_POINT_OPERATION_RESPONSE);
 
+                pos = data_offset;
                 for (i = 0; i < connection->response_ases_num; i++){
-                    ase_id = buffer[data_offset++];
-                    data_offset += ascs_util_codec_configuration_request_parse(&buffer[data_offset], buffer_size-data_offset, &codec_config_request);
+                    ase_id = buffer[pos++];
+                    pos += ascs_util_codec_configuration_request_parse(&buffer[pos], buffer_size-pos, &codec_config_request);
                     if (ascs_server_request_successfully_processed(connection, i)){
                         ascs_server_emit_client_codec_configuration_request(con_handle, ase_id, &codec_config_request);
                     }
@@ -974,10 +975,11 @@ static int ascs_server_write_callback(hci_con_handle_t con_handle, uint16_t attr
                     ascs_control_point_operation_prepare_response_for_qos_configuration(connection, i, ase_id, qos_config);
                 }
                 ascs_server_schedule_task(connection, ASCS_TASK_SEND_CONTROL_POINT_OPERATION_RESPONSE);
-                
+
+                pos = data_offset;
                 for (i = 0; i < connection->response_ases_num; i++){
-                    ase_id = buffer[data_offset++];
-                    data_offset += ascs_util_qos_configuration_parse(&buffer[data_offset], buffer_size - data_offset, &qos_config);
+                    ase_id = buffer[pos++];
+                    pos += ascs_util_qos_configuration_parse(&buffer[pos], buffer_size - pos, &qos_config);
                     if (ascs_server_request_successfully_processed(connection, i)){
                         ascs_server_emit_client_qos_configuration_request(ascs_server_event_callback, con_handle, ase_id, ASCS_STATE_RFU, &qos_config);
                     }
@@ -995,8 +997,10 @@ static int ascs_server_write_callback(hci_con_handle_t con_handle, uint16_t attr
                 }
                 ascs_server_schedule_task(connection, ASCS_TASK_SEND_CONTROL_POINT_OPERATION_RESPONSE);
 
+                pos = data_offset;
                 for (i = 0; i < connection->response_ases_num; i++){
-                    ase_id = buffer[data_offset++];
+                    ase_id = buffer[pos++];
+                    pos += le_audio_util_metadata_parse(&buffer[pos], buffer_size-pos, &metadata_config);
                     if (ascs_server_request_successfully_processed(connection, i)){
                         ascs_server_emit_client_request(con_handle, ase_id, GATTSERVICE_SUBEVENT_ASCS_SERVER_ENABLE);
                     }
@@ -1010,8 +1014,9 @@ static int ascs_server_write_callback(hci_con_handle_t con_handle, uint16_t attr
                 }
                 ascs_server_schedule_task(connection, ASCS_TASK_SEND_CONTROL_POINT_OPERATION_RESPONSE);
 
+                pos = data_offset;
                 for (i = 0; i < connection->response_ases_num; i++){
-                    ase_id = buffer[data_offset++];
+                    ase_id = buffer[pos++];
                     if (ascs_server_request_successfully_processed(connection, i)){
                         ascs_server_emit_client_request(con_handle, ase_id, GATTSERVICE_SUBEVENT_ASCS_SERVER_START_READY);
                     }
@@ -1025,8 +1030,10 @@ static int ascs_server_write_callback(hci_con_handle_t con_handle, uint16_t attr
                 }
                 ascs_server_schedule_task(connection, ASCS_TASK_SEND_CONTROL_POINT_OPERATION_RESPONSE);
 
+                pos = data_offset;
                 for (i = 0; i < connection->response_ases_num; i++){
-                    ase_id = buffer[data_offset++];
+                    ase_id = buffer[pos++];
+                    ascs_server_control_point_operation_prepare_response_for_target_state(connection, i, ase_id, ASCS_STATE_DISABLING);
                     if (ascs_server_request_successfully_processed(connection, i)){
                         ascs_server_emit_client_request(con_handle, ase_id, GATTSERVICE_SUBEVENT_ASCS_SERVER_DISABLE);
                     }
@@ -1040,8 +1047,9 @@ static int ascs_server_write_callback(hci_con_handle_t con_handle, uint16_t attr
                 }
                 ascs_server_schedule_task(connection, ASCS_TASK_SEND_CONTROL_POINT_OPERATION_RESPONSE);
 
+                pos = data_offset;
                 for (i = 0; i < connection->response_ases_num; i++){
-                    ase_id = buffer[data_offset++];
+                    ase_id = buffer[pos++];
                     if (ascs_server_request_successfully_processed(connection, i)){
                         ascs_server_emit_client_request(con_handle, ase_id, GATTSERVICE_SUBEVENT_ASCS_SERVER_STOP_READY);
                     }
@@ -1055,10 +1063,11 @@ static int ascs_server_write_callback(hci_con_handle_t con_handle, uint16_t attr
                     ascs_server_control_point_operation_prepare_response_for_metadata_update(connection, i, ase_id, &metadata_config);
                 }
                 ascs_server_schedule_task(connection, ASCS_TASK_SEND_CONTROL_POINT_OPERATION_RESPONSE);
-                
+
+                pos = data_offset;
                 for (i = 0; i < connection->response_ases_num; i++){
-                    ase_id = buffer[data_offset++];
-                    data_offset += le_audio_util_metadata_parse(&buffer[data_offset], buffer_size-data_offset, &metadata_config);
+                    ase_id = buffer[pos++];
+                    pos += le_audio_util_metadata_parse(&buffer[pos], buffer_size-pos, &metadata_config);
                     if (ascs_server_request_successfully_processed(connection, i)){
                         ascs_server_emit_client_metadata_request(ascs_server_event_callback, con_handle, ase_id, ASCS_STATE_RFU, &metadata_config);
                     }
@@ -1072,8 +1081,9 @@ static int ascs_server_write_callback(hci_con_handle_t con_handle, uint16_t attr
                 }
                 ascs_server_schedule_task(connection, ASCS_TASK_SEND_CONTROL_POINT_OPERATION_RESPONSE);
 
+                pos = data_offset;
                 for (i = 0; i < connection->response_ases_num; i++){
-                    ase_id = buffer[data_offset++];
+                    ase_id = buffer[pos++];
                     if (ascs_server_request_successfully_processed(connection, i)){
                         ascs_server_emit_client_request(con_handle, ase_id, GATTSERVICE_SUBEVENT_ASCS_SERVER_RELEASE);
                     }
@@ -1087,8 +1097,9 @@ static int ascs_server_write_callback(hci_con_handle_t con_handle, uint16_t attr
                 }
                 ascs_server_schedule_task(connection, ASCS_TASK_SEND_CONTROL_POINT_OPERATION_RESPONSE);
 
+                pos = data_offset;
                 for (i = 0; i < connection->response_ases_num; i++){
-                    ase_id = buffer[data_offset++];
+                    ase_id = buffer[pos++];
                     if (ascs_server_request_successfully_processed(connection, i)){
                         ascs_server_emit_client_request(con_handle, ase_id, GATTSERVICE_SUBEVENT_ASCS_SERVER_RELEASED);
                     }
