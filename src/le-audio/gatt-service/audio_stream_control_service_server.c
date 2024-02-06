@@ -266,9 +266,6 @@ static void ascs_server_reset_client_response(ascs_server_connection_t * connect
 }
 
 static void ascs_server_reset_client_streamendpoints(ascs_server_connection_t * connection){
-    if (connection == NULL){
-        return;
-    }
     uint8_t i;
     for (i = 0; i < ascs_streamendpoint_chr_num; i++){
         ascs_streamendpoint_t * streamendpoint = &connection->streamendpoints[i];
@@ -278,14 +275,11 @@ static void ascs_server_reset_client_streamendpoints(ascs_server_connection_t * 
         memset(&streamendpoint->metadata, 0, sizeof(le_audio_metadata_t));
         streamendpoint->ase_characteristic_value_change_initiated_by_client = false;
         streamendpoint->ase_characteristic_value_changed_w2_notify = false;
+        streamendpoint->cis_handle = HCI_CON_HANDLE_INVALID;
     }
 }
 
 static void ascs_server_reset_client(ascs_server_connection_t * connection){
-    if (connection == NULL){
-        return;
-    }
-            
     connection->scheduled_tasks = 0;
     connection->con_handle = HCI_CON_HANDLE_INVALID;
     ascs_server_reset_client_response(connection);
