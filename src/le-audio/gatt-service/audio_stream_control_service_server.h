@@ -176,11 +176,28 @@ void audio_stream_control_service_server_streamendpoint_metadata_update(hci_con_
 void audio_stream_control_service_server_streamendpoint_release(hci_con_handle_t con_handle, uint8_t ase_id);
 
 /**
+ * @brief Report Accepted CIS request
+ * @param acl_handle
+ * @param cis_handle
+ * @param cig_id
+ * @param cis_id
+ */
+void audio_stream_control_service_server_streamendpoint_cis_accepted(hci_con_handle_t acl_handle, hci_con_handle_t cis_handle, uint8_t cig_id, uint8_t cis_id);
+
+/**
  * @brief Report CIS loss for a streamendpoint
  * @param con_handle
  * @param ase_id
  */
 void audio_stream_control_service_server_streamendpoint_cis_lost(hci_con_handle_t con_handle, uint8_t ase_id);
+
+/**
+ * @brief Get CIS Connection Handle for streamendpoint
+ * @param con_handle
+ * @param ase_id
+ * @return cis handle or HCI_CON_HANDLE_INVALID
+ */
+hci_con_handle_t audio_stream_control_service_server_streamendpoint_cis_get_handle(hci_con_handle_t con_handle, uint8_t ase_id);
 
 /**
  * @brief Deinit Audio Stream Control Service Server
