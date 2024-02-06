@@ -1153,15 +1153,45 @@ static void ascs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
 
     hci_con_handle_t con_handle;
     ascs_server_connection_t * client_connection;
-    
+    uint8_t i;
+
     switch (hci_event_packet_get_type(packet)) {
         case HCI_EVENT_DISCONNECTION_COMPLETE:
             con_handle = hci_event_disconnection_complete_get_connection_handle(packet);
-            
             client_connection = ascs_server_get_remote_client_for_con_handle(con_handle);
             if (client_connection != NULL){
                 ascs_server_reset_client(client_connection);
                 ascs_server_emit_disconnected(con_handle);
+            }
+            break;
+        case HCI_EVENT_LE_META:
+            switch (hci_event_le_meta_get_subevent_code(packet)) {
+                case HCI_SUBEVENT_LE_CIS_REQUEST:
+                    con_handle = hci_subevent_le_cis_request_get_acl_connection_handle(packet);
+                    client_connection = ascs_server_get_remote_client_for_con_handle(con_handle);
+                    if (client_connection != NULL){
+                        uint8_t cis_id = hci_subevent_le_cis_request_get_cis_id(packet);
+                        uint8_t cig_id = hci_subevent_le_cis_request_get_cig_id(packet);
+                        hci_con_handle_t cis_handle = hci_subevent_le_cis_request_get_cis_connection_handle(packet);
+                        for (i=0;i<ASCS_STREAMENDPOINTS_MAX_NUM;i++){
+                            ascs_streamendpoint_t * streamendpoint = &client_connection->streamendpoints[i];
+                            switch (streamendpoint->state){
+                                case ASCS_STATE_QOS_CONFIGURED:
+                                case ASCS_STATE_ENABLING:
+                                    if ((streamendpoint->qos_configuration.cig_id == cig_id) && (streamendpoint->qos_configuration.cis_id == cis_id)){
+                                        // assign cis handle
+                                        streamendpoint->cis_handle = cis_handle;
+                                        log_info("ASE #%u <-> CIS Handle 0x%04x", streamendpoint->ase_characteristic->ase_id, cis_handle);
+                                    }
+                                    break;
+                                default:
+                                    break;
+                            }
+                        }
+                    }
+                    break;
+                default:
+                    break;
             }
             break;
         default:
