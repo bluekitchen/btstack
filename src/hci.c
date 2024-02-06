@@ -6351,7 +6351,11 @@ static bool hci_run_general_gap_le(void){
         hci_stack->le_advertisements_todo &= ~LE_ADVERTISEMENT_TASKS_PRIVACY_NOTIFY;
         // GAP Privacy, notify clients upon upcoming random address change
         hci_stack->le_advertisements_state |= LE_ADVERTISEMENT_STATE_PRIVACY_PENDING;
+        // notify might cause hci_run to get executed, check if we still can send
         gap_privacy_clients_notify(hci_stack->le_random_address);
+        if (!hci_can_send_command_packet_now()) {
+            return true;
+        }
     }
 
     // - wait until privacy update completed
