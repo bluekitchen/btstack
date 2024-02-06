@@ -207,8 +207,7 @@ static uint16_t packet_sequence_numbers[MAX_NUM_CIS];
 static uint8_t iso_payload[MAX_CHANNELS * MAX_LC3_FRAME_BYTES];
 
 static void send_iso_packet(uint8_t cis_index){
-    bool ok = hci_reserve_packet_buffer();
-    btstack_assert(ok);
+    hci_reserve_packet_buffer();
     uint8_t * buffer = hci_get_outgoing_packet_buffer();
     // complete SDU, no TimeStamp
     little_endian_store_16(buffer, 0, cis_con_handles[cis_index] | (2 << 12));
@@ -281,6 +280,7 @@ static void ascs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
 
     hci_con_handle_t con_handle;
     uint8_t status;
+    uint8_t i;
 
     ascs_codec_configuration_t codec_configuration;
     ascs_qos_configuration_t   qos_configuration;
@@ -344,6 +344,9 @@ static void ascs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
 
             MESSAGE("ASCS: QOS_CONFIGURATION_RECEIVED ase_id %d", ascs_server_current_ase_id);
             audio_stream_control_service_server_streamendpoint_configure_qos(con_handle, ascs_server_current_ase_id, &qos_configuration);
+
+            // ASCS Server, remote will setup cis
+            cig.num_cis = 0;
             break;
         case GATTSERVICE_SUBEVENT_ASCS_SERVER_ENABLE:
             ascs_server_current_ase_id = gattservice_subevent_ascs_server_enable_get_ase_id(packet);
@@ -362,6 +365,10 @@ static void ascs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
             con_handle = gattservice_subevent_ascs_server_start_ready_get_con_handle(packet);
             MESSAGE("ASCS: START_READY ase_id %d", ascs_server_current_ase_id);
             audio_stream_control_service_server_streamendpoint_receiver_start_ready(con_handle, ascs_server_current_ase_id);
+            // start streaming, which cis handles do we have
+            for (i = 0; i < cig.num_cis; i++) {
+                hci_request_cis_can_send_now_events(cis_con_handles[i]);
+            }
             break;
         case GATTSERVICE_SUBEVENT_ASCS_SERVER_STOP_READY:
             ascs_server_current_ase_id = gattservice_subevent_ascs_server_stop_ready_get_ase_id(packet);
@@ -441,6 +448,8 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     switch (hci_event_le_meta_get_subevent_code(packet)){
                         case HCI_SUBEVENT_LE_CIS_REQUEST:
                             cis_con_handle = hci_subevent_le_cis_request_get_cis_connection_handle(packet);
+                            MESSAGE("Accept CIS #%u with con handle 0x%04x", cig.num_cis, cis_con_handle);
+                            cis_con_handles[cig.num_cis++] = cis_con_handle;
                             gap_cis_accept(cis_con_handle);
                             break;
                         default:
