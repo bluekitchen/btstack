@@ -187,6 +187,8 @@ typedef struct {
     ascs_qos_configuration_t      qos_configuration;
     // Enable Metadata
     le_audio_metadata_t metadata;
+    // CIS Handle
+    hci_con_handle_t cis_handle;
 
     // ASE value changed indicates that server 
     bool ase_characteristic_value_change_initiated_by_client;
