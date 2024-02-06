@@ -279,6 +279,7 @@ static void ascs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
     if (hci_event_packet_get_type(packet) != HCI_EVENT_GATTSERVICE_META) return;
 
     hci_con_handle_t con_handle;
+    hci_con_handle_t cis_handle;
     uint8_t status;
     uint8_t i;
 
@@ -342,10 +343,9 @@ static void ascs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
             qos_configuration.max_transport_latency_ms = gattservice_subevent_ascs_server_qos_configuration_get_max_transport_latency(packet);
             qos_configuration.presentation_delay_us = gattservice_subevent_ascs_server_qos_configuration_get_presentation_delay_us(packet);
 
-            MESSAGE("ASCS: QOS_CONFIGURATION_RECEIVED ase_id %d", ascs_server_current_ase_id);
+            MESSAGE("ASCS: QOS_CONFIGURATION_RECEIVED ase_id %d, cig_id %u, cis_id %u", ascs_server_current_ase_id, qos_configuration.cig_id, qos_configuration.cis_id);
             audio_stream_control_service_server_streamendpoint_configure_qos(con_handle, ascs_server_current_ase_id, &qos_configuration);
-
-            // ASCS Server, remote will setup cis
+            // HACK: start counting CIS
             cig.num_cis = 0;
             break;
         case GATTSERVICE_SUBEVENT_ASCS_SERVER_ENABLE:
@@ -365,10 +365,11 @@ static void ascs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
             con_handle = gattservice_subevent_ascs_server_start_ready_get_con_handle(packet);
             MESSAGE("ASCS: START_READY ase_id %d", ascs_server_current_ase_id);
             audio_stream_control_service_server_streamendpoint_receiver_start_ready(con_handle, ascs_server_current_ase_id);
-            // start streaming, which cis handles do we have
-            for (i = 0; i < cig.num_cis; i++) {
-                hci_request_cis_can_send_now_events(cis_con_handles[i]);
-            }
+            // if this is a SOURCE ASE, start streaming
+            cis_handle = audio_stream_control_service_server_streamendpoint_cis_get_handle(con_handle, ascs_server_current_ase_id);
+            MESSAGE("CSI: request to send ase_id %u, cis handle 0x%04x", ascs_server_current_ase_id, cis_handle);
+            cis_con_handles[cig.num_cis++] = cis_handle;
+            hci_request_cis_can_send_now_events(cis_handle);
             break;
         case GATTSERVICE_SUBEVENT_ASCS_SERVER_STOP_READY:
             ascs_server_current_ase_id = gattservice_subevent_ascs_server_stop_ready_get_ase_id(packet);
@@ -414,6 +415,8 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
     UNUSED(channel);
     hci_con_handle_t con_handle;
     hci_con_handle_t cis_con_handle;
+    uint8_t cig_id;
+    uint8_t cis_id;
     uint8_t i;
 
     switch (packet_type) {
@@ -447,10 +450,13 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                 case HCI_EVENT_LE_META:
                     switch (hci_event_le_meta_get_subevent_code(packet)){
                         case HCI_SUBEVENT_LE_CIS_REQUEST:
+                            con_handle     = hci_subevent_le_cis_request_get_acl_connection_handle(packet);
                             cis_con_handle = hci_subevent_le_cis_request_get_cis_connection_handle(packet);
-                            MESSAGE("Accept CIS #%u with con handle 0x%04x", cig.num_cis, cis_con_handle);
-                            cis_con_handles[cig.num_cis++] = cis_con_handle;
+                            cig_id = hci_subevent_le_cis_request_get_cig_id(packet);
+                            cis_id = hci_subevent_le_cis_request_get_cis_id(packet);
                             gap_cis_accept(cis_con_handle);
+                            MESSAGE("Accept cig_id %u/cis_id %u with con handle 0x%04x", cig_id, cis_id, cis_con_handle);
+                            audio_stream_control_service_server_streamendpoint_cis_accepted(con_handle, cis_con_handle, cig_id, cis_id);
                             break;
                         default:
                             break;
@@ -470,17 +476,35 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                             }
                             break;
                         case GAP_SUBEVENT_CIS_CREATED:
-                            MESSAGE("CIS Created");
+                            cis_con_handle = gap_subevent_cis_created_get_cis_con_handle(packet);
+                            MESSAGE("CIS Created 0x%04x", cis_con_handle);
                             // TODO: check if all CIS have been created in both modes
                             if (response_op == BTP_LE_AUDIO_OP_CIS_CREATE){
                                 response_op = 0;
                                 btp_send(BTP_SERVICE_ID_LE_AUDIO, BTP_LE_AUDIO_OP_CIS_CREATE, 0, 0, NULL);
                             } else {
-                                // TODO: lookup ASE by { ACL Handle, CIG ID, CIS ID, Role == SINK }
-                                ascs_server_current_cis_con_handle = gap_subevent_cis_created_get_cis_con_handle(packet);
-                                const ascs_streamendpoint_characteristic_t * ase = ascs_server_get_streamenpoint_characteristic_for_ase_id(ascs_server_current_ase_id);
-                                if ((ase != NULL) && (ase->role == LE_AUDIO_ROLE_SINK)){
-                                    audio_stream_control_service_server_streamendpoint_receiver_start_ready(ascs_server_current_client_con_handle, ascs_server_current_ase_id);
+                                // TODO: move into ASCS Server
+                                // lookup ASE by { CIS Handle, Role == SINK } and report as ready
+                                for (i=0;i<ASCS_NUM_CLIENTS;i++){
+                                    ascs_server_connection_t * connection = &ascs_clients[i];
+                                    uint8_t j;
+                                    for (j=0;j<ASCS_NUM_STREAMENDPOINT_CHARACTERISTICS;j++){
+                                        ascs_streamendpoint_t * streamendpoint = &connection->streamendpoints[j];
+                                        uint8_t ase_id = streamendpoint->ase_characteristic->ase_id;
+                                        le_audio_role_t role = streamendpoint->ase_characteristic->role;
+                                        switch (streamendpoint->state){
+                                            case ASCS_STATE_ENABLING:
+                                                if (streamendpoint->cis_handle == cis_con_handle){
+                                                    if (role == LE_AUDIO_ROLE_SINK){
+                                                        MESSAGE("ASE %u, Role %u, State %u, CIS 0x%04x -> Start Ready", ase_id, role, streamendpoint->state, streamendpoint->cis_handle);
+                                                        audio_stream_control_service_server_streamendpoint_receiver_start_ready(connection->con_handle, ase_id);
+                                                    }
+                                                }
+                                                break;
+                                            default:
+                                                break;
+                                        }
+                                    }
                                 }
                             }
                             break;
