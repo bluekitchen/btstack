@@ -1175,36 +1175,6 @@ static void ascs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
                 ascs_server_emit_disconnected(con_handle);
             }
             break;
-        case HCI_EVENT_LE_META:
-            switch (hci_event_le_meta_get_subevent_code(packet)) {
-                case HCI_SUBEVENT_LE_CIS_REQUEST:
-                    con_handle = hci_subevent_le_cis_request_get_acl_connection_handle(packet);
-                    client_connection = ascs_server_get_remote_client_for_con_handle(con_handle);
-                    if (client_connection != NULL){
-                        uint8_t cis_id = hci_subevent_le_cis_request_get_cis_id(packet);
-                        uint8_t cig_id = hci_subevent_le_cis_request_get_cig_id(packet);
-                        hci_con_handle_t cis_handle = hci_subevent_le_cis_request_get_cis_connection_handle(packet);
-                        for (i=0;i<ASCS_STREAMENDPOINTS_MAX_NUM;i++){
-                            ascs_streamendpoint_t * streamendpoint = &client_connection->streamendpoints[i];
-                            switch (streamendpoint->state){
-                                case ASCS_STATE_QOS_CONFIGURED:
-                                case ASCS_STATE_ENABLING:
-                                    if ((streamendpoint->qos_configuration.cig_id == cig_id) && (streamendpoint->qos_configuration.cis_id == cis_id)){
-                                        // assign cis handle
-                                        streamendpoint->cis_handle = cis_handle;
-                                        log_info("ASE #%u <-> CIS Handle 0x%04x", streamendpoint->ase_characteristic->ase_id, cis_handle);
-                                    }
-                                    break;
-                                default:
-                                    break;
-                            }
-                        }
-                    }
-                    break;
-                default:
-                    break;
-            }
-            break;
         default:
             break;
     }
@@ -1476,6 +1446,29 @@ void audio_stream_control_service_server_streamendpoint_metadata_update(hci_con_
     }
 }
 
+void audio_stream_control_service_server_streamendpoint_cis_accepted(hci_con_handle_t acl_handle, hci_con_handle_t cis_handle, uint8_t cig_id, uint8_t cis_id){
+    ascs_server_connection_t * client_connection = ascs_server_get_remote_client_for_con_handle(acl_handle);
+    if (client_connection != NULL){
+        uint8_t i;
+        for (i=0;i<ASCS_STREAMENDPOINTS_MAX_NUM;i++){
+            ascs_streamendpoint_t * streamendpoint = &client_connection->streamendpoints[i];
+            switch (streamendpoint->state){
+                case ASCS_STATE_QOS_CONFIGURED:
+                case ASCS_STATE_ENABLING:
+                    if ((streamendpoint->qos_configuration.cig_id == cig_id) && (streamendpoint->qos_configuration.cis_id == cis_id)){
+                        // assign cis handle
+                        streamendpoint->cis_handle = cis_handle;
+                        log_info("ASE #%u <-> CIS Handle 0x%04x", streamendpoint->ase_characteristic->ase_id, cis_handle);
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+
+}
+
 void audio_stream_control_service_server_streamendpoint_cis_lost(hci_con_handle_t con_handle, uint8_t ase_id){
     ascs_server_connection_t * client = ascs_server_get_remote_client_for_con_handle(con_handle);
     if (client == NULL){
@@ -1500,6 +1493,18 @@ void audio_stream_control_service_server_streamendpoint_cis_lost(hci_con_handle_
         default:
             break;
     }
+}
+
+hci_con_handle_t audio_stream_control_service_server_streamendpoint_cis_get_handle(hci_con_handle_t con_handle, uint8_t ase_id){
+    ascs_server_connection_t * client = ascs_server_get_remote_client_for_con_handle(con_handle);
+    if (client == NULL){
+        return HCI_CON_HANDLE_INVALID;
+    }
+    ascs_streamendpoint_t * streamendpoint = ascs_server_get_streamendpoint_for_ase_id(client, ase_id);
+    if (streamendpoint == NULL){
+        return HCI_CON_HANDLE_INVALID;
+    }
+    return streamendpoint->cis_handle;
 }
 
 void audio_stream_control_service_server_deinit(void){
