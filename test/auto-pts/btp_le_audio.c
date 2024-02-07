@@ -268,8 +268,38 @@ static const ascs_streamendpoint_characteristic_t * ascs_server_get_streamenpoin
 
 static void ascs_server_released_timer_handler(btstack_timer_source_t * ts){
     UNUSED(ts);
-    MESSAGE("ASCS Server Released triggered by timer");
-    audio_stream_control_service_server_streamendpoint_released(ascs_server_current_client_con_handle, ascs_server_current_ase_id, true);
+    uint8_t i;
+    for (i=0;i<ASCS_NUM_CLIENTS;i++) {
+        ascs_server_connection_t *connection = &ascs_clients[i];
+        uint8_t j;
+        for (j = 0; j < ASCS_NUM_STREAMENDPOINT_CHARACTERISTICS; j++) {
+            ascs_streamendpoint_t *streamendpoint = &connection->streamendpoints[j];
+            ascs_state_t state = streamendpoint->state;
+            le_audio_role_t role = streamendpoint->ase_characteristic->role;
+            if (state == ASCS_STATE_RELEASING){
+                uint8_t ase_id = streamendpoint->ase_characteristic->ase_id;
+                MESSAGE("ASCS Server Released");
+                audio_stream_control_service_server_streamendpoint_released(connection->con_handle, ase_id, true);
+            }
+        }
+    }
+}
+
+static void ascs_server_handle_disconnect(hci_con_handle_t con_handle){
+    uint8_t i;
+    for (i=0;i<ASCS_NUM_CLIENTS;i++) {
+        ascs_server_connection_t *connection = &ascs_clients[i];
+        uint8_t j;
+        for (j = 0; j < ASCS_NUM_STREAMENDPOINT_CHARACTERISTICS; j++) {
+            ascs_streamendpoint_t *streamendpoint = &connection->streamendpoints[j];
+            ascs_state_t state = streamendpoint->state;
+            le_audio_role_t role = streamendpoint->ase_characteristic->role;
+            if ((state == ASCS_STATE_STREAMING) && (streamendpoint->cis_handle == con_handle)){
+                uint8_t ase_id = streamendpoint->ase_characteristic->ase_id;
+                MESSAGE("HCI Disconnect for  cis_con_handle 0x%04x-> CIS lost acl handle 0x%04x, ase %u", con_handle, connection->con_handle, con_handle);
+            }
+        }
+    }
 }
 
 static void ascs_server_start_ready_timer_handler(btstack_timer_source_t * ts){
@@ -281,20 +311,18 @@ static void ascs_server_start_ready_timer_handler(btstack_timer_source_t * ts){
     for (i=0;i<ASCS_NUM_CLIENTS;i++) {
         ascs_server_connection_t *connection = &ascs_clients[i];
         uint8_t j;
-        if (connection->con_handle == ascs_server_current_client_con_handle){
-            for (j = 0; j < ASCS_NUM_STREAMENDPOINT_CHARACTERISTICS; j++) {
-                ascs_streamendpoint_t *streamendpoint = &connection->streamendpoints[j];
-                ascs_state_t state = streamendpoint->state;
-                uint8_t ase_id = streamendpoint->ase_characteristic->ase_id;
-                le_audio_role_t role = streamendpoint->ase_characteristic->role;
-                if ((state == ASCS_STATE_ENABLING) && (role == LE_AUDIO_ROLE_SINK)){
-                    if (streamendpoint->cis_handle == HCI_CON_HANDLE_INVALID){
-                        MESSAGE("ASE %u, Role %u, State %u, No CIS -> Check again", ase_id, role, streamendpoint->state);
-                        more_tasks = true;
-                    } else {
-                        MESSAGE("ASE %u, Role %u, State %u, CIS 0x%04x -> ReceiverStart Ready", ase_id, role, streamendpoint->state, streamendpoint->cis_handle);
-                        audio_stream_control_service_server_streamendpoint_receiver_start_ready(connection->con_handle, ase_id);
-                    }
+        for (j = 0; j < ASCS_NUM_STREAMENDPOINT_CHARACTERISTICS; j++) {
+            ascs_streamendpoint_t *streamendpoint = &connection->streamendpoints[j];
+            ascs_state_t state = streamendpoint->state;
+            uint8_t ase_id = streamendpoint->ase_characteristic->ase_id;
+            le_audio_role_t role = streamendpoint->ase_characteristic->role;
+            if ((state == ASCS_STATE_ENABLING) && (role == LE_AUDIO_ROLE_SINK)){
+                if (streamendpoint->cis_handle == HCI_CON_HANDLE_INVALID){
+                    MESSAGE("ASE %u, Role %u, State %u, No CIS -> Check again", ase_id, role, streamendpoint->state);
+                    more_tasks = true;
+                } else {
+                    MESSAGE("ASE %u, Role %u, State %u, CIS 0x%04x -> ReceiverStart Ready", ase_id, role, streamendpoint->state, streamendpoint->cis_handle);
+                    audio_stream_control_service_server_streamendpoint_receiver_start_ready(connection->con_handle, ase_id);
                 }
             }
         }
@@ -471,13 +499,7 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                             cis_con_handles[i] = HCI_CON_HANDLE_INVALID;
                         }
                     }
-                    if (ascs_server_current_cis_con_handle == con_handle){
-                        // disconnect was for a CIS con handle
-                        MESSAGE("HCI Disconnect for main cis_con_handle 0x%04x-> CIS lost ase %u", con_handle, ascs_server_current_ase_id);
-                        ascs_server_current_cis_con_handle = HCI_CON_HANDLE_INVALID;
-                        audio_stream_control_service_server_streamendpoint_cis_lost(ascs_server_current_client_con_handle,
-                                                                                   ascs_server_current_ase_id);
-                    }
+                    ascs_server_handle_disconnect(hci_event_disconnection_complete_get_connection_handle(packet));
                     break;
                 case HCI_EVENT_CIS_CAN_SEND_NOW:
                     cis_con_handle = hci_event_cis_can_send_now_get_cis_con_handle(packet);
