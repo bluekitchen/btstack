@@ -107,7 +107,7 @@ function(compile_gatt PROFILE_GATT PROFILE_H)
 endfunction()
 
 # GATT BAP
-compile_gatt(${CMAKE_SOURCE_DIR}/../pts-h4/bap_service_server_test.gatt  ${CMAKE_CURRENT_BINARY_DIR}/bap_service_server_test.h)
+compile_gatt(${CMAKE_SOURCE_DIR}/btp_le_audio.gatt  ${CMAKE_CURRENT_BINARY_DIR}/btp_le_audio.h)
 
 # target btpclient-usb
 add_executable(btpclient-usb btpclient.c ../../port/libusb/main.c btp_socket.c btp_le_audio.c ${CMAKE_CURRENT_BINARY_DIR}/bap_service_server_test.h)
