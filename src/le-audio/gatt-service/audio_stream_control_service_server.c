@@ -548,7 +548,7 @@ static void ascs_server_update_control_point_operation_response(ascs_server_conn
     connection->response[response_index].reason = reason;
 }
 
-static bool ascs_server_control_point_operation_has_valid_length(ascs_opcode_t opcode, uint8_t ases_num, uint8_t *buffer, uint16_t buffer_size){
+static bool ascs_server_control_point_operation_has_valid_length(ascs_opcode_t opcode, uint8_t ases_num, const uint8_t *buffer, uint16_t buffer_size){
     uint16_t pos = 0;
     
     uint8_t  i;
@@ -890,231 +890,239 @@ static void ascs_server_control_point_operation_prepare_response_for_stop_ready(
     }
 }
 
+static int
+ascs_server_handle_control_point_write(ascs_server_connection_t *connection, const uint8_t *buffer, uint16_t buffer_size) {
+
+    if (buffer_size < 1){
+        return 0; // ASCS_ERROR_CODE_UNSUPPORTED_OPCODE;
+    }
+
+    ascs_server_reset_client_response(connection);
+
+    hci_con_handle_t con_handle = connection->con_handle;
+
+    uint8_t pos = 0;
+    connection->response_opcode = (ascs_opcode_t)buffer[pos++];
+    if (buffer_size < 2){
+        // ASCS_ERROR_CODE_INVALID_LENGTH, set Number_of_ASEs to 0xFF
+        connection->response_ases_num = 0xFF;
+        ascs_server_schedule_task(connection, ASCS_TASK_SEND_CONTROL_POINT_OPERATION_RESPONSE);
+        return 0;
+    }
+
+    connection->response_ases_num = buffer[pos++];
+    if ((connection->response_ases_num == 0) || (connection->response_ases_num > ascs_streamendpoint_chr_num)){
+        // ASCS_ERROR_CODE_INVALID_LENGTH, set Number_of_ASEs to 0xFF
+        connection->response_ases_num = 0xFF;
+        ascs_server_schedule_task(connection, ASCS_TASK_SEND_CONTROL_POINT_OPERATION_RESPONSE);
+        return 0;
+    }
+
+    if (!ascs_server_control_point_operation_has_valid_length(connection->response_opcode, connection->response_ases_num, &buffer[pos], buffer_size - pos)){
+        // ASCS_ERROR_CODE_INVALID_LENGTH, set Number_of_ASEs to 0xFF
+        connection->response_ases_num = 0xFF;
+        ascs_server_schedule_task(connection, ASCS_TASK_SEND_CONTROL_POINT_OPERATION_RESPONSE);
+        return 0;
+    }
+
+    // save offset for second buffer read:
+    // - first read is used to form answer for control point operation - sent via notification
+    // - second read is used to inform server on ASEs that changed values, which could in turn trigger
+    // notification on value changed
+    ascs_client_codec_configuration_request_t codec_config_request;
+    ascs_qos_configuration_t          qos_config;
+    le_audio_metadata_t               metadata_config;
+    memset(&metadata_config, 0, sizeof(le_audio_metadata_t));
+
+    uint16_t data_offset = pos;
+    uint8_t ase_id;
+    uint8_t  i;
+
+    // 1. as first schedule opcode operation answer via notification,
+    // 2. then inform server on these (connection) codec configuration recommendations via GATTSERVICE_SUBEVENT_ASCS_CLIENT_CODEC_CONFIGURATION_RECEIVED event
+    // 3. server should then call the API audio_stream_control_service_server_configure_codec to set the values
+    // 4. and this should in return trigger notification of value change for each ASE changed separately.
+
+    switch (connection->response_opcode){
+        case ASCS_OPCODE_CONFIG_CODEC:
+            // first read
+            for (i = 0; i < connection->response_ases_num; i++){
+                ase_id = buffer[pos++];
+                pos += ascs_util_codec_configuration_request_parse(&buffer[pos], buffer_size-pos, &codec_config_request);
+                ascs_server_control_point_operation_prepare_response_for_codec_configuration(connection, i, ase_id, codec_config_request);
+            }
+            ascs_server_schedule_task(connection, ASCS_TASK_SEND_CONTROL_POINT_OPERATION_RESPONSE);
+
+            pos = data_offset;
+            for (i = 0; i < connection->response_ases_num; i++){
+                ase_id = buffer[pos++];
+                pos += ascs_util_codec_configuration_request_parse(&buffer[pos], buffer_size-pos, &codec_config_request);
+                if (ascs_server_request_successfully_processed(connection, i)){
+                    ascs_server_emit_client_codec_configuration_request(con_handle, ase_id, &codec_config_request);
+                }
+            }
+            break;
+
+        case ASCS_OPCODE_CONFIG_QOS:
+            for (i = 0; i < connection->response_ases_num; i++){
+                ase_id = buffer[pos++];
+                pos += ascs_util_qos_configuration_parse(&buffer[pos], buffer_size - pos, &qos_config);
+                ascs_control_point_operation_prepare_response_for_qos_configuration(connection, i, ase_id, qos_config);
+            }
+            ascs_server_schedule_task(connection, ASCS_TASK_SEND_CONTROL_POINT_OPERATION_RESPONSE);
+
+            pos = data_offset;
+            for (i = 0; i < connection->response_ases_num; i++){
+                ase_id = buffer[pos++];
+                pos += ascs_util_qos_configuration_parse(&buffer[pos], buffer_size - pos, &qos_config);
+                if (ascs_server_request_successfully_processed(connection, i)){
+                    ascs_server_emit_client_qos_configuration_request(ascs_server_event_callback, con_handle, ase_id, ASCS_STATE_RFU, &qos_config);
+                }
+            }
+            break;
+
+        case ASCS_OPCODE_ENABLE:
+            // The metadata values for an ASE can only be set or updated by the Initiator.
+            // An Acceptor can update its Available_Audio_Contexts value at any point, but these do not appear in the ASE metadata.
+            // Nor do they result in the termination of a current stream. Any change in the Available_Audio_Contexts is only used for subsequent connection attempts.
+            for (i = 0; i < connection->response_ases_num; i++){
+                ase_id = buffer[pos++];
+                pos += le_audio_util_metadata_parse(&buffer[pos], buffer_size-pos, &metadata_config);
+                ascs_server_control_point_operation_prepare_response_for_target_state(connection, i, ase_id, ASCS_STATE_ENABLING);
+            }
+            ascs_server_schedule_task(connection, ASCS_TASK_SEND_CONTROL_POINT_OPERATION_RESPONSE);
+
+            pos = data_offset;
+            for (i = 0; i < connection->response_ases_num; i++){
+                ase_id = buffer[pos++];
+                pos += le_audio_util_metadata_parse(&buffer[pos], buffer_size-pos, &metadata_config);
+                if (ascs_server_request_successfully_processed(connection, i)){
+                    ascs_server_emit_client_request(con_handle, ase_id, GATTSERVICE_SUBEVENT_ASCS_SERVER_ENABLE);
+                }
+            }
+            break;
+
+        case ASCS_OPCODE_RECEIVER_START_READY:
+            for (i = 0; i < connection->response_ases_num; i++){
+                ase_id = buffer[pos++];
+                ascs_server_control_point_operation_prepare_response_for_start_ready(connection, i, ase_id);
+            }
+            ascs_server_schedule_task(connection, ASCS_TASK_SEND_CONTROL_POINT_OPERATION_RESPONSE);
+
+            pos = data_offset;
+            for (i = 0; i < connection->response_ases_num; i++){
+                ase_id = buffer[pos++];
+                if (ascs_server_request_successfully_processed(connection, i)){
+                    ascs_server_emit_client_request(con_handle, ase_id, GATTSERVICE_SUBEVENT_ASCS_SERVER_START_READY);
+                }
+            }
+            break;
+
+        case ASCS_OPCODE_DISABLE:
+            for (i = 0; i < connection->response_ases_num; i++){
+                ase_id = buffer[pos++];
+                ascs_server_control_point_operation_prepare_response_for_target_state(connection, i, ase_id, ASCS_STATE_DISABLING);
+            }
+            ascs_server_schedule_task(connection, ASCS_TASK_SEND_CONTROL_POINT_OPERATION_RESPONSE);
+
+            pos = data_offset;
+            for (i = 0; i < connection->response_ases_num; i++){
+                ase_id = buffer[pos++];
+                ascs_server_control_point_operation_prepare_response_for_target_state(connection, i, ase_id, ASCS_STATE_DISABLING);
+                if (ascs_server_request_successfully_processed(connection, i)){
+                    ascs_server_emit_client_request(con_handle, ase_id, GATTSERVICE_SUBEVENT_ASCS_SERVER_DISABLE);
+                }
+            }
+            break;
+
+        case ASCS_OPCODE_RECEIVER_STOP_READY:
+            for (i = 0; i < connection->response_ases_num; i++){
+                ase_id = buffer[pos++];
+                ascs_server_control_point_operation_prepare_response_for_stop_ready(connection, i, ase_id);
+            }
+            ascs_server_schedule_task(connection, ASCS_TASK_SEND_CONTROL_POINT_OPERATION_RESPONSE);
+
+            pos = data_offset;
+            for (i = 0; i < connection->response_ases_num; i++){
+                ase_id = buffer[pos++];
+                if (ascs_server_request_successfully_processed(connection, i)){
+                    ascs_server_emit_client_request(con_handle, ase_id, GATTSERVICE_SUBEVENT_ASCS_SERVER_STOP_READY);
+                }
+            }
+            break;
+
+        case ASCS_OPCODE_UPDATE_METADATA:
+            for (i = 0; i < connection->response_ases_num; i++){
+                ase_id = buffer[pos++];
+                pos += le_audio_util_metadata_parse(&buffer[pos], buffer_size-pos, &metadata_config);
+                ascs_server_control_point_operation_prepare_response_for_metadata_update(connection, i, ase_id, &metadata_config);
+            }
+            ascs_server_schedule_task(connection, ASCS_TASK_SEND_CONTROL_POINT_OPERATION_RESPONSE);
+
+            pos = data_offset;
+            for (i = 0; i < connection->response_ases_num; i++){
+                ase_id = buffer[pos++];
+                pos += le_audio_util_metadata_parse(&buffer[pos], buffer_size-pos, &metadata_config);
+                if (ascs_server_request_successfully_processed(connection, i)){
+                    ascs_server_emit_client_metadata_request(ascs_server_event_callback, con_handle, ase_id, ASCS_STATE_RFU, &metadata_config);
+                }
+            }
+            break;
+
+        case ASCS_OPCODE_RELEASE:
+            for (i = 0; i < connection->response_ases_num; i++){
+                ase_id = buffer[pos++];
+                ascs_server_control_point_operation_prepare_response_for_target_state(connection, i, ase_id, ASCS_STATE_RELEASING);
+            }
+            ascs_server_schedule_task(connection, ASCS_TASK_SEND_CONTROL_POINT_OPERATION_RESPONSE);
+
+            pos = data_offset;
+            for (i = 0; i < connection->response_ases_num; i++){
+                ase_id = buffer[pos++];
+                if (ascs_server_request_successfully_processed(connection, i)){
+                    ascs_server_emit_client_request(con_handle, ase_id, GATTSERVICE_SUBEVENT_ASCS_SERVER_RELEASE);
+                }
+            }
+            break;
+
+        case ASCS_OPCODE_RELEASED:
+            for (i = 0; i < connection->response_ases_num; i++){
+                ase_id = buffer[pos++];
+                ascs_server_control_point_operation_prepare_response_for_target_state(connection, i, ase_id, ASCS_STATE_IDLE);
+            }
+            ascs_server_schedule_task(connection, ASCS_TASK_SEND_CONTROL_POINT_OPERATION_RESPONSE);
+
+            pos = data_offset;
+            for (i = 0; i < connection->response_ases_num; i++){
+                ase_id = buffer[pos++];
+                if (ascs_server_request_successfully_processed(connection, i)){
+                    ascs_server_emit_client_request(con_handle, ase_id, GATTSERVICE_SUBEVENT_ASCS_SERVER_RELEASED);
+                }
+            }
+            break;
+
+        default:
+            // ASCS_ERROR_CODE_UNSUPPORTED_OPCODE, set Number_of_ASEs to 0xFF
+            connection->response_ases_num = 0xFF;
+            ascs_server_schedule_task(connection, ASCS_TASK_SEND_CONTROL_POINT_OPERATION_RESPONSE);
+            return 0;
+    }
+    return 0;
+}
+
 static int ascs_server_write_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
     UNUSED(offset);
 
-    // only handle regular write request/write without response
+    // only handle regular write request/write without response for other characteristics
     if (transaction_mode != ATT_TRANSACTION_MODE_NONE) return 0;
 
     if (attribute_handle == ascs_ase_control_point_handle){
-        // write without response
-        if (buffer_size < 1){
-            return 0; // ASCS_ERROR_CODE_UNSUPPORTED_OPCODE;
-        }
-
         ascs_server_connection_t * connection = ascs_server_get_remote_client_for_con_handle(con_handle);
         if (connection == NULL){
-            return 0; 
-        }
-        ascs_server_reset_client_response(connection);
-
-        uint8_t pos = 0;
-        connection->response_opcode = (ascs_opcode_t)buffer[pos++];
-        if (buffer_size < 2){
-            // ASCS_ERROR_CODE_INVALID_LENGTH, set Number_of_ASEs to 0xFF
-            connection->response_ases_num = 0xFF;
-            ascs_server_schedule_task(connection, ASCS_TASK_SEND_CONTROL_POINT_OPERATION_RESPONSE);
             return 0;
+        } else {
+            return ascs_server_handle_control_point_write(connection, buffer, buffer_size);
         }
-
-        connection->response_ases_num = buffer[pos++];
-        if ((connection->response_ases_num == 0) || (connection->response_ases_num > ascs_streamendpoint_chr_num)){
-            // ASCS_ERROR_CODE_INVALID_LENGTH, set Number_of_ASEs to 0xFF
-            connection->response_ases_num = 0xFF;
-            ascs_server_schedule_task(connection, ASCS_TASK_SEND_CONTROL_POINT_OPERATION_RESPONSE);
-            return 0;
-        }
-
-        if (!ascs_server_control_point_operation_has_valid_length(connection->response_opcode, connection->response_ases_num, &buffer[pos], buffer_size - pos)){
-            // ASCS_ERROR_CODE_INVALID_LENGTH, set Number_of_ASEs to 0xFF
-            connection->response_ases_num = 0xFF;
-            ascs_server_schedule_task(connection, ASCS_TASK_SEND_CONTROL_POINT_OPERATION_RESPONSE);
-            return 0;
-        }
-
-        // save offset for second buffer read:
-        // - first read is used to form answer for control point operation - sent via notification
-        // - second read is used to inform server on ASEs that changed values, which could in turn trigger 
-        // notification on value changed
-        ascs_client_codec_configuration_request_t codec_config_request;
-        ascs_qos_configuration_t          qos_config;
-        le_audio_metadata_t               metadata_config;
-        memset(&metadata_config, 0, sizeof(le_audio_metadata_t));
-
-        uint16_t data_offset = pos;
-        uint8_t ase_id;
-        uint8_t  i;
-
-        // 1. as first schedule opcode operation answer via notification,
-        // 2. then inform server on these (connection) codec configuration recommendations via GATTSERVICE_SUBEVENT_ASCS_CLIENT_CODEC_CONFIGURATION_RECEIVED event
-        // 3. server should then call the API audio_stream_control_service_server_configure_codec to set the values
-        // 4. and this should in return trigger notification of value change for each ASE changed separately.
-
-        switch (connection->response_opcode){
-            case ASCS_OPCODE_CONFIG_CODEC:
-                // first read
-                for (i = 0; i < connection->response_ases_num; i++){
-                    ase_id = buffer[pos++];
-                    pos += ascs_util_codec_configuration_request_parse(&buffer[pos], buffer_size-pos, &codec_config_request);
-                    ascs_server_control_point_operation_prepare_response_for_codec_configuration(connection, i, ase_id, codec_config_request);
-                }
-                ascs_server_schedule_task(connection, ASCS_TASK_SEND_CONTROL_POINT_OPERATION_RESPONSE);
-
-                pos = data_offset;
-                for (i = 0; i < connection->response_ases_num; i++){
-                    ase_id = buffer[pos++];
-                    pos += ascs_util_codec_configuration_request_parse(&buffer[pos], buffer_size-pos, &codec_config_request);
-                    if (ascs_server_request_successfully_processed(connection, i)){
-                        ascs_server_emit_client_codec_configuration_request(con_handle, ase_id, &codec_config_request);
-                    }
-                }
-                break;
-
-            case ASCS_OPCODE_CONFIG_QOS:
-                for (i = 0; i < connection->response_ases_num; i++){
-                    ase_id = buffer[pos++];
-                    pos += ascs_util_qos_configuration_parse(&buffer[pos], buffer_size - pos, &qos_config);
-                    ascs_control_point_operation_prepare_response_for_qos_configuration(connection, i, ase_id, qos_config);
-                }
-                ascs_server_schedule_task(connection, ASCS_TASK_SEND_CONTROL_POINT_OPERATION_RESPONSE);
-
-                pos = data_offset;
-                for (i = 0; i < connection->response_ases_num; i++){
-                    ase_id = buffer[pos++];
-                    pos += ascs_util_qos_configuration_parse(&buffer[pos], buffer_size - pos, &qos_config);
-                    if (ascs_server_request_successfully_processed(connection, i)){
-                        ascs_server_emit_client_qos_configuration_request(ascs_server_event_callback, con_handle, ase_id, ASCS_STATE_RFU, &qos_config);
-                    }
-                }
-                break;
-
-            case ASCS_OPCODE_ENABLE:
-                // The metadata values for an ASE can only be set or updated by the Initiator.
-                // An Acceptor can update its Available_Audio_Contexts value at any point, but these do not appear in the ASE metadata. 
-                // Nor do they result in the termination of a current stream. Any change in the Available_Audio_Contexts is only used for subsequent connection attempts.
-                for (i = 0; i < connection->response_ases_num; i++){
-                    ase_id = buffer[pos++];
-                    pos += le_audio_util_metadata_parse(&buffer[pos], buffer_size-pos, &metadata_config);
-                    ascs_server_control_point_operation_prepare_response_for_target_state(connection, i, ase_id, ASCS_STATE_ENABLING);
-                }
-                ascs_server_schedule_task(connection, ASCS_TASK_SEND_CONTROL_POINT_OPERATION_RESPONSE);
-
-                pos = data_offset;
-                for (i = 0; i < connection->response_ases_num; i++){
-                    ase_id = buffer[pos++];
-                    pos += le_audio_util_metadata_parse(&buffer[pos], buffer_size-pos, &metadata_config);
-                    if (ascs_server_request_successfully_processed(connection, i)){
-                        ascs_server_emit_client_request(con_handle, ase_id, GATTSERVICE_SUBEVENT_ASCS_SERVER_ENABLE);
-                    }
-                }
-                break;
-
-            case ASCS_OPCODE_RECEIVER_START_READY:
-                for (i = 0; i < connection->response_ases_num; i++){
-                    ase_id = buffer[pos++];
-                    ascs_server_control_point_operation_prepare_response_for_start_ready(connection, i, ase_id);
-                }
-                ascs_server_schedule_task(connection, ASCS_TASK_SEND_CONTROL_POINT_OPERATION_RESPONSE);
-
-                pos = data_offset;
-                for (i = 0; i < connection->response_ases_num; i++){
-                    ase_id = buffer[pos++];
-                    if (ascs_server_request_successfully_processed(connection, i)){
-                        ascs_server_emit_client_request(con_handle, ase_id, GATTSERVICE_SUBEVENT_ASCS_SERVER_START_READY);
-                    }
-                }
-                break;
-
-            case ASCS_OPCODE_DISABLE:
-                for (i = 0; i < connection->response_ases_num; i++){
-                    ase_id = buffer[pos++];
-                    ascs_server_control_point_operation_prepare_response_for_target_state(connection, i, ase_id, ASCS_STATE_DISABLING);
-                }
-                ascs_server_schedule_task(connection, ASCS_TASK_SEND_CONTROL_POINT_OPERATION_RESPONSE);
-
-                pos = data_offset;
-                for (i = 0; i < connection->response_ases_num; i++){
-                    ase_id = buffer[pos++];
-                    ascs_server_control_point_operation_prepare_response_for_target_state(connection, i, ase_id, ASCS_STATE_DISABLING);
-                    if (ascs_server_request_successfully_processed(connection, i)){
-                        ascs_server_emit_client_request(con_handle, ase_id, GATTSERVICE_SUBEVENT_ASCS_SERVER_DISABLE);
-                    }
-                }
-                break;
-            
-            case ASCS_OPCODE_RECEIVER_STOP_READY:
-                for (i = 0; i < connection->response_ases_num; i++){
-                    ase_id = buffer[pos++];
-                    ascs_server_control_point_operation_prepare_response_for_stop_ready(connection, i, ase_id);
-                }
-                ascs_server_schedule_task(connection, ASCS_TASK_SEND_CONTROL_POINT_OPERATION_RESPONSE);
-
-                pos = data_offset;
-                for (i = 0; i < connection->response_ases_num; i++){
-                    ase_id = buffer[pos++];
-                    if (ascs_server_request_successfully_processed(connection, i)){
-                        ascs_server_emit_client_request(con_handle, ase_id, GATTSERVICE_SUBEVENT_ASCS_SERVER_STOP_READY);
-                    }
-                }
-                break;
-            
-            case ASCS_OPCODE_UPDATE_METADATA:
-                for (i = 0; i < connection->response_ases_num; i++){
-                    ase_id = buffer[pos++];
-                    pos += le_audio_util_metadata_parse(&buffer[pos], buffer_size-pos, &metadata_config);
-                    ascs_server_control_point_operation_prepare_response_for_metadata_update(connection, i, ase_id, &metadata_config);
-                }
-                ascs_server_schedule_task(connection, ASCS_TASK_SEND_CONTROL_POINT_OPERATION_RESPONSE);
-
-                pos = data_offset;
-                for (i = 0; i < connection->response_ases_num; i++){
-                    ase_id = buffer[pos++];
-                    pos += le_audio_util_metadata_parse(&buffer[pos], buffer_size-pos, &metadata_config);
-                    if (ascs_server_request_successfully_processed(connection, i)){
-                        ascs_server_emit_client_metadata_request(ascs_server_event_callback, con_handle, ase_id, ASCS_STATE_RFU, &metadata_config);
-                    }
-                }
-                break;
-            
-            case ASCS_OPCODE_RELEASE:
-                for (i = 0; i < connection->response_ases_num; i++){
-                    ase_id = buffer[pos++];
-                    ascs_server_control_point_operation_prepare_response_for_target_state(connection, i, ase_id, ASCS_STATE_RELEASING);
-                }
-                ascs_server_schedule_task(connection, ASCS_TASK_SEND_CONTROL_POINT_OPERATION_RESPONSE);
-
-                pos = data_offset;
-                for (i = 0; i < connection->response_ases_num; i++){
-                    ase_id = buffer[pos++];
-                    if (ascs_server_request_successfully_processed(connection, i)){
-                        ascs_server_emit_client_request(con_handle, ase_id, GATTSERVICE_SUBEVENT_ASCS_SERVER_RELEASE);
-                    }
-                }
-                break;
-
-            case ASCS_OPCODE_RELEASED:
-                for (i = 0; i < connection->response_ases_num; i++){
-                    ase_id = buffer[pos++];
-                    ascs_server_control_point_operation_prepare_response_for_target_state(connection, i, ase_id, ASCS_STATE_IDLE);
-                }
-                ascs_server_schedule_task(connection, ASCS_TASK_SEND_CONTROL_POINT_OPERATION_RESPONSE);
-
-                pos = data_offset;
-                for (i = 0; i < connection->response_ases_num; i++){
-                    ase_id = buffer[pos++];
-                    if (ascs_server_request_successfully_processed(connection, i)){
-                        ascs_server_emit_client_request(con_handle, ase_id, GATTSERVICE_SUBEVENT_ASCS_SERVER_RELEASED);
-                    }
-                }
-                break;
-
-            default:
-                // ASCS_ERROR_CODE_UNSUPPORTED_OPCODE, set Number_of_ASEs to 0xFF
-                connection->response_ases_num = 0xFF;
-                ascs_server_schedule_task(connection, ASCS_TASK_SEND_CONTROL_POINT_OPERATION_RESPONSE);
-                return 0;
-        }
-        return 0;
     }
 
     ascs_server_connection_t * connection = ascs_server_get_remote_client_for_con_handle(con_handle);
