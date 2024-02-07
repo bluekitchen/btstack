@@ -249,9 +249,7 @@ static void pacs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
 }
 
 // ASCS Server Handler
-static uint8_t          ascs_server_current_ase_id = 0;
 static hci_con_handle_t ascs_server_current_client_con_handle = HCI_CON_HANDLE_INVALID;
-static hci_con_handle_t ascs_server_current_cis_con_handle = HCI_CON_HANDLE_INVALID;
 static btstack_timer_source_t  ascs_server_released_timer;
 static btstack_timer_source_t  ascs_server_start_ready_timer;
 static le_audio_metadata_t     ascs_server_audio_metadata;
@@ -344,7 +342,7 @@ static void ascs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
     hci_con_handle_t con_handle;
     hci_con_handle_t cis_handle;
     uint8_t status;
-    uint8_t i;
+    uint8_t ase_id;
 
     ascs_codec_configuration_t codec_configuration;
     ascs_qos_configuration_t   qos_configuration;
@@ -362,7 +360,7 @@ static void ascs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
             MESSAGE("ASCS Server: disconnected, con_handle 0x%02xn", con_handle);
             break;
         case GATTSERVICE_SUBEVENT_ASCS_SERVER_CODEC_CONFIGURATION:
-            ascs_server_current_ase_id = gattservice_subevent_ascs_server_codec_configuration_get_ase_id(packet);
+            ase_id = gattservice_subevent_ascs_server_codec_configuration_get_ase_id(packet);
             con_handle = gattservice_subevent_ascs_server_codec_configuration_get_con_handle(packet);
 
             // use framing for 441
@@ -388,12 +386,12 @@ static void ascs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
             codec_configuration.specific_codec_configuration.octets_per_codec_frame = gattservice_subevent_ascs_server_codec_configuration_get_octets_per_frame(packet);
             codec_configuration.specific_codec_configuration.codec_frame_blocks_per_sdu = gattservice_subevent_ascs_server_codec_configuration_get_frame_blocks_per_sdu(packet);
 
-            MESSAGE("ASCS: CODEC_CONFIGURATION_RECEIVED ase_id %d, codec_configuration_mask %02x, con_handle 0x%02x", ascs_server_current_ase_id,
+            MESSAGE("ASCS: CODEC_CONFIGURATION_RECEIVED ase_id %d, codec_configuration_mask %02x, con_handle 0x%02x", ase_id,
                     codec_configuration.specific_codec_configuration.codec_configuration_mask, con_handle);
-            audio_stream_control_service_server_streamendpoint_configure_codec(con_handle, ascs_server_current_ase_id, &codec_configuration);
+            audio_stream_control_service_server_streamendpoint_configure_codec(con_handle, ase_id, &codec_configuration);
             break;
         case GATTSERVICE_SUBEVENT_ASCS_SERVER_QOS_CONFIGURATION:
-            ascs_server_current_ase_id = gattservice_subevent_ascs_server_qos_configuration_get_ase_id(packet);
+            ase_id = gattservice_subevent_ascs_server_qos_configuration_get_ase_id(packet);
             con_handle = gattservice_subevent_ascs_server_qos_configuration_get_con_handle(packet);
 
             qos_configuration.cig_id = gattservice_subevent_ascs_server_qos_configuration_get_cig_id(packet);
@@ -406,16 +404,16 @@ static void ascs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
             qos_configuration.max_transport_latency_ms = gattservice_subevent_ascs_server_qos_configuration_get_max_transport_latency(packet);
             qos_configuration.presentation_delay_us = gattservice_subevent_ascs_server_qos_configuration_get_presentation_delay_us(packet);
 
-            MESSAGE("ASCS: QOS_CONFIGURATION_RECEIVED ase_id %d, cig_id %u, cis_id %u", ascs_server_current_ase_id, qos_configuration.cig_id, qos_configuration.cis_id);
-            audio_stream_control_service_server_streamendpoint_configure_qos(con_handle, ascs_server_current_ase_id, &qos_configuration);
+            MESSAGE("ASCS: QOS_CONFIGURATION_RECEIVED ase_id %d, cig_id %u, cis_id %u", ase_id, qos_configuration.cig_id, qos_configuration.cis_id);
+            audio_stream_control_service_server_streamendpoint_configure_qos(con_handle, ase_id, &qos_configuration);
             // HACK: start counting CIS
             cig.num_cis = 0;
             break;
         case GATTSERVICE_SUBEVENT_ASCS_SERVER_ENABLE:
-            ascs_server_current_ase_id = gattservice_subevent_ascs_server_enable_get_ase_id(packet);
-            ascs_server_current_client_con_handle = gattservice_subevent_ascs_server_enable_get_con_handle(packet);
-            MESSAGE("ASCS: ENABLE ase_id %d", ascs_server_current_ase_id);
-            audio_stream_control_service_server_streamendpoint_enable(ascs_server_current_client_con_handle, ascs_server_current_ase_id);
+            ase_id = gattservice_subevent_ascs_server_enable_get_ase_id(packet);
+            con_handle = gattservice_subevent_ascs_server_enable_get_con_handle(packet);
+            MESSAGE("ASCS: ENABLE ase_id %d", ase_id);
+            audio_stream_control_service_server_streamendpoint_enable(con_handle, ase_id);
             // trigger (potential) Receiver Start Ready
             btstack_run_loop_remove_timer(&ascs_server_start_ready_timer);
             btstack_run_loop_set_timer_handler(&ascs_server_start_ready_timer,
@@ -425,38 +423,38 @@ static void ascs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
             break;
         case GATTSERVICE_SUBEVENT_ASCS_SERVER_METADATA:
             con_handle = gattservice_subevent_ascs_server_metadata_get_con_handle(packet);
-            ascs_server_current_ase_id = gattservice_subevent_ascs_server_metadata_get_ase_id(packet);
-            MESSAGE("ASCS: METADATA_RECEIVED ase_id %d", ascs_server_current_ase_id);
-            audio_stream_control_service_server_streamendpoint_metadata_update(con_handle, ascs_server_current_ase_id, &ascs_server_audio_metadata);
+            ase_id = gattservice_subevent_ascs_server_metadata_get_ase_id(packet);
+            MESSAGE("ASCS: METADATA_RECEIVED ase_id %d", ase_id);
+            audio_stream_control_service_server_streamendpoint_metadata_update(con_handle, ase_id, &ascs_server_audio_metadata);
             break;
         case GATTSERVICE_SUBEVENT_ASCS_SERVER_START_READY:
-            ascs_server_current_ase_id = gattservice_subevent_ascs_server_start_ready_get_ase_id(packet);
+            ase_id = gattservice_subevent_ascs_server_start_ready_get_ase_id(packet);
             con_handle = gattservice_subevent_ascs_server_start_ready_get_con_handle(packet);
-            MESSAGE("ASCS: START_READY ase_id %d", ascs_server_current_ase_id);
-            audio_stream_control_service_server_streamendpoint_receiver_start_ready(con_handle, ascs_server_current_ase_id);
+            MESSAGE("ASCS: START_READY ase_id %d", ase_id);
+            audio_stream_control_service_server_streamendpoint_receiver_start_ready(con_handle, ase_id);
             // if this is a SOURCE ASE, start streaming
-            cis_handle = audio_stream_control_service_server_streamendpoint_cis_get_handle(con_handle, ascs_server_current_ase_id);
-            MESSAGE("CSI: request to send ase_id %u, cis handle 0x%04x", ascs_server_current_ase_id, cis_handle);
+            cis_handle = audio_stream_control_service_server_streamendpoint_cis_get_handle(con_handle, ase_id);
+            MESSAGE("CSI: request to send ase_id %u, cis handle 0x%04x", ase_id, cis_handle);
             cis_con_handles[cig.num_cis++] = cis_handle;
             hci_request_cis_can_send_now_events(cis_handle);
             break;
         case GATTSERVICE_SUBEVENT_ASCS_SERVER_STOP_READY:
-            ascs_server_current_ase_id = gattservice_subevent_ascs_server_stop_ready_get_ase_id(packet);
+            ase_id = gattservice_subevent_ascs_server_stop_ready_get_ase_id(packet);
             con_handle = gattservice_subevent_ascs_server_stop_ready_get_con_handle(packet);
-            MESSAGE("ASCS: STOP_READY ase_id %d", ascs_server_current_ase_id);
-            audio_stream_control_service_server_streamendpoint_receiver_stop_ready(con_handle, ascs_server_current_ase_id);
+            MESSAGE("ASCS: STOP_READY ase_id %d", ase_id);
+            audio_stream_control_service_server_streamendpoint_receiver_stop_ready(con_handle, ase_id);
             break;
         case GATTSERVICE_SUBEVENT_ASCS_SERVER_DISABLE:
-            ascs_server_current_ase_id = gattservice_subevent_ascs_server_disable_get_ase_id(packet);
+            ase_id = gattservice_subevent_ascs_server_disable_get_ase_id(packet);
             con_handle = gattservice_subevent_ascs_server_disable_get_con_handle(packet);
-            MESSAGE("ASCS: DISABLING ase_id %d", ascs_server_current_ase_id);
-            audio_stream_control_service_server_streamendpoint_disable(con_handle, ascs_server_current_ase_id);
+            MESSAGE("ASCS: DISABLING ase_id %d", ase_id);
+            audio_stream_control_service_server_streamendpoint_disable(con_handle, ase_id);
             break;
         case GATTSERVICE_SUBEVENT_ASCS_SERVER_RELEASE:
-            ascs_server_current_ase_id            = gattservice_subevent_ascs_server_release_get_ase_id(packet);
-            ascs_server_current_client_con_handle = gattservice_subevent_ascs_server_release_get_con_handle(packet);
-            MESSAGE("ASCS: RELEASE ase_id %d", ascs_server_current_ase_id);
-            audio_stream_control_service_server_streamendpoint_release(ascs_server_current_client_con_handle, ascs_server_current_ase_id);
+            ase_id            = gattservice_subevent_ascs_server_release_get_ase_id(packet);
+            con_handle = gattservice_subevent_ascs_server_release_get_con_handle(packet);
+            MESSAGE("ASCS: RELEASE ase_id %d", ase_id);
+            audio_stream_control_service_server_streamendpoint_release(con_handle, ase_id);
             // Client request: Release. Accept (enter Releasing State), and trigger Releasing
             // TODO: find better approach
             btstack_run_loop_remove_timer(&ascs_server_released_timer);
@@ -466,10 +464,10 @@ static void ascs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
             break;
 
         case GATTSERVICE_SUBEVENT_ASCS_SERVER_RELEASED:
-            ascs_server_current_ase_id = gattservice_subevent_ascs_server_released_get_ase_id(packet);
+            ase_id = gattservice_subevent_ascs_server_released_get_ase_id(packet);
             con_handle = gattservice_subevent_ascs_server_released_get_con_handle(packet);
-            MESSAGE("ASCS: RELEASED ase_id %d", ascs_server_current_ase_id);
-            audio_stream_control_service_server_streamendpoint_released(con_handle, ascs_server_current_ase_id, true);
+            MESSAGE("ASCS: RELEASED ase_id %d", ase_id);
+            audio_stream_control_service_server_streamendpoint_released(con_handle, ase_id, true);
             break;
 
         default:
