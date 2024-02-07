@@ -815,9 +815,10 @@ static void ascs_server_control_point_operation_prepare_response_for_metadata_up
 
     uint16_t metadata_type;
     uint8_t reject_code = 0;
+    uint8_t reason = 0;
 
     if ((metadata->metadata_mask & (1 << (uint16_t) LE_AUDIO_METADATA_TYPE_RFU) ) != 0 ){
-        ascs_server_update_control_point_operation_response(connection, ase_index, ASCS_ERROR_CODE_REJECTED_METADATA, 0);
+        ascs_server_update_control_point_operation_response(connection, ase_index, ASCS_ERROR_CODE_REJECTED_METADATA, metadata->unsupported_type);
         return;
     }
 
@@ -826,13 +827,17 @@ static void ascs_server_control_point_operation_prepare_response_for_metadata_up
 
             switch ((le_audio_metadata_type_t)metadata_type){
                 case LE_AUDIO_METADATA_TYPE_PREFERRED_AUDIO_CONTEXTS:
-                    if (metadata->preferred_audio_contexts_mask >= LE_AUDIO_CONTEXT_MASK_RFU){
+                    if ((metadata->preferred_audio_contexts_mask == 0) ||
+                        (metadata->preferred_audio_contexts_mask >= LE_AUDIO_CONTEXT_MASK_RFU)){
                         reject_code = ASCS_ERROR_CODE_INVALID_METADATA;
+                        reason = ASCS_REJECT_REASON_CODEC_SPECIFIC_CONFIGURATION;
                     }
                     break;
                 case LE_AUDIO_METADATA_TYPE_STREAMING_AUDIO_CONTEXTS:
-                    if (metadata->streaming_audio_contexts_mask >= LE_AUDIO_CONTEXT_MASK_RFU){
+                    if ((metadata->streaming_audio_contexts_mask == 0) ||
+                        (metadata->streaming_audio_contexts_mask >= LE_AUDIO_CONTEXT_MASK_RFU)){
                         reject_code = ASCS_ERROR_CODE_INVALID_METADATA;
+                        reason = ASCS_REJECT_REASON_CODEC_SPECIFIC_CONFIGURATION;
                     }
                     break;
                 case LE_AUDIO_METADATA_TYPE_PARENTAL_RATING:
@@ -846,7 +851,7 @@ static void ascs_server_control_point_operation_prepare_response_for_metadata_up
         }
     }
     if (reject_code != 0){
-        ascs_server_update_control_point_operation_response(connection, ase_index, reject_code, 0);
+        ascs_server_update_control_point_operation_response(connection, ase_index, reject_code, reason);
     }
 }
 
@@ -988,7 +993,13 @@ ascs_server_handle_control_point_write(ascs_server_connection_t *connection, con
             for (i = 0; i < connection->response_ases_num; i++){
                 ase_id = buffer[pos++];
                 pos += le_audio_util_metadata_parse(&buffer[pos], buffer_size-pos, &metadata_config);
-                ascs_server_control_point_operation_prepare_response_for_target_state(connection, i, ase_id, ASCS_STATE_ENABLING);
+
+                if ((metadata_config.metadata_mask & (1 << LE_AUDIO_METADATA_TYPE_RFU)) != 0){
+                    connection->response[i].ase_id = ase_id;
+                    ascs_server_update_control_point_operation_response(connection, i, ASCS_ERROR_CODE_UNSUPPORTED_METADATA, metadata_config.unsupported_type);
+                } else {
+                    ascs_server_control_point_operation_prepare_response_for_target_state(connection, i, ase_id, ASCS_STATE_ENABLING);
+                }
             }
             ascs_server_schedule_task(connection, ASCS_TASK_SEND_CONTROL_POINT_OPERATION_RESPONSE);
 
