@@ -301,7 +301,6 @@ static void ascs_server_handle_disconnect(hci_con_handle_t con_handle){
 }
 
 static void ascs_server_start_ready_timer_handler(btstack_timer_source_t * ts){
-    MESSAGE("ASCS Server Start Ready triggered by timer");
     bool more_tasks = false;
 
     // if AES Sink and CIS established, transition to streaming
@@ -316,7 +315,6 @@ static void ascs_server_start_ready_timer_handler(btstack_timer_source_t * ts){
             le_audio_role_t role = streamendpoint->ase_characteristic->role;
             if ((state == ASCS_STATE_ENABLING) && (role == LE_AUDIO_ROLE_SINK)){
                 if (streamendpoint->cis_handle == HCI_CON_HANDLE_INVALID){
-                    MESSAGE("ASE %u, Role %u, State %u, No CIS -> Check again", ase_id, role, streamendpoint->state);
                     more_tasks = true;
                 } else {
                     MESSAGE("ASE %u, Role %u, State %u, CIS 0x%04x -> ReceiverStart Ready", ase_id, role, streamendpoint->state, streamendpoint->cis_handle);
