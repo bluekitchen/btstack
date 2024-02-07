@@ -484,26 +484,31 @@ static void ascs_server_can_send_now(void * context){
     } else if ((connection->scheduled_tasks & ASCS_TASK_SEND_CODEC_CONFIGURATION_VALUE_CHANGED) != 0){
         connection->scheduled_tasks &= ~ASCS_TASK_SEND_CODEC_CONFIGURATION_VALUE_CHANGED;
 
-        bool notification_sent = false;
         uint8_t i;
         for (i = 0; i < ascs_streamendpoint_chr_num; i++){
-            
             ascs_streamendpoint_t * streamendpoint = &connection->streamendpoints[i];
+            log_info("ascs_server_can_send_now - streamendpoint %u, notify %x", streamendpoint->ase_characteristic->ase_id, streamendpoint->ase_characteristic_value_changed_w2_notify);
+
             if (!streamendpoint->ase_characteristic_value_changed_w2_notify){
                 continue;
             }
 
-            if (!notification_sent){
-                notification_sent = true;
-                streamendpoint->ase_characteristic_value_changed_w2_notify = false;
-                streamendpoint->ase_characteristic_value_change_initiated_by_client = false;
+            streamendpoint->ase_characteristic_value_changed_w2_notify = false;
+            streamendpoint->ase_characteristic_value_change_initiated_by_client = false;
 
-                uint8_t value[25 + LE_AUDIO_MAX_CODEC_CONFIG_SIZE]; 
-                uint16_t value_size = asce_server_ase_serialize(streamendpoint, value, sizeof(value));
-                att_server_notify(connection->con_handle, streamendpoint->ase_characteristic->ase_characteristic_value_handle, &value[0], value_size);
-            } else {
+            uint8_t value[25 + LE_AUDIO_MAX_CODEC_CONFIG_SIZE];
+            uint16_t value_size = asce_server_ase_serialize(streamendpoint, value, sizeof(value));
+            uint8_t status = att_server_notify(connection->con_handle, streamendpoint->ase_characteristic->ase_characteristic_value_handle, &value[0], value_size);
+            btstack_assert(status == ERROR_CODE_SUCCESS);
+            break;
+        }
+
+        // more?
+        for (i = 0; i < ascs_streamendpoint_chr_num; i++) {
+            ascs_streamendpoint_t *streamendpoint = &connection->streamendpoints[i];
+            if (streamendpoint->ase_characteristic_value_changed_w2_notify) {
+                log_info("ascs_server_can_send_now - streamendpoint %u, still needs notify %x", streamendpoint->ase_characteristic->ase_id, streamendpoint->ase_characteristic_value_changed_w2_notify);
                 connection->scheduled_tasks |= ASCS_TASK_SEND_CODEC_CONFIGURATION_VALUE_CHANGED;
-                break;
             }
         }
     }
@@ -1349,10 +1354,8 @@ static void ascs_server_streamendpoint_schedule_value_changed_task(ascs_server_c
 
     if (streamendpoint->ase_characteristic_client_configuration != 0){
         log_debug("streamendpoint ase_characteristic_client_configuration %u", streamendpoint->ase_characteristic_client_configuration);
-        if (!streamendpoint->ase_characteristic_value_changed_w2_notify){
-            streamendpoint->ase_characteristic_value_changed_w2_notify = true;
-            ascs_server_schedule_task(client, ASCS_TASK_SEND_CODEC_CONFIGURATION_VALUE_CHANGED);
-        }
+        streamendpoint->ase_characteristic_value_changed_w2_notify = true;
+        ascs_server_schedule_task(client, ASCS_TASK_SEND_CODEC_CONFIGURATION_VALUE_CHANGED);
     }
 }
 
