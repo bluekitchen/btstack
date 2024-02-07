@@ -51,6 +51,10 @@
 extern "C" {
 #endif
 
+#ifndef ASCS_SERVER_WRITE_LONG_MAX
+#define ASCS_SERVER_WRITE_LONG_MAX 100
+#endif
+
 /* API_START */
 
 /**
@@ -64,6 +68,9 @@ extern "C" {
 typedef struct {
     hci_con_handle_t con_handle;
     ascs_streamendpoint_t streamendpoints[ASCS_STREAMENDPOINTS_MAX_NUM];
+
+    uint8_t  write_long_buffer[ASCS_SERVER_WRITE_LONG_MAX];
+    uint16_t write_long_length;
 
     // High priority Control Point Operation responses - assumed that are handled serially
     // followed by lower priority characteristic value changes, handled asynchronously

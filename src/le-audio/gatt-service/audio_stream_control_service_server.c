@@ -1113,19 +1113,54 @@ ascs_server_handle_control_point_write(ascs_server_connection_t *connection, con
 static int ascs_server_write_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
     UNUSED(offset);
 
-    // only handle regular write request/write without response for other characteristics
-    if (transaction_mode != ATT_TRANSACTION_MODE_NONE) return 0;
-
+    ascs_server_connection_t * connection = ascs_server_get_remote_client_for_con_handle(con_handle);
     if (attribute_handle == ascs_ase_control_point_handle){
-        ascs_server_connection_t * connection = ascs_server_get_remote_client_for_con_handle(con_handle);
-        if (connection == NULL){
-            return 0;
-        } else {
-            return ascs_server_handle_control_point_write(connection, buffer, buffer_size);
+        uint32_t new_length;
+        if (connection != NULL){
+            switch (transaction_mode){
+                case ATT_TRANSACTION_MODE_NONE:
+                    return ascs_server_handle_control_point_write(connection, buffer, buffer_size);
+                case ATT_TRANSACTION_MODE_ACTIVE:
+                    // store in buffer
+                    new_length = (uint32_t) offset + buffer_size;
+                    if (new_length <= sizeof(connection->write_long_buffer)){
+                        log_info("write long, offset %u, len %u -> new len %u", offset, buffer_size, new_length);
+                        memcpy(&connection->write_long_buffer[offset], buffer, buffer_size);
+                        connection->write_long_length = new_length;
+                    } else {
+                        return ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH;
+                    }
+                    break;
+                default:
+                    break;
+            }
         }
+        return 0;
     }
 
-    ascs_server_connection_t * connection = ascs_server_get_remote_client_for_con_handle(con_handle);
+    switch (transaction_mode){
+        case ATT_TRANSACTION_MODE_EXECUTE:
+            // execute contol point operation
+            if (connection != NULL){
+                uint16_t len = connection->write_long_length;
+                log_info("execute new len %u", len);
+                connection->write_long_length = 0;
+                return ascs_server_handle_control_point_write(connection, connection->write_long_buffer,  len);
+            }
+            break;
+        case ATT_TRANSACTION_MODE_CANCEL:
+            // reset buffer on cancel
+            if (connection != NULL) {
+                connection->write_long_length = 0;
+            }
+            return 0;
+        case ATT_TRANSACTION_MODE_NONE:
+            break;
+        default:
+            // only handle regular write request/write without response for other characteristics
+            return 0;
+    }
+
     if (connection == NULL){
         connection = ascs_server_add_client(con_handle);
         
