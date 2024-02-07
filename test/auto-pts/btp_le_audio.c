@@ -264,6 +264,29 @@ static const ascs_streamendpoint_characteristic_t * ascs_server_get_streamenpoin
     return NULL;
 }
 
+static void ascs_server_stop_streaming(uint8_t ase_id){
+    uint8_t i;
+    for (i=0;i<ASCS_NUM_CLIENTS;i++) {
+        ascs_server_connection_t *connection = &ascs_clients[i];
+        uint8_t j;
+        for (j = 0; j < ASCS_NUM_STREAMENDPOINT_CHARACTERISTICS; j++) {
+            ascs_streamendpoint_t *streamendpoint = &connection->streamendpoints[j];
+            le_audio_role_t role = streamendpoint->ase_characteristic->role;
+            if ((streamendpoint->ase_characteristic->ase_id == ase_id) && (role == LE_AUDIO_ROLE_SOURCE)){
+                uint8_t k;
+                hci_con_handle_t cis_handle = streamendpoint->cis_handle;
+                for (k=0;k<cig.num_cis;k++){
+                    if (cis_con_handles[k] == cis_handle){
+                        cis_con_handles[k] = HCI_CON_HANDLE_INVALID;
+                        MESSAGE("ASCS Server: stop streaming, cis handle %u", cis_handle);
+                    }
+                }
+            }
+        }
+    }
+
+}
+
 static void ascs_server_released_timer_handler(btstack_timer_source_t * ts){
     UNUSED(ts);
     uint8_t i;
@@ -447,6 +470,7 @@ static void ascs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
             con_handle = gattservice_subevent_ascs_server_disable_get_con_handle(packet);
             MESSAGE("ASCS: DISABLING ase_id %d", ase_id);
             audio_stream_control_service_server_streamendpoint_disable(con_handle, ase_id);
+            ascs_server_stop_streaming(ase_id);
             break;
         case GATTSERVICE_SUBEVENT_ASCS_SERVER_RELEASE:
             ase_id            = gattservice_subevent_ascs_server_release_get_ase_id(packet);
@@ -457,7 +481,7 @@ static void ascs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
             // TODO: find better approach
             btstack_run_loop_remove_timer(&ascs_server_released_timer);
             btstack_run_loop_set_timer_handler(&ascs_server_released_timer, &ascs_server_released_timer_handler);
-            btstack_run_loop_set_timer(&ascs_server_released_timer, 100);
+            btstack_run_loop_set_timer(&ascs_server_released_timer, 500);
             btstack_run_loop_add_timer(&ascs_server_released_timer);
             break;
 
