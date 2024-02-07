@@ -333,6 +333,7 @@ uint16_t le_audio_util_metadata_parse(const uint8_t *buffer, uint8_t buffer_size
                 break;
             default:
                 metadata->metadata_mask |= (1 << LE_AUDIO_METADATA_TYPE_RFU);
+                metadata->unsupported_type = ltv_type;
                 break;
         }
         offset += ltv_len;
