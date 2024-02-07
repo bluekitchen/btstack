@@ -1830,7 +1830,21 @@ static void stdin_process(char cmd){
     const uint8_t unpair[] = { 0, 1,2,3,4,5,6};
     const uint8_t value_on  = 1;
     const uint8_t value_off = 0;
-    const uint8_t public_adv[]  = { 0x08, 0x00, 0x08, 0x06, 'T', 'e', 's', 't', 'e', 'r', 0xff, 0xff, 0xff, 0xff, 0x00, };
+    // const uint8_t public_adv[]  = { 0x08, 0x00, 0x08, 0x06, 'T', 'e', 's', 't', 'e', 'r', 0xff, 0xff, 0xff, 0xff, 0x00, };
+    static uint8_t public_adv[] = {
+            14, 0,
+            // Flags general discoverable
+            // 0x02, BLUETOOTH_DATA_TYPE_FLAGS, APP_AD_FLAGS,
+            // RSI
+            // 0x07, BLUETOOTH_DATA_TYPE_RESOLVABLE_SET_IDENTIFIER, 0x28, 0x31, 0xB6, 0x4C, 0x39, 0xCC,
+            // ASCS
+            BLUETOOTH_DATA_TYPE_INCOMPLETE_LIST_OF_16_BIT_SERVICE_CLASS_UUIDS, 0x02, 0x4E, 0x18,
+            BLUETOOTH_DATA_TYPE_SERVICE_DATA_16_BIT_UUID,  0x08, 0x4E, 0x18,  0x01,  0x07, 0x00,  0x00, 0x00,  0x00,
+            // Name
+            // 0x04, BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME, 'I', 'U', 'T',
+            0xff, 0xff, 0xff, 0xff, 0x00,
+    };
+
     const uint8_t rpa_adv[]     = { 0x08, 0x00, 0x08, 0x06, 'T', 'e', 's', 't', 'e', 'r', 0xff, 0xff, 0xff, 0xff, 0x02, };
     const uint8_t non_rpa_adv[] = { 0x08, 0x00, 0x08, 0x06, 'T', 'e', 's', 't', 'e', 'r', 0xff, 0xff, 0xff, 0xff, 0x03, };
     const uint8_t gc_read_0009[] = { 0, 1,2,3,4,5,6, 0x09, 0x00};
@@ -1890,6 +1904,7 @@ static void stdin_process(char cmd){
                     btp_packet_handler(BTP_SERVICE_ID_GAP, BTP_GAP_OP_START_DISCOVERY, 0, 1, &general_le_scan);
                     break;
                 case 'a':
+                    btp_packet_handler(BTP_SERVICE_ID_GAP, BTP_GAP_SET_EXTENDED_ADVERTISING, 0, sizeof(value_on), &value_on);
                     btp_packet_handler(BTP_SERVICE_ID_GAP, BTP_GAP_OP_START_ADVERTISING, 0, sizeof(public_adv), public_adv);
                     break;
                 case 'r':
