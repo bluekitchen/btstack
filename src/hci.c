@@ -10404,10 +10404,11 @@ static void hci_iso_notify_can_send_now(void){
             if ((iso_stream != NULL) && iso_stream->emit_ready_to_send){
                 iso_stream->emit_ready_to_send = false;
                 hci_emit_bis_can_send_now(big, i);
-                break;
+                if (hci_stack->hci_packet_buffer_reserved) return;
             }
         }
     }
+
 
     // CIS
     btstack_linked_list_iterator_init(&it, &hci_stack->iso_streams);
@@ -10417,6 +10418,7 @@ static void hci_iso_notify_can_send_now(void){
             (iso_stream->num_packets_sent < hci_stack->iso_packets_to_queue)){
             iso_stream->can_send_now_requested = false;
             hci_emit_cis_can_send_now(iso_stream->cis_handle);
+            if (hci_stack->hci_packet_buffer_reserved) return;
         }
     }
 }
