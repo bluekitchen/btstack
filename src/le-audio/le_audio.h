@@ -321,6 +321,9 @@ typedef struct {
     uint16_t vendor_specific_company_id;
     uint8_t  vendor_specific_metadata_length;                              
     uint8_t  vendor_specific_metadata[LE_AUDIO_VENDOR_SPECIFIC_METADATA_MAX_LENGTH];
+
+    uint8_t unsupported_type;
+
 } le_audio_metadata_t;
 
 typedef struct {
