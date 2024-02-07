@@ -135,9 +135,6 @@ set(SOURCES
 )
 list(SORT SOURCES)
 
-# create static lib
-add_library(btstack STATIC ${SOURCES})
-
 # pkgconfig required to link libusb
 find_package(PkgConfig REQUIRED)
 
@@ -156,6 +153,9 @@ if(PORTAUDIO_FOUND)
 	link_libraries(${PORTAUDIO_LIBRARIES})
 	add_compile_definitions(HAVE_PORTAUDIO)
 endif()
+
+# create static lib
+add_library(btstack STATIC ${SOURCES})
 
 # pthread
 find_package(Threads)
