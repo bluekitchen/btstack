@@ -1230,8 +1230,8 @@ void audio_stream_control_service_server_init(
     // get service handle range
     uint16_t start_handle = 0;
     uint16_t end_handle   = 0xffff;
-    int service_found = gatt_server_get_handle_range_for_service_with_uuid16(ORG_BLUETOOTH_SERVICE_AUDIO_STREAM_CONTROL_SERVICE, &start_handle, &end_handle);
-    btstack_assert(service_found != 0);
+    bool service_found = gatt_server_get_handle_range_for_service_with_uuid16(ORG_BLUETOOTH_SERVICE_AUDIO_STREAM_CONTROL_SERVICE, &start_handle, &end_handle);
+    btstack_assert(service_found);
     UNUSED(service_found);
 
 #ifdef ENABLE_TESTING_SUPPORT
@@ -1243,10 +1243,9 @@ void audio_stream_control_service_server_init(
     ascs_streamendpoint_characteristics_id_counter = 0;
     ascs_streamendpoint_characteristics = streamendpoint_characteristics;
 
-    ascs_server_streamenpoint_init(streamendpoint_characteristics_num, &streamendpoint_characteristics[0], 
-        start_handle, end_handle, LE_AUDIO_ROLE_SINK);
-    ascs_server_streamenpoint_init(streamendpoint_characteristics_num - ascs_streamendpoint_chr_num, &streamendpoint_characteristics[ascs_streamendpoint_chr_num], 
-        start_handle, end_handle, LE_AUDIO_ROLE_SOURCE);
+    // lookup sinks then sources
+    ascs_server_streamenpoint_init(streamendpoint_characteristics_num, streamendpoint_characteristics, start_handle, end_handle, LE_AUDIO_ROLE_SINK);
+    ascs_server_streamenpoint_init(streamendpoint_characteristics_num, streamendpoint_characteristics, start_handle, end_handle, LE_AUDIO_ROLE_SOURCE);
 
     ascs_clients_num = clients_num;
     ascs_clients = clients;
