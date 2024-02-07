@@ -272,10 +272,38 @@ static void ascs_server_released_timer_handler(btstack_timer_source_t * ts){
     audio_stream_control_service_server_streamendpoint_released(ascs_server_current_client_con_handle, ascs_server_current_ase_id, true);
 }
 
-static void ascs_server_start_readytimer_handler(btstack_timer_source_t * ts){
-    UNUSED(ts);
+static void ascs_server_start_ready_timer_handler(btstack_timer_source_t * ts){
     MESSAGE("ASCS Server Start Ready triggered by timer");
-    audio_stream_control_service_server_streamendpoint_receiver_start_ready(ascs_server_current_client_con_handle, ascs_server_current_ase_id);
+    bool more_tasks = false;
+
+    // if AES Sink and CIS established, transition to streaming
+    uint8_t i;
+    for (i=0;i<ASCS_NUM_CLIENTS;i++) {
+        ascs_server_connection_t *connection = &ascs_clients[i];
+        uint8_t j;
+        if (connection->con_handle == ascs_server_current_client_con_handle){
+            for (j = 0; j < ASCS_NUM_STREAMENDPOINT_CHARACTERISTICS; j++) {
+                ascs_streamendpoint_t *streamendpoint = &connection->streamendpoints[j];
+                ascs_state_t state = streamendpoint->state;
+                uint8_t ase_id = streamendpoint->ase_characteristic->ase_id;
+                le_audio_role_t role = streamendpoint->ase_characteristic->role;
+                if ((state == ASCS_STATE_ENABLING) && (role == LE_AUDIO_ROLE_SINK)){
+                    if (streamendpoint->cis_handle == HCI_CON_HANDLE_INVALID){
+                        MESSAGE("ASE %u, Role %u, State %u, No CIS -> Check again", ase_id, role, streamendpoint->state);
+                        more_tasks = true;
+                    } else {
+                        MESSAGE("ASE %u, Role %u, State %u, CIS 0x%04x -> ReceiverStart Ready", ase_id, role, streamendpoint->state, streamendpoint->cis_handle);
+                        audio_stream_control_service_server_streamendpoint_receiver_start_ready(connection->con_handle, ase_id);
+                    }
+                }
+            }
+        }
+    }
+
+    if (more_tasks){
+        btstack_run_loop_set_timer(ts, 100);
+        btstack_run_loop_add_timer(ts);
+    }
 }
 
 static void ascs_server_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -360,27 +388,12 @@ static void ascs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
             ascs_server_current_client_con_handle = gattservice_subevent_ascs_server_enable_get_con_handle(packet);
             MESSAGE("ASCS: ENABLE ase_id %d", ascs_server_current_ase_id);
             audio_stream_control_service_server_streamendpoint_enable(ascs_server_current_client_con_handle, ascs_server_current_ase_id);
-            // if AES Sink and CIS already established, schedule transition to streaming
-            // lookup ASE by { CIS Handle, Role == SINK } and report as ready
-            for (i=0;i<ASCS_NUM_CLIENTS;i++) {
-                ascs_server_connection_t *connection = &ascs_clients[i];
-                uint8_t j;
-                if (connection->con_handle == ascs_server_current_client_con_handle){
-                    for (j = 0; j < ASCS_NUM_STREAMENDPOINT_CHARACTERISTICS; j++) {
-                        ascs_streamendpoint_t *streamendpoint = &connection->streamendpoints[j];
-                        uint8_t ase_id = streamendpoint->ase_characteristic->ase_id;
-                        le_audio_role_t role = streamendpoint->ase_characteristic->role;
-                        if ((ase_id == ascs_server_current_ase_id) && (role == LE_AUDIO_ROLE_SINK)){
-                            MESSAGE("ASE %u, Role %u, State %u, CIS 0x%04x -> Schedule Start Ready", ase_id, role, streamendpoint->state, streamendpoint->cis_handle);
-                            // TODO: find better approach
-                            btstack_run_loop_remove_timer(&ascs_server_start_ready_timer);
-                            btstack_run_loop_set_timer_handler(&ascs_server_start_ready_timer, &ascs_server_start_readytimer_handler);
-                            btstack_run_loop_set_timer(&ascs_server_start_ready_timer, 100);
-                            btstack_run_loop_add_timer(&ascs_server_start_ready_timer);
-                        }
-                    }
-                }
-            }
+            // trigger (potential) Receiver Start Ready
+            btstack_run_loop_remove_timer(&ascs_server_start_ready_timer);
+            btstack_run_loop_set_timer_handler(&ascs_server_start_ready_timer,
+                                               &ascs_server_start_ready_timer_handler);
+            btstack_run_loop_set_timer(&ascs_server_start_ready_timer, 100);
+            btstack_run_loop_add_timer(&ascs_server_start_ready_timer);
             break;
         case GATTSERVICE_SUBEVENT_ASCS_SERVER_METADATA:
             con_handle = gattservice_subevent_ascs_server_metadata_get_con_handle(packet);
