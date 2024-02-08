@@ -121,7 +121,7 @@ static uint16_t gatt_service_client_characteristic_value_handle2uuid16(mics_clie
     return 0;
 }
 
-static void mics_client_emit_number(uint16_t cid, btstack_packet_handler_t event_callback, uint8_t subevent, const uint8_t * data, uint8_t data_size, uint8_t expected_data_size){
+static void mics_client_emit_number(uint16_t cid, btstack_packet_handler_t event_callback, uint8_t subevent, const uint8_t * data, uint8_t data_size, uint8_t expected_data_size, uint8_t status){
     UNUSED(data_size);
     btstack_assert(event_callback != NULL);
     
@@ -129,7 +129,7 @@ static void mics_client_emit_number(uint16_t cid, btstack_packet_handler_t event
         return;
     }
     
-    uint8_t event[9];
+    uint8_t event[10];
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
     event[pos++] = 3 + data_size;
@@ -138,7 +138,7 @@ static void mics_client_emit_number(uint16_t cid, btstack_packet_handler_t event
     pos+= 2;
     reverse_bytes(data, &event[pos], data_size);
     pos += data_size;
-
+    event[pos++] = status;
     (*event_callback)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
@@ -177,7 +177,7 @@ static void mics_client_emit_read_event(mics_client_connection_t * connection, u
 
     switch (characteristic_uuid16){
         case ORG_BLUETOOTH_CHARACTERISTIC_MUTE:
-           mics_client_emit_number(cid, event_callback, GATTSERVICE_SUBEVENT_MICS_CLIENT_MUTE, data, data_size, 4);
+           mics_client_emit_number(cid, event_callback, GATTSERVICE_SUBEVENT_MICS_CLIENT_MUTE, data, data_size, 4, ATT_ERROR_SUCCESS);
            break;
         default:
             btstack_assert(false);
@@ -198,7 +198,7 @@ static void mics_client_emit_notify_event(mics_client_connection_t * connection,
 
     switch (characteristic_uuid16){
         case ORG_BLUETOOTH_CHARACTERISTIC_MUTE:
-            mics_client_emit_number(cid, event_callback, GATTSERVICE_SUBEVENT_MICS_CLIENT_MUTE, data, data_size, 1);
+            mics_client_emit_number(cid, event_callback, GATTSERVICE_SUBEVENT_MICS_CLIENT_MUTE, data, data_size, 1,  ATT_ERROR_SUCCESS);
            break;
         default:
             btstack_assert(false);
