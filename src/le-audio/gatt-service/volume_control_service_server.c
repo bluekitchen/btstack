@@ -50,20 +50,10 @@
 #include "bluetooth_gatt.h"
 #include "btstack_debug.h"
 
+#include "le-audio/gatt-service/volume_control_service_util.h"
 #include "le-audio/gatt-service/volume_control_service_server.h"
 #include "le-audio/gatt-service/audio_input_control_service_server.h"
 #include "le-audio/gatt-service/volume_offset_control_service_server.h"
-
-typedef enum {
-    VCS_OPCODE_RELATIVE_VOLUME_DOWN = 0x00,
-    VCS_OPCODE_RELATIVE_VOLUME_UP,
-    VCS_OPCODE_UNMUTE_RELATIVE_VOLUME_DOWN,
-    VCS_OPCODE_UNMUTE_RELATIVE_VOLUME_UP,
-    VCS_OPCODE_SET_ABSOLUTE_VOLUME,
-    VCS_OPCODE_UNMUTE,
-    VCS_OPCODE_MUTE,
-    VCS_OPCODE_RFU
-} vcs_opcode_t;
 
 #define VCS_TASK_SEND_VOLUME_SETTING                0x01
 #define VCS_TASK_SEND_VOLUME_FLAGS                  0x02
