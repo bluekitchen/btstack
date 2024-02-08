@@ -45,6 +45,7 @@
 
 #include <stdint.h>
 #include "le-audio/le_audio.h"
+#include "le-audio/gatt-service/volume_offset_control_service_util.h"
 
 #if defined __cplusplus
 extern "C" {
@@ -58,15 +59,10 @@ extern "C" {
  *
  */
 #define VOCS_MAX_NUM_SERVICES 5
-#define VOCS_MAX_AUDIO_OUTPUT_DESCRIPTION_LENGTH          30
 
 #define VOCS_ERROR_CODE_INVALID_CHANGE_COUNTER          0x80
 #define VOCS_ERROR_CODE_OPCODE_NOT_SUPPORTED            0x81
 #define VOCS_ERROR_CODE_VALUE_OUT_OF_RANGE              0x82
-
-typedef enum {
-    VOCS_OPCODE_SET_VOLUME_OFFSET        = 0x01
-} vocs_opcode_t;
 
 typedef struct {
     int16_t  volume_offset;
