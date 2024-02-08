@@ -177,8 +177,12 @@
 #include "le-audio/gatt-service/published_audio_capabilities_service_util.h"
 #include "le-audio/gatt-service/telephone_bearer_service_server.h"
 #include "le-audio/gatt-service/telephone_bearer_service_util.h"
+#include "le-audio/gatt-service/volume_control_service_client.h"
 #include "le-audio/gatt-service/volume_control_service_server.h"
+#include "le-audio/gatt-service/volume_control_service_util.h"
+#include "le-audio/gatt-service/volume_offset_control_service_client.h"
 #include "le-audio/gatt-service/volume_offset_control_service_server.h"
+#include "le-audio/gatt-service/volume_offset_control_service_util.h"
 #endif
 
 #ifdef ENABLE_MESH
