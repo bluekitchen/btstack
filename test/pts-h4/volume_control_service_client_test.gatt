@@ -1,0 +1,12 @@
+// add Audio Input Control Service (it will be included into VCS bellow)
+#import <audio_input_control_service.gatt>
+
+// add Audio Input Control Service (it will be included into VCS bellow)
+#import <audio_input_control_service.gatt>
+
+// add Volume Offset Control Service (it will be included into VCS bellow)
+#import <volume_offset_control_service.gatt>
+
+// add Volume Control Service
+#import <volume_control_service.gatt>
+
