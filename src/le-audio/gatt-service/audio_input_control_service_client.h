@@ -55,8 +55,6 @@
 extern "C" {
 #endif
 
-// number of characteristics in Media Control Service
-#define AUDIO_INPUT_CONTROL_SERVICE_CLIENT_NUM_CHARACTERISTICS 6
 
 /** 
  * @text The Media Control Service Client 
@@ -88,6 +86,7 @@ typedef struct {
     } data;
     uint8_t  change_counter;
 
+    gatt_service_client_characteristic_t characteristics_storage[AUDIO_INPUT_CONTROL_SERVICE_NUM_CHARACTERISTICS];
     btstack_context_callback_registration_t gatt_query_can_send_now;
 } aics_client_connection_t;
 
@@ -120,7 +119,6 @@ uint8_t audio_input_control_service_client_connect(
     hci_con_handle_t con_handle,
     aics_client_connection_t * connection,
     uint16_t service_start_handle, uint16_t service_end_handle, uint8_t service_index,
-    gatt_service_client_characteristic_t * characteristics_storage, uint8_t characteristics_num,
     btstack_packet_handler_t packet_handler);
 
 uint8_t audio_input_control_service_client_read_input_description(aics_client_connection_t * connection);
@@ -140,10 +138,10 @@ uint8_t audio_input_control_service_client_write_automatic_gain_mode(aics_client
 
 /**
  * @brief Disconnect.
- * @param aics_cid
+ * @param connection
  * @return status
  */
-uint8_t audio_input_control_service_client_disconnect(uint16_t aics_cid);
+uint8_t audio_input_control_service_client_disconnect(aics_client_connection_t * connection);
 
 
 /**
