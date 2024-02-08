@@ -422,7 +422,7 @@ static void aics_client_packet_handler_internal(uint8_t packet_type, uint16_t ch
                     status = gatt_service_client_can_query_characteristic(connection_helper, AICS_CLIENT_CHARACTERISTIC_INDEX_AUDIO_INPUT_STATE);
 
                     if (status == ERROR_CODE_SUCCESS){
-                        connection->state = AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_W2_QUERY_AICS_CHANGE_COUNTER;
+                        connection->state = AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_W2_QUERY_CHANGE_COUNTER;
                         status = aics_client_request_send_gatt_query(connection, AICS_CLIENT_CHARACTERISTIC_INDEX_AUDIO_INPUT_STATE);
                         if (status == ERROR_CODE_SUCCESS){
                             break;
@@ -466,7 +466,7 @@ static void aics_client_handle_gatt_client_event(uint8_t packet_type, uint16_t c
 
     gatt_service_client_connection_helper_t * connection_helper = NULL;
     hci_con_handle_t con_handle;
-    aics_client_connection_t * aics_connection;
+    aics_client_connection_t * connection;
 
     switch(hci_event_packet_get_type(packet)){
         case GATT_EVENT_CHARACTERISTIC_VALUE_QUERY_RESULT:
@@ -475,31 +475,31 @@ static void aics_client_handle_gatt_client_event(uint8_t packet_type, uint16_t c
 
             btstack_assert(connection_helper != NULL);
 
-            aics_connection = (aics_client_connection_t *)connection_helper;
-            switch (aics_connection->state){
-                case AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_W4_AICS_CHANGE_COUNTER_RESULT:
-                    btstack_assert(aics_connection->characteristic_index == AICS_CLIENT_CHARACTERISTIC_INDEX_AUDIO_INPUT_STATE);
+            connection = (aics_client_connection_t *)connection_helper;
+            switch (connection->state){
+                case AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_W4_CHANGE_COUNTER_RESULT:
+                    btstack_assert(connection->characteristic_index == AICS_CLIENT_CHARACTERISTIC_INDEX_AUDIO_INPUT_STATE);
                     if (gatt_event_characteristic_value_query_result_get_value_length(packet) != 4) {
 #ifdef ENABLE_TESTING_SUPPORT
                         printf("AICS Client: connection failed\n");
 #endif
-                        aics_connection->state = AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_UNINITIALISED;
+                        connection->state = AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_UNINITIALISED;
                         aics_client_emit_connected(connection_helper, ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH);
                         break;
                     }
 
-                    aics_connection->change_counter = gatt_event_characteristic_value_query_result_get_value(packet)[3];
+                    connection->change_counter = gatt_event_characteristic_value_query_result_get_value(packet)[3];
 #ifdef ENABLE_TESTING_SUPPORT
-                    printf("AICS Client: connected, change counter initialized to %d\n", aics_connection->change_counter);
+                    printf("AICS Client: connected, change counter initialized to %d\n", connection->change_counter);
 #endif
-                    aics_connection->state = AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_READY;
+                    connection->state = AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_READY;
                     // initialize change counter on connect
                     aics_client_emit_connected(connection_helper, ATT_ERROR_SUCCESS);
                     break;
 
                 case AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_W4_READ_CHARACTERISTIC_VALUE_RESULT:
-                    aics_connection->state = AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_READY;
-                    aics_client_emit_read_event(connection_helper, aics_connection->characteristic_index, ATT_ERROR_SUCCESS,
+                    connection->state = AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_READY;
+                    aics_client_emit_read_event(connection_helper, connection->characteristic_index, ATT_ERROR_SUCCESS,
                                                 gatt_event_characteristic_value_query_result_get_value(packet),
                                                 gatt_event_characteristic_value_query_result_get_value_length(packet));
                     break;
@@ -517,15 +517,15 @@ static void aics_client_handle_gatt_client_event(uint8_t packet_type, uint16_t c
             connection_helper = gatt_service_client_get_connection_for_con_handle(&aics_client, con_handle);
             btstack_assert(connection_helper != NULL);
 
-            aics_connection = (aics_client_connection_t *)connection_helper;
-            switch (aics_connection->state){
+            connection = (aics_client_connection_t *)connection_helper;
+            switch (connection->state){
                 case AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_W4_WRITE_CHARACTERISTIC_VALUE_RESULT:
-                    aics_client_emit_done_event(connection_helper, aics_connection->characteristic_index, gatt_event_query_complete_get_att_status(packet));
+                    aics_client_emit_done_event(connection_helper, connection->characteristic_index, gatt_event_query_complete_get_att_status(packet));
                     break;
                 default:
                     break;
             }
-            aics_connection->state = AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_READY;
+            connection->state = AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_READY;
             break;
 
         default:
@@ -569,8 +569,8 @@ static void aics_client_run_for_connection(void * context){
     uint8_t * value;
 
     switch (connection->state){
-        case AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_W2_QUERY_AICS_CHANGE_COUNTER:
-            connection->state = AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_W4_AICS_CHANGE_COUNTER_RESULT;
+        case AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_W2_QUERY_CHANGE_COUNTER:
+            connection->state = AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_W4_CHANGE_COUNTER_RESULT;
             (void) gatt_client_read_value_of_characteristic_using_value_handle(
                     &aics_client_handle_gatt_client_event, con_handle,
                     aics_client_value_handle_for_index(connection));
