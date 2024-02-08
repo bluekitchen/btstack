@@ -171,14 +171,6 @@ static void ots_server_reset_connection(ots_server_connection_t * connection){
     connection->oacp_opcode = OACP_OPCODE_READY;
 }
 
-static void ots_server_reset_connection_for_con_handle(hci_con_handle_t con_handle){
-    ots_server_connection_t * connection = ots_server_find_connection_for_con_handle(con_handle);
-    if (connection == NULL){
-        return;
-    }
-    ots_server_reset_connection(connection);
-}
-
 static bool ots_server_is_current_object_locked(ots_server_connection_t * connection){
     if (connection->current_object_locked){
         return true;
