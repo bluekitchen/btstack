@@ -158,6 +158,8 @@ gatt_service_client_connection_helper_t * gatt_service_client_get_connection_for
 uint16_t gatt_service_client_characteristic_index2uuid16(const gatt_service_client_helper_t * client, uint8_t index);
 btstack_packet_handler_t gatt_service_client_get_event_callback_for_connection(const gatt_service_client_connection_helper_t * connection);
 uint16_t gatt_service_client_get_cid_for_connection(const gatt_service_client_connection_helper_t * connection);
+uint16_t gatt_service_client_helper_value_handle_for_index(gatt_service_client_connection_helper_t * connection_helper, uint8_t characteristic_index);
+uint16_t gatt_service_client_helper_characteristic_uuid16_for_value_handle(const gatt_service_client_helper_t * client, gatt_service_client_connection_helper_t * connection_helper, uint16_t value_handle);
 
 uint8_t gatt_service_client_connect(
         hci_con_handle_t con_handle,

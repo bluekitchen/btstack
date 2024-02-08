@@ -98,6 +98,20 @@ uint16_t gatt_service_client_characteristic_index2uuid16(const gatt_service_clie
     return client->characteristics_desc16[index];
 }
 
+uint16_t gatt_service_client_helper_value_handle_for_index(gatt_service_client_connection_helper_t * connection_helper, uint8_t characteristic_index){
+    return connection_helper->characteristics[characteristic_index].value_handle;
+}
+
+uint16_t gatt_service_client_helper_characteristic_uuid16_for_value_handle(const gatt_service_client_helper_t * client, gatt_service_client_connection_helper_t * connection_helper, uint16_t value_handle) {
+    int i;
+    for (i = 0; i < connection_helper->characteristics_num; i++){
+        if (connection_helper->characteristics[i].value_handle == value_handle) {
+            return gatt_service_client_characteristic_index2uuid16(client, i);
+        }
+    }
+    return 0;
+}
+
 static void gatt_service_client_emit_connected(btstack_packet_handler_t event_callback, hci_con_handle_t con_handle, uint16_t cid, uint8_t status){
     btstack_assert(event_callback != NULL);
 
