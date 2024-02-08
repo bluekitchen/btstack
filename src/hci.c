@@ -1926,6 +1926,7 @@ static void hci_initializing_run(void){
             hci_send_cmd(&hci_reset);
             break;
         case HCI_INIT_SEND_BAUD_CHANGE_BCM: {
+            hci_reserve_packet_buffer();
             uint32_t baud_rate = hci_transport_uart_get_main_baud_rate();
             hci_stack->chipset->set_baudrate_command(baud_rate, hci_stack->hci_packet_buffer);
             hci_stack->substate = HCI_INIT_W4_SEND_BAUD_CHANGE_BCM;
@@ -1933,6 +1934,7 @@ static void hci_initializing_run(void){
             break;
         }
         case HCI_INIT_SET_BD_ADDR:
+            hci_reserve_packet_buffer();
             log_info("Set Public BD ADDR to %s", bd_addr_to_str(hci_stack->custom_bd_addr));
             hci_stack->chipset->set_bd_addr_command(hci_stack->custom_bd_addr, hci_stack->hci_packet_buffer);
             hci_stack->substate = HCI_INIT_W4_SET_BD_ADDR;
@@ -1948,6 +1950,7 @@ static void hci_initializing_run(void){
 
         case HCI_INIT_SEND_BAUD_CHANGE:
             if (need_baud_change) {
+                hci_reserve_packet_buffer();
                 uint32_t baud_rate = hci_transport_uart_get_main_baud_rate();
                 hci_stack->chipset->set_baudrate_command(baud_rate, hci_stack->hci_packet_buffer);
                 hci_stack->substate = HCI_INIT_W4_SEND_BAUD_CHANGE;
