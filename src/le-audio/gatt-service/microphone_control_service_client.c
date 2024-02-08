@@ -364,9 +364,6 @@ static void mics_client_packet_handler_internal(uint8_t packet_type, uint16_t ch
                                         connection->aics_connections_storage[connection->aics_connections_index].basic_connection.start_handle,
                                         connection->aics_connections_storage[connection->aics_connections_index].basic_connection.end_handle,
                                         connection->aics_connections_storage[connection->aics_connections_index].basic_connection.service_index,
-                                        &connection->aics_characteristics_storage[connection->aics_connections_index *
-                                                                                  AUDIO_INPUT_CONTROL_SERVICE_CLIENT_NUM_CHARACTERISTICS],
-                                        AUDIO_INPUT_CONTROL_SERVICE_CLIENT_NUM_CHARACTERISTICS,
                                         &mics_client_packet_handler_internal);
                                 return;
                             }
@@ -459,8 +456,6 @@ static void mics_client_handle_gatt_client_event(uint8_t packet_type, uint16_t c
                             connection->aics_connections_storage[connection->aics_connections_index].basic_connection.start_handle,
                             connection->aics_connections_storage[connection->aics_connections_index].basic_connection.end_handle,
                             connection->aics_connections_storage[connection->aics_connections_index].basic_connection.service_index,
-                            &connection->aics_characteristics_storage[connection->aics_connections_index * AUDIO_INPUT_CONTROL_SERVICE_CLIENT_NUM_CHARACTERISTICS],
-                            AUDIO_INPUT_CONTROL_SERVICE_CLIENT_NUM_CHARACTERISTICS,
                             &mics_client_packet_handler_internal);
 
                     if (status == ERROR_CODE_SUCCESS){
@@ -575,7 +570,7 @@ uint8_t microphone_control_service_client_connect(hci_con_handle_t con_handle,
     if (aics_connections_num > 0){
         btstack_assert(aics_storage_for_characteristics != NULL);
         btstack_assert(aics_connections != NULL);
-        btstack_assert(aics_characteristics_num == aics_connections_num * AUDIO_INPUT_CONTROL_SERVICE_CLIENT_NUM_CHARACTERISTICS);
+        btstack_assert(aics_characteristics_num == aics_connections_num * AUDIO_INPUT_CONTROL_SERVICE_NUM_CHARACTERISTICS);
 
         mics_connection->aics_connections_storage = aics_connections;
         mics_connection->aics_connections_max_num = aics_connections_num;
