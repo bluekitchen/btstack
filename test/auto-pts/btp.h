@@ -66,7 +66,7 @@ extern "C" {
 #define BTP_SERVICE_ID_GATT     2
 #define BTP_SERVICE_ID_L2CAP    3
 #define BTP_SERVICE_ID_MESH     4
-#define BTP_SERVICE_ID_LE_AUDIO 7
+#define BTP_SERVICE_ID_LE_AUDIO 0xf0
 
 #define BTP_OP_ERROR                            0x00
 
