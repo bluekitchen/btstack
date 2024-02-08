@@ -52,6 +52,8 @@
 #if defined __cplusplus
 extern "C" {
 #endif
+
+#define AUDIO_INPUT_CONTROL_SERVICE_NUM_CHARACTERISTICS    6
 #define AICS_MAX_AUDIO_INPUT_DESCRIPTION_LENGTH           30
 
 #define AICS_ERROR_CODE_INVALID_CHANGE_COUNTER          0x80
