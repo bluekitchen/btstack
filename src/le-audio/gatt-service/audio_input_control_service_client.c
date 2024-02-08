@@ -61,7 +61,7 @@ static void aics_client_handle_gatt_client_event(uint8_t packet_type, uint16_t c
 static void aics_client_run_for_connection(void * context);
 
 // list of uuids
-static const uint16_t aics_uuid16s[AUDIO_INPUT_CONTROL_SERVICE_CLIENT_NUM_CHARACTERISTICS] = {
+static const uint16_t aics_uuid16s[AUDIO_INPUT_CONTROL_SERVICE_NUM_CHARACTERISTICS] = {
     ORG_BLUETOOTH_CHARACTERISTIC_AUDIO_INPUT_STATE,
     ORG_BLUETOOTH_CHARACTERISTIC_GAIN_SETTINGS_ATTRIBUTE,
     ORG_BLUETOOTH_CHARACTERISTIC_AUDIO_INPUT_TYPE,
@@ -622,22 +622,24 @@ void audio_input_control_service_client_init(void){
 
 uint8_t audio_input_control_service_client_connect(hci_con_handle_t con_handle,
     aics_client_connection_t * connection, uint16_t service_start_handle, uint16_t service_end_handle, uint8_t service_index,
-    gatt_service_client_characteristic_t * characteristics, uint8_t characteristics_num, btstack_packet_handler_t packet_handler){
-
-    btstack_assert(characteristics_num > 0);
+    btstack_packet_handler_t packet_handler){
 
     connection->gatt_query_can_send_now.callback = &aics_client_run_for_connection;
     connection->gatt_query_can_send_now.context = (void *)(uintptr_t)connection->basic_connection.con_handle;
     connection->change_counter = 0;
     connection->state = AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_W4_CONNECTED;
+
     return gatt_service_client_connect_secondary_service(con_handle,
         &aics_client, &connection->basic_connection,
         ORG_BLUETOOTH_SERVICE_AUDIO_INPUT_CONTROL, service_start_handle, service_end_handle, service_index,
-        characteristics, characteristics_num, packet_handler);
+        connection->characteristics_storage, AUDIO_INPUT_CONTROL_SERVICE_NUM_CHARACTERISTICS, packet_handler);
 }
 
-uint8_t audio_input_control_service_client_disconnect(uint16_t aics_cid){
-    return gatt_service_client_disconnect(&aics_client, aics_cid);
+uint8_t audio_input_control_service_client_disconnect(aics_client_connection_t * connection){
+    if (connection == NULL){
+        return ERROR_CODE_SUCCESS;
+    }
+    return gatt_service_client_disconnect(&aics_client, connection->basic_connection.cid);
 }
 
 void audio_input_control_service_client_deinit(void){
