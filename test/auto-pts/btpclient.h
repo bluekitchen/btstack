@@ -74,6 +74,8 @@ void btp_append_remote_address(void);
 
 void btp_send(uint8_t service_id, uint8_t opcode, uint8_t controller_index, uint16_t length, const uint8_t *data);
 
+uint32_t btp_gap_current_settings(void);
+
 #if defined __cplusplus
 }
 #endif
