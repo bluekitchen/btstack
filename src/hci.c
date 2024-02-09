@@ -3288,6 +3288,18 @@ static void handle_command_status_event(uint8_t * packet, uint16_t size) {
                 hci_iso_stream_requested_finalize(HCI_ISO_GROUP_ID_INVALID);
             }
             break;
+        case HCI_OPCODE_HCI_LE_CREATE_BIG:
+            if (status != ERROR_CODE_SUCCESS){
+                log_info("TODO: handle Create BIG failed");
+                hci_stack->iso_active_operation_type = HCI_ISO_TYPE_INVALID;
+            }
+            break;
+        case HCI_OPCODE_HCI_LE_BIG_CREATE_SYNC:
+            if (status != ERROR_CODE_SUCCESS){
+                log_info("TODO: handle BIG Sync failed");
+                hci_stack->iso_active_operation_type = HCI_ISO_TYPE_INVALID;
+            }
+            break;
 #endif /* ENABLE_LE_ISOCHRONOUS_STREAMS */
         default:
             break;
