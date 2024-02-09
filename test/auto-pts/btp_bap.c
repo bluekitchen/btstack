@@ -47,10 +47,18 @@
 #include "btpclient.h"
 #include "btp.h"
 #include "btstack.h"
+#include "le-audio/le_audio_base_builder.h"
 
 #define  MAX_NUM_BIS 2
 #define  MAX_CHANNELS 2
 #define MAX_LC3_FRAME_BYTES 155
+
+// Random Broadcast ID, valid for lifetime of BIG
+#define BROADCAST_ID (0x112233u)
+
+// encryption
+static uint8_t encryption = 0;
+static uint8_t broadcast_code [] = {0x01, 0x02, 0x68, 0x05, 0x53, 0xF1, 0x41, 0x5A, 0xA2, 0x65, 0xBB, 0xAF, 0xC6, 0xEA, 0x03, 0xB8, };
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
@@ -58,7 +66,52 @@ static hci_con_handle_t bis_con_handles[MAX_NUM_BIS];
 static uint16_t packet_sequence_numbers[MAX_NUM_BIS];
 static uint8_t iso_payload[MAX_CHANNELS * MAX_LC3_FRAME_BYTES];
 static uint16_t bis_sdu_size;
-static uint8_t num_bis;
+
+static uint8_t adv_handle = 0;
+
+static le_advertising_set_t le_advertising_set;
+
+static uint8_t period_adv_data[255];
+static uint16_t period_adv_data_len;
+
+static le_audio_big_t big_storage;
+static le_audio_big_params_t big_params;
+
+static const uint8_t adv_sid = 0;
+
+static const le_periodic_advertising_parameters_t periodic_params = {
+        .periodic_advertising_interval_min = 0x258, // 375 ms
+        .periodic_advertising_interval_max = 0x258, // 375 ms
+        .periodic_advertising_properties = 0
+};
+
+static le_extended_advertising_parameters_t extended_params = {
+        .advertising_event_properties = 0,
+        .primary_advertising_interval_min = 0x4b0, // 750 ms
+        .primary_advertising_interval_max = 0x4b0, // 750 ms
+        .primary_advertising_channel_map = 7,
+        .own_address_type = BD_ADDR_TYPE_LE_PUBLIC,
+        .peer_address_type = 0,
+        .peer_address =  { 0 },
+        .advertising_filter_policy = 0,
+        .advertising_tx_power = 10, // 10 dBm
+        .primary_advertising_phy = 1, // LE 1M PHY
+        .secondary_advertising_max_skip = 0,
+        .secondary_advertising_phy = 1, // LE 1M PHY
+        .advertising_sid = adv_sid,
+        .scan_request_notification_enable = 0,
+};
+
+static const uint8_t extended_adv_data[] = {
+        // 16 bit service data, ORG_BLUETOOTH_SERVICE_BASIC_AUDIO_ANNOUNCEMENT_SERVICE, Broadcast ID
+        6, BLUETOOTH_DATA_TYPE_SERVICE_DATA_16_BIT_UUID, 0x52, 0x18,
+        BROADCAST_ID >> 16,
+        (BROADCAST_ID >> 8) & 0xff,
+        BROADCAST_ID & 0xff,
+        // name
+        7, BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME, 'P', 'T', 'S', '-', 'x', 'x',
+        7, BLUETOOTH_DATA_TYPE_BROADCAST_NAME ,     'P', 'T', 'S', '-', 'x', 'x',
+};
 
 static void send_iso_packet(uint8_t cis_index){
     hci_reserve_packet_buffer();
@@ -107,7 +160,7 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     break;
                 case HCI_EVENT_BIS_CAN_SEND_NOW:
                     cis_con_handle = hci_event_cis_can_send_now_get_cis_con_handle(packet);
-                    for (i = 0; i < num_bis; i++) {
+                    for (i = 0; i < MAX_NUM_BIS; i++) {
                         if (cis_con_handle == bis_con_handles[i]){
                             send_iso_packet(i);
                             hci_request_cis_can_send_now_events(cis_con_handle);
@@ -143,6 +196,66 @@ static void expect_status_no_error(uint8_t status){
     btstack_assert(status == ERROR_CODE_SUCCESS);
 }
 
+static void start_advertising() {
+    bd_addr_t local_addr;
+    gap_local_bd_addr(local_addr);
+    bool local_address_invalid = btstack_is_null_bd_addr( local_addr );
+    if( local_address_invalid ) {
+        extended_params.own_address_type = BD_ADDR_TYPE_LE_RANDOM;
+    }
+    gap_extended_advertising_setup(&le_advertising_set, &extended_params, &adv_handle);
+    if( local_address_invalid ) {
+        bd_addr_t random_address = { 0xC1, 0x01, 0x01, 0x01, 0x01, 0x01 };
+        gap_extended_advertising_set_random_address( adv_handle, random_address );
+    }
+    gap_extended_advertising_set_adv_data(adv_handle, sizeof(extended_adv_data), extended_adv_data);
+    gap_periodic_advertising_set_params(adv_handle, &periodic_params);
+    gap_periodic_advertising_set_data(adv_handle, period_adv_data_len, period_adv_data);
+    gap_periodic_advertising_start(adv_handle, 0);
+    gap_extended_advertising_start(adv_handle, 0, 0);
+}
+
+static void setup_big(void){
+    // Create BIG. From BTP_BAP_BROADCAST_SOURCE_SETUP
+    // - num_bis
+    // - max sdu
+    // - max_transport_latency_ms
+    // - rtn
+    // - sdu interval us
+    // - framing
+    big_params.big_handle = 0;
+    big_params.advertising_handle = adv_handle;
+    big_params.phy = 2;
+    big_params.packing = 0;
+    big_params.encryption = encryption;
+    if (encryption) {
+        memcpy(big_params.broadcast_code, &broadcast_code[0], 16);
+    } else {
+        memset(big_params.broadcast_code, 0, 16);
+    }
+    gap_big_create(&big_storage, &big_params);
+}
+
+static void setup_periodic_adv(uint8_t num_bis, uint32_t presentation_delay_us, const uint8_t * const codec_id, uint8_t codec_ltv_len, const uint8_t * const codec_ltv_bytes ) {
+
+    // setup base
+    uint8_t subgroup_metadata[] = {
+            0x03, 0x02, 0x04, 0x00, // Metadata[i]
+    };
+
+    le_audio_base_builder_t builder;
+    le_audio_base_builder_init(&builder, period_adv_data, sizeof(period_adv_data), presentation_delay_us);
+    le_audio_base_builder_add_subgroup(&builder, codec_id,
+                                       codec_ltv_len,
+                                       codec_ltv_bytes,
+                                       sizeof(subgroup_metadata), subgroup_metadata);
+    uint8_t i;
+    for (i=1;i<= num_bis;i++){
+        le_audio_base_builder_add_bis(&builder, i, 0, NULL);
+    }
+    period_adv_data_len = le_audio_base_builder_get_ad_data_size(&builder);
+}
+
 void btp_bap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, const uint8_t *data) {
     // provide op info for response
     response_len = 0;
@@ -175,6 +288,7 @@ void btp_bap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, 
             if (controller_index == 0){
                 MESSAGE("BTP_BAP_BROADCAST_SOURCE_SETUP");
                 uint16_t pos = 0;
+                uint8_t streams_per_subgroup = data[pos++];
                 uint8_t subgroups = data[pos++];
                 uint32_t sdu_interval = little_endian_read_24(data, pos);
                 pos += 3;
@@ -186,16 +300,25 @@ void btp_bap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, 
                 pos += 2;
                 uint32_t presentation_delay = little_endian_read_24(data, pos);
                 pos += 3;
-                uint8_t coding_format = data[pos++];
-                uint16_t vid = little_endian_read_16(data, pos);
-                pos += 2;
-                uint16_t cid = little_endian_read_16(data, pos);
-                pos += 2;
+                // coding format(1), vendor id (2), codec id (2)
+                const uint8_t * const codec_id = &data[pos];
+                pos += 5;
                 uint8_t ltv_len = data[pos++];
                 const uint8_t * const ltv_data = &data[pos];
+
+                // setup BIG params
+                big_params.num_bis = streams_per_subgroup;
+                big_params.framing = framing;
+                big_params.max_sdu = max_sdu;
+                big_params.rtn = retransmission_num;
+                big_params.max_transport_latency_ms = max_transport_latency;
+
+                // setup BASE
+                setup_periodic_adv(subgroups, presentation_delay, codec_id, ltv_len, ltv_data);
+
                 uint8_t result[7];
                 little_endian_store_32(result, 0, btp_gap_current_settings());
-                uint32_t broadcast_id = 1;
+                uint32_t broadcast_id = BROADCAST_ID;
                 little_endian_store_24(result, 4, broadcast_id);
                 btp_send(BTP_SERVICE_ID_BAP, opcode, controller_index, sizeof(result), result);
             }
@@ -205,6 +328,7 @@ void btp_bap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, 
                 MESSAGE("BTP_BAP_BROADCAST_ADV_START");
                 uint16_t pos = 0;
                 uint32_t broadcast_id = little_endian_read_24(data, 0);
+                start_advertising();
                 btp_send(BTP_SERVICE_ID_BAP, opcode, controller_index, 0, NULL);
                 break;
             }
@@ -214,6 +338,7 @@ void btp_bap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, 
                 MESSAGE("BTP_BAP_BROADCAST_SOURCE_START");
                 uint16_t pos = 0;
                 uint32_t broadcast_id = little_endian_read_24(data, 0);
+                setup_big();
                 btp_send(BTP_SERVICE_ID_BAP, opcode, controller_index, 0, NULL);
                 break;
             }
