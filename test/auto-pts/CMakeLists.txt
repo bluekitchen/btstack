@@ -58,6 +58,7 @@ file(GLOB SOURCES_ZEPHYR    "../../chipset/zephyr/*.c")
 file(GLOB SOURCES_STLC2500D "../../chipset/stlc2500d/*.c")
 file(GLOB SOURCES_TC2566X   "../../chipset/tc3566x/*.c")
 file(GLOB SOURCES_LE_AUDIO  "../../src/le-audio/*.c" "../../src/le-audio/gatt-service/*.c")
+file(GLOB SOURCES_BTP       "btpclient.c" "btp_*.c")
 
 # remove some
 file(GLOB SOURCES_BLE_OFF "../../src/ble/le_device_db_memory.c")
@@ -82,6 +83,7 @@ set(SOURCES
 	${SOURCES_REALTEK}
 	${SOURCES_STLC2500D}
 	${SOURCES_TC2566X}
+	${SOURCES_BTP}
 	"../../3rd-party/rijndael/rijndael.c"
 )
 
@@ -110,9 +112,9 @@ endfunction()
 compile_gatt(${CMAKE_SOURCE_DIR}/btp_le_audio.gatt  ${CMAKE_CURRENT_BINARY_DIR}/btp_le_audio.h)
 
 # target btpclient-usb
-add_executable(btpclient-usb btpclient.c ../../port/libusb/main.c btp_socket.c btp_le_audio.c ${CMAKE_CURRENT_BINARY_DIR}/bap_service_server_test.h)
+add_executable(btpclient-usb ../../port/libusb/main.c ${CMAKE_CURRENT_BINARY_DIR}/bap_service_server_test.h)
 target_link_libraries(btpclient-usb btstack)
 
 # target btpclient-h4
-add_executable(btpclient-h4 btpclient.c ../../port/posix-h4/main.c btp_socket.c btp_le_audio.c ${CMAKE_CURRENT_BINARY_DIR}/bap_service_server_test.h)
+add_executable(btpclient-h4 ../../port/posix-h4/main.c ${CMAKE_CURRENT_BINARY_DIR}/bap_service_server_test.h)
 target_link_libraries(btpclient-h4 btstack)
