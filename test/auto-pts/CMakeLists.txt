@@ -41,7 +41,7 @@ include_directories(${CMAKE_BINARY_DIR})
 
 # find src files
 file(GLOB SOURCES_BCM       "../../chipset/bcm/*.c")
-file(GLOB SOURCES_CSR       "../../chipset/csr/*.c")
+file(GLOB SOURCES_CSR       "../../chipset/csr/btstack_chipset*.c")
 file(GLOB SOURCES_EM9301    "../../chipset/em9301/*.c")
 file(GLOB SOURCES_SRC       "../../src/*.c" "../../example/sco_demo_util.c")
 file(GLOB SOURCES_CLASSIC   ../../src/classic/btstack_link_key_db_tlv.c
@@ -59,6 +59,8 @@ file(GLOB SOURCES_STLC2500D "../../chipset/stlc2500d/*.c")
 file(GLOB SOURCES_TC2566X   "../../chipset/tc3566x/*.c")
 file(GLOB SOURCES_LE_AUDIO  "../../src/le-audio/*.c" "../../src/le-audio/gatt-service/*.c")
 file(GLOB SOURCES_BTP       "btpclient.c" "btp_*.c")
+
+message(${SOURCES_BTP})
 
 # remove some
 file(GLOB SOURCES_BLE_OFF "../../src/ble/le_device_db_memory.c")
