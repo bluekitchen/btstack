@@ -157,6 +157,67 @@ void btp_bap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, 
                 btp_send(BTP_SERVICE_ID_BAP, opcode, controller_index, 1, &commands);
             }
             break;
+        case BTP_BAP_SEND:
+            if (controller_index == 0) {
+                uint16_t pos = 0;
+                uint8_t addr_type = data[pos++];
+                bd_addr_t address;
+                reverse_bd_addr(&data[pos], address);
+                pos += 6;
+                uint8_t ase_id = data[pos++];
+                uint8_t payload_len = data[pos++];
+                const uint8_t *const payload_data = &data[pos];
+                uint8_t result = payload_len;
+                btp_send(BTP_SERVICE_ID_BAP, opcode, controller_index, sizeof(result), &result);
+            }
+            break;
+        case BTP_BAP_BROADCAST_SOURCE_SETUP:
+            if (controller_index == 0){
+                MESSAGE("BTP_BAP_BROADCAST_SOURCE_SETUP");
+                uint16_t pos = 0;
+                uint8_t subgroups = data[pos++];
+                uint32_t sdu_interval = little_endian_read_24(data, pos);
+                pos += 3;
+                uint8_t framing = data[pos++];
+                uint16_t max_sdu = little_endian_read_16(data, pos);
+                pos += 2;
+                uint8_t retransmission_num = data[pos++];
+                uint16_t max_transport_latency = little_endian_read_16(data, pos);
+                pos += 2;
+                uint32_t presentation_delay = little_endian_read_24(data, pos);
+                pos += 3;
+                uint8_t coding_format = data[pos++];
+                uint16_t vid = little_endian_read_16(data, pos);
+                pos += 2;
+                uint16_t cid = little_endian_read_16(data, pos);
+                pos += 2;
+                uint8_t ltv_len = data[pos++];
+                const uint8_t * const ltv_data = &data[pos];
+                uint8_t result[7];
+                little_endian_store_32(result, 0, btp_gap_current_settings());
+                uint32_t broadcast_id = 1;
+                little_endian_store_24(result, 4, broadcast_id);
+                btp_send(BTP_SERVICE_ID_BAP, opcode, controller_index, sizeof(result), result);
+            }
+            break;
+        case BTP_BAP_BROADCAST_ADV_START:
+            if (controller_index == 0) {
+                MESSAGE("BTP_BAP_BROADCAST_ADV_START");
+                uint16_t pos = 0;
+                uint32_t broadcast_id = little_endian_read_24(data, 0);
+                btp_send(BTP_SERVICE_ID_BAP, opcode, controller_index, 0, NULL);
+                break;
+            }
+            break;
+        case BTP_BAP_BROADCAST_SOURCE_START:
+            if (controller_index == 0) {
+                MESSAGE("BTP_BAP_BROADCAST_SOURCE_START");
+                uint16_t pos = 0;
+                uint32_t broadcast_id = little_endian_read_24(data, 0);
+                btp_send(BTP_SERVICE_ID_BAP, opcode, controller_index, 0, NULL);
+                break;
+            }
+            break;
         default:
             break;
     }
