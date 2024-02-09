@@ -189,6 +189,10 @@ static void btp_send_gap_settings(uint8_t opcode){
     btp_send(BTP_SERVICE_ID_GAP, opcode, 0, 4, buffer);
 }
 
+uint32_t btp_gap_current_settings(void){
+    return current_settings;
+}
+
 static void btp_send_error(uint8_t service_id, uint8_t error){
     MESSAGE("BTP_GAP_ERROR error %02x", error);
     btp_send(service_id, BTP_OP_ERROR, 0, 1, &error);
@@ -1457,6 +1461,7 @@ static void btp_gatt_handler(uint8_t opcode, uint8_t controller_index, uint16_t 
             break;
         case BTP_GATT_OP_START_SERVER:
             MESSAGE("BTP_GATT_OP_START_SERVER - NOP");
+            btp_send(BTP_SERVICE_ID_GATT, opcode, controller_index, 0, NULL);
             btp_send(BTP_SERVICE_ID_GATT, opcode, controller_index, 0, NULL);
             break;
         case BTP_GATT_OP_DISC_ALL_PRIM:
