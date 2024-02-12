@@ -79,6 +79,8 @@ static le_audio_big_params_t big_params;
 
 static const uint8_t adv_sid = 0;
 
+static btstack_timer_source_t iso_timer;
+
 static const le_periodic_advertising_parameters_t periodic_params = {
         .periodic_advertising_interval_min = 0x258, // 375 ms
         .periodic_advertising_interval_max = 0x258, // 375 ms
@@ -120,6 +122,10 @@ static void btp_bap_send_response_if_pending(void){
     }
 }
 
+static void btp_trigger_iso(btstack_timer_source_t * ts){
+    hci_request_bis_can_send_now_events(big_params.big_handle);
+}
+
 // HCI Handler
 static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
@@ -143,13 +149,13 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     break;
                 case HCI_EVENT_BIS_CAN_SEND_NOW:
                     bis_index = hci_event_bis_can_send_now_get_bis_index(packet);
-                    le_audio_demo_util_source_generate_iso_frame(AUDIO_SOURCE_SINE);
                     le_audio_demo_util_source_send(bis_index, bis_con_handles[bis_index]);
-                    // confirm sent
-                    if (response_op != 0){
-                        uint8_t num_bytes_sent = big_params.max_sdu ;
-                        btp_send(BTP_SERVICE_ID_BAP, response_op, 0, 1, &num_bytes_sent);
-                        response_op = 0;
+                    bis_index++;
+                    if (bis_index == big_params.num_bis){
+                        le_audio_demo_util_source_generate_iso_frame(AUDIO_SOURCE_SINE);
+                        btstack_run_loop_set_timer(&iso_timer, 100);
+                        btstack_run_loop_set_timer_handler(&iso_timer, &btp_trigger_iso);
+                        btstack_run_loop_add_timer(&iso_timer);
                     }
                     break;
                 case HCI_EVENT_LE_META:
@@ -165,6 +171,7 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                                 bis_con_handles[i] = gap_subevent_big_created_get_bis_con_handles(packet, i);
                             }
                             btp_bap_send_response_if_pending();
+                            hci_request_bis_can_send_now_events(big_params.big_handle);
                             break;
                         case GAP_SUBEVENT_BIG_TERMINATED:
                             btp_bap_send_response_if_pending();
@@ -291,9 +298,14 @@ void btp_bap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, 
                 reverse_bd_addr(&data[pos], address);
                 pos += 6;
                 uint8_t ase_id = data[pos++];
-                uint8_t payload_len = data[pos++];  // ignored
-                memcpy(iso_payload_data,  &data[pos], payload_len);
-                hci_request_bis_can_send_now_events(big_params.big_handle);
+                uint8_t payload_len = data[pos++];
+                const uint8_t * const payload_data = &data[pos];
+                // confirm sent
+                if (response_op != 0){
+                    uint8_t num_bytes_sent = payload_len;
+                    btp_send(BTP_SERVICE_ID_BAP, response_op, 0, 1, &num_bytes_sent);
+                    response_op = 0;
+                }
             }
             break;
         case BTP_BAP_BROADCAST_SOURCE_SETUP:
@@ -329,8 +341,22 @@ void btp_bap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, 
                 // setup BASE
                 setup_periodic_adv(subgroups, presentation_delay, codec_id, ltv_len, ltv_data);
 
-                btstack_lc3_frame_duration_t frame_duration = big_params.sdu_interval_us == 7500 ? BTSTACK_LC3_FRAME_DURATION_7500US : BTSTACK_LC3_FRAME_DURATION_10000US;
-                le_audio_demo_util_source_configure(1, big_params.num_bis, 48000, frame_duration, big_params.max_sdu);
+                // parse LTV and configure codec
+                uint32_t sampling_frequency_hz = 0;
+                pos = 0;
+                while (pos < ltv_len){
+                    uint8_t ltv_entry_len = ltv_data[pos++];
+                    uint8_t codec_config_type = ltv_data[pos];
+                    if (codec_config_type == LE_AUDIO_CODEC_CONFIGURATION_TYPE_SAMPLING_FREQUENCY){
+                        sampling_frequency_hz = le_audio_get_sampling_frequency_hz(ltv_data[pos]);
+                    }
+                    pos += ltv_entry_len;
+                }
+                btstack_lc3_frame_duration_t frame_duration =
+                        big_params.sdu_interval_us == 7500 ? BTSTACK_LC3_FRAME_DURATION_7500US : BTSTACK_LC3_FRAME_DURATION_10000US;
+                le_audio_demo_util_source_configure(big_params.num_bis, 1, sampling_frequency_hz, frame_duration, big_params.max_sdu);
+                MESSAGE("LC3 Config: streams %u, channels per stream %u, sampling frequency %u, frame duration %u, max sdu %u", big_params.num_bis, 1, sampling_frequency_hz, big_params.sdu_interval_us, big_params.max_sdu);
+                btstack_assert(sampling_frequency_hz != 0);
 
                 uint8_t result[7];
                 little_endian_store_32(result, 0, btp_gap_current_settings());
