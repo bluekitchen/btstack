@@ -6986,7 +6986,7 @@ static bool hci_run_iso_tasks(void){
                 return true;
             case LE_AUDIO_BIG_STATE_TERMINATE:
                 big->state = LE_AUDIO_BIG_STATE_W4_TERMINATED;
-                hci_send_cmd(&hci_le_terminate_big, big->big_handle, ERROR_CODE_SUCCESS);
+                hci_send_cmd(&hci_le_terminate_big, big->big_handle, ERROR_CODE_REMOTE_USER_TERMINATED_CONNECTION);
                 return true;
             default:
                 break;
