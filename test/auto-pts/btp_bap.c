@@ -67,7 +67,7 @@ static uint16_t packet_sequence_numbers[MAX_NUM_BIS];
 static uint8_t iso_payload[MAX_CHANNELS * MAX_LC3_FRAME_BYTES];
 static uint16_t bis_sdu_size;
 
-static uint8_t adv_handle = 0;
+static uint8_t adv_handle;
 
 static le_advertising_set_t le_advertising_set;
 
@@ -112,6 +112,13 @@ static const uint8_t extended_adv_data[] = {
         7, BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME, 'P', 'T', 'S', '-', 'x', 'x',
         7, BLUETOOTH_DATA_TYPE_BROADCAST_NAME ,     'P', 'T', 'S', '-', 'x', 'x',
 };
+
+static void btp_bap_send_response_if_pending(void){
+    if (response_op != 0){
+        btp_send(BTP_SERVICE_ID_BAP, response_op, 0, 0, NULL);
+        response_op = 0;
+    }
+}
 
 static void send_iso_packet(uint8_t cis_index){
     hci_reserve_packet_buffer();
@@ -176,6 +183,12 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     break;
                 case HCI_EVENT_META_GAP:
                     switch (hci_event_gap_meta_get_subevent_code(packet)) {
+                        case GAP_SUBEVENT_BIG_CREATED:
+                            btp_bap_send_response_if_pending();
+                            break;
+                        case GAP_SUBEVENT_BIG_TERMINATED:
+                            btp_bap_send_response_if_pending();
+                            break;
                         default:
                             break;
                     }
@@ -197,22 +210,36 @@ static void expect_status_no_error(uint8_t status){
 }
 
 static void start_advertising() {
-    bd_addr_t local_addr;
-    gap_local_bd_addr(local_addr);
-    bool local_address_invalid = btstack_is_null_bd_addr( local_addr );
-    if( local_address_invalid ) {
-        extended_params.own_address_type = BD_ADDR_TYPE_LE_RANDOM;
+    if (adv_handle == 0xff){
+        bd_addr_t local_addr;
+        gap_local_bd_addr(local_addr);
+        bool local_address_invalid = btstack_is_null_bd_addr( local_addr );
+        if( local_address_invalid ) {
+            extended_params.own_address_type = BD_ADDR_TYPE_LE_RANDOM;
+        }
+        gap_extended_advertising_setup(&le_advertising_set, &extended_params, &adv_handle);
+        if( local_address_invalid ) {
+            bd_addr_t random_address = { 0xC1, 0x01, 0x01, 0x01, 0x01, 0x01 };
+            gap_extended_advertising_set_random_address( adv_handle, random_address );
+        }
     }
-    gap_extended_advertising_setup(&le_advertising_set, &extended_params, &adv_handle);
-    if( local_address_invalid ) {
-        bd_addr_t random_address = { 0xC1, 0x01, 0x01, 0x01, 0x01, 0x01 };
-        gap_extended_advertising_set_random_address( adv_handle, random_address );
-    }
-    gap_extended_advertising_set_adv_data(adv_handle, sizeof(extended_adv_data), extended_adv_data);
-    gap_periodic_advertising_set_params(adv_handle, &periodic_params);
-    gap_periodic_advertising_set_data(adv_handle, period_adv_data_len, period_adv_data);
-    gap_periodic_advertising_start(adv_handle, 0);
-    gap_extended_advertising_start(adv_handle, 0, 0);
+
+    uint8_t status;
+    status = gap_extended_advertising_set_adv_data(adv_handle, sizeof(extended_adv_data), extended_adv_data);
+    if (status != 0) MESSAGE("Status 0x%02x", status);
+    status = gap_periodic_advertising_set_params(adv_handle, &periodic_params);
+    if (status != 0) MESSAGE("Status 0x%02x", status);
+    status = gap_periodic_advertising_set_data(adv_handle, period_adv_data_len, period_adv_data);
+    if (status != 0) MESSAGE("Status 0x%02x", status);
+    status = gap_periodic_advertising_start(adv_handle, 0);
+    if (status != 0) MESSAGE("Status 0x%02x", status);
+    status = gap_extended_advertising_start(adv_handle, 0, 0);
+    if (status != 0) MESSAGE("Status 0x%02x", status);
+}
+
+static void stop_advertising(){
+    gap_periodic_advertising_stop(adv_handle);
+    gap_extended_advertising_stop(adv_handle);
 }
 
 static void setup_big(void){
@@ -234,6 +261,11 @@ static void setup_big(void){
         memset(big_params.broadcast_code, 0, 16);
     }
     gap_big_create(&big_storage, &big_params);
+}
+
+static void release_big(void){
+    uint8_t status = gap_big_terminate(big_params.big_handle);
+    MESSAGE("gap_big_terminate, status 0x%x", status);
 }
 
 static void setup_periodic_adv(uint8_t num_bis, uint32_t presentation_delay_us, const uint8_t * const codec_id, uint8_t codec_ltv_len, const uint8_t * const codec_ltv_bytes ) {
@@ -312,6 +344,7 @@ void btp_bap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, 
                 big_params.max_sdu = max_sdu;
                 big_params.rtn = retransmission_num;
                 big_params.max_transport_latency_ms = max_transport_latency;
+                big_params.sdu_interval_us = sdu_interval;
 
                 // setup BASE
                 setup_periodic_adv(subgroups, presentation_delay, codec_id, ltv_len, ltv_data);
@@ -326,9 +359,17 @@ void btp_bap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, 
         case BTP_BAP_BROADCAST_ADV_START:
             if (controller_index == 0) {
                 MESSAGE("BTP_BAP_BROADCAST_ADV_START");
-                uint16_t pos = 0;
                 uint32_t broadcast_id = little_endian_read_24(data, 0);
                 start_advertising();
+                btp_send(BTP_SERVICE_ID_BAP, opcode, controller_index, 0, NULL);
+                break;
+            }
+            break;
+        case BTP_BAP_BROADCAST_ADV_STOP:
+            if (controller_index == 0) {
+                MESSAGE("BTP_BAP_BROADCAST_ADV_STOP");
+                uint32_t broadcast_id = little_endian_read_24(data, 0);
+                stop_advertising();
                 btp_send(BTP_SERVICE_ID_BAP, opcode, controller_index, 0, NULL);
                 break;
             }
@@ -336,10 +377,16 @@ void btp_bap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, 
         case BTP_BAP_BROADCAST_SOURCE_START:
             if (controller_index == 0) {
                 MESSAGE("BTP_BAP_BROADCAST_SOURCE_START");
-                uint16_t pos = 0;
                 uint32_t broadcast_id = little_endian_read_24(data, 0);
                 setup_big();
-                btp_send(BTP_SERVICE_ID_BAP, opcode, controller_index, 0, NULL);
+                break;
+            }
+            break;
+        case BTP_BAP_BROADCAST_SOURCE_STOP:
+            if (controller_index == 0) {
+                MESSAGE("BTP_BAP_BROADCAST_SOURCE_STOP");
+                uint32_t broadcast_id = little_endian_read_24(data, 0);
+                release_big();
                 break;
             }
             break;
@@ -358,5 +405,7 @@ void btp_bap_init(void){
     for (i=0;i<MAX_NUM_BIS;i++){
         bis_con_handles[i] = HCI_CON_HANDLE_INVALID;
     }
+
+    adv_handle = 0xff;
 }
 
