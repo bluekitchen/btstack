@@ -48,6 +48,7 @@
 #include "btp.h"
 #include "btstack.h"
 #include "le-audio/le_audio_base_builder.h"
+#include "le_audio_demo_util_source.h"
 
 #define  MAX_NUM_BIS 2
 #define  MAX_CHANNELS 2
@@ -64,8 +65,7 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 static hci_con_handle_t bis_con_handles[MAX_NUM_BIS];
 static uint16_t packet_sequence_numbers[MAX_NUM_BIS];
-static uint8_t iso_payload[MAX_CHANNELS * MAX_LC3_FRAME_BYTES];
-static uint16_t bis_sdu_size;
+static uint8_t  iso_payload_data[MAX_CHANNELS * MAX_LC3_FRAME_BYTES];
 
 static uint8_t adv_handle;
 
@@ -120,35 +120,11 @@ static void btp_bap_send_response_if_pending(void){
     }
 }
 
-static void send_iso_packet(uint8_t cis_index){
-    hci_reserve_packet_buffer();
-    uint8_t * buffer = hci_get_outgoing_packet_buffer();
-    // complete SDU, no TimeStamp
-    little_endian_store_16(buffer, 0, bis_con_handles[cis_index] | (2 << 12));
-    // len
-    little_endian_store_16(buffer, 2, 0 + 4 + bis_sdu_size);
-    // TimeStamp if TS flag is set
-    // packet seq nr
-    little_endian_store_16(buffer, 4, packet_sequence_numbers[cis_index]);
-    // iso sdu len
-    little_endian_store_16(buffer, 6, bis_sdu_size);
-    // copy encoded payload
-    uint8_t i;
-    uint16_t offset = 8;
-    memcpy(&buffer[offset], &iso_payload[i * MAX_LC3_FRAME_BYTES], bis_sdu_size);
-    offset += bis_sdu_size;
-
-    // send
-    hci_send_iso_packet_buffer(offset);
-
-    packet_sequence_numbers[cis_index]++;
-}
-
 // HCI Handler
 static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     hci_con_handle_t con_handle;
-    hci_con_handle_t cis_con_handle;
+    hci_con_handle_t bis_index;
     uint8_t cig_id;
     uint8_t cis_id;
     uint8_t i;
@@ -160,23 +136,24 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     for (i=0; i < MAX_NUM_BIS ; i++){
                         con_handle = hci_event_disconnection_complete_get_connection_handle(packet);
                         if (bis_con_handles[i] == con_handle){
-                            MESSAGE("HCI Disconnect for bis_con_handle 0x%04x, with index %u", cis_con_handle, i);
+                            MESSAGE("HCI Disconnect for bis_con_handle 0x%04x, with index %u", bis_index, i);
                             bis_con_handles[i] = HCI_CON_HANDLE_INVALID;
                         }
                     }
                     break;
                 case HCI_EVENT_BIS_CAN_SEND_NOW:
-                    cis_con_handle = hci_event_cis_can_send_now_get_cis_con_handle(packet);
-                    for (i = 0; i < MAX_NUM_BIS; i++) {
-                        if (cis_con_handle == bis_con_handles[i]){
-                            send_iso_packet(i);
-                            hci_request_cis_can_send_now_events(cis_con_handle);
-                        }
+                    bis_index = hci_event_bis_can_send_now_get_bis_index(packet);
+                    le_audio_demo_util_source_generate_iso_frame(AUDIO_SOURCE_SINE);
+                    le_audio_demo_util_source_send(bis_index, bis_con_handles[bis_index]);
+                    // confirm sent
+                    if (response_op != 0){
+                        uint8_t num_bytes_sent = big_params.max_sdu ;
+                        btp_send(BTP_SERVICE_ID_BAP, response_op, 0, 1, &num_bytes_sent);
+                        response_op = 0;
                     }
                     break;
                 case HCI_EVENT_LE_META:
                     switch (hci_event_le_meta_get_subevent_code(packet)){
-                            break;
                         default:
                             break;
                     }
@@ -184,6 +161,9 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                 case HCI_EVENT_META_GAP:
                     switch (hci_event_gap_meta_get_subevent_code(packet)) {
                         case GAP_SUBEVENT_BIG_CREATED:
+                            for (i=0;i<big_params.num_bis;i++){
+                                bis_con_handles[i] = gap_subevent_big_created_get_bis_con_handles(packet, i);
+                            }
                             btp_bap_send_response_if_pending();
                             break;
                         case GAP_SUBEVENT_BIG_TERMINATED:
@@ -294,6 +274,7 @@ void btp_bap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, 
     response_service_id = BTP_SERVICE_ID_BAP;
     response_op = opcode;
     uint8_t ase_id;
+    uint8_t i;
     switch (opcode) {
         case BTP_BAP_READ_SUPPORTED_COMMANDS:
             MESSAGE("BTP_BAP_READ_SUPPORTED_COMMANDS");
@@ -310,10 +291,9 @@ void btp_bap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, 
                 reverse_bd_addr(&data[pos], address);
                 pos += 6;
                 uint8_t ase_id = data[pos++];
-                uint8_t payload_len = data[pos++];
-                const uint8_t *const payload_data = &data[pos];
-                uint8_t result = payload_len;
-                btp_send(BTP_SERVICE_ID_BAP, opcode, controller_index, sizeof(result), &result);
+                uint8_t payload_len = data[pos++];  // ignored
+                memcpy(iso_payload_data,  &data[pos], payload_len);
+                hci_request_bis_can_send_now_events(big_params.big_handle);
             }
             break;
         case BTP_BAP_BROADCAST_SOURCE_SETUP:
@@ -348,6 +328,9 @@ void btp_bap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, 
 
                 // setup BASE
                 setup_periodic_adv(subgroups, presentation_delay, codec_id, ltv_len, ltv_data);
+
+                btstack_lc3_frame_duration_t frame_duration = big_params.sdu_interval_us == 7500 ? BTSTACK_LC3_FRAME_DURATION_7500US : BTSTACK_LC3_FRAME_DURATION_10000US;
+                le_audio_demo_util_source_configure(1, big_params.num_bis, 48000, frame_duration, big_params.max_sdu);
 
                 uint8_t result[7];
                 little_endian_store_32(result, 0, btp_gap_current_settings());
@@ -405,6 +388,9 @@ void btp_bap_init(void){
     // register for HCI events
     hci_event_callback_registration.callback = &hci_packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
+
+    // setup audio processing
+    le_audio_demo_util_source_init();
 
     // BIS
     uint8_t i;

@@ -16,6 +16,8 @@ link_libraries(${LIBUSB_LIBRARIES})
 include_directories((../../chipset/realtek))
 include_directories(../../3rd-party/bluedroid/decoder/include)
 include_directories(../../3rd-party/bluedroid/encoder/include)
+include_directories(../../3rd-party/hxcmod-player)
+include_directories(../../3rd-party/hxcmod-player/mod)
 include_directories(../../3rd-party/lc3-google/include)
 include_directories(../../3rd-party/micro-ecc)
 include_directories(../../3rd-party/rijndael)
@@ -35,6 +37,7 @@ include_directories(../../platform/posix)
 include_directories(../../platform/embedded)
 include_directories(../../platform/lwip)
 include_directories(../../platform/lwip/port)
+include_directories(../../example)
 include_directories(.)
 include_directories(..)
 include_directories(${CMAKE_BINARY_DIR})
@@ -51,13 +54,15 @@ file(GLOB SOURCES_CLASSIC   ../../src/classic/btstack_link_key_db_tlv.c
 file(GLOB SOURCES_BLE       "../../src/ble/*.c")
 file(GLOB SOURCES_GATT      "../../src/ble/gatt-service/*.c")
 file(GLOB SOURCES_UECC      "../../3rd-party/micro-ecc/uECC.c")
+file(GLOB SOURCES_HXCMOD    "../../3rd-party/hxcmod-player/*.c"  "../../3rd-party/hxcmod-player/mods/*.c")
+file(GLOB SOURCES_LC3_GOOGLE "../../3rd-party/lc3-google/src/*.c")
 file(GLOB SOURCES_POSIX     "../../platform/posix/*.c")
 file(GLOB SOURCES_LIBUSB    "../../platform/libusb/*.c")
 file(GLOB SOURCES_REALTEK   "../../chipset/realtek/*.c")
 file(GLOB SOURCES_ZEPHYR    "../../chipset/zephyr/*.c")
 file(GLOB SOURCES_STLC2500D "../../chipset/stlc2500d/*.c")
 file(GLOB SOURCES_TC2566X   "../../chipset/tc3566x/*.c")
-file(GLOB SOURCES_LE_AUDIO  "../../src/le-audio/*.c" "../../src/le-audio/gatt-service/*.c")
+file(GLOB SOURCES_LE_AUDIO  "../../src/le-audio/*.c" "../../src/le-audio/gatt-service/*.c" "../../example/le_audio_demo_util_source.c")
 file(GLOB SOURCES_BTP       "btpclient.c" "btp_*.c")
 
 message(${SOURCES_BTP})
@@ -79,6 +84,8 @@ set(SOURCES
 	${SOURCES_BLE}
 	${SOURCES_GATT}
 	${SOURCES_UECC}
+	${SOURCES_HXCMOD}
+	${SOURCES_LC3_GOOGLE}
 	${SOURCES_LE_AUDIO}
 	${SOURCES_REALTEK}
 	${SOURCES_ZEPHYR}
