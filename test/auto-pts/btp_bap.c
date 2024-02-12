@@ -356,6 +356,12 @@ void btp_bap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, 
                 btp_send(BTP_SERVICE_ID_BAP, opcode, controller_index, sizeof(result), result);
             }
             break;
+        case BTP_BAP_BROADCAST_SOURCE_RELEASE:
+            if (controller_index == 0) {
+                MESSAGE("BTP_BAP_BROADCAST_SOURCE_RELEASE");
+                btp_send(BTP_SERVICE_ID_BAP, opcode, controller_index, 0, NULL);
+            }
+            break;
         case BTP_BAP_BROADCAST_ADV_START:
             if (controller_index == 0) {
                 MESSAGE("BTP_BAP_BROADCAST_ADV_START");
