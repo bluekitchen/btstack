@@ -1225,7 +1225,6 @@ static void ascs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
 
     hci_con_handle_t con_handle;
     ascs_server_connection_t * client_connection;
-    uint8_t i;
 
     switch (hci_event_packet_get_type(packet)) {
         case HCI_EVENT_DISCONNECTION_COMPLETE:
