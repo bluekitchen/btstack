@@ -63,9 +63,11 @@ static uint8_t broadcast_code [] = {0x01, 0x02, 0x68, 0x05, 0x53, 0xF1, 0x41, 0x
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
+// send iso packets
 static hci_con_handle_t bis_con_handles[MAX_NUM_BIS];
 static uint16_t packet_sequence_numbers[MAX_NUM_BIS];
 static uint8_t  iso_payload_data[MAX_CHANNELS * MAX_LC3_FRAME_BYTES];
+static btstack_timer_source_t iso_timer;
 
 static uint8_t adv_handle;
 
@@ -79,7 +81,11 @@ static le_audio_big_params_t big_params;
 
 static const uint8_t adv_sid = 0;
 
-static btstack_timer_source_t iso_timer;
+// Scan
+static bool scan_for_scan_delegator;
+static bool scan_for_broadcast_audio_announcement;
+static bool have_base;
+static bool have_big_info;
 
 static const le_periodic_advertising_parameters_t periodic_params = {
         .periodic_advertising_interval_min = 0x258, // 375 ms
@@ -129,11 +135,15 @@ static void btp_trigger_iso(btstack_timer_source_t * ts){
 // HCI Handler
 static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
+    uint8_t adv_size;
+    ad_context_t context;
+    const uint8_t * adv_data;
     hci_con_handle_t con_handle;
     hci_con_handle_t bis_index;
     uint8_t cig_id;
     uint8_t cis_id;
     uint8_t i;
+    uint16_t uuid;
 
     switch (packet_type) {
         case HCI_EVENT_PACKET:
@@ -156,6 +166,49 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                         btstack_run_loop_set_timer(&iso_timer, 100);
                         btstack_run_loop_set_timer_handler(&iso_timer, &btp_trigger_iso);
                         btstack_run_loop_add_timer(&iso_timer);
+                    }
+                    break;
+                case GAP_EVENT_EXTENDED_ADVERTISING_REPORT:
+                    adv_size = gap_event_extended_advertising_report_get_data_length(packet);
+                    adv_data = gap_event_extended_advertising_report_get_data(packet);
+                    for (ad_iterator_init(&context, adv_size, adv_data) ; ad_iterator_has_more(&context) ; ad_iterator_next(&context)) {
+                        uint8_t data_type = ad_iterator_get_data_type(&context);
+                        const uint8_t *data = ad_iterator_get_data(&context);
+                        switch (data_type){
+                            case BLUETOOTH_DATA_TYPE_SERVICE_DATA_16_BIT_UUID:
+                                uuid = little_endian_read_16(data, 0);
+                                switch (uuid){
+                                    case ORG_BLUETOOTH_SERVICE_BROADCAST_AUDIO_ANNOUNCEMENT_SERVICE:
+                                        if (scan_for_broadcast_audio_announcement) {
+                                            uint32_t broadcast_id = little_endian_read_24(data, 2);
+                                            uint8_t buffer[13];
+                                            uint8_t pos = 0;
+                                            buffer[pos++] = gap_event_extended_advertising_report_get_address_type(packet);
+                                            bd_addr_t addr;
+                                            gap_event_extended_advertising_report_get_address(packet, addr);
+                                            reverse_bd_addr(addr, &buffer[pos]);
+                                            pos += 6;
+                                            little_endian_store_24(buffer, pos, broadcast_id);
+                                            pos += 3;
+                                            buffer[pos++] = gap_event_extended_advertising_report_get_advertising_sid(packet);
+                                            uint16_t pa_interval = gap_event_extended_advertising_report_get_periodic_advertising_interval(packet);
+                                            little_endian_store_16(buffer, pos, pa_interval);
+                                            pos += 2;
+                                            btstack_assert(pos == sizeof(buffer));
+                                            btp_send(BTP_SERVICE_ID_BAP, BTP_BAP_EV_BAA_FOUND, 0, sizeof(buffer), buffer);
+                                        }
+                                        break;
+                                    case ORG_BLUETOOTH_SERVICE_BROADCAST_AUDIO_SCAN_SERVICE:
+                                        if (scan_for_scan_delegator) {
+                                        }
+                                        break;
+                                    default:
+                                        break;
+                                }
+                                break;
+                            default:
+                                break;
+                        }
                     }
                     break;
                 case HCI_EVENT_LE_META:
@@ -273,6 +326,18 @@ static void setup_periodic_adv(uint8_t num_bis, uint32_t presentation_delay_us, 
         le_audio_base_builder_add_bis(&builder, i, 0, NULL);
     }
     period_adv_data_len = le_audio_base_builder_get_ad_data_size(&builder);
+}
+
+static void start_scanning() {
+    have_base = false;
+    have_big_info = false;
+    gap_set_scan_params(1, 0x30, 0x30, 0);
+    gap_start_scan();
+    printf("Start scan..\n");
+}
+
+static void stop_scanning() {
+    gap_stop_scan();
 }
 
 void btp_bap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, const uint8_t *data) {
@@ -402,6 +467,106 @@ void btp_bap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, 
                 MESSAGE("BTP_BAP_BROADCAST_SOURCE_STOP");
                 uint32_t broadcast_id = little_endian_read_24(data, 0);
                 release_big();
+                break;
+            }
+            break;
+        case BTP_BAP_BROADCAST_SINK_SETUP:
+            if (controller_index == 0) {
+                MESSAGE("BTP_BAP_BROADCAST_SINK_SETUP");
+                btp_send(BTP_SERVICE_ID_BAP, opcode, controller_index, 0, NULL);
+                break;
+            }
+            break;
+        case BTP_BAP_BROADCAST_SINK_RELEASE:
+            if (controller_index == 0) {
+                MESSAGE("BTP_BAP_BROADCAST_SINK_RELEASE");
+                btp_send(BTP_SERVICE_ID_BAP, opcode, controller_index, 0, NULL);
+                break;
+            }
+            break;
+        case BTP_BAP_BROADCAST_SCAN_START:
+            if (controller_index == 0) {
+                MESSAGE("BTP_BAP_BROADCAST_SCAN_START");
+                scan_for_broadcast_audio_announcement = true;
+                scan_for_scan_delegator = false;
+                start_scanning();
+                btp_send(BTP_SERVICE_ID_BAP, opcode, controller_index, 0, NULL);
+                break;
+            }
+            break;
+        case BTP_BAP_BROADCAST_SCAN_STOP:
+            if (controller_index == 0) {
+                MESSAGE("BTP_BAP_BROADCAST_SCAN_STOP");
+                stop_scanning();
+                btp_send(BTP_SERVICE_ID_BAP, opcode, controller_index, 0, NULL);
+                break;
+            }
+            break;
+        case BTP_BAP_BROADCAST_SINK_SYNC:
+            if (controller_index == 0) {
+                MESSAGE("BTP_BAP_BROADCAST_SINK_SYNC");
+                break;
+            }
+            break;
+        case BTP_BAP_BROADCAST_SINK_STOP:
+            if (controller_index == 0) {
+                MESSAGE("BTP_BAP_BROADCAST_SINK_STOP");
+                break;
+            }
+            break;
+        case BTP_BAP_BROADCAST_SINK_BIS_SYNC:
+            if (controller_index == 0) {
+                MESSAGE("BTP_BAP_BROADCAST_SINK_BIS_SYNC");
+                break;
+            }
+            break;
+        case BTP_BAP_DISCOVER_SCAN_DELEGATOR:
+            if (controller_index == 0) {
+                MESSAGE("BTP_BAP_DISCOVER_SCAN_DELEGATOR");
+                break;
+            }
+            break;
+        case BTP_BAP_BROADCAST_ASSISTANT_SCAN_START:
+            if (controller_index == 0) {
+                scan_for_broadcast_audio_announcement = false;
+                scan_for_scan_delegator = true;
+                MESSAGE("BTP_BAP_BROADCAST_ASSISTANT_SCAN_START");
+                break;
+            }
+            break;
+        case BTP_BAP_BROADCAST_ASSISTANT_SCAN_STOP:
+            if (controller_index == 0) {
+                MESSAGE("BTP_BAP_BROADCAST_ASSISTANT_SCAN_STOP");
+                break;
+            }
+            break;
+        case BTP_BAP_ADD_BROADCAST_SRC:
+            if (controller_index == 0) {
+                MESSAGE("BTP_BAP_ADD_BROADCAST_SRC");
+                break;
+            }
+            break;
+        case BTP_BAP_REMOVE_BROADCAST_SRC:
+            if (controller_index == 0) {
+                MESSAGE("BTP_BAP_REMOVE_BROADCAST_SRC");
+                break;
+            }
+            break;
+        case BTP_BAP_MODIFY_BROADCAST_SRC:
+            if (controller_index == 0) {
+                MESSAGE("BTP_BAP_MODIFY_BROADCAST_SRC");
+                break;
+            }
+            break;
+        case BTP_BAP_SET_BROADCAST_CODE:
+            if (controller_index == 0) {
+                MESSAGE("BTP_BAP_SET_BROADCAST_CODE");
+                break;
+            }
+            break;
+        case BTP_BAP_SEND_PAST:
+            if (controller_index == 0) {
+                MESSAGE("BTP_BAP_SEND_PAST");
                 break;
             }
             break;
