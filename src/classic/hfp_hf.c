@@ -2210,10 +2210,10 @@ uint8_t hfp_hf_set_hf_indicator(hci_con_handle_t acl_handle, int assigned_number
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     // find index for assigned number
-    int i;
+    uint8_t i;
     for (i = 0; i < hfp_hf_indicators_nr ; i++){
         if (hfp_hf_indicators[i] == assigned_number){
-            // check if connection ready and indicator subscribed
+            // check if connection ready and indicator enabled
             if (hfp_connection->state > HFP_LIST_GENERIC_STATUS_INDICATORS){
                 if (hfp_connection->generic_status_indicators[i].state != 0) {
                     // set value
@@ -2224,7 +2224,6 @@ uint8_t hfp_hf_set_hf_indicator(hci_con_handle_t acl_handle, int assigned_number
                     hfp_hf_run_for_context(hfp_connection);
                 }
             }
-            return ERROR_CODE_SUCCESS;
         }
     }
     return ERROR_CODE_SUCCESS;
