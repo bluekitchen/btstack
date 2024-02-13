@@ -356,8 +356,7 @@ static void vocs_client_packet_handler_internal(uint8_t packet_type, uint16_t ch
     if (packet_type != HCI_EVENT_PACKET) return;
     gatt_service_client_connection_helper_t * connection_helper;
     vocs_client_connection_t * connection;
-    hci_con_handle_t con_handle;
-    uint8_t status;
+    hci_con_handle_t con_handle;;
 
     switch(hci_event_packet_get_type(packet)){
         case HCI_EVENT_GATTSERVICE_META:
@@ -377,19 +376,16 @@ static void vocs_client_packet_handler_internal(uint8_t packet_type, uint16_t ch
                     printf("VOCS Client: Query input state to retrieve and cache change counter\n");
 #endif
                     connection = (vocs_client_connection_t *) connection_helper;
-                    status = gatt_service_client_can_query_characteristic(connection_helper, VOCS_CLIENT_CHARACTERISTIC_INDEX_OFFSET_STATE);
 
-                    if (status == ERROR_CODE_SUCCESS){
-                        connection->state = VOLUME_OFFSET_CONTROL_SERVICE_CLIENT_STATE_W2_QUERY_CHANGE_COUNTER;
-                        status = vocs_client_request_send_gatt_query(connection, VOCS_CLIENT_CHARACTERISTIC_INDEX_OFFSET_STATE);
-                        if (status == ERROR_CODE_SUCCESS){
-                            break;
-                        }
+                    if (connection->basic_connection.characteristics[VOCS_CLIENT_CHARACTERISTIC_INDEX_OFFSET_STATE].value_handle == 0){
+                        connection->state = VOLUME_OFFSET_CONTROL_SERVICE_CLIENT_STATE_UNINITIALISED;
+                        vocs_client_emit_connected(connection_helper, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE);
+                        // TODO reset client
+                        break;
                     }
 
-                    // change counter must be retrieved, smth. went wrong
-                    connection->state = VOLUME_OFFSET_CONTROL_SERVICE_CLIENT_STATE_UNINITIALISED;
-                    vocs_client_emit_connected(connection_helper, status);
+                    connection->state = VOLUME_OFFSET_CONTROL_SERVICE_CLIENT_STATE_W2_QUERY_CHANGE_COUNTER;
+                    vocs_client_request_send_gatt_query(connection, VOCS_CLIENT_CHARACTERISTIC_INDEX_OFFSET_STATE);
                     break;
 
                 case GATTSERVICE_SUBEVENT_CLIENT_DISCONNECTED:
@@ -444,17 +440,10 @@ static void vocs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t c
                         printf("VOCS Client: connection failed\n");
 #endif
                         connection->state = VOLUME_OFFSET_CONTROL_SERVICE_CLIENT_STATE_UNINITIALISED;
-                        vocs_client_emit_connected(connection_helper, ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH);
                         break;
                     }
 
                     connection->change_counter = gatt_event_characteristic_value_query_result_get_value(packet)[2];
-#ifdef ENABLE_TESTING_SUPPORT
-                    printf("VOCS Client: connected, change counter initialized to %d\n", connection->change_counter);
-#endif
-                    connection->state = VOLUME_OFFSET_CONTROL_SERVICE_CLIENT_STATE_READY;
-                    // initialize change counter on connect
-                    vocs_client_emit_connected(connection_helper, ATT_ERROR_SUCCESS);
                     break;
 
                 case VOLUME_OFFSET_CONTROL_SERVICE_CLIENT_STATE_W4_READ_CHARACTERISTIC_VALUE_RESULT:
@@ -481,6 +470,17 @@ static void vocs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t c
             switch (connection->state){
                 case VOLUME_OFFSET_CONTROL_SERVICE_CLIENT_STATE_W4_WRITE_CHARACTERISTIC_VALUE_RESULT:
                     vocs_client_emit_done_event(connection_helper, connection->characteristic_index, gatt_event_query_complete_get_att_status(packet));
+                    break;
+                case VOLUME_OFFSET_CONTROL_SERVICE_CLIENT_STATE_UNINITIALISED:
+                    vocs_client_emit_connected(connection_helper, ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH);
+                    break;
+                case VOLUME_OFFSET_CONTROL_SERVICE_CLIENT_STATE_W4_CHANGE_COUNTER_RESULT:
+#ifdef ENABLE_TESTING_SUPPORT
+                    printf("VOCS Client: connected, change counter initialized to %d\n", connection->change_counter);
+#endif
+                    connection->state = VOLUME_OFFSET_CONTROL_SERVICE_CLIENT_STATE_READY;
+                    // initialize change counter on connect
+                    vocs_client_emit_connected(connection_helper, ATT_ERROR_SUCCESS);
                     break;
                 default:
                     break;
@@ -509,7 +509,7 @@ static uint16_t vocs_client_serialize_characteristic_value_for_write(vocs_client
         case VOCS_CLIENT_CHARACTERISTIC_INDEX_VOLUME_OFFSET_CONTROL_POINT:
             switch ((vocs_opcode_t)connection->data.data_bytes[0]){
                 case VOCS_OPCODE_SET_VOLUME_OFFSET:
-                    value_length = 3;
+                    value_length = 4;
                     break;
                 default:
                     btstack_assert(false);
