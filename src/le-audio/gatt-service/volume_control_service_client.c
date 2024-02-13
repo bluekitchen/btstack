@@ -141,7 +141,7 @@ static void vcs_client_emit_done_event(vcs_client_connection_t * connection, uin
     uint16_t cid = connection->basic_connection.cid;
     uint16_t characteristic_uuid16 = gatt_service_client_characteristic_index2uuid16(&vcs_client, index);
 
-    uint8_t event[8];
+    uint8_t event[9];
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
     event[pos++] = sizeof(event) - 2;
@@ -149,6 +149,8 @@ static void vcs_client_emit_done_event(vcs_client_connection_t * connection, uin
 
     little_endian_store_16(event, pos, cid);
     pos+= 2;
+    event[pos++] = index;
+
     little_endian_store_16(event, pos, characteristic_uuid16);
     pos+= 2;
     event[pos++] = status;
