@@ -61,7 +61,10 @@ extern "C" {
  * @text The Media Control Service Client 
  */
 typedef enum {
-    VOLUME_CONTROL_SERVICE_CLIENT_STATE_W4_CONNECTION = 0,
+    VOLUME_CONTROL_SERVICE_CLIENT_STATE_UNINITIALIZED = 0,
+    VOLUME_CONTROL_SERVICE_CLIENT_STATE_W4_CONNECTION,
+    VOLUME_CONTROL_SERVICE_CLIENT_STATE_W2_QUERY_CHANGE_COUNTER,
+    VOLUME_CONTROL_SERVICE_CLIENT_STATE_W4_CHANGE_COUNTER_RESULT,
     VOLUME_CONTROL_SERVICE_CLIENT_STATE_W2_QUERY_INCLUDED_SERVICES,
     VOLUME_CONTROL_SERVICE_CLIENT_STATE_W4_INCLUDED_SERVICES_RESULT,
     VOLUME_CONTROL_SERVICE_CLIENT_STATE_W4_AICS_SERVICES_CONNECTED,
@@ -161,14 +164,7 @@ uint8_t volume_control_service_client_connect(
  * @return status
  */
 uint8_t volume_control_service_client_read_volume_state(uint16_t vcs_cid);
-
-
-// VCS Control Point procedures
-uint8_t volume_control_service_client_relative_volume_down(uint16_t vcs_cid);
-uint8_t volume_control_service_client_relative_volume_up(uint16_t vcs_cid);
-uint8_t volume_control_service_client_unmute_relative_volume_down(uint16_t vcs_cid);
-uint8_t volume_control_service_client_unmute_relative_volume_up(uint16_t vcs_cid);
-uint8_t volume_control_service_client_relative_set_absolute_volume(uint16_t vcs_cid, uint8_t volume_setting);
+uint8_t volume_control_service_client_read_volume_flags(uint16_t vcs_cid);
 
 /**
  * @brief Turn on mute.
@@ -183,6 +179,14 @@ uint8_t volume_control_service_client_mute(uint16_t vcs_cid);
  */
 uint8_t volume_control_service_client_unmute(uint16_t vcs_cid);
 
+
+// VCS Control Point procedures
+
+uint8_t volume_control_service_client_relative_volume_up(uint16_t vcs_cid);
+uint8_t volume_control_service_client_relative_volume_down(uint16_t vcs_cid);
+uint8_t volume_control_service_client_unmute_relative_volume_up(uint16_t vcs_cid);
+uint8_t volume_control_service_client_unmute_relative_volume_down(uint16_t vcs_cid);
+uint8_t volume_control_service_client_set_absolute_volume(uint16_t vcs_cid, uint8_t abs_volume);
 
 // Wrap AICS service API
 uint8_t volume_control_service_client_write_gain_setting(uint16_t vcs_cid, uint8_t aics_index, int8_t gain_setting);
