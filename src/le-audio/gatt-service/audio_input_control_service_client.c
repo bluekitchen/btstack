@@ -419,19 +419,15 @@ static void aics_client_packet_handler_internal(uint8_t packet_type, uint16_t ch
                     printf("AICS Client: Query input state to retrieve and cache change counter\n");
 #endif
                     connection = (aics_client_connection_t *) connection_helper;
-                    status = gatt_service_client_can_query_characteristic(connection_helper, AICS_CLIENT_CHARACTERISTIC_INDEX_AUDIO_INPUT_STATE);
-
-                    if (status == ERROR_CODE_SUCCESS){
-                        connection->state = AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_W2_QUERY_CHANGE_COUNTER;
-                        status = aics_client_request_send_gatt_query(connection, AICS_CLIENT_CHARACTERISTIC_INDEX_AUDIO_INPUT_STATE);
-                        if (status == ERROR_CODE_SUCCESS){
-                            break;
-                        }
+                    if (connection->basic_connection.characteristics[AICS_CLIENT_CHARACTERISTIC_INDEX_AUDIO_INPUT_STATE].value_handle == 0){
+                        connection->state = AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_UNINITIALISED;
+                        aics_client_emit_connected(connection_helper, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE);
+                        // TODO reset client
+                        break;
                     }
 
-                    // change counter must be retrieved, smth. went wrong
-                    connection->state = AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_UNINITIALISED;
-                    aics_client_emit_connected(connection_helper, status);
+                    connection->state = AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_W2_QUERY_CHANGE_COUNTER;
+                    aics_client_request_send_gatt_query(connection, AICS_CLIENT_CHARACTERISTIC_INDEX_AUDIO_INPUT_STATE);
                     break;
 
                 case GATTSERVICE_SUBEVENT_CLIENT_DISCONNECTED:
@@ -484,17 +480,10 @@ static void aics_client_handle_gatt_client_event(uint8_t packet_type, uint16_t c
                         printf("AICS Client: connection failed\n");
 #endif
                         connection->state = AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_UNINITIALISED;
-                        aics_client_emit_connected(connection_helper, ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH);
                         break;
                     }
 
                     connection->change_counter = gatt_event_characteristic_value_query_result_get_value(packet)[3];
-#ifdef ENABLE_TESTING_SUPPORT
-                    printf("AICS Client: connected, change counter initialized to %d\n", connection->change_counter);
-#endif
-                    connection->state = AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_READY;
-                    // initialize change counter on connect
-                    aics_client_emit_connected(connection_helper, ATT_ERROR_SUCCESS);
                     break;
 
                 case AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_W4_READ_CHARACTERISTIC_VALUE_RESULT:
@@ -521,6 +510,17 @@ static void aics_client_handle_gatt_client_event(uint8_t packet_type, uint16_t c
             switch (connection->state){
                 case AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_W4_WRITE_CHARACTERISTIC_VALUE_RESULT:
                     aics_client_emit_done_event(connection_helper, connection->characteristic_index, gatt_event_query_complete_get_att_status(packet));
+                    break;
+                case AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_W4_CHANGE_COUNTER_RESULT:
+#ifdef ENABLE_TESTING_SUPPORT
+                    printf("AICS Client: connected, change counter initialized to %d\n", connection->change_counter);
+#endif
+                    connection->state = AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_READY;
+                    // initialize change counter on connect
+                    aics_client_emit_connected(connection_helper, ATT_ERROR_SUCCESS);
+                    break;
+                case AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_UNINITIALISED:
+                    aics_client_emit_connected(connection_helper, ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH);
                     break;
                 default:
                     break;
