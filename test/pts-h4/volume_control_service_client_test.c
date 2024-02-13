@@ -277,6 +277,10 @@ static void gatt_client_event_handler(uint8_t packet_type, uint16_t channel, uin
             printf("Mute: %d\n", gattservice_subevent_vcs_client_volume_state_get_mute(packet));
             break;
 
+        case GATTSERVICE_SUBEVENT_VCS_CLIENT_VOLUME_FLAGS:
+            printf("Flags: %d\n", gattservice_subevent_vcs_client_volume_flags_get_flags(packet));
+            break;
+
         case GATTSERVICE_SUBEVENT_VCS_CLIENT_AUDIO_INPUT_STATE:
             included_service_index = gattservice_subevent_vcs_client_audio_input_state_get_aics_index(packet);
             printf("VCS Client Test: received AICS[%d] event AUDIO_INPUT_STATE\n", included_service_index);
@@ -385,7 +389,7 @@ static void gatt_client_event_handler(uint8_t packet_type, uint16_t channel, uin
 
 
         case GATTSERVICE_SUBEVENT_VCS_CLIENT_DISCONNECTED:
-            printf("Microphone Control service client disconnected\n");
+            printf("Volume Control service client disconnected\n");
             break;
 
         default:
@@ -401,7 +405,15 @@ static void show_usage(void){
     printf("--- VCS Client ---\n");
     printf("c    - Connect to %s\n", bd_addr_to_str(current_pts_address));
     printf("r    - Read Volume state\n");
+    printf("R    - Read Volume flags\n");
     printf("m/M  - Mute ON/OFF\n");
+    printf("d     - Relative Volume Up\n");
+    printf("D     - Relative Volume Down\n");
+    printf("e     - Unmute Relative Volume Up\n");
+    printf("E     - Unmute Relative Volume Down\n");
+    printf("f     - Set Absolute Volume\n");
+
+    printf("\n--- AICP Client ---\n");
     printf("g    - write gain setting, AICS[%d] client\n", aics_connection_index);
     printf("G    - write manual gain mode, AICS[%d] client\n", aics_connection_index);
     printf("h    - write automatic gain mode, AICS[%d] client\n", aics_connection_index);
@@ -416,11 +428,12 @@ static void show_usage(void){
     printf("q    - write incorrect gain setting 110, AICS[%d] client\n", aics_connection_index);
     printf("Q    - write incorrect gain setting 110, AICS[%d] client\n", aics_connection_index);
 
-    printf("p   - write volume offset, VOCS[%d] client\n", vocs_connection_index);
-    printf("P   - write audio locationt, VOCS[%d] client\n", vocs_connection_index);
-    printf("R   - read offset state, VOCS[%d] client\n", vocs_connection_index);
-    printf("s   - read audio location, VOCS[%d] client\n", vocs_connection_index);
-    printf("S   - read audio output description, VOCS[%d] client\n", vocs_connection_index);
+    printf("\n--- VOCS Client ---\n");
+    printf("p    - write volume offset, VOCS[%d] client\n", vocs_connection_index);
+    printf("P    - write audio locationt, VOCS[%d] client\n", vocs_connection_index);
+    printf("t    - read offset state, VOCS[%d] client\n", vocs_connection_index);
+    printf("s    - read audio location, VOCS[%d] client\n", vocs_connection_index);
+    printf("S    - read audio output description, VOCS[%d] client\n", vocs_connection_index);
 }
 
 static void stdin_process(char c){
@@ -442,9 +455,35 @@ static void stdin_process(char c){
 
             break;
 
+        case 'd':
+            printf("Relative Volume Up\n");
+            status = volume_control_service_client_relative_volume_up(vcs_cid);
+            break;
+        case 'D':
+            printf("Relative Volume Down\n");
+            status = volume_control_service_client_relative_volume_down(vcs_cid);
+            break;
+        case 'e':
+            printf("Unmute Relative Volume Up\n");
+            status =  volume_control_service_client_unmute_relative_volume_up(vcs_cid);
+            break;
+        case 'E':
+            printf("Unmute Relative Volume Down\n");
+            status =  volume_control_service_client_unmute_relative_volume_down(vcs_cid);
+            break;
+        case 'f':
+            printf("Set Absolute Volume\n");
+            status =  volume_control_service_client_set_absolute_volume(vcs_cid, 50);
+            break;
+
         case 'r':
             printf("Read Volume state\n");
             status = volume_control_service_client_read_volume_state(vcs_cid);
+            break;
+
+        case 'R':
+            printf("Read Volume flags\n");
+            status = volume_control_service_client_read_volume_flags(vcs_cid);
             break;
 
         case 'm':
@@ -532,7 +571,7 @@ static void stdin_process(char c){
             status = volume_control_service_client_write_audio_location(vcs_cid, vocs_connection_index, LE_AUDIO_LOCATION_MASK_FRONT_LEFT | LE_AUDIO_LOCATION_MASK_FRONT_RIGHT);
             break;
 
-        case 'R':
+        case 't':
             printf("Read offset state\n");
             status = volume_control_service_client_read_offset_state(vcs_cid, vocs_connection_index);
             break;
