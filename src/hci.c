@@ -167,6 +167,7 @@
     X( SUPPORTED_HCI_COMMAND_READ_ENCRYPTION_KEY_SIZE              , 20, 4) \
     X( SUPPORTED_HCI_COMMAND_SET_EVENT_MASK_PAGE_2                 , 22, 2) \
     X( SUPPORTED_HCI_COMMAND_WRITE_LE_HOST_SUPPORTED               , 24, 6) \
+    X( SUPPORTED_HCI_COMMAND_LE_READ_REMOTE_FEATURES               , 27, 5) \
     X( SUPPORTED_HCI_COMMAND_REMOTE_OOB_EXTENDED_DATA_REQUEST_REPLY, 32, 1) \
     X( SUPPORTED_HCI_COMMAND_WRITE_SECURE_CONNECTIONS_HOST         , 32, 3) \
     X( SUPPORTED_HCI_COMMAND_READ_LOCAL_OOB_EXTENDED_DATA_COMMAND  , 32, 6) \
@@ -3411,8 +3412,12 @@ static void hci_handle_le_connection_complete_event(const uint8_t * hci_event){
 	conn->con_handle             = gap_subevent_le_connection_complete_get_connection_handle(gap_event);
     conn->le_connection_interval = conn_interval;
 
+#ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
     // workaround: PAST doesn't work without LE Read Remote Features on PacketCraft Controller with LMP 568B
-    conn->gap_connection_tasks = GAP_CONNECTION_TASK_LE_READ_REMOTE_FEATURES;
+    if (hci_command_supported(SUPPORTED_HCI_COMMAND_LE_READ_REMOTE_FEATURES)){
+        conn->gap_connection_tasks = GAP_CONNECTION_TASK_LE_READ_REMOTE_FEATURES;
+    }
+#endif
 
 #ifdef ENABLE_LE_PERIPHERAL
 	if (role == HCI_ROLE_SLAVE){
