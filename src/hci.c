@@ -3215,6 +3215,28 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
     }
 }
 
+#ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
+static void
+hci_iso_create_big_failed(const le_audio_big_t *big, uint8_t status) {
+    hci_iso_stream_finalize_by_type_and_group_id(HCI_ISO_TYPE_BIS, big->big_handle);
+    btstack_linked_list_remove(&hci_stack->le_audio_bigs, (btstack_linked_item_t *) big);
+    if (big->state == LE_AUDIO_BIG_STATE_W4_ESTABLISHED){
+        hci_emit_big_created(big, status);
+    } else {
+        hci_emit_big_terminated(big);
+    }
+}
+
+static void hci_iso_big_sync_failed(const le_audio_big_sync_t *big_sync, uint8_t status) {
+    btstack_linked_list_remove(&hci_stack->le_audio_big_syncs, (btstack_linked_item_t *) big_sync);
+    if (big_sync->state == LE_AUDIO_BIG_STATE_W4_ESTABLISHED) {
+        hci_emit_big_sync_created(big_sync, status);
+    } else {
+        hci_emit_big_sync_stopped(big_sync->big_handle);
+    }
+}
+#endif
+
 static void handle_command_status_event(uint8_t * packet, uint16_t size) {
     UNUSED(size);
 
@@ -3290,14 +3312,22 @@ static void handle_command_status_event(uint8_t * packet, uint16_t size) {
             break;
         case HCI_OPCODE_HCI_LE_CREATE_BIG:
             if (status != ERROR_CODE_SUCCESS){
-                log_info("TODO: handle Create BIG failed");
                 hci_stack->iso_active_operation_type = HCI_ISO_TYPE_INVALID;
+                // get current big
+                le_audio_big_t * big = hci_big_for_handle(hci_stack->iso_active_operation_group_id);
+                if (big != NULL){
+                    hci_iso_create_big_failed(big, status);
+                }
             }
             break;
         case HCI_OPCODE_HCI_LE_BIG_CREATE_SYNC:
             if (status != ERROR_CODE_SUCCESS){
-                log_info("TODO: handle BIG Sync failed");
                 hci_stack->iso_active_operation_type = HCI_ISO_TYPE_INVALID;
+                // get current big sync
+                le_audio_big_sync_t * big_sync = hci_big_sync_for_handle(hci_stack->iso_active_operation_group_id);
+                if (big_sync != NULL){
+                    hci_iso_big_sync_failed(big_sync, status);
+                }
             }
             break;
 #endif /* ENABLE_LE_ISOCHRONOUS_STREAMS */
@@ -4539,13 +4569,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
                             }
                         } else {
                             // create BIG failed or has been stopped by us
-                            hci_iso_stream_finalize_by_type_and_group_id(HCI_ISO_TYPE_BIS, big->big_handle);
-                            btstack_linked_list_remove(&hci_stack->le_audio_bigs, (btstack_linked_item_t *) big);
-                            if (big->state == LE_AUDIO_BIG_STATE_W4_ESTABLISHED){
-                                hci_emit_big_created(big, status);
-                            } else {
-                                hci_emit_big_terminated(big);
-                            }
+                            hci_iso_create_big_failed(big, status);
                         }
                     }
                     break;
@@ -4608,12 +4632,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
                             }
                         } else {
                             // create BIG Sync failed or has been stopped by us
-                            btstack_linked_list_remove(&hci_stack->le_audio_big_syncs, (btstack_linked_item_t *) big_sync);
-                            if (big_sync->state == LE_AUDIO_BIG_STATE_W4_ESTABLISHED) {
-                                hci_emit_big_sync_created(big_sync, status);
-                            } else {
-                                hci_emit_big_sync_stopped(big_handle);
-                            }
+                            hci_iso_big_sync_failed(big_sync, status);
                         }
                     }
                     break;
