@@ -115,7 +115,7 @@ static uint8_t gap_ext_adv_sid;
 static uint8_t  gap_scan_response[31];
 static uint16_t gap_scan_response_len;
 static uint8_t gap_inquriy_scan_active;
-
+static bool gap_discovery_active;
 static bool gap_delete_bonding_on_start;
 
 static uint32_t current_settings;
@@ -305,6 +305,8 @@ static void btstack_packet_handler (uint8_t packet_type, uint16_t channel, uint8
                     break;
 
                 case GAP_EVENT_ADVERTISING_REPORT:{
+                    if (gap_discovery_active == false) break;
+
                     bd_addr_t address;
                     gap_event_advertising_report_get_address(packet, address);
                     uint8_t event_type = gap_event_advertising_report_get_advertising_event_type(packet);
@@ -1060,6 +1062,7 @@ static void btp_gap_handler(uint8_t opcode, uint8_t controller_index, uint16_t l
         case BTP_GAP_OP_START_DISCOVERY:
             MESSAGE("BTP_GAP_OP_START_DISCOVERY");
             if (controller_index == 0){
+                gap_discovery_active = true;
                 uint8_t flags = data[0];
                 if ((flags & BTP_GAP_DISCOVERY_FLAG_LE) != 0){
                     uint8_t scan_type;
@@ -1091,6 +1094,7 @@ static void btp_gap_handler(uint8_t opcode, uint8_t controller_index, uint16_t l
         case BTP_GAP_OP_STOP_DISCOVERY:
             MESSAGE("BTP_GAP_OP_STOP_DISCOVERY");
             if (controller_index == 0){
+                gap_discovery_active = false;
                 gap_stop_scan();
                 if (gap_inquriy_scan_active){
                     gap_inquriy_scan_active = 0;
