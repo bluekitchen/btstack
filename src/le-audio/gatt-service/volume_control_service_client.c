@@ -675,6 +675,10 @@ uint8_t volume_control_service_client_read_volume_state(uint16_t vcs_cid){
     return vcs_client_request_read_characteristic(vcs_cid, VCS_CLIENT_CHARACTERISTIC_INDEX_VOLUME_STATE);
 }
 
+uint8_t volume_control_service_client_read_volume_flags(uint16_t vcs_cid){
+    return vcs_client_request_read_characteristic(vcs_cid, VCS_CLIENT_CHARACTERISTIC_INDEX_VOLUME_FLAGS);
+}
+
 static uint8_t vcs_control_point_procedure_request(uint16_t vcs_cid, vcs_opcode_t opcode){
     vcs_client_connection_t * connection = (vcs_client_connection_t *) gatt_service_client_get_connection_for_cid(&vcs_client, vcs_cid);
     if (connection == NULL){
@@ -685,7 +689,7 @@ static uint8_t vcs_control_point_procedure_request(uint16_t vcs_cid, vcs_opcode_
         return status;
     }
     btstack_assert(connection != NULL);
-    if (connection->state != AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_READY){
+    if (connection->state != VOLUME_CONTROL_SERVICE_CLIENT_STATE_READY){
         return ERROR_CODE_CONTROLLER_BUSY;
     }
     connection->data.data_bytes[0] = (uint8_t)opcode;
@@ -699,6 +703,39 @@ uint8_t volume_control_service_client_mute(uint16_t vcs_cid){
 
 uint8_t volume_control_service_client_unmute(uint16_t vcs_cid){
     return vcs_control_point_procedure_request(vcs_cid, VCS_OPCODE_UNMUTE);
+}
+
+uint8_t volume_control_service_client_relative_volume_up(uint16_t vcs_cid){
+    return vcs_control_point_procedure_request(vcs_cid, VCS_OPCODE_RELATIVE_VOLUME_UP);
+}
+uint8_t volume_control_service_client_relative_volume_down(uint16_t vcs_cid){
+    return vcs_control_point_procedure_request(vcs_cid, VCS_OPCODE_RELATIVE_VOLUME_DOWN);
+}
+uint8_t volume_control_service_client_unmute_relative_volume_up(uint16_t vcs_cid){
+    return vcs_control_point_procedure_request(vcs_cid, VCS_OPCODE_UNMUTE_RELATIVE_VOLUME_UP);
+}
+uint8_t volume_control_service_client_unmute_relative_volume_down(uint16_t vcs_cid){
+    return vcs_control_point_procedure_request(vcs_cid, VCS_OPCODE_UNMUTE_RELATIVE_VOLUME_DOWN);
+}
+
+uint8_t volume_control_service_client_set_absolute_volume(uint16_t vcs_cid, uint8_t abs_volume){
+    vcs_client_connection_t * connection = (vcs_client_connection_t *) gatt_service_client_get_connection_for_cid(&vcs_client, vcs_cid);
+    if (connection == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    uint8_t status = vcs_client_can_query_characteristic(connection, VCS_CLIENT_CHARACTERISTIC_INDEX_VOLUME_CONTROL_POINT);
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
+    }
+    btstack_assert(connection != NULL);
+    if (connection->state != VOLUME_CONTROL_SERVICE_CLIENT_STATE_READY){
+        return ERROR_CODE_CONTROLLER_BUSY;
+    }
+    connection->data.data_bytes[0] = (uint8_t)VCS_OPCODE_SET_ABSOLUTE_VOLUME;
+    connection->data.data_bytes[1] = connection->change_counter;
+    connection->data.data_bytes[3] = abs_volume;
+
+    return vcs_client_request_write_characteristic(connection, VCS_CLIENT_CHARACTERISTIC_INDEX_VOLUME_CONTROL_POINT);
 }
 
 
