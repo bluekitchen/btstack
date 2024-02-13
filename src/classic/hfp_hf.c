@@ -1047,9 +1047,9 @@ static void hfp_hf_run_for_context(hfp_connection_t * hfp_connection){
         int i;
         for (i=0; i < hfp_hf_indicators_nr; i++){
             if (get_bit(hfp_connection->generic_status_update_bitmap, i)){
+                hfp_connection->generic_status_update_bitmap = store_bit(hfp_connection->generic_status_update_bitmap, i, 0);
                 if (hfp_connection->generic_status_indicators[i].state){
                     hfp_connection->ok_pending = 1;
-                    hfp_connection->generic_status_update_bitmap = store_bit(hfp_connection->generic_status_update_bitmap, i, 0);
                     char buffer[30];
                     snprintf(buffer, sizeof(buffer), "AT%s=%u,%u\r",
                              HFP_TRANSFER_HF_INDICATOR_STATUS,
@@ -2213,13 +2213,16 @@ uint8_t hfp_hf_set_hf_indicator(hci_con_handle_t acl_handle, int assigned_number
     int i;
     for (i = 0; i < hfp_hf_indicators_nr ; i++){
         if (hfp_hf_indicators[i] == assigned_number){
-            // set value
-            hfp_hf_indicators_value[i] = value;
-            // mark for update
+            // check if connection ready and indicator subscribed
             if (hfp_connection->state > HFP_LIST_GENERIC_STATUS_INDICATORS){
-                hfp_connection->generic_status_update_bitmap |= (1<<i);
-                // send update
-                hfp_hf_run_for_context(hfp_connection);
+                if (hfp_connection->generic_status_indicators[i].state != 0) {
+                    // set value
+                    hfp_hf_indicators_value[i] = value;
+                    // mark for update
+                    hfp_connection->generic_status_update_bitmap |= (1 << i);
+                    // send update
+                    hfp_hf_run_for_context(hfp_connection);
+                }
             }
             return ERROR_CODE_SUCCESS;
         }
