@@ -167,6 +167,10 @@ static void vcs_client_emit_read_event(gatt_service_client_connection_helper_t *
     switch (characteristic_index){
         case VCS_CLIENT_CHARACTERISTIC_INDEX_VOLUME_STATE:
             expected_data_size = 3;
+            if (expected_data_size == data_size){
+                vcs_client_connection_t * connection = (vcs_client_connection_t *)connection_helper;
+                connection->change_counter = data[2];
+            }
             subevent_id = GATTSERVICE_SUBEVENT_VCS_CLIENT_VOLUME_STATE;
             break;
         case VCS_CLIENT_CHARACTERISTIC_INDEX_VOLUME_FLAGS:
@@ -200,6 +204,10 @@ static void vcs_client_emit_notify_event(gatt_service_client_connection_helper_t
     switch (characteristic_uuid16){
         case ORG_BLUETOOTH_CHARACTERISTIC_VOLUME_STATE:
             expected_data_size = 3;
+            if (expected_data_size == data_size){
+                vcs_client_connection_t * connection = (vcs_client_connection_t *)connection_helper;
+                connection->change_counter = data[2];
+            }
             subevent_id = GATTSERVICE_SUBEVENT_VCS_CLIENT_VOLUME_STATE;
             break;
         case ORG_BLUETOOTH_CHARACTERISTIC_VOLUME_FLAGS:
@@ -365,7 +373,7 @@ static void vcs_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
                     connection = (vcs_client_connection_t *)connection_helper;
 
                     if (gattservice_subevent_aics_client_connected_get_att_status(packet) != ERROR_CODE_SUCCESS) {
-                        printf("VCS: Audio Input Control service client connection failed, err 0x%02x.\n", gattservice_subevent_aics_client_connected_get_att_status(packet));
+                        log_info("VCS: Audio Input Control service client connection failed, err 0x%02x.", gattservice_subevent_aics_client_connected_get_att_status(packet));
                         break;
                     }
 
@@ -556,18 +564,25 @@ static void vcs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t ch
 }
 
 static uint16_t vcs_client_serialize_characteristic_value_for_write(vcs_client_connection_t * connection, uint8_t ** out_value){
-    uint16_t characteristic_uuid16 = gatt_service_client_characteristic_index2uuid16(&vcs_client, connection->characteristic_index);
-    *out_value = connection->write_buffer;
+    uint8_t value_length = 0;
+    switch (connection->characteristic_index){
+        case VCS_CLIENT_CHARACTERISTIC_INDEX_VOLUME_CONTROL_POINT:
+            switch ((aics_opcode_t)connection->data.data_bytes[0]){
+                case VCS_OPCODE_SET_ABSOLUTE_VOLUME:
+                    value_length = 3;
+                    break;
+                default:
+                    value_length = 2;
+                    break;
+            }
+            *out_value = (uint8_t *) connection->data.data_bytes;
+            break;
 
-    switch (characteristic_uuid16){
-        case ORG_BLUETOOTH_CHARACTERISTIC_MUTE:
-            connection->write_buffer[0] = connection->data.data_8;
-            return 1;
         default:
             btstack_assert(false);
             break;
     }
-    return 0;
+    return value_length;
 }
 
 static void vcs_client_run_for_connection(void * context){
@@ -581,6 +596,13 @@ static void vcs_client_run_for_connection(void * context){
     gatt_client_service_t service;
 
     switch (connection->state){
+        case VOLUME_CONTROL_SERVICE_CLIENT_STATE_W2_QUERY_CHANGE_COUNTER:
+            connection->state = VOLUME_CONTROL_SERVICE_CLIENT_STATE_W4_CHANGE_COUNTER_RESULT;
+            (void) gatt_client_read_value_of_characteristic_using_value_handle(
+                    &vcs_client_handle_gatt_client_event, con_handle,
+                    gatt_service_client_helper_value_handle_for_index(connection_helper, connection->characteristic_index));
+            break;
+
         case VOLUME_CONTROL_SERVICE_CLIENT_STATE_W2_QUERY_INCLUDED_SERVICES:
             connection->state = VOLUME_CONTROL_SERVICE_CLIENT_STATE_W4_INCLUDED_SERVICES_RESULT;
             service.start_group_handle = connection->basic_connection.start_handle;
@@ -645,7 +667,8 @@ uint8_t volume_control_service_client_connect(hci_con_handle_t con_handle,
 
     vcs_connection->aics_connections_max_num = 0;
     vcs_connection->aics_connections_storage = NULL;
-    
+    vcs_connection->aics_connections_num = 0;
+
     if (aics_connections_num > 0){
         btstack_assert(aics_connections != NULL);
         vcs_connection->aics_connections_storage = aics_connections;
@@ -653,6 +676,7 @@ uint8_t volume_control_service_client_connect(hci_con_handle_t con_handle,
     }
 
     vcs_connection->vocs_connections_max_num = 0;
+    vcs_connection->vocs_connections_num = 0;
     vcs_connection->vocs_connections_storage = NULL;
     
     if (vocs_connections_num > 0){
