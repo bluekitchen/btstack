@@ -238,6 +238,8 @@ static void hci_le_scan_stop(void);
 #ifdef ENABLE_LE_PERIPHERAL
 #ifdef ENABLE_LE_EXTENDED_ADVERTISING
 static le_advertising_set_t * hci_advertising_set_for_handle(uint8_t advertising_handle);
+static uint8_t hci_le_extended_advertising_operation_for_chunk(uint16_t pos, uint16_t len);
+static void le_handle_extended_advertisement_report(uint8_t *packet, uint16_t size);
 #endif /* ENABLE_LE_EXTENDED_ADVERTISING */
 #endif /* ENABLE_LE_PERIPHERAL */
 #ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
@@ -1583,7 +1585,7 @@ void le_handle_advertisement_report(uint8_t *packet, uint16_t size){
 }
 
 #ifdef ENABLE_LE_EXTENDED_ADVERTISING
-void le_handle_extended_advertisement_report(uint8_t *packet, uint16_t size) {
+static void le_handle_extended_advertisement_report(uint8_t *packet, uint16_t size) {
     uint16_t offset = 3;
     uint8_t num_reports = packet[offset++];
     uint8_t event[2 + 255]; // use upper bound to avoid var size automatic var
@@ -6042,7 +6044,7 @@ hci_send_le_create_connection(uint8_t initiator_filter_policy, bd_addr_type_t ad
 
 #ifdef ENABLE_LE_PERIPHERAL
 #ifdef ENABLE_LE_EXTENDED_ADVERTISING
-uint8_t hci_le_extended_advertising_operation_for_chunk(uint16_t pos, uint16_t len){
+static uint8_t hci_le_extended_advertising_operation_for_chunk(uint16_t pos, uint16_t len){
     uint8_t  operation = 0;
     if (pos == 0){
         // first fragment or complete data
