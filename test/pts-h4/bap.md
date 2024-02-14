@@ -28,8 +28,8 @@ PTS IXIT Configuration:
 - BAP/UCL/DISC/BV-05-C: c, p, h, X
 - BAP/UCL/DISC/BV-06-C: c, p, g, X
 
-### BAP/UCL/ADV
-- BAP/USR/DISC/BV-01-C: 9
+### BAP/UCL/SCC
+- BAP/UCL/ADV/BV-01-C: ?
 
 ### BAP/UCL/SCC -> auto-pts
 - BAP/UCL/SCC/BV-001-C: c, d, K
@@ -52,23 +52,56 @@ PTS IXIT Configuration:
 - BAP/UCL/SCC/BV-116-C: c, d, z, K, y, l, M, Q
 - BAP/UCL/SCC/BV-117-C: c, d, z, K, y, l, M, n, Q
 
+### BAP/UCL/P
 - BAP/UCL/PD/BV-01-C: c, d, x, y, K, l, 
+- BAP/UCL/PD/BV-02-C: ?
+- BAP/UCL/PD/BV-03-C: ?
+- BAP/UCL/PD/BV-04-C: ?
 
-### BASS Client:
+### BAP/UCL/STR -> auto-pts
+
+### BAP/USR/STR -> auto-pts
+
+### BAP/USR/ADV
+- BAP/USR/DISC/BV-01-C: 9
+- BAP/USR/DISC/BV-04-C: ?
+
+### BAP/USR/SCC -> auto-pts
+
+### BAP/USR/SPE
+- BAP/USR/SPE/BI-01-C: ?
+- BAP/USR/SPE/BI-02-C: ?
+- BAP/USR/SPE/BI-03-C: ?
+- BAP/USR/SPE/BI-04-C: ?
+- BAP/USR/SPE/BI-05-C: ?
+
+### BAP/BSRC/SCC -> auto-pts
+
+### BAP/BSRC/STR -> auto-pts
+
+### BAP/BSRC/SCC -> auto-pts
+
+### BAP/BSNK/SCC -> auto-pts
+
+### BAP/BSNK/ADV -> auto-pts
+
+### BAP/BSNK/STR -> auto-pts
+
+### BAP/SDE
+Tool: test/le_audio/le_broadcast_sink
+- BAP/SDE/BASS/BV-01-C: s
+
+### BAP/BA/CGGIT -> auto-pts
 - BAP/BA/CGGIT/SER/BV-01-C  : c, b
 - BAP/BA/CGGIT/CHA/BV-01-C  : c, b
 - BAP/BA/CGGIT/CHA/BV-02-C  : c, b
+ 
+#### BAP/BA/ADV -> auto-pts
 
-## Unicast Server: pts/gatt_profiles_bap
+## BAP/BA/BASS
+Tool: le_audio/le_broadcast_assistant
+Tool: pts-h4/bap_service_client_test
 
-Tool: test/le_audio/le_broadcast_sink
-
-## BASS Server:
-- BAP/SDE/BASS/BV-01-C:    s
-
-Tool: test/le_audio/le_broadcast_assistant
-
-## BASS Client:
 - BAP/BA/BASS/BV-01-C    : see pts-h4/bap_service_client_test
 - BAP/BA/BASS/BV-02-C    : see pts-h4/bap_service_client_test
 - BAP/BA/BASS/BV-03-C    : see pts-h4/bap_service_client_test
@@ -79,7 +112,6 @@ Tool: test/le_audio/le_broadcast_assistant
 - BAP/BA/BASS/BV-08-C    : c,
 - BAP/BA/BASS/BV-09-C    : see pts-h4/bap_service_client_test
 
-## Broadcast Assistant
 - BAP/BA/BASS/BV-01-C    : c,
 - BAP/BA/BASS/BV-02-C    : c, s
 - BAP/BA/BASS/BV-03-C    : c, S
@@ -89,5 +121,3 @@ Tool: test/le_audio/le_broadcast_assistant
 - BAP/BA/BASS/BV-07-C    : see test/le_audio/le_broadcast_assistant
 - BAP/BA/BASS/BV-08-C    : see test/le_audio/le_broadcast_assistant
 - BAP/BA/BASS/BV-09-C    : c, p
-
-## CSIS Client -> Documentation moved to pts-h4/csip_client_test.md
