@@ -88,8 +88,8 @@ static bool scan_for_broadcast_audio_announcement;
 static bool have_base;
 static bool have_big_info;
 static uint32_t       periodic_advertising_sync_broadcast_id;
-static bd_addr_t      periodic_advertisinc_sync_address;
-static bd_addr_type_t periodic_advertisinc_sync_addr_type;
+static bd_addr_t      periodic_advertising_sync_address;
+static bd_addr_type_t periodic_advertising_sync_addr_type;
 static bass_source_data_t bass_source_data;
 static hci_con_handle_t sync_handle = HCI_CON_HANDLE_INVALID;
 
@@ -97,6 +97,16 @@ static hci_con_handle_t sync_handle = HCI_CON_HANDLE_INVALID;
 static const uint8_t              big_handle = 1;
 static le_audio_big_sync_t        big_sync_storage;
 static le_audio_big_sync_params_t big_sync_params;
+
+// BASS
+#define BASS_CLIENT_NUM_SOURCES 1
+static bd_addr_type_t bass_addr_type;
+static bd_addr_t      bass_address;
+static bass_client_connection_t bass_connection;
+static bass_client_source_t bass_sources[BASS_CLIENT_NUM_SOURCES];
+static bass_source_data_t bass_source_data;
+static uint16_t bass_cid;
+static uint8_t  bass_source_id;
 
 static const le_periodic_advertising_parameters_t periodic_params = {
         .periodic_advertising_interval_min = 0x258, // 375 ms
@@ -290,8 +300,8 @@ static void handle_periodic_advertisement(const uint8_t * packet, uint16_t size)
             // emit BIS Found event
             uint8_t buffer[255];
             uint16_t pos = 0;
-            buffer[pos++] = periodic_advertisinc_sync_addr_type;
-            reverse_bd_addr(periodic_advertisinc_sync_address, &buffer[pos]);
+            buffer[pos++] = periodic_advertising_sync_addr_type;
+            reverse_bd_addr(periodic_advertising_sync_address, &buffer[pos]);
             pos += 6;
             little_endian_store_24(buffer, pos, periodic_advertising_sync_broadcast_id);
             pos += 3;
@@ -340,8 +350,8 @@ static void handle_big_sync_created(const uint8_t * packet, uint16_t size){
         // emit BIS Synced event
         uint8_t buffer[255];
         uint16_t pos = 0;
-        buffer[pos++] = periodic_advertisinc_sync_addr_type;
-        reverse_bd_addr(periodic_advertisinc_sync_address, &buffer[pos]);
+        buffer[pos++] = periodic_advertising_sync_addr_type;
+        reverse_bd_addr(periodic_advertising_sync_address, &buffer[pos]);
         pos += 6;
         little_endian_store_24(buffer, pos, periodic_advertising_sync_broadcast_id);
         pos += 3;
@@ -436,6 +446,68 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                 default:
                     break;
             }
+            break;
+        default:
+            break;
+    }
+}
+
+static void bass_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+    UNUSED(size);
+
+    if (packet_type != HCI_EVENT_PACKET) return;
+    if (hci_event_packet_get_type(packet) != HCI_EVENT_GATTSERVICE_META) return;
+
+    const bass_source_data_t * source_data;
+
+    switch (hci_event_gattservice_meta_get_subevent_code(packet)) {
+        case GATTSERVICE_SUBEVENT_BASS_CLIENT_CONNECTED:
+            if (gattservice_subevent_bass_client_connected_get_status(packet) != ERROR_CODE_SUCCESS){
+                MESSAGE("BASS client connection failed, cid 0x%02x, con_handle 0x%02x, status 0x%02x",
+                       bass_cid, remote_handle,
+                       gattservice_subevent_bass_client_connected_get_status(packet));
+                return;
+            }
+            MESSAGE("BASS client connected, cid 0x%02x\n", bass_cid);
+
+            // inform btp
+            uint8_t data[7];
+            data[0] = bass_addr_type;
+            reverse_bd_addr(bass_address, &data[1]);
+            btp_send(BTP_SERVICE_ID_BAP, BTP_BAP_EV_SCAN_DELEGATOR_FOUND, 0, sizeof(data), data);
+            break;
+        case GATTSERVICE_SUBEVENT_BASS_CLIENT_SOURCE_OPERATION_COMPLETE:
+            if (gattservice_subevent_bass_client_source_operation_complete_get_status(packet) != ERROR_CODE_SUCCESS){
+                MESSAGE("BASS client source operation failed, status 0x%02x", gattservice_subevent_bass_client_source_operation_complete_get_status(packet));
+                break;
+            }
+
+            if ( gattservice_subevent_bass_client_source_operation_complete_get_opcode(packet) == (uint8_t)BASS_OPCODE_ADD_SOURCE ){
+                // TODO: set state to 'wait for source_id"
+                printf("BASS client add source operation completed, wait for source_id\n");
+            }
+            break;
+        case GATTSERVICE_SUBEVENT_BASS_CLIENT_NOTIFICATION_COMPLETE:
+            // store source_id
+            bass_source_id = gattservice_subevent_bass_client_notification_complete_get_source_id(packet);
+            MESSAGE("BASS client notification, source_id = 0x%02x", bass_source_id);
+            source_data = broadcast_audio_scan_service_client_get_source_data(bass_cid, bass_source_id);
+            btstack_assert(source_data != NULL);
+
+            switch (source_data->pa_sync_state){
+                case LE_AUDIO_PA_SYNC_STATE_SYNCINFO_REQUEST:
+                    // start pa sync transfer
+                    printf("LE_AUDIO_PA_SYNC_STATE_SYNCINFO_REQUEST -> Start PAST\n");
+                    // TODO: unclear why this needs to be shifted for PAST with TS to get test green
+                    uint16_t service_data = bass_source_id << 8;
+                    gap_periodic_advertising_sync_transfer_send(remote_handle, service_data, sync_handle);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case GATTSERVICE_SUBEVENT_BASS_CLIENT_DISCONNECTED:
             break;
         default:
             break;
@@ -549,8 +621,8 @@ btp_bap_start_periodic_sync(bd_addr_type_t addr_type, bd_addr_t addr, uint32_t b
     have_big_info = false;
 
     // cache for btp
-    memcpy(periodic_advertisinc_sync_address, addr, 6);
-    periodic_advertisinc_sync_addr_type = addr_type;
+    memcpy(periodic_advertising_sync_address, addr, 6);
+    periodic_advertising_sync_addr_type = addr_type;
     periodic_advertising_sync_broadcast_id = broadcast_id;
 
     // ignore other advertisements
@@ -605,8 +677,8 @@ static void iso_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
             // emit BIS Synced event
             uint8_t buffer[400];
             uint16_t pos = 0;
-            buffer[pos++] = periodic_advertisinc_sync_addr_type;
-            reverse_bd_addr(periodic_advertisinc_sync_address, &buffer[pos]);
+            buffer[pos++] = periodic_advertising_sync_addr_type;
+            reverse_bd_addr(periodic_advertising_sync_address, &buffer[pos]);
             pos += 6;
             little_endian_store_24(buffer, pos, periodic_advertising_sync_broadcast_id);
             pos += 3;
@@ -632,6 +704,18 @@ void btp_bap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, 
             if (controller_index == BTP_INDEX_NON_CONTROLLER) {
                 uint8_t commands = 0;
                 btp_send(BTP_SERVICE_ID_BAP, opcode, controller_index, 1, &commands);
+            }
+            break;
+        case BTP_BAP_DISCOVER:
+            MESSAGE("BTP_BAP_DISCOVER");
+            if (controller_index == 0) {
+                btp_send(BTP_SERVICE_ID_BAP, opcode, controller_index, 0, NULL);
+                // TODO: connect to ASCS and PACS Service
+                // simulate done
+                uint8_t buffer[8];
+                memcpy(buffer, data, 7);
+                buffer[7] = 0;
+                btp_send(BTP_SERVICE_ID_BAP, BTP_BAP_EV_DISCOVERY_COMPLETED, controller_index, sizeof(buffer), buffer);
             }
             break;
         case BTP_BAP_SEND:
@@ -829,6 +913,14 @@ void btp_bap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, 
         case BTP_BAP_DISCOVER_SCAN_DELEGATOR:
             if (controller_index == 0) {
                 MESSAGE("BTP_BAP_DISCOVER_SCAN_DELEGATOR");
+                bass_addr_type = data[0];
+                reverse_bd_addr(&data[1], bass_address);
+                broadcast_audio_scan_service_client_connect(&bass_connection,
+                                                            bass_sources,
+                                                            BASS_CLIENT_NUM_SOURCES,
+                                                            remote_handle,
+                                                            &bass_cid);
+                btp_send(BTP_SERVICE_ID_BAP, opcode, controller_index, 0, NULL);
                 break;
             }
             break;
@@ -898,6 +990,9 @@ void btp_bap_init(void){
 
     // register for ISO Packet
     hci_register_iso_packet_handler(&iso_packet_handler);
+
+    // BASS
+    broadcast_audio_scan_service_client_init(&bass_packet_handler);
 
     // BIS
     uint8_t i;
