@@ -457,21 +457,18 @@ int count_set_bits_uint32(uint32_t x){
 }
 
 uint8_t btstack_clz(uint32_t value) {
+    btstack_assert( value != 0 );
 #if defined(__GNUC__) || defined (__clang__)
     // use gcc/clang intrinsic
     return (uint8_t) __builtin_clz(value);
 #elif defined(_MSC_VER)
     // use MSVC intrinsic
     DWORD leading_zero = 0;
-    if (_BitScanReverse( &leading_zero, value )){
-		return (uint8_t)(31 - leading_zero);
-    } else {
-        return 32;
-    }
+    _BitScanReverse( &leading_zero, value )
+	return (uint8_t)(31 - leading_zero);
 #else
     // divide-and-conquer implementation for 32-bit integers
     uint32_t x = value;
-    if (x == 0) return 32;
     uint8_t r = 0;
     if ((x & 0xffff0000u) == 0) {
         x <<= 16;
