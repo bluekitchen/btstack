@@ -55,7 +55,8 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 static btstack_packet_callback_registration_t sm_event_callback_registration;
 static void show_usage(void);
 
-static const char * bap_app_server_addr_string = "C007E833B9E8";
+static const char * bap_app_server_addr_string = "C007E8414591";
+static const char * bap_app_server_lt2_addr_string = "C007E8CEB0A6";
 
 static bd_addr_t        bap_app_server_addr;
 static hci_con_handle_t bap_app_client_con_handle;
@@ -64,6 +65,8 @@ static hci_con_handle_t bap_app_client_con_handle;
 static bass_client_connection_t bass_connection;
 static bass_client_source_t bass_sources[BASS_CLIENT_NUM_SOURCES];
 static uint16_t bass_cid;
+static uint8_t bass_source_id;
+static uint8_t broadcast_code [] = {0x01, 0x02, 0x68, 0x05, 0x53, 0xF1, 0x41, 0x5A, 0xA2, 0x65, 0xBB, 0xAF, 0xC6, 0xEA, 0x03, 0xB8, };
 
 // PACS
 static pacs_client_connection_t pacs_connection;
@@ -129,7 +132,7 @@ static bass_source_data_t source_data1 = {
      
     BD_ADDR_TYPE_LE_PUBLIC, {0xC0, 0x07, 0xE8, 0x7E, 0x55, 0x5F}, 
     // adv_sid
-    0x01, 
+    0x00,
     // broadcast_id
     0x000001,
     // pa_sync
@@ -502,6 +505,7 @@ static void bass_client_event_handler(uint8_t packet_type, uint16_t channel, uin
             break;
         case GATTSERVICE_SUBEVENT_BASS_CLIENT_NOTIFICATION_COMPLETE:
             printf("BASS Client: GATTSERVICE_SUBEVENT_BASS_NOTIFICATION_COMPLETE\n");
+            bass_source_id = gattservice_subevent_bass_client_notification_complete_get_source_id(packet);
             break;
         
         default:
@@ -835,7 +839,10 @@ static void show_usage(void){
     printf("a   - add source (pa_sync %d), DO_NOT_SYNCHRONIZE_TO_PA\n", LE_AUDIO_PA_SYNC_DO_NOT_SYNCHRONIZE_TO_PA);
     printf("A   - add source (pa_sync %d), SYNCHRONIZE_TO_PA_PAST_AVAILABLE\n", LE_AUDIO_PA_SYNC_SYNCHRONIZE_TO_PA_PAST_AVAILABLE);
     printf("C   - add source (pa_sync %d), SYNCHRONIZE_TO_PA_PAST_NOT_AVAILABLE\n", LE_AUDIO_PA_SYNC_SYNCHRONIZE_TO_PA_PAST_NOT_AVAILABLE);
-    
+    printf("m   - modify source (pa_sync %d), SYNCHRONIZE_TO_PA_PAST_NOT_AVAILABLE\n", LE_AUDIO_PA_SYNC_DO_NOT_SYNCHRONIZE_TO_PA);
+    printf("L   - remove source (pa_sync %d), SYNCHRONIZE_TO_PA_PAST_NOT_AVAILABLE\n", LE_AUDIO_PA_SYNC_DO_NOT_SYNCHRONIZE_TO_PA);
+    printf("o   - set Broadcast Code\n");
+
     printf("\n--- PACS Client Test Console %s ---\n", bd_addr_to_str(iut_address));
     printf("p   - connect to %s\n", bap_app_server_addr_string); 
     
@@ -994,7 +1001,21 @@ static void stdin_process(char cmd){
             source_data1.pa_sync = LE_AUDIO_PA_SYNC_SYNCHRONIZE_TO_PA_PAST_NOT_AVAILABLE;
             status = broadcast_audio_scan_service_client_add_source(bass_cid, &source_data1);
             break;
-        
+        case 'm':
+            printf("BASS: Modify source (pa_sync %d), LE_AUDIO_PA_SYNC_DO_NOT_SYNCHRONIZE_TO_PA\n", LE_AUDIO_PA_SYNC_DO_NOT_SYNCHRONIZE_TO_PA);
+            source_data1.pa_sync = LE_AUDIO_PA_SYNC_DO_NOT_SYNCHRONIZE_TO_PA;
+            status = broadcast_audio_scan_service_client_modify_source(bass_cid, bass_source_id, &source_data1);
+            break;
+        case 'L':
+            printf("BASS: Remove source (pa_sync %d), LE_AUDIO_PA_SYNC_DO_NOT_SYNCHRONIZE_TO_PA\n", LE_AUDIO_PA_SYNC_DO_NOT_SYNCHRONIZE_TO_PA);
+            source_data1.pa_sync = LE_AUDIO_PA_SYNC_DO_NOT_SYNCHRONIZE_TO_PA;
+            status = broadcast_audio_scan_service_client_remove_source(bass_cid, bass_source_id);
+            break;
+        case 'o':
+            printf("BASS: Set Broadcast Code\n");
+            status = broadcast_audio_scan_service_client_set_broadcast_code(bass_cid, bass_source_id, broadcast_code);
+            break;
+
         case 'p':
             printf("PACS: connect 0x%02x\n", bap_app_client_con_handle);
             btstack_assert(bap_app_client_con_handle != HCI_CON_HANDLE_INVALID);
@@ -1242,6 +1263,8 @@ int btstack_main(int argc, const char * argv[]){
 
     // parse human readable Bluetooth address
     sscanf_bd_addr(bap_app_server_addr_string, bap_app_server_addr);
+    sscanf_bd_addr(bap_app_server_lt2_addr_string, source_data1.address);
+
     btstack_stdin_setup(stdin_process);
 
     // turn on!
