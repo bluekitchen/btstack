@@ -99,25 +99,19 @@ Tool: test/le_audio/le_broadcast_sink
 #### BAP/BA/ADV -> auto-pts
 
 ## BAP/BA/BASS
-Tool: le_audio/le_broadcast_assistant
 Tool: pts-h4/bap_service_client_test
+TSPX_Public_bd_addr_LT2: enter address of LT2 in LT1 and test tool
+ADD Source operation in BV-04 must contain address and adv_sid of LT2
 
-- BAP/BA/BASS/BV-01-C    : see pts-h4/bap_service_client_test
-- BAP/BA/BASS/BV-02-C    : see pts-h4/bap_service_client_test
-- BAP/BA/BASS/BV-03-C    : see pts-h4/bap_service_client_test
-- BAP/BA/BASS/BV-04-C    : c, C
-- BAP/BA/BASS/BV-05-C    : c, a
-- BAP/BA/BASS/BV-06-C    : c, a, m
-- BAP/BA/BASS/BV-07-C    : c, a, m, r
-- BAP/BA/BASS/BV-08-C    : c,
-- BAP/BA/BASS/BV-09-C    : see pts-h4/bap_service_client_test
-
-- BAP/BA/BASS/BV-01-C    : c,
-- BAP/BA/BASS/BV-02-C    : c, s
-- BAP/BA/BASS/BV-03-C    : c, S
-- BAP/BA/BASS/BV-04-C    : c, C
-- BAP/BA/BASS/BV-05-C    : see test/le_audio/le_broadcast_assistant
-- BAP/BA/BASS/BV-06-C    : see test/le_audio/le_broadcast_assistant
-- BAP/BA/BASS/BV-07-C    : see test/le_audio/le_broadcast_assistant
-- BAP/BA/BASS/BV-08-C    : see test/le_audio/le_broadcast_assistant
-- BAP/BA/BASS/BV-09-C    : c, p
+- BAP/BA/BASS/BV-01-C     : c, b
+- BAP/BA/BASS/BV-02-C     : c, b, s
+- BAP/BA/BASS/BV-03-C     : c, b, S
+- BAP/BA/BASS/BV-04-C     : start LT2, c, b, C
+- BAP/BA/BASS/BV-04-C_LT2 : ok
+- BAP/BA/BASS/BV-05-C     : start LT2, c, b, C, wait until LT1 has synchronized, m, ok
+- BAP/BA/BASS/BV-05-C_LT2 : ok
+- BAP/BA/BASS/BV-06-C     : c, b, a, L
+- BAP/BA/BASS/BV-06-C_LT2 : ok
+- BAP/BA/BASS/BV-07-C     : start LT2, c, b, C, o
+- BAP/BA/BASS/BV-08-C     : test/le_audio_broadcast_assistant
+- BAP/BA/BASS/BV-09-C     : c, p
