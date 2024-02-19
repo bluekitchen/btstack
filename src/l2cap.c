@@ -1885,8 +1885,8 @@ static void l2cap_run_signaling_response(void) {
         uint16_t result        = l2cap_signaling_responses[0].data;  // CONNECTION_REQUEST, COMMAND_REJECT, REJECT_SM_PAIRING, L2CAP_CREDIT_BASED_CONNECTION_REQUEST
         uint8_t  buffer[4];                                          // REJECT_SM_PAIRING, CONFIGURE_REQUEST
         uint16_t source_cid    = l2cap_signaling_responses[0].cid;   // CONNECTION_REQUEST, REJECT_SM_PAIRING, DISCONNECT_REQUEST, CONFIGURE_REQUEST, DISCONNECT_REQUEST
-        uint16_t dest_cid      = l2cap_signaling_responses[0].data;  // DISCONNECT_REQUEST
 #ifdef ENABLE_CLASSIC
+        uint16_t dest_cid      = l2cap_signaling_responses[0].data;  // DISCONNECT_REQUEST
         uint16_t info_type     = l2cap_signaling_responses[0].data;  // INFORMATION_REQUEST
 #endif
 #ifdef ENABLE_L2CAP_ENHANCED_CREDIT_BASED_FLOW_CONTROL_MODE
