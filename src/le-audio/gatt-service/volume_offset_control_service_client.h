@@ -105,18 +105,20 @@ void volume_offset_control_service_client_init(void);
  * GATT_CLIENT_IN_WRONG_STATE, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE if no audio input control service is found, or ATT errors (see bluetooth.h). 
  *
  * @param con_handle
- * @param service_index         index o media player to connect to
  * @param packet_handler
+ * @param service_start_handle
+ * @param service_end_handle
+ * @param service_index
  * @param connection
- * @param characteristics       storage for characteristics
- * @param characteristics_num >= VOLUME_OFFSET_CONTROL_SERVICE_CLIENT_NUM_CHARACTERISTICS
  * @return status ERROR_CODE_SUCCESS on success, otherwise ERROR_CODE_COMMAND_DISALLOWED if there is already a client associated with con_handle, or BTSTACK_MEMORY_ALLOC_FAILED
  */
 uint8_t volume_offset_control_service_client_connect(
     hci_con_handle_t con_handle,
-    vocs_client_connection_t * connection,
-    uint16_t service_start_handle, uint16_t service_end_handle, uint8_t service_index,
-    btstack_packet_handler_t packet_handler);
+    btstack_packet_handler_t packet_handler,
+    uint16_t service_start_handle, 
+    uint16_t service_end_handle, 
+    uint8_t service_index, 
+    vocs_client_connection_t * connection);
 
 uint8_t volume_offset_control_service_client_write_volume_offset(vocs_client_connection_t * connection, int16_t volume_offset);
 uint8_t volume_offset_control_service_client_write_audio_location(vocs_client_connection_t * connection, uint32_t audio_location);

@@ -98,16 +98,6 @@ static uint16_t vocs_client_value_handle_for_index(vocs_client_connection_t * co
     return connection->basic_connection.characteristics[connection->characteristic_index].value_handle;
 }
 
-static uint16_t gatt_service_client_characteristic_value_handle2uuid16(vocs_client_connection_t * connection, uint16_t value_handle) {
-    int i;
-    for (i = 0; i < connection->basic_connection.characteristics_num; i++){
-        if (connection->basic_connection.characteristics[i].value_handle == value_handle) {
-            return gatt_service_client_characteristic_index2uuid16(&vocs_client, i);
-        }
-    }
-    return 0;
-}
-
 static void vocs_client_emit_string_value(gatt_service_client_connection_helper_t * connection_helper, uint8_t subevent, const uint8_t * data, uint16_t data_size, uint8_t att_status){
     btstack_assert(connection_helper != NULL);
     btstack_assert(connection_helper->event_callback != NULL);
@@ -585,9 +575,13 @@ void volume_offset_control_service_client_init(void){
     vocs_client.characteristics_desc16 = vocs_uuid16s;
 }
 
-uint8_t volume_offset_control_service_client_connect(hci_con_handle_t con_handle,
-    vocs_client_connection_t * connection, uint16_t service_start_handle, uint16_t service_end_handle, uint8_t service_index,
-    btstack_packet_handler_t packet_handler){
+uint8_t volume_offset_control_service_client_connect(
+    hci_con_handle_t con_handle,
+    btstack_packet_handler_t packet_handler,
+    uint16_t service_start_handle, 
+    uint16_t service_end_handle, 
+    uint8_t service_index, 
+    vocs_client_connection_t * connection){
 
     connection->gatt_query_can_send_now.callback = &vocs_client_run_for_connection;
     connection->gatt_query_can_send_now.context = (void *)(uintptr_t)connection->basic_connection.con_handle;
