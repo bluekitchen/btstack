@@ -360,11 +360,12 @@ static void mics_client_packet_handler_internal(uint8_t packet_type, uint16_t ch
                                 connection->aics_connections_index++;
                                 (void) audio_input_control_service_client_connect(
                                         connection->basic_connection.con_handle,
-                                        &connection->aics_connections_storage[connection->aics_connections_index],
+                                        &mics_client_packet_handler_internal, 
                                         connection->aics_connections_storage[connection->aics_connections_index].basic_connection.start_handle,
                                         connection->aics_connections_storage[connection->aics_connections_index].basic_connection.end_handle,
                                         connection->aics_connections_storage[connection->aics_connections_index].basic_connection.service_index,
-                                        &mics_client_packet_handler_internal);
+                                        &connection->aics_connections_storage[connection->aics_connections_index]
+                                );
                                 return;
                             }
 
@@ -452,11 +453,11 @@ static void mics_client_handle_gatt_client_event(uint8_t packet_type, uint16_t c
                     audio_input_control_service_client_init();
                     status = audio_input_control_service_client_connect(
                             connection->basic_connection.con_handle,
-                            &connection->aics_connections_storage[connection->aics_connections_index],
+                            &mics_client_packet_handler_internal, 
                             connection->aics_connections_storage[connection->aics_connections_index].basic_connection.start_handle,
                             connection->aics_connections_storage[connection->aics_connections_index].basic_connection.end_handle,
                             connection->aics_connections_storage[connection->aics_connections_index].basic_connection.service_index,
-                            &mics_client_packet_handler_internal);
+                            &connection->aics_connections_storage[connection->aics_connections_index]);
 
                     if (status == ERROR_CODE_SUCCESS){
                         return;
