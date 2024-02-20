@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 BlueKitchen GmbH
+ * Copyright (C) 2024 BlueKitchen GmbH
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -49,6 +49,8 @@
 #if defined __cplusplus
 extern "C" {
 #endif
+
+#define OBJECT_TRANSFER_SERVICE_NUM_CHARACTERISTICS                       14
 
 #define ATT_ERROR_RESPONSE_OTS_WRITE_REQUEST_REJECTED                   0x80
 #define ATT_ERROR_RESPONSE_OTS_OBJECT_NOT_SELECTED                      0x81
