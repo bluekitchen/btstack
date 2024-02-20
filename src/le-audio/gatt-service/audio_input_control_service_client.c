@@ -399,7 +399,6 @@ static void aics_client_packet_handler_internal(uint8_t packet_type, uint16_t ch
     gatt_service_client_connection_helper_t * connection_helper;
     aics_client_connection_t * connection;
     hci_con_handle_t con_handle;
-    uint8_t status;
 
     switch(hci_event_packet_get_type(packet)){
         case HCI_EVENT_GATTSERVICE_META:
@@ -620,9 +619,13 @@ void audio_input_control_service_client_init(void){
     aics_client.characteristics_desc16 = aics_uuid16s;
 }
 
-uint8_t audio_input_control_service_client_connect(hci_con_handle_t con_handle,
-    aics_client_connection_t * connection, uint16_t service_start_handle, uint16_t service_end_handle, uint8_t service_index,
-    btstack_packet_handler_t packet_handler){
+uint8_t audio_input_control_service_client_connect(
+    hci_con_handle_t con_handle,
+    btstack_packet_handler_t packet_handler,
+    uint16_t service_start_handle, 
+    uint16_t service_end_handle, 
+    uint8_t service_index, 
+    aics_client_connection_t * connection){
 
     connection->gatt_query_can_send_now.callback = &aics_client_run_for_connection;
     connection->gatt_query_can_send_now.context = (void *)(uintptr_t)connection->basic_connection.con_handle;

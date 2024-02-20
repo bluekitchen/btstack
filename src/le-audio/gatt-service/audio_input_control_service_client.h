@@ -104,22 +104,24 @@ void audio_input_control_service_client_init(void);
  * The mute state can be 0 - off, 1 - on, 2 - disabeled and it is valid if the ATT status is equal to ATT_ERROR_SUCCESS,
  * see ATT errors (see bluetooth.h) for other values.
  *   
- * Event GATTSERVICE_SUBEVENT_MCS_CLIENT_CONNECTED is emitted with status ERROR_CODE_SUCCESS on success, otherwise
+ * Event GATTSERVICE_SUBEVENT_AICS_CLIENT_CONNECTED is emitted with status ERROR_CODE_SUCCESS on success, otherwise
  * GATT_CLIENT_IN_WRONG_STATE, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE if no audio input control service is found, or ATT errors (see bluetooth.h). 
  *
  * @param con_handle
- * @param service_index         index o media player to connect to
  * @param packet_handler
+ * @param service_start_handle
+ * @param service_end_handle
+ * @param service_index
  * @param connection
- * @param characteristics       storage for characteristics
- * @param characteristics_num >= MEDIA_CONTROL_SERVICE_CLIENT_NUM_CHARACTERISTICS
  * @return status ERROR_CODE_SUCCESS on success, otherwise ERROR_CODE_COMMAND_DISALLOWED if there is already a client associated with con_handle, or BTSTACK_MEMORY_ALLOC_FAILED
  */
 uint8_t audio_input_control_service_client_connect(
     hci_con_handle_t con_handle,
-    aics_client_connection_t * connection,
-    uint16_t service_start_handle, uint16_t service_end_handle, uint8_t service_index,
-    btstack_packet_handler_t packet_handler);
+    btstack_packet_handler_t packet_handler,
+    uint16_t service_start_handle, 
+    uint16_t service_end_handle, 
+    uint8_t service_index, 
+    aics_client_connection_t * connection);
 
 uint8_t audio_input_control_service_client_read_input_description(aics_client_connection_t * connection);
 uint8_t audio_input_control_service_client_write_input_description(aics_client_connection_t * connection, const char * audio_input_description);
