@@ -134,17 +134,9 @@ void volume_control_service_client_init(void);
  * @param con_handle
  * @param packet_handler
  * @param vcs_connection
- * @param vcs_characteristics_storage           storage for characteristics
- * @param vcs_characteristics_num           >= VOLUME_CONTROL_SERVICE_CLIENT_NUM_CHARACTERISTICS
- * @param aics_client
  * @param aics_connections
- * @param aics_connections_num
- * @param aics_characteristics_storage
- * @param aics_characteristics_num
  * @param vocs_connections
- * @param vocs_connections_num
- * @param vocs_characteristics_storage
- * @param vocs_characteristics_num
+ * @param out_vcs_cid
  * @return status ERROR_CODE_SUCCESS on success, otherwise ERROR_CODE_COMMAND_DISALLOWED if there is already a client associated with con_handle, or BTSTACK_MEMORY_ALLOC_FAILED
  */
 uint8_t volume_control_service_client_connect(
