@@ -379,11 +379,11 @@ static void vcs_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
                                 connection->aics_connections_index++;
                                 (void) audio_input_control_service_client_connect(
                                         connection->basic_connection.con_handle,
-                                        &connection->aics_connections_storage[connection->aics_connections_index],
+                                        &vcs_client_packet_handler_internal,
                                         connection->aics_connections_storage[connection->aics_connections_index].basic_connection.start_handle,
                                         connection->aics_connections_storage[connection->aics_connections_index].basic_connection.end_handle,
                                         connection->aics_connections_storage[connection->aics_connections_index].basic_connection.service_index,
-                                        &vcs_client_packet_handler_internal);
+                                        &connection->aics_connections_storage[connection->aics_connections_index]);
                                 return;
                             }
 
@@ -394,11 +394,11 @@ static void vcs_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
 
                                 (void) volume_offset_control_service_client_connect(
                                         connection->basic_connection.con_handle,
-                                        &connection->vocs_connections_storage[connection->vocs_connections_index],
+                                        &vcs_client_packet_handler_internal,
                                         connection->vocs_connections_storage[connection->vocs_connections_index].basic_connection.start_handle,
                                         connection->vocs_connections_storage[connection->vocs_connections_index].basic_connection.end_handle,
                                         connection->vocs_connections_storage[connection->vocs_connections_index].basic_connection.service_index,
-                                        &vcs_client_packet_handler_internal);
+                                        &connection->vocs_connections_storage[connection->vocs_connections_index]);
                                 return;
 
                             }
@@ -428,11 +428,11 @@ static void vcs_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
                                 connection->vocs_connections_index++;
                                 (void) volume_offset_control_service_client_connect(
                                         connection->basic_connection.con_handle,
-                                        &connection->vocs_connections_storage[connection->vocs_connections_index],
+                                        &vcs_client_packet_handler_internal,
                                         connection->vocs_connections_storage[connection->vocs_connections_index].basic_connection.start_handle,
                                         connection->vocs_connections_storage[connection->vocs_connections_index].basic_connection.end_handle,
                                         connection->vocs_connections_storage[connection->vocs_connections_index].basic_connection.service_index,
-                                        &vcs_client_packet_handler_internal);
+                                        &connection->vocs_connections_storage[connection->vocs_connections_index]);
                                 return;
                             }
 
@@ -574,11 +574,11 @@ static void vcs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t ch
 
                         (void)audio_input_control_service_client_connect(
                                 connection->basic_connection.con_handle,
-                                &connection->aics_connections_storage[connection->aics_connections_index],
+                                &vcs_client_packet_handler_internal,
                                 connection->aics_connections_storage[connection->aics_connections_index].basic_connection.start_handle,
                                 connection->aics_connections_storage[connection->aics_connections_index].basic_connection.end_handle,
                                 connection->aics_connections_storage[connection->aics_connections_index].basic_connection.service_index,
-                                &vcs_client_packet_handler_internal);
+                                &connection->aics_connections_storage[connection->aics_connections_index]);
 
                         break;
                     }
@@ -590,11 +590,11 @@ static void vcs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t ch
 
                         (void) volume_offset_control_service_client_connect(
                                 connection->basic_connection.con_handle,
-                                &connection->vocs_connections_storage[connection->vocs_connections_index],
+                                &vcs_client_packet_handler_internal,
                                 connection->vocs_connections_storage[connection->vocs_connections_index].basic_connection.start_handle,
                                 connection->vocs_connections_storage[connection->vocs_connections_index].basic_connection.end_handle,
                                 connection->vocs_connections_storage[connection->vocs_connections_index].basic_connection.service_index,
-                                &vcs_client_packet_handler_internal);
+                                &connection->vocs_connections_storage[connection->vocs_connections_index]);
 
                         break;
 
