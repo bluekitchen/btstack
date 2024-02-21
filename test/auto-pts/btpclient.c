@@ -803,6 +803,11 @@ static void btp_gap_handler(uint8_t opcode, uint8_t controller_index, uint16_t l
                 uint8_t buffer[277];
                 bd_addr_t local_addr;
                 gap_local_bd_addr( local_addr);
+                if (btstack_is_null_bd_addr(local_addr)){
+                    MESSAGE("Fix NULL BD ADDR");
+                    memset(local_addr, 0x01, 6);
+                    local_addr[0] = 0xc1;
+                }
                 reverse_bd_addr(local_addr, &buffer[0]);
                 uint32_t supported_settings = 0;
                 supported_settings |=  BTP_GAP_SETTING_POWERED;
