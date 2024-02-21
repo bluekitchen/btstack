@@ -755,6 +755,15 @@ void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
             ase_state  = gattservice_subevent_ascs_client_streamendpoint_state_get_state(packet);
             log_info("ASCS Client: ASE STATE (%s) - ase_id %d, ascs_cid 0x%02x, role %s", ascs_util_ase_state2str(ase_state), ase_id, ascs_cid,
                      (audio_stream_control_service_client_get_ase_role(ascs_cid, ase_id) == LE_AUDIO_ROLE_SOURCE) ? "SOURCE" : "SINK" );
+
+            // stop streaming if remote is a sink
+            if ((ase_state == ASCS_STATE_RELEASING) && audio_stream_control_service_client_get_ase_role(ascs_cid, ase_id) == LE_AUDIO_ROLE_SINK){
+                log_info("Releasing on Sink Stream Endpoint -> stop sending on all CIS");
+                for (i=0;i<MAX_CHANNELS;i++){
+                    cis_con_handles[i] = HCI_CON_HANDLE_INVALID;
+                }
+            }
+
             // send done
             if (response_service_id == BTP_SERVICE_ID_LE_AUDIO){
                 switch (response_op){
