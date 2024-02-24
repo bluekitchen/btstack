@@ -62,6 +62,7 @@ static uint16_t nordic_spp_rx_value_handle;
 static uint16_t nordic_spp_tx_value_handle;
 static uint16_t nordic_spp_tx_client_configuration_handle;
 static uint16_t nordic_spp_tx_client_configuration_value;
+static hci_con_handle_t nordic_spp_con_handle;
 
 static void nordic_spp_service_emit_state(hci_con_handle_t con_handle, bool enabled){
     uint8_t event[5];
@@ -103,6 +104,7 @@ static int nordic_spp_service_write_callback(hci_con_handle_t con_handle, uint16
 	if (attribute_handle == nordic_spp_tx_client_configuration_handle){
 		nordic_spp_tx_client_configuration_value = little_endian_read_16(buffer, 0);
 		bool enabled = (nordic_spp_tx_client_configuration_value != 0);
+        nordic_spp_con_handle = con_handle;
         nordic_spp_service_emit_state(con_handle, enabled);
 	}
 
@@ -119,10 +121,13 @@ static void nordic_spp_service_hci_event_handler(uint8_t packet_type, uint16_t c
 
     switch (hci_event_packet_get_type(packet)){
         case HCI_EVENT_DISCONNECTION_COMPLETE:
-            if (nordic_spp_tx_client_configuration_value > 0){
-                nordic_spp_tx_client_configuration_value = 0;
-                con_handle = hci_event_disconnection_complete_get_connection_handle(packet);
-                nordic_spp_service_emit_state(con_handle, false);
+            con_handle = hci_event_disconnection_complete_get_connection_handle(packet);
+            if (con_handle == nordic_spp_con_handle){
+                nordic_spp_con_handle = HCI_CON_HANDLE_INVALID;
+                if (nordic_spp_tx_client_configuration_value > 0){
+                    nordic_spp_tx_client_configuration_value = 0;
+                    nordic_spp_service_emit_state(con_handle, false);
+                }
             }
             break;
         default:
@@ -168,6 +173,9 @@ void nordic_spp_service_server_init(btstack_packet_handler_t packet_handler){
     // register HCI packet handler
     nordic_spp_service_hci_event_callback_registration.callback = &nordic_spp_service_hci_event_handler;
     hci_add_event_handler(&nordic_spp_service_hci_event_callback_registration);
+
+    // reset connection
+    nordic_spp_con_handle = HCI_CON_HANDLE_INVALID;
 }
 
 /** 
