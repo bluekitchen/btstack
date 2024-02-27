@@ -225,7 +225,8 @@ static void send_iso_packet(uint8_t cis_index){
     offset += cis_sdu_size;
 
     // send
-    hci_send_iso_packet_buffer(offset);
+    uint8_t status = hci_send_iso_packet_buffer(offset);
+    btstack_assert(status == ERROR_CODE_SUCCESS);
 
     packet_sequence_numbers[cis_index]++;
 }
@@ -1225,11 +1226,11 @@ void btp_le_audio_handler(uint8_t opcode, uint8_t controller_index, uint16_t len
                 uint8_t cig_id = data[pos++];
                 uint8_t cis_id = data[pos++];
                 MESSAGE("BTP_LE_AUDIO_OP_CIS_START_STREAMING: cig %u, cis %u", cig_id, cis_id);
+                btp_send(BTP_SERVICE_ID_LE_AUDIO, BTP_LE_AUDIO_OP_CIS_START_STREAMING,
+                         controller_index, 0, NULL);
                 hci_con_handle_t cis_con_handle = get_cis_con_handle_for_cig_cis_id(cig_id, cis_id);
                 MESSAGE("Request can send now 0x%04x", cis_con_handle);
                 hci_request_cis_can_send_now_events(cis_con_handle);
-                btp_send(BTP_SERVICE_ID_LE_AUDIO, BTP_LE_AUDIO_OP_CIS_START_STREAMING,
-                         controller_index, 0, NULL);
             }
             break;
         default:
