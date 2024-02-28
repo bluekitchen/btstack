@@ -2630,7 +2630,7 @@ void hfp_ag_init_codecs(uint8_t codecs_nr, const uint8_t * codecs){
 
     hfp_ag_codecs_nr = codecs_nr;
     uint8_t i;
-    for (i=0; i < codecs_nr; i++){
+    for (i=0; i < codecs_nr && i < HFP_MAX_NUM_CODECS; i++){
         hfp_ag_codecs[i] = codecs[i];
     }
 }

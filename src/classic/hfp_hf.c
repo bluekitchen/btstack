@@ -1553,7 +1553,7 @@ void hfp_hf_init_codecs(uint8_t codecs_nr, const uint8_t * codecs){
 
     hfp_hf_codecs_nr = codecs_nr;
     uint8_t i;
-    for (i=0; i<codecs_nr; i++){
+    for (i=0; i<codecs_nr && i < HFP_MAX_NUM_CODECS; i++){
         hfp_hf_codecs[i] = codecs[i];
     }
 }
@@ -1567,7 +1567,7 @@ void hfp_hf_init_hf_indicators(int indicators_nr, const uint16_t * indicators){
 
     hfp_hf_indicators_nr = indicators_nr;
     int i;
-    for (i = 0; i < hfp_hf_indicators_nr ; i++){
+    for (i = 0; i < hfp_hf_indicators_nr && i < HFP_MAX_NUM_INDICATORS; i++){
         hfp_hf_indicators[i] = (uint8_t) indicators[i];
     }
 
