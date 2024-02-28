@@ -70,6 +70,7 @@
 #define ORG_BLUETOOTH_SERVICE_BINARY_SENSOR                                                                           0x183B // Binary Sensor 
 #define ORG_BLUETOOTH_SERVICE_BROADCAST_AUDIO_ANNOUNCEMENT_SERVICE                                                    0x1852 // Broadcast Audio Announcement Service
 #define ORG_BLUETOOTH_SERVICE_BROADCAST_AUDIO_SCAN_SERVICE                                                            0x184F // Broadcast Audio Scan Service
+#define ORG_BLUETOOTH_SERVICE_COMMON_AUDIO_SERVICE                                                                    0x1853 // Commmon Audio Service
 #define ORG_BLUETOOTH_SERVICE_CONSTANT_TONE_EXTENSION                                                                 0x184A // Constant Tone Extension
 #define ORG_BLUETOOTH_SERVICE_COORDINATED_SET_IDENTIFICATION_SERVICE                                                  0x1846 // Coordinated Set Identification Service
 #define ORG_BLUETOOTH_SERVICE_DEVICE_TIME                                                                             0x1847 // Device Time
