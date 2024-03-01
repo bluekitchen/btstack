@@ -2627,6 +2627,7 @@ static void hfp_ag_hci_event_packet_handler(uint8_t packet_type, uint16_t channe
 
 void hfp_ag_init_codecs(uint8_t codecs_nr, const uint8_t * codecs){
     btstack_assert(codecs_nr <= HFP_MAX_NUM_CODECS);
+    if (codecs_nr > HFP_MAX_NUM_CODECS) return;
 
     hfp_ag_codecs_nr = codecs_nr;
     uint8_t i;
@@ -2641,13 +2642,18 @@ void hfp_ag_init_supported_features(uint32_t supported_features){
 }
 
 void hfp_ag_init_ag_indicators(int ag_indicators_nr, const hfp_ag_indicator_t * ag_indicators){
+    btstack_assert(ag_indicators_nr <= HFP_MAX_NUM_INDICATORS);
+    if (ag_indicators_nr > HFP_MAX_NUM_CODECS) return;
+
     hfp_ag_indicators_nr = ag_indicators_nr;
     (void)memcpy(hfp_ag_indicators, ag_indicators,
                  ag_indicators_nr * sizeof(hfp_ag_indicator_t));
 }
 
 void hfp_ag_init_hf_indicators(int hf_indicators_nr, const hfp_generic_status_indicator_t * hf_indicators){
-    if (hf_indicators_nr > HFP_MAX_NUM_INDICATORS) return;
+    btstack_assert(hf_indicators_nr <= HFP_MAX_NUM_INDICATORS);
+    if (hf_indicators_nr > HFP_MAX_NUM_CODECS) return;
+
     hfp_ag_generic_status_indicators_nr = hf_indicators_nr;
     (void)memcpy(hfp_ag_generic_status_indicators, hf_indicators,
                  hf_indicators_nr * sizeof(hfp_generic_status_indicator_t));

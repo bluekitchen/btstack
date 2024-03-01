@@ -68,8 +68,10 @@
  
 /* LISTING_START(MainConfiguration): Setup stack to advertise */
 static btstack_packet_callback_registration_t sm_event_callback_registration;
+static btstack_packet_callback_registration_t hci_event_callback_registration;
 
-static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+static void sm_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+static void hci_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 const uint8_t adv_data[] = {
     // Flags general discoverable, BR/EDR not supported
@@ -104,13 +106,12 @@ static void sm_peripheral_setup(void){
     gap_advertisements_set_data(adv_data_len, (uint8_t*) adv_data);
     gap_advertisements_enable(1);
 
-    // register for SM events
-    sm_event_callback_registration.callback = &packet_handler;
+    // register handler
+    hci_event_callback_registration.callback = &hci_packet_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
+
+    sm_event_callback_registration.callback = &sm_packet_handler;
     sm_add_event_handler(&sm_event_callback_registration);
-
-    // register for ATT
-    att_server_register_packet_handler(packet_handler);
-
 
     // Configuration
 
@@ -161,15 +162,13 @@ static void sm_peripheral_setup(void){
 /* LISTING_END */
 
 /* 
- * @section Packet Handler
+ * @section Security Manager Packet Handler
  *
- * @text The packet handler is used to:
- *        - report connect/disconnect
- *        - handle Security Manager events
+ * @text The packet handler is used to handle Security Manager events
  */
 
-/* LISTING_START(packetHandler): Packet Handler */
-static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+/* LISTING_START(packetHandler): Security Manager Packet Handler */
+static void sm_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
 
@@ -299,6 +298,48 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             break;
     }
 }
+
+/*
+ * @section HCI Packet Handler
+ *
+ * @text The packet handler is used to handle new connections, can trigger Security Request
+ */
+static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+    UNUSED(size);
+
+    if (packet_type != HCI_EVENT_PACKET) return;
+
+    hci_con_handle_t con_handle;
+
+    switch (hci_event_packet_get_type(packet)) {
+        case HCI_EVENT_META_GAP:
+            switch (hci_event_gap_meta_get_subevent_code(packet)) {
+                case GAP_SUBEVENT_LE_CONNECTION_COMPLETE:
+                    printf("Connection complete\n");
+                    con_handle = gap_subevent_le_connection_complete_get_connection_handle(packet);
+                    UNUSED(con_handle);
+
+                    // for testing, choose one of the following actions
+
+                    // manually start pairing
+                    // sm_request_pairing(con_handle);
+
+                    // gatt client request to authenticated characteristic in sm_pairing_central (short cut, uses hard-coded value handle)
+                    // gatt_client_read_value_of_characteristic_using_value_handle(&packet_handler, con_handle, 0x0009);
+
+                    // general gatt client request to trigger mandatory authentication
+                    // gatt_client_discover_primary_services(&packet_handler, con_handle);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        default:
+            break;
+    }
+}
+
 /* LISTING_END */
 
 int btstack_main(void);

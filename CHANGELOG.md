@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Fixed
 - GAP: allow use of own address type different from gap_random_set_mode() incl. RPA in LE Extended Advertising
 - SM: abort pairing with invalid parameter error for encryption key size > 16
+- SM: ignore Security Request after re-encryption has started
 - ATT Server: support delayed read responses for registered services
 - ATT Server: allow to start crypto operation from delayed att read/write request
 - HFP HF: send HF Indicator update only if enabled by AG
