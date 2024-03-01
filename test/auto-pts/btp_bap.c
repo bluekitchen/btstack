@@ -46,6 +46,7 @@
 #include "btstack_debug.h"
 #include "btpclient.h"
 #include "btp.h"
+#include "btp_bap.h"
 #include "btstack.h"
 #include "le-audio/le_audio_base_builder.h"
 #include "le_audio_demo_util_source.h"
