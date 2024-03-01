@@ -58,6 +58,7 @@
 #include "btpclient.h"
 #include "btp_le_audio.h"
 #include "btp_bap.h"
+#include "btp_cap.h"
 
 #define AUTOPTS_SOCKET_NAME "/tmp/bt-stack-tester"
 
@@ -1765,6 +1766,9 @@ static void btp_packet_handler(uint8_t service_id, uint8_t opcode, uint8_t contr
         case BTP_SERVICE_ID_BAP:
             btp_bap_handler(opcode, controller_index, length, data);
             break;
+        case BTP_SERVICE_ID_CAP:
+            btp_cap_handler(opcode, controller_index, length, data);
+            break;
         case BTP_SERVICE_ID_LE_AUDIO:
             btp_le_audio_handler(opcode, controller_index, length, data);
             break;
@@ -2074,6 +2078,7 @@ int btstack_main(int argc, const char * argv[])
 
     // BAP (new) Client
     btp_bap_init();
+    btp_cap_init();
 
     MESSAGE("auto-pts iut-btp-client started");
 
