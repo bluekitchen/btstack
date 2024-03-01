@@ -329,7 +329,7 @@ int main(int argc, const char * argv[]){
     const char * log_file_path = NULL;
 
     // set default device path
-    config.device_name = "/dev/tty.usbmodemEF437DF524C51";
+    config.device_name = "/dev/tty.usbmodem113401";
 
     // parse command line parameters
     while(true){
