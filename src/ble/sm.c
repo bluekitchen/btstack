@@ -4516,6 +4516,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             sm_conn->sm_engine_state = SM_PH2_C1_GET_ENC_C;
             break;
 
+        case SM_INITIATOR_PH4_HAS_LTK:
         case SM_PH4_W4_CONNECTION_ENCRYPTED:
             // ignore Security Request, see SM_INITIATOR_PH1_W4_PAIRING_RESPONSE above
             if (sm_pdu_code != SM_CODE_SECURITY_REQUEST){
