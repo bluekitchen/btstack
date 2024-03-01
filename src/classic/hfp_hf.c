@@ -1565,7 +1565,7 @@ void hfp_hf_init_supported_features(uint32_t supported_features){
 
 void hfp_hf_init_hf_indicators(int indicators_nr, const uint16_t * indicators){
     btstack_assert(hfp_hf_indicators_nr < HFP_MAX_NUM_INDICATORS);
-    if (hfp_hf_indicators_nr > HFP_MAX_NUM_CODECS) return;
+    if (hfp_hf_indicators_nr > HFP_MAX_NUM_INDICATORS) return;
 
     hfp_hf_indicators_nr = indicators_nr;
     int i;
