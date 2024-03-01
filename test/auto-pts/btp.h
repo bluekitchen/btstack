@@ -61,13 +61,32 @@ extern "C" {
 #define BTP_ERROR_INVALID_INDEX 0x04
 
 // Service IDs
-#define BTP_SERVICE_ID_CORE     0
-#define BTP_SERVICE_ID_GAP      1
-#define BTP_SERVICE_ID_GATT     2
-#define BTP_SERVICE_ID_L2CAP    3
-#define BTP_SERVICE_ID_MESH     4
-
-#define BTP_SERVICE_ID_BAP    14
+#define BTP_SERVICE_ID_CORE      0
+#define BTP_SERVICE_ID_GAP       1
+#define BTP_SERVICE_ID_GATT      2
+#define BTP_SERVICE_ID_L2CAP     3
+#define BTP_SERVICE_ID_MESH      4
+#define BTP_SERVICE_ID_VCS   	 8
+#define BTP_SERVICE_ID_IAS	     9
+#define BTP_SERVICE_ID_AICS	    10
+#define BTP_SERVICE_ID_VOCS	    11
+#define BTP_SERVICE_ID_PACS	    12
+#define BTP_SERVICE_ID_ASCS	    13
+#define BTP_SERVICE_ID_BAP      14
+#define BTP_SERVICE_ID_HAS	    15
+#define BTP_SERVICE_ID_MICP	    16
+#define BTP_SERVICE_ID_CSIS	    17
+#define BTP_SERVICE_ID_MICS	    18
+#define BTP_SERVICE_ID_CCP	    19
+#define BTP_SERVICE_ID_VCP	    20
+#define BTP_SERVICE_ID_CAS	    21
+#define BTP_SERVICE_ID_MCP	    22
+#define BTP_SERVICE_ID_GMCS     23
+#define BTP_SERVICE_ID_HAP	    24
+#define BTP_SERVICE_ID_CSIP	    25
+#define BTP_SERVICE_ID_CAP	    26
+#define BTP_SERVICE_ID_TBS	    27
+#define BTP_SERVICE_ID_TMAP	    28
 
 #define BTP_SERVICE_ID_LE_AUDIO 0xf0
 
