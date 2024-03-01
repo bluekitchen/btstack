@@ -644,7 +644,7 @@ hci_con_handle_t get_cis_con_handle_for_cig_cis_id(uint8_t cig_id, uint8_t cis_i
     return HCI_CON_HANDLE_INVALID;
 }
 
-void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
 
