@@ -105,14 +105,14 @@ static uint8_t hfp_ag_codecs_nr;
 static uint8_t hfp_ag_codecs[HFP_MAX_NUM_CODECS];
 
 // AG indicators
-static int                hfp_ag_indicators_nr;
+static uint16_t           hfp_ag_indicators_nr;
 static hfp_ag_indicator_t hfp_ag_indicators[HFP_MAX_NUM_INDICATORS];
 
 // generic status indicators
-static int                            hfp_ag_generic_status_indicators_nr;
+static uint16_t                       hfp_ag_generic_status_indicators_nr;
 static hfp_generic_status_indicator_t hfp_ag_generic_status_indicators[HFP_MAX_NUM_INDICATORS];
 
-static int    hfp_ag_call_hold_services_nr;
+static uint16_t    hfp_ag_call_hold_services_nr;
 static char * hfp_ag_call_hold_services[6];
 
 static hfp_response_and_hold_state_t hfp_ag_response_and_hold_state;
