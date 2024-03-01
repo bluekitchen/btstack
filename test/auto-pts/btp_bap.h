@@ -53,6 +53,43 @@
 extern "C" {
 #endif
 
+// BAP
+#define BTP_BAP_READ_SUPPORTED_COMMANDS 			0x01
+#define BTP_BAP_DISCOVER 				            0x02
+#define BTP_BAP_SEND 				                0x03
+#define BTP_BAP_BROADCAST_SOURCE_SETUP 				0x04
+#define BTP_BAP_BROADCAST_SOURCE_RELEASE 			0x05
+#define BTP_BAP_BROADCAST_ADV_START 				0x06
+#define BTP_BAP_BROADCAST_ADV_STOP 				    0x07
+#define BTP_BAP_BROADCAST_SOURCE_START 				0x08
+#define BTP_BAP_BROADCAST_SOURCE_STOP 				0x09
+#define BTP_BAP_BROADCAST_SINK_SETUP 				0x0a
+#define BTP_BAP_BROADCAST_SINK_RELEASE 				0x0b
+#define BTP_BAP_BROADCAST_SCAN_START 				0x0c
+#define BTP_BAP_BROADCAST_SCAN_STOP 				0x0d
+#define BTP_BAP_BROADCAST_SINK_SYNC 				0x0e
+#define BTP_BAP_BROADCAST_SINK_STOP 				0x0f
+#define BTP_BAP_BROADCAST_SINK_BIS_SYNC 			0x10
+#define BTP_BAP_DISCOVER_SCAN_DELEGATOR 			0x11
+#define BTP_BAP_BROADCAST_ASSISTANT_SCAN_START 		0x12
+#define BTP_BAP_BROADCAST_ASSISTANT_SCAN_STOP 		0x13
+#define BTP_BAP_ADD_BROADCAST_SRC 				    0x14
+#define BTP_BAP_REMOVE_BROADCAST_SRC 				0x15
+#define BTP_BAP_MODIFY_BROADCAST_SRC 				0x16
+#define BTP_BAP_SET_BROADCAST_CODE 				    0x17
+#define BTP_BAP_SEND_PAST 				            0x18
+#define BTP_BAP_EV_DISCOVERY_COMPLETED 				0x80
+#define BTP_BAP_EV_CODEC_CAP_FOUND 				    0x81
+#define BTP_BAP_EV_ASE_FOUND 				        0x82
+#define BTP_BAP_EV_STREAM_RECEIVED 				    0x83
+#define BTP_BAP_EV_BAA_FOUND 				        0x84
+#define BTP_BAP_EV_BIS_FOUND 				        0x85
+#define BTP_BAP_EV_BIS_SYNCED 				        0x86
+#define BTP_BAP_EV_BIS_STREAM_RECEIVED 				0x87
+#define BTP_BAP_EV_SCAN_DELEGATOR_FOUND 			0x88
+#define BTP_BAP_EV_BROADCAST_RECEIVE_STATE 			0x89
+#define BTP_BAP_EV_PA_SYNC_REQ 				        0x8a
+
 /**
  * Init BAP Service
  */
@@ -61,7 +98,7 @@ void btp_bap_init(void);
 /**
  * Process BAP Operation
  */
-bool btp_bap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, const uint8_t *data);
+void btp_bap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, const uint8_t *data);
 
 #if defined __cplusplus
 }
