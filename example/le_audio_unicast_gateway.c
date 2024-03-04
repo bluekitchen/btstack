@@ -94,6 +94,11 @@
 // hard-coded
 #define NUM_CIS_RETRANSMISSIONS 2
 
+// known headsets
+static const char * known_headsets[] = {
+    "ZenHybridPro",
+};
+
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static btstack_packet_callback_registration_t sm_event_callback_registration;
 
@@ -600,11 +605,27 @@ static void le_audio_unicast_source_handle_adv(bd_addr_type_t adv_addr_type, bd_
                 memcpy(remote_name, data, data_len);
                 remote_name[data_len] = 0;
                 printf("%s - '%s'\n", remote_name, bd_addr_to_str(adv_addr));
+                for (i=0;i<sizeof(known_headsets)/sizeof(const char *);i++){
+                    int known_len = strlen(known_headsets[i]);
+                    if (strncmp(known_headsets[i], remote_name, known_len) == 0){
+                        log_info("Name matches '%s'", known_headsets[i]);
+                        match = true;
+                    }
+                }
                 break;
             case BLUETOOTH_DATA_TYPE_COMPLETE_LIST_OF_16_BIT_SERVICE_CLASS_UUIDS:
             case BLUETOOTH_DATA_TYPE_INCOMPLETE_LIST_OF_16_BIT_SERVICE_CLASS_UUIDS:
-                for (i=0;(i+1) < data_len; i++){
+                for (i=0;(i+1) < data_len; i+=2){
                     if (little_endian_read_16(data, i) == ORG_BLUETOOTH_SERVICE_AUDIO_STREAM_CONTROL_SERVICE){
+                        log_info("List of service UUIDs contains ASCS\n");
+                        match = true;
+                    }
+                }
+                break;
+            case BLUETOOTH_DATA_TYPE_SERVICE_DATA_16_BIT_UUID:
+                if (data_len > 2){
+                    if (little_endian_read_16(data, 0) == ORG_BLUETOOTH_SERVICE_AUDIO_STREAM_CONTROL_SERVICE){
+                        log_info("Service Data for ASCS\n");
                         match = true;
                     }
                 }
