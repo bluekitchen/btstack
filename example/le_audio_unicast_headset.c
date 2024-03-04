@@ -113,6 +113,16 @@
 
 static void show_usage(void);
 
+typedef enum {
+    APP_MODE_STEREO = 0,
+    APP_MODE_MONO_LEFT,
+    APP_MODE_MONO_RIGHT,
+    APP_MODE_COUNT
+} app_audio_mode_t;
+static app_audio_mode_t audio_mode = APP_MODE_STEREO;
+
+static char * audio_modes[] = {"Stereo", "Mono Left", "Mono Right"};
+
 static enum {
     APP_W4_WORKING,
     APP_W4_CIG_COMPLETE,
@@ -129,8 +139,9 @@ static uint8_t adv_data[] = {
     // offset 3 - RSI
     7, BLUETOOTH_DATA_TYPE_RESOLVABLE_SET_IDENTIFIER, 0, 0, 0, 0, 0, 0,
 #endif
+    3, BLUETOOTH_DATA_TYPE_INCOMPLETE_LIST_OF_16_BIT_SERVICE_CLASS_UUIDS, ORG_BLUETOOTH_SERVICE_AUDIO_STREAM_CONTROL_SERVICE & 0xff, ORG_BLUETOOTH_SERVICE_AUDIO_STREAM_CONTROL_SERVICE >> 8,
     // name
-    16, BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME, 'U', 'n', 'i', 'c', 'a', 's', 't', ' ', 'H', 'e', 'a', 'd', 's', 'e', 't'
+    8, BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME, 'H', 'e', 'a', 'd', 's', 'e', 't'
 };
 static const uint8_t adv_data_len = sizeof(adv_data);
 
@@ -348,9 +359,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
         case BTSTACK_EVENT_STATE:
             switch(btstack_event_state_get_state(packet)) {
                 case HCI_STATE_WORKING:
-                    printf("Configured as STEREO speaker\n");
-                    setup_pacs(LE_AUDIO_LOCATION_MASK_FRONT_LEFT | LE_AUDIO_LOCATION_MASK_FRONT_RIGHT);
-                    start_advertising();
+                    printf("Press 's', 'l', or 'r' to configure headset as Stereo, Mono Left, Mono Right speaker and start advertising\n");
                     break;
                 default:
                     break;
@@ -472,7 +481,6 @@ static void csis_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
         case GATTSERVICE_SUBEVENT_CSIS_RSI:
             gattservice_subevent_csis_rsi_get_rsi(packet, rsi);
             rsi_ready = true;
-            start_advertising();
             break;
         default:
             break;
@@ -700,8 +708,44 @@ static void ascs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
     }
 }
 
+static void app_configure(app_audio_mode_t mode) {
+    printf("Configured as %s speaker\n", audio_modes[(int) mode]);
+    audio_mode = mode;
+
+    uint8_t set_size;
+    uint8_t set_rank;
+    uint8_t audio_location_mask;
+    switch (audio_mode){
+        case APP_MODE_STEREO:
+            audio_location_mask = LE_AUDIO_LOCATION_MASK_FRONT_LEFT | LE_AUDIO_LOCATION_MASK_FRONT_RIGHT;
+            set_size = 1;
+            set_rank = 1;
+            break;
+        case APP_MODE_MONO_LEFT:
+            audio_location_mask = LE_AUDIO_LOCATION_MASK_FRONT_LEFT;
+            set_size = 2;
+            set_rank = 1;
+            break;
+        case APP_MODE_MONO_RIGHT:
+            audio_location_mask = LE_AUDIO_LOCATION_MASK_FRONT_RIGHT;
+            set_size = 2;
+            set_rank = 2;
+            break;
+        default:
+            btstack_unreachable();
+            break;
+    }
+    setup_pacs(audio_location_mask);
+#ifdef ENABLE_CSIS_SERVER
+    coordinated_set_identification_service_server_set_size(set_size);
+    coordinated_set_identification_service_server_set_rank(set_rank);
+#endif
+    start_advertising();
+}
+
 static void show_usage(void){
-    printf("\n--- LE Audio Unicast Sink Test Console ---\n");
+    printf("\n--- LE Audio Unicast Headset Console ---\n");
+    printf("Audio Mode: %s\n", audio_modes[(int)audio_mode]);
     printf(" [ - volume down\n");
     printf(" ] - volume up\n");
     printf(" k - play\n");
@@ -758,6 +802,15 @@ static void stdin_process(char c){
             status = media_control_service_client_command_previous_track(mcs_cid);
             printf("MCS Client: previous track (0x%02x)\n", status);
             break;
+        case 's':
+            app_configure(APP_MODE_STEREO);
+            break;
+        case 'l':
+            app_configure(APP_MODE_MONO_LEFT);
+            break;
+        case 'r':
+            app_configure(APP_MODE_MONO_RIGHT);
+            break;
         case '\n':
         case '\r':
             break;
@@ -810,9 +863,7 @@ int btstack_main(int argc, const char * argv[]){
     // Coordinated Set Server
     coordinated_set_identification_service_server_init(CSIS_NUM_CLIENTS, csis_coordinators, 1, 1);
     coordinated_set_identification_service_server_register_packet_handler(&csis_packet_handler);
-    coordinated_set_identification_service_server_set_sirk(CSIS_SIRK_TYPE_PUBLIC, &sirk[0], false);
-    coordinated_set_identification_service_server_set_size(1);
-    coordinated_set_identification_service_server_set_rank(1);
+    coordinated_set_identification_service_server_set_sirk(CSIS_SIRK_TYPE_PUBLIC, sirk, false);
     coordinated_set_identification_service_server_generate_rsi();
 #endif
 
