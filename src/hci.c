@@ -4556,11 +4556,9 @@ static void event_handler(uint8_t *packet, uint16_t size){
                     big_sync = hci_big_sync_for_handle(packet[4]);
                     if (big_sync != NULL){
                         uint8_t status = packet[3];
-                        uint8_t big_handle = packet[4];
                         if (status == ERROR_CODE_SUCCESS){
                             // store bis_con_handles and trigger iso path setup
                             uint8_t num_bis = btstack_min(big_sync->num_bis, packet[16]);
-                            uint8_t i;
                             for (i=0;i<num_bis;i++){
                                 hci_con_handle_t bis_handle = little_endian_read_16(packet, 17 + (2 * i));
                                 big_sync->bis_con_handles[i] = bis_handle;
