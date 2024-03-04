@@ -52,6 +52,15 @@
 #include "le_audio_demo_util_source.h"
 #include "le-audio/le_audio_base_parser.h"
 
+// CAP
+static enum {
+    CAP_DISOCVERY_IDLE,
+    CAP_DISOCVERY_ASCS_CONNECT,
+    CAP_DISCOVERY_ASCS_WAIT,
+    CAP_DISCOVERY_CSIP_CONNECT,
+    CAP_DISCOVErY_CSIP_WAIT
+} btp_cap_discovery_state;
+
 // ASCS Client
 #define ASCS_CLIENT_COUNT 2
 #define ASCS_CLIENT_NUM_STREAMENDPOINTS 4
@@ -69,6 +78,37 @@ static uint8_t ascs_get_free_slot(void){
     btstack_assert(false);
     return 0;
 }
+
+static void btp_cap_send_discovery_complete(hci_con_handle_t con_handle) {
+    hci_connection_t * hci_connection = hci_connection_for_handle(con_handle);
+    btstack_assert(hci_connection != NULL);
+    struct btp_cap_discovery_completed_ev discovery_completed_ev;
+    discovery_completed_ev.addr_type = hci_connection->address_type;
+    reverse_bd_addr(hci_connection->address, discovery_completed_ev.address);
+    btp_send(BTP_SERVICE_ID_CAP, BTP_CAP_EV_DISCOVERY_COMPLETED, 0, sizeof(discovery_completed_ev), (const uint8_t *) &discovery_completed_ev);
+}
+
+static void btp_cap_discovery_next(hci_con_handle_t con_handle) {
+    switch(btp_cap_discovery_state){
+        case CAP_DISOCVERY_IDLE:
+            // 1. ASCS
+            btp_cap_discovery_state = CAP_DISCOVERY_ASCS_WAIT;
+            uint8_t ascs_index = ascs_get_free_slot();
+            uint16_t ascs_cid;
+            audio_stream_control_service_client_connect(&ascs_connections[ascs_index],
+                                                        &streamendpoint_characteristics[ascs_index *
+                                                                                        ASCS_CLIENT_NUM_STREAMENDPOINTS],
+                                                        ASCS_CLIENT_NUM_STREAMENDPOINTS,
+                                                        con_handle, &ascs_cid);
+            break;
+            // 2. CSIP
+        default:
+            btstack_unreachable();
+            break;
+    }
+}
+
+
 
 static void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
@@ -88,7 +128,6 @@ static void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uin
     uint8_t num_ases;
     uint8_t i;
     uint8_t opcode;
-    struct btp_cap_discovery_completed_ev discovery_completed_ev;
     hci_connection_t * hci_connection;
 
     switch (hci_event_gattservice_meta_get_subevent_code(packet)){
@@ -101,14 +140,10 @@ static void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uin
                         gattservice_subevent_ascs_client_connected_get_status(packet));
                 return;
             }
-            hci_connection = hci_connection_for_handle(con_handle);
-            btstack_assert(hci_connection != NULL);
-
             // TODO: connect to PACS
             // TODO: connect to BASS
-            discovery_completed_ev.addr_type = hci_connection->address_type;
-            reverse_bd_addr(hci_connection->address, discovery_completed_ev.address);
-            btp_send(BTP_SERVICE_ID_CAP, BTP_CAP_EV_DISCOVERY_COMPLETED, 0, sizeof(discovery_completed_ev),  (const uint8_t *) &discovery_completed_ev);
+            // TODO: connect to CSIP
+            btp_cap_send_discovery_complete(con_handle);
             break;
 #if 0
         case GATTSERVICE_SUBEVENT_ASCS_CLIENT_DISCONNECTED:
@@ -338,12 +373,10 @@ void btp_cap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, 
                 btstack_assert(hci_connection != NULL);
                 hci_con_handle_t con_handle = hci_connection->con_handle;
                 MESSAGE("BTP_CAP_DISCOVER %s, con handle 0x%04x", bd_addr_to_str(address), con_handle);
-                ascs_index = ascs_get_free_slot();
-                uint16_t ascs_cid;
-                audio_stream_control_service_client_connect(&ascs_connections[ascs_index],
-                                                            &streamendpoint_characteristics[ascs_index * ASCS_CLIENT_NUM_STREAMENDPOINTS],
-                                                            ASCS_CLIENT_NUM_STREAMENDPOINTS,
-                                                            con_handle, &ascs_cid);
+
+                btp_cap_discovery_state = CAP_DISOCVERY_IDLE;
+                btp_cap_discovery_next(con_handle);
+
                 btp_send(response_service_id, opcode, controller_index, 0, NULL);
             }
             break;
