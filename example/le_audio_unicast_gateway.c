@@ -1075,7 +1075,9 @@ static void csis_client_event_handler(uint8_t packet_type, uint16_t channel, uin
                     printf("CSIS client %u: connection failed, cid 0x%04x, con_handle 0x%04x, status 0x%02x\n",
                            server->server_id, server->csis_cid, server->acl_con_handle,
                            gattservice_subevent_csis_client_connected_get_status(packet));
-                    printf("TODO: handle CSIS connection failure\n");
+                    printf("CSIS client %u: assume individual device\n", server->server_id);
+                    server->coordinated_set_size = 1;
+                    server->server_state = SERVER_CSIS_QUERY_COMPLETED;
                     return;
                 }
 
