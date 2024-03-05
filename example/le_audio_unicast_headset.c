@@ -709,8 +709,14 @@ static void ascs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
 }
 
 static void app_configure(app_audio_mode_t mode) {
-    printf("Configured as %s speaker\n", audio_modes[(int) mode]);
+    const char * filenames[] = { "stereo", "mono_left", "mono_right"};
+    static char filename[128];
+
     audio_mode = mode;
+    snprintf(filename, sizeof(filename), "le_audio_unicast_headset_%s.wav", filenames[(int)audio_mode]);
+    printf("Store WAV in %s\n", filename);
+
+    printf("Configured as %s speaker\n", audio_modes[(int) mode]);
 
     uint8_t set_size;
     uint8_t set_rank;
@@ -736,11 +742,13 @@ static void app_configure(app_audio_mode_t mode) {
             break;
     }
     setup_pacs(audio_location_mask);
+    le_audio_demo_util_sink_init(filename);
+    start_advertising();
+
 #ifdef ENABLE_CSIS_SERVER
     coordinated_set_identification_service_server_set_size(set_size);
     coordinated_set_identification_service_server_set_rank(set_rank);
 #endif
-    start_advertising();
 }
 
 static void show_usage(void){
@@ -873,7 +881,6 @@ int btstack_main(int argc, const char * argv[]){
 #endif
 
     // setup audio processing
-    le_audio_demo_util_sink_init("le_audio_unicast_headset.wav");
     le_audio_demo_util_source_init();
 
     // turn on!
