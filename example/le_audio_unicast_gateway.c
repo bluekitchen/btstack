@@ -161,6 +161,7 @@ typedef struct {
     uint16_t ascs_cid;
     uint8_t  ase_id_sink;
     ascs_client_connection_t ascs_connection;
+    uint8_t channel_allocation;
     ascs_streamendpoint_characteristic_t streamendpoint_characteristics[ASCS_CLIENT_NUM_STREAMENDPOINTS];
 
     // CIS
@@ -389,7 +390,7 @@ static void run_for_server(server_t * server){
             ascs_codec_configuration_request.specific_codec_configuration.frame_duration_index =
                     codec_configurations[menu_sampling_frequency].variants[menu_variant].frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US ?
                     LE_AUDIO_CODEC_FRAME_DURATION_INDEX_7500US : LE_AUDIO_CODEC_FRAME_DURATION_INDEX_10000US;
-            ascs_codec_configuration_request.specific_codec_configuration.audio_channel_allocation_mask = num_channels == 1 ? 1 : 3;
+            ascs_codec_configuration_request.specific_codec_configuration.audio_channel_allocation_mask = server->channel_allocation;
             ascs_codec_configuration_request.specific_codec_configuration.octets_per_codec_frame = codec_configurations[menu_sampling_frequency].variants[menu_variant].octets_per_frame;
             ascs_codec_configuration_request.specific_codec_configuration.codec_frame_blocks_per_sdu = num_channels;
             status = audio_stream_control_service_client_streamendpoint_configure_codec(server->ascs_cid, server->ase_id_sink, &ascs_codec_configuration_request);
@@ -455,6 +456,17 @@ static void all_members_connected(void){
     app_state = APP_SET_CONNECTED;
     servers_set_state(SERVER_W2_ASCS_CONNECT);
     printf("[-] CSIS - all members connected\n");
+    // distribute audio channels
+    if (num_servers == 1){
+        servers[0].channel_allocation = 3;
+    } else {
+        servers[0].channel_allocation = 1;
+        servers[1].channel_allocation = 2;
+    }
+    uint8_t i;
+    for (i=0;i<num_servers;i++){
+        printf("ASCS client %u - channel allocation %u\n", servers[i].server_id, servers[i].channel_allocation);
+    }
 }
 
 static void app_run(void){
