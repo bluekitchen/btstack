@@ -351,6 +351,8 @@ static void csis_client_handle_value_query_result(csis_client_connection_t * con
         case CSIS_CHARACTERISTIC_INDEX_SIRK:
             if (status == ATT_ERROR_SUCCESS){
                 if (data_size == 17){
+                    // store sirk type in read_value_data field
+                    connection->read_value_data = data[0];
                     reverse_128((uint8_t *)&data[1], connection->remote_sirk);
                 } else {
                     connection->read_value_status = ATT_ERROR_VALUE_NOT_ALLOWED;
