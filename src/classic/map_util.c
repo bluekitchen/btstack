@@ -124,7 +124,7 @@ static void map_create_sdp_record(uint8_t * service, uint32_t service_record_han
 
     // "Service Name"
     de_add_number(service, DE_UINT, DE_SIZE_16, 0x0100);
-    de_add_data(service,   DE_STRING, strlen(name), (uint8_t *) name);
+    de_add_data(service,   DE_STRING, (uint16_t) strlen(name), (uint8_t *) name);
 
 #ifdef ENABLE_GOEP_L2CAP
     // 0x0200 "GoepL2CapPsm"
@@ -175,7 +175,7 @@ void map_message_str_to_handle(const char * value, map_message_handle_t msg_hand
 }
 
 void map_conversation_str_to_id(const char * value, map_conversation_id_t conv_id){
-    int pos = strlen (value);
+    uint16_t pos = (uint16_t) strlen (value);
     int i = 0;
     int nibble;
 
@@ -280,7 +280,7 @@ static void map_client_parse_folder_listing(map_util_xml_parser *mu_parser, cons
                 break;
             case YXML_ELEMEND:
                 if (mu_parser->folder_listing.folder_found){
-                    map_client_emit_folder_listing_item_event(mu_parser->callback, mu_parser->cid, (uint8_t *) mu_parser->folder_listing.name, strlen(mu_parser->folder_listing.name));
+                    map_client_emit_folder_listing_item_event(mu_parser->callback, mu_parser->cid, (uint8_t *) mu_parser->folder_listing.name, (uint16_t) strlen(mu_parser->folder_listing.name));
                 }
                 mu_parser->folder_listing.folder_found = 0;
                 break;

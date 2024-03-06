@@ -265,7 +265,7 @@ void pbap_server_create_sdp_record(uint8_t *service, uint32_t service_record_han
     }
     if (strlen(name) > 0) {
         de_add_number(service,  DE_UINT, DE_SIZE_16, 0x0100);
-        de_add_data(service,  DE_STRING, strlen(name), (uint8_t *) name);
+        de_add_data(service,  DE_STRING, (uint16_t) strlen(name), (uint8_t *) name);
     }
 
 #ifdef ENABLE_GOEP_L2CAP
@@ -304,7 +304,7 @@ static pbap_phonebook_t pbap_server_get_phonebook_by_dir_and_name(pbap_server_di
 }
 
 static void pbap_server_handle_set_path_request(pbap_server_t *pbap_server, uint8_t flags, const char * name){
-    uint16_t name_len = strlen(name);
+    uint16_t name_len = (uint16_t) strlen(name);
     uint8_t obex_result = OBEX_RESP_SUCCESS;
     if (name_len == 0){
         if ((flags & 1) == 1){
@@ -757,7 +757,7 @@ static void pbap_server_handle_get_request(pbap_server_t * pbap_server){
     pbap_server_handle_srm_headers(pbap_server);
     pbap_server->request.object_type = pbap_server_parse_object_type(pbap_server->request.type);
     pbap_phonebook_t phonebook = PBAP_PHONEBOOK_INVALID;
-    uint16_t name_len = strlen(pbap_server->request.name);
+    uint16_t name_len = (uint16_t) strlen(pbap_server->request.name);
     switch (pbap_server->request.object_type){
         case PBAP_OBJECT_TYPE_INVALID:
             // unknown object type
