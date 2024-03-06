@@ -86,6 +86,10 @@
 #ifdef HAVE_POSIX_FILE_IO
 #include "wav_util.h"
 #define STORE_TO_WAV_FILE
+#ifdef _MSC_VER
+// ignore deprecated warning for fopen
+#pragma warning(disable : 4996)
+#endif
 #endif
 
 #define NUM_CHANNELS 2
