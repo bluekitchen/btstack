@@ -175,7 +175,7 @@ void map_message_str_to_handle(const char * value, map_message_handle_t msg_hand
 }
 
 void map_conversation_str_to_id(const char * value, map_conversation_id_t conv_id){
-    int pos = strlen (value);
+    uint16_t pos = (uint16_t) strlen (value);
     int i = 0;
     int nibble;
 
