@@ -296,7 +296,7 @@ static void map_client_parse_folder_listing(map_util_xml_parser *mu_parser, cons
                 if (mu_parser->folder_listing.name_found == 1) {
                     // "In UTF-8, characters from the U+0000..U+10FFFF range (the UTF-16 accessible range) are encoded using sequences of 1 to 4 octets."
                     if (strlen(mu_parser->folder_listing.name) + 4 + 1 >= sizeof(mu_parser->folder_listing.name)) break;
-                    strcat(mu_parser->folder_listing.name, mu_parser->xml_parser.data);
+                    btstack_strcat(mu_parser->folder_listing.name, MAP_MAX_VALUE_LEN, mu_parser->xml_parser.data);
                     break;
                 }
                 break;
@@ -350,7 +350,7 @@ void map_client_parse_message_listing(map_util_xml_parser *mu_parser, const uint
                 if (mu_parser->cur_attr == MAP_ATTR_INVALID) break;
                 if (strlen(mu_parser->xml_parser.data) != 1) break;
                 if (strlen(mu_parser->attr_val) >= MAP_MAX_VALUE_LEN) break;
-                strcat(mu_parser->attr_val, mu_parser->xml_parser.data);
+                btstack_strcat(mu_parser->attr_val, MAP_MAX_VALUE_LEN, mu_parser->xml_parser.data);
                 break;
             case YXML_ATTREND:
                 switch (mu_parser->cur_attr){
@@ -428,7 +428,7 @@ void map_client_parse_conversation_listing(map_util_xml_parser *mu_parser, const
                 if (mu_parser->cur_attr == MAP_ATTR_INVALID) break;
                 if (strlen(mu_parser->xml_parser.data) != 1) break;
                 if (strlen(mu_parser->attr_val) >= MAP_MAX_VALUE_LEN) break;
-                strcat(mu_parser->attr_val, mu_parser->xml_parser.data);
+                btstack_strcat(mu_parser->attr_val, MAP_MAX_VALUE_LEN, mu_parser->xml_parser.data);
                 break;
             case YXML_ATTREND:
                 switch (mu_parser->cur_attr){
