@@ -1058,14 +1058,6 @@ uint8_t pbap_server_init(btstack_packet_handler_t packet_handler, uint8_t rfcomm
 void pbap_server_deinit(void){
 }
 
-uint8_t pbap_connect(bd_addr_t addr, uint16_t * out_cid){
-    return ERROR_CODE_SUCCESS;
-}
-
-uint8_t pbap_disconnect(uint16_t pbap_cid){
-    return ERROR_CODE_SUCCESS;
-}
-
 // note: common code for next four setters
 static bool pbap_server_valid_header_for_request(pbap_server_t * pbap_server){
     if (pbap_server->state != PBAP_SERVER_STATE_W4_USER_DATA) {
