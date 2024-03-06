@@ -1,0 +1,5 @@
+PRIMARY_SERVICE, GAP_SERVICE
+CHARACTERISTIC, GAP_DEVICE_NAME, READ, "GATT Telephony Bearer Server"
+
+#import <generic_telephone_bearer_service.gatt>
+#import <telephone_bearer_service.gatt>
