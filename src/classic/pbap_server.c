@@ -1212,6 +1212,11 @@ uint16_t pbap_server_send_pull_response(uint16_t pbap_cid, uint8_t response_code
     return goep_server_request_can_send_now(pbap_server->goep_cid);
 }
 
+// suppress MSVC C4244: unchecked upper bound for enum phonebook used as index
+#ifdef _MSC_VER
+#pragma warning( disable : 33011 )
+#endif
+
 const char * pbap_server_get_phonebook_path(pbap_phonebook_t phonebook){
     btstack_assert(phonebook >= PBAP_PHONEBOOK_TELECOM_CCH);
     btstack_assert(phonebook <= PBAP_PHONEBOOK_SIM_TELECOM_PB);
