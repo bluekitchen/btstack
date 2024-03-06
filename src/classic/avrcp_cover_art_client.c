@@ -267,9 +267,9 @@ static void avrcp_cover_art_client_handle_can_send_now(avrcp_cover_art_client_t 
                 avrcp_cover_art_client_prepare_srm_header(cover_art_client);
                 goep_client_header_add_type(cover_art_client->goep_cid, cover_art_client->object_type);
                 if (cover_art_client->image_descriptor != NULL){
-                    goep_client_header_add_variable(cover_art_client->goep_cid, OBEX_HEADER_IMG_DESCRIPTOR, (const uint8_t *) cover_art_client->image_descriptor, strlen(cover_art_client->image_descriptor));
+                    goep_client_header_add_variable(cover_art_client->goep_cid, OBEX_HEADER_IMG_DESCRIPTOR, (const uint8_t *) cover_art_client->image_descriptor, (uint16_t) strlen(cover_art_client->image_descriptor));
                 }
-                uint8_t image_handle_len = btstack_max(7, strlen(cover_art_client->image_handle));
+                uint8_t image_handle_len = btstack_max(7, (uint16_t) strlen(cover_art_client->image_handle));
                 goep_client_header_add_unicode_prefix(cover_art_client->goep_cid, OBEX_HEADER_IMG_HANDLE, cover_art_client->image_handle, image_handle_len);
             }
             // state

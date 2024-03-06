@@ -278,7 +278,7 @@ static void hfp_hf_emit_enhanced_voice_recognition_text(hfp_connection_t * hfp_c
 static void hfp_hf_emit_custom_command_event(hfp_connection_t * hfp_connection){
     btstack_assert(sizeof(hfp_connection->line_buffer) < (255-5));
 
-    uint16_t line_len = strlen((const char*)hfp_connection->line_buffer) + 1;
+    uint16_t line_len = (uint16_t) strlen((const char*)hfp_connection->line_buffer) + 1;
     uint8_t event[7 + sizeof(hfp_connection->line_buffer)];
     event[0] = HCI_EVENT_HFP_META;
     event[1] = 5 + line_len;
