@@ -143,7 +143,6 @@ static uint8_t adv_data[] = {
     // name
     8, BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME, 'H', 'e', 'a', 'd', 's', 'e', 't'
 };
-static const uint8_t adv_data_len = sizeof(adv_data);
 
 static pacs_record_t sink_pac_records[] = {
     // sink_record_0
@@ -280,6 +279,25 @@ static gatt_service_client_characteristic_t mcs_client_characteristics[MEDIA_CON
 
 static void pacs_server_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
+static le_extended_advertising_parameters_t extended_params = {
+        .advertising_event_properties = 1,  // connectable
+        .primary_advertising_interval_min = 0x0030,
+        .primary_advertising_interval_max = 0x0030,
+        .primary_advertising_channel_map = 7,
+        .own_address_type = BD_ADDR_TYPE_LE_PUBLIC,
+        .peer_address_type = 0,
+        .peer_address =  { 0 },
+        .advertising_filter_policy = 0,
+        .advertising_tx_power = 10, // 10 dBm
+        .primary_advertising_phy = 1, // LE 1M PHY
+        .secondary_advertising_max_skip = 0,
+        .secondary_advertising_phy = 1, // LE 1M PHY
+        .advertising_sid = 0,
+        .scan_request_notification_enable = 0,
+};
+static le_advertising_set_t le_advertising_set;
+static uint8_t adv_handle = 0;
+
 static void start_advertising(void) {
 
 #ifdef ENABLE_CSIS_SERVER
@@ -290,15 +308,19 @@ static void start_advertising(void) {
     reverse_48(rsi, &adv_data[offset]);
 #endif
 
-    // setup advertisements
-    uint16_t adv_int_min = 0x0030;
-    uint16_t adv_int_max = 0x0030;
-    uint8_t adv_type = 0;
-    bd_addr_t null_addr;
-    memset(null_addr, 0, 6);
-    gap_advertisements_set_params(adv_int_min, adv_int_max, adv_type, 0, null_addr, 0x07, 0x00);
-    gap_advertisements_set_data(adv_data_len, (uint8_t*) adv_data);
-    gap_advertisements_enable(1);
+    bd_addr_t local_addr;
+    gap_local_bd_addr(local_addr);
+    bool local_address_invalid = btstack_is_null_bd_addr( local_addr );
+    if (local_address_invalid) {
+        extended_params.own_address_type = BD_ADDR_TYPE_LE_RANDOM;
+    }
+    gap_extended_advertising_setup(&le_advertising_set, &extended_params, &adv_handle);
+    if (local_address_invalid) {
+        bd_addr_t random_address = { 0xC1, 0x01, 0x01, 0x01, 0x01, 0x01 };
+        gap_extended_advertising_set_random_address( adv_handle, random_address );
+    }
+    gap_extended_advertising_set_adv_data(adv_handle, sizeof(adv_data), adv_data);
+
     printf("Start Advertising, waiting for connection\n");
 }
 
@@ -867,7 +889,6 @@ int btstack_main(int argc, const char * argv[]){
     volume_control_service_server_register_packet_handler(vcs_server_packet_handler);
 
 #ifdef ENABLE_CSIS_SERVER
-    btstack_assert(adv_data_len <= 31);
     // Coordinated Set Server
     coordinated_set_identification_service_server_init(CSIS_NUM_CLIENTS, csis_coordinators, 1, 1);
     coordinated_set_identification_service_server_register_packet_handler(&csis_packet_handler);
