@@ -133,7 +133,7 @@ uint16_t hci_event_create_from_template_and_arglist(uint8_t *hci_event_buffer, u
                 if (!hci_event_can_store(pos, buffer_size, 1, &overrun)) break;
                 word = va_arg(argptr, int);  // minimal va_arg is int: 2 bytes on 8+16 bit CPUs
                 length_j = word & 0xff;
-                hci_event_buffer[pos++] = length_j;
+                hci_event_buffer[pos++] = (uint8_t) length_j;
                 break;
             case 'K':
                 word = va_arg(argptr, int);  // minimal va_arg is int: 2 bytes on 8+16 bit CPUs
