@@ -228,7 +228,7 @@ typedef struct {
     uint16_t buf_offset;
 } memcat_t;
 
-static uint16_t memcat( memcat_t *me, uint8_t *data, uint16_t len ) {
+static uint16_t memcat( memcat_t *me, const uint8_t *data, uint16_t len ) {
     uint16_t stored_bytes = le_audio_util_virtual_memcpy_helper(data, len, me->field_offset, me->buf, me->buf_size, me->buf_offset );
     me->field_offset += len;
     return stored_bytes;
@@ -254,15 +254,15 @@ static uint16_t tbs_server_serialize_current_call_list( memcat_t *storage, telep
          )
     {
         tbs_call_data_t * call = (tbs_call_data_t *)btstack_linked_list_iterator_next(&it);
-        uint8_t *string = call->call_uri;
-        uint16_t uri_length = strnlen(string, TELEPHONE_BEARER_SERVICE_URI_MAX_LENGTH);
+        const char * string = call->call_uri;
+        uint16_t uri_length = (uint16_t) strnlen(string, TELEPHONE_BEARER_SERVICE_URI_MAX_LENGTH);
         uint8_t item_length = uri_length + 3;
 
         stored_bytes += memcat_byte( storage, item_length );
         stored_bytes += memcat_byte( storage, call->id );
         stored_bytes += memcat_byte( storage, call->state );
         stored_bytes += memcat_byte( storage, call->flags );
-        stored_bytes += memcat( storage, string, uri_length );
+        stored_bytes += memcat( storage, (const uint8_t *) string, uri_length );
     }
     return stored_bytes;
 }
@@ -289,13 +289,12 @@ static uint16_t tbs_server_serialize_incoming_call_target_bearer_uri( memcat_t *
          )
     {
         tbs_call_data_t * call = (tbs_call_data_t *)btstack_linked_list_iterator_next(&it);
-        uint8_t *string = call->target_uri;
-        uint16_t uri_length = strnlen(string, TELEPHONE_BEARER_SERVICE_URI_MAX_LENGTH);
+        const char *string = call->target_uri;
+        uint16_t uri_length = (uint16_t) strnlen(string, TELEPHONE_BEARER_SERVICE_URI_MAX_LENGTH);
         if( (call->scheduled_tasks & index_mask) > 0 ) {
             call->scheduled_tasks &= ~index_mask;
-
             stored_bytes += memcat_byte( storage, call->id );
-            stored_bytes += memcat( storage, string, uri_length );
+            stored_bytes += memcat( storage, (const uint8_t *) string, uri_length );
             break;
         }
     }
@@ -309,11 +308,11 @@ static uint16_t tbs_server_serialize_first_incoming_call_target_bearer_uri( memc
          )
     {
         tbs_call_data_t * call = (tbs_call_data_t *)btstack_linked_list_iterator_next(&it);
-        uint8_t *string = call->target_uri;
-        uint16_t uri_length = strnlen(string, TELEPHONE_BEARER_SERVICE_URI_MAX_LENGTH);
+        const char *string = call->target_uri;
+        uint16_t uri_length = (uint16_t) strnlen(string, TELEPHONE_BEARER_SERVICE_URI_MAX_LENGTH);
         if( uri_length > 0 ) {
             stored_bytes += memcat_byte( storage, call->id );
-            stored_bytes += memcat( storage, string, uri_length );
+            stored_bytes += memcat( storage, (const uint8_t *) string, uri_length );
             break;
         }
     }
@@ -328,13 +327,13 @@ static uint16_t tbs_server_serialize_incoming_call( memcat_t *storage, telephone
          )
     {
         tbs_call_data_t * call = (tbs_call_data_t *)btstack_linked_list_iterator_next(&it);
-        uint8_t *string = call->call_uri;
-        uint16_t uri_length = strnlen(string, TELEPHONE_BEARER_SERVICE_URI_MAX_LENGTH);
+        const char *string = call->call_uri;
+        uint16_t uri_length = (uint16_t) strnlen(string, TELEPHONE_BEARER_SERVICE_URI_MAX_LENGTH);
         if( (call->scheduled_tasks & index_mask) > 0 ) {
             call->scheduled_tasks &= ~index_mask;
 
             stored_bytes += memcat_byte( storage, call->id );
-            stored_bytes += memcat( storage, string, uri_length );
+            stored_bytes += memcat( storage, (const uint8_t *) string, uri_length );
             break;
         }
     }
@@ -348,11 +347,11 @@ static uint16_t tbs_server_serialize_first_incoming_call( memcat_t *storage, tel
          )
     {
         tbs_call_data_t * call = (tbs_call_data_t *)btstack_linked_list_iterator_next(&it);
-        uint8_t *string = call->call_uri;
-        uint16_t uri_length = strnlen(string, TELEPHONE_BEARER_SERVICE_URI_MAX_LENGTH);
+        const char * string = call->call_uri;
+        uint16_t uri_length = (uint16_t) strnlen(string, TELEPHONE_BEARER_SERVICE_URI_MAX_LENGTH);
         if( uri_length > 0 ) {
             stored_bytes += memcat_byte( storage, call->id );
-            stored_bytes += memcat( storage, string, uri_length );
+            stored_bytes += memcat( storage, (const uint8_t *) string, uri_length );
             break;
         }
     }
@@ -367,12 +366,12 @@ static uint16_t tbs_server_serialize_call_friendly_name( memcat_t *storage, tele
          )
     {
         tbs_call_data_t * call = (tbs_call_data_t *)btstack_linked_list_iterator_next(&it);
-        uint8_t *string = call->friendly_name;
-        uint16_t uri_length = strnlen(string, TELEPHONE_BEARER_SERVICE_URI_MAX_LENGTH);
+        const char *string = call->friendly_name;
+        uint16_t uri_length = (uint16_t) strnlen(string, TELEPHONE_BEARER_SERVICE_URI_MAX_LENGTH);
         if( (call->scheduled_tasks & index_mask) > 0 ) {
             call->scheduled_tasks &= ~index_mask;
             stored_bytes += memcat_byte( storage, call->id );
-            stored_bytes += memcat( storage, string, uri_length );
+            stored_bytes += memcat( storage, (const uint8_t *) string, uri_length );
             break;
         }
     }
@@ -386,11 +385,11 @@ static uint16_t tbs_server_serialize_first_call_friendly_name( memcat_t *storage
          )
     {
         tbs_call_data_t * call = (tbs_call_data_t *)btstack_linked_list_iterator_next(&it);
-        uint8_t *string = call->friendly_name;
-        uint16_t uri_length = strnlen(string, TELEPHONE_BEARER_SERVICE_URI_MAX_LENGTH);
+        const char * string = call->friendly_name;
+        uint16_t uri_length = (uint16_t) strnlen(string, TELEPHONE_BEARER_SERVICE_URI_MAX_LENGTH);
         if( uri_length > 0 ) {
             stored_bytes += memcat_byte( storage, call->id );
-            stored_bytes += memcat( storage, string, uri_length );
+            stored_bytes += memcat( storage, (const uint8_t *) string, uri_length );
             break;
         }
     }
