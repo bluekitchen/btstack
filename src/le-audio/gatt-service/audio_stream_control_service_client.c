@@ -571,16 +571,12 @@ static void ascs_client_run_for_connection(ascs_client_connection_t * connection
                 return;
             }
 
-            connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W4_ASE_WRITTEN;
             uint16_t value_length = ascs_client_serialize_ase(connection, ascs_client_value_buffer, ascs_client_get_value_buffer_size(connection));
-            ascs_client_value_buffer_used = true;
 
-            (void)gatt_client_write_value_of_characteristic(
-                    &ascs_client_handle_gatt_client_event,
-                connection->con_handle, 
-                connection->control_point.value_handle,
-                value_length, 
-                ascs_client_value_buffer); 
+            connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_CONNECTED;
+            (void) gatt_client_write_value_of_characteristic_without_response(connection->con_handle, connection->control_point.value_handle,
+                                                                              value_length,
+                                                                              ascs_client_value_buffer);
             break;
         }
 
@@ -665,11 +661,6 @@ static bool ascs_client_handle_query_complete(ascs_client_connection_t * connect
             break;
 
         case AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W4_ASE_READ:
-            connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_CONNECTED;
-            break;
-
-        case AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W4_ASE_WRITTEN:
-            ascs_client_value_buffer_used = false;
             connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_CONNECTED;
             break;
 
