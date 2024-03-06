@@ -2135,30 +2135,33 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
                 case L2CAP_EVENT_CHANNEL_OPENED:
                     status = l2cap_event_channel_opened_get_status(packet);
                     gatt_client = gatt_client_get_context_for_l2cap_cid(l2cap_event_channel_opened_get_local_cid(packet));
-                    btstack_assert(gatt_client != NULL);
-                    con_handle = l2cap_event_channel_opened_get_handle(packet);
-                    hci_connection = hci_connection_for_handle(con_handle);
-                    if (status == L2CAP_CONNECTION_RESPONSE_RESULT_REFUSED_RESOURCES){
-                        if ((hci_connection != NULL) && hci_connection->att_server.incoming_connection_request) {
-                            log_info("Collision, retry in 100ms");
-                            gatt_client->state = P_W2_L2CAP_CONNECT;
-                            // set timer for retry
-                            btstack_run_loop_set_timer(&gatt_client->gc_timeout, GATT_CLIENT_COLLISION_BACKOFF_MS);
-                            btstack_run_loop_set_timer_handler(&gatt_client->gc_timeout, gatt_client_classic_retry);
-                            btstack_run_loop_add_timer(&gatt_client->gc_timeout);
-                            break;
+                    if (gatt_client != NULL){
+                        con_handle = l2cap_event_channel_opened_get_handle(packet);
+                        hci_connection = hci_connection_for_handle(con_handle);
+                        if (status == L2CAP_CONNECTION_RESPONSE_RESULT_REFUSED_RESOURCES){
+                            if ((hci_connection != NULL) && hci_connection->att_server.incoming_connection_request) {
+                                log_info("Collision, retry in 100ms");
+                                gatt_client->state = P_W2_L2CAP_CONNECT;
+                                // set timer for retry
+                                btstack_run_loop_set_timer(&gatt_client->gc_timeout, GATT_CLIENT_COLLISION_BACKOFF_MS);
+                                btstack_run_loop_set_timer_handler(&gatt_client->gc_timeout, gatt_client_classic_retry);
+                                btstack_run_loop_add_timer(&gatt_client->gc_timeout);
+                                break;
+                            }
                         }
+                        // if status != 0, gatt_client will be discarded
+                        gatt_client->state = P_READY;
+                        gatt_client->con_handle = l2cap_event_channel_opened_get_handle(packet);
+                        gatt_client->mtu = l2cap_event_channel_opened_get_remote_mtu(packet);
+                        gatt_client_classic_handle_connected(gatt_client, status);
                     }
-                    // if status != 0, gatt_client will be discarded
-                    gatt_client->state = P_READY;
-                    gatt_client->con_handle = l2cap_event_channel_opened_get_handle(packet);
-                    gatt_client->mtu = l2cap_event_channel_opened_get_remote_mtu(packet);
-                    gatt_client_classic_handle_connected(gatt_client, status);
                     break;
                 case L2CAP_EVENT_CHANNEL_CLOSED:
                     gatt_client = gatt_client_get_context_for_l2cap_cid(l2cap_event_channel_closed_get_local_cid(packet));
-                    // discard gatt client object
-                    gatt_client_classic_handle_disconnected(gatt_client);
+                    if (gatt_client != NULL){
+                        // discard gatt client object
+                        gatt_client_classic_handle_disconnected(gatt_client);
+                    }
                     break;
 #endif
                 case L2CAP_EVENT_CAN_SEND_NOW:
@@ -2168,8 +2171,9 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
                 case ATT_EVENT_MTU_EXCHANGE_COMPLETE:
                     if (size < 6u) break;
                     gatt_client = gatt_client_get_context_for_handle(handle);
-                    if (gatt_client == NULL) break;
-                    gatt_client->mtu = little_endian_read_16(packet, 4);
+                    if (gatt_client != NULL) {
+                        gatt_client->mtu = little_endian_read_16(packet, 4);
+                    }
                     break;
                 default:
                     break;
@@ -2197,9 +2201,10 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
 #ifdef ENABLE_GATT_OVER_CLASSIC
         case L2CAP_DATA_PACKET:
             gatt_client = gatt_client_get_context_for_l2cap_cid(handle);
-            btstack_assert(gatt_client != NULL);
-            gatt_client_handle_att_response(gatt_client, packet, size);
-            gatt_client_run();
+            if (gatt_client != NULL){
+                gatt_client_handle_att_response(gatt_client, packet, size);
+                gatt_client_run();
+            }
             break;
 #endif
 
