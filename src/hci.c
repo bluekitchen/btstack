@@ -4667,7 +4667,7 @@ static void sco_handler(uint8_t * packet, uint16_t size){
         // log_debug("sco flow %u, handle 0x%04x, packets sent %u, bytes send %u", hci_stack->synchronous_flow_control_enabled, (int) con_handle, conn->num_packets_sent, conn->num_sco_bytes_sent);
         if (hci_stack->synchronous_flow_control_enabled == 0){
             // ignore received SCO packets for the first 10 ms, then allow for max two HCI_SCO_2EV3_SIZE packets
-            uint16_t max_sco_packets = btstack_min(2 * HCI_SCO_2EV3_SIZE / conn->sco_payload_length, hci_stack->sco_packets_total_num);
+            uint8_t max_sco_packets = (uint8_t) btstack_min(2 * HCI_SCO_2EV3_SIZE / conn->sco_payload_length, hci_stack->sco_packets_total_num);
             if (conn->sco_tx_active == 0){
                 if (btstack_time_delta(btstack_run_loop_get_time_ms(), conn->sco_established_ms) > 10){
                     conn->sco_tx_active = 1;
@@ -4869,6 +4869,7 @@ void hci_init(const hci_transport_t *transport, const void *config){
     if (!hci_stack) {
         hci_stack = (hci_stack_t*) malloc(sizeof(hci_stack_t));
     }
+    btstack_assert(hci_stack != NULL);
 #else
     hci_stack = &hci_stack_static;
 #endif
