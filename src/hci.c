@@ -7722,7 +7722,7 @@ uint8_t hci_send_cmd_packet(uint8_t *packet, int size){
 
             // track outgoing connection to handle command status with error
             hci_stack->outgoing_addr_type = BD_ADDR_TYPE_SCO;
-            (void) memcpy(hci_stack->outgoing_addr, addr, 6);
+            (void) memcpy(hci_stack->outgoing_addr, conn->address, 6);
 
             // setup_synchronous_connection? Voice setting at offset 22
             // TODO: compare to current setting if sco connection already active
