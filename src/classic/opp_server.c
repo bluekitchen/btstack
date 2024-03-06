@@ -41,7 +41,6 @@
 
 #include <stdint.h>
 #include <string.h>
-#include <strings.h>
 #include <stdio.h>
 
 #include "hci_cmd.h"
@@ -56,6 +55,14 @@
 #include "classic/goep_server.h"
 #include "classic/sdp_util.h"
 #include "classic/opp_server.h"
+
+// use replacment in Visual Studio
+#ifdef _MSC_VER
+#define strncasecmp _strnicmp
+#define strcasecmp _stricmp
+#else
+#include <strings.h>
+#endif
 
 typedef enum {
     OPP_SERVER_STATE_W4_OPEN,
