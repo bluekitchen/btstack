@@ -1,0 +1,254 @@
+/*
+ * Copyright (C) 2024 BlueKitchen GmbH
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 3. Neither the name of the copyright holders nor the names of
+ *    contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ * 4. Any redistribution, use, or modification is done solely for
+ *    personal benefit and not for any commercial purpose or for
+ *    monetary gain.
+ *
+ * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
+ * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
+ * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
+ * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
+ * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ *
+ * Please inquire about commercial licensing options at 
+ * contact@bluekitchen-gmbh.com
+ *
+ */
+
+#define BTSTACK_FILE__ "map_server_demo.c"
+
+// *****************************************************************************
+/* EXAMPLE_START(map_server_demo): Provide MAP Messaging Server Equipment (MSE)
+ *
+ */
+// *****************************************************************************
+
+
+#include "btstack_config.h"
+
+#include <stdint.h>
+#include <stdio.h>
+#include <string.h>
+
+#include "btstack_event.h"
+#include "yxml.h"
+#include "classic/goep_client.h"
+#include "classic/goep_server.h"
+#include "classic/map.h"
+#include "classic/map_access_client.h"
+#include "classic/map_notification_server.h"
+#include "classic/map_util.h"
+#include "classic/obex.h"
+#include "classic/rfcomm.h"
+#include "classic/sdp_server.h"
+
+#ifdef HAVE_BTSTACK_STDIN
+#include "btstack_stdin.h"
+#endif
+
+#define MAS_SERVER_RFCOMM_CHANNEL_NR 1
+#define MAS_SERVER_GOEP_PSM 0x1001
+
+static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+
+#if 0
+
+// singleton instance required to configure GOEP
+
+#ifdef ENABLE_GOEP_L2CAP
+static uint8_t map_notification_client_ertm_buffer_mas_0[4000];
+static uint8_t map_notification_client_ertm_buffer_mas_1[4000];
+static l2cap_ertm_config_t map_notification_client_ertm_config = {
+        1,  // ertm mandatory
+        2,  // max transmit, some tests require > 1
+        2000,
+        12000,
+        512,    // l2cap ertm mtu
+        4,
+        4,
+        1,      // 16-bit FCS
+};
+#endif
+
+#endif
+
+static bd_addr_t    remote_addr;
+static const char * remote_addr_string = "001BDC08E272";
+
+static btstack_packet_callback_registration_t hci_event_callback_registration;
+
+#ifdef HAVE_BTSTACK_STDIN
+// Testing User Interface
+static void show_usage(void){
+    bd_addr_t iut_address;
+    gap_local_bd_addr(iut_address);
+
+    printf("\n--- Bluetooth MAP Server Test Console %s ---\n", bd_addr_to_str(iut_address));
+    printf("Command list goes here... try press 'a'\n");
+    printf("\n");
+}
+
+static void stdin_process(char c){
+    switch (c){
+        case 'a':
+            printf("a was pressed\n");
+            break;
+        default:
+            show_usage();
+            break;
+    }
+}
+
+static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+    UNUSED(size);
+    int i;
+    char value[MAP_MAX_VALUE_LEN];
+    memset(value, 0, MAP_MAX_VALUE_LEN);
+    bd_addr_t event_addr;
+
+    switch (packet_type){
+        case HCI_EVENT_PACKET:
+            switch (hci_event_packet_get_type(packet)) {
+                case BTSTACK_EVENT_STATE:
+                    // BTstack activated, get started 
+                    if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING){
+                        show_usage();
+                    }
+                    break;
+
+                case HCI_EVENT_PIN_CODE_REQUEST:
+                    // inform about pin code request
+                    printf("Pin code request - using '0000'\n");
+                    hci_event_pin_code_request_get_bd_addr(packet, event_addr);
+                    gap_pin_code_response(event_addr, "0000");
+                    break;
+                default:
+                    break;
+            }
+            break;
+
+        case MAP_DATA_PACKET:
+            for (i=0;i<size;i++){
+                printf("%c", packet[i]);
+            }
+            break;
+        default:
+            break;
+    }
+}
+#endif
+
+static void mns_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    int i;
+
+    switch (packet_type){
+        case HCI_EVENT_PACKET:
+            switch (hci_event_packet_get_type(packet)) {
+                case HCI_EVENT_MAP_META:
+                    switch (hci_event_map_meta_get_subevent_code(packet)){
+                        case MAP_SUBEVENT_NOTIFICATION_EVENT:
+                            printf("Notification!\n");
+                            break;
+                        default:
+                            printf ("unknown map meta event %d\n", hci_event_map_meta_get_subevent_code(packet));
+                            break;
+                    }
+                    break;
+                default:
+                    printf ("unknown HCI event %d\n",
+                            hci_event_packet_get_type(packet));
+                    break;
+            }
+            break;
+
+        case MAP_DATA_PACKET:
+            for (i=0;i<size;i++){
+                printf("%c", packet[i]);
+            }
+            printf ("\n");
+            break;
+        default:
+            printf ("unknown event of type %d\n", packet_type);
+            break;
+    }
+}
+
+static uint8_t  map_message_access_service_buffer[150];
+const char * name = "MAS";
+
+int btstack_main(int argc, const char * argv[]);
+int btstack_main(int argc, const char * argv[]){
+
+    (void)argc;
+    (void)argv;
+
+    // init L2CAP
+    l2cap_init();
+
+    // init RFCOM
+    rfcomm_init();
+
+    // init SDP Server
+    sdp_init();
+
+    // init GOEP Client
+    goep_client_init();
+
+    // init GOEP Server
+    goep_server_init();
+
+    // register for HCI events
+    hci_event_callback_registration.callback = &packet_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
+
+    sscanf_bd_addr(remote_addr_string, remote_addr);
+
+    // init MAP Notification Client
+    // map_notification_client_init();
+
+    // setup MAP Access Server
+    map_message_type_t supported_message_types = MAP_MESSAGE_TYPE_SMS_GSM;
+    uint32_t supported_features = 0x1F;
+    memset(map_message_access_service_buffer, 0, sizeof(map_message_access_service_buffer));
+    map_util_create_access_service_sdp_record(map_message_access_service_buffer,
+                                                    sdp_create_service_record_handle(),
+                                                    1,
+                                                    MAS_SERVER_RFCOMM_CHANNEL_NR,
+                                                    MAS_SERVER_GOEP_PSM,
+                                                    supported_message_types,
+                                                    supported_features,
+                                                    name);
+    sdp_register_service(map_message_access_service_buffer);
+    // map_access_server_init(mns_packet_handler, MNS_SERVER_RFCOMM_CHANNEL_NR,  MNS_SERVER_GOEP_PSM, 0xffff);
+
+#ifdef HAVE_BTSTACK_STDIN
+    btstack_stdin_setup(stdin_process);
+#endif    
+
+    // turn on!
+    hci_power_control(HCI_POWER_ON);
+
+    return 0;
+}
+/* EXAMPLE_END */

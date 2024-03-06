@@ -27,6 +27,7 @@ set(EXAMPLES_CLASSIC_ONLY
 	hsp_ag_demo
 	hsp_hs_demo
 	map_client_demo
+	map_server_demo
 	pbap_client_demo
 	sdp_bnep_query
 	sdp_general_query      
