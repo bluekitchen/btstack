@@ -155,60 +155,161 @@ typedef struct {
  */
 void telephone_bearer_service_server_init(void);
 
+/**
+ *
+ * @param bearer
+ * @param packet_handler
+ * @param optional_opcodes_supported_bitmap
+ * @param out_bearer_id
+ * @return
+ */
 uint8_t telephone_bearer_service_server_register_generic_bearer(
         telephone_bearer_service_server_t * bearer,
         btstack_packet_handler_t packet_handler,
         uint16_t optional_opcodes_supported_bitmap,
         uint16_t * out_bearer_id );
-
+/**
+ *
+ * @param bearer
+ * @param packet_handler
+ * @param optional_opcodes_supported_bitmask
+ * @param out_bearer_id
+ * @return
+ */
 uint8_t telephone_bearer_service_server_register_individual_bearer(
         telephone_bearer_service_server_t * bearer,
         btstack_packet_handler_t packet_handler,
         uint16_t optional_opcodes_supported_bitmask,
         uint16_t * out_bearer_id );
-
+/**
+ *
+ * @param bearer_id
+ * @param call
+ * @param out_call_id
+ * @return
+ */
 uint8_t telephone_bearer_service_server_register_call(
         uint16_t bearer_id,
         tbs_call_data_t *const call,
         uint16_t *const out_call_id );
-
+/**
+ *
+ * @param bearer_id
+ * @param call_id
+ * @return
+ */
 uint8_t telephone_bearer_service_server_deregister_call(
         uint16_t bearer_id,
         uint16_t call_id );
-
+/**
+ *
+ * @param bearer_id
+ * @param call_id
+ * @param state
+ * @return
+ */
 uint8_t telephone_bearer_service_server_set_call_state(
         uint16_t bearer_id,
         uint16_t call_id,
         const tbs_call_state_t state );
-
+/**
+ *
+ * @param bearer_id
+ * @param call_id
+ * @param opcode
+ * @param result
+ * @return
+ */
 uint8_t telephone_bearer_service_server_call_control_point_notification(
         uint16_t bearer_id,
         uint16_t call_id,
         tbs_control_point_opcode_t opcode,
         tbs_control_point_notification_result_codes_t result);
-
+/**
+ *
+ * @param id
+ * @return
+ */
 telephone_bearer_service_server_t *telephone_bearer_service_server_get_bearer_by_id( uint16_t id );
-
+/**
+ *
+ * @param bearer
+ * @param id
+ * @return
+ */
 tbs_call_data_t *telephone_bearer_service_server_get_call_by_id( telephone_bearer_service_server_t *bearer, uint16_t id );
-
+/**
+ *
+ * @param bearer_id
+ * @param call_id
+ * @param reason
+ * @return
+ */
 uint8_t telephone_bearer_service_server_termination_reason(uint16_t bearer_id, uint16_t call_id, tbs_call_termination_reason_t reason);
-
+/**
+ *
+ * @param bearer_id
+ * @param call_id
+ * @param uri
+ * @return
+ */
 uint8_t telephone_bearer_service_server_call_friendly_name( uint16_t bearer_id, uint16_t call_id, const char * uri );
-
+/**
+ *
+ * @param bearer_id
+ * @param call_id
+ * @param uri
+ * @return
+ */
 uint8_t telephone_bearer_service_server_call_uri( uint16_t bearer_id, uint16_t call_id, const char * uri );
-
+/**
+ *
+ * @param bearer_id
+ * @param call_id
+ * @param uri
+ * @return
+ */
 uint8_t telephone_bearer_service_server_incoming_call_target_bearer_uri( uint16_t bearer_id, uint16_t call_id, const char * uri );
-
+/**
+ *
+ * @param call
+ * @return
+ */
 tbs_call_state_t telephone_bearer_service_server_get_call_state( tbs_call_data_t *call );
-
+/**
+ *
+ * @param bearer_id
+ * @param provider_name
+ * @return
+ */
 uint8_t telephone_bearer_service_server_set_provider_name(uint16_t bearer_id, const char * provider_name);
-
+/**
+ *
+ * @param bearer_id
+ * @param technology
+ * @return
+ */
 uint8_t telephone_bearer_service_server_set_technology(uint16_t bearer_id, const tbs_technology_t technology);
-
+/**
+ *
+ * @param bearer_id
+ * @param schemes_list
+ * @return
+ */
 uint8_t telephone_bearer_service_server_set_supported_schemes_list(uint16_t bearer_id, const char * schemes_list);
-
+/**
+ *
+ * @param bearer_id
+ * @param signal_strength
+ * @return
+ */
 uint8_t telephone_bearer_service_server_set_signal_strength(uint16_t bearer_id, const uint8_t signal_strength);
-
+/**
+ *
+ * @param bearer_id
+ * @param flags
+ * @return
+ */
 uint8_t telephone_bearer_service_server_set_status_flags(uint16_t bearer_id, const uint16_t flags);
 
 /* API_END */
