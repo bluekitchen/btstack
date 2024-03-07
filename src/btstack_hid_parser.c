@@ -377,7 +377,7 @@ void btstack_hid_parser_init(btstack_hid_parser_t * parser, const uint8_t * hid_
     btstack_hid_parser_find_next_usage(parser);
 }
 
-int  btstack_hid_parser_has_more(btstack_hid_parser_t * parser){
+bool btstack_hid_parser_has_more(btstack_hid_parser_t * parser){
     return parser->state == BTSTACK_HID_PARSER_USAGES_AVAILABLE;
 }
 
