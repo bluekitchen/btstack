@@ -208,11 +208,12 @@ int btstack_hid_get_report_size_for_id(int report_id, hid_report_type_t report_t
 hid_report_id_status_t btstack_hid_id_valid(int report_id, uint16_t hid_descriptor_len, const uint8_t * hid_descriptor);
 
 /**
- * @brief Parses descriptor and returns 1 if report ID found
+ * @brief Parses descriptor and returns true if report ID found
  * @param hid_descriptor_len
  * @param hid_descriptor
+ * @return true if report ID declared in descriptor
  */
-int btstack_hid_report_id_declared(uint16_t hid_descriptor_len, const uint8_t * hid_descriptor);
+bool btstack_hid_report_id_declared(uint16_t hid_descriptor_len, const uint8_t * hid_descriptor);
 /* API_END */
 
 #if defined __cplusplus

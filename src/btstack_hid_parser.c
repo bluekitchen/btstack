@@ -531,7 +531,7 @@ hid_report_id_status_t btstack_hid_id_valid(int report_id, uint16_t hid_descript
     return HID_REPORT_ID_UNDECLARED;
 }
 
-int btstack_hid_report_id_declared(uint16_t hid_descriptor_len, const uint8_t * hid_descriptor){
+bool btstack_hid_report_id_declared(uint16_t hid_descriptor_len, const uint8_t * hid_descriptor){
     while (hid_descriptor_len){
         hid_descriptor_item_t item;
         bool ok = btstack_hid_parse_descriptor_item(&item, hid_descriptor, hid_descriptor_len);
@@ -542,7 +542,7 @@ int btstack_hid_report_id_declared(uint16_t hid_descriptor_len, const uint8_t * 
             case Global:
                 switch ((GlobalItemTag)item.item_tag){
                     case ReportID:
-                        return 1;
+                        return true;
                     default:
                         break;
                 }
@@ -553,5 +553,5 @@ int btstack_hid_report_id_declared(uint16_t hid_descriptor_len, const uint8_t * 
         hid_descriptor_len -= item.item_size;
         hid_descriptor += item.item_size;
     }
-    return 0;
+    return false;
 }
