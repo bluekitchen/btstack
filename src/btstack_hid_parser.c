@@ -534,7 +534,10 @@ hid_report_id_status_t btstack_hid_id_valid(int report_id, uint16_t hid_descript
 int btstack_hid_report_id_declared(uint16_t hid_descriptor_len, const uint8_t * hid_descriptor){
     while (hid_descriptor_len){
         hid_descriptor_item_t item;
-        btstack_hid_parse_descriptor_item(&item, hid_descriptor, hid_descriptor_len);
+        bool ok = btstack_hid_parse_descriptor_item(&item, hid_descriptor, hid_descriptor_len);
+        if (ok == false){
+            break;
+        }
         switch (item.item_type){
             case Global:
                 switch ((GlobalItemTag)item.item_tag){
