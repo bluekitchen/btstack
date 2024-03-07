@@ -360,14 +360,21 @@ static bool gatt_service_client_handle_query_complete(gatt_service_client_helper
     return true;
 }
 
-static uint8_t gatt_service_client_get_characteristic_index_for_uuid16(
+static uint8_t gatt_service_client_get_uninitialized_characteristic_index_for_uuid16(
         gatt_service_client_helper_t * client,
+        gatt_service_client_connection_helper_t * connection,
         uint16_t uuid16){
+
         uint8_t index = 0xff;
 
         uint8_t i;
+
         for (i = 0; i < client->characteristics_desc16_num; i++){
             if (client->characteristics_desc16[i] == uuid16){
+                // allow for more then one instance of the same characteristic (as in OTS client)
+                if (connection->characteristics[i].value_handle != 0){
+                   continue;
+                }
                 index = i;
                 break;
             }
@@ -432,7 +439,7 @@ void gatt_service_client_trampoline_packet_handler(gatt_service_client_helper_t 
             btstack_assert(connection != NULL);
             gatt_event_characteristic_query_result_get_characteristic(packet, &characteristic);
       
-            characteristic_index = gatt_service_client_get_characteristic_index_for_uuid16(client, characteristic.uuid16);
+            characteristic_index = gatt_service_client_get_uninitialized_characteristic_index_for_uuid16(client, connection, characteristic.uuid16);
             if (characteristic_index < client->characteristics_desc16_num){
                 connection->characteristics[characteristic_index].value_handle = characteristic.value_handle;
                 connection->characteristics[characteristic_index].properties = characteristic.properties;
