@@ -59,6 +59,7 @@
 #include "btp_le_audio.h"
 #include "btp_bap.h"
 #include "btp_cap.h"
+#include "btp_csip.h"
 
 #define AUTOPTS_SOCKET_NAME "/tmp/bt-stack-tester"
 
@@ -1766,6 +1767,9 @@ static void btp_packet_handler(uint8_t service_id, uint8_t opcode, uint8_t contr
         case BTP_SERVICE_ID_BAP:
             btp_bap_handler(opcode, controller_index, length, data);
             break;
+        case BTP_SERVICE_ID_CSIP:
+            btp_csip_handler(opcode, controller_index, length, data);
+            break;
         case BTP_SERVICE_ID_CAP:
             btp_cap_handler(opcode, controller_index, length, data);
             break;
@@ -2076,7 +2080,8 @@ int btstack_main(int argc, const char * argv[])
     // LE Audio (old) Client
     btp_le_audio_init();
 
-    // BAP (new) Client
+    // New Clients
+    btp_csip_init();
     btp_bap_init();
     btp_cap_init();
 
