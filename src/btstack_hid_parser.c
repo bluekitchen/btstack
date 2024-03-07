@@ -443,7 +443,10 @@ int btstack_hid_get_report_size_for_id(int report_id, hid_report_type_t report_t
     while (hid_descriptor_len){
         int valid_report_type = 0;
         hid_descriptor_item_t item;
-        btstack_hid_parse_descriptor_item(&item, hid_descriptor, hid_descriptor_len);
+        bool ok = btstack_hid_parse_descriptor_item(&item, hid_descriptor, hid_descriptor_len);
+        if (ok == false) {
+            return 0;
+        }
         switch (item.item_type){
             case Global:
                 switch ((GlobalItemTag)item.item_tag){
