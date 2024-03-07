@@ -199,10 +199,11 @@ bool btstack_hid_parse_descriptor_item(hid_descriptor_item_t * item, const uint8
 int btstack_hid_get_report_size_for_id(int report_id, hid_report_type_t report_type, uint16_t hid_descriptor_len, const uint8_t * hid_descriptor);
 
 /**
- * @brief Parses descriptor and returns report size for given report ID and report type
+ * @brief Parses descriptor and returns status for given report ID
  * @param report_id
  * @param hid_descriptor_len
  * @param hid_descriptor
+ * @return status for report id
  */
 hid_report_id_status_t btstack_hid_id_valid(int report_id, uint16_t hid_descriptor_len, const uint8_t * hid_descriptor);
 

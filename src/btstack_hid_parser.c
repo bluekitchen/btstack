@@ -233,7 +233,10 @@ static void hid_find_next_usage(btstack_hid_parser_t * parser){
     while ((parser->available_usages == 0u) && (parser->usage_pos < parser->descriptor_pos)){
         hid_descriptor_item_t usage_item;
         // parser->usage_pos < parser->descriptor_pos < parser->descriptor_len
-        btstack_hid_parse_descriptor_item(&usage_item, &parser->descriptor[parser->usage_pos], parser->descriptor_len - parser->usage_pos);
+        bool ok = btstack_hid_parse_descriptor_item(&usage_item, &parser->descriptor[parser->usage_pos], parser->descriptor_len - parser->usage_pos);
+        if (ok == false){
+            break;
+        }
         if ((usage_item.item_type == Global) && (usage_item.item_tag == UsagePage)){
             parser->usage_page = usage_item.item_value;
         }
@@ -498,7 +501,10 @@ hid_report_id_status_t btstack_hid_id_valid(int report_id, uint16_t hid_descript
     int current_report_id = 0;
     while (hid_descriptor_len){
         hid_descriptor_item_t item;
-        btstack_hid_parse_descriptor_item(&item, hid_descriptor, hid_descriptor_len);
+        bool ok = btstack_hid_parse_descriptor_item(&item, hid_descriptor, hid_descriptor_len);
+        if (ok == false){
+            return HID_REPORT_ID_INVALID;
+        }
         switch (item.item_type){
             case Global:
                 switch ((GlobalItemTag)item.item_tag){
