@@ -340,7 +340,12 @@ static void btstack_hid_parser_find_next_usage(btstack_hid_parser_t * parser){
             parser->state = BTSTACK_HID_PARSER_COMPLETE;
             break;
         }
-        btstack_hid_parse_descriptor_item(&parser->descriptor_item, &parser->descriptor[parser->descriptor_pos], parser->descriptor_len - parser->descriptor_pos);
+        bool ok = btstack_hid_parse_descriptor_item(&parser->descriptor_item, &parser->descriptor[parser->descriptor_pos], parser->descriptor_len - parser->descriptor_pos);
+        if (ok == false){
+            // abort parsing
+            parser->state = BTSTACK_HID_PARSER_COMPLETE;
+            break;
+        }
         hid_process_item(parser, &parser->descriptor_item);
         if (parser->required_usages){
             hid_find_next_usage(parser);
