@@ -184,8 +184,9 @@ void btstack_hid_parser_get_field(btstack_hid_parser_t * parser, uint16_t * usag
  * @param item
  * @param hid_descriptor
  * @param hid_descriptor_len
+ * @return true if item has been parsed successfully
  */
-void btstack_hid_parse_descriptor_item(hid_descriptor_item_t * item, const uint8_t * hid_descriptor, uint16_t hid_descriptor_len);
+bool btstack_hid_parse_descriptor_item(hid_descriptor_item_t * item, const uint8_t * hid_descriptor, uint16_t hid_descriptor_len);
 
 /**
  * @brief Parses descriptor and returns report size for given report ID and report type
