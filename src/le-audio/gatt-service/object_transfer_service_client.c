@@ -140,20 +140,26 @@ static uint16_t ots_client_value_handle_for_index(ots_client_connection_t * conn
     return connection->basic_connection.characteristics[connection->characteristic_index].value_handle;
 }
 
-static void ots_client_emit_connected(gatt_service_client_connection_helper_t * connection_helper, uint8_t status){
+static void ots_client_emit_connected(ots_client_connection_t * connection, uint8_t status){
+    btstack_assert(connection != NULL);
+    gatt_service_client_connection_helper_t * connection_helper = (gatt_service_client_connection_helper_t *) connection;
     btstack_assert(connection_helper != NULL);
     btstack_assert(connection_helper->event_callback != NULL);
 
-    uint8_t event[9];
+    uint8_t event[17];
     int pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_OTS_CLIENT_DISCONNECTED;
+    event[pos++] = GATTSERVICE_SUBEVENT_OTS_CLIENT_CONNECTED;
     little_endian_store_16(event, pos, connection_helper->con_handle);
     pos += 2;
     little_endian_store_16(event, pos, connection_helper->cid);
     pos += 2;
     event[pos++] = 0; // num included services
+    little_endian_store_32(event, pos, connection->oacp_features);
+    pos += 4;
+    little_endian_store_32(event, pos, connection->olcp_features);
+    pos += 4;
     event[pos++] = status;
     (*connection_helper->event_callback)(HCI_EVENT_PACKET, 0, event, pos);
 }
@@ -335,7 +341,7 @@ static void ots_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
                     } else {
                         connection->state = OBJECT_TRANSFER_SERVICE_CLIENT_STATE_UNINITIALISED;
                     }
-                    ots_client_emit_connected(connection_helper, gattservice_subevent_client_connected_get_status(packet));
+                    ots_client_emit_connected(connection, gattservice_subevent_client_connected_get_status(packet));
                     break;
 
                 case GATTSERVICE_SUBEVENT_CLIENT_DISCONNECTED:
@@ -416,22 +422,22 @@ static void ots_client_handle_gatt_client_event(uint8_t packet_type, uint16_t ch
                     break;
                 
                 case OBJECT_TRANSFER_SERVICE_CLIENT_STATE_UNINITIALISED:
-                    ots_client_emit_connected(connection_helper, ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH);
+                    ots_client_emit_connected(connection, ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH);
                     break;
                 
                 case OBJECT_TRANSFER_SERVICE_CLIENT_STATE_OTS_FEATURES_READING_FAILED:
                     connection->state = OBJECT_TRANSFER_SERVICE_CLIENT_STATE_UNINITIALISED;
-                    ots_client_emit_connected(connection_helper, ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH);
+                    ots_client_emit_connected(connection, ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH);
                     break;
 
                 case OBJECT_TRANSFER_SERVICE_CLIENT_STATE_W4_OTS_FEATURES_RESULT:
                     if (gatt_event_query_complete_get_att_status(packet) == ERROR_CODE_SUCCESS){
                         connection->state = OBJECT_TRANSFER_SERVICE_CLIENT_STATE_READY;
-                        ots_client_emit_connected(connection_helper, ERROR_CODE_SUCCESS);
+                        ots_client_emit_connected(connection, ERROR_CODE_SUCCESS);
                         break;
                     }
                     connection->state = OBJECT_TRANSFER_SERVICE_CLIENT_STATE_UNINITIALISED;
-                    ots_client_emit_connected(connection_helper, gatt_event_query_complete_get_att_status(packet));
+                    ots_client_emit_connected(connection, gatt_event_query_complete_get_att_status(packet));
                     break;
 
                 default:
