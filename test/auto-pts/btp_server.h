@@ -74,6 +74,7 @@ typedef struct {
     // pacs client
     pacs_client_connection_t pacs_connection;
     uint16_t pacs_cid;
+    uint8_t  pacs_state;
 } server_t;
 
 /**

@@ -328,9 +328,9 @@ void btp_cap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, 
                 bd_addr_t address;
                 reverse_bd_addr(&data[1], address);
                 const hci_connection_t * hci_connection = hci_connection_for_bd_addr_and_type(address, addr_type);
+                MESSAGE("BTP_CAP_DISCOVER addr %s, addr type %u, -> con %p", bd_addr_to_str(address), addr_type, hci_connection);
                 btstack_assert(hci_connection != NULL);
                 hci_con_handle_t con_handle = hci_connection->con_handle;
-                MESSAGE("BTP_CAP_DISCOVER %s, con handle 0x%04x", bd_addr_to_str(address), con_handle);
 
                 btp_cap_discovery_state = CAP_DISOCVERY_IDLE;
                 btp_cap_discovery_next(con_handle);
