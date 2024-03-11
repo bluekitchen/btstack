@@ -127,6 +127,7 @@ typedef struct {
     uint16_t csis_cid;
     uint8_t  sirk[16];
     uint8_t  coordinated_set_size;
+    uint8_t  coordinated_set_rank;
 
 } server_t;
 
