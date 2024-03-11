@@ -45,6 +45,7 @@
 
 #include <stdint.h>
 #include "le-audio/le_audio.h"
+#include "ble/gatt_client.h"
 #include "le-audio/gatt-service/coordinated_set_identification_service_util.h"
 
 #if defined __cplusplus
