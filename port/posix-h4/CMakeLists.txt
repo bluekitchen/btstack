@@ -155,6 +155,9 @@ list(SORT SOURCES)
 # create static lib
 add_library(btstack STATIC ${SOURCES})
 
+# Collect libraries for executables
+set (BTSTACK_LIBRARIES btstack)
+
 # pkgconfig
 find_package(PkgConfig)
 
@@ -164,18 +167,18 @@ if (PkgConfig_FOUND)
 	if(PORTAUDIO_FOUND)
 		message("HAVE_PORTAUDIO")
 		include_directories(${PORTAUDIO_INCLUDE_DIRS})
+		set(BTSTACK_LIBRARIES ${BTSTACK_LIBRARIES} ${PORTAUDIO_LIBRARIES})
 		link_directories(${PORTAUDIO_LIBRARY_DIRS})
-		link_libraries(${PORTAUDIO_LIBRARIES})
 		add_compile_definitions(HAVE_PORTAUDIO)
 	endif()
 endif()
 
 # pthread
 find_package(Threads)
-link_libraries(${CMAKE_THREAD_LIBS_INIT})
+set(BTSTACK_LIBRARIES ${BTSTACK_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} pthread m)
 
 # Add CC256x Support and specify init script
-set (CC256X_INIT_SCRIPT bluetooth_init_cc2564C_1.5.c)
+set(CC256X_INIT_SCRIPT bluetooth_init_cc2564C_1.5.c)
 include(${BTSTACK_ROOT}/chipset/cc256x/cc256x.cmake)
 
 # Add BCM Support and download PatchRAM files
@@ -206,5 +209,5 @@ foreach(EXAMPLE ${EXAMPLES})
 		message("example ${EXAMPLE}")
 	endif()
 	add_executable(${EXAMPLE} ${SOURCES_EXAMPLE})
-	target_link_libraries(${EXAMPLE} btstack pthread)
+	target_link_libraries(${EXAMPLE} ${BTSTACK_LIBRARIES})
 endforeach(EXAMPLE)
