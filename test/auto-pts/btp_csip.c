@@ -47,6 +47,7 @@
 #include "btpclient.h"
 #include "btp.h"
 #include "btp_csip.h"
+#include "btp_server.h"
 #include "btstack.h"
 #include "le-audio/le_audio_base_builder.h"
 #include "le_audio_demo_util_source.h"
@@ -55,12 +56,6 @@
 static btstack_packet_handler_t btp_csip_higher_layer_handler;
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
-#define MAX_NUM_SERVERS 2
-
-// BTP Server Management
-
-static server_t servers[MAX_NUM_SERVERS];
-
 static enum {
     BTP_CSIP_ORDERED_ACCESS_IDLE,
     BTP_CSIP_ORDERED_ACCESS_READ_LOCKS,
@@ -68,76 +63,6 @@ static enum {
     BTP_CSIP_ORDERED_ACCESS_READY
 } btp_csip_ordered_access_state = BTP_CSIP_ORDERED_ACCESS_IDLE;
 static uint8_t csip_ordered_access_next_rank;
-
-static server_t * btp_server_initialize(hci_con_handle_t con_handle){
-    uint8_t i;
-    for (i=0; i < MAX_NUM_SERVERS; i++){
-        server_t * server = &servers[i];
-        if (server->acl_con_handle == HCI_CON_HANDLE_INVALID){
-            // get hci con handle from HCI
-            hci_connection_t * connection = hci_connection_for_handle(con_handle);
-            btstack_assert(connection != NULL);
-            server->acl_con_handle = connection->con_handle;
-            memcpy(server->address, connection->address, 6);
-            server->address_type = connection->address_type;
-            return server;
-        }
-    }
-    btstack_unreachable();
-    return NULL;
-}
-
-server_t * btp_server_for_csis_cid(uint16_t csis_cid){
-    uint8_t i;
-    for (i=0; i < MAX_NUM_SERVERS; i++){
-        server_t * server = &servers[i];
-        if (server->csis_cid == csis_cid){
-            return server;
-        }
-    }
-    return NULL;
-}
-
-static server_t * btp_server_for_acl_con_handle(hci_con_handle_t acl_con_handle){
-    uint8_t i;
-    for (i=0; i < MAX_NUM_SERVERS; i++){
-        server_t * server = &servers[i];
-        if (server->acl_con_handle == acl_con_handle){
-            return server;
-        }
-    }
-    return NULL;
-}
-
-server_t * btp_server_for_address(bd_addr_type_t address_type, bd_addr_t address){
-    uint8_t i;
-    for (i=0; i < MAX_NUM_SERVERS; i++){
-        server_t * server = &servers[i];
-        if (server->address_type == address_type){
-            if (memcmp(server->address, address, 6) == 0){
-                return server;
-            }
-        }
-    }
-    return NULL;
-}
-
-static void btp_server_init(void){
-    // init servers
-    uint8_t i;
-    for (i=0;i<MAX_NUM_SERVERS;i++){
-        servers[i].server_id = i;
-        servers[i].acl_con_handle = HCI_CON_HANDLE_INVALID;
-    }
-}
-
-static void btp_server_finalize(server_t * server){
-    uint8_t server_id = server->server_id;
-    memset(servers, 0, sizeof(server_t));
-    server->server_id = server_id;
-}
-
-//
 
 static void btp_csip_hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
@@ -170,7 +95,7 @@ static void btp_csip_ordered_access_next(void){
         case BTP_CSIP_ORDERED_ACCESS_READ_LOCKS:
             // read lock characteristic of all set members
             for (i=0;i<MAX_NUM_SERVERS;i++) {
-                server_t * server = &servers[i];
+                server_t * server = btp_server_for_index(i);
                 if (server->coordinated_set_rank == csip_ordered_access_next_rank) {
                     MESSAGE("CSIP client %u: read lock, cid 0x%04x", server->server_id, server->csis_cid);
                     csip_ordered_access_next_rank++;
@@ -189,7 +114,7 @@ static void btp_csip_ordered_access_next(void){
         case BTP_CSIP_ORDERED_ACCESS_WRITE_LOCKS:
             // write lock characteristic of all set members
             for (i=0;i<MAX_NUM_SERVERS;i++) {
-                server_t * server = &servers[i];
+                server_t * server = btp_server_for_index(i);
                 if (server->coordinated_set_rank == csip_ordered_access_next_rank) {
                     MESSAGE("CSIP client %u: write lock, cid 0x%04x", server->server_id, server->csis_cid);
                     csip_ordered_access_next_rank++;
@@ -373,7 +298,6 @@ void btp_csip_handler(uint8_t opcode, uint8_t controller_index, uint16_t length,
 
 
 void btp_csip_init(void) {
-    btp_server_init();
 
     // register for HCI events
     hci_event_callback_registration.callback = &btp_csip_hci_packet_handler;
