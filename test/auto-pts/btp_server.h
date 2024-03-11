@@ -30,109 +30,96 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at
+ * Please inquire about commercial licensing options at 
  * contact@bluekitchen-gmbh.com
  *
  */
 
-
-/*
- *  btp_csip.h
- *  BTP CSI Implementation
+/**
+ *  @brief TODO
  */
 
-#ifndef BTP_CSIP_H
-#define BTP_CSIP_H
-
-#include "btstack_run_loop.h"
-#include "btstack_defines.h"
-#include "bluetooth.h"
+#ifndef BTP_SERVER_H
+#define BTP_SERVER_H
 
 #include <stdint.h>
+#include "btstack_linked_list.h"
+#include "bluetooth.h"
+#include "le-audio/gatt-service/coordinated_set_identification_service_client.h"
 
 #if defined __cplusplus
 extern "C" {
 #endif
 
-// pack structs
-#pragma pack(1)
-#define __packed
+#define MAX_NUM_SERVERS 3
 
-/* CSIP commands */
-#define BTP_CSIP_READ_SUPPORTED_COMMANDS	0x01
-struct btp_csip_read_supported_commands_rp {
-    uint8_t data[0];
-} __packed;
+typedef struct {
+    btstack_linked_item_t item;
+    uint8_t server_id;
 
-#define BTP_CSIP_DISCOVER			0x02
-struct btp_csip_discover_cmd {
-    uint8_t addr_type;
     bd_addr_t address;
-} __packed;
+    bd_addr_type_t address_type;
 
-#define BTP_CSIP_START_ORDERED_ACCESS		0x03
-struct btp_csip_start_ordered_access_cmd {
-    uint8_t flags;
-} __packed;
+    // hci
+    hci_con_handle_t acl_con_handle;
 
-#define BTP_CSIP_SET_COORDINATOR_LOCK		0x04
-struct btp_csip_set_coordinator_lock_cmd {
-    uint8_t count;
-} __packed;
+    // csis
+    csis_client_connection_t csis_connection;
+    uint16_t csis_cid;
+    uint8_t  sirk[16];
+    uint8_t  coordinated_set_size;
+    uint8_t  coordinated_set_rank;
 
-#define BTP_CSIP_SET_COORDINATOR_RELEASE	0x05
-struct btp_csip_set_coordinator_release_cmd {
-    uint8_t count;
-} __packed;
-
-/* CSIP Events */
-#define BTP_CSIP_DISCOVERED_EV			0x80
-struct btp_csip_discovered_ev {
-    uint8_t addr_type;
-    bd_addr_t address;
-    uint8_t status;
-    uint16_t sirk_handle;
-    uint16_t size_handle;
-    uint16_t lock_handle;
-    uint16_t rank_handle;
-} __packed;
-
-#define BTP_CSIP_SIRK_EV			0x81
-struct btp_csip_sirk_ev {
-    uint8_t addr_type;
-    bd_addr_t address;
-    uint8_t sirk[16];
-} __packed;
-
-#define BTP_CSIP_LOCK_EV			0x82
-struct btp_csip_lock_ev {
-    uint8_t status;
-} __packed;
-
-#pragma options align=reset
+} server_t;
 
 /**
- * Init CSIP Service
+ * @brief Initialize server structures
  */
-void btp_csip_init(void);
+void btp_server_init(void);
 
 /**
- * Process CSIP Operation
+ * @brief Setup server struct for active hci connection
+ * @param con_handle
+ * @return
  */
-void btp_csip_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, const uint8_t *data);
+server_t * btp_server_initialize(hci_con_handle_t con_handle);
 
 /**
- * Allow to process CSIP events by higher layer, e.g. BAP or CAP
+ * @brief Lookup server by index, used to iterate over servers
+ * @param index
+ * @return
  */
-void btp_csip_register_higher_layer(btstack_packet_handler_t packet_handler);
+server_t * btp_server_for_index(uint8_t index);
 
 /**
- * Connect to remote device
+ * @brief Free server
  */
-void btp_csip_connect(hci_con_handle_t );
+void btp_server_finalize(server_t * server);
+
+
+/**
+ * @brief Lookup server by Address
+ * @param address_type
+ * @param address
+ * @return
+ */
+server_t * btp_server_for_address(bd_addr_type_t address_type, bd_addr_t address);
+
+/**
+ * @brief Lookup server by ACL Connection Handle
+ * @param acl_con_handle
+ * @return
+ */
+server_t * btp_server_for_acl_con_handle(hci_con_handle_t acl_con_handle);
+
+/**
+ * @brief Lookup server by csis_cid
+ * @param csis_cid
+ * @return
+ */
+server_t * btp_server_for_csis_cid(uint16_t csis_cid);
 
 #if defined __cplusplus
 }
 #endif
-
-#endif // BTP_CSIP_H
+#endif // BTP_SERVER_H

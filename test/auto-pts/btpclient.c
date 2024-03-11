@@ -60,6 +60,7 @@
 #include "btp_bap.h"
 #include "btp_cap.h"
 #include "btp_csip.h"
+#include "btp_server.h"
 
 #define AUTOPTS_SOCKET_NAME "/tmp/bt-stack-tester"
 
@@ -2081,6 +2082,7 @@ int btstack_main(int argc, const char * argv[])
     btp_le_audio_init();
 
     // New Clients
+    btp_server_init();
     btp_csip_init();
     btp_bap_init();
     btp_cap_init();
