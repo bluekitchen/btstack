@@ -46,6 +46,7 @@
 #include "btstack_linked_list.h"
 #include "bluetooth.h"
 #include "le-audio/gatt-service/coordinated_set_identification_service_client.h"
+#include "le-audio/gatt-service/published_audio_capabilities_service_client.h"
 
 #if defined __cplusplus
 extern "C" {
@@ -70,6 +71,9 @@ typedef struct {
     uint8_t  coordinated_set_size;
     uint8_t  coordinated_set_rank;
 
+    // pacs client
+    pacs_client_connection_t pacs_connection;
+    uint16_t pacs_cid;
 } server_t;
 
 /**
@@ -118,6 +122,13 @@ server_t * btp_server_for_acl_con_handle(hci_con_handle_t acl_con_handle);
  * @return
  */
 server_t * btp_server_for_csis_cid(uint16_t csis_cid);
+
+/**
+ * @brief Lookup server by pacs_cid
+ * @param pacs_cid
+ * @return
+ */
+server_t * btp_server_for_pacs_cid(uint16_t csis_cid);
 
 #if defined __cplusplus
 }
