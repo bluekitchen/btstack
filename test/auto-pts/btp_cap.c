@@ -286,75 +286,6 @@ static void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uin
     }
 }
 
-static void pacs_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    UNUSED(channel);
-    UNUSED(size);
-
-    if (packet_type != HCI_EVENT_PACKET) return;
-    if (hci_event_packet_get_type(packet) != HCI_EVENT_GATTSERVICE_META) return;
-
-    uint32_t audio_allocation_mask;
-    uint16_t ascs_cid;
-    uint16_t pacs_cid;
-    hci_con_handle_t con_handle;
-    uint8_t i;
-    uint8_t status;
-
-    switch (hci_event_gattservice_meta_get_subevent_code(packet)){
-        case GATTSERVICE_SUBEVENT_PACS_CLIENT_CONNECTED:
-            pacs_cid = gattservice_subevent_pacs_client_connected_get_pacs_cid(packet);
-            con_handle = gattservice_subevent_pacs_client_connected_get_con_handle(packet);
-            status = gattservice_subevent_pacs_client_connected_get_status(packet);
-            if (status != ERROR_CODE_SUCCESS){
-                // TODO send error response
-                MESSAGE("PACS Client: connection failed, cid 0x%02x, con_handle 0x%02x, status 0x%02x", pacs_cid, con_handle, status);
-                return;
-            }
-            break;
-#if 0
-        case GATTSERVICE_SUBEVENT_PACS_CLIENT_DISCONNECTED:
-            pacs_cid = 0;
-            MESSAGE("PACS Client: disconnected\n");
-            break;
-
-        case GATTSERVICE_SUBEVENT_PACS_CLIENT_OPERATION_DONE:
-            if (gattservice_subevent_pacs_client_operation_done_get_status(packet) == ERROR_CODE_SUCCESS){
-                MESSAGE("      Operation successful");
-            } else {
-                MESSAGE("      Operation failed with status 0x%02X", gattservice_subevent_pacs_client_operation_done_get_status(packet));
-            }
-            break;
-
-        case GATTSERVICE_SUBEVENT_PACS_CLIENT_AUDIO_LOCATIONS:
-            audio_allocation_mask = gattservice_subevent_pacs_client_audio_locations_get_audio_locations_mask(packet);
-            MESSAGE("PACS Client: %s Audio Locations 0x%04x",
-                    gattservice_subevent_pacs_client_audio_locations_get_le_audio_role(packet) == LE_AUDIO_ROLE_SINK ? "Sink" : "Source", audio_allocation_mask);
-            break;
-
-        case GATTSERVICE_SUBEVENT_PACS_CLIENT_AVAILABLE_AUDIO_CONTEXTS:
-            MESSAGE("PACS Client: Available Audio Contexts");
-            MESSAGE("      Sink   0x%02X", gattservice_subevent_pacs_client_available_audio_contexts_get_sink_mask(packet));
-            MESSAGE("      Source 0x%02X", gattservice_subevent_pacs_client_available_audio_contexts_get_source_mask(packet));
-            break;
-
-        case GATTSERVICE_SUBEVENT_PACS_CLIENT_SUPPORTED_AUDIO_CONTEXTS:
-            MESSAGE("PACS Client: Supported Audio Contexts\n");
-            MESSAGE("      Sink   0x%02X\n", gattservice_subevent_pacs_client_supported_audio_contexts_get_sink_mask(packet));
-            MESSAGE("      Source 0x%02X\n", gattservice_subevent_pacs_client_supported_audio_contexts_get_source_mask(packet));
-            break;
-
-        case GATTSERVICE_SUBEVENT_PACS_CLIENT_PACK_RECORD:
-            MESSAGE("PACS Client: %s PAC Record\n", gattservice_subevent_pacs_client_pack_record_get_le_audio_role(packet) == LE_AUDIO_ROLE_SINK ? "Sink" : "Source");
-            MESSAGE("      %s PAC Record DONE\n", gattservice_subevent_pacs_client_pack_record_done_get_le_audio_role(packet) == LE_AUDIO_ROLE_SINK ? "Sink" : "Source");
-            break;
-        case GATTSERVICE_SUBEVENT_PACS_CLIENT_PACK_RECORD_DONE:
-            MESSAGE("      %s PAC Record DONE\n", gattservice_subevent_pacs_client_pack_record_done_get_le_audio_role(packet) == LE_AUDIO_ROLE_SINK ? "Sink" : "Source");
-            break;
-#endif
-        default:
-            break;
-    }
-}
 static void btp_cap_csip_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) {
     UNUSED(channel);
     UNUSED(size);
@@ -415,6 +346,5 @@ void btp_cap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, 
 void btp_cap_init(void) {
     // Clients
     audio_stream_control_service_client_init(&ascs_client_event_handler);
-    published_audio_capabilities_service_client_init(&pacs_client_event_handler);
     btp_csip_register_higher_layer(&btp_cap_csip_handler);
 }
