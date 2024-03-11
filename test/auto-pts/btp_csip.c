@@ -61,6 +61,14 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 static server_t servers[MAX_NUM_SERVERS];
 
+static enum {
+    BTP_CSIP_ORDERED_ACCESS_IDLE,
+    BTP_CSIP_ORDERED_ACCESS_READ_LOCKS,
+    BTP_CSIP_ORDERED_ACCESS_WRITE_LOCKS,
+    BTP_CSIP_ORDERED_ACCESS_READY
+} btp_csip_ordered_access_state = BTP_CSIP_ORDERED_ACCESS_IDLE;
+static uint8_t csip_ordered_access_next_rank;
+
 static server_t * btp_server_initialize(hci_con_handle_t con_handle){
     uint8_t i;
     for (i=0; i < MAX_NUM_SERVERS; i++){
@@ -155,6 +163,55 @@ static void btp_csip_hci_packet_handler (uint8_t packet_type, uint16_t channel, 
     }
 }
 
+
+static void btp_csip_ordered_access_next(void){
+    uint8_t i;
+    switch (btp_csip_ordered_access_state){
+        case BTP_CSIP_ORDERED_ACCESS_READ_LOCKS:
+            // read lock characteristic of all set members
+            for (i=0;i<MAX_NUM_SERVERS;i++) {
+                server_t * server = &servers[i];
+                if (server->coordinated_set_rank == csip_ordered_access_next_rank) {
+                    MESSAGE("CSIP client %u: read lock, cid 0x%04x", server->server_id, server->csis_cid);
+                    csip_ordered_access_next_rank++;
+                    coordinated_set_identification_service_client_read_member_lock(server->csis_cid);
+                    return;
+                }
+            }
+
+            // done
+            MESSAGE("CSIP clients: all locks read");
+            btp_csip_ordered_access_state = BTP_CSIP_ORDERED_ACCESS_WRITE_LOCKS;
+            csip_ordered_access_next_rank = 1;
+
+            /* fall through */
+
+        case BTP_CSIP_ORDERED_ACCESS_WRITE_LOCKS:
+            // write lock characteristic of all set members
+            for (i=0;i<MAX_NUM_SERVERS;i++) {
+                server_t * server = &servers[i];
+                if (server->coordinated_set_rank == csip_ordered_access_next_rank) {
+                    MESSAGE("CSIP client %u: write lock, cid 0x%04x", server->server_id, server->csis_cid);
+                    csip_ordered_access_next_rank++;
+                    coordinated_set_identification_service_client_write_member_lock(server->csis_cid, CSIS_MEMBER_LOCKED);
+                    return;
+                }
+            }
+
+            // done
+            MESSAGE("CSIP clients: all locks written");
+            btp_csip_ordered_access_state = BTP_CSIP_ORDERED_ACCESS_READY;
+            csip_ordered_access_next_rank = 1;
+
+            btp_send(response_service_id, BTP_CSIP_START_ORDERED_ACCESS, 0, 0, NULL);
+
+            break;
+
+        default:
+            break;
+    }
+}
+
 static void btp_csip_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
@@ -165,19 +222,19 @@ static void btp_csip_client_event_handler(uint8_t packet_type, uint16_t channel,
     uint8_t status;
     server_t * server = NULL;
 
-    MESSAGE("CSIS subevent 0x%02x", hci_event_gattservice_meta_get_subevent_code(packet));
+    MESSAGE("CSIP subevent 0x%02x", hci_event_gattservice_meta_get_subevent_code(packet));
     switch (hci_event_gattservice_meta_get_subevent_code(packet)){
         case GATTSERVICE_SUBEVENT_CSIS_CLIENT_CONNECTED:
             server = btp_server_for_csis_cid(gattservice_subevent_csis_client_connected_get_csis_cid(packet));
             if (server != NULL){
                 if (gattservice_subevent_csis_client_connected_get_status(packet) != ERROR_CODE_SUCCESS){
-                    MESSAGE("CSIS client %u: connection failed, cid 0x%04x, con_handle 0x%04x, status 0x%02x",
+                    MESSAGE("CSIP client %u: connection failed, cid 0x%04x, con_handle 0x%04x, status 0x%02x",
                            server->server_id, server->csis_cid, server->acl_con_handle,
                            gattservice_subevent_csis_client_connected_get_status(packet));
-                    MESSAGE("CSIS client %u: assume individual device", server->server_id);
+                    MESSAGE("CSIP client %u: assume individual device", server->server_id);
                     server->coordinated_set_size = 1;
                 } else {
-                    MESSAGE("CSIS client %u: connected, cid 0x%04x", server->server_id, server->csis_cid);
+                    MESSAGE("CSIP client %u: connected, cid 0x%04x", server->server_id, server->csis_cid);
                     // get coordinated set size
                     coordinated_set_identification_service_client_read_coordinated_set_size(server->csis_cid);
                 }
@@ -188,11 +245,11 @@ static void btp_csip_client_event_handler(uint8_t packet_type, uint16_t channel,
             server = btp_server_for_csis_cid(gattservice_subevent_csis_client_coordinated_set_size_get_csis_cid(packet));
             status = gattservice_subevent_csis_client_coordinated_set_size_get_status(packet);
             if (status != ERROR_CODE_SUCCESS){
-                MESSAGE("CSIS client %u: read coordinated set size failed, 0x%02x", server->server_id, status);
+                MESSAGE("CSIP client %u: read coordinated set size failed, 0x%02x", server->server_id, status);
             } else {
                 uint8_t set_size = gattservice_subevent_csis_client_coordinated_set_size_get_coordinated_set_size(packet);
                 server->coordinated_set_size = set_size;
-                MESSAGE("CSIS client %u: coordinated_set_size %u", server->server_id, set_size);
+                MESSAGE("CSIP client %u: coordinated_set_size %u", server->server_id, set_size);
             }
             coordinated_set_identification_service_client_read_sirk(server->csis_cid);
             break;
@@ -201,13 +258,25 @@ static void btp_csip_client_event_handler(uint8_t packet_type, uint16_t channel,
             server = btp_server_for_csis_cid(gattservice_subevent_csis_client_sirk_get_csis_cid(packet));
             status = gattservice_subevent_csis_client_sirk_get_status(packet);
             if (status != ERROR_CODE_SUCCESS){
-                MESSAGE("CSIS client %u: read SIRK failed, 0x%02x", server->server_id, status);
+                MESSAGE("CSIP client %u: read SIRK failed, 0x%02x", server->server_id, status);
                 MESSAGE("TODO: handle get sirk failed");
             } else {
                 gattservice_subevent_csis_client_sirk_get_sirk(packet, server->sirk);
-                MESSAGE("CSIS client %u: remote SIRK (%s)", server->server_id,
+                MESSAGE("CSIP client %u: remote SIRK (%s)", server->server_id,
                         (csis_sirk_type_t)gattservice_subevent_csis_client_sirk_get_sirk_type(packet) == CSIS_SIRK_TYPE_ENCRYPTED ? "ENCRYPTED" : "PLAIN_TEXT");
+                coordinated_set_identification_service_client_read_member_rank(server->csis_cid);
             }
+            break;
+
+        case GATTSERVICE_SUBEVENT_CSIS_CLIENT_RANK:
+            server = btp_server_for_csis_cid(gattservice_subevent_csis_client_rank_get_csis_cid(packet));
+            status = gattservice_subevent_csis_client_rank_get_status(packet);
+            if (status != ERROR_CODE_SUCCESS){
+                MESSAGE("CSIP client %u: read RANK failed, 0x%02x", status, server->server_id);
+                break;
+            }
+            server->coordinated_set_rank = gattservice_subevent_csis_client_rank_get_rank(packet);
+            MESSAGE("CSIP client %u: remote member RANK %u", server->server_id, server->coordinated_set_rank);
             break;
 
         case GATTSERVICE_SUBEVENT_CSIS_RSI_MATCH:
@@ -222,26 +291,10 @@ static void btp_csip_client_event_handler(uint8_t packet_type, uint16_t channel,
             server = btp_server_for_csis_cid(gattservice_subevent_csis_client_lock_get_csis_cid(packet));
             status = gattservice_subevent_csis_client_lock_get_status(packet);
             if (status != ERROR_CODE_SUCCESS){
-                MESSAGE("CSIS client %u: read LOCK failed, 0x%02x", server->server_id, status);
-                break;
+                MESSAGE("CSIP client %u: read LOCK failed, 0x%02x", server->server_id, status);
+            } else {
+                btp_csip_ordered_access_next();
             }
-            if (server != NULL){
-                MESSAGE("CSIS client %u: remote LOCK %u", server->server_id, gattservice_subevent_csis_client_lock_get_lock(packet));
-
-                // set locked
-                MESSAGE("CSIS client %u: set client LOCK", server->server_id);
-                coordinated_set_identification_service_client_write_member_lock(server->csis_cid, CSIS_MEMBER_LOCKED);
-            }
-            break;
-
-        case GATTSERVICE_SUBEVENT_CSIS_CLIENT_RANK:
-            server = btp_server_for_csis_cid(gattservice_subevent_csis_client_rank_get_csis_cid(packet));
-            status = gattservice_subevent_csis_client_rank_get_status(packet);
-            if (status != ERROR_CODE_SUCCESS){
-                MESSAGE("CSIS client %u: read RANK failed, 0x%02x", status, server->server_id);
-                break;
-            }
-            MESSAGE("CSIS client %u: remote member RANK %u", server->server_id, gattservice_subevent_csis_client_rank_get_rank(packet));
             break;
 
         case GATTSERVICE_SUBEVENT_CSIS_CLIENT_LOCK_WRITE_COMPLETE:
@@ -250,10 +303,7 @@ static void btp_csip_client_event_handler(uint8_t packet_type, uint16_t channel,
             if (status != ERROR_CODE_SUCCESS){
                 printf("CSIS client %u: write LOCK failed, 0x%02x\n", server->server_id, status);
             } else {
-                if (server != NULL){
-                    csis_member_lock_t csis_member_lock = (csis_member_lock_t) gattservice_subevent_csis_client_lock_write_complete_get_lock(packet);
-                    printf("CSIS client %u: remote member %s", server->server_id, csis_member_lock == CSIS_MEMBER_UNLOCKED ? "UNLOCKED" : "LOCKED");
-                }
+                btp_csip_ordered_access_next();
             }
             break;
 
@@ -261,7 +311,7 @@ static void btp_csip_client_event_handler(uint8_t packet_type, uint16_t channel,
             server = btp_server_for_csis_cid(gattservice_subevent_csis_client_disconnected_get_csis_cid(packet));
             if (server != NULL){
                 server->csis_cid = 0;
-                MESSAGE("CSIS Client %u: disconnected", server->server_id);
+                MESSAGE("CSIP client %u: disconnected", server->server_id);
             }
             break;
 
@@ -288,7 +338,7 @@ void btp_csip_handler(uint8_t opcode, uint8_t controller_index, uint16_t length,
             }
             break;
         case BTP_CSIP_DISCOVER:
-            MESSAGE("BTP_CSIP_DISCOVER");
+            MESSAGE("BTP_CSIP_DISCOVER - ignore currently, as it is done as part of CAP Discover");
             if (controller_index == 0) {
                 // ignore
                 btp_send(response_service_id, opcode, controller_index, 0, NULL);
@@ -297,8 +347,9 @@ void btp_csip_handler(uint8_t opcode, uint8_t controller_index, uint16_t length,
         case BTP_CSIP_START_ORDERED_ACCESS:
             MESSAGE("BTP_CSIP_START_ORDERED_ACCESS");
             if (controller_index == 0) {
-                // ignore
-                btp_send(response_service_id, opcode, controller_index, 0, NULL);
+                csip_ordered_access_next_rank = 1;
+                btp_csip_ordered_access_state = BTP_CSIP_ORDERED_ACCESS_READ_LOCKS;
+                btp_csip_ordered_access_next();
             }
             break;
         case BTP_CSIP_SET_COORDINATOR_LOCK:
