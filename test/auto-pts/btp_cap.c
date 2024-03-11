@@ -48,6 +48,7 @@
 #include "btp.h"
 #include "btp_cap.h"
 #include "btp_csip.h"
+#include "btp_server.h"
 #include "btstack.h"
 #include "le-audio/le_audio_base_builder.h"
 #include "le_audio_demo_util_source.h"
