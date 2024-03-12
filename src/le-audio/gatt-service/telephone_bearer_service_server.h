@@ -156,6 +156,7 @@ typedef struct {
 void telephone_bearer_service_server_init(void);
 
 /**
+ * Register a generic bearer
  *
  * @param bearer
  * @param packet_handler
@@ -169,6 +170,7 @@ uint8_t telephone_bearer_service_server_register_generic_bearer(
         uint16_t optional_opcodes_supported_bitmap,
         uint16_t * out_bearer_id );
 /**
+ * Register a individual bearer
  *
  * @param bearer
  * @param packet_handler
@@ -182,6 +184,7 @@ uint8_t telephone_bearer_service_server_register_individual_bearer(
         uint16_t optional_opcodes_supported_bitmask,
         uint16_t * out_bearer_id );
 /**
+ * Register a call to a bearer
  *
  * @param bearer_id
  * @param call
@@ -193,6 +196,7 @@ uint8_t telephone_bearer_service_server_register_call(
         tbs_call_data_t *const call,
         uint16_t *const out_call_id );
 /**
+ * De-register a call from a bearer
  *
  * @param bearer_id
  * @param call_id
@@ -202,6 +206,7 @@ uint8_t telephone_bearer_service_server_deregister_call(
         uint16_t bearer_id,
         uint16_t call_id );
 /**
+ * Set the call state
  *
  * @param bearer_id
  * @param call_id
@@ -213,6 +218,7 @@ uint8_t telephone_bearer_service_server_set_call_state(
         uint16_t call_id,
         const tbs_call_state_t state );
 /**
+ * Generate a call control point notification
  *
  * @param bearer_id
  * @param call_id
@@ -226,12 +232,14 @@ uint8_t telephone_bearer_service_server_call_control_point_notification(
         tbs_control_point_opcode_t opcode,
         tbs_control_point_notification_result_codes_t result);
 /**
+ * Get the bearer struct corresponding to a given id
  *
  * @param id
  * @return
  */
 telephone_bearer_service_server_t *telephone_bearer_service_server_get_bearer_by_id( uint16_t id );
 /**
+ * Get the call struct corresponding to a given id from a bearer
  *
  * @param bearer
  * @param id
@@ -239,6 +247,7 @@ telephone_bearer_service_server_t *telephone_bearer_service_server_get_bearer_by
  */
 tbs_call_data_t *telephone_bearer_service_server_get_call_by_id( telephone_bearer_service_server_t *bearer, uint16_t id );
 /**
+ * Set call termination reason
  *
  * @param bearer_id
  * @param call_id
@@ -247,6 +256,7 @@ tbs_call_data_t *telephone_bearer_service_server_get_call_by_id( telephone_beare
  */
 uint8_t telephone_bearer_service_server_termination_reason(uint16_t bearer_id, uint16_t call_id, tbs_call_termination_reason_t reason);
 /**
+ * Set call friendly name
  *
  * @param bearer_id
  * @param call_id
@@ -255,6 +265,7 @@ uint8_t telephone_bearer_service_server_termination_reason(uint16_t bearer_id, u
  */
 uint8_t telephone_bearer_service_server_call_friendly_name( uint16_t bearer_id, uint16_t call_id, const char * uri );
 /**
+ * Set call uri
  *
  * @param bearer_id
  * @param call_id
@@ -263,6 +274,7 @@ uint8_t telephone_bearer_service_server_call_friendly_name( uint16_t bearer_id, 
  */
 uint8_t telephone_bearer_service_server_call_uri( uint16_t bearer_id, uint16_t call_id, const char * uri );
 /**
+ * Set incoming call target bearer uri
  *
  * @param bearer_id
  * @param call_id
@@ -271,12 +283,14 @@ uint8_t telephone_bearer_service_server_call_uri( uint16_t bearer_id, uint16_t c
  */
 uint8_t telephone_bearer_service_server_incoming_call_target_bearer_uri( uint16_t bearer_id, uint16_t call_id, const char * uri );
 /**
+ * Get the call state of a given call struct
  *
  * @param call
  * @return
  */
 tbs_call_state_t telephone_bearer_service_server_get_call_state( tbs_call_data_t *call );
 /**
+ * Set bearer provider name
  *
  * @param bearer_id
  * @param provider_name
@@ -284,6 +298,7 @@ tbs_call_state_t telephone_bearer_service_server_get_call_state( tbs_call_data_t
  */
 uint8_t telephone_bearer_service_server_set_provider_name(uint16_t bearer_id, const char * provider_name);
 /**
+ * Set bearer technology
  *
  * @param bearer_id
  * @param technology
@@ -291,6 +306,7 @@ uint8_t telephone_bearer_service_server_set_provider_name(uint16_t bearer_id, co
  */
 uint8_t telephone_bearer_service_server_set_technology(uint16_t bearer_id, const tbs_technology_t technology);
 /**
+ * Set bearer supported schemes list
  *
  * @param bearer_id
  * @param schemes_list
@@ -298,6 +314,7 @@ uint8_t telephone_bearer_service_server_set_technology(uint16_t bearer_id, const
  */
 uint8_t telephone_bearer_service_server_set_supported_schemes_list(uint16_t bearer_id, const char * schemes_list);
 /**
+ * Set signal strength
  *
  * @param bearer_id
  * @param signal_strength
@@ -305,6 +322,7 @@ uint8_t telephone_bearer_service_server_set_supported_schemes_list(uint16_t bear
  */
 uint8_t telephone_bearer_service_server_set_signal_strength(uint16_t bearer_id, const uint8_t signal_strength);
 /**
+ * Set bearer status flags
  *
  * @param bearer_id
  * @param flags
