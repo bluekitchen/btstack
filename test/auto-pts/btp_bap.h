@@ -354,6 +354,11 @@ struct btp_bap_pa_sync_req_ev {
 
 #pragma options align=reset
 
+typedef enum {
+    BTP_AUDIO_DIR_SINK   = 0x01,
+    BTP_AUDIO_DIR_SOURCE = 0x02,
+} btp_audio_dir_t;
+
 /**
  * Init BAP Service
  */

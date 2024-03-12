@@ -693,6 +693,16 @@ static void iso_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
     }
 }
 
+static void btp_bap_send_discovery_complete(hci_con_handle_t con_handle) {
+    hci_connection_t * hci_connection = hci_connection_for_handle(con_handle);
+    btstack_assert(hci_connection != NULL);
+    struct btp_bap_discovery_completed_ev discovery_completed_ev;
+    discovery_completed_ev.addr_type = hci_connection->address_type;
+    reverse_bd_addr(hci_connection->address, discovery_completed_ev.address);
+    MESSAGE("BTP_BAP_EV_DISCOVERY_COMPLETED, con handle 0x%04x - DONE", con_handle);
+    btp_send(BTP_SERVICE_ID_CAP, BTP_BAP_EV_DISCOVERY_COMPLETED, 0, sizeof(discovery_completed_ev), (const uint8_t *) &discovery_completed_ev);
+}
+
 // -- PACS
 
 typedef enum {
@@ -703,14 +713,32 @@ typedef enum {
     BTP_BAP_PACS_STATE_DONE
 } btp_bap_pacs_state_t;
 
-static void btp_bap_send_discovery_complete(hci_con_handle_t con_handle) {
-    hci_connection_t * hci_connection = hci_connection_for_handle(con_handle);
-    btstack_assert(hci_connection != NULL);
-    struct btp_bap_discovery_completed_ev discovery_completed_ev;
-    discovery_completed_ev.addr_type = hci_connection->address_type;
-    reverse_bd_addr(hci_connection->address, discovery_completed_ev.address);
-    MESSAGE("BTP_BAP_EV_DISCOVERY_COMPLETED, con handle 0x%04x - DONE", con_handle);
-    btp_send(BTP_SERVICE_ID_CAP, BTP_BAP_EV_DISCOVERY_COMPLETED, 0, sizeof(discovery_completed_ev), (const uint8_t *) &discovery_completed_ev);
+static void btp_bap_pacs_client_report_pacs(uint8_t *packet, uint16_t size){
+    uint16_t pacs_cid = gattservice_subevent_pacs_client_operation_done_get_pacs_cid(packet);
+    server_t * server = btp_server_for_pacs_cid(pacs_cid);
+    btstack_assert(server != NULL);
+
+    uint8_t buffer[100];
+    uint16_t pos = 0;
+    buffer[pos++] = server->address_type;
+    reverse_bd_addr( server->address, &buffer[pos]);
+    pos += 6;
+    buffer[pos++] = gattservice_subevent_pacs_client_pack_record_get_le_audio_role(packet) == LE_AUDIO_ROLE_SINK ? BTP_AUDIO_DIR_SINK : BTP_AUDIO_DIR_SOURCE;
+    buffer[pos++] = gattservice_subevent_pacs_client_pack_record_get_coding_format(packet);
+    uint32_t supported_frequencies = gattservice_subevent_pacs_client_pack_record_get_supported_sampling_frequencies_mask(packet);
+    little_endian_store_32(buffer, pos, supported_frequencies);
+    pos += 4;
+    buffer[pos++] = gattservice_subevent_pacs_client_pack_record_get_supported_frame_durations_mask(packet);
+    uint32_t octets_per_frame = gattservice_subevent_pacs_client_pack_record_get_supported_octets_per_frame_max_num(packet);
+    little_endian_store_32(buffer, pos, octets_per_frame);
+    pos += 4;
+    buffer[pos++] = gattservice_subevent_pacs_client_pack_record_get_supported_audio_channel_counts_mask(packet);
+
+    MESSAGE("BTP_BAP_EV_CODEC_CAP_FOUND %s", bd_addr_to_str(server->address));
+
+    btp_send(BTP_SERVICE_ID_BAP, BTP_BAP_EV_CODEC_CAP_FOUND, 0, pos, buffer);
+
+    MESSAGE("PACS Client: %s PAC Record\n", gattservice_subevent_pacs_client_pack_record_get_le_audio_role(packet) == LE_AUDIO_ROLE_SINK ? "Sink" : "Source");
 }
 
 static void btp_bap_pacs_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -745,8 +773,7 @@ static void btp_bap_pacs_client_event_handler(uint8_t packet_type, uint16_t chan
             }
             break;
         case GATTSERVICE_SUBEVENT_PACS_CLIENT_PACK_RECORD:
-            MESSAGE("PACS Client: %s PAC Record\n", gattservice_subevent_pacs_client_pack_record_get_le_audio_role(packet) == LE_AUDIO_ROLE_SINK ? "Sink" : "Source");
-            MESSAGE("      %s PAC Record DONE\n", gattservice_subevent_pacs_client_pack_record_done_get_le_audio_role(packet) == LE_AUDIO_ROLE_SINK ? "Sink" : "Source");
+            btp_bap_pacs_client_report_pacs(packet, size);
             break;
         case GATTSERVICE_SUBEVENT_PACS_CLIENT_PACK_RECORD_DONE:
             MESSAGE("      %s PAC Record DONE\n", gattservice_subevent_pacs_client_pack_record_done_get_le_audio_role(packet) == LE_AUDIO_ROLE_SINK ? "Sink" : "Source");
@@ -757,6 +784,7 @@ static void btp_bap_pacs_client_event_handler(uint8_t packet_type, uint16_t chan
             } else {
                 MESSAGE("      Operation failed with status 0x%02X", gattservice_subevent_pacs_client_operation_done_get_status(packet));
             }
+            pacs_cid = gattservice_subevent_pacs_client_operation_done_get_pacs_cid(packet);
             server = btp_server_for_pacs_cid(pacs_cid);
             btstack_assert(server != NULL);
             switch ((btp_bap_pacs_state_t) server->pacs_state){
