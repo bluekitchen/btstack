@@ -1413,6 +1413,7 @@ static void stdin_process(char c){
                 printf("Cannot start scanning - not in idle state\n");
                 break;
             }
+            printf("Start scanning...\n");
             num_active_servers = 0;
             cig_id = CIG_ID_INVALID;
             app_state = APP_W4_UNICAST_SINK_ADV;
