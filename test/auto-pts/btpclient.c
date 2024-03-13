@@ -131,7 +131,8 @@ static gatt_client_notification_t gatt_client_notification;
 static btstack_timer_source_t heartbeat;
 
 // static bd_addr_t pts_addr = { 0x00, 0x1b, 0xdc, 0x07, 0x32, 0xef};
-static bd_addr_t pts_addr = { 0x00, 0x1b, 0xdc, 0x08, 0xe2, 0x5c};
+static bd_addr_t pts_addr;
+static const char * pts_addr_str = "C0:07:E8:7E:55:5F";
 
 // flush gcov data
 #ifdef HAVE_GCOV_FLUSH
@@ -479,6 +480,11 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
 
     if (packet_type != HCI_EVENT_PACKET) return;
 
+    bd_addr_t addr;
+    bd_addr_type_t addr_type;
+    hci_con_handle_t con_handle;
+    bool send_security_level = false;
+
     switch (hci_event_packet_get_type(packet)) {
         case SM_EVENT_JUST_WORKS_REQUEST:
             MESSAGE("Just works requested - auto-accept\n");
@@ -505,12 +511,16 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
             switch (sm_event_pairing_complete_get_status(packet)){
                 case ERROR_CODE_SUCCESS:
                     MESSAGE("Pairing complete, success\n");
+                    con_handle = sm_event_pairing_complete_get_handle(packet);
+                    addr_type = sm_event_pairing_complete_get_addr_type(packet);
+                    sm_event_pairing_complete_get_address(packet, addr);
+                    send_security_level = true;
                     break;
                 case ERROR_CODE_CONNECTION_TIMEOUT:
                     MESSAGE("Pairing failed, timeout\n");
                     break;
                 case ERROR_CODE_REMOTE_USER_TERMINATED_CONNECTION:
-                    MESSAGE("Pairing faileed, disconnected\n");
+                    MESSAGE("Pairing failed, disconnected\n");
                     break;
                 case ERROR_CODE_AUTHENTICATION_FAILURE:
                     MESSAGE("Pairing failed, reason = %u\n", sm_event_pairing_complete_get_reason(packet));
@@ -519,8 +529,36 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
                     break;
             }
             break;
+        case SM_EVENT_REENCRYPTION_COMPLETE:
+            MESSAGE("Reencryption complete, success\n");
+            con_handle = sm_event_reencryption_complete_get_handle(packet);
+            addr_type = sm_event_reencryption_complete_get_addr_type(packet);
+            sm_event_reencryption_complete_get_address(packet, addr);
+            send_security_level = true;
+            break;
         default:
             break;
+    }
+
+    if (send_security_level){
+        uint16_t pos = 0;
+        uint8_t buffer[8];
+        buffer[pos++] = addr_type;
+        reverse_bd_addr(addr, &buffer[pos]);
+        pos += 6;
+        uint8_t level = 0;
+        if (gap_encryption_key_size(con_handle) > 7){
+            level = 1;
+            if (gap_authenticated(con_handle)){
+                level = 2;
+                if (gap_secure_connection(con_handle)){
+                    level = 3;
+                }
+            }
+        }
+        MESSAGE("Security level %u for con handle %04x / %s", level, con_handle, bd_addr_to_str(addr));
+        buffer[pos++] = level;
+        btp_send(BTP_SERVICE_ID_GAP, BTP_GAP_EV_SECURITY_LEVEL_CHANGED, 0, sizeof(buffer), buffer);
     }
 }
 
@@ -2107,7 +2145,9 @@ int btstack_main(int argc, const char * argv[])
 #endif
 #endif
     heartbeat_handler(NULL);
-    
+
+    sscanf_bd_addr(pts_addr_str, pts_addr);
+
 #ifdef TEST_POWER_CYCLE
     hci_power_control(HCI_POWER_ON);
 #endif

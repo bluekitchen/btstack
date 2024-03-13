@@ -187,6 +187,7 @@ extern "C" {
 #define BTP_GAP_EV_PASSKEY_REQUEST              0x85
 #define BTP_GAP_EV_PASSKEY_CONFIRM              0x86
 #define BTP_GAP_EV_IDENTITY_RESOLVED            0x87
+#define BTP_GAP_EV_SECURITY_LEVEL_CHANGED       0x89
 
 
 // GATT Service
