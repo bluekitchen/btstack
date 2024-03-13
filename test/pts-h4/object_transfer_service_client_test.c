@@ -221,6 +221,28 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
     }
 }
 
+static const char * ots_filter_type2str(ots_filter_type_t filter_type){
+    static char * filter_type_names[] = {
+        "NO_FILTER",
+        "NAME_STARTS_WITH",
+        "NAME_ENDS_WITH",
+        "NAME_CONTAINS",
+        "NAME_IS_EXACTLY",
+        "OBJECT_TYPE",
+        "CREATED_BETWEEN",
+        "MODIFIED_BETWEEN",
+        "CURRENT_SIZE_BETWEEN",
+        "ALLOCATED_SIZE_BETWEEN",
+        "MARKED_OBJECTS",
+        "RFU",
+    };
+
+    if (filter_type < OTS_FILTER_TYPE_RFU){
+        return filter_type_names[(uint8_t) filter_type];
+    }
+    return filter_type_names[OTS_FILTER_TYPE_RFU];
+}
+
 static void gatt_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) {
     UNUSED(packet_type);
     UNUSED(channel);
@@ -255,6 +277,100 @@ static void gatt_client_event_handler(uint8_t packet_type, uint16_t channel, uin
             }
             break;
 
+        case GATTSERVICE_SUBEVENT_OTS_CLIENT_FEATURES:
+            status = gattservice_subevent_ots_client_features_get_att_status(packet);
+            if (status != ATT_ERROR_SUCCESS){
+                printf("OTS Client Test: Read failed, 0x%02x\n", status);
+            } else {
+                printf("OTS Client Test: OACP 0x%08X, OLCP 0x%08X\n",
+                       gattservice_subevent_ots_client_features_get_oacp_features(packet),
+                       gattservice_subevent_ots_client_features_get_olcp_features(packet));
+            }
+            break;
+
+        case GATTSERVICE_SUBEVENT_OTS_CLIENT_OBJECT_NAME:
+            status = gattservice_subevent_ots_client_object_name_get_att_status(packet);
+            if (status != ATT_ERROR_SUCCESS){
+                printf("OTS Client Test: Read failed, 0x%02x\n", status);
+            } else {
+                printf("OTS Client Test: Object Name \'%s\'\n",
+                       gattservice_subevent_ots_client_object_name_get_value(packet));
+            }
+            break;
+
+        case GATTSERVICE_SUBEVENT_OTS_CLIENT_OBJECT_TYPE:
+            status = gattservice_subevent_ots_client_object_type_get_att_status(packet);
+            if (status != ATT_ERROR_SUCCESS){
+                printf("OTS Client Test: Read failed, 0x%02x\n", status);
+            } else {
+                printf("OTS Client Test: Object Type\n");
+                printf_hexdump(gattservice_subevent_ots_client_object_type_get_value(packet), gattservice_subevent_ots_client_object_type_get_value_len(packet));
+            }
+            break;
+
+        case GATTSERVICE_SUBEVENT_OTS_CLIENT_OBJECT_FIRST_CREATED:
+            status = gattservice_subevent_ots_client_object_first_created_get_att_status(packet);
+            if (status != ATT_ERROR_SUCCESS){
+                printf("OTS Client Test: Read failed, 0x%02x\n", status);
+            } else {
+                printf("OTS Client Test: First created: %d-%d-%d %d:%d:%d\n",
+                       gattservice_subevent_ots_client_object_first_created_get_day(packet),
+                       gattservice_subevent_ots_client_object_first_created_get_month(packet),
+                       gattservice_subevent_ots_client_object_first_created_get_year(packet),
+                       gattservice_subevent_ots_client_object_first_created_get_hours(packet),
+                       gattservice_subevent_ots_client_object_first_created_get_minutes(packet),
+                       gattservice_subevent_ots_client_object_first_created_get_seconds(packet));
+            }
+            break;
+
+        case GATTSERVICE_SUBEVENT_OTS_CLIENT_OBJECT_LAST_MODIFIED:
+            status = gattservice_subevent_ots_client_object_last_modified_get_att_status(packet);
+            if (status != ATT_ERROR_SUCCESS){
+                printf("OTS Client Test: Read failed, 0x%02x\n", status);
+            } else {
+                printf("OTS Client Test: Last Modified: %d-%d-%d %d:%d:%d\n",
+                       gattservice_subevent_ots_client_object_last_modified_get_day(packet),
+                       gattservice_subevent_ots_client_object_last_modified_get_month(packet),
+                       gattservice_subevent_ots_client_object_last_modified_get_year(packet),
+                       gattservice_subevent_ots_client_object_last_modified_get_hours(packet),
+                       gattservice_subevent_ots_client_object_last_modified_get_minutes(packet),
+                       gattservice_subevent_ots_client_object_last_modified_get_seconds(packet));
+            }
+            break;
+
+        case GATTSERVICE_SUBEVENT_OTS_CLIENT_OBJECT_ID:
+            status = gattservice_subevent_ots_client_object_id_get_att_status(packet);
+            if (status != ATT_ERROR_SUCCESS){
+                printf("OTS Client Test: Read failed, 0x%02x\n", status);
+            } else {
+                printf("OTS Client Test: Object ID \n");
+                printf_hexdump(gattservice_subevent_ots_client_object_id_get_value(packet), gattservice_subevent_ots_client_object_id_get_value_len(packet));
+            }
+            break;
+
+        case GATTSERVICE_SUBEVENT_OTS_CLIENT_OBJECT_PROPERTIES:
+            status = gattservice_subevent_ots_client_object_properties_get_att_status(packet);
+            if (status != ATT_ERROR_SUCCESS){
+                printf("OTS Client Test: Read failed, 0x%02x\n", status);
+            } else {
+                printf("OTS Client Test: Object Properties 0x%08x\n",
+                    gattservice_subevent_ots_client_object_properties_get_bitmask(packet));
+            }
+            break;
+        case GATTSERVICE_SUBEVENT_OTS_CLIENT_FILTER:
+            status = gattservice_subevent_ots_client_filter_get_att_status(packet);
+            if (status != ATT_ERROR_SUCCESS){
+                printf("OTS Client Test: Read failed, 0x%02x\n", status);
+            } else {
+                printf("OTS Client Test: Filter-%d %s \n",
+                       gattservice_subevent_ots_client_filter_get_index(packet),
+                       ots_filter_type2str(gattservice_subevent_ots_client_filter_get_type(packet)));
+                printf_hexdump(gattservice_subevent_ots_client_filter_get_value(packet),
+                               gattservice_subevent_ots_client_filter_get_value_len(packet));
+
+            }
+            break;
+
         case GATTSERVICE_SUBEVENT_OTS_CLIENT_DISCONNECTED:
             printf("OTS Client Test: disconnected\n");
             break;
@@ -271,7 +387,24 @@ static void show_usage(void){
 
     printf("--- OTS Client ---\n");
     printf("c    - Connect to %s\n", bd_addr_to_str(current_pts_address));
+    
+    printf("d    - Read ots feature\n");
+    printf("D    - Read object name\n");
+    printf("e    - Read object type\n");
+    printf("E    - Read object size\n");
+    printf("f    - Read object first created\n");
+    printf("F    - Read object last modified\n");
+    printf("g    - Read object id\n");
+    printf("G    - Read object properties\n");
+    printf("h    - Read filter 1\n");
+    printf("H    - Read filter 2\n");
+    printf("i    - Read filter 3\n");
+    printf("I    - Read long object name\n");
+    printf("j    - Read long filter 1\n");
+    printf("J    - Read long_filter 2\n");
+    printf("k    - Read long_filter 3\n");
 }
+
 
 static void stdin_process(char c){
     uint8_t status = ERROR_CODE_SUCCESS;
@@ -281,6 +414,81 @@ static void stdin_process(char c){
             printf("Connect to %s\n", bd_addr_to_str(current_pts_address));
             app_state = APP_STATE_W4_CONNECT;
             status = gap_connect(current_pts_address, current_pts_address_type);
+            break;
+
+        case 'd':
+            printf("Read ots feature\n");
+            status = object_transfer_service_client_read_ots_feature(&ots_connection);
+            break;
+
+        case 'D':
+            printf("Read object name\n");
+            status = object_transfer_service_client_read_object_name(&ots_connection);
+            break;
+
+        case 'e':
+            printf("Read object type\n");
+            status = object_transfer_service_client_read_object_type(&ots_connection);
+            break;
+
+        case 'E':
+            printf("Read object size\n");
+            status = object_transfer_service_client_read_object_size(&ots_connection);
+            break;
+
+        case 'f':
+            printf("Read object first created\n");
+            status = object_transfer_service_client_read_object_first_created(&ots_connection);
+            break;
+
+        case 'F':
+            printf("Read object last modified\n");
+            status = object_transfer_service_client_read_object_last_modified(&ots_connection);
+            break;
+
+        case 'g':
+            printf("Read object id\n");
+            status = object_transfer_service_client_read_object_id(&ots_connection);
+            break;
+
+        case 'G':
+            printf("Read object properties\n");
+            status = object_transfer_service_client_read_object_properties(&ots_connection);
+            break;
+
+        case 'h':
+            printf("Read filter 1\n");
+            status = object_transfer_service_client_read_object_list_filter_1(&ots_connection);
+            break;
+
+        case 'H':
+            printf("Read filter 2\n");
+            status = object_transfer_service_client_read_object_list_filter_2(&ots_connection);
+            break;
+
+        case 'i':
+            printf("Read filter 3\n");
+            status = object_transfer_service_client_read_object_list_filter_3(&ots_connection);
+            break;
+
+        case 'I':
+            printf("\n");
+            status = object_transfer_service_client_read_long_object_name(&ots_connection);
+            break;
+
+        case 'j':
+            printf("Read long filter 1\n");
+            status = object_transfer_service_client_read_object_long_list_filter_1(&ots_connection);
+            break;
+
+        case 'J':
+            printf("Read long filter 2\n");
+            status = object_transfer_service_client_read_object_long_list_filter_2(&ots_connection);
+            break;
+
+        case 'k':
+            printf("Read long filter 3\n");
+            status = object_transfer_service_client_read_object_long_list_filter_3(&ots_connection);
             break;
 
         case '\n':
