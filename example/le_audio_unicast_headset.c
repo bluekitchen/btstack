@@ -799,6 +799,7 @@ static void show_usage(void){
 static void stdin_process(char c){
     uint8_t volume_step = 10;
     uint8_t status = ERROR_CODE_SUCCESS;
+    UNUSED(status);
     printf("STDIN: %c\n", c);
     switch (c){
         case '[':
@@ -822,6 +823,7 @@ static void stdin_process(char c){
             }
             update_playback_volume();
             break;
+#ifdef ENABLE_MCS_CLIENT
         case 'k':
             status = media_control_service_client_command_play(mcs_cid);
             printf("MCS Client: play (0x%02x)\n", status);
@@ -842,6 +844,7 @@ static void stdin_process(char c){
             status = media_control_service_client_command_previous_track(mcs_cid);
             printf("MCS Client: previous track (0x%02x)\n", status);
             break;
+#endif
         case 's':
             app_configure(APP_MODE_STEREO);
             break;
