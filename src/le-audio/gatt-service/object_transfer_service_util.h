@@ -87,7 +87,7 @@ extern "C" {
 #define OBJECT_PROPERTY_MASK_MARK                                       0x0080
 
 
-#define OTS_MAX_NAME_LENGHT         60
+#define OTS_MAX_STRING_LENGHT         60
 #define OTS_MAX_NUM_FILTERS          3
 #define OTS_OBJECT_ID_LEN            6
 /**
@@ -214,7 +214,7 @@ typedef enum {
 typedef struct {
     ots_filter_type_t type;
     uint8_t value_length;
-    uint8_t value[OTS_MAX_NAME_LENGHT];
+    uint8_t value[OTS_MAX_STRING_LENGHT];
 } ots_filter_t;
 
 typedef struct {
@@ -226,7 +226,7 @@ typedef struct {
 
     uint32_t properties;
 
-    char name[OTS_MAX_NAME_LENGHT];
+    char name[OTS_MAX_STRING_LENGHT];
     ots_object_type_t type;
     uint8_t  type_uuid128[16];
 

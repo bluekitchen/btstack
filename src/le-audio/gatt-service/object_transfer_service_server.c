@@ -1143,7 +1143,7 @@ static uint8_t ots_server_filter_buffer_valid_write(uint8_t * buffer, uint16_t b
 static void ots_server_emit_filter_event(ots_server_connection_t * connection, uint8_t filter_index){
     btstack_assert(ots_server_event_callback != NULL);
 
-    uint8_t event[8 + OTS_MAX_NAME_LENGHT];
+    uint8_t event[8 + OTS_MAX_STRING_LENGHT];
 
     uint8_t pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
@@ -1277,7 +1277,7 @@ static int ots_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
         // handle long write
         switch (transaction_mode){
             case ATT_TRANSACTION_MODE_NONE:
-                if (buffer_size > OTS_MAX_NAME_LENGHT){
+                if (buffer_size > OTS_MAX_STRING_LENGHT){
                     return ATT_ERROR_RESPONSE_OTS_WRITE_REQUEST_REJECTED;
                 }
 
@@ -1285,16 +1285,16 @@ static int ots_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
                     return ATT_ERROR_RESPONSE_OTS_OBJECT_NAME_ALREADY_EXISTS;
                 }
 
-                btstack_strcpy(&connection->current_object->name[0], OTS_MAX_NAME_LENGHT, (const char *)buffer);
+                btstack_strcpy(&connection->current_object->name[0], OTS_MAX_STRING_LENGHT, (const char *)buffer);
                 break;
 
             case ATT_TRANSACTION_MODE_ACTIVE:
-                if (total_value_len >= (OTS_MAX_NAME_LENGHT - 1)){
+                if (total_value_len >= (OTS_MAX_STRING_LENGHT - 1)){
                     ots_server_reset_current_object_name(connection);
                     return ATT_ERROR_RESPONSE_OTS_WRITE_REQUEST_REJECTED;
                 }
                 if (offset == 0){
-                    memset(connection->long_write_data, 0, OTS_MAX_NAME_LENGHT);
+                    memset(connection->long_write_data, 0, OTS_MAX_STRING_LENGHT);
                 }
                 memcpy(&connection->long_write_data[offset], (const char *)buffer, buffer_size);
                 break;
@@ -1722,11 +1722,11 @@ uint8_t object_transfer_service_server_update_current_object_name(hci_con_handle
     }
     
     uint16_t name_length = strlen(name);
-    if (name_length > OTS_MAX_NAME_LENGHT){
+    if (name_length > OTS_MAX_STRING_LENGHT){
         return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
     }
 
-    btstack_strcpy(connection->current_object->name, OTS_MAX_NAME_LENGHT, name);
+    btstack_strcpy(connection->current_object->name, OTS_MAX_STRING_LENGHT, name);
     connection->change_flags = (0 << OTS_OBJECT_CHANGED_FLAG_SOURCE_OF_CHANGE) | (1 << OTS_OBJECT_CHANGED_FLAG_OBJECT_METADATA_CHANGED);
     ots_server_schedule_task(connection, OTS_TASK_SEND_OBJECT_CHANGED_RESPONSE);
     return ERROR_CODE_SUCCESS;
@@ -1799,26 +1799,4 @@ uint16_t object_transfer_service_server_get_cbm_channel_remote_mtu(hci_con_handl
         return connection->remote_mtu;
     }
     return 0;
-}
-
-static char * filter_type_names[] = {
-        "NO_FILTER",
-        "NAME_STARTS_WITH",
-        "NAME_ENDS_WITH",
-        "NAME_CONTAINS",
-        "NAME_IS_EXACTLY",
-        "OBJECT_TYPE",
-        "CREATED_BETWEEN",
-        "MODIFIED_BETWEEN",
-        "CURRENT_SIZE_BETWEEN",
-        "ALLOCATED_SIZE_BETWEEN",
-        "MARKED_OBJECTS",
-        "RFU"
-};
-
-char * ots_filter_type2str(ots_filter_type_t filter_type){
-    if (filter_type < OTS_FILTER_TYPE_RFU){
-        return filter_type_names[(uint8_t) filter_type];
-    }
-    return filter_type_names[OTS_FILTER_TYPE_RFU];
 }

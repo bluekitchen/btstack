@@ -992,7 +992,7 @@ ots_object_t * ots_db_object_add(ots_object_id_t * object_id, char * name, uint3
         return NULL;
     }
 
-    if (strlen(name) > OTS_MAX_NAME_LENGHT){
+    if (strlen(name) > OTS_MAX_STRING_LENGHT){
         return NULL;
     }
 
@@ -1002,7 +1002,7 @@ ots_object_t * ots_db_object_add(ots_object_id_t * object_id, char * name, uint3
     }
 
     memcpy(&object->luid, object_id, sizeof(ots_object_id_t));
-    btstack_strcpy(object->name, OTS_MAX_NAME_LENGHT, name);
+    btstack_strcpy(object->name, OTS_MAX_STRING_LENGHT, name);
     object->properties = properties;
     object->type = type_uuid16;
     object->current_size = current_size;
