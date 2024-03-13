@@ -109,7 +109,7 @@ typedef struct {
     ots_filter_type_t long_write_filter_type;
     uint8_t           long_write_filter_index;
     uint8_t           long_write_data_length;
-    uint8_t           long_write_data[OTS_MAX_NAME_LENGHT];
+    uint8_t           long_write_data[OTS_MAX_STRING_LENGHT];
     uint16_t          long_write_attribute_handle;
 
     // used for OACP procedures
@@ -167,7 +167,6 @@ uint32_t object_transfer_service_server_current_object_allocated_size(hci_con_ha
 char * object_transfer_service_server_current_object_name(hci_con_handle_t con_handle);
 uint16_t object_transfer_service_server_get_cbm_channel_remote_mtu(hci_con_handle_t con_handle);
 
-char * ots_filter_type2str(ots_filter_type_t filter_type);
 /* API_END */
 
 #if defined __cplusplus
