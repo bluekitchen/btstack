@@ -607,7 +607,11 @@ static void ascs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
             status =     gattservice_subevent_ascs_server_connected_get_status(packet);
             printf("ASCS Server: connected, con_handle 0x%04x\n, status 0x%02x", con_handle, status);
 #ifdef ENABLE_MCS_CLIENT
-            mcs_client_connect(con_handle);
+            if (audio_mode == APP_MODE_MONO_RIGHT){
+                printf("Right speaker does not connect to MCS Server, use left speaker for playback control\n");
+            } else {
+                mcs_client_connect(con_handle);
+            }
 #endif
             break;
         case GATTSERVICE_SUBEVENT_ASCS_SERVER_DISCONNECTED:
@@ -786,13 +790,17 @@ static void app_configure(app_audio_mode_t mode) {
 static void show_usage(void){
     printf("\n--- LE Audio Unicast Headset Console ---\n");
     printf("Audio Mode: %s\n", audio_modes[(int)audio_mode]);
-    printf(" [ - volume down\n");
-    printf(" ] - volume up\n");
-    printf(" k - play\n");
-    printf(" K - stop (only works in paused mode)\n");
-    printf(" L - pause\n");
-    printf(" i - next track\n");
-    printf(" I - previous track\n");
+#ifdef ENABLE_MCS_CLIENT
+    if (mcs_cid != 0){
+        printf(" [ - volume down\n");
+        printf(" ] - volume up\n");
+        printf(" k - play\n");
+        printf(" K - stop (only works in paused mode)\n");
+        printf(" L - pause\n");
+        printf(" i - next track\n");
+        printf(" I - previous track\n");
+    }
+#endif
     printf("---\n");
 }
 
