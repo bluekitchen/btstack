@@ -739,14 +739,16 @@ static int hfp_ag_run_for_context_service_level_connection(hfp_connection_t * hf
             if (hfp_connection->state != HFP_W4_ENABLE_INDICATORS_STATUS_UPDATE) break;
             if (has_call_waiting_and_3way_calling_feature(hfp_connection)){
                 hfp_connection->state = HFP_W4_RETRIEVE_CAN_HOLD_CALL;
+                hfp_ag_send_ok(hfp_connection->rfcomm_cid);
             } else if (has_hf_indicators_feature(hfp_connection)){
                 hfp_connection->state = HFP_W4_LIST_GENERIC_STATUS_INDICATORS;
+                hfp_ag_send_ok(hfp_connection->rfcomm_cid);
             } else {
+                hfp_ag_send_ok(hfp_connection->rfcomm_cid);
                 hfp_ag_slc_established(hfp_connection);
             }
-            hfp_ag_send_ok(hfp_connection->rfcomm_cid);
             return 1;
-                
+
         case HFP_CMD_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES:
             if (hfp_connection->state != HFP_W4_RETRIEVE_CAN_HOLD_CALL) break;
             if (has_hf_indicators_feature(hfp_connection)){

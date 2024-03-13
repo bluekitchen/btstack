@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - ATT Server: support delayed read responses for registered services
 - ATT Server: allow to start crypto operation from delayed att read/write request
 - HFP HF: send HF Indicator update only if enabled by AG
+- HFP AG: send OK after SLC for HF that does not support 3-way-calling or HF Indicators
 - HSP HS: use EV3 and 2EV3 packets for 7.5 ms voice interval
 
 ### Changed
