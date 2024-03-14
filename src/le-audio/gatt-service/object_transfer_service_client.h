@@ -72,6 +72,7 @@ typedef enum {
     OBJECT_TRANSFER_SERVICE_CLIENT_STATE_W4_READ_LONG_CHARACTERISTIC_VALUE_RESULT,
     OBJECT_TRANSFER_SERVICE_CLIENT_STATE_W2_WRITE_CHARACTERISTIC_VALUE_WITHOUT_RESPONSE,
     OBJECT_TRANSFER_SERVICE_CLIENT_STATE_W2_WRITE_CHARACTERISTIC_VALUE,
+    OBJECT_TRANSFER_SERVICE_CLIENT_STATE_W2_WRITE_LONG_CHARACTERISTIC_VALUE,
     OBJECT_TRANSFER_SERVICE_CLIENT_STATE_W4_WRITE_CHARACTERISTIC_VALUE_RESULT   
 } object_transfer_service_client_state_t;
 
@@ -82,10 +83,10 @@ typedef struct {
     // Used for read characteristic queries
     uint8_t characteristic_index;
     // Used to store parameters for write characteristic
+
+    uint8_t data_length;
     union {
-        uint8_t  data_8;
-        uint16_t data_16;
-        uint32_t data_32;
+        uint8_t  data_bytes[OTS_MAX_STRING_LENGHT + 1];
         const char * data_string;
     } data;
 
@@ -95,7 +96,7 @@ typedef struct {
     gatt_service_client_characteristic_t characteristics_storage[OBJECT_TRANSFER_SERVICE_NUM_CHARACTERISTICS];
     btstack_context_callback_registration_t gatt_query_can_send_now;
 
-    uint8_t long_value_buffer[OTS_MAX_STRING_LENGHT];
+    uint8_t long_value_buffer[OTS_MAX_STRING_LENGHT + 1];
     uint8_t long_value_buffer_length;
 } ots_client_connection_t;
 
@@ -152,16 +153,19 @@ uint8_t object_transfer_service_client_read_object_long_list_filter_2(ots_client
 uint8_t object_transfer_service_client_read_object_long_list_filter_3(ots_client_connection_t * connection);
 
 
-uint8_t object_transfer_service_client_write_object_name(ots_client_connection_t * connection);
-uint8_t object_transfer_service_client_write_object_first_created(ots_client_connection_t * connection);
-uint8_t object_transfer_service_client_write_object_last_modified(ots_client_connection_t * connection);
-uint8_t object_transfer_service_client_write_object_properties(ots_client_connection_t * connection);
+uint8_t object_transfer_service_client_write_object_name(ots_client_connection_t * connection, const char * name);
+
+uint8_t object_transfer_service_client_write_object_first_created(ots_client_connection_t * connection, btstack_utc_t * date);
+uint8_t object_transfer_service_client_write_object_last_modified(ots_client_connection_t * connection, btstack_utc_t * date);
+uint8_t object_transfer_service_client_write_object_properties(ots_client_connection_t * connection, uint32_t properties);
+
+uint8_t object_transfer_service_client_write_object_list_filter_1(ots_client_connection_t * connection, ots_filter_type_t filter_type, uint8_t data_length, const uint8_t * data);
+uint8_t object_transfer_service_client_write_object_list_filter_2(ots_client_connection_t * connection, ots_filter_type_t filter_type, uint8_t data_length, const uint8_t * data);
+uint8_t object_transfer_service_client_write_object_list_filter_3(ots_client_connection_t * connection, ots_filter_type_t filter_type, uint8_t data_length, const uint8_t * data);
+
+
 uint8_t object_transfer_service_client_write_object_action_control_point(ots_client_connection_t * connection);
 uint8_t object_transfer_service_client_write_object_list_control_point(ots_client_connection_t * connection);
-uint8_t object_transfer_service_client_write_object_list_filter_1(ots_client_connection_t * connection);
-uint8_t object_transfer_service_client_write_object_list_filter_2(ots_client_connection_t * connection);
-uint8_t object_transfer_service_client_write_object_list_filter_3(ots_client_connection_t * connection);
-
 
 /**
  * @brief Disconnect.

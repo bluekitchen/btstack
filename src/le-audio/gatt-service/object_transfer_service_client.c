@@ -290,22 +290,22 @@ static uint16_t ots_client_serialize_characteristic_value_for_write(ots_client_c
 
     switch (connection->characteristic_index){
         case OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_NAME:
+            value_length = connection->data_length;
+            *out_value   = (uint8_t *)connection->data.data_string;
             break;
+
         case OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_FIRST_CREATED:
-            break;
         case OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_LAST_MODIFIED:
-            break;
         case OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_PROPERTIES:
-            break;
-        case OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_ACTION_CONTROL_POINT:
-            break;
-        case OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_LIST_CONTROL_POINT:
-            break;
         case OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_LIST_FILTER_1:
-            break;
         case OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_LIST_FILTER_2:
-            break;
         case OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_LIST_FILTER_3:
+            value_length = connection->data_length;
+            *out_value   = connection->data.data_bytes;
+            break;
+
+        case OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_ACTION_CONTROL_POINT:
+        case OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_LIST_CONTROL_POINT:
             break;
 
         default:
@@ -480,20 +480,15 @@ static uint8_t ots_client_request_read_long_characteristic(ots_client_connection
     return ots_client_request_send_gatt_query(connection, characteristic_index);
 }
 
-// uint8_t object_transfer_control_service_client_write_audio_location(ots_client_connection_t * connection, uint32_t audio_location){
-//     btstack_assert(connection != NULL);
-//     if (connection->state != OBJECT_TRANSFER_SERVICE_CLIENT_STATE_READY){
-//         return ERROR_CODE_CONTROLLER_BUSY;
-//     }
+static uint8_t ots_client_request_write_characteristic(ots_client_connection_t * connection, ots_client_characteristic_index_t characteristic_index){
+    connection->state = OBJECT_TRANSFER_SERVICE_CLIENT_STATE_W2_WRITE_CHARACTERISTIC_VALUE;
+    return ots_client_request_send_gatt_query(connection, characteristic_index);
+}
 
-//     little_endian_store_32(connection->data.data_bytes, 0, audio_location);
-//     return ots_client_request_write_characteristic_without_response(connection, OTS_CLIENT_CHARACTERISTIC_INDEX_AUDIO_LOCATION);
-// }
-
-// uint8_t object_transfer_control_service_client_read_offset_state(ots_client_connection_t * connection){
-//     return ots_client_request_read_characteristic(connection, OTS_CLIENT_CHARACTERISTIC_INDEX_OFFSET_STATE);
-// }
-
+static uint8_t ots_client_request_write_long_characteristic(ots_client_connection_t * connection, ots_client_characteristic_index_t characteristic_index){
+    connection->state = OBJECT_TRANSFER_SERVICE_CLIENT_STATE_W2_WRITE_LONG_CHARACTERISTIC_VALUE;
+    return ots_client_request_send_gatt_query(connection, characteristic_index);
+}
 
 static void ots_client_packet_handler_internal(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
@@ -708,8 +703,8 @@ static void ots_client_run_for_connection(void * context){
                 con_handle,
                 ots_client_value_handle_for_index(connection),
                 value_length, value);
-            
             break;
+
         case OBJECT_TRANSFER_SERVICE_CLIENT_STATE_W2_WRITE_CHARACTERISTIC_VALUE:
             connection->state = OBJECT_TRANSFER_SERVICE_CLIENT_STATE_W4_WRITE_CHARACTERISTIC_VALUE_RESULT;
 
@@ -719,6 +714,17 @@ static void ots_client_run_for_connection(void * context){
                     ots_client_value_handle_for_index(connection),
                     value_length, value);
             break;
+
+        case OBJECT_TRANSFER_SERVICE_CLIENT_STATE_W2_WRITE_LONG_CHARACTERISTIC_VALUE:
+            connection->state = OBJECT_TRANSFER_SERVICE_CLIENT_STATE_W4_WRITE_CHARACTERISTIC_VALUE_RESULT;
+
+            value_length = ots_client_serialize_characteristic_value_for_write(connection, &value);
+            (void) gatt_client_write_long_value_of_characteristic(
+                    &ots_client_handle_gatt_client_event, con_handle,
+                    ots_client_value_handle_for_index(connection),
+                    value_length, value);
+            break;
+
         default:
             break;
     }
@@ -759,213 +765,237 @@ uint8_t object_transfer_service_client_connect(
                                        packet_handler, ots_cid);
 }
 
-static bool ots_client_feature_supported(ots_client_connection_t * connection, uint32_t feature){
-    return true;
-}
-
 uint8_t object_transfer_service_client_read_ots_feature(ots_client_connection_t * connection){
-    if (connection == NULL){
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    btstack_assert(connection != NULL);
+    if (connection->state != OBJECT_TRANSFER_SERVICE_CLIENT_STATE_READY){
+        return ERROR_CODE_CONTROLLER_BUSY;
     }
     return ots_client_request_read_characteristic(connection, OTS_CLIENT_CHARACTERISTIC_INDEX_OTS_FEATURE);
 }
 
 uint8_t object_transfer_service_client_read_object_name(ots_client_connection_t * connection){
-    if (connection == NULL){
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    btstack_assert(connection != NULL);
+    if (connection->state != OBJECT_TRANSFER_SERVICE_CLIENT_STATE_READY){
+        return ERROR_CODE_CONTROLLER_BUSY;
     }
     return ots_client_request_read_characteristic(connection, OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_NAME);
 }
 
 uint8_t object_transfer_service_client_read_long_object_name(ots_client_connection_t * connection){
-    if (connection == NULL){
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    btstack_assert(connection != NULL);
+    if (connection->state != OBJECT_TRANSFER_SERVICE_CLIENT_STATE_READY){
+        return ERROR_CODE_CONTROLLER_BUSY;
     }
     return ots_client_request_read_long_characteristic(connection, OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_NAME);
 }
 
 uint8_t object_transfer_service_client_read_object_type(ots_client_connection_t * connection){
-    if (connection == NULL){
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    btstack_assert(connection != NULL);
+    if (connection->state != OBJECT_TRANSFER_SERVICE_CLIENT_STATE_READY){
+        return ERROR_CODE_CONTROLLER_BUSY;
     }
     return ots_client_request_read_characteristic(connection, OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_TYPE);
 }
 
 uint8_t object_transfer_service_client_read_object_size(ots_client_connection_t * connection){
-    if (connection == NULL){
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    btstack_assert(connection != NULL);
+    if (connection->state != OBJECT_TRANSFER_SERVICE_CLIENT_STATE_READY){
+        return ERROR_CODE_CONTROLLER_BUSY;
     }
     return ots_client_request_read_characteristic(connection, OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_SIZE);
 }
 
 uint8_t object_transfer_service_client_read_object_first_created(ots_client_connection_t * connection){
-    if (connection == NULL){
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    btstack_assert(connection != NULL);
+    if (connection->state != OBJECT_TRANSFER_SERVICE_CLIENT_STATE_READY){
+        return ERROR_CODE_CONTROLLER_BUSY;
     }
     return ots_client_request_read_characteristic(connection, OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_FIRST_CREATED);
 }
 
 uint8_t object_transfer_service_client_read_object_last_modified(ots_client_connection_t * connection){
-    if (connection == NULL){
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    btstack_assert(connection != NULL);
+    if (connection->state != OBJECT_TRANSFER_SERVICE_CLIENT_STATE_READY){
+        return ERROR_CODE_CONTROLLER_BUSY;
     }
     return ots_client_request_read_characteristic(connection, OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_LAST_MODIFIED);
 }
 
 uint8_t object_transfer_service_client_read_object_id(ots_client_connection_t * connection){
-    if (connection == NULL){
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    btstack_assert(connection != NULL);
+    if (connection->state != OBJECT_TRANSFER_SERVICE_CLIENT_STATE_READY){
+        return ERROR_CODE_CONTROLLER_BUSY;
     }
     return ots_client_request_read_characteristic(connection, OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_ID);
 }
 
 uint8_t object_transfer_service_client_read_object_properties(ots_client_connection_t * connection){
-    if (connection == NULL){
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    btstack_assert(connection != NULL);
+    if (connection->state != OBJECT_TRANSFER_SERVICE_CLIENT_STATE_READY){
+        return ERROR_CODE_CONTROLLER_BUSY;
     }
     return ots_client_request_read_characteristic(connection, OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_PROPERTIES);
 }
 
 uint8_t object_transfer_service_client_read_object_list_filter_1(ots_client_connection_t * connection){
-    if (connection == NULL){
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    btstack_assert(connection != NULL);
+    if (connection->state != OBJECT_TRANSFER_SERVICE_CLIENT_STATE_READY){
+        return ERROR_CODE_CONTROLLER_BUSY;
     }
     return ots_client_request_read_characteristic(connection, OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_LIST_FILTER_1);
 }
 
 uint8_t object_transfer_service_client_read_object_list_filter_2(ots_client_connection_t * connection){
-    if (connection == NULL){
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    btstack_assert(connection != NULL);
+    if (connection->state != OBJECT_TRANSFER_SERVICE_CLIENT_STATE_READY){
+        return ERROR_CODE_CONTROLLER_BUSY;
     }
     return ots_client_request_read_characteristic(connection, OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_LIST_FILTER_2);
 }
 
 uint8_t object_transfer_service_client_read_object_list_filter_3(ots_client_connection_t * connection){
-    if (connection == NULL){
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    btstack_assert(connection != NULL);
+    if (connection->state != OBJECT_TRANSFER_SERVICE_CLIENT_STATE_READY){
+        return ERROR_CODE_CONTROLLER_BUSY;
     }
     return ots_client_request_read_characteristic(connection, OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_LIST_FILTER_3);
 }
 
 uint8_t object_transfer_service_client_read_object_long_list_filter_1(ots_client_connection_t * connection){
-    if (connection == NULL){
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    btstack_assert(connection != NULL);
+    if (connection->state != OBJECT_TRANSFER_SERVICE_CLIENT_STATE_READY){
+        return ERROR_CODE_CONTROLLER_BUSY;
     }
     return ots_client_request_read_long_characteristic(connection, OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_LIST_FILTER_1);
 }
 
 uint8_t object_transfer_service_client_read_object_long_list_filter_2(ots_client_connection_t * connection){
-    if (connection == NULL){
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    btstack_assert(connection != NULL);
+    if (connection->state != OBJECT_TRANSFER_SERVICE_CLIENT_STATE_READY){
+        return ERROR_CODE_CONTROLLER_BUSY;
     }
     return ots_client_request_read_long_characteristic(connection, OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_LIST_FILTER_2);
 }
 
 uint8_t object_transfer_service_client_read_object_long_list_filter_3(ots_client_connection_t * connection){
-    if (connection == NULL){
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    btstack_assert(connection != NULL);
+    if (connection->state != OBJECT_TRANSFER_SERVICE_CLIENT_STATE_READY){
+        return ERROR_CODE_CONTROLLER_BUSY;
     }
     return ots_client_request_read_long_characteristic(connection, OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_LIST_FILTER_3);
 }
 
-static uint32_t feature;
-uint8_t object_transfer_service_client_write_object_name(ots_client_connection_t * connection){
-    if (connection == NULL){
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    }
-    if (!ots_client_feature_supported(connection, feature)){
-        return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
+uint8_t object_transfer_service_client_write_object_name(ots_client_connection_t * connection, const char * name){
+    btstack_assert(connection != NULL);
+    if (connection->state != OBJECT_TRANSFER_SERVICE_CLIENT_STATE_READY){
+        return ERROR_CODE_CONTROLLER_BUSY;
     }
 
-    return ERROR_CODE_SUCCESS;
+    connection->data.data_string = name;
+    connection->data_length = strlen(name);
+
+    if (connection->basic_connection.mtu >= connection->data_length + 3){
+        return ots_client_request_write_characteristic(connection, OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_NAME);
+    }
+    return ots_client_request_write_long_characteristic(connection, OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_NAME);
 }
 
-uint8_t object_transfer_service_client_write_object_first_created(ots_client_connection_t * connection){
-    if (connection == NULL){
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    }
-    if (!ots_client_feature_supported(connection, feature)){
-        return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
-    }
+uint8_t ots_client_write_utc_date(ots_client_connection_t * connection, ots_client_characteristic_index_t characteristic_index, btstack_utc_t * date){
+    btstack_assert(connection != NULL);
+    btstack_assert(date != NULL);
 
-    return ERROR_CODE_SUCCESS;
+    if (connection->state != OBJECT_TRANSFER_SERVICE_CLIENT_STATE_READY){
+        return ERROR_CODE_CONTROLLER_BUSY;
+    }
+    uint8_t pos = 0;
+    little_endian_store_16(connection->data.data_bytes, pos, date->year);
+    pos += 2;
+    connection->data.data_bytes[pos++] = date->month;
+    connection->data.data_bytes[pos++] = date->day;
+    connection->data.data_bytes[pos++] = date->hours;
+    connection->data.data_bytes[pos++] = date->minutes;
+    connection->data.data_bytes[pos++] = date->seconds;
+    connection->data_length = pos;
+    return ots_client_request_write_characteristic(connection, characteristic_index);
 }
 
-uint8_t object_transfer_service_client_write_object_last_modified(ots_client_connection_t * connection){
-    if (connection == NULL){
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    }
-    if (!ots_client_feature_supported(connection, feature)){
-        return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
-    }
-
-    return ERROR_CODE_SUCCESS;
+uint8_t object_transfer_service_client_write_object_first_created(ots_client_connection_t * connection, btstack_utc_t * date){
+    return ots_client_write_utc_date(connection, OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_FIRST_CREATED, date);
 }
 
-uint8_t object_transfer_service_client_write_object_properties(ots_client_connection_t * connection){
-    if (connection == NULL){
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    }
-    if (!ots_client_feature_supported(connection, feature)){
-        return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
+uint8_t object_transfer_service_client_write_object_last_modified(ots_client_connection_t * connection, btstack_utc_t * date){
+    return ots_client_write_utc_date(connection, OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_LAST_MODIFIED, date);
+}
+
+uint8_t object_transfer_service_client_write_object_properties(ots_client_connection_t * connection, uint32_t properties){
+    btstack_assert(connection != NULL);
+    if (connection->state != OBJECT_TRANSFER_SERVICE_CLIENT_STATE_READY){
+        return ERROR_CODE_CONTROLLER_BUSY;
     }
 
-    return ERROR_CODE_SUCCESS;
+    little_endian_store_32(connection->data.data_bytes, 0, properties);
+    connection->data_length = 4;
+    return ots_client_request_write_characteristic(connection, OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_PROPERTIES);
 }
+
+uint8_t ots_client_write_filter(ots_client_connection_t * connection, ots_client_characteristic_index_t characteristic_index, ots_filter_type_t filter_type, uint8_t data_length, const uint8_t * data){
+    btstack_assert(connection != NULL);
+
+    if (data_length + 1 > sizeof(connection->data.data_bytes)){
+        return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
+    }
+
+    connection->data.data_bytes[0] = (uint8_t) filter_type;
+    memcpy(connection->data.data_bytes + 1, data, data_length);
+    connection->data_length = 1 + data_length;
+
+    if (connection->basic_connection.mtu >= connection->data_length + 3){
+        return ots_client_request_write_characteristic(connection, characteristic_index);
+    }
+    return ots_client_request_write_long_characteristic(connection, characteristic_index);
+}
+
+uint8_t object_transfer_service_client_write_object_list_filter_1(ots_client_connection_t * connection, ots_filter_type_t filter_type, uint8_t data_length, const uint8_t * data){
+    btstack_assert(connection != NULL);
+    if (connection->state != OBJECT_TRANSFER_SERVICE_CLIENT_STATE_READY){
+        return ERROR_CODE_CONTROLLER_BUSY;
+    }
+    return ots_client_write_filter(connection, OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_LIST_FILTER_1, filter_type, data_length, data);
+}
+
+uint8_t object_transfer_service_client_write_object_list_filter_2(ots_client_connection_t * connection, ots_filter_type_t filter_type, uint8_t data_length, const uint8_t * data){
+    btstack_assert(connection != NULL);
+    if (connection->state != OBJECT_TRANSFER_SERVICE_CLIENT_STATE_READY){
+        return ERROR_CODE_CONTROLLER_BUSY;
+    }
+    return ots_client_write_filter(connection, OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_LIST_FILTER_2, filter_type, data_length, data);
+}
+
+uint8_t object_transfer_service_client_write_object_list_filter_3(ots_client_connection_t * connection, ots_filter_type_t filter_type, uint8_t data_length, const uint8_t * data){
+    btstack_assert(connection != NULL);
+    if (connection->state != OBJECT_TRANSFER_SERVICE_CLIENT_STATE_READY){
+        return ERROR_CODE_CONTROLLER_BUSY;
+    }
+    return ots_client_write_filter(connection, OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_LIST_FILTER_3, filter_type, data_length, data);
+}
+
 
 uint8_t object_transfer_service_client_write_object_action_control_point(ots_client_connection_t * connection){
-    if (connection == NULL){
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    }
-    if (!ots_client_feature_supported(connection, feature)){
-        return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
+    btstack_assert(connection != NULL);
+    if (connection->state != OBJECT_TRANSFER_SERVICE_CLIENT_STATE_READY){
+        return ERROR_CODE_CONTROLLER_BUSY;
     }
 
-    return ERROR_CODE_SUCCESS;
+    return ots_client_request_write_characteristic(connection, OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_ACTION_CONTROL_POINT);
 }
 
 uint8_t object_transfer_service_client_write_object_list_control_point(ots_client_connection_t * connection){
-    if (connection == NULL){
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    }
-    if (!ots_client_feature_supported(connection, feature)){
-        return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
+    btstack_assert(connection != NULL);
+    if (connection->state != OBJECT_TRANSFER_SERVICE_CLIENT_STATE_READY){
+        return ERROR_CODE_CONTROLLER_BUSY;
     }
 
-    return ERROR_CODE_SUCCESS;
-}
-
-uint8_t object_transfer_service_client_write_object_list_filter_1(ots_client_connection_t * connection){
-    if (connection == NULL){
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    }
-    if (!ots_client_feature_supported(connection, feature)){
-        return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
-    }
-
-    return ERROR_CODE_SUCCESS;
-}
-
-uint8_t object_transfer_service_client_write_object_list_filter_2(ots_client_connection_t * connection){
-    if (connection == NULL){
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    }
-    if (!ots_client_feature_supported(connection, feature)){
-        return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
-    }
-
-    return ERROR_CODE_SUCCESS;
-}
-
-uint8_t object_transfer_service_client_write_object_list_filter_3(ots_client_connection_t * connection){
-    if (connection == NULL){
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    }
-    if (!ots_client_feature_supported(connection, feature)){
-        return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
-    }
-
-    return ERROR_CODE_SUCCESS;
+    return ots_client_request_write_characteristic(connection, OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_LIST_CONTROL_POINT);
 }
 
 uint8_t object_transfer_service_client_disconnect(ots_client_connection_t * connection){
