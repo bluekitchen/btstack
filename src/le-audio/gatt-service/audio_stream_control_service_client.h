@@ -117,6 +117,7 @@ typedef struct {
     uint8_t streamendpoints_index;
 
     // used for write requests
+    btstack_context_callback_registration_t gatt_client_query_request;
     const ascs_client_codec_configuration_request_t * codec_configuration;
     const ascs_qos_configuration_t   * qos_configuration;
     const le_audio_metadata_t        * metadata;

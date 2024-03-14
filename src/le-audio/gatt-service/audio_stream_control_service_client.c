@@ -60,10 +60,13 @@ static btstack_linked_list_t    ascs_client_connections;
 static uint16_t                 ascs_client_cid_counter = 0;
 
 static void ascs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+static void ascs_client_run_for_connection(ascs_client_connection_t * connection);
+
 static btstack_packet_callback_registration_t ascs_client_hci_event_callback_registration;
 
 static uint8_t  ascs_client_value_buffer[ASCS_CLIENT_MAX_VALUE_BUFFER_SIZE];
 static bool     ascs_client_value_buffer_used = false;
+static uint16_t ascs_client_value_buffer_len;
 
 static uint16_t ascs_client_get_value_buffer_size(ascs_client_connection_t * connection){
     return btstack_min(connection->mtu, ASCS_CLIENT_MAX_VALUE_BUFFER_SIZE);
@@ -433,6 +436,22 @@ static uint16_t ascs_client_serialize_ase(ascs_client_connection_t * connection,
     }
     return pos;
 }
+static void ascs_client_write_control_point (void * context){
+    ascs_client_connection_t * connection = (ascs_client_connection_t *) context;
+    connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_CONNECTED;
+    (void) gatt_client_write_value_of_characteristic_without_response(connection->con_handle, connection->control_point.value_handle,
+                                                                      ascs_client_value_buffer_len,
+                                                                      ascs_client_value_buffer);
+
+    // poll connections if value buffer became available
+    ascs_client_value_buffer_used = false;
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, (btstack_linked_list_t *) &ascs_client_connections);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        connection = (ascs_client_connection_t *)btstack_linked_list_iterator_next(&it);
+        ascs_client_run_for_connection(connection);
+    }
+}
 
 static void ascs_client_run_for_connection(ascs_client_connection_t * connection){
     gatt_client_characteristic_t characteristic;
@@ -570,13 +589,12 @@ static void ascs_client_run_for_connection(ascs_client_connection_t * connection
                 // defer
                 return;
             }
-            uint16_t value_length = ascs_client_serialize_ase(connection, ascs_client_value_buffer, ascs_client_get_value_buffer_size(connection));
+            ascs_client_value_buffer_len  = ascs_client_serialize_ase(connection, ascs_client_value_buffer, ascs_client_get_value_buffer_size(connection));
             ascs_client_value_buffer_used = true;
 
-            connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_CONNECTED;
-            (void) gatt_client_write_value_of_characteristic_without_response(connection->con_handle, connection->control_point.value_handle,
-                                                                              value_length,
-                                                                              ascs_client_value_buffer);
+            connection->gatt_client_query_request.callback = ascs_client_write_control_point;
+            connection->gatt_client_query_request.context = connection;
+            gatt_client_request_to_write_without_response(&connection->gatt_client_query_request, connection->con_handle);
             break;
         }
 
@@ -690,7 +708,6 @@ static void ascs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t c
     uint8_t status;
 
     bool call_run_connection = true;
-    bool ascs_client_value_buffer_used_before = ascs_client_value_buffer_used;
     uint16_t bytes_read;
 
     switch(hci_event_packet_get_type(packet)){
@@ -849,16 +866,6 @@ static void ascs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t c
 
     if (call_run_connection && (connection != NULL)){
         ascs_client_run_for_connection(connection);
-    }
-
-    // poll connections if value buffer became available
-    if (ascs_client_value_buffer_used_before && (ascs_client_value_buffer_used == false)){
-        btstack_linked_list_iterator_t it;
-        btstack_linked_list_iterator_init(&it, (btstack_linked_list_t *) &ascs_client_connections);
-        while (btstack_linked_list_iterator_has_next(&it)){
-            ascs_client_connection_t * connection = (ascs_client_connection_t *)btstack_linked_list_iterator_next(&it);
-            ascs_client_run_for_connection(connection);
-        }
     }
 }
 
