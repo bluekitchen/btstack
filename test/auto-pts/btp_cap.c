@@ -55,34 +55,32 @@
 #include "le-audio/le_audio_base_parser.h"
 
 // CAP
-static enum {
+typedef enum {
     CAP_DISOCVERY_IDLE,
     CAP_DISCOVERY_CSIS_WAIT,
-} btp_cap_discovery_state;
+    CAP_DISCOVERY_DONE,
+} btp_cap_discovery_state_t;
 
-static void btp_cap_send_discovery_complete(hci_con_handle_t con_handle) {
-    hci_connection_t * hci_connection = hci_connection_for_handle(con_handle);
-    btstack_assert(hci_connection != NULL);
+static void btp_cap_send_discovery_complete(server_t * server) {
     struct btp_cap_discovery_completed_ev discovery_completed_ev;
-    discovery_completed_ev.addr_type = hci_connection->address_type;
-    reverse_bd_addr(hci_connection->address, discovery_completed_ev.address);
-    MESSAGE("BTP_CAP_EV_DISCOVERY_COMPLETED, con handle 0x%04x - DONE", con_handle);
+    discovery_completed_ev.addr_type = server->address_type;
+    reverse_bd_addr(server->address, discovery_completed_ev.address);
+    MESSAGE("BTP_CAP_EV_DISCOVERY_COMPLETED %s", bd_addr_to_str(server->address));
     btp_send(BTP_SERVICE_ID_CAP, BTP_CAP_EV_DISCOVERY_COMPLETED, 0, sizeof(discovery_completed_ev), (const uint8_t *) &discovery_completed_ev);
 }
 
-static void btp_cap_discovery_next(hci_con_handle_t con_handle) {
+static void btp_cap_discovery_next(server_t * server) {
     uint8_t ascs_index;
     uint16_t ascs_cid;
-    server_t * server = btp_server_for_acl_con_handle(con_handle);
-    btstack_assert(server != NULL);
-    switch(btp_cap_discovery_state){
+    switch((btp_cap_discovery_state_t) server->cap_state){
         case CAP_DISOCVERY_IDLE:
-            MESSAGE("BTP_CAP_DISCOVER, con handle 0x%04x - Connect CSIP", con_handle);
-            btp_cap_discovery_state = CAP_DISCOVERY_CSIS_WAIT;
+            MESSAGE("BTP_CAP_DISCOVER addr %s, addr type %u", bd_addr_to_str(server->address), server->address_type);
+            server->cap_state = (uint8_t) CAP_DISCOVERY_CSIS_WAIT;
             btp_csip_connect_to_server(server);
             break;
         case CAP_DISCOVERY_CSIS_WAIT:
-            btp_cap_send_discovery_complete(con_handle);
+            server->cap_state = (uint8_t) CAP_DISCOVERY_DONE;
+            btp_cap_send_discovery_complete(server);
             break;
         default:
             btstack_unreachable();
@@ -102,7 +100,8 @@ static void btp_cap_csip_handler(uint8_t packet_type, uint16_t channel, uint8_t 
             if ((response_service_id == BTP_SERVICE_ID_CAP) && (response_op == BTP_CAP_DISCOVER)){
                 server_t * server = btp_server_for_csis_cid(gattservice_subevent_csis_client_sirk_get_csis_cid(packet));
                 btstack_assert(server != NULL);
-                btp_cap_discovery_next(server->acl_con_handle);
+                MESSAGE("BTP_CAP_DISCOVER complete");
+                btp_cap_discovery_next(server);
             }
             break;
         default:
@@ -115,9 +114,7 @@ void btp_cap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, 
     response_len = 0;
     response_service_id = BTP_SERVICE_ID_CAP;
     response_op = opcode;
-    uint8_t ase_id;
-    uint8_t i;
-    uint8_t ascs_index;
+    server_t * server;
     switch (opcode) {
         case BTP_CAP_READ_SUPPORTED_COMMANDS:
             MESSAGE("BTP_CAP_READ_SUPPORTED_COMMANDS");
@@ -131,13 +128,10 @@ void btp_cap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, 
                 bd_addr_type_t addr_type = (bd_addr_type_t) data[0];
                 bd_addr_t address;
                 reverse_bd_addr(&data[1], address);
-                const hci_connection_t * hci_connection = hci_connection_for_bd_addr_and_type(address, addr_type);
-                MESSAGE("BTP_CAP_DISCOVER addr %s, addr type %u, -> con %p", bd_addr_to_str(address), addr_type, hci_connection);
-                btstack_assert(hci_connection != NULL);
-                hci_con_handle_t con_handle = hci_connection->con_handle;
 
-                btp_cap_discovery_state = CAP_DISOCVERY_IDLE;
-                btp_cap_discovery_next(con_handle);
+                server = btp_server_for_address(addr_type, address);
+                server->cap_state = (uint8_t) CAP_DISOCVERY_IDLE;
+                btp_cap_discovery_next(server);
 
                 btp_send(response_service_id, opcode, controller_index, 0, NULL);
             }
