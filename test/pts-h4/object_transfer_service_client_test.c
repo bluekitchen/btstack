@@ -76,6 +76,14 @@ static int       public_pts_address_type = 0;
 static bd_addr_t current_pts_address;
 static int       current_pts_address_type;
 
+static char * ots_object_name_short = "Short name";
+static char * ots_object_name_long  = "OTS long object name that exceeds the MTU size for this test example";
+static btstack_utc_t first_created = {2023, 6, 22, 10, 59, 30};
+static btstack_utc_t last_modified = {2023, 6, 22, 10, 59, 30};
+const uint8_t filter_data_null[]  = {};
+const uint8_t filter_data_short[] = {0x53, 0x68, 0x6F, 0x72, 0x74, 0x20, 0x6E, 0x61, 0x6D, 0x65};
+const uint8_t filter_data_long[]  = {0x4F, 0x54, 0x53, 0x20, 0x6C, 0x6F, 0x6E, 0x67, 0x20, 0x6F, 0x62,
+                                    0x6A, 0x65, 0x63, 0x74, 0x20, 0x6E, 0x61, 0x6D, 0x65, 0x20, 0x74};
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
@@ -403,6 +411,18 @@ static void show_usage(void){
     printf("j    - Read long filter 1\n");
     printf("J    - Read long_filter 2\n");
     printf("k    - Read long_filter 3\n");
+    printf("K    - Write object name\n");
+    printf("l    - Write long object name\n");
+    printf("L    - Write first created\n");
+    printf("m    - Write last modifies\n");
+    printf("M    - Write object properties\n");
+    printf("n    - Write filter 1\n");
+    printf("N    - Write filter 2\n");
+    printf("o    - Write filter 3\n");
+    printf("O    - Write long filter 1\n");
+    printf("p    - Write long filter 2\n");
+    printf("P    - Write long filter 3\n");
+
 }
 
 
@@ -489,6 +509,61 @@ static void stdin_process(char c){
         case 'k':
             printf("Read long filter 3\n");
             status = object_transfer_service_client_read_object_long_list_filter_3(&ots_connection);
+            break;
+
+        case 'K':
+            printf("Write object name\n");
+            status = object_transfer_service_client_write_object_name(&ots_connection, ots_object_name_short);
+            break;
+
+        case 'l':
+            printf("Write long object name\n");
+            status = object_transfer_service_client_write_object_name(&ots_connection, ots_object_name_long);
+            break;
+
+        case 'L':
+            printf("Write first created\n");
+            status = object_transfer_service_client_write_object_first_created(&ots_connection, &first_created);
+            break;
+
+        case 'm':
+            printf("Write last modifies\n");
+            status = object_transfer_service_client_write_object_last_modified(&ots_connection, &last_modified);
+            break;
+
+        case 'M':
+            printf("Write object properties\n");
+            object_transfer_service_client_write_object_properties(&ots_connection, 0xFF);
+            break;
+
+        case 'n':
+            printf("Write filter 1\n");
+            object_transfer_service_client_write_object_list_filter_1(&ots_connection, OTS_FILTER_TYPE_NAME_CONTAINS, sizeof(filter_data_short), filter_data_short);
+            break;
+
+        case 'N':
+            printf("Write filter 2\n");
+            object_transfer_service_client_write_object_list_filter_2(&ots_connection, OTS_FILTER_TYPE_NAME_CONTAINS, sizeof(filter_data_short), filter_data_short);
+            break;
+
+        case 'o':
+            printf("Write filter 3\n");
+            object_transfer_service_client_write_object_list_filter_3(&ots_connection, OTS_FILTER_TYPE_NAME_CONTAINS, sizeof(filter_data_short), filter_data_short);
+            break;
+
+        case 'O':
+            printf("Write long filter 1\n");
+            object_transfer_service_client_write_object_list_filter_1(&ots_connection, OTS_FILTER_TYPE_NAME_CONTAINS, sizeof(filter_data_long), filter_data_long);
+            break;
+
+        case 'p':
+            printf("Write long filter 2\n");
+            object_transfer_service_client_write_object_list_filter_2(&ots_connection, OTS_FILTER_TYPE_NAME_CONTAINS, sizeof(filter_data_long), filter_data_long);
+            break;
+
+        case 'P':
+            printf("Write long filter 3\n");
+            object_transfer_service_client_write_object_list_filter_3(&ots_connection, OTS_FILTER_TYPE_NAME_CONTAINS, sizeof(filter_data_long), filter_data_long);
             break;
 
         case '\n':
