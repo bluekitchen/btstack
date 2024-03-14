@@ -89,7 +89,7 @@ static btstack_tlv_posix_t   tlv_context;
 static bd_addr_t             static_address;
 
 // random MAC address for the device, used if nothing else is available 
-static const bd_addr_t random_address = { 0xC1, 0x01, 0x01, 0x01, 0x01, 0x01 };
+static bd_addr_t random_address = { 0xC1, 0x01, 0x01, 0x01, 0x01, 0x01 };
 
 static int is_bcm;
 // shutdown
@@ -281,13 +281,14 @@ static void local_version_information_handler(uint8_t * packet){
     }
 }
 
-static char short_options[] = "hu:l:r";
+static char short_options[] = "hu:l:rb:";
 
 static struct option long_options[] = {
         {"help",        no_argument,        NULL,   'h'},
         {"logfile",    required_argument,  NULL,   'l'},
         {"reset-tlv",    no_argument,       NULL,   'r'},
         {"tty",    required_argument,  NULL,   'u'},
+        {"bd-addr", required_argument, NULL, 'b'},
         {0, 0, 0, 0}
 };
 
@@ -296,6 +297,7 @@ static char *help_options[] = {
         "set file to store debug output and HCI trace.",
         "reset bonding information stored in TLV.",
         "set path to Bluetooth Controller.",
+        "set random static Bluetooth address for nRF5340 with PacketCraft Controller.",
 };
 
 static char *option_arg_name[] = {
@@ -303,6 +305,7 @@ static char *option_arg_name[] = {
         "LOGFILE",
         "",
         "TTY",
+        "BD_ADDR",
 };
 
 static void usage(const char *name){
@@ -339,6 +342,9 @@ int main(int argc, const char * argv[]){
                 break;
             case 'r':
                 tlv_reset = true;
+                break;
+            case 'b':
+                sscanf_bd_addr(optarg, random_address);
                 break;
             case 'h':
             default:
