@@ -570,8 +570,8 @@ static void ascs_client_run_for_connection(ascs_client_connection_t * connection
                 // defer
                 return;
             }
-
             uint16_t value_length = ascs_client_serialize_ase(connection, ascs_client_value_buffer, ascs_client_get_value_buffer_size(connection));
+            ascs_client_value_buffer_used = true;
 
             connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_CONNECTED;
             (void) gatt_client_write_value_of_characteristic_without_response(connection->con_handle, connection->control_point.value_handle,
