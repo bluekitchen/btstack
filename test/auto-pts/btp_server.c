@@ -53,24 +53,6 @@
 
 static server_t servers[MAX_NUM_SERVERS];
 
-server_t * btp_server_initialize(hci_con_handle_t con_handle){
-    uint8_t i;
-    for (i=0; i < MAX_NUM_SERVERS; i++){
-        server_t * server = &servers[i];
-        if (server->acl_con_handle == HCI_CON_HANDLE_INVALID){
-            // get hci con handle from HCI
-            hci_connection_t * connection = hci_connection_for_handle(con_handle);
-            btstack_assert(connection != NULL);
-            server->acl_con_handle = connection->con_handle;
-            memcpy(server->address, connection->address, 6);
-            server->address_type = connection->address_type;
-            return server;
-        }
-    }
-    btstack_unreachable();
-    return NULL;
-}
-
 server_t * btp_server_for_address(bd_addr_type_t address_type, bd_addr_t address){
     const hci_connection_t * hci_connection = hci_connection_for_bd_addr_and_type(address, address_type);
     if (hci_connection == NULL){
@@ -81,7 +63,20 @@ server_t * btp_server_for_address(bd_addr_type_t address_type, bd_addr_t address
     hci_con_handle_t con_handle = hci_connection->con_handle;
     server_t * server = btp_server_for_acl_con_handle(con_handle);
     if (server == NULL){
-        btp_server_initialize(con_handle);
+        uint8_t i;
+        for (i=0; i < MAX_NUM_SERVERS; i++){
+            server_t * server = &servers[i];
+            if (server->acl_con_handle == HCI_CON_HANDLE_INVALID){
+                server->acl_con_handle = hci_connection->con_handle;
+                memcpy(server->address, address, 6);
+                server->address_type =address_type;
+                MESSAGE("btp_server_for_address: setup slot %u (%p) for addr %s type %u", i, server, bd_addr_to_str(address), address_type);
+                return server;
+            }
+        }
+        MESSAGE("btp_server_for_address: no free server slot for for addr %s type %u", bd_addr_to_str(address), address_type);
+        btstack_unreachable();
+        return NULL;
     }
     return server;
 }

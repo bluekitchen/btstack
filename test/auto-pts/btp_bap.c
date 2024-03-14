@@ -702,8 +702,6 @@ typedef enum {
     BTP_BAP_PACS_STATE_W4_SINK_PACS,
     BTP_BAP_PACS_STATE_W4_SOURCE_PACS,
     BTP_BAP_ASCS_STATE_W4_CONNECTED,
-    BTP_BAP_ASCS_STATE_W4_SINK_ASE,
-    BTP_BAP_ASCS_STATE_W4_SOURCE_ASE,
     BTP_BAP_STATE_DONE
 } btp_bap_state_t;
 
@@ -716,44 +714,85 @@ static void btp_bap_send_discovery_complete(server_t * server) {
 }
 
 static void btp_bap_discovery_next(server_t * server){
+    MESSAGE("BTP BAP Discovery %s, state %u (%p)", bd_addr_to_str(server->address), server->bap_state, server);
+    uint8_t status = ERROR_CODE_SUCCESS;
     switch ((btp_bap_state_t) server->bap_state){
         case BTP_BAP_STATE_IDLE:
-            server->pacs_state = (uint8_t) BTP_BAP_PACS_STATE_W4_CONNECTED;
-            published_audio_capabilities_service_client_connect(&server->pacs_connection, server->acl_con_handle, &server->pacs_cid);
-            MESSAGE("BTP_PACS: connect 0x%04x, PACS CID %u", server->acl_con_handle, server->csis_cid);
+            server->bap_state = (uint8_t) BTP_BAP_PACS_STATE_W4_CONNECTED;
+            status = published_audio_capabilities_service_client_connect(&server->pacs_connection, server->acl_con_handle, &server->pacs_cid);
+            MESSAGE("BTP PACS: connect 0x%04x, PACS CID %u", server->acl_con_handle, server->csis_cid);
             break;
         case BTP_BAP_PACS_STATE_W4_CONNECTED:
-            server->pacs_state = (uint8_t) BTP_BAP_PACS_STATE_W4_SINK_PACS;
-            MESSAGE("PACS Client %u: Get Sink PAC records", server->server_id);
-            published_audio_capabilities_service_client_get_sink_pacs(server->pacs_cid);
-            break;
-        case BTP_BAP_PACS_STATE_W4_SINK_PACS:
-            server->pacs_state = (uint8_t) BTP_BAP_PACS_STATE_W4_SOURCE_PACS;
-            MESSAGE("PACS Client %u: Get Source PAC records", server->server_id);
-            published_audio_capabilities_service_client_get_source_pacs(server->pacs_cid);
-            break;
-        case BTP_BAP_PACS_STATE_W4_SOURCE_PACS:
-            MESSAGE("PACS Client %u: PAC Discovery Done", server->server_id);
+            server->bap_state = (uint8_t) BTP_BAP_PACS_STATE_W4_SINK_PACS;
+            status = published_audio_capabilities_service_client_get_sink_pacs(server->pacs_cid);
+            MESSAGE("BTP PACS Client %u: Get Sink PAC records", server->server_id);
+            if (status == ERROR_CODE_SUCCESS){
+                break;
+            }
 
-            server->pacs_state = (uint8_t) BTP_BAP_ASCS_STATE_W4_CONNECTED;
-            audio_stream_control_service_client_connect(&server->ascs_connection,
+            // fall through //
+
+        case BTP_BAP_PACS_STATE_W4_SINK_PACS:
+            server->bap_state = (uint8_t) BTP_BAP_PACS_STATE_W4_SOURCE_PACS;
+            status = published_audio_capabilities_service_client_get_source_pacs(server->pacs_cid);
+            MESSAGE("BTP PACS Client %u: Get Source PAC records", server->server_id);
+            if (status == ERROR_CODE_SUCCESS){
+                break;
+            }
+
+            // fall through //
+
+        case BTP_BAP_PACS_STATE_W4_SOURCE_PACS:
+            MESSAGE("BTP PACS Client %u: PAC Discovery Done", server->server_id);
+
+            server->bap_state = (uint8_t) BTP_BAP_ASCS_STATE_W4_CONNECTED;
+            status = audio_stream_control_service_client_connect(&server->ascs_connection,
                                                         server->streamendpoint_characteristics,
                                                         ASCS_CLIENT_NUM_STREAMENDPOINTS,
                                                         server->acl_con_handle,
                                                         &server->ascs_cid);
-            MESSAGE("BTP_ASCS: connect 0x%04x, ASCS CID %u", server->acl_con_handle, server->csis_cid);
+            MESSAGE("BTP ASCS: connect 0x%04x, ASCS CID %u", server->acl_con_handle, server->csis_cid);
             break;
         case BTP_BAP_ASCS_STATE_W4_CONNECTED:
+            server->bap_state = (uint8_t) BTP_BAP_STATE_DONE;
             btp_bap_send_discovery_complete(server);
             break;
         default:
             break;
     }
+    if (status != ERROR_CODE_SUCCESS){
+        MESSAGE("BTP BAP Discovery status 0x%02x abort", status);
+        btstack_assert(false);
+    }
 }
 
 // ASCS
 
-static void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void btp_bap_send_ase(server_t * server, uint8_t direction, uint8_t num_ases, const uint8_t * ase_ids){
+    uint8_t i;
+    for (i=0;i<num_ases;i++){
+        uint8_t buffer[100];
+        uint16_t pos = 0;
+        buffer[pos++] = server->address_type;
+        reverse_bd_addr( server->address, &buffer[pos]);
+        pos += 6;
+        buffer[pos++] = direction;
+        buffer[pos++] = ase_ids[i];
+        MESSAGE("BTP_BAP_EV_ASE_FOUND %s", bd_addr_to_str(server->address));
+        btp_send(BTP_SERVICE_ID_BAP, BTP_BAP_EV_ASE_FOUND, 0, pos, buffer);
+    }
+}
+
+static void btp_ascs_client_report_ases(server_t *server, uint8_t *packet){
+    uint8_t sink_ase_num = gattservice_subevent_ascs_client_connected_get_sink_ase_num(packet);
+    const uint8_t * sink_ase_ids = gattservice_subevent_ascs_client_connected_get_sink_ase_ids(packet);
+    btp_bap_send_ase(server, BTP_AUDIO_DIR_SINK, sink_ase_num, sink_ase_ids);
+    uint8_t source_ase_num = gattservice_subevent_ascs_client_connected_get_source_ase_num(packet);
+    const uint8_t * source_ase_ids = gattservice_subevent_ascs_client_connected_get_source_ase_ids(packet);
+    btp_bap_send_ase(server, BTP_AUDIO_DIR_SOURCE, source_ase_num, source_ase_ids);
+}
+
+static void btp_bap_ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
 
@@ -780,15 +819,16 @@ static void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uin
             con_handle = gattservice_subevent_ascs_client_connected_get_con_handle(packet);
             if (gattservice_subevent_ascs_client_connected_get_status(packet) != ERROR_CODE_SUCCESS){
                 // TODO send error response
-                MESSAGE("ASCS Client: connection failed, cid 0x%02x, con_handle 0x%04x, status 0x%02x", ascs_cid, con_handle,
+                MESSAGE("BTP ASCS Client: connection failed, cid 0x%02x, con_handle 0x%04x, status 0x%02x", ascs_cid, con_handle,
                         gattservice_subevent_ascs_client_connected_get_status(packet));
             } else {
                 server = btp_server_for_acl_con_handle(con_handle);
+                btp_ascs_client_report_ases(server, packet);
                 btp_bap_discovery_next(server);
             }
             break;
         case GATTSERVICE_SUBEVENT_ASCS_CLIENT_DISCONNECTED:
-            MESSAGE("ASCS Client: disconnected, cid 0x%02x", gattservice_subevent_ascs_client_disconnected_get_ascs_cid(packet));
+            MESSAGE("BTP ASCS Client: disconnected, cid 0x%02x", gattservice_subevent_ascs_client_disconnected_get_ascs_cid(packet));
             break;
 #if 0
         case GATTSERVICE_SUBEVENT_ASCS_CLIENT_CODEC_CONFIGURATION:
@@ -946,7 +986,7 @@ static void btp_bap_pacs_client_report_pacs(uint8_t *packet, uint16_t size){
 
     btp_send(BTP_SERVICE_ID_BAP, BTP_BAP_EV_CODEC_CAP_FOUND, 0, pos, buffer);
 
-    MESSAGE("PACS Client: %s PAC Record\n", gattservice_subevent_pacs_client_pack_record_get_le_audio_role(packet) == LE_AUDIO_ROLE_SINK ? "Sink" : "Source");
+    MESSAGE("BTP PACS Client: %s PAC Record\n", gattservice_subevent_pacs_client_pack_record_get_le_audio_role(packet) == LE_AUDIO_ROLE_SINK ? "Sink" : "Source");
 }
 
 static void btp_bap_pacs_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -973,8 +1013,9 @@ static void btp_bap_pacs_client_event_handler(uint8_t packet_type, uint16_t chan
             btstack_assert(server != NULL);
             if (status != ERROR_CODE_SUCCESS){
                 // TODO send error response
-                MESSAGE("PACS Client %u: connection failed, status 0x%02x", server->server_id, status);
+                MESSAGE("BTP PACS Client %u: connection failed, status 0x%02x", server->server_id, status);
             } else {
+                MESSAGE("BTP PACS Client %u: connected", server->server_id);
                 btp_bap_discovery_next(server);
             }
             break;
@@ -982,17 +1023,20 @@ static void btp_bap_pacs_client_event_handler(uint8_t packet_type, uint16_t chan
             btp_bap_pacs_client_report_pacs(packet, size);
             break;
         case GATTSERVICE_SUBEVENT_PACS_CLIENT_PACK_RECORD_DONE:
-            MESSAGE("      %s PAC Record DONE\n", gattservice_subevent_pacs_client_pack_record_done_get_le_audio_role(packet) == LE_AUDIO_ROLE_SINK ? "Sink" : "Source");
+            pacs_cid = gattservice_subevent_pacs_client_pack_record_done_get_pacs_cid(packet);
+            server = btp_server_for_pacs_cid(pacs_cid);
+            btstack_assert(server != NULL);
+            MESSAGE("BTP PACS Client %u: %s PAC Record DONE\n", server->server_id, gattservice_subevent_pacs_client_pack_record_done_get_le_audio_role(packet) == LE_AUDIO_ROLE_SINK ? "Sink" : "Source");
             break;
         case GATTSERVICE_SUBEVENT_PACS_CLIENT_OPERATION_DONE:
-            if (gattservice_subevent_pacs_client_operation_done_get_status(packet) == ERROR_CODE_SUCCESS){
-                MESSAGE("      Operation successful");
-            } else {
-                MESSAGE("      Operation failed with status 0x%02X", gattservice_subevent_pacs_client_operation_done_get_status(packet));
-            }
             pacs_cid = gattservice_subevent_pacs_client_operation_done_get_pacs_cid(packet);
             server = btp_server_for_pacs_cid(pacs_cid);
             btstack_assert(server != NULL);
+            if (gattservice_subevent_pacs_client_operation_done_get_status(packet) == ERROR_CODE_SUCCESS){
+                MESSAGE("BTP PACS Client %u: Operation successful", server->server_id);
+            } else {
+                MESSAGE("BTP PACS Client %u: Operation failed with status 0x%02X", server->server_id, gattservice_subevent_pacs_client_operation_done_get_status(packet));
+            }
             btp_bap_discovery_next(server);
             break;
         case GATTSERVICE_SUBEVENT_PACS_CLIENT_DISCONNECTED:
@@ -1022,13 +1066,6 @@ static void btp_bap_pacs_client_event_handler(uint8_t packet_type, uint16_t chan
     }
 }
 
-static void btp_pacs_connect(bd_addr_type_t address_type, bd_addr_t address){
-    server_t * server = btp_server_for_address(address_type, address);
-    server->pacs_state = (uint8_t) BTP_BAP_PACS_STATE_W4_CONNECTED;
-    published_audio_capabilities_service_client_connect(&server->pacs_connection, server->acl_con_handle, &server->pacs_cid);
-    MESSAGE("BTP_PACS: connect 0x%04x, PACS CID %u", server->acl_con_handle, server->csis_cid);
-}
-
 // BTP
 
 void btp_bap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, const uint8_t *data) {
@@ -1048,7 +1085,6 @@ void btp_bap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, 
             }
             break;
         case BTP_BAP_DISCOVER:
-            MESSAGE("BTP_BAP_DISCOVER");
             if (controller_index == 0) {
                 // get server struct
                 bd_addr_type_t addr_type = (bd_addr_type_t) data[0];
@@ -1350,6 +1386,6 @@ void btp_bap_init(void){
     published_audio_capabilities_service_client_init(&btp_bap_pacs_client_event_handler);
 
     // ASCS
-    audio_stream_control_service_client_init(&ascs_client_event_handler);
+    audio_stream_control_service_client_init(&btp_bap_ascs_client_event_handler);
 }
 
