@@ -43,6 +43,8 @@
 #include "btstack_config.h"
 #include "btstack_debug.h"
 
+#include "btpclient.h"
+
 #include <stdint.h>
 #include <string.h>
 #include "hci.h"
@@ -67,6 +69,21 @@ server_t * btp_server_initialize(hci_con_handle_t con_handle){
     }
     btstack_unreachable();
     return NULL;
+}
+
+server_t * btp_server_for_address(bd_addr_type_t address_type, bd_addr_t address){
+    const hci_connection_t * hci_connection = hci_connection_for_bd_addr_and_type(address, address_type);
+    if (hci_connection == NULL){
+        MESSAGE("btp_server_for_address: no hci connection for addr %s type %u", bd_addr_to_str(address), address_type);
+        btstack_unreachable();
+        return NULL;
+    }
+    hci_con_handle_t con_handle = hci_connection->con_handle;
+    server_t * server = btp_server_for_acl_con_handle(con_handle);
+    if (server == NULL){
+        btp_server_initialize(con_handle);
+    }
+    return server;
 }
 
 server_t * btp_server_for_csis_cid(uint16_t csis_cid){
@@ -97,19 +114,6 @@ server_t * btp_server_for_acl_con_handle(hci_con_handle_t acl_con_handle){
         server_t * server = &servers[i];
         if (server->acl_con_handle == acl_con_handle){
             return server;
-        }
-    }
-    return NULL;
-}
-
-server_t * btp_server_for_address(bd_addr_type_t address_type, bd_addr_t address){
-    uint8_t i;
-    for (i=0; i < MAX_NUM_SERVERS; i++){
-        server_t * server = &servers[i];
-        if (server->address_type == address_type){
-            if (memcmp(server->address, address, 6) == 0){
-                return server;
-            }
         }
     }
     return NULL;

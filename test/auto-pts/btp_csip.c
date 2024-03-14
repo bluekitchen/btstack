@@ -310,14 +310,7 @@ void btp_csip_register_higher_layer(btstack_packet_handler_t handler){
     btp_csip_higher_layer_handler = handler;
 }
 
-void btp_csip_connect(hci_con_handle_t con_handle){
-
-    server_t * server = btp_server_for_acl_con_handle(con_handle);
-
-    if (server == NULL){
-        server = btp_server_initialize(con_handle);
-    }
-
+void btp_csip_connect_to_server(server_t * server){
     coordinated_set_identification_service_client_connect(&server->csis_connection, server->acl_con_handle, &server->csis_cid);
     MESSAGE("BTP_CSIP: connect 0x%04x, CSIS CID %u", server->acl_con_handle, server->csis_cid);
 }

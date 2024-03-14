@@ -47,6 +47,8 @@
 #include "btstack_run_loop.h"
 #include "btstack_defines.h"
 #include "bluetooth.h"
+#include "btp_server.h"
+
 
 #include <stdint.h>
 
@@ -130,6 +132,11 @@ void btp_csip_register_higher_layer(btstack_packet_handler_t packet_handler);
  * Connect to remote device
  */
 void btp_csip_connect(hci_con_handle_t );
+
+/**
+ * Connect to remote device
+ */
+void btp_csip_connect_to_server(server_t * server);
 
 #if defined __cplusplus
 }
