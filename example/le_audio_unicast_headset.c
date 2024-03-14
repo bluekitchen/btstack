@@ -321,12 +321,10 @@ static void start_advertising(void) {
     }
     gap_extended_advertising_setup(&le_advertising_set, &extended_params, &adv_handle);
     if (local_address_invalid) {
-        bd_addr_t random_address = { 0xC1, 0x01, 0x01, 0x01, 0x01, 0x01 };
-        if (audio_mode == APP_MODE_MONO_RIGHT){
-            // use different addresses for left and right speaker
-            random_address[5]++;
-        }
-        gap_extended_advertising_set_random_address( adv_handle, random_address );
+        // assume nRF5340 in which case main already set a random address
+        uint8_t local_addr_type;
+        gap_le_get_own_address(&local_addr_type, local_addr);
+        gap_extended_advertising_set_random_address( adv_handle, local_addr );
     }
     gap_extended_advertising_set_adv_data(adv_handle, sizeof(adv_data), adv_data);
     gap_extended_advertising_start(adv_handle, 0, 0);
