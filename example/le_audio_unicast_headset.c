@@ -305,28 +305,35 @@ static uint8_t adv_handle = 0;
 
 static void start_advertising(void) {
 
+    static bool adv_initialized = false;
+
+    if (adv_initialized == false){
+        adv_initialized = true;
+
 #ifdef ENABLE_CSIS_SERVER
-    if (rsi_ready == false) return;
-    uint8_t offset = 3 + 2;
-    printf("RSI in advertisements at offset %u: ", offset);
-    printf_hexdump(rsi, 6);
-    reverse_48(rsi, &adv_data[offset]);
+        if (rsi_ready == false) return;
+        uint8_t offset = 3 + 2;
+        printf("RSI in advertisements at offset %u: ", offset);
+        printf_hexdump(rsi, 6);
+        reverse_48(rsi, &adv_data[offset]);
 #endif
 
-    bd_addr_t local_addr;
-    gap_local_bd_addr(local_addr);
-    bool local_address_invalid = btstack_is_null_bd_addr( local_addr );
-    if (local_address_invalid) {
-        extended_params.own_address_type = BD_ADDR_TYPE_LE_RANDOM;
+        bd_addr_t local_addr;
+        gap_local_bd_addr(local_addr);
+        bool local_address_invalid = btstack_is_null_bd_addr( local_addr );
+        if (local_address_invalid) {
+            extended_params.own_address_type = BD_ADDR_TYPE_LE_RANDOM;
+        }
+        gap_extended_advertising_setup(&le_advertising_set, &extended_params, &adv_handle);
+        if (local_address_invalid) {
+            // assume nRF5340 in which case main already set a random address
+            uint8_t local_addr_type;
+            gap_le_get_own_address(&local_addr_type, local_addr);
+            gap_extended_advertising_set_random_address( adv_handle, local_addr );
+        }
+        gap_extended_advertising_set_adv_data(adv_handle, sizeof(adv_data), adv_data);
     }
-    gap_extended_advertising_setup(&le_advertising_set, &extended_params, &adv_handle);
-    if (local_address_invalid) {
-        // assume nRF5340 in which case main already set a random address
-        uint8_t local_addr_type;
-        gap_le_get_own_address(&local_addr_type, local_addr);
-        gap_extended_advertising_set_random_address( adv_handle, local_addr );
-    }
-    gap_extended_advertising_set_adv_data(adv_handle, sizeof(adv_data), adv_data);
+
     gap_extended_advertising_start(adv_handle, 0, 0);
 
     printf("Start Advertising, waiting for connection\n");
@@ -401,8 +408,9 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             break;
         case HCI_EVENT_DISCONNECTION_COMPLETE:
             if (hci_event_disconnection_complete_get_connection_handle(packet) == remote_handle){
-                printf("Disconnected, back to scanning\n");
+                printf("Disconnected, back to advertising\n");
                 stop_streaming();
+                start_advertising();
             }
             break;
         case HCI_EVENT_LE_META:
