@@ -47,16 +47,18 @@
 #include "bluetooth.h"
 #include "le-audio/gatt-service/coordinated_set_identification_service_client.h"
 #include "le-audio/gatt-service/published_audio_capabilities_service_client.h"
+#include "le-audio/gatt-service/audio_stream_control_service_client.h"
 
 #if defined __cplusplus
 extern "C" {
 #endif
 
 #define MAX_NUM_SERVERS 3
+#define ASCS_CLIENT_NUM_STREAMENDPOINTS 4
 
 typedef struct {
     btstack_linked_item_t item;
-    uint8_t server_id;
+    uint8_t server_id;  // 0-based index
 
     bd_addr_t address;
     bd_addr_type_t address_type;
@@ -71,10 +73,21 @@ typedef struct {
     uint8_t  coordinated_set_size;
     uint8_t  coordinated_set_rank;
 
+    // bap initiator
+    uint8_t bap_state;
+
     // pacs client
     pacs_client_connection_t pacs_connection;
     uint16_t pacs_cid;
     uint8_t  pacs_state;
+
+    // ascs client
+    ascs_client_connection_t ascs_connection;
+    ascs_streamendpoint_characteristic_t streamendpoint_characteristics[ASCS_CLIENT_NUM_STREAMENDPOINTS];
+
+    uint16_t ascs_cid;
+    uint8_t ascs_state;
+
 } server_t;
 
 /**
@@ -88,6 +101,14 @@ void btp_server_init(void);
  * @return
  */
 server_t * btp_server_initialize(hci_con_handle_t con_handle);
+
+/**
+ * @brief Prepare server struct for addr / addr type
+ * @param addr
+ * @param addr_type
+ * @return
+ */
+server_t * btp_server_for_address(bd_addr_type_t addr_type, bd_addr_t bd_addr);
 
 /**
  * @brief Lookup server by index, used to iterate over servers
