@@ -66,7 +66,10 @@ typedef struct {
     // hci
     hci_con_handle_t acl_con_handle;
 
-    // csis
+    // cap initiator
+    uint8_t cap_state;
+
+    // csis client
     csis_client_connection_t csis_connection;
     uint16_t csis_cid;
     uint8_t  sirk[16];
@@ -79,14 +82,11 @@ typedef struct {
     // pacs client
     pacs_client_connection_t pacs_connection;
     uint16_t pacs_cid;
-    uint8_t  pacs_state;
 
     // ascs client
     ascs_client_connection_t ascs_connection;
     ascs_streamendpoint_characteristic_t streamendpoint_characteristics[ASCS_CLIENT_NUM_STREAMENDPOINTS];
-
     uint16_t ascs_cid;
-    uint8_t ascs_state;
 
 } server_t;
 
@@ -94,13 +94,6 @@ typedef struct {
  * @brief Initialize server structures
  */
 void btp_server_init(void);
-
-/**
- * @brief Setup server struct for active hci connection
- * @param con_handle
- * @return
- */
-server_t * btp_server_initialize(hci_con_handle_t con_handle);
 
 /**
  * @brief Prepare server struct for addr / addr type
