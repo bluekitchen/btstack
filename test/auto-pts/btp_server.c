@@ -103,6 +103,17 @@ server_t * btp_server_for_pacs_cid(uint16_t pacs_cid){
     return NULL;
 }
 
+server_t * btp_server_for_ascs_cid(uint16_t ascs_cid){
+    uint8_t i;
+    for (i=0; i < MAX_NUM_SERVERS; i++){
+        server_t * server = &servers[i];
+        if (server->ascs_cid == ascs_cid){
+            return server;
+        }
+    }
+    return NULL;
+}
+
 server_t * btp_server_for_acl_con_handle(hci_con_handle_t acl_con_handle){
     uint8_t i;
     for (i=0; i < MAX_NUM_SERVERS; i++){

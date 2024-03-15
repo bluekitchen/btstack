@@ -87,7 +87,10 @@ typedef struct {
     ascs_client_connection_t ascs_connection;
     ascs_streamendpoint_characteristic_t streamendpoint_characteristics[ASCS_CLIENT_NUM_STREAMENDPOINTS];
     uint16_t ascs_cid;
-
+    // current operation
+    uint16_t ascs_ase;
+    ascs_client_codec_configuration_request_t ascs_codec_configuration_request;
+    ascs_qos_configuration_t ascs_qos_configuration;
 } server_t;
 
 /**
@@ -144,6 +147,13 @@ server_t * btp_server_for_csis_cid(uint16_t csis_cid);
  * @return
  */
 server_t * btp_server_for_pacs_cid(uint16_t csis_cid);
+
+/**
+ * @brief Lookup server by ascs_cid
+ * @param pacs_cid
+ * @return
+ */
+server_t * btp_server_for_ascs_cid(uint16_t ascs_cid);
 
 #if defined __cplusplus
 }
