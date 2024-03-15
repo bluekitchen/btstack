@@ -165,10 +165,64 @@ static void enter_streaming(void){
     printf("Configure: %u channels, sampling rate %u, samples per frame %u\n", num_channels, sampling_frequency_hz, number_samples_per_frame);
 }
 
+static void handle_advertisement(bd_addr_type_t address_type, bd_addr_t address, uint8_t adv_size,  const uint8_t * adv_data){
+    ad_context_t context;
+    bool found = false;
+    remote_name[0] = '\0';
+    uint16_t uuid;
+    uint16_t company_id;
+    for (ad_iterator_init(&context, adv_size, adv_data) ; ad_iterator_has_more(&context) ; ad_iterator_next(&context)) {
+        uint8_t data_type = ad_iterator_get_data_type(&context);
+        uint8_t size = ad_iterator_get_data_len(&context);
+        const uint8_t *data = ad_iterator_get_data(&context);
+        switch (data_type){
+            case BLUETOOTH_DATA_TYPE_MANUFACTURER_SPECIFIC_DATA:
+                company_id = little_endian_read_16(data, 0);
+                if (company_id == BLUETOOTH_COMPANY_ID_BLUEKITCHEN_GMBH){
+                    // subtype = 0 -> le audio unicast source
+                    uint8_t subtype = data[2];
+                    if (subtype != 0) break;
+                    // flags
+                    uint8_t flags = data[3];
+                    // num channels
+                    num_channels = data[4];
+                    if (num_channels > 2) break;
+                    // sampling frequency
+                    sampling_frequency_hz = 1000 * data[5];
+                    // frame duration
+                    frame_duration = data[6] == 0 ? BTSTACK_LC3_FRAME_DURATION_7500US : BTSTACK_LC3_FRAME_DURATION_10000US;
+                    // octets per frame
+                    octets_per_frame = data[7];
+                    // done
+                    found = true;
+                }
+                break;
+            case BLUETOOTH_DATA_TYPE_SHORTENED_LOCAL_NAME:
+            case BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME:
+                size = btstack_min(sizeof(remote_name) - 1, size);
+                memcpy(remote_name, data, size);
+                remote_name[size] = 0;
+                break;
+            default:
+                break;
+        }
+    }
+    if (!found) return;
+
+    memcpy(remote_addr, address, 6);
+    remote_type = address_type;
+    printf("Remote Unicast source found, addr %s, name: '%s'\n", bd_addr_to_str(remote_addr), remote_name);
+
+    // stop scanning
+    app_state = APP_W4_CIS_CREATED;
+    gap_stop_scan();
+    gap_connect(remote_addr, remote_type);
+}
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     bd_addr_t event_addr;
+    bd_addr_type_t event_addr_type;
     hci_con_handle_t cis_handle;
     unsigned int i;
     uint8_t status;
@@ -200,64 +254,23 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             }
             break;
         case GAP_EVENT_ADVERTISING_REPORT:
-        {
-            if (app_state != APP_W4_SOURCE_ADV) break;
-
-            gap_event_advertising_report_get_address(packet, remote_addr);
-            uint8_t adv_size = gap_event_advertising_report_get_data_length(packet);
-            const uint8_t * adv_data = gap_event_advertising_report_get_data(packet);
-
-            ad_context_t context;
-            bool found = false;
-            remote_name[0] = '\0';
-            uint16_t uuid;
-            uint16_t company_id;
-            for (ad_iterator_init(&context, adv_size, adv_data) ; ad_iterator_has_more(&context) ; ad_iterator_next(&context)) {
-                uint8_t data_type = ad_iterator_get_data_type(&context);
-                uint8_t size = ad_iterator_get_data_len(&context);
-                const uint8_t *data = ad_iterator_get_data(&context);
-                switch (data_type){
-                    case BLUETOOTH_DATA_TYPE_MANUFACTURER_SPECIFIC_DATA:
-                        company_id = little_endian_read_16(data, 0);
-                        if (company_id == BLUETOOTH_COMPANY_ID_BLUEKITCHEN_GMBH){
-                            // subtype = 0 -> le audio unicast source
-                            uint8_t subtype = data[2];
-                            if (subtype != 0) break;
-                            // flags
-                            uint8_t flags = data[3];
-                            // num channels
-                            num_channels = data[4];
-                            if (num_channels > 2) break;
-                            // sampling frequency
-                            sampling_frequency_hz = 1000 * data[5];
-                            // frame duration
-                            frame_duration = data[6] == 0 ? BTSTACK_LC3_FRAME_DURATION_7500US : BTSTACK_LC3_FRAME_DURATION_10000US;
-                            // octets per frame
-                            octets_per_frame = data[7];
-                            // done
-                            found = true;
-                        }
-                        break;
-                    case BLUETOOTH_DATA_TYPE_SHORTENED_LOCAL_NAME:
-                    case BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME:
-                        size = btstack_min(sizeof(remote_name) - 1, size);
-                        memcpy(remote_name, data, size);
-                        remote_name[size] = 0;
-                        break;
-                    default:
-                        break;
-                }
+            if (app_state == APP_W4_SOURCE_ADV) {
+                gap_event_advertising_report_get_address(packet, event_addr);
+                event_addr_type = gap_event_advertising_report_get_address_type(packet);
+                uint8_t adv_size = gap_event_advertising_report_get_data_length(packet);
+                const uint8_t * adv_data = gap_event_advertising_report_get_data(packet);
+                handle_advertisement(event_addr_type, event_addr, adv_size, adv_data);
             }
-            if (!found) break;
-            remote_type = gap_event_advertising_report_get_address_type(packet);
-            printf("Remote Unicast source found, addr %s, name: '%s'\n", bd_addr_to_str(remote_addr), remote_name);
-            // stop scanning
-            app_state = APP_W4_CIS_CREATED;
-            gap_stop_scan();
-            gap_connect(remote_addr, remote_type);
             break;
-        }
-
+        case GAP_EVENT_EXTENDED_ADVERTISING_REPORT:
+            if (app_state == APP_W4_SOURCE_ADV) {
+                gap_event_extended_advertising_report_get_address(packet, event_addr);
+                event_addr_type = gap_event_extended_advertising_report_get_address_type(packet) & 1;
+                uint8_t adv_size = gap_event_extended_advertising_report_get_data_length(packet);
+                const uint8_t * adv_data = gap_event_extended_advertising_report_get_data(packet);
+                handle_advertisement(event_addr_type, event_addr, adv_size, adv_data);
+            }
+            break;
         case HCI_EVENT_META_GAP:
             switch (hci_event_gap_meta_get_subevent_code(packet)){
                 case GAP_SUBEVENT_LE_CONNECTION_COMPLETE:
