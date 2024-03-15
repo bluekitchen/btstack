@@ -352,6 +352,9 @@ struct btp_bap_pa_sync_req_ev {
     uint16_t pa_interval;
 } __packed;
 
+// TODO: move to ASCS
+#define BTP_BAP_ASE_STATE_CHANGED 0x82
+
 #pragma options align=reset
 
 typedef enum {
