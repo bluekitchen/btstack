@@ -65,6 +65,7 @@ static uint8_t encryption = 0;
 static uint8_t broadcast_code [] = {0x01, 0x02, 0x68, 0x05, 0x53, 0xF1, 0x41, 0x5A, 0xA2, 0x65, 0xBB, 0xAF, 0xC6, 0xEA, 0x03, 0xB8, };
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
+static btstack_packet_handler_t btp_bap_higher_layer_handler;
 
 // send iso packets
 static hci_con_handle_t bis_con_handles[MAX_NUM_BIS];
@@ -957,6 +958,10 @@ static void btp_bap_ascs_client_event_handler(uint8_t packet_type, uint16_t chan
         default:
             break;
     }
+
+    if (btp_bap_higher_layer_handler != NULL){
+        (*btp_bap_higher_layer_handler)(packet_type, channel, packet, size);
+    }
 }
 
 // -- PACS
@@ -1063,6 +1068,10 @@ static void btp_bap_pacs_client_event_handler(uint8_t packet_type, uint16_t chan
 #endif
         default:
             break;
+    }
+
+    if (btp_bap_higher_layer_handler != NULL){
+        (*btp_bap_higher_layer_handler)(packet_type, channel, packet, size);
     }
 }
 
@@ -1389,3 +1398,6 @@ void btp_bap_init(void){
     audio_stream_control_service_client_init(&btp_bap_ascs_client_event_handler);
 }
 
+void btp_bap_register_higher_layer(btstack_packet_handler_t handler){
+    btp_bap_higher_layer_handler = handler;
+}
