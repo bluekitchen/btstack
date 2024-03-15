@@ -369,6 +369,11 @@ void btp_bap_init(void);
  */
 void btp_bap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, const uint8_t *data);
 
+/**
+ * Allow to process BAP (PACS, ASCS) events by higher layer, e.g. CAP
+ */
+void btp_bap_register_higher_layer(btstack_packet_handler_t handler);
+
 #if defined __cplusplus
 }
 #endif
