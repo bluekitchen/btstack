@@ -973,9 +973,9 @@ static void btp_bap_pacs_client_report_pacs(uint8_t *packet, uint16_t size){
     pos += 6;
     buffer[pos++] = gattservice_subevent_pacs_client_pack_record_get_le_audio_role(packet) == LE_AUDIO_ROLE_SINK ? BTP_AUDIO_DIR_SINK : BTP_AUDIO_DIR_SOURCE;
     buffer[pos++] = gattservice_subevent_pacs_client_pack_record_get_coding_format(packet);
-    uint32_t supported_frequencies = gattservice_subevent_pacs_client_pack_record_get_supported_sampling_frequencies_mask(packet);
-    little_endian_store_32(buffer, pos, supported_frequencies);
-    pos += 4;
+    uint16_t supported_frequencies = gattservice_subevent_pacs_client_pack_record_get_supported_sampling_frequencies_mask(packet);
+    little_endian_store_16(buffer, pos, supported_frequencies);
+    pos += 2;
     buffer[pos++] = gattservice_subevent_pacs_client_pack_record_get_supported_frame_durations_mask(packet);
     uint32_t octets_per_frame = gattservice_subevent_pacs_client_pack_record_get_supported_octets_per_frame_max_num(packet);
     little_endian_store_32(buffer, pos, octets_per_frame);
