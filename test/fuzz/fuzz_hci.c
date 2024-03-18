@@ -88,6 +88,10 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
             packet[1] = size;
             memcpy(&packet[2], data, size);
             packet_len = size + 2;
+            // avoid assert on packet buffer reserved
+            if (packet[0] == HCI_EVENT_TRANSPORT_PACKET_SENT){
+                return 0;
+            }
             break;
         case HCI_SCO_DATA_PACKET:
             little_endian_store_16(packet, 0, (pb_or_ps << 12) | connection_handle);
