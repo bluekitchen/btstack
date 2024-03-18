@@ -107,9 +107,8 @@ uint8_t hci_get_allow_role_switch(void){
     return true;
 }
 
-bool hci_reserve_packet_buffer(void){
+void hci_reserve_packet_buffer(void){
     outgoing_reserved = true;
-    return true;
 }
 
 void hci_release_packet_buffer(void){
