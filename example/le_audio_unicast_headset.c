@@ -113,15 +113,8 @@
 
 static void show_usage(void);
 
-typedef enum {
-    APP_MODE_STEREO = 0,
-    APP_MODE_MONO_LEFT,
-    APP_MODE_MONO_RIGHT,
-    APP_MODE_COUNT
-} app_audio_mode_t;
-static app_audio_mode_t audio_mode = APP_MODE_STEREO;
-
-static char * audio_modes[] = {"Stereo", "Mono Left", "Mono Right"};
+static const char * channel_names[] =  { "Stereo", "Mono Front Left", "Mono Front Right", "Mono Front Center", "Mono Back Left", "Mono Back Right" };
+static uint8_t app_config;
 
 static enum {
     APP_W4_WORKING,
@@ -303,6 +296,8 @@ static le_extended_advertising_parameters_t extended_params = {
 static le_advertising_set_t le_advertising_set;
 static uint8_t adv_handle = 0;
 
+static bool ui_wait_for_configuration;
+
 static void start_advertising(void) {
 
     static bool adv_initialized = false;
@@ -385,6 +380,41 @@ static void stop_streaming(void){
     playback_active = false;
 }
 
+#define MAX_SET_SIZE 5
+static struct config {
+    uint8_t set_size;
+    uint8_t channel_id;
+} configurations[] = {
+    { 1, 0 },
+    { 1, 1 },
+    { 2, 1 },
+    { 2, 2 },
+    { 3, 1 },
+    { 3, 2 },
+    { 3, 3 },
+    { 4, 1 },
+    { 4, 2 },
+    { 4, 3 },
+    { 4, 4 },
+    { 5, 1 },
+    { 5, 2 },
+    { 5, 3 },
+    { 5, 4 },
+    { 5, 5 },
+};
+static const uint8_t configuration_count = sizeof(configurations) / sizeof(struct config);
+
+static void list_configurations(void){
+    printf("\n");
+    printf("Please select speaker configuration:\n");
+    uint8_t option;
+    for (option = 0 ; option < configuration_count; option++) {
+        printf("%c => %u speakers - %s\n", 'a' + option, configurations[option].set_size,
+               channel_names[configurations[option].channel_id]);
+    }
+    printf("\n");
+}
+
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     bd_addr_t event_addr;
@@ -396,7 +426,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
         case BTSTACK_EVENT_STATE:
             switch(btstack_event_state_get_state(packet)) {
                 case HCI_STATE_WORKING:
-                    printf("Press 's', 'l', or 'r' to configure headset as Stereo, Mono Left, Mono Right speaker and start advertising\n");
+                    list_configurations();
                     break;
                 default:
                     break;
@@ -613,8 +643,8 @@ static void ascs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
             status =     gattservice_subevent_ascs_server_connected_get_status(packet);
             printf("ASCS Server: connected, con_handle 0x%04x\n, status 0x%02x", con_handle, status);
 #ifdef ENABLE_MCS_CLIENT
-            if (audio_mode == APP_MODE_MONO_RIGHT){
-                printf("Right speaker does not connect to MCS Server, use left speaker for playback control\n");
+            if (configurations[app_config].channel_id < 2){
+                printf("Only left/stereo speaker connect to MCS Server -> don't connecty to MCS\n");
             } else {
                 mcs_client_connect(con_handle);
             }
@@ -750,34 +780,46 @@ static void ascs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
     }
 }
 
-static void app_configure(app_audio_mode_t mode) {
-    const char * filenames[] = { "stereo", "mono_left", "mono_right"};
+static void app_configure(uint8_t option) {
+
+    app_config = option;
+    uint8_t set_size = configurations[app_config].set_size;
+    uint8_t channel_id = configurations[app_config].channel_id;
+
+    printf("Configuration: set size %u, channel %s\n", set_size, channel_names[channel_id]);
+
+    const char * filenames[] = { "stereo", "front_left", "front_right", "front_center", "back_left", "back_right"};
     static char filename[128];
 
-    audio_mode = mode;
-    snprintf(filename, sizeof(filename), "le_audio_unicast_headset_%s.wav", filenames[(int)audio_mode]);
+    snprintf(filename, sizeof(filename), "headset_%s.wav", filenames[channel_id]);
     printf("Store WAV in %s\n", filename);
 
-    printf("Configured as %s speaker\n", audio_modes[(int) mode]);
-
-    uint8_t set_size;
     uint8_t set_rank;
     uint8_t audio_location_mask;
-    switch (audio_mode){
-        case APP_MODE_STEREO:
+    switch (channel_id){
+        case 0:
             audio_location_mask = LE_AUDIO_LOCATION_MASK_FRONT_LEFT | LE_AUDIO_LOCATION_MASK_FRONT_RIGHT;
-            set_size = 1;
             set_rank = 1;
             break;
-        case APP_MODE_MONO_LEFT:
+        case 1:
             audio_location_mask = LE_AUDIO_LOCATION_MASK_FRONT_LEFT;
-            set_size = 2;
             set_rank = 1;
             break;
-        case APP_MODE_MONO_RIGHT:
+        case 2:
             audio_location_mask = LE_AUDIO_LOCATION_MASK_FRONT_RIGHT;
-            set_size = 2;
             set_rank = 2;
+            break;
+        case 3:
+            audio_location_mask = LE_AUDIO_LOCATION_MASK_FRONT_CENTER;
+            set_rank = 3;
+            break;
+        case 4:
+            audio_location_mask = LE_AUDIO_LOCATION_MASK_BACK_LEFT;
+            set_rank = 4;
+            break;
+        case 5:
+            audio_location_mask = LE_AUDIO_LOCATION_MASK_BACK_RIGHT;
+            set_rank = 5;
             break;
         default:
             btstack_unreachable();
@@ -795,7 +837,9 @@ static void app_configure(app_audio_mode_t mode) {
 
 static void show_usage(void){
     printf("\n--- LE Audio Unicast Headset Console ---\n");
-    printf("Audio Mode: %s\n", audio_modes[(int)audio_mode]);
+    uint8_t set_size = configurations[app_config].set_size;
+    uint8_t channel_id = configurations[app_config].channel_id;
+    printf("Configuration: set size %u, channel %s\n", set_size, channel_names[channel_id]);
 #ifdef ENABLE_MCS_CLIENT
     if (mcs_cid != 0){
         printf(" [ - volume down\n");
@@ -811,10 +855,24 @@ static void show_usage(void){
 }
 
 static void stdin_process(char c){
+
+    printf("STDIN: %c\n", c);
+
+    // handle config selection
+    if (ui_wait_for_configuration){
+        if (c >= 'a'){
+            uint8_t option = c - 'a';
+            if (option < configuration_count){
+                ui_wait_for_configuration = false;
+                app_configure(option);
+            } else {
+                list_configurations();
+            }
+        }
+    }
+
     uint8_t volume_step = 10;
     uint8_t status = ERROR_CODE_SUCCESS;
-    UNUSED(status);
-    printf("STDIN: %c\n", c);
     switch (c){
         case '[':
             if (playback_volume > volume_step){
@@ -859,15 +917,6 @@ static void stdin_process(char c){
             printf("MCS Client: previous track (0x%02x)\n", status);
             break;
 #endif
-        case 's':
-            app_configure(APP_MODE_STEREO);
-            break;
-        case 'l':
-            app_configure(APP_MODE_MONO_LEFT);
-            break;
-        case 'r':
-            app_configure(APP_MODE_MONO_RIGHT);
-            break;
         case '\n':
         case '\r':
             break;
@@ -934,6 +983,7 @@ int btstack_main(int argc, const char * argv[]){
     // turn on!
     hci_power_control(HCI_POWER_ON);
 
+    ui_wait_for_configuration = true;
     btstack_stdin_setup(stdin_process);
     return 0;
 }
