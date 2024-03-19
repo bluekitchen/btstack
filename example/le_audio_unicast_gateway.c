@@ -76,9 +76,8 @@
 #include "le_audio_unicast_gateway.h"
 
 // max config
-#define MAX_CHANNELS 2
-#define MAX_NUM_CIS 2
-#define MAX_NUM_SERVERS 2
+#define MAX_NUM_CIS 5
+#define MAX_NUM_SERVERS 5
 #define MAX_SAMPLES_PER_FRAME 480
 #define MAX_LC3_FRAME_BYTES   155
 
@@ -490,11 +489,12 @@ static void app_run(void){
                         num_channels = 2;
                         break;
                     default:
-                        printf("CAP client %u: set size %u not handled\n", servers[0].server_id, set_size);
-                        num_servers = 1;
+                        printf("CAP client %u: select multi-channel audio with %u channels/devices\n", servers[0].server_id, set_size);
+                        num_servers = set_size;
+                        num_channels = set_size;
                         break;
                 }
-                if (num_servers == 2){
+                if (num_servers > 1){
                     // need more servers
                     app_state = APP_W4_COORDINATED_SET_ADV;
                     coordinated_set_identification_service_client_find_members(rsi_entries, NR_RSI_ENTRIES, servers[0].sirk);
