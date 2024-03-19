@@ -39,10 +39,12 @@
 
 #include "le_audio_demo_util_source.h"
 
+#include <stdio.h>
+#include <math.h>
+
 #include "btstack_bool.h"
 #include "btstack_config.h"
 #include <btstack_debug.h>
-#include <stdio.h>
 
 #include "hci.h"
 #include "btstack_audio.h"
@@ -65,7 +67,7 @@
 #define printf_plc(...)  (void)(0);
 #endif
 
-#define MAX_CHANNELS 2
+#define MAX_CHANNELS 5
 #define MAX_SAMPLES_PER_FRAME 480
 #define MAX_LC3_FRAME_BYTES   155
 
@@ -87,42 +89,19 @@
 #define PACKET_PREFIX_LEN 10
 
 // SOURCE
-
-// input signal: pre-computed int16 sine wave, 96000 Hz at 300 Hz
-static const int16_t sine_int16[] = {
-        0,    643,   1286,   1929,   2571,   3212,   3851,   4489,   5126,   5760,
-        6393,   7022,   7649,   8273,   8894,   9512,  10126,  10735,  11341,  11943,
-        12539,  13131,  13718,  14300,  14876,  15446,  16011,  16569,  17121,  17666,
-        18204,  18736,  19260,  19777,  20286,  20787,  21280,  21766,  22242,  22710,
-        23170,  23620,  24062,  24494,  24916,  25329,  25732,  26126,  26509,  26882,
-        27245,  27597,  27938,  28269,  28589,  28898,  29196,  29482,  29757,  30021,
-        30273,  30513,  30742,  30958,  31163,  31356,  31537,  31705,  31862,  32006,
-        32137,  32257,  32364,  32458,  32540,  32609,  32666,  32710,  32742,  32761,
-        32767,  32761,  32742,  32710,  32666,  32609,  32540,  32458,  32364,  32257,
-        32137,  32006,  31862,  31705,  31537,  31356,  31163,  30958,  30742,  30513,
-        30273,  30021,  29757,  29482,  29196,  28898,  28589,  28269,  27938,  27597,
-        27245,  26882,  26509,  26126,  25732,  25329,  24916,  24494,  24062,  23620,
-        23170,  22710,  22242,  21766,  21280,  20787,  20286,  19777,  19260,  18736,
-        18204,  17666,  17121,  16569,  16011,  15446,  14876,  14300,  13718,  13131,
-        12539,  11943,  11341,  10735,  10126,   9512,   8894,   8273,   7649,   7022,
-        6393,   5760,   5126,   4489,   3851,   3212,   2571,   1929,   1286,    643,
-        0,   -643,  -1286,  -1929,  -2571,  -3212,  -3851,  -4489,  -5126,  -5760,
-        -6393,  -7022,  -7649,  -8273,  -8894,  -9512, -10126, -10735, -11341, -11943,
-        -12539, -13131, -13718, -14300, -14876, -15446, -16011, -16569, -17121, -17666,
-        -18204, -18736, -19260, -19777, -20286, -20787, -21280, -21766, -22242, -22710,
-        -23170, -23620, -24062, -24494, -24916, -25329, -25732, -26126, -26509, -26882,
-        -27245, -27597, -27938, -28269, -28589, -28898, -29196, -29482, -29757, -30021,
-        -30273, -30513, -30742, -30958, -31163, -31356, -31537, -31705, -31862, -32006,
-        -32137, -32257, -32364, -32458, -32540, -32609, -32666, -32710, -32742, -32761,
-        -32767, -32761, -32742, -32710, -32666, -32609, -32540, -32458, -32364, -32257,
-        -32137, -32006, -31862, -31705, -31537, -31356, -31163, -30958, -30742, -30513,
-        -30273, -30021, -29757, -29482, -29196, -28898, -28589, -28269, -27938, -27597,
-        -27245, -26882, -26509, -26126, -25732, -25329, -24916, -24494, -24062, -23620,
-        -23170, -22710, -22242, -21766, -21280, -20787, -20286, -19777, -19260, -18736,
-        -18204, -17666, -17121, -16569, -16011, -15446, -14876, -14300, -13718, -13131,
-        -12539, -11943, -11341, -10735, -10126,  -9512,  -8894,  -8273,  -7649,  -7022,
-        -6393,  -5760,  -5126,  -4489,  -3851,  -3212,  -2571,  -1929,  -1286,   -643,
+static float sine_frequencies[MAX_CHANNELS] = {
+    261.63, // C-4
+    311.13, // Es-4
+    369.99, // G-4
+    493.88, // B-4
+    587.33, // D-5
 };
+
+//  48000 / 261.6 = 183.46
+#define SINE_MAX_SAMPLES_AT_48KHZ 185
+#define PI 3.14159265358979323846
+
+static int16_t sine_table[MAX_CHANNELS * SINE_MAX_SAMPLES_AT_48KHZ];
 
 static uint16_t le_audio_demo_source_octets_per_frame;
 static uint16_t le_audio_demo_source_packet_sequence_numbers[MAX_CHANNELS];
@@ -143,7 +122,7 @@ static btstack_lc3_encoder_google_t  le_audio_demo_source_encoder_contexts[MAX_C
 static int16_t                       le_audio_demo_source_pcm[MAX_CHANNELS * MAX_SAMPLES_PER_FRAME];
 
 // sine generator
-static uint8_t  le_audio_demo_source_sine_step;
+static uint16_t le_audio_demo_source_sine_samples[MAX_CHANNELS];
 static uint16_t le_audio_demo_source_sine_phases[MAX_CHANNELS];
 
 // mod player
@@ -177,6 +156,23 @@ static void le_audio_demo_source_setup_mod_player(void){
     hxcmod_load(&le_audio_demo_source_hxcmod_context, (void *) &mod_data, mod_len);
 }
 
+static void le_audio_demo_source_setup_sine_generator(void){
+    // pre-compute sine for all channels
+    uint8_t channel;
+    for (channel = 0; channel < MAX_CHANNELS ; channel++){
+        float frequency_hz =  (float) sine_frequencies[channel];
+        float samplerate_hz = (float) le_audio_demo_source_sampling_frequency_hz;
+        float period_samples =samplerate_hz / frequency_hz;
+        le_audio_demo_source_sine_samples[channel] = (uint16_t) period_samples;
+        le_audio_demo_source_sine_phases[channel] = 0;
+        uint16_t i;
+        for (i=0;i<le_audio_demo_source_sine_samples[channel] ;i++){
+            float sine_value = sin(2 * PI * i / period_samples);
+            sine_table[channel*SINE_MAX_SAMPLES_AT_48KHZ + i] = (int16_t)(sine_value * 32767);
+        }
+    }
+}
+
 void le_audio_demo_util_source_configure(uint8_t num_streams, uint8_t num_channels_per_stream, uint32_t sampling_frequency_hz,
                                          btstack_lc3_frame_duration_t frame_duration, uint16_t octets_per_frame) {
     le_audio_demo_source_sampling_frequency_hz = sampling_frequency_hz;
@@ -195,11 +191,7 @@ void le_audio_demo_util_source_configure(uint8_t num_streams, uint8_t num_channe
     le_audio_demo_source_setup_lc3_encoder();
 
     // setup sine generator
-    if (sampling_frequency_hz == 44100){
-        le_audio_demo_source_sine_step = 2;
-    } else {
-        le_audio_demo_source_sine_step = 96000 / sampling_frequency_hz;
-    }
+    le_audio_demo_source_setup_sine_generator();
 
     // setup mod player
     le_audio_demo_source_setup_mod_player();
@@ -209,20 +201,24 @@ void le_audio_demo_util_source_generate_iso_frame(le_audio_demo_source_generator
     btstack_assert(le_audio_demo_source_octets_per_frame != 0);
     uint16_t sample;
     bool encode_pcm = true;
+    // more than 2 channels only supported by sine generator & counter
+    if ((le_audio_demo_source_num_channels > 2) && (generator != AUDIO_SOURCE_COUNTER)){
+        generator = AUDIO_SOURCE_SINE;
+    }
     switch (generator){
         case AUDIO_SOURCE_COUNTER:
             encode_pcm = false;
             memset(le_audio_demo_source_iso_payload, le_audio_demo_source_iso_frame_counter++, sizeof(le_audio_demo_source_iso_payload));
             break;
         case AUDIO_SOURCE_SINE:
-            // generate sine wave for all channels
+            // use pre-computed sine for all channels
             for (sample = 0 ; sample < le_audio_demo_source_num_samples_per_frame ; sample++){
                 uint8_t i;
                 for (i = 0; i < le_audio_demo_source_num_channels; i++) {
-                    int16_t value = sine_int16[le_audio_demo_source_sine_phases[i]] / 4;
+                    int16_t value = sine_table[i*SINE_MAX_SAMPLES_AT_48KHZ + le_audio_demo_source_sine_phases[i]];
                     le_audio_demo_source_pcm[sample * le_audio_demo_source_num_channels + i] = value;
-                    le_audio_demo_source_sine_phases[i] += le_audio_demo_source_sine_step * (1 + i);    // second channel, double frequency
-                    if (le_audio_demo_source_sine_phases[i] >= (sizeof(sine_int16) / sizeof(int16_t))) {
+                    le_audio_demo_source_sine_phases[i] += 1;
+                    if (le_audio_demo_source_sine_phases[i] >= le_audio_demo_source_sine_samples[i]) {
                         le_audio_demo_source_sine_phases[i] = 0;
                     }
                 }
