@@ -1455,6 +1455,8 @@ int btstack_main(int argc, const char * argv[]){
     (void) argv;
     (void) argc;
 
+    gap_set_connection_parameters(0x90, 0x60, 0x30, 0x48, 4, 100, 0, 0);
+
     l2cap_init();
 
     le_device_db_init();
