@@ -73,12 +73,21 @@ static le_audio_cig_params_t btp_cap_cig_params;
 // CIS <-> ASE
 typedef enum {
     ASE_STATE_IDLE,
+    ASE_STATE_W2_CONFIGURE_CODEC,
+    ASE_STATE_W4_CODEC_CONFIGURED,
+    ASE_STATE_W2_CREATE_CIG,
+    ASE_STATE_W4_CIG_CREATED,
+    ASE_STATE_W2_CONFIGURE_QOS,
+    ASE_STATE_W4_QOS_CONFIGURED,
+    ASE_STATE_W2_CREATE_CIS,
+    ASE_STATE_W4_CIS_CREATED,
+    ASE_STATE_W4_ALL_CIS_CREATED,
     ASE_STATE_W2_ENABLE,
-    ASE_STATE_W4_EANBLING,
+    ASE_STATE_W4_ENABLING,
     ASE_STATE_ENABLING,
 } btp_cap_ase_state;
 
-static struct {
+typedef struct {
     uint8_t cig_id;
     uint8_t cis_id;
     uint8_t server_index;
@@ -86,11 +95,45 @@ static struct {
     hci_con_handle_t acl_con_handle;
     hci_con_handle_t cis_con_handle;
     btp_cap_ase_state state;
-} btp_cap_ases[MAX_NUM_ASES];
+} btp_cap_ase_t;
+static btp_cap_ase_t btp_cap_ases[MAX_NUM_ASES];
 static uint8_t btp_bap_num_ases;
 
-// CIS
+static btp_cap_ase_t * btp_cap_ase_for_server_index_and_ase_id(uint8_t server_index, uint8_t ase_id){
+    uint8_t i;
+    for (i=0;i<btp_bap_num_ases;i++){
+        btp_cap_ase_t * ase = &btp_cap_ases[i];
+        if ((ase->server_index == server_index) && (ase->ase_id == ase_id)){
+            return ase;
+        }
+    }
+    MESSAGE("ASE ID %u for server %u not found", ase_id, server_index);
+    btstack_assert(false);
+    return NULL;
+}
 
+static bool btp_cap_ases_in_state(btp_cap_ase_state state){
+    if (btp_bap_num_ases == 0){
+        return false;
+    }
+    uint8_t i;
+    for (i=0;i<btp_bap_num_ases;i++){
+        if (btp_cap_ases[i].state != state) {
+            return false;
+        }
+    }
+    return true;
+}
+
+static void btp_cap_ases_set_state(btp_cap_ase_state state){
+    uint8_t i;
+    for (i=0;i<btp_bap_num_ases;i++) {
+        MESSAGE("btp_cap_ases_set_state %u = state %u", i, state);
+        btp_cap_ases[i].state = state;
+    }
+}
+
+// CIS
 
 static void btp_cap_send_discovery_complete(server_t * server) {
     struct btp_cap_discovery_completed_ev discovery_completed_ev;
@@ -126,47 +169,82 @@ static void btp_bap_start_audio_completed(uint8_t cig_id, uint8_t status){
     btp_send(BTP_SERVICE_ID_CAP, BTP_CAP_EV_UNICAST_START_COMPLETED, 0, sizeof(buffer), buffer);
     response_op = 0;
 }
-static bool btp_cap_aess_in_state(btp_cap_ase_state state){
-    uint8_t i;
-    for (i=0;i<btp_bap_num_ases;i++){
-        if (btp_cap_ases[i].state != state) {
-            return false;
-        }
-    }
-    return true;
-}
 
-static void btp_cap_ases_run(void){
+static void     btp_cap_ases_run(void){
+
+    uint8_t status = ERROR_CODE_SUCCESS;
     uint8_t i;
-    for (i=0;i<btp_bap_num_ases;i++){
-        switch (btp_cap_ases[i].state){
-            case ASE_STATE_W2_ENABLE:
-                btp_cap_ases[i].state = ASE_STATE_W4_EANBLING;
-                // get server
-                server_t * server = btp_server_for_index(btp_cap_ases[i].server_index);
-                audio_stream_control_service_client_streamendpoint_enable(server->ascs_cid, btp_cap_ases[i].ase_id, NULL);
-                return;
-            default:
-                break;
-        }
+
+    // All ASE operations
+
+    // create cig when all ase configured
+    if (btp_cap_ases_in_state(ASE_STATE_W2_CREATE_CIG)){
+        btp_cap_ases_set_state(ASE_STATE_W4_CIG_CREATED);
+        // ascs configured
+        status = gap_cig_create(&btp_cap_cig, &btp_cap_cig_params);
+        MESSAGE("gap_cig_create status 0x%02x", status);
     }
-    // all enable?
-    if (response_op == BTP_CAP_UNICAST_AUDIO_START){
-        if (btp_cap_aess_in_state(ASE_STATE_ENABLING)){
-            MESSAGE("BTP CAP All ASE in state Enabling");
+
+    // create cis when?
+    if (btp_cap_ases_in_state(ASE_STATE_W2_CREATE_CIS)){
+        btp_cap_ases_set_state(ASE_STATE_W4_CIS_CREATED);
+        hci_con_handle_t acl_con_handles[MAX_NUM_SERVERS];
+        hci_con_handle_t cis_con_handles[MAX_NUM_SERVERS];
+        for (i=0;i<btp_cap_cig_params.num_cis;i++){
+            acl_con_handles[i] = btp_cap_ases[i].acl_con_handle;
+            cis_con_handles[i] = btp_cap_ases[i].cis_con_handle;
+        }
+        status = gap_cis_create(btp_cap_cig_params.cig_id, cis_con_handles, acl_con_handles);
+        MESSAGE("gap_cis_create status 0x%02x", status);
+    }
+
+    // enable when all cis are created
+    if (btp_cap_ases_in_state(ASE_STATE_W4_ALL_CIS_CREATED)) {
+        MESSAGE("BTP CAP All CIS Created -> ASE_STATE_W2_ENABLE");
+        btp_cap_ases_set_state(ASE_STATE_W2_ENABLE);
+    }
+
+    if (btp_cap_ases_in_state(ASE_STATE_ENABLING)){
+        if (response_op == BTP_CAP_UNICAST_AUDIO_START){
+            MESSAGE("BTP CAP All ASE in state Enabling -> BTP_CAP_EV_UNICAST_START_COMPLETED");
             btp_bap_start_audio_completed(btp_cap_cig_params.cig_id, BTP_CAP_UNICAST_START_STATUS_SUCCESS);
         }
     }
+
+    // Handle single ASE
+    for (i=0;i<btp_bap_num_ases;i++){
+        btp_cap_ase_t * ase = &btp_cap_ases[i];
+        server_t * server = btp_server_for_index(ase->server_index);
+        switch (ase->state){
+            case ASE_STATE_W2_CONFIGURE_CODEC:
+                ase->state = ASE_STATE_W4_CODEC_CONFIGURED;
+                status = audio_stream_control_service_client_streamendpoint_configure_codec(server->ascs_cid, ase->ase_id, &server->ascs_codec_configuration_request);
+                MESSAGE("BTP ASCS %u: Configure Codec for ase id %u -> 0x%02x", ase->server_index,  ase->ase_id, status);
+                break;
+            case ASE_STATE_W2_CONFIGURE_QOS:
+                ase->state = ASE_STATE_W4_QOS_CONFIGURED;
+                status = audio_stream_control_service_client_streamendpoint_configure_qos(server->ascs_cid, ase->ase_id,&server->ascs_qos_configuration);
+                MESSAGE("BTP ASCS %u: Configure QoS for ase id %u -> 0x%02x", server->server_id, server->ascs_ase, status);
+                break;
+            case ASE_STATE_W2_ENABLE:
+                btp_cap_ases[i].state = ASE_STATE_W4_ENABLING;
+                status = audio_stream_control_service_client_streamendpoint_enable(server->ascs_cid, btp_cap_ases[i].ase_id, NULL);
+                MESSAGE("BTP ASCS %u: Enable for ase id %u -> 0x%02x", server->server_id, server->ascs_ase, status);
+                return;
+            default:
+                MESSAGE("BTP ASCS %u state %u - wait", i, ase->state);
+                break;
+        }
+    }
+
+    btstack_assert(status == ERROR_CODE_SUCCESS);
 }
 
 #define MAX_NUM_CIS
 static void btp_cap_hci_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) {
     if (packet_type != HCI_EVENT_PACKET) return;
     uint8_t i;
-    uint8_t status;
-
-    hci_con_handle_t acl_con_handles[MAX_NUM_SERVERS];
-    hci_con_handle_t cis_con_handles[MAX_NUM_SERVERS];
+    uint8_t cis_id;
 
     switch (hci_event_packet_get_type(packet)){
         case HCI_EVENT_META_GAP:
@@ -175,20 +253,20 @@ static void btp_cap_hci_handler(uint8_t packet_type, uint16_t channel, uint8_t *
                     // TODO: check status
                     // store CIS handles, and prepare create cis
                     for (i=0;i<btp_cap_cig_params.num_cis;i++){
+                        // TODO: check CIG ID
                         btp_cap_ases[i].cis_con_handle = gap_subevent_cig_created_get_cis_con_handles(packet, i);
-                        acl_con_handles[i] = btp_cap_ases[i].acl_con_handle;
-                        cis_con_handles[i] = btp_cap_ases[i].cis_con_handle;
+                        btp_cap_ases[i].state = ASE_STATE_W2_CONFIGURE_QOS;
                     }
-                    // create CIS
-                    MESSAGE("CIG Created");
-                    status = gap_cis_create(btp_cap_cig_params.cig_id, cis_con_handles, acl_con_handles);
-                    MESSAGE("gap_cis_create status 0x%02x", status);
-                    btstack_assert(status == ERROR_CODE_SUCCESS);
+                    btp_cap_ases_run();
                     break;
                 case GAP_SUBEVENT_CIS_CREATED:
-                    MESSAGE("CIS Created");
+                    // TODO: check CIG ID
                     for (i=0;i<btp_cap_cig_params.num_cis;i++) {
-                        btp_cap_ases[i].state = ASE_STATE_W2_ENABLE;
+                        cis_id = gap_subevent_cis_created_get_cis_id(packet);
+                        if (cis_id == btp_cap_ases[i].cis_id){
+                            MESSAGE("CIS %u for server %u, ASE ID %u ready", cis_id, btp_cap_ases[i].server_index, btp_cap_ases[i].ase_id);
+                            btp_cap_ases[i].state = ASE_STATE_W2_ENABLE;
+                        }
                     }
                     btp_cap_ases_run();
                     break;
@@ -229,20 +307,11 @@ static void btp_cap_bap_handler(uint8_t packet_type, uint16_t channel, uint8_t *
     if (hci_event_packet_get_type(packet) != HCI_EVENT_GATTSERVICE_META) return;
 
     ascs_codec_configuration_t codec_configuration;
-    hci_con_handle_t con_handle;
     ascs_state_t ase_state;
-    uint8_t response_code;
-    uint8_t reason;
     uint16_t ascs_cid;
-    uint16_t pacs_cid;
     uint8_t ase_id;
-    uint8_t num_ases;
-    uint8_t i;
-    uint8_t opcode;
-    hci_connection_t * hci_connection;
     server_t * server;
     uint8_t status = ERROR_CODE_SUCCESS;
-    uint8_t ase_state_changed_ev[9];
     uint16_t pos;
     bool emit_state = false;
 
@@ -264,11 +333,6 @@ static void btp_cap_bap_handler(uint8_t packet_type, uint16_t channel, uint8_t *
             codec_configuration.specific_codec_configuration.octets_per_codec_frame = gattservice_subevent_ascs_client_codec_configuration_get_octets_per_frame(packet);
             codec_configuration.specific_codec_configuration.codec_frame_blocks_per_sdu = gattservice_subevent_ascs_client_codec_configuration_get_frame_blocks_per_sdu(packet);
             MESSAGE("BTP ASCS %u: Codec Configured for ase_id %d", server->server_id, server->ascs_ase);
-
-            if (response_op == BTP_CAP_UNICAST_SETUP_ASE){
-                MESSAGE("BTP ASCS %u: Configure QoS for ase id %u", server->server_id, server->ascs_ase);
-                status = audio_stream_control_service_client_streamendpoint_configure_qos(server->ascs_cid, server->ascs_ase,&server->ascs_qos_configuration);
-            }
             break;
 
         case GATTSERVICE_SUBEVENT_ASCS_CLIENT_QOS_CONFIGURATION:
@@ -297,22 +361,47 @@ static void btp_cap_bap_handler(uint8_t packet_type, uint16_t channel, uint8_t *
             log_info("ASCS Client: ASE STATE (%s) - ase_id %d, ascs_cid 0x%02x, role %s", ascs_util_ase_state2str(ase_state), ase_id, ascs_cid,
                      (audio_stream_control_service_client_get_ase_role(ascs_cid, ase_id) == LE_AUDIO_ROLE_SOURCE) ? "SOURCE" : "SINK" );
 
+            btp_cap_ase_t * ase;
             switch (response_op){
-                case BTP_CAP_UNICAST_SETUP_ASE:
-                    if (ase_state == ASCS_STATE_QOS_CONFIGURED){
-                        btp_send(BTP_SERVICE_ID_ASCS, BTP_CAP_UNICAST_SETUP_ASE, 0, 0, NULL);
-                    }
-                    break;
                 case BTP_CAP_UNICAST_AUDIO_START:
-                    emit_state = true;
+                    ase = btp_cap_ase_for_server_index_and_ase_id(server->server_id, ase_id);
+                    switch (ase->state){
+                        case ASE_STATE_W4_CODEC_CONFIGURED:
+                            if (ase_state == ASCS_STATE_CODEC_CONFIGURED){
+                                ase->state = ASE_STATE_W2_CREATE_CIG;
+                                emit_state = true;
+                            } else {
+                                MESSAGE("ASE State %u unexpected, expected %u", ase_state, ASCS_STATE_CODEC_CONFIGURED);
+                            }
+                            break;
+                        case ASE_STATE_W4_QOS_CONFIGURED:
+                            if (ase_state == ASCS_STATE_QOS_CONFIGURED){
+                                ase->state = ASE_STATE_W2_ENABLE;
+                                emit_state = true;
+                            } else {
+                                MESSAGE("ASE State %u unexpected, expected %u", ase_state, ASCS_STATE_QOS_CONFIGURED);
+                            }
+                            break;
+                        case ASE_STATE_W4_ENABLING:
+                            if (ase_state == ASCS_STATE_ENABLING){
+                                ase->state = ASE_STATE_ENABLING;
+                                emit_state = true;
+                            } else {
+                                MESSAGE("ASE State %u unexpected, expected %u", ase_state, ASCS_STATE_ENABLING);
+                            }
+                            break;
+                        default:
+                            break;
+                    }
                     break;
                 default:
                     break;
             }
 
             // report ASE State changes
-            // TODO: move ot btp_ascs.c
+            // TODO: move into btp_ascs.c
             if (emit_state){
+                uint8_t ase_state_changed_ev[9];
                 pos = 0;
                 ase_state_changed_ev[pos++] = server->address_type;
                 reverse_bd_addr(server->address, &ase_state_changed_ev[pos]);
@@ -410,6 +499,8 @@ static void btp_cap_bap_handler(uint8_t packet_type, uint16_t channel, uint8_t *
         default:
             break;
     }
+
+    btp_cap_ases_run();
 
     if (status != ERROR_CODE_SUCCESS){
         MESSAGE("BTP CAP Operation failed, status 0x%02x", status);
@@ -535,8 +626,8 @@ void btp_cap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, 
                 }
                 btp_cap_cig_params.num_cis++;
 
-                MESSAGE("BTP ASCS %u: Configure Codec for ase id %u", server->server_id, server->ascs_ase);
-                status = audio_stream_control_service_client_streamendpoint_configure_codec(server->ascs_cid, server->ascs_ase, &server->ascs_codec_configuration_request);
+                // local setup completed
+                btp_send(BTP_SERVICE_ID_CAP, BTP_CAP_UNICAST_SETUP_ASE, 0, 0, NULL);
             }
             break;
         case BTP_CAP_UNICAST_AUDIO_START:
@@ -546,10 +637,12 @@ void btp_cap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, 
                 btp_send(BTP_SERVICE_ID_CAP, response_op, 0, 0, NULL);
 
                 // TODO: support ordered access
-                MESSAGE("Unicaset audio start");
-                // ascs configured
-                uint8_t status = gap_cig_create(&btp_cap_cig, &btp_cap_cig_params);
-                btstack_assert(status == ERROR_CODE_SUCCESS);
+                MESSAGE("Unicaset audio start, num ASEs %u", btp_bap_num_ases);
+
+                btp_cap_ases_set_state(ASE_STATE_W2_CONFIGURE_CODEC);
+
+                // go
+                btp_cap_ases_run();
             }
             break;
         default:
