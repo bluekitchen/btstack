@@ -43,6 +43,7 @@ extern "C" {
 #endif
  
 #include "btstack_config.h"
+#include "gap.h"
 #include <stdint.h>
 
 #ifdef ENABLE_GOEP_L2CAP
