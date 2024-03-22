@@ -61,6 +61,7 @@
 #include "btp_cap.h"
 #include "btp_csip.h"
 #include "btp_server.h"
+#include "btp_ascs.h"
 
 #define AUTOPTS_SOCKET_NAME "/tmp/bt-stack-tester"
 
@@ -1812,6 +1813,9 @@ static void btp_packet_handler(uint8_t service_id, uint8_t opcode, uint8_t contr
         case BTP_SERVICE_ID_CSIP:
             btp_csip_handler(opcode, controller_index, length, data);
             break;
+        case BTP_SERVICE_ID_ASCS:
+            btp_ascs_handler(opcode, controller_index, length, data);
+            break;
         case BTP_SERVICE_ID_CAP:
             btp_cap_handler(opcode, controller_index, length, data);
             break;
@@ -2125,6 +2129,7 @@ int btstack_main(int argc, const char * argv[])
     // New Clients
     btp_server_init();
     btp_csip_init();
+    btp_ascs_init();
     btp_bap_init();
     btp_cap_init();
 
