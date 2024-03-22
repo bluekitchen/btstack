@@ -240,7 +240,7 @@ int btstack_main(int argc, const char * argv[]){
                                                     supported_features,
                                                     name);
     sdp_register_service(map_message_access_service_buffer);
-    // map_access_server_init(mns_packet_handler, MNS_SERVER_RFCOMM_CHANNEL_NR,  MNS_SERVER_GOEP_PSM, 0xffff);
+    map_access_server_init(mns_packet_handler, MAS_SERVER_RFCOMM_CHANNEL_NR, MAS_SERVER_GOEP_PSM, 0xffff);
 
 #ifdef HAVE_BTSTACK_STDIN
     btstack_stdin_setup(stdin_process);
