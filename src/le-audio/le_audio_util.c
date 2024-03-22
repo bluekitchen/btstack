@@ -299,9 +299,11 @@ uint16_t le_audio_util_metadata_parse(const uint8_t *buffer, uint8_t buffer_size
                 metadata->metadata_mask |= (1 << ltv_type);
                 break;
             case LE_AUDIO_METADATA_TYPE_CCID_LIST:
-                metadata->ccids_num = btstack_min(ltv_len, LE_CCIDS_MAX_NUM);
-                memcpy(metadata->ccids, &buffer[offset+1], metadata->ccids_num);
-                metadata->metadata_mask |= (1 << ltv_type);
+                if (ltv_len > 1){
+                    metadata->ccids_num = btstack_min(ltv_len - 1, LE_CCIDS_MAX_NUM);
+                    memcpy(metadata->ccids, &buffer[offset+1], metadata->ccids_num);
+                    metadata->metadata_mask |= (1 << ltv_type);
+                }
                 break;
             case LE_AUDIO_METADATA_TYPE_PARENTAL_RATING:
                 parental_rating = (le_audio_parental_rating_t)buffer[offset+1];
