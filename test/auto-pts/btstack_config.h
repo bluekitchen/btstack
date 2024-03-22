@@ -38,4 +38,6 @@
 #define NVM_NUM_DEVICE_DB_ENTRIES 4
 #define NVM_NUM_LINK_KEYS 2
 
+#define MAX_NR_CIS 4
+
 #endif
