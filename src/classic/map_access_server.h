@@ -45,7 +45,8 @@
 #if defined __cplusplus
 extern "C" {
 #endif
-
+#include "btstack_defines.h"
+void map_access_server_init(btstack_packet_handler_t packet_handler, uint8_t rfcomm_channel_nr, uint16_t l2cap_psm, uint16_t mtu);
 #if defined __cplusplus
 }
 #endif
