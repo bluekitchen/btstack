@@ -95,6 +95,10 @@ typedef struct {
     hci_con_handle_t acl_con_handle;
     hci_con_handle_t cis_con_handle;
     btp_cap_ase_state state;
+
+    ascs_client_codec_configuration_request_t codec_configuration_request;
+    ascs_qos_configuration_t                  qos_configuration;
+    le_audio_metadata_t                       metadata;
 } btp_cap_ase_t;
 static btp_cap_ase_t btp_cap_ases[MAX_NUM_ASES];
 static uint8_t btp_bap_num_ases;
@@ -218,18 +222,18 @@ static void     btp_cap_ases_run(void){
         switch (ase->state){
             case ASE_STATE_W2_CONFIGURE_CODEC:
                 ase->state = ASE_STATE_W4_CODEC_CONFIGURED;
-                status = audio_stream_control_service_client_streamendpoint_configure_codec(server->ascs_cid, ase->ase_id, &server->ascs_codec_configuration_request);
+                status = audio_stream_control_service_client_streamendpoint_configure_codec(server->ascs_cid, ase->ase_id, &ase->codec_configuration_request);
                 MESSAGE("BTP ASCS %u: Configure Codec for ase id %u -> 0x%02x", ase->server_index,  ase->ase_id, status);
                 break;
             case ASE_STATE_W2_CONFIGURE_QOS:
                 ase->state = ASE_STATE_W4_QOS_CONFIGURED;
-                status = audio_stream_control_service_client_streamendpoint_configure_qos(server->ascs_cid, ase->ase_id,&server->ascs_qos_configuration);
-                MESSAGE("BTP ASCS %u: Configure QoS for ase id %u -> 0x%02x", server->server_id, server->ascs_ase, status);
+                status = audio_stream_control_service_client_streamendpoint_configure_qos(server->ascs_cid, ase->ase_id,&ase->qos_configuration);
+                MESSAGE("BTP ASCS %u: Configure QoS for ase id %u -> 0x%02x", server->server_id, ase->ase_id, status);
                 break;
             case ASE_STATE_W2_ENABLE:
                 btp_cap_ases[i].state = ASE_STATE_W4_ENABLING;
-                status = audio_stream_control_service_client_streamendpoint_enable(server->ascs_cid, btp_cap_ases[i].ase_id, NULL);
-                MESSAGE("BTP ASCS %u: Enable for ase id %u -> 0x%02x", server->server_id, server->ascs_ase, status);
+                status = audio_stream_control_service_client_streamendpoint_enable(server->ascs_cid, ase->ase_id, &ase->metadata);
+                MESSAGE("BTP ASCS %u: Enable for ase id %u -> 0x%02x", server->server_id, ase->ase_id, status);
                 return;
             default:
                 MESSAGE("BTP ASCS %u state %u - wait", i, ase->state);
@@ -318,6 +322,7 @@ static void btp_cap_bap_handler(uint8_t packet_type, uint16_t channel, uint8_t *
     switch (hci_event_gattservice_meta_get_subevent_code(packet)){
         case GATTSERVICE_SUBEVENT_ASCS_CLIENT_CODEC_CONFIGURATION:
             ascs_cid = gattservice_subevent_ascs_client_codec_configuration_get_ascs_cid(packet);
+            ase_id = gattservice_subevent_ascs_client_codec_configuration_get_ase_id(packet);
             server = btp_server_for_ascs_cid(ascs_cid);
             btstack_assert(server != NULL);
 
@@ -332,19 +337,19 @@ static void btp_cap_bap_handler(uint8_t packet_type, uint16_t channel, uint8_t *
             codec_configuration.specific_codec_configuration.audio_channel_allocation_mask = gattservice_subevent_ascs_client_codec_configuration_get_audio_channel_allocation_mask(packet);
             codec_configuration.specific_codec_configuration.octets_per_codec_frame = gattservice_subevent_ascs_client_codec_configuration_get_octets_per_frame(packet);
             codec_configuration.specific_codec_configuration.codec_frame_blocks_per_sdu = gattservice_subevent_ascs_client_codec_configuration_get_frame_blocks_per_sdu(packet);
-            MESSAGE("BTP ASCS %u: Codec Configured for ase_id %d", server->server_id, server->ascs_ase);
+            MESSAGE("BTP ASCS %u: Codec Configured for ase_id %d", server->server_id, ase_id);
             break;
 
         case GATTSERVICE_SUBEVENT_ASCS_CLIENT_QOS_CONFIGURATION:
-            ase_id  = gattservice_subevent_ascs_server_qos_configuration_get_ase_id(packet);
             ascs_cid = gattservice_subevent_ascs_server_qos_configuration_get_con_handle(packet);
+            ase_id  = gattservice_subevent_ascs_server_qos_configuration_get_ase_id(packet);
             server = btp_server_for_ascs_cid(ascs_cid);
             btstack_assert(server != NULL);
 
-            MESSAGE("BTP ASCS %u: QoS Configured for ase_id %d", server->server_id, server->ascs_ase);
+            MESSAGE("BTP ASCS %u: QoS Configured for ase_id %d", server->server_id, ase_id);
 
             if (response_op == BTP_CAP_UNICAST_SETUP_ASE){
-                MESSAGE("BTP_CAP_UNICAST_SETUP_ASE %u, ase id %u complete", server->server_id, server->ascs_ase);
+                MESSAGE("BTP_CAP_UNICAST_SETUP_ASE %u, ase id %u complete", server->server_id, ase_id);
                 btp_send(BTP_SERVICE_ID_CAP, BTP_CAP_UNICAST_SETUP_ASE, 0, 0, NULL);
                 response_op = 0;
             }
@@ -550,63 +555,75 @@ void btp_cap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, 
             break;
         case BTP_CAP_UNICAST_SETUP_ASE:
             if (controller_index == 0){
+
+                btp_cap_ase_t * ase = &btp_cap_ases[btp_bap_num_ases++];
+
+                // lookup server
                 int offset = 0;
                 bd_addr_type_t addr_type = data[offset++];
                 bd_addr_t address;
                 reverse_bd_addr(&data[1], address);
                 server = btp_server_for_address(addr_type, address);
                 offset += 6;
+
+                // get ASE info
                 uint8_t ase_id = data[offset++];
-                server->ascs_ase = ase_id;
                 uint8_t cis_id = data[offset++];
-                server->ascs_qos_configuration.cis_id = cis_id;
                 uint8_t cig_id = data[offset++];
-                server->ascs_qos_configuration.cig_id = cig_id;
-                server->ascs_codec_configuration_request.coding_format = data[offset++];
-                server->ascs_codec_configuration_request.company_id = little_endian_read_16(data, offset);
+
+                // setup ASE
+                ase->state = ASE_STATE_IDLE;
+                ase->ase_id = ase_id;
+                ase->cig_id = cig_id;
+                ase->cis_id = cis_id;
+                ase->ase_id = ase_id;
+                ase->server_index = server->server_id;
+                ase->acl_con_handle = server->acl_con_handle;
+                ase->cis_con_handle = HCI_CON_HANDLE_INVALID;
+                MESSAGE("BTP_CAP CIG %u, CIS %u, server %u, ASE ID %u", cig_id, cis_id, ase->server_index, ase_id);
+
+                // store codec config
+                ase->qos_configuration.cig_id = cig_id;
+                ase->qos_configuration.cis_id = cis_id;
+                ase->codec_configuration_request.coding_format = data[offset++];
+                ase->codec_configuration_request.company_id = little_endian_read_16(data, offset);
                 offset += 2;
-                server->ascs_codec_configuration_request.vendor_specific_codec_id = little_endian_read_16(data, offset);
+                ase->codec_configuration_request.vendor_specific_codec_id = little_endian_read_16(data, offset);
                 offset += 2;
+
+                // store qos config
                 uint32_t sdu_interval_us = little_endian_read_24(data, offset);
-                server->ascs_qos_configuration.sdu_interval = sdu_interval_us;
+                ase->qos_configuration.sdu_interval = sdu_interval_us;
                 offset += 3;
-                server->ascs_qos_configuration.framing = data[offset++];
+                ase->qos_configuration.framing = data[offset++];
                 uint16_t max_sdu = little_endian_read_16(data, offset);
-                server->ascs_qos_configuration.max_sdu = max_sdu;
+                ase->qos_configuration.max_sdu = max_sdu;
                 offset += 2;
                 uint8_t retransmission_number = data[offset++];
-                server->ascs_qos_configuration.retransmission_number = retransmission_number;
+                ase->qos_configuration.retransmission_number = retransmission_number;
                 uint16_t max_transport_latency_ms = little_endian_read_16(data, offset);
-                server->ascs_qos_configuration.max_transport_latency_ms = max_transport_latency_ms;
+                ase->qos_configuration.max_transport_latency_ms = max_transport_latency_ms;
                 offset += 2;
-                server->ascs_qos_configuration.presentation_delay_us =  little_endian_read_24(data, offset);
+                ase->qos_configuration.presentation_delay_us =  little_endian_read_24(data, offset);
                 offset += 3;
+
+                // parse codec config and meta data
                 uint8_t codec_config_ltvs_length = data[offset++];
                 uint8_t metadata_ltvs_length = data[offset++];
-                ascs_util_specific_codec_configuration_parse(&data[offset], codec_config_ltvs_length, &server->ascs_codec_configuration_request.specific_codec_configuration);
-                MESSAGE("Parse Meta Data");
-                MESSAGE("BTP_CAP_UNICAST_SETUP_ASE %u, ase id %u", server->server_id, server->ascs_ase);
+                ascs_util_specific_codec_configuration_parse(&data[offset], codec_config_ltvs_length, &ase->codec_configuration_request.specific_codec_configuration);
+                offset += codec_config_ltvs_length;
+                le_audio_util_metadata_parse(&data[offset], metadata_ltvs_length, &ase->metadata);
 
-                le_audio_role_t direction = audio_stream_control_service_client_get_ase_role(server->ascs_cid, ase_id);
-
-                // collect ASEs
-                btp_cap_ases[btp_bap_num_ases].cig_id = cig_id;
-                btp_cap_ases[btp_bap_num_ases].cis_id = cis_id;
-                btp_cap_ases[btp_bap_num_ases].server_index = server->server_id;
-                btp_cap_ases[btp_bap_num_ases].ase_id = ase_id;
-                btp_cap_ases[btp_bap_num_ases].acl_con_handle = server->acl_con_handle;
-                btp_cap_ases[btp_bap_num_ases].cis_con_handle = HCI_CON_HANDLE_INVALID;
-                btp_cap_ases[btp_bap_num_ases].state = ASE_STATE_IDLE;
-                btp_bap_num_ases++;
-                MESSAGE("BTP_CAP CIG %u, CIS %u, server %u, ASE ID %u", cig_id, cis_id, server->server_id, ase_id);
+                MESSAGE("BTP_CAP_UNICAST_SETUP_ASE %u, ase id %u", server->server_id, ase->ase_id );
 
                 // collect CIG params
+                le_audio_role_t direction = audio_stream_control_service_client_get_ase_role(server->ascs_cid, ase_id);
                 uint8_t cis_index = btp_cap_cig_params.num_cis;
                 btstack_assert(cig_id == 0);
                 btp_cap_cig_params.cig_id = cig_id;
                 btp_cap_cig_params.cis_params[cis_index].cis_id = cis_id;
                 btp_cap_cig_params.cis_params[cis_index].phy_c_to_p = LE_AUDIO_SERVER_PHY_MASK_2M;
-                btp_cap_cig_params.framing = server->ascs_qos_configuration.framing;
+                btp_cap_cig_params.framing = ase->qos_configuration.framing;
                 btp_cap_cig_params.sdu_interval_c_to_p = sdu_interval_us;
                 btp_cap_cig_params.sdu_interval_p_to_c = sdu_interval_us;
                 switch (direction){

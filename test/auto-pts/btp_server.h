@@ -87,10 +87,6 @@ typedef struct {
     ascs_client_connection_t ascs_connection;
     ascs_streamendpoint_characteristic_t streamendpoint_characteristics[ASCS_CLIENT_NUM_STREAMENDPOINTS];
     uint16_t ascs_cid;
-    // current operation
-    uint16_t ascs_ase;
-    ascs_client_codec_configuration_request_t ascs_codec_configuration_request;
-    ascs_qos_configuration_t ascs_qos_configuration;
 } server_t;
 
 /**
