@@ -245,6 +245,7 @@ static void map_access_server_packet_handler_hci(uint8_t* packet, uint16_t size)
                 ENTER_STATE(mas, MAP_INIT);
                 // TODO: emit connection success event
                 // map_emit_connected_event(mas, status);
+                obex_parser_init_for_request(&mas->obex_parser, NULL, NULL);
             }
             else {
                 log_info("MAP access server: connection failed %u", status);
@@ -283,8 +284,8 @@ static void map_access_server_packet_handler_goep(map_access_server_t* mas, uint
     btstack_assert(size > 0);
 
     switch (mas->state) {
+    
     case MAP_INIT:
-        obex_parser_init_for_request(&mas->obex_parser, NULL, NULL);
         parser_state = obex_parser_process_data(&mas->obex_parser, packet, size);
         if (parser_state == OBEX_PARSER_OBJECT_STATE_COMPLETE) {
             obex_parser_operation_info_t op_info;
@@ -372,9 +373,11 @@ static void map_access_server_packet_handler_goep(map_access_server_t* mas, uint
 static void map_access_server_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t* packet, uint16_t size) {
     map_access_server_t* mas;
     switch (packet_type) {
+    // meta events
     case HCI_EVENT_PACKET:
         map_access_server_packet_handler_hci(packet, size);
         break;
+    // data
     case GOEP_DATA_PACKET:
         mas = map_access_server_for_goep_cid(channel);
         btstack_assert(mas != NULL);
