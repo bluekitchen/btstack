@@ -828,6 +828,8 @@ static uint8_t btp_advertising_handle;
 #endif
 
 static void btp_gap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, const uint8_t *data){
+    server_t * server;
+
     switch (opcode){
         case BTP_OP_ERROR:
             MESSAGE("BTP_OP_ERROR");
@@ -1184,10 +1186,12 @@ static void btp_gap_handler(uint8_t opcode, uint8_t controller_index, uint16_t l
         case BTP_GAP_OP_DISCONNECT:
             MESSAGE("BTP_GAP_OP_DISCONNECT");
             if (controller_index == 0){
-                if (remote_handle != HCI_CON_HANDLE_INVALID){
-                    gap_disconnect(remote_handle);
-                    remote_handle = HCI_CON_HANDLE_INVALID;
-                }
+                int offset = 0;
+                bd_addr_type_t addr_type = data[offset++];
+                bd_addr_t address;
+                reverse_bd_addr(&data[1], address);
+                server = btp_server_for_address(addr_type, address);
+                gap_disconnect(server->acl_con_handle);
                 btp_send(BTP_SERVICE_ID_GAP, opcode, controller_index, 0, NULL);
             }
             break;
