@@ -265,7 +265,12 @@ static void local_version_information_handler(uint8_t * packet){
             break;
         case BLUETOOTH_COMPANY_ID_NORDIC_SEMICONDUCTOR_ASA:
             printf("Nordic Semiconductor nRF5 chipset.\n");
-            break;        
+            hci_set_chipset(btstack_chipset_zephyr_instance());
+            break;
+        case BLUETOOTH_COMPANY_ID_THE_LINUX_FOUNDATION:
+            printf("Linux Foundation - assuming Zephyr running on Nordic chipset.\n");
+            hci_set_chipset(btstack_chipset_zephyr_instance());
+            break;
         case BLUETOOTH_COMPANY_ID_TOSHIBA_CORP:
             printf("Toshiba - using TC3566x driver.\n");
             hci_set_chipset(btstack_chipset_tc3566x_instance());
