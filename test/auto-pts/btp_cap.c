@@ -580,7 +580,8 @@ void btp_cap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, 
                 ase->server_index = server->server_id;
                 ase->acl_con_handle = server->acl_con_handle;
                 ase->cis_con_handle = HCI_CON_HANDLE_INVALID;
-                MESSAGE("BTP_CAP CIG %u, CIS %u, server %u, ASE ID %u", cig_id, cis_id, ase->server_index, ase_id);
+
+                MESSAGE("BTP_CAP_UNICAST_SETUP_ASE %u, ase id %u", server->server_id, ase->ase_id );
 
                 // store codec config
                 ase->qos_configuration.cig_id = cig_id;
@@ -612,9 +613,14 @@ void btp_cap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, 
                 uint8_t metadata_ltvs_length = data[offset++];
                 ascs_util_specific_codec_configuration_parse(&data[offset], codec_config_ltvs_length, &ase->codec_configuration_request.specific_codec_configuration);
                 offset += codec_config_ltvs_length;
-                le_audio_util_metadata_parse(&data[offset], metadata_ltvs_length, &ase->metadata);
 
-                MESSAGE("BTP_CAP_UNICAST_SETUP_ASE %u, ase id %u", server->server_id, ase->ase_id );
+                // metadata parser expects lenght in first field
+                uint8_t metadata[256];
+                metadata[0] = metadata_ltvs_length;
+                memcpy(&metadata[1], &data[offset], metadata_ltvs_length);
+                uint16_t parsed_bytes = le_audio_util_metadata_parse(metadata, metadata_ltvs_length + 1, &ase->metadata);
+                MESSAGE("Parsed %u of %u meta data bytes", parsed_bytes, metadata_ltvs_length);
+                log_info_hexdump(&metadata[1], metadata_ltvs_length);
 
                 // collect CIG params
                 le_audio_role_t direction = audio_stream_control_service_client_get_ase_role(server->ascs_cid, ase_id);
