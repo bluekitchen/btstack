@@ -79,12 +79,16 @@ typedef enum {
     ASE_STATE_W4_CIG_CREATED,
     ASE_STATE_W2_CONFIGURE_QOS,
     ASE_STATE_W4_QOS_CONFIGURED,
+    ASE_STATE_QOS_CONFIGURED,
     ASE_STATE_W2_CREATE_CIS,
     ASE_STATE_W4_CIS_CREATED,
     ASE_STATE_W4_ALL_CIS_CREATED,
     ASE_STATE_W2_ENABLE,
     ASE_STATE_W4_ENABLING,
     ASE_STATE_ENABLING,
+    ASE_STATE_W2_RECEIVER_START_READY,
+    ASE_STATE_W4_STREAMING,
+    ASE_STATE_STREAMING,
 } btp_cap_ase_state;
 
 typedef struct {
@@ -208,9 +212,25 @@ static void     btp_cap_ases_run(void){
         btp_cap_ases_set_state(ASE_STATE_W2_ENABLE);
     }
 
+    // trigger receiver start ready for remote remote sources when all are in enabling
     if (btp_cap_ases_in_state(ASE_STATE_ENABLING)){
-        if (response_op == BTP_CAP_UNICAST_AUDIO_START){
-            MESSAGE("BTP CAP All ASE in state Enabling -> BTP_CAP_EV_UNICAST_START_COMPLETED");
+        MESSAGE("BTP CAP All ASE in Enabling, send Receiver Start Ready");
+        for (i=0;i<btp_bap_num_ases;i++){
+            btp_cap_ase_t * ase = &btp_cap_ases[i];
+            server_t * server = btp_server_for_index(ase->server_index);
+            if (audio_stream_control_service_client_get_ase_role(server->ascs_cid, ase->ase_id) == LE_AUDIO_ROLE_SOURCE){
+                // if we are SINK, tell remote SOURCE to start streaming
+                ase->state = ASE_STATE_W2_RECEIVER_START_READY;
+            } else {
+                ase->state = ASE_STATE_W4_STREAMING;
+            }
+        }
+    }
+
+    if (btp_cap_ases_in_state(ASE_STATE_STREAMING)) {
+        if (response_op == BTP_CAP_UNICAST_AUDIO_START) {
+            response_op = 0;
+            MESSAGE("BTP CAP All ASE in state Streaming -> BTP_CAP_EV_UNICAST_START_COMPLETED");
             btp_bap_start_audio_completed(btp_cap_cig_params.cig_id, BTP_CAP_UNICAST_START_STATUS_SUCCESS);
         }
     }
@@ -231,9 +251,14 @@ static void     btp_cap_ases_run(void){
                 MESSAGE("BTP ASCS %u: Configure QoS for ase id %u -> 0x%02x", server->server_id, ase->ase_id, status);
                 break;
             case ASE_STATE_W2_ENABLE:
-                btp_cap_ases[i].state = ASE_STATE_W4_ENABLING;
+                ase->state = ASE_STATE_W4_ENABLING;
                 status = audio_stream_control_service_client_streamendpoint_enable(server->ascs_cid, ase->ase_id, &ase->metadata);
                 MESSAGE("BTP ASCS %u: Enable for ase id %u -> 0x%02x", server->server_id, ase->ase_id, status);
+                return;
+            case ASE_STATE_W2_RECEIVER_START_READY:
+                ase->state = ASE_STATE_W4_STREAMING;
+                status = audio_stream_control_service_client_streamendpoint_receiver_start_ready(server->ascs_cid, ase->ase_id);
+                MESSAGE("BTP ASCS %u: Receiver Start Ready for ase id %u -> 0x%02x", server->server_id, ase->ase_id, status);
                 return;
             default:
                 MESSAGE("BTP ASCS %u state %u - wait", i, ase->state);
@@ -394,6 +419,18 @@ static void btp_cap_bap_handler(uint8_t packet_type, uint16_t channel, uint8_t *
                             } else {
                                 MESSAGE("ASE State %u unexpected, expected %u", ase_state, ASCS_STATE_ENABLING);
                             }
+                            break;
+                        case ASE_STATE_W4_STREAMING:
+                            if (ase_state == ASCS_STATE_STREAMING){
+                                ase->state = ASE_STATE_STREAMING;
+                                emit_state = true;
+                            } else {
+                                MESSAGE("ASE State %u unexpected, expected %u", ase_state, ASCS_STATE_STREAMING);
+                            }
+                            break;
+                        case ASE_STATE_STREAMING:
+                            // hack: keep state, but emit updates
+                            emit_state = true;
                             break;
                         default:
                             break;
