@@ -711,7 +711,7 @@ static void btp_bap_send_discovery_complete(server_t * server) {
     discovery_completed_ev.addr_type = server->address_type;
     reverse_bd_addr(server->address, discovery_completed_ev.address);
     MESSAGE("BTP_BAP_EV_DISCOVERY_COMPLETED, con handle 0x%04x - DONE", server->acl_con_handle);
-    btp_send(BTP_SERVICE_ID_CAP, BTP_BAP_EV_DISCOVERY_COMPLETED, 0, sizeof(discovery_completed_ev), (const uint8_t *) &discovery_completed_ev);
+    btp_send(BTP_SERVICE_ID_BAP, BTP_BAP_EV_DISCOVERY_COMPLETED, 0, sizeof(discovery_completed_ev), (const uint8_t *) &discovery_completed_ev);
 }
 
 static void btp_bap_discovery_next(server_t * server){
