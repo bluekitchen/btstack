@@ -149,9 +149,6 @@ set(SOURCES
 )
 list(SORT SOURCES)
 
-# create static lib
-add_library(btstack STATIC ${SOURCES})
-
 # pkgconfig
 find_package(PkgConfig)
 
@@ -166,6 +163,9 @@ if (PkgConfig_FOUND)
 		add_compile_definitions(HAVE_PORTAUDIO)
 	endif()
 endif()
+
+# create static lib
+add_library(btstack STATIC ${SOURCES})
 
 # Add CC256x Support and specify init script
 set (CC256X_INIT_SCRIPT bluetooth_init_cc2564C_1.5.c)
