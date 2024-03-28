@@ -164,6 +164,10 @@ static bool gatt_service_client_next_index_for_descriptor_query(gatt_service_cli
             next_query_found = true;
             break;
         }
+        if ((connection->characteristics[connection->characteristic_index].properties & ATT_PROPERTY_INDICATE) != 0u){
+            next_query_found = true;
+            break;
+        }
         connection->characteristic_index++;
     }
     return next_query_found;
@@ -191,12 +195,23 @@ static uint8_t gatt_service_client_register_notification(gatt_service_client_hel
         characteristic.end_handle = connection->characteristics[connection->characteristic_index].end_handle;
         characteristic.properties = connection->characteristics[connection->characteristic_index].properties;
 
-        status = gatt_client_write_client_characteristic_configuration(
-                gatt_service_client_get_packet_handler_trampoline(client),
-                connection->con_handle,
-                &characteristic,
-                GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION);
-      
+        if ((connection->characteristics[connection->characteristic_index].properties & ATT_PROPERTY_NOTIFY) != 0u){
+            status = gatt_client_write_client_characteristic_configuration(
+                    gatt_service_client_get_packet_handler_trampoline(client),
+                    connection->con_handle,
+                    &characteristic,
+                    GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION);
+        } else if ((connection->characteristics[connection->characteristic_index].properties & ATT_PROPERTY_INDICATE) != 0u){
+            status = gatt_client_write_client_characteristic_configuration(
+                    gatt_service_client_get_packet_handler_trampoline(client),
+                    connection->con_handle,
+                    &characteristic,
+                    GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_INDICATION);
+
+        }
+
+
+
         // notification supported, register for value updates
         if (status == ERROR_CODE_SUCCESS){
             gatt_client_listen_for_characteristic_value_updates(
@@ -241,7 +256,7 @@ static void gatt_service_client_run_for_client(gatt_service_client_helper_t * cl
 
         case GATT_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTIC_DESCRIPTORS:
 #ifdef ENABLE_TESTING_SUPPORT
-            printf("Read client characteristic descriptors for characteristic[%u, uuid16 0x%04x, value_handle 0x%04x]:\n", 
+            printf("Read client characteristic descriptors for characteristic[%u, uuid16 0x%04x, value_handle 0x%04x]:\n",
                 connection->characteristic_index, 
                 client->characteristics_desc16[connection->characteristic_index],
                 connection->characteristics[connection->characteristic_index].value_handle);
@@ -259,7 +274,13 @@ static void gatt_service_client_run_for_client(gatt_service_client_helper_t * cl
 
         case GATT_SERVICE_CLIENT_STATE_W2_REGISTER_NOTIFICATION:
 #ifdef ENABLE_TESTING_SUPPORT
-            printf("Register notification for characteristic[%u, uuid16 0x%04x, ccd handle 0x%04x]:\n", 
+            if ((connection->characteristics[connection->characteristic_index].properties & ATT_PROPERTY_NOTIFY) != 0u){
+                printf("Register notification for characteristic");
+            } else {
+                printf("Register indication for characteristic");
+            }
+
+            printf("[%u, uuid16 0x%04x, ccd handle 0x%04x]\n",
                 connection->characteristic_index, 
                 client->characteristics_desc16[connection->characteristic_index],
                 connection->characteristics[connection->characteristic_index].client_configuration_handle);
