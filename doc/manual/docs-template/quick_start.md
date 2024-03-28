@@ -29,7 +29,7 @@ GitHub.
 
 The easiest way to try BTstack is on a regular desktop setup like macOS, Linux or Windows together with a standard USB Bluetooth Controller. Running BTstack on desktop speeds up the development cycle a lot and also provides direct access to full packet log files in cases something doesn't work as expected. The same code can then later be run unmodified on an embedded target.
 
-For macOS and Linux, please see [libusb](../ports/existing_ports.md#libusbPort) port.
-For Windows, please see [windows-winusb](../ports/existing_ports.md#windows-winusbPort) port.
+For macOS and Linux, please see [libusb](../ports/existing_ports/#sec:libusbPort) port.
+For Windows, please see [windows-winusb](../ports/existing_ports/#sec:windows-winusbPort) port.
 
-Or checkout the [list of existing ports](../ports/existing_ports.md)
+Or checkout the [list of existing ports](../ports/existing_ports)
