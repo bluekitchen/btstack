@@ -18,20 +18,20 @@ figures = {
 
 
 def fix_empty_href(line):
-    corr = re.match('.*(href{}).*',line)
+    corr = re.match(r'.*(href{}).*',line)
     if corr:
         line = line.replace(corr.group(1), "path")
     return line
 
 
 def fix_listing_after_section(line):
-    corr = re.match('.*begin{lstlisting}',line)
+    corr = re.match(r'.*begin{lstlisting}',line)
     if corr:
         line = "\leavevmode" + line
     return line
 
 def fix_listing_hyperref_into_ref(line):
-    corr = re.match('(.*\\\\)hyperref\[(lst:.*)\]{.*}(.*)',line)
+    corr = re.match(r'.*\\)hyperref\[(lst:.*)\]{.*}(.*)',line)
     if corr:
         line = corr.group(1)+"ref{" + corr.group(2) +"} " + corr.group(3) 
     return line
@@ -40,14 +40,14 @@ def fix_listing_hyperref_into_ref(line):
 def fix_figure_width_and_type(line):
     global figures
     for name, width in figures.items():
-        corr = re.match('(.*includegraphics)(.*'+name+'.*)',line)
+        corr = re.match(r'(.*includegraphics)(.*'+name+'.*)',line)
         if corr:
             line = corr.group(1) + '[width='+width+'\\textwidth]' + corr.group(2).replace('png','pdf')
     return line
 
 
 def fix_appendix_pagebreak(line):
-    corr = re.match('.*section{APIs}.*',line)
+    corr = re.match(r'.*section{APIs}.*',line)
     if corr:
         line = "\leavevmode\pagebreak\n" + line
     return line
@@ -67,7 +67,7 @@ def postprocess_file(markdown_filepath, fout, title):
             # remove path from section reference
             # e.g. [the SPP Counter example](examples/generated/#sec:sppcounterExample)
             # replace with [the SPP Counter example](#sec:sppcounterExample)
-            section_ref = re.match('.*\(((.*)(#sec:.*))\).*',line)
+            section_ref = re.match(r'.*\(((.*)(#sec:.*))\).*',line)
             if section_ref:
                 line = line.replace(section_ref.group(2),"")
             fout.write(line)
