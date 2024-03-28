@@ -73,13 +73,37 @@ typedef enum {
     OBJECT_TRANSFER_SERVICE_CLIENT_STATE_W2_WRITE_CHARACTERISTIC_VALUE_WITHOUT_RESPONSE,
     OBJECT_TRANSFER_SERVICE_CLIENT_STATE_W2_WRITE_CHARACTERISTIC_VALUE,
     OBJECT_TRANSFER_SERVICE_CLIENT_STATE_W2_WRITE_LONG_CHARACTERISTIC_VALUE,
-    OBJECT_TRANSFER_SERVICE_CLIENT_STATE_W4_WRITE_CHARACTERISTIC_VALUE_RESULT   
+    OBJECT_TRANSFER_SERVICE_CLIENT_STATE_W4_WRITE_CHARACTERISTIC_VALUE_RESULT,
+    OBJECT_TRANSFER_SERVICE_CLIENT_STATE_W4_L2CAP_CBM_CHANNEL_OPENED
 } object_transfer_service_client_state_t;
+
+
+typedef struct {
+    char name;
+    hci_con_handle_t connection_handle;
+    uint16_t cid;
+    int  mtu;
+} le_cbm_connection_t;
 
 typedef struct {
     gatt_service_client_connection_helper_t basic_connection;
     object_transfer_service_client_state_t state;
-    
+
+    le_cbm_connection_t le_cbm_connection;
+    bool le_cbm_channel_opened;
+    bool current_object_transfer_in_progress;
+
+    bool current_object_read_transfer_in_progress;
+    bool current_object_write_transfer_in_progress;
+    uint8_t  * cbm_data;
+    uint16_t cbm_data_length;
+
+    bool     cbm_data_truncated;
+    uint32_t cbm_data_offset;
+    uint32_t cbm_data_chunk_length;
+    uint32_t cbm_data_chunk_bytes_transferred;
+
+
     // Used for read characteristic queries
     uint8_t characteristic_index;
     // Used to store parameters for write characteristic
@@ -163,9 +187,27 @@ uint8_t object_transfer_service_client_write_object_list_filter_1(ots_client_con
 uint8_t object_transfer_service_client_write_object_list_filter_2(ots_client_connection_t * connection, ots_filter_type_t filter_type, uint8_t data_length, const uint8_t * data);
 uint8_t object_transfer_service_client_write_object_list_filter_3(ots_client_connection_t * connection, ots_filter_type_t filter_type, uint8_t data_length, const uint8_t * data);
 
+uint8_t object_transfer_service_client_command_first(ots_client_connection_t * connection);
+uint8_t object_transfer_service_client_command_last(ots_client_connection_t * connection);
+uint8_t object_transfer_service_client_command_previous(ots_client_connection_t * connection);
+uint8_t object_transfer_service_client_command_next(ots_client_connection_t * connection);
+uint8_t object_transfer_service_client_command_goto(ots_client_connection_t * connection, ots_object_id_t * object_id);
+uint8_t object_transfer_service_client_command_order(ots_client_connection_t * connection, olcp_list_sort_order_t order);
+uint8_t object_transfer_service_client_command_request_number_of_objects(ots_client_connection_t * connection);
+uint8_t object_transfer_service_client_command_request_clear_marking(ots_client_connection_t * connection);
 
-uint8_t object_transfer_service_client_write_object_action_control_point(ots_client_connection_t * connection);
-uint8_t object_transfer_service_client_write_object_list_control_point(ots_client_connection_t * connection);
+uint8_t object_transfer_service_client_open_object_channel(ots_client_connection_t * connection, uint8_t * cbm_receive_buffer, uint16_t cbm_receive_buffer_len);
+uint8_t object_transfer_service_client_close_object_channel(ots_client_connection_t * connection);
+
+uint8_t object_transfer_service_client_read(ots_client_connection_t * connection, uint32_t offset, uint32_t length);
+uint8_t object_transfer_service_client_calculate_checksum(ots_client_connection_t * connection, uint32_t offset, uint32_t length);
+uint8_t object_transfer_service_client_write(ots_client_connection_t * connection, bool truncated, uint32_t data_offset, uint8_t *data, uint16_t data_len);
+
+uint8_t object_transfer_service_client_execute(ots_client_connection_t * connection);
+uint8_t object_transfer_service_client_abort(ots_client_connection_t * connection);
+
+uint8_t object_transfer_service_client_create_object(ots_client_connection_t * connection, uint32_t object_size, ots_object_type_t type_uuid16);
+uint8_t object_transfer_service_client_delete_object(ots_client_connection_t * connection);
 
 /**
  * @brief Disconnect.

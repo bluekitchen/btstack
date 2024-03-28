@@ -65,6 +65,7 @@
 #include "bluetooth_gatt.h"
 #include "btstack_debug.h"
 #include "btstack_event.h"
+#include "bluetooth_psm.h"
 
 static gatt_service_client_helper_t ots_client;
 
@@ -127,6 +128,17 @@ static char * ots_client_characteristic_name[] = {
     "RFU"
 };
 #endif
+
+ots_client_connection_t *  ots_client_get_connection_for_cbm_local_cid(uint16_t cbm_local_cid){
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, (btstack_linked_list_t *) &ots_client.connections);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        ots_client_connection_t * connection = (ots_client_connection_t *)btstack_linked_list_iterator_next(&it);
+        if (connection->le_cbm_connection.cid != cbm_local_cid) continue;
+        return connection;
+    }
+    return NULL;
+}
 
 static void ots_client_replace_subevent_id_and_emit(btstack_packet_handler_t callback, uint8_t * packet, uint16_t size, uint8_t subevent_id){
     UNUSED(size);
@@ -285,6 +297,30 @@ static void ots_client_emit_uint8_array(gatt_service_client_connection_helper_t 
     (*connection_helper->event_callback)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
+
+static void ots_client_emit_data_chunk(gatt_service_client_connection_helper_t * connection_helper, uint8_t state){
+    btstack_assert(connection_helper != NULL);
+    btstack_assert(connection_helper->event_callback != NULL);
+
+    ots_client_connection_t * connection = (ots_client_connection_t *) connection_helper;
+
+    uint8_t event[18];
+    uint16_t pos = 0;
+    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = GATTSERVICE_SUBEVENT_OTS_CLIENT_DATA_CHUNK;
+    little_endian_store_16(event, pos, connection_helper->cid);
+    pos+= 2;
+    event[pos++] = state;
+    little_endian_store_32(event, pos, connection->cbm_data_chunk_length);
+    pos += 4;
+    little_endian_store_32(event, pos, connection->cbm_data_offset);
+    pos += 4;
+    little_endian_store_32(event, pos, connection->cbm_data_chunk_bytes_transferred);
+    pos += 4;
+    (*connection_helper->event_callback)(HCI_EVENT_PACKET, 0, event, pos);
+}
+
 static uint16_t ots_client_serialize_characteristic_value_for_write(ots_client_connection_t * connection, uint8_t ** out_value){
     uint8_t value_length = 0;
 
@@ -300,12 +336,10 @@ static uint16_t ots_client_serialize_characteristic_value_for_write(ots_client_c
         case OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_LIST_FILTER_1:
         case OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_LIST_FILTER_2:
         case OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_LIST_FILTER_3:
-            value_length = connection->data_length;
-            *out_value   = connection->data.data_bytes;
-            break;
-
         case OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_ACTION_CONTROL_POINT:
         case OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_LIST_CONTROL_POINT:
+            value_length = connection->data_length;
+            *out_value   = connection->data.data_bytes;
             break;
 
         default:
@@ -424,15 +458,96 @@ static void ots_client_emit_read_event(gatt_service_client_connection_helper_t *
 
 static void ots_client_emit_notify_event(gatt_service_client_connection_helper_t * connection_helper, uint16_t value_handle, uint8_t att_status, const uint8_t * data, uint16_t data_size){
     uint16_t characteristic_uuid16 = gatt_service_client_helper_characteristic_uuid16_for_value_handle(&ots_client, connection_helper, value_handle);
+    uint8_t  emit_bytes[2 + OTS_OBJECT_ID_LEN];
+    ots_client_connection_t * connection;
+
+    uint8_t pos = 0;
 
     switch (characteristic_uuid16){
+        case ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_CHANGED:
+            if (data_size == (OTS_OBJECT_ID_LEN + 1)) {
+                ots_object_changed_flag_t flag = (ots_object_changed_flag_t) data[0];
+                if (flag < OTS_OBJECT_CHANGED_FLAG_RFU) {
+                    emit_bytes[pos++] = data[0];
+                    emit_bytes[pos++] = OTS_OBJECT_ID_LEN;
+                    reverse_bytes(&data[1], emit_bytes + pos, OTS_OBJECT_ID_LEN);
+                    pos += OTS_OBJECT_ID_LEN;
+                    ots_client_emit_uint8_array(connection_helper, GATTSERVICE_SUBEVENT_OTS_CLIENT_OBJECT_CHANGED, emit_bytes, pos, att_status);
+                }
+            }
+            break;
+
         case ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_ACTION_CONTROL_POINT:
+            if (data_size < 3) {
+                ots_client_emit_uint8_array(connection_helper, GATTSERVICE_SUBEVENT_OTS_CLIENT_OACP_RESPONSE, emit_bytes, 0, ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH);
+                break;
+            }
+            if ((oacp_opcode_t)data[0] != OACP_OPCODE_RESPONSE_CODE) {
+                break;
+            }
+            if (att_status != ATT_ERROR_SUCCESS){
+                ots_client_emit_uint8_array(connection_helper, GATTSERVICE_SUBEVENT_OTS_CLIENT_OACP_RESPONSE, emit_bytes, 2, att_status);
+            }
+
+            connection = (ots_client_connection_t *)connection_helper;
+            // opcode
+            emit_bytes[pos++] = data[1];
+            // response code
+            emit_bytes[pos++] = data[2];
+
+            if ((oacp_result_code_t)emit_bytes[1] == OACP_RESULT_CODE_SUCCESS){
+                switch ((oacp_opcode_t)emit_bytes[0]){
+                    case OACP_OPCODE_READ:
+                        connection->current_object_read_transfer_in_progress = true;
+                        connection->cbm_data_chunk_bytes_transferred = 0;
+                        break;
+
+                    case OACP_OPCODE_CALCULATE_CHECKSUM:
+                        reverse_bytes(&data[3], emit_bytes + pos, 4);
+                        pos += 4;
+                        break;
+
+                    case OACP_OPCODE_WRITE:
+                        connection->current_object_write_transfer_in_progress = true;
+                        connection->cbm_data_chunk_bytes_transferred = 0;
+                        l2cap_request_can_send_now_event(connection->le_cbm_connection.cid);
+                        break;
+
+                    case OACP_OPCODE_CREATE:
+                    case OACP_OPCODE_DELETE:
+                    case OACP_OPCODE_EXECUTE:
+                    case OACP_OPCODE_ABORT:
+                        break;
+                    default:
+                        att_status = ATT_ERROR_INVALID_PDU;
+                        break;
+                }
+            }
+
+            ots_client_emit_uint8_array(connection_helper, GATTSERVICE_SUBEVENT_OTS_CLIENT_OACP_RESPONSE, emit_bytes, 2, att_status);
             break;
         
         case ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_LIST_CONTROL_POINT:
-            break;
+            if (data_size < 3) {
+                ots_client_emit_uint8_array(connection_helper, GATTSERVICE_SUBEVENT_OTS_CLIENT_OLCP_RESPONSE, emit_bytes, 0, ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH);
+                break;
+            }
+            if ((olcp_opcode_t)data[0] != OLCP_OPCODE_RESPONSE_CODE) {
+                break;
+            }
 
-        case ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_CHANGED:
+            // opcode
+            emit_bytes[0] = data[1];
+            // response code
+            emit_bytes[1] = data[2];
+            if ((olcp_opcode_t)data[0] == OLCP_OPCODE_REQUEST_NUMBER_OF_OBJECTS){
+                if (data_size != 7){
+                    ots_client_emit_uint8_array(connection_helper, GATTSERVICE_SUBEVENT_OTS_CLIENT_OLCP_RESPONSE, emit_bytes, 0, ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH);
+                    break;
+                }
+                reverse_bytes(data + 3, emit_bytes + 2, data_size - 3);
+            }
+            ots_client_emit_uint8_array(connection_helper, GATTSERVICE_SUBEVENT_OTS_CLIENT_OLCP_RESPONSE, emit_bytes, data_size-1, att_status);
             break;
 
         default:
@@ -511,7 +626,6 @@ static void ots_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
                         uint8_t i;
                         for (i = OTS_CLIENT_CHARACTERISTIC_INDEX_OTS_FEATURE; i < OTS_CLIENT_CHARACTERISTIC_INDEX_INDEX_RFU; i++){
                             printf("    0x%04X %s\n", connection_helper->characteristics[i].value_handle, ots_client_characteristic_name[i]);
-
                         }
                     };
                     printf("OTS Client: Query input state to retrieve and cache change counter\n");
@@ -546,6 +660,17 @@ static void ots_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
             ots_client_emit_notify_event(connection_helper, gatt_event_notification_get_value_handle(packet), ATT_ERROR_SUCCESS,
                                          gatt_event_notification_get_value(packet),gatt_event_notification_get_value_length(packet));
             break;
+
+        case GATT_EVENT_INDICATION:
+            con_handle = (hci_con_handle_t)gatt_event_indication_get_handle(packet);
+            connection_helper = gatt_service_client_get_connection_for_con_handle(&ots_client, con_handle);
+
+            btstack_assert(connection_helper != NULL);
+
+            ots_client_emit_notify_event(connection_helper, gatt_event_indication_get_value_handle(packet), ATT_ERROR_SUCCESS,
+                                         gatt_event_indication_get_value(packet),gatt_event_indication_get_value_length(packet));
+            break;
+
         default:
             break;
     }
@@ -626,6 +751,7 @@ static void ots_client_handle_gatt_client_event(uint8_t packet_type, uint16_t ch
                 case OBJECT_TRANSFER_SERVICE_CLIENT_STATE_W4_WRITE_CHARACTERISTIC_VALUE_RESULT:
                     ots_client_emit_done_event(connection_helper, connection->characteristic_index, gatt_event_query_complete_get_att_status(packet));
                     connection->state = OBJECT_TRANSFER_SERVICE_CLIENT_STATE_READY;
+
                     break;
                 
                 case OBJECT_TRANSFER_SERVICE_CLIENT_STATE_UNINITIALISED:
@@ -755,6 +881,8 @@ uint8_t object_transfer_service_client_connect(
 
     connection->gatt_query_can_send_now.callback = &ots_client_run_for_connection;
     connection->gatt_query_can_send_now.context = (void *)(uintptr_t)connection->basic_connection.con_handle;
+    connection->le_cbm_connection.connection_handle = HCI_CON_HANDLE_INVALID;
+    connection->le_cbm_connection.cid = 0;
 
     connection->state = OBJECT_TRANSFER_SERVICE_CLIENT_STATE_W4_CONNECTED;
     memset(connection->characteristics_storage, 0, OBJECT_TRANSFER_SERVICE_NUM_CHARACTERISTICS * sizeof(gatt_service_client_characteristic_t));
@@ -979,23 +1107,309 @@ uint8_t object_transfer_service_client_write_object_list_filter_3(ots_client_con
     return ots_client_write_filter(connection, OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_LIST_FILTER_3, filter_type, data_length, data);
 }
 
-
-uint8_t object_transfer_service_client_write_object_action_control_point(ots_client_connection_t * connection){
+uint8_t ots_write_object_list_control_point(ots_client_connection_t * connection, olcp_opcode_t opcode, uint8_t * data, uint8_t data_length){
     btstack_assert(connection != NULL);
     if (connection->state != OBJECT_TRANSFER_SERVICE_CLIENT_STATE_READY){
         return ERROR_CODE_CONTROLLER_BUSY;
     }
+
+    connection->data_length = 0;
+    connection->data.data_bytes[connection->data_length++] = opcode;
+    if (data_length > 0){
+        reverse_bytes(data, connection->data.data_bytes + connection->data_length,data_length);
+        connection->data_length += data_length;
+    }
+    return ots_client_request_write_characteristic(connection, OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_LIST_CONTROL_POINT);
+}
+
+uint8_t ots_write_object_action_control_point(ots_client_connection_t * connection, olcp_opcode_t opcode, uint8_t * data, uint8_t data_length){
+    btstack_assert(connection != NULL);
+    if (connection->state != OBJECT_TRANSFER_SERVICE_CLIENT_STATE_READY){
+        return ERROR_CODE_CONTROLLER_BUSY;
+    }
+
+    connection->data_length = 0;
+    connection->data.data_bytes[connection->data_length++] = opcode;
+    if (data_length > 0){
+        reverse_bytes(data, connection->data.data_bytes + connection->data_length,data_length);
+        connection->data_length += data_length;
+    }
+    return ots_client_request_write_characteristic(connection, OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_ACTION_CONTROL_POINT);
+}
+
+
+uint8_t object_transfer_service_client_command_first(ots_client_connection_t * connection){
+    return ots_write_object_list_control_point(connection, OLCP_OPCODE_FIRST, NULL, 0);
+}
+
+uint8_t object_transfer_service_client_command_last(ots_client_connection_t * connection){
+    return ots_write_object_list_control_point(connection, OLCP_OPCODE_LAST, NULL, 0);
+}
+
+uint8_t object_transfer_service_client_command_previous(ots_client_connection_t * connection){
+    return ots_write_object_list_control_point(connection, OLCP_OPCODE_PREVIOUS, NULL, 0);
+}
+
+uint8_t object_transfer_service_client_command_next(ots_client_connection_t * connection){
+    return ots_write_object_list_control_point(connection, OLCP_OPCODE_NEXT, NULL, 0);
+}
+
+uint8_t object_transfer_service_client_command_goto(ots_client_connection_t * connection, ots_object_id_t * object_id){
+    return ots_write_object_list_control_point(connection, OLCP_OPCODE_GOTO, (uint8_t *) object_id, OTS_OBJECT_ID_LEN);
+}
+
+uint8_t object_transfer_service_client_command_order(ots_client_connection_t * connection, olcp_list_sort_order_t order){
+    uint8_t data[1];
+    data[0] = (uint8_t) order;
+    return ots_write_object_list_control_point(connection, OLCP_OPCODE_ORDER, data, sizeof(data));
+}
+
+uint8_t object_transfer_service_client_command_request_number_of_objects(ots_client_connection_t * connection){
+    return ots_write_object_list_control_point(connection, OLCP_OPCODE_REQUEST_NUMBER_OF_OBJECTS, NULL, 0);
+}
+
+uint8_t object_transfer_service_client_command_request_clear_marking(ots_client_connection_t * connection){
+    return ots_write_object_list_control_point(connection, OLCP_OPCODE_CLEAR_MARKING, NULL, 0);
+}
+
+static void ots_client_l2cap_cbm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) {
+    bd_addr_t event_address;
+    uint16_t psm;
+    uint16_t cid;
+    hci_con_handle_t handle;
+    uint8_t status;
+    ots_client_connection_t * connection;
+
+    if (packet_type == L2CAP_DATA_PACKET){
+        connection = ots_client_get_connection_for_cbm_local_cid(channel);
+        if (!connection->current_object_read_transfer_in_progress){
+            return;
+        }
+
+        uint16_t offset = connection->cbm_data_chunk_bytes_transferred ;
+        connection->cbm_data_chunk_bytes_transferred += size;
+        uint8_t state = 2;
+
+        if (connection->cbm_data_chunk_bytes_transferred < connection->cbm_data_chunk_length){
+           state = offset == 0 ? 0 : 1;
+        }
+        // TODO -> memcpy to connection->cbm_data;
+        ots_client_emit_data_chunk((gatt_service_client_connection_helper_t *) connection, state);
+        // printf("emit data[%d] offset %d, chunk length %d, transferred %d \n", state, connection->cbm_data_offset, connection->cbm_data_chunk_length,  connection->cbm_data_chunk_bytes_transferred);
+        return;
+    }
+
+    if (packet_type != HCI_EVENT_PACKET){
+        return;
+    }
+    uint16_t  bytes_to_read;
+
+    switch (hci_event_packet_get_type(packet)) {
+
+        case L2CAP_EVENT_CBM_CHANNEL_OPENED:
+            // inform about new l2cap connection
+            l2cap_event_cbm_channel_opened_get_address(packet, event_address);
+            psm = l2cap_event_cbm_channel_opened_get_psm(packet);
+            cid = l2cap_event_cbm_channel_opened_get_local_cid(packet);
+            handle = l2cap_event_cbm_channel_opened_get_handle(packet);
+            connection = (ots_client_connection_t *)gatt_service_client_get_connection_for_con_handle(&ots_client, handle);
+            btstack_assert(connection != NULL);
+
+            status = l2cap_event_cbm_channel_opened_get_status(packet);
+            if (status == ERROR_CODE_SUCCESS) {
+                log_info("L2CAP: CBM Channel successfully opened: %s, handle 0x%04x, psm 0x%02x, local cid 0x%02x, remote cid 0x%02x",
+                       bd_addr_to_str(event_address), handle, psm, cid,  little_endian_read_16(packet, 15));
+
+                connection->le_cbm_connection.cid = cid;
+                connection->le_cbm_connection.connection_handle = handle;
+                connection->le_cbm_connection.mtu = l2cap_event_cbm_channel_opened_get_remote_mtu(packet);
+            } else {
+                log_info("L2CAP: Connection to device %s failed. status code 0x%02x", bd_addr_to_str(event_address), status);
+            }
+            connection->state = OBJECT_TRANSFER_SERVICE_CLIENT_STATE_READY;
+            break;
+
+        case L2CAP_EVENT_CAN_SEND_NOW:
+            cid = l2cap_event_can_send_now_get_local_cid(packet);
+            connection = ots_client_get_connection_for_cbm_local_cid(cid);
+            if (connection == NULL){
+                break;
+            }
+
+            bytes_to_read = btstack_min(connection->le_cbm_connection.mtu, connection->cbm_data_chunk_length - connection->cbm_data_chunk_bytes_transferred);
+
+            if (bytes_to_read > 0){
+
+                l2cap_send(connection->le_cbm_connection.cid, &connection->cbm_data[connection->cbm_data_offset + connection->cbm_data_chunk_bytes_transferred], bytes_to_read);
+                connection->cbm_data_chunk_bytes_transferred += bytes_to_read;
+                l2cap_request_can_send_now_event(connection->le_cbm_connection.cid);
+                break;
+            }
+
+            connection->cbm_data_offset = 0;
+            connection->cbm_data_chunk_length = 0;
+            connection->current_object_write_transfer_in_progress = false;
+            break;
+
+        case L2CAP_EVENT_CHANNEL_CLOSED:
+            cid = l2cap_event_channel_closed_get_local_cid(packet);
+            connection = (ots_client_connection_t *)gatt_service_client_get_connection_for_cid(&ots_client, cid);
+            if (connection != NULL){
+                log_info("L2CAP: Channel closed 0x%02x", cid);
+                connection->le_cbm_connection.cid = 0;
+                connection->le_cbm_connection.connection_handle = HCI_CON_HANDLE_INVALID;
+                connection->le_cbm_connection.mtu = 0;
+            }
+            break;
+        default:
+            break;
+    }
+}
+
+uint8_t object_transfer_service_client_open_object_channel(ots_client_connection_t * connection, uint8_t * cbm_receive_buffer, uint16_t cbm_receive_buffer_len){
+    btstack_assert(connection != NULL);
+    if (connection->state != OBJECT_TRANSFER_SERVICE_CLIENT_STATE_READY){
+        return ERROR_CODE_CONTROLLER_BUSY;
+    }
+    uint8_t status = ERROR_CODE_SUCCESS;
+
+    if (connection->le_cbm_connection.connection_handle == HCI_CON_HANDLE_INVALID){
+        connection->state = OBJECT_TRANSFER_SERVICE_CLIENT_STATE_W4_L2CAP_CBM_CHANNEL_OPENED;
+        status = l2cap_cbm_create_channel(&ots_client_l2cap_cbm_packet_handler, connection->basic_connection.con_handle,
+                                          BLUETOOTH_PSM_OTS, cbm_receive_buffer,
+                                          cbm_receive_buffer_len, L2CAP_LE_AUTOMATIC_CREDITS, LEVEL_0, &connection->le_cbm_connection.cid);
+
+        if (status != ERROR_CODE_SUCCESS){
+            connection->state = OBJECT_TRANSFER_SERVICE_CLIENT_STATE_READY;
+            return status;
+        }
+    }
+    return status;
+}
+
+uint8_t object_transfer_service_client_close_object_channel(ots_client_connection_t * connection){
+    btstack_assert(connection != NULL);
+    return l2cap_disconnect(connection->le_cbm_connection.cid);
+}
+
+
+uint8_t object_transfer_service_client_read(ots_client_connection_t * connection, uint32_t data_offset, uint32_t data_len){
+    btstack_assert(connection != NULL);
+    if (connection->state != OBJECT_TRANSFER_SERVICE_CLIENT_STATE_READY){
+        return ERROR_CODE_CONTROLLER_BUSY;
+    }
+    if (connection->le_cbm_connection.connection_handle == HCI_CON_HANDLE_INVALID){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+
+    connection->cbm_data_offset = data_offset;
+    connection->cbm_data_chunk_length = data_len;
+    connection->cbm_data_chunk_bytes_transferred = 0;
+
+    connection->data_length = 0;
+    connection->data.data_bytes[connection->data_length++] = OACP_OPCODE_READ;
+    little_endian_store_32(connection->data.data_bytes, connection->data_length, connection->cbm_data_offset);
+    connection->data_length += 4;
+    little_endian_store_32(connection->data.data_bytes, connection->data_length, connection->cbm_data_chunk_length);
+    connection->data_length += 4;
+    return ots_client_request_write_characteristic(connection, OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_ACTION_CONTROL_POINT);
+}
+
+uint8_t object_transfer_service_client_calculate_checksum(ots_client_connection_t * connection, uint32_t data_offset, uint32_t data_len){
+    btstack_assert(connection != NULL);
+    if (connection->state != OBJECT_TRANSFER_SERVICE_CLIENT_STATE_READY){
+        return ERROR_CODE_CONTROLLER_BUSY;
+    }
+    if (connection->le_cbm_connection.connection_handle == HCI_CON_HANDLE_INVALID){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+
+    connection->cbm_data_offset = data_offset;
+    connection->cbm_data_chunk_length = data_len;
+    connection->cbm_data_chunk_bytes_transferred = 0;
+
+    connection->data_length = 0;
+    connection->data.data_bytes[connection->data_length++] = OACP_OPCODE_CALCULATE_CHECKSUM;
+    little_endian_store_32(connection->data.data_bytes, connection->data_length, connection->cbm_data_offset);
+    connection->data_length += 4;
+    little_endian_store_32(connection->data.data_bytes, connection->data_length, connection->cbm_data_chunk_length);
+    connection->data_length += 4;
+    return ots_client_request_write_characteristic(connection, OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_ACTION_CONTROL_POINT);
+}
+
+uint8_t object_transfer_service_client_write(ots_client_connection_t * connection, bool truncated, uint32_t data_offset, uint8_t *data, uint16_t data_len){
+    btstack_assert(connection != NULL);
+    if (connection->state != OBJECT_TRANSFER_SERVICE_CLIENT_STATE_READY){
+        return ERROR_CODE_CONTROLLER_BUSY;
+    }
+    if (connection->le_cbm_connection.connection_handle == HCI_CON_HANDLE_INVALID){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    connection->cbm_data_offset = data_offset;
+    connection->cbm_data_chunk_length = data_len;
+    connection->cbm_data_chunk_bytes_transferred = 0;
+    connection->cbm_data = data;
+
+    connection->data_length = 0;
+    connection->data.data_bytes[connection->data_length++] = OACP_OPCODE_WRITE;
+    little_endian_store_32(connection->data.data_bytes, connection->data_length, connection->cbm_data_offset);
+    connection->data_length += 4;
+    little_endian_store_32(connection->data.data_bytes, connection->data_length, connection->cbm_data_chunk_length);
+    connection->data_length += 4;
+    connection->data.data_bytes[connection->data_length++] = truncated ? 2 : 0;
 
     return ots_client_request_write_characteristic(connection, OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_ACTION_CONTROL_POINT);
 }
 
-uint8_t object_transfer_service_client_write_object_list_control_point(ots_client_connection_t * connection){
+uint8_t object_transfer_service_client_execute(ots_client_connection_t * connection){
     btstack_assert(connection != NULL);
     if (connection->state != OBJECT_TRANSFER_SERVICE_CLIENT_STATE_READY){
         return ERROR_CODE_CONTROLLER_BUSY;
     }
 
-    return ots_client_request_write_characteristic(connection, OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_LIST_CONTROL_POINT);
+    connection->data_length = 0;
+    connection->data.data_bytes[connection->data_length++] = OACP_OPCODE_EXECUTE;
+    return ots_client_request_write_characteristic(connection, OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_ACTION_CONTROL_POINT);
+}
+
+
+uint8_t object_transfer_service_client_delete_object(ots_client_connection_t * connection){
+    btstack_assert(connection != NULL);
+    if (connection->state != OBJECT_TRANSFER_SERVICE_CLIENT_STATE_READY){
+        return ERROR_CODE_CONTROLLER_BUSY;
+    }
+
+    connection->data_length = 0;
+    connection->data.data_bytes[connection->data_length++] = OACP_OPCODE_DELETE;
+    return ots_client_request_write_characteristic(connection, OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_ACTION_CONTROL_POINT);
+}
+
+uint8_t object_transfer_service_client_abort(ots_client_connection_t * connection){
+    btstack_assert(connection != NULL);
+    if (connection->state != OBJECT_TRANSFER_SERVICE_CLIENT_STATE_READY){
+        return ERROR_CODE_CONTROLLER_BUSY;
+    }
+
+    connection->data_length = 0;
+    connection->data.data_bytes[connection->data_length++] = OACP_OPCODE_ABORT;
+    return ots_client_request_write_characteristic(connection, OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_ACTION_CONTROL_POINT);
+}
+
+uint8_t object_transfer_service_client_create_object(ots_client_connection_t * connection, uint32_t object_size, ots_object_type_t type_uuid16){
+    btstack_assert(connection != NULL);
+    if (connection->state != OBJECT_TRANSFER_SERVICE_CLIENT_STATE_READY){
+        return ERROR_CODE_CONTROLLER_BUSY;
+    }
+
+    connection->data_length = 0;
+    connection->data.data_bytes[connection->data_length++] = OACP_OPCODE_CREATE;
+
+    little_endian_store_32(connection->data.data_bytes, connection->data_length, object_size);
+    connection->data_length += 4;
+    little_endian_store_16(connection->data.data_bytes, connection->data_length, type_uuid16);
+    connection->data_length += 2;
+
+    return ots_client_request_write_characteristic(connection, OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_ACTION_CONTROL_POINT);
 }
 
 uint8_t object_transfer_service_client_disconnect(ots_client_connection_t * connection){
