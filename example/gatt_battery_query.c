@@ -171,7 +171,6 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
     UNUSED(size);
 
     /* LISTING_RESUME */
-    bd_addr_t address;
 
     if (packet_type != HCI_EVENT_PACKET){
         return;  
@@ -198,8 +197,9 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
         case GAP_EVENT_ADVERTISING_REPORT:
             if (app_state != APP_STATE_W4_SCAN_RESULT) return;
 
-            gap_event_advertising_report_get_address(packet, address);
-            if (blacklist_contains(address)) {
+            gap_event_advertising_report_get_address(packet, report.address);
+            report.address_type = gap_event_advertising_report_get_address_type(packet);
+            if (blacklist_contains(report.address)) {
                 break;
             }
             dump_advertising_report(packet);
@@ -208,7 +208,7 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
             app_state = APP_STATE_W4_CONNECT;
             gap_stop_scan();
             printf("Stop scan. Connect to device with addr %s.\n", bd_addr_to_str(report.address));
-            gap_connect(report.address,report.address_type);
+            gap_connect(report.address, report.address_type);
             break;
 
         /* LISTING_RESUME */
