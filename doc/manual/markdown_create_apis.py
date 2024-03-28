@@ -151,6 +151,9 @@ def createIndex(fin, filename, api_filepath, api_title, api_label, githuburl):
             if len(name) == 0:
                 print(parts);
                 sys.exit(10)
+            # ignore typedef for callbacks
+            if parts[0] == 'typedef':
+                continue
             functions[name] = codeReference( name, githuburl, filename, api_filepath, linenr)
             continue
 
