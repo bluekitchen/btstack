@@ -47,6 +47,8 @@
 
 #include "btstack.h"
 
+#define CBM_RECEIVE_BUFFER_LEN 300
+
 typedef struct advertising_report {
     uint8_t   type;
     uint8_t   event_type;
@@ -71,6 +73,7 @@ static btstack_packet_callback_registration_t sm_event_callback_registration;
 static hci_con_handle_t connection_handle;
 static uint16_t ots_cid;
 
+
 static bd_addr_t public_pts_address = {0xC0, 0x07, 0xE8, 0x41, 0x45, 0x91};
 static int       public_pts_address_type = 0;
 static bd_addr_t current_pts_address;
@@ -80,12 +83,23 @@ static char * ots_object_name_short = "Short name";
 static char * ots_object_name_long  = "OTS long object name that exceeds the MTU size for this test example";
 static btstack_utc_t first_created = {2023, 6, 22, 10, 59, 30};
 static btstack_utc_t last_modified = {2023, 6, 22, 10, 59, 30};
-const uint8_t filter_data_null[]  = {};
-const uint8_t filter_data_short[] = {0x53, 0x68, 0x6F, 0x72, 0x74, 0x20, 0x6E, 0x61, 0x6D, 0x65};
-const uint8_t filter_data_long[]  = {0x4F, 0x54, 0x53, 0x20, 0x6C, 0x6F, 0x6E, 0x67, 0x20, 0x6F, 0x62,
+static uint8_t filter_data_starts_with[] = {0x4F, 0x62, 0x6A};
+static uint8_t filter_data_ends_with[] = {0x65, 0x63, 0x74, 0x20, 0x32};
+static uint8_t filter_data_contains[] = {0x65, 0x63, 0x74};
+static uint8_t filter_data_name_is_exactly[] = {0x4F, 0x62, 0x6A, 0x65, 0x63, 0x74, 0x20, 0x32};
+
+static uint8_t filter_data_long[]  = {0x4F, 0x54, 0x53, 0x20, 0x6C, 0x6F, 0x6E, 0x67, 0x20, 0x6F, 0x62,
                                     0x6A, 0x65, 0x63, 0x74, 0x20, 0x6E, 0x61, 0x6D, 0x65, 0x20, 0x74};
+static ots_object_id_t object_id = {};
+static olcp_list_sort_order_t sort_order = OLCP_LIST_SORT_ORDER_BY_FIRST_NAME_ASCENDING;
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
+
+static uint8_t  cbm_receive_buffer[CBM_RECEIVE_BUFFER_LEN];
+static uint32_t cbm_object_size;
+static uint32_t cbm_object_read_chunk_offset = 0;
+static uint32_t cbm_object_read_chunk_length = 0;
+static uint32_t cbm_object_read_chunk_transferred = 0;
 
 static void show_usage(void);
 static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
@@ -224,6 +238,8 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
             object_transfer_service_client_disconnect(&ots_connection);
             printf("Disconnected\n");
             break;
+
+
         default:
             break;
     }
@@ -346,6 +362,17 @@ static void gatt_client_event_handler(uint8_t packet_type, uint16_t channel, uin
             }
             break;
 
+        case GATTSERVICE_SUBEVENT_OTS_CLIENT_OBJECT_SIZE:
+            status = gattservice_subevent_ots_client_object_size_get_att_status(packet);
+            if (status != ATT_ERROR_SUCCESS){
+                printf("OTS Client Test: Read failed, 0x%02x\n", status);
+            } else {
+                cbm_object_size = gattservice_subevent_ots_client_object_size_get_current_size(packet);
+                printf("OTS Client Test: Object allocated size %d, current size %d \n",
+                    gattservice_subevent_ots_client_object_size_get_allocated_size(packet), gattservice_subevent_ots_client_object_size_get_current_size(packet));
+            }
+            break;
+
         case GATTSERVICE_SUBEVENT_OTS_CLIENT_OBJECT_ID:
             status = gattservice_subevent_ots_client_object_id_get_att_status(packet);
             if (status != ATT_ERROR_SUCCESS){
@@ -365,6 +392,7 @@ static void gatt_client_event_handler(uint8_t packet_type, uint16_t channel, uin
                     gattservice_subevent_ots_client_object_properties_get_bitmask(packet));
             }
             break;
+
         case GATTSERVICE_SUBEVENT_OTS_CLIENT_FILTER:
             status = gattservice_subevent_ots_client_filter_get_att_status(packet);
             if (status != ATT_ERROR_SUCCESS){
@@ -377,6 +405,50 @@ static void gatt_client_event_handler(uint8_t packet_type, uint16_t channel, uin
                                gattservice_subevent_ots_client_filter_get_value_len(packet));
 
             }
+            break;
+
+        case GATTSERVICE_SUBEVENT_OTS_CLIENT_OBJECT_CHANGED:
+            status = gattservice_subevent_ots_client_object_changed_get_att_status(packet);
+            if (status != ATT_ERROR_SUCCESS){
+                printf("OTS Client Test: Indication incomplete, 0x%02x\n", status);
+            } else {
+                printf("OTS Client Test: Flags 0x%04X, Object ID \n",
+                       gattservice_subevent_ots_client_object_changed_get_flags(packet));
+                printf_hexdump(gattservice_subevent_ots_client_object_changed_get_id(packet), gattservice_subevent_ots_client_object_changed_get_id_len(packet));
+            }
+            break;
+
+        case GATTSERVICE_SUBEVENT_OTS_CLIENT_OLCP_RESPONSE:
+            status = gattservice_subevent_ots_client_olcp_response_get_att_status(packet);
+            if (status != ATT_ERROR_SUCCESS){
+                printf("OTS Client Test: OLCP response incomplete, 0x%02x\n", status);
+            } else {
+                printf("OTS Client Test: OLCP response opcode %d, result %d\n",
+                       gattservice_subevent_ots_client_olcp_response_get_opcode(packet),
+                       gattservice_subevent_ots_client_olcp_response_get_result_code(packet));
+            }
+            break;
+
+        case GATTSERVICE_SUBEVENT_OTS_CLIENT_OACP_RESPONSE:
+            status = gattservice_subevent_ots_client_oacp_response_get_att_status(packet);
+            if (status != ATT_ERROR_SUCCESS){
+                printf("OTS Client Test: OACP response incomplete, 0x%02x\n", status);
+            } else {
+                printf("OTS Client Test: OACP response opcode %d, result %d\n",
+                       gattservice_subevent_ots_client_oacp_response_get_opcode(packet),
+                       gattservice_subevent_ots_client_oacp_response_get_result_code(packet));
+            }
+            break;
+
+        case GATTSERVICE_SUBEVENT_OTS_CLIENT_DATA_CHUNK:
+            cbm_object_read_chunk_length = gattservice_subevent_ots_client_data_chunk_get_bytes_transferred_num(packet);
+            cbm_object_read_chunk_offset = gattservice_subevent_ots_client_data_chunk_get_offset(packet);
+            cbm_object_read_chunk_transferred = gattservice_subevent_ots_client_data_chunk_get_bytes_transferred_num(packet);
+
+            printf("OTS Client Test: Read data [%d] offset %d, chunk length %d, transferred %d \n",
+                   gattservice_subevent_ots_client_data_chunk_get_state(packet),
+                   cbm_object_read_chunk_offset, cbm_object_read_chunk_length, cbm_object_read_chunk_transferred);
+
             break;
 
         case GATTSERVICE_SUBEVENT_OTS_CLIENT_DISCONNECTED:
@@ -422,6 +494,14 @@ static void show_usage(void){
     printf("O    - Write long filter 1\n");
     printf("p    - Write long filter 2\n");
     printf("P    - Write long filter 3\n");
+    printf("q    - OLCP cmd FIRST\n");
+    printf("Q    - OLCP cmd LAST n");
+    printf("r    - OLCP cmd PREVIOUS\n");
+    printf("R    - OLCP cmd NEXT\n");
+    printf("s    - OLCP cmd GOTO\n");
+    printf("S    - OLCP cmd ORDER\n");
+    printf("t    - OLCP cmd NUMBER OF OBJECTS\n");
+    printf("T    - OLCP cmd CLEAR MARKING\n");
 
 }
 
@@ -538,32 +618,160 @@ static void stdin_process(char c){
 
         case 'n':
             printf("Write filter 1\n");
-            object_transfer_service_client_write_object_list_filter_1(&ots_connection, OTS_FILTER_TYPE_NAME_CONTAINS, sizeof(filter_data_short), filter_data_short);
+            status = object_transfer_service_client_write_object_list_filter_1(&ots_connection, OTS_FILTER_TYPE_NAME_STARTS_WITH, sizeof(filter_data_starts_with), filter_data_starts_with);
             break;
 
         case 'N':
             printf("Write filter 2\n");
-            object_transfer_service_client_write_object_list_filter_2(&ots_connection, OTS_FILTER_TYPE_NAME_CONTAINS, sizeof(filter_data_short), filter_data_short);
+            status = object_transfer_service_client_write_object_list_filter_2(&ots_connection, OTS_FILTER_TYPE_NAME_ENDS_WITH, sizeof(filter_data_ends_with), filter_data_ends_with);
             break;
 
         case 'o':
             printf("Write filter 3\n");
-            object_transfer_service_client_write_object_list_filter_3(&ots_connection, OTS_FILTER_TYPE_NAME_CONTAINS, sizeof(filter_data_short), filter_data_short);
+            status = object_transfer_service_client_write_object_list_filter_3(&ots_connection, OTS_FILTER_TYPE_NAME_CONTAINS, sizeof(filter_data_contains), filter_data_contains);
             break;
 
         case 'O':
             printf("Write long filter 1\n");
-            object_transfer_service_client_write_object_list_filter_1(&ots_connection, OTS_FILTER_TYPE_NAME_CONTAINS, sizeof(filter_data_long), filter_data_long);
+            status = object_transfer_service_client_write_object_list_filter_1(&ots_connection, OTS_FILTER_TYPE_NAME_CONTAINS, sizeof(filter_data_long), filter_data_long);
             break;
 
         case 'p':
             printf("Write long filter 2\n");
-            object_transfer_service_client_write_object_list_filter_2(&ots_connection, OTS_FILTER_TYPE_NAME_CONTAINS, sizeof(filter_data_long), filter_data_long);
+            status = object_transfer_service_client_write_object_list_filter_2(&ots_connection, OTS_FILTER_TYPE_NAME_CONTAINS, sizeof(filter_data_long), filter_data_long);
             break;
 
         case 'P':
             printf("Write long filter 3\n");
-            object_transfer_service_client_write_object_list_filter_3(&ots_connection, OTS_FILTER_TYPE_NAME_CONTAINS, sizeof(filter_data_long), filter_data_long);
+            status = object_transfer_service_client_write_object_list_filter_3(&ots_connection, OTS_FILTER_TYPE_NAME_CONTAINS, sizeof(filter_data_long), filter_data_long);
+            break;
+        case 'q':
+            printf("OLCP cmd FIRST\n");
+            status = object_transfer_service_client_command_first(&ots_connection);
+            break;
+
+        case 'Q':
+            printf("OLCP cmd LAST n");
+            status = object_transfer_service_client_command_last(&ots_connection);
+            break;
+
+        case 'r':
+            printf("OLCP cmd PREVIOUS\n");
+            status = object_transfer_service_client_command_previous(&ots_connection);
+            break;
+
+        case 'R':
+            printf("OLCP cmd NEXT\n");
+            status = object_transfer_service_client_command_next(&ots_connection);
+            break;
+
+        case 's':
+            printf("OLCP cmd GOTO\n");
+            status = object_transfer_service_client_command_goto(&ots_connection, &object_id);
+            break;
+
+        case 'S':
+            printf("OLCP cmd ORDER\n");
+            status = object_transfer_service_client_command_order(&ots_connection, sort_order);
+            break;
+
+        case 't':
+            printf("OLCP cmd NUMBER OF OBJECTS\n");
+            status = object_transfer_service_client_command_request_number_of_objects(&ots_connection);
+            break;
+
+        case 'T':
+            printf("OLCP cmd CLEAR MARKING\n");
+            status = object_transfer_service_client_command_request_clear_marking(&ots_connection);
+            break;
+
+        case 'u':
+            printf("Filter NAME_IS_EXACTLY\n");
+            status = object_transfer_service_client_write_object_list_filter_1(&ots_connection, OTS_FILTER_TYPE_NAME_IS_EXACTLY, sizeof(filter_data_name_is_exactly), filter_data_name_is_exactly);
+            break;
+        case 'v': {
+            printf("Filter OBJECT_TYPE 7FB1\n");
+            uint8_t value[] = {0xB1, 0x7f};
+            status = object_transfer_service_client_write_object_list_filter_1(&ots_connection, OTS_FILTER_TYPE_OBJECT_TYPE,sizeof(value),value);
+            break;
+        }
+        case 'V': {
+            printf("Filter CREATED_BETWEEN\n");
+            uint8_t value[] = {225,7,  11, 12, 1, 0,30, 238,7,  2, 10, 13, 2, 0};
+            status = object_transfer_service_client_write_object_list_filter_1(&ots_connection, OTS_FILTER_TYPE_CREATED_BETWEEN,sizeof(value),value);
+            break;
+        }
+        case 'x': {
+            printf("Filter MODIFIED_BETWEEN\n");
+            uint8_t value[] = {222,7,  1, 1, 0, 0,0, 238,7,  11, 30, 13, 2, 0};
+            status = object_transfer_service_client_write_object_list_filter_1(&ots_connection, OTS_FILTER_TYPE_MODIFIED_BETWEEN,sizeof(value),value);
+            break;
+        }
+        case 'X': {
+            printf("Filter CURRENT_SIZE_BETWEEN\n");
+            uint8_t value[] = {1, 0, 0, 0, 0, 4, 0, 0};
+            status = object_transfer_service_client_write_object_list_filter_1(&ots_connection, OTS_FILTER_TYPE_CURRENT_SIZE_BETWEEN,sizeof(value),value);
+            break;
+        }
+        case 'y': {
+            printf("Filter ALLOCATED_SIZE_BETWEEN\n");
+            uint8_t value[] = {1, 0, 0, 0, 0, 4, 0, 0};
+            status = object_transfer_service_client_write_object_list_filter_1(&ots_connection, OTS_FILTER_TYPE_ALLOCATED_SIZE_BETWEEN,sizeof(value),value);
+            break;
+        }
+
+        case 'Y':
+            printf("Filter MARKED_OBJECTS\n");
+            status = object_transfer_service_client_write_object_list_filter_1(&ots_connection, OTS_FILTER_TYPE_MARKED_OBJECTS,0,NULL);
+            break;
+
+        case '0':
+            printf("Open Object Channel\n");
+            status = object_transfer_service_client_open_object_channel(&ots_connection, cbm_receive_buffer, CBM_RECEIVE_BUFFER_LEN);
+            break;
+
+        case '1':
+            printf("OACP - Read Object \n");
+            status = object_transfer_service_client_read(&ots_connection, 0, cbm_object_size);
+            break;
+
+        case '2':
+            printf("OACP - Calculate Checksum, chunk length %d\n", cbm_object_read_chunk_transferred);
+            status = object_transfer_service_client_calculate_checksum(&ots_connection, 0, cbm_object_read_chunk_transferred);
+            break;
+
+        case '3':
+            printf("OACP - Write (not truncated)\n");
+            status = object_transfer_service_client_write(&ots_connection, false, 0, (uint8_t *) ots_object_name_long, strlen(ots_object_name_long));
+            break;
+
+        case '4':
+            printf("OACP - Write (truncated)\n");
+            status = object_transfer_service_client_write(&ots_connection, true, 0, (uint8_t *) ots_object_name_long, strlen(ots_object_name_long));
+            break;
+
+        case '5':
+            printf("OACP - Execute\n");
+            status = object_transfer_service_client_execute(&ots_connection);
+            break;
+
+        case '6':
+            printf("OACP - Abort\n");
+            status = object_transfer_service_client_abort(&ots_connection);
+            break;
+
+
+        case '7':
+            printf("OACP - Create\n");
+            status = object_transfer_service_client_create_object(&ots_connection, 277, OTS_OBJECT_TYPE_TRACK);
+            break;
+        case '8':
+            printf("OACP - Delete\n");
+            status = object_transfer_service_client_delete_object(&ots_connection);
+            break;
+        case '9':
+            printf("Close Object Channel\n");
+            status = object_transfer_service_client_close_object_channel(&ots_connection);
             break;
 
         case '\n':
