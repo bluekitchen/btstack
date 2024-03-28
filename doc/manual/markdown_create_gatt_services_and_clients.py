@@ -33,22 +33,22 @@ See [NAME API](../appendix/apis/#REFERENCE).
 """
 
 def isEmptyCommentLine(line):
-    return re.match('(\s*\*\s*)\n',line)
+    return re.match(r'(\s*\*\s*)\n',line)
 
 def isCommentLine(line):
-    return re.match('(\s*\*\s*).*',line)
+    return re.match(r'(\s*\*\s*).*',line)
 
 def isEndOfComment(line):
-    return re.match('\s*\*/.*', line) 
+    return re.match(r'\s*\*/.*', line)
 
 def isNewItem(line):
-    return re.match('(\s*\*\s*\-\s*)(.*)',line)
+    return re.match(r'(\s*\*\s*\-\s*)(.*)',line)
 
 def isTextTag(line):
-    return re.match('.*(@text).*', line)
+    return re.match(r'.*(@text).*', line)
 
 def isItemizeTag(line):
-    return re.match("(\s+\*\s+)(-\s)(.*)", line)
+    return re.match(r'(\s+\*\s+)(-\s)(.*)', line)
 
 def processTextLine(line):
     if isEmptyCommentLine(line):
@@ -57,17 +57,17 @@ def processTextLine(line):
     line.rstrip()
 
     if isTextTag(line):
-        text_line_parts = re.match(".*(@text\s*)(.*)", line)
+        text_line_parts = re.match(r'.*(@text\s*)(.*)', line)
         return text_line_parts.group(2).lstrip() + " "
 
     if isItemizeTag(line):
-        text_line_parts = re.match("(\s*\*\s*\-\s*)(.*)", line)
+        text_line_parts = re.match(r'(\s*\*\s*\-\s*)(.*)', line)
         return "- " + text_line_parts.group(2)
     
     if isEmptyCommentLine(line):
         return "\n"
 
-    text_line_parts = re.match("(\s+\*\s+)(.*)", line)
+    text_line_parts = re.match(r'(\s+\*\s+)(.*)', line)
     if text_line_parts:
         return text_line_parts.group(2) + " "
     return ""

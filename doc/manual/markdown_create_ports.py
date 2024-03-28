@@ -11,7 +11,7 @@ def get_readme_title(example_path):
     title = ''
     with open(example_path, 'r') as fin:
         for line in fin:
-            parts = re.match('(##\s)(.*)\n',line)
+            parts = re.match(r'(##\s)(.*)\n',line)
             if parts: 
                 title = parts.group(2)
                 continue
@@ -43,7 +43,7 @@ def process_readmes(intro_file, port_folder, ports_file, ports_folder):
             with open(readme_file, 'r') as fin:
                 for line in fin:
                     # find title, add reference
-                    title_parts = re.match('(#\s+)(.*)\n',line)
+                    title_parts = re.match(r'(#\s+)(.*)\n',line)
                     if title_parts:
                         title = title_parts.group(2)
                         ports.write(port_item.replace("PORT_TITLE", title).replace("PORT_LABEL", readme_dir))
@@ -55,10 +55,10 @@ def process_readmes(intro_file, port_folder, ports_file, ports_folder):
             with open(readme_file, 'r') as fin:
                 for line in fin:
                     #increase level of indentation
-                    parts = re.match('#(.*)\n',line)
+                    parts = re.match(r'#(.*)\n',line)
 
-                    title_parts_level1 = re.match('(#\s+)(.*)\n',line)
-                    title_parts_level2 = re.match('(##\s+)(.*)\n',line)
+                    title_parts_level1 = re.match(r'(#\s+)(.*)\n',line)
+                    title_parts_level2 = re.match(r'(##\s+)(.*)\n',line)
                     
                     if parts and title_parts_level1:
                         ports.write("## " + title_parts_level1.group(2) + " {" + "#sec:" + readme_dir + "Port}\n" )

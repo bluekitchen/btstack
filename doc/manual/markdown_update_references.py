@@ -16,7 +16,7 @@ def insert_reference(mdout, text, link):
     mdout.write("")
 
 def process_source_file_link(mdin, mdout, githuburl, line):
-    parts = re.match('.*(GITHUB_URL).*\n',line)
+    parts = re.match(r'.*(GITHUB_URL).*\n',line)
     if parts:
         line_with_source_file_link = line.replace("GITHUB_URL", githuburl)
         mdout.write(line_with_source_file_link)
@@ -25,7 +25,7 @@ def process_source_file_link(mdin, mdout, githuburl, line):
 
 # handlers for various elements
 def process_section(mdin, mdout, line):
-    section = re.match('(#+.*){#(sec:.*)}',line)
+    section = re.match(r'(#+.*){#(sec:.*)}',line)
     if section:
         insert_anchor(mdout, section.group(2))
         mdout.write(section.group(1)+"\n")
@@ -34,7 +34,7 @@ def process_section(mdin, mdout, line):
 
 def process_figure(mdin, mdout, line):
     # detect figure
-    figure = re.match('\s*(\!.*)({#(fig:.*)})',line)
+    figure = re.match(r'\s*(\!.*)({#(fig:.*)})',line)
     if figure:
         insert_anchor(mdout, figure.group(3))
         mdout.write(figure.group(1)+"\n")
@@ -43,7 +43,7 @@ def process_figure(mdin, mdout, line):
 
 def process_fig_ref(mdin, mdout, line):
     # detect figure reference
-    figure_ref = re.match('.*({@(fig:.*)})',line)
+    figure_ref = re.match(r'.*({@(fig:.*)})',line)
     if figure_ref:
         md_reference = "[below](#"+figure_ref.group(2)+")"
         line = line.replace(figure_ref.group(1), md_reference) 
@@ -53,7 +53,7 @@ def process_fig_ref(mdin, mdout, line):
 
 def process_table(mdin, mdout, line):
     # detect table
-    table = re.match('\s*(Table:.*)({#(tbl:.*)})',line)
+    table = re.match(r'\s*(Table:.*)({#(tbl:.*)})',line)
     if table:
         insert_anchor(mdout, table.group(3))
         mdout.write(table.group(1)+"\n")
@@ -61,7 +61,7 @@ def process_table(mdin, mdout, line):
     return line
 
 def process_tbl_ref(mdin, mdout, line):
-    table_ref = re.match('.*({@(tbl:.*)})',line)
+    table_ref = re.match(r'.*({@(tbl:.*)})',line)
     if table_ref:
         md_reference = "[below](#"+table_ref.group(2)+")"
         line = line.replace(table_ref.group(1), md_reference) 
@@ -70,8 +70,8 @@ def process_tbl_ref(mdin, mdout, line):
     return line
 
 def process_listing(mdin, mdout, line):
-    listing_start = re.match('.*{#(lst:.*)\s+.c\s+.*',line)
-    listing_end   = re.match('\s*~~~~\s*\n',line)
+    listing_start = re.match(r'.*{#(lst:.*)\s+.c\s+.*',line)
+    listing_end   = re.match(r'\s*~~~~\s*\n',line)
     if listing_start:
         insert_anchor(mdout, listing_start.group(1))
         line = ''
