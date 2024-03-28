@@ -56,6 +56,9 @@ def processTextLine(line):
 
     line.rstrip()
 
+    # add missing https://
+    line = line.replace("developer.apple.com","https://developer.apple.com")
+
     if isTextTag(line):
         text_line_parts = re.match(r'.*(@text\s*)(.*)', line)
         return text_line_parts.group(2).lstrip() + " "
