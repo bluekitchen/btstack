@@ -156,8 +156,8 @@ link_libraries(${CMAKE_THREAD_LIBS_INIT})
 include(${BTSTACK_ROOT}/chipset/bcm/bcm.cmake)
 
 # CYW55573
-file(DOWNLOAD https://github.com/Infineon/combo-bluetooth-firmware/raw/master/CYW5557x/FCBGA/CYW55560A1_001.002.087.0225.0000_Generic_UART_37_4MHz_fcbga_iPA_sLNA_ANT0.hcd
-		${CMAKE_CURRENT_BINARY_DIR}/CYW55560A1_001.002.087.0225.0000_Generic_UART_37_4MHz_fcbga_iPA_sLNA_ANT0.hcd)
+file(DOWNLOAD https://github.com/Infineon/combo-bluetooth-firmware/raw/master/CYW5557x/FCBGA/CYW55560A1_001.002.087.0285.0000_Generic_UART_37_4MHz_fcbga_iPA_sLNA_ANT0.hcd
+		${CMAKE_CURRENT_BINARY_DIR}/CYW55560A1_001.002.087.0285.0000_Generic_UART_37_4MHz_fcbga_iPA_sLNA_ANT0.hcd)
 
 # get list of examples, skipping mesh_node_demo
 include(../../example/CMakeLists.txt)
