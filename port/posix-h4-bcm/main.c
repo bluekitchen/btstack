@@ -202,6 +202,7 @@ int main(int argc, const char * argv[]){
     printf("Phase 1: Download firmware\n");
 
     // phase #2 start main app
+    btstack_chipset_bcm_set_hcd_folder_path("/tmp/");
     btstack_chipset_bcm_download_firmware_with_uart(uart_driver, 0, &phase2);
 
     // go
