@@ -61,6 +61,7 @@
 
 #include "le-audio/gatt-service/object_transfer_service_server.h"
 #include "le-audio/le_audio_util.h"
+#include "bluetooth_psm.h"
 
 #define OTS_TASK_SEND_OACP_PROCEDURE_RESPONSE                   0x01
 #define OTS_TASK_SEND_OLCP_PROCEDURE_RESPONSE                   0x02
@@ -101,8 +102,6 @@ static ots_characteristic_t  ots_characteristics[OTS_CHARACTERISTICS_NUM];
 
 static uint32_t ots_oacp_features;
 static uint32_t ots_olcp_features;
-
-#define TSPX_LE_PSM          0x25
 
 static void ots_server_schedule_task(ots_server_connection_t * connection, uint8_t task);
 
@@ -1430,7 +1429,7 @@ static void ots_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
                     }
                     psm = l2cap_event_cbm_incoming_connection_get_psm(packet);
                     cid = l2cap_event_cbm_incoming_connection_get_local_cid(packet);
-                    if (psm != TSPX_LE_PSM) break;
+
                     log_info("L2CAP: Accepting incoming LE connection request for 0x%02x, PSM %02x", cid, psm); 
                     l2cap_cbm_accept_connection(cid, connection->receive_buffer, sizeof(connection->receive_buffer), connection->initial_credits);
                     break;
@@ -1571,7 +1570,7 @@ uint8_t object_transfer_service_server_init(uint32_t oacp_features, uint32_t olc
     log_info("Found OTS service 0x%02x-0x%02x", start_handle, end_handle);
 
     // le data channel setup
-    uint8_t status = l2cap_cbm_register_service(&ots_server_packet_handler, TSPX_LE_PSM, LEVEL_0);
+    uint8_t status = l2cap_cbm_register_service(&ots_server_packet_handler, BLUETOOTH_PSM_OTS, LEVEL_0);
     if (status != ERROR_CODE_SUCCESS){
         return status;
     }
