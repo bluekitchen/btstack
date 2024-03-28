@@ -81,7 +81,7 @@ static uint8_t period_adv_data[255];
 static uint16_t period_adv_data_len;
 
 static le_audio_big_t big_storage;
-static le_audio_big_params_t big_params;
+le_audio_big_params_t btp_bap_big_params;
 
 static const uint8_t adv_sid = 0;
 
@@ -135,26 +135,23 @@ static le_extended_advertising_parameters_t extended_params = {
         .scan_request_notification_enable = 0,
 };
 
-static const uint8_t extended_adv_data[] = {
+static uint8_t extended_adv_data[] = {
         // 16 bit service data, ORG_BLUETOOTH_SERVICE_BASIC_AUDIO_ANNOUNCEMENT_SERVICE, Broadcast ID
-        6, BLUETOOTH_DATA_TYPE_SERVICE_DATA_16_BIT_UUID, 0x52, 0x18,
-        BROADCAST_ID >> 16,
-        (BROADCAST_ID >> 8) & 0xff,
-        BROADCAST_ID & 0xff,
+        6, BLUETOOTH_DATA_TYPE_SERVICE_DATA_16_BIT_UUID, 0x52, 0x18, 0, 0, 0,
         // name
         7, BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME, 'P', 'T', 'S', '-', 'x', 'x',
         7, BLUETOOTH_DATA_TYPE_BROADCAST_NAME ,     'P', 'T', 'S', '-', 'x', 'x',
 };
 
 static void btp_bap_send_response_if_pending(void){
-    if (response_op != 0){
+    if ((response_service_id == BTP_SERVICE_ID_BAP) && (response_op != 0)){
         btp_send(BTP_SERVICE_ID_BAP, response_op, 0, 0, NULL);
         response_op = 0;
     }
 }
 
 static void btp_trigger_iso(btstack_timer_source_t * ts){
-    hci_request_bis_can_send_now_events(big_params.big_handle);
+    hci_request_bis_can_send_now_events(btp_bap_big_params.big_handle);
 }
 
 static void handle_extended_advertisement(const uint8_t * packet, uint16_t size){
@@ -393,7 +390,7 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     bis_index = hci_event_bis_can_send_now_get_bis_index(packet);
                     le_audio_demo_util_source_send(bis_index, bis_con_handles[bis_index]);
                     bis_index++;
-                    if (bis_index == big_params.num_bis){
+                    if (bis_index == btp_bap_big_params.num_bis){
                         le_audio_demo_util_source_generate_iso_frame(AUDIO_SOURCE_SINE);
                         btstack_run_loop_set_timer(&iso_timer, 100);
                         btstack_run_loop_set_timer_handler(&iso_timer, &btp_trigger_iso);
@@ -430,11 +427,11 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                 case HCI_EVENT_META_GAP:
                     switch (hci_event_gap_meta_get_subevent_code(packet)) {
                         case GAP_SUBEVENT_BIG_CREATED:
-                            for (i=0;i<big_params.num_bis;i++){
+                            for (i=0; i < btp_bap_big_params.num_bis; i++){
                                 bis_con_handles[i] = gap_subevent_big_created_get_bis_con_handles(packet, i);
                             }
                             btp_bap_send_response_if_pending();
-                            hci_request_bis_can_send_now_events(big_params.big_handle);
+                            hci_request_bis_can_send_now_events(btp_bap_big_params.big_handle);
                             break;
                         case GAP_SUBEVENT_BIG_TERMINATED:
                             btp_bap_send_response_if_pending();
@@ -525,7 +522,7 @@ static void expect_status_no_error(uint8_t status){
     btstack_assert(status == ERROR_CODE_SUCCESS);
 }
 
-static void start_advertising() {
+void btp_bap_start_advertising(uint32_t broadcast_id) {
     if (adv_handle == 0xff){
         bd_addr_t local_addr;
         gap_local_bd_addr(local_addr);
@@ -540,6 +537,9 @@ static void start_advertising() {
         }
     }
 
+    // set broadcast id
+    little_endian_store_24(extended_adv_data, 4, broadcast_id);
+
     uint8_t status;
     status = gap_extended_advertising_set_adv_data(adv_handle, sizeof(extended_adv_data), extended_adv_data);
     if (status != 0) MESSAGE("Status 0x%02x", status);
@@ -553,12 +553,12 @@ static void start_advertising() {
     if (status != 0) MESSAGE("Status 0x%02x", status);
 }
 
-static void stop_advertising(){
+void btp_bap_stop_advertising(void) {
     gap_periodic_advertising_stop(adv_handle);
     gap_extended_advertising_stop(adv_handle);
 }
 
-static void setup_big(void){
+void btp_bap_setup_big(void){
     // Create BIG. From BTP_BAP_BROADCAST_SOURCE_SETUP
     // - num_bis
     // - max sdu
@@ -566,40 +566,37 @@ static void setup_big(void){
     // - rtn
     // - sdu interval us
     // - framing
-    big_params.big_handle = 0;
-    big_params.advertising_handle = adv_handle;
-    big_params.phy = 2;
-    big_params.packing = 0;
-    big_params.encryption = encryption;
+    btp_bap_big_params.big_handle = 0;
+    btp_bap_big_params.advertising_handle = adv_handle;
+    btp_bap_big_params.phy = 2;
+    btp_bap_big_params.packing = 0;
+    btp_bap_big_params.encryption = encryption;
     if (encryption) {
-        memcpy(big_params.broadcast_code, &broadcast_code[0], 16);
+        memcpy(btp_bap_big_params.broadcast_code, &broadcast_code[0], 16);
     } else {
-        memset(big_params.broadcast_code, 0, 16);
+        memset(btp_bap_big_params.broadcast_code, 0, 16);
     }
-    gap_big_create(&big_storage, &big_params);
+    gap_big_create(&big_storage, &btp_bap_big_params);
 }
 
 static void release_big(void){
-    uint8_t status = gap_big_terminate(big_params.big_handle);
+    uint8_t status = gap_big_terminate(btp_bap_big_params.big_handle);
     MESSAGE("gap_big_terminate, status 0x%x", status);
 }
 
-static void setup_periodic_adv(uint8_t num_bis, uint32_t presentation_delay_us, const uint8_t * const codec_id, uint8_t codec_ltv_len, const uint8_t * const codec_ltv_bytes ) {
-
-    // setup base
-    uint8_t subgroup_metadata[] = {
-            0x03, 0x02, 0x04, 0x00, // Metadata[i]
-    };
+void btp_bap_setup_periodic_advertising_data(uint8_t num_bis, uint32_t presentation_delay_us, const uint8_t *const codec_id,
+                                             uint8_t subgroup_codec_ltv_len, const uint8_t *const subgroup_codec_ltv_bytes,
+                                             uint8_t subgroup_metadata_ltv_len, const uint8_t *const subgroup_metadata_ltv_bytes,
+                                             uint8_t stream_codec_ltv_len, const uint8_t *const stream_codec_ltv_bytes) {
 
     le_audio_base_builder_t builder;
     le_audio_base_builder_init(&builder, period_adv_data, sizeof(period_adv_data), presentation_delay_us);
-    le_audio_base_builder_add_subgroup(&builder, codec_id,
-                                       codec_ltv_len,
-                                       codec_ltv_bytes,
-                                       sizeof(subgroup_metadata), subgroup_metadata);
+    le_audio_base_builder_add_subgroup(&builder, codec_id, subgroup_codec_ltv_len,
+                                       subgroup_codec_ltv_bytes,
+                                       subgroup_metadata_ltv_len, subgroup_metadata_ltv_bytes);
     uint8_t i;
     for (i=1;i<= num_bis;i++){
-        le_audio_base_builder_add_bis(&builder, i, 0, NULL);
+        le_audio_base_builder_add_bis(&builder, i, stream_codec_ltv_len, stream_codec_ltv_bytes);
     }
     period_adv_data_len = le_audio_base_builder_get_ad_data_size(&builder);
 }
@@ -1148,15 +1145,21 @@ void btp_bap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, 
                 const uint8_t * const ltv_data = &data[pos];
 
                 // setup BIG params
-                big_params.num_bis = streams_per_subgroup;
-                big_params.framing = framing;
-                big_params.max_sdu = max_sdu;
-                big_params.rtn = retransmission_num;
-                big_params.max_transport_latency_ms = max_transport_latency;
-                big_params.sdu_interval_us = sdu_interval;
+                btp_bap_big_params.num_bis = streams_per_subgroup;
+                btp_bap_big_params.framing = framing;
+                btp_bap_big_params.max_sdu = max_sdu;
+                btp_bap_big_params.rtn = retransmission_num;
+                btp_bap_big_params.max_transport_latency_ms = max_transport_latency;
+                btp_bap_big_params.sdu_interval_us = sdu_interval;
 
                 // setup BASE
-                setup_periodic_adv(subgroups, presentation_delay, codec_id, ltv_len, ltv_data);
+                // setup base
+                uint8_t subgroup_metadata[] = {
+                        0x03, 0x02, 0x04, 0x00, // Metadata[i]
+                };
+                btp_bap_setup_periodic_advertising_data(subgroups, presentation_delay, codec_id, ltv_len,
+                                                        ltv_data, sizeof(subgroup_metadata), subgroup_metadata, 0,
+                                                        NULL);
 
                 // parse LTV and configure codec
                 uint32_t sampling_frequency_hz = 0;
@@ -1170,9 +1173,9 @@ void btp_bap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, 
                     pos += ltv_entry_len;
                 }
                 btstack_lc3_frame_duration_t frame_duration =
-                        big_params.sdu_interval_us == 7500 ? BTSTACK_LC3_FRAME_DURATION_7500US : BTSTACK_LC3_FRAME_DURATION_10000US;
-                le_audio_demo_util_source_configure(big_params.num_bis, 1, sampling_frequency_hz, frame_duration, big_params.max_sdu);
-                MESSAGE("LC3 Config: streams %u, channels per stream %u, sampling frequency %u, frame duration %u, max sdu %u", big_params.num_bis, 1, sampling_frequency_hz, big_params.sdu_interval_us, big_params.max_sdu);
+                        btp_bap_big_params.sdu_interval_us == 7500 ? BTSTACK_LC3_FRAME_DURATION_7500US : BTSTACK_LC3_FRAME_DURATION_10000US;
+                le_audio_demo_util_source_configure(btp_bap_big_params.num_bis, 1, sampling_frequency_hz, frame_duration, btp_bap_big_params.max_sdu);
+                MESSAGE("LC3 Config: streams %u, channels per stream %u, sampling frequency %u, frame duration %u, max sdu %u", btp_bap_big_params.num_bis, 1, sampling_frequency_hz, btp_bap_big_params.sdu_interval_us, btp_bap_big_params.max_sdu);
                 btstack_assert(sampling_frequency_hz != 0);
 
                 uint8_t result[7];
@@ -1192,7 +1195,7 @@ void btp_bap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, 
             if (controller_index == 0) {
                 MESSAGE("BTP_BAP_BROADCAST_ADV_START");
                 uint32_t broadcast_id = little_endian_read_24(data, 0);
-                start_advertising();
+                btp_bap_start_advertising(broadcast_id);
                 btp_send(BTP_SERVICE_ID_BAP, opcode, controller_index, 0, NULL);
                 break;
             }
@@ -1201,7 +1204,7 @@ void btp_bap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, 
             if (controller_index == 0) {
                 MESSAGE("BTP_BAP_BROADCAST_ADV_STOP");
                 uint32_t broadcast_id = little_endian_read_24(data, 0);
-                stop_advertising();
+                btp_bap_stop_advertising();
                 btp_send(BTP_SERVICE_ID_BAP, opcode, controller_index, 0, NULL);
                 break;
             }
@@ -1210,7 +1213,7 @@ void btp_bap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, 
             if (controller_index == 0) {
                 MESSAGE("BTP_BAP_BROADCAST_SOURCE_START");
                 uint32_t broadcast_id = little_endian_read_24(data, 0);
-                setup_big();
+                btp_bap_setup_big();
                 break;
             }
             break;

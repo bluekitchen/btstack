@@ -154,8 +154,8 @@ struct btp_cap_broadcast_source_setup_rp {
     uint32_t gap_settings;
     uint8_t broadcast_id[16];
 };
-#define BTP_CAP_BROADCAST_SOURCE_SETUP_FLAG_ENCRYPTION		BIT(0)
-#define BTP_CAP_BROADCAST_SOURCE_SETUP_FLAG_SUBGROUP_CODEC	BIT(1)
+#define BTP_CAP_BROADCAST_SOURCE_SETUP_FLAG_ENCRYPTION		0x01
+#define BTP_CAP_BROADCAST_SOURCE_SETUP_FLAG_SUBGROUP_CODEC	0x02
 
 #define BTP_CAP_BROADCAST_SOURCE_RELEASE	0x0a
 struct btp_cap_broadcast_source_release_cmd {
