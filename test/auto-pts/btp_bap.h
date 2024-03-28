@@ -362,6 +362,8 @@ typedef enum {
     BTP_AUDIO_DIR_SOURCE = 0x02,
 } btp_audio_dir_t;
 
+extern le_audio_big_params_t btp_bap_big_params;
+
 /**
  * Init BAP Service
  */
@@ -376,6 +378,16 @@ void btp_bap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, 
  * Allow to process BAP (PACS, ASCS) events by higher layer, e.g. CAP
  */
 void btp_bap_register_higher_layer(btstack_packet_handler_t handler);
+
+void btp_bap_setup_periodic_advertising_data(uint8_t num_bis, uint32_t presentation_delay_us, const uint8_t *const codec_id,
+                                             uint8_t subgroup_codec_ltv_len, const uint8_t *const subgroup_codec_ltv_bytes,
+                                             uint8_t subgroup_metadata_ltv_len, const uint8_t *const subgroup_metadata_ltv_bytes,
+                                             uint8_t stream_codec_ltv_len, const uint8_t *const stream_codec_ltv_bytes);
+
+void btp_bap_start_advertising(uint32_t broadcast_id);
+void btp_bap_stop_advertising();
+
+void btp_bap_setup_big(void);
 
 #if defined __cplusplus
 }

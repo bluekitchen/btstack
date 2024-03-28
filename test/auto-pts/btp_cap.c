@@ -107,6 +107,60 @@ typedef struct {
 static btp_cap_ase_t btp_cap_ases[MAX_NUM_ASES];
 static uint8_t btp_bap_num_ases;
 
+// Broadcast
+#define MAX_NUM_BROADCAST_STREAMS 2
+#define MAX_NUM_BROADCAST_SUBGROUPS 1
+#define MAX_BROADCAST_CODEC_CONFIG_LEN 64
+#define MAX_BROADCAST_METADATA_LEN 64
+
+// streams
+typedef struct {
+    uint8_t source_id;
+    uint8_t subgroup_id;
+#if 0
+    uint8_t coding_format;
+    uint16_t vid;
+    uint16_t pid;
+#else
+    uint8_t codec_id[5];
+#endif
+    uint8_t codec_config_len;
+    uint8_t codec_config_data[MAX_BROADCAST_CODEC_CONFIG_LEN];
+    uint8_t metadata_len;
+    uint8_t metadata_data[MAX_BROADCAST_METADATA_LEN];
+} btp_cap_broadcast_stream_t;
+static btp_cap_broadcast_stream_t broadcast_streams[MAX_NUM_BROADCAST_STREAMS];
+static uint8_t btp_cap_broadcast_stream_count;
+
+// subgroups
+typedef struct {
+    uint8_t source_id;
+#if 0
+    uint8_t coding_format;
+    uint16_t vid;
+    uint16_t pid;
+#else
+    uint8_t codec_id[5];
+#endif
+    uint8_t codec_config_len;
+    uint8_t codec_config_data[MAX_BROADCAST_CODEC_CONFIG_LEN];
+    uint8_t metadata_len;
+    uint8_t metadata_data[MAX_BROADCAST_METADATA_LEN];
+} btp_cap_broadcast_subgroup_t ;
+static btp_cap_broadcast_subgroup_t broadcast_subgroups[MAX_NUM_BROADCAST_SUBGROUPS];
+static uint8_t btp_cap_broadcast_subgroup_count;
+
+// sources
+static bool btp_cap_broadcast_source_codec_config_at_subgroup;
+static uint32_t btp_cap_broadcast_source_presenentation_delay_us;
+
+static void btp_cap_send_response_if_pending(void){
+    if ((response_service_id == BTP_SERVICE_ID_CAP) && (response_op != 0)){
+        btp_send(BTP_SERVICE_ID_CAP, response_op, 0, 0, NULL);
+        response_op = 0;
+    }
+}
+
 static btp_cap_ase_t * btp_cap_ase_for_server_index_and_ase_id(uint8_t server_index, uint8_t ase_id){
     uint8_t i;
     for (i=0;i<btp_bap_num_ases;i++){
@@ -298,6 +352,9 @@ static void btp_cap_hci_handler(uint8_t packet_type, uint16_t channel, uint8_t *
                         }
                     }
                     btp_cap_ases_run();
+                    break;
+                case GAP_SUBEVENT_BIG_CREATED:
+                    btp_cap_send_response_if_pending();
                     break;
             }
         default:
@@ -550,6 +607,30 @@ static void btp_cap_bap_handler(uint8_t packet_type, uint16_t channel, uint8_t *
     }
 }
 
+void btp_cap_setup_periodic_advertising_data(void) {
+    // setup BASE
+    btstack_assert(btp_cap_broadcast_stream_count > 0);
+    btp_cap_broadcast_stream_t * stream = &broadcast_streams[0];
+    btstack_assert(btp_cap_broadcast_subgroup_count > 0);
+    btp_cap_broadcast_subgroup_t * subgroup = &broadcast_subgroups[0];
+    uint8_t subgroup_codec_ltv_len = 0;
+    const uint8_t * subgroup_codec_ltv_bytes = NULL;
+    uint8_t stream_codec_ltv_len = 0;
+    const uint8_t * stream_codec_ltv_bytes = NULL;
+    if (btp_cap_broadcast_source_codec_config_at_subgroup){
+        subgroup_codec_ltv_len = subgroup->codec_config_len;
+        subgroup_codec_ltv_bytes = subgroup->codec_config_data;
+    } else {
+        stream_codec_ltv_len = stream->codec_config_len;
+        stream_codec_ltv_bytes = subgroup->codec_config_data;
+    }
+    btp_bap_setup_periodic_advertising_data(btp_cap_broadcast_stream_count,
+                                            btp_cap_broadcast_source_presenentation_delay_us, subgroup->codec_id,
+                                            subgroup_codec_ltv_len, subgroup_codec_ltv_bytes, subgroup->metadata_len,
+                                            subgroup->metadata_data,
+                                            stream_codec_ltv_len, stream_codec_ltv_bytes);
+}
+
 void btp_cap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, const uint8_t *data) {
     // provide op info for response
     response_len = 0;
@@ -575,7 +656,10 @@ void btp_cap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, 
                 server->cap_state = (uint8_t) CAP_DISCOVERY_IDLE;
                 btp_cap_discovery_next(server);
                 btp_send(response_service_id, opcode, controller_index, 0, NULL);
-                // Reset CIG params + ASEs
+
+                // Reset state
+
+                // Unicast CIG params + ASEs
                 memset (&btp_cap_cig_params, 0, sizeof(le_audio_cig_params_t));
                 btp_cap_cig_params.max_transport_latency_c_to_p = 40;
                 btp_cap_cig_params.max_transport_latency_p_to_c = 40;
@@ -588,6 +672,9 @@ void btp_cap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, 
                     btp_cap_cig_params.cis_params[i].phy_c_to_p = LE_AUDIO_SERVER_PHY_MASK_2M;
                     btp_cap_cig_params.cis_params[i].phy_p_to_c = LE_AUDIO_SERVER_PHY_MASK_2M;
                 }
+                // Broadcast
+                btp_cap_broadcast_stream_count = 0;
+                btp_cap_broadcast_subgroup_count = 0;
             }
             break;
         case BTP_CAP_UNICAST_SETUP_ASE:
@@ -687,17 +774,17 @@ void btp_cap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, 
                 btp_cap_cig_params.num_cis++;
 
                 // local setup completed
-                btp_send(BTP_SERVICE_ID_CAP, BTP_CAP_UNICAST_SETUP_ASE, 0, 0, NULL);
+                btp_send(response_service_id, response_op, 0, 0, NULL);
             }
             break;
         case BTP_CAP_UNICAST_AUDIO_START:
             if (controller_index == 0){
                 uint8_t cig_id = data[0];
                 uint8_t set_type = data[1];
-                btp_send(BTP_SERVICE_ID_CAP, response_op, 0, 0, NULL);
+                btp_send(response_service_id, response_op, 0, 0, NULL);
 
                 // TODO: support ordered access
-                MESSAGE("Unicaset audio start, num ASEs %u", btp_bap_num_ases);
+                MESSAGE("Unicast audio start, num ASEs %u", btp_bap_num_ases);
 
                 btp_cap_ases_set_state(ASE_STATE_W2_CONFIGURE_CODEC);
 
@@ -705,6 +792,221 @@ void btp_cap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, 
                 btp_cap_ases_run();
             }
             break;
+        case BTP_CAP_BROADCAST_SOURCE_SETUP_STREAM:
+            if (controller_index == 0) {
+                btp_cap_broadcast_stream_t * stream = &broadcast_streams[btp_cap_broadcast_stream_count++];
+                uint16_t offset = 0;
+                stream->source_id = data[offset++];
+                stream->subgroup_id = data[offset++];
+                memcpy(stream->codec_id, &data[offset], 5);
+                offset += 5;
+                stream->codec_config_len = data[offset++];
+                stream->metadata_len = data[offset++];
+                memcpy(stream->codec_config_data, &data[offset], stream->codec_config_len);
+                offset += stream->codec_config_len;
+                memcpy(stream->metadata_data, &data[offset], stream->metadata_len);
+                MESSAGE("BTP_CAP_BROADCAST_SOURCE_SETUP_STREAM");
+                MESSAGE("Codec Config");
+                log_info_hexdump(stream->codec_config_data, stream->codec_config_len);
+                MESSAGE("Metadata");
+                log_info_hexdump(stream->metadata_data, stream->metadata_len);
+                // local setup completed
+                btp_send(response_service_id, response_op, 0, 0, NULL);
+            }
+            break;
+        case BTP_CAP_BROADCAST_SOURCE_SETUP_SUBGROUP:
+            if (controller_index == 0) {
+                uint16_t offset = 0;
+                uint8_t source_id = data[offset++];
+                uint8_t subgroup_id = data[offset++];
+                if (subgroup_id != btp_cap_broadcast_subgroup_count){
+                    MESSAGE("BTP_CAP_BROADCAST_SOURCE_SETUP_SUBGROUP: expected subgroup id %u, but got %u -> abort", btp_cap_broadcast_subgroup_count, subgroup_id);
+                    btstack_assert(false);
+                }
+                btp_cap_broadcast_subgroup_t * subgroup = &broadcast_subgroups[btp_cap_broadcast_subgroup_count++];
+                subgroup->source_id = source_id;
+                memcpy(subgroup->codec_id, &data[offset], 5);
+                offset += 5;
+                subgroup->codec_config_len = data[offset++];
+                subgroup->metadata_len = data[offset++];
+                memcpy(subgroup->codec_config_data, &data[offset], subgroup->codec_config_len);
+                offset += subgroup->codec_config_len;
+                memcpy(subgroup->metadata_data, &data[offset], subgroup->metadata_len);
+                MESSAGE("BTP_CAP_BROADCAST_SOURCE_SETUP_SUBGROUP");
+                MESSAGE("Codec Config");
+                log_info_hexdump(subgroup->codec_config_data, subgroup->codec_config_len);
+                MESSAGE("Metadata");
+                log_info_hexdump(subgroup->metadata_data, subgroup->metadata_len);
+                // local setup completed
+                btp_send(response_service_id, response_op, 0, 0, NULL);
+            }
+            break;
+        case BTP_CAP_BROADCAST_SOURCE_SETUP:
+#if 0
+            struct btp_cap_broadcast_source_setup_cmd {
+                uint8_t source_id;
+                uint8_t broadcast_id[3];
+                uint8_t sdu_interval[3];
+                uint8_t framing;
+                uint16_t max_sdu;
+                uint8_t retransmission_num;
+                uint16_t max_transport_latency;
+                uint8_t presentation_delay[3];
+                uint8_t flags;
+                uint8_t broadcast_code[16];
+            };
+            struct btp_cap_broadcast_source_setup_rp {
+                uint8_t source_id;
+                uint32_t gap_settings;
+                uint8_t broadcast_id[16];
+            };
+#define BTP_CAP_BROADCAST_SOURCE_SETUP_FLAG_ENCRYPTION		BIT(0)
+#define BTP_CAP_BROADCAST_SOURCE_SETUP_FLAG_SUBGROUP_CODEC	BIT(1)
+#endif
+            if (controller_index == 0) {
+                MESSAGE("BTP_CAP_BROADCAST_SOURCE_SETUP, subgroups %u, streams %u",
+                        btp_cap_broadcast_subgroup_count, btp_cap_broadcast_stream_count);
+                uint16_t pos = 0;
+                uint8_t  source_id = data[pos++];
+                uint32_t broadcast_id = little_endian_read_24(data, pos);
+                pos += 3;
+                uint32_t sdu_interval = little_endian_read_24(data, pos);
+                pos += 3;
+                uint8_t framing = data[pos++];
+                uint16_t max_sdu = little_endian_read_16(data, pos);
+                pos += 2;
+                uint8_t retransmission_num = data[pos++];
+                uint16_t max_transport_latency = little_endian_read_16(data, pos);
+                pos += 2;
+                uint32_t presentation_delay = little_endian_read_24(data, pos);
+                pos += 3;
+                uint8_t flags = data[pos++];
+                const uint8_t * broadcast_code = &data[pos];
+                // - Flags is a bit map of settings:
+                // bit 0: Use encryption and the given Broadcast Code
+                // bit 1: Setup Codec Config at Subgroup level
+
+                // setup BIG params
+                btp_bap_big_params.num_bis = btp_cap_broadcast_stream_count;
+                btp_bap_big_params.framing = framing;
+                btp_bap_big_params.max_sdu = max_sdu;
+                btp_bap_big_params.rtn = retransmission_num;
+                btp_bap_big_params.max_transport_latency_ms = max_transport_latency;
+                btp_bap_big_params.sdu_interval_us = sdu_interval;
+                btp_bap_big_params.encryption = ((flags & BTP_CAP_BROADCAST_SOURCE_SETUP_FLAG_ENCRYPTION) != 0) ? 1 : 0;
+                memcpy(btp_bap_big_params.broadcast_code, broadcast_code, 16);
+                btp_cap_broadcast_source_codec_config_at_subgroup = (flags & BTP_CAP_BROADCAST_SOURCE_SETUP_FLAG_SUBGROUP_CODEC) != 0;
+                btp_cap_broadcast_source_presenentation_delay_us = presentation_delay;
+
+                // setup data for periodic advertising
+                btp_cap_setup_periodic_advertising_data();
+
+                // parse LTV and configure codec
+                btp_cap_broadcast_subgroup_t * subgroup = &broadcast_subgroups[0];
+                uint32_t sampling_frequency_hz = 0;
+                pos = 0;
+                uint8_t ltv_len = subgroup->codec_config_len;
+                const uint8_t * ltv_data = subgroup->codec_config_data;
+                while (pos < ltv_len){
+                    uint8_t ltv_entry_len = ltv_data[pos++];
+                    uint8_t codec_config_type = ltv_data[pos];
+                    if (codec_config_type == LE_AUDIO_CODEC_CONFIGURATION_TYPE_SAMPLING_FREQUENCY){
+                        sampling_frequency_hz = le_audio_get_sampling_frequency_hz(ltv_data[pos]);
+                    }
+                    pos += ltv_entry_len;
+                }
+                btstack_lc3_frame_duration_t frame_duration =
+                        btp_bap_big_params.sdu_interval_us == 7500 ? BTSTACK_LC3_FRAME_DURATION_7500US : BTSTACK_LC3_FRAME_DURATION_10000US;
+                le_audio_demo_util_source_configure(btp_bap_big_params.num_bis, 1, sampling_frequency_hz, frame_duration, btp_bap_big_params.max_sdu);
+                MESSAGE("LC3 Config: streams %u, channels per stream %u, sampling frequency %u, frame duration %u, max sdu %u", btp_bap_big_params.num_bis, 1, sampling_frequency_hz, btp_bap_big_params.sdu_interval_us, btp_bap_big_params.max_sdu);
+                btstack_assert(sampling_frequency_hz != 0);
+
+                // response
+                pos = 0;
+                uint8_t response[21];
+                response[pos++] = source_id;
+                little_endian_store_32(response, pos, btp_gap_current_settings());
+                pos += 4;
+                memcpy(&response[pos], broadcast_code, 16);
+                pos += 16;
+                // local setup completed
+                btp_send(response_service_id, response_op, 0, pos, response);
+            }
+            break;
+        case BTP_CAP_BROADCAST_SOURCE_RELEASE:
+#if 0
+            struct btp_cap_broadcast_source_release_cmd {
+                uint8_t source_id;
+            };
+#endif
+            if (controller_index == 0) {
+                MESSAGE("BTP_CAP_BROADCAST_SOURCE_SETUP_STREAM");
+            }
+            break;
+
+        case BTP_CAP_BROADCAST_ADV_START:
+            if (controller_index == 0) {
+                MESSAGE("BTP_CAP_BROADCAST_ADV_START");
+                uint8_t source_id = data[0];
+                btstack_assert(source_id == 0);
+                btp_bap_start_advertising(0);
+                btp_send(response_service_id, opcode, controller_index, 0, NULL);
+            }
+            break;
+
+        case BTP_CAP_BROADCAST_ADV_STOP:
+            if (controller_index == 0) {
+                MESSAGE("BTP_BAP_BROADCAST_ADV_STOP");
+                uint8_t source_id = data[0];
+                btstack_assert(source_id == 0);
+                btp_bap_stop_advertising();
+                btp_send(response_service_id, opcode, controller_index, 0, NULL);
+            }
+            break;
+
+        case BTP_CAP_BROADCAST_SOURCE_START:
+#if 0
+            struct btp_cap_broadcast_source_start_cmd {
+                uint8_t source_id;
+            };
+#endif
+            if (controller_index == 0) {
+                MESSAGE("BTP_CAP_BROADCAST_SOURCE_START");
+                uint8_t source_id = data[0];
+                btstack_assert(source_id == 0);
+                btp_bap_setup_big();
+            }
+            break;
+
+        case BTP_CAP_BROADCAST_SOURCE_STOP:
+#if 0
+            struct btp_cap_broadcast_source_stop_cmd {
+                uint8_t source_id;
+            };
+#endif
+            if (controller_index == 0) {
+                // TODO: support ordered access
+                MESSAGE("BTP_CAP_BROADCAST_SOURCE_SETUP_STREAM");
+            }
+            break;
+
+        case BTP_CAP_BROADCAST_SOURCE_UPDATE:
+            if (controller_index == 0) {
+                MESSAGE("BTP_CAP_BROADCAST_SOURCE_UPDATE");
+                // get new metadata
+                uint8_t source_id = data[0];
+                btstack_assert(source_id == 0);
+                btp_cap_broadcast_subgroup_t * subgroup = &broadcast_subgroups[0];
+                subgroup->metadata_len = data[1];
+                memcpy(subgroup->metadata_data, &data[2], subgroup->metadata_len);
+
+                // setup data for periodic advertising
+                btp_cap_setup_periodic_advertising_data();
+
+                btp_send(response_service_id, opcode, controller_index, 0, NULL);
+            }
+            break;
+
         default:
             break;
     }
