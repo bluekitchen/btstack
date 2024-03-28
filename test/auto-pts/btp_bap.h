@@ -388,6 +388,7 @@ void btp_bap_start_advertising(uint32_t broadcast_id);
 void btp_bap_stop_advertising();
 
 void btp_bap_setup_big(void);
+void btp_bap_release_big(void);
 
 #if defined __cplusplus
 }
