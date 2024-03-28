@@ -31,7 +31,7 @@ def fix_listing_after_section(line):
     return line
 
 def fix_listing_hyperref_into_ref(line):
-    corr = re.match(r'.*\\)hyperref\[(lst:.*)\]{.*}(.*)',line)
+    corr = re.match(r'(.*\\)hyperref\[(lst:.*)\]{.*}(.*)',line)
     if corr:
         line = corr.group(1)+"ref{" + corr.group(2) +"} " + corr.group(3) 
     return line
