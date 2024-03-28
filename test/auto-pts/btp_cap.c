@@ -979,14 +979,12 @@ void btp_cap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, 
             break;
 
         case BTP_CAP_BROADCAST_SOURCE_STOP:
-#if 0
-            struct btp_cap_broadcast_source_stop_cmd {
-                uint8_t source_id;
-            };
-#endif
             if (controller_index == 0) {
-                // TODO: support ordered access
-                MESSAGE("BTP_CAP_BROADCAST_SOURCE_SETUP_STREAM");
+                MESSAGE("BTP_CAP_BROADCAST_SOURCE_STOP");
+                uint8_t source_id = data[0];
+                btstack_assert(source_id == 0);
+                btp_bap_release_big();
+                btp_send(response_service_id, opcode, controller_index, 0, NULL);
             }
             break;
 

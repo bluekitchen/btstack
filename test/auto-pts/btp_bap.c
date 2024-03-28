@@ -579,7 +579,7 @@ void btp_bap_setup_big(void){
     gap_big_create(&big_storage, &btp_bap_big_params);
 }
 
-static void release_big(void){
+void btp_bap_release_big(void){
     uint8_t status = gap_big_terminate(btp_bap_big_params.big_handle);
     MESSAGE("gap_big_terminate, status 0x%x", status);
 }
@@ -1221,7 +1221,7 @@ void btp_bap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, 
             if (controller_index == 0) {
                 MESSAGE("BTP_BAP_BROADCAST_SOURCE_STOP");
                 uint32_t broadcast_id = little_endian_read_24(data, 0);
-                release_big();
+                btp_bap_release_big();
                 break;
             }
             break;
