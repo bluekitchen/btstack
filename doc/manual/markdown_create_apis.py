@@ -125,7 +125,13 @@ def createIndex(fin, filename, api_filepath, api_title, api_label, githuburl):
         param = re.match(".*@return.*", line)
         if param:
             continue
-        
+        param = re.match(".*@result.*", line)
+        if param:
+            continue
+        param = re.match(".*@note.*", line)
+        if param:
+            continue
+
         # search typedef struct begin
         if isTypedefStart(line):
             typedefFound = 1
@@ -143,7 +149,11 @@ def createIndex(fin, filename, api_filepath, api_title, api_label, githuburl):
             functions[ref_function.group(1)] = codeReference(ref_function.group(1), githuburl, filename, api_filepath, linenr)
             continue
 
-
+        # filter callback 
+        callback_function_definition = re.match(r'(.*?)\s*\(\s*\*.*\(*.*;\n', line)
+        if callback_function_definition:
+            continue
+            
         one_line_function_definition = re.match(r'(.*?)\s*\(.*\(*.*;\n', line)
         if one_line_function_definition:
             parts = one_line_function_definition.group(1).split(" ");
