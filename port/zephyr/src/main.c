@@ -295,6 +295,14 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 case HCI_OPCODE_HCI_READ_LOCAL_VERSION_INFORMATION:
                     local_version_information_handler(packet);
                     break;
+                case HCI_OPCODE_HCI_READ_BD_ADDR:
+                    params = hci_event_command_complete_get_return_parameters(packet);
+                    if(params[0] != 0)
+                        break;
+                    if(size < 12)
+                        break;
+                    reverse_48(&params[1], local_addr);
+                    break;
                 case HCI_OPCODE_HCI_ZEPHYR_READ_STATIC_ADDRESS:
                     params = hci_event_command_complete_get_return_parameters(packet);
                     if(params[0] != 0)
