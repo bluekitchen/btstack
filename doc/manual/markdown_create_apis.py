@@ -38,10 +38,26 @@ api_description = """
 code_ref = """GITHUB/FPATH#LLINENR"""
 
 def isEndOfComment(line):
-    return re.match(r'\s*\*/.*', line)
+    parts = re.match(r'\s*\*\/.*', line)
+    if parts:
+        return True
+    return False
 
 def isStartOfComment(line):
-    return re.match(r'\s*\/\*/.*', line)
+    parts = re.match(r'\s*\/\*\*.*', line)
+    if parts:
+        return True
+    return False
+
+def isComment(line): 
+    parts = re.match(r'\s*\/\/.*', line)
+    if parts:
+        return True
+    parts = re.match(r'\s*\*.*', line)
+    if parts:
+        return True
+
+    return isStartOfComment(line) or isEndOfComment(line)
 
 def isTypedefStart(line):
     return re.match(r'.*typedef\s+struct.*', line)
@@ -110,10 +126,7 @@ def createIndex(fin, filename, api_filepath, api_title, api_label, githuburl):
                 state = State.DoneAPI
                 continue
 
-        if multiline_function_def:
-            function_end = re.match('.*;\n', line)
-            if function_end:
-                multiline_function_def = 0
+        if isComment(line):
             continue
 
         param = re.match(".*@brief.*", line)
@@ -131,7 +144,10 @@ def createIndex(fin, filename, api_filepath, api_title, api_label, githuburl):
         param = re.match(".*@note.*", line)
         if param:
             continue
-
+        param = re.match(".*return.*", line)
+        if param:
+            continue
+        
         # search typedef struct begin
         if isTypedefStart(line):
             typedefFound = 1
@@ -153,7 +169,7 @@ def createIndex(fin, filename, api_filepath, api_title, api_label, githuburl):
         callback_function_definition = re.match(r'(.*?)\s*\(\s*\*.*\(*.*;\n', line)
         if callback_function_definition:
             continue
-            
+
         one_line_function_definition = re.match(r'(.*?)\s*\(.*\(*.*;\n', line)
         if one_line_function_definition:
             parts = one_line_function_definition.group(1).split(" ");
@@ -353,6 +369,9 @@ def main(argv):
 
     references = functions.copy()
     references.update(typedefs)
+
+    for function_name, url in references.items():
+        print(function_name, url)
 
     # with open(indexfile, 'w') as fout:
     #     for function, reference in references.items():
