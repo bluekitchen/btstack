@@ -150,7 +150,7 @@ uint8_t a2dp_source_disconnect(uint16_t a2dp_cid);
  * @param a2dp_cid 			A2DP channel identifier.
  * @param local_seid  		ID of a local stream endpoint.
  */
-void 	a2dp_source_stream_endpoint_request_can_send_now(uint16_t a2dp_cid, uint8_t local_seid);
+void a2dp_source_stream_endpoint_request_can_send_now(uint16_t a2dp_cid, uint8_t local_seid);
 
 /**
  * @brief Return maximal media payload size, does not include media header.
@@ -158,7 +158,7 @@ void 	a2dp_source_stream_endpoint_request_can_send_now(uint16_t a2dp_cid, uint8_
  * @param local_seid  		ID of a local stream endpoint.
  * @return max_media_payload_size_without_media_header
  */
-int 	a2dp_max_media_payload_size(uint16_t a2dp_cid, uint8_t local_seid);
+int a2dp_max_media_payload_size(uint16_t a2dp_cid, uint8_t local_seid);
 
 /**
  * @brief Send media payload.
@@ -171,8 +171,7 @@ int 	a2dp_max_media_payload_size(uint16_t a2dp_cid, uint8_t local_seid);
  * @param marker
  * @return status
  */
-uint8_t
-a2dp_source_stream_send_media_payload_rtp(uint16_t a2dp_cid, uint8_t local_seid, uint8_t marker, uint32_t timestamp,
+uint8_t a2dp_source_stream_send_media_payload_rtp(uint16_t a2dp_cid, uint8_t local_seid, uint8_t marker, uint32_t timestamp,
                                           uint8_t *payload, uint16_t payload_size);
 
 /**

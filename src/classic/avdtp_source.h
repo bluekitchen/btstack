@@ -256,8 +256,7 @@ uint8_t avdtp_source_stream_send_media_packet(uint16_t avdtp_cid, uint8_t local_
  * @param size
  * @return status
  */
-uint8_t
-avdtp_source_stream_send_media_payload_rtp(uint16_t avdtp_cid, uint8_t local_seid, uint8_t marker, uint32_t timestamp,
+uint8_t avdtp_source_stream_send_media_payload_rtp(uint16_t avdtp_cid, uint8_t local_seid, uint8_t marker, uint32_t timestamp,
                                            const uint8_t *payload, uint16_t size);
 
 /**

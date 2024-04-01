@@ -158,7 +158,7 @@ typedef struct {
  * - GATTSERVICE_SUBEVENT_BASS_CLIENT_NOTIFICATION_COMPLETE
  * @param packet_handler for events
  */
-void    broadcast_audio_scan_service_client_init(btstack_packet_handler_t packet_handler);
+void broadcast_audio_scan_service_client_init(btstack_packet_handler_t packet_handler);
 
 /**
  * @brief Connect to BASS Service on remote device

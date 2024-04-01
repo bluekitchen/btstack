@@ -168,8 +168,7 @@ void avdtp_source_deinit(void){
     avdtp_deinit();
 }
 
-static void
-avdtp_source_setup_media_header(uint8_t *media_packet, uint8_t marker, uint16_t sequence_number, uint32_t timestamp) {
+static void avdtp_source_setup_media_header(uint8_t *media_packet, uint8_t marker, uint16_t sequence_number, uint32_t timestamp) {
     uint8_t  rtp_version = 2;
     uint8_t  padding = 0;
     uint8_t  extension = 0;
@@ -188,8 +187,7 @@ avdtp_source_setup_media_header(uint8_t *media_packet, uint8_t marker, uint16_t 
     big_endian_store_32(media_packet, pos, ssrc); // only used for multicast
 }
 
-uint8_t
-avdtp_source_stream_send_media_payload_rtp(uint16_t avdtp_cid, uint8_t local_seid, uint8_t marker, uint32_t timestamp,
+uint8_t avdtp_source_stream_send_media_payload_rtp(uint16_t avdtp_cid, uint8_t local_seid, uint8_t marker, uint32_t timestamp,
                                            const uint8_t *payload, uint16_t payload_size) {
     UNUSED(avdtp_cid);
 
