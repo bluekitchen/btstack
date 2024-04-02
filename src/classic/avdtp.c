@@ -248,7 +248,7 @@ static avdtp_connection_t * avdtp_create_connection(bd_addr_t remote_addr, uint1
     connection->avdtp_cid = cid;
     (void)memcpy(connection->remote_addr, remote_addr, 6);
    
-    btstack_linked_list_add(&avdtp_connections, (btstack_linked_item_t *) connection);
+    btstack_linked_list_add_tail(&avdtp_connections, (btstack_linked_item_t *) connection);
     return connection;
 }
 
