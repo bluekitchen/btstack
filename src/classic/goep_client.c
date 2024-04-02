@@ -529,7 +529,7 @@ uint8_t goep_client_connect_l2cap(goep_client_t *goep_client, l2cap_ertm_config_
     memcpy(&goep_client->ertm_config, l2cap_ertm_config, sizeof(l2cap_ertm_config_t));
     goep_client->ertm_buffer_size = l2cap_ertm_buffer_size;
     goep_client->ertm_buffer = l2cap_ertm_buffer;
-    btstack_linked_list_add(&goep_clients, (btstack_linked_item_t *) goep_client);
+    btstack_linked_list_add_tail(&goep_clients, (btstack_linked_item_t *) goep_client);
 
     goep_client->l2cap_psm = l2cap_psm;
 

@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - HSP HS: use EV3 and 2EV3 packets for 7.5 ms voice interval
 - AVDTP: use round robin for outgoing connections
 - AVRCP: use round robin for outgoing connections
+- GOEP Client: use round robin for outgoing connections
 
 ### Changed
 - HCI: hci_reserved_packet_buffer and higher layer functions asserts if packet buffer is free instead of return value
