@@ -2055,6 +2055,7 @@ static bool l2cap_cbm_run_channel(l2cap_channel_t * channel) {
             channel->credits_incoming =  channel->new_credits_incoming;
             channel->new_credits_incoming = 0;
             mps = btstack_min(l2cap_max_le_mtu(), channel->local_mtu);
+            channel->local_mps = mps;
             l2cap_send_le_signaling_packet(channel->con_handle, LE_CREDIT_BASED_CONNECTION_RESPONSE, channel->remote_sig_id, channel->local_cid, channel->local_mtu, mps, channel->credits_incoming, 0);
             // notify client
             l2cap_cbm_emit_channel_opened(channel, ERROR_CODE_SUCCESS);
