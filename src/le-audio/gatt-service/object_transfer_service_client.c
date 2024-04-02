@@ -129,6 +129,39 @@ static char * ots_client_characteristic_name[] = {
 };
 #endif
 
+static void ots_client_emit_timeout(gatt_service_client_connection_helper_t * connection_helper, uint16_t characteristic_uuid){
+    btstack_assert(connection_helper != NULL);
+    btstack_assert(connection_helper->event_callback != NULL);
+
+    uint8_t event[17];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = GATTSERVICE_SUBEVENT_OTS_CLIENT_TIMEOUT;
+    little_endian_store_16(event, pos, characteristic_uuid);
+    pos += 2;
+    (*connection_helper->event_callback)(HCI_EVENT_PACKET, 0, event, pos);
+}
+
+static void ots_client_operations_timer_timeout_handler(btstack_timer_source_t * timer){
+    hci_con_handle_t con_handle = (hci_con_handle_t)(uintptr_t) btstack_run_loop_get_timer_context(timer);
+    ots_client_connection_t * connection = (ots_client_connection_t *)gatt_service_client_get_connection_for_con_handle(&ots_client, con_handle);
+
+    if (connection == NULL){
+        return;
+    }
+    ots_client_emit_timeout((gatt_service_client_connection_helper_t *) connection, gatt_service_client_characteristic_index2uuid16(&ots_client, connection->characteristic_index));
+    l2cap_le_disconnect(connection->basic_connection.cid);
+}
+
+static void ots_client_operations_start_timer(ots_client_connection_t * connection){
+    btstack_run_loop_set_timer_handler(&connection->operation_timer, ots_client_operations_timer_timeout_handler);
+    btstack_run_loop_set_timer_context(&connection->operation_timer, (void *)(uintptr_t)connection->basic_connection.con_handle);
+
+    btstack_run_loop_set_timer(&connection->operation_timer, 30000);
+    btstack_run_loop_add_timer(&connection->operation_timer);
+}
+
 ots_client_connection_t *  ots_client_get_connection_for_cbm_local_cid(uint16_t cbm_local_cid){
     btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, (btstack_linked_list_t *) &ots_client.connections);
@@ -600,6 +633,18 @@ static uint8_t ots_client_request_write_characteristic(ots_client_connection_t *
     return ots_client_request_send_gatt_query(connection, characteristic_index);
 }
 
+static uint8_t ots_client_start_oacp_procedure(ots_client_connection_t * connection){
+    connection->state = OBJECT_TRANSFER_SERVICE_CLIENT_STATE_W2_WRITE_CHARACTERISTIC_VALUE;
+    ots_client_operations_start_timer(connection);
+    return ots_client_request_send_gatt_query(connection, OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_ACTION_CONTROL_POINT);
+}
+
+static uint8_t ots_client_start_olcp_procedure(ots_client_connection_t * connection){
+    connection->state = OBJECT_TRANSFER_SERVICE_CLIENT_STATE_W2_WRITE_CHARACTERISTIC_VALUE;
+    ots_client_operations_start_timer(connection);
+    return ots_client_request_send_gatt_query(connection, OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_LIST_CONTROL_POINT);
+}
+
 static uint8_t ots_client_request_write_long_characteristic(ots_client_connection_t * connection, ots_client_characteristic_index_t characteristic_index){
     connection->state = OBJECT_TRANSFER_SERVICE_CLIENT_STATE_W2_WRITE_LONG_CHARACTERISTIC_VALUE;
     return ots_client_request_send_gatt_query(connection, characteristic_index);
@@ -751,9 +796,8 @@ static void ots_client_handle_gatt_client_event(uint8_t packet_type, uint16_t ch
                 case OBJECT_TRANSFER_SERVICE_CLIENT_STATE_W4_WRITE_CHARACTERISTIC_VALUE_RESULT:
                     ots_client_emit_done_event(connection_helper, connection->characteristic_index, gatt_event_query_complete_get_att_status(packet));
                     connection->state = OBJECT_TRANSFER_SERVICE_CLIENT_STATE_READY;
-
                     break;
-                
+
                 case OBJECT_TRANSFER_SERVICE_CLIENT_STATE_UNINITIALISED:
                     ots_client_emit_connected(connection, ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH);
                     break;
@@ -1119,24 +1163,8 @@ uint8_t ots_write_object_list_control_point(ots_client_connection_t * connection
         reverse_bytes(data, connection->data.data_bytes + connection->data_length,data_length);
         connection->data_length += data_length;
     }
-    return ots_client_request_write_characteristic(connection, OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_LIST_CONTROL_POINT);
+    return ots_client_start_olcp_procedure(connection);
 }
-
-uint8_t ots_write_object_action_control_point(ots_client_connection_t * connection, olcp_opcode_t opcode, uint8_t * data, uint8_t data_length){
-    btstack_assert(connection != NULL);
-    if (connection->state != OBJECT_TRANSFER_SERVICE_CLIENT_STATE_READY){
-        return ERROR_CODE_CONTROLLER_BUSY;
-    }
-
-    connection->data_length = 0;
-    connection->data.data_bytes[connection->data_length++] = opcode;
-    if (data_length > 0){
-        reverse_bytes(data, connection->data.data_bytes + connection->data_length,data_length);
-        connection->data_length += data_length;
-    }
-    return ots_client_request_write_characteristic(connection, OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_ACTION_CONTROL_POINT);
-}
-
 
 uint8_t object_transfer_service_client_command_first(ots_client_connection_t * connection){
     return ots_write_object_list_control_point(connection, OLCP_OPCODE_FIRST, NULL, 0);
@@ -1259,6 +1287,7 @@ static void ots_client_l2cap_cbm_packet_handler(uint8_t packet_type, uint16_t ch
                 connection->le_cbm_connection.cid = 0;
                 connection->le_cbm_connection.connection_handle = HCI_CON_HANDLE_INVALID;
                 connection->le_cbm_connection.mtu = 0;
+                btstack_run_loop_remove_timer(&connection->operation_timer);
             }
             break;
         default:
@@ -1289,7 +1318,7 @@ uint8_t object_transfer_service_client_open_object_channel(ots_client_connection
 
 uint8_t object_transfer_service_client_close_object_channel(ots_client_connection_t * connection){
     btstack_assert(connection != NULL);
-    return l2cap_disconnect(connection->le_cbm_connection.cid);
+    return l2cap_le_disconnect(connection->le_cbm_connection.cid);
 }
 
 
@@ -1312,7 +1341,7 @@ uint8_t object_transfer_service_client_read(ots_client_connection_t * connection
     connection->data_length += 4;
     little_endian_store_32(connection->data.data_bytes, connection->data_length, connection->cbm_data_chunk_length);
     connection->data_length += 4;
-    return ots_client_request_write_characteristic(connection, OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_ACTION_CONTROL_POINT);
+    return ots_client_start_oacp_procedure(connection);
 }
 
 uint8_t object_transfer_service_client_calculate_checksum(ots_client_connection_t * connection, uint32_t data_offset, uint32_t data_len){
@@ -1334,7 +1363,7 @@ uint8_t object_transfer_service_client_calculate_checksum(ots_client_connection_
     connection->data_length += 4;
     little_endian_store_32(connection->data.data_bytes, connection->data_length, connection->cbm_data_chunk_length);
     connection->data_length += 4;
-    return ots_client_request_write_characteristic(connection, OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_ACTION_CONTROL_POINT);
+    return ots_client_start_oacp_procedure(connection);
 }
 
 uint8_t object_transfer_service_client_write(ots_client_connection_t * connection, bool truncated, uint32_t data_offset, uint8_t *data, uint16_t data_len){
@@ -1358,7 +1387,7 @@ uint8_t object_transfer_service_client_write(ots_client_connection_t * connectio
     connection->data_length += 4;
     connection->data.data_bytes[connection->data_length++] = truncated ? 2 : 0;
 
-    return ots_client_request_write_characteristic(connection, OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_ACTION_CONTROL_POINT);
+    return ots_client_start_oacp_procedure(connection);
 }
 
 uint8_t object_transfer_service_client_execute(ots_client_connection_t * connection){
@@ -1369,7 +1398,7 @@ uint8_t object_transfer_service_client_execute(ots_client_connection_t * connect
 
     connection->data_length = 0;
     connection->data.data_bytes[connection->data_length++] = OACP_OPCODE_EXECUTE;
-    return ots_client_request_write_characteristic(connection, OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_ACTION_CONTROL_POINT);
+    return ots_client_start_oacp_procedure(connection);
 }
 
 
@@ -1381,7 +1410,7 @@ uint8_t object_transfer_service_client_delete_object(ots_client_connection_t * c
 
     connection->data_length = 0;
     connection->data.data_bytes[connection->data_length++] = OACP_OPCODE_DELETE;
-    return ots_client_request_write_characteristic(connection, OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_ACTION_CONTROL_POINT);
+    return ots_client_start_oacp_procedure(connection);
 }
 
 uint8_t object_transfer_service_client_abort(ots_client_connection_t * connection){
@@ -1392,7 +1421,7 @@ uint8_t object_transfer_service_client_abort(ots_client_connection_t * connectio
 
     connection->data_length = 0;
     connection->data.data_bytes[connection->data_length++] = OACP_OPCODE_ABORT;
-    return ots_client_request_write_characteristic(connection, OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_ACTION_CONTROL_POINT);
+    return ots_client_start_oacp_procedure(connection);
 }
 
 uint8_t object_transfer_service_client_create_object(ots_client_connection_t * connection, uint32_t object_size, ots_object_type_t type_uuid16){
@@ -1409,7 +1438,7 @@ uint8_t object_transfer_service_client_create_object(ots_client_connection_t * c
     little_endian_store_16(connection->data.data_bytes, connection->data_length, type_uuid16);
     connection->data_length += 2;
 
-    return ots_client_request_write_characteristic(connection, OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_ACTION_CONTROL_POINT);
+    return ots_client_start_oacp_procedure(connection);
 }
 
 uint8_t object_transfer_service_client_disconnect(ots_client_connection_t * connection){
