@@ -171,7 +171,6 @@ static void hci_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
     UNUSED(size);
 
     uint8_t status;
-    bd_addr_t address;
 
     if (packet_type != HCI_EVENT_PACKET){
         return;  
@@ -196,8 +195,9 @@ static void hci_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
         case GAP_EVENT_ADVERTISING_REPORT:
             if (app_state != APP_STATE_W4_SCAN_RESULT) return;
 
-            gap_event_advertising_report_get_address(packet, address);
-            if (blacklist_contains(address)) {
+            gap_event_advertising_report_get_address(packet, report.address);
+            report.address_type = gap_event_advertising_report_get_address_type(packet);
+            if (blacklist_contains(report.address)) {
                 break;
             }
             dump_advertising_report(packet);
