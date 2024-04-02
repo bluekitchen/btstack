@@ -451,6 +451,10 @@ static void gatt_client_event_handler(uint8_t packet_type, uint16_t channel, uin
 
             break;
 
+        case GATTSERVICE_SUBEVENT_OTS_CLIENT_TIMEOUT:
+            printf("OTS Client Test: Operation timeout\n");
+            break;
+
         case GATTSERVICE_SUBEVENT_OTS_CLIENT_DISCONNECTED:
             printf("OTS Client Test: disconnected\n");
             break;
@@ -502,7 +506,23 @@ static void show_usage(void){
     printf("S    - OLCP cmd ORDER\n");
     printf("t    - OLCP cmd NUMBER OF OBJECTS\n");
     printf("T    - OLCP cmd CLEAR MARKING\n");
-
+    printf("u    - Filter NAME_IS_EXACTLY\n");
+    printf("v    - Filter OBJECT_TYPE 7FB1\n");
+    printf("V    - Filter CREATED_BETWEEN\n");
+    printf("x    - Filter MODIFIED_BETWEEN\n");
+    printf("X    - Filter CURRENT_SIZE_BETWEEN\n");
+    printf("y    - Filter ALLOCATED_SIZE_BETWEEN\n");
+    printf("Y    - Filter MARKED_OBJECTS\n");
+    printf("0    - Open Object Channel\n");
+    printf("1    - OACP - Read Object \n");
+    printf("2    - OACP - Calculate Checksum, chunk length %d\n", cbm_object_read_chunk_transferred);
+    printf("3    - OACP - Write (not truncated)\n");
+    printf("4    - OACP - Write (truncated)\n");
+    printf("5    - OACP - Execute\n");
+    printf("6    - OACP - Abort\n");
+    printf("7    - OACP - Create\n");
+    printf("8    - OACP - Delete\n");
+    printf("9    - Close Object Channel\n");
 }
 
 
