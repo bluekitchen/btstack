@@ -4800,7 +4800,6 @@ static void hci_state_reset(void){
 
 #ifdef ENABLE_CLASSIC
     hci_stack->inquiry_lap = GAP_IAC_GENERAL_INQUIRY;
-    hci_stack->page_timeout = 0x6000;  // ca. 15 sec
 
     hci_stack->gap_tasks_classic =
             GAP_TASK_SET_DEFAULT_LINK_POLICY |
@@ -4921,6 +4920,9 @@ void hci_init(const hci_transport_t *transport, const void *config){
 
     // Link Supervision Timeout
     hci_stack->link_supervision_timeout = HCI_LINK_SUPERVISION_TIMEOUT_DEFAULT;
+
+    // Page Timeout
+    hci_stack->page_timeout = 0x6000;  // ca. 15 sec
 
     // All ACL packet types are enabledh
     hci_stack->enabled_packet_types_acl = ACL_PACKET_TYPES_ALL;
