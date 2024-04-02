@@ -644,7 +644,7 @@ static hfp_connection_t * create_hfp_connection_context(void){
 
     hfp_reset_context_flags(hfp_connection);
 
-    btstack_linked_list_add(&hfp_connections, (btstack_linked_item_t*)hfp_connection);
+    btstack_linked_list_add_tail(&hfp_connections, (btstack_linked_item_t*)hfp_connection);
     return hfp_connection;
 }
 
