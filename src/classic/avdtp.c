@@ -1084,7 +1084,7 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
     }
 }
 
-void avdtp_disconenct_streamendpoints(const avdtp_connection_t *connection) {
+static void avdtp_disconenct_streamendpoints(const avdtp_connection_t *connection) {
     btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, avdtp_get_stream_endpoints());
     while (btstack_linked_list_iterator_has_next(&it)){
