@@ -1084,19 +1084,13 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
     }
 }
 
-uint8_t avdtp_disconnect(uint16_t avdtp_cid){
-    avdtp_connection_t * connection = avdtp_get_connection_for_avdtp_cid(avdtp_cid);
-    if (!connection) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-
-    if (connection->state == AVDTP_SIGNALING_CONNECTION_W4_L2CAP_DISCONNECTED) return ERROR_CODE_SUCCESS;
-    
-    btstack_linked_list_iterator_t it;    
+void avdtp_disconenct_streamendpoints(const avdtp_connection_t *connection) {
+    btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, avdtp_get_stream_endpoints());
-
     while (btstack_linked_list_iterator_has_next(&it)){
         avdtp_stream_endpoint_t * stream_endpoint = (avdtp_stream_endpoint_t *)btstack_linked_list_iterator_next(&it);
         if (stream_endpoint->connection != connection) continue;
-    
+
         switch (stream_endpoint->state){
             case AVDTP_STREAM_ENDPOINT_OPENED:
             case AVDTP_STREAM_ENDPOINT_STREAMING:
@@ -1105,11 +1099,30 @@ uint8_t avdtp_disconnect(uint16_t avdtp_cid){
                 break;
             default:
                 break;
-        } 
+        }
     }
+}
 
-    connection->state = AVDTP_SIGNALING_CONNECTION_W4_L2CAP_DISCONNECTED;
-    l2cap_disconnect(connection->l2cap_signaling_cid);
+uint8_t avdtp_disconnect(uint16_t avdtp_cid){
+    avdtp_connection_t * connection = avdtp_get_connection_for_avdtp_cid(avdtp_cid);
+    if (!connection) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+
+    switch (connection->state){
+        case AVDTP_SIGNALING_CONNECTION_OPENED:
+            avdtp_disconenct_streamendpoints(connection);
+            connection->state = AVDTP_SIGNALING_CONNECTION_W4_L2CAP_DISCONNECTED;
+            l2cap_disconnect(connection->l2cap_signaling_cid);
+            break;
+        case AVDTP_SIGNALING_CONNECTION_W4_L2CAP_DISCONNECTED:
+            // stream endpoints closed, wait for disconnected
+            break;
+        default:
+            // connection has not been reported as established yet, report open failed
+            avdtp_signaling_emit_connection_established(connection->avdtp_cid, connection->remote_addr,
+                                                        connection->con_handle, ERROR_CODE_UNSPECIFIED_ERROR);
+            avdtp_finalize_connection(connection);
+            break;
+    }
     return ERROR_CODE_SUCCESS;
 }
 

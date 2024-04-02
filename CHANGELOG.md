@@ -22,6 +22,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - HFP AG: send OK after SLC for HF that does not support 3-way-calling or HF Indicators
 - HSP HS: use EV3 and 2EV3 packets for 7.5 ms voice interval
 - AVDTP: use round robin for outgoing connections
+- AVDTP: allow call to avdtp_disconnect before connection was established
+- A2DP: allow call to avdtp_disconnect before connection was established
 - AVRCP: use round robin for outgoing connections
 - GOEP Client: use round robin for outgoing connections
 - HID Host: use round robin for outgoing connections
