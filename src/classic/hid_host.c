@@ -356,7 +356,7 @@ static hid_host_connection_t * hid_host_create_connection(bd_addr_t remote_addr)
     connection->con_handle = HCI_CON_HANDLE_INVALID;
 
     (void)memcpy(connection->remote_addr, remote_addr, 6);
-    btstack_linked_list_add(&hid_host_connections, (btstack_linked_item_t *) connection);
+    btstack_linked_list_add_tail(&hid_host_connections, (btstack_linked_item_t *) connection);
     return connection;
 }
 

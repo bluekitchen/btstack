@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - AVDTP: use round robin for outgoing connections
 - AVRCP: use round robin for outgoing connections
 - GOEP Client: use round robin for outgoing connections
+- HID Host: use round robin for outgoing connections
 
 ### Changed
 - HCI: hci_reserved_packet_buffer and higher layer functions asserts if packet buffer is free instead of return value
