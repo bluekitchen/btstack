@@ -122,6 +122,8 @@ typedef struct {
 
     uint8_t long_value_buffer[OTS_MAX_STRING_LENGHT + 1];
     uint8_t long_value_buffer_length;
+
+    btstack_timer_source_t operation_timer;
 } ots_client_connection_t;
 
 /* API_START */
