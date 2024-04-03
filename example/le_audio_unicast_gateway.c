@@ -279,12 +279,13 @@ static struct {
 static void show_usage(void);
 
 static void print_config(void) {
+    static const char * generator[] = { "Sine", "Modplayer", "Recording"};
     printf("Config '%s' -> %u, %s ms, %u octets - %s\n",
            codec_configurations[menu_sampling_frequency].variants[menu_variant].name,
            codec_configurations[menu_sampling_frequency].samplingrate_hz,
            codec_configurations[menu_sampling_frequency].variants[menu_variant].frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US ? "7.5" : "10",
            codec_configurations[menu_sampling_frequency].variants[menu_variant].octets_per_frame,
-           audio_source == AUDIO_SOURCE_SINE ? "Sine" : "Modplayer");
+           generator[audio_source - AUDIO_SOURCE_SINE]);
 }
 
 static server_t * server_for_acl_con_handle(hci_con_handle_t acl_con_handle){
@@ -1375,7 +1376,7 @@ static void show_usage(void){
     printf("---\n");
     printf("f - next sampling frequency\n");
     printf("v - next codec variant\n");
-    printf("x - toggle sine / modplayer\n");
+    printf("x - toggle sine / modplayer / recording\n");
     printf("s - start scanning for headphones\n");
     printf("q - disconnect\n");
     printf("---\n");
@@ -1426,6 +1427,9 @@ static void stdin_process(char c){
                     audio_source = AUDIO_SOURCE_SINE;
                     break;
                 case AUDIO_SOURCE_SINE:
+                    audio_source = AUDIO_SOURCE_RECORDING;
+                    break;
+                case AUDIO_SOURCE_RECORDING:
                     audio_source = AUDIO_SOURCE_MODPLAYER;
                     break;
                 default:
