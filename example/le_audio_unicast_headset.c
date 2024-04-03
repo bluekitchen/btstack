@@ -279,8 +279,8 @@ static void pacs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
 
 static le_extended_advertising_parameters_t extended_params = {
         .advertising_event_properties = 1,  // connectable
-        .primary_advertising_interval_min = 0x0030,
-        .primary_advertising_interval_max = 0x0030,
+        .primary_advertising_interval_min = 160,    // 100 ms
+        .primary_advertising_interval_max = 192,    // 120 ms
         .primary_advertising_channel_map = 7,
         .own_address_type = BD_ADDR_TYPE_LE_PUBLIC,
         .peer_address_type = 0,
