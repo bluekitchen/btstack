@@ -52,6 +52,10 @@
 #define NUM_INPUT_BUFFERS                2
 #define DRIVER_POLL_INTERVAL_MS          5
 
+#ifndef MAX_NR_AUDIO_CHANNELS
+#define MAX_NR_AUDIO_CHANNELS 2
+#endif
+
 #include <portaudio.h>
 
 // config
@@ -79,14 +83,14 @@ static void (*playback_callback)(int16_t * buffer, uint16_t num_samples);
 static void (*recording_callback)(const int16_t * buffer, uint16_t num_samples);
 
 // output buffer
-static int16_t               output_buffer_storage[NUM_OUTPUT_BUFFERS * NUM_FRAMES_PER_PA_BUFFER * 2];   // stereo
+static int16_t               output_buffer_storage[NUM_OUTPUT_BUFFERS * NUM_FRAMES_PER_PA_BUFFER * MAX_NR_AUDIO_CHANNELS];
 static int16_t             * output_buffers[NUM_OUTPUT_BUFFERS];
 static int                   output_buffer_to_play;
 static int                   output_buffer_to_fill;
 
 // input buffer
-static int16_t               input_buffer_a[NUM_FRAMES_PER_PA_BUFFER * 2];   // stereo
-static int16_t               input_buffer_b[NUM_FRAMES_PER_PA_BUFFER * 2];   // stereo
+static int16_t               input_buffer_a[NUM_FRAMES_PER_PA_BUFFER * MAX_NR_AUDIO_CHANNELS];
+static int16_t               input_buffer_b[NUM_FRAMES_PER_PA_BUFFER * MAX_NR_AUDIO_CHANNELS];
 static int16_t             * input_buffers[NUM_INPUT_BUFFERS] = { input_buffer_a, input_buffer_b};
 static int                   input_buffer_to_record;
 static int                   input_buffer_to_fill;
@@ -200,12 +204,14 @@ static int btstack_audio_portaudio_sink_init(
 ){
     PaError err;
 
+    btstack_assert(channels <= MAX_NR_AUDIO_CHANNELS);
+
     num_channels_sink = channels;
     num_bytes_per_sample_sink = 2 * channels;
 
     uint8_t i;
     for (i=0;i<NUM_OUTPUT_BUFFERS;i++){
-        output_buffers[i] = &output_buffer_storage[i * NUM_FRAMES_PER_PA_BUFFER * 2];
+        output_buffers[i] = &output_buffer_storage[i * NUM_FRAMES_PER_PA_BUFFER * MAX_NR_AUDIO_CHANNELS];
     }
 
     if (!playback){
@@ -271,6 +277,8 @@ static int btstack_audio_portaudio_source_init(
     void (*recording)(const int16_t * buffer, uint16_t num_samples)
 ){
     PaError err;
+
+    btstack_assert(channels <= MAX_NR_AUDIO_CHANNELS);
 
     num_channels_source = channels;
     num_bytes_per_sample_source = 2 * channels;
@@ -356,7 +364,7 @@ static void btstack_audio_portaudio_sink_start_stream(void){
     // fill buffers once
     uint8_t i;
     for (i=0;i<NUM_OUTPUT_BUFFERS-1;i++){
-        (*playback_callback)(&output_buffer_storage[i*NUM_FRAMES_PER_PA_BUFFER*2], NUM_FRAMES_PER_PA_BUFFER);
+        (*playback_callback)(&output_buffer_storage[i * NUM_FRAMES_PER_PA_BUFFER * MAX_NR_AUDIO_CHANNELS], NUM_FRAMES_PER_PA_BUFFER);
     }
     output_buffer_to_play = 0;
     output_buffer_to_fill = NUM_OUTPUT_BUFFERS-1;
