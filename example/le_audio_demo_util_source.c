@@ -42,9 +42,10 @@
 #include <stdio.h>
 #include <math.h>
 
-#include "btstack_bool.h"
 #include "btstack_config.h"
-#include <btstack_debug.h>
+#include "btstack_bool.h"
+#include "btstack_debug.h"
+#include "btstack_ring_buffer.h"
 
 #include "hci.h"
 #include "btstack_audio.h"
@@ -54,39 +55,13 @@
 #include "hxcmod.h"
 #include "mods/mod.h"
 
-#ifdef HAVE_POSIX_FILE_IO
-#include "wav_util.h"
-#include "btstack_ring_buffer.h"
-
-#endif
-
-//#define DEBUG_PLC
-#ifdef DEBUG_PLC
-#define printf_plc(...) printf(__VA_ARGS__)
-#else
-#define printf_plc(...)  (void)(0);
-#endif
-
 #define MAX_CHANNELS 5
-#define MAX_SAMPLES_PER_FRAME 480
+#define MAX_SAMPLES_PER_10MS_FRAME 480
 #define MAX_LC3_FRAME_BYTES   155
 
-// playback
-#define MAX_NUM_LC3_FRAMES   15
-#define MAX_BYTES_PER_SAMPLE 4
-#define PLAYBACK_BUFFER_SIZE (MAX_NUM_LC3_FRAMES * MAX_SAMPLES_PER_FRAME * MAX_BYTES_PER_SAMPLE)
-#define PLAYBACK_START_MS (MAX_NUM_LC3_FRAMES * 20 / 3)
-
-#define ANSI_COLOR_RED     "\x1b[31m"
-#define ANSI_COLOR_GREEN   "\x1b[32m"
-#define ANSI_COLOR_YELLOW  "\x1b[33m"
-#define ANSI_COLOR_BLUE    "\x1b[34m"
-#define ANSI_COLOR_MAGENTA "\x1b[35m"
-#define ANSI_COLOR_CYAN    "\x1b[36m"
-#define ANSI_COLOR_RESET   "\x1b[0m"
-
-// analysis
-#define PACKET_PREFIX_LEN 10
+// live recording
+#define RECORDING_PREBUFFER__MS          20
+#define RECORDING_BUFFER_MS              40
 
 // SOURCE
 static float sine_frequencies[MAX_CHANNELS] = {
@@ -119,7 +94,7 @@ static uint8_t le_audio_demo_source_iso_payload[MAX_CHANNELS * MAX_LC3_FRAME_BYT
 // lc3 encoder
 static const btstack_lc3_encoder_t * le_audio_demo_source_lc3_encoder;
 static btstack_lc3_encoder_google_t  le_audio_demo_source_encoder_contexts[MAX_CHANNELS];
-static int16_t                       le_audio_demo_source_pcm[MAX_CHANNELS * MAX_SAMPLES_PER_FRAME];
+static int16_t                       le_audio_demo_source_pcm[MAX_CHANNELS * MAX_SAMPLES_PER_10MS_FRAME];
 
 // sine generator
 static uint16_t le_audio_demo_source_sine_samples[MAX_CHANNELS];
@@ -130,7 +105,51 @@ static bool                 le_audio_demo_source_hxcmod_initialized;
 static modcontext           le_audio_demo_source_hxcmod_context;
 static tracker_buffer_state le_audio_demo_source_hxcmod_trkbuf;
 
-void le_audio_demo_util_source_init(void){
+// recording / portaudio
+#define SAMPLES_PER_CHANNEL_RECORDING (MAX_SAMPLES_PER_10MS_FRAME * RECORDING_BUFFER_MS / 10)
+static uint8_t recording_storage[MAX_CHANNELS * 2 * SAMPLES_PER_CHANNEL_RECORDING];
+static btstack_ring_buffer_t le_audio_demo_source_recording_buffer;
+static uint16_t le_audio_demo_source_recording_stored_samples;
+static uint16_t le_audio_demo_source_recording_prebuffer_samples;
+static bool le_audio_demo_source_recording_streaming;
+static btstack_audio_source_t const * le_audio_demo_audio_source;
+
+// generation method
+static le_audio_demo_source_generator le_audio_demo_util_source_generator = AUDIO_SOURCE_SINE;
+
+// recording callback has channels interleaved, collect per channel
+static void le_audio_util_source_recording_callback(const int16_t * buffer, uint16_t num_samples){
+    log_info("store %u samples per channel", num_samples);
+    uint32_t bytes_to_store = le_audio_demo_source_num_channels * num_samples * 2;
+    if (bytes_to_store < btstack_ring_buffer_bytes_free(&le_audio_demo_source_recording_buffer)){
+        btstack_ring_buffer_write(&le_audio_demo_source_recording_buffer, (uint8_t *)buffer, bytes_to_store);
+        le_audio_demo_source_recording_stored_samples += num_samples;
+    }
+}
+
+void le_audio_demo_util_source_init(void) {
+    le_audio_demo_audio_source = btstack_audio_source_get_instance();
+}
+
+static bool le_audio_demo_util_source_recording_start(void){
+    bool ok = false;
+    if (le_audio_demo_audio_source != NULL){
+        int init_ok = le_audio_demo_audio_source->init(le_audio_demo_source_num_channels, le_audio_demo_source_sampling_frequency_hz,
+                                         &le_audio_util_source_recording_callback);
+        log_info("recording initialized, ok %u", init_ok);
+        btstack_ring_buffer_init(&le_audio_demo_source_recording_buffer, recording_storage, sizeof(recording_storage));
+        le_audio_demo_source_recording_prebuffer_samples = le_audio_demo_source_num_channels * le_audio_demo_source_sampling_frequency_hz * RECORDING_PREBUFFER__MS / 1000;
+        le_audio_demo_source_recording_streaming = false;
+        le_audio_demo_source_recording_stored_samples = 0;
+        le_audio_demo_audio_source->start_stream();
+        log_info("recording start, %u prebuffer samples per channel", le_audio_demo_source_recording_prebuffer_samples / le_audio_demo_source_num_channels);
+        ok = true;
+    }
+    return ok;
+}
+
+static void le_audio_demo_util_source_recording_stop(void) {
+    le_audio_demo_audio_source->stop_stream();
 }
 
 static void le_audio_demo_source_setup_lc3_encoder(void){
@@ -185,7 +204,7 @@ void le_audio_demo_util_source_configure(uint8_t num_streams, uint8_t num_channe
     btstack_assert((le_audio_demo_source_num_channels == 1) || (le_audio_demo_source_num_channels == 2));
 
     le_audio_demo_source_num_samples_per_frame = btstack_lc3_samples_per_frame(sampling_frequency_hz, frame_duration);
-    btstack_assert(le_audio_demo_source_num_samples_per_frame <= MAX_SAMPLES_PER_FRAME);
+    btstack_assert(le_audio_demo_source_num_samples_per_frame <= MAX_SAMPLES_PER_10MS_FRAME);
 
     // setup encoder
     le_audio_demo_source_setup_lc3_encoder();
@@ -201,10 +220,27 @@ void le_audio_demo_util_source_generate_iso_frame(le_audio_demo_source_generator
     btstack_assert(le_audio_demo_source_octets_per_frame != 0);
     uint16_t sample;
     bool encode_pcm = true;
+
     // more than 2 channels only supported by sine generator & counter
     if ((le_audio_demo_source_num_channels > 2) && (generator != AUDIO_SOURCE_COUNTER)){
         generator = AUDIO_SOURCE_SINE;
     }
+
+    // lazy init of btstack_audio, fallback to sine
+    if ((generator == AUDIO_SOURCE_RECORDING) && (le_audio_demo_util_source_generator != AUDIO_SOURCE_RECORDING)){
+        bool ok = le_audio_demo_util_source_recording_start();
+        if (ok) {
+            le_audio_demo_util_source_generator = generator;
+        } else {
+            generator = AUDIO_SOURCE_SINE;
+        }
+    }
+
+    // stop recording
+    if ((generator != AUDIO_SOURCE_RECORDING) && (le_audio_demo_util_source_generator == AUDIO_SOURCE_RECORDING)) {
+        le_audio_demo_util_source_recording_stop();
+    }
+
     switch (generator){
         case AUDIO_SOURCE_COUNTER:
             encode_pcm = false;
@@ -235,6 +271,31 @@ void le_audio_demo_util_source_generate_iso_frame(le_audio_demo_source_generator
                 }
             }
             break;
+        case AUDIO_SOURCE_RECORDING:
+            if (le_audio_demo_source_recording_streaming == false){
+                if (le_audio_demo_source_recording_stored_samples >= le_audio_demo_source_recording_prebuffer_samples){
+                    // start streaming audio
+                    le_audio_demo_source_recording_streaming = true;
+                    log_info("Streaming started");
+
+                }
+            }
+            if (le_audio_demo_source_recording_streaming){
+                uint32_t bytes_needed = le_audio_demo_source_num_channels * le_audio_demo_source_num_samples_per_frame * 2;
+                if (btstack_ring_buffer_bytes_available(&le_audio_demo_source_recording_buffer) >= bytes_needed){
+                    uint32_t bytes_read;
+                    btstack_ring_buffer_read(&le_audio_demo_source_recording_buffer, (uint8_t*) le_audio_demo_source_pcm, bytes_needed, &bytes_read);
+                    btstack_assert(bytes_needed == bytes_needed);
+                    log_info("Read %u samples per channel", le_audio_demo_source_num_samples_per_frame);
+                    le_audio_demo_source_recording_stored_samples -= le_audio_demo_source_num_samples_per_frame;
+                } else {
+                    le_audio_demo_source_recording_streaming = false;
+                    log_info("Streaming underrun");
+                }
+            } else {
+                memset(le_audio_demo_source_pcm, 0, sizeof(le_audio_demo_source_pcm));
+            }
+            break;
         default:
             btstack_unreachable();
             break;
@@ -246,6 +307,8 @@ void le_audio_demo_util_source_generate_iso_frame(le_audio_demo_source_generator
             le_audio_demo_source_lc3_encoder->encode_signed_16(&le_audio_demo_source_encoder_contexts[i], &le_audio_demo_source_pcm[i], le_audio_demo_source_num_channels, &le_audio_demo_source_iso_payload[i * MAX_LC3_FRAME_BYTES]);
         }
     }
+
+    le_audio_demo_util_source_generator = generator;
 };
 
 void le_audio_demo_util_source_send(uint8_t stream_index, hci_con_handle_t con_handle){
@@ -278,4 +341,7 @@ void le_audio_demo_util_source_send(uint8_t stream_index, hci_con_handle_t con_h
 }
 
 void le_audio_demo_util_source_close(void){
+    if (le_audio_demo_audio_source != NULL){
+        le_audio_demo_audio_source->close();
+    }
 }
