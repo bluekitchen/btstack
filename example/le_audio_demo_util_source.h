@@ -48,7 +48,8 @@ extern "C" {
 typedef enum {
     AUDIO_SOURCE_COUNTER,
     AUDIO_SOURCE_SINE,
-    AUDIO_SOURCE_MODPLAYER
+    AUDIO_SOURCE_MODPLAYER,
+    AUDIO_SOURCE_RECORDING,
 } le_audio_demo_source_generator;
 
 /**
