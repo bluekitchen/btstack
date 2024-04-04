@@ -133,9 +133,6 @@ static bass_source_data_t bass_source_data;
 static uint16_t bass_cid;
 static uint8_t  bass_source_id;
 
-// test device name
-static const char test_device_name[] = "OnePlus Buds Pro 2";
-
 /* Scanning */
 
 static void start_scanning() {
