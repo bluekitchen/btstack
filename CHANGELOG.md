@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 - GAP: allow use of own address type different from gap_random_set_mode() incl. RPA in LE Extended Advertising
+- GAP: emit GAP_SUBEVENT_LE_CONNECTION_COMPLETE for failed outgoing connections
 - SM: abort pairing with invalid parameter error for encryption key size > 16
 - SM: ignore Security Request after re-encryption has started
 - SM: respond to Pairing Request after Identity Resolution failed

@@ -3362,7 +3362,10 @@ static void hci_handle_le_connection_complete_event(const uint8_t * hci_event){
 			btstack_linked_list_remove(&hci_stack->connections, (btstack_linked_item_t *) conn);
 			btstack_memory_hci_connection_free( conn );
 		}
-		return;
+
+        // emit GAP_SUBEVENT_LE_CONNECTION_COMPLETE for error case
+        hci_emit_event(gap_event, sizeof(gap_event), 1);
+        return;
 	}
 #endif
 
