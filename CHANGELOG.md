@@ -36,7 +36,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - GAP: suppress GAP_SUBEVENT_LE_CONNECTION_COMPLETE for intermediate connection pause due to filterlist update
 - GAP: mutual authentication for legacy secure connections to prevent BIAS attacks was made optional with 
        ENABLE_MUTUAL_AUTHENTICATION_FOR_LEGACY_SECURE_CONNECTIONS. Not needed for default encryption key size of 16
-
+- HCI Dump: only log internal/BTstack events for ENABLE_LOG_BTSTACK_EVENTS
 
 ## Release v1.6
 

@@ -214,6 +214,7 @@ static void hci_emit_nr_connections_changed(void);
 static void hci_emit_hci_open_failed(void);
 static void hci_emit_dedicated_bonding_result(bd_addr_t address, uint8_t status);
 static void hci_emit_event(uint8_t * event, uint16_t size, int dump);
+static void hci_emit_btstack_event(uint8_t * event, uint16_t size, int dump);
 static void hci_emit_acl_packet(uint8_t * packet, uint16_t size);
 static void hci_run(void);
 static bool hci_is_le_connection(hci_connection_t * connection);
@@ -522,7 +523,7 @@ static void hci_pairing_started(hci_connection_t * hci_connection, bool ssp){
     reverse_bd_addr(hci_connection->address, &event[4]);
     event[10] = (uint8_t) ssp;
     event[11] = (uint8_t) initiator;
-    hci_emit_event(event, sizeof(event), 1);
+    hci_emit_btstack_event(event, sizeof(event), 1);
 }
 
 static void hci_pairing_complete(hci_connection_t * hci_connection, uint8_t status){
@@ -543,7 +544,7 @@ static void hci_pairing_complete(hci_connection_t * hci_connection, uint8_t stat
     little_endian_store_16(event, 2, (uint16_t) hci_connection->con_handle);
     reverse_bd_addr(hci_connection->address, &event[4]);
     event[10] = status;
-    hci_emit_event(event, sizeof(event), 1);
+    hci_emit_btstack_event(event, sizeof(event), 1);
 
     // emit dedicated bonding done on failure, otherwise verify that connection can be encrypted
     if ((status != ERROR_CODE_SUCCESS) && ((hci_connection->bonding_flags & BONDING_DEDICATED) != 0)){
@@ -1580,7 +1581,7 @@ void le_handle_advertisement_report(uint8_t *packet, uint16_t size){
         (void)memcpy(&event[pos], &packet[offset], data_length);
         pos +=    data_length;
         offset += data_length + 1u; // rssi
-        hci_emit_event(event, pos, 1);
+        hci_emit_btstack_event(event, pos, 1);
     }
 }
 
@@ -1644,7 +1645,7 @@ static void le_handle_extended_advertisement_report(uint8_t *packet, uint16_t si
             (void) memcpy(&event[pos], &packet[offset], 1 + data_length);
             pos    += 1 +data_length;
             offset += 1+ data_length;
-            hci_emit_event(event, pos, 1);
+            hci_emit_btstack_event(event, pos, 1);
         } else {
             event[0] = GAP_EVENT_EXTENDED_ADVERTISING_REPORT;
             uint8_t report_len = 24 + data_length;
@@ -1652,7 +1653,7 @@ static void le_handle_extended_advertisement_report(uint8_t *packet, uint16_t si
             little_endian_store_16(event, 2, event_type);
             memcpy(&event[4], &packet[offset], report_len);
             offset += report_len;
-            hci_emit_event(event, 2 + report_len, 1);
+            hci_emit_btstack_event(event, 2 + report_len, 1);
         }
     }
 }
@@ -2853,7 +2854,7 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
                 event[0] = GAP_EVENT_RSSI_MEASUREMENT;
                 event[1] = 3;
                 (void)memcpy(&event[2], &packet[6], 3);
-                hci_emit_event(event, sizeof(event), 1);
+                hci_emit_btstack_event(event, sizeof(event), 1);
             }
             break;
 #ifdef ENABLE_BLE
@@ -2904,7 +2905,7 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
                 if (adv_status == 0){
                     advertising_set->state |= LE_ADVERTISEMENT_STATE_PARAMS_SET;
                 }
-                hci_emit_event(event, sizeof(event), 1);
+                hci_emit_btstack_event(event, sizeof(event), 1);
             }
             break;
         case HCI_OPCODE_HCI_LE_REMOVE_ADVERTISING_SET:
@@ -2916,7 +2917,7 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
                 if (status == 0){
                     btstack_linked_list_remove(&hci_stack->le_advertising_sets, (btstack_linked_item_t *) advertising_set);
                 }
-                hci_emit_event(event, sizeof(event), 1);
+                hci_emit_btstack_event(event, sizeof(event), 1);
             }
             break;
 #endif
@@ -2946,7 +2947,7 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
             if (hci_stack->inquiry_state == GAP_INQUIRY_STATE_W4_CANCELLED){
                 hci_stack->inquiry_state = GAP_INQUIRY_STATE_IDLE;
                 uint8_t event[] = { GAP_EVENT_INQUIRY_COMPLETE, 1, 0};
-                hci_emit_event(event, sizeof(event), 1);
+                hci_emit_btstack_event(event, sizeof(event), 1);
             }
             break;
 #endif
@@ -3032,7 +3033,7 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
                     event[2] = 1;
                 }
             }
-            hci_emit_event(event, sizeof(event), 0);
+            hci_emit_btstack_event(event, sizeof(event), 0);
             break;
         }
 
@@ -3451,7 +3452,7 @@ static void hci_handle_le_connection_complete_event(const uint8_t * hci_event){
 	log_info("New connection: handle %u, %s", conn->con_handle, bd_addr_to_str(conn->address));
 
     // emit GAP_SUBEVENT_LE_CONNECTION_COMPLETE
-    hci_emit_event(gap_event, sizeof(gap_event), 1);
+    hci_emit_btstack_event(gap_event, sizeof(gap_event), 1);
 
     // emit BTSTACK_EVENT_NR_CONNECTIONS_CHANGED;
 	hci_emit_nr_connections_changed();
@@ -3710,7 +3711,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
             if (hci_stack->inquiry_state == GAP_INQUIRY_STATE_ACTIVE){
                 hci_stack->inquiry_state = GAP_INQUIRY_STATE_IDLE;
                 uint8_t event[] = { GAP_EVENT_INQUIRY_COMPLETE, 1, 0};
-                hci_emit_event(event, sizeof(event), 1);
+                hci_emit_btstack_event(event, sizeof(event), 1);
             }
             break;
         case HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE:
@@ -7916,8 +7917,7 @@ uint8_t hci_send_cmd(const hci_cmd_t * cmd, ...){
     return status;
 }
 
-// Create various non-HCI events. 
-// TODO: generalize, use table similar to hci_create_command
+// Forward HCI events and create non-HCI events
 
 static void hci_emit_event(uint8_t * event, uint16_t size, int dump){
     // dump packet
@@ -7934,6 +7934,13 @@ static void hci_emit_event(uint8_t * event, uint16_t size, int dump){
     }
 }
 
+static void hci_emit_btstack_event(uint8_t * event, uint16_t size, int dump){
+#ifndef ENABLE_LOG_BTSTACK_EVENTS
+    dump = 0;
+#endif
+    hci_emit_event(event, size, dump);
+}
+
 static void hci_emit_acl_packet(uint8_t * packet, uint16_t size){
     if (!hci_stack->acl_packet_handler) return;
     hci_stack->acl_packet_handler(HCI_ACL_DATA_PACKET, 0, packet, size);
@@ -7946,7 +7953,7 @@ static void hci_notify_if_sco_can_send_now(void){
     if (hci_can_send_sco_packet_now()){
         hci_stack->sco_waiting_for_can_send_now = 0;
         uint8_t event[2] = { HCI_EVENT_SCO_CAN_SEND_NOW, 0 };
-        hci_dump_packet(HCI_EVENT_PACKET, 1, event, sizeof(event));
+        hci_dump_btstack_event(event, sizeof(event));
         hci_stack->sco_packet_handler(HCI_EVENT_PACKET, 0, event, sizeof(event));
     }
 }
@@ -8046,7 +8053,7 @@ static void gap_inquiry_explode(uint8_t *packet, uint16_t size) {
                 return;
         }
         event[1] = event_size - 2;
-        hci_emit_event(event, event_size, 1);
+        hci_emit_btstack_event(event, event_size, 1);
     }
 }
 #endif
@@ -8057,7 +8064,7 @@ void hci_emit_state(void){
     event[0] = BTSTACK_EVENT_STATE;
     event[1] = sizeof(event) - 2u;
     event[2] = hci_stack->state;
-    hci_emit_event(event, sizeof(event), 1);
+    hci_emit_btstack_event(event, sizeof(event), 1);
 }
 
 #ifdef ENABLE_CLASSIC
@@ -8070,7 +8077,7 @@ static void hci_emit_connection_complete(bd_addr_t address, hci_con_handle_t con
     reverse_bd_addr(address, &event[5]);
     event[11] = 1; // ACL connection
     event[12] = 0; // encryption disabled
-    hci_emit_event(event, sizeof(event), 1);
+    hci_emit_btstack_event(event, sizeof(event), 1);
 }
 static void hci_emit_l2cap_check_timeout(hci_connection_t *conn){
     if (disable_l2cap_timeouts) return;
@@ -8079,7 +8086,7 @@ static void hci_emit_l2cap_check_timeout(hci_connection_t *conn){
     event[0] = L2CAP_EVENT_TIMEOUT_CHECK;
     event[1] = sizeof(event) - 2;
     little_endian_store_16(event, 2, conn->con_handle);
-    hci_emit_event(event, sizeof(event), 1);
+    hci_emit_btstack_event(event, sizeof(event), 1);
 }
 #endif
 
@@ -8099,11 +8106,11 @@ static void hci_emit_le_connection_complete(uint8_t address_type, const bd_addr_
     little_endian_store_16(hci_event, 16, 0); // latency
     little_endian_store_16(hci_event, 18, 0); // supervision timeout
     hci_event[20] = 0; // master clock accuracy
-    hci_emit_event(hci_event, sizeof(hci_event), 1);
+    hci_emit_btstack_event(hci_event, sizeof(hci_event), 1);
     // emit GAP event, too
     uint8_t gap_event[36];
     hci_create_gap_connection_complete_event(hci_event, gap_event);
-    hci_emit_event(gap_event, sizeof(gap_event), 1);
+    hci_emit_btstack_event(gap_event, sizeof(gap_event), 1);
 }
 #endif
 #endif
@@ -8111,7 +8118,7 @@ static void hci_emit_le_connection_complete(uint8_t address_type, const bd_addr_
 static void hci_emit_transport_packet_sent(void){
     // notify upper stack that it might be possible to send again
     uint8_t event[] = { HCI_EVENT_TRANSPORT_PACKET_SENT, 0};
-    hci_emit_event(&event[0], sizeof(event), 0);  // don't dump
+    hci_emit_btstack_event(&event[0], sizeof(event), 0);  // don't dump
 }
 
 static void hci_emit_disconnection_complete(hci_con_handle_t con_handle, uint8_t reason){
@@ -8121,7 +8128,7 @@ static void hci_emit_disconnection_complete(hci_con_handle_t con_handle, uint8_t
     event[2] = 0; // status = OK
     little_endian_store_16(event, 3, con_handle);
     event[5] = reason;
-    hci_emit_event(event, sizeof(event), 1);
+    hci_emit_btstack_event(event, sizeof(event), 1);
 }
 
 static void hci_emit_nr_connections_changed(void){
@@ -8130,7 +8137,7 @@ static void hci_emit_nr_connections_changed(void){
     event[0] = BTSTACK_EVENT_NR_CONNECTIONS_CHANGED;
     event[1] = sizeof(event) - 2u;
     event[2] = nr_hci_connections();
-    hci_emit_event(event, sizeof(event), 1);
+    hci_emit_btstack_event(event, sizeof(event), 1);
 }
 
 static void hci_emit_hci_open_failed(void){
@@ -8138,7 +8145,7 @@ static void hci_emit_hci_open_failed(void){
     uint8_t event[2];
     event[0] = BTSTACK_EVENT_POWERON_FAILED;
     event[1] = sizeof(event) - 2u;
-    hci_emit_event(event, sizeof(event), 1);
+    hci_emit_btstack_event(event, sizeof(event), 1);
 }
 
 static void hci_emit_dedicated_bonding_result(bd_addr_t address, uint8_t status){
@@ -8149,7 +8156,7 @@ static void hci_emit_dedicated_bonding_result(bd_addr_t address, uint8_t status)
     event[pos++] = sizeof(event) - 2u;
     event[pos++] = status;
     reverse_bd_addr(address, &event[pos]);
-    hci_emit_event(event, sizeof(event), 1);
+    hci_emit_btstack_event(event, sizeof(event), 1);
 }
 
 
@@ -8164,7 +8171,7 @@ static void hci_emit_security_level(hci_con_handle_t con_handle, gap_security_le
     little_endian_store_16(event, 2, con_handle);
     pos += 2;
     event[pos++] = level;
-    hci_emit_event(event, sizeof(event), 1);
+    hci_emit_btstack_event(event, sizeof(event), 1);
 }
 
 static gap_security_level_t gap_security_level_for_connection(hci_connection_t * connection){
@@ -8187,7 +8194,7 @@ static void hci_emit_scan_mode_changed(uint8_t discoverable, uint8_t connectable
     event[1] = sizeof(event) - 2;
     event[2] = discoverable;
     event[3] = connectable;
-    hci_emit_event(event, sizeof(event), 1);
+    hci_emit_btstack_event(event, sizeof(event), 1);
 }
 
 // query if remote side supports eSCO
@@ -8624,7 +8631,7 @@ int gap_request_connection_parameter_update(hci_con_handle_t con_handle, uint16_
     connection->le_supervision_timeout = supervision_timeout;
     connection->le_con_parameter_update_state = CON_PARAMETER_UPDATE_SEND_REQUEST;
     uint8_t l2cap_trigger_run_event[2] = { L2CAP_EVENT_TRIGGER_RUN, 0};
-    hci_emit_event(l2cap_trigger_run_event, sizeof(l2cap_trigger_run_event), 0);
+    hci_emit_btstack_event(l2cap_trigger_run_event, sizeof(l2cap_trigger_run_event), 0);
     return 0;
 }
 
@@ -9291,7 +9298,7 @@ int gap_inquiry_stop(void){
     if ((hci_stack->inquiry_state >= GAP_INQUIRY_DURATION_MIN) && (hci_stack->inquiry_state <= GAP_INQUIRY_DURATION_MAX)) {
         // emit inquiry complete event, before it even started
         uint8_t event[] = { GAP_EVENT_INQUIRY_COMPLETE, 1, 0};
-        hci_emit_event(event, sizeof(event), 1);
+        hci_emit_btstack_event(event, sizeof(event), 1);
         return 0;
     }
     switch (hci_stack->inquiry_state){
@@ -10169,7 +10176,7 @@ static void hci_emit_big_created(const le_audio_big_t * big, uint8_t status){
         little_endian_store_16(event, pos, big->bis_con_handles[i]);
         pos += 2;
     }
-    hci_emit_event(event, pos, 0);
+    hci_emit_btstack_event(event, pos, 0);
 }
 
 static void hci_emit_cig_created(const le_audio_cig_t * cig, uint8_t status){
@@ -10186,7 +10193,7 @@ static void hci_emit_cig_created(const le_audio_cig_t * cig, uint8_t status){
         little_endian_store_16(event, pos, cig->cis_con_handles[i]);
         pos += 2;
     }
-    hci_emit_event(event, pos, 0);
+    hci_emit_btstack_event(event, pos, 0);
 }
 
 static uint16_t hci_setup_cis_created(uint8_t * event, hci_iso_stream_t * iso_stream, uint8_t status) {
@@ -10220,7 +10227,7 @@ static void hci_cis_handle_created(hci_iso_stream_t * iso_stream, uint8_t status
     if (status != ERROR_CODE_SUCCESS){
         hci_iso_stream_finalize(iso_stream);
     }
-    hci_emit_event(event, pos, 0);
+    hci_emit_btstack_event(event, pos, 0);
 }
 
 static void hci_emit_big_terminated(const le_audio_big_t * big){
@@ -10230,7 +10237,7 @@ static void hci_emit_big_terminated(const le_audio_big_t * big){
     event[pos++] = 2;
     event[pos++] = GAP_SUBEVENT_BIG_TERMINATED;
     event[pos++] = big->big_handle;
-    hci_emit_event(event, pos, 0);
+    hci_emit_btstack_event(event, pos, 0);
 }
 
 static void hci_emit_big_sync_created(const le_audio_big_sync_t * big_sync, uint8_t status){
@@ -10247,7 +10254,7 @@ static void hci_emit_big_sync_created(const le_audio_big_sync_t * big_sync, uint
         little_endian_store_16(event, pos, big_sync->bis_con_handles[i]);
         pos += 2;
     }
-    hci_emit_event(event, pos, 0);
+    hci_emit_btstack_event(event, pos, 0);
 }
 
 static void hci_emit_big_sync_stopped(uint8_t big_handle){
@@ -10257,7 +10264,7 @@ static void hci_emit_big_sync_stopped(uint8_t big_handle){
     event[pos++] = 2;
     event[pos++] = GAP_SUBEVENT_BIG_SYNC_STOPPED;
     event[pos++] = big_handle;
-    hci_emit_event(event, pos, 0);
+    hci_emit_btstack_event(event, pos, 0);
 }
 
 static void hci_emit_bis_can_send_now(const le_audio_big_t *big, uint8_t bis_index) {
@@ -10268,7 +10275,7 @@ static void hci_emit_bis_can_send_now(const le_audio_big_t *big, uint8_t bis_ind
     event[pos++] = big->big_handle;
     event[pos++] = bis_index;
     little_endian_store_16(event, pos, big->bis_con_handles[bis_index]);
-    hci_emit_event(&event[0], sizeof(event), 0);  // don't dump
+    hci_emit_btstack_event(&event[0], sizeof(event), 0);  // don't dump
 }
 
 static void hci_emit_cis_can_send_now(hci_con_handle_t cis_con_handle) {
@@ -10277,7 +10284,7 @@ static void hci_emit_cis_can_send_now(hci_con_handle_t cis_con_handle) {
     event[pos++] = HCI_EVENT_CIS_CAN_SEND_NOW;
     event[pos++] = sizeof(event) - 2;
     little_endian_store_16(event, pos, cis_con_handle);
-    hci_emit_event(&event[0], sizeof(event), 0);  // don't dump
+    hci_emit_btstack_event(&event[0], sizeof(event), 0);  // don't dump
 }
 
 static le_audio_big_t * hci_big_for_handle(uint8_t big_handle){

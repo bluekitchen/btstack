@@ -559,7 +559,7 @@ static void sm_dispatch_event(uint8_t packet_type, uint16_t channel, uint8_t * p
     UNUSED(channel);
 
     // log event
-    hci_dump_packet(packet_type, 1, packet, size);
+    hci_dump_btstack_event(packet, size);
     // dispatch to all event handlers
     btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, &sm_event_handlers);

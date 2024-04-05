@@ -253,7 +253,7 @@ static void rfcomm_emit_connection_request(rfcomm_channel_t *channel) {
     event[8] = channel->dlci >> 1;
     little_endian_store_16(event, 9, channel->rfcomm_cid);
     little_endian_store_16(event, 11, channel->multiplexer->con_handle);
-    hci_dump_packet(HCI_EVENT_PACKET, 1, event, sizeof(event));
+    hci_dump_btstack_event( event, sizeof(event));
 	(channel->packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
@@ -276,7 +276,7 @@ static void rfcomm_emit_channel_opened(rfcomm_channel_t *channel, uint8_t status
 	little_endian_store_16(event, pos, channel->rfcomm_cid); pos += 2;                 // 12 - channel ID
 	little_endian_store_16(event, pos, channel->max_frame_size); pos += 2;   // max frame size
     event[pos++] = channel->service ? 1 : 0;    // linked to service -> incoming
-    hci_dump_packet(HCI_EVENT_PACKET, 1, event, sizeof(event));
+    hci_dump_btstack_event( event, sizeof(event));
 	(channel->packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
 
     // if channel opened successfully, also send can send now if possible
@@ -293,7 +293,7 @@ static void rfcomm_emit_channel_closed(rfcomm_channel_t * channel) {
     event[0] = RFCOMM_EVENT_CHANNEL_CLOSED;
     event[1] = sizeof(event) - 2;
     little_endian_store_16(event, 2, channel->rfcomm_cid);
-    hci_dump_packet(HCI_EVENT_PACKET, 1, event, sizeof(event));
+    hci_dump_btstack_event( event, sizeof(event));
 	(channel->packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
@@ -304,7 +304,7 @@ static void rfcomm_emit_remote_line_status(rfcomm_channel_t *channel, uint8_t li
     event[1] = sizeof(event) - 2;
     little_endian_store_16(event, 2, channel->rfcomm_cid);
     event[4] = line_status;
-    hci_dump_packet( HCI_EVENT_PACKET, 1, event, sizeof(event));
+    hci_dump_btstack_event( event, sizeof(event));
     (channel->packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
@@ -321,7 +321,7 @@ static void rfcomm_emit_port_configuration(rfcomm_channel_t *channel, bool remot
         event[4] = 0;
         (void)memcpy(&event[5], (uint8_t *) &channel->local_rpn_data, sizeof(rfcomm_rpn_data_t));
     }
-    hci_dump_packet( HCI_EVENT_PACKET, 1, event, sizeof(event));
+    hci_dump_btstack_event( event, sizeof(event));
     (channel->packet_handler)(HCI_EVENT_PACKET, channel->rfcomm_cid, event, sizeof(event));
 }
 
@@ -331,7 +331,7 @@ static void rfcomm_emit_can_send_now(rfcomm_channel_t *channel) {
     event[0] = RFCOMM_EVENT_CAN_SEND_NOW;
     event[1] = sizeof(event) - 2;
     little_endian_store_16(event, 2, channel->rfcomm_cid);
-    hci_dump_packet( HCI_EVENT_PACKET, 1, event, sizeof(event));
+    hci_dump_btstack_event( event, sizeof(event));
     (channel->packet_handler)(HCI_EVENT_PACKET, channel->rfcomm_cid, event, sizeof(event));
 }
 
