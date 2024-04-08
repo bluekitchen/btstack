@@ -66,7 +66,7 @@
 //#define NRF5340_BROADCAST_MODE
 
 // max config
-#define MAX_NUM_BIS 2
+#define MAX_NUM_BIS 5
 #define MAX_SAMPLES_PER_FRAME 480
 #define MAX_LC3_FRAME_BYTES   155
 
@@ -282,7 +282,8 @@ static void setup_big(void){
 }
 
 
-static void start_broadcast() {// use values from table
+static void start_broadcast() {
+    // use values from table
     sampling_frequency_hz = codec_configurations[menu_sampling_frequency].samplingrate_hz;
     octets_per_frame      = codec_configurations[menu_sampling_frequency].variants[menu_variant].octets_per_frame;
     frame_duration        = codec_configurations[menu_sampling_frequency].variants[menu_variant].frame_duration;
@@ -330,6 +331,11 @@ static void start_broadcast() {// use values from table
 
     // setup big
     setup_big();
+}
+
+static void stop_broadcast(void) {
+    printf("Terminate BIG\n");
+    gap_big_terminate(big_params.big_handle);
 }
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -405,6 +411,7 @@ static void show_usage(void){
     printf("v - next codec variant\n");
     printf("x - toggle sine / modplayer / recording\n");
     printf("s - start broadcast\n");
+    printf("q - stop broadcast\n");
     printf("---\n");
 }
 static void stdin_process(char c){
@@ -414,7 +421,10 @@ static void stdin_process(char c){
                 printf("Codec configuration can only be changed in idle state\n");
                 break;
             }
-            num_bis = 3 - num_bis;
+            num_bis++;
+            if (num_bis > MAX_NUM_BIS){
+                num_bis = 1;
+            }
             print_config();
             break;
         case 'e':
@@ -473,6 +483,9 @@ static void stdin_process(char c){
                     break;
             }
             print_config();
+            break;
+        case 'q':
+            stop_broadcast();
             break;
         case '\n':
         case '\r':
