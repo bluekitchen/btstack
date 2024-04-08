@@ -1468,6 +1468,9 @@ static int usb_send_packet(uint8_t packet_type, uint8_t * packet, int size){
     switch (packet_type){
         case HCI_COMMAND_DATA_PACKET:
             return usb_send_cmd_packet(packet, size);
+#ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
+        case HCI_ISO_DATA_PACKET:
+#endif
         case HCI_ACL_DATA_PACKET:
             return usb_send_acl_packet(packet, size);
 #ifdef ENABLE_SCO_OVER_HCI
