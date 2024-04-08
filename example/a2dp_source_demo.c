@@ -848,7 +848,7 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
         //     status = avrcp_target_now_playing_info(avrcp_cid);
         //     break;
         case AVRCP_SUBEVENT_OPERATION:
-            operation_id = avrcp_subevent_operation_get_operation_id(packet);
+            operation_id = (avrcp_operation_id_t) avrcp_subevent_operation_get_operation_id(packet);
             button_pressed = avrcp_subevent_operation_get_button_pressed(packet) > 0;
             button_state = button_pressed ? "PRESS" : "RELEASE";
 
