@@ -50,6 +50,7 @@
 #define NVM_NUM_LINK_KEYS              16
 
 #define MAX_NR_AUDIO_CHANNELS           5
+#define MAX_NR_BIS                      5
 
 // Mesh Configuration
 #define ENABLE_MESH
