@@ -1476,6 +1476,7 @@ static int usb_send_packet(uint8_t packet_type, uint8_t * packet, int size){
             return usb_send_sco_packet(packet, size);
 #endif
         default:
+            btstack_assert(false);
             return -1;
     }
 }
