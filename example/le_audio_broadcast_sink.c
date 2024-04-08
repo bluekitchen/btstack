@@ -77,7 +77,7 @@
 #include "le_audio_demo_util_sink.h"
 
 // max config
-#define MAX_NUM_BIS 2
+#define MAX_NUM_BIS 5
 #define MAX_SAMPLES_PER_FRAME 480
 
 // playback
@@ -169,6 +169,7 @@ static uint8_t          broadcast_code[16];
 static btstack_timer_source_t broadcast_sink_pa_sync_timer;
 
 // BIG Sync
+static uint8_t channel_map = 0xff;
 static le_audio_big_sync_t        big_sync_storage;
 static le_audio_big_sync_params_t big_sync_params;
 
@@ -305,12 +306,7 @@ static void enter_create_big_sync(void){
     // stop scanning
     gap_stop_scan();
 
-    // init sink
-    uint16_t iso_interval_1250us = frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US ? 6 : 8;
-    uint8_t  pre_transmission_offset = 1;
-    le_audio_demo_util_sink_configure_broadcast(num_bis, 1, sampling_frequency_hz, frame_duration, octets_per_frame,
-                                              iso_interval_1250us, pre_transmission_offset);
-
+    // setup big sync params
     big_sync_params.big_handle = big_handle;
     big_sync_params.sync_handle = sync_handle;
     big_sync_params.encryption = encryption;
@@ -321,14 +317,25 @@ static void enter_create_big_sync(void){
     }
     big_sync_params.mse = 0;
     big_sync_params.big_sync_timeout_10ms = 100;
-    big_sync_params.num_bis = num_bis;
+    big_sync_params.num_bis = 0;
     uint8_t i;
     printf("BIG Create Sync for BIS: ");
     for (i=0;i<num_bis;i++){
-        big_sync_params.bis_indices[i] = i + 1;
-        printf("%u ", big_sync_params.bis_indices[i]);
+        uint8_t bis_index = i + 1;
+        if ((channel_map & (1 << bis_index)) != 0){
+            big_sync_params.bis_indices[big_sync_params.num_bis++] = bis_index;
+            printf("%u ", bis_index);
+        }
     }
     printf("\n");
+
+    // init audio sink
+    uint16_t iso_interval_1250us = frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US ? 6 : 8;
+    uint8_t  pre_transmission_offset = 1;
+    le_audio_demo_util_sink_configure_broadcast(big_sync_params.num_bis, 1, sampling_frequency_hz, frame_duration, octets_per_frame,
+                                                iso_interval_1250us, pre_transmission_offset);
+
+    // start sync
     app_state = APP_W4_BIG_SYNC_ESTABLISHED;
     gap_big_sync_create(&big_sync_storage, &big_sync_params);
 }
@@ -571,7 +578,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 case GAP_SUBEVENT_BIG_SYNC_CREATED: {
                     printf("BIG Sync created with BIS Connection handles: ");
                     uint8_t i;
-                    for (i=0;i<num_bis;i++){
+                    for (i=0;i<big_sync_params.num_bis;i++){
                         bis_con_handles[i] = gap_subevent_big_sync_created_get_bis_con_handles(packet, i);
                         printf("0x%04x ", bis_con_handles[i]);
                     }
@@ -579,7 +586,6 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     app_state = APP_STREAMING;
                     printf("Start receiving\n");
 
-                    printf("Terminate PA Sync\n");
                     gap_periodic_advertising_terminate_sync(sync_handle);
 
                     // update BIS Sync state
@@ -605,6 +611,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 
 static void show_usage(void){
     printf("\n--- LE Audio Broadcast Sink Test Console ---\n");
+    printf("1-%u: select single BIS channel\n", MAX_NR_BIS);
     printf("s - start scanning\n");
 #ifdef HAVE_LC3PLUS
     printf("q - use LC3plus decoder if 10 ms ISO interval is used\n");
@@ -615,7 +622,17 @@ static void show_usage(void){
 }
 
 static void stdin_process(char c){
+    uint8_t channel;
     switch (c){
+        case '1':
+        case '2':
+        case '3':
+        case '4':
+        case '5':
+            channel = c - '0';
+            channel_map = 1 << channel;
+            printf("Synchronize to channel %u\n", channel);
+            break;
         case 's':
             if (app_state != APP_IDLE) break;
             standalone_mode = true;
