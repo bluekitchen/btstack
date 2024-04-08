@@ -201,7 +201,7 @@ void le_audio_demo_util_source_configure(uint8_t num_streams, uint8_t num_channe
     le_audio_demo_source_num_channels_per_stream = num_channels_per_stream;
 
     le_audio_demo_source_num_channels = num_streams * num_channels_per_stream;
-    btstack_assert((le_audio_demo_source_num_channels == 1) || (le_audio_demo_source_num_channels == 2));
+    btstack_assert((le_audio_demo_source_num_channels > 0) || (le_audio_demo_source_num_channels <= MAX_CHANNELS));
 
     le_audio_demo_source_num_samples_per_frame = btstack_lc3_samples_per_frame(sampling_frequency_hz, frame_duration);
     btstack_assert(le_audio_demo_source_num_samples_per_frame <= MAX_SAMPLES_PER_10MS_FRAME);
