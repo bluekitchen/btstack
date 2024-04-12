@@ -3346,7 +3346,9 @@ static void hci_handle_le_connection_complete_event(const uint8_t * hci_event){
 		// "If the cancellation was successful then, after the Command Complete event for the LE_Create_Connection_Cancel command,
 		//  either an LE Connection Complete or an LE Enhanced Connection Complete event shall be generated.
 		//  In either case, the event shall be sent with the error code Unknown Connection Identifier (0x02)."
+        bool connection_was_cancelled = false;
 		if (status == ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER){
+            connection_was_cancelled = true;
 		    // reset state
             hci_stack->le_connecting_state = LE_CONNECTING_IDLE;
 			// get outgoing connection conn struct for direct connect
@@ -3357,14 +3359,20 @@ static void hci_handle_le_connection_complete_event(const uint8_t * hci_event){
 		}
 
 		// free connection if cancelled by user (request == IDLE)
-		if ((conn != NULL) && (hci_stack->le_connecting_request == LE_CONNECTING_IDLE)){
+        bool cancelled_by_user = hci_stack->le_connecting_request == LE_CONNECTING_IDLE;
+		if ((conn != NULL) && cancelled_by_user){
 			// remove entry
 			btstack_linked_list_remove(&hci_stack->connections, (btstack_linked_item_t *) conn);
 			btstack_memory_hci_connection_free( conn );
 		}
 
-        // emit GAP_SUBEVENT_LE_CONNECTION_COMPLETE for error case
-        hci_emit_event(gap_event, sizeof(gap_event), 1);
+        // emit GAP_SUBEVENT_LE_CONNECTION_COMPLETE for:
+        // - outgoing error not caused by connection cancel
+        // - connection cancelled by user
+        // by this, no event is emitted for intermediate connection cancel required filterlist modification
+        if ((connection_was_cancelled == false) || cancelled_by_user){
+            hci_emit_event(gap_event, sizeof(gap_event), 1);
+        }
         return;
 	}
 #endif
