@@ -5435,6 +5435,7 @@ typedef uint8_t sm_key_t[16];
  */
 #define GATTSERVICE_SUBEVENT_OTS_SERVER_DISCONNECT                                      0x99u
 
+// TBS Meat Event Group
 /**
  * @format 1H211
  * @param subevent_code
@@ -5452,8 +5453,171 @@ typedef uint8_t sm_key_t[16];
  * @param bearer_id
  * @param call_id
  */
-#define GATTSERVICE_SUBEVENT_TBS_SERVER_CALL_DEREGISTER_DONE            0xC1u
+#define GATTSERVICE_SUBEVENT_TBS_SERVER_CALL_DEREGISTER_DONE                            0xC1u
 
+/**
+ * @format 1H211
+ * @param subevent_code
+ * @param con_handle
+ * @param map_cid
+ * @param num_services
+ * @param att_status
+ */
+#define GATTSERVICE_SUBEVENT_TBS_CLIENT_CONNECTED                                       0xC2u
+
+/**
+ * @format 12JV
+ * @param subevent_code
+ * @param map_cid
+ * @param length
+ * @param name
+ */
+#define GATTSERVICE_SUBEVENT_TBS_CLIENT_BEARER_PROVIDER_NAME                            0xC3u
+
+/**
+ * @format 12JV
+ * @param subevent_code
+ * @param map_cid
+ * @param length
+ * @param uci
+ */
+#define GATTSERVICE_SUBEVENT_TBS_CLIENT_BEARER_UCI                                      0xC4u
+
+/**
+ * @format 121
+ * @param subevent_code
+ * @param map_cid
+ * @param technology
+ */
+#define GATTSERVICE_SUBEVENT_TBS_CLIENT_BEARER_TECHNOLOGY                               0xC5u
+
+/**
+ * @format 12JV
+ * @param subevent_code
+ * @param map_cid
+ * @param length
+ * @param list
+ */
+#define GATTSERVICE_SUBEVENT_TBS_CLIENT_BEARER_URI_SCHEMES_SUPPORTED_LIST               0xC6u
+
+/**
+ * @format 121
+ * @param subevent_code
+ * @param map_cid
+ * @param strength
+ */
+#define GATTSERVICE_SUBEVENT_TBS_CLIENT_BEARER_SIGNAL_STRENGTH                          0xC7u
+
+/**
+ * @format 121
+ * @param subevent_code
+ * @param map_cid
+ * @param interval
+ */
+#define GATTSERVICE_SUBEVENT_TBS_CLIENT_BEARER_SIGNAL_STRENGTH_REPORTING_INTERVAL       0xC8u
+
+/**
+ * @format 12JV
+ * @param subevent_code
+ * @param map_cid
+ * @param length
+ * @param list
+ */
+#define GATTSERVICE_SUBEVENT_TBS_CLIENT_BEARER_LIST_CURRENT_CALLS                       0xC9u
+
+/**
+ * @format 121
+ * @param subevent_code
+ * @param map_cid
+ * @param id
+ */
+#define GATTSERVICE_SUBEVENT_TBS_CLIENT_CONTENT_CONTROL_ID                              0xCAu
+
+/**
+ * @format 122
+ * @param subevent_code
+ * @param map_cid
+ * @param flags
+ */
+#define GATTSERVICE_SUBEVENT_TBS_CLIENT_STATUS_FLAGS                                    0xCBu
+
+/**
+ * @format 12J1V
+ * @param subevent_code
+ * @param map_cid
+ * @param length
+ * @param call_index
+ * @param uri
+ */
+#define GATTSERVICE_SUBEVENT_TBS_CLIENT_INCOMING_CALL_TARGET_BEARER_URI                 0xCCu
+
+/**
+ * @format 12JV
+ * @param subevent_code
+ * @param map_cid
+ * @param length
+ * @param state
+ */
+#define GATTSERVICE_SUBEVENT_TBS_CLIENT_CALL_STATE                                      0xCDu
+
+/**
+ * @format 12111
+ * @param subevent_code
+ * @param map_cid
+ * @param requested_opcode
+ * @param call_index
+ * @param result_code
+ */
+#define GATTSERVICE_SUBEVENT_TBS_CLIENT_CALL_CONTROL_POINT                              0xCEu
+
+/**
+ * @format 122
+ * @param subevent_code
+ * @param map_cid
+ * @param mask
+ */
+#define GATTSERVICE_SUBEVENT_TBS_CLIENT_CALL_CONTROL_POINT_OPTIONAL_OPCODES             0xCFu
+
+/**
+ * @format 1211
+ * @param subevent_code
+ * @param map_cid
+ * @param call_index
+ * @param reason
+ */
+#define GATTSERVICE_SUBEVENT_TBS_CLIENT_TERMINATION_REASON                              0xD0u
+
+/**
+ * @format 12J1V
+ * @param subevent_code
+ * @param map_cid
+ * @param length
+ * @param call_index
+ * @param uri
+ */
+#define GATTSERVICE_SUBEVENT_TBS_CLIENT_INCOMING_CALL                                   0xD1u
+
+/**
+ * @format 12J1V
+ * @param subevent_code
+ * @param map_cid
+ * @param length
+ * @param call_index
+ * @param name
+ */
+#define GATTSERVICE_SUBEVENT_TBS_CLIENT_CALL_FRIENDLY_NAME                              0xD2u
+
+/**
+ * @format 12121
+ * @param subevent_code
+ * @param map_cid
+ * @param service_index
+ * @param uuid16
+ * @param att_status
+ */
+#define GATTSERVICE_SUBEVENT_TBS_CLIENT_WRITE_DONE                                      0xD3u
+
+#define GATTSERVICE_SUBEVENT_TBS_CLIENT_DISCONNECTED                                    0xD4u
 // MAP Meta Event Group
 
 /**
