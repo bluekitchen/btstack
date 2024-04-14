@@ -2852,6 +2852,16 @@ uint8_t gatt_client_request_to_send_gatt_query(btstack_context_callback_registra
     }
 }
 
+uint8_t gatt_client_remove_gatt_query(btstack_context_callback_registration_t * callback_registration, hci_con_handle_t con_handle){
+    gatt_client_t * gatt_client;
+    uint8_t status = gatt_client_provide_context_for_handle(con_handle, &gatt_client);
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
+    }
+    (void)btstack_linked_list_remove(&gatt_client->query_requests, (btstack_linked_item_t*) callback_registration);
+    return ERROR_CODE_SUCCESS;
+}
+
 uint8_t gatt_client_request_can_write_without_response_event(btstack_packet_handler_t callback, hci_con_handle_t con_handle){
     gatt_client_t * gatt_client;
     uint8_t status = gatt_client_provide_context_for_handle(con_handle, &gatt_client);

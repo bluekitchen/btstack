@@ -978,6 +978,14 @@ uint8_t gatt_client_cancel_write(btstack_packet_handler_t callback, hci_con_hand
 uint8_t gatt_client_request_to_send_gatt_query(btstack_context_callback_registration_t * callback_registration, hci_con_handle_t con_handle);
 
 /**
+ * @brief Remove queued callback for regular gatt queries, to be used on disconnect for example
+ * @param callback_registration
+ * @param con_handle
+ * @return ERROR_CODE_SUCCESS if ok
+ */
+uint8_t gatt_client_remove_gatt_query(btstack_context_callback_registration_t * callback_registration, hci_con_handle_t con_handle);
+
+/**
  * @brief Request callback when writing characteristic value without response is possible
  * @note callback might happen during call to this function
  * @param callback_registration to point to callback function and context information
