@@ -228,16 +228,18 @@ typedef struct {
     uint16_t buf_offset;
 } memcat_t;
 
-static uint16_t memcat( memcat_t *me, const uint8_t *data, uint16_t len ) {
-    uint16_t stored_bytes = le_audio_util_virtual_memcpy_helper(data, len, me->field_offset, me->buf, me->buf_size, me->buf_offset );
+static void memcat( memcat_t *me, const uint8_t *data, uint16_t len ) {
+    le_audio_util_virtual_memcpy_helper(data, len, me->field_offset, me->buf, me->buf_size, me->buf_offset );
     me->field_offset += len;
-    return stored_bytes;
 }
 
-static uint16_t memcat_byte( memcat_t *me, uint8_t value ) {
-    uint16_t stored_bytes = le_audio_util_virtual_memcpy_helper(&value, 1, me->field_offset, me->buf, me->buf_size, me->buf_offset );
+static void memcat_byte( memcat_t *me, uint8_t value ) {
+    le_audio_util_virtual_memcpy_helper(&value, 1, me->field_offset, me->buf, me->buf_size, me->buf_offset );
     me->field_offset += 1;
-    return stored_bytes;
+}
+
+static uint16_t memcat_get_size( memcat_t *me ) {
+    return me->field_offset;
 }
 
 btstack_linked_list_iterator_t bearer_calls_iterator_begin( telephone_bearer_service_server_t *bearer ) {
@@ -248,7 +250,6 @@ btstack_linked_list_iterator_t bearer_calls_iterator_begin( telephone_bearer_ser
 }
 
 static uint16_t tbs_server_serialize_current_call_list( memcat_t *storage, telephone_bearer_service_server_t *bearer ) {
-    uint16_t stored_bytes = 0;
     for( btstack_linked_list_iterator_t it = bearer_calls_iterator_begin(bearer);
          btstack_linked_list_iterator_has_next(&it);
          )
@@ -258,31 +259,29 @@ static uint16_t tbs_server_serialize_current_call_list( memcat_t *storage, telep
         uint16_t uri_length = (uint16_t) strnlen(string, TELEPHONE_BEARER_SERVICE_URI_MAX_LENGTH);
         uint8_t item_length = uri_length + 3;
 
-        stored_bytes += memcat_byte( storage, item_length );
-        stored_bytes += memcat_byte( storage, call->id );
-        stored_bytes += memcat_byte( storage, call->state );
-        stored_bytes += memcat_byte( storage, call->flags );
-        stored_bytes += memcat( storage, (const uint8_t *) string, uri_length );
+        memcat_byte( storage, item_length );
+        memcat_byte( storage, call->id );
+        memcat_byte( storage, call->state );
+        memcat_byte( storage, call->flags );
+        memcat( storage, (const uint8_t *) string, uri_length );
     }
-    return stored_bytes;
+    return memcat_get_size(storage);
 }
 
 static uint16_t tbs_server_serialize_call_state( memcat_t *storage, telephone_bearer_service_server_t *bearer ) {
-    uint16_t stored_bytes = 0;
     for( btstack_linked_list_iterator_t it = bearer_calls_iterator_begin(bearer);
          btstack_linked_list_iterator_has_next(&it);
          )
     {
         tbs_call_data_t * call = (tbs_call_data_t *)btstack_linked_list_iterator_next(&it);
-        stored_bytes += memcat_byte( storage, call->id );
-        stored_bytes += memcat_byte( storage, call->state );
-        stored_bytes += memcat_byte( storage, call->flags );
+        memcat_byte( storage, call->id );
+        memcat_byte( storage, call->state );
+        memcat_byte( storage, call->flags );
     }
-    return stored_bytes;
+    return memcat_get_size(storage);
 }
 
 static uint16_t tbs_server_serialize_incoming_call_target_bearer_uri( memcat_t *storage, telephone_bearer_service_server_t *bearer ) {
-    uint16_t stored_bytes = 0;
     uint32_t index_mask = UINT32_C(1)<<TBS_CHARACTERISTIC_INDEX_INCOMING_CALL_TARGET_BEARER_URI;
     for( btstack_linked_list_iterator_t it = bearer_calls_iterator_begin(bearer);
          btstack_linked_list_iterator_has_next(&it);
@@ -293,16 +292,15 @@ static uint16_t tbs_server_serialize_incoming_call_target_bearer_uri( memcat_t *
         uint16_t uri_length = (uint16_t) strnlen(string, TELEPHONE_BEARER_SERVICE_URI_MAX_LENGTH);
         if( (call->scheduled_tasks & index_mask) > 0 ) {
             call->scheduled_tasks &= ~index_mask;
-            stored_bytes += memcat_byte( storage, call->id );
-            stored_bytes += memcat( storage, (const uint8_t *) string, uri_length );
+            memcat_byte( storage, call->id );
+            memcat( storage, (const uint8_t *) string, uri_length );
             break;
         }
     }
-    return stored_bytes;
+    return memcat_get_size(storage);
 }
 
 static uint16_t tbs_server_serialize_first_incoming_call_target_bearer_uri( memcat_t *storage, telephone_bearer_service_server_t *bearer ) {
-    uint16_t stored_bytes = 0;
     for( btstack_linked_list_iterator_t it = bearer_calls_iterator_begin(bearer);
          btstack_linked_list_iterator_has_next(&it);
          )
@@ -311,16 +309,15 @@ static uint16_t tbs_server_serialize_first_incoming_call_target_bearer_uri( memc
         const char *string = call->target_uri;
         uint16_t uri_length = (uint16_t) strnlen(string, TELEPHONE_BEARER_SERVICE_URI_MAX_LENGTH);
         if( uri_length > 0 ) {
-            stored_bytes += memcat_byte( storage, call->id );
-            stored_bytes += memcat( storage, (const uint8_t *) string, uri_length );
+            memcat_byte( storage, call->id );
+            memcat( storage, (const uint8_t *) string, uri_length );
             break;
         }
     }
-    return stored_bytes;
+    return memcat_get_size(storage);
 }
 
 static uint16_t tbs_server_serialize_incoming_call( memcat_t *storage, telephone_bearer_service_server_t *bearer ) {
-    uint16_t stored_bytes = 0;
     uint32_t index_mask = UINT32_C(1)<<TBS_CHARACTERISTIC_INDEX_INCOMING_CALL;
     for( btstack_linked_list_iterator_t it = bearer_calls_iterator_begin(bearer);
          btstack_linked_list_iterator_has_next(&it);
@@ -332,16 +329,15 @@ static uint16_t tbs_server_serialize_incoming_call( memcat_t *storage, telephone
         if( (call->scheduled_tasks & index_mask) > 0 ) {
             call->scheduled_tasks &= ~index_mask;
 
-            stored_bytes += memcat_byte( storage, call->id );
-            stored_bytes += memcat( storage, (const uint8_t *) string, uri_length );
+            memcat_byte( storage, call->id );
+            memcat( storage, (const uint8_t *) string, uri_length );
             break;
         }
     }
-    return stored_bytes;
+    return memcat_get_size(storage);
 }
 
 static uint16_t tbs_server_serialize_first_incoming_call( memcat_t *storage, telephone_bearer_service_server_t *bearer ) {
-    uint16_t stored_bytes = 0;
     for( btstack_linked_list_iterator_t it = bearer_calls_iterator_begin(bearer);
          btstack_linked_list_iterator_has_next(&it);
          )
@@ -350,16 +346,15 @@ static uint16_t tbs_server_serialize_first_incoming_call( memcat_t *storage, tel
         const char * string = call->call_uri;
         uint16_t uri_length = (uint16_t) strnlen(string, TELEPHONE_BEARER_SERVICE_URI_MAX_LENGTH);
         if( uri_length > 0 ) {
-            stored_bytes += memcat_byte( storage, call->id );
-            stored_bytes += memcat( storage, (const uint8_t *) string, uri_length );
+            memcat_byte( storage, call->id );
+            memcat( storage, (const uint8_t *) string, uri_length );
             break;
         }
     }
-    return stored_bytes;
+    return memcat_get_size(storage);
 }
 
 static uint16_t tbs_server_serialize_call_friendly_name( memcat_t *storage, telephone_bearer_service_server_t *bearer ) {
-    uint16_t stored_bytes = 0;
     uint32_t index_mask = UINT32_C(1)<<TBS_CHARACTERISTIC_INDEX_CALL_FRIENDLY_NAME;
     for( btstack_linked_list_iterator_t it = bearer_calls_iterator_begin(bearer);
          btstack_linked_list_iterator_has_next(&it);
@@ -370,16 +365,15 @@ static uint16_t tbs_server_serialize_call_friendly_name( memcat_t *storage, tele
         uint16_t uri_length = (uint16_t) strnlen(string, TELEPHONE_BEARER_SERVICE_URI_MAX_LENGTH);
         if( (call->scheduled_tasks & index_mask) > 0 ) {
             call->scheduled_tasks &= ~index_mask;
-            stored_bytes += memcat_byte( storage, call->id );
-            stored_bytes += memcat( storage, (const uint8_t *) string, uri_length );
+            memcat_byte( storage, call->id );
+            memcat( storage, (const uint8_t *) string, uri_length );
             break;
         }
     }
-    return stored_bytes;
+    return memcat_get_size(storage);
 }
 
 static uint16_t tbs_server_serialize_first_call_friendly_name( memcat_t *storage, telephone_bearer_service_server_t *bearer ) {
-    uint16_t stored_bytes = 0;
     for( btstack_linked_list_iterator_t it = bearer_calls_iterator_begin(bearer);
          btstack_linked_list_iterator_has_next(&it);
          )
@@ -388,22 +382,20 @@ static uint16_t tbs_server_serialize_first_call_friendly_name( memcat_t *storage
         const char * string = call->friendly_name;
         uint16_t uri_length = (uint16_t) strnlen(string, TELEPHONE_BEARER_SERVICE_URI_MAX_LENGTH);
         if( uri_length > 0 ) {
-            stored_bytes += memcat_byte( storage, call->id );
-            stored_bytes += memcat( storage, (const uint8_t *) string, uri_length );
+            memcat_byte( storage, call->id );
+            memcat( storage, (const uint8_t *) string, uri_length );
             break;
         }
     }
-    return stored_bytes;
+    return memcat_get_size(storage);
 }
 
 static uint16_t tbs_server_serialize_call_control_point_notification( memcat_t *storage, telephone_bearer_service_server_t *bearer ) {
-    uint16_t stored_bytes = 0;
-
     // if we have a notification without a valid call_id it is stored in the bearer
     if( bearer->data.call_control_point_notification_pending ) {
-        stored_bytes += memcat( storage, bearer->data.call_control_point_notification, sizeof(bearer->data.call_control_point_notification) );
+        memcat( storage, bearer->data.call_control_point_notification, sizeof(bearer->data.call_control_point_notification) );
         bearer->data.call_control_point_notification_pending = false;
-        return stored_bytes;
+        return memcat_get_size(storage);
     }
 
     uint32_t index_mask = UINT32_C(1)<<TBS_CHARACTERISTIC_INDEX_CALL_CONTROL_POINT;
@@ -414,15 +406,14 @@ static uint16_t tbs_server_serialize_call_control_point_notification( memcat_t *
         tbs_call_data_t * call = (tbs_call_data_t *)btstack_linked_list_iterator_next(&it);
         if( (call->scheduled_tasks & index_mask) > 0 ) {
             call->scheduled_tasks &= ~index_mask;
-            stored_bytes += memcat( storage, call->call_control_point_notification, sizeof(call->call_control_point_notification) );
+            memcat( storage, call->call_control_point_notification, sizeof(call->call_control_point_notification) );
             break;
         }
     }
-    return stored_bytes;
+    return memcat_get_size(storage);
 }
 
 static uint16_t tbs_server_serialize_termination_reason( memcat_t *storage, telephone_bearer_service_server_t *bearer ) {
-    uint16_t stored_bytes = 0;
     uint32_t index_mask = UINT32_C(1)<<TBS_CHARACTERISTIC_INDEX_TERMINATION_REASON;
     for( btstack_linked_list_iterator_t it = bearer_calls_iterator_begin(bearer);
          btstack_linked_list_iterator_has_next(&it);
@@ -431,12 +422,12 @@ static uint16_t tbs_server_serialize_termination_reason( memcat_t *storage, tele
         tbs_call_data_t * call = (tbs_call_data_t *)btstack_linked_list_iterator_next(&it);
         if( (call->scheduled_tasks & index_mask) > 0 ) {
             call->scheduled_tasks &= ~index_mask;
-            stored_bytes += memcat_byte( storage, call->id );
-            stored_bytes += memcat_byte( storage, call->termination_reason );
+            memcat_byte( storage, call->id );
+            memcat_byte( storage, call->termination_reason );
             break;
         }
     }
-    return stored_bytes;
+    return memcat_get_size(storage);
 }
 
 static uint32_t tbs_server_merge_calls_scheduled_tasks( telephone_bearer_service_server_t *tbs_bearer, uint32_t tasks ) {
@@ -826,28 +817,7 @@ static uint8_t tbs_server_register_bearer(uint16_t service_uuid, telephone_beare
     // search service with global start handle
     btstack_assert(tbs_bearer != NULL);
     btstack_assert(packet_handler != NULL);
-   
-#ifdef ENABLE_TESTING_SUPPORT
-    const char * tbs_characteristic_uuid_names[]= {
-        [TBS_CHARACTERISTIC_INDEX_BEARER_LIST_CURRENT_CALLS]                 = "bearer_list_current_calls                 ",
-        [TBS_CHARACTERISTIC_INDEX_BEARER_PROVIDER_NAME]                      = "bearer_provider_name                      ",
-        [TBS_CHARACTERISTIC_INDEX_BEARER_SIGNAL_STRENGTH_REPORTING_INTERVAL] = "bearer_signal_strength_reporting_interval ",
-        [TBS_CHARACTERISTIC_INDEX_BEARER_SIGNAL_STRENGTH]                    = "bearer_signal_strength                    ",
-        [TBS_CHARACTERISTIC_INDEX_BEARER_TECHNOLOGY]                         = "bearer_technology                         ",
-        [TBS_CHARACTERISTIC_INDEX_BEARER_UCI]                                = "bearer_uci                                ",
-        [TBS_CHARACTERISTIC_INDEX_BEARER_URI_SCHEMES_SUPPORTED_LIST]         = "bearer_uri_schemes_supported_list         ",
-        [TBS_CHARACTERISTIC_INDEX_CALL_CONTROL_POINT_OPTIONAL_OPCODES]       = "call_control_point_optional_opcodes       ",
-        [TBS_CHARACTERISTIC_INDEX_CALL_CONTROL_POINT]                        = "call_control_point                        ",
-        [TBS_CHARACTERISTIC_INDEX_CALL_FRIENDLY_NAME]                        = "call_friendly_name                        ",
-        [TBS_CHARACTERISTIC_INDEX_CALL_STATE]                                = "call_state                                ",
-        [TBS_CHARACTERISTIC_INDEX_CONTENT_CONTROL_ID]                        = "content_control_id                        ",
-        [TBS_CHARACTERISTIC_INDEX_INCOMING_CALL_TARGET_BEARER_URI]           = "incoming_call_target_bearer_uri           ",
-        [TBS_CHARACTERISTIC_INDEX_INCOMING_CALL]                             = "incoming_call                             ",
-        [TBS_CHARACTERISTIC_INDEX_STATUS_FLAGS]                              = "status_flags                              ",
-        [TBS_CHARACTERISTIC_INDEX_TERMINATION_REASON]                        = "termination_reason                        ",
-    };
-#endif
-    
+
     if (tbs_services_start_handle == 0xffff) {
         return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
      }
@@ -865,10 +835,10 @@ static uint8_t tbs_server_register_bearer(uint16_t service_uuid, telephone_beare
         return ERROR_CODE_REPEATED_ATTEMPTS;
     }
 
-    log_info("Found %s service 0x%02x-0x%02x", service_uuid == ORG_BLUETOOTH_SERVICE_TELEPHONE_BEARER_SERVICE ? "TBS":"GTBS", tbs_services_start_handle, tbs_services_end_handle);
+    log_info("Found %s service %#04x-%#04x", service_uuid == ORG_BLUETOOTH_SERVICE_TELEPHONE_BEARER_SERVICE ? "TBS":"GTBS", tbs_services_start_handle, tbs_services_end_handle);
 
 #ifdef ENABLE_TESTING_SUPPORT
-    printf("Found %s service 0x%02x-0x%02x\n", service_uuid == ORG_BLUETOOTH_SERVICE_TELEPHONE_BEARER_SERVICE ? "TBS":"GTBS", tbs_services_start_handle, tbs_services_end_handle);
+    printf("Found %s service %#04x-%#04x\n", service_uuid == ORG_BLUETOOTH_SERVICE_TELEPHONE_BEARER_SERVICE ? "TBS":"GTBS", tbs_services_start_handle, tbs_services_end_handle);
 #endif
     tbs_server_reset_bearer(tbs_bearer);
     
@@ -882,9 +852,9 @@ static uint8_t tbs_server_register_bearer(uint16_t service_uuid, telephone_beare
         tbs_bearer->characteristics[i].client_configuration_handle = gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(tbs_services_start_handle, tbs_services_end_handle, tbs_characteristic_uuids[i ]);
 
 #ifdef ENABLE_TESTING_SUPPORT
-        printf("    %s      0x%02x\n", tbs_characteristic_uuid_names[i], tbs_bearer->characteristics[i].value_handle);
+        printf("    %-45s     %#04x\n", tbs_characteristic_index_to_name(i), tbs_bearer->characteristics[i].value_handle);
         if (tbs_bearer->characteristics[i].client_configuration_handle != 0){
-            printf("    %s CCC  0x%02x\n", tbs_characteristic_uuid_names[i], tbs_bearer->characteristics[i].client_configuration_handle);
+            printf("    %-45s CCC %#04x\n", tbs_characteristic_index_to_name(i), tbs_bearer->characteristics[i].client_configuration_handle);
         }
 #endif
     }
