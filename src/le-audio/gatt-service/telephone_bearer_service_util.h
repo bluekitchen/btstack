@@ -127,7 +127,28 @@ typedef enum {
     TBS_TECHNOLOGY_WCDMA,
 } tbs_technology_t;
 
-extern uint16_t  tbs_characteristic_uuids[TBS_CHARACTERISTICS_NUM];
+extern const uint16_t tbs_characteristic_uuids[TBS_CHARACTERISTICS_NUM];
+/**
+ * Converts a characteristic specified by a given index into a readable name
+ *
+ * @param index
+ * @return name of given characteristic index
+ */
+const char *tbs_characteristic_index_to_name( tbs_characteristic_index_t index );
+/**
+ * Given a characteristic by index returns the corresponding UUID
+ *
+ * @param index
+ * @return uuid16 of given characteristic index
+ */
+uint16_t tbs_characteristic_index_to_uuid( tbs_characteristic_index_t index );
+/**
+ * Returns the sub-event code of a given characteristic
+ *
+ * @param index
+ * @return sub-event code
+ */
+uint8_t tbs_characteristic_index_to_subevent( tbs_characteristic_index_t index );
 
 #if defined __cplusplus
 }
