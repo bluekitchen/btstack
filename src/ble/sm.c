@@ -2599,9 +2599,6 @@ static bool sm_ctkd_from_classic(sm_connection_t * sm_connection){
     // requirements to derive ltk from BR/EDR:
     // - BR/EDR uses secure connections
     if (gap_secure_connection_for_link_key_type(hci_connection->link_key_type) == false) return false;
-    // - bonding needs to be enabled:
-    bool bonding_enabled = (sm_pairing_packet_get_auth_req(setup->sm_m_preq) & sm_pairing_packet_get_auth_req(setup->sm_s_pres) & SM_AUTHREQ_BONDING ) != 0u;
-    if (!bonding_enabled) return false;
     // - there is no stored LTK or the derived key has at least the same level of authentication (bail if LTK is authenticated but Link Key isn't)
     bool link_key_authenticated = gap_authenticated_for_link_key_type(hci_connection->link_key_type);
     if (link_key_authenticated) return true;
