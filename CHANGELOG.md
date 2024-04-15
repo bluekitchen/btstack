@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - SM: abort pairing with invalid parameter error for encryption key size > 16
 - SM: ignore Security Request after re-encryption has started
 - SM: respond to Pairing Request after Identity Resolution failed
+- SM: fix CTKD from Classic in Peripheral role
 - ATT Server: support delayed read responses for registered services
 - ATT Server: allow to start crypto operation from delayed att read/write request
 - HFP: use round robin for outgoing connections
