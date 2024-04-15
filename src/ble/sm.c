@@ -4905,7 +4905,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             (void)memcpy(&sm_conn->sm_m_preq, packet, sizeof(sm_pairing_packet_t));
 
             // validate encryption key size
-            max_encryption_key_size = sm_pairing_packet_get_max_encryption_key_size(setup->sm_m_preq);
+            max_encryption_key_size = sm_pairing_packet_get_max_encryption_key_size(sm_conn->sm_m_preq);
             if ((max_encryption_key_size < 7) || (max_encryption_key_size > 16)){
                 sm_pairing_error(sm_conn, SM_REASON_INVALID_PARAMETERS);
                 break;
