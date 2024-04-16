@@ -1,12 +1,13 @@
 # nRF5340 (Audio) DK Board as USB HCI Dongle Guide
 
-This will turn the Nordic nRF5340 DK and Audio DK boards into an USB CDC HCI dongle.
-
-If using the NRF Connect SDK ( sdk-nrf ) it is important to follow the order in this document, as 'west flash' 
-will also program the NetCore with zephyr-ll which needs to be replaced afterwards with the Packetcraft Link Layer.
+This will turn the Nordic nRF5340 DK and Audio DK boards into an USB CDC HCI dongle that uses Nordic's SoftDevice Controller.
 
 ## Preconditions
-Copy the included files to '${ZEPHYR_ROOT}/zephyr/examples/bluetooth/hci_uart/'
+- [Install Nordic's nRF Connect SDK, v2.6 or higher](https://developer.nordicsemi.com/nRF_Connect_SDK/doc/latest/nrf/installation.html)
+- Copy the included files and folders to '${ZEPHYR_ROOT}/zephyr/examples/bluetooth/hci_uart/'
+    - `child_image/hci_ipc.con`
+    - `overlay-usb.conf`
+    - `usb.overlay`
 
 ## Build/Flash HCI Bridge on AppCore
 
@@ -28,18 +29,12 @@ west build --pristine -b nrf5340_audio_dk_nrf5340_cpuapp -- -DDTC_OVERLAY_FILE=u
 west flash
 ```
 
-## Flash Packetcraft Link Layer on NetCore
-
-```sh
-nrfjprog --program ble5-ctr-rpmsg_3424.hex --chiperase --coprocessor CP_NETWORK -r --verify
-```
-
-the corresponding hex file is in the [nrfConnectSDK](https://github.com/nrfconnect/sdk-nrf/blob/main/lib/bin/bt_ll_acs_nrf53/bin)
-
 ## Usage / Find Serial Port
 
-On macOS, the nRF5340 with the HCI bridge show up as 5 /dev/tty. To find the HCI one, list all /dev/tty.* devices,
+On macOS, the nRF5340 ADK with the HCI bridge show up as 5 /dev/tty. To find the HCI one, list all /dev/tty.* devices,
 then press and hold the RESET button and list all devices again. The missing one is the one provided by the HCI bridge.
+
+On the nRF5340 DK, you can directly plug into the `nRF5340 USB` port and get only a single /dev/tty.
 
 ## HCI log
 
