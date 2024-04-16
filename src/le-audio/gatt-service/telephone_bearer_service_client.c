@@ -219,18 +219,22 @@ static uint8_t tbs_client_request_send_gatt_query(tbs_client_connection_t * conn
      return status;
 }
 
-static uint8_t tbs_client_request_read_characteristic(tbs_client_connection_t * connection, tbs_characteristic_index_t characteristic_index){
-     btstack_assert(connection != NULL);
-     if (connection->state != TELEPHONE_BEARER_SERVICE_CLIENT_STATE_READY){
-         return ERROR_CODE_CONTROLLER_BUSY;
-     }
+static uint8_t tbs_client_request_read_characteristic(uint16_t tbs_cid, tbs_characteristic_index_t characteristic_index){
+    tbs_client_connection_t * connection = (tbs_client_connection_t *) gatt_service_client_get_connection_for_cid(&tbs_client, tbs_cid);
+    if (connection == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
 
-     uint8_t status = gatt_service_client_can_query_characteristic(&connection->basic_connection, (uint8_t) characteristic_index);
-     if (status != ERROR_CODE_SUCCESS){
-         return status;
-     }
-     connection->state = TELEPHONE_BEARER_SERVICE_CLIENT_STATE_W2_READ_CHARACTERISTIC_VALUE;
-     return tbs_client_request_send_gatt_query(connection, characteristic_index);
+    if (connection->state != TELEPHONE_BEARER_SERVICE_CLIENT_STATE_READY){
+        return ERROR_CODE_CONTROLLER_BUSY;
+    }
+
+    uint8_t status = gatt_service_client_can_query_characteristic(&connection->basic_connection, (uint8_t) characteristic_index);
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
+    }
+    connection->state = TELEPHONE_BEARER_SERVICE_CLIENT_STATE_W2_READ_CHARACTERISTIC_VALUE;
+    return tbs_client_request_send_gatt_query(connection, characteristic_index);
 }
 
 static uint8_t tbs_client_request_write_characteristic_without_response(tbs_client_connection_t * connection, tbs_characteristic_index_t characteristic_index){
@@ -238,177 +242,185 @@ static uint8_t tbs_client_request_write_characteristic_without_response(tbs_clie
     return tbs_client_request_send_gatt_query(connection, characteristic_index);
 }
 
-uint8_t telephone_bearer_service_client_set_strength_reporting_interval(tbs_client_connection_t * connection, uint8_t reporting_interval_s){
-     if (connection == NULL){
-         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-     }
-     if (connection->state != TELEPHONE_BEARER_SERVICE_CLIENT_STATE_READY){
-         return ERROR_CODE_CONTROLLER_BUSY;
-     }
+uint8_t telephone_bearer_service_client_set_strength_reporting_interval(uint16_t tbs_cid, uint8_t reporting_interval_s){
+    tbs_client_connection_t * connection = (tbs_client_connection_t *) gatt_service_client_get_connection_for_cid(&tbs_client, tbs_cid);
+    if (connection == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if (connection->state != TELEPHONE_BEARER_SERVICE_CLIENT_STATE_READY){
+        return ERROR_CODE_CONTROLLER_BUSY;
+    }
 
-     uint8_t *out = connection->serialisation_buffer;
-     out[0] = reporting_interval_s;
-     connection->data_size = 1;
+    uint8_t *out = connection->serialisation_buffer;
+    out[0] = reporting_interval_s;
+    connection->data_size = 1;
 
-     return tbs_client_request_write_characteristic_without_response(connection, TBS_CHARACTERISTIC_INDEX_BEARER_SIGNAL_STRENGTH_REPORTING_INTERVAL);
+    return tbs_client_request_write_characteristic_without_response(connection, TBS_CHARACTERISTIC_INDEX_BEARER_SIGNAL_STRENGTH_REPORTING_INTERVAL);
 }
 
-uint8_t telephone_bearer_service_client_call_accept(tbs_client_connection_t * connection, uint8_t call_id){
-     if (connection == NULL){
-         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-     }
-     if (connection->state != TELEPHONE_BEARER_SERVICE_CLIENT_STATE_READY){
-         return ERROR_CODE_CONTROLLER_BUSY;
-     }
+uint8_t telephone_bearer_service_client_call_accept(uint16_t tbs_cid, uint8_t call_id){
+    tbs_client_connection_t * connection = (tbs_client_connection_t *) gatt_service_client_get_connection_for_cid(&tbs_client, tbs_cid);
+    if (connection == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if (connection->state != TELEPHONE_BEARER_SERVICE_CLIENT_STATE_READY){
+        return ERROR_CODE_CONTROLLER_BUSY;
+    }
 
-     uint8_t *out = connection->serialisation_buffer;
-     out[0] = TBS_CONTROL_POINT_OPCODE_ACCEPT;
-     out[1] = call_id;
-     connection->data_size = 2;
+    uint8_t *out = connection->serialisation_buffer;
+    out[0] = TBS_CONTROL_POINT_OPCODE_ACCEPT;
+    out[1] = call_id;
+    connection->data_size = 2;
 
-     return tbs_client_request_write_characteristic_without_response(connection, TBS_CHARACTERISTIC_INDEX_CALL_CONTROL_POINT);
+    return tbs_client_request_write_characteristic_without_response(connection, TBS_CHARACTERISTIC_INDEX_CALL_CONTROL_POINT);
 }
 
-uint8_t telephone_bearer_service_client_call_terminate(tbs_client_connection_t * connection, uint8_t call_id){
-     if (connection == NULL){
-         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-     }
-     if (connection->state != TELEPHONE_BEARER_SERVICE_CLIENT_STATE_READY){
-         return ERROR_CODE_CONTROLLER_BUSY;
-     }
+uint8_t telephone_bearer_service_client_call_terminate(uint16_t tbs_cid, uint8_t call_id){
+    tbs_client_connection_t * connection = (tbs_client_connection_t *) gatt_service_client_get_connection_for_cid(&tbs_client, tbs_cid);
+    if (connection == NULL) {
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if (connection->state != TELEPHONE_BEARER_SERVICE_CLIENT_STATE_READY) {
+        return ERROR_CODE_CONTROLLER_BUSY;
+    }
 
-     uint8_t *out = connection->serialisation_buffer;
-     out[0] = TBS_CONTROL_POINT_OPCODE_TERMINATE;
-     out[1] = call_id;
-     connection->data_size = 2;
+    uint8_t *out = connection->serialisation_buffer;
+    out[0] = TBS_CONTROL_POINT_OPCODE_TERMINATE;
+    out[1] = call_id;
+    connection->data_size = 2;
 
-     return tbs_client_request_write_characteristic_without_response(connection, TBS_CHARACTERISTIC_INDEX_CALL_CONTROL_POINT);
+    return tbs_client_request_write_characteristic_without_response(connection, TBS_CHARACTERISTIC_INDEX_CALL_CONTROL_POINT);
 }
 
-uint8_t telephone_bearer_service_client_call_hold(tbs_client_connection_t * connection, uint8_t call_id){
-     if (connection == NULL){
-         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-     }
-     if (connection->state != TELEPHONE_BEARER_SERVICE_CLIENT_STATE_READY){
-         return ERROR_CODE_CONTROLLER_BUSY;
-     }
+uint8_t telephone_bearer_service_client_call_hold(uint16_t tbs_cid, uint8_t call_id) {
+    tbs_client_connection_t *connection = (tbs_client_connection_t*) gatt_service_client_get_connection_for_cid(&tbs_client, tbs_cid);
+    if (connection == NULL) {
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if (connection->state != TELEPHONE_BEARER_SERVICE_CLIENT_STATE_READY) {
+        return ERROR_CODE_CONTROLLER_BUSY;
+    }
 
-     uint8_t *out = connection->serialisation_buffer;
-     out[0] = TBS_CONTROL_POINT_OPCODE_LOCAL_HOLD;
-     out[1] = call_id;
-     connection->data_size = 2;
+    uint8_t *out = connection->serialisation_buffer;
+    out[0] = TBS_CONTROL_POINT_OPCODE_LOCAL_HOLD;
+    out[1] = call_id;
+    connection->data_size = 2;
 
-     return tbs_client_request_write_characteristic_without_response(connection, TBS_CHARACTERISTIC_INDEX_CALL_CONTROL_POINT);
+    return tbs_client_request_write_characteristic_without_response(connection, TBS_CHARACTERISTIC_INDEX_CALL_CONTROL_POINT);
 }
 
-uint8_t telephone_bearer_service_client_call_retrieve(tbs_client_connection_t * connection, uint8_t call_id){
-     if (connection == NULL){
-         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-     }
-     if (connection->state != TELEPHONE_BEARER_SERVICE_CLIENT_STATE_READY){
-         return ERROR_CODE_CONTROLLER_BUSY;
-     }
+uint8_t telephone_bearer_service_client_call_retrieve(uint16_t tbs_cid, uint8_t call_id){
+    tbs_client_connection_t * connection = (tbs_client_connection_t *) gatt_service_client_get_connection_for_cid(&tbs_client, tbs_cid);
+    if (connection == NULL) {
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if (connection->state != TELEPHONE_BEARER_SERVICE_CLIENT_STATE_READY) {
+        return ERROR_CODE_CONTROLLER_BUSY;
+    }
 
-     uint8_t *out = connection->serialisation_buffer;
-     out[0] = TBS_CONTROL_POINT_OPCODE_LOCAL_RETRIEVE;
-     out[1] = call_id;
-     connection->data_size = 2;
+    uint8_t *out = connection->serialisation_buffer;
+    out[0] = TBS_CONTROL_POINT_OPCODE_LOCAL_RETRIEVE;
+    out[1] = call_id;
+    connection->data_size = 2;
 
-     return tbs_client_request_write_characteristic_without_response(connection, TBS_CHARACTERISTIC_INDEX_CALL_CONTROL_POINT);
+    return tbs_client_request_write_characteristic_without_response(connection, TBS_CHARACTERISTIC_INDEX_CALL_CONTROL_POINT);
 }
 
-uint8_t telephone_bearer_service_client_call_originate(tbs_client_connection_t * connection, uint8_t call_id, const char *uri){
-     if (connection == NULL){
-         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-     }
-     if (connection->state != TELEPHONE_BEARER_SERVICE_CLIENT_STATE_READY){
-         return ERROR_CODE_CONTROLLER_BUSY;
-     }
+uint8_t telephone_bearer_service_client_call_originate(uint16_t tbs_cid, uint8_t call_id, const char *uri){
+    tbs_client_connection_t * connection = (tbs_client_connection_t *) gatt_service_client_get_connection_for_cid(&tbs_client, tbs_cid);
+    if (connection == NULL) {
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if (connection->state != TELEPHONE_BEARER_SERVICE_CLIENT_STATE_READY) {
+        return ERROR_CODE_CONTROLLER_BUSY;
+    }
 
-     uint16_t length = btstack_min(TBS_CLIENT_SERIALISATION_BUFFER_SIZE, strlen(uri));
-     uint8_t *out = connection->serialisation_buffer;
-     out[0] = TBS_CONTROL_POINT_OPCODE_ORIGINATE;
-     memcpy( &out[1], uri, length );
-     connection->data_size = length+1;
+    uint16_t length = btstack_min(TBS_CLIENT_SERIALISATION_BUFFER_SIZE, strlen(uri));
+    uint8_t *out = connection->serialisation_buffer;
+    out[0] = TBS_CONTROL_POINT_OPCODE_ORIGINATE;
+    memcpy(&out[1], uri, length);
+    connection->data_size = length + 1;
 
-     return tbs_client_request_write_characteristic_without_response(connection, TBS_CHARACTERISTIC_INDEX_CALL_CONTROL_POINT);
+    return tbs_client_request_write_characteristic_without_response(connection, TBS_CHARACTERISTIC_INDEX_CALL_CONTROL_POINT);
 }
 
-uint8_t telephone_bearer_service_client_call_join(tbs_client_connection_t * connection, const uint8_t *call_index_list, uint16_t size){
-     if (connection == NULL){
-         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-     }
-     if (connection->state != TELEPHONE_BEARER_SERVICE_CLIENT_STATE_READY){
-         return ERROR_CODE_CONTROLLER_BUSY;
-     }
+uint8_t telephone_bearer_service_client_call_join(uint16_t tbs_cid, const uint8_t *call_index_list, uint16_t size) {
+    tbs_client_connection_t *connection = (tbs_client_connection_t*) gatt_service_client_get_connection_for_cid(&tbs_client, tbs_cid);
 
-     uint16_t length = btstack_min(TBS_CLIENT_SERIALISATION_BUFFER_SIZE, size);
-     uint8_t *out = connection->serialisation_buffer;
-     out[0] = TBS_CONTROL_POINT_OPCODE_JOIN;
-     memcpy( &out[1], call_index_list, length );
-     connection->data_size = length+1;
+    if (connection == NULL) {
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if (connection->state != TELEPHONE_BEARER_SERVICE_CLIENT_STATE_READY) {
+        return ERROR_CODE_CONTROLLER_BUSY;
+    }
 
-     return tbs_client_request_write_characteristic_without_response(connection, TBS_CHARACTERISTIC_INDEX_CALL_CONTROL_POINT);
+    uint16_t length = btstack_min(TBS_CLIENT_SERIALISATION_BUFFER_SIZE, size);
+    uint8_t *out = connection->serialisation_buffer;
+    out[0] = TBS_CONTROL_POINT_OPCODE_JOIN;
+    memcpy(&out[1], call_index_list, length);
+    connection->data_size = length + 1;
+
+    return tbs_client_request_write_characteristic_without_response(connection, TBS_CHARACTERISTIC_INDEX_CALL_CONTROL_POINT);
 }
 
-uint8_t telephone_bearer_service_client_get_provider_name(tbs_client_connection_t * connection){
-     return tbs_client_request_read_characteristic(connection, TBS_CHARACTERISTIC_INDEX_BEARER_PROVIDER_NAME);
+uint8_t telephone_bearer_service_client_get_provider_name(uint16_t cid) {
+    return tbs_client_request_read_characteristic(cid, TBS_CHARACTERISTIC_INDEX_BEARER_PROVIDER_NAME);
 }
 
-uint8_t telephone_bearer_service_client_get_list_current_calls(tbs_client_connection_t * connection){
-     return tbs_client_request_read_characteristic(connection, TBS_CHARACTERISTIC_INDEX_BEARER_LIST_CURRENT_CALLS);
+uint8_t telephone_bearer_service_client_get_list_current_calls(uint16_t cid) {
+    return tbs_client_request_read_characteristic(cid, TBS_CHARACTERISTIC_INDEX_BEARER_LIST_CURRENT_CALLS);
 }
 
-uint8_t telephone_bearer_service_client_get_signal_strength(tbs_client_connection_t * connection){
-     return tbs_client_request_read_characteristic(connection, TBS_CHARACTERISTIC_INDEX_BEARER_SIGNAL_STRENGTH);
+uint8_t telephone_bearer_service_client_get_signal_strength(uint16_t cid) {
+    return tbs_client_request_read_characteristic(cid, TBS_CHARACTERISTIC_INDEX_BEARER_SIGNAL_STRENGTH);
 }
 
-uint8_t telephone_bearer_service_client_get_signal_strength_reporting_interval(tbs_client_connection_t * connection){
-     return tbs_client_request_read_characteristic(connection, TBS_CHARACTERISTIC_INDEX_BEARER_SIGNAL_STRENGTH_REPORTING_INTERVAL);
+uint8_t telephone_bearer_service_client_get_signal_strength_reporting_interval(uint16_t cid) {
+    return tbs_client_request_read_characteristic(cid, TBS_CHARACTERISTIC_INDEX_BEARER_SIGNAL_STRENGTH_REPORTING_INTERVAL);
 }
 
-uint8_t telephone_bearer_service_client_get_technology(tbs_client_connection_t * connection){
-     return tbs_client_request_read_characteristic(connection, TBS_CHARACTERISTIC_INDEX_BEARER_TECHNOLOGY);
+uint8_t telephone_bearer_service_client_get_technology(uint16_t cid) {
+    return tbs_client_request_read_characteristic(cid, TBS_CHARACTERISTIC_INDEX_BEARER_TECHNOLOGY);
 }
 
-uint8_t telephone_bearer_service_client_get_uci(tbs_client_connection_t * connection){
-     return tbs_client_request_read_characteristic(connection, TBS_CHARACTERISTIC_INDEX_BEARER_UCI);
+uint8_t telephone_bearer_service_client_get_uci(uint16_t cid) {
+    return tbs_client_request_read_characteristic(cid, TBS_CHARACTERISTIC_INDEX_BEARER_UCI);
 }
 
-uint8_t telephone_bearer_service_client_get_schemes_supported_list(tbs_client_connection_t * connection){
-     return tbs_client_request_read_characteristic(connection, TBS_CHARACTERISTIC_INDEX_BEARER_URI_SCHEMES_SUPPORTED_LIST);
+uint8_t telephone_bearer_service_client_get_schemes_supported_list(uint16_t cid) {
+    return tbs_client_request_read_characteristic(cid, TBS_CHARACTERISTIC_INDEX_BEARER_URI_SCHEMES_SUPPORTED_LIST);
 }
 
-uint8_t telephone_bearer_service_client_get_call_control_point_optional_opcodes(tbs_client_connection_t * connection){
-     return tbs_client_request_read_characteristic(connection, TBS_CHARACTERISTIC_INDEX_CALL_CONTROL_POINT_OPTIONAL_OPCODES);
+uint8_t telephone_bearer_service_client_get_call_control_point_optional_opcodes(uint16_t cid) {
+    return tbs_client_request_read_characteristic(cid, TBS_CHARACTERISTIC_INDEX_CALL_CONTROL_POINT_OPTIONAL_OPCODES);
 }
 
-uint8_t telephone_bearer_service_client_get_call_friendly_name(tbs_client_connection_t * connection){
-     return tbs_client_request_read_characteristic(connection, TBS_CHARACTERISTIC_INDEX_CALL_FRIENDLY_NAME);
+uint8_t telephone_bearer_service_client_get_call_friendly_name(uint16_t cid) {
+    return tbs_client_request_read_characteristic(cid, TBS_CHARACTERISTIC_INDEX_CALL_FRIENDLY_NAME);
 }
 
-uint8_t telephone_bearer_service_client_get_call_state(tbs_client_connection_t * connection){
-     return tbs_client_request_read_characteristic(connection, TBS_CHARACTERISTIC_INDEX_CALL_STATE);
+uint8_t telephone_bearer_service_client_get_call_state(uint16_t cid) {
+    return tbs_client_request_read_characteristic(cid, TBS_CHARACTERISTIC_INDEX_CALL_STATE);
 }
 
-uint8_t telephone_bearer_service_client_get_content_control_id(tbs_client_connection_t * connection){
-     return tbs_client_request_read_characteristic(connection, TBS_CHARACTERISTIC_INDEX_CONTENT_CONTROL_ID);
+uint8_t telephone_bearer_service_client_get_content_control_id(uint16_t cid) {
+    return tbs_client_request_read_characteristic(cid, TBS_CHARACTERISTIC_INDEX_CONTENT_CONTROL_ID);
 }
 
-uint8_t telephone_bearer_service_client_get_incoming_call(tbs_client_connection_t * connection){
-     return tbs_client_request_read_characteristic(connection, TBS_CHARACTERISTIC_INDEX_INCOMING_CALL);
+uint8_t telephone_bearer_service_client_get_incoming_call(uint16_t cid) {
+    return tbs_client_request_read_characteristic(cid, TBS_CHARACTERISTIC_INDEX_INCOMING_CALL);
 }
 
-uint8_t telephone_bearer_service_client_get_incoming_call_target_bearer_uri(tbs_client_connection_t * connection){
-     return tbs_client_request_read_characteristic(connection, TBS_CHARACTERISTIC_INDEX_INCOMING_CALL_TARGET_BEARER_URI);
+uint8_t telephone_bearer_service_client_get_incoming_call_target_bearer_uri(uint16_t cid) {
+    return tbs_client_request_read_characteristic(cid, TBS_CHARACTERISTIC_INDEX_INCOMING_CALL_TARGET_BEARER_URI);
 }
 
-uint8_t telephone_bearer_service_client_get_status_flags(tbs_client_connection_t * connection){
-     return tbs_client_request_read_characteristic(connection, TBS_CHARACTERISTIC_INDEX_STATUS_FLAGS);
+uint8_t telephone_bearer_service_client_get_status_flags(uint16_t cid) {
+    return tbs_client_request_read_characteristic(cid, TBS_CHARACTERISTIC_INDEX_STATUS_FLAGS);
 }
 
-uint8_t telephone_bearer_service_client_get_termination_reason(tbs_client_connection_t * connection){
-     return tbs_client_request_read_characteristic(connection, TBS_CHARACTERISTIC_INDEX_TERMINATION_REASON);
+uint8_t telephone_bearer_service_client_get_termination_reason(uint16_t cid) {
+    return tbs_client_request_read_characteristic(cid, TBS_CHARACTERISTIC_INDEX_TERMINATION_REASON);
 }
 
 static void tbs_client_packet_handler_internal(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
