@@ -133,229 +133,233 @@ void telephone_bearer_service_client_init(void);
 /**
  * @brief Set signal strength reporting interval
  *
- * @param connection
+ * @param cid
  * @param reporting_interval_s
  * @return status ERROR_CODE_SUCCESS on success
  */
-uint8_t telephone_bearer_service_client_set_strength_reporting_interval(tbs_client_connection_t * connection, uint8_t reporting_interval_s);
+uint8_t telephone_bearer_service_client_set_strength_reporting_interval(uint16_t cid, uint8_t reporting_interval_s);
 
 /**
  * @brief Issues the ACCEPT command, with given call id, to the Call Control Point characteristic, command status is received via Call Control Point Notifications
  *
- * @param connection
+ * @param cid
  * @param call_id
  * @return status ERROR_CODE_SUCCESS on success
  */
-uint8_t telephone_bearer_service_client_call_accept(tbs_client_connection_t * connection, uint8_t call_id);
+uint8_t telephone_bearer_service_client_call_accept(uint16_t cid, uint8_t call_id);
 
 /**
  * @brief Issues the TERMINATE command, with given call id, to the Call Control Point characteristic, command status is received via Call Control Point Notifications
- * @param connection
+ * @param cid
  * @param call_id
  * @return status ERROR_CODE_SUCCESS on success
  */
-uint8_t telephone_bearer_service_client_call_terminate(tbs_client_connection_t * connection, uint8_t call_id);
+uint8_t telephone_bearer_service_client_call_terminate(uint16_t cid, uint8_t call_id);
 
 /**
  * @brief Issues the LOCAL_HOLD command, with given call id, to the Call Control Point characteristic, command status is received via Call Control Point Notifications
- * @param connection
+ * @param cid
  * @param call_id
  * @return status ERROR_CODE_SUCCESS on success
  */
-uint8_t telephone_bearer_service_client_call_hold(tbs_client_connection_t * connection, uint8_t call_id);
+uint8_t telephone_bearer_service_client_call_hold(uint16_t cid, uint8_t call_id);
 
 /**
  * @brief Issues the LOCAL_RETRIEVE command, with given call id, to the Call Control Point characteristic, command status is received via Call Control Point Notifications
- * @param connection
+ * @param cid
  * @param call_id
  * @return status ERROR_CODE_SUCCESS on success
  */
-uint8_t telephone_bearer_service_client_call_retrieve(tbs_client_connection_t * connection, uint8_t call_id);
+uint8_t telephone_bearer_service_client_call_retrieve(uint16_t cid, uint8_t call_id);
 
 /**
  * @brief Issues the ORIGINATE command, with given call id, to the Call Control Point characteristic, command status is received via Call Control Point Notifications
- * @param connection
+ * @param cid
  * @param call_id
  * @param uri
  * @return status ERROR_CODE_SUCCESS on success
  */
-uint8_t telephone_bearer_service_client_call_originate(tbs_client_connection_t * connection, uint8_t call_id, const char *uri);
+uint8_t telephone_bearer_service_client_call_originate(uint16_t cid, uint8_t call_id, const char *uri);
 
 /**
  * @brief Issues the JOIN command, with given call id, to the Call Control Point characteristic, command status is received via Call Control Point Notifications
- * @param connection
+ * @param cid
  * @param call_id
  * @param call_index_list
  * @param size
  * @return status ERROR_CODE_SUCCESS on success
  */
-uint8_t telephone_bearer_service_client_call_join(tbs_client_connection_t * connection, const uint8_t *call_index_list, uint16_t size);
+uint8_t telephone_bearer_service_client_call_join(uint16_t cid, const uint8_t *call_index_list, uint16_t size);
 
 /**
  * @brief Query the provider name
- * @param connection
+ * @param cid
  * @return status ERROR_CODE_SUCCESS on success
  */
-uint8_t telephone_bearer_service_client_get_provider_name(tbs_client_connection_t * connection);
+uint8_t telephone_bearer_service_client_get_provider_name(uint16_t cid);
 
 /**
  * @brief Query the list of current calls
- * @param connection
+ * @param cid
  * @return status ERROR_CODE_SUCCESS on success
  */
-uint8_t telephone_bearer_service_client_get_list_current_calls(tbs_client_connection_t * connection);
+uint8_t telephone_bearer_service_client_get_list_current_calls(uint16_t cid);
 
-static inline uint8_t *gattservice_subevent_tbs_client_bearer_list_current_calls_list_begin( uint8_t *packet ) {
+typedef uint8_t* btstack_subevent_iterator_t;
+
+static inline btstack_subevent_iterator_t gattservice_subevent_tbs_client_bearer_list_current_calls_list_init( uint8_t *packet ) {
     return &packet[6];
 }
 
-static inline uint8_t *gattservice_subevent_tbs_client_bearer_list_current_calls_list_end( uint8_t *packet ) {
+static inline bool gattservice_subevent_tbs_client_bearer_list_current_calls_list_has_next( btstack_subevent_iterator_t iter, uint8_t *packet ) {
     uint8_t length = packet[5];
-    uint8_t *begin = gattservice_subevent_tbs_client_bearer_list_current_calls_list_begin( packet );
-    return begin+length;
+    uint8_t *begin = gattservice_subevent_tbs_client_bearer_list_current_calls_list_init( packet );
+    uint8_t *end = begin+length;
+    return iter<end;
 }
 
-static inline uint8_t *gattservice_subevent_tbs_client_bearer_list_current_calls_list_next( uint8_t *iter ) {
+static inline btstack_subevent_iterator_t gattservice_subevent_tbs_client_bearer_list_current_calls_list_next( btstack_subevent_iterator_t iter ) {
     uint8_t length = iter[0]+1;
     return iter+length;
 }
 
-static inline uint8_t gattservice_subevent_tbs_client_bearer_list_current_calls_list_item_length( uint8_t *iter ) {
+static inline uint8_t gattservice_subevent_tbs_client_bearer_list_current_calls_list_item_length( btstack_subevent_iterator_t iter ) {
     return iter[0]+1;
 }
 
-static inline uint8_t gattservice_subevent_tbs_client_bearer_list_current_calls_list_item_call_index( uint8_t *iter ) {
+static inline uint8_t gattservice_subevent_tbs_client_bearer_list_current_calls_list_item_call_index( btstack_subevent_iterator_t iter ) {
     return iter[1];
 }
 
-static inline uint8_t gattservice_subevent_tbs_client_bearer_list_current_calls_list_item_call_state( uint8_t *iter ) {
+static inline uint8_t gattservice_subevent_tbs_client_bearer_list_current_calls_list_item_call_state( btstack_subevent_iterator_t iter ) {
     return iter[2];
 }
 
-static inline uint8_t gattservice_subevent_tbs_client_bearer_list_current_calls_list_item_flags( uint8_t *iter ) {
+static inline uint8_t gattservice_subevent_tbs_client_bearer_list_current_calls_list_item_flags( btstack_subevent_iterator_t iter ) {
     return iter[3];
 }
 
-static inline uint8_t *gattservice_subevent_tbs_client_bearer_list_current_calls_list_item_uri( uint8_t *iter ) {
+static inline uint8_t *gattservice_subevent_tbs_client_bearer_list_current_calls_list_item_uri( btstack_subevent_iterator_t iter ) {
     return &iter[4];
 }
 
-static inline uint8_t *gattservice_subevent_tbs_client_call_state_get_list_begin(uint8_t *packet) {
+static inline btstack_subevent_iterator_t gattservice_subevent_tbs_client_call_state_get_list_init(uint8_t *packet) {
     return &packet[6];
 }
 
-static inline uint8_t *gattservice_subevent_tbs_client_call_state_get_list_end(uint8_t *packet) {
+static inline bool gattservice_subevent_tbs_client_call_state_get_list_has_next( btstack_subevent_iterator_t iter, uint8_t *packet ) {
     uint8_t length = packet[5];
-    uint8_t *begin = gattservice_subevent_tbs_client_call_state_get_list_begin( packet );
-    return begin+length;
+    uint8_t *begin = gattservice_subevent_tbs_client_call_state_get_list_init( packet );
+    uint8_t *end = begin+length;
+    return iter<end;
 }
 
-static inline uint8_t *gattservice_subevent_tbs_client_call_state_get_list_next(uint8_t *iter) {
+static inline btstack_subevent_iterator_t gattservice_subevent_tbs_client_call_state_get_list_next( btstack_subevent_iterator_t iter ) {
     return iter+3;
 }
 
-static inline uint8_t gattservice_subevent_tbs_client_call_state_get_list_item_call_index(uint8_t *iter) {
+static inline uint8_t gattservice_subevent_tbs_client_call_state_get_list_item_call_index( btstack_subevent_iterator_t iter ) {
     return iter[0];
 }
 
-static inline uint8_t gattservice_subevent_tbs_client_call_state_get_list_item_call_state(uint8_t *iter) {
+static inline uint8_t gattservice_subevent_tbs_client_call_state_get_list_item_call_state( btstack_subevent_iterator_t iter ) {
     return iter[1];
 }
 
-static inline uint8_t gattservice_subevent_tbs_client_call_state_get_list_item_flags(uint8_t *iter) {
+static inline uint8_t gattservice_subevent_tbs_client_call_state_get_list_item_flags( btstack_subevent_iterator_t iter ) {
     return iter[2];
 }
 
 /**
  * @brief Query the signal strength
- * @param connection
+ * @param cid
  * @return status ERROR_CODE_SUCCESS on success
  */
-uint8_t telephone_bearer_service_client_get_signal_strength(tbs_client_connection_t * connection);
+uint8_t telephone_bearer_service_client_get_signal_strength(uint16_t cid);
 
 /**
  * @brief Query the signal strength reporting interval
- * @param connection
+ * @param cid
  * @return status ERROR_CODE_SUCCESS on success
  */
-uint8_t telephone_bearer_service_client_get_signal_strength_reporting_interval(tbs_client_connection_t * connection);
+uint8_t telephone_bearer_service_client_get_signal_strength_reporting_interval(uint16_t cid);
 
 /**
  * @brief Query the bearer technology
- * @param connection
+ * @param cid
  * @return status ERROR_CODE_SUCCESS on success
  */
-uint8_t telephone_bearer_service_client_get_technology(tbs_client_connection_t * connection);
+uint8_t telephone_bearer_service_client_get_technology(uint16_t cid);
 
 /**
  * @brief Query the universal caller identifier
- * @param connection
+ * @param cid
  * @return status ERROR_CODE_SUCCESS on success
  */
-uint8_t telephone_bearer_service_client_get_uci(tbs_client_connection_t * connection);
+uint8_t telephone_bearer_service_client_get_uci(uint16_t cid);
 
 /**
  * @brief Query bearer supported schemes list
- * @param connection
+ * @param cid
  * @return status ERROR_CODE_SUCCESS on success
  */
-uint8_t telephone_bearer_service_client_get_schemes_supported_list(tbs_client_connection_t * connection);
+uint8_t telephone_bearer_service_client_get_schemes_supported_list(uint16_t cid);
 
 /**
  * @brief Query call control point optional opcodes
- * @param connection
+ * @param cid
  * @return status ERROR_CODE_SUCCESS on success
  */
-uint8_t telephone_bearer_service_client_get_call_control_point_optional_opcodes(tbs_client_connection_t * connection);
+uint8_t telephone_bearer_service_client_get_call_control_point_optional_opcodes(uint16_t cid);
 
 /**
  * @brief Query call friendly name
- * @param connection
+ * @param cid
  * @return status ERROR_CODE_SUCCESS on success
  */
-uint8_t telephone_bearer_service_client_get_call_friendly_name(tbs_client_connection_t * connection);
+uint8_t telephone_bearer_service_client_get_call_friendly_name(uint16_t cid);
 
 /**
  * @brief Query call state
- * @param connection
+ * @param cid
  * @return status ERROR_CODE_SUCCESS on success
  */
-uint8_t telephone_bearer_service_client_get_call_state(tbs_client_connection_t * connection);
+uint8_t telephone_bearer_service_client_get_call_state(uint16_t cid);
 
 /**
  * @brief Query content control id
- * @param connection
+ * @param cid
  * @return status ERROR_CODE_SUCCESS on success
  */
-uint8_t telephone_bearer_service_client_get_content_control_id(tbs_client_connection_t * connection);
+uint8_t telephone_bearer_service_client_get_content_control_id(uint16_t cid);
 
 /**
  * @brief Query incoming call
- * @param connection
+ * @param cid
  * @return status ERROR_CODE_SUCCESS on success
  */
-uint8_t telephone_bearer_service_client_get_incoming_call(tbs_client_connection_t * connection);
+uint8_t telephone_bearer_service_client_get_incoming_call(uint16_t cid);
 
 /**
  * @brief Query incoming call target bearer URI
- * @param connection
+ * @param cid
  * @return status ERROR_CODE_SUCCESS on success
  */
-uint8_t telephone_bearer_service_client_get_incoming_call_target_bearer_uri(tbs_client_connection_t * connection);
+uint8_t telephone_bearer_service_client_get_incoming_call_target_bearer_uri(uint16_t cid);
 
 /**
  * @brief Query status flags
- * @param connection
+ * @param cid
  * @return status ERROR_CODE_SUCCESS on success
  */
-uint8_t telephone_bearer_service_client_get_status_flags(tbs_client_connection_t * connection);
+uint8_t telephone_bearer_service_client_get_status_flags(uint16_t cid);
 
 /**
  * @brief Query termination reason
- * @param connection
+ * @param cid
  * @return status ERROR_CODE_SUCCESS on success
  */
-uint8_t telephone_bearer_service_client_get_termination_reason(tbs_client_connection_t * connection);
+uint8_t telephone_bearer_service_client_get_termination_reason(uint16_t cid);
 
 /**
  * @brief Disconnect.

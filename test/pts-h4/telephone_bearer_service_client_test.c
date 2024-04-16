@@ -329,27 +329,13 @@ static void gatt_client_event_handler(uint8_t packet_type, uint16_t channel, uin
             printf("Signal Strength Reporting Interval: \"%d\"\n", gattservice_subevent_tbs_client_bearer_signal_strength_reporting_interval_get_interval(packet));
             break;
         case GATTSERVICE_SUBEVENT_TBS_CLIENT_BEARER_LIST_CURRENT_CALLS: {
-#if 0
             uint8_t length = gattservice_subevent_tbs_client_bearer_list_current_calls_get_length(packet);
-            uint8_t const *data = gattservice_subevent_tbs_client_bearer_list_current_calls_get_list(packet);
             if( length == 0 ) {
                 break; // Empty list
             }
             printf("call_index | call_state | flags | uri\n");
-            for( int i=0; i<length; ) {
-                uint8_t item_length = data[0]+1; // item length + this field
-                uint8_t call_index  = data[1];
-                uint8_t call_state  = data[2];
-                uint8_t flags       = data[3];
-                uint8_t const *uri  =&data[4];
-                printf( "%10d | %10d | %5x | \"%s\"\n", call_index, call_state, flags, uri );
-                i += item_length;
-                data += item_length;
-            }
-#else
-            printf("call_index | call_state | flags | uri\n");
-            for( uint8_t* iter=gattservice_subevent_tbs_client_bearer_list_current_calls_list_begin(packet);
-                    iter<gattservice_subevent_tbs_client_bearer_list_current_calls_list_end(packet);
+            for( btstack_subevent_iterator_t iter = gattservice_subevent_tbs_client_bearer_list_current_calls_list_init(packet);
+                    gattservice_subevent_tbs_client_bearer_list_current_calls_list_has_next(iter, packet);
                     iter=gattservice_subevent_tbs_client_bearer_list_current_calls_list_next(iter)) {
                 uint8_t call_index  = gattservice_subevent_tbs_client_bearer_list_current_calls_list_item_call_index(iter);
                 uint8_t call_state  = gattservice_subevent_tbs_client_bearer_list_current_calls_list_item_call_state(iter);
@@ -357,7 +343,6 @@ static void gatt_client_event_handler(uint8_t packet_type, uint16_t channel, uin
                 uint8_t const *uri  = gattservice_subevent_tbs_client_bearer_list_current_calls_list_item_uri(iter);
                 printf( "%10d | %10d | %5x | \"%s\"\n", call_index, call_state, flags, uri );
             }
-#endif
             break;
         }
         case GATTSERVICE_SUBEVENT_TBS_CLIENT_CONTENT_CONTROL_ID:
@@ -373,31 +358,19 @@ static void gatt_client_event_handler(uint8_t packet_type, uint16_t channel, uin
             break;
         }
         case GATTSERVICE_SUBEVENT_TBS_CLIENT_CALL_STATE: {
-#if 0
             uint8_t length = gattservice_subevent_tbs_client_call_state_get_length(packet);
-            uint8_t const *data = gattservice_subevent_tbs_client_call_state_get_state(packet);
             if( length == 0 ) {
-                break;
+                break; // Empty list
             }
             printf("call_index | call_state | flags\n");
-            for( int i=0; i<length; i += 3 ) {
-                uint8_t call_index = data[0];
-                uint8_t call_state = data[1];
-                uint8_t flags      = data[2];
-                printf("%10d | %10d | %5x\n", call_index, call_state, flags );
-                data += 3;
-            }
-#else
-            printf("call_index | call_state | flags\n");
-            for( uint8_t *iter = gattservice_subevent_tbs_client_call_state_get_list_begin(packet);
-                    iter<gattservice_subevent_tbs_client_call_state_get_list_end(packet);
+            for( btstack_subevent_iterator_t iter = gattservice_subevent_tbs_client_call_state_get_list_init(packet);
+                    gattservice_subevent_tbs_client_call_state_get_list_has_next(iter, packet);
                     iter = gattservice_subevent_tbs_client_call_state_get_list_next(iter)) {
                 uint8_t call_index = gattservice_subevent_tbs_client_call_state_get_list_item_call_index(iter);
                 uint8_t call_state = gattservice_subevent_tbs_client_call_state_get_list_item_call_state(iter);
                 uint8_t flags      = gattservice_subevent_tbs_client_call_state_get_list_item_flags(iter);
                 printf("%10d | %10d | %5x\n", call_index, call_state, flags );
             }
-#endif
             break;
         }
         case GATTSERVICE_SUBEVENT_TBS_CLIENT_CALL_CONTROL_POINT: {
@@ -486,67 +459,67 @@ static void stdin_process(char c){
             printf("Bearer type to connect to: %s\n", (bearer_type==INDIVIDUAL_BEARER)?"individual bearer":"generic bearer");
             break;
         case 'g':
-            telephone_bearer_service_client_call_accept( &tbs_connection, 1 );
+            telephone_bearer_service_client_call_accept( tbs_cid, 1 );
             break;
         case 'h':
-            telephone_bearer_service_client_call_terminate( &tbs_connection, 1 );
+            telephone_bearer_service_client_call_terminate( tbs_cid, 1 );
             break;
         case 'j':
-            telephone_bearer_service_client_call_hold( &tbs_connection, 1 );
+            telephone_bearer_service_client_call_hold( tbs_cid, 1 );
             break;
         case 'k':
-            telephone_bearer_service_client_call_retrieve( &tbs_connection, 1 );
+            telephone_bearer_service_client_call_retrieve( tbs_cid, 1 );
             break;
         case 'p':
-            telephone_bearer_service_client_call_originate(&tbs_connection, 1, "tel:5551234");
+            telephone_bearer_service_client_call_originate(tbs_cid, 1, "tel:5551234");
             break;
         case 'q':
-            telephone_bearer_service_client_call_join(&tbs_connection, "\x01\x02", 2);
+            telephone_bearer_service_client_call_join(tbs_cid, "\x01\x02", 2);
             break;
         case 'n':
-            telephone_bearer_service_client_get_provider_name(&tbs_connection);
+            telephone_bearer_service_client_get_provider_name(tbs_cid);
             break;
         case 'u':
-            telephone_bearer_service_client_get_uci(&tbs_connection);
+            telephone_bearer_service_client_get_uci(tbs_cid);
             break;
         case 't':
-            telephone_bearer_service_client_get_technology(&tbs_connection);
+            telephone_bearer_service_client_get_technology(tbs_cid);
             break;
         case 's':
-            telephone_bearer_service_client_get_schemes_supported_list(&tbs_connection);
+            telephone_bearer_service_client_get_schemes_supported_list(tbs_cid);
             break;
         case 'i':
-            telephone_bearer_service_client_get_signal_strength(&tbs_connection);
+            telephone_bearer_service_client_get_signal_strength(tbs_cid);
             break;
         case 'r':
-            telephone_bearer_service_client_get_signal_strength_reporting_interval(&tbs_connection);
+            telephone_bearer_service_client_get_signal_strength_reporting_interval(tbs_cid);
             break;
         case 'v':
-            telephone_bearer_service_client_set_strength_reporting_interval( &tbs_connection, 6 );
+            telephone_bearer_service_client_set_strength_reporting_interval( tbs_cid, 6 );
             break;
         case 'l':
-            telephone_bearer_service_client_get_list_current_calls(&tbs_connection);
+            telephone_bearer_service_client_get_list_current_calls(tbs_cid);
             break;
         case 'd':
-            telephone_bearer_service_client_get_content_control_id(&tbs_connection);
+            telephone_bearer_service_client_get_content_control_id(tbs_cid);
             break;
         case 'a':
-            telephone_bearer_service_client_get_incoming_call_target_bearer_uri(&tbs_connection);
+            telephone_bearer_service_client_get_incoming_call_target_bearer_uri(tbs_cid);
             break;
         case 'f':
-            telephone_bearer_service_client_get_status_flags(&tbs_connection);
+            telephone_bearer_service_client_get_status_flags(tbs_cid);
             break;
         case 'e':
-            telephone_bearer_service_client_get_call_state(&tbs_connection);
+            telephone_bearer_service_client_get_call_state(tbs_cid);
             break;
         case 'o':
-            telephone_bearer_service_client_get_call_control_point_optional_opcodes(&tbs_connection);
+            telephone_bearer_service_client_get_call_control_point_optional_opcodes(tbs_cid);
             break;
         case 'm':
-            telephone_bearer_service_client_get_incoming_call(&tbs_connection);
+            telephone_bearer_service_client_get_incoming_call(tbs_cid);
             break;
         case 'y':
-            telephone_bearer_service_client_get_call_friendly_name(&tbs_connection);
+            telephone_bearer_service_client_get_call_friendly_name(tbs_cid);
             break;
 
         case '\r':
