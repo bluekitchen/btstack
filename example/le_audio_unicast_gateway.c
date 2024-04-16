@@ -35,11 +35,10 @@
  *
  */
 
-#define BTSTACK_FILE__ "le_audio_unicast_source.c"
+#define BTSTACK_FILE__ "le_audio_unicast_gateway.c"
 
 /*
- * LE Audio Unicast Source
- * Until GATT Services are available, we encode LC3 config in advertising
+ * LE Audio Unicast Gateway
  */
 
 #include <inttypes.h>
@@ -437,6 +436,13 @@ static void run_for_server(server_t * server){
     }
 }
 
+static void app_start_scanning(void){
+    // (re)set scan parameters for known issue #20444 in SoftDevice Controller of v2.6 and older
+    // https://developer.nordicsemi.com/nRF_Connect_SDK/doc/latest/nrf/releases_and_maturity/known_issues.html#softdevice-controller
+    gap_set_scan_parameters(0,480, 48);
+    gap_start_scan();
+}
+
 static void trigger_next_connect(void){
     // trigger next idle server
     btstack_assert(app_state == APP_CONNECT_TO_NEXT_MEMBER);
@@ -501,7 +507,7 @@ static void app_run(void){
                     coordinated_set_identification_service_client_find_members(rsi_entries, NR_RSI_ENTRIES, servers[0].sirk);
                     printf("CAP client %u: look for %u more Set Members\n", servers[0].server_id, set_size - 1);
                     // start scanning
-                    gap_start_scan();
+                    app_start_scanning();
                 } else {
                     all_members_connected();
                 }
@@ -673,7 +679,7 @@ static void le_audio_unicast_source_handle_adv(bd_addr_type_t adv_addr_type, bd_
 }
 
 static void create_cig(void){
-    btstack_assert((num_servers == 1) || (num_channels == 2));
+    btstack_assert((num_servers > 0) || (num_servers <= MAX_NR_CIS));
 
     uint8_t i;
 
@@ -1419,7 +1425,7 @@ static void stdin_process(char c){
             cig_id = CIG_ID_INVALID;
             app_state = APP_W4_UNICAST_SINK_ADV;
             // start scanning
-            gap_start_scan();
+            app_start_scanning();
             break;
         case 'x':
             switch (audio_source){
@@ -1460,7 +1466,6 @@ int btstack_main(int argc, const char * argv[]){
     (void) argc;
 
     gap_set_connection_parameters(0x90, 0x60, 0x30, 0x48, 4, 100, 0, 0);
-
     l2cap_init();
 
     le_device_db_init();
