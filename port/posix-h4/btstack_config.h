@@ -51,6 +51,7 @@
 
 #define MAX_NR_AUDIO_CHANNELS           5
 #define MAX_NR_BIS                      5
+#define MAX_NR_CIS                      5
 
 // Mesh Configuration
 #define ENABLE_MESH
