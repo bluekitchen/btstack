@@ -205,69 +205,69 @@ uint8_t telephone_bearer_service_client_get_provider_name(uint16_t cid);
  */
 uint8_t telephone_bearer_service_client_get_list_current_calls(uint16_t cid);
 
-typedef uint8_t* btstack_subevent_iterator_t;
+typedef uint8_t* btstack_event_iterator_t;
 
-static inline btstack_subevent_iterator_t gattservice_subevent_tbs_client_bearer_list_current_calls_list_init( uint8_t *packet ) {
-    return &packet[6];
+static inline void gattservice_subevent_tbs_client_bearer_list_current_calls_list_init( btstack_event_iterator_t *iter, uint8_t *packet ) {
+    *iter = &packet[6];
 }
 
-static inline bool gattservice_subevent_tbs_client_bearer_list_current_calls_list_has_next( btstack_subevent_iterator_t iter, uint8_t *packet ) {
+static inline bool gattservice_subevent_tbs_client_bearer_list_current_calls_list_has_next( btstack_event_iterator_t *iter, uint8_t *packet ) {
     uint8_t length = packet[5];
-    uint8_t *begin = gattservice_subevent_tbs_client_bearer_list_current_calls_list_init( packet );
+    uint8_t *begin = &packet[6];
     uint8_t *end = begin+length;
-    return iter<end;
+    return *iter<end;
 }
 
-static inline btstack_subevent_iterator_t gattservice_subevent_tbs_client_bearer_list_current_calls_list_next( btstack_subevent_iterator_t iter ) {
-    uint8_t length = iter[0]+1;
-    return iter+length;
+static inline void gattservice_subevent_tbs_client_bearer_list_current_calls_list_next( btstack_event_iterator_t *iter ) {
+    uint8_t length = *iter[0]+1;
+    *iter = *iter+length;
 }
 
-static inline uint8_t gattservice_subevent_tbs_client_bearer_list_current_calls_list_item_length( btstack_subevent_iterator_t iter ) {
-    return iter[0]+1;
+static inline uint8_t gattservice_subevent_tbs_client_bearer_list_current_calls_list_item_length( btstack_event_iterator_t *iter ) {
+    return (*iter)[0]+1;
 }
 
-static inline uint8_t gattservice_subevent_tbs_client_bearer_list_current_calls_list_item_call_index( btstack_subevent_iterator_t iter ) {
-    return iter[1];
+static inline uint8_t gattservice_subevent_tbs_client_bearer_list_current_calls_list_item_call_index( btstack_event_iterator_t *iter ) {
+    return (*iter)[1];
 }
 
-static inline uint8_t gattservice_subevent_tbs_client_bearer_list_current_calls_list_item_call_state( btstack_subevent_iterator_t iter ) {
-    return iter[2];
+static inline uint8_t gattservice_subevent_tbs_client_bearer_list_current_calls_list_item_call_state( btstack_event_iterator_t *iter ) {
+    return (*iter)[2];
 }
 
-static inline uint8_t gattservice_subevent_tbs_client_bearer_list_current_calls_list_item_flags( btstack_subevent_iterator_t iter ) {
-    return iter[3];
+static inline uint8_t gattservice_subevent_tbs_client_bearer_list_current_calls_list_item_flags( btstack_event_iterator_t *iter ) {
+    return (*iter)[3];
 }
 
-static inline uint8_t *gattservice_subevent_tbs_client_bearer_list_current_calls_list_item_uri( btstack_subevent_iterator_t iter ) {
-    return &iter[4];
+static inline uint8_t *gattservice_subevent_tbs_client_bearer_list_current_calls_list_item_uri( btstack_event_iterator_t *iter ) {
+    return &((*iter)[4]);
 }
 
-static inline btstack_subevent_iterator_t gattservice_subevent_tbs_client_call_state_get_list_init(uint8_t *packet) {
-    return &packet[6];
+static inline void gattservice_subevent_tbs_client_call_state_get_list_init( btstack_event_iterator_t *iter, uint8_t *packet) {
+    *iter = &packet[6];
 }
 
-static inline bool gattservice_subevent_tbs_client_call_state_get_list_has_next( btstack_subevent_iterator_t iter, uint8_t *packet ) {
+static inline bool gattservice_subevent_tbs_client_call_state_get_list_has_next( btstack_event_iterator_t *iter, uint8_t *packet ) {
     uint8_t length = packet[5];
-    uint8_t *begin = gattservice_subevent_tbs_client_call_state_get_list_init( packet );
+    uint8_t *begin = &packet[6];
     uint8_t *end = begin+length;
-    return iter<end;
+    return *iter<end;
 }
 
-static inline btstack_subevent_iterator_t gattservice_subevent_tbs_client_call_state_get_list_next( btstack_subevent_iterator_t iter ) {
-    return iter+3;
+static inline void gattservice_subevent_tbs_client_call_state_get_list_next( btstack_event_iterator_t *iter ) {
+    *iter += 3;
 }
 
-static inline uint8_t gattservice_subevent_tbs_client_call_state_get_list_item_call_index( btstack_subevent_iterator_t iter ) {
-    return iter[0];
+static inline uint8_t gattservice_subevent_tbs_client_call_state_get_list_item_call_index( btstack_event_iterator_t *iter ) {
+    return (*iter)[0];
 }
 
-static inline uint8_t gattservice_subevent_tbs_client_call_state_get_list_item_call_state( btstack_subevent_iterator_t iter ) {
-    return iter[1];
+static inline uint8_t gattservice_subevent_tbs_client_call_state_get_list_item_call_state( btstack_event_iterator_t *iter ) {
+    return (*iter)[1];
 }
 
-static inline uint8_t gattservice_subevent_tbs_client_call_state_get_list_item_flags( btstack_subevent_iterator_t iter ) {
-    return iter[2];
+static inline uint8_t gattservice_subevent_tbs_client_call_state_get_list_item_flags( btstack_event_iterator_t *iter ) {
+    return (*iter)[2];
 }
 
 /**

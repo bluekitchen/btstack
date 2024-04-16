@@ -499,7 +499,6 @@ static void tbs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t ch
             connection_helper = gatt_service_client_get_connection_for_con_handle(&tbs_client, con_handle);
             connection = (tbs_client_connection_t *)connection_helper;
             btstack_assert(connection != NULL);
-            printf("query result idx: %d\n", connection->characteristic_index);
             switch (connection->state){
                 case TELEPHONE_BEARER_SERVICE_CLIENT_STATE_W4_READ_CHARACTERISTIC_VALUE_RESULT:
                     connection->state = TELEPHONE_BEARER_SERVICE_CLIENT_STATE_READY;

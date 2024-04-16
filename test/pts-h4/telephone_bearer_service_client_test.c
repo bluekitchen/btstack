@@ -334,13 +334,14 @@ static void gatt_client_event_handler(uint8_t packet_type, uint16_t channel, uin
                 break; // Empty list
             }
             printf("call_index | call_state | flags | uri\n");
-            for( btstack_subevent_iterator_t iter = gattservice_subevent_tbs_client_bearer_list_current_calls_list_init(packet);
-                    gattservice_subevent_tbs_client_bearer_list_current_calls_list_has_next(iter, packet);
-                    iter=gattservice_subevent_tbs_client_bearer_list_current_calls_list_next(iter)) {
-                uint8_t call_index  = gattservice_subevent_tbs_client_bearer_list_current_calls_list_item_call_index(iter);
-                uint8_t call_state  = gattservice_subevent_tbs_client_bearer_list_current_calls_list_item_call_state(iter);
-                uint8_t flags       = gattservice_subevent_tbs_client_bearer_list_current_calls_list_item_flags(iter);
-                uint8_t const *uri  = gattservice_subevent_tbs_client_bearer_list_current_calls_list_item_uri(iter);
+            btstack_event_iterator_t iter;
+            for( gattservice_subevent_tbs_client_bearer_list_current_calls_list_init( &iter, packet );
+                    gattservice_subevent_tbs_client_bearer_list_current_calls_list_has_next(&iter, packet);
+                    gattservice_subevent_tbs_client_bearer_list_current_calls_list_next(&iter)) {
+                uint8_t call_index  = gattservice_subevent_tbs_client_bearer_list_current_calls_list_item_call_index(&iter);
+                uint8_t call_state  = gattservice_subevent_tbs_client_bearer_list_current_calls_list_item_call_state(&iter);
+                uint8_t flags       = gattservice_subevent_tbs_client_bearer_list_current_calls_list_item_flags(&iter);
+                uint8_t const *uri  = gattservice_subevent_tbs_client_bearer_list_current_calls_list_item_uri(&iter);
                 printf( "%10d | %10d | %5x | \"%s\"\n", call_index, call_state, flags, uri );
             }
             break;
@@ -363,12 +364,13 @@ static void gatt_client_event_handler(uint8_t packet_type, uint16_t channel, uin
                 break; // Empty list
             }
             printf("call_index | call_state | flags\n");
-            for( btstack_subevent_iterator_t iter = gattservice_subevent_tbs_client_call_state_get_list_init(packet);
-                    gattservice_subevent_tbs_client_call_state_get_list_has_next(iter, packet);
-                    iter = gattservice_subevent_tbs_client_call_state_get_list_next(iter)) {
-                uint8_t call_index = gattservice_subevent_tbs_client_call_state_get_list_item_call_index(iter);
-                uint8_t call_state = gattservice_subevent_tbs_client_call_state_get_list_item_call_state(iter);
-                uint8_t flags      = gattservice_subevent_tbs_client_call_state_get_list_item_flags(iter);
+            btstack_event_iterator_t iter;
+            for( gattservice_subevent_tbs_client_call_state_get_list_init(&iter, packet);
+                    gattservice_subevent_tbs_client_call_state_get_list_has_next(&iter, packet);
+                    gattservice_subevent_tbs_client_call_state_get_list_next(&iter)) {
+                uint8_t call_index = gattservice_subevent_tbs_client_call_state_get_list_item_call_index(&iter);
+                uint8_t call_state = gattservice_subevent_tbs_client_call_state_get_list_item_call_state(&iter);
+                uint8_t flags      = gattservice_subevent_tbs_client_call_state_get_list_item_flags(&iter);
                 printf("%10d | %10d | %5x\n", call_index, call_state, flags );
             }
             break;
@@ -383,11 +385,12 @@ static void gatt_client_event_handler(uint8_t packet_type, uint16_t channel, uin
         case GATTSERVICE_SUBEVENT_TBS_CLIENT_CALL_CONTROL_POINT_OPTIONAL_OPCODES:
             printf("Call Control Point Optional Opcodes: \"%#06x\"\n", gattservice_subevent_tbs_client_call_control_point_optional_opcodes_get_mask(packet));
             break;
-        case GATTSERVICE_SUBEVENT_TBS_CLIENT_TERMINATION_REASON:
+        case GATTSERVICE_SUBEVENT_TBS_CLIENT_TERMINATION_REASON: {
             uint8_t call_index = gattservice_subevent_tbs_client_termination_reason_get_call_index(packet);
             uint8_t reason = gattservice_subevent_tbs_client_termination_reason_get_reason(packet);
             printf("call_index: %d, reason_code: %d\n", call_index, reason);
             break;
+        }
         case GATTSERVICE_SUBEVENT_TBS_CLIENT_INCOMING_CALL: {
             uint8_t call_index = gattservice_subevent_tbs_client_incoming_call_get_call_index(packet);
             uint8_t const *uri = gattservice_subevent_tbs_client_incoming_call_get_uri(packet);
@@ -474,7 +477,10 @@ static void stdin_process(char c){
             telephone_bearer_service_client_call_originate(tbs_cid, 1, "tel:5551234");
             break;
         case 'q':
-            telephone_bearer_service_client_call_join(tbs_cid, "\x01\x02", 2);
+            {
+                const uint8_t call_index_list[] = { 1, 2 };
+                telephone_bearer_service_client_call_join(tbs_cid, call_index_list, 2);
+            }
             break;
         case 'n':
             telephone_bearer_service_client_get_provider_name(tbs_cid);
