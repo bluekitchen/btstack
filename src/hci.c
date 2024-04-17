@@ -6150,6 +6150,7 @@ static bool hci_whitelist_modification_process(void){
 static bool hci_run_general_gap_le(void){
 
     btstack_linked_list_iterator_t lit;
+    UNUSED(lit);
 
 #ifdef ENABLE_LE_EXTENDED_ADVERTISING
     if (hci_stack->le_resolvable_private_address_update_s > 0){
