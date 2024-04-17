@@ -3742,7 +3742,7 @@ static void sm_handle_random_result_ir(void *arg){
 
 static void sm_handle_random_result_er(void *arg){
     sm_persistent_keys_random_active = false;
-    if (arg != 0){
+    if (arg != NULL){
         // key generated, store in tlv
         int status = sm_tlv_impl->store_tag(sm_tlv_context, BTSTACK_TAG32('S','M','E','R'), sm_persistent_er, 16u);
         log_info("Generated ER key. Store in TLV status: %d", status);
