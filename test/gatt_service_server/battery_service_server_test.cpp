@@ -90,13 +90,20 @@ TEST(BATTERY_SERVICE_SERVER, set_wrong_handle_battery_value){
     battery_service_server_set_battery_value(60);
     mock().checkExpectations();
 
-    // // battery_value_handle_client_configuration set
-    mock().expectNoCall("att_server_register_can_send_now_callback");
+    // battery_value_handle_client_configuration set
     const uint8_t enable_notify[]= { 0x1, 0x0 };
+    
+    mock().expectNoCall("att_server_register_can_send_now_callback");
     mock_att_service_write_callback(con_handle, battery_value_handle_client_configuration + 10, ATT_TRANSACTION_MODE_NONE, 0, enable_notify, sizeof(enable_notify));
     battery_service_server_set_battery_value(60);
     mock().checkExpectations();
+
+    mock().expectNoCall("att_server_register_can_send_now_callback");
+    mock_att_service_write_callback(con_handle, battery_value_handle_client_configuration + 10, ATT_TRANSACTION_MODE_VALIDATE, 0, enable_notify, sizeof(enable_notify));
+    battery_service_server_set_battery_value(60);
+    mock().checkExpectations();
 }
+
 
 
 TEST(BATTERY_SERVICE_SERVER, read_battery_value){
