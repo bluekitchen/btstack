@@ -13371,6 +13371,34 @@ static inline uint8_t gattservice_subevent_hid_service_reports_notification_get_
 }
 
 /**
+ * @brief Get field hids_cid from event GATTSERVICE_SUBEVENT_HID_REPORT_WRITTEN
+ * @param event packet
+ * @return hids_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_hid_report_written_get_hids_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field service_index from event GATTSERVICE_SUBEVENT_HID_REPORT_WRITTEN
+ * @param event packet
+ * @return service_index
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_hid_report_written_get_service_index(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field report_id from event GATTSERVICE_SUBEVENT_HID_REPORT_WRITTEN
+ * @param event packet
+ * @return report_id
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_hid_report_written_get_report_id(const uint8_t * event){
+    return event[6];
+}
+
+/**
  * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_SCAN_PARAMETERS_SERVICE_SCAN_INTERVAL_UPDATE
  * @param event packet
  * @return con_handle
@@ -13602,90 +13630,90 @@ static inline uint8_t gattservice_subevent_bass_client_scan_operation_complete_g
  * @return bass_cid
  * @note: btstack_type 2
  */
-//  static inline uint16_t gattservice_subevent_bass_notify_receive_state_base_get_bass_cid(const uint8_t * event){
-//      not implemented yet
-//  }
+static inline uint16_t gattservice_subevent_bass_notify_receive_state_base_get_bass_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
 /**
  * @brief Get field source_id from event GATTSERVICE_SUBEVENT_BASS_NOTIFY_RECEIVE_STATE_BASE
  * @param event packet
  * @return source_id
  * @note: btstack_type 1
  */
-//  static inline uint8_t gattservice_subevent_bass_notify_receive_state_base_get_source_id(const uint8_t * event){
-//      not implemented yet
-//  }
+static inline uint8_t gattservice_subevent_bass_notify_receive_state_base_get_source_id(const uint8_t * event){
+    return event[5];
+}
 /**
  * @brief Get field source_address_type from event GATTSERVICE_SUBEVENT_BASS_NOTIFY_RECEIVE_STATE_BASE
  * @param event packet
  * @return source_address_type
  * @note: btstack_type 1
  */
-//  static inline uint8_t gattservice_subevent_bass_notify_receive_state_base_get_source_address_type(const uint8_t * event){
-//      not implemented yet
-//  }
+static inline uint8_t gattservice_subevent_bass_notify_receive_state_base_get_source_address_type(const uint8_t * event){
+    return event[6];
+}
 /**
  * @brief Get field source_address from event GATTSERVICE_SUBEVENT_BASS_NOTIFY_RECEIVE_STATE_BASE
  * @param event packet
- * @return source_address
+ * @param Pointer to storage for source_address
  * @note: btstack_type B
  */
-//  static inline bd_addr_t gattservice_subevent_bass_notify_receive_state_base_get_source_address(const uint8_t * event){
-//      not implemented yet
-//  }
+static inline void gattservice_subevent_bass_notify_receive_state_base_get_source_address(const uint8_t * event, bd_addr_t source_address){
+    reverse_bytes(&event[7], source_address, 6);
+}
 /**
  * @brief Get field source_adv_sid from event GATTSERVICE_SUBEVENT_BASS_NOTIFY_RECEIVE_STATE_BASE
  * @param event packet
  * @return source_adv_sid
  * @note: btstack_type 1
  */
-//  static inline uint8_t gattservice_subevent_bass_notify_receive_state_base_get_source_adv_sid(const uint8_t * event){
-//      not implemented yet
-//  }
+static inline uint8_t gattservice_subevent_bass_notify_receive_state_base_get_source_adv_sid(const uint8_t * event){
+    return event[13];
+}
 /**
  * @brief Get field broadcast_id from event GATTSERVICE_SUBEVENT_BASS_NOTIFY_RECEIVE_STATE_BASE
  * @param event packet
  * @return broadcast_id
  * @note: btstack_type 3
  */
-//  static inline uint32_t gattservice_subevent_bass_notify_receive_state_base_get_broadcast_id(const uint8_t * event){
-//      not implemented yet
-//  }
+static inline uint32_t gattservice_subevent_bass_notify_receive_state_base_get_broadcast_id(const uint8_t * event){
+    return little_endian_read_24(event, 14);
+}
 /**
  * @brief Get field pa_sync_state from event GATTSERVICE_SUBEVENT_BASS_NOTIFY_RECEIVE_STATE_BASE
  * @param event packet
  * @return pa_sync_state
  * @note: btstack_type 1
  */
-//  static inline uint8_t gattservice_subevent_bass_notify_receive_state_base_get_pa_sync_state(const uint8_t * event){
-//      not implemented yet
-//  }
+static inline uint8_t gattservice_subevent_bass_notify_receive_state_base_get_pa_sync_state(const uint8_t * event){
+    return event[17];
+}
 /**
  * @brief Get field big_encryption from event GATTSERVICE_SUBEVENT_BASS_NOTIFY_RECEIVE_STATE_BASE
  * @param event packet
  * @return big_encryption
  * @note: btstack_type 1
  */
-//  static inline uint8_t gattservice_subevent_bass_notify_receive_state_base_get_big_encryption(const uint8_t * event){
-//      not implemented yet
-//  }
+static inline uint8_t gattservice_subevent_bass_notify_receive_state_base_get_big_encryption(const uint8_t * event){
+    return event[18];
+}
 /**
  * @brief Get field bad_code from event GATTSERVICE_SUBEVENT_BASS_NOTIFY_RECEIVE_STATE_BASE
  * @param event packet
  * @return bad_code
  * @note: btstack_type P
  */
-//  static inline const uint8_t * gattservice_subevent_bass_notify_receive_state_base_get_bad_code(const uint8_t * event){
-//      not implemented yet
-//  }
+static inline const uint8_t * gattservice_subevent_bass_notify_receive_state_base_get_bad_code(const uint8_t * event){
+    return (const uint8_t *) &event[19];
+}
 /**
  * @brief Get field subgroups_num from event GATTSERVICE_SUBEVENT_BASS_NOTIFY_RECEIVE_STATE_BASE
  * @param event packet
  * @return subgroups_num
  * @note: btstack_type 1
  */
-//  static inline uint8_t gattservice_subevent_bass_notify_receive_state_base_get_subgroups_num(const uint8_t * event){
-//      not implemented yet
-//  }
+static inline uint8_t gattservice_subevent_bass_notify_receive_state_base_get_subgroups_num(const uint8_t * event){
+    return event[35];
+}
 
 /**
  * @brief Get field bass_cid from event GATTSERVICE_SUBEVENT_BASS_CLIENT_NOTIFY_RECEIVE_STATE_SUBGROUP

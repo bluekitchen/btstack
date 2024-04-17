@@ -4156,13 +4156,22 @@ typedef uint8_t sm_key_t[16];
 #define GATTSERVICE_SUBEVENT_HID_SERVICE_REPORTS_NOTIFICATION             0x17u
 
 /**
+ * @format 1211
+ * @param subevent_code
+ * @param hids_cid
+ * @param service_index
+ * @param report_id
+*/
+#define GATTSERVICE_SUBEVENT_HID_REPORT_WRITTEN                           0x18u
+
+/**
  * @format 1H22
  * @param subevent_code
  * @param con_handle
  * @param max_scan_interval
  * @param min_scan_window
  */
-#define GATTSERVICE_SUBEVENT_SCAN_PARAMETERS_SERVICE_SCAN_INTERVAL_UPDATE 0x18u
+#define GATTSERVICE_SUBEVENT_SCAN_PARAMETERS_SERVICE_SCAN_INTERVAL_UPDATE 0x19u
 
 // LE Audio
 
