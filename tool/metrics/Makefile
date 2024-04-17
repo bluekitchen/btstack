@@ -61,4 +61,4 @@ metrics.txt: metrics.tsv
 	cat metrics_header.tsv metrics.tsv | expand -t 70,160,170,180,190,210,220,230,240,250,260,270,280,290,300 > metrics.txt
 
 clean:
-	rm -f metrics.tsv metrics.md
+	rm -f metrics.tsv metrics.md metrics.txt metrics.html metrics_header.tsv
