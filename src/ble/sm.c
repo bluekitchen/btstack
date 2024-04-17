@@ -2257,6 +2257,7 @@ static bool sm_run_irk_lookup(void){
 
     // -- Continue with device lookup by public or resolvable private address
     if (!sm_address_resolution_idle()){
+        bool started_aes128 = false;
         while (sm_address_resolution_test < le_device_db_max_count()){
             int addr_type = BD_ADDR_TYPE_UNKNOWN;
             bd_addr_t addr;
@@ -2301,6 +2302,11 @@ static bool sm_run_irk_lookup(void){
             sm_ah_r_prime(sm_address_resolution_address, sm_aes128_plaintext);
             sm_aes128_state = SM_AES128_ACTIVE;
             btstack_crypto_aes128_encrypt(&sm_crypto_aes128_request, sm_aes128_key, sm_aes128_plaintext, sm_aes128_ciphertext, sm_handle_encryption_result_address_resolution, NULL);
+            started_aes128 = true;
+            break;
+        }
+
+        if (started_aes128){
             return true;
         }
 
