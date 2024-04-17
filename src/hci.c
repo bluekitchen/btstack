@@ -6105,12 +6105,42 @@ static uint8_t hci_le_extended_advertising_operation_for_chunk(uint16_t pos, uin
 #endif
 #endif
 
-static bool hci_whitelist_modification_pending() {
+static bool hci_whitelist_modification_pending(void) {
     btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, &hci_stack->le_whitelist);
     while (btstack_linked_list_iterator_has_next(&it)){
         whitelist_entry_t * entry = (whitelist_entry_t*) btstack_linked_list_iterator_next(&it);
         if (entry->state & (LE_WHITELIST_REMOVE_FROM_CONTROLLER | LE_WHITELIST_ADD_TO_CONTROLLER)){
+            return true;
+        }
+    }
+    return false;
+}
+
+static bool hci_whitelist_modification_process(void){
+    // add/remove entries
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &hci_stack->le_whitelist);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        whitelist_entry_t * entry = (whitelist_entry_t*) btstack_linked_list_iterator_next(&it);
+        if (entry->state & LE_WHITELIST_REMOVE_FROM_CONTROLLER){
+            entry->state &= ~LE_WHITELIST_REMOVE_FROM_CONTROLLER;
+            entry->state &= ~LE_WHITELIST_ON_CONTROLLER;
+            bd_addr_type_t address_type = entry->address_type;
+            bd_addr_t address;
+            memcpy(address, entry->address, 6);
+            if ((entry->state & LE_WHITELIST_ADD_TO_CONTROLLER) == 0){
+                // remove from whitelist if not scheduled for re-addition
+                btstack_linked_list_remove(&hci_stack->le_whitelist, (btstack_linked_item_t *) entry);
+                btstack_memory_whitelist_entry_free(entry);
+            }
+            hci_send_cmd(&hci_le_remove_device_from_white_list, address_type, address);
+            return true;
+        }
+        if (entry->state & LE_WHITELIST_ADD_TO_CONTROLLER){
+            entry->state &= ~LE_WHITELIST_ADD_TO_CONTROLLER;
+            entry->state |= LE_WHITELIST_ON_CONTROLLER;
+            hci_send_cmd(&hci_le_add_device_to_white_list, entry->address_type, entry->address);
             return true;
         }
     }
@@ -6669,31 +6699,8 @@ static bool hci_run_general_gap_le(void){
 
     // LE Whitelist Management
     if (whitelist_modification_pending){
-        // add/remove entries
-        btstack_linked_list_iterator_init(&lit, &hci_stack->le_whitelist);
-        while (btstack_linked_list_iterator_has_next(&lit)){
-            whitelist_entry_t * entry = (whitelist_entry_t*) btstack_linked_list_iterator_next(&lit);
-			if (entry->state & LE_WHITELIST_REMOVE_FROM_CONTROLLER){
-				entry->state &= ~LE_WHITELIST_REMOVE_FROM_CONTROLLER;
-                entry->state &= ~LE_WHITELIST_ON_CONTROLLER;
-                bd_addr_type_t address_type = entry->address_type;
-                bd_addr_t address;
-                memcpy(address, entry->address, 6);
-                if ((entry->state & LE_WHITELIST_ADD_TO_CONTROLLER) == 0){
-                    // remove from whitelist if not scheduled for re-addition
-                    btstack_linked_list_remove(&hci_stack->le_whitelist, (btstack_linked_item_t *) entry);
-                    btstack_memory_whitelist_entry_free(entry);
-                }
-				hci_send_cmd(&hci_le_remove_device_from_white_list, address_type, address);
-				return true;
-			}
-            if (entry->state & LE_WHITELIST_ADD_TO_CONTROLLER){
-				entry->state &= ~LE_WHITELIST_ADD_TO_CONTROLLER;
-                entry->state |= LE_WHITELIST_ON_CONTROLLER;
-                hci_send_cmd(&hci_le_add_device_to_white_list, entry->address_type, entry->address);
-                return true;
-            }
-        }
+        bool done = hci_whitelist_modification_process();
+        if (done) return true;
     }
 
 #ifdef ENABLE_LE_PRIVACY_ADDRESS_RESOLUTION
