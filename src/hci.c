@@ -3702,7 +3702,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
 
 #ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
                 if (conn == NULL){
-                    hci_iso_stream_t * iso_stream = hci_iso_stream_for_con_handle(handle);
+                    iso_stream = hci_iso_stream_for_con_handle(handle);
                     if (iso_stream != NULL){
                         if (iso_stream->num_packets_sent >= num_packets) {
                             iso_stream->num_packets_sent -= num_packets;
@@ -3711,7 +3711,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
                             iso_stream->num_packets_sent = 0;
                         }
                         if (iso_stream->iso_type == HCI_ISO_TYPE_BIS){
-                            le_audio_big_t * big = hci_big_for_handle(iso_stream->group_id);
+                            big = hci_big_for_handle(iso_stream->group_id);
                             if (big != NULL){
                                 big->num_completed_timestamp_current_valid = true;
                                 big->num_completed_timestamp_current_ms = btstack_run_loop_get_time_ms();
@@ -4273,7 +4273,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
             // finalize iso stream(s) for ACL handle
             btstack_linked_list_iterator_init(&it, &hci_stack->iso_streams);
             while (btstack_linked_list_iterator_has_next(&it)){
-                hci_iso_stream_t * iso_stream = (hci_iso_stream_t *) btstack_linked_list_iterator_next(&it);
+                iso_stream = (hci_iso_stream_t *) btstack_linked_list_iterator_next(&it);
                 if (iso_stream->acl_handle == handle ) {
                     hci_iso_stream_finalize(iso_stream);
                 }
@@ -4513,7 +4513,6 @@ static void event_handler(uint8_t *packet, uint16_t size){
                                 iso_stream->state = HCI_ISO_STREAM_STATE_IDLE;
                             }
                             // update cig state
-                            uint8_t i;
                             for (i=0;i<cig->num_cis;i++){
                                 if (cig->cis_con_handles[i] == handle){
                                     cig->cis_setup_active[i] = false;
@@ -4546,15 +4545,14 @@ static void event_handler(uint8_t *packet, uint16_t size){
                         if (status == ERROR_CODE_SUCCESS){
                             // store bis_con_handles and trigger iso path setup
                             uint8_t num_bis = btstack_min(big->num_bis, packet[20]);
-                            uint8_t i;
+
                             for (i=0;i<num_bis;i++){
                                 hci_con_handle_t bis_handle = (hci_con_handle_t) little_endian_read_16(packet, 21 + (2 * i));
                                 big->bis_con_handles[i] = bis_handle;
                                 // assign bis handle
-                                btstack_linked_list_iterator_t it;
                                 btstack_linked_list_iterator_init(&it, &hci_stack->iso_streams);
                                 while (btstack_linked_list_iterator_has_next(&it)){
-                                    hci_iso_stream_t * iso_stream = (hci_iso_stream_t *) btstack_linked_list_iterator_next(&it);
+                                    iso_stream = (hci_iso_stream_t *) btstack_linked_list_iterator_next(&it);
                                     if ((iso_stream->state == HCI_ISO_STREAM_STATE_REQUESTED ) &&
                                         (iso_stream->group_id == big->big_handle)){
                                         iso_stream->cis_handle = bis_handle;
@@ -4578,10 +4576,10 @@ static void event_handler(uint8_t *packet, uint16_t size){
                     big = hci_big_for_handle(hci_subevent_le_terminate_big_complete_get_big_handle(packet));
                     if (big != NULL){
                         // finalize associated ISO streams
-                        btstack_linked_list_iterator_t it;
+
                         btstack_linked_list_iterator_init(&it, &hci_stack->iso_streams);
                         while (btstack_linked_list_iterator_has_next(&it)){
-                            hci_iso_stream_t * iso_stream = (hci_iso_stream_t *) btstack_linked_list_iterator_next(&it);
+                            iso_stream = (hci_iso_stream_t *) btstack_linked_list_iterator_next(&it);
                             if (iso_stream->group_id == big->big_handle){
                                 log_info("BIG Terminated, big_handle 0x%02x, con handle 0x%04x", iso_stream->group_id, iso_stream->cis_handle);
                                 btstack_linked_list_iterator_remove(&it);
@@ -4604,19 +4602,16 @@ static void event_handler(uint8_t *packet, uint16_t size){
                     big_sync = hci_big_sync_for_handle(packet[4]);
                     if (big_sync != NULL){
                         uint8_t status = packet[3];
-                        uint8_t big_handle = packet[4];
                         if (status == ERROR_CODE_SUCCESS){
                             // store bis_con_handles and trigger iso path setup
                             uint8_t num_bis = btstack_min(big_sync->num_bis, packet[16]);
-                            uint8_t i;
                             for (i=0;i<num_bis;i++){
                                 hci_con_handle_t bis_handle = little_endian_read_16(packet, 17 + (2 * i));
                                 big_sync->bis_con_handles[i] = bis_handle;
                                 // setup iso_stream_t
-                                btstack_linked_list_iterator_t it;
                                 btstack_linked_list_iterator_init(&it, &hci_stack->iso_streams);
                                 while (btstack_linked_list_iterator_has_next(&it)){
-                                    hci_iso_stream_t * iso_stream = (hci_iso_stream_t *) btstack_linked_list_iterator_next(&it);
+                                    iso_stream = (hci_iso_stream_t *) btstack_linked_list_iterator_next(&it);
                                     if ((iso_stream->state == HCI_ISO_STREAM_STATE_REQUESTED ) &&
                                         (iso_stream->group_id == big_sync->big_handle)){
                                         iso_stream->cis_handle = bis_handle;
