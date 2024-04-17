@@ -524,24 +524,28 @@ TEST(BATTERY_SERVICE_CLIENT, mixed_poll_and_notify_battery_value){
     CHECK_EQUAL(true, connected);
 }
 
-TEST(BATTERY_SERVICE_CLIENT, disconnect){
+TEST(BATTERY_SERVICE_CLIENT, hci_disconnect_event){
     setup_service(true, true);
     connect();
     CHECK_EQUAL(true, connected);
     
-    uint8_t status;
-
-    // send unexpected event
-    mock_hci_emit_connection_encrypted(con_handle, 0);
-
     mock_hci_emit_disconnection_complete(con_handle, 0);
-    status = battery_service_client_disconnect(battery_service_cid);
+    uint8_t status = battery_service_client_disconnect(battery_service_cid);
     CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
 
-    // send event with wrong con handle
     mock_hci_emit_disconnection_complete(HCI_CON_HANDLE_INVALID, 0);
 }
 
+TEST(BATTERY_SERVICE_CLIENT, ignored_events){
+    setup_service(true, true);
+    connect();
+    CHECK_EQUAL(true, connected);
+    
+    // unexpected event
+    mock_hci_emit_connection_encrypted(con_handle, 0);
+    // event with wrong con handle
+    mock_hci_emit_disconnection_complete(HCI_CON_HANDLE_INVALID, 0);
+}
 
 int main (int argc, const char * argv[]){
     return CommandLineTestRunner::RunAllTests(argc, argv);

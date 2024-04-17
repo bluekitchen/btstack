@@ -153,6 +153,7 @@ TEST(ANCS_CLIENT, ignored_events){
     // default hci event
     uint8_t some_other_event[] = { 0, 0};
     mock_hci_emit_event(some_other_event, sizeof(some_other_event));
+    
     // default hci le subevent
     uint8_t some_le_event[] = { HCI_EVENT_LE_META, 1, 0};
     mock_hci_emit_event(some_le_event, sizeof(some_le_event));
@@ -166,6 +167,10 @@ TEST(ANCS_CLIENT, ignored_events){
     mock_hci_emit_disconnection_complete(ancs_con_handle+1,0);
     // disconnected different handle
     mock_hci_emit_disconnection_complete(ancs_con_handle,0);
+    
+    // some hci gap meta subevent
+    uint8_t some_gap_meta_event[] = { HCI_EVENT_META_GAP, 1, HCI_SUBEVENT_LE_CONNECTION_COMPLETE + 1};
+    mock_hci_emit_event(some_gap_meta_event, sizeof(some_gap_meta_event));
 }
 
 TEST(ANCS_CLIENT, connect_no_service){
@@ -175,19 +180,6 @@ TEST(ANCS_CLIENT, connect_no_service){
 
 TEST(ANCS_CLIENT, connect_unexpected_event_during_service_disc){
     connect();
-    mock_gatt_client_emit_dummy_event();
-}
-
-TEST(ANCS_CLIENT, connect_unexpected_events){
-    setup_service(true, true);
-    connect();
-    mock_gatt_client_run_once();
-    mock_gatt_client_emit_dummy_event();
-    mock_gatt_client_run_once();
-    mock_gatt_client_emit_dummy_event();
-    mock_gatt_client_run_once();
-    mock_gatt_client_emit_dummy_event();
-    mock_gatt_client_run_once();
     mock_gatt_client_emit_dummy_event();
 }
 
@@ -278,6 +270,27 @@ TEST(ANCS_CLIENT, notifications_invalid_parser){
     mock_gatt_client_run();
     const uint8_t data[] = {1,2,3,4,5,6};
     mock_gatt_client_send_notification(ancs_data_source_characteristic, data, sizeof(data));
+}
+
+TEST(ANCS_CLIENT, connect_unexpected_events){
+    printf("connect_unexpected_events\n");
+    setup_service(true, true);
+    connect();
+    mock_gatt_client_run_once();
+    mock_gatt_client_emit_dummy_event();
+    mock_gatt_client_run_once();
+    mock_gatt_client_emit_dummy_event();
+    mock_gatt_client_run_once();
+    mock_gatt_client_emit_dummy_event();
+    mock_gatt_client_run_once();
+    mock_gatt_client_emit_dummy_event();
+}
+
+TEST(ANCS_CLIENT, connect_unexpected_events_in_idle_state){
+    printf("connect_unexpected_events\n");
+    connect();
+    mock_gatt_client_run_once();
+    mock_gatt_client_emit_dummy_event();
 }
 
 int main (int argc, const char * argv[]){
