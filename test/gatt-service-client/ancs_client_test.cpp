@@ -34,84 +34,12 @@ static const uint8_t ancs_notification_source_uuid[] = {0x9F,0xBF,0x12,0x0D,0x63
 static const uint8_t ancs_control_point_uuid[] =       {0x69,0xD1,0xD8,0xF3,0x45,0xE1,0x49,0xA8,0x98,0x21,0x9B,0xBD,0xFD,0xAA,0xD9,0xD9};
 static const uint8_t ancs_data_source_uuid[] =         {0x22,0xEA,0xC6,0xE9,0x24,0xD6,0x4B,0xB5,0xBE,0x44,0xB3,0x6A,0xCE,0x7C,0x7B,0xFB};
 
-static btstack_packet_callback_registration_t * ancs_callback_registration;
 static const hci_con_handle_t ancs_con_handle = 0x001;
 static bool ancs_connected;
-
-void hci_add_event_handler(btstack_packet_callback_registration_t * callback_handler){
-    ancs_callback_registration = callback_handler;
-}
-
-static void hci_emit_event(uint8_t * event, uint16_t size, int dump){
-    btstack_assert(ancs_callback_registration != NULL);
-    (*ancs_callback_registration->callback)(HCI_EVENT_PACKET, 0, event, size);
-}
-
-static void hci_create_gap_connection_complete_event(const uint8_t * hci_event, uint8_t * gap_event) {
-    gap_event[0] = HCI_EVENT_META_GAP;
-    gap_event[1] = 36 - 2;
-    gap_event[2] = GAP_SUBEVENT_LE_CONNECTION_COMPLETE;
-    switch (hci_event[2]){
-        case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
-            memcpy(&gap_event[3], &hci_event[3], 11);
-        memset(&gap_event[14], 0, 12);
-        memcpy(&gap_event[26], &hci_event[14], 7);
-        memset(&gap_event[33], 0xff, 3);
-        break;
-        case HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE_V1:
-            memcpy(&gap_event[3], &hci_event[3], 30);
-        memset(&gap_event[33], 0xff, 3);
-        break;
-        case HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE_V2:
-            memcpy(&gap_event[3], &hci_event[3], 33);
-        break;
-        default:
-            btstack_unreachable();
-        break;
-    }
-}
-
-static void hci_emit_le_connection_complete(uint8_t address_type, const bd_addr_t address, hci_con_handle_t con_handle, uint8_t status){
-    uint8_t hci_event[21];
-    hci_event[0] = HCI_EVENT_LE_META;
-    hci_event[1] = sizeof(hci_event) - 2u;
-    hci_event[2] = HCI_SUBEVENT_LE_CONNECTION_COMPLETE;
-    hci_event[3] = status;
-    little_endian_store_16(hci_event, 4, con_handle);
-    hci_event[6] = 0; // TODO: role
-    hci_event[7] = address_type;
-    reverse_bd_addr(address, &hci_event[8]);
-    little_endian_store_16(hci_event, 14, 0); // interval
-    little_endian_store_16(hci_event, 16, 0); // latency
-    little_endian_store_16(hci_event, 18, 0); // supervision timeout
-    hci_event[20] = 0; // master clock accuracy
-    // emit GAP event, too
-    uint8_t gap_event[36];
-    hci_create_gap_connection_complete_event(hci_event, gap_event);
-    hci_emit_event(gap_event, sizeof(gap_event), 1);
-}
-
-static void hci_emit_connection_encrypted(hci_con_handle_t con_handle, uint8_t encrypted){
-    uint8_t encryption_complete_event[6] = { HCI_EVENT_ENCRYPTION_CHANGE, 4, 0, 0, 0, 0};
-    little_endian_store_16(encryption_complete_event, 3, con_handle);
-    encryption_complete_event[5] = encrypted;
-    hci_emit_event(encryption_complete_event, sizeof(encryption_complete_event), 0);
-}
-
-static void hci_emit_disconnection_complete(hci_con_handle_t con_handle, uint8_t reason){
-    uint8_t event[6];
-    event[0] = HCI_EVENT_DISCONNECTION_COMPLETE;
-    event[1] = sizeof(event) - 2u;
-    event[2] = 0; // status = OK
-    little_endian_store_16(event, 3, con_handle);
-    event[5] = reason;
-    hci_emit_event(event, sizeof(event), 1);
-}
 
 // mock sm
 void sm_request_pairing(hci_con_handle_t con_handle){
 }
-
 
 // temp btstack run loop mock
 
@@ -204,8 +132,8 @@ TEST_GROUP(ANCS_CLIENT){
     void connect(void){
         // simulated connected
         bd_addr_t some_address;
-        hci_emit_le_connection_complete(0, some_address, ancs_con_handle, ERROR_CODE_SUCCESS);
-        hci_emit_connection_encrypted(ancs_con_handle, 1);
+        mock_hci_emit_le_connection_complete(0, some_address, ancs_con_handle, ERROR_CODE_SUCCESS);
+        mock_hci_emit_connection_encrypted(ancs_con_handle, 1);
     }
 
     void teardown(void){
@@ -224,20 +152,20 @@ TEST(ANCS_CLIENT, resolve_ids){
 TEST(ANCS_CLIENT, ignored_events){
     // default hci event
     uint8_t some_other_event[] = { 0, 0};
-    hci_emit_event(some_other_event, sizeof(some_other_event), 0);
+    mock_hci_emit_event(some_other_event, sizeof(some_other_event));
     // default hci le subevent
     uint8_t some_le_event[] = { HCI_EVENT_LE_META, 1, 0};
-    hci_emit_event(some_le_event, sizeof(some_le_event), 0);
+    mock_hci_emit_event(some_le_event, sizeof(some_le_event));
     // encypted but different con handle
-    hci_emit_connection_encrypted(ancs_con_handle+1, 1);
+    mock_hci_emit_connection_encrypted(ancs_con_handle+1, 1);
     // encypted but different state
-    hci_emit_connection_encrypted(ancs_con_handle, 1);
+    mock_hci_emit_connection_encrypted(ancs_con_handle, 1);
     // non-encypted
-    hci_emit_connection_encrypted(ancs_con_handle, 0);
+    mock_hci_emit_connection_encrypted(ancs_con_handle, 0);
     // disconnected different handle
-    hci_emit_disconnection_complete(ancs_con_handle+1,0);
+    mock_hci_emit_disconnection_complete(ancs_con_handle+1,0);
     // disconnected different handle
-    hci_emit_disconnection_complete(ancs_con_handle,0);
+    mock_hci_emit_disconnection_complete(ancs_con_handle,0);
 }
 
 TEST(ANCS_CLIENT, connect_no_service){
@@ -281,7 +209,7 @@ TEST(ANCS_CLIENT, disconnect){
     setup_service(true, true);
     connect();
     mock_gatt_client_run();
-    hci_emit_disconnection_complete(ancs_con_handle,0);
+    mock_hci_emit_disconnection_complete(ancs_con_handle,0);
 }
 
 TEST(ANCS_CLIENT, notification_characteristic){
