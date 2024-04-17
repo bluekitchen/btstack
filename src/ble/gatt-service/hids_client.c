@@ -537,7 +537,7 @@ static void hids_emit_notifications_configuration(hids_client_t * client){
     (*client->client_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-static void hids_client_setup_report_event(hids_client_t * client, uint8_t report_index, uint8_t *buffer, uint16_t report_len){
+static uint16_t hids_client_setup_report_event(hids_client_t * client, uint8_t report_index, uint8_t *buffer, uint16_t report_len){
     uint16_t pos = 0;
     buffer[pos++] = HCI_EVENT_GATTSERVICE_META;
     pos++;  // skip len
@@ -546,11 +546,15 @@ static void hids_client_setup_report_event(hids_client_t * client, uint8_t repor
     pos += 2;
     buffer[pos++] = client->reports[report_index].service_index;
     buffer[pos++] = client->reports[report_index].report_id;
-    little_endian_store_16(buffer, pos, report_len + 1);
+    little_endian_store_16(buffer, pos, report_len);
     pos += 2;
-    buffer[pos++] = client->reports[report_index].report_id;
-    buffer[1] = pos + (report_len + 1) - 2;
+    buffer[1] = pos + report_len - 2;
+    return pos;
+}
 
+static void hids_client_setup_report_event_with_report_id(hids_client_t * client, uint8_t report_index, uint8_t *buffer, uint16_t report_len){
+    uint16_t pos = hids_client_setup_report_event(client, report_index, buffer, report_len + 1);
+    buffer[pos] = client->reports[report_index].report_id;
 }
 
 static void hids_client_emit_hid_information_event(hids_client_t * client, const uint8_t *value, uint16_t value_len){
@@ -603,7 +607,8 @@ static void handle_notification_event(uint8_t packet_type, uint16_t channel, uin
     }
 
     uint8_t * in_place_event = &packet[-2];
-    hids_client_setup_report_event(client, report_index, in_place_event, gatt_event_notification_get_value_length(packet));
+    hids_client_setup_report_event_with_report_id(client, report_index, in_place_event,
+                                                  gatt_event_notification_get_value_length(packet));
     (*client->client_handler)(HCI_EVENT_GATTSERVICE_META, client->cid, in_place_event, size + 2);
 }
 
