@@ -556,6 +556,40 @@ static void att_signed_write_handle_cmac_result(uint8_t hash[8]){
 }
 #endif
 
+#ifdef ENABLE_ATT_DELAYED_RESPONSE
+static void att_server_handle_response_pending(att_server_t *att_server, const att_connection_t *att_connection,
+                                               const uint8_t *eatt_buffer,
+                                               uint16_t att_response_size) {
+    // free reserved buffer
+    if (eatt_buffer == NULL){
+        l2cap_release_packet_buffer();
+    }
+
+    // update state
+    att_server->state = ATT_SERVER_RESPONSE_PENDING;
+
+    // callback with handle ATT_READ_RESPONSE_PENDING for reads
+    if (att_response_size == ATT_READ_RESPONSE_PENDING){
+        // notify services that returned response pending
+        btstack_linked_list_iterator_t it;
+        btstack_linked_list_iterator_init(&it, &service_handlers);
+        while (btstack_linked_list_iterator_has_next(&it)) {
+            att_service_handler_t *handler = (att_service_handler_t *) btstack_linked_list_iterator_next(&it);
+            if ((handler->flags & ATT_SERVICE_FLAGS_DELAYED_RESPONSE) != 0){
+                handler->flags &= ~ATT_SERVICE_FLAGS_DELAYED_RESPONSE;
+                handler->read_callback(att_connection->con_handle, ATT_READ_RESPONSE_PENDING, 0, NULL, 0);
+            }
+        }
+        // notify main read callback if it returned response pending
+        if ((att_server_flags & ATT_SERVICE_FLAGS_DELAYED_RESPONSE) != 0){
+            // flag was set by read callback
+            btstack_assert(att_server_client_read_callback != NULL);
+            (*att_server_client_read_callback)(att_connection->con_handle, ATT_READ_RESPONSE_PENDING, 0, NULL, 0);
+        }
+    }
+}
+#endif
+
 // pre: att_server->state == ATT_SERVER_REQUEST_RECEIVED_AND_VALIDATED
 // pre: can send now
 // uses l2cap outgoing buffer if no eatt_buffer provided
@@ -586,33 +620,7 @@ att_server_process_validated_request(att_server_t *att_server, att_connection_t 
 
 #ifdef ENABLE_ATT_DELAYED_RESPONSE
     if ((att_response_size == ATT_READ_RESPONSE_PENDING) || (att_response_size == ATT_INTERNAL_WRITE_RESPONSE_PENDING)){
-        // free reserved buffer
-        if (eatt_buffer == NULL){
-            l2cap_release_packet_buffer();
-        }
-
-        // update state
-        att_server->state = ATT_SERVER_RESPONSE_PENDING;
-
-        // callback with handle ATT_READ_RESPONSE_PENDING for reads
-        if (att_response_size == ATT_READ_RESPONSE_PENDING){
-            // notify services that returned response pending
-            btstack_linked_list_iterator_t it;
-            btstack_linked_list_iterator_init(&it, &service_handlers);
-            while (btstack_linked_list_iterator_has_next(&it)) {
-                att_service_handler_t *handler = (att_service_handler_t *) btstack_linked_list_iterator_next(&it);
-                if ((handler->flags & ATT_SERVICE_FLAGS_DELAYED_RESPONSE) != 0){
-                    handler->flags &= ~ATT_SERVICE_FLAGS_DELAYED_RESPONSE;
-                    handler->read_callback(att_connection->con_handle, ATT_READ_RESPONSE_PENDING, 0, NULL, 0);
-                }
-            }
-            // notify main read callback if it returned response pending
-            if ((att_server_flags & ATT_SERVICE_FLAGS_DELAYED_RESPONSE) != 0){
-                // flag was set by read callback
-                btstack_assert(att_server_client_read_callback != NULL);
-                (*att_server_client_read_callback)(att_connection->con_handle, ATT_READ_RESPONSE_PENDING, 0, NULL, 0);
-            }
-        }
+        att_server_handle_response_pending(att_server, att_connection, eatt_buffer, att_response_size);
         return 0;
     }
 #endif
