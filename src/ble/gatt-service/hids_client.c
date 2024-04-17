@@ -537,11 +537,12 @@ static void hids_emit_notifications_configuration(hids_client_t * client){
     (*client->client_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-static uint16_t hids_client_setup_report_event(hids_client_t * client, uint8_t report_index, uint8_t *buffer, uint16_t report_len){
+static uint16_t hids_client_setup_report_event(uint8_t subevent, hids_client_t *client, uint8_t report_index, uint8_t *buffer,
+                               uint16_t report_len) {
     uint16_t pos = 0;
     buffer[pos++] = HCI_EVENT_GATTSERVICE_META;
     pos++;  // skip len
-    buffer[pos++] = GATTSERVICE_SUBEVENT_HID_REPORT;
+    buffer[pos++] = subevent;
     little_endian_store_16(buffer, pos, client->cid);
     pos += 2;
     buffer[pos++] = client->reports[report_index].service_index;
@@ -553,7 +554,8 @@ static uint16_t hids_client_setup_report_event(hids_client_t * client, uint8_t r
 }
 
 static void hids_client_setup_report_event_with_report_id(hids_client_t * client, uint8_t report_index, uint8_t *buffer, uint16_t report_len){
-    uint16_t pos = hids_client_setup_report_event(client, report_index, buffer, report_len + 1);
+    uint16_t pos = hids_client_setup_report_event(GATTSERVICE_SUBEVENT_HID_REPORT, client, report_index, buffer,
+                                                  report_len + 1);
     buffer[pos] = client->reports[report_index].report_id;
 }
 
@@ -1365,7 +1367,8 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
 
                         // emit empty report to signal done
                         uint8_t event[9];
-                        hids_client_setup_report_event(client, client->report_index, event, 0);
+                        hids_client_setup_report_event(GATTSERVICE_SUBEVENT_HID_REPORT_WRITTEN, client,
+                                                       client->report_index, event, 0);
                         (*client->client_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
                     }
                     break;

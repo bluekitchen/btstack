@@ -236,7 +236,7 @@ void hids_client_init(uint8_t * hid_descriptor_storage, uint16_t hid_descriptor_
 uint8_t hids_client_connect(hci_con_handle_t con_handle, btstack_packet_handler_t packet_handler, hid_protocol_mode_t protocol_mode, uint16_t * hids_cid);
 
 /**
- * @brief Send HID report. Event GATTSERVICE_SUBEVENT_HID_REPORT is emitted with empty report
+ * @brief Send HID report. Event GATTSERVICE_SUBEVENT_HID_REPORT_WRITTEN is emitted.
  *
  * @param hids_cid
  * @param report_id
