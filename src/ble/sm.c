@@ -4362,36 +4362,7 @@ static uint8_t sm_pdu_validate_and_get_opcode(uint8_t packet_type, const uint8_t
     return sm_pdu_code;
 }
 
-static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uint8_t *packet, uint16_t size){
-
-    if ((packet_type == HCI_EVENT_PACKET) && (packet[0] == L2CAP_EVENT_CAN_SEND_NOW)){
-        sm_run();
-    }
-
-    uint8_t sm_pdu_code = sm_pdu_validate_and_get_opcode(packet_type, packet, size);
-    if (sm_pdu_code == 0) return;
-
-    sm_connection_t * sm_conn = sm_get_connection_for_handle(con_handle);
-    if (!sm_conn) return;
-
-    if (sm_pdu_code == SM_CODE_PAIRING_FAILED){
-        sm_reencryption_complete(sm_conn, ERROR_CODE_AUTHENTICATION_FAILURE);
-        sm_pairing_complete(sm_conn, ERROR_CODE_AUTHENTICATION_FAILURE, packet[1]);
-        sm_done_for_handle(con_handle);
-        sm_conn->sm_engine_state = sm_conn->sm_role ? SM_RESPONDER_IDLE : SM_INITIATOR_CONNECTED;
-        return;
-    }
-
-    if (sm_pdu_code == SM_CODE_KEYPRESS_NOTIFICATION){
-        uint8_t buffer[5];
-        buffer[0] = SM_EVENT_KEYPRESS_NOTIFICATION;
-        buffer[1] = 3;
-        little_endian_store_16(buffer, 2, con_handle);
-        buffer[4] = packet[1];
-        sm_dispatch_event(HCI_EVENT_PACKET, 0, buffer, sizeof(buffer));
-        return;
-    }
-
+static void sm_pdu_handler(sm_connection_t *sm_conn, uint8_t sm_pdu_code, const uint8_t *packet) {
     log_debug("sm_pdu_handler: state %u, pdu 0x%02x", sm_conn->sm_engine_state, sm_pdu_code);
 
     int err;
@@ -4675,7 +4646,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             log_info("SM_SC_W4_PAIRING_RANDOM, responder: %u, just works: %u, passkey used %u, passkey entry %u",
                      IS_RESPONDER(sm_conn->sm_role), sm_just_works_or_numeric_comparison(setup->sm_stk_generation_method),
                      sm_passkey_used(setup->sm_stk_generation_method), sm_passkey_entry(setup->sm_stk_generation_method));
-            if ( (!IS_RESPONDER(sm_conn->sm_role) && sm_just_works_or_numeric_comparison(setup->sm_stk_generation_method)) 
+            if ( (!IS_RESPONDER(sm_conn->sm_role) && sm_just_works_or_numeric_comparison(setup->sm_stk_generation_method))
             ||   (sm_passkey_entry(setup->sm_stk_generation_method)) ) {
                  sm_conn->sm_engine_state = SM_SC_W2_CMAC_FOR_CHECK_CONFIRMATION;
                  break;
@@ -4972,6 +4943,39 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
     sm_trigger_run();
 }
 
+static void sm_channel_handler(uint8_t packet_type, hci_con_handle_t con_handle, uint8_t *packet, uint16_t size){
+
+    if ((packet_type == HCI_EVENT_PACKET) && (packet[0] == L2CAP_EVENT_CAN_SEND_NOW)){
+        sm_run();
+    }
+
+    uint8_t sm_pdu_code = sm_pdu_validate_and_get_opcode(packet_type, packet, size);
+    if (sm_pdu_code == 0) return;
+
+    sm_connection_t * sm_conn = sm_get_connection_for_handle(con_handle);
+    if (!sm_conn) return;
+
+    if (sm_pdu_code == SM_CODE_PAIRING_FAILED){
+        sm_reencryption_complete(sm_conn, ERROR_CODE_AUTHENTICATION_FAILURE);
+        sm_pairing_complete(sm_conn, ERROR_CODE_AUTHENTICATION_FAILURE, packet[1]);
+        sm_done_for_handle(con_handle);
+        sm_conn->sm_engine_state = sm_conn->sm_role ? SM_RESPONDER_IDLE : SM_INITIATOR_CONNECTED;
+        return;
+    }
+
+    if (sm_pdu_code == SM_CODE_KEYPRESS_NOTIFICATION){
+        uint8_t buffer[5];
+        buffer[0] = SM_EVENT_KEYPRESS_NOTIFICATION;
+        buffer[1] = 3;
+        little_endian_store_16(buffer, 2, con_handle);
+        buffer[4] = packet[1];
+        sm_dispatch_event(HCI_EVENT_PACKET, 0, buffer, sizeof(buffer));
+        return;
+    }
+
+    sm_pdu_handler(sm_conn, sm_pdu_code, packet);
+}
+
 // Security Manager Client API
 void sm_register_oob_data_callback( int (*get_oob_data_callback)(uint8_t address_type, bd_addr_t addr, uint8_t * oob_data)){
     sm_get_oob_data = get_oob_data_callback;
@@ -5141,9 +5145,9 @@ void sm_init(void){
     le_device_db_init();
 
     // and L2CAP PDUs + L2CAP_EVENT_CAN_SEND_NOW
-    l2cap_register_fixed_channel(sm_pdu_handler, L2CAP_CID_SECURITY_MANAGER_PROTOCOL);
+    l2cap_register_fixed_channel(sm_channel_handler, L2CAP_CID_SECURITY_MANAGER_PROTOCOL);
 #ifdef ENABLE_CLASSIC
-    l2cap_register_fixed_channel(sm_pdu_handler, L2CAP_CID_BR_EDR_SECURITY_MANAGER);
+    l2cap_register_fixed_channel(sm_channel_handler, L2CAP_CID_BR_EDR_SECURITY_MANAGER);
 #endif
 
     // state
