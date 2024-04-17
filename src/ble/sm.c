@@ -4382,12 +4382,6 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
         return;
     }
 
-    log_debug("sm_pdu_handler: state %u, pdu 0x%02x", sm_conn->sm_engine_state, sm_pdu_code);
-
-    int err;
-    uint8_t max_encryption_key_size;
-    UNUSED(err);
-
     if (sm_pdu_code == SM_CODE_KEYPRESS_NOTIFICATION){
         uint8_t buffer[5];
         buffer[0] = SM_EVENT_KEYPRESS_NOTIFICATION;
@@ -4397,7 +4391,13 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
         sm_dispatch_event(HCI_EVENT_PACKET, 0, buffer, sizeof(buffer));
         return;
     }
-    
+
+    log_debug("sm_pdu_handler: state %u, pdu 0x%02x", sm_conn->sm_engine_state, sm_pdu_code);
+
+    int err;
+    uint8_t max_encryption_key_size;
+    UNUSED(err);
+
     switch (sm_conn->sm_engine_state){
 
         // a sm timeout requires a new physical connection
