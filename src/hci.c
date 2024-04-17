@@ -8517,7 +8517,7 @@ uint8_t gap_connect(const bd_addr_t addr, bd_addr_type_t addr_type) {
     hci_connection_t * conn = hci_connection_for_bd_addr_and_type(addr, addr_type);
     if (conn == NULL) {
         conn = create_connection_for_bd_addr_and_type(addr, addr_type, HCI_ROLE_MASTER);
-        if (conn == false){
+        if (conn == NULL){
             // alloc failed
             log_info("gap_connect: failed to alloc hci_connection_t");
             return BTSTACK_MEMORY_ALLOC_FAILED;
