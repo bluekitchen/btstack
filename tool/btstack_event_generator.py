@@ -273,8 +273,8 @@ def create_getter(event_name, field_name, field_type, offset, offset_is_number, 
         requires_signed = 'little_endian' in read_code or 'gatt_client_deserialize' in read_code
         code = ''
         if requires_signed and not offset_is_number:
-            code += 'uint16_t offset = %s;\n    ' % offset
-            offset = '(int)(int16_t) offset'
+            code += 'uint8_t offset = %s;\n    ' % offset
+            offset = '(int)(int8_t) offset'
         code += read_code.format(offset=offset, result_name=result_name)
     return template.format(description=description, fn_name=fn_name, result_name=result_name, result_type=result_type, code=code, format=field_type)
 
