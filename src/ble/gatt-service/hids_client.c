@@ -632,7 +632,8 @@ static void handle_report_event(uint8_t packet_type, uint16_t channel, uint8_t *
     }
     
     uint8_t * in_place_event = &packet[-2];
-    hids_client_setup_report_event(client, report_index, in_place_event, gatt_event_characteristic_value_query_result_get_value_length(packet));
+    hids_client_setup_report_event_with_report_id(client, report_index, in_place_event,
+                                                  gatt_event_characteristic_value_query_result_get_value_length(packet));
     (*client->client_handler)(HCI_EVENT_GATTSERVICE_META, client->cid, in_place_event, size + 2);
 }
 
@@ -829,7 +830,7 @@ static void hids_run_for_client(hids_client_t * client){
 
             // see GATT_EVENT_QUERY_COMPLETE for end of write
             att_status = gatt_client_write_value_of_characteristic(
-                &handle_report_event, client->con_handle, 
+                &handle_gatt_client_event, client->con_handle,
                 client->reports[client->report_index].value_handle, 
                 client->report_len, (uint8_t *)client->report);
             UNUSED(att_status);
@@ -1353,12 +1354,21 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                     client->state = HIDS_CLIENT_W2_SEND_GET_REPORT;
                     break;
 #endif
-                
+
                 case HIDS_CLIENT_W4_VALUE_OF_CHARACTERISTIC_RESULT:
-                case HIDS_CLIENT_W4_WRITE_REPORT_DONE:
                     client->state = HIDS_CLIENT_STATE_CONNECTED;
                     break;
 
+                case HIDS_CLIENT_W4_WRITE_REPORT_DONE:
+                    {
+                        client->state = HIDS_CLIENT_STATE_CONNECTED;
+
+                        // emit empty report to signal done
+                        uint8_t event[9];
+                        hids_client_setup_report_event(client, client->report_index, event, 0);
+                        (*client->client_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+                    }
+                    break;
 
                 default:
                     break;
