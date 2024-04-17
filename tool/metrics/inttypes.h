@@ -32,8 +32,8 @@ SOFTWARE.
 #if !defined __INTTYPES_H
 #define      __INTTYPES_H
 
-// assume 32-bit architecture
-#define PRIu32       "I32u"
-#define PRIx32       "I32x"
+// assume at least 32-bit architecture
+#define PRIu32       "u"
+#define PRIx32       "x"
 
 #endif
