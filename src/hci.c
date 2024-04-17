@@ -6105,6 +6105,18 @@ static uint8_t hci_le_extended_advertising_operation_for_chunk(uint16_t pos, uin
 #endif
 #endif
 
+static bool hci_whitelist_modification_pending() {
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &hci_stack->le_whitelist);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        whitelist_entry_t * entry = (whitelist_entry_t*) btstack_linked_list_iterator_next(&it);
+        if (entry->state & (LE_WHITELIST_REMOVE_FROM_CONTROLLER | LE_WHITELIST_ADD_TO_CONTROLLER)){
+            return true;
+        }
+    }
+    return false;
+}
+
 static bool hci_run_general_gap_le(void){
 
     btstack_linked_list_iterator_t lit;
@@ -6145,15 +6157,7 @@ static bool hci_run_general_gap_le(void){
     bool random_address_change = (hci_stack->le_advertisements_todo & address_change_mask) != 0;
 
     // check if whitelist needs modification
-    bool whitelist_modification_pending = false;
-    btstack_linked_list_iterator_init(&lit, &hci_stack->le_whitelist);
-    while (btstack_linked_list_iterator_has_next(&lit)){
-        whitelist_entry_t * entry = (whitelist_entry_t*) btstack_linked_list_iterator_next(&lit);
-        if (entry->state & (LE_WHITELIST_REMOVE_FROM_CONTROLLER | LE_WHITELIST_ADD_TO_CONTROLLER)){
-            whitelist_modification_pending = true;
-            break;
-        }
-    }
+    bool  whitelist_modification_pending = hci_whitelist_modification_pending();
 
     // check if resolving list needs modification
     bool resolving_list_modification_pending = false;
