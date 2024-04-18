@@ -85,7 +85,7 @@ static void gatt_client_emit_service_changed(gatt_service_client_connection_help
     (*connection_helper->event_callback)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
-static void gatt_service_client_emit_indication(gatt_service_client_connection_helper_t * connection_helper, uint16_t value_handle, uint8_t att_status, const uint8_t * data, uint16_t data_size){
+static void gatts_client_emit_indication(gatt_service_client_connection_helper_t * connection_helper, uint16_t value_handle, uint8_t att_status, const uint8_t * data, uint16_t data_size){
     uint16_t characteristic_uuid16 = gatt_service_client_helper_characteristic_uuid16_for_value_handle(&gatts_client, connection_helper, value_handle);
     
     switch (characteristic_uuid16){
@@ -98,6 +98,15 @@ static void gatt_service_client_emit_indication(gatt_service_client_connection_h
             break;
     }
 }
+
+static void gatts_client_replace_subevent_id_and_emit(btstack_packet_handler_t callback, uint8_t * packet, uint16_t size, uint8_t subevent_id){
+    UNUSED(size);
+    btstack_assert(callback != NULL);
+    // execute callback
+    packet[2] = subevent_id;
+    (*callback)(HCI_EVENT_PACKET, 0, packet, size);
+}
+
 static void gatt_service_client_packet_handler_internal(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
@@ -105,16 +114,36 @@ static void gatt_service_client_packet_handler_internal(uint8_t packet_type, uin
     if (packet_type != HCI_EVENT_PACKET) return;
 
     gatt_service_client_connection_helper_t * connection_helper;
-    hci_con_handle_t con_handle;;
+    hci_con_handle_t con_handle;
 
     switch(hci_event_packet_get_type(packet)){
+        case HCI_EVENT_GATTSERVICE_META:
+            switch (hci_event_gattservice_meta_get_subevent_code(packet)){
+                case GATTSERVICE_SUBEVENT_CLIENT_CONNECTED:
+                    connection_helper = gatt_service_client_get_connection_for_cid(&gatts_client, gattservice_subevent_client_connected_get_cid(packet));
+                    btstack_assert(connection_helper != NULL);
+                    gatts_client_replace_subevent_id_and_emit(connection_helper->event_callback, packet, size, GATT_EVENT_CONNECTED);
+                    break;
+
+                case GATTSERVICE_SUBEVENT_CLIENT_DISCONNECTED:
+                    connection_helper = gatt_service_client_get_connection_for_cid(&gatts_client, gattservice_subevent_client_disconnected_get_cid(packet));
+                    btstack_assert(connection_helper != NULL);
+                    gatts_client_replace_subevent_id_and_emit(connection_helper->event_callback, packet, size, GATT_EVENT_DISCONNECTED);
+                    break;
+
+                default:
+                    break;
+            }
+            break;
+
+
         case GATT_EVENT_INDICATION:
             con_handle = (hci_con_handle_t)gatt_event_indication_get_handle(packet);
             connection_helper = gatt_service_client_get_connection_for_con_handle(&gatts_client, con_handle);
 
             btstack_assert(connection_helper != NULL);
 
-            gatt_service_client_emit_indication(connection_helper, gatt_event_indication_get_value_handle(packet), ATT_ERROR_SUCCESS,
+            gatts_client_emit_indication(connection_helper, gatt_event_indication_get_value_handle(packet), ATT_ERROR_SUCCESS,
                                          gatt_event_indication_get_value(packet),gatt_event_indication_get_value_length(packet));
             break;
         default:
