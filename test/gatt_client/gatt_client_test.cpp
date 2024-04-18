@@ -53,6 +53,7 @@ typedef enum {
     READ_CHARACTERISTIC_DESCRIPTOR,
     WRITE_CHARACTERISTIC_DESCRIPTOR,
     WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION,
+    WRITE_NONEXISTING_CLIENT_CHARACTERISTIC_CONFIGURATION,
     READ_LONG_CHARACTERISTIC_DESCRIPTOR,
     WRITE_LONG_CHARACTERISTIC_DESCRIPTOR,
     WRITE_RELIABLE_LONG_CHARACTERISTIC_VALUE,
@@ -586,11 +587,41 @@ TEST(GATTClient, TestWriteClientCharacteristicConfiguration){
 	characteristics->properties = 0;
 	status = gatt_client_write_client_characteristic_configuration(handle_ble_client_event, gatt_client_handle, &characteristics[0], GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION);
  	CHECK_EQUAL(GATT_CLIENT_CHARACTERISTIC_NOTIFICATION_NOT_SUPPORTED, status);
- 
+
  	reset_query_state();
 	characteristics->properties = 0;
 	status = gatt_client_write_client_characteristic_configuration(handle_ble_client_event, gatt_client_handle, &characteristics[0], GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_INDICATION);
  	CHECK_EQUAL(GATT_CLIENT_CHARACTERISTIC_INDICATION_NOT_SUPPORTED, status);
+
+ 	reset_query_state();
+	status = gatt_client_write_client_characteristic_configuration(handle_ble_client_event, gatt_client_handle, &characteristics[0], 10);
+ 	CHECK_EQUAL(ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE, status);
+}
+
+TEST(GATTClient, TestWriteClientCharacteristicConfigurationNone){
+ 	reset_query_state();
+	status = gatt_client_discover_primary_services_by_uuid16(handle_ble_client_event, gatt_client_handle, service_uuid16);
+	CHECK_EQUAL(0, status);
+	CHECK_EQUAL(1, gatt_query_complete);
+	CHECK_EQUAL(1, result_counter);
+
+	reset_query_state();
+	status = gatt_client_write_client_characteristic_configuration(handle_ble_client_event, gatt_client_handle, &characteristics[0], GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NONE);
+ 	CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
+ }
+
+TEST(GATTClient, TestWriteNonexistingClientCharacteristicConfiguration){
+	test = WRITE_NONEXISTING_CLIENT_CHARACTERISTIC_CONFIGURATION;
+	reset_query_state();
+	status = gatt_client_discover_primary_services_by_uuid16(handle_ble_client_event, gatt_client_handle, service_uuid16);
+	CHECK_EQUAL(0, status);
+	CHECK_EQUAL(1, gatt_query_complete);
+	CHECK_EQUAL(1, result_counter);
+
+	reset_query_state();
+	characteristics->properties = ATT_PROPERTY_INDICATE;
+	status = gatt_client_write_client_characteristic_configuration(handle_ble_client_event, gatt_client_handle, &characteristics[0], GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_INDICATION);
+ 	CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
 }
 
 TEST(GATTClient, TestReadCharacteristicDescriptor){
@@ -1318,6 +1349,109 @@ TEST(GATTClient, gatt_client_get_mtu){
 	gatt_client->mtu_state = SEND_MTU_EXCHANGE;
 }
 
+TEST(GATTClient, gatt_client_deserialize_characteristic_descriptor){
+	gatt_client_characteristic_descriptor_t descriptor;
+
+	uint8_t packet[18];
+	uint16_t expected_handle = 0x1234;
+	uint16_t expected_uuid16 = 0xABCD;
+	
+	uint8_t uuid128[16];
+	uuid_add_bluetooth_prefix(uuid128, expected_uuid16);
+
+	little_endian_store_16(packet, 0, expected_handle);
+	reverse_128(uuid128, &packet[2]);
+
+	// uuid16 with Bluetooth prefix
+	gatt_client_deserialize_characteristic_descriptor(packet, 0, &descriptor);
+	CHECK_EQUAL(descriptor.handle, expected_handle);
+	CHECK_EQUAL(descriptor.uuid16, expected_uuid16);
+	MEMCMP_EQUAL(uuid128, descriptor.uuid128, sizeof(uuid128));
+
+	// uuid128
+	memset(&uuid128[4], 0xaa, 12);
+	reverse_128(uuid128, &packet[2]);
+
+	gatt_client_deserialize_characteristic_descriptor(packet, 0, &descriptor);
+	CHECK_EQUAL(descriptor.handle, expected_handle);
+	CHECK_EQUAL(descriptor.uuid16, 0);
+	MEMCMP_EQUAL(uuid128, descriptor.uuid128, sizeof(uuid128));
+}
+
+TEST(GATTClient, gatt_client_deserialize_service){
+	gatt_client_service_t service;
+
+	uint8_t packet[20];
+	uint16_t expected_start_group_handle = 0x1234;
+	uint16_t expected_end_group_handle   = 0x5678;
+	uint16_t expected_uuid16             = 0xABCD;
+	
+	uint8_t uuid128[16];
+	uuid_add_bluetooth_prefix(uuid128, expected_uuid16);
+
+	little_endian_store_16(packet, 0, expected_start_group_handle);
+	little_endian_store_16(packet, 2, expected_end_group_handle);
+	reverse_128(uuid128, &packet[4]);
+
+	// uuid16 with Bluetooth prefix
+	gatt_client_deserialize_service(packet, 0, &service);
+	CHECK_EQUAL(service.start_group_handle, expected_start_group_handle);
+	CHECK_EQUAL(service.end_group_handle  , expected_end_group_handle);
+	CHECK_EQUAL(service.uuid16, expected_uuid16);
+	MEMCMP_EQUAL(uuid128, service.uuid128, sizeof(uuid128));
+
+	// uuid128
+	memset(&uuid128[4], 0xaa, 12);
+	reverse_128(uuid128, &packet[4]);
+
+	gatt_client_deserialize_service(packet, 0, &service);
+	CHECK_EQUAL(service.start_group_handle, expected_start_group_handle);
+	CHECK_EQUAL(service.end_group_handle  , expected_end_group_handle);
+	CHECK_EQUAL(service.uuid16, 0);
+	MEMCMP_EQUAL(uuid128, service.uuid128, sizeof(uuid128));
+}
+
+TEST(GATTClient, gatt_client_deserialize_characteristic){
+	gatt_client_characteristic_t characteristic;
+
+	uint8_t packet[24];
+	uint16_t expected_start_handle = 0x1234;
+	uint16_t expected_value_handle = 0x3455;
+	uint16_t expected_end_handle   = 0x5678;
+	uint16_t expected_properties   = 0x6789;
+	
+	uint16_t expected_uuid16             = 0xABCD;
+	
+	uint8_t uuid128[16];
+	uuid_add_bluetooth_prefix(uuid128, expected_uuid16);
+
+	little_endian_store_16(packet, 0, expected_start_handle);
+	little_endian_store_16(packet, 2, expected_value_handle);
+	little_endian_store_16(packet, 4, expected_end_handle);
+	little_endian_store_16(packet, 6, expected_properties);
+	reverse_128(uuid128, &packet[8]);
+
+	// uuid16 with Bluetooth prefix
+	gatt_client_deserialize_characteristic(packet, 0, &characteristic);
+	CHECK_EQUAL(characteristic.start_handle, expected_start_handle);
+	CHECK_EQUAL(characteristic.value_handle, expected_value_handle);
+	CHECK_EQUAL(characteristic.end_handle  , expected_end_handle);
+	CHECK_EQUAL(characteristic.properties  , expected_properties);
+	CHECK_EQUAL(characteristic.uuid16, expected_uuid16);
+	MEMCMP_EQUAL(uuid128, characteristic.uuid128, sizeof(uuid128));
+
+	// uuid128
+	memset(&uuid128[4], 0xaa, 12);
+	reverse_128(uuid128, &packet[8]);
+
+	gatt_client_deserialize_characteristic(packet, 0, &characteristic);
+	CHECK_EQUAL(characteristic.start_handle, expected_start_handle);
+	CHECK_EQUAL(characteristic.value_handle, expected_value_handle);
+	CHECK_EQUAL(characteristic.end_handle  , expected_end_handle);
+	CHECK_EQUAL(characteristic.properties  , expected_properties);
+	CHECK_EQUAL(characteristic.uuid16, 0);
+	MEMCMP_EQUAL(uuid128, characteristic.uuid128, sizeof(uuid128));
+}
 
 int main (int argc, const char * argv[]){
 	att_set_db(profile_data);
