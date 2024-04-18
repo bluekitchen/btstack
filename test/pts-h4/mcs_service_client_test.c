@@ -321,7 +321,8 @@ static void show_usage(void){
     printf("A   - disconnect from %s\n", bap_app_server_addr_string);       
     
     printf("\n--- MCS Client Test Console %s ---\n", bd_addr_to_str(iut_address));
-    printf("b   - connect to %s\n", bap_app_server_addr_string);
+    printf("0   - connect to GMCS server %s\n", bap_app_server_addr_string);
+    printf("b   - connect to MCS  server %s\n", bap_app_server_addr_string);
     printf("B   - get media player name\n");
     printf("c   - get icon object ID\n");
     printf("C   - get icon URI\n");
@@ -399,12 +400,25 @@ static void stdin_process(char cmd){
             status = gap_disconnect(bap_app_client_con_handle);
             break;
 
-        case 'b':
+        case '0':
             if (bap_app_client_state < BAP_APP_CLIENT_STATE_CONNECTED){
-                printf("Not connected yet. Call first \"c\"\n");
+                printf("Not connected yet. Call first \"a\"\n");
                 break;
             }
-            printf("MCS: connect 0x%02x\n", bap_app_client_con_handle);
+            printf("MCS: connect to GMCP Server 0x%02x\n", bap_app_client_con_handle);
+            bap_app_client_state = BAP_APP_CLIENT_STATE_W4_MCS_CONNECTED;
+            status = media_control_service_client_connect_generic_player(
+                    bap_app_client_con_handle, &mcs_client_event_handler,
+                    &mcs_connection, mcs_connection_characteristics, MCS_CLIENT_CHARACTERISTICS_MAX_NUM,
+                    &mcs_cid);
+            break;
+
+        case 'b':
+            if (bap_app_client_state < BAP_APP_CLIENT_STATE_CONNECTED){
+                printf("Not connected yet. Call first \"a\"\n");
+                break;
+            }
+            printf("MCS: connect to MCP Server 0x%02x\n", bap_app_client_con_handle);
             bap_app_client_state = BAP_APP_CLIENT_STATE_W4_MCS_CONNECTED;
             status = media_control_service_client_connect_media_player(
                 bap_app_client_con_handle, 0, &mcs_client_event_handler,
