@@ -46,6 +46,7 @@
 #include <btstack_lc3.h>
 
 #include "btstack.h"
+#include "le-audio/gatt-service/gatt_service_client.h"
 
 #define CBM_RECEIVE_BUFFER_LEN 300
 
@@ -63,10 +64,12 @@ static enum {
     APP_STATE_IDLE,
     APP_STATE_W4_SCAN_RESULT,
     APP_STATE_W4_CONNECT,
+    APP_STATE_W4_CHANGE_SERVER_CONNECT,
     APP_STATE_CONNECTED
 } app_state;
 
 static ots_client_connection_t ots_connection;
+static gatt_service_client_connection_t gatt_service_client_connection;
 
 static advertising_report_t report;
 static btstack_packet_callback_registration_t sm_event_callback_registration;
@@ -112,6 +115,7 @@ static void object_transfer_service_client_setup(void){
     // GATT Client setup
     gatt_client_init();
     
+    gatt_service_changed_client_init();
     object_transfer_service_client_init();
 
     sm_init();
@@ -226,10 +230,6 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
             gap_stop_scan();
             app_state = APP_STATE_CONNECTED;
             printf("GAP connected.\n");
-            (void) object_transfer_service_client_connect(connection_handle, &gatt_client_event_handler,
-                                                             &ots_connection,
-                                                             0, 0xFFFF, 0,
-                                                             &ots_cid);
             break;
 
         case HCI_EVENT_DISCONNECTION_COMPLETE:
@@ -274,17 +274,41 @@ static void gatt_client_event_handler(uint8_t packet_type, uint16_t channel, uin
 
     uint8_t status;
 
+    if (hci_event_packet_get_type(packet) == GATT_EVENT_SERVICE_CHANGED) {
+        printf("GATT_EVENT_SERVICE_CHANGED\n");
+        return;
+    }
     if (hci_event_packet_get_type(packet) != HCI_EVENT_GATTSERVICE_META) {
         return;
     }
 
     switch (hci_event_gattservice_meta_get_subevent_code(packet)) {
+        case GATT_EVENT_CONNECTED:
+            status = gatt_event_connected_get_status(packet);
+            switch (status){
+                case ERROR_CODE_SUCCESS:
+                    printf("Change Service: Server connected\n");
+                    (void) gatt_service_changed_client_connect(connection_handle, &gatt_client_event_handler, &gatt_service_client_connection);
+                    break;
+
+                default:
+                    printf("Change Service: connection failed, err 0x%02x.\n", status);
+                    break;
+            }
+
+            app_state = APP_STATE_CONNECTED;
+            break;
+
         case GATTSERVICE_SUBEVENT_OTS_CLIENT_CONNECTED:
             status = gattservice_subevent_ots_client_connected_get_att_status(packet);
+
             switch (status) {
                 case ERROR_CODE_SUCCESS:
+                    app_state = APP_STATE_W4_CHANGE_SERVER_CONNECT;
                     printf("OTS Client Test: connected\n");
+                    (void) gatt_service_changed_client_connect(connection_handle, &gatt_client_event_handler, &gatt_service_client_connection);
                     break;
+
                 default:
                     printf("OTS Client Test: connection failed, err 0x%02x.\n", status);
                     gap_disconnect(connection_handle);
@@ -457,6 +481,7 @@ static void gatt_client_event_handler(uint8_t packet_type, uint16_t channel, uin
 
         case GATTSERVICE_SUBEVENT_OTS_CLIENT_DISCONNECTED:
             printf("OTS Client Test: disconnected\n");
+            gatt_service_changed_client_disconnect(&gatt_service_client_connection);
             break;
 
         default:
@@ -471,7 +496,8 @@ static void show_usage(void){
 
     printf("--- OTS Client ---\n");
     printf("c    - Connect to %s\n", bd_addr_to_str(current_pts_address));
-    
+    printf("C    - Disconnect from %s\n", bd_addr_to_str(current_pts_address));
+    printf("Z    - Connect to OTS servert\n");
     printf("d    - Read ots feature\n");
     printf("D    - Read object name\n");
     printf("e    - Read object type\n");
@@ -535,8 +561,18 @@ static void stdin_process(char c){
             app_state = APP_STATE_W4_CONNECT;
             status = gap_connect(current_pts_address, current_pts_address_type);
             break;
-
-        case 'd':
+        case 'C':
+            printf("Disconnect OTS client from %s\n", bd_addr_to_str(current_pts_address));
+            status = object_transfer_service_client_disconnect(&ots_connection);
+            break;
+        case 'Z':
+            printf("Connect to OTS server\n");
+            status = object_transfer_service_client_connect(connection_handle, &gatt_client_event_handler,
+                                                          &ots_connection,
+                                                          0, 0xFFFF, 0,
+                                                          &ots_cid);
+            break;
+    case 'd':
             printf("Read ots feature\n");
             status = object_transfer_service_client_read_ots_feature(&ots_connection);
             break;
