@@ -37,7 +37,7 @@ file(GLOB SOURCES_SRC       "../../src/*.c" "../../src/*.cpp" "../../example/sco
 file(GLOB SOURCES_BLE       "../../src/ble/*.c")
 file(GLOB SOURCES_GATT      "../../src/ble/gatt-service/*.c")
 file(GLOB SOURCES_CLASSIC   "../../src/classic/*.c")
-file(GLOB SOURCES_LE_AUDIO  "../../src/le-audio/*.c" "../../src/le-audio/gatt-service/*.c" "../../example/le_audio_demo_util_*".c)
+file(GLOB SOURCES_LE_AUDIO  "../../src/le-audio/*.c" "../../src/le-audio/gatt-service/*.c" "../../example/le_audio_demo_util_*.c")
 file(GLOB SOURCES_MESH      "../../src/mesh/*.c")
 file(GLOB SOURCES_MD5       "../../3rd-party/md5/md5.c")
 file(GLOB SOURCES_UECC      "../../3rd-party/micro-ecc/uECC.c")

@@ -248,6 +248,9 @@ TEST(DEVICE_INFORMATION_SERVICE_CLIENT, double_query){
 
     status = device_information_service_client_query(con_handle, &gatt_client_event_handler);
     CHECK_EQUAL(ERROR_CODE_COMMAND_DISALLOWED, status);
+
+    status = device_information_service_client_query(HCI_CON_HANDLE_INVALID, &gatt_client_event_handler);
+    CHECK_EQUAL(ERROR_CODE_COMMAND_DISALLOWED, status);
 }
 
 TEST(DEVICE_INFORMATION_SERVICE_CLIENT, query_no_service){

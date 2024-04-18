@@ -41,9 +41,9 @@
 #include <string.h>
 #include <portaudio.h>
 
-#include "btstack_sbc.h"
-#include "avdtp.h"
-#include "avdtp_source.h"
+#include "classic/btstack_sbc.h"
+#include "classic/avdtp.h"
+#include "classic/avdtp_source.h"
 #include "btstack_stdin.h"
 
 #define NUM_CHANNELS        2

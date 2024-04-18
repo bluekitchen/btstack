@@ -293,11 +293,6 @@ TEST(HCI, Flushable){
     hci_non_flushable_packet_boundary_flag_supported();
 }
 
-TEST(HCI, DoubleReserve){
-    CHECK_TRUE(hci_reserve_packet_buffer());
-    CHECK_FALSE(hci_reserve_packet_buffer());
-}
-
 TEST(HCI, RemovePacketHandler){
     hci_remove_event_handler(NULL);
 }

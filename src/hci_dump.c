@@ -116,6 +116,15 @@ void hci_dump_log_P(int log_level, PGM_P format, ...){
 }
 #endif
 
+void hci_dump_btstack_event(const uint8_t *packet, uint16_t len){
+#ifdef ENABLE_LOG_BTSTACK_EVENTS
+    hci_dump_packet(HCI_EVENT_PACKET, 1, packet, size);
+#else
+    UNUSED(packet);
+    UNUSED(len);
+#endif
+}
+
 void hci_dump_enable_log_level(int log_level, int enable){
     if (log_level < HCI_DUMP_LOG_LEVEL_DEBUG) return;
     if (log_level > HCI_DUMP_LOG_LEVEL_ERROR) return;

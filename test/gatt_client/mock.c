@@ -165,9 +165,7 @@ void hci_add_event_handler(btstack_packet_callback_registration_t * callback_han
 	registered_hci_event_handler = callback_handler->callback;
 }
 
-bool l2cap_reserve_packet_buffer(void){
-	return true;
-}
+void l2cap_reserve_packet_buffer(void){}
 
 bool l2cap_can_send_fixed_channel_packet_now(uint16_t handle, uint16_t channel_id){
 	return true;

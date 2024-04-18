@@ -40,6 +40,84 @@ static uint8_t moc_att_error_code_discover_characteristics;
 static uint8_t moc_att_error_code_discover_characteristic_descriptors;
 static uint8_t moc_att_error_code_read_value_characteristics;
 
+static btstack_linked_list_t event_packet_handlers;
+
+void hci_add_event_handler(btstack_packet_callback_registration_t * callback_handler){
+    btstack_linked_list_add_tail(&event_packet_handlers, (btstack_linked_item_t*) callback_handler);
+}
+
+void mock_hci_emit_event(uint8_t * packet, uint16_t size){
+    // dispatch to all event handlers
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &event_packet_handlers);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        btstack_packet_callback_registration_t * entry = (btstack_packet_callback_registration_t*) btstack_linked_list_iterator_next(&it);
+        entry->callback(HCI_EVENT_PACKET, 0, packet, size);
+    }
+}
+
+static void hci_create_gap_connection_complete_event(const uint8_t * hci_event, uint8_t * gap_event) {
+    gap_event[0] = HCI_EVENT_META_GAP;
+    gap_event[1] = 36 - 2;
+    gap_event[2] = GAP_SUBEVENT_LE_CONNECTION_COMPLETE;
+    switch (hci_event[2]){
+        case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
+            memcpy(&gap_event[3], &hci_event[3], 11);
+        memset(&gap_event[14], 0, 12);
+        memcpy(&gap_event[26], &hci_event[14], 7);
+        memset(&gap_event[33], 0xff, 3);
+        break;
+        case HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE_V1:
+            memcpy(&gap_event[3], &hci_event[3], 30);
+        memset(&gap_event[33], 0xff, 3);
+        break;
+        case HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE_V2:
+            memcpy(&gap_event[3], &hci_event[3], 33);
+        break;
+        default:
+            btstack_unreachable();
+        break;
+    }
+}
+
+void mock_hci_emit_le_connection_complete(uint8_t address_type, const bd_addr_t address, hci_con_handle_t con_handle, uint8_t status){
+    uint8_t hci_event[21];
+    hci_event[0] = HCI_EVENT_LE_META;
+    hci_event[1] = sizeof(hci_event) - 2u;
+    hci_event[2] = HCI_SUBEVENT_LE_CONNECTION_COMPLETE;
+    hci_event[3] = status;
+    little_endian_store_16(hci_event, 4, con_handle);
+    hci_event[6] = 0; // TODO: role
+    hci_event[7] = address_type;
+    reverse_bd_addr(address, &hci_event[8]);
+    little_endian_store_16(hci_event, 14, 0); // interval
+    little_endian_store_16(hci_event, 16, 0); // latency
+    little_endian_store_16(hci_event, 18, 0); // supervision timeout
+    hci_event[20] = 0; // master clock accuracy
+    // emit GAP event, too
+    uint8_t gap_event[36];
+    hci_create_gap_connection_complete_event(hci_event, gap_event);
+    mock_hci_emit_event(gap_event, sizeof(gap_event));
+}
+
+void mock_hci_emit_connection_encrypted(hci_con_handle_t con_handle, uint8_t encrypted){
+    uint8_t encryption_complete_event[6] = { HCI_EVENT_ENCRYPTION_CHANGE, 4, 0, 0, 0, 0};
+    little_endian_store_16(encryption_complete_event, 3, con_handle);
+    encryption_complete_event[5] = encrypted;
+    mock_hci_emit_event(encryption_complete_event, sizeof(encryption_complete_event));
+}
+
+void mock_hci_emit_disconnection_complete(hci_con_handle_t con_handle, uint8_t reason){
+    uint8_t event[6];
+    event[0] = HCI_EVENT_DISCONNECTION_COMPLETE;
+    event[1] = sizeof(event) - 2u;
+    event[2] = 0; // status = OK
+    little_endian_store_16(event, 3, con_handle);
+    event[5] = reason;
+    mock_hci_emit_event(event, sizeof(event));
+}
+
+
 /**
  * copied from gatt_client.c - START
  */

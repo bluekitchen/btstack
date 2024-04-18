@@ -425,7 +425,8 @@ uint16_t rfcomm_get_max_frame_size(uint16_t rfcomm_cid);
 
 /** 
  * @brief Reserve packet buffer to allow to create RFCOMM packet in place
- * @return true on success
+ * @note Must only be called after a 'can send now' check or event
+ * @note Asserts if packet buffer is already reserved
  *
  * if (rfcomm_can_send_packet_now(cid)){
  *     rfcomm_reserve_packet_buffer();
@@ -435,7 +436,7 @@ uint16_t rfcomm_get_max_frame_size(uint16_t rfcomm_cid);
  *     rfcomm_send_prepared(cid, len)
  * }
  */
-bool rfcomm_reserve_packet_buffer(void);
+void rfcomm_reserve_packet_buffer(void);
 
 /**
  * @brief Get outgoing buffer

@@ -516,8 +516,12 @@ bool gap_secure_connections_active(void);
 void gap_ssp_set_auto_accept(int auto_accept);
 
 /**
- * @brief Set required encryption key size for GAP Levels 1-3 on ccassic connections. Default: 16 bytes
- * @param encryption_key_size in bytes. Valid 7..16
+ * @brief Set required encryption key size for GAP Levels 1-3 on classic connections.
+ * @note If you need to reduce the required encryption key size, please consider enabling
+ *       ENABLE_MUTUAL_AUTHENTICATION_FOR_LEGACY_SECURE_CONNECTIONS to prevent BIAS attacks.
+ *       However, the re-authentication for Legacy Secure Connections can cause a link loss
+ *       in some Controller combinations.
+ * @param encryption_key_size in bytes. Valid 7..16, default: 16
  */
 void gap_set_required_encryption_key_size(uint8_t encryption_key_size);
 
@@ -681,6 +685,7 @@ uint8_t gap_extended_advertising_set_resolvable_private_address_update(uint16_t 
 
 /**
  * @brief Provide storage for new advertising set and setup on Controller
+ * @note Using RPA as own_address_type requires ENABLE_LE_ENHANCED_CONNECTION_COMPLETE_EVENT is required for pairing
  * @param storage to use by stack, needs to stay valid until adv set is removed with gap_extended_advertising_remove
  * @param advertising_parameters
  * @param out_advertising_handle to use with other adv config commands
@@ -691,6 +696,7 @@ uint8_t gap_extended_advertising_setup(le_advertising_set_t * storage, const le_
 
 /**
  * @param Set advertising params for advertising set
+ * @note Using RPA as own_address_type requires ENABLE_LE_ENHANCED_CONNECTION_COMPLETE_EVENT is required for pairing
  * @param advertising_handle
  * @param advertising_parameters
  * @return status
@@ -876,22 +882,22 @@ uint8_t gap_cig_create(le_audio_cig_t * storage, le_audio_cig_params_t * cig_par
 
 /**
  * @brief Remove Connected Isochronous Group (CIG)
- * @param cig_handle
+ * @param cig_id
  * @return status
  * @events GAP_SUBEVENT_CIG_TERMINATED
  */
-uint8_t gap_cig_remove(uint8_t cig_handle);
+uint8_t gap_cig_remove(uint8_t cig_id);
 
 /**
  * @brief Create Connected Isochronous Streams (CIS)
  * @note number of CIS from cig_params in gap_cig_create is used
- * @param cig_handle
+ * @param cig_id
  * @param cis_con_handles array of CIS Connection Handles
  * @param acl_con_handles array of ACL Connection Handles
  * @return status
  * @events GAP_SUBEVENT_CIS_CREATED unless interrupted by call to gap_cig_remove
  */
-uint8_t gap_cis_create(uint8_t cig_handle, hci_con_handle_t cis_con_handles [], hci_con_handle_t acl_con_handles []);
+uint8_t gap_cis_create(uint8_t cig_id, hci_con_handle_t cis_con_handles [], hci_con_handle_t acl_con_handles []);
 
 /**
  * @brief Accept Connected Isochronous Stream (CIS)
@@ -1399,6 +1405,11 @@ void gap_le_get_own_address(uint8_t * addr_type, bd_addr_t addr);
 void gap_le_get_own_advertisements_address(uint8_t * addr_type, bd_addr_t addr);
 
 /**
+ * @brief Get own addr type and address used for LE Extended Advertisiing (Peripheral)
+ */
+void gap_le_get_own_advertising_set_address(uint8_t * addr_type, bd_addr_t addr, uint8_t advertising_handle);
+
+/**
  * @brief Get own addr type and address used for LE connections (Central)
  */
 void gap_le_get_own_connection_address(uint8_t * addr_type, bd_addr_t addr);
@@ -1438,6 +1449,41 @@ void gap_set_peer_privacy_mode(le_privacy_mode_t privacy_mode );
  * @return EROOR_CODE_SUCCESS if supported by Controller
  */
 uint8_t gap_load_resolving_list_from_le_device_db(void);
+
+typedef enum {
+    GAP_PRIVACY_CLIENT_STATE_IDLE,
+    GAP_PRIVACY_CLIENT_STATE_PENDING,
+    GAP_PRIVACY_CLIENT_STATE_READY
+} gap_privacy_client_state_t;
+
+struct gap_privacy_client {
+    btstack_linked_item_t * next;
+    void (*callback)(struct gap_privacy_client * client, bd_addr_t random_addr);
+    gap_privacy_client_state_t state;
+};
+typedef struct gap_privacy_client gap_privacy_client_t;
+
+/**
+ * @brief Register callback that gets executed during random address update
+ * @note gap_privacy_client_ready needs to be called after callback is received
+ * @param client
+ * @return status
+ */
+void gap_privacy_client_register(gap_privacy_client_t * client);
+
+/**
+ * @brief Acknowledge upcoming random address change
+ * @param client
+ * @return status
+ */
+void gap_privacy_client_ready(gap_privacy_client_t * client);
+
+/**
+ * @brief Unregister callback from random address updates
+ * @param client
+ * @return status
+ */
+void gap_privacy_client_unregister(gap_privacy_client_t * client);
 
 /**
  * @brief Get local persistent IRK

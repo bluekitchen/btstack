@@ -1,31 +1,35 @@
 cmake_minimum_required (VERSION 3.5)
 project(test-hfp)
 
+# pkgconfig required to link cpputest
+find_package(PkgConfig REQUIRED)
+
 # libusb
 pkg_check_modules(LIBUSB REQUIRED libusb-1.0)
 include_directories(${LIBUSB_INCLUDE_DIRS})
 link_directories(${LIBUSB_LIBRARY_DIRS})
 link_libraries(${LIBUSB_LIBRARIES})
 
-# add CppUTest
-include_directories("/usr/local/include")
-link_directories("/usr/local/lib")
-link_libraries( CppUTest )
-link_libraries( CppUTestExt )
+# CppuTest
+pkg_check_modules(CPPUTEST REQUIRED CppuTest)
+include_directories(${CPPUTEST_INCLUDE_DIRS})
+link_directories(${CPPUTEST_LIBRARY_DIRS})
+link_libraries(${CPPUTEST_LIBRARIES})
 
 include_directories(.)
-include_directories(..)
 include_directories(../../3rd-party/micro-ecc)
 include_directories(../../3rd-party/bluedroid/decoder/include)
 include_directories(../../3rd-party/bluedroid/encoder/include)
 include_directories(../../3rd-party/md5)
 include_directories(../../3rd-party/hxcmod-player)
 include_directories(../../3rd-party/hxcmod-player/mod)
+include_directories(../../3rd-party/lc3-google/include)
 include_directories(../../3rd-party/rijndael)
 include_directories(../../3rd-party/yxml)
 include_directories(../../3rd-party/tinydir)
 include_directories(../../src)
 include_directories(../../chipset/zephyr)
+include_directories(../../chipset/realtek)
 include_directories(../../platform/posix)
 include_directories(../../platform/embedded)
 include_directories(../../port/libusb)
@@ -42,6 +46,9 @@ file(GLOB SOURCES_HXCMOD    "../../3rd-party/hxcmod-player/*.c"  "../../3rd-part
 file(GLOB SOURCES_RIJNDAEL  "../../3rd-party/rijndael/rijndael.c")
 file(GLOB SOURCES_POSIX     "../../platform/posix/*.c")
 file(GLOB SOURCES_LIBUSB    "../../port/libusb/*.c" "../../platform/libusb/*.c")
+file(GLOB SOURCES_ZEPHYR    "../../chipset/zephyr/*.c")
+file(GLOB SOURCES_REALTEK   "../../chipset/realtek/*.c")
+file(GLOB SOURCES_LC3_GOOGLE "../../3rd-party/lc3-google/src/*.c")
 
 file(GLOB SOURCES_BLE_OFF "../../src/ble/le_device_db_memory.c")
 list(REMOVE_ITEM SOURCES_BLE   ${SOURCES_BLE_OFF})
@@ -62,7 +69,9 @@ set(SOURCES
 	${SOURCES_CLASSIC}
 	${SOURCES_UECC}
 	${SOURCES_HXCMOD}
+	${SOURCES_REALTEK}
 	${SOURCES_ZEPHYR}
+	${SOURCES_LC3_GOOGLE}
 )
 list(SORT SOURCES)
 
@@ -70,6 +79,16 @@ set_source_files_properties(../../src/classic/hfp_ag.c PROPERTIES LANGUAGE CXX )
 
 # create static lib
 add_library(btstack STATIC ${SOURCES})
+
+# portaudio
+pkg_check_modules(PORTAUDIO portaudio-2.0)
+if(PORTAUDIO_FOUND)
+	message("HAVE_PORTAUDIO")
+	include_directories(${PORTAUDIO_INCLUDE_DIRS})
+	link_directories(${PORTAUDIO_LIBRARY_DIRS})
+	link_libraries(${PORTAUDIO_LIBRARIES})
+	add_compile_definitions(HAVE_PORTAUDIO)
+endif()
 
 # create targets for all examples
 file(GLOB EXAMPLES_C    "*.c")

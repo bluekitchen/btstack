@@ -105,15 +105,15 @@ static uint8_t hfp_ag_codecs_nr;
 static uint8_t hfp_ag_codecs[HFP_MAX_NUM_CODECS];
 
 // AG indicators
-static int                hfp_ag_indicators_nr;
+static uint16_t           hfp_ag_indicators_nr;
 static hfp_ag_indicator_t hfp_ag_indicators[HFP_MAX_NUM_INDICATORS];
 
 // generic status indicators
-static int                            hfp_ag_generic_status_indicators_nr;
+static uint16_t                       hfp_ag_generic_status_indicators_nr;
 static hfp_generic_status_indicator_t hfp_ag_generic_status_indicators[HFP_MAX_NUM_INDICATORS];
 
-static int    hfp_ag_call_hold_services_nr;
-static char * hfp_ag_call_hold_services[6];
+static uint16_t hfp_ag_call_hold_services_nr;
+static char *   hfp_ag_call_hold_services[6];
 
 static hfp_response_and_hold_state_t hfp_ag_response_and_hold_state;
 static bool hfp_ag_response_and_hold_active = false;
@@ -739,14 +739,16 @@ static int hfp_ag_run_for_context_service_level_connection(hfp_connection_t * hf
             if (hfp_connection->state != HFP_W4_ENABLE_INDICATORS_STATUS_UPDATE) break;
             if (has_call_waiting_and_3way_calling_feature(hfp_connection)){
                 hfp_connection->state = HFP_W4_RETRIEVE_CAN_HOLD_CALL;
+                hfp_ag_send_ok(hfp_connection->rfcomm_cid);
             } else if (has_hf_indicators_feature(hfp_connection)){
                 hfp_connection->state = HFP_W4_LIST_GENERIC_STATUS_INDICATORS;
+                hfp_ag_send_ok(hfp_connection->rfcomm_cid);
             } else {
+                hfp_ag_send_ok(hfp_connection->rfcomm_cid);
                 hfp_ag_slc_established(hfp_connection);
             }
-            hfp_ag_send_ok(hfp_connection->rfcomm_cid);
             return 1;
-                
+
         case HFP_CMD_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES:
             if (hfp_connection->state != HFP_W4_RETRIEVE_CAN_HOLD_CALL) break;
             if (has_hf_indicators_feature(hfp_connection)){
@@ -896,7 +898,7 @@ static void hfp_ag_emit_general_simple_event(uint8_t event_subtype){
 static void hfp_ag_emit_custom_command_event(hfp_connection_t * hfp_connection){
     btstack_assert(sizeof(hfp_connection->line_buffer) < (255-5));
 
-    uint16_t line_len = strlen((const char*)hfp_connection->line_buffer) + 1;
+    uint16_t line_len = (uint16_t) strlen((const char*)hfp_connection->line_buffer) + 1;
     uint8_t event[7 + sizeof(hfp_connection->line_buffer)];
     event[0] = HCI_EVENT_HFP_META;
     event[1] = 5 + line_len;
@@ -2627,6 +2629,7 @@ static void hfp_ag_hci_event_packet_handler(uint8_t packet_type, uint16_t channe
 
 void hfp_ag_init_codecs(uint8_t codecs_nr, const uint8_t * codecs){
     btstack_assert(codecs_nr <= HFP_MAX_NUM_CODECS);
+    if (codecs_nr > HFP_MAX_NUM_CODECS) return;
 
     hfp_ag_codecs_nr = codecs_nr;
     uint8_t i;
@@ -2641,13 +2644,18 @@ void hfp_ag_init_supported_features(uint32_t supported_features){
 }
 
 void hfp_ag_init_ag_indicators(int ag_indicators_nr, const hfp_ag_indicator_t * ag_indicators){
+    btstack_assert(ag_indicators_nr <= HFP_MAX_NUM_INDICATORS);
+    if (ag_indicators_nr > HFP_MAX_NUM_CODECS) return;
+
     hfp_ag_indicators_nr = ag_indicators_nr;
     (void)memcpy(hfp_ag_indicators, ag_indicators,
                  ag_indicators_nr * sizeof(hfp_ag_indicator_t));
 }
 
 void hfp_ag_init_hf_indicators(int hf_indicators_nr, const hfp_generic_status_indicator_t * hf_indicators){
-    if (hf_indicators_nr > HFP_MAX_NUM_INDICATORS) return;
+    btstack_assert(hf_indicators_nr <= HFP_MAX_NUM_INDICATORS);
+    if (hf_indicators_nr > HFP_MAX_NUM_CODECS) return;
+
     hfp_ag_generic_status_indicators_nr = hf_indicators_nr;
     (void)memcpy(hfp_ag_generic_status_indicators, hf_indicators,
                  hf_indicators_nr * sizeof(hfp_generic_status_indicator_t));

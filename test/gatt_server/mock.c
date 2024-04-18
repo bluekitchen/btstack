@@ -176,12 +176,9 @@ uint16_t l2cap_max_le_mtu(void){
 
 void l2cap_init(void){}
 
-bool l2cap_reserve_packet_buffer(void){
-	return true;
-}
+void l2cap_reserve_packet_buffer(void){}
 
-void l2cap_release_packet_buffer(void){
-}
+void l2cap_release_packet_buffer(void){}
 
 static uint8_t l2cap_can_send_fixed_channel_packet_now_status = 1;
 

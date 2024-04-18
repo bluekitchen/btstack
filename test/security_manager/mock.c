@@ -207,6 +207,16 @@ void hci_le_set_own_address_type(uint8_t own_address){
 void hci_le_random_address_set(const bd_addr_t addr){
 }
 
+bool hci_is_le_identity_address_type(bd_addr_type_t address_type) {
+    switch (address_type) {
+        case BD_ADDR_TYPE_LE_PUBLIC_IDENTITY:
+        case BD_ADDR_TYPE_LE_RANDOM_IDENTITY:
+            return true;
+        default:
+            return false;
+    }
+}
+
 void l2cap_request_can_send_fix_channel_now_event(hci_con_handle_t con_handle, uint16_t cid){
 	if (packet_buffer_len) return;
     uint8_t event[] = { L2CAP_EVENT_CAN_SEND_NOW, 2, 0, 0};
@@ -258,9 +268,8 @@ void hci_add_event_handler(btstack_packet_callback_registration_t * callback_han
 	btstack_linked_list_add(&event_packet_handlers, (btstack_linked_item_t *) callback_handler);
 }
 
-bool l2cap_reserve_packet_buffer(void){
+void l2cap_reserve_packet_buffer(void){
 	printf("l2cap_reserve_packet_buffer\n");
-	return true;
 }
 
 uint8_t l2cap_send_prepared_connectionless(uint16_t handle, uint16_t cid, uint16_t len){

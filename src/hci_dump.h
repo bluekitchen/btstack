@@ -146,6 +146,14 @@ __attribute__ ((format (__printf__, 2, 3)))
 #endif
 
 /**
+ * @brief Dump internal BTstack event
+ * @note only logged if ENABLE_LOG_BTSTACK_EVENTS is defined
+ * @param packet
+ * @param len
+ */
+void hci_dump_btstack_event(const uint8_t *packet, uint16_t len);
+
+/**
  * @brief Setup header for PacketLogger format
  * @param buffer
  * @param tv_sec

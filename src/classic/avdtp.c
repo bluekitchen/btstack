@@ -248,7 +248,7 @@ static avdtp_connection_t * avdtp_create_connection(bd_addr_t remote_addr, uint1
     connection->avdtp_cid = cid;
     (void)memcpy(connection->remote_addr, remote_addr, 6);
    
-    btstack_linked_list_add(&avdtp_connections, (btstack_linked_item_t *) connection);
+    btstack_linked_list_add_tail(&avdtp_connections, (btstack_linked_item_t *) connection);
     return connection;
 }
 
@@ -551,15 +551,19 @@ handle_l2cap_data_packet_for_signaling_connection(avdtp_connection_t *connection
     if (size < 2) return;
 
     uint16_t offset;
-    avdtp_message_type_t message_type = avdtp_get_signaling_packet_type(packet);
+    avdtp_message_type_t message_type = avdtp_get_signaling_message_type(packet);
     switch (message_type){
         case AVDTP_CMD_MSG:
             offset = avdtp_read_signaling_header(&connection->acceptor_signaling_packet, packet, size);
-            avdtp_acceptor_stream_config_subsm(connection, packet, size, offset);
+            if (offset > 0){
+                avdtp_acceptor_stream_config_subsm(connection, packet, size, offset);
+            }
             break;
         default:
-            offset = avdtp_read_signaling_header(&connection->initiator_signaling_packet, packet, size);
-            avdtp_initiator_stream_config_subsm(connection, packet, size, offset);
+                offset = avdtp_read_signaling_header(&connection->initiator_signaling_packet, packet, size);
+            if (offset > 0) {
+                avdtp_initiator_stream_config_subsm(connection, packet, size, offset);
+            }
             break;
     }
 }
@@ -1080,19 +1084,13 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
     }
 }
 
-uint8_t avdtp_disconnect(uint16_t avdtp_cid){
-    avdtp_connection_t * connection = avdtp_get_connection_for_avdtp_cid(avdtp_cid);
-    if (!connection) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-
-    if (connection->state == AVDTP_SIGNALING_CONNECTION_W4_L2CAP_DISCONNECTED) return ERROR_CODE_SUCCESS;
-    
-    btstack_linked_list_iterator_t it;    
+static void avdtp_disconenct_streamendpoints(const avdtp_connection_t *connection) {
+    btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, avdtp_get_stream_endpoints());
-
     while (btstack_linked_list_iterator_has_next(&it)){
         avdtp_stream_endpoint_t * stream_endpoint = (avdtp_stream_endpoint_t *)btstack_linked_list_iterator_next(&it);
         if (stream_endpoint->connection != connection) continue;
-    
+
         switch (stream_endpoint->state){
             case AVDTP_STREAM_ENDPOINT_OPENED:
             case AVDTP_STREAM_ENDPOINT_STREAMING:
@@ -1101,11 +1099,30 @@ uint8_t avdtp_disconnect(uint16_t avdtp_cid){
                 break;
             default:
                 break;
-        } 
+        }
     }
+}
 
-    connection->state = AVDTP_SIGNALING_CONNECTION_W4_L2CAP_DISCONNECTED;
-    l2cap_disconnect(connection->l2cap_signaling_cid);
+uint8_t avdtp_disconnect(uint16_t avdtp_cid){
+    avdtp_connection_t * connection = avdtp_get_connection_for_avdtp_cid(avdtp_cid);
+    if (!connection) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+
+    switch (connection->state){
+        case AVDTP_SIGNALING_CONNECTION_OPENED:
+            avdtp_disconenct_streamendpoints(connection);
+            connection->state = AVDTP_SIGNALING_CONNECTION_W4_L2CAP_DISCONNECTED;
+            l2cap_disconnect(connection->l2cap_signaling_cid);
+            break;
+        case AVDTP_SIGNALING_CONNECTION_W4_L2CAP_DISCONNECTED:
+            // stream endpoints closed, wait for disconnected
+            break;
+        default:
+            // connection has not been reported as established yet, report open failed
+            avdtp_signaling_emit_connection_established(connection->avdtp_cid, connection->remote_addr,
+                                                        connection->con_handle, ERROR_CODE_UNSPECIFIED_ERROR);
+            avdtp_finalize_connection(connection);
+            break;
+    }
     return ERROR_CODE_SUCCESS;
 }
 
@@ -1658,3 +1675,19 @@ void avdtp_deinit(void){
     avdtp_record_id = 0;
     avdtp_cid_counter = 0;
 }
+
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+#define FUZZ_CID 0x44
+#define FUZZ_CON_HANDLE 0x0001
+static bd_addr_t remote_addr = { 0x33, 0x33, 0x33, 0x33, 0x33, 0x33 };
+void avdtp_init_fuzz(void){
+    // setup avdtp connections for cid
+    avdtp_connection_t * connection = avdtp_create_connection(remote_addr, FUZZ_CID);
+    connection->state = AVDTP_SIGNALING_CONNECTION_OPENED;
+    connection->l2cap_signaling_cid = FUZZ_CID;
+    connection->con_handle = FUZZ_CON_HANDLE;
+}
+void avdtp_packet_handler_fuzz(uint8_t *packet, uint16_t size){
+    avdtp_packet_handler(L2CAP_DATA_PACKET, FUZZ_CID, packet, size);
+}
+#endif

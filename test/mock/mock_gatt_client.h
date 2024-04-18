@@ -116,6 +116,12 @@ void mock_gatt_client_run_once(void);
 
 void mock_gatt_client_dump_services(void);
 
+void mock_hci_emit_event(uint8_t * packet, uint16_t size);
+
+void mock_hci_emit_le_connection_complete(uint8_t address_type, const bd_addr_t address, hci_con_handle_t con_handle, uint8_t status);
+void mock_hci_emit_connection_encrypted(hci_con_handle_t con_handle, uint8_t encrypted);
+void mock_hci_emit_disconnection_complete(hci_con_handle_t con_handle, uint8_t reason);
+
 #if defined __cplusplus
 }
 #endif

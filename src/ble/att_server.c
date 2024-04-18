@@ -77,6 +77,8 @@
 #define NVN_NUM_GATT_SERVER_CCC 20
 #endif
 
+#define ATT_SERVICE_FLAGS_DELAYED_RESPONSE (1<<0u)
+
 static void att_run_for_context(att_server_t * att_server, att_connection_t * att_connection);
 static att_write_callback_t att_server_write_callback_for_handle(uint16_t handle);
 static btstack_packet_handler_t att_server_packet_handler_for_handle(uint16_t handle);
@@ -111,6 +113,8 @@ static att_write_callback_t                   att_server_client_write_callback;
 
 // round robin
 static hci_con_handle_t att_server_last_can_send_now = HCI_CON_HANDLE_INVALID;
+
+static uint8_t att_server_flags;
 
 #ifdef ENABLE_GATT_OVER_EATT
 typedef struct {
@@ -552,6 +556,40 @@ static void att_signed_write_handle_cmac_result(uint8_t hash[8]){
 }
 #endif
 
+#ifdef ENABLE_ATT_DELAYED_RESPONSE
+static void att_server_handle_response_pending(att_server_t *att_server, const att_connection_t *att_connection,
+                                               const uint8_t *eatt_buffer,
+                                               uint16_t att_response_size) {
+    // free reserved buffer
+    if (eatt_buffer == NULL){
+        l2cap_release_packet_buffer();
+    }
+
+    // update state
+    att_server->state = ATT_SERVER_RESPONSE_PENDING;
+
+    // callback with handle ATT_READ_RESPONSE_PENDING for reads
+    if (att_response_size == ATT_READ_RESPONSE_PENDING){
+        // notify services that returned response pending
+        btstack_linked_list_iterator_t it;
+        btstack_linked_list_iterator_init(&it, &service_handlers);
+        while (btstack_linked_list_iterator_has_next(&it)) {
+            att_service_handler_t *handler = (att_service_handler_t *) btstack_linked_list_iterator_next(&it);
+            if ((handler->flags & ATT_SERVICE_FLAGS_DELAYED_RESPONSE) != 0){
+                handler->flags &= ~ATT_SERVICE_FLAGS_DELAYED_RESPONSE;
+                handler->read_callback(att_connection->con_handle, ATT_READ_RESPONSE_PENDING, 0, NULL, 0);
+            }
+        }
+        // notify main read callback if it returned response pending
+        if ((att_server_flags & ATT_SERVICE_FLAGS_DELAYED_RESPONSE) != 0){
+            // flag was set by read callback
+            btstack_assert(att_server_client_read_callback != NULL);
+            (*att_server_client_read_callback)(att_connection->con_handle, ATT_READ_RESPONSE_PENDING, 0, NULL, 0);
+        }
+    }
+}
+#endif
+
 // pre: att_server->state == ATT_SERVER_REQUEST_RECEIVED_AND_VALIDATED
 // pre: can send now
 // uses l2cap outgoing buffer if no eatt_buffer provided
@@ -582,18 +620,7 @@ att_server_process_validated_request(att_server_t *att_server, att_connection_t 
 
 #ifdef ENABLE_ATT_DELAYED_RESPONSE
     if ((att_response_size == ATT_READ_RESPONSE_PENDING) || (att_response_size == ATT_INTERNAL_WRITE_RESPONSE_PENDING)){
-        // update state
-        att_server->state = ATT_SERVER_RESPONSE_PENDING;
-
-        // callback with handle ATT_READ_RESPONSE_PENDING for reads
-        if (att_response_size == ATT_READ_RESPONSE_PENDING){
-            att_server_client_read_callback(att_connection->con_handle, ATT_READ_RESPONSE_PENDING, 0, NULL, 0);
-        }
-
-        // free reserved buffer
-        if (eatt_buffer == NULL){
-            l2cap_release_packet_buffer();
-        }
+        att_server_handle_response_pending(att_server, att_connection, eatt_buffer, att_response_size);
         return 0;
     }
 #endif
@@ -1172,11 +1199,6 @@ static att_service_handler_t * att_service_handler_for_handle(uint16_t handle){
     }
     return NULL;
 }
-static att_read_callback_t att_server_read_callback_for_handle(uint16_t handle){
-    att_service_handler_t * handler = att_service_handler_for_handle(handle);
-    if (handler != NULL) return handler->read_callback;
-    return att_server_client_read_callback;
-}
 
 static att_write_callback_t att_server_write_callback_for_handle(uint16_t handle){
     att_service_handler_t * handler = att_service_handler_for_handle(handle);
@@ -1218,9 +1240,22 @@ static uint8_t att_validate_prepared_write(hci_con_handle_t con_handle){
 }
 
 static uint16_t att_server_read_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
-    att_read_callback_t callback = att_server_read_callback_for_handle(attribute_handle);
-    if (!callback) return 0;
-    return (*callback)(con_handle, attribute_handle, offset, buffer, buffer_size);
+    att_service_handler_t * service = att_service_handler_for_handle(attribute_handle);
+    att_read_callback_t read_callback = (service != NULL) ? service->read_callback : att_server_client_read_callback;
+    uint16_t result = 0;
+    if (read_callback != NULL){
+        result = (*read_callback)(con_handle, attribute_handle, offset, buffer, buffer_size);
+#ifdef ENABLE_ATT_DELAYED_RESPONSE
+        if (result == ATT_READ_RESPONSE_PENDING){
+            if (service == NULL){
+                att_server_flags |= ATT_SERVICE_FLAGS_DELAYED_RESPONSE;
+            } else {
+                service->flags   |= ATT_SERVICE_FLAGS_DELAYED_RESPONSE;
+            }
+        }
+#endif
+    }
+    return result;
 }
 
 static int att_server_write_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
@@ -1263,6 +1298,8 @@ void att_server_register_service_handler(att_service_handler_t * handler){
         log_error("handler for range 0x%04x-0x%04x already registered", handler->start_handle, handler->end_handle);
         return;
     }
+
+    handler->flags = 0;
     btstack_linked_list_add(&service_handlers, (btstack_linked_item_t*) handler);
 }
 
@@ -1465,6 +1502,7 @@ void att_server_deinit(void){
     att_server_client_write_callback = NULL;
     att_client_packet_handler = NULL;
     service_handlers = NULL;
+    att_server_flags = 0;
 }
 
 #ifdef ENABLE_GATT_OVER_EATT

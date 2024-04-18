@@ -568,7 +568,7 @@ static avrcp_connection_t * avrcp_create_connection(avrcp_role_t role, bd_addr_t
 
     log_info("avrcp_create_connection, role %d", role);
     (void)memcpy(connection->remote_addr, remote_addr, 6);
-    btstack_linked_list_add(&avrcp_connections, (btstack_linked_item_t *) connection);
+    btstack_linked_list_add_tail(&avrcp_connections, (btstack_linked_item_t *) connection);
     return connection;
 }
 

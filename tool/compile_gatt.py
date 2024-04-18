@@ -38,6 +38,7 @@ except ImportError:
         print("[!] Please install PyCryptodome, e.g. 'pip3 install pycryptodomex' or 'pip3 install pycryptodome'\n")
 
 header = '''
+// clang-format off
 // {0} generated from {1} for BTstack
 // it needs to be regenerated when the .gatt file is updated. 
 

@@ -312,7 +312,7 @@ int es8388_get_mute(int *mute)
     return res;
 }
 
-int es8388_set_dac_ouput(int output)
+int es8388_set_dac_ouput(es_codec_dac_output_t output)
 {
     int res;
     uint8_t reg = 0;

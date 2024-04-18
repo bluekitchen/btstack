@@ -84,6 +84,9 @@ static btstack_packet_handler_t hfp_ag_callback;
 static btstack_packet_handler_t hfp_hf_rfcomm_packet_handler;
 static btstack_packet_handler_t hfp_ag_rfcomm_packet_handler;
 
+static uint8_t  hfp_hf_indicators_nr;
+static const uint8_t * hfp_hf_indicators;
+
 static uint16_t hfp_allowed_sco_packet_types;
 static hfp_connection_t * hfp_sco_establishment_active;
 
@@ -641,7 +644,7 @@ static hfp_connection_t * create_hfp_connection_context(void){
 
     hfp_reset_context_flags(hfp_connection);
 
-    btstack_linked_list_add(&hfp_connections, (btstack_linked_item_t*)hfp_connection);
+    btstack_linked_list_add_tail(&hfp_connections, (btstack_linked_item_t*)hfp_connection);
     return hfp_connection;
 }
 
@@ -1884,6 +1887,15 @@ uint8_t hfp_establish_service_level_connection(bd_addr_t bd_addr, uint16_t servi
     bd_addr_copy(connection->remote_addr, bd_addr);
     connection->service_uuid = service_uuid;
 
+    if (local_role == HFP_ROLE_HF) {
+        // setup HF Indicators
+        uint8_t i;
+        for (i=0; i < hfp_hf_indicators_nr; i++){
+            connection->generic_status_indicators[i].uuid = hfp_hf_indicators[i];
+            connection->generic_status_indicators[i].state = 0;
+        }
+    }
+
     hfp_sdp_query_request.callback = &hfp_handle_start_sdp_client_query;
     // ignore ERROR_CODE_COMMAND_DISALLOWED because in that case, we already have requested an SDP callback
     (void) sdp_client_register_query_callback(&hfp_sdp_query_request);
@@ -2252,6 +2264,11 @@ void hfp_set_ag_rfcomm_packet_handler(btstack_packet_handler_t handler){
 
 void hfp_set_hf_rfcomm_packet_handler(btstack_packet_handler_t handler){
     hfp_hf_rfcomm_packet_handler = handler;
+}
+
+void hfp_set_hf_indicators(uint8_t indicators_nr, const uint8_t * indicators) {
+    hfp_hf_indicators_nr = indicators_nr;
+    hfp_hf_indicators = indicators;
 }
 
 void hfp_init(void){

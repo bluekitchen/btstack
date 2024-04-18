@@ -53,6 +53,7 @@
 #include <unistd.h>   /* UNIX standard function definitions */
 #include <string.h>
 #include <errno.h>
+#include <stdlib.h>
 #ifdef __APPLE__
 #include <sys/ioctl.h>
 #include <IOKit/serial/ioss.h>
@@ -102,12 +103,12 @@ static void btstack_uart_block_posix_process_write(btstack_data_source_t *ds) {
     }
     if (bytes_written == 0){
         log_error("wrote zero bytes\n");
-        return;
+        exit(EXIT_FAILURE);
     }
     if (bytes_written < 0) {
         log_error("write returned error\n");
         btstack_run_loop_enable_data_source_callbacks(ds, DATA_SOURCE_CALLBACK_WRITE);
-        return;
+        exit(EXIT_FAILURE);
     }
 
     btstack_uart_block_write_bytes_data += bytes_written;

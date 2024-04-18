@@ -147,12 +147,12 @@ static void hid_pretty_print_item(btstack_hid_parser_t * parser, hid_descriptor_
 }
 
 // parse descriptor item and read up to 32-bit bit value
-void btstack_hid_parse_descriptor_item(hid_descriptor_item_t * item, const uint8_t * hid_descriptor, uint16_t hid_descriptor_len){
+bool btstack_hid_parse_descriptor_item(hid_descriptor_item_t * item, const uint8_t * hid_descriptor, uint16_t hid_descriptor_len){
 
     const int hid_item_sizes[] = { 0, 1, 2, 4 };
 
     // parse item header
-    if (hid_descriptor_len < 1u) return;
+    if (hid_descriptor_len < 1u) return false;
     uint16_t pos = 0;
     uint8_t item_header = hid_descriptor[pos++];
     item->data_size = hid_item_sizes[item_header & 0x03u];
@@ -160,7 +160,7 @@ void btstack_hid_parse_descriptor_item(hid_descriptor_item_t * item, const uint8
     item->item_tag  = (item_header & 0xf0u) >> 4u;
     // long item
     if ((item->data_size == 2u) && (item->item_tag == 0x0fu) && (item->item_type == 3u)){
-        if (hid_descriptor_len < 3u) return;
+        if (hid_descriptor_len < 3u) return false;
         item->data_size = hid_descriptor[pos++];
         item->item_tag  = hid_descriptor[pos++];
     }
@@ -168,8 +168,8 @@ void btstack_hid_parse_descriptor_item(hid_descriptor_item_t * item, const uint8
     item->item_value = 0;
 
     // read item value
-    if (hid_descriptor_len < item->item_size) return;
-    if (item->data_size > 4u) return;
+    if (hid_descriptor_len < item->item_size) return false;
+    if (item->data_size > 4u) return false;
     int i;
     int sgnd = (item->item_type == Global) && (item->item_tag > 0u) && (item->item_tag < 5u);
     int32_t value = 0;
@@ -184,6 +184,7 @@ void btstack_hid_parse_descriptor_item(hid_descriptor_item_t * item, const uint8
         }
     }
     item->item_value = value;
+    return true;
 }
 
 static void btstack_hid_handle_global_item(btstack_hid_parser_t * parser, hid_descriptor_item_t * item){
@@ -232,7 +233,10 @@ static void hid_find_next_usage(btstack_hid_parser_t * parser){
     while ((parser->available_usages == 0u) && (parser->usage_pos < parser->descriptor_pos)){
         hid_descriptor_item_t usage_item;
         // parser->usage_pos < parser->descriptor_pos < parser->descriptor_len
-        btstack_hid_parse_descriptor_item(&usage_item, &parser->descriptor[parser->usage_pos], parser->descriptor_len - parser->usage_pos);
+        bool ok = btstack_hid_parse_descriptor_item(&usage_item, &parser->descriptor[parser->usage_pos], parser->descriptor_len - parser->usage_pos);
+        if (ok == false){
+            break;
+        }
         if ((usage_item.item_type == Global) && (usage_item.item_tag == UsagePage)){
             parser->usage_page = usage_item.item_value;
         }
@@ -336,7 +340,12 @@ static void btstack_hid_parser_find_next_usage(btstack_hid_parser_t * parser){
             parser->state = BTSTACK_HID_PARSER_COMPLETE;
             break;
         }
-        btstack_hid_parse_descriptor_item(&parser->descriptor_item, &parser->descriptor[parser->descriptor_pos], parser->descriptor_len - parser->descriptor_pos);
+        bool ok = btstack_hid_parse_descriptor_item(&parser->descriptor_item, &parser->descriptor[parser->descriptor_pos], parser->descriptor_len - parser->descriptor_pos);
+        if (ok == false){
+            // abort parsing
+            parser->state = BTSTACK_HID_PARSER_COMPLETE;
+            break;
+        }
         hid_process_item(parser, &parser->descriptor_item);
         if (parser->required_usages){
             hid_find_next_usage(parser);
@@ -368,7 +377,7 @@ void btstack_hid_parser_init(btstack_hid_parser_t * parser, const uint8_t * hid_
     btstack_hid_parser_find_next_usage(parser);
 }
 
-int  btstack_hid_parser_has_more(btstack_hid_parser_t * parser){
+bool btstack_hid_parser_has_more(btstack_hid_parser_t * parser){
     return parser->state == BTSTACK_HID_PARSER_USAGES_AVAILABLE;
 }
 
@@ -442,7 +451,10 @@ int btstack_hid_get_report_size_for_id(int report_id, hid_report_type_t report_t
     while (hid_descriptor_len){
         int valid_report_type = 0;
         hid_descriptor_item_t item;
-        btstack_hid_parse_descriptor_item(&item, hid_descriptor, hid_descriptor_len);
+        bool ok = btstack_hid_parse_descriptor_item(&item, hid_descriptor, hid_descriptor_len);
+        if (ok == false) {
+            return 0;
+        }
         switch (item.item_type){
             case Global:
                 switch ((GlobalItemTag)item.item_tag){
@@ -494,7 +506,10 @@ hid_report_id_status_t btstack_hid_id_valid(int report_id, uint16_t hid_descript
     int current_report_id = 0;
     while (hid_descriptor_len){
         hid_descriptor_item_t item;
-        btstack_hid_parse_descriptor_item(&item, hid_descriptor, hid_descriptor_len);
+        bool ok = btstack_hid_parse_descriptor_item(&item, hid_descriptor, hid_descriptor_len);
+        if (ok == false){
+            return HID_REPORT_ID_INVALID;
+        }
         switch (item.item_type){
             case Global:
                 switch ((GlobalItemTag)item.item_tag){
@@ -516,15 +531,18 @@ hid_report_id_status_t btstack_hid_id_valid(int report_id, uint16_t hid_descript
     return HID_REPORT_ID_UNDECLARED;
 }
 
-int btstack_hid_report_id_declared(uint16_t hid_descriptor_len, const uint8_t * hid_descriptor){
+bool btstack_hid_report_id_declared(uint16_t hid_descriptor_len, const uint8_t * hid_descriptor){
     while (hid_descriptor_len){
         hid_descriptor_item_t item;
-        btstack_hid_parse_descriptor_item(&item, hid_descriptor, hid_descriptor_len);
+        bool ok = btstack_hid_parse_descriptor_item(&item, hid_descriptor, hid_descriptor_len);
+        if (ok == false){
+            break;
+        }
         switch (item.item_type){
             case Global:
                 switch ((GlobalItemTag)item.item_tag){
                     case ReportID:
-                        return 1;
+                        return true;
                     default:
                         break;
                 }
@@ -535,5 +553,5 @@ int btstack_hid_report_id_declared(uint16_t hid_descriptor_len, const uint8_t * 
         hid_descriptor_len -= item.item_size;
         hid_descriptor += item.item_size;
     }
-    return 0;
+    return false;
 }

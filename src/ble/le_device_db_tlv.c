@@ -309,8 +309,12 @@ void le_device_db_encryption_set(int index, uint16_t ediv, uint8_t rand[8], sm_k
     log_info("LE Device DB set encryption for %u, ediv x%04x, key size %u, authenticated %u, authorized %u, secure connection %u",
         index, ediv, key_size, authenticated, authorized, secure_connection);
     entry.ediv = ediv;
-    if (rand != 0) (void)memcpy(entry.rand, rand, 8);
-    if (ltk != 0) (void)memcpy(entry.ltk, ltk, 16);
+    if (rand != NULL){
+        (void)memcpy(entry.rand, rand, 8);
+    }
+    if (ltk != 0) {
+        (void)memcpy(entry.ltk, ltk, 16);
+    }
     entry.key_size = key_size;
     entry.authenticated = authenticated;
     entry.authorized = authorized;

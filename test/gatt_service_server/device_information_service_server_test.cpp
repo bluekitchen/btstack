@@ -99,6 +99,16 @@ TEST(DEVICE_INFORMATION_SERVICE_SERVER, read_values){
         response_len = mock_att_service_read_callback(con_handle, device_information_fields[i].value_handle, 0, response, sizeof(response));
         CHECK(response_len > 0);
     }
+
+    // NULL data field
+    device_information_service_server_set_manufacturer_name(NULL);
+    response_len = mock_att_service_read_callback(con_handle, device_information_fields[0].value_handle, 0, response, sizeof(response));
+    CHECK(response_len == 0);
+
+
+    // invalid handle
+    response_len = mock_att_service_read_callback(con_handle, 0xFFFF, 0, response, sizeof(response));
+    CHECK(response_len == 0);
 }
 
 int main (int argc, const char * argv[]){

@@ -86,6 +86,10 @@
 #ifdef HAVE_POSIX_FILE_IO
 #include "wav_util.h"
 #define STORE_TO_WAV_FILE
+#ifdef _MSC_VER
+// ignore deprecated warning for fopen
+#pragma warning(disable : 4996)
+#endif
 #endif
 
 #define NUM_CHANNELS 2
@@ -987,7 +991,7 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
             break;
         
         case AVRCP_SUBEVENT_OPERATION:
-            operation_id = avrcp_subevent_operation_get_operation_id(packet);
+            operation_id = (avrcp_operation_id_t) avrcp_subevent_operation_get_operation_id(packet);
             button_state = avrcp_subevent_operation_get_button_pressed(packet) > 0 ? "PRESS" : "RELEASE";
             switch (operation_id){
                 case AVRCP_OPERATION_ID_VOLUME_UP:

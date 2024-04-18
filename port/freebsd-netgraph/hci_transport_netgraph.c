@@ -231,6 +231,10 @@ static void hci_transport_netgraph_init (const void *transport_config){
 
     // set state to off
     hci_transport_netgraph_tx_state = TX_OFF;
+
+    // reset sockets file descriptors
+    hci_transport_netgraph_hci_raw_control_socket = -1;
+    hci_transport_netgraph_hci_raw_data_socket    = -1;
 }
 
 static int hci_transport_netgraph_open(void) {
@@ -299,12 +303,18 @@ static int hci_transport_netgraph_open(void) {
 }
 
 static int hci_transport_netgraph_close(void){
-    // first remove run loop handler
+    // first remove data source
     btstack_run_loop_remove_data_source(&hci_transport_netgraph_data_source_hci_raw);
 
+    log_info("Close Netgraph sockets %u and %u", hci_transport_netgraph_hci_raw_control_socket, hci_transport_netgraph_hci_raw_data_socket);
+
     // then close device
-    close(hci_transport_netgraph_data_source_hci_raw.source.fd);
-    hci_transport_netgraph_data_source_hci_raw.source.fd = -1;
+    close(hci_transport_netgraph_hci_raw_control_socket);
+    close(hci_transport_netgraph_hci_raw_data_socket);
+
+    // and reset file descriptors
+    hci_transport_netgraph_hci_raw_control_socket = -1;
+    hci_transport_netgraph_hci_raw_data_socket    = -1;
     return 0;
 }
 

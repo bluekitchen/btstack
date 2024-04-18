@@ -143,6 +143,9 @@ uint8_t goep_server_request_can_send_now(uint16_t goep_cid);
 
 /**
  * @brief Start Connect response
+ * @note Reserves outgoing packet buffer
+ * @note Must only be called after a 'can send now' check or event
+ * @note Asserts if packet buffer is already reserved
  * @param goep_cid
  * @param obex_version_number
  * @param flags
@@ -153,6 +156,9 @@ uint8_t goep_server_response_create_connect(uint16_t goep_cid, uint8_t obex_vers
 
 /**
  * @brief Start General response
+ * @note Reserves outgoing packet buffer
+ * @note Must only be called after a 'can send now' check or event
+ * @note Asserts if packet buffer is already reserved
  * @note response code is set by goep_server_execute
  * @param goep_cid
  * @param opcode

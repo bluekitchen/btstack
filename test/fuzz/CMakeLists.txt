@@ -3,7 +3,9 @@ cmake_minimum_required (VERSION 3.5)
 set(CMAKE_C_COMPILER clang)
 set(CMAKE_CXX_COMPILER clang)
 
-project(BTstack)
+project(BTstack-Fuzzer)
+
+SET(BTSTACK_ROOT ${CMAKE_SOURCE_DIR}/../..)
 
 include_directories(../../3rd-party/micro-ecc)
 include_directories(../../3rd-party/bluedroid/decoder/include)
@@ -116,6 +118,22 @@ file(GLOB TARGETS_C "fuzz_*.c")
 # create targets
 foreach(TARGET_FILE ${TARGETS_C})
     get_filename_component(EXAMPLE ${TARGET_FILE} NAME_WE)
-    add_executable(${EXAMPLE} ${TARGET_FILE} )
-    target_link_libraries(${EXAMPLE} btstack)
+
+    if ( "fuzz_l2cap" MATCHES ${EXAMPLE} )
+        add_executable(${EXAMPLE} ${TARGET_FILE}
+            ${BTSTACK_ROOT}/src/l2cap.c
+            ${BTSTACK_ROOT}/src/l2cap_signaling.c
+            ${BTSTACK_ROOT}/src/btstack_run_loop.c
+            ${BTSTACK_ROOT}/src/btstack_util.c
+            ${BTSTACK_ROOT}/src/btstack_linked_list.c
+            ${BTSTACK_ROOT}/src/btstack_memory.c
+            ${BTSTACK_ROOT}/src/btstack_memory_pool.c
+            ${BTSTACK_ROOT}/src/hci_cmd.c
+            ${BTSTACK_ROOT}/src/hci_dump.c
+            ${SOURCES_POSIX}
+        )
+    else()
+        add_executable(${EXAMPLE} ${TARGET_FILE} )
+        target_link_libraries(${EXAMPLE} btstack)
+    endif()
 endforeach(TARGET_FILE)

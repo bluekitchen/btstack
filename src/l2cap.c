@@ -1024,7 +1024,7 @@ void l2cap_remove_event_handler(btstack_packet_callback_registration_t * callbac
 }
 
 static void l2cap_emit_event(uint8_t *event, uint16_t size) {
-    hci_dump_packet( HCI_EVENT_PACKET, 1, event, size);
+    hci_dump_btstack_event( event, size);
     // dispatch to all event handlers
     btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, &l2cap_event_handlers);
@@ -1054,8 +1054,8 @@ uint8_t *l2cap_get_outgoing_buffer(void){
 }
 
 // only for L2CAP Basic Channels
-bool l2cap_reserve_packet_buffer(void){
-    return hci_reserve_packet_buffer();
+void l2cap_reserve_packet_buffer(void){
+    hci_reserve_packet_buffer();
 }
 
 // only for L2CAP Basic Channels
@@ -1117,7 +1117,7 @@ static void l2cap_emit_can_send_now(btstack_packet_handler_t packet_handler, uin
     event[0] = L2CAP_EVENT_CAN_SEND_NOW;
     event[1] = sizeof(event) - 2u;
     little_endian_store_16(event, 2, channel);
-    hci_dump_packet( HCI_EVENT_PACKET, 1, event, sizeof(event));
+    hci_dump_btstack_event( event, sizeof(event));
     packet_handler(HCI_EVENT_PACKET, channel, event, sizeof(event));
 }
 
@@ -1131,7 +1131,7 @@ static void l2cap_emit_simple_event_with_cid(l2cap_channel_t * channel, uint8_t 
     event[0] = event_code;
     event[1] = sizeof(event) - 2u;
     little_endian_store_16(event, 2, channel->local_cid);
-    hci_dump_packet( HCI_EVENT_PACKET, 1, event, sizeof(event));
+    hci_dump_btstack_event( event, sizeof(event));
     l2cap_dispatch_to_channel(channel, HCI_EVENT_PACKET, event, sizeof(event));
 }
 #endif
@@ -1163,7 +1163,7 @@ void l2cap_emit_channel_opened(l2cap_channel_t *channel, uint8_t status) {
     event[24] = L2CAP_CHANNEL_MODE_BASIC;
     event[25] = 0;
 #endif
-    hci_dump_packet( HCI_EVENT_PACKET, 1, event, sizeof(event));
+    hci_dump_btstack_event( event, sizeof(event));
     l2cap_dispatch_to_channel(channel, HCI_EVENT_PACKET, event, sizeof(event));
 }
 
@@ -1178,7 +1178,7 @@ static void l2cap_emit_incoming_connection(l2cap_channel_t *channel) {
     little_endian_store_16(event, 10, channel->psm);
     little_endian_store_16(event, 12, channel->local_cid);
     little_endian_store_16(event, 14, channel->remote_cid);
-    hci_dump_packet( HCI_EVENT_PACKET, 1, event, sizeof(event));
+    hci_dump_btstack_event( event, sizeof(event));
     l2cap_dispatch_to_channel(channel, HCI_EVENT_PACKET, event, sizeof(event));
 }
 
@@ -1885,8 +1885,8 @@ static void l2cap_run_signaling_response(void) {
         uint16_t result        = l2cap_signaling_responses[0].data;  // CONNECTION_REQUEST, COMMAND_REJECT, REJECT_SM_PAIRING, L2CAP_CREDIT_BASED_CONNECTION_REQUEST
         uint8_t  buffer[4];                                          // REJECT_SM_PAIRING, CONFIGURE_REQUEST
         uint16_t source_cid    = l2cap_signaling_responses[0].cid;   // CONNECTION_REQUEST, REJECT_SM_PAIRING, DISCONNECT_REQUEST, CONFIGURE_REQUEST, DISCONNECT_REQUEST
-        uint16_t dest_cid      = l2cap_signaling_responses[0].data;  // DISCONNECT_REQUEST
 #ifdef ENABLE_CLASSIC
+        uint16_t dest_cid      = l2cap_signaling_responses[0].data;  // DISCONNECT_REQUEST
         uint16_t info_type     = l2cap_signaling_responses[0].data;  // INFORMATION_REQUEST
 #endif
 #ifdef ENABLE_L2CAP_ENHANCED_CREDIT_BASED_FLOW_CONTROL_MODE
@@ -2055,6 +2055,7 @@ static bool l2cap_cbm_run_channel(l2cap_channel_t * channel) {
             channel->credits_incoming =  channel->new_credits_incoming;
             channel->new_credits_incoming = 0;
             mps = btstack_min(l2cap_max_le_mtu(), channel->local_mtu);
+            channel->local_mps = mps;
             l2cap_send_le_signaling_packet(channel->con_handle, LE_CREDIT_BASED_CONNECTION_RESPONSE, channel->remote_sig_id, channel->local_cid, channel->local_mtu, mps, channel->credits_incoming, 0);
             // notify client
             l2cap_cbm_emit_channel_opened(channel, ERROR_CODE_SUCCESS);
@@ -5266,7 +5267,7 @@ static void l2cap_cbm_emit_incoming_connection(l2cap_channel_t *channel) {
     little_endian_store_16(event, 13, channel->local_cid);
     little_endian_store_16(event, 15, channel->remote_cid);
     little_endian_store_16(event, 17, channel->remote_mtu);
-    hci_dump_packet( HCI_EVENT_PACKET, 1, event, sizeof(event));
+    hci_dump_btstack_event( event, sizeof(event));
     l2cap_dispatch_to_channel(channel, HCI_EVENT_PACKET, event, sizeof(event));
 }
 // 11BH22222
@@ -5287,7 +5288,7 @@ static void l2cap_cbm_emit_channel_opened(l2cap_channel_t *channel, uint8_t stat
     little_endian_store_16(event, 17, channel->remote_cid);
     little_endian_store_16(event, 19, channel->local_mtu);
     little_endian_store_16(event, 21, channel->remote_mtu); 
-    hci_dump_packet( HCI_EVENT_PACKET, 1, event, sizeof(event));
+    hci_dump_btstack_event(  event, sizeof(event));
     l2cap_dispatch_to_channel(channel, HCI_EVENT_PACKET, event, sizeof(event));
 }
 
@@ -5796,5 +5797,51 @@ uint8_t l2cap_le_send_data(uint16_t local_cid, const uint8_t * data, uint16_t si
 uint8_t l2cap_le_disconnect(uint16_t local_cid){
     log_error("deprecated - please use l2cap_disconnect");
     return l2cap_disconnect(local_cid);
+}
+#endif
+
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+static void fuzz_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) {
+}
+void l2cap_setup_test_channels_fuzz(void) {
+    bd_addr_t address;
+    l2cap_channel_t * channel;
+
+    // 0x41 1setup classic basic
+    channel = l2cap_create_channel_entry(fuzz_packet_handler, L2CAP_CHANNEL_TYPE_CLASSIC, address,
+        BD_ADDR_TYPE_ACL, 0x01, 100, LEVEL_4);
+    btstack_linked_list_add_tail(&l2cap_channels, (btstack_linked_item_t *) channel);
+
+    // 0x42 setup le cbm
+    channel = l2cap_create_channel_entry(fuzz_packet_handler, L2CAP_CHANNEL_TYPE_CHANNEL_CBM, address,
+        BD_ADDR_TYPE_LE_PUBLIC, 0x03, 100, LEVEL_4);
+    btstack_linked_list_add_tail(&l2cap_channels, (btstack_linked_item_t *) channel);
+
+    // 0x43 setup le ecbm
+    channel = l2cap_create_channel_entry(fuzz_packet_handler, L2CAP_CHANNEL_TYPE_CHANNEL_ECBM,
+        address, BD_ADDR_TYPE_LE_PUBLIC, 0x05, 100, LEVEL_4);
+    btstack_linked_list_add_tail(&l2cap_channels, (btstack_linked_item_t *) channel);
+}
+
+void l2cap_free_channels_fuzz(void){
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &l2cap_channels);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        l2cap_channel_t * channel = (l2cap_channel_t*) btstack_linked_list_iterator_next(&it);
+        bool fixed_channel = false;
+        switch (channel->channel_type) {
+            case L2CAP_CHANNEL_TYPE_FIXED_LE:
+            case L2CAP_CHANNEL_TYPE_FIXED_CLASSIC:
+            case L2CAP_CHANNEL_TYPE_CONNECTIONLESS:
+                fixed_channel = true;
+                break;
+            default:
+                break;
+        }
+        if (fixed_channel == false) {
+            btstack_linked_list_iterator_remove(&it);
+            btstack_memory_l2cap_channel_free(channel);
+        }
+    }
 }
 #endif

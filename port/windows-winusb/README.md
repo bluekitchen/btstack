@@ -26,6 +26,7 @@ After the new driver was installed, your device is shown in the Device Manager w
 ## Visual Studio 2022
 
 Visual Studio can directly open the provided `port/windows-winusb/CMakeLists.txt` and allows to compile and run all examples.
+For this, the C++ CMake tools for Windows is required. They are part of the Desktop development with C++ workloads.
 
 ## mingw64 
 

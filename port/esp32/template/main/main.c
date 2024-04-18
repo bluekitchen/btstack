@@ -67,8 +67,10 @@ int app_main(void){
     // optional: enable packet logger
     // hci_dump_init(hci_dump_embedded_stdout_get_instance());
 
+#ifdef CONFIG_ESP_CONSOLE_UART
     // Enable buffered stdout
     btstack_stdio_init();
+#endif
 
     // Configure BTstack for ESP32 VHCI Controller
     btstack_init();

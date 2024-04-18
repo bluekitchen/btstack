@@ -104,8 +104,9 @@ const uint8_t hid_descriptor_mouse_boot_mode[] = {
 
 // HID Report sending
 static void send_report(uint8_t buttons, int8_t dx, int8_t dy){
-    uint8_t report[] = { 0xa1, buttons, (uint8_t) dx, (uint8_t) dy};
-    hid_device_send_interrupt_message(hid_cid, &report[0], sizeof(report));
+    // setup HID message: A1 = Input Report, Report ID, Payload
+    uint8_t message[] = {0xa1, buttons, (uint8_t) dx, (uint8_t) dy};
+    hid_device_send_interrupt_message(hid_cid, &message[0], sizeof(message));
     printf("Mouse: %d/%d - buttons: %02x\n", dx, dy, buttons);
 }
 

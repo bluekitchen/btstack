@@ -253,7 +253,7 @@ obex_parser_header_state_t obex_parser_header_store(uint8_t * header_buffer, uin
 
 /* OBEX App Param Parser */
 
-void obex_app_param_parser_init(obex_app_param_parser_t * parser, obex_app_param_parser_callback_t callback, uint8_t param_size, void * user_data){
+void obex_app_param_parser_init(obex_app_param_parser_t * parser, obex_app_param_parser_callback_t callback, uint16_t param_size, void * user_data){
     parser->state = OBEX_APP_PARAM_PARSER_STATE_W4_TYPE;
     parser->callback = callback;
     parser->user_data = user_data;

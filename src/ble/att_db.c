@@ -205,10 +205,10 @@ const uint8_t * gatt_server_get_const_value_for_handle(uint16_t attribute_handle
     att_iterator_t it;
     bool ok = att_find_handle(&it, attribute_handle);
     if (!ok){
-        return 0u;
+        return NULL;
     }
     if ((it.flags & (uint16_t)ATT_PROPERTY_DYNAMIC) != 0u){
-        return 0u;
+        return NULL;
     }
     *out_value_len = it.value_len;
     return it.value;

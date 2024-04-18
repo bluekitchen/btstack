@@ -248,14 +248,7 @@ static void att_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
             context->test_data_len = btstack_min(mtu - 3, sizeof(context->test_data));
             printf("%c: ATT MTU = %u => use test data of len %u\n", context->name, mtu, context->test_data_len);
             break;
-        case ATT_EVENT_DISCONNECTED:
-            context = connection_for_conn_handle(att_event_disconnected_get_handle(packet));
-            if (!context) break;
-            // free connection
-            printf("%c: Disconnect\n", context->name);                    
-            context->le_notification_enabled = 0;
-            context->connection_handle = HCI_CON_HANDLE_INVALID;
-            break;
+
         default:
             break;
     }
@@ -321,16 +314,20 @@ static void nordic_spp_packet_handler(uint8_t packet_type, uint16_t channel, uin
                     con_handle = gattservice_subevent_spp_service_connected_get_con_handle(packet);
                     context = connection_for_conn_handle(con_handle);
                     if (!context) break;
+                    printf("%c: Nordic SPP connected\n", context->name);
                     context->le_notification_enabled = 1;
                     test_reset(context);
                     context->send_request.callback = &nordic_can_send;
                     nordic_spp_service_server_request_can_send_now(&context->send_request, context->connection_handle);
                     break;
                 case GATTSERVICE_SUBEVENT_SPP_SERVICE_DISCONNECTED:
-                    con_handle = HCI_CON_HANDLE_INVALID;
+                    con_handle = gattservice_subevent_spp_service_disconnected_get_con_handle(packet);
                     context = connection_for_conn_handle(con_handle);
                     if (!context) break;
+                    // free connection
+                    printf("%c: Nordic SPP disconnected\n", context->name);
                     context->le_notification_enabled = 0;
+                    context->connection_handle = HCI_CON_HANDLE_INVALID;
                     break;
                 default:
                     break;

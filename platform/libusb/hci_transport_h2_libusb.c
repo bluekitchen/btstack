@@ -334,9 +334,9 @@ static void enqueue_transfer(struct libusb_transfer *transfer) {
 }
 
 static void signal_acknowledge(void);
-static void signal_sco_can_send_now(void);
 
 #ifdef ENABLE_SCO_OVER_HCI
+static void signal_sco_can_send_now(void);
 
 #ifdef _WIN32
 #error "SCO not working on Win32 (Windows 8, libusb 1.0.19, Zadic WinUSB), please uncomment ENABLE_SCO_OVER_HCI in btstack-config.h for now"
@@ -1350,26 +1350,29 @@ static void signal_acknowledge(void) {
     btstack_run_loop_poll_data_sources_from_irq();
 }
 
+#ifdef ENABLE_SCO_OVER_HCI
 static int sco_can_send_now_count = 0;
 static void signal_sco_can_send_now(void) {
     ++sco_can_send_now_count;
     btstack_run_loop_poll_data_sources_from_irq();
 }
+#endif
 
 static void usb_transport_response_ds(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type) {
     UNUSED(ds);
     UNUSED(callback_type);
-//    printf("%s packet sent: %d sco can send now: %d\n", __FUNCTION__, acknowledge_count, sco_can_send_now_count);
     for(; acknowledge_count>0; --acknowledge_count) {
         static const uint8_t event[] = { HCI_EVENT_TRANSPORT_PACKET_SENT, 0 };
         packet_handler(HCI_EVENT_PACKET, (uint8_t*)&event[0], sizeof(event));
     }
 
+#ifdef ENABLE_SCO_OVER_HCI
     for(; sco_can_send_now_count>0; --sco_can_send_now_count) {
         static const uint8_t event[] = { HCI_EVENT_SCO_CAN_SEND_NOW, 0 };
         packet_handler(HCI_EVENT_PACKET, (uint8_t*)&event[0], sizeof(event));
     }
-
+#endif
+    
 }
 
 static int usb_send_cmd_packet(uint8_t *packet, int size){
@@ -1465,6 +1468,9 @@ static int usb_send_packet(uint8_t packet_type, uint8_t * packet, int size){
     switch (packet_type){
         case HCI_COMMAND_DATA_PACKET:
             return usb_send_cmd_packet(packet, size);
+#ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
+        case HCI_ISO_DATA_PACKET:
+#endif
         case HCI_ACL_DATA_PACKET:
             return usb_send_acl_packet(packet, size);
 #ifdef ENABLE_SCO_OVER_HCI
@@ -1473,6 +1479,7 @@ static int usb_send_packet(uint8_t packet_type, uint8_t * packet, int size){
             return usb_send_sco_packet(packet, size);
 #endif
         default:
+            btstack_assert(false);
             return -1;
     }
 }

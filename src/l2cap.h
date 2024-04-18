@@ -566,9 +566,10 @@ uint8_t l2cap_request_can_send_now_event(uint16_t local_cid);
 /** 
  * @brief Reserve outgoing buffer
  * @note Only for L2CAP Basic Mode Channels
- * @return true on success
+ * @note Must only be called after a 'can send now' check or event
+ * @note Asserts if packet buffer is already reserved
  */
-bool l2cap_reserve_packet_buffer(void);
+void l2cap_reserve_packet_buffer(void);
 
 /** 
  * @brief Get outgoing buffer and prepare data.

@@ -166,11 +166,12 @@ typedef int (*att_write_callback_t)(hci_con_handle_t con_handle, uint16_t attrib
 // Read & Write Callbacks for handle range
 typedef struct att_service_handler {
     btstack_linked_item_t * item;
-    uint16_t start_handle;
-    uint16_t end_handle;
     att_read_callback_t read_callback;
     att_write_callback_t write_callback;
     btstack_packet_handler_t packet_handler;
+    uint16_t start_handle;
+    uint16_t end_handle;
+    uint8_t flags;
 } att_service_handler_t;
 
 // MARK: ATT Operations

@@ -54,6 +54,7 @@
 
 #include "ble/le_device_db_tlv.h"
 #include "btstack_chipset_nxp.h"
+#include "btstack_audio.h"
 #include "btstack_debug.h"
 #include "btstack_event.h"
 #include "btstack_memory.h"
@@ -168,6 +169,11 @@ static void nxp_phase2(uint8_t status){
     const hci_transport_t * transport = hci_transport_h4_instance_for_uart(uart_driver);
     hci_init(transport, (void*) &transport_config);
     hci_set_chipset(btstack_chipset_nxp_instance());
+
+#ifdef HAVE_PORTAUDIO
+    btstack_audio_sink_set_instance(btstack_audio_portaudio_sink_get_instance());
+    btstack_audio_source_set_instance(btstack_audio_portaudio_source_get_instance());
+#endif
 
     // inform about BTstack state
     hci_event_callback_registration.callback = &packet_handler;

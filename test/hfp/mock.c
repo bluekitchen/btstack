@@ -174,9 +174,8 @@ uint8_t rfcomm_request_can_send_now_event(uint16_t rfcomm_cid){
     return ERROR_CODE_SUCCESS;
 }
 
-bool rfcomm_reserve_packet_buffer(void){
+void rfcomm_reserve_packet_buffer(void){
     // printf("mock: rfcomm_reserve_packet_buffer\n");
-    return true;
 };
 void rfcomm_release_packet_buffer(void){};
 uint8_t * rfcomm_get_outgoing_buffer(void) {

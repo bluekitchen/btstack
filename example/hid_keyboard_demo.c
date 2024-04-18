@@ -233,8 +233,9 @@ static bool keycode_and_modifer_us_for_character(uint8_t character, uint8_t * ke
 }
 
 static void send_report(int modifier, int keycode){
-    uint8_t report[] = { 0xa1, REPORT_ID, modifier, 0, keycode, 0, 0, 0, 0, 0};
-    hid_device_send_interrupt_message(hid_cid, &report[0], sizeof(report));
+    // setup HID message: A1 = Input Report, Report ID, Payload
+    uint8_t message[] = {0xa1, REPORT_ID, modifier, 0, keycode, 0, 0, 0, 0, 0};
+    hid_device_send_interrupt_message(hid_cid, &message[0], sizeof(message));
 }
 
 static void trigger_key_up(btstack_timer_source_t * ts){

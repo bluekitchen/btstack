@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ---
 
 ## Unreleased
+
 ### Added
 ### Fixed
 - HFP: use 'don't care' to accept SCO connections, fixes issue on ESP32
@@ -15,6 +16,40 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
  
 ### Changed
 
+## Release v1.6.1
+
+### Added
+- GAP: support coordinated private random address updates
+- libusb: support send/receive of HCI ISO packets
+
+### Fixed
+- GAP: allow use of own address type different from gap_random_set_mode() incl. RPA in LE Extended Advertising
+- GAP: emit GAP_SUBEVENT_LE_CONNECTION_COMPLETE for failed outgoing connections
+- HCI: improved BIG setup/termination
+- SM: abort pairing with invalid parameter error for encryption key size > 16
+- SM: ignore Security Request after re-encryption has started
+- SM: respond to Pairing Request after Identity Resolution failed
+- SM: fix CTKD from Classic in Peripheral role
+- ATT Server: support delayed read responses for registered services
+- ATT Server: allow to start crypto operation from delayed att read/write request
+- HFP: use round robin for outgoing connections
+- HFP HF: send HF Indicator update only if enabled by AG
+- HFP AG: send OK after SLC for HF that does not support 3-way-calling or HF Indicators
+- HSP HS: use EV3 and 2EV3 packets for 7.5 ms voice interval
+- AVDTP: use round robin for outgoing connections
+- AVDTP: allow call to avdtp_disconnect before connection was established
+- A2DP: allow call to avdtp_disconnect before connection was established
+- AVRCP: use round robin for outgoing connections
+- GOEP Client: use round robin for outgoing connections
+- HID Host: use round robin for outgoing connections
+- HOG Host: emit GATTSERVICE_SUBEVENT_HID_REPORT for hids_client_send_write_report
+ 
+### Changed
+- HCI: hci_reserved_packet_buffer and higher layer functions asserts if packet buffer is free instead of return value
+- GAP: suppress GAP_SUBEVENT_LE_CONNECTION_COMPLETE for intermediate connection pause due to filterlist update
+- GAP: mutual authentication for legacy secure connections to prevent BIAS attacks was made optional with 
+       ENABLE_MUTUAL_AUTHENTICATION_FOR_LEGACY_SECURE_CONNECTIONS. Not needed for default encryption key size of 16
+- HCI Dump: only log internal/BTstack events for ENABLE_LOG_BTSTACK_EVENTS
 
 ## Release v1.6
 
