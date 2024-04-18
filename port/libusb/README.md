@@ -9,22 +9,29 @@ installed.
 
 On a recent Debian-based system, all you need is:
 
-	apt-get install gcc git libusb-1.0 pkg-config
+	sudo apt-get install gcc git cmake ninja-build pkg-config libusb-1.0 portaudio19-dev
 
 
-When everything is ready, you compile all examples with:
+When everything is ready, you compile all examples with make:
 
 	make
+
+or using CMake + Ninja:
+
+    mkdir build
+    cd build
+    cmake -G Ninja
+    ninja
 
 ## Environment Setup
 
 ### Linux
 
-On Linux, the USB Bluetooth dongle is usually not accessible to a regular user. You can either:
-- run the examples as root
-- add a udev rule for your dongle to extend access rights to user processes
+On Linux, the USB Bluetooth dongle is usually not accessible to a regular user.
 
-To add an udev rule, please create `/etc/udev/rules.d/btstack.rules` and add this
+You can add a udev rule for your dongle to extend access rights to user processes.
+
+For this, create `/etc/udev/rules.d/btstack.rules` and add this
 
 	# Match all devices from CSR
 	SUBSYSTEM=="usb", ATTRS{idVendor}=="0a12", MODE="0666"
