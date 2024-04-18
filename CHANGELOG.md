@@ -9,11 +9,19 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## Unreleased
 
 ### Added
+### Fixed
+### Changed
+
+## Release v1.6.1
+
+### Added
 - GAP: support coordinated private random address updates
+- libusb: support send/receive of HCI ISO packets
 
 ### Fixed
 - GAP: allow use of own address type different from gap_random_set_mode() incl. RPA in LE Extended Advertising
 - GAP: emit GAP_SUBEVENT_LE_CONNECTION_COMPLETE for failed outgoing connections
+- HCI: improved BIG setup/termination
 - SM: abort pairing with invalid parameter error for encryption key size > 16
 - SM: ignore Security Request after re-encryption has started
 - SM: respond to Pairing Request after Identity Resolution failed
@@ -30,7 +38,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - AVRCP: use round robin for outgoing connections
 - GOEP Client: use round robin for outgoing connections
 - HID Host: use round robin for outgoing connections
-
+- HOG Host: emit GATTSERVICE_SUBEVENT_HID_REPORT for hids_client_send_write_report
+ 
 ### Changed
 - HCI: hci_reserved_packet_buffer and higher layer functions asserts if packet buffer is free instead of return value
 - GAP: suppress GAP_SUBEVENT_LE_CONNECTION_COMPLETE for intermediate connection pause due to filterlist update
