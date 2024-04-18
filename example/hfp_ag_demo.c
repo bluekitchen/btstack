@@ -121,6 +121,126 @@ static hfp_voice_recognition_message_t msg = {
 enum STATE {INIT, W4_INQUIRY_MODE_COMPLETE, ACTIVE} ;
 enum STATE state = INIT;
 
+#define IPHONEACCEV_BATTERY_LEVEL    1
+#define IPHONEACCEV_BATTERY_CHARGING 2
+
+typedef enum {
+    HFP_COMMAND_AT_IPHONEACCEV,
+} hfp_ag_at_command_id_t;
+
+static hfp_custom_at_command_t hfp_ag_at_table[] = {
+        {NULL, "AT+IPHONEACCEV=", HFP_COMMAND_AT_IPHONEACCEV}
+};
+
+static int hfp_subevent_custom_at_command_iphoneaccev_parse_key_value(int key, int val)
+{
+    switch (key) {
+    case IPHONEACCEV_BATTERY_LEVEL:
+        printf("Received BATTERY LEVEL %d%%.\n", (val + 1) * 10); 
+        break;
+
+    case IPHONEACCEV_BATTERY_CHARGING:
+        printf("Received BATTERY CHARGED %d.\n", val); 
+        break;
+
+    default:
+        printf("Received unknown AT+IPHONEACCEV command %d.\n", key);
+        return -1;
+    }
+
+    return 0;
+}
+
+static int hfp_subevent_custom_at_command_iphoneaccev_handler(const char * string)
+{
+    char *str;
+    char *temp, *arr;
+    int key = -1, val = -1;
+    int key_num = 0;
+
+    if (!string || strlen(string) < strlen("AT+IPHONEACCEV=")) {
+        return (-1);
+    }
+
+    str = malloc(strlen(string) + 1);
+    memset(str, 0 , strlen(string) + 1);
+    strcpy(str, string);
+
+    temp = str + sizeof("AT+IPHONEACCEV=") - 1;
+    arr = temp;
+
+    /*  parse number of key-value pairs  */
+    while (*temp != '\0') {
+        if (*temp == ',') {
+            *temp = '\0';
+            temp++;
+            key_num = strtol(arr, NULL, 10);
+            arr = temp;
+            break;
+        } else {
+            temp++;
+        }
+    }
+
+    if (key_num == 0) {
+        free(str);
+        return -1;
+    }
+
+    /*  parse key-value pairs  */
+    while (*temp != '\0') {
+        if (*temp == ',') {
+            *temp = '\0';
+            temp++;
+            if (key == -1) {
+                /*  parse key  */
+                key = strtol(arr, NULL, 10);
+            } else {
+                /*  parse value  */
+                val = strtol(arr, NULL, 10);
+                hfp_subevent_custom_at_command_iphoneaccev_parse_key_value(key, val);
+                key = -1; val = -1;
+            }
+            arr = temp;
+        } else {
+            temp++;
+        }
+    }
+
+    /*  parse last key value  */
+    if (key != -1) {
+        val = strtol(arr, NULL, 10);
+        hfp_subevent_custom_at_command_iphoneaccev_parse_key_value(key, val);
+    }
+
+    free(str);
+    return 0;
+}
+
+static void hfp_subevent_custom_at_command_handler(uint8_t * event)
+{
+    uint16_t command_id;
+    command_id = hfp_subevent_custom_at_command_get_command_id(event);
+    switch (command_id) {
+    case HFP_COMMAND_AT_IPHONEACCEV:
+        hfp_subevent_custom_at_command_iphoneaccev_handler(hfp_subevent_custom_at_command_get_command_string(event));
+        break;
+
+    default:
+        break;
+    }
+}
+
+static void hfp_subevent_custom_command_register(void)
+{
+    int i;
+    int len = sizeof(hfp_ag_at_table) / sizeof(hfp_ag_at_table[0]);
+
+    for (i = 0; i < len; i++) {
+        hfp_register_custom_ag_command(&hfp_ag_at_table[i]);
+    }
+}
+
 static void dump_supported_codecs(void){
     printf("Supported codecs: CVSD");
     if (hci_extended_sco_link_supported()) {
@@ -678,6 +798,9 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                             break;
                     }
                     break;
+                case HFP_SUBEVENT_CUSTOM_AT_COMMAND:
+                    hfp_subevent_custom_at_command_handler(event);
+                    break;
                 default:
                     break;
             }
@@ -767,6 +890,9 @@ int btstack_main(int argc, const char * argv[]){
 
     // register for HFP events
     hfp_ag_register_packet_handler(&packet_handler);
+    
+    // register custom command
+    hfp_subevent_custom_command_register();
 
     // parse human readable Bluetooth address
     sscanf_bd_addr(device_addr_string, device_addr);
