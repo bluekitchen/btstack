@@ -48,7 +48,7 @@
 #include "bluetooth.h"
 #include "btstack_linked_list.h"
 #include "ble/gatt_client.h"
-#include "le-audio/gatt-service/gatt_service_client_helper.h"
+#include "ble/gatt-service/gatt_service_client_helper.h"
 #include "le-audio/gatt-service/media_control_service_util.h"
 #include "le-audio/gatt-service/object_transfer_service_client.h"
 
