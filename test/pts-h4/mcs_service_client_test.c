@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 BlueKitchen GmbH
+ * Copyright (C) 2024 BlueKitchen GmbH
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -189,6 +189,7 @@ static void mcs_client_event_handler(uint8_t packet_type, uint16_t channel, uint
     int speed;
     int seeking_speed;
     uint8_t subevent = hci_event_gattservice_meta_get_subevent_code(packet);
+    uint8_t status;
 
     switch (subevent){
         case GATTSERVICE_SUBEVENT_MCS_CLIENT_CONNECTED:
@@ -205,6 +206,25 @@ static void mcs_client_event_handler(uint8_t packet_type, uint16_t channel, uint
                 return;
             }
             printf("MCS client: connected, cid 0x%04x\n", mcs_cid);
+            break;
+
+        case GATTSERVICE_SUBEVENT_OTS_CLIENT_CONNECTED:
+            status = gattservice_subevent_ots_client_connected_get_att_status(packet);
+
+            switch (status) {
+                case ERROR_CODE_SUCCESS:
+                    printf("OTS Client Test: connected\n");
+                    bap_app_client_state = BAP_APP_CLIENT_STATE_CONNECTED;
+                    break;
+                default:
+                    printf("OTS Client Test: connection failed, err 0x%02x.\n", status);
+                    break;
+            }
+            break;
+
+
+        case GATTSERVICE_SUBEVENT_OTS_CLIENT_DISCONNECTED:
+            printf("MTS: OTS Server disconnected\n");
             break;
 
         case GATTSERVICE_SUBEVENT_MCS_CLIENT_MEDIA_PLAYER_NAME:
@@ -742,7 +762,7 @@ int btstack_main(int argc, const char * argv[]){
     sm_add_event_handler(&sm_event_callback_registration);
 
     media_control_service_client_init();
-
+    object_transfer_service_client_init();
 
     hci_event_callback_registration.callback = &hci_event_handler;
     hci_add_event_handler(&hci_event_callback_registration);
