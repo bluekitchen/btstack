@@ -48,7 +48,7 @@
 #include <string.h>
 
 
-#include "le-audio/gatt-service/gatt_service_client_helper.h"
+#include "ble/gatt-service/gatt_service_client_helper.h"
 
 #include "btstack_memory.h"
 #include "ble/core.h"

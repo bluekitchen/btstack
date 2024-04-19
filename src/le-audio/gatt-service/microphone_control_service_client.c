@@ -47,7 +47,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "le-audio/gatt-service/gatt_service_client_helper.h"
+#include "ble/gatt-service/gatt_service_client_helper.h"
 #include "le-audio/gatt-service/microphone_control_service_client.h"
 #include "le-audio/gatt-service/audio_input_control_service_client.h"
 
