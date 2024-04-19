@@ -49,7 +49,6 @@
 #include "btstack_linked_list.h"
 #include "ble/gatt_client.h"
 #include "le-audio/gatt-service/gatt_service_client_helper.h"
-#include "le-audio/gatt-service/microphone_control_service_util.h"
 #include "le-audio/gatt-service/audio_input_control_service_client.h"
 
 #if defined __cplusplus
