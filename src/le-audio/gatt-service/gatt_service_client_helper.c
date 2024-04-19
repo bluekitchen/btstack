@@ -144,14 +144,6 @@ static void gatt_service_client_emit_disconnected(btstack_packet_handler_t event
     (*event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-
-static void gatt_service_client_helper_emit_included_service(btstack_packet_handler_t event_callback, uint8_t * packet, uint16_t packet_size){
-    btstack_assert(event_callback != NULL);
-    btstack_assert(packet_size <= 26);
-    (*event_callback)(HCI_EVENT_PACKET, 0, packet, packet_size);
-}
-
-
 static uint16_t gatt_service_client_get_next_cid(gatt_service_client_helper_t * client){
     client->cid_counter = btstack_next_cid_ignoring_zero(client->cid_counter);
     return client->cid_counter;
