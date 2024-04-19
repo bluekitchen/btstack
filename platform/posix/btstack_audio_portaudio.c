@@ -49,7 +49,7 @@
 #define PA_SAMPLE_TYPE               paInt16
 #define NUM_FRAMES_PER_PA_BUFFER       512
 #define NUM_OUTPUT_BUFFERS               5
-#define NUM_INPUT_BUFFERS                2
+#define NUM_INPUT_BUFFERS                5
 #define DRIVER_POLL_INTERVAL_MS          5
 
 #ifndef MAX_NR_AUDIO_CHANNELS
@@ -89,9 +89,8 @@ static int                   output_buffer_to_play;
 static int                   output_buffer_to_fill;
 
 // input buffer
-static int16_t               input_buffer_a[NUM_FRAMES_PER_PA_BUFFER * MAX_NR_AUDIO_CHANNELS];
-static int16_t               input_buffer_b[NUM_FRAMES_PER_PA_BUFFER * MAX_NR_AUDIO_CHANNELS];
-static int16_t             * input_buffers[NUM_INPUT_BUFFERS] = { input_buffer_a, input_buffer_b};
+static int16_t               input_buffer_storage[NUM_INPUT_BUFFERS * NUM_FRAMES_PER_PA_BUFFER * MAX_NR_AUDIO_CHANNELS];
+static int16_t             * input_buffers[NUM_INPUT_BUFFERS];
 static int                   input_buffer_to_record;
 static int                   input_buffer_to_fill;
 
@@ -209,14 +208,13 @@ static int btstack_audio_portaudio_sink_init(
     num_channels_sink = channels;
     num_bytes_per_sample_sink = 2 * channels;
 
-    uint8_t i;
-    for (i=0;i<NUM_OUTPUT_BUFFERS;i++){
-        output_buffers[i] = &output_buffer_storage[i * NUM_FRAMES_PER_PA_BUFFER * MAX_NR_AUDIO_CHANNELS];
-    }
-
     if (!playback){
         log_error("No playback callback");
         return 1;
+    }
+
+    for (int i=0;i<NUM_OUTPUT_BUFFERS;i++){
+        output_buffers[i] = &output_buffer_storage[i * NUM_FRAMES_PER_PA_BUFFER * MAX_NR_AUDIO_CHANNELS];
     }
 
     /* -- initialize PortAudio -- */
@@ -286,6 +284,10 @@ static int btstack_audio_portaudio_source_init(
     if (!recording){
         log_error("No recording callback");
         return 1;
+    }
+
+    for (int i=0;i<NUM_INPUT_BUFFERS;i++){
+        input_buffers[i] = &input_buffer_storage[i * NUM_FRAMES_PER_PA_BUFFER * MAX_NR_AUDIO_CHANNELS];
     }
 
     /* -- initialize PortAudio -- */
