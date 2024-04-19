@@ -50,6 +50,7 @@
 #include "ble/gatt_client.h"
 #include "le-audio/gatt-service/gatt_service_client_helper.h"
 #include "le-audio/gatt-service/media_control_service_util.h"
+#include "le-audio/gatt-service/object_transfer_service_client.h"
 
 #if defined __cplusplus
 extern "C" {
@@ -62,6 +63,10 @@ extern "C" {
  * @text The Media Control Service Client 
  */
 typedef enum {
+    MEDIA_CONTROL_SERVICE_CLIENT_STATE_W4_CONNECTION = 0,
+    MEDIA_CONTROL_SERVICE_CLIENT_STATE_W2_QUERY_INCLUDED_SERVICES,
+    MEDIA_CONTROL_SERVICE_CLIENT_STATE_W4_INCLUDED_SERVICES_RESULT,
+    MEDIA_CONTROL_SERVICE_CLIENT_STATE_W4_INCLUDED_SERVICE_CONNECTED,
     MEDIA_CONTROL_SERVICE_CLIENT_STATE_READY,
     MEDIA_CONTROL_SERVICE_CLIENT_STATE_W2_READ_CHARACTERISTIC_VALUE,
     MEDIA_CONTROL_SERVICE_CLIENT_STATE_W4_READ_CHARACTERISTIC_VALUE_RESULT,
@@ -72,8 +77,8 @@ typedef struct {
     gatt_service_client_connection_helper_t basic_connection;
     
     media_service_client_state_t state;
-    // btstack_packet_handler_t client_handler;
-    // gatt_client_notification_t notification_listener;
+    ots_client_connection_t ots_connection;
+    uint8_t ots_connections_num;
 
     // Used for read characteristic queries
     uint8_t characteristic_index;

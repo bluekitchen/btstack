@@ -224,8 +224,20 @@ static void mcs_client_run_for_connection(void * context){
     btstack_assert(connection != NULL);
     uint16_t value_length;
     uint8_t * value;
+    gatt_client_service_t service;
 
     switch (connection->state){
+        case MEDIA_CONTROL_SERVICE_CLIENT_STATE_W2_QUERY_INCLUDED_SERVICES:
+            connection->state = MEDIA_CONTROL_SERVICE_CLIENT_STATE_W4_INCLUDED_SERVICES_RESULT;
+            service.start_group_handle = connection->basic_connection.start_handle;
+            service.end_group_handle = connection->basic_connection.end_handle;
+
+            (void) gatt_client_find_included_services_for_service(
+                    mcs_client_handle_gatt_client_event,
+                    con_handle,
+                    &service);
+            break;
+
         case MEDIA_CONTROL_SERVICE_CLIENT_STATE_W2_READ_CHARACTERISTIC_VALUE:
             connection->state = MEDIA_CONTROL_SERVICE_CLIENT_STATE_W4_READ_CHARACTERISTIC_VALUE_RESULT;
 
@@ -248,6 +260,24 @@ static void mcs_client_run_for_connection(void * context){
         default:
             break;
     }
+}
+
+static void mcs_client_emit_connected(const gatt_service_client_connection_helper_t *connection_helper, uint8_t num_included_clients, uint8_t status) {
+    btstack_assert(connection_helper != NULL);
+    btstack_assert(connection_helper->event_callback != NULL);
+
+    uint8_t event[9];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = GATTSERVICE_SUBEVENT_MCS_CLIENT_CONNECTED;
+    little_endian_store_16(event, pos, connection_helper->con_handle);
+    pos += 2;
+    little_endian_store_16(event, pos, connection_helper->cid);
+    pos += 2;
+    event[pos++] = num_included_clients; // num included services
+    event[pos++] = status;
+    (*connection_helper->event_callback)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
 static void mcs_client_emit_string_value(uint16_t cid, btstack_packet_handler_t event_callback, uint8_t subevent, const uint8_t * data, uint16_t data_size){
@@ -504,6 +534,7 @@ static void mcs_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
     gatt_service_client_connection_helper_t * connection_helper;
     mcs_client_connection_t * connection;
     hci_con_handle_t con_handle;
+    uint16_t cid;
 
     switch(hci_event_packet_get_type(packet)){
         case HCI_EVENT_GATTSERVICE_META:
@@ -511,6 +542,11 @@ static void mcs_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
                 case GATTSERVICE_SUBEVENT_CLIENT_CONNECTED:
                     connection_helper = gatt_service_client_get_connection_for_cid(&mcs_client, gattservice_subevent_client_connected_get_cid(packet));
                     btstack_assert(connection_helper != NULL);
+                    
+                    connection = (mcs_client_connection_t *)connection_helper;
+                    if (connection->state != MEDIA_CONTROL_SERVICE_CLIENT_STATE_W4_CONNECTION){
+                        return;
+                    }
 
 #ifdef ENABLE_TESTING_SUPPORT
                     {
@@ -521,7 +557,42 @@ static void mcs_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
                         }
                     };
 #endif
-                    mcs_client_replace_subevent_id_and_emit(connection_helper->event_callback, packet, size, GATTSERVICE_SUBEVENT_MCS_CLIENT_CONNECTED);
+                    
+
+#ifdef ENABLE_TESTING_SUPPORT
+                    printf("\nMICS Client: Query OTS included service\n");
+#endif
+                    connection->state = MEDIA_CONTROL_SERVICE_CLIENT_STATE_W2_QUERY_INCLUDED_SERVICES;
+                    connection->ots_connections_num = 0;
+
+                    mcs_client_handle_can_send_now.context = (void *)(uintptr_t)connection->basic_connection.con_handle;
+                    uint8_t status = gatt_client_request_to_send_gatt_query(&mcs_client_handle_can_send_now, connection->basic_connection.con_handle);
+
+                    if (status != ERROR_CODE_SUCCESS){
+                        connection->state = MEDIA_CONTROL_SERVICE_CLIENT_STATE_READY;
+                        mcs_client_emit_connected(connection_helper, connection->ots_connections_num, status);
+                    }
+                    break;
+
+                case GATTSERVICE_SUBEVENT_OTS_CLIENT_CONNECTED:
+                    cid = gattservice_subevent_ots_client_connected_get_ots_cid(packet);
+                    connection_helper = gatt_service_client_get_connection_for_cid(&mcs_client, cid);
+                    btstack_assert(connection_helper != NULL);
+                    connection = (mcs_client_connection_t *)connection_helper;
+
+                    if (gattservice_subevent_ots_client_connected_get_att_status(packet) != ERROR_CODE_SUCCESS) {
+                        printf("MCS: OTS client connection failed, err 0x%02x.\n", gattservice_subevent_ots_client_connected_get_att_status(packet));
+                        connection->ots_connections_num = 0;
+                    }
+
+                    switch (connection->state){
+                        case MEDIA_CONTROL_SERVICE_CLIENT_STATE_W4_INCLUDED_SERVICE_CONNECTED:
+                            connection->state = MEDIA_CONTROL_SERVICE_CLIENT_STATE_READY;
+                            mcs_client_emit_connected(&connection->basic_connection, connection->ots_connections_num, ATT_ERROR_SUCCESS);
+                            break;
+                        default:
+                            break;
+                    }
                     break;
 
                 case GATTSERVICE_SUBEVENT_CLIENT_DISCONNECTED:
@@ -557,6 +628,8 @@ static void mcs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t ch
 
     mcs_client_connection_t * connection = NULL;
     hci_con_handle_t con_handle;
+    gatt_client_service_t service;
+    uint8_t status;
 
     switch(hci_event_packet_get_type(packet)){
         case GATT_EVENT_CHARACTERISTIC_VALUE_QUERY_RESULT:
@@ -571,11 +644,52 @@ static void mcs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t ch
             connection->state = MEDIA_CONTROL_SERVICE_CLIENT_STATE_READY;
             break;
 
+        case GATT_EVENT_INCLUDED_SERVICE_QUERY_RESULT:
+            con_handle = (hci_con_handle_t)gatt_event_included_service_query_result_get_handle(packet);
+            connection = (mcs_client_connection_t *)gatt_service_client_get_connection_for_con_handle(&mcs_client, con_handle);
+            btstack_assert(connection != NULL);
+
+            if (connection->ots_connections_num == 0){
+                gatt_event_included_service_query_result_get_service(packet, &service);
+                connection->ots_connection.basic_connection.service_index = connection->ots_connections_num;
+                connection->ots_connection.basic_connection.service_uuid16 = service.uuid16;
+                connection->ots_connection.basic_connection.start_handle = service.start_group_handle;
+                connection->ots_connection.basic_connection.end_handle = service.end_group_handle;
+                connection->ots_connections_num++;
+            } else {
+                log_info("More then one included OTS service");
+            }
+            break;
+
         case GATT_EVENT_QUERY_COMPLETE:
             con_handle = (hci_con_handle_t)gatt_event_query_complete_get_handle(packet);
             connection = (mcs_client_connection_t *)gatt_service_client_get_connection_for_con_handle(&mcs_client, con_handle);
             btstack_assert(connection != NULL);
             
+            switch (connection->state){
+                case MEDIA_CONTROL_SERVICE_CLIENT_STATE_W4_INCLUDED_SERVICES_RESULT:
+                    if (connection->ots_connections_num == 0) {
+                        break;
+                    }
+                    connection->state = MEDIA_CONTROL_SERVICE_CLIENT_STATE_W4_INCLUDED_SERVICE_CONNECTED;
+                    
+                    object_transfer_service_client_init();
+                    status = object_transfer_service_client_connect_secondary_service(
+                            connection->basic_connection.con_handle,
+                            &mcs_client_packet_handler_internal, 
+                            connection->ots_connection.basic_connection.start_handle,
+                            connection->ots_connection.basic_connection.end_handle,
+                            connection->ots_connection.basic_connection.service_index,
+                            &connection->ots_connection);
+
+                    if (status == ERROR_CODE_SUCCESS){
+                        return;
+                    }
+                    break;
+                default:
+                    break;
+            }
+
             connection->state = MEDIA_CONTROL_SERVICE_CLIENT_STATE_READY;
             mcs_client_emit_done_event(connection, connection->characteristic_index, gatt_event_query_complete_get_att_status(packet));
             break;
@@ -606,6 +720,8 @@ uint8_t media_control_service_client_connect_generic_player(hci_con_handle_t con
     uint16_t * mcs_cid){
 
     btstack_assert(mcs_client.characteristics_desc16_num > 0);
+    
+    connection->state = MEDIA_CONTROL_SERVICE_CLIENT_STATE_W4_CONNECTION;
     return gatt_service_client_connect(con_handle,
         &mcs_client, &connection->basic_connection,
         ORG_BLUETOOTH_SERVICE_GENERIC_MEDIA_CONTROL_SERVICE, 0,
@@ -620,6 +736,8 @@ uint8_t media_control_service_client_connect_media_player(hci_con_handle_t con_h
     uint16_t * mcs_cid){
 
     btstack_assert(mcs_client.characteristics_desc16_num > 0);
+    
+    connection->state = MEDIA_CONTROL_SERVICE_CLIENT_STATE_W4_CONNECTION;
     return gatt_service_client_connect(con_handle,
         &mcs_client, &connection->basic_connection,
         ORG_BLUETOOTH_SERVICE_MEDIA_CONTROL_SERVICE, service_index,
