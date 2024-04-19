@@ -62,7 +62,7 @@ static btstack_timer_source_t start_stop_timer;
 const uint32_t samplerate = 16000;
 
 // ring buffer for audio
-#define BUFFER_SAMPLES 1024
+#define BUFFER_SAMPLES 2048
 static uint16_t              audio_buffer_storage[BUFFER_SAMPLES * NUM_INPUT_CHANNELS];
 static btstack_ring_buffer_t audio_buffer;
 
