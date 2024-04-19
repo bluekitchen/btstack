@@ -48,7 +48,7 @@
 #include "bluetooth.h"
 #include "btstack_linked_list.h"
 #include "ble/gatt_client.h"
-#include "le-audio/gatt-service/gatt_service_client_helper.h"
+#include "ble/gatt-service/gatt_service_client_helper.h"
 
 #if defined __cplusplus
 extern "C" {
