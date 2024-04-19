@@ -47,7 +47,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "le-audio/gatt-service/gatt_service_client.h"
+#include "ble/gatt-service/gatt_service_client.h"
 
 #include "bluetooth_gatt.h"
 #include "btstack_debug.h"
