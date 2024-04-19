@@ -689,6 +689,7 @@ static void ots_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
                     connection_helper = gatt_service_client_get_connection_for_cid(&ots_client, gattservice_subevent_client_disconnected_get_cid(packet));
                     btstack_assert(connection_helper != NULL);
                     ots_client_replace_subevent_id_and_emit(connection_helper->event_callback, packet, size, GATTSERVICE_SUBEVENT_OTS_CLIENT_DISCONNECTED);
+                    connection_helper->con_handle = HCI_CON_HANDLE_INVALID;
                     break;
 
                 default:
@@ -935,6 +936,30 @@ uint8_t object_transfer_service_client_connect(
                                        ORG_BLUETOOTH_SERVICE_OBJECT_TRANSFER, service_index,
                                        connection->characteristics_storage, OBJECT_TRANSFER_SERVICE_NUM_CHARACTERISTICS,
                                        packet_handler, ots_cid);
+}
+
+
+uint8_t object_transfer_service_client_connect_secondary_service(
+        hci_con_handle_t con_handle,
+        btstack_packet_handler_t packet_handler,
+        uint16_t service_start_handle, uint16_t service_end_handle, uint8_t service_index, 
+        ots_client_connection_t * connection){
+
+    btstack_assert(packet_handler != NULL);
+    btstack_assert(connection != NULL);
+
+    connection->gatt_query_can_send_now.callback = &ots_client_run_for_connection;
+    connection->gatt_query_can_send_now.context = (void *)(uintptr_t)connection->basic_connection.con_handle;
+    connection->le_cbm_connection.connection_handle = HCI_CON_HANDLE_INVALID;
+    connection->le_cbm_connection.cid = 0;
+
+    connection->state = OBJECT_TRANSFER_SERVICE_CLIENT_STATE_W4_CONNECTED;
+    memset(connection->characteristics_storage, 0, OBJECT_TRANSFER_SERVICE_NUM_CHARACTERISTICS * sizeof(gatt_service_client_characteristic_t));
+
+    return gatt_service_client_connect_secondary_service(con_handle,
+        &ots_client, &connection->basic_connection,
+        ORG_BLUETOOTH_SERVICE_OBJECT_TRANSFER, service_start_handle, service_end_handle, service_index,
+        connection->characteristics_storage, OBJECT_TRANSFER_SERVICE_NUM_CHARACTERISTICS, packet_handler);
 }
 
 uint8_t object_transfer_service_client_read_ots_feature(ots_client_connection_t * connection){

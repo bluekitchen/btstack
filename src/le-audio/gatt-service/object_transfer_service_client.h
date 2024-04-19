@@ -157,7 +157,11 @@ void object_transfer_service_client_init(void);
     uint8_t  service_index,
     uint16_t * ots_cid);
 
-
+uint8_t object_transfer_service_client_connect_secondary_service(
+        hci_con_handle_t con_handle,
+        btstack_packet_handler_t packet_handler,
+        uint16_t service_start_handle, uint16_t service_end_handle, uint8_t service_index, 
+        ots_client_connection_t * connection);
 
 uint8_t object_transfer_service_client_read_ots_feature(ots_client_connection_t * connection);
 uint8_t object_transfer_service_client_read_object_name(ots_client_connection_t * connection);
