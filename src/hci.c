@@ -160,7 +160,7 @@
 // format: command name, byte offset, bit nr in 64-byte supported commands
 // currently stored in 32-bit variable
 #define SUPPORTED_HCI_COMMANDS \
-    X( SUPPORTED_HCI_COMMAND_READ_REMOTE_EXTENDED_FEATURES         ,  2, 5) \
+    X( SUPPORTED_HCI_COMMAND_READ_REMOTE_EXTENDED_FEATURES         ,  2, 6) \
     X( SUPPORTED_HCI_COMMAND_WRITE_SYNCHRONOUS_FLOW_CONTROL_ENABLE , 10, 4) \
     X( SUPPORTED_HCI_COMMAND_READ_BUFFER_SIZE                      , 14, 7) \
     X( SUPPORTED_HCI_COMMAND_WRITE_DEFAULT_ERRONEOUS_DATA_REPORTING, 18, 3) \
