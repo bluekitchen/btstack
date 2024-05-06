@@ -329,6 +329,7 @@ int main(int argc, const char * argv[]){
     int bt_reg_en_pin = -1;
     bool power_cycle = true;
     switch (raspi_get_bluetooth_uart_type()){
+		default:
         case UART_INVALID:
             fprintf(stderr, "can't verify HW uart, %s\n", strerror( errno ) );
             return -1;

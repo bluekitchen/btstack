@@ -9,6 +9,7 @@
 set(BLUEKITCHEN_URL https://bluekitchen-gmbh.com/files/ti/service-packs)
 set(CONVERSION_SCRIPT ${BTSTACK_ROOT}/chipset/cc256x/convert_bts_init_scripts.py)
 
+find_package (Python REQUIRED COMPONENTS Interpreter)
 #
 # Service Pack / Init Script / .bts Conversion function
 #
@@ -33,7 +34,7 @@ function(cc256x_init_script output_file archive main_script optional_script)
             add_custom_command(
                     OUTPUT ${output_file}
                     DEPENDS ${main_script} ${optional_script}
-                    COMMAND python
+                    COMMAND ${Python_EXECUTABLE}
                     ARGS ${CONVERSION_SCRIPT} ${main_script} ${optional_script} ${output_file}
             )
 

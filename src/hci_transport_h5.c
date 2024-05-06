@@ -670,6 +670,8 @@ static void hci_transport_h5_process_frame(uint16_t frame_size){
                     // reset inactvitiy timer
                     hci_transport_inactivity_timer_set();
                     break;
+                 default:
+					 break;
             }
 
             break;
