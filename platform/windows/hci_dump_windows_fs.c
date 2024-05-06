@@ -58,6 +58,7 @@
 
 #include <stdio.h>
 #include <windows.h>
+#include <share.h>
 
 /**
  * number of seconds from 1 Jan. 1601 00:00 to 1 Jan 1970 00:00 UTC
@@ -180,7 +181,7 @@ int hci_dump_windows_fs_open(const char *filename, hci_dump_format_t format){
 
 	dump_file = CreateFile(filename,	// name of the write
 				GENERIC_WRITE,          // open for writing
-				0,                      // do not share
+                FILE_SHARE_READ,        // readable while still writing
 				NULL,                   // default security
 				CREATE_ALWAYS,          // create new file always
 				FILE_ATTRIBUTE_NORMAL,  // normal file
