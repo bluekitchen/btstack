@@ -329,9 +329,6 @@ int main(int argc, const char * argv[]){
     int bt_reg_en_pin = -1;
     bool power_cycle = true;
     switch (raspi_get_bluetooth_uart_type()){
-        case UART_INVALID:
-            fprintf(stderr, "can't verify HW uart, %s\n", strerror( errno ) );
-            return -1;
         case UART_SOFTWARE_NO_FLOW:
             // ??
             bt_reg_en_pin = 128;
@@ -370,6 +367,9 @@ int main(int argc, const char * argv[]){
             }
 #endif
             break;
+        default:
+            fprintf(stderr, "can't verify HW uart, %s\n", strerror( errno ) );
+            return -1;
     }
     printf("%s, %u, BT_REG_EN at GPIO %u, %s\n", transport_config.flowcontrol ? "H4":"H5", transport_config.baudrate_main, bt_reg_en_pin, power_cycle ? "Reset Controller" : "Warm Boot");
 
