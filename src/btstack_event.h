@@ -16527,295 +16527,305 @@ static inline uint8_t leaudio_subevent_pacs_client_pack_record_done_get_le_audio
 }
 
 /**
- * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_CSIS_SERVER_CONNECTED
+ * @brief Get field con_handle from event LEAUDIO_SUBEVENT_CSIS_SERVER_CONNECTED
  * @param event packet
  * @return con_handle
  * @note: btstack_type H
  */
-static inline hci_con_handle_t gattservice_subevent_csis_server_connected_get_con_handle(const uint8_t * event){
+static inline hci_con_handle_t leaudio_subevent_csis_server_connected_get_con_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field status from event GATTSERVICE_SUBEVENT_CSIS_SERVER_CONNECTED
+ * @brief Get field status from event LEAUDIO_SUBEVENT_CSIS_SERVER_CONNECTED
  * @param event packet
  * @return status
  * @note: btstack_type 1
  */
-static inline uint8_t gattservice_subevent_csis_server_connected_get_status(const uint8_t * event){
+static inline uint8_t leaudio_subevent_csis_server_connected_get_status(const uint8_t * event){
     return event[5];
 }
 
 /**
- * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_CSIS_SERVER_MEMBER_LOCK
+ * @brief Get field con_handle from event LEAUDIO_SUBEVENT_CSIS_SERVER_DISCONNECTED
  * @param event packet
  * @return con_handle
  * @note: btstack_type H
  */
-static inline hci_con_handle_t gattservice_subevent_csis_server_member_lock_get_con_handle(const uint8_t * event){
+static inline hci_con_handle_t leaudio_subevent_csis_server_disconnected_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+
+/**
+ * @brief Get field con_handle from event LEAUDIO_SUBEVENT_CSIS_SERVER_MEMBER_LOCK
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t leaudio_subevent_csis_server_member_lock_get_con_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field lock from event GATTSERVICE_SUBEVENT_CSIS_SERVER_MEMBER_LOCK
+ * @brief Get field lock from event LEAUDIO_SUBEVENT_CSIS_SERVER_MEMBER_LOCK
  * @param event packet
  * @return lock
  * @note: btstack_type 1
  */
-static inline uint8_t gattservice_subevent_csis_server_member_lock_get_lock(const uint8_t * event){
+static inline uint8_t leaudio_subevent_csis_server_member_lock_get_lock(const uint8_t * event){
     return event[5];
 }
 
 /**
- * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_CSIS_SERVER_COORDINATED_SET_SIZE
+ * @brief Get field con_handle from event LEAUDIO_SUBEVENT_CSIS_SERVER_COORDINATED_SET_SIZE
  * @param event packet
  * @return con_handle
  * @note: btstack_type H
  */
-static inline hci_con_handle_t gattservice_subevent_csis_server_coordinated_set_size_get_con_handle(const uint8_t * event){
+static inline hci_con_handle_t leaudio_subevent_csis_server_coordinated_set_size_get_con_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field set_size from event GATTSERVICE_SUBEVENT_CSIS_SERVER_COORDINATED_SET_SIZE
+ * @brief Get field set_size from event LEAUDIO_SUBEVENT_CSIS_SERVER_COORDINATED_SET_SIZE
  * @param event packet
  * @return set_size
  * @note: btstack_type 1
  */
-static inline uint8_t gattservice_subevent_csis_server_coordinated_set_size_get_set_size(const uint8_t * event){
+static inline uint8_t leaudio_subevent_csis_server_coordinated_set_size_get_set_size(const uint8_t * event){
     return event[5];
 }
 
 /**
- * @brief Get field rsi from event GATTSERVICE_SUBEVENT_CSIS_RSI
+ * @brief Get field rsi from event LEAUDIO_SUBEVENT_CSIS_SERVER_RSI
  * @param event packet
  * @param Pointer to storage for rsi
  * @note: btstack_type B
  */
-static inline void gattservice_subevent_csis_rsi_get_rsi(const uint8_t * event, bd_addr_t rsi){
+static inline void leaudio_subevent_csis_server_rsi_get_rsi(const uint8_t * event, bd_addr_t rsi){
     reverse_bytes(&event[3], rsi, 6);
 }
 
 /**
- * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_CSIS_SERVER_DISCONNECTED
+ * @brief Get field con_handle from event LEAUDIO_SUBEVENT_CSIS_CLIENT_CONNECTED
  * @param event packet
  * @return con_handle
  * @note: btstack_type H
  */
-static inline hci_con_handle_t gattservice_subevent_csis_server_disconnected_get_con_handle(const uint8_t * event){
-    return little_endian_read_16(event, 3);
-}
-
-/**
- * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_CSIS_CLIENT_CONNECTED
- * @param event packet
- * @return con_handle
- * @note: btstack_type H
- */
-static inline hci_con_handle_t gattservice_subevent_csis_client_connected_get_con_handle(const uint8_t * event){
+static inline hci_con_handle_t leaudio_subevent_csis_client_connected_get_con_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field csis_cid from event GATTSERVICE_SUBEVENT_CSIS_CLIENT_CONNECTED
+ * @brief Get field csis_cid from event LEAUDIO_SUBEVENT_CSIS_CLIENT_CONNECTED
  * @param event packet
  * @return csis_cid
  * @note: btstack_type 2
  */
-static inline uint16_t gattservice_subevent_csis_client_connected_get_csis_cid(const uint8_t * event){
+static inline uint16_t leaudio_subevent_csis_client_connected_get_csis_cid(const uint8_t * event){
     return little_endian_read_16(event, 5);
 }
 /**
- * @brief Get field status from event GATTSERVICE_SUBEVENT_CSIS_CLIENT_CONNECTED
+ * @brief Get field status from event LEAUDIO_SUBEVENT_CSIS_CLIENT_CONNECTED
  * @param event packet
  * @return status
  * @note: btstack_type 1
  */
-static inline uint8_t gattservice_subevent_csis_client_connected_get_status(const uint8_t * event){
+static inline uint8_t leaudio_subevent_csis_client_connected_get_status(const uint8_t * event){
     return event[7];
 }
 
 /**
- * @brief Get field csis_cid from event GATTSERVICE_SUBEVENT_CSIS_CLIENT_DISCONNECTED
+ * @brief Get field csis_cid from event LEAUDIO_SUBEVENT_CSIS_CLIENT_DISCONNECTED
  * @param event packet
  * @return csis_cid
  * @note: btstack_type 2
  */
-static inline uint16_t gattservice_subevent_csis_client_disconnected_get_csis_cid(const uint8_t * event){
+static inline uint16_t leaudio_subevent_csis_client_disconnected_get_csis_cid(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 
 /**
- * @brief Get field csis_cid from event GATTSERVICE_SUBEVENT_CSIS_CLIENT_LOCK_WRITE_COMPLETE
+ * @brief Get field csis_cid from event LEAUDIO_SUBEVENT_CSIS_CLIENT_LOCK_WRITE_COMPLETE
  * @param event packet
  * @return csis_cid
  * @note: btstack_type 2
  */
-static inline uint16_t gattservice_subevent_csis_client_lock_write_complete_get_csis_cid(const uint8_t * event){
+static inline uint16_t leaudio_subevent_csis_client_lock_write_complete_get_csis_cid(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field status from event GATTSERVICE_SUBEVENT_CSIS_CLIENT_LOCK_WRITE_COMPLETE
+ * @brief Get field status from event LEAUDIO_SUBEVENT_CSIS_CLIENT_LOCK_WRITE_COMPLETE
  * @param event packet
  * @return status
  * @note: btstack_type 1
  */
-static inline uint8_t gattservice_subevent_csis_client_lock_write_complete_get_status(const uint8_t * event){
+static inline uint8_t leaudio_subevent_csis_client_lock_write_complete_get_status(const uint8_t * event){
     return event[5];
 }
 /**
- * @brief Get field lock from event GATTSERVICE_SUBEVENT_CSIS_CLIENT_LOCK_WRITE_COMPLETE
+ * @brief Get field lock from event LEAUDIO_SUBEVENT_CSIS_CLIENT_LOCK_WRITE_COMPLETE
  * @param event packet
  * @return lock
  * @note: btstack_type 1
  */
-static inline uint8_t gattservice_subevent_csis_client_lock_write_complete_get_lock(const uint8_t * event){
+static inline uint8_t leaudio_subevent_csis_client_lock_write_complete_get_lock(const uint8_t * event){
     return event[6];
 }
 
 /**
- * @brief Get field csis_cid from event GATTSERVICE_SUBEVENT_CSIS_CLIENT_LOCK
+ * @brief Get field csis_cid from event LEAUDIO_SUBEVENT_CSIS_CLIENT_LOCK
  * @param event packet
  * @return csis_cid
  * @note: btstack_type 2
  */
-static inline uint16_t gattservice_subevent_csis_client_lock_get_csis_cid(const uint8_t * event){
+static inline uint16_t leaudio_subevent_csis_client_lock_get_csis_cid(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field status from event GATTSERVICE_SUBEVENT_CSIS_CLIENT_LOCK
+ * @brief Get field status from event LEAUDIO_SUBEVENT_CSIS_CLIENT_LOCK
  * @param event packet
  * @return status
  * @note: btstack_type 1
  */
-static inline uint8_t gattservice_subevent_csis_client_lock_get_status(const uint8_t * event){
+static inline uint8_t leaudio_subevent_csis_client_lock_get_status(const uint8_t * event){
     return event[5];
 }
 /**
- * @brief Get field lock from event GATTSERVICE_SUBEVENT_CSIS_CLIENT_LOCK
+ * @brief Get field lock from event LEAUDIO_SUBEVENT_CSIS_CLIENT_LOCK
  * @param event packet
  * @return lock
  * @note: btstack_type 1
  */
-static inline uint8_t gattservice_subevent_csis_client_lock_get_lock(const uint8_t * event){
+static inline uint8_t leaudio_subevent_csis_client_lock_get_lock(const uint8_t * event){
     return event[6];
 }
 
 /**
- * @brief Get field csis_cid from event GATTSERVICE_SUBEVENT_CSIS_CLIENT_COORDINATED_SET_SIZE
+ * @brief Get field csis_cid from event LEAUDIO_SUBEVENT_CSIS_CLIENT_COORDINATED_SET_SIZE
  * @param event packet
  * @return csis_cid
  * @note: btstack_type 2
  */
-static inline uint16_t gattservice_subevent_csis_client_coordinated_set_size_get_csis_cid(const uint8_t * event){
+static inline uint16_t leaudio_subevent_csis_client_coordinated_set_size_get_csis_cid(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field status from event GATTSERVICE_SUBEVENT_CSIS_CLIENT_COORDINATED_SET_SIZE
+ * @brief Get field status from event LEAUDIO_SUBEVENT_CSIS_CLIENT_COORDINATED_SET_SIZE
  * @param event packet
  * @return status
  * @note: btstack_type 1
  */
-static inline uint8_t gattservice_subevent_csis_client_coordinated_set_size_get_status(const uint8_t * event){
+static inline uint8_t leaudio_subevent_csis_client_coordinated_set_size_get_status(const uint8_t * event){
     return event[5];
 }
 /**
- * @brief Get field coordinated_set_size from event GATTSERVICE_SUBEVENT_CSIS_CLIENT_COORDINATED_SET_SIZE
+ * @brief Get field coordinated_set_size from event LEAUDIO_SUBEVENT_CSIS_CLIENT_COORDINATED_SET_SIZE
  * @param event packet
  * @return coordinated_set_size
  * @note: btstack_type 1
  */
-static inline uint8_t gattservice_subevent_csis_client_coordinated_set_size_get_coordinated_set_size(const uint8_t * event){
+static inline uint8_t leaudio_subevent_csis_client_coordinated_set_size_get_coordinated_set_size(const uint8_t * event){
     return event[6];
 }
 
 /**
- * @brief Get field csis_cid from event GATTSERVICE_SUBEVENT_CSIS_CLIENT_RANK
+ * @brief Get field csis_cid from event LEAUDIO_SUBEVENT_CSIS_CLIENT_RANK
  * @param event packet
  * @return csis_cid
  * @note: btstack_type 2
  */
-static inline uint16_t gattservice_subevent_csis_client_rank_get_csis_cid(const uint8_t * event){
+static inline uint16_t leaudio_subevent_csis_client_rank_get_csis_cid(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field status from event GATTSERVICE_SUBEVENT_CSIS_CLIENT_RANK
+ * @brief Get field status from event LEAUDIO_SUBEVENT_CSIS_CLIENT_RANK
  * @param event packet
  * @return status
  * @note: btstack_type 1
  */
-static inline uint8_t gattservice_subevent_csis_client_rank_get_status(const uint8_t * event){
+static inline uint8_t leaudio_subevent_csis_client_rank_get_status(const uint8_t * event){
     return event[5];
 }
 /**
- * @brief Get field rank from event GATTSERVICE_SUBEVENT_CSIS_CLIENT_RANK
+ * @brief Get field rank from event LEAUDIO_SUBEVENT_CSIS_CLIENT_RANK
  * @param event packet
  * @return rank
  * @note: btstack_type 1
  */
-static inline uint8_t gattservice_subevent_csis_client_rank_get_rank(const uint8_t * event){
+static inline uint8_t leaudio_subevent_csis_client_rank_get_rank(const uint8_t * event){
     return event[6];
 }
 
 /**
- * @brief Get field csis_cid from event GATTSERVICE_SUBEVENT_CSIS_CLIENT_SIRK
+ * @brief Get field csis_cid from event LEAUDIO_SUBEVENT_CSIS_CLIENT_SIRK
  * @param event packet
  * @return csis_cid
  * @note: btstack_type 2
  */
-static inline uint16_t gattservice_subevent_csis_client_sirk_get_csis_cid(const uint8_t * event){
+static inline uint16_t leaudio_subevent_csis_client_sirk_get_csis_cid(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field status from event GATTSERVICE_SUBEVENT_CSIS_CLIENT_SIRK
+ * @brief Get field status from event LEAUDIO_SUBEVENT_CSIS_CLIENT_SIRK
  * @param event packet
  * @return status
  * @note: btstack_type 1
  */
-static inline uint8_t gattservice_subevent_csis_client_sirk_get_status(const uint8_t * event){
+static inline uint8_t leaudio_subevent_csis_client_sirk_get_status(const uint8_t * event){
     return event[5];
 }
 /**
- * @brief Get field sirk_type from event GATTSERVICE_SUBEVENT_CSIS_CLIENT_SIRK
+ * @brief Get field sirk_type from event LEAUDIO_SUBEVENT_CSIS_CLIENT_SIRK
  * @param event packet
  * @return sirk_type
  * @note: btstack_type 1
  */
-static inline uint8_t gattservice_subevent_csis_client_sirk_get_sirk_type(const uint8_t * event){
+static inline uint8_t leaudio_subevent_csis_client_sirk_get_sirk_type(const uint8_t * event){
     return event[6];
 }
 /**
- * @brief Get field sirk from event GATTSERVICE_SUBEVENT_CSIS_CLIENT_SIRK
+ * @brief Get field sirk from event LEAUDIO_SUBEVENT_CSIS_CLIENT_SIRK
  * @param event packet
  * @param Pointer to storage for sirk
  * @note: btstack_type K
  */
-static inline void gattservice_subevent_csis_client_sirk_get_sirk(const uint8_t * event, uint8_t * sirk){
+static inline void leaudio_subevent_csis_client_sirk_get_sirk(const uint8_t * event, uint8_t * sirk){
     reverse_bytes(&event[7], sirk, 16);
 }
 
 /**
- * @brief Get field source_address_type from event GATTSERVICE_SUBEVENT_CSIS_RSI_MATCH
+ * @brief Get field source_address_type from event LEAUDIO_SUBEVENT_CSIS_CLIENT_RSI_MATCH
  * @param event packet
  * @return source_address_type
  * @note: btstack_type 1
  */
-static inline uint8_t gattservice_subevent_csis_rsi_match_get_source_address_type(const uint8_t * event){
+static inline uint8_t leaudio_subevent_csis_client_rsi_match_get_source_address_type(const uint8_t * event){
     return event[3];
 }
 /**
- * @brief Get field source_address from event GATTSERVICE_SUBEVENT_CSIS_RSI_MATCH
+ * @brief Get field source_address from event LEAUDIO_SUBEVENT_CSIS_CLIENT_RSI_MATCH
  * @param event packet
  * @param Pointer to storage for source_address
  * @note: btstack_type B
  */
-static inline void gattservice_subevent_csis_rsi_match_get_source_address(const uint8_t * event, bd_addr_t source_address){
+static inline void leaudio_subevent_csis_client_rsi_match_get_source_address(const uint8_t * event, bd_addr_t source_address){
     reverse_bytes(&event[4], source_address, 6);
 }
 /**
- * @brief Get field match from event GATTSERVICE_SUBEVENT_CSIS_RSI_MATCH
+ * @brief Get field match from event LEAUDIO_SUBEVENT_CSIS_CLIENT_RSI_MATCH
  * @param event packet
  * @return match
  * @note: btstack_type 1
  */
-static inline uint8_t gattservice_subevent_csis_rsi_match_get_match(const uint8_t * event){
+static inline uint8_t leaudio_subevent_csis_client_rsi_match_get_match(const uint8_t * event){
     return event[10];
+}
+
+/**
+ * @brief Get field rsi from event LEAUDIO_SUBEVENT_CSIS_CLIENT_RSI
+ * @param event packet
+ * @param Pointer to storage for rsi
+ * @note: btstack_type B
+ */
+static inline void leaudio_subevent_csis_client_rsi_get_rsi(const uint8_t * event, bd_addr_t rsi){
+    reverse_bytes(&event[3], rsi, 6);
 }
 
 /**

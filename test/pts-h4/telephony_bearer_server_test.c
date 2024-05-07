@@ -891,7 +891,7 @@ static void tbs_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
                   .data.sig = ORIGINATE_SIG,
                   .caller_id = "5551234",
                   .friendly_name = "all mighty",
-                  .target_uri = data,
+                  .target_uri = (char *)data,
                 };
                 telephone_bearer_service_server_register_call( bearer_id, &call->data, &call->id );
                 call_id = call->id;

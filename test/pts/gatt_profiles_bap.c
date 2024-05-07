@@ -185,7 +185,7 @@ static void csis_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
     UNUSED(size);
 
     if (packet_type != HCI_EVENT_PACKET) return;
-    if (hci_event_packet_get_type(packet) != HCI_EVENT_GATTSERVICE_META) return;
+    if (hci_event_packet_get_type(packet) != HCI_EVENT_LEAUDIO_META) return;
 
     hci_con_handle_t con_handle;
     uint8_t status;
@@ -193,9 +193,9 @@ static void csis_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
 
     switch (hci_event_gattservice_meta_get_subevent_code(packet)){
         
-        case GATTSERVICE_SUBEVENT_CSIS_SERVER_CONNECTED:
-            con_handle = gattservice_subevent_csis_server_connected_get_con_handle(packet);
-            status =     gattservice_subevent_csis_server_connected_get_status(packet);
+        case LEAUDIO_SUBEVENT_CSIS_SERVER_CONNECTED:
+            con_handle = leaudio_subevent_csis_server_connected_get_con_handle(packet);
+            status =     leaudio_subevent_csis_server_connected_get_status(packet);
 
             if (status != ERROR_CODE_SUCCESS){
                 printf("CSIS Server: connection to coordinator failed, con_handle 0x%02x, status 0x%02x\n", con_handle, status);
@@ -204,9 +204,9 @@ static void csis_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
             printf("CSIS Server: connected, con_handle 0x%02x\n", con_handle);
             break;
 
-        case GATTSERVICE_SUBEVENT_CSIS_RSI:
+        case LEAUDIO_SUBEVENT_CSIS_SERVER_RSI:
             printf("CSIS Server: RSI \n");
-            gattservice_subevent_csis_rsi_get_rsi(packet, ris);
+            leaudio_subevent_csis_server_rsi_get_rsi(packet, ris);
             reverse_48(ris, &adv_data[5]);
             printf_hexdump(ris, 6);
             //
@@ -214,8 +214,8 @@ static void csis_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
             gap_advertisements_enable(1);
             break;
 
-        case GATTSERVICE_SUBEVENT_CSIS_SERVER_DISCONNECTED:
-            con_handle = gattservice_subevent_csis_server_disconnected_get_con_handle(packet);
+        case LEAUDIO_SUBEVENT_CSIS_SERVER_DISCONNECTED:
+            con_handle = leaudio_subevent_csis_server_disconnected_get_con_handle(packet);
             printf("CSIS Server: RELEASED\n");
             break;
 

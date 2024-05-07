@@ -142,20 +142,20 @@ static void btp_csip_client_event_handler(uint8_t packet_type, uint16_t channel,
     UNUSED(size);
 
     if (packet_type != HCI_EVENT_PACKET) return;
-    if (hci_event_packet_get_type(packet) != HCI_EVENT_GATTSERVICE_META) return;
+    if (hci_event_packet_get_type(packet) != HCI_EVENT_LEAUDIO_META) return;
 
     uint8_t status;
     server_t * server = NULL;
 
     MESSAGE("CSIP subevent 0x%02x", hci_event_gattservice_meta_get_subevent_code(packet));
     switch (hci_event_gattservice_meta_get_subevent_code(packet)){
-        case GATTSERVICE_SUBEVENT_CSIS_CLIENT_CONNECTED:
-            server = btp_server_for_csis_cid(gattservice_subevent_csis_client_connected_get_csis_cid(packet));
+        case LEAUDIO_SUBEVENT_CSIS_CLIENT_CONNECTED:
+            server = btp_server_for_csis_cid(leaudio_subevent_csis_client_connected_get_csis_cid(packet));
             if (server != NULL){
-                if (gattservice_subevent_csis_client_connected_get_status(packet) != ERROR_CODE_SUCCESS){
+                if (leaudio_subevent_csis_client_connected_get_status(packet) != ERROR_CODE_SUCCESS){
                     MESSAGE("CSIP client %u: connection failed, cid 0x%04x, con_handle 0x%04x, status 0x%02x",
                            server->server_id, server->csis_cid, server->acl_con_handle,
-                           gattservice_subevent_csis_client_connected_get_status(packet));
+                           leaudio_subevent_csis_client_connected_get_status(packet));
                     MESSAGE("CSIP client %u: assume individual device", server->server_id);
                     server->coordinated_set_size = 1;
                 } else {
@@ -166,55 +166,55 @@ static void btp_csip_client_event_handler(uint8_t packet_type, uint16_t channel,
             }
             break;
 
-        case GATTSERVICE_SUBEVENT_CSIS_CLIENT_COORDINATED_SET_SIZE:
-            server = btp_server_for_csis_cid(gattservice_subevent_csis_client_coordinated_set_size_get_csis_cid(packet));
-            status = gattservice_subevent_csis_client_coordinated_set_size_get_status(packet);
+        case LEAUDIO_SUBEVENT_CSIS_CLIENT_COORDINATED_SET_SIZE:
+            server = btp_server_for_csis_cid(leaudio_subevent_csis_client_coordinated_set_size_get_csis_cid(packet));
+            status = leaudio_subevent_csis_client_coordinated_set_size_get_status(packet);
             if (status != ERROR_CODE_SUCCESS){
                 MESSAGE("CSIP client %u: read coordinated set size failed, 0x%02x", server->server_id, status);
             } else {
-                uint8_t set_size = gattservice_subevent_csis_client_coordinated_set_size_get_coordinated_set_size(packet);
+                uint8_t set_size = leaudio_subevent_csis_client_coordinated_set_size_get_coordinated_set_size(packet);
                 server->coordinated_set_size = set_size;
                 MESSAGE("CSIP client %u: coordinated_set_size %u", server->server_id, set_size);
             }
             coordinated_set_identification_service_client_read_sirk(server->csis_cid);
             break;
 
-        case GATTSERVICE_SUBEVENT_CSIS_CLIENT_SIRK:
-            server = btp_server_for_csis_cid(gattservice_subevent_csis_client_sirk_get_csis_cid(packet));
-            status = gattservice_subevent_csis_client_sirk_get_status(packet);
+        case LEAUDIO_SUBEVENT_CSIS_CLIENT_SIRK:
+            server = btp_server_for_csis_cid(leaudio_subevent_csis_client_sirk_get_csis_cid(packet));
+            status = leaudio_subevent_csis_client_sirk_get_status(packet);
             if (status != ERROR_CODE_SUCCESS){
                 MESSAGE("CSIP client %u: read SIRK failed, 0x%02x", server->server_id, status);
                 MESSAGE("TODO: handle get sirk failed");
             } else {
-                gattservice_subevent_csis_client_sirk_get_sirk(packet, server->sirk);
+                leaudio_subevent_csis_client_sirk_get_sirk(packet, server->sirk);
                 MESSAGE("CSIP client %u: remote SIRK (%s)", server->server_id,
-                        (csis_sirk_type_t)gattservice_subevent_csis_client_sirk_get_sirk_type(packet) == CSIS_SIRK_TYPE_ENCRYPTED ? "ENCRYPTED" : "PLAIN_TEXT");
+                        (csis_sirk_type_t)leaudio_subevent_csis_client_sirk_get_sirk_type(packet) == CSIS_SIRK_TYPE_ENCRYPTED ? "ENCRYPTED" : "PLAIN_TEXT");
                 coordinated_set_identification_service_client_read_member_rank(server->csis_cid);
             }
             break;
 
-        case GATTSERVICE_SUBEVENT_CSIS_CLIENT_RANK:
-            server = btp_server_for_csis_cid(gattservice_subevent_csis_client_rank_get_csis_cid(packet));
-            status = gattservice_subevent_csis_client_rank_get_status(packet);
+        case LEAUDIO_SUBEVENT_CSIS_CLIENT_RANK:
+            server = btp_server_for_csis_cid(leaudio_subevent_csis_client_rank_get_csis_cid(packet));
+            status = leaudio_subevent_csis_client_rank_get_status(packet);
             if (status != ERROR_CODE_SUCCESS){
                 MESSAGE("CSIP client %u: read RANK failed, 0x%02x", status, server->server_id);
                 break;
             }
-            server->coordinated_set_rank = gattservice_subevent_csis_client_rank_get_rank(packet);
+            server->coordinated_set_rank = leaudio_subevent_csis_client_rank_get_rank(packet);
             MESSAGE("CSIP client %u: remote member RANK %u", server->server_id, server->coordinated_set_rank);
             break;
 
-        case GATTSERVICE_SUBEVENT_CSIS_RSI_MATCH:
-            if (gattservice_subevent_csis_rsi_match_get_match(packet) != 0){
+        case LEAUDIO_SUBEVENT_CSIS_CLIENT_RSI_MATCH:
+            if (gattservice_subevent_csis_client_rsi_match_get_match(packet) != 0){
                 bd_addr_t addr;
-                gattservice_subevent_csis_rsi_match_get_source_address(packet, addr);
-                // rsi_match_handler(gattservice_subevent_csis_rsi_match_get_source_address_type(packet), addr);
+                leaudio_subevent_csis_client_rsi_match_get_source_address(packet, addr);
+                // rsi_match_handler(leaudio_subevent_csis_client_rsi_match_get_source_address_type(packet), addr);
             }
             break;
 
-        case GATTSERVICE_SUBEVENT_CSIS_CLIENT_LOCK:
-            server = btp_server_for_csis_cid(gattservice_subevent_csis_client_lock_get_csis_cid(packet));
-            status = gattservice_subevent_csis_client_lock_get_status(packet);
+        case LEAUDIO_SUBEVENT_CSIS_CLIENT_LOCK:
+            server = btp_server_for_csis_cid(leaudio_subevent_csis_client_lock_get_csis_cid(packet));
+            status = leaudio_subevent_csis_client_lock_get_status(packet);
             if (status != ERROR_CODE_SUCCESS){
                 MESSAGE("CSIP client %u: read LOCK failed, 0x%02x", server->server_id, status);
             } else {
@@ -222,9 +222,9 @@ static void btp_csip_client_event_handler(uint8_t packet_type, uint16_t channel,
             }
             break;
 
-        case GATTSERVICE_SUBEVENT_CSIS_CLIENT_LOCK_WRITE_COMPLETE:
-            server = btp_server_for_csis_cid(gattservice_subevent_csis_client_lock_write_complete_get_csis_cid(packet));
-            status = gattservice_subevent_csis_client_lock_write_complete_get_status(packet);
+        case LEAUDIO_SUBEVENT_CSIS_CLIENT_LOCK_WRITE_COMPLETE:
+            server = btp_server_for_csis_cid(leaudio_subevent_csis_client_lock_write_complete_get_csis_cid(packet));
+            status = leaudio_subevent_csis_client_lock_write_complete_get_status(packet);
             if (status != ERROR_CODE_SUCCESS){
                 printf("CSIS client %u: write LOCK failed, 0x%02x\n", server->server_id, status);
             } else {
@@ -232,8 +232,8 @@ static void btp_csip_client_event_handler(uint8_t packet_type, uint16_t channel,
             }
             break;
 
-        case GATTSERVICE_SUBEVENT_CSIS_CLIENT_DISCONNECTED:
-            server = btp_server_for_csis_cid(gattservice_subevent_csis_client_disconnected_get_csis_cid(packet));
+        case LEAUDIO_SUBEVENT_CSIS_CLIENT_DISCONNECTED:
+            server = btp_server_for_csis_cid(leaudio_subevent_csis_client_disconnected_get_csis_cid(packet));
             if (server != NULL){
                 server->csis_cid = 0;
                 MESSAGE("CSIP client %u: disconnected", server->server_id);
