@@ -4411,6 +4411,8 @@ typedef uint8_t sm_key_t[16];
 */
 #define GATTSERVICE_SUBEVENT_VCS_SERVER_VOLUME_FLAGS                                 0x25u
 
+// LE Audio
+
 /**
  * @format 1H1
  * @param subevent_code
@@ -4475,6 +4477,92 @@ typedef uint8_t sm_key_t[16];
  * @param pa_sync
  */
 #define LEAUDIO_SUBEVENT_BASS_SERVER_SOURCE_DELETED                          0x08u
+
+/**
+ * @format 1H21
+ * @param subevent_code
+ * @param con_handle
+ * @param bass_cid
+ * @param status
+*/
+#define LEAUDIO_SUBEVENT_BASS_CLIENT_CONNECTED                                0x09u
+
+/**
+ * @format 12
+ * @param subevent_code
+ * @param bass_cid
+*/
+#define LEAUDIO_SUBEVENT_BASS_CLIENT_DISCONNECTED                             0x0Au
+
+/**
+ * @format 1211
+ * @param subevent_code
+ * @param bass_cid
+ * @param status
+ * @param opcode
+*/
+#define LEAUDIO_SUBEVENT_BASS_CLIENT_SCAN_OPERATION_COMPLETE                   0x0Bu
+
+/**
+ * @format 1211B1311K1
+ * @param subevent_code
+ * @param bass_cid
+ * @param source_id
+ * @param source_address_type
+ * @param source_address
+ * @param source_adv_sid
+ * @param broadcast_id
+ * @param pa_sync_state
+ * @param big_encryption
+ * @param bad_code
+ * @param subgroups_num
+*/
+#define LEAUDIO_SUBEVENT_BASS_CLIENT_NOTIFY_RECEIVE_STATE_BASE                  0x0Cu
+
+/**
+ * @format 1214122JV3JV1JV2JV2JV
+ * @param subevent_code
+ * @param bass_cid
+ * @param source_id
+ * @param bis_sync_state
+ * @param metadata_mask
+ * @param preferred_audio_contexts_mask
+ * @param streaming_audio_contexts_mask
+ * @param program_info_length
+ * @param program_info
+ * @param language_code
+ * @param ccids_num
+ * @param ccids
+ * @param parental_rating
+ * @param program_info_uri_length
+ * @param program_info_uri
+ * @param extended_metadata_type
+ * @param extended_metadata_value_length
+ * @param extended_metadata_value
+ * @param vendor_specific_metadata_type
+ * @param vendor_specific_metadata_value_length
+ * @param vendor_specific_metadata_value
+*/
+#define LEAUDIO_SUBEVENT_BASS_CLIENT_NOTIFY_RECEIVE_STATE_SUBGROUP                 0x0Du
+
+/**
+ * @format 121
+ * @param subevent_code
+ * @param bass_cid
+ * @param source_id
+*/
+#define LEAUDIO_SUBEVENT_BASS_CLIENT_NOTIFICATION_COMPLETE                         0x0Eu
+
+/**
+ * @format 12111
+ * @param subevent_code
+ * @param bass_cid
+ * @param status
+ * @param opcode
+ * @param source_id
+*/
+#define LEAUDIO_SUBEVENT_BASS_CLIENT_SOURCE_OPERATION_COMPLETE                     0x0Fu
+
 
 /**
  * @format 1H111122111421
@@ -4711,90 +4799,7 @@ typedef uint8_t sm_key_t[16];
 */
 #define GATTSERVICE_SUBEVENT_PACS_SERVER_AUDIO_LOCATIONS                      0x44u
 
-/**
- * @format 1H21
- * @param subevent_code
- * @param con_handle
- * @param bass_cid
- * @param status
-*/
-#define LEAUDIO_SUBEVENT_BASS_CLIENT_CONNECTED                                0x09u
 
-/**
- * @format 12
- * @param subevent_code
- * @param bass_cid
-*/
-#define LEAUDIO_SUBEVENT_BASS_CLIENT_DISCONNECTED                             0x0Au
-
-/**
- * @format 1211
- * @param subevent_code
- * @param bass_cid
- * @param status
- * @param opcode
-*/
-#define LEAUDIO_SUBEVENT_BASS_CLIENT_SCAN_OPERATION_COMPLETE                   0x0Bu
-
-/**
- * @format 1211B1311K1
- * @param subevent_code
- * @param bass_cid
- * @param source_id
- * @param source_address_type
- * @param source_address
- * @param source_adv_sid
- * @param broadcast_id
- * @param pa_sync_state
- * @param big_encryption
- * @param bad_code
- * @param subgroups_num
-*/
-#define LEAUDIO_SUBEVENT_BASS_CLIENT_NOTIFY_RECEIVE_STATE_BASE                  0x0Cu
-
-/**
- * @format 1214122JV3JV1JV2JV2JV
- * @param subevent_code
- * @param bass_cid
- * @param source_id
- * @param bis_sync_state
- * @param metadata_mask
- * @param preferred_audio_contexts_mask
- * @param streaming_audio_contexts_mask
- * @param program_info_length
- * @param program_info
- * @param language_code
- * @param ccids_num
- * @param ccids
- * @param parental_rating
- * @param program_info_uri_length
- * @param program_info_uri
- * @param extended_metadata_type
- * @param extended_metadata_value_length
- * @param extended_metadata_value
- * @param vendor_specific_metadata_type
- * @param vendor_specific_metadata_value_length
- * @param vendor_specific_metadata_value
-*/
-#define LEAUDIO_SUBEVENT_BASS_CLIENT_NOTIFY_RECEIVE_STATE_SUBGROUP                 0x0Du
-
-/**
- * @format 121
- * @param subevent_code
- * @param bass_cid
- * @param source_id
-*/
-#define LEAUDIO_SUBEVENT_BASS_CLIENT_NOTIFICATION_COMPLETE                         0x0Eu
-
-/**
- * @format 12111
- * @param subevent_code
- * @param bass_cid
- * @param status
- * @param opcode
- * @param source_id
-*/
-#define LEAUDIO_SUBEVENT_BASS_CLIENT_SOURCE_OPERATION_COMPLETE                     0x0Fu
 
 /**
  * @format 1H21
