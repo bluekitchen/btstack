@@ -304,9 +304,9 @@ static void ascs_server_emit_disconnected(hci_con_handle_t con_handle){
 
     uint8_t event[5];
     uint16_t pos = 0;
-    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = HCI_EVENT_LEAUDIO_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_ASCS_SERVER_DISCONNECTED;
+    event[pos++] = LEAUDIO_SUBEVENT_ASCS_SERVER_DISCONNECTED;
     little_endian_store_16(event, pos, con_handle);
     pos += 2;
     (*ascs_server_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
@@ -317,9 +317,9 @@ static void ascs_server_emit_connected(hci_con_handle_t con_handle, uint8_t stat
 
     uint8_t event[6];
     uint16_t pos = 0;
-    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = HCI_EVENT_LEAUDIO_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_ASCS_SERVER_CONNECTED;
+    event[pos++] = LEAUDIO_SUBEVENT_ASCS_SERVER_CONNECTED;
     little_endian_store_16(event, pos, con_handle);
     pos += 2;
     event[pos++] = status;
@@ -331,7 +331,7 @@ static void ascs_server_emit_client_request(hci_con_handle_t con_handle, uint8_t
 
     uint8_t event[6];
     uint8_t pos = 0;
-    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = HCI_EVENT_LEAUDIO_META;
     event[pos++] = sizeof(event) - 2;
     event[pos++] = subevent_id;
     little_endian_store_16(event, pos, con_handle);
@@ -345,9 +345,9 @@ static void ascs_server_emit_client_codec_configuration_request(hci_con_handle_t
     
     uint8_t event[23];
     uint8_t pos = 0;
-    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = HCI_EVENT_LEAUDIO_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_ASCS_SERVER_CODEC_CONFIGURATION;
+    event[pos++] = LEAUDIO_SUBEVENT_ASCS_SERVER_CODEC_CONFIGURATION;
     little_endian_store_16(event, pos, con_handle);
     pos += 2;
     event[pos++] = ase_id;
@@ -949,7 +949,7 @@ ascs_server_handle_control_point_write(ascs_server_connection_t *connection, con
     uint8_t  i;
 
     // 1. as first schedule opcode operation answer via notification,
-    // 2. then inform server on these (connection) codec configuration recommendations via GATTSERVICE_SUBEVENT_ASCS_CLIENT_CODEC_CONFIGURATION_RECEIVED event
+    // 2. then inform server on these (connection) codec configuration recommendations via LEAUDIO_SUBEVENT_ASCS_CLIENT_CODEC_CONFIGURATION_RECEIVED event
     // 3. server should then call the API audio_stream_control_service_server_configure_codec to set the values
     // 4. and this should in return trigger notification of value change for each ASE changed separately.
 
@@ -1013,7 +1013,7 @@ ascs_server_handle_control_point_write(ascs_server_connection_t *connection, con
                 ase_id = buffer[pos++];
                 pos += le_audio_util_metadata_parse(&buffer[pos], buffer_size-pos, &metadata_config);
                 if (ascs_server_request_successfully_processed(connection, i)){
-                    ascs_server_emit_client_request(con_handle, ase_id, GATTSERVICE_SUBEVENT_ASCS_SERVER_ENABLE);
+                    ascs_server_emit_client_request(con_handle, ase_id, LEAUDIO_SUBEVENT_ASCS_SERVER_ENABLE);
                 }
             }
             break;
@@ -1029,7 +1029,7 @@ ascs_server_handle_control_point_write(ascs_server_connection_t *connection, con
             for (i = 0; i < connection->response_ases_num; i++){
                 ase_id = buffer[pos++];
                 if (ascs_server_request_successfully_processed(connection, i)){
-                    ascs_server_emit_client_request(con_handle, ase_id, GATTSERVICE_SUBEVENT_ASCS_SERVER_START_READY);
+                    ascs_server_emit_client_request(con_handle, ase_id, LEAUDIO_SUBEVENT_ASCS_SERVER_START_READY);
                 }
             }
             break;
@@ -1046,7 +1046,7 @@ ascs_server_handle_control_point_write(ascs_server_connection_t *connection, con
                 ase_id = buffer[pos++];
                 ascs_server_control_point_operation_prepare_response_for_target_state(connection, i, ase_id, ASCS_STATE_DISABLING);
                 if (ascs_server_request_successfully_processed(connection, i)){
-                    ascs_server_emit_client_request(con_handle, ase_id, GATTSERVICE_SUBEVENT_ASCS_SERVER_DISABLE);
+                    ascs_server_emit_client_request(con_handle, ase_id, LEAUDIO_SUBEVENT_ASCS_SERVER_DISABLE);
                 }
             }
             break;
@@ -1062,7 +1062,7 @@ ascs_server_handle_control_point_write(ascs_server_connection_t *connection, con
             for (i = 0; i < connection->response_ases_num; i++){
                 ase_id = buffer[pos++];
                 if (ascs_server_request_successfully_processed(connection, i)){
-                    ascs_server_emit_client_request(con_handle, ase_id, GATTSERVICE_SUBEVENT_ASCS_SERVER_STOP_READY);
+                    ascs_server_emit_client_request(con_handle, ase_id, LEAUDIO_SUBEVENT_ASCS_SERVER_STOP_READY);
                 }
             }
             break;
@@ -1096,7 +1096,7 @@ ascs_server_handle_control_point_write(ascs_server_connection_t *connection, con
             for (i = 0; i < connection->response_ases_num; i++){
                 ase_id = buffer[pos++];
                 if (ascs_server_request_successfully_processed(connection, i)){
-                    ascs_server_emit_client_request(con_handle, ase_id, GATTSERVICE_SUBEVENT_ASCS_SERVER_RELEASE);
+                    ascs_server_emit_client_request(con_handle, ase_id, LEAUDIO_SUBEVENT_ASCS_SERVER_RELEASE);
                 }
             }
             break;
@@ -1112,7 +1112,7 @@ ascs_server_handle_control_point_write(ascs_server_connection_t *connection, con
             for (i = 0; i < connection->response_ases_num; i++){
                 ase_id = buffer[pos++];
                 if (ascs_server_request_successfully_processed(connection, i)){
-                    ascs_server_emit_client_request(con_handle, ase_id, GATTSERVICE_SUBEVENT_ASCS_SERVER_RELEASED);
+                    ascs_server_emit_client_request(con_handle, ase_id, LEAUDIO_SUBEVENT_ASCS_SERVER_RELEASED);
                 }
             }
             break;

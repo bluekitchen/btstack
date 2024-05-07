@@ -355,12 +355,12 @@ void ascs_util_emit_codec_configuration(btstack_packet_handler_t ascs_event_call
     
     uint8_t event[39];
     uint8_t pos = 0;
-    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = HCI_EVENT_LEAUDIO_META;
     event[pos++] = sizeof(event) - 2;
     if (client_request){
-        event[pos++] = GATTSERVICE_SUBEVENT_ASCS_SERVER_CODEC_CONFIGURATION;
+        event[pos++] = LEAUDIO_SUBEVENT_ASCS_SERVER_CODEC_CONFIGURATION;
     } else {
-        event[pos++] = GATTSERVICE_SUBEVENT_ASCS_CLIENT_CODEC_CONFIGURATION;
+        event[pos++] = LEAUDIO_SUBEVENT_ASCS_CLIENT_CODEC_CONFIGURATION;
     }
     little_endian_store_16(event, pos, con_identifier);
     pos += 2;
@@ -375,12 +375,12 @@ void ascs_util_emit_qos_configuration(btstack_packet_handler_t ascs_event_callba
     
     uint8_t event[21];
     uint16_t pos = 0;
-    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = HCI_EVENT_LEAUDIO_META;
     event[pos++] = sizeof(event) - 2;
     if (client_request){
-        event[pos++] = GATTSERVICE_SUBEVENT_ASCS_SERVER_QOS_CONFIGURATION;
+        event[pos++] = LEAUDIO_SUBEVENT_ASCS_SERVER_QOS_CONFIGURATION;
     } else {
-        event[pos++] = GATTSERVICE_SUBEVENT_ASCS_CLIENT_QOS_CONFIGURATION;
+        event[pos++] = LEAUDIO_SUBEVENT_ASCS_CLIENT_QOS_CONFIGURATION;
     }
     little_endian_store_16(event, pos, con_identifier);
     pos += 2;
@@ -400,12 +400,12 @@ void ascs_util_emit_metadata(btstack_packet_handler_t ascs_event_callback, bool 
             + LE_CCIDS_MAX_NUM];
 
     uint16_t pos = 0;
-    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = HCI_EVENT_LEAUDIO_META;
     event[pos++] = (uint8_t)sizeof(event) - 2;
     if (client_request){
-        event[pos++] = GATTSERVICE_SUBEVENT_ASCS_SERVER_METADATA;
+        event[pos++] = LEAUDIO_SUBEVENT_ASCS_SERVER_METADATA;
     } else {
-        event[pos++] = GATTSERVICE_SUBEVENT_ASCS_CLIENT_METADATA;
+        event[pos++] = LEAUDIO_SUBEVENT_ASCS_CLIENT_METADATA;
     }
     little_endian_store_16(event, pos, con_identifier);
     pos += 2;

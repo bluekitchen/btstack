@@ -458,16 +458,16 @@ static void bass_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
     UNUSED(size);
 
     if (packet_type != HCI_EVENT_PACKET) return;
-    if (hci_event_packet_get_type(packet) != HCI_EVENT_GATTSERVICE_META) return;
+    if (hci_event_packet_get_type(packet) != HCI_EVENT_LEAUDIO_META) return;
 
     const bass_source_data_t * source_data;
 
     switch (hci_event_gattservice_meta_get_subevent_code(packet)) {
-        case GATTSERVICE_SUBEVENT_BASS_CLIENT_CONNECTED:
-            if (gattservice_subevent_bass_client_connected_get_status(packet) != ERROR_CODE_SUCCESS){
+        case LEAUDIO_SUBEVENT_BASS_CLIENT_CONNECTED:
+            if (leaudio_subevent_bass_client_connected_get_status(packet) != ERROR_CODE_SUCCESS){
                 MESSAGE("BASS client connection failed, cid 0x%02x, con_handle 0x%02x, status 0x%02x",
                        bass_cid, remote_handle,
-                       gattservice_subevent_bass_client_connected_get_status(packet));
+                       leaudio_subevent_bass_client_connected_get_status(packet));
                 return;
             }
             MESSAGE("BASS client connected, cid 0x%02x\n", bass_cid);
@@ -478,20 +478,20 @@ static void bass_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
             reverse_bd_addr(bass_address, &data[1]);
             btp_send(BTP_SERVICE_ID_BAP, BTP_BAP_EV_SCAN_DELEGATOR_FOUND, 0, sizeof(data), data);
             break;
-        case GATTSERVICE_SUBEVENT_BASS_CLIENT_SOURCE_OPERATION_COMPLETE:
-            if (gattservice_subevent_bass_client_source_operation_complete_get_status(packet) != ERROR_CODE_SUCCESS){
-                MESSAGE("BASS client source operation failed, status 0x%02x", gattservice_subevent_bass_client_source_operation_complete_get_status(packet));
+        case LEAUDIO_SUBEVENT_BASS_CLIENT_SOURCE_OPERATION_COMPLETE:
+            if (leaudio_subevent_bass_client_source_operation_complete_get_status(packet) != ERROR_CODE_SUCCESS){
+                MESSAGE("BASS client source operation failed, status 0x%02x", leaudio_subevent_bass_client_source_operation_complete_get_status(packet));
                 break;
             }
 
-            if ( gattservice_subevent_bass_client_source_operation_complete_get_opcode(packet) == (uint8_t)BASS_OPCODE_ADD_SOURCE ){
+            if ( leaudio_subevent_bass_client_source_operation_complete_get_opcode(packet) == (uint8_t)BASS_OPCODE_ADD_SOURCE ){
                 // TODO: set state to 'wait for source_id"
                 printf("BASS client add source operation completed, wait for source_id\n");
             }
             break;
-        case GATTSERVICE_SUBEVENT_BASS_CLIENT_NOTIFICATION_COMPLETE:
+        case LEAUDIO_SUBEVENT_BASS_CLIENT_NOTIFICATION_COMPLETE:
             // store source_id
-            bass_source_id = gattservice_subevent_bass_client_notification_complete_get_source_id(packet);
+            bass_source_id = leaudio_subevent_bass_client_notification_complete_get_source_id(packet);
             MESSAGE("BASS client notification, source_id = 0x%02x", bass_source_id);
             source_data = broadcast_audio_scan_service_client_get_source_data(bass_cid, bass_source_id);
             btstack_assert(source_data != NULL);
@@ -508,7 +508,7 @@ static void bass_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
                     break;
             }
             break;
-        case GATTSERVICE_SUBEVENT_BASS_CLIENT_DISCONNECTED:
+        case LEAUDIO_SUBEVENT_BASS_CLIENT_DISCONNECTED:
             break;
         default:
             break;
@@ -782,11 +782,11 @@ static void btp_bap_send_ase(server_t * server, uint8_t direction, uint8_t num_a
 }
 
 static void btp_ascs_client_report_ases(server_t *server, uint8_t *packet){
-    uint8_t sink_ase_num = gattservice_subevent_ascs_client_connected_get_sink_ase_num(packet);
-    const uint8_t * sink_ase_ids = gattservice_subevent_ascs_client_connected_get_sink_ase_ids(packet);
+    uint8_t sink_ase_num = leaudio_subevent_ascs_client_connected_get_sink_ase_num(packet);
+    const uint8_t * sink_ase_ids = leaudio_subevent_ascs_client_connected_get_sink_ase_ids(packet);
     btp_bap_send_ase(server, BTP_AUDIO_DIR_SINK, sink_ase_num, sink_ase_ids);
-    uint8_t source_ase_num = gattservice_subevent_ascs_client_connected_get_source_ase_num(packet);
-    const uint8_t * source_ase_ids = gattservice_subevent_ascs_client_connected_get_source_ase_ids(packet);
+    uint8_t source_ase_num = leaudio_subevent_ascs_client_connected_get_source_ase_num(packet);
+    const uint8_t * source_ase_ids = leaudio_subevent_ascs_client_connected_get_source_ase_ids(packet);
     btp_bap_send_ase(server, BTP_AUDIO_DIR_SOURCE, source_ase_num, source_ase_ids);
 }
 
@@ -812,49 +812,49 @@ static void btp_bap_ascs_client_event_handler(uint8_t packet_type, uint16_t chan
     server_t * server;
 
     switch (hci_event_gattservice_meta_get_subevent_code(packet)){
-        case GATTSERVICE_SUBEVENT_ASCS_CLIENT_CONNECTED:
-            ascs_cid = gattservice_subevent_ascs_client_connected_get_ascs_cid(packet);
-            con_handle = gattservice_subevent_ascs_client_connected_get_con_handle(packet);
-            if (gattservice_subevent_ascs_client_connected_get_status(packet) != ERROR_CODE_SUCCESS){
+        case LEAUDIO_SUBEVENT_ASCS_CLIENT_CONNECTED:
+            ascs_cid = leaudio_subevent_ascs_client_connected_get_ascs_cid(packet);
+            con_handle = leaudio_subevent_ascs_client_connected_get_con_handle(packet);
+            if (leaudio_subevent_ascs_client_connected_get_status(packet) != ERROR_CODE_SUCCESS){
                 // TODO send error response
                 MESSAGE("BTP ASCS Client: connection failed, cid 0x%02x, con_handle 0x%04x, status 0x%02x", ascs_cid, con_handle,
-                        gattservice_subevent_ascs_client_connected_get_status(packet));
+                        leaudio_subevent_ascs_client_connected_get_status(packet));
             } else {
                 server = btp_server_for_acl_con_handle(con_handle);
                 btp_ascs_client_report_ases(server, packet);
                 btp_bap_discovery_next(server);
             }
             break;
-        case GATTSERVICE_SUBEVENT_ASCS_CLIENT_DISCONNECTED:
-            MESSAGE("BTP ASCS Client: disconnected, cid 0x%02x", gattservice_subevent_ascs_client_disconnected_get_ascs_cid(packet));
+        case LEAUDIO_SUBEVENT_ASCS_CLIENT_DISCONNECTED:
+            MESSAGE("BTP ASCS Client: disconnected, cid 0x%02x", leaudio_subevent_ascs_client_disconnected_get_ascs_cid(packet));
             break;
 #if 0
-        case GATTSERVICE_SUBEVENT_ASCS_CLIENT_CODEC_CONFIGURATION:
-            ase_id = gattservice_subevent_ascs_client_codec_configuration_get_ase_id(packet);
-            ascs_cid = gattservice_subevent_ascs_client_codec_configuration_get_ascs_cid(packet);
+        case LEAUDIO_SUBEVENT_ASCS_CLIENT_CODEC_CONFIGURATION:
+            ase_id = leaudio_subevent_ascs_client_codec_configuration_get_ase_id(packet);
+            ascs_cid = leaudio_subevent_ascs_client_codec_configuration_get_ascs_cid(packet);
 
             // codec id:
-            codec_configuration.coding_format =  gattservice_subevent_ascs_client_codec_configuration_get_coding_format(packet);;
-            codec_configuration.company_id = gattservice_subevent_ascs_client_codec_configuration_get_company_id(packet);
-            codec_configuration.vendor_specific_codec_id = gattservice_subevent_ascs_client_codec_configuration_get_vendor_specific_codec_id(packet);
+            codec_configuration.coding_format =  leaudio_subevent_ascs_client_codec_configuration_get_coding_format(packet);;
+            codec_configuration.company_id = leaudio_subevent_ascs_client_codec_configuration_get_company_id(packet);
+            codec_configuration.vendor_specific_codec_id = leaudio_subevent_ascs_client_codec_configuration_get_vendor_specific_codec_id(packet);
 
-            codec_configuration.specific_codec_configuration.codec_configuration_mask = gattservice_subevent_ascs_client_codec_configuration_get_specific_codec_configuration_mask(packet);
-            codec_configuration.specific_codec_configuration.sampling_frequency_index = gattservice_subevent_ascs_client_codec_configuration_get_sampling_frequency_index(packet);
-            codec_configuration.specific_codec_configuration.frame_duration_index = gattservice_subevent_ascs_client_codec_configuration_get_frame_duration_index(packet);
-            codec_configuration.specific_codec_configuration.audio_channel_allocation_mask = gattservice_subevent_ascs_client_codec_configuration_get_audio_channel_allocation_mask(packet);
-            codec_configuration.specific_codec_configuration.octets_per_codec_frame = gattservice_subevent_ascs_client_codec_configuration_get_octets_per_frame(packet);
-            codec_configuration.specific_codec_configuration.codec_frame_blocks_per_sdu = gattservice_subevent_ascs_client_codec_configuration_get_frame_blocks_per_sdu(packet);
+            codec_configuration.specific_codec_configuration.codec_configuration_mask = leaudio_subevent_ascs_client_codec_configuration_get_specific_codec_configuration_mask(packet);
+            codec_configuration.specific_codec_configuration.sampling_frequency_index = leaudio_subevent_ascs_client_codec_configuration_get_sampling_frequency_index(packet);
+            codec_configuration.specific_codec_configuration.frame_duration_index = leaudio_subevent_ascs_client_codec_configuration_get_frame_duration_index(packet);
+            codec_configuration.specific_codec_configuration.audio_channel_allocation_mask = leaudio_subevent_ascs_client_codec_configuration_get_audio_channel_allocation_mask(packet);
+            codec_configuration.specific_codec_configuration.octets_per_codec_frame = leaudio_subevent_ascs_client_codec_configuration_get_octets_per_frame(packet);
+            codec_configuration.specific_codec_configuration.codec_frame_blocks_per_sdu = leaudio_subevent_ascs_client_codec_configuration_get_frame_blocks_per_sdu(packet);
 
             MESSAGE("ASCS Client: CODEC CONFIGURATION - ase_id %d, ascs_cid 0x%02x", ase_id, ascs_cid);
             response_len = 0;
-            btp_append_uint24(gattservice_subevent_ascs_client_codec_configuration_get_presentation_delay_min(packet));
-            btp_append_uint24(gattservice_subevent_ascs_client_codec_configuration_get_presentation_delay_max(packet));
+            btp_append_uint24(leaudio_subevent_ascs_client_codec_configuration_get_presentation_delay_min(packet));
+            btp_append_uint24(leaudio_subevent_ascs_client_codec_configuration_get_presentation_delay_max(packet));
             btp_send(BTP_SERVICE_ID_LE_AUDIO, BTP_LE_AUDIO_OP_ASCS_CONFIGURE_CODEC, 0, response_len, response_buffer);
             break;
 
-        case GATTSERVICE_SUBEVENT_ASCS_CLIENT_QOS_CONFIGURATION:
-            ase_id  = gattservice_subevent_ascs_server_qos_configuration_get_ase_id(packet);
-            ascs_cid = gattservice_subevent_ascs_server_qos_configuration_get_con_handle(packet);
+        case LEAUDIO_SUBEVENT_ASCS_CLIENT_QOS_CONFIGURATION:
+            ase_id   = leaudio_subevent_ascs_client_qos_configuration_get_ase_id(packet);
+            ascs_cid = leaudio_subevent_ascs_client_qos_configuration_get_con_handle(packet);
 
             MESSAGE("ASCS Client: QOS CONFIGURATION - ase_id %d, ascs_cid 0x%02x", ase_id, ascs_cid);
             if (response_op != 0){
@@ -863,19 +863,19 @@ static void btp_bap_ascs_client_event_handler(uint8_t packet_type, uint16_t chan
             }
             break;
 
-        case GATTSERVICE_SUBEVENT_ASCS_CLIENT_METADATA:
-            ase_id  = gattservice_subevent_ascs_client_metadata_get_ase_id(packet);
-            ascs_cid = gattservice_subevent_ascs_client_metadata_get_ascs_cid(packet);
+        case LEAUDIO_SUBEVENT_ASCS_CLIENT_METADATA:
+            ase_id  = leaudio_subevent_ascs_client_metadata_get_ase_id(packet);
+            ascs_cid = leaudio_subevent_ascs_client_metadata_get_ascs_cid(packet);
 
             printf("ASCS Client: METADATA UPDATE - ase_id %d, ascs_cid 0x%02x\n", ase_id, ascs_cid);
             break;
 
-        case GATTSERVICE_SUBEVENT_ASCS_CLIENT_CONTROL_POINT_OPERATION_RESPONSE:
-            ase_id        = gattservice_subevent_ascs_client_control_point_operation_response_get_ase_id(packet);
-            ascs_cid      = gattservice_subevent_ascs_client_control_point_operation_response_get_ascs_cid(packet);
-            response_code = gattservice_subevent_ascs_client_control_point_operation_response_get_response_code(packet);
-            reason        = gattservice_subevent_ascs_client_control_point_operation_response_get_reason(packet);
-            opcode        = gattservice_subevent_ascs_client_control_point_operation_response_get_opcode(packet);
+        case LEAUDIO_SUBEVENT_ASCS_CLIENT_CONTROL_POINT_OPERATION_RESPONSE:
+            ase_id        = leaudio_subevent_ascs_client_control_point_operation_response_get_ase_id(packet);
+            ascs_cid      = leaudio_subevent_ascs_client_control_point_operation_response_get_ascs_cid(packet);
+            response_code = leaudio_subevent_ascs_client_control_point_operation_response_get_response_code(packet);
+            reason        = leaudio_subevent_ascs_client_control_point_operation_response_get_reason(packet);
+            opcode        = leaudio_subevent_ascs_client_control_point_operation_response_get_opcode(packet);
             printf("ASCS Client: Operation complete - ase_id %d, opcode %u, response [0x%02x, 0x%02x], ascs_cid 0x%02x\n", ase_id, opcode, response_code, reason, ascs_cid);
             if ((opcode == ASCS_OPCODE_RECEIVER_START_READY) && (response_op != 0)){
                 MESSAGE("Receiver Start Ready completed");
@@ -884,11 +884,11 @@ static void btp_bap_ascs_client_event_handler(uint8_t packet_type, uint16_t chan
             }
             break;
 
-        case GATTSERVICE_SUBEVENT_ASCS_CLIENT_STREAMENDPOINT_STATE:
-            log_info("GATTSERVICE_SUBEVENT_ASCS_STREAMENDPOINT_STATE");
-            ascs_cid   = gattservice_subevent_ascs_client_streamendpoint_state_get_ascs_cid(packet);
-            ase_id     = gattservice_subevent_ascs_client_streamendpoint_state_get_ase_id(packet);
-            ase_state  = gattservice_subevent_ascs_client_streamendpoint_state_get_state(packet);
+        case LEAUDIO_SUBEVENT_ASCS_CLIENT_STREAMENDPOINT_STATE:
+            log_info("LEAUDIO_SUBEVENT_ASCS_STREAMENDPOINT_STATE");
+            ascs_cid   = leaudio_subevent_ascs_client_streamendpoint_state_get_ascs_cid(packet);
+            ase_id     = leaudio_subevent_ascs_client_streamendpoint_state_get_ase_id(packet);
+            ase_state  = leaudio_subevent_ascs_client_streamendpoint_state_get_state(packet);
             log_info("ASCS Client: ASE STATE (%s) - ase_id %d, ascs_cid 0x%02x, role %s", ascs_util_ase_state2str(ase_state), ase_id, ascs_cid,
                      (audio_stream_control_service_client_get_ase_role(ascs_cid, ase_id) == LE_AUDIO_ROLE_SOURCE) ? "SOURCE" : "SINK" );
 
