@@ -518,10 +518,10 @@ static void pacs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
     UNUSED(size);
 
     if (packet_type != HCI_EVENT_PACKET) return;
-    if (hci_event_packet_get_type(packet) != HCI_EVENT_GATTSERVICE_META) return;
+    if (hci_event_packet_get_type(packet) != HCI_EVENT_LEAUDIO_META) return;
 
     switch (hci_event_gattservice_meta_get_subevent_code(packet)){
-        case GATTSERVICE_SUBEVENT_PACS_SERVER_AUDIO_LOCATIONS:
+        case LEAUDIO_SUBEVENT_PACS_SERVER_AUDIO_LOCATIONS:
             printf("PACS: audio location received\n");
             break;
 
