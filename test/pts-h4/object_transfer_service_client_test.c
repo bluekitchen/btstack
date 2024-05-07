@@ -276,29 +276,38 @@ static void gatt_client_event_handler(uint8_t packet_type, uint16_t channel, uin
         printf("GATT_EVENT_SERVICE_CHANGED\n");
         return;
     }
-    if (hci_event_packet_get_type(packet) != HCI_EVENT_GATTSERVICE_META) {
+
+    if (hci_event_packet_get_type(packet) == HCI_EVENT_GATTSERVICE_META) {
+        switch (hci_event_gattservice_meta_get_subevent_code(packet)) {
+            case GATT_EVENT_CONNECTED:
+                status = gatt_event_connected_get_status(packet);
+                switch (status) {
+                    case ERROR_CODE_SUCCESS:
+                        printf("Change Service: Server connected\n");
+                        (void) gatt_service_changed_client_connect(connection_handle, &gatt_client_event_handler,
+                                                                   &gatt_service_client_connection);
+                        break;
+
+                    default:
+                        printf("Change Service: connection failed, err 0x%02x.\n", status);
+                        break;
+                }
+
+                app_state = APP_STATE_CONNECTED;
+                return;
+
+            default:
+                break;
+        }
+    }
+
+    if (hci_event_packet_get_type(packet) != HCI_EVENT_LEAUDIO_META) {
         return;
     }
 
-    switch (hci_event_gattservice_meta_get_subevent_code(packet)) {
-        case GATT_EVENT_CONNECTED:
-            status = gatt_event_connected_get_status(packet);
-            switch (status){
-                case ERROR_CODE_SUCCESS:
-                    printf("Change Service: Server connected\n");
-                    (void) gatt_service_changed_client_connect(connection_handle, &gatt_client_event_handler, &gatt_service_client_connection);
-                    break;
-
-                default:
-                    printf("Change Service: connection failed, err 0x%02x.\n", status);
-                    break;
-            }
-
-            app_state = APP_STATE_CONNECTED;
-            break;
-
-        case GATTSERVICE_SUBEVENT_OTS_CLIENT_CONNECTED:
-            status = gattservice_subevent_ots_client_connected_get_att_status(packet);
+    switch (hci_event_leaudio_meta_get_subevent_code(packet)) {
+        case LEAUDIO_SUBEVENT_OTS_CLIENT_CONNECTED:
+            status = leaudio_subevent_ots_client_connected_get_att_status(packet);
 
             switch (status) {
                 case ERROR_CODE_SUCCESS:
@@ -314,8 +323,8 @@ static void gatt_client_event_handler(uint8_t packet_type, uint16_t channel, uin
             }
             break;
 
-        case GATTSERVICE_SUBEVENT_OTS_CLIENT_WRITE_DONE:
-            status = gattservice_subevent_ots_client_write_done_get_att_status(packet);
+        case LEAUDIO_SUBEVENT_OTS_CLIENT_WRITE_DONE:
+            status = leaudio_subevent_ots_client_write_done_get_att_status(packet);
             if (status != ATT_ERROR_SUCCESS){
                 printf("OTS Client Test: Write failed, 0x%02x\n", status);
             } else {
@@ -323,161 +332,161 @@ static void gatt_client_event_handler(uint8_t packet_type, uint16_t channel, uin
             }
             break;
 
-        case GATTSERVICE_SUBEVENT_OTS_CLIENT_FEATURES:
-            status = gattservice_subevent_ots_client_features_get_att_status(packet);
+        case LEAUDIO_SUBEVENT_OTS_CLIENT_FEATURES:
+            status = leaudio_subevent_ots_client_features_get_att_status(packet);
             if (status != ATT_ERROR_SUCCESS){
                 printf("OTS Client Test: Read failed, 0x%02x\n", status);
             } else {
                 printf("OTS Client Test: OACP 0x%08X, OLCP 0x%08X\n",
-                       gattservice_subevent_ots_client_features_get_oacp_features(packet),
-                       gattservice_subevent_ots_client_features_get_olcp_features(packet));
+                       leaudio_subevent_ots_client_features_get_oacp_features(packet),
+                       leaudio_subevent_ots_client_features_get_olcp_features(packet));
             }
             break;
 
-        case GATTSERVICE_SUBEVENT_OTS_CLIENT_OBJECT_NAME:
-            status = gattservice_subevent_ots_client_object_name_get_att_status(packet);
+        case LEAUDIO_SUBEVENT_OTS_CLIENT_OBJECT_NAME:
+            status = leaudio_subevent_ots_client_object_name_get_att_status(packet);
             if (status != ATT_ERROR_SUCCESS){
                 printf("OTS Client Test: Read failed, 0x%02x\n", status);
             } else {
                 printf("OTS Client Test: Object Name \'%s\'\n",
-                       gattservice_subevent_ots_client_object_name_get_value(packet));
+                       leaudio_subevent_ots_client_object_name_get_value(packet));
             }
             break;
 
-        case GATTSERVICE_SUBEVENT_OTS_CLIENT_OBJECT_TYPE:
-            status = gattservice_subevent_ots_client_object_type_get_att_status(packet);
+        case LEAUDIO_SUBEVENT_OTS_CLIENT_OBJECT_TYPE:
+            status = leaudio_subevent_ots_client_object_type_get_att_status(packet);
             if (status != ATT_ERROR_SUCCESS){
                 printf("OTS Client Test: Read failed, 0x%02x\n", status);
             } else {
                 printf("OTS Client Test: Object Type\n");
-                printf_hexdump(gattservice_subevent_ots_client_object_type_get_value(packet), gattservice_subevent_ots_client_object_type_get_value_len(packet));
+                printf_hexdump(leaudio_subevent_ots_client_object_type_get_value(packet), leaudio_subevent_ots_client_object_type_get_value_len(packet));
             }
             break;
 
-        case GATTSERVICE_SUBEVENT_OTS_CLIENT_OBJECT_FIRST_CREATED:
-            status = gattservice_subevent_ots_client_object_first_created_get_att_status(packet);
+        case LEAUDIO_SUBEVENT_OTS_CLIENT_OBJECT_FIRST_CREATED:
+            status = leaudio_subevent_ots_client_object_first_created_get_att_status(packet);
             if (status != ATT_ERROR_SUCCESS){
                 printf("OTS Client Test: Read failed, 0x%02x\n", status);
             } else {
                 printf("OTS Client Test: First created: %d-%d-%d %d:%d:%d\n",
-                       gattservice_subevent_ots_client_object_first_created_get_day(packet),
-                       gattservice_subevent_ots_client_object_first_created_get_month(packet),
-                       gattservice_subevent_ots_client_object_first_created_get_year(packet),
-                       gattservice_subevent_ots_client_object_first_created_get_hours(packet),
-                       gattservice_subevent_ots_client_object_first_created_get_minutes(packet),
-                       gattservice_subevent_ots_client_object_first_created_get_seconds(packet));
+                       leaudio_subevent_ots_client_object_first_created_get_day(packet),
+                       leaudio_subevent_ots_client_object_first_created_get_month(packet),
+                       leaudio_subevent_ots_client_object_first_created_get_year(packet),
+                       leaudio_subevent_ots_client_object_first_created_get_hours(packet),
+                       leaudio_subevent_ots_client_object_first_created_get_minutes(packet),
+                       leaudio_subevent_ots_client_object_first_created_get_seconds(packet));
             }
             break;
 
-        case GATTSERVICE_SUBEVENT_OTS_CLIENT_OBJECT_LAST_MODIFIED:
-            status = gattservice_subevent_ots_client_object_last_modified_get_att_status(packet);
+        case LEAUDIO_SUBEVENT_OTS_CLIENT_OBJECT_LAST_MODIFIED:
+            status = leaudio_subevent_ots_client_object_last_modified_get_att_status(packet);
             if (status != ATT_ERROR_SUCCESS){
                 printf("OTS Client Test: Read failed, 0x%02x\n", status);
             } else {
                 printf("OTS Client Test: Last Modified: %d-%d-%d %d:%d:%d\n",
-                       gattservice_subevent_ots_client_object_last_modified_get_day(packet),
-                       gattservice_subevent_ots_client_object_last_modified_get_month(packet),
-                       gattservice_subevent_ots_client_object_last_modified_get_year(packet),
-                       gattservice_subevent_ots_client_object_last_modified_get_hours(packet),
-                       gattservice_subevent_ots_client_object_last_modified_get_minutes(packet),
-                       gattservice_subevent_ots_client_object_last_modified_get_seconds(packet));
+                       leaudio_subevent_ots_client_object_last_modified_get_day(packet),
+                       leaudio_subevent_ots_client_object_last_modified_get_month(packet),
+                       leaudio_subevent_ots_client_object_last_modified_get_year(packet),
+                       leaudio_subevent_ots_client_object_last_modified_get_hours(packet),
+                       leaudio_subevent_ots_client_object_last_modified_get_minutes(packet),
+                       leaudio_subevent_ots_client_object_last_modified_get_seconds(packet));
             }
             break;
 
-        case GATTSERVICE_SUBEVENT_OTS_CLIENT_OBJECT_SIZE:
-            status = gattservice_subevent_ots_client_object_size_get_att_status(packet);
+        case LEAUDIO_SUBEVENT_OTS_CLIENT_OBJECT_SIZE:
+            status = leaudio_subevent_ots_client_object_size_get_att_status(packet);
             if (status != ATT_ERROR_SUCCESS){
                 printf("OTS Client Test: Read failed, 0x%02x\n", status);
             } else {
-                cbm_object_size = gattservice_subevent_ots_client_object_size_get_current_size(packet);
+                cbm_object_size = leaudio_subevent_ots_client_object_size_get_current_size(packet);
                 printf("OTS Client Test: Object allocated size %d, current size %d \n",
-                    gattservice_subevent_ots_client_object_size_get_allocated_size(packet), gattservice_subevent_ots_client_object_size_get_current_size(packet));
+                    leaudio_subevent_ots_client_object_size_get_allocated_size(packet), leaudio_subevent_ots_client_object_size_get_current_size(packet));
             }
             break;
 
-        case GATTSERVICE_SUBEVENT_OTS_CLIENT_OBJECT_ID:
-            status = gattservice_subevent_ots_client_object_id_get_att_status(packet);
+        case LEAUDIO_SUBEVENT_OTS_CLIENT_OBJECT_ID:
+            status = leaudio_subevent_ots_client_object_id_get_att_status(packet);
             if (status != ATT_ERROR_SUCCESS){
                 printf("OTS Client Test: Read failed, 0x%02x\n", status);
             } else {
                 printf("OTS Client Test: Object ID \n");
-                printf_hexdump(gattservice_subevent_ots_client_object_id_get_value(packet), gattservice_subevent_ots_client_object_id_get_value_len(packet));
+                printf_hexdump(leaudio_subevent_ots_client_object_id_get_value(packet), leaudio_subevent_ots_client_object_id_get_value_len(packet));
             }
             break;
 
-        case GATTSERVICE_SUBEVENT_OTS_CLIENT_OBJECT_PROPERTIES:
-            status = gattservice_subevent_ots_client_object_properties_get_att_status(packet);
+        case LEAUDIO_SUBEVENT_OTS_CLIENT_OBJECT_PROPERTIES:
+            status = leaudio_subevent_ots_client_object_properties_get_att_status(packet);
             if (status != ATT_ERROR_SUCCESS){
                 printf("OTS Client Test: Read failed, 0x%02x\n", status);
             } else {
                 printf("OTS Client Test: Object Properties 0x%08x\n",
-                    gattservice_subevent_ots_client_object_properties_get_bitmask(packet));
+                    leaudio_subevent_ots_client_object_properties_get_bitmask(packet));
             }
             break;
 
-        case GATTSERVICE_SUBEVENT_OTS_CLIENT_FILTER:
-            status = gattservice_subevent_ots_client_filter_get_att_status(packet);
+        case LEAUDIO_SUBEVENT_OTS_CLIENT_FILTER:
+            status = leaudio_subevent_ots_client_filter_get_att_status(packet);
             if (status != ATT_ERROR_SUCCESS){
                 printf("OTS Client Test: Read failed, 0x%02x\n", status);
             } else {
                 printf("OTS Client Test: Filter-%d %s \n",
-                       gattservice_subevent_ots_client_filter_get_index(packet),
-                       ots_filter_type2str(gattservice_subevent_ots_client_filter_get_type(packet)));
-                printf_hexdump(gattservice_subevent_ots_client_filter_get_value(packet),
-                               gattservice_subevent_ots_client_filter_get_value_len(packet));
+                       leaudio_subevent_ots_client_filter_get_index(packet),
+                       ots_filter_type2str(leaudio_subevent_ots_client_filter_get_type(packet)));
+                printf_hexdump(leaudio_subevent_ots_client_filter_get_value(packet),
+                               leaudio_subevent_ots_client_filter_get_value_len(packet));
 
             }
             break;
 
-        case GATTSERVICE_SUBEVENT_OTS_CLIENT_OBJECT_CHANGED:
-            status = gattservice_subevent_ots_client_object_changed_get_att_status(packet);
+        case LEAUDIO_SUBEVENT_OTS_CLIENT_OBJECT_CHANGED:
+            status = leaudio_subevent_ots_client_object_changed_get_att_status(packet);
             if (status != ATT_ERROR_SUCCESS){
                 printf("OTS Client Test: Indication incomplete, 0x%02x\n", status);
             } else {
                 printf("OTS Client Test: Flags 0x%04X, Object ID \n",
-                       gattservice_subevent_ots_client_object_changed_get_flags(packet));
-                printf_hexdump(gattservice_subevent_ots_client_object_changed_get_id(packet), gattservice_subevent_ots_client_object_changed_get_id_len(packet));
+                       leaudio_subevent_ots_client_object_changed_get_flags(packet));
+                printf_hexdump(leaudio_subevent_ots_client_object_changed_get_id(packet), leaudio_subevent_ots_client_object_changed_get_id_len(packet));
             }
             break;
 
-        case GATTSERVICE_SUBEVENT_OTS_CLIENT_OLCP_RESPONSE:
-            status = gattservice_subevent_ots_client_olcp_response_get_att_status(packet);
+        case LEAUDIO_SUBEVENT_OTS_CLIENT_OLCP_RESPONSE:
+            status = leaudio_subevent_ots_client_olcp_response_get_att_status(packet);
             if (status != ATT_ERROR_SUCCESS){
                 printf("OTS Client Test: OLCP response incomplete, 0x%02x\n", status);
             } else {
                 printf("OTS Client Test: OLCP response opcode %d, result %d\n",
-                       gattservice_subevent_ots_client_olcp_response_get_opcode(packet),
-                       gattservice_subevent_ots_client_olcp_response_get_result_code(packet));
+                       leaudio_subevent_ots_client_olcp_response_get_opcode(packet),
+                       leaudio_subevent_ots_client_olcp_response_get_result_code(packet));
             }
             break;
 
-        case GATTSERVICE_SUBEVENT_OTS_CLIENT_OACP_RESPONSE:
-            status = gattservice_subevent_ots_client_oacp_response_get_att_status(packet);
+        case LEAUDIO_SUBEVENT_OTS_CLIENT_OACP_RESPONSE:
+            status = leaudio_subevent_ots_client_oacp_response_get_att_status(packet);
             if (status != ATT_ERROR_SUCCESS){
                 printf("OTS Client Test: OACP response incomplete, 0x%02x\n", status);
             } else {
                 printf("OTS Client Test: OACP response opcode %d, result %d\n",
-                       gattservice_subevent_ots_client_oacp_response_get_opcode(packet),
-                       gattservice_subevent_ots_client_oacp_response_get_result_code(packet));
+                       leaudio_subevent_ots_client_oacp_response_get_opcode(packet),
+                       leaudio_subevent_ots_client_oacp_response_get_result_code(packet));
             }
             break;
 
-        case GATTSERVICE_SUBEVENT_OTS_CLIENT_DATA_CHUNK:
-            cbm_object_read_chunk_length = gattservice_subevent_ots_client_data_chunk_get_bytes_transferred_num(packet);
-            cbm_object_read_chunk_offset = gattservice_subevent_ots_client_data_chunk_get_offset(packet);
-            cbm_object_read_chunk_transferred = gattservice_subevent_ots_client_data_chunk_get_bytes_transferred_num(packet);
+        case LEAUDIO_SUBEVENT_OTS_CLIENT_DATA_CHUNK:
+            cbm_object_read_chunk_length = leaudio_subevent_ots_client_data_chunk_get_bytes_transferred_num(packet);
+            cbm_object_read_chunk_offset = leaudio_subevent_ots_client_data_chunk_get_offset(packet);
+            cbm_object_read_chunk_transferred = leaudio_subevent_ots_client_data_chunk_get_bytes_transferred_num(packet);
 
             printf("OTS Client Test: Read data [%d] offset %d, chunk length %d, transferred %d \n",
-                   gattservice_subevent_ots_client_data_chunk_get_state(packet),
+                   leaudio_subevent_ots_client_data_chunk_get_state(packet),
                    cbm_object_read_chunk_offset, cbm_object_read_chunk_length, cbm_object_read_chunk_transferred);
 
             break;
 
-        case GATTSERVICE_SUBEVENT_OTS_CLIENT_TIMEOUT:
+        case LEAUDIO_SUBEVENT_OTS_CLIENT_TIMEOUT:
             printf("OTS Client Test: Operation timeout\n");
             break;
 
-        case GATTSERVICE_SUBEVENT_OTS_CLIENT_DISCONNECTED:
+        case LEAUDIO_SUBEVENT_OTS_CLIENT_DISCONNECTED:
             printf("OTS Client Test: disconnected\n");
             gatt_service_changed_client_disconnect(&gatt_service_client_connection);
             break;

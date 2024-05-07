@@ -182,34 +182,34 @@ static void mcs_client_event_handler(uint8_t packet_type, uint16_t channel, uint
     UNUSED(size);
 
     if (packet_type != HCI_EVENT_PACKET) return;
-    if (hci_event_packet_get_type(packet) != HCI_EVENT_GATTSERVICE_META) return;
+    if (hci_event_packet_get_type(packet) != HCI_EVENT_LEAUDIO_META) return;
 
     uint32_t duration_ms;
     uint32_t position_ms;
     int speed;
     int seeking_speed;
-    uint8_t subevent = hci_event_gattservice_meta_get_subevent_code(packet);
+    uint8_t subevent = hci_event_leaudio_meta_get_subevent_code(packet);
     uint8_t status;
 
     switch (subevent){
-        case GATTSERVICE_SUBEVENT_MCS_CLIENT_CONNECTED:
-            if (bap_app_client_con_handle != gattservice_subevent_mcs_client_connected_get_con_handle(packet)){
-                printf("MCS Client: expected con handle 0x%04x, received 0x%04x\n", bap_app_client_con_handle, gattservice_subevent_mcs_client_connected_get_con_handle(packet));
+        case LEAUDIO_SUBEVENT_MCS_CLIENT_CONNECTED:
+            if (bap_app_client_con_handle != leaudio_subevent_mcs_client_connected_get_con_handle(packet)){
+                printf("MCS Client: expected con handle 0x%04x, received 0x%04x\n", bap_app_client_con_handle, leaudio_subevent_mcs_client_connected_get_con_handle(packet));
                 return;
             }
 
             bap_app_client_state = BAP_APP_CLIENT_STATE_CONNECTED;
 
-            if (gattservice_subevent_mcs_client_connected_get_status(packet) != ERROR_CODE_SUCCESS){
+            if (leaudio_subevent_mcs_client_connected_get_status(packet) != ERROR_CODE_SUCCESS){
                 printf("MCS client: connection failed, cid 0x%04x, con_handle 0x%04x, status 0x%02x\n", mcs_cid, bap_app_client_con_handle, 
-                    gattservice_subevent_mcs_client_connected_get_status(packet));
+                    leaudio_subevent_mcs_client_connected_get_status(packet));
                 return;
             }
             printf("MCS client: connected, cid 0x%04x\n", mcs_cid);
             break;
 
-        case GATTSERVICE_SUBEVENT_OTS_CLIENT_CONNECTED:
-            status = gattservice_subevent_ots_client_connected_get_att_status(packet);
+        case LEAUDIO_SUBEVENT_OTS_CLIENT_CONNECTED:
+            status = leaudio_subevent_ots_client_connected_get_att_status(packet);
 
             switch (status) {
                 case ERROR_CODE_SUCCESS:
@@ -223,107 +223,107 @@ static void mcs_client_event_handler(uint8_t packet_type, uint16_t channel, uint
             break;
 
 
-        case GATTSERVICE_SUBEVENT_OTS_CLIENT_DISCONNECTED:
+        case LEAUDIO_SUBEVENT_OTS_CLIENT_DISCONNECTED:
             printf("MTS: OTS Server disconnected\n");
             break;
 
-        case GATTSERVICE_SUBEVENT_MCS_CLIENT_MEDIA_PLAYER_NAME:
-            printf("MCS Client: Media Player Name \"%s\"\n", (char *) gattservice_subevent_mcs_client_media_player_name_get_value(packet));
+        case LEAUDIO_SUBEVENT_MCS_CLIENT_MEDIA_PLAYER_NAME:
+            printf("MCS Client: Media Player Name \"%s\"\n", (char *) leaudio_subevent_mcs_client_media_player_name_get_value(packet));
             break;
         
-        case GATTSERVICE_SUBEVENT_MCS_CLIENT_MEDIA_PLAYER_ICON_OBJECT_ID:
-            printf("MCS Client: Media Player Icon Object ID \"%s\"\n", (char *) gattservice_subevent_mcs_client_media_player_icon_object_id_get_value(packet));
+        case LEAUDIO_SUBEVENT_MCS_CLIENT_MEDIA_PLAYER_ICON_OBJECT_ID:
+            printf("MCS Client: Media Player Icon Object ID \"%s\"\n", (char *) leaudio_subevent_mcs_client_media_player_icon_object_id_get_value(packet));
             break;
         
-        case GATTSERVICE_SUBEVENT_MCS_CLIENT_MEDIA_PLAYER_ICON_URI:
-            printf("MCS Client: Media Player Icon URI\"%s\"\n", (char *) gattservice_subevent_mcs_client_media_player_icon_uri_get_value(packet));
+        case LEAUDIO_SUBEVENT_MCS_CLIENT_MEDIA_PLAYER_ICON_URI:
+            printf("MCS Client: Media Player Icon URI\"%s\"\n", (char *) leaudio_subevent_mcs_client_media_player_icon_uri_get_value(packet));
             break;
         
-        case GATTSERVICE_SUBEVENT_MCS_CLIENT_TRACK_CHANGED:
+        case LEAUDIO_SUBEVENT_MCS_CLIENT_TRACK_CHANGED:
             printf("MCS Client: Media Player Track Changed\n");
             break;
         
-        case GATTSERVICE_SUBEVENT_MCS_CLIENT_TRACK_TITLE:
-            printf("MCS Client: Media Player Name \"%s\"\n", (char *) gattservice_subevent_mcs_client_track_title_get_value(packet));
+        case LEAUDIO_SUBEVENT_MCS_CLIENT_TRACK_TITLE:
+            printf("MCS Client: Media Player Name \"%s\"\n", (char *) leaudio_subevent_mcs_client_track_title_get_value(packet));
             break;
         
-        case GATTSERVICE_SUBEVENT_MCS_CLIENT_TRACK_DURATION:
-            duration_ms = gattservice_subevent_mcs_client_track_duration_get_duration_10ms(packet) * 10;
+        case LEAUDIO_SUBEVENT_MCS_CLIENT_TRACK_DURATION:
+            duration_ms = leaudio_subevent_mcs_client_track_duration_get_duration_10ms(packet) * 10;
             printf("MCS Client: Media Player Track Duration %d ms\n", duration_ms * 10);
             break;
         
-        case GATTSERVICE_SUBEVENT_MCS_CLIENT_TRACK_POSITION:
-            position_ms = gattservice_subevent_mcs_client_track_position_get_position_10ms(packet) * 10;
+        case LEAUDIO_SUBEVENT_MCS_CLIENT_TRACK_POSITION:
+            position_ms = leaudio_subevent_mcs_client_track_position_get_position_10ms(packet) * 10;
             printf("MCS Client: Media Player Track Position %d ms\n", position_ms);
             break;
 
-        case GATTSERVICE_SUBEVENT_MCS_CLIENT_PLAYBACK_SPEED:
-            speed = (int)gattservice_subevent_mcs_client_playback_speed_get_speed(packet);
+        case LEAUDIO_SUBEVENT_MCS_CLIENT_PLAYBACK_SPEED:
+            speed = (int)leaudio_subevent_mcs_client_playback_speed_get_speed(packet);
             printf("MCS Client: Media Player Playback Speed %d \n", speed);
             break;
         
-        case GATTSERVICE_SUBEVENT_MCS_CLIENT_SEEKING_SPEED:
-            seeking_speed = (int)gattservice_subevent_mcs_client_seeking_speed_get_multiplier(packet);
+        case LEAUDIO_SUBEVENT_MCS_CLIENT_SEEKING_SPEED:
+            seeking_speed = (int)leaudio_subevent_mcs_client_seeking_speed_get_multiplier(packet);
             printf("MCS Client: Media Player Seeking Speed %d \n", seeking_speed);
             break;
 
-        case GATTSERVICE_SUBEVENT_MCS_CLIENT_CURRENT_TRACK_SEGMENTS_OBJECT_ID:
-            printf("MCS Client: Current Track Segments Object ID \"%s\"\n", (char *) gattservice_subevent_mcs_client_current_track_segments_object_id_get_value(packet));
+        case LEAUDIO_SUBEVENT_MCS_CLIENT_CURRENT_TRACK_SEGMENTS_OBJECT_ID:
+            printf("MCS Client: Current Track Segments Object ID \"%s\"\n", (char *) leaudio_subevent_mcs_client_current_track_segments_object_id_get_value(packet));
             break;
 
-        case GATTSERVICE_SUBEVENT_MCS_CLIENT_CURRENT_TRACK_OBJECT_ID:
-            printf("MCS Client: Current Track Object ID \"%s\"\n", (char *) gattservice_subevent_mcs_client_current_track_object_id_get_value(packet));
+        case LEAUDIO_SUBEVENT_MCS_CLIENT_CURRENT_TRACK_OBJECT_ID:
+            printf("MCS Client: Current Track Object ID \"%s\"\n", (char *) leaudio_subevent_mcs_client_current_track_object_id_get_value(packet));
             break;
         
-        case GATTSERVICE_SUBEVENT_MCS_CLIENT_NEXT_TRACK_OBJECT_ID:
-            printf("MCS Client: Next Track Object ID \"%s\"\n", (char *) gattservice_subevent_mcs_client_next_track_object_id_get_value(packet));
+        case LEAUDIO_SUBEVENT_MCS_CLIENT_NEXT_TRACK_OBJECT_ID:
+            printf("MCS Client: Next Track Object ID \"%s\"\n", (char *) leaudio_subevent_mcs_client_next_track_object_id_get_value(packet));
             break;
         
-        case GATTSERVICE_SUBEVENT_MCS_CLIENT_PARENT_GROUP_OBJECT_ID:
-            printf("MCS Client: Parent Group Object ID \"%s\"\n", (char *) gattservice_subevent_mcs_client_parent_group_object_id_get_value(packet));
+        case LEAUDIO_SUBEVENT_MCS_CLIENT_PARENT_GROUP_OBJECT_ID:
+            printf("MCS Client: Parent Group Object ID \"%s\"\n", (char *) leaudio_subevent_mcs_client_parent_group_object_id_get_value(packet));
             break;
 
-        case GATTSERVICE_SUBEVENT_MCS_CLIENT_CURRENT_GROUP_OBJECT_ID:
-            printf("MCS Client: Current Group Object ID \"%s\"\n", (char *) gattservice_subevent_mcs_client_current_group_object_id_get_value(packet));
+        case LEAUDIO_SUBEVENT_MCS_CLIENT_CURRENT_GROUP_OBJECT_ID:
+            printf("MCS Client: Current Group Object ID \"%s\"\n", (char *) leaudio_subevent_mcs_client_current_group_object_id_get_value(packet));
             break;
 
-        case GATTSERVICE_SUBEVENT_MCS_CLIENT_PLAYING_ORDER:
-            printf("MCS Client: Playing Order 0x%02x\n", gattservice_subevent_mcs_client_playing_order_get_order(packet));
+        case LEAUDIO_SUBEVENT_MCS_CLIENT_PLAYING_ORDER:
+            printf("MCS Client: Playing Order 0x%02x\n", leaudio_subevent_mcs_client_playing_order_get_order(packet));
             break;
         
-        case GATTSERVICE_SUBEVENT_MCS_CLIENT_PLAYING_ORDER_SUPPORTED:
-            printf("MCS Client: Playing Order Supported 0x%04x\n", gattservice_subevent_mcs_client_playing_order_supported_get_bitmap(packet));
+        case LEAUDIO_SUBEVENT_MCS_CLIENT_PLAYING_ORDER_SUPPORTED:
+            printf("MCS Client: Playing Order Supported 0x%04x\n", leaudio_subevent_mcs_client_playing_order_supported_get_bitmap(packet));
             break;  
 
-        case GATTSERVICE_SUBEVENT_MCS_CLIENT_MEDIA_STATE:
-            printf("MCS Client: Media State 0x%02x\n", gattservice_subevent_mcs_client_media_state_get_state(packet));
+        case LEAUDIO_SUBEVENT_MCS_CLIENT_MEDIA_STATE:
+            printf("MCS Client: Media State 0x%02x\n", leaudio_subevent_mcs_client_media_state_get_state(packet));
             break;
 
-        case GATTSERVICE_SUBEVENT_MCS_CLIENT_CONTROL_POINT_OPCODES_SUPPORTED:
-            printf("MCS Client: Control Point Opcodes Supported 0x%04x\n", gattservice_subevent_mcs_client_control_point_opcodes_supported_get_bitmap(packet));
+        case LEAUDIO_SUBEVENT_MCS_CLIENT_CONTROL_POINT_OPCODES_SUPPORTED:
+            printf("MCS Client: Control Point Opcodes Supported 0x%04x\n", leaudio_subevent_mcs_client_control_point_opcodes_supported_get_bitmap(packet));
             break;
 
-        case GATTSERVICE_SUBEVENT_MCS_CLIENT_MEDIA_CONTROL_POINT_NOTIFICATION_RESULT:
+        case LEAUDIO_SUBEVENT_MCS_CLIENT_MEDIA_CONTROL_POINT_NOTIFICATION_RESULT:
             printf("MCS Client: Control Point Notification Opcode 0x%02x, Result Code 0x%02x\n",
-                   gattservice_subevent_mcs_client_media_control_point_notification_result_get_opcode(packet),
-                   gattservice_subevent_mcs_client_media_control_point_notification_result_get_result_code(packet));
+                   leaudio_subevent_mcs_client_media_control_point_notification_result_get_opcode(packet),
+                   leaudio_subevent_mcs_client_media_control_point_notification_result_get_result_code(packet));
             break;
 
-        case GATTSERVICE_SUBEVENT_MCS_CLIENT_SEARCH_CONTROL_POINT_NOTIFICATION_RESULT:
+        case LEAUDIO_SUBEVENT_MCS_CLIENT_SEARCH_CONTROL_POINT_NOTIFICATION_RESULT:
             printf("MCS Client: Search Control Point Notification, Result Code 0x%02x\n",
-                   gattservice_subevent_mcs_client_search_control_point_notification_result_get_result_code(packet));
+                   leaudio_subevent_mcs_client_search_control_point_notification_result_get_result_code(packet));
                 break;
 
-        case GATTSERVICE_SUBEVENT_MCS_CLIENT_SEARCH_RESULT_OBJECT_ID:
-            printf("MCS Client: Search Result Object ID \"%s\"\n", (char *) gattservice_subevent_mcs_client_search_result_object_id_get_value(packet));
-            printf_hexdump(gattservice_subevent_mcs_client_search_result_object_id_get_value(packet), gattservice_subevent_mcs_client_search_result_object_id_get_value_len(packet));
+        case LEAUDIO_SUBEVENT_MCS_CLIENT_SEARCH_RESULT_OBJECT_ID:
+            printf("MCS Client: Search Result Object ID \"%s\"\n", (char *) leaudio_subevent_mcs_client_search_result_object_id_get_value(packet));
+            printf_hexdump(leaudio_subevent_mcs_client_search_result_object_id_get_value(packet), leaudio_subevent_mcs_client_search_result_object_id_get_value_len(packet));
             break;
         
-        case GATTSERVICE_SUBEVENT_MCS_CLIENT_CONTENT_CONTROL_ID:
-            printf("MCS Client: Content Control ID 0x%02x\n", gattservice_subevent_mcs_client_content_control_id_get_ccid(packet));
+        case LEAUDIO_SUBEVENT_MCS_CLIENT_CONTENT_CONTROL_ID:
+            printf("MCS Client: Content Control ID 0x%02x\n", leaudio_subevent_mcs_client_content_control_id_get_ccid(packet));
             break;
         
-        case GATTSERVICE_SUBEVENT_MCS_CLIENT_DISCONNECTED:
+        case LEAUDIO_SUBEVENT_MCS_CLIENT_DISCONNECTED:
             mcs_cid = 0;
             printf("MCS Client: disconnected\n");
             break;

@@ -2249,7 +2249,7 @@ static void mcs_server_execute_track_operation(mcs_media_player_t * media_player
             mcs_goto_next_track(media_player->id);
             break;
         case MEDIA_CONTROL_POINT_OPCODE_GOTO_TRACK:
-            value_int32 = (int32_t) gattservice_subevent_mcs_server_media_control_point_notification_task_get_data(packet);
+            value_int32 = (int32_t) leaudio_subevent_mcs_server_media_control_point_notification_task_get_data(packet);
             if (value_int32 == 0){
                 return;
             }
@@ -2273,7 +2273,7 @@ static void mcs_server_execute_track_operation(mcs_media_player_t * media_player
             mcs_current_track_goto_last_segment(track);
             break;
         case MEDIA_CONTROL_POINT_OPCODE_GOTO_SEGMENT:
-            value_int32 = (int32_t) gattservice_subevent_mcs_server_media_control_point_notification_task_get_data(packet);
+            value_int32 = (int32_t) leaudio_subevent_mcs_server_media_control_point_notification_task_get_data(packet);
             printf(" - Goto %d segment, current %d\n", value_int32, mcs_track_current_segment(track));
             mcs_current_track_goto_segment(track, value_int32);
             break;
@@ -2290,12 +2290,12 @@ static void mcs_server_execute_track_operation(mcs_media_player_t * media_player
             mcs_goto_last_group(media_player->id);
             break;
         case MEDIA_CONTROL_POINT_OPCODE_GOTO_GROUP:
-            value_int32 = (int32_t) gattservice_subevent_mcs_server_media_control_point_notification_task_get_data(packet);
+            value_int32 = (int32_t) leaudio_subevent_mcs_server_media_control_point_notification_task_get_data(packet);
             mcs_goto_group(media_player->id, value_int32);
             break;
 
         case MEDIA_CONTROL_POINT_OPCODE_MOVE_RELATIVE:
-            value_int32 = (int32_t) gattservice_subevent_mcs_server_media_control_point_notification_task_get_data(packet);
+            value_int32 = (int32_t) leaudio_subevent_mcs_server_media_control_point_notification_task_get_data(packet);
             mcs_current_track_apply_relative_offset(media_player->id, value_int32);
             break;
 
@@ -2325,19 +2325,19 @@ static void ots_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
     UNUSED(size);
 
     if (packet_type != HCI_EVENT_PACKET) return;
-    if (hci_event_packet_get_type(packet) != HCI_EVENT_GATTSERVICE_META) return;
+    if (hci_event_packet_get_type(packet) != HCI_EVENT_LEAUDIO_META) return;
 
     uint8_t filter_index;
     ots_object_t * object;
 
-    switch (hci_event_gattservice_meta_get_subevent_code(packet)) {
-        case GATTSERVICE_SUBEVENT_OTS_SERVER_FILTER:
-            filter_index = gattservice_subevent_ots_server_filter_get_filter_index(packet);
+    switch (hci_event_leaudio_meta_get_subevent_code(packet)) {
+        case LEAUDIO_SUBEVENT_OTS_SERVER_FILTER:
+            filter_index = leaudio_subevent_ots_server_filter_get_filter_index(packet);
             btstack_assert(filter_index < OTS_MAX_NUM_FILTERS);
 
-            ots_filters[filter_index].type = (ots_filter_type_t)gattservice_subevent_ots_server_filter_get_filter_type(packet);
-            ots_filters[filter_index].value_length = (ots_filter_type_t)gattservice_subevent_ots_server_filter_get_data_length(packet);
-            memcpy(ots_filters[filter_index].value, gattservice_subevent_ots_server_filter_get_data(packet), ots_filters[filter_index].value_length);
+            ots_filters[filter_index].type = (ots_filter_type_t)leaudio_subevent_ots_server_filter_get_filter_type(packet);
+            ots_filters[filter_index].value_length = (ots_filter_type_t)leaudio_subevent_ots_server_filter_get_data_length(packet);
+            memcpy(ots_filters[filter_index].value, leaudio_subevent_ots_server_filter_get_data(packet), ots_filters[filter_index].value_length);
 
             if (ots_filters[filter_index].type == OTS_FILTER_TYPE_NO_FILTER){
                 ots_db_active_filters_bitmap &= ~(1 << filter_index);
@@ -2348,9 +2348,9 @@ static void ots_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
             ots_dump_filter(filter_index);
             ots_db_filter();
             object = ots_object_iterator_first();
-            object_transfer_service_server_set_current_object(gattservice_subevent_ots_server_filter_get_con_handle(packet), object);
+            object_transfer_service_server_set_current_object(leaudio_subevent_ots_server_filter_get_con_handle(packet), object);
             break;
-        case GATTSERVICE_SUBEVENT_OTS_SERVER_DISCONNECT:
+        case LEAUDIO_SUBEVENT_OTS_SERVER_DISCONNECTED:
             ots_db_delete_malformed_objects();
             break;
         default:
@@ -2416,7 +2416,7 @@ static void mcs_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
     UNUSED(size);
 
     if (packet_type != HCI_EVENT_PACKET) return;
-    if (hci_event_packet_get_type(packet) != HCI_EVENT_GATTSERVICE_META) return;
+    if (hci_event_packet_get_type(packet) != HCI_EVENT_LEAUDIO_META) return;
 
     uint8_t characteristic_id;
     media_control_point_opcode_t opcode;
@@ -2428,21 +2428,21 @@ static void mcs_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
     uint8_t search_data_len;
     uint8_t pos = 0;
 
-    switch (hci_event_gattservice_meta_get_subevent_code(packet)){
-        case GATTSERVICE_SUBEVENT_MCS_SERVER_VALUE_CHANGED:
-            characteristic_id = gattservice_subevent_mcs_server_value_changed_get_characteristic_id(packet);
+    switch (hci_event_leaudio_meta_get_subevent_code(packet)){
+        case LEAUDIO_SUBEVENT_MCS_SERVER_VALUE_CHANGED:
+            characteristic_id = leaudio_subevent_mcs_server_value_changed_get_characteristic_id(packet);
             printf("MCS Server App: changed value, characteristic_id %d\n", characteristic_id);
             break;
 
-        case GATTSERVICE_SUBEVENT_MCS_SERVER_SEARCH_CONTROL_POINT_NOTIFICATION_TASK:
-            media_player_id = gattservice_subevent_mcs_server_search_control_point_notification_task_get_media_player_id(packet);
+        case LEAUDIO_SUBEVENT_MCS_SERVER_SEARCH_CONTROL_POINT_NOTIFICATION_TASK:
+            media_player_id = leaudio_subevent_mcs_server_search_control_point_notification_task_get_media_player_id(packet);
             media_player = mcs_get_media_player_for_id(media_player_id);
 
             if (media_player == NULL){
                 return;
             }
-            search_data     = gattservice_subevent_mcs_server_search_control_point_notification_task_get_data(packet);
-            search_data_len = gattservice_subevent_mcs_server_search_control_point_notification_task_get_data_length(packet);
+            search_data     = leaudio_subevent_mcs_server_search_control_point_notification_task_get_data(packet);
+            search_data_len = leaudio_subevent_mcs_server_search_control_point_notification_task_get_data_length(packet);
 
             printf("MCS Server App: Search Notification, data len %d\n", search_data_len);
 
@@ -2488,9 +2488,9 @@ static void mcs_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
 
         break;
 
-        case GATTSERVICE_SUBEVENT_MCS_SERVER_MEDIA_CONTROL_POINT_NOTIFICATION_TASK:
-            opcode = (media_control_point_opcode_t)gattservice_subevent_mcs_server_media_control_point_notification_task_get_opcode(packet);
-            media_player_id = gattservice_subevent_mcs_server_media_control_point_notification_task_get_media_player_id(packet);
+        case LEAUDIO_SUBEVENT_MCS_SERVER_MEDIA_CONTROL_POINT_NOTIFICATION_TASK:
+            opcode = (media_control_point_opcode_t)leaudio_subevent_mcs_server_media_control_point_notification_task_get_opcode(packet);
+            media_player_id = leaudio_subevent_mcs_server_media_control_point_notification_task_get_media_player_id(packet);
             media_player = mcs_get_media_player_for_id(media_player_id);
 
             if (media_player == NULL){

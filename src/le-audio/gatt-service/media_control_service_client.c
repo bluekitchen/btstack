@@ -268,9 +268,9 @@ static void mcs_client_emit_connected(const gatt_service_client_connection_helpe
 
     uint8_t event[9];
     int pos = 0;
-    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = HCI_EVENT_LEAUDIO_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_MCS_CLIENT_CONNECTED;
+    event[pos++] = LEAUDIO_SUBEVENT_MCS_CLIENT_CONNECTED;
     little_endian_store_16(event, pos, connection_helper->con_handle);
     pos += 2;
     little_endian_store_16(event, pos, connection_helper->cid);
@@ -286,7 +286,7 @@ static void mcs_client_emit_string_value(uint16_t cid, btstack_packet_handler_t 
     
     uint8_t event[257];
     uint16_t pos = 0;
-    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = HCI_EVENT_LEAUDIO_META;
     pos++;                      // reserve event[1] for subevent size 
     event[pos++] = subevent;
     little_endian_store_16(event, pos, cid);
@@ -311,7 +311,7 @@ static void mcs_client_emit_number(uint16_t cid, btstack_packet_handler_t event_
     
     uint8_t event[9];
     uint16_t pos = 0;
-    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = HCI_EVENT_LEAUDIO_META;
     event[pos++] = 3 + data_size;
     event[pos++] = subevent;
     little_endian_store_16(event, pos, cid);
@@ -331,9 +331,9 @@ static void mcs_client_emit_done_event(mcs_client_connection_t * connection, uin
 
     uint8_t event[8];
     uint16_t pos = 0;
-    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = HCI_EVENT_LEAUDIO_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_MCS_CLIENT_WRITE_DONE;
+    event[pos++] = LEAUDIO_SUBEVENT_MCS_CLIENT_WRITE_DONE;
 
     little_endian_store_16(event, pos, cid);
     pos+= 2;
@@ -352,9 +352,9 @@ static void mcs_client_emit_media_control_point_notification_result_event(uint16
     
     uint8_t event[7];
     uint16_t pos = 0;
-    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = HCI_EVENT_LEAUDIO_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_MCS_CLIENT_MEDIA_CONTROL_POINT_NOTIFICATION_RESULT;
+    event[pos++] = LEAUDIO_SUBEVENT_MCS_CLIENT_MEDIA_CONTROL_POINT_NOTIFICATION_RESULT;
 
     little_endian_store_16(event, pos, cid);
     pos+= 2;
@@ -372,9 +372,9 @@ static void mcs_client_emit_search_control_point_notification_result_event(uint1
     
     uint8_t event[6];
     uint16_t pos = 0;
-    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = HCI_EVENT_LEAUDIO_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_MCS_CLIENT_SEARCH_CONTROL_POINT_NOTIFICATION_RESULT;
+    event[pos++] = LEAUDIO_SUBEVENT_MCS_CLIENT_SEARCH_CONTROL_POINT_NOTIFICATION_RESULT;
 
     little_endian_store_16(event, pos, cid);
     pos+= 2;
@@ -395,61 +395,61 @@ static void mcs_client_emit_read_event(mcs_client_connection_t * connection, uin
 
     switch (characteristic_uuid16){
         case ORG_BLUETOOTH_CHARACTERISTIC_MEDIA_PLAYER_NAME:
-            mcs_client_emit_string_value(cid, event_callback, GATTSERVICE_SUBEVENT_MCS_CLIENT_MEDIA_PLAYER_NAME, data, data_size);
+            mcs_client_emit_string_value(cid, event_callback, LEAUDIO_SUBEVENT_MCS_CLIENT_MEDIA_PLAYER_NAME, data, data_size);
             break;
         case ORG_BLUETOOTH_CHARACTERISTIC_MEDIA_PLAYER_ICON_OBJECT_ID:
-            mcs_client_emit_string_value(cid, event_callback, GATTSERVICE_SUBEVENT_MCS_CLIENT_MEDIA_PLAYER_ICON_OBJECT_ID, data, data_size);
+            mcs_client_emit_string_value(cid, event_callback, LEAUDIO_SUBEVENT_MCS_CLIENT_MEDIA_PLAYER_ICON_OBJECT_ID, data, data_size);
             break;
         case ORG_BLUETOOTH_CHARACTERISTIC_MEDIA_PLAYER_ICON_URL:
-            mcs_client_emit_string_value(cid, event_callback, GATTSERVICE_SUBEVENT_MCS_CLIENT_MEDIA_PLAYER_ICON_URI, data, data_size);
+            mcs_client_emit_string_value(cid, event_callback, LEAUDIO_SUBEVENT_MCS_CLIENT_MEDIA_PLAYER_ICON_URI, data, data_size);
             break;
         case ORG_BLUETOOTH_CHARACTERISTIC_TRACK_TITLE:
-            mcs_client_emit_string_value(cid, event_callback, GATTSERVICE_SUBEVENT_MCS_CLIENT_TRACK_TITLE, data, data_size);
+            mcs_client_emit_string_value(cid, event_callback, LEAUDIO_SUBEVENT_MCS_CLIENT_TRACK_TITLE, data, data_size);
             break;
         case ORG_BLUETOOTH_CHARACTERISTIC_TRACK_DURATION:
-            mcs_client_emit_number(cid, event_callback, GATTSERVICE_SUBEVENT_MCS_CLIENT_TRACK_DURATION, data, data_size, 4);
+            mcs_client_emit_number(cid, event_callback, LEAUDIO_SUBEVENT_MCS_CLIENT_TRACK_DURATION, data, data_size, 4);
             break;
         case ORG_BLUETOOTH_CHARACTERISTIC_TRACK_POSITION:
-            mcs_client_emit_number(cid, event_callback, GATTSERVICE_SUBEVENT_MCS_CLIENT_TRACK_POSITION, data, data_size, 4);
+            mcs_client_emit_number(cid, event_callback, LEAUDIO_SUBEVENT_MCS_CLIENT_TRACK_POSITION, data, data_size, 4);
             break;
         case ORG_BLUETOOTH_CHARACTERISTIC_PLAYBACK_SPEED:
-            mcs_client_emit_number(cid, event_callback, GATTSERVICE_SUBEVENT_MCS_CLIENT_PLAYBACK_SPEED, data, data_size, 2);
+            mcs_client_emit_number(cid, event_callback, LEAUDIO_SUBEVENT_MCS_CLIENT_PLAYBACK_SPEED, data, data_size, 2);
             break;
         case ORG_BLUETOOTH_CHARACTERISTIC_SEEKING_SPEED:
-            mcs_client_emit_number(cid, event_callback, GATTSERVICE_SUBEVENT_MCS_CLIENT_SEEKING_SPEED, data, data_size, 1);
+            mcs_client_emit_number(cid, event_callback, LEAUDIO_SUBEVENT_MCS_CLIENT_SEEKING_SPEED, data, data_size, 1);
             break;
         case ORG_BLUETOOTH_CHARACTERISTIC_CURRENT_TRACK_SEGMENTS_OBJECT_ID:
-            mcs_client_emit_string_value(cid, event_callback, GATTSERVICE_SUBEVENT_MCS_CLIENT_CURRENT_TRACK_SEGMENTS_OBJECT_ID, data, data_size);
+            mcs_client_emit_string_value(cid, event_callback, LEAUDIO_SUBEVENT_MCS_CLIENT_CURRENT_TRACK_SEGMENTS_OBJECT_ID, data, data_size);
             break;
         case ORG_BLUETOOTH_CHARACTERISTIC_CURRENT_TRACK_OBJECT_ID:
-            mcs_client_emit_string_value(cid, event_callback, GATTSERVICE_SUBEVENT_MCS_CLIENT_CURRENT_TRACK_OBJECT_ID, data, data_size);
+            mcs_client_emit_string_value(cid, event_callback, LEAUDIO_SUBEVENT_MCS_CLIENT_CURRENT_TRACK_OBJECT_ID, data, data_size);
             break;
         case ORG_BLUETOOTH_CHARACTERISTIC_NEXT_TRACK_OBJECT_ID:
-            mcs_client_emit_string_value(cid, event_callback, GATTSERVICE_SUBEVENT_MCS_CLIENT_NEXT_TRACK_OBJECT_ID, data, data_size);
+            mcs_client_emit_string_value(cid, event_callback, LEAUDIO_SUBEVENT_MCS_CLIENT_NEXT_TRACK_OBJECT_ID, data, data_size);
             break;
         case ORG_BLUETOOTH_CHARACTERISTIC_PARENT_GROUP_OBJECT_ID:
-            mcs_client_emit_string_value(cid, event_callback, GATTSERVICE_SUBEVENT_MCS_CLIENT_PARENT_GROUP_OBJECT_ID, data, data_size);
+            mcs_client_emit_string_value(cid, event_callback, LEAUDIO_SUBEVENT_MCS_CLIENT_PARENT_GROUP_OBJECT_ID, data, data_size);
             break;
         case ORG_BLUETOOTH_CHARACTERISTIC_CURRENT_GROUP_OBJECT_ID:
-            mcs_client_emit_string_value(cid, event_callback, GATTSERVICE_SUBEVENT_MCS_CLIENT_CURRENT_GROUP_OBJECT_ID, data, data_size);
+            mcs_client_emit_string_value(cid, event_callback, LEAUDIO_SUBEVENT_MCS_CLIENT_CURRENT_GROUP_OBJECT_ID, data, data_size);
             break;
         case ORG_BLUETOOTH_CHARACTERISTIC_PLAYING_ORDER:
-            mcs_client_emit_number(cid, event_callback, GATTSERVICE_SUBEVENT_MCS_CLIENT_PLAYING_ORDER, data, data_size, 1);
+            mcs_client_emit_number(cid, event_callback, LEAUDIO_SUBEVENT_MCS_CLIENT_PLAYING_ORDER, data, data_size, 1);
             break;
         case ORG_BLUETOOTH_CHARACTERISTIC_PLAYING_ORDERS_SUPPORTED:
-            mcs_client_emit_number(cid, event_callback, GATTSERVICE_SUBEVENT_MCS_CLIENT_PLAYING_ORDER_SUPPORTED, data, data_size, 2);
+            mcs_client_emit_number(cid, event_callback, LEAUDIO_SUBEVENT_MCS_CLIENT_PLAYING_ORDER_SUPPORTED, data, data_size, 2);
             break;
         case ORG_BLUETOOTH_CHARACTERISTIC_MEDIA_STATE:
-            mcs_client_emit_number(cid, event_callback, GATTSERVICE_SUBEVENT_MCS_CLIENT_MEDIA_STATE, data, data_size, 1);
+            mcs_client_emit_number(cid, event_callback, LEAUDIO_SUBEVENT_MCS_CLIENT_MEDIA_STATE, data, data_size, 1);
             break;
         case ORG_BLUETOOTH_CHARACTERISTIC_MEDIA_CONTROL_POINT_OPCODES_SUPPORTED:
-            mcs_client_emit_number(cid, event_callback, GATTSERVICE_SUBEVENT_MCS_CLIENT_CONTROL_POINT_OPCODES_SUPPORTED, data, data_size, 4);
+            mcs_client_emit_number(cid, event_callback, LEAUDIO_SUBEVENT_MCS_CLIENT_CONTROL_POINT_OPCODES_SUPPORTED, data, data_size, 4);
             break;
         case ORG_BLUETOOTH_CHARACTERISTIC_SEARCH_RESULTS_OBJECT_ID:
-            mcs_client_emit_string_value(cid, event_callback, GATTSERVICE_SUBEVENT_MCS_CLIENT_SEARCH_RESULT_OBJECT_ID, data, data_size);
+            mcs_client_emit_string_value(cid, event_callback, LEAUDIO_SUBEVENT_MCS_CLIENT_SEARCH_RESULT_OBJECT_ID, data, data_size);
             break;
         case ORG_BLUETOOTH_CHARACTERISTIC_CONTENT_CONTROL_ID:
-            mcs_client_emit_number(cid, event_callback, GATTSERVICE_SUBEVENT_MCS_CLIENT_CONTENT_CONTROL_ID, data, data_size, 1);
+            mcs_client_emit_number(cid, event_callback, LEAUDIO_SUBEVENT_MCS_CLIENT_CONTENT_CONTROL_ID, data, data_size, 1);
             break;  
          default:
             break;
@@ -469,49 +469,49 @@ static void mcs_client_emit_notify_event(mcs_client_connection_t * connection, u
 
     switch (characteristic_uuid16){
         case ORG_BLUETOOTH_CHARACTERISTIC_MEDIA_PLAYER_NAME:
-            mcs_client_emit_string_value(cid, event_callback, GATTSERVICE_SUBEVENT_MCS_CLIENT_MEDIA_PLAYER_NAME, data, data_size);
+            mcs_client_emit_string_value(cid, event_callback, LEAUDIO_SUBEVENT_MCS_CLIENT_MEDIA_PLAYER_NAME, data, data_size);
             break;
         case ORG_BLUETOOTH_CHARACTERISTIC_TRACK_TITLE:
-            mcs_client_emit_string_value(cid, event_callback, GATTSERVICE_SUBEVENT_MCS_CLIENT_TRACK_TITLE, data, data_size);
+            mcs_client_emit_string_value(cid, event_callback, LEAUDIO_SUBEVENT_MCS_CLIENT_TRACK_TITLE, data, data_size);
             break;
         case ORG_BLUETOOTH_CHARACTERISTIC_TRACK_DURATION:
-            mcs_client_emit_number(cid, event_callback, GATTSERVICE_SUBEVENT_MCS_CLIENT_TRACK_DURATION, data, data_size, 4);
+            mcs_client_emit_number(cid, event_callback, LEAUDIO_SUBEVENT_MCS_CLIENT_TRACK_DURATION, data, data_size, 4);
             break;
         case ORG_BLUETOOTH_CHARACTERISTIC_TRACK_POSITION:
-            mcs_client_emit_number(cid, event_callback, GATTSERVICE_SUBEVENT_MCS_CLIENT_TRACK_POSITION, data, data_size, 4);
+            mcs_client_emit_number(cid, event_callback, LEAUDIO_SUBEVENT_MCS_CLIENT_TRACK_POSITION, data, data_size, 4);
             break;
         case ORG_BLUETOOTH_CHARACTERISTIC_PLAYBACK_SPEED:
-            mcs_client_emit_number(cid, event_callback, GATTSERVICE_SUBEVENT_MCS_CLIENT_PLAYBACK_SPEED, data, data_size, 2);
+            mcs_client_emit_number(cid, event_callback, LEAUDIO_SUBEVENT_MCS_CLIENT_PLAYBACK_SPEED, data, data_size, 2);
             break;
         case ORG_BLUETOOTH_CHARACTERISTIC_SEEKING_SPEED:
-            mcs_client_emit_number(cid, event_callback, GATTSERVICE_SUBEVENT_MCS_CLIENT_SEEKING_SPEED, data, data_size, 1);
+            mcs_client_emit_number(cid, event_callback, LEAUDIO_SUBEVENT_MCS_CLIENT_SEEKING_SPEED, data, data_size, 1);
             break;
         case ORG_BLUETOOTH_CHARACTERISTIC_CURRENT_TRACK_OBJECT_ID:
-            mcs_client_emit_string_value(cid, event_callback, GATTSERVICE_SUBEVENT_MCS_CLIENT_CURRENT_TRACK_OBJECT_ID, data, data_size);
+            mcs_client_emit_string_value(cid, event_callback, LEAUDIO_SUBEVENT_MCS_CLIENT_CURRENT_TRACK_OBJECT_ID, data, data_size);
             break;
         case ORG_BLUETOOTH_CHARACTERISTIC_NEXT_TRACK_OBJECT_ID:
-            mcs_client_emit_string_value(cid, event_callback, GATTSERVICE_SUBEVENT_MCS_CLIENT_NEXT_TRACK_OBJECT_ID, data, data_size);
+            mcs_client_emit_string_value(cid, event_callback, LEAUDIO_SUBEVENT_MCS_CLIENT_NEXT_TRACK_OBJECT_ID, data, data_size);
             break;
         case ORG_BLUETOOTH_CHARACTERISTIC_PARENT_GROUP_OBJECT_ID:
-            mcs_client_emit_string_value(cid, event_callback, GATTSERVICE_SUBEVENT_MCS_CLIENT_PARENT_GROUP_OBJECT_ID, data, data_size);
+            mcs_client_emit_string_value(cid, event_callback, LEAUDIO_SUBEVENT_MCS_CLIENT_PARENT_GROUP_OBJECT_ID, data, data_size);
             break;
         case ORG_BLUETOOTH_CHARACTERISTIC_CURRENT_GROUP_OBJECT_ID:
-            mcs_client_emit_string_value(cid, event_callback, GATTSERVICE_SUBEVENT_MCS_CLIENT_CURRENT_GROUP_OBJECT_ID, data, data_size);
+            mcs_client_emit_string_value(cid, event_callback, LEAUDIO_SUBEVENT_MCS_CLIENT_CURRENT_GROUP_OBJECT_ID, data, data_size);
             break;
         case ORG_BLUETOOTH_CHARACTERISTIC_PLAYING_ORDER:
-            mcs_client_emit_number(cid, event_callback, GATTSERVICE_SUBEVENT_MCS_CLIENT_PLAYING_ORDER, data, data_size, 1);
+            mcs_client_emit_number(cid, event_callback, LEAUDIO_SUBEVENT_MCS_CLIENT_PLAYING_ORDER, data, data_size, 1);
             break;
         case ORG_BLUETOOTH_CHARACTERISTIC_MEDIA_STATE:
-            mcs_client_emit_number(cid, event_callback, GATTSERVICE_SUBEVENT_MCS_CLIENT_MEDIA_STATE, data, data_size, 1);
+            mcs_client_emit_number(cid, event_callback, LEAUDIO_SUBEVENT_MCS_CLIENT_MEDIA_STATE, data, data_size, 1);
             break;
         case ORG_BLUETOOTH_CHARACTERISTIC_MEDIA_CONTROL_POINT_OPCODES_SUPPORTED:
-            mcs_client_emit_number(cid, event_callback, GATTSERVICE_SUBEVENT_MCS_CLIENT_CONTROL_POINT_OPCODES_SUPPORTED, data, data_size, 4);
+            mcs_client_emit_number(cid, event_callback, LEAUDIO_SUBEVENT_MCS_CLIENT_CONTROL_POINT_OPCODES_SUPPORTED, data, data_size, 4);
             break;
         case ORG_BLUETOOTH_CHARACTERISTIC_SEARCH_RESULTS_OBJECT_ID:
-            mcs_client_emit_string_value(cid, event_callback, GATTSERVICE_SUBEVENT_MCS_CLIENT_SEARCH_RESULT_OBJECT_ID, data, data_size);
+            mcs_client_emit_string_value(cid, event_callback, LEAUDIO_SUBEVENT_MCS_CLIENT_SEARCH_RESULT_OBJECT_ID, data, data_size);
             break;
         case ORG_BLUETOOTH_CHARACTERISTIC_TRACK_CHANGED:
-            mcs_client_emit_number(cid, event_callback, GATTSERVICE_SUBEVENT_MCS_CLIENT_TRACK_CHANGED, data, data_size, 1);
+            mcs_client_emit_number(cid, event_callback, LEAUDIO_SUBEVENT_MCS_CLIENT_TRACK_CHANGED, data, data_size, 1);
             break;
         case ORG_BLUETOOTH_CHARACTERISTIC_MEDIA_CONTROL_POINT:
             mcs_client_emit_media_control_point_notification_result_event(cid, event_callback, data, data_size);
@@ -574,14 +574,27 @@ static void mcs_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
                     }
                     break;
 
-                case GATTSERVICE_SUBEVENT_OTS_CLIENT_CONNECTED:
-                    cid = gattservice_subevent_ots_client_connected_get_ots_cid(packet);
+                case GATTSERVICE_SUBEVENT_CLIENT_DISCONNECTED:
+                    connection_helper = gatt_service_client_get_connection_for_cid(&mcs_client, gattservice_subevent_client_disconnected_get_cid(packet));
+                    btstack_assert(connection_helper != NULL);
+                    mcs_client_replace_subevent_id_and_emit(connection_helper->event_callback, packet, size, LEAUDIO_SUBEVENT_MCS_CLIENT_DISCONNECTED);
+                    break;
+
+                default:
+                    break;
+            }
+            break;
+
+        case HCI_EVENT_LEAUDIO_META:
+            switch (hci_event_leaudio_meta_get_subevent_code(packet)){
+                case LEAUDIO_SUBEVENT_OTS_CLIENT_CONNECTED:
+                    cid = leaudio_subevent_ots_client_connected_get_ots_cid(packet);
                     connection_helper = gatt_service_client_get_connection_for_cid(&mcs_client, cid);
                     btstack_assert(connection_helper != NULL);
                     connection = (mcs_client_connection_t *)connection_helper;
 
-                    if (gattservice_subevent_ots_client_connected_get_att_status(packet) != ERROR_CODE_SUCCESS) {
-                        log_info("MCS: OTS client connection failed, err 0x%02x", gattservice_subevent_ots_client_connected_get_att_status(packet));
+                    if (leaudio_subevent_ots_client_connected_get_att_status(packet) != ERROR_CODE_SUCCESS) {
+                        log_info("MCS: OTS client connection failed, err 0x%02x", leaudio_subevent_ots_client_connected_get_att_status(packet));
                         connection->ots_connections_num = 0;
                     }
 
@@ -593,12 +606,6 @@ static void mcs_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
                         default:
                             break;
                     }
-                    break;
-
-                case GATTSERVICE_SUBEVENT_CLIENT_DISCONNECTED:
-                    connection_helper = gatt_service_client_get_connection_for_cid(&mcs_client, gattservice_subevent_client_disconnected_get_cid(packet));
-                    btstack_assert(connection_helper != NULL);
-                    mcs_client_replace_subevent_id_and_emit(connection_helper->event_callback, packet, size, GATTSERVICE_SUBEVENT_MCS_CLIENT_DISCONNECTED);
                     break;
 
                 default:

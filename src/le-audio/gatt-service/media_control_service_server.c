@@ -357,9 +357,9 @@ static void mcs_server_emit_media_value_changed(media_control_service_server_t *
     memset(event, 0, sizeof(event));
 
     uint8_t pos = 0;
-    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = HCI_EVENT_LEAUDIO_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_MCS_SERVER_VALUE_CHANGED;
+    event[pos++] = LEAUDIO_SUBEVENT_MCS_SERVER_VALUE_CHANGED;
     little_endian_store_16(event, pos, media_player->con_handle);
     pos += 2;
     little_endian_store_16(event, pos, media_player->player_id);
@@ -377,9 +377,9 @@ static void mcs_server_emit_media_control_notification_task(media_control_servic
     memset(event, 0, sizeof(event));
 
     uint8_t pos = 0;
-    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = HCI_EVENT_LEAUDIO_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_MCS_SERVER_MEDIA_CONTROL_POINT_NOTIFICATION_TASK;
+    event[pos++] = LEAUDIO_SUBEVENT_MCS_SERVER_MEDIA_CONTROL_POINT_NOTIFICATION_TASK;
     little_endian_store_16(event, pos, media_player->con_handle);
     pos += 2;
     little_endian_store_16(event, pos, media_player->player_id);
@@ -401,9 +401,9 @@ static void mcs_server_emit_search_control_notification_task(media_control_servi
     memset(event, 0, sizeof(event));
 
     uint8_t pos = 0;
-    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = HCI_EVENT_LEAUDIO_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_MCS_SERVER_SEARCH_CONTROL_POINT_NOTIFICATION_TASK;
+    event[pos++] = LEAUDIO_SUBEVENT_MCS_SERVER_SEARCH_CONTROL_POINT_NOTIFICATION_TASK;
     little_endian_store_16(event, pos, media_player->con_handle);
     pos += 2;
     little_endian_store_16(event, pos, media_player->player_id);
