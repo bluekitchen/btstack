@@ -4563,6 +4563,20 @@ typedef uint8_t sm_key_t[16];
 */
 #define LEAUDIO_SUBEVENT_BASS_CLIENT_SOURCE_OPERATION_COMPLETE                     0x0Fu
 
+/**
+ * @format 1H1
+ * @param subevent_code
+ * @param con_handle
+ * @param status
+*/
+#define LEAUDIO_SUBEVENT_ASCS_SERVER_CONNECTED                              0x10u
+
+/**
+ * @format 1H
+ * @param subevent_code
+ * @param con_handle
+*/
+#define LEAUDIO_SUBEVENT_ASCS_SERVER_DISCONNECTED                           0x11u
 
 /**
  * @format 1H111122111421
@@ -4581,7 +4595,7 @@ typedef uint8_t sm_key_t[16];
  * @param octets_per_frame 
  * @param frame_blocks_per_sdu 
 */
-#define GATTSERVICE_SUBEVENT_ASCS_SERVER_CODEC_CONFIGURATION                  0x32u
+#define LEAUDIO_SUBEVENT_ASCS_SERVER_CODEC_CONFIGURATION                      0x12u
 
 
 /**
@@ -4599,7 +4613,7 @@ typedef uint8_t sm_key_t[16];
  * @param max_transport_latency
  * @param presentation_delay_us
 */
-#define GATTSERVICE_SUBEVENT_ASCS_SERVER_QOS_CONFIGURATION                   0x034u
+#define LEAUDIO_SUBEVENT_ASCS_SERVER_QOS_CONFIGURATION                         0x13u
 
 /**
  * @format 1H1122JV3JV1JV2JV2JV
@@ -4624,7 +4638,77 @@ typedef uint8_t sm_key_t[16];
  * @param vendor_specific_metadata_value_length
  * @param vendor_specific_metadata_value
 */
-#define GATTSERVICE_SUBEVENT_ASCS_SERVER_METADATA                             0x35u
+#define LEAUDIO_SUBEVENT_ASCS_SERVER_METADATA                                    0x14u
+
+
+// used by server to emit control point operation operation
+/**
+ * @format 1H1
+ * @param subevent_code
+ * @param con_handle
+ * @param ase_id
+*/ 
+#define LEAUDIO_SUBEVENT_ASCS_SERVER_START_READY                                 0x15u
+
+/**
+ * @format 1H1
+ * @param subevent_code
+ * @param con_handle
+ * @param ase_id
+*/
+#define LEAUDIO_SUBEVENT_ASCS_SERVER_ENABLE                                       0x16u
+
+/**
+ * @format 1H1
+ * @param subevent_code
+ * @param con_handle
+ * @param ase_id
+*/ 
+#define LEAUDIO_SUBEVENT_ASCS_SERVER_DISABLE                                      0x17u
+
+/**
+ * @format 1H1
+ * @param subevent_code
+ * @param con_handle
+ * @param ase_id
+*/ 
+#define LEAUDIO_SUBEVENT_ASCS_SERVER_RELEASE                                      0x18u
+
+/**
+ * @format 1H1
+ * @param subevent_code
+ * @param con_handle
+ * @param ase_id
+*/ 
+#define LEAUDIO_SUBEVENT_ASCS_SERVER_STOP_READY                                   0x19u
+
+/**
+ * @format 1H1
+ * @param subevent_code
+ * @param con_handle
+ * @param ase_id
+*/
+#define LEAUDIO_SUBEVENT_ASCS_SERVER_RELEASED                                     0x1Au
+
+/**
+ * @format 1H21JVJV
+ * @param subevent_code
+ * @param con_handle
+ * @param ascs_cid
+ * @param status
+ * @param sink_ase_num
+ * @param sink_ase_ids
+ * @param source_ase_num
+ * @param source_ase_ids 
+*/
+#define LEAUDIO_SUBEVENT_ASCS_CLIENT_CONNECTED                                    0x1Bu
+
+/**
+ * @format 12
+ * @param subevent_code
+ * @param ascs_cid
+*/
+#define LEAUDIO_SUBEVENT_ASCS_CLIENT_DISCONNECTED                                 0x1Cu
 
 /**
  * @format 12111123333122111421
@@ -4649,7 +4733,7 @@ typedef uint8_t sm_key_t[16];
  * @param octets_per_frame 
  * @param frame_blocks_per_sdu 
 */
-#define GATTSERVICE_SUBEVENT_ASCS_CLIENT_CODEC_CONFIGURATION                         0x36u
+#define LEAUDIO_SUBEVENT_ASCS_CLIENT_CODEC_CONFIGURATION                          0x1Du
 
 /**
  * @format 121113112123
@@ -4666,7 +4750,7 @@ typedef uint8_t sm_key_t[16];
  * @param max_transport_latency
  * @param presentation_delay_us
 */
-#define GATTSERVICE_SUBEVENT_ASCS_CLIENT_QOS_CONFIGURATION                           0x37u
+#define LEAUDIO_SUBEVENT_ASCS_CLIENT_QOS_CONFIGURATION                             0x1Eu
 
 /**
  * @format 121122JV3JV1JV2JV2JV
@@ -4691,7 +4775,7 @@ typedef uint8_t sm_key_t[16];
  * @param vendor_specific_metadata_value_length
  * @param vendor_specific_metadata_value
 */
-#define GATTSERVICE_SUBEVENT_ASCS_CLIENT_METADATA                                     0x38u
+#define LEAUDIO_SUBEVENT_ASCS_CLIENT_METADATA                                       0x1Fu
 
 /**
  * @format 1211
@@ -4700,40 +4784,7 @@ typedef uint8_t sm_key_t[16];
  * @param ase_id
  * @param state
 */
-#define GATTSERVICE_SUBEVENT_ASCS_CLIENT_STREAMENDPOINT_STATE                         0x39u
-
-// used by server to emit control point operation operation
-/**
- * @format 1H1
- * @param subevent_code
- * @param con_handle
- * @param ase_id
-*/ 
-#define GATTSERVICE_SUBEVENT_ASCS_SERVER_START_READY                           0x3Au
-
-/**
- * @format 1H1
- * @param subevent_code
- * @param con_handle
- * @param ase_id
-*/ 
-#define GATTSERVICE_SUBEVENT_ASCS_SERVER_DISABLE                             0x3Bu
-
-/**
- * @format 1H1
- * @param subevent_code
- * @param con_handle
- * @param ase_id
-*/ 
-#define GATTSERVICE_SUBEVENT_ASCS_SERVER_RELEASE                             0x3Cu
-
-/**
- * @format 1H1
- * @param subevent_code
- * @param con_handle
- * @param ase_id
-*/ 
-#define GATTSERVICE_SUBEVENT_ASCS_SERVER_STOP_READY                            0x3Du
+#define LEAUDIO_SUBEVENT_ASCS_CLIENT_STREAMENDPOINT_STATE                            0x20u
 
 /**
  * @format 1H1
@@ -4741,43 +4792,7 @@ typedef uint8_t sm_key_t[16];
  * @param con_handle
  * @param ase_id
 */
-#define GATTSERVICE_SUBEVENT_ASCS_SERVER_RELEASED                              0x3Eu
-
-// used by server
-/**
- * @format 1H1
- * @param subevent_code
- * @param con_handle
- * @param status
-*/
-#define GATTSERVICE_SUBEVENT_ASCS_SERVER_CONNECTED                              0x3Fu
-
-/**
- * @format 1H
- * @param subevent_code
- * @param con_handle
-*/
-#define GATTSERVICE_SUBEVENT_ASCS_SERVER_DISCONNECTED                           0x40u
-
-/**
- * @format 1H21JVJV
- * @param subevent_code
- * @param con_handle
- * @param ascs_cid
- * @param status
- * @param sink_ase_num
- * @param sink_ase_ids
- * @param source_ase_num
- * @param source_ase_ids 
-*/
-#define GATTSERVICE_SUBEVENT_ASCS_CLIENT_CONNECTED                      0x41u
-
-/**
- * @format 12
- * @param subevent_code
- * @param ascs_cid
-*/
-#define GATTSERVICE_SUBEVENT_ASCS_CLIENT_DISCONNECTED                   0x42u
+#define LEAUDIO_SUBEVENT_ASCS_CLIENT_ENABLE                                          0x21u
 
 /**
  * @format 121111
@@ -4788,7 +4803,7 @@ typedef uint8_t sm_key_t[16];
  * @param response_code
  * @param reason
 */ 
-#define GATTSERVICE_SUBEVENT_ASCS_CLIENT_CONTROL_POINT_OPERATION_RESPONSE             0x43u
+#define LEAUDIO_SUBEVENT_ASCS_CLIENT_CONTROL_POINT_OPERATION_RESPONSE                 0x22u
 
 /**
  * @format 1H41
@@ -5025,23 +5040,6 @@ typedef uint8_t sm_key_t[16];
  * @param con_handle
 */
 #define GATTSERVICE_SUBEVENT_AICS_SERVER_DISCONNECTED                           0x69u
-
-
-/**
- * @format 1H1
- * @param subevent_code
- * @param con_handle
- * @param status
-*/
-#define GATTSERVICE_SUBEVENT_BASS_SERVER_CONNECTED                              0x70u
-
-/**
- * @format 1H
- * @param subevent_code
- * @param con_handle
-*/
-#define GATTSERVICE_SUBEVENT_BASS_SERVER_DISCONNECTED                           0x71u
-
 
 /**
  * @format 1H1
@@ -5335,22 +5333,6 @@ typedef uint8_t sm_key_t[16];
  * @param att_status
  */
 #define GATTSERVICE_SUBEVENT_MCS_CLIENT_WRITE_DONE                                      0x95u
-
-/**
- * @format 1H1
- * @param subevent_code
- * @param con_handle
- * @param ase_id
-*/
-#define GATTSERVICE_SUBEVENT_ASCS_SERVER_ENABLE                             0x96u
-
-/**
- * @format 1H1
- * @param subevent_code
- * @param con_handle
- * @param ase_id
-*/
-#define GATTSERVICE_SUBEVENT_ASCS_CLIENT_ENABLE                             0x97u
 
 /**
  * @format 1211

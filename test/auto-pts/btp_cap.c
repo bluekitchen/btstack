@@ -402,29 +402,29 @@ static void btp_cap_bap_handler(uint8_t packet_type, uint16_t channel, uint8_t *
     bool emit_state = false;
 
     switch (hci_event_gattservice_meta_get_subevent_code(packet)){
-        case GATTSERVICE_SUBEVENT_ASCS_CLIENT_CODEC_CONFIGURATION:
-            ascs_cid = gattservice_subevent_ascs_client_codec_configuration_get_ascs_cid(packet);
-            ase_id = gattservice_subevent_ascs_client_codec_configuration_get_ase_id(packet);
+        case LEAUDIO_SUBEVENT_ASCS_CLIENT_CODEC_CONFIGURATION:
+            ascs_cid = leaudio_subevent_ascs_client_codec_configuration_get_ascs_cid(packet);
+            ase_id = leaudio_subevent_ascs_client_codec_configuration_get_ase_id(packet);
             server = btp_server_for_ascs_cid(ascs_cid);
             btstack_assert(server != NULL);
 
             // codec id:
-            codec_configuration.coding_format =  gattservice_subevent_ascs_client_codec_configuration_get_coding_format(packet);;
-            codec_configuration.company_id = gattservice_subevent_ascs_client_codec_configuration_get_company_id(packet);
-            codec_configuration.vendor_specific_codec_id = gattservice_subevent_ascs_client_codec_configuration_get_vendor_specific_codec_id(packet);
+            codec_configuration.coding_format =  leaudio_subevent_ascs_client_codec_configuration_get_coding_format(packet);;
+            codec_configuration.company_id = leaudio_subevent_ascs_client_codec_configuration_get_company_id(packet);
+            codec_configuration.vendor_specific_codec_id = leaudio_subevent_ascs_client_codec_configuration_get_vendor_specific_codec_id(packet);
 
-            codec_configuration.specific_codec_configuration.codec_configuration_mask = gattservice_subevent_ascs_client_codec_configuration_get_specific_codec_configuration_mask(packet);
-            codec_configuration.specific_codec_configuration.sampling_frequency_index = gattservice_subevent_ascs_client_codec_configuration_get_sampling_frequency_index(packet);
-            codec_configuration.specific_codec_configuration.frame_duration_index = gattservice_subevent_ascs_client_codec_configuration_get_frame_duration_index(packet);
-            codec_configuration.specific_codec_configuration.audio_channel_allocation_mask = gattservice_subevent_ascs_client_codec_configuration_get_audio_channel_allocation_mask(packet);
-            codec_configuration.specific_codec_configuration.octets_per_codec_frame = gattservice_subevent_ascs_client_codec_configuration_get_octets_per_frame(packet);
-            codec_configuration.specific_codec_configuration.codec_frame_blocks_per_sdu = gattservice_subevent_ascs_client_codec_configuration_get_frame_blocks_per_sdu(packet);
+            codec_configuration.specific_codec_configuration.codec_configuration_mask = leaudio_subevent_ascs_client_codec_configuration_get_specific_codec_configuration_mask(packet);
+            codec_configuration.specific_codec_configuration.sampling_frequency_index = leaudio_subevent_ascs_client_codec_configuration_get_sampling_frequency_index(packet);
+            codec_configuration.specific_codec_configuration.frame_duration_index = leaudio_subevent_ascs_client_codec_configuration_get_frame_duration_index(packet);
+            codec_configuration.specific_codec_configuration.audio_channel_allocation_mask = leaudio_subevent_ascs_client_codec_configuration_get_audio_channel_allocation_mask(packet);
+            codec_configuration.specific_codec_configuration.octets_per_codec_frame = leaudio_subevent_ascs_client_codec_configuration_get_octets_per_frame(packet);
+            codec_configuration.specific_codec_configuration.codec_frame_blocks_per_sdu = leaudio_subevent_ascs_client_codec_configuration_get_frame_blocks_per_sdu(packet);
             MESSAGE("BTP ASCS %u: Codec Configured for ase_id %d", server->server_id, ase_id);
             break;
 
-        case GATTSERVICE_SUBEVENT_ASCS_CLIENT_QOS_CONFIGURATION:
-            ascs_cid = gattservice_subevent_ascs_server_qos_configuration_get_con_handle(packet);
-            ase_id  = gattservice_subevent_ascs_server_qos_configuration_get_ase_id(packet);
+        case LEAUDIO_SUBEVENT_ASCS_CLIENT_QOS_CONFIGURATION:
+            ascs_cid = leaudio_subevent_ascs_client_qos_configuration_get_con_handle(packet);
+            ase_id   = leaudio_subevent_ascs_client_qos_configuration_get_ase_id(packet);
             server = btp_server_for_ascs_cid(ascs_cid);
             btstack_assert(server != NULL);
 
@@ -437,14 +437,14 @@ static void btp_cap_bap_handler(uint8_t packet_type, uint16_t channel, uint8_t *
             }
             break;
 
-        case GATTSERVICE_SUBEVENT_ASCS_CLIENT_STREAMENDPOINT_STATE:
-            log_info("GATTSERVICE_SUBEVENT_ASCS_STREAMENDPOINT_STATE");
-            ase_id     = gattservice_subevent_ascs_client_streamendpoint_state_get_ase_id(packet);
-            ascs_cid   = gattservice_subevent_ascs_client_streamendpoint_state_get_ascs_cid(packet);
+        case LEAUDIO_SUBEVENT_ASCS_CLIENT_STREAMENDPOINT_STATE:
+            log_info("LEAUDIO_SUBEVENT_ASCS_CLIENT_STREAMENDPOINT_STATE");
+            ase_id     = leaudio_subevent_ascs_client_streamendpoint_state_get_ase_id(packet);
+            ascs_cid   = leaudio_subevent_ascs_client_streamendpoint_state_get_ascs_cid(packet);
             server = btp_server_for_ascs_cid(ascs_cid);
             btstack_assert(server != NULL);
 
-            ase_state  = gattservice_subevent_ascs_client_streamendpoint_state_get_state(packet);
+            ase_state  = leaudio_subevent_ascs_client_streamendpoint_state_get_state(packet);
             log_info("ASCS Client: ASE STATE (%s) - ase_id %d, ascs_cid 0x%02x, role %s", ascs_util_ase_state2str(ase_state), ase_id, ascs_cid,
                      (audio_stream_control_service_client_get_ase_role(ascs_cid, ase_id) == LE_AUDIO_ROLE_SOURCE) ? "SOURCE" : "SINK" );
 
@@ -572,19 +572,19 @@ static void btp_cap_bap_handler(uint8_t packet_type, uint16_t channel, uint8_t *
 #endif
             break;
 #if 0
-        case GATTSERVICE_SUBEVENT_ASCS_CLIENT_METADATA:
-            ase_id  = gattservice_subevent_ascs_client_metadata_get_ase_id(packet);
-            ascs_cid = gattservice_subevent_ascs_client_metadata_get_ascs_cid(packet);
+        case LEAUDIO_SUBEVENT_ASCS_CLIENT_METADATA:
+            ase_id  = leaudio_subevent_ascs_client_metadata_get_ase_id(packet);
+            ascs_cid = leaudio_subevent_ascs_client_metadata_get_ascs_cid(packet);
 
             printf("ASCS Client: METADATA UPDATE - ase_id %d, ascs_cid 0x%02x\n", ase_id, ascs_cid);
             break;
 
-        case GATTSERVICE_SUBEVENT_ASCS_CLIENT_CONTROL_POINT_OPERATION_RESPONSE:
-            ase_id        = gattservice_subevent_ascs_client_control_point_operation_response_get_ase_id(packet);
-            ascs_cid      = gattservice_subevent_ascs_client_control_point_operation_response_get_ascs_cid(packet);
-            response_code = gattservice_subevent_ascs_client_control_point_operation_response_get_response_code(packet);
-            reason        = gattservice_subevent_ascs_client_control_point_operation_response_get_reason(packet);
-            opcode        = gattservice_subevent_ascs_client_control_point_operation_response_get_opcode(packet);
+        case LEAUDIO_SUBEVENT_ASCS_CLIENT_CONTROL_POINT_OPERATION_RESPONSE:
+            ase_id        = leaudio_subevent_ascs_client_control_point_operation_response_get_ase_id(packet);
+            ascs_cid      = leaudio_subevent_ascs_client_control_point_operation_response_get_ascs_cid(packet);
+            response_code = leaudio_subevent_ascs_client_control_point_operation_response_get_response_code(packet);
+            reason        = leaudio_subevent_ascs_client_control_point_operation_response_get_reason(packet);
+            opcode        = leaudio_subevent_ascs_client_control_point_operation_response_get_opcode(packet);
             printf("ASCS Client: Operation complete - ase_id %d, opcode %u, response [0x%02x, 0x%02x], ascs_cid 0x%02x\n", ase_id, opcode, response_code, reason, ascs_cid);
             if ((opcode == ASCS_OPCODE_RECEIVER_START_READY) && (response_op != 0)){
                 MESSAGE("Receiver Start Ready completed");
