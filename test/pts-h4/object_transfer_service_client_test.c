@@ -41,12 +41,10 @@
 #include <inttypes.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
-#include <btstack_lc3.h>
 
 #include "btstack.h"
-#include "le-audio/gatt-service/gatt_service_client.h"
+#include "ble/gatt-service/gatt_service_client.h"
 
 #define CBM_RECEIVE_BUFFER_LEN 300
 
