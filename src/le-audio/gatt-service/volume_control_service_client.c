@@ -418,7 +418,7 @@ static void vcs_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
                     connection = (vcs_client_connection_t *)connection_helper;
 
                     if (gattservice_subevent_vocs_client_connected_get_att_status(packet) != ERROR_CODE_SUCCESS) {
-                        printf("VCS: Volume Offset Control service client connection failed, err 0x%02x.\n", gattservice_subevent_vocs_client_connected_get_att_status(packet));
+                        log_info("VCS: Volume Offset Control service client connection failed, err 0x%02x", gattservice_subevent_vocs_client_connected_get_att_status(packet));
                         break;
                     }
 
