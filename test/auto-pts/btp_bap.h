@@ -390,6 +390,12 @@ void btp_bap_stop_advertising();
 void btp_bap_setup_big(void);
 void btp_bap_release_big(void);
 
+/**
+ * @brief Discover BASS Delegate
+ * @param con_handle
+ */
+void btp_bap_bass_discover(hci_con_handle_t con_handle);
+
 #if defined __cplusplus
 }
 #endif
