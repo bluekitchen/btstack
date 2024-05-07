@@ -5299,7 +5299,7 @@ typedef uint8_t sm_key_t[16];
  * @param change_counter
  * @param att_status
 */
-#define LEAUDIO_SUBEVENT_VCS_CLIENT_AUDIO_INPUT_STATE                                0x5Bu
+#define LEAUDIO_SUBEVENT_VCS_CLIENT_AUDIO_INPUT_STATE                                0x5Du
 
 /**
  * @format 1211111
@@ -5311,7 +5311,7 @@ typedef uint8_t sm_key_t[16];
  * @param maximum_value
  * @param att_status
 */
-#define LEAUDIO_SUBEVENT_VCS_CLIENT_GAIN_SETTINGS_PROPERTIES                         0x5Cu
+#define LEAUDIO_SUBEVENT_VCS_CLIENT_GAIN_SETTINGS_PROPERTIES                         0x5Eu
 
 /**
  * @format 12111
@@ -5321,7 +5321,7 @@ typedef uint8_t sm_key_t[16];
  * @param input_type
  * @param att_status
 */
-#define LEAUDIO_SUBEVENT_VCS_CLIENT_AUDIO_INPUT_TYPE                                 0x5Du
+#define LEAUDIO_SUBEVENT_VCS_CLIENT_AUDIO_INPUT_TYPE                                 0x5Fu
 
 /**
  * @format 12111
@@ -5331,7 +5331,7 @@ typedef uint8_t sm_key_t[16];
  * @param input_status
  * @param att_status
 */
-#define LEAUDIO_SUBEVENT_VCS_CLIENT_AUDIO_INPUT_STATUS                               0x5Eu
+#define LEAUDIO_SUBEVENT_VCS_CLIENT_AUDIO_INPUT_STATUS                               0x60u
 
 /**
  * @format 121JV1
@@ -5342,7 +5342,7 @@ typedef uint8_t sm_key_t[16];
  * @param value
  * @param att_status
  */
-#define LEAUDIO_SUBEVENT_VCS_CLIENT_AUDIO_DESCRIPTION                                0x5Fu
+#define LEAUDIO_SUBEVENT_VCS_CLIENT_AUDIO_DESCRIPTION                                0x61u
 
 /**
  * @format 12121
@@ -5352,7 +5352,7 @@ typedef uint8_t sm_key_t[16];
  * @param volume_offset
  * @param att_status
 */
-#define LEAUDIO_SUBEVENT_VCS_CLIENT_VOLUME_OFFSET                                    0x60u
+#define LEAUDIO_SUBEVENT_VCS_CLIENT_VOLUME_OFFSET                                    0x62u
 
 /**
  * @format 12141
@@ -5362,7 +5362,7 @@ typedef uint8_t sm_key_t[16];
  * @param audio_location
  * @param att_status
 */
-#define LEAUDIO_SUBEVENT_VCS_CLIENT_AUDIO_LOCATION                                   0x61u
+#define LEAUDIO_SUBEVENT_VCS_CLIENT_AUDIO_LOCATION                                   0x63u
 
 /**
  * @format 121JV1
@@ -5373,7 +5373,7 @@ typedef uint8_t sm_key_t[16];
  * @param description
  * @param att_status
 */
-#define LEAUDIO_SUBEVENT_VCS_CLIENT_AUDIO_OUTPUT_DESCRIPTION                         0x62u
+#define LEAUDIO_SUBEVENT_VCS_CLIENT_AUDIO_OUTPUT_DESCRIPTION                         0x64u
 
 
 /**
@@ -5384,8 +5384,7 @@ typedef uint8_t sm_key_t[16];
  * @param characteristic_uuid
  * @param att_status
 */
-#define LEAUDIO_SUBEVENT_VCS_CLIENT_WRITE_DONE                                        0x63u
-
+#define LEAUDIO_SUBEVENT_VCS_CLIENT_WRITE_DONE                                        0x65u
 
 /**
  * @format 1H1
@@ -5393,14 +5392,14 @@ typedef uint8_t sm_key_t[16];
  * @param con_handle
  * @param status
 */
-#define LEAUDIO_SUBEVENT_VOCS_SERVER_CONNECTED                                        0x64u
+#define LEAUDIO_SUBEVENT_VOCS_SERVER_CONNECTED                                        0x66u
 
 /**
  * @format 1H
  * @param subevent_code
  * @param con_handle
 */
-#define LEAUDIO_SUBEVENT_VOCS_SERVER_DISCONNECTED                                     0x65u
+#define LEAUDIO_SUBEVENT_VOCS_SERVER_DISCONNECTED                                     0x67u
 
 /**
  * @format 1H12
@@ -5409,7 +5408,7 @@ typedef uint8_t sm_key_t[16];
  * @param index
  * @param volume_offset
 */
-#define LEAUDIO_SUBEVENT_VOCS_SERVER_VOLUME_OFFSET                                    0x66u
+#define LEAUDIO_SUBEVENT_VOCS_SERVER_VOLUME_OFFSET                                    0x68u
 
 /**
  * @format 1H14
@@ -5418,7 +5417,7 @@ typedef uint8_t sm_key_t[16];
  * @param index
  * @param audio_location
 */
-#define LEAUDIO_SUBEVENT_VOCS_SERVER_AUDIO_LOCATION                                   0x67u
+#define LEAUDIO_SUBEVENT_VOCS_SERVER_AUDIO_LOCATION                                   0x69u
 
 /**
  * @format 1H1JV
@@ -5428,7 +5427,7 @@ typedef uint8_t sm_key_t[16];
  * @param description_len
  * @param description 
 */
-#define LEAUDIO_SUBEVENT_VOCS_SERVER_AUDIO_OUTPUT_DESCRIPTION                         0x68u
+#define LEAUDIO_SUBEVENT_VOCS_SERVER_AUDIO_OUTPUT_DESCRIPTION                         0x6Au
 
 /**
  * @format 1H211
@@ -5438,7 +5437,7 @@ typedef uint8_t sm_key_t[16];
  * @param vocs_index
  * @param att_status
 */
-#define LEAUDIO_SUBEVENT_VOCS_CLIENT_CONNECTED                                        0x69u
+#define LEAUDIO_SUBEVENT_VOCS_CLIENT_CONNECTED                                        0x6Bu
 
 /**
  * @format 121
@@ -5446,7 +5445,7 @@ typedef uint8_t sm_key_t[16];
  * @param vocs_cid
  * @param vocs_index
 */
-#define LEAUDIO_SUBEVENT_VOCS_CLIENT_DISCONNECTED                                     0x6Au
+#define LEAUDIO_SUBEVENT_VOCS_CLIENT_DISCONNECTED                                     0x6Cu
 
 /**
  * @format 121211
@@ -5457,7 +5456,7 @@ typedef uint8_t sm_key_t[16];
  * @param change_counter
  * @param att_status
 */
-#define LEAUDIO_SUBEVENT_VOCS_CLIENT_OFFSET_STATE                                     0x6Bu
+#define LEAUDIO_SUBEVENT_VOCS_CLIENT_OFFSET_STATE                                     0x6Du
 
 /**
  * @format 12141
@@ -5467,7 +5466,7 @@ typedef uint8_t sm_key_t[16];
  * @param audio_location
  * @param att_status
 */
-#define LEAUDIO_SUBEVENT_VOCS_CLIENT_AUDIO_LOCATION                                   0x6Cu
+#define LEAUDIO_SUBEVENT_VOCS_CLIENT_AUDIO_LOCATION                                   0x6Eu
 
 /**
  * @format 121JV1
@@ -5478,8 +5477,32 @@ typedef uint8_t sm_key_t[16];
  * @param description 
  * @param att_status
 */
-#define LEAUDIO_SUBEVENT_VOCS_CLIENT_AUDIO_OUTPUT_DESCRIPTION                         0x6Du
+#define LEAUDIO_SUBEVENT_VOCS_CLIENT_AUDIO_OUTPUT_DESCRIPTION                         0x6Fu
 
+/**
+ * @format 1H1
+ * @param subevent_code
+ * @param con_handle
+ * @param status
+*/
+#define LEAUDIO_SUBEVENT_MCS_SERVER_CONNECTED                                         0x70u
+
+/**
+ * @format 1H
+ * @param subevent_code
+ * @param con_handle
+*/
+#define LEAUDIO_SUBEVENT_MCS_SERVER_DISCONNECTED                                     0x71u
+
+/**
+ * @format 1H211
+ * @param subevent_code
+ * @param con_handle
+ * @param media_player_id
+ * @param media_state
+ * @param characteristic_id
+ */
+#define LEAUDIO_SUBEVENT_MCS_SERVER_VALUE_CHANGED                                    0x72u
 
 /**
  * @format 1H211
@@ -5489,14 +5512,14 @@ typedef uint8_t sm_key_t[16];
  * @param num_included_clients
  * @param status
 */
-#define GATTSERVICE_SUBEVENT_MCS_CLIENT_CONNECTED                               0x7Du
+#define LEAUDIO_SUBEVENT_MCS_CLIENT_CONNECTED                                        0x73u
 
 /**
  * @format 12
  * @param subevent_code
  * @param mcs_cid
 */
-#define GATTSERVICE_SUBEVENT_MCS_CLIENT_DISCONNECTED                            0x7Eu
+#define LEAUDIO_SUBEVENT_MCS_CLIENT_DISCONNECTED                                     0x74u
 
 /**
  * @format 12JV
@@ -5505,7 +5528,7 @@ typedef uint8_t sm_key_t[16];
  * @param value_len        // Capped at ATT_MTU - 3
  * @param value
  */
-#define GATTSERVICE_SUBEVENT_MCS_CLIENT_MEDIA_PLAYER_NAME                           0x7Fu
+#define LEAUDIO_SUBEVENT_MCS_CLIENT_MEDIA_PLAYER_NAME                                0x75u
 
 /**
  * @format 12JV
@@ -5514,7 +5537,7 @@ typedef uint8_t sm_key_t[16];
  * @param value_len         // If the media player has an icon, the length of the characteristic is six octets, otherwise 0
  * @param value
  */
-#define GATTSERVICE_SUBEVENT_MCS_CLIENT_MEDIA_PLAYER_ICON_OBJECT_ID                  0x80u
+#define LEAUDIO_SUBEVENT_MCS_CLIENT_MEDIA_PLAYER_ICON_OBJECT_ID                      0x76u
 
 /**
  * @format 12JV
@@ -5523,14 +5546,14 @@ typedef uint8_t sm_key_t[16];
  * @param value_len
  * @param value
  */
-#define GATTSERVICE_SUBEVENT_MCS_CLIENT_MEDIA_PLAYER_ICON_URI                      0x81u
+#define LEAUDIO_SUBEVENT_MCS_CLIENT_MEDIA_PLAYER_ICON_URI                            0x77u
 
 /**
  * @format 12
  * @param subevent_code
  * @param mcs_cid
  */
-#define GATTSERVICE_SUBEVENT_MCS_CLIENT_TRACK_CHANGED                                 0x82u
+#define LEAUDIO_SUBEVENT_MCS_CLIENT_TRACK_CHANGED                                    0x78u
 
 /**
  * @format 12JV
@@ -5539,7 +5562,7 @@ typedef uint8_t sm_key_t[16];
  * @param value_len
  * @param value
  */
-#define GATTSERVICE_SUBEVENT_MCS_CLIENT_TRACK_TITLE                                   0x83u
+#define LEAUDIO_SUBEVENT_MCS_CLIENT_TRACK_TITLE                                      0x79u
 
 /**
  * @format 124
@@ -5547,7 +5570,7 @@ typedef uint8_t sm_key_t[16];
  * @param mcs_cid
  * @param duration_10ms     // The length of the current track in 0.01-second resolution as a 32-bit signed integer.
  */
-#define GATTSERVICE_SUBEVENT_MCS_CLIENT_TRACK_DURATION                                0x84u
+#define LEAUDIO_SUBEVENT_MCS_CLIENT_TRACK_DURATION                                   0x7Au
 
 /**
  * @format 124
@@ -5556,7 +5579,7 @@ typedef uint8_t sm_key_t[16];
  * @param position_10ms     //  The offset from the start of the track to the current playing position in 0.01-second resolution as a 32-bit signed integer.
  *                          //  If the media player has no current track, the Track Position characteristic value shall be 0xFFFFFFFF.
  */
-#define GATTSERVICE_SUBEVENT_MCS_CLIENT_TRACK_POSITION                                0x85u
+#define LEAUDIO_SUBEVENT_MCS_CLIENT_TRACK_POSITION                                   0x7Bu
 
 /**
  * @format 122
@@ -5564,7 +5587,7 @@ typedef uint8_t sm_key_t[16];
  * @param mcs_cid
  * @param speed
  */
-#define GATTSERVICE_SUBEVENT_MCS_CLIENT_PLAYBACK_SPEED                                   0x86u
+#define LEAUDIO_SUBEVENT_MCS_CLIENT_PLAYBACK_SPEED                                   0x7Cu
 
 /**
  * @format 121
@@ -5572,7 +5595,7 @@ typedef uint8_t sm_key_t[16];
  * @param mcs_cid
  * @param multiplier
  */
-#define GATTSERVICE_SUBEVENT_MCS_CLIENT_SEEKING_SPEED                                 0x87u
+#define LEAUDIO_SUBEVENT_MCS_CLIENT_SEEKING_SPEED                                    0x7Du
 
 /**
  * @format 12JV
@@ -5581,7 +5604,7 @@ typedef uint8_t sm_key_t[16];
  * @param value_len             // If the media player has a current track, the length of the characteristic is six octets, otherwise 0
  * @param value
  */
-#define GATTSERVICE_SUBEVENT_MCS_CLIENT_CURRENT_TRACK_SEGMENTS_OBJECT_ID              0x88u
+#define LEAUDIO_SUBEVENT_MCS_CLIENT_CURRENT_TRACK_SEGMENTS_OBJECT_ID                 0x7Eu
 
 /**
  * @format 12JV
@@ -5590,7 +5613,7 @@ typedef uint8_t sm_key_t[16];
  * @param value_len             // If the media player has a current track, the length of the characteristic is six octets, otherwise 0
  * @param value
  */
-#define GATTSERVICE_SUBEVENT_MCS_CLIENT_CURRENT_TRACK_OBJECT_ID                       0x89u
+#define LEAUDIO_SUBEVENT_MCS_CLIENT_CURRENT_TRACK_OBJECT_ID                          0x7Fu
 
 /**
  * @format 12JV
@@ -5599,7 +5622,7 @@ typedef uint8_t sm_key_t[16];
  * @param value_len             // If the media player has a next track, the length of the characteristic is six octets, otherwise 0
  * @param value
  */
-#define GATTSERVICE_SUBEVENT_MCS_CLIENT_NEXT_TRACK_OBJECT_ID                       0x8Au
+#define LEAUDIO_SUBEVENT_MCS_CLIENT_NEXT_TRACK_OBJECT_ID                             0x80u
 
 /**
  * @format 12JV
@@ -5608,7 +5631,7 @@ typedef uint8_t sm_key_t[16];
  * @param value_len             // If the media player has a parent group, the length of the characteristic is six octets, otherwise 0
  * @param value
  */
-#define GATTSERVICE_SUBEVENT_MCS_CLIENT_PARENT_GROUP_OBJECT_ID                       0x8Bu
+#define LEAUDIO_SUBEVENT_MCS_CLIENT_PARENT_GROUP_OBJECT_ID                           0x81u
 
 /**
  * @format 12JV
@@ -5617,7 +5640,7 @@ typedef uint8_t sm_key_t[16];
  * @param value_len             // If the media player has a parent group, the length of the characteristic is six octets, otherwise 0
  * @param value
  */
-#define GATTSERVICE_SUBEVENT_MCS_CLIENT_CURRENT_GROUP_OBJECT_ID                      0x8Cu
+#define LEAUDIO_SUBEVENT_MCS_CLIENT_CURRENT_GROUP_OBJECT_ID                          0x82u
 
 
 /**
@@ -5626,7 +5649,7 @@ typedef uint8_t sm_key_t[16];
  * @param mcs_cid
  * @param order
  */
-#define GATTSERVICE_SUBEVENT_MCS_CLIENT_PLAYING_ORDER                                 0x8Du
+#define LEAUDIO_SUBEVENT_MCS_CLIENT_PLAYING_ORDER                                    0x83u
 
 /**
  * @format 122
@@ -5634,7 +5657,7 @@ typedef uint8_t sm_key_t[16];
  * @param mcs_cid
  * @param bitmap
  */
-#define GATTSERVICE_SUBEVENT_MCS_CLIENT_PLAYING_ORDER_SUPPORTED                        0x8Eu
+#define LEAUDIO_SUBEVENT_MCS_CLIENT_PLAYING_ORDER_SUPPORTED                          0x84u
 
 /**
  * @format 121
@@ -5642,7 +5665,7 @@ typedef uint8_t sm_key_t[16];
  * @param mcs_cid
  * @param state
  */
-#define GATTSERVICE_SUBEVENT_MCS_CLIENT_MEDIA_STATE                                    0x8Fu
+#define LEAUDIO_SUBEVENT_MCS_CLIENT_MEDIA_STATE                                      0x85u
 
 /**
  * @format 124
@@ -5650,7 +5673,7 @@ typedef uint8_t sm_key_t[16];
  * @param mcs_cid
  * @param bitmap
  */
-#define GATTSERVICE_SUBEVENT_MCS_CLIENT_CONTROL_POINT_OPCODES_SUPPORTED                0x90u
+#define LEAUDIO_SUBEVENT_MCS_CLIENT_CONTROL_POINT_OPCODES_SUPPORTED                  0x86u
 
 /**
  * @format 1211
@@ -5659,7 +5682,7 @@ typedef uint8_t sm_key_t[16];
  * @param requested_opcode
  * @param result_code
  */
-#define GATTSERVICE_SUBEVENT_MCS_CLIENT_CONTROL_POINT_NOTIFICATION                     0x91u
+#define LEAUDIO_SUBEVENT_MCS_CLIENT_CONTROL_POINT_NOTIFICATION                       0x87u
 
 /**
  * @format 121
@@ -5667,7 +5690,7 @@ typedef uint8_t sm_key_t[16];
  * @param mcs_cid
  * @param requested_opcode
  */
-#define GATTSERVICE_SUBEVENT_MCS_CLIENT_SEARCH_CONTROL_POINT_NOTIFICATION               0x92u
+#define LEAUDIO_SUBEVENT_MCS_CLIENT_SEARCH_CONTROL_POINT_NOTIFICATION                0x88u
 
 /**
  * @format 12JV
@@ -5676,7 +5699,7 @@ typedef uint8_t sm_key_t[16];
  * @param value_len             //  If there are search results, the length of the characteristic is six octets
  * @param value
  */
-#define GATTSERVICE_SUBEVENT_MCS_CLIENT_SEARCH_RESULT_OBJECT_ID                         0x93u
+#define LEAUDIO_SUBEVENT_MCS_CLIENT_SEARCH_RESULT_OBJECT_ID                          0x89u
 
 /**
  * @format 121
@@ -5684,7 +5707,7 @@ typedef uint8_t sm_key_t[16];
  * @param mcs_cid
  * @param ccid
  */
-#define GATTSERVICE_SUBEVENT_MCS_CLIENT_CONTENT_CONTROL_ID                              0x94u
+#define LEAUDIO_SUBEVENT_MCS_CLIENT_CONTENT_CONTROL_ID                               0x8Au
 
 /**
  * @format 1221
@@ -5693,7 +5716,7 @@ typedef uint8_t sm_key_t[16];
  * @param characteristic_uuid
  * @param att_status
  */
-#define GATTSERVICE_SUBEVENT_MCS_CLIENT_WRITE_DONE                                      0x95u
+#define LEAUDIO_SUBEVENT_MCS_CLIENT_WRITE_DONE                                       0x8Bu
 
 /**
  * @format 1211
@@ -5702,7 +5725,7 @@ typedef uint8_t sm_key_t[16];
  * @param opcode
  * @param result_code
  */
-#define GATTSERVICE_SUBEVENT_MCS_CLIENT_MEDIA_CONTROL_POINT_NOTIFICATION_RESULT         0x96u
+#define LEAUDIO_SUBEVENT_MCS_CLIENT_MEDIA_CONTROL_POINT_NOTIFICATION_RESULT          0x8Cu
 
 /**
  * @format 121
@@ -5710,7 +5733,7 @@ typedef uint8_t sm_key_t[16];
  * @param mcs_cid
  * @param result_code
  */
-#define GATTSERVICE_SUBEVENT_MCS_CLIENT_SEARCH_CONTROL_POINT_NOTIFICATION_RESULT         0x97u
+#define LEAUDIO_SUBEVENT_MCS_CLIENT_SEARCH_CONTROL_POINT_NOTIFICATION_RESULT         0x8Du
 
 /**
  * @format 1H2114
@@ -5721,7 +5744,7 @@ typedef uint8_t sm_key_t[16];
  * @param opcode
  * @param data
  */
-#define GATTSERVICE_SUBEVENT_MCS_SERVER_MEDIA_CONTROL_POINT_NOTIFICATION_TASK           0x98u
+#define LEAUDIO_SUBEVENT_MCS_SERVER_MEDIA_CONTROL_POINT_NOTIFICATION_TASK           0x8Eu
 
 /**
  * @format 1H21JV
@@ -5732,17 +5755,22 @@ typedef uint8_t sm_key_t[16];
  * @param data_length
  * @param data
  */
-#define GATTSERVICE_SUBEVENT_MCS_SERVER_SEARCH_CONTROL_POINT_NOTIFICATION_TASK           0x99u
+#define LEAUDIO_SUBEVENT_MCS_SERVER_SEARCH_CONTROL_POINT_NOTIFICATION_TASK           0x8Fu
 
 /**
- * @format 1H211
+ * @format 1H1
  * @param subevent_code
  * @param con_handle
- * @param media_player_id
- * @param media_state
- * @param characteristic_id
- */
-#define GATTSERVICE_SUBEVENT_MCS_SERVER_VALUE_CHANGED                                   0x9Au
+ * @param status
+*/
+#define LEAUDIO_SUBEVENT_OTS_SERVER_CONNECTED                                        0x90u
+
+/**
+ * @format 1H
+ * @param subevent_code
+ * @param con_handle
+*/
+#define LEAUDIO_SUBEVENT_OTS_SERVER_DISCONNECTED                                     0x91u
 
 /**
  * @format 1H11JV
@@ -5753,17 +5781,7 @@ typedef uint8_t sm_key_t[16];
  * @param data_length
  * @param data
  */
-#define GATTSERVICE_SUBEVENT_OTS_SERVER_FILTER                                          0x9Bu
-
-/**
- * @format 1H
- * @param subevent_code
- * @param con_handle
- */
-#define GATTSERVICE_SUBEVENT_OTS_SERVER_DISCONNECT                                      0x99u
-
-
-
+#define LEAUDIO_SUBEVENT_OTS_SERVER_FILTER                                          0x92u
 
 
 /**
@@ -5776,7 +5794,7 @@ typedef uint8_t sm_key_t[16];
  * @param olcp_features
  * @param att_status
 */
-#define GATTSERVICE_SUBEVENT_OTS_CLIENT_CONNECTED                                        0xC0u
+#define LEAUDIO_SUBEVENT_OTS_CLIENT_CONNECTED                                        0x96u
 
 /**
  * @format 121
@@ -5784,7 +5802,7 @@ typedef uint8_t sm_key_t[16];
  * @param ots_cid
  * @param ots_index
 */
-#define GATTSERVICE_SUBEVENT_OTS_CLIENT_DISCONNECTED                                     0xC1u
+#define LEAUDIO_SUBEVENT_OTS_CLIENT_DISCONNECTED                                     0x97u
 
 /**
  * @format 12121
@@ -5794,7 +5812,7 @@ typedef uint8_t sm_key_t[16];
  * @param characteristic_uuid
  * @param att_status
 */
-#define GATTSERVICE_SUBEVENT_OTS_CLIENT_WRITE_DONE                                       0xC2u
+#define LEAUDIO_SUBEVENT_OTS_CLIENT_WRITE_DONE                                       0x98u
 
 /**
  * @format 12441
@@ -5804,7 +5822,7 @@ typedef uint8_t sm_key_t[16];
  * @param olcp_features
  * @param att_status
 */
-#define GATTSERVICE_SUBEVENT_OTS_CLIENT_FEATURES                                        0xC3u
+#define LEAUDIO_SUBEVENT_OTS_CLIENT_FEATURES                                        0x99u
 
 /**
  * @format 12JV1
@@ -5814,7 +5832,7 @@ typedef uint8_t sm_key_t[16];
  * @param value
  * @param att_status
 */
-#define GATTSERVICE_SUBEVENT_OTS_CLIENT_OBJECT_NAME                                      0xC4u
+#define LEAUDIO_SUBEVENT_OTS_CLIENT_OBJECT_NAME                                      0x9Au
 
 /**
  * @format 12JV1
@@ -5824,7 +5842,7 @@ typedef uint8_t sm_key_t[16];
  * @param value
  * @param att_status
 */
-#define GATTSERVICE_SUBEVENT_OTS_CLIENT_OBJECT_TYPE                                      0xC5u
+#define LEAUDIO_SUBEVENT_OTS_CLIENT_OBJECT_TYPE                                      0x9Bu
 
 /**
  * @format 12441
@@ -5834,7 +5852,7 @@ typedef uint8_t sm_key_t[16];
  * @param allocated_size
  * @param att_status
 */
-#define GATTSERVICE_SUBEVENT_OTS_CLIENT_OBJECT_SIZE                                      0xC6u
+#define LEAUDIO_SUBEVENT_OTS_CLIENT_OBJECT_SIZE                                      0x9Cu
 
 /**
  * @format 122111111
@@ -5848,7 +5866,7 @@ typedef uint8_t sm_key_t[16];
  * @param seconds
  * @param att_status
 */
-#define GATTSERVICE_SUBEVENT_OTS_CLIENT_OBJECT_FIRST_CREATED                             0xC7u
+#define LEAUDIO_SUBEVENT_OTS_CLIENT_OBJECT_FIRST_CREATED                             0x9Du
 
 /**
  * @format 122111111
@@ -5862,7 +5880,7 @@ typedef uint8_t sm_key_t[16];
  * @param seconds
  * @param att_status
 */
-#define GATTSERVICE_SUBEVENT_OTS_CLIENT_OBJECT_LAST_MODIFIED                             0xC8u
+#define LEAUDIO_SUBEVENT_OTS_CLIENT_OBJECT_LAST_MODIFIED                             0x9Eu
 
 /**
  * @format 12JV1
@@ -5872,7 +5890,7 @@ typedef uint8_t sm_key_t[16];
  * @param value
  * @param att_status
 */
-#define GATTSERVICE_SUBEVENT_OTS_CLIENT_OBJECT_ID                                       0xC9u
+#define LEAUDIO_SUBEVENT_OTS_CLIENT_OBJECT_ID                                        0x9Fu
 
 /**
  * @format 1241
@@ -5881,7 +5899,7 @@ typedef uint8_t sm_key_t[16];
  * @param bitmask
  * @param att_status
 */
-#define GATTSERVICE_SUBEVENT_OTS_CLIENT_OBJECT_PROPERTIES                                0xCAu
+#define LEAUDIO_SUBEVENT_OTS_CLIENT_OBJECT_PROPERTIES                                0xA1u
 
 /**
  * @format 1211JV1
@@ -5893,7 +5911,7 @@ typedef uint8_t sm_key_t[16];
  * @param value
  * @param att_status
 */
-#define GATTSERVICE_SUBEVENT_OTS_CLIENT_FILTER                                          0xCBu
+#define LEAUDIO_SUBEVENT_OTS_CLIENT_FILTER                                            0xA2u
 
 /**
  * @format 121JV1
@@ -5904,7 +5922,7 @@ typedef uint8_t sm_key_t[16];
  * @param id
  * @param att_status
 */
-#define GATTSERVICE_SUBEVENT_OTS_CLIENT_OBJECT_CHANGED                                  0xCCu
+#define LEAUDIO_SUBEVENT_OTS_CLIENT_OBJECT_CHANGED                                   0xA3u
 
 /**
  * @format 12111
@@ -5914,8 +5932,8 @@ typedef uint8_t sm_key_t[16];
  * @param result_code
  * @param att_status
 */
-#define GATTSERVICE_SUBEVENT_OTS_CLIENT_OLCP_RESPONSE                                  0xCDu
-
+#define LEAUDIO_SUBEVENT_OTS_CLIENT_OLCP_RESPONSE                                    0xA4u
+ 
 /**
  * @format 12111
  * @param subevent_code
@@ -5924,7 +5942,7 @@ typedef uint8_t sm_key_t[16];
  * @param result_code
  * @param att_status
 */
-#define GATTSERVICE_SUBEVENT_OTS_CLIENT_OACP_RESPONSE                                  0xCEu
+#define LEAUDIO_SUBEVENT_OTS_CLIENT_OACP_RESPONSE                                    0xA5u
 
 /**
  * @format 121444
@@ -5935,7 +5953,7 @@ typedef uint8_t sm_key_t[16];
  * @param offset
  * @param bytes_transferred_num
 */
-#define GATTSERVICE_SUBEVENT_OTS_CLIENT_DATA_CHUNK                                      0xCFu
+#define LEAUDIO_SUBEVENT_OTS_CLIENT_DATA_CHUNK                                       0xA6u
 
 /**
  * @format 122
@@ -5943,10 +5961,8 @@ typedef uint8_t sm_key_t[16];
  * @param ots_cid
  * @param characterictic_uuid
  */
-#define GATTSERVICE_SUBEVENT_OTS_CLIENT_TIMEOUT                                         0xD0u
+#define LEAUDIO_SUBEVENT_OTS_CLIENT_TIMEOUT                                          0xA7u
 
-
-// TBS Meta Event Group
 
 /**
  * @format 1H211

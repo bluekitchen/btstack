@@ -520,7 +520,7 @@ static void pacs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
     if (packet_type != HCI_EVENT_PACKET) return;
     if (hci_event_packet_get_type(packet) != HCI_EVENT_LEAUDIO_META) return;
 
-    switch (hci_event_gattservice_meta_get_subevent_code(packet)){
+    switch (hci_event_leaudio_meta_get_subevent_code(packet)){
         case LEAUDIO_SUBEVENT_PACS_SERVER_AUDIO_LOCATIONS:
             printf("PACS: audio location received\n");
             break;
@@ -536,7 +536,7 @@ static void csis_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
     if (packet_type != HCI_EVENT_PACKET) return;
     if (hci_event_packet_get_type(packet) != HCI_EVENT_LEAUDIO_META) return;
 
-    switch (hci_event_gattservice_meta_get_subevent_code(packet)){
+    switch (hci_event_leaudio_meta_get_subevent_code(packet)){
         case LEAUDIO_SUBEVENT_CSIS_SERVER_CONNECTED:
             printf("CSIS: LEAUDIO_SUBEVENT_CSIS_SERVER_CONNECTED\n");
             break;
@@ -581,18 +581,18 @@ static void mcs_client_packet_handler(uint8_t packet_type, uint16_t channel, uin
     UNUSED(size);
 
     if (packet_type != HCI_EVENT_PACKET) return;
-    if (hci_event_packet_get_type(packet) != HCI_EVENT_GATTSERVICE_META) return;
+    if (hci_event_packet_get_type(packet) != HCI_EVENT_LEAUDIO_META) return;
 
     printf("MCS Client: ");
     printf_hexdump(packet, size);
 
-    switch (hci_event_gattservice_meta_get_subevent_code(packet)){
-        case GATTSERVICE_SUBEVENT_MCS_CLIENT_CONNECTED:
+    switch (hci_event_leaudio_meta_get_subevent_code(packet)){
+        case LEAUDIO_SUBEVENT_MCS_CLIENT_CONNECTED:
             printf("MCS Client: connected, status 0x%02x, mcs id %u\n",
-                   gattservice_subevent_mcs_client_connected_get_status(packet),
-                   gattservice_subevent_client_connected_get_cid(packet));
+                   leaudio_subevent_mcs_client_connected_get_status(packet),
+                   leaudio_subevent_mcs_client_connected_get_mcs_cid(packet));
             break;
-        case GATTSERVICE_SUBEVENT_MCS_CLIENT_DISCONNECTED:
+        case LEAUDIO_SUBEVENT_MCS_CLIENT_DISCONNECTED:
             printf("MCS Client: disconnected\n");
             mcs_cid = 0;
             break;
@@ -637,7 +637,7 @@ static void ascs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
     ascs_qos_configuration_t   qos_configuration;
     uint8_t ase_id;
 
-    switch (hci_event_gattservice_meta_get_subevent_code(packet)){
+    switch (hci_event_leaudio_meta_get_subevent_code(packet)){
         case LEAUDIO_SUBEVENT_ASCS_SERVER_CONNECTED:
             con_handle = leaudio_subevent_ascs_server_connected_get_con_handle(packet);
             status =     leaudio_subevent_ascs_server_connected_get_status(packet);
