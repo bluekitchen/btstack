@@ -513,6 +513,10 @@ static void bass_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
         default:
             break;
     }
+
+    if (btp_bap_higher_layer_handler != NULL){
+        (*btp_bap_higher_layer_handler)(packet_type, channel, packet, size);
+    }
 }
 
 static void expect_status_no_error(uint8_t status){
