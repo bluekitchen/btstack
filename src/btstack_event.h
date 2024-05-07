@@ -13974,339 +13974,59 @@ static inline void gattservice_subevent_gatt_database_hash_get_database_hash(con
 }
 
 /**
- * @brief Get field hids_cid from event GATTSERVICE_SUBEVENT_MICS_CLIENT_CONNECTED
+ * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_CLIENT_CONNECTED
  * @param event packet
- * @return hids_cid
- * @note: btstack_type 2
+ * @return con_handle
+ * @note: btstack_type H
  */
-static inline uint16_t gattservice_subevent_mics_client_connected_get_hids_cid(const uint8_t * event){
+static inline hci_con_handle_t gattservice_subevent_client_connected_get_con_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field status from event GATTSERVICE_SUBEVENT_MICS_CLIENT_CONNECTED
- * @param event packet
- * @return status
- * @note: btstack_type 1
- */
-static inline uint8_t gattservice_subevent_mics_client_connected_get_status(const uint8_t * event){
-    return event[5];
-}
-
-/**
- * @brief Get field cid from event GATTSERVICE_SUBEVENT_MICS_CLIENT_MUTE
+ * @brief Get field cid from event GATTSERVICE_SUBEVENT_CLIENT_CONNECTED
  * @param event packet
  * @return cid
  * @note: btstack_type 2
  */
-static inline uint16_t gattservice_subevent_mics_client_mute_get_cid(const uint8_t * event){
-    return little_endian_read_16(event, 3);
+static inline uint16_t gattservice_subevent_client_connected_get_cid(const uint8_t * event){
+    return little_endian_read_16(event, 5);
 }
 /**
- * @brief Get field status from event GATTSERVICE_SUBEVENT_MICS_CLIENT_MUTE
+ * @brief Get field num_included_services from event GATTSERVICE_SUBEVENT_CLIENT_CONNECTED
+ * @param event packet
+ * @return num_included_services
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_client_connected_get_num_included_services(const uint8_t * event){
+    return event[7];
+}
+/**
+ * @brief Get field status from event GATTSERVICE_SUBEVENT_CLIENT_CONNECTED
  * @param event packet
  * @return status
  * @note: btstack_type 1
  */
-static inline uint8_t gattservice_subevent_mics_client_mute_get_status(const uint8_t * event){
-    return event[5];
-}
-/**
- * @brief Get field state from event GATTSERVICE_SUBEVENT_MICS_CLIENT_MUTE
- * @param event packet
- * @return state
- * @note: btstack_type 1
- */
-static inline uint8_t gattservice_subevent_mics_client_mute_get_state(const uint8_t * event){
-    return event[6];
+static inline uint8_t gattservice_subevent_client_connected_get_status(const uint8_t * event){
+    return event[8];
 }
 
 /**
- * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_MICS_SERVER_MUTE
+ * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_CLIENT_DISCONNECTED
  * @param event packet
  * @return con_handle
  * @note: btstack_type H
  */
-static inline hci_con_handle_t gattservice_subevent_mics_server_mute_get_con_handle(const uint8_t * event){
+static inline hci_con_handle_t gattservice_subevent_client_disconnected_get_con_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field state from event GATTSERVICE_SUBEVENT_MICS_SERVER_MUTE
+ * @brief Get field cid from event GATTSERVICE_SUBEVENT_CLIENT_DISCONNECTED
  * @param event packet
- * @return state
- * @note: btstack_type 1
- */
-static inline uint8_t gattservice_subevent_mics_server_mute_get_state(const uint8_t * event){
-    return event[5];
-}
-
-/**
- * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_AICS_SERVER_MUTE_MODE
- * @param event packet
- * @return con_handle
- * @note: btstack_type H
- */
-static inline hci_con_handle_t gattservice_subevent_aics_server_mute_mode_get_con_handle(const uint8_t * event){
-    return little_endian_read_16(event, 3);
-}
-/**
- * @brief Get field index from event GATTSERVICE_SUBEVENT_AICS_SERVER_MUTE_MODE
- * @param event packet
- * @return index
- * @note: btstack_type 1
- */
-static inline uint8_t gattservice_subevent_aics_server_mute_mode_get_index(const uint8_t * event){
-    return event[5];
-}
-/**
- * @brief Get field state from event GATTSERVICE_SUBEVENT_AICS_SERVER_MUTE_MODE
- * @param event packet
- * @return state
- * @note: btstack_type 1
- */
-static inline uint8_t gattservice_subevent_aics_server_mute_mode_get_state(const uint8_t * event){
-    return event[6];
-}
-
-/**
- * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_AICS_SERVER_GAIN_MODE
- * @param event packet
- * @return con_handle
- * @note: btstack_type H
- */
-static inline hci_con_handle_t gattservice_subevent_aics_server_gain_mode_get_con_handle(const uint8_t * event){
-    return little_endian_read_16(event, 3);
-}
-/**
- * @brief Get field index from event GATTSERVICE_SUBEVENT_AICS_SERVER_GAIN_MODE
- * @param event packet
- * @return index
- * @note: btstack_type 1
- */
-static inline uint8_t gattservice_subevent_aics_server_gain_mode_get_index(const uint8_t * event){
-    return event[5];
-}
-/**
- * @brief Get field state from event GATTSERVICE_SUBEVENT_AICS_SERVER_GAIN_MODE
- * @param event packet
- * @return state
- * @note: btstack_type 1
- */
-static inline uint8_t gattservice_subevent_aics_server_gain_mode_get_state(const uint8_t * event){
-    return event[6];
-}
-
-/**
- * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_AICS_SERVER_GAIN_CHANGED
- * @param event packet
- * @return con_handle
- * @note: btstack_type H
- */
-static inline hci_con_handle_t gattservice_subevent_aics_server_gain_changed_get_con_handle(const uint8_t * event){
-    return little_endian_read_16(event, 3);
-}
-/**
- * @brief Get field index from event GATTSERVICE_SUBEVENT_AICS_SERVER_GAIN_CHANGED
- * @param event packet
- * @return index
- * @note: btstack_type 1
- */
-static inline uint8_t gattservice_subevent_aics_server_gain_changed_get_index(const uint8_t * event){
-    return event[5];
-}
-/**
- * @brief Get field gain_db from event GATTSERVICE_SUBEVENT_AICS_SERVER_GAIN_CHANGED
- * @param event packet
- * @return gain_db
- * @note: btstack_type 1
- */
-static inline uint8_t gattservice_subevent_aics_server_gain_changed_get_gain_db(const uint8_t * event){
-    return event[6];
-}
-
-/**
- * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_AICS_SERVER_AUDIO_INPUT_DESC_CHANGED
- * @param event packet
- * @return con_handle
- * @note: btstack_type H
- */
-static inline hci_con_handle_t gattservice_subevent_aics_server_audio_input_desc_changed_get_con_handle(const uint8_t * event){
-    return little_endian_read_16(event, 3);
-}
-/**
- * @brief Get field index from event GATTSERVICE_SUBEVENT_AICS_SERVER_AUDIO_INPUT_DESC_CHANGED
- * @param event packet
- * @return index
- * @note: btstack_type 1
- */
-static inline uint8_t gattservice_subevent_aics_server_audio_input_desc_changed_get_index(const uint8_t * event){
-    return event[5];
-}
-/**
- * @brief Get field description_len from event GATTSERVICE_SUBEVENT_AICS_SERVER_AUDIO_INPUT_DESC_CHANGED
- * @param event packet
- * @return description_len
- * @note: btstack_type J
- */
-static inline uint8_t gattservice_subevent_aics_server_audio_input_desc_changed_get_description_len(const uint8_t * event){
-    return event[6];
-}
-/**
- * @brief Get field description from event GATTSERVICE_SUBEVENT_AICS_SERVER_AUDIO_INPUT_DESC_CHANGED
- * @param event packet
- * @return description
- * @note: btstack_type V
- */
-static inline const uint8_t * gattservice_subevent_aics_server_audio_input_desc_changed_get_description(const uint8_t * event){
-    return &event[7];
-}
-
-/**
- * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_VOCS_SERVER_VOLUME_OFFSET
- * @param event packet
- * @return con_handle
- * @note: btstack_type H
- */
-static inline hci_con_handle_t gattservice_subevent_vocs_server_volume_offset_get_con_handle(const uint8_t * event){
-    return little_endian_read_16(event, 3);
-}
-/**
- * @brief Get field index from event GATTSERVICE_SUBEVENT_VOCS_SERVER_VOLUME_OFFSET
- * @param event packet
- * @return index
- * @note: btstack_type 1
- */
-static inline uint8_t gattservice_subevent_vocs_server_volume_offset_get_index(const uint8_t * event){
-    return event[5];
-}
-/**
- * @brief Get field volume_offset from event GATTSERVICE_SUBEVENT_VOCS_SERVER_VOLUME_OFFSET
- * @param event packet
- * @return volume_offset
+ * @return cid
  * @note: btstack_type 2
  */
-static inline uint16_t gattservice_subevent_vocs_server_volume_offset_get_volume_offset(const uint8_t * event){
-    return little_endian_read_16(event, 6);
-}
-
-/**
- * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_VOCS_SERVER_AUDIO_LOCATION
- * @param event packet
- * @return con_handle
- * @note: btstack_type H
- */
-static inline hci_con_handle_t gattservice_subevent_vocs_server_audio_location_get_con_handle(const uint8_t * event){
-    return little_endian_read_16(event, 3);
-}
-/**
- * @brief Get field index from event GATTSERVICE_SUBEVENT_VOCS_SERVER_AUDIO_LOCATION
- * @param event packet
- * @return index
- * @note: btstack_type 1
- */
-static inline uint8_t gattservice_subevent_vocs_server_audio_location_get_index(const uint8_t * event){
-    return event[5];
-}
-/**
- * @brief Get field audio_location from event GATTSERVICE_SUBEVENT_VOCS_SERVER_AUDIO_LOCATION
- * @param event packet
- * @return audio_location
- * @note: btstack_type 4
- */
-static inline uint32_t gattservice_subevent_vocs_server_audio_location_get_audio_location(const uint8_t * event){
-    return little_endian_read_32(event, 6);
-}
-
-/**
- * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_VOCS_SERVER_AUDIO_OUTPUT_DESCRIPTION
- * @param event packet
- * @return con_handle
- * @note: btstack_type H
- */
-static inline hci_con_handle_t gattservice_subevent_vocs_server_audio_output_description_get_con_handle(const uint8_t * event){
-    return little_endian_read_16(event, 3);
-}
-/**
- * @brief Get field index from event GATTSERVICE_SUBEVENT_VOCS_SERVER_AUDIO_OUTPUT_DESCRIPTION
- * @param event packet
- * @return index
- * @note: btstack_type 1
- */
-static inline uint8_t gattservice_subevent_vocs_server_audio_output_description_get_index(const uint8_t * event){
-    return event[5];
-}
-/**
- * @brief Get field description_len from event GATTSERVICE_SUBEVENT_VOCS_SERVER_AUDIO_OUTPUT_DESCRIPTION
- * @param event packet
- * @return description_len
- * @note: btstack_type J
- */
-static inline uint8_t gattservice_subevent_vocs_server_audio_output_description_get_description_len(const uint8_t * event){
-    return event[6];
-}
-/**
- * @brief Get field description from event GATTSERVICE_SUBEVENT_VOCS_SERVER_AUDIO_OUTPUT_DESCRIPTION
- * @param event packet
- * @return description
- * @note: btstack_type V
- */
-static inline const uint8_t * gattservice_subevent_vocs_server_audio_output_description_get_description(const uint8_t * event){
-    return &event[7];
-}
-
-/**
- * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_VCS_SERVER_VOLUME_STATE
- * @param event packet
- * @return con_handle
- * @note: btstack_type H
- */
-static inline hci_con_handle_t gattservice_subevent_vcs_server_volume_state_get_con_handle(const uint8_t * event){
-    return little_endian_read_16(event, 3);
-}
-/**
- * @brief Get field volume_setting from event GATTSERVICE_SUBEVENT_VCS_SERVER_VOLUME_STATE
- * @param event packet
- * @return volume_setting
- * @note: btstack_type 1
- */
-static inline uint8_t gattservice_subevent_vcs_server_volume_state_get_volume_setting(const uint8_t * event){
-    return event[5];
-}
-/**
- * @brief Get field volume_change_step from event GATTSERVICE_SUBEVENT_VCS_SERVER_VOLUME_STATE
- * @param event packet
- * @return volume_change_step
- * @note: btstack_type 1
- */
-static inline uint8_t gattservice_subevent_vcs_server_volume_state_get_volume_change_step(const uint8_t * event){
-    return event[6];
-}
-/**
- * @brief Get field mute from event GATTSERVICE_SUBEVENT_VCS_SERVER_VOLUME_STATE
- * @param event packet
- * @return mute
- * @note: btstack_type 1
- */
-static inline uint8_t gattservice_subevent_vcs_server_volume_state_get_mute(const uint8_t * event){
-    return event[7];
-}
-
-/**
- * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_VCS_VOLUME_FLAGS
- * @param event packet
- * @return con_handle
- * @note: btstack_type H
- */
-static inline hci_con_handle_t gattservice_subevent_vcs_volume_flags_get_con_handle(const uint8_t * event){
-    return little_endian_read_16(event, 3);
-}
-/**
- * @brief Get field flags from event GATTSERVICE_SUBEVENT_VCS_VOLUME_FLAGS
- * @param event packet
- * @return flags
- * @note: btstack_type 1
- */
-static inline uint8_t gattservice_subevent_vcs_volume_flags_get_flags(const uint8_t * event){
-    return event[5];
+static inline uint16_t gattservice_subevent_client_disconnected_get_cid(const uint8_t * event){
+    return little_endian_read_16(event, 5);
 }
 
 /**
@@ -16819,186 +16539,1802 @@ static inline uint8_t leaudio_subevent_csis_client_rsi_match_get_match(const uin
 }
 
 /**
- * @brief Get field rsi from event LEAUDIO_SUBEVENT_CSIS_CLIENT_RSI
- * @param event packet
- * @param Pointer to storage for rsi
- * @note: btstack_type B
- */
-static inline void leaudio_subevent_csis_client_rsi_get_rsi(const uint8_t * event, bd_addr_t rsi){
-    reverse_bytes(&event[3], rsi, 6);
-}
-
-/**
- * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_AICS_SERVER_CONNECTED
+ * @brief Get field con_handle from event LEAUDIO_SUBEVENT_AICS_SERVER_CONNECTED
  * @param event packet
  * @return con_handle
  * @note: btstack_type H
  */
-static inline hci_con_handle_t gattservice_subevent_aics_server_connected_get_con_handle(const uint8_t * event){
+static inline hci_con_handle_t leaudio_subevent_aics_server_connected_get_con_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field status from event GATTSERVICE_SUBEVENT_AICS_SERVER_CONNECTED
+ * @brief Get field status from event LEAUDIO_SUBEVENT_AICS_SERVER_CONNECTED
  * @param event packet
  * @return status
  * @note: btstack_type 1
  */
-static inline uint8_t gattservice_subevent_aics_server_connected_get_status(const uint8_t * event){
+static inline uint8_t leaudio_subevent_aics_server_connected_get_status(const uint8_t * event){
     return event[5];
 }
 
 /**
- * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_AICS_SERVER_DISCONNECTED
+ * @brief Get field con_handle from event LEAUDIO_SUBEVENT_AICS_SERVER_DISCONNECTED
  * @param event packet
  * @return con_handle
  * @note: btstack_type H
  */
-static inline hci_con_handle_t gattservice_subevent_aics_server_disconnected_get_con_handle(const uint8_t * event){
+static inline hci_con_handle_t leaudio_subevent_aics_server_disconnected_get_con_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 
 /**
- * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_MICS_SERVER_CONNECTED
+ * @brief Get field con_handle from event LEAUDIO_SUBEVENT_AICS_SERVER_MUTE_MODE
  * @param event packet
  * @return con_handle
  * @note: btstack_type H
  */
-static inline hci_con_handle_t gattservice_subevent_mics_server_connected_get_con_handle(const uint8_t * event){
+static inline hci_con_handle_t leaudio_subevent_aics_server_mute_mode_get_con_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field status from event GATTSERVICE_SUBEVENT_MICS_SERVER_CONNECTED
+ * @brief Get field index from event LEAUDIO_SUBEVENT_AICS_SERVER_MUTE_MODE
  * @param event packet
- * @return status
+ * @return index
  * @note: btstack_type 1
  */
-static inline uint8_t gattservice_subevent_mics_server_connected_get_status(const uint8_t * event){
+static inline uint8_t leaudio_subevent_aics_server_mute_mode_get_index(const uint8_t * event){
     return event[5];
 }
-
 /**
- * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_MICS_SERVER_DISCONNECTED
+ * @brief Get field state from event LEAUDIO_SUBEVENT_AICS_SERVER_MUTE_MODE
  * @param event packet
- * @return con_handle
- * @note: btstack_type H
- */
-static inline hci_con_handle_t gattservice_subevent_mics_server_disconnected_get_con_handle(const uint8_t * event){
-    return little_endian_read_16(event, 3);
-}
-
-/**
- * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_VCS_SERVER_CONNECTED
- * @param event packet
- * @return con_handle
- * @note: btstack_type H
- */
-static inline hci_con_handle_t gattservice_subevent_vcs_server_connected_get_con_handle(const uint8_t * event){
-    return little_endian_read_16(event, 3);
-}
-/**
- * @brief Get field status from event GATTSERVICE_SUBEVENT_VCS_SERVER_CONNECTED
- * @param event packet
- * @return status
+ * @return state
  * @note: btstack_type 1
  */
-static inline uint8_t gattservice_subevent_vcs_server_connected_get_status(const uint8_t * event){
-    return event[5];
+static inline uint8_t leaudio_subevent_aics_server_mute_mode_get_state(const uint8_t * event){
+    return event[6];
 }
 
 /**
- * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_VCS_SERVER_DISCONNECTED
+ * @brief Get field con_handle from event LEAUDIO_SUBEVENT_AICS_SERVER_GAIN_MODE
  * @param event packet
  * @return con_handle
  * @note: btstack_type H
  */
-static inline hci_con_handle_t gattservice_subevent_vcs_server_disconnected_get_con_handle(const uint8_t * event){
-    return little_endian_read_16(event, 3);
-}
-
-/**
- * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_VOCS_SERVER_CONNECTED
- * @param event packet
- * @return con_handle
- * @note: btstack_type H
- */
-static inline hci_con_handle_t gattservice_subevent_vocs_server_connected_get_con_handle(const uint8_t * event){
+static inline hci_con_handle_t leaudio_subevent_aics_server_gain_mode_get_con_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field status from event GATTSERVICE_SUBEVENT_VOCS_SERVER_CONNECTED
+ * @brief Get field index from event LEAUDIO_SUBEVENT_AICS_SERVER_GAIN_MODE
  * @param event packet
- * @return status
+ * @return index
  * @note: btstack_type 1
  */
-static inline uint8_t gattservice_subevent_vocs_server_connected_get_status(const uint8_t * event){
+static inline uint8_t leaudio_subevent_aics_server_gain_mode_get_index(const uint8_t * event){
     return event[5];
+}
+/**
+ * @brief Get field state from event LEAUDIO_SUBEVENT_AICS_SERVER_GAIN_MODE
+ * @param event packet
+ * @return state
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_aics_server_gain_mode_get_state(const uint8_t * event){
+    return event[6];
 }
 
 /**
- * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_VOCS_SERVER_DISCONNECTED
+ * @brief Get field con_handle from event LEAUDIO_SUBEVENT_AICS_SERVER_GAIN_CHANGED
  * @param event packet
  * @return con_handle
  * @note: btstack_type H
  */
-static inline hci_con_handle_t gattservice_subevent_vocs_server_disconnected_get_con_handle(const uint8_t * event){
+static inline hci_con_handle_t leaudio_subevent_aics_server_gain_changed_get_con_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field index from event LEAUDIO_SUBEVENT_AICS_SERVER_GAIN_CHANGED
+ * @param event packet
+ * @return index
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_aics_server_gain_changed_get_index(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field gain_db from event LEAUDIO_SUBEVENT_AICS_SERVER_GAIN_CHANGED
+ * @param event packet
+ * @return gain_db
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_aics_server_gain_changed_get_gain_db(const uint8_t * event){
+    return event[6];
 }
 
 /**
- * @brief Get field mics_cid from event GATTSERVICE_SUBEVENT_MICS_CLIENT_DISCONNECTED
+ * @brief Get field con_handle from event LEAUDIO_SUBEVENT_AICS_SERVER_AUDIO_INPUT_DESC_CHANGED
  * @param event packet
- * @return mics_cid
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t leaudio_subevent_aics_server_audio_input_desc_changed_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field index from event LEAUDIO_SUBEVENT_AICS_SERVER_AUDIO_INPUT_DESC_CHANGED
+ * @param event packet
+ * @return index
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_aics_server_audio_input_desc_changed_get_index(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field description_len from event LEAUDIO_SUBEVENT_AICS_SERVER_AUDIO_INPUT_DESC_CHANGED
+ * @param event packet
+ * @return description_len
+ * @note: btstack_type J
+ */
+static inline uint8_t leaudio_subevent_aics_server_audio_input_desc_changed_get_description_len(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field description from event LEAUDIO_SUBEVENT_AICS_SERVER_AUDIO_INPUT_DESC_CHANGED
+ * @param event packet
+ * @return description
+ * @note: btstack_type V
+ */
+static inline const uint8_t * leaudio_subevent_aics_server_audio_input_desc_changed_get_description(const uint8_t * event){
+    return &event[7];
+}
+
+/**
+ * @brief Get field con_handle from event LEAUDIO_SUBEVENT_AICS_CLIENT_CONNECTED
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t leaudio_subevent_aics_client_connected_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field aics_cid from event LEAUDIO_SUBEVENT_AICS_CLIENT_CONNECTED
+ * @param event packet
+ * @return aics_cid
  * @note: btstack_type 2
  */
-static inline uint16_t gattservice_subevent_mics_client_disconnected_get_mics_cid(const uint8_t * event){
-    return little_endian_read_16(event, 3);
-}
-
-/**
- * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_CLIENT_CONNECTED
- * @param event packet
- * @return con_handle
- * @note: btstack_type H
- */
-static inline hci_con_handle_t gattservice_subevent_client_connected_get_con_handle(const uint8_t * event){
-    return little_endian_read_16(event, 3);
-}
-/**
- * @brief Get field cid from event GATTSERVICE_SUBEVENT_CLIENT_CONNECTED
- * @param event packet
- * @return cid
- * @note: btstack_type 2
- */
-static inline uint16_t gattservice_subevent_client_connected_get_cid(const uint8_t * event){
+static inline uint16_t leaudio_subevent_aics_client_connected_get_aics_cid(const uint8_t * event){
     return little_endian_read_16(event, 5);
 }
 /**
- * @brief Get field status from event GATTSERVICE_SUBEVENT_CLIENT_CONNECTED
+ * @brief Get field aics_index from event LEAUDIO_SUBEVENT_AICS_CLIENT_CONNECTED
  * @param event packet
- * @return status
+ * @return aics_index
  * @note: btstack_type 1
  */
-static inline uint8_t gattservice_subevent_client_connected_get_status(const uint8_t * event){
+static inline uint8_t leaudio_subevent_aics_client_connected_get_aics_index(const uint8_t * event){
+    return event[7];
+}
+/**
+ * @brief Get field att_status from event LEAUDIO_SUBEVENT_AICS_CLIENT_CONNECTED
+ * @param event packet
+ * @return att_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_aics_client_connected_get_att_status(const uint8_t * event){
+    return event[8];
+}
+
+/**
+ * @brief Get field aics_cid from event LEAUDIO_SUBEVENT_AICS_CLIENT_DISCONNECTED
+ * @param event packet
+ * @return aics_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t leaudio_subevent_aics_client_disconnected_get_aics_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field aics_index from event LEAUDIO_SUBEVENT_AICS_CLIENT_DISCONNECTED
+ * @param event packet
+ * @return aics_index
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_aics_client_disconnected_get_aics_index(const uint8_t * event){
+    return event[5];
+}
+
+/**
+ * @brief Get field aics_cid from event LEAUDIO_SUBEVENT_AICS_CLIENT_AUDIO_INPUT_STATE
+ * @param event packet
+ * @return aics_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t leaudio_subevent_aics_client_audio_input_state_get_aics_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field aics_index from event LEAUDIO_SUBEVENT_AICS_CLIENT_AUDIO_INPUT_STATE
+ * @param event packet
+ * @return aics_index
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_aics_client_audio_input_state_get_aics_index(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field gain_setting from event LEAUDIO_SUBEVENT_AICS_CLIENT_AUDIO_INPUT_STATE
+ * @param event packet
+ * @return gain_setting
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_aics_client_audio_input_state_get_gain_setting(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field mute from event LEAUDIO_SUBEVENT_AICS_CLIENT_AUDIO_INPUT_STATE
+ * @param event packet
+ * @return mute
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_aics_client_audio_input_state_get_mute(const uint8_t * event){
+    return event[7];
+}
+/**
+ * @brief Get field gain_mode from event LEAUDIO_SUBEVENT_AICS_CLIENT_AUDIO_INPUT_STATE
+ * @param event packet
+ * @return gain_mode
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_aics_client_audio_input_state_get_gain_mode(const uint8_t * event){
+    return event[8];
+}
+/**
+ * @brief Get field change_counter from event LEAUDIO_SUBEVENT_AICS_CLIENT_AUDIO_INPUT_STATE
+ * @param event packet
+ * @return change_counter
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_aics_client_audio_input_state_get_change_counter(const uint8_t * event){
+    return event[9];
+}
+/**
+ * @brief Get field att_status from event LEAUDIO_SUBEVENT_AICS_CLIENT_AUDIO_INPUT_STATE
+ * @param event packet
+ * @return att_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_aics_client_audio_input_state_get_att_status(const uint8_t * event){
+    return event[10];
+}
+
+/**
+ * @brief Get field aics_cid from event LEAUDIO_SUBEVENT_AICS_CLIENT_GAIN_SETTINGS_PROPERTIES
+ * @param event packet
+ * @return aics_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t leaudio_subevent_aics_client_gain_settings_properties_get_aics_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field aics_index from event LEAUDIO_SUBEVENT_AICS_CLIENT_GAIN_SETTINGS_PROPERTIES
+ * @param event packet
+ * @return aics_index
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_aics_client_gain_settings_properties_get_aics_index(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field units from event LEAUDIO_SUBEVENT_AICS_CLIENT_GAIN_SETTINGS_PROPERTIES
+ * @param event packet
+ * @return units
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_aics_client_gain_settings_properties_get_units(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field minimum_value from event LEAUDIO_SUBEVENT_AICS_CLIENT_GAIN_SETTINGS_PROPERTIES
+ * @param event packet
+ * @return minimum_value
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_aics_client_gain_settings_properties_get_minimum_value(const uint8_t * event){
+    return event[7];
+}
+/**
+ * @brief Get field maximum_value from event LEAUDIO_SUBEVENT_AICS_CLIENT_GAIN_SETTINGS_PROPERTIES
+ * @param event packet
+ * @return maximum_value
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_aics_client_gain_settings_properties_get_maximum_value(const uint8_t * event){
+    return event[8];
+}
+/**
+ * @brief Get field att_status from event LEAUDIO_SUBEVENT_AICS_CLIENT_GAIN_SETTINGS_PROPERTIES
+ * @param event packet
+ * @return att_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_aics_client_gain_settings_properties_get_att_status(const uint8_t * event){
+    return event[9];
+}
+
+/**
+ * @brief Get field aics_cid from event LEAUDIO_SUBEVENT_AICS_CLIENT_AUDIO_INPUT_TYPE
+ * @param event packet
+ * @return aics_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t leaudio_subevent_aics_client_audio_input_type_get_aics_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field aics_index from event LEAUDIO_SUBEVENT_AICS_CLIENT_AUDIO_INPUT_TYPE
+ * @param event packet
+ * @return aics_index
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_aics_client_audio_input_type_get_aics_index(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field input_type from event LEAUDIO_SUBEVENT_AICS_CLIENT_AUDIO_INPUT_TYPE
+ * @param event packet
+ * @return input_type
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_aics_client_audio_input_type_get_input_type(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field att_status from event LEAUDIO_SUBEVENT_AICS_CLIENT_AUDIO_INPUT_TYPE
+ * @param event packet
+ * @return att_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_aics_client_audio_input_type_get_att_status(const uint8_t * event){
     return event[7];
 }
 
 /**
- * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_CLIENT_DISCONNECTED
+ * @brief Get field aics_cid from event LEAUDIO_SUBEVENT_AICS_CLIENT_AUDIO_INPUT_STATUS
+ * @param event packet
+ * @return aics_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t leaudio_subevent_aics_client_audio_input_status_get_aics_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field aics_index from event LEAUDIO_SUBEVENT_AICS_CLIENT_AUDIO_INPUT_STATUS
+ * @param event packet
+ * @return aics_index
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_aics_client_audio_input_status_get_aics_index(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field input_status from event LEAUDIO_SUBEVENT_AICS_CLIENT_AUDIO_INPUT_STATUS
+ * @param event packet
+ * @return input_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_aics_client_audio_input_status_get_input_status(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field att_status from event LEAUDIO_SUBEVENT_AICS_CLIENT_AUDIO_INPUT_STATUS
+ * @param event packet
+ * @return att_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_aics_client_audio_input_status_get_att_status(const uint8_t * event){
+    return event[7];
+}
+
+/**
+ * @brief Get field aics_cid from event LEAUDIO_SUBEVENT_AICS_CLIENT_AUDIO_DESCRIPTION
+ * @param event packet
+ * @return aics_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t leaudio_subevent_aics_client_audio_description_get_aics_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field aics_index from event LEAUDIO_SUBEVENT_AICS_CLIENT_AUDIO_DESCRIPTION
+ * @param event packet
+ * @return aics_index
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_aics_client_audio_description_get_aics_index(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field value_len from event LEAUDIO_SUBEVENT_AICS_CLIENT_AUDIO_DESCRIPTION
+ * @param event packet
+ * @return value_len
+ * @note: btstack_type J
+ */
+static inline uint8_t leaudio_subevent_aics_client_audio_description_get_value_len(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field value from event LEAUDIO_SUBEVENT_AICS_CLIENT_AUDIO_DESCRIPTION
+ * @param event packet
+ * @return value
+ * @note: btstack_type V
+ */
+static inline const uint8_t * leaudio_subevent_aics_client_audio_description_get_value(const uint8_t * event){
+    return &event[7];
+}
+/**
+ * @brief Get field att_status from event LEAUDIO_SUBEVENT_AICS_CLIENT_AUDIO_DESCRIPTION
+ * @param event packet
+ * @return att_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_aics_client_audio_description_get_att_status(const uint8_t * event){
+    return event[7u + event[6]];
+}
+
+/**
+ * @brief Get field aics_cid from event LEAUDIO_SUBEVENT_AICS_CLIENT_WRITE_DONE
+ * @param event packet
+ * @return aics_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t leaudio_subevent_aics_client_write_done_get_aics_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field aics_index from event LEAUDIO_SUBEVENT_AICS_CLIENT_WRITE_DONE
+ * @param event packet
+ * @return aics_index
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_aics_client_write_done_get_aics_index(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field characteristic_uuid from event LEAUDIO_SUBEVENT_AICS_CLIENT_WRITE_DONE
+ * @param event packet
+ * @return characteristic_uuid
+ * @note: btstack_type 2
+ */
+static inline uint16_t leaudio_subevent_aics_client_write_done_get_characteristic_uuid(const uint8_t * event){
+    return little_endian_read_16(event, 6);
+}
+/**
+ * @brief Get field att_status from event LEAUDIO_SUBEVENT_AICS_CLIENT_WRITE_DONE
+ * @param event packet
+ * @return att_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_aics_client_write_done_get_att_status(const uint8_t * event){
+    return event[8];
+}
+
+/**
+ * @brief Get field con_handle from event LEAUDIO_SUBEVENT_MICS_SERVER_CONNECTED
  * @param event packet
  * @return con_handle
  * @note: btstack_type H
  */
-static inline hci_con_handle_t gattservice_subevent_client_disconnected_get_con_handle(const uint8_t * event){
+static inline hci_con_handle_t leaudio_subevent_mics_server_connected_get_con_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field cid from event GATTSERVICE_SUBEVENT_CLIENT_DISCONNECTED
+ * @brief Get field status from event LEAUDIO_SUBEVENT_MICS_SERVER_CONNECTED
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_mics_server_connected_get_status(const uint8_t * event){
+    return event[5];
+}
+
+/**
+ * @brief Get field con_handle from event LEAUDIO_SUBEVENT_MICS_SERVER_DISCONNECTED
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t leaudio_subevent_mics_server_disconnected_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+
+/**
+ * @brief Get field con_handle from event LEAUDIO_SUBEVENT_MICS_SERVER_MUTE
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t leaudio_subevent_mics_server_mute_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field mute from event LEAUDIO_SUBEVENT_MICS_SERVER_MUTE
+ * @param event packet
+ * @return mute
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_mics_server_mute_get_mute(const uint8_t * event){
+    return event[5];
+}
+
+/**
+ * @brief Get field con_handle from event LEAUDIO_SUBEVENT_MICS_CLIENT_CONNECTED
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t leaudio_subevent_mics_client_connected_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field mics_cid from event LEAUDIO_SUBEVENT_MICS_CLIENT_CONNECTED
+ * @param event packet
+ * @return mics_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t leaudio_subevent_mics_client_connected_get_mics_cid(const uint8_t * event){
+    return little_endian_read_16(event, 5);
+}
+/**
+ * @brief Get field aics_services_num from event LEAUDIO_SUBEVENT_MICS_CLIENT_CONNECTED
+ * @param event packet
+ * @return aics_services_num
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_mics_client_connected_get_aics_services_num(const uint8_t * event){
+    return event[7];
+}
+/**
+ * @brief Get field att_status from event LEAUDIO_SUBEVENT_MICS_CLIENT_CONNECTED
+ * @param event packet
+ * @return att_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_mics_client_connected_get_att_status(const uint8_t * event){
+    return event[8];
+}
+
+/**
+ * @brief Get field mics_cid from event LEAUDIO_SUBEVENT_MICS_CLIENT_DISCONNECTED
+ * @param event packet
+ * @return mics_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t leaudio_subevent_mics_client_disconnected_get_mics_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+
+/**
+ * @brief Get field mics_cid from event LEAUDIO_SUBEVENT_MICS_CLIENT_AUDIO_INPUT_STATE
+ * @param event packet
+ * @return mics_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t leaudio_subevent_mics_client_audio_input_state_get_mics_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field aics_index from event LEAUDIO_SUBEVENT_MICS_CLIENT_AUDIO_INPUT_STATE
+ * @param event packet
+ * @return aics_index
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_mics_client_audio_input_state_get_aics_index(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field gain_setting from event LEAUDIO_SUBEVENT_MICS_CLIENT_AUDIO_INPUT_STATE
+ * @param event packet
+ * @return gain_setting
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_mics_client_audio_input_state_get_gain_setting(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field mute from event LEAUDIO_SUBEVENT_MICS_CLIENT_AUDIO_INPUT_STATE
+ * @param event packet
+ * @return mute
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_mics_client_audio_input_state_get_mute(const uint8_t * event){
+    return event[7];
+}
+/**
+ * @brief Get field gain_mode from event LEAUDIO_SUBEVENT_MICS_CLIENT_AUDIO_INPUT_STATE
+ * @param event packet
+ * @return gain_mode
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_mics_client_audio_input_state_get_gain_mode(const uint8_t * event){
+    return event[8];
+}
+/**
+ * @brief Get field change_counter from event LEAUDIO_SUBEVENT_MICS_CLIENT_AUDIO_INPUT_STATE
+ * @param event packet
+ * @return change_counter
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_mics_client_audio_input_state_get_change_counter(const uint8_t * event){
+    return event[9];
+}
+/**
+ * @brief Get field att_status from event LEAUDIO_SUBEVENT_MICS_CLIENT_AUDIO_INPUT_STATE
+ * @param event packet
+ * @return att_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_mics_client_audio_input_state_get_att_status(const uint8_t * event){
+    return event[10];
+}
+
+/**
+ * @brief Get field mics_cid from event LEAUDIO_SUBEVENT_MICS_CLIENT_GAIN_SETTINGS_PROPERTIES
+ * @param event packet
+ * @return mics_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t leaudio_subevent_mics_client_gain_settings_properties_get_mics_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field aics_index from event LEAUDIO_SUBEVENT_MICS_CLIENT_GAIN_SETTINGS_PROPERTIES
+ * @param event packet
+ * @return aics_index
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_mics_client_gain_settings_properties_get_aics_index(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field units from event LEAUDIO_SUBEVENT_MICS_CLIENT_GAIN_SETTINGS_PROPERTIES
+ * @param event packet
+ * @return units
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_mics_client_gain_settings_properties_get_units(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field minimum_value from event LEAUDIO_SUBEVENT_MICS_CLIENT_GAIN_SETTINGS_PROPERTIES
+ * @param event packet
+ * @return minimum_value
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_mics_client_gain_settings_properties_get_minimum_value(const uint8_t * event){
+    return event[7];
+}
+/**
+ * @brief Get field maximum_value from event LEAUDIO_SUBEVENT_MICS_CLIENT_GAIN_SETTINGS_PROPERTIES
+ * @param event packet
+ * @return maximum_value
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_mics_client_gain_settings_properties_get_maximum_value(const uint8_t * event){
+    return event[8];
+}
+/**
+ * @brief Get field att_status from event LEAUDIO_SUBEVENT_MICS_CLIENT_GAIN_SETTINGS_PROPERTIES
+ * @param event packet
+ * @return att_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_mics_client_gain_settings_properties_get_att_status(const uint8_t * event){
+    return event[9];
+}
+
+/**
+ * @brief Get field mics_cid from event LEAUDIO_SUBEVENT_MICS_CLIENT_AUDIO_INPUT_TYPE
+ * @param event packet
+ * @return mics_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t leaudio_subevent_mics_client_audio_input_type_get_mics_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field aics_index from event LEAUDIO_SUBEVENT_MICS_CLIENT_AUDIO_INPUT_TYPE
+ * @param event packet
+ * @return aics_index
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_mics_client_audio_input_type_get_aics_index(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field input_type from event LEAUDIO_SUBEVENT_MICS_CLIENT_AUDIO_INPUT_TYPE
+ * @param event packet
+ * @return input_type
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_mics_client_audio_input_type_get_input_type(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field att_status from event LEAUDIO_SUBEVENT_MICS_CLIENT_AUDIO_INPUT_TYPE
+ * @param event packet
+ * @return att_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_mics_client_audio_input_type_get_att_status(const uint8_t * event){
+    return event[7];
+}
+
+/**
+ * @brief Get field mics_cid from event LEAUDIO_SUBEVENT_MICS_CLIENT_AUDIO_INPUT_STATUS
+ * @param event packet
+ * @return mics_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t leaudio_subevent_mics_client_audio_input_status_get_mics_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field aics_index from event LEAUDIO_SUBEVENT_MICS_CLIENT_AUDIO_INPUT_STATUS
+ * @param event packet
+ * @return aics_index
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_mics_client_audio_input_status_get_aics_index(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field input_status from event LEAUDIO_SUBEVENT_MICS_CLIENT_AUDIO_INPUT_STATUS
+ * @param event packet
+ * @return input_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_mics_client_audio_input_status_get_input_status(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field att_status from event LEAUDIO_SUBEVENT_MICS_CLIENT_AUDIO_INPUT_STATUS
+ * @param event packet
+ * @return att_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_mics_client_audio_input_status_get_att_status(const uint8_t * event){
+    return event[7];
+}
+
+/**
+ * @brief Get field mics_cid from event LEAUDIO_SUBEVENT_MICS_CLIENT_AUDIO_DESCRIPTION
+ * @param event packet
+ * @return mics_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t leaudio_subevent_mics_client_audio_description_get_mics_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field aics_index from event LEAUDIO_SUBEVENT_MICS_CLIENT_AUDIO_DESCRIPTION
+ * @param event packet
+ * @return aics_index
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_mics_client_audio_description_get_aics_index(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field value_len from event LEAUDIO_SUBEVENT_MICS_CLIENT_AUDIO_DESCRIPTION
+ * @param event packet
+ * @return value_len
+ * @note: btstack_type J
+ */
+static inline uint8_t leaudio_subevent_mics_client_audio_description_get_value_len(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field value from event LEAUDIO_SUBEVENT_MICS_CLIENT_AUDIO_DESCRIPTION
+ * @param event packet
+ * @return value
+ * @note: btstack_type V
+ */
+static inline const uint8_t * leaudio_subevent_mics_client_audio_description_get_value(const uint8_t * event){
+    return &event[7];
+}
+/**
+ * @brief Get field att_status from event LEAUDIO_SUBEVENT_MICS_CLIENT_AUDIO_DESCRIPTION
+ * @param event packet
+ * @return att_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_mics_client_audio_description_get_att_status(const uint8_t * event){
+    return event[7u + event[6]];
+}
+
+/**
+ * @brief Get field mics_cid from event LEAUDIO_SUBEVENT_MICS_CLIENT_WRITE_DONE
+ * @param event packet
+ * @return mics_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t leaudio_subevent_mics_client_write_done_get_mics_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field aics_index from event LEAUDIO_SUBEVENT_MICS_CLIENT_WRITE_DONE
+ * @param event packet
+ * @return aics_index
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_mics_client_write_done_get_aics_index(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field characteristic_uuid from event LEAUDIO_SUBEVENT_MICS_CLIENT_WRITE_DONE
+ * @param event packet
+ * @return characteristic_uuid
+ * @note: btstack_type 2
+ */
+static inline uint16_t leaudio_subevent_mics_client_write_done_get_characteristic_uuid(const uint8_t * event){
+    return little_endian_read_16(event, 6);
+}
+/**
+ * @brief Get field att_status from event LEAUDIO_SUBEVENT_MICS_CLIENT_WRITE_DONE
+ * @param event packet
+ * @return att_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_mics_client_write_done_get_att_status(const uint8_t * event){
+    return event[8];
+}
+
+/**
+ * @brief Get field cid from event LEAUDIO_SUBEVENT_MICS_CLIENT_MUTE
  * @param event packet
  * @return cid
  * @note: btstack_type 2
  */
-static inline uint16_t gattservice_subevent_client_disconnected_get_cid(const uint8_t * event){
+static inline uint16_t leaudio_subevent_mics_client_mute_get_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field state from event LEAUDIO_SUBEVENT_MICS_CLIENT_MUTE
+ * @param event packet
+ * @return state
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_mics_client_mute_get_state(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field att_status from event LEAUDIO_SUBEVENT_MICS_CLIENT_MUTE
+ * @param event packet
+ * @return att_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_mics_client_mute_get_att_status(const uint8_t * event){
+    return event[6];
+}
+
+/**
+ * @brief Get field con_handle from event LEAUDIO_SUBEVENT_VCS_SERVER_CONNECTED
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t leaudio_subevent_vcs_server_connected_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field status from event LEAUDIO_SUBEVENT_VCS_SERVER_CONNECTED
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_vcs_server_connected_get_status(const uint8_t * event){
+    return event[5];
+}
+
+/**
+ * @brief Get field con_handle from event LEAUDIO_SUBEVENT_VCS_SERVER_DISCONNECTED
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t leaudio_subevent_vcs_server_disconnected_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+
+/**
+ * @brief Get field con_handle from event LEAUDIO_SUBEVENT_VCS_SERVER_VOLUME_STATE
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t leaudio_subevent_vcs_server_volume_state_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field volume_setting from event LEAUDIO_SUBEVENT_VCS_SERVER_VOLUME_STATE
+ * @param event packet
+ * @return volume_setting
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_vcs_server_volume_state_get_volume_setting(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field volume_change_step from event LEAUDIO_SUBEVENT_VCS_SERVER_VOLUME_STATE
+ * @param event packet
+ * @return volume_change_step
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_vcs_server_volume_state_get_volume_change_step(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field mute from event LEAUDIO_SUBEVENT_VCS_SERVER_VOLUME_STATE
+ * @param event packet
+ * @return mute
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_vcs_server_volume_state_get_mute(const uint8_t * event){
+    return event[7];
+}
+
+/**
+ * @brief Get field con_handle from event LEAUDIO_SUBEVENT_VCS_SERVER_VOLUME_FLAGS
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t leaudio_subevent_vcs_server_volume_flags_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field flags from event LEAUDIO_SUBEVENT_VCS_SERVER_VOLUME_FLAGS
+ * @param event packet
+ * @return flags
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_vcs_server_volume_flags_get_flags(const uint8_t * event){
+    return event[5];
+}
+
+/**
+ * @brief Get field con_handle from event LEAUDIO_SUBEVENT_VCS_CLIENT_CONNECTED
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t leaudio_subevent_vcs_client_connected_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field vcs_cid from event LEAUDIO_SUBEVENT_VCS_CLIENT_CONNECTED
+ * @param event packet
+ * @return vcs_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t leaudio_subevent_vcs_client_connected_get_vcs_cid(const uint8_t * event){
     return little_endian_read_16(event, 5);
+}
+/**
+ * @brief Get field aics_services_num from event LEAUDIO_SUBEVENT_VCS_CLIENT_CONNECTED
+ * @param event packet
+ * @return aics_services_num
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_vcs_client_connected_get_aics_services_num(const uint8_t * event){
+    return event[7];
+}
+/**
+ * @brief Get field vocs_services_num from event LEAUDIO_SUBEVENT_VCS_CLIENT_CONNECTED
+ * @param event packet
+ * @return vocs_services_num
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_vcs_client_connected_get_vocs_services_num(const uint8_t * event){
+    return event[8];
+}
+/**
+ * @brief Get field att_status from event LEAUDIO_SUBEVENT_VCS_CLIENT_CONNECTED
+ * @param event packet
+ * @return att_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_vcs_client_connected_get_att_status(const uint8_t * event){
+    return event[9];
+}
+
+/**
+ * @brief Get field vcs_cid from event LEAUDIO_SUBEVENT_VCS_CLIENT_DISCONNECTED
+ * @param event packet
+ * @return vcs_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t leaudio_subevent_vcs_client_disconnected_get_vcs_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+
+/**
+ * @brief Get field vcs_cid from event LEAUDIO_SUBEVENT_VCS_CLIENT_VOLUME_STATE
+ * @param event packet
+ * @return vcs_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t leaudio_subevent_vcs_client_volume_state_get_vcs_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field volume_setting from event LEAUDIO_SUBEVENT_VCS_CLIENT_VOLUME_STATE
+ * @param event packet
+ * @return volume_setting
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_vcs_client_volume_state_get_volume_setting(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field volume_change_step from event LEAUDIO_SUBEVENT_VCS_CLIENT_VOLUME_STATE
+ * @param event packet
+ * @return volume_change_step
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_vcs_client_volume_state_get_volume_change_step(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field mute from event LEAUDIO_SUBEVENT_VCS_CLIENT_VOLUME_STATE
+ * @param event packet
+ * @return mute
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_vcs_client_volume_state_get_mute(const uint8_t * event){
+    return event[7];
+}
+/**
+ * @brief Get field att_status from event LEAUDIO_SUBEVENT_VCS_CLIENT_VOLUME_STATE
+ * @param event packet
+ * @return att_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_vcs_client_volume_state_get_att_status(const uint8_t * event){
+    return event[8];
+}
+
+/**
+ * @brief Get field vcs_cid from event LEAUDIO_SUBEVENT_VCS_CLIENT_VOLUME_FLAGS
+ * @param event packet
+ * @return vcs_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t leaudio_subevent_vcs_client_volume_flags_get_vcs_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field flags from event LEAUDIO_SUBEVENT_VCS_CLIENT_VOLUME_FLAGS
+ * @param event packet
+ * @return flags
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_vcs_client_volume_flags_get_flags(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field att_status from event LEAUDIO_SUBEVENT_VCS_CLIENT_VOLUME_FLAGS
+ * @param event packet
+ * @return att_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_vcs_client_volume_flags_get_att_status(const uint8_t * event){
+    return event[6];
+}
+
+/**
+ * @brief Get field vcs_cid from event LEAUDIO_SUBEVENT_VCS_CLIENT_AUDIO_INPUT_STATE
+ * @param event packet
+ * @return vcs_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t leaudio_subevent_vcs_client_audio_input_state_get_vcs_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field aics_index from event LEAUDIO_SUBEVENT_VCS_CLIENT_AUDIO_INPUT_STATE
+ * @param event packet
+ * @return aics_index
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_vcs_client_audio_input_state_get_aics_index(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field gain_setting from event LEAUDIO_SUBEVENT_VCS_CLIENT_AUDIO_INPUT_STATE
+ * @param event packet
+ * @return gain_setting
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_vcs_client_audio_input_state_get_gain_setting(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field mute from event LEAUDIO_SUBEVENT_VCS_CLIENT_AUDIO_INPUT_STATE
+ * @param event packet
+ * @return mute
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_vcs_client_audio_input_state_get_mute(const uint8_t * event){
+    return event[7];
+}
+/**
+ * @brief Get field gain_mode from event LEAUDIO_SUBEVENT_VCS_CLIENT_AUDIO_INPUT_STATE
+ * @param event packet
+ * @return gain_mode
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_vcs_client_audio_input_state_get_gain_mode(const uint8_t * event){
+    return event[8];
+}
+/**
+ * @brief Get field change_counter from event LEAUDIO_SUBEVENT_VCS_CLIENT_AUDIO_INPUT_STATE
+ * @param event packet
+ * @return change_counter
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_vcs_client_audio_input_state_get_change_counter(const uint8_t * event){
+    return event[9];
+}
+/**
+ * @brief Get field att_status from event LEAUDIO_SUBEVENT_VCS_CLIENT_AUDIO_INPUT_STATE
+ * @param event packet
+ * @return att_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_vcs_client_audio_input_state_get_att_status(const uint8_t * event){
+    return event[10];
+}
+
+/**
+ * @brief Get field vcs_cid from event LEAUDIO_SUBEVENT_VCS_CLIENT_GAIN_SETTINGS_PROPERTIES
+ * @param event packet
+ * @return vcs_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t leaudio_subevent_vcs_client_gain_settings_properties_get_vcs_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field aics_index from event LEAUDIO_SUBEVENT_VCS_CLIENT_GAIN_SETTINGS_PROPERTIES
+ * @param event packet
+ * @return aics_index
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_vcs_client_gain_settings_properties_get_aics_index(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field units from event LEAUDIO_SUBEVENT_VCS_CLIENT_GAIN_SETTINGS_PROPERTIES
+ * @param event packet
+ * @return units
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_vcs_client_gain_settings_properties_get_units(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field minimum_value from event LEAUDIO_SUBEVENT_VCS_CLIENT_GAIN_SETTINGS_PROPERTIES
+ * @param event packet
+ * @return minimum_value
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_vcs_client_gain_settings_properties_get_minimum_value(const uint8_t * event){
+    return event[7];
+}
+/**
+ * @brief Get field maximum_value from event LEAUDIO_SUBEVENT_VCS_CLIENT_GAIN_SETTINGS_PROPERTIES
+ * @param event packet
+ * @return maximum_value
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_vcs_client_gain_settings_properties_get_maximum_value(const uint8_t * event){
+    return event[8];
+}
+/**
+ * @brief Get field att_status from event LEAUDIO_SUBEVENT_VCS_CLIENT_GAIN_SETTINGS_PROPERTIES
+ * @param event packet
+ * @return att_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_vcs_client_gain_settings_properties_get_att_status(const uint8_t * event){
+    return event[9];
+}
+
+/**
+ * @brief Get field vcs_cid from event LEAUDIO_SUBEVENT_VCS_CLIENT_AUDIO_INPUT_TYPE
+ * @param event packet
+ * @return vcs_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t leaudio_subevent_vcs_client_audio_input_type_get_vcs_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field aics_index from event LEAUDIO_SUBEVENT_VCS_CLIENT_AUDIO_INPUT_TYPE
+ * @param event packet
+ * @return aics_index
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_vcs_client_audio_input_type_get_aics_index(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field input_type from event LEAUDIO_SUBEVENT_VCS_CLIENT_AUDIO_INPUT_TYPE
+ * @param event packet
+ * @return input_type
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_vcs_client_audio_input_type_get_input_type(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field att_status from event LEAUDIO_SUBEVENT_VCS_CLIENT_AUDIO_INPUT_TYPE
+ * @param event packet
+ * @return att_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_vcs_client_audio_input_type_get_att_status(const uint8_t * event){
+    return event[7];
+}
+
+/**
+ * @brief Get field vcs_cid from event LEAUDIO_SUBEVENT_VCS_CLIENT_AUDIO_INPUT_STATUS
+ * @param event packet
+ * @return vcs_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t leaudio_subevent_vcs_client_audio_input_status_get_vcs_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field aics_index from event LEAUDIO_SUBEVENT_VCS_CLIENT_AUDIO_INPUT_STATUS
+ * @param event packet
+ * @return aics_index
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_vcs_client_audio_input_status_get_aics_index(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field input_status from event LEAUDIO_SUBEVENT_VCS_CLIENT_AUDIO_INPUT_STATUS
+ * @param event packet
+ * @return input_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_vcs_client_audio_input_status_get_input_status(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field att_status from event LEAUDIO_SUBEVENT_VCS_CLIENT_AUDIO_INPUT_STATUS
+ * @param event packet
+ * @return att_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_vcs_client_audio_input_status_get_att_status(const uint8_t * event){
+    return event[7];
+}
+
+/**
+ * @brief Get field vcs_cid from event LEAUDIO_SUBEVENT_VCS_CLIENT_AUDIO_DESCRIPTION
+ * @param event packet
+ * @return vcs_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t leaudio_subevent_vcs_client_audio_description_get_vcs_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field aics_index from event LEAUDIO_SUBEVENT_VCS_CLIENT_AUDIO_DESCRIPTION
+ * @param event packet
+ * @return aics_index
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_vcs_client_audio_description_get_aics_index(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field value_len from event LEAUDIO_SUBEVENT_VCS_CLIENT_AUDIO_DESCRIPTION
+ * @param event packet
+ * @return value_len
+ * @note: btstack_type J
+ */
+static inline uint8_t leaudio_subevent_vcs_client_audio_description_get_value_len(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field value from event LEAUDIO_SUBEVENT_VCS_CLIENT_AUDIO_DESCRIPTION
+ * @param event packet
+ * @return value
+ * @note: btstack_type V
+ */
+static inline const uint8_t * leaudio_subevent_vcs_client_audio_description_get_value(const uint8_t * event){
+    return &event[7];
+}
+/**
+ * @brief Get field att_status from event LEAUDIO_SUBEVENT_VCS_CLIENT_AUDIO_DESCRIPTION
+ * @param event packet
+ * @return att_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_vcs_client_audio_description_get_att_status(const uint8_t * event){
+    return event[7u + event[6]];
+}
+
+/**
+ * @brief Get field vcs_cid from event LEAUDIO_SUBEVENT_VCS_CLIENT_VOLUME_OFFSET
+ * @param event packet
+ * @return vcs_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t leaudio_subevent_vcs_client_volume_offset_get_vcs_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field vocs_index from event LEAUDIO_SUBEVENT_VCS_CLIENT_VOLUME_OFFSET
+ * @param event packet
+ * @return vocs_index
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_vcs_client_volume_offset_get_vocs_index(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field volume_offset from event LEAUDIO_SUBEVENT_VCS_CLIENT_VOLUME_OFFSET
+ * @param event packet
+ * @return volume_offset
+ * @note: btstack_type 2
+ */
+static inline uint16_t leaudio_subevent_vcs_client_volume_offset_get_volume_offset(const uint8_t * event){
+    return little_endian_read_16(event, 6);
+}
+/**
+ * @brief Get field att_status from event LEAUDIO_SUBEVENT_VCS_CLIENT_VOLUME_OFFSET
+ * @param event packet
+ * @return att_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_vcs_client_volume_offset_get_att_status(const uint8_t * event){
+    return event[8];
+}
+
+/**
+ * @brief Get field vcs_cid from event LEAUDIO_SUBEVENT_VCS_CLIENT_AUDIO_LOCATION
+ * @param event packet
+ * @return vcs_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t leaudio_subevent_vcs_client_audio_location_get_vcs_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field vocs_index from event LEAUDIO_SUBEVENT_VCS_CLIENT_AUDIO_LOCATION
+ * @param event packet
+ * @return vocs_index
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_vcs_client_audio_location_get_vocs_index(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field audio_location from event LEAUDIO_SUBEVENT_VCS_CLIENT_AUDIO_LOCATION
+ * @param event packet
+ * @return audio_location
+ * @note: btstack_type 4
+ */
+static inline uint32_t leaudio_subevent_vcs_client_audio_location_get_audio_location(const uint8_t * event){
+    return little_endian_read_32(event, 6);
+}
+/**
+ * @brief Get field att_status from event LEAUDIO_SUBEVENT_VCS_CLIENT_AUDIO_LOCATION
+ * @param event packet
+ * @return att_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_vcs_client_audio_location_get_att_status(const uint8_t * event){
+    return event[10];
+}
+
+/**
+ * @brief Get field vcs_cid from event LEAUDIO_SUBEVENT_VCS_CLIENT_AUDIO_OUTPUT_DESCRIPTION
+ * @param event packet
+ * @return vcs_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t leaudio_subevent_vcs_client_audio_output_description_get_vcs_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field vocs_index from event LEAUDIO_SUBEVENT_VCS_CLIENT_AUDIO_OUTPUT_DESCRIPTION
+ * @param event packet
+ * @return vocs_index
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_vcs_client_audio_output_description_get_vocs_index(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field description_len from event LEAUDIO_SUBEVENT_VCS_CLIENT_AUDIO_OUTPUT_DESCRIPTION
+ * @param event packet
+ * @return description_len
+ * @note: btstack_type J
+ */
+static inline uint8_t leaudio_subevent_vcs_client_audio_output_description_get_description_len(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field description from event LEAUDIO_SUBEVENT_VCS_CLIENT_AUDIO_OUTPUT_DESCRIPTION
+ * @param event packet
+ * @return description
+ * @note: btstack_type V
+ */
+static inline const uint8_t * leaudio_subevent_vcs_client_audio_output_description_get_description(const uint8_t * event){
+    return &event[7];
+}
+/**
+ * @brief Get field att_status from event LEAUDIO_SUBEVENT_VCS_CLIENT_AUDIO_OUTPUT_DESCRIPTION
+ * @param event packet
+ * @return att_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_vcs_client_audio_output_description_get_att_status(const uint8_t * event){
+    return event[7u + event[6]];
+}
+
+/**
+ * @brief Get field vcs_cid from event LEAUDIO_SUBEVENT_VCS_CLIENT_WRITE_DONE
+ * @param event packet
+ * @return vcs_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t leaudio_subevent_vcs_client_write_done_get_vcs_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field included_service_index from event LEAUDIO_SUBEVENT_VCS_CLIENT_WRITE_DONE
+ * @param event packet
+ * @return included_service_index
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_vcs_client_write_done_get_included_service_index(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field characteristic_uuid from event LEAUDIO_SUBEVENT_VCS_CLIENT_WRITE_DONE
+ * @param event packet
+ * @return characteristic_uuid
+ * @note: btstack_type 2
+ */
+static inline uint16_t leaudio_subevent_vcs_client_write_done_get_characteristic_uuid(const uint8_t * event){
+    return little_endian_read_16(event, 6);
+}
+/**
+ * @brief Get field att_status from event LEAUDIO_SUBEVENT_VCS_CLIENT_WRITE_DONE
+ * @param event packet
+ * @return att_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_vcs_client_write_done_get_att_status(const uint8_t * event){
+    return event[8];
+}
+
+/**
+ * @brief Get field con_handle from event LEAUDIO_SUBEVENT_VOCS_SERVER_CONNECTED
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t leaudio_subevent_vocs_server_connected_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field status from event LEAUDIO_SUBEVENT_VOCS_SERVER_CONNECTED
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_vocs_server_connected_get_status(const uint8_t * event){
+    return event[5];
+}
+
+/**
+ * @brief Get field con_handle from event LEAUDIO_SUBEVENT_VOCS_SERVER_DISCONNECTED
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t leaudio_subevent_vocs_server_disconnected_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+
+/**
+ * @brief Get field con_handle from event LEAUDIO_SUBEVENT_VOCS_SERVER_VOLUME_OFFSET
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t leaudio_subevent_vocs_server_volume_offset_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field index from event LEAUDIO_SUBEVENT_VOCS_SERVER_VOLUME_OFFSET
+ * @param event packet
+ * @return index
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_vocs_server_volume_offset_get_index(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field volume_offset from event LEAUDIO_SUBEVENT_VOCS_SERVER_VOLUME_OFFSET
+ * @param event packet
+ * @return volume_offset
+ * @note: btstack_type 2
+ */
+static inline uint16_t leaudio_subevent_vocs_server_volume_offset_get_volume_offset(const uint8_t * event){
+    return little_endian_read_16(event, 6);
+}
+
+/**
+ * @brief Get field con_handle from event LEAUDIO_SUBEVENT_VOCS_SERVER_AUDIO_LOCATION
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t leaudio_subevent_vocs_server_audio_location_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field index from event LEAUDIO_SUBEVENT_VOCS_SERVER_AUDIO_LOCATION
+ * @param event packet
+ * @return index
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_vocs_server_audio_location_get_index(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field audio_location from event LEAUDIO_SUBEVENT_VOCS_SERVER_AUDIO_LOCATION
+ * @param event packet
+ * @return audio_location
+ * @note: btstack_type 4
+ */
+static inline uint32_t leaudio_subevent_vocs_server_audio_location_get_audio_location(const uint8_t * event){
+    return little_endian_read_32(event, 6);
+}
+
+/**
+ * @brief Get field con_handle from event LEAUDIO_SUBEVENT_VOCS_SERVER_AUDIO_OUTPUT_DESCRIPTION
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t leaudio_subevent_vocs_server_audio_output_description_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field index from event LEAUDIO_SUBEVENT_VOCS_SERVER_AUDIO_OUTPUT_DESCRIPTION
+ * @param event packet
+ * @return index
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_vocs_server_audio_output_description_get_index(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field description_len from event LEAUDIO_SUBEVENT_VOCS_SERVER_AUDIO_OUTPUT_DESCRIPTION
+ * @param event packet
+ * @return description_len
+ * @note: btstack_type J
+ */
+static inline uint8_t leaudio_subevent_vocs_server_audio_output_description_get_description_len(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field description from event LEAUDIO_SUBEVENT_VOCS_SERVER_AUDIO_OUTPUT_DESCRIPTION
+ * @param event packet
+ * @return description
+ * @note: btstack_type V
+ */
+static inline const uint8_t * leaudio_subevent_vocs_server_audio_output_description_get_description(const uint8_t * event){
+    return &event[7];
+}
+
+/**
+ * @brief Get field con_handle from event LEAUDIO_SUBEVENT_VOCS_CLIENT_CONNECTED
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t leaudio_subevent_vocs_client_connected_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field vocs_cid from event LEAUDIO_SUBEVENT_VOCS_CLIENT_CONNECTED
+ * @param event packet
+ * @return vocs_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t leaudio_subevent_vocs_client_connected_get_vocs_cid(const uint8_t * event){
+    return little_endian_read_16(event, 5);
+}
+/**
+ * @brief Get field vocs_index from event LEAUDIO_SUBEVENT_VOCS_CLIENT_CONNECTED
+ * @param event packet
+ * @return vocs_index
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_vocs_client_connected_get_vocs_index(const uint8_t * event){
+    return event[7];
+}
+/**
+ * @brief Get field att_status from event LEAUDIO_SUBEVENT_VOCS_CLIENT_CONNECTED
+ * @param event packet
+ * @return att_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_vocs_client_connected_get_att_status(const uint8_t * event){
+    return event[8];
+}
+
+/**
+ * @brief Get field vocs_cid from event LEAUDIO_SUBEVENT_VOCS_CLIENT_DISCONNECTED
+ * @param event packet
+ * @return vocs_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t leaudio_subevent_vocs_client_disconnected_get_vocs_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field vocs_index from event LEAUDIO_SUBEVENT_VOCS_CLIENT_DISCONNECTED
+ * @param event packet
+ * @return vocs_index
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_vocs_client_disconnected_get_vocs_index(const uint8_t * event){
+    return event[5];
+}
+
+/**
+ * @brief Get field vocs_cid from event LEAUDIO_SUBEVENT_VOCS_CLIENT_OFFSET_STATE
+ * @param event packet
+ * @return vocs_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t leaudio_subevent_vocs_client_offset_state_get_vocs_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field vocs_index from event LEAUDIO_SUBEVENT_VOCS_CLIENT_OFFSET_STATE
+ * @param event packet
+ * @return vocs_index
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_vocs_client_offset_state_get_vocs_index(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field volume_offset from event LEAUDIO_SUBEVENT_VOCS_CLIENT_OFFSET_STATE
+ * @param event packet
+ * @return volume_offset
+ * @note: btstack_type 2
+ */
+static inline uint16_t leaudio_subevent_vocs_client_offset_state_get_volume_offset(const uint8_t * event){
+    return little_endian_read_16(event, 6);
+}
+/**
+ * @brief Get field change_counter from event LEAUDIO_SUBEVENT_VOCS_CLIENT_OFFSET_STATE
+ * @param event packet
+ * @return change_counter
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_vocs_client_offset_state_get_change_counter(const uint8_t * event){
+    return event[8];
+}
+/**
+ * @brief Get field att_status from event LEAUDIO_SUBEVENT_VOCS_CLIENT_OFFSET_STATE
+ * @param event packet
+ * @return att_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_vocs_client_offset_state_get_att_status(const uint8_t * event){
+    return event[9];
+}
+
+/**
+ * @brief Get field vocs_cid from event LEAUDIO_SUBEVENT_VOCS_CLIENT_AUDIO_LOCATION
+ * @param event packet
+ * @return vocs_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t leaudio_subevent_vocs_client_audio_location_get_vocs_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field vocs_index from event LEAUDIO_SUBEVENT_VOCS_CLIENT_AUDIO_LOCATION
+ * @param event packet
+ * @return vocs_index
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_vocs_client_audio_location_get_vocs_index(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field audio_location from event LEAUDIO_SUBEVENT_VOCS_CLIENT_AUDIO_LOCATION
+ * @param event packet
+ * @return audio_location
+ * @note: btstack_type 4
+ */
+static inline uint32_t leaudio_subevent_vocs_client_audio_location_get_audio_location(const uint8_t * event){
+    return little_endian_read_32(event, 6);
+}
+/**
+ * @brief Get field att_status from event LEAUDIO_SUBEVENT_VOCS_CLIENT_AUDIO_LOCATION
+ * @param event packet
+ * @return att_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_vocs_client_audio_location_get_att_status(const uint8_t * event){
+    return event[10];
+}
+
+/**
+ * @brief Get field vocs_cid from event LEAUDIO_SUBEVENT_VOCS_CLIENT_AUDIO_OUTPUT_DESCRIPTION
+ * @param event packet
+ * @return vocs_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t leaudio_subevent_vocs_client_audio_output_description_get_vocs_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field vocs_index from event LEAUDIO_SUBEVENT_VOCS_CLIENT_AUDIO_OUTPUT_DESCRIPTION
+ * @param event packet
+ * @return vocs_index
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_vocs_client_audio_output_description_get_vocs_index(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field description_len from event LEAUDIO_SUBEVENT_VOCS_CLIENT_AUDIO_OUTPUT_DESCRIPTION
+ * @param event packet
+ * @return description_len
+ * @note: btstack_type J
+ */
+static inline uint8_t leaudio_subevent_vocs_client_audio_output_description_get_description_len(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field description from event LEAUDIO_SUBEVENT_VOCS_CLIENT_AUDIO_OUTPUT_DESCRIPTION
+ * @param event packet
+ * @return description
+ * @note: btstack_type V
+ */
+static inline const uint8_t * leaudio_subevent_vocs_client_audio_output_description_get_description(const uint8_t * event){
+    return &event[7];
+}
+/**
+ * @brief Get field att_status from event LEAUDIO_SUBEVENT_VOCS_CLIENT_AUDIO_OUTPUT_DESCRIPTION
+ * @param event packet
+ * @return att_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_vocs_client_audio_output_description_get_att_status(const uint8_t * event){
+    return event[7u + event[6]];
 }
 
 /**
@@ -17020,13 +18356,22 @@ static inline uint16_t gattservice_subevent_mcs_client_connected_get_mcs_cid(con
     return little_endian_read_16(event, 5);
 }
 /**
+ * @brief Get field num_included_clients from event GATTSERVICE_SUBEVENT_MCS_CLIENT_CONNECTED
+ * @param event packet
+ * @return num_included_clients
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_mcs_client_connected_get_num_included_clients(const uint8_t * event){
+    return event[7];
+}
+/**
  * @brief Get field status from event GATTSERVICE_SUBEVENT_MCS_CLIENT_CONNECTED
  * @param event packet
  * @return status
  * @note: btstack_type 1
  */
 static inline uint8_t gattservice_subevent_mcs_client_connected_get_status(const uint8_t * event){
-    return event[7];
+    return event[8];
 }
 
 /**
@@ -17805,6 +19150,716 @@ static inline const uint8_t * gattservice_subevent_ots_server_filter_get_data(co
  */
 static inline hci_con_handle_t gattservice_subevent_ots_server_disconnect_get_con_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
+}
+
+/**
+ * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_OTS_CLIENT_CONNECTED
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t gattservice_subevent_ots_client_connected_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field ots_cid from event GATTSERVICE_SUBEVENT_OTS_CLIENT_CONNECTED
+ * @param event packet
+ * @return ots_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_ots_client_connected_get_ots_cid(const uint8_t * event){
+    return little_endian_read_16(event, 5);
+}
+/**
+ * @brief Get field ots_index from event GATTSERVICE_SUBEVENT_OTS_CLIENT_CONNECTED
+ * @param event packet
+ * @return ots_index
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_ots_client_connected_get_ots_index(const uint8_t * event){
+    return event[7];
+}
+/**
+ * @brief Get field oacp_features from event GATTSERVICE_SUBEVENT_OTS_CLIENT_CONNECTED
+ * @param event packet
+ * @return oacp_features
+ * @note: btstack_type 4
+ */
+static inline uint32_t gattservice_subevent_ots_client_connected_get_oacp_features(const uint8_t * event){
+    return little_endian_read_32(event, 8);
+}
+/**
+ * @brief Get field olcp_features from event GATTSERVICE_SUBEVENT_OTS_CLIENT_CONNECTED
+ * @param event packet
+ * @return olcp_features
+ * @note: btstack_type 4
+ */
+static inline uint32_t gattservice_subevent_ots_client_connected_get_olcp_features(const uint8_t * event){
+    return little_endian_read_32(event, 12);
+}
+/**
+ * @brief Get field att_status from event GATTSERVICE_SUBEVENT_OTS_CLIENT_CONNECTED
+ * @param event packet
+ * @return att_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_ots_client_connected_get_att_status(const uint8_t * event){
+    return event[16];
+}
+
+/**
+ * @brief Get field ots_cid from event GATTSERVICE_SUBEVENT_OTS_CLIENT_DISCONNECTED
+ * @param event packet
+ * @return ots_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_ots_client_disconnected_get_ots_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field ots_index from event GATTSERVICE_SUBEVENT_OTS_CLIENT_DISCONNECTED
+ * @param event packet
+ * @return ots_index
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_ots_client_disconnected_get_ots_index(const uint8_t * event){
+    return event[5];
+}
+
+/**
+ * @brief Get field ots_cid from event GATTSERVICE_SUBEVENT_OTS_CLIENT_WRITE_DONE
+ * @param event packet
+ * @return ots_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_ots_client_write_done_get_ots_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field ots_index from event GATTSERVICE_SUBEVENT_OTS_CLIENT_WRITE_DONE
+ * @param event packet
+ * @return ots_index
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_ots_client_write_done_get_ots_index(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field characteristic_uuid from event GATTSERVICE_SUBEVENT_OTS_CLIENT_WRITE_DONE
+ * @param event packet
+ * @return characteristic_uuid
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_ots_client_write_done_get_characteristic_uuid(const uint8_t * event){
+    return little_endian_read_16(event, 6);
+}
+/**
+ * @brief Get field att_status from event GATTSERVICE_SUBEVENT_OTS_CLIENT_WRITE_DONE
+ * @param event packet
+ * @return att_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_ots_client_write_done_get_att_status(const uint8_t * event){
+    return event[8];
+}
+
+/**
+ * @brief Get field ots_cid from event GATTSERVICE_SUBEVENT_OTS_CLIENT_FEATURES
+ * @param event packet
+ * @return ots_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_ots_client_features_get_ots_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field oacp_features from event GATTSERVICE_SUBEVENT_OTS_CLIENT_FEATURES
+ * @param event packet
+ * @return oacp_features
+ * @note: btstack_type 4
+ */
+static inline uint32_t gattservice_subevent_ots_client_features_get_oacp_features(const uint8_t * event){
+    return little_endian_read_32(event, 5);
+}
+/**
+ * @brief Get field olcp_features from event GATTSERVICE_SUBEVENT_OTS_CLIENT_FEATURES
+ * @param event packet
+ * @return olcp_features
+ * @note: btstack_type 4
+ */
+static inline uint32_t gattservice_subevent_ots_client_features_get_olcp_features(const uint8_t * event){
+    return little_endian_read_32(event, 9);
+}
+/**
+ * @brief Get field att_status from event GATTSERVICE_SUBEVENT_OTS_CLIENT_FEATURES
+ * @param event packet
+ * @return att_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_ots_client_features_get_att_status(const uint8_t * event){
+    return event[13];
+}
+
+/**
+ * @brief Get field ots_cid from event GATTSERVICE_SUBEVENT_OTS_CLIENT_OBJECT_NAME
+ * @param event packet
+ * @return ots_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_ots_client_object_name_get_ots_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field value_len from event GATTSERVICE_SUBEVENT_OTS_CLIENT_OBJECT_NAME
+ * @param event packet
+ * @return value_len
+ * @note: btstack_type J
+ */
+static inline uint8_t gattservice_subevent_ots_client_object_name_get_value_len(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field value from event GATTSERVICE_SUBEVENT_OTS_CLIENT_OBJECT_NAME
+ * @param event packet
+ * @return value
+ * @note: btstack_type V
+ */
+static inline const uint8_t * gattservice_subevent_ots_client_object_name_get_value(const uint8_t * event){
+    return &event[6];
+}
+/**
+ * @brief Get field att_status from event GATTSERVICE_SUBEVENT_OTS_CLIENT_OBJECT_NAME
+ * @param event packet
+ * @return att_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_ots_client_object_name_get_att_status(const uint8_t * event){
+    return event[6u + event[5]];
+}
+
+/**
+ * @brief Get field ots_cid from event GATTSERVICE_SUBEVENT_OTS_CLIENT_OBJECT_TYPE
+ * @param event packet
+ * @return ots_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_ots_client_object_type_get_ots_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field value_len from event GATTSERVICE_SUBEVENT_OTS_CLIENT_OBJECT_TYPE
+ * @param event packet
+ * @return value_len
+ * @note: btstack_type J
+ */
+static inline uint8_t gattservice_subevent_ots_client_object_type_get_value_len(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field value from event GATTSERVICE_SUBEVENT_OTS_CLIENT_OBJECT_TYPE
+ * @param event packet
+ * @return value
+ * @note: btstack_type V
+ */
+static inline const uint8_t * gattservice_subevent_ots_client_object_type_get_value(const uint8_t * event){
+    return &event[6];
+}
+/**
+ * @brief Get field att_status from event GATTSERVICE_SUBEVENT_OTS_CLIENT_OBJECT_TYPE
+ * @param event packet
+ * @return att_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_ots_client_object_type_get_att_status(const uint8_t * event){
+    return event[6u + event[5]];
+}
+
+/**
+ * @brief Get field ots_cid from event GATTSERVICE_SUBEVENT_OTS_CLIENT_OBJECT_SIZE
+ * @param event packet
+ * @return ots_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_ots_client_object_size_get_ots_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field current_size from event GATTSERVICE_SUBEVENT_OTS_CLIENT_OBJECT_SIZE
+ * @param event packet
+ * @return current_size
+ * @note: btstack_type 4
+ */
+static inline uint32_t gattservice_subevent_ots_client_object_size_get_current_size(const uint8_t * event){
+    return little_endian_read_32(event, 5);
+}
+/**
+ * @brief Get field allocated_size from event GATTSERVICE_SUBEVENT_OTS_CLIENT_OBJECT_SIZE
+ * @param event packet
+ * @return allocated_size
+ * @note: btstack_type 4
+ */
+static inline uint32_t gattservice_subevent_ots_client_object_size_get_allocated_size(const uint8_t * event){
+    return little_endian_read_32(event, 9);
+}
+/**
+ * @brief Get field att_status from event GATTSERVICE_SUBEVENT_OTS_CLIENT_OBJECT_SIZE
+ * @param event packet
+ * @return att_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_ots_client_object_size_get_att_status(const uint8_t * event){
+    return event[13];
+}
+
+/**
+ * @brief Get field ots_cid from event GATTSERVICE_SUBEVENT_OTS_CLIENT_OBJECT_FIRST_CREATED
+ * @param event packet
+ * @return ots_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_ots_client_object_first_created_get_ots_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field year from event GATTSERVICE_SUBEVENT_OTS_CLIENT_OBJECT_FIRST_CREATED
+ * @param event packet
+ * @return year
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_ots_client_object_first_created_get_year(const uint8_t * event){
+    return little_endian_read_16(event, 5);
+}
+/**
+ * @brief Get field month from event GATTSERVICE_SUBEVENT_OTS_CLIENT_OBJECT_FIRST_CREATED
+ * @param event packet
+ * @return month
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_ots_client_object_first_created_get_month(const uint8_t * event){
+    return event[7];
+}
+/**
+ * @brief Get field day from event GATTSERVICE_SUBEVENT_OTS_CLIENT_OBJECT_FIRST_CREATED
+ * @param event packet
+ * @return day
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_ots_client_object_first_created_get_day(const uint8_t * event){
+    return event[8];
+}
+/**
+ * @brief Get field hours from event GATTSERVICE_SUBEVENT_OTS_CLIENT_OBJECT_FIRST_CREATED
+ * @param event packet
+ * @return hours
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_ots_client_object_first_created_get_hours(const uint8_t * event){
+    return event[9];
+}
+/**
+ * @brief Get field minutes from event GATTSERVICE_SUBEVENT_OTS_CLIENT_OBJECT_FIRST_CREATED
+ * @param event packet
+ * @return minutes
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_ots_client_object_first_created_get_minutes(const uint8_t * event){
+    return event[10];
+}
+/**
+ * @brief Get field seconds from event GATTSERVICE_SUBEVENT_OTS_CLIENT_OBJECT_FIRST_CREATED
+ * @param event packet
+ * @return seconds
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_ots_client_object_first_created_get_seconds(const uint8_t * event){
+    return event[11];
+}
+/**
+ * @brief Get field att_status from event GATTSERVICE_SUBEVENT_OTS_CLIENT_OBJECT_FIRST_CREATED
+ * @param event packet
+ * @return att_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_ots_client_object_first_created_get_att_status(const uint8_t * event){
+    return event[12];
+}
+
+/**
+ * @brief Get field ots_cid from event GATTSERVICE_SUBEVENT_OTS_CLIENT_OBJECT_LAST_MODIFIED
+ * @param event packet
+ * @return ots_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_ots_client_object_last_modified_get_ots_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field year from event GATTSERVICE_SUBEVENT_OTS_CLIENT_OBJECT_LAST_MODIFIED
+ * @param event packet
+ * @return year
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_ots_client_object_last_modified_get_year(const uint8_t * event){
+    return little_endian_read_16(event, 5);
+}
+/**
+ * @brief Get field month from event GATTSERVICE_SUBEVENT_OTS_CLIENT_OBJECT_LAST_MODIFIED
+ * @param event packet
+ * @return month
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_ots_client_object_last_modified_get_month(const uint8_t * event){
+    return event[7];
+}
+/**
+ * @brief Get field day from event GATTSERVICE_SUBEVENT_OTS_CLIENT_OBJECT_LAST_MODIFIED
+ * @param event packet
+ * @return day
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_ots_client_object_last_modified_get_day(const uint8_t * event){
+    return event[8];
+}
+/**
+ * @brief Get field hours from event GATTSERVICE_SUBEVENT_OTS_CLIENT_OBJECT_LAST_MODIFIED
+ * @param event packet
+ * @return hours
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_ots_client_object_last_modified_get_hours(const uint8_t * event){
+    return event[9];
+}
+/**
+ * @brief Get field minutes from event GATTSERVICE_SUBEVENT_OTS_CLIENT_OBJECT_LAST_MODIFIED
+ * @param event packet
+ * @return minutes
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_ots_client_object_last_modified_get_minutes(const uint8_t * event){
+    return event[10];
+}
+/**
+ * @brief Get field seconds from event GATTSERVICE_SUBEVENT_OTS_CLIENT_OBJECT_LAST_MODIFIED
+ * @param event packet
+ * @return seconds
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_ots_client_object_last_modified_get_seconds(const uint8_t * event){
+    return event[11];
+}
+/**
+ * @brief Get field att_status from event GATTSERVICE_SUBEVENT_OTS_CLIENT_OBJECT_LAST_MODIFIED
+ * @param event packet
+ * @return att_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_ots_client_object_last_modified_get_att_status(const uint8_t * event){
+    return event[12];
+}
+
+/**
+ * @brief Get field ots_cid from event GATTSERVICE_SUBEVENT_OTS_CLIENT_OBJECT_ID
+ * @param event packet
+ * @return ots_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_ots_client_object_id_get_ots_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field value_len from event GATTSERVICE_SUBEVENT_OTS_CLIENT_OBJECT_ID
+ * @param event packet
+ * @return value_len
+ * @note: btstack_type J
+ */
+static inline uint8_t gattservice_subevent_ots_client_object_id_get_value_len(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field value from event GATTSERVICE_SUBEVENT_OTS_CLIENT_OBJECT_ID
+ * @param event packet
+ * @return value
+ * @note: btstack_type V
+ */
+static inline const uint8_t * gattservice_subevent_ots_client_object_id_get_value(const uint8_t * event){
+    return &event[6];
+}
+/**
+ * @brief Get field att_status from event GATTSERVICE_SUBEVENT_OTS_CLIENT_OBJECT_ID
+ * @param event packet
+ * @return att_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_ots_client_object_id_get_att_status(const uint8_t * event){
+    return event[6u + event[5]];
+}
+
+/**
+ * @brief Get field ots_cid from event GATTSERVICE_SUBEVENT_OTS_CLIENT_OBJECT_PROPERTIES
+ * @param event packet
+ * @return ots_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_ots_client_object_properties_get_ots_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field bitmask from event GATTSERVICE_SUBEVENT_OTS_CLIENT_OBJECT_PROPERTIES
+ * @param event packet
+ * @return bitmask
+ * @note: btstack_type 4
+ */
+static inline uint32_t gattservice_subevent_ots_client_object_properties_get_bitmask(const uint8_t * event){
+    return little_endian_read_32(event, 5);
+}
+/**
+ * @brief Get field att_status from event GATTSERVICE_SUBEVENT_OTS_CLIENT_OBJECT_PROPERTIES
+ * @param event packet
+ * @return att_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_ots_client_object_properties_get_att_status(const uint8_t * event){
+    return event[9];
+}
+
+/**
+ * @brief Get field ots_cid from event GATTSERVICE_SUBEVENT_OTS_CLIENT_FILTER
+ * @param event packet
+ * @return ots_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_ots_client_filter_get_ots_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field index from event GATTSERVICE_SUBEVENT_OTS_CLIENT_FILTER
+ * @param event packet
+ * @return index
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_ots_client_filter_get_index(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field type from event GATTSERVICE_SUBEVENT_OTS_CLIENT_FILTER
+ * @param event packet
+ * @return type
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_ots_client_filter_get_type(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field value_len from event GATTSERVICE_SUBEVENT_OTS_CLIENT_FILTER
+ * @param event packet
+ * @return value_len
+ * @note: btstack_type J
+ */
+static inline uint8_t gattservice_subevent_ots_client_filter_get_value_len(const uint8_t * event){
+    return event[7];
+}
+/**
+ * @brief Get field value from event GATTSERVICE_SUBEVENT_OTS_CLIENT_FILTER
+ * @param event packet
+ * @return value
+ * @note: btstack_type V
+ */
+static inline const uint8_t * gattservice_subevent_ots_client_filter_get_value(const uint8_t * event){
+    return &event[8];
+}
+/**
+ * @brief Get field att_status from event GATTSERVICE_SUBEVENT_OTS_CLIENT_FILTER
+ * @param event packet
+ * @return att_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_ots_client_filter_get_att_status(const uint8_t * event){
+    return event[8u + event[7]];
+}
+
+/**
+ * @brief Get field ots_cid from event GATTSERVICE_SUBEVENT_OTS_CLIENT_OBJECT_CHANGED
+ * @param event packet
+ * @return ots_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_ots_client_object_changed_get_ots_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field flags from event GATTSERVICE_SUBEVENT_OTS_CLIENT_OBJECT_CHANGED
+ * @param event packet
+ * @return flags
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_ots_client_object_changed_get_flags(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field id_len from event GATTSERVICE_SUBEVENT_OTS_CLIENT_OBJECT_CHANGED
+ * @param event packet
+ * @return id_len
+ * @note: btstack_type J
+ */
+static inline uint8_t gattservice_subevent_ots_client_object_changed_get_id_len(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field id from event GATTSERVICE_SUBEVENT_OTS_CLIENT_OBJECT_CHANGED
+ * @param event packet
+ * @return id
+ * @note: btstack_type V
+ */
+static inline const uint8_t * gattservice_subevent_ots_client_object_changed_get_id(const uint8_t * event){
+    return &event[7];
+}
+/**
+ * @brief Get field att_status from event GATTSERVICE_SUBEVENT_OTS_CLIENT_OBJECT_CHANGED
+ * @param event packet
+ * @return att_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_ots_client_object_changed_get_att_status(const uint8_t * event){
+    return event[7u + event[6]];
+}
+
+/**
+ * @brief Get field ots_cid from event GATTSERVICE_SUBEVENT_OTS_CLIENT_OLCP_RESPONSE
+ * @param event packet
+ * @return ots_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_ots_client_olcp_response_get_ots_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field opcode from event GATTSERVICE_SUBEVENT_OTS_CLIENT_OLCP_RESPONSE
+ * @param event packet
+ * @return opcode
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_ots_client_olcp_response_get_opcode(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field result_code from event GATTSERVICE_SUBEVENT_OTS_CLIENT_OLCP_RESPONSE
+ * @param event packet
+ * @return result_code
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_ots_client_olcp_response_get_result_code(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field att_status from event GATTSERVICE_SUBEVENT_OTS_CLIENT_OLCP_RESPONSE
+ * @param event packet
+ * @return att_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_ots_client_olcp_response_get_att_status(const uint8_t * event){
+    return event[7];
+}
+
+/**
+ * @brief Get field ots_cid from event GATTSERVICE_SUBEVENT_OTS_CLIENT_OACP_RESPONSE
+ * @param event packet
+ * @return ots_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_ots_client_oacp_response_get_ots_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field opcode from event GATTSERVICE_SUBEVENT_OTS_CLIENT_OACP_RESPONSE
+ * @param event packet
+ * @return opcode
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_ots_client_oacp_response_get_opcode(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field result_code from event GATTSERVICE_SUBEVENT_OTS_CLIENT_OACP_RESPONSE
+ * @param event packet
+ * @return result_code
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_ots_client_oacp_response_get_result_code(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field att_status from event GATTSERVICE_SUBEVENT_OTS_CLIENT_OACP_RESPONSE
+ * @param event packet
+ * @return att_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_ots_client_oacp_response_get_att_status(const uint8_t * event){
+    return event[7];
+}
+
+/**
+ * @brief Get field ots_cid from event GATTSERVICE_SUBEVENT_OTS_CLIENT_DATA_CHUNK
+ * @param event packet
+ * @return ots_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_ots_client_data_chunk_get_ots_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field state from event GATTSERVICE_SUBEVENT_OTS_CLIENT_DATA_CHUNK
+ * @param event packet
+ * @return state
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_ots_client_data_chunk_get_state(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field length from event GATTSERVICE_SUBEVENT_OTS_CLIENT_DATA_CHUNK
+ * @param event packet
+ * @return length
+ * @note: btstack_type 4
+ */
+static inline uint32_t gattservice_subevent_ots_client_data_chunk_get_length(const uint8_t * event){
+    return little_endian_read_32(event, 6);
+}
+/**
+ * @brief Get field offset from event GATTSERVICE_SUBEVENT_OTS_CLIENT_DATA_CHUNK
+ * @param event packet
+ * @return offset
+ * @note: btstack_type 4
+ */
+static inline uint32_t gattservice_subevent_ots_client_data_chunk_get_offset(const uint8_t * event){
+    return little_endian_read_32(event, 10);
+}
+/**
+ * @brief Get field bytes_transferred_num from event GATTSERVICE_SUBEVENT_OTS_CLIENT_DATA_CHUNK
+ * @param event packet
+ * @return bytes_transferred_num
+ * @note: btstack_type 4
+ */
+static inline uint32_t gattservice_subevent_ots_client_data_chunk_get_bytes_transferred_num(const uint8_t * event){
+    return little_endian_read_32(event, 14);
+}
+
+/**
+ * @brief Get field ots_cid from event GATTSERVICE_SUBEVENT_OTS_CLIENT_TIMEOUT
+ * @param event packet
+ * @return ots_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_ots_client_timeout_get_ots_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field characterictic_uuid from event GATTSERVICE_SUBEVENT_OTS_CLIENT_TIMEOUT
+ * @param event packet
+ * @return characterictic_uuid
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_ots_client_timeout_get_characterictic_uuid(const uint8_t * event){
+    return little_endian_read_16(event, 5);
 }
 
 /**

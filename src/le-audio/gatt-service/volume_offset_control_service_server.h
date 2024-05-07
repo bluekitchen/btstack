@@ -119,9 +119,9 @@ typedef struct {
 
 /**
  * @brief Init Volume Offset Control Service Server with ATT DB. Event emitted to the event callback of the vocs_server_connection_t struct:
- * - GATTSERVICE_SUBEVENT_VOCS_SERVER_VOLUME_OFFSET
- * - GATTSERVICE_SUBEVENT_VOCS_SERVER_AUDIO_LOCATION
- * - GATTSERVICE_SUBEVENT_VOCS_SERVER_AUDIO_OUTPUT_DESCRIPTION
+ * - LEAUDIO_SUBEVENT_VOCS_SERVER_VOLUME_OFFSET
+ * - LEAUDIO_SUBEVENT_VOCS_SERVER_AUDIO_LOCATION
+ * - LEAUDIO_SUBEVENT_VOCS_SERVER_AUDIO_OUTPUT_DESCRIPTION
  * -
  * @param connection service storage
  */
