@@ -219,6 +219,9 @@ TIInit_11.8.32_4.7.bts:
 	@echo "Downloading $@"
 	@curl -sS -O $(BLUEKITCHEN_URL)/TIInit_11.8.32_4.7.bts
 
+TIInit_11.8.32_4.8.bts:
+	@echo "Downloading $@"
+	@curl -sS -O $(BLUEKITCHEN_URL)/TIInit_11.8.32_4.8.bts
 
 TIInit_12.10.28.bts:
 	@echo "Downloading $@"
@@ -366,6 +369,10 @@ TIInit_11.8.32_4.7.c: TIInit_11.8.32_4.7.bts
 	@echo "Creating $@"
 	@$(CONVERSION_SCRIPT) $^ $@
 
+TIInit_11.8.32_4.8.c: TIInit_11.8.32_4.8.bts
+	@echo "Creating $@"
+	@$(CONVERSION_SCRIPT) $^ $@
+
 TIInit_12.10.28.c: TIInit_12.10.28.bts
 	@echo "Creating $@"
 	@$(CONVERSION_SCRIPT) $^ $@
@@ -389,6 +396,7 @@ all-scripts: \
     TIInit_11.8.32_4.2.c \
 	TIInit_11.8.32_4.6.c \
 	TIInit_11.8.32_4.7.c \
+	TIInit_11.8.32_4.8.c \
 	TIInit_12.10.28.c \
 	TIInit_12.8.32.c \
 

@@ -120,6 +120,7 @@ cc256x_init_script(bluetooth_init_cc2564C_1.5.c                  cc256xc_bt_sp_v
 cc256x_init_script(TIInit_11.8.32_4.2.c                          TIInit_11.8.32_4.2.bts          TIInit_11.8.32_4.2.bts                                       "")
 cc256x_init_script(TIInit_11.8.32_4.6.c                          TIInit_11.8.32_4.6.bts          TIInit_11.8.32_4.6.bts                                       "")
 cc256x_init_script(TIInit_11.8.32_4.7.c                          TIInit_11.8.32_4.7.bts          TIInit_11.8.32_4.7.bts                                       "")
+cc256x_init_script(TIInit_11.8.32_4.8.c                          TIInit_11.8.32_4.8.bts          TIInit_11.8.32_4.8.bts                                       "")
 cc256x_init_script(TIInit_12.10.28.c                             TIInit_12.10.28.bts             TIInit_12.10.28.bts                                          "")
 cc256x_init_script(TIInit_12.8.32.c                              TIInit_12.8.32.bts              TIInit_12.8.32.bts                                           "")
 
