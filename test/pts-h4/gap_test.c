@@ -424,9 +424,7 @@ static void enter_create_big_sync(void){
 }
 
 static void send_iso_packet(uint8_t bis_index) {
-
-    bool ok = hci_reserve_packet_buffer();
-    btstack_assert(ok);
+    hci_reserve_packet_buffer();
     uint8_t * buffer = hci_get_outgoing_packet_buffer();
     // complete SDU, no TimeStamp
     little_endian_store_16(buffer, 0, bis_con_handles[bis_index] | (2 << 12));
