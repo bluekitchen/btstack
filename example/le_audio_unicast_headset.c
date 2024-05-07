@@ -534,20 +534,20 @@ static void pacs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
 // CSIS Server Handler
 static void csis_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) {
     if (packet_type != HCI_EVENT_PACKET) return;
-    if (hci_event_packet_get_type(packet) != HCI_EVENT_GATTSERVICE_META) return;
+    if (hci_event_packet_get_type(packet) != HCI_EVENT_LEAUDIO_META) return;
 
     switch (hci_event_gattservice_meta_get_subevent_code(packet)){
-        case GATTSERVICE_SUBEVENT_CSIS_SERVER_CONNECTED:
-            printf("CSIS: GATTSERVICE_SUBEVENT_CSIS_SERVER_CONNECTED\n");
+        case LEAUDIO_SUBEVENT_CSIS_SERVER_CONNECTED:
+            printf("CSIS: LEAUDIO_SUBEVENT_CSIS_SERVER_CONNECTED\n");
             break;
-        case GATTSERVICE_SUBEVENT_CSIS_SERVER_MEMBER_LOCK:
-            printf("CSIS: GATTSERVICE_SUBEVENT_CSIS_SERVER_MEMBER_LOCK\n");
+        case LEAUDIO_SUBEVENT_CSIS_SERVER_MEMBER_LOCK:
+            printf("CSIS: LEAUDIO_SUBEVENT_CSIS_SERVER_MEMBER_LOCK\n");
         break;
-        case GATTSERVICE_SUBEVENT_CSIS_SERVER_COORDINATED_SET_SIZE:
-            printf("CSIS: GATTSERVICE_SUBEVENT_CSIS_SERVER_COORDINATED_SET_SIZE\n");
+        case LEAUDIO_SUBEVENT_CSIS_SERVER_COORDINATED_SET_SIZE:
+            printf("CSIS: LEAUDIO_SUBEVENT_CSIS_SERVER_COORDINATED_SET_SIZE\n");
             break;
-        case GATTSERVICE_SUBEVENT_CSIS_RSI:
-            gattservice_subevent_csis_rsi_get_rsi(packet, rsi);
+        case LEAUDIO_SUBEVENT_CSIS_SERVER_RSI:
+            leaudio_subevent_csis_server_rsi_get_rsi(packet, rsi);
             rsi_ready = true;
             break;
         default:

@@ -185,9 +185,9 @@ static void csis_client_emit_connection_established(csis_client_connection_t * c
 
     uint8_t event[8];
     uint16_t pos = 0;
-    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = HCI_EVENT_LEAUDIO_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_CSIS_CLIENT_CONNECTED;
+    event[pos++] = LEAUDIO_SUBEVENT_CSIS_CLIENT_CONNECTED;
     little_endian_store_16(event, pos, connection->con_handle);
     pos += 2;
     little_endian_store_16(event, pos, connection->cid);
@@ -201,9 +201,9 @@ static void csis_client_emit_disconnect(uint16_t cid){
 
     uint8_t event[5];
     uint16_t pos = 0;
-    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = HCI_EVENT_LEAUDIO_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_CSIS_CLIENT_DISCONNECTED;
+    event[pos++] = LEAUDIO_SUBEVENT_CSIS_CLIENT_DISCONNECTED;
     little_endian_store_16(event, pos, cid);
     (*csis_client_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
@@ -213,9 +213,9 @@ static void csis_client_emit_write_lock_complete(csis_client_connection_t * conn
 
     uint8_t event[7];
     uint16_t pos = 0;
-    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = HCI_EVENT_LEAUDIO_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_CSIS_CLIENT_LOCK_WRITE_COMPLETE;
+    event[pos++] = LEAUDIO_SUBEVENT_CSIS_CLIENT_LOCK_WRITE_COMPLETE;
     little_endian_store_16(event, pos, connection->cid);
     pos += 2;
     event[pos++] = status;
@@ -228,9 +228,9 @@ static void csis_client_emit_read_remote_lock(csis_client_connection_t * connect
 
     uint8_t event[7];
     uint16_t pos = 0;
-    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = HCI_EVENT_LEAUDIO_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_CSIS_CLIENT_LOCK;
+    event[pos++] = LEAUDIO_SUBEVENT_CSIS_CLIENT_LOCK;
     little_endian_store_16(event, pos, connection->cid);
     pos += 2;
     event[pos++] = status;
@@ -243,9 +243,9 @@ static void csis_client_emit_read_remote_coordinated_set_size(csis_client_connec
 
     uint8_t event[7];
     uint16_t pos = 0;
-    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = HCI_EVENT_LEAUDIO_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_CSIS_CLIENT_COORDINATED_SET_SIZE;
+    event[pos++] = LEAUDIO_SUBEVENT_CSIS_CLIENT_COORDINATED_SET_SIZE;
     little_endian_store_16(event, pos, connection->cid);
     pos += 2;
     event[pos++] = status;
@@ -258,9 +258,9 @@ static void csis_client_emit_read_remote_rank(csis_client_connection_t * connect
 
     uint8_t event[7];
     uint16_t pos = 0;
-    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = HCI_EVENT_LEAUDIO_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_CSIS_CLIENT_RANK;
+    event[pos++] = LEAUDIO_SUBEVENT_CSIS_CLIENT_RANK;
     little_endian_store_16(event, pos, connection->cid);
     pos += 2;
     event[pos++] = status;
@@ -276,9 +276,9 @@ static void csis_client_emit_read_remote_sirk(csis_client_connection_t * connect
     memset(event, 0, sizeof(event));
 
     uint16_t pos = 0;
-    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = HCI_EVENT_LEAUDIO_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_CSIS_CLIENT_SIRK;
+    event[pos++] = LEAUDIO_SUBEVENT_CSIS_CLIENT_SIRK;
     little_endian_store_16(event, pos, connection->cid);
     pos += 2;
     event[pos++] = status;
@@ -917,9 +917,9 @@ static void csis_client_handle_csis_hash(void * arg){
 
     uint8_t event[11];
     uint16_t pos = 0;
-    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = HCI_EVENT_LEAUDIO_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_CSIS_RSI_MATCH;
+    event[pos++] = LEAUDIO_SUBEVENT_CSIS_CLIENT_RSI_MATCH;
     memset(&event[pos], 0, 7);
     pos += 7;
     event[pos++] = is_match ? 1u : 0u;
@@ -980,9 +980,9 @@ static void csis_client_find_member_handle_csis_hash(void * arg){
 
     uint8_t event[11];
     uint16_t pos = 0;
-    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = HCI_EVENT_LEAUDIO_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_CSIS_RSI_MATCH;
+    event[pos++] = LEAUDIO_SUBEVENT_CSIS_CLIENT_RSI_MATCH;
     event[pos++] = csis_client_find_member_entries[csis_client_find_member_next_read].addr_type;
     reverse_bd_addr(csis_client_find_member_entries[csis_client_find_member_next_read].addr, &event[pos]);
     pos += 6;
