@@ -375,7 +375,7 @@ int btstack_main(void)
     ots_object_id_t icon_object_id = {0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF};
     char * icon_url = "https://www.bluetooth.com/";
 
-    media_control_service_server_register_media_player(&media_player1, 
+    media_control_service_server_register_player(&media_player1,
         &mcs_server_packet_handler, 0xFFFF, 
         &media_player_id1);
     media_control_service_server_set_media_player_name(media_player_id1, "BK Player1");
