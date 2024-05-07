@@ -71,7 +71,7 @@ void published_audio_capabilities_service_server_init(pacs_streamendpoint_t * si
 
 /**
  * @brief Register packet handler to receive events:
- * - GATTSERVICE_SUBEVENT_PACS_SERVER_AUDIO_LOCATIONS
+ * - LEAUDIO_SUBEVENT_PACS_SERVER_AUDIO_LOCATIONS
  * -
  * @param packet_handler
  */

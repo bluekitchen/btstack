@@ -519,62 +519,62 @@ static void pacs_client_event_handler(uint8_t packet_type, uint16_t channel, uin
     UNUSED(size);
 
     if (packet_type != HCI_EVENT_PACKET) return;
-    if (hci_event_packet_get_type(packet) != HCI_EVENT_GATTSERVICE_META) return;
+    if (hci_event_packet_get_type(packet) != HCI_EVENT_LEAUDIO_META) return;
 
     switch (hci_event_gattservice_meta_get_subevent_code(packet)){
-        case GATTSERVICE_SUBEVENT_PACS_CLIENT_CONNECTED:
-            if (bap_app_client_con_handle != gattservice_subevent_pacs_client_connected_get_con_handle(packet)){
-                printf("PACS Client: expected con handle 0x%04x, received 0x%04x\n", bap_app_client_con_handle, gattservice_subevent_pacs_client_connected_get_con_handle(packet));
+        case LEAUDIO_SUBEVENT_PACS_CLIENT_CONNECTED:
+            if (bap_app_client_con_handle != leaudio_subevent_pacs_client_connected_get_con_handle(packet)){
+                printf("PACS Client: expected con handle 0x%04x, received 0x%04x\n", bap_app_client_con_handle, leaudio_subevent_pacs_client_connected_get_con_handle(packet));
                 return;
             }
 
             bap_app_client_state = BAP_APP_CLIENT_STATE_CONNECTED;
 
-            if (gattservice_subevent_pacs_client_connected_get_status(packet) != ERROR_CODE_SUCCESS){
+            if (leaudio_subevent_pacs_client_connected_get_status(packet) != ERROR_CODE_SUCCESS){
                 printf("PACS client: connection failed, cid 0x%04x, con_handle 0x%04x, status 0x%02x\n", pacs_cid, bap_app_client_con_handle, 
-                    gattservice_subevent_pacs_client_connected_get_status(packet));
+                    leaudio_subevent_pacs_client_connected_get_status(packet));
                 return;
             }
 
             printf("PACS client: connected, cid 0x%04x\n", pacs_cid);
             break;
 
-        case GATTSERVICE_SUBEVENT_PACS_CLIENT_DISCONNECTED:
+        case LEAUDIO_SUBEVENT_PACS_CLIENT_DISCONNECTED:
             pacs_cid = 0;
             printf("PACS Client: disconnected\n");
             break;
 
-        case GATTSERVICE_SUBEVENT_PACS_CLIENT_OPERATION_DONE:
-            if (gattservice_subevent_pacs_client_operation_done_get_status(packet) == ERROR_CODE_SUCCESS){
+        case LEAUDIO_SUBEVENT_PACS_CLIENT_OPERATION_DONE:
+            if (leaudio_subevent_pacs_client_operation_done_get_status(packet) == ERROR_CODE_SUCCESS){
                 printf("      Operation successful\n");
             } else {
-                printf("      Operation failed with status 0x%02x\n", gattservice_subevent_pacs_client_operation_done_get_status(packet));
+                printf("      Operation failed with status 0x%02x\n", leaudio_subevent_pacs_client_operation_done_get_status(packet));
             }
             break;
 
-        case GATTSERVICE_SUBEVENT_PACS_CLIENT_AUDIO_LOCATIONS:
+        case LEAUDIO_SUBEVENT_PACS_CLIENT_AUDIO_LOCATIONS:
             printf("PACS Client: %s Audio Locations 0x%04x \n", 
-                gattservice_subevent_pacs_client_audio_locations_get_le_audio_role(packet) == LE_AUDIO_ROLE_SINK ? "Sink" : "Source",
-                gattservice_subevent_pacs_client_audio_locations_get_audio_locations_mask(packet));
+                leaudio_subevent_pacs_client_audio_locations_get_le_audio_role(packet) == LE_AUDIO_ROLE_SINK ? "Sink" : "Source",
+                leaudio_subevent_pacs_client_audio_locations_get_audio_locations_mask(packet));
             break;
 
-        case GATTSERVICE_SUBEVENT_PACS_CLIENT_AVAILABLE_AUDIO_CONTEXTS:
+        case LEAUDIO_SUBEVENT_PACS_CLIENT_AVAILABLE_AUDIO_CONTEXTS:
             printf("PACS Client: Available Audio Contexts\n");
-            printf("      Sink   0x%02x\n", gattservice_subevent_pacs_client_available_audio_contexts_get_sink_mask(packet));
-            printf("      Source 0x%02x\n", gattservice_subevent_pacs_client_available_audio_contexts_get_source_mask(packet));
+            printf("      Sink   0x%02x\n", leaudio_subevent_pacs_client_available_audio_contexts_get_sink_mask(packet));
+            printf("      Source 0x%02x\n", leaudio_subevent_pacs_client_available_audio_contexts_get_source_mask(packet));
             break;
     
-        case GATTSERVICE_SUBEVENT_PACS_CLIENT_SUPPORTED_AUDIO_CONTEXTS:
+        case LEAUDIO_SUBEVENT_PACS_CLIENT_SUPPORTED_AUDIO_CONTEXTS:
             printf("PACS Client: Supported Audio Contexts\n");
-            printf("      Sink   0x%02x\n", gattservice_subevent_pacs_client_supported_audio_contexts_get_sink_mask(packet));
-            printf("      Source 0x%02x\n", gattservice_subevent_pacs_client_supported_audio_contexts_get_source_mask(packet));
+            printf("      Sink   0x%02x\n", leaudio_subevent_pacs_client_supported_audio_contexts_get_sink_mask(packet));
+            printf("      Source 0x%02x\n", leaudio_subevent_pacs_client_supported_audio_contexts_get_source_mask(packet));
             break;
             
-        case GATTSERVICE_SUBEVENT_PACS_CLIENT_PACK_RECORD:
-            printf("PACS Client: %s PAC Record\n", gattservice_subevent_pacs_client_pack_record_get_le_audio_role(packet) == LE_AUDIO_ROLE_SINK ? "Sink" : "Source");
+        case LEAUDIO_SUBEVENT_PACS_CLIENT_PACK_RECORD:
+            printf("PACS Client: %s PAC Record\n", leaudio_subevent_pacs_client_pack_record_get_le_audio_role(packet) == LE_AUDIO_ROLE_SINK ? "Sink" : "Source");
             break;
-        case GATTSERVICE_SUBEVENT_PACS_CLIENT_PACK_RECORD_DONE:
-            printf("      %s PAC Record DONE\n", gattservice_subevent_pacs_client_pack_record_done_get_le_audio_role(packet) == LE_AUDIO_ROLE_SINK ? "Sink" : "Source");
+        case LEAUDIO_SUBEVENT_PACS_CLIENT_PACK_RECORD_DONE:
+            printf("      %s PAC Record DONE\n", leaudio_subevent_pacs_client_pack_record_done_get_le_audio_role(packet) == LE_AUDIO_ROLE_SINK ? "Sink" : "Source");
             break;
 
         default:

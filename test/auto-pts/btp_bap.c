@@ -964,7 +964,7 @@ static void btp_bap_ascs_client_event_handler(uint8_t packet_type, uint16_t chan
 // -- PACS
 
 static void btp_bap_pacs_client_report_pacs(uint8_t *packet, uint16_t size){
-    uint16_t pacs_cid = gattservice_subevent_pacs_client_operation_done_get_pacs_cid(packet);
+    uint16_t pacs_cid = leaudio_subevent_pacs_client_operation_done_get_pacs_cid(packet);
     server_t * server = btp_server_for_pacs_cid(pacs_cid);
     btstack_assert(server != NULL);
 
@@ -973,22 +973,22 @@ static void btp_bap_pacs_client_report_pacs(uint8_t *packet, uint16_t size){
     buffer[pos++] = server->address_type;
     reverse_bd_addr( server->address, &buffer[pos]);
     pos += 6;
-    buffer[pos++] = gattservice_subevent_pacs_client_pack_record_get_le_audio_role(packet) == LE_AUDIO_ROLE_SINK ? BTP_AUDIO_DIR_SINK : BTP_AUDIO_DIR_SOURCE;
-    buffer[pos++] = gattservice_subevent_pacs_client_pack_record_get_coding_format(packet);
-    uint16_t supported_frequencies = gattservice_subevent_pacs_client_pack_record_get_supported_sampling_frequencies_mask(packet);
+    buffer[pos++] = leaudio_subevent_pacs_client_pack_record_get_le_audio_role(packet) == LE_AUDIO_ROLE_SINK ? BTP_AUDIO_DIR_SINK : BTP_AUDIO_DIR_SOURCE;
+    buffer[pos++] = leaudio_subevent_pacs_client_pack_record_get_coding_format(packet);
+    uint16_t supported_frequencies = leaudio_subevent_pacs_client_pack_record_get_supported_sampling_frequencies_mask(packet);
     little_endian_store_16(buffer, pos, supported_frequencies);
     pos += 2;
-    buffer[pos++] = gattservice_subevent_pacs_client_pack_record_get_supported_frame_durations_mask(packet);
-    uint32_t octets_per_frame = gattservice_subevent_pacs_client_pack_record_get_supported_octets_per_frame_max_num(packet);
+    buffer[pos++] = leaudio_subevent_pacs_client_pack_record_get_supported_frame_durations_mask(packet);
+    uint32_t octets_per_frame = leaudio_subevent_pacs_client_pack_record_get_supported_octets_per_frame_max_num(packet);
     little_endian_store_32(buffer, pos, octets_per_frame);
     pos += 4;
-    buffer[pos++] = gattservice_subevent_pacs_client_pack_record_get_supported_audio_channel_counts_mask(packet);
+    buffer[pos++] = leaudio_subevent_pacs_client_pack_record_get_supported_audio_channel_counts_mask(packet);
 
     MESSAGE("BTP_BAP_EV_CODEC_CAP_FOUND %s", bd_addr_to_str(server->address));
 
     btp_send(BTP_SERVICE_ID_BAP, BTP_BAP_EV_CODEC_CAP_FOUND, 0, pos, buffer);
 
-    MESSAGE("BTP PACS Client: %s PAC Record\n", gattservice_subevent_pacs_client_pack_record_get_le_audio_role(packet) == LE_AUDIO_ROLE_SINK ? "Sink" : "Source");
+    MESSAGE("BTP PACS Client: %s PAC Record\n", leaudio_subevent_pacs_client_pack_record_get_le_audio_role(packet) == LE_AUDIO_ROLE_SINK ? "Sink" : "Source");
 }
 
 static void btp_bap_pacs_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -996,7 +996,7 @@ static void btp_bap_pacs_client_event_handler(uint8_t packet_type, uint16_t chan
     UNUSED(size);
 
     if (packet_type != HCI_EVENT_PACKET) return;
-    if (hci_event_packet_get_type(packet) != HCI_EVENT_GATTSERVICE_META) return;
+    if (hci_event_packet_get_type(packet) != HCI_EVENT_LEAUDIO_META) return;
 
     uint32_t audio_allocation_mask;
     uint16_t ascs_cid;
@@ -1007,10 +1007,10 @@ static void btp_bap_pacs_client_event_handler(uint8_t packet_type, uint16_t chan
     server_t * server;
 
     switch (hci_event_gattservice_meta_get_subevent_code(packet)){
-        case GATTSERVICE_SUBEVENT_PACS_CLIENT_CONNECTED:
-            pacs_cid = gattservice_subevent_pacs_client_connected_get_pacs_cid(packet);
-            con_handle = gattservice_subevent_pacs_client_connected_get_con_handle(packet);
-            status = gattservice_subevent_pacs_client_connected_get_status(packet);
+        case LEAUDIO_SUBEVENT_PACS_CLIENT_CONNECTED:
+            pacs_cid = leaudio_subevent_pacs_client_connected_get_pacs_cid(packet);
+            con_handle = leaudio_subevent_pacs_client_connected_get_con_handle(packet);
+            status = leaudio_subevent_pacs_client_connected_get_status(packet);
             server = btp_server_for_pacs_cid(pacs_cid);
             btstack_assert(server != NULL);
             if (status != ERROR_CODE_SUCCESS){
@@ -1021,46 +1021,46 @@ static void btp_bap_pacs_client_event_handler(uint8_t packet_type, uint16_t chan
                 btp_bap_discovery_next(server);
             }
             break;
-        case GATTSERVICE_SUBEVENT_PACS_CLIENT_PACK_RECORD:
+        case LEAUDIO_SUBEVENT_PACS_CLIENT_PACK_RECORD:
             btp_bap_pacs_client_report_pacs(packet, size);
             break;
-        case GATTSERVICE_SUBEVENT_PACS_CLIENT_PACK_RECORD_DONE:
-            pacs_cid = gattservice_subevent_pacs_client_pack_record_done_get_pacs_cid(packet);
+        case LEAUDIO_SUBEVENT_PACS_CLIENT_PACK_RECORD_DONE:
+            pacs_cid = leaudio_subevent_pacs_client_pack_record_done_get_pacs_cid(packet);
             server = btp_server_for_pacs_cid(pacs_cid);
             btstack_assert(server != NULL);
-            MESSAGE("BTP PACS Client %u: %s PAC Record DONE\n", server->server_id, gattservice_subevent_pacs_client_pack_record_done_get_le_audio_role(packet) == LE_AUDIO_ROLE_SINK ? "Sink" : "Source");
+            MESSAGE("BTP PACS Client %u: %s PAC Record DONE\n", server->server_id, leaudio_subevent_pacs_client_pack_record_done_get_le_audio_role(packet) == LE_AUDIO_ROLE_SINK ? "Sink" : "Source");
             break;
-        case GATTSERVICE_SUBEVENT_PACS_CLIENT_OPERATION_DONE:
-            pacs_cid = gattservice_subevent_pacs_client_operation_done_get_pacs_cid(packet);
+        case LEAUDIO_SUBEVENT_PACS_CLIENT_OPERATION_DONE:
+            pacs_cid = leaudio_subevent_pacs_client_operation_done_get_pacs_cid(packet);
             server = btp_server_for_pacs_cid(pacs_cid);
             btstack_assert(server != NULL);
-            if (gattservice_subevent_pacs_client_operation_done_get_status(packet) == ERROR_CODE_SUCCESS){
+            if (leaudio_subevent_pacs_client_operation_done_get_status(packet) == ERROR_CODE_SUCCESS){
                 MESSAGE("BTP PACS Client %u: Operation successful", server->server_id);
             } else {
-                MESSAGE("BTP PACS Client %u: Operation failed with status 0x%02X", server->server_id, gattservice_subevent_pacs_client_operation_done_get_status(packet));
+                MESSAGE("BTP PACS Client %u: Operation failed with status 0x%02X", server->server_id, leaudio_subevent_pacs_client_operation_done_get_status(packet));
             }
             btp_bap_discovery_next(server);
             break;
-        case GATTSERVICE_SUBEVENT_PACS_CLIENT_DISCONNECTED:
+        case LEAUDIO_SUBEVENT_PACS_CLIENT_DISCONNECTED:
             MESSAGE("PACS Client: disconnected\n");
             break;
 #if 0
-        case GATTSERVICE_SUBEVENT_PACS_CLIENT_AUDIO_LOCATIONS:
-            audio_allocation_mask = gattservice_subevent_pacs_client_audio_locations_get_audio_locations_mask(packet);
+        case LEAUDIO_SUBEVENT_PACS_CLIENT_AUDIO_LOCATIONS:
+            audio_allocation_mask = leaudio_subevent_pacs_client_audio_locations_get_audio_locations_mask(packet);
             MESSAGE("PACS Client: %s Audio Locations 0x%04x",
-                    gattservice_subevent_pacs_client_audio_locations_get_le_audio_role(packet) == LE_AUDIO_ROLE_SINK ? "Sink" : "Source", audio_allocation_mask);
+                    leaudio_subevent_pacs_client_audio_locations_get_le_audio_role(packet) == LE_AUDIO_ROLE_SINK ? "Sink" : "Source", audio_allocation_mask);
             break;
 
-        case GATTSERVICE_SUBEVENT_PACS_CLIENT_AVAILABLE_AUDIO_CONTEXTS:
+        case LEAUDIO_SUBEVENT_PACS_CLIENT_AVAILABLE_AUDIO_CONTEXTS:
             MESSAGE("PACS Client: Available Audio Contexts");
-            MESSAGE("      Sink   0x%02X", gattservice_subevent_pacs_client_available_audio_contexts_get_sink_mask(packet));
-            MESSAGE("      Source 0x%02X", gattservice_subevent_pacs_client_available_audio_contexts_get_source_mask(packet));
+            MESSAGE("      Sink   0x%02X", leaudio_subevent_pacs_client_available_audio_contexts_get_sink_mask(packet));
+            MESSAGE("      Source 0x%02X", leaudio_subevent_pacs_client_available_audio_contexts_get_source_mask(packet));
             break;
 
-        case GATTSERVICE_SUBEVENT_PACS_CLIENT_SUPPORTED_AUDIO_CONTEXTS:
+        case LEAUDIO_SUBEVENT_PACS_CLIENT_SUPPORTED_AUDIO_CONTEXTS:
             MESSAGE("PACS Client: Supported Audio Contexts\n");
-            MESSAGE("      Sink   0x%02X\n", gattservice_subevent_pacs_client_supported_audio_contexts_get_sink_mask(packet));
-            MESSAGE("      Source 0x%02X\n", gattservice_subevent_pacs_client_supported_audio_contexts_get_source_mask(packet));
+            MESSAGE("      Sink   0x%02X\n", leaudio_subevent_pacs_client_supported_audio_contexts_get_sink_mask(packet));
+            MESSAGE("      Source 0x%02X\n", leaudio_subevent_pacs_client_supported_audio_contexts_get_source_mask(packet));
             break;
 #endif
         default:
