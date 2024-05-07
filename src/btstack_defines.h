@@ -4317,99 +4317,24 @@ typedef uint8_t sm_key_t[16];
 #define GATTSERVICE_SUBEVENT_GATT_DATABASE_HASH                            0x1Du
 
 
-// LE Audio
-
-
 /**
- * @format 1H1
+ * @format 1H211
  * @param subevent_code
  * @param con_handle
- * @param mute
+ * @param cid
+ * @param num_included_services
+ * @param status
 */
-#define GATTSERVICE_SUBEVENT_MICS_SERVER_MUTE                                0x1Bu
+#define GATTSERVICE_SUBEVENT_CLIENT_CONNECTED                               0x1Au
 
 /**
- * @format 1H11
+ * @format 1H2
  * @param subevent_code
  * @param con_handle
- * @param index
- * @param state
+ * @param cid
 */
-#define GATTSERVICE_SUBEVENT_AICS_SERVER_MUTE_MODE                                 0x1Cu
+#define GATTSERVICE_SUBEVENT_CLIENT_DISCONNECTED                            0x1Bu
 
-/**
- * @format 1H11
- * @param subevent_code
- * @param con_handle
- * @param index
- * @param state
-*/
-#define GATTSERVICE_SUBEVENT_AICS_SERVER_GAIN_MODE                                 0x1Du
-
-/**
- * @format 1H11
- * @param subevent_code
- * @param con_handle
- * @param index
- * @param gain_db
-*/
-#define GATTSERVICE_SUBEVENT_AICS_SERVER_GAIN_CHANGED                              0x1Eu
-
-/**
- * @format 1H1JV
- * @param subevent_code
- * @param con_handle
- * @param index
- * @param description_len
- * @param description 
-*/
-#define GATTSERVICE_SUBEVENT_AICS_SERVER_AUDIO_INPUT_DESC_CHANGED                   0x20u
-
-/**
- * @format 1H12
- * @param subevent_code
- * @param con_handle
- * @param index
- * @param volume_offset
-*/
-#define GATTSERVICE_SUBEVENT_VOCS_SERVER_VOLUME_OFFSET                              0x21u
-
-/**
- * @format 1H14
- * @param subevent_code
- * @param con_handle
- * @param index
- * @param audio_location
-*/
-#define GATTSERVICE_SUBEVENT_VOCS_SERVER_AUDIO_LOCATION                             0x22u
-
-/**
- * @format 1H1JV
- * @param subevent_code
- * @param con_handle
- * @param index
- * @param description_len
- * @param description 
-*/
-#define GATTSERVICE_SUBEVENT_VOCS_SERVER_AUDIO_OUTPUT_DESCRIPTION                   0x23u
-
-/**
- * @format 1H111
- * @param subevent_code
- * @param con_handle
- * @param volume_setting
- * @param volume_change_step
- * @param mute 
-*/
-#define GATTSERVICE_SUBEVENT_VCS_SERVER_VOLUME_STATE                                 0x24u
-
-/**
- * @format 1H1
- * @param subevent_code
- * @param con_handle
- * @param flags
-*/
-#define GATTSERVICE_SUBEVENT_VCS_SERVER_VOLUME_FLAGS                                 0x25u
 
 // LE Audio
 
@@ -5044,78 +4969,517 @@ typedef uint8_t sm_key_t[16];
  * @param con_handle
  * @param status
 */
-#define GATTSERVICE_SUBEVENT_AICS_SERVER_CONNECTED                              0x68u
+#define LEAUDIO_SUBEVENT_AICS_SERVER_CONNECTED                                 0x3Bu
 
 /**
  * @format 1H
  * @param subevent_code
  * @param con_handle
 */
-#define GATTSERVICE_SUBEVENT_AICS_SERVER_DISCONNECTED                           0x69u
+#define LEAUDIO_SUBEVENT_AICS_SERVER_DISCONNECTED                              0x3Cu
 
 /**
- * @format 1H1
+ * @format 1H11
  * @param subevent_code
  * @param con_handle
- * @param status
+ * @param index
+ * @param state
 */
-#define GATTSERVICE_SUBEVENT_MICS_SERVER_CONNECTED                              0x72u
+#define LEAUDIO_SUBEVENT_AICS_SERVER_MUTE_MODE                                 0x3Du
 
 /**
- * @format 1H
+ * @format 1H11
  * @param subevent_code
  * @param con_handle
+ * @param index
+ * @param state
 */
-#define GATTSERVICE_SUBEVENT_MICS_SERVER_DISCONNECTED                           0x73u
+#define LEAUDIO_SUBEVENT_AICS_SERVER_GAIN_MODE                                 0x3Eu
 
 /**
- * @format 1H1
+ * @format 1H11
  * @param subevent_code
  * @param con_handle
- * @param status
+ * @param index
+ * @param gain_db
 */
-#define GATTSERVICE_SUBEVENT_VCS_SERVER_CONNECTED                              0x76u
+#define LEAUDIO_SUBEVENT_AICS_SERVER_GAIN_CHANGED                              0x3Fu
 
 /**
- * @format 1H
+ * @format 1H1JV
  * @param subevent_code
  * @param con_handle
+ * @param index
+ * @param description_len
+ * @param description 
 */
-#define GATTSERVICE_SUBEVENT_VCS_SERVER_DISCONNECTED                           0x77u
-
-/**
- * @format 1H1
- * @param subevent_code
- * @param con_handle
- * @param status
-*/
-#define GATTSERVICE_SUBEVENT_VOCS_SERVER_CONNECTED                              0x78u
-
-/**
- * @format 1H
- * @param subevent_code
- * @param con_handle
-*/
-#define GATTSERVICE_SUBEVENT_VOCS_SERVER_DISCONNECTED                           0x79u
+#define LEAUDIO_SUBEVENT_AICS_SERVER_AUDIO_INPUT_DESC_CHANGED                   0x40u
 
 
 /**
  * @format 1H211
  * @param subevent_code
  * @param con_handle
- * @param cid
- * @param num_included_services
- * @param status
+ * @param aics_cid
+ * @param aics_index
+ * @param att_status
 */
-#define GATTSERVICE_SUBEVENT_CLIENT_CONNECTED                                  0x7Bu
+#define LEAUDIO_SUBEVENT_AICS_CLIENT_CONNECTED                                        0x41u
 
 /**
- * @format 1H2
+ * @format 121
+ * @param subevent_code
+ * @param aics_cid
+ * @param aics_index
+*/
+#define LEAUDIO_SUBEVENT_AICS_CLIENT_DISCONNECTED                                     0x42u
+
+/**
+ * @format 12111111
+ * @param subevent_code
+ * @param aics_cid
+ * @param aics_index
+ * @param gain_setting
+ * @param mute
+ * @param gain_mode
+ * @param change_counter
+ * @param att_status
+*/
+#define LEAUDIO_SUBEVENT_AICS_CLIENT_AUDIO_INPUT_STATE                                0x43u
+
+/**
+ * @format 1211111
+ * @param subevent_code
+ * @param aics_cid
+ * @param aics_index
+ * @param units
+ * @param minimum_value
+ * @param maximum_value
+ * @param att_status
+*/
+#define LEAUDIO_SUBEVENT_AICS_CLIENT_GAIN_SETTINGS_PROPERTIES                         0x44u
+
+/**
+ * @format 12111
+ * @param subevent_code
+ * @param aics_cid
+ * @param aics_index
+ * @param input_type
+ * @param att_status
+*/
+#define LEAUDIO_SUBEVENT_AICS_CLIENT_AUDIO_INPUT_TYPE                                 0x45u
+
+/**
+ * @format 12111
+ * @param subevent_code
+ * @param aics_cid
+ * @param aics_index
+ * @param input_status
+ * @param att_status
+*/
+#define LEAUDIO_SUBEVENT_AICS_CLIENT_AUDIO_INPUT_STATUS                               0x46u
+
+/**
+ * @format 121JV1
+ * @param subevent_code
+ * @param aics_cid
+ * @param aics_index
+ * @param value_len        // Capped at ATT_MTU - 3
+ * @param value
+ * @param att_status
+ */
+#define LEAUDIO_SUBEVENT_AICS_CLIENT_AUDIO_DESCRIPTION                                0x47u
+
+/**
+ * @format 12121
+ * @param subevent_code
+ * @param aics_cid
+ * @param aics_index
+ * @param characteristic_uuid
+ * @param att_status
+*/
+#define LEAUDIO_SUBEVENT_AICS_CLIENT_WRITE_DONE                                       0x48u
+
+/**
+ * @format 1H1
  * @param subevent_code
  * @param con_handle
- * @param cid
+ * @param status
 */
-#define GATTSERVICE_SUBEVENT_CLIENT_DISCONNECTED                               0x7Cu
+#define LEAUDIO_SUBEVENT_MICS_SERVER_CONNECTED                                        0x49u
+
+/**
+ * @format 1H
+ * @param subevent_code
+ * @param con_handle
+*/
+#define LEAUDIO_SUBEVENT_MICS_SERVER_DISCONNECTED                                     0x4Au
+
+
+/**
+ * @format 1H1
+ * @param subevent_code
+ * @param con_handle
+ * @param mute
+*/
+#define LEAUDIO_SUBEVENT_MICS_SERVER_MUTE                                             0x4Bu
+
+/**
+ * @format 1H211
+ * @param subevent_code
+ * @param con_handle
+ * @param mics_cid
+ * @param aics_services_num
+ * @param att_status
+ */
+#define LEAUDIO_SUBEVENT_MICS_CLIENT_CONNECTED                                        0x4Cu
+
+/**
+ * @format 12
+ * @param subevent_code
+ * @param mics_cid
+*/
+#define LEAUDIO_SUBEVENT_MICS_CLIENT_DISCONNECTED                                     0x4Du
+
+/**
+ * @format 12111111
+ * @param subevent_code
+ * @param mics_cid
+ * @param aics_index
+ * @param gain_setting
+ * @param mute
+ * @param gain_mode
+ * @param change_counter
+ * @param att_status
+*/
+#define LEAUDIO_SUBEVENT_MICS_CLIENT_AUDIO_INPUT_STATE                                0x4Eu
+
+/**
+ * @format 1211111
+ * @param subevent_code
+ * @param mics_cid
+ * @param aics_index
+ * @param units
+ * @param minimum_value
+ * @param maximum_value
+ * @param att_status
+*/
+#define LEAUDIO_SUBEVENT_MICS_CLIENT_GAIN_SETTINGS_PROPERTIES                         0x4Fu
+
+/**
+ * @format 12111
+ * @param subevent_code
+ * @param mics_cid
+ * @param aics_index
+ * @param input_type
+ * @param att_status
+*/
+#define LEAUDIO_SUBEVENT_MICS_CLIENT_AUDIO_INPUT_TYPE                                 0x50u
+
+/**
+ * @format 12111
+ * @param subevent_code
+ * @param mics_cid
+ * @param aics_index
+ * @param input_status
+ * @param att_status
+*/
+#define LEAUDIO_SUBEVENT_MICS_CLIENT_AUDIO_INPUT_STATUS                               0x51u
+
+/**
+ * @format 121JV1
+ * @param subevent_code
+ * @param mics_cid
+ * @param aics_index
+ * @param value_len        // Capped at ATT_MTU - 3
+ * @param value
+ * @param att_status
+ */
+#define LEAUDIO_SUBEVENT_MICS_CLIENT_AUDIO_DESCRIPTION                                0x52u
+
+/**
+ * @format 12121
+ * @param subevent_code
+ * @param mics_cid
+ * @param aics_index
+ * @param characteristic_uuid
+ * @param att_status
+*/
+#define LEAUDIO_SUBEVENT_MICS_CLIENT_WRITE_DONE                                       0x53u
+
+/**
+ * @format 1211
+ * @param subevent_code
+ * @param cid
+ * @param state
+ * @param att_status
+*/
+#define LEAUDIO_SUBEVENT_MICS_CLIENT_MUTE                                             0x54u
+
+/**
+ * @format 1H1
+ * @param subevent_code
+ * @param con_handle
+ * @param status
+*/
+#define LEAUDIO_SUBEVENT_VCS_SERVER_CONNECTED                                         0x55u
+
+/**
+ * @format 1H
+ * @param subevent_code
+ * @param con_handle
+*/
+#define LEAUDIO_SUBEVENT_VCS_SERVER_DISCONNECTED                                      0x56u
+
+/**
+ * @format 1H111
+ * @param subevent_code
+ * @param con_handle
+ * @param volume_setting
+ * @param volume_change_step
+ * @param mute 
+*/
+#define LEAUDIO_SUBEVENT_VCS_SERVER_VOLUME_STATE                                      0x57u
+
+/**
+ * @format 1H1
+ * @param subevent_code
+ * @param con_handle
+ * @param flags
+*/
+#define LEAUDIO_SUBEVENT_VCS_SERVER_VOLUME_FLAGS                                      0x58u
+
+/**
+ * @format 1H2111
+ * @param subevent_code
+ * @param con_handle
+ * @param vcs_cid
+ * @param aics_services_num
+ * @param vocs_services_num
+ * @param att_status
+ */
+#define LEAUDIO_SUBEVENT_VCS_CLIENT_CONNECTED                                         0x59u
+
+/**
+ * @format 12
+ * @param subevent_code
+ * @param vcs_cid
+*/
+#define LEAUDIO_SUBEVENT_VCS_CLIENT_DISCONNECTED                                      0x5Au
+
+
+/**
+ * @format 121111
+ * @param subevent_code
+ * @param vcs_cid
+ * @param volume_setting
+ * @param volume_change_step
+ * @param mute 
+ * @param att_status
+*/
+#define LEAUDIO_SUBEVENT_VCS_CLIENT_VOLUME_STATE                                      0x5Bu
+
+/**
+ * @format 1211
+ * @param subevent_code
+ * @param vcs_cid
+ * @param flags
+ * @param att_status
+*/
+#define LEAUDIO_SUBEVENT_VCS_CLIENT_VOLUME_FLAGS                                      0x5Cu
+
+/**
+ * @format 12111111
+ * @param subevent_code
+ * @param vcs_cid
+ * @param aics_index
+ * @param gain_setting
+ * @param mute
+ * @param gain_mode
+ * @param change_counter
+ * @param att_status
+*/
+#define LEAUDIO_SUBEVENT_VCS_CLIENT_AUDIO_INPUT_STATE                                0x5Bu
+
+/**
+ * @format 1211111
+ * @param subevent_code
+ * @param vcs_cid
+ * @param aics_index
+ * @param units
+ * @param minimum_value
+ * @param maximum_value
+ * @param att_status
+*/
+#define LEAUDIO_SUBEVENT_VCS_CLIENT_GAIN_SETTINGS_PROPERTIES                         0x5Cu
+
+/**
+ * @format 12111
+ * @param subevent_code
+ * @param vcs_cid
+ * @param aics_index
+ * @param input_type
+ * @param att_status
+*/
+#define LEAUDIO_SUBEVENT_VCS_CLIENT_AUDIO_INPUT_TYPE                                 0x5Du
+
+/**
+ * @format 12111
+ * @param subevent_code
+ * @param vcs_cid
+ * @param aics_index
+ * @param input_status
+ * @param att_status
+*/
+#define LEAUDIO_SUBEVENT_VCS_CLIENT_AUDIO_INPUT_STATUS                               0x5Eu
+
+/**
+ * @format 121JV1
+ * @param subevent_code
+ * @param vcs_cid
+ * @param aics_index
+ * @param value_len        // Capped at ATT_MTU - 3
+ * @param value
+ * @param att_status
+ */
+#define LEAUDIO_SUBEVENT_VCS_CLIENT_AUDIO_DESCRIPTION                                0x5Fu
+
+/**
+ * @format 12121
+ * @param subevent_code
+ * @param vcs_cid
+ * @param vocs_index
+ * @param volume_offset
+ * @param att_status
+*/
+#define LEAUDIO_SUBEVENT_VCS_CLIENT_VOLUME_OFFSET                                    0x60u
+
+/**
+ * @format 12141
+ * @param subevent_code
+ * @param vcs_cid
+ * @param vocs_index
+ * @param audio_location
+ * @param att_status
+*/
+#define LEAUDIO_SUBEVENT_VCS_CLIENT_AUDIO_LOCATION                                   0x61u
+
+/**
+ * @format 121JV1
+ * @param subevent_code
+ * @param vcs_cid
+ * @param vocs_index
+ * @param description_len
+ * @param description
+ * @param att_status
+*/
+#define LEAUDIO_SUBEVENT_VCS_CLIENT_AUDIO_OUTPUT_DESCRIPTION                         0x62u
+
+
+/**
+ * @format 12121
+ * @param subevent_code
+ * @param vcs_cid
+ * @param included_service_index
+ * @param characteristic_uuid
+ * @param att_status
+*/
+#define LEAUDIO_SUBEVENT_VCS_CLIENT_WRITE_DONE                                        0x63u
+
+
+/**
+ * @format 1H1
+ * @param subevent_code
+ * @param con_handle
+ * @param status
+*/
+#define LEAUDIO_SUBEVENT_VOCS_SERVER_CONNECTED                                        0x64u
+
+/**
+ * @format 1H
+ * @param subevent_code
+ * @param con_handle
+*/
+#define LEAUDIO_SUBEVENT_VOCS_SERVER_DISCONNECTED                                     0x65u
+
+/**
+ * @format 1H12
+ * @param subevent_code
+ * @param con_handle
+ * @param index
+ * @param volume_offset
+*/
+#define LEAUDIO_SUBEVENT_VOCS_SERVER_VOLUME_OFFSET                                    0x66u
+
+/**
+ * @format 1H14
+ * @param subevent_code
+ * @param con_handle
+ * @param index
+ * @param audio_location
+*/
+#define LEAUDIO_SUBEVENT_VOCS_SERVER_AUDIO_LOCATION                                   0x67u
+
+/**
+ * @format 1H1JV
+ * @param subevent_code
+ * @param con_handle
+ * @param index
+ * @param description_len
+ * @param description 
+*/
+#define LEAUDIO_SUBEVENT_VOCS_SERVER_AUDIO_OUTPUT_DESCRIPTION                         0x68u
+
+/**
+ * @format 1H211
+ * @param subevent_code
+ * @param con_handle
+ * @param vocs_cid
+ * @param vocs_index
+ * @param att_status
+*/
+#define LEAUDIO_SUBEVENT_VOCS_CLIENT_CONNECTED                                        0x69u
+
+/**
+ * @format 121
+ * @param subevent_code
+ * @param vocs_cid
+ * @param vocs_index
+*/
+#define LEAUDIO_SUBEVENT_VOCS_CLIENT_DISCONNECTED                                     0x6Au
+
+/**
+ * @format 121211
+ * @param subevent_code
+ * @param vocs_cid
+ * @param vocs_index
+ * @param volume_offset
+ * @param change_counter
+ * @param att_status
+*/
+#define LEAUDIO_SUBEVENT_VOCS_CLIENT_OFFSET_STATE                                     0x6Bu
+
+/**
+ * @format 12141
+ * @param subevent_code
+ * @param vocs_cid
+ * @param vocs_index
+ * @param audio_location
+ * @param att_status
+*/
+#define LEAUDIO_SUBEVENT_VOCS_CLIENT_AUDIO_LOCATION                                   0x6Cu
+
+/**
+ * @format 121JV1
+ * @param subevent_code
+ * @param vocs_cid
+ * @param vocs_index
+ * @param description_len
+ * @param description 
+ * @param att_status
+*/
+#define LEAUDIO_SUBEVENT_VOCS_CLIENT_AUDIO_OUTPUT_DESCRIPTION                         0x6Du
+
 
 /**
  * @format 1H211
@@ -5397,370 +5761,10 @@ typedef uint8_t sm_key_t[16];
  * @param con_handle
  */
 #define GATTSERVICE_SUBEVENT_OTS_SERVER_DISCONNECT                                      0x99u
-/**
- * @format 1H211
- * @param subevent_code
- * @param con_handle
- * @param aics_cid
- * @param aics_index
- * @param att_status
-*/
-#define GATTSERVICE_SUBEVENT_AICS_CLIENT_CONNECTED                                        0x9Au
-
-/**
- * @format 121
- * @param subevent_code
- * @param aics_cid
- * @param aics_index
-*/
-#define GATTSERVICE_SUBEVENT_AICS_CLIENT_DISCONNECTED                                     0x9Bu
-
-/**
- * @format 12111111
- * @param subevent_code
- * @param aics_cid
- * @param aics_index
- * @param gain_setting
- * @param mute
- * @param gain_mode
- * @param change_counter
- * @param att_status
-*/
-#define GATTSERVICE_SUBEVENT_AICS_CLIENT_AUDIO_INPUT_STATE                                0x9Cu
-
-/**
- * @format 1211111
- * @param subevent_code
- * @param aics_cid
- * @param aics_index
- * @param units
- * @param minimum_value
- * @param maximum_value
- * @param att_status
-*/
-#define GATTSERVICE_SUBEVENT_AICS_CLIENT_GAIN_SETTINGS_PROPERTIES                         0x9Du
-
-/**
- * @format 12111
- * @param subevent_code
- * @param aics_cid
- * @param aics_index
- * @param input_type
- * @param att_status
-*/
-#define GATTSERVICE_SUBEVENT_AICS_CLIENT_AUDIO_INPUT_TYPE                                 0x9Eu
-
-/**
- * @format 12111
- * @param subevent_code
- * @param aics_cid
- * @param aics_index
- * @param input_status
- * @param att_status
-*/
-#define GATTSERVICE_SUBEVENT_AICS_CLIENT_AUDIO_INPUT_STATUS                               0x9Fu
-
-/**
- * @format 121JV1
- * @param subevent_code
- * @param aics_cid
- * @param aics_index
- * @param value_len        // Capped at ATT_MTU - 3
- * @param value
- * @param att_status
- */
-#define GATTSERVICE_SUBEVENT_AICS_CLIENT_AUDIO_DESCRIPTION                                0xA0u
-
-/**
- * @format 12121
- * @param subevent_code
- * @param aics_cid
- * @param aics_index
- * @param characteristic_uuid
- * @param att_status
-*/
-#define GATTSERVICE_SUBEVENT_AICS_CLIENT_WRITE_DONE                                       0xA1u
-
-/**
- * @format 1H211
- * @param subevent_code
- * @param con_handle
- * @param mics_cid
- * @param aics_services_num
- * @param att_status
- */
-#define GATTSERVICE_SUBEVENT_MICS_CLIENT_CONNECTED                                        0xA2u
-
-/**
- * @format 12
- * @param subevent_code
- * @param mics_cid
-*/
-#define GATTSERVICE_SUBEVENT_MICS_CLIENT_DISCONNECTED                                     0xA3u
-
-/**
- * @format 12111111
- * @param subevent_code
- * @param mics_cid
- * @param aics_index
- * @param gain_setting
- * @param mute
- * @param gain_mode
- * @param change_counter
- * @param att_status
-*/
-#define GATTSERVICE_SUBEVENT_MICS_CLIENT_AUDIO_INPUT_STATE                                0xA4u
-
-/**
- * @format 1211111
- * @param subevent_code
- * @param mics_cid
- * @param aics_index
- * @param units
- * @param minimum_value
- * @param maximum_value
- * @param att_status
-*/
-#define GATTSERVICE_SUBEVENT_MICS_CLIENT_GAIN_SETTINGS_PROPERTIES                         0xA5u
-
-/**
- * @format 12111
- * @param subevent_code
- * @param mics_cid
- * @param aics_index
- * @param input_type
- * @param att_status
-*/
-#define GATTSERVICE_SUBEVENT_MICS_CLIENT_AUDIO_INPUT_TYPE                                 0xA6u
-
-/**
- * @format 12111
- * @param subevent_code
- * @param mics_cid
- * @param aics_index
- * @param input_status
- * @param att_status
-*/
-#define GATTSERVICE_SUBEVENT_MICS_CLIENT_AUDIO_INPUT_STATUS                               0xA7u
-
-/**
- * @format 121JV1
- * @param subevent_code
- * @param mics_cid
- * @param aics_index
- * @param value_len        // Capped at ATT_MTU - 3
- * @param value
- * @param att_status
- */
-#define GATTSERVICE_SUBEVENT_MICS_CLIENT_AUDIO_DESCRIPTION                                0xA8u
-
-/**
- * @format 12121
- * @param subevent_code
- * @param mics_cid
- * @param aics_index
- * @param characteristic_uuid
- * @param att_status
-*/
-#define GATTSERVICE_SUBEVENT_MICS_CLIENT_WRITE_DONE                                       0xA9u
-
-/**
- * @format 1211
- * @param subevent_code
- * @param cid
- * @param state
- * @param att_status
-*/
-#define GATTSERVICE_SUBEVENT_MICS_CLIENT_MUTE                                             0xAAu
 
 
-/**
- * @format 1H211
- * @param subevent_code
- * @param con_handle
- * @param vocs_cid
- * @param vocs_index
- * @param att_status
-*/
-#define GATTSERVICE_SUBEVENT_VOCS_CLIENT_CONNECTED                                        0xABu
-
-/**
- * @format 121
- * @param subevent_code
- * @param vocs_cid
- * @param vocs_index
-*/
-#define GATTSERVICE_SUBEVENT_VOCS_CLIENT_DISCONNECTED                                     0xACu
-
-/**
- * @format 121211
- * @param subevent_code
- * @param vocs_cid
- * @param vocs_index
- * @param volume_offset
- * @param change_counter
- * @param att_status
-*/
-#define GATTSERVICE_SUBEVENT_VOCS_CLIENT_OFFSET_STATE                                     0xADu
-
-/**
- * @format 12141
- * @param subevent_code
- * @param vocs_cid
- * @param vocs_index
- * @param audio_location
- * @param att_status
-*/
-#define GATTSERVICE_SUBEVENT_VOCS_CLIENT_AUDIO_LOCATION                                   0xAEu
-
-/**
- * @format 121JV1
- * @param subevent_code
- * @param vocs_cid
- * @param vocs_index
- * @param description_len
- * @param description 
- * @param att_status
-*/
-#define GATTSERVICE_SUBEVENT_VOCS_CLIENT_AUDIO_OUTPUT_DESCRIPTION                         0xAFu
 
 
-/**
- * @format 1H2111
- * @param subevent_code
- * @param con_handle
- * @param vcs_cid
- * @param aics_services_num
- * @param vocs_services_num
- * @param att_status
- */
-#define GATTSERVICE_SUBEVENT_VCS_CLIENT_CONNECTED                                         0xB0u
-
-/**
- * @format 12
- * @param subevent_code
- * @param vcs_cid
-*/
-#define GATTSERVICE_SUBEVENT_VCS_CLIENT_DISCONNECTED                                      0xB1u
-
-
-/**
- * @format 121111
- * @param subevent_code
- * @param vcs_cid
- * @param volume_setting
- * @param volume_change_step
- * @param mute 
- * @param att_status
-*/
-#define GATTSERVICE_SUBEVENT_VCS_CLIENT_VOLUME_STATE                                      0xB2u
-
-/**
- * @format 1211
- * @param subevent_code
- * @param vcs_cid
- * @param flags
- * @param att_status
-*/
-#define GATTSERVICE_SUBEVENT_VCS_CLIENT_VOLUME_FLAGS                                      0xB3u
-
-/**
- * @format 12111111
- * @param subevent_code
- * @param vcs_cid
- * @param aics_index
- * @param gain_setting
- * @param mute
- * @param gain_mode
- * @param change_counter
- * @param att_status
-*/
-#define GATTSERVICE_SUBEVENT_VCS_CLIENT_AUDIO_INPUT_STATE                                0xB4u
-
-/**
- * @format 1211111
- * @param subevent_code
- * @param vcs_cid
- * @param aics_index
- * @param units
- * @param minimum_value
- * @param maximum_value
- * @param att_status
-*/
-#define GATTSERVICE_SUBEVENT_VCS_CLIENT_GAIN_SETTINGS_PROPERTIES                         0xB5u
-
-/**
- * @format 12111
- * @param subevent_code
- * @param vcs_cid
- * @param aics_index
- * @param input_type
- * @param att_status
-*/
-#define GATTSERVICE_SUBEVENT_VCS_CLIENT_AUDIO_INPUT_TYPE                                 0xB6u
-
-/**
- * @format 12111
- * @param subevent_code
- * @param vcs_cid
- * @param aics_index
- * @param input_status
- * @param att_status
-*/
-#define GATTSERVICE_SUBEVENT_VCS_CLIENT_AUDIO_INPUT_STATUS                               0xB7u
-
-/**
- * @format 121JV1
- * @param subevent_code
- * @param vcs_cid
- * @param aics_index
- * @param value_len        // Capped at ATT_MTU - 3
- * @param value
- * @param att_status
- */
-#define GATTSERVICE_SUBEVENT_VCS_CLIENT_AUDIO_DESCRIPTION                                0xB8u
-
-/**
- * @format 12121
- * @param subevent_code
- * @param vcs_cid
- * @param vocs_index
- * @param volume_offset
- * @param att_status
-*/
-#define GATTSERVICE_SUBEVENT_VCS_CLIENT_VOLUME_OFFSET                                    0xBCu
-
-/**
- * @format 12141
- * @param subevent_code
- * @param vcs_cid
- * @param vocs_index
- * @param audio_location
- * @param att_status
-*/
-#define GATTSERVICE_SUBEVENT_VCS_CLIENT_AUDIO_LOCATION                                   0xBDu
-
-/**
- * @format 121JV1
- * @param subevent_code
- * @param vcs_cid
- * @param vocs_index
- * @param description_len
- * @param description
- * @param att_status
-*/
-#define GATTSERVICE_SUBEVENT_VCS_CLIENT_AUDIO_OUTPUT_DESCRIPTION                         0xBEu
-
-
-/**
- * @format 12121
- * @param subevent_code
- * @param vcs_cid
- * @param included_service_index
- * @param characteristic_uuid
- * @param att_status
-*/
-#define GATTSERVICE_SUBEVENT_VCS_CLIENT_WRITE_DONE                                        0xBFu
 
 /**
  * @format 1H21441

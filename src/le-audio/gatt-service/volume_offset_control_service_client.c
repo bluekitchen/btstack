@@ -104,7 +104,7 @@ static void vocs_client_emit_string_value(gatt_service_client_connection_helper_
     
     uint8_t event[VOCS_MAX_AUDIO_OUTPUT_DESCRIPTION_LENGTH + 7];
     uint16_t pos = 0;
-    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = HCI_EVENT_LEAUDIO_META;
     pos++;                      // reserve event[1] for subevent size 
     event[pos++] = subevent;
     little_endian_store_16(event, pos, connection_helper->cid);
@@ -126,9 +126,9 @@ static void vocs_client_emit_connected(gatt_service_client_connection_helper_t *
 
     uint8_t event[9];
     int pos = 0;
-    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = HCI_EVENT_LEAUDIO_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_VOCS_CLIENT_CONNECTED;
+    event[pos++] = LEAUDIO_SUBEVENT_VOCS_CLIENT_CONNECTED;
     little_endian_store_16(event, pos, connection_helper->con_handle);
     pos += 2;
     little_endian_store_16(event, pos, connection_helper->cid);
@@ -145,7 +145,7 @@ static void vocs_client_emit_uint8_array(gatt_service_client_connection_helper_t
 
     uint8_t event[11];
     uint16_t pos = 0;
-    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = HCI_EVENT_LEAUDIO_META;
     event[pos++] = 3 + data_size;
     event[pos++] = subevent;
     little_endian_store_16(event, pos, connection_helper->cid);
@@ -165,9 +165,9 @@ static void vocs_client_emit_done_event(gatt_service_client_connection_helper_t 
 
     uint8_t event[9];
     uint16_t pos = 0;
-    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = HCI_EVENT_LEAUDIO_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_VCS_CLIENT_WRITE_DONE;
+    event[pos++] = LEAUDIO_SUBEVENT_VCS_CLIENT_WRITE_DONE;
 
     little_endian_store_16(event, pos, connection_helper->cid);
     pos+= 2;
@@ -186,7 +186,7 @@ static void vocs_client_emit_read_event(gatt_service_client_connection_helper_t 
 
     switch (characteristic_index){
         case VOCS_CLIENT_CHARACTERISTIC_INDEX_OFFSET_STATE:
-            subevent_id = GATTSERVICE_SUBEVENT_VOCS_CLIENT_OFFSET_STATE;
+            subevent_id = LEAUDIO_SUBEVENT_VOCS_CLIENT_OFFSET_STATE;
             expected_data_size = 3;
             // UPDATE change_counter
             if (data_size == expected_data_size){
@@ -195,12 +195,12 @@ static void vocs_client_emit_read_event(gatt_service_client_connection_helper_t 
             break;
         
         case VOCS_CLIENT_CHARACTERISTIC_INDEX_AUDIO_LOCATION:
-            subevent_id = GATTSERVICE_SUBEVENT_VOCS_CLIENT_AUDIO_LOCATION;
+            subevent_id = LEAUDIO_SUBEVENT_VOCS_CLIENT_AUDIO_LOCATION;
             expected_data_size = 4;
             break;
 
         case VOCS_CLIENT_CHARACTERISTIC_INDEX_AUDIO_OUTPUT_DESCRIPTION:
-            subevent_id = GATTSERVICE_SUBEVENT_VOCS_CLIENT_AUDIO_OUTPUT_DESCRIPTION;
+            subevent_id = LEAUDIO_SUBEVENT_VOCS_CLIENT_AUDIO_OUTPUT_DESCRIPTION;
             if (att_status == ATT_ERROR_SUCCESS){
                 vocs_client_emit_string_value(connection_helper, subevent_id, data, data_size, att_status);
                 return;
@@ -233,7 +233,7 @@ static void vocs_client_emit_notify_event(gatt_service_client_connection_helper_
 
     switch (characteristic_uuid16){
         case ORG_BLUETOOTH_CHARACTERISTIC_OFFSET_STATE:
-            subevent_id = GATTSERVICE_SUBEVENT_VOCS_CLIENT_OFFSET_STATE;
+            subevent_id = LEAUDIO_SUBEVENT_VOCS_CLIENT_OFFSET_STATE;
             expected_data_size = 3;
             // UPDATE change_counter
             if (data_size == expected_data_size){
@@ -242,12 +242,12 @@ static void vocs_client_emit_notify_event(gatt_service_client_connection_helper_
             break;
         
         case ORG_BLUETOOTH_CHARACTERISTIC_AUDIO_LOCATION:
-            subevent_id = GATTSERVICE_SUBEVENT_VOCS_CLIENT_AUDIO_LOCATION;
+            subevent_id = LEAUDIO_SUBEVENT_VOCS_CLIENT_AUDIO_LOCATION;
             expected_data_size = 4;
             break;
 
         case ORG_BLUETOOTH_CHARACTERISTIC_AUDIO_OUTPUT_DESCRIPTION:
-            subevent_id = GATTSERVICE_SUBEVENT_VOCS_CLIENT_AUDIO_OUTPUT_DESCRIPTION;
+            subevent_id = LEAUDIO_SUBEVENT_VOCS_CLIENT_AUDIO_OUTPUT_DESCRIPTION;
             if (att_status == ATT_ERROR_SUCCESS){
                 vocs_client_emit_string_value(connection_helper, subevent_id, data, data_size, att_status);
                 return;
@@ -381,7 +381,7 @@ static void vocs_client_packet_handler_internal(uint8_t packet_type, uint16_t ch
                 case GATTSERVICE_SUBEVENT_CLIENT_DISCONNECTED:
                     connection_helper = gatt_service_client_get_connection_for_cid(&vocs_client, gattservice_subevent_client_disconnected_get_cid(packet));
                     btstack_assert(connection_helper != NULL);
-                    vocs_client_replace_subevent_id_and_emit(connection_helper->event_callback, packet, size, GATTSERVICE_SUBEVENT_VOCS_CLIENT_DISCONNECTED);
+                    vocs_client_replace_subevent_id_and_emit(connection_helper->event_callback, packet, size, LEAUDIO_SUBEVENT_VOCS_CLIENT_DISCONNECTED);
                     break;
 
                 default:

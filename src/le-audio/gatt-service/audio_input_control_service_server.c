@@ -131,9 +131,9 @@ static void aics_server_emit_mute_mode(aics_server_connection_t * connection){
     
     uint8_t event[7];
     uint8_t pos = 0;
-    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = HCI_EVENT_LEAUDIO_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_AICS_SERVER_MUTE_MODE;
+    event[pos++] = LEAUDIO_SUBEVENT_AICS_SERVER_MUTE_MODE;
     little_endian_store_16(event, pos, connection->con_handle);
     pos += 2;
     event[pos++] = connection->index;
@@ -148,9 +148,9 @@ static void aics_server_emit_gain_mode(aics_server_connection_t * connection){
     
     uint8_t event[7];
     uint8_t pos = 0;
-    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = HCI_EVENT_LEAUDIO_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_AICS_SERVER_GAIN_MODE;
+    event[pos++] = LEAUDIO_SUBEVENT_AICS_SERVER_GAIN_MODE;
     little_endian_store_16(event, pos, connection->con_handle);
     pos += 2;
     event[pos++] = connection->index;
@@ -165,9 +165,9 @@ static void aics_server_emit_gain(aics_server_connection_t * connection){
     
     uint8_t event[7];
     uint8_t pos = 0;
-    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = HCI_EVENT_LEAUDIO_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_AICS_SERVER_GAIN_CHANGED;
+    event[pos++] = LEAUDIO_SUBEVENT_AICS_SERVER_GAIN_CHANGED;
     little_endian_store_16(event, pos, connection->con_handle);
     pos += 2;
     event[pos++] = connection->index;
@@ -182,9 +182,9 @@ static void aics_server_emit_audio_input_description(aics_server_connection_t * 
     
     uint8_t event[7 + AICS_MAX_AUDIO_INPUT_DESCRIPTION_LENGTH];
     uint8_t pos = 0;
-    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = HCI_EVENT_LEAUDIO_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_AICS_SERVER_AUDIO_INPUT_DESC_CHANGED;
+    event[pos++] = LEAUDIO_SUBEVENT_AICS_SERVER_AUDIO_INPUT_DESC_CHANGED;
     little_endian_store_16(event, pos, connection->con_handle);
     pos += 2;
     event[pos++] = connection->index;

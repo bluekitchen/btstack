@@ -69,7 +69,7 @@ void microphone_control_service_server_init(gatt_microphone_control_mute_t mute_
 
 /**
  * @brief Register packet_handle to receive updates of mute value from remote side via event:
- * - GATTSERVICE_SUBEVENT_MICS_SERVER_MUTE
+ * - LEAUDIO_SUBEVENT_MICS_SERVER_MUTE
  * @param callback
  */
 void microphone_control_service_server_register_packet_handler(btstack_packet_handler_t packet_handler);

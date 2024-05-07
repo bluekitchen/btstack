@@ -73,9 +73,9 @@ static void mics_server_emit_mute(gatt_microphone_control_mute_t mute_state){
     uint8_t event[6];
 
     uint8_t pos = 0;
-    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = HCI_EVENT_LEAUDIO_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_MICS_SERVER_MUTE;
+    event[pos++] = LEAUDIO_SUBEVENT_MICS_SERVER_MUTE;
     little_endian_store_16(event, pos, mics_server_con_handle);
     pos += 2;
     event[pos++] = (uint8_t)mute_state;
