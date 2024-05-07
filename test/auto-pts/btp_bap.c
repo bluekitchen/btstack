@@ -473,10 +473,13 @@ static void bass_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
             MESSAGE("BASS client connected, cid 0x%02x\n", bass_cid);
 
             // inform btp
-            uint8_t data[7];
-            data[0] = bass_addr_type;
-            reverse_bd_addr(bass_address, &data[1]);
-            btp_send(BTP_SERVICE_ID_BAP, BTP_BAP_EV_SCAN_DELEGATOR_FOUND, 0, sizeof(data), data);
+            if ((response_service_id == BTP_SERVICE_ID_BAP) && (response_op != 0)){
+                response_op = 0;
+                uint8_t data[7];
+                data[0] = bass_addr_type;
+                reverse_bd_addr(bass_address, &data[1]);
+                btp_send(BTP_SERVICE_ID_BAP, BTP_BAP_EV_SCAN_DELEGATOR_FOUND, 0, sizeof(data), data);
+            }
             break;
         case LEAUDIO_SUBEVENT_BASS_CLIENT_SOURCE_OPERATION_COMPLETE:
             if (leaudio_subevent_bass_client_source_operation_complete_get_status(packet) != ERROR_CODE_SUCCESS){
@@ -1407,4 +1410,12 @@ void btp_bap_init(void){
 
 void btp_bap_register_higher_layer(btstack_packet_handler_t handler){
     btp_bap_higher_layer_handler = handler;
+}
+
+void btp_bap_bass_discover(hci_con_handle_t con_handle){
+    broadcast_audio_scan_service_client_connect(&bass_connection,
+                                                bass_sources,
+                                                BASS_CLIENT_NUM_SOURCES,
+                                                con_handle,
+                                                &bass_cid);
 }
