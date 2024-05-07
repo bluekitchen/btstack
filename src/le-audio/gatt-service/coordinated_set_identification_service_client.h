@@ -126,14 +126,14 @@ typedef struct {
 
 /**
  * @brief Init Coordinated Set Identification Service (CSIS) Client and register packet handler to receive events:
- * - GATTSERVICE_SUBEVENT_CSIS_CLIENT_CONNECTED
- * - GATTSERVICE_SUBEVENT_CSIS_CLIENT_DISCONNECTED
- * - GATTSERVICE_SUBEVENT_CSIS_CLIENT_LOCK_WRITE_COMPLETE
- * - GATTSERVICE_SUBEVENT_CSIS_CLIENT_REMOTE_LOCK
- * - GATTSERVICE_SUBEVENT_CSIS_CLIENT_COORDINATED_SET_SIZE
- * - GATTSERVICE_SUBEVENT_CSIS_CLIENT_RANK
- * - GATTSERVICE_SUBEVENT_CSIS_CLIENT_SIRK
- * - GATTSERVICE_SUBEVENT_CSIS_RSI_MATCH
+ * - LEAUDIO_SUBEVENT_CSIS_CLIENT_CONNECTED
+ * - LEAUDIO_SUBEVENT_CSIS_CLIENT_DISCONNECTED
+ * - LEAUDIO_SUBEVENT_CSIS_CLIENT_LOCK_WRITE_COMPLETE
+ * - LEAUDIO_SUBEVENT_CSIS_CLIENT_REMOTE_LOCK
+ * - LEAUDIO_SUBEVENT_CSIS_CLIENT_COORDINATED_SET_SIZE
+ * - LEAUDIO_SUBEVENT_CSIS_CLIENT_RANK
+ * - LEAUDIO_SUBEVENT_CSIS_CLIENT_SIRK
+ * - LEAUDIO_SUBEVENT_CSIS_CLIENT_RSI_MATCH
  *              
  * @param packet_handler
  */
@@ -150,7 +150,7 @@ void coordinated_set_identification_service_client_init(btstack_packet_handler_t
 uint8_t coordinated_set_identification_service_client_connect(csis_client_connection_t * connection, hci_con_handle_t con_handle, uint16_t * csis_cid);
 
 /**
- * @brief Read SIRK from remote CSIS server. The SIRK value is reported via the GATTSERVICE_SUBEVENT_CSIS_CLIENT_SIRK event.
+ * @brief Read SIRK from remote CSIS server. The SIRK value is reported via the LEAUDIO_SUBEVENT_CSIS_CLIENT_SIRK event.
  * @param  ascs_cid
  * @return ERROR_CODE_SUCCESS if successful, otherwise
  *                - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if the HCI connection with the given con_handle is found
@@ -160,7 +160,7 @@ uint8_t coordinated_set_identification_service_client_connect(csis_client_connec
 uint8_t coordinated_set_identification_service_client_read_sirk(uint16_t ascs_cid);
 
 /**
- * @brief Read lock from remote CSIS server. The value is reported via the GATTSERVICE_SUBEVENT_CSIS_CLIENT_REMOTE_LOCK event.
+ * @brief Read lock from remote CSIS server. The value is reported via the LEAUDIO_SUBEVENT_CSIS_CLIENT_REMOTE_LOCK event.
  * @param  ascs_cid
  * @return ERROR_CODE_SUCCESS if successful, otherwise
  *                - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if the HCI connection with the given con_handle is found
@@ -170,7 +170,7 @@ uint8_t coordinated_set_identification_service_client_read_sirk(uint16_t ascs_ci
 uint8_t coordinated_set_identification_service_client_read_member_lock(uint16_t ascs_cid);
 
 /**
- * @brief Write lock on remote CSIS server. The status of write is reported via the GATTSERVICE_SUBEVENT_CSIS_WRITE_LOCK_COMPLETE event. 
+ * @brief Write lock on remote CSIS server. The status of write is reported via the LEAUDIO_SUBEVENT_CSIS_WRITE_LOCK_COMPLETE event. 
  * @param  ascs_cid
  * @return ERROR_CODE_SUCCESS if successful, otherwise
  *                - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if the HCI connection with the given con_handle is found
@@ -180,7 +180,7 @@ uint8_t coordinated_set_identification_service_client_read_member_lock(uint16_t 
 uint8_t coordinated_set_identification_service_client_write_member_lock(uint16_t ascs_cid, csis_member_lock_t lock);
 
 /**
- * @brief Read coordinated set size from remote CSIS server. The value is reported via the GATTSERVICE_SUBEVENT_CSIS_CLIENT_COORDINATED_SET_SIZE event.
+ * @brief Read coordinated set size from remote CSIS server. The value is reported via the LEAUDIO_SUBEVENT_CSIS_CLIENT_COORDINATED_SET_SIZE event.
  * @param  ascs_cid
  * @return ERROR_CODE_SUCCESS if succesful, otherwise
  *                - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if the HCI connection with the given con_handle is found
@@ -190,7 +190,7 @@ uint8_t coordinated_set_identification_service_client_write_member_lock(uint16_t
 uint8_t coordinated_set_identification_service_client_read_coordinated_set_size(uint16_t ascs_cid);
 
 /**
- * @brief Read coordinator rank from remote CSIS server. The value is reported via the GATTSERVICE_SUBEVENT_CSIS_CLIENT_RANK event.
+ * @brief Read coordinator rank from remote CSIS server. The value is reported via the LEAUDIO_SUBEVENT_CSIS_CLIENT_RANK event.
  * @param  ascs_cid
  * @return ERROR_CODE_SUCCESS if successful, otherwise
  *                - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if the HCI connection with the given con_handle is found
@@ -209,7 +209,7 @@ uint8_t coordinated_set_identification_service_client_read_member_rank(uint16_t 
 bool coordinated_set_identification_service_client_get_adv_rsi(uint8_t const * const adv_data, uint8_t adv_len, uint8_t * const rsi);
 
 /**
- * @brief Check if the RSI matches the given SIRK value. The result is reported via the GATTSERVICE_SUBEVENT_CSIS_RSI_MATCH event. 
+ * @brief Check if the RSI matches the given SIRK value. The result is reported via the LEAUDIO_SUBEVENT_CSIS_CLIENT_RSI_MATCH event. 
  * @param  rsi
  * @param sirk
  * @return ERROR_CODE_SUCCESS if successful, otherwise
@@ -230,9 +230,9 @@ uint8_t coordinated_set_identification_service_client_find_members(csis_client_r
                                                                   uint8_t const * const sirk);
 
 /**
- * @brief Check if RSI in advertisement matches the given SIRK value. The result is reported via the GATTSERVICE_SUBEVENT_CSIS_RSI_MATCH event.
- * @param addr      for GATTSERVICE_SUBEVENT_CSIS_RSI_MATCH
- * @param addr_type for GATTSERVICE_SUBEVENT_CSIS_RSI_MATCH
+ * @brief Check if RSI in advertisement matches the given SIRK value. The result is reported via the LEAUDIO_SUBEVENT_CSIS_CLIENT_RSI_MATCH event.
+ * @param addr      for LEAUDIO_SUBEVENT_CSIS_CLIENT_RSI_MATCH
+ * @param addr_type for LEAUDIO_SUBEVENT_CSIS_CLIENT_RSI_MATCH
  * @param adv_data
  * @param adv_len
  * @return status
@@ -241,7 +241,7 @@ uint8_t coordinated_set_identification_service_client_check_advertisement(bd_add
                                                                      uint8_t const * const adv_data, uint8_t adv_len);
 
 /**
- * @brief Check if RSI in advertisement matches the given SIRK value. The result is reported via the GATTSERVICE_SUBEVENT_CSIS_RSI_MATCH event.
+ * @brief Check if RSI in advertisement matches the given SIRK value. The result is reported via the LEAUDIO_SUBEVENT_CSIS_CLIENT_RSI_MATCH event.
  * @param packet
  * @param size
  * @return status

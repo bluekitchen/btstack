@@ -4911,15 +4911,20 @@ typedef uint8_t sm_key_t[16];
 #define LEAUDIO_SUBEVENT_PACS_CLIENT_PACK_RECORD_DONE                               0x2Du
 
 
-
-// used by server
 /**
  * @format 1H1
  * @param subevent_code
  * @param con_handle
  * @param status
 */
-#define GATTSERVICE_SUBEVENT_CSIS_SERVER_CONNECTED                           0x58u
+#define LEAUDIO_SUBEVENT_CSIS_SERVER_CONNECTED                                  0x2Eu
+
+/**
+ * @format 1H
+ * @param subevent_code
+ * @param con_handle
+*/
+#define LEAUDIO_SUBEVENT_CSIS_SERVER_DISCONNECTED                               0x2Fu
 
 /**
  * @format 1H1
@@ -4927,7 +4932,7 @@ typedef uint8_t sm_key_t[16];
  * @param con_handle
  * @param lock
 */
-#define GATTSERVICE_SUBEVENT_CSIS_SERVER_MEMBER_LOCK                      0x59u
+#define LEAUDIO_SUBEVENT_CSIS_SERVER_MEMBER_LOCK                                0x30u
 
 /**
  * @format 1H1
@@ -4935,22 +4940,14 @@ typedef uint8_t sm_key_t[16];
  * @param con_handle
  * @param set_size
 */
-#define GATTSERVICE_SUBEVENT_CSIS_SERVER_COORDINATED_SET_SIZE                             0x5Au
+#define LEAUDIO_SUBEVENT_CSIS_SERVER_COORDINATED_SET_SIZE                       0x31u
 
 /**
  * @format 1B
  * @param subevent_code
  * @param rsi
 */
-#define GATTSERVICE_SUBEVENT_CSIS_RSI                                             0x5Eu
-
-/**
- * @format 1H
- * @param subevent_code
- * @param con_handle
-*/
-#define GATTSERVICE_SUBEVENT_CSIS_SERVER_DISCONNECTED                        0x5Fu
-
+#define LEAUDIO_SUBEVENT_CSIS_SERVER_RSI                                        0x32u
 
 /**
  * @format 1H21
@@ -4959,14 +4956,14 @@ typedef uint8_t sm_key_t[16];
  * @param csis_cid
  * @param status
 */
-#define GATTSERVICE_SUBEVENT_CSIS_CLIENT_CONNECTED                         0x60u
+#define LEAUDIO_SUBEVENT_CSIS_CLIENT_CONNECTED                                  0x33u
 
 /**
  * @format 12
  * @param subevent_code
  * @param csis_cid
 */
-#define GATTSERVICE_SUBEVENT_CSIS_CLIENT_DISCONNECTED                      0x61u
+#define LEAUDIO_SUBEVENT_CSIS_CLIENT_DISCONNECTED                               0x34u
 
 /**
  * @format 1211
@@ -4975,7 +4972,7 @@ typedef uint8_t sm_key_t[16];
  * @param status
  * @param lock
 */
-#define GATTSERVICE_SUBEVENT_CSIS_CLIENT_LOCK_WRITE_COMPLETE                      0x62u
+#define LEAUDIO_SUBEVENT_CSIS_CLIENT_LOCK_WRITE_COMPLETE                        0x35u
 
 /**
  * @format 1211
@@ -4984,7 +4981,7 @@ typedef uint8_t sm_key_t[16];
  * @param status
  * @param lock
 */
-#define GATTSERVICE_SUBEVENT_CSIS_CLIENT_LOCK                                     0x63u
+#define LEAUDIO_SUBEVENT_CSIS_CLIENT_LOCK                                       0x36u
 
 /**
  * @format 1211
@@ -4993,7 +4990,7 @@ typedef uint8_t sm_key_t[16];
  * @param status
  * @param coordinated_set_size
 */
-#define GATTSERVICE_SUBEVENT_CSIS_CLIENT_COORDINATED_SET_SIZE                     0x64u
+#define LEAUDIO_SUBEVENT_CSIS_CLIENT_COORDINATED_SET_SIZE                       0x37u
 
 /**
  * @format 1211
@@ -5002,7 +4999,7 @@ typedef uint8_t sm_key_t[16];
  * @param status
  * @param rank
 */
-#define GATTSERVICE_SUBEVENT_CSIS_CLIENT_RANK                                     0x65u
+#define LEAUDIO_SUBEVENT_CSIS_CLIENT_RANK                                       0x38u
 
 /**
  * @format 1211K
@@ -5012,7 +5009,7 @@ typedef uint8_t sm_key_t[16];
  * @param sirk_type
  * @param sirk
 */
-#define GATTSERVICE_SUBEVENT_CSIS_CLIENT_SIRK                                     0x66u
+#define LEAUDIO_SUBEVENT_CSIS_CLIENT_SIRK                                       0x39u
 
 /**
  * @format 11B1
@@ -5021,7 +5018,7 @@ typedef uint8_t sm_key_t[16];
  * @param source_address
  * @param match
  */
-#define GATTSERVICE_SUBEVENT_CSIS_RSI_MATCH                                       0x67u
+#define LEAUDIO_SUBEVENT_CSIS_CLIENT_RSI_MATCH                                  0x3Au
 
 
 /**

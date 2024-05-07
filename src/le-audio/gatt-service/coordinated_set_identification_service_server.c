@@ -118,9 +118,9 @@ static void csis_server_emit_rsi(const uint8_t * rsi){
 
     uint8_t event[9];
     uint16_t pos = 0;
-    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = HCI_EVENT_LEAUDIO_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_CSIS_RSI;
+    event[pos++] = LEAUDIO_SUBEVENT_CSIS_SERVER_RSI;
     reverse_48(rsi, &event[pos]);
     (*csis_server_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
@@ -270,9 +270,9 @@ static void csis_server_emit_coordinator_disconnected(hci_con_handle_t con_handl
 
     uint8_t event[5];
     uint16_t pos = 0;
-    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = HCI_EVENT_LEAUDIO_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_CSIS_SERVER_DISCONNECTED;
+    event[pos++] = LEAUDIO_SUBEVENT_CSIS_SERVER_DISCONNECTED;
     little_endian_store_16(event, pos, con_handle);
     pos += 2;
     (*csis_server_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
@@ -283,9 +283,9 @@ static void csis_server_emit_coordinator_connected(hci_con_handle_t con_handle, 
 
     uint8_t event[6];
     uint16_t pos = 0;
-    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = HCI_EVENT_LEAUDIO_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_CSIS_SERVER_CONNECTED;
+    event[pos++] = LEAUDIO_SUBEVENT_CSIS_SERVER_CONNECTED;
     little_endian_store_16(event, pos, con_handle);
     pos += 2;
     event[pos++] = status;
@@ -297,9 +297,9 @@ static void csis_server_emit_lock(hci_con_handle_t con_handle){
 
     uint8_t event[6];
     uint16_t pos = 0;
-    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = HCI_EVENT_LEAUDIO_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_CSIS_SERVER_MEMBER_LOCK;
+    event[pos++] = LEAUDIO_SUBEVENT_CSIS_SERVER_MEMBER_LOCK;
     little_endian_store_16(event, pos, con_handle);
     pos += 2;
     event[pos++] = (uint8_t)csis_member_lock;
@@ -311,9 +311,9 @@ static void csis_server_emit_set_size(hci_con_handle_t con_handle){
 
     uint8_t event[6];
     uint16_t pos = 0;
-    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = HCI_EVENT_LEAUDIO_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_CSIS_SERVER_COORDINATED_SET_SIZE;
+    event[pos++] = LEAUDIO_SUBEVENT_CSIS_SERVER_COORDINATED_SET_SIZE;
     little_endian_store_16(event, pos, con_handle);
     event[pos++] = csis_coordinated_set_member_rank;
     (*csis_server_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));

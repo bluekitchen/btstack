@@ -368,12 +368,12 @@ static void btp_cap_csip_handler(uint8_t packet_type, uint16_t channel, uint8_t 
     UNUSED(size);
 
     if (packet_type != HCI_EVENT_PACKET) return;
-    if (hci_event_packet_get_type(packet) != HCI_EVENT_GATTSERVICE_META) return;
+    if (hci_event_packet_get_type(packet) != HCI_EVENT_LEAUDIO_META) return;
 
     switch (hci_event_gattservice_meta_get_subevent_code(packet)){
-        case GATTSERVICE_SUBEVENT_CSIS_CLIENT_RANK:
+        case LEAUDIO_SUBEVENT_CSIS_CLIENT_RANK:
             if ((response_service_id == BTP_SERVICE_ID_CAP) && (response_op == BTP_CAP_DISCOVER)){
-                server_t * server = btp_server_for_csis_cid(gattservice_subevent_csis_client_sirk_get_csis_cid(packet));
+                server_t * server = btp_server_for_csis_cid(gleaudio_subevent_csis_client_sirk_get_csis_cid(packet));
                 btstack_assert(server != NULL);
                 MESSAGE("BTP_CAP_DISCOVER complete");
                 btp_cap_discovery_next(server);

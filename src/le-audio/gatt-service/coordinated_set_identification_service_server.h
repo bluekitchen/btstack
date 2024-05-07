@@ -89,11 +89,11 @@ void coordinated_set_identification_service_server_init(const uint8_t coordinato
 
 /**
  * @brief Register packet handler to receive events:
- * - GATTSERVICE_SUBEVENT_CSIS_SERVER_CONNECTED
- * - GATTSERVICE_SUBEVENT_CSIS_SERVER_DISCONNECTED
- * - GATTSERVICE_SUBEVENT_CSIS_SERVER_MEMBER_LOCK
- * - GATTSERVICE_SUBEVENT_CSIS_SERVER_COORDINATED_SET_SIZE
- * - GATTSERVICE_SUBEVENT_CSIS_RSI
+ * - LEAUDIO_SUBEVENT_CSIS_SERVER_CONNECTED
+ * - LEAUDIO_SUBEVENT_CSIS_SERVER_DISCONNECTED
+ * - LEAUDIO_SUBEVENT_CSIS_SERVER_MEMBER_LOCK
+ * - LEAUDIO_SUBEVENT_CSIS_SERVER_COORDINATED_SET_SIZE
+ * - LEAUDIO_SUBEVENT_CSIS_SERVER_RSI
  * @param packet_handler
  */
 void coordinated_set_identification_service_server_register_packet_handler(btstack_packet_handler_t packet_handler);
@@ -120,7 +120,7 @@ void coordinated_set_identification_service_server_set_size(uint8_t coordinated_
 void coordinated_set_identification_service_server_set_rank(uint8_t coordinated_set_member_rank);
 
 /**
- * @brief Calculate RSI based on SIRK and a random number. The result is reported via the GATTSERVICE_SUBEVENT_CSIS_RSI event.
+ * @brief Calculate RSI based on SIRK and a random number. The result is reported via the LEAUDIO_SUBEVENT_CSIS_SERVER_RSI event.
  * @return ERROR_CODE_SUCCESS if successful, otherwise
  *                - ERROR_CODE_COMMAND_DISALLOWED if there is an ongoing RSI calculation
  */ 

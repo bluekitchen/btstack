@@ -1080,20 +1080,20 @@ static void csis_client_event_handler(uint8_t packet_type, uint16_t channel, uin
     UNUSED(size);
 
     if (packet_type != HCI_EVENT_PACKET) return;
-    if (hci_event_packet_get_type(packet) != HCI_EVENT_GATTSERVICE_META) return;
+    if (hci_event_packet_get_type(packet) != HCI_EVENT_LEAUDIO_META) return;
 
     uint8_t status;
     server_t * server = NULL;
 
     switch (hci_event_gattservice_meta_get_subevent_code(packet)){
-        case GATTSERVICE_SUBEVENT_CSIS_CLIENT_CONNECTED:
-            server = server_for_csis_cid(gattservice_subevent_csis_client_connected_get_csis_cid(packet));
+        case LEAUDIO_SUBEVENT_CSIS_CLIENT_CONNECTED:
+            server = server_for_csis_cid(leaudio_subevent_csis_client_connected_get_csis_cid(packet));
             if (server != NULL){
 
-                if (gattservice_subevent_csis_client_connected_get_status(packet) != ERROR_CODE_SUCCESS){
+                if (leaudio_subevent_csis_client_connected_get_status(packet) != ERROR_CODE_SUCCESS){
                     printf("CSIS client %u: connection failed, cid 0x%04x, con_handle 0x%04x, status 0x%02x\n",
                            server->server_id, server->csis_cid, server->acl_con_handle,
-                           gattservice_subevent_csis_client_connected_get_status(packet));
+                           leaudio_subevent_csis_client_connected_get_status(packet));
                     printf("CSIS client %u: assume individual device\n", server->server_id);
                     server->coordinated_set_size = 1;
                     server->server_state = SERVER_CSIS_QUERY_COMPLETED;
@@ -1107,52 +1107,52 @@ static void csis_client_event_handler(uint8_t packet_type, uint16_t channel, uin
             }
             break;
 
-        case GATTSERVICE_SUBEVENT_CSIS_CLIENT_COORDINATED_SET_SIZE:
-            server = server_for_csis_cid(gattservice_subevent_csis_client_coordinated_set_size_get_csis_cid(packet));
-            status = gattservice_subevent_csis_client_coordinated_set_size_get_status(packet);
+        case LEAUDIO_SUBEVENT_CSIS_CLIENT_COORDINATED_SET_SIZE:
+            server = server_for_csis_cid(leaudio_subevent_csis_client_coordinated_set_size_get_csis_cid(packet));
+            status = leaudio_subevent_csis_client_coordinated_set_size_get_status(packet);
             if (status != ERROR_CODE_SUCCESS){
                 printf("CSIS client %u: read coordinated set size failed, 0x%02x\n", server->server_id, status);
             } else {
-                uint8_t set_size = gattservice_subevent_csis_client_coordinated_set_size_get_coordinated_set_size(packet);
+                uint8_t set_size = leaudio_subevent_csis_client_coordinated_set_size_get_coordinated_set_size(packet);
                 server->coordinated_set_size = set_size;
                 printf("CSIS client %u: coordinated_set_size %u\n", server->server_id, set_size);
             }
             coordinated_set_identification_service_client_read_sirk(server->csis_cid);
             break;
 
-        case GATTSERVICE_SUBEVENT_CSIS_CLIENT_SIRK:
-            server = server_for_csis_cid(gattservice_subevent_csis_client_sirk_get_csis_cid(packet));
-            status = gattservice_subevent_csis_client_sirk_get_status(packet);
+        case LEAUDIO_SUBEVENT_CSIS_CLIENT_SIRK:
+            server = server_for_csis_cid(leaudio_subevent_csis_client_sirk_get_csis_cid(packet));
+            status = leaudio_subevent_csis_client_sirk_get_status(packet);
             if (status != ERROR_CODE_SUCCESS){
                 printf("CSIS client %u: read SIRK failed, 0x%02x\n", server->server_id, status);
                 printf("TODO: handle get sirk failed\n");
                 break;
             }
-            gattservice_subevent_csis_client_sirk_get_sirk(packet, server->sirk);
+            leaudio_subevent_csis_client_sirk_get_sirk(packet, server->sirk);
             printf("CSIS client %u: remote SIRK (%s) ", server->server_id,
-                   (csis_sirk_type_t)gattservice_subevent_csis_client_sirk_get_sirk_type(packet) == CSIS_SIRK_TYPE_ENCRYPTED ? "ENCRYPTED" : "PLAIN_TEXT");
+                   (csis_sirk_type_t)leaudio_subevent_csis_client_sirk_get_sirk_type(packet) == CSIS_SIRK_TYPE_ENCRYPTED ? "ENCRYPTED" : "PLAIN_TEXT");
             printf_hexdump(server->sirk, sizeof(server->sirk));
 
             server->server_state = SERVER_CSIS_QUERY_COMPLETED;
             break;
 
-        case GATTSERVICE_SUBEVENT_CSIS_RSI_MATCH:
-            if (gattservice_subevent_csis_rsi_match_get_match(packet) != 0){
+        case LEAUDIO_SUBEVENT_CSIS_CLIENT_RSI_MATCH:
+            if (leaudio_subevent_csis_client_rsi_match_get_match(packet) != 0){
                 bd_addr_t addr;
-                gattservice_subevent_csis_rsi_match_get_source_address(packet, addr);
-                rsi_match_handler(gattservice_subevent_csis_rsi_match_get_source_address_type(packet), addr);
+                leaudio_subevent_csis_client_rsi_match_get_source_address(packet, addr);
+                rsi_match_handler(leaudio_subevent_csis_client_rsi_match_get_source_address_type(packet), addr);
             }
             break;
 
-        case GATTSERVICE_SUBEVENT_CSIS_CLIENT_LOCK:
-            server = server_for_csis_cid(gattservice_subevent_csis_client_lock_get_csis_cid(packet));
-            status = gattservice_subevent_csis_client_lock_get_status(packet);
+        case LEAUDIO_SUBEVENT_CSIS_CLIENT_LOCK:
+            server = server_for_csis_cid(leaudio_subevent_csis_client_lock_get_csis_cid(packet));
+            status = leaudio_subevent_csis_client_lock_get_status(packet);
             if (status != ERROR_CODE_SUCCESS){
                 printf("CSIS client %u: read LOCK failed, 0x%02x\n", server->server_id, status);
                 break;
             }
             if (server != NULL){
-                printf("CSIS client %u: remote LOCK %u\n", server->server_id, gattservice_subevent_csis_client_lock_get_lock(packet));
+                printf("CSIS client %u: remote LOCK %u\n", server->server_id, leaudio_subevent_csis_client_lock_get_lock(packet));
 
                 // set locked
                 printf("CSIS client %u: set client LOCK\n", server->server_id);
@@ -1160,31 +1160,31 @@ static void csis_client_event_handler(uint8_t packet_type, uint16_t channel, uin
             }
             break;
 
-        case GATTSERVICE_SUBEVENT_CSIS_CLIENT_RANK:
-            server = server_for_csis_cid(gattservice_subevent_csis_client_rank_get_csis_cid(packet));
-            status = gattservice_subevent_csis_client_rank_get_status(packet);
+        case LEAUDIO_SUBEVENT_CSIS_CLIENT_RANK:
+            server = server_for_csis_cid(leaudio_subevent_csis_client_rank_get_csis_cid(packet));
+            status = leaudio_subevent_csis_client_rank_get_status(packet);
             if (status != ERROR_CODE_SUCCESS){
                 printf("CSIS client %u: read RANK failed, 0x%02x\n", status, server->server_id);
                 break;
             }
-            printf("CSIS client %u: remote member RANK %u\n", server->server_id, gattservice_subevent_csis_client_rank_get_rank(packet));
+            printf("CSIS client %u: remote member RANK %u\n", server->server_id, leaudio_subevent_csis_client_rank_get_rank(packet));
             break;
 
-        case GATTSERVICE_SUBEVENT_CSIS_CLIENT_LOCK_WRITE_COMPLETE:
-            server = server_for_csis_cid(gattservice_subevent_csis_client_lock_write_complete_get_csis_cid(packet));
-            status = gattservice_subevent_csis_client_lock_write_complete_get_status(packet);
+        case LEAUDIO_SUBEVENT_CSIS_CLIENT_LOCK_WRITE_COMPLETE:
+            server = server_for_csis_cid(leaudio_subevent_csis_client_lock_write_complete_get_csis_cid(packet));
+            status = leaudio_subevent_csis_client_lock_write_complete_get_status(packet);
             if (status != ERROR_CODE_SUCCESS){
                 printf("CSIS client %u: write LOCK failed, 0x%02x\n", server->server_id, status);
             } else {
                 if (server != NULL){
-                    csis_member_lock_t csis_member_lock = (csis_member_lock_t) gattservice_subevent_csis_client_lock_write_complete_get_lock(packet);
+                    csis_member_lock_t csis_member_lock = (csis_member_lock_t) leaudio_subevent_csis_client_lock_write_complete_get_lock(packet);
                     printf("CSIS client %u: remote member %s\n", server->server_id, csis_member_lock == CSIS_MEMBER_UNLOCKED ? "UNLOCKED" : "LOCKED");
                 }
             }
             break;
 
-        case GATTSERVICE_SUBEVENT_CSIS_CLIENT_DISCONNECTED:
-            server = server_for_csis_cid(gattservice_subevent_csis_client_disconnected_get_csis_cid(packet));
+        case LEAUDIO_SUBEVENT_CSIS_CLIENT_DISCONNECTED:
+            server = server_for_csis_cid(leaudio_subevent_csis_client_disconnected_get_csis_cid(packet));
             if (server != NULL){
                 server->csis_cid = 0;
                 printf("CSIS Client %u: disconnected\n", server->server_id);
