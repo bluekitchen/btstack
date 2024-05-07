@@ -148,9 +148,9 @@ static void pacs_server_emit_audio_locations_received(hci_con_handle_t con_handl
     
     uint8_t event[10];
     uint8_t pos = 0;
-    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = HCI_EVENT_LEAUDIO_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_PACS_SERVER_AUDIO_LOCATIONS;
+    event[pos++] = LEAUDIO_SUBEVENT_PACS_SERVER_AUDIO_LOCATIONS;
     little_endian_store_16(event, pos, con_handle);
     pos += 2;
     little_endian_store_32(event, pos, audio_locations);

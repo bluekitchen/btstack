@@ -107,9 +107,9 @@ static void pacs_client_emit_connection_established(pacs_client_connection_t * c
 
     uint8_t event[8];
     uint16_t pos = 0;
-    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = HCI_EVENT_LEAUDIO_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_PACS_CLIENT_CONNECTED;
+    event[pos++] = LEAUDIO_SUBEVENT_PACS_CLIENT_CONNECTED;
     little_endian_store_16(event, pos, connection->con_handle);
     pos += 2;
     little_endian_store_16(event, pos, connection->cid);
@@ -123,9 +123,9 @@ static void pacs_client_emit_disconnect(uint16_t cid){
 
     uint8_t event[5];
     uint16_t pos = 0;
-    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = HCI_EVENT_LEAUDIO_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_PACS_CLIENT_DISCONNECTED;
+    event[pos++] = LEAUDIO_SUBEVENT_PACS_CLIENT_DISCONNECTED;
     little_endian_store_16(event, pos, cid);
     (*pacs_client_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
@@ -135,9 +135,9 @@ static void pacs_client_emit_operation_done(pacs_client_connection_t * connectio
 
     uint8_t event[6];
     uint16_t pos = 0;
-    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = HCI_EVENT_LEAUDIO_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_PACS_CLIENT_OPERATION_DONE;
+    event[pos++] = LEAUDIO_SUBEVENT_PACS_CLIENT_OPERATION_DONE;
     little_endian_store_16(event, pos, connection->cid);
     pos += 2;
     event[pos++] = status;
@@ -150,9 +150,9 @@ static void pacs_client_emit_audio_locations(pacs_client_connection_t * connecti
     uint8_t  event[11];
     memset(event, 0, sizeof(event));
     uint16_t pos = 0;
-    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = HCI_EVENT_LEAUDIO_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_PACS_CLIENT_AUDIO_LOCATIONS;
+    event[pos++] = LEAUDIO_SUBEVENT_PACS_CLIENT_AUDIO_LOCATIONS;
     little_endian_store_16(event, pos, connection->cid);
     pos += 2;
     event[pos++] = status;
@@ -178,7 +178,7 @@ static void pacs_client_emit_audio_contexts(pacs_client_connection_t * connectio
     uint8_t event[10];
     memset(event, 0, sizeof(event));
     uint16_t pos = 0;
-    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = HCI_EVENT_LEAUDIO_META;
     event[pos++] = sizeof(event) - 2;
     event[pos++] = subevent;
     little_endian_store_16(event, pos, connection->cid);
@@ -294,9 +294,9 @@ static void pacs_client_emit_pac_done(pacs_client_connection_t * connection, le_
     btstack_assert(pacs_client_event_callback != NULL);
 
     uint8_t event[6];
-    event[0] = HCI_EVENT_GATTSERVICE_META;
+    event[0] = HCI_EVENT_LEAUDIO_META;
     event[1] = 4;
-    event[2] = GATTSERVICE_SUBEVENT_PACS_CLIENT_PACK_RECORD_DONE;
+    event[2] = LEAUDIO_SUBEVENT_PACS_CLIENT_PACK_RECORD_DONE;
     little_endian_store_16(event, 3, connection->cid);
     event[5] = (uint8_t)role;
     (*pacs_client_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
@@ -312,9 +312,9 @@ static void pacs_client_emit_pac(pacs_client_connection_t * connection, le_audio
     uint8_t event[6 + 5 + 10 + 6 * 2 + 5 + 4];
     uint8_t event_size = sizeof(event);
 
-    event[0] = HCI_EVENT_GATTSERVICE_META;
+    event[0] = HCI_EVENT_LEAUDIO_META;
     event[1] = sizeof(event) - 2;
-    event[2] = GATTSERVICE_SUBEVENT_PACS_CLIENT_PACK_RECORD;
+    event[2] = LEAUDIO_SUBEVENT_PACS_CLIENT_PACK_RECORD;
     little_endian_store_16(event, 3, connection->cid);
     event[5] = (uint8_t)role;
 
@@ -407,10 +407,10 @@ static void pacs_client_handle_gatt_server_notification(uint8_t packet_type, uin
                 pacs_client_handle_audio_locations(connection, LE_AUDIO_ROLE_SOURCE, value, value_length);
                 break;
             case PACS_CLIENT_CHARACTERISTIC_INDEX_AVAILABLE_AUDIO_CONTEXTS:
-                pacs_client_handle_audio_contexts(connection, GATTSERVICE_SUBEVENT_PACS_CLIENT_AVAILABLE_AUDIO_CONTEXTS, value, value_length);
+                pacs_client_handle_audio_contexts(connection, LEAUDIO_SUBEVENT_PACS_CLIENT_AVAILABLE_AUDIO_CONTEXTS, value, value_length);
                 break;
             case PACS_CLIENT_CHARACTERISTIC_INDEX_SUPPORTED_AUDIO_CONTEXTS:
-                pacs_client_handle_audio_contexts(connection, GATTSERVICE_SUBEVENT_PACS_CLIENT_SUPPORTED_AUDIO_CONTEXTS, value, value_length);
+                pacs_client_handle_audio_contexts(connection, LEAUDIO_SUBEVENT_PACS_CLIENT_SUPPORTED_AUDIO_CONTEXTS, value, value_length);
                 break;
             default:
                 break;
@@ -794,13 +794,13 @@ static void pacs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t c
                     break;
 
                 case PACS_CLIENT_CHARACTERISTIC_INDEX_AVAILABLE_AUDIO_CONTEXTS:
-                    pacs_client_handle_audio_contexts(connection, GATTSERVICE_SUBEVENT_PACS_CLIENT_AVAILABLE_AUDIO_CONTEXTS,
+                    pacs_client_handle_audio_contexts(connection, LEAUDIO_SUBEVENT_PACS_CLIENT_AVAILABLE_AUDIO_CONTEXTS,
                                                       gatt_event_characteristic_value_query_result_get_value(packet),
                                                       gatt_event_characteristic_value_query_result_get_value_length(packet));
                     break;
 
                 case PACS_CLIENT_CHARACTERISTIC_INDEX_SUPPORTED_AUDIO_CONTEXTS:
-                    pacs_client_handle_audio_contexts(connection, GATTSERVICE_SUBEVENT_PACS_CLIENT_SUPPORTED_AUDIO_CONTEXTS,
+                    pacs_client_handle_audio_contexts(connection, LEAUDIO_SUBEVENT_PACS_CLIENT_SUPPORTED_AUDIO_CONTEXTS,
                                                       gatt_event_characteristic_value_query_result_get_value(packet),
                                                       gatt_event_characteristic_value_query_result_get_value_length(packet));
                     break;
