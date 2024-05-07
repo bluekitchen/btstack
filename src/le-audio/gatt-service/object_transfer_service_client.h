@@ -83,13 +83,13 @@ typedef struct {
     hci_con_handle_t connection_handle;
     uint16_t cid;
     int  mtu;
-} le_cbm_connection_t;
+} otp_le_cbm_connection_t;
 
 typedef struct {
     gatt_service_client_connection_helper_t basic_connection;
     object_transfer_service_client_state_t state;
 
-    le_cbm_connection_t le_cbm_connection;
+    otp_le_cbm_connection_t le_cbm_connection;
     bool le_cbm_channel_opened;
     bool current_object_transfer_in_progress;
 
