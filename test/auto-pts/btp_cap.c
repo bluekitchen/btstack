@@ -63,6 +63,7 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 typedef enum {
     CAP_DISCOVERY_IDLE,
     CAP_DISCOVERY_CSIS_WAIT,
+    CAP_DISCOVERY_BASS_WAIT,
     CAP_DISCOVERY_DONE,
 } btp_cap_state_t;
 
@@ -206,14 +207,17 @@ static void btp_cap_send_discovery_complete(server_t * server) {
 }
 
 static void btp_cap_discovery_next(server_t * server) {
-    uint8_t ascs_index;
-    uint16_t ascs_cid;
     switch((btp_cap_state_t) server->cap_state){
         case CAP_DISCOVERY_IDLE:
             server->cap_state = (uint8_t) CAP_DISCOVERY_CSIS_WAIT;
             btp_csip_connect_to_server(server);
             break;
         case CAP_DISCOVERY_CSIS_WAIT:
+            server->cap_state = (uint8_t) CAP_DISCOVERY_BASS_WAIT;
+            btp_bap_bass_discover(server->acl_con_handle);
+            break;
+        case CAP_DISCOVERY_BASS_WAIT:
+            MESSAGE("BTP_CAP_DISCOVER complete");
             server->cap_state = (uint8_t) CAP_DISCOVERY_DONE;
             btp_cap_send_discovery_complete(server);
             break;
@@ -232,7 +236,7 @@ static void btp_bap_start_audio_completed(uint8_t cig_id, uint8_t status){
     response_op = 0;
 }
 
-static void     btp_cap_ases_run(void){
+static void btp_cap_ases_run(void){
 
     uint8_t status = ERROR_CODE_SUCCESS;
     uint8_t i;
@@ -375,7 +379,7 @@ static void btp_cap_csip_handler(uint8_t packet_type, uint16_t channel, uint8_t 
             if ((response_service_id == BTP_SERVICE_ID_CAP) && (response_op == BTP_CAP_DISCOVER)){
                 server_t * server = btp_server_for_csis_cid(gleaudio_subevent_csis_client_sirk_get_csis_cid(packet));
                 btstack_assert(server != NULL);
-                MESSAGE("BTP_CAP_DISCOVER complete");
+                MESSAGE("BTP_CAP_DISCOVER CSIS Client connected");
                 btp_cap_discovery_next(server);
             }
             break;
@@ -595,6 +599,14 @@ static void btp_cap_bap_handler(uint8_t packet_type, uint16_t channel, uint8_t *
 
 
 #endif
+        case GATTSERVICE_SUBEVENT_BASS_CLIENT_CONNECTED:
+            if ((response_service_id == BTP_SERVICE_ID_CAP) && (response_op == BTP_CAP_DISCOVER)){
+                server_t * server = btp_server_for_acl_con_handle(gattservice_subevent_bass_client_connected_get_con_handle(packet));
+                btstack_assert(server != NULL);
+                MESSAGE("BTP_CAP_DISCOVER BASS Client connected");
+                btp_cap_discovery_next(server);
+            }
+            break;
         default:
             break;
     }
