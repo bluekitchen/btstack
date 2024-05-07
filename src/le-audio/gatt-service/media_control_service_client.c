@@ -581,7 +581,7 @@ static void mcs_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
                     connection = (mcs_client_connection_t *)connection_helper;
 
                     if (gattservice_subevent_ots_client_connected_get_att_status(packet) != ERROR_CODE_SUCCESS) {
-                        printf("MCS: OTS client connection failed, err 0x%02x.\n", gattservice_subevent_ots_client_connected_get_att_status(packet));
+                        log_info("MCS: OTS client connection failed, err 0x%02x", gattservice_subevent_ots_client_connected_get_att_status(packet));
                         connection->ots_connections_num = 0;
                     }
 
