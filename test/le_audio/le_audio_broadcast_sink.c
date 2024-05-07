@@ -706,31 +706,31 @@ static void bass_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t 
     UNUSED(packet_type);
     UNUSED(channel);
     btstack_assert (packet_type == HCI_EVENT_PACKET);
-    btstack_assert(hci_event_packet_get_type(packet) == HCI_EVENT_GATTSERVICE_META);
+    btstack_assert(hci_event_packet_get_type(packet) == HCI_EVENT_LEAUDIO_META);
     uint8_t source_id;
     printf("BASS Event 0x%02x: ", hci_event_gattservice_meta_get_subevent_code(packet));
     printf_hexdump(packet, size);
     uint8_t pa_sync;
     switch (hci_event_gattservice_meta_get_subevent_code(packet)){
-        case GATTSERVICE_SUBEVENT_BASS_SERVER_SOURCE_ADDED:
-            pa_sync = gattservice_subevent_bass_server_source_added_get_pa_sync(packet);
-            source_id = gattservice_subevent_bass_server_source_added_get_source_id(packet);
-            printf("GATTSERVICE_SUBEVENT_BASS_SOURCE_ADDED, source_id 0x%04x, pa_sync %u\n", source_id, pa_sync);
+        case LEAUDIO_SUBEVENT_BASS_SERVER_SOURCE_ADDED:
+            pa_sync = leaudio_subevent_bass_server_source_added_get_pa_sync(packet);
+            source_id = leaudio_subevent_bass_server_source_added_get_source_id(packet);
+            printf("LEAUDIO_SUBEVENT_BASS_SOURCE_ADDED, source_id 0x%04x, pa_sync %u\n", source_id, pa_sync);
             handle_new_pa_sync(source_id, pa_sync);
             break;
-        case GATTSERVICE_SUBEVENT_BASS_SERVER_SOURCE_MODIFIED:
-            pa_sync = gattservice_subevent_bass_server_source_added_get_pa_sync(packet);
-            source_id = gattservice_subevent_bass_server_source_added_get_source_id(packet);
-            printf("GATTSERVICE_SUBEVENT_BASS_SOURCE_MODIFIED, source_id 0x%04x, pa_sync %u\n", source_id, pa_sync);
+        case LEAUDIO_SUBEVENT_BASS_SERVER_SOURCE_MODIFIED:
+            pa_sync = leaudio_subevent_bass_server_source_added_get_pa_sync(packet);
+            source_id = leaudio_subevent_bass_server_source_added_get_source_id(packet);
+            printf("LEAUDIO_SUBEVENT_BASS_SOURCE_MODIFIED, source_id 0x%04x, pa_sync %u\n", source_id, pa_sync);
             handle_new_pa_sync(source_id, pa_sync);
             break;
-        case GATTSERVICE_SUBEVENT_BASS_SERVER_SOURCE_DELETED:
-            printf("GATTSERVICE_SUBEVENT_BASS_SERVER_SOURCE_DELETED, source_id 0x%04x\n",
-                   gattservice_subevent_bass_server_source_deleted_get_source_id(packet));
+        case LEAUDIO_SUBEVENT_BASS_SERVER_SOURCE_DELETED:
+            printf("LEAUDIO_SUBEVENT_BASS_SERVER_SOURCE_DELETED, source_id 0x%04x\n",
+                   leaudio_subevent_bass_server_source_deleted_get_source_id(packet));
             break;
-        case GATTSERVICE_SUBEVENT_BASS_SERVER_BROADCAST_CODE:
-            gattservice_subevent_bass_server_broadcast_code_get_broadcast_code(packet, broadcast_code);
-            printf("GATTSERVICE_SUBEVENT_BASS_BROADCAST_CODE received: ");
+        case LEAUDIO_SUBEVENT_BASS_SERVER_BROADCAST_CODE:
+            leaudio_subevent_bass_server_broadcast_code_get_broadcast_code(packet, broadcast_code);
+            printf("LEAUDIO_SUBEVENT_BASS_BROADCAST_CODE received: ");
             printf_hexdump(broadcast_code, 16);
             bass_sources[0].big_encryption = LE_AUDIO_BIG_ENCRYPTION_DECRYPTING;
             if (have_base && have_big_info){

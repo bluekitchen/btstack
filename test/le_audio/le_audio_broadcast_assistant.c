@@ -338,35 +338,35 @@ static void bass_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
     UNUSED(size);
 
     if (packet_type != HCI_EVENT_PACKET) return;
-    if (hci_event_packet_get_type(packet) != HCI_EVENT_GATTSERVICE_META) return;
+    if (hci_event_packet_get_type(packet) != HCI_EVENT_LEAUDIO_META) return;
 
     const bass_source_data_t * source_data;
 
     switch (hci_event_gattservice_meta_get_subevent_code(packet)) {
-        case GATTSERVICE_SUBEVENT_BASS_CLIENT_CONNECTED:
-            if (gattservice_subevent_bass_client_connected_get_status(packet) != ERROR_CODE_SUCCESS){
+        case LEAUDIO_SUBEVENT_BASS_CLIENT_CONNECTED:
+            if (leaudio_subevent_bass_client_connected_get_status(packet) != ERROR_CODE_SUCCESS){
                 printf("BASS client connection failed, cid 0x%02x, con_handle 0x%02x, status 0x%02x\n",
                        bass_cid, scan_delegator_handle,
-                       gattservice_subevent_bass_client_connected_get_status(packet));
+                       leaudio_subevent_bass_client_connected_get_status(packet));
                 return;
             }
             printf("BASS client connected, cid 0x%02x\n", bass_cid);
             app_state = APP_CONNECTED;
             break;
-        case GATTSERVICE_SUBEVENT_BASS_CLIENT_SOURCE_OPERATION_COMPLETE:
-            if (gattservice_subevent_bass_client_source_operation_complete_get_status(packet) != ERROR_CODE_SUCCESS){
-                printf("BASS client source operation failed, status 0x%02x\n", gattservice_subevent_bass_client_source_operation_complete_get_status(packet));
+        case LEAUDIO_SUBEVENT_BASS_CLIENT_SOURCE_OPERATION_COMPLETE:
+            if (leaudio_subevent_bass_client_source_operation_complete_get_status(packet) != ERROR_CODE_SUCCESS){
+                printf("BASS client source operation failed, status 0x%02x\n", leaudio_subevent_bass_client_source_operation_complete_get_status(packet));
                 break;
             }
 
-            if ( gattservice_subevent_bass_client_source_operation_complete_get_opcode(packet) == (uint8_t)BASS_OPCODE_ADD_SOURCE ){
+            if ( leaudio_subevent_bass_client_source_operation_complete_get_opcode(packet) == (uint8_t)BASS_OPCODE_ADD_SOURCE ){
                 // TODO: set state to 'wait for source_id"
                 printf("BASS client add source operation completed, wait for source_id\n");
             }
             break;
-        case GATTSERVICE_SUBEVENT_BASS_CLIENT_NOTIFICATION_COMPLETE:
+        case LEAUDIO_SUBEVENT_BASS_CLIENT_NOTIFICATION_COMPLETE:
             // store source_id
-            bass_source_id = gattservice_subevent_bass_client_notification_complete_get_source_id(packet);
+            bass_source_id = leaudio_subevent_bass_client_notification_complete_get_source_id(packet);
             printf("BASS client notification, source_id = 0x%02x\n", bass_source_id);
             source_data = broadcast_audio_scan_service_client_get_source_data(bass_cid, bass_source_id);
             btstack_assert(source_data != NULL);
@@ -383,7 +383,7 @@ static void bass_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
                     break;
             }
             break;
-        case GATTSERVICE_SUBEVENT_BASS_CLIENT_DISCONNECTED:
+        case LEAUDIO_SUBEVENT_BASS_CLIENT_DISCONNECTED:
             break;
         default:
             break;

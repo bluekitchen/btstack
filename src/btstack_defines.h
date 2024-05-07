@@ -1906,6 +1906,7 @@ typedef uint8_t sm_key_t[16];
 #define HCI_EVENT_BIP_META                                       0xF3u
 #define HCI_EVENT_MAP_META                                       0xF4u
 #define HCI_EVENT_MESH_META                                      0xF5u
+#define HCI_EVENT_LEAUDIO_META                                   0xF6u
 
 // Potential other meta groups
 // #define HCI_EVENT_BNEP_META                                0xxx
@@ -4176,18 +4177,33 @@ typedef uint8_t sm_key_t[16];
 // LE Audio
 
 /**
- * @format 1H
+ * @format 1H1
  * @param subevent_code
  * @param con_handle
+ * @param status
 */
-#define GATTSERVICE_SUBEVENT_BASS_SERVER_SCAN_STOPPED                         0x26u
+#define LEAUDIO_SUBEVENT_BASS_SERVER_CONNECTED                              0x01u
 
 /**
  * @format 1H
  * @param subevent_code
  * @param con_handle
 */
-#define GATTSERVICE_SUBEVENT_BASS_SERVER_SCAN_STARTED                          0x27u
+#define LEAUDIO_SUBEVENT_BASS_SERVER_DISCONNECTED                           0x02u
+
+/**
+ * @format 1H
+ * @param subevent_code
+ * @param con_handle
+*/
+#define LEAUDIO_SUBEVENT_BASS_SERVER_SCAN_STOPPED                         0x03u
+
+/**
+ * @format 1H
+ * @param subevent_code
+ * @param con_handle
+*/
+#define LEAUDIO_SUBEVENT_BASS_SERVER_SCAN_STARTED                          0x04u
 
 /**
  * @format 1H1K
@@ -4196,7 +4212,7 @@ typedef uint8_t sm_key_t[16];
  * @param source_id
  * @param broadcast_code
 */
-#define GATTSERVICE_SUBEVENT_BASS_SERVER_BROADCAST_CODE                               0x28u
+#define LEAUDIO_SUBEVENT_BASS_SERVER_BROADCAST_CODE                         0x05u
 
 /**
  * @format 1H11
@@ -4205,7 +4221,7 @@ typedef uint8_t sm_key_t[16];
  * @param source_id
  * @param pa_sync
  */
-#define GATTSERVICE_SUBEVENT_BASS_SERVER_SOURCE_ADDED                                 0x29u
+#define LEAUDIO_SUBEVENT_BASS_SERVER_SOURCE_ADDED                            0x06u
 
 /**
  * @format 1H11
@@ -4214,7 +4230,7 @@ typedef uint8_t sm_key_t[16];
  * @param source_id
  * @param pa_sync
  */
-#define GATTSERVICE_SUBEVENT_BASS_SERVER_SOURCE_MODIFIED                              0x30u
+#define LEAUDIO_SUBEVENT_BASS_SERVER_SOURCE_MODIFIED                         0x07u
 
 /**
  * @format 1H11
@@ -4223,7 +4239,7 @@ typedef uint8_t sm_key_t[16];
  * @param source_id
  * @param pa_sync
  */
-#define GATTSERVICE_SUBEVENT_BASS_SERVER_SOURCE_DELETED                               0x31u
+#define LEAUDIO_SUBEVENT_BASS_SERVER_SOURCE_DELETED                          0x08u
 
 /**
  * @format 1H21
@@ -4232,14 +4248,14 @@ typedef uint8_t sm_key_t[16];
  * @param bass_cid
  * @param status
 */
-#define GATTSERVICE_SUBEVENT_BASS_CLIENT_CONNECTED                                    0x43u
+#define LEAUDIO_SUBEVENT_BASS_CLIENT_CONNECTED                                0x09u
 
 /**
  * @format 12
  * @param subevent_code
  * @param bass_cid
 */
-#define GATTSERVICE_SUBEVENT_BASS_CLIENT_DISCONNECTED                                 0x44u
+#define LEAUDIO_SUBEVENT_BASS_CLIENT_DISCONNECTED                             0x0Au
 
 /**
  * @format 1211
@@ -4248,7 +4264,7 @@ typedef uint8_t sm_key_t[16];
  * @param status
  * @param opcode
 */
-#define GATTSERVICE_SUBEVENT_BASS_CLIENT_SCAN_OPERATION_COMPLETE                       0x45u
+#define LEAUDIO_SUBEVENT_BASS_CLIENT_SCAN_OPERATION_COMPLETE                   0x0Bu
 
 /**
  * @format 1211B1311P1
@@ -4264,7 +4280,7 @@ typedef uint8_t sm_key_t[16];
  * @param bad_code
  * @param subgroups_num
 */
-#define GATTSERVICE_SUBEVENT_BASS_NOTIFY_RECEIVE_STATE_BASE                     0x46u
+#define LEAUDIO_SUBEVENT_BASS_CLIENT_NOTIFY_RECEIVE_STATE_BASE                  0x0Cu
 
 /**
  * @format 1214122JV3JV1JV2JV2JV
@@ -4290,7 +4306,7 @@ typedef uint8_t sm_key_t[16];
  * @param vendor_specific_metadata_value_length
  * @param vendor_specific_metadata_value
 */
-#define GATTSERVICE_SUBEVENT_BASS_CLIENT_NOTIFY_RECEIVE_STATE_SUBGROUP                 0x47u
+#define LEAUDIO_SUBEVENT_BASS_CLIENT_NOTIFY_RECEIVE_STATE_SUBGROUP                 0x0Du
 
 /**
  * @format 121
@@ -4298,7 +4314,7 @@ typedef uint8_t sm_key_t[16];
  * @param bass_cid
  * @param source_id
 */
-#define GATTSERVICE_SUBEVENT_BASS_CLIENT_NOTIFICATION_COMPLETE                         0x48u
+#define LEAUDIO_SUBEVENT_BASS_CLIENT_NOTIFICATION_COMPLETE                         0x0Eu
 
 /**
  * @format 12111
@@ -4308,22 +4324,8 @@ typedef uint8_t sm_key_t[16];
  * @param opcode
  * @param source_id
 */
-#define GATTSERVICE_SUBEVENT_BASS_CLIENT_SOURCE_OPERATION_COMPLETE                     0x49u
+#define LEAUDIO_SUBEVENT_BASS_CLIENT_SOURCE_OPERATION_COMPLETE                     0x0Fu
 
-/**
- * @format 1H1
- * @param subevent_code
- * @param con_handle
- * @param status
-*/
-#define GATTSERVICE_SUBEVENT_BASS_SERVER_CONNECTED                              0x70u
-
-/**
- * @format 1H
- * @param subevent_code
- * @param con_handle
-*/
-#define GATTSERVICE_SUBEVENT_BASS_SERVER_DISCONNECTED                           0x71u
 
 // MESH Meta Event Group
 

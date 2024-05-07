@@ -20,6 +20,7 @@ meta_events = [
     'HIDS',
     'HSP',
     'LE',
+    'LEAUDIO',
     'MAP',
     'MESH',
     'PBAP',

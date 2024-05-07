@@ -125,9 +125,9 @@ static void bass_client_emit_connection_established(bass_client_connection_t * c
 
     uint8_t event[8];
     uint16_t pos = 0;
-    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = HCI_EVENT_LEAUDIO_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_BASS_CLIENT_CONNECTED;
+    event[pos++] = LEAUDIO_SUBEVENT_BASS_CLIENT_CONNECTED;
     little_endian_store_16(event, pos, connection->con_handle);
     pos += 2;
     little_endian_store_16(event, pos, connection->cid);
@@ -140,9 +140,9 @@ static void bass_client_emit_scan_operation_complete(bass_client_connection_t * 
     btstack_assert(bass_client_event_callback != NULL);
     uint8_t event[7];
     uint16_t pos = 0;
-    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = HCI_EVENT_LEAUDIO_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_BASS_CLIENT_SCAN_OPERATION_COMPLETE;
+    event[pos++] = LEAUDIO_SUBEVENT_BASS_CLIENT_SCAN_OPERATION_COMPLETE;
     little_endian_store_16(event, pos, connection->cid);
     pos += 2;
     event[pos++] = status;
@@ -154,9 +154,9 @@ static void bass_client_emit_source_operation_complete(bass_client_connection_t 
     btstack_assert(bass_client_event_callback != NULL);
     uint8_t event[8];
     uint16_t pos = 0;
-    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = HCI_EVENT_LEAUDIO_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_BASS_CLIENT_SOURCE_OPERATION_COMPLETE;
+    event[pos++] = LEAUDIO_SUBEVENT_BASS_CLIENT_SOURCE_OPERATION_COMPLETE;
     little_endian_store_16(event, pos, connection->cid);
     pos += 2;
     event[pos++] = status;
@@ -169,9 +169,9 @@ static void bass_client_emit_receive_state(bass_client_connection_t * connection
     btstack_assert(bass_client_event_callback != NULL);
     uint8_t pos = 0;
     uint8_t event[7];
-    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = HCI_EVENT_LEAUDIO_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_BASS_CLIENT_NOTIFICATION_COMPLETE;
+    event[pos++] = LEAUDIO_SUBEVENT_BASS_CLIENT_NOTIFICATION_COMPLETE;
     little_endian_store_16(event, pos, connection->cid);
     pos += 2;
     event[pos++] = source_id;
