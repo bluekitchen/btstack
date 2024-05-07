@@ -1145,9 +1145,9 @@ static void ots_server_emit_filter_event(ots_server_connection_t * connection, u
     uint8_t event[8 + OTS_MAX_STRING_LENGHT];
 
     uint8_t pos = 0;
-    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = HCI_EVENT_LEAUDIO_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_OTS_SERVER_FILTER;
+    event[pos++] = LEAUDIO_SUBEVENT_OTS_SERVER_FILTER;
     little_endian_store_16(event, pos, connection->con_handle);
     pos += 2;
     event[pos++] = filter_index;
@@ -1165,9 +1165,9 @@ static void ots_server_emit_disconnect_event(hci_con_handle_t con_handle){
     uint8_t event[5];
 
     uint8_t pos = 0;
-    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = HCI_EVENT_LEAUDIO_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_OTS_SERVER_DISCONNECT;
+    event[pos++] = LEAUDIO_SUBEVENT_OTS_SERVER_DISCONNECTED;
     little_endian_store_16(event, pos, con_handle);
     pos += 2;
 
