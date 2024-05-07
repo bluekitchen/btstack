@@ -562,11 +562,11 @@ static void vcs_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
     UNUSED(size);
 
     if (packet_type != HCI_EVENT_PACKET) return;
-    if (hci_event_packet_get_type(packet) != HCI_EVENT_GATTSERVICE_META) return;
+    if (hci_event_packet_get_type(packet) != HCI_EVENT_LEAUDIO_META) return;
 
-    switch (hci_event_gattservice_meta_get_subevent_code(packet)){
-        case GATTSERVICE_SUBEVENT_VCS_SERVER_VOLUME_STATE:
-            playback_volume = gattservice_subevent_vcs_server_volume_state_get_volume_setting(packet);
+    switch (hci_event_leaudio_meta_get_subevent_code(packet)){
+        case LEAUDIO_SUBEVENT_VCS_SERVER_VOLUME_STATE:
+            playback_volume = leaudio_subevent_vcs_server_volume_state_get_volume_setting(packet);
             update_playback_volume();
             printf("VCS Server: set volume %3u\n", playback_volume);
             break;

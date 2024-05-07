@@ -116,10 +116,10 @@ typedef struct {
 
 /**
  * @brief Init Audio Input Control Service Server with ATT DB. Following events will be received via server->info->packet_handler:
- * - GATTSERVICE_SUBEVENT_AICS_SERVER_MUTE_MODE
- * - GATTSERVICE_SUBEVENT_AICS_SERVER_GAIN_MODE
- * - GATTSERVICE_SUBEVENT_AICS_SERVER_GAIN_CHANGED
- * - GATTSERVICE_SUBEVENT_AICS_SERVER_AUDIO_INPUT_DESC_CHANGED
+ * - LEAUDIO_SUBEVENT_AICS_SERVER_MUTE_MODE
+ * - LEAUDIO_SUBEVENT_AICS_SERVER_GAIN_MODE
+ * - LEAUDIO_SUBEVENT_AICS_SERVER_GAIN_CHANGED
+ * - LEAUDIO_SUBEVENT_AICS_SERVER_AUDIO_INPUT_DESC_CHANGED
  * @param connection service storage
  */
 void audio_input_control_service_server_init(aics_server_connection_t * connection);

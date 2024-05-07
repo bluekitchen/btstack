@@ -187,9 +187,9 @@ static void vocs_server_emit_volume_offset(vocs_server_connection_t * connection
     
     uint8_t event[8];
     uint8_t pos = 0;
-    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = HCI_EVENT_LEAUDIO_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_VOCS_SERVER_VOLUME_OFFSET;
+    event[pos++] = LEAUDIO_SUBEVENT_VOCS_SERVER_VOLUME_OFFSET;
     little_endian_store_16(event, pos, connection->con_handle);
     pos += 2;
     event[pos++] = connection->index;
@@ -205,9 +205,9 @@ static void vocs_server_emit_audio_location(vocs_server_connection_t * connectio
     
     uint8_t event[10];
     uint8_t pos = 0;
-    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = HCI_EVENT_LEAUDIO_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_VOCS_SERVER_AUDIO_LOCATION;
+    event[pos++] = LEAUDIO_SUBEVENT_VOCS_SERVER_AUDIO_LOCATION;
     little_endian_store_16(event, pos, connection->con_handle);
     pos += 2;
     event[pos++] = connection->index;
@@ -223,9 +223,9 @@ static void vocs_server_emit_audio_output_description(vocs_server_connection_t *
     
     uint8_t event[7 + VOCS_MAX_AUDIO_OUTPUT_DESCRIPTION_LENGTH];
     uint8_t pos = 0;
-    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = HCI_EVENT_LEAUDIO_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_VOCS_SERVER_AUDIO_OUTPUT_DESCRIPTION;
+    event[pos++] = LEAUDIO_SUBEVENT_VOCS_SERVER_AUDIO_OUTPUT_DESCRIPTION;
     little_endian_store_16(event, pos, connection->con_handle);
     pos += 2;
     event[pos++] = connection->index;

@@ -160,51 +160,51 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 sm_numeric_comparison_confirm(sm_event_passkey_display_number_get_handle(packet));
                 break;
 
-        case HCI_EVENT_GATTSERVICE_META:
+        case HCI_EVENT_LEAUDIO_META:
             switch (hci_event_gattservice_meta_get_subevent_code(packet)){
                 
-                case GATTSERVICE_SUBEVENT_MICS_SERVER_MUTE: 
-                    printf("MICS: mute value changed by remote to %d\n", gattservice_subevent_mics_server_mute_get_mute(packet));
-                    mics_mute = (gatt_microphone_control_mute_t)gattservice_subevent_mics_server_mute_get_mute(packet);
+                case LEAUDIO_SUBEVENT_MICS_SERVER_MUTE: 
+                    printf("MICS: mute value changed by remote to %d\n", leaudio_subevent_mics_server_mute_get_mute(packet));
+                    mics_mute = (gatt_microphone_control_mute_t)leaudio_subevent_mics_server_mute_get_mute(packet);
                     break;
 
-                case GATTSERVICE_SUBEVENT_AICS_SERVER_MUTE_MODE:
-                    switch ((aics_mute_mode_t)gattservice_subevent_aics_server_mute_mode_get_state(packet)){
+                case LEAUDIO_SUBEVENT_AICS_SERVER_MUTE_MODE:
+                    switch ((aics_mute_mode_t)leaudio_subevent_aics_server_mute_mode_get_state(packet)){
                         case AICS_MUTE_MODE_NOT_MUTED:
-                            printf("AICS[%d]: mute mode NOT_MUTED\n", gattservice_subevent_aics_server_mute_mode_get_index(packet));
+                            printf("AICS[%d]: mute mode NOT_MUTED\n", leaudio_subevent_aics_server_mute_mode_get_index(packet));
                             break;
                         case AICS_MUTE_MODE_MUTED:
-                            printf("AICS[%d]: mute mode MUTED\n", gattservice_subevent_aics_server_mute_mode_get_index(packet));
+                            printf("AICS[%d]: mute mode MUTED\n", leaudio_subevent_aics_server_mute_mode_get_index(packet));
                             break;
                         case AICS_MUTE_MODE_DISABLED:
-                            printf("AICS[%d]: mute mode DISABLED\n", gattservice_subevent_aics_server_mute_mode_get_index(packet));
+                            printf("AICS[%d]: mute mode DISABLED\n", leaudio_subevent_aics_server_mute_mode_get_index(packet));
                             break;
                         default:
                             break;
                     } 
                     break;
 
-                case GATTSERVICE_SUBEVENT_AICS_SERVER_GAIN_MODE:
-                    switch ((aics_gain_mode_t)gattservice_subevent_aics_server_gain_mode_get_state(packet)) {
+                case LEAUDIO_SUBEVENT_AICS_SERVER_GAIN_MODE:
+                    switch ((aics_gain_mode_t)leaudio_subevent_aics_server_gain_mode_get_state(packet)) {
                         case AICS_GAIN_MODE_MANUAL:
-                            printf("AICS[%d]: gain mode MANUAL\n", gattservice_subevent_aics_server_gain_mode_get_index(packet));
+                            printf("AICS[%d]: gain mode MANUAL\n", leaudio_subevent_aics_server_gain_mode_get_index(packet));
                             break;
                         case AICS_GAIN_MODE_AUTOMATIC:
-                            printf("AICS[%d]: gain mode AUTOMATIC\n", gattservice_subevent_aics_server_gain_mode_get_index(packet));
+                            printf("AICS[%d]: gain mode AUTOMATIC\n", leaudio_subevent_aics_server_gain_mode_get_index(packet));
                             break;
                         case AICS_GAIN_MODE_MANUAL_ONLY:
-                            printf("AICS[%d]: gain mode MANUAL_ONLY\n", gattservice_subevent_aics_server_gain_mode_get_index(packet));
+                            printf("AICS[%d]: gain mode MANUAL_ONLY\n", leaudio_subevent_aics_server_gain_mode_get_index(packet));
                             break;
                         case AICS_GAIN_MODE_AUTOMATIC_ONLY:
-                            printf("AICS[%d]: gain mode AUTOMATIC_ONLY\n", gattservice_subevent_aics_server_gain_mode_get_index(packet));
+                            printf("AICS[%d]: gain mode AUTOMATIC_ONLY\n", leaudio_subevent_aics_server_gain_mode_get_index(packet));
                             break;
                         default:
                             break;
                     }
                     break;
                 
-                case GATTSERVICE_SUBEVENT_AICS_SERVER_GAIN_CHANGED:
-                    printf("AICS: gain for AICS %d changed to %ddB\n", gattservice_subevent_aics_server_gain_changed_get_index(packet), gattservice_subevent_aics_server_gain_changed_get_gain_db(packet));
+                case LEAUDIO_SUBEVENT_AICS_SERVER_GAIN_CHANGED:
+                    printf("AICS: gain for AICS %d changed to %ddB\n", leaudio_subevent_aics_server_gain_changed_get_index(packet), leaudio_subevent_aics_server_gain_changed_get_gain_db(packet));
                     break;
 
                 default:

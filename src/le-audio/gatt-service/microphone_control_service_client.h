@@ -113,11 +113,11 @@ void microphone_control_service_client_init(void);
 
  /**
  * @brief Connect to a Media Control Service instance of remote device. The client will automatically register for notifications.
- * The mute state is received via GATTSERVICE_SUBEVENT_MCS_CLIENT_MUTE event.
+ * The mute state is received via LEAUDIO_SUBEVENT_MCS_CLIENT_MUTE event.
  * The mute state can be 0 - off, 1 - on, 2 - disabeled and it is valid if the ATT status is equal to ATT_ERROR_SUCCESS,
  * see ATT errors (see bluetooth.h) for other values.
  *   
- * Event GATTSERVICE_SUBEVENT_MCS_CLIENT_CONNECTED is emitted with status ERROR_CODE_SUCCESS on success, otherwise
+ * Event LEAUDIO_SUBEVENT_MCS_CLIENT_CONNECTED is emitted with status ERROR_CODE_SUCCESS on success, otherwise
  * GATT_CLIENT_IN_WRONG_STATE, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE if no audio input control service is found, or ATT errors (see bluetooth.h). 
  *
  * @param con_handle
@@ -145,7 +145,7 @@ uint8_t microphone_control_service_client_connect(
 //uint8_t microphone_control_service_client_connect_aics_services(uint16_t mics_cid);
 
 /**
- * @brief Read mute state. The mute state is received via GATTSERVICE_SUBEVENT_MICS_CLIENT_MUTE event.
+ * @brief Read mute state. The mute state is received via LEAUDIO_SUBEVENT_MICS_CLIENT_MUTE event.
  * @param mics_cid
  * @return status
  */

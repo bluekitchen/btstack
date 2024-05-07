@@ -98,8 +98,8 @@ void volume_control_service_server_init(uint8_t volume_setting, vcs_mute_t mute,
 
 /**
  * @brief Register packet handler to receive updates of volume state and volume flags:
- * - GATTSERVICE_SUBEVENT_VCS_SERVER_VOLUME_STATE
- * - GATTSERVICE_SUBEVENT_VCS_VOLUME_FLAGS 
+ * - LEAUDIO_SUBEVENT_VCS_SERVER_VOLUME_STATE
+ * - LEAUDIO_SUBEVENT_VCS_VOLUME_FLAGS 
  * 
  * @param packet_handler
  */

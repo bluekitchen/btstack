@@ -249,18 +249,18 @@ static void gatt_client_event_handler(uint8_t packet_type, uint16_t channel, uin
 
     uint8_t status;
 
-    if (hci_event_packet_get_type(packet) != HCI_EVENT_GATTSERVICE_META) {
+    if (hci_event_packet_get_type(packet) != HCI_EVENT_LEAUDIO_META) {
         return;
     }
 
     uint8_t aics_index;
-    switch (hci_event_gattservice_meta_get_subevent_code(packet)) {
-        case GATTSERVICE_SUBEVENT_MICS_CLIENT_CONNECTED:
-            status = gattservice_subevent_mics_client_connected_get_att_status(packet);
+    switch (hci_event_leaudio_meta_get_subevent_code(packet)) {
+        case LEAUDIO_SUBEVENT_MICS_CLIENT_CONNECTED:
+            status = leaudio_subevent_mics_client_connected_get_att_status(packet);
             switch (status) {
                 case ERROR_CODE_SUCCESS:
                     printf("Microphone Control service client connected, num included AICS services %d\n",
-                           gattservice_subevent_mics_client_connected_get_aics_services_num(packet));
+                           leaudio_subevent_mics_client_connected_get_aics_services_num(packet));
                     break;
                 default:
                     printf("Microphone Control service client connection failed, err 0x%02x.\n", status);
@@ -269,75 +269,75 @@ static void gatt_client_event_handler(uint8_t packet_type, uint16_t channel, uin
             }
             break;
 
-        case GATTSERVICE_SUBEVENT_MICS_CLIENT_MUTE:
-            printf("Mute: %d\n", gattservice_subevent_mics_client_mute_get_state(packet));
+        case LEAUDIO_SUBEVENT_MICS_CLIENT_MUTE:
+            printf("Mute: %d\n", leaudio_subevent_mics_client_mute_get_state(packet));
             break;
 
-        case GATTSERVICE_SUBEVENT_MICS_CLIENT_AUDIO_INPUT_STATE:
-            aics_index = gattservice_subevent_mics_client_audio_input_state_get_aics_index(packet);
+        case LEAUDIO_SUBEVENT_MICS_CLIENT_AUDIO_INPUT_STATE:
+            aics_index = leaudio_subevent_mics_client_audio_input_state_get_aics_index(packet);
             printf("MICS Client Test: received AICS[%d] event AUDIO_INPUT_STATE\n", aics_index);
-            status = gattservice_subevent_mics_client_audio_input_state_get_att_status(packet);
+            status = leaudio_subevent_mics_client_audio_input_state_get_att_status(packet);
             if (status != ATT_ERROR_SUCCESS){
                 printf("Read failed, 0x%02x\n", status);
                 break;
             }
 
-            printf("Gain Setting:     %d\n", (int8_t)gattservice_subevent_mics_client_audio_input_state_get_gain_setting(packet));
-            printf("Mute:             %d\n",  gattservice_subevent_mics_client_audio_input_state_get_mute(packet));
-            printf("Gain Mode:        %d\n",  gattservice_subevent_mics_client_audio_input_state_get_gain_mode(packet));
-            printf("Chainge Counter:  %d\n", gattservice_subevent_mics_client_audio_input_state_get_change_counter(packet));
+            printf("Gain Setting:     %d\n", (int8_t)leaudio_subevent_mics_client_audio_input_state_get_gain_setting(packet));
+            printf("Mute:             %d\n",  leaudio_subevent_mics_client_audio_input_state_get_mute(packet));
+            printf("Gain Mode:        %d\n",  leaudio_subevent_mics_client_audio_input_state_get_gain_mode(packet));
+            printf("Chainge Counter:  %d\n", leaudio_subevent_mics_client_audio_input_state_get_change_counter(packet));
             break;
 
-        case GATTSERVICE_SUBEVENT_MICS_CLIENT_GAIN_SETTINGS_PROPERTIES:
-            aics_index = gattservice_subevent_mics_client_gain_settings_properties_get_aics_index(packet);
+        case LEAUDIO_SUBEVENT_MICS_CLIENT_GAIN_SETTINGS_PROPERTIES:
+            aics_index = leaudio_subevent_mics_client_gain_settings_properties_get_aics_index(packet);
             printf("MICS Client Test: received AICS[%d] event GAIN_SETTINGS_PROPERTIES\n", aics_index);
-            status = gattservice_subevent_mics_client_gain_settings_properties_get_att_status(packet);
+            status = leaudio_subevent_mics_client_gain_settings_properties_get_att_status(packet);
             if (status != ATT_ERROR_SUCCESS){
                 printf("Read failed, 0x%02x\n", status);
                 break;
             }
-            printf("Gain Setting Step Size: %d\n", gattservice_subevent_mics_client_gain_settings_properties_get_units(packet));
-            printf("Gain Setting Minimum:   %d\n", (int8_t)gattservice_subevent_mics_client_gain_settings_properties_get_minimum_value(packet));
-            printf("Gain Setting Maximum:   %d\n", (int8_t)gattservice_subevent_mics_client_gain_settings_properties_get_maximum_value(packet));
+            printf("Gain Setting Step Size: %d\n", leaudio_subevent_mics_client_gain_settings_properties_get_units(packet));
+            printf("Gain Setting Minimum:   %d\n", (int8_t)leaudio_subevent_mics_client_gain_settings_properties_get_minimum_value(packet));
+            printf("Gain Setting Maximum:   %d\n", (int8_t)leaudio_subevent_mics_client_gain_settings_properties_get_maximum_value(packet));
             break;
 
-        case GATTSERVICE_SUBEVENT_MICS_CLIENT_AUDIO_INPUT_TYPE:
-            aics_index = gattservice_subevent_mics_client_audio_input_type_get_aics_index(packet);
+        case LEAUDIO_SUBEVENT_MICS_CLIENT_AUDIO_INPUT_TYPE:
+            aics_index = leaudio_subevent_mics_client_audio_input_type_get_aics_index(packet);
             printf("MICS Client Test: received AICS[%d] event AUDIO_INPUT_TYPE\n", aics_index);
-            status = gattservice_subevent_mics_client_audio_input_type_get_att_status(packet);
+            status = leaudio_subevent_mics_client_audio_input_type_get_att_status(packet);
             if (status != ATT_ERROR_SUCCESS){
                 printf("Read failed, 0x%02x\n", status);
                 break;
             }
-            printf("Input type:  %d\n", gattservice_subevent_mics_client_audio_input_type_get_input_type(packet));
+            printf("Input type:  %d\n", leaudio_subevent_mics_client_audio_input_type_get_input_type(packet));
             break;
 
-        case GATTSERVICE_SUBEVENT_MICS_CLIENT_AUDIO_INPUT_STATUS:
-            aics_index = gattservice_subevent_mics_client_audio_input_status_get_aics_index(packet);
+        case LEAUDIO_SUBEVENT_MICS_CLIENT_AUDIO_INPUT_STATUS:
+            aics_index = leaudio_subevent_mics_client_audio_input_status_get_aics_index(packet);
             printf("MICS Client Test: received AICS[%d] event AUDIO_INPUT_STATUS\n", aics_index);
-            status = gattservice_subevent_mics_client_audio_input_status_get_att_status(packet);
+            status = leaudio_subevent_mics_client_audio_input_status_get_att_status(packet);
             if (status != ATT_ERROR_SUCCESS){
                 printf("Read failed, 0x%02x\n", status);
                 break;
             }
-            printf("Input status:  %d\n", gattservice_subevent_mics_client_audio_input_status_get_input_status(packet));
+            printf("Input status:  %d\n", leaudio_subevent_mics_client_audio_input_status_get_input_status(packet));
             break;
 
-        case GATTSERVICE_SUBEVENT_MICS_CLIENT_AUDIO_DESCRIPTION:
-            aics_index = gattservice_subevent_mics_client_audio_description_get_aics_index(packet);
+        case LEAUDIO_SUBEVENT_MICS_CLIENT_AUDIO_DESCRIPTION:
+            aics_index = leaudio_subevent_mics_client_audio_description_get_aics_index(packet);
             printf("MICS Client Test: received AICS[%d] event AUDIO_DESCRIPTION\n", aics_index);
-            status = gattservice_subevent_mics_client_audio_description_get_att_status(packet);
+            status = leaudio_subevent_mics_client_audio_description_get_att_status(packet);
             if (status != ATT_ERROR_SUCCESS){
                 printf("Read failed, 0x%02x\n", status);
                 break;
             }
-            printf("Audio description:  %s\n", gattservice_subevent_mics_client_audio_description_get_value(packet));
+            printf("Audio description:  %s\n", leaudio_subevent_mics_client_audio_description_get_value(packet));
             break;
 
-        case GATTSERVICE_SUBEVENT_MICS_CLIENT_WRITE_DONE:
-            aics_index = gattservice_subevent_mics_client_write_done_get_aics_index(packet);
+        case LEAUDIO_SUBEVENT_MICS_CLIENT_WRITE_DONE:
+            aics_index = leaudio_subevent_mics_client_write_done_get_aics_index(packet);
             printf("MICS Client Test: received AICS[%d] event WRITE_DONE\n", aics_index);
-            status = gattservice_subevent_mics_client_write_done_get_att_status(packet);
+            status = leaudio_subevent_mics_client_write_done_get_att_status(packet);
             if (status != ATT_ERROR_SUCCESS){
                 printf("Write failed, 0x%02x\n", status);
             } else {
@@ -345,7 +345,7 @@ static void gatt_client_event_handler(uint8_t packet_type, uint16_t channel, uin
             }
             break;
 
-        case GATTSERVICE_SUBEVENT_MICS_CLIENT_DISCONNECTED:
+        case LEAUDIO_SUBEVENT_MICS_CLIENT_DISCONNECTED:
             printf("Microphone Control service client disconnected\n");
             break;
 

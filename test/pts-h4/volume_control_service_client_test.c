@@ -252,19 +252,19 @@ static void gatt_client_event_handler(uint8_t packet_type, uint16_t channel, uin
 
     uint8_t status;
 
-    if (hci_event_packet_get_type(packet) != HCI_EVENT_GATTSERVICE_META) {
+    if (hci_event_packet_get_type(packet) != HCI_EVENT_LEAUDIO_META) {
         return;
     }
 
     uint8_t included_service_index;
-    switch (hci_event_gattservice_meta_get_subevent_code(packet)) {
-        case GATTSERVICE_SUBEVENT_VCS_CLIENT_CONNECTED:
-            status = gattservice_subevent_vcs_client_connected_get_att_status(packet);
+    switch (hci_event_leaudio_meta_get_subevent_code(packet)) {
+        case LEAUDIO_SUBEVENT_VCS_CLIENT_CONNECTED:
+            status = leaudio_subevent_vcs_client_connected_get_att_status(packet);
             switch (status) {
                 case ERROR_CODE_SUCCESS:
                     printf("VCS Client Test: VCS service client connected, %d included AICS services, %d included VOCS services\n",
-                           gattservice_subevent_vcs_client_connected_get_aics_services_num(packet),
-                           gattservice_subevent_vcs_client_connected_get_vocs_services_num(packet));
+                           leaudio_subevent_vcs_client_connected_get_aics_services_num(packet),
+                           leaudio_subevent_vcs_client_connected_get_vocs_services_num(packet));
                     break;
                 default:
                     printf("VCS Client Test: VCS service client connection failed, err 0x%02x.\n", status);
@@ -273,79 +273,79 @@ static void gatt_client_event_handler(uint8_t packet_type, uint16_t channel, uin
             }
             break;
 
-        case GATTSERVICE_SUBEVENT_VCS_CLIENT_VOLUME_STATE:
-            printf("Mute: %d\n", gattservice_subevent_vcs_client_volume_state_get_mute(packet));
+        case LEAUDIO_SUBEVENT_VCS_CLIENT_VOLUME_STATE:
+            printf("Mute: %d\n", leaudio_subevent_vcs_client_volume_state_get_mute(packet));
             break;
 
-        case GATTSERVICE_SUBEVENT_VCS_CLIENT_VOLUME_FLAGS:
-            printf("Flags: %d\n", gattservice_subevent_vcs_client_volume_flags_get_flags(packet));
+        case LEAUDIO_SUBEVENT_VCS_CLIENT_VOLUME_FLAGS:
+            printf("Flags: %d\n", leaudio_subevent_vcs_client_volume_flags_get_flags(packet));
             break;
 
-        case GATTSERVICE_SUBEVENT_VCS_CLIENT_AUDIO_INPUT_STATE:
-            included_service_index = gattservice_subevent_vcs_client_audio_input_state_get_aics_index(packet);
+        case LEAUDIO_SUBEVENT_VCS_CLIENT_AUDIO_INPUT_STATE:
+            included_service_index = leaudio_subevent_vcs_client_audio_input_state_get_aics_index(packet);
             printf("VCS Client Test: received AICS[%d] event AUDIO_INPUT_STATE\n", included_service_index);
-            status = gattservice_subevent_vcs_client_audio_input_state_get_att_status(packet);
+            status = leaudio_subevent_vcs_client_audio_input_state_get_att_status(packet);
             if (status != ATT_ERROR_SUCCESS){
                 printf("Read failed, 0x%02x\n", status);
                 break;
             }
 
-            printf("Gain Setting:     %d\n", (int8_t)gattservice_subevent_vcs_client_audio_input_state_get_gain_setting(packet));
-            printf("Mute:             %d\n",  gattservice_subevent_vcs_client_audio_input_state_get_mute(packet));
-            printf("Gain Mode:        %d\n",  gattservice_subevent_vcs_client_audio_input_state_get_gain_mode(packet));
-            printf("Chainge Counter:  %d\n", gattservice_subevent_vcs_client_audio_input_state_get_change_counter(packet));
+            printf("Gain Setting:     %d\n", (int8_t)leaudio_subevent_vcs_client_audio_input_state_get_gain_setting(packet));
+            printf("Mute:             %d\n",  leaudio_subevent_vcs_client_audio_input_state_get_mute(packet));
+            printf("Gain Mode:        %d\n",  leaudio_subevent_vcs_client_audio_input_state_get_gain_mode(packet));
+            printf("Chainge Counter:  %d\n", leaudio_subevent_vcs_client_audio_input_state_get_change_counter(packet));
             break;
 
-        case GATTSERVICE_SUBEVENT_VCS_CLIENT_GAIN_SETTINGS_PROPERTIES:
-            included_service_index = gattservice_subevent_vcs_client_gain_settings_properties_get_aics_index(packet);
+        case LEAUDIO_SUBEVENT_VCS_CLIENT_GAIN_SETTINGS_PROPERTIES:
+            included_service_index = leaudio_subevent_vcs_client_gain_settings_properties_get_aics_index(packet);
             printf("VCS Client Test: received AICS[%d] event GAIN_SETTINGS_PROPERTIES\n", included_service_index);
-            status = gattservice_subevent_vcs_client_gain_settings_properties_get_att_status(packet);
+            status = leaudio_subevent_vcs_client_gain_settings_properties_get_att_status(packet);
             if (status != ATT_ERROR_SUCCESS){
                 printf("Read failed, 0x%02x\n", status);
                 break;
             }
-            printf("Gain Setting Step Size: %d\n", gattservice_subevent_vcs_client_gain_settings_properties_get_units(packet));
-            printf("Gain Setting Minimum:   %d\n", (int8_t)gattservice_subevent_vcs_client_gain_settings_properties_get_minimum_value(packet));
-            printf("Gain Setting Maximum:   %d\n", (int8_t)gattservice_subevent_vcs_client_gain_settings_properties_get_maximum_value(packet));
+            printf("Gain Setting Step Size: %d\n", leaudio_subevent_vcs_client_gain_settings_properties_get_units(packet));
+            printf("Gain Setting Minimum:   %d\n", (int8_t)leaudio_subevent_vcs_client_gain_settings_properties_get_minimum_value(packet));
+            printf("Gain Setting Maximum:   %d\n", (int8_t)leaudio_subevent_vcs_client_gain_settings_properties_get_maximum_value(packet));
             break;
 
-        case GATTSERVICE_SUBEVENT_VCS_CLIENT_AUDIO_INPUT_TYPE:
-            included_service_index = gattservice_subevent_vcs_client_audio_input_type_get_aics_index(packet);
+        case LEAUDIO_SUBEVENT_VCS_CLIENT_AUDIO_INPUT_TYPE:
+            included_service_index = leaudio_subevent_vcs_client_audio_input_type_get_aics_index(packet);
             printf("VCS Client Test: received AICS[%d] event AUDIO_INPUT_TYPE\n", included_service_index);
-            status = gattservice_subevent_vcs_client_audio_input_type_get_att_status(packet);
+            status = leaudio_subevent_vcs_client_audio_input_type_get_att_status(packet);
             if (status != ATT_ERROR_SUCCESS){
                 printf("Read failed, 0x%02x\n", status);
                 break;
             }
-            printf("Input type:  %d\n", gattservice_subevent_vcs_client_audio_input_type_get_input_type(packet));
+            printf("Input type:  %d\n", leaudio_subevent_vcs_client_audio_input_type_get_input_type(packet));
             break;
 
-        case GATTSERVICE_SUBEVENT_VCS_CLIENT_AUDIO_INPUT_STATUS:
-            included_service_index = gattservice_subevent_vcs_client_audio_input_status_get_aics_index(packet);
+        case LEAUDIO_SUBEVENT_VCS_CLIENT_AUDIO_INPUT_STATUS:
+            included_service_index = leaudio_subevent_vcs_client_audio_input_status_get_aics_index(packet);
             printf("VCS Client Test: received AICS[%d] event AUDIO_INPUT_STATUS\n", included_service_index);
-            status = gattservice_subevent_vcs_client_audio_input_status_get_att_status(packet);
+            status = leaudio_subevent_vcs_client_audio_input_status_get_att_status(packet);
             if (status != ATT_ERROR_SUCCESS){
                 printf("Read failed, 0x%02x\n", status);
                 break;
             }
-            printf("Input status:  %d\n", gattservice_subevent_vcs_client_audio_input_status_get_input_status(packet));
+            printf("Input status:  %d\n", leaudio_subevent_vcs_client_audio_input_status_get_input_status(packet));
             break;
 
-        case GATTSERVICE_SUBEVENT_VCS_CLIENT_AUDIO_DESCRIPTION:
-            included_service_index = gattservice_subevent_vcs_client_audio_description_get_aics_index(packet);
+        case LEAUDIO_SUBEVENT_VCS_CLIENT_AUDIO_DESCRIPTION:
+            included_service_index = leaudio_subevent_vcs_client_audio_description_get_aics_index(packet);
             printf("VCS Client Test: received AICS[%d] event AUDIO_DESCRIPTION\n", included_service_index);
-            status = gattservice_subevent_vcs_client_audio_description_get_att_status(packet);
+            status = leaudio_subevent_vcs_client_audio_description_get_att_status(packet);
             if (status != ATT_ERROR_SUCCESS){
                 printf("Read failed, 0x%02x\n", status);
                 break;
             }
-            printf("Audio description:  %s\n", gattservice_subevent_vcs_client_audio_description_get_value(packet));
+            printf("Audio description:  %s\n", leaudio_subevent_vcs_client_audio_description_get_value(packet));
             break;
 
-        case GATTSERVICE_SUBEVENT_VCS_CLIENT_WRITE_DONE:
-            included_service_index = gattservice_subevent_vcs_client_write_done_get_included_service_index(packet);
+        case LEAUDIO_SUBEVENT_VCS_CLIENT_WRITE_DONE:
+            included_service_index = leaudio_subevent_vcs_client_write_done_get_included_service_index(packet);
             printf("VCS Client Test: received AICS[%d] event WRITE_DONE\n", included_service_index);
-            status = gattservice_subevent_vcs_client_write_done_get_att_status(packet);
+            status = leaudio_subevent_vcs_client_write_done_get_att_status(packet);
             if (status != ATT_ERROR_SUCCESS){
                 printf("Write failed, 0x%02x\n", status);
             } else {
@@ -353,42 +353,42 @@ static void gatt_client_event_handler(uint8_t packet_type, uint16_t channel, uin
             }
             break;
 
-        case GATTSERVICE_SUBEVENT_VCS_CLIENT_VOLUME_OFFSET:
-            included_service_index = gattservice_subevent_vcs_client_volume_offset_get_vocs_index(packet);
+        case LEAUDIO_SUBEVENT_VCS_CLIENT_VOLUME_OFFSET:
+            included_service_index = leaudio_subevent_vcs_client_volume_offset_get_vocs_index(packet);
             printf("VCS Client Test: received VOCS[%d] event VOLUME_OFFSET\n", included_service_index);
-            status = gattservice_subevent_vcs_client_volume_offset_get_att_status(packet);
+            status = leaudio_subevent_vcs_client_volume_offset_get_att_status(packet);
             if (status != ATT_ERROR_SUCCESS){
                 printf("Read failed, 0x%02x\n", status);
                 break;
             }
-            printf("Volume offset:  %d\n", gattservice_subevent_vcs_client_volume_offset_get_volume_offset(packet));
+            printf("Volume offset:  %d\n", leaudio_subevent_vcs_client_volume_offset_get_volume_offset(packet));
             break;
 
 
-        case GATTSERVICE_SUBEVENT_VCS_CLIENT_AUDIO_LOCATION:
-            included_service_index = gattservice_subevent_vcs_client_audio_location_get_vocs_index(packet);
+        case LEAUDIO_SUBEVENT_VCS_CLIENT_AUDIO_LOCATION:
+            included_service_index = leaudio_subevent_vcs_client_audio_location_get_vocs_index(packet);
             printf("VCS Client Test: received VOCS[%d] event AUDIO_LOCATION\n", included_service_index);
-            status = gattservice_subevent_vcs_client_audio_location_get_att_status(packet);
+            status = leaudio_subevent_vcs_client_audio_location_get_att_status(packet);
             if (status != ATT_ERROR_SUCCESS){
                 printf("Read failed, 0x%02x\n", status);
                 break;
             }
-            printf("Audio location:  %d\n", gattservice_subevent_vcs_client_audio_location_get_audio_location(packet));
+            printf("Audio location:  %d\n", leaudio_subevent_vcs_client_audio_location_get_audio_location(packet));
             break;
 
-        case GATTSERVICE_SUBEVENT_VCS_CLIENT_AUDIO_OUTPUT_DESCRIPTION:
-            included_service_index = gattservice_subevent_vcs_client_audio_output_description_get_vocs_index(packet);
+        case LEAUDIO_SUBEVENT_VCS_CLIENT_AUDIO_OUTPUT_DESCRIPTION:
+            included_service_index = leaudio_subevent_vcs_client_audio_output_description_get_vocs_index(packet);
             printf("VCS Client Test: received VOCS[%d] event AUDIO_OUTPUT_DESCRIPTION\n", included_service_index);
-            status = gattservice_subevent_vcs_client_audio_output_description_get_att_status(packet);
+            status = leaudio_subevent_vcs_client_audio_output_description_get_att_status(packet);
             if (status != ATT_ERROR_SUCCESS){
                 printf("Read failed, 0x%02x\n", status);
                 break;
             }
-            printf("Audio output description:  %s\n", gattservice_subevent_vcs_client_audio_output_description_get_description(packet));
+            printf("Audio output description:  %s\n", leaudio_subevent_vcs_client_audio_output_description_get_description(packet));
             break;
 
 
-        case GATTSERVICE_SUBEVENT_VCS_CLIENT_DISCONNECTED:
+        case LEAUDIO_SUBEVENT_VCS_CLIENT_DISCONNECTED:
             printf("Volume Control service client disconnected\n");
             break;
 
