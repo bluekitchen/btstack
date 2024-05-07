@@ -2359,8 +2359,7 @@ static void ots_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
 }
 
 static void ots_dump_filter(uint8_t filter_index) {
-    printf("received filter[%d/0x%02x]: %s ", filter_index, ots_db_active_filters_bitmap, ots_filter_type2str(ots_filters[filter_index].type));
-
+    printf("received filter[%d/0x%02x] ", filter_index, ots_db_active_filters_bitmap);
 
     switch (ots_filters[filter_index].type){
         case OTS_FILTER_TYPE_NAME_STARTS_WITH: // var
