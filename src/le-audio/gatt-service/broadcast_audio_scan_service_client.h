@@ -189,7 +189,7 @@ uint8_t broadcast_audio_scan_service_client_scanning_stopped(uint16_t bass_cid);
 
 /**
  * @brief Add Broadcast Source on service
- * @note GATTSERVICE_SUBEVENT_BASS_NOTIFICATION_COMPLETE will contain source_id for other functions
+ * @note LEAUDIO_SUBEVENT_BASS_NOTIFICATION_COMPLETE will contain source_id for other functions
  * @param bass_cid
  * @param add_source_data data to add, needs to stay valid until LEAUDIO_SUBEVENT_BASS_CLIENT_SOURCE_OPERATION_COMPLETE
  * @return status
