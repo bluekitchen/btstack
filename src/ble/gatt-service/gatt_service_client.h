@@ -88,7 +88,7 @@ void gatt_service_changed_client_init(void);
  /**
  * @brief Connect to a GATT Service instance of remote device. The client will automatically register for notifications.
  *   
- * Event GATTSERVICE_SUBEVENT_VOCS_CLIENT_CONNECTED is emitted with status ERROR_CODE_SUCCESS on success, otherwise
+ * Event GATTSERVICE_SUBEVENT_CLIENT_CONNECTED is emitted with status ERROR_CODE_SUCCESS on success, otherwise
  * GATT_CLIENT_IN_WRONG_STATE, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE if no audio input control service is found, or ATT errors (see bluetooth.h). 
  *
  * @param con_handle
