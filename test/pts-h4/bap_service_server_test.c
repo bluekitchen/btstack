@@ -430,22 +430,22 @@ static void bass_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
     UNUSED(size);
 
     if (packet_type != HCI_EVENT_PACKET) return;
-    if (hci_event_packet_get_type(packet) != HCI_EVENT_GATTSERVICE_META) return;
+    if (hci_event_packet_get_type(packet) != HCI_EVENT_LEAUDIO_META) return;
     
     switch (hci_event_gattservice_meta_get_subevent_code(packet)){
-        case GATTSERVICE_SUBEVENT_BASS_SERVER_SCAN_STOPPED:
+        case LEAUDIO_SUBEVENT_BASS_SERVER_SCAN_STOPPED:
             printf("BASS: remote scan stopped\n");
             break;
-        case GATTSERVICE_SUBEVENT_BASS_SERVER_SCAN_STARTED:
+        case LEAUDIO_SUBEVENT_BASS_SERVER_SCAN_STARTED:
             printf("BASS: remote scan started\n");
             break;
         
-        case GATTSERVICE_SUBEVENT_BASS_SERVER_SOURCE_ADDED:
-            source_id = gattservice_subevent_bass_server_source_added_get_source_id(packet);
-            printf("BASS: source[%d] added, py_sync %d\n", source_id, gattservice_subevent_bass_server_source_added_get_pa_sync(packet));
+        case LEAUDIO_SUBEVENT_BASS_SERVER_SOURCE_ADDED:
+            source_id = leaudio_subevent_bass_server_source_added_get_source_id(packet);
+            printf("BASS: source[%d] added, py_sync %d\n", source_id, leaudio_subevent_bass_server_source_added_get_pa_sync(packet));
             btstack_assert(source_id < BASS_NUM_SOURCES);
 
-            switch (gattservice_subevent_bass_server_source_added_get_pa_sync(packet)){
+            switch (leaudio_subevent_bass_server_source_added_get_pa_sync(packet)){
                 case LE_AUDIO_PA_SYNC_DO_NOT_SYNCHRONIZE_TO_PA:
                     bass_sources[source_id].data.pa_sync_state = LE_AUDIO_PA_SYNC_STATE_NOT_SYNCHRONIZED_TO_PA;
                     break;
@@ -461,13 +461,13 @@ static void bass_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
             printf("BASS: source[%d], py_sync_state %d\n", source_id, bass_sources[source_id].data.pa_sync_state);
             break;
         
-        case GATTSERVICE_SUBEVENT_BASS_SERVER_SOURCE_MODIFIED:
-            source_id = gattservice_subevent_bass_server_source_modified_get_source_id(packet);
-            printf("BASS: source[%d] modified, py_sync %d\n", source_id, gattservice_subevent_bass_server_source_added_get_pa_sync(packet));
+        case LEAUDIO_SUBEVENT_BASS_SERVER_SOURCE_MODIFIED:
+            source_id = leaudio_subevent_bass_server_source_modified_get_source_id(packet);
+            printf("BASS: source[%d] modified, py_sync %d\n", source_id, leaudio_subevent_bass_server_source_added_get_pa_sync(packet));
             break;
 
-        case GATTSERVICE_SUBEVENT_BASS_SERVER_SOURCE_DELETED:
-            source_id = gattservice_subevent_bass_server_source_deleted_get_source_id(packet);
+        case LEAUDIO_SUBEVENT_BASS_SERVER_SOURCE_DELETED:
+            source_id = leaudio_subevent_bass_server_source_deleted_get_source_id(packet);
             printf("BASS: source deleted %d, %d\n", source_id, pa_sync_state);
             btstack_assert(source_id < BASS_NUM_SOURCES);
             break;
