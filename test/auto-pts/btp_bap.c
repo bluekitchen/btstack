@@ -102,7 +102,6 @@ static le_audio_big_sync_t        big_sync_storage;
 static le_audio_big_sync_params_t big_sync_params;
 
 // BASS
-#define BASS_CLIENT_NUM_SOURCES 1
 static bd_addr_type_t bass_addr_type;
 static bd_addr_t      bass_address;
 static bass_client_connection_t bass_connection;
