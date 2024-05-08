@@ -45,9 +45,11 @@
 #include <stdint.h>
 #include "btstack_linked_list.h"
 #include "bluetooth.h"
+#include "le-audio/gatt-service/audio_stream_control_service_client.h"
+#include "le-audio/gatt-service/broadcast_audio_scan_service_client.h"
 #include "le-audio/gatt-service/coordinated_set_identification_service_client.h"
 #include "le-audio/gatt-service/published_audio_capabilities_service_client.h"
-#include "le-audio/gatt-service/audio_stream_control_service_client.h"
+
 
 #if defined __cplusplus
 extern "C" {
@@ -55,6 +57,7 @@ extern "C" {
 
 #define MAX_NUM_SERVERS 3
 #define ASCS_CLIENT_NUM_STREAMENDPOINTS 4
+#define BASS_CLIENT_NUM_SOURCES 1
 
 typedef struct {
     btstack_linked_item_t item;
@@ -87,6 +90,13 @@ typedef struct {
     ascs_client_connection_t ascs_connection;
     ascs_streamendpoint_characteristic_t streamendpoint_characteristics[ASCS_CLIENT_NUM_STREAMENDPOINTS];
     uint16_t ascs_cid;
+
+    // bass client
+    bass_client_connection_t bass_connection;
+    bass_client_source_t bass_sources[BASS_CLIENT_NUM_SOURCES];
+    uint8_t  bass_source_id;
+    uint16_t bass_cid;
+
 } server_t;
 
 /**
@@ -150,6 +160,13 @@ server_t * btp_server_for_pacs_cid(uint16_t csis_cid);
  * @return
  */
 server_t * btp_server_for_ascs_cid(uint16_t ascs_cid);
+
+/**
+ * @brief Lookup server by bass_cid
+ * @param pacs_cid
+ * @return
+ */
+server_t * btp_server_for_bass_cid(uint16_t ascs_cid);
 
 #if defined __cplusplus
 }
