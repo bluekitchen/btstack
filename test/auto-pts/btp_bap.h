@@ -46,6 +46,7 @@
 
 #include "btstack_run_loop.h"
 #include "btstack_defines.h"
+#include "btp_server.h"
 
 #include <stdint.h>
 
@@ -392,9 +393,9 @@ void btp_bap_release_big(void);
 
 /**
  * @brief Discover BASS Delegate
- * @param con_handle
+ * @param server
  */
-void btp_bap_bass_discover(hci_con_handle_t con_handle);
+void btp_bap_bass_discover(server_t * server);
 
 #if defined __cplusplus
 }

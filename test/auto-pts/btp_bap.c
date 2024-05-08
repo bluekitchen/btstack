@@ -102,13 +102,7 @@ static le_audio_big_sync_t        big_sync_storage;
 static le_audio_big_sync_params_t big_sync_params;
 
 // BASS
-static bd_addr_type_t bass_addr_type;
-static bd_addr_t      bass_address;
-static bass_client_connection_t bass_connection;
-static bass_client_source_t bass_sources[BASS_CLIENT_NUM_SOURCES];
 static bass_source_data_t bass_source_data;
-static uint16_t bass_cid;
-static uint8_t  bass_source_id;
 
 // Advertising etc
 static const le_periodic_advertising_parameters_t periodic_params = {
@@ -460,9 +454,12 @@ static void bass_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
     if (hci_event_packet_get_type(packet) != HCI_EVENT_LEAUDIO_META) return;
 
     const bass_source_data_t * source_data;
+    uint16_t bass_cid;
+    server_t * server;
 
     switch (hci_event_gattservice_meta_get_subevent_code(packet)) {
         case LEAUDIO_SUBEVENT_BASS_CLIENT_CONNECTED:
+			bass_cid = leaudio_subevent_bass_client_connected_get_bass_cid(packet);
             if (leaudio_subevent_bass_client_connected_get_status(packet) != ERROR_CODE_SUCCESS){
                 MESSAGE("BASS client connection failed, cid 0x%02x, con_handle 0x%02x, status 0x%02x",
                        bass_cid, remote_handle,
@@ -473,10 +470,12 @@ static void bass_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
 
             // inform btp
             if ((response_service_id == BTP_SERVICE_ID_BAP) && (response_op != 0)){
+                server = btp_server_for_bass_cid(bass_cid);
+                btstack_assert(server != NULL);
                 response_op = 0;
                 uint8_t data[7];
-                data[0] = bass_addr_type;
-                reverse_bd_addr(bass_address, &data[1]);
+                data[0] = server->address_type;
+                reverse_bd_addr(server->address, &data[1]);
                 btp_send(BTP_SERVICE_ID_BAP, BTP_BAP_EV_SCAN_DELEGATOR_FOUND, 0, sizeof(data), data);
             }
             break;
@@ -493,9 +492,13 @@ static void bass_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
             break;
         case LEAUDIO_SUBEVENT_BASS_CLIENT_NOTIFICATION_COMPLETE:
             // store source_id
-            bass_source_id = leaudio_subevent_bass_client_notification_complete_get_source_id(packet);
-            MESSAGE("BASS client notification, source_id = 0x%02x", bass_source_id);
-            source_data = broadcast_audio_scan_service_client_get_source_data(bass_cid, bass_source_id);
+            bass_cid = leaudio_subevent_bass_client_notification_complete_get_bass_cid(packet);
+            server = btp_server_for_bass_cid(bass_cid);
+            btstack_assert(server != NULL);
+
+            server->bass_source_id = leaudio_subevent_bass_client_notification_complete_get_source_id(packet);
+            MESSAGE("BASS client notification, source_id = 0x%02x", server->bass_source_id);
+            source_data = broadcast_audio_scan_service_client_get_source_data(bass_cid, server->bass_source_id);
             btstack_assert(source_data != NULL);
 
             switch (source_data->pa_sync_state){
@@ -503,7 +506,7 @@ static void bass_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
                     // start pa sync transfer
                     printf("LE_AUDIO_PA_SYNC_STATE_SYNCINFO_REQUEST -> Start PAST\n");
                     // TODO: unclear why this needs to be shifted for PAST with TS to get test green
-                    uint16_t service_data = bass_source_id << 8;
+                    uint16_t service_data = server->bass_source_id << 8;
                     gap_periodic_advertising_sync_transfer_send(remote_handle, service_data, sync_handle);
                     break;
                 default:
@@ -1311,13 +1314,18 @@ void btp_bap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, 
         case BTP_BAP_DISCOVER_SCAN_DELEGATORS:
             if (controller_index == 0) {
                 MESSAGE("BTP_BAP_DISCOVER_SCAN_DELEGATOR");
-                bass_addr_type = data[0];
-                reverse_bd_addr(&data[1], bass_address);
-                broadcast_audio_scan_service_client_connect(&bass_connection,
-                                                            bass_sources,
+                // get server struct
+                bd_addr_type_t addr_type = (bd_addr_type_t) data[0];
+                bd_addr_t address;
+                reverse_bd_addr(&data[1], address);
+                MESSAGE("BTP_BAP_DISCOVER_SCAN_DELEGATORS %s", bd_addr_to_str(address));
+                server = btp_server_for_address(addr_type, address);
+
+                broadcast_audio_scan_service_client_connect(&server->bass_connection,
+                                                            server->bass_sources,
                                                             BASS_CLIENT_NUM_SOURCES,
-                                                            remote_handle,
-                                                            &bass_cid);
+                                                            server->acl_con_handle,
+                                                            &server->bass_cid);
                 btp_send(BTP_SERVICE_ID_BAP, opcode, controller_index, 0, NULL);
                 break;
             }
@@ -1411,10 +1419,10 @@ void btp_bap_register_higher_layer(btstack_packet_handler_t handler){
     btp_bap_higher_layer_handler = handler;
 }
 
-void btp_bap_bass_discover(hci_con_handle_t con_handle){
-    broadcast_audio_scan_service_client_connect(&bass_connection,
-                                                bass_sources,
+void btp_bap_bass_discover(server_t * server){
+    broadcast_audio_scan_service_client_connect(&server->bass_connection,
+                                                server->bass_sources,
                                                 BASS_CLIENT_NUM_SOURCES,
-                                                con_handle,
-                                                &bass_cid);
+                                                server->acl_con_handle,
+                                                &server->bass_cid);
 }
