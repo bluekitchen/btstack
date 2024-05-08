@@ -45,6 +45,7 @@
 
 #include <stdint.h>
 #include "le-audio/le_audio.h"
+#include "ble/gatt_client.h"
 
 #if defined __cplusplus
 extern "C" {
