@@ -214,7 +214,7 @@ static void btp_cap_discovery_next(server_t * server) {
             break;
         case CAP_DISCOVERY_CSIS_WAIT:
             server->cap_state = (uint8_t) CAP_DISCOVERY_BASS_WAIT;
-            btp_bap_bass_discover(server->acl_con_handle);
+            btp_bap_bass_discover(server);
             break;
         case CAP_DISCOVERY_BASS_WAIT:
             MESSAGE("BTP_CAP_DISCOVER complete");
