@@ -245,7 +245,7 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
     uint16_t conn_interval;
     hci_con_handle_t con_handle;
     static const char * const phy_names[] = {
-        "1 M", "2 M", "Codec"
+        "Reserved", "1 M", "2 M", "Codec"
     };
 
     switch (hci_event_packet_get_type(packet)) {
