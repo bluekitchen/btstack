@@ -626,9 +626,9 @@ static void tbs_server_emit_call_deregister_done(telephone_bearer_service_server
     memset(event, 0, sizeof(event));
 
     uint8_t pos = 0;
-    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = HCI_EVENT_LEAUDIO_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_TBS_SERVER_CALL_DEREGISTER_DONE;
+    event[pos++] = LEAUDIO_SUBEVENT_TBS_SERVER_CALL_DEREGISTER_DONE;
     little_endian_store_16(event, pos, tbs_bearer->con_handle);
     pos += 2;
     little_endian_store_16(event, pos, tbs_bearer->bearer_id);
@@ -644,9 +644,9 @@ static void tbs_server_emit_call_control_notification_task(telephone_bearer_serv
     uint8_t event[TELEPHONE_BEARER_SERVICE_URI_MAX_LENGTH] = { 0 };
 
     uint8_t pos = 0;
-    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = HCI_EVENT_LEAUDIO_META;
     pos++; // placeholder for event size, overwritten later
-    event[pos++] = GATTSERVICE_SUBEVENT_TBS_SERVER_CALL_CONTROL_POINT_NOTIFICATION_TASK;
+    event[pos++] = LEAUDIO_SUBEVENT_TBS_SERVER_CALL_CONTROL_POINT_NOTIFICATION_TASK;
     little_endian_store_16(event, pos, tbs_bearer->con_handle);
     pos += 2;
     little_endian_store_16(event, pos, tbs_bearer->bearer_id);

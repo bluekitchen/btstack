@@ -319,7 +319,12 @@ static void vcs_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
                     vcs_client_replace_subevent_id_and_emit(connection_helper->event_callback, packet, size, LEAUDIO_SUBEVENT_VCS_CLIENT_DISCONNECTED);
                     break;
 
-                case GATT_EVENT_NOTIFICATION:
+                default:
+                    break;
+            }
+            break;
+
+        case GATT_EVENT_NOTIFICATION:
                     con_handle = (hci_con_handle_t)gatt_event_notification_get_handle(packet);
                     connection_helper = gatt_service_client_get_connection_for_con_handle(&vcs_client, con_handle);
 
@@ -329,11 +334,7 @@ static void vcs_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
                                                  gatt_event_notification_get_value(packet),
                                                  gatt_event_notification_get_value_length(packet));
                     break;
-                default:
-                    break;
-            }
-            break;
-
+        
         case HCI_EVENT_LEAUDIO_META:
             switch (hci_event_leaudio_meta_get_subevent_code(packet)){
                 

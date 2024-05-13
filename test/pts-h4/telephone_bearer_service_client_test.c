@@ -86,7 +86,7 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 static void show_usage(void);
 static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
-static void gatt_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+static void tbs_gatt_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 static void telephone_bearer_service_client_setup(void){
     // Init L2CAP
@@ -248,11 +248,11 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
             printf("GAP connected.\n");
             uint8_t service_index = 0;
             if( bearer_type == GENERIC_BEARER ) {
-                (void) telephone_generic_bearer_service_client_connect(connection_handle, &gatt_client_event_handler,
+                (void) telephone_generic_bearer_service_client_connect(connection_handle, &tbs_gatt_client_event_handler,
                                                                  &tbs_connection, service_index,
                                                                  &tbs_cid);
             } else {
-                (void) telephone_bearer_service_client_connect(connection_handle, &gatt_client_event_handler,
+                (void) telephone_bearer_service_client_connect(connection_handle, &tbs_gatt_client_event_handler,
                                                                  &tbs_connection, service_index,
                                                                  &tbs_cid);
             }
@@ -275,20 +275,20 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
     }
 }
 
-static void gatt_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) {
+static void tbs_gatt_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) {
     UNUSED(packet_type);
     UNUSED(channel);
     UNUSED(size);
 
     uint8_t status;
 
-    if (hci_event_packet_get_type(packet) != HCI_EVENT_GATTSERVICE_META) {
+    if (hci_event_packet_get_type(packet) != HCI_EVENT_LEAUDIO_META) {
         return;
     }
 
     switch (hci_event_gattservice_meta_get_subevent_code(packet)) {
-        case GATTSERVICE_SUBEVENT_TBS_CLIENT_CONNECTED:
-            status = gattservice_subevent_tbs_client_connected_get_att_status(packet);
+        case LEAUDIO_SUBEVENT_TBS_CLIENT_CONNECTED:
+            status = leaudio_subevent_tbs_client_connected_get_att_status(packet);
             switch (status) {
                 case ERROR_CODE_SUCCESS:
                     printf("TBS Client Test: connected\n");
@@ -301,8 +301,8 @@ static void gatt_client_event_handler(uint8_t packet_type, uint16_t channel, uin
             }
             break;
 
-        case GATTSERVICE_SUBEVENT_TBS_CLIENT_WRITE_DONE:
-            status = gattservice_subevent_tbs_client_write_done_get_att_status(packet);
+        case LEAUDIO_SUBEVENT_TBS_CLIENT_WRITE_DONE:
+            status = leaudio_subevent_tbs_client_write_done_get_att_status(packet);
             if (status != ATT_ERROR_SUCCESS){
                 printf("TBS Client Test: Write failed, 0x%02x\n", status);
             } else {
@@ -310,26 +310,26 @@ static void gatt_client_event_handler(uint8_t packet_type, uint16_t channel, uin
             }
             break;
 
-        case GATTSERVICE_SUBEVENT_TBS_CLIENT_BEARER_PROVIDER_NAME:
-            printf("Provider name: \"%s\"\n", gattservice_subevent_tbs_client_bearer_provider_name_get_name(packet));
+        case LEAUDIO_SUBEVENT_TBS_CLIENT_BEARER_PROVIDER_NAME:
+            printf("Provider name: \"%s\"\n", leaudio_subevent_tbs_client_bearer_provider_name_get_name(packet));
             break;
-        case GATTSERVICE_SUBEVENT_TBS_CLIENT_BEARER_UCI:
-            printf("Bearer UCI: \"%s\"\n", gattservice_subevent_tbs_client_bearer_uci_get_uci(packet));
+        case LEAUDIO_SUBEVENT_TBS_CLIENT_BEARER_UCI:
+            printf("Bearer UCI: \"%s\"\n", leaudio_subevent_tbs_client_bearer_uci_get_uci(packet));
             break;
-        case GATTSERVICE_SUBEVENT_TBS_CLIENT_BEARER_TECHNOLOGY:
-            printf("Bearer Technology: \"%#04x\"\n", gattservice_subevent_tbs_client_bearer_technology_get_technology(packet));
+        case LEAUDIO_SUBEVENT_TBS_CLIENT_BEARER_TECHNOLOGY:
+            printf("Bearer Technology: \"%#04x\"\n", leaudio_subevent_tbs_client_bearer_technology_get_technology(packet));
             break;
-        case GATTSERVICE_SUBEVENT_TBS_CLIENT_BEARER_URI_SCHEMES_SUPPORTED_LIST:
-            printf("Bearer URI Schemes Supported List: \"%s\"\n", gattservice_subevent_tbs_client_bearer_uri_schemes_supported_list_get_list(packet));
+        case LEAUDIO_SUBEVENT_TBS_CLIENT_BEARER_URI_SCHEMES_SUPPORTED_LIST:
+            printf("Bearer URI Schemes Supported List: \"%s\"\n", leaudio_subevent_tbs_client_bearer_uri_schemes_supported_list_get_list(packet));
             break;
-        case GATTSERVICE_SUBEVENT_TBS_CLIENT_BEARER_SIGNAL_STRENGTH:
-            printf("Signal Strength: \"%d\"\n", gattservice_subevent_tbs_client_bearer_signal_strength_get_strength(packet));
+        case LEAUDIO_SUBEVENT_TBS_CLIENT_BEARER_SIGNAL_STRENGTH:
+            printf("Signal Strength: \"%d\"\n", leaudio_subevent_tbs_client_bearer_signal_strength_get_strength(packet));
             break;
-        case GATTSERVICE_SUBEVENT_TBS_CLIENT_BEARER_SIGNAL_STRENGTH_REPORTING_INTERVAL:
-            printf("Signal Strength Reporting Interval: \"%d\"\n", gattservice_subevent_tbs_client_bearer_signal_strength_reporting_interval_get_interval(packet));
+        case LEAUDIO_SUBEVENT_TBS_CLIENT_BEARER_SIGNAL_STRENGTH_REPORTING_INTERVAL:
+            printf("Signal Strength Reporting Interval: \"%d\"\n", leaudio_subevent_tbs_client_bearer_signal_strength_reporting_interval_get_interval(packet));
             break;
-        case GATTSERVICE_SUBEVENT_TBS_CLIENT_BEARER_LIST_CURRENT_CALLS: {
-            uint8_t length = gattservice_subevent_tbs_client_bearer_list_current_calls_get_length(packet);
+        case LEAUDIO_SUBEVENT_TBS_CLIENT_BEARER_LIST_CURRENT_CALLS: {
+            uint8_t length = leaudio_subevent_tbs_client_bearer_list_current_calls_get_length(packet);
             if( length == 0 ) {
                 break; // Empty list
             }
@@ -346,20 +346,20 @@ static void gatt_client_event_handler(uint8_t packet_type, uint16_t channel, uin
             }
             break;
         }
-        case GATTSERVICE_SUBEVENT_TBS_CLIENT_CONTENT_CONTROL_ID:
-            printf("Content Control ID: \"%#04x\"\n", gattservice_subevent_tbs_client_content_control_id_get_id(packet));
+        case LEAUDIO_SUBEVENT_TBS_CLIENT_CONTENT_CONTROL_ID:
+            printf("Content Control ID: \"%#04x\"\n", leaudio_subevent_tbs_client_content_control_id_get_id(packet));
             break;
-        case GATTSERVICE_SUBEVENT_TBS_CLIENT_STATUS_FLAGS:
-            printf("Client Status Flags: \"%#06x\"\n", gattservice_subevent_tbs_client_status_flags_get_flags(packet));
+        case LEAUDIO_SUBEVENT_TBS_CLIENT_STATUS_FLAGS:
+            printf("Client Status Flags: \"%#06x\"\n", leaudio_subevent_tbs_client_status_flags_get_flags(packet));
             break;
-        case GATTSERVICE_SUBEVENT_TBS_CLIENT_INCOMING_CALL_TARGET_BEARER_URI: {
-            uint8_t call_index = gattservice_subevent_tbs_client_incoming_call_get_call_index(packet);
-            uint8_t const *uri = gattservice_subevent_tbs_client_incoming_call_get_uri(packet);
+        case LEAUDIO_SUBEVENT_TBS_CLIENT_INCOMING_CALL_TARGET_BEARER_URI: {
+            uint8_t call_index = leaudio_subevent_tbs_client_incoming_call_get_call_index(packet);
+            uint8_t const *uri = leaudio_subevent_tbs_client_incoming_call_get_uri(packet);
             printf("Incoming Call Target Bearer URI: \"%d\": \"%s\"\n", call_index, uri);
             break;
         }
-        case GATTSERVICE_SUBEVENT_TBS_CLIENT_CALL_STATE: {
-            uint8_t length = gattservice_subevent_tbs_client_call_state_get_length(packet);
+        case LEAUDIO_SUBEVENT_TBS_CLIENT_CALL_STATE: {
+            uint8_t length = leaudio_subevent_tbs_client_call_state_get_length(packet);
             if( length == 0 ) {
                 break; // Empty list
             }
@@ -375,35 +375,35 @@ static void gatt_client_event_handler(uint8_t packet_type, uint16_t channel, uin
             }
             break;
         }
-        case GATTSERVICE_SUBEVENT_TBS_CLIENT_CALL_CONTROL_POINT: {
-            uint8_t opcode = gattservice_subevent_tbs_client_call_control_point_get_requested_opcode(packet);
-            uint8_t call_index = gattservice_subevent_tbs_client_call_control_point_get_call_index(packet);
-            uint8_t result_code = gattservice_subevent_tbs_client_call_control_point_get_result_code(packet);
+        case LEAUDIO_SUBEVENT_TBS_CLIENT_CALL_CONTROL_POINT: {
+            uint8_t opcode = leaudio_subevent_tbs_client_call_control_point_get_requested_opcode(packet);
+            uint8_t call_index = leaudio_subevent_tbs_client_call_control_point_get_call_index(packet);
+            uint8_t result_code = leaudio_subevent_tbs_client_call_control_point_get_result_code(packet);
             printf("opcode: %d, call_index: %d, result_code: %d\n", opcode, call_index, result_code);
             break;
         }
-        case GATTSERVICE_SUBEVENT_TBS_CLIENT_CALL_CONTROL_POINT_OPTIONAL_OPCODES:
-            printf("Call Control Point Optional Opcodes: \"%#06x\"\n", gattservice_subevent_tbs_client_call_control_point_optional_opcodes_get_mask(packet));
+        case LEAUDIO_SUBEVENT_TBS_CLIENT_CALL_CONTROL_POINT_OPTIONAL_OPCODES:
+            printf("Call Control Point Optional Opcodes: \"%#06x\"\n", leaudio_subevent_tbs_client_call_control_point_optional_opcodes_get_mask(packet));
             break;
-        case GATTSERVICE_SUBEVENT_TBS_CLIENT_TERMINATION_REASON: {
-            uint8_t call_index = gattservice_subevent_tbs_client_termination_reason_get_call_index(packet);
-            uint8_t reason = gattservice_subevent_tbs_client_termination_reason_get_reason(packet);
+        case LEAUDIO_SUBEVENT_TBS_CLIENT_TERMINATION_REASON: {
+            uint8_t call_index = leaudio_subevent_tbs_client_termination_reason_get_call_index(packet);
+            uint8_t reason = leaudio_subevent_tbs_client_termination_reason_get_reason(packet);
             printf("call_index: %d, reason_code: %d\n", call_index, reason);
             break;
         }
-        case GATTSERVICE_SUBEVENT_TBS_CLIENT_INCOMING_CALL: {
-            uint8_t call_index = gattservice_subevent_tbs_client_incoming_call_get_call_index(packet);
-            uint8_t const *uri = gattservice_subevent_tbs_client_incoming_call_get_uri(packet);
+        case LEAUDIO_SUBEVENT_TBS_CLIENT_INCOMING_CALL: {
+            uint8_t call_index = leaudio_subevent_tbs_client_incoming_call_get_call_index(packet);
+            uint8_t const *uri = leaudio_subevent_tbs_client_incoming_call_get_uri(packet);
             printf("Incoming Call: \"%d\": \"%s\"\n", call_index, uri);
             break;
         }
-        case GATTSERVICE_SUBEVENT_TBS_CLIENT_CALL_FRIENDLY_NAME: {
-            uint8_t call_index = gattservice_subevent_tbs_client_call_control_point_get_call_index(packet);
-            uint8_t const *name = gattservice_subevent_tbs_client_call_friendly_name_get_name(packet);
+        case LEAUDIO_SUBEVENT_TBS_CLIENT_CALL_FRIENDLY_NAME: {
+            uint8_t call_index = leaudio_subevent_tbs_client_call_control_point_get_call_index(packet);
+            uint8_t const *name = leaudio_subevent_tbs_client_call_friendly_name_get_name(packet);
             printf("Call Friendly Name: \"%d\": \"%s\"\n", call_index, name);
             break;
         }
-        case GATTSERVICE_SUBEVENT_TBS_CLIENT_DISCONNECTED:
+        case LEAUDIO_SUBEVENT_TBS_CLIENT_DISCONNECTED:
             printf("TBS Client Test: disconnected\n");
             break;
 

@@ -79,9 +79,9 @@ static void tbs_client_emit_connected(gatt_service_client_connection_helper_t * 
 
     uint8_t event[9];
     int pos = 0;
-    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = HCI_EVENT_LEAUDIO_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_TBS_CLIENT_CONNECTED;
+    event[pos++] = LEAUDIO_SUBEVENT_TBS_CLIENT_CONNECTED;
     little_endian_store_16(event, pos, connection_helper->con_handle);
     pos += 2;
     little_endian_store_16(event, pos, connection_helper->cid);
@@ -99,9 +99,9 @@ static void tbs_client_emit_done_event(gatt_service_client_connection_helper_t *
 
     uint8_t event[9];
     uint16_t pos = 0;
-    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = HCI_EVENT_LEAUDIO_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_TBS_CLIENT_WRITE_DONE;
+    event[pos++] = LEAUDIO_SUBEVENT_TBS_CLIENT_WRITE_DONE;
 
     little_endian_store_16(event, pos, connection_helper->cid);
     pos+= 2;
@@ -126,7 +126,7 @@ static void tbs_client_emit_blob( const emitter_t * emit ){
 
     uint8_t event[257] = { 0 };
     uint16_t pos = 0;
-    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = HCI_EVENT_LEAUDIO_META;
     pos++;                      // reserve event[1] for subevent size
     event[pos++] = emit->subevent;
     little_endian_store_16(event, pos, emit->cid);
@@ -148,7 +148,7 @@ static void tbs_client_emit_nbytes( const emitter_t * emit ) {
 
     uint8_t event[258] = { 0 }; // space for 252byte sub-event data + 5byte header + 1byte to guarantee null termination, just in case
     uint8_t data_length = btstack_min( 252, emit->data_size);
-    event[0] = HCI_EVENT_GATTSERVICE_META;
+    event[0] = HCI_EVENT_LEAUDIO_META;
     event[1] = 3 + data_length;   // sub-event size
     event[2] = emit->subevent;
     little_endian_store_16(event, 3, emit->cid);
@@ -462,7 +462,7 @@ static void tbs_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
                     connection_helper = gatt_service_client_get_connection_for_cid(&tbs_client, gattservice_subevent_client_disconnected_get_cid(packet));
                     btstack_assert(connection_helper != NULL);
                     // TODO:
-                    //  tbs_client_replace_subevent_id_and_emit(connection_helper->event_callback, packet, size, GATTSERVICE_SUBEVENT_TBS_CLIENT_DISCONNECTED);
+                    //  tbs_client_replace_subevent_id_and_emit(connection_helper->event_callback, packet, size, LEAUDIO_SUBEVENT_TBS_CLIENT_DISCONNECTED);
                     break;
 
                 default:
