@@ -159,7 +159,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 }
 #endif
 
-static void mns_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     int i;
 
     switch (packet_type){
@@ -240,7 +240,7 @@ int btstack_main(int argc, const char * argv[]){
                                                     supported_features,
                                                     name);
     sdp_register_service(map_message_access_service_buffer);
-    map_access_server_init(mns_packet_handler, MAS_SERVER_RFCOMM_CHANNEL_NR, MAS_SERVER_GOEP_PSM, 0xffff);
+    map_access_server_init(mas_packet_handler, MAS_SERVER_RFCOMM_CHANNEL_NR, MAS_SERVER_GOEP_PSM, 0xffff);
 
 #ifdef HAVE_BTSTACK_STDIN
     btstack_stdin_setup(stdin_process);
