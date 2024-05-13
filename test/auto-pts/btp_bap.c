@@ -101,9 +101,6 @@ static const uint8_t              big_handle = 1;
 static le_audio_big_sync_t        big_sync_storage;
 static le_audio_big_sync_params_t big_sync_params;
 
-// BASS
-static bass_source_data_t bass_source_data;
-
 // Advertising etc
 static const le_periodic_advertising_parameters_t periodic_params = {
         .periodic_advertising_interval_min = 0x258, // 375 ms
@@ -485,9 +482,12 @@ static void bass_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
                 break;
             }
 
-            if ( leaudio_subevent_bass_client_source_operation_complete_get_opcode(packet) == (uint8_t)BASS_OPCODE_ADD_SOURCE ){
-                // TODO: set state to 'wait for source_id"
-                printf("BASS client add source operation completed, wait for source_id\n");
+            // inform btp
+            if ((response_service_id == BTP_SERVICE_ID_BAP) && (BTP_BAP_ADD_BROADCAST_SRC != 0)) {
+                if (gleaudio_subevent_bass_client_source_operation_complete_get_opcode(packet) == (uint8_t) BASS_OPCODE_ADD_SOURCE) {
+                    MESSAGE("BTP_BAP_ADD_BROADCAST_SRC completed");
+                    btp_send(BTP_SERVICE_ID_BAP, BTP_BAP_ADD_BROADCAST_SRC, 0, 0, NULL);
+                }
             }
             break;
         case LEAUDIO_SUBEVENT_BASS_CLIENT_NOTIFICATION_COMPLETE:
@@ -1348,8 +1348,38 @@ void btp_bap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, 
             break;
         case BTP_BAP_ADD_BROADCAST_SRC:
             if (controller_index == 0) {
-                MESSAGE("BTP_BAP_ADD_BROADCAST_SRC");
-                btp_send(BTP_SERVICE_ID_BAP, opcode, controller_index, 0, NULL);
+                // parse command into bass_source_data
+
+                uint16_t pos = 0;
+                bd_addr_type_t addr_type = (bd_addr_type_t) data[pos++];
+                bd_addr_t address;
+                reverse_bd_addr(&data[pos], address);
+                pos += 6;
+                server = btp_server_for_address(addr_type, address);
+
+                MESSAGE("BTP_BAP_ADD_BROADCAST_SRC on %s", bd_addr_to_str(server->address));
+                memset(&bass_source_data, 0, sizeof(bass_source_data));
+                bass_source_data.address_type = data[pos++];
+                reverse_bd_addr(&data[pos], bass_source_data.address);
+                pos += 6;
+                bass_source_data.adv_sid = data[pos++];
+                bass_source_data.broadcast_id = little_endian_read_24(data, pos);
+                pos += 3;
+                bass_source_data.pa_sync = data[pos++];
+                bass_source_data.pa_interval = little_endian_read_16(data, pos);
+                pos += 2;
+                bass_source_data.subgroups_num = data[pos++];
+                uint8_t subgroup;
+                for (subgroup=0;subgroup < bass_source_data.subgroups_num;subgroup++){
+                    bass_source_data.subgroups[subgroup].bis_sync = little_endian_read_32(data, pos);
+                    pos += 4;
+                    bass_source_data.subgroups[subgroup].metadata_length = data[pos++];
+                    // skip metadata
+                    pos += bass_source_data.subgroups[subgroup].metadata_length;
+                }
+
+                uint8_t status = broadcast_audio_scan_service_client_add_source(server->bass_cid, &bass_source_data);
+                btstack_assert(status == ERROR_CODE_SUCCESS);
                 break;
             }
             break;
