@@ -708,10 +708,10 @@ static void bass_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t 
     btstack_assert (packet_type == HCI_EVENT_PACKET);
     btstack_assert(hci_event_packet_get_type(packet) == HCI_EVENT_LEAUDIO_META);
     uint8_t source_id;
-    printf("BASS Event 0x%02x: ", hci_event_gattservice_meta_get_subevent_code(packet));
+    printf("BASS Event 0x%02x: ", hci_event_leaudio_meta_get_subevent_code(packet));
     printf_hexdump(packet, size);
     uint8_t pa_sync;
-    switch (hci_event_gattservice_meta_get_subevent_code(packet)){
+    switch (hci_event_leaudio_meta_get_subevent_code(packet)){
         case LEAUDIO_SUBEVENT_BASS_SERVER_SOURCE_ADDED:
             pa_sync = leaudio_subevent_bass_server_source_added_get_pa_sync(packet);
             source_id = leaudio_subevent_bass_server_source_added_get_source_id(packet);

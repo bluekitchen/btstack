@@ -5964,6 +5964,7 @@ typedef uint8_t sm_key_t[16];
 #define LEAUDIO_SUBEVENT_OTS_CLIENT_TIMEOUT                                          0xA7u
 
 
+
 /**
  * @format 1H211
  * @param subevent_code
@@ -5972,7 +5973,7 @@ typedef uint8_t sm_key_t[16];
  * @param bearer_state
  * @param opcode
  */
-#define GATTSERVICE_SUBEVENT_TBS_SERVER_CALL_CONTROL_POINT_NOTIFICATION_TASK            0xC0u
+#define LEAUDIO_SUBEVENT_TBS_SERVER_CALL_CONTROL_POINT_NOTIFICATION_TASK            0xC0u
 
 /**
  * @format 1H21
@@ -5981,171 +5982,177 @@ typedef uint8_t sm_key_t[16];
  * @param bearer_id
  * @param call_id
  */
-#define GATTSERVICE_SUBEVENT_TBS_SERVER_CALL_DEREGISTER_DONE                            0xC1u
+#define LEAUDIO_SUBEVENT_TBS_SERVER_CALL_DEREGISTER_DONE                            0xC1u
 
 /**
  * @format 1H211
  * @param subevent_code
  * @param con_handle
- * @param map_cid
+ * @param tbs_cid
  * @param num_services
  * @param att_status
  */
-#define GATTSERVICE_SUBEVENT_TBS_CLIENT_CONNECTED                                       0xC2u
+#define LEAUDIO_SUBEVENT_TBS_CLIENT_CONNECTED                                       0xC2u
+
+/**
+ * @format 12
+ * @param subevent_code
+ * @param tbs_cid
+*/
+#define LEAUDIO_SUBEVENT_TBS_CLIENT_DISCONNECTED                                    0xC3u
 
 /**
  * @format 12JV
  * @param subevent_code
- * @param map_cid
+ * @param tbs_cid
  * @param length
  * @param name
  */
-#define GATTSERVICE_SUBEVENT_TBS_CLIENT_BEARER_PROVIDER_NAME                            0xC3u
+#define LEAUDIO_SUBEVENT_TBS_CLIENT_BEARER_PROVIDER_NAME                            0xC4u
 
 /**
  * @format 12JV
  * @param subevent_code
- * @param map_cid
+ * @param tbs_cid
  * @param length
  * @param uci
  */
-#define GATTSERVICE_SUBEVENT_TBS_CLIENT_BEARER_UCI                                      0xC4u
+#define LEAUDIO_SUBEVENT_TBS_CLIENT_BEARER_UCI                                      0xC5u
 
 /**
  * @format 121
  * @param subevent_code
- * @param map_cid
+ * @param tbs_cid
  * @param technology
  */
-#define GATTSERVICE_SUBEVENT_TBS_CLIENT_BEARER_TECHNOLOGY                               0xC5u
+#define LEAUDIO_SUBEVENT_TBS_CLIENT_BEARER_TECHNOLOGY                               0xC6u
 
 /**
  * @format 12JV
  * @param subevent_code
- * @param map_cid
+ * @param tbs_cid
  * @param length
  * @param list
  */
-#define GATTSERVICE_SUBEVENT_TBS_CLIENT_BEARER_URI_SCHEMES_SUPPORTED_LIST               0xC6u
+#define LEAUDIO_SUBEVENT_TBS_CLIENT_BEARER_URI_SCHEMES_SUPPORTED_LIST               0xC7u
 
 /**
  * @format 121
  * @param subevent_code
- * @param map_cid
+ * @param tbs_cid
  * @param strength
  */
-#define GATTSERVICE_SUBEVENT_TBS_CLIENT_BEARER_SIGNAL_STRENGTH                          0xC7u
+#define LEAUDIO_SUBEVENT_TBS_CLIENT_BEARER_SIGNAL_STRENGTH                          0xC8u
 
 /**
  * @format 121
  * @param subevent_code
- * @param map_cid
+ * @param tbs_cid
  * @param interval
  */
-#define GATTSERVICE_SUBEVENT_TBS_CLIENT_BEARER_SIGNAL_STRENGTH_REPORTING_INTERVAL       0xC8u
+#define LEAUDIO_SUBEVENT_TBS_CLIENT_BEARER_SIGNAL_STRENGTH_REPORTING_INTERVAL       0xC9u
 
 /**
  * @format 12JV
  * @param subevent_code
- * @param map_cid
+ * @param tbs_cid
  * @param length
  * @param list
  */
-#define GATTSERVICE_SUBEVENT_TBS_CLIENT_BEARER_LIST_CURRENT_CALLS                       0xC9u
+#define LEAUDIO_SUBEVENT_TBS_CLIENT_BEARER_LIST_CURRENT_CALLS                       0xCAu
 
 /**
  * @format 121
  * @param subevent_code
- * @param map_cid
+ * @param tbs_cid
  * @param id
  */
-#define GATTSERVICE_SUBEVENT_TBS_CLIENT_CONTENT_CONTROL_ID                              0xCAu
+#define LEAUDIO_SUBEVENT_TBS_CLIENT_CONTENT_CONTROL_ID                              0xCBu
 
 /**
  * @format 122
  * @param subevent_code
- * @param map_cid
+ * @param tbs_cid
  * @param flags
  */
-#define GATTSERVICE_SUBEVENT_TBS_CLIENT_STATUS_FLAGS                                    0xCBu
+#define LEAUDIO_SUBEVENT_TBS_CLIENT_STATUS_FLAGS                                    0xCCu
 
 /**
  * @format 12J1V
  * @param subevent_code
- * @param map_cid
+ * @param tbs_cid
  * @param length
  * @param call_index
  * @param uri
  */
-#define GATTSERVICE_SUBEVENT_TBS_CLIENT_INCOMING_CALL_TARGET_BEARER_URI                 0xCCu
+#define LEAUDIO_SUBEVENT_TBS_CLIENT_INCOMING_CALL_TARGET_BEARER_URI                 0xCDu
 
 /**
  * @format 12JV
  * @param subevent_code
- * @param map_cid
+ * @param tbs_cid
  * @param length
  * @param state
  */
-#define GATTSERVICE_SUBEVENT_TBS_CLIENT_CALL_STATE                                      0xCDu
+#define LEAUDIO_SUBEVENT_TBS_CLIENT_CALL_STATE                                      0xCEu
 
 /**
  * @format 12111
  * @param subevent_code
- * @param map_cid
+ * @param tbs_cid
  * @param requested_opcode
  * @param call_index
  * @param result_code
  */
-#define GATTSERVICE_SUBEVENT_TBS_CLIENT_CALL_CONTROL_POINT                              0xCEu
+#define LEAUDIO_SUBEVENT_TBS_CLIENT_CALL_CONTROL_POINT                              0xCFu
 
 /**
  * @format 122
  * @param subevent_code
- * @param map_cid
+ * @param tbs_cid
  * @param mask
  */
-#define GATTSERVICE_SUBEVENT_TBS_CLIENT_CALL_CONTROL_POINT_OPTIONAL_OPCODES             0xCFu
+#define LEAUDIO_SUBEVENT_TBS_CLIENT_CALL_CONTROL_POINT_OPTIONAL_OPCODES             0xD0u
 
 /**
  * @format 1211
  * @param subevent_code
- * @param map_cid
+ * @param tbs_cid
  * @param call_index
  * @param reason
  */
-#define GATTSERVICE_SUBEVENT_TBS_CLIENT_TERMINATION_REASON                              0xD0u
+#define LEAUDIO_SUBEVENT_TBS_CLIENT_TERMINATION_REASON                              0xD1u
 
 /**
  * @format 12J1V
  * @param subevent_code
- * @param map_cid
+ * @param tbs_cid
  * @param length
  * @param call_index
  * @param uri
  */
-#define GATTSERVICE_SUBEVENT_TBS_CLIENT_INCOMING_CALL                                   0xD1u
+#define LEAUDIO_SUBEVENT_TBS_CLIENT_INCOMING_CALL                                   0xD2u
 
 /**
  * @format 12J1V
  * @param subevent_code
- * @param map_cid
+ * @param tbs_cid
  * @param length
  * @param call_index
  * @param name
  */
-#define GATTSERVICE_SUBEVENT_TBS_CLIENT_CALL_FRIENDLY_NAME                              0xD2u
+#define LEAUDIO_SUBEVENT_TBS_CLIENT_CALL_FRIENDLY_NAME                              0xD3u
 
 /**
  * @format 12121
  * @param subevent_code
- * @param map_cid
+ * @param tbs_cid
  * @param service_index
  * @param uuid16
  * @param att_status
  */
-#define GATTSERVICE_SUBEVENT_TBS_CLIENT_WRITE_DONE                                      0xD3u
+#define LEAUDIO_SUBEVENT_TBS_CLIENT_WRITE_DONE                                      0xD4u
 
-#define GATTSERVICE_SUBEVENT_TBS_CLIENT_DISCONNECTED                                    0xD4u
 
 // MAP Meta Event Group
 
