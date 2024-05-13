@@ -696,10 +696,10 @@ static void tbs_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
     UNUSED(size);
 
     if (packet_type != HCI_EVENT_PACKET) return;
-    if (hci_event_packet_get_type(packet) != HCI_EVENT_GATTSERVICE_META) return;
+    if (hci_event_packet_get_type(packet) != HCI_EVENT_LEAUDIO_META) return;
 
     switch (hci_event_gattservice_meta_get_subevent_code(packet)){
-        case GATTSERVICE_SUBEVENT_TBS_SERVER_CALL_CONTROL_POINT_NOTIFICATION_TASK: {
+        case LEAUDIO_SUBEVENT_TBS_SERVER_CALL_CONTROL_POINT_NOTIFICATION_TASK: {
 //            hci_con_handle_t con_handle = little_endian_read_16(packet, 3);
             uint16_t bearer_id = little_endian_read_16(packet, 5);
             uint8_t opcode = packet[7];
@@ -915,7 +915,7 @@ static void tbs_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
             }
             break;
         }
-        case GATTSERVICE_SUBEVENT_TBS_SERVER_CALL_DEREGISTER_DONE: {
+        case LEAUDIO_SUBEVENT_TBS_SERVER_CALL_DEREGISTER_DONE: {
 //            hci_con_handle_t con_handle = little_endian_read_16(packet, 3);
 //            uint16_t bearer_id = little_endian_read_16(packet, 5);
             uint8_t call_id = packet[7];
