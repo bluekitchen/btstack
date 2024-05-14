@@ -70,7 +70,7 @@ typedef enum {
 
 
 typedef struct {
-    uint16_t  mns_cid;
+    uint16_t  mas_cid;
     uint16_t  goep_cid;
     bd_addr_t bd_addr;
     hci_con_handle_t con_handle;
@@ -79,7 +79,7 @@ typedef struct {
     obex_srm_t obex_srm;
     // request
     struct {
-        bool is_event_report;
+        bool is_notification_registration;
         uint32_t length;
         uint8_t* payload_data;
         uint32_t payload_len;
@@ -125,19 +125,19 @@ static uint8_t goep_data_packet_get_opcode(uint8_t* packet) {
     return packet[0];
 }
 
-static void map_access_server_reset_request(map_access_server_t* mns) {
-    (void)memset(&mns->request, 0, sizeof(mns->request));
+static void map_access_server_reset_request(map_access_server_t* mas) {
+    (void)memset(&mas->request, 0, sizeof(mas->request));
 }
 
 /* OBEX related functions */
 
 static void map_access_server_app_param_callback(void* user_data, uint8_t tag_id, uint8_t total_len, uint8_t data_offset, const uint8_t* data_buffer, uint8_t data_len) {
-    map_access_server_t* mns = (map_access_server_t*)user_data;
+    map_access_server_t* mas = (map_access_server_t*)user_data;
 
     switch (tag_id) {
     case MAP_APPLICATION_PARAMETER_MAS_INSTANCE_ID:
-        mns->request.app_params.mas_instance_id = data_buffer[0];
-        log_info("MAS instance ID %02d\n", mns->request.app_params.mas_instance_id);
+        mas->request.app_params.mas_instance_id = data_buffer[0];
+        log_info("MAS instance ID %02d\n", mas->request.app_params.mas_instance_id);
         break;
     default:
         log_info("unhandled application parameter %02x\n", tag_id);
@@ -145,42 +145,43 @@ static void map_access_server_app_param_callback(void* user_data, uint8_t tag_id
     }
 }
 
+#define x_bt_MAP_NotificationRegistration "x-bt/MAP-NotificationRegistration"
 static void map_access_server_obex_parser_callback(void* user_data, uint8_t header_id, uint16_t total_len, uint16_t data_offset, const uint8_t* data_buffer, uint16_t data_len) {
-    map_access_server_t* mns = (map_access_server_t*)user_data;
+    map_access_server_t* mas = (map_access_server_t*)user_data;
 
     switch (header_id) {
     case OBEX_HEADER_SINGLE_RESPONSE_MODE:
     case OBEX_HEADER_SINGLE_RESPONSE_MODE_PARAMETER:
-        obex_srm_header_store(&mns->obex_srm, header_id,
+        obex_srm_header_store(&mas->obex_srm, header_id,
             total_len, data_offset, data_buffer, data_len);
         break;
     case OBEX_HEADER_CONNECTION_ID:
         // TODO: verify connection id
         break;
     case OBEX_HEADER_TYPE:
-        /* we only deal with <x-bt/MAP-event-report> */
-        if (data_len == strlen("x-bt/MAP-event-report") &&
-            strncmp("x-bt/MAP-event-report", (const char*)data_buffer, data_len) == 0) {
-            mns->request.is_event_report = 1;
+        /* we only deal with <x-bt/MAP-NotificationRegistration> */
+        if (data_len == strlen(x_bt_MAP_NotificationRegistration) &&
+            strncmp(x_bt_MAP_NotificationRegistration, (const char*)data_buffer, data_len) == 0) {
+            mas->request.is_notification_registration = 1;
         }
         break;
     case OBEX_HEADER_BODY:
     case OBEX_HEADER_END_OF_BODY:
         log_info("received (END_OF_)BODY data: %d bytes\n", data_len);
-        mns->request.payload_data = (uint8_t*)data_buffer;
-        mns->request.payload_len = data_len;
+        mas->request.payload_data = (uint8_t*)data_buffer;
+        mas->request.payload_len = data_len;
         break;
     case OBEX_HEADER_LENGTH:
-        mns->request.length = big_endian_read_32(data_buffer, 0);
-        log_info("length of data: %d\n", mns->request.length);
+        mas->request.length = big_endian_read_32(data_buffer, 0);
+        log_info("length of data: %d\n", mas->request.length);
         break;
     case OBEX_HEADER_APPLICATION_PARAMETERS:
         log_info("application parameters: %d bytes\n", data_len);
         if (data_offset == 0) {
-            obex_app_param_parser_init(&mns->request.app_param_parser,
-                &map_access_server_app_param_callback, total_len, mns);
+            obex_app_param_parser_init(&mas->request.app_param_parser,
+                &map_access_server_app_param_callback, total_len, mas);
         }
-        obex_app_param_parser_process_data(&mns->request.app_param_parser, data_buffer, data_len);
+        obex_app_param_parser_process_data(&mas->request.app_param_parser, data_buffer, data_len);
         break;
 
     default:
@@ -189,6 +190,43 @@ static void map_access_server_obex_parser_callback(void* user_data, uint8_t head
     }
 }
 
+static void map_access_server_handle_put_request(map_access_server_t* mas, uint8_t opcode, bool do_push_event) {
+    if (opcode & OBEX_OPCODE_FINAL_BIT_MASK ||
+        !obex_srm_is_enabled(&mas->obex_srm)) {
+        ENTER_STATE(mas, MAP_SEND_REQUEST_RESPONSE);
+    }
+    else {
+        ENTER_STATE(mas, MAP_W4_REQUEST);
+    }
+
+    if (do_push_event) {
+        mas->operation_complete_send = true;
+
+        uint8_t event[3 + 2 + 1 + 4];
+        uint16_t pos = 0;
+
+        event[pos++] = HCI_EVENT_MAP_META;
+        event[pos++] = 0;
+        event[pos++] = MAP_SUBEVENT_NOTIFICATION_EVENT;
+        little_endian_store_16(event, pos, mas->mas_cid);
+        pos += 2;
+        event[pos++] = 0;  /* MASInstanceID */
+        little_endian_store_32(event, pos, mas->request.length);
+        pos += 4;
+        event[1] = pos - 2;
+
+        (*map_access_server_user_packet_handler) (HCI_EVENT_PACKET, 0, event, pos);
+    }
+
+    if (mas->request.abort_response == 0) {
+        mas->response_code = opcode & OBEX_OPCODE_FINAL_BIT_MASK ? OBEX_RESP_SUCCESS : OBEX_RESP_CONTINUE;
+    }
+    else {
+        mas->response_code = mas->request.abort_response;
+    }
+
+    goep_server_request_can_send_now(mas->goep_cid);
+}
 
 /* btstack packet handlers */
 
@@ -330,7 +368,7 @@ static void map_access_server_packet_handler_goep(map_access_server_t* mas, uint
         }
 
         /* fall through */
-#if 0
+
     case MAP_W4_REQUEST:
         obex_srm_init(&mas->obex_srm);
         parser_state = obex_parser_process_data(&mas->obex_parser, packet, size);
@@ -343,7 +381,7 @@ static void map_access_server_packet_handler_goep(map_access_server_t* mas, uint
                 mas->request.abort_response = 0;
                 map_access_server_handle_put_request(mas, op_info.opcode, false);
                 if (mas->request.abort_response == 0) {
-                    (*map_access_server_user_packet_handler)(MAP_DATA_PACKET, mas->mns_cid, (uint8_t*)mas->request.payload_data, mas->request.payload_len);
+                    (*map_access_server_user_packet_handler)(MAP_DATA_PACKET, mas->mas_cid, (uint8_t*)mas->request.payload_data, mas->request.payload_len);
                 }
                 break;
             case OBEX_OPCODE_DISCONNECT:
@@ -359,7 +397,7 @@ static void map_access_server_packet_handler_goep(map_access_server_t* mas, uint
             }
         }
         break;
-#endif
+
     default:
         printf("MAP server: GOEP data packet'");
         for (i = 0;i < size;i++) {
