@@ -71,7 +71,6 @@
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
-#if 0
 
 // singleton instance required to configure GOEP
 
@@ -90,7 +89,6 @@ static l2cap_ertm_config_t map_notification_client_ertm_config = {
 };
 #endif
 
-#endif
 
 static bd_addr_t    remote_addr;
 static const char * remote_addr_string = "001BDC08E272";
@@ -104,6 +102,7 @@ static void show_usage(void){
     gap_local_bd_addr(iut_address);
 
     printf("\n--- Bluetooth MAP Server Test Console %s ---\n", bd_addr_to_str(iut_address));
+    printf("c: open GEOP connection to MNS (in PTS)\n");
     printf("Command list goes here... try press 'a'\n");
     printf("\n");
 }
@@ -111,6 +110,9 @@ static void show_usage(void){
 static void stdin_process(char c){
     switch (c){
         case 'a':
+            printf("a was pressed\n");
+            break;
+        case 'c':
             printf("a was pressed\n");
             break;
         default:
