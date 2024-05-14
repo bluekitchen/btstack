@@ -258,11 +258,23 @@ void le_audio_demo_util_source_generate_iso_frame(le_audio_demo_source_generator
         case AUDIO_SOURCE_MODPLAYER:
             // mod player configured for stereo
             hxcmod_fillbuffer(&le_audio_demo_source_hxcmod_context, (unsigned short *) le_audio_demo_source_pcm, le_audio_demo_source_num_samples_per_frame, &le_audio_demo_source_hxcmod_trkbuf);
+            // stereo -> mono
             if (le_audio_demo_source_num_channels == 1) {
-                // stereo -> mono
                 uint16_t i;
                 for (i=0;i<le_audio_demo_source_num_samples_per_frame;i++){
                     le_audio_demo_source_pcm[i] = (le_audio_demo_source_pcm[2*i] / 2) + (le_audio_demo_source_pcm[2*i+1] / 2);
+                }
+            }
+            // duplicate stereo channels
+            if (le_audio_demo_source_num_channels > 2) {
+                int16_t i;
+                for (i = le_audio_demo_source_num_samples_per_frame - 1; i >= 0; i--) {
+                    uint16_t channel_dst;
+                    for (channel_dst=0; channel_dst < le_audio_demo_source_num_channels; channel_dst++){
+                        uint16_t channel_src = channel_dst & 1;
+                        le_audio_demo_source_pcm[i * le_audio_demo_source_num_channels + channel_dst] =
+                                le_audio_demo_source_pcm[i * 2 + channel_src];
+                    }
                 }
             }
             break;
