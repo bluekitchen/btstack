@@ -1008,7 +1008,7 @@ static void pacs_client_event_handler(uint8_t packet_type, uint16_t channel, uin
     if (packet_type != HCI_EVENT_PACKET) return;
     if (hci_event_packet_get_type(packet) != HCI_EVENT_LEAUDIO_META) return;
 
-    switch (hci_event_gattservice_meta_get_subevent_code(packet)){
+    switch (hci_event_leaudio_meta_get_subevent_code(packet)){
         case LEAUDIO_SUBEVENT_PACS_CLIENT_CONNECTED:
             if (leaudio_subevent_pacs_client_connected_get_status(packet) != ERROR_CODE_SUCCESS){
                 printf("PACS client: connection failed, cid 0x%04x, con_handle 0x%04x, status 0x%02x\n", pacs_cid,
@@ -1085,7 +1085,7 @@ static void csis_client_event_handler(uint8_t packet_type, uint16_t channel, uin
     uint8_t status;
     server_t * server = NULL;
 
-    switch (hci_event_gattservice_meta_get_subevent_code(packet)){
+    switch (hci_event_leaudio_meta_get_subevent_code(packet)){
         case LEAUDIO_SUBEVENT_CSIS_CLIENT_CONNECTED:
             server = server_for_csis_cid(leaudio_subevent_csis_client_connected_get_csis_cid(packet));
             if (server != NULL){
@@ -1215,7 +1215,7 @@ void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
     uint8_t status;
     server_t * server = NULL;
 
-    switch (hci_event_gattservice_meta_get_subevent_code(packet)){
+    switch (hci_event_leaudio_meta_get_subevent_code(packet)){
         case LEAUDIO_SUBEVENT_ASCS_CLIENT_CONNECTED:
             con_handle = leaudio_subevent_ascs_client_connected_get_con_handle(packet);
             server = server_for_acl_con_handle(con_handle);
