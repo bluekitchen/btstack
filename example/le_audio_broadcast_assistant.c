@@ -339,7 +339,7 @@ static void bass_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
 
     const bass_source_data_t * source_data;
 
-    switch (hci_event_gattservice_meta_get_subevent_code(packet)) {
+    switch (hci_event_leaudio_meta_get_subevent_code(packet)) {
         case LEAUDIO_SUBEVENT_BASS_CLIENT_CONNECTED:
             if (leaudio_subevent_bass_client_connected_get_status(packet) != ERROR_CODE_SUCCESS){
                 printf("BASS client connection failed, cid 0x%02x, con_handle 0x%02x, status 0x%02x\n",
