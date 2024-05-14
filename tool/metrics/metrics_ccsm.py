@@ -102,6 +102,10 @@ def analyze_folders(btstack_root, folders, metrics_file):
         for row in rd:
             file = ''
             function_metrics = {}
+            # skip optional header
+            if row[0].startswith('#'):
+                continue
+
             for key, value in zip(fields, row):
                 if key == 'file':
                     # get rid of directory traversal on buildbot
