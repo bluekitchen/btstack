@@ -52,6 +52,7 @@
 #include "bluetooth_company_id.h"
 #include "bluetooth_data_types.h"
 #include "bluetooth_gatt.h"
+#include "btstack_audio.h"
 #include "btstack_debug.h"
 #include "btstack_event.h"
 #include "btstack_lc3.h"
@@ -91,6 +92,11 @@
 
 // hard-coded
 #define NUM_CIS_RETRANSMISSIONS 2
+
+// support for multi-channel audio using custom input device
+#ifdef HAVE_PORTAUDIO
+// #define INPUT_DEVICE_NAME "4-chan"
+#endif
 
 // known headsets
 static const char * known_headsets[] = {
@@ -1496,6 +1502,9 @@ int btstack_main(int argc, const char * argv[]){
 
     // setup audio processing
     le_audio_demo_util_source_init();
+#ifdef INPUT_DEVICE_NAME
+    btstack_audio_portaudio_source_set_device(INPUT_DEVICE_NAME);
+#endif
 
     // init servers
     uint8_t i;
