@@ -221,11 +221,6 @@ void le_audio_demo_util_source_generate_iso_frame(le_audio_demo_source_generator
     uint16_t sample;
     bool encode_pcm = true;
 
-    // more than 2 channels only supported by sine generator & counter
-    if ((le_audio_demo_source_num_channels > 2) && (generator != AUDIO_SOURCE_COUNTER)){
-        generator = AUDIO_SOURCE_SINE;
-    }
-
     // lazy init of btstack_audio, fallback to sine
     if ((generator == AUDIO_SOURCE_RECORDING) && (le_audio_demo_util_source_generator != AUDIO_SOURCE_RECORDING)){
         bool ok = le_audio_demo_util_source_recording_start();
