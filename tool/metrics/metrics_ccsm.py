@@ -170,8 +170,12 @@ def list_deviations():
         print ("\n%s" % key)
         print ('\n'.join(value))
  
-analyze(folders)
-list_metrics_table()
-# list_targets()
-# list_metrics()
-# list_deviations()
+def main(argv):
+    analyze(folders)
+    list_metrics_table()
+    # list_targets()
+    # list_metrics()
+    # list_deviations()
+
+if __name__ == "__main__":
+   main(sys.argv[1:])
