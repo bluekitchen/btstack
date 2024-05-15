@@ -5342,6 +5342,7 @@ static void hci_power_enter_halting_state(void){
             entry->state = LE_WHITELIST_ADD_TO_CONTROLLER;
         }
     }
+#ifdef ENABLE_LE_CENTRAL
 #ifdef ENABLE_LE_PERIODIC_ADVERTISING
     btstack_linked_list_iterator_init(&it, &hci_stack->le_periodic_advertiser_list);
     const uint8_t mask = LE_PERIODIC_ADVERTISER_LIST_ENTRY_REMOVE_FROM_CONTROLLER | LE_PERIODIC_ADVERTISER_LIST_ENTRY_REMOVE_FROM_CONTROLLER;
@@ -5355,6 +5356,7 @@ static void hci_power_enter_halting_state(void){
             continue;
         }
     }
+#endif
 #endif
 #endif
     // see hci_run
@@ -8929,6 +8931,7 @@ uint8_t gap_periodic_advertising_stop(uint8_t advertising_handle){
     return ERROR_CODE_SUCCESS;
 }
 
+#ifdef ENABLE_LE_CENTRAL
 uint8_t gap_periodic_advertising_sync_transfer_set_default_parameters(uint8_t mode, uint16_t skip, uint16_t sync_timeout, uint8_t cte_type){
     hci_stack->le_past_mode = mode;
     hci_stack->le_past_skip = skip;
@@ -8949,6 +8952,7 @@ uint8_t gap_periodic_advertising_sync_transfer_send(hci_con_handle_t con_handle,
     hci_run();
     return ERROR_CODE_SUCCESS;
 }
+#endif
 
 uint8_t gap_periodic_advertising_set_info_transfer_send(hci_con_handle_t con_handle, uint16_t service_data, uint8_t advertising_handle){
     hci_connection_t * hci_connection = hci_connection_for_handle(con_handle);
