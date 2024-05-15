@@ -484,7 +484,7 @@ static void bass_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
 
             // inform btp
             if ((response_service_id == BTP_SERVICE_ID_BAP) && (BTP_BAP_ADD_BROADCAST_SRC != 0)) {
-                if (gleaudio_subevent_bass_client_source_operation_complete_get_opcode(packet) == (uint8_t) BASS_OPCODE_ADD_SOURCE) {
+                if (leaudio_subevent_bass_client_source_operation_complete_get_opcode(packet) == (uint8_t) BASS_OPCODE_ADD_SOURCE) {
                     MESSAGE("BTP_BAP_ADD_BROADCAST_SRC completed");
                     btp_send(BTP_SERVICE_ID_BAP, BTP_BAP_ADD_BROADCAST_SRC, 0, 0, NULL);
                 }

@@ -377,7 +377,7 @@ static void btp_cap_csip_handler(uint8_t packet_type, uint16_t channel, uint8_t 
     switch (hci_event_gattservice_meta_get_subevent_code(packet)){
         case LEAUDIO_SUBEVENT_CSIS_CLIENT_RANK:
             if ((response_service_id == BTP_SERVICE_ID_CAP) && (response_op == BTP_CAP_DISCOVER)){
-                server_t * server = btp_server_for_csis_cid(gleaudio_subevent_csis_client_sirk_get_csis_cid(packet));
+                server_t * server = btp_server_for_csis_cid(leaudio_subevent_csis_client_sirk_get_csis_cid(packet));
                 btstack_assert(server != NULL);
                 MESSAGE("BTP_CAP_DISCOVER CSIS Client connected");
                 btp_cap_discovery_next(server);
@@ -427,7 +427,7 @@ static void btp_cap_bap_handler(uint8_t packet_type, uint16_t channel, uint8_t *
             break;
 
         case LEAUDIO_SUBEVENT_ASCS_CLIENT_QOS_CONFIGURATION:
-            ascs_cid = leaudio_subevent_ascs_client_qos_configuration_get_con_handle(packet);
+            ascs_cid = leaudio_subevent_ascs_client_qos_configuration_get_ascs_cid(packet);
             ase_id   = leaudio_subevent_ascs_client_qos_configuration_get_ase_id(packet);
             server = btp_server_for_ascs_cid(ascs_cid);
             btstack_assert(server != NULL);
@@ -599,9 +599,9 @@ static void btp_cap_bap_handler(uint8_t packet_type, uint16_t channel, uint8_t *
 
 
 #endif
-        case GATTSERVICE_SUBEVENT_BASS_CLIENT_CONNECTED:
+        case LEAUDIO_SUBEVENT_BASS_CLIENT_CONNECTED:
             if ((response_service_id == BTP_SERVICE_ID_CAP) && (response_op == BTP_CAP_DISCOVER)){
-                server_t * server = btp_server_for_acl_con_handle(gattservice_subevent_bass_client_connected_get_con_handle(packet));
+                server_t * server = btp_server_for_acl_con_handle(leaudio_subevent_bass_client_connected_get_con_handle(packet));
                 btstack_assert(server != NULL);
                 MESSAGE("BTP_CAP_DISCOVER BASS Client connected");
                 btp_cap_discovery_next(server);
