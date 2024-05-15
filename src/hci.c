@@ -4269,15 +4269,6 @@ static void event_handler(uint8_t *packet, uint16_t size){
                 hci_iso_stream_finalize(iso_stream);
                 break;
             }
-
-            // finalize iso stream(s) for ACL handle
-            btstack_linked_list_iterator_init(&it, &hci_stack->iso_streams);
-            while (btstack_linked_list_iterator_has_next(&it)){
-                iso_stream = (hci_iso_stream_t *) btstack_linked_list_iterator_next(&it);
-                if (iso_stream->acl_handle == handle ) {
-                    hci_iso_stream_finalize(iso_stream);
-                }
-            }
 #endif
 
 #if defined(ENABLE_BLE) && defined (ENABLE_HCI_COMMAND_STATUS_DISCARDED_FOR_FAILED_CONNECTIONS_WORKAROUND)
@@ -7191,17 +7182,17 @@ static bool hci_run_iso_tasks(void){
                 hci_stack->iso_active_operation_type = HCI_ISO_TYPE_CIS;
                 iso_stream->state = HCI_ISO_STREAM_STATE_W4_ISO_SETUP_INPUT;
                 hci_send_cmd(&hci_le_setup_iso_data_path, iso_stream->cis_handle, 0, 0, HCI_AUDIO_CODING_FORMAT_TRANSPARENT, 0, 0, 0, 0, NULL);
-                break;
+                return true;
             case HCI_ISO_STREAM_STATE_W2_SETUP_ISO_OUTPUT:
                 hci_stack->iso_active_operation_group_id = HCI_ISO_GROUP_ID_SINGLE_CIS;
                 hci_stack->iso_active_operation_type = HCI_ISO_TYPE_CIS;
                 iso_stream->state = HCI_ISO_STREAM_STATE_W4_ISO_SETUP_OUTPUT;
                 hci_send_cmd(&hci_le_setup_iso_data_path, iso_stream->cis_handle, 1, 0, HCI_AUDIO_CODING_FORMAT_TRANSPARENT, 0, 0, 0, 0, NULL);
-                break;
+                return true;
             case HCI_ISO_STREAM_STATE_W2_CLOSE:
                 iso_stream->state = HCI_ISO_STREAM_STATE_W4_DISCONNECTED;
-                hci_send_cmd(&hci_disconnect, iso_stream->cis_handle);
-                break;
+                hci_send_cmd(&hci_disconnect, iso_stream->cis_handle, ERROR_CODE_REMOTE_USER_TERMINATED_CONNECTION);
+                return true;
             default:
                 break;
         }
