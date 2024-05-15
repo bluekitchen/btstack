@@ -723,7 +723,7 @@ static void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uin
 
         case LEAUDIO_SUBEVENT_ASCS_CLIENT_QOS_CONFIGURATION:
             ase_id   = leaudio_subevent_ascs_client_qos_configuration_get_ase_id(packet);
-            ascs_cid = leaudio_subevent_ascs_client_qos_configuration_get_con_handle(packet);
+            ascs_cid = leaudio_subevent_ascs_client_qos_configuration_get_ascs_cid(packet);
 
             MESSAGE("ASCS Client: QOS CONFIGURATION - ase_id %d, ascs_cid 0x%02x", ase_id, ascs_cid);
             if (response_op != 0){

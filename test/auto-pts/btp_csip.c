@@ -205,7 +205,7 @@ static void btp_csip_client_event_handler(uint8_t packet_type, uint16_t channel,
             break;
 
         case LEAUDIO_SUBEVENT_CSIS_CLIENT_RSI_MATCH:
-            if (gattservice_subevent_csis_client_rsi_match_get_match(packet) != 0){
+            if (leaudio_subevent_csis_client_rsi_match_get_match(packet) != 0){
                 bd_addr_t addr;
                 leaudio_subevent_csis_client_rsi_match_get_source_address(packet, addr);
                 // rsi_match_handler(leaudio_subevent_csis_client_rsi_match_get_source_address_type(packet), addr);
