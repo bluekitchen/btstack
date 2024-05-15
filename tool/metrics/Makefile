@@ -50,8 +50,8 @@ all: metrics.md metrics.html metrics.txt
 metrics.tsv: ${SRCS}
 	ccsm --disable-file --disable-global --exclude-std-headers --exclude-file=.h$$ --output-format=tsv --output-metrics=HIS_.* $^ -- -DuECC_NO_DEFAULT_RNG -isystem ${C_HEADERS}/c90 -isystem ${C_HEADERS}/c99 ${INCLUDES} > $@
 
-metrics.md: metrics.tsv metrics-ccsm.py
-	./metrics-ccsm.py > metrics.md
+metrics.md: metrics.tsv metrics_ccsm.py
+	./metrics_ccsm.py > metrics.md
 
 metrics.html: metrics.md
 	pandoc --from markdown --to html -o metrics.html metrics.md
