@@ -4748,7 +4748,16 @@ static void packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
     }
 #endif
 
-    hci_dump_packet(packet_type, 1, packet, size);
+    // don't log internal events unless requested
+    bool internal_event = (packet_type == HCI_EVENT_PACKET) && (hci_event_packet_get_type(packet) >= BTSTACK_EVENT_FIRST);
+    bool log_packet = internal_event == false;
+#ifdef ENABLE_LOG_BTSTACK_EVENTS
+    log_packet = true;
+#endif
+    if (log_packet){
+        hci_dump_packet(packet_type, 1, packet, size);
+    }
+
     switch (packet_type) {
         case HCI_EVENT_PACKET:
             event_handler(packet, size);
