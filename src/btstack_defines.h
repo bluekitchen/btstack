@@ -1015,6 +1015,9 @@ typedef uint8_t sm_key_t[16];
  */
 #define HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE_V2           0x29u
 
+/** Internal BTstack events */
+#define BTSTACK_EVENT_FIRST                               BTSTACK_EVENT_STATE
+
 /**
  * @format 1
  * @param state
