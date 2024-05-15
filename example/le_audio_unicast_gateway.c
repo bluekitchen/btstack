@@ -117,6 +117,7 @@ static enum {
     APP_SET_CONNECTED,
     APP_CIG_CREATED,
     APP_STREAMING,
+    APP_DISCONNECTING,
 } app_state = APP_W4_WORKING;
 
 // remote devices
@@ -848,17 +849,19 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
             }
             break;
         case HCI_EVENT_CIS_CAN_SEND_NOW:
-            cis_con_handle = hci_event_cis_can_send_now_get_cis_con_handle(packet);
-            log_info("ISO can send now %04x", cis_con_handle);
-            for (i=0;i<cig_params.num_cis;i++){
-                if (cis_con_handle == cis_con_handles[i]){
-                    // allow to send
-                    le_audio_demo_util_source_send(i, cis_con_handle);
-                    // TODO: replace this quick fix
-                    if (i == cig_params.num_cis-1){
-                        le_audio_demo_util_source_generate_iso_frame(audio_source);
+            if (app_state == APP_STREAMING){
+                cis_con_handle = hci_event_cis_can_send_now_get_cis_con_handle(packet);
+                log_info("ISO can send now %04x", cis_con_handle);
+                for (i=0;i<cig_params.num_cis;i++){
+                    if (cis_con_handle == cis_con_handles[i]){
+                        // allow to send
+                        le_audio_demo_util_source_send(i, cis_con_handle);
+                        // TODO: replace this quick fix
+                        if (i == cig_params.num_cis-1){
+                            le_audio_demo_util_source_generate_iso_frame(audio_source);
+                        }
+                        hci_request_cis_can_send_now_events(cis_con_handle);
                     }
-                    hci_request_cis_can_send_now_events(cis_con_handle);
                 }
             }
             break;
@@ -1451,6 +1454,7 @@ static void stdin_process(char c){
             print_config();
             break;
         case 'q':
+            app_state = APP_DISCONNECTING;
             if (cig_id != CIG_ID_INVALID){
                 gap_cig_remove(cig_id);
             }
