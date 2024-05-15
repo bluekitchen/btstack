@@ -3646,7 +3646,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
 #if defined(ENABLE_LE_ISOCHRONOUS_STREAMS) || defined(ENABLE_LE_EXTENDED_ADVERTISING)
     btstack_linked_list_iterator_t it;
 #endif
-#ifdef ENABLE_LE_EXTENDED_ADVERTISING
+#if defined(ENABLE_LE_EXTENDED_ADVERTISING) && defined(ENABLE_LE_CENTRAL)
     uint8_t advertising_handle;
 #endif
 
