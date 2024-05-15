@@ -641,12 +641,12 @@ static void ascs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
         case LEAUDIO_SUBEVENT_ASCS_SERVER_CONNECTED:
             con_handle = leaudio_subevent_ascs_server_connected_get_con_handle(packet);
             status =     leaudio_subevent_ascs_server_connected_get_status(packet);
-            printf("ASCS Server: connected, con_handle 0x%04x\n, status 0x%02x", con_handle, status);
+            printf("ASCS Server: connected, con_handle 0x%04x, status 0x%02x\n", con_handle, status);
 #ifdef ENABLE_MCS_CLIENT
             if (configurations[app_config].channel_id < 2){
-                printf("Only left/stereo speaker connect to MCS Server -> don't connecty to MCS\n");
-            } else {
                 mcs_client_connect(con_handle);
+            } else {
+                printf("MCS: Only left/stereo speaker connect to MCS Server -> don't connect\n");
             }
 #endif
             break;
