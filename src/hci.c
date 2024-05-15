@@ -3403,6 +3403,8 @@ static void hci_handle_le_connection_complete_event(const uint8_t * hci_event){
 
 		// free connection if cancelled by user (request == IDLE)
         bool cancelled_by_user = hci_stack->le_connecting_request == LE_CONNECTING_IDLE;
+        // get outgoing connection conn to free slot if cancelled by user
+        conn = gap_get_outgoing_le_connection();
 		if ((conn != NULL) && cancelled_by_user){
 			// remove entry
 			btstack_linked_list_remove(&hci_stack->connections, (btstack_linked_item_t *) conn);
