@@ -74,7 +74,7 @@ def metric_measure(metric_name, function_name, actual):
             metric_list(metric_name + '_LIST', function_name)
 
 
-def analyze_folders(btstack_root, folders):
+def analyze_folders(btstack_root, folders, metrics_file):
     global excluded_functions
 
     # File,Name,"'goto' keyword count (raw source)","Return points","Statement count (raw source)(local)",
@@ -88,7 +88,7 @@ def analyze_folders(btstack_root, folders):
         metrics[key + '_DEVIATIONS'] = 0
 
     # for now, just read the file
-    with open("metrics.tsv") as fd:
+    with open(metrics_file) as fd:
         rd = csv.reader(fd, delimiter="\t")
         last_function_name = ''
         for row in rd:
@@ -119,13 +119,13 @@ def analyze_folders(btstack_root, folders):
             for key,value in function_metrics.items():
                 metric_measure(key, qualified_function_name, int(function_metrics[key]))
 
-def analyze(folders):
+def analyze(folders, metrics_file):
     # print ("\nAnalyzing:")
     # for path in folders:
     #     print('- %s' % path)
     #     analyze_folder(btstack_root + "/" + path)
     btstack_root = os.path.abspath(os.path.dirname(sys.argv[0]) + '/../..')
-    analyze_folders(btstack_root, folders)
+    analyze_folders(btstack_root, folders, metrics_file)
 
 def list_targets():
     print ("Targets:")
@@ -171,7 +171,7 @@ def list_deviations():
         print ('\n'.join(value))
  
 def main(argv):
-    analyze(folders)
+    analyze(folders, "metrics.tsv")
     list_metrics_table()
     # list_targets()
     # list_metrics()
