@@ -2104,8 +2104,8 @@ int btstack_main(int argc, const char * argv[])
     gap_set_local_name(gap_name);
     gap_set_class_of_device(gap_cod);
 #endif
-    // use 30-100 ms connection interval to allow for 2 ACL Connections with CIS
-    gap_set_connection_parameters(0x60, 0x30, 0x18, 0x50, 4, 200, 0x18, 0x50);
+    // use 60-100 ms connection interval to allow for 2 ACL Connections with CIS
+    gap_set_connection_parameters(0x60, 0x30, 0x30, 0x50, 4, 200, 0x18, 0x50);
 
     // delete all bonding information on start
     gap_delete_bonding_on_start = true;
