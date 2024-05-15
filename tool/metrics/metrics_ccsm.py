@@ -15,6 +15,7 @@ folders = [
 
 metrics = {}
 targets = {}
+histogram_data = {}
 
 targets['PATH']   = 1000
 targets['GOTO']   = 0
@@ -40,6 +41,13 @@ excluded_functions = [
     'src/l2cap.c:l2cap_cbm_can_send_now',
     'src/l2cap.c:l2cap_cbm_request_can_send_now_even'
 ]
+
+def histogram_add_data(key, value):
+    global histogram_data
+    if key not in histogram_data.keys():
+        histogram_data[key] = []
+    histogram_data[key].append(value)
+
 
 def metric_sum(name, value):
     global metrics
@@ -109,6 +117,8 @@ def analyze_folders(btstack_root, folders, metrics_file):
                 if key == '_':
                     continue
                 function_metrics[key] = value
+                histogram_add_data(key,int(value))
+
             if file.endswith('.h'):
                 continue
             qualified_function_name = file+':'+function_name
