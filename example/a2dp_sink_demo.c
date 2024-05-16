@@ -345,8 +345,8 @@ static int setup_demo(void){
     // - Allow to show up in Bluetooth inquiry
     gap_discoverable_control(1);
 
-    // - Set Class of Device - Service Class: Audio, Major Device Class: Audio, Minor: Loudspeaker
-    gap_set_class_of_device(0x200414);
+    // - Set Class of Device - Service Class: Audio, Major Device Class: Audio, Minor: Headphone
+    gap_set_class_of_device(0x200404);
 
     // - Allow for role switch in general and sniff mode
     gap_set_default_link_policy_settings( LM_LINK_POLICY_ENABLE_ROLE_SWITCH | LM_LINK_POLICY_ENABLE_SNIFF_MODE );
