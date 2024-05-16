@@ -3394,9 +3394,10 @@ static void hci_handle_le_connection_complete_event(const uint8_t * hci_event){
             connection_was_cancelled = true;
 		    // reset state
             hci_stack->le_connecting_state = LE_CONNECTING_IDLE;
-			// get outgoing connection conn struct for direct connect
+            // get outgoing connection conn struct for direct connect
+            conn = gap_get_outgoing_le_connection();
+            // prepare restart if still active
             if (hci_stack->le_connecting_request == LE_CONNECTING_DIRECT){
-                conn = gap_get_outgoing_le_connection();
                 conn->state = SEND_CREATE_CONNECTION;
             }
 		}
@@ -3414,7 +3415,7 @@ static void hci_handle_le_connection_complete_event(const uint8_t * hci_event){
         // - connection cancelled by user
         // by this, no event is emitted for intermediate connection cancel required filterlist modification
         if ((connection_was_cancelled == false) || cancelled_by_user){
-            hci_emit_event(gap_event, sizeof(gap_event), 1);
+            hci_emit_btstack_event(gap_event, sizeof(gap_event), 1);
         }
         return;
 	}
