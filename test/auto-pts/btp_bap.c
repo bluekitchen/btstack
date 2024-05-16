@@ -327,7 +327,8 @@ static void handle_big_info(const uint8_t * packet, uint16_t size){
 }
 
 static void have_base_and_big_info(void){
-    MESSAGE("Broadcast Sink Synced");
+    MESSAGE("Broadcast Sink Synced -> Stop Scanning to reduce resources");
+    gap_stop_scan();
 }
 
 static void handle_big_sync_created(const uint8_t * packet, uint16_t size){
