@@ -35,7 +35,7 @@
  *
  */
 
-#define BTSTACK_FILE__ "btp_btp.c"
+#define BTSTACK_FILE__ "btp_bap.c"
 
 #include <stdint.h>
 #include <stdio.h>
@@ -454,7 +454,7 @@ static void bass_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
     uint16_t bass_cid;
     server_t * server;
 
-    switch (hci_event_gattservice_meta_get_subevent_code(packet)) {
+    switch (hci_event_leaudio_meta_get_subevent_code(packet)) {
         case LEAUDIO_SUBEVENT_BASS_CLIENT_CONNECTED:
 			bass_cid = leaudio_subevent_bass_client_connected_get_bass_cid(packet);
             if (leaudio_subevent_bass_client_connected_get_status(packet) != ERROR_CODE_SUCCESS){
@@ -483,11 +483,26 @@ static void bass_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
             }
 
             // inform btp
-            if ((response_service_id == BTP_SERVICE_ID_BAP) && (BTP_BAP_ADD_BROADCAST_SRC != 0)) {
+            if ((response_service_id == BTP_SERVICE_ID_BAP) && (response_op == BTP_BAP_ADD_BROADCAST_SRC)) {
                 if (leaudio_subevent_bass_client_source_operation_complete_get_opcode(packet) == (uint8_t) BASS_OPCODE_ADD_SOURCE) {
                     MESSAGE("BTP_BAP_ADD_BROADCAST_SRC completed");
                     btp_send(BTP_SERVICE_ID_BAP, BTP_BAP_ADD_BROADCAST_SRC, 0, 0, NULL);
                 }
+            }
+            else if ((response_service_id == BTP_SERVICE_ID_BAP) && (response_op == BTP_BAP_REMOVE_BROADCAST_SRC)) {
+                if (leaudio_subevent_bass_client_source_operation_complete_get_opcode(packet) == (uint8_t) BASS_OPCODE_REMOVE_SOURCE) {
+                    MESSAGE("BTP_BAP_REMOVE_BROADCAST_SRC completed");
+                    btp_send(BTP_SERVICE_ID_BAP, BTP_BAP_REMOVE_BROADCAST_SRC, 0, 0, NULL);
+                }
+            }
+            else if ((response_service_id == BTP_SERVICE_ID_BAP) && (response_op == BTP_BAP_MODIFY_BROADCAST_SRC)) {
+                if (leaudio_subevent_bass_client_source_operation_complete_get_opcode(packet) == (uint8_t) BASS_OPCODE_MODIFY_SOURCE) {
+                    MESSAGE("BTP_BAP_MODIFY_BROADCAST_SRC completed");
+                    btp_send(BTP_SERVICE_ID_BAP, BTP_BAP_MODIFY_BROADCAST_SRC, 0, 0, NULL);
+                }
+            }
+            else {
+                MESSAGE("BTP_BAP_OPERATION %u completed", leaudio_subevent_bass_client_source_operation_complete_get_opcode(packet));
             }
             break;
         case LEAUDIO_SUBEVENT_BASS_CLIENT_NOTIFICATION_COMPLETE:
@@ -500,6 +515,37 @@ static void bass_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
             MESSAGE("BASS client notification, source_id = 0x%02x", server->bass_source_id);
             source_data = broadcast_audio_scan_service_client_get_source_data(bass_cid, server->bass_source_id);
             btstack_assert(source_data != NULL);
+
+            // inform btp
+            {
+                /*  <B6s B B6s B3sBBB
+                    Address_Type (1 octet)
+					Address (6 octets)
+					Source ID (1 octet)
+					Broadcaster Address Type (1 octet)
+					Broadcaster Address (6 octets)
+					Advertiser SID (1 octet)
+					Broadcast ID (3 octets)
+					PA Sync State (1 octet)
+					BIG Encryption (1 octet)
+					Num Subgroups (1 octet)
+					Subgroups (varies)
+                 */
+                response_len = 0;
+                btp_append_uint8(server->address_type);
+                reverse_bd_addr(server->address, &response_buffer[response_len]);
+                response_len += 6;
+                btp_append_uint8(server->bass_source_id);
+                btp_append_uint8(source_data->address_type);
+                reverse_bd_addr(source_data->address, &response_buffer[response_len]);
+                response_len += 6;
+                btp_append_uint8(source_data->adv_sid);
+                btp_append_uint24(source_data->broadcast_id);
+                btp_append_uint8(source_data->pa_sync_state);
+                btp_append_uint8(0); // assume unencrypted
+                btp_append_uint8(0); // no subgroups for now
+                btp_send(BTP_SERVICE_ID_BAP, BTP_BAP_EV_BROADCAST_RECEIVE_STATE, 0, response_len,  response_buffer);
+            }
 
             switch (source_data->pa_sync_state){
                 case LE_AUDIO_PA_SYNC_STATE_SYNCINFO_REQUEST:
@@ -804,7 +850,7 @@ static void btp_bap_ascs_client_event_handler(uint8_t packet_type, uint16_t chan
     UNUSED(size);
 
     if (packet_type != HCI_EVENT_PACKET) return;
-    if (hci_event_packet_get_type(packet) != HCI_EVENT_GATTSERVICE_META) return;
+    if (hci_event_packet_get_type(packet) != HCI_EVENT_LEAUDIO_META) return;
 
     ascs_codec_configuration_t codec_configuration;
     hci_con_handle_t con_handle;
@@ -1385,15 +1431,61 @@ void btp_bap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, 
             break;
         case BTP_BAP_REMOVE_BROADCAST_SRC:
             if (controller_index == 0) {
-                MESSAGE("BTP_BAP_REMOVE_BROADCAST_SRC");
-                btp_send(BTP_SERVICE_ID_BAP, opcode, controller_index, 0, NULL);
+
+                uint16_t pos = 0;
+                bd_addr_type_t addr_type = (bd_addr_type_t) data[pos++];
+                bd_addr_t address;
+                reverse_bd_addr(&data[pos], address);
+                pos += 6;
+                server = btp_server_for_address(addr_type, address);
+
+                MESSAGE("BTP_BAP_REMOVE_BROADCAST_SRC on %s", bd_addr_to_str(server->address));
+
+                uint8_t source_id = data[pos];
+                uint8_t status = broadcast_audio_scan_service_client_remove_source(server->bass_cid, source_id);
+                btstack_assert(status == ERROR_CODE_SUCCESS);
                 break;
             }
             break;
         case BTP_BAP_MODIFY_BROADCAST_SRC:
             if (controller_index == 0) {
-                MESSAGE("BTP_BAP_MODIFY_BROADCAST_SRC");
-                btp_send(BTP_SERVICE_ID_BAP, opcode, controller_index, 0, NULL);
+                // parse command into bass_source_data
+
+                /*
+		            Address_Type (1 octet)
+					Address  (6 octets)
+					Source ID (1 octet)
+					PA_Sync (1 octet)
+					PA_Interval (2 octets)
+					Num_Subgroups (1 octet
+                */
+                uint16_t pos = 0;
+                bd_addr_type_t addr_type = (bd_addr_type_t) data[pos++];
+                bd_addr_t address;
+                reverse_bd_addr(&data[pos], address);
+                pos += 6;
+                server = btp_server_for_address(addr_type, address);
+
+                MESSAGE("BTP_BAP_MODIFY_BROADCAST_SRC on %s", bd_addr_to_str(server->address));
+
+                uint8_t source_id = data[pos++];
+
+                memset(&bass_source_data, 0, sizeof(bass_source_data));
+                bass_source_data.pa_sync = data[pos++];
+                bass_source_data.pa_interval = little_endian_read_16(data, pos);
+                pos += 2;
+                bass_source_data.subgroups_num = data[pos++];
+                uint8_t subgroup;
+                for (subgroup=0;subgroup < bass_source_data.subgroups_num;subgroup++){
+                    bass_source_data.subgroups[subgroup].bis_sync = little_endian_read_32(data, pos);
+                    pos += 4;
+                    bass_source_data.subgroups[subgroup].metadata_length = data[pos++];
+                    // skip metadata
+                    pos += bass_source_data.subgroups[subgroup].metadata_length;
+                }
+
+                uint8_t status = broadcast_audio_scan_service_client_modify_source(server->bass_cid, source_id,  &bass_source_data);
+                btstack_assert(status == ERROR_CODE_SUCCESS);
                 break;
             }
             break;
