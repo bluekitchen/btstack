@@ -394,7 +394,7 @@ static void btp_cap_bap_handler(uint8_t packet_type, uint16_t channel, uint8_t *
     UNUSED(size);
 
     if (packet_type != HCI_EVENT_PACKET) return;
-    if (hci_event_packet_get_type(packet) != HCI_EVENT_GATTSERVICE_META) return;
+    if (hci_event_packet_get_type(packet) != HCI_EVENT_LEAUDIO_META) return;
 
     ascs_codec_configuration_t codec_configuration;
     ascs_state_t ase_state;
@@ -664,10 +664,10 @@ void btp_cap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, 
                 bd_addr_t address;
                 reverse_bd_addr(&data[1], address);
                 server = btp_server_for_address(addr_type, address);
+                btstack_assert(server != NULL);
+
                 MESSAGE("BTP_CAP_DISCOVER %u, addr %s, addr type %u", server->server_id, bd_addr_to_str(server->address), server->address_type);
                 server->cap_state = (uint8_t) CAP_DISCOVERY_IDLE;
-                btp_cap_discovery_next(server);
-                btp_send(response_service_id, opcode, controller_index, 0, NULL);
 
                 // Reset state
 
@@ -687,6 +687,10 @@ void btp_cap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, 
                 // Broadcast
                 btp_cap_broadcast_stream_count = 0;
                 btp_cap_broadcast_subgroup_count = 0;
+
+                // discover
+                btp_send(response_service_id, opcode, controller_index, 0, NULL);
+                btp_cap_discovery_next(server);
             }
             break;
         case BTP_CAP_UNICAST_SETUP_ASE:
