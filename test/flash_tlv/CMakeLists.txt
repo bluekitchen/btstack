@@ -20,14 +20,11 @@ include_directories(../../platform/posix)
 include_directories(../../src)
 include_directories(..)
 
-# test ENABLE_TLV_FLASH_WRITE_ONCE
-add_compile_definitions(ENABLE_TLV_FLASH_WRITE_ONCE)
-
 # Enable ASAN
 add_compile_options( -g -fsanitize=address)
 add_link_options(       -fsanitize=address)
 
-add_executable(tlv_test
+add_executable(tlv_test_main
         tlv_test.cpp
         ${BTSTACK_ROOT}/src/btstack_util.c
         ${BTSTACK_ROOT}/src/hci_dump.c
@@ -36,3 +33,27 @@ add_executable(tlv_test
         ${BTSTACK_ROOT}/platform/embedded/hal_flash_bank_memory.c
         ${BTSTACK_ROOT}/platform/posix/hci_dump_posix_fs.c
 )
+
+# test ENABLE_TLV_FLASH_WRITE_ONCE
+add_executable(tlv_test_write_once
+        tlv_test.cpp
+        ${BTSTACK_ROOT}/src/btstack_util.c
+        ${BTSTACK_ROOT}/src/hci_dump.c
+        ${BTSTACK_ROOT}/src/classic/btstack_link_key_db_tlv.c
+        ${BTSTACK_ROOT}/platform/embedded/btstack_tlv_flash_bank.c
+        ${BTSTACK_ROOT}/platform/embedded/hal_flash_bank_memory.c
+        ${BTSTACK_ROOT}/platform/posix/hci_dump_posix_fs.c
+)
+target_compile_definitions(tlv_test_write_once PUBLIC ENABLE_TLV_FLASH_WRITE_ONCE)
+
+# test ENABLE_TLV_FLASH_WRITE_ONCE
+add_executable(tlv_test_delete_field
+        tlv_test.cpp
+        ${BTSTACK_ROOT}/src/btstack_util.c
+        ${BTSTACK_ROOT}/src/hci_dump.c
+        ${BTSTACK_ROOT}/src/classic/btstack_link_key_db_tlv.c
+        ${BTSTACK_ROOT}/platform/embedded/btstack_tlv_flash_bank.c
+        ${BTSTACK_ROOT}/platform/embedded/hal_flash_bank_memory.c
+        ${BTSTACK_ROOT}/platform/posix/hci_dump_posix_fs.c
+)
+target_compile_definitions(tlv_test_delete_field PUBLIC ENABLE_TLV_FLASH_EXPLICIT_DELETE_FIELD)
