@@ -196,11 +196,6 @@ static bool btstack_tlv_flash_bank_iterator_has_next(btstack_tlv_flash_bank_t * 
 static void tlv_iterator_fetch_next(btstack_tlv_flash_bank_t * self, tlv_iterator_t * it){
     it->offset += btstack_tlv_flash_bank_aligned_entry_size(self, it->len);
 
-#ifdef ENABLE_TLV_FLASH_EXPLICIT_DELETE_FIELD
-	// skip delete field
-	it->offset += self->delete_tag_len;
-#endif
-
 	if (it->offset >= it->size) {
 		it->tag = 0xffffffff;
 		it->len = 0;
