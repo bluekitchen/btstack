@@ -15,9 +15,10 @@
 #include "btstack_debug.h"
 
 #ifdef ENABLE_TLV_FLASH_EXPLICIT_DELETE_FIELD
-// Provide additional bytes for 3 x delete fields (in both banks)
+// Provide additional bytes for 3 x delete fields of 4 bytes (in both banks)
+// note: only valid for alignments: 1,2 and 4
 #define HAL_FLASH_BANK_MEMORY_STORAGE_SIZE (256 + 24)
-#define TAG_OVERHEAD 16
+#define TAG_OVERHEAD 12
 #else
 #define HAL_FLASH_BANK_MEMORY_STORAGE_SIZE (256)
 #define TAG_OVERHEAD 8
@@ -251,7 +252,7 @@ TEST(BSTACK_TLV, TestWriteResetRead){
     CHECK_EQUAL(buffer, data);
 }
 
-TEST(BSTACK_TLV, TestFullBank){
+TEST(BSTACK_TLV, TestFullBankNormal){
     btstack_tlv_impl = btstack_tlv_flash_bank_init_instance(&btstack_tlv_context, hal_flash_bank_impl, &hal_flash_bank_context);
 
     // fill-up flash bank
