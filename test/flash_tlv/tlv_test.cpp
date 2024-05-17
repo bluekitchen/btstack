@@ -392,6 +392,8 @@ int main (int argc, const char * argv[]){
     // log into file using HCI_DUMP_PACKETLOGGER format
 #ifdef ENABLE_TLV_FLASH_WRITE_ONCE
     const char * pklg_path = "hci_dump_write_once.pklg";
+#elif defined(ENABLE_TLV_FLASH_EXPLICIT_DELETE_FIELD)
+    const char * pklg_path = "hci_dump_delete_field.pklg";
 #else
     const char * pklg_path = "hci_dump.pklg";
 #endif
