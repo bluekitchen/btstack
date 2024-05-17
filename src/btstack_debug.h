@@ -103,26 +103,34 @@ void btstack_assert_failed(const char * file, uint16_t line_nr);
 #endif
 #endif
 
-#ifdef __AVR__
-#define HCI_DUMP_LOG(log_level, format, ...) hci_dump_log_P(log_level, PSTR("%S.%u: " format), PSTR(BTSTACK_FILE__), __LINE__, ## __VA_ARGS__)
+// Prefix log messages with [DBG/INF/ERR] - using Wireshark filter to show or hide log levels <!_ws.col.info matches "DBG">
+#ifdef ENABLE_LOG_PREFIXES
+#define LOG_PREFIX(prefix) "[" ## prefix ## "] "
 #else
-#define HCI_DUMP_LOG(log_level, format, ...) hci_dump_log(log_level, "%s.%u: " format, BTSTACK_FILE__, __LINE__, ## __VA_ARGS__)
+#define LOG_PREFIX(prefix) ""
 #endif
 
+#ifdef __AVR__
+#define HCI_DUMP_LOG(prefix, log_level, format, ...) hci_dump_log_P(log_level, PSTR(LOG_PREFIX(prefix) "%S.%u: " format), PSTR(BTSTACK_FILE__), __LINE__, ## __VA_ARGS__)
+#else
+#define HCI_DUMP_LOG(prefix, log_level, format, ...) hci_dump_log(log_level, LOG_PREFIX(prefix) "%s.%u: " format, BTSTACK_FILE__, __LINE__, ## __VA_ARGS__)
+#endif
+
+
 #ifdef ENABLE_LOG_DEBUG
-#define log_debug(format, ...)  HCI_DUMP_LOG(HCI_DUMP_LOG_LEVEL_DEBUG, format,  ## __VA_ARGS__)
+#define log_debug(format, ...)  HCI_DUMP_LOG("DBG", HCI_DUMP_LOG_LEVEL_DEBUG, format,  ## __VA_ARGS__)
 #else
 #define log_debug(...) (void)(0)
 #endif
 
 #ifdef ENABLE_LOG_INFO
-#define log_info(format, ...)  HCI_DUMP_LOG(HCI_DUMP_LOG_LEVEL_INFO, format,  ## __VA_ARGS__)
+#define log_info(format, ...)  HCI_DUMP_LOG("INF", HCI_DUMP_LOG_LEVEL_INFO, format,  ## __VA_ARGS__)
 #else
 #define log_info(...) (void)(0)
 #endif
 
 #ifdef ENABLE_LOG_ERROR
-#define log_error(format, ...)  HCI_DUMP_LOG(HCI_DUMP_LOG_LEVEL_ERROR, format,  ## __VA_ARGS__)
+#define log_error(format, ...)  HCI_DUMP_LOG("ERR", HCI_DUMP_LOG_LEVEL_ERROR, format,  ## __VA_ARGS__)
 #else
 #define log_error(...) (void)(0)
 #endif
