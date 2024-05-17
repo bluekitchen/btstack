@@ -252,6 +252,7 @@ void printf_hexdump(const void * data, int size){
 
 #if defined(ENABLE_LOG_INFO) || defined(ENABLE_LOG_DEBUG)
 static void log_hexdump(int level, const void * data, int size){
+#define LOG_PREFIX(level) level==0?"[DBG]":"[INF]"
 #define ITEMS_PER_LINE 16
 // template '0x12, '
 #define BYTES_PER_BYTE  6
@@ -275,13 +276,13 @@ static void log_hexdump(int level, const void * data, int size){
 
         if (j >= (BYTES_PER_BYTE * ITEMS_PER_LINE) ){
             buffer[j] = 0;
-            HCI_DUMP_LOG(level, "%s", buffer);
+            HCI_DUMP_LOG(LOG_PREFIX(level), level, "%s", buffer);
             j = 0;
         }
     }
     if (j != 0){
         buffer[j] = 0;
-        HCI_DUMP_LOG(level, "%s", buffer);
+        HCI_DUMP_LOG(LOG_PREFIX(level), level, "%s", buffer);
     }
 }
 #endif
