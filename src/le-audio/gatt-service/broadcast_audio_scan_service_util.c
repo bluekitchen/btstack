@@ -206,9 +206,12 @@ bass_util_pa_info_and_subgroups_parse(const uint8_t *buffer, uint16_t buffer_siz
     // for Broadcast Receive state, we have BIG_Encryption + Bad_Code, while for Add/Modify we have PA_Interval
     if (is_broadcast_receive_state){
         source_data->pa_sync_state = (le_audio_pa_sync_state_t)buffer[pos++];
-        le_audio_big_encryption_t big_encryption = (le_audio_big_encryption_t) buffer[pos++];
-        if (big_encryption == LE_AUDIO_BIG_ENCRYPTION_BAD_CODE){
+        source_data->big_encryption = (le_audio_big_encryption_t) buffer[pos++];
+        if (source_data->big_encryption == LE_AUDIO_BIG_ENCRYPTION_BAD_CODE){
+            memcpy(source_data->bad_code, &buffer[pos], 16);
             pos += 16;
+        } else {
+            memset(source_data->bad_code, 0, 16);
         }
     } else {
         source_data->pa_sync       = (le_audio_pa_sync_t)buffer[pos++];
