@@ -190,7 +190,7 @@ static void map_access_server_obex_parser_callback(void* user_data, uint8_t head
     }
 }
 
-static void map_access_server_handle_put_request(map_access_server_t* mas, uint8_t opcode, bool do_push_event) {
+static void map_access_server_handle_map_requests(map_access_server_t* mas, uint8_t opcode, bool do_push_event) {
     if (opcode & OBEX_OPCODE_FINAL_BIT_MASK ||
         !obex_srm_is_enabled(&mas->obex_srm)) {
         ENTER_STATE(mas, MAP_SEND_REQUEST_RESPONSE);
@@ -376,13 +376,14 @@ static void map_access_server_packet_handler_goep(map_access_server_t* mas, uint
             obex_parser_operation_info_t op_info;
             obex_parser_get_operation_info(&mas->obex_parser, &op_info);
             switch (op_info.opcode) {
-            case OBEX_OPCODE_SETPATH:
             case OBEX_OPCODE_GET:
             case (OBEX_OPCODE_GET | OBEX_OPCODE_FINAL_BIT_MASK):
+            case OBEX_OPCODE_SETPATH:
+
             case OBEX_OPCODE_PUT:
             case (OBEX_OPCODE_PUT | OBEX_OPCODE_FINAL_BIT_MASK):
                 mas->request.abort_response = 0;
-                map_access_server_handle_put_request(mas, op_info.opcode, false);
+                map_access_server_handle_map_requests(mas, op_info.opcode, false);
                 if (mas->request.abort_response == 0) {
                     (*map_access_server_user_packet_handler)(MAP_DATA_PACKET, mas->mas_cid, (uint8_t*)mas->request.payload_data, mas->request.payload_len);
                 }
