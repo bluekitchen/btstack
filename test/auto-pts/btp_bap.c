@@ -1492,7 +1492,22 @@ void btp_bap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, 
             break;
         case BTP_BAP_SET_BROADCAST_CODE:
             if (controller_index == 0) {
+                /*
+                    Address_Type (1 octet)
+                    Address  (6 octets)
+                    Source ID (1 octet)
+                    Broadcast Code (16 octets)
+                 */
+                uint16_t pos = 0;
+                bd_addr_type_t addr_type = (bd_addr_type_t) data[pos++];
+                bd_addr_t address;
+                reverse_bd_addr(&data[pos], address);
+                pos += 6;
+                server = btp_server_for_address(addr_type, address);
+                uint8_t source_id = data[pos++];
                 MESSAGE("BTP_BAP_SET_BROADCAST_CODE");
+                uint8_t status = broadcast_audio_scan_service_client_set_broadcast_code(server->bass_cid, source_id, &data[pos]);
+                btstack_assert(status == ERROR_CODE_SUCCESS);
                 btp_send(BTP_SERVICE_ID_BAP, opcode, controller_index, 0, NULL);
                 break;
             }
