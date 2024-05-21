@@ -51,6 +51,7 @@
 #include <string.h>
 
 #include "btstack_event.h"
+#include "btstack_debug.h"
 #include "yxml.h"
 #include "classic/goep_client.h"
 #include "classic/goep_server.h"
@@ -170,15 +171,15 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                 case HCI_EVENT_MAP_META:
                     switch (hci_event_map_meta_get_subevent_code(packet)){
                         case MAP_SUBEVENT_NOTIFICATION_EVENT:
-                            printf("Notification!\n");
+                            log_info("Notification!");
                             break;
                         default:
-                            printf ("unknown map meta event %d\n", hci_event_map_meta_get_subevent_code(packet));
+                            log_info("unknown map meta event %d\n", hci_event_map_meta_get_subevent_code(packet));
                             break;
                     }
                     break;
                 default:
-                    printf ("unknown HCI event %d\n",
+                    log_info("unknown HCI event %d\n",
                             hci_event_packet_get_type(packet));
                     break;
             }
