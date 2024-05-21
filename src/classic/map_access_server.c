@@ -368,7 +368,7 @@ static void map_access_server_packet_handler_goep(map_access_server_t* mas, uint
         }
 
         /* fall through */
-
+#if 1 // set to 0 to print GOEP packet to the console
     case MAP_W4_REQUEST:
         obex_srm_init(&mas->obex_srm);
         parser_state = obex_parser_process_data(&mas->obex_parser, packet, size);
@@ -376,6 +376,9 @@ static void map_access_server_packet_handler_goep(map_access_server_t* mas, uint
             obex_parser_operation_info_t op_info;
             obex_parser_get_operation_info(&mas->obex_parser, &op_info);
             switch (op_info.opcode) {
+            case OBEX_OPCODE_SETPATH:
+            case OBEX_OPCODE_GET:
+            case (OBEX_OPCODE_GET | OBEX_OPCODE_FINAL_BIT_MASK):
             case OBEX_OPCODE_PUT:
             case (OBEX_OPCODE_PUT | OBEX_OPCODE_FINAL_BIT_MASK):
                 mas->request.abort_response = 0;
@@ -384,6 +387,7 @@ static void map_access_server_packet_handler_goep(map_access_server_t* mas, uint
                     (*map_access_server_user_packet_handler)(MAP_DATA_PACKET, mas->mas_cid, (uint8_t*)mas->request.payload_data, mas->request.payload_len);
                 }
                 break;
+
             case OBEX_OPCODE_DISCONNECT:
                 ENTER_STATE(mas, MAP_W2_SEND_DISCONNECT_RESPONSE);
                 goep_server_request_can_send_now(mas->goep_cid);
@@ -397,6 +401,7 @@ static void map_access_server_packet_handler_goep(map_access_server_t* mas, uint
             }
         }
         break;
+#endif
 
     default:
         printf("MAP server: GOEP data packet'");
