@@ -543,7 +543,7 @@ static void bass_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
                 btp_append_uint8(source_data->adv_sid);
                 btp_append_uint24(source_data->broadcast_id);
                 btp_append_uint8(source_data->pa_sync_state);
-                btp_append_uint8(0); // assume unencrypted
+                btp_append_uint8(source_data->big_encryption);
                 btp_append_uint8(0); // no subgroups for now
                 btp_send(BTP_SERVICE_ID_BAP, BTP_BAP_EV_BROADCAST_RECEIVE_STATE, 0, response_len,  response_buffer);
             }
