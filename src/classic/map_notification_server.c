@@ -347,6 +347,12 @@ static void map_notification_server_packet_handler_goep(map_notification_server_
             opcode = goep_data_packet_get_opcode(packet);
             // default headers
             switch (opcode){
+                case OBEX_OPCODE_SETPATH:
+                    log_info("handling SETPATH\n");
+                    map_notification_server_reset_request(mns);
+                    ENTER_STATE(mns, MAP_W4_REQUEST);
+                    obex_parser_init_for_request(&mns->obex_parser, &map_notification_server_obex_parser_callback, (void*)mns);
+                    break;
                 case OBEX_OPCODE_PUT:
                 case (OBEX_OPCODE_PUT | OBEX_OPCODE_FINAL_BIT_MASK):
                     log_info ("handling PUT\n");
