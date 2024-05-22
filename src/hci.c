@@ -3446,8 +3446,16 @@ static void hci_handle_le_connection_complete_event(const uint8_t * hci_event){
 #endif
 	} else {
 #ifdef ENABLE_LE_PERIPHERAL
-		// if we're slave, it was an incoming connection, advertisements have stopped
-        hci_stack->le_advertisements_state &= ~LE_ADVERTISEMENT_STATE_ACTIVE;
+#ifdef ENABLE_LE_EXTENDED_ADVERTISING
+        if (hci_le_extended_advertising_supported()) {
+            // handled with HCI_SUBEVENT_LE_ADVERTISING_SET_TERMINATED
+        }
+        else
+#endif
+        {
+            // if we're slave, it was an incoming connection and advertisements have stopped
+            hci_stack->le_advertisements_state &= ~LE_ADVERTISEMENT_STATE_ACTIVE;
+        }
 #endif
 	}
 
@@ -3473,9 +3481,9 @@ static void hci_handle_le_connection_complete_event(const uint8_t * hci_event){
 #endif
 
 #ifdef ENABLE_LE_PERIPHERAL
-	if (role == HCI_ROLE_SLAVE){
-		hci_update_advertisements_enabled_for_current_roles();
-	}
+    if (role == HCI_ROLE_SLAVE){
+        hci_update_advertisements_enabled_for_current_roles();
+    }
 #endif
 
     // init unenhanced att bearer mtu
@@ -4395,6 +4403,11 @@ static void event_handler(uint8_t *packet, uint16_t size){
                         if (advertising_set->advertising_handle == advertising_handle){
                             advertising_set->state &= ~(LE_ADVERTISEMENT_STATE_ACTIVE | LE_ADVERTISEMENT_STATE_ENABLED);
                         }
+                    }
+                    // support legacy advertisements
+                    if (advertising_handle == 0){
+                        hci_stack->le_advertisements_state &= ~LE_ADVERTISEMENT_STATE_ACTIVE;
+                        hci_update_advertisements_enabled_for_current_roles();
                     }
                     break;
 #endif
