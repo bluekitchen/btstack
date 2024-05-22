@@ -3446,7 +3446,15 @@ static void hci_handle_le_connection_complete_event(const uint8_t * hci_event){
 #ifdef ENABLE_LE_PERIPHERAL
 #ifdef ENABLE_LE_EXTENDED_ADVERTISING
         if (hci_le_extended_advertising_supported()) {
-            // handled with HCI_SUBEVENT_LE_ADVERTISING_SET_TERMINATED
+            // advertisement state managed with HCI_SUBEVENT_LE_ADVERTISING_SET_TERMINATED
+
+            // if advertisement set terminated event arrives before connection complete, connection struct has been prepared
+            // set missing peer address + address type
+            conn = hci_connection_for_handle(con_handle);
+            if (conn != NULL){
+                memcpy(conn->address, addr, 6);
+                conn->address_type = addr_type;
+            }
         }
         else
 #endif
@@ -4406,6 +4414,18 @@ static void event_handler(uint8_t *packet, uint16_t size){
                     if (advertising_handle == 0){
                         hci_stack->le_advertisements_state &= ~LE_ADVERTISEMENT_STATE_ACTIVE;
                         hci_update_advertisements_enabled_for_current_roles();
+                    }
+                    // event may come before le connection complete and announces new connection
+                    if (hci_subevent_le_advertising_set_terminated_get_status(packet) == ERROR_CODE_SUCCESS){
+                        handle = hci_subevent_le_advertising_set_terminated_get_connection_handle(packet);
+                        conn = hci_connection_for_handle(handle);
+                        if (conn == NULL){
+                            conn = create_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_LE_PUBLIC, HCI_ROLE_SLAVE);
+                            if (conn != NULL){
+                                conn->state = ANNOUNCED;
+                                conn->con_handle = handle;
+                            }
+                        }
                     }
                     break;
 #endif

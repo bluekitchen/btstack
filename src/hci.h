@@ -248,7 +248,8 @@ typedef enum {
     OPEN,
     SEND_DISCONNECT,
     SENT_DISCONNECT,
-    RECEIVED_DISCONNECTION_COMPLETE
+    RECEIVED_DISCONNECTION_COMPLETE,
+    ANNOUNCED // connection handle announced in advertisement set terminated event
 } CONNECTION_STATE;
 
 // bonding flags
