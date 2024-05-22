@@ -786,16 +786,14 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                 server_t *server = &servers[i];
                 if (server->acl_con_handle == acl_con_handle) {
                     printf("GAP Client %u: Disconnected\n", server->server_id);
-                    server->acl_con_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
+                    server->acl_con_handle = HCI_CON_HANDLE_INVALID;
                     server->server_state = SERVER_IDLE;
-                    sm_request_pairing(server->acl_con_handle);
                 }
             }
             //
             if (servers_in_state(SERVER_IDLE)){
                 printf("Headset(s) disconnected\n");
                 app_state = APP_IDLE;
-                // gap_cig_remove(cig_id);
             }
             break;
         case HCI_EVENT_META_GAP:
