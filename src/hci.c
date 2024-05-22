@@ -3358,10 +3358,6 @@ static void hci_create_gap_connection_complete_event(const uint8_t * hci_event, 
 }
 
 static void hci_handle_le_connection_complete_event(const uint8_t * hci_event){
-	bd_addr_t addr;
-	bd_addr_type_t addr_type;
-	hci_connection_t * conn;
-
     // create GAP_SUBEVENT_LE_CONNECTION_COMPLETE
     uint8_t gap_event[36];
     hci_create_gap_connection_complete_event(hci_event, gap_event);
@@ -3372,10 +3368,12 @@ static void hci_handle_le_connection_complete_event(const uint8_t * hci_event){
     uint16_t conn_interval = gap_subevent_le_connection_complete_get_conn_interval(gap_event);
 
 	// Connection management
+    bd_addr_t addr;
     gap_subevent_le_connection_complete_get_peer_address(gap_event, addr);
-	addr_type = (bd_addr_type_t) gap_subevent_le_connection_complete_get_peer_address_type(gap_event);
+    bd_addr_type_t addr_type = (bd_addr_type_t) gap_subevent_le_connection_complete_get_peer_address_type(gap_event);
+    hci_con_handle_t con_handle = gap_subevent_le_connection_complete_get_connection_handle(gap_event);
     log_info("LE Connection_complete (status=%u) type %u, %s", status, addr_type, bd_addr_to_str(addr));
-	conn = hci_connection_for_bd_addr_and_type(addr, addr_type);
+    hci_connection_t * conn = hci_connection_for_bd_addr_and_type(addr, addr_type);
 
 #ifdef ENABLE_LE_CENTRAL
 	// handle error: error is reported only to the initiator -> outgoing connection
@@ -3470,7 +3468,7 @@ static void hci_handle_le_connection_complete_event(const uint8_t * hci_event){
 	}
 
 	conn->state = OPEN;
-	conn->con_handle             = gap_subevent_le_connection_complete_get_connection_handle(gap_event);
+	conn->con_handle             = con_handle;
     conn->le_connection_interval = conn_interval;
 
 #ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
