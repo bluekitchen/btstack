@@ -3984,6 +3984,8 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                                 uint8_t advertising_handle = hci_subevent_le_advertising_set_terminated_get_advertising_handle(packet);
                                 con_handle = hci_subevent_le_advertising_set_terminated_get_connection_handle(packet);
                                 sm_conn = sm_get_connection_for_handle(con_handle);
+                                if (!sm_conn) break;
+
                                 gap_le_get_own_advertising_set_address(&sm_conn->sm_own_addr_type, sm_conn->sm_own_address, advertising_handle);
                                 log_info("Adv set %u terminated -> use addr type %u, addr %s for con handle 0x%04x", advertising_handle, sm_conn->sm_own_addr_type,
                                          bd_addr_to_str(sm_conn->sm_own_address), con_handle);
