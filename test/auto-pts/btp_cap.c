@@ -88,6 +88,9 @@ typedef enum {
     ASE_STATE_W2_RECEIVER_START_READY,
     ASE_STATE_W4_STREAMING,
     ASE_STATE_STREAMING,
+    ASE_STATE_W2_RELEASE,
+    ASE_STATE_W4_RELEASING,
+    ASE_STATE_W4_ALL_RELEASING,
 } btp_cap_ase_state;
 
 typedef struct {
@@ -234,6 +237,15 @@ static void btp_bap_start_audio_completed(uint8_t cig_id, uint8_t status){
     response_op = 0;
 }
 
+static void btp_bap_stop_audio_completed(uint8_t cig_id, uint8_t status){
+    response_op = 0;
+    uint8_t buffer[2];
+    buffer[0] = cig_id;
+    buffer[1] = status;
+    btp_send(BTP_SERVICE_ID_CAP, BTP_CAP_EV_UNICAST_STOP_COMPLETED, 0, sizeof(buffer), buffer);
+    response_op = 0;
+}
+
 static void btp_cap_ases_run(void){
 
     uint8_t status = ERROR_CODE_SUCCESS;
@@ -285,6 +297,18 @@ static void btp_cap_ases_run(void){
         }
     }
 
+    if (btp_cap_ases_in_state(ASE_STATE_W4_ALL_RELEASING)) {
+        if (response_op == BTP_CAP_UNICAST_AUDIO_STOP) {
+            MESSAGE("BTP CAP All ASE in Releasing state - > terminate CIG & become idle");
+            btp_cap_ases_set_state(ASE_STATE_IDLE);
+            // remove CIG
+            gap_cig_remove(btp_cap_cig.cig_id);
+            // TODO: wait until all CIS are disconnected
+            // TODO: wait until all ASE are in Idle or Codec Configured
+            btp_bap_stop_audio_completed(btp_cap_cig.cig_id, ERROR_CODE_SUCCESS);
+        }
+    }
+
     // Handle single ASE
     for (i=0;i<btp_bap_num_ases;i++){
         btp_cap_ase_t * ase = &btp_cap_ases[i];
@@ -304,14 +328,19 @@ static void btp_cap_ases_run(void){
                 ase->state = ASE_STATE_W4_ENABLING;
                 status = audio_stream_control_service_client_streamendpoint_enable(server->ascs_cid, ase->ase_id, &ase->metadata);
                 MESSAGE("BTP ASCS %u: Enable for ase id %u -> 0x%02x", server->server_id, ase->ase_id, status);
-                return;
+                break;
             case ASE_STATE_W2_RECEIVER_START_READY:
                 ase->state = ASE_STATE_W4_STREAMING;
                 status = audio_stream_control_service_client_streamendpoint_receiver_start_ready(server->ascs_cid, ase->ase_id);
                 MESSAGE("BTP ASCS %u: Receiver Start Ready for ase id %u -> 0x%02x", server->server_id, ase->ase_id, status);
-                return;
+                break;
+            case ASE_STATE_W2_RELEASE:
+                ase->state = ASE_STATE_W4_RELEASING;
+                status = audio_stream_control_service_client_streamendpoint_release(server->ascs_cid, ase->ase_id, false);
+                MESSAGE("BTP ASCS %u: Release ase id %u -> 0x%02x", server->server_id, ase->ase_id, status);
+                break;
             default:
-                MESSAGE("BTP ASCS %u state %u - wait", i, ase->state);
+                MESSAGE("BTP ASCS %u: state %u - wait", i, ase->state);
                 break;
         }
     }
@@ -353,6 +382,7 @@ static void btp_cap_hci_handler(uint8_t packet_type, uint16_t channel, uint8_t *
                     btp_cap_send_response_if_pending();
                     break;
             }
+            break;
         default:
             break;
     }
@@ -485,6 +515,20 @@ static void btp_cap_bap_handler(uint8_t packet_type, uint16_t channel, uint8_t *
                             // hack: keep state, but emit updates
                             emit_state = true;
                             break;
+                        default:
+                            break;
+                    }
+                    break;
+                case BTP_CAP_UNICAST_AUDIO_STOP:
+                    ase = btp_cap_ase_for_server_index_and_ase_id(server->server_id, ase_id);
+                    switch (ase->state){
+                        case ASE_STATE_W4_RELEASING:
+                            if (ase_state == ASCS_STATE_RELEASING){
+                                ase->state = ASE_STATE_W4_ALL_RELEASING;
+                                emit_state = true;
+                            } else {
+                                MESSAGE("ASE State %u unexpected, expected %u", ase_state, ASCS_STATE_RELEASING);
+                            }
                         default:
                             break;
                     }
@@ -795,6 +839,20 @@ void btp_cap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, 
                 MESSAGE("Unicast audio start, num ASEs %u", btp_bap_num_ases);
 
                 btp_cap_ases_set_state(ASE_STATE_W2_CONFIGURE_CODEC);
+
+                // go
+                btp_cap_ases_run();
+            }
+            break;
+        case BTP_CAP_UNICAST_AUDIO_STOP:
+            if (controller_index == 0){
+                uint8_t cig_id = data[0];
+                btp_send(response_service_id, response_op, 0, 0, NULL);
+
+                // TODO: support ordered access
+                MESSAGE("Unicast audio stop, num ASEs %u", btp_bap_num_ases);
+
+                btp_cap_ases_set_state(ASE_STATE_W2_RELEASE);
 
                 // go
                 btp_cap_ases_run();
