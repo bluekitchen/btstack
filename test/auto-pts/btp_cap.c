@@ -80,13 +80,11 @@ typedef enum {
     ASE_STATE_W4_CIG_CREATED,
     ASE_STATE_W2_CONFIGURE_QOS,
     ASE_STATE_W4_QOS_CONFIGURED,
-    ASE_STATE_QOS_CONFIGURED,
-    ASE_STATE_W2_CREATE_CIS,
-    ASE_STATE_W4_CIS_CREATED,
-    ASE_STATE_W4_ALL_CIS_CREATED,
     ASE_STATE_W2_ENABLE,
     ASE_STATE_W4_ENABLING,
     ASE_STATE_ENABLING,
+    ASE_STATE_W4_CIS_CREATED,
+    ASE_STATE_W4_ALL_CIS_CREATED,
     ASE_STATE_W2_RECEIVER_START_READY,
     ASE_STATE_W4_STREAMING,
     ASE_STATE_STREAMING,
@@ -252,7 +250,7 @@ static void btp_cap_ases_run(void){
     }
 
     // create cis when?
-    if (btp_cap_ases_in_state(ASE_STATE_W2_CREATE_CIS)){
+    if (btp_cap_ases_in_state(ASE_STATE_ENABLING)){
         btp_cap_ases_set_state(ASE_STATE_W4_CIS_CREATED);
         hci_con_handle_t acl_con_handles[MAX_NUM_SERVERS];
         hci_con_handle_t cis_con_handles[MAX_NUM_SERVERS];
@@ -264,15 +262,9 @@ static void btp_cap_ases_run(void){
         MESSAGE("gap_cis_create status 0x%02x", status);
     }
 
-    // enable when all cis are created
-    if (btp_cap_ases_in_state(ASE_STATE_W4_ALL_CIS_CREATED)) {
-        MESSAGE("BTP CAP All CIS Created -> ASE_STATE_W2_ENABLE");
-        btp_cap_ases_set_state(ASE_STATE_W2_ENABLE);
-    }
-
     // trigger receiver start ready for remote remote sources when all are in enabling
-    if (btp_cap_ases_in_state(ASE_STATE_ENABLING)){
-        MESSAGE("BTP CAP All ASE in Enabling, send Receiver Start Ready");
+    if (btp_cap_ases_in_state(ASE_STATE_W4_ALL_CIS_CREATED)){
+        MESSAGE("BTP CAP All CIS Created and all ASE in Enabling, send Receiver Start Ready for Sources");
         for (i=0;i<btp_bap_num_ases;i++){
             btp_cap_ase_t * ase = &btp_cap_ases[i];
             server_t * server = btp_server_for_index(ase->server_index);
@@ -352,7 +344,7 @@ static void btp_cap_hci_handler(uint8_t packet_type, uint16_t channel, uint8_t *
                         cis_id = gap_subevent_cis_created_get_cis_id(packet);
                         if (cis_id == btp_cap_ases[i].cis_id){
                             MESSAGE("CIS %u for server %u, ASE ID %u ready", cis_id, btp_cap_ases[i].server_index, btp_cap_ases[i].ase_id);
-                            btp_cap_ases[i].state = ASE_STATE_W2_ENABLE;
+                            btp_cap_ases[i].state = ASE_STATE_W4_ALL_CIS_CREATED;
                         }
                     }
                     btp_cap_ases_run();
