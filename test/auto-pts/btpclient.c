@@ -264,6 +264,7 @@ static void btstack_packet_handler (uint8_t packet_type, uint16_t channel, uint8
     hci_con_handle_t con_handle;
     uint8_t i;
     uint8_t status;
+    server_t * server;
 
     switch (packet_type) {
         case HCI_EVENT_PACKET:
@@ -409,12 +410,16 @@ static void btstack_packet_handler (uint8_t packet_type, uint16_t channel, uint8
                         gap_auto_connection_start(remote_addr_type, remote_addr);
                         break;
                     }
-                    // assume remote device
-                    MESSAGE("Disconnected");
-                    uint8_t buffer[7];
-                    buffer[0] =  remote_addr_type;
-                    reverse_bd_addr(remote_addr, &buffer[1]);
-                    btp_send(BTP_SERVICE_ID_GAP, BTP_GAP_EV_DEVICE_DISCONNECTED, 0, sizeof(buffer), &buffer[0]);
+                    // get server
+                    con_handle = hci_event_disconnection_complete_get_connection_handle(packet);
+                    server = btp_server_for_acl_con_handle(con_handle);
+                    if (server != NULL){
+                        MESSAGE("Disconnected server %u, addr %s", server->server_id, bd_addr_to_str(server->address));
+                        uint8_t buffer[7];
+                        buffer[0] =  server->address_type;
+                        reverse_bd_addr(server->address, &buffer[1]);
+                        btp_send(BTP_SERVICE_ID_GAP, BTP_GAP_EV_DEVICE_DISCONNECTED, 0, sizeof(buffer), &buffer[0]);
+                    }
                     break;
                 }
                 case HCI_EVENT_ENCRYPTION_CHANGE:
