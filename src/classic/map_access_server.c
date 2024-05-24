@@ -79,7 +79,7 @@ typedef struct {
     obex_srm_t obex_srm;
     // request
     struct {
-        bool is_notification_registration;
+        bool is_map_msg_listing;
         uint32_t length;
         uint8_t* payload_data;
         uint32_t payload_len;
@@ -87,7 +87,7 @@ typedef struct {
         uint8_t  abort_response;
         obex_app_param_parser_t app_param_parser;
         struct {
-            uint8_t  mas_instance_id;
+            uint16_t  mas_max_list_count;
         } app_params;
     } request;
     uint8_t response_code;
@@ -135,9 +135,9 @@ static void map_access_server_app_param_callback(void* user_data, uint8_t tag_id
     map_access_server_t* mas = (map_access_server_t*)user_data;
 
     switch (tag_id) {
-    case MAP_APPLICATION_PARAMETER_MAS_INSTANCE_ID:
-        mas->request.app_params.mas_instance_id = data_buffer[0];
-        log_info("MAS instance ID %02d\n", mas->request.app_params.mas_instance_id);
+    case MAP_APPLICATION_PARAMETER_MAS_MAX_LIST_COUNT:
+        mas->request.app_params.mas_max_list_count = big_endian_read_16(data_buffer,0);
+        log_info("MAS MAX_LIST_COUNT %02d\n", mas->request.app_params.mas_max_list_count);
         break;
     default:
         log_info("unhandled application parameter %02x\n", tag_id);
