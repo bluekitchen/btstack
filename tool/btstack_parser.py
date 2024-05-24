@@ -14,6 +14,9 @@ hci_cmds_c_path = 'src/hci_cmd.c'
 hci_cmds_h_path = 'src/hci_cmd.h'
 hci_h_path = 'src/hci.h'
 
+open_bracket = '['
+closing_bracket = ']'
+
 btstack_root = os.path.abspath(os.path.dirname(sys.argv[0]) + '/..')
 print ("BTstack root %s" % btstack_root)
 
@@ -69,7 +72,7 @@ def my_parse_events(path):
     format = None
     with open (path, 'rt') as fin:
         for line in fin:
-            parts = re.match('.*@format\s*(\w*)\s*', line)
+            parts = re.match('.*@format\s*([a-zA-Z0-9_' + re.escape(open_bracket) + re.escape(closing_bracket) + ']*)\s*', line)
             if parts and len(parts.groups()) == 1:
                 format = parts.groups()[0]
             parts = re.match('.*@param\s*(\w*)\s*', line)
