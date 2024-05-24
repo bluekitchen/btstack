@@ -186,8 +186,27 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
             break;
 
         case MAP_DATA_PACKET:
+#if 0 // set to 0 to only print data
+            switch (map_da) {
+            case HCI_EVENT_MAP_META:
+                switch (hci_event_map_meta_get_subevent_code(packet)) {
+                case MAP_SUBEVENT_NOTIFICATION_EVENT:
+                    log_info("Notification!");
+                    break;
+                default:
+                    log_info("unknown map meta event %d\n", hci_event_map_meta_get_subevent_code(packet));
+                    break;
+                }
+                break;
+            default:
+                log_info("unknown HCI event %d\n",
+                    hci_event_packet_get_type(packet));
+                break;
+            }
+#endif
+            printf("MAP_DATA_PACKET (%u bytes): ", size);
             for (i=0;i<size;i++){
-                printf("%c", packet[i]);
+                printf("%0x2 ", packet[i]);
             }
             printf ("\n");
             break;
