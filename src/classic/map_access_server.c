@@ -145,7 +145,6 @@ static void map_access_server_app_param_callback(void* user_data, uint8_t tag_id
     }
 }
 
-#define x_bt_MAP_NotificationRegistration "x-bt/MAP-NotificationRegistration"
 static void map_access_server_obex_parser_callback(void* user_data, uint8_t header_id, uint16_t total_len, uint16_t data_offset, const uint8_t* data_buffer, uint16_t data_len) {
     map_access_server_t* mas = (map_access_server_t*)user_data;
 
@@ -159,10 +158,9 @@ static void map_access_server_obex_parser_callback(void* user_data, uint8_t head
         // TODO: verify connection id
         break;
     case OBEX_HEADER_TYPE:
-        /* we only deal with <x-bt/MAP-NotificationRegistration> */
-        if (data_len == strlen(x_bt_MAP_NotificationRegistration) &&
-            strncmp(x_bt_MAP_NotificationRegistration, (const char*)data_buffer, data_len) == 0) {
-            mas->request.is_notification_registration = 1;
+        /* we only deal with <x-bt/MAP-msg-listing> */
+        if (strncmp("x-bt/MAP-msg-listing", (const char*)data_buffer, data_len) == 0) {
+            mas->request.is_map_msg_listing = 1;
         }
         break;
     case OBEX_HEADER_BODY:
@@ -215,6 +213,7 @@ static void map_access_server_handle_map_requests(map_access_server_t* mas, uint
         pos += 4;
         event[1] = pos - 2;
 
+        /* call user handler with OBEX event */
         (*map_access_server_user_packet_handler) (HCI_EVENT_PACKET, 0, event, pos);
     }
 
