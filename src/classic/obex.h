@@ -63,6 +63,10 @@
 #define OBEX_RESP_ENTITY_TOO_LARGE         0xCD
 #define OBEX_RESP_NOT_IMPLEMENTED          0xD1
 
+#define OBEX_HEADER_TYPE_16BIT_LENGTH_0       0		// 16-bit length info prefixed
+#define OBEX_HEADER_TYPE_16BIT_LENGTH_1       1		// 16-bit length info prefixed
+#define OBEX_HEADER_TYPE_8BIT_VALUE_2         2		// 8-bit Value
+#define OBEX_HEADER_TYPE_32BIT_VALUE_3       32		// 32-bit Value
 #define OBEX_HEADER_NAME                           0x01
 #define OBEX_HEADER_DESCRIPTION                    0x05
 // user defined 0x30..0x3f: unicode string
