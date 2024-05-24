@@ -349,9 +349,16 @@ static void map_access_server_packet_handler_goep(map_access_server_t* mas, uint
         opcode = goep_data_packet_get_opcode(packet);
         // default headers
         switch (opcode) {
-        case OBEX_OPCODE_PUT:
-        case (OBEX_OPCODE_PUT | OBEX_OPCODE_FINAL_BIT_MASK):
-            log_info("handling PUT\n");
+            case OBEX_OPCODE_PUT:
+            case (OBEX_OPCODE_PUT | OBEX_OPCODE_FINAL_BIT_MASK):
+                log_info("handling PUT\n");
+                map_access_server_reset_request(mas);
+                ENTER_STATE(mas, MAP_W4_REQUEST);
+                obex_parser_init_for_request(&mas->obex_parser, &map_access_server_obex_parser_callback, (void*)mas);
+                break;
+            case OBEX_OPCODE_GET:
+            case (OBEX_OPCODE_GET | OBEX_OPCODE_FINAL_BIT_MASK):
+                log_info("handling GET\n");
             map_access_server_reset_request(mas);
             ENTER_STATE(mas, MAP_W4_REQUEST);
             obex_parser_init_for_request(&mas->obex_parser, &map_access_server_obex_parser_callback, (void*)mas);
