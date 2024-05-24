@@ -9,4 +9,4 @@ cmake_minimum_required(VERSION 3.12)
 project(BTstack-Parent)
 
 # Add subdirectories
-add_subdirectory(${CMAKE_SOURCE_DIR}/port/windows-winusb-intel)
+add_subdirectory(${CMAKE_SOURCE_DIR}/port/windows-winusb)
