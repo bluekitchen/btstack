@@ -350,7 +350,7 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
 #ifdef HAVE_BTSTACK_STDIN
 static void usage(const char *name){
     fprintf(stderr, "Usage: %s [-a|--address aa:bb:cc:dd:ee:ff]\n", name);
-    fprintf(stderr, "If no argument is provided, GATT Heart Rate Client will start scanning and connect to the first device named 'LE Streamer'.\n");
+    fprintf(stderr, "If no argument is provided, GATT Heart Rate Client will start scanning and connect to a device that advertises the heart rate UUID.\n");
     fprintf(stderr, "To connect to a specific device use argument [-a].\n\n");
 }
 #endif
@@ -359,19 +359,23 @@ int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
 
 #ifdef HAVE_BTSTACK_STDIN
-    int arg = 1;
+    int arg;
     cmdline_addr_found = 0;
     
-    while (arg < argc) {
+    for (arg = 1; arg < argc; arg++) {
         if(!strcmp(argv[arg], "-a") || !strcmp(argv[arg], "--address")){
-            arg++;
-            cmdline_addr_found = sscanf_bd_addr(argv[arg], cmdline_addr);
-            arg++;
-            if (!cmdline_addr_found) exit(1);
-            continue;
+            if (arg + 1 < argc) {
+                arg++;
+                cmdline_addr_found = sscanf_bd_addr(argv[arg], cmdline_addr);
+            }
+            if (!cmdline_addr_found) {
+                usage(argv[0]);
+                return 1;
+            }
         }
-        usage(argv[0]);
-        return 0;
+    }
+    if (!cmdline_addr_found) {
+        fprintf(stderr, "No specific address specified or found; start scanning for heart rate UUID advertiser.\n");
     }
 #else
     (void)argc;

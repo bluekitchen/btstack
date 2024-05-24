@@ -346,19 +346,23 @@ int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
 
 #ifdef HAVE_BTSTACK_STDIN
-    int arg = 1;
+    int arg;
     cmdline_addr_found = 0;
     
-    while (arg < argc) {
+    for (arg = 1; arg < argc; arg++) {
         if(!strcmp(argv[arg], "-a") || !strcmp(argv[arg], "--address")){
-            arg++;
-            cmdline_addr_found = sscanf_bd_addr(argv[arg], cmdline_addr);
-            arg++;
-            if (!cmdline_addr_found) exit(1);
-            continue;
+            if (arg + 1 < argc) {
+                arg++;
+                cmdline_addr_found = sscanf_bd_addr(argv[arg], cmdline_addr);
+            }
+            if (!cmdline_addr_found) {
+                usage(argv[0]);
+                return 1;
+            }
         }
-        usage(argv[0]);
-        return 0;
+    }
+    if (!cmdline_addr_found) {
+        fprintf(stderr, "No specific address specified or found; start scanning for 'LE Streamer' advertisement.\n");
     }
 #else
     (void)argc;

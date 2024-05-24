@@ -317,23 +317,27 @@ int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
 
     // parse address if command line arguments are provided
-    int arg = 1;
+    int arg;
     cmdline_addr_found = 0;
     
-    while (arg < argc) {
+    for (arg = 1; arg < argc; arg++) {
         if(!strcmp(argv[arg], "-a") || !strcmp(argv[arg], "--address")){
-            arg++;
-            cmdline_addr_found = sscanf_bd_addr(argv[arg], cmdline_addr);
-            arg++;
-            if (!cmdline_addr_found) exit(1);
-            continue;
+            if (arg + 1 < argc) {
+                arg++;
+                cmdline_addr_found = sscanf_bd_addr(argv[arg], cmdline_addr);
+            }
+            if (!cmdline_addr_found) {
+                fprintf(stderr, "\nUsage: %s [-a|--address aa:bb:cc:dd:ee:ff]\n", argv[0]);
+                fprintf(stderr, "If no argument is provided, %s will start scanning and connect to the first found device.\n"
+                                "To connect to a specific device use argument [-a].\n\n", argv[0]);
+                return 1;
+            }
         }
-        fprintf(stderr, "\nUsage: %s [-a|--address aa:bb:cc:dd:ee:ff]\n", argv[0]);
-        fprintf(stderr, "If no argument is provided, GATT browser will start scanning and connect to the first found device.\nTo connect to a specific device use argument [-a].\n\n");
-        return 0;
     }
-    (void)argv;
-
+    if (!cmdline_addr_found) {
+        fprintf(stderr, "No specific address specified or found; start scanning for any advertiser.\n");
+    }
+    
     battery_service_client_setup();
 
     app_state = APP_STATE_IDLE;
