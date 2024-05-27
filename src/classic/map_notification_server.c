@@ -137,10 +137,6 @@ static void map_notification_server_app_param_callback (void * user_data, uint8_
     map_notification_server_t *mns = (map_notification_server_t *) user_data;
 
     switch (tag_id) {
-        case MAP_APPLICATION_PARAMETER_MAS_INSTANCE_ID:
-            mns->request.app_params.mas_instance_id = data_buffer[0];
-            log_info ("MAS instance ID %02d\n", mns->request.app_params.mas_instance_id);
-            break;
         default:
             log_info ("unhandled application parameter %02x\n", tag_id);
             break;
