@@ -67,10 +67,7 @@
 typedef enum {
     MAP_SERVER_DIR_ROOT,
     MAP_SERVER_DIR_TELECOM,
-    MAP_SERVER_DIR_TELECOM_PHONEBOOK,
-    MAP_SERVER_DIR_SIM,
-    MAP_SERVER_DIR_SIM_TELECOM,
-    MAP_SERVER_DIR_SIM_TELECOM_PHONEBOOK
+    MAP_SERVER_DIR_TELECOM_MSG,
 } map_access_server_dir_t;
 
 typedef enum {
@@ -172,12 +169,7 @@ static struct {
     {"mch",MAP_SERVER_DIR_TELECOM, "telecom/mch.vcf"},
     {"och",MAP_SERVER_DIR_TELECOM, "telecom/och.vcf"},
     {"pb", MAP_SERVER_DIR_TELECOM, "telecom/pb.vcf"},
-    {"spd",MAP_SERVER_DIR_TELECOM, "telecom/spd.vcf"},
-    {"cch",MAP_SERVER_DIR_SIM_TELECOM, "SIM1/telecom/cch.vcf"},
-    {"ich",MAP_SERVER_DIR_SIM_TELECOM, "SIM1/telecom/ich.vcf"},
-    {"mch",MAP_SERVER_DIR_SIM_TELECOM, "SIM1/telecom/mch.vcf"},
-    {"och",MAP_SERVER_DIR_SIM_TELECOM, "SIM1/telecom/och.vcf"},
-    {"pb", MAP_SERVER_DIR_SIM_TELECOM, "SIM1/telecom/pb.vcf"}
+    {"spd",MAP_SERVER_DIR_TELECOM, "telecom/spd.vcf"}
 };
 
 static const char map_access_server_default_service_name[] = "MAP";
@@ -310,17 +302,10 @@ static void map_access_server_handle_set_path_request(map_access_server_t* map_a
         if ((flags & 1) == 1) {
             switch (map_access_server->map_access_server_dir) {
             case MAP_SERVER_DIR_TELECOM:
-            case MAP_SERVER_DIR_SIM:
                 map_access_server->map_access_server_dir = MAP_SERVER_DIR_ROOT;
                 break;
-            case MAP_SERVER_DIR_SIM_TELECOM:
-                map_access_server->map_access_server_dir = MAP_SERVER_DIR_SIM;
-                break;
-            case MAP_SERVER_DIR_TELECOM_PHONEBOOK:
+            case MAP_SERVER_DIR_TELECOM_MSG:
                 map_access_server->map_access_server_dir = MAP_SERVER_DIR_TELECOM;
-                break;
-            case MAP_SERVER_DIR_SIM_TELECOM_PHONEBOOK:
-                map_access_server->map_access_server_dir = MAP_SERVER_DIR_SIM_TELECOM;
                 break;
             default:
                 obex_result = OBEX_RESP_NOT_FOUND;
@@ -337,39 +322,19 @@ static void map_access_server_handle_set_path_request(map_access_server_t* map_a
             if (strcmp("telecom", name) == 0) {
                 map_access_server->map_access_server_dir = MAP_SERVER_DIR_TELECOM;
             }
-            else if (strcmp("SIM1", name) == 0) {
-                map_access_server->map_access_server_dir = MAP_SERVER_DIR_SIM;
+            else {
+                obex_result = OBEX_RESP_NOT_FOUND;
+            }
+            break;
+        case MAP_SERVER_DIR_TELECOM:
+            if (strcmp("msg", name) == 0) {
+                map_access_server->map_access_server_dir = MAP_SERVER_DIR_TELECOM_MSG;
             }
             else {
                 obex_result = OBEX_RESP_NOT_FOUND;
             }
             break;
-        case MAP_SERVER_DIR_SIM:
-            if (strcmp("telecom", name) == 0) {
-                map_access_server->map_access_server_dir = MAP_SERVER_DIR_SIM_TELECOM;
-            }
-            else {
-                obex_result = OBEX_RESP_NOT_FOUND;
-            }
-            break;
-        case MAP_SERVER_DIR_TELECOM_PHONEBOOK:
-            map_access_server->map_phonebook = map_access_server_get_phonebook_by_dir_and_name(map_access_server->map_access_server_dir, name);
-            if (map_access_server->map_phonebook < 0) {
-                obex_result = OBEX_RESP_NOT_FOUND;
-            }
-            else {
-                map_access_server->map_access_server_dir = MAP_SERVER_DIR_TELECOM_PHONEBOOK;
-            }
-            break;
-        case MAP_SERVER_DIR_SIM_TELECOM_PHONEBOOK:
-            map_access_server->map_phonebook = map_access_server_get_phonebook_by_dir_and_name(map_access_server->map_access_server_dir, name);
-            if (map_access_server->map_phonebook < 0) {
-                obex_result = OBEX_RESP_NOT_FOUND;
-            }
-            else {
-                map_access_server->map_access_server_dir = MAP_SERVER_DIR_SIM_TELECOM_PHONEBOOK;
-            }
-            break;
+
         default:
             obex_result = OBEX_RESP_NOT_FOUND;
             break;
