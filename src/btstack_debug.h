@@ -165,6 +165,12 @@ noreturn void btstack_assert_failed(const char * file, uint16_t line_nr);
 #endif /* _MSC_VER */
 
 
+#ifdef ENABLE_DBG_PRINTF
+#define dbg_printf(format, ...)  printf("[DBG] %s.%u: " format, BTSTACK_FILE__, __LINE__, ## __VA_ARGS__)
+#else
+#define dbg_printf(...) (void)(0)
+#endif
+
 /* API_START */
 
 /** 
