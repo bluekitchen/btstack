@@ -38,7 +38,8 @@ supported_event_groups = meta_events + [
     'L2CAP',
     'RFCOMM',
     'SDP',
-    'SM'
+    'SM',
+    'DAEMON',
 ]
 
 open_bracket = parser.open_bracket

@@ -1055,7 +1055,7 @@ typedef uint8_t sm_key_t[16];
 // data: system bluetooth on/off (bool)
 /**
  * @format 1
- * param system_bluetooth_enabled
+ * @param system_bluetooth_enabled
  */
 #define DAEMON_EVENT_SYSTEM_BLUETOOTH_ENABLED              0x64u
 

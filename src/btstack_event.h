@@ -1496,6 +1496,148 @@ static inline uint8_t btstack_event_scan_mode_changed_get_connectable(const uint
 }
 
 /**
+ * @brief Get field major from event DAEMON_EVENT_VERSION
+ * @param event packet
+ * @return major
+ * @note: btstack_type 1
+ */
+static inline uint8_t daemon_event_version_get_major(const uint8_t * event){
+    return event[2];
+}
+/**
+ * @brief Get field minor from event DAEMON_EVENT_VERSION
+ * @param event packet
+ * @return minor
+ * @note: btstack_type 1
+ */
+static inline uint8_t daemon_event_version_get_minor(const uint8_t * event){
+    return event[3];
+}
+/**
+ * @brief Get field revision from event DAEMON_EVENT_VERSION
+ * @param event packet
+ * @return revision
+ * @note: btstack_type 2
+ */
+static inline uint16_t daemon_event_version_get_revision(const uint8_t * event){
+    return little_endian_read_16(event, 4);
+}
+
+/**
+ * @brief Get field system_bluetooth_enabled from event DAEMON_EVENT_SYSTEM_BLUETOOTH_ENABLED
+ * @param event packet
+ * @return system_bluetooth_enabled
+ * @note: btstack_type 1
+ */
+static inline uint8_t daemon_event_system_bluetooth_enabled_get_system_bluetooth_enabled(const uint8_t * event){
+    return event[2];
+}
+
+/**
+ * @brief Get field status from event DAEMON_EVENT_REMOTE_NAME_CACHED
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t daemon_event_remote_name_cached_get_status(const uint8_t * event){
+    return event[2];
+}
+/**
+ * @brief Get field address from event DAEMON_EVENT_REMOTE_NAME_CACHED
+ * @param event packet
+ * @param Pointer to storage for address
+ * @note: btstack_type B
+ */
+static inline void daemon_event_remote_name_cached_get_address(const uint8_t * event, bd_addr_t address){
+    reverse_bytes(&event[3], address, 6);
+}
+/**
+ * @brief Get field name from event DAEMON_EVENT_REMOTE_NAME_CACHED
+ * @param event packet
+ * @return name
+ * @note: btstack_type T
+ */
+static inline const char * daemon_event_remote_name_cached_get_name(const uint8_t * event){
+    return (const char *) &event[9];
+}
+
+/**
+ * @brief Get field status from event DAEMON_EVENT_L2CAP_SERVICE_REGISTERED
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t daemon_event_l2cap_service_registered_get_status(const uint8_t * event){
+    return event[2];
+}
+/**
+ * @brief Get field psm from event DAEMON_EVENT_L2CAP_SERVICE_REGISTERED
+ * @param event packet
+ * @return psm
+ * @note: btstack_type 2
+ */
+static inline uint16_t daemon_event_l2cap_service_registered_get_psm(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+
+/**
+ * @brief Get field status from event DAEMON_EVENT_RFCOMM_SERVICE_REGISTERED
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t daemon_event_rfcomm_service_registered_get_status(const uint8_t * event){
+    return event[2];
+}
+/**
+ * @brief Get field channel_id from event DAEMON_EVENT_RFCOMM_SERVICE_REGISTERED
+ * @param event packet
+ * @return channel_id
+ * @note: btstack_type 1
+ */
+static inline uint8_t daemon_event_rfcomm_service_registered_get_channel_id(const uint8_t * event){
+    return event[3];
+}
+
+/**
+ * @brief Get field status from event DAEMON_EVENT_RFCOMM_PERSISTENT_CHANNEL
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t daemon_event_rfcomm_persistent_channel_get_status(const uint8_t * event){
+    return event[2];
+}
+/**
+ * @brief Get field server_channel_id from event DAEMON_EVENT_RFCOMM_PERSISTENT_CHANNEL
+ * @param event packet
+ * @return server_channel_id
+ * @note: btstack_type 1
+ */
+static inline uint8_t daemon_event_rfcomm_persistent_channel_get_server_channel_id(const uint8_t * event){
+    return event[3];
+}
+
+/**
+ * @brief Get field status from event DAEMON_EVENT_SDP_SERVICE_REGISTERED
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t daemon_event_sdp_service_registered_get_status(const uint8_t * event){
+    return event[2];
+}
+/**
+ * @brief Get field service_record_handle from event DAEMON_EVENT_SDP_SERVICE_REGISTERED
+ * @param event packet
+ * @return service_record_handle
+ * @note: btstack_type 4
+ */
+static inline uint32_t daemon_event_sdp_service_registered_get_service_record_handle(const uint8_t * event){
+    return little_endian_read_32(event, 3);
+}
+
+/**
  * @brief Get field active from event HCI_EVENT_TRANSPORT_SLEEP_MODE
  * @param event packet
  * @return active
