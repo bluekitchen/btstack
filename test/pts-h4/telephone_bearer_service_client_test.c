@@ -329,19 +329,19 @@ static void tbs_gatt_client_event_handler(uint8_t packet_type, uint16_t channel,
             printf("Signal Strength Reporting Interval: \"%d\"\n", leaudio_subevent_tbs_client_bearer_signal_strength_reporting_interval_get_interval(packet));
             break;
         case LEAUDIO_SUBEVENT_TBS_CLIENT_BEARER_LIST_CURRENT_CALLS: {
-            uint8_t length = leaudio_subevent_tbs_client_bearer_list_current_calls_get_length(packet);
+            uint8_t length = leaudio_subevent_tbs_client_bearer_list_current_calls_get_list_length(packet);
             if( length == 0 ) {
                 break; // Empty list
             }
             printf("call_index | call_state | flags | uri\n");
             btstack_event_iterator_t iter;
-            for( gattservice_subevent_tbs_client_bearer_list_current_calls_list_init( &iter, packet );
-                    gattservice_subevent_tbs_client_bearer_list_current_calls_list_has_next(&iter, packet);
-                    gattservice_subevent_tbs_client_bearer_list_current_calls_list_next(&iter)) {
-                uint8_t call_index  = gattservice_subevent_tbs_client_bearer_list_current_calls_list_item_call_index(&iter);
-                uint8_t call_state  = gattservice_subevent_tbs_client_bearer_list_current_calls_list_item_call_state(&iter);
-                uint8_t flags       = gattservice_subevent_tbs_client_bearer_list_current_calls_list_item_flags(&iter);
-                uint8_t const *uri  = gattservice_subevent_tbs_client_bearer_list_current_calls_list_item_uri(&iter);
+            for( leaudio_subevent_tbs_client_bearer_list_current_calls_list_init( &iter, packet );
+                 leaudio_subevent_tbs_client_bearer_list_current_calls_list_has_next(&iter, packet);
+                 leaudio_subevent_tbs_client_bearer_list_current_calls_list_next(&iter)) {
+                uint8_t call_index  = leaudio_subevent_tbs_client_bearer_list_current_calls_get_list_item_call_index(&iter);
+                uint8_t call_state  = leaudio_subevent_tbs_client_bearer_list_current_calls_get_list_item_state(&iter);
+                uint8_t flags       = leaudio_subevent_tbs_client_bearer_list_current_calls_get_list_item_flags(&iter);
+                uint8_t const *uri  = leaudio_subevent_tbs_client_bearer_list_current_calls_get_list_item_uri(&iter);
                 printf( "%10d | %10d | %5x | \"%s\"\n", call_index, call_state, flags, uri );
             }
             break;
@@ -359,18 +359,19 @@ static void tbs_gatt_client_event_handler(uint8_t packet_type, uint16_t channel,
             break;
         }
         case LEAUDIO_SUBEVENT_TBS_CLIENT_CALL_STATE: {
-            uint8_t length = leaudio_subevent_tbs_client_call_state_get_length(packet);
+            uint8_t length = leaudio_subevent_tbs_client_call_state_get_list_length(packet);
             if( length == 0 ) {
-                break; // Empty list
+                // Empty list
+                break;
             }
             printf("call_index | call_state | flags\n");
             btstack_event_iterator_t iter;
-            for( gattservice_subevent_tbs_client_call_state_get_list_init(&iter, packet);
-                    gattservice_subevent_tbs_client_call_state_get_list_has_next(&iter, packet);
-                    gattservice_subevent_tbs_client_call_state_get_list_next(&iter)) {
-                uint8_t call_index = gattservice_subevent_tbs_client_call_state_get_list_item_call_index(&iter);
-                uint8_t call_state = gattservice_subevent_tbs_client_call_state_get_list_item_call_state(&iter);
-                uint8_t flags      = gattservice_subevent_tbs_client_call_state_get_list_item_flags(&iter);
+            for( leaudio_subevent_tbs_client_call_state_list_init(&iter, packet);
+                 leaudio_subevent_tbs_client_call_state_list_has_next(&iter, packet);
+                 leaudio_subevent_tbs_client_call_state_list_next(&iter)) {
+                uint8_t call_index = leaudio_subevent_tbs_client_call_state_get_list_item_call_index(&iter);
+                uint8_t call_state = leaudio_subevent_tbs_client_call_state_get_list_item_call_state(&iter);
+                uint8_t flags      = leaudio_subevent_tbs_client_call_state_get_list_item_flags(&iter);
                 printf("%10d | %10d | %5x\n", call_index, call_state, flags );
             }
             break;
