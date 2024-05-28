@@ -829,7 +829,7 @@ static void btp_core_handler(uint8_t opcode, uint8_t controller_index, uint16_t 
 #ifdef ENABLE_LE_EXTENDED_ADVERTISING
 static le_extended_advertising_parameters_t btp_advertising_parameters;
 static le_advertising_set_t btp_advertising_set;
-static uint8_t btp_advertising_handle;
+static uint8_t btp_advertising_handle = 0xff;
 #endif
 
 static void btp_gap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, const uint8_t *data){
@@ -1091,7 +1091,11 @@ static void btp_gap_handler(uint8_t opcode, uint8_t controller_index, uint16_t l
                     btp_advertising_parameters.advertising_sid = 0;
                     btp_advertising_parameters.scan_request_notification_enable = 0;
 
-                    gap_extended_advertising_setup(&btp_advertising_set, &btp_advertising_parameters, &btp_advertising_handle);
+                    if (btp_advertising_handle == 0xff){
+                        gap_extended_advertising_setup(&btp_advertising_set, &btp_advertising_parameters, &btp_advertising_handle);
+                    } else {
+                        gap_extended_advertising_set_params(btp_advertising_handle, &btp_advertising_parameters);
+                    }
                     gap_extended_advertising_set_adv_data(btp_advertising_handle, gap_adv_data_len, (uint8_t *) gap_adv_data);
                     gap_extended_advertising_set_scan_response_data(btp_advertising_handle, gap_scan_response_len, (uint8_t *) gap_scan_response);
                     gap_extended_advertising_start(btp_advertising_handle, 0, 0);
