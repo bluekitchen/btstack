@@ -844,6 +844,44 @@ void btp_cap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, 
                 btp_cap_ases_run();
             }
             break;
+        case BTP_CAP_UNICAST_AUDIO_UPDATE:
+            /**
+            Address_Type (1 octet)
+            Address (6 octets)
+            ASE_ID (1 octet)
+            Metadata LTVs length (1 octet)
+            Metadata LTVs (varies)
+            */
+            if (controller_index == 0){
+                uint16_t offset = 0;
+                uint8_t stream_count = data[offset++];
+                uint8_t i;
+                for (i=0;i<stream_count;i++){
+                    bd_addr_type_t addr_type = data[offset++];
+                    bd_addr_t address;
+                    reverse_bd_addr(&data[offset], address);
+                    offset += 6;
+
+                    server = btp_server_for_address(addr_type, address);
+                    btstack_assert(server != NULL);
+
+                    // get ASE info
+                    uint8_t ase_id = data[offset++];
+
+                    btp_cap_ase_t * ase = btp_cap_ase_for_server_index_and_ase_id(server->server_id, ase_id);
+                    btstack_assert(ase != NULL);
+
+                    // trigger update
+                    uint8_t metadata_ltvs_length = data[offset];
+                    const uint8_t * metadata_buffer = &data[offset];
+                    uint16_t parsed_bytes = le_audio_util_metadata_parse(metadata_buffer, metadata_ltvs_length + 1, &ase->metadata);
+                    offset += metadata_ltvs_length + 1;
+                    MESSAGE("BTP_CAP_UNICAST_AUDIO_UPDATE %u, ase id %u", server->server_id, ase_id);
+                    status = audio_stream_control_service_client_streamendpoint_metadata_update(server->ascs_cid, ase_id, &ase->metadata);
+                }
+                btp_send(response_service_id, response_op, 0, 0, NULL);
+            }
+            break;
         case BTP_CAP_UNICAST_AUDIO_STOP:
             if (controller_index == 0){
                 uint8_t cig_id = data[0];
@@ -1072,6 +1110,8 @@ void btp_cap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, 
             break;
 
         default:
+            MESSAGE("BTP CAP Operation 0x%02x not implemented", opcode);
+            btstack_assert(false);
             break;
     }
 
