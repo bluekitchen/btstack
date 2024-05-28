@@ -60,7 +60,7 @@ extern "C" {
 #define MAP_SERVER_MAX_NAME_LEN 32
 
 // max type header len
-#define MAP_SERVER_MAX_TYPE_LEN 20
+#define MAP_SERVER_MAX_TYPE_LEN 30
 
 // max search value len
 #define MAP_SERVER_MAX_SEARCH_VALUE_LEN 32
@@ -148,7 +148,7 @@ typedef enum {
     MAP_PHONEBOOK_SIM_TELECOM_MCH,
     MAP_PHONEBOOK_SIM_TELECOM_OCH,
     MAP_PHONEBOOK_SIM_TELECOM_PB
-} map_phonebook_t;
+} map_folder_t;
 
 // lengths
 #define MAP_DATABASE_IDENTIFIER_LEN 16
