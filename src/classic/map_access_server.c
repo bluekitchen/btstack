@@ -290,13 +290,17 @@ static void map_access_server_handle_set_path_request(map_access_server_t* map_a
     uint16_t name_len = (uint16_t)strlen(name);
     uint8_t obex_result = OBEX_RESP_SUCCESS;
     if (name_len == 0) {
-        if ((flags & 1) == 1) {
+        // no path name given, one dir up?
+        if IS_BIT_SET(flags, OBEX_SP_BIT0_DIR_UP) {
             switch (map_access_server->map_access_server_dir) {
             case MAP_SERVER_DIR_TELECOM:
                 map_access_server->map_access_server_dir = MAP_SERVER_DIR_ROOT;
                 break;
             case MAP_SERVER_DIR_TELECOM_MSG:
                 map_access_server->map_access_server_dir = MAP_SERVER_DIR_TELECOM;
+                break;
+            case MAP_SERVER_DIR_TELECOM_MSG_INBOX:
+                map_access_server->map_access_server_dir = MAP_SERVER_DIR_TELECOM_MSG;
                 break;
             default:
                 obex_result = OBEX_RESP_NOT_FOUND;
