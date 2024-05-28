@@ -68,6 +68,7 @@ typedef enum {
     MAP_SERVER_DIR_ROOT,
     MAP_SERVER_DIR_TELECOM,
     MAP_SERVER_DIR_TELECOM_MSG,
+    MAP_SERVER_DIR_TELECOM_MSG_INBOX,
 } map_access_server_dir_t;
 
 typedef enum {
@@ -319,6 +320,14 @@ static void map_access_server_handle_set_path_request(map_access_server_t* map_a
         case MAP_SERVER_DIR_TELECOM:
             if (strcmp("msg", name) == 0) {
                 map_access_server->map_access_server_dir = MAP_SERVER_DIR_TELECOM_MSG;
+            }
+            else {
+                obex_result = OBEX_RESP_NOT_FOUND;
+            }
+            break;
+        case MAP_SERVER_DIR_TELECOM_MSG:
+            if (strcmp("inbox", name) == 0) {
+                map_access_server->map_access_server_dir = MAP_SERVER_DIR_TELECOM_MSG_INBOX;
             }
             else {
                 obex_result = OBEX_RESP_NOT_FOUND;
