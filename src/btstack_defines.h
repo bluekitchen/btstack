@@ -4255,6 +4255,158 @@ typedef uint8_t sm_key_t[16];
 #define GATTSERVICE_SUBEVENT_GATT_DATABASE_HASH                            0x1Du
 
 
+/**
+ * @format 1H211
+ * @param subevent_code
+ * @param con_handle
+ * @param cid
+ * @param num_included_services
+ * @param status
+*/
+#define GATTSERVICE_SUBEVENT_CLIENT_CONNECTED                               0x1Au
+
+/**
+ * @format 1H2
+ * @param subevent_code
+ * @param con_handle
+ * @param cid
+*/
+#define GATTSERVICE_SUBEVENT_CLIENT_DISCONNECTED                            0x1Bu
+
+
+/**
+ * @format 1H21
+ * @param subevent_code
+ * @param con_handle
+ * @param lls_cid
+ * @param status
+*/
+#define GATTSERVICE_SUBEVENT_LLS_CLIENT_CONNECTED                                        0x1Cu
+
+/**
+ * @format 12
+ * @param subevent_code
+ * @param lls_cid
+*/
+#define GATTSERVICE_SUBEVENT_LLS_CLIENT_DISCONNECTED                                     0x1Du
+
+/**
+ * @format 1221
+ * @param subevent_code
+ * @param lls_cid
+ * @param characteristic_uuid
+ * @param att_status
+ */
+#define GATTSERVICE_SUBEVENT_LLS_CLIENT_WRITE_DONE                                       0x1Eu
+
+/**
+ * @format 12
+ * @param subevent_code
+ * @param lls_cid
+ */
+#define GATTSERVICE_SUBEVENT_LLS_CLIENT_START_ALERTING                                   0x1Fu
+
+/**
+ * @format 121
+ * @param subevent_code
+ * @param lls_cid
+ * @param timeout
+ */
+#define GATTSERVICE_SUBEVENT_LLS_CLIENT_STOP_ALERTING                                   0x20u
+
+/**
+ * @format 121
+ * @param subevent_code
+ * @param lls_cid
+ * @param value
+ */
+ #define GATTSERVICE_SUBEVENT_LLS_CLIENT_ALERT_LEVEL                                    0x21u
+
+/**
+ * @format 1H21
+ * @param subevent_code
+ * @param con_handle
+ * @param ias_cid
+ * @param status
+*/
+#define GATTSERVICE_SUBEVENT_IAS_CLIENT_CONNECTED                                        0x22u
+
+/**
+ * @format 12
+ * @param subevent_code
+ * @param ias_cid
+*/
+#define GATTSERVICE_SUBEVENT_IAS_CLIENT_DISCONNECTED                                     0x23u
+
+/**
+ * @format 12
+ * @param subevent_code
+ * @param ias_cid
+ */
+#define GATTSERVICE_SUBEVENT_IAS_CLIENT_START_ALERTING                                   0x24u
+
+/**
+ * @format 121
+ * @param subevent_code
+ * @param ias_cid
+ * @param timeout
+ */
+#define GATTSERVICE_SUBEVENT_IAS_CLIENT_STOP_ALERTING                                    0x25u
+
+/**
+ * @format 1H21
+ * @param subevent_code
+ * @param con_handle
+ * @param tpxs_cid
+ * @param status
+*/
+#define GATTSERVICE_SUBEVENT_TXPS_CLIENT_CONNECTED                                        0x26u
+
+/**
+ * @format 12
+ * @param subevent_code
+ * @param tpxs_cid
+*/
+#define GATTSERVICE_SUBEVENT_TXPS_CLIENT_DISCONNECTED                                     0x27u
+
+/**
+ * @format 121
+ * @param subevent_code
+ * @param tpxs_cid
+ * @param value
+ */
+#define GATTSERVICE_SUBEVENT_TXPS_CLIENT_TX_POWER_LEVEL                                   0x28u
+
+/**
+ * @format 11
+ * @param subevent_code
+ * @param alert_level
+ */
+#define GATTSERVICE_SUBEVENT_LLS_SERVER_START_ALERTING                                    0x29u
+
+/**
+ * @format 111
+ * @param subevent_code
+ * @param alert_level
+ * @param timeout
+ */
+#define GATTSERVICE_SUBEVENT_LLS_SERVER_STOP_ALERTING                                     0x2Au
+
+/**
+ * @format 11
+ * @param subevent_code
+ * @param alert_level
+ */
+#define GATTSERVICE_SUBEVENT_IAS_SERVER_START_ALERTING                                    0x2Bu
+
+/**
+ * @format 111
+ * @param subevent_code
+ * @param alert_level
+ * @param timeout
+ */
+#define GATTSERVICE_SUBEVENT_IAS_SERVER_STOP_ALERTING                                     0x2Cu
+
 // LE Audio
 
 /**
