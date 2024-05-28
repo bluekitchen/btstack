@@ -62,6 +62,13 @@ extern "C" {
 
 // will be moved to daemon/btstack_device_name_db.h
 
+/**
+ * @brief TestNon-zero if all bits in flag_mask are set in value
+ * @parm value this is tested for all flags set in the mask
+ * @parm flag_mask this mask is tested against value
+ * @return 0 if false
+ */
+#define IS_BIT_SET(value, flag_mask) (((value) & flag_mask) == flag_mask)
 
 /**
  * @brief The device name type
