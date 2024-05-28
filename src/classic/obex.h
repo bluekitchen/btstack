@@ -112,6 +112,9 @@
 #define OBEX_SRMP_WAIT                              0x01
 #define OBEX_SRMP_NEXT_WAIT                         0x02
 
+/* SETPATH header Values */
+#define OBEX_SP_BIT0_DIR_UP							0x01
+#define OBEX_SP_BIT1_DONT_CREATE_DIR	     		0x02
 
 /**
  * PBAP
