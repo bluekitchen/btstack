@@ -163,13 +163,9 @@ static struct {
     map_access_server_dir_t parent_dir;
     char* path;
 } map_access_server_folders[] = {
-    {"cch",MAP_SERVER_DIR_TELECOM, "telecom/cch.vcf"},
-    {"fav",MAP_SERVER_DIR_TELECOM, "telecom/fav.vcf"},
-    {"ich",MAP_SERVER_DIR_TELECOM, "telecom/ich.vcf"},
-    {"mch",MAP_SERVER_DIR_TELECOM, "telecom/mch.vcf"},
-    {"och",MAP_SERVER_DIR_TELECOM, "telecom/och.vcf"},
-    {"pb", MAP_SERVER_DIR_TELECOM, "telecom/pb.vcf"},
-    {"spd",MAP_SERVER_DIR_TELECOM, "telecom/spd.vcf"}
+    {"msg",     MAP_SERVER_DIR_TELECOM, "telecom/msg.vcf"},
+    {"inbox",   MAP_SERVER_DIR_TELECOM, "telecom/msg/inbox.vcf"},
+    {"outbox",  MAP_SERVER_DIR_TELECOM, "telecom/msg/outbox.vcf"},
 };
 
 static const char map_access_server_default_service_name[] = "MAP";
@@ -276,23 +272,17 @@ void map_access_server_create_sdp_record(uint8_t* service, uint32_t service_reco
 }
 
 static map_folder_t map_access_server_get_folder_by_path(const char* path) {
-    uint16_t index;
-    for (index = 0; index < (sizeof(map_access_server_folders) / sizeof(map_access_server_folders[0])); index++) {
-        if (strcmp(path, map_access_server_folders[index].path) == 0) {
-            return MAP_PHONEBOOK_TELECOM_CCH + index;
-        }
-    }
-    return MAP_PHONEBOOK_INVALID;
+    return MAP_FOLDER_TELECOM_MSG;
 }
 
 static map_folder_t map_access_server_get_folder_by_dir_and_name(map_access_server_dir_t parent_dir, const char* name) {
     uint16_t index;
     for (index = 0; index < (sizeof(map_access_server_folders) / sizeof(map_access_server_folders[0])); index++) {
         if ((parent_dir == map_access_server_folders[index].parent_dir) && (strcmp(name, map_access_server_folders[index].name) == 0)) {
-            return MAP_PHONEBOOK_TELECOM_CCH + index;
+            return MAP_FOLDER_TELECOM_MSG + index;
         }
     }
-    return MAP_PHONEBOOK_INVALID;
+    return MAP_FOLDER_INVALID;
 }
 
 static void map_access_server_handle_set_path_request(map_access_server_t* map_access_server, uint8_t flags, const char* name) {
@@ -478,7 +468,7 @@ static void map_access_server_handle_can_send_now(map_access_server_t* map_acces
         goep_server_header_add_who(map_access_server->goep_cid, map_uuid);
         // next state
         map_access_server->map_access_server_dir = MAP_SERVER_DIR_ROOT;
-        map_access_server->map_folder = MAP_PHONEBOOK_INVALID;
+        map_access_server->map_folder = MAP_FOLDER_INVALID;
         map_access_server_operation_complete(map_access_server);
         // send packet
         goep_server_execute(map_access_server->goep_cid, OBEX_RESP_SUCCESS);
@@ -729,7 +719,7 @@ static void map_access_server_parser_callback_get(void* user_data, uint8_t heade
 static void map_access_server_handle_get_request(map_access_server_t* map_access_server) {
     map_access_server_handle_srm_headers(map_access_server);
     map_access_server->request.object_type = map_access_server_parse_object_type(map_access_server->request.type);
-    map_folder_t folder = MAP_PHONEBOOK_INVALID;
+    map_folder_t folder = MAP_FOLDER_INVALID;
     uint16_t name_len = (uint16_t)strlen(map_access_server->request.name);
     switch (map_access_server->request.object_type) {
     case MAP_OBJECT_TYPE_INVALID:
@@ -763,25 +753,20 @@ static void map_access_server_handle_get_request(map_access_server_t* map_access
         break;
     }
 
-    if (folder == MAP_PHONEBOOK_INVALID) {
+    if (folder == MAP_FOLDER_INVALID) {
         map_access_server->state = MAP_SERVER_STATE_SEND_INTERNAL_RESPONSE;
         map_access_server->response.code = OBEX_RESP_NOT_FOUND;
         goep_server_request_can_send_now(map_access_server->goep_cid);
         return;
     }
 
-    //// ResetNewMissedCalls
-    //if (map_access_server->request.app_params.reset_new_missed_calls == 1) {
-    //    uint8_t event[6];
-    //    uint16_t pos = 0;
-    //    event[pos++] = HCI_EVENT_MAP_META;
-    //    event[pos++] = sizeof(event) - 2;
-    //    event[pos++] = MAP_SUBEVENT_RESET_MISSED_CALLS;
-    //    little_endian_store_16(event, pos, map_access_server->map_cid);
-    //    pos += 2;
-    //    event[pos++] = folder;
-    //    (*map_access_server_user_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
-    //}
+    if (folder == MAP_FOLDER_TELECOM_MSG) {
+        dbg_printf("TODO: dummy response\n");
+        map_access_server->state = MAP_SERVER_STATE_SEND_INTERNAL_RESPONSE;
+        map_access_server->response.code = OBEX_RESP_SUCCESS;
+        goep_server_request_can_send_now(map_access_server->goep_cid);
+        return;
+    }
 
     // MaxListCount == 0 -> query size
     if (map_access_server->request.app_params.max_list_count == 0) {
@@ -1203,17 +1188,13 @@ uint16_t map_access_server_send_pull_response(uint16_t map_cid, uint8_t response
 #endif
 
 const char* map_access_server_get_folder_path(map_folder_t folder) {
-    btstack_assert(folder >= MAP_PHONEBOOK_TELECOM_CCH);
-    btstack_assert(folder <= MAP_PHONEBOOK_SIM_TELECOM_PB);
+    btstack_assert(folder > MAP_FOLDER_MAX);
+    btstack_assert(folder < MAP_FOLDER_MAX);
     return map_access_server_folders[(uint16_t)folder].path;
 }
 
 const char* map_access_server_get_folder_name(map_folder_t folder) {
-    btstack_assert(folder >= MAP_PHONEBOOK_TELECOM_CCH);
-    btstack_assert(folder <= MAP_PHONEBOOK_SIM_TELECOM_PB);
+    btstack_assert(folder > MAP_FOLDER_MAX);
+    btstack_assert(folder < MAP_FOLDER_MAX);
     return map_access_server_folders[(uint16_t)folder].name;
-}
-
-bool map_access_server_is_folder_on_sim1(map_folder_t folder) {
-    return (folder >= MAP_PHONEBOOK_TELECOM_CCH) && (folder <= MAP_PHONEBOOK_TELECOM_SPD);
 }
