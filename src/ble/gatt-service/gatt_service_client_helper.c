@@ -202,8 +202,6 @@ static uint8_t gatt_service_client_register_notification(gatt_service_client_hel
 
         }
 
-
-
         // notification supported, register for value updates
         if (status == ERROR_CODE_SUCCESS){
             gatt_client_listen_for_characteristic_value_updates(
@@ -477,7 +475,13 @@ void gatt_service_client_trampoline_packet_handler(gatt_service_client_helper_t 
             }
             btstack_assert(connection->state == GATT_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_DESCRIPTORS_RESULT);
 
-            connection->characteristics[connection->characteristic_index].client_configuration_handle = characteristic_descriptor.handle;
+            if ( ((connection->characteristics[connection->characteristic_index].properties & ATT_PROPERTY_NOTIFY)   != 0u) ||
+                 ((connection->characteristics[connection->characteristic_index].properties & ATT_PROPERTY_INDICATE) != 0u)
+               ){
+                connection->characteristics[connection->characteristic_index].client_configuration_handle = characteristic_descriptor.handle;
+            } else {
+                connection->characteristics[connection->characteristic_index].client_configuration_handle = 0;
+            } 
             connection->characteristic_index++;
 
 #ifdef ENABLE_TESTING_SUPPORT
