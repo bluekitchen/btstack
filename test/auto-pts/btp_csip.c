@@ -218,7 +218,15 @@ static void btp_csip_client_event_handler(uint8_t packet_type, uint16_t channel,
             if (status != ERROR_CODE_SUCCESS){
                 MESSAGE("CSIP client %u: read LOCK failed, 0x%02x", server->server_id, status);
             } else {
-                btp_csip_ordered_access_next();
+                // abort if lockec
+                csis_member_lock_t lock = (csis_member_lock_t) leaudio_subevent_csis_client_lock_get_lock(packet);
+                if (lock == CSIS_MEMBER_LOCKED){
+                    MESSAGE("CSIP clients: not all are unlocked");
+                    btp_csip_ordered_access_state = BTP_CSIP_ORDERED_ACCESS_IDLE;
+                    btp_send(response_service_id, BTP_CSIP_START_ORDERED_ACCESS, 0, 0, NULL);
+                } else {
+                    btp_csip_ordered_access_next();
+                }
             }
             break;
 
