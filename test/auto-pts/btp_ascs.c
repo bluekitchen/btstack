@@ -46,6 +46,7 @@
 #include <stdint.h>
 #include "btpclient.h"
 #include "btp.h"
+#include "btp_server.h"
 
 void btp_ascs_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, const uint8_t *data) {
     // provide op info for response
@@ -60,7 +61,58 @@ void btp_ascs_handler(uint8_t opcode, uint8_t controller_index, uint16_t length,
                 btp_send(response_service_id, opcode, controller_index, 1, &commands);
             }
             break;
+        case BTP_ASCS_DISABLE:
+            if (controller_index == 0) {
+                /**
+                    Address_Type (1 octet)
+                    Address (6 octets)
+                    ASE_ID (1 octet)
+                 */
+
+                uint16_t offset = 0;
+                bd_addr_type_t addr_type = data[offset++];
+                bd_addr_t address;
+                reverse_bd_addr(&data[offset], address);
+                offset += 6;
+
+                server_t * server = btp_server_for_address(addr_type, address);
+                btstack_assert(server != NULL);
+
+                // get ASE info
+                uint8_t ase_id = data[offset++];
+                MESSAGE("BTP_ASCS_DISABLE %u, ASE ID %u", server->server_id, ase_id);
+                audio_stream_control_service_client_streamendpoint_disable(server->ascs_cid, ase_id);
+                btp_send(response_service_id, opcode, controller_index, 0, NULL);
+            }
+            break;
+        case BTP_ASCS_RECEIVER_STOP_READY:
+            if (controller_index == 0) {
+                /**
+                    Address_Type (1 octet)
+                    Address (6 octets)
+                    ASE_ID (1 octet)
+                 */
+
+                uint16_t offset = 0;
+                bd_addr_type_t addr_type = data[offset++];
+                bd_addr_t address;
+                reverse_bd_addr(&data[offset], address);
+                offset += 6;
+
+                server_t *server = btp_server_for_address(addr_type, address);
+                btstack_assert(server != NULL);
+
+                // get ASE info
+                uint8_t ase_id = data[offset++];
+                MESSAGE("BTP_ASCS_RECEIVER_STOP_READY %u, ASE ID %u", server->server_id, ase_id);
+
+                audio_stream_control_service_client_streamendpoint_receiver_stop_ready(server->ascs_cid, ase_id);
+                btp_send(response_service_id, opcode, controller_index, 0, NULL);
+            }
+            break;
         default:
+            MESSAGE("BTP ASCS Operation 0x%02x not implemented", opcode);
+            btstack_assert(false);
             break;
     }
 }
