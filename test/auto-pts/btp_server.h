@@ -91,6 +91,7 @@ typedef struct {
     ascs_streamendpoint_characteristic_t streamendpoint_characteristics[ASCS_CLIENT_NUM_STREAMENDPOINTS];
     uint16_t ascs_cid;
     bool ascs_operation_active;
+    bool wait_for_ase_state_change;
 
     // bass client
     bass_client_connection_t bass_connection;
