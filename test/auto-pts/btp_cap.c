@@ -619,22 +619,35 @@ static void btp_cap_bap_handler(uint8_t packet_type, uint16_t channel, uint8_t *
             printf("ASCS Client: METADATA UPDATE - ase_id %d, ascs_cid 0x%02x\n", ase_id, ascs_cid);
             break;
 
+#endif
+
         case LEAUDIO_SUBEVENT_ASCS_CLIENT_CONTROL_POINT_OPERATION_RESPONSE:
+            // TODO: move into btp_ascs.c
             ase_id        = leaudio_subevent_ascs_client_control_point_operation_response_get_ase_id(packet);
             ascs_cid      = leaudio_subevent_ascs_client_control_point_operation_response_get_ascs_cid(packet);
             response_code = leaudio_subevent_ascs_client_control_point_operation_response_get_response_code(packet);
             reason        = leaudio_subevent_ascs_client_control_point_operation_response_get_reason(packet);
             opcode        = leaudio_subevent_ascs_client_control_point_operation_response_get_opcode(packet);
-            printf("ASCS Client: Operation complete - ase_id %d, opcode %u, response [0x%02x, 0x%02x], ascs_cid 0x%02x\n", ase_id, opcode, response_code, reason, ascs_cid);
-            if ((opcode == ASCS_OPCODE_RECEIVER_START_READY) && (response_op != 0)){
-                MESSAGE("Receiver Start Ready completed");
-                btp_send(BTP_SERVICE_ID_LE_AUDIO, response_op, 0, 0, NULL);
-                response_op = 0;
+
+            server = btp_server_for_ascs_cid(ascs_cid);
+            btstack_assert(server != NULL);
+
+            MESSAGE("BTP CAP - ASCS Client: Operation complete - ase_id %d, opcode %u, response [0x%02x, 0x%02x], ascs_cid 0x%02x", ase_id, opcode, response_code, reason, ascs_cid);
+            {
+                uint8_t ase_operation_complete_ev[11];
+                pos = 0;
+                ase_operation_complete_ev[pos++] = server->address_type;
+                reverse_bd_addr(server->address, &ase_operation_complete_ev[pos]);
+                pos += 6;
+                ase_operation_complete_ev[pos++] = ase_id;
+                ase_operation_complete_ev[pos++] = opcode;
+                ase_operation_complete_ev[pos++] = response_code;
+                uint8_t flags = 0;
+                ase_operation_complete_ev[pos++] = flags;
+                btp_send(BTP_SERVICE_ID_ASCS, BTP_ASCS_EV_OPERATION_COMPLETED, 0, pos, ase_operation_complete_ev);
             }
             break;
 
-
-#endif
         case LEAUDIO_SUBEVENT_BASS_CLIENT_CONNECTED:
             if ((response_service_id == BTP_SERVICE_ID_CAP) && (response_op == BTP_CAP_DISCOVER)){
                 server_t * server = btp_server_for_acl_con_handle(leaudio_subevent_bass_client_connected_get_con_handle(packet));
