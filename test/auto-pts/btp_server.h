@@ -90,6 +90,7 @@ typedef struct {
     ascs_client_connection_t ascs_connection;
     ascs_streamendpoint_characteristic_t streamendpoint_characteristics[ASCS_CLIENT_NUM_STREAMENDPOINTS];
     uint16_t ascs_cid;
+    bool ascs_operation_active;
 
     // bass client
     bass_client_connection_t bass_connection;

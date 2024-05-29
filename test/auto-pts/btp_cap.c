@@ -313,28 +313,37 @@ static void btp_cap_ases_run(void){
     for (i=0;i<btp_bap_num_ases;i++){
         btp_cap_ase_t * ase = &btp_cap_ases[i];
         server_t * server = btp_server_for_index(ase->server_index);
+        // TODO: current implementation only supports one operation per connection
+        if (server->ascs_operation_active) {
+            continue;
+        }
         switch (ase->state){
             case ASE_STATE_W2_CONFIGURE_CODEC:
+                server->ascs_operation_active = true;
                 ase->state = ASE_STATE_W4_CODEC_CONFIGURED;
                 status = audio_stream_control_service_client_streamendpoint_configure_codec(server->ascs_cid, ase->ase_id, &ase->codec_configuration_request);
                 MESSAGE("BTP ASCS %u: Configure Codec for ase id %u -> 0x%02x", ase->server_index,  ase->ase_id, status);
                 break;
             case ASE_STATE_W2_CONFIGURE_QOS:
+                server->ascs_operation_active = true;
                 ase->state = ASE_STATE_W4_QOS_CONFIGURED;
                 status = audio_stream_control_service_client_streamendpoint_configure_qos(server->ascs_cid, ase->ase_id,&ase->qos_configuration);
                 MESSAGE("BTP ASCS %u: Configure QoS for ase id %u -> 0x%02x", server->server_id, ase->ase_id, status);
                 break;
             case ASE_STATE_W2_ENABLE:
+                server->ascs_operation_active = true;
                 ase->state = ASE_STATE_W4_ENABLING;
                 status = audio_stream_control_service_client_streamendpoint_enable(server->ascs_cid, ase->ase_id, &ase->metadata);
                 MESSAGE("BTP ASCS %u: Enable for ase id %u -> 0x%02x", server->server_id, ase->ase_id, status);
                 break;
             case ASE_STATE_W2_RECEIVER_START_READY:
+                server->ascs_operation_active = true;
                 ase->state = ASE_STATE_W4_STREAMING;
                 status = audio_stream_control_service_client_streamendpoint_receiver_start_ready(server->ascs_cid, ase->ase_id);
                 MESSAGE("BTP ASCS %u: Receiver Start Ready for ase id %u -> 0x%02x", server->server_id, ase->ase_id, status);
                 break;
             case ASE_STATE_W2_RELEASE:
+                server->ascs_operation_active = true;
                 ase->state = ASE_STATE_W4_RELEASING;
                 status = audio_stream_control_service_client_streamendpoint_release(server->ascs_cid, ase->ase_id, false);
                 MESSAGE("BTP ASCS %u: Release ase id %u -> 0x%02x", server->server_id, ase->ase_id, status);
@@ -632,6 +641,8 @@ static void btp_cap_bap_handler(uint8_t packet_type, uint16_t channel, uint8_t *
             server = btp_server_for_ascs_cid(ascs_cid);
             btstack_assert(server != NULL);
 
+            server->ascs_operation_active = false;
+
             MESSAGE("BTP CAP - ASCS Client: Operation complete - ase_id %d, opcode %u, response [0x%02x, 0x%02x], ascs_cid 0x%02x", ase_id, opcode, response_code, reason, ascs_cid);
             {
                 uint8_t ase_operation_complete_ev[11];
@@ -889,6 +900,7 @@ void btp_cap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, 
                     const uint8_t * metadata_buffer = &data[offset];
                     uint16_t parsed_bytes = le_audio_util_metadata_parse(metadata_buffer, metadata_ltvs_length + 1, &ase->metadata);
                     offset += metadata_ltvs_length + 1;
+                    server->ascs_operation_active = true;
                     MESSAGE("BTP_CAP_UNICAST_AUDIO_UPDATE %u, ase id %u", server->server_id, ase_id);
                     status = audio_stream_control_service_client_streamendpoint_metadata_update(server->ascs_cid, ase_id, &ase->metadata);
                 }

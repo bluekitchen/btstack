@@ -81,6 +81,7 @@ void btp_ascs_handler(uint8_t opcode, uint8_t controller_index, uint16_t length,
                 // get ASE info
                 uint8_t ase_id = data[offset++];
                 MESSAGE("BTP_ASCS_DISABLE %u, ASE ID %u", server->server_id, ase_id);
+                server->ascs_operation_active = true;
                 audio_stream_control_service_client_streamendpoint_disable(server->ascs_cid, ase_id);
                 btp_send(response_service_id, opcode, controller_index, 0, NULL);
             }
@@ -106,6 +107,7 @@ void btp_ascs_handler(uint8_t opcode, uint8_t controller_index, uint16_t length,
                 uint8_t ase_id = data[offset++];
                 MESSAGE("BTP_ASCS_RECEIVER_STOP_READY %u, ASE ID %u", server->server_id, ase_id);
 
+                server->ascs_operation_active = true;
                 audio_stream_control_service_client_streamendpoint_receiver_stop_ready(server->ascs_cid, ase_id);
                 btp_send(response_service_id, opcode, controller_index, 0, NULL);
             }
