@@ -57,6 +57,7 @@
 #include "classic/map.h"
 #include "classic/map_access_server.h"
 
+ // TODO: copied from PBAP_server, to be adapted to MAS server
  // max app params for vcard listing and folder response:
  // - NewMissedCalls
  // - DatabaseIdentifier
@@ -129,12 +130,12 @@ typedef struct {
         struct {
             char search_value[MAP_SERVER_MAX_SEARCH_VALUE_LEN];    // has trailing zero
             uint32_t property_selector;
-            uint32_t vcard_selector;
-            map_format_vcard_t format;
+            uint32_t msg_selector;
+            map_format_msg_t format;
             uint16_t max_list_count;
             uint16_t list_start_offset;
             uint8_t reset_new_missed_calls;
-            uint8_t vcard_selector_operator;
+            uint8_t msg_selector_operator;
             uint8_t order;
             uint8_t search_property;
         } app_params;
@@ -450,7 +451,7 @@ static void map_access_server_add_application_parameters(const map_access_server
 static void map_access_server_default_headers(map_access_server_t* map_access_server) {
     (void)memset(&map_access_server->request, 0, sizeof(map_access_server->request));
     map_access_server->request.app_params.max_list_count = 0xffffU;
-    map_access_server->request.app_params.vcard_selector = 0xffffffffUL;
+    map_access_server->request.app_params.msg_selector = 0xffffffffUL;
     map_access_server->request.app_params.property_selector = 0xffffffffUL;
 }
 static void map_access_server_reset_response(map_access_server_t* map_access_server) {
@@ -745,22 +746,6 @@ static void map_access_server_handle_get_request(map_access_server_t* map_access
     case MAP_OBJECT_TYPE_MSG_LISTING:
             folder = map_access_server_get_folder_by_path(map_access_server->request.name);
             break;
-    //case MAP_OBJECT_TYPE_PHONEBOOOK:
-    //    // lookup folder by absolute path
-    //    folder = map_access_server_get_folder_by_path(map_access_server->request.name);
-    //    break;
-    //case MAP_OBJECT_TYPE_VCARD_LISTING:
-    //    // lookup folder by relative name if name given
-    //    if (name_len == 0) {
-    //        folder = map_access_server->map_folder;
-    //    }
-    //    else {
-    //        folder = map_access_server_get_folder_by_dir_and_name(map_access_server->map_access_server_dir, map_access_server->request.name);
-    //    }
-    //    break;
-    //case MAP_OBJECT_TYPE_VCARD:
-    //    folder = map_access_server->map_folder;
-    //    break;
     default:
         btstack_unreachable();
         break;
@@ -773,88 +758,60 @@ static void map_access_server_handle_get_request(map_access_server_t* map_access
         return;
     }
 
-    if (folder == MAP_FOLDER_TELECOM_MSG) {
-        dbg_printf("TODO: dummy response\n");
-        map_access_server->state = MAP_SERVER_STATE_SEND_INTERNAL_RESPONSE;
-        map_access_server->response.code = OBEX_RESP_SUCCESS;
-        goep_server_request_can_send_now(map_access_server->goep_cid);
-        return;
-    }
+    // this leads to an "unexpeted GET CFM" in PTS
+    //if (folder == MAP_FOLDER_TELECOM_MSG) {
+    //    dbg_printf("TODO: dummy response\n");
+    //    map_access_server->state = MAP_SERVER_STATE_SEND_INTERNAL_RESPONSE;
+    //    map_access_server->response.code = OBEX_RESP_SUCCESS;
+    //    goep_server_request_can_send_now(map_access_server->goep_cid);
+    //    return;
+    //}
 
-    // MaxListCount == 0 -> query size
-    if (map_access_server->request.app_params.max_list_count == 0) {
-        // not valid for vCard request
-        if (map_access_server->request.object_type == MAP_OBJECT_TYPE_VCARD) {
-            map_access_server->state = MAP_SERVER_STATE_SEND_INTERNAL_RESPONSE;
-            map_access_server->response.code = OBEX_RESP_BAD_REQUEST;
-            goep_server_request_can_send_now(map_access_server->goep_cid);
-        }
-        //else {
-        //    map_access_server->state = MAP_SERVER_STATE_W4_USER_DATA;
-        //    uint8_t event[11];
-        //    uint16_t pos = 0;
-        //    event[pos++] = HCI_EVENT_MAP_META;
-        //    event[pos++] = sizeof(event) - 2;
-        //    event[pos++] = MAP_SUBEVENT_QUERY_PHONEBOOK_SIZE;
-        //    little_endian_store_16(event, pos, map_access_server->map_cid);
-        //    pos += 2;
-        //    little_endian_store_32(event, pos, map_access_server->request.app_params.vcard_selector);
-        //    pos += 4;
-        //    event[pos++] = map_access_server->request.app_params.vcard_selector_operator;
-        //    event[pos++] = folder;
-        //    (*map_access_server_user_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
-        //}
-        return;
-    }
-    dbg_printf("partial implementation, shouldnt be reached\n");
-    //// emit pull ( folder, vcard_listing, vcard)
-    //uint8_t event[2 + 20 + MAP_SERVER_MAX_NAME_LEN + MAP_SERVER_MAX_SEARCH_VALUE_LEN];
+    //map_access_server->state = MAP_SERVER_STATE_W4_USER_DATA;
+    //uint8_t event[11];
     //uint16_t pos = 0;
-    //uint16_t search_value_len;
     //event[pos++] = HCI_EVENT_MAP_META;
-    //switch (map_access_server->request.object_type) {
-    //case MAP_OBJECT_TYPE_PHONEBOOOK:
-    //    event[pos++] = 22;
-    //    event[pos++] = MAP_SUBEVENT_PULL_PHONEBOOK;
-    //    little_endian_store_16(event, pos, map_access_server->map_cid);
-    //    pos += 2;
-    //    little_endian_store_32(event, pos, map_access_server->request.continuation);
-    //    pos += 4;
-    //    little_endian_store_32(event, pos, map_access_server->request.app_params.property_selector);
-    //    pos += 4;
-    //    event[pos++] = map_access_server->request.app_params.format;
-    //    little_endian_store_16(event, pos, map_access_server->request.app_params.max_list_count);
-    //    pos += 2;
-    //    little_endian_store_16(event, pos, map_access_server->request.app_params.list_start_offset);
-    //    pos += 2;
-    //    little_endian_store_32(event, pos, map_access_server->request.app_params.vcard_selector);
-    //    pos += 4;
-    //    event[pos++] = map_access_server->request.app_params.vcard_selector_operator;
-    //    event[pos++] = folder;
-    //    break;
-    //case MAP_OBJECT_TYPE_VCARD_LISTING:
-    //    search_value_len = (uint16_t)strlen(map_access_server->request.app_params.search_value);
-    //    event[pos++] = 20 + search_value_len + 1;
-    //    event[pos++] = MAP_SUBEVENT_PULL_VCARD_LISTING;
-    //    little_endian_store_16(event, pos, map_access_server->map_cid);
-    //    pos += 2;
-    //    little_endian_store_32(event, pos, map_access_server->request.continuation);
-    //    pos += 4;
-    //    event[pos++] = map_access_server->request.app_params.order;
-    //    little_endian_store_16(event, pos, map_access_server->request.app_params.max_list_count);
-    //    pos += 2;
-    //    little_endian_store_16(event, pos, map_access_server->request.app_params.list_start_offset);
-    //    pos += 2;
-    //    little_endian_store_32(event, pos, map_access_server->request.app_params.vcard_selector);
-    //    pos += 4;
-    //    event[pos++] = map_access_server->request.app_params.vcard_selector_operator;
-    //    event[pos++] = map_access_server->request.app_params.search_property;
-    //    // search_value is zero terminated
-    //    event[pos++] = search_value_len + 1;
-    //    memcpy(&event[pos], (const uint8_t*)map_access_server->request.app_params.search_value, search_value_len + 1);
-    //    pos += search_value_len + 1;
-    //    event[pos++] = folder;
-    //    break;
+    //event[pos++] = sizeof(event) - 2;
+    //event[pos++] = MAP_SUBEVENT_MESSAGE_LISTING_ITEM;
+    //little_endian_store_16(event, pos, map_access_server->map_cid);
+    //pos += 2;
+    //little_endian_store_32(event, pos, map_access_server->request.app_params.vcard_selector);
+    //pos += 4;
+    //event[pos++] = map_access_server->request.app_params.vcard_selector_operator;
+    //event[pos++] = folder;
+    //(*map_access_server_user_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
+    //
+    dbg_printf("partial implementation, shouldnt be reached\n");
+    // emit get ( folder, msg_listing, msg)
+    uint8_t event[2 + 20 + MAP_SERVER_MAX_NAME_LEN + MAP_SERVER_MAX_SEARCH_VALUE_LEN];
+    uint16_t pos = 0;
+    uint16_t search_value_len;
+    event[pos++] = HCI_EVENT_MAP_META;
+    switch (map_access_server->request.object_type) {
+
+    case MAP_OBJECT_TYPE_MSG_LISTING:
+        search_value_len = (uint16_t)strlen(map_access_server->request.app_params.search_value);
+        event[pos++] = 20 + search_value_len + 1;
+        event[pos++] = MAP_SUBEVENT_MESSAGE_LISTING_ITEM;
+        little_endian_store_16(event, pos, map_access_server->map_cid);
+        pos += 2;
+        little_endian_store_32(event, pos, map_access_server->request.continuation);
+        pos += 4;
+        event[pos++] = map_access_server->request.app_params.order;
+        little_endian_store_16(event, pos, map_access_server->request.app_params.max_list_count);
+        pos += 2;
+        little_endian_store_16(event, pos, map_access_server->request.app_params.list_start_offset);
+        pos += 2;
+        little_endian_store_32(event, pos, map_access_server->request.app_params.msg_selector);
+        pos += 4;
+        event[pos++] = map_access_server->request.app_params.msg_selector_operator;
+        event[pos++] = map_access_server->request.app_params.search_property;
+        // search_value is zero terminated
+        event[pos++] = search_value_len + 1;
+        memcpy(&event[pos], (const uint8_t*)map_access_server->request.app_params.search_value, search_value_len + 1);
+        pos += search_value_len + 1;
+        event[pos++] = folder;
+        break;
     //case MAP_OBJECT_TYPE_VCARD:
     //    event[pos++] = 13 + name_len + 1;
     //    event[pos++] = MAP_SUBEVENT_PULL_VCARD_ENTRY;
@@ -870,12 +827,12 @@ static void map_access_server_handle_get_request(map_access_server_t* map_access
     //    memcpy(&event[pos], map_access_server->request.name, name_len + 1);
     //    pos += name_len + 1;
     //    break;
-    //default:
-    //    btstack_unreachable();
-    //    break;
-    //}
-    //map_access_server->state = MAP_SERVER_STATE_W4_USER_DATA;
-    //(*map_access_server_user_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
+    default:
+        btstack_unreachable();
+        break;
+    }
+    map_access_server->state = MAP_SERVER_STATE_W4_USER_DATA;
+    (*map_access_server_user_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
 static void map_access_server_packet_handler_goep(map_access_server_t* map_access_server, uint8_t* packet, uint16_t size) {
@@ -1043,8 +1000,7 @@ static bool map_access_server_valid_header_for_request(map_access_server_t* map_
         return false;
     }
     switch (map_access_server->request.object_type) {
-    case MAP_OBJECT_TYPE_PHONEBOOOK:
-    case MAP_OBJECT_TYPE_VCARD_LISTING:
+    case MAP_OBJECT_TYPE_MSG_LISTING:
         return true;
     default:
         return false;

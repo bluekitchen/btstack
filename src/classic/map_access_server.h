@@ -73,10 +73,10 @@ extern "C" {
 #define MAP_SUPPORTED_FEATURES_BROWSING                        (1<<1)
 #define MAP_SUPPORTED_FEATURES_DATABASE_IDENTIFIER             (1<<2)
 #define MAP_SUPPORTED_FEATURES_FOLDER_VERSION_COUNTERS         (1<<3)
-#define MAP_SUPPORTED_FEATURES_VCARD_SELECTING                 (1<<4)
+#define MAP_SUPPORTED_FEATURES_MSG_SELECTING                   (1<<4)
 #define MAP_SUPPORTED_FEATURES_ENHANCED_MISSED_CALLS           (1<<5)
-#define MAP_SUPPORTED_FEATURES_X_BT_UCI_VCARD_PROPERTY         (1<<6)
-#define MAP_SUPPORTED_FEATURES_X_BT_UID_VCARD_PROPERTY         (1<<7)
+#define MAP_SUPPORTED_FEATURES_X_BT_UCI_MSG_PROPERTY           (1<<6)
+#define MAP_SUPPORTED_FEATURES_X_BT_UID_MSG_PROPERTY           (1<<7)
 #define MAP_SUPPORTED_FEATURES_CONTACT_REFERENCING             (1<<8)
 #define MAP_SUPPORTED_FEATURES_DEFAULT_CONTACT_IMAGE_FORMAT    (1<<9)
 
@@ -115,22 +115,19 @@ extern "C" {
 #define MAP_PROPERTY_MASK_X_BT_UID             (1<<31) // Bluetooth Contact Unique Identifier
 
 // MAP vCardSelectorOperator
-#define MAP_VCARD_SELECTOR_OPERATOR_OR          0
-#define MAP_VCARD_SELECTOR_OPERATOR_AND         1
+#define MAP_MSG_SELECTOR_OPERATOR_OR          0
+#define MAP_MSG_SELECTOR_OPERATOR_AND         1
 
 // MAP Format
 typedef enum {
-    MAP_FORMAT_VCARD_21 = 0,
-    MAP_FORMAT_VCRAD_30
-} map_format_vcard_t;
+    MAP_FORMAT_MSG_10 = 0,
+    MAP_FORMAT_MSG_11
+} map_format_msg_t;
 
 // MAP Object Types
 typedef enum {
     MAP_OBJECT_TYPE_INVALID = 0,
     MAP_OBJECT_TYPE_MSG_LISTING,
-    MAP_OBJECT_TYPE_PHONEBOOOK,
-    MAP_OBJECT_TYPE_VCARD_LISTING,
-    MAP_OBJECT_TYPE_VCARD,
 } map_object_type_t;
 
 // MAP Folders
@@ -146,6 +143,7 @@ typedef enum {
 #define MAP_DATABASE_IDENTIFIER_LEN 16
 #define MAP_FOLDER_VERSION_LEN 16
 
+uint16_t map_access_server_send_pull_response(uint16_t map_cid, uint8_t response_code, uint32_t continuation, uint16_t body_len, const uint8_t* body);
 void map_access_server_init(btstack_packet_handler_t packet_handler, uint8_t rfcomm_channel_nr, uint16_t l2cap_psm, uint16_t mtu);
 
 #if defined __cplusplus
