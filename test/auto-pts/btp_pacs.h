@@ -39,8 +39,8 @@
  *  @brief TODO
  */
 
-#ifndef BTP_ASCS_H
-#define BTP_ASCS_H
+#ifndef BTP_PACS_H
+#define BTP_PACS_H
 
 #include <stdint.h>
 #include "bluetooth.h"
@@ -60,101 +60,56 @@ typedef struct {
 #pragma pack(1)
 #define __packed
 
-/* ASCS commands */
-#define BTP_ASCS_READ_SUPPORTED_COMMANDS	0x01
-struct btp_ascs_read_supported_commands_rp {
+/* PACSS commands */
+
+#define BTP_PACS_READ_SUPPORTED_COMMANDS			0x01
+struct btp_pacs_read_supported_commands_rp {
     uint8_t data[0];
 } __packed;
 
-#define BTP_ASCS_CONFIGURE_CODEC	0x02
-struct btp_ascs_configure_codec_cmd {
-    bt_addr_le_t address;
-    uint8_t ase_id;
-    uint8_t coding_format;
-    uint16_t vid;
-    uint16_t cid;
-    uint8_t ltvs_len;
-    uint8_t ltvs[0];
+#define BTP_PACS_CHARACTERISTIC_SINK_PAC			0x01
+#define BTP_PACS_CHARACTERISTIC_SOURCE_PAC			0x02
+#define BTP_PACS_CHARACTERISTIC_SINK_AUDIO_LOCATIONS		0x03
+#define BTP_PACS_CHARACTERISTIC_SOURCE_AUDIO_LOCATIONS		0x04
+#define BTP_PACS_CHARACTERISTIC_AVAILABLE_AUDIO_CONTEXTS	0x05
+#define BTP_PACS_CHARACTERISTIC_SUPPORTED_AUDIO_CONTEXTS	0x06
+
+#define BTP_PACS_UPDATE_CHARACTERISTIC				0x02
+struct btp_pacs_update_characteristic_cmd {
+    uint8_t characteristic;
 } __packed;
 
-#define BTP_ASCS_CONFIGURE_QOS	0x03
-struct btp_ascs_configure_qos_cmd {
-    bt_addr_le_t address;
-    uint8_t ase_id;
-    uint8_t cig_id;
-    uint8_t cis_id;
-    uint8_t sdu_interval[3];
-    uint8_t framing;
-    uint16_t max_sdu;
-    uint8_t retransmission_num;
-    uint16_t max_transport_latency;
-    uint8_t presentation_delay[3];
+#define BTP_PACS_SET_LOCATION					0x03
+struct btp_pacs_set_location_cmd {
+    uint8_t dir;
+    uint32_t location;
 } __packed;
 
-#define BTP_ASCS_ENABLE	0x04
-struct btp_ascs_enable_cmd {
-    bt_addr_le_t address;
-    uint8_t ase_id;
+#define BTP_PACS_SET_AVAILABLE_CONTEXTS				0x04
+struct btp_pacs_set_available_contexts_cmd {
+    uint16_t sink_contexts;
+    uint16_t source_contexts;
 } __packed;
 
-#define BTP_ASCS_RECEIVER_START_READY	0x05
-struct btp_ascs_receiver_start_ready_cmd {
-    bt_addr_le_t address;
-    uint8_t ase_id;
+#define BTP_PACS_SET_SUPPORTED_CONTEXTS				0x05
+struct btp_pacs_set_supported_contexts_cmd {
+    uint16_t sink_contexts;
+    uint16_t source_contexts;
 } __packed;
-
-#define BTP_ASCS_RECEIVER_STOP_READY	0x06
-struct btp_ascs_receiver_stop_ready_cmd {
-    bt_addr_le_t address;
-    uint8_t ase_id;
-} __packed;
-
-#define BTP_ASCS_DISABLE	0x07
-struct btp_ascs_disable_cmd {
-    bt_addr_le_t address;
-    uint8_t ase_id;
-} __packed;
-
-#define BTP_ASCS_RELEASE	0x08
-struct btp_ascs_release_cmd {
-    bt_addr_le_t address;
-    uint8_t ase_id;
-} __packed;
-
-#define BTP_ASCS_UPDATE_METADATA	0x09
-struct btp_ascs_update_metadata_cmd {
-    bt_addr_le_t address;
-    uint8_t ase_id;
-} __packed;
-
-/* ASCS events */
-#define BTP_ASCS_EV_OPERATION_COMPLETED	0x80
-struct btp_ascs_operation_completed_ev {
-    bt_addr_le_t address;
-    uint8_t ase_id;
-    uint8_t opcode;
-    uint8_t status;
-
-    /* RFU */
-    uint8_t flags;
-} __packed;
-
-#define BTP_ASCS_STATUS_SUCCESS	0x00
-#define BTP_ASCS_STATUS_FAILED	0x01
 
 #pragma options align=reset
 
 /**
-* Init ASCS Service
+* Init PACS Service
 */
-void btp_ascs_init(void);
+void btp_pacs_init(void);
 
 /**
- * Process ASCS Operation
+ * Process PACS Operation
  */
-void btp_ascs_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, const uint8_t *data);
+void btp_pacs_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, const uint8_t *data);
 
 #if defined __cplusplus
 }
 #endif
-#endif // BTP_ASCS_H
+#endif // BTP_PACS_H
