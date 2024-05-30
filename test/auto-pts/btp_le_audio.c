@@ -47,7 +47,7 @@
 #include "btpclient.h"
 #include "btp.h"
 #include "btstack.h"
-#include "bap_service_server_test.h"
+#include "btp_le_audio_profile.h"
 
 #define ASCS_CLIENT_NUM_STREAMENDPOINTS 4
 #define ASCS_CLIENT_COUNT 2
