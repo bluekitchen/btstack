@@ -48,6 +48,7 @@
 #include "btp.h"
 #include "btstack.h"
 #include "btp_le_audio_profile.h"
+#include "btp_pacs.h"
 
 #define ASCS_CLIENT_NUM_STREAMENDPOINTS 4
 #define ASCS_CLIENT_COUNT 2
@@ -1284,3 +1285,57 @@ void btp_le_audio_init(void){
     }
 }
 
+// PACS
+void btp_pacs_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, const uint8_t *data) {
+    // provide op info for response
+    response_len = 0;
+    response_service_id = BTP_SERVICE_ID_PACS;
+    response_op = opcode;
+    switch (opcode) {
+        case BTP_PACS_READ_SUPPORTED_COMMANDS:
+        MESSAGE("BTP_ASCS_READ_SUPPORTED_COMMANDS");
+            if (controller_index == BTP_INDEX_NON_CONTROLLER) {
+                uint8_t commands = 0;
+                btp_send(response_service_id, opcode, controller_index, 1, &commands);
+            }
+            break;
+        case BTP_PACS_SET_AVAILABLE_CONTEXTS:
+            if (controller_index == 0){
+                /*
+                uint16_t sink_contexts;
+                uint16_t source_contexts;
+                */
+                uint8_t offset = 0;
+                uint16_t sink_available_contexts = little_endian_read_16(data, offset);
+                offset += 2;
+                uint16_t source_available_context = little_endian_read_16(data, offset);
+                published_audio_capabilities_service_server_set_available_audio_contexts(sink_available_contexts, source_available_context);
+                audio_stream_control_service_server_set_available_audio_contexts(sink_available_contexts, source_available_context);
+                btp_send(response_service_id, opcode, controller_index, 0, NULL);
+                MESSAGE("BTP_PACS_SET_AVAILABLE_CONTEXTS: sink 0x%04x,source 0x%04x", sink_available_contexts, source_available_context);
+            }
+            break;
+        case BTP_PACS_SET_SUPPORTED_CONTEXTS:
+            if (controller_index == 0){
+                /*
+                uint16_t sink_contexts;
+                uint16_t source_contexts;
+                */
+                uint8_t offset = 0;
+                uint16_t sink_supported_contexts = little_endian_read_16(data, offset);
+                offset += 2;
+                uint16_t source_supported_context = little_endian_read_16(data, offset);
+                published_audio_capabilities_service_server_set_supported_audio_contexts(sink_supported_contexts, source_supported_context);
+                btp_send(response_service_id, opcode, controller_index, 0, NULL);
+                MESSAGE("BTP_PACS_SET_SUPPORTED_CONTEXTS: sink 0x%04x,source 0x%04x", sink_supported_contexts, source_supported_context);
+            }
+            break;
+        default:
+        MESSAGE("BTP PACS Operation 0x%02x not implemented", opcode);
+            btstack_assert(false);
+            break;
+    }
+}
+
+void btp_pacs_init(void) {
+}
