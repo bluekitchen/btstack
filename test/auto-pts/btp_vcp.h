@@ -39,11 +39,12 @@
  *  @brief TODO
  */
 
-#ifndef BTP_ASCS_H
-#define BTP_ASCS_H
+#ifndef BTP_VCP_H
+#define BTP_VCP_H
 
 #include <stdint.h>
 #include "bluetooth.h"
+
 
 #if defined __cplusplus
 extern "C" {
@@ -60,101 +61,125 @@ typedef struct {
 #pragma pack(1)
 #define __packed
 
-/* ASCS commands */
-#define BTP_ASCS_READ_SUPPORTED_COMMANDS	0x01
-struct btp_ascs_read_supported_commands_rp {
+#define BTP_VCP_READ_SUPPORTED_COMMANDS		0x01
+struct btp_vcp_read_supported_commands_rp {
     uint8_t data[0];
 } __packed;
 
-#define BTP_ASCS_CONFIGURE_CODEC	0x02
-struct btp_ascs_configure_codec_cmd {
+#define BTP_VCP_VOL_CTLR_DISCOVER		0x02
+struct btp_vcp_discover_cmd {
     bt_addr_le_t address;
-    uint8_t ase_id;
-    uint8_t coding_format;
-    uint16_t vid;
-    uint16_t cid;
-    uint8_t ltvs_len;
-    uint8_t ltvs[0];
 } __packed;
 
-#define BTP_ASCS_CONFIGURE_QOS	0x03
-struct btp_ascs_configure_qos_cmd {
+#define BTP_VCP_VOL_CTLR_STATE_READ		0x03
+struct btp_vcp_state_read_cmd {
     bt_addr_le_t address;
-    uint8_t ase_id;
-    uint8_t cig_id;
-    uint8_t cis_id;
-    uint8_t sdu_interval[3];
-    uint8_t framing;
-    uint16_t max_sdu;
-    uint8_t retransmission_num;
-    uint16_t max_transport_latency;
-    uint8_t presentation_delay[3];
 } __packed;
 
-#define BTP_ASCS_ENABLE	0x04
-struct btp_ascs_enable_cmd {
+#define BTP_VCP_VOL_CTLR_FLAGS_READ		0x04
+struct btp_vcp_flags_read_cmd {
     bt_addr_le_t address;
-    uint8_t ase_id;
 } __packed;
 
-#define BTP_ASCS_RECEIVER_START_READY	0x05
-struct btp_ascs_receiver_start_ready_cmd {
+#define BTP_VCP_VOL_CTLR_VOL_DOWN		0x05
+struct btp_vcp_ctlr_vol_down_cmd {
     bt_addr_le_t address;
-    uint8_t ase_id;
 } __packed;
 
-#define BTP_ASCS_RECEIVER_STOP_READY	0x06
-struct btp_ascs_receiver_stop_ready_cmd {
+#define BTP_VCP_VOL_CTLR_VOL_UP			0x06
+struct btp_vcp_ctlr_vol_up_cmd {
     bt_addr_le_t address;
-    uint8_t ase_id;
 } __packed;
 
-#define BTP_ASCS_DISABLE	0x07
-struct btp_ascs_disable_cmd {
+#define BTP_VCP_VOL_CTLR_UNMUTE_VOL_DOWN	0x07
+struct btp_vcp_ctlr_unmute_vol_down_cmd {
     bt_addr_le_t address;
-    uint8_t ase_id;
 } __packed;
 
-#define BTP_ASCS_RELEASE	0x08
-struct btp_ascs_release_cmd {
+#define BTP_VCP_VOL_CTLR_UNMUTE_VOL_UP		0x08
+struct btp_vcp_ctlr_unmute_vol_up_cmd {
     bt_addr_le_t address;
-    uint8_t ase_id;
 } __packed;
 
-#define BTP_ASCS_UPDATE_METADATA	0x09
-struct btp_ascs_update_metadata_cmd {
+#define BTP_VCP_VOL_CTLR_SET_VOL		0x09
+struct btp_vcp_ctlr_set_vol_cmd {
     bt_addr_le_t address;
-    uint8_t ase_id;
+    uint8_t volume;
 } __packed;
 
-/* ASCS events */
-#define BTP_ASCS_EV_OPERATION_COMPLETED	0x80
-struct btp_ascs_operation_completed_ev {
+#define BTP_VCP_VOL_CTLR_UNMUTE			0x0a
+struct btp_vcp_ctlr_unmute_cmd {
     bt_addr_le_t address;
-    uint8_t ase_id;
-    uint8_t opcode;
-    uint8_t status;
+} __packed;
 
-    /* RFU */
+#define BTP_VCP_VOL_CTLR_MUTE			0x0b
+struct btp_vcp_ctlr_mute_cmd {
+    bt_addr_le_t address;
+} __packed;
+
+/* VCP events */
+#define BTP_VCP_DISCOVERED_EV			0x80
+struct btp_vcp_discovered_ev {
+    bt_addr_le_t address;
+    uint8_t att_status;
+    struct {
+        uint16_t control_handle;
+        uint16_t flag_handle;
+        uint16_t state_handle;
+    } vcs_handles;
+
+    struct {
+        uint16_t state_handle;
+        uint16_t location_handle;
+        uint16_t control_handle;
+        uint16_t desc_handle;
+    } vocs_handles;
+
+    struct {
+        uint16_t state_handle;
+        uint16_t gain_handle;
+        uint16_t type_handle;
+        uint16_t status_handle;
+        uint16_t control_handle;
+        uint16_t desc_handle;
+    } aics_handles;
+} __packed;
+
+#define BTP_VCP_STATE_EV			0x81
+struct btp_vcp_state_ev {
+    bt_addr_le_t address;
+    uint8_t att_status;
+    uint8_t volume;
+    uint8_t mute;
+} __packed;
+
+#define BTP_VCP_FLAGS_EV			0x82
+struct btp_vcp_volume_flags_ev {
+    bt_addr_le_t address;
+    uint8_t att_status;
     uint8_t flags;
 } __packed;
 
-#define BTP_ASCS_STATUS_SUCCESS	0x00
-#define BTP_ASCS_STATUS_FAILED	0x01
+#define BTP_VCP_PROCEDURE_EV			0x83
+struct btp_vcp_procedure_ev {
+    bt_addr_le_t address;
+    uint8_t att_status;
+    uint8_t opcode;
+} __packed;
 
 #pragma options align=reset
 
 /**
-* Init ASCS Service
+* Init VCP Service
 */
-void btp_ascs_init(void);
+void btp_vcp_init(void);
 
 /**
- * Process ASCS Operation
+ * Process VCP Operation
  */
-void btp_ascs_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, const uint8_t *data);
+void btp_vcp_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, const uint8_t *data);
 
 #if defined __cplusplus
 }
 #endif
-#endif // BTP_ASCS_H
+#endif // BTP_VCP_H

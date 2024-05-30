@@ -39,11 +39,13 @@
  *  @brief TODO
  */
 
-#ifndef BTP_ASCS_H
-#define BTP_ASCS_H
+#ifndef BTP_MCS_H
+#define BTP_MCS_H
 
 #include <stdint.h>
 #include "bluetooth.h"
+#include "btstack_bool.h"
+#include "le-audio/gatt-service/object_transfer_service_util.h"
 
 #if defined __cplusplus
 extern "C" {
@@ -57,104 +59,55 @@ typedef struct {
 } bt_addr_le_t;
 #endif
 
+#define BT_OTS_OBJ_ID_SIZE OTS_OBJECT_ID_LEN
+
 #pragma pack(1)
 #define __packed
 
-/* ASCS commands */
-#define BTP_ASCS_READ_SUPPORTED_COMMANDS	0x01
-struct btp_ascs_read_supported_commands_rp {
+/* MCS commands */
+#define BTP_MCS_READ_SUPPORTED_COMMANDS		0x01
+struct btp_mcs_read_supported_commands_rp {
     uint8_t data[0];
 } __packed;
 
-#define BTP_ASCS_CONFIGURE_CODEC	0x02
-struct btp_ascs_configure_codec_cmd {
-    bt_addr_le_t address;
-    uint8_t ase_id;
-    uint8_t coding_format;
-    uint16_t vid;
-    uint16_t cid;
-    uint8_t ltvs_len;
-    uint8_t ltvs[0];
-} __packed;
-
-#define BTP_ASCS_CONFIGURE_QOS	0x03
-struct btp_ascs_configure_qos_cmd {
-    bt_addr_le_t address;
-    uint8_t ase_id;
-    uint8_t cig_id;
-    uint8_t cis_id;
-    uint8_t sdu_interval[3];
-    uint8_t framing;
-    uint16_t max_sdu;
-    uint8_t retransmission_num;
-    uint16_t max_transport_latency;
-    uint8_t presentation_delay[3];
-} __packed;
-
-#define BTP_ASCS_ENABLE	0x04
-struct btp_ascs_enable_cmd {
-    bt_addr_le_t address;
-    uint8_t ase_id;
-} __packed;
-
-#define BTP_ASCS_RECEIVER_START_READY	0x05
-struct btp_ascs_receiver_start_ready_cmd {
-    bt_addr_le_t address;
-    uint8_t ase_id;
-} __packed;
-
-#define BTP_ASCS_RECEIVER_STOP_READY	0x06
-struct btp_ascs_receiver_stop_ready_cmd {
-    bt_addr_le_t address;
-    uint8_t ase_id;
-} __packed;
-
-#define BTP_ASCS_DISABLE	0x07
-struct btp_ascs_disable_cmd {
-    bt_addr_le_t address;
-    uint8_t ase_id;
-} __packed;
-
-#define BTP_ASCS_RELEASE	0x08
-struct btp_ascs_release_cmd {
-    bt_addr_le_t address;
-    uint8_t ase_id;
-} __packed;
-
-#define BTP_ASCS_UPDATE_METADATA	0x09
-struct btp_ascs_update_metadata_cmd {
-    bt_addr_le_t address;
-    uint8_t ase_id;
-} __packed;
-
-/* ASCS events */
-#define BTP_ASCS_EV_OPERATION_COMPLETED	0x80
-struct btp_ascs_operation_completed_ev {
-    bt_addr_le_t address;
-    uint8_t ase_id;
+#define BTP_MCS_CMD_SEND			0x02
+struct btp_mcs_send_cmd {
     uint8_t opcode;
-    uint8_t status;
-
-    /* RFU */
-    uint8_t flags;
+    uint8_t use_param;
+    int32_t param;
 } __packed;
 
-#define BTP_ASCS_STATUS_SUCCESS	0x00
-#define BTP_ASCS_STATUS_FAILED	0x01
+#define BTP_MCS_CURRENT_TRACK_OBJ_ID_GET	0x03
+struct btp_mcs_current_track_obj_id_rp {
+    uint8_t id[BT_OTS_OBJ_ID_SIZE];
+} __packed;
+
+#define BTP_MCS_NEXT_TRACK_OBJ_ID_GET		0x04
+struct btp_mcs_next_track_obj_id_rp {
+    uint8_t id[BT_OTS_OBJ_ID_SIZE];
+} __packed;
+
+#define BTP_MCS_INACTIVE_STATE_SET		0x05
+struct btp_mcs_state_set_rp {
+    uint8_t state;
+} __packed;
+
+#define BTP_MCS_PARENT_GROUP_SET		0x06
+
 
 #pragma options align=reset
 
 /**
-* Init ASCS Service
+* Init MCS Service
 */
-void btp_ascs_init(void);
+void btp_mcs_init(void);
 
 /**
- * Process ASCS Operation
+ * Process MCS Operation
  */
-void btp_ascs_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, const uint8_t *data);
+void btp_mcs_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, const uint8_t *data);
 
 #if defined __cplusplus
 }
 #endif
-#endif // BTP_ASCS_H
+#endif // BTP_MCS_H
