@@ -1573,27 +1573,3 @@ void btp_bap_bass_discover(server_t * server){
                                                 server->acl_con_handle,
                                                 &server->bass_cid);
 }
-
-// PACS
-void btp_pacs_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, const uint8_t *data) {
-    // provide op info for response
-    response_len = 0;
-    response_service_id = BTP_SERVICE_ID_PACS;
-    response_op = opcode;
-    switch (opcode) {
-        case BTP_PACS_READ_SUPPORTED_COMMANDS:
-            MESSAGE("BTP_ASCS_READ_SUPPORTED_COMMANDS");
-            if (controller_index == BTP_INDEX_NON_CONTROLLER) {
-                uint8_t commands = 0;
-                btp_send(response_service_id, opcode, controller_index, 1, &commands);
-            }
-            break;
-        default:
-            MESSAGE("BTP PACS Operation 0x%02x not implemented", opcode);
-            btstack_assert(false);
-            break;
-    }
-}
-
-void btp_pacs_init(void) {
-}
