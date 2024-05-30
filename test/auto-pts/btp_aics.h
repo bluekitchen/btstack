@@ -39,11 +39,12 @@
  *  @brief TODO
  */
 
-#ifndef BTP_ASCS_H
-#define BTP_ASCS_H
+#ifndef BTP_AICS_H
+#define BTP_AICS_H
 
 #include <stdint.h>
 #include "bluetooth.h"
+#include "btstack_bool.h"
 
 #if defined __cplusplus
 extern "C" {
@@ -60,101 +61,135 @@ typedef struct {
 #pragma pack(1)
 #define __packed
 
-/* ASCS commands */
-#define BTP_ASCS_READ_SUPPORTED_COMMANDS	0x01
-struct btp_ascs_read_supported_commands_rp {
+/* AICS commands */
+
+#define BTP_AICS_READ_SUPPORTED_COMMANDS	0x01
+struct btp_aics_read_supported_commands_rp {
     uint8_t data[0];
 } __packed;
 
-#define BTP_ASCS_CONFIGURE_CODEC	0x02
-struct btp_ascs_configure_codec_cmd {
+/* AICS client/server commands */
+#define BTP_AICS_SET_GAIN			0x02
+struct btp_aics_set_gain_cmd {
     bt_addr_le_t address;
-    uint8_t ase_id;
-    uint8_t coding_format;
-    uint16_t vid;
-    uint16_t cid;
-    uint8_t ltvs_len;
-    uint8_t ltvs[0];
+    int8_t gain;
 } __packed;
 
-#define BTP_ASCS_CONFIGURE_QOS	0x03
-struct btp_ascs_configure_qos_cmd {
+#define BTP_AICS_MUTE				0x03
+struct btp_aics_mute_cmd {
     bt_addr_le_t address;
-    uint8_t ase_id;
-    uint8_t cig_id;
-    uint8_t cis_id;
-    uint8_t sdu_interval[3];
-    uint8_t framing;
-    uint16_t max_sdu;
-    uint8_t retransmission_num;
-    uint16_t max_transport_latency;
-    uint8_t presentation_delay[3];
 } __packed;
 
-#define BTP_ASCS_ENABLE	0x04
-struct btp_ascs_enable_cmd {
+#define BTP_AICS_UNMUTE				0x04
+struct btp_aics_unmute_cmd {
     bt_addr_le_t address;
-    uint8_t ase_id;
 } __packed;
 
-#define BTP_ASCS_RECEIVER_START_READY	0x05
-struct btp_ascs_receiver_start_ready_cmd {
+#define BTP_AICS_MAN_GAIN_SET			0x05
+struct btp_aics_manual_gain_cmd {
     bt_addr_le_t address;
-    uint8_t ase_id;
 } __packed;
 
-#define BTP_ASCS_RECEIVER_STOP_READY	0x06
-struct btp_ascs_receiver_stop_ready_cmd {
+#define BTP_AICS_AUTO_GAIN_SET			0x06
+struct btp_aics_auto_gain_cmd {
     bt_addr_le_t address;
-    uint8_t ase_id;
 } __packed;
 
-#define BTP_ASCS_DISABLE	0x07
-struct btp_ascs_disable_cmd {
-    bt_addr_le_t address;
-    uint8_t ase_id;
+#define BTP_AICS_SET_MAN_GAIN_ONLY		0x07
+#define BTP_AICS_SET_AUTO_GAIN_ONLY		0x08
+#define BTP_AICS_AUDIO_DESCRIPTION_SET		0x09
+struct btp_aics_audio_desc_cmd {
+    uint8_t desc_len;
+    uint8_t desc[0];
 } __packed;
 
-#define BTP_ASCS_RELEASE	0x08
-struct btp_ascs_release_cmd {
+#define BTP_AICS_MUTE_DISABLE			0x0a
+#define BTP_AICS_GAIN_SETTING_PROP_GET		0x0b
+struct btp_aics_gain_setting_prop_cmd {
     bt_addr_le_t address;
-    uint8_t ase_id;
 } __packed;
 
-#define BTP_ASCS_UPDATE_METADATA	0x09
-struct btp_ascs_update_metadata_cmd {
+#define BTP_AICS_TYPE_GET			0x0c
+struct btp_aics_type_cmd {
     bt_addr_le_t address;
-    uint8_t ase_id;
 } __packed;
 
-/* ASCS events */
-#define BTP_ASCS_EV_OPERATION_COMPLETED	0x80
-struct btp_ascs_operation_completed_ev {
+#define BTP_AICS_STATUS_GET			0x0d
+struct btp_aics_status_cmd {
     bt_addr_le_t address;
-    uint8_t ase_id;
+} __packed;
+
+#define BTP_AICS_STATE_GET			0x0e
+struct btp_aics_state_cmd {
+    bt_addr_le_t address;
+} __packed;
+
+#define BTP_AICS_DESCRIPTION_GET		0x0f
+struct btp_aics_desc_cmd {
+    bt_addr_le_t address;
+} __packed;
+
+/* AICS events */
+#define BTP_AICS_STATE_EV			0x80
+struct btp_aics_state_ev {
+    bt_addr_le_t address;
+    uint8_t att_status;
+    int8_t gain;
+    uint8_t mute;
+    uint8_t mode;
+} __packed;
+
+#define BTP_GAIN_SETTING_PROPERTIES_EV		0x81
+struct btp_gain_setting_properties_ev {
+    bt_addr_le_t address;
+    uint8_t att_status;
+    uint8_t units;
+    int8_t minimum;
+    int8_t maximum;
+} __packed;
+
+#define BTP_AICS_INPUT_TYPE_EV			0x82
+struct btp_aics_input_type_ev {
+    bt_addr_le_t address;
+    uint8_t att_status;
+    uint8_t input_type;
+} __packed;
+
+#define BTP_AICS_STATUS_EV			0x83
+struct btp_aics_status_ev {
+    bt_addr_le_t address;
+    uint8_t att_status;
+    bool active;
+} __packed;
+
+#define BTP_AICS_DESCRIPTION_EV			0x84
+struct btp_aics_description_ev {
+    bt_addr_le_t address;
+    uint8_t att_status;
+    uint8_t data_len;
+    char data[0];
+} __packed;
+
+#define BTP_AICS_PROCEDURE_EV			0x85
+struct btp_aics_procedure_ev {
+    bt_addr_le_t address;
+    uint8_t att_status;
     uint8_t opcode;
-    uint8_t status;
-
-    /* RFU */
-    uint8_t flags;
 } __packed;
-
-#define BTP_ASCS_STATUS_SUCCESS	0x00
-#define BTP_ASCS_STATUS_FAILED	0x01
 
 #pragma options align=reset
 
 /**
-* Init ASCS Service
+* Init AICS Service
 */
-void btp_ascs_init(void);
+void btp_aics_init(void);
 
 /**
- * Process ASCS Operation
+ * Process PACS Operation
  */
-void btp_ascs_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, const uint8_t *data);
+void btp_aics_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, const uint8_t *data);
 
 #if defined __cplusplus
 }
 #endif
-#endif // BTP_ASCS_H
+#endif // BTP_AICS_H
