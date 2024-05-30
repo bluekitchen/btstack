@@ -4342,7 +4342,6 @@ static void event_handler(uint8_t *packet, uint16_t size){
             if (hci_stack->acl_fragmentation_total_size) break;
 
             // release packet buffer without HCI_EVENT_TRANSPORT_PACKET_SENT (as it will be later)
-            btstack_assert(hci_stack->hci_packet_buffer_reserved);
             hci_stack->hci_packet_buffer_reserved = false;
 
 #ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
