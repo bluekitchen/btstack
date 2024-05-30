@@ -280,6 +280,11 @@ static void mcs_client_emit_connected(const gatt_service_client_connection_helpe
     (*connection_helper->event_callback)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
+static void mcs_client_connected(mcs_client_connection_t *connection, uint8_t status) {
+    connection->state = MEDIA_CONTROL_SERVICE_CLIENT_STATE_READY;
+    mcs_client_emit_connected(&connection->basic_connection, connection->ots_connections_num, status);
+}
+
 static void mcs_client_emit_string_value(uint16_t cid, btstack_packet_handler_t event_callback, uint8_t subevent, const uint8_t * data, uint16_t data_size){
     UNUSED(data_size);
     btstack_assert(event_callback != NULL);
@@ -560,18 +565,13 @@ static void mcs_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
                     
 
 #ifdef ENABLE_TESTING_SUPPORT
-                    printf("\nMICS Client: Query OTS included service\n");
+                    printf("\nMCS Client: Query OTS included service\n");
 #endif
                     connection->state = MEDIA_CONTROL_SERVICE_CLIENT_STATE_W2_QUERY_INCLUDED_SERVICES;
                     connection->ots_connections_num = 0;
 
                     mcs_client_handle_can_send_now.context = (void *)(uintptr_t)connection->basic_connection.con_handle;
-                    uint8_t status = gatt_client_request_to_send_gatt_query(&mcs_client_handle_can_send_now, connection->basic_connection.con_handle);
-
-                    if (status != ERROR_CODE_SUCCESS){
-                        connection->state = MEDIA_CONTROL_SERVICE_CLIENT_STATE_READY;
-                        mcs_client_emit_connected(connection_helper, connection->ots_connections_num, status);
-                    }
+                    (void) gatt_client_request_to_send_gatt_query(&mcs_client_handle_can_send_now, connection->basic_connection.con_handle);
                     break;
 
                 case GATTSERVICE_SUBEVENT_CLIENT_DISCONNECTED:
@@ -600,9 +600,9 @@ static void mcs_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
 
                     switch (connection->state){
                         case MEDIA_CONTROL_SERVICE_CLIENT_STATE_W4_INCLUDED_SERVICE_CONNECTED:
-                            connection->state = MEDIA_CONTROL_SERVICE_CLIENT_STATE_READY;
-                            mcs_client_emit_connected(&connection->basic_connection, connection->ots_connections_num, ATT_ERROR_SUCCESS);
+                            mcs_client_connected(connection, ERROR_CODE_SUCCESS);
                             break;
+
                         default:
                             break;
                     }
@@ -676,10 +676,12 @@ static void mcs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t ch
             switch (connection->state){
                 case MEDIA_CONTROL_SERVICE_CLIENT_STATE_W4_INCLUDED_SERVICES_RESULT:
                     if (connection->ots_connections_num == 0) {
+                        // no included OTS service found found, MCS ready
+                        mcs_client_connected(connection, ERROR_CODE_SUCCESS);
                         break;
                     }
+
                     connection->state = MEDIA_CONTROL_SERVICE_CLIENT_STATE_W4_INCLUDED_SERVICE_CONNECTED;
-                    
                     object_transfer_service_client_init();
                     status = object_transfer_service_client_connect_secondary_service(
                             connection->basic_connection.con_handle,
@@ -689,10 +691,12 @@ static void mcs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t ch
                             connection->ots_connection.basic_connection.service_index,
                             &connection->ots_connection);
 
-                    if (status == ERROR_CODE_SUCCESS){
-                        return;
+                    if (status != ERROR_CODE_SUCCESS) {
+                        // failed to connect to OTS service
+                        mcs_client_connected(connection, status);
                     }
                     break;
+
                 default:
                     break;
             }
