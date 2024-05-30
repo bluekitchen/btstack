@@ -62,6 +62,7 @@
 #include "btp_csip.h"
 #include "btp_server.h"
 #include "btp_ascs.h"
+#include "btp_pacs.h"
 
 #define AUTOPTS_SOCKET_NAME "/tmp/bt-stack-tester"
 
@@ -1829,6 +1830,9 @@ static void btp_packet_handler(uint8_t service_id, uint8_t opcode, uint8_t contr
         case BTP_SERVICE_ID_ASCS:
             btp_ascs_handler(opcode, controller_index, length, data);
             break;
+        case BTP_SERVICE_ID_PACS:
+            btp_pacs_handler(opcode, controller_index, length, data);
+            break;
         case BTP_SERVICE_ID_CAP:
             btp_cap_handler(opcode, controller_index, length, data);
             break;
@@ -2123,7 +2127,7 @@ int btstack_main(int argc, const char * argv[])
 
     // LE Legacy Pairing, Passkey entry initiator enter, responder (us) displays
     sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
-    sm_set_authentication_requirements(SM_AUTHREQ_MITM_PROTECTION | SM_AUTHREQ_NO_BONDING);
+    sm_set_authentication_requirements( SM_AUTHREQ_NO_BONDING);
     sm_use_fixed_passkey_in_display_role(0);
 
     reset_gap();
@@ -2138,6 +2142,9 @@ int btstack_main(int argc, const char * argv[])
 
     // LE Audio (old) Client
     btp_le_audio_init();
+
+    // New Servers
+    btp_pacs_init();
 
     // New Clients
     btp_server_init();
