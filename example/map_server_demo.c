@@ -98,22 +98,23 @@ static l2cap_ertm_config_t map_notification_client_ertm_config = {
 
 static bd_addr_t    remote_addr;
 static const char* remote_addr_string = "001BDC08E272";
+static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 static const char * msg_listing_header = "<MAP-msg-listing version = \"1.0\">";
-static const char * msg_listing_msg   = "<msg handle = \"20000100001\" subject = \"Hello\" datetime = \"20071213T130510\" sender_name = \"Jamie\" \
-sender_addressing = \"+1-987-6543210\" recipient_addressing = \"+1-0123-456789\" type = \"SMS_GSM\"  \
-size = \"256\" attachment_size = \"0\" priority = \"no\" read = \"yes\" sent = \"no\" protected = \"no\"/>";
+static const char * msg_listing_msg   = "<msg handle = \"20000100001\" subject = \"Hello\"/>";
 static const char * msg_listing_footer = "</MAP-msg-listing>";
 
 static void create_msg(char * msg_buffer, uint16_t index){
     sprintf(msg_buffer, msg_listing_msg);
 }
-
+static void create_item(char * buffer, uint16_t index){
+    sprintf(buffer, msg_listing_msg);
+}
 
 // send msgs first-last, returns index of next card
 static uint16_t send_messages(uint16_t first, uint16_t last){
     uint16_t max_body_size = map_access_server_get_max_body_size(map_cid);
-    char msg_buffer[200];
+    char msg_buffer[300];
     uint16_t pos = 0;
     while ((max_body_size > 0) && (first <= last)){
         // create msg
@@ -133,30 +134,49 @@ static uint16_t send_messages(uint16_t first, uint16_t last){
     return first;
 }
 
-static btstack_packet_callback_registration_t hci_event_callback_registration;
+static uint16_t send_listing(uint16_t first, uint16_t last) {
+    uint16_t max_body_size = pbap_server_get_max_body_size(map_cid);
+    char listing_buffer[200];
+    uint16_t pos = 0;
+    bool done = false;
+    // add header
+    if (first == 0){
+        uint16_t len = strlen(msg_listing_header);
+        memcpy(upload_buffer, msg_listing_header, len);
+        pos += len;
+        max_body_size -= len;
+    }
+    while ((max_body_size > 0) && (first <= last)){
+        // add entry
+        create_item(listing_buffer, first);
+        // get len
+        uint16_t len = strlen(listing_buffer);
+        if (len > max_body_size){
+            break;
+        }
+        memcpy(&upload_buffer[pos], (const uint8_t *) listing_buffer, len);
+        pos += len;
+        max_body_size -= len;
+        first++;
+    }
 
-const static char* test_message =
-"BEGIN:BMSG\n"
-"VERSION:1.0\n"
-"STATUS:UNREAD\n"
-"TYPE:SMS_GSM\n"
-"FOLDER:telecom/msg/INBOX\n"
-"BEGIN:VCARD\n"
-"VERSION:3.0\n"
-"FN:\n"
-"N:\n"
-"TEL:Swisscom\n"
-"END:VCARD\n"
-"BEGIN:BENV\n"
-"BEGIN:BBODY\n"
-"CHARSET:UTF-8\n"
-"LENGTH:172\n"
-"BEGIN:MSG\n"
-"This is a test message!\n"
-"END:MSG\n"
-"END:BBODY\n"
-"END:BENV\n"
-"END:BMSG\n";
+    if (first > last){
+        uint16_t len = (uint16_t) strlen(msg_listing_footer);
+        if (len < max_body_size){
+            memcpy(&upload_buffer[pos], (const uint8_t *) msg_listing_footer, len);
+            pos += len;
+            max_body_size -= len;
+            done = true;
+        }
+    }
+
+    uint8_t response_code = done ? OBEX_RESP_SUCCESS : OBEX_RESP_CONTINUE;
+    uint32_t continuation = done ? 0x10000 : first;
+    map_access_server_send_get_response(map_cid, response_code, continuation, pos, upload_buffer);
+    return first;
+
+}
+
 
 
 #ifdef HAVE_BTSTACK_STDIN
@@ -174,9 +194,6 @@ static void show_usage(void){
 static void stdin_process(char c){
     switch (c){
         case 'a':
-            printf("a was pressed\n");
-            break;
-        case 'c':
             printf("a was pressed\n");
             break;
         default:
@@ -268,7 +285,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             map_access_server_set_database_identifier(map_cid, database_identifier);
                             map_access_server_set_folder_version(map_cid, folder_version);
                             printf("[+] Get Message listing\n");
-                            send_messages(1,1);
+                            send_listing(0,0);
                             break;
                         default:
                             log_info("unknown map meta event %d\n", hci_event_map_meta_get_subevent_code(packet));
