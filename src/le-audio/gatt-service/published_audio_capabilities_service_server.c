@@ -248,16 +248,24 @@ static uint16_t pacs_server_store_records(const pacs_record_t * pacs, uint8_t pa
     return stored_bytes;
 }
 
+// returns index or PACS_CHARACTERISTIC_COUNT if none is ready
+static uint8_t pacs_server_ready_notification_index(void){
+    uint8_t i;
+    for (i = 0 ; i < PACS_CHARACTERISTIC_COUNT; i++) {
+        // check if scheduled_tasks that can be executed
+        uint8_t task_mask = 1u << i;
+        if (((pacs_server_scheduled_tasks & task_mask) != 0) && (pacs_server_cccd[i] != 0)){
+            break;
+        }
+    }
+    return i;
+}
+
 static void pacs_server_request_to_send(void){
     if (pacs_server_con_handle != HCI_CON_HANDLE_INVALID){
-        uint8_t i;
-        for (i = 0 ; i < PACS_CHARACTERISTIC_COUNT; i++) {
-            uint8_t task_mask = 1u << i;
-            // check if scheduled_tasks that can be executed
-            if (((pacs_server_scheduled_tasks & task_mask) != 0) && (pacs_server_cccd[i] != 0)){
-                att_server_register_can_send_now_callback(&pacs_server_scheduled_tasks_callback, pacs_server_con_handle);
-                return;
-            }
+        uint8_t i = pacs_server_ready_notification_index();
+        if (i < PACS_CHARACTERISTIC_COUNT){
+            att_server_register_can_send_now_callback(&pacs_server_scheduled_tasks_callback, pacs_server_con_handle);
         }
     }
 }
@@ -265,65 +273,54 @@ static void pacs_server_request_to_send(void){
 static void pacs_server_can_send_now(void * context){
     UNUSED(context);
 
-    uint8_t i;
-    bool sent = false;
-    for (i = 0 ; (i < PACS_CHARACTERISTIC_COUNT) && (sent == false) ; i++){
-        uint8_t task_mask = 1u << i;
-        // check if scheduled_tasks
-        if ((pacs_server_scheduled_tasks & task_mask) != 0){
-            // check if notifications enabled
-            if (pacs_server_cccd[i] != 0){
-                pacs_server_scheduled_tasks &= ~task_mask;
-                uint8_t buffer_32[4];
-                uint8_t buffer_max[PACS_MAX_NOTIFY_BUFFER_SIZE];
-                uint16_t bytes_stored;
-                // notify
-                switch (i){
-                    case PACS_CHARACTERISTIC_SINK_AUDIO_LOCATIONS:
-                        little_endian_store_32(buffer_32, 0, pacs_sink_audio_locations);
-                        att_server_notify(pacs_server_con_handle, pacs_sink_audio_locations_handle, &buffer_32[0], sizeof(buffer_32));
-                        sent = true;
-                        break;
-                    case PACS_CHARACTERISTIC_SOURCE_AUDIO_LOCATIONS:
-                        little_endian_store_32(buffer_32, 0, pacs_source_audio_locations);
-                        att_server_notify(pacs_server_con_handle, pacs_source_audio_locations_handle, &buffer_32[0], sizeof(buffer_32));
-                        sent = true;
-                        break;
-                    case PACS_CHARACTERISTIC_AVAILABLE_AUDIO_CONTEXTS:
-                        little_endian_store_16(buffer_32, 0, pacs_sink_available_audio_contexts_mask);
-                        little_endian_store_16(buffer_32, 2, pacs_source_available_audio_contexts_mask);
-                        att_server_notify(pacs_server_con_handle, pacs_available_audio_contexts_handle, &buffer_32[0], sizeof(buffer_32));
-                        sent = true;
-                        break;
-                    case PACS_CHARACTERISTIC_SUPPORTED_AUDIO_CONTEXTS:
-                        little_endian_store_16(buffer_32, 0, pacs_sink_supported_audio_contexts_mask);
-                        little_endian_store_16(buffer_32, 2, pacs_source_supported_audio_contexts_mask);
-                        att_server_notify(pacs_server_con_handle, pacs_supported_audio_contexts_handle, &buffer_32[0], sizeof(buffer_32));
-                        sent = true;
-                        break;
-                    case PACS_CHARACTERISTIC_SINK_PAC_RECORD:
-                        bytes_stored = pacs_server_store_records(pacs_sink_pac_records, pacs_sink_pac_records_num, buffer_max, sizeof(buffer_max), 0);
-                        if (att_server_get_mtu(pacs_server_con_handle) >= bytes_stored){
-                            att_server_notify(pacs_server_con_handle, pacs_sink_pac_handle, &buffer_max[0], bytes_stored);
-                            sent = true;
-                        }
-                        break;
-                    case PACS_CHARACTERISTIC_SOURCE_PAC_RECORD:
-                        bytes_stored = pacs_server_store_records(pacs_source_pac_records, pacs_source_pac_records_num, buffer_max, sizeof(buffer_max), 0);
-                        if (att_server_get_mtu(pacs_server_con_handle) >= bytes_stored){
-                            att_server_notify(pacs_server_con_handle, pacs_source_pac_handle, &buffer_max[0], bytes_stored);
-                            sent = true;
-                        }
-                        break;
-                    default:
-                        btstack_unreachable();
-                        break;
-                }
-            }
-        }
-    }
+    uint8_t i = pacs_server_ready_notification_index();
+    if (i < PACS_CHARACTERISTIC_COUNT) {
 
-    pacs_server_request_to_send();
+        uint8_t task_mask = 1u << i;
+        pacs_server_scheduled_tasks &= ~task_mask;
+
+        uint8_t buffer_32[4];
+        uint8_t buffer_max[PACS_MAX_NOTIFY_BUFFER_SIZE];
+        uint16_t bytes_stored;
+
+        // notify
+        switch (i) {
+            case PACS_CHARACTERISTIC_SINK_AUDIO_LOCATIONS:
+                little_endian_store_32(buffer_32, 0, pacs_sink_audio_locations);
+                att_server_notify(pacs_server_con_handle, pacs_sink_audio_locations_handle, &buffer_32[0],sizeof(buffer_32));
+                break;
+            case PACS_CHARACTERISTIC_SOURCE_AUDIO_LOCATIONS:
+                little_endian_store_32(buffer_32, 0, pacs_source_audio_locations);
+                att_server_notify(pacs_server_con_handle, pacs_source_audio_locations_handle, &buffer_32[0], sizeof(buffer_32));
+                break;
+            case PACS_CHARACTERISTIC_AVAILABLE_AUDIO_CONTEXTS:
+                little_endian_store_16(buffer_32, 0, pacs_sink_available_audio_contexts_mask);
+                little_endian_store_16(buffer_32, 2, pacs_source_available_audio_contexts_mask);
+                att_server_notify(pacs_server_con_handle, pacs_available_audio_contexts_handle, &buffer_32[0],sizeof(buffer_32));
+                break;
+            case PACS_CHARACTERISTIC_SUPPORTED_AUDIO_CONTEXTS:
+                little_endian_store_16(buffer_32, 0, pacs_sink_supported_audio_contexts_mask);
+                little_endian_store_16(buffer_32, 2, pacs_source_supported_audio_contexts_mask);
+                att_server_notify(pacs_server_con_handle, pacs_supported_audio_contexts_handle, &buffer_32[0],sizeof(buffer_32));
+                break;
+            case PACS_CHARACTERISTIC_SINK_PAC_RECORD:
+                bytes_stored = pacs_server_store_records(pacs_sink_pac_records, pacs_sink_pac_records_num, buffer_max,sizeof(buffer_max), 0);
+                if (att_server_get_mtu(pacs_server_con_handle) >= bytes_stored) {
+                    att_server_notify(pacs_server_con_handle, pacs_sink_pac_handle, &buffer_max[0], bytes_stored);
+                }
+                break;
+            case PACS_CHARACTERISTIC_SOURCE_PAC_RECORD:
+                bytes_stored = pacs_server_store_records(pacs_source_pac_records, pacs_source_pac_records_num,buffer_max, sizeof(buffer_max), 0);
+                if (att_server_get_mtu(pacs_server_con_handle) >= bytes_stored) {
+                    att_server_notify(pacs_server_con_handle, pacs_source_pac_handle, &buffer_max[0], bytes_stored);
+                }
+                break;
+            default:
+                btstack_unreachable();
+                break;
+        }
+        pacs_server_request_to_send();
+    }
 }
 
 static void pacs_server_schedule_notify(pacs_characteristic_t characteristic){
