@@ -69,7 +69,11 @@ static uint8_t ascs_streamendpoint_characteristics_id_counter = 0;
 // characteristic: ASE_CONTROL_POINT
 static uint16_t ascs_ase_control_point_handle;
 static uint16_t ascs_ase_control_point_client_configuration_handle;
-// configration of conntrol point notifications is stored per client
+// configration of control point notifications is stored per client
+
+// dynamic configuration of Available Audio Contexts
+static uint16_t ascs_sink_available_audio_contexts_mask;
+static uint16_t ascs_source_available_audio_contexts_mask;
 
 #ifdef ENABLE_TESTING_SUPPORT
 static void dump_streamendpoint(ascs_server_connection_t * client, ascs_streamendpoint_t * streamendpoint){
@@ -1282,6 +1286,10 @@ void audio_stream_control_service_server_init(
     btstack_assert(streamendpoint_characteristics_num != 0);
     btstack_assert(clients_num != 0);
 
+    // set globals
+    ascs_sink_available_audio_contexts_mask   = LE_AUDIO_CONTEXT_MASK_ANY;
+    ascs_source_available_audio_contexts_mask = LE_AUDIO_CONTEXT_MASK_ANY;
+
     // get service handle range
     uint16_t start_handle = 0;
     uint16_t end_handle   = 0xffff;
@@ -1559,6 +1567,17 @@ hci_con_handle_t audio_stream_control_service_server_streamendpoint_cis_get_hand
         return HCI_CON_HANDLE_INVALID;
     }
     return streamendpoint->cis_handle;
+}
+
+void audio_stream_control_service_server_set_available_audio_contexts(
+        uint16_t available_sink_audio_contexts_bitmap,
+        uint16_t available_source_audio_contexts_bitmap){
+
+    btstack_assert((available_sink_audio_contexts_bitmap   & LE_AUDIO_CONTEXT_MASK_RFU) == 0);
+    btstack_assert((available_source_audio_contexts_bitmap & LE_AUDIO_CONTEXT_MASK_RFU) == 0);
+
+    ascs_sink_available_audio_contexts_mask = available_sink_audio_contexts_bitmap;
+    ascs_source_available_audio_contexts_mask = available_source_audio_contexts_bitmap;
 }
 
 void audio_stream_control_service_server_deinit(void){
