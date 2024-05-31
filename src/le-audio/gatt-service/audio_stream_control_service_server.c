@@ -798,13 +798,23 @@ static void ascs_server_control_point_operation_prepare_response_for_target_stat
 static void ascs_server_control_point_operation_prepare_response_for_enable(ascs_server_connection_t * connection, uint8_t ase_index, uint8_t ase_id, le_audio_metadata_t * metadata) {
     connection->response[ase_index].ase_id = ase_id;
 
-    if ((metadata->metadata_mask & (1 << LE_AUDIO_METADATA_TYPE_RFU)) != 0){
-        connection->response[ase_index].ase_id = ase_id;
-        ascs_server_update_control_point_operation_response(connection, ase_index, ASCS_ERROR_CODE_UNSUPPORTED_METADATA, metadata->unsupported_type);
+    ascs_streamendpoint_t * streamendpoint = ascs_server_get_streamendpoint_for_ase_id(connection, ase_id);
+    if (streamendpoint == NULL){
+        ascs_server_update_control_point_operation_response(connection, ase_index, ASCS_ERROR_CODE_INVALID_ASE_ID, 0);
         return;
     }
 
+    // validate state transition
     ascs_server_control_point_operation_prepare_response_for_target_state(connection, ase_index, ase_id,ASCS_STATE_ENABLING);
+    if (ascs_server_request_successfully_processed(connection, ase_index) == false) {
+        return;
+    }
+
+    // validate metadata
+    if ((metadata->metadata_mask & (1 << LE_AUDIO_METADATA_TYPE_RFU)) != 0){
+        connection->response[ase_index].ase_id = ase_id;
+        ascs_server_update_control_point_operation_response(connection, ase_index, ASCS_ERROR_CODE_UNSUPPORTED_METADATA, metadata->unsupported_type);
+    }
 }
 
 static void ascs_server_control_point_operation_prepare_response_for_metadata_update(ascs_server_connection_t * connection, uint8_t ase_index, uint8_t ase_id, le_audio_metadata_t * metadata){
@@ -815,7 +825,8 @@ static void ascs_server_control_point_operation_prepare_response_for_metadata_up
         ascs_server_update_control_point_operation_response(connection, ase_index, ASCS_ERROR_CODE_INVALID_ASE_ID, 0);
         return;
     }
-    
+
+    // validate state
     switch (streamendpoint->state){
         case ASCS_STATE_ENABLING:
         case ASCS_STATE_STREAMING:
@@ -825,6 +836,7 @@ static void ascs_server_control_point_operation_prepare_response_for_metadata_up
             return;
     }
 
+    // validate metadata
     if ((metadata->metadata_mask & (1 << (uint16_t) LE_AUDIO_METADATA_TYPE_RFU) ) != 0 ){
         ascs_server_update_control_point_operation_response(connection, ase_index, ASCS_ERROR_CODE_REJECTED_METADATA, metadata->unsupported_type);
         return;
