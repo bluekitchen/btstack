@@ -250,8 +250,14 @@ static uint16_t pacs_server_store_records(const pacs_record_t * pacs, uint8_t pa
 
 static void pacs_server_request_to_send(void){
     if (pacs_server_con_handle != HCI_CON_HANDLE_INVALID){
-        if ((pacs_server_scheduled_tasks & pacs_server_notifcations_map) != 0){
-            att_server_register_can_send_now_callback(&pacs_server_scheduled_tasks_callback, pacs_server_con_handle);
+        uint8_t i;
+        for (i = 0 ; i < PACS_CHARACTERISTIC_COUNT; i++) {
+            uint8_t task_mask = 1u << i;
+            // check if scheduled_tasks that can be executed
+            if (((pacs_server_scheduled_tasks & task_mask) != 0) && (pacs_server_cccd[i] != 0)){
+                att_server_register_can_send_now_callback(&pacs_server_scheduled_tasks_callback, pacs_server_con_handle);
+                return;
+            }
         }
     }
 }
