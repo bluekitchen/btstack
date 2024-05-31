@@ -749,30 +749,6 @@ static void map_access_server_handle_get_request(map_access_server_t* map_access
         return;
     }
 
-    // this leads to an "unexpeted GET CFM" in PTS
-    //if (folder == MAP_FOLDER_TELECOM_MSG) {
-    //    dbg_printf("TODO: dummy response\n");
-    //    map_access_server->state = MAP_SERVER_STATE_SEND_INTERNAL_RESPONSE;
-    //    map_access_server->response.code = OBEX_RESP_SUCCESS;
-    //    goep_server_request_can_send_now(map_access_server->goep_cid);
-    //    return;
-    //}
-
-    //map_access_server->state = MAP_SERVER_STATE_W4_USER_DATA;
-    //uint8_t event[11];
-    //uint16_t pos = 0;
-    //event[pos++] = HCI_EVENT_MAP_META;
-    //event[pos++] = sizeof(event) - 2;
-    //event[pos++] = MAP_SUBEVENT_MESSAGE_LISTING_ITEM;
-    //little_endian_store_16(event, pos, map_access_server->map_cid);
-    //pos += 2;
-    //little_endian_store_32(event, pos, map_access_server->request.app_params.vcard_selector);
-    //pos += 4;
-    //event[pos++] = map_access_server->request.app_params.vcard_selector_operator;
-    //event[pos++] = folder;
-    //(*map_access_server_user_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
-    //
-    dbg_printf("partial implementation, shouldnt be reached\n");
     // emit get ( folder, msg_listing, msg)
     uint8_t event[2 + 20 + MAP_SERVER_MAX_NAME_LEN + MAP_SERVER_MAX_SEARCH_VALUE_LEN];
     uint16_t pos = 0;
@@ -791,10 +767,6 @@ static void map_access_server_handle_get_request(map_access_server_t* map_access
         event[pos++] = map_access_server->request.app_params.order;
         little_endian_store_16(event, pos, map_access_server->request.app_params.max_list_count);
         pos += 2;
-        little_endian_store_16(event, pos, map_access_server->request.app_params.list_start_offset);
-        pos += 2;
-        little_endian_store_32(event, pos, map_access_server->request.app_params.msg_selector);
-        pos += 4;
         event[pos++] = map_access_server->request.app_params.msg_selector_operator;
         event[pos++] = map_access_server->request.app_params.search_property;
         // search_value is zero terminated
