@@ -207,6 +207,15 @@ void audio_stream_control_service_server_streamendpoint_cis_lost(hci_con_handle_
 hci_con_handle_t audio_stream_control_service_server_streamendpoint_cis_get_handle(hci_con_handle_t con_handle, uint8_t ase_id);
 
 /**
+ * @brief Set available audio context mask. Used to verify Enable or Metadata update that specify audio contexts
+ * @param available_sink_audio_contexts_mask
+ * @param available_source_audio_contexts_mask
+ */
+void audio_stream_control_service_server_set_available_audio_contexts(
+        uint16_t available_sink_audio_contexts_mask,
+        uint16_t available_source_audio_contexts_mask);
+
+/**
  * @brief Deinit Audio Stream Control Service Server
  */
 void audio_stream_control_service_server_deinit(void);
