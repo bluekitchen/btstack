@@ -832,15 +832,15 @@ static void ascs_server_control_point_operation_prepare_response_for_metadata_up
 
             switch ((le_audio_metadata_type_t)metadata_type){
                 case LE_AUDIO_METADATA_TYPE_PREFERRED_AUDIO_CONTEXTS:
-                    if ((metadata->preferred_audio_contexts_mask == 0) ||
-                        (metadata->preferred_audio_contexts_mask >= LE_AUDIO_CONTEXT_MASK_RFU)){
+                    if ( (metadata->preferred_audio_contexts_mask == LE_AUDIO_CONTEXT_MASK_PROHIBITED) ||
+                        ((metadata->preferred_audio_contexts_mask &  LE_AUDIO_CONTEXT_MASK_RFU) != 0)){
                         reject_code = ASCS_ERROR_CODE_INVALID_METADATA;
                         reason = ASCS_REJECT_REASON_CODEC_SPECIFIC_CONFIGURATION;
                     }
                     break;
                 case LE_AUDIO_METADATA_TYPE_STREAMING_AUDIO_CONTEXTS:
-                    if ((metadata->streaming_audio_contexts_mask == 0) ||
-                        (metadata->streaming_audio_contexts_mask >= LE_AUDIO_CONTEXT_MASK_RFU)){
+                    if ( (metadata->streaming_audio_contexts_mask == LE_AUDIO_CONTEXT_MASK_PROHIBITED) ||
+                        ((metadata->streaming_audio_contexts_mask &  LE_AUDIO_CONTEXT_MASK_RFU) != 0)){
                         reject_code = ASCS_ERROR_CODE_INVALID_METADATA;
                         reason = ASCS_REJECT_REASON_CODEC_SPECIFIC_CONFIGURATION;
                     }
