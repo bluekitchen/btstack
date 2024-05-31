@@ -795,50 +795,12 @@ static void ascs_server_control_point_operation_prepare_response_for_target_stat
     }
 }
 
-static void ascs_server_control_point_operation_prepare_response_for_enable(ascs_server_connection_t * connection, uint8_t ase_index, uint8_t ase_id, le_audio_metadata_t * metadata) {
-    connection->response[ase_index].ase_id = ase_id;
-
-    ascs_streamendpoint_t * streamendpoint = ascs_server_get_streamendpoint_for_ase_id(connection, ase_id);
-    if (streamendpoint == NULL){
-        ascs_server_update_control_point_operation_response(connection, ase_index, ASCS_ERROR_CODE_INVALID_ASE_ID, 0);
-        return;
-    }
-
-    // validate state transition
-    ascs_server_control_point_operation_prepare_response_for_target_state(connection, ase_index, ase_id,ASCS_STATE_ENABLING);
-    if (ascs_server_request_successfully_processed(connection, ase_index) == false) {
-        return;
-    }
-
-    // validate metadata
+static void
+ascs_server_control_point_operation_validate_metadata(ascs_server_connection_t *connection, uint8_t ase_index,
+                                                      ascs_streamendpoint_t *streamendpoint,
+                                                      const le_audio_metadata_t *metadata) {
     if ((metadata->metadata_mask & (1 << LE_AUDIO_METADATA_TYPE_RFU)) != 0){
-        connection->response[ase_index].ase_id = ase_id;
         ascs_server_update_control_point_operation_response(connection, ase_index, ASCS_ERROR_CODE_UNSUPPORTED_METADATA, metadata->unsupported_type);
-    }
-}
-
-static void ascs_server_control_point_operation_prepare_response_for_metadata_update(ascs_server_connection_t * connection, uint8_t ase_index, uint8_t ase_id, le_audio_metadata_t * metadata){
-    connection->response[ase_index].ase_id = ase_id;
-    
-    ascs_streamendpoint_t * streamendpoint = ascs_server_get_streamendpoint_for_ase_id(connection, ase_id);
-    if (streamendpoint == NULL){
-        ascs_server_update_control_point_operation_response(connection, ase_index, ASCS_ERROR_CODE_INVALID_ASE_ID, 0);
-        return;
-    }
-
-    // validate state
-    switch (streamendpoint->state){
-        case ASCS_STATE_ENABLING:
-        case ASCS_STATE_STREAMING:
-            break;
-        default:
-            ascs_server_update_control_point_operation_response(connection, ase_index, ASCS_ERROR_CODE_INVALID_ASE_STATE_MACHINE_TRANSITION, 0);
-            return;
-    }
-
-    // validate metadata
-    if ((metadata->metadata_mask & (1 << (uint16_t) LE_AUDIO_METADATA_TYPE_RFU) ) != 0 ){
-        ascs_server_update_control_point_operation_response(connection, ase_index, ASCS_ERROR_CODE_REJECTED_METADATA, metadata->unsupported_type);
         return;
     }
 
@@ -853,7 +815,7 @@ static void ascs_server_control_point_operation_prepare_response_for_metadata_up
             switch ((le_audio_metadata_type_t)metadata_type){
                 case LE_AUDIO_METADATA_TYPE_PREFERRED_AUDIO_CONTEXTS:
                     if ( (metadata->preferred_audio_contexts_mask == LE_AUDIO_CONTEXT_MASK_PROHIBITED) ||
-                        ((metadata->preferred_audio_contexts_mask &  LE_AUDIO_CONTEXT_MASK_RFU) != 0)){
+                         ((metadata->preferred_audio_contexts_mask &  LE_AUDIO_CONTEXT_MASK_RFU) != 0)){
                         reject_code = ASCS_ERROR_CODE_INVALID_METADATA;
                     }
                     break;
@@ -891,6 +853,48 @@ static void ascs_server_control_point_operation_prepare_response_for_metadata_up
             }
         }
     }
+}
+
+static void ascs_server_control_point_operation_prepare_response_for_enable(ascs_server_connection_t * connection, uint8_t ase_index, uint8_t ase_id, le_audio_metadata_t * metadata) {
+    connection->response[ase_index].ase_id = ase_id;
+
+    ascs_streamendpoint_t * streamendpoint = ascs_server_get_streamendpoint_for_ase_id(connection, ase_id);
+    if (streamendpoint == NULL){
+        ascs_server_update_control_point_operation_response(connection, ase_index, ASCS_ERROR_CODE_INVALID_ASE_ID, 0);
+        return;
+    }
+
+    // validate state transition
+    ascs_server_control_point_operation_prepare_response_for_target_state(connection, ase_index, ase_id,ASCS_STATE_ENABLING);
+    if (ascs_server_request_successfully_processed(connection, ase_index) == false) {
+        return;
+    }
+
+    // validate metadata
+    ascs_server_control_point_operation_validate_metadata(connection, ase_index, streamendpoint, metadata);
+}
+
+static void ascs_server_control_point_operation_prepare_response_for_metadata_update(ascs_server_connection_t * connection, uint8_t ase_index, uint8_t ase_id, le_audio_metadata_t * metadata){
+    connection->response[ase_index].ase_id = ase_id;
+    
+    ascs_streamendpoint_t * streamendpoint = ascs_server_get_streamendpoint_for_ase_id(connection, ase_id);
+    if (streamendpoint == NULL){
+        ascs_server_update_control_point_operation_response(connection, ase_index, ASCS_ERROR_CODE_INVALID_ASE_ID, 0);
+        return;
+    }
+
+    // validate state
+    switch (streamendpoint->state){
+        case ASCS_STATE_ENABLING:
+        case ASCS_STATE_STREAMING:
+            break;
+        default:
+            ascs_server_update_control_point_operation_response(connection, ase_index, ASCS_ERROR_CODE_INVALID_ASE_STATE_MACHINE_TRANSITION, 0);
+            return;
+    }
+
+    // validate metadate
+    ascs_server_control_point_operation_validate_metadata(connection, ase_index, streamendpoint, metadata);
 }
 
 static void ascs_server_control_point_operation_prepare_response_for_start_ready(ascs_server_connection_t * connection, uint8_t ase_index, uint8_t ase_id){
