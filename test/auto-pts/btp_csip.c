@@ -75,8 +75,6 @@ static void btp_csip_hci_packet_handler (uint8_t packet_type, uint16_t channel, 
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
                     server = btp_server_for_acl_con_handle(hci_event_disconnection_complete_get_connection_handle(packet));
                     if (server != NULL){
-                        // discard server
-                        btp_server_finalize(server);
                     }
                     break;
                 default:
