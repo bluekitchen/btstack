@@ -260,7 +260,7 @@ uint16_t le_audio_util_metadata_virtual_memcpy(const le_audio_metadata_t * metad
     return stored_bytes;
 }
 
-
+// parse metadata, first unsupported type is stored in metadata.unsupported_type
 uint16_t le_audio_util_metadata_parse(const uint8_t *buffer, uint8_t buffer_size, le_audio_metadata_t * metadata){
 
     // reset capabilities
