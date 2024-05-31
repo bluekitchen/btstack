@@ -795,6 +795,18 @@ static void ascs_server_control_point_operation_prepare_response_for_target_stat
     }
 }
 
+static void ascs_server_control_point_operation_prepare_response_for_enable(ascs_server_connection_t * connection, uint8_t ase_index, uint8_t ase_id, le_audio_metadata_t * metadata) {
+    connection->response[ase_index].ase_id = ase_id;
+
+    if ((metadata->metadata_mask & (1 << LE_AUDIO_METADATA_TYPE_RFU)) != 0){
+        connection->response[ase_index].ase_id = ase_id;
+        ascs_server_update_control_point_operation_response(connection, ase_index, ASCS_ERROR_CODE_UNSUPPORTED_METADATA, metadata->unsupported_type);
+        return;
+    }
+
+    ascs_server_control_point_operation_prepare_response_for_target_state(connection, ase_index, ase_id,ASCS_STATE_ENABLING);
+}
+
 static void ascs_server_control_point_operation_prepare_response_for_metadata_update(ascs_server_connection_t * connection, uint8_t ase_index, uint8_t ase_id, le_audio_metadata_t * metadata){
     connection->response[ase_index].ase_id = ase_id;
     
@@ -1007,13 +1019,7 @@ ascs_server_handle_control_point_write(ascs_server_connection_t *connection, con
             for (i = 0; i < connection->response_ases_num; i++){
                 ase_id = buffer[pos++];
                 pos += le_audio_util_metadata_parse(&buffer[pos], buffer_size-pos, &metadata_config);
-
-                if ((metadata_config.metadata_mask & (1 << LE_AUDIO_METADATA_TYPE_RFU)) != 0){
-                    connection->response[i].ase_id = ase_id;
-                    ascs_server_update_control_point_operation_response(connection, i, ASCS_ERROR_CODE_UNSUPPORTED_METADATA, metadata_config.unsupported_type);
-                } else {
-                    ascs_server_control_point_operation_prepare_response_for_target_state(connection, i, ase_id, ASCS_STATE_ENABLING);
-                }
+                ascs_server_control_point_operation_prepare_response_for_enable(connection, i, ase_id, &metadata_config);
             }
             ascs_server_schedule_task(connection, ASCS_TASK_SEND_CONTROL_POINT_OPERATION_RESPONSE);
 
