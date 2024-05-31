@@ -880,18 +880,24 @@ static void btp_bap_ascs_client_event_handler(uint8_t packet_type, uint16_t chan
         case LEAUDIO_SUBEVENT_ASCS_CLIENT_CONNECTED:
             ascs_cid = leaudio_subevent_ascs_client_connected_get_ascs_cid(packet);
             con_handle = leaudio_subevent_ascs_client_connected_get_con_handle(packet);
+            server = btp_server_for_acl_con_handle(con_handle);
             if (leaudio_subevent_ascs_client_connected_get_status(packet) != ERROR_CODE_SUCCESS){
                 // TODO send error response
                 MESSAGE("BTP ASCS Client: connection failed, cid 0x%02x, con_handle 0x%04x, status 0x%02x", ascs_cid, con_handle,
                         leaudio_subevent_ascs_client_connected_get_status(packet));
+                server->ascs_cid = 0;
             } else {
-                server = btp_server_for_acl_con_handle(con_handle);
                 btp_ascs_client_report_ases(server, packet);
-                btp_bap_discovery_next(server);
             }
+            btp_bap_discovery_next(server);
             break;
         case LEAUDIO_SUBEVENT_ASCS_CLIENT_DISCONNECTED:
             MESSAGE("BTP ASCS Client: disconnected, cid 0x%02x", leaudio_subevent_ascs_client_disconnected_get_ascs_cid(packet));
+            ascs_cid = leaudio_subevent_ascs_client_disconnected_get_ascs_cid(packet);
+            server = btp_server_for_ascs_cid(con_handle);
+            if (server != NULL){
+                server->ascs_cid = 0;
+            }
             break;
 #if 0
         case LEAUDIO_SUBEVENT_ASCS_CLIENT_CODEC_CONFIGURATION:
@@ -1560,6 +1566,9 @@ void btp_bap_init(void){
 
     // ASCS
     audio_stream_control_service_client_init(&btp_bap_ascs_client_event_handler);
+
+    // VCS
+    volume_control_service_client_init();
 }
 
 void btp_bap_register_higher_layer(btstack_packet_handler_t handler){
@@ -1573,3 +1582,118 @@ void btp_bap_bass_discover(server_t * server){
                                                 server->acl_con_handle,
                                                 &server->bass_cid);
 }
+
+void btp_vcp_init(void){
+}
+
+static void btp_bap_vcp_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) {
+    UNUSED(channel);
+    UNUSED(size);
+
+    if (packet_type != HCI_EVENT_PACKET) return;
+    if (hci_event_packet_get_type(packet) != HCI_EVENT_LEAUDIO_META) return;
+
+    server_t *server;
+    uint16_t vcs_cid;
+    uint8_t status;
+
+    switch (hci_event_gattservice_meta_get_subevent_code(packet)) {
+        case LEAUDIO_SUBEVENT_VCS_CLIENT_CONNECTED:
+            vcs_cid = leaudio_subevent_vcs_client_connected_get_vcs_cid(packet);
+            status = leaudio_subevent_pacs_client_connected_get_status(packet);
+            server = btp_server_for_vcs_cid(vcs_cid);
+            btstack_assert(server != NULL);
+            if (status != ERROR_CODE_SUCCESS){
+                // TODO send error response
+                MESSAGE("BTP VCS Client %u: connection failed, status 0x%02x", server->server_id, status);
+            } else {
+                MESSAGE("BTP VCS Client %u: connected, VCS Client cid %02x", server->server_id, server->vcs_cid);
+                struct btp_vcp_discovered_ev event;
+                memset(&event, 0, sizeof(event));
+                uint16_t offset = 0;
+                event.address.address_type = server->address_type;
+                reverse_bd_addr(server->address,event.address.address);
+                event.att_status = 0;
+                btp_send(BTP_SERVICE_ID_VCP, BTP_VCP_DISCOVERED_EV, 0, sizeof(event), (uint8_t *) &event);
+            }
+            break;
+        case LEAUDIO_SUBEVENT_VCS_CLIENT_DISCONNECTED:
+            vcs_cid = leaudio_subevent_vcs_client_disconnected_get_vcs_cid(packet);
+            server = btp_server_for_vcs_cid(vcs_cid);
+            MESSAGE("BTP VCS Client %u: disconnected, cid %02x", server->server_id, vcs_cid);
+            btstack_assert(server != NULL);
+            server->vcs_cid = 0;
+            break;
+        default:
+            break;
+    }
+}
+
+void btp_vcp_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, const uint8_t *data){
+    // provide op info for response
+    response_len = 0;
+    response_service_id = BTP_SERVICE_ID_VCP;
+    response_op = opcode;
+    server_t * server;
+    switch (opcode) {
+        case BTP_VCP_READ_SUPPORTED_COMMANDS:
+            MESSAGE("BTP_VCP_READ_SUPPORTED_COMMANDS");
+            if (controller_index == BTP_INDEX_NON_CONTROLLER) {
+                uint8_t commands = 0;
+                btp_send(response_service_id, opcode, controller_index, 1, &commands);
+            }
+            break;
+        case BTP_VCP_VOL_CTLR_DISCOVER:
+            if (controller_index == 0) {
+                /**
+                    bt_addr_le_t address;
+                 */
+                // get server struct
+                bd_addr_type_t addr_type = (bd_addr_type_t) data[0];
+                bd_addr_t address;
+                reverse_bd_addr(&data[1], address);
+                server = btp_server_for_address(addr_type, address);
+                uint8_t status = volume_control_service_client_connect(server->acl_con_handle,
+                                                                       &btp_bap_vcp_event_handler, &server->vcs_connection,
+                                                                       NULL, 0,
+                                                                       NULL, 0,
+                                                                       &server->vcs_cid);
+                MESSAGE("BTP_VCP_VOL_CTLR_DISCOVER %s, VCS Client cid %02x", bd_addr_to_str(address), server->vcs_cid);
+                btstack_assert(status == ERROR_CODE_SUCCESS);
+                btp_send(response_service_id, opcode, controller_index, 0, NULL);
+            }
+            break;
+        case BTP_VCP_VOL_CTLR_SET_VOL:
+            if (controller_index == 0){
+                /**
+                    bt_addr_le_t address;
+                    uint8_t volume;
+                 */
+                // get server struct
+                bd_addr_type_t addr_type = (bd_addr_type_t) data[0];
+                bd_addr_t address;
+                reverse_bd_addr(&data[1], address);
+                uint8_t volume = data[7];
+                MESSAGE("BTP_VCP_VOL_CTLR_SET_VOL %s -> %u", bd_addr_to_str(address), volume);
+                server = btp_server_for_address(addr_type, address);
+                uint8_t status = volume_control_service_client_set_absolute_volume(server->vcs_cid, volume);
+                btstack_assert(status == ERROR_CODE_SUCCESS);
+                btp_send(response_service_id, opcode, controller_index, 0, NULL);
+            }
+            break;
+#if 0
+        case BTP_VCP_VOL_CTLR_MUTE:
+            if (controller_index == 0){
+            }
+            break;
+        case BTP_VCP_VOL_CTLR_UNMUTE:
+            if (controller_index == 0){
+            }
+            break;
+#endif
+        default:
+            MESSAGE("BTP PACS Operation 0x%02x not implemented", opcode);
+            btstack_assert(false);
+            break;
+    }
+};
