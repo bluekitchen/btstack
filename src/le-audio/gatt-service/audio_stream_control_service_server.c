@@ -813,14 +813,15 @@ static void ascs_server_control_point_operation_prepare_response_for_metadata_up
             return;
     }
 
-    uint16_t metadata_type;
-    uint8_t reject_code = 0;
-    uint8_t reason = 0;
-
     if ((metadata->metadata_mask & (1 << (uint16_t) LE_AUDIO_METADATA_TYPE_RFU) ) != 0 ){
         ascs_server_update_control_point_operation_response(connection, ase_index, ASCS_ERROR_CODE_REJECTED_METADATA, metadata->unsupported_type);
         return;
     }
+
+    uint16_t metadata_type;
+    uint8_t  reject_code = 0;
+    uint16_t available_audio_contexts;
+    uint16_t non_available_audio_contexts;
 
     for (metadata_type = (uint16_t)LE_AUDIO_METADATA_TYPE_PREFERRED_AUDIO_CONTEXTS; metadata_type < (uint16_t) LE_AUDIO_METADATA_TYPE_RFU; metadata_type++){
         if ((metadata->metadata_mask & (1 << metadata_type) ) != 0 ){
@@ -830,14 +831,24 @@ static void ascs_server_control_point_operation_prepare_response_for_metadata_up
                     if ( (metadata->preferred_audio_contexts_mask == LE_AUDIO_CONTEXT_MASK_PROHIBITED) ||
                         ((metadata->preferred_audio_contexts_mask &  LE_AUDIO_CONTEXT_MASK_RFU) != 0)){
                         reject_code = ASCS_ERROR_CODE_INVALID_METADATA;
-                        reason = ASCS_REJECT_REASON_CODEC_SPECIFIC_CONFIGURATION;
                     }
                     break;
                 case LE_AUDIO_METADATA_TYPE_STREAMING_AUDIO_CONTEXTS:
-                    if ( (metadata->streaming_audio_contexts_mask == LE_AUDIO_CONTEXT_MASK_PROHIBITED) ||
+                    // first check for valid context
+                    if ((metadata->streaming_audio_contexts_mask == LE_AUDIO_CONTEXT_MASK_PROHIBITED) ||
                         ((metadata->streaming_audio_contexts_mask &  LE_AUDIO_CONTEXT_MASK_RFU) != 0)){
                         reject_code = ASCS_ERROR_CODE_INVALID_METADATA;
-                        reason = ASCS_REJECT_REASON_CODEC_SPECIFIC_CONFIGURATION;
+                        break;
+                    }
+                    // then for availability
+                    if (ascs_server_streamendpoint_in_source_role(streamendpoint)){
+                        available_audio_contexts = ascs_source_available_audio_contexts_mask;
+                    } else {
+                        available_audio_contexts = ascs_sink_available_audio_contexts_mask;
+                    }
+                    non_available_audio_contexts = ~available_audio_contexts;
+                    if ((metadata->streaming_audio_contexts_mask & non_available_audio_contexts) != 0){
+                        reject_code = ASCS_ERROR_CODE_REJECTED_METADATA;
                     }
                     break;
                 case LE_AUDIO_METADATA_TYPE_PARENTAL_RATING:
@@ -848,10 +859,13 @@ static void ascs_server_control_point_operation_prepare_response_for_metadata_up
                 default:
                     break;
             }
+
+            // abort on first metadata error
+            if (reject_code != 0){
+                ascs_server_update_control_point_operation_response(connection, ase_index, reject_code, metadata_type);
+                return;
+            }
         }
-    }
-    if (reject_code != 0){
-        ascs_server_update_control_point_operation_response(connection, ase_index, reject_code, reason);
     }
 }
 
