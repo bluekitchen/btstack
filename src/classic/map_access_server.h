@@ -132,18 +132,24 @@ typedef enum {
 
 // MAP Folders
 typedef enum {
-    MAP_FOLDER_MIN,
-    MAP_FOLDER_INVALID = 0, 
-    MAP_FOLDER_TELECOM_MSG,
-    MAP_FOLDER_TELECOM_MSG_INBOX,
-    MAP_FOLDER_MAX,
-} map_folder_t;
+    MAS_FOLDER_MIN, MAS_FOLDER_INVALID = 0,
+    MAS_FOLDER_ROOT,
+    MAS_FOLDER_TELECOM,
+    MAS_FOLDER_TELECOM_MSG, 
+    MAS_FOLDER_TELECOM_MSG_INBOX,
+    MAS_FOLDER_MAX,
+} mas_folder_t;
+
 
 // lengths
-#define MAP_DATABASE_IDENTIFIER_LEN 16
-#define MAP_FOLDER_VERSION_LEN 16
+#define MAS_DATABASE_IDENTIFIER_LEN 16
+#define MAS_FOLDER_VERSION_LEN 16
 
-uint16_t map_access_server_send_pull_response(uint16_t map_cid, uint8_t response_code, uint32_t continuation, uint16_t body_len, const uint8_t* body);
+uint16_t map_access_server_send_get_response(uint16_t map_cid, uint8_t response_code, uint32_t continuation, uint16_t body_len, const uint8_t* body);
+uint16_t map_access_server_get_max_body_size(uint16_t map_cid);
+uint8_t map_access_server_set_new_messages(uint16_t map_cid, uint16_t new_messages);
+uint8_t map_access_server_set_folder_version(uint16_t map_cid, const uint8_t* primary_folder_version);
+uint8_t map_access_server_set_database_identifier(uint16_t map_cid, const uint8_t* database_identifier);
 void map_access_server_init(btstack_packet_handler_t packet_handler, uint8_t rfcomm_channel_nr, uint16_t l2cap_psm, uint16_t mtu);
 
 #if defined __cplusplus

@@ -63,14 +63,8 @@
  // - DatabaseIdentifier
  // - PrimaryFolderVersion,
  // - SecondaryFolderVersion
-#define MAP_SERVER_MAX_APP_PARAMS_LEN ((4*2) + 2 + MAP_DATABASE_IDENTIFIER_LEN + (2*MAP_FOLDER_VERSION_LEN))
+#define MAP_SERVER_MAX_APP_PARAMS_LEN ((4*2) + 2 + MAS_DATABASE_IDENTIFIER_LEN + (2*MAS_FOLDER_VERSION_LEN))
 
-typedef enum {
-    MAP_SERVER_DIR_ROOT,
-    MAP_SERVER_DIR_TELECOM,
-    MAP_SERVER_DIR_TELECOM_MSG,
-    MAP_SERVER_DIR_TELECOM_MSG_INBOX,
-} map_access_server_dir_t;
 
 typedef enum {
     MAP_SERVER_STATE_W4_OPEN,
@@ -114,8 +108,8 @@ typedef struct {
     map_access_server_state_t state;
     obex_parser_t obex_parser;
     uint16_t map_supported_features;
-    map_access_server_dir_t map_access_server_dir;
-    map_folder_t  map_folder;
+    mas_folder_t map_access_server_dir;
+    mas_folder_t  map_folder;
     // SRM
     obex_srm_t  obex_srm;
     srm_state_t srm_state;
@@ -134,7 +128,7 @@ typedef struct {
             map_format_msg_t format;
             uint16_t max_list_count;
             uint16_t list_start_offset;
-            uint8_t reset_new_missed_calls;
+            uint8_t reset_new_messages;
             uint8_t msg_selector_operator;
             uint8_t order;
             uint8_t search_property;
@@ -143,16 +137,14 @@ typedef struct {
     // response
     struct {
         uint8_t code;
-        bool new_missed_calls_set;
+        uint16_t new_messages_count;
+        bool new_messages;
         bool folder_size_set;
         bool database_identifier_set;
-        bool primary_folder_version_set;
-        bool secondary_folder_version_set;
-        uint16_t new_missed_calls;
+        bool folder_version_set;
         uint16_t folder_size;
-        uint8_t database_identifier[MAP_DATABASE_IDENTIFIER_LEN];
-        uint8_t primary_folder_version[MAP_FOLDER_VERSION_LEN];
-        uint8_t secondary_folder_version[MAP_FOLDER_VERSION_LEN];
+        uint8_t database_identifier[MAS_DATABASE_IDENTIFIER_LEN];
+        uint8_t folder_version[MAS_FOLDER_VERSION_LEN];
         uint16_t body_len;
         const uint8_t* body_data;
     } response;
@@ -162,12 +154,11 @@ static map_access_server_t map_access_server_singleton;
 
 static struct {
     char* name;
-    map_access_server_dir_t parent_dir;
+    mas_folder_t parent_dir;
     char* path;
 } map_access_server_folders[] = {
-    {"msg",     MAP_SERVER_DIR_TELECOM, "telecom/msg.vcf"},
-    {"inbox",   MAP_SERVER_DIR_TELECOM, "telecom/msg/inbox.vcf"},
-    {"outbox",  MAP_SERVER_DIR_TELECOM, "telecom/msg/outbox.vcf"},
+    {"msg",     MAS_FOLDER_TELECOM_MSG, "telecom/msg.vcf"},
+    {"inbox",   MAS_FOLDER_TELECOM_MSG_INBOX, "telecom/msg/inbox.vcf"},
 };
 
 static const char map_access_server_default_service_name[] = "MAP";
@@ -273,18 +264,18 @@ void map_access_server_create_sdp_record(uint8_t* service, uint32_t service_reco
     de_add_number(service, DE_UINT, DE_SIZE_16, map_supported_features);
 }
 
-static map_folder_t map_access_server_get_folder_by_path(const char* path) {
-    return MAP_FOLDER_TELECOM_MSG;
+static mas_folder_t map_access_server_get_folder_by_path(const char* path) {
+    return MAS_FOLDER_TELECOM_MSG;
 }
 
-static map_folder_t map_access_server_get_folder_by_dir_and_name(map_access_server_dir_t parent_dir, const char* name) {
+static mas_folder_t map_access_server_get_folder_by_dir_and_name(mas_folder_t parent_dir, const char* name) {
     uint16_t index;
     for (index = 0; index < (sizeof(map_access_server_folders) / sizeof(map_access_server_folders[0])); index++) {
         if ((parent_dir == map_access_server_folders[index].parent_dir) && (strcmp(name, map_access_server_folders[index].name) == 0)) {
-            return MAP_FOLDER_TELECOM_MSG + index;
+            return MAS_FOLDER_TELECOM_MSG + index;
         }
     }
-    return MAP_FOLDER_INVALID;
+    return MAS_FOLDER_INVALID;
 }
 
 static void map_access_server_handle_set_path_request(map_access_server_t* map_access_server, uint8_t flags, const char* name) {
@@ -294,14 +285,14 @@ static void map_access_server_handle_set_path_request(map_access_server_t* map_a
         // no path name given, one dir up?
         if IS_BIT_SET(flags, OBEX_SP_BIT0_DIR_UP) {
             switch (map_access_server->map_access_server_dir) {
-            case MAP_SERVER_DIR_TELECOM:
-                map_access_server->map_access_server_dir = MAP_SERVER_DIR_ROOT;
+            case MAS_FOLDER_TELECOM:
+                map_access_server->map_access_server_dir = MAS_FOLDER_ROOT;
                 break;
-            case MAP_SERVER_DIR_TELECOM_MSG:
-                map_access_server->map_access_server_dir = MAP_SERVER_DIR_TELECOM;
+            case MAS_FOLDER_TELECOM_MSG:
+                map_access_server->map_access_server_dir = MAS_FOLDER_TELECOM;
                 break;
-            case MAP_SERVER_DIR_TELECOM_MSG_INBOX:
-                map_access_server->map_access_server_dir = MAP_SERVER_DIR_TELECOM_MSG;
+            case MAS_FOLDER_TELECOM_MSG_INBOX:
+                map_access_server->map_access_server_dir = MAS_FOLDER_TELECOM_MSG;
                 break;
             default:
                 obex_result = OBEX_RESP_NOT_FOUND;
@@ -309,30 +300,30 @@ static void map_access_server_handle_set_path_request(map_access_server_t* map_a
             }
         }
         else {
-            map_access_server->map_access_server_dir = MAP_SERVER_DIR_ROOT;
+            map_access_server->map_access_server_dir = MAS_FOLDER_ROOT;
         };
     }
     else {
         switch (map_access_server->map_access_server_dir) {
-        case MAP_SERVER_DIR_ROOT:
+        case MAS_FOLDER_ROOT:
             if (strcmp("telecom", name) == 0) {
-                map_access_server->map_access_server_dir = MAP_SERVER_DIR_TELECOM;
+                map_access_server->map_access_server_dir = MAS_FOLDER_TELECOM;
             }
             else {
                 obex_result = OBEX_RESP_NOT_FOUND;
             }
             break;
-        case MAP_SERVER_DIR_TELECOM:
+        case MAS_FOLDER_TELECOM:
             if (strcmp("msg", name) == 0) {
-                map_access_server->map_access_server_dir = MAP_SERVER_DIR_TELECOM_MSG;
+                map_access_server->map_access_server_dir = MAS_FOLDER_TELECOM_MSG;
             }
             else {
                 obex_result = OBEX_RESP_NOT_FOUND;
             }
             break;
-        case MAP_SERVER_DIR_TELECOM_MSG:
+        case MAS_FOLDER_TELECOM_MSG:
             if (strcmp("inbox", name) == 0) {
-                map_access_server->map_access_server_dir = MAP_SERVER_DIR_TELECOM_MSG_INBOX;
+                map_access_server->map_access_server_dir = MAS_FOLDER_TELECOM_MSG_INBOX;
             }
             else {
                 obex_result = OBEX_RESP_NOT_FOUND;
@@ -360,7 +351,7 @@ static map_object_type_t map_access_server_parse_object_type(const char* type_st
     return MAP_OBJECT_TYPE_INVALID;
 }
 
-static void obex_srm_init(obex_srm_t* obex_srm) {
+static void map_access_server_obex_srm_init(obex_srm_t* obex_srm) {
     obex_srm->srm_value = OBEX_SRM_DISABLE;
     obex_srm->srmp_value = OBEX_SRMP_NEXT;
 }
@@ -481,8 +472,8 @@ static void map_access_server_handle_can_send_now(map_access_server_t* map_acces
         goep_server_response_create_connect(map_access_server->goep_cid, OBEX_VERSION, 0, OBEX_MAX_PACKETLEN_DEFAULT);
         goep_server_header_add_who(map_access_server->goep_cid, map_uuid);
         // next state
-        map_access_server->map_access_server_dir = MAP_SERVER_DIR_ROOT;
-        map_access_server->map_folder = MAP_FOLDER_INVALID;
+        map_access_server->map_access_server_dir = MAS_FOLDER_ROOT;
+        map_access_server->map_folder = MAS_FOLDER_INVALID;
         map_access_server_operation_complete(map_access_server);
         // send packet
         goep_server_execute(map_access_server->goep_cid, OBEX_RESP_SUCCESS);
@@ -733,7 +724,7 @@ static void map_access_server_parser_callback_get(void* user_data, uint8_t heade
 static void map_access_server_handle_get_request(map_access_server_t* map_access_server) {
     map_access_server_handle_srm_headers(map_access_server);
     map_access_server->request.object_type = map_access_server_parse_object_type(map_access_server->request.type);
-    map_folder_t folder = MAP_FOLDER_INVALID;
+    mas_folder_t folder = MAS_FOLDER_INVALID;
     uint16_t name_len = (uint16_t)strlen(map_access_server->request.name);
     switch (map_access_server->request.object_type) {
     case MAP_OBJECT_TYPE_INVALID:
@@ -751,7 +742,7 @@ static void map_access_server_handle_get_request(map_access_server_t* map_access
         break;
     }
 
-    if (folder == MAP_FOLDER_INVALID) {
+    if (folder == MAS_FOLDER_INVALID) {
         map_access_server->state = MAP_SERVER_STATE_SEND_INTERNAL_RESPONSE;
         map_access_server->response.code = OBEX_RESP_NOT_FOUND;
         goep_server_request_can_send_now(map_access_server->goep_cid);
@@ -900,7 +891,7 @@ static void map_access_server_packet_handler_goep(map_access_server_t* map_acces
         /* fall through */
 
     case MAP_SERVER_STATE_W4_REQUEST:
-        obex_srm_init(&map_access_server->obex_srm);
+        map_access_server_obex_srm_init(&map_access_server->obex_srm);
         parser_state = obex_parser_process_data(&map_access_server->obex_parser, packet, size);
         if (parser_state == OBEX_PARSER_OBJECT_STATE_COMPLETE) {
             obex_parser_operation_info_t op_info;
@@ -937,7 +928,7 @@ static void map_access_server_packet_handler_goep(map_access_server_t* map_acces
         /* fall through */
 
     case MAP_SERVER_STATE_W4_GET_REQUEST:
-        obex_srm_init(&map_access_server->obex_srm);
+        map_access_server_obex_srm_init(&map_access_server->obex_srm);
         parser_state = obex_parser_process_data(&map_access_server->obex_parser, packet, size);
         if (parser_state == OBEX_PARSER_OBJECT_STATE_COMPLETE) {
             obex_parser_operation_info_t op_info;
@@ -1007,14 +998,14 @@ static bool map_access_server_valid_header_for_request(map_access_server_t* map_
     }
 
 }
-uint8_t map_access_server_set_new_missed_calls(uint16_t map_cid, uint16_t new_missed_calls) {
+uint8_t map_access_server_set_new_messages(uint16_t map_cid, uint16_t new_messages) {
     map_access_server_t* map_access_server = map_access_server_for_map_cid(map_cid);
     if (map_access_server == NULL) {
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     if (map_access_server_valid_header_for_request(map_access_server)) {
-        map_access_server->response.new_missed_calls = new_missed_calls;
-        map_access_server->response.new_missed_calls_set = true;
+        map_access_server->response.new_messages_count = new_messages;
+        map_access_server->response.new_messages = true;
         return ERROR_CODE_SUCCESS;
     }
     else {
@@ -1022,14 +1013,14 @@ uint8_t map_access_server_set_new_missed_calls(uint16_t map_cid, uint16_t new_mi
     }
 }
 
-uint8_t map_access_server_set_primary_folder_version(uint16_t map_cid, const uint8_t* primary_folder_version) {
+uint8_t map_access_server_set_folder_version(uint16_t map_cid, const uint8_t* primary_folder_version) {
     map_access_server_t* map_access_server = map_access_server_for_map_cid(map_cid);
     if (map_access_server == NULL) {
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     if (map_access_server_valid_header_for_request(map_access_server)) {
-        (void)memcpy(map_access_server->response.primary_folder_version, primary_folder_version, MAP_FOLDER_VERSION_LEN);
-        map_access_server->response.primary_folder_version_set = true;
+        (void)memcpy(map_access_server->response.folder_version, primary_folder_version, MAS_FOLDER_VERSION_LEN);
+        map_access_server->response.folder_version_set = true;
         return ERROR_CODE_SUCCESS;
     }
     else {
@@ -1037,20 +1028,6 @@ uint8_t map_access_server_set_primary_folder_version(uint16_t map_cid, const uin
     }
 }
 
-uint8_t map_access_server_set_secondary_folder_version(uint16_t map_cid, const uint8_t* secondary_folder_version) {
-    map_access_server_t* map_access_server = map_access_server_for_map_cid(map_cid);
-    if (map_access_server == NULL) {
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    }
-    if (map_access_server_valid_header_for_request(map_access_server)) {
-        (void)memcpy(map_access_server->response.secondary_folder_version, secondary_folder_version, MAP_FOLDER_VERSION_LEN);
-        map_access_server->response.secondary_folder_version_set = true;
-        return ERROR_CODE_SUCCESS;
-    }
-    else {
-        return ERROR_CODE_COMMAND_DISALLOWED;
-    }
-}
 
 uint8_t map_access_server_set_database_identifier(uint16_t map_cid, const uint8_t* database_identifier) {
     map_access_server_t* map_access_server = map_access_server_for_map_cid(map_cid);
@@ -1062,7 +1039,7 @@ uint8_t map_access_server_set_database_identifier(uint16_t map_cid, const uint8_
     }
     btstack_assert(map_access_server->request.object_type != MAP_OBJECT_TYPE_INVALID);
 
-    (void)memcpy(map_access_server->response.database_identifier, database_identifier, MAP_FOLDER_VERSION_LEN);
+    (void)memcpy(map_access_server->response.database_identifier, database_identifier, MAS_FOLDER_VERSION_LEN);
     map_access_server->response.database_identifier_set = true;
     return ERROR_CODE_SUCCESS;
 };
@@ -1128,7 +1105,7 @@ uint8_t map_access_server_send_folder_size(uint16_t map_cid, uint8_t response_co
     }
 }
 
-uint16_t map_access_server_send_pull_response(uint16_t map_cid, uint8_t response_code, uint32_t continuation, uint16_t body_len, const uint8_t* body) {
+uint16_t map_access_server_send_get_response(uint16_t map_cid, uint8_t response_code, uint32_t continuation, uint16_t body_len, const uint8_t* body) {
     map_access_server_t* map_access_server = map_access_server_for_map_cid(map_cid);
     if (map_access_server == NULL) {
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
@@ -1156,14 +1133,14 @@ uint16_t map_access_server_send_pull_response(uint16_t map_cid, uint8_t response
 #pragma warning( disable : 33011 )
 #endif
 
-const char* map_access_server_get_folder_path(map_folder_t folder) {
-    btstack_assert(folder > MAP_FOLDER_MAX);
-    btstack_assert(folder < MAP_FOLDER_MAX);
+const char* map_access_server_get_folder_path(mas_folder_t folder) {
+    btstack_assert(folder > MAS_FOLDER_MAX);
+    btstack_assert(folder < MAS_FOLDER_MAX);
     return map_access_server_folders[(uint16_t)folder].path;
 }
 
-const char* map_access_server_get_folder_name(map_folder_t folder) {
-    btstack_assert(folder > MAP_FOLDER_MAX);
-    btstack_assert(folder < MAP_FOLDER_MAX);
+const char* map_access_server_get_folder_name(mas_folder_t folder) {
+    btstack_assert(folder > MAS_FOLDER_MAX);
+    btstack_assert(folder < MAS_FOLDER_MAX);
     return map_access_server_folders[(uint16_t)folder].name;
 }
