@@ -120,7 +120,6 @@ static void ascs_server_reset_client_streamendpoints(ascs_server_connection_t * 
         memset(&streamendpoint->codec_configuration, 0, sizeof(ascs_codec_configuration_t));
         memset(&streamendpoint->qos_configuration, 0, sizeof(ascs_qos_configuration_t));
         memset(&streamendpoint->metadata, 0, sizeof(le_audio_metadata_t));
-        streamendpoint->ase_characteristic_value_change_initiated_by_client = false;
         streamendpoint->ase_characteristic_value_changed_w2_notify = false;
         streamendpoint->cis_handle = HCI_CON_HANDLE_INVALID;
     }
@@ -289,15 +288,8 @@ static bool ascs_server_streamendpoint_cis_set(ascs_streamendpoint_t * streamend
 }
 
 static bool ascs_server_request_successfully_processed(ascs_server_connection_t * connection, uint8_t response_index){
-    if (connection->response[response_index].response_code != ASCS_ERROR_CODE_SUCCESS){
-        return false;
-    }
-
-    ascs_streamendpoint_t * streamendpoint = ascs_server_get_streamendpoint_for_ase_id(connection, connection->response[response_index].ase_id);
-    streamendpoint->ase_characteristic_value_change_initiated_by_client = true;
-    return true;
+    return connection->response[response_index].response_code == ASCS_ERROR_CODE_SUCCESS;
 }
-
 
 static void ascs_server_emit_disconnected(hci_con_handle_t con_handle){
     btstack_assert(ascs_server_event_callback != NULL);
@@ -494,7 +486,6 @@ static void ascs_server_can_send_now(void * context){
             }
 
             streamendpoint->ase_characteristic_value_changed_w2_notify = false;
-            streamendpoint->ase_characteristic_value_change_initiated_by_client = false;
 
             uint8_t value[25 + LE_AUDIO_MAX_CODEC_CONFIG_SIZE];
             uint16_t value_size = asce_server_ase_serialize(streamendpoint, value, sizeof(value));

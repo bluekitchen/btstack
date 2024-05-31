@@ -192,8 +192,7 @@ typedef struct {
     hci_con_handle_t cis_handle;
 
     // ASE value changed indicates that server 
-    bool ase_characteristic_value_change_initiated_by_client;
-    bool ase_characteristic_value_changed_w2_notify; 
+    bool ase_characteristic_value_changed_w2_notify;
 
     gatt_client_notification_t notification_listener;  
 } ascs_streamendpoint_t;
