@@ -268,6 +268,11 @@ static uint8_t vcs_client_request_write_characteristic(vcs_client_connection_t *
     return vcs_client_request_send_gatt_query(connection, characteristic_index);
 }
 
+static void vcs_client_connected(vcs_client_connection_t *connection, uint8_t status) {
+    connection->state = VOLUME_CONTROL_SERVICE_CLIENT_STATE_READY;
+    vcs_client_emit_connected(&connection->basic_connection, connection->aics_connections_connected, connection->vocs_connections_connected, status);
+}
+
 static void vcs_client_packet_handler_internal(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
@@ -386,47 +391,43 @@ static void vcs_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
                     btstack_assert(connection_helper != NULL);
                     connection = (vcs_client_connection_t *)connection_helper;
 
-                    if (leaudio_subevent_aics_client_connected_get_att_status(packet) != ERROR_CODE_SUCCESS) {
-                        log_info("VCS: Audio Input Control service client connection failed, err 0x%02x.", leaudio_subevent_aics_client_connected_get_att_status(packet));
+                    if (leaudio_subevent_aics_client_connected_get_att_status(packet) == ERROR_CODE_SUCCESS) {
+                        connection->aics_connections_connected++;
+                    } else {
+                        log_info("VCS: AICS client connection failed, err 0x%02x, con_handle 0x%04x, cid 0x%04x",
+                                 leaudio_subevent_aics_client_connected_get_att_status(packet),
+                                 leaudio_subevent_aics_client_connected_get_con_handle(packet),
+                                 leaudio_subevent_aics_client_connected_get_aics_cid(packet));
+                    }
+
+                    if (connection->aics_connections_index < (connection->aics_connections_num-1)) {
+                        connection->aics_connections_index++;
+                        (void) audio_input_control_service_client_connect(
+                                connection->basic_connection.con_handle,
+                                &vcs_client_packet_handler_internal,
+                                connection->aics_connections_storage[connection->aics_connections_index].basic_connection.start_handle,
+                                connection->aics_connections_storage[connection->aics_connections_index].basic_connection.end_handle,
+                                connection->aics_connections_storage[connection->aics_connections_index].basic_connection.service_index,
+                                &connection->aics_connections_storage[connection->aics_connections_index]);
                         break;
                     }
 
-                    switch (connection->state){
-                        case VOLUME_CONTROL_SERVICE_CLIENT_STATE_W4_AICS_SERVICES_CONNECTED:
-                            if (connection->aics_connections_index < (connection->aics_connections_num-1)) {
-                                connection->aics_connections_index++;
-                                (void) audio_input_control_service_client_connect(
-                                        connection->basic_connection.con_handle,
-                                        &vcs_client_packet_handler_internal,
-                                        connection->aics_connections_storage[connection->aics_connections_index].basic_connection.start_handle,
-                                        connection->aics_connections_storage[connection->aics_connections_index].basic_connection.end_handle,
-                                        connection->aics_connections_storage[connection->aics_connections_index].basic_connection.service_index,
-                                        &connection->aics_connections_storage[connection->aics_connections_index]);
-                                return;
-                            }
+                    if (connection->vocs_connections_num != 0) {
+                        volume_offset_control_service_client_init();
+                        connection->vocs_connections_index = 0;
+                        connection->state = VOLUME_CONTROL_SERVICE_CLIENT_STATE_W4_VOCS_SERVICES_CONNECTED;
 
-                            if (connection->vocs_connections_num != 0) {
-                                volume_offset_control_service_client_init();
-                                connection->vocs_connections_index = 0;
-                                connection->state = VOLUME_CONTROL_SERVICE_CLIENT_STATE_W4_VOCS_SERVICES_CONNECTED;
-
-                                (void) volume_offset_control_service_client_connect(
-                                        connection->basic_connection.con_handle,
-                                        &vcs_client_packet_handler_internal,
-                                        connection->vocs_connections_storage[connection->vocs_connections_index].basic_connection.start_handle,
-                                        connection->vocs_connections_storage[connection->vocs_connections_index].basic_connection.end_handle,
-                                        connection->vocs_connections_storage[connection->vocs_connections_index].basic_connection.service_index,
-                                        &connection->vocs_connections_storage[connection->vocs_connections_index]);
-                                return;
-
-                            }
-
-                            connection->state = VOLUME_CONTROL_SERVICE_CLIENT_STATE_READY;
-                            vcs_client_emit_connected(&connection->basic_connection, connection->aics_connections_num, connection->vocs_connections_num, ATT_ERROR_SUCCESS);
-                            break;
-                        default:
-                            break;
+                        (void) volume_offset_control_service_client_connect(
+                                connection->basic_connection.con_handle,
+                                &vcs_client_packet_handler_internal,
+                                connection->vocs_connections_storage[connection->vocs_connections_index].basic_connection.start_handle,
+                                connection->vocs_connections_storage[connection->vocs_connections_index].basic_connection.end_handle,
+                                connection->vocs_connections_storage[connection->vocs_connections_index].basic_connection.service_index,
+                                &connection->vocs_connections_storage[connection->vocs_connections_index]);
+                        break;
                     }
+
+                    vcs_client_connected(connection, ERROR_CODE_SUCCESS);
                     break;
 
                 case LEAUDIO_SUBEVENT_VOCS_CLIENT_CONNECTED:
@@ -435,31 +436,28 @@ static void vcs_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
                     btstack_assert(connection_helper != NULL);
                     connection = (vcs_client_connection_t *)connection_helper;
 
-                    if (leaudio_subevent_vocs_client_connected_get_att_status(packet) != ERROR_CODE_SUCCESS) {
-                        log_info("VCS: Volume Offset Control service client connection failed, err 0x%02x", leaudio_subevent_vocs_client_connected_get_att_status(packet));
-                        break;
+                    if (leaudio_subevent_vocs_client_connected_get_att_status(packet) == ERROR_CODE_SUCCESS) {
+                        connection->vocs_connections_connected++;
+                    } else {
+                        log_info("VCS: VOCS client connection failed, err 0x%02x, con_handle 0x%04x, cid 0x%04x",
+                                 leaudio_subevent_vocs_client_connected_get_att_status(packet),
+                                 leaudio_subevent_vocs_client_connected_get_con_handle(packet),
+                                 leaudio_subevent_vocs_client_connected_get_vocs_cid(packet));
                     }
 
-                    switch (connection->state){
-                        case VOLUME_CONTROL_SERVICE_CLIENT_STATE_W4_VOCS_SERVICES_CONNECTED:
-                            if (connection->vocs_connections_index < (connection->vocs_connections_num-1)) {
-                                connection->vocs_connections_index++;
-                                (void) volume_offset_control_service_client_connect(
-                                        connection->basic_connection.con_handle,
-                                        &vcs_client_packet_handler_internal,
-                                        connection->vocs_connections_storage[connection->vocs_connections_index].basic_connection.start_handle,
-                                        connection->vocs_connections_storage[connection->vocs_connections_index].basic_connection.end_handle,
-                                        connection->vocs_connections_storage[connection->vocs_connections_index].basic_connection.service_index,
-                                        &connection->vocs_connections_storage[connection->vocs_connections_index]);
-                                return;
-                            }
-
-                            connection->state = VOLUME_CONTROL_SERVICE_CLIENT_STATE_READY;
-                            vcs_client_emit_connected(&connection->basic_connection, connection->aics_connections_num, connection->vocs_connections_num, ATT_ERROR_SUCCESS);
-                            break;
-                        default:
-                            break;
+                    if (connection->vocs_connections_index < (connection->vocs_connections_num-1)) {
+                        connection->vocs_connections_index++;
+                        (void) volume_offset_control_service_client_connect(
+                                connection->basic_connection.con_handle,
+                                &vcs_client_packet_handler_internal,
+                                connection->vocs_connections_storage[connection->vocs_connections_index].basic_connection.start_handle,
+                                connection->vocs_connections_storage[connection->vocs_connections_index].basic_connection.end_handle,
+                                connection->vocs_connections_storage[connection->vocs_connections_index].basic_connection.service_index,
+                                &connection->vocs_connections_storage[connection->vocs_connections_index]);
+                        return;
                     }
+
+                    vcs_client_connected(connection, ERROR_CODE_SUCCESS);
                     break;
 
                 default:
@@ -481,6 +479,7 @@ static void vcs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t ch
     vcs_client_connection_t * connection = NULL;
     hci_con_handle_t con_handle;
     gatt_client_service_t service;
+    uint8_t status;
 
     switch(hci_event_packet_get_type(packet)){
         case GATT_EVENT_CHARACTERISTIC_VALUE_QUERY_RESULT:
@@ -496,8 +495,9 @@ static void vcs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t ch
 
             switch (connection->state){
                 case VOLUME_CONTROL_SERVICE_CLIENT_STATE_W4_CHANGE_COUNTER_RESULT:
-                    if (gatt_event_characteristic_value_query_result_get_value_length(packet) == 3){
-                        connection->state = VOLUME_CONTROL_SERVICE_CLIENT_STATE_W2_QUERY_INCLUDED_SERVICES;
+                    // check wrong packet length
+                    if (gatt_event_characteristic_value_query_result_get_value_length(packet) != 3){
+                        vcs_client_connected(connection, ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE);
                         break;
                     }
                     break;
@@ -515,29 +515,29 @@ static void vcs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t ch
             gatt_event_included_service_query_result_get_service(packet, &service);
             switch (service.uuid16){
                 case ORG_BLUETOOTH_SERVICE_AUDIO_INPUT_CONTROL:
-                    if (connection->aics_connections_num < (connection->aics_connections_max_num - 1) ){
-                        connection->aics_connections_storage[connection->aics_connections_num].basic_connection.service_index = connection->aics_connections_num;
-                        connection->aics_connections_storage[connection->aics_connections_num].basic_connection.service_uuid16 = service.uuid16;
-                        connection->aics_connections_storage[connection->aics_connections_num].basic_connection.start_handle = service.start_group_handle;
-                        connection->aics_connections_storage[connection->aics_connections_num].basic_connection.end_handle = service.end_group_handle;
+                    if (connection->aics_connections_num < connection->aics_connections_max_num){
+                        gatt_event_included_service_query_result_get_service(packet, &service);
+                        aics_client_connection_t * aics_connection = &connection->aics_connections_storage[connection->aics_connections_num];
+
+                        aics_connection->basic_connection.service_index = connection->aics_connections_num;
+                        aics_connection->basic_connection.service_uuid16 = service.uuid16;
+                        aics_connection->basic_connection.start_handle = service.start_group_handle;
+                        aics_connection->basic_connection.end_handle = service.end_group_handle;
                         connection->aics_connections_num++;
-#ifdef ENABLE_TESTING_SUPPORT
-                        printf("VCS Client: Found AICS service[%d], uuid 0x%4X, start handle 0x%4X, end handle 0x%4X\n", connection->aics_connections_num - 1, service.uuid16, service.start_group_handle, service.end_group_handle );
-#endif
                     } else {
                         log_info("Num included AICS services exceeded storage capacity, max num %d", connection->aics_connections_max_num);
                     }
                     break;
                 case ORG_BLUETOOTH_SERVICE_VOLUME_OFFSET_CONTROL:
-                    if (connection->vocs_connections_num < (connection->vocs_connections_max_num - 1) ){
-                        connection->vocs_connections_storage[connection->vocs_connections_num].basic_connection.service_index = connection->vocs_connections_num;
-                        connection->vocs_connections_storage[connection->vocs_connections_num].basic_connection.service_uuid16 = service.uuid16;
-                        connection->vocs_connections_storage[connection->vocs_connections_num].basic_connection.start_handle = service.start_group_handle;
-                        connection->vocs_connections_storage[connection->vocs_connections_num].basic_connection.end_handle = service.end_group_handle;
+                    if (connection->vocs_connections_num < connection->vocs_connections_max_num){
+                        gatt_event_included_service_query_result_get_service(packet, &service);
+                        vocs_client_connection_t * vocs_connection = &connection->vocs_connections_storage[connection->vocs_connections_num];
+
+                        vocs_connection->basic_connection.service_index = connection->aics_connections_num;
+                        vocs_connection->basic_connection.service_uuid16 = service.uuid16;
+                        vocs_connection->basic_connection.start_handle = service.start_group_handle;
+                        vocs_connection->basic_connection.end_handle = service.end_group_handle;
                         connection->vocs_connections_num++;
-#ifdef ENABLE_TESTING_SUPPORT
-                        printf("VCS Client: Found VOCS service[%d], uuid 0x%4X, start handle 0x%4X, end handle 0x%4X\n", connection->aics_connections_num - 1, service.uuid16, service.start_group_handle, service.end_group_handle );
-#endif
                     } else {
                         log_info("Num included VOCS services exceeded storage capacity, max num %d", connection->aics_connections_max_num);
                     }
@@ -563,31 +563,60 @@ static void vcs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t ch
 #ifdef ENABLE_TESTING_SUPPORT
                     printf("\nVCS Client: Trigger included services query\n");
 #endif
-                    vcs_client_handle_can_send_now.context = (void *)(uintptr_t)connection->basic_connection.con_handle;
-                    uint8_t status = gatt_client_request_to_send_gatt_query(&vcs_client_handle_can_send_now, connection->basic_connection.con_handle);
 
-                    if (status != ERROR_CODE_SUCCESS){
-                        connection->state = VOLUME_CONTROL_SERVICE_CLIENT_STATE_READY;
-                        vcs_client_emit_connected(connection_helper, connection->aics_connections_num, connection->vocs_connections_num, status);
+                    // only look for included services if we can use them
+                    status = ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
+                    connection->aics_connections_index = 0;
+                    connection->aics_connections_connected = 0;
+
+                    if ((connection->aics_connections_max_num > 0) && (connection->aics_connections_storage != NULL)){
+                        status = audio_input_control_service_client_ready_to_connect(
+                                connection->basic_connection.con_handle,
+                                &vcs_client_packet_handler_internal,
+                                &connection->aics_connections_storage[0]
+                        );
+                    }
+                    if (status == ERROR_CODE_SUCCESS) {
+                        vcs_client_handle_can_send_now.context = (void *) (uintptr_t) connection->basic_connection.con_handle;
+                        (void) gatt_client_request_to_send_gatt_query(&vcs_client_handle_can_send_now,
+                                                                      connection->basic_connection.con_handle);
+                    } else {
+                        // cannot connect to included AICS services, check VOCS services
+                        connection->vocs_connections_index = 0;
+                        connection->vocs_connections_connected = 0;
+
+                        if ((connection->vocs_connections_max_num > 0) && (connection->vocs_connections_storage != NULL)){
+                            status = volume_offset_control_service_client_ready_to_connect(
+                                    connection->basic_connection.con_handle,
+                                    &vcs_client_packet_handler_internal,
+                                    &connection->vocs_connections_storage[0]
+                            );
+                        }
+                        if (status == ERROR_CODE_SUCCESS) {
+                            vcs_client_handle_can_send_now.context = (void *) (uintptr_t) connection->basic_connection.con_handle;
+                            (void) gatt_client_request_to_send_gatt_query(&vcs_client_handle_can_send_now,
+                                                                          connection->basic_connection.con_handle);
+                        } else {
+                            // cannot connect to included VOCS services,
+                            vcs_client_connected(connection, ERROR_CODE_SUCCESS);
+                        }
                     }
                     break;
 
                 case VOLUME_CONTROL_SERVICE_CLIENT_STATE_W4_INCLUDED_SERVICES_RESULT:
                     if (connection->aics_connections_num != 0) {
                         connection->aics_connections_index = 0;
-                        connection->vocs_connections_index = 0;
 
                         audio_input_control_service_client_init();
                         connection->state = VOLUME_CONTROL_SERVICE_CLIENT_STATE_W4_AICS_SERVICES_CONNECTED;
 
-                        (void)audio_input_control_service_client_connect(
+                        (void) audio_input_control_service_client_connect(
                                 connection->basic_connection.con_handle,
                                 &vcs_client_packet_handler_internal,
                                 connection->aics_connections_storage[connection->aics_connections_index].basic_connection.start_handle,
                                 connection->aics_connections_storage[connection->aics_connections_index].basic_connection.end_handle,
                                 connection->aics_connections_storage[connection->aics_connections_index].basic_connection.service_index,
                                 &connection->aics_connections_storage[connection->aics_connections_index]);
-
                         break;
                     }
 
@@ -605,16 +634,14 @@ static void vcs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t ch
                                 &connection->vocs_connections_storage[connection->vocs_connections_index]);
 
                         break;
-
                     }
-                    connection->state = VOLUME_CONTROL_SERVICE_CLIENT_STATE_READY;
-                    vcs_client_emit_connected(connection_helper, connection->aics_connections_num, connection->vocs_connections_num, ERROR_CODE_SUCCESS);
+                    vcs_client_connected(connection, ERROR_CODE_SUCCESS);
                     break;
+
                 default:
                     connection->state = VOLUME_CONTROL_SERVICE_CLIENT_STATE_READY;
                     break;
             }
-
             break;
 
         default:
