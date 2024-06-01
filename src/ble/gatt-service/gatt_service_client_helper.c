@@ -584,6 +584,28 @@ uint8_t gatt_service_client_connect(
     return ERROR_CODE_SUCCESS;
 }
 
+uint8_t gatt_service_client_connect_secondary_service_ready_to_connect(
+        hci_con_handle_t con_handle,
+        gatt_service_client_helper_t * client, gatt_service_client_connection_helper_t * connection,
+        gatt_service_client_characteristic_t * characteristics, uint8_t characteristics_num,
+        btstack_packet_handler_t packet_handler){
+
+    btstack_assert(client != NULL);
+    btstack_assert(connection != NULL);
+    btstack_assert(packet_handler != NULL);
+    btstack_assert(characteristics != NULL);
+
+    if (gatt_service_client_get_connection_for_con_handle(client, con_handle) != NULL) {
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+
+    if (characteristics_num < client->characteristics_desc16_num) {
+        log_info("At least %u characteristics needed", client->characteristics_desc16_num);
+        return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
+    }
+    return ERROR_CODE_SUCCESS;
+}
+
 uint8_t gatt_service_client_connect_secondary_service(
         hci_con_handle_t con_handle,
         gatt_service_client_helper_t * client, gatt_service_client_connection_helper_t * connection,
@@ -591,18 +613,11 @@ uint8_t gatt_service_client_connect_secondary_service(
         gatt_service_client_characteristic_t * characteristics, uint8_t characteristics_num,
         btstack_packet_handler_t packet_handler){
 
-    btstack_assert(client          != NULL);
-    btstack_assert(connection      != NULL);
-    btstack_assert(packet_handler  != NULL);
-    btstack_assert(characteristics != NULL);
-
-    if (gatt_service_client_get_connection_for_con_handle(client, con_handle) != NULL){
-        return ERROR_CODE_COMMAND_DISALLOWED;
-    }
-
-    if (characteristics_num < client->characteristics_desc16_num){
-        log_info("At least %u characteristics needed", client->characteristics_desc16_num);
-        return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
+    uint8_t status = gatt_service_client_connect_secondary_service_ready_to_connect(con_handle, client, connection,
+                                                                                    characteristics,
+                                                                                    characteristics_num, packet_handler);
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
     }
 
     uint16_t cid = gatt_service_client_get_next_cid(client);
