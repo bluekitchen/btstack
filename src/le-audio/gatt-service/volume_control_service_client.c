@@ -845,7 +845,7 @@ uint8_t volume_control_service_client_set_absolute_volume(uint16_t vcs_cid, uint
     }
     connection->data.data_bytes[0] = (uint8_t)VCS_OPCODE_SET_ABSOLUTE_VOLUME;
     connection->data.data_bytes[1] = connection->change_counter;
-    connection->data.data_bytes[3] = abs_volume;
+    connection->data.data_bytes[2] = abs_volume;
 
     return vcs_client_request_write_characteristic(connection, VCS_CLIENT_CHARACTERISTIC_INDEX_VOLUME_CONTROL_POINT);
 }
