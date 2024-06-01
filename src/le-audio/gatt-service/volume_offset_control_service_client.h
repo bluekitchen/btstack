@@ -120,6 +120,11 @@ uint8_t volume_offset_control_service_client_connect(
     uint8_t service_index, 
     vocs_client_connection_t * connection);
 
+uint8_t volume_offset_control_service_client_ready_to_connect(
+        hci_con_handle_t con_handle,
+        btstack_packet_handler_t packet_handler,
+        vocs_client_connection_t * connection);
+
 uint8_t volume_offset_control_service_client_write_volume_offset(vocs_client_connection_t * connection, int16_t volume_offset);
 uint8_t volume_offset_control_service_client_write_audio_location(vocs_client_connection_t * connection, uint32_t audio_location);
 
