@@ -287,7 +287,7 @@ static void mics_client_packet_handler_internal(uint8_t packet_type, uint16_t ch
 #endif
                     // only look for included services if we can use them
                     status = ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
-                    connection->aics_connections_num = 0;
+                    connection->aics_connections_index = 0;
 
                     if ((connection->aics_connections_max_num > 0) && (connection->aics_connections_storage != NULL)){
                         status = audio_input_control_service_client_ready_to_connect(
@@ -446,18 +446,26 @@ static void mics_client_handle_gatt_client_event(uint8_t packet_type, uint16_t c
             connection = (mics_client_connection_t *)gatt_service_client_get_connection_for_con_handle(&mics_client, con_handle);
             btstack_assert(connection != NULL);
 
-            if (connection->aics_connections_num < connection->aics_connections_max_num){
-                gatt_event_included_service_query_result_get_service(packet, &service);
-                aics_client_connection_t * aics_connection = &connection->aics_connections_storage[connection->aics_connections_num];
+            gatt_event_included_service_query_result_get_service(packet, &service);
+            switch (service.uuid16) {
+                case ORG_BLUETOOTH_SERVICE_AUDIO_INPUT_CONTROL:
+                    if (connection->aics_connections_num < connection->aics_connections_max_num){
+                        gatt_event_included_service_query_result_get_service(packet, &service);
+                        aics_client_connection_t * aics_connection = &connection->aics_connections_storage[connection->aics_connections_num];
 
-                aics_connection->basic_connection.service_index = connection->aics_connections_num;
-                aics_connection->basic_connection.service_uuid16 = service.uuid16;
-                aics_connection->basic_connection.start_handle = service.start_group_handle;
-                aics_connection->basic_connection.end_handle = service.end_group_handle;
-                connection->aics_connections_num++;
-            } else {
-                log_info("Num included AICS services exceeded storage capacity, max num %d", connection->aics_connections_max_num);
+                        aics_connection->basic_connection.service_index = connection->aics_connections_num;
+                        aics_connection->basic_connection.service_uuid16 = service.uuid16;
+                        aics_connection->basic_connection.start_handle = service.start_group_handle;
+                        aics_connection->basic_connection.end_handle = service.end_group_handle;
+                        connection->aics_connections_num++;
+                    } else {
+                        log_info("Num included AICS services exceeded storage capacity, max num %d", connection->aics_connections_max_num);
+                    }
+                    break;
+                default:
+                    break;
             }
+
             break;
 
         case GATT_EVENT_QUERY_COMPLETE:
