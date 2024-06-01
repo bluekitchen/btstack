@@ -103,11 +103,13 @@ typedef struct {
     aics_client_connection_t  * aics_connections_storage;
     uint8_t aics_connections_max_num;
     uint8_t aics_connections_num;
+    uint8_t aics_connections_connected;
     uint8_t aics_connections_index;
 
     vocs_client_connection_t  * vocs_connections_storage;
     uint8_t vocs_connections_max_num;
     uint8_t vocs_connections_num;
+    uint8_t vocs_connections_connected;
     uint8_t vocs_connections_index;
 
     // Application packet handler
@@ -143,7 +145,6 @@ uint8_t volume_control_service_client_connect(
          vocs_client_connection_t * vocs_connections, uint8_t vocs_connections_num,
          uint16_t * out_vcs_cid
 );
-
 
 
 /**
