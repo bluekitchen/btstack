@@ -1681,16 +1681,38 @@ void btp_vcp_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, 
                 btp_send(response_service_id, opcode, controller_index, 0, NULL);
             }
             break;
-#if 0
         case BTP_VCP_VOL_CTLR_MUTE:
             if (controller_index == 0){
+                /**
+                    bt_addr_le_t address;
+                 */
+                // get server struct
+                bd_addr_type_t addr_type = (bd_addr_type_t) data[0];
+                bd_addr_t address;
+                reverse_bd_addr(&data[1], address);
+                MESSAGE("BTP_VCP_VOL_CTLR_MUTE %s", bd_addr_to_str(address));
+                server = btp_server_for_address(addr_type, address);
+                uint8_t status = volume_control_service_client_mute(server->vcs_cid);
+                btstack_assert(status == ERROR_CODE_SUCCESS);
+                btp_send(response_service_id, opcode, controller_index, 0, NULL);
             }
             break;
         case BTP_VCP_VOL_CTLR_UNMUTE:
             if (controller_index == 0){
+                /**
+                    bt_addr_le_t address;
+                 */
+                // get server struct
+                bd_addr_type_t addr_type = (bd_addr_type_t) data[0];
+                bd_addr_t address;
+                reverse_bd_addr(&data[1], address);
+                MESSAGE("BTP_VCP_VOL_CTLR_UNMUTE %s", bd_addr_to_str(address));
+                server = btp_server_for_address(addr_type, address);
+                uint8_t status = volume_control_service_client_unmute(server->vcs_cid);
+                btstack_assert(status == ERROR_CODE_SUCCESS);
+                btp_send(response_service_id, opcode, controller_index, 0, NULL);
             }
             break;
-#endif
         default:
             MESSAGE("BTP PACS Operation 0x%02x not implemented", opcode);
             btstack_assert(false);
