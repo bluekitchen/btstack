@@ -168,6 +168,12 @@ uint8_t gatt_service_client_connect(
         gatt_service_client_characteristic_t * characteristics, uint8_t characteristics_num,
         btstack_packet_handler_t packet_handler, uint16_t * connection_cid);
 
+uint8_t gatt_service_client_connect_secondary_service_ready_to_connect(
+        hci_con_handle_t con_handle,
+        gatt_service_client_helper_t * client, gatt_service_client_connection_helper_t * connection,
+        gatt_service_client_characteristic_t * characteristics, uint8_t characteristics_num,
+        btstack_packet_handler_t packet_handler);
+
 uint8_t gatt_service_client_connect_secondary_service(
         hci_con_handle_t con_handle,
         gatt_service_client_helper_t * client, gatt_service_client_connection_helper_t * connection,
