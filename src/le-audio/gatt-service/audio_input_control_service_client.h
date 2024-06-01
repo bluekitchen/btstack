@@ -112,6 +112,11 @@ void audio_input_control_service_client_init(void);
  * @param connection
  * @return status ERROR_CODE_SUCCESS on success, otherwise ERROR_CODE_COMMAND_DISALLOWED if there is already a client associated with con_handle, or BTSTACK_MEMORY_ALLOC_FAILED
  */
+ uint8_t audio_input_control_service_client_ready_to_connect(
+         hci_con_handle_t con_handle,
+         btstack_packet_handler_t packet_handler,
+         aics_client_connection_t * connection);
+
 uint8_t audio_input_control_service_client_connect(
     hci_con_handle_t con_handle,
     btstack_packet_handler_t packet_handler,
