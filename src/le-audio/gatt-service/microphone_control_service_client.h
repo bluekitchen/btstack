@@ -95,6 +95,7 @@ typedef struct {
     aics_client_connection_t  * aics_connections_storage;
     uint8_t aics_connections_max_num;
     uint8_t aics_connections_num;
+    uint8_t aics_connections_connected;
     uint8_t aics_connections_index;
     gatt_service_client_characteristic_t * aics_characteristics_storage;
     uint8_t aics_characteristics_max_num;
