@@ -60,7 +60,6 @@ static gatt_service_client_helper_t ias_client;
 static btstack_context_callback_registration_t ias_client_handle_can_send_now;
 
 static void ias_client_packet_handler_internal(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
-static void ias_client_handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static void ias_client_run_for_connection(void * context);
 
 // list of uuids
@@ -86,26 +85,6 @@ static void ias_client_replace_subevent_id_and_emit(btstack_packet_handler_t cal
     // execute callback
     packet[2] = subevent_id;
     (*callback)(HCI_EVENT_PACKET, 0, packet, size);
-}
-
-static void ias_client_emit_uint8(uint16_t cid, btstack_packet_handler_t event_callback, uint8_t subevent, const uint8_t * data, uint8_t data_size){
-    UNUSED(data_size);
-    btstack_assert(event_callback != NULL);
-
-    if (data_size != 1){
-        return;
-    }
-
-    uint8_t event[6];
-    uint16_t pos = 0;
-    event[pos++] = HCI_EVENT_GATTSERVICE_META;
-    event[pos++] = 4;
-    event[pos++] = subevent;
-    little_endian_store_16(event, pos, cid);
-    pos+= 2;
-    event[pos++] = data[0];
-
-    (*event_callback)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
 static uint16_t ias_client_value_handle_for_index(ias_client_connection_t * connection){
@@ -193,30 +172,6 @@ static void ias_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
                 default:
                     break;
             }
-            break;
-
-        default:
-            break;
-    }
-}
-
-static void ias_client_handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    UNUSED(packet_type); 
-    UNUSED(channel);
-    UNUSED(size);
-
-    ias_client_connection_t * connection = NULL;
-    hci_con_handle_t con_handle;
-
-    switch(hci_event_packet_get_type(packet)){
-
-        case GATT_EVENT_QUERY_COMPLETE:
-            con_handle = (hci_con_handle_t)gatt_event_query_complete_get_handle(packet);
-            connection = (ias_client_connection_t *)gatt_service_client_get_connection_for_con_handle(&ias_client, con_handle);
-            btstack_assert(connection != NULL);
-
-            connection->state = IMMEDIATE_ALERT_SERVICE_CLIENT_STATE_READY;
-        //    ias_client_emit_done_event(connection, connection->characteristic_index, gatt_event_query_complete_get_att_status(packet));
             break;
 
         default:
