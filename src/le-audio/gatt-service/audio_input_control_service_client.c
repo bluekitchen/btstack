@@ -619,6 +619,18 @@ void audio_input_control_service_client_init(void){
     aics_client.characteristics_desc16 = aics_uuid16s;
 }
 
+uint8_t audio_input_control_service_client_ready_to_connect(
+        hci_con_handle_t con_handle,
+        btstack_packet_handler_t packet_handler,
+        aics_client_connection_t * connection){
+
+    return gatt_service_client_connect_secondary_service_ready_to_connect(con_handle,
+                                                                          &aics_client, &connection->basic_connection,
+                                                                          connection->characteristics_storage,
+                                                                          AUDIO_INPUT_CONTROL_SERVICE_NUM_CHARACTERISTICS,
+                                                                          packet_handler);
+}
+
 uint8_t audio_input_control_service_client_connect(
     hci_con_handle_t con_handle,
     btstack_packet_handler_t packet_handler,
