@@ -265,8 +265,6 @@ static void txps_client_run_for_connection(void * context){
     txps_client_connection_t * connection = (txps_client_connection_t *)gatt_service_client_get_connection_for_con_handle(&txps_client, con_handle);
 
     btstack_assert(connection != NULL);
-    uint16_t value_length;
-    uint8_t * value;
 
     switch (connection->state){
         case TX_POWER_SERVICE_CLIENT_STATE_W2_READ_CHARACTERISTIC_VALUE:
