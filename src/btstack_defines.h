@@ -4709,10 +4709,27 @@ typedef uint8_t sm_key_t[16];
 #define LEAUDIO_SUBEVENT_ASCS_SERVER_START_READY                                 0x15u
 
 /**
- * @format 1H1
+ * @format 121122JV3JV1JV2JV2JV
  * @param subevent_code
  * @param con_handle
  * @param ase_id
+ * @param metadata_mask
+ * @param preferred_audio_contexts_mask
+ * @param streaming_audio_contexts_mask
+ * @param program_info_length
+ * @param program_info
+ * @param language_code
+ * @param ccids_num
+ * @param ccids
+ * @param parental_rating
+ * @param program_info_uri_length
+ * @param program_info_uri
+ * @param extended_metadata_type
+ * @param extended_metadata_value_length
+ * @param extended_metadata_value
+ * @param vendor_specific_metadata_type
+ * @param vendor_specific_metadata_value_length
+ * @param vendor_specific_metadata_value
 */
 #define LEAUDIO_SUBEVENT_ASCS_SERVER_ENABLE                                       0x16u
 
