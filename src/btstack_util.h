@@ -107,11 +107,12 @@ int32_t btstack_time_delta(uint32_t time_a, uint32_t time_b);
 int16_t btstack_time16_delta(uint16_t time_a, uint16_t time_b);
 
 /** 
- * @brief Read 16/24/32 bit little endian value from buffer
+ * @brief Read 08/16/24/32 bit little endian value from buffer
  * @param buffer
  * @param position in buffer
  * @return value
  */
+uint16_t little_endian_read_08(const uint8_t* buffer, int position);
 uint16_t little_endian_read_16(const uint8_t * buffer, int position);
 uint32_t little_endian_read_24(const uint8_t * buffer, int position);
 uint32_t little_endian_read_32(const uint8_t * buffer, int position);

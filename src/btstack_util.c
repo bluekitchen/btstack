@@ -106,6 +106,10 @@ void little_endian_store_32(uint8_t * buffer, uint16_t position, uint32_t value)
     buffer[pos++] = (uint8_t)(value >> 24);
 }
 
+uint32_t big_endian_read_08(const uint8_t* buffer, int position) {
+    return buffer[position];
+}
+
 uint32_t big_endian_read_16(const uint8_t * buffer, int position) {
     return (uint16_t)(((uint16_t) buffer[position+1]) | (((uint16_t)buffer[position]) << 8));
 }
