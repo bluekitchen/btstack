@@ -129,7 +129,7 @@ void audio_stream_control_service_server_streamendpoint_configure_qos(hci_con_ha
  * @param con_handle
  * @param ase_id
  */
-void audio_stream_control_service_server_streamendpoint_enable(hci_con_handle_t con_handle, uint8_t ase_id);
+void audio_stream_control_service_server_streamendpoint_enable(hci_con_handle_t con_handle, uint8_t ase_id, const le_audio_metadata_t *metadata);
 
 /**
  * @brief Start stream.
