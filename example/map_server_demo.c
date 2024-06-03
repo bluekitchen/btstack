@@ -364,7 +364,7 @@ int btstack_main(int argc, const char * argv[]){
     // map_notification_client_init();
 
     // setup MAP Access Server
-    map_message_type_t supported_message_types = MAP_MESSAGE_TYPE_SMS_GSM;
+    map_message_type_t supported_message_types = MAP_MESSAGE_TYPE_EMAIL;
     uint32_t supported_features = 0x1F;
     memset(map_message_access_service_buffer, 0, sizeof(map_message_access_service_buffer));
     map_util_create_access_service_sdp_record(map_message_access_service_buffer,
