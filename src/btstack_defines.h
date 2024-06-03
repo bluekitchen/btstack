@@ -6754,6 +6754,8 @@ typedef uint8_t sm_key_t[16];
  * @param read map_message_status_t
  */
 #define MAP_SUBEVENT_MESSAGE_LISTING_ITEM                                 0x05u
+// todo: quick fix to have a subevent for "x-bt/message"
+#define MAP_SUBEVENT_MESSAGE                                0x55u
 
 /**
  * @format 12P
