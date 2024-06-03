@@ -389,8 +389,7 @@ void ascs_util_emit_qos_configuration(btstack_packet_handler_t ascs_event_callba
     (*ascs_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-
-void ascs_util_emit_metadata(btstack_packet_handler_t ascs_event_callback, bool client_request, uint16_t con_identifier, uint8_t ase_id, ascs_state_t state, const le_audio_metadata_t *metadata){
+static void ascs_util_emit_event_with_metadata(btstack_packet_handler_t ascs_event_callback, uint8_t subevent, uint16_t con_identifier, uint8_t ase_id, ascs_state_t state, const le_audio_metadata_t *metadata){
     btstack_assert(ascs_event_callback != NULL);
 
     uint8_t event[25 + LE_AUDIO_PROGRAM_INFO_MAX_LENGTH
@@ -402,11 +401,7 @@ void ascs_util_emit_metadata(btstack_packet_handler_t ascs_event_callback, bool 
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_LEAUDIO_META;
     event[pos++] = (uint8_t)sizeof(event) - 2;
-    if (client_request){
-        event[pos++] = LEAUDIO_SUBEVENT_ASCS_SERVER_METADATA;
-    } else {
-        event[pos++] = LEAUDIO_SUBEVENT_ASCS_CLIENT_METADATA;
-    }
+    event[pos++] = subevent; 
     little_endian_store_16(event, pos, con_identifier);
     pos += 2;
     event[pos++] = ase_id;
@@ -414,4 +409,18 @@ void ascs_util_emit_metadata(btstack_packet_handler_t ascs_event_callback, bool 
     pos += metadata_length;
     
     (*ascs_event_callback)(HCI_EVENT_PACKET, 0, event, pos);
+}
+
+void ascs_util_emit_metadata(btstack_packet_handler_t ascs_event_callback, bool client_request, uint16_t con_identifier, uint8_t ase_id, ascs_state_t state, const le_audio_metadata_t *metadata){
+    uint8_t subevent;
+    if (client_request){
+        subevent = LEAUDIO_SUBEVENT_ASCS_SERVER_METADATA;
+    } else {
+        subevent = LEAUDIO_SUBEVENT_ASCS_CLIENT_METADATA;
+    }
+    ascs_util_emit_event_with_metadata(ascs_event_callback, subevent, con_identifier, ase_id, state, metadata);
+}
+
+void ascs_util_emit_client_enable_request(btstack_packet_handler_t ascs_event_callback, uint16_t con_identifier, uint8_t ase_id, ascs_state_t state, const le_audio_metadata_t *metadata){
+    ascs_util_emit_event_with_metadata(ascs_event_callback, LEAUDIO_SUBEVENT_ASCS_SERVER_ENABLE, con_identifier, ase_id, state, metadata);
 }

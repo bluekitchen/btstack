@@ -223,6 +223,7 @@ uint16_t asce_util_metadata_serialize(const le_audio_metadata_t *metadata, uint8
 void ascs_util_emit_codec_configuration(btstack_packet_handler_t ascs_event_callback, bool client_request, uint16_t con_identifier, uint8_t ase_id, ascs_state_t state, const ascs_codec_configuration_t *codec_configuration);
 void ascs_util_emit_qos_configuration(btstack_packet_handler_t ascs_event_callback, bool client_request, uint16_t con_identifier, uint8_t ase_id, ascs_state_t state, const ascs_qos_configuration_t *qos_configuration);
 void ascs_util_emit_metadata(btstack_packet_handler_t ascs_event_callback, bool client_request, uint16_t con_identifier, uint8_t ase_id, ascs_state_t state, const le_audio_metadata_t *metadata);
+void ascs_util_emit_client_enable_request(btstack_packet_handler_t ascs_event_callback, uint16_t con_identifier, uint8_t ase_id, ascs_state_t state, const le_audio_metadata_t *metadata);
 
 #if defined __cplusplus
 }
