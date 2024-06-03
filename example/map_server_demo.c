@@ -101,7 +101,7 @@ static const char* remote_addr_string = "001BDC08E272";
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 static const char * msg_listing_header = "<MAP-msg-listing version = \"1.0\">";
-static const char * msg_listing_msg   = "<msg handle = \"20000100001\" subject = \"Hello\"/>";
+static const char * msg_listing_msg   = "<msg handle = \"20000100001\" subject = \"Hello\" type = \"EMAIL\" />";
 static const char * msg_listing_footer = "</MAP-msg-listing>";
 
 static void create_msg(char * msg_buffer, uint16_t index){
@@ -279,7 +279,6 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             printf("[+] Operation complete, status 0x%02x\n",
                                    map_subevent_operation_completed_get_status(packet));
                             break;
-
 							
                         case MAP_SUBEVENT_MESSAGE_LISTING_ITEM:
                             map_access_server_set_database_identifier(map_cid, database_identifier);
@@ -287,6 +286,12 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             printf("[+] Get Message listing\n");
                             send_listing(0,0);
                             break;
+
+                        case MAP_SUBEVENT_MESSAGE:
+                            printf("[+] Get Message\n");
+                            send_listing(0, 0);
+                            break;
+
                         default:
                             log_info("unknown map meta event %d\n", hci_event_map_meta_get_subevent_code(packet));
                             break;
