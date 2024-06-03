@@ -1013,7 +1013,11 @@ ascs_server_handle_control_point_write(ascs_server_connection_t *connection, con
                 ase_id = buffer[pos++];
                 pos += le_audio_util_metadata_parse(&buffer[pos], buffer_size-pos, &metadata_config);
                 if (ascs_server_request_successfully_processed(connection, i)){
-                    ascs_server_emit_client_request(con_handle, ase_id, LEAUDIO_SUBEVENT_ASCS_SERVER_ENABLE);
+                    ascs_server_connection_t * client = ascs_server_get_remote_client_for_con_handle(con_handle);
+                    btstack_assert(client != NULL);
+                    ascs_streamendpoint_t * streamendpoint = ascs_server_get_streamendpoint_for_ase_id(client, ase_id);
+                    btstack_assert(streamendpoint != NULL);
+                    ascs_util_emit_client_enable_request(ascs_server_event_callback, con_handle, ase_id, streamendpoint->state, &metadata_config);
                 }
             }
             break;
@@ -1403,13 +1407,15 @@ void audio_stream_control_service_server_streamendpoint_configure_qos(hci_con_ha
     ascs_server_streamendpoint_schedule_value_changed_task(client, streamendpoint);
 }
 
-void audio_stream_control_service_server_streamendpoint_enable(hci_con_handle_t con_handle, uint8_t ase_id){
+void audio_stream_control_service_server_streamendpoint_enable(hci_con_handle_t con_handle, uint8_t ase_id, const le_audio_metadata_t *metadata){
     ascs_server_connection_t  * client;
     ascs_streamendpoint_t * streamendpoint;
 
     if (!ascs_server_streamendpoint_transit_to_state(con_handle, ase_id, ASCS_OPCODE_ENABLE, ASCS_STATE_ENABLING, &client, &streamendpoint)){
         return;
     }
+
+    memcpy(&streamendpoint->metadata, metadata, sizeof(le_audio_metadata_t));
     ascs_server_streamendpoint_schedule_value_changed_task(client, streamendpoint);
 }
 
