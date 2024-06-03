@@ -177,7 +177,7 @@ static void lls_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
     if (packet_type != HCI_EVENT_PACKET){
         return;
     }
-    hci_con_handle_t con_handle;
+
     uint8_t reason;
 
     switch (hci_event_packet_get_type(packet)){
@@ -190,8 +190,6 @@ static void lls_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
             break;
 
         case HCI_EVENT_DISCONNECTION_COMPLETE:
-            con_handle = hci_event_disconnection_complete_get_connection_handle(packet);
-            
             reason = hci_event_disconnection_complete_get_reason(packet);
             if (reason == ERROR_CODE_REMOTE_USER_TERMINATED_CONNECTION){
                 lls_server_stop_alerting();
