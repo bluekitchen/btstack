@@ -26,3 +26,5 @@ cmake-build-*
 build
 build-asan
 build-coverage
+.vs
+.vscode
