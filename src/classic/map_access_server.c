@@ -346,9 +346,10 @@ static map_object_type_t map_access_server_parse_object_type(const char* type_st
     if (strcmp("x-bt/MAP-msg-listing", type_string) == 0) {
         return MAP_OBJECT_TYPE_MSG_LISTING;
     }
-    if (strcmp("x-obex/folder-listing", type_string) == 0) {
-        return MAP_OBJECT_TYPE_MSG_LISTING;
+    if (strcmp("x-bt/message", type_string) == 0) {
+        return MAP_OBJECT_TYPE_MESSAGE;
     }
+
 
     return MAP_OBJECT_TYPE_INVALID;
 }
@@ -702,7 +703,7 @@ static void map_access_server_parser_callback_get(void* user_data, uint8_t heade
 static void map_access_server_handle_get_request(map_access_server_t* map_access_server) {
     map_access_server_handle_srm_headers(map_access_server);
     map_access_server->request.object_type = map_access_server_parse_object_type(map_access_server->request.type);
-    mas_folder_t folder = MAS_FOLDER_INVALID;
+    mas_folder_t folder = map_access_server->map_access_server_dir;
     uint16_t name_len = (uint16_t)strlen(map_access_server->request.name);
     switch (map_access_server->request.object_type) {
     case MAP_OBJECT_TYPE_INVALID:
@@ -713,8 +714,12 @@ static void map_access_server_handle_get_request(map_access_server_t* map_access
         return;
 
     case MAP_OBJECT_TYPE_MSG_LISTING:
-            folder = map_access_server_get_folder_by_path(map_access_server->request.name);
-            break;
+        folder = map_access_server_get_folder_by_path(map_access_server->request.name);
+        break;
+
+    case MAP_OBJECT_TYPE_MESSAGE:
+        break;
+
     default:
         btstack_unreachable();
         break;
@@ -753,6 +758,28 @@ static void map_access_server_handle_get_request(map_access_server_t* map_access
         pos += search_value_len + 1;
         event[pos++] = folder;
         break;
+
+    case MAP_OBJECT_TYPE_MESSAGE:
+        search_value_len = (uint16_t)strlen(map_access_server->request.app_params.search_value);
+        event[pos++] = 20 + search_value_len + 1;
+        event[pos++] = MAP_SUBEVENT_MESSAGE;
+        little_endian_store_16(event, pos, map_access_server->map_cid);
+        pos += 2;
+        little_endian_store_32(event, pos, map_access_server->request.continuation);
+        pos += 4;
+        event[pos++] = map_access_server->request.app_params.order;
+        little_endian_store_16(event, pos, map_access_server->request.app_params.max_list_count);
+        pos += 2;
+        event[pos++] = map_access_server->request.app_params.msg_selector_operator;
+        event[pos++] = map_access_server->request.app_params.search_property;
+        // search_value is zero terminated
+        event[pos++] = search_value_len + 1;
+        memcpy(&event[pos], (const uint8_t*)map_access_server->request.app_params.search_value, search_value_len + 1);
+        pos += search_value_len + 1;
+        event[pos++] = folder;
+        break;
+
+
     //case MAP_OBJECT_TYPE_VCARD:
     //    event[pos++] = 13 + name_len + 1;
     //    event[pos++] = MAP_SUBEVENT_PULL_VCARD_ENTRY;
