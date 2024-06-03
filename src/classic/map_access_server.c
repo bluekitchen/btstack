@@ -132,6 +132,8 @@ typedef struct {
             uint8_t msg_selector_operator;
             uint8_t order;
             uint8_t search_property;
+            bool attachement;
+            uint8_t charset;
         } app_params;
     } request;
     // response
@@ -624,52 +626,28 @@ static void map_access_server_app_param_callback_get(void* user_data, uint8_t ta
     map_access_server_t* map_access_server = (map_access_server_t*)user_data;
     obex_app_param_parser_tag_state_t state;
     switch (tag_id) {
-    //case MAP_APPLICATION_PARAMETER_SEARCH_VALUE:
-    //    state = obex_app_param_parser_tag_store((uint8_t*)map_access_server->request.app_params.search_value,
-    //        MAP_SERVER_MAX_SEARCH_VALUE_LEN - 1, total_len,
-    //        data_offset, data_buffer, data_len);
-    //    // assert trailing zero
-    //    map_access_server->request.app_params.search_value[MAP_SERVER_MAX_SEARCH_VALUE_LEN - 1] = 0;
-    //    break;
+
     default:
         state = obex_app_param_parser_tag_store(map_access_server->request.app_param_buffer,
             sizeof(map_access_server->request.app_param_buffer), total_len,
             data_offset, data_buffer, data_len);
         if (state == OBEX_APP_PARAM_PARSER_TAG_COMPLETE) {
             switch (tag_id) {
-            //case MAP_APPLICATION_PARAMETER_PROPERTY_SELECTOR:
-            //    // read lower 32 bit
-            //    map_access_server->request.app_params.property_selector = big_endian_read_32(
-            //        map_access_server->request.app_param_buffer, 4);
-            //    break;
-            //case MAP_APPLICATION_PARAMETER_VCARD_SELECTOR:
-            //    // read lower 32 bit
-            //    map_access_server->request.app_params.vcard_selector = big_endian_read_32(
-            //        map_access_server->request.app_param_buffer, 4);
-            //    break;
-            //case MAP_APPLICATION_PARAMETER_FORMAT:
-            //    map_access_server->request.app_params.format = (map_format_vcard_t)map_access_server->request.app_param_buffer[0];
-            //    break;
+
             case MAP_APPLICATION_PARAMETER_MAX_LIST_COUNT:
                 map_access_server->request.app_params.max_list_count = big_endian_read_16(
                     map_access_server->request.app_param_buffer, 0);
                 break;
-            //case MAP_APPLICATION_PARAMETER_LIST_START_OFFSET:
-            //    map_access_server->request.app_params.list_start_offset = big_endian_read_16(
-            //        map_access_server->request.app_param_buffer, 0);
-            //    break;
-            //case MAP_APPLICATION_PARAMETER_RESET_NEW_MISSED_CALLS:
-            //    map_access_server->request.app_params.reset_new_missed_calls = map_access_server->request.app_param_buffer[0];
-            //    break;
-            //case MAP_APPLICATION_PARAMETER_VCARD_SELECTOR_OPERATOR:
-            //    map_access_server->request.app_params.vcard_selector_operator = map_access_server->request.app_param_buffer[0];
-            //    break;
-            //case MAP_APPLICATION_PARAMETER_ORDER:
-            //    map_access_server->request.app_params.vcard_selector_operator = map_access_server->request.app_param_buffer[0];
-            //    break;
-            //case MAP_APPLICATION_PARAMETER_SEARCH_PROPERTY:
-            //    map_access_server->request.app_params.search_property = map_access_server->request.app_param_buffer[0];
-            //    break;
+
+            case MAP_APPLICATION_PARAMETER_ATTACHEMENT:
+                map_access_server->request.app_params.attachement = big_endian_read_08(
+                    map_access_server->request.app_param_buffer, 0);
+                break;
+
+            case MAP_APPLICATION_PARAMETER_CHARSET:
+                map_access_server->request.app_params.max_list_count = big_endian_read_08(
+                    map_access_server->request.app_param_buffer, 0);
+                break;
             default:
                 break;
             }
