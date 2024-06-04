@@ -186,7 +186,6 @@ static void show_usage(void){
     gap_local_bd_addr(iut_address);
 
     printf("\n--- Bluetooth MAP Server Test Console %s ---\n", bd_addr_to_str(iut_address));
-    printf("c: open GEOP connection to MNS (in PTS)\n");
     printf("Command list goes here... try press 'a'\n");
     printf("\n");
 }
