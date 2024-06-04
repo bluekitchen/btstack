@@ -133,15 +133,15 @@ static void map_create_sdp_record(uint8_t * service, uint32_t service_record_han
 #endif
 
     // 0x0315 "MASInstanceID"
-    de_add_number(service, DE_UINT, DE_SIZE_16, 0x0315);
+    de_add_number(service, DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_MAS_INSTANCE_ID);
     de_add_number(service, DE_UINT, DE_SIZE_8, instance_id);
 
     // 0x0316 "SupportedMessageTypes"
-    de_add_number(service, DE_UINT, DE_SIZE_16, 0x0316);
+    de_add_number(service, DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_SUPPORTED_MESSAGE_TYPES);
     de_add_number(service, DE_UINT, DE_SIZE_8, supported_message_types);
 
     // 0x0317 "MapSupportedFeatures"
-    de_add_number(service, DE_UINT, DE_SIZE_16, 0x0317);
+    de_add_number(service, DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_MAP_SUPPORTED_FEATURES);
     de_add_number(service, DE_UINT, DE_SIZE_32, supported_features);
 }
 
