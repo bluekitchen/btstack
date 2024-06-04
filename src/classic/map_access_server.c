@@ -346,6 +346,9 @@ static map_object_type_t map_access_server_parse_object_type(const char* type_st
     if (strcmp("x-bt/MAP-msg-listing", type_string) == 0) {
         return MAP_OBJECT_TYPE_MSG_LISTING;
     }
+    if (strcmp("x-obex/folder-listing", type_string) == 0) {
+        return MAP_OBJECT_TYPE_MSG_LISTING;
+    }
     if (strcmp("x-bt/message", type_string) == 0) {
         return MAP_OBJECT_TYPE_MESSAGE;
     }
