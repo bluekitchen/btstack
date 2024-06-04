@@ -101,6 +101,7 @@
 // known headsets
 static const char * known_headsets[] = {
     "ZenHybridPro",
+    "NRF5340_AUDIO"
 };
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
@@ -662,6 +663,11 @@ static void le_audio_unicast_source_handle_adv(bd_addr_type_t adv_addr_type, bd_
     }
     // done if not match expectation
     if (!match) return;
+
+    // nRF5340 Resolving issue
+    static int match_counter = 0;
+    match_counter++;
+    if (match_counter < 3) return;
 
     // if already in server list, skip
     for (i=0; i < num_active_servers; i++){
