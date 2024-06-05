@@ -5380,8 +5380,6 @@ typedef uint8_t sm_key_t[16];
  * @param read map_message_status_t
  */
 #define MAP_SUBEVENT_MESSAGE_LISTING_ITEM                                 0x05u
-// todo: quick fix to have a subevent for "x-bt/message"
-#define MAP_SUBEVENT_MESSAGE                                0x55u
 
 /**
  * @format 12P
@@ -5406,6 +5404,18 @@ typedef uint8_t sm_key_t[16];
  * @param length
  */
 #define MAP_SUBEVENT_NOTIFICATION_EVENT                                   0x08u
+
+// subevent for "x-bt/message"
+
+ /**
+  * @format 12D11
+  * @param subevent_code
+  * @param map_cid
+  * @param handle
+  * @param type map_message_type_t
+  * @param read map_message_status_t
+  */
+#define MAP_SUBEVENT_GET_MESSAGE                                           0x09u
 
 // MESH Meta Event Group
 
