@@ -50,6 +50,7 @@
 #include "le-audio/gatt-service/coordinated_set_identification_service_client.h"
 #include "le-audio/gatt-service/published_audio_capabilities_service_client.h"
 #include "le-audio/gatt-service/volume_control_service_client.h"
+#include "le-audio/gatt-service/microphone_control_service_client.h"
 
 #if defined __cplusplus
 extern "C" {
@@ -102,6 +103,10 @@ typedef struct {
     // vcs client
     vcs_client_connection_t vcs_connection;
     uint16_t vcs_cid;
+
+    // mics client
+    mics_client_connection_t mics_connection;
+    uint16_t mics_cid;
 
 } server_t;
 
@@ -180,6 +185,13 @@ server_t * btp_server_for_bass_cid(uint16_t ascs_cid);
  * @return
  */
 server_t * btp_server_for_vcs_cid(uint16_t pacs_cid);
+
+/**
+ * @brief Lookup server by mics_cid
+ * @param mics_cid
+ * @return
+ */
+server_t * btp_server_for_mics_cid(uint16_t mics_cid);
 
 #if defined __cplusplus
 }
