@@ -63,6 +63,8 @@ uint16_t le_audio_util_metadata_serialize(const le_audio_metadata_t *metadata, u
 
 uint16_t le_audio_util_metadata_serialize_using_mask(const le_audio_metadata_t *metadata, uint8_t * tlv_buffer, uint16_t tlv_buffer_size);
 
+void le_audio_util_metadata_using_mask_from_metadata_event(const uint8_t * packet, uint16_t packet_size, le_audio_metadata_t * metadata);
+void le_audio_util_metadata_using_mask_from_enable_event(const uint8_t * packet, uint16_t packet_size, le_audio_metadata_t * metadata);
 
 btstack_lc3_frame_duration_t le_audio_util_get_btstack_lc3_frame_duration(le_audio_codec_frame_duration_index_t frame_duration_index);
 

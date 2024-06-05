@@ -55,6 +55,7 @@ static int att_write_callback(hci_con_handle_t con_handle, uint16_t att_handle, 
 static int  le_notification_enabled;
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static btstack_packet_callback_registration_t sm_event_callback_registration;
+static le_audio_metadata_t     ascs_server_audio_metadata;
 
 typedef enum {
     BAP_APP_SERVER_STATE_IDLE = 0,
@@ -554,19 +555,23 @@ static void ascs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
             printf("ASCS: QOS_CONFIGURATION_RECEIVED ase_id %d\n", ase_id);
             audio_stream_control_service_server_streamendpoint_configure_qos(con_handle, ase_id, &qos_configuration);
             break;
+
         case LEAUDIO_SUBEVENT_ASCS_SERVER_ENABLE:
             ase_id = leaudio_subevent_ascs_server_disable_get_ase_id(packet);
             con_handle = leaudio_subevent_ascs_server_disable_get_con_handle(packet);
             printf("ASCS: ENABLE ase_id %d\n", ase_id);
-            audio_stream_control_service_server_streamendpoint_enable(con_handle, ase_id);
+            le_audio_util_metadata_using_mask_from_enable_event(packet, size, &ascs_server_audio_metadata);
+            audio_stream_control_service_server_streamendpoint_enable(con_handle, ase_id, &ascs_server_audio_metadata);
             break;
 
         case LEAUDIO_SUBEVENT_ASCS_SERVER_METADATA:
             ase_id = leaudio_subevent_ascs_server_metadata_get_ase_id(packet);
             con_handle = leaudio_subevent_ascs_server_metadata_get_con_handle(packet);
             printf("ASCS: METADATA_RECEIVED ase_id %d\n", ase_id);
-            audio_stream_control_service_server_streamendpoint_enable(con_handle, ase_id);
+            le_audio_util_metadata_using_mask_from_metadata_event(packet, size, &ascs_server_audio_metadata);
+            audio_stream_control_service_server_streamendpoint_enable(con_handle, ase_id, &ascs_server_audio_metadata);
             break;
+            
         case LEAUDIO_SUBEVENT_ASCS_SERVER_START_READY:
             ase_id = leaudio_subevent_ascs_server_start_ready_get_ase_id(packet);
             con_handle = leaudio_subevent_ascs_server_start_ready_get_con_handle(packet);
