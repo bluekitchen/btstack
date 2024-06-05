@@ -253,7 +253,7 @@ static void pacs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
 static hci_con_handle_t ascs_server_current_client_con_handle = HCI_CON_HANDLE_INVALID;
 static btstack_timer_source_t  ascs_server_released_timer;
 static btstack_timer_source_t  ascs_server_start_ready_timer;
-static le_audio_metadata_t     ascs_server_audio_metadata;
+static le_audio_metadata_t     ascs_audio_metadata;
 
 static const ascs_streamendpoint_characteristic_t * ascs_server_get_streamenpoint_characteristic_for_ase_id(uint8_t ase_id){
     uint8_t i;
@@ -435,7 +435,10 @@ static void ascs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
             ase_id = leaudio_subevent_ascs_server_enable_get_ase_id(packet);
             con_handle = leaudio_subevent_ascs_server_enable_get_con_handle(packet);
             MESSAGE("ASCS: ENABLE ase_id %d", ase_id);
-            audio_stream_control_service_server_streamendpoint_enable(con_handle, ase_id);
+            // TODO check metadata
+            memcpy(&ascs_audio_metadata, &packet[6], sizeof(le_audio_metadata_t));
+            audio_stream_control_service_server_streamendpoint_enable(con_handle, ase_id, &ascs_audio_metadata);
+
             // trigger (potential) Receiver Start Ready
             btstack_run_loop_remove_timer(&ascs_server_start_ready_timer);
             btstack_run_loop_set_timer_handler(&ascs_server_start_ready_timer,
@@ -447,7 +450,8 @@ static void ascs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
             con_handle = leaudio_subevent_ascs_server_metadata_get_con_handle(packet);
             ase_id = leaudio_subevent_ascs_server_metadata_get_ase_id(packet);
             MESSAGE("ASCS: METADATA_RECEIVED ase_id %d", ase_id);
-            audio_stream_control_service_server_streamendpoint_metadata_update(con_handle, ase_id, &ascs_server_audio_metadata);
+            le_audio_util_metadata_using_mask_from_metadata_event(packet, size, &ascs_audio_metadata);
+            audio_stream_control_service_server_streamendpoint_metadata_update(con_handle, ase_id, &ascs_audio_metadata);
             break;
         case LEAUDIO_SUBEVENT_ASCS_SERVER_START_READY:
             ase_id = leaudio_subevent_ascs_server_start_ready_get_ase_id(packet);
