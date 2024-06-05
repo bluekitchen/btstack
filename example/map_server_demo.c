@@ -135,7 +135,7 @@ static uint16_t send_messages(uint16_t first, uint16_t last){
 }
 
 static uint16_t send_listing(uint16_t first, uint16_t last) {
-    uint16_t max_body_size = pbap_server_get_max_body_size(map_cid);
+    uint16_t max_body_size = map_access_server_get_max_body_size(map_cid);
     char listing_buffer[200];
     uint16_t pos = 0;
     bool done = false;
