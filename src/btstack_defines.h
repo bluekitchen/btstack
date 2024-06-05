@@ -6800,6 +6800,16 @@ typedef uint8_t sm_key_t[16];
 */
 #define GATTSERVICE_SUBEVENT_PACS_SERVER_DISCONNECTED                           0x75u0
 
+  /**
+   * @format 12D11
+   * @param subevent_code
+   * @param map_cid
+   * @param handle
+   * @param type map_message_type_t
+   * @param read map_message_status_t
+   */
+#define MAP_SUBEVENT_PUT_MESSAGE_STATUS                                    0x0Au
+
 // MESH Meta Event Group
 
 /**

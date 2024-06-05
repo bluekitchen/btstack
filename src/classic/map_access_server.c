@@ -301,13 +301,19 @@ static void map_access_server_handle_set_path_request(map_access_server_t* map_a
 
 static map_object_type_t map_access_server_parse_object_type(const char* type_string) {
     if (strcmp("x-bt/MAP-msg-listing", type_string) == 0) {
-        return MAP_OBJECT_TYPE_MSG_LISTING;
+        return MAP_OBJECT_TYPE_GET_MSG_LISTING;
     }
+
     if (strcmp("x-obex/folder-listing", type_string) == 0) {
-        return MAP_OBJECT_TYPE_MSG_LISTING;
+        return MAP_OBJECT_TYPE_GET_MSG_LISTING;
     }
+
     if (strcmp("x-bt/message", type_string) == 0) {
-        return MAP_OBJECT_TYPE_MESSAGE;
+        return MAP_OBJECT_TYPE_GET_MESSAGE;
+    }
+
+    if (strcmp("x-bt/messageStatus", type_string) == 0) {
+        return MAP_OBJECT_TYPE_PUT_MESSAGE_STATUS;
     }
 
 
@@ -589,6 +595,16 @@ static void map_access_server_app_param_callback_get(void* user_data, uint8_t ta
                 map_access_server->request.app_params.max_list_count = big_endian_read_08(
                     map_access_server->request.app_param_buffer, 0);
                 break;
+
+            case MAP_APPLICATION_PARAMETER_STATUS_INDICATOR:
+                map_access_server->request.app_params.status_indicator = big_endian_read_08(
+                    map_access_server->request.app_param_buffer, 0);
+                break;
+
+            case MAP_APPLICATION_PARAMETER_STATUS_VALUE:
+                map_access_server->request.app_params.status_value = big_endian_read_08(
+                    map_access_server->request.app_param_buffer, 0);
+                break;
             default:
                 break;
             }
@@ -653,11 +669,12 @@ static void map_access_server_handle_get_request(map_access_server_t* map_access
         goep_server_request_can_send_now(map_access_server->goep_cid);
         return;
 
-    case MAP_OBJECT_TYPE_MSG_LISTING:
+    case MAP_OBJECT_TYPE_GET_MSG_LISTING:
         folder = map_access_server_get_folder_by_path(map_access_server->request.name);
         break;
 
-    case MAP_OBJECT_TYPE_MESSAGE:
+    case MAP_OBJECT_TYPE_GET_MESSAGE:
+    case MAP_OBJECT_TYPE_PUT_MESSAGE_STATUS:
         break;
 
     default:
@@ -679,7 +696,7 @@ static void map_access_server_handle_get_request(map_access_server_t* map_access
     event[pos++] = HCI_EVENT_MAP_META;
     switch (map_access_server->request.object_type) {
 
-    case MAP_OBJECT_TYPE_MSG_LISTING:
+    case MAP_OBJECT_TYPE_GET_MSG_LISTING:
         search_value_len = (uint16_t)strlen(map_access_server->request.app_params.search_value);
         event[pos++] = 20 + search_value_len + 1;
         event[pos++] = MAP_SUBEVENT_MESSAGE_LISTING_ITEM;
@@ -699,10 +716,30 @@ static void map_access_server_handle_get_request(map_access_server_t* map_access
         event[pos++] = folder;
         break;
 
-    case MAP_OBJECT_TYPE_MESSAGE:
+    case MAP_OBJECT_TYPE_GET_MESSAGE:
         search_value_len = (uint16_t)strlen(map_access_server->request.app_params.search_value);
         event[pos++] = 20 + search_value_len + 1;
         event[pos++] = MAP_SUBEVENT_GET_MESSAGE;
+        little_endian_store_16(event, pos, map_access_server->map_cid);
+        pos += 2;
+        little_endian_store_32(event, pos, map_access_server->request.continuation);
+        pos += 4;
+        event[pos++] = map_access_server->request.app_params.order;
+        little_endian_store_16(event, pos, map_access_server->request.app_params.max_list_count);
+        pos += 2;
+        event[pos++] = map_access_server->request.app_params.msg_selector_operator;
+        event[pos++] = map_access_server->request.app_params.search_property;
+        // search_value is zero terminated
+        event[pos++] = search_value_len + 1;
+        memcpy(&event[pos], (const uint8_t*)map_access_server->request.app_params.search_value, search_value_len + 1);
+        pos += search_value_len + 1;
+        event[pos++] = folder;
+        break;
+
+    case MAP_OBJECT_TYPE_PUT_MESSAGE_STATUS:
+        search_value_len = (uint16_t)strlen(map_access_server->request.app_params.search_value);
+        event[pos++] = 20 + search_value_len + 1;
+        event[pos++] = MAP_SUBEVENT_PUT_MESSAGE_STATUS;
         little_endian_store_16(event, pos, map_access_server->map_cid);
         pos += 2;
         little_endian_store_32(event, pos, map_access_server->request.continuation);
@@ -892,7 +929,7 @@ static bool map_access_server_valid_header_for_request(map_access_server_t* map_
         return false;
     }
     switch (map_access_server->request.object_type) {
-    case MAP_OBJECT_TYPE_MSG_LISTING:
+    case MAP_OBJECT_TYPE_GET_MSG_LISTING:
         return true;
     default:
         return false;
