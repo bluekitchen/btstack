@@ -186,86 +186,6 @@ static void map_access_server_finalize_connection(map_access_server_t* map_acces
     map_access_server->state = MAP_SERVER_STATE_W4_OPEN;
 }
 
-void map_access_server_create_sdp_record(uint8_t* service, uint32_t service_record_handle, uint8_t rfcomm_channel_nr,
-    uint16_t l2cap_psm, const char* name, uint8_t supported_repositories,
-    uint32_t map_supported_features) {
-    uint8_t* attribute;
-    de_create_sequence(service);
-
-    // 0x0000 "Service Record Handle"
-    de_add_number(service, DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_SERVICE_RECORD_HANDLE);
-    de_add_number(service, DE_UINT, DE_SIZE_32, service_record_handle);
-
-    // 0x0001 "Service Class ID List"
-    de_add_number(service, DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_SERVICE_CLASS_ID_LIST);
-    attribute = de_push_sequence(service);
-    {
-        de_add_number(attribute, DE_UUID, DE_SIZE_16, BLUETOOTH_SERVICE_CLASS_PHONEBOOK_ACCESS_PSE);
-    }
-    de_pop_sequence(service, attribute);
-
-    // 0x0004 "Protocol Descriptor List"
-    de_add_number(service, DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_PROTOCOL_DESCRIPTOR_LIST);
-    attribute = de_push_sequence(service);
-    {
-        uint8_t* l2cpProtocol = de_push_sequence(attribute);
-        {
-            de_add_number(l2cpProtocol, DE_UUID, DE_SIZE_16, BLUETOOTH_PROTOCOL_L2CAP);
-        }
-        de_pop_sequence(attribute, l2cpProtocol);
-
-        uint8_t* rfcomm = de_push_sequence(attribute);
-        {
-            de_add_number(rfcomm, DE_UUID, DE_SIZE_16, BLUETOOTH_PROTOCOL_RFCOMM);
-            de_add_number(rfcomm, DE_UINT, DE_SIZE_8, rfcomm_channel_nr);
-        }
-        de_pop_sequence(attribute, rfcomm);
-
-        uint8_t* obexProtocol = de_push_sequence(attribute);
-        {
-            de_add_number(obexProtocol, DE_UUID, DE_SIZE_16, BLUETOOTH_PROTOCOL_OBEX);
-        }
-        de_pop_sequence(attribute, obexProtocol);
-    }
-    de_pop_sequence(service, attribute);
-
-    // 0x0009 "Bluetooth Profile Descriptor List"
-    de_add_number(service, DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_BLUETOOTH_PROFILE_DESCRIPTOR_LIST);
-    attribute = de_push_sequence(service);
-    {
-        uint8_t* mapServerProfile = de_push_sequence(attribute);
-        {
-            de_add_number(mapServerProfile, DE_UUID, DE_SIZE_16, BLUETOOTH_SERVICE_CLASS_PHONEBOOK_ACCESS);
-            de_add_number(mapServerProfile, DE_UINT, DE_SIZE_16, 0x0102); // Verision 1.2
-        }
-        de_pop_sequence(attribute, mapServerProfile);
-    }
-    de_pop_sequence(service, attribute);
-
-    // 0x0100 "Service Name"
-    if (name == NULL) {
-        name = map_access_server_default_service_name;
-    }
-    if (strlen(name) > 0) {
-        de_add_number(service, DE_UINT, DE_SIZE_16, 0x0100);
-        de_add_data(service, DE_STRING, (uint16_t)strlen(name), (uint8_t*)name);
-    }
-
-#ifdef ENABLE_GOEP_L2CAP
-    // 0x0200 "GOEP L2CAP PSM"
-    de_add_number(service, DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_GOEP_L2CAP_PSM);
-    de_add_number(service, DE_UINT, DE_SIZE_16, l2cap_psm);
-#endif
-
-    // 0x0314 "Supported Repositories"
-    de_add_number(service, DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_SUPPORTED_REPOSITORIES);
-    de_add_number(service, DE_UINT, DE_SIZE_16, supported_repositories);
-
-    // 0x0317 "MAP Supported Features"
-    de_add_number(service, DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_MAP_SUPPORTED_FEATURES);
-    de_add_number(service, DE_UINT, DE_SIZE_16, map_supported_features);
-}
-
 static mas_folder_t map_access_server_get_folder_by_path(const char* path) {
     return MAS_FOLDER_TELECOM_MSG;
 }
@@ -418,26 +338,6 @@ static uint16_t map_access_server_application_params_add_uint128(uint8_t* applic
     pos += 16;
     return pos;
 }
-
-//static uint16_t map_access_server_application_params_add_folder_size(uint8_t* application_parameters, uint16_t folder_size) {
-//    return map_access_server_application_params_add_uint16(application_parameters, MAP_APPLICATION_PARAMETER_PHONEBOOK_SIZE, folder_size);
-//}
-//
-//static uint16_t map_access_server_application_params_add_new_missed_calls(uint8_t* application_parameters, uint16_t new_missed_calls) {
-//    return map_access_server_application_params_add_uint16(application_parameters, MAP_APPLICATION_PARAMETER_NEW_MISSED_CALLS, new_missed_calls);
-//}
-//
-//static uint16_t map_access_server_application_params_add_primary_folder_version(uint8_t* application_parameters, const uint8_t* primary_folder_version) {
-//    return map_access_server_application_params_add_uint128(application_parameters, MAP_APPLICATION_PARAMETER_PRIMARY_VERSION_COUNTER, primary_folder_version);
-//}
-//
-//static uint16_t map_access_server_application_params_add_secondary_folder_version(uint8_t* application_parameters, const uint8_t* secondary_folder_version) {
-//    return map_access_server_application_params_add_uint128(application_parameters, MAP_APPLICATION_PARAMETER_SECONDARY_VERSION_COUNTER, secondary_folder_version);
-//}
-//
-//static uint16_t map_access_server_application_params_add_database_identifier(uint8_t* application_parameters, const uint8_t* database_identifier) {
-//    return map_access_server_application_params_add_uint128(application_parameters, MAP_APPLICATION_PARAMETER_DATABASE_IDENTIFIER, database_identifier);
-//}
 
 static void map_access_server_add_application_parameters(const map_access_server_t* map_access_server, uint8_t* application_parameters, uint16_t len) {
     if (len > 0) {
@@ -782,22 +682,6 @@ static void map_access_server_handle_get_request(map_access_server_t* map_access
         event[pos++] = folder;
         break;
 
-
-    //case MAP_OBJECT_TYPE_VCARD:
-    //    event[pos++] = 13 + name_len + 1;
-    //    event[pos++] = MAP_SUBEVENT_PULL_VCARD_ENTRY;
-    //    little_endian_store_16(event, pos, map_access_server->map_cid);
-    //    pos += 2;
-    //    little_endian_store_32(event, pos, map_access_server->request.continuation);
-    //    pos += 4;
-    //    little_endian_store_32(event, pos, map_access_server->request.app_params.property_selector);
-    //    pos += 4;
-    //    event[pos++] = map_access_server->request.app_params.format;
-    //    event[pos++] = folder;
-    //    // name is zero terminated
-    //    memcpy(&event[pos], map_access_server->request.name, name_len + 1);
-    //    pos += name_len + 1;
-    //    break;
     default:
         btstack_unreachable();
         break;
@@ -1030,26 +914,6 @@ static void map_access_server_build_response(map_access_server_t* map_access_ser
     // Application Params
     uint8_t app_params[MAP_SERVER_MAX_APP_PARAMS_LEN];
     uint16_t app_params_pos = 0;
-    //if (map_access_server->response.folder_size_set) {
-    //    map_access_server->response.folder_size_set = false;
-    //    app_params_pos += map_access_server_application_params_add_folder_size(&app_params[app_params_pos], map_access_server->response.folder_size);
-    //}
-    //if (map_access_server->response.new_missed_calls_set) {
-    //    map_access_server->response.new_missed_calls_set = false;
-    //    app_params_pos += map_access_server_application_params_add_new_missed_calls(&app_params[app_params_pos], map_access_server->response.new_missed_calls);
-    //}
-    //if (map_access_server->response.primary_folder_version_set) {
-    //    map_access_server->response.primary_folder_version_set = false;
-    //    app_params_pos += map_access_server_application_params_add_primary_folder_version(&app_params[app_params_pos], map_access_server->response.primary_folder_version);
-    //}
-    //if (map_access_server->response.secondary_folder_version_set) {
-    //    map_access_server->response.secondary_folder_version_set = false;
-    //    app_params_pos += map_access_server_application_params_add_secondary_folder_version(&app_params[app_params_pos], map_access_server->response.secondary_folder_version);
-    //}
-    //if (map_access_server->response.database_identifier_set) {
-    //    map_access_server->response.database_identifier_set = false;
-    //    app_params_pos += map_access_server_application_params_add_database_identifier(&app_params[app_params_pos], map_access_server->response.database_identifier);
-    //}
     map_access_server_add_application_parameters(map_access_server, app_params, app_params_pos);
 }
 

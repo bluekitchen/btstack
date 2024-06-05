@@ -245,14 +245,6 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
     UNUSED(channel);
     UNUSED(size);
     uint8_t status;
-    int  phonebook_index;
-    const char * handle;
-    //uint32_t continuation = 0;
-    //uint16_t total_msgs;
-    //uint16_t start_index, end_index;
-    //uint16_t num_msgs_selected;
-    //uint16_t max_list_count;
-    //mas_folder_t msg_folder = MAS_FOLDER_TELECOM_MSG_INBOX;
 	
     switch (packet_type){
         case HCI_EVENT_PACKET:
