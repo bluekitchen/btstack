@@ -136,6 +136,17 @@ server_t * btp_server_for_vcs_cid(uint16_t vcs_cid){
     return NULL;
 }
 
+server_t * btp_server_for_mics_cid(uint16_t mics_cid){
+    uint8_t i;
+    for (i=0; i < MAX_NUM_SERVERS; i++){
+        server_t * server = &servers[i];
+        if (server->mics_cid == mics_cid){
+            return server;
+        }
+    }
+    return NULL;
+}
+
 server_t * btp_server_for_acl_con_handle(hci_con_handle_t acl_con_handle){
     uint8_t i;
     for (i=0; i < MAX_NUM_SERVERS; i++){
