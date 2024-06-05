@@ -145,8 +145,9 @@ typedef enum {
 // MAP Object Types
 typedef enum {
     MAP_OBJECT_TYPE_INVALID = 0,
-    MAP_OBJECT_TYPE_MSG_LISTING,
-    MAP_OBJECT_TYPE_MESSAGE,
+    MAP_OBJECT_TYPE_GET_MSG_LISTING,
+    MAP_OBJECT_TYPE_GET_MESSAGE,
+    MAP_OBJECT_TYPE_PUT_MESSAGE_STATUS
 } map_object_type_t;
 
 // MAP Folders

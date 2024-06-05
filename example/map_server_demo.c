@@ -305,6 +305,10 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             send_listing(0, 1);
                             break;
 
+                        case MAP_SUBEVENT_PUT_MESSAGE_STATUS:
+                            printf("[+] Put MessageStatus\n");
+                            break;
+
                         default:
                             log_info("unknown map meta event %d\n", hci_event_map_meta_get_subevent_code(packet));
                             break;
