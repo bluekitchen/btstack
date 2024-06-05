@@ -99,6 +99,43 @@ typedef enum {
 
 static  btstack_packet_handler_t map_access_server_user_packet_handler;
 
+
+//case MAP_APPLICATION_PARAMETER_MAX_LIST_COUNT:
+//    map_access_server->request.app_params.max_list_count = big_endian_read_16(
+//        map_access_server->request.app_param_buffer, 0);
+//    break;
+//
+//case MAP_APPLICATION_PARAMETER_ATTACHEMENT:
+//    map_access_server->request.app_params.attachement = big_endian_read_08(
+//        map_access_server->request.app_param_buffer, 0);
+//    break;
+//
+//case MAP_APPLICATION_PARAMETER_CHARSET:
+//    map_access_server->request.app_params.max_list_count = big_endian_read_08(
+//        map_access_server->request.app_param_buffer, 0);
+//    break;
+//
+//case MAP_APPLICATION_PARAMETER_STATUS_INDICATOR:
+//    map_access_server->request.app_params.status_indicator = big_endian_read_08(
+//        map_access_server->request.app_param_buffer, 0);
+//    break;
+//
+//case MAP_APPLICATION_PARAMETER_STATUS_VALUE:
+//    map_access_server->request.app_params.status_value = big_endian_read_08(
+//        map_access_server->request.app_param_buffer, 0);
+//    break;
+//
+// compact storage of supported ApplicationParameters
+// X-Macro below provides enumeration and mapping table 
+#define APP_PARAMS \
+   /*  Parameter Name   , Tag , type+size  */ \
+     X(MAX_LIST_COUNT   , 0x01, be16) \
+     X(ATTACHEMENT      , 0x0A, be08) \
+     X(CHARSET          , 0x14, be08) \
+     X(STATUS_INDICATOR , 0x17, be08) \
+     X(STATUS_VALUE     , 0x18, be08)
+
+
 typedef struct {
     uint16_t map_cid;
     uint16_t goep_cid;
