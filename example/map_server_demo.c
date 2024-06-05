@@ -278,7 +278,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             send_listing(0,0);
                             break;
 
-                        case MAP_SUBEVENT_MESSAGE:
+                        case MAP_SUBEVENT_GET_MESSAGE:
                             printf("[+] Get Message\n");
                             send_listing(0, 0);
                             break;
