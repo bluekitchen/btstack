@@ -101,44 +101,53 @@ static const char* remote_addr_string = "001BDC08E272";
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 static const char * msg_listing_header = "<MAP-msg-listing version = \"1.0\">";
-static const char * msg_listing_msg   = "<msg handle = \"20000100001\" subject = \"Hello\" type = \"%s\" />";
+static const char * msg_listing_msg   = "<msg handle = \"20000100001\" subject=\"Hello\" type=\"%s\" read=\"%s\"/>";
 static const char * msg_listing_footer = "</MAP-msg-listing>";
-static char* msg_types[2] = { [0] = "SMS_GSM",[1] = "SMS_CDMA" };
+
+static struct
+{
+    char* descr;
+    int msg_count;
+    char* msg_types[4]; // maximum 4-1 entries, last one is null
+    char* msg_stati[3]; // maximum 3-1 entries, last one is null
+} test_configs[] =
+{
+{.descr = "MAP/MSE/MMB/BV-09-I .. 14-I", .msg_count = 2, .msg_types = { "SMS_GSM","SMS_CDMA","" },  .msg_stati = { "" }},
+{.descr = "MAP/MSE/MMB/BV-09-I .. 15-I", .msg_count = 1, .msg_types = { "EMAIL", "SMS_GSM","SMS_CDMA",""},                .msg_stati = { "no","yes","" }}
+};
+
+static int current_test_config = 0;
+static int current_msg_type = 0;
+static int msg_status = 0;
+
 
 static void create_msg(char * msg_buffer, uint16_t index, int maxsize){
-    sprintf_s(msg_buffer, maxsize, msg_listing_msg, msg_types[index%2]);
+    sprintf_s(msg_buffer, maxsize, msg_listing_msg,
+        test_configs[current_test_config].msg_types[current_msg_type], test_configs[current_test_config].msg_stati[msg_status]);
+    
+    // cycle through all msg_types
+    if (test_configs[current_test_config].msg_types[current_msg_type + 1][0] != '\0')
+        ++current_msg_type;
+    else
+        current_msg_type = 0;
+
+    // cycle through all msg_stati
+    if (test_configs[current_test_config].msg_stati[msg_status][0] != '\0')
+        ++msg_status;
+    else
+        msg_status = 0;
+
 }
 
-//// send msgs first-last, returns index of next card
-//static uint16_t send_messages(uint16_t first, uint16_t last){
-//    uint16_t max_body_size = map_access_server_get_max_body_size(map_cid);
-//    char msg_buffer[300];
-//    uint16_t pos = 0;
-//    while ((max_body_size > 0) && (first <= last)){
-//        // create msg
-//        create_msg(msg_buffer, first, sizeof(msg_buffer));
-//        // get len
-//        uint16_t len = (uint16_t)strlen(msg_buffer);
-//        if (len > max_body_size){
-//            break;
-//        }
-//        memcpy(&upload_buffer[pos], (const uint8_t *) msg_buffer, len);
-//        pos += len;
-//        max_body_size -= len;
-//        first++;
-//    }
-//    uint8_t response_code = (first > last) ? OBEX_RESP_SUCCESS : OBEX_RESP_CONTINUE;
-//    map_access_server_send_get_response(map_cid, response_code, first, pos, upload_buffer);
-//    return first;
-//}
-
+// TODO enable to send message larger as one OBEX/MAP packet
 static uint16_t send_listing(uint16_t first, uint16_t last) {
     uint16_t max_body_size = map_access_server_get_max_body_size(map_cid);
     char listing_buffer[200];
     uint16_t pos = 0;
     bool done = false;
-    // add header
+    
     if (first == 0){
+        // add header
         uint16_t len = (uint16_t)strlen(msg_listing_header);
         memcpy(upload_buffer, msg_listing_header, len);
         pos += len;
@@ -161,6 +170,7 @@ static uint16_t send_listing(uint16_t first, uint16_t last) {
     if (first > last){
         uint16_t len = (uint16_t) strlen(msg_listing_footer);
         if (len < max_body_size){
+            // add footer
             memcpy(&upload_buffer[pos], (const uint8_t *) msg_listing_footer, len);
             pos += len;
             max_body_size -= len;
@@ -168,14 +178,25 @@ static uint16_t send_listing(uint16_t first, uint16_t last) {
         }
     }
 
-    uint8_t response_code = done ? OBEX_RESP_SUCCESS : OBEX_RESP_CONTINUE;
-    uint32_t continuation = done ? 0x10000 : first;
+    uint8_t response_code;
+    uint32_t continuation;
+
+    if (done) {
+        response_code = OBEX_RESP_SUCCESS;
+        continuation = 0x10000;
+    }
+    else {
+        response_code = OBEX_RESP_CONTINUE;
+        continuation = first;
+    }
     map_access_server_send_get_response(map_cid, response_code, continuation, pos, upload_buffer);
     return first;
-
 }
 
-
+static void print_current_test_config(void)
+{
+    printf("new test config is <%d: %s>\n", current_test_config, test_configs[current_test_config].descr);
+}
 
 #ifdef HAVE_BTSTACK_STDIN
 // Testing User Interface
@@ -184,14 +205,17 @@ static void show_usage(void){
     gap_local_bd_addr(iut_address);
 
     printf("\n--- Bluetooth MAP Server Test Console %s ---\n", bd_addr_to_str(iut_address));
-    printf("Command list goes here... try press 'a'\n");
+    print_current_test_config();
+    printf("'n' switch to next test config\n");
     printf("\n");
 }
 
 static void stdin_process(char c){
     switch (c){
-        case 'a':
-            printf("a was pressed\n");
+        case 'n':
+            current_test_config = (current_test_config + 1) % ARRAYSIZE(test_configs);
+            print_current_test_config();
+            
             break;
         default:
             show_usage();
@@ -273,7 +297,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             map_access_server_set_database_identifier(map_cid, database_identifier);
                             map_access_server_set_folder_version(map_cid, folder_version);
                             printf("[+] Get Message listing\n");
-                            send_listing(0,1);
+                            send_listing(0, test_configs[current_test_config].msg_count-1);
                             break;
 
                         case MAP_SUBEVENT_GET_MESSAGE:
@@ -359,8 +383,8 @@ int btstack_main(int argc, const char * argv[]){
 
     // setup MAP Access Server
     uint8_t supported_message_types = MAP_SUPPORTED_MESSAGE_TYPE_EMAIL |
-                                                    MAP_SUPPORTED_MESSAGE_TYPE_SMS_GSM |
-                                                    MAP_SUPPORTED_MESSAGE_TYPE_SMS_CDMA;
+                                            MAP_SUPPORTED_MESSAGE_TYPE_SMS_GSM |
+                                            MAP_SUPPORTED_MESSAGE_TYPE_SMS_CDMA;
     uint32_t supported_features = 0x1F;
     memset(map_message_access_service_buffer, 0, sizeof(map_message_access_service_buffer));
     map_util_create_access_service_sdp_record(map_message_access_service_buffer,
