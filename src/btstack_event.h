@@ -21756,6 +21756,43 @@ static inline uint32_t map_subevent_notification_event_get_length(const uint8_t 
     return little_endian_read_32(event, 6);
 }
 
+/**
+ * @brief Get field map_cid from event MAP_SUBEVENT_GET_MESSAGE
+ * @param event packet
+ * @return map_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t map_subevent_get_message_get_map_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field handle from event MAP_SUBEVENT_GET_MESSAGE
+ * @param event packet
+ * @return handle
+ * @note: btstack_type D
+ */
+static inline const uint8_t * map_subevent_get_message_get_handle(const uint8_t * event){
+    return (const uint8_t *) &event[5];
+}
+/**
+ * @brief Get field type from event MAP_SUBEVENT_GET_MESSAGE
+ * @param event packet
+ * @return type
+ * @note: btstack_type 1
+ */
+static inline uint8_t map_subevent_get_message_get_type(const uint8_t * event){
+    return event[13];
+}
+/**
+ * @brief Get field read from event MAP_SUBEVENT_GET_MESSAGE
+ * @param event packet
+ * @return read
+ * @note: btstack_type 1
+ */
+static inline uint8_t map_subevent_get_message_get_read(const uint8_t * event){
+    return event[14];
+}
+
 
 /**
  * @brief Get field status from event MESH_SUBEVENT_PB_TRANSPORT_PDU_SENT

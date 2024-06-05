@@ -665,7 +665,7 @@ static void map_access_server_handle_get_request(map_access_server_t* map_access
     case MAP_OBJECT_TYPE_MESSAGE:
         search_value_len = (uint16_t)strlen(map_access_server->request.app_params.search_value);
         event[pos++] = 20 + search_value_len + 1;
-        event[pos++] = MAP_SUBEVENT_MESSAGE;
+        event[pos++] = MAP_SUBEVENT_GET_MESSAGE;
         little_endian_store_16(event, pos, map_access_server->map_cid);
         pos += 2;
         little_endian_store_32(event, pos, map_access_server->request.continuation);
