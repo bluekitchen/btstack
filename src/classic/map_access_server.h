@@ -91,6 +91,12 @@ extern "C" {
 #define MAP_SUPPORTED_FEATURES_CONVERSATION_LISTING                         (1 << 20) // Conversation listing                      
 #define MAP_SUPPORTED_FEATURES_OWNER_STATUS                                 (1 << 21) // Owner status                              
 
+// SupportedMessageTypes                                                    
+#define MAP_SUPPORTED_MESSAGE_TYPE_EMAIL                                    (1 << 0) //  EMAIL   
+#define MAP_SUPPORTED_MESSAGE_TYPE_SMS_GSM                                  (1 << 1) //  SMS_GSM 
+#define MAP_SUPPORTED_MESSAGE_TYPE_SMS_CDMA                                 (1 << 2) //  SMS_CDMA
+#define MAP_SUPPORTED_MESSAGE_TYPE_MMS                                      (1 << 3) //  MMS     
+#define MAP_SUPPORTED_MESSAGE_TYPE_IM                                       (1 << 4) //  IM      
 
 // MAP Property Mask - also used for vCardSelector
 #define MAP_PROPERTY_MASK_VERSION              (1<< 0) // vCard Version
