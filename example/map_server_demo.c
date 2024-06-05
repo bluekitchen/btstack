@@ -104,11 +104,11 @@ static const char * msg_listing_header = "<MAP-msg-listing version = \"1.0\">";
 static const char * msg_listing_msg   = "<msg handle = \"20000100001\" subject = \"Hello\" type = \"EMAIL\" />";
 static const char * msg_listing_footer = "</MAP-msg-listing>";
 
-static void create_msg(char * msg_buffer, uint16_t index){
-    sprintf(msg_buffer, msg_listing_msg);
+static void create_msg(char * msg_buffer, uint16_t index, int maxsize){
+    strncpy_s(msg_buffer, maxsize, msg_listing_msg, maxsize);
 }
-static void create_item(char * buffer, uint16_t index){
-    sprintf(buffer, msg_listing_msg);
+static void create_item(char * buffer, uint16_t index, int maxsize){
+    strncpy_s(buffer, maxsize, msg_listing_msg, maxsize);
 }
 
 // send msgs first-last, returns index of next card
@@ -118,9 +118,9 @@ static uint16_t send_messages(uint16_t first, uint16_t last){
     uint16_t pos = 0;
     while ((max_body_size > 0) && (first <= last)){
         // create msg
-        create_msg(msg_buffer, first);
+        create_msg(msg_buffer, first, sizeof(msg_buffer));
         // get len
-        uint16_t len = strlen(msg_buffer);
+        uint16_t len = (uint16_t)strlen(msg_buffer);
         if (len > max_body_size){
             break;
         }
@@ -141,16 +141,16 @@ static uint16_t send_listing(uint16_t first, uint16_t last) {
     bool done = false;
     // add header
     if (first == 0){
-        uint16_t len = strlen(msg_listing_header);
+        uint16_t len = (uint16_t)strlen(msg_listing_header);
         memcpy(upload_buffer, msg_listing_header, len);
         pos += len;
         max_body_size -= len;
     }
     while ((max_body_size > 0) && (first <= last)){
         // add entry
-        create_item(listing_buffer, first);
+        create_item(listing_buffer, first, sizeof(listing_buffer));
         // get len
-        uint16_t len = strlen(listing_buffer);
+        uint16_t len = (uint16_t)strlen(listing_buffer);
         if (len > max_body_size){
             break;
         }
