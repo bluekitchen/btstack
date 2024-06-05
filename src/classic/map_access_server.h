@@ -68,17 +68,29 @@ extern "C" {
     /* API_START */
 
 // MAP Supported Features
+#define MAP_SUPPORTED_FEATURES_NOTIFICATION_REGISTRATION                    (1 << 0) // Notification Registration                 
+#define MAP_SUPPORTED_FEATURES_NOTIFICATION                                 (1 << 1) // Notification                              
+#define MAP_SUPPORTED_FEATURES_BROWSING                                     (1 << 2) // Browsing                                  
+#define MAP_SUPPORTED_FEATURES_UPLOADING                                    (1 << 3) // Uploading                                 
+#define MAP_SUPPORTED_FEATURES_DELETE                                       (1 << 4) // Delete                                    
+#define MAP_SUPPORTED_FEATURES_INSTANCE_INFORMATION                         (1 << 5) // Instance Information                      
+#define MAP_SUPPORTED_FEATURES_EXTENDED_EVENT_REPORT_1_1                    (1 << 6) // Extended Event Report 1.1                 
+#define MAP_SUPPORTED_FEATURES_EVENT_REPORT_VERSION_1_2                     (1 << 7) // Event Report Version 1.2                  
+#define MAP_SUPPORTED_FEATURES_MESSAGE_FORMAT_VERSION_1_1                   (1 << 8) // Message Format Version 1.1                
+#define MAP_SUPPORTED_FEATURES_MESSAGES_LISTING_FORMAT_VERSION_1_1          (1 << 9) // Messages-Listing Format Version 1.1       
+#define MAP_SUPPORTED_FEATURES_PERSISTENT_MESSAGE_HANDLES                   (1 << 10) // Persistent Message Handles                
+#define MAP_SUPPORTED_FEATURES_DATABASE_IDENTIFIER                          (1 << 11) // Database Identifier                       
+#define MAP_SUPPORTED_FEATURES_FOLDER_VERSION_COUNTER                       (1 << 12) // Folder Version Counter                    
+#define MAP_SUPPORTED_FEATURES_CONVERSATION_VERSION_COUNTERS                (1 << 13) // Conversation Version Counters             
+#define MAP_SUPPORTED_FEATURES_PARTICIPANT_PRESENCE_CHANGE_NOTIFICATION     (1 << 14) // Participant Presence Change Notification  
+#define MAP_SUPPORTED_FEATURES_PARTICIPANT_CHAT_STATE_CHANGE_NOTIFICATION   (1 << 15) // Participant Chat State Change Notification
+#define MAP_SUPPORTED_FEATURES_PBAP_CONTACT_CROSS_REFERENCE                 (1 << 16) // PBAP Contact Cross Reference              
+#define MAP_SUPPORTED_FEATURES_NOTIFICATION_FILTERING                       (1 << 17) // Notification Filtering                    
+#define MAP_SUPPORTED_FEATURES_UTC_OFFSET_TIMESTAMP_FORMAT                  (1 << 18) // UTC Offset Timestamp Format               
+#define MAP_SUPPORTED_FEATURES_RESERVED                                     (1 << 19) // Reserved                                  
+#define MAP_SUPPORTED_FEATURES_CONVERSATION_LISTING                         (1 << 20) // Conversation listing                      
+#define MAP_SUPPORTED_FEATURES_OWNER_STATUS                                 (1 << 21) // Owner status                              
 
-#define MAP_SUPPORTED_FEATURES_DOWNLOAD                        (1<<0)
-#define MAP_SUPPORTED_FEATURES_BROWSING                        (1<<1)
-#define MAP_SUPPORTED_FEATURES_DATABASE_IDENTIFIER             (1<<2)
-#define MAP_SUPPORTED_FEATURES_FOLDER_VERSION_COUNTERS         (1<<3)
-#define MAP_SUPPORTED_FEATURES_MSG_SELECTING                   (1<<4)
-#define MAP_SUPPORTED_FEATURES_ENHANCED_MISSED_CALLS           (1<<5)
-#define MAP_SUPPORTED_FEATURES_X_BT_UCI_MSG_PROPERTY           (1<<6)
-#define MAP_SUPPORTED_FEATURES_X_BT_UID_MSG_PROPERTY           (1<<7)
-#define MAP_SUPPORTED_FEATURES_CONTACT_REFERENCING             (1<<8)
-#define MAP_SUPPORTED_FEATURES_DEFAULT_CONTACT_IMAGE_FORMAT    (1<<9)
 
 // MAP Property Mask - also used for vCardSelector
 #define MAP_PROPERTY_MASK_VERSION              (1<< 0) // vCard Version
