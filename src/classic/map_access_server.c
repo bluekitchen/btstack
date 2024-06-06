@@ -100,41 +100,131 @@ typedef enum {
 static  btstack_packet_handler_t map_access_server_user_packet_handler;
 
 
-//case MAP_APPLICATION_PARAMETER_MAX_LIST_COUNT:
-//    map_access_server->request.app_params.max_list_count = big_endian_read_16(
-//        map_access_server->request.app_param_buffer, 0);
-//    break;
-//
-//case MAP_APPLICATION_PARAMETER_ATTACHEMENT:
-//    map_access_server->request.app_params.attachement = big_endian_read_08(
-//        map_access_server->request.app_param_buffer, 0);
-//    break;
-//
-//case MAP_APPLICATION_PARAMETER_CHARSET:
-//    map_access_server->request.app_params.max_list_count = big_endian_read_08(
-//        map_access_server->request.app_param_buffer, 0);
-//    break;
-//
-//case MAP_APPLICATION_PARAMETER_STATUS_INDICATOR:
-//    map_access_server->request.app_params.status_indicator = big_endian_read_08(
-//        map_access_server->request.app_param_buffer, 0);
-//    break;
-//
-//case MAP_APPLICATION_PARAMETER_STATUS_VALUE:
-//    map_access_server->request.app_params.status_value = big_endian_read_08(
-//        map_access_server->request.app_param_buffer, 0);
-//    break;
-//
-// compact storage of supported ApplicationParameters
-// X-Macro below provides enumeration and mapping table 
-#define APP_PARAMS \
-   /*  Parameter Name   , Tag , type+size  */ \
-     X(MAX_LIST_COUNT   , 0x01, be16) \
-     X(ATTACHEMENT      , 0x0A, be08) \
-     X(CHARSET          , 0x14, be08) \
-     X(STATUS_INDICATOR , 0x17, be08) \
-     X(STATUS_VALUE     , 0x18, be08)
+//typedef char    variable_string_t[64];
+//typedef char    variable_utf8[64];
+//typedef uint8_t variable_uint128[16];
+//typedef uint8_t variable_uint64[8];
 
+typedef uint32_t variable_string_t;
+typedef uint32_t variable_utf8;
+typedef uint32_t variable_uint128;
+typedef uint32_t variable_uint64;
+
+
+#define app_param_read_uint8_t           big_endian_read_08
+#define app_param_read_uint16_t          big_endian_read_16
+#define app_param_read_uint32_t          big_endian_read_32
+#define app_param_read_variable_string_t big_endian_read_32 // TODO: dummy
+#define app_param_read_variable_utf8     big_endian_read_32 // TODO: dummy
+#define app_param_read_variable_uint64   big_endian_read_32 // TODO: dummy
+#define app_param_read_variable_uint128  big_endian_read_32 // TODO: dummy
+
+// Data extracted from "Message Access Profile"
+// Bluetooth  Profile Specification
+// *  Revision : v1.4.2
+// *  Revision Date : 2019 - 08 - 13
+// *  Group Prepared By : Audio, Telephony, and Automotive Working Group
+
+// compact storage of supported ApplicationParameters
+// X-Macro below provides enumeration and mapping table
+// 
+//X(Parameter Name         , Tag , Type               , free text description ... no coma ... multiple _backslash_no_space lines ... )
+#define APP_PARAMS                                                                                                                        \
+X(MaxListCount             , 0x01, uint16_t           , 0000 to 0xFFFF                                                                   )\
+X(ListStartOffset          , 0x02, uint16_t           , 0x0000 to 0xFFFF                                                                 )\
+X(FilterMessageType        , 0x03, uint8_t            , Bit mask: 0b000XXXX1 = "SMS_GSM"                                                  \
+                                                                  0b000XXX1X = "SMS_CDMA"                                                 \
+                                                                  0b000XX1XX = "EMAIL" 0b000X1XXX = "MMS" 0b0001XXXX = "IM"               \
+                                                                  All other values : Reserved for Future Use                              \
+                                                                  Where                                                                   \
+                                                                  0 = "no filtering; get this type"                                       \
+                                                                  1 = "filter out this type"                                             )\
+ X(FilterPeriodBegin       , 0x04, variable_string_t  , with Begin of filter period.See Section 5.5.4                                    )\
+ X(EndFilterPeriodEnd      , 0x05, variable_string_t  , with End of filter period.See Section 5.5.4                                      )\
+ X(FilterReadStatus        , 0x06, uint8_t            , 1 byte Bit mask : 0b00000001 = get unread messages only                           \
+                                                        0b00000010 = get read messages only                                               \
+                                                        0b00000000 =                                                                      \
+                                                        no - filtering; get both read and unread messages; all other values : undefined  )\
+ X(FilterRecipient 	       , 0x07, variable_string_t  , variable Text(UTF - 8) wildcards "*" may 	be used if required                  )\
+ X(FilterOriginator        , 0x08, variable_string_t  , variable Text(UTF - 8) wildcards "*" may be used if required                     )\
+ X(FilterPriority          , 0x09, uint8_t            , Bit mask: 0b00000000 = no - filtering                                             \
+                                                                  0b00000001 = get high priority messages only                            \
+                                                                  0b00000010 = get non - high priority messages only;                     \
+                                                                  all other values : undefined                                           )\
+ X(Attachment              , 0x0A, uint8_t            , 0b1 = "ON"                                                                        \
+                                                        0b0 = "OFF"                                                                      )\
+ X(Transparent             , 0x0B, uint8_t            , 0b1 = "ON"                                                                        \
+                                                        0b0 = "OFF"                                                                      )\
+ X(Retry                   , 0x0C, uint8_t            , 0b1 = "ON"                                                                        \
+                                                        0b0 = "OFF"                                                                      )\
+ X(NewMessage              , 0x0D, uint8_t            , 0b1 = "ON"                                                                        \
+                                                        0b0 = "OFF"                                                                      )\
+ X(NotificationStatus      , 0x0E, uint8_t            , 0b1 = "ON"                                                                        \
+                                                        0b0 = "OFF"                                                                      )\
+ X(MASInstanceID           , 0x0F, uint8_t            , 0 to 255                                                                         )\
+ X(ParameterMask           , 0x10, uint32_t           , Bit mask; settings see Section 5.5.4                                             )\
+ X(FolderListingSize       , 0x11, uint16_t           , 0x0000 to 0xFFFF                                                                 )\
+ X(ListingSize             , 0x12, uint16_t           , 0x0000 to 0xFFFF                                                                 )\
+ X(SubjectLength           , 0x13, uint8_t            , 1 to 255                                                                         )\
+ X(Charset                 , 0x14, uint8_t            , 0 = "native"                                                                      \
+                                                        1 = "UTF-8"                                                                      )\
+ X(FractionRequest         , 0x15, uint8_t            , 0 = "first" 1 = "next"                                                           )\
+ X(FractionDeliver         , 0x16, uint8_t            , 0 = "more"                                                                        \
+                                                        1 = "last"                                                                       )\
+ X(StatusIndicator         , 0x17, uint8_t            , 0 = "readStatus"                                                                  \
+                                                        1 = "deletedStatus"                                                               \
+                                                        2 = “setExtendedData”                                                            )\
+ X(StatusValue             , 0x18, uint8_t            , 1 = "yes"                                                                         \
+                                                        0 = "no"                                                                         )\
+ X(MSETime                 , 0x19, variable_string_t  , with current time basis and UTC - offset of the MSE.See Section 5.5.4            )\
+ X(DatabaseIdentifier      , 0x1A, variable_uint128   , (max 3uint16_t)    ;   128 - bit value in hex string format                      )\
+ X(ListingVersionCounter   , 0x1B, variable_uint128   , (max 3uint16_t)    ;   128 - bit value in hex string format                      )\
+ X(PresenceAvailability    , 0x1C, uint8_t            , 0 to 255                                                                         )\
+ X(PresenceText            , 0x1D, variable_utf8      , Text UTF - 8                                                                     )\
+ X(LastActivity            , 0x1E, variable_utf8      , Text UTF - 8                                                                     )\
+ X(FilterLastActivityBegin , 0x1F, variable_utf8      , Text UTF - 8                                                                     )\
+ X(FilterLastActivityEnd   , 0x20, variable_utf8      , Text UTF - 8                                                                     )\
+ X(ChatState               , 0x21, uint8_t            , 0 to 255                                                                         )\
+ X(ConversationID          , 0x22, variable_uint128   , (max 3uint16_t)    ;   128 - bit value in hex string format                      )\
+ X(FolderVersionCounter    , 0x23, variable_uint128   , (max 3uint16_t);   128 - bit value in hex string format                          )\
+ X(FilterMessageHandle     , 0x24, variable_uint64    , 64 - bit value in hex string format                                              )\
+ X(NotificationFilterMask  , 0x25, uint32_t           , Bit mask settings; see Section 5.14.3.1                                          )\
+ X(ConvParameterMask       , 0x26, uint32_t           , Bit mask settings; see Section 5.13.3.10                                         )\
+ X(OwnerUCI                , 0x27, variable_utf8      , Text UTF - 8                                                                     )\
+ X(ExtendedData            , 0x28, variable_utf8      , Text UTF - 8                                                                     )\
+ X(MapSupportedFeatures    , 0x29, uint32_t           , Bit 0 = Notification Registration Feature                                         \
+                                                        Bit 1 = Notification Feature                                                      \
+                                                        Bit 2 = Browsing Feature                                                          \
+                                                        Bit 3 = Uploading Feature                                                         \
+                                                        Bit 4 = Delete Feature                                                            \
+                                                        Bit 5 = Instance Information Feature                                              \
+                                                        Bit 6 = Extended Event Report 1.1                                                 \
+                                                        Bit 7 = Event Report Version 1.2                                                  \
+                                                        Bit 8 = Message Format Version 1.1                                                \
+                                                        Bit 9 = Messages - Listing Format Version 1.1                                     \
+                                                        Bit 10 = Persistent Message Handles                                               \
+                                                        Bit 11 = Database Identifier                                                      \
+                                                        Bit 12 = Folder Version Counter                                                   \
+                                                        Bit 13 = Conversation Version Counters                                            \
+                                                        Bit 14 = Participant Presence Change Notification                                 \
+                                                        Bit 15 = Participant Chat State Change Notification                               \
+                                                        Bit 16 = PBAP Contact Cross Reference                                             \
+                                                        Bit 17 = Notification Filtering                                                   \
+                                                        Bit 18 = UTC Offset Timestamp Format                                              \
+                                                        Bit 19 = Reserved                                                                 \
+                                                        Bit 20 = Conversation listing                                                     \
+                                                        Bit 21 = Owner status                                                             \
+                                                        Bits 22 to 31 = Reserved for Future Use0F                                        )\
+ X(MessageHandle           , 0x2A, variable_uint64    , 64 - bit value in hex string format                                              )\
+ X(ModifyText              , 0x2B, uint8_t            , 0 = "REPLACE"                                                                    )
+
+
+enum MAP_APP_PARAMS
+{
+#define X(name, tag, type, descr) MAP_APP_PARAM_ ## name = tag,
+    APP_PARAMS
+#undef X
+};
 
 typedef struct {
     uint16_t map_cid;
@@ -160,17 +250,11 @@ typedef struct {
         uint8_t app_param_buffer[8];
         struct {
             char search_value[MAP_SERVER_MAX_SEARCH_VALUE_LEN];    // has trailing zero
-            uint32_t property_selector;
-            uint32_t msg_selector;
-            map_format_msg_t format;
-            uint16_t max_list_count;
-            uint16_t list_start_offset;
-            uint8_t reset_new_messages;
-            uint8_t msg_selector_operator;
-            uint8_t order;
-            uint8_t search_property;
-            bool attachement;
-            uint8_t charset;
+
+#define X(name, tag, type, descr) type name;
+        APP_PARAMS
+    
+#undef X
         } app_params;
     } request;
     // response
@@ -390,9 +474,9 @@ static void map_access_server_add_application_parameters(const map_access_server
 
 static void map_access_server_default_headers(map_access_server_t* map_access_server) {
     (void)memset(&map_access_server->request, 0, sizeof(map_access_server->request));
-    map_access_server->request.app_params.max_list_count = 0xffffU;
-    map_access_server->request.app_params.msg_selector = 0xffffffffUL;
-    map_access_server->request.app_params.property_selector = 0xffffffffUL;
+    map_access_server->request.app_params.MaxListCount = 0xffffU;
+    //map_access_server->request.app_params.msg_selector = 0xffffffffUL;
+    //map_access_server->request.app_params.property_selector = 0xffffffffUL;
 }
 static void map_access_server_reset_response(map_access_server_t* map_access_server) {
     (void)memset(&map_access_server->response, 0, sizeof(map_access_server->response));
@@ -581,30 +665,15 @@ static void map_access_server_app_param_callback_get(void* user_data, uint8_t ta
         if (state == OBEX_APP_PARAM_PARSER_TAG_COMPLETE) {
             switch (tag_id) {
 
-            case MAP_APPLICATION_PARAMETER_MAX_LIST_COUNT:
-                map_access_server->request.app_params.max_list_count = big_endian_read_16(
-                    map_access_server->request.app_param_buffer, 0);
-                break;
+// X-Macro generates GETer for all APP Params
+//case MAP_APPLICATION_PARAMETER_MAX_LIST_COUNT:
+//    map_access_server->request.app_params.MaxListCount = big_endian_read_16(
+//        map_access_server->request.app_param_buffer, 0);
+//    break;
 
-            case MAP_APPLICATION_PARAMETER_ATTACHEMENT:
-                map_access_server->request.app_params.attachement = big_endian_read_08(
-                    map_access_server->request.app_param_buffer, 0);
-                break;
-
-            case MAP_APPLICATION_PARAMETER_CHARSET:
-                map_access_server->request.app_params.max_list_count = big_endian_read_08(
-                    map_access_server->request.app_param_buffer, 0);
-                break;
-
-            case MAP_APPLICATION_PARAMETER_STATUS_INDICATOR:
-                map_access_server->request.app_params.status_indicator = big_endian_read_08(
-                    map_access_server->request.app_param_buffer, 0);
-                break;
-
-            case MAP_APPLICATION_PARAMETER_STATUS_VALUE:
-                map_access_server->request.app_params.status_value = big_endian_read_08(
-                    map_access_server->request.app_param_buffer, 0);
-                break;
+#define X(name, tag, type, descr) case MAP_APP_PARAM_ ## name: map_access_server->request.app_params. name = app_param_read_ ## type (map_access_server->request.app_param_buffer, 0); break;
+                APP_PARAMS
+#undef X
             default:
                 break;
             }
@@ -700,60 +769,60 @@ static void map_access_server_handle_get_request(map_access_server_t* map_access
         search_value_len = (uint16_t)strlen(map_access_server->request.app_params.search_value);
         event[pos++] = 20 + search_value_len + 1;
         event[pos++] = MAP_SUBEVENT_MESSAGE_LISTING_ITEM;
-        little_endian_store_16(event, pos, map_access_server->map_cid);
-        pos += 2;
-        little_endian_store_32(event, pos, map_access_server->request.continuation);
-        pos += 4;
-        event[pos++] = map_access_server->request.app_params.order;
-        little_endian_store_16(event, pos, map_access_server->request.app_params.max_list_count);
-        pos += 2;
-        event[pos++] = map_access_server->request.app_params.msg_selector_operator;
-        event[pos++] = map_access_server->request.app_params.search_property;
-        // search_value is zero terminated
-        event[pos++] = search_value_len + 1;
-        memcpy(&event[pos], (const uint8_t*)map_access_server->request.app_params.search_value, search_value_len + 1);
-        pos += search_value_len + 1;
-        event[pos++] = folder;
+        //little_endian_store_16(event, pos, map_access_server->map_cid);
+        //pos += 2;
+        //little_endian_store_32(event, pos, map_access_server->request.continuation);
+        //pos += 4;
+        //event[pos++] = map_access_server->request.app_params.order;
+        //little_endian_store_16(event, pos, map_access_server->request.app_params.MaxListCount);
+        //pos += 2;
+        //event[pos++] = map_access_server->request.app_params.msg_selector_operator;
+        //event[pos++] = map_access_server->request.app_params.search_property;
+        //// search_value is zero terminated
+        //event[pos++] = search_value_len + 1;
+        //memcpy(&event[pos], (const uint8_t*)map_access_server->request.app_params.search_value, search_value_len + 1);
+        //pos += search_value_len + 1;
+        //event[pos++] = folder;
         break;
 
     case MAP_OBJECT_TYPE_GET_MESSAGE:
         search_value_len = (uint16_t)strlen(map_access_server->request.app_params.search_value);
         event[pos++] = 20 + search_value_len + 1;
         event[pos++] = MAP_SUBEVENT_GET_MESSAGE;
-        little_endian_store_16(event, pos, map_access_server->map_cid);
-        pos += 2;
-        little_endian_store_32(event, pos, map_access_server->request.continuation);
-        pos += 4;
-        event[pos++] = map_access_server->request.app_params.order;
-        little_endian_store_16(event, pos, map_access_server->request.app_params.max_list_count);
-        pos += 2;
-        event[pos++] = map_access_server->request.app_params.msg_selector_operator;
-        event[pos++] = map_access_server->request.app_params.search_property;
-        // search_value is zero terminated
-        event[pos++] = search_value_len + 1;
-        memcpy(&event[pos], (const uint8_t*)map_access_server->request.app_params.search_value, search_value_len + 1);
-        pos += search_value_len + 1;
-        event[pos++] = folder;
+        //little_endian_store_16(event, pos, map_access_server->map_cid);
+        //pos += 2;
+        //little_endian_store_32(event, pos, map_access_server->request.continuation);
+        //pos += 4;
+        //event[pos++] = map_access_server->request.app_params.order;
+        //little_endian_store_16(event, pos, map_access_server->request.app_params.MaxListCount);
+        //pos += 2;
+        //event[pos++] = map_access_server->request.app_params.msg_selector_operator;
+        //event[pos++] = map_access_server->request.app_params.search_property;
+        //// search_value is zero terminated
+        //event[pos++] = search_value_len + 1;
+        //memcpy(&event[pos], (const uint8_t*)map_access_server->request.app_params.search_value, search_value_len + 1);
+        //pos += search_value_len + 1;
+        //event[pos++] = folder;
         break;
 
     case MAP_OBJECT_TYPE_PUT_MESSAGE_STATUS:
         search_value_len = (uint16_t)strlen(map_access_server->request.app_params.search_value);
         event[pos++] = 20 + search_value_len + 1;
         event[pos++] = MAP_SUBEVENT_PUT_MESSAGE_STATUS;
-        little_endian_store_16(event, pos, map_access_server->map_cid);
-        pos += 2;
-        little_endian_store_32(event, pos, map_access_server->request.continuation);
-        pos += 4;
-        event[pos++] = map_access_server->request.app_params.order;
-        little_endian_store_16(event, pos, map_access_server->request.app_params.max_list_count);
-        pos += 2;
-        event[pos++] = map_access_server->request.app_params.msg_selector_operator;
-        event[pos++] = map_access_server->request.app_params.search_property;
-        // search_value is zero terminated
-        event[pos++] = search_value_len + 1;
-        memcpy(&event[pos], (const uint8_t*)map_access_server->request.app_params.search_value, search_value_len + 1);
-        pos += search_value_len + 1;
-        event[pos++] = folder;
+        //little_endian_store_16(event, pos, map_access_server->map_cid);
+        //pos += 2;
+        //little_endian_store_32(event, pos, map_access_server->request.continuation);
+        //pos += 4;
+        //event[pos++] = map_access_server->request.app_params.order;
+        //little_endian_store_16(event, pos, map_access_server->request.app_params.MaxListCount);
+        //pos += 2;
+        //event[pos++] = map_access_server->request.app_params.msg_selector_operator;
+        //event[pos++] = map_access_server->request.app_params.search_property;
+        //// search_value is zero terminated
+        //event[pos++] = search_value_len + 1;
+        //memcpy(&event[pos], (const uint8_t*)map_access_server->request.app_params.search_value, search_value_len + 1);
+        //pos += search_value_len + 1;
+        //event[pos++] = folder;
         break;
 
     default:
