@@ -112,8 +112,8 @@ static struct
     char* msg_stati[3]; // maximum 3-1 entries, last one is null
 } test_configs[] =
 {
-{.descr = "MAP/MSE/MMB/BV-09-I .. 14-I", .msg_count = 2, .msg_types = { "SMS_GSM","SMS_CDMA","" },  .msg_stati = { "" }},
-{.descr = "MAP/MSE/MMB/BV-09-I .. 15-I", .msg_count = 1, .msg_types = { "EMAIL", "SMS_GSM","SMS_CDMA",""},                .msg_stati = { "no","yes","" }}
+{.descr = "MAP/MSE/MMB/BV-09-I 10 11 13 14", .msg_count = 2, .msg_types = { "SMS_GSM","SMS_CDMA","" },  .msg_stati = { "" }},
+{.descr = "MAP/MSE/MMB/BV-12-I 15", .msg_count = 1, .msg_types = { "EMAIL", "SMS_GSM","SMS_CDMA",""},                .msg_stati = { "no","yes","" }}
 };
 
 static int current_test_config = 0;
