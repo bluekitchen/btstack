@@ -1567,8 +1567,11 @@ void btp_bap_init(void){
     // ASCS
     audio_stream_control_service_client_init(&btp_bap_ascs_client_event_handler);
 
-    // VCS
+    // VCP = VOCS Client
     volume_control_service_client_init();
+
+    // MICP = MICS Client
+    microphone_control_service_client_init();
 }
 
 void btp_bap_register_higher_layer(btstack_packet_handler_t handler){
@@ -1600,7 +1603,7 @@ static void btp_bap_vcp_event_handler(uint8_t packet_type, uint16_t channel, uin
     switch (hci_event_gattservice_meta_get_subevent_code(packet)) {
         case LEAUDIO_SUBEVENT_VCS_CLIENT_CONNECTED:
             vcs_cid = leaudio_subevent_vcs_client_connected_get_vcs_cid(packet);
-            status = leaudio_subevent_pacs_client_connected_get_status(packet);
+            status = leaudio_subevent_vcs_client_connected_get_att_status(packet);
             server = btp_server_for_vcs_cid(vcs_cid);
             btstack_assert(server != NULL);
             if (status != ERROR_CODE_SUCCESS){
@@ -1714,7 +1717,114 @@ void btp_vcp_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, 
             }
             break;
         default:
-            MESSAGE("BTP PACS Operation 0x%02x not implemented", opcode);
+            MESSAGE("BTP VCP Operation 0x%02x not implemented", opcode);
+            btstack_assert(false);
+            break;
+    }
+};
+
+void btp_micp_init(void){
+}
+
+static void btp_bap_micp_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) {
+    UNUSED(channel);
+    UNUSED(size);
+
+    if (packet_type != HCI_EVENT_PACKET) return;
+    if (hci_event_packet_get_type(packet) != HCI_EVENT_LEAUDIO_META) return;
+
+    server_t *server;
+    uint16_t mics_cid;
+    uint8_t status;
+
+    switch (hci_event_leaudio_meta_get_subevent_code(packet)) {
+        case LEAUDIO_SUBEVENT_MICS_CLIENT_CONNECTED:
+            mics_cid = leaudio_subevent_mics_client_connected_get_mics_cid(packet);
+            status = leaudio_subevent_mics_client_connected_get_att_status(packet);
+            server = btp_server_for_mics_cid(mics_cid);
+            btstack_assert(server != NULL);
+            if (status != ERROR_CODE_SUCCESS){
+                // TODO send error response
+                MESSAGE("BTP MICP %u: connection failed, status 0x%02x", server->server_id, status);
+            } else {
+                MESSAGE("BTP MICP %u: connected, MICS Client cid %02x", server->server_id, server->mics_cid);
+                struct btp_micp_discovered_ev event;
+                memset(&event, 0, sizeof(event));
+                uint16_t offset = 0;
+                event.address.address_type = server->address_type;
+                reverse_bd_addr(server->address,event.address.address);
+                event.att_status = 0;
+                btp_send(BTP_SERVICE_ID_MICP, BTP_MICP_DISCOVERED_EV, 0, sizeof(event), (uint8_t *) &event);
+            }
+            break;
+        case LEAUDIO_SUBEVENT_MICS_CLIENT_DISCONNECTED:
+            mics_cid = leaudio_subevent_mics_client_disconnected_get_mics_cid(packet);
+            server = btp_server_for_mics_cid(mics_cid);
+            MESSAGE("BTP MICP Client %u: disconnected, cid %02x", server->server_id, mics_cid);
+            btstack_assert(server != NULL);
+            server->mics_cid = 0;
+            break;
+        default:
+            break;
+    }
+}
+
+void btp_micp_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, const uint8_t *data){
+    // provide op info for response
+    response_len = 0;
+    response_service_id = BTP_SERVICE_ID_MICP;
+    response_op = opcode;
+    server_t * server;
+    switch (opcode) {
+        case BTP_MICP_READ_SUPPORTED_COMMANDS:
+            MESSAGE("BTP_MICP_READ_SUPPORTED_COMMANDS");
+            if (controller_index == BTP_INDEX_NON_CONTROLLER) {
+                uint8_t commands = 0;
+                btp_send(response_service_id, opcode, controller_index, 1, &commands);
+            }
+            break;
+        case BTP_MICP_CTLR_DISCOVER:
+            if (controller_index == 0) {
+                /**
+                    bt_addr_le_t address;
+                 */
+                // get server struct
+                bd_addr_type_t addr_type = (bd_addr_type_t) data[0];
+                bd_addr_t address;
+                reverse_bd_addr(&data[1], address);
+                server = btp_server_for_address(addr_type, address);
+                uint8_t status = microphone_control_service_client_connect(server->acl_con_handle,
+                                                                       &btp_bap_micp_event_handler,
+                                                                       &server->mics_connection,
+                                                                       server->mics_characteristics, MICROPHONE_CONTROL_SERVICE_CLIENT_NUM_CHARACTERISTICS,
+                                                                       server->aics_connections, 2,
+                                                                       server->aics_characteristics, 2 * AUDIO_INPUT_CONTROL_SERVICE_NUM_CHARACTERISTICS,
+                                                                       &server->mics_cid);
+                MESSAGE("BTP_MICP_CTLR_DISCOVER %s, MICS Client cid %02x", bd_addr_to_str(address), server->mics_cid);
+                btstack_assert(status == ERROR_CODE_SUCCESS);
+                btp_send(response_service_id, opcode, controller_index, 0, NULL);
+            }
+            break;
+        case BTP_MICP_CTLR_MUTE:
+            if (controller_index == 0){
+                /**
+                    bt_addr_le_t address;
+                 */
+                // get server struct
+                bd_addr_type_t addr_type = (bd_addr_type_t) data[0];
+                bd_addr_t address;
+                reverse_bd_addr(&data[1], address);
+                MESSAGE("BTP_MICP_CTLR_MUTE %s", bd_addr_to_str(address));
+                server = btp_server_for_address(addr_type, address);
+                MESSAGE("BTP_MICP_CTLR_MUTE server %p", server);
+                uint8_t status = microphone_control_service_client_mute(server->mics_cid);
+                MESSAGE("BTP_MICP_CTLR_MUTE status 0x%02x", status);
+                btstack_assert(status == ERROR_CODE_SUCCESS);
+                btp_send(response_service_id, opcode, controller_index, 0, NULL);
+            }
+            break;
+        default:
+            MESSAGE("BTP MICP Operation 0x%02x not implemented", opcode);
             btstack_assert(false);
             break;
     }
