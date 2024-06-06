@@ -640,7 +640,7 @@ uint8_t audio_input_control_service_client_connect(
     aics_client_connection_t * connection){
 
     connection->gatt_query_can_send_now.callback = &aics_client_run_for_connection;
-    connection->gatt_query_can_send_now.context = (void *)(uintptr_t)connection->basic_connection.con_handle;
+    connection->gatt_query_can_send_now.context = (void *)(uintptr_t) con_handle;
     connection->change_counter = 0;
     connection->state = AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_W4_CONNECTED;
 
