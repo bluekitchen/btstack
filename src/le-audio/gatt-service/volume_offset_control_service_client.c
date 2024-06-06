@@ -575,7 +575,7 @@ void volume_offset_control_service_client_init(void){
     vocs_client.characteristics_desc16 = vocs_uuid16s;
 }
 
-uint8_t volume_offsetcontrol_service_client_ready_to_connect(
+uint8_t volume_offset_control_service_client_ready_to_connect(
         hci_con_handle_t con_handle,
         btstack_packet_handler_t packet_handler,
         vocs_client_connection_t * connection){
