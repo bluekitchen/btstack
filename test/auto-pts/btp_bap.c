@@ -1567,6 +1567,12 @@ void btp_bap_init(void){
     // ASCS
     audio_stream_control_service_client_init(&btp_bap_ascs_client_event_handler);
 
+    // AICS Client, used by VCS Client and MICS
+    audio_input_control_service_client_init();
+
+    // VOCS Client, used by VCS Client
+    volume_offset_control_service_client_init();
+
     // VCP = VOCS Client
     volume_control_service_client_init();
 
