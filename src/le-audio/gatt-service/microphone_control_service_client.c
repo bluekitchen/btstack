@@ -482,7 +482,6 @@ static void mics_client_handle_gatt_client_event(uint8_t packet_type, uint16_t c
                     connection->aics_connections_index = 0;
                     connection->aics_connections_connected = 0;
 
-                    audio_input_control_service_client_init();
                     (void) audio_input_control_service_client_connect(
                             connection->basic_connection.con_handle,
                             &mics_client_packet_handler_internal,
