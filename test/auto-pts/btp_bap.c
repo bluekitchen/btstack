@@ -1835,3 +1835,58 @@ void btp_micp_handler(uint8_t opcode, uint8_t controller_index, uint16_t length,
             break;
     }
 };
+
+void btp_aics_init(void){
+}
+
+static void btp_bap_aics_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) {
+    UNUSED(channel);
+    UNUSED(size);
+
+    if (packet_type != HCI_EVENT_PACKET) return;
+    if (hci_event_packet_get_type(packet) != HCI_EVENT_LEAUDIO_META) return;
+
+    switch (hci_event_leaudio_meta_get_subevent_code(packet)) {
+        default:
+            break;
+    }
+}
+
+void btp_aics_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, const uint8_t *data){
+    // provide op info for response
+    response_len = 0;
+    response_service_id = BTP_SERVICE_ID_AICS;
+    response_op = opcode;
+    server_t * server;
+    switch (opcode) {
+        case BTP_AICS_READ_SUPPORTED_COMMANDS:
+            MESSAGE("BTP_AICS_READ_SUPPORTED_COMMANDS");
+            if (controller_index == BTP_INDEX_NON_CONTROLLER) {
+                uint8_t commands = 0;
+                btp_send(response_service_id, opcode, controller_index, 1, &commands);
+            }
+            break;
+        case BTP_AICS_SET_GAIN:
+            if (controller_index == 0) {
+                /**
+                    bt_addr_le_t address;
+                 */
+                // get server struct
+                bd_addr_type_t addr_type = (bd_addr_type_t) data[0];
+                bd_addr_t address;
+                reverse_bd_addr(&data[1], address);
+                server = btp_server_for_address(addr_type, address);
+                int8_t gain = (int8_t) data[7];
+                uint8_t status = microphone_control_service_client_write_gain_setting(server->mics_cid, 0, gain);
+                MESSAGE("BTP_AICS_SET_GAIN %s, MICS Client cid %02x", bd_addr_to_str(address), server->mics_cid);
+                btstack_assert(status == ERROR_CODE_SUCCESS);
+                btp_send(response_service_id, opcode, controller_index, 0, NULL);
+            }
+            break;
+
+        default:
+            MESSAGE("BTP MICP Operation 0x%02x not implemented", opcode);
+            btstack_assert(false);
+            break;
+    }
+};
