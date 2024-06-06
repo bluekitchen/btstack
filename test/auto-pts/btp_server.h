@@ -106,6 +106,9 @@ typedef struct {
 
     // mics client
     mics_client_connection_t mics_connection;
+    gatt_service_client_characteristic_t mics_characteristics[MICROPHONE_CONTROL_SERVICE_CLIENT_NUM_CHARACTERISTICS];
+    aics_client_connection_t aics_connections[2];
+    gatt_service_client_characteristic_t aics_characteristics[2 * AUDIO_INPUT_CONTROL_SERVICE_NUM_CHARACTERISTICS];
     uint16_t mics_cid;
 
 } server_t;
