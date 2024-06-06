@@ -607,7 +607,6 @@ static void vcs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t ch
                     if (connection->aics_connections_num != 0) {
                         connection->aics_connections_index = 0;
 
-                        audio_input_control_service_client_init();
                         connection->state = VOLUME_CONTROL_SERVICE_CLIENT_STATE_W4_AICS_SERVICES_CONNECTED;
 
                         (void) audio_input_control_service_client_connect(
