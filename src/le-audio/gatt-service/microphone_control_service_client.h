@@ -100,8 +100,11 @@ typedef struct {
     gatt_service_client_characteristic_t * aics_characteristics_storage;
     uint8_t aics_characteristics_max_num;
 
+    btstack_context_callback_registration_t gatt_query_can_send_now_request;
+
     // Application packet handler
     btstack_packet_handler_t aics_events_packet_handler;
+
 } mics_client_connection_t;
 
 /* API_START */
