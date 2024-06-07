@@ -189,7 +189,7 @@ static uint16_t send_listing(uint16_t first, uint16_t last) {
         response_code = OBEX_RESP_CONTINUE;
         continuation = first;
     }
-    map_access_server_send_get_response(map_cid, response_code, continuation, pos, upload_buffer);
+    map_access_server_send_get_put_response(map_cid, response_code, continuation, pos, upload_buffer);
     return first;
 }
 
@@ -307,6 +307,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
 
                         case MAP_SUBEVENT_PUT_MESSAGE_STATUS:
                             printf("[+] Put MessageStatus\n");
+                            map_access_server_send_get_put_response(map_cid, OBEX_RESP_SUCCESS, 0, 0, NULL);
                             break;
 
                         default:
