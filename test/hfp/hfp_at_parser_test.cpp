@@ -676,6 +676,22 @@ TEST(HFPParser, long_command){
     command[offset++] = 0x00;
     parse_hf(command);
 }
+
+TEST(HFPParser,dummy){
+    unsigned char data[] = {
+        0x99, 0x08, 0x0a
+    };
+    unsigned int data_len = sizeof(data);
+    int is_handsfree = data[0] & 1;
+    hfp_connection_t hfp_connection;
+    memset(&hfp_connection, 0, sizeof(hfp_connection_t));
+    uint32_t i;
+    for (i = 1; i < data_len; i++){
+        hfp_parse(&hfp_connection, data[i], is_handsfree);
+    }
+
+}
+
 int main (int argc, const char * argv[]){
     return CommandLineTestRunner::RunAllTests(argc, argv);
 }
