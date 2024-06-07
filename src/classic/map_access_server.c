@@ -302,6 +302,9 @@ static map_access_server_t* map_access_server_for_map_cid(uint16_t map_cid) {
     return (map_cid == map_access_server_singleton.map_cid) ? &map_access_server_singleton : NULL;
 }
 
+/* only to be called if the GEOP connection is closed
+* if only OBEX connection is closed we need to go to  MAP_SERVER_STATE_W4_CONNECT_OPCODE
+*/
 static void map_access_server_finalize_connection(map_access_server_t* map_access_server) {
     // minimal
     map_access_server->state = MAP_SERVER_STATE_W4_OPEN;
