@@ -137,7 +137,7 @@ static void gatt_client_timeout_handler(btstack_timer_source_t * timer){
 }
 
 static void gatt_client_timeout_start(gatt_client_t * gatt_client){
-    log_info("GATT client timeout start, handle 0x%02x", gatt_client->con_handle);
+    log_debug("GATT client timeout start, handle 0x%02x", gatt_client->con_handle);
     btstack_run_loop_remove_timer(&gatt_client->gc_timeout);
     btstack_run_loop_set_timer_handler(&gatt_client->gc_timeout, gatt_client_timeout_handler);
     btstack_run_loop_set_timer(&gatt_client->gc_timeout, 30000); // 30 seconds sm timeout
@@ -145,7 +145,7 @@ static void gatt_client_timeout_start(gatt_client_t * gatt_client){
 }
 
 static void gatt_client_timeout_stop(gatt_client_t * gatt_client){
-    log_info("GATT client timeout stop, handle 0x%02x", gatt_client->con_handle);
+    log_debug("GATT client timeout stop, handle 0x%02x", gatt_client->con_handle);
     btstack_run_loop_remove_timer(&gatt_client->gc_timeout);
 }
 
