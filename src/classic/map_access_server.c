@@ -595,7 +595,8 @@ static void map_access_server_packet_handler_hci(uint8_t* packet, uint16_t size)
             btstack_assert(map_access_server != NULL);
             status = goep_subevent_connection_opened_get_status(packet);
             if (status != ERROR_CODE_SUCCESS) {
-                // TODO: report failed outgoing connection
+                // TODO: report failed incomming connection
+                log_error("TODO: report failed outgoing connection");
             }
             else {
                 map_access_server->goep_cid = goep_cid;
