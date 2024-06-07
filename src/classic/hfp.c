@@ -1257,7 +1257,7 @@ static hfp_command_t parse_command(const char * line_buffer, int isHandsFree){
         int match = strcmp(line_buffer, entry->command);
         if (match < 0){
             // search term is lower than middle element
-            if (right == 0) break;
+            if (middle == 0) break;
             right = middle - 1;
         } else if (match == 0){
             return entry->command_id;
