@@ -651,6 +651,31 @@ TEST(HFPParser, custom_command_hf_with_assignment){
     hfp_at_parser_test_dump_line_buffer();
 }
 
+TEST(HFPParser, HFP_GABRBAGE_AND_ANSWER_CALL){
+    parse_ag("\r\nABCDEF\r\n");
+    snprintf(packet, sizeof(packet), "\r\n%s\r\n", HFP_ANSWER_CALL);
+    parse_ag(packet);
+    CHECK_EQUAL(HFP_CMD_CALL_ANSWERED, context.command);
+}
+
+TEST(HFPParser, long_command){
+    char command[300];
+    uint16_t offset = 0;
+    const char * header = "+CIEV";
+    uint16_t header_len = strlen(header);
+    memcpy(&command[offset], header, header_len);
+    offset += header_len;
+    command[offset++] = 0x02;
+    command[offset++] = 0x32;
+    uint16_t num_2c = 250;
+    memset(&command[offset], 0x2c, num_2c);
+    offset += num_2c;
+    command[offset++] = 0x31;
+    command[offset++] = '\r';
+    command[offset++] = '\n';
+    command[offset++] = 0x00;
+    parse_hf(command);
+}
 int main (int argc, const char * argv[]){
     return CommandLineTestRunner::RunAllTests(argc, argv);
 }
