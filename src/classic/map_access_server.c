@@ -551,8 +551,8 @@ static void map_access_server_handle_can_send_now(map_access_server_t* map_acces
         uint16_t map_cid = map_access_server->map_cid;
         uint16_t goep_cid = map_access_server->goep_cid;
 
-        // finalize connection
-        map_access_server_finalize_connection(map_access_server);
+        // reset MAP/OBEX connection state
+        map_access_server->state = MAP_SERVER_STATE_W4_CONNECT_OPCODE;
 
         // respond to request
         goep_server_response_create_general(goep_cid);
