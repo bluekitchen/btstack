@@ -112,9 +112,9 @@ static struct
     char* msg_stati[3]; // maximum 3-1 entries, last one is null
 } test_configs[] =
 {
-{.descr = "MAP/MSE/MMB/BV-09-I 10 11 13 14" , .msg_count = 2, .msg_types = { "SMS_GSM","SMS_CDMA","" },         .msg_stati = { "" }},
-{.descr = "MAP/MSE/MMB/BV-12-I"             , .msg_count = 1, .msg_types = { "EMAIL", "SMS_GSM","SMS_CDMA",""}, .msg_stati = { "no","yes","" }},
-{.descr = "MAP/MSE/MMB/BV-15-I"             , .msg_count = 1, .msg_types = { "EMAIL","SMS_GSM","SMS_CDMA",""},  .msg_stati = { "no","yes","" }}
+{.descr = "MAP/MSE/MMB/BV-09-I 10 11 13 14" , .msg_count = 2, .msg_types = { "SMS_GSM","SMS_CDMA"},         .msg_stati = { "no"}},
+{.descr = "MAP/MSE/MMB/BV-12-I"             , .msg_count = 1, .msg_types = { "EMAIL", "SMS_GSM","SMS_CDMA"}, .msg_stati = { "no","yes" }},
+{.descr = "MAP/MSE/MMB/BV-15-I"             , .msg_count = 1, .msg_types = { "EMAIL","SMS_GSM","SMS_CDMA"},  .msg_stati = { "no","yes" }}
 };
 
 static int current_test_config = 0;
@@ -128,13 +128,13 @@ static void create_msg(char * msg_buffer, uint16_t index, int maxsize){
    
 
     // cycle through all msg_stati
-    if (test_configs[current_test_config].msg_stati[msg_status][0] != '\0')
+    if (test_configs[current_test_config].msg_stati[msg_status + 1] != NULL)
         ++msg_status;
     else {
         msg_status = 0;
 
         // next msg_type
-        if (test_configs[current_test_config].msg_types[current_msg_type + 1][0] != '\0')
+        if (test_configs[current_test_config].msg_types[current_msg_type + 1] != NULL)
             ++current_msg_type;
         else
             current_msg_type = 0;
