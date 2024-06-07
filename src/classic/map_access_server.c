@@ -665,7 +665,7 @@ static void map_access_server_app_param_callback_get(void* user_data, uint8_t ta
         if (state == OBEX_APP_PARAM_PARSER_TAG_COMPLETE) {
             switch (tag_id) {
 
-// X-Macro generates GETer for all APP Params
+// X-Macro automagically generates GETers for all APP Params
 //case MAP_APPLICATION_PARAMETER_MAX_LIST_COUNT:
 //    map_access_server->request.app_params.MaxListCount = big_endian_read_16(
 //        map_access_server->request.app_param_buffer, 0);
@@ -877,6 +877,8 @@ static void map_access_server_packet_handler_goep(map_access_server_t* map_acces
         switch (opcode) {
         case OBEX_OPCODE_GET:
         case (OBEX_OPCODE_GET | OBEX_OPCODE_FINAL_BIT_MASK):
+        case OBEX_OPCODE_PUT:
+        case (OBEX_OPCODE_PUT | OBEX_OPCODE_FINAL_BIT_MASK):
             map_access_server->state = MAP_SERVER_STATE_W4_REQUEST;
             obex_parser_init_for_request(&map_access_server->obex_parser, &map_access_server_parser_callback_get, (void*)map_access_server);
             break;
@@ -906,6 +908,8 @@ static void map_access_server_packet_handler_goep(map_access_server_t* map_acces
             switch (op_info.opcode) {
             case OBEX_OPCODE_GET:
             case (OBEX_OPCODE_GET | OBEX_OPCODE_FINAL_BIT_MASK):
+            case OBEX_OPCODE_PUT:
+            case (OBEX_OPCODE_PUT | OBEX_OPCODE_FINAL_BIT_MASK):
                 map_access_server_handle_get_request(map_access_server);
                 break;
             case OBEX_OPCODE_SETPATH:
@@ -1092,7 +1096,30 @@ uint8_t map_access_server_send_folder_size(uint16_t map_cid, uint8_t response_co
     }
 }
 
-uint16_t map_access_server_send_get_response(uint16_t map_cid, uint8_t response_code, uint32_t continuation, uint16_t body_len, const uint8_t* body) {
+uint16_t map_access_server_send_get_put_response(uint16_t map_cid, uint8_t response_code, uint32_t continuation, uint16_t body_len, const uint8_t* body) {
+    map_access_server_t* map_access_server = map_access_server_for_map_cid(map_cid);
+    if (map_access_server == NULL) {
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+
+    // double check size
+
+    // calc max body size without reserving outgoing buffer: packet size - OBEX Header (3) - SRM Header (2) - Body Header (3)
+    uint16_t max_body_size = goep_server_response_get_max_message_size(map_access_server->goep_cid) - (3 + 2 + 3);
+    if (body_len > max_body_size) {
+        return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
+    }
+
+    // set data for response and trigger execute
+    map_access_server->response.code = response_code;
+    map_access_server->request.continuation = continuation;
+    map_access_server->state = MAP_SERVER_STATE_SEND_USER_RESPONSE;
+    map_access_server->response.body_data = body;
+    map_access_server->response.body_len = body_len;
+    return goep_server_request_can_send_now(map_access_server->goep_cid);
+}
+
+uint16_t map_access_server_send_put_response(uint16_t map_cid, uint8_t response_code, uint32_t continuation, uint16_t body_len, const uint8_t* body) {
     map_access_server_t* map_access_server = map_access_server_for_map_cid(map_cid);
     if (map_access_server == NULL) {
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
