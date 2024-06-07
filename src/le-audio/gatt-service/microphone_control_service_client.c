@@ -266,9 +266,12 @@ static void mics_client_packet_handler_internal(uint8_t packet_type, uint16_t ch
                     connection_helper = gatt_service_client_get_connection_for_cid(&mics_client, cid);
                     btstack_assert(connection_helper != NULL);
                     connection = (mics_client_connection_t *)connection_helper;
+                    status = gattservice_subevent_client_connected_get_status(packet);
 
-                    if (connection->state != MICROPHONE_CONTROL_SERVICE_CLIENT_STATE_W4_CONNECTION){
-                        return;
+                    if (status != ERROR_CODE_SUCCESS){
+                        connection->state = MICROPHONE_CONTROL_SERVICE_CLIENT_STATE_IDLE;
+                        mics_client_connected(connection, status);
+                        break;
                     }
 
 #ifdef ENABLE_TESTING_SUPPORT
@@ -278,9 +281,6 @@ static void mics_client_packet_handler_internal(uint8_t packet_type, uint16_t ch
                             printf("0x%04X %s\n", connection_helper->characteristics[i].value_handle, mics_client_characteristic_name[i]);
                         }
                     };
-#endif
-
-#ifdef ENABLE_TESTING_SUPPORT
                     printf("\nMICS Client: Query AICS included services\n");
 #endif
                     // only look for included services if we can use them
