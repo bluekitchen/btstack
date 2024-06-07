@@ -165,7 +165,7 @@ typedef enum {
 #define MAS_DATABASE_IDENTIFIER_LEN 16
 #define MAS_FOLDER_VERSION_LEN 16
 
-uint16_t map_access_server_send_get_response(uint16_t map_cid, uint8_t response_code, uint32_t continuation, uint16_t body_len, const uint8_t* body);
+uint16_t map_access_server_send_get_put_response(uint16_t map_cid, uint8_t response_code, uint32_t continuation, uint16_t body_len, const uint8_t* body);
 uint16_t map_access_server_get_max_body_size(uint16_t map_cid);
 uint8_t map_access_server_set_new_messages(uint16_t map_cid, uint16_t new_messages);
 uint8_t map_access_server_set_folder_version(uint16_t map_cid, const uint8_t* primary_folder_version);
