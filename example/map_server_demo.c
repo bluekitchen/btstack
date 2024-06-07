@@ -108,19 +108,23 @@ static struct
 {
     char* descr;
     int msg_count;
-    char* msg_types[4]; // maximum 4-1 entries, last one is null
+    char* msg_types[5]; // maximum 4-1 entries, last one is null
     char* msg_stati[3]; // maximum 3-1 entries, last one is null
 } test_configs[] =
 {
-{.descr = "MAP/MSE/MMB/BV-09-I 10 11 13 14" , .msg_count = 2, .msg_types = { "SMS_GSM","SMS_CDMA"},         .msg_stati = { "no"}},
-{.descr = "MAP/MSE/MMB/BV-12-I"             , .msg_count = 1, .msg_types = { "EMAIL", "SMS_GSM","SMS_CDMA"}, .msg_stati = { "no","yes" }},
-{.descr = "MAP/MSE/MMB/BV-15-I"             , .msg_count = 1, .msg_types = { "EMAIL","SMS_GSM","SMS_CDMA"},  .msg_stati = { "no","yes" }}
+{.descr = "MAP/MSE/MMB/BV-09-I 10 11 13 14" , .msg_count = 2, .msg_types = { "SMS_GSM","SMS_CDMA"},                      .msg_stati = { "no"}},
+{.descr = "MAP/MSE/MMB/BV-12-I"             , .msg_count = 1, .msg_types = { "EMAIL", "SMS_GSM","SMS_CDMA"},             .msg_stati = { "no","yes" }},
+{.descr = "MAP/MSE/MMB/BV-15-I"             , .msg_count = 1, .msg_types = { "EMAIL","SMS_GSM","SMS_CDMA", "MMS", "IM"}, .msg_stati = { "no","yes"}}
 };
 
 static int current_test_config = 0;
 static int current_msg_type = 0;
 static int msg_status = 0;
 
+static void init_testcases(void) {
+    current_msg_type = 0;
+    msg_status = 0;
+}
 
 static void create_msg(char * msg_buffer, uint16_t index, int maxsize){
     sprintf_s(msg_buffer, maxsize, msg_listing_msg,
@@ -217,9 +221,11 @@ static void stdin_process(char c){
     switch (c){
         case 'n':
             current_test_config = (current_test_config + 1) % ARRAYSIZE(test_configs);
+            // init MAP Access Server test cases
+            init_testcases();
             print_current_test_config();
-            
             break;
+
         default:
             show_usage();
             break;
@@ -386,13 +392,15 @@ int btstack_main(int argc, const char * argv[]){
 
     sscanf_bd_addr(remote_addr_string, remote_addr);
 
-    // init MAP Notification Client
-    // map_notification_client_init();
+    // init MAP Access Server test cases
+    init_testcases();
 
     // setup MAP Access Server
-    uint8_t supported_message_types = MAP_SUPPORTED_MESSAGE_TYPE_EMAIL |
-                                            MAP_SUPPORTED_MESSAGE_TYPE_SMS_GSM |
-                                            MAP_SUPPORTED_MESSAGE_TYPE_SMS_CDMA;
+    uint8_t supported_message_types =   MAP_SUPPORTED_MESSAGE_TYPE_EMAIL
+                                      | MAP_SUPPORTED_MESSAGE_TYPE_SMS_GSM
+                                      | MAP_SUPPORTED_MESSAGE_TYPE_SMS_CDMA;
+                                      //| MAP_SUPPORTED_MESSAGE_TYPE_MMS
+                                      //| MAP_SUPPORTED_MESSAGE_TYPE_IM;
     uint32_t supported_features = 0x1F;
     memset(map_message_access_service_buffer, 0, sizeof(map_message_access_service_buffer));
     map_util_create_access_service_sdp_record(map_message_access_service_buffer,
