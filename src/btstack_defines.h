@@ -5381,8 +5381,8 @@ typedef uint8_t sm_key_t[16];
   * @format 12422
   * @param subevent_code
   * @param map_cid
-  * @param MaxListCount
   * @param continuation - value provided by caller of map_server_send_pull_response
+  * @param MaxListCount
   * @param ListStartOffset
   */
   
