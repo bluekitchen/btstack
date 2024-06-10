@@ -104,19 +104,21 @@ static const char * msg_listing_header = "<MAP-msg-listing version = \"1.0\">";
 static const char * msg_listing_msg   = "<msg handle = \"20000100001\" subject=\"Hello\" type=\"%s\" read=\"%s\"/>";
 static const char * msg_listing_footer = "</MAP-msg-listing>";
 
-static struct
+static struct test_config_s
 {
     char* descr;
     int msg_count;
-    char* msg_types[5]; // maximum 4-1 entries, last one is null
+    int cycle_type_first;
+    char* msg_types[6]; // maximum 4-1 entries, last one is null
     char* msg_stati[3]; // maximum 3-1 entries, last one is null
 } test_configs[] =
 {
-    {.descr = "MAP/MSE/MMB/BV-15-I MMS only"             , .msg_count = 1, .msg_types = { "MMS"}, .msg_stati = { "no","yes"}},
-    {.descr = "MAP/MSE/MMB/BV-15-I IM only"             , .msg_count = 1, .msg_types = { "IM"}, .msg_stati = { "no","yes"}},
-{.descr = "MAP/MSE/MMB/BV-09-I 10 11 13 14" , .msg_count = 2, .msg_types = { "SMS_GSM","SMS_CDMA"},                      .msg_stati = { "no"}},
-{.descr = "MAP/MSE/MMB/BV-12-I"             , .msg_count = 1, .msg_types = { "EMAIL", "SMS_GSM","SMS_CDMA"},             .msg_stati = { "no","yes" }},
-{.descr = "MAP/MSE/MMB/BV-15-I"             , .msg_count = 1, .msg_types = { "EMAIL","SMS_GSM","SMS_CDMA", "MMS", "IM"}, .msg_stati = { "no","yes"}}
+    
+{.descr = "MAP/MSE/MMB/BV-09-I 10 11 13 14" , .msg_count = 2, .msg_types = { "SMS_GSM","SMS_CDMA"},                      .msg_stati = { "no"}      ,.cycle_type_first = 0},
+{.descr = "MAP/MSE/MMB/BV-12-I"             , .msg_count = 1, .msg_types = { "EMAIL", "SMS_GSM","SMS_CDMA"},             .msg_stati = { "no","yes"},.cycle_type_first = 0},
+{.descr = "MAP/MSE/MMB/BV-15-I"             , .msg_count = 5, .msg_types = { "EMAIL","SMS_GSM","SMS_CDMA"/*, "MMS", "IM"*/}, .msg_stati = {"no","yes"},.cycle_type_first = 1},
+{.descr = "MAP/MSE/MMB/BV-15-I MMS only"    , .msg_count = 1, .msg_types = { "MMS"},                                     .msg_stati = { "no","yes"},.cycle_type_first = 0},
+{.descr = "MAP/MSE/MMB/BV-15-I IM only"     , .msg_count = 1, .msg_types = { "IM"},                                      .msg_stati = { "no","yes"},.cycle_type_first = 0},
 };
 
 static int current_test_config = 0;
@@ -128,24 +130,39 @@ static void init_testcases(void) {
     msg_status = 0;
 }
 
+// activate next msg_status
+// return true on overflow
+static int cycle_msg_status(void) {
+    if (test_configs[current_test_config].msg_stati[msg_status + 1] != NULL)
+        ++msg_status;
+    else
+        msg_status = 0;
+
+    return msg_status == 0;
+}
+
+// // activate next msg_type
+// return true on overflow
+static int cycle_msg_type(void) {
+    if (test_configs[current_test_config].msg_types[current_msg_type + 1] != NULL)
+        ++current_msg_type;
+    else
+        current_msg_type = 0;
+
+    return current_msg_type == 0;
+}
+
 static void create_msg(char * msg_buffer, uint16_t index, int maxsize){
     sprintf_s(msg_buffer, maxsize, msg_listing_msg,
         test_configs[current_test_config].msg_types[current_msg_type], test_configs[current_test_config].msg_stati[msg_status]);
-   
 
-    // cycle through all msg_stati
-    if (test_configs[current_test_config].msg_stati[msg_status + 1] != NULL)
-        ++msg_status;
-    else {
-        msg_status = 0;
-
-        // next msg_type
-        if (test_configs[current_test_config].msg_types[current_msg_type + 1] != NULL)
-            ++current_msg_type;
-        else
-            current_msg_type = 0;
+    if (test_configs[current_test_config].cycle_type_first) {
+        if (cycle_msg_type())
+            cycle_msg_status();
+    } else {
+        if (cycle_msg_status())
+            cycle_msg_type();
     }
-
 }
 
 // TODO enable to send message larger as one OBEX/MAP packet
@@ -188,7 +205,7 @@ static uint16_t send_listing(uint16_t first, uint16_t last) {
     }
 
     uint8_t response_code;
-    uint32_t continuation;
+	uint32_t continuation;
 
     if (done) {
         response_code = OBEX_RESP_SUCCESS;
@@ -278,6 +295,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
     UNUSED(channel);
     UNUSED(size);
     uint8_t status;
+    uint16_t continuation, total_cards, start_index, end_index, num_cards_selected, max_list_count;
 	
     switch (packet_type){
         case HCI_EVENT_PACKET:
@@ -305,9 +323,33 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             break;
 							
                         case MAP_SUBEVENT_MESSAGE_LISTING_ITEM:
+                            //continuation = (uint16_t) pbap_subevent_pull_vcard_listing_get_continuation(packet);
+                            //if (continuation == 0) {} // something TODO?
                             map_access_server_set_database_identifier(map_cid, database_identifier);
                             map_access_server_set_folder_version(map_cid, folder_version);
                             printf("[+] Get Message listing\n");
+                            // send vcard listing
+                            //
+                            //total_cards = test_configs[current_test_config].msg_count;
+                            //start_index = pbap_subevent_pull_vcard_listing_get_list_start_offset(packet);
+                            //num_cards_selected = total_cards - start_index;
+                            //max_list_count = pbap_subevent_pull_vcard_listing_get_max_list_count(packet);
+                            //if (max_list_count < 0xffff){
+                            //    num_cards_selected = btstack_min(max_list_count, num_cards_selected);
+                            //}
+                            //printf("[+] get message listing - list offset %u, num messages %u\n", start_index, num_cards_selected);
+                            //// consider already sent cards
+                            //if (continuation > 0xffff){
+                            //    // just missed the footer
+                            //    start_index = 0xffff;
+                            //    num_cards_selected  = 0;
+                            //} else {
+                            //    num_cards_selected -= continuation;
+                            //    start_index += continuation;
+                            //}
+                            //end_index = start_index + num_cards_selected - 1;
+                            //printf("[-] continuation %u, num messages %u, start index %u, end index %u\n", continuation, num_cards_selected, start_index, end_index);
+                            //send_listing(start_index, end_index);
                             send_listing(0, test_configs[current_test_config].msg_count-1);
                             break;
 
