@@ -47,7 +47,7 @@
  *  - stdout hexdump
  *
  */
-
+#include <windows.h>
 #include "btstack_config.h"
 
 #include "hci_dump_windows_fs.h"
@@ -57,7 +57,6 @@
 #include "hci_cmd.h"
 
 #include <stdio.h>
-#include <windows.h>
 #include <share.h>
 
 /**
