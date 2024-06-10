@@ -61,6 +61,7 @@
 #include "le-audio/le_audio_base_builder.h"
 #include "le_audio_demo_util_source.h"
 #include "le-audio/le_audio_base_parser.h"
+#include "btp_tmap.h"
 
 #define  MAX_NUM_BIS 2
 #define  MAX_CHANNELS 2
@@ -1886,6 +1887,43 @@ void btp_aics_handler(uint8_t opcode, uint8_t controller_index, uint16_t length,
 
         default:
             MESSAGE("BTP MICP Operation 0x%02x not implemented", opcode);
+            btstack_assert(false);
+            break;
+    }
+};
+
+void btp_tmap_init(void){
+}
+
+static void btp_bap_tmap_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) {
+    UNUSED(channel);
+    UNUSED(size);
+
+    if (packet_type != HCI_EVENT_PACKET) return;
+    if (hci_event_packet_get_type(packet) != HCI_EVENT_LEAUDIO_META) return;
+
+    switch (hci_event_leaudio_meta_get_subevent_code(packet)) {
+        default:
+            break;
+    }
+}
+
+void btp_tmap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, const uint8_t *data){
+    // provide op info for response
+    response_len = 0;
+    response_service_id = BTP_SERVICE_ID_TMAP;
+    response_op = opcode;
+    server_t * server;
+    switch (opcode) {
+        case BTP_TMAP_READ_SUPPORTED_COMMANDS:
+        MESSAGE("BTP_TMAP_READ_SUPPORTED_COMMANDS");
+            if (controller_index == BTP_INDEX_NON_CONTROLLER) {
+                uint8_t commands = 0;
+                btp_send(response_service_id, opcode, controller_index, 1, &commands);
+            }
+            break;
+        default:
+            MESSAGE("BTP TMAP Operation 0x%02x not implemented", opcode);
             btstack_assert(false);
             break;
     }
