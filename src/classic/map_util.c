@@ -225,7 +225,7 @@ static void map_client_emit_message_listing_item_event(btstack_packet_handler_t 
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_MAP_META;
     pos++;  // skip len
-    event[pos++] = MAP_SUBEVENT_MESSAGE_LISTING_ITEM;
+    event[pos++] = MAP_SUBEVENT_GET_MESSAGE_LISTING;
     little_endian_store_16(event,pos,cid);
     pos+=2;
     

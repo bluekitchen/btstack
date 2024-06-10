@@ -295,7 +295,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
     UNUSED(channel);
     UNUSED(size);
     uint8_t status;
-    uint16_t continuation, total_cards, start_index, end_index, num_cards_selected, max_list_count;
+    uint16_t continuation, total_messages, start_index, end_index, num_msgs_selected, max_list_count;
 	
     switch (packet_type){
         case HCI_EVENT_PACKET:
@@ -322,35 +322,43 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                                    map_subevent_operation_completed_get_status(packet));
                             break;
 							
-                        case MAP_SUBEVENT_MESSAGE_LISTING_ITEM:
-                            //continuation = (uint16_t) pbap_subevent_pull_vcard_listing_get_continuation(packet);
-                            //if (continuation == 0) {} // something TODO?
+                        case MAP_SUBEVENT_FOLDER_LISTING_ITEM:
                             map_access_server_set_database_identifier(map_cid, database_identifier);
                             map_access_server_set_folder_version(map_cid, folder_version);
-                            printf("[+] Get Message listing\n");
-                            // send vcard listing
-                            //
-                            //total_cards = test_configs[current_test_config].msg_count;
-                            //start_index = pbap_subevent_pull_vcard_listing_get_list_start_offset(packet);
-                            //num_cards_selected = total_cards - start_index;
-                            //max_list_count = pbap_subevent_pull_vcard_listing_get_max_list_count(packet);
-                            //if (max_list_count < 0xffff){
-                            //    num_cards_selected = btstack_min(max_list_count, num_cards_selected);
-                            //}
-                            //printf("[+] get message listing - list offset %u, num messages %u\n", start_index, num_cards_selected);
-                            //// consider already sent cards
-                            //if (continuation > 0xffff){
-                            //    // just missed the footer
-                            //    start_index = 0xffff;
-                            //    num_cards_selected  = 0;
-                            //} else {
-                            //    num_cards_selected -= continuation;
-                            //    start_index += continuation;
-                            //}
-                            //end_index = start_index + num_cards_selected - 1;
-                            //printf("[-] continuation %u, num messages %u, start index %u, end index %u\n", continuation, num_cards_selected, start_index, end_index);
-                            //send_listing(start_index, end_index);
+                            printf("[+] Get Folder listing\n");
                             send_listing(0, test_configs[current_test_config].msg_count-1);
+                            break;
+							
+                        case MAP_SUBEVENT_GET_MESSAGE_LISTING:
+                            continuation = (uint16_t)map_subevent_get_message_listing_get_continuation(packet);
+                            if (continuation == 0) {
+                                printf("[+] Start MAP_SUBEVENT_GET_MESSAGE_LISTING continuation == 0\n");
+                                map_access_server_set_database_identifier(map_cid, database_identifier);
+                                map_access_server_set_folder_version(map_cid, folder_version);
+                            }
+                            
+                            // send messages listing
+                            total_messages = test_configs[current_test_config].msg_count;
+                            start_index = map_subevent_get_message_listing_get_ListStartOffset(packet);
+                            num_msgs_selected = total_messages - start_index;
+                            max_list_count = map_subevent_get_message_listing_get_MaxListCount(packet);
+                            if (max_list_count < 0xffff){
+                                num_msgs_selected = btstack_min(max_list_count, num_msgs_selected);
+                            }
+                            printf("[+] get message listing - list offset %u, num messages %u\n", start_index, num_msgs_selected);
+                            // consider already sent cards
+                            if (continuation > 0xffff){
+                                // just missed the footer
+                                start_index = 0xffff;
+                                num_msgs_selected  = 0;
+                            } else {
+                                num_msgs_selected -= continuation;
+                                start_index += continuation;
+                            }
+                            end_index = start_index + num_msgs_selected - 1;
+                            printf("[-] continuation %u, num messages %u, start index %u, end index %u\n", continuation, num_msgs_selected, start_index, end_index);
+                            send_listing(start_index, end_index);
+                            //send_listing(test_configs[current_test_config].msg_count-1);
                             break;
 
                         case MAP_SUBEVENT_GET_MESSAGE:
