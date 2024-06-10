@@ -37,6 +37,11 @@
 
 #define BTSTACK_FILE__ "btstack_util.c"
 
+#ifdef _MSC_VER
+#include <intrin.h>
+#include <windows.h>
+#endif
+
 /*
  *  General utility functions
  */
@@ -44,11 +49,6 @@
 #include "btstack_config.h"
 #include "btstack_debug.h"
 #include "btstack_util.h"
-
-#ifdef _MSC_VER
-#include <intrin.h>
-#include <windows.h>
-#endif
 
 #ifdef ENABLE_PRINTF_HEXDUMP
 #include <stdio.h>

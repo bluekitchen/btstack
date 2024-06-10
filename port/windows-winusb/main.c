@@ -42,7 +42,7 @@
 // minimal setup for HCI code
 //
 // *****************************************************************************
-
+#include <Windows.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>

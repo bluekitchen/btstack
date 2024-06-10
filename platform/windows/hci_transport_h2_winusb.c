@@ -53,6 +53,8 @@
 // SCO Data     0 0 0x83 Isochronous (IN)
 // SCO Data     0 0 0x03 Isochronous (Out)
 
+#include <Windows.h>
+
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
@@ -65,7 +67,6 @@
 #include "hci_transport.h"
 #include "hci_transport_usb.h"
 
-#include <Windows.h>
 #include <SetupAPI.h>
 #include <Winusb.h>
 
