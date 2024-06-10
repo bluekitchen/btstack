@@ -112,6 +112,8 @@ static struct
     char* msg_stati[3]; // maximum 3-1 entries, last one is null
 } test_configs[] =
 {
+    {.descr = "MAP/MSE/MMB/BV-15-I MMS only"             , .msg_count = 1, .msg_types = { "MMS"}, .msg_stati = { "no","yes"}},
+    {.descr = "MAP/MSE/MMB/BV-15-I IM only"             , .msg_count = 1, .msg_types = { "IM"}, .msg_stati = { "no","yes"}},
 {.descr = "MAP/MSE/MMB/BV-09-I 10 11 13 14" , .msg_count = 2, .msg_types = { "SMS_GSM","SMS_CDMA"},                      .msg_stati = { "no"}},
 {.descr = "MAP/MSE/MMB/BV-12-I"             , .msg_count = 1, .msg_types = { "EMAIL", "SMS_GSM","SMS_CDMA"},             .msg_stati = { "no","yes" }},
 {.descr = "MAP/MSE/MMB/BV-15-I"             , .msg_count = 1, .msg_types = { "EMAIL","SMS_GSM","SMS_CDMA", "MMS", "IM"}, .msg_stati = { "no","yes"}}
@@ -398,9 +400,9 @@ int btstack_main(int argc, const char * argv[]){
     // setup MAP Access Server
     uint8_t supported_message_types =   MAP_SUPPORTED_MESSAGE_TYPE_EMAIL
                                       | MAP_SUPPORTED_MESSAGE_TYPE_SMS_GSM
-                                      | MAP_SUPPORTED_MESSAGE_TYPE_SMS_CDMA;
-                                      //| MAP_SUPPORTED_MESSAGE_TYPE_MMS
-                                      //| MAP_SUPPORTED_MESSAGE_TYPE_IM;
+                                      | MAP_SUPPORTED_MESSAGE_TYPE_SMS_CDMA
+                                      | MAP_SUPPORTED_MESSAGE_TYPE_MMS
+                                      | MAP_SUPPORTED_MESSAGE_TYPE_IM;
     uint32_t supported_features = 0x1F;
     memset(map_message_access_service_buffer, 0, sizeof(map_message_access_service_buffer));
     map_util_create_access_service_sdp_record(map_message_access_service_buffer,
