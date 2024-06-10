@@ -66,6 +66,7 @@
 #include "btp_pacs.h"
 #include "btp_vcp.h"
 #include "btp_aics.h"
+#include "btp_tmap.h"
 
 #define AUTOPTS_SOCKET_NAME "/tmp/bt-stack-tester"
 
@@ -1842,6 +1843,9 @@ static void btp_packet_handler(uint8_t service_id, uint8_t opcode, uint8_t contr
         case BTP_SERVICE_ID_VCP:
             btp_vcp_handler(opcode, controller_index, length, data);
             break;
+        case BTP_SERVICE_ID_TMAP:
+            btp_tmap_handler(opcode, controller_index, length, data);
+            break;
         case BTP_SERVICE_ID_MICP:
             btp_micp_handler(opcode, controller_index, length, data);
             break;
@@ -2138,7 +2142,7 @@ int btstack_main(int argc, const char * argv[])
     // configure GAP LE
 
     // LE Legacy Pairing, Passkey entry initiator enter, responder (us) displays
-    sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
+    sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_YES_NO);
     sm_set_authentication_requirements( SM_AUTHREQ_NO_BONDING);
     sm_use_fixed_passkey_in_display_role(0);
 
@@ -2167,6 +2171,7 @@ int btstack_main(int argc, const char * argv[])
     btp_cap_init();
     btp_vcp_init();
     btp_micp_init();
+    btp_tmap_init();
 
     MESSAGE("auto-pts iut-btp-client started");
 
