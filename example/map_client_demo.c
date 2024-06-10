@@ -354,7 +354,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             memcpy(value, map_subevent_folder_listing_item_get_name(packet), value_len);
                             printf("Folder \'%s\'\n", value);
                             break;
-                        case MAP_SUBEVENT_MESSAGE_LISTING_ITEM:
+                        case MAP_SUBEVENT_GET_MESSAGE_LISTING:
                             msg_type = map_subevent_message_listing_item_get_type (packet);
                             msg_status = map_subevent_message_listing_item_get_read (packet);
                             memcpy((uint8_t *) message_handle, map_subevent_message_listing_item_get_handle(packet), MAP_MESSAGE_HANDLE_SIZE);
