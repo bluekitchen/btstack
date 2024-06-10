@@ -37,6 +37,7 @@
 
 #define BTSTACK_FILE__ "btstack_stdin_windows.c"
 
+#include <Windows.h>
 #include <errno.h>
 #include <stdio.h>
 
@@ -51,7 +52,6 @@
 // __WIN32 Defined as 1 when the compilation target is 32-bit ARM, 64-bit ARM, x86, or x64.
 //         Otherwise, undefined.
 
-#include <Windows.h>
 #include <conio.h>  //provides non standard getch() function
 #include <signal.h>
 

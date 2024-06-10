@@ -41,6 +41,11 @@
  *  General utility functions
  */
 
+#ifdef _MSC_VER
+#include <Windows.h>
+#include <intrin.h>
+#endif
+
 #include "btstack_config.h"
 #include "btstack_debug.h"
 #include "btstack_util.h"
@@ -48,10 +53,6 @@
 #include <stdio.h>  // vsnprintf
 #include <string.h> // memcpy
 
-#ifdef _MSC_VER
-#include <intrin.h>
-#include <windows.h>
-#endif
 
 
 /**
