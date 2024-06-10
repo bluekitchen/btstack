@@ -54,7 +54,9 @@
 
 
 // Get the number of entries in an array ('x' must NOT be a pointer!)
+#ifndef ARRAYSIZE
 #define ARRAYSIZE(x) (sizeof(x)/sizeof((x)[0]))
+#endif
 
 // TYPES
 
@@ -6749,14 +6751,21 @@ typedef uint8_t sm_key_t[16];
  */
 #define MAP_SUBEVENT_FOLDER_LISTING_ITEM                                  0x04u
 
-/**
- * @format 12D11
- * @param subevent_code
- * @param map_cid
- * @param handle
- * @param type map_message_type_t
- * @param read map_message_status_t
- */
+ /**
+  * @format 124122411JV
+  * @param subevent_code
+  * @param goep_cid
+  * @param continuation - value provided by caller of pbap_server_send_pull_response
+  * @param order
+  * @param max_list_count 0xffff for unlimited
+  * @param list_start_offset
+  * @param vcard_selector
+  * @param vcard_selector_operator
+  * @param search_property
+  * @param search_value_len
+  * @param search_value
+ 
+  */
 #define MAP_SUBEVENT_MESSAGE_LISTING_ITEM                                 0x05u
 // todo: quick fix to have a subevent for "x-bt/message"
 #define MAP_SUBEVENT_MESSAGE                                0x55u
