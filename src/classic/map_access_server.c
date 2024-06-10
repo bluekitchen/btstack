@@ -771,67 +771,33 @@ static void map_access_server_handle_get_request(map_access_server_t* map_access
     uint8_t event[2 + 20 + MAP_SERVER_MAX_NAME_LEN + MAP_SERVER_MAX_SEARCH_VALUE_LEN];
     uint16_t pos = 0;
     uint16_t search_value_len;
-    event[pos++] = HCI_EVENT_MAP_META;
+    app_write_08(event, &pos, HCI_EVENT_MAP_META);
+    pos++; // skip size header, its written at the end
     switch (map_access_server->request.object_type) {
 
     case MAP_OBJECT_TYPE_GET_MSG_LISTING:
-        search_value_len = (uint16_t)strlen(map_access_server->request.app_params.search_value);
-        event[pos++] = 20 + search_value_len + 1;
-        event[pos++] = MAP_SUBEVENT_MESSAGE_LISTING_ITEM;
-        //little_endian_store_16(event, pos, map_access_server->map_cid);
-        //pos += 2;
-        //little_endian_store_32(event, pos, map_access_server->request.continuation);
-        //pos += 4;
-        //event[pos++] = map_access_server->request.app_params.order;
-        //little_endian_store_16(event, pos, map_access_server->request.app_params.MaxListCount);
-        //pos += 2;
-        //event[pos++] = map_access_server->request.app_params.msg_selector_operator;
-        //event[pos++] = map_access_server->request.app_params.search_property;
-        //// search_value is zero terminated
-        //event[pos++] = search_value_len + 1;
-        //memcpy(&event[pos], (const uint8_t*)map_access_server->request.app_params.search_value, search_value_len + 1);
-        //pos += search_value_len + 1;
-        //event[pos++] = folder;
+        app_write_08(event, &pos, MAP_SUBEVENT_MESSAGE_LISTING_ITEM);
+        app_write_16(event, &pos, map_access_server->map_cid);
+
+        // write message len (after 2 header bytes) into 2nd byte
+        event[1] = 25;//pos - 2;
+
         break;
 
     case MAP_OBJECT_TYPE_GET_MESSAGE:
-        search_value_len = (uint16_t)strlen(map_access_server->request.app_params.search_value);
-        event[pos++] = 20 + search_value_len + 1;
-        event[pos++] = MAP_SUBEVENT_GET_MESSAGE;
-        //little_endian_store_16(event, pos, map_access_server->map_cid);
-        //pos += 2;
-        //little_endian_store_32(event, pos, map_access_server->request.continuation);
-        //pos += 4;
-        //event[pos++] = map_access_server->request.app_params.order;
-        //little_endian_store_16(event, pos, map_access_server->request.app_params.MaxListCount);
-        //pos += 2;
-        //event[pos++] = map_access_server->request.app_params.msg_selector_operator;
-        //event[pos++] = map_access_server->request.app_params.search_property;
-        //// search_value is zero terminated
-        //event[pos++] = search_value_len + 1;
-        //memcpy(&event[pos], (const uint8_t*)map_access_server->request.app_params.search_value, search_value_len + 1);
-        //pos += search_value_len + 1;
-        //event[pos++] = folder;
+        app_write_08(event, &pos, MAP_SUBEVENT_GET_MESSAGE);
+        app_write_16(event, &pos, map_access_server->map_cid);
+
+        // write message len (after 2 header bytes) into 2nd byte
+        event[1] = 25;//pos - 2;
         break;
 
     case MAP_OBJECT_TYPE_PUT_MESSAGE_STATUS:
-        search_value_len = (uint16_t)strlen(map_access_server->request.app_params.search_value);
-        event[pos++] = 20 + search_value_len + 1;
-        event[pos++] = MAP_SUBEVENT_PUT_MESSAGE_STATUS;
-        //little_endian_store_16(event, pos, map_access_server->map_cid);
-        //pos += 2;
-        //little_endian_store_32(event, pos, map_access_server->request.continuation);
-        //pos += 4;
-        //event[pos++] = map_access_server->request.app_params.order;
-        //little_endian_store_16(event, pos, map_access_server->request.app_params.MaxListCount);
-        //pos += 2;
-        //event[pos++] = map_access_server->request.app_params.msg_selector_operator;
-        //event[pos++] = map_access_server->request.app_params.search_property;
-        //// search_value is zero terminated
-        //event[pos++] = search_value_len + 1;
-        //memcpy(&event[pos], (const uint8_t*)map_access_server->request.app_params.search_value, search_value_len + 1);
-        //pos += search_value_len + 1;
-        //event[pos++] = folder;
+        app_write_08(event, &pos, MAP_SUBEVENT_PUT_MESSAGE_STATUS);
+        app_write_16(event, &pos, map_access_server->map_cid);
+
+        // write message len (after 2 header bytes) into 2nd byte
+        event[1] = 25;//pos - 2;
         break;
 
     default:
