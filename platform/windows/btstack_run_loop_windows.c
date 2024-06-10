@@ -41,13 +41,12 @@
  *  btstack_run_loop_windows.c
  */
 
+#include <Windows.h>
 #include "btstack_run_loop.h"
 #include "btstack_run_loop_windows.h"
 #include "btstack_linked_list.h"
 #include "btstack_debug.h"
 #include "btstack_util.h"
-
-#include <Windows.h>
 
 #include <stdio.h>
 #include <stdlib.h>

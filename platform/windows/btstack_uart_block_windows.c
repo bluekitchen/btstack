@@ -43,7 +43,7 @@
  *  Common code to access serial port via asynchronous block read/write commands
  *
  */
-
+#include <Windows.h>
 #include "btstack_uart_block.h"
 #include "btstack_run_loop.h"
 #include "btstack_debug.h"
@@ -52,7 +52,7 @@
 #include <string.h>
 #include <errno.h>
 
-#include <Windows.h>
+
 
 // uart config
 static const btstack_uart_config_t * uart_config;
