@@ -387,11 +387,12 @@ static void map_access_server_handle_set_path_request(map_access_server_t* map_a
 }
 
 static map_object_type_t map_access_server_parse_object_type(const char* type_string) {
-    if (strcmp("x-bt/MAP-msg-listing", type_string) == 0) {
-        return MAP_OBJECT_TYPE_GET_MSG_LISTING;
-    }
-
+    
     if (strcmp("x-obex/folder-listing", type_string) == 0) {
+        return MAP_OBJECT_TYPE_GET_FOLDER_LISTING;
+    }
+    
+    if (strcmp("x-bt/MAP-msg-listing", type_string) == 0) {
         return MAP_OBJECT_TYPE_GET_MSG_LISTING;
     }
 
@@ -752,6 +753,7 @@ static void map_access_server_handle_get_request(map_access_server_t* map_access
         break;
 
     case MAP_OBJECT_TYPE_GET_MESSAGE:
+    case MAP_OBJECT_TYPE_GET_FOLDER_LISTING:
     case MAP_OBJECT_TYPE_PUT_MESSAGE_STATUS:
         break;
 
@@ -775,18 +777,26 @@ static void map_access_server_handle_get_request(map_access_server_t* map_access
     pos++; // skip size header, its written at the end
     switch (map_access_server->request.object_type) {
 
-    case MAP_OBJECT_TYPE_GET_MSG_LISTING:
-        app_write_08(event, &pos, MAP_SUBEVENT_MESSAGE_LISTING_ITEM);
+    case MAP_OBJECT_TYPE_GET_FOLDER_LISTING:
+        app_write_08(event, &pos, MAP_SUBEVENT_FOLDER_LISTING_ITEM);
         app_write_16(event, &pos, map_access_server->map_cid);
 
         // write message len (after 2 header bytes) into 2nd byte
         event[1] = 25;//pos - 2;
+        break;
 
+    case MAP_OBJECT_TYPE_GET_MSG_LISTING:
+        app_write_08(event, &pos, MAP_SUBEVENT_GET_MESSAGE_LISTING);
+        app_write_16(event, &pos, map_access_server->map_cid);
+
+        // write message len (after 2 header bytes) into 2nd byte
+        event[1] = 25;//pos - 2;
         break;
 
     case MAP_OBJECT_TYPE_GET_MESSAGE:
         app_write_08(event, &pos, MAP_SUBEVENT_GET_MESSAGE);
         app_write_16(event, &pos, map_access_server->map_cid);
+        app_write_16(event, &pos, map_access_server->request.app_params.ListStartOffset);
 
         // write message len (after 2 header bytes) into 2nd byte
         event[1] = 25;//pos - 2;
