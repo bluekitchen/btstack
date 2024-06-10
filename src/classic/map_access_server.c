@@ -794,8 +794,12 @@ static void map_access_server_handle_get_request(map_access_server_t* map_access
         break;
 
     case MAP_OBJECT_TYPE_GET_MESSAGE:
+        * @param continuation - value provided by caller of map_server_send_pull_response
+        * @param MaxListCount
+        * @param ListStartOffset
         app_write_08(event, &pos, MAP_SUBEVENT_GET_MESSAGE);
         app_write_16(event, &pos, map_access_server->map_cid);
+        app_write_16(event, &pos, map_access_server->request.app_params.MaxListCount);
         app_write_16(event, &pos, map_access_server->request.app_params.ListStartOffset);
 
         // write message len (after 2 header bytes) into 2nd byte
