@@ -2144,7 +2144,7 @@ int btstack_main(int argc, const char * argv[])
 
     // LE Legacy Pairing, Passkey entry initiator enter, responder (us) displays
     sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_YES_NO);
-    sm_set_authentication_requirements( SM_AUTHREQ_NO_BONDING);
+    sm_set_authentication_requirements( SM_AUTHREQ_NO_BONDING | SM_AUTHREQ_SECURE_CONNECTION);
     sm_use_fixed_passkey_in_display_role(0);
 
     reset_gap();
