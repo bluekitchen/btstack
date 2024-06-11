@@ -5378,14 +5378,13 @@ typedef uint8_t sm_key_t[16];
 #define MAP_SUBEVENT_FOLDER_LISTING_ITEM                                  0x04u
 
  /**
-  * @format 12422
+  * @format 142422
   * @param subevent_code
+  * @param continuation internal state set from app via map_access_server_send_get_put_response
   * @param map_cid
-  * @param continuation - value provided by caller of map_server_send_pull_response
   * @param MaxListCount
   * @param ListStartOffset
   */
-  
 #define MAP_SUBEVENT_GET_MESSAGE_LISTING                                 0x05u
 
 /**
