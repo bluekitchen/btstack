@@ -773,14 +773,6 @@ void btp_cap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, 
                 btp_cap_cig_params.max_transport_latency_c_to_p = 40;
                 btp_cap_cig_params.max_transport_latency_p_to_c = 40;
                 btp_bap_num_ases = 0;
-                // set defaults
-                uint8_t i;
-                for (i=0;i<MAX_NR_CIS;i++){
-                    btp_cap_cig_params.cis_params[i].rtn_c_to_p = 2;
-                    btp_cap_cig_params.cis_params[i].rtn_p_to_c = 2;
-                    btp_cap_cig_params.cis_params[i].phy_c_to_p = LE_AUDIO_SERVER_PHY_MASK_2M;
-                    btp_cap_cig_params.cis_params[i].phy_p_to_c = LE_AUDIO_SERVER_PHY_MASK_2M;
-                }
                 // Broadcast
                 btp_cap_broadcast_stream_count = 0;
                 btp_cap_broadcast_subgroup_count = 0;
@@ -865,18 +857,19 @@ void btp_cap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, 
                 btstack_assert(cig_id == 0);
                 btp_cap_cig_params.cig_id = cig_id;
                 btp_cap_cig_params.cis_params[cis_index].cis_id = cis_id;
-                btp_cap_cig_params.cis_params[cis_index].phy_c_to_p = LE_AUDIO_SERVER_PHY_MASK_2M;
                 btp_cap_cig_params.framing = ase->qos_configuration.framing;
                 btp_cap_cig_params.sdu_interval_c_to_p = sdu_interval_us;
                 btp_cap_cig_params.sdu_interval_p_to_c = sdu_interval_us;
                 switch (direction){
                     case LE_AUDIO_ROLE_SINK:
                         btp_cap_cig_params.max_transport_latency_c_to_p = max_transport_latency_ms;
+                        btp_cap_cig_params.cis_params[cis_index].phy_c_to_p = LE_AUDIO_SERVER_PHY_MASK_2M;
                         btp_cap_cig_params.cis_params[cis_index].max_sdu_c_to_p = max_sdu;
                         btp_cap_cig_params.cis_params[cis_index].rtn_c_to_p = retransmission_number;
                         break;
                     case LE_AUDIO_ROLE_SOURCE:
                         btp_cap_cig_params.max_transport_latency_p_to_c = max_transport_latency_ms;
+                        btp_cap_cig_params.cis_params[cis_index].phy_p_to_c = LE_AUDIO_SERVER_PHY_MASK_2M;
                         btp_cap_cig_params.cis_params[cis_index].max_sdu_p_to_c = max_sdu;
                         btp_cap_cig_params.cis_params[cis_index].rtn_p_to_c = retransmission_number;
                         break;
