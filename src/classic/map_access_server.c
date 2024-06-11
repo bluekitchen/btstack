@@ -680,7 +680,7 @@ static void map_access_server_app_param_callback_get(void* user_data, uint8_t ta
             case MAP_APP_PARAM_ ## name: \
                 map_access_server->request.app_params. name = \
                     app_param_read_ ## type (map_access_server->request.app_param_buffer, 0); \
-                log_debug("APP PARAM <%s> value <%08x>", #name, map_access_server->request.app_params. name); \
+                log_info("APP PARAM <%s> value <%08x>", #name, map_access_server->request.app_params. name); \
                 break;
                 APP_PARAMS
 #undef X
