@@ -62,6 +62,7 @@
 #include "le_audio_demo_util_source.h"
 #include "le-audio/le_audio_base_parser.h"
 #include "btp_tmap.h"
+#include "btp_tbs.h"
 
 #define  MAX_NUM_BIS 2
 #define  MAX_CHANNELS 2
@@ -142,6 +143,19 @@ static uint8_t extended_adv_data[] = {
         7, BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME, 'P', 'T', 'S', '-', 'x', 'x',
         7, BLUETOOTH_DATA_TYPE_BROADCAST_NAME ,     'P', 'T', 'S', '-', 'x', 'x',
 };
+
+// TBS
+#define TBS_BEARERS_MAX_NUM 2
+#define CALL_POOL_SIZE  (10)
+typedef struct {
+    telephone_bearer_service_server_t bearer;
+    uint16_t id;
+    char *scheme;
+} my_bearer_t;
+static my_bearer_t tbs_bearers[TBS_BEARERS_MAX_NUM];
+static uint8_t tbs_bearer_index;
+static tbs_call_data_t calls[CALL_POOL_SIZE];
+static uint16_t call_ids[CALL_POOL_SIZE];
 
 static void btp_bap_send_response_if_pending(void){
     if ((response_service_id == BTP_SERVICE_ID_BAP) && (response_op != 0)){
@@ -1144,6 +1158,249 @@ static void btp_bap_pacs_client_event_handler(uint8_t packet_type, uint16_t chan
     }
 }
 
+// TBS
+static void tbs_server_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+    UNUSED(size);
+
+    if (packet_type != HCI_EVENT_PACKET) return;
+    if (hci_event_packet_get_type(packet) != HCI_EVENT_LEAUDIO_META) return;
+
+    switch (hci_event_gattservice_meta_get_subevent_code(packet)){
+#if 0
+        case LEAUDIO_SUBEVENT_TBS_SERVER_CALL_CONTROL_POINT_NOTIFICATION_TASK: {
+//            hci_con_handle_t con_handle = little_endian_read_16(packet, 3);
+            uint16_t bearer_id = little_endian_read_16(packet, 5);
+            uint8_t opcode = packet[7];
+
+            telephone_bearer_service_server_t *tbs_bearer = telephone_bearer_service_server_get_bearer_by_id( bearer_id );
+            my_bearer_t *bearer = tbs_to_my_bearer( tbs_bearer );
+            uint8_t call_id = packet[8];
+            uint8_t *data = &packet[8];
+            uint16_t data_size = size - 8;
+            tbs_call_data_t *tbs_call = telephone_bearer_service_server_get_call_by_id( tbs_bearer, call_id );
+            my_call_data_t *call = tbs_call_to_my_call( tbs_call );
+#ifdef DEBUG
+            for( int i=0; i<size; ++i ) {
+                printf("%#04x, ", packet[i]);
+            }
+            printf("\n");
+            printf("opcode: %d\ncall_id: %d\n", opcode, call_id);
+            printf("bearer_id: %d\n", bearer_id);
+#endif
+            switch( opcode ) {
+                case TBS_CONTROL_POINT_OPCODE_ACCEPT: {
+                    printf("%s( %d )\n", opcode_to_string[opcode], call_id);
+                    tbs_private_public_event_t sig_accept = { .data.sig=ACCEPT_SIG, .private = false };
+                    tbs_private_public_event_t sig_local_hold = { .data.sig=LOCAL_HOLD_SIG, .private = true };
+                    if( call == NULL ) {
+                        telephone_bearer_service_server_call_control_point_notification(bearer_id, call_id, opcode, TBS_CONTROL_POINT_RESULT_INVALID_CALL_INDEX);
+                        break;
+                    }
+                    btstack_hsm_dispatch( &call->super, &sig_accept.data );
+
+                    // for all other call's of this bearer
+                    for( int i=0; i<CALL_POOL_SIZE; ++i ) {
+                        if(( calls[i].id > 0 ) && (calls[i].id != call_id) && (calls[i].bearer == bearer)) {
+                            tbs_call_state_t state = telephone_bearer_service_server_get_call_state(&calls[i].data);
+                            switch( state ) {
+                                case TBS_CALL_STATE_ACTIVE:
+                                    btstack_hsm_dispatch( &calls[i].super, &sig_local_hold.data );
+                                    break;
+                                case TBS_CALL_STATE_REMOTELY_HELD:
+                                    btstack_hsm_dispatch( &calls[i].super, &sig_local_hold.data );
+                                    break;
+                                default:
+                                    break;
+                            }
+                        }
+                    }
+                    break;
+                }
+                case TBS_CONTROL_POINT_OPCODE_JOIN: {
+                    printf("%s( ", opcode_to_string[opcode]);
+                    for(int i=0; i<data_size; ++i) {
+                        printf("%d ", data[i]);
+                    }
+                    printf(")\n");
+                    if( !join_operation ) {
+                        telephone_bearer_service_server_call_control_point_notification(bearer_id, 0, opcode, TBS_CONTROL_POINT_RESULT_OPERATION_NOT_POSSIBLE);
+                        break;
+                    }
+                    tbs_private_public_event_t sig_retrive = { .data.sig=LOCAL_RETRIEVE_SIG, .private = true };
+                    tbs_private_public_event_t sig_local_hold = { .data.sig=LOCAL_HOLD_SIG, .private = true };
+
+                    if( data_size < 2 ) {
+                        telephone_bearer_service_server_call_control_point_notification(bearer_id, 0, opcode, TBS_CONTROL_POINT_RESULT_OPERATION_NOT_POSSIBLE);
+                        break;
+                    }
+                    // if any call in the list is incoming, or invalid reject operation
+                    for( int i=0; i<data_size; ++i ) {
+                        call_id = data[i];
+                        tbs_call = telephone_bearer_service_server_get_call_by_id( tbs_bearer, call_id );
+                        if( tbs_call == NULL ) {
+                            telephone_bearer_service_server_call_control_point_notification(bearer_id, call_id, opcode, TBS_CONTROL_POINT_RESULT_INVALID_CALL_INDEX);
+                            return;
+                        }
+                        tbs_call_state_t state = telephone_bearer_service_server_get_call_state(tbs_call);
+                        switch( state ) {
+                            case TBS_CALL_STATE_INCOMMING:
+                                telephone_bearer_service_server_call_control_point_notification(bearer_id, call_id, opcode, TBS_CONTROL_POINT_RESULT_OPERATION_NOT_POSSIBLE);
+                                return;
+                            default:
+                                break;
+                        }
+                    }
+
+                    call_id = data[0];
+                    tbs_call = telephone_bearer_service_server_get_call_by_id( tbs_bearer, call_id );
+                    tbs_call_state_t state = telephone_bearer_service_server_get_call_state(tbs_call);
+                    telephone_bearer_service_server_set_call_state( bearer_id, call_id, state );
+
+                    // retrieve locally held calls
+                    for( int i=0; i<data_size; ++i ) {
+                        tbs_call = telephone_bearer_service_server_get_call_by_id( tbs_bearer, data[i] );
+                        call = tbs_call_to_my_call( tbs_call );
+                        state = telephone_bearer_service_server_get_call_state(tbs_call);
+                        switch( state ) {
+                            case TBS_CALL_STATE_LOCALLY_HELD:
+                            case TBS_CALL_STATE_LOCALLY_AND_REMOTELY_HELD:
+                                btstack_hsm_dispatch( &call->super, &sig_retrive.data );
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+                    // for all other call's of this bearer
+                    for( int i=0; i<CALL_POOL_SIZE; ++i ) {
+                        call = &calls[i];
+                        // skip unused call
+                        if( call->id == 0 ) {
+                            continue;
+                        }
+                        // skip call's not belonging to us
+                        if( call->bearer != bearer ) {
+                            continue;
+                        }
+                        // skip calls in the join list
+                        int j;
+                        for( j=0; j<data_size; ++j ) {
+                            if( data[i] == call->id ) {
+                                break;
+                            }
+                        }
+                        if(j < data_size ) {
+                            continue;
+                        }
+
+                        tbs_call_state_t state = telephone_bearer_service_server_get_call_state(&calls[i].data);
+                        switch( state ) {
+                            case TBS_CALL_STATE_ACTIVE:
+                                btstack_hsm_dispatch( &calls[i].super, &sig_local_hold.data );
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+
+                    telephone_bearer_service_server_call_control_point_notification(bearer_id, call_id, opcode, TBS_CONTROL_POINT_RESULT_SUCCESS);
+                    break;
+                }
+                case TBS_CONTROL_POINT_OPCODE_LOCAL_HOLD: {
+                    printf("%s( %d )\n", opcode_to_string[opcode], call_id);
+                    tbs_private_public_event_t sig_local_hold = { .data.sig=LOCAL_HOLD_SIG, .private = false };
+                    if( call == NULL ) {
+                        telephone_bearer_service_server_call_control_point_notification(bearer_id, call_id, opcode, TBS_CONTROL_POINT_RESULT_INVALID_CALL_INDEX);
+                        break;
+                    }
+                    btstack_hsm_dispatch( &call->super, &sig_local_hold.data );
+                    break;
+                }
+                case TBS_CONTROL_POINT_OPCODE_LOCAL_RETRIEVE: {
+                    printf("%s( %d )\n", opcode_to_string[opcode], call_id);
+
+                    tbs_private_public_event_t sig_retrive = { .data.sig=LOCAL_RETRIEVE_SIG, .private = false };
+                    tbs_private_public_event_t sig_local_hold = { .data.sig=LOCAL_HOLD_SIG, .private = true };
+                    if( call == NULL ) {
+                        telephone_bearer_service_server_call_control_point_notification(bearer_id, call_id, opcode, TBS_CONTROL_POINT_RESULT_INVALID_CALL_INDEX);
+                        break;
+                    }
+                    btstack_hsm_dispatch( &call->super, &sig_retrive.data );
+
+                    // for all other call's of this bearer
+                    for( int i=0; i<CALL_POOL_SIZE; ++i ) {
+                        if(( calls[i].id > 0 ) && (calls[i].id != call_id) && (calls[i].bearer == bearer)) {
+                            tbs_call_state_t state = telephone_bearer_service_server_get_call_state(&calls[i].data);
+                            switch( state ) {
+                                case TBS_CALL_STATE_ACTIVE:
+                                    btstack_hsm_dispatch( &calls[i].super, &sig_local_hold.data );
+                                    break;
+                                case TBS_CALL_STATE_REMOTELY_HELD:
+                                    btstack_hsm_dispatch( &calls[i].super, &sig_local_hold.data );
+                                    break;
+                                default:
+                                    break;
+                            }
+                        }
+                    }
+                    break;
+                }
+                case TBS_CONTROL_POINT_OPCODE_ORIGINATE: {
+                    printf("%s( %s )\n", opcode_to_string[opcode], data);
+                    my_call_data_t *call = find_unused_call();
+                    if( call == NULL ) {
+                        telephone_bearer_service_server_call_control_point_notification(bearer_id, call_id, opcode, TBS_CONTROL_POINT_RESULT_LACK_OF_RESOURCES);
+                        break;
+                    }
+                    btstack_assert( bearer != NULL );
+
+                    tbs_state_constructor( call );
+                    call->bearer = bearer;
+                    tbs_call_event_t e = {
+                            .data.sig = ORIGINATE_SIG,
+                            .caller_id = "5551234",
+                            .friendly_name = "all mighty",
+                            .target_uri = (char *)data,
+                    };
+                    telephone_bearer_service_server_register_call( bearer_id, &call->data, &call->id );
+                    call_id = call->id;
+                    btstack_hsm_init( &call->super, &e.data);
+                    break;
+                }
+                case TBS_CONTROL_POINT_OPCODE_TERMINATE: {
+                    printf("%s( %d )\n", opcode_to_string[opcode], call_id);
+                    btstack_hsm_event_t e = { .sig=TERMINATE_SIG };
+                    if( call == NULL ) {
+                        telephone_bearer_service_server_call_control_point_notification(bearer_id, call_id, opcode, TBS_CONTROL_POINT_RESULT_INVALID_CALL_INDEX);
+                        break;
+                    }
+                    btstack_hsm_dispatch( &call->super, &e );
+                    break;
+                }
+                default:
+                    printf("unknown opcode\n");
+                    telephone_bearer_service_server_call_control_point_notification(bearer_id, call_id, opcode, TBS_CONTROL_POINT_RESULT_OPCODE_NOT_SUPPORTED);
+                    break;
+            }
+            break;
+        }
+        case LEAUDIO_SUBEVENT_TBS_SERVER_CALL_DEREGISTER_DONE: {
+//            hci_con_handle_t con_handle = little_endian_read_16(packet, 3);
+//            uint16_t bearer_id = little_endian_read_16(packet, 5);
+            uint8_t call_id = packet[7];
+
+            my_call_data_t *call = find_call_by_id(call_id);
+            btstack_assert( call != NULL );
+            call->id = 0;
+            printf("de-register call_id - %d\n", call_id);
+            break;
+        }
+#endif
+        default:
+            break;
+    }
+}
+
 // BTP
 
 void btp_bap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, const uint8_t *data) {
@@ -1579,6 +1836,18 @@ void btp_bap_init(void){
 
     // MICP = MICS Client
     microphone_control_service_client_init();
+
+    // GTBS Server
+    telephone_bearer_service_server_init();
+
+    // setup TBS
+    telephone_bearer_service_server_init();
+    (void) telephone_bearer_service_server_register_generic_bearer(
+            &tbs_bearers[tbs_bearer_index].bearer,
+            &tbs_server_packet_handler,
+            TBS_OPCODE_MASK_LOCAL_HOLD | TBS_OPCODE_MASK_JOIN,
+            &tbs_bearers[tbs_bearer_index].id);
+
 }
 
 void btp_bap_register_higher_layer(btstack_packet_handler_t handler){
@@ -1924,6 +2193,103 @@ void btp_tmap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length,
             break;
         default:
             MESSAGE("BTP TMAP Operation 0x%02x not implemented", opcode);
+            btstack_assert(false);
+            break;
+    }
+};
+
+
+void btp_tbs_init(void){
+}
+
+void btp_tbs_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, const uint8_t *data){
+    // provide op info for response
+    response_len = 0;
+    response_service_id = BTP_SERVICE_ID_TBS;
+    response_op = opcode;
+    server_t * server;
+    switch (opcode) {
+        case BTP_TBS_READ_SUPPORTED_COMMANDS:
+            MESSAGE("BTP_TBS_READ_SUPPORTED_COMMANDS");
+            if (controller_index == BTP_INDEX_NON_CONTROLLER) {
+                uint8_t commands = 0;
+                btp_send(response_service_id, opcode, controller_index, 1, &commands);
+            }
+            break;
+        case BTP_TBS_REMOTE_INCOMING:
+            /**
+             * 	uint8_t index;
+                uint8_t recv_len;
+                uint8_t caller_len;
+                uint8_t fn_len;
+                uint8_t data_len;
+                uint8_t data[0];
+             */
+            if (controller_index == 0) {
+                uint16_t offset = 0;
+                uint8_t index = data[offset++];
+                uint8_t recv_len = data[offset++];
+                uint8_t caller_len = data[offset++];
+                uint8_t fn_len = data[offset++];
+                uint8_t data_len = data[offset++];
+
+                char receiver_uri[TELEPHONE_BEARER_SERVICE_URI_MAX_LENGTH];
+                memcpy(receiver_uri, &data[offset], recv_len);
+                receiver_uri[recv_len] = 0;
+                offset += recv_len;
+
+                char caller_uri[TELEPHONE_BEARER_SERVICE_URI_MAX_LENGTH];
+                memcpy(caller_uri, &data[offset], caller_len);
+                caller_uri[caller_len] = 0;
+
+                char friendly_name[TELEPHONE_BEARER_SERVICE_URI_MAX_LENGTH];
+                memcpy(friendly_name, &data[offset], caller_len);
+                friendly_name[caller_len] = 0;
+
+                uint8_t bearer_id = tbs_bearers[tbs_bearer_index].id;
+                btp_send(response_service_id, opcode, controller_index, 0, NULL);
+
+                MESSAGE("BTP_TBS_REMOTE_INCOMING, index %u, bearer id %u", index, bearer_id);
+                MESSAGE("BTP_TBS_REMOTE_INCOMING, receiver %s", receiver_uri);
+                MESSAGE("BTP_TBS_REMOTE_INCOMING, caller %s", caller_uri);
+                MESSAGE("BTP_TBS_REMOTE_INCOMING, friendly name %s", friendly_name);
+
+                uint8_t status;
+                status = telephone_bearer_service_server_register_call(bearer_id, &calls[index], &call_ids[index]);
+                btstack_assert(status == ERROR_CODE_SUCCESS);
+                uint16_t call_id = call_ids[index];
+                status = telephone_bearer_service_server_set_call_state(bearer_id, call_id, TBS_CALL_STATE_INCOMMING);
+                btstack_assert(status == ERROR_CODE_SUCCESS);
+                // TODO: might need to get flipped
+                status = telephone_bearer_service_server_call_uri(bearer_id, call_id, caller_uri);
+                btstack_assert(status == ERROR_CODE_SUCCESS);
+                status = telephone_bearer_service_server_incoming_call_target_bearer_uri(bearer_id, call_id, receiver_uri);
+                btstack_assert(status == ERROR_CODE_SUCCESS);
+                status = telephone_bearer_service_server_call_friendly_name(bearer_id, call_id, friendly_name);
+                btstack_assert(status == ERROR_CODE_SUCCESS);
+            }
+            break;
+        case BTP_TBS_TERMINATE:
+            /**
+             * 	uint8_t index;
+             */
+            if (controller_index == 0) {
+                uint16_t offset = 0;
+                uint8_t index = data[offset++];
+                uint8_t bearer_id = tbs_bearers[tbs_bearer_index].id;
+                btp_send(response_service_id, opcode, controller_index, 0, NULL);
+
+                uint16_t call_id = call_ids[index];
+                MESSAGE("BTP_TBS_HANGUP, index %u, bearer id %u, call_id %u", index, bearer_id, call_id);
+                uint8_t status;
+                status = telephone_bearer_service_server_termination_reason(bearer_id, call_id, TBS_CALL_TERMINATION_REASON_CLIENT_ENDED_CALL);
+                btstack_assert(status == ERROR_CODE_SUCCESS);
+                telephone_bearer_service_server_deregister_call(bearer_id, call_id);
+                btstack_assert(status == ERROR_CODE_SUCCESS);
+            }
+            break;
+        default:
+            MESSAGE("BTP TBS Operation 0x%02x not implemented", opcode);
             btstack_assert(false);
             break;
     }
