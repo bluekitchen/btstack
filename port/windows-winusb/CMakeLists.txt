@@ -78,6 +78,21 @@ list(SORT SOURCES)
 # create static lib
 add_library(btstack STATIC ${SOURCES})
 
+
+# Add custom command to generate btstack_event.h
+add_custom_command(
+    OUTPUT ${BTSTACK_ROOT}/src/btstack_event.h
+    COMMAND ${Python_EXECUTABLE} ${BTSTACK_ROOT}/tool/btstack_event_generator.py
+    DEPENDS ${BTSTACK_ROOT}/src/btstack_defines.h
+    COMMENT "Generating btstack_event.h"
+)
+
+# Add custom target that depends on the generated header
+add_custom_target(generate_btstack_event_h DEPENDS ${BTSTACK_ROOT}/src/btstack_event.h)
+
+# Make sure the library depends on the generated header
+add_dependencies(btstack generate_btstack_event_h)
+
 # pkgconfig
 find_package(PkgConfig QUIET)
 
