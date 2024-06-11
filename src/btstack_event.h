@@ -21207,10 +21207,10 @@ static inline uint16_t map_subevent_get_message_listing_get_map_cid(const uint8_
  * @brief Get field MaxListCount from event MAP_SUBEVENT_GET_MESSAGE_LISTING
  * @param event packet
  * @return MaxListCount
- * @note: btstack_type 4
+ * @note: btstack_type 2
  */
-static inline uint32_t map_subevent_get_message_listing_get_MaxListCount(const uint8_t * event){
-    return little_endian_read_32(event, 9);
+static inline uint16_t map_subevent_get_message_listing_get_MaxListCount(const uint8_t * event){
+    return little_endian_read_16(event, 9);
 }
 /**
  * @brief Get field ListStartOffset from event MAP_SUBEVENT_GET_MESSAGE_LISTING
@@ -21219,7 +21219,7 @@ static inline uint32_t map_subevent_get_message_listing_get_MaxListCount(const u
  * @note: btstack_type 2
  */
 static inline uint16_t map_subevent_get_message_listing_get_ListStartOffset(const uint8_t * event){
-    return little_endian_read_16(event, 13);
+    return little_endian_read_16(event, 11);
 }
 
 /**
