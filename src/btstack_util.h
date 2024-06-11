@@ -136,10 +136,10 @@ void app_write_16(uint8_t* buffer, uint16_t* pos, uint16_t value);
 void app_write_24(uint8_t* buffer, uint16_t* pos, uint32_t value);
 void app_write_32(uint8_t* buffer, uint16_t* pos, uint32_t value);
 																 
-void app_read_08(uint8_t* buffer, uint16_t* pos, uint8_t  *value);
-void app_read_16(uint8_t* buffer, uint16_t* pos, uint16_t *value);
-void app_read_24(uint8_t* buffer, uint16_t* pos, uint32_t *value);
-void app_read_32(uint8_t* buffer, uint16_t* pos, uint32_t *value);
+void app_read_08(const uint8_t* buffer, uint16_t* pos, uint8_t  *value);
+void app_read_16(const uint8_t* buffer, uint16_t* pos, uint16_t *value);
+void app_read_24(const uint8_t* buffer, uint16_t* pos, uint32_t *value);
+void app_read_32(const uint8_t* buffer, uint16_t* pos, uint32_t *value);
 
 
 static inline uint16_t LITTLE_ENDIAN_READ_08(const uint8_t* buffer, uint16_t position) { uint8_t  value; uint16_t tmp_pos = (uint16_t)position; app_read_08(buffer, &tmp_pos, &value); log_debug("LITTLE_ENDIAN_READ_08: pos:%u value:%u (0x%04X)", tmp_pos, value, value); return value; }

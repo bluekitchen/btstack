@@ -119,10 +119,10 @@ void app_write_16(uint8_t* buffer, uint16_t* pos, uint16_t value) { little_endia
 void app_write_24(uint8_t* buffer, uint16_t* pos, uint32_t value) { little_endian_store_24(buffer, *pos, value);  *pos += 3; }
 void app_write_32(uint8_t* buffer, uint16_t* pos, uint32_t value) { little_endian_store_32(buffer, *pos, value);  *pos += 4; }
 
-void app_read_08(uint8_t* buffer, uint16_t* pos, uint8_t * value) { *value = little_endian_read_08(buffer, *pos); *pos += 1; }
-void app_read_16(uint8_t* buffer, uint16_t* pos, uint16_t* value) { *value = little_endian_read_16(buffer, *pos); *pos += 2; }
-void app_read_24(uint8_t* buffer, uint16_t* pos, uint32_t* value) { *value = little_endian_read_24(buffer, *pos); *pos += 3; }
-void app_read_32(uint8_t* buffer, uint16_t* pos, uint32_t* value) { *value = little_endian_read_32(buffer, *pos); *pos += 4; }
+void app_read_08(const uint8_t* buffer, uint16_t* pos, uint8_t * value) { *value = little_endian_read_08(buffer, *pos); *pos += 1; }
+void app_read_16(const uint8_t* buffer, uint16_t* pos, uint16_t* value) { *value = little_endian_read_16(buffer, *pos); *pos += 2; }
+void app_read_24(const uint8_t* buffer, uint16_t* pos, uint32_t* value) { *value = little_endian_read_24(buffer, *pos); *pos += 3; }
+void app_read_32(const uint8_t* buffer, uint16_t* pos, uint32_t* value) { *value = little_endian_read_32(buffer, *pos); *pos += 4; }
 
 uint32_t big_endian_read_08(const uint8_t* buffer, int position) {
     return buffer[position];
