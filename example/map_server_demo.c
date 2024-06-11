@@ -330,7 +330,11 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             break;
 							
                         case MAP_SUBEVENT_GET_MESSAGE_LISTING:
-                            continuation = (uint16_t)map_subevent_get_message_listing_get_continuation(packet);
+                            uint16_t pos = 3; // we skip directly to continuation;
+                            //continuation = (uint16_t)map_subevent_get_message_listing_get_continuation(packet);
+                            APP_READ_16(packet, &pos, &continuation);
+                            APP_READ_16(packet, &pos, &start_index);
+
                             if (continuation == 0) {
                                 printf("[+] Start MAP_SUBEVENT_GET_MESSAGE_LISTING continuation == 0\n");
                                 map_access_server_set_database_identifier(map_cid, database_identifier);
@@ -339,7 +343,8 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             
                             // send messages listing
                             total_messages = test_configs[current_test_config].msg_count;
-                            start_index = map_subevent_get_message_listing_get_ListStartOffset(packet);
+                            //start_index = map_subevent_get_message_listing_get_ListStartOffset(packet);
+
                             num_msgs_selected = total_messages - start_index;
                             max_list_count = map_subevent_get_message_listing_get_MaxListCount(packet);
                             if (max_list_count < 0xffff){

@@ -49,11 +49,13 @@ extern "C" {
 #endif
 
 #include <stdint.h>
+#include <stdio.h>
 #include <string.h>
 
 #include "bluetooth.h"
 #include "btstack_defines.h"
 #include "btstack_linked_list.h"
+#include "btstack_debug.h"
 	
 // hack: compilation with the android ndk causes an error as there's a reverse_64 macro
 #ifdef reverse_64
@@ -129,15 +131,33 @@ void little_endian_store_16(uint8_t * buffer, uint16_t position, uint16_t value)
 void little_endian_store_24(uint8_t * buffer, uint16_t position, uint32_t value);
 void little_endian_store_32(uint8_t * buffer, uint16_t position, uint32_t value);
 
-void app_write_08(uint8_t* buffer, uint16_t* pos, uint8_t  value);// { little_endian_store_08(buffer, *pos, value);  *pos += 1; }
-void app_write_16(uint8_t* buffer, uint16_t* pos, uint16_t value);// { little_endian_store_16(buffer, *pos, value);  *pos += 2; }
-void app_write_24(uint8_t* buffer, uint16_t* pos, uint32_t value);// { little_endian_store_24(buffer, *pos, value);  *pos += 3; }
-void app_write_32(uint8_t* buffer, uint16_t* pos, uint32_t value);// { little_endian_store_32(buffer, *pos, value);  *pos += 4; }
+void app_write_08(uint8_t* buffer, uint16_t* pos, uint8_t  value);
+void app_write_16(uint8_t* buffer, uint16_t* pos, uint16_t value);
+void app_write_24(uint8_t* buffer, uint16_t* pos, uint32_t value);
+void app_write_32(uint8_t* buffer, uint16_t* pos, uint32_t value);
 																 
-void app_read_08(uint8_t* buffer, uint16_t* pos, uint8_t  *value);// { *value = little_endian_read_08(buffer, *pos); *pos += 1; }
-void app_read_16(uint8_t* buffer, uint16_t* pos, uint16_t *value);// { *value = little_endian_read_16(buffer, *pos); *pos += 2; }
-void app_read_24(uint8_t* buffer, uint16_t* pos, uint32_t *value);// { *value = little_endian_read_24(buffer, *pos); *pos += 3; }
-void app_read_32(uint8_t* buffer, uint16_t* pos, uint32_t *value);// { *value = little_endian_read_32(buffer, *pos); *pos += 4; }
+void app_read_08(uint8_t* buffer, uint16_t* pos, uint8_t  *value);
+void app_read_16(uint8_t* buffer, uint16_t* pos, uint16_t *value);
+void app_read_24(uint8_t* buffer, uint16_t* pos, uint32_t *value);
+void app_read_32(uint8_t* buffer, uint16_t* pos, uint32_t *value);
+
+
+static inline uint16_t LITTLE_ENDIAN_READ_08(uint8_t* buffer, uint16_t position) { uint8_t  value; uint16_t tmp_pos = (uint16_t)position; app_read_08(buffer, &tmp_pos, &value); dbg_printf("LITTLE_ENDIAN_READ_08: pos:%u value:%u\n", tmp_pos, value); return value; }
+static inline uint16_t LITTLE_ENDIAN_READ_16(uint8_t* buffer, uint16_t position) { uint16_t value; uint16_t tmp_pos = (uint16_t)position; app_read_16(buffer, &tmp_pos, &value); dbg_printf("LITTLE_ENDIAN_READ_16: pos:%u value:%u\n", tmp_pos, value); return value; }
+static inline uint16_t LITTLE_ENDIAN_READ_24(uint8_t* buffer, uint16_t position) { uint32_t value; uint16_t tmp_pos = (uint16_t)position; app_read_24(buffer, &tmp_pos, &value); dbg_printf("LITTLE_ENDIAN_READ_24: pos:%u value:%u\n", tmp_pos, value); return value; }
+static inline uint16_t LITTLE_ENDIAN_READ_32(uint8_t* buffer, uint16_t position) { uint32_t value; uint16_t tmp_pos = (uint16_t)position; app_read_32(buffer, &tmp_pos, &value); dbg_printf("LITTLE_ENDIAN_READ_32: pos:%u value:%u\n", tmp_pos, value); return value; }
+
+
+
+#define APP_WRITE_08(buffer, pos, value) { dbg_printf("APP_WRITE_08: pos:%u %s:%u\n", (unsigned int)*pos, #value, (unsigned int)value); app_write_08(buffer, pos, value); } 
+#define APP_WRITE_16(buffer, pos, value) { dbg_printf("APP_WRITE_16: pos:%u %s:%u\n", (unsigned int)*pos, #value, (unsigned int)value); app_write_16(buffer, pos, value); } 
+#define APP_WRITE_24(buffer, pos, value) { dbg_printf("APP_WRITE_24: pos:%u %s:%u\n", (unsigned int)*pos, #value, (unsigned int)value); app_write_24(buffer, pos, value); } 
+#define APP_WRITE_32(buffer, pos, value) { dbg_printf("APP_WRITE_32: pos:%u %s:%u\n", (unsigned int)*pos, #value, (unsigned int)value); app_write_32(buffer, pos, value); } 
+
+#define APP_READ_08(buffer, pos, value)  { uint16t  tmp_pos = (unsigned int)*pos; app_read_08(buffer, &tmp_pos, value); dbg_printf("APP_READ_08: pos:%u %s:%u\n" , tmp_pos, #value, (unsigned int)*value); } 
+#define APP_READ_16(buffer, pos, value)  { uint16_t tmp_pos = (unsigned int)*pos; app_read_16(buffer, &tmp_pos, value); dbg_printf("APP_READ_16: pos:%u %s:%u\n" , tmp_pos, #value, (unsigned int)*value); } 
+#define APP_READ_24(buffer, pos, value)  { uint16_t tmp_pos = (unsigned int)*pos; app_read_24(buffer, &tmp_pos, value); dbg_printf("APP_READ_24: pos:%u %s:%u\n" , tmp_pos, #value, (unsigned int)*value); } 
+#define APP_READ_32(buffer, pos, value)  { uint16_t tmp_pos = (unsigned int)*pos; app_read_32(buffer, &tmp_pos, value); dbg_printf("APP_READ_32: pos:%u %s:%u\n" , tmp_pos, #value, (unsigned int)*value); } 
 
 /** 
  * @brief Read 16/24/32 bit big endian value from buffer
