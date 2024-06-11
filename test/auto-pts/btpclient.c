@@ -465,9 +465,10 @@ static void btstack_packet_handler (uint8_t packet_type, uint16_t channel, uint8
                             little_endian_store_16(buffer, 11, supervision_timeout);
                             btp_send(BTP_SERVICE_ID_GAP, BTP_GAP_EV_DEVICE_CONNECTED, 0, sizeof(buffer), &buffer[0]);
 
-                            // trigger security
-                            sm_request_pairing(remote_handle);
-
+                            // trigger security in Central Role
+                            if (gap_subevent_le_connection_complete_get_role(packet) == HCI_ROLE_MASTER){
+                                 sm_request_pairing(remote_handle);
+                            }
                             break;
                         default:
                             break;
