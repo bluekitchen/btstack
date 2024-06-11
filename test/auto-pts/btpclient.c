@@ -499,12 +499,16 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
 
     switch (hci_event_packet_get_type(packet)) {
         case SM_EVENT_JUST_WORKS_REQUEST:
-            MESSAGE("Just works requested - auto-accept\n");
+            MESSAGE("Just works requested - auto-accept");
              sm_just_works_confirm(sm_event_just_works_request_get_handle(packet));
             break;
         case SM_EVENT_NUMERIC_COMPARISON_REQUEST:
-            MESSAGE("Confirming numeric comparison: %"PRIu32" - auto-accept\n", sm_event_numeric_comparison_request_get_passkey(packet));
-            sm_numeric_comparison_confirm(sm_event_passkey_display_number_get_handle(packet));
+            passkey = sm_event_numeric_comparison_request_get_passkey(packet);
+            MESSAGE("Numeric comparison: %"PRIu32"", sm_event_numeric_comparison_request_get_passkey(packet));
+            buffer[0] = remote_addr_type;
+            reverse_bd_addr(remote_addr, &buffer[1]);
+            little_endian_store_32(buffer, 7, passkey);
+            btp_send(BTP_SERVICE_ID_GAP, BTP_GAP_EV_PASSKEY_CONFIRM, 0, 11, &buffer[0]);
             break;
         case SM_EVENT_PASSKEY_DISPLAY_NUMBER:
             passkey = sm_event_passkey_display_number_get_passkey(packet);
