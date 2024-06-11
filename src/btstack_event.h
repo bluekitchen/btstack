@@ -21186,13 +21186,22 @@ static inline const uint8_t * map_subevent_folder_listing_item_get_name(const ui
 }
 
 /**
+ * @brief Get field continuation from event MAP_SUBEVENT_GET_MESSAGE_LISTING
+ * @param event packet
+ * @return continuation
+ * @note: btstack_type 4
+ */
+static inline uint32_t map_subevent_get_message_listing_get_continuation(const uint8_t * event){
+    return little_endian_read_32(event, 3);
+}
+/**
  * @brief Get field map_cid from event MAP_SUBEVENT_GET_MESSAGE_LISTING
  * @param event packet
  * @return map_cid
  * @note: btstack_type 2
  */
 static inline uint16_t map_subevent_get_message_listing_get_map_cid(const uint8_t * event){
-    return little_endian_read_16(event, 3);
+    return little_endian_read_16(event, 7);
 }
 /**
  * @brief Get field MaxListCount from event MAP_SUBEVENT_GET_MESSAGE_LISTING
@@ -21201,16 +21210,7 @@ static inline uint16_t map_subevent_get_message_listing_get_map_cid(const uint8_
  * @note: btstack_type 4
  */
 static inline uint32_t map_subevent_get_message_listing_get_MaxListCount(const uint8_t * event){
-    return little_endian_read_32(event, 5);
-}
-/**
- * @brief Get field continuation from event MAP_SUBEVENT_GET_MESSAGE_LISTING
- * @param event packet
- * @return continuation
- * @note: btstack_type 2
- */
-static inline uint16_t map_subevent_get_message_listing_get_continuation(const uint8_t * event){
-    return little_endian_read_16(event, 9);
+    return little_endian_read_32(event, 9);
 }
 /**
  * @brief Get field ListStartOffset from event MAP_SUBEVENT_GET_MESSAGE_LISTING
@@ -21219,7 +21219,7 @@ static inline uint16_t map_subevent_get_message_listing_get_continuation(const u
  * @note: btstack_type 2
  */
 static inline uint16_t map_subevent_get_message_listing_get_ListStartOffset(const uint8_t * event){
-    return little_endian_read_16(event, 11);
+    return little_endian_read_16(event, 13);
 }
 
 /**
