@@ -64,7 +64,7 @@ static btstack_packet_handler_t gatt_service_client_get_packet_handler_trampolin
 }
 
 // LE Audio Service Client helper functions
-static void gatt_service_client_finalize_connection(gatt_service_client_helper_t * client, gatt_service_client_connection_helper_t * connection){
+void gatt_service_client_finalize_connection(gatt_service_client_helper_t * client, gatt_service_client_connection_helper_t * connection){
     if (client == NULL){
         return;
     }
@@ -112,6 +112,18 @@ uint16_t gatt_service_client_helper_characteristic_uuid16_for_value_handle(const
     return 0;
 }
 
+uint8_t gatt_service_client_att_status_to_error_code(uint8_t att_error_code){
+    switch (att_error_code){
+        case ATT_ERROR_SUCCESS:
+            return ERROR_CODE_SUCCESS;
+        case ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH:
+            return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+            
+        default:
+            log_info("ATT ERROR 0x%02x mapped to ERROR_CODE_UNSPECIFIED_ERROR", att_error_code);
+            return ERROR_CODE_UNSPECIFIED_ERROR;
+    }
+}
 static void gatt_service_client_emit_connected(btstack_packet_handler_t event_callback, hci_con_handle_t con_handle, uint16_t cid, uint8_t status){
     btstack_assert(event_callback != NULL);
 
@@ -296,7 +308,7 @@ static void gatt_service_client_run_for_client(gatt_service_client_helper_t * cl
     }
 
     if (status != ATT_ERROR_SUCCESS){
-        gatt_service_client_emit_connected(client->packet_handler, connection->con_handle, connection->cid, status);
+        gatt_service_client_emit_connected(client->packet_handler, connection->con_handle, connection->cid, gatt_service_client_att_status_to_error_code(status));
         gatt_service_client_finalize_connection(client, connection);
     }
 }
@@ -312,7 +324,7 @@ static bool gatt_service_client_handle_query_complete(gatt_service_client_helper
         switch (connection->state){
             case GATT_SERVICE_CLIENT_STATE_W4_SERVICE_RESULT:
             case GATT_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTICS:
-                gatt_service_client_emit_connected(client->packet_handler, connection->con_handle, connection->cid, status);
+                gatt_service_client_emit_connected(client->packet_handler, connection->con_handle, connection->cid, gatt_service_client_att_status_to_error_code(status));
                 gatt_service_client_finalize_connection(client, connection);
                 return false;
             default:

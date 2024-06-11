@@ -190,6 +190,10 @@ uint8_t gatt_service_client_can_query_characteristic(gatt_service_client_connect
 
 uint8_t gatt_service_client_disconnect(gatt_service_client_helper_t * client, uint16_t connection_cid);
 
+void gatt_service_client_finalize_connection(gatt_service_client_helper_t * client, gatt_service_client_connection_helper_t * connection);
+
+uint8_t gatt_service_client_att_status_to_error_code(uint8_t att_error_code);
+
 void gatt_service_client_deinit(gatt_service_client_helper_t * client);
 
 /* API_END */
