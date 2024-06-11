@@ -66,6 +66,14 @@
 #include "btstack_stdin.h"
 #endif
 
+#define PRINTF_TO_PKTLOG
+#ifdef PRINTF_TO_PKTLOG
+#define MAP_PRINTF(format, ...)  printf(format,  ## __VA_ARGS__); HCI_DUMP_LOG("PRINTF", HCI_DUMP_LOG_LEVEL_INFO, format,  ## __VA_ARGS__)
+#else
+#define MAP_PRINTF MAP_PRINTF
+#endif
+
+
 #define MAS_SERVER_RFCOMM_CHANNEL_NR 1
 #define MAS_SERVER_GOEP_PSM 0x1001
 
@@ -221,7 +229,7 @@ static uint16_t send_listing(uint16_t first, uint16_t last) {
 
 static void print_current_test_config(void)
 {
-    printf("new test config is <%d: %s>\n", current_test_config, test_configs[current_test_config].descr);
+    MAP_PRINTF("new test config is <%d: %s>\n", current_test_config, test_configs[current_test_config].descr);
 }
 
 #ifdef HAVE_BTSTACK_STDIN
@@ -230,10 +238,10 @@ static void show_usage(void){
     bd_addr_t iut_address;
     gap_local_bd_addr(iut_address);
 
-    printf("\n--- Bluetooth MAP Server Test Console %s ---\n", bd_addr_to_str(iut_address));
+    MAP_PRINTF("\n--- Bluetooth MAP Server Test Console %s ---\n", bd_addr_to_str(iut_address));
     print_current_test_config();
-    printf("'n' switch to next test config\n");
-    printf("\n");
+    MAP_PRINTF("'n' switch to next test config\n");
+    MAP_PRINTF("\n");
 }
 
 static void stdin_process(char c){
@@ -271,7 +279,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 
                 case HCI_EVENT_PIN_CODE_REQUEST:
                     // inform about pin code request
-                    printf("Pin code request - using '0000'\n");
+                    MAP_PRINTF("Pin code request - using '0000'\n");
                     hci_event_pin_code_request_get_bd_addr(packet, event_addr);
                     gap_pin_code_response(event_addr, "0000");
                     break;
@@ -282,7 +290,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 
         case MAP_DATA_PACKET:
             for (i=0;i<size;i++){
-                printf("%c", packet[i]);
+                MAP_PRINTF("%c", packet[i]);
             }
             break;
         default:
@@ -308,24 +316,24 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                         case MAP_SUBEVENT_CONNECTION_OPENED:
                             status = map_subevent_connection_opened_get_status(packet);
                             if (status){
-                                printf("[!] Connection failed, status 0x%02x\n", status);
+                                MAP_PRINTF("[!] Connection failed, status 0x%02x\n", status);
                             } else {
                                 map_cid = map_subevent_connection_opened_get_map_cid(packet);
-                                printf("[+] Connected map_cid 0x%04x\n", map_cid);
+                                MAP_PRINTF("[+] Connected map_cid 0x%04x\n", map_cid);
                             }
                             break;
                         case MAP_SUBEVENT_CONNECTION_CLOSED:
-                            printf("[+] Connection closed\n");
+                            MAP_PRINTF("[+] Connection closed\n");
                             break;
                         case MAP_SUBEVENT_OPERATION_COMPLETED:
-                            printf("[+] Operation complete, status 0x%02x\n",
+                            MAP_PRINTF("[+] Operation complete, status 0x%02x\n",
                                    map_subevent_operation_completed_get_status(packet));
                             break;
 							
                         case MAP_SUBEVENT_FOLDER_LISTING_ITEM:
                             map_access_server_set_database_identifier(map_cid, database_identifier);
                             map_access_server_set_folder_version(map_cid, folder_version);
-                            printf("[+] Get Folder listing\n");
+                            MAP_PRINTF("[+] Get Folder listing\n");
                             send_listing(0, test_configs[current_test_config].msg_count-1);
                             break;
 							
@@ -336,7 +344,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             APP_READ_16(packet, &pos, &start_index);
 
                             if (continuation == 0) {
-                                printf("[+] Start MAP_SUBEVENT_GET_MESSAGE_LISTING continuation == 0\n");
+                                MAP_PRINTF("[+] Start MAP_SUBEVENT_GET_MESSAGE_LISTING continuation == 0\n");
                                 map_access_server_set_database_identifier(map_cid, database_identifier);
                                 map_access_server_set_folder_version(map_cid, folder_version);
                             }
@@ -350,7 +358,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             if (max_list_count < 0xffff){
                                 num_msgs_selected = btstack_min(max_list_count, num_msgs_selected);
                             }
-                            printf("[+] get message listing - list offset %u, num messages %u\n", start_index, num_msgs_selected);
+                            MAP_PRINTF("[+] get message listing - list offset %u, num messages %u\n", start_index, num_msgs_selected);
                             // consider already sent cards
                             if (continuation > 0xffff){
                                 // just missed the footer
@@ -361,18 +369,18 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                                 start_index += continuation;
                             }
                             end_index = start_index + num_msgs_selected - 1;
-                            printf("[-] continuation %u, num messages %u, start index %u, end index %u\n", continuation, num_msgs_selected, start_index, end_index);
+                            MAP_PRINTF("[-] continuation %u, num messages %u, start index %u, end index %u\n", continuation, num_msgs_selected, start_index, end_index);
                             send_listing(start_index, end_index);
                             //send_listing(test_configs[current_test_config].msg_count-1);
                             break;
 
                         case MAP_SUBEVENT_GET_MESSAGE:
-                            printf("[+] Get Message\n");
+                            MAP_PRINTF("[+] Get Message\n");
                             send_listing(0, 1);
                             break;
 
                         case MAP_SUBEVENT_PUT_MESSAGE_STATUS:
-                            printf("[+] Put MessageStatus\n");
+                            MAP_PRINTF("[+] Put MessageStatus\n");
                             map_access_server_send_get_put_response(map_cid, OBEX_RESP_SUCCESS, 0, 0, NULL);
                             break;
 
@@ -407,14 +415,14 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                 break;
             }
 #endif
-            printf("MAP_DATA_PACKET (%u bytes): ", size);
+            MAP_PRINTF("MAP_DATA_PACKET (%u bytes): ", size);
             for (int i=0;i<size;i++){
-                printf("%0x2 ", packet[i]);
+                MAP_PRINTF("%0x2 ", packet[i]);
             }
-            printf ("\n");
+            MAP_PRINTF ("\n");
             break;
         default:
-            printf ("unknown event of type %d\n", packet_type);
+            MAP_PRINTF ("unknown event of type %d\n", packet_type);
             break;
     }
 }
