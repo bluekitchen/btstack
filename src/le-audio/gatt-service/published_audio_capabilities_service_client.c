@@ -47,6 +47,7 @@
 
 #include "le-audio/le_audio_util.h"
 #include "le-audio/gatt-service/published_audio_capabilities_service_client.h"
+#include "ble/gatt-service/gatt_service_client_helper.h"
 
 #ifdef ENABLE_TESTING_SUPPORT
 #include <stdio.h>
@@ -116,6 +117,17 @@ static void pacs_client_emit_connection_established(pacs_client_connection_t * c
     pos += 2;
     event[pos++] = status;
     (*pacs_client_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
+static void pacs_client_connected(pacs_client_connection_t * connection, uint8_t status) {
+    if (status == ERROR_CODE_SUCCESS){
+        connection->state = PUBLISHED_AUDIO_CAPABILITIES_SERVICE_CLIENT_STATE_READY;
+        pacs_client_emit_connection_established(connection, status);
+    } else {
+        connection->state = PUBLISHED_AUDIO_CAPABILITIES_SERVICE_CLIENT_STATE_IDLE;
+        pacs_client_emit_connection_established(connection, status);
+        pacs_client_finalize_connection(connection);
+    }
 }
 
 static void pacs_client_emit_disconnect(uint16_t cid){
@@ -478,8 +490,7 @@ static void pacs_client_handle_notification_registered(pacs_client_connection_t 
         connection->state = PUBLISHED_AUDIO_CAPABILITIES_SERVICE_CLIENT_STATE_W2_REGISTER_NOTIFICATION;
     } else {
         connection->pacs_characteristics_index = 0;
-        connection->state = PUBLISHED_AUDIO_CAPABILITIES_SERVICE_CLIENT_STATE_CONNECTED;
-        pacs_client_emit_connection_established(connection, ERROR_CODE_SUCCESS);
+        pacs_client_connected(connection, ERROR_CODE_SUCCESS);
     }
 }
 
@@ -580,7 +591,7 @@ static bool pacs_client_handle_query_complete(pacs_client_connection_t * connect
     switch (connection->state){
         case PUBLISHED_AUDIO_CAPABILITIES_SERVICE_CLIENT_STATE_W4_SERVER_WRITE_RESPONSE:
             pacs_client_emit_operation_done(connection, status);
-            connection->state = PUBLISHED_AUDIO_CAPABILITIES_SERVICE_CLIENT_STATE_CONNECTED;
+            connection->state = PUBLISHED_AUDIO_CAPABILITIES_SERVICE_CLIENT_STATE_READY;
             break;
 
         case PUBLISHED_AUDIO_CAPABILITIES_SERVICE_CLIENT_STATE_W4_SERVER_READ_RESPONSE:
@@ -606,20 +617,18 @@ static bool pacs_client_handle_query_complete(pacs_client_connection_t * connect
                 default:
                     break;
             }
-            connection->state = PUBLISHED_AUDIO_CAPABILITIES_SERVICE_CLIENT_STATE_CONNECTED;
+            connection->state = PUBLISHED_AUDIO_CAPABILITIES_SERVICE_CLIENT_STATE_READY;
             pacs_client_emit_operation_done(connection, status);
             break;
 
         case PUBLISHED_AUDIO_CAPABILITIES_SERVICE_CLIENT_STATE_W4_SERVICE_RESULT:
             if (status != ATT_ERROR_SUCCESS){
-                pacs_client_emit_connection_established(connection, status);
-                pacs_client_finalize_connection(connection);
+                pacs_client_connected(connection, gatt_service_client_att_status_to_error_code(status));
                 return false;
             }
 
             if (connection->service_instances_num == 0){
-                pacs_client_emit_connection_established(connection, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE);
-                pacs_client_finalize_connection(connection);
+                pacs_client_connected(connection, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE);
                 return false;
             }
 
@@ -629,14 +638,12 @@ static bool pacs_client_handle_query_complete(pacs_client_connection_t * connect
 
         case PUBLISHED_AUDIO_CAPABILITIES_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_RESULT:
             if (status != ATT_ERROR_SUCCESS){
-                pacs_client_emit_connection_established(connection, status);
-                pacs_client_finalize_connection(connection);
+                pacs_client_connected(connection, gatt_service_client_att_status_to_error_code(status));
                 return false;
             }
             
             if (connection->pacs_characteristics_num == 0){
-                pacs_client_emit_connection_established(connection, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE);
-                pacs_client_finalize_connection(connection);
+                pacs_client_connected(connection, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE);
                 return false;
             }
 
@@ -900,7 +907,7 @@ static uint8_t pacs_client_set_audio_locations_operation(
     if (connection == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    if (connection->state != PUBLISHED_AUDIO_CAPABILITIES_SERVICE_CLIENT_STATE_CONNECTED) {
+    if (connection->state != PUBLISHED_AUDIO_CAPABILITIES_SERVICE_CLIENT_STATE_READY) {
         return GATT_CLIENT_IN_WRONG_STATE;
     }
 
@@ -934,7 +941,7 @@ static uint8_t pacs_client_get_operation(
     if (connection == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    if (connection->state != PUBLISHED_AUDIO_CAPABILITIES_SERVICE_CLIENT_STATE_CONNECTED) {
+    if (connection->state != PUBLISHED_AUDIO_CAPABILITIES_SERVICE_CLIENT_STATE_READY) {
         return GATT_CLIENT_IN_WRONG_STATE;
     }
 
