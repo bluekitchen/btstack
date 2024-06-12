@@ -73,7 +73,7 @@ static uint16_t tbs_client_value_handle_for_index(tbs_client_connection_t * conn
     return connection->basic_connection.characteristics[connection->characteristic_index].value_handle;
 }
 
-static void tbs_client_emit_connected(gatt_service_client_connection_helper_t * connection_helper, uint8_t status){
+static void tbs_client_emit_connection_established(gatt_service_client_connection_helper_t * connection_helper, uint8_t status){
     btstack_assert(connection_helper != NULL);
     btstack_assert(connection_helper->event_callback != NULL);
 
@@ -89,6 +89,33 @@ static void tbs_client_emit_connected(gatt_service_client_connection_helper_t * 
     event[pos++] = 0; // num included services
     event[pos++] = status;
     (*connection_helper->event_callback)(HCI_EVENT_PACKET, 0, event, pos);
+}
+
+static void tbs_client_finalize_connection(tbs_client_connection_t * connection){
+    // already finalized by GATT CLIENT HELPER
+    if (connection == NULL){
+        return;
+    }
+    gatt_service_client_finalize_connection(&tbs_client, &connection->basic_connection);
+}
+
+static void tbs_client_connected(tbs_client_connection_t * connection, uint8_t status) {
+    if (status == ERROR_CODE_SUCCESS){
+        connection->state = TELEPHONE_BEARER_SERVICE_CLIENT_STATE_READY;
+        tbs_client_emit_connection_established(&connection->basic_connection, status);
+    } else {
+        connection->state = TELEPHONE_BEARER_SERVICE_CLIENT_STATE_IDLE;
+        tbs_client_emit_connection_established(&connection->basic_connection, status);
+        tbs_client_finalize_connection(connection);
+    }
+}
+
+static void tbs_client_replace_subevent_id_and_emit(btstack_packet_handler_t callback, uint8_t * packet, uint16_t size, uint8_t subevent_id){
+    UNUSED(size);
+    btstack_assert(callback != NULL);
+    // execute callback
+    packet[2] = subevent_id;
+    (*callback)(HCI_EVENT_PACKET, 0, packet, size);
 }
 
 static void tbs_client_emit_done_event(gatt_service_client_connection_helper_t * connection_helper, uint8_t index, uint8_t att_status){
@@ -431,6 +458,7 @@ static void tbs_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
     gatt_service_client_connection_helper_t * connection_helper;
     tbs_client_connection_t * connection;
     hci_con_handle_t con_handle;;
+    uint8_t status;
 
     switch(hci_event_packet_get_type(packet)){
         case HCI_EVENT_GATTSERVICE_META:
@@ -438,7 +466,14 @@ static void tbs_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
                 case GATTSERVICE_SUBEVENT_CLIENT_CONNECTED:
                     connection_helper = gatt_service_client_get_connection_for_cid(&tbs_client, gattservice_subevent_client_connected_get_cid(packet));
                     btstack_assert(connection_helper != NULL);
+                    connection = (tbs_client_connection_t *) connection_helper;
 
+                    status = gattservice_subevent_client_connected_get_status(packet);
+                    if (status != ERROR_CODE_SUCCESS){
+                        tbs_client_connected(connection, status);
+                        break;
+                    }
+                    
 #ifdef ENABLE_TESTING_SUPPORT
                     {
                         for (int i = 0; i < TBS_CHARACTERISTICS_NUM; i++){
@@ -446,23 +481,15 @@ static void tbs_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
 
                         }
                     };
-                    printf("TBS Client: Query input state to retrieve and cache change counter\n");
-#endif
-                    connection = (tbs_client_connection_t *) connection_helper;
-
-                    if (gattservice_subevent_client_connected_get_status(packet) == ATT_ERROR_SUCCESS){
-                        connection->state = TELEPHONE_BEARER_SERVICE_CLIENT_STATE_READY;
-                    } else {
-                        connection->state = TELEPHONE_BEARER_SERVICE_CLIENT_STATE_UNINITIALISED;
-                    }
-                    tbs_client_emit_connected(connection_helper, gattservice_subevent_client_connected_get_status(packet));
+                    printf("TBS Client: connected\n");
+#endif                   
+                    tbs_client_connected(connection, ERROR_CODE_SUCCESS);
                     break;
 
                 case GATTSERVICE_SUBEVENT_CLIENT_DISCONNECTED:
                     connection_helper = gatt_service_client_get_connection_for_cid(&tbs_client, gattservice_subevent_client_disconnected_get_cid(packet));
                     btstack_assert(connection_helper != NULL);
-                    // TODO:
-                    //  tbs_client_replace_subevent_id_and_emit(connection_helper->event_callback, packet, size, LEAUDIO_SUBEVENT_TBS_CLIENT_DISCONNECTED);
+                    tbs_client_replace_subevent_id_and_emit(connection_helper->event_callback, packet, size, LEAUDIO_SUBEVENT_TBS_CLIENT_DISCONNECTED);
                     break;
 
                 default:
@@ -524,11 +551,7 @@ static void tbs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t ch
                     tbs_client_emit_done_event(connection_helper, connection->characteristic_index, gatt_event_query_complete_get_att_status(packet));
                     connection->state = TELEPHONE_BEARER_SERVICE_CLIENT_STATE_READY;
                     break;
-                
-                case TELEPHONE_BEARER_SERVICE_CLIENT_STATE_UNINITIALISED:
-                    tbs_client_emit_connected(connection_helper, ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH);
-                    break;
-                
+
                 default:
                     connection->state = TELEPHONE_BEARER_SERVICE_CLIENT_STATE_READY;
                     break;
