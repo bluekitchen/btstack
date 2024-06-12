@@ -88,6 +88,16 @@ static void lls_client_replace_subevent_id_and_emit(btstack_packet_handler_t cal
     (*callback)(HCI_EVENT_PACKET, 0, packet, size);
 }
 
+static void lls_client_connected(lls_client_connection_t * connection, uint8_t status, uint8_t * packet, uint16_t size) {
+    if (status == ERROR_CODE_SUCCESS){
+        connection->state = LINK_LOSS_SERVICE_CLIENT_STATE_READY;
+    } else {
+        connection->state = LINK_LOSS_SERVICE_CLIENT_STATE_IDLE;
+    }
+    lls_client_replace_subevent_id_and_emit(connection->basic_connection.event_callback, packet, size,
+                                            GATTSERVICE_SUBEVENT_LLS_CLIENT_CONNECTED);
+}
+
 static void lls_client_emit_uint8(uint16_t cid, btstack_packet_handler_t event_callback, uint8_t subevent, const uint8_t * data, uint8_t data_size){
     UNUSED(data_size);
     btstack_assert(event_callback != NULL);
@@ -195,7 +205,6 @@ static void lls_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
 
     if (packet_type != HCI_EVENT_PACKET) return;
     gatt_service_client_connection_helper_t * connection_helper;
-    lls_client_connection_t * connection;
     uint16_t cid;
     uint8_t status;
 
@@ -207,11 +216,6 @@ static void lls_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
                     connection_helper = gatt_service_client_get_connection_for_cid(&lls_client, cid);
                     btstack_assert(connection_helper != NULL);
 
-                    connection = (lls_client_connection_t *) connection_helper;
-                    if (connection->state != LINK_LOSS_SERVICE_CLIENT_STATE_W4_CONNECTION) {
-                        return;
-                    }
-
 #ifdef ENABLE_TESTING_SUPPORT
                     {
                         uint8_t i;
@@ -222,16 +226,8 @@ static void lls_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
                         }
                     };
 #endif
-
                     status = gattservice_subevent_client_connected_get_status(packet);
-
-#ifdef ENABLE_TESTING_SUPPORT
-                    printf("\nLLS Client connection status 0x%02x\n", status);
-#endif
-                    connection->state = status == ATT_ERROR_SUCCESS ? LINK_LOSS_SERVICE_CLIENT_STATE_READY
-                                                                    : LINK_LOSS_SERVICE_CLIENT_STATE_IDLE;
-                    lls_client_replace_subevent_id_and_emit(connection_helper->event_callback, packet, size,
-                                                            GATTSERVICE_SUBEVENT_LLS_CLIENT_CONNECTED);
+                    lls_client_connected((lls_client_connection_t *) connection_helper, status, packet, size);
                     break;
 
                 case GATTSERVICE_SUBEVENT_CLIENT_DISCONNECTED:

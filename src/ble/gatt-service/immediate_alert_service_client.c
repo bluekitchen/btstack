@@ -87,6 +87,17 @@ static void ias_client_replace_subevent_id_and_emit(btstack_packet_handler_t cal
     (*callback)(HCI_EVENT_PACKET, 0, packet, size);
 }
 
+static void ias_client_connected(ias_client_connection_t * connection, uint8_t status, uint8_t * packet, uint16_t size) {
+    if (status == ERROR_CODE_SUCCESS){
+        connection->state = IMMEDIATE_ALERT_SERVICE_CLIENT_STATE_READY;
+    } else {
+        connection->state = IMMEDIATE_ALERT_SERVICE_CLIENT_STATE_IDLE;
+    }
+    ias_client_replace_subevent_id_and_emit(connection->basic_connection.event_callback, packet, size,
+                                            GATTSERVICE_SUBEVENT_LLS_CLIENT_CONNECTED);
+}
+
+
 static uint16_t ias_client_value_handle_for_index(ias_client_connection_t * connection){
     return connection->basic_connection.characteristics[connection->characteristic_index].value_handle;
 }
@@ -121,7 +132,6 @@ static void ias_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
 
     if (packet_type != HCI_EVENT_PACKET) return;
     gatt_service_client_connection_helper_t * connection_helper;
-    ias_client_connection_t * connection;
     uint16_t cid;
     uint8_t status;
 
@@ -133,11 +143,6 @@ static void ias_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
                     connection_helper = gatt_service_client_get_connection_for_cid(&ias_client, cid);
                     btstack_assert(connection_helper != NULL);
 
-                    connection = (ias_client_connection_t *) connection_helper;
-                    if (connection->state != IMMEDIATE_ALERT_SERVICE_CLIENT_STATE_W4_CONNECTION) {
-                        return;
-                    }
-
 #ifdef ENABLE_TESTING_SUPPORT
                     {
                         uint8_t i;
@@ -148,16 +153,8 @@ static void ias_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
                         }
                     };
 #endif
-
                     status = gattservice_subevent_client_connected_get_status(packet);
-
-#ifdef ENABLE_TESTING_SUPPORT
-                    printf("\nIAS Client connection status 0x%02x\n", status);
-#endif
-                    connection->state = status == ATT_ERROR_SUCCESS ? IMMEDIATE_ALERT_SERVICE_CLIENT_STATE_READY
-                                                                    : IMMEDIATE_ALERT_SERVICE_CLIENT_STATE_IDLE;
-                    ias_client_replace_subevent_id_and_emit(connection_helper->event_callback, packet, size,
-                                                            GATTSERVICE_SUBEVENT_IAS_CLIENT_CONNECTED);
+                    ias_client_connected((ias_client_connection_t *) connection_helper, status, packet, size);
                     break;
 
                 case GATTSERVICE_SUBEVENT_CLIENT_DISCONNECTED:
