@@ -48,6 +48,7 @@
 #include "le-audio/le_audio_util.h"
 #include "le-audio/gatt-service/audio_stream_control_service_util.h"
 #include "le-audio/gatt-service/audio_stream_control_service_client.h"
+#include "ble/gatt-service/gatt_service_client_helper.h"
 
 #ifdef ENABLE_TESTING_SUPPORT
 #include <stdio.h>
@@ -217,6 +218,17 @@ static void ascs_client_emit_connection_established(ascs_client_connection_t * c
     }
 
     (*ascs_client_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
+static void ascs_client_connected(ascs_client_connection_t * connection, uint8_t status) {
+    if (status == ERROR_CODE_SUCCESS){
+        connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_IDLE;
+        ascs_client_emit_connection_established(connection, status);
+    } else {
+        connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_READY;
+        ascs_client_emit_connection_established(connection, status);
+        ascs_client_finalize_connection(connection);
+    }
 }
 
 static void ascs_client_emit_disconnect(uint16_t cid){
@@ -438,7 +450,7 @@ static uint16_t ascs_client_serialize_ase(ascs_client_connection_t * connection,
 }
 static void ascs_client_write_control_point (void * context){
     ascs_client_connection_t * connection = (ascs_client_connection_t *) context;
-    connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_CONNECTED;
+    connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_READY;
     (void) gatt_client_write_value_of_characteristic_without_response(connection->con_handle, connection->control_point.value_handle,
                                                                       ascs_client_value_buffer_len,
                                                                       ascs_client_value_buffer);
@@ -562,8 +574,7 @@ static void ascs_client_run_for_connection(ascs_client_connection_t * connection
                 break;
             }
             
-            connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_CONNECTED;
-            ascs_client_emit_connection_established(connection, ERROR_CODE_SUCCESS);
+            ascs_client_connected(connection, ERROR_CODE_SUCCESS);
             break;
 
         case AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W2_ASE_ID_READ:
@@ -608,8 +619,7 @@ static bool ascs_client_handle_query_complete(ascs_client_connection_t * connect
         switch (connection->state){
             case AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W4_SERVICE_RESULT:
             case AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_RESULT:
-                ascs_client_emit_connection_established(connection, status);
-                ascs_client_finalize_connection(connection);
+                ascs_client_connected(connection, gatt_service_client_att_status_to_error_code(status));
                 return false;
             default:
                 break;
@@ -619,8 +629,7 @@ static bool ascs_client_handle_query_complete(ascs_client_connection_t * connect
     switch (connection->state){
         case AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W4_SERVICE_RESULT:
             if (connection->service_instances_num == 0){
-                ascs_client_emit_connection_established(connection, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE);
-                ascs_client_finalize_connection(connection);
+                ascs_client_connected(connection, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE);
                 return false;
             }
             connection->streamendpoints_index = 0;
@@ -669,23 +678,18 @@ static bool ascs_client_handle_query_complete(ascs_client_connection_t * connect
                 break;
             }
 
-            connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_CONNECTED;
-            ascs_client_emit_connection_established(connection, ERROR_CODE_SUCCESS);
+            ascs_client_connected(connection, ERROR_CODE_SUCCESS);
             break;
 
         case AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_CONFIGURATION_RESULT:
-            connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_CONNECTED;
-            ascs_client_emit_connection_established(connection, ERROR_CODE_SUCCESS);
+            ascs_client_connected(connection, ERROR_CODE_SUCCESS);
             break;
 
         case AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_W4_ASE_READ:
-            connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_CONNECTED;
+            connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_READY;
             break;
 
-        case AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_CONNECTED:
-            if (status != ATT_ERROR_SUCCESS){ 
-                break;
-            }
+        case AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_READY:
             break;
 
         default:
@@ -926,7 +930,7 @@ static uint8_t ascs_client_connection_for_parameters_ready(uint16_t ascs_cid, bo
     if (connection == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    if (connection->state != AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_CONNECTED){
+    if (connection->state != AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_READY){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
