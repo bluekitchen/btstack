@@ -96,7 +96,7 @@ static void vcs_client_replace_subevent_id_and_emit(btstack_packet_handler_t cal
     (*callback)(HCI_EVENT_PACKET, 0, packet, size);
 }
 
-static void vcs_client_emit_connected(const gatt_service_client_connection_helper_t *connection_helper, uint8_t num_aics_clients, uint8_t num_vocs_clients, uint8_t status) {
+static void vcs_client_emit_connection_established(const gatt_service_client_connection_helper_t *connection_helper, uint8_t num_aics_clients, uint8_t num_vocs_clients, uint8_t status) {
     btstack_assert(connection_helper != NULL);
     btstack_assert(connection_helper->event_callback != NULL);
 
@@ -113,6 +113,25 @@ static void vcs_client_emit_connected(const gatt_service_client_connection_helpe
     event[pos++] = num_vocs_clients; // num included services
     event[pos++] = status;
     (*connection_helper->event_callback)(HCI_EVENT_PACKET, 0, event, pos);
+}
+
+static void vcs_client_finalize_connection(vcs_client_connection_t * connection){
+    // already finalized by GATT CLIENT HELPER
+    if (connection == NULL){
+        return;
+    }
+    gatt_service_client_finalize_connection(&vcs_client, &connection->basic_connection);
+}
+
+static void vcs_client_connected(vcs_client_connection_t * connection, uint8_t status) {
+    if (status == ERROR_CODE_SUCCESS){
+        connection->state = VOLUME_CONTROL_SERVICE_CLIENT_STATE_READY;
+        vcs_client_emit_connection_established(&connection->basic_connection, connection->aics_connections_num, connection->vocs_connections_num, status);
+    } else {
+        connection->state = VOLUME_CONTROL_SERVICE_CLIENT_STATE_IDLE;
+        vcs_client_emit_connection_established(&connection->basic_connection, 0, 0, status);
+        vcs_client_finalize_connection(connection);
+    }
 }
 
 static void vcs_client_emit_uint8_array(gatt_service_client_connection_helper_t * connection_helper, uint8_t subevent, const uint8_t * data, uint8_t data_size, uint8_t att_status){
@@ -268,11 +287,6 @@ static uint8_t vcs_client_request_write_characteristic(vcs_client_connection_t *
     return vcs_client_request_send_gatt_query(connection, characteristic_index);
 }
 
-static void vcs_client_connected(vcs_client_connection_t *connection, uint8_t status) {
-    connection->state = VOLUME_CONTROL_SERVICE_CLIENT_STATE_READY;
-    vcs_client_emit_connected(&connection->basic_connection, connection->aics_connections_connected, connection->vocs_connections_connected, status);
-}
-
 static void vcs_client_packet_handler_internal(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
@@ -282,6 +296,7 @@ static void vcs_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
     vcs_client_connection_t * connection;
     hci_con_handle_t con_handle;
     uint16_t cid;
+    uint8_t status;
 
     switch(hci_event_packet_get_type(packet)){
         case HCI_EVENT_GATTSERVICE_META:
@@ -292,8 +307,10 @@ static void vcs_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
                     btstack_assert(connection_helper != NULL);
                     connection = (vcs_client_connection_t *)connection_helper;
 
-                    if (connection->state != VOLUME_CONTROL_SERVICE_CLIENT_STATE_W4_CONNECTION){
-                        return;
+                    status = gattservice_subevent_client_connected_get_status(packet);
+                    if (status != ERROR_CODE_SUCCESS){
+                        vcs_client_connected(connection, status);
+                        break;
                     }
 
 #ifdef ENABLE_TESTING_SUPPORT
@@ -306,9 +323,8 @@ static void vcs_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
 #endif
 
                     if (connection->basic_connection.characteristics[VCS_CLIENT_CHARACTERISTIC_INDEX_VOLUME_STATE].value_handle == 0){
-                        connection->state = VOLUME_CONTROL_SERVICE_CLIENT_STATE_UNINITIALIZED;
-                        vcs_client_emit_connected(connection_helper, 0, 0, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE);
-                        // TODO reset client
+                        connection->state = VOLUME_CONTROL_SERVICE_CLIENT_STATE_IDLE;
+                        vcs_client_connected(connection, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE);
                         break;
                     }
 
@@ -497,12 +513,11 @@ static void vcs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t ch
                 case VOLUME_CONTROL_SERVICE_CLIENT_STATE_W4_CHANGE_COUNTER_RESULT:
                     // check wrong packet length
                     if (gatt_event_characteristic_value_query_result_get_value_length(packet) != 3){
-                        vcs_client_connected(connection, ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE);
+                        connection->state = VOLUME_CONTROL_SERVICE_CLIENT_STATE_CHANGE_COUNTER_RESULT_READ_FAILED;
                         break;
                     }
                     break;
                 default:
-                    connection->state = VOLUME_CONTROL_SERVICE_CLIENT_STATE_READY;
                     break;
             }
             break;
@@ -553,10 +568,15 @@ static void vcs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t ch
             connection = (vcs_client_connection_t *)gatt_service_client_get_connection_for_con_handle(&vcs_client, con_handle);
             btstack_assert(connection != NULL);
 
+            status = gatt_event_query_complete_get_att_status(packet);
             switch (connection->state){
+                case VOLUME_CONTROL_SERVICE_CLIENT_STATE_CHANGE_COUNTER_RESULT_READ_FAILED:
+                    vcs_client_connected(connection, ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE);
+                    break;
+
                 case VOLUME_CONTROL_SERVICE_CLIENT_STATE_W4_WRITE_CHARACTERISTIC_VALUE_RESULT:
                     connection->state = VOLUME_CONTROL_SERVICE_CLIENT_STATE_READY;
-                    vcs_client_emit_done_event(connection, connection->characteristic_index, gatt_event_query_complete_get_att_status(packet));
+                    vcs_client_emit_done_event(connection, connection->characteristic_index, status);
                     break;
 
                 case VOLUME_CONTROL_SERVICE_CLIENT_STATE_W2_QUERY_INCLUDED_SERVICES:
