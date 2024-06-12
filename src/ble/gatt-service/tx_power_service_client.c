@@ -88,6 +88,16 @@ static void txps_client_replace_subevent_id_and_emit(btstack_packet_handler_t ca
     (*callback)(HCI_EVENT_PACKET, 0, packet, size);
 }
 
+static void txps_client_connected(txps_client_connection_t * connection, uint8_t status, uint8_t * packet, uint16_t size) {
+    if (status == ERROR_CODE_SUCCESS){
+        connection->state = TX_POWER_SERVICE_CLIENT_STATE_READY;
+    } else {
+        connection->state = TX_POWER_SERVICE_CLIENT_STATE_IDLE;
+    }
+    txps_client_replace_subevent_id_and_emit(connection->basic_connection.event_callback, packet, size,
+                                             GATTSERVICE_SUBEVENT_TXPS_CLIENT_CONNECTED);
+}
+
 static void txps_client_emit_uint8(uint16_t cid, btstack_packet_handler_t event_callback, uint8_t subevent, const uint8_t * data, uint8_t data_size){
     UNUSED(data_size);
     btstack_assert(event_callback != NULL);
@@ -168,7 +178,6 @@ static void txps_client_packet_handler_internal(uint8_t packet_type, uint16_t ch
 
     if (packet_type != HCI_EVENT_PACKET) return;
     gatt_service_client_connection_helper_t * connection_helper;
-    txps_client_connection_t * connection;
     uint16_t cid;
     uint8_t status;
 
@@ -180,11 +189,6 @@ static void txps_client_packet_handler_internal(uint8_t packet_type, uint16_t ch
                     connection_helper = gatt_service_client_get_connection_for_cid(&txps_client, cid);
                     btstack_assert(connection_helper != NULL);
 
-                    connection = (txps_client_connection_t *) connection_helper;
-                    if (connection->state != TX_POWER_SERVICE_CLIENT_STATE_W4_CONNECTION) {
-                        return;
-                    }
-
 #ifdef ENABLE_TESTING_SUPPORT
                     {
                         uint8_t i;
@@ -195,16 +199,8 @@ static void txps_client_packet_handler_internal(uint8_t packet_type, uint16_t ch
                         }
                     };
 #endif
-
                     status = gattservice_subevent_client_connected_get_status(packet);
-
-#ifdef ENABLE_TESTING_SUPPORT
-                    printf("\nLLS Client connection status 0x%02x\n", status);
-#endif
-                    connection->state = status == ATT_ERROR_SUCCESS ? TX_POWER_SERVICE_CLIENT_STATE_READY
-                                                                    : TX_POWER_SERVICE_CLIENT_STATE_IDLE;
-                    txps_client_replace_subevent_id_and_emit(connection_helper->event_callback, packet, size,
-                                                            GATTSERVICE_SUBEVENT_TXPS_CLIENT_CONNECTED);
+                    txps_client_connected((txps_client_connection_t *) connection_helper, status, packet, size);
                     break;
 
                 case GATTSERVICE_SUBEVENT_CLIENT_DISCONNECTED:
