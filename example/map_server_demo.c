@@ -114,6 +114,7 @@ static const char * msg_listing_footer = "</MAP-msg-listing>";
 
 static struct test_config_s
 {
+    int nr;
     char* descr;
     int msg_count;
     int cycle_type_first;
@@ -122,37 +123,45 @@ static struct test_config_s
 } test_configs[] =
 {
     
-{.descr = "MAP/MSE/MMB/BV-09-I 10 11 13 14" , .msg_count = 2, .msg_types = { "SMS_GSM","SMS_CDMA"},                          .msg_stati = { "no"}      ,.cycle_type_first = 0},
-{.descr = "MAP/MSE/MMB/BV-12-I"             , .msg_count = 1, .msg_types = { "EMAIL", "SMS_GSM","SMS_CDMA"},                 .msg_stati = { "no","yes"},.cycle_type_first = 0},
-{.descr = "MAP/MSE/MMB/BV-15-I"             , .msg_count = 3, .msg_types = { "EMAIL","SMS_GSM","SMS_CDMA"/*, "MMS", "IM"*/}, .msg_stati = { "no","yes"},.cycle_type_first = 1},
-{.descr = "MAP/MSE/MMB/BV-15-I MMS only"    , .msg_count = 1, .msg_types = { "MMS"},                                         .msg_stati = { "no","yes"},.cycle_type_first = 0},
-{.descr = "MAP/MSE/MMB/BV-15-I IM only"     , .msg_count = 1, .msg_types = { "IM"},                                          .msg_stati = { "no","yes"},.cycle_type_first = 0},
+{.nr = 0, .descr = "MAP/MSE/MMB/BV-09-I 10 11 13 14" , .msg_count = 2, .msg_types = { "SMS_GSM","SMS_CDMA"},                          .msg_stati = { "no"}      ,.cycle_type_first = 0},
+{.nr = 1, .descr = "MAP/MSE/MMB/BV-12-I"             , .msg_count = 1, .msg_types = { "EMAIL", "SMS_GSM","SMS_CDMA"},                 .msg_stati = { "no","yes"},.cycle_type_first = 0},
+{.nr = 2, .descr = "MAP/MSE/MMB/BV-15-I"             , .msg_count = 3, .msg_types = { "EMAIL","SMS_GSM","SMS_CDMA"/*, "MMS", "IM"*/}, .msg_stati = { "no","yes"},.cycle_type_first = 1},
+{.nr = 3, .descr = "MAP/MSE/MMB/BV-15-I MMS only"    , .msg_count = 1, .msg_types = { "MMS"},                                         .msg_stati = { "no","yes"},.cycle_type_first = 0},
+{.nr = 4, .descr = "MAP/MSE/MMB/BV-15-I IM only"     , .msg_count = 1, .msg_types = { "IM"},                                          .msg_stati = { "no","yes"},.cycle_type_first = 0},
 };
 
-static int current_test_config = 0;
+struct test_config_s* config = &test_configs[0];
 static int current_msg_type = 0;
-static int msg_status = 0;
+static int current_msg_status = 0;
+
+static void set_test_config(int nr) {
+    if (nr < ARRAYSIZE(test_configs))
+        config = &test_configs[nr];
+    else
+        printf("couldn't set test setup nr %d\n", nr);
+}
+
 
 static void init_testcases(void) {
     current_msg_type = 0;
-    msg_status = 0;
+    current_msg_status = 0;
 }
 
 // activate next msg_status
 // return true on overflow
 static int cycle_msg_status(void) {
-    if (test_configs[current_test_config].msg_stati[msg_status + 1] != NULL)
-        ++msg_status;
+    if (config->msg_stati[current_msg_status + 1] != NULL)
+        ++current_msg_status;
     else
-        msg_status = 0;
+        current_msg_status = 0;
 
-    return msg_status == 0;
+    return current_msg_status == 0;
 }
 
 // // activate next msg_type
 // return true on overflow
 static int cycle_msg_type(void) {
-    if (test_configs[current_test_config].msg_types[current_msg_type + 1] != NULL)
+    if (config->msg_types[current_msg_type + 1] != NULL)
         ++current_msg_type;
     else
         current_msg_type = 0;
@@ -162,9 +171,9 @@ static int cycle_msg_type(void) {
 
 static void create_msg(char * msg_buffer, uint16_t index, int maxsize){
     sprintf_s(msg_buffer, maxsize, msg_listing_msg,
-        test_configs[current_test_config].msg_types[current_msg_type], test_configs[current_test_config].msg_stati[msg_status]);
+        config->msg_types[current_msg_type], config->msg_stati[current_msg_status]);
 
-    if (test_configs[current_test_config].cycle_type_first) {
+    if (config->cycle_type_first) {
         if (cycle_msg_type())
             cycle_msg_status();
     } else {
@@ -229,7 +238,7 @@ static uint16_t send_listing(uint16_t first, uint16_t last) {
 
 static void print_current_test_config(void)
 {
-    MAP_PRINTF("new test config is <%d: %s>\n", current_test_config, test_configs[current_test_config].descr);
+    MAP_PRINTF("new test config is <%d: %s>\n", config->nr, config->descr);
 }
 
 #ifdef HAVE_BTSTACK_STDIN
@@ -240,15 +249,23 @@ static void show_usage(void){
 
     MAP_PRINTF("\n--- Bluetooth MAP Server Test Console %s ---\n", bd_addr_to_str(iut_address));
     print_current_test_config();
-    MAP_PRINTF("'n' switch to next test config\n");
-    MAP_PRINTF("\n");
+    MAP_PRINTF("<n> switch to next test config\n");
+    MAP_PRINTF("<r> reset current test case\n");
 }
 
 static void stdin_process(char c){
     switch (c){
         case 'n':
-            current_test_config = (current_test_config + 1) % ARRAYSIZE(test_configs);
+            // cycle throug all test cases
+            if (++config >= &test_configs[ARRAYSIZE(test_configs)])
+                config = &test_configs[0];
             // init MAP Access Server test cases
+            init_testcases();
+            print_current_test_config();
+            break;
+
+        case 'r':
+            // reset current test cases
             init_testcases();
             print_current_test_config();
             break;
@@ -334,7 +351,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             map_access_server_set_database_identifier(map_cid, database_identifier);
                             map_access_server_set_folder_version(map_cid, folder_version);
                             MAP_PRINTF("[+] Get Folder listing\n");
-                            send_listing(0, test_configs[current_test_config].msg_count-1);
+                            send_listing(0, config->msg_count-1);
                             break;
 							
                         case MAP_SUBEVENT_GET_MESSAGE_LISTING:
@@ -350,7 +367,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             }
                             
                             // send messages listing
-                            total_messages = test_configs[current_test_config].msg_count;
+                            total_messages = config->msg_count;
                             //start_index = map_subevent_get_message_listing_get_ListStartOffset(packet);
 
                             num_msgs_selected = total_messages - start_index;
@@ -371,7 +388,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             end_index = start_index + num_msgs_selected - 1;
                             MAP_PRINTF("[-] continuation %u, num messages %u, start index %u, end index %u\n", continuation, num_msgs_selected, start_index, end_index);
                             send_listing(start_index, end_index);
-                            //send_listing(test_configs[current_test_config].msg_count-1);
+                            //send_listing(config->msg_count-1);
                             break;
 
                         case MAP_SUBEVENT_GET_MESSAGE:
