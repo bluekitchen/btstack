@@ -51,6 +51,7 @@
 #include "le-audio/gatt-service/coordinated_set_identification_service_client.h"
 #include "ad_parser.h"
 #include "bluetooth_data_types.h"
+#include "ble/gatt-service/gatt_service_client_helper.h"
 
 #ifdef ENABLE_TESTING_SUPPORT
 #include <stdio.h>
@@ -194,6 +195,17 @@ static void csis_client_emit_connection_established(csis_client_connection_t * c
     pos += 2;
     event[pos++] = status;
     (*csis_client_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
+static void csis_client_connected(csis_client_connection_t * connection, uint8_t status) {
+    if (status == ERROR_CODE_SUCCESS){
+        connection->state = COORDINATED_SET_IDENTIFICATION_SERVICE_CLIENT_STATE_READY;
+        csis_client_emit_connection_established(connection, status);
+    } else {
+        connection->state = COORDINATED_SET_IDENTIFICATION_SERVICE_CLIENT_STATE_IDLE;
+        csis_client_emit_connection_established(connection, status);
+        csis_client_finalize_connection(connection);
+    }
 }
 
 static void csis_client_emit_disconnect(uint16_t cid){
@@ -538,8 +550,7 @@ static void csis_client_run_for_connection(csis_client_connection_t * connection
                 break;
             }
             
-            connection->state = COORDINATED_SET_IDENTIFICATION_SERVICE_CLIENT_STATE_CONNECTED;
-            csis_client_emit_connection_established(connection, ERROR_CODE_SUCCESS);
+            csis_client_connected(connection, ERROR_CODE_SUCCESS);
             break;
 
         case COORDINATED_SET_IDENTIFICATION_SERVICE_CLIENT_STATE_W2_READ_CHARACTERISTIC_VALUE:
@@ -584,8 +595,7 @@ static bool csis_client_handle_query_complete(csis_client_connection_t * connect
         switch (connection->state){
             case COORDINATED_SET_IDENTIFICATION_SERVICE_CLIENT_STATE_W4_SERVICE_RESULT:
             case COORDINATED_SET_IDENTIFICATION_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_RESULT:
-                csis_client_emit_connection_established(connection, status);
-                csis_client_finalize_connection(connection);
+                csis_client_connected(connection, gatt_service_client_att_status_to_error_code(status));
                 return false;
             default:
                 break;
@@ -595,8 +605,7 @@ static bool csis_client_handle_query_complete(csis_client_connection_t * connect
     switch (connection->state){
         case COORDINATED_SET_IDENTIFICATION_SERVICE_CLIENT_STATE_W4_SERVICE_RESULT:
             if (connection->service_instances_num == 0){
-                csis_client_emit_connection_established(connection, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE);
-                csis_client_finalize_connection(connection);
+                csis_client_connected(connection, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE);
                 return false;
             }
             connection->state = COORDINATED_SET_IDENTIFICATION_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTICS;
@@ -619,8 +628,7 @@ static bool csis_client_handle_query_complete(csis_client_connection_t * connect
                 connection->state = COORDINATED_SET_IDENTIFICATION_SERVICE_CLIENT_STATE_W2_REGISTER_NOTIFICATION;
             } else {
                 connection->characteristic_index = 0;
-                connection->state = COORDINATED_SET_IDENTIFICATION_SERVICE_CLIENT_STATE_CONNECTED;
-                csis_client_emit_connection_established(connection, ERROR_CODE_SUCCESS);
+                csis_client_connected(connection, ERROR_CODE_SUCCESS);
             }
             break;
 
@@ -632,22 +640,20 @@ static bool csis_client_handle_query_complete(csis_client_connection_t * connect
             }
 
             connection->characteristic_index = 0;
-            connection->state = COORDINATED_SET_IDENTIFICATION_SERVICE_CLIENT_STATE_CONNECTED;
-            csis_client_emit_connection_established(connection, ERROR_CODE_SUCCESS);
+            csis_client_connected(connection, ERROR_CODE_SUCCESS);
             break;
       
         case COORDINATED_SET_IDENTIFICATION_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_CONFIGURATION_RESULT:
-            connection->state = COORDINATED_SET_IDENTIFICATION_SERVICE_CLIENT_STATE_CONNECTED;
-            csis_client_emit_connection_established(connection, ERROR_CODE_SUCCESS);
+            csis_client_connected(connection, ERROR_CODE_SUCCESS);
             break;
 
         case COORDINATED_SET_IDENTIFICATION_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_VALUE_WRITTEN:
-            connection->state = COORDINATED_SET_IDENTIFICATION_SERVICE_CLIENT_STATE_CONNECTED;
+            connection->state = COORDINATED_SET_IDENTIFICATION_SERVICE_CLIENT_STATE_READY;
             csis_client_emit_write_lock_complete(connection, status);
             break;
 
         case COORDINATED_SET_IDENTIFICATION_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_VALUE_READ:
-            connection->state = COORDINATED_SET_IDENTIFICATION_SERVICE_CLIENT_STATE_CONNECTED;
+            connection->state = COORDINATED_SET_IDENTIFICATION_SERVICE_CLIENT_STATE_READY;
             if (status != ERROR_CODE_SUCCESS){
                 // simulate failed query result
                 csis_client_handle_value_query_result(connection, connection->characteristic_index, status, NULL, 0);
@@ -844,7 +850,7 @@ static uint8_t csis_client_read_characteristics_value(uint16_t ascs_cid, csis_ch
     if (connection == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    if (connection->state != COORDINATED_SET_IDENTIFICATION_SERVICE_CLIENT_STATE_CONNECTED){
+    if (connection->state != COORDINATED_SET_IDENTIFICATION_SERVICE_CLIENT_STATE_READY){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
@@ -879,7 +885,7 @@ uint8_t coordinated_set_identification_service_client_write_member_lock(uint16_t
     if (connection == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    if (connection->state != COORDINATED_SET_IDENTIFICATION_SERVICE_CLIENT_STATE_CONNECTED){
+    if (connection->state != COORDINATED_SET_IDENTIFICATION_SERVICE_CLIENT_STATE_READY){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
     if (connection->characteristics[CSIS_CHARACTERISTIC_INDEX_LOCK].value_handle == 0){
