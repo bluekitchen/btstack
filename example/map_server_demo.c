@@ -73,7 +73,6 @@
 #define MAP_PRINTF MAP_PRINTF
 #endif
 
-
 #define MAS_SERVER_RFCOMM_CHANNEL_NR 1
 #define MAS_SERVER_GOEP_PSM 0x1001
 
@@ -125,7 +124,7 @@ static struct test_config_s
     
 {.nr = 0, .descr = "MAP/MSE/MMB/BV-09-I 10 11 13 14" , .msg_count = 2, .msg_types = { "SMS_GSM","SMS_CDMA"},                          .msg_stati = { "no"}      ,.cycle_type_first = 0},
 {.nr = 1, .descr = "MAP/MSE/MMB/BV-12-I"             , .msg_count = 1, .msg_types = { "EMAIL", "SMS_GSM","SMS_CDMA"},                 .msg_stati = { "no","yes"},.cycle_type_first = 0},
-{.nr = 2, .descr = "MAP/MSE/MMB/BV-15-I"             , .msg_count = 3, .msg_types = { "EMAIL","SMS_GSM","SMS_CDMA"/*, "MMS", "IM"*/}, .msg_stati = { "no","yes"},.cycle_type_first = 1},
+{.nr = 2, .descr = "MAP/MSE/MMB/BV-15-I"             , .msg_count = 4, .msg_types = { "EMAIL","SMS_GSM","SMS_CDMA", "MMS"/*, "IM" */ },     .msg_stati = {"no","yes"},.cycle_type_first = 1},
 {.nr = 3, .descr = "MAP/MSE/MMB/BV-15-I MMS only"    , .msg_count = 1, .msg_types = { "MMS"},                                         .msg_stati = { "no","yes"},.cycle_type_first = 0},
 {.nr = 4, .descr = "MAP/MSE/MMB/BV-15-I IM only"     , .msg_count = 1, .msg_types = { "IM"},                                          .msg_stati = { "no","yes"},.cycle_type_first = 0},
 };
@@ -188,7 +187,9 @@ static uint16_t send_listing(uint16_t first, uint16_t last) {
     char listing_buffer[2000];
     uint16_t pos = 0;
     bool done = false;
-    
+
+    log_debug("1 max_body_size:%d", max_body_size);
+
     if (first == 0){
         // add header
         uint16_t len = (uint16_t)strlen(msg_listing_header);
@@ -197,10 +198,12 @@ static uint16_t send_listing(uint16_t first, uint16_t last) {
         max_body_size -= len;
     }
     while ((max_body_size > 0) && (first <= last)){
+        log_debug("2 first:%d last:%d pos:%d", first, last, pos);
         // add entry
         create_msg(listing_buffer, first, sizeof(listing_buffer));
         // get len
         uint16_t len = (uint16_t)strlen(listing_buffer);
+        log_debug("2.5 first:%d last:%d pos:%d", first, last, pos);
         if (len > max_body_size){
             break;
         }
@@ -208,11 +211,14 @@ static uint16_t send_listing(uint16_t first, uint16_t last) {
         pos += len;
         max_body_size -= len;
         first++;
+        log_debug("3 first:%d last:%d pos:%d len:%d", first, last, pos, len);
     }
 
     if (first > last){
         uint16_t len = (uint16_t) strlen(msg_listing_footer);
+        log_debug("4 first:%d last:%d pos:%d len:%d", first, last, pos, len);
         if (len < max_body_size){
+            log_debug("5 first:%d last:%d pos:%d len:%d", first, last, pos, len);
             // add footer
             memcpy(&upload_buffer[pos], (const uint8_t *) msg_listing_footer, len);
             pos += len;
