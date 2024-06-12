@@ -184,8 +184,8 @@ static void create_msg(char * msg_buffer, uint16_t index, int maxsize){
 
 // TODO enable to send message larger as one OBEX/MAP packet
 static uint16_t send_listing(uint16_t first, uint16_t last) {
-    uint16_t max_body_size = map_access_server_get_max_body_size(map_cid);
-    char listing_buffer[200];
+    uint16_t max_body_size = 150;//map_access_server_get_max_body_size(map_cid);
+    char listing_buffer[2000];
     uint16_t pos = 0;
     bool done = false;
     
