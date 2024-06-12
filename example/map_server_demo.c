@@ -320,7 +320,8 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
     UNUSED(channel);
     UNUSED(size);
     uint8_t status;
-    uint16_t continuation, total_messages, start_index, end_index, num_msgs_selected, max_list_count;
+    uint16_t total_messages, start_index, end_index, num_msgs_selected, max_list_count;
+    uint32_t continuation;
 	
     switch (packet_type){
         case HCI_EVENT_PACKET:
@@ -357,7 +358,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                         case MAP_SUBEVENT_GET_MESSAGE_LISTING:
                             uint16_t pos = 3; // we skip directly to continuation;
                             //continuation = (uint16_t)map_subevent_get_message_listing_get_continuation(packet);
-                            APP_READ_16(packet, &pos, &continuation);
+                            APP_READ_32(packet, &pos, &continuation);
                             APP_READ_16(packet, &pos, &start_index);
 
                             if (continuation == 0) {
