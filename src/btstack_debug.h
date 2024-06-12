@@ -122,10 +122,18 @@ void btstack_assert_failed(const char * file, uint16_t line_nr);
 #define dbg_printf(...) (void)(0)
 #endif
 
-#ifdef __AVR__
-#define HCI_DUMP_LOG(prefix, log_level, format, ...) hci_dump_log_P(log_level, PSTR(LOG_PREFIX(prefix) "%S.%u: " format), PSTR(BTSTACK_FILE__), __LINE__, ## __VA_ARGS__)
+#ifdef ENABLE_HCI_LOG_FUNCTION_NAME
+#define ___FUNCTION___ __func__
+#define FUNC_FMT "[%s()]"
 #else
-#define HCI_DUMP_LOG(prefix, log_level, format, ...) hci_dump_log(log_level, LOG_PREFIX(prefix) "%s.%u: " format, BTSTACK_FILE__, __LINE__, ## __VA_ARGS__); HCI_CONSOLE_PRINTF(LOG_PREFIX(prefix) "%s.%u: " format "\n", BTSTACK_FILE__, __LINE__, ## __VA_ARGS__)
+#define ___FUNCTION___ ""
+#define FUNC_FMT "%s"
+#endif
+
+#ifdef __AVR__
+#define HCI_DUMP_LOG(prefix, log_level, format, ...) hci_dump_log_P(log_level, PSTR(LOG_PREFIX(prefix) "%S.%u" FUNC_FMT ": " format), PSTR(BTSTACK_FILE__), __LINE__, ___FUNCTION___, ## __VA_ARGS__)
+#else
+#define HCI_DUMP_LOG(prefix, log_level, format, ...) hci_dump_log(log_level, LOG_PREFIX(prefix) "%s.%u" FUNC_FMT ": " format, BTSTACK_FILE__, __LINE__, ___FUNCTION___,## __VA_ARGS__); HCI_CONSOLE_PRINTF(LOG_PREFIX(prefix) "%s.%u: " format "\n", BTSTACK_FILE__, __LINE__, ## __VA_ARGS__)
 #endif
 
 #ifdef ENABLE_LOG_DEBUG
