@@ -87,7 +87,7 @@ static void mics_client_replace_subevent_id_and_emit(btstack_packet_handler_t ca
     (*callback)(HCI_EVENT_PACKET, 0, packet, size);
 }
 
-static void mics_client_emit_connected(const gatt_service_client_connection_helper_t *connection_helper, uint8_t num_included_clients, uint8_t status) {
+static void mics_client_emit_connection_established(const gatt_service_client_connection_helper_t *connection_helper, uint8_t num_included_clients, uint8_t status) {
     btstack_assert(connection_helper != NULL);
     btstack_assert(connection_helper->event_callback != NULL);
 
@@ -105,9 +105,23 @@ static void mics_client_emit_connected(const gatt_service_client_connection_help
     (*connection_helper->event_callback)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
+static void mics_client_finalize_connection(mics_client_connection_t * connection){
+    // already finalized by GATT CLIENT HELPER
+    if (connection == NULL){
+        return;
+    }
+    gatt_service_client_finalize_connection(&mics_client, &connection->basic_connection);
+}
+
 static void mics_client_connected(mics_client_connection_t *connection, uint8_t status) {
-    connection->state = MICROPHONE_CONTROL_SERVICE_CLIENT_STATE_READY;
-    mics_client_emit_connected(&connection->basic_connection, connection->aics_connections_connected, status);
+    if (status == ERROR_CODE_SUCCESS){
+        connection->state = MICROPHONE_CONTROL_SERVICE_CLIENT_STATE_READY;
+        mics_client_emit_connection_established(&connection->basic_connection, connection->aics_connections_num, status);
+    } else {
+        connection->state = MICROPHONE_CONTROL_SERVICE_CLIENT_STATE_IDLE;
+        mics_client_emit_connection_established(&connection->basic_connection, 0, status);
+        mics_client_finalize_connection(connection);
+    }
 }
 
 static uint16_t mics_client_value_handle_for_index(mics_client_connection_t * connection){
@@ -269,7 +283,6 @@ static void mics_client_packet_handler_internal(uint8_t packet_type, uint16_t ch
                     status = gattservice_subevent_client_connected_get_status(packet);
 
                     if (status != ERROR_CODE_SUCCESS){
-                        connection->state = MICROPHONE_CONTROL_SERVICE_CLIENT_STATE_IDLE;
                         mics_client_connected(connection, status);
                         break;
                     }
