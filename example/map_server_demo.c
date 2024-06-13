@@ -205,7 +205,7 @@ static uint16_t send_listing(uint16_t first, uint16_t last) {
         create_msg(listing_buffer, first, sizeof(listing_buffer));
         // get len
         uint16_t len = (uint16_t)strlen(listing_buffer);
-        log_debug("2.5 first:%d last:%d pos:%d", first, last, pos);
+        log_debug("2.5 first:%d last:%d pos:%d len:%d", first, last, pos, len);
         if (len > max_body_size){
             break;
         }
@@ -214,13 +214,14 @@ static uint16_t send_listing(uint16_t first, uint16_t last) {
         max_body_size -= len;
         first++;
         log_debug("3 first:%d last:%d pos:%d len:%d", first, last, pos, len);
+        log_debug("4 %.*s", btstack_min(pos, sizeof(listing_buffer)),upload_buffer);
     }
 
     if (first > last){
         uint16_t len = (uint16_t) strlen(msg_listing_footer);
-        log_debug("4 first:%d last:%d pos:%d len:%d", first, last, pos, len);
+        log_debug("5 first:%d last:%d pos:%d len:%d", first, last, pos, len);
         if (len < max_body_size){
-            log_debug("5 first:%d last:%d pos:%d len:%d", first, last, pos, len);
+            log_debug("6 first:%d last:%d pos:%d len:%d", first, last, pos, len);
             // add footer
             memcpy(&upload_buffer[pos], (const uint8_t *) msg_listing_footer, len);
             pos += len;
@@ -240,6 +241,7 @@ static uint16_t send_listing(uint16_t first, uint16_t last) {
         response_code = OBEX_RESP_CONTINUE;
         continuation = first;
     }
+    log_debug("7 send response %.*s", btstack_min(pos, sizeof(listing_buffer)), upload_buffer);
     map_access_server_send_get_put_response(map_cid, response_code, continuation, pos, upload_buffer);
     return first;
 }
