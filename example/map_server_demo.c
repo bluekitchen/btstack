@@ -121,12 +121,11 @@ static struct test_config_s
     char* msg_stati[3]; // maximum 3-1 entries, last one is null
 } test_configs[] =
 {
-    
-{.nr = 0, .descr = "MAP/MSE/MMB/BV-09-I 10 11 13 14" , .msg_count = 2, .msg_types = { "SMS_GSM","SMS_CDMA"},                          .msg_stati = { "no"}      ,.cycle_type_first = 0},
-{.nr = 1, .descr = "MAP/MSE/MMB/BV-12-I"             , .msg_count = 1, .msg_types = { "EMAIL", "SMS_GSM","SMS_CDMA"},                 .msg_stati = { "no","yes"},.cycle_type_first = 0},
-{.nr = 2, .descr = "MAP/MSE/MMB/BV-15-I"             , .msg_count = 4, .msg_types = { "EMAIL","SMS_GSM","SMS_CDMA", "MMS"/*, "IM" */ },     .msg_stati = {"no","yes"},.cycle_type_first = 1},
-{.nr = 3, .descr = "MAP/MSE/MMB/BV-15-I MMS only"    , .msg_count = 1, .msg_types = { "MMS"},                                         .msg_stati = { "no","yes"},.cycle_type_first = 0},
-{.nr = 4, .descr = "MAP/MSE/MMB/BV-15-I IM only"     , .msg_count = 1, .msg_types = { "IM"},                                          .msg_stati = { "no","yes"},.cycle_type_first = 0},
+{.nr = 0, .descr = "MAP/MSE/MMB/BV-09-I 10 11 13 14" , .msg_count = 2, .msg_types = { "SMS_GSM","SMS_CDMA"                      },  .msg_stati = { "no"       }, .cycle_type_first = 0},
+{.nr = 1, .descr = "MAP/MSE/MMB/BV-12-I"             , .msg_count = 1, .msg_types = { "EMAIL", "SMS_GSM","SMS_CDMA"             },  .msg_stati = { "no","yes" }, .cycle_type_first = 0},
+{.nr = 2, .descr = "MAP/MSE/MMB/BV-15-I"             , .msg_count = 5, .msg_types = { "EMAIL","SMS_GSM","SMS_CDMA", "MMS", "IM" },  .msg_stati = { "no","yes" }, .cycle_type_first = 1},
+{.nr = 3, .descr = "MAP/MSE/MMB/BV-15-I MMS only"    , .msg_count = 1, .msg_types = { "MMS"                                     },  .msg_stati = { "no","yes" }, .cycle_type_first = 0},
+{.nr = 4, .descr = "MAP/MSE/MMB/BV-15-I IM only"     , .msg_count = 1, .msg_types = { "IM"                                      },  .msg_stati = { "no","yes" }, .cycle_type_first = 0},
 };
 
 struct test_config_s* config = &test_configs[0];
