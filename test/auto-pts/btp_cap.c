@@ -837,13 +837,17 @@ void btp_cap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, 
                 ase->qos_configuration.presentation_delay_us =  little_endian_read_24(data, offset);
                 offset += 3;
 
-                // parse codec config and meta data
                 uint8_t codec_config_ltvs_length = data[offset++];
                 uint8_t metadata_ltvs_length = data[offset++];
-                ascs_util_specific_codec_configuration_parse(&data[offset], codec_config_ltvs_length, &ase->codec_configuration_request.specific_codec_configuration);
+
+                // codec config parser expects length in first field
+                uint8_t codec_config_lts[256];
+                codec_config_lts[0] = codec_config_ltvs_length;
+                memcpy(&codec_config_lts[1], &data[offset], codec_config_ltvs_length);
+                ascs_util_specific_codec_configuration_parse(codec_config_lts, codec_config_ltvs_length + 1, &ase->codec_configuration_request.specific_codec_configuration);
                 offset += codec_config_ltvs_length;
 
-                // metadata parser expects lenght in first field
+                // metadata parser expects length in first field
                 uint8_t metadata[256];
                 metadata[0] = metadata_ltvs_length;
                 memcpy(&metadata[1], &data[offset], metadata_ltvs_length);
