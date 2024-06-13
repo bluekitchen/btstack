@@ -330,7 +330,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
     UNUSED(channel);
     UNUSED(size);
     uint8_t status;
-    uint16_t total_messages, start_index, end_index, num_msgs_selected, max_list_count;
+    uint16_t dummy_map_cid, total_messages, start_index, end_index, num_msgs_selected, max_list_count;
     uint32_t continuation;
 	
     switch (packet_type){
@@ -367,9 +367,15 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
 							
                         case MAP_SUBEVENT_GET_MESSAGE_LISTING:
                             uint16_t pos = 3; // we skip directly to continuation;
-                            //continuation = (uint16_t)map_subevent_get_message_listing_get_continuation(packet);
+                            //APP_WRITE_32(event, &pos, map_access_server->request.continuation);
+                            //APP_WRITE_16(event, &pos, map_access_server->map_cid);
+                            //APP_WRITE_16(event, &pos, map_access_server->request.app_params.MaxListCount);
+                            //APP_WRITE_16(event, &pos, map_access_server->request.app_params.ListStartOffset);
                             APP_READ_32(packet, &pos, &continuation);
+                            APP_READ_16(packet, &pos, &dummy_map_cid);
+                            APP_READ_16(packet, &pos, &max_list_count);
                             APP_READ_16(packet, &pos, &start_index);
+                            
 
                             if (continuation == 0) {
                                 MAP_PRINTF("[+] Start MAP_SUBEVENT_GET_MESSAGE_LISTING continuation == 0\n");
@@ -379,7 +385,6 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             
                             // send messages listing
                             total_messages = config->msg_count;
-                            //start_index = map_subevent_get_message_listing_get_ListStartOffset(packet);
 
                             num_msgs_selected = total_messages - start_index;
                             max_list_count = map_subevent_get_message_listing_get_MaxListCount(packet);
