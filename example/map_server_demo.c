@@ -107,8 +107,8 @@ static bd_addr_t    remote_addr;
 static const char* remote_addr_string = "001BDC08E272";
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
-static const char * msg_listing_header = "<MAP-msg-listing version = \"1.0\">";
-static const char * msg_listing_msg   = "<msg handle = \"20000100001\" subject=\"Hello\" type=\"%s\" read=\"%s\"/>";
+static const char * msg_listing_header = "<MAP-msg-listing version=\"1.0\">";
+static const char * msg_listing_msg   = "<msg handle=\"2000010000%u\" subject=\"Hello\" type=\"%s\" read=\"%s\"/>";
 static const char * msg_listing_footer = "</MAP-msg-listing>";
 
 static struct test_config_s
@@ -169,8 +169,11 @@ static int cycle_msg_type(void) {
 }
 
 static void create_msg(char * msg_buffer, uint16_t index, int maxsize){
+    index = index % ARRAYSIZE(config->msg_types);
     sprintf_s(msg_buffer, maxsize, msg_listing_msg,
-        config->msg_types[current_msg_type], config->msg_stati[current_msg_status]);
+        index,
+        config->msg_types[index],
+        config->msg_stati[current_msg_status]);
 
     if (config->cycle_type_first) {
         if (cycle_msg_type())
