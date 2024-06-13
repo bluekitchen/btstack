@@ -352,7 +352,8 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             }
                             break;
                         case MAP_SUBEVENT_CONNECTION_CLOSED:
-                            MAP_PRINTF("[+] Connection closed\n");
+                            MAP_PRINTF("[+] Connection closed, re-init test case states\n");
+                            init_testcases();
                             break;
                         case MAP_SUBEVENT_OPERATION_COMPLETED:
                             MAP_PRINTF("[+] Operation complete, status 0x%02x\n",
