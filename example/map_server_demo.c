@@ -111,26 +111,25 @@ static const char * msg_listing_header = "<MAP-msg-listing version=\"1.0\">";
 static const char * msg_listing_msg   = "<msg handle=\"2000010000%u\" subject=\"Hello\" type=\"%s\" read=\"%s\"/>";
 static const char * msg_listing_footer = "</MAP-msg-listing>";
 
+enum msg_status_read { no, yes };
 static struct test_config_s
 {
     int nr;
     char* descr;
     int msg_count;
-    int cycle_type_first;
     char* msg_types[6]; // maximum 6-1 entries, last one is null
-    char* msg_stati[3]; // maximum 3-1 entries, last one is null
+    enum msg_status_read msg_stati[6]; // maximum 6-1 entries, last one is null
 } test_configs[] =
 {
-{.nr = 0, .descr = "MAP/MSE/MMB/BV-09-I 10 11 13 14" , .msg_count = 2, .msg_types = { "SMS_GSM","SMS_CDMA"                      },  .msg_stati = { "no"       }, .cycle_type_first = 0},
-{.nr = 1, .descr = "MAP/MSE/MMB/BV-12-I"             , .msg_count = 1, .msg_types = { "EMAIL", "SMS_GSM","SMS_CDMA"             },  .msg_stati = { "no","yes" }, .cycle_type_first = 0},
-{.nr = 2, .descr = "MAP/MSE/MMB/BV-15-I"             , .msg_count = 5, .msg_types = { "EMAIL","SMS_GSM","SMS_CDMA", "MMS", "IM" },  .msg_stati = { "no","yes" }, .cycle_type_first = 1},
-{.nr = 3, .descr = "MAP/MSE/MMB/BV-15-I MMS only"    , .msg_count = 1, .msg_types = { "MMS"                                     },  .msg_stati = { "no","yes" }, .cycle_type_first = 0},
-{.nr = 4, .descr = "MAP/MSE/MMB/BV-15-I IM only"     , .msg_count = 1, .msg_types = { "IM"                                      },  .msg_stati = { "no","yes" }, .cycle_type_first = 0},
+{.nr = 0, .descr = "MAP/MSE/MMB/BV-09-I 10 11 13 14" , .msg_count = 2, .msg_types = { "SMS_GSM","SMS_CDMA"                      }, },
+{.nr = 1, .descr = "MAP/MSE/MMB/BV-12-I"             , .msg_count = 1, .msg_types = { "EMAIL", "SMS_GSM","SMS_CDMA"             }, },
+{.nr = 2, .descr = "MAP/MSE/MMB/BV-15-I"             , .msg_count = 5, .msg_types = { "EMAIL","SMS_GSM","SMS_CDMA", "MMS", "IM" }, },
+{.nr = 3, .descr = "MAP/MSE/MMB/BV-15-I MMS only"    , .msg_count = 1, .msg_types = { "MMS"                                     }, },
+{.nr = 4, .descr = "MAP/MSE/MMB/BV-15-I IM only"     , .msg_count = 1, .msg_types = { "IM"                                      }, },
 };
 
 struct test_config_s* config = &test_configs[0];
 static int current_msg_type = 0;
-static int current_msg_status = 0;
 
 static void set_test_config(int nr) {
     if (nr < ARRAYSIZE(test_configs))
@@ -142,45 +141,15 @@ static void set_test_config(int nr) {
 
 static void init_testcases(void) {
     current_msg_type = 0;
-    current_msg_status = 0;
 }
 
-// activate next msg_status
-// return true on overflow
-static int cycle_msg_status(void) {
-    if (config->msg_stati[current_msg_status + 1] != NULL)
-        ++current_msg_status;
-    else
-        current_msg_status = 0;
-
-    return current_msg_status == 0;
-}
-
-// // activate next msg_type
-// return true on overflow
-static int cycle_msg_type(void) {
-    if (config->msg_types[current_msg_type + 1] != NULL)
-        ++current_msg_type;
-    else
-        current_msg_type = 0;
-
-    return current_msg_type == 0;
-}
 
 static void create_msg(char * msg_buffer, uint16_t index, int maxsize){
     index = index % ARRAYSIZE(config->msg_types);
     sprintf_s(msg_buffer, maxsize, msg_listing_msg,
         index,
         config->msg_types[index],
-        config->msg_stati[current_msg_status]);
-
-    if (config->cycle_type_first) {
-        if (cycle_msg_type())
-            cycle_msg_status();
-    } else {
-        if (cycle_msg_status())
-            cycle_msg_type();
-    }
+        config->msg_stati[index]?"yes":"no");
 }
 
 // TODO enable to send message larger as one OBEX/MAP packet
@@ -294,7 +263,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
     memset(value, 0, MAP_MAX_VALUE_LEN);
     bd_addr_t event_addr;
 
-    log_debug("packet_type:%u", packet_type);
+    //log_debug("packet_type:%u", packet_type);
     switch (packet_type){
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)) {
@@ -331,7 +300,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
     UNUSED(channel);
     UNUSED(size);
     uint8_t status;
-    uint16_t dummy_map_cid, total_messages, start_index, end_index, num_msgs_selected, max_list_count;
+    uint16_t pos, total_messages, start_index, end_index, num_msgs_selected, max_list_count, dummy_map_cid;
     uint32_t continuation;
 	
     switch (packet_type){
@@ -368,7 +337,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             break;
 							
                         case MAP_SUBEVENT_GET_MESSAGE_LISTING:
-                            uint16_t pos = 3; // we skip directly to continuation;
+                            pos = 3; // we skip directly to continuation;
                             //APP_WRITE_32(event, &pos, map_access_server->request.continuation);
                             //APP_WRITE_16(event, &pos, map_access_server->map_cid);
                             //APP_WRITE_16(event, &pos, map_access_server->request.app_params.MaxListCount);
@@ -415,7 +384,11 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             break;
 
                         case MAP_SUBEVENT_PUT_MESSAGE_STATUS:
-                            MAP_PRINTF("[+] Put MessageStatus\n");
+                            pos = 3; // we skip directly to the first value;
+                            char request_name[32];
+                            APP_READ_16(packet, &pos, &dummy_map_cid);
+                            APP_READ_STR(packet, &pos, sizeof(request_name), request_name, "request_name");
+                            MAP_PRINTF("[+] Put MessageStatus (ObjectName:%s)\n", request_name);
                             map_access_server_send_get_put_response(map_cid, OBEX_RESP_SUCCESS, 0, 0, NULL);
                             break;
 

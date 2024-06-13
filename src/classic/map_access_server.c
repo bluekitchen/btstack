@@ -715,6 +715,7 @@ static void map_access_server_parser_callback_get(void* user_data, uint8_t heade
                 }
             }
             map_access_server->request.name[total_len / 2] = 0;
+            log_debug("OBEX_HEADER_NAME:%*s", data_len/2, map_access_server->request.name);
         }
         break;
     case OBEX_HEADER_TYPE:
@@ -816,9 +817,10 @@ static void map_access_server_handle_get_request(map_access_server_t* map_access
     case MAP_OBJECT_TYPE_PUT_MESSAGE_STATUS:
         APP_WRITE_08(event, &pos, MAP_SUBEVENT_PUT_MESSAGE_STATUS);
         APP_WRITE_16(event, &pos, map_access_server->map_cid);
-
+        APP_WRITE_STR(event, &pos, sizeof(event) - pos, map_access_server->request.name, "map_access_server->request.name");
+   
         // write message len (after 2 header bytes) into 2nd byte
-        event[1] = 25;//pos - 2;
+        event[1] = pos;//pos - 2;
         break;
 
     default:

@@ -114,6 +114,20 @@ void little_endian_store_32(uint8_t * buffer, uint16_t position, uint32_t value)
     buffer[pos++] = (uint8_t)(value >> 24);
 }
 
+void app_write_str(uint8_t* buffer, uint16_t *pos, uint16_t dest_size, char * str) {
+    uint16_t max_len = dest_size - *pos - 1;
+    strncpy_s(&buffer[*pos], dest_size, str, max_len);
+    uint16_t str_len = (uint16_t)strnlen_s(&buffer[*pos], max_len);
+    *pos += str_len;
+}
+
+void app_read_str(uint8_t* buffer, uint16_t* pos, uint16_t dest_size, char* str) {
+    uint16_t max_len = dest_size - *pos - 1;
+    uint16_t str_len = (uint16_t)strnlen_s(&buffer[*pos], max_len);
+    strncpy_s(str, dest_size, &buffer[*pos], max_len);
+    *pos += str_len;
+}
+
 void app_write_08(uint8_t* buffer, uint16_t* pos, uint8_t  value) { little_endian_store_08(buffer, *pos, value);  *pos += 1; }
 void app_write_16(uint8_t* buffer, uint16_t* pos, uint16_t value) { little_endian_store_16(buffer, *pos, value);  *pos += 2; }
 void app_write_24(uint8_t* buffer, uint16_t* pos, uint32_t value) { little_endian_store_24(buffer, *pos, value);  *pos += 3; }
