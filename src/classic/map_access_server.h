@@ -47,14 +47,7 @@ extern "C" {
 #endif
 #include "btstack_config.h"
 #include "btstack_defines.h"
-// max len of phone number used for lookup in map_lookup_by_number
-#define MAP_MAX_PHONE_NUMBER_LEN 32
 
-// max len of name reported in MAP_SUBEVENT_CARD_RESULT
-#define MAP_MAX_NAME_LEN   32
-
-// max len of vcard handle reported in MAP_SUBEVENT_CARD_RESULT
-#define MAP_MAX_HANDLE_LEN 16
 
 // max name header len
 #define MAP_SERVER_MAX_NAME_LEN 32
