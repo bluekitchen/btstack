@@ -160,6 +160,9 @@ static void hid_host_setup(void){
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
 
+    // make discoverable to allow HID device to initiate connection
+    gap_discoverable_control(1);
+
     // Disable stdout buffering
     setvbuf(stdin, NULL, _IONBF, 0);
 }
