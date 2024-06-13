@@ -117,7 +117,7 @@ static struct test_config_s
     char* descr;
     int msg_count;
     int cycle_type_first;
-    char* msg_types[6]; // maximum 4-1 entries, last one is null
+    char* msg_types[6]; // maximum 6-1 entries, last one is null
     char* msg_stati[3]; // maximum 3-1 entries, last one is null
 } test_configs[] =
 {
@@ -294,6 +294,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
     memset(value, 0, MAP_MAX_VALUE_LEN);
     bd_addr_t event_addr;
 
+    log_debug("packet_type:%u", packet_type);
     switch (packet_type){
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)) {
