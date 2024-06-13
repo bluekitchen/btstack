@@ -28,3 +28,4 @@ build-asan
 build-coverage
 .vs
 .vscode
+enc_temp_folder
