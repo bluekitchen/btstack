@@ -817,6 +817,8 @@ static void map_access_server_handle_get_request(map_access_server_t* map_access
     case MAP_OBJECT_TYPE_PUT_MESSAGE_STATUS:
         APP_WRITE_08(event, &pos, MAP_SUBEVENT_PUT_MESSAGE_STATUS);
         APP_WRITE_16(event, &pos, map_access_server->map_cid);
+        APP_WRITE_08(event, &pos, map_access_server->request.app_params.StatusIndicator);
+        APP_WRITE_08(event, &pos, map_access_server->request.app_params.StatusValue);
         APP_WRITE_STR(event, &pos, sizeof(event) - pos, map_access_server->request.name, "map_access_server->request.name");
    
         // write message len (after 2 header bytes) into 2nd byte
