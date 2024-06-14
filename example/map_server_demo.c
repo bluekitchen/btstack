@@ -385,10 +385,15 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
 
                         case MAP_SUBEVENT_PUT_MESSAGE_STATUS:
                             pos = 3; // we skip directly to the first value;
+                            uint8_t StatusIndicator;
+                            uint8_t StatusValue;
                             char request_name[32];
                             APP_READ_16(packet, &pos, &dummy_map_cid);
+                            APP_READ_08(packet, &pos, &StatusIndicator);
+                            APP_READ_08(packet, &pos, &StatusValue);
                             APP_READ_STR(packet, &pos, sizeof(request_name), request_name, "request_name");
-                            MAP_PRINTF("[+] Put MessageStatus (ObjectName:%s)\n", request_name);
+                            MAP_PRINTF("[+] Put MessageStatus ObjectName:%s StatusIndicator:0x%02X StatusValue:0x%02X\n", request_name, (unsigned int) StatusIndicator, (unsigned int)StatusValue);
+                            MAP_PRINTF("[+] Put MessageStatus\n");
                             map_access_server_send_get_put_response(map_cid, OBEX_RESP_SUCCESS, 0, 0, NULL);
                             break;
 
