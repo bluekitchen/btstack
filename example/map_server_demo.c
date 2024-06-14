@@ -123,7 +123,7 @@ static struct test_config_s
 {
 {.nr = 0, .descr = "MAP/MSE/MMB/BV-09-I 10 11 13 14" , .msg_count = 2, .msg_types = { "SMS_GSM","SMS_CDMA"                      }, },
 {.nr = 1, .descr = "MAP/MSE/MMB/BV-12-I"             , .msg_count = 1, .msg_types = { "EMAIL", "SMS_GSM","SMS_CDMA"             }, },
-{.nr = 2, .descr = "MAP/MSE/MMB/BV-15-I 18"          , .msg_count = 5, .msg_types = { "EMAIL","SMS_GSM","SMS_CDMA", "MMS", "IM" }, },
+{.nr = 2, .descr = "MAP/MSE/MMB/BV-15-I 18 20"       , .msg_count = 5, .msg_types = { "EMAIL","SMS_GSM","SMS_CDMA", "MMS", "IM" }, },
 {.nr = 3, .descr = "MAP/MSE/MMB/BV-16-I"             , .msg_count = 1, .msg_types = { "EMAIL","EMAIL"},},
 };
 
