@@ -404,6 +404,9 @@ static map_object_type_t map_access_server_parse_object_type(const char* type_st
         return MAP_OBJECT_TYPE_PUT_MESSAGE_STATUS;
     }
 
+    if (strcmp("x-bt/MAP-messageUpdate", type_string) == 0) {
+        return MAP_OBJECT_TYPE_PUT_MESSAGE_UPDATE;
+    }
 
     return MAP_OBJECT_TYPE_INVALID;
 }
@@ -756,6 +759,7 @@ static void map_access_server_handle_get_request(map_access_server_t* map_access
     case MAP_OBJECT_TYPE_GET_MESSAGE:
     case MAP_OBJECT_TYPE_GET_FOLDER_LISTING:
     case MAP_OBJECT_TYPE_PUT_MESSAGE_STATUS:
+    case MAP_OBJECT_TYPE_PUT_MESSAGE_UPDATE:
         break;
 
     default:
@@ -823,6 +827,13 @@ static void map_access_server_handle_get_request(map_access_server_t* map_access
    
         // write message len (after 2 header bytes) into 2nd byte
         event[1] = pos;//pos - 2;
+        break;
+
+    case MAP_OBJECT_TYPE_PUT_MESSAGE_UPDATE:
+        APP_WRITE_08(event, &pos, MAP_SUBEVENT_PUT_MESSAGE_UPDATE);
+        APP_WRITE_16(event, &pos, map_access_server->map_cid);
+        // write message len (after 2 header bytes) into 2nd byte
+        event[1] = pos;
         break;
 
     default:
