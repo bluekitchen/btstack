@@ -108,7 +108,7 @@ static const char* remote_addr_string = "001BDC08E272";
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 static const char * msg_listing_header = "<MAP-msg-listing version=\"1.0\">";
-static const char * msg_listing_msg   = "<msg handle=\"2000010000%u\" subject=\"Hello\" type=\"%s\" read=\"%s\"/>";
+static const char * msg_listing_msg   = "<msg handle=\"ID%u\" subject=\"Hello\" type=\"%s\" read=\"%s\"/>";
 static const char * msg_listing_footer = "</MAP-msg-listing>";
 
 enum msg_status_read { no, yes };
@@ -255,6 +255,46 @@ static void stdin_process(char c){
     }
 }
 
+
+static handle_set_message_status(char *msg_handle_str, uint8_t StatusIndicator, uint8_t StatusValue) {
+#define ERROR(str_descr) { error_msg = str_descr; goto error; }
+    int msg_handle;
+    const char* error_msg = "";
+    
+    if (StatusIndicator != 0)
+        ERROR("we only handle valid change - requests of Status Read=yes/no");
+    
+    
+    if (StatusValue > 1)
+        ERROR("we only handle valid change-requests of Status Read=yes/no");
+
+    
+    if (msg_handle_str == NULL)
+        ERROR("msg_handle_str invalid");
+
+    if (strnlen_s(msg_handle_str,10) != 3)
+        ERROR("String is not 3 digits long");
+    
+    if (msg_handle_str[0] != 'I' || msg_handle_str[1] != 'D')
+        ERROR("no valid ID prefix");
+
+    if (msg_handle_str[2] < '0' || msg_handle_str[2] > '9')
+        ERROR("no valid digit");
+
+    msg_handle = msg_handle_str[2] - '0';
+
+    if (msg_handle > ARRAYSIZE(config->msg_types) - 1)
+        ERROR("handle exceeds our nr of messages");
+
+    if (StatusValue > 1)
+        ERROR("invalid status");
+
+    config->msg_stati[msg_handle] = StatusValue;
+
+error:
+    log_error("%s", error_msg);
+}
+
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
@@ -338,10 +378,6 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
 							
                         case MAP_SUBEVENT_GET_MESSAGE_LISTING:
                             pos = 3; // we skip directly to continuation;
-                            //APP_WRITE_32(event, &pos, map_access_server->request.continuation);
-                            //APP_WRITE_16(event, &pos, map_access_server->map_cid);
-                            //APP_WRITE_16(event, &pos, map_access_server->request.app_params.MaxListCount);
-                            //APP_WRITE_16(event, &pos, map_access_server->request.app_params.ListStartOffset);
                             APP_READ_32(packet, &pos, &continuation);
                             APP_READ_16(packet, &pos, &dummy_map_cid);
                             APP_READ_16(packet, &pos, &max_list_count);
@@ -393,8 +429,8 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             APP_READ_08(packet, &pos, &StatusValue);
                             APP_READ_STR(packet, &pos, sizeof(request_name), request_name, "request_name");
                             MAP_PRINTF("[+] Put MessageStatus ObjectName:%s StatusIndicator:0x%02X StatusValue:0x%02X\n", request_name, (unsigned int) StatusIndicator, (unsigned int)StatusValue);
-                            MAP_PRINTF("[+] Put MessageStatus\n");
                             map_access_server_send_get_put_response(map_cid, OBEX_RESP_SUCCESS, 0, 0, NULL);
+                            handle_set_message_status(request_name, StatusIndicator, (unsigned int)StatusValue);
                             break;
 
                         default:
