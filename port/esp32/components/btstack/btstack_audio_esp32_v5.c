@@ -88,7 +88,7 @@ i2s_chan_handle_t rx_handle = NULL;
 #define BTSTACK_AUDIO_I2S_WS  GPIO_NUM_45
 #define BTSTACK_AUDIO_I2S_OUT GPIO_NUM_8
 #define BTSTACK_AUDIO_I2S_IN  GPIO_NUM_10
-#else
+#elif CONFIG_ESP_LYRAT_V4_3_BOARD
 // ESP32-LyraT V4
 #define BTSTACK_AUDIO_I2S_MCLK GPIO_NUM_0
 #define BTSTACK_AUDIO_I2S_BCK  GPIO_NUM_5
@@ -96,6 +96,8 @@ i2s_chan_handle_t rx_handle = NULL;
 #define BTSTACK_AUDIO_I2S_OUT  GPIO_NUM_26
 #define BTSTACK_AUDIO_I2S_IN   GPIO_NUM_35
 #define HEADPHONE_DETECT       GPIO_NUM_19
+#else
+#error "No I2S configuration, if you don't use btstack I2S audio please disable BTSTACK_AUDIO"
 #endif
 
 // set MCLK unused
