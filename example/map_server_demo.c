@@ -117,15 +117,15 @@ static struct test_config_s
     int nr;
     char* descr;
     int msg_count;
+    int updated;
     char* msg_types[6]; // maximum 6-1 entries, last one is null
     enum msg_status_read msg_stati[6]; // maximum 6-1 entries, last one is null
 } test_configs[] =
 {
-{.nr = 0, .descr = "MAP/MSE/MMB/BV-09-I 10 11 13 14" , .msg_count = 2, .msg_types = { "SMS_GSM","SMS_CDMA"                      }, },
-{.nr = 1, .descr = "MAP/MSE/MMB/BV-12-I"             , .msg_count = 1, .msg_types = { "EMAIL", "SMS_GSM","SMS_CDMA"             }, },
-{.nr = 2, .descr = "MAP/MSE/MMB/BV-15-I"             , .msg_count = 5, .msg_types = { "EMAIL","SMS_GSM","SMS_CDMA", "MMS", "IM" }, },
-{.nr = 3, .descr = "MAP/MSE/MMB/BV-15-I MMS only"    , .msg_count = 1, .msg_types = { "MMS"                                     }, },
-{.nr = 4, .descr = "MAP/MSE/MMB/BV-15-I IM only"     , .msg_count = 1, .msg_types = { "IM"                                      }, },
+{.nr = 0, .descr = "MAP/MSE/MMB/BV-09-I 10 11 13 14" , .msg_count = 2, .updated = 0, .msg_types = { "SMS_GSM","SMS_CDMA"                      }, },
+{.nr = 1, .descr = "MAP/MSE/MMB/BV-12-I"             , .msg_count = 1, .updated = 0, .msg_types = { "EMAIL", "SMS_GSM","SMS_CDMA"             }, },
+{.nr = 2, .descr = "MAP/MSE/MMB/BV-15-I"             , .msg_count = 5, .updated = 0, .msg_types = { "EMAIL","SMS_GSM","SMS_CDMA", "MMS", "IM" }, },
+{.nr = 3, .descr = "MAP/MSE/MMB/BV-16-I"             , .msg_count = 1, .updated = 1, .msg_types = { "EMAIL","EMAIL"},},
 };
 
 struct test_config_s* config = &test_configs[0];
@@ -431,6 +431,14 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             MAP_PRINTF("[+] Put MessageStatus ObjectName:%s StatusIndicator:0x%02X StatusValue:0x%02X\n", request_name, (unsigned int) StatusIndicator, (unsigned int)StatusValue);
                             map_access_server_send_get_put_response(map_cid, OBEX_RESP_SUCCESS, 0, 0, NULL);
                             handle_set_message_status(request_name, StatusIndicator, (unsigned int)StatusValue);
+                            break;
+
+                        case MAP_SUBEVENT_PUT_MESSAGE_UPDATE:
+                            pos = 3; // we skip directly to the first value;
+                            APP_READ_16(packet, &pos, &dummy_map_cid);
+                            MAP_PRINTF("[+] Put MessageUpdate\n");
+                            map_access_server_send_get_put_response(map_cid, OBEX_RESP_SUCCESS, 0, 0, NULL);
+                            
                             break;
 
                         default:
