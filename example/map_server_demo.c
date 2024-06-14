@@ -117,19 +117,19 @@ static struct test_config_s
     int nr;
     char* descr;
     int msg_count;
-    int updated;
     char* msg_types[6]; // maximum 6-1 entries, last one is null
     enum msg_status_read msg_stati[6]; // maximum 6-1 entries, last one is null
 } test_configs[] =
 {
-{.nr = 0, .descr = "MAP/MSE/MMB/BV-09-I 10 11 13 14" , .msg_count = 2, .updated = 0, .msg_types = { "SMS_GSM","SMS_CDMA"                      }, },
-{.nr = 1, .descr = "MAP/MSE/MMB/BV-12-I"             , .msg_count = 1, .updated = 0, .msg_types = { "EMAIL", "SMS_GSM","SMS_CDMA"             }, },
-{.nr = 2, .descr = "MAP/MSE/MMB/BV-15-I"             , .msg_count = 5, .updated = 0, .msg_types = { "EMAIL","SMS_GSM","SMS_CDMA", "MMS", "IM" }, },
-{.nr = 3, .descr = "MAP/MSE/MMB/BV-16-I"             , .msg_count = 1, .updated = 1, .msg_types = { "EMAIL","EMAIL"},},
+{.nr = 0, .descr = "MAP/MSE/MMB/BV-09-I 10 11 13 14" , .msg_count = 2, .msg_types = { "SMS_GSM","SMS_CDMA"                      }, },
+{.nr = 1, .descr = "MAP/MSE/MMB/BV-12-I"             , .msg_count = 1, .msg_types = { "EMAIL", "SMS_GSM","SMS_CDMA"             }, },
+{.nr = 2, .descr = "MAP/MSE/MMB/BV-15-I"             , .msg_count = 5, .msg_types = { "EMAIL","SMS_GSM","SMS_CDMA", "MMS", "IM" }, },
+{.nr = 3, .descr = "MAP/MSE/MMB/BV-16-I"             , .msg_count = 1, .msg_types = { "EMAIL","EMAIL"},},
 };
 
 struct test_config_s* config = &test_configs[0];
 static int current_msg_type = 0;
+static int send_one_more_message = 0;
 
 static void set_test_config(int nr) {
     if (nr < ARRAYSIZE(test_configs))
@@ -141,6 +141,7 @@ static void set_test_config(int nr) {
 
 static void init_testcases(void) {
     current_msg_type = 0;
+    send_one_more_message = 0;
 }
 
 
@@ -373,7 +374,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             map_access_server_set_database_identifier(map_cid, database_identifier);
                             map_access_server_set_folder_version(map_cid, folder_version);
                             MAP_PRINTF("[+] Get Folder listing\n");
-                            send_listing(0, config->msg_count-1);
+                            send_listing(0, config->msg_count-1 + send_one_more_message);
                             break;
 							
                         case MAP_SUBEVENT_GET_MESSAGE_LISTING:
@@ -391,7 +392,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             }
                             
                             // send messages listing
-                            total_messages = config->msg_count;
+                            total_messages = config->msg_count + send_one_more_message;
 
                             num_msgs_selected = total_messages - start_index;
                             max_list_count = map_subevent_get_message_listing_get_MaxListCount(packet);
@@ -411,7 +412,6 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             end_index = start_index + num_msgs_selected - 1;
                             MAP_PRINTF("[-] continuation %u, num messages %u, start index %u, end index %u\n", continuation, num_msgs_selected, start_index, end_index);
                             send_listing(start_index, end_index);
-                            //send_listing(config->msg_count-1);
                             break;
 
                         case MAP_SUBEVENT_GET_MESSAGE:
@@ -438,7 +438,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             APP_READ_16(packet, &pos, &dummy_map_cid);
                             MAP_PRINTF("[+] Put MessageUpdate\n");
                             map_access_server_send_get_put_response(map_cid, OBEX_RESP_SUCCESS, 0, 0, NULL);
-                            
+                            send_one_more_message = 1;
                             break;
 
                         default:
