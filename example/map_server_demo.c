@@ -124,7 +124,7 @@ static struct test_config_s
 {.nr = 0, .descr = "MAP/MSE/MMB/BV-09-I 10 11 13 14" , .msg_count = 2, .msg_types = { "SMS_GSM","SMS_CDMA"                      }, },
 {.nr = 1, .descr = "MAP/MSE/MMB/BV-12-I"             , .msg_count = 1, .msg_types = { "EMAIL", "SMS_GSM","SMS_CDMA"             }, },
 {.nr = 2, .descr = "MAP/MSE/MMB/BV-15-I 18 20 22"    , .msg_count = 5, .msg_types = { "EMAIL","SMS_GSM","SMS_CDMA", "MMS", "IM" }, },
-{.nr = 3, .descr = "MAP/MSE/MMB/BV-16-I"             , .msg_count = 1, .msg_types = { "EMAIL","EMAIL"},},
+{.nr = 3, .descr = "MAP/MSE/MMB/BV-16-I 32"          , .msg_count = 1, .msg_types = { "EMAIL","EMAIL"},},
 };
 
 struct test_config_s* config = &test_configs[0];
@@ -160,7 +160,14 @@ static uint16_t send_listing(uint16_t first, uint16_t last) {
     uint16_t pos = 0;
     bool done = false;
 
-    log_debug("1 max_body_size:%d", max_body_size);
+    log_debug("1 first:%d last:%d max_body_size:%d", first, last, max_body_size);
+
+    // PTS asked us to send zero messages
+    if (first == 0 && last == 0)
+    {
+        done = true;
+        goto send_response;
+    }
 
     if (first == 0){
         // add header
@@ -200,6 +207,7 @@ static uint16_t send_listing(uint16_t first, uint16_t last) {
         }
     }
 
+send_response:
     uint8_t response_code;
 	uint32_t continuation;
 
@@ -384,13 +392,18 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             APP_READ_16(packet, &pos, &max_list_count);
                             APP_READ_16(packet, &pos, &start_index);
                             
-
+                            if (max_list_count == 0) {
+                                MAP_PRINTF("[+] Start MAP_SUBEVENT_GET_MESSAGE_LISTING max_list_count == 0\n");
+                                send_listing(0, 0);
+                                break;
+                            }
+                            
                             if (continuation == 0) {
                                 MAP_PRINTF("[+] Start MAP_SUBEVENT_GET_MESSAGE_LISTING continuation == 0\n");
                                 map_access_server_set_database_identifier(map_cid, database_identifier);
                                 map_access_server_set_folder_version(map_cid, folder_version);
                             }
-                            
+
                             // send messages listing
                             total_messages = config->msg_count + send_one_more_message;
 
@@ -412,6 +425,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             end_index = start_index + num_msgs_selected - 1;
                             MAP_PRINTF("[-] continuation %u, num messages %u, start index %u, end index %u\n", continuation, num_msgs_selected, start_index, end_index);
                             send_listing(start_index, end_index);
+
                             break;
 
                         case MAP_SUBEVENT_GET_MESSAGE:
