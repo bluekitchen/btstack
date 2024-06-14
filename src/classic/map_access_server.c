@@ -715,7 +715,7 @@ static void map_access_server_parser_callback_get(void* user_data, uint8_t heade
                 }
             }
             map_access_server->request.name[total_len / 2] = 0;
-            log_debug("OBEX_HEADER_NAME:%*s", data_len/2, map_access_server->request.name);
+            log_debug("OBEX_HEADER_NAME:<%*s>", data_len/2, map_access_server->request.name);
         }
         break;
     case OBEX_HEADER_TYPE:
