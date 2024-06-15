@@ -63,7 +63,7 @@
  // - DatabaseIdentifier
  // - PrimaryFolderVersion,
  // - SecondaryFolderVersion
-#define MAP_SERVER_MAX_APP_PARAMS_LEN ((4*2) + 2 + MAS_DATABASE_IDENTIFIER_LEN + (2*MAS_FOLDER_VERSION_LEN))
+#define MAP_SERVER_MAX_APP_PARAMS_LEN ((4*2) + 2 + BT_UINT128_LEN_BYTES + (2*BT_UINT128_LEN_BYTES))
 
 
 typedef enum {
@@ -100,15 +100,11 @@ typedef enum {
 static  btstack_packet_handler_t map_access_server_user_packet_handler;
 
 
-//typedef char    variable_string_t[64];
-//typedef char    variable_utf8[64];
-//typedef uint8_t variable_uint128[16];
-//typedef uint8_t variable_uint64[8];
 
 typedef uint32_t variable_string_t;
 typedef uint32_t variable_utf8;
-typedef uint32_t variable_uint128;
-typedef uint32_t variable_uint64;
+typedef uint8_t variable_uint128[BT_UINT128_LEN_BYTES];
+typedef uint8_t variable_uint64[8];
 
 
 #define app_param_read_uint8_t           big_endian_read_08
@@ -119,14 +115,24 @@ typedef uint32_t variable_uint64;
 #define app_param_read_variable_uint64   big_endian_read_32 // TODO: dummy
 #define app_param_read_variable_uint128  big_endian_read_32 // TODO: dummy
 
+#define app_param_write_uint8_t           big_endian_read_08
+#define app_param_write_uint16_t          big_endian_read_16
+#define app_param_write_uint32_t          big_endian_read_32
+#define app_param_write_variable_string_t big_endian_read_32 // TODO: dummy
+#define app_param_write_variable_utf8     big_endian_read_32 // TODO: dummy
+#define app_param_write_variable_uint64   big_endian_read_32 // TODO: dummy
+#define app_param_write_variable_uint128  big_endian_read_32 // TODO: dummy
+
 // Data extracted from "Message Access Profile"
 // Bluetooth  Profile Specification
 // *  Revision : v1.4.2
 // *  Revision Date : 2019 - 08 - 13
 // *  Group Prepared By : Audio, Telephony, and Automotive Working Group
 
-// compact storage of supported ApplicationParameters
-// X-Macro below provides enumeration and mapping table
+// the following X-Macro (https://en.wikipedia.org/wiki/X_macro)
+// below is a compact storage of all BT SIG MAS supported ApplicationParameters
+// for both Requests and Responses. Unused parameters dont use any run-time ressources
+// but are declared and compile-time checked as well but
 // 
 //X(Parameter Name         , Tag , Type               , free text description ... no coma ... multiple _backslash_no_space lines ... )
 #define APP_PARAMS \
@@ -177,7 +183,7 @@ typedef uint32_t variable_uint64;
  PARAM_REQUST( StatusValue             , 0x18, uint8_t            , 1 = "yes"                                                                         \
                                                                     0 = "no"                                                                         )\
  PARAM_UNUSED( MSETime                 , 0x19, variable_string_t  , with current time basis and UTC - offset of the MSE.See Section 5.5.4            )\
- PARAM_UNUSED( DatabaseIdentifier      , 0x1A, variable_uint128   , (max 3uint16_t)    ;   128 - bit value in hex string format                      )\
+ PARAM_RESPON( DatabaseIdentifier      , 0x1A, variable_uint128   , (max 3uint16_t)    ;   128 - bit value in hex string format                      )\
  PARAM_UNUSED( ListingVersionCounter   , 0x1B, variable_uint128   , (max 3uint16_t)    ;   128 - bit value in hex string format                      )\
  PARAM_UNUSED( PresenceAvailability    , 0x1C, uint8_t            , 0 to 255                                                                         )\
  PARAM_UNUSED( PresenceText            , 0x1D, variable_utf8      , Text UTF - 8                                                                     )\
@@ -221,6 +227,8 @@ typedef uint32_t variable_uint64;
 
 enum MAP_APP_PARAMS
 {
+// the following X-Macro (https://en.wikipedia.org/wiki/X_macro)
+// below defines enum MAP_APP_PARAMS members MAP_APP_PARAM_xyz = tag with BT SPECs tag values
 #define PARAM_REQUST(name, tag, type, descr) MAP_APP_PARAM_ ## name = tag,
 #define PARAM_RESPON PARAM_REQUST
 #define PARAM_UNUSED PARAM_REQUST
@@ -231,7 +239,8 @@ enum MAP_APP_PARAMS
 };
 
 typedef struct {
-    
+// the following X-Macro (https://en.wikipedia.org/wiki/X_macro)
+// below generates app_params_compile_time_check struct members to compile-time check all PARAMs
 #define PARAM_REQUST(name, tag, type, descr) type PARAM_REQUST ## name;
 #define PARAM_RESPON(name, tag, type, descr) type PARAM_RESPON ## name;
 #define PARAM_UNUSED(name, tag, type, descr) type PARAM_UNUSED ## name;
@@ -266,8 +275,8 @@ typedef struct {
         obex_app_param_parser_t app_param_parser;
         uint8_t app_param_buffer[8];
         struct {
-            char search_value[MAP_SERVER_MAX_SEARCH_VALUE_LEN];    // has trailing zero
-
+// the following X-Macro (https://en.wikipedia.org/wiki/X_macro)
+// below generates request.app_param struct members
 #define PARAM_REQUST(name, tag, type, descr) type name;
 #define PARAM_RESPON(...)
 #define PARAM_UNUSED(...)
@@ -282,16 +291,21 @@ typedef struct {
     // response
     struct {
         uint8_t code;
-        uint16_t new_messages_count;
-        bool new_messages;
-        bool folder_size_set;
-        bool database_identifier_set;
-        bool folder_version_set;
-        uint16_t folder_size;
-        uint8_t database_identifier[MAS_DATABASE_IDENTIFIER_LEN];
-        uint8_t folder_version[MAS_FOLDER_VERSION_LEN];
         uint16_t body_len;
         const uint8_t* body_data;
+        struct {
+// the following X-Macro (https://en.wikipedia.org/wiki/X_macro)
+// below generates response.app_param struct members
+#define PARAM_RESPON(name, tag, type, descr) type name;
+#define PARAM_REQUST(...)
+#define PARAM_UNUSED(...)
+
+            APP_PARAMS
+
+#undef PARAM_REQUST
+#undef PARAM_RESPON
+#undef PARAM_UNUSED
+        } app_params;
     } response;
 } map_access_server_t;
 
@@ -695,7 +709,8 @@ static void map_access_server_app_param_callback_get(void* user_data, uint8_t ta
         if (state == OBEX_APP_PARAM_PARSER_TAG_COMPLETE) {
             switch (tag_id) {
 
-// X-Macro automagically generates GETers for all APP Params
+// the following X-Macro (https://en.wikipedia.org/wiki/X_macro)
+// automagically generates GETers for all APP Params in the form of:
 //case MAP_APPLICATION_PARAMETER_MAX_LIST_COUNT:
 //    map_access_server->request.app_params.MaxListCount = big_endian_read_16(
 //        map_access_server->request.app_param_buffer, 0);
@@ -767,6 +782,8 @@ static void map_access_server_parser_callback_get(void* user_data, uint8_t heade
     }
 }
 
+
+// sends MAP_SUBEVENT_xyz messages to the application using serialized stack-internal app-parameters
 static void map_access_server_handle_get_request(map_access_server_t* map_access_server) {
     map_access_server_handle_srm_headers(map_access_server);
     map_access_server->request.object_type = map_access_server_parse_object_type(map_access_server->request.type);
@@ -1029,20 +1046,20 @@ static bool map_access_server_valid_header_for_request(map_access_server_t* map_
     }
 
 }
-uint8_t map_access_server_set_new_messages(uint16_t map_cid, uint16_t new_messages) {
-    map_access_server_t* map_access_server = map_access_server_for_map_cid(map_cid);
-    if (map_access_server == NULL) {
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    }
-    if (map_access_server_valid_header_for_request(map_access_server)) {
-        map_access_server->response.new_messages_count = new_messages;
-        map_access_server->response.new_messages = true;
-        return ERROR_CODE_SUCCESS;
-    }
-    else {
-        return ERROR_CODE_COMMAND_DISALLOWED;
-    }
-}
+//uint8_t map_access_server_set_new_messages(uint16_t map_cid, uint16_t new_messages) {
+//    map_access_server_t* map_access_server = map_access_server_for_map_cid(map_cid);
+//    if (map_access_server == NULL) {
+//        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+//    }
+//    if (map_access_server_valid_header_for_request(map_access_server)) {
+//        map_access_server->response.new_messages_count = new_messages;
+//        map_access_server->response.new_messages = true;
+//        return ERROR_CODE_SUCCESS;
+//    }
+//    else {
+//        return ERROR_CODE_COMMAND_DISALLOWED;
+//    }
+//}
 
 uint8_t map_access_server_set_folder_version(uint16_t map_cid, const uint8_t* primary_folder_version) {
     map_access_server_t* map_access_server = map_access_server_for_map_cid(map_cid);
@@ -1050,8 +1067,8 @@ uint8_t map_access_server_set_folder_version(uint16_t map_cid, const uint8_t* pr
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     if (map_access_server_valid_header_for_request(map_access_server)) {
-        (void)memcpy(map_access_server->response.folder_version, primary_folder_version, MAS_FOLDER_VERSION_LEN);
-        map_access_server->response.folder_version_set = true;
+        (void)memcpy(map_access_server->response.app_params.FolderVersionCounter, primary_folder_version, BT_UINT128_LEN_BYTES);
+        //map_access_server->response.folder_version_set = true;
         return ERROR_CODE_SUCCESS;
     }
     else {
@@ -1070,8 +1087,8 @@ uint8_t map_access_server_set_database_identifier(uint16_t map_cid, const uint8_
     }
     btstack_assert(map_access_server->request.object_type != MAP_OBJECT_TYPE_INVALID);
 
-    (void)memcpy(map_access_server->response.database_identifier, database_identifier, MAS_FOLDER_VERSION_LEN);
-    map_access_server->response.database_identifier_set = true;
+    (void)memcpy(map_access_server->response.app_params.DatabaseIdentifier, database_identifier, BT_UINT128_LEN_BYTES);
+    //map_access_server->response.database_identifier_set = true;
     return ERROR_CODE_SUCCESS;
 };
 
@@ -1098,23 +1115,23 @@ uint16_t map_access_server_get_max_body_size(uint16_t map_cid) {
     return goep_server_response_get_max_message_size(map_access_server->goep_cid) - (3 + 2 + 3);
 }
 
-uint8_t map_access_server_send_folder_size(uint16_t map_cid, uint8_t response_code, uint16_t folder_size) {
-    map_access_server_t* map_access_server = map_access_server_for_map_cid(map_cid);
-    if (map_access_server == NULL) {
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    }
-    // folder size valid for PHONEBOOK and VCARD_LIST query
-    if (map_access_server_valid_header_for_request(map_access_server)) {
-        map_access_server->response.folder_size = folder_size;
-        map_access_server->response.folder_size_set = true;
-        map_access_server->response.code = response_code;
-        map_access_server->state = MAP_SERVER_STATE_SEND_USER_RESPONSE;
-        return goep_server_request_can_send_now(map_access_server->goep_cid);
-    }
-    else {
-        return ERROR_CODE_COMMAND_DISALLOWED;
-    }
-}
+//uint8_t map_access_server_send_folder_size(uint16_t map_cid, uint8_t response_code, uint16_t folder_size) {
+//    map_access_server_t* map_access_server = map_access_server_for_map_cid(map_cid);
+//    if (map_access_server == NULL) {
+//        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+//    }
+//    // folder size valid for PHONEBOOK and VCARD_LIST query
+//    if (map_access_server_valid_header_for_request(map_access_server)) {
+//        map_access_server->response.folder_size = folder_size;
+//        map_access_server->response.folder_size_set = true;
+//        map_access_server->response.code = response_code;
+//        map_access_server->state = MAP_SERVER_STATE_SEND_USER_RESPONSE;
+//        return goep_server_request_can_send_now(map_access_server->goep_cid);
+//    }
+//    else {
+//        return ERROR_CODE_COMMAND_DISALLOWED;
+//    }
+//}
 
 uint16_t map_access_server_send_get_put_response(uint16_t map_cid, uint8_t response_code, uint32_t continuation, uint16_t body_len, const uint8_t* body) {
     map_access_server_t* map_access_server = map_access_server_for_map_cid(map_cid);
