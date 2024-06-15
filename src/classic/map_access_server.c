@@ -1156,29 +1156,6 @@ uint16_t map_access_server_send_get_put_response(uint16_t map_cid, uint8_t respo
     return goep_server_request_can_send_now(map_access_server->goep_cid);
 }
 
-uint16_t map_access_server_send_put_response(uint16_t map_cid, uint8_t response_code, uint32_t continuation, uint16_t body_len, const uint8_t* body) {
-    map_access_server_t* map_access_server = map_access_server_for_map_cid(map_cid);
-    if (map_access_server == NULL) {
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    }
-
-    // double check size
-
-    // calc max body size without reserving outgoing buffer: packet size - OBEX Header (3) - SRM Header (2) - Body Header (3)
-    uint16_t max_body_size = goep_server_response_get_max_message_size(map_access_server->goep_cid) - (3 + 2 + 3);
-    if (body_len > max_body_size) {
-        return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
-    }
-
-    // set data for response and trigger execute
-    map_access_server->response.code = response_code;
-    map_access_server->request.continuation = continuation;
-    map_access_server->state = MAP_SERVER_STATE_SEND_USER_RESPONSE;
-    map_access_server->response.body_data = body;
-    map_access_server->response.body_len = body_len;
-    return goep_server_request_can_send_now(map_access_server->goep_cid);
-}
-
 // suppress MSVC C4244: unchecked upper bound for enum folder used as index
 #ifdef _MSC_VER
 #pragma warning( disable : 33011 )
