@@ -805,45 +805,29 @@ static void map_access_server_handle_get_request(map_access_server_t* map_access
     // emit get ( folder, msg_listing, msg)
     uint8_t event[2 + 20 + MAP_SERVER_MAX_NAME_LEN + MAP_SERVER_MAX_SEARCH_VALUE_LEN];
     uint16_t pos = 0;
-    uint16_t search_value_len;
     APP_WRITE_08(event, &pos, HCI_EVENT_MAP_META);
-    pos++; // skip size header, its written at the end
+    pos = 2; // skip size header, its written at the end
     switch (map_access_server->request.object_type) {
 
     case MAP_OBJECT_TYPE_GET_FOLDER_LISTING:
         APP_WRITE_08(event, &pos, MAP_SUBEVENT_FOLDER_LISTING_ITEM);
         APP_WRITE_16(event, &pos, map_access_server->map_cid);
-
-        // write message len (after 2 header bytes) into 2nd byte
-        event[1] = 25;//pos - 2;
+        APP_WRITE_LEN(event, pos);
         break;
 
     case MAP_OBJECT_TYPE_GET_MSG_LISTING:
-        /**
-         * @format 142422
-         * @param subevent_code
-         * @param continuation internal state set from app via map_access_server_send_get_put_response
-         * @param map_cid
-         * @param MaxListCount
-         * @param ListStartOffset
-         */
         APP_WRITE_08(event, &pos, MAP_SUBEVENT_GET_MESSAGE_LISTING);
         APP_WRITE_32(event, &pos, map_access_server->request.continuation);
         APP_WRITE_16(event, &pos, map_access_server->map_cid);
         APP_WRITE_16(event, &pos, map_access_server->request.app_params.MaxListCount);
         APP_WRITE_16(event, &pos, map_access_server->request.app_params.ListStartOffset);
-
-        
-        // write message len (after 2 header bytes) into 2nd byte
-        event[1] = 25;//pos - 2;
+        APP_WRITE_LEN(event, pos);
         break;
 
     case MAP_OBJECT_TYPE_GET_MESSAGE:
         APP_WRITE_08(event, &pos, MAP_SUBEVENT_GET_MESSAGE);
         APP_WRITE_16(event, &pos, map_access_server->map_cid);
-
-        // write message len (after 2 header bytes) into 2nd byte
-        event[1] = 25;//pos - 2;
+        APP_WRITE_LEN(event, pos);
         break;
 
     case MAP_OBJECT_TYPE_PUT_MESSAGE_STATUS:
@@ -851,17 +835,14 @@ static void map_access_server_handle_get_request(map_access_server_t* map_access
         APP_WRITE_16(event, &pos, map_access_server->map_cid);
         APP_WRITE_08(event, &pos, map_access_server->request.app_params.StatusIndicator);
         APP_WRITE_08(event, &pos, map_access_server->request.app_params.StatusValue);
-        APP_WRITE_STR(event, &pos, sizeof(event) - pos, map_access_server->request.name, "map_access_server->request.name");
-   
-        // write message len (after 2 header bytes) into 2nd byte
-        event[1] = pos;//pos - 2;
+        APP_WRITE_STR(event, &pos, sizeof(event) - pos, map_access_server->request.name);
+        APP_WRITE_LEN(event, pos);
         break;
 
     case MAP_OBJECT_TYPE_PUT_MESSAGE_UPDATE:
         APP_WRITE_08(event, &pos, MAP_SUBEVENT_PUT_MESSAGE_UPDATE);
         APP_WRITE_16(event, &pos, map_access_server->map_cid);
-        // write message len (after 2 header bytes) into 2nd byte
-        event[1] = pos;
+        APP_WRITE_LEN(event, pos);
         break;
 
     default:
