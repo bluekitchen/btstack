@@ -273,10 +273,8 @@ static handle_set_message_status(char *msg_handle_str, uint8_t StatusIndicator, 
     if (StatusIndicator != 0)
         ERROR("we only handle valid change - requests of Status Read=yes/no");
     
-    
     if (StatusValue > 1)
         ERROR("we only handle valid change-requests of Status Read=yes/no");
-
     
     if (msg_handle_str == NULL)
         ERROR("msg_handle_str invalid");
