@@ -509,6 +509,13 @@ static uint16_t map_access_server_application_params_add_uint128(uint8_t* applic
     return pos;
 }
 
+static uint16_t pbap_server_application_params_add_phonebook_size(uint8_t * application_parameters, uint16_t phonebook_size){
+    return pbap_server_application_params_add_uint16(application_parameters, PBAP_APPLICATION_PARAMETER_PHONEBOOK_SIZE, phonebook_size);
+}
+
+static uint16_t pbap_server_application_params_add_new_missed_calls(uint8_t * application_parameters, uint16_t new_missed_calls){
+    return pbap_server_application_params_add_uint16(application_parameters, PBAP_APPLICATION_PARAMETER_NEW_MISSED_CALLS, new_missed_calls);
+}
 static void map_access_server_add_application_parameters(const map_access_server_t* map_access_server, uint8_t* application_parameters, uint16_t len) {
     if (len > 0) {
         goep_server_header_add_application_parameters(map_access_server->goep_cid, application_parameters, len);
