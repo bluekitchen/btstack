@@ -127,6 +127,8 @@ uint8_t gatt_service_client_att_status_to_error_code(uint8_t att_error_code){
 static void gatt_service_client_emit_connected(btstack_packet_handler_t event_callback, hci_con_handle_t con_handle, uint16_t cid, uint8_t status){
     btstack_assert(event_callback != NULL);
 
+    log_info("GATT Client Helper, connected 0x%04x, status 0x%02x", con_handle, status);
+
     uint8_t event[9];
     int pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
