@@ -574,6 +574,12 @@ static void vcs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t ch
                     vcs_client_connected(connection, ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE);
                     break;
 
+                case VOLUME_CONTROL_SERVICE_CLIENT_STATE_W4_CHANGE_COUNTER_RESULT:
+                    connection->state = VOLUME_CONTROL_SERVICE_CLIENT_STATE_W2_QUERY_INCLUDED_SERVICES;
+                    (void) gatt_client_request_to_send_gatt_query(&vcs_client_handle_can_send_now,
+                                                                  connection->basic_connection.con_handle);
+                    break;
+
                 case VOLUME_CONTROL_SERVICE_CLIENT_STATE_W4_WRITE_CHARACTERISTIC_VALUE_RESULT:
                     connection->state = VOLUME_CONTROL_SERVICE_CLIENT_STATE_READY;
                     vcs_client_emit_done_event(connection, connection->characteristic_index, status);
