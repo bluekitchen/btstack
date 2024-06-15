@@ -611,11 +611,10 @@ static void map_access_server_handle_can_send_now(map_access_server_t* map_acces
         // emit event
         uint8_t event[2 + 3];
         uint16_t pos = 0;
-        event[pos++] = HCI_EVENT_MAP_META;
-        event[pos++] = 0;
-        event[pos++] = MAP_SUBEVENT_CONNECTION_CLOSED;
-        little_endian_store_16(event, pos, map_cid);
-        pos += 2;
+        APP_WRITE_08(event, &pos, HCI_EVENT_MAP_META);
+        APP_WRITE_08(event, &pos, 0);
+        APP_WRITE_08(event, &pos, MAP_SUBEVENT_CONNECTION_CLOSED);
+        APP_WRITE_16(event, &pos, map_access_server->map_cid);
         (*map_access_server_user_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
         break;
     }
