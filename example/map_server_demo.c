@@ -84,8 +84,8 @@ static uint16_t map_cid;
 static uint8_t service_buffer[150];
 static uint8_t upload_buffer[1000];
 
-static uint8_t database_identifier[MAS_DATABASE_IDENTIFIER_LEN];
-static uint8_t folder_version[MAS_FOLDER_VERSION_LEN];
+static uint8_t database_identifier[BT_UINT128_LEN_BYTES];
+static uint8_t folder_version[BT_UINT128_LEN_BYTES];
 
 #ifdef ENABLE_GOEP_L2CAP
 static uint8_t map_notification_client_ertm_buffer_mas_0[4000];
