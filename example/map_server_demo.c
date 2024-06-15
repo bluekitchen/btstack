@@ -354,6 +354,8 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)) {
                 case HCI_EVENT_MAP_META:
+                    // set app message read to the first app parameter;
+                    pos = 3;
                     switch (hci_event_map_meta_get_subevent_code(packet)){
                         case MAP_SUBEVENT_NOTIFICATION_EVENT:
                             log_info("Notification!");
@@ -384,7 +386,6 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             break;
 							
                         case MAP_SUBEVENT_GET_MESSAGE_LISTING:
-                            pos = 3; // we skip directly to continuation;
                             APP_READ_32(packet, &pos, &continuation);
                             APP_READ_16(packet, &pos, &dummy_map_cid);
                             APP_READ_16(packet, &pos, &max_list_count);
@@ -432,24 +433,24 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             break;
 
                         case MAP_SUBEVENT_PUT_MESSAGE_STATUS:
-                            pos = 3; // we skip directly to the first value;
                             uint8_t StatusIndicator;
                             uint8_t StatusValue;
                             char request_name[32];
                             APP_READ_16(packet, &pos, &dummy_map_cid);
                             APP_READ_08(packet, &pos, &StatusIndicator);
                             APP_READ_08(packet, &pos, &StatusValue);
-                            APP_READ_STR(packet, &pos, sizeof(request_name), request_name, "request_name");
+                            APP_READ_STR(packet, &pos, sizeof(request_name), request_name);
                             MAP_PRINTF("[+] Put MessageStatus ObjectName:%s StatusIndicator:0x%02X StatusValue:0x%02X\n", request_name, (unsigned int) StatusIndicator, (unsigned int)StatusValue);
                             map_access_server_send_get_put_response(map_cid, OBEX_RESP_SUCCESS, 0, 0, NULL);
                             handle_set_message_status(request_name, StatusIndicator, (unsigned int)StatusValue);
                             break;
 
                         case MAP_SUBEVENT_PUT_MESSAGE_UPDATE:
-                            pos = 3; // we skip directly to the first value;
                             APP_READ_16(packet, &pos, &dummy_map_cid);
                             MAP_PRINTF("[+] Put MessageUpdate\n");
                             map_access_server_send_get_put_response(map_cid, OBEX_RESP_SUCCESS, 0, 0, NULL);
+                            // BT SIG Test case MAP/MSE/MMB/BV-23-I asks for one more message after
+                            // issuing a "update messages" request so we just simulate one
                             send_one_more_message = 1;
                             break;
 
