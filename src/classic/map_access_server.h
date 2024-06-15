@@ -158,6 +158,7 @@ typedef enum {
 
 // lengths
 #define BT_UINT128_LEN_BYTES 16
+#define BT_UINT128_HEX_LEN_BYTES 32
 
 uint16_t map_access_server_send_get_put_response(uint16_t map_cid, uint8_t response_code, uint32_t continuation, uint16_t body_len, const uint8_t* body);
 uint16_t map_access_server_get_max_body_size(uint16_t map_cid);

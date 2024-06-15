@@ -103,7 +103,7 @@ static  btstack_packet_handler_t map_access_server_user_packet_handler;
 
 typedef uint32_t variable_string_t;
 typedef uint32_t variable_utf8;
-typedef uint8_t variable_uint128[BT_UINT128_LEN_BYTES];
+typedef char variable_uint128hex[BT_UINT128_HEX_LEN_BYTES];
 typedef uint8_t variable_uint64[8];
 
 
@@ -113,7 +113,7 @@ typedef uint8_t variable_uint64[8];
 #define app_param_read_variable_string_t big_endian_read_32 // TODO: dummy
 #define app_param_read_variable_utf8     big_endian_read_32 // TODO: dummy
 #define app_param_read_variable_uint64   big_endian_read_32 // TODO: dummy
-#define app_param_read_variable_uint128  big_endian_read_32 // TODO: dummy
+#define app_param_read_variable_uint128hex  big_endian_read_32 // TODO: dummy
 
 #define app_param_write_uint8_t           big_endian_read_08
 #define app_param_write_uint16_t          big_endian_read_16
@@ -121,7 +121,7 @@ typedef uint8_t variable_uint64[8];
 #define app_param_write_variable_string_t big_endian_read_32 // TODO: dummy
 #define app_param_write_variable_utf8     big_endian_read_32 // TODO: dummy
 #define app_param_write_variable_uint64   big_endian_read_32 // TODO: dummy
-#define app_param_write_variable_uint128  big_endian_read_32 // TODO: dummy
+#define app_param_write_variable_uint128hex  big_endian_read_32 // TODO: dummy
 
 // Data extracted from "Message Access Profile"
 // Bluetooth  Profile Specification
@@ -183,16 +183,16 @@ typedef uint8_t variable_uint64[8];
  PARAM_REQUST( StatusValue             , 0x18, uint8_t            , 1 = "yes"                                                                         \
                                                                     0 = "no"                                                                         )\
  PARAM_UNUSED( MSETime                 , 0x19, variable_string_t  , with current time basis and UTC - offset of the MSE.See Section 5.5.4            )\
- PARAM_RESPON( DatabaseIdentifier      , 0x1A, variable_uint128   , (max 3uint16_t)    ;   128 - bit value in hex string format                      )\
- PARAM_UNUSED( ListingVersionCounter   , 0x1B, variable_uint128   , (max 3uint16_t)    ;   128 - bit value in hex string format                      )\
+ PARAM_RESPON( DatabaseIdentifier      , 0x1A, variable_uint128hex, (max 3uint16_t)    ;   128 - bit value in hex string format                      )\
+ PARAM_UNUSED( ListingVersionCounter   , 0x1B, variable_uint128hex, (max 3uint16_t)    ;   128 - bit value in hex string format                      )\
  PARAM_UNUSED( PresenceAvailability    , 0x1C, uint8_t            , 0 to 255                                                                         )\
  PARAM_UNUSED( PresenceText            , 0x1D, variable_utf8      , Text UTF - 8                                                                     )\
  PARAM_UNUSED( LastActivity            , 0x1E, variable_utf8      , Text UTF - 8                                                                     )\
  PARAM_UNUSED( FilterLastActivityBegin , 0x1F, variable_utf8      , Text UTF - 8                                                                     )\
  PARAM_UNUSED( FilterLastActivityEnd   , 0x20, variable_utf8      , Text UTF - 8                                                                     )\
  PARAM_UNUSED( ChatState               , 0x21, uint8_t            , 0 to 255                                                                         )\
- PARAM_UNUSED( ConversationID          , 0x22, variable_uint128   , (max 3uint16_t)    ;   128 - bit value in hex string format                      )\
- PARAM_RESPON( FolderVersionCounter    , 0x23, variable_uint128   , (max 3uint16_t);   128 - bit value in hex string format                          )\
+ PARAM_UNUSED( ConversationID          , 0x22, variable_uint128hex, (max 3uint16_t)    ;   128 - bit value in hex string format                      )\
+ PARAM_RESPON( FolderVersionCounter    , 0x23, variable_uint128hex, (max 3uint16_t);   128 - bit value in hex string format                          )\
  PARAM_UNUSED( FilterMessageHandle     , 0x24, variable_uint64    , 64 - bit value in hex string format                                              )\
  PARAM_UNUSED( NotificationFilterMask  , 0x25, uint32_t           , Bit mask settings; see Section 5.14.3.1                                          )\
  PARAM_UNUSED( ConvParameterMask       , 0x26, uint32_t           , Bit mask settings; see Section 5.13.3.10                                         )\

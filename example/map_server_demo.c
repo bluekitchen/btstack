@@ -130,6 +130,7 @@ static struct test_config_s
 struct test_config_s* config = &test_configs[0];
 static int current_msg_type = 0;
 static int send_one_more_message = 0;
+static char folder_version_counter128_hex[BT_UINT128_HEX_LEN_BYTES] = "001122334455667788";
 
 static void set_test_config(int nr) {
     if (nr < ARRAYSIZE(test_configs))
