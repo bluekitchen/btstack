@@ -2201,6 +2201,15 @@ static void rfcomm_channel_state_machine_with_channel(rfcomm_channel_t *channel,
                     channel->state = RFCOMM_CHANNEL_CLOSED;
                     rfcomm_emit_channel_closed(channel);
                     rfcomm_channel_finalize(channel);
+                    // RFCOMM v1.2, 5.2.2. Close-Down Procedure
+                    // The device closing the last connection (DLC) on a particular session shall close the
+                    // multiplexer by closing the corresponding L2CAP channel.
+                    if (rfcomm_multiplexer_has_channels(multiplexer) == false){
+                        log_info("Closed last DLC, shut-down multiplexer");
+                        uint16_t l2cap_cid = multiplexer->l2cap_cid;
+                        rfcomm_multiplexer_finalize(multiplexer);
+                        l2cap_disconnect(l2cap_cid);
+                    }
                     *out_channel_valid = 0;
                     break;
                 default:
