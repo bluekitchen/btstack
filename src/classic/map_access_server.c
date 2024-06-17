@@ -292,6 +292,7 @@ typedef struct {
     struct {
         uint8_t code;
         uint8_t header_data[MAP_SERVER_MAX_APP_PARAMS_LEN];
+        uint8_t header_pos;
         uint16_t body_len;
         const uint8_t* body_data;
         struct {
@@ -1083,9 +1084,12 @@ uint8_t map_access_server_set_folder_version(uint16_t map_cid, const uint8_t* fo
     }
     
     if (map_access_server_valid_header_for_request(map_access_server)) {
-        (void)memcpy(map_access_server->response.app_params.FolderVersionCounter, folder_version, BT_UINT128_HEX_LEN_BYTES);
-        map_access_server->response.folder_version_set = true;
-        log_debug("1 map_cid:0x%04x folder_version:%s", map_cid, map_access_server, folder_version);
+        map_access_server->response.header_data[map_access_server->response.header_pos++] = MAP_APP_PARAM_FolderVersionCounter;
+        map_access_server->response.header_data[map_access_server->response.header_pos++] = BT_UINT128_HEX_LEN_BYTES;
+        memcpy(&map_access_server->response.header_data[map_access_server->response.header_pos], folder_version, BT_UINT128_HEX_LEN_BYTES);
+        map_access_server->response.header_pos += BT_UINT128_HEX_LEN_BYTES;
+
+        log_debug("header_pos:%u map_cid : 0x % 04x folder_version : % s", map_access_server->response.header_pos, map_cid, map_access_server, folder_version);
         return ERROR_CODE_SUCCESS;
     }
     else {
@@ -1112,14 +1116,9 @@ uint8_t map_access_server_set_database_identifier(uint16_t map_cid, const uint8_
 static void map_access_server_build_response(map_access_server_t* map_access_server) {
     goep_server_response_create_general(map_access_server->goep_cid);
     map_access_server_add_srm_headers(map_access_server);
-    // Application Params
-    uint8_t app_params[MAP_SERVER_MAX_APP_PARAMS_LEN];
-    uint16_t app_params_pos = 0;
-    if (map_access_server->response.folder_version_set){
-        map_access_server->response.folder_version_set = false;
-        app_params_pos += map_access_server_application_params_add_uint128hex(&app_params[app_params_pos], MAP_APP_PARAM_FolderVersionCounter, map_access_server->response.app_params.FolderVersionCounter);
-    }
-    map_access_server_add_application_parameters(map_access_server, app_params, app_params_pos);
+    // Application Params already in map_access_server->response.header_data
+
+    map_access_server_add_application_parameters(map_access_server, map_access_server->response.header_data, map_access_server->response.header_pos);
 }
 
 uint16_t map_access_server_get_max_body_size(uint16_t map_cid) {
