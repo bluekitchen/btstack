@@ -84,8 +84,8 @@ static uint16_t map_cid;
 static uint8_t service_buffer[150];
 static uint8_t upload_buffer[1000];
 
-static uint8_t database_identifier[BT_UINT128_LEN_BYTES];
-static uint8_t folder_version[BT_UINT128_LEN_BYTES];
+static uint8_t database_identifier[BT_UINT128_HEX_LEN_BYTES];
+static uint8_t folder_version[BT_UINT128_HEX_LEN_BYTES];
 
 #ifdef ENABLE_GOEP_L2CAP
 static uint8_t map_notification_client_ertm_buffer_mas_0[4000];
@@ -387,6 +387,8 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             break;
 							
                         case MAP_SUBEVENT_GET_MESSAGE_LISTING:
+                            map_access_server_set_database_identifier(map_cid, database_identifier);
+                            map_access_server_set_folder_version(map_cid, folder_version);
                             APP_READ_32(packet, &pos, &continuation);
                             APP_READ_16(packet, &pos, &dummy_map_cid);
                             APP_READ_16(packet, &pos, &max_list_count);
