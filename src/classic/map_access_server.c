@@ -673,7 +673,7 @@ static void map_access_server_packet_handler_hci(uint8_t* packet, uint16_t size)
 }
 static void map_access_server_app_param_callback_connect(void* user_data, uint8_t tag_id, uint8_t total_len, uint8_t data_offset, const uint8_t* data_buffer, uint8_t data_len) {
     map_access_server_t* map_access_server = (map_access_server_t*)user_data;
-    if (tag_id == MAP_APPLICATION_PARAMETER_MAP_SUPPORTED_FEATURES) {
+    if (tag_id == MAP_APP_PARAM_MapSupportedFeatures) {
         obex_app_param_parser_tag_state_t state = obex_app_param_parser_tag_store(map_access_server->request.app_param_buffer, sizeof(map_access_server->request.app_param_buffer), total_len, data_offset, data_buffer, data_len);
         if (state == OBEX_APP_PARAM_PARSER_TAG_COMPLETE) {
             map_access_server->map_supported_features = big_endian_read_32(map_access_server->request.app_param_buffer, 0);
