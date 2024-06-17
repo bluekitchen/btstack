@@ -7635,7 +7635,7 @@ static void hci_run(void){
 
 #ifdef ENABLE_HCI_CONTROLLER_TO_HOST_FLOW_CONTROL
     // send host num completed packets next as they don't require num_cmd_packets > 0
-    if (!hci_can_send_comand_packet_transport()) return;
+    if (!hci_can_send_command_packet_transport()) return;
     if (hci_stack->host_completed_packets){
         hci_host_num_completed_packets();        
         return;
