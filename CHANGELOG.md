@@ -9,7 +9,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## Unreleased
 
 ### Added
+
 ### Fixed
+RFCOMM: shut down multiplexer after closing last channel instead of multiplexer idle timer
+
 ### Changed
 
 ## Release v1.6.1
