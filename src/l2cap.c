@@ -5844,4 +5844,21 @@ void l2cap_free_channels_fuzz(void){
         }
     }
 }
+
+l2cap_channel_t * l2cap_get_dynamic_channel_fuzz(void){
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &l2cap_channels);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        l2cap_channel_t * channel = (l2cap_channel_t*) btstack_linked_list_iterator_next(&it);
+        switch (channel->channel_type) {
+            case L2CAP_CHANNEL_TYPE_CLASSIC:
+            case L2CAP_CHANNEL_TYPE_CHANNEL_CBM:
+            case L2CAP_CHANNEL_TYPE_CHANNEL_ECBM:
+                return channel;
+            default:
+                break;
+        }
+    }
+    return NULL;
+}
 #endif
