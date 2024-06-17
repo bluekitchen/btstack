@@ -1078,13 +1078,14 @@ static bool map_access_server_valid_header_for_request(map_access_server_t* map_
 
 uint8_t map_access_server_set_folder_version(uint16_t map_cid, const uint8_t* folder_version) {
     map_access_server_t* map_access_server = map_access_server_for_map_cid(map_cid);
-    log_debug("map_cid:0x%04x folder_version:%s", map_cid, folder_version);
     if (map_access_server == NULL) {
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
+    
     if (map_access_server_valid_header_for_request(map_access_server)) {
         (void)memcpy(map_access_server->response.app_params.FolderVersionCounter, folder_version, BT_UINT128_HEX_LEN_BYTES);
         map_access_server->response.folder_version_set = true;
+        log_debug("1 map_cid:0x%04x folder_version:%s", map_cid, map_access_server, folder_version);
         return ERROR_CODE_SUCCESS;
     }
     else {
