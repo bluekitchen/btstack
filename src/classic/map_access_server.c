@@ -291,6 +291,7 @@ typedef struct {
     // response
     struct {
         uint8_t code;
+        uint8_t header_data[MAP_SERVER_MAX_APP_PARAMS_LEN];
         uint16_t body_len;
         const uint8_t* body_data;
         struct {
@@ -306,6 +307,7 @@ typedef struct {
 #undef PARAM_RESPON
 #undef PARAM_UNUSED
         } app_params;
+        bool folder_version_set;
     } response;
 } map_access_server_t;
 
@@ -509,13 +511,20 @@ static uint16_t map_access_server_application_params_add_uint128(uint8_t* applic
     return pos;
 }
 
-static uint16_t pbap_server_application_params_add_phonebook_size(uint8_t * application_parameters, uint16_t phonebook_size){
-    return pbap_server_application_params_add_uint16(application_parameters, PBAP_APPLICATION_PARAMETER_PHONEBOOK_SIZE, phonebook_size);
+static uint16_t map_access_server_application_params_add_uint128hex(uint8_t* application_parameters, uint8_t type, const uint8_t* value) {
+    uint16_t pos = 0;
+    application_parameters[pos++] = type;
+    application_parameters[pos++] = BT_UINT128_HEX_LEN_BYTES;
+    memcpy(&application_parameters[pos], value, BT_UINT128_HEX_LEN_BYTES);
+    pos += BT_UINT128_HEX_LEN_BYTES;
+    return pos;
 }
 
-static uint16_t pbap_server_application_params_add_new_missed_calls(uint8_t * application_parameters, uint16_t new_missed_calls){
-    return pbap_server_application_params_add_uint16(application_parameters, PBAP_APPLICATION_PARAMETER_NEW_MISSED_CALLS, new_missed_calls);
+static uint16_t map_access_server_application_params_add_folder_version(map_access_server_t* map_access_server, uint8_t *folder_version){
+    //return pbap_server_application_params_add_uint16(map_access_server->, PBAP_APPLICATION_PARAMETER_PHONEBOOK_SIZE, phonebook_size);
 }
+
+
 static void map_access_server_add_application_parameters(const map_access_server_t* map_access_server, uint8_t* application_parameters, uint16_t len) {
     if (len > 0) {
         goep_server_header_add_application_parameters(map_access_server->goep_cid, application_parameters, len);
@@ -1067,14 +1076,15 @@ static bool map_access_server_valid_header_for_request(map_access_server_t* map_
 //    }
 //}
 
-uint8_t map_access_server_set_folder_version(uint16_t map_cid, const uint8_t* primary_folder_version) {
+uint8_t map_access_server_set_folder_version(uint16_t map_cid, const uint8_t* folder_version) {
     map_access_server_t* map_access_server = map_access_server_for_map_cid(map_cid);
+    log_debug("map_cid:0x%04x folder_version:%s", map_cid, folder_version);
     if (map_access_server == NULL) {
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     if (map_access_server_valid_header_for_request(map_access_server)) {
-        (void)memcpy(map_access_server->response.app_params.FolderVersionCounter, primary_folder_version, BT_UINT128_LEN_BYTES);
-        //map_access_server->response.folder_version_set = true;
+        (void)memcpy(map_access_server->response.app_params.FolderVersionCounter, folder_version, BT_UINT128_HEX_LEN_BYTES);
+        map_access_server->response.folder_version_set = true;
         return ERROR_CODE_SUCCESS;
     }
     else {
@@ -1104,6 +1114,10 @@ static void map_access_server_build_response(map_access_server_t* map_access_ser
     // Application Params
     uint8_t app_params[MAP_SERVER_MAX_APP_PARAMS_LEN];
     uint16_t app_params_pos = 0;
+    if (map_access_server->response.folder_version_set){
+        map_access_server->response.folder_version_set = false;
+        app_params_pos += map_access_server_application_params_add_uint128hex(&app_params[app_params_pos], MAP_APP_PARAM_FolderVersionCounter, map_access_server->response.app_params.FolderVersionCounter);
+    }
     map_access_server_add_application_parameters(map_access_server, app_params, app_params_pos);
 }
 
