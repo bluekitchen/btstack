@@ -877,21 +877,12 @@ static void rfcomm_channel_emit_final_event(rfcomm_channel_t * channel, uint8_t 
 }
 
 // MARK: RFCOMM MULTIPLEXER
-static void rfcomm_multiplexer_stop_timer(rfcomm_multiplexer_t * multiplexer){
-    if (multiplexer->timer_active) {
-        btstack_run_loop_remove_timer(&multiplexer->timer);
-        multiplexer->timer_active = 0;
-    }
-}
 static void rfcomm_multiplexer_free(rfcomm_multiplexer_t * multiplexer){
     btstack_linked_list_remove( &rfcomm_multiplexers, (btstack_linked_item_t *) multiplexer);
     btstack_memory_rfcomm_multiplexer_free(multiplexer);
 }
 
 static void rfcomm_multiplexer_finalize(rfcomm_multiplexer_t * multiplexer){
-    // remove (potential) timer
-    rfcomm_multiplexer_stop_timer(multiplexer);
-    
     // close and remove all channels
     btstack_linked_item_t *it = (btstack_linked_item_t *) &rfcomm_channels;
     while (it->next){
@@ -912,31 +903,6 @@ static void rfcomm_multiplexer_finalize(rfcomm_multiplexer_t * multiplexer){
     rfcomm_multiplexer_free(multiplexer);
 }
 
-static void rfcomm_multiplexer_timer_handler(btstack_timer_source_t *timer){
-    rfcomm_multiplexer_t * multiplexer = (rfcomm_multiplexer_t*) btstack_run_loop_get_timer_context(timer);
-    if (rfcomm_multiplexer_has_channels(multiplexer)) return;
-
-    log_info("handler timeout: shutting down multiplexer! (no channels)");
-    uint16_t l2cap_cid = multiplexer->l2cap_cid;
-    rfcomm_multiplexer_finalize(multiplexer);
-    l2cap_disconnect(l2cap_cid);
-}
-
-static void rfcomm_multiplexer_prepare_idle_timer(rfcomm_multiplexer_t * multiplexer){
-    if (multiplexer->timer_active) {
-        btstack_run_loop_remove_timer(&multiplexer->timer);
-        multiplexer->timer_active = 0;
-    }    
-    if (rfcomm_multiplexer_has_channels(multiplexer)) return;
-
-    // start idle timer for multiplexer timeout check as there are no rfcomm channels yet
-    btstack_run_loop_set_timer(&multiplexer->timer, RFCOMM_MULIPLEXER_TIMEOUT_MS);
-    btstack_run_loop_set_timer_handler(&multiplexer->timer, rfcomm_multiplexer_timer_handler);
-    btstack_run_loop_set_timer_context(&multiplexer->timer, multiplexer);
-    btstack_run_loop_add_timer(&multiplexer->timer);
-    multiplexer->timer_active = 1;
-}
-
 static void rfcomm_multiplexer_opened(rfcomm_multiplexer_t *multiplexer){
     log_info("Multiplexer up and running");
     multiplexer->state = RFCOMM_MULTIPLEXER_OPEN;
@@ -954,7 +920,6 @@ static void rfcomm_multiplexer_opened(rfcomm_multiplexer_t *multiplexer){
             l2cap_request_can_send_now_event(multiplexer->l2cap_cid);
         }
     }        
-    rfcomm_multiplexer_prepare_idle_timer(multiplexer);
 
     // request can send now for multiplexer if ready
     if (rfcomm_multiplexer_ready_to_send(multiplexer)){
@@ -1115,9 +1080,6 @@ static int rfcomm_hci_event_handler(uint8_t *packet, uint16_t size){
 
             // on l2cap open error discard everything
             if (status){
-
-                // remove (potential) timer
-                rfcomm_multiplexer_stop_timer(multiplexer);
 
                 // mark multiplexer as shutting down
                 multiplexer->state = RFCOMM_MULTIPLEXER_SHUTTING_DOWN;
@@ -1413,13 +1375,8 @@ static void rfcomm_channel_opened(rfcomm_channel_t *rfChannel){
     rfcomm_emit_channel_opened(rfChannel, 0);
     rfcomm_emit_port_configuration(rfChannel, false);
 
-    // remove (potential) timer
-    rfcomm_multiplexer_t *multiplexer = rfChannel->multiplexer;
-    if (multiplexer->timer_active) {
-        btstack_run_loop_remove_timer(&multiplexer->timer);
-        multiplexer->timer_active = 0;
-    }
     // hack for problem detecting authentication failure
+    rfcomm_multiplexer_t *multiplexer = rfChannel->multiplexer;
     multiplexer->at_least_one_connection = 1;
     
     // request can send now if channel ready 
@@ -1502,17 +1459,11 @@ static void rfcomm_channel_accept_pn(rfcomm_channel_t *channel, rfcomm_channel_e
 }
 
 static void rfcomm_channel_finalize(rfcomm_channel_t *channel){
-
-    rfcomm_multiplexer_t *multiplexer = channel->multiplexer;
-
     // remove from list
     btstack_linked_list_remove( &rfcomm_channels, (btstack_linked_item_t *) channel);
 
     // free channel
     btstack_memory_rfcomm_channel_free(channel);
-    
-    // update multiplexer timeout after channel was removed from list
-    rfcomm_multiplexer_prepare_idle_timer(multiplexer);
 }
 
 static void rfcomm_channel_state_machine_with_dlci(rfcomm_multiplexer_t * multiplexer, uint8_t dlci, const rfcomm_channel_event_t *event){
