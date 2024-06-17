@@ -875,7 +875,7 @@ static void hid_host_packet_handler(uint8_t packet_type, uint16_t channel, uint8
 
             if (channel == connection->interrupt_cid){
                 uint8_t * in_place_event = packet - 7;
-                hid_setup_report_event(connection, in_place_event, size-1);
+                hid_setup_report_event(connection, in_place_event, size);
                 hid_host_callback(HCI_EVENT_PACKET, connection->hid_cid, in_place_event, size + 7);
                 break;
             }
