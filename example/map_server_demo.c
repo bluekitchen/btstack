@@ -84,8 +84,6 @@ static uint16_t map_cid;
 static uint8_t service_buffer[150];
 static uint8_t upload_buffer[1000];
 
-static uint8_t database_identifier[BT_UINT128_HEX_LEN_BYTES];
-static uint8_t folder_version[BT_UINT128_HEX_LEN_BYTES];
 
 #ifdef ENABLE_GOEP_L2CAP
 static uint8_t map_notification_client_ertm_buffer_mas_0[4000];
@@ -130,7 +128,15 @@ static struct test_config_s
 struct test_config_s* config = &test_configs[0];
 static int current_msg_type = 0;
 static int send_one_more_message = 0;
-static char folder_version_counter128_hex[BT_UINT128_HEX_LEN_BYTES] = "001122334455667788";
+static uint8_t database_identifier[BT_UINT128_HEX_LEN_BYTES];
+// BT SIG Test Suite PTS is not acepting what BT SIG MAP spec describes as valid counters:
+// "variable length (max. 32 bytes), 128 - bit value in hex string format":
+// "00112233445566778899AABBCCDDEEFF"
+// "0000000000000000"
+// "0000000000000001"
+// "00000000"
+// "00000001"
+static char folder_version_counter128_hex[BT_UINT128_HEX_LEN_BYTES] = { 0 };
 
 static void set_test_config(int nr) {
     if (nr < ARRAYSIZE(test_configs))
@@ -227,7 +233,12 @@ send_response:
 
 static void print_current_test_config(void)
 {
-    MAP_PRINTF("new test config is <%d: %s>\n", config->nr, config->descr);
+    MAP_PRINTF("curent test config is <%d: %s>\n", config->nr, config->descr);
+    MAP_PRINTF("FolderVersion:%s", folder_version_counter128_hex);
+}
+
+static void increase_folder_version_by_1(void) {
+    folder_version_counter128_hex[BT_UINT128_HEX_LEN_BYTES-1]++;
 }
 
 #ifdef HAVE_BTSTACK_STDIN
@@ -258,6 +269,11 @@ static void stdin_process(char c){
             init_testcases();
             print_current_test_config();
             break;
+        case 'f':
+            increase_folder_version_by_1();
+            print_current_test_config();
+            break;
+
 
         default:
             show_usage();
@@ -381,14 +397,14 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
 							
                         case MAP_SUBEVENT_FOLDER_LISTING_ITEM:
                             map_access_server_set_database_identifier(map_cid, database_identifier);
-                            map_access_server_set_folder_version(map_cid, folder_version);
+                            map_access_server_set_folder_version(map_cid, folder_version_counter128_hex);
                             MAP_PRINTF("[+] Get Folder listing\n");
                             send_listing(0, config->msg_count-1 + send_one_more_message);
                             break;
 							
                         case MAP_SUBEVENT_GET_MESSAGE_LISTING:
                             map_access_server_set_database_identifier(map_cid, database_identifier);
-                            map_access_server_set_folder_version(map_cid, folder_version);
+                            map_access_server_set_folder_version(map_cid, folder_version_counter128_hex);
                             APP_READ_32(packet, &pos, &continuation);
                             APP_READ_16(packet, &pos, &dummy_map_cid);
                             APP_READ_16(packet, &pos, &max_list_count);
@@ -403,7 +419,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             if (continuation == 0) {
                                 MAP_PRINTF("[+] Start MAP_SUBEVENT_GET_MESSAGE_LISTING continuation == 0\n");
                                 map_access_server_set_database_identifier(map_cid, database_identifier);
-                                map_access_server_set_folder_version(map_cid, folder_version);
+                                map_access_server_set_folder_version(map_cid, folder_version_counter128_hex);
                             }
 
                             // send messages listing
