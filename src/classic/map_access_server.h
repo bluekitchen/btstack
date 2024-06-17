@@ -158,7 +158,9 @@ typedef enum {
 
 // lengths
 #define BT_UINT128_LEN_BYTES 16
-#define BT_UINT128_HEX_LEN_BYTES 32
+// should be 32 - but - BT SIG PTS Test tool expects the version as a 16-bytes binary representation like BT SIG PBAP
+// but doesnt accept the BT SIG MAP Spec's up to 32 bytes human-readable hex string
+#define BT_UINT128_HEX_LEN_BYTES 16
 
 uint16_t map_access_server_send_get_put_response(uint16_t map_cid, uint8_t response_code, uint32_t continuation, uint16_t body_len, const uint8_t* body);
 uint16_t map_access_server_get_max_body_size(uint16_t map_cid);
