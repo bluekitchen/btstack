@@ -78,8 +78,6 @@
 #endif
 #endif
 
-#define RFCOMM_MULIPLEXER_TIMEOUT_MS 60000
-
 #define RFCOMM_CREDITS 10
 
 // FCS calc 
