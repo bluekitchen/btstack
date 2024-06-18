@@ -126,6 +126,7 @@ uint16_t little_endian_read_16(const uint8_t * buffer, int position);
 uint32_t little_endian_read_24(const uint8_t * buffer, int position);
 uint32_t little_endian_read_32(const uint8_t * buffer, int position);
 
+
 /** 
  * @brief Write 16/32 bit little endian value into buffer
  * @param buffer
@@ -137,6 +138,9 @@ void little_endian_store_16(uint8_t * buffer, uint16_t position, uint16_t value)
 void little_endian_store_24(uint8_t * buffer, uint16_t position, uint32_t value);
 void little_endian_store_32(uint8_t * buffer, uint16_t position, uint32_t value);
 
+/** 
+ * @brief BTstack internal stack<>application messaging
+ */
 void app_write_08(uint8_t* buffer, uint16_t* pos, uint8_t  value);
 void app_write_16(uint8_t* buffer, uint16_t* pos, uint16_t value);
 void app_write_24(uint8_t* buffer, uint16_t* pos, uint32_t value);
@@ -182,6 +186,7 @@ uint32_t big_endian_read_08(const uint8_t* buffer, int position);
 uint32_t big_endian_read_16(const uint8_t * buffer, int position);
 uint32_t big_endian_read_24(const uint8_t * buffer, int position);
 uint32_t big_endian_read_32(const uint8_t * buffer, int position);
+static inline void read_arr(uint8_t* buffer, int position, uint8_t* arr, size_t size) { memcpy(arr, &buffer[position], size); }
 
 /** 
  * @brief Write 16/32 bit big endian value into buffer
@@ -189,10 +194,26 @@ uint32_t big_endian_read_32(const uint8_t * buffer, int position);
  * @param position in buffer
  * @param value
  */
+void big_endian_store_08(uint8_t * buffer, uint16_t position, uint8_t value);
 void big_endian_store_16(uint8_t * buffer, uint16_t position, uint16_t value);
 void big_endian_store_24(uint8_t * buffer, uint16_t position, uint32_t value);
 void big_endian_store_32(uint8_t * buffer, uint16_t position, uint32_t value);
+static inline void store_arr(uint8_t* buffer, uint16_t position, uint8_t* arr, size_t size) { memcpy(&buffer[position], arr, size); }
 
+/**
+ * @brief Bluetooth SIG Central<>Peripheral APP-PARAMETER messaging (Big Endian)1
+ */
+static inline void APP_PARAM_WRITE_08 (uint8_t* buffer, uint16_t* pos, uint8_t  value, uint16_t size)	{ big_endian_store_08(buffer, (uint16_t)*pos, value); log_app_messaging("APP_PARAM_STORE_08: pos:%u %s:%u (0x%04X)" ,*pos, "xxx", (unsigned int)value, (unsigned int)value); *pos += 1; }
+static inline void APP_PARAM_WRITE_16 (uint8_t* buffer, uint16_t* pos, uint16_t value, uint16_t size)	{ big_endian_store_16(buffer, (uint16_t)*pos, value); log_app_messaging("APP_PARAM_STORE_16: pos:%u %s:%u (0x%04X)" ,*pos, "xxx", (unsigned int)value, (unsigned int)value); *pos += 2; }
+static inline void APP_PARAM_WRITE_24 (uint8_t* buffer, uint16_t* pos, uint32_t value, uint16_t size)	{ big_endian_store_24(buffer, (uint16_t)*pos, value); log_app_messaging("APP_PARAM_STORE_24: pos:%u %s:%u (0x%04X)" ,*pos, "xxx", (unsigned int)value, (unsigned int)value); *pos += 3; }
+static inline void APP_PARAM_WRITE_32 (uint8_t* buffer, uint16_t* pos, uint32_t value, uint16_t size)	{ big_endian_store_32(buffer, (uint16_t)*pos, value); log_app_messaging("APP_PARAM_STORE_32: pos:%u %s:%u (0x%04X)" ,*pos, "xxx", (unsigned int)value, (unsigned int)value); *pos += 4; }
+static inline void APP_PARAM_WRITE_ARR(uint8_t* buffer, uint16_t* pos, uint8_t  *value, uint16_t size)  { store_arr(buffer, *pos, value, size);               log_app_messaging("APP_PARAM_STORE_ARR: pos:%u size:%u %s:%s (0x%04X)", *pos, size, "xxx", value);                     *pos += size; }
+
+static inline void APP_PARAM_READ_08  (uint8_t* buffer, uint16_t* pos, uint8_t  *value, uint16_t size)	{ *value = big_endian_read_08(buffer, *pos);          log_app_messaging("APP_PARAM_READ_08: pos:%u %s:%u (0x%04X)" ,*pos, "xxx", (unsigned int)*value, (unsigned int)*value); *pos += 1; }
+static inline void APP_PARAM_READ_16  (uint8_t* buffer, uint16_t* pos, uint16_t *value, uint16_t size)	{ *value = big_endian_read_16(buffer, *pos);          log_app_messaging("APP_PARAM_READ_16: pos:%u %s:%u (0x%04X)" ,*pos, "xxx", (unsigned int)*value, (unsigned int)*value); *pos += 2; }
+static inline void APP_PARAM_READ_24  (uint8_t* buffer, uint16_t* pos, uint32_t *value, uint16_t size)	{ *value = big_endian_read_24(buffer, *pos);          log_app_messaging("APP_PARAM_READ_24: pos:%u %s:%u (0x%04X)" ,*pos, "xxx", (unsigned int)*value, (unsigned int)*value); *pos += 3; }
+static inline void APP_PARAM_READ_32  (uint8_t* buffer, uint16_t* pos, uint32_t *value, uint16_t size)	{ *value = big_endian_read_32(buffer, *pos);          log_app_messaging("APP_PARAM_READ_32: pos:%u %s:%u (0x%04X)" ,*pos, "xxx", (unsigned int)*value, (unsigned int)*value); *pos += 4; }
+static inline void APP_PARAM_READ_ARR (uint8_t* buffer, uint16_t* pos, uint8_t  *value, uint16_t size)  {          read_arr(buffer, *pos, value, size);       log_app_messaging("APP_PARAM_READ_ARR: pos:%u %s:%s (0x%04X)", *pos, "xxx", value);                                     *pos += size; }
 
 /**
  * @brief Swap bytes in 16 bit integer
