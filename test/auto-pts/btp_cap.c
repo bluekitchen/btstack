@@ -324,7 +324,7 @@ static void btp_cap_ases_run(void){
                 server->ascs_operation_active = true;
                 ase->state = ASE_STATE_W4_CODEC_CONFIGURED;
                 status = audio_stream_control_service_client_streamendpoint_configure_codec(server->ascs_cid, ase->ase_id, &ase->codec_configuration_request);
-                MESSAGE("BTP ASCS %u:  ase id %u in state %u - Configure Codec -> 0x%02x", ase->server_index,  ase->ase_id, ase->state, status);
+                MESSAGE("BTP ASCS %u:  ascs cid %u, ase id %u in state %u - Configure Codec -> 0x%02x", ase->server_index,   server->ascs_cid,  ase->ase_id, ase->state, status);
                 break;
             case ASE_STATE_W2_CONFIGURE_QOS:
                 server->ascs_operation_active = true;
