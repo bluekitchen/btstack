@@ -128,7 +128,6 @@ static struct test_config_s
 struct test_config_s* config = &test_configs[0];
 static int current_msg_type = 0;
 static int send_one_more_message = 0;
-static uint8_t database_identifier[BT_UINT128_HEX_LEN_BYTES];
 // BT SIG Test Suite PTS is not acepting what BT SIG MAP spec describes as valid counters:
 // "variable length (max. 32 bytes), 128 - bit value in hex string format":
 // "00112233445566778899AABBCCDDEEFF"
@@ -136,7 +135,8 @@ static uint8_t database_identifier[BT_UINT128_HEX_LEN_BYTES];
 // "0000000000000001"
 // "00000000"
 // "00000001"
-static char folder_version_counter128_hex[BT_UINT128_HEX_LEN_BYTES] = { 0 };
+static uint8_t database_identifier[BT_UINT128_HEX_LEN_BYTES] = { 0 };
+static uint8_t folder_version_counter128_hex[BT_UINT128_HEX_LEN_BYTES] = { 0 };
 
 static void set_test_config(int nr) {
     if (nr < ARRAYSIZE(test_configs))
@@ -396,15 +396,13 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             break;
 							
                         case MAP_SUBEVENT_FOLDER_LISTING_ITEM:
-                            map_access_server_set_database_identifier(map_cid, database_identifier);
-                            map_access_server_set_folder_version(map_cid, folder_version_counter128_hex);
+                            map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_DatabaseIdentifier, database_identifier);
+                            map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_FolderVersionCounter, folder_version_counter128_hex);
                             MAP_PRINTF("[+] Get Folder listing\n");
                             send_listing(0, config->msg_count-1 + send_one_more_message);
                             break;
 							
                         case MAP_SUBEVENT_GET_MESSAGE_LISTING:
-                            map_access_server_set_database_identifier(map_cid, database_identifier);
-                            map_access_server_set_folder_version(map_cid, folder_version_counter128_hex);
                             APP_READ_32(packet, &pos, &continuation);
                             APP_READ_16(packet, &pos, &dummy_map_cid);
                             APP_READ_16(packet, &pos, &max_list_count);
@@ -412,14 +410,16 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             
                             if (max_list_count == 0) {
                                 MAP_PRINTF("[+] Start MAP_SUBEVENT_GET_MESSAGE_LISTING max_list_count == 0\n");
+                                map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_DatabaseIdentifier, database_identifier);
+                                map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_FolderVersionCounter, folder_version_counter128_hex);
                                 send_listing(0, 0);
                                 break;
                             }
                             
                             if (continuation == 0) {
                                 MAP_PRINTF("[+] Start MAP_SUBEVENT_GET_MESSAGE_LISTING continuation == 0\n");
-                                map_access_server_set_database_identifier(map_cid, database_identifier);
-                                map_access_server_set_folder_version(map_cid, folder_version_counter128_hex);
+                                map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_DatabaseIdentifier, database_identifier);
+                                map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_FolderVersionCounter, folder_version_counter128_hex);
                             }
 
                             // send messages listing
