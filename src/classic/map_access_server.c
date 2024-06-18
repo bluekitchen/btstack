@@ -1058,7 +1058,7 @@ static bool map_access_server_valid_header_for_request(map_access_server_t* map_
 }
 
 
-int map_access_server_set_response_app_param(uint16_t map_cid, enum MAP_APP_PARAMS app_param) {
+int map_access_server_set_response_app_param(uint16_t map_cid, enum MAP_APP_PARAMS app_param, void* param) {
     map_access_server_t* mas = map_access_server_for_map_cid(map_cid);
     if (mas == NULL)
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
@@ -1069,18 +1069,13 @@ int map_access_server_set_response_app_param(uint16_t map_cid, enum MAP_APP_PARA
     switch (app_param) {
 
 
-        // the following X-Macro (https://en.wikipedia.org/wiki/X_macro)
-        // automagically generates GETers for all APP Params in the form of:
-        //case MAP_APPLICATION_PARAMETER_MAX_LIST_COUNT:
-        //    mas->request.app_params.MaxListCount = big_endian_read_16(
-        //        mas->request.app_param_buffer, 0);
-        //    break;
-
+// the following X-Macro (https://en.wikipedia.org/wiki/X_macro)
+// automagically generates SETers for all APP Params
 #define PARAM_RESPON(name, tag, type, descr) \
     case MAP_APP_PARAM_ ## name: \
         /* Type: 1 Byte  */APP_PARAM_WRITE_08(mas->response.header_data, &mas->response.header_pos, MAP_APP_PARAM_ ## name, 1); \
         /* Size: 1 Byte  */APP_PARAM_WRITE_08(mas->response.header_data, &mas->response.header_pos, sizeof(type), 1); \
-        /* Data: N Bytes */app_param_write_ ## type (mas->response.header_data, &mas->response.header_pos, mas->response.app_params. name, sizeof(type)); \
+        /* Data: N Bytes */app_param_write_ ## type (mas->response.header_data, &mas->response.header_pos, param, sizeof(type)); \
         log_debug("header_pos:%u map_cid:0x%04x %s", mas->response.header_pos, map_cid, mas, #name); \
         log_info("response set APP PARAM <%s> value <%08x> str:<%s>", #name, mas->response.app_params. name, mas->response.app_params. name); \
         return ERROR_CODE_SUCCESS; \
@@ -1110,8 +1105,8 @@ uint8_t map_access_server_set_folder_version(uint16_t map_cid, const uint8_t* fo
     }
 
     if (map_access_server_valid_header_for_request(map_access_server)) {
-        memcpy(map_access_server->response.app_params.FolderVersionCounter, folder_version, sizeof(map_access_server->response.app_params.FolderVersionCounter));
-        map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_FolderVersionCounter);
+        //memcpy(map_access_server->response.app_params.FolderVersionCounter, folder_version, sizeof(map_access_server->response.app_params.FolderVersionCounter));
+        map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_FolderVersionCounter, folder_version);
 
         log_debug("header_pos:%u map_cid : 0x % 04x folder_version : % s", map_access_server->response.header_pos, map_cid, map_access_server, folder_version);
         return ERROR_CODE_SUCCESS;
