@@ -829,7 +829,7 @@ static void btp_bap_discovery_next(server_t * server){
                                                         ASCS_CLIENT_NUM_STREAMENDPOINTS,
                                                         server->acl_con_handle,
                                                         &server->ascs_cid);
-            MESSAGE("BTP ASCS: connect 0x%04x, ASCS CID %u", server->acl_con_handle, server->csis_cid);
+            MESSAGE("BTP ASCS: connect 0x%04x, ASCS CID %u", server->acl_con_handle, server->ascs_cid);
             break;
         case BTP_BAP_ASCS_STATE_W4_CONNECTED:
             server->bap_state = (uint8_t) BTP_BAP_STATE_DONE;
@@ -902,6 +902,7 @@ static void btp_bap_ascs_client_event_handler(uint8_t packet_type, uint16_t chan
                         leaudio_subevent_ascs_client_connected_get_status(packet));
                 server->ascs_cid = 0;
             } else {
+                MESSAGE("BTP ASCS Client %u: connected, cid %u", server->server_id, server->ascs_cid);
                 btp_ascs_client_report_ases(server, packet);
             }
             btp_bap_discovery_next(server);
