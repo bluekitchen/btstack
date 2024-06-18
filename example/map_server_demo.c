@@ -129,6 +129,8 @@ struct test_config_s* config = &test_configs[0];
 static int current_msg_type = 0;
 static int send_one_more_message = 0;
 static int send_one_more_conversation = 0;
+
+static mas_uint128hex_t DatabaseIdentifier = { 0 };
 // BT SIG Test Suite PTS is not acepting what BT SIG MAP spec describes as valid counters:
 // "variable length (max. 32 bytes), 128 - bit value in hex string format":
 // "00112233445566778899AABBCCDDEEFF"
@@ -136,8 +138,23 @@ static int send_one_more_conversation = 0;
 // "0000000000000001"
 // "00000000"
 // "00000001"
-static uint8_t database_identifier[BT_UINT128_HEX_LEN_BYTES] = { 0 };
-static uint8_t folder_version_counter128_hex[BT_UINT128_HEX_LEN_BYTES] = { 0 };
+// { 0 } works
+static mas_uint128hex_t FolderVersionCounter = { 0 };
+// BT SIG Test Suite PTS is not acepting what BT SIG MAP spec describes as valid counters:
+// "variable length (max. 32 bytes), 128 - bit value in hex string format":
+// "00000000000000000000000000000001"
+// "0000000000000000"
+// "0000000000000001"
+// "00000000"
+// "00000001"
+// { 0 } doesn't work neither
+static mas_uint128hex_t ConversationListingVersionCounter = { 0 };
+static mas_uint128hex_t ConversationID = { 0 };
+
+static void increase_version_counter_by_1(mas_uint128hex_t counter) {
+    counter[BT_UINT128_HEX_LEN_BYTES - 1]++;
+    log_debug_hexdump(counter, BT_UINT128_HEX_LEN_BYTES);
+}
 
 static void set_test_config(int nr) {
     if (nr < ARRAYSIZE(test_configs))
@@ -150,6 +167,7 @@ static void set_test_config(int nr) {
 static void init_testcases(void) {
     current_msg_type = 0;
     send_one_more_message = 0;
+    send_one_more_conversation = 0;
 }
 
 
@@ -235,11 +253,6 @@ send_response:
 static void print_current_test_config(void)
 {
     MAP_PRINTF("curent test config is <%d: %s>\n", config->nr, config->descr);
-    MAP_PRINTF("FolderVersion:%s", folder_version_counter128_hex);
-}
-
-static void increase_folder_version_by_1(void) {
-    folder_version_counter128_hex[BT_UINT128_HEX_LEN_BYTES-1]++;
 }
 
 #ifdef HAVE_BTSTACK_STDIN
@@ -251,7 +264,13 @@ static void show_usage(void){
     MAP_PRINTF("\n--- Bluetooth MAP Server Test Console %s ---\n", bd_addr_to_str(iut_address));
     print_current_test_config();
     MAP_PRINTF("<n> switch to next test config\n");
+    MAP_PRINTF("<f> increase FolderVersionCounter by 1\n");
+    MAP_PRINTF("<c> increase ConversationListingVersionCounter by 1\n");
+    MAP_PRINTF("<i> increase ConversationID by 1\n");
+    MAP_PRINTF("<d> increase DatabaseIdentifier by 1\n");
     MAP_PRINTF("<r> reset current test case\n");
+
+
 }
 
 static void stdin_process(char c){
@@ -270,11 +289,30 @@ static void stdin_process(char c){
             init_testcases();
             print_current_test_config();
             break;
+
         case 'f':
-            increase_folder_version_by_1();
             print_current_test_config();
+            MAP_PRINTF("FolderVersionCounter:");
+            increase_version_counter_by_1(FolderVersionCounter);
             break;
 
+        case 'i':
+            print_current_test_config();
+            MAP_PRINTF("ConversationID:");
+            increase_version_counter_by_1(ConversationID);
+            break;
+
+        case 'c':
+            print_current_test_config();
+            MAP_PRINTF("ConversationListingVersionCounter:");
+            increase_version_counter_by_1(ConversationListingVersionCounter);
+            break;
+
+        case 'd':
+            print_current_test_config();
+            MAP_PRINTF("DatabaseIdentifier:");
+            increase_version_counter_by_1(DatabaseIdentifier);
+            break;
 
         default:
             show_usage();
@@ -397,8 +435,8 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             break;
 							
                         case MAP_SUBEVENT_FOLDER_LISTING_ITEM:
-                            map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_DatabaseIdentifier, database_identifier);
-                            map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_FolderVersionCounter, folder_version_counter128_hex);
+                            map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_DatabaseIdentifier, DatabaseIdentifier);
+                            map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_FolderVersionCounter, FolderVersionCounter);
                             MAP_PRINTF("[+] Get Folder listing\n");
                             send_listing(0, config->msg_count-1 + send_one_more_message);
                             break;
@@ -411,16 +449,16 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             
                             if (max_list_count == 0) {
                                 MAP_PRINTF("[+] Start MAP_SUBEVENT_GET_MESSAGE_LISTING max_list_count == 0\n");
-                                map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_DatabaseIdentifier, database_identifier);
-                                map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_FolderVersionCounter, folder_version_counter128_hex);
+                                map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_DatabaseIdentifier, DatabaseIdentifier);
+                                map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_FolderVersionCounter, FolderVersionCounter);
                                 send_listing(0, 0);
                                 break;
                             }
                             
                             if (continuation == 0) {
                                 MAP_PRINTF("[+] Start MAP_SUBEVENT_GET_MESSAGE_LISTING continuation == 0\n");
-                                map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_DatabaseIdentifier, database_identifier);
-                                map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_FolderVersionCounter, folder_version_counter128_hex);
+                                map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_DatabaseIdentifier, DatabaseIdentifier);
+                                map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_FolderVersionCounter, FolderVersionCounter);
                             }
 
                             // send messages listing
