@@ -222,10 +222,10 @@ static void ascs_client_emit_connection_established(ascs_client_connection_t * c
 
 static void ascs_client_connected(ascs_client_connection_t * connection, uint8_t status) {
     if (status == ERROR_CODE_SUCCESS){
-        connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_IDLE;
+        connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_READY;
         ascs_client_emit_connection_established(connection, status);
     } else {
-        connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_READY;
+        connection->state = AUDIO_STREAM_CONTROL_SERVICE_CLIENT_STATE_IDLE;
         ascs_client_emit_connection_established(connection, status);
         ascs_client_finalize_connection(connection);
     }
