@@ -104,12 +104,14 @@ typedef struct {
 // below generates app_params_compile_time_check struct members to compile-time check all PARAMs
 #define PARAM_REQUST(name, tag, type, descr) type PARAM_REQUST ## name;
 #define PARAM_RESPON(name, tag, type, descr) type PARAM_RESPON ## name;
+#define PARAM_REQRSP(name, tag, type, descr) type PARAM_REQRSP ## name;
 #define PARAM_UNUSED(name, tag, type, descr) type PARAM_UNUSED ## name;
 
     APP_PARAMS
 
 #undef PARAM_REQUST
 #undef PARAM_RESPON
+#undef PARAM_REQRSP
 #undef PARAM_UNUSED
 } app_params_compile_time_check;
 
@@ -139,6 +141,7 @@ typedef struct {
 // the following X-Macro (https://en.wikipedia.org/wiki/X_macro)
 // below generates request.app_param struct members
 #define PARAM_REQUST(name, tag, type, descr) type name;
+#define PARAM_REQRSP(name, tag, type, descr) type name;
 #define PARAM_RESPON(...)
 #define PARAM_UNUSED(...)
 
@@ -146,6 +149,7 @@ typedef struct {
     
 #undef PARAM_REQUST
 #undef PARAM_RESPON
+#undef PARAM_REQRSP
 #undef PARAM_UNUSED
         } app_params;
     } request;
@@ -156,19 +160,6 @@ typedef struct {
         uint16_t header_pos;
         uint16_t body_len;
         const uint8_t* body_data;
-//        struct {
-//// the following X-Macro (https://en.wikipedia.org/wiki/X_macro)
-//// below generates response.app_param struct members
-//#define PARAM_RESPON(name, tag, type, descr) type name;
-//#define PARAM_REQUST(...)
-//#define PARAM_UNUSED(...)
-//
-//            APP_PARAMS
-//
-//#undef PARAM_REQUST
-//#undef PARAM_RESPON
-//#undef PARAM_UNUSED
-//        } app_params;
         bool folder_version_set;
     } response;
 } map_access_server_t;
@@ -594,17 +585,28 @@ static void map_access_server_app_param_callback_get(void* user_data, uint8_t ta
 
 #define PARAM_REQUST(name, tag, type, descr) \
             case MAP_APP_PARAM_ ## name: \
-                    app_param_read_ ## type (map_access_server->request.app_param_buffer, &pos, &map_access_server->request.app_params. name, sizeof(type)); \
-                log_info("APP PARAM <%s> value <%08x>", #name, map_access_server->request.app_params. name); \
+                    app_param_read_ ## type (map_access_server->request.app_param_buffer, &pos, (void*)&map_access_server->request.app_params. name, sizeof(type)); \
                 break;
 
+#define PARAM_REQRSP PARAM_REQUST
 #define PARAM_RESPON(...)
 #define PARAM_UNUSED(...)
 
                 APP_PARAMS
 #undef PARAM_REQUST
 #undef PARAM_RESPON
+#undef PARAM_REQRSP
 #undef PARAM_UNUSED
+
+
+
+            //case MAP_APP_PARAM_MaxListCount: APP_PARAM_READ_16(map_access_server->request.app_param_buffer, &pos, (void*) & map_access_server->request.app_params.MaxListCount, sizeof(uint16_t));break;
+            //case MAP_APP_PARAM_ListStartOffset: APP_PARAM_READ_16(map_access_server->request.app_param_buffer, &pos, &map_access_server->request.app_params.ListStartOffset, sizeof(uint16_t));break;                     
+            //case MAP_APP_PARAM_StatusIndicator: APP_PARAM_READ_08(map_access_server->request.app_param_buffer, &pos, &map_access_server->request.app_params.StatusIndicator, sizeof(uint8_t)); break; 
+            //case MAP_APP_PARAM_StatusValue: APP_PARAM_READ_08(map_access_server->request.app_param_buffer, &pos, &map_access_server->request.app_params.StatusValue, sizeof(uint8_t)); break;          
+            //case MAP_APP_PARAM_ConversationID: APP_PARAM_READ_ARR(map_access_server->request.app_param_buffer, &pos, (void*)&map_access_server->request.app_params.ConversationID, sizeof(mas_uint128hex_t)); break;
+            //case MAP_APP_PARAM_MapSupportedFeatures: APP_PARAM_READ_32(map_access_server->request.app_param_buffer, &pos, &map_access_server->request.app_params.MapSupportedFeatures, sizeof(uint32_t)); break;
+
             default:
                 break;
             }
@@ -953,6 +955,7 @@ int map_access_server_set_response_app_param(uint16_t map_cid, enum MAP_APP_PARA
         /* Data: N Bytes */app_param_write_ ## type (mas->response.header_data, &mas->response.header_pos, param, sizeof(type)); \
         return ERROR_CODE_SUCCESS;
 
+#define PARAM_REQRSP PARAM_RESPON
 #define PARAM_REQUST(...)
 #define PARAM_UNUSED(...)
 
@@ -960,6 +963,7 @@ int map_access_server_set_response_app_param(uint16_t map_cid, enum MAP_APP_PARA
 
 #undef PARAM_REQUST
 #undef PARAM_RESPON
+#undef PARAM_REQRSP
 #undef PARAM_UNUSED
        
 
@@ -980,7 +984,7 @@ uint8_t map_access_server_set_database_identifier(uint16_t map_cid, const uint8_
     //}
     //btstack_assert(map_access_server->request.object_type != MAP_OBJECT_TYPE_INVALID);
 
-    //(void)memcpy(map_access_server->response.app_params.DatabaseIdentifier, database_identifier, BT_UINT128_LEN_BYTES);
+    //(void)memcpy(map_access_server->response.app_params.DatabaseIdentifier, DatabaseIdentifier, BT_UINT128_LEN_BYTES);
     ////map_access_server->response.database_identifier_set = true;
     return ERROR_CODE_SUCCESS;
 };

@@ -12,3 +12,5 @@ MAP/MSE/MMB/BV-18-I: PASS (2024-06-14)
 MAP/MSE/MMB/BV-20-I: PASS (2024-06-14)
 MAP/MSE/MMB/BV-22-I: PASS (2024-06-14)
 MAP/MSE/MMB/BV-23-I: PASS (2024-06-17, PTS want to see a 16-bytes long counter identical to PBAP, but MAP spec says it should be 128 bit hex string, max 32 bytes)
+MAP/MSE/MMB/BV-24-I: WIP, no idea, why PTS is not acepting the update of ConversationListingVersionCounter
+MAP/MSE/MMB/BV-25-I: PASS (2024-06-18)
