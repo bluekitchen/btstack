@@ -128,6 +128,7 @@ static struct test_config_s
 struct test_config_s* config = &test_configs[0];
 static int current_msg_type = 0;
 static int send_one_more_message = 0;
+static int send_one_more_conversation = 0;
 // BT SIG Test Suite PTS is not acepting what BT SIG MAP spec describes as valid counters:
 // "variable length (max. 32 bytes), 128 - bit value in hex string format":
 // "00112233445566778899AABBCCDDEEFF"
@@ -471,6 +472,15 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             // BT SIG Test case MAP/MSE/MMB/BV-23-I asks for one more message after
                             // issuing a "update messages" request so we just simulate one
                             send_one_more_message = 1;
+                            break;
+
+                        case MAP_SUBEVENT_GET_CONVO_LISTING:
+                            APP_READ_32(packet, &pos, &continuation);
+                            APP_READ_16(packet, &pos, &dummy_map_cid);
+                            APP_READ_STR(packet, &pos, sizeof(ConversationID), ConversationID);
+                            map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_ConversationID, ConversationID);
+                            map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_ConversationListingVersionCounter, ConversationListingVersionCounter);
+                            map_access_server_send_get_put_response(map_cid, OBEX_RESP_SUCCESS, 0, 0, NULL);
                             break;
 
                         default:

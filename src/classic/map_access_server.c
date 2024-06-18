@@ -296,6 +296,10 @@ static map_object_type_t map_access_server_parse_object_type(const char* type_st
         return MAP_OBJECT_TYPE_GET_MSG_LISTING;
     }
 
+    if (strcmp("x-bt/MAP-convo-listing", type_string) == 0) {
+        return MAP_OBJECT_TYPE_GET_CONVO_LISTING;
+    }
+
     if (strcmp("x-bt/message", type_string) == 0) {
         return MAP_OBJECT_TYPE_GET_MESSAGE;
     }
@@ -674,6 +678,7 @@ static void map_access_server_handle_get_request(map_access_server_t* map_access
 
     case MAP_OBJECT_TYPE_GET_MESSAGE:
     case MAP_OBJECT_TYPE_GET_FOLDER_LISTING:
+    case MAP_OBJECT_TYPE_GET_CONVO_LISTING:
     case MAP_OBJECT_TYPE_PUT_MESSAGE_STATUS:
     case MAP_OBJECT_TYPE_PUT_MESSAGE_UPDATE:
         break;
@@ -709,6 +714,14 @@ static void map_access_server_handle_get_request(map_access_server_t* map_access
         APP_WRITE_16(event, &pos, map_access_server->map_cid);
         APP_WRITE_16(event, &pos, map_access_server->request.app_params.MaxListCount);
         APP_WRITE_16(event, &pos, map_access_server->request.app_params.ListStartOffset);
+        APP_WRITE_LEN(event, pos);
+        break;
+
+    case MAP_OBJECT_TYPE_GET_CONVO_LISTING:
+        APP_WRITE_08(event, &pos, MAP_SUBEVENT_GET_CONVO_LISTING);
+        APP_WRITE_32(event, &pos, map_access_server->request.continuation);
+        APP_WRITE_16(event, &pos, map_access_server->map_cid);
+        APP_WRITE_STR(event, &pos, sizeof(map_access_server->request.app_params.ConversationID),(uint8_t*)map_access_server->request.app_params.ConversationID);
         APP_WRITE_LEN(event, pos);
         break;
 
@@ -911,6 +924,7 @@ static bool map_access_server_valid_header_for_request(map_access_server_t* map_
     }
     switch (map_access_server->request.object_type) {
     case MAP_OBJECT_TYPE_GET_MSG_LISTING:
+    case MAP_OBJECT_TYPE_GET_CONVO_LISTING:
         return true;
     default:
         return false;
