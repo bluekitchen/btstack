@@ -101,27 +101,27 @@ static  btstack_packet_handler_t map_access_server_user_packet_handler;
 
 
 
-typedef uint32_t variable_string_t;
-typedef uint32_t variable_utf8;
-typedef char variable_uint128hex[BT_UINT128_HEX_LEN_BYTES];
-typedef uint8_t variable_uint64[8];
+typedef uint8_t mas_string_t[MAP_SERVER_MAX_TYPE_LEN];
+typedef uint8_t mas_utf8[MAP_SERVER_MAX_TYPE_LEN];
+typedef uint8_t mas_uint128hex[BT_UINT128_HEX_LEN_BYTES];
+typedef uint8_t mas_uint64[8];
 
 
-#define app_param_read_uint8_t           big_endian_read_08
-#define app_param_read_uint16_t          big_endian_read_16
-#define app_param_read_uint32_t          big_endian_read_32
-#define app_param_read_variable_string_t big_endian_read_32 // TODO: dummy
-#define app_param_read_variable_utf8     big_endian_read_32 // TODO: dummy
-#define app_param_read_variable_uint64   big_endian_read_32 // TODO: dummy
-#define app_param_read_variable_uint128hex  big_endian_read_32 // TODO: dummy
+#define app_param_read_uint8_t           APP_PARAM_READ_08
+#define app_param_read_uint16_t          APP_PARAM_READ_16
+#define app_param_read_uint32_t          APP_PARAM_READ_32
+#define app_param_read_mas_string_t      APP_PARAM_READ_ARR
+#define app_param_read_mas_utf8          APP_PARAM_READ_ARR
+#define app_param_read_mas_uint64        APP_PARAM_READ_ARR
+#define app_param_read_mas_uint128hex    APP_PARAM_READ_ARR
 
-#define app_param_write_uint8_t           big_endian_read_08
-#define app_param_write_uint16_t          big_endian_read_16
-#define app_param_write_uint32_t          big_endian_read_32
-#define app_param_write_variable_string_t big_endian_read_32 // TODO: dummy
-#define app_param_write_variable_utf8     big_endian_read_32 // TODO: dummy
-#define app_param_write_variable_uint64   big_endian_read_32 // TODO: dummy
-#define app_param_write_variable_uint128hex  big_endian_read_32 // TODO: dummy
+#define app_param_write_uint8_t          APP_PARAM_WRITE_08
+#define app_param_write_uint16_t         APP_PARAM_WRITE_16
+#define app_param_write_uint32_t         APP_PARAM_WRITE_32
+#define app_param_write_mas_string_t     APP_PARAM_WRITE_ARR 
+#define app_param_write_mas_utf8         APP_PARAM_WRITE_ARR 
+#define app_param_write_mas_uint64       APP_PARAM_WRITE_ARR 
+#define app_param_write_mas_uint128hex   APP_PARAM_WRITE_ARR 
 
 // Data extracted from "Message Access Profile"
 // Bluetooth  Profile Specification
@@ -134,7 +134,7 @@ typedef uint8_t variable_uint64[8];
 // for both Requests and Responses. Unused parameters dont use any run-time ressources
 // but are declared and compile-time checked as well but
 // 
-//X(Parameter Name         , Tag , Type               , free text description ... no coma ... multiple _backslash_no_space lines ... )
+//  PARAM_xyz( Parameter_Name          , Tag , Type               , free text description ... no coma ... multiple _backslash_no_space lines ... )
 #define APP_PARAMS \
  PARAM_REQUST( MaxListCount            , 0x01, uint16_t           , 0000 to 0xFFFF                                                                   )\
  PARAM_REQUST( ListStartOffset         , 0x02, uint16_t           , 0x0000 to 0xFFFF                                                                 )\
@@ -145,14 +145,14 @@ typedef uint8_t variable_uint64[8];
                                                                               Where                                                                   \
                                                                               0 = "no filtering; get this type"                                       \
                                                                               1 = "filter out this type"                                             )\
- PARAM_UNUSED( FilterPeriodBegin       , 0x04, variable_string_t  , with Begin of filter period.See Section 5.5.4                                    )\
- PARAM_UNUSED( EndFilterPeriodEnd      , 0x05, variable_string_t  , with End of filter period.See Section 5.5.4                                      )\
+ PARAM_UNUSED( FilterPeriodBegin       , 0x04, mas_string_t       , with Begin of filter period.See Section 5.5.4                                    )\
+ PARAM_UNUSED( EndFilterPeriodEnd      , 0x05, mas_string_t       , with End of filter period.See Section 5.5.4                                      )\
  PARAM_UNUSED( FilterReadStatus        , 0x06, uint8_t            , 1 byte Bit mask : 0b00000001 = get unread messages only                           \
                                                                     0b00000010 = get read messages only                                               \
                                                                     0b00000000 =                                                                      \
                                                                     no - filtering; get both read and unread messages; all other values : undefined  )\
- PARAM_UNUSED( FilterRecipient 	       , 0x07, variable_string_t  , variable Text(UTF - 8) wildcards "*" may 	be used if required                  )\
- PARAM_UNUSED( FilterOriginator        , 0x08, variable_string_t  , variable Text(UTF - 8) wildcards "*" may be used if required                     )\
+ PARAM_UNUSED( FilterRecipient 	       , 0x07, mas_string_t       , variable Text(UTF - 8) wildcards "*" may 	be used if required                  )\
+ PARAM_UNUSED( FilterOriginator        , 0x08, mas_string_t       , variable Text(UTF - 8) wildcards "*" may be used if required                     )\
  PARAM_UNUSED( FilterPriority          , 0x09, uint8_t            , Bit mask: 0b00000000 = no - filtering                                             \
                                                                               0b00000001 = get high priority messages only                            \
                                                                               0b00000010 = get non - high priority messages only;                     \
@@ -182,22 +182,22 @@ typedef uint8_t variable_uint64[8];
                                                                     2 = “setExtendedData”                                                            )\
  PARAM_REQUST( StatusValue             , 0x18, uint8_t            , 1 = "yes"                                                                         \
                                                                     0 = "no"                                                                         )\
- PARAM_UNUSED( MSETime                 , 0x19, variable_string_t  , with current time basis and UTC - offset of the MSE.See Section 5.5.4            )\
- PARAM_RESPON( DatabaseIdentifier      , 0x1A, variable_uint128hex, (max 3uint16_t)    ;   128 - bit value in hex string format                      )\
- PARAM_UNUSED( ListingVersionCounter   , 0x1B, variable_uint128hex, (max 3uint16_t)    ;   128 - bit value in hex string format                      )\
+ PARAM_UNUSED( MSETime                 , 0x19, mas_string_t       , with current time basis and UTC - offset of the MSE.See Section 5.5.4            )\
+ PARAM_RESPON( DatabaseIdentifier      , 0x1A, mas_uint128hex     , (max 3uint16_t)    ;   128 - bit value in hex string format                      )\
+ PARAM_UNUSED( ListingVersionCounter   , 0x1B, mas_uint128hex     , (max 3uint16_t)    ;   128 - bit value in hex string format                      )\
  PARAM_UNUSED( PresenceAvailability    , 0x1C, uint8_t            , 0 to 255                                                                         )\
- PARAM_UNUSED( PresenceText            , 0x1D, variable_utf8      , Text UTF - 8                                                                     )\
- PARAM_UNUSED( LastActivity            , 0x1E, variable_utf8      , Text UTF - 8                                                                     )\
- PARAM_UNUSED( FilterLastActivityBegin , 0x1F, variable_utf8      , Text UTF - 8                                                                     )\
- PARAM_UNUSED( FilterLastActivityEnd   , 0x20, variable_utf8      , Text UTF - 8                                                                     )\
+ PARAM_UNUSED( PresenceText            , 0x1D, mas_utf8           , Text UTF - 8                                                                     )\
+ PARAM_UNUSED( LastActivity            , 0x1E, mas_utf8           , Text UTF - 8                                                                     )\
+ PARAM_UNUSED( FilterLastActivityBegin , 0x1F, mas_utf8           , Text UTF - 8                                                                     )\
+ PARAM_UNUSED( FilterLastActivityEnd   , 0x20, mas_utf8           , Text UTF - 8                                                                     )\
  PARAM_UNUSED( ChatState               , 0x21, uint8_t            , 0 to 255                                                                         )\
- PARAM_UNUSED( ConversationID          , 0x22, variable_uint128hex, (max 3uint16_t)    ;   128 - bit value in hex string format                      )\
- PARAM_RESPON( FolderVersionCounter    , 0x23, variable_uint128hex, (max 3uint16_t);   128 - bit value in hex string format                          )\
- PARAM_UNUSED( FilterMessageHandle     , 0x24, variable_uint64    , 64 - bit value in hex string format                                              )\
+ PARAM_UNUSED( ConversationID          , 0x22, mas_uint128hex     , (max 3uint16_t)    ;   128 - bit value in hex string format                      )\
+ PARAM_RESPON( FolderVersionCounter    , 0x23, mas_uint128hex     , (max 3uint16_t);   128 - bit value in hex string format                          )\
+ PARAM_UNUSED( FilterMessageHandle     , 0x24, mas_uint64         , 64 - bit value in hex string format                                              )\
  PARAM_UNUSED( NotificationFilterMask  , 0x25, uint32_t           , Bit mask settings; see Section 5.14.3.1                                          )\
  PARAM_UNUSED( ConvParameterMask       , 0x26, uint32_t           , Bit mask settings; see Section 5.13.3.10                                         )\
- PARAM_UNUSED( OwnerUCI                , 0x27, variable_utf8      , Text UTF - 8                                                                     )\
- PARAM_UNUSED( ExtendedData            , 0x28, variable_utf8      , Text UTF - 8                                                                     )\
+ PARAM_UNUSED( OwnerUCI                , 0x27, mas_utf8           , Text UTF - 8                                                                     )\
+ PARAM_UNUSED( ExtendedData            , 0x28, mas_utf8           , Text UTF - 8                                                                     )\
  PARAM_UNUSED( MapSupportedFeatures    , 0x29, uint32_t           , Bit 0 = Notification Registration Feature                                         \
                                                                     Bit 1 = Notification Feature                                                      \
                                                                     Bit 2 = Browsing Feature                                                          \
@@ -221,7 +221,7 @@ typedef uint8_t variable_uint64[8];
                                                                     Bit 20 = Conversation listing                                                     \
                                                                     Bit 21 = Owner status                                                             \
                                                                     Bits 22 to 31 = Reserved for Future Use0F                                        )\
- PARAM_UNUSED( MessageHandle           , 0x2A, variable_uint64    , 64 - bit value in hex string format                                              )\
+ PARAM_UNUSED( MessageHandle           , 0x2A, mas_uint64         , 64 - bit value in hex string format                                              )\
  PARAM_UNUSED( ModifyText              , 0x2B, uint8_t            , 0 = "REPLACE"                                                                    )
 
 
@@ -292,7 +292,7 @@ typedef struct {
     struct {
         uint8_t code;
         uint8_t header_data[MAP_SERVER_MAX_APP_PARAMS_LEN];
-        uint8_t header_pos;
+        uint16_t header_pos;
         uint16_t body_len;
         const uint8_t* body_data;
         struct {
@@ -526,12 +526,6 @@ static uint16_t map_access_server_application_params_add_folder_version(map_acce
 }
 
 
-static void map_access_server_add_application_parameters(const map_access_server_t* map_access_server, uint8_t* application_parameters, uint16_t len) {
-    if (len > 0) {
-        goep_server_header_add_application_parameters(map_access_server->goep_cid, application_parameters, len);
-    }
-}
-
 static void map_access_server_default_headers(map_access_server_t* map_access_server) {
     (void)memset(&map_access_server->request, 0, sizeof(map_access_server->request));
     map_access_server->request.app_params.MaxListCount = 0xffffU;
@@ -716,6 +710,7 @@ static void map_access_server_parser_callback_connect(void* user_data, uint8_t h
 static void map_access_server_app_param_callback_get(void* user_data, uint8_t tag_id, uint8_t total_len, uint8_t data_offset, const uint8_t* data_buffer, uint8_t data_len) {
     map_access_server_t* map_access_server = (map_access_server_t*)user_data;
     obex_app_param_parser_tag_state_t state;
+    uint16_t pos = data_offset;
     switch (tag_id) {
 
     default:
@@ -734,8 +729,7 @@ static void map_access_server_app_param_callback_get(void* user_data, uint8_t ta
 
 #define PARAM_REQUST(name, tag, type, descr) \
             case MAP_APP_PARAM_ ## name: \
-                map_access_server->request.app_params. name = \
-                    app_param_read_ ## type (map_access_server->request.app_param_buffer, 0); \
+                    app_param_read_ ## type (map_access_server->request.app_param_buffer, &pos, &map_access_server->request.app_params. name, sizeof(type)); \
                 log_info("APP PARAM <%s> value <%08x>", #name, map_access_server->request.app_params. name); \
                 break;
 
@@ -1062,32 +1056,62 @@ static bool map_access_server_valid_header_for_request(map_access_server_t* map_
     }
 
 }
-//uint8_t map_access_server_set_new_messages(uint16_t map_cid, uint16_t new_messages) {
-//    map_access_server_t* map_access_server = map_access_server_for_map_cid(map_cid);
-//    if (map_access_server == NULL) {
-//        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-//    }
-//    if (map_access_server_valid_header_for_request(map_access_server)) {
-//        map_access_server->response.new_messages_count = new_messages;
-//        map_access_server->response.new_messages = true;
-//        return ERROR_CODE_SUCCESS;
-//    }
-//    else {
-//        return ERROR_CODE_COMMAND_DISALLOWED;
-//    }
-//}
+
+
+int map_access_server_set_response_app_param(uint16_t map_cid, enum MAP_APP_PARAMS app_param) {
+    map_access_server_t* mas = map_access_server_for_map_cid(map_cid);
+    if (mas == NULL)
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+
+    if (!map_access_server_valid_header_for_request(mas))
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    
+    switch (app_param) {
+
+
+        // the following X-Macro (https://en.wikipedia.org/wiki/X_macro)
+        // automagically generates GETers for all APP Params in the form of:
+        //case MAP_APPLICATION_PARAMETER_MAX_LIST_COUNT:
+        //    mas->request.app_params.MaxListCount = big_endian_read_16(
+        //        mas->request.app_param_buffer, 0);
+        //    break;
+
+#define PARAM_RESPON(name, tag, type, descr) \
+    case MAP_APP_PARAM_ ## name: \
+        /* Type: 1 Byte  */APP_PARAM_WRITE_08(mas->response.header_data, &mas->response.header_pos, MAP_APP_PARAM_ ## name, 1); \
+        /* Size: 1 Byte  */APP_PARAM_WRITE_08(mas->response.header_data, &mas->response.header_pos, sizeof(type), 1); \
+        /* Data: N Bytes */app_param_write_ ## type (mas->response.header_data, &mas->response.header_pos, mas->response.app_params. name, sizeof(type)); \
+        log_debug("header_pos:%u map_cid:0x%04x %s", mas->response.header_pos, map_cid, mas, #name); \
+        log_info("response set APP PARAM <%s> value <%08x> str:<%s>", #name, mas->response.app_params. name, mas->response.app_params. name); \
+        return ERROR_CODE_SUCCESS; \
+
+#define PARAM_REQUST(...)
+#define PARAM_UNUSED(...)
+
+        APP_PARAMS
+
+#undef PARAM_REQUST
+#undef PARAM_RESPON
+#undef PARAM_UNUSED
+       
+
+    default:
+        btstack_unreachable();
+        return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+        break;
+    } // end of switch
+
+}
 
 uint8_t map_access_server_set_folder_version(uint16_t map_cid, const uint8_t* folder_version) {
     map_access_server_t* map_access_server = map_access_server_for_map_cid(map_cid);
     if (map_access_server == NULL) {
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    
+
     if (map_access_server_valid_header_for_request(map_access_server)) {
-        map_access_server->response.header_data[map_access_server->response.header_pos++] = MAP_APP_PARAM_FolderVersionCounter;
-        map_access_server->response.header_data[map_access_server->response.header_pos++] = BT_UINT128_HEX_LEN_BYTES;
-        memcpy(&map_access_server->response.header_data[map_access_server->response.header_pos], folder_version, BT_UINT128_HEX_LEN_BYTES);
-        map_access_server->response.header_pos += BT_UINT128_HEX_LEN_BYTES;
+        memcpy(map_access_server->response.app_params.FolderVersionCounter, folder_version, sizeof(map_access_server->response.app_params.FolderVersionCounter));
+        map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_FolderVersionCounter);
 
         log_debug("header_pos:%u map_cid : 0x % 04x folder_version : % s", map_access_server->response.header_pos, map_cid, map_access_server, folder_version);
         return ERROR_CODE_SUCCESS;
@@ -1097,19 +1121,18 @@ uint8_t map_access_server_set_folder_version(uint16_t map_cid, const uint8_t* fo
     }
 }
 
-
 uint8_t map_access_server_set_database_identifier(uint16_t map_cid, const uint8_t* database_identifier) {
-    map_access_server_t* map_access_server = map_access_server_for_map_cid(map_cid);
-    if (map_access_server == NULL) {
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    }
-    if (map_access_server->state != MAP_SERVER_STATE_W4_USER_DATA) {
-        return ERROR_CODE_COMMAND_DISALLOWED;
-    }
-    btstack_assert(map_access_server->request.object_type != MAP_OBJECT_TYPE_INVALID);
+    //map_access_server_t* map_access_server = map_access_server_for_map_cid(map_cid);
+    //if (map_access_server == NULL) {
+    //    return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    //}
+    //if (map_access_server->state != MAP_SERVER_STATE_W4_USER_DATA) {
+    //    return ERROR_CODE_COMMAND_DISALLOWED;
+    //}
+    //btstack_assert(map_access_server->request.object_type != MAP_OBJECT_TYPE_INVALID);
 
-    (void)memcpy(map_access_server->response.app_params.DatabaseIdentifier, database_identifier, BT_UINT128_LEN_BYTES);
-    //map_access_server->response.database_identifier_set = true;
+    //(void)memcpy(map_access_server->response.app_params.DatabaseIdentifier, database_identifier, BT_UINT128_LEN_BYTES);
+    ////map_access_server->response.database_identifier_set = true;
     return ERROR_CODE_SUCCESS;
 };
 
@@ -1117,8 +1140,8 @@ static void map_access_server_build_response(map_access_server_t* map_access_ser
     goep_server_response_create_general(map_access_server->goep_cid);
     map_access_server_add_srm_headers(map_access_server);
     // Application Params already in map_access_server->response.header_data
-
-    map_access_server_add_application_parameters(map_access_server, map_access_server->response.header_data, map_access_server->response.header_pos);
+    if (map_access_server->response.header_pos > 0)
+        goep_server_header_add_application_parameters(map_access_server->goep_cid, map_access_server->response.header_data, map_access_server->response.header_pos);
 }
 
 uint16_t map_access_server_get_max_body_size(uint16_t map_cid) {

@@ -154,6 +154,11 @@ uint32_t big_endian_read_32(const uint8_t * buffer, int position) {
     return ((uint32_t) buffer[position+3]) | (((uint32_t)buffer[position+2]) << 8) | (((uint32_t)buffer[position+1]) << 16) | (((uint32_t) buffer[position]) << 24);
 }
 
+void big_endian_store_08(uint8_t* buffer, uint16_t position, uint8_t value) {
+    uint16_t pos = position;
+    buffer[pos++] = (uint8_t)(value);
+}
+
 void big_endian_store_16(uint8_t * buffer, uint16_t position, uint16_t value){
     uint16_t pos = position;
     buffer[pos++] = (uint8_t)(value >> 8);
