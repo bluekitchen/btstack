@@ -60,6 +60,149 @@ extern "C" {
 
     /* API_START */
 
+    // lengths
+#define BT_UINT128_LEN_BYTES 16
+// should be 32 - but - BT SIG PTS Test tool expects the version as a 16-bytes binary representation like BT SIG PBAP
+// but doesnt accept the BT SIG MAP Spec's up to 32 bytes human-readable hex string
+#define BT_UINT128_HEX_LEN_BYTES 16
+
+typedef uint8_t mas_string_t[MAP_SERVER_MAX_TYPE_LEN];
+typedef uint8_t mas_utf8[MAP_SERVER_MAX_TYPE_LEN];
+typedef uint8_t mas_uint128hex[BT_UINT128_HEX_LEN_BYTES];
+typedef uint8_t mas_uint64[8];
+
+
+#define app_param_read_uint8_t           APP_PARAM_READ_08
+#define app_param_read_uint16_t          APP_PARAM_READ_16
+#define app_param_read_uint32_t          APP_PARAM_READ_32
+#define app_param_read_mas_string_t      APP_PARAM_READ_ARR
+#define app_param_read_mas_utf8          APP_PARAM_READ_ARR
+#define app_param_read_mas_uint64        APP_PARAM_READ_ARR
+#define app_param_read_mas_uint128hex    APP_PARAM_READ_ARR
+
+#define app_param_write_uint8_t          APP_PARAM_WRITE_08
+#define app_param_write_uint16_t         APP_PARAM_WRITE_16
+#define app_param_write_uint32_t         APP_PARAM_WRITE_32
+#define app_param_write_mas_string_t     APP_PARAM_WRITE_ARR 
+#define app_param_write_mas_utf8         APP_PARAM_WRITE_ARR 
+#define app_param_write_mas_uint64       APP_PARAM_WRITE_ARR 
+#define app_param_write_mas_uint128hex   APP_PARAM_WRITE_ARR 
+
+    // Data extracted from "Message Access Profile"
+    // Bluetooth  Profile Specification
+    // *  Revision : v1.4.2
+    // *  Revision Date : 2019 - 08 - 13
+    // *  Group Prepared By : Audio, Telephony, and Automotive Working Group
+
+    // the following X-Macro (https://en.wikipedia.org/wiki/X_macro)
+    // below is a compact storage of all BT SIG MAS supported ApplicationParameters
+    // for both Requests and Responses. Unused parameters dont use any run-time ressources
+    // but are declared and compile-time checked as well but
+    // 
+    //  PARAM_xyz( Parameter_Name          , Tag , Type               , free text description ... no coma ... multiple _backslash_no_space lines ... )
+#define APP_PARAMS \
+ PARAM_REQUST( MaxListCount            , 0x01, uint16_t           , 0000 to 0xFFFF                                                                   )\
+ PARAM_REQUST( ListStartOffset         , 0x02, uint16_t           , 0x0000 to 0xFFFF                                                                 )\
+ PARAM_UNUSED( FilterMessageType       , 0x03, uint8_t            , Bit mask: 0b000XXXX1 = "SMS_GSM"                                                  \
+                                                                              0b000XXX1X = "SMS_CDMA"                                                 \
+                                                                              0b000XX1XX = "EMAIL" 0b000X1XXX = "MMS" 0b0001XXXX = "IM"               \
+                                                                              All other values : Reserved for Future Use                              \
+                                                                              Where                                                                   \
+                                                                              0 = "no filtering; get this type"                                       \
+                                                                              1 = "filter out this type"                                             )\
+ PARAM_UNUSED( FilterPeriodBegin       , 0x04, mas_string_t       , with Begin of filter period.See Section 5.5.4                                    )\
+ PARAM_UNUSED( EndFilterPeriodEnd      , 0x05, mas_string_t       , with End of filter period.See Section 5.5.4                                      )\
+ PARAM_UNUSED( FilterReadStatus        , 0x06, uint8_t            , 1 byte Bit mask : 0b00000001 = get unread messages only                           \
+                                                                    0b00000010 = get read messages only                                               \
+                                                                    0b00000000 =                                                                      \
+                                                                    no - filtering; get both read and unread messages; all other values : undefined  )\
+ PARAM_UNUSED( FilterRecipient 	       , 0x07, mas_string_t       , variable Text(UTF - 8) wildcards "*" may 	be used if required                  )\
+ PARAM_UNUSED( FilterOriginator        , 0x08, mas_string_t       , variable Text(UTF - 8) wildcards "*" may be used if required                     )\
+ PARAM_UNUSED( FilterPriority          , 0x09, uint8_t            , Bit mask: 0b00000000 = no - filtering                                             \
+                                                                              0b00000001 = get high priority messages only                            \
+                                                                              0b00000010 = get non - high priority messages only;                     \
+                                                                              all other values : undefined                                           )\
+ PARAM_UNUSED( Attachment              , 0x0A, uint8_t            , 0b1 = "ON"                                                                        \
+                                                                    0b0 = "OFF"                                                                      )\
+ PARAM_UNUSED( Transparent             , 0x0B, uint8_t            , 0b1 = "ON"                                                                        \
+                                                                    0b0 = "OFF"                                                                      )\
+ PARAM_UNUSED( Retry                   , 0x0C, uint8_t            , 0b1 = "ON"                                                                        \
+                                                                    0b0 = "OFF"                                                                      )\
+ PARAM_UNUSED( NewMessage              , 0x0D, uint8_t            , 0b1 = "ON"                                                                        \
+                                                                    0b0 = "OFF"                                                                      )\
+ PARAM_UNUSED( NotificationStatus      , 0x0E, uint8_t            , 0b1 = "ON"                                                                        \
+                                                                    0b0 = "OFF"                                                                      )\
+ PARAM_UNUSED( MASInstanceID           , 0x0F, uint8_t            , 0 to 255                                                                         )\
+ PARAM_UNUSED( ParameterMask           , 0x10, uint32_t           , Bit mask; settings see Section 5.5.4                                             )\
+ PARAM_UNUSED( FolderListingSize       , 0x11, uint16_t           , 0x0000 to 0xFFFF                                                                 )\
+ PARAM_UNUSED( ListingSize             , 0x12, uint16_t           , 0x0000 to 0xFFFF                                                                 )\
+ PARAM_UNUSED( SubjectLength           , 0x13, uint8_t            , 1 to 255                                                                         )\
+ PARAM_UNUSED( Charset                 , 0x14, uint8_t            , 0 = "native"                                                                      \
+                                                                    1 = "UTF-8"                                                                      )\
+ PARAM_UNUSED( FractionRequest         , 0x15, uint8_t            , 0 = "first" 1 = "next"                                                           )\
+ PARAM_UNUSED( FractionDeliver         , 0x16, uint8_t            , 0 = "more"                                                                        \
+                                                                    1 = "last"                                                                       )\
+ PARAM_REQUST( StatusIndicator         , 0x17, uint8_t            , 0 = "readStatus"                                                                  \
+                                                                    1 = "deletedStatus"                                                               \
+                                                                    2 = “setExtendedData”                                                            )\
+ PARAM_REQUST( StatusValue             , 0x18, uint8_t            , 1 = "yes"                                                                         \
+                                                                    0 = "no"                                                                         )\
+ PARAM_UNUSED( MSETime                 , 0x19, mas_string_t       , with current time basis and UTC - offset of the MSE.See Section 5.5.4            )\
+ PARAM_RESPON( DatabaseIdentifier      , 0x1A, mas_uint128hex     , (max 3uint16_t)    ;   128 - bit value in hex string format                      )\
+ PARAM_UNUSED( ListingVersionCounter   , 0x1B, mas_uint128hex     , (max 3uint16_t)    ;   128 - bit value in hex string format                      )\
+ PARAM_UNUSED( PresenceAvailability    , 0x1C, uint8_t            , 0 to 255                                                                         )\
+ PARAM_UNUSED( PresenceText            , 0x1D, mas_utf8           , Text UTF - 8                                                                     )\
+ PARAM_UNUSED( LastActivity            , 0x1E, mas_utf8           , Text UTF - 8                                                                     )\
+ PARAM_UNUSED( FilterLastActivityBegin , 0x1F, mas_utf8           , Text UTF - 8                                                                     )\
+ PARAM_UNUSED( FilterLastActivityEnd   , 0x20, mas_utf8           , Text UTF - 8                                                                     )\
+ PARAM_UNUSED( ChatState               , 0x21, uint8_t            , 0 to 255                                                                         )\
+ PARAM_UNUSED( ConversationID          , 0x22, mas_uint128hex     , (max 3uint16_t)    ;   128 - bit value in hex string format                      )\
+ PARAM_RESPON( FolderVersionCounter    , 0x23, mas_uint128hex     , (max 3uint16_t);   128 - bit value in hex string format                          )\
+ PARAM_UNUSED( FilterMessageHandle     , 0x24, mas_uint64         , 64 - bit value in hex string format                                              )\
+ PARAM_UNUSED( NotificationFilterMask  , 0x25, uint32_t           , Bit mask settings; see Section 5.14.3.1                                          )\
+ PARAM_UNUSED( ConvParameterMask       , 0x26, uint32_t           , Bit mask settings; see Section 5.13.3.10                                         )\
+ PARAM_UNUSED( OwnerUCI                , 0x27, mas_utf8           , Text UTF - 8                                                                     )\
+ PARAM_UNUSED( ExtendedData            , 0x28, mas_utf8           , Text UTF - 8                                                                     )\
+ PARAM_UNUSED( MapSupportedFeatures    , 0x29, uint32_t           , Bit 0 = Notification Registration Feature                                         \
+                                                                    Bit 1 = Notification Feature                                                      \
+                                                                    Bit 2 = Browsing Feature                                                          \
+                                                                    Bit 3 = Uploading Feature                                                         \
+                                                                    Bit 4 = Delete Feature                                                            \
+                                                                    Bit 5 = Instance Information Feature                                              \
+                                                                    Bit 6 = Extended Event Report 1.1                                                 \
+                                                                    Bit 7 = Event Report Version 1.2                                                  \
+                                                                    Bit 8 = Message Format Version 1.1                                                \
+                                                                    Bit 9 = Messages - Listing Format Version 1.1                                     \
+                                                                    Bit 10 = Persistent Message Handles                                               \
+                                                                    Bit 11 = Database Identifier                                                      \
+                                                                    Bit 12 = Folder Version Counter                                                   \
+                                                                    Bit 13 = Conversation Version Counters                                            \
+                                                                    Bit 14 = Participant Presence Change Notification                                 \
+                                                                    Bit 15 = Participant Chat State Change Notification                               \
+                                                                    Bit 16 = PBAP Contact Cross Reference                                             \
+                                                                    Bit 17 = Notification Filtering                                                   \
+                                                                    Bit 18 = UTC Offset Timestamp Format                                              \
+                                                                    Bit 19 = Reserved                                                                 \
+                                                                    Bit 20 = Conversation listing                                                     \
+                                                                    Bit 21 = Owner status                                                             \
+                                                                    Bits 22 to 31 = Reserved for Future Use0F                                        )\
+ PARAM_UNUSED( MessageHandle           , 0x2A, mas_uint64         , 64 - bit value in hex string format                                              )\
+ PARAM_UNUSED( ModifyText              , 0x2B, uint8_t            , 0 = "REPLACE"                                                                    )
+
+
+    enum MAP_APP_PARAMS
+    {
+        // the following X-Macro (https://en.wikipedia.org/wiki/X_macro)
+        // below defines enum MAP_APP_PARAMS members MAP_APP_PARAM_xyz = tag with BT SPECs tag values
+#define PARAM_REQUST(name, tag, type, descr) MAP_APP_PARAM_ ## name = tag,
+#define PARAM_RESPON PARAM_REQUST
+#define PARAM_UNUSED PARAM_REQUST
+        APP_PARAMS
+#undef PARAM_REQUST
+#undef PARAM_RESPON
+#undef PARAM_UNUSED
+    };
+
 // MAP Supported Features
 #define MAP_SUPPORTED_FEATURES_NOTIFICATION_REGISTRATION                    (1 << 0) // Notification Registration                 
 #define MAP_SUPPORTED_FEATURES_NOTIFICATION                                 (1 << 1) // Notification                              
@@ -155,18 +298,10 @@ typedef enum {
     MAS_FOLDER_MAX,
 } mas_folder_t;
 
-
-// lengths
-#define BT_UINT128_LEN_BYTES 16
-// should be 32 - but - BT SIG PTS Test tool expects the version as a 16-bytes binary representation like BT SIG PBAP
-// but doesnt accept the BT SIG MAP Spec's up to 32 bytes human-readable hex string
-#define BT_UINT128_HEX_LEN_BYTES 16
-
+int map_access_server_set_response_app_param(uint16_t map_cid, enum MAP_APP_PARAMS app_param, void* param);
 uint16_t map_access_server_send_get_put_response(uint16_t map_cid, uint8_t response_code, uint32_t continuation, uint16_t body_len, const uint8_t* body);
 uint16_t map_access_server_get_max_body_size(uint16_t map_cid);
-uint8_t map_access_server_set_new_messages(uint16_t map_cid, uint16_t new_messages);
-uint8_t map_access_server_set_folder_version(uint16_t map_cid, const uint8_t* primary_folder_version);
-uint8_t map_access_server_set_database_identifier(uint16_t map_cid, const uint8_t* database_identifier);
+int map_access_server_set_response_app_param(uint16_t map_cid, enum MAP_APP_PARAMS app_param, void* param);
 void map_access_server_init(btstack_packet_handler_t packet_handler, uint8_t rfcomm_channel_nr, uint16_t l2cap_psm, uint16_t mtu);
 
 #if defined __cplusplus
