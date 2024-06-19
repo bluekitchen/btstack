@@ -106,20 +106,24 @@ static const char* remote_addr_string = "001BDC08E272";
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 #define MSG_LISTING_HEADER   "<MAP-msg-listing version=\"1.0\">"
-#define MSG_LISTING_BODY     "<msg handle=\"ID%u\" subject=\"Hello\" type=\"%s\" read=\"%s\"/>"
 #define MSG_LISTING_FOOTER   "</MAP-msg-listing>"
+/* Sample from BT SIG MAP Spec Page 54
+<MAP-convo-listing version = "1.0">
+<conversation id="E1E2E3E4F1F2F3F4A1A2A3A4B1B2B3B4" name="Beergarden
+Connection" last_activity="20140612T105430+0100" read_status="no"
+version_counter="A1A1B2B2C3C3D4D5E5E6F6F7A7A8B8B">
+<participant uci="4986925814@s.whateverapp.net" display_name="Tien"
+chat_state="3" last_activity="20140612T105430+0100"/>
+<participant uci="4912345678@s.whateverapp.net" display_name="Jonas"
+chat_state="5" last_activity="20140610T115130+0100"/>
+</conversation>
+</MAP-convo-listing>
+*/
 #define CONVO_LISTING_HEADER "<MAP-convo-listing version=\"1.0\">"
-#define CONVO_LISTING_BODY   "<conversation id = \"%s\" name=\"%s\" last_activity=\"20140612T10543%01u+0100\" read_status=\"%s\"    \
-                             version_counter=\"%s\">                                                                                \
-                             <participant uci=\"%s\" display_name=\"%s\"                                                            \
-                             chat_state=\"%s\" last_activity=\"20140612T10543%01u+0100\"/>                                          \
-                             </conversation>"
-
 #define CONVO_LISTING_FOOTER "</MAP-convo-listing>"
 
 struct objconfig_s {
     char* header;
-    char* body;
     char* footer;
     // function pointer for creation of body
     void (*fbody)(char* msg_buffer, uint16_t index, int maxsize);
@@ -133,14 +137,12 @@ static void body_convo(char* msg_buffer, uint16_t index, int maxsize);
 
 struct objconfig_s msg = {
     .header = MSG_LISTING_HEADER,
-    .body   = MSG_LISTING_BODY,
     .footer = MSG_LISTING_FOOTER,
     .fbody  = body_msg
 };
 
 struct objconfig_s convo = {
     .header = CONVO_LISTING_HEADER,
-    .body   = CONVO_LISTING_BODY,
     .footer = CONVO_LISTING_FOOTER,
     .fbody  = body_convo,
 
@@ -211,7 +213,7 @@ static void init_testcases(void) {
 
 static void body_msg(char* msg_buffer, uint16_t index, int maxsize) {
     index = index % ARRAYSIZE(config->objects);
-    sprintf_s(msg_buffer, maxsize, config->type->body,
+    sprintf_s(msg_buffer, maxsize, "<msg handle=\"ID%u\" subject=\"Hello\" type=\"%s\" read=\"%s\"/>",
         index,
         config->objects[index],
         config->objects[index] ? "yes" : "no");
@@ -219,7 +221,22 @@ static void body_msg(char* msg_buffer, uint16_t index, int maxsize) {
 
 static void body_convo(char* msg_buffer, uint16_t index, int maxsize) {
     // Implement the function to create a conversation
-    snprintf(msg_buffer, maxsize, config->type->body, "E1E2E3E4F1F2F3F4A1A2A3A4B1B2B3B4", "Beergarden Connection", index, "no", "A1A1B2B2C3C3D4D5E5E6F6F7A7A8B8B", "4986925814@s.whateverapp.net", "Tien", "3", index);
+    snprintf(msg_buffer, maxsize,
+        "<conversation id = \"DEAD%02X\" name=\"%s\" last_activity=\"20140612T10543%1u+0100\" read_status=\"%s\"        \
+         version_counter=\"BEEF%02X\">                                                                                  \
+         <participant uci=\"%u@bla.net\" display_name=\"%s\"                                                            \
+         chat_state=\"%u\" last_activity=\"20140612T10543%1u+0100\"/>                                                   \
+         </conversation>",
+        index, // <conversation id = \"DEAD%02X\" 
+        "Sbjct", // name="subject"
+        0, // last second of last_activity=\"20140612T10543%1u+0100\"
+        "no", // read_status = \"%s\"
+        0, // version_counter=\"BEEF%02X\"> 
+        0, // <participant uci=\"%u@bla.net\"
+        "Eve", // display_name=\"%s\"
+        3, // chat_state=\"%u\"
+        0 // last_activity=\"20140612T10543%1u+0100\"/> 
+    );
 }
 
 
