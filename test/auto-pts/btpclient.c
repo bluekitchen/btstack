@@ -843,6 +843,15 @@ static le_advertising_set_t btp_advertising_set;
 static uint8_t btp_advertising_handle = 0xff;
 #endif
 
+static hci_con_handle_t btp_con_handle_for_addr_and_type(bd_addr_type_t addr_type, bd_addr_t addr){
+    hci_connection_t * connection = hci_connection_for_bd_addr_and_type(addr, addr_type);
+    if (connection == NULL){
+        return HCI_CON_HANDLE_INVALID;
+    } else {
+        return connection->con_handle;
+    }
+}
+
 static void btp_gap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, const uint8_t *data){
     server_t * server;
 
@@ -1251,28 +1260,30 @@ static void btp_gap_handler(uint8_t opcode, uint8_t controller_index, uint16_t l
         case BTP_GAP_OP_PASSKEY_ENTRY_RSP:
             if (controller_index == 0){
                 // assume already connected
-                // uint8_t   command_addr_type = data[0];
+                uint8_t   command_addr_type = data[0];
                 bd_addr_t command_addr;
                 reverse_bd_addr(&data[1], command_addr);
                 uint32_t passkey = little_endian_read_32(data, 7);
-                MESSAGE("BTP_GAP_OP_PASSKEY_ENTRY_RSP, passkey %06u", passkey);
-                sm_passkey_input(remote_handle, passkey);
+                hci_con_handle_t con_handle = btp_con_handle_for_addr_and_type(command_addr_type, command_addr);
+                MESSAGE("BTP_GAP_OP_PASSKEY_ENTRY_RSP, %s handle %0x4x, passkey %06u", bd_addr_to_str(command_addr), con_handle, passkey);
+                sm_passkey_input(con_handle, passkey);
                 btp_send(BTP_SERVICE_ID_GAP, opcode, controller_index, 0, NULL);
             }
             break;
         case BTP_GAP_OP_PASSKEY_CONFIRM_RSP:
             if (controller_index == 0){
                 // assume already connected
-                // uint8_t   command_addr_type = data[0];
+                uint8_t   command_addr_type = data[0];
                 bd_addr_t command_addr;
                 reverse_bd_addr(&data[1], command_addr);
                 uint8_t match = data[7];
-                MESSAGE("BTP_GAP_OP_PASSKEY_CONFIRM_RSP - match %u", match);
+                hci_con_handle_t con_handle = btp_con_handle_for_addr_and_type(command_addr_type, command_addr);
+                MESSAGE("BTP_GAP_OP_PASSKEY_CONFIRM_RSP - %s handle 0x%04x, match %u", bd_addr_to_str(command_addr), con_handle, match);
                 if (match){
                     // note: sm_numeric_comparison_confirm == sm_just_works_confirm for nwo
-                    sm_just_works_confirm(remote_handle);
+                    sm_just_works_confirm(con_handle);
                 } else {
-                    sm_bonding_decline(remote_handle);
+                    sm_bonding_decline(con_handle);
                 }
                 btp_send(BTP_SERVICE_ID_GAP, opcode, controller_index, 0, NULL);
             }
