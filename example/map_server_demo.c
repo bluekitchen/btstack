@@ -109,20 +109,69 @@ static const char * msg_listing_header = "<MAP-msg-listing version=\"1.0\">";
 static const char * msg_listing_msg   = "<msg handle=\"ID%u\" subject=\"Hello\" type=\"%s\" read=\"%s\"/>";
 static const char * msg_listing_footer = "</MAP-msg-listing>";
 
+/* Sample from BT SIG MAP Spec Page 54
+<MAP-convo-listing version = "1.0">
+<conversation id="E1E2E3E4F1F2F3F4A1A2A3A4B1B2B3B4" name="Beergarden
+Connection" last_activity="20140612T105430+0100" read_status="no"
+version_counter="A1A1B2B2C3C3D4D5E5E6F6F7A7A8B8B">
+<participant uci="4986925814@s.whateverapp.net" display_name="Tien"
+chat_state="3" last_activity="20140612T105430+0100"/>
+<participant uci="4912345678@s.whateverapp.net" display_name="Jonas"
+chat_state="5" last_activity="20140610T115130+0100"/>
+</conversation>
+</MAP-convo-listing>
+*/
+static const char* convo_listing_header = "<MAP-convo-listing version=\"1.0\">";
+static const char* convo_listing_msg =
+"<conversation id = \"%s\" name=\"%s\" last_activity=\"20140612T10543%01u+0100\" read_status=\"%s\"    \
+version_counter=\"%s\">                                                                                \
+<participant uci=\"%s\" display_name=\"%s\"                                                            \
+chat_state=\"%s\" last_activity=\"20140612T10543%01u+0100\"/>                                          \
+</conversation>";
+
+static const char* convo_listing_footer = "</MAP-convo-listing>";
+
+static void create_msg(char* msg_buffer, uint16_t index, int maxsize);
+static void create_convo(char* msg_buffer, uint16_t index, int maxsize);
+
+struct objconfig_s {
+    // header string
+    const char* header;
+    // function pointer for creation of body
+    void (*body)(char* msg_buffer, uint16_t index, int maxsize);
+    // footer string
+    const char* footer;
+};
+
+struct objconfig_s msg = {
+    .header = msg_listing_header,
+    .body = create_msg,
+    .footer = msg_listing_footer
+};
+
+
+struct objconfig_s cnv = {
+    .header = convo_listing_header,
+    .body = create_convo,
+    .footer = convo_listing_footer
+};
+
 enum msg_status_read { no, yes };
 static struct test_config_s
 {
     int nr;
     char* descr;
-    int msg_count;
-    char* msg_types[6]; // maximum 6-1 entries, last one is null
+    struct objconfig_s* cfg;
+    int obj_count;
+    char* objects[6]; // maximum 6-1 entries, last one is null
     enum msg_status_read msg_stati[6]; // maximum 6-1 entries, last one is null
 } test_configs[] =
 {
-{.nr = 0, .descr = "MAP/MSE/MMB/BV-09-I 10 11 13 14" , .msg_count = 2, .msg_types = { "SMS_GSM","SMS_CDMA"                      }, },
-{.nr = 1, .descr = "MAP/MSE/MMB/BV-12-I"             , .msg_count = 1, .msg_types = { "EMAIL", "SMS_GSM","SMS_CDMA"             }, },
-{.nr = 2, .descr = "MAP/MSE/MMB/BV-15-I 18 20 22"    , .msg_count = 5, .msg_types = { "EMAIL","SMS_GSM","SMS_CDMA", "MMS", "IM" }, },
-{.nr = 3, .descr = "MAP/MSE/MMB/BV-16-I 23"          , .msg_count = 1, .msg_types = { "EMAIL","EMAIL"},},
+{.nr = 0, .descr = "MAP/MSE/MMB/BV-09-I 10 11 13 14" , .cfg = &msg,  .obj_count = 2, .objects = { "SMS_GSM","SMS_CDMA"                      }, },
+{.nr = 1, .descr = "MAP/MSE/MMB/BV-12-I"             , .cfg = &msg,  .obj_count = 1, .objects = { "EMAIL", "SMS_GSM","SMS_CDMA"             }, },
+{.nr = 2, .descr = "MAP/MSE/MMB/BV-15-I 18 20 22"    , .cfg = &msg,  .obj_count = 5, .objects = { "EMAIL","SMS_GSM","SMS_CDMA", "MMS", "IM" }, },
+{.nr = 3, .descr = "MAP/MSE/MMB/BV-16-I 23"          , .cfg = &msg,  .obj_count = 1, .objects = { "EMAIL","EMAIL"                           }, },
+{.nr = 4, .descr = "MAP/MSE/MMB/BV-16-I 24"          , .cfg = &msg,  .obj_count = 1, .objects = { "EMAIL","EMAIL"                           }, },
 };
 
 struct test_config_s* config = &test_configs[0];
@@ -168,15 +217,6 @@ static void init_testcases(void) {
     current_msg_type = 0;
     send_one_more_message = 0;
     send_one_more_conversation = 0;
-}
-
-
-static void create_msg(char * msg_buffer, uint16_t index, int maxsize){
-    index = index % ARRAYSIZE(config->msg_types);
-    sprintf_s(msg_buffer, maxsize, msg_listing_msg,
-        index,
-        config->msg_types[index],
-        config->msg_stati[index]?"yes":"no");
 }
 
 // TODO enable to send message larger as one OBEX/MAP packet
@@ -346,7 +386,7 @@ static handle_set_message_status(char *msg_handle_str, uint8_t StatusIndicator, 
 
     msg_handle = msg_handle_str[2] - '0';
 
-    if (msg_handle > ARRAYSIZE(config->msg_types) - 1)
+    if (msg_handle > ARRAYSIZE(config->objects) - 1)
         ERROR("handle exceeds our nr of messages");
 
     if (StatusValue > 1)
@@ -438,7 +478,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_DatabaseIdentifier, DatabaseIdentifier);
                             map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_FolderVersionCounter, FolderVersionCounter);
                             MAP_PRINTF("[+] Get Folder listing\n");
-                            send_listing(0, config->msg_count-1 + send_one_more_message);
+                            send_listing(0, config->obj_count-1 + send_one_more_message);
                             break;
 							
                         case MAP_SUBEVENT_GET_MESSAGE_LISTING:
@@ -462,7 +502,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             }
 
                             // send messages listing
-                            total_messages = config->msg_count + send_one_more_message;
+                            total_messages = config->obj_count + send_one_more_message;
 
                             num_msgs_selected = total_messages - start_index;
                             max_list_count = map_subevent_get_message_listing_get_MaxListCount(packet);
