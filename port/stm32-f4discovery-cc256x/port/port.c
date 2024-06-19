@@ -1,5 +1,9 @@
 #define BTSTACK_FILE__ "port.c"
 
+#include <stdio.h>
+#include <unistd.h>
+#include <signal.h>
+
 // include STM32 first to avoid warning about redefinition of UNUSED
 #include "stm32f4xx_hal.h"
 #include "main.h"
@@ -38,7 +42,8 @@ static const hci_transport_config_uart_t config = {
     115200,
     4000000,
     1,
-    NULL
+    NULL,
+    BTSTACK_UART_PARITY_OFF
 };
 
 // hal_time_ms.h
@@ -216,18 +221,18 @@ void hal_uart_dma_receive_block(uint8_t *data, uint16_t size){
 #include <stdio.h>
 #include <unistd.h>
 #include <errno.h>
-int _write(int file, char *ptr, int len);
-int _write(int file, char *ptr, int len){
+ssize_t _write(int file, const void *buf, size_t len);
+ssize_t _write(int file, const void *buf, size_t len){
 #if 1
     uint8_t cr = '\r';
     int i;
-
+    uint8_t *ptr = buf;
     if (file == STDOUT_FILENO || file == STDERR_FILENO) {
         for (i = 0; i < len; i++) {
             if (ptr[i] == '\n') {
                 HAL_UART_Transmit( &huart2, &cr, 1, HAL_MAX_DELAY );
             }
-            HAL_UART_Transmit( &huart2, (uint8_t *) &ptr[i], 1, HAL_MAX_DELAY );
+            HAL_UART_Transmit( &huart2, &ptr[i], 1, HAL_MAX_DELAY );
         }
         return i;
     }
@@ -237,15 +242,14 @@ int _write(int file, char *ptr, int len){
     return len;
 #endif
 }
+#endif
 
-int _read(int file, char * ptr, int len){
-    UNUSED(file);
-    UNUSED(ptr);
-    UNUSED(len);
+ssize_t _read(int fd, void * buf, size_t count){
+    UNUSED(fd);
+    UNUSED(buf);
+    UNUSED(count);
     return -1;
 }
-
-#endif
 
 int _close(int file){
     UNUSED(file);
@@ -267,6 +271,15 @@ int _fstat(int file){
     return -1;
 }
 
+int _kill (pid_t pid, int sig) {
+    UNUSED(pid);
+    UNUSED(sig);
+    return -1;
+}
+
+pid_t _getpid (void) {
+    return 0;
+}
 
 // main.c
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
