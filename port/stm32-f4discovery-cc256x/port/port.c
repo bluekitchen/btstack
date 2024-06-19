@@ -34,7 +34,7 @@ extern UART_HandleTypeDef huart3;
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 static const hci_transport_config_uart_t config = {
-	HCI_TRANSPORT_CONFIG_UART,
+    HCI_TRANSPORT_CONFIG_UART,
     115200,
     4000000,
     1,
@@ -44,23 +44,23 @@ static const hci_transport_config_uart_t config = {
 // hal_time_ms.h
 #include "hal_time_ms.h"
 uint32_t hal_time_ms(void){
-	return HAL_GetTick();
+    return HAL_GetTick();
 }
 
 // hal_cpu.h implementation
 #include "hal_cpu.h"
 
 void hal_cpu_disable_irqs(void){
-	__disable_irq();
+    __disable_irq();
 }
 
 void hal_cpu_enable_irqs(void){
-	__enable_irq();
+    __enable_irq();
 }
 
 void hal_cpu_enable_irqs_and_sleep(void){
-	__enable_irq();
-	__asm__("wfe");	// go to sleep if event flag isn't set. if set, just clear it. IRQs set event flag
+    __enable_irq();
+    __asm__("wfe"); // go to sleep if event flag isn't set. if set, just clear it. IRQs set event flag
 }
 
 // hal_stdin.h
@@ -70,7 +70,7 @@ static void (*stdin_handler)(char c);
 void hal_stdin_setup(void (*handler)(char c)){
     stdin_handler = handler;
     // start receiving
-	HAL_UART_Receive_IT(&huart2, &stdin_buffer[0], 1);
+    HAL_UART_Receive_IT(&huart2, &stdin_buffer[0], 1);
 }
 
 static void stdin_rx_complete(void){
@@ -97,54 +97,54 @@ static int hal_uart_needed_during_sleep;
 
 void hal_uart_dma_set_sleep(uint8_t sleep){
 
-	// RTS is on PD12 - manually set it during sleep
-	GPIO_InitTypeDef RTS_InitStruct;
-	RTS_InitStruct.Pin = GPIO_PIN_12;
+    // RTS is on PD12 - manually set it during sleep
+    GPIO_InitTypeDef RTS_InitStruct;
+    RTS_InitStruct.Pin = GPIO_PIN_12;
     RTS_InitStruct.Pull = GPIO_NOPULL;
     RTS_InitStruct.Alternate = GPIO_AF7_USART3;
-	if (sleep){
-		HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, GPIO_PIN_SET);
-		RTS_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-	    RTS_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-	} else {
-		RTS_InitStruct.Mode = GPIO_MODE_AF_PP;
-	    RTS_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-	}
+    if (sleep){
+        HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, GPIO_PIN_SET);
+        RTS_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+        RTS_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+    } else {
+        RTS_InitStruct.Mode = GPIO_MODE_AF_PP;
+        RTS_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+    }
 
-	HAL_GPIO_Init(GPIOD, &RTS_InitStruct);
+    HAL_GPIO_Init(GPIOD, &RTS_InitStruct);
 
-//	if (sleep){
-//		HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, GPIO_PIN_SET);
-//	}
-	hal_uart_needed_during_sleep = !sleep;
+//  if (sleep){
+//      HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, GPIO_PIN_SET);
+//  }
+    hal_uart_needed_during_sleep = !sleep;
 }
 
 // reset Bluetooth using n_shutdown
 static void bluetooth_power_cycle(void){
-	printf("Bluetooth power cycle\n");
-	HAL_GPIO_WritePin( CC_nSHUTD_GPIO_Port, CC_nSHUTD_Pin, GPIO_PIN_RESET );
-	HAL_Delay( 250 );
-	HAL_GPIO_WritePin( CC_nSHUTD_GPIO_Port, CC_nSHUTD_Pin, GPIO_PIN_SET );
-	HAL_Delay( 500 );
+    printf("Bluetooth power cycle\n");
+    HAL_GPIO_WritePin( CC_nSHUTD_GPIO_Port, CC_nSHUTD_Pin, GPIO_PIN_RESET );
+    HAL_Delay( 250 );
+    HAL_GPIO_WritePin( CC_nSHUTD_GPIO_Port, CC_nSHUTD_Pin, GPIO_PIN_SET );
+    HAL_Delay( 500 );
 }
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart){
-	if (huart == &huart3){
-		(*tx_done_handler)();
-	}
+    if (huart == &huart3){
+        (*tx_done_handler)();
+    }
 }
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart){
-	if (huart == &huart3){
-		(*rx_done_handler)();
-	}
+    if (huart == &huart3){
+        (*rx_done_handler)();
+    }
     if (huart == &huart2){
         stdin_rx_complete();
     }
 }
 
 void hal_uart_dma_init(void){
-	bluetooth_power_cycle();
+    bluetooth_power_cycle();
 }
 void hal_uart_dma_set_block_received( void (*the_block_handler)(void)){
     rx_done_handler = the_block_handler;
@@ -155,44 +155,44 @@ void hal_uart_dma_set_block_sent( void (*the_block_handler)(void)){
 }
 
 void EXTI15_10_IRQHandler(void){
-	__HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_11);
-	if (cts_irq_handler){
-		(*cts_irq_handler)();
-	}
+    __HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_11);
+    if (cts_irq_handler){
+        (*cts_irq_handler)();
+    }
 }
 
 void hal_uart_dma_set_csr_irq_handler( void (*the_irq_handler)(void)){
 
-	GPIO_InitTypeDef CTS_InitStruct = {
-		.Pin       = GPIO_PIN_11,
-		.Mode      = GPIO_MODE_AF_PP,
-		.Pull      = GPIO_PULLUP,
-		.Speed     = GPIO_SPEED_FREQ_VERY_HIGH,
-		.Alternate = GPIO_AF7_USART3,
-	};
+    GPIO_InitTypeDef CTS_InitStruct = {
+        .Pin       = GPIO_PIN_11,
+        .Mode      = GPIO_MODE_AF_PP,
+        .Pull      = GPIO_PULLUP,
+        .Speed     = GPIO_SPEED_FREQ_VERY_HIGH,
+        .Alternate = GPIO_AF7_USART3,
+    };
 
-	if( the_irq_handler )  {
-		/* Configure the EXTI11 interrupt (USART3_CTS is on PD11) */
-		HAL_NVIC_EnableIRQ( EXTI15_10_IRQn );
-		CTS_InitStruct.Mode = GPIO_MODE_IT_RISING;
-		CTS_InitStruct.Pull = GPIO_NOPULL;
-		HAL_GPIO_Init( GPIOD, &CTS_InitStruct );
-		log_info("enabled CTS irq");
-	}
-	else  {
-		CTS_InitStruct.Mode = GPIO_MODE_AF_PP;
-		CTS_InitStruct.Pull = GPIO_PULLUP;
-		HAL_GPIO_Init( GPIOD, &CTS_InitStruct );
-		HAL_NVIC_DisableIRQ( EXTI15_10_IRQn );
-		log_info("disabled CTS irq");
-	}
+    if( the_irq_handler )  {
+        /* Configure the EXTI11 interrupt (USART3_CTS is on PD11) */
+        HAL_NVIC_EnableIRQ( EXTI15_10_IRQn );
+        CTS_InitStruct.Mode = GPIO_MODE_IT_RISING;
+        CTS_InitStruct.Pull = GPIO_NOPULL;
+        HAL_GPIO_Init( GPIOD, &CTS_InitStruct );
+        log_info("enabled CTS irq");
+    }
+    else  {
+        CTS_InitStruct.Mode = GPIO_MODE_AF_PP;
+        CTS_InitStruct.Pull = GPIO_PULLUP;
+        HAL_GPIO_Init( GPIOD, &CTS_InitStruct );
+        HAL_NVIC_DisableIRQ( EXTI15_10_IRQn );
+        log_info("disabled CTS irq");
+    }
     cts_irq_handler = the_irq_handler;
 }
 
 int  hal_uart_dma_set_baud(uint32_t baud){
-	huart3.Init.BaudRate = baud;
-	HAL_UART_Init(&huart3);
-	return 0;
+    huart3.Init.BaudRate = baud;
+    HAL_UART_Init(&huart3);
+    return 0;
 }
 
 void hal_uart_dma_send_block(const uint8_t *data, uint16_t size){
@@ -200,7 +200,7 @@ void hal_uart_dma_send_block(const uint8_t *data, uint16_t size){
 }
 
 void hal_uart_dma_receive_block(uint8_t *data, uint16_t size){
-	HAL_UART_Receive_DMA( &huart3, data, size );
+    HAL_UART_Receive_DMA( &huart3, data, size );
 }
 
 #ifndef ENABLE_SEGGER_RTT
@@ -219,60 +219,60 @@ void hal_uart_dma_receive_block(uint8_t *data, uint16_t size){
 int _write(int file, char *ptr, int len);
 int _write(int file, char *ptr, int len){
 #if 1
-	uint8_t cr = '\r';
-	int i;
+    uint8_t cr = '\r';
+    int i;
 
-	if (file == STDOUT_FILENO || file == STDERR_FILENO) {
-		for (i = 0; i < len; i++) {
-			if (ptr[i] == '\n') {
-				HAL_UART_Transmit( &huart2, &cr, 1, HAL_MAX_DELAY );
-			}
-			HAL_UART_Transmit( &huart2, (uint8_t *) &ptr[i], 1, HAL_MAX_DELAY );
-		}
-		return i;
-	}
-	errno = EIO;
-	return -1;
+    if (file == STDOUT_FILENO || file == STDERR_FILENO) {
+        for (i = 0; i < len; i++) {
+            if (ptr[i] == '\n') {
+                HAL_UART_Transmit( &huart2, &cr, 1, HAL_MAX_DELAY );
+            }
+            HAL_UART_Transmit( &huart2, (uint8_t *) &ptr[i], 1, HAL_MAX_DELAY );
+        }
+        return i;
+    }
+    errno = EIO;
+    return -1;
 #else
-	return len;
+    return len;
 #endif
 }
 
 int _read(int file, char * ptr, int len){
-	UNUSED(file);
-	UNUSED(ptr);
-	UNUSED(len);
-	return -1;
+    UNUSED(file);
+    UNUSED(ptr);
+    UNUSED(len);
+    return -1;
 }
 
 #endif
 
 int _close(int file){
-	UNUSED(file);
-	return -1;
+    UNUSED(file);
+    return -1;
 }
 
 int _isatty(int file){
-	UNUSED(file);
-	return -1;
+    UNUSED(file);
+    return -1;
 }
 
 int _lseek(int file){
-	UNUSED(file);
-	return -1;
+    UNUSED(file);
+    return -1;
 }
 
 int _fstat(int file){
-	UNUSED(file);
-	return -1;
+    UNUSED(file);
+    return -1;
 }
 
 
 // main.c
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-	UNUSED(size);
-	UNUSED(channel);
-	bd_addr_t local_addr;
+    UNUSED(size);
+    UNUSED(channel);
+    bd_addr_t local_addr;
     if (packet_type != HCI_EVENT_PACKET) return;
     switch(hci_event_packet_get_type(packet)){
         case BTSTACK_EVENT_STATE:
@@ -328,22 +328,22 @@ void port_main(void){
     // hci_dump_init(hci_dump_embedded_stdout_get_instance());
 #endif
 
-	// init HCI
+    // init HCI
     hci_init(hci_transport_h4_instance(btstack_uart_block_embedded_instance()), (void*) &config);
     hci_set_chipset(btstack_chipset_cc256x_instance());
 
     // setup TLV Flash Sector implementation
     const hal_flash_bank_t * hal_flash_bank_impl = hal_flash_bank_stm32_init_instance(
-    		&hal_flash_bank_context,
-    		HAL_FLASH_BANK_SIZE,
-			HAL_FLASH_BANK_0_SECTOR,
-			HAL_FLASH_BANK_1_SECTOR,
-			HAL_FLASH_BANK_0_ADDR,
-			HAL_FLASH_BANK_1_ADDR);
+            &hal_flash_bank_context,
+            HAL_FLASH_BANK_SIZE,
+            HAL_FLASH_BANK_0_SECTOR,
+            HAL_FLASH_BANK_1_SECTOR,
+            HAL_FLASH_BANK_0_ADDR,
+            HAL_FLASH_BANK_1_ADDR);
     const btstack_tlv_t * btstack_tlv_impl = btstack_tlv_flash_bank_init_instance(
-    		&btstack_tlv_flash_bank_context,
-			hal_flash_bank_impl,
-			&hal_flash_bank_context);
+            &btstack_tlv_flash_bank_context,
+            hal_flash_bank_impl,
+            &hal_flash_bank_context);
 
     // setup global tlv
     btstack_tlv_set_instance(btstack_tlv_impl, &btstack_tlv_flash_bank_context);
@@ -357,15 +357,15 @@ void port_main(void){
 
 #ifdef HAVE_HAL_AUDIO
     // setup audio
-   	btstack_audio_sink_set_instance(btstack_audio_embedded_sink_get_instance());
+    btstack_audio_sink_set_instance(btstack_audio_embedded_sink_get_instance());
     btstack_audio_source_set_instance(btstack_audio_embedded_source_get_instance());
 #endif
-   	
+
     // inform about BTstack state
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
 
-	// hand over to btstack embedded code
+    // hand over to btstack embedded code
     btstack_main(0, NULL);
 
     // go
@@ -380,18 +380,18 @@ void port_main(void){
 void prvGetRegistersFromStack( uint32_t *pulFaultStackAddress );
 void prvGetRegistersFromStack( uint32_t *pulFaultStackAddress ) {
 
-	/* These are volatile to try and prevent the compiler/linker optimising them
-	away as the variables never actually get used.  If the debugger won't show the
-	values of the variables, make them global my moving their declaration outside
-	of this function. */
-	volatile uint32_t r0;
-	volatile uint32_t r1;
-	volatile uint32_t r2;
-	volatile uint32_t r3;
-	volatile uint32_t r12;
-	volatile uint32_t lr; /* Link register. */
-	volatile uint32_t pc; /* Program counter. */
-	volatile uint32_t psr;/* Program status register. */
+    /* These are volatile to try and prevent the compiler/linker optimising them
+    away as the variables never actually get used.  If the debugger won't show the
+    values of the variables, make them global my moving their declaration outside
+    of this function. */
+    volatile uint32_t r0;
+    volatile uint32_t r1;
+    volatile uint32_t r2;
+    volatile uint32_t r3;
+    volatile uint32_t r12;
+    volatile uint32_t lr; /* Link register. */
+    volatile uint32_t pc; /* Program counter. */
+    volatile uint32_t psr;/* Program status register. */
 
     r0  = pulFaultStackAddress[ 0 ];
     r1  = pulFaultStackAddress[ 1 ];
