@@ -105,55 +105,45 @@ static bd_addr_t    remote_addr;
 static const char* remote_addr_string = "001BDC08E272";
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
-static const char * msg_listing_header = "<MAP-msg-listing version=\"1.0\">";
-static const char * msg_listing_msg   = "<msg handle=\"ID%u\" subject=\"Hello\" type=\"%s\" read=\"%s\"/>";
-static const char * msg_listing_footer = "</MAP-msg-listing>";
+#define MSG_LISTING_HEADER   "<MAP-msg-listing version=\"1.0\">"
+#define MSG_LISTING_BODY     "<msg handle=\"ID%u\" subject=\"Hello\" type=\"%s\" read=\"%s\"/>"
+#define MSG_LISTING_FOOTER   "</MAP-msg-listing>"
+#define CONVO_LISTING_HEADER "<MAP-convo-listing version=\"1.0\">"
+#define CONVO_LISTING_BODY   "<conversation id = \"%s\" name=\"%s\" last_activity=\"20140612T10543%01u+0100\" read_status=\"%s\"    \
+                             version_counter=\"%s\">                                                                                \
+                             <participant uci=\"%s\" display_name=\"%s\"                                                            \
+                             chat_state=\"%s\" last_activity=\"20140612T10543%01u+0100\"/>                                          \
+                             </conversation>"
 
-/* Sample from BT SIG MAP Spec Page 54
-<MAP-convo-listing version = "1.0">
-<conversation id="E1E2E3E4F1F2F3F4A1A2A3A4B1B2B3B4" name="Beergarden
-Connection" last_activity="20140612T105430+0100" read_status="no"
-version_counter="A1A1B2B2C3C3D4D5E5E6F6F7A7A8B8B">
-<participant uci="4986925814@s.whateverapp.net" display_name="Tien"
-chat_state="3" last_activity="20140612T105430+0100"/>
-<participant uci="4912345678@s.whateverapp.net" display_name="Jonas"
-chat_state="5" last_activity="20140610T115130+0100"/>
-</conversation>
-</MAP-convo-listing>
-*/
-static const char* convo_listing_header = "<MAP-convo-listing version=\"1.0\">";
-static const char* convo_listing_msg =
-"<conversation id = \"%s\" name=\"%s\" last_activity=\"20140612T10543%01u+0100\" read_status=\"%s\"    \
-version_counter=\"%s\">                                                                                \
-<participant uci=\"%s\" display_name=\"%s\"                                                            \
-chat_state=\"%s\" last_activity=\"20140612T10543%01u+0100\"/>                                          \
-</conversation>";
-
-static const char* convo_listing_footer = "</MAP-convo-listing>";
-
-static void create_msg(char* msg_buffer, uint16_t index, int maxsize);
-static void create_convo(char* msg_buffer, uint16_t index, int maxsize);
+#define CONVO_LISTING_FOOTER "</MAP-convo-listing>"
 
 struct objconfig_s {
-    // header string
-    const char* header;
+    char* header;
+    char* body;
+    char* footer;
     // function pointer for creation of body
-    void (*body)(char* msg_buffer, uint16_t index, int maxsize);
-    // footer string
-    const char* footer;
+    void (*fbody)(char* msg_buffer, uint16_t index, int maxsize);
+
 };
+
+static void body_msg(char* msg_buffer, uint16_t index, int maxsize);
+static void body_convo(char* msg_buffer, uint16_t index, int maxsize);
+
+
 
 struct objconfig_s msg = {
-    .header = msg_listing_header,
-    .body = create_msg,
-    .footer = msg_listing_footer
+    .header = MSG_LISTING_HEADER,
+    .body   = MSG_LISTING_BODY,
+    .footer = MSG_LISTING_FOOTER,
+    .fbody  = body_msg
 };
 
+struct objconfig_s convo = {
+    .header = CONVO_LISTING_HEADER,
+    .body   = CONVO_LISTING_BODY,
+    .footer = CONVO_LISTING_FOOTER,
+    .fbody  = body_convo,
 
-struct objconfig_s cnv = {
-    .header = convo_listing_header,
-    .body = create_convo,
-    .footer = convo_listing_footer
 };
 
 enum msg_status_read { no, yes };
@@ -161,17 +151,17 @@ static struct test_config_s
 {
     int nr;
     char* descr;
-    struct objconfig_s* cfg;
+    struct objconfig_s* type;
     int obj_count;
     char* objects[6]; // maximum 6-1 entries, last one is null
     enum msg_status_read msg_stati[6]; // maximum 6-1 entries, last one is null
 } test_configs[] =
 {
-{.nr = 0, .descr = "MAP/MSE/MMB/BV-09-I 10 11 13 14" , .cfg = &msg,  .obj_count = 2, .objects = { "SMS_GSM","SMS_CDMA"                      }, },
-{.nr = 1, .descr = "MAP/MSE/MMB/BV-12-I"             , .cfg = &msg,  .obj_count = 1, .objects = { "EMAIL", "SMS_GSM","SMS_CDMA"             }, },
-{.nr = 2, .descr = "MAP/MSE/MMB/BV-15-I 18 20 22"    , .cfg = &msg,  .obj_count = 5, .objects = { "EMAIL","SMS_GSM","SMS_CDMA", "MMS", "IM" }, },
-{.nr = 3, .descr = "MAP/MSE/MMB/BV-16-I 23"          , .cfg = &msg,  .obj_count = 1, .objects = { "EMAIL","EMAIL"                           }, },
-{.nr = 4, .descr = "MAP/MSE/MMB/BV-16-I 24"          , .cfg = &msg,  .obj_count = 1, .objects = { "EMAIL","EMAIL"                           }, },
+{.nr = 0, .descr = "MAP/MSE/MMB/BV-09-I 10 11 13 14" , .type = &msg,  .obj_count = 2, .objects = { "SMS_GSM","SMS_CDMA"                      }, },
+{.nr = 1, .descr = "MAP/MSE/MMB/BV-12-I"             , .type = &msg,  .obj_count = 1, .objects = { "EMAIL", "SMS_GSM","SMS_CDMA"             }, },
+{.nr = 2, .descr = "MAP/MSE/MMB/BV-15-I 18 20 22"    , .type = &msg,  .obj_count = 5, .objects = { "EMAIL","SMS_GSM","SMS_CDMA", "MMS", "IM" }, },
+{.nr = 3, .descr = "MAP/MSE/MMB/BV-16-I 23"          , .type = &msg,  .obj_count = 1, .objects = { "EMAIL","EMAIL"                           }, },
+{.nr = 4, .descr = "MAP/MSE/MMB/BV-16-I 24"          , .type = &convo,.obj_count = 1, .objects = { "EMAIL","EMAIL"                           }, },
 };
 
 struct test_config_s* config = &test_configs[0];
@@ -219,6 +209,20 @@ static void init_testcases(void) {
     send_one_more_conversation = 0;
 }
 
+static void body_msg(char* msg_buffer, uint16_t index, int maxsize) {
+    index = index % ARRAYSIZE(config->objects);
+    sprintf_s(msg_buffer, maxsize, config->type->body,
+        index,
+        config->objects[index],
+        config->objects[index] ? "yes" : "no");
+}
+
+static void body_convo(char* msg_buffer, uint16_t index, int maxsize) {
+    // Implement the function to create a conversation
+    snprintf(msg_buffer, maxsize, config->type->body, "E1E2E3E4F1F2F3F4A1A2A3A4B1B2B3B4", "Beergarden Connection", index, "no", "A1A1B2B2C3C3D4D5E5E6F6F7A7A8B8B", "4986925814@s.whateverapp.net", "Tien", "3", index);
+}
+
+
 // TODO enable to send message larger as one OBEX/MAP packet
 static uint16_t send_listing(uint16_t first, uint16_t last) {
     uint16_t max_body_size = map_access_server_get_max_body_size(map_cid);
@@ -237,15 +241,15 @@ static uint16_t send_listing(uint16_t first, uint16_t last) {
 
     if (first == 0){
         // add header
-        uint16_t len = (uint16_t)strlen(msg_listing_header);
-        memcpy(upload_buffer, msg_listing_header, len);
+        uint16_t len = (uint16_t)strlen(config->type->header);
+        memcpy(upload_buffer, config->type->header, len);
         pos += len;
         max_body_size -= len;
     }
     while ((max_body_size > 0) && (first <= last)){
         log_debug("2 first:%d last:%d pos:%d", first, last, pos);
         // add entry
-        create_msg(listing_buffer, first, sizeof(listing_buffer));
+        body_msg(listing_buffer, first, sizeof(listing_buffer));
         // get len
         uint16_t len = (uint16_t)strlen(listing_buffer);
         log_debug("2.5 first:%d last:%d pos:%d len:%d", first, last, pos, len);
@@ -261,12 +265,12 @@ static uint16_t send_listing(uint16_t first, uint16_t last) {
     }
 
     if (first > last){
-        uint16_t len = (uint16_t) strlen(msg_listing_footer);
+        uint16_t len = (uint16_t) strlen(config->type->footer);
         log_debug("5 first:%d last:%d pos:%d len:%d", first, last, pos, len);
         if (len < max_body_size){
             log_debug("6 first:%d last:%d pos:%d len:%d", first, last, pos, len);
             // add footer
-            memcpy(&upload_buffer[pos], (const uint8_t *) msg_listing_footer, len);
+            memcpy(&upload_buffer[pos], (const uint8_t *)config->type->footer, len);
             pos += len;
             max_body_size -= len;
             done = true;
