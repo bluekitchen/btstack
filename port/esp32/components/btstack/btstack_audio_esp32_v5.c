@@ -96,8 +96,15 @@ i2s_chan_handle_t rx_handle = NULL;
 #define BTSTACK_AUDIO_I2S_OUT  GPIO_NUM_26
 #define BTSTACK_AUDIO_I2S_IN   GPIO_NUM_35
 #define HEADPHONE_DETECT       GPIO_NUM_19
+#elif CONFIG_IDF_TARGET_ESP32
+// Generic ESP32
+#define BTSTACK_AUDIO_I2S_MCLK GPIO_NUM_0
+#define BTSTACK_AUDIO_I2S_BCK  GPIO_NUM_5
+#define BTSTACK_AUDIO_I2S_WS   GPIO_NUM_25
+#define BTSTACK_AUDIO_I2S_OUT  GPIO_NUM_26
+#define BTSTACK_AUDIO_I2S_IN   GPIO_NUM_35
 #else
-#error "No I2S configuration, if you don't use btstack I2S audio please disable BTSTACK_AUDIO"
+#error "No I2S configuration, if you don't use BTstack I2S audio please disable BTSTACK_AUDIO in Components->BTstack Configuration"
 #endif
 
 // set MCLK unused
