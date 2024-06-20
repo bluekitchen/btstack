@@ -164,7 +164,7 @@ static struct test_config_s
 {.nr = 1, .descr = "MAP/MSE/MMB/BV-12-I"             , .type = &msg,  .obj_count = 1, .objects = { "EMAIL", "SMS_GSM","SMS_CDMA"             }, },
 {.nr = 2, .descr = "MAP/MSE/MMB/BV-15-I 18 20 22"    , .type = &msg,  .obj_count = 5, .objects = { "EMAIL","SMS_GSM","SMS_CDMA", "MMS", "IM" }, },
 {.nr = 3, .descr = "MAP/MSE/MMB/BV-16-I 23"          , .type = &msg,  .obj_count = 1, .objects = { "EMAIL","EMAIL"                           }, },
-{.nr = 4, .descr = "MAP/MSE/MMB/BV-16-I 24"          , .type = &convo,.obj_count = 1, .objects = { "None","Adam"                             }, },
+{.nr = 4, .descr = "MAP/MSE/MMB/BV-16-I 24"          , .type = &convo,.obj_count = 0, .objects = { "None","Adam"                             }, },
 };
 
 struct test_config_s* config = &test_configs[0];
@@ -256,7 +256,8 @@ static uint16_t send_listing(uint16_t first, uint16_t last) {
         pos += len;
         max_body_size -= len;
     }
-    while ((max_body_size > 0) && (first <= last)){
+
+    while ((max_body_size > 0) && (first < last)){
         log_debug("2 first:%d last:%d pos:%d", first, last, pos);
         // add entry
         for (int i = 0; config->type->fbody[i] != NULL; i++)
@@ -276,7 +277,7 @@ static uint16_t send_listing(uint16_t first, uint16_t last) {
     }
 
 
-    if (first > last){
+    if (first >= last){
         uint16_t len = (uint16_t) strlen(config->type->footer);
 
         log_debug("5 first:%d last:%d pos:%d len:%d", first, last, pos, len);
@@ -336,7 +337,7 @@ static void send_get_listing_object(uint8_t* packet, uint16_t start_index, uint1
         num_msgs_selected -= continuation;
         start_index += continuation;
     }
-    end_index = start_index + num_msgs_selected - 1;
+    end_index = start_index + num_msgs_selected;
     MAP_PRINTF("[-] continuation %u, num messages %u, start index %u, end index %u\n", continuation, num_msgs_selected, start_index, end_index);
     send_listing(start_index, end_index);
 }
