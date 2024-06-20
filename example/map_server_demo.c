@@ -239,7 +239,6 @@ static void body_convo(char* msg_buffer, uint16_t index, int maxsize) {
     );
 }
 
-
 // TODO enable to send message larger as one OBEX/MAP packet
 static uint16_t send_listing(uint16_t first, uint16_t last) {
     uint16_t max_body_size = map_access_server_get_max_body_size(map_cid);
@@ -577,7 +576,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             APP_READ_32(packet, &pos, &continuation);
                             APP_READ_16(packet, &pos, &dummy_map_cid);
                             APP_READ_STR(packet, &pos, sizeof(ConversationID), ConversationID);
-                            map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_ConversationID, ConversationID);
+                            map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_DatabaseIdentifier, DatabaseIdentifier);
                             map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_ConversationListingVersionCounter, ConversationListingVersionCounter);
                             map_access_server_send_get_put_response(map_cid, OBEX_RESP_SUCCESS, 0, 0, NULL);
                             break;
