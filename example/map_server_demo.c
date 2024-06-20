@@ -164,13 +164,12 @@ static struct test_config_s
 {.nr = 1, .descr = "MAP/MSE/MMB/BV-12-I"             , .type = &msg,  .obj_count = 1, .objects = { "EMAIL", "SMS_GSM","SMS_CDMA"             }, },
 {.nr = 2, .descr = "MAP/MSE/MMB/BV-15-I 18 20 22"    , .type = &msg,  .obj_count = 5, .objects = { "EMAIL","SMS_GSM","SMS_CDMA", "MMS", "IM" }, },
 {.nr = 3, .descr = "MAP/MSE/MMB/BV-16-I 23"          , .type = &msg,  .obj_count = 1, .objects = { "EMAIL","EMAIL"                           }, },
-{.nr = 4, .descr = "MAP/MSE/MMB/BV-16-I 24"          , .type = &convo,.obj_count = 1, .objects = { "None","Adam"                             }, },
+{.nr = 4, .descr = "MAP/MSE/MMB/BV-16-I 24"          , .type = &convo,.obj_count = 0, .objects = { "Eve","Adam"                              }, },
 };
 
 struct test_config_s* config = &test_configs[0];
 static int current_msg_type = 0;
-static int send_one_more_message = 0;
-static int send_one_more_conversation = 0;
+static int add_one_object = 0;
 
 static mas_uint128hex_t DatabaseIdentifier = { 0 };
 // BT SIG Test Suite PTS is not acepting what BT SIG MAP spec describes as valid counters:
@@ -208,8 +207,7 @@ static void set_test_config(int nr) {
 
 static void init_testcases(void) {
     current_msg_type = 0;
-    send_one_more_message = 0;
-    send_one_more_conversation = 0;
+    add_one_object = 0;
 }
 
 static void body_msg(char* msg_buffer, uint16_t index, int maxsize) {
@@ -322,7 +320,7 @@ static void send_get_listing_object(uint8_t* packet, uint16_t start_index, uint1
     //}
 
     // send messages listing
-    total_messages = config->obj_count + send_one_more_message;
+    total_messages = config->obj_count + add_one_object;
 
     num_msgs_selected = total_messages - start_index;
     max_list_count = map_subevent_get_message_listing_get_MaxListCount(packet);
@@ -363,6 +361,7 @@ static void show_usage(void){
     MAP_PRINTF("<c> increase ConversationListingVersionCounter by 1\n");
     MAP_PRINTF("<i> increase ConversationID by 1\n");
     MAP_PRINTF("<d> increase DatabaseIdentifier by 1\n");
+
     MAP_PRINTF("<r> reset current test case\n");
 
 
@@ -377,6 +376,13 @@ static void stdin_process(char c){
             // init MAP Access Server test cases
             init_testcases();
             print_current_test_config();
+            break;
+
+        case 'a':
+            // BT SIG Test case MAP/MSE/MMB/BV-23-I asks for one more message after
+// issuing a "update messages" request so we just simulate one
+            add_one_object = 1;
+            MAP_PRINTF("Added one object, press <OK> in PTS");
             break;
 
         case 'r':
@@ -498,7 +504,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
     UNUSED(channel);
     UNUSED(size);
     uint8_t status;
-    uint16_t pos, start_index, max_list_count, dummy_map_cid;
+    uint16_t pos, start_index, max_list_count = 0, dummy_map_cid;
     uint32_t continuation;
 	
     switch (packet_type){
@@ -533,7 +539,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_DatabaseIdentifier, DatabaseIdentifier);
                             map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_FolderVersionCounter, FolderVersionCounter);
                             MAP_PRINTF("[+] Get Folder listing\n");
-                            send_listing(0, config->obj_count-1 + send_one_more_message);
+                            send_listing(0, config->obj_count-1 + add_one_object);
                             break;
 							
                         case MAP_SUBEVENT_GET_MESSAGE_LISTING:
@@ -574,7 +580,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             map_access_server_send_get_put_response(map_cid, OBEX_RESP_SUCCESS, 0, 0, NULL);
                             // BT SIG Test case MAP/MSE/MMB/BV-23-I asks for one more message after
                             // issuing a "update messages" request so we just simulate one
-                            send_one_more_message = 1;
+                            add_one_object = 1;
                             break;
 
                         case MAP_SUBEVENT_GET_CONVO_LISTING:
@@ -583,8 +589,12 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             APP_READ_STR(packet, &pos, sizeof(ConversationID), ConversationID);
                             map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_DatabaseIdentifier, DatabaseIdentifier);
                             map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_ConversationListingVersionCounter, ConversationListingVersionCounter);
-                            //map_access_server_send_get_put_response(map_cid, OBEX_RESP_SUCCESS, 0, 0, NULL);
-                            send_get_listing_object(packet, 0, 0xffff, continuation);
+                            // BT MAP Spec requires to skip the body if max_list_count == 0
+                            if (config->obj_count == 0 && add_one_object == 0)
+                                map_access_server_send_get_put_response(map_cid, OBEX_RESP_SUCCESS, 0, 0, NULL);
+                            else
+                                send_get_listing_object(packet, 0, 0xffff, continuation);
+                            break;
                             break;
 
                         default:
