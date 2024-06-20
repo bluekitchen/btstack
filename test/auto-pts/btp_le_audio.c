@@ -436,8 +436,7 @@ static void ascs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
             ase_id = leaudio_subevent_ascs_server_enable_get_ase_id(packet);
             con_handle = leaudio_subevent_ascs_server_enable_get_con_handle(packet);
             MESSAGE("ASCS: ENABLE ase_id %d", ase_id);
-            // TODO check metadata
-            memcpy(&ascs_audio_metadata, &packet[6], sizeof(le_audio_metadata_t));
+            le_audio_util_metadata_using_mask_from_enable_event(packet, size, &ascs_audio_metadata);
             audio_stream_control_service_server_streamendpoint_enable(con_handle, ase_id, &ascs_audio_metadata);
 
             // trigger (potential) Receiver Start Ready
