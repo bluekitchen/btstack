@@ -323,7 +323,7 @@ static void send_get_listing_object(uint8_t* packet, uint16_t start_index, uint1
     if (max_list_count < 0xffff) {
         num_msgs_selected = btstack_min(max_list_count, num_msgs_selected);
     }
-    MAP_PRINTF("[+] get message listing - list offset %u, num messages %u\n", start_index, num_msgs_selected);
+    MAP_PRINTF("[+] get message listing - list offset %u, num messages %u max_list_count %u\n", start_index, num_msgs_selected, max_list_count);
     // consider already sent cards
     if (continuation > 0xffff) {
         // just missed the footer
