@@ -310,6 +310,48 @@ send_response:
     return first;
 }
 
+static void SUBEVENT_GET_MESSAGE_LISTING(uint8_t* packet, uint16_t start_index, uint16_t max_list_count, uint32_t continuation) {
+
+    uint16_t total_messages, num_msgs_selected, end_index;
+
+    if (max_list_count == 0) {
+        MAP_PRINTF("[+] Start MAP_SUBEVENT_GET_MESSAGE_LISTING max_list_count == 0\n");
+        map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_DatabaseIdentifier, DatabaseIdentifier);
+        map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_FolderVersionCounter, FolderVersionCounter);
+        send_listing(0, 0);
+        return;
+    }
+
+    if (continuation == 0) {
+        MAP_PRINTF("[+] Start MAP_SUBEVENT_GET_MESSAGE_LISTING continuation == 0\n");
+        map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_DatabaseIdentifier, DatabaseIdentifier);
+        map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_FolderVersionCounter, FolderVersionCounter);
+    }
+
+    // send messages listing
+    total_messages = config->obj_count + send_one_more_message;
+
+    num_msgs_selected = total_messages - start_index;
+    max_list_count = map_subevent_get_message_listing_get_MaxListCount(packet);
+    if (max_list_count < 0xffff) {
+        num_msgs_selected = btstack_min(max_list_count, num_msgs_selected);
+    }
+    MAP_PRINTF("[+] get message listing - list offset %u, num messages %u\n", start_index, num_msgs_selected);
+    // consider already sent cards
+    if (continuation > 0xffff) {
+        // just missed the footer
+        start_index = 0xffff;
+        num_msgs_selected = 0;
+    }
+    else {
+        num_msgs_selected -= continuation;
+        start_index += continuation;
+    }
+    end_index = start_index + num_msgs_selected - 1;
+    MAP_PRINTF("[-] continuation %u, num messages %u, start index %u, end index %u\n", continuation, num_msgs_selected, start_index, end_index);
+    send_listing(start_index, end_index);
+}
+
 static void print_current_test_config(void)
 {
     MAP_PRINTF("curent test config is <%d: %s>\n", config->nr, config->descr);
@@ -463,7 +505,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
     UNUSED(channel);
     UNUSED(size);
     uint8_t status;
-    uint16_t pos, total_messages, start_index, end_index, num_msgs_selected, max_list_count, dummy_map_cid;
+    uint16_t pos, start_index, max_list_count, dummy_map_cid;
     uint32_t continuation;
 	
     switch (packet_type){
@@ -506,43 +548,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             APP_READ_16(packet, &pos, &dummy_map_cid);
                             APP_READ_16(packet, &pos, &max_list_count);
                             APP_READ_16(packet, &pos, &start_index);
-                            
-                            if (max_list_count == 0) {
-                                MAP_PRINTF("[+] Start MAP_SUBEVENT_GET_MESSAGE_LISTING max_list_count == 0\n");
-                                map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_DatabaseIdentifier, DatabaseIdentifier);
-                                map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_FolderVersionCounter, FolderVersionCounter);
-                                send_listing(0, 0);
-                                break;
-                            }
-                            
-                            if (continuation == 0) {
-                                MAP_PRINTF("[+] Start MAP_SUBEVENT_GET_MESSAGE_LISTING continuation == 0\n");
-                                map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_DatabaseIdentifier, DatabaseIdentifier);
-                                map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_FolderVersionCounter, FolderVersionCounter);
-                            }
-
-                            // send messages listing
-                            total_messages = config->obj_count + send_one_more_message;
-
-                            num_msgs_selected = total_messages - start_index;
-                            max_list_count = map_subevent_get_message_listing_get_MaxListCount(packet);
-                            if (max_list_count < 0xffff){
-                                num_msgs_selected = btstack_min(max_list_count, num_msgs_selected);
-                            }
-                            MAP_PRINTF("[+] get message listing - list offset %u, num messages %u\n", start_index, num_msgs_selected);
-                            // consider already sent cards
-                            if (continuation > 0xffff){
-                                // just missed the footer
-                                start_index = 0xffff;
-                                num_msgs_selected  = 0;
-                            } else {
-                                num_msgs_selected -= continuation;
-                                start_index += continuation;
-                            }
-                            end_index = start_index + num_msgs_selected - 1;
-                            MAP_PRINTF("[-] continuation %u, num messages %u, start index %u, end index %u\n", continuation, num_msgs_selected, start_index, end_index);
-                            send_listing(start_index, end_index);
-
+                            SUBEVENT_GET_MESSAGE_LISTING(packet, start_index, max_list_count, continuation);
                             break;
 
                         case MAP_SUBEVENT_GET_MESSAGE:
