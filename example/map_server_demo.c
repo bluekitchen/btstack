@@ -309,11 +309,11 @@ static void send_get_listing_object(uint8_t* packet, uint16_t start_index, uint1
 
     uint16_t total_messages, num_msgs_selected, end_index;
 
-    if (max_list_count == 0) {
-        MAP_PRINTF("[+] Start max_list_count == 0\n");
-        send_listing(0, 0);
-        return;
-    }
+    //if (max_list_count == 0) {
+    //    MAP_PRINTF("[+] Start max_list_count == 0\n");
+    //    send_listing(0, 0);
+    //    return;
+    //}
 
     // send messages listing
     total_messages = config->obj_count + send_one_more_message;
