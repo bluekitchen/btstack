@@ -585,7 +585,7 @@ static void map_access_server_app_param_callback_get(void* user_data, uint8_t ta
 
 #define PARAM_REQUST(name, tag, type, descr) \
             case MAP_APP_PARAM_ ## name: \
-                    app_param_read_ ## type (map_access_server->request.app_param_buffer, &pos, (void*)&map_access_server->request.app_params. name, sizeof(type)); \
+                    app_param_read_ ## type (map_access_server->request.app_param_buffer, &pos, &map_access_server->request.app_params. name, sizeof(type)); \
                 break;
 
 #define PARAM_REQRSP PARAM_REQUST
