@@ -163,7 +163,7 @@ static struct test_config_s
 {.nr = 1, .descr = "MAP/MSE/MMB/BV-12-I"             , .type = &msg,  .obj_count = 1, .objects = { "EMAIL", "SMS_GSM","SMS_CDMA"             }, },
 {.nr = 2, .descr = "MAP/MSE/MMB/BV-15-I 18 20 22"    , .type = &msg,  .obj_count = 5, .objects = { "EMAIL","SMS_GSM","SMS_CDMA", "MMS", "IM" }, },
 {.nr = 3, .descr = "MAP/MSE/MMB/BV-16-I 23"          , .type = &msg,  .obj_count = 1, .objects = { "EMAIL","EMAIL"                           }, },
-{.nr = 4, .descr = "MAP/MSE/MMB/BV-16-I 24"          , .type = &convo,.obj_count = 1, .objects = { "EMAIL","EMAIL"                           }, },
+{.nr = 4, .descr = "MAP/MSE/MMB/BV-16-I 24"          , .type = &convo,.obj_count = 1, .objects = { "None","Adam"                             }, },
 };
 
 struct test_config_s* config = &test_configs[0];
@@ -248,13 +248,6 @@ static uint16_t send_listing(uint16_t first, uint16_t last) {
 
     log_debug("1 first:%d last:%d max_body_size:%d", first, last, max_body_size);
 
-    // PTS asked us to send zero messages
-    if (first == 0 && last == 0)
-    {
-        done = true;
-        goto send_response;
-    }
-
     if (first == 0){
         // add header
         uint16_t len = (uint16_t)strlen(config->type->header);
@@ -265,7 +258,7 @@ static uint16_t send_listing(uint16_t first, uint16_t last) {
     while ((max_body_size > 0) && (first <= last)){
         log_debug("2 first:%d last:%d pos:%d", first, last, pos);
         // add entry
-        body_msg(listing_buffer, first, sizeof(listing_buffer));
+        config->type->fbody(listing_buffer, first, sizeof(listing_buffer));
         // get len
         uint16_t len = (uint16_t)strlen(listing_buffer);
         log_debug("2.5 first:%d last:%d pos:%d len:%d", first, last, pos, len);
@@ -280,8 +273,10 @@ static uint16_t send_listing(uint16_t first, uint16_t last) {
         log_debug("4 %.*s", btstack_min(pos, sizeof(listing_buffer)),upload_buffer);
     }
 
+
     if (first > last){
         uint16_t len = (uint16_t) strlen(config->type->footer);
+
         log_debug("5 first:%d last:%d pos:%d len:%d", first, last, pos, len);
         if (len < max_body_size){
             log_debug("6 first:%d last:%d pos:%d len:%d", first, last, pos, len);
@@ -293,7 +288,7 @@ static uint16_t send_listing(uint16_t first, uint16_t last) {
         }
     }
 
-send_response:
+
     uint8_t response_code;
 	uint32_t continuation;
 
@@ -310,22 +305,14 @@ send_response:
     return first;
 }
 
-static void SUBEVENT_GET_MESSAGE_LISTING(uint8_t* packet, uint16_t start_index, uint16_t max_list_count, uint32_t continuation) {
+static void send_get_listing_object(uint8_t* packet, uint16_t start_index, uint16_t max_list_count, uint32_t continuation) {
 
     uint16_t total_messages, num_msgs_selected, end_index;
 
     if (max_list_count == 0) {
-        MAP_PRINTF("[+] Start MAP_SUBEVENT_GET_MESSAGE_LISTING max_list_count == 0\n");
-        map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_DatabaseIdentifier, DatabaseIdentifier);
-        map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_FolderVersionCounter, FolderVersionCounter);
+        MAP_PRINTF("[+] Start max_list_count == 0\n");
         send_listing(0, 0);
         return;
-    }
-
-    if (continuation == 0) {
-        MAP_PRINTF("[+] Start MAP_SUBEVENT_GET_MESSAGE_LISTING continuation == 0\n");
-        map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_DatabaseIdentifier, DatabaseIdentifier);
-        map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_FolderVersionCounter, FolderVersionCounter);
     }
 
     // send messages listing
@@ -354,7 +341,7 @@ static void SUBEVENT_GET_MESSAGE_LISTING(uint8_t* packet, uint16_t start_index, 
 
 static void print_current_test_config(void)
 {
-    MAP_PRINTF("curent test config is <%d: %s>\n", config->nr, config->descr);
+    MAP_PRINTF("curent test config is <%d: %s> obj_count:%d hdr:%s\n", config->nr, config->descr, config->obj_count, config->type->header);
 }
 
 #ifdef HAVE_BTSTACK_STDIN
@@ -548,7 +535,13 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             APP_READ_16(packet, &pos, &dummy_map_cid);
                             APP_READ_16(packet, &pos, &max_list_count);
                             APP_READ_16(packet, &pos, &start_index);
-                            SUBEVENT_GET_MESSAGE_LISTING(packet, start_index, max_list_count, continuation);
+                            map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_DatabaseIdentifier, DatabaseIdentifier);
+                            map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_FolderVersionCounter, FolderVersionCounter);
+                            // BT MAP Spec requires to skip the body if max_list_count == 0
+                            if (max_list_count == 0)
+                                map_access_server_send_get_put_response(map_cid, OBEX_RESP_SUCCESS, 0, 0, NULL);
+                            else
+                                send_get_listing_object(packet, start_index, max_list_count, continuation);
                             break;
 
                         case MAP_SUBEVENT_GET_MESSAGE:
@@ -584,7 +577,8 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             APP_READ_STR(packet, &pos, sizeof(ConversationID), ConversationID);
                             map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_DatabaseIdentifier, DatabaseIdentifier);
                             map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_ConversationListingVersionCounter, ConversationListingVersionCounter);
-                            map_access_server_send_get_put_response(map_cid, OBEX_RESP_SUCCESS, 0, 0, NULL);
+                            //map_access_server_send_get_put_response(map_cid, OBEX_RESP_SUCCESS, 0, 0, NULL);
+                            send_get_listing_object(packet, 0, 0xffff, continuation);
                             break;
 
                         default:
