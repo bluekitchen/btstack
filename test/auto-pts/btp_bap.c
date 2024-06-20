@@ -1809,9 +1809,6 @@ void btp_bap_init(void){
     // register for ISO Packet
     hci_register_iso_packet_handler(&iso_packet_handler);
 
-    // BASS
-    broadcast_audio_scan_service_client_init(&bass_packet_handler);
-
     // BIS
     uint8_t i;
     for (i=0;i<MAX_NUM_BIS;i++){
@@ -1820,10 +1817,15 @@ void btp_bap_init(void){
 
     adv_handle = 0xff;
 
-    // PACS
+    // -- Clients --
+
+    // BASS Client
+    broadcast_audio_scan_service_client_init(&bass_packet_handler);
+
+    // PACS Client
     published_audio_capabilities_service_client_init(&btp_bap_pacs_client_event_handler);
 
-    // ASCS
+    // ASCS Client
     audio_stream_control_service_client_init(&btp_bap_ascs_client_event_handler);
 
     // AICS Client, used by VCS Client and MICS
@@ -1838,10 +1840,9 @@ void btp_bap_init(void){
     // MICP = MICS Client
     microphone_control_service_client_init();
 
-    // GTBS Server
-    telephone_bearer_service_server_init();
+    // -- Servers --
 
-    // setup TBS
+    // GTBS Server
     telephone_bearer_service_server_init();
     (void) telephone_bearer_service_server_register_generic_bearer(
             &tbs_bearers[tbs_bearer_index].bearer,
@@ -1849,6 +1850,9 @@ void btp_bap_init(void){
             TBS_OPCODE_MASK_LOCAL_HOLD | TBS_OPCODE_MASK_JOIN,
             &tbs_bearers[tbs_bearer_index].id);
 
+
+    // VCS Server without AICS or VOCS
+    volume_control_service_server_init(128, VCS_MUTE_OFF, 0, NULL, 0, NULL);
 }
 
 void btp_bap_register_higher_layer(btstack_packet_handler_t handler){
