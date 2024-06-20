@@ -125,8 +125,9 @@ chat_state="5" last_activity="20140610T115130+0100"/>
 struct objconfig_s {
     char* header;
     char* footer;
-    // function pointer for creation of body
-    void (*fbody)(char* msg_buffer, uint16_t index, int maxsize);
+    // array of up to 3 function pointers for creation of body
+    // last entry needs to be NULL
+    void (*fbody[4])(char* msg_buffer, uint16_t index, int maxsize);
 
 };
 
@@ -138,13 +139,13 @@ static void body_convo(char* msg_buffer, uint16_t index, int maxsize);
 struct objconfig_s msg = {
     .header = MSG_LISTING_HEADER,
     .footer = MSG_LISTING_FOOTER,
-    .fbody  = body_msg
+    .fbody = {body_msg, NULL }
 };
 
 struct objconfig_s convo = {
     .header = CONVO_LISTING_HEADER,
     .footer = CONVO_LISTING_FOOTER,
-    .fbody  = body_convo,
+    .fbody = {body_convo, NULL }
 
 };
 
@@ -258,7 +259,8 @@ static uint16_t send_listing(uint16_t first, uint16_t last) {
     while ((max_body_size > 0) && (first <= last)){
         log_debug("2 first:%d last:%d pos:%d", first, last, pos);
         // add entry
-        config->type->fbody(listing_buffer, first, sizeof(listing_buffer));
+        for (int i = 0; config->type->fbody[i] != NULL; i++)
+            config->type->fbody[i](listing_buffer, first, sizeof(listing_buffer));
         // get len
         uint16_t len = (uint16_t)strlen(listing_buffer);
         log_debug("2.5 first:%d last:%d pos:%d len:%d", first, last, pos, len);
