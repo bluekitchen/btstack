@@ -165,6 +165,7 @@ static struct test_config_s
 {.nr = 2, .descr = "MAP/MSE/MMB/BV-15-I 18 20 22"    , .type = &msg,  .obj_count = 5, .objects = { "EMAIL","SMS_GSM","SMS_CDMA", "MMS", "IM" }, },
 {.nr = 3, .descr = "MAP/MSE/MMB/BV-16-I 23"          , .type = &msg,  .obj_count = 1, .objects = { "EMAIL","EMAIL"                           }, },
 {.nr = 4, .descr = "MAP/MSE/MMB/BV-16-I 24 <a><OK>"  , .type = &convo,.obj_count = 0, .objects = { "",""                                     }, },
+{.nr = 5, .descr = "MAP/MSE/MMB/BV-16-I 25 <c><OK>"  , .type = &convo,.obj_count = 0, .objects = { "",""                                     }, },
 };
 
 struct test_config_s* config = &test_configs[0];
@@ -346,7 +347,7 @@ static void send_get_listing_object(uint8_t* packet, uint16_t start_index, uint1
 
 static void print_current_test_config(void)
 {
-    MAP_PRINTF("curent test config is <%d: %s> obj_count:%d hdr:%s\n", config->nr, config->descr, config->obj_count, config->type->header);
+    MAP_PRINTF("config #%d:%s obj_count:%d hdr:%s\n", config->nr, config->descr, config->obj_count, config->type->header);
 }
 
 #ifdef HAVE_BTSTACK_STDIN
