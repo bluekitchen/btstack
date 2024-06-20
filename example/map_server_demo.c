@@ -223,11 +223,11 @@ static void body_msg(char* msg_buffer, uint16_t index, int maxsize) {
 static void body_convo(char* msg_buffer, uint16_t index, int maxsize) {
     // Implement the function to create a conversation
     snprintf(msg_buffer, maxsize,
-        "<conversation id = \"DEAD%02X\" name=\"%s\" last_activity=\"20140612T10543%1u+0100\" read_status=\"%s\"        \
-         version_counter=\"BEEF%02X\">                                                                                  \
-         <participant uci=\"%u@bla.net\" display_name=\"%s\"                                                            \
-         chat_state=\"%u\" last_activity=\"20140612T10543%1u+0100\"/>                                                   \
-         </conversation>",
+        "<conversation id = \"DEAD%02X\" name=\"%s\" last_activity=\"20140612T10543%1u+0100\" read_status=\"%s\""       
+        "version_counter=\"BEEF%02X\">"                                                                                 
+        "<participant uci=\"%u@bla.net\" display_name=\"%s\""                                                           
+        "chat_state=\"%u\" last_activity=\"20140612T10543%1u+0100\"/>"                                                  
+        "</conversation>",
         index, // <conversation id = \"DEAD%02X\" 
         "Sbjct", // name="subject"
         0, // last second of last_activity=\"20140612T10543%1u+0100\"
