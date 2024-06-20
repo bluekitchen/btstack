@@ -218,9 +218,7 @@ void hal_uart_dma_receive_block(uint8_t *data, uint16_t size){
  * @param len
  * @return
  */
-#include <stdio.h>
-#include <unistd.h>
-#include <errno.h>
+
 ssize_t _write(int file, const void *buf, size_t len);
 ssize_t _write(int file, const void *buf, size_t len){
 #if 1

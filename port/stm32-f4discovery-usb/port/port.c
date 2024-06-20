@@ -37,6 +37,10 @@
 
 #define BTSTACK_FILE__ "port.c"
 
+#include <stdio.h>
+#include <unistd.h>
+#include <signal.h>
+
 // include STM32 first to avoid warning about redefinition of UNUSED
 #include "stm32f4xx_hal.h"
 #include "main.h"
@@ -103,6 +107,43 @@ void hal_cpu_enable_irqs_and_sleep(void){
 #define HAL_FLASH_BANK_1_SECTOR FLASH_SECTOR_11
 
 int btstack_main(int argc, char ** argv);
+
+ssize_t _read(int fd, void * buf, size_t count){
+    UNUSED(fd);
+    UNUSED(buf);
+    UNUSED(count);
+    return -1;
+}
+
+int _close(int file){
+    UNUSED(file);
+    return -1;
+}
+
+int _isatty(int file){
+    UNUSED(file);
+    return -1;
+}
+
+int _lseek(int file){
+    UNUSED(file);
+    return -1;
+}
+
+int _fstat(int file){
+    UNUSED(file);
+    return -1;
+}
+
+int _kill (pid_t pid, int sig) {
+    UNUSED(pid);
+    UNUSED(sig);
+    return -1;
+}
+
+pid_t _getpid (void) {
+    return 0;
+}
 
 // main.c
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){

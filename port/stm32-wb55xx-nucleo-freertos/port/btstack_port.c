@@ -45,6 +45,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+#include <signal.h>
 
 #include "btstack_config.h"
 #include "main.h"
@@ -61,11 +63,12 @@
  *******************************************/
 extern UART_HandleTypeDef hTuart;
 
-int _write(int file, char* ptr, int len)
+ssize_t _write(int fd, const void* buf, size_t count)
 {
+    const uint8_t *ptr = buf;
     // expand '/n' to '/r/n'
     int pos;
-    for (pos=0;pos<len;pos++){
+    for (pos=0;pos<count;pos++){
         uint8_t next_char = *ptr++;
         if (next_char == '\n'){
             const uint8_t NEWLINE[] = "\r\n";
@@ -75,16 +78,60 @@ int _write(int file, char* ptr, int len)
         }
     }
 
-    return len;
+    return count;
 }
 
-int _read(int file, char* ptr, int len)
+ssize_t _read(int file, void * buf, size_t count)
 {
-    HAL_UART_Receive(&hTuart, (uint8_t*)ptr, len, 1000);
+    uint8_t *ptr = buf;
+    HAL_UART_Receive(&hTuart, ptr, count, 1000);
+    return count;
+}
+#else
+ssize_t _write(int fd, const void* buf, size_t count){
+    UNUSED(fd);
+    UNUSED(buf);
+    UNUSED(count);
+    return -1
+}
 
-    return len;
+ssize_t _read(int fd, void* buf, size_t count){
+    UNUSED(fd);
+    UNUSED(buf);
+    UNUSED(count);
+    return -1;
 }
 #endif
+
+int _close(int file){
+    UNUSED(file);
+    return -1;
+}
+
+int _isatty(int file){
+    UNUSED(file);
+    return -1;
+}
+
+int _lseek(int file){
+    UNUSED(file);
+    return -1;
+}
+
+int _fstat(int file){
+    UNUSED(file);
+    return -1;
+}
+
+int _kill (pid_t pid, int sig) {
+    UNUSED(pid);
+    UNUSED(sig);
+    return -1;
+}
+
+pid_t _getpid (void) {
+    return 0;
+}
 
 /********************************************
  *      hal_time_ms.h implementation
