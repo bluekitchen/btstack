@@ -164,7 +164,7 @@ static struct test_config_s
 {.nr = 1, .descr = "MAP/MSE/MMB/BV-12-I"             , .type = &msg,  .obj_count = 1, .objects = { "EMAIL", "SMS_GSM","SMS_CDMA"             }, },
 {.nr = 2, .descr = "MAP/MSE/MMB/BV-15-I 18 20 22"    , .type = &msg,  .obj_count = 5, .objects = { "EMAIL","SMS_GSM","SMS_CDMA", "MMS", "IM" }, },
 {.nr = 3, .descr = "MAP/MSE/MMB/BV-16-I 23"          , .type = &msg,  .obj_count = 1, .objects = { "EMAIL","EMAIL"                           }, },
-{.nr = 4, .descr = "MAP/MSE/MMB/BV-16-I 24"          , .type = &convo,.obj_count = 0, .objects = { "Eve","Adam"                              }, },
+{.nr = 4, .descr = "MAP/MSE/MMB/BV-16-I 24 <a><OK>"  , .type = &convo,.obj_count = 0, .objects = { "",""                                     }, },
 };
 
 struct test_config_s* config = &test_configs[0];
@@ -219,21 +219,22 @@ static void body_msg(char* msg_buffer, uint16_t index, int maxsize) {
 }
 
 static void body_convo(char* msg_buffer, uint16_t index, int maxsize) {
+    static int version = 0;
     // Implement the function to create a conversation
     snprintf(msg_buffer, maxsize,
-        "<conversation id = \"DEAD%02X\" name=\"%s\""
+        "<conversation id=\"DEAD%02X\" name=\"%s\""
         // optional fields and elements
         // "last_activity=\"20140612T10543%1u+0100\" read_status=\"%s\""       
-        // "version_counter=\"BEEF%02X\">"                                                                                 
+        "version_counter=\"BEEF%02X\">"                                                                                 
         // "<participant uci=\"%u@bla.net\" display_name=\"%s\""                                                           
         // "chat_state=\"%u\" last_activity=\"20140612T10543%1u+0100\"/>"                                                  
         "</conversation>",
         index, // <conversation id = \"DEAD%02X\" 
-        "Sbjct" // name="subject"
+        "Sbjct", // name="subject"
         // optional fields and elements
         // ,0, // last second of last_activity=\"20140612T10543%1u+0100\"
         // "no", // read_status = \"%s\"
-        // 0, // version_counter=\"BEEF%02X\"> 
+        version++ // version_counter=\"BEEF%02X\"> 
         // 0, // <participant uci=\"%u@bla.net\"
         // "Eve", // display_name=\"%s\"
         // 3, // chat_state=\"%u\"
