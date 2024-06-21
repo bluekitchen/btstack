@@ -119,7 +119,7 @@ typedef uint8_t mas_UTCstmpoffstr_t[20];
                                                                               0b00000010 = get read messages only                                               \
                                                                               0b00000000 =                                                                      \
                                                                               no - filtering; get both read and unread messages; all other values : undefined  )\
- PARAM_UNUSED( FilterRecipient 	                 , 0x07, mas_string_t       , variable Text(UTF - 8) wildcards "*" may 	be used if required                    )\
+ PARAM_REQUST( FilterRecipient 	                 , 0x07, mas_string_t       , variable Text(UTF - 8) wildcards "*" may 	be used if required                    )\
  PARAM_UNUSED( FilterOriginator                  , 0x08, mas_string_t       , variable Text(UTF - 8) wildcards "*" may be used if required                     )\
  PARAM_UNUSED( FilterPriority                    , 0x09, uint8_t            , Bit mask: 0b00000000 = no - filtering                                             \
                                                                                         0b00000001 = get high priority messages only                            \
