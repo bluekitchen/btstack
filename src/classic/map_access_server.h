@@ -72,21 +72,21 @@ typedef uint8_t mas_uint128hex_t[BT_UINT128_HEX_LEN_BYTES];
 typedef uint8_t mas_uint64_t[8];
 
 
-#define app_param_read_uint8_t           APP_PARAM_READ_08
-#define app_param_read_uint16_t          APP_PARAM_READ_16
-#define app_param_read_uint32_t          APP_PARAM_READ_32
-#define app_param_read_mas_string_t      APP_PARAM_READ_ARR
-#define app_param_read_mas_utf8_t        APP_PARAM_READ_ARR
-#define app_param_read_mas_uint64_t      APP_PARAM_READ_ARR
-#define app_param_read_mas_uint128hex_t  APP_PARAM_READ_ARR
+#define app_param_read_uint8_t           BT_APP_PARAM_READ_08
+#define app_param_read_uint16_t          BT_APP_PARAM_READ_16
+#define app_param_read_uint32_t          BT_APP_PARAM_READ_32
+#define app_param_read_mas_string_t      BT_APP_PARAM_READ_ARR
+#define app_param_read_mas_utf8_t        BT_APP_PARAM_READ_ARR
+#define app_param_read_mas_uint64_t      BT_APP_PARAM_READ_ARR
+#define app_param_read_mas_uint128hex_t  BT_APP_PARAM_READ_ARR
 
-#define app_param_write_uint8_t          APP_PARAM_WRITE_08
-#define app_param_write_uint16_t         APP_PARAM_WRITE_16
-#define app_param_write_uint32_t         APP_PARAM_WRITE_32
-#define app_param_write_mas_string_t     APP_PARAM_WRITE_ARR 
-#define app_param_write_mas_utf8_t       APP_PARAM_WRITE_ARR 
-#define app_param_write_mas_uint64_t     APP_PARAM_WRITE_ARR 
-#define app_param_write_mas_uint128hex_t APP_PARAM_WRITE_ARR 
+#define app_param_write_uint8_t          BT_APP_PARAM_WRITE_08
+#define app_param_write_uint16_t         BT_APP_PARAM_WRITE_16
+#define app_param_write_uint32_t         BT_APP_PARAM_WRITE_32
+#define app_param_write_mas_string_t     BT_APP_PARAM_WRITE_ARR 
+#define app_param_write_mas_utf8_t       BT_APP_PARAM_WRITE_ARR 
+#define app_param_write_mas_uint64_t     BT_APP_PARAM_WRITE_ARR 
+#define app_param_write_mas_uint128hex_t BT_APP_PARAM_WRITE_ARR 
 
     // Data extracted from "Message Access Profile"
     // Bluetooth  Profile Specification
