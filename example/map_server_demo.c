@@ -166,13 +166,14 @@ static struct test_config_s
 {.nr = 3, .descr = "MAP/MSE/MMB/BV-16-I 23"          , .type = &msg,  .obj_count = 1, .objects = { "EMAIL","EMAIL"                           }, },
 {.nr = 4, .descr = "MAP/MSE/MMB/BV-24-I <a><OK>"     , .type = &convo,.obj_count = 0, .objects = { "",""                                     }, },
 {.nr = 5, .descr = "MAP/MSE/MMB/BV-25-I <c><OK>"     , .type = &convo,.obj_count = 0, .objects = { "",""                                     }, },
-{.nr = 6, .descr = "MAP/MSE/MMB/BV-34-I"             , .type = &convo,.obj_count = 1, .objects = { "",""                                     }, },
+{.nr = 6, .descr = "MAP/MSE/MMB/BV-34-I 38"          , .type = &convo,.obj_count = 1, .objects = { "",""                                     }, },
 {.nr = 7, .descr = "MAP/MSE/MMB/BV-35-I 36 37"       , .type = &msg,  .obj_count = 1, .objects = { "EMAIL"                                   }, },
 };
 
 struct test_config_s* config = &test_configs[0];
 static int current_msg_type = 0;
 static int add_one_object = 0;
+uint16_t ListingSize = 0;
 
 static mas_uint128hex_t DatabaseIdentifier = { 0 };
 // BT SIG Test Suite PTS is not acepting what BT SIG MAP spec describes as valid counters:
@@ -211,6 +212,7 @@ static void set_test_config(int nr) {
 static void init_testcases(void) {
     current_msg_type = 0;
     add_one_object = 0;
+    ListingSize = config->obj_count + add_one_object;
 }
 
 static void body_msg(char* msg_buffer, uint16_t index, int maxsize) {
@@ -585,7 +587,6 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             APP_READ_16(packet, &pos, &start_index);
                             uint8_t tmp_NewMessage = 0;
                             char MSETime[] = "20140612T105430+0100";
-                            uint16_t ListingSize = config->obj_count + add_one_object;
                             map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_NewMessage, &tmp_NewMessage);
                             // needs ro be present for MAP/MSE/MMB/BV-35-I
                             map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_MSETime, &MSETime[0]);
@@ -633,6 +634,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             APP_READ_STR(packet, &pos, sizeof(ConversationID), ConversationID);
                             map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_DatabaseIdentifier, DatabaseIdentifier);
                             map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_ConversationListingVersionCounter, ConversationListingVersionCounter);
+                            map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_ListingSize, &ListingSize);
                             // BT MAP Spec requires to skip the body if max_list_count == 0
                             if (config->obj_count == 0 && add_one_object == 0)
                                 map_access_server_send_get_put_response(map_cid, OBEX_RESP_SUCCESS, 0, 0, NULL);
