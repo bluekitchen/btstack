@@ -385,8 +385,6 @@ static uint16_t map_access_server_application_params_add_folder_version(map_acce
 static void map_access_server_default_headers(map_access_server_t* map_access_server) {
     (void)memset(&map_access_server->request, 0, sizeof(map_access_server->request));
     map_access_server->request.app_params.MaxListCount = 0xffffU;
-    //map_access_server->request.app_params.msg_selector = 0xffffffffUL;
-    //map_access_server->request.app_params.property_selector = 0xffffffffUL;
 }
 static void map_access_server_reset_response(map_access_server_t* map_access_server) {
     (void)memset(&map_access_server->response, 0, sizeof(map_access_server->response));
