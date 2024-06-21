@@ -19,3 +19,4 @@ MAP/MSE/MMB/BV-35-I: WIP (PASSED 2024-06-21 with truncated App_PARAM header or a
 MAP/MSE/MMB/BV-36-I: PASS (2024-06-20)
 MAP/MSE/MMB/BV-37-I: PASS (2024-06-20) Verify that the MSE correctly responds to a request for a Messages-Listing with MaxListCount=0 including DatabaseIdentifier and FolderVersionCounter.
 MAP/MSE/MMB/BV-38-I: PASS (2024-06-20) Verify that the MSE correctly responds to a request for a Conversation-Listing with MaxListCount=0 including Conversation-ListingVersionCounter, ConversationListingSize and DatabaseIdentifier.
+MAP/MSE/MMB/BV-39-I: PASS (2024-06-20)

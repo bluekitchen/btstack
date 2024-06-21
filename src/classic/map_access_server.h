@@ -70,14 +70,15 @@ typedef uint8_t mas_string_t[MAP_SERVER_MAX_TYPE_LEN];
 typedef uint8_t mas_utf8_t[MAP_SERVER_MAX_TYPE_LEN];
 typedef uint8_t mas_uint128hex_t[BT_UINT128_HEX_LEN_BYTES];
 typedef uint8_t mas_uint64_t[8];
-typedef uint8_t mas_msetimestr_t[20];
+typedef uint8_t mas_UTCstmpoffstr_t[20];
 
 
 #define app_param_read_uint8_t           BT_APP_PARAM_READ_08
 #define app_param_read_uint16_t          BT_APP_PARAM_READ_16
 #define app_param_read_uint32_t          BT_APP_PARAM_READ_32
 #define app_param_read_mas_string_t      BT_APP_PARAM_READ_ARR
-#define app_param_read_mas_utf8_t        BT_APP_PARAM_READ_ARR
+#define app_param_read_mas_string_t      BT_APP_PARAM_READ_ARR
+#define app_param_read_mas_UTCstmpoffstr_t        BT_APP_PARAM_READ_ARR
 #define app_param_read_mas_uint64_t      BT_APP_PARAM_READ_ARR
 #define app_param_read_mas_uint128hex_t  BT_APP_PARAM_READ_ARR
 
@@ -85,7 +86,7 @@ typedef uint8_t mas_msetimestr_t[20];
 #define app_param_write_uint16_t         BT_APP_PARAM_WRITE_16
 #define app_param_write_uint32_t         BT_APP_PARAM_WRITE_32
 #define app_param_write_mas_string_t     BT_APP_PARAM_WRITE_ARR
-#define app_param_write_mas_msetimestr_t BT_APP_PARAM_WRITE_ARR
+#define app_param_write_mas_UTCstmpoffstr_t BT_APP_PARAM_WRITE_ARR
 #define app_param_write_mas_utf8_t       BT_APP_PARAM_WRITE_ARR 
 #define app_param_write_mas_uint64_t     BT_APP_PARAM_WRITE_ARR 
 #define app_param_write_mas_uint128hex_t BT_APP_PARAM_WRITE_ARR 
@@ -112,8 +113,8 @@ typedef uint8_t mas_msetimestr_t[20];
                                                                                         Where                                                                   \
                                                                                         0 = "no filtering; get this type"                                       \
                                                                                         1 = "filter out this type"                                             )\
- PARAM_UNUSED( FilterPeriodBegin                 , 0x04, mas_string_t       , with Begin of filter period.See Section 5.5.4                                    )\
- PARAM_UNUSED( EndFilterPeriodEnd                , 0x05, mas_string_t       , with End of filter period.See Section 5.5.4                                      )\
+ PARAM_REQUST( FilterPeriodBegin                 , 0x04, mas_UTCstmpoffstr_t, with Begin of filter period.See Section 5.5.4                                    )\
+ PARAM_REQUST( EndFilterPeriodEnd                , 0x05, mas_UTCstmpoffstr_t, with End of filter period.See Section 5.5.4                                      )\
  PARAM_UNUSED( FilterReadStatus                  , 0x06, uint8_t            , 1 byte Bit mask : 0b00000001 = get unread messages only                           \
                                                                               0b00000010 = get read messages only                                               \
                                                                               0b00000000 =                                                                      \
@@ -149,7 +150,7 @@ typedef uint8_t mas_msetimestr_t[20];
                                                                               2 = “setExtendedData”                                                            )\
  PARAM_REQUST( StatusValue                       , 0x18, uint8_t            , 1 = "yes"                                                                         \
                                                                               0 = "no"                                                                         )\
- PARAM_RESPON( MSETime                           , 0x19, mas_msetimestr_t   , with current time basis and UTC - offset of the MSE.See Section 5.5.4            )\
+ PARAM_RESPON( MSETime                           , 0x19, mas_UTCstmpoffstr_t, with current time basis and UTC - offset of the MSE.See Section 5.5.4            )\
  PARAM_RESPON( DatabaseIdentifier                , 0x1A, mas_uint128hex_t   , (max 3uint16_t)    ;   128 - bit value in hex string format                      )\
  PARAM_RESPON( ConversationListingVersionCounter , 0x1B, mas_uint128hex_t   , (max 3uint16_t)    ;   128 - bit value in hex string format                      )\
  PARAM_UNUSED( PresenceAvailability              , 0x1C, uint8_t            , 0 to 255                                                                         )\
