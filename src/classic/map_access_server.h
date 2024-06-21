@@ -239,39 +239,39 @@ typedef uint8_t mas_UTCstmpoffstr_t[20];
 #define MAP_SUPPORTED_MESSAGE_TYPE_MMS                                      (1 << 3) //  MMS     
 #define MAP_SUPPORTED_MESSAGE_TYPE_IM                                       (1 << 4) //  IM      
 
-// MAP Property Mask - also used for vCardSelector
-#define MAP_PROPERTY_MASK_VERSION              (1<< 0) // vCard Version
-#define MAP_PROPERTY_MASK_FN                   (1<< 1) // Formatted Name
-#define MAP_PROPERTY_MASK_N                    (1<< 2) // Structured Presentation of Name
-#define MAP_PROPERTY_MASK_PHOTO                (1<< 3) // Associated Image or Photo
-#define MAP_PROPERTY_MASK_BDAY                 (1<< 4) // Birthday
-#define MAP_PROPERTY_MASK_ADR                  (1<< 5) // Delivery Address
-#define MAP_PROPERTY_MASK_LABEL                (1<< 6) // Delivery
-#define MAP_PROPERTY_MASK_TEL                  (1<< 7) // Telephone Number
-#define MAP_PROPERTY_MASK_EMAIL                (1<< 8) // Electronic Mail Address
-#define MAP_PROPERTY_MASK_MAILER               (1<< 9) // Electronic Mail
-#define MAP_PROPERTY_MASK_TZ                   (1<<10) // Time Zone
-#define MAP_PROPERTY_MASK_GEO                  (1<<11) // Geographic Position
-#define MAP_PROPERTY_MASK_TITLE                (1<<12) // Job
-#define MAP_PROPERTY_MASK_ROLE                 (1<<13) // Role within the Organization
-#define MAP_PROPERTY_MASK_LOGO                 (1<<14) // Organization Logo
-#define MAP_PROPERTY_MASK_AGENT                (1<<15) // vCard of Person Representing
-#define MAP_PROPERTY_MASK_ORG                  (1<<16) // Name of Organization
-#define MAP_PROPERTY_MASK_NOTE                 (1<<17) // Comments
-#define MAP_PROPERTY_MASK_REV                  (1<<18) // Revision
-#define MAP_PROPERTY_MASK_SOUND                (1<<19) // Pronunciation of Name
-#define MAP_PROPERTY_MASK_URL                  (1<<20) // Uniform Resource Locator
-#define MAP_PROPERTY_MASK_UID                  (1<<21) // Unique ID
-#define MAP_PROPERTY_MASK_KEY                  (1<<22) // Public Encryption Key
-#define MAP_PROPERTY_MASK_NICKNAME             (1<<23) // Nickname
-#define MAP_PROPERTY_MASK_CATEGORIES           (1<<24) // Categories
-#define MAP_PROPERTY_MASK_PROID                (1<<25) // Product ID
-#define MAP_PROPERTY_MASK_CLASS                (1<<26) // Class information
-#define MAP_PROPERTY_MASK_SORT_STRING          (1<<27) // String used for sorting operations
-#define MAP_PROPERTY_MASK_X_IRMC_CALL_DATETIME (1<<28) // Time stamp
-#define MAP_PROPERTY_MASK_X_BT_SPEEDDIALKEY    (1<<29) // Speed-dial shortcut
-#define MAP_PROPERTY_MASK_X_BT_UCI             (1<<30) // Uniform Caller Identifier
-#define MAP_PROPERTY_MASK_X_BT_UID             (1<<31) // Bluetooth Contact Unique Identifier
+//// MAP Property Mask - also used for vCardSelector
+//#define MAP_PROPERTY_MASK_VERSION              (1<< 0) // vCard Version
+//#define MAP_PROPERTY_MASK_FN                   (1<< 1) // Formatted Name
+//#define MAP_PROPERTY_MASK_N                    (1<< 2) // Structured Presentation of Name
+//#define MAP_PROPERTY_MASK_PHOTO                (1<< 3) // Associated Image or Photo
+//#define MAP_PROPERTY_MASK_BDAY                 (1<< 4) // Birthday
+//#define MAP_PROPERTY_MASK_ADR                  (1<< 5) // Delivery Address
+//#define MAP_PROPERTY_MASK_LABEL                (1<< 6) // Delivery
+//#define MAP_PROPERTY_MASK_TEL                  (1<< 7) // Telephone Number
+//#define MAP_PROPERTY_MASK_EMAIL                (1<< 8) // Electronic Mail Address
+//#define MAP_PROPERTY_MASK_MAILER               (1<< 9) // Electronic Mail
+//#define MAP_PROPERTY_MASK_TZ                   (1<<10) // Time Zone
+//#define MAP_PROPERTY_MASK_GEO                  (1<<11) // Geographic Position
+//#define MAP_PROPERTY_MASK_TITLE                (1<<12) // Job
+//#define MAP_PROPERTY_MASK_ROLE                 (1<<13) // Role within the Organization
+//#define MAP_PROPERTY_MASK_LOGO                 (1<<14) // Organization Logo
+//#define MAP_PROPERTY_MASK_AGENT                (1<<15) // vCard of Person Representing
+//#define MAP_PROPERTY_MASK_ORG                  (1<<16) // Name of Organization
+//#define MAP_PROPERTY_MASK_NOTE                 (1<<17) // Comments
+//#define MAP_PROPERTY_MASK_REV                  (1<<18) // Revision
+//#define MAP_PROPERTY_MASK_SOUND                (1<<19) // Pronunciation of Name
+//#define MAP_PROPERTY_MASK_URL                  (1<<20) // Uniform Resource Locator
+//#define MAP_PROPERTY_MASK_UID                  (1<<21) // Unique ID
+//#define MAP_PROPERTY_MASK_KEY                  (1<<22) // Public Encryption Key
+//#define MAP_PROPERTY_MASK_NICKNAME             (1<<23) // Nickname
+//#define MAP_PROPERTY_MASK_CATEGORIES           (1<<24) // Categories
+//#define MAP_PROPERTY_MASK_PROID                (1<<25) // Product ID
+//#define MAP_PROPERTY_MASK_CLASS                (1<<26) // Class information
+//#define MAP_PROPERTY_MASK_SORT_STRING          (1<<27) // String used for sorting operations
+//#define MAP_PROPERTY_MASK_X_IRMC_CALL_DATETIME (1<<28) // Time stamp
+//#define MAP_PROPERTY_MASK_X_BT_SPEEDDIALKEY    (1<<29) // Speed-dial shortcut
+//#define MAP_PROPERTY_MASK_X_BT_UCI             (1<<30) // Uniform Caller Identifier
+//#define MAP_PROPERTY_MASK_X_BT_UID             (1<<31) // Bluetooth Contact Unique Identifier
 
 // MAP vCardSelectorOperator
 #define MAP_MSG_SELECTOR_OPERATOR_OR          0
