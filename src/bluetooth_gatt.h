@@ -443,7 +443,9 @@
 #define ORG_BLUETOOTH_CHARACTERISTIC_SOURCE_AUDIO_LOCATIONS                                                           0x2BCC // Source Audio Locations
 #define ORG_BLUETOOTH_CHARACTERISTIC_AVAILABLE_AUDIO_CONTEXTS                                                         0x2BCD // Available Audio Contexts
 #define ORG_BLUETOOTH_CHARACTERISTIC_SUPPORTED_AUDIO_CONTEXTS                                                         0x2BCE // Supported Audio Contexts
-
+#define ORG_BLUETOOTH_CHARACTERISTIC_HEARING_AID_FEATURES                                                             0x2BDA // Hearing Aid Features
+#define ORG_BLUETOOTH_CHARACTERISTIC_HEARING_AID_PRESET_CONTROL_POINT                                                 0x2BDB // Hearing Aid Preset Control Point
+#define ORG_BLUETOOTH_CHARACTERISTIC_ACTIVE_PRESET_INDEX                                                              0x2BDC // Active Preset Index
 #define ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_CRITCAL_STATUS                                                           0x2BE9 // Battery Critical Status
 #define ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_HEALTH_STATUS                                                            0x2BEA // Battery Health Status
 #define ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_HEALTH_INFORMATION                                                       0x2BEB // Battery Health Information
