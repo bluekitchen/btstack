@@ -197,7 +197,7 @@ typedef uint8_t mas_uint64_t[8];
 #define PARAM_REQUST(name, tag, type, descr) MAP_APP_PARAM_ ## name = tag,
 #define PARAM_RESPON PARAM_REQUST
 #define PARAM_REQRSP PARAM_REQUST
-#define PARAM_UNUSED(...)
+#define PARAM_UNUSED PARAM_REQUST
         APP_PARAMS
 #undef PARAM_REQUST
 #undef PARAM_RESPON
