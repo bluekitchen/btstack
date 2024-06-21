@@ -941,8 +941,8 @@ int map_access_server_set_response_app_param(uint16_t map_cid, enum MAP_APP_PARA
 // automagically generates SETers for all APP Params
 #define PARAM_RESPON(name, tag, type, descr) \
     case MAP_APP_PARAM_ ## name: \
-        /* Type: 1 Byte  */APP_PARAM_WRITE_08(mas->response.header_data, &mas->response.header_pos, MAP_APP_PARAM_ ## name, 1); \
-        /* Size: 1 Byte  */APP_PARAM_WRITE_08(mas->response.header_data, &mas->response.header_pos, sizeof(type), 1); \
+        /* Type: 1 Byte  */BT_APP_PARAM_WRITE_08(mas->response.header_data, &mas->response.header_pos, MAP_APP_PARAM_ ## name, 1); \
+        /* Size: 1 Byte  */BT_APP_PARAM_WRITE_08(mas->response.header_data, &mas->response.header_pos, sizeof(type), 1); \
         /* Data: N Bytes */app_param_write_ ## type (mas->response.header_data, &mas->response.header_pos, *((type*)param), sizeof(type)); \
         return ERROR_CODE_SUCCESS;
 
