@@ -598,15 +598,6 @@ static void map_access_server_app_param_callback_get(void* user_data, uint8_t ta
 #undef PARAM_REQRSP
 #undef PARAM_UNUSED
 
-
-
-            //case MAP_APP_PARAM_MaxListCount: APP_PARAM_READ_16(map_access_server->request.app_param_buffer, &pos, (void*) & map_access_server->request.app_params.MaxListCount, sizeof(uint16_t));break;
-            //case MAP_APP_PARAM_ListStartOffset: APP_PARAM_READ_16(map_access_server->request.app_param_buffer, &pos, &map_access_server->request.app_params.ListStartOffset, sizeof(uint16_t));break;                     
-            //case MAP_APP_PARAM_StatusIndicator: APP_PARAM_READ_08(map_access_server->request.app_param_buffer, &pos, &map_access_server->request.app_params.StatusIndicator, sizeof(uint8_t)); break; 
-            //case MAP_APP_PARAM_StatusValue: APP_PARAM_READ_08(map_access_server->request.app_param_buffer, &pos, &map_access_server->request.app_params.StatusValue, sizeof(uint8_t)); break;          
-            //case MAP_APP_PARAM_ConversationID: APP_PARAM_READ_ARR(map_access_server->request.app_param_buffer, &pos, (void*)&map_access_server->request.app_params.ConversationID, sizeof(mas_uint128hex_t)); break;
-            //case MAP_APP_PARAM_MapSupportedFeatures: APP_PARAM_READ_32(map_access_server->request.app_param_buffer, &pos, &map_access_server->request.app_params.MapSupportedFeatures, sizeof(uint32_t)); break;
-
             default:
                 break;
             }
