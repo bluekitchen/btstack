@@ -160,14 +160,14 @@ static struct test_config_s
     enum msg_status_read msg_stati[6]; // maximum 6-1 entries, last one is null
 } test_configs[] =
 {
-{.nr = 0, .descr = "MAP/MSE/MMB/BV-09-I 10 11 13 14" , .type = &msg,  .obj_count = 2, .objects = { "SMS_GSM","SMS_CDMA"                      }, },
-{.nr = 1, .descr = "MAP/MSE/MMB/BV-12-I"             , .type = &msg,  .obj_count = 1, .objects = { "EMAIL", "SMS_GSM","SMS_CDMA"             }, },
-{.nr = 2, .descr = "MAP/MSE/MMB/BV-15-I 18 20 22"    , .type = &msg,  .obj_count = 5, .objects = { "EMAIL","SMS_GSM","SMS_CDMA", "MMS", "IM" }, },
-{.nr = 3, .descr = "MAP/MSE/MMB/BV-16-I 23"          , .type = &msg,  .obj_count = 1, .objects = { "EMAIL","EMAIL"                           }, },
-{.nr = 4, .descr = "MAP/MSE/MMB/BV-24-I <a><OK>"     , .type = &convo,.obj_count = 0, .objects = { "",""                                     }, },
-{.nr = 5, .descr = "MAP/MSE/MMB/BV-25-I <c><OK>"     , .type = &convo,.obj_count = 0, .objects = { "",""                                     }, },
-{.nr = 6, .descr = "MAP/MSE/MMB/BV-34-I 38 39 40 41" , .type = &convo,.obj_count = 1, .objects = { "",""                                     }, },
-{.nr = 7, .descr = "MAP/MSE/MMB/BV-35-I 36 37"       , .type = &msg,  .obj_count = 1, .objects = { "EMAIL"                                   }, },
+{.nr = 0, .descr = "MAP/MSE/MMB/BV-09-I 10 11 13 14 42" , .type = &msg,  .obj_count = 2, .objects = { "SMS_GSM","SMS_CDMA"                      }, },
+{.nr = 1, .descr = "MAP/MSE/MMB/BV-12-I"                , .type = &msg,  .obj_count = 1, .objects = { "EMAIL", "SMS_GSM","SMS_CDMA"             }, },
+{.nr = 2, .descr = "MAP/MSE/MMB/BV-15-I 18 20 22"       , .type = &msg,  .obj_count = 5, .objects = { "EMAIL","SMS_GSM","SMS_CDMA", "MMS", "IM" }, },
+{.nr = 3, .descr = "MAP/MSE/MMB/BV-16-I 23"             , .type = &msg,  .obj_count = 1, .objects = { "EMAIL","EMAIL"                           }, },
+{.nr = 4, .descr = "MAP/MSE/MMB/BV-24-I <a><OK>"        , .type = &convo,.obj_count = 0, .objects = { "",""                                     }, },
+{.nr = 5, .descr = "MAP/MSE/MMB/BV-25-I <c><OK>"        , .type = &convo,.obj_count = 0, .objects = { "",""                                     }, },
+{.nr = 6, .descr = "MAP/MSE/MMB/BV-34-I 38 39 40 41"    , .type = &convo,.obj_count = 1, .objects = { "",""                                     }, },
+{.nr = 7, .descr = "MAP/MSE/MMB/BV-35-I 36 37"          , .type = &msg,  .obj_count = 1, .objects = { "EMAIL"                                   }, },
 };
 
 struct test_config_s* config = &test_configs[0];
