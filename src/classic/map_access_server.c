@@ -714,6 +714,8 @@ static void map_access_server_handle_get_request(map_access_server_t* map_access
         APP_WRITE_08(event, &pos, MAP_SUBEVENT_GET_CONVO_LISTING);
         APP_WRITE_32(event, &pos, map_access_server->request.continuation);
         APP_WRITE_16(event, &pos, map_access_server->map_cid);
+        APP_WRITE_STR(event, &pos, sizeof(map_access_server->request.app_params.FilterPeriodBegin), (uint8_t*)map_access_server->request.app_params.FilterPeriodBegin);
+        APP_WRITE_STR(event, &pos, sizeof(map_access_server->request.app_params.EndFilterPeriodEnd), (uint8_t*)map_access_server->request.app_params.EndFilterPeriodEnd);
         APP_WRITE_STR(event, &pos, sizeof(map_access_server->request.app_params.ConversationID),(uint8_t*)map_access_server->request.app_params.ConversationID);
         APP_WRITE_LEN(event, pos);
         break;
