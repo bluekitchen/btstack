@@ -167,7 +167,7 @@ static struct test_config_s
 {.nr = 4, .descr = "MAP/MSE/MMB/BV-24-I <a><OK>"     , .type = &convo,.obj_count = 0, .objects = { "",""                                     }, },
 {.nr = 5, .descr = "MAP/MSE/MMB/BV-25-I <c><OK>"     , .type = &convo,.obj_count = 0, .objects = { "",""                                     }, },
 {.nr = 6, .descr = "MAP/MSE/MMB/BV-34-I"             , .type = &convo,.obj_count = 1, .objects = { "",""                                     }, },
-{.nr = 7, .descr = "MAP/MSE/MMB/BV-35-I"             , .type = &msg,  .obj_count = 1, .objects = { "EMAIL"                                   }, },
+{.nr = 7, .descr = "MAP/MSE/MMB/BV-35-I 36 37"       , .type = &msg,  .obj_count = 1, .objects = { "EMAIL"                                   }, },
 };
 
 struct test_config_s* config = &test_configs[0];
@@ -215,7 +215,10 @@ static void init_testcases(void) {
 
 static void body_msg(char* msg_buffer, uint16_t index, int maxsize) {
     index = index % ARRAYSIZE(config->objects);
-    sprintf_s(msg_buffer, maxsize, "<msg handle=\"ID%u\" subject=\"Hello\" type=\"%s\" read=\"%s\"/>",
+    snprintf(msg_buffer, maxsize, "<msg handle=\"ID%u\" subject=\"Hello\" type=\"%s\" read=\"%s\""
+        //" conversation_id=\"E1\"" /* might be required for v1.1? */
+        //" direction=\"incoming\"" /* might be required for v1.1? */
+        "/>",
         index,
         config->objects[index],
         config->objects[index] ? "yes" : "no");
@@ -555,6 +558,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             char MSETime[] = "20140612T105430+0100";
                             uint16_t ListingSize = config->obj_count + add_one_object;
                             map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_NewMessage, &tmp_NewMessage);
+                            // needs ro be present for MAP/MSE/MMB/BV-35-I
                             map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_MSETime, &MSETime[0]);
                             map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_ListingSize, &ListingSize);
                             map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_DatabaseIdentifier, DatabaseIdentifier);
