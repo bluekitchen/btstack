@@ -360,14 +360,20 @@ static void print_current_test_config(void)
 static void show_usage(void){
     bd_addr_t iut_address;
     gap_local_bd_addr(iut_address);
+    struct test_config_s* cfg = &test_configs[0];
 
     MAP_PRINTF("\n--- Bluetooth MAP Server Test Console %s ---\n", bd_addr_to_str(iut_address));
+    do {
+        MAP_PRINTF("[%d] <%s>\n", cfg->nr, cfg->descr);
+    } while (++cfg < &test_configs[ARRAYSIZE(test_configs)]);
+
     print_current_test_config();
     MAP_PRINTF("<n> switch to next test config\n");
-    MAP_PRINTF("<f> increase FolderVersionCounter by 1\n");
-    MAP_PRINTF("<c> increase ConversationListingVersionCounter by 1\n");
-    MAP_PRINTF("<i> increase ConversationID by 1\n");
-    MAP_PRINTF("<d> increase DatabaseIdentifier by 1\n");
+    MAP_PRINTF("<0..9> select # 0..9\n");
+    MAP_PRINTF("<f> FolderVersionCounter++\n");
+    MAP_PRINTF("<c> ConversationListingVersionCounter++\n");
+    MAP_PRINTF("<i> ConversationID++\n");
+    MAP_PRINTF("<d> DatabaseIdentifier++\n");
 
     MAP_PRINTF("<r> reset current test case\n");
 
@@ -375,6 +381,7 @@ static void show_usage(void){
 }
 
 static void stdin_process(char c){
+    
     switch (c){
         case 'n':
             // cycle throug all test cases
@@ -383,6 +390,28 @@ static void stdin_process(char c){
             // init MAP Access Server test cases
             init_testcases();
             print_current_test_config();
+            break;
+
+        case '0':
+        case '1':
+        case '2':
+        case '3':
+        case '4':
+        case '5':
+        case '6':
+        case '7':
+        case '8':
+        case '9':
+            uint8_t tc = c - '0';
+            if (tc < ARRAYSIZE(test_configs))
+            {
+                config = &test_configs[c - '0'];
+                // init MAP Access Server test cases
+                init_testcases();
+                print_current_test_config();
+            }
+            else
+                MAP_PRINTF("Error: coulnd't set config <%c>", c);
             break;
 
         case 'a':
