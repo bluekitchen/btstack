@@ -232,8 +232,9 @@ static void body_convo(char* msg_buffer, uint16_t index, int maxsize) {
     snprintf(msg_buffer, maxsize,
         "<conversation id=\"DEAD%02X\" name=\"%s\""
         // optional fields and elements
-        // "last_activity=\"20140612T10543%1u+0100\" read_status=\"%s\""       
-        "version_counter=\"BEEF%02X\">"                                                                                 
+        // "last_activity=\"20140612T10543%1u+0100\""
+        " read_status=\"%s\""       
+        " version_counter=\"BEEF%02X\">"                                                                                 
         // "<participant uci=\"%u@bla.net\" display_name=\"%s\""                                                           
         // "chat_state=\"%u\" last_activity=\"20140612T10543%1u+0100\"/>"                                                  
         "</conversation>",
@@ -241,7 +242,7 @@ static void body_convo(char* msg_buffer, uint16_t index, int maxsize) {
         "Sbjct", // name="subject"
         // optional fields and elements
         // ,0, // last second of last_activity=\"20140612T10543%1u+0100\"
-        // "no", // read_status = \"%s\"
+        "yes", // read_status = \"%s\"
         version++ // version_counter=\"BEEF%02X\"> 
         // 0, // <participant uci=\"%u@bla.net\"
         // "Eve", // display_name=\"%s\"
