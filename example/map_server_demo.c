@@ -167,6 +167,7 @@ static struct test_config_s
 {.nr = 4, .descr = "MAP/MSE/MMB/BV-24-I <a><OK>"     , .type = &convo,.obj_count = 0, .objects = { "",""                                     }, },
 {.nr = 5, .descr = "MAP/MSE/MMB/BV-25-I <c><OK>"     , .type = &convo,.obj_count = 0, .objects = { "",""                                     }, },
 {.nr = 6, .descr = "MAP/MSE/MMB/BV-34-I"             , .type = &convo,.obj_count = 1, .objects = { "",""                                     }, },
+{.nr = 7, .descr = "MAP/MSE/MMB/BV-35-I"             , .type = &msg,  .obj_count = 1, .objects = { "EMAIL"                                   }, },
 };
 
 struct test_config_s* config = &test_configs[0];
