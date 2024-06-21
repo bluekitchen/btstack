@@ -114,18 +114,18 @@ void little_endian_store_32(uint8_t * buffer, uint16_t position, uint32_t value)
     buffer[pos++] = (uint8_t)(value >> 24);
 }
 
-void app_write_str(uint8_t* buffer, uint16_t *pos, uint16_t dest_size, char * str) {
-    uint16_t max_len = dest_size - *pos - 1;
-    strncpy_s(&buffer[*pos], dest_size, str, max_len);
-    uint16_t str_len = (uint16_t)strnlen_s(&buffer[*pos], max_len);
-    *pos += str_len;
+// we \0 terminate strings in APP messages
+uint16_t app_write_str(uint8_t* buffer, uint16_t *pos, uint16_t dest_size, char * str) {
+    uint16_t bytes = btstack_strcpy(&buffer[*pos], dest_size, str);
+    *pos += bytes; // including terminating \0
+    return bytes;
 }
 
-void app_read_str(uint8_t* buffer, uint16_t* pos, uint16_t dest_size, char* str) {
-    uint16_t max_len = dest_size - *pos - 1;
-    uint16_t str_len = (uint16_t)strnlen_s(&buffer[*pos], max_len);
-    strncpy_s(str, dest_size, &buffer[*pos], max_len);
-    *pos += str_len;
+// we \0 terminate strings in APP messages
+uint16_t app_read_str(uint8_t* buffer, uint16_t* pos, uint16_t dest_size, char* str) {
+    uint16_t bytes = btstack_strcpy(str, dest_size , &buffer[*pos]);
+    *pos += bytes; // including terminating \0
+    return bytes;
 }
 
 void app_write_08(uint8_t* buffer, uint16_t* pos, uint8_t  value) { little_endian_store_08(buffer, *pos, value);  *pos += 1; }

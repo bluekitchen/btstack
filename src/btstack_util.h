@@ -145,13 +145,13 @@ void app_write_08(uint8_t* buffer, uint16_t* pos, uint8_t  value);
 void app_write_16(uint8_t* buffer, uint16_t* pos, uint16_t value);
 void app_write_24(uint8_t* buffer, uint16_t* pos, uint32_t value);
 void app_write_32(uint8_t* buffer, uint16_t* pos, uint32_t value);
-void app_write_str(uint8_t* buffer, uint16_t* pos, uint16_t dest_size, char* str);
+uint16_t app_write_str(uint8_t* buffer, uint16_t* pos, uint16_t dest_size, char* str);
 																 
 void app_read_08(const uint8_t* buffer, uint16_t* pos, uint8_t  *value);
 void app_read_16(const uint8_t* buffer, uint16_t* pos, uint16_t *value);
 void app_read_24(const uint8_t* buffer, uint16_t* pos, uint32_t *value);
 void app_read_32(const uint8_t* buffer, uint16_t* pos, uint32_t *value);
-void app_read_str(uint8_t* buffer, uint16_t* pos, uint16_t dest_size, char* str);
+uint16_t app_read_str(uint8_t* buffer, uint16_t* pos, uint16_t dest_size, char* str);
 
 
 static inline uint16_t LITTLE_ENDIAN_READ_08(const uint8_t* buffer, uint16_t position) { uint8_t  value; uint16_t tmp_pos = (uint16_t)position; app_read_08(buffer, &tmp_pos, &value); log_app_messaging("LITTLE_ENDIAN_READ_08: pos:%u value:%u (0x%04X)", tmp_pos, value, value); return value; }
@@ -173,8 +173,8 @@ static inline uint16_t LITTLE_ENDIAN_READ_32(const uint8_t* buffer, uint16_t pos
 #define APP_READ_24(buffer, ppos, pvalue)  { uint16_t tmp_pos = *ppos; app_read_24(buffer, ppos, pvalue); log_app_messaging("APP_READ_24: pos:%u %s:%u (0x%04X)" , tmp_pos, #pvalue, (unsigned int)*pvalue, (unsigned int)*pvalue); } 
 #define APP_READ_32(buffer, ppos, pvalue)  { uint16_t tmp_pos = *ppos; app_read_32(buffer, ppos, pvalue); log_app_messaging("APP_READ_32: pos:%u %s:%u (0x%04X)" , tmp_pos, #pvalue, (unsigned int)*pvalue, (unsigned int)*pvalue); } 
 
-#define APP_WRITE_STR(buffer, ppos, dest_size, str) { log_app_messaging("APP_WRITE_STR: pos:%u dest_size:%u str(%s):%s", (unsigned int)*ppos, (unsigned int)dest_size, #str, str); app_write_str(buffer, ppos, dest_size, str); }
-#define APP_READ_STR(buffer, ppos, dest_size, str)  { uint16_t tmp_pos = *ppos; app_read_str(buffer, ppos, dest_size, str); log_app_messaging("APP_READ_STR: pos:%u dest_size:%u str(%s):%s", (unsigned int)tmp_pos, (unsigned int)dest_size, #str, str); }
+#define APP_WRITE_STR(buffer, ppos, dest_size, str) { uint16_t tmp_pos = *ppos, bytes = app_write_str(buffer, ppos, dest_size, str); log_app_messaging("APP_WRITE_STR: pos:%u dest_size:%u bytes:%u str(%s):%s", (unsigned int)*ppos, (unsigned int)dest_size, bytes, #str, str); }
+#define APP_READ_STR(buffer, ppos, dest_size, str)  { uint16_t tmp_pos = *ppos, bytes = app_read_str(buffer, ppos, dest_size, str); log_app_messaging("APP_READ_STR: pos:%u dest_size:%u bytes:%u str(%s):%s", (unsigned int)tmp_pos, (unsigned int)dest_size, bytes, #str, str); }
 
 /** 
  * @brief Read 16/24/32 bit big endian value from buffer
