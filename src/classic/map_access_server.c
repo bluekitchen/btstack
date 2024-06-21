@@ -137,7 +137,7 @@ typedef struct {
         map_object_type_t object_type; // parsed from type string
         uint32_t continuation;
         obex_app_param_parser_t app_param_parser;
-        uint8_t app_param_buffer[8];
+        uint8_t app_param_buffer[200];
         struct {
 // the following X-Macro (https://en.wikipedia.org/wiki/X_macro)
 // below generates request.app_param struct members
