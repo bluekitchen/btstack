@@ -140,8 +140,8 @@ typedef struct {
         struct {
 // the following X-Macro (https://en.wikipedia.org/wiki/X_macro)
 // below generates request.app_param struct members
-#define PARAM_REQUST(name, tag, type, descr) type name;
-#define PARAM_REQRSP(name, tag, type, descr) type name;
+#define PARAM_REQUST(name, tag, type, descr) type name; bool name ## _was_set;
+#define PARAM_REQRSP PARAM_REQUST
 #define PARAM_RESPON(...)
 #define PARAM_UNUSED(...)
 
