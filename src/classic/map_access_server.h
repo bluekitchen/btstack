@@ -128,14 +128,14 @@ typedef uint8_t mas_uint64_t[8];
                                                                               0b0 = "OFF"                                                                      )\
  PARAM_UNUSED( Retry                             , 0x0C, uint8_t            , 0b1 = "ON"                                                                        \
                                                                               0b0 = "OFF"                                                                      )\
- PARAM_UNUSED( NewMessage                        , 0x0D, uint8_t            , 0b1 = "ON"                                                                        \
+ PARAM_RESPON( NewMessage                        , 0x0D, uint8_t            , 0b1 = "ON"                                                                        \
                                                                               0b0 = "OFF"                                                                      )\
  PARAM_UNUSED( NotificationStatus                , 0x0E, uint8_t            , 0b1 = "ON"                                                                        \
                                                                               0b0 = "OFF"                                                                      )\
  PARAM_UNUSED( MASInstanceID                     , 0x0F, uint8_t            , 0 to 255                                                                         )\
  PARAM_UNUSED( ParameterMask                     , 0x10, uint32_t           , Bit mask; settings see Section 5.5.4                                             )\
  PARAM_UNUSED( FolderListingSize                 , 0x11, uint16_t           , 0x0000 to 0xFFFF                                                                 )\
- PARAM_UNUSED( ListingSize                       , 0x12, uint16_t           , 0x0000 to 0xFFFF                                                                 )\
+ PARAM_RESPON( ListingSize                       , 0x12, uint16_t           , 0x0000 to 0xFFFF                                                                 )\
  PARAM_UNUSED( SubjectLength                     , 0x13, uint8_t            , 1 to 255                                                                         )\
  PARAM_UNUSED( Charset                           , 0x14, uint8_t            , 0 = "native"                                                                      \
                                                                               1 = "UTF-8"                                                                      )\
@@ -147,7 +147,7 @@ typedef uint8_t mas_uint64_t[8];
                                                                               2 = “setExtendedData”                                                            )\
  PARAM_REQUST( StatusValue                       , 0x18, uint8_t            , 1 = "yes"                                                                         \
                                                                               0 = "no"                                                                         )\
- PARAM_UNUSED( MSETime                           , 0x19, mas_string_t       , with current time basis and UTC - offset of the MSE.See Section 5.5.4            )\
+ PARAM_RESPON( MSETime                           , 0x19, mas_string_t       , with current time basis and UTC - offset of the MSE.See Section 5.5.4            )\
  PARAM_RESPON( DatabaseIdentifier                , 0x1A, mas_uint128hex_t   , (max 3uint16_t)    ;   128 - bit value in hex string format                      )\
  PARAM_RESPON( ConversationListingVersionCounter , 0x1B, mas_uint128hex_t   , (max 3uint16_t)    ;   128 - bit value in hex string format                      )\
  PARAM_UNUSED( PresenceAvailability              , 0x1C, uint8_t            , 0 to 255                                                                         )\
