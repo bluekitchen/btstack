@@ -332,11 +332,10 @@ static void send_get_listing_object(uint8_t* packet, uint16_t start_index, uint1
     total_messages = config->obj_count + add_one_object;
 
     num_msgs_selected = total_messages - start_index;
-    max_list_count = map_subevent_get_message_listing_get_MaxListCount(packet);
     if (max_list_count < 0xffff) {
         num_msgs_selected = btstack_min(max_list_count, num_msgs_selected);
     }
-    MAP_PRINTF("[+] get message listing - list offset %u, num messages %u max_list_count %u\n", start_index, num_msgs_selected, max_list_count);
+    MAP_PRINTF("[+] get message listing - obj_count:%u add_one_object:%u list offset %u, num messages %u max_list_count %u\n", config->obj_count, add_one_object, start_index, num_msgs_selected, max_list_count);
     // consider already sent cards
     if (continuation > 0xffff) {
         // just missed the footer
