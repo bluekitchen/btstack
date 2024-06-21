@@ -21,3 +21,4 @@ MAP/MSE/MMB/BV-37-I: PASS (2024-06-20) Verify that the MSE correctly responds to
 MAP/MSE/MMB/BV-38-I: PASS (2024-06-20) Verify that the MSE correctly responds to a request for a Conversation-Listing with MaxListCount=0 including Conversation-ListingVersionCounter, ConversationListingSize and DatabaseIdentifier.
 MAP/MSE/MMB/BV-39-I: PASS (2024-06-20)
 MAP/MSE/MMB/BV-40-I: PASS (2024-06-20)
+MAP/MSE/MMB/BV-41-I: PASS (2024-06-20) Verify that the MSE correctly responds to a request for a Conversation-Listing with Filtering by recipient
