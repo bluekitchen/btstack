@@ -63,7 +63,8 @@
  // - DatabaseIdentifier
  // - PrimaryFolderVersion,
  // - SecondaryFolderVersion
-#define MAP_SERVER_MAX_APP_PARAMS_LEN ((4*2) + 2 + BT_UINT128_LEN_BYTES + (2*BT_UINT128_LEN_BYTES))
+#define MAP_SERVER_MAX_APP_PARAMS_LEN 200
+//#define MAP_SERVER_MAX_APP_PARAMS_LEN ((4*2) + 2 + BT_UINT128_LEN_BYTES + (2*BT_UINT128_LEN_BYTES))
 
 
 typedef enum {
