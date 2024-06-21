@@ -1137,6 +1137,10 @@ void btp_cap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, 
                 btstack_assert(source_id == 0);
                 btp_bap_stop_advertising();
                 btp_send(response_service_id, opcode, controller_index, 0, NULL);
+
+                // reset BTP Broadcast setup logic
+                btp_cap_broadcast_stream_count   = 0;
+                btp_cap_broadcast_subgroup_count = 0;
             }
             break;
 
@@ -1161,6 +1165,10 @@ void btp_cap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, 
                 btstack_assert(source_id == 0);
                 btp_bap_release_big();
                 btp_send(response_service_id, opcode, controller_index, 0, NULL);
+
+                // reset BTP Broadcast setup logic
+                btp_cap_broadcast_stream_count   = 0;
+                btp_cap_broadcast_subgroup_count = 0;
             }
             break;
 
