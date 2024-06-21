@@ -15,4 +15,5 @@ MAP/MSE/MMB/BV-23-I: PASS (2024-06-17, PTS want to see a 16-bytes long counter i
 MAP/MSE/MMB/BV-24-I: PASS (2024-06-20)
 MAP/MSE/MMB/BV-25-I: PASS (2024-06-20)
 MAP/MSE/MMB/BV-34-I: PASS (2024-06-20)
-MAP/MSE/MMB/BV-35-I: PASS (2024-06-21)
+MAP/MSE/MMB/BV-35-I: WIP (PASSED 2024-06-21 with truncated App_PARAM header or a special combo of xml items at PTS)
+MAP/MSE/MMB/BV-36-I: PASS (2024-06-20)
