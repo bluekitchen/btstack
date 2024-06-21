@@ -166,7 +166,7 @@ static struct test_config_s
 {.nr = 3, .descr = "MAP/MSE/MMB/BV-16-I 23"          , .type = &msg,  .obj_count = 1, .objects = { "EMAIL","EMAIL"                           }, },
 {.nr = 4, .descr = "MAP/MSE/MMB/BV-24-I <a><OK>"     , .type = &convo,.obj_count = 0, .objects = { "",""                                     }, },
 {.nr = 5, .descr = "MAP/MSE/MMB/BV-25-I <c><OK>"     , .type = &convo,.obj_count = 0, .objects = { "",""                                     }, },
-{.nr = 6, .descr = "MAP/MSE/MMB/BV-34-I 38 39 40"    , .type = &convo,.obj_count = 1, .objects = { "",""                                     }, },
+{.nr = 6, .descr = "MAP/MSE/MMB/BV-34-I 38 39 40 41" , .type = &convo,.obj_count = 1, .objects = { "",""                                     }, },
 {.nr = 7, .descr = "MAP/MSE/MMB/BV-35-I 36 37"       , .type = &msg,  .obj_count = 1, .objects = { "EMAIL"                                   }, },
 };
 
@@ -629,12 +629,14 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             break;
 
                         case MAP_SUBEVENT_GET_CONVO_LISTING:
-                            mas_UTCstmpoffstr_t FilterPeriodBegin[50];
-                            mas_UTCstmpoffstr_t EndFilterPeriodEnd[50];
+                            mas_UTCstmpoffstr_t FilterPeriodBegin;
+                            mas_UTCstmpoffstr_t EndFilterPeriodEnd;
+                            mas_string_t FilterRecipient;
                             APP_READ_32(packet, &pos, &continuation);
                             APP_READ_16(packet, &pos, &dummy_map_cid);
                             APP_READ_STR(packet, &pos, sizeof(FilterPeriodBegin),  (char*)FilterPeriodBegin);
                             APP_READ_STR(packet, &pos, sizeof(EndFilterPeriodEnd), (char*)EndFilterPeriodEnd);
+                            APP_READ_STR(packet, &pos, sizeof(EndFilterPeriodEnd), (char*)FilterRecipient);
                             APP_READ_STR(packet, &pos, sizeof(ConversationID), ConversationID);
                             map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_DatabaseIdentifier, DatabaseIdentifier);
                             map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_ConversationListingVersionCounter, ConversationListingVersionCounter);
