@@ -2573,6 +2573,7 @@ static void hfp_ag_handle_rfcomm_data(hfp_connection_t * hfp_connection, uint8_t
                 hfp_parser_reset_line_buffer(hfp_connection);
                 log_info("Custom AT Command ID 0x%04x", hfp_connection->custom_at_command_id);
                 hfp_ag_emit_custom_command_event(hfp_connection);
+                hfp_ag_queue_ok(hfp_connection);
                 break;
             case HFP_CMD_UNKNOWN:
                 hfp_connection->command = HFP_CMD_NONE;
