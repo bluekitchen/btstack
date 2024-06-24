@@ -107,6 +107,7 @@ static void setup_advertising(void);
 // TBS HSM
 #define TRAN( target ) btstack_hsm_transit( &me->super, (btstack_hsm_state_handler_t)target )
 #define SUPER( target ) btstack_hsm_super( &me->super, (btstack_hsm_state_handler_t)target )
+#define TBS_HEARER_CONNECTIONS_MAX_NUM 4
 
 enum {
     ACCEPT_SIG = BTSTACK_HSM_USER_SIG,
@@ -128,6 +129,7 @@ typedef struct {
 
 typedef struct {
     telephone_bearer_service_server_t bearer;
+    tbs_server_connection_t connections[TBS_HEARER_CONNECTIONS_MAX_NUM];
     uint16_t id;
     char *scheme;
 } my_bearer_t;
@@ -545,7 +547,7 @@ static btstack_hsm_state_t tbs_state_remotely_held(my_call_data_t * const me, bt
 static my_bearer_t tbs_bearers[TBS_BEARERS_MAX_NUM];
 static uint8_t tbs_bearer_index;
 
-static void setup_advertising(void) {
+static void     setup_advertising(void) {
     bd_addr_t local_addr;
     gap_local_bd_addr(local_addr);
     bool local_address_invalid = btstack_is_null_bd_addr( local_addr );
@@ -1110,6 +1112,7 @@ int btstack_main(void)
     (void) telephone_bearer_service_server_register_generic_bearer(
         &tbs_bearers[tbs_bearer_index].bearer,
         &tbs_server_packet_handler,
+        TBS_HEARER_CONNECTIONS_MAX_NUM, tbs_bearers[tbs_bearer_index].connections,
         TBS_OPCODE_MASK_LOCAL_HOLD | TBS_OPCODE_MASK_JOIN,
         &tbs_bearers[tbs_bearer_index].id);
 
@@ -1117,6 +1120,7 @@ int btstack_main(void)
     (void) telephone_bearer_service_server_register_individual_bearer(
             &tbs_bearers[tbs_bearer_index].bearer,
             &tbs_server_packet_handler,
+            TBS_HEARER_CONNECTIONS_MAX_NUM, tbs_bearers[tbs_bearer_index].connections,
             TBS_OPCODE_MASK_LOCAL_HOLD | TBS_OPCODE_MASK_JOIN,
             &tbs_bearers[tbs_bearer_index].id);
 
