@@ -133,7 +133,7 @@ typedef uint8_t mas_UTCstmpoffstr_t[20];
                                                                               0b0 = "OFF"                                                                      )\
  PARAM_RESPON( NewMessage                        , 0x0D, uint8_t            , 0b1 = "ON"                                                                        \
                                                                               0b0 = "OFF"                                                                      )\
- PARAM_UNUSED( NotificationStatus                , 0x0E, uint8_t            , 0b1 = "ON"                                                                        \
+ PARAM_REQUST( NotificationStatus                , 0x0E, uint8_t            , 0b1 = "ON"                                                                        \
                                                                               0b0 = "OFF"                                                                      )\
  PARAM_UNUSED( MASInstanceID                     , 0x0F, uint8_t            , 0 to 255                                                                         )\
  PARAM_UNUSED( ParameterMask                     , 0x10, uint32_t           , Bit mask; settings see Section 5.5.4                                             )\
@@ -291,7 +291,8 @@ typedef enum {
     MAP_OBJECT_TYPE_GET_CONVO_LISTING,
     MAP_OBJECT_TYPE_GET_MESSAGE,
     MAP_OBJECT_TYPE_PUT_MESSAGE_STATUS,
-    MAP_OBJECT_TYPE_PUT_MESSAGE_UPDATE
+    MAP_OBJECT_TYPE_PUT_MESSAGE_UPDATE,
+    MAP_OBJECT_TYPE_PUT_NOTIFICATION_REGISTRATION
 } map_object_type_t;
 
 // MAP Folders

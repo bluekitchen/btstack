@@ -6821,6 +6821,8 @@ typedef uint8_t sm_key_t[16];
 
 #define MAP_SUBEVENT_PUT_MESSAGE_UPDATE                                    0x0Bu
 
+#define MAP_SUBEVENT_PUT_NOTIFICATION_REGISTRATION                         0x0Du
+
 // MESH Meta Event Group
 
 /**
