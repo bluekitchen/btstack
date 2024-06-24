@@ -541,7 +541,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
-    uint8_t status, NotificationStatus;
+    uint8_t status, NotificationStatus, ChatState;
     uint16_t pos, start_index, max_list_count = 0, dummy_map_cid;
     uint32_t continuation;
 	
@@ -632,6 +632,18 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             APP_READ_16(packet, &pos, &dummy_map_cid);
                             APP_READ_08(packet, &pos, &NotificationStatus);
                             MAP_PRINTF("[+] Put NotificationRegistration\n");
+                            map_access_server_send_get_put_response(map_cid, OBEX_RESP_SUCCESS, 0, 0, NULL);
+                            // BT SIG Test case MAP/MSE/MMB/BV-23-I asks for one more message after
+                            // issuing a "update messages" request so we just simulate one
+                            add_one_object = 1;
+                            break;
+
+                        case MAP_OBJECT_TYPE_PUT_OWNER_STATUS:
+                            mas_UTCstmpoffstr_t LastActivity;
+                            APP_READ_16(packet, &pos, &dummy_map_cid);
+                            APP_READ_STR(packet, &pos, sizeof(LastActivity), (char*)LastActivity);
+                            APP_READ_08(packet, &pos, &ChatState);
+                            MAP_PRINTF("[+] Put OwnerStatusn\n");
                             map_access_server_send_get_put_response(map_cid, OBEX_RESP_SUCCESS, 0, 0, NULL);
                             // BT SIG Test case MAP/MSE/MMB/BV-23-I asks for one more message after
                             // issuing a "update messages" request so we just simulate one
