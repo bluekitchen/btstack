@@ -53,7 +53,7 @@ extern "C" {
 #define MAP_SERVER_MAX_NAME_LEN 32
 
 // max type header len
-#define MAP_SERVER_MAX_TYPE_LEN 30
+#define MAP_SERVER_MAX_TYPE_LEN 42
 
 // max search value len
 #define MAP_SERVER_MAX_SEARCH_VALUE_LEN 32
