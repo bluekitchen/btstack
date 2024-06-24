@@ -27,3 +27,4 @@ MAP/MSE/MMB/BV-43-I: WIP (2024-06-24) PTS wants us to open a second connection, 
 MAP/MSE/MMB/BV-44-I: PASS (2024-06-24) test settings 6
 MAP/MSE/MMB/BV-45-I: PASS (2024-06-24) test settings 6
 MAP/MSE/MMB/BV-46-I: PASS (2024-06-24) Verify that the MSE correctly responds to a request to get the presence, chat state and last activity datetime of the owner.
+MAP/MSE/MMB/BV-47-I: WIP
