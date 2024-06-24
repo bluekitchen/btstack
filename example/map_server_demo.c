@@ -160,14 +160,14 @@ static struct test_config_s
     enum msg_status_read msg_stati[6]; // maximum 6-1 entries, last one is null
 } test_configs[] =
 {
-{.nr = 0, .descr = "MAP/MSE/MMB/BV-09-I 10 11 13 14 42" , .type = &msg,  .obj_count = 2, .objects = { "SMS_GSM","SMS_CDMA"                      }, },
-{.nr = 1, .descr = "MAP/MSE/MMB/BV-12-I"                , .type = &msg,  .obj_count = 1, .objects = { "EMAIL", "SMS_GSM","SMS_CDMA"             }, },
-{.nr = 2, .descr = "MAP/MSE/MMB/BV-15-I 18 20 22"       , .type = &msg,  .obj_count = 5, .objects = { "EMAIL","SMS_GSM","SMS_CDMA", "MMS", "IM" }, },
-{.nr = 3, .descr = "MAP/MSE/MMB/BV-16-I 23"             , .type = &msg,  .obj_count = 1, .objects = { "EMAIL","EMAIL"                           }, },
-{.nr = 4, .descr = "MAP/MSE/MMB/BV-24-I <a><OK>"        , .type = &convo,.obj_count = 0, .objects = { "",""                                     }, },
-{.nr = 5, .descr = "MAP/MSE/MMB/BV-25-I <c><OK>"        , .type = &convo,.obj_count = 0, .objects = { "",""                                     }, },
-{.nr = 6, .descr = "MAP/MSE/MMB/BV-34-I 38 39 40 41 44" , .type = &convo,.obj_count = 1, .objects = { "",""                                     }, },
-{.nr = 7, .descr = "MAP/MSE/MMB/BV-35-I 36 37"          , .type = &msg,  .obj_count = 1, .objects = { "EMAIL"                                   }, },
+{.nr = 0, .descr = "MAP/MSE/MMB/BV-09-I 10 11 13 14 42 46" , .type = &msg,  .obj_count = 2, .objects = { "SMS_GSM","SMS_CDMA"                      }, },
+{.nr = 1, .descr = "MAP/MSE/MMB/BV-12-I"                   , .type = &msg,  .obj_count = 1, .objects = { "EMAIL", "SMS_GSM","SMS_CDMA"             }, },
+{.nr = 2, .descr = "MAP/MSE/MMB/BV-15-I 18 20 22"          , .type = &msg,  .obj_count = 5, .objects = { "EMAIL","SMS_GSM","SMS_CDMA", "MMS", "IM" }, },
+{.nr = 3, .descr = "MAP/MSE/MMB/BV-16-I 23"                , .type = &msg,  .obj_count = 1, .objects = { "EMAIL","EMAIL"                           }, },
+{.nr = 4, .descr = "MAP/MSE/MMB/BV-24-I <a><OK>"           , .type = &convo,.obj_count = 0, .objects = { "",""                                     }, },
+{.nr = 5, .descr = "MAP/MSE/MMB/BV-25-I <c><OK>"           , .type = &convo,.obj_count = 0, .objects = { "",""                                     }, },
+{.nr = 6, .descr = "MAP/MSE/MMB/BV-34-I 38 39 40 41 44"    , .type = &convo,.obj_count = 1, .objects = { "",""                                     }, },
+{.nr = 7, .descr = "MAP/MSE/MMB/BV-35-I 36 37"             , .type = &msg,  .obj_count = 1, .objects = { "EMAIL"                                   }, },
 };
 
 struct test_config_s* config = &test_configs[0];
@@ -218,7 +218,7 @@ static void init_testcases(void) {
 static void body_msg(char* msg_buffer, uint16_t index, int maxsize) {
     index = index % ARRAYSIZE(config->objects);
     snprintf(msg_buffer, maxsize, "<msg handle=\"ID%u\" subject=\"Hello\" type=\"%s\" read=\"%s\""
-        //" conversation_id=\"E1\"" /* might be required for v1.1? */
+        " conversation_id=\"E1\"" /* might be required for v1.1? */
         //" direction=\"incoming\"" /* might be required for v1.1? */
         "/>",
         index,
@@ -230,14 +230,17 @@ static void body_convo(char* msg_buffer, uint16_t index, int maxsize) {
     static int version = 0;
     // Implement the function to create a conversation
     snprintf(msg_buffer, maxsize,
-        "<conversation id=\"DEAD%02X\" name=\"%s\""
+        "<?xml version=\"1.0\" encoding= \"UTF-8\"?>"
+        "<conversation id=\"E1E2E3E4F1F2F3F4A1A2A3A4B1B2B3%02X\" name=\"%s\""
         // optional fields and elements
-        // "last_activity=\"20140612T10543%1u+0100\""
+        " last_activity=\"20140612T105430+0100\""
         " read_status=\"%s\""       
         " version_counter=\"BEEF%02X\">"                                                                                 
-        // "<participant uci=\"%u@bla.net\" display_name=\"%s\""                                                           
-        // "chat_state=\"%u\" last_activity=\"20140612T10543%1u+0100\"/>"                                                  
-        "</conversation>",
+            "\n<participant uci=\"0@bla.net\""
+            " display_name=\"Eve\""                                                           
+            " chat_state=\"3\""
+            " last_activity=\"20140612T105430+0100\"/>"                                                  
+        "\n</conversation>",
         index, // <conversation id = \"DEAD%02X\" 
         "Sbjct", // name="subject"
         // optional fields and elements
