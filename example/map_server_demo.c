@@ -105,7 +105,7 @@ static bd_addr_t    remote_addr;
 static const char* remote_addr_string = "001BDC08E272";
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
-#define MSG_LISTING_HEADER   "<MAP-msg-listing version=\"1.0\">"
+#define MSG_LISTING_HEADER   "<MAP-msg-listing version=\"1.1\">"
 #define MSG_LISTING_FOOTER   "</MAP-msg-listing>"
 /* Sample from BT SIG MAP Spec Page 54
 <MAP-convo-listing version = "1.0">
@@ -160,14 +160,14 @@ static struct test_config_s
     enum msg_status_read msg_stati[6]; // maximum 6-1 entries, last one is null
 } test_configs[] =
 {
-{.nr = 0, .descr = "MAP/MSE/MMB/BV-09-I 10 11 13 14 42 46" , .type = &msg,  .obj_count = 2, .objects = { "SMS_GSM","SMS_CDMA"                      }, },
-{.nr = 1, .descr = "MAP/MSE/MMB/BV-12-I"                   , .type = &msg,  .obj_count = 1, .objects = { "EMAIL", "SMS_GSM","SMS_CDMA"             }, },
-{.nr = 2, .descr = "MAP/MSE/MMB/BV-15-I 18 20 22"          , .type = &msg,  .obj_count = 5, .objects = { "EMAIL","SMS_GSM","SMS_CDMA", "MMS", "IM" }, },
-{.nr = 3, .descr = "MAP/MSE/MMB/BV-16-I 23"                , .type = &msg,  .obj_count = 1, .objects = { "EMAIL","EMAIL"                           }, },
-{.nr = 4, .descr = "MAP/MSE/MMB/BV-24-I <a><OK>"           , .type = &convo,.obj_count = 0, .objects = { "",""                                     }, },
-{.nr = 5, .descr = "MAP/MSE/MMB/BV-25-I <c><OK>"           , .type = &convo,.obj_count = 0, .objects = { "",""                                     }, },
-{.nr = 6, .descr = "MAP/MSE/MMB/BV-34-I 38 39 40 41 44"    , .type = &convo,.obj_count = 1, .objects = { "",""                                     }, },
-{.nr = 7, .descr = "MAP/MSE/MMB/BV-35-I 36 37"             , .type = &msg,  .obj_count = 1, .objects = { "EMAIL"                                   }, },
+{.nr = 0, .descr = "MAP/MSE/MMB/BV-09-I 10 11 13 14 42 46 47" , .type = &msg,  .obj_count = 2, .objects = { "SMS_GSM","SMS_CDMA"                      }, },
+{.nr = 1, .descr = "MAP/MSE/MMB/BV-12-I"                      , .type = &msg,  .obj_count = 1, .objects = { "EMAIL", "SMS_GSM","SMS_CDMA"             }, },
+{.nr = 2, .descr = "MAP/MSE/MMB/BV-15-I 18 20 22"             , .type = &msg,  .obj_count = 5, .objects = { "EMAIL","SMS_GSM","SMS_CDMA", "MMS", "IM" }, },
+{.nr = 3, .descr = "MAP/MSE/MMB/BV-16-I 23"                   , .type = &msg,  .obj_count = 1, .objects = { "EMAIL","EMAIL"                           }, },
+{.nr = 4, .descr = "MAP/MSE/MMB/BV-24-I <a><OK>"              , .type = &convo,.obj_count = 0, .objects = { "",""                                     }, },
+{.nr = 5, .descr = "MAP/MSE/MMB/BV-25-I <c><OK>"              , .type = &convo,.obj_count = 0, .objects = { "",""                                     }, },
+{.nr = 6, .descr = "MAP/MSE/MMB/BV-34-I 38 39 40 41 44"       , .type = &convo,.obj_count = 1, .objects = { "",""                                     }, },
+{.nr = 7, .descr = "MAP/MSE/MMB/BV-35-I 36 37"                , .type = &msg,  .obj_count = 1, .objects = { "EMAIL"                                   }, },
 };
 
 struct test_config_s* config = &test_configs[0];
@@ -215,9 +215,53 @@ static void init_testcases(void) {
     ListingSize = config->obj_count + add_one_object;
 }
 
+
+/* 1.1
+<!DTD for the MAP Messages-Listing Object-->
+
+<!DOCTYPE MAP-msg-listing [
+
+<!ELEMENT MAP-msg-listing ( msg )* >
+<!ATTLIST MAP-msg-listing version CDATA #FIXED "1.1">
+
+<!ELEMENT msg EMPTY>
+<!ATTLIST msg
+  handle CDATA #REQUIRED
+  subject CDATA #REQUIRED
+  datetime CDATA #REQUIRED
+  sender_name CDATA #IMPLIED
+  sender_addressing CDATA #IMPLIED
+  replyto_addressing CDATA #IMPLIED
+  recipient_name CDATA #IMPLIED
+  recipient_addressing CDATA #REQUIRED
+  type CDATA #REQUIRED
+  size CDATA #REQUIRED
+  text (yes|no) "no"
+   reception_status CDATA #REQUIRED
+  attachment_size CDATA #REQUIRED
+  priority (yes|no) "no"
+  read (yes|no) "no"
+  sent (yes|no) "no"
+  protected (yes|no) "no"
+  delivery_status CDATA #IMPLIED
+  conversation_id CDATA #REQUIRED
+  conversation_name CDATA #IMPLIED
+  direction CDATA #REQUIRED
+  attachment_mime_types CDATA #IMPLIED
+>
+]>
+*/
 static void body_msg(char* msg_buffer, uint16_t index, int maxsize) {
     index = index % ARRAYSIZE(config->objects);
-    snprintf(msg_buffer, maxsize, "<msg handle=\"ID%u\" subject=\"Hello\" type=\"%s\" read=\"%s\""
+    snprintf(msg_buffer, maxsize, 
+        "<msg"
+        " handle=\"ID%u\""
+        " subject=\"Hello\""
+        " datetime = \"20140706T095000-0400\"" // 1.1 required
+        " recipient_addressing = \"\"" // 1.1 required
+        " type=\"%s\""
+        " size=\"424242\"" // 1.1 required
+        " read=\"%s\""
         " conversation_id=\"E1\"" /* might be required for v1.1? */
         //" direction=\"incoming\"" /* might be required for v1.1? */
         "/>",
