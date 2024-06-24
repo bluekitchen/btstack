@@ -155,10 +155,10 @@ typedef uint8_t mas_UTCstmpoffstr_t[20];
  PARAM_RESPON( ConversationListingVersionCounter , 0x1B, mas_uint128hex_t   , (max 3uint16_t)    ;   128 - bit value in hex string format                      )\
  PARAM_UNUSED( PresenceAvailability              , 0x1C, uint8_t            , 0 to 255                                                                         )\
  PARAM_UNUSED( PresenceText                      , 0x1D, mas_utf8_t         , Text UTF - 8                                                                     )\
- PARAM_UNUSED( LastActivity                      , 0x1E, mas_utf8_t         , Text UTF - 8                                                                     )\
+ PARAM_REQUST( LastActivity                      , 0x1E, mas_UTCstmpoffstr_t, Text UTF - 8                                                                     )\
  PARAM_UNUSED( FilterLastActivityBegin           , 0x1F, mas_utf8_t         , Text UTF - 8                                                                     )\
  PARAM_UNUSED( FilterLastActivityEnd             , 0x20, mas_utf8_t         , Text UTF - 8                                                                     )\
- PARAM_UNUSED( ChatState                         , 0x21, uint8_t            , 0 to 255                                                                         )\
+ PARAM_REQUST( ChatState                         , 0x21, uint8_t            , 0 to 255                                                                         )\
  PARAM_REQRSP( ConversationID                    , 0x22, mas_uint128hex_t   , (max 3uint16_t)    ;   128 - bit value in hex string format                      )\
  PARAM_RESPON( FolderVersionCounter              , 0x23, mas_uint128hex_t   , (max 3uint16_t);   128 - bit value in hex string format                          )\
  PARAM_UNUSED( FilterMessageHandle               , 0x24, mas_uint64_t       , 64 - bit value in hex string format                                              )\
@@ -292,7 +292,8 @@ typedef enum {
     MAP_OBJECT_TYPE_GET_MESSAGE,
     MAP_OBJECT_TYPE_PUT_MESSAGE_STATUS,
     MAP_OBJECT_TYPE_PUT_MESSAGE_UPDATE,
-    MAP_OBJECT_TYPE_PUT_NOTIFICATION_REGISTRATION
+    MAP_OBJECT_TYPE_PUT_NOTIFICATION_REGISTRATION,
+    MAP_OBJECT_TYPE_PUT_OWNER_STATUS
 } map_object_type_t;
 
 // MAP Folders
