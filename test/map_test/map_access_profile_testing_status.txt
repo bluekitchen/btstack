@@ -23,3 +23,4 @@ MAP/MSE/MMB/BV-39-I: PASS (2024-06-20)
 MAP/MSE/MMB/BV-40-I: PASS (2024-06-20)
 MAP/MSE/MMB/BV-41-I: PASS (2024-06-20) Verify that the MSE correctly responds to a request for a Conversation-Listing with Filtering by recipient
 MAP/MSE/MMB/BV-42-I: PASS (2024-06-20) Verify that the MSE correctly responds to a request for a Messages-Listing with Filtering by message handle
+MAP/MSE/MMB/BV-43-I: WIP (2024-06-24) PTS wants us to open a second connection, postponed to later
