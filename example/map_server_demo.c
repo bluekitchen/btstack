@@ -630,7 +630,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
 
                         case MAP_SUBEVENT_PUT_NOTIFICATION_REGISTRATION:
                             APP_READ_16(packet, &pos, &dummy_map_cid);
-                            APP_READ_08(event, &pos, &NotificationStatus);
+                            APP_READ_08(packet, &pos, &NotificationStatus);
                             MAP_PRINTF("[+] Put NotificationRegistration\n");
                             map_access_server_send_get_put_response(map_cid, OBEX_RESP_SUCCESS, 0, 0, NULL);
                             // BT SIG Test case MAP/MSE/MMB/BV-23-I asks for one more message after
