@@ -90,7 +90,6 @@ typedef enum {
 typedef struct {
     uint16_t  value_handle;
     uint16_t  client_configuration_handle;
-    uint16_t  client_configuration;
 } tbs_characteristic_t;
 
 
@@ -127,18 +126,32 @@ typedef struct {
     uint8_t signal_strength_reporting_interval;
 } tbs_data_t;
 
+struct telephone_bearer_service_server;
+
 typedef struct {
+    hci_con_handle_t            con_handle;
+
+    // nedded for notifications for sending notifications
+    struct telephone_bearer_service_server * bearer;
+    
+    uint32_t        characteristics_dirty;
+    uint16_t        client_configuration[TBS_CHARACTERISTICS_NUM];
+
+    uint32_t        scheduled_tasks;
+    btstack_context_callback_registration_t scheduled_tasks_callback; 
+} tbs_server_connection_t;
+
+typedef struct telephone_bearer_service_server {
     btstack_linked_item_t item;
 
-    hci_con_handle_t            con_handle;
     uint16_t                    bearer_id;
 
+    uint8_t connections_num;
+    tbs_server_connection_t * connections;
+    
     att_service_handler_t       service;
     tbs_characteristic_t        characteristics[TBS_CHARACTERISTICS_NUM];
-    uint32_t                    characteristics_dirty;
-
-    uint32_t                    scheduled_tasks;
-    btstack_context_callback_registration_t scheduled_tasks_callback; 
+    
 
     btstack_packet_handler_t event_callback;
 
@@ -160,6 +173,8 @@ void telephone_bearer_service_server_init(void);
  *
  * @param bearer
  * @param packet_handler
+ * @param connections_num
+ * @param connections
  * @param optional_opcodes_supported_bitmap
  * @param out_bearer_id
  * @return
@@ -167,6 +182,7 @@ void telephone_bearer_service_server_init(void);
 uint8_t telephone_bearer_service_server_register_generic_bearer(
         telephone_bearer_service_server_t * bearer,
         btstack_packet_handler_t packet_handler,
+        uint8_t connections_num, tbs_server_connection_t * connections,
         uint16_t optional_opcodes_supported_bitmap,
         uint16_t * out_bearer_id );
 /**
@@ -174,6 +190,8 @@ uint8_t telephone_bearer_service_server_register_generic_bearer(
  *
  * @param bearer
  * @param packet_handler
+ * @param connections_num
+ * @param connections
  * @param optional_opcodes_supported_bitmask
  * @param out_bearer_id
  * @return
@@ -181,6 +199,7 @@ uint8_t telephone_bearer_service_server_register_generic_bearer(
 uint8_t telephone_bearer_service_server_register_individual_bearer(
         telephone_bearer_service_server_t * bearer,
         btstack_packet_handler_t packet_handler,
+        uint8_t connections_num, tbs_server_connection_t * connections,
         uint16_t optional_opcodes_supported_bitmask,
         uint16_t * out_bearer_id );
 /**
