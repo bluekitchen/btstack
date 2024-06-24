@@ -316,6 +316,10 @@ static map_object_type_t map_access_server_parse_object_type(const char* type_st
         return MAP_OBJECT_TYPE_PUT_NOTIFICATION_REGISTRATION;
     }
 
+    if (strcmp("x-bt/ownerStatus", type_string) == 0) {
+        return MAP_OBJECT_TYPE_PUT_OWNER_STATUS;
+    }
+
     return MAP_OBJECT_TYPE_INVALID;
 }
 
@@ -689,6 +693,7 @@ static void map_access_server_handle_get_put_request(map_access_server_t* map_ac
     case MAP_OBJECT_TYPE_PUT_MESSAGE_STATUS:
     case MAP_OBJECT_TYPE_PUT_MESSAGE_UPDATE:
     case MAP_OBJECT_TYPE_PUT_NOTIFICATION_REGISTRATION:
+    case MAP_OBJECT_TYPE_PUT_OWNER_STATUS:
         break;
 
     default:
@@ -760,6 +765,15 @@ static void map_access_server_handle_get_put_request(map_access_server_t* map_ac
     case MAP_OBJECT_TYPE_PUT_NOTIFICATION_REGISTRATION:
         APP_WRITE_08(event, &pos, MAP_SUBEVENT_PUT_NOTIFICATION_REGISTRATION);
         APP_WRITE_16(event, &pos, map_access_server->map_cid);
+        APP_WRITE_08(event, &pos, map_access_server->request.app_params.NotificationStatus);
+        APP_WRITE_LEN(event, pos);
+        break;
+
+    case MAP_OBJECT_TYPE_PUT_OWNER_STATUS:
+        APP_WRITE_08(event, &pos, MAP_OBJECT_TYPE_PUT_OWNER_STATUS);
+        APP_WRITE_16(event, &pos, map_access_server->map_cid);
+        APP_WRITE_08(event, &pos, map_access_server->request.app_params.ChatState);
+        APP_WRITE_STR(event, &pos, sizeof(event) - pos, map_access_server->request.app_params.LastActivity);
         APP_WRITE_LEN(event, pos);
         break;
 
