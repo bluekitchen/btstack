@@ -57,6 +57,14 @@
 #include "classic/map.h"
 #include "classic/map_access_server.h"
 
+#ifdef ENABLE_LOG_MAP_ACCESS_SERVER
+#define log_app_messaging log_debug
+#define RUN_AND_LOG_ACTION(code) { log_debug("RUN_AND_LOG_ACTION <%s>", #code); code } 
+#else
+#define log_app_messaging(...)
+#define RUN_AND_LOG_ACTION(code) code
+#endif
+
  // TODO: copied from PBAP_server, to be adapted to MAS server
  // max app params for vcard listing and folder response:
  // - NewMissedCalls
@@ -641,6 +649,8 @@ static void map_access_server_parser_callback_get(void* user_data, uint8_t heade
             memcpy(&map_access_server->request.type[data_offset], data_buffer, data_len);
             map_access_server->request.type[total_len] = 0;
         }
+        else
+            log_error("(total_len < MAP_SERVER_MAX_TYPE_LEN) failed: <%s>", data_buffer);
         break;
     case OBEX_HEADER_APPLICATION_PARAMETERS:
         if (data_offset == 0) {
@@ -853,7 +863,7 @@ static void map_access_server_packet_handler_goep(map_access_server_t* map_acces
             default:
                 // send bad request response
                 map_access_server->state = MAP_SERVER_STATE_SEND_INTERNAL_RESPONSE;
-                map_access_server->response.code = OBEX_RESP_BAD_REQUEST;
+                RUN_AND_LOG_ACTION(map_access_server->response.code = OBEX_RESP_BAD_REQUEST;)
                 goep_server_request_can_send_now(map_access_server->goep_cid);
                 break;
             }
@@ -874,7 +884,7 @@ static void map_access_server_packet_handler_goep(map_access_server_t* map_acces
             obex_parser_get_operation_info(&map_access_server->obex_parser, &op_info);
             switch ((op_info.opcode & 0x7f)) {
             case OBEX_OPCODE_GET:
-                map_access_server_handle_get_request(map_access_server);
+                map_access_server_handle_get_put_request(map_access_server);
                 break;
             case (OBEX_OPCODE_ABORT & 0x7f):
                 map_access_server->response.code = OBEX_RESP_SUCCESS;
@@ -884,7 +894,7 @@ static void map_access_server_packet_handler_goep(map_access_server_t* map_acces
             default:
                 // send bad request response
                 map_access_server->state = MAP_SERVER_STATE_SEND_INTERNAL_RESPONSE;
-                map_access_server->response.code = OBEX_RESP_BAD_REQUEST;
+                RUN_AND_LOG_ACTION(map_access_server->response.code = OBEX_RESP_BAD_REQUEST;)
                 goep_server_request_can_send_now(map_access_server->goep_cid);
                 break;
             }
