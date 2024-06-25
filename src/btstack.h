@@ -184,6 +184,7 @@
 #include "le-audio/gatt-service/published_audio_capabilities_service_util.h"
 #include "le-audio/gatt-service/telephone_bearer_service_server.h"
 #include "le-audio/gatt-service/telephone_bearer_service_util.h"
+#include "le-audio/gatt-service/telephony_and_media_audio_service_client.h"
 #include "le-audio/gatt-service/volume_control_service_client.h"
 #include "le-audio/gatt-service/volume_control_service_server.h"
 #include "le-audio/gatt-service/volume_control_service_util.h"
