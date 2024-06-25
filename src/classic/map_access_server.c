@@ -115,6 +115,8 @@ typedef struct {
 #define PARAM_RESPON(name, tag, type, descr) type PARAM_RESPON ## name;
 #define PARAM_REQRSP(name, tag, type, descr) type PARAM_REQRSP ## name;
 #define PARAM_UNUSED(name, tag, type, descr) type PARAM_UNUSED ## name;
+#define ENUM(...)
+#define DSCR(...)
 
     APP_PARAMS
 
@@ -122,6 +124,8 @@ typedef struct {
 #undef PARAM_RESPON
 #undef PARAM_REQRSP
 #undef PARAM_UNUSED
+#undef ENUM
+#undef DSCR
 } app_params_compile_time_check;
 
 typedef struct {
@@ -153,13 +157,17 @@ typedef struct {
 #define PARAM_REQRSP PARAM_REQUST
 #define PARAM_RESPON(...)
 #define PARAM_UNUSED(...)
+#define ENUM(...)
+#define DSCR(...)
 
             APP_PARAMS
-    
+
 #undef PARAM_REQUST
 #undef PARAM_RESPON
 #undef PARAM_REQRSP
 #undef PARAM_UNUSED
+#undef ENUM
+#undef DSCR
         } app_params;
     } request;
     // response
@@ -607,12 +615,17 @@ static void map_access_server_app_param_callback_get(void* user_data, uint8_t ta
 #define PARAM_REQRSP PARAM_REQUST
 #define PARAM_RESPON(...)
 #define PARAM_UNUSED(...)
+#define ENUM(...)
+#define DSCR(...)
 
                 APP_PARAMS
+
 #undef PARAM_REQUST
 #undef PARAM_RESPON
 #undef PARAM_REQRSP
 #undef PARAM_UNUSED
+#undef ENUM
+#undef DSCR
 
             default:
                 break;
@@ -987,6 +1000,8 @@ int map_access_server_set_response_app_param(uint16_t map_cid, enum MAP_APP_PARA
 #define PARAM_REQRSP PARAM_RESPON
 #define PARAM_REQUST(...)
 #define PARAM_UNUSED(...)
+#define ENUM(...)
+#define DSCR(...)
 
         APP_PARAMS
 
@@ -994,6 +1009,8 @@ int map_access_server_set_response_app_param(uint16_t map_cid, enum MAP_APP_PARA
 #undef PARAM_RESPON
 #undef PARAM_REQRSP
 #undef PARAM_UNUSED
+#undef ENUM
+#undef DSCR
        
 
     default:
