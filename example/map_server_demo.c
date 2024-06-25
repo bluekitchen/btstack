@@ -252,25 +252,7 @@ static void init_testcases(void) {
 ]>
 */
 
-
-
-// not accepted by PTS
-const char* test_msg_1_v1_1 =
-"<msg handle = \"ID0\""
-" subject = \"Hello\""
-" datetime = \"20140706T095000-0400\""
-" recipient_addressing = \"\""
-" type = \"EMAIL\""
-" size = \"424242\""
-" read = \"yes\""
-" conversation_id = \"E1\""
-" direction = \"incoming\""
-" reception_status = \"\""
-" attachment_size = \"0\""
-"/>";
-
 const char* test_msg_2_v1_1 =
-"<MAP-msg-listing version=\"1.1\">"
 "<msg handle=\"20000100001\" subject=\"Welcome Clara Nicole” datetime=\"20140706T095000-0400\""
 " sender_name=\"Max\" sender_addressing=\"4924689753@s.whateverapp.net\""
 " recipient_addressing=\"\" type=\"IM\" size=\"256\" attachment_size=\"0\" priority=\"no\" read=\"no\" sent=\"no\""
