@@ -21064,6 +21064,34 @@ static inline uint8_t leaudio_subevent_tbs_client_write_done_get_att_status(cons
 }
 
 /**
+ * @brief Get field con_handle from event LEAUDIO_SUBEVENT_TMAS_CLIENT_SUPPORTED_ROLES_BITMAP
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type 2
+ */
+static inline uint16_t leaudio_subevent_tmas_client_supported_roles_bitmap_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field supported_roles from event LEAUDIO_SUBEVENT_TMAS_CLIENT_SUPPORTED_ROLES_BITMAP
+ * @param event packet
+ * @return supported_roles
+ * @note: btstack_type 2
+ */
+static inline uint16_t leaudio_subevent_tmas_client_supported_roles_bitmap_get_supported_roles(const uint8_t * event){
+    return little_endian_read_16(event, 5);
+}
+/**
+ * @brief Get field status from event LEAUDIO_SUBEVENT_TMAS_CLIENT_SUPPORTED_ROLES_BITMAP
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_tmas_client_supported_roles_bitmap_get_status(const uint8_t * event){
+    return event[7];
+}
+
+/**
  * @brief Get field map_cid from event MAP_SUBEVENT_CONNECTION_OPENED
  * @param event packet
  * @return map_cid

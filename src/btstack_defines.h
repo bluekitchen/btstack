@@ -6313,6 +6313,14 @@ typedef uint8_t sm_key_t[16];
  */
 #define LEAUDIO_SUBEVENT_TBS_CLIENT_WRITE_DONE                                      0xD4u
 
+/**
+ * @format 1221
+ * @param subevent_code
+ * @param con_handle
+ * @param supported_roles
+ * @param status
+ */
+#define LEAUDIO_SUBEVENT_TMAS_CLIENT_SUPPORTED_ROLES_BITMAP                         0xD5u
 
 // MAP Meta Event Group
 
