@@ -274,7 +274,7 @@ static void body_msg(char* msg_buffer, uint16_t index, int maxsize) {
     snprintf(msg_buffer, maxsize, 
         "<msg handle = \"20000100002\" subject= \"What’s the progress Max?\""
         " datetime=\"20140705T092200+0100\" sender_name=\"Jonas\""
-        " sender_addressing=\"4913579864@s.whateverapp.net\" recipient_addressing = \"\" type=\"IM\""
+        " sender_addressing=\"4913579864@s.whateverapp.net\" recipient_addressing = \"\" type=\"EMAIL\""
         " size=\"512\" attachment_size=\"8671724\" priority=\"no\" read=\"yes\" sent=\"yes\" protected=\"no\""
         " conversation_id=”E1E2E3E4F1F2F3F4A1A2A3A4B1B2B3B4” direction=”incoming”"
         " attachment_mime_types=”video/mpeg”/>"
