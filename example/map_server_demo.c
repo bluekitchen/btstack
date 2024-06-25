@@ -216,7 +216,8 @@ static void init_testcases(void) {
 }
 
 
-/* 1.1
+/* BT SIG MAP SPEC1.1 Page 37 & 38:
+
 <!DTD for the MAP Messages-Listing Object-->
 
 <!DOCTYPE MAP-msg-listing [
@@ -250,48 +251,39 @@ static void init_testcases(void) {
   attachment_mime_types CDATA #IMPLIED
 >
 ]>
+
+<MAP-msg-listing version="1.1">
+  <msg handle="20000100001" subject="Welcome Clara Nicole” datetime="20140706T095000-0400"
+sender_name="Max" sender_addressing="4924689753@s.whateverapp.net"
+recipient_addressing="" type="IM" size="256" attachment_size="0" priority="no" read="no" sent="no"
+protected="no" conversation_id=”E1E2E3E4F1F2F3F4A1A2A3A4B1B2B3B4” direction=”incoming”
+/>
+  <msg handle = "20000100002" subject= "What’s the progress Max?"
+datetime="20140705T092200+0100" sender_name="Jonas"
+sender_addressing="4913579864@s.whateverapp.net" recipient_addressing = "" type="IM"
+size="512" attachment_size="8671724" priority="no" read="yes" sent="yes" protected="no"
+conversation_id=”E1E2E3E4F1F2F3F4A1A2A3A4B1B2B3B4” direction=”incoming”
+attachment_mime_types=”video/mpeg”/>
+</MAP-msg-listing>
 */
 
-const char* test_msg_2_v1_1 =
-"<msg handle=\"20000100001\" subject=\"Welcome Clara Nicole” datetime=\"20140706T095000-0400\""
-" sender_name=\"Max\" sender_addressing=\"4924689753@s.whateverapp.net\""
-" recipient_addressing=\"\" type=\"IM\" size=\"256\" attachment_size=\"0\" priority=\"no\" read=\"no\" sent=\"no\""
-" protected=\"no\" conversation_id=”E1E2E3E4F1F2F3F4A1A2A3A4B1B2B3B4” direction=”incoming”"
-"/>"
-"<msg handle = \"20000100002\" subject= \"What’s the progress Max?\""
-" datetime=\"20140705T092200+0100\" sender_name=\"Jonas\""
-" sender_addressing=\"4913579864@s.whateverapp.net\" recipient_addressing = \"\" type=\"IM\""
-" size=\"512\" attachment_size=\"8671724\" priority=\"no\" read=\"yes\" sent=\"yes\" protected=\"no\""
-" conversation_id=”E1E2E3E4F1F2F3F4A1A2A3A4B1B2B3B4” direction=”incoming”"
-" attachment_mime_types=”video/mpeg”/>"
-"</MAP-msg-listing>";
+
 
 static void body_msg(char* msg_buffer, uint16_t index, int maxsize) {
+    index = index % ARRAYSIZE(config->objects);
     snprintf(msg_buffer, maxsize, 
-        test_msg_2_v1_1
+        "<msg handle = \"20000100002\" subject= \"What’s the progress Max?\""
+        " datetime=\"20140705T092200+0100\" sender_name=\"Jonas\""
+        " sender_addressing=\"4913579864@s.whateverapp.net\" recipient_addressing = \"\" type=\"IM\""
+        " size=\"512\" attachment_size=\"8671724\" priority=\"no\" read=\"yes\" sent=\"yes\" protected=\"no\""
+        " conversation_id=”E1E2E3E4F1F2F3F4A1A2A3A4B1B2B3B4” direction=”incoming”"
+        " attachment_mime_types=”video/mpeg”/>"
+        "</MAP-msg-listing>"
+        //index,
+        //config->objects[index],
+        //config->objects[index] ? "yes" : "no"
     );
 }
-
-
-
-//static void body_msg(char* msg_buffer, uint16_t index, int maxsize) {
-//    index = index % ARRAYSIZE(config->objects);
-//    snprintf(msg_buffer, maxsize, 
-//        "<msg"
-//        " handle=\"ID%u\""
-//        " subject=\"Hello\""
-//        " datetime = \"20140706T095000-0400\"" // 1.1 required
-//        " recipient_addressing = \"\"" // 1.1 required
-//        " type=\"%s\""
-//        " size=\"424242\"" // 1.1 required
-//        " read=\"%s\""
-//        " conversation_id=\"E1\"" /* might be required for v1.1? */
-//        " direction=\"incoming\"" /* might be required for v1.1? */
-//        "/>",
-//        index,
-//        config->objects[index],
-//        config->objects[index] ? "yes" : "no");
-//}
 
 static void body_convo(char* msg_buffer, uint16_t index, int maxsize) {
     static int version = 0;
