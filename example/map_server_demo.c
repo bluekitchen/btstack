@@ -158,6 +158,7 @@ static struct test_config_s
     int obj_count;
     char* objects[6]; // maximum 6-1 entries, last one is null
     enum msg_status_read msg_stati[6]; // maximum 6-1 entries, last one is null
+    bool msg_deleted[6]; // maximum 6-1 entries, last one is null
 } test_configs[] =
 {
 {.nr = 0, .descr = "MAP/MSE/MMB/BV-09-I 10 11 13 14 42 46   " , .type = &msg,  .obj_count = 2, .objects = { "SMS_GSM","SMS_CDMA"                      }, },
@@ -173,7 +174,7 @@ static struct test_config_s
 
 struct test_config_s* config = &test_configs[0];
 static int current_msg_type = 0;
-static int add_one_object = 0;
+static int one_object_more_or_less = 0;
 uint16_t ListingSize = 0;
 
 static mas_uint128hex_t DatabaseIdentifier = { 0 };
@@ -212,8 +213,8 @@ static void set_test_config(int nr) {
 
 static void init_testcases(void) {
     current_msg_type = 0;
-    add_one_object = 0;
-    ListingSize = config->obj_count + add_one_object;
+    one_object_more_or_less = 0;
+    ListingSize = config->obj_count + one_object_more_or_less;
 }
 
 
@@ -272,18 +273,20 @@ attachment_mime_types=”video/mpeg”/>
 
 static void body_msg(char* msg_buffer, uint16_t index, int maxsize) {
     index = index % ARRAYSIZE(config->objects);
-    snprintf(msg_buffer, maxsize, 
-        "<msg handle = \"200001000%02u\" subject= \"What’s the progress Max?\""
-        " datetime=\"20140705T092200+0100\" sender_name=\"Jonas\""
-        " sender_addressing=\"4913579864@s.whateverapp.net\" recipient_addressing = \"\" type=\"%s\""
-        " size=\"512\" attachment_size=\"8671724\" priority=\"no\" read=\"%s\" sent=\"yes\" protected=\"no\""
-        " conversation_id=”E1E2E3E4F1F2F3F4A1A2A3A4B1B2B3B4” direction=”incoming”"
-        " attachment_mime_types=”video/mpeg”/>"
-        "</MAP-msg-listing>",
-        index,
-        config->objects[index],
-        config->objects[index] ? "yes" : "no"
-    );
+
+    if (!config->msg_deleted[index])
+        snprintf(msg_buffer, maxsize, 
+            "<msg handle = \"A%X\" subject= \"What’s the progress Max?\""
+            " datetime=\"20140705T092200+0100\" sender_name=\"Jonas\""
+            " sender_addressing=\"4913579864@s.whateverapp.net\" recipient_addressing = \"\" type=\"%s\""
+            " size=\"512\" attachment_size=\"8671724\" priority=\"no\" read=\"%s\" sent=\"yes\" protected=\"no\""
+            " conversation_id=”E1E2E3E4F1F2F3F4A1A2A3A4B1B2B3B4” direction=”incoming”"
+            " attachment_mime_types=”video/mpeg”/>"
+            "</MAP-msg-listing>",
+            index,
+            config->objects[index],
+            config->objects[index] ? "yes" : "no"
+        );
 }
 
 static void body_convo(char* msg_buffer, uint16_t index, int maxsize) {
@@ -393,13 +396,13 @@ static void send_get_listing_object(uint8_t* packet, uint16_t start_index, uint1
     //}
 
     // send messages listing
-    total_messages = config->obj_count + add_one_object;
+    total_messages = config->obj_count + one_object_more_or_less;
 
     num_msgs_selected = total_messages - start_index;
     if (max_list_count < 0xffff) {
         num_msgs_selected = btstack_min(max_list_count, num_msgs_selected);
     }
-    MAP_PRINTF("[+] get message listing - obj_count:%u add_one_object:%u list offset %u, num messages %u max_list_count %u\n", config->obj_count, add_one_object, start_index, num_msgs_selected, max_list_count);
+    MAP_PRINTF("[+] get message listing - obj_count:%u add_one_object:%u list offset %u, num messages %u max_list_count %u\n", config->obj_count, one_object_more_or_less, start_index, num_msgs_selected, max_list_count);
     // consider already sent cards
     if (continuation > 0xffff) {
         // just missed the footer
@@ -438,8 +441,8 @@ static void show_usage(void){
     MAP_PRINTF("<f> FolderVersionCounter++\n");
     MAP_PRINTF("<c> ConversationListingVersionCounter++\n");
     MAP_PRINTF("<i> ConversationID++\n");
-    MAP_PRINTF("<d> DatabaseIdentifier++\n");
-
+    MAP_PRINTF("<a> add one object\n");
+    MAP_PRINTF("<d> delete one object\n");
     MAP_PRINTF("<r> reset current test case\n");
 
 
@@ -480,10 +483,13 @@ static void stdin_process(char c){
             break;
 
         case 'a':
-            // BT SIG Test case MAP/MSE/MMB/BV-23-I asks for one more message after
-// issuing a "update messages" request so we just simulate one
-            add_one_object = 1;
+            one_object_more_or_less = 1;
             MAP_PRINTF("Added one object, press <OK> in PTS");
+            break;
+
+        case 'd':
+            one_object_more_or_less = -1;
+            MAP_PRINTF("removed one object, press <OK> in PTS");
             break;
 
         case 'r':
@@ -510,11 +516,11 @@ static void stdin_process(char c){
             increase_version_counter_by_1(ConversationListingVersionCounter);
             break;
 
-        case 'd':
-            print_current_test_config();
-            MAP_PRINTF("DatabaseIdentifier:");
-            increase_version_counter_by_1(DatabaseIdentifier);
-            break;
+        //case 'd':
+        //    print_current_test_config();
+        //    MAP_PRINTF("DatabaseIdentifier:");
+        //    increase_version_counter_by_1(DatabaseIdentifier);
+        //    break;
 
         default:
             show_usage();
@@ -528,25 +534,22 @@ static handle_set_message_status(char *msg_handle_str, uint8_t StatusIndicator, 
     int msg_handle;
     const char* error_msg = "";
     
-    if (StatusIndicator != 0)
-        ERROR("we only handle valid change - requests of Status Read=yes/no");
+    if (StatusIndicator != readStatus && StatusIndicator != deletedStatus)
+        ERROR("we only handle valid change - requests of Status Read=yes/no or deletedStatus");
     
     if (StatusValue > 1)
-        ERROR("we only handle valid change-requests of Status Read=yes/no");
+        ERROR("we only handle valid change-requests of Status Read=yes/no / deletedStatus");
     
     if (msg_handle_str == NULL)
         ERROR("msg_handle_str invalid");
 
-    if (strnlen_s(msg_handle_str,10) != 3)
-        ERROR("String is not 3 digits long");
-    
-    if (msg_handle_str[0] != 'I' || msg_handle_str[1] != 'D')
-        ERROR("no valid ID prefix");
+    if (strnlen_s(msg_handle_str,10) != 2)
+        ERROR("String is not 2 digits long");
 
-    if (msg_handle_str[2] < '0' || msg_handle_str[2] > '9')
+    if (msg_handle_str[1] < '0' || msg_handle_str[1] > '9')
         ERROR("no valid digit");
 
-    msg_handle = msg_handle_str[2] - '0';
+    msg_handle = msg_handle_str[1] - '0';
 
     if (msg_handle > ARRAYSIZE(config->objects) - 1)
         ERROR("handle exceeds our nr of messages");
@@ -554,7 +557,11 @@ static handle_set_message_status(char *msg_handle_str, uint8_t StatusIndicator, 
     if (StatusValue > 1)
         ERROR("invalid status");
 
-    config->msg_stati[msg_handle] = StatusValue;
+    switch (StatusIndicator) {
+    case readStatus: config->msg_stati[msg_handle] = StatusValue; break;
+    case deletedStatus: config->msg_deleted[msg_handle] = StatusValue; break;
+    }
+
 
 error:
     log_error("%s", error_msg);
@@ -640,7 +647,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_DatabaseIdentifier, DatabaseIdentifier);
                             map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_FolderVersionCounter, FolderVersionCounter);
                             MAP_PRINTF("[+] Get Folder listing\n");
-                            send_listing(0, config->obj_count-1 + add_one_object);
+                            send_listing(0, config->obj_count-1 + one_object_more_or_less);
                             break;
 							
                         case MAP_SUBEVENT_GET_MESSAGE_LISTING:
@@ -688,7 +695,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             map_access_server_send_get_put_response(map_cid, OBEX_RESP_SUCCESS, 0, 0, NULL);
                             // BT SIG Test case MAP/MSE/MMB/BV-23-I asks for one more message after
                             // issuing a "update messages" request so we just simulate one
-                            add_one_object = 1;
+                            one_object_more_or_less = 1;
                             break;
 
                         case MAP_SUBEVENT_PUT_NOTIFICATION_REGISTRATION:
@@ -698,7 +705,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             map_access_server_send_get_put_response(map_cid, OBEX_RESP_SUCCESS, 0, 0, NULL);
                             // BT SIG Test case MAP/MSE/MMB/BV-23-I asks for one more message after
                             // issuing a "update messages" request so we just simulate one
-                            add_one_object = 1;
+                            one_object_more_or_less = 1;
                             break;
 
                         case MAP_OBJECT_TYPE_PUT_OWNER_STATUS:
@@ -710,7 +717,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             map_access_server_send_get_put_response(map_cid, OBEX_RESP_SUCCESS, 0, 0, NULL);
                             // BT SIG Test case MAP/MSE/MMB/BV-23-I asks for one more message after
                             // issuing a "update messages" request so we just simulate one
-                            add_one_object = 1;
+                            one_object_more_or_less = 1;
                             break;
 
                         case MAP_SUBEVENT_GET_CONVO_LISTING:
@@ -727,7 +734,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_ConversationListingVersionCounter, ConversationListingVersionCounter);
                             map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_ListingSize, &ListingSize);
                             // BT MAP Spec requires to skip the body if max_list_count == 0
-                            if (config->obj_count == 0 && add_one_object == 0)
+                            if (config->obj_count == 0 && one_object_more_or_less == 0)
                                 map_access_server_send_get_put_response(map_cid, OBEX_RESP_SUCCESS, 0, 0, NULL);
                             else
                                 send_get_listing_object(packet, 0, 0xffff, continuation);
