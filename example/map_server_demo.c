@@ -160,10 +160,10 @@ static struct test_config_s
     enum msg_status_read msg_stati[6]; // maximum 6-1 entries, last one is null
 } test_configs[] =
 {
-{.nr = 0, .descr = "MAP/MSE/MMB/BV-09-I 10 11 13 14 42 46 47" , .type = &msg,  .obj_count = 2, .objects = { "SMS_GSM","SMS_CDMA"                      }, },
+{.nr = 0, .descr = "MAP/MSE/MMB/BV-09-I 10 11 13 14 42 46   " , .type = &msg,  .obj_count = 2, .objects = { "SMS_GSM","SMS_CDMA"                      }, },
 {.nr = 1, .descr = "MAP/MSE/MMB/BV-12-I"                      , .type = &msg,  .obj_count = 1, .objects = { "EMAIL", "SMS_GSM","SMS_CDMA"             }, },
 {.nr = 2, .descr = "MAP/MSE/MMB/BV-15-I 18 20 22"             , .type = &msg,  .obj_count = 5, .objects = { "EMAIL","SMS_GSM","SMS_CDMA", "MMS", "IM" }, },
-{.nr = 3, .descr = "MAP/MSE/MMB/BV-16-I 23"                   , .type = &msg,  .obj_count = 1, .objects = { "EMAIL","EMAIL"                           }, },
+{.nr = 3, .descr = "MAP/MSE/MMB/BV-16-I 23 47"                , .type = &msg,  .obj_count = 1, .objects = { "EMAIL","EMAIL"                           }, },
 {.nr = 4, .descr = "MAP/MSE/MMB/BV-24-I <a><OK>"              , .type = &convo,.obj_count = 0, .objects = { "",""                                     }, },
 {.nr = 5, .descr = "MAP/MSE/MMB/BV-25-I <c><OK>"              , .type = &convo,.obj_count = 0, .objects = { "",""                                     }, },
 {.nr = 6, .descr = "MAP/MSE/MMB/BV-34-I 38 39 40 41 44"       , .type = &convo,.obj_count = 1, .objects = { "",""                                     }, },
@@ -251,24 +251,65 @@ static void init_testcases(void) {
 >
 ]>
 */
+
+
+
+// not accepted by PTS
+const char* test_msg_1_v1_1 =
+"<msg handle = \"ID0\""
+" subject = \"Hello\""
+" datetime = \"20140706T095000-0400\""
+" recipient_addressing = \"\""
+" type = \"EMAIL\""
+" size = \"424242\""
+" read = \"yes\""
+" conversation_id = \"E1\""
+" direction = \"incoming\""
+" reception_status = \"\""
+" attachment_size = \"0\""
+"/>";
+
+const char* test_msg_2_v1_1 =
+"<MAP-msg-listing version=\"1.1\">"
+"<msg handle=\"20000100001\" subject=\"Welcome Clara Nicole” datetime=\"20140706T095000-0400\""
+" sender_name=\"Max\" sender_addressing=\"4924689753@s.whateverapp.net\""
+" recipient_addressing=\"\" type=\"IM\" size=\"256\" attachment_size=\"0\" priority=\"no\" read=\"no\" sent=\"no\""
+" protected=\"no\" conversation_id=”E1E2E3E4F1F2F3F4A1A2A3A4B1B2B3B4” direction=”incoming”"
+"/>"
+"<msg handle = \"20000100002\" subject= \"What’s the progress Max?\""
+" datetime=\"20140705T092200+0100\" sender_name=\"Jonas\""
+" sender_addressing=\"4913579864@s.whateverapp.net\" recipient_addressing = \"\" type=\"IM\""
+" size=\"512\" attachment_size=\"8671724\" priority=\"no\" read=\"yes\" sent=\"yes\" protected=\"no\""
+" conversation_id=”E1E2E3E4F1F2F3F4A1A2A3A4B1B2B3B4” direction=”incoming”"
+" attachment_mime_types=”video/mpeg”/>"
+"</MAP-msg-listing>";
+
 static void body_msg(char* msg_buffer, uint16_t index, int maxsize) {
-    index = index % ARRAYSIZE(config->objects);
     snprintf(msg_buffer, maxsize, 
-        "<msg"
-        " handle=\"ID%u\""
-        " subject=\"Hello\""
-        " datetime = \"20140706T095000-0400\"" // 1.1 required
-        " recipient_addressing = \"\"" // 1.1 required
-        " type=\"%s\""
-        " size=\"424242\"" // 1.1 required
-        " read=\"%s\""
-        " conversation_id=\"E1\"" /* might be required for v1.1? */
-        //" direction=\"incoming\"" /* might be required for v1.1? */
-        "/>",
-        index,
-        config->objects[index],
-        config->objects[index] ? "yes" : "no");
+        test_msg_2_v1_1
+    );
 }
+
+
+
+//static void body_msg(char* msg_buffer, uint16_t index, int maxsize) {
+//    index = index % ARRAYSIZE(config->objects);
+//    snprintf(msg_buffer, maxsize, 
+//        "<msg"
+//        " handle=\"ID%u\""
+//        " subject=\"Hello\""
+//        " datetime = \"20140706T095000-0400\"" // 1.1 required
+//        " recipient_addressing = \"\"" // 1.1 required
+//        " type=\"%s\""
+//        " size=\"424242\"" // 1.1 required
+//        " read=\"%s\""
+//        " conversation_id=\"E1\"" /* might be required for v1.1? */
+//        " direction=\"incoming\"" /* might be required for v1.1? */
+//        "/>",
+//        index,
+//        config->objects[index],
+//        config->objects[index] ? "yes" : "no");
+//}
 
 static void body_convo(char* msg_buffer, uint16_t index, int maxsize) {
     static int version = 0;
