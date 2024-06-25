@@ -163,11 +163,12 @@ static struct test_config_s
 {.nr = 0, .descr = "MAP/MSE/MMB/BV-09-I 10 11 13 14 42 46   " , .type = &msg,  .obj_count = 2, .objects = { "SMS_GSM","SMS_CDMA"                      }, },
 {.nr = 1, .descr = "MAP/MSE/MMB/BV-12-I"                      , .type = &msg,  .obj_count = 1, .objects = { "EMAIL", "SMS_GSM","SMS_CDMA"             }, },
 {.nr = 2, .descr = "MAP/MSE/MMB/BV-15-I 18 20 22"             , .type = &msg,  .obj_count = 5, .objects = { "EMAIL","SMS_GSM","SMS_CDMA", "MMS", "IM" }, },
-{.nr = 3, .descr = "MAP/MSE/MMB/BV-16-I 23 47"                , .type = &msg,  .obj_count = 1, .objects = { "EMAIL","EMAIL"                           }, },
+{.nr = 3, .descr = "MAP/MSE/MMB/BV-16-I 23"                   , .type = &msg,  .obj_count = 1, .objects = { "EMAIL","EMAIL"                           }, },
 {.nr = 4, .descr = "MAP/MSE/MMB/BV-24-I <a><OK>"              , .type = &convo,.obj_count = 0, .objects = { "",""                                     }, },
 {.nr = 5, .descr = "MAP/MSE/MMB/BV-25-I <c><OK>"              , .type = &convo,.obj_count = 0, .objects = { "",""                                     }, },
 {.nr = 6, .descr = "MAP/MSE/MMB/BV-34-I 38 39 40 41 44"       , .type = &convo,.obj_count = 1, .objects = { "",""                                     }, },
 {.nr = 7, .descr = "MAP/MSE/MMB/BV-35-I 36 37"                , .type = &msg,  .obj_count = 1, .objects = { "EMAIL"                                   }, },
+{.nr = 8, .descr = "MAP/MSE/MMB/BV-47-I"                      , .type = &msg,  .obj_count = 1, .objects = { "IM","IM"                                 }, }, // PTS.EXE fails with "- MTC INCONC: no email message in message listing" but expects type="IM"
 };
 
 struct test_config_s* config = &test_configs[0];
@@ -272,16 +273,16 @@ attachment_mime_types=”video/mpeg”/>
 static void body_msg(char* msg_buffer, uint16_t index, int maxsize) {
     index = index % ARRAYSIZE(config->objects);
     snprintf(msg_buffer, maxsize, 
-        "<msg handle = \"20000100002\" subject= \"What’s the progress Max?\""
+        "<msg handle = \"200001000%02u\" subject= \"What’s the progress Max?\""
         " datetime=\"20140705T092200+0100\" sender_name=\"Jonas\""
-        " sender_addressing=\"4913579864@s.whateverapp.net\" recipient_addressing = \"\" type=\"EMAIL\""
-        " size=\"512\" attachment_size=\"8671724\" priority=\"no\" read=\"yes\" sent=\"yes\" protected=\"no\""
+        " sender_addressing=\"4913579864@s.whateverapp.net\" recipient_addressing = \"\" type=\"%s\""
+        " size=\"512\" attachment_size=\"8671724\" priority=\"no\" read=\"%s\" sent=\"yes\" protected=\"no\""
         " conversation_id=”E1E2E3E4F1F2F3F4A1A2A3A4B1B2B3B4” direction=”incoming”"
         " attachment_mime_types=”video/mpeg”/>"
-        "</MAP-msg-listing>"
-        //index,
-        //config->objects[index],
-        //config->objects[index] ? "yes" : "no"
+        "</MAP-msg-listing>",
+        index,
+        config->objects[index],
+        config->objects[index] ? "yes" : "no"
     );
 }
 
