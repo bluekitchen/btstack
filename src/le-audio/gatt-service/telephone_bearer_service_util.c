@@ -129,3 +129,15 @@ uint8_t tbs_characteristic_index_to_subevent( tbs_characteristic_index_t index )
     btstack_assert( index < TBS_CHARACTERISTICS_NUM );
     return tbs_characteristic_meta_subevent[index];
 }
+
+bool tbs_characteristic_index_uses_call_index( tbs_characteristic_index_t index ){
+    switch (index){
+        case TBS_CHARACTERISTIC_INDEX_CALL_FRIENDLY_NAME:
+        case TBS_CHARACTERISTIC_INDEX_INCOMING_CALL_TARGET_BEARER_URI:
+        case TBS_CHARACTERISTIC_INDEX_INCOMING_CALL:
+        case TBS_CHARACTERISTIC_INDEX_TERMINATION_REASON:
+            return true;
+        default:
+            return false;
+    }
+}
