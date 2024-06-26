@@ -285,8 +285,11 @@ static void body_msg(char* msg_buffer, uint16_t index, int maxsize) {
     if (!config->msg_deleted[index])
         snprintf(msg_buffer, maxsize, 
             "<msg handle = \"A%X\" subject= \"Sbjct\""
+            "<msg handle=\"A%X\""
+            " type = \"%s\""
+            " subject= \"Sbjct\""
             " datetime=\"20140705T092200+0100\" sender_name=\"Jonas\""
-            " sender_addressing=\"1@bla.net\" recipient_addressing=\"\" type=\"%s\""
+            " sender_addressing=\"1@bla.net\" recipient_addressing=\"\""
             " size=\"512\" attachment_size=\"123\" priority=\"no\" read=\"%s\" sent=\"yes\" protected=\"no\""
             " conversation_id=\"E1E2E3E4\"" // "E1" is to short for PTS but happy with "E1E2E3E4\"
             " direction=\"incoming\""
