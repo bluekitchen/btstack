@@ -150,6 +150,7 @@ struct objconfig_s convo = {
 };
 
 enum msg_status_read { no, yes };
+#define MAX_TC_OBJECTS 10
 static struct test_config_s
 {
     int nr;
@@ -157,9 +158,9 @@ static struct test_config_s
     struct objconfig_s* type;
     void (*fdiscon)(void); // optional handler for OBEX disconnect
     int obj_count;
-    char* objects[6]; // maximum 6-1 entries, last one is null
-    enum msg_status_read msg_stati[6]; // maximum 6-1 entries, last one is null
-    bool msg_deleted[6]; // maximum 6-1 entries, last one is null
+    char* objects[MAX_TC_OBJECTS]; // maximum 6-1 entries, last one is null
+    enum msg_status_read msg_stati[MAX_TC_OBJECTS]; // maximum 6-1 entries, last one is null
+    bool msg_deleted[MAX_TC_OBJECTS]; // maximum 6-1 entries, last one is null
 } test_configs[] =
 {
 {.nr = 0, .descr = "MAP/MSE/MMB/BV-09-I 10 11 13 14 42 46   " , .type = &msg,  .obj_count = 2, .objects = { "SMS_GSM","SMS_CDMA"                              }, },
@@ -171,7 +172,7 @@ static struct test_config_s
 {.nr = 6, .descr = "MAP/MSE/MMB/BV-34-I 38 39 40 41 44"       , .type = &convo,.obj_count = 1, .objects = { "",""                                             }, },
 {.nr = 7, .descr = "MAP/MSE/MMB/BV-35-I 36 37"                , .type = &msg,  .obj_count = 1, .objects = { "EMAIL"                                           }, },
 {.nr = 8, .descr = "MAP/MSE/MMB/BV-47-I"                      , .type = &msg,  .obj_count = 1, .objects = { "IM","IM"                                         }, }, // PTS.EXE fails with "- MTC INCONC: no email message in message listing" but expects type="IM"
-{.nr = 9, .descr = "MAP/MSE/MMD/BV-02-I"                      , .type = &msg,  .obj_count = 1, .objects = { "EMAIL","MMS" }, .fdiscon = MAP_MSE_MMD_BV_02_I_disc }, // PTS connects, expects to see an EMAIl, delete it, listmessages, MAIL gone, disconnects, expects MMS, repeat...
+{.nr = 9, .descr = "MAP/MSE/MMD/BV-02-I"                      , .type = &msg,  .obj_count = 1, .objects = { "EMAIL","MMS", "SMS_GSM","SMS_CDMA", "IM", "dummy"}, .fdiscon = MAP_MSE_MMD_BV_02_I_disc }, // PTS connects, expects to see an EMAIL, delete it, listmessages, MAIL gone, disconnects, expects MMS, repeat...
 };
 
 struct test_config_s* config = &test_configs[0];
@@ -180,8 +181,8 @@ static int one_object_more_or_less = 0;
 uint16_t ListingSize = 0;
 
 static void MAP_MSE_MMD_BV_02_I_disc(void) {
-    cfg_start_index = 1;
-    one_object_more_or_less = 1;
+    cfg_start_index++;
+    one_object_more_or_less++;
 }
 
 static mas_uint128hex_t DatabaseIdentifier = { 0 };
