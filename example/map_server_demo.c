@@ -284,12 +284,14 @@ static void body_msg(char* msg_buffer, uint16_t index, int maxsize) {
 
     if (!config->msg_deleted[index])
         snprintf(msg_buffer, maxsize, 
-            "<msg handle = \"A%X\" subject= \"What’s the progress Max?\""
+            "<msg handle = \"A%X\" subject= \"Sbjct\""
             " datetime=\"20140705T092200+0100\" sender_name=\"Jonas\""
-            " sender_addressing=\"4913579864@s.whateverapp.net\" recipient_addressing = \"\" type=\"%s\""
-            " size=\"512\" attachment_size=\"8671724\" priority=\"no\" read=\"%s\" sent=\"yes\" protected=\"no\""
-            " conversation_id=”E1E2E3E4F1F2F3F4A1A2A3A4B1B2B3B4” direction=”incoming”"
-            " attachment_mime_types=\"video/mpeg\"/>",
+            " sender_addressing=\"1@bla.net\" recipient_addressing=\"\" type=\"%s\""
+            " size=\"512\" attachment_size=\"123\" priority=\"no\" read=\"%s\" sent=\"yes\" protected=\"no\""
+            " conversation_id=\"E1E2E3E4\"" // "E1" is to short for PTS but happy with "E1E2E3E4\"
+            " direction=\"incoming\""
+            " attachment_mime_types=\"video/mpeg\"/>" // PTS wants this in MAP/MSE/MMD/BV-02-I, otherwise "no EMAIL message in message listing"
+            ,
             index,
             config->objects[index],
             config->objects[index] ? "yes" : "no"
