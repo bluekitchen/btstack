@@ -133,6 +133,7 @@ struct objconfig_s {
 
 static void body_msg(char* msg_buffer, uint16_t index, int maxsize);
 static void body_convo(char* msg_buffer, uint16_t index, int maxsize);
+static void MAP_MSE_MMD_BV_02_I_disc(void);
 
 
 
@@ -146,7 +147,6 @@ struct objconfig_s convo = {
     .header = CONVO_LISTING_HEADER,
     .footer = CONVO_LISTING_FOOTER,
     .fbody = {body_convo, NULL }
-
 };
 
 enum msg_status_read { no, yes };
@@ -155,27 +155,33 @@ static struct test_config_s
     int nr;
     char* descr;
     struct objconfig_s* type;
+    void (*fdiscon)(void); // optional handler for OBEX disconnect
     int obj_count;
     char* objects[6]; // maximum 6-1 entries, last one is null
     enum msg_status_read msg_stati[6]; // maximum 6-1 entries, last one is null
     bool msg_deleted[6]; // maximum 6-1 entries, last one is null
 } test_configs[] =
 {
-{.nr = 0, .descr = "MAP/MSE/MMB/BV-09-I 10 11 13 14 42 46   " , .type = &msg,  .obj_count = 2, .objects = { "SMS_GSM","SMS_CDMA"                      }, },
-{.nr = 1, .descr = "MAP/MSE/MMB/BV-12-I"                      , .type = &msg,  .obj_count = 1, .objects = { "EMAIL", "SMS_GSM","SMS_CDMA"             }, },
-{.nr = 2, .descr = "MAP/MSE/MMB/BV-15-I 18 20 22"             , .type = &msg,  .obj_count = 5, .objects = { "EMAIL","SMS_GSM","SMS_CDMA", "MMS", "IM" }, },
-{.nr = 3, .descr = "MAP/MSE/MMB/BV-16-I 23"                   , .type = &msg,  .obj_count = 1, .objects = { "EMAIL","EMAIL"                           }, },
-{.nr = 4, .descr = "MAP/MSE/MMB/BV-24-I <a><OK>"              , .type = &convo,.obj_count = 0, .objects = { "",""                                     }, },
-{.nr = 5, .descr = "MAP/MSE/MMB/BV-25-I <c><OK>"              , .type = &convo,.obj_count = 0, .objects = { "",""                                     }, },
-{.nr = 6, .descr = "MAP/MSE/MMB/BV-34-I 38 39 40 41 44"       , .type = &convo,.obj_count = 1, .objects = { "",""                                     }, },
-{.nr = 7, .descr = "MAP/MSE/MMB/BV-35-I 36 37"                , .type = &msg,  .obj_count = 1, .objects = { "EMAIL"                                   }, },
-{.nr = 8, .descr = "MAP/MSE/MMB/BV-47-I"                      , .type = &msg,  .obj_count = 1, .objects = { "IM","IM"                                 }, }, // PTS.EXE fails with "- MTC INCONC: no email message in message listing" but expects type="IM"
+{.nr = 0, .descr = "MAP/MSE/MMB/BV-09-I 10 11 13 14 42 46   " , .type = &msg,  .obj_count = 2, .objects = { "SMS_GSM","SMS_CDMA"                              }, },
+{.nr = 1, .descr = "MAP/MSE/MMB/BV-12-I"                      , .type = &msg,  .obj_count = 1, .objects = { "EMAIL", "SMS_GSM","SMS_CDMA"                     }, },
+{.nr = 2, .descr = "MAP/MSE/MMB/BV-15-I 18 20 22"             , .type = &msg,  .obj_count = 5, .objects = { "EMAIL","SMS_GSM","SMS_CDMA", "MMS", "IM"         }, },
+{.nr = 3, .descr = "MAP/MSE/MMB/BV-16-I 23"                   , .type = &msg,  .obj_count = 1, .objects = { "EMAIL","EMAIL"                                   }, },
+{.nr = 4, .descr = "MAP/MSE/MMB/BV-24-I <a><OK>"              , .type = &convo,.obj_count = 0, .objects = { "",""                                             }, },
+{.nr = 5, .descr = "MAP/MSE/MMB/BV-25-I <c><OK>"              , .type = &convo,.obj_count = 0, .objects = { "",""                                             }, },
+{.nr = 6, .descr = "MAP/MSE/MMB/BV-34-I 38 39 40 41 44"       , .type = &convo,.obj_count = 1, .objects = { "",""                                             }, },
+{.nr = 7, .descr = "MAP/MSE/MMB/BV-35-I 36 37"                , .type = &msg,  .obj_count = 1, .objects = { "EMAIL"                                           }, },
+{.nr = 8, .descr = "MAP/MSE/MMB/BV-47-I"                      , .type = &msg,  .obj_count = 1, .objects = { "IM","IM"                                         }, }, // PTS.EXE fails with "- MTC INCONC: no email message in message listing" but expects type="IM"
+{.nr = 9, .descr = "MAP/MSE/MMD/BV-02-I"                      , .type = &msg,  .obj_count = 1, .objects = { "EMAIL","MMS" }, .fdiscon = MAP_MSE_MMD_BV_02_I_disc }, // PTS connects, expects to see an EMAIl, delete it, listmessages, MAIL gone, disconnects, expects MMS, repeat...
 };
 
 struct test_config_s* config = &test_configs[0];
-static int current_msg_type = 0;
+static int start_index = 0;
 static int one_object_more_or_less = 0;
 uint16_t ListingSize = 0;
+
+static void MAP_MSE_MMD_BV_02_I_disc(void) {
+    start_index = 1;
+}
 
 static mas_uint128hex_t DatabaseIdentifier = { 0 };
 // BT SIG Test Suite PTS is not acepting what BT SIG MAP spec describes as valid counters:
@@ -212,7 +218,7 @@ static void set_test_config(int nr) {
 
 
 static void init_testcases(void) {
-    current_msg_type = 0;
+    start_index = 0;
     one_object_more_or_less = 0;
     ListingSize = config->obj_count + one_object_more_or_less;
 }
@@ -642,8 +648,11 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             }
                             break;
                         case MAP_SUBEVENT_CONNECTION_CLOSED:
-                            MAP_PRINTF("[+] Connection closed, re-init test case states\n");
-                            init_testcases();
+                            MAP_PRINTF("[+] Connection closed, %s\n", config->fdiscon?"disconnect handler":"re-init test case states");
+                            if (config->fdiscon != NULL)
+                                config->fdiscon();
+                            else
+                                init_testcases();
                             break;
                         case MAP_SUBEVENT_OPERATION_COMPLETED:
                             MAP_PRINTF("[+] Operation complete, status 0x%02x\n",
@@ -758,7 +767,6 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             hci_event_packet_get_type(packet));
                     break;
             }
-            break;
 
         case MAP_DATA_PACKET:
 #if 0 // set to 0 to only print data
