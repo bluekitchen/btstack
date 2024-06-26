@@ -127,12 +127,12 @@ struct objconfig_s {
     char* footer;
     // array of up to 3 function pointers for creation of body
     // last entry needs to be NULL
-    void (*fbody[4])(char* msg_buffer, uint16_t index, int maxsize);
+    int (*fbody)(char* msg_buffer, uint16_t index, int maxsize);
 
 };
 
-static void body_msg(char* msg_buffer, uint16_t index, int maxsize);
-static void body_convo(char* msg_buffer, uint16_t index, int maxsize);
+static int body_msg(char* msg_buffer, uint16_t index, int maxsize);
+static int body_convo(char* msg_buffer, uint16_t index, int maxsize);
 static void MAP_MSE_MMD_BV_02_I_disc(void);
 
 
@@ -140,13 +140,13 @@ static void MAP_MSE_MMD_BV_02_I_disc(void);
 struct objconfig_s msg = {
     .header = MSG_LISTING_HEADER,
     .footer = MSG_LISTING_FOOTER,
-    .fbody = {body_msg, NULL }
+    .fbody = body_msg
 };
 
 struct objconfig_s convo = {
     .header = CONVO_LISTING_HEADER,
     .footer = CONVO_LISTING_FOOTER,
-    .fbody = {body_convo, NULL }
+    .fbody = body_convo
 };
 
 enum msg_status_read { no, yes };
@@ -348,11 +348,10 @@ static uint16_t send_listing(uint16_t first, uint16_t last) {
 
     while ((max_body_size > 0) && (first < last)){
         log_debug("2 first:%d last:%d pos:%d", first, last, pos);
+        
         // add entry
-        for (int i = 0; config->type->fbody[i] != NULL; i++)
-            config->type->fbody[i](listing_buffer, first, sizeof(listing_buffer));
-        // get len
-        uint16_t len = (uint16_t)strlen(listing_buffer);
+        len = config->type->fbody(listing_buffer, first, sizeof(listing_buffer));
+        
         log_debug("2.5 first:%d last:%d pos:%d len:%d", first, last, pos, len);
         if (len > max_body_size){
             break;
