@@ -796,11 +796,13 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                 break;
             }
 #endif
-            MAP_PRINTF("MAP_DATA_PACKET (%u bytes): ", size);
-            for (int i=0;i<size;i++){
-                MAP_PRINTF("%0x2 ", packet[i]);
+            
+            char buf[100]; int i;
+            for (i=0;i<size;i++){
+                snprintf(&buf[3*i], 4, "%02x ", packet[i]);
             }
-            MAP_PRINTF ("\n");
+            //buf[3 * i] = 0;
+            MAP_PRINTF("MAP_DATA_PACKET (%u bytes): %s", size, buf);
             break;
         default:
             MAP_PRINTF ("unknown event of type %d\n", packet_type);
