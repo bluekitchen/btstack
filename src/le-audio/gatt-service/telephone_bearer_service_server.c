@@ -433,26 +433,10 @@ static uint16_t tbs_server_serialize_first_call_friendly_name( memcat_t *storage
     return memcat_get_size(storage);
 }
 
-static uint16_t tbs_server_serialize_call_control_point_notification( memcat_t *storage, telephone_bearer_service_server_t *bearer ) {
-    // if we have a notification without a valid call_id it is stored in the bearer
-    if( bearer->data.call_control_point_notification_pending ) {
-        memcat( storage, bearer->data.call_control_point_notification, sizeof(bearer->data.call_control_point_notification) );
-        bearer->data.call_control_point_notification_pending = false;
-        return memcat_get_size(storage);
-    }
-
-    uint32_t index_mask = UINT32_C(1)<<TBS_CHARACTERISTIC_INDEX_CALL_CONTROL_POINT;
-    for( btstack_linked_list_iterator_t it = bearer_calls_iterator_begin(bearer);
-         btstack_linked_list_iterator_has_next(&it);
-         )
-    {
-        tbs_call_data_t * call = (tbs_call_data_t *)btstack_linked_list_iterator_next(&it);
-        if( (call->scheduled_tasks & index_mask) > 0 ) {
-            call->scheduled_tasks &= ~index_mask;
-            memcat( storage, call->call_control_point_notification, sizeof(call->call_control_point_notification) );
-            break;
-        }
-    }
+static uint16_t tbs_server_serialize_call_control_point_notification(memcat_t *storage, telephone_bearer_service_server_t *bearer,
+                                                     tbs_server_connection_t *bearer_connection) {
+    bearer_connection->call_control_point_notification_pending = true;
+    memcat(storage, bearer_connection->call_control_point_notification, sizeof(bearer_connection->call_control_point_notification) );
     return memcat_get_size(storage);
 }
 
@@ -597,7 +581,7 @@ static void tbs_server_can_send_now(void * context){
         break;
     }
     case TBS_CHARACTERISTIC_INDEX_CALL_CONTROL_POINT: {
-        uint16_t stored_bytes = tbs_server_serialize_call_control_point_notification( &storage, tbs_bearer );
+        uint16_t stored_bytes = tbs_server_serialize_call_control_point_notification(&storage, tbs_bearer, bearer_connection);
         att_server_notify(con_handle,
                 value_handle,
                 buf,
@@ -1013,9 +997,6 @@ static uint8_t tbs_server_register_bearer(uint16_t service_uuid, telephone_beare
     btstack_run_loop_set_timer_context(&tbs_bearer->signal_strength_timer, tbs_bearer);
     btstack_run_loop_remove_timer(&tbs_bearer->signal_strength_timer);
 
-    // clear call control point notification flag
-    tbs_bearer->data.call_control_point_notification_pending = false;
-
     // prepare for the next service
     tbs_services_start_handle = tbs_bearer->service.end_handle;
     return ERROR_CODE_SUCCESS;
@@ -1235,26 +1216,33 @@ uint8_t telephone_bearer_service_server_call_control_point_notification(hci_con_
     if (tbs_bearer == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
+
+    tbs_server_connection_t * bearer_connection = tbs_server_get_bearer_connection_for_con_handle(tbs_bearer, con_handle);
+    if (bearer_connection == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+
+    // get call. must exist unless request isn't supported
     tbs_call_data_t *call = telephone_bearer_service_server_get_call_by_id( tbs_bearer, call_id );
-    if( call == NULL ) {
-        tbs_bearer->data.call_control_point_notification[0] = opcode;
-        tbs_bearer->data.call_control_point_notification[1] = 0;
-        tbs_bearer->data.call_control_point_notification[2] = result;
-        tbs_bearer->data.call_control_point_notification_pending = true;
-
-        tbs_server_schedule_task(tbs_bearer, TBS_CHARACTERISTIC_INDEX_CALL_CONTROL_POINT);
-        return ERROR_CODE_SUCCESS;
+    uint8_t call_index;
+    if (call == NULL) {
+        if (result != TBS_CONTROL_POINT_RESULT_OPCODE_NOT_SUPPORTED){
+            return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+        }
+        call_index = 0;
+    } else {
+        call_index = call->id;
     }
 
-    call->call_control_point_notification[0] = opcode;
-    call->call_control_point_notification[1] = call_id;
-    call->call_control_point_notification[2] = result;
-    if( result > TBS_CONTROL_POINT_RESULT_SUCCESS ) {
-        call->call_control_point_notification[1] = 0;
-    }
+    // store reply in connection
+    bearer_connection->call_control_point_notification[0] = opcode;
+    bearer_connection->call_control_point_notification[0] = call_index;
+    bearer_connection->call_control_point_notification[0] = result;
+    bearer_connection->call_control_point_notification_pending = true;
 
-    tbs_server_call_schedule_task(call, TBS_CHARACTERISTIC_INDEX_CALL_CONTROL_POINT);
-    tbs_server_schedule_task(tbs_bearer, TBS_CHARACTERISTIC_INDEX_CALL_CONTROL_POINT);
+    // trigger notify
+    tbs_server_bearer_connection_schedule_task(tbs_bearer, bearer_connection, TBS_CHARACTERISTIC_INDEX_CALL_CONTROL_POINT);
+
     return ERROR_CODE_SUCCESS;
 }
 
