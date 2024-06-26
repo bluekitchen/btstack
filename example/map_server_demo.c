@@ -289,8 +289,7 @@ static void body_msg(char* msg_buffer, uint16_t index, int maxsize) {
             " sender_addressing=\"4913579864@s.whateverapp.net\" recipient_addressing = \"\" type=\"%s\""
             " size=\"512\" attachment_size=\"8671724\" priority=\"no\" read=\"%s\" sent=\"yes\" protected=\"no\""
             " conversation_id=”E1E2E3E4F1F2F3F4A1A2A3A4B1B2B3B4” direction=”incoming”"
-            " attachment_mime_types=”video/mpeg”/>"
-            "</MAP-msg-listing>",
+            " attachment_mime_types=\"video/mpeg\"/>",
             index,
             config->objects[index],
             config->objects[index] ? "yes" : "no"
