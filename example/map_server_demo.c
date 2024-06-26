@@ -529,13 +529,11 @@ static void stdin_process(char c){
 }
 
 
-static handle_set_message_status(char *msg_handle_str, uint8_t StatusIndicator, uint8_t StatusValue) {
+static void handle_set_message_status(char *msg_handle_str, uint8_t StatusIndicator, uint8_t StatusValue) {
 #define ERROR(str_descr) { error_msg = str_descr; goto error; }
     int msg_handle;
     const char* error_msg = "";
     
-    if (StatusIndicator != readStatus && StatusIndicator != deletedStatus)
-        ERROR("we only handle valid change - requests of Status Read=yes/no or deletedStatus");
     
     if (StatusValue > 1)
         ERROR("we only handle valid change-requests of Status Read=yes/no / deletedStatus");
@@ -554,14 +552,23 @@ static handle_set_message_status(char *msg_handle_str, uint8_t StatusIndicator, 
     if (msg_handle > ARRAYSIZE(config->objects) - 1)
         ERROR("handle exceeds our nr of messages");
 
-    if (StatusValue > 1)
-        ERROR("invalid status");
 
     switch (StatusIndicator) {
-    case readStatus: config->msg_stati[msg_handle] = StatusValue; break;
-    case deletedStatus: config->msg_deleted[msg_handle] = StatusValue; break;
+    
+    case readStatus:
+        config->msg_stati[msg_handle] = StatusValue;
+        break;
+    
+    case deletedStatus:
+        config->msg_deleted[msg_handle] = StatusValue;
+        break;
+    
+    default:
+        ERROR("we only handle valid change - requests of Status Read=yes/no or deletedStatus");
+        break;
     }
 
+    return;
 
 error:
     log_error("%s", error_msg);
