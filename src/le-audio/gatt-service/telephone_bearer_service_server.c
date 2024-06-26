@@ -896,11 +896,11 @@ static int tbs_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
             uint16_t opcode_mask = tbs_bearer->data.optional_opcodes_supported_bitmap;
             // reject opcodes if not supported
             if( (0 == (opcode_mask & TBS_OPCODE_MASK_JOIN)) && (opcode == TBS_CONTROL_POINT_OPCODE_JOIN) ) {
-                telephone_bearer_service_server_call_control_point_notification(tbs_bearer->bearer_id, 0, TBS_CONTROL_POINT_OPCODE_JOIN, TBS_CONTROL_POINT_RESULT_OPCODE_NOT_SUPPORTED);
+                telephone_bearer_service_server_call_control_point_notification(con_handle, tbs_bearer->bearer_id, 0, TBS_CONTROL_POINT_OPCODE_JOIN, TBS_CONTROL_POINT_RESULT_OPCODE_NOT_SUPPORTED);
                 break;
             }
             if( (0 == (opcode_mask & TBS_OPCODE_MASK_LOCAL_HOLD)) && (opcode == TBS_CONTROL_POINT_OPCODE_LOCAL_HOLD) ) {
-                telephone_bearer_service_server_call_control_point_notification(tbs_bearer->bearer_id, 0, TBS_CONTROL_POINT_OPCODE_LOCAL_HOLD, TBS_CONTROL_POINT_RESULT_OPCODE_NOT_SUPPORTED);
+                telephone_bearer_service_server_call_control_point_notification(con_handle, tbs_bearer->bearer_id, 0, TBS_CONTROL_POINT_OPCODE_LOCAL_HOLD, TBS_CONTROL_POINT_RESULT_OPCODE_NOT_SUPPORTED);
                 break;
             }
             tbs_server_emit_call_control_notification_task(tbs_bearer, opcode, buffer, buffer_size);
@@ -1230,7 +1230,7 @@ uint8_t telephone_bearer_service_server_set_technology(uint16_t bearer_id, const
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t telephone_bearer_service_server_call_control_point_notification(uint16_t bearer_id, uint16_t call_id, tbs_control_point_opcode_t opcode, tbs_control_point_notification_result_codes_t result){
+uint8_t telephone_bearer_service_server_call_control_point_notification(hci_con_handle_t con_handle, uint16_t bearer_id, uint16_t call_id, tbs_control_point_opcode_t opcode, tbs_control_point_notification_result_codes_t result){
     telephone_bearer_service_server_t * tbs_bearer = telephone_bearer_service_server_get_bearer_by_id(bearer_id);
     if (tbs_bearer == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;

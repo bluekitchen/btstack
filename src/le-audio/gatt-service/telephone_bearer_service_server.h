@@ -240,12 +240,14 @@ uint8_t telephone_bearer_service_server_set_call_state(
  * Generate a call control point notification
  *
  * @param bearer_id
+ * @param con_handle
  * @param call_id
  * @param opcode
  * @param result
  * @return
  */
 uint8_t telephone_bearer_service_server_call_control_point_notification(
+        hci_con_handle_t con_handle,
         uint16_t bearer_id,
         uint16_t call_id,
         tbs_control_point_opcode_t opcode,
