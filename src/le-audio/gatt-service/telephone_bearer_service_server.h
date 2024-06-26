@@ -120,8 +120,6 @@ typedef struct {
     char provider_name[TELEPHONE_BEARER_SERVICE_PROVIDER_NAME_MAX_LENGTH];
     char uniform_caller_identifier[TELEPHONE_BEARER_SERVICE_UNIFORM_CALLER_IDENTIFIER_MAX_LENGTH];
     uint8_t technology;
-    bool call_control_point_notification_pending;
-    uint8_t call_control_point_notification[TELEPHONE_BEARER_SERVICE_CALL_CONTROL_POINT_NOTIFICATION_LENGTH];
     uint8_t signal_strength;
     uint8_t signal_strength_reporting_interval;
 } tbs_data_t;
@@ -131,11 +129,15 @@ struct telephone_bearer_service_server;
 typedef struct {
     hci_con_handle_t            con_handle;
 
-    // nedded for notifications for sending notifications
+    // needed for notifications for sending notifications
     struct telephone_bearer_service_server * bearer;
     
     uint32_t        characteristics_dirty;
     uint16_t        client_configuration[TBS_CHARACTERISTICS_NUM];
+
+    // Call Control Point Notification is response to write request by client
+    bool    call_control_point_notification_pending;
+    uint8_t call_control_point_notification[TELEPHONE_BEARER_SERVICE_CALL_CONTROL_POINT_NOTIFICATION_LENGTH];
 
     uint32_t        scheduled_tasks;
     btstack_context_callback_registration_t scheduled_tasks_callback; 
