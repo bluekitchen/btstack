@@ -146,16 +146,20 @@ static uint8_t extended_adv_data[] = {
 
 // TBS
 #define TBS_BEARERS_MAX_NUM 2
+#define TBS_SERVER_NUM_CONNECTIONS 2
 #define CALL_POOL_SIZE  (10)
+
 typedef struct {
     telephone_bearer_service_server_t bearer;
     uint16_t id;
     char *scheme;
 } my_bearer_t;
+
 static my_bearer_t tbs_bearers[TBS_BEARERS_MAX_NUM];
 static uint8_t tbs_bearer_index;
 static tbs_call_data_t calls[CALL_POOL_SIZE];
 static uint16_t call_ids[CALL_POOL_SIZE];
+static tbs_server_connection_t tbs_server_connections[TBS_SERVER_NUM_CONNECTIONS];
 
 static void btp_bap_send_response_if_pending(void){
     if ((response_service_id == BTP_SERVICE_ID_BAP) && (response_op != 0)){
@@ -1847,6 +1851,7 @@ void btp_bap_init(void){
     (void) telephone_bearer_service_server_register_generic_bearer(
             &tbs_bearers[tbs_bearer_index].bearer,
             &tbs_server_packet_handler,
+            TBS_SERVER_NUM_CONNECTIONS, tbs_server_connections,
             TBS_OPCODE_MASK_LOCAL_HOLD | TBS_OPCODE_MASK_JOIN,
             &tbs_bearers[tbs_bearer_index].id);
 
