@@ -71,6 +71,11 @@ static uint16_t tbs_bearer_counter = 0;
 static uint16_t tbs_services_start_handle;
 static uint8_t buf[TELEPHONE_BEARER_SERVICE_BUFFER_SIZE];
 
+// prototypes
+static void tbs_server_start_bearer_notify(telephone_bearer_service_server_t * tbs_bearer);
+static void tbs_server_schedule_task(telephone_bearer_service_server_t * tbs_bearer, tbs_characteristic_index_t characteristic_index);
+static void tbs_server_check_for_deregister_call( telephone_bearer_service_server_t *bearer );
+
 telephone_bearer_service_server_t *telephone_bearer_service_server_get_bearer_by_id(uint16_t bearer_id) {
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, &tbs_bearers);
@@ -115,9 +120,6 @@ static uint16_t tbs_server_get_next_call_id( telephone_bearer_service_server_t *
     return tbs_bearer->call_counter;
 }
 
-static void tbs_server_schedule_task(telephone_bearer_service_server_t * tbs_bearer, tbs_characteristic_index_t characteristic_index);
-static void tbs_server_check_for_deregister_call( telephone_bearer_service_server_t *bearer );
-
 static void tbs_server_reset_bearer_connection(tbs_server_connection_t * bearer_connection) {
     log_info("tbs_server_reset_bearer_connection, connection %p", bearer_connection);
     bearer_connection->con_handle = HCI_CON_HANDLE_INVALID;
@@ -145,7 +147,6 @@ static tbs_server_connection_t * tbs_server_setup_bearer_connection(telephone_be
     }
     tbs_server_reset_bearer_connection(bearer_connection);
     bearer_connection->con_handle = con_handle;
-    bearer_connection->bearer = tbs_bearer;
     return bearer_connection;
 }
 
@@ -205,21 +206,17 @@ static void tbs_server_handle_cccd_write(telephone_bearer_service_server_t * tbs
                     return;
                 }
             }
-            log_info("tbs_server_handle_cccd_write reset connection");
             tbs_server_reset_bearer_connection(bearer_connection);
         }
     } else {
         if (bearer_connection == NULL){
             bearer_connection = tbs_server_setup_bearer_connection(tbs_bearer, con_handle);
             if (bearer_connection == NULL){
-                log_info("tbs_server_handle_cccd_write failed to allocate connection");
                 return;
             }
-            log_info("tbs_server_handle_cccd_write allocate connection");
         }
 
         bearer_connection->client_configuration[characteristic_index] = configuration;
-
     }
 }
 
@@ -334,7 +331,6 @@ static uint16_t tbs_server_serialize_incoming_call_target_bearer_uri( memcat_t *
         const char *string = call->target_uri;
         uint16_t uri_length = (uint16_t) strnlen(string, TELEPHONE_BEARER_SERVICE_URI_MAX_LENGTH);
         if( (call->scheduled_tasks & index_mask) > 0 ) {
-            call->scheduled_tasks &= ~index_mask;
             memcat_byte( storage, call->id );
             memcat( storage, (const uint8_t *) string, uri_length );
             break;
@@ -370,8 +366,6 @@ static uint16_t tbs_server_serialize_incoming_call( memcat_t *storage, telephone
         const char *string = call->call_uri;
         uint16_t uri_length = (uint16_t) strnlen(string, TELEPHONE_BEARER_SERVICE_URI_MAX_LENGTH);
         if( (call->scheduled_tasks & index_mask) > 0 ) {
-            call->scheduled_tasks &= ~index_mask;
-
             memcat_byte( storage, call->id );
             memcat( storage, (const uint8_t *) string, uri_length );
             break;
@@ -407,7 +401,6 @@ static uint16_t tbs_server_serialize_call_friendly_name( memcat_t *storage, tele
         const char *string = call->friendly_name;
         uint16_t uri_length = (uint16_t) strnlen(string, TELEPHONE_BEARER_SERVICE_URI_MAX_LENGTH);
         if( (call->scheduled_tasks & index_mask) > 0 ) {
-            call->scheduled_tasks &= ~index_mask;
             memcat_byte( storage, call->id );
             memcat( storage, (const uint8_t *) string, uri_length );
             break;
@@ -435,7 +428,6 @@ static uint16_t tbs_server_serialize_first_call_friendly_name( memcat_t *storage
 
 static uint16_t tbs_server_serialize_call_control_point_notification(memcat_t *storage, telephone_bearer_service_server_t *bearer,
                                                      tbs_server_connection_t *bearer_connection) {
-    bearer_connection->call_control_point_notification_pending = true;
     memcat(storage, bearer_connection->call_control_point_notification, sizeof(bearer_connection->call_control_point_notification) );
     return memcat_get_size(storage);
 }
@@ -448,7 +440,6 @@ static uint16_t tbs_server_serialize_termination_reason( memcat_t *storage, tele
     {
         tbs_call_data_t * call = (tbs_call_data_t *)btstack_linked_list_iterator_next(&it);
         if( (call->scheduled_tasks & index_mask) > 0 ) {
-            call->scheduled_tasks &= ~index_mask;
             memcat_byte( storage, call->id );
             memcat_byte( storage, call->termination_reason );
             break;
@@ -467,54 +458,66 @@ static uint32_t tbs_server_merge_calls_scheduled_tasks( telephone_bearer_service
     return tasks;
 }
 
-// warning, value needs to be greater than zero otherwise behavior is undefined!
-static uint8_t tbs_server_mask_to_index( uint32_t value ) {
-    return 31-btstack_clz(value);
-}
-
-static tbs_server_connection_t * tbs_get_next_bearer_connection_to_notify(telephone_bearer_service_server_t * tbs_bearer){
+static uint8_t tbs_get_next_bearer_connection_to_notify_for_tasks(telephone_bearer_service_server_t * tbs_bearer, tbs_characteristic_index_t characteristic_index){
+    uint32_t task_bit_mask = UINT32_C(1) << characteristic_index;
     uint8_t i;
     for (i = 0; i < tbs_bearer->connections_num; i++){
         tbs_server_connection_t * bearer_connection = &tbs_bearer->connections[i];
-
         if (bearer_connection->con_handle != HCI_CON_HANDLE_INVALID){
-            if (bearer_connection->scheduled_tasks != 0){
-                return bearer_connection;
+            if ((bearer_connection->scheduled_tasks & task_bit_mask) != 0){
+                return i;
             }
         }
-    } 
+    }
+    return i;
+}
+
+static tbs_call_data_t * tbs_server_next_call_to_notify(telephone_bearer_service_server_t * tbs_bearer, tbs_characteristic_index_t characteristic_index){
+    uint32_t task_bit_mask = UINT32_C(1) << characteristic_index;
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &tbs_bearer->calls);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        tbs_call_data_t * call = (tbs_call_data_t *)btstack_linked_list_iterator_next(&it);
+        if ((call->scheduled_tasks & task_bit_mask) != 0) {
+            return call;
+        }
+    }
     return NULL;
+}
+
+static void tbs_server_set_task_in_connections(const telephone_bearer_service_server_t *tbs_bearer, tbs_characteristic_index_t characteristic_index) {
+    // set task in all subscribed connections
+    uint8_t i;
+    uint32_t task_bit_mask = UINT32_C(1) << characteristic_index;
+    for (i = 0; i < tbs_bearer->connections_num; i++){
+        tbs_server_connection_t * bearer_connection = &tbs_bearer->connections[i];
+        if (bearer_connection->con_handle != HCI_CON_HANDLE_INVALID){
+            if (bearer_connection->client_configuration[tbs_bearer->scheduled_characteristic_to_notify] != 0){
+                bearer_connection->scheduled_tasks |= task_bit_mask;
+                log_info("tbs_server_set_task_in_connections: need to notify connection %u", i);
+            }
+        }
+    }
 }
 
 static void tbs_server_can_send_now(void * context){
     telephone_bearer_service_server_t * tbs_bearer = (telephone_bearer_service_server_t *) context;
     btstack_assert(tbs_bearer != NULL);
 
-    tbs_server_connection_t * bearer_connection = tbs_get_next_bearer_connection_to_notify(tbs_bearer);
-    btstack_assert(bearer_connection != NULL);
-
-    
-    if (bearer_connection->con_handle == HCI_CON_HANDLE_INVALID){
-        bearer_connection->scheduled_tasks = 0;
-        return;
-    }
-
-    uint32_t scheduled_tasks = bearer_connection->scheduled_tasks;
-    // nothing to do here
-    if( scheduled_tasks == 0 ) {
-        return;
-    }
+    tbs_server_connection_t * bearer_connection = &tbs_bearer->connections[tbs_bearer->scheduled_connection_to_notify];
 
     memcat_t storage = {
-            .buf = buf,
-            .buf_size = TELEPHONE_BEARER_SERVICE_BUFFER_SIZE,
+        .buf = buf,
+        .buf_size = TELEPHONE_BEARER_SERVICE_BUFFER_SIZE,
     };
 
-    uint8_t index = tbs_server_mask_to_index(scheduled_tasks);
-    uint16_t value_handle = tbs_bearer->characteristics[index].value_handle;
+    uint8_t characteristic_index = (uint8_t) tbs_bearer->scheduled_characteristic_to_notify;
+    uint16_t value_handle = tbs_bearer->characteristics[characteristic_index].value_handle;
     hci_con_handle_t con_handle = bearer_connection->con_handle;
 
-    switch( index ) {
+    log_info("tbs_server_can_send_now, connection %p, index %u", bearer_connection, characteristic_index);
+
+    switch( tbs_bearer->scheduled_characteristic_to_notify ) {
     case TBS_CHARACTERISTIC_INDEX_BEARER_PROVIDER_NAME:
         att_server_notify(con_handle,
             value_handle,
@@ -617,21 +620,51 @@ static void tbs_server_can_send_now(void * context){
     default:
         break;
     }
-    scheduled_tasks &= ~(UINT32_C(1)<<index);
-    scheduled_tasks = tbs_server_merge_calls_scheduled_tasks(tbs_bearer, scheduled_tasks);
 
-    bearer_connection->scheduled_tasks = scheduled_tasks;
-    tbs_server_check_for_deregister_call(tbs_bearer);
+    // sent for this connection
+    uint32_t task_bit_mask = UINT32_C(1) << characteristic_index;
+    bearer_connection->scheduled_tasks &= ~task_bit_mask;
 
-    if (bearer_connection->scheduled_tasks != 0){
-        att_server_register_can_send_now_callback(&bearer_connection->scheduled_tasks_callback, bearer_connection->con_handle);
-    } else {
-        tbs_server_connection_t * connection = tbs_get_next_bearer_connection_to_notify(tbs_bearer);
-        if (connection != NULL){
-            bearer_connection->scheduled_tasks_callback.callback = &tbs_server_can_send_now;
-            bearer_connection->scheduled_tasks_callback.context  = (void*) tbs_bearer;
-            att_server_register_can_send_now_callback(&connection->scheduled_tasks_callback, connection->con_handle);
+    // more connections?
+    tbs_bearer->scheduled_connection_to_notify = tbs_get_next_bearer_connection_to_notify_for_tasks(tbs_bearer, tbs_bearer->scheduled_characteristic_to_notify);
+    if (tbs_bearer->scheduled_connection_to_notify == tbs_bearer->connections_num){
+        log_info("no other connections with same task / characteristic id");
+        if (tbs_characteristic_index_uses_call_index(tbs_bearer->scheduled_characteristic_to_notify)){
+            // clear task for current call
+            log_info("clear flag in call state for call id %u", tbs_bearer->scheduled_call_to_notify->id);
+            tbs_bearer->scheduled_call_to_notify->scheduled_tasks &= ~task_bit_mask;
+            // more calls?
+            tbs_bearer->scheduled_call_to_notify = tbs_server_next_call_to_notify(tbs_bearer, tbs_bearer->scheduled_characteristic_to_notify);
+            if (tbs_bearer->scheduled_call_to_notify == NULL){
+                log_info("no other call needs notify, all clients notified");
+                // done for this characteristic
+                tbs_bearer->scheduled_tasks &= ~task_bit_mask;
+                // check if call can be freed
+                tbs_server_check_for_deregister_call(tbs_bearer);
+            } else {
+                // continue with next call
+                log_info("continue with call id %u", tbs_bearer->scheduled_call_to_notify->id);
+                tbs_server_set_task_in_connections(tbs_bearer, tbs_bearer->scheduled_characteristic_to_notify);
+            }
+        } else {
+            // done for this characteristic
+            log_info("all clients notified for this characteristic %u", tbs_bearer->scheduled_characteristic_to_notify);
+            tbs_bearer->scheduled_tasks &= ~task_bit_mask;
         }
+    }
+
+    // more for this characteristic?
+    if ((tbs_bearer->scheduled_tasks & task_bit_mask) != 0){
+        tbs_server_connection_t * bearer_connection = &tbs_bearer->connections[tbs_bearer->scheduled_connection_to_notify];
+        hci_con_handle_t con_handle = bearer_connection->con_handle;
+        log_info("tbs_server_can_send_now: register can send now con %u, handle 0x%04x", tbs_bearer->scheduled_connection_to_notify, con_handle);
+        att_server_register_can_send_now_callback(&tbs_bearer->scheduled_tasks_callback, con_handle);
+        return;
+    }
+
+    // check if there is more work for other characteristics
+    else if (tbs_bearer->scheduled_tasks != 0){
+        tbs_server_start_bearer_notify(tbs_bearer);
     }
 }
 
@@ -645,35 +678,87 @@ static void tbs_server_bearer_connection_schedule_task(telephone_bearer_service_
         return;
     }
 
+    // set flag in task
     uint32_t task_bit_mask = UINT32_C(1) << ((uint8_t)characteristic_index);
-
-    // skip if already scheduled
-    if ((bearer_connection->scheduled_tasks & task_bit_mask) != 0){
-        log_info("tbs_server_bearer_connection_schedule_task already scheduled");
-        return;
-    }
-
-    uint32_t scheduled_tasks = bearer_connection->scheduled_tasks;
     bearer_connection->scheduled_tasks |= task_bit_mask;
 
     // flag characteristic as dirty
     bearer_connection->characteristics_dirty |= UINT32_C(1) << characteristic_index;
-
-    if( scheduled_tasks == 0 ) {
-        log_info("tbs_server_bearer_connection_schedule_task register can send now, connection %p", bearer_connection);
-        bearer_connection->scheduled_tasks_callback.callback = &tbs_server_can_send_now;
-        bearer_connection->scheduled_tasks_callback.context  = (void*) tbs_bearer;
-        att_server_register_can_send_now_callback(&bearer_connection->scheduled_tasks_callback, bearer_connection->con_handle);
-    } else {
-        log_info("tbs_server_bearer_connection_schedule_task can send now already scheduled, connection %p", bearer_connection);
-    }
 }
 
+static tbs_characteristic_index_t tbs_server_next_characteristic_to_notify(telephone_bearer_service_server_t * tbs_bearer){
+    uint8_t index;
+    for (index = 0; index < TBS_CHARACTERISTICS_NUM;index++){
+        uint32_t task_bit_mask = UINT32_C(1) << index;
+        if ((tbs_bearer->scheduled_tasks & task_bit_mask) != 0){
+            break;
+        }
+    }
+    return (tbs_characteristic_index_t) index;
+}
+
+static void tbs_server_start_bearer_notify(telephone_bearer_service_server_t * tbs_bearer){
+    // select characteristic based on bearer task set
+    tbs_bearer->scheduled_characteristic_to_notify = tbs_server_next_characteristic_to_notify(tbs_bearer);
+    btstack_assert(tbs_bearer->scheduled_characteristic_to_notify != TBS_CHARACTERISTICS_NUM);
+    log_info("tbs_server_start_bearer_notify: selected characteristic %u", tbs_bearer->scheduled_characteristic_to_notify);
+
+    // select call if characteristic is responsible for multiple calls, and select all connections
+    if (tbs_characteristic_index_uses_call_index(tbs_bearer->scheduled_characteristic_to_notify)){
+        tbs_bearer->scheduled_call_to_notify = tbs_server_next_call_to_notify(tbs_bearer, tbs_bearer->scheduled_characteristic_to_notify);
+        btstack_assert(tbs_bearer->scheduled_call_to_notify != NULL);
+        log_info("tbs_server_start_bearer_notify: set call with call_index %u", tbs_bearer->scheduled_call_to_notify->id);
+        tbs_server_set_task_in_connections(tbs_bearer, tbs_bearer->scheduled_characteristic_to_notify);
+    } else {
+        log_info("tbs_server_start_bearer_notify: unrelated to specific call");
+        tbs_bearer->scheduled_call_to_notify = NULL;
+    }
+
+    // set per connection flags
+    tbs_bearer->scheduled_connection_to_notify = tbs_get_next_bearer_connection_to_notify_for_tasks(tbs_bearer, tbs_bearer->scheduled_characteristic_to_notify);
+    log_info("tbs_server_start_bearer_notify: tbs_bearer->scheduled_connection_to_notify %u", tbs_bearer->scheduled_connection_to_notify);
+    btstack_assert(tbs_bearer->scheduled_connection_to_notify < tbs_bearer->connections_num);
+
+    // register can send now
+    tbs_bearer->scheduled_tasks_callback.callback = &tbs_server_can_send_now;
+    tbs_bearer->scheduled_tasks_callback.context  = (void*) tbs_bearer;
+    hci_con_handle_t con_handle = tbs_bearer->connections[tbs_bearer->scheduled_connection_to_notify].con_handle;
+    log_info("tbs_server_start_bearer_notify: register can send now con %u, handle 0x%04x", tbs_bearer->scheduled_connection_to_notify, con_handle);
+    att_server_register_can_send_now_callback(&tbs_bearer->scheduled_tasks_callback, con_handle);
+}
+
+static bool tbs_server_connection_task_pending(const tbs_server_connection_t *bearer_connection, tbs_characteristic_index_t characteristic_index) {
+    uint32_t task_bit_mask = UINT32_C(1) << ((uint8_t) (characteristic_index));
+    return (bearer_connection->scheduled_tasks & task_bit_mask) != 0;
+}
+
+// assumption: only called for TBS_CHARACTERISTIC_INDEX_CALL_CONTROL_POINT if notifications are enabled
 static void tbs_server_schedule_task(telephone_bearer_service_server_t * tbs_bearer, tbs_characteristic_index_t characteristic_index){
     btstack_assert( characteristic_index < TBS_CHARACTERISTICS_NUM );
+
     uint8_t i;
-    for (i = 0; i < tbs_bearer->connections_num; i++){
-        tbs_server_bearer_connection_schedule_task(tbs_bearer, &tbs_bearer->connections[i], characteristic_index);
+    bool notification_pending = false;
+    if (characteristic_index == TBS_CHARACTERISTIC_INDEX_CALL_CONTROL_POINT){
+        notification_pending = true;
+    } else {
+        for (i = 0; i < tbs_bearer->connections_num; i++){
+            tbs_server_connection_t * bearer_connection = &tbs_bearer->connections[i];
+            tbs_server_bearer_connection_schedule_task(tbs_bearer, bearer_connection, characteristic_index);
+            notification_pending = notification_pending ||
+                    tbs_server_connection_task_pending(bearer_connection, characteristic_index);;
+        }
+    }
+
+    if (notification_pending == false){
+        return;
+    }
+
+    uint32_t scheduled_tasks = tbs_bearer->scheduled_tasks;
+    uint32_t task_bit_mask = UINT32_C(1) << ((uint8_t)characteristic_index);
+    tbs_bearer->scheduled_tasks |= task_bit_mask;
+
+    if (scheduled_tasks == 0){
+        tbs_server_start_bearer_notify(tbs_bearer);
     }
 }
 
@@ -1238,11 +1323,11 @@ uint8_t telephone_bearer_service_server_call_control_point_notification(hci_con_
     bearer_connection->call_control_point_notification[0] = opcode;
     bearer_connection->call_control_point_notification[0] = call_index;
     bearer_connection->call_control_point_notification[0] = result;
-    bearer_connection->call_control_point_notification_pending = true;
 
-    // trigger notify
     tbs_server_bearer_connection_schedule_task(tbs_bearer, bearer_connection, TBS_CHARACTERISTIC_INDEX_CALL_CONTROL_POINT);
-
+    if (tbs_server_connection_task_pending(bearer_connection, TBS_CHARACTERISTIC_INDEX_CALL_CONTROL_POINT)){
+        tbs_server_schedule_task(tbs_bearer, TBS_CHARACTERISTIC_INDEX_CALL_CONTROL_POINT);
+    }
     return ERROR_CODE_SUCCESS;
 }
 
