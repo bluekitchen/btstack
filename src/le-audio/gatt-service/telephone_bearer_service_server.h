@@ -104,7 +104,6 @@ typedef struct {
     char call_uri[TELEPHONE_BEARER_SERVICE_URI_MAX_LENGTH];
     char target_uri[TELEPHONE_BEARER_SERVICE_URI_MAX_LENGTH];
     char friendly_name[TELEPHONE_BEARER_SERVICE_URI_MAX_LENGTH];
-    uint8_t call_control_point_notification[TELEPHONE_BEARER_SERVICE_CALL_CONTROL_POINT_NOTIFICATION_LENGTH];
     uint8_t termination_reason;
 
     uint32_t scheduled_tasks;
