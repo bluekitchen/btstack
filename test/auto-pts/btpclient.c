@@ -1664,13 +1664,22 @@ static void btp_gatt_handler(uint8_t opcode, uint8_t controller_index, uint16_t 
             }
             break;
         case BTP_GATT_OP_READ:
-            MESSAGE("BTP_GATT_OP_READ");
             // initialize response
             response_len = 0;
             response_service_id = BTP_SERVICE_ID_GATT;
             response_op = opcode;
             if (controller_index == 0){
+                /**
+                Command parameters:	Address_Type (1 octet)
+                Address (6 octets)
+                Handle (2 octets)
+                 */
+                uint8_t   command_addr_type = data[0];
+                bd_addr_t command_addr;
+                reverse_bd_addr(&data[1], command_addr);
+                remote_handle = btp_con_handle_for_addr_and_type(command_addr_type, command_addr);
                 uint16_t value_handle = little_endian_read_16(data, 7);
+                MESSAGE("BTP_GATT_OP_READ, con handle 0x%04x, value handle 0x%04x", remote_handle, value_handle);
                 gatt_client_read_value_of_characteristic_using_value_handle(&gatt_client_packet_handler, remote_handle, value_handle);
             }
             break;
