@@ -279,12 +279,11 @@ attachment_mime_types=”video/mpeg”/>
 
 
 
-static void body_msg(char* msg_buffer, uint16_t index, int maxsize) {
+static int body_msg(char* msg_buffer, uint16_t index, int maxsize) {
     index = index % ARRAYSIZE(config->objects);
-
+    int size = 0;
     if (!config->msg_deleted[index])
-        snprintf(msg_buffer, maxsize, 
-            "<msg handle = \"A%X\" subject= \"Sbjct\""
+        size = snprintf(msg_buffer, maxsize,
             "<msg handle=\"A%X\""
             " type = \"%s\""
             " subject= \"Sbjct\""
@@ -299,12 +298,13 @@ static void body_msg(char* msg_buffer, uint16_t index, int maxsize) {
             config->objects[index],
             config->objects[index] ? "yes" : "no"
         );
+    return size;
 }
 
-static void body_convo(char* msg_buffer, uint16_t index, int maxsize) {
-    static int version = 0;
+static int body_convo(char* msg_buffer, uint16_t index, int maxsize) {
+    static int version = 0, size = 0;
     // Implement the function to create a conversation
-    snprintf(msg_buffer, maxsize,
+    size = snprintf(msg_buffer, maxsize,
         "<?xml version=\"1.0\" encoding= \"UTF-8\"?>"
         "<conversation id=\"E1E2E3E4F1F2F3F4A1A2A3A4B1B2B3%02X\" name=\"%s\""
         // optional fields and elements
@@ -327,18 +327,20 @@ static void body_convo(char* msg_buffer, uint16_t index, int maxsize) {
         // 3, // chat_state=\"%u\"
         // 0 // last_activity=\"20140612T10543%1u+0100\"/> 
     );
+    return size;
 }
 
 // TODO enable to send message larger as one OBEX/MAP packet
-static uint16_t send_listing(uint16_t first, uint16_t last) {
+static uint16_t send_listing(bool header,  uint16_t first, uint16_t last) {
     uint16_t max_body_size = map_access_server_get_max_body_size(map_cid);
-    char listing_buffer[500];
+    char listing_buffer[500]; // only for message items
     uint16_t pos = 0;
+    uint16_t len = 0;
     bool done = false;
 
     log_debug("1 first:%d last:%d max_body_size:%d", first, last, max_body_size);
 
-    if (first == 0){
+    if (header){
         // add header
         uint16_t len = (uint16_t)strlen(config->type->header);
         memcpy(upload_buffer, config->type->header, len);
@@ -354,6 +356,7 @@ static uint16_t send_listing(uint16_t first, uint16_t last) {
         
         log_debug("2.5 first:%d last:%d pos:%d len:%d", first, last, pos, len);
         if (len > max_body_size){
+            log_debug("2.8 first:%d last:%d len%d max_body_size %d", first, last, len, max_body_size);
             break;
         }
         memcpy(&upload_buffer[pos], (const uint8_t *) listing_buffer, len);
@@ -361,13 +364,13 @@ static uint16_t send_listing(uint16_t first, uint16_t last) {
         max_body_size -= len;
         first++;
         log_debug("3 first:%d last:%d pos:%d len:%d", first, last, pos, len);
-        log_debug("4 %.*s", btstack_min(pos, sizeof(listing_buffer)),upload_buffer);
+        log_debug("4 %.*s", btstack_min(pos, sizeof(upload_buffer)),upload_buffer);
     }
 
 
-    if (first >= last){
-        uint16_t len = (uint16_t) strlen(config->type->footer);
+    len = (uint16_t)strlen(config->type->footer);
 
+    if (first >= last && len < sizeof(listing_buffer) - pos){
         log_debug("5 first:%d last:%d pos:%d len:%d", first, last, pos, len);
         if (len < max_body_size){
             log_debug("6 first:%d last:%d pos:%d len:%d", first, last, pos, len);
@@ -391,7 +394,7 @@ static uint16_t send_listing(uint16_t first, uint16_t last) {
         response_code = OBEX_RESP_CONTINUE;
         continuation = first;
     }
-    log_debug("7 send response %.*s", btstack_min(pos, sizeof(listing_buffer)), upload_buffer);
+    log_debug("7 send response %.*s", btstack_min(pos, sizeof(upload_buffer)), upload_buffer);
     map_access_server_send_get_put_response(map_cid, response_code, continuation, pos, upload_buffer);
     return first;
 }
@@ -399,12 +402,6 @@ static uint16_t send_listing(uint16_t first, uint16_t last) {
 static void send_get_listing_object(uint8_t* packet, uint16_t start_index, uint16_t max_list_count, uint32_t continuation) {
 
     uint16_t total_messages, num_msgs_selected, end_index;
-
-    //if (max_list_count == 0) {
-    //    MAP_PRINTF("[+] Start max_list_count == 0\n");
-    //    send_listing(0, 0);
-    //    return;
-    //}
 
     // send messages listing
     total_messages = config->obj_count + one_object_more_or_less;
@@ -426,7 +423,7 @@ static void send_get_listing_object(uint8_t* packet, uint16_t start_index, uint1
     }
     end_index = start_index + num_msgs_selected;
     MAP_PRINTF("[-] continuation %u, num messages %u, start index %u, end index %u\n", continuation, num_msgs_selected, start_index, end_index);
-    send_listing(start_index, end_index);
+    send_listing(continuation == 0, start_index, end_index);
 }
 
 static void print_current_test_config(void)
@@ -668,7 +665,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_DatabaseIdentifier, DatabaseIdentifier);
                             map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_FolderVersionCounter, FolderVersionCounter);
                             MAP_PRINTF("[+] Get Folder listing\n");
-                            send_listing(0, config->obj_count-1 + one_object_more_or_less);
+                            send_listing(true, 0, config->obj_count-1 + one_object_more_or_less);
                             break;
 							
                         case MAP_SUBEVENT_GET_MESSAGE_LISTING:
@@ -700,7 +697,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
 
                         case MAP_SUBEVENT_GET_MESSAGE:
                             MAP_PRINTF("[+] Get Message\n");
-                            send_listing(0, 1);
+                            send_listing(true, 0, 1);
                             break;
 
                         case MAP_SUBEVENT_PUT_MESSAGE_STATUS:
