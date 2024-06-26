@@ -175,12 +175,13 @@ static struct test_config_s
 };
 
 struct test_config_s* config = &test_configs[0];
-static int start_index = 0;
+static int cfg_start_index = 0;
 static int one_object_more_or_less = 0;
 uint16_t ListingSize = 0;
 
 static void MAP_MSE_MMD_BV_02_I_disc(void) {
-    start_index = 1;
+    cfg_start_index = 1;
+    one_object_more_or_less = 1;
 }
 
 static mas_uint128hex_t DatabaseIdentifier = { 0 };
@@ -218,7 +219,7 @@ static void set_test_config(int nr) {
 
 
 static void init_testcases(void) {
-    start_index = 0;
+    cfg_start_index = 0;
     one_object_more_or_less = 0;
     ListingSize = config->obj_count + one_object_more_or_less;
 }
@@ -679,6 +680,12 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_ListingSize, &ListingSize);
                             map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_DatabaseIdentifier, DatabaseIdentifier);
                             map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_FolderVersionCounter, FolderVersionCounter);
+
+                            if (cfg_start_index != 0) {
+                                start_index = cfg_start_index;
+                            }
+
+                            MAP_PRINTF("[+] Get Message Listing cfg_start_index:%d\n", cfg_start_index);
 
                             // BT MAP Spec requires to skip the body if max_list_count == 0
                             if (max_list_count == 0)
