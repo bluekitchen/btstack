@@ -119,6 +119,7 @@ static void tbs_server_schedule_task(telephone_bearer_service_server_t * tbs_bea
 static void tbs_server_check_for_deregister_call( telephone_bearer_service_server_t *bearer );
 
 static void tbs_server_reset_bearer_connection(tbs_server_connection_t * bearer_connection) {
+    log_info("tbs_server_reset_bearer_connection, connection %p", bearer_connection);
     bearer_connection->con_handle = HCI_CON_HANDLE_INVALID;
     bearer_connection->scheduled_tasks = 0;
     bearer_connection->characteristics_dirty = 0;
@@ -187,22 +188,38 @@ static tbs_characteristic_index_t tbs_server_find_characteristic_index_for_attri
     return -1;
 }
 
-static void tbs_server_set_con_handle(telephone_bearer_service_server_t * tbs_bearer, uint16_t characteristic_index, hci_con_handle_t con_handle, uint16_t configuration){
+static void tbs_server_handle_cccd_write(telephone_bearer_service_server_t * tbs_bearer, uint16_t characteristic_index, hci_con_handle_t con_handle, uint16_t configuration){
     // find connection for con handle
     tbs_server_connection_t * bearer_connection = tbs_server_get_bearer_connection_for_con_handle(tbs_bearer, con_handle);
+    log_info("tbs_server_handle_cccd_write config = %u, characteristic %u, connection %p", configuration, characteristic_index, bearer_connection);
 
     if (configuration == 0){
         if (bearer_connection != NULL) {
+
+            bearer_connection->client_configuration[characteristic_index] = configuration;
+
+            // reset if no notifications are set
+            uint8_t i;
+            for (i = 0; i < TBS_CHARACTERISTICS_NUM; i++){
+                if (bearer_connection->client_configuration[i] != 0){
+                    return;
+                }
+            }
+            log_info("tbs_server_handle_cccd_write reset connection");
             tbs_server_reset_bearer_connection(bearer_connection);
         }
     } else {
         if (bearer_connection == NULL){
             bearer_connection = tbs_server_setup_bearer_connection(tbs_bearer, con_handle);
             if (bearer_connection == NULL){
+                log_info("tbs_server_handle_cccd_write failed to allocate connection");
                 return;
             }
-            bearer_connection->client_configuration[characteristic_index] = configuration;
+            log_info("tbs_server_handle_cccd_write allocate connection");
         }
+
+        bearer_connection->client_configuration[characteristic_index] = configuration;
+
     }
 }
 
@@ -640,10 +657,7 @@ static void tbs_server_bearer_connection_schedule_task(telephone_bearer_service_
     }
 
     if (bearer_connection->client_configuration[characteristic_index] == 0){
-        return;
-    }
-
-    if (bearer_connection->con_handle == HCI_CON_HANDLE_INVALID){
+        log_info("tbs_server_bearer_connection_schedule_task %u not subscribed, connection %p", (int) characteristic_index, bearer_connection);
         return;
     }
 
@@ -651,6 +665,7 @@ static void tbs_server_bearer_connection_schedule_task(telephone_bearer_service_
 
     // skip if already scheduled
     if ((bearer_connection->scheduled_tasks & task_bit_mask) != 0){
+        log_info("tbs_server_bearer_connection_schedule_task already scheduled");
         return;
     }
 
@@ -661,9 +676,12 @@ static void tbs_server_bearer_connection_schedule_task(telephone_bearer_service_
     bearer_connection->characteristics_dirty |= UINT32_C(1) << characteristic_index;
 
     if( scheduled_tasks == 0 ) {
+        log_info("tbs_server_bearer_connection_schedule_task register can send now, connection %p", bearer_connection);
         bearer_connection->scheduled_tasks_callback.callback = &tbs_server_can_send_now;
         bearer_connection->scheduled_tasks_callback.context  = (void*) tbs_bearer;
         att_server_register_can_send_now_callback(&bearer_connection->scheduled_tasks_callback, bearer_connection->con_handle);
+    } else {
+        log_info("tbs_server_bearer_connection_schedule_task can send now already scheduled, connection %p", bearer_connection);
     }
 }
 
@@ -851,7 +869,8 @@ static int tbs_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
     tbs_characteristic_index_t characteristic_index = tbs_server_find_characteristic_index_for_attribute_handle(tbs_bearer, attribute_handle, &type);
     switch (type){
         case HANDLE_TYPE_CHARACTERISTIC_CCD:
-            tbs_server_set_con_handle(tbs_bearer, (uint16_t)characteristic_index, con_handle, little_endian_read_16(buffer, 0));
+            tbs_server_handle_cccd_write(tbs_bearer, (uint16_t) characteristic_index, con_handle,
+                                         little_endian_read_16(buffer, 0));
             return 0;
         default:
             break;
