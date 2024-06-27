@@ -28,4 +28,4 @@ MAP/MSE/MMB/BV-44-I: PASS (2024-06-24) test settings 6
 MAP/MSE/MMB/BV-45-I: PASS (2024-06-24) test settings 6
 MAP/MSE/MMB/BV-46-I: PASS (2024-06-24) Verify that the MSE correctly responds to a request to get the presence, chat state and last activity datetime of the owner.
 MAP/MSE/MMB/BV-47-I: PASS (2024-06-25, type="IM" let it pass) Respond to a request to change the extended data of a message.
-MAP/MSE/MMD/BV-02-I: WIP Verify that the MSE can delete a message on request of the MCE.
+MAP/MSE/MMD/BV-02-I: WIP PTS 8.5.4 Build 6 issue: sends a sequence of OBEX connect, GetMessageListing (expects 1 EMAIL, nothing else, no more messages), PUT MessageStatus (Delete Message), GetMessageListing (expects empty listing), OBEX discoonect, repeat (MMS, SMS_GSM, SMS_CDMA) - the last repeat for IM misses the disconnect and fails on the Get because the list is still empty
