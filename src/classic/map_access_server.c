@@ -190,6 +190,7 @@ static struct {
 } map_access_server_folders[] = {
     {"msg",     MAS_FOLDER_TELECOM_MSG, "telecom/msg.vcf"},
     {"inbox",   MAS_FOLDER_TELECOM_MSG_INBOX, "telecom/msg/inbox.vcf"},
+    {"draft",   MAS_FOLDER_TELECOM_MSG_DRAFT, "telecom/msg/draft.vcf"},
 };
 
 static const char map_access_server_default_service_name[] = "MAP";
@@ -279,6 +280,9 @@ static void map_access_server_handle_set_path_request(map_access_server_t* map_a
             if (strcmp("inbox", name) == 0) {
                 map_access_server->map_access_server_dir = MAS_FOLDER_TELECOM_MSG_INBOX;
             }
+            else if (strcmp("draft", name) == 0) {
+                map_access_server->map_access_server_dir = MAS_FOLDER_TELECOM_MSG_DRAFT;
+            }
             else {
                 obex_result = OBEX_RESP_NOT_FOUND;
             }
@@ -309,7 +313,7 @@ static map_object_type_t map_access_server_parse_object_type(const char* type_st
     }
 
     if (strcmp("x-bt/message", type_string) == 0) {
-        return MAP_OBJECT_TYPE_GET_MESSAGE;
+        return MAP_OBJECT_TYPE_PUT_MESSAGE;
     }
 
     if (strcmp("x-bt/messageStatus", type_string) == 0) {
@@ -318,6 +322,10 @@ static map_object_type_t map_access_server_parse_object_type(const char* type_st
 
     if (strcmp("x-bt/MAP-messageUpdate", type_string) == 0) {
         return MAP_OBJECT_TYPE_PUT_MESSAGE_UPDATE;
+    }
+
+    if (strcmp("x-bt/message", type_string) == 0) {
+        return MAP_OBJECT_TYPE_PUT_MESSAGE;
     }
 
     if (strcmp("x-bt/MAP-NotificationRegistration", type_string) == 0) {
@@ -705,6 +713,7 @@ static void map_access_server_handle_get_put_request(map_access_server_t* map_ac
     case MAP_OBJECT_TYPE_GET_CONVO_LISTING:
     case MAP_OBJECT_TYPE_PUT_MESSAGE_STATUS:
     case MAP_OBJECT_TYPE_PUT_MESSAGE_UPDATE:
+    case MAP_OBJECT_TYPE_PUT_MESSAGE:
     case MAP_OBJECT_TYPE_PUT_NOTIFICATION_REGISTRATION:
     case MAP_OBJECT_TYPE_PUT_OWNER_STATUS:
         break;
@@ -762,6 +771,15 @@ static void map_access_server_handle_get_put_request(map_access_server_t* map_ac
 
     case MAP_OBJECT_TYPE_PUT_MESSAGE_STATUS:
         APP_WRITE_08(event, &pos, MAP_SUBEVENT_PUT_MESSAGE_STATUS);
+        APP_WRITE_16(event, &pos, map_access_server->map_cid);
+        APP_WRITE_08(event, &pos, map_access_server->request.app_params.StatusIndicator);
+        APP_WRITE_08(event, &pos, map_access_server->request.app_params.StatusValue);
+        APP_WRITE_STR(event, &pos, sizeof(event) - pos, map_access_server->request.name);
+        APP_WRITE_LEN(event, pos);
+        break;
+
+    case MAP_OBJECT_TYPE_PUT_MESSAGE:
+        APP_WRITE_08(event, &pos, MAP_SUBEVENT_PUT_MESSAGE);
         APP_WRITE_16(event, &pos, map_access_server->map_cid);
         APP_WRITE_08(event, &pos, map_access_server->request.app_params.StatusIndicator);
         APP_WRITE_08(event, &pos, map_access_server->request.app_params.StatusValue);
