@@ -140,8 +140,8 @@ typedef uint8_t mas_UTCstmpoffstr_t[20];
  PARAM_UNUSED( FolderListingSize                 , 0x11, uint16_t           , DSCR( 0x0000 to 0xFFFF                                                                ))\
  PARAM_RESPON( ListingSize                       , 0x12, uint16_t           , DSCR( 0x0000 to 0xFFFF                                                                ))\
  PARAM_UNUSED( SubjectLength                     , 0x13, uint8_t            , DSCR( 1 to 255                                                                        ))\
- PARAM_UNUSED( Charset                           , 0x14, uint8_t            , DSCR( 0 = "native"                                                                      \
-                                                                                    1 = "UTF-8"                                                                     ))\
+ PARAM_REQUST( Charset                           , 0x14, uint8_t            , ENUM( 0 , native )                                                                    \
+                                                                              ENUM( 1 , UTF_8  )                                                                    )\
  PARAM_UNUSED( FractionRequest                   , 0x15, uint8_t            , DSCR( 0 = "first" 1 = "next"                                                          ))\
  PARAM_UNUSED( FractionDeliver                   , 0x16, uint8_t            , DSCR( 0 = "more"                                                                        \
                                                                                     1 = "last"                                                                      ))\
@@ -316,6 +316,7 @@ typedef enum {
     MAP_OBJECT_TYPE_GET_MESSAGE,
     MAP_OBJECT_TYPE_PUT_MESSAGE_STATUS,
     MAP_OBJECT_TYPE_PUT_MESSAGE_UPDATE,
+    MAP_OBJECT_TYPE_PUT_MESSAGE,
     MAP_OBJECT_TYPE_PUT_NOTIFICATION_REGISTRATION,
     MAP_OBJECT_TYPE_PUT_OWNER_STATUS
 } map_object_type_t;
@@ -327,6 +328,7 @@ typedef enum {
     MAS_FOLDER_TELECOM,
     MAS_FOLDER_TELECOM_MSG, 
     MAS_FOLDER_TELECOM_MSG_INBOX,
+    MAS_FOLDER_TELECOM_MSG_DRAFT,
     MAS_FOLDER_MAX,
 } mas_folder_t;
 
