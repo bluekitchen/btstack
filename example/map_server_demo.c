@@ -133,7 +133,7 @@ struct objconfig_s {
 
 static int body_msg(char* msg_buffer, uint16_t index, int maxsize);
 static int body_convo(char* msg_buffer, uint16_t index, int maxsize);
-static void MAP_MSE_MMD_BV_02_I_disc(void);
+static void MAP_MSE_MMD_BV_02_I_getMsgListng(void);
 
 
 
@@ -157,6 +157,7 @@ static struct test_config_s
     char* descr;
     struct objconfig_s* type;
     void (*fdiscon)(void); // optional handler for OBEX disconnect
+    void (*fGetMsgListng)(void); // optional handler for OBEX getMessageListing
     int obj_count;
     char* objects[MAX_TC_OBJECTS]; // maximum 6-1 entries, last one is null
     enum msg_status_read msg_stati[MAX_TC_OBJECTS]; // maximum 6-1 entries, last one is null
@@ -172,17 +173,21 @@ static struct test_config_s
 {.nr = 6, .descr = "MAP/MSE/MMB/BV-34-I 38 39 40 41 44"       , .type = &convo,.obj_count = 1, .objects = { "",""                                             }, },
 {.nr = 7, .descr = "MAP/MSE/MMB/BV-35-I 36 37"                , .type = &msg,  .obj_count = 1, .objects = { "EMAIL"                                           }, },
 {.nr = 8, .descr = "MAP/MSE/MMB/BV-47-I"                      , .type = &msg,  .obj_count = 1, .objects = { "IM","IM"                                         }, }, // PTS.EXE fails with "- MTC INCONC: no email message in message listing" but expects type="IM"
-{.nr = 9, .descr = "MAP/MSE/MMD/BV-02-I"                      , .type = &msg,  .obj_count = 1, .objects = { "EMAIL","MMS", "SMS_GSM","SMS_CDMA", "IM", "dummy"}, .fdiscon = MAP_MSE_MMD_BV_02_I_disc }, // PTS connects, expects to see an EMAIL, delete it, listmessages, MAIL gone, disconnects, expects MMS, repeat...
+{.nr = 9, .descr = "MAP/MSE/MMD/BV-02-I"                      , .type = &msg,  .obj_count = 1, .objects = { "EMAIL","MMS", "SMS_GSM","SMS_CDMA", "IM", "dummy"}, .fGetMsgListng = MAP_MSE_MMD_BV_02_I_getMsgListng }, // PTS 8.5.4 Build 6 issue: sends a sequence of OBEX connect, GetMessageListing (expects 1 EMAIL, nothing else, no more messages), PUT MessageStatus (Delete Message), GetMessageListing (expects empty listing), OBEX discoonect, repeat (MMS, SMS_GSM, SMS_CDMA) - the last repeat for IM misses the disconnect and fails on the Get because the list is still empty
 };
 
 struct test_config_s* config = &test_configs[0];
 static int cfg_start_index = 0;
+static int cfg_MAP_MSE_MMD_BV_02_I_getMsgListng_counter = 0;
 static int one_object_more_or_less = 0;
 uint16_t ListingSize = 0;
 
-static void MAP_MSE_MMD_BV_02_I_disc(void) {
-    cfg_start_index++;
-    one_object_more_or_less++;
+static void MAP_MSE_MMD_BV_02_I_getMsgListng(void) {
+    if ((++cfg_MAP_MSE_MMD_BV_02_I_getMsgListng_counter & 0x1) == 0) {
+        cfg_start_index++;
+        one_object_more_or_less++;
+    }
+    log_debug("counter:%d cfg_start_index:%d one_object_more_or_less:%d", cfg_MAP_MSE_MMD_BV_02_I_getMsgListng_counter, cfg_start_index, one_object_more_or_less);
 }
 
 static mas_uint128hex_t DatabaseIdentifier = { 0 };
@@ -223,6 +228,7 @@ static void init_testcases(void) {
     cfg_start_index = 0;
     one_object_more_or_less = 0;
     ListingSize = config->obj_count + one_object_more_or_less;
+    cfg_MAP_MSE_MMD_BV_02_I_getMsgListng_counter = 0;
 }
 
 
@@ -681,6 +687,10 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_ListingSize, &ListingSize);
                             map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_DatabaseIdentifier, DatabaseIdentifier);
                             map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_FolderVersionCounter, FolderVersionCounter);
+
+                            // some PTS tests require strange behaviour so we need a handler to modify default behaviour for GetMessageListing
+                            if (config->fGetMsgListng != NULL)
+                                config->fGetMsgListng();
 
                             if (cfg_start_index != 0) {
                                 start_index = cfg_start_index;
