@@ -193,7 +193,7 @@ static void mics_client_emit_read_event(mics_client_connection_t * connection, u
 
     switch (characteristic_uuid16){
         case ORG_BLUETOOTH_CHARACTERISTIC_MUTE:
-           mics_client_emit_number(cid, event_callback, LEAUDIO_SUBEVENT_MICS_CLIENT_MUTE, data, data_size, 4, ATT_ERROR_SUCCESS);
+           mics_client_emit_number(cid, event_callback, LEAUDIO_SUBEVENT_MICS_CLIENT_MUTE, data, data_size, 1, ATT_ERROR_SUCCESS);
            break;
         default:
             btstack_assert(false);
