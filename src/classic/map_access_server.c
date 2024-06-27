@@ -191,6 +191,7 @@ static struct {
 } map_access_server_folders[] = {
     {"msg",     MAS_FOLDER_TELECOM_MSG, "telecom/msg.vcf"},
     {"inbox",   MAS_FOLDER_TELECOM_MSG_INBOX, "telecom/msg/inbox.vcf"},
+    {"outbox",  MAS_FOLDER_TELECOM_MSG_OUTBOX, "telecom/msg/outbox.vcf"},
     {"draft",   MAS_FOLDER_TELECOM_MSG_DRAFT, "telecom/msg/draft.vcf"},
 };
 
@@ -250,6 +251,12 @@ static void map_access_server_handle_set_path_request(map_access_server_t* map_a
             case MAS_FOLDER_TELECOM_MSG_INBOX:
                 map_access_server->map_access_server_dir = MAS_FOLDER_TELECOM_MSG;
                 break;
+            case MAS_FOLDER_TELECOM_MSG_OUTBOX:
+                map_access_server->map_access_server_dir = MAS_FOLDER_TELECOM_MSG;
+                break;
+            case MAS_FOLDER_TELECOM_MSG_DRAFT:
+                map_access_server->map_access_server_dir = MAS_FOLDER_TELECOM_MSG;
+                break;
             default:
                 obex_result = OBEX_RESP_NOT_FOUND;
                 break;
@@ -280,6 +287,9 @@ static void map_access_server_handle_set_path_request(map_access_server_t* map_a
         case MAS_FOLDER_TELECOM_MSG:
             if (strcmp("inbox", name) == 0) {
                 map_access_server->map_access_server_dir = MAS_FOLDER_TELECOM_MSG_INBOX;
+            }           
+            else if (strcmp("outbox", name) == 0) {
+                map_access_server->map_access_server_dir = MAS_FOLDER_TELECOM_MSG_OUTBOX;
             }
             else if (strcmp("draft", name) == 0) {
                 map_access_server->map_access_server_dir = MAS_FOLDER_TELECOM_MSG_DRAFT;
