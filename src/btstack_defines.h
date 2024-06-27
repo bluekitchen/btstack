@@ -6713,6 +6713,8 @@ typedef uint8_t sm_key_t[16];
 
 #define MAP_SUBEVENT_PUT_OWNER_STATUS                                      0x0Eu
 
+#define MAP_SUBEVENT_PUT_MESSAGE                                           0x0Fu
+
 // MESH Meta Event Group
 
 /**
