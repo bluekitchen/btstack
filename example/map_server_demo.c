@@ -133,6 +133,7 @@ struct objconfig_s {
 
 static int body_msg(char* msg_buffer, uint16_t index, int maxsize);
 static int body_convo(char* msg_buffer, uint16_t index, int maxsize);
+static void MAP_MSE_MMD_BV_02_I_disc(void);
 static void MAP_MSE_MMD_BV_02_I_getMsgListng(void);
 
 
@@ -173,7 +174,7 @@ static struct test_config_s
 {.nr = 6, .descr = "MAP/MSE/MMB/BV-34-I 38 39 40 41 44"       , .type = &convo,.obj_count = 1, .objects = { "",""                                             }, },
 {.nr = 7, .descr = "MAP/MSE/MMB/BV-35-I 36 37"                , .type = &msg,  .obj_count = 1, .objects = { "EMAIL"                                           }, },
 {.nr = 8, .descr = "MAP/MSE/MMB/BV-47-I"                      , .type = &msg,  .obj_count = 1, .objects = { "IM","IM"                                         }, }, // PTS.EXE fails with "- MTC INCONC: no email message in message listing" but expects type="IM"
-{.nr = 9, .descr = "MAP/MSE/MMD/BV-02-I"                      , .type = &msg,  .obj_count = 1, .objects = { "EMAIL","MMS", "SMS_GSM","SMS_CDMA", "IM", "dummy"}, .fGetMsgListng = MAP_MSE_MMD_BV_02_I_getMsgListng }, // PTS 8.5.4 Build 6 issue: sends a sequence of OBEX connect, GetMessageListing (expects 1 EMAIL, nothing else, no more messages), PUT MessageStatus (Delete Message), GetMessageListing (expects empty listing), OBEX discoonect, repeat (MMS, SMS_GSM, SMS_CDMA) - the last repeat for IM misses the disconnect and fails on the Get because the list is still empty
+{.nr = 9, .descr = "MAP/MSE/MMD/BV-02-I"                      , .type = &msg,  .obj_count = 1, .objects = { "EMAIL","MMS", "SMS_GSM","SMS_CDMA", "IM", "dummy"}, .fGetMsgListng = MAP_MSE_MMD_BV_02_I_getMsgListng, .fdiscon = MAP_MSE_MMD_BV_02_I_disc}, // PTS 8.5.4 Build 6 issue: sends a sequence of OBEX connect, GetMessageListing (expects 1 EMAIL, nothing else, no more messages), PUT MessageStatus (Delete Message), GetMessageListing (expects empty listing), OBEX discoonect, repeat (MMS, SMS_GSM, SMS_CDMA) - the last repeat for IM misses the disconnect and fails on the Get because the list is still empty
 };
 
 struct test_config_s* config = &test_configs[0];
@@ -182,12 +183,21 @@ static int cfg_MAP_MSE_MMD_BV_02_I_getMsgListng_counter = 0;
 static int one_object_more_or_less = 0;
 uint16_t ListingSize = 0;
 
+static void MAP_MSE_MMD_BV_02_I_disc(void) {
+    log_debug("disabled default discconect behaviour");
+    //cfg_start_index++;
+    //one_object_more_or_less++;
+    //log_debug("counter:%d cfg_start_index:%d one_object_more_or_less:%d", cfg_MAP_MSE_MMD_BV_02_I_getMsgListng_counter, cfg_start_index, one_object_more_or_less);
+    //cfg_MAP_MSE_MMD_BV_02_I_getMsgListng_counter++;
+}
+
 static void MAP_MSE_MMD_BV_02_I_getMsgListng(void) {
-    if ((++cfg_MAP_MSE_MMD_BV_02_I_getMsgListng_counter & 0x1) == 0) {
+    if ((cfg_MAP_MSE_MMD_BV_02_I_getMsgListng_counter & 0x1) == 1) {
         cfg_start_index++;
         one_object_more_or_less++;
     }
     log_debug("counter:%d cfg_start_index:%d one_object_more_or_less:%d", cfg_MAP_MSE_MMD_BV_02_I_getMsgListng_counter, cfg_start_index, one_object_more_or_less);
+    cfg_MAP_MSE_MMD_BV_02_I_getMsgListng_counter++;
 }
 
 static mas_uint128hex_t DatabaseIdentifier = { 0 };
@@ -688,10 +698,6 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_DatabaseIdentifier, DatabaseIdentifier);
                             map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_FolderVersionCounter, FolderVersionCounter);
 
-                            // some PTS tests require strange behaviour so we need a handler to modify default behaviour for GetMessageListing
-                            if (config->fGetMsgListng != NULL)
-                                config->fGetMsgListng();
-
                             if (cfg_start_index != 0) {
                                 start_index = cfg_start_index;
                             }
@@ -703,6 +709,11 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                                 map_access_server_send_get_put_response(map_cid, OBEX_RESP_SUCCESS, 0, 0, NULL);
                             else
                                 send_get_listing_object(packet, start_index, max_list_count, continuation);
+
+                            // some PTS tests require strange behaviour so we need a handler to modify default behaviour for GetMessageListing
+                            if (config->fGetMsgListng != NULL)
+                                config->fGetMsgListng();
+
                             break;
 
                         case MAP_SUBEVENT_GET_MESSAGE:
