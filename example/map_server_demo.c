@@ -166,7 +166,11 @@ static struct test_config_s
     bool msg_deleted[MAX_TC_OBJECTS]; // maximum 6-1 entries, last one is null
 } test_configs[] =
 {
-{.nr =  0, .descr = "MAP/MSE/MMU/BV-02-I"                      , .type = &msg,  .obj_count = 0, .objects = { "", "EMAIL", "MMS"                                }, .fPutMsg = MAP_MSE_MMU_BV_02_I_PutMsg}, // WIP: PTS accepts the EMAIL but not the MMS. No idea why...
+
+    
+
+{.nr =  0, .descr = "MAP/MSE/MMU/BV-03-I"                      , .type = &msg,  .obj_count = 0, .objects = { "", "EMAIL", "MMS"                                }, .fPutMsg = MAP_MSE_MMU_BV_02_I_PutMsg}, // WIP add OBEX NAME Header (Handle) PTS [50] Enter Test Step TS_MTC_OBEX_extract_handle_name ( , (lt)Not Defined Value(gt)  ) Test case error in 'MAP/MSE/MMU/BV-03-I'. The value 'headers_received' (-1) is not fully defined.
+{.nr =  1, .descr = "MAP/MSE/MMU/BV-02-I"                      , .type = &msg,  .obj_count = 0, .objects = { "", "EMAIL", "MMS"                                }, .fPutMsg = MAP_MSE_MMU_BV_02_I_PutMsg}, // WIP: PTS accepts the EMAIL but not the MMS. No idea why...
 {.nr = 10, .descr = "MAP/MSE/MMB/BV-09-I 10 11 13 14 42 46"    , .type = &msg,  .obj_count = 2, .objects = { "SMS_GSM","SMS_CDMA"                              }, },
 {.nr = 11, .descr = "MAP/MSE/MMB/BV-12-I"                      , .type = &msg,  .obj_count = 1, .objects = { "EMAIL", "SMS_GSM","SMS_CDMA"                     }, },
 {.nr = 12, .descr = "MAP/MSE/MMB/BV-15-I 18 20 22"             , .type = &msg,  .obj_count = 5, .objects = { "EMAIL","SMS_GSM","SMS_CDMA", "MMS", "IM"         }, },
