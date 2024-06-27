@@ -1171,29 +1171,21 @@ static void tbs_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
     if (packet_type != HCI_EVENT_PACKET) return;
     if (hci_event_packet_get_type(packet) != HCI_EVENT_LEAUDIO_META) return;
 
-    switch (hci_event_gattservice_meta_get_subevent_code(packet)){
-#if 0
-        case LEAUDIO_SUBEVENT_TBS_SERVER_CALL_CONTROL_POINT_NOTIFICATION_TASK: {
-//            hci_con_handle_t con_handle = little_endian_read_16(packet, 3);
-            uint16_t bearer_id = little_endian_read_16(packet, 5);
-            uint8_t opcode = packet[7];
+    uint8_t status;
 
-            telephone_bearer_service_server_t *tbs_bearer = telephone_bearer_service_server_get_bearer_by_id( bearer_id );
-            my_bearer_t *bearer = tbs_to_my_bearer( tbs_bearer );
-            uint8_t call_id = packet[8];
+    switch (hci_event_gattservice_meta_get_subevent_code(packet)){
+        case LEAUDIO_SUBEVENT_TBS_SERVER_CALL_CONTROL_POINT_NOTIFICATION_TASK: {
+            hci_con_handle_t con_handle = leaudio_subevent_tbs_server_call_control_point_notification_task_get_con_handle(packet);
+            uint16_t bearer_id = leaudio_subevent_tbs_server_call_control_point_notification_task_get_bearer_id(packet);
+            uint8_t opcode = leaudio_subevent_tbs_server_call_control_point_notification_task_get_opcode(packet);
             uint8_t *data = &packet[8];
             uint16_t data_size = size - 8;
-            tbs_call_data_t *tbs_call = telephone_bearer_service_server_get_call_by_id( tbs_bearer, call_id );
-            my_call_data_t *call = tbs_call_to_my_call( tbs_call );
-#ifdef DEBUG
-            for( int i=0; i<size; ++i ) {
-                printf("%#04x, ", packet[i]);
-            }
-            printf("\n");
-            printf("opcode: %d\ncall_id: %d\n", opcode, call_id);
-            printf("bearer_id: %d\n", bearer_id);
-#endif
+            uint8_t call_id = packet[9];
+
+            telephone_bearer_service_server_t *tbs_bearer = telephone_bearer_service_server_get_bearer_by_id( bearer_id );
+
             switch( opcode ) {
+#if 0
                 case TBS_CONTROL_POINT_OPCODE_ACCEPT: {
                     printf("%s( %d )\n", opcode_to_string[opcode], call_id);
                     tbs_private_public_event_t sig_accept = { .data.sig=ACCEPT_SIG, .private = false };
@@ -1350,28 +1342,32 @@ static void tbs_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
                     }
                     break;
                 }
+#endif
                 case TBS_CONTROL_POINT_OPCODE_ORIGINATE: {
-                    printf("%s( %s )\n", opcode_to_string[opcode], data);
-                    my_call_data_t *call = find_unused_call();
-                    if( call == NULL ) {
-                        telephone_bearer_service_server_call_control_point_notification(bearer_id, call_id, opcode, TBS_CONTROL_POINT_RESULT_LACK_OF_RESOURCES);
-                        break;
-                    }
-                    btstack_assert( bearer != NULL );
+                    // select free call
+                    uint8_t index = 0;
+                    tbs_call_data_t * call = &calls[index];
+                    // register call
+                    status = telephone_bearer_service_server_register_call( bearer_id, call, &call_ids[index] );
+                    uint16_t call_id = call_ids[index];
+                    btstack_assert(status == ERROR_CODE_SUCCESS);
+                    MESSAGE("TBS_CONTROL_POINT_OPCODE_ORIGINATE, handle 0x%04x, call id %u", con_handle, call_id);
 
-                    tbs_state_constructor( call );
-                    call->bearer = bearer;
-                    tbs_call_event_t e = {
-                            .data.sig = ORIGINATE_SIG,
-                            .caller_id = "5551234",
-                            .friendly_name = "all mighty",
-                            .target_uri = (char *)data,
-                    };
-                    telephone_bearer_service_server_register_call( bearer_id, &call->data, &call->id );
-                    call_id = call->id;
-                    btstack_hsm_init( &call->super, &e.data);
+                    // set state
+                    status = telephone_bearer_service_server_set_call_state(bearer_id, call_id, TBS_CALL_STATE_DIALING);
+                    btstack_assert(status == ERROR_CODE_SUCCESS);
+                    // set Caller URI
+                    char caller_uri[TELEPHONE_BEARER_SERVICE_URI_MAX_LENGTH];
+                    memcpy(caller_uri, data, data_size);
+                    caller_uri[data_size] = 0;
+                    status = telephone_bearer_service_server_call_uri(bearer_id, call_id, caller_uri);
+                    btstack_assert(status == ERROR_CODE_SUCCESS);
+                    // send response
+                    status = telephone_bearer_service_server_call_control_point_notification(con_handle, bearer_id, call_id, opcode, TBS_CONTROL_POINT_RESULT_SUCCESS);
+                    btstack_assert(status == ERROR_CODE_SUCCESS);
                     break;
                 }
+#if 0
                 case TBS_CONTROL_POINT_OPCODE_TERMINATE: {
                     printf("%s( %d )\n", opcode_to_string[opcode], call_id);
                     btstack_hsm_event_t e = { .sig=TERMINATE_SIG };
@@ -1382,13 +1378,15 @@ static void tbs_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
                     btstack_hsm_dispatch( &call->super, &e );
                     break;
                 }
+#endif
                 default:
-                    printf("unknown opcode\n");
-                    telephone_bearer_service_server_call_control_point_notification(bearer_id, call_id, opcode, TBS_CONTROL_POINT_RESULT_OPCODE_NOT_SUPPORTED);
+                    MESSAGE("Opcode %u not supported yet", opcode);
+                    btstack_assert(false);
                     break;
             }
             break;
         }
+#if 0
         case LEAUDIO_SUBEVENT_TBS_SERVER_CALL_DEREGISTER_DONE: {
 //            hci_con_handle_t con_handle = little_endian_read_16(packet, 3);
 //            uint16_t bearer_id = little_endian_read_16(packet, 5);
@@ -2241,7 +2239,8 @@ void btp_tbs_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, 
                 uint8_t recv_len = data[offset++];
                 uint8_t caller_len = data[offset++];
                 uint8_t fn_len = data[offset++];
-                uint8_t data_len = data[offset++];
+                // ignore data len
+                offset++;
 
                 char receiver_uri[TELEPHONE_BEARER_SERVICE_URI_MAX_LENGTH];
                 memcpy(receiver_uri, &data[offset], recv_len);
@@ -2253,8 +2252,8 @@ void btp_tbs_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, 
                 caller_uri[caller_len] = 0;
 
                 char friendly_name[TELEPHONE_BEARER_SERVICE_URI_MAX_LENGTH];
-                memcpy(friendly_name, &data[offset], caller_len);
-                friendly_name[caller_len] = 0;
+                memcpy(friendly_name, &data[offset], fn_len);
+                friendly_name[fn_len] = 0;
 
                 uint8_t bearer_id = tbs_bearers[tbs_bearer_index].id;
                 btp_send(response_service_id, opcode, controller_index, 0, NULL);
