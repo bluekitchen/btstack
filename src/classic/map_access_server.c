@@ -141,6 +141,7 @@ typedef struct {
     mas_folder_t  map_folder;
     // SRM
     obex_srm_t  obex_srm;
+    uint8_t OBEX_opcode;
     srm_state_t srm_state;
     // request
     struct {
@@ -298,42 +299,41 @@ static void map_access_server_handle_set_path_request(map_access_server_t* map_a
     goep_server_request_can_send_now(map_access_server->goep_cid);
 }
 
-static map_object_type_t map_access_server_parse_object_type(const char* type_string) {
+static map_object_type_t map_access_server_parse_object_type(map_access_server_t* mas, const char* type_string) {
     
     if (strcmp("x-obex/folder-listing", type_string) == 0) {
-        return MAP_OBJECT_TYPE_GET_FOLDER_LISTING;
+        RUN_AND_LOG_ACTION(return MAP_OBJECT_TYPE_GET_FOLDER_LISTING;)
     }
     
     if (strcmp("x-bt/MAP-msg-listing", type_string) == 0) {
-        return MAP_OBJECT_TYPE_GET_MSG_LISTING;
+        RUN_AND_LOG_ACTION(return MAP_OBJECT_TYPE_GET_MSG_LISTING;)
     }
 
     if (strcmp("x-bt/MAP-convo-listing", type_string) == 0) {
-        return MAP_OBJECT_TYPE_GET_CONVO_LISTING;
-    }
-
-    if (strcmp("x-bt/message", type_string) == 0) {
-        return MAP_OBJECT_TYPE_PUT_MESSAGE;
+        RUN_AND_LOG_ACTION(return MAP_OBJECT_TYPE_GET_CONVO_LISTING;)
     }
 
     if (strcmp("x-bt/messageStatus", type_string) == 0) {
-        return MAP_OBJECT_TYPE_PUT_MESSAGE_STATUS;
+        RUN_AND_LOG_ACTION(return MAP_OBJECT_TYPE_PUT_MESSAGE_STATUS;)
     }
 
     if (strcmp("x-bt/MAP-messageUpdate", type_string) == 0) {
-        return MAP_OBJECT_TYPE_PUT_MESSAGE_UPDATE;
+        RUN_AND_LOG_ACTION(return MAP_OBJECT_TYPE_PUT_MESSAGE_UPDATE;)
     }
 
     if (strcmp("x-bt/message", type_string) == 0) {
-        return MAP_OBJECT_TYPE_PUT_MESSAGE;
+        if ((mas->OBEX_opcode & OBEX_OPCODE_GET) == OBEX_OPCODE_GET)
+            RUN_AND_LOG_ACTION(return MAP_OBJECT_TYPE_GET_MESSAGE;)
+        else
+            RUN_AND_LOG_ACTION(return MAP_OBJECT_TYPE_PUT_MESSAGE;)
     }
 
     if (strcmp("x-bt/MAP-NotificationRegistration", type_string) == 0) {
-        return MAP_OBJECT_TYPE_PUT_NOTIFICATION_REGISTRATION;
+        RUN_AND_LOG_ACTION(return MAP_OBJECT_TYPE_PUT_NOTIFICATION_REGISTRATION;)
     }
 
     if (strcmp("x-bt/ownerStatus", type_string) == 0) {
-        return MAP_OBJECT_TYPE_PUT_OWNER_STATUS;
+        RUN_AND_LOG_ACTION(return MAP_OBJECT_TYPE_PUT_OWNER_STATUS;)
     }
 
     return MAP_OBJECT_TYPE_INVALID;
@@ -693,7 +693,7 @@ static void map_access_server_parser_callback_get(void* user_data, uint8_t heade
 // sends MAP_SUBEVENT_xyz messages to the application using serialized stack-internal app-parameters
 static void map_access_server_handle_get_put_request(map_access_server_t* map_access_server) {
     map_access_server_handle_srm_headers(map_access_server);
-    map_access_server->request.object_type = map_access_server_parse_object_type(map_access_server->request.type);
+    map_access_server->request.object_type = map_access_server_parse_object_type(map_access_server, map_access_server->request.type);
     mas_folder_t folder = map_access_server->map_access_server_dir;
     uint16_t name_len = (uint16_t)strlen(map_access_server->request.name);
     switch (map_access_server->request.object_type) {
@@ -856,25 +856,31 @@ static void map_access_server_packet_handler_goep(map_access_server_t* map_acces
         break;
     case MAP_SERVER_STATE_CONNECTED:
         opcode = packet[0];
+        map_access_server->OBEX_opcode = opcode;
+
         // default headers
         switch (opcode) {
         case OBEX_OPCODE_GET:
         case (OBEX_OPCODE_GET | OBEX_OPCODE_FINAL_BIT_MASK):
         case OBEX_OPCODE_PUT:
         case (OBEX_OPCODE_PUT | OBEX_OPCODE_FINAL_BIT_MASK):
+            log_debug("MAP_SERVER_STATE_W4_REQUEST: OBEX_OPCODE_GET/PUT opcode:0x%02X", opcode);
             map_access_server->state = MAP_SERVER_STATE_W4_REQUEST;
             obex_parser_init_for_request(&map_access_server->obex_parser, &map_access_server_parser_callback_get, (void*)map_access_server);
             break;
         case OBEX_OPCODE_SETPATH:
+            log_debug("MAP_SERVER_STATE_W4_REQUEST: OBEX_OPCODE_SETPATH opcode:0x%02X", opcode);
             map_access_server->state = MAP_SERVER_STATE_W4_REQUEST;
             obex_parser_init_for_request(&map_access_server->obex_parser, &map_access_server_parser_callback_get, (void*)map_access_server);
             break;
         case OBEX_OPCODE_DISCONNECT:
+            log_debug("MAP_SERVER_STATE_W4_REQUEST: OBEX_OPCODE_DISCONNECT opcode:0x%02X", opcode);
             map_access_server->state = MAP_SERVER_STATE_W4_REQUEST;
             obex_parser_init_for_request(&map_access_server->obex_parser, NULL, NULL);
             break;
         case OBEX_OPCODE_ACTION:
         default:
+            log_debug("MAP_SERVER_STATE_W4_REQUEST: OBEX_OPCODE_ACTION/default opcode:0x%02X", opcode);
             map_access_server->state = MAP_SERVER_STATE_W4_REQUEST;
             obex_parser_init_for_request(&map_access_server->obex_parser, NULL, NULL);
             break;
