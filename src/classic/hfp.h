@@ -707,6 +707,10 @@ typedef struct hfp_connection {
     uint8_t hf_deactivate_calling_line_notification;
     uint8_t hf_deactivate_echo_canceling_and_noise_reduction;
 
+    hfp_call_status_t      hf_call_status;
+    hfp_callsetup_status_t hf_callsetup_status;
+    hfp_callheld_status_t  hf_callheld_status;
+
     hfp_voice_recognition_activation_status_t vra_state;
     hfp_voice_recognition_activation_status_t vra_state_requested;
     bool deactivate_voice_recognition;
