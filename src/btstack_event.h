@@ -20381,22 +20381,13 @@ static inline uint16_t leaudio_subevent_tbs_server_call_control_point_notificati
     return little_endian_read_16(event, 5);
 }
 /**
- * @brief Get field bearer_state from event LEAUDIO_SUBEVENT_TBS_SERVER_CALL_CONTROL_POINT_NOTIFICATION_TASK
- * @param event packet
- * @return bearer_state
- * @note: btstack_type 1
- */
-static inline uint8_t leaudio_subevent_tbs_server_call_control_point_notification_task_get_bearer_state(const uint8_t * event){
-    return event[7];
-}
-/**
  * @brief Get field opcode from event LEAUDIO_SUBEVENT_TBS_SERVER_CALL_CONTROL_POINT_NOTIFICATION_TASK
  * @param event packet
  * @return opcode
  * @note: btstack_type 1
  */
 static inline uint8_t leaudio_subevent_tbs_server_call_control_point_notification_task_get_opcode(const uint8_t * event){
-    return event[8];
+    return event[7];
 }
 
 /**

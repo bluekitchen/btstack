@@ -6116,11 +6116,10 @@ typedef uint8_t sm_key_t[16];
 
 
 /**
- * @format 1H211
+ * @format 1H21
  * @param subevent_code
  * @param con_handle
  * @param bearer_id
- * @param bearer_state
  * @param opcode
  */
 #define LEAUDIO_SUBEVENT_TBS_SERVER_CALL_CONTROL_POINT_NOTIFICATION_TASK            0xC0u
