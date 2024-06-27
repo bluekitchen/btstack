@@ -1315,8 +1315,8 @@ uint8_t telephone_bearer_service_server_call_control_point_notification(hci_con_
 
     // store reply in connection
     bearer_connection->call_control_point_notification[0] = opcode;
-    bearer_connection->call_control_point_notification[0] = call_index;
-    bearer_connection->call_control_point_notification[0] = result;
+    bearer_connection->call_control_point_notification[1] = call_index;
+    bearer_connection->call_control_point_notification[2] = result;
 
     tbs_server_bearer_connection_schedule_task(tbs_bearer, bearer_connection, TBS_CHARACTERISTIC_INDEX_CALL_CONTROL_POINT);
     if (tbs_server_connection_task_pending(bearer_connection, TBS_CHARACTERISTIC_INDEX_CALL_CONTROL_POINT)){
