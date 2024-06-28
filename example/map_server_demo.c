@@ -132,6 +132,7 @@ struct objconfig_s {
 };
 
 static int body_msg(char* msg_buffer, uint16_t index, int maxsize);
+static int body_msg_short(char* msg_buffer, uint16_t index, int maxsize);
 static int body_convo(char* msg_buffer, uint16_t index, int maxsize);
 static void MAP_MSE_MMD_BV_02_I_disc(void);
 static void MAP_MSE_MMD_BV_02_I_getMsgListng(void);
@@ -142,6 +143,12 @@ struct objconfig_s msg = {
     .header = MSG_LISTING_HEADER,
     .footer = MSG_LISTING_FOOTER,
     .fbody = body_msg
+};
+
+struct objconfig_s msgshrt = {
+    .header = MSG_LISTING_HEADER,
+    .footer = MSG_LISTING_FOOTER,
+    .fbody = body_msg_short
 };
 
 struct objconfig_s convo = {
@@ -170,7 +177,6 @@ static struct test_config_s
     
 
 {.nr =  0, .descr = "MAP/MSE/MMU/BV-03-I"                      , .type = &msg,  .obj_count = 0, .objects = { "", "EMAIL", "MMS"                                }, .fPutMsg = MAP_MSE_MMU_BV_02_I_PutMsg}, // WIP add OBEX NAME Header (Handle) PTS [50] Enter Test Step TS_MTC_OBEX_extract_handle_name ( , (lt)Not Defined Value(gt)  ) Test case error in 'MAP/MSE/MMU/BV-03-I'. The value 'headers_received' (-1) is not fully defined.
-{.nr =  1, .descr = "MAP/MSE/MMU/BV-02-I"                      , .type = &msg,  .obj_count = 0, .objects = { "", "EMAIL", "MMS" , "EMAIL", "EMAIL"             }, .fPutMsg = MAP_MSE_MMU_BV_02_I_PutMsg}, // WIP: PTS accepts the EMAIL but not the MMS. No idea why...
 {.nr = 10, .descr = "MAP/MSE/MMB/BV-09-I 10 11 13 14 42 46"    , .type = &msg,  .obj_count = 2, .objects = { "SMS_GSM","SMS_CDMA"                              }, },
 {.nr = 11, .descr = "MAP/MSE/MMB/BV-12-I"                      , .type = &msg,  .obj_count = 1, .objects = { "EMAIL", "SMS_GSM","SMS_CDMA"                     }, },
 {.nr = 12, .descr = "MAP/MSE/MMB/BV-15-I 18 20 22"             , .type = &msg,  .obj_count = 5, .objects = { "EMAIL","SMS_GSM","SMS_CDMA", "MMS", "IM"         }, },
@@ -181,6 +187,7 @@ static struct test_config_s
 {.nr = 17, .descr = "MAP/MSE/MMB/BV-35-I 36 37"                , .type = &msg,  .obj_count = 1, .objects = { "EMAIL"                                           }, },
 {.nr = 18, .descr = "MAP/MSE/MMB/BV-47-I"                      , .type = &msg,  .obj_count = 1, .objects = { "IM","IM"                                         }, }, // PTS.EXE fails with "- MTC INCONC: no email message in message listing" but expects type="IM"
 {.nr = 19, .descr = "MAP/MSE/MMD/BV-02-I"                      , .type = &msg,  .obj_count = 1, .objects = { "EMAIL","MMS", "SMS_GSM","SMS_CDMA", "IM", "dummy"}, .fGetMsgListng = MAP_MSE_MMD_BV_02_I_getMsgListng, .fdiscon = MAP_MSE_MMD_BV_02_I_disc}, // PTS 8.5.4 Build 6 issue: sends a sequence of OBEX connect, GetMessageListing (expects 1 EMAIL, nothing else, no more messages), PUT MessageStatus (Delete Message), GetMessageListing (expects empty listing), OBEX discoonect, repeat (MMS, SMS_GSM, SMS_CDMA) - the last repeat for IM misses the disconnect and fails on the Get because the list is still empty
+{.nr =  1, .descr = "MAP/MSE/MMU/BV-02-I"                      , .type = &msgshrt,.obj_count = 0, .objects = { "", "EMAIL", "MMS" , "EMAIL", "EMAIL"             }, .fPutMsg = MAP_MSE_MMU_BV_02_I_PutMsg}, // WIP: PTS accepts the EMAIL but not the MMS. No idea why...
 };
 
 struct test_config_s* config = &test_configs[0];
@@ -207,11 +214,8 @@ static void MAP_MSE_MMD_BV_02_I_getMsgListng(void) {
 }
 
 static void MAP_MSE_MMU_BV_02_I_PutMsg(void) {
-    config->obj_count = 1;
-    cfg_start_index++;
     one_object_more_or_less++;
-
-    log_debug("cfg_start_index:%d one_object_more_or_less:%d", cfg_start_index, one_object_more_or_less);
+    log_debug("one_object_more_or_less:%d", one_object_more_or_less);
 }
 
 static mas_uint128hex_t DatabaseIdentifier = { 0 };
@@ -323,6 +327,30 @@ static int body_msg(char* msg_buffer, uint16_t index, int maxsize) {
             " conversation_id=\"E1E2E3E4\"" // "E1" is to short for PTS but happy with "E1E2E3E4\"
             " direction=\"incoming\""
             " attachment_mime_types=\"video/mpeg\"/>" // PTS wants this in MAP/MSE/MMD/BV-02-I, otherwise "no EMAIL message in message listing"
+            ,
+            index,
+            config->objects[index],
+            config->objects[index] ? "yes" : "no"
+        );
+    return size;
+}
+
+static int body_msg_short(char* msg_buffer, uint16_t index, int maxsize) {
+    index = index % ARRAYSIZE(config->objects);
+    int size = 0;
+    if (!config->msg_deleted[index])
+        size = snprintf(msg_buffer, maxsize,
+            "<msg handle=\"A%X\""
+            " type=\"%s\""
+            " subject=\"Sbjct\""
+            //" datetime=\"20140705T092200+0100\" sender_name=\"Jonas\""
+            //" sender_addressing=\"1@bla.net\" recipient_addressing=\"\""
+            //" size=\"512\" attachment_size=\"123\" priority=\"no\""
+            " read=\"%s\""
+            //" sent=\"yes\" protected=\"no\""
+            //" conversation_id=\"E1E2E3E4\"" // "E1" is to short for PTS but happy with "E1E2E3E4\"
+            //" direction=\"incoming\""
+            //" attachment_mime_types=\"video/mpeg\"/>" // PTS wants this in MAP/MSE/MMD/BV-02-I, otherwise "no EMAIL message in message listing"
             ,
             index,
             config->objects[index],
