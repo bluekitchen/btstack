@@ -9035,13 +9035,23 @@ uint8_t gap_disconnect(hci_con_handle_t handle){
         hci_emit_disconnection_complete(handle, 0);
         return 0;
     }
-    // ignore if already disconnected
-    if (conn->state == RECEIVED_DISCONNECTION_COMPLETE){
-        return 0;
+    uint8_t status = ERROR_CODE_SUCCESS;
+    switch (conn->state){
+        case RECEIVED_DISCONNECTION_COMPLETE:
+            // ignore if remote just disconnected
+            break;
+        case SEND_DISCONNECT:
+        case SENT_DISCONNECT:
+            // disconnect already requested or sent
+            status = ERROR_CODE_COMMAND_DISALLOWED;
+            break;
+        default:
+            // trigger hci_disconnect
+            conn->state = SEND_DISCONNECT;
+            hci_run();
+            break;
     }
-    conn->state = SEND_DISCONNECT;
-    hci_run();
-    return 0;
+    return status;
 }
 
 int gap_read_rssi(hci_con_handle_t con_handle){

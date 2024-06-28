@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - HID Host: return complete HID report
 
 ### Changed
+- GAP: return command disallowed if disconnect already requested
+
 
 ## Release v1.6.1
 
