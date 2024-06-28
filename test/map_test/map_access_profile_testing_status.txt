@@ -32,3 +32,4 @@ MAP/MSE/MMD/BV-02-I: PASS (2024-06-28, had to work arround a couple of PTS glitc
 MAP/MSE/MMD/BV-03-I: WIP (2024-06-28, OBEX NAME Header (Handle) PTS [50] Enter Test Step TS_MTC_OBEX_extract_handle_name ( , (lt)Not Defined Value(gt)  ) Test case error in 'MAP/MSE/MMU/BV-03-I'. The value 'headers_received' (-1) is not fully defined. See Screenshots in ...\test\map_test\MAP_MSE_MMU_BV_03_I_2024_06_28_12_02_17
 MAP/MSE/MMU/BV-02-I: PASS (2024-06-28 had to shorten messages, PTS failed to handle chunked responses)
 MAP/MSE/MFB/BV-02-I: PASS (2024-06-28) Verify that the MSE correctly advertizes the correct feature bits in the MAS SDP records .
+MAP/MSE/MFB/BV-05-I: PASS (2024-06-28) Verify that the MSE correctly advertizes the correct feature bits in the MAS SDP Rrecord during MAS connection.
