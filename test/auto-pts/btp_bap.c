@@ -1163,6 +1163,32 @@ static void btp_bap_pacs_client_event_handler(uint8_t packet_type, uint16_t chan
     }
 }
 
+static btstack_timer_source_t tbs_server_call_simulation_timer;
+static void tbs_server_call_simulation_alerting_to_active(btstack_timer_source_t * ts){
+    MESSAGE("Transition: Alerting to Active");
+    // update state
+    uint8_t bearer_id = tbs_bearers[tbs_bearer_index].id;
+    uint8_t index = 0;
+    uint16_t call_id = call_ids[index];
+    uint8_t status = telephone_bearer_service_server_set_call_state(bearer_id, call_id, TBS_CALL_STATE_ACTIVE);
+    btstack_assert(status == ERROR_CODE_SUCCESS);
+}
+
+static void tbs_server_call_simulation_dialing_to_alerting(btstack_timer_source_t * ts){
+    MESSAGE("Transition: Dialing to Alerting");
+    // update state
+    uint8_t bearer_id = tbs_bearers[tbs_bearer_index].id;
+    uint8_t index = 0;
+    uint16_t call_id = call_ids[index];
+    uint8_t status = telephone_bearer_service_server_set_call_state(bearer_id, call_id, TBS_CALL_STATE_ALERTING);
+    btstack_assert(status == ERROR_CODE_SUCCESS);
+
+    // next steps: transition to TBS_CALL_STATE_ALERTING and then to TBS_CALL_STATE_ACTIVE
+    btstack_run_loop_set_timer_handler(&tbs_server_call_simulation_timer, &tbs_server_call_simulation_alerting_to_active);
+    btstack_run_loop_set_timer(&tbs_server_call_simulation_timer, 2000);
+    btstack_run_loop_add_timer(&tbs_server_call_simulation_timer);
+}
+
 // TBS
 static void tbs_server_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
@@ -1365,20 +1391,29 @@ static void tbs_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
                     // send response
                     status = telephone_bearer_service_server_call_control_point_notification(con_handle, bearer_id, call_id, opcode, TBS_CONTROL_POINT_RESULT_SUCCESS);
                     btstack_assert(status == ERROR_CODE_SUCCESS);
+                    // next steps: transition to TBS_CALL_STATE_ALERTING and then to TBS_CALL_STATE_ACTIVE
+                    btstack_run_loop_set_timer_handler(&tbs_server_call_simulation_timer, &tbs_server_call_simulation_dialing_to_alerting);
+                    btstack_run_loop_set_timer(&tbs_server_call_simulation_timer, 1000);
+                    btstack_run_loop_remove_timer(&tbs_server_call_simulation_timer);
+                    btstack_run_loop_add_timer(&tbs_server_call_simulation_timer);
                     break;
                 }
-#if 0
                 case TBS_CONTROL_POINT_OPCODE_TERMINATE: {
-                    printf("%s( %d )\n", opcode_to_string[opcode], call_id);
-                    btstack_hsm_event_t e = { .sig=TERMINATE_SIG };
-                    if( call == NULL ) {
-                        telephone_bearer_service_server_call_control_point_notification(bearer_id, call_id, opcode, TBS_CONTROL_POINT_RESULT_INVALID_CALL_INDEX);
-                        break;
-                    }
-                    btstack_hsm_dispatch( &call->super, &e );
+                    // select free call
+                    uint8_t index = 0;
+                    tbs_call_data_t * call = &calls[index];
+                    uint8_t bearer_id = tbs_bearers[tbs_bearer_index].id;
+                    uint16_t call_id = call_ids[index];
+                    MESSAGE("TBS_CONTROL_POINT_OPCODE_ORIGINATE, handle 0x%04x, call id %u", con_handle, call_id);
+                    // send response
+                    status = telephone_bearer_service_server_call_control_point_notification(con_handle, bearer_id, call_id, opcode, TBS_CONTROL_POINT_RESULT_SUCCESS);
+                    btstack_assert(status == ERROR_CODE_SUCCESS);
+                    status = telephone_bearer_service_server_termination_reason(bearer_id, call_id, TBS_CALL_TERMINATION_REASON_CLIENT_ENDED_CALL);
+                    btstack_assert(status == ERROR_CODE_SUCCESS);
+                    telephone_bearer_service_server_deregister_call(bearer_id, call_id);
+                    btstack_assert(status == ERROR_CODE_SUCCESS);
                     break;
                 }
-#endif
                 default:
                     MESSAGE("Opcode %u not supported yet", opcode);
                     btstack_assert(false);
