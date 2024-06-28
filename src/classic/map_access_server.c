@@ -1012,14 +1012,15 @@ void map_access_server_deinit(void) {
 // note: common code for next four setters
 static bool map_access_server_valid_header_for_request(map_access_server_t* map_access_server) {
     if (map_access_server->state != MAP_SERVER_STATE_W4_USER_DATA) {
-        return false;
+        RUN_AND_LOG_ACTION(return false;)
     }
     switch (map_access_server->request.object_type) {
     case MAP_OBJECT_TYPE_GET_MSG_LISTING:
     case MAP_OBJECT_TYPE_GET_CONVO_LISTING:
-        return true;
+    case MAP_OBJECT_TYPE_GET_MAS_INSTANCE_INFORMATION:
+        RUN_AND_LOG_ACTION(return true;)
     default:
-        return false;
+        RUN_AND_LOG_ACTION(return false;)
     }
 
 }
@@ -1031,7 +1032,7 @@ int map_access_server_set_response_app_param(uint16_t map_cid, enum MAP_APP_PARA
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
 
     if (!map_access_server_valid_header_for_request(mas))
-        return ERROR_CODE_COMMAND_DISALLOWED;
+        RUN_AND_LOG_ACTION(return ERROR_CODE_COMMAND_DISALLOWED;)
     
     switch (app_param) {
 
