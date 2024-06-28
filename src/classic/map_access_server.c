@@ -74,7 +74,6 @@
 #define MAP_SERVER_MAX_APP_PARAMS_LEN 200
 //#define MAP_SERVER_MAX_APP_PARAMS_LEN ((4*2) + 2 + BT_UINT128_LEN_BYTES + (2*BT_UINT128_LEN_BYTES))
 
-
 typedef enum {
     MAP_SERVER_STATE_W4_OPEN,
     MAP_SERVER_STATE_W4_CONNECT_OPCODE,
@@ -174,6 +173,7 @@ typedef struct {
     // response
     struct {
         uint8_t code;
+        char *hdr_name; // pointer to a name string for the response header provided by the application or NULL
         uint8_t header_data[MAP_SERVER_MAX_APP_PARAMS_LEN];
         uint16_t header_pos;
         uint16_t body_len;
@@ -390,6 +390,14 @@ static void map_access_server_add_srm_headers(map_access_server_t* map_access_se
         break;
     default:
         break;
+    }
+}
+
+static void map_access_server_add_name_header(map_access_server_t* map_access_server) {
+log_debug("1");
+    if (map_access_server->response.hdr_name != NULL) {
+log_debug("2 hdr_name:<%s>", map_access_server->response.hdr_name);
+        goep_server_header_add_name(map_access_server->goep_cid, map_access_server->response.hdr_name);
     }
 }
 
@@ -1072,6 +1080,7 @@ uint8_t map_access_server_set_database_identifier(uint16_t map_cid, const uint8_
 static void map_access_server_build_response(map_access_server_t* map_access_server) {
     goep_server_response_create_general(map_access_server->goep_cid);
     map_access_server_add_srm_headers(map_access_server);
+    map_access_server_add_name_header(map_access_server);
     // Application Params already in map_access_server->response.header_data
     if (map_access_server->response.header_pos > 0)
         goep_server_header_add_application_parameters(map_access_server->goep_cid, map_access_server->response.header_data, map_access_server->response.header_pos);
@@ -1091,7 +1100,7 @@ uint16_t map_access_server_get_max_body_size(uint16_t map_cid) {
     return goep_server_response_get_max_message_size(map_access_server->goep_cid) - (3 + 2 + 3);
 }
 
-uint16_t map_access_server_send_get_put_response(uint16_t map_cid, uint8_t response_code, uint32_t continuation, uint16_t body_len, const uint8_t* body) {
+uint16_t map_access_server_send_get_put_response(uint16_t map_cid, uint8_t response_code, char* hdr_name, uint32_t continuation, uint16_t body_len, const uint8_t* body) {
     map_access_server_t* map_access_server = map_access_server_for_map_cid(map_cid);
     if (map_access_server == NULL) {
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
@@ -1107,6 +1116,7 @@ uint16_t map_access_server_send_get_put_response(uint16_t map_cid, uint8_t respo
 
     // set data for response and trigger execute
     map_access_server->response.code = response_code;
+    map_access_server->response.hdr_name = hdr_name;
     map_access_server->request.continuation = continuation;
     map_access_server->state = MAP_SERVER_STATE_SEND_USER_RESPONSE;
     map_access_server->response.body_data = body;

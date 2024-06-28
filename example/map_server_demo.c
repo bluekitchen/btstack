@@ -425,7 +425,7 @@ static uint16_t send_listing(bool header,  uint16_t first, uint16_t last) {
         continuation = first;
     }
     log_debug("7 send response %.*s", btstack_min(pos, sizeof(upload_buffer)), upload_buffer);
-    map_access_server_send_get_put_response(map_cid, response_code, continuation, pos, upload_buffer);
+    map_access_server_send_get_put_response(map_cid, response_code, NULL, continuation, pos, upload_buffer);
     return first;
 }
 
@@ -720,7 +720,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
 
                             // BT MAP Spec requires to skip the body if max_list_count == 0
                             if (max_list_count == 0)
-                                map_access_server_send_get_put_response(map_cid, OBEX_RESP_SUCCESS, 0, 0, NULL);
+                                map_access_server_send_get_put_response(map_cid, OBEX_RESP_SUCCESS, NULL, 0, 0, NULL);
                             else
                                 send_get_listing_object(packet, start_index, max_list_count, continuation);
 
@@ -744,27 +744,25 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             APP_READ_08(packet, &pos, &StatusValue);
                             APP_READ_STR(packet, &pos, sizeof(request_name), request_name);
                             MAP_PRINTF("[+] Put MessageStatus ObjectName:%s StatusIndicator:0x%02X StatusValue:0x%02X\n", request_name, (unsigned int) StatusIndicator, (unsigned int)StatusValue);
-                            map_access_server_send_get_put_response(map_cid, OBEX_RESP_SUCCESS, 0, 0, NULL);
+                            map_access_server_send_get_put_response(map_cid, OBEX_RESP_SUCCESS, NULL, 0, 0, NULL);
                             handle_set_message_status(request_name, StatusIndicator, (unsigned int)StatusValue);
                             break;
 
                         case MAP_SUBEVENT_PUT_MESSAGE_UPDATE:
                             APP_READ_16(packet, &pos, &dummy_map_cid);
                             MAP_PRINTF("[+] Put MessageUpdate\n");
-                            map_access_server_send_get_put_response(map_cid, OBEX_RESP_SUCCESS, 0, 0, NULL);
+                            map_access_server_send_get_put_response(map_cid, OBEX_RESP_SUCCESS, NULL, 0, 0, NULL);
                             // BT SIG Test case MAP/MSE/MMB/BV-23-I asks for one more message after
                             // issuing a "update messages" request so we just simulate one
                             one_object_more_or_less = 1;
                             break;
 
                         case MAP_SUBEVENT_PUT_MESSAGE:
-                            uint8_t obex_name_hdr[40];
+                            char obex_name_hdr_new_msg_handle[] = "A1A2A3A4";
                             APP_READ_16(packet, &pos, &dummy_map_cid);
                             MAP_PRINTF("[+] Put Message\n");
-                            map_access_server_send_get_put_response(map_cid, OBEX_RESP_SUCCESS, 0, 0, NULL);
-                            // TODO add NAME header
-                            //obex_message_builder_header_add_name(obex_name_hdr, sizeof(obex_name_hdr), "A1")
-                            // return obex_message_builder_header_add_unicode_prefix(buffer, buffer_len, OBEX_HEADER_NAME, name, name_len);
+                            map_access_server_send_get_put_response(map_cid, OBEX_RESP_SUCCESS, obex_name_hdr_new_msg_handle, 0, 0, NULL);
+
                             if (config->fPutMsg != NULL)
                                 config->fPutMsg();
                             break;
@@ -773,7 +771,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             APP_READ_16(packet, &pos, &dummy_map_cid);
                             APP_READ_08(packet, &pos, &NotificationStatus);
                             MAP_PRINTF("[+] Put NotificationRegistration\n");
-                            map_access_server_send_get_put_response(map_cid, OBEX_RESP_SUCCESS, 0, 0, NULL);
+                            map_access_server_send_get_put_response(map_cid, OBEX_RESP_SUCCESS, NULL, 0, 0, NULL);
                             // BT SIG Test case MAP/MSE/MMB/BV-23-I asks for one more message after
                             // issuing a "update messages" request so we just simulate one
                             one_object_more_or_less = 1;
@@ -785,7 +783,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             APP_READ_STR(packet, &pos, sizeof(LastActivity), (char*)LastActivity);
                             APP_READ_08(packet, &pos, &ChatState);
                             MAP_PRINTF("[+] Put OwnerStatus\n");
-                            map_access_server_send_get_put_response(map_cid, OBEX_RESP_SUCCESS, 0, 0, NULL);
+                            map_access_server_send_get_put_response(map_cid, OBEX_RESP_SUCCESS, NULL, 0, 0, NULL);
                             // BT SIG Test case MAP/MSE/MMB/BV-23-I asks for one more message after
                             // issuing a "update messages" request so we just simulate one
                             one_object_more_or_less = 1;
@@ -806,7 +804,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_ListingSize, &ListingSize);
                             // BT MAP Spec requires to skip the body if max_list_count == 0
                             if (config->obj_count == 0 && one_object_more_or_less == 0)
-                                map_access_server_send_get_put_response(map_cid, OBEX_RESP_SUCCESS, 0, 0, NULL);
+                                map_access_server_send_get_put_response(map_cid, OBEX_RESP_SUCCESS, NULL, 0, 0, NULL);
                             else
                                 send_get_listing_object(packet, 0, 0xffff, continuation);
                             break;
