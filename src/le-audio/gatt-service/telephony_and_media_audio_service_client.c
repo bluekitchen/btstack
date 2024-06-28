@@ -98,7 +98,7 @@ static void tmas_client_handle_gatt_client_event(uint8_t packet_type, uint16_t c
                 tmas_client_state = TELEPHONY_AND_MEDIA_AUDIO_SERVICE_CLIENT_STATE_W4_READ_CHARACTERISTIC_VALUE_READ_FAILED;
                 break;
             }
-            tmap_supported_roles = little_endian_read_16(gatt_event_characteristic_value_query_result_get_value(packet), 0);
+            tmap_supported_roles = little_endian_read_16(gatt_event_characteristic_value_query_result_get_value(packet), 0) & TMAS_ROLE_BITMASK_ALL;
             break;
 
         case GATT_EVENT_QUERY_COMPLETE:
@@ -133,7 +133,7 @@ static void tmas_client_run_for_connection(void * context){
         case TELEPHONY_AND_MEDIA_AUDIO_SERVICE_CLIENT_STATE_W2_READ_CHARACTERISTIC_VALUE:
             tmas_client_state = TELEPHONY_AND_MEDIA_AUDIO_SERVICE_CLIENT_STATE_W4_READ_CHARACTERISTIC_VALUE_RESULT;
             (void) gatt_client_read_value_of_characteristics_by_uuid16(
-                    &tmas_client_handle_gatt_client_event, con_handle, 0, 0xFFFF,
+                    &tmas_client_handle_gatt_client_event, con_handle, 1, 0xFFFF,
                     ORG_BLUETOOTH_CHARACTERISTIC_TMAP_ROLE);
             break;
         default:
