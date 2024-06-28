@@ -144,7 +144,7 @@ num_functions = 0
 
 # [file_name, api_title, api_label]
 apis = [ 
-    ["src/ble/ancs_client.h", "BLE ANCS Client", "ancsClient", True],
+    ["src/ble/gatt-service/ancs_client.h", "BLE ANCS Client", "ancsClient", True],
     ["src/ble/att_db_util.h", "BLE ATT Database", "attDb", True],
     ["src/ble/att_server.h", "BLE ATT Server", "attServer", True],
     ["src/ble/gatt_client.h", "BLE GATT Client", "gattClient", True],
@@ -198,7 +198,7 @@ def split_arguments(args_string):
     return args
 
 def argument_name(parameter):
-    function_pointer = re.match('[\w\s\*]*\(\s*\*(\w*)\s*\)\(.*\)', parameter)
+    function_pointer = re.match(r'[\w\s\*]*\(\s*\*(\w*)\s*\)\(.*\)', parameter)
     if function_pointer:
         return function_pointer.group(1)
     parts = parameter.split(' ')
@@ -274,29 +274,29 @@ def write_wrappers_for_file(fout, file, header_name, need_lock):
                 continue
             
             if state == State.SearchStartAPI:
-                parts = re.match('.*API_START.*',line)
+                parts = re.match(r'.*API_START.*',line)
                 if parts:
                     state = State.SearchEndAPI
                 continue
             
             if state == State.SearchEndAPI:
-                parts = re.match('.*API_END.*',line)
+                parts = re.match(r'.*API_END.*',line)
                 if parts:
                     state = State.DoneAPI
                     continue
 
             if inline_function:
-                function_end = re.match('.*}.*', line)
+                function_end = re.match(r'.*}.*', line)
                 if function_end:
                     inline_function = 0
                 continue
 
             if multiline_function_def:
                 multiline += line
-                function_end = re.match('.*\)', line)
+                function_end = re.match(r'.*\)', line)
                 if function_end:
                     multiline_function_def = 0
-                    function = re.match('([\w\s\*]*)\(([\w\s,\*]*)\).*', multiline)
+                    function = re.match(r'([\w\s\*]*)\(([\w\s,\*]*)\).*', multiline)
                     if function:
                         type_and_name = function.group(1)
                         arg_string    = function.group(2)
@@ -304,7 +304,7 @@ def write_wrappers_for_file(fout, file, header_name, need_lock):
                 continue
 
             if multiline_comment:
-                comment_end = re.match('.*\*/.*', line)
+                comment_end = re.match(r'.*\*/.*', line)
                 if comment_end:
                     multiline_comment = 0
                 fout.write(line)
@@ -312,36 +312,36 @@ def write_wrappers_for_file(fout, file, header_name, need_lock):
 
             # search typedef struct end
             if typedefFound:
-                typedef = re.match('}\s*(.*);\n', line)
+                typedef = re.match(r'}\s*(.*);\n', line)
                 if typedef:
                     typedefFound = 0
                 continue
 
             # search comment line
-            comment = re.match(".*/\*.*\*/.*", line)
+            comment = re.match(r'.*/\*.*\*/.*', line)
             if comment:
                 fout.write(line)
                 continue
 
             # search start of multi line comment
-            comment = re.match(".*/\*", line)
+            comment = re.match(r'.*/\*', line)
             if comment:
                 fout.write(line)
                 multiline_comment = 1
                 continue
             
             # ignore __attribute__ for hci_dump_log in src/hci_dump.h
-            param = re.match(".*__attribute__", line)
+            param = re.match(r'.*__attribute__', line)
             if param:
                 continue
 
             # search typedef struct begin
-            typedef =  re.match('.*typedef\s+struct.*', line)
+            typedef =  re.match(r'.*typedef\s+struct.*', line)
             if typedef:
                 typedefFound = 1
             
             # complete function declaration
-            function = re.match('([\w\s\*]*)\((.*)\).*', line)
+            function = re.match(r'([\w\s\*]*)\((.*)\).*', line)
             if function:
                 if "return" in line:
                     continue
@@ -352,7 +352,7 @@ def write_wrappers_for_file(fout, file, header_name, need_lock):
                 continue
 
             # multi-line function declaration
-            function = re.match('([\w\s\*]*)\((.*).*', line)
+            function = re.match(r'([\w\s\*]*)\((.*).*', line)
             if function:
                 multiline = line
                 multiline_function_def = 1
@@ -410,6 +410,7 @@ def main(argv):
     rtos_folder = btstack_root + '/platform/rtos'
     assert_dir_exists(rtos_folder)
     assert_dir_exists(rtos_folder+'/ble')
+    assert_dir_exists(rtos_folder+'/ble/gatt-service')
     assert_dir_exists(rtos_folder+'/classic')
     create_wrapper_files(btstack_root, rtos_folder, apis)   
 
