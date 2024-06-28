@@ -1877,6 +1877,9 @@ void btp_bap_init(void){
     // MICP = MICS Client
     microphone_control_service_client_init();
 
+    // TMAP = TMAS Client
+    telephony_and_media_audio_service_client_init();
+
     // -- Servers --
 
     // GTBS Server
@@ -2214,7 +2217,28 @@ static void btp_bap_tmap_event_handler(uint8_t packet_type, uint16_t channel, ui
     if (packet_type != HCI_EVENT_PACKET) return;
     if (hci_event_packet_get_type(packet) != HCI_EVENT_LEAUDIO_META) return;
 
+    hci_con_handle_t con_handle;
+    uint8_t status;
+    uint16_t roles_bitmap;
+    server_t * server;
+
+    MESSAGE("btp_bap_tmap_event_handler, subevent code 0x%02x", hci_event_leaudio_meta_get_subevent_code(packet));
+
     switch (hci_event_leaudio_meta_get_subevent_code(packet)) {
+        case LEAUDIO_SUBEVENT_TMAS_CLIENT_SUPPORTED_ROLES_BITMAP:
+            con_handle = leaudio_subevent_tmas_client_supported_roles_bitmap_get_con_handle(packet);
+            server = btp_server_for_acl_con_handle(con_handle);
+            roles_bitmap = leaudio_subevent_tmas_client_supported_roles_bitmap_get_supported_roles(packet);
+            uint8_t buffer[10];
+            uint16_t pos = 0;
+            buffer[pos++] = server->address_type;
+            reverse_bd_addr(server->address, &buffer[pos]);
+            pos += 6;
+            buffer[pos++] = status;
+            little_endian_store_16(buffer, pos, roles_bitmap);
+            pos += 2;
+            btp_send(BTP_SERVICE_ID_TMAP, BT_TMAP_EV_DISCOVERY_COMPLETE, 0, pos, buffer);
+            break;
         default:
             break;
     }
@@ -2228,10 +2252,28 @@ void btp_tmap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length,
     server_t * server;
     switch (opcode) {
         case BTP_TMAP_READ_SUPPORTED_COMMANDS:
-        MESSAGE("BTP_TMAP_READ_SUPPORTED_COMMANDS");
+            MESSAGE("BTP_TMAP_READ_SUPPORTED_COMMANDS");
             if (controller_index == BTP_INDEX_NON_CONTROLLER) {
                 uint8_t commands = 0;
                 btp_send(response_service_id, opcode, controller_index, 1, &commands);
+            }
+            break;
+        case BTP_TMAP_DISCOVER:
+        MESSAGE("BTP_TMAP_DISCOVER");
+            if (controller_index == 0) {
+                /**
+                    bt_addr_le_t address;
+                 */
+                // get server struct
+                bd_addr_type_t addr_type = (bd_addr_type_t) data[0];
+                bd_addr_t address;
+                reverse_bd_addr(&data[1], address);
+                MESSAGE("BTP_TMAP_DISCOVER %s", bd_addr_to_str(address));
+                server = btp_server_for_address(addr_type, address);
+                // query role
+                telephony_and_media_audio_service_client_read_roles(btp_bap_tmap_event_handler, server->acl_con_handle);
+                // report started
+                btp_send(response_service_id, opcode, controller_index, 0, NULL);
             }
             break;
         default:
