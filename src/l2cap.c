@@ -2610,10 +2610,10 @@ static void l2cap_handle_connection_failed_for_addr(bd_addr_t address, uint8_t s
             if (!l2cap_is_dynamic_channel_type(channel->channel_type)) continue;
             if (channel->state == L2CAP_STATE_EMIT_OPEN_FAILED_AND_DISCARD){
                 done = 0;
-                // failure, forward error code
-                l2cap_handle_channel_open_failed(channel, status);
                 // discard channel
                 btstack_linked_list_remove(&l2cap_channels, (btstack_linked_item_t *) channel);
+                // failure, forward error code
+                l2cap_handle_channel_open_failed(channel, status);
                 l2cap_free_channel_entry(channel);
                 break;
             }
