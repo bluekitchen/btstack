@@ -240,12 +240,9 @@ static void map_access_server_handle_set_path_request(map_access_server_t* map_a
                 map_access_server->map_access_server_dir = MAS_FOLDER_TELECOM;
                 break;
             case MAS_FOLDER_TELECOM_MSG_INBOX:
-                map_access_server->map_access_server_dir = MAS_FOLDER_TELECOM_MSG;
-                break;
             case MAS_FOLDER_TELECOM_MSG_OUTBOX:
-                map_access_server->map_access_server_dir = MAS_FOLDER_TELECOM_MSG;
-                break;
             case MAS_FOLDER_TELECOM_MSG_DRAFT:
+            case MAS_FOLDER_TELECOM_MSG_SENT:            
                 map_access_server->map_access_server_dir = MAS_FOLDER_TELECOM_MSG;
                 break;
             default:
@@ -276,9 +273,9 @@ static void map_access_server_handle_set_path_request(map_access_server_t* map_a
             }
             break;
         case MAS_FOLDER_TELECOM_MSG:
-            if (strcasecmp("inbox", name) == 0) {
+            if      (strcasecmp("inbox", name) == 0) {
                 map_access_server->map_access_server_dir = MAS_FOLDER_TELECOM_MSG_INBOX;
-            }           
+            } 
             else if (strcasecmp("outbox", name) == 0) {
                 map_access_server->map_access_server_dir = MAS_FOLDER_TELECOM_MSG_OUTBOX;
             }
