@@ -335,6 +335,8 @@ static int body_msg(char* msg_buffer, uint16_t index, int maxsize) {
     return size;
 }
 
+
+// TODO: PTS MAP/MSE/MMU/BV-02-I fails to handle multi-segment chunked responses so we had to send 2 message in a single rfcom/goep/obex response packet.
 static int body_msg_short(char* msg_buffer, uint16_t index, int maxsize) {
     index = index % ARRAYSIZE(config->objects);
     int size = 0;
