@@ -68,6 +68,10 @@ extern "C" {
 #undef reverse_64
 #endif
 
+#ifdef _WINDOWS
+	#define strcasecmp _stricmp
+#endif 
+
 // will be moved to daemon/btstack_device_name_db.h
 
 /**
