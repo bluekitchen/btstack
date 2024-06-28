@@ -790,8 +790,10 @@ static void map_access_server_handle_get_put_request(map_access_server_t* map_ac
     case MAP_OBJECT_TYPE_PUT_MESSAGE:
         APP_WRITE_08(event, &pos, MAP_SUBEVENT_PUT_MESSAGE);
         APP_WRITE_16(event, &pos, map_access_server->map_cid);
-        APP_WRITE_08(event, &pos, map_access_server->request.app_params.StatusIndicator);
-        APP_WRITE_08(event, &pos, map_access_server->request.app_params.StatusValue);
+        APP_WRITE_08(event, &pos, map_access_server->request.app_params.Charset);
+        APP_WRITE_08(event, &pos, map_access_server->request.app_params.Attachment);
+        APP_WRITE_08(event, &pos, map_access_server->request.app_params.ModifyText);
+        APP_WRITE_STR(event, &pos, sizeof(map_access_server->request.app_params.MessageHandle), (uint8_t*)map_access_server->request.app_params.MessageHandle);
         APP_WRITE_STR(event, &pos, sizeof(event) - pos, map_access_server->request.name);
         APP_WRITE_LEN(event, pos);
         break;

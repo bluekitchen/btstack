@@ -788,9 +788,19 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             break;
 
                         case MAP_SUBEVENT_PUT_MESSAGE:
-                            char* obex_name_hdr_new_msg_handle = NULL; // "A1A2A3A4";
+                            char* obex_name_hdr_new_msg_handle = NULL; // "A1A2A3A4" // crrently not used
+                            uint8_t Attachment;
+                            uint8_t Charset;
+                            uint8_t ModifyText;
+                            mas_uint64hex_t MessageHandle;
                             APP_READ_16(packet, &pos, &dummy_map_cid);
-                            MAP_PRINTF("[+] Put Message\n");
+                            APP_READ_08(packet, &pos, &Charset);
+                            APP_READ_08(packet, &pos, &Attachment);
+                            APP_READ_08(packet, &pos, &ModifyText);
+                            APP_READ_STR(packet, &pos, sizeof(MessageHandle), MessageHandle);
+                            APP_READ_STR(packet, &pos, sizeof(request_name), request_name);
+                            
+                            MAP_PRINTF("[+] Put Message Charset:%u Attachment:%u MessageHandle:%s\n", Charset, Attachment, MessageHandle);
                             map_access_server_send_get_put_response(map_cid, OBEX_RESP_SUCCESS, obex_name_hdr_new_msg_handle, 0, 0, NULL);
 
                             if (config->fPutMsg != NULL)
