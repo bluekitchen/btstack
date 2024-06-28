@@ -110,12 +110,13 @@ static  btstack_packet_handler_t map_access_server_user_packet_handler;
 typedef struct {
 // the following X-Macro (https://en.wikipedia.org/wiki/X_macro)
 // below generates app_params_compile_time_check struct members to compile-time check all PARAMs
-#define PARAM_REQUST(name, tag, type, descr) type PARAM_REQUST ## name;
-#define PARAM_RESPON(name, tag, type, descr) type PARAM_RESPON ## name;
-#define PARAM_REQRSP(name, tag, type, descr) type PARAM_REQRSP ## name;
-#define PARAM_UNUSED(name, tag, type, descr) type PARAM_UNUSED ## name;
+#define PARAM_REQUST(name, tag, type, opts, descr) type PARAM_REQUST ## name;
+#define PARAM_RESPON(name, tag, type, opts, descr) type PARAM_RESPON ## name;
+#define PARAM_REQRSP(name, tag, type, opts, descr) type PARAM_REQRSP ## name;
+#define PARAM_UNUSED(name, tag, type, opts, descr) type PARAM_UNUSED ## name;
 #define ENUM(...)
 #define DSCR(...)
+
 
     APP_PARAMS
 
@@ -125,6 +126,7 @@ typedef struct {
 #undef PARAM_UNUSED
 #undef ENUM
 #undef DSCR
+
 } app_params_compile_time_check;
 
 typedef struct {
@@ -153,7 +155,7 @@ typedef struct {
         struct {
 // the following X-Macro (https://en.wikipedia.org/wiki/X_macro)
 // below generates request.app_param struct members
-#define PARAM_REQUST(name, tag, type, descr) type name; bool name ## _was_set;
+#define PARAM_REQUST(name, tag, type, opts, descr) type name; bool name ## _was_set;
 #define PARAM_REQRSP PARAM_REQUST
 #define PARAM_RESPON(...)
 #define PARAM_UNUSED(...)
@@ -168,6 +170,7 @@ typedef struct {
 #undef PARAM_UNUSED
 #undef ENUM
 #undef DSCR
+
         } app_params;
     } request;
     // response
@@ -627,7 +630,7 @@ static void map_access_server_app_param_callback_get(void* user_data, uint8_t ta
 //        map_access_server->request.app_param_buffer, 0);
 //    break;
 
-#define PARAM_REQUST(name, tag, type, descr) \
+#define PARAM_REQUST(name, tag, type, opts, descr) \
             case MAP_APP_PARAM_ ## name: \
                     app_param_read_ ## type (map_access_server->request.app_param_buffer, &pos, &map_access_server->request.app_params. name, sizeof(type)); \
                     map_access_server->request.app_params. name ## _was_set = true; \
@@ -1028,6 +1031,8 @@ static bool map_access_server_valid_header_for_request(map_access_server_t* map_
 
 int map_access_server_set_response_app_param(uint16_t map_cid, enum MAP_APP_PARAMS app_param, void* param) {
     map_access_server_t* mas = map_access_server_for_map_cid(map_cid);
+    size_t len;
+
     if (mas == NULL)
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
 
@@ -1039,11 +1044,12 @@ int map_access_server_set_response_app_param(uint16_t map_cid, enum MAP_APP_PARA
 
 // the following X-Macro (https://en.wikipedia.org/wiki/X_macro)
 // automagically generates SETers for all APP Params
-#define PARAM_RESPON(name, tag, type, descr) \
+#define PARAM_RESPON(name, tag, type, opts, descr) \
     case MAP_APP_PARAM_ ## name: \
+        len = (MAP_APP_PARAMS_OPTIONS_ ## name & OPT_STR0) ? strlen(param):sizeof(type); \
         /* Type: 1 Byte  */BT_APP_PARAM_WRITE_08(mas->response.header_data, &mas->response.header_pos, MAP_APP_PARAM_ ## name, 1); \
-        /* Size: 1 Byte  */BT_APP_PARAM_WRITE_08(mas->response.header_data, &mas->response.header_pos, sizeof(type), 1); \
-        /* Data: N Bytes */app_param_write_ ## type (mas->response.header_data, &mas->response.header_pos, *((type*)param), sizeof(type)); \
+        /* Size: 1 Byte  */BT_APP_PARAM_WRITE_08(mas->response.header_data, &mas->response.header_pos, len, 1); \
+        /* Data: N Bytes */app_param_write_ ## type (mas->response.header_data, &mas->response.header_pos, *((type*)param), (uint16_t) len); \
         return ERROR_CODE_SUCCESS;
 
 #define PARAM_REQRSP PARAM_RESPON
@@ -1060,7 +1066,7 @@ int map_access_server_set_response_app_param(uint16_t map_cid, enum MAP_APP_PARA
 #undef PARAM_UNUSED
 #undef ENUM
 #undef DSCR
-       
+
 
     default:
         btstack_unreachable();
