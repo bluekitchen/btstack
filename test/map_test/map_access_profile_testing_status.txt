@@ -37,3 +37,4 @@ MAP/MSE/MFB/BV-07-I: PASS (2024-06-28) Verify that the MSE responds to an OBEX c
 MAP/MSE/MFMH/BV-01-I: PASS (2024-06-28) Verify that the MSE sends a correctly formatted response to a PushMessage request including MessageHandle application parameter.
 MAP/MSE/MFMH/BV-02-I: PASS (2024-06-28) Verify that the MSE sends a correctly formatted response to a PushMessage request including application parameter Attachment=ON.
 MAP/MSE/MFMH/BV-03-I 04 05: PASS (2024-06-28) Verify that the MSE sends a correctly formatted response to a PushMessage request including application parameter ...
+MAP/MSE/MMI/BV-02-I: PASS (2024-06-28) Verify that the MCE can return user-readable information about the MAS-instance to the MCE
