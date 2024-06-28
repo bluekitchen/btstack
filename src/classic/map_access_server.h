@@ -70,26 +70,29 @@ typedef uint8_t mas_string_t[MAP_SERVER_MAX_TYPE_LEN];
 typedef uint8_t mas_utf8_t[MAP_SERVER_MAX_TYPE_LEN];
 typedef uint8_t mas_uint128hex_t[BT_UINT128_HEX_LEN_BYTES];
 typedef uint8_t mas_uint64_t[8];
+typedef uint8_t mas_uint64hex_t[16+1]; // \0 terminated?
 typedef uint8_t mas_UTCstmpoffstr_t[20];
 
 
-#define app_param_read_uint8_t           BT_APP_PARAM_READ_08
-#define app_param_read_uint16_t          BT_APP_PARAM_READ_16
-#define app_param_read_uint32_t          BT_APP_PARAM_READ_32
-#define app_param_read_mas_string_t      BT_APP_PARAM_READ_ARR
-#define app_param_read_mas_string_t      BT_APP_PARAM_READ_ARR
-#define app_param_read_mas_UTCstmpoffstr_t        BT_APP_PARAM_READ_ARR
-#define app_param_read_mas_uint64_t      BT_APP_PARAM_READ_ARR
-#define app_param_read_mas_uint128hex_t  BT_APP_PARAM_READ_ARR
-
-#define app_param_write_uint8_t          BT_APP_PARAM_WRITE_08
-#define app_param_write_uint16_t         BT_APP_PARAM_WRITE_16
-#define app_param_write_uint32_t         BT_APP_PARAM_WRITE_32
-#define app_param_write_mas_string_t     BT_APP_PARAM_WRITE_ARR
+#define app_param_read_uint8_t              BT_APP_PARAM_READ_08
+#define app_param_read_uint16_t             BT_APP_PARAM_READ_16
+#define app_param_read_uint32_t             BT_APP_PARAM_READ_32
+#define app_param_read_mas_string_t         BT_APP_PARAM_READ_ARR
+#define app_param_read_mas_string_t         BT_APP_PARAM_READ_ARR
+#define app_param_read_mas_UTCstmpoffstr_t  BT_APP_PARAM_READ_ARR
+#define app_param_read_mas_uint64_t         BT_APP_PARAM_READ_ARR
+#define app_param_read_mas_uint64hex_t      BT_APP_PARAM_READ_ARR
+#define app_param_read_mas_uint128hex_t     BT_APP_PARAM_READ_ARR
+                                            
+#define app_param_write_uint8_t             BT_APP_PARAM_WRITE_08
+#define app_param_write_uint16_t            BT_APP_PARAM_WRITE_16
+#define app_param_write_uint32_t            BT_APP_PARAM_WRITE_32
+#define app_param_write_mas_string_t        BT_APP_PARAM_WRITE_ARR
 #define app_param_write_mas_UTCstmpoffstr_t BT_APP_PARAM_WRITE_ARR
-#define app_param_write_mas_utf8_t       BT_APP_PARAM_WRITE_ARR 
-#define app_param_write_mas_uint64_t     BT_APP_PARAM_WRITE_ARR 
-#define app_param_write_mas_uint128hex_t BT_APP_PARAM_WRITE_ARR 
+#define app_param_write_mas_utf8_t          BT_APP_PARAM_WRITE_ARR 
+#define app_param_write_mas_uint64_t        BT_APP_PARAM_WRITE_ARR 
+#define app_param_write_mas_uint64hex_t     BT_APP_PARAM_WRITE_ARR 
+#define app_param_write_mas_uint128hex_t    BT_APP_PARAM_WRITE_ARR 
 
     // Data extracted from "Message Access Profile"
     // Bluetooth  Profile Specification
@@ -125,8 +128,8 @@ typedef uint8_t mas_UTCstmpoffstr_t[20];
                                                                                               0b00000001 = get high priority messages only                            \
                                                                                               0b00000010 = get non - high priority messages only;                     \
                                                                                               all other values : undefined                                          ))\
- PARAM_UNUSED( Attachment                        , 0x0A, uint8_t            , DSCR( 0b1 = "ON"                                                                        \
-                                                                                    0b0 = "OFF"                                                                     ))\
+ PARAM_REQUST( Attachment                        , 0x0A, uint8_t            , ENUM( 1 , ON )                                                                          \
+                                                                              ENUM( 0 , OFF)                                                                         )\
  PARAM_UNUSED( Transparent                       , 0x0B, uint8_t            , DSCR( 0b1 = "ON"                                                                        \
                                                                                     0b0 = "OFF"                                                                     ))\
  PARAM_UNUSED( Retry                             , 0x0C, uint8_t            , DSCR( 0b1 = "ON"                                                                        \
@@ -189,8 +192,8 @@ typedef uint8_t mas_UTCstmpoffstr_t[20];
                                                                                     Bit 20 = Conversation listing                                                     \
                                                                                     Bit 21 = Owner status                                                             \
                                                                                     Bits 22 to 31 = Reserved for Future Use0F                                       ))\
- PARAM_UNUSED( MessageHandle                     , 0x2A, mas_uint64_t       , DSCR( 64 - bit value in hex string format                                             ))\
- PARAM_UNUSED( ModifyText                        , 0x2B, uint8_t            , DSCR( 0 = "REPLACE"                                                                    ))
+ PARAM_REQUST( MessageHandle                     , 0x2A, mas_uint64hex_t    , DSCR( 64 - bit value in hex string format                                             ))\
+ PARAM_REQUST( ModifyText                        , 0x2B, uint8_t            , ENUM( 0 , REPLACE)                                                                     )
 
 
     enum MAP_APP_PARAMS
