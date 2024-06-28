@@ -225,15 +225,6 @@ static mas_folder_t map_access_server_get_folder_by_path(const char* path) {
     return MAS_FOLDER_TELECOM_MSG;
 }
 
-static mas_folder_t map_access_server_get_folder_by_dir_and_name(mas_folder_t parent_dir, const char* name) {
-    uint16_t index;
-    for (index = 0; index < (sizeof(map_access_server_folders) / sizeof(map_access_server_folders[0])); index++) {
-        if ((parent_dir == map_access_server_folders[index].parent_dir) && (strcmp(name, map_access_server_folders[index].name) == 0)) {
-            return MAS_FOLDER_TELECOM_MSG + index;
-        }
-    }
-    return MAS_FOLDER_INVALID;
-}
 
 static void map_access_server_handle_set_path_request(map_access_server_t* map_access_server, uint8_t flags, const char* name) {
     uint16_t name_len = (uint16_t)strlen(name);
