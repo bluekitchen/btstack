@@ -848,6 +848,13 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             else
                                 send_get_listing_object(packet, 0, 0xffff, continuation);
                             break;
+
+                        case MAP_SUBEVENT_GET_MAS_INSTANCE_INFORMATION:
+                            uint8_t MASInstanceID;
+                            APP_READ_32(packet, &pos, &continuation);
+                            APP_READ_16(packet, &pos, &dummy_map_cid);
+                            APP_READ_08(packet, &pos, &MASInstanceID);
+                            map_access_server_send_get_put_response(map_cid, OBEX_RESP_SUCCESS, NULL, 0, 0, NULL);
                             break;
 
                         default:

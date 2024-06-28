@@ -138,7 +138,7 @@ typedef uint8_t mas_UTCstmpoffstr_t[20];
                                                                                     0b0 = "OFF"                                                                     ))\
  PARAM_REQUST( NotificationStatus                , 0x0E, uint8_t            , DSCR( 0b1 = "ON"                                                                        \
                                                                                     0b0 = "OFF"                                                                     ))\
- PARAM_UNUSED( MASInstanceID                     , 0x0F, uint8_t            , DSCR( 0 to 255                                                                        ))\
+ PARAM_REQUST( MASInstanceID                     , 0x0F, uint8_t            , DSCR( 0 to 255                                                                        ))\
  PARAM_UNUSED( ParameterMask                     , 0x10, uint32_t           , DSCR( Bit mask; settings see Section 5.5.4                                            ))\
  PARAM_UNUSED( FolderListingSize                 , 0x11, uint16_t           , DSCR( 0x0000 to 0xFFFF                                                                ))\
  PARAM_RESPON( ListingSize                       , 0x12, uint16_t           , DSCR( 0x0000 to 0xFFFF                                                                ))\
@@ -167,7 +167,7 @@ typedef uint8_t mas_UTCstmpoffstr_t[20];
  PARAM_UNUSED( FilterMessageHandle               , 0x24, mas_uint64_t       , DSCR( 64 - bit value in hex string format                                             ))\
  PARAM_UNUSED( NotificationFilterMask            , 0x25, uint32_t           , DSCR( Bit mask settings; see Section 5.14.3.1                                         ))\
  PARAM_UNUSED( ConvParameterMask                 , 0x26, uint32_t           , DSCR( Bit mask settings; see Section 5.13.3.10                                        ))\
- PARAM_UNUSED( OwnerUCI                          , 0x27, mas_utf8_t         , DSCR( Text UTF - 8                                                                    ))\
+ PARAM_RESPON( OwnerUCI                          , 0x27, mas_utf8_t         , DSCR( Text UTF - 8                                                                    ))\
  PARAM_UNUSED( ExtendedData                      , 0x28, mas_utf8_t         , DSCR( Text UTF - 8                                                                    ))\
  PARAM_REQUST( MapSupportedFeatures              , 0x29, uint32_t           , DSCR( Bit 0 = Notification Registration Feature                                         \
                                                                                     Bit 1 = Notification Feature                                                      \
@@ -316,6 +316,7 @@ typedef enum {
     MAP_OBJECT_TYPE_GET_FOLDER_LISTING,
     MAP_OBJECT_TYPE_GET_MSG_LISTING,
     MAP_OBJECT_TYPE_GET_CONVO_LISTING,
+    MAP_OBJECT_TYPE_GET_MAS_INSTANCE_INFORMATION,
     MAP_OBJECT_TYPE_GET_MESSAGE,
     MAP_OBJECT_TYPE_PUT_MESSAGE_STATUS,
     MAP_OBJECT_TYPE_PUT_MESSAGE_UPDATE,
