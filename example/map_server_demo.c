@@ -176,18 +176,18 @@ static struct test_config_s
 
     
 
-{.nr =  0, .descr = "MAP/MSE/MMU/BV-03-I"                      , .type = &msg,  .obj_count = 0, .objects = { "", "EMAIL", "MMS"                                }, .fPutMsg = MAP_MSE_MMU_BV_02_I_PutMsg}, // WIP add OBEX NAME Header (Handle) PTS [50] Enter Test Step TS_MTC_OBEX_extract_handle_name ( , (lt)Not Defined Value(gt)  ) Test case error in 'MAP/MSE/MMU/BV-03-I'. The value 'headers_received' (-1) is not fully defined.
-{.nr = 10, .descr = "MAP/MSE/MMB/BV-09-I 10 11 13 14 42 46"    , .type = &msg,  .obj_count = 2, .objects = { "SMS_GSM","SMS_CDMA"                              }, },
-{.nr = 11, .descr = "MAP/MSE/MMB/BV-12-I"                      , .type = &msg,  .obj_count = 1, .objects = { "EMAIL", "SMS_GSM","SMS_CDMA"                     }, },
-{.nr = 12, .descr = "MAP/MSE/MMB/BV-15-I 18 20 22"             , .type = &msg,  .obj_count = 5, .objects = { "EMAIL","SMS_GSM","SMS_CDMA", "MMS", "IM"         }, },
-{.nr = 13, .descr = "MAP/MSE/MMB/BV-16-I 23"                   , .type = &msg,  .obj_count = 1, .objects = { "EMAIL","EMAIL"                                   }, },
-{.nr = 14, .descr = "MAP/MSE/MMB/BV-24-I <a><OK>"              , .type = &convo,.obj_count = 0, .objects = { "",""                                             }, },
-{.nr = 15, .descr = "MAP/MSE/MMB/BV-25-I <c><OK>"              , .type = &convo,.obj_count = 0, .objects = { "",""                                             }, },
-{.nr = 16, .descr = "MAP/MSE/MMB/BV-34-I 38 39 40 41 44"       , .type = &convo,.obj_count = 1, .objects = { "",""                                             }, },
-{.nr = 17, .descr = "MAP/MSE/MMB/BV-35-I 36 37"                , .type = &msg,  .obj_count = 1, .objects = { "EMAIL"                                           }, },
-{.nr = 18, .descr = "MAP/MSE/MMB/BV-47-I"                      , .type = &msg,  .obj_count = 1, .objects = { "IM","IM"                                         }, }, // PTS.EXE fails with "- MTC INCONC: no email message in message listing" but expects type="IM"
-{.nr = 19, .descr = "MAP/MSE/MMD/BV-02-I"                      , .type = &msg,  .obj_count = 1, .objects = { "EMAIL","MMS", "SMS_GSM","SMS_CDMA", "IM", "dummy"}, .fGetMsgListng = MAP_MSE_MMD_BV_02_I_getMsgListng, .fdiscon = MAP_MSE_MMD_BV_02_I_disc}, // PTS 8.5.4 Build 6 issue: sends a sequence of OBEX connect, GetMessageListing (expects 1 EMAIL, nothing else, no more messages), PUT MessageStatus (Delete Message), GetMessageListing (expects empty listing), OBEX discoonect, repeat (MMS, SMS_GSM, SMS_CDMA) - the last repeat for IM misses the disconnect and fails on the Get because the list is still empty
+{.nr =  0, .descr = "MAP/MSE/MMU/BV-03-I"                      , .type = &msg,    .obj_count = 0, .objects = { "", "EMAIL", "MMS"                                }, .fPutMsg = MAP_MSE_MMU_BV_02_I_PutMsg}, // WIP add OBEX NAME Header (Handle) PTS [50] Enter Test Step TS_MTC_OBEX_extract_handle_name ( , (lt)Not Defined Value(gt)  ) Test case error in 'MAP/MSE/MMU/BV-03-I'. The value 'headers_received' (-1) is not fully defined.
 {.nr =  1, .descr = "MAP/MSE/MMU/BV-02-I"                      , .type = &msgshrt,.obj_count = 0, .objects = { "", "EMAIL", "MMS" , "EMAIL", "EMAIL"             }, .fPutMsg = MAP_MSE_MMU_BV_02_I_PutMsg}, // WIP: PTS accepts the EMAIL but not the MMS. No idea why...
+{.nr = 10, .descr = "MAP/MSE/MMB/BV-09-I 10 11 13 14 42 46"    , .type = &msg,    .obj_count = 2, .objects = { "SMS_GSM","SMS_CDMA"                              }, },
+{.nr = 11, .descr = "MAP/MSE/MMB/BV-12-I"                      , .type = &msg,    .obj_count = 1, .objects = { "EMAIL", "SMS_GSM","SMS_CDMA"                     }, },
+{.nr = 12, .descr = "MAP/MSE/MMB/BV-15-I 18 20 22"             , .type = &msg,    .obj_count = 5, .objects = { "EMAIL","SMS_GSM","SMS_CDMA", "MMS", "IM"         }, },
+{.nr = 13, .descr = "MAP/MSE/MMB/BV-16-I 23"                   , .type = &msg,    .obj_count = 1, .objects = { "EMAIL","EMAIL"                                   }, },
+{.nr = 14, .descr = "MAP/MSE/MMB/BV-24-I <a><OK>"              , .type = &convo,  .obj_count = 0, .objects = { "",""                                             }, },
+{.nr = 15, .descr = "MAP/MSE/MMB/BV-25-I <c><OK>"              , .type = &convo,  .obj_count = 0, .objects = { "",""                                             }, },
+{.nr = 16, .descr = "MAP/MSE/MMB/BV-34-I 38 39 40 41 44"       , .type = &convo,  .obj_count = 1, .objects = { "",""                                             }, },
+{.nr = 17, .descr = "MAP/MSE/MMB/BV-35-I 36 37"                , .type = &msg,    .obj_count = 1, .objects = { "EMAIL"                                           }, },
+{.nr = 18, .descr = "MAP/MSE/MMB/BV-47-I"                      , .type = &msg,    .obj_count = 1, .objects = { "IM","IM"                                         }, }, // PTS.EXE fails with "- MTC INCONC: no email message in message listing" but expects type="IM"
+{.nr = 19, .descr = "MAP/MSE/MMD/BV-02-I"                      , .type = &msg,    .obj_count = 1, .objects = { "EMAIL","MMS", "SMS_GSM","SMS_CDMA", "IM", "dummy"}, .fGetMsgListng = MAP_MSE_MMD_BV_02_I_getMsgListng, .fdiscon = MAP_MSE_MMD_BV_02_I_disc}, // PTS 8.5.4 Build 6 issue: sends a sequence of OBEX connect, GetMessageListing (expects 1 EMAIL, nothing else, no more messages), PUT MessageStatus (Delete Message), GetMessageListing (expects empty listing), OBEX discoonect, repeat (MMS, SMS_GSM, SMS_CDMA) - the last repeat for IM misses the disconnect and fails on the Get because the list is still empty
 };
 
 struct test_config_s* config = &test_configs[0];
