@@ -851,10 +851,12 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
 
                         case MAP_SUBEVENT_GET_MAS_INSTANCE_INFORMATION:
                             uint8_t MASInstanceID;
+                            const char MAS_INSTANCE_INFORMATION[] = "BTstack MAS INSTANCE";
                             APP_READ_32(packet, &pos, &continuation);
                             APP_READ_16(packet, &pos, &dummy_map_cid);
                             APP_READ_08(packet, &pos, &MASInstanceID);
-                            map_access_server_send_get_put_response(map_cid, OBEX_RESP_SUCCESS, NULL, 0, 0, NULL);
+                            map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_OwnerUCI, "BTstack OwnerUCI");
+                            map_access_server_send_get_put_response(map_cid, OBEX_RESP_SUCCESS, NULL, 0, (uint16_t)sizeof(MAS_INSTANCE_INFORMATION), MAS_INSTANCE_INFORMATION);
                             break;
 
                         default:
