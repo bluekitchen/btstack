@@ -176,8 +176,8 @@ static struct test_config_s
 
     
 
-{.nr =  0, .descr = "MAP/MSE/MMU/BV-03-I"                      , .type = &msg,    .obj_count = 0, .objects = { "", "EMAIL", "MMS"                                }, .fPutMsg = MAP_MSE_MMU_BV_02_I_PutMsg}, // WIP add OBEX NAME Header (Handle) PTS [50] Enter Test Step TS_MTC_OBEX_extract_handle_name ( , (lt)Not Defined Value(gt)  ) Test case error in 'MAP/MSE/MMU/BV-03-I'. The value 'headers_received' (-1) is not fully defined.
-{.nr =  1, .descr = "MAP/MSE/MMU/BV-02-I"                      , .type = &msgshrt,.obj_count = 0, .objects = { "", "EMAIL", "MMS" , "EMAIL", "EMAIL"             }, .fPutMsg = MAP_MSE_MMU_BV_02_I_PutMsg}, // WIP: PTS accepts the EMAIL but not the MMS. No idea why...
+{.nr =  8, .descr = "MAP/MSE/MMU/BV-03-I"                      , .type = &msg,    .obj_count = 0, .objects = { "", "EMAIL", "MMS"                                }, .fPutMsg = MAP_MSE_MMU_BV_02_I_PutMsg}, // WIP add OBEX NAME Header (Handle) PTS [50] Enter Test Step TS_MTC_OBEX_extract_handle_name ( , (lt)Not Defined Value(gt)  ) Test case error in 'MAP/MSE/MMU/BV-03-I'. The value 'headers_received' (-1) is not fully defined. See Screenshots in ...\test\map_test\MAP_MSE_MMU_BV_03_I_2024_06_28_12_02_17\
+{.nr =  9, .descr = "MAP/MSE/MMU/BV-02-I"                      , .type = &msgshrt,.obj_count = 0, .objects = { "", "EMAIL", "MMS" , "EMAIL", "EMAIL"             }, .fPutMsg = MAP_MSE_MMU_BV_02_I_PutMsg}, // WIP: PTS accepts the EMAIL but not the MMS. No idea why...
 {.nr = 10, .descr = "MAP/MSE/MMB/BV-09-I 10 11 13 14 42 46"    , .type = &msg,    .obj_count = 2, .objects = { "SMS_GSM","SMS_CDMA"                              }, },
 {.nr = 11, .descr = "MAP/MSE/MMB/BV-12-I"                      , .type = &msg,    .obj_count = 1, .objects = { "EMAIL", "SMS_GSM","SMS_CDMA"                     }, },
 {.nr = 12, .descr = "MAP/MSE/MMB/BV-15-I 18 20 22"             , .type = &msg,    .obj_count = 5, .objects = { "EMAIL","SMS_GSM","SMS_CDMA", "MMS", "IM"         }, },
@@ -788,7 +788,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             break;
 
                         case MAP_SUBEVENT_PUT_MESSAGE:
-                            char obex_name_hdr_new_msg_handle[] = "A1A2A3A4";
+                            char* obex_name_hdr_new_msg_handle = NULL; // "A1A2A3A4";
                             APP_READ_16(packet, &pos, &dummy_map_cid);
                             MAP_PRINTF("[+] Put Message\n");
                             map_access_server_send_get_put_response(map_cid, OBEX_RESP_SUCCESS, obex_name_hdr_new_msg_handle, 0, 0, NULL);
