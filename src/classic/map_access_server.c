@@ -314,6 +314,10 @@ static map_object_type_t map_access_server_parse_object_type(map_access_server_t
         RUN_AND_LOG_ACTION(return MAP_OBJECT_TYPE_GET_CONVO_LISTING;)
     }
 
+    if (strcmp("x-bt/MASInstanceInformation", type_string) == 0) {
+        RUN_AND_LOG_ACTION(return MAP_OBJECT_TYPE_GET_MAS_INSTANCE_INFORMATION;)
+    }
+
     if (strcmp("x-bt/messageStatus", type_string) == 0) {
         RUN_AND_LOG_ACTION(return MAP_OBJECT_TYPE_PUT_MESSAGE_STATUS;)
     }
@@ -720,6 +724,7 @@ static void map_access_server_handle_get_put_request(map_access_server_t* map_ac
     case MAP_OBJECT_TYPE_GET_MESSAGE:
     case MAP_OBJECT_TYPE_GET_FOLDER_LISTING:
     case MAP_OBJECT_TYPE_GET_CONVO_LISTING:
+    case MAP_OBJECT_TYPE_GET_MAS_INSTANCE_INFORMATION:
     case MAP_OBJECT_TYPE_PUT_MESSAGE_STATUS:
     case MAP_OBJECT_TYPE_PUT_MESSAGE_UPDATE:
     case MAP_OBJECT_TYPE_PUT_MESSAGE:
@@ -769,6 +774,14 @@ static void map_access_server_handle_get_put_request(map_access_server_t* map_ac
         APP_WRITE_STR(event, &pos, sizeof(map_access_server->request.app_params.EndFilterPeriodEnd), (uint8_t*)map_access_server->request.app_params.EndFilterPeriodEnd);
         APP_WRITE_STR(event, &pos, sizeof(map_access_server->request.app_params.EndFilterPeriodEnd), (uint8_t*)map_access_server->request.app_params.FilterRecipient);
         APP_WRITE_STR(event, &pos, sizeof(map_access_server->request.app_params.ConversationID),(uint8_t*)map_access_server->request.app_params.ConversationID);
+        APP_WRITE_LEN(event, pos);
+        break;
+
+    case MAP_OBJECT_TYPE_GET_MAS_INSTANCE_INFORMATION:
+        APP_WRITE_08(event, &pos, MAP_SUBEVENT_GET_MAS_INSTANCE_INFORMATION);
+        APP_WRITE_32(event, &pos, map_access_server->request.continuation);
+        APP_WRITE_16(event, &pos, map_access_server->map_cid);
+        APP_WRITE_08(event, &pos, map_access_server->request.app_params.MASInstanceID)
         APP_WRITE_LEN(event, pos);
         break;
 
