@@ -269,7 +269,7 @@ static void map_access_server_handle_set_path_request(map_access_server_t* map_a
     else {
         switch (map_access_server->map_access_server_dir) {
         case MAS_FOLDER_ROOT:
-            if (strcmp("telecom", name) == 0) {
+            if (strcasecmp("telecom", name) == 0) {
                 map_access_server->map_access_server_dir = MAS_FOLDER_TELECOM;
             }
             else {
@@ -277,7 +277,7 @@ static void map_access_server_handle_set_path_request(map_access_server_t* map_a
             }
             break;
         case MAS_FOLDER_TELECOM:
-            if (strcmp("msg", name) == 0) {
+            if (strcasecmp("msg", name) == 0) {
                 map_access_server->map_access_server_dir = MAS_FOLDER_TELECOM_MSG;
             }
             else {
@@ -285,14 +285,17 @@ static void map_access_server_handle_set_path_request(map_access_server_t* map_a
             }
             break;
         case MAS_FOLDER_TELECOM_MSG:
-            if (strcmp("inbox", name) == 0) {
+            if (strcasecmp("inbox", name) == 0) {
                 map_access_server->map_access_server_dir = MAS_FOLDER_TELECOM_MSG_INBOX;
             }           
-            else if (strcmp("outbox", name) == 0) {
+            else if (strcasecmp("outbox", name) == 0) {
                 map_access_server->map_access_server_dir = MAS_FOLDER_TELECOM_MSG_OUTBOX;
             }
-            else if (strcmp("draft", name) == 0) {
+            else if (strcasecmp("draft", name) == 0) {
                 map_access_server->map_access_server_dir = MAS_FOLDER_TELECOM_MSG_DRAFT;
+            }
+            else if (strcasecmp("sent", name) == 0) {
+                map_access_server->map_access_server_dir = MAS_FOLDER_TELECOM_MSG_SENT;
             }
             else {
                 obex_result = OBEX_RESP_NOT_FOUND;
