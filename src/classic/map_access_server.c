@@ -504,7 +504,7 @@ static void map_access_server_handle_can_send_now(map_access_server_t* map_acces
     case MAP_SERVER_STATE_SEND_DISCONNECT_RESPONSE:
     {
         // cache data
-        uint16_t map_cid = map_access_server->map_cid;
+        //uint16_t map_cid = map_access_server->map_cid;
         uint16_t goep_cid = map_access_server->goep_cid;
 
         // reset MAP/OBEX connection state
@@ -719,7 +719,7 @@ static void map_access_server_handle_get_put_request(map_access_server_t* map_ac
 
     map_access_server->request.object_type = map_access_server_parse_object_type(map_access_server, map_access_server->request.type);
     mas_folder_t folder = map_access_server->map_access_server_dir;
-    uint16_t name_len = (uint16_t)strlen(map_access_server->request.name);
+    //uint16_t name_len = (uint16_t)strlen(map_access_server->request.name);
     switch (map_access_server->request.object_type) {
     case MAP_OBJECT_TYPE_INVALID:
         // unknown object type

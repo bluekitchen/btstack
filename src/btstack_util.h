@@ -165,10 +165,10 @@ static inline uint16_t LITTLE_ENDIAN_READ_32(const uint8_t* buffer, uint16_t pos
 
 
 
-#define APP_WRITE_08(buffer, ppos, value)  { uint8_t  tmp_val = value;  log_app_messaging("APP_WRITE_08: pos:%u %s:%u", (unsigned int)*ppos, #value, (unsigned int)value); app_write_08(buffer, ppos, value); } 
-#define APP_WRITE_16(buffer, ppos, value)  { uint16_t tmp_val = value;  log_app_messaging("APP_WRITE_16: pos:%u %s:%u", (unsigned int)*ppos, #value, (unsigned int)value); app_write_16(buffer, ppos, value); } 
-#define APP_WRITE_24(buffer, ppos, value)  { uint32_t tmp_val = value;  log_app_messaging("APP_WRITE_24: pos:%u %s:%u", (unsigned int)*ppos, #value, (unsigned int)value); app_write_24(buffer, ppos, value); } 
-#define APP_WRITE_32(buffer, ppos, value)  { uint32_t tmp_val = value;  log_app_messaging("APP_WRITE_32: pos:%u %s:%u", (unsigned int)*ppos, #value, (unsigned int)value); app_write_32(buffer, ppos, value); } 
+#define APP_WRITE_08(buffer, ppos, value)  { uint8_t  tmp_val = value;  log_app_messaging("APP_WRITE_08: pos:%u %s:%u", (unsigned int)*ppos, #value, (unsigned int)tmp_val); app_write_08(buffer, ppos, tmp_val); } 
+#define APP_WRITE_16(buffer, ppos, value)  { uint16_t tmp_val = value;  log_app_messaging("APP_WRITE_16: pos:%u %s:%u", (unsigned int)*ppos, #value, (unsigned int)tmp_val); app_write_16(buffer, ppos, tmp_val); } 
+#define APP_WRITE_24(buffer, ppos, value)  { uint32_t tmp_val = value;  log_app_messaging("APP_WRITE_24: pos:%u %s:%u", (unsigned int)*ppos, #value, (unsigned int)tmp_val); app_write_24(buffer, ppos, tmp_val); } 
+#define APP_WRITE_32(buffer, ppos, value)  { uint32_t tmp_val = value;  log_app_messaging("APP_WRITE_32: pos:%u %s:%u", (unsigned int)*ppos, #value, (unsigned int)tmp_val); app_write_32(buffer, ppos, tmp_val); } 
 #define APP_WRITE_LEN(buffer, pos)         { btstack_assert(pos <= 255);log_app_messaging("APP_WRITE_LEN: buf[1]=%u", pos); buffer[1] = (uint8_t)pos; }
 
 
@@ -177,7 +177,7 @@ static inline uint16_t LITTLE_ENDIAN_READ_32(const uint8_t* buffer, uint16_t pos
 #define APP_READ_24(buffer, ppos, pvalue)  { uint16_t tmp_pos = *ppos; app_read_24(buffer, ppos, pvalue); log_app_messaging("APP_READ_24: pos:%u %s:%u (0x%04X)" , tmp_pos, #pvalue, (unsigned int)*pvalue, (unsigned int)*pvalue); } 
 #define APP_READ_32(buffer, ppos, pvalue)  { uint16_t tmp_pos = *ppos; app_read_32(buffer, ppos, pvalue); log_app_messaging("APP_READ_32: pos:%u %s:%u (0x%04X)" , tmp_pos, #pvalue, (unsigned int)*pvalue, (unsigned int)*pvalue); } 
 
-#define APP_WRITE_STR(buffer, ppos, dest_size, str) { uint16_t tmp_pos = *ppos, bytes = app_write_str(buffer, ppos, dest_size, str); log_app_messaging("APP_WRITE_STR: pos:%u dest_size:%u bytes:%u str(%s):%s", (unsigned int)*ppos, (unsigned int)dest_size, bytes, #str, str); }
+#define APP_WRITE_STR(buffer, ppos, dest_size, str) { uint16_t tmp_pos = *ppos, bytes = app_write_str(buffer, ppos, dest_size, str); log_app_messaging("APP_WRITE_STR: pos:%u dest_size:%u bytes:%u str(%s):%s", (unsigned int)tmp_pos, (unsigned int)dest_size, bytes, #str, str); }
 #define APP_READ_STR(buffer, ppos, dest_size, str)  { uint16_t tmp_pos = *ppos, bytes = app_read_str(buffer, ppos, dest_size, str); log_app_messaging("APP_READ_STR: pos:%u dest_size:%u bytes:%u str(%s):%s", (unsigned int)tmp_pos, (unsigned int)dest_size, bytes, #str, str); }
 
 /** 
