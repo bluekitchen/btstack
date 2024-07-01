@@ -247,7 +247,7 @@ typedef uint8_t mas_UTCstmpoffstr_t[20];
 #define ENUM(value, enumname) enumname = value,
 #define DSCR(...)
 
-#define PARAM_REQUST(name, tag, type, opts, descr) enum MAP_APP_PARAM_SUB_ ## name { descr };
+#define PARAM_REQUST(name, tag, type, opts, descr) enum MAP_APP_PARAM_SUB_ ## name { MAP_APP_PARAM_SUB_ ## name ## min = 0, descr };
 #define PARAM_RESPON PARAM_REQUST
 #define PARAM_REQRSP PARAM_REQUST
 #define PARAM_UNUSED PARAM_REQUST
