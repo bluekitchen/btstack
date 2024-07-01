@@ -517,7 +517,8 @@ static void show_usage(void){
 }
 
 static void stdin_process(char c){
-    
+    uint8_t tc;
+
     switch (c){
         case 'n':
             // cycle throug all test cases
@@ -538,7 +539,7 @@ static void stdin_process(char c){
         case '7':
         case '8':
         case '9':
-            uint8_t tc = c - '0';
+            tc = c - '0';
             if (tc < ARRAYSIZE(test_configs))
             {
                 config = &test_configs[c - '0'];
@@ -765,7 +766,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             send_listing(true, 0, 1);
                             break;
 
-                        case MAP_SUBEVENT_PUT_MESSAGE_STATUS:
+                        case MAP_SUBEVENT_PUT_MESSAGE_STATUS: {
                             uint8_t StatusIndicator;
                             uint8_t StatusValue;
                             char request_name[32];
@@ -773,11 +774,11 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             APP_READ_08(packet, &pos, &StatusIndicator);
                             APP_READ_08(packet, &pos, &StatusValue);
                             APP_READ_STR(packet, &pos, sizeof(request_name), request_name);
-                            MAP_PRINTF("[+] Put MessageStatus ObjectName:%s StatusIndicator:0x%02X StatusValue:0x%02X\n", request_name, (unsigned int) StatusIndicator, (unsigned int)StatusValue);
+                            MAP_PRINTF("[+] Put MessageStatus ObjectName:%s StatusIndicator:0x%02X StatusValue:0x%02X\n", request_name, (unsigned int)StatusIndicator, (unsigned int)StatusValue);
                             map_access_server_send_get_put_response(map_cid, OBEX_RESP_SUCCESS, NULL, 0, 0, NULL);
                             handle_set_message_status(request_name, StatusIndicator, (unsigned int)StatusValue);
                             break;
-
+                        }
                         case MAP_SUBEVENT_PUT_MESSAGE_UPDATE:
                             APP_READ_16(packet, &pos, &dummy_map_cid);
                             MAP_PRINTF("[+] Put MessageUpdate\n");
@@ -787,7 +788,8 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             one_object_more_or_less = 1;
                             break;
 
-                        case MAP_SUBEVENT_PUT_MESSAGE:
+                        case MAP_SUBEVENT_PUT_MESSAGE: {
+                            char request_name[32];
                             char* obex_name_hdr_new_msg_handle = NULL; // "A1A2A3A4" // crrently not used
                             uint8_t Attachment;
                             uint8_t Charset;
@@ -799,13 +801,14 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             APP_READ_08(packet, &pos, &ModifyText);
                             APP_READ_STR(packet, &pos, sizeof(MessageHandle), MessageHandle);
                             APP_READ_STR(packet, &pos, sizeof(request_name), request_name);
-                            
+
                             MAP_PRINTF("[+] Put Message Charset:%u Attachment:%u MessageHandle:%s\n", Charset, Attachment, MessageHandle);
                             map_access_server_send_get_put_response(map_cid, OBEX_RESP_SUCCESS, obex_name_hdr_new_msg_handle, 0, 0, NULL);
 
                             if (config->fPutMsg != NULL)
                                 config->fPutMsg();
                             break;
+                        }
 
                         case MAP_SUBEVENT_PUT_NOTIFICATION_REGISTRATION:
                             APP_READ_16(packet, &pos, &dummy_map_cid);
@@ -817,7 +820,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             one_object_more_or_less = 1;
                             break;
 
-                        case MAP_SUBEVENT_PUT_OWNER_STATUS:
+                        case MAP_SUBEVENT_PUT_OWNER_STATUS: {
                             mas_UTCstmpoffstr_t LastActivity;
                             APP_READ_16(packet, &pos, &dummy_map_cid);
                             APP_READ_STR(packet, &pos, sizeof(LastActivity), (char*)LastActivity);
@@ -828,14 +831,15 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             // issuing a "update messages" request so we just simulate one
                             one_object_more_or_less = 1;
                             break;
+                        }
 
-                        case MAP_SUBEVENT_GET_CONVO_LISTING:
+                        case MAP_SUBEVENT_GET_CONVO_LISTING: {
                             mas_UTCstmpoffstr_t FilterPeriodBegin;
                             mas_UTCstmpoffstr_t EndFilterPeriodEnd;
                             mas_string_t FilterRecipient;
                             APP_READ_32(packet, &pos, &continuation);
                             APP_READ_16(packet, &pos, &dummy_map_cid);
-                            APP_READ_STR(packet, &pos, sizeof(FilterPeriodBegin),  (char*)FilterPeriodBegin);
+                            APP_READ_STR(packet, &pos, sizeof(FilterPeriodBegin), (char*)FilterPeriodBegin);
                             APP_READ_STR(packet, &pos, sizeof(EndFilterPeriodEnd), (char*)EndFilterPeriodEnd);
                             APP_READ_STR(packet, &pos, sizeof(EndFilterPeriodEnd), (char*)FilterRecipient);
                             APP_READ_STR(packet, &pos, sizeof(ConversationID), ConversationID);
@@ -848,8 +852,8 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             else
                                 send_get_listing_object(packet, 0, 0xffff, continuation);
                             break;
-
-                        case MAP_SUBEVENT_GET_MAS_INSTANCE_INFORMATION:
+                        }
+                        case MAP_SUBEVENT_GET_MAS_INSTANCE_INFORMATION: {
                             uint8_t MASInstanceID;
                             const char MAS_INSTANCE_INFORMATION[] = "BTstack MAS INSTANCE";
                             APP_READ_32(packet, &pos, &continuation);
@@ -858,7 +862,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_OwnerUCI, "BTstack OwnerUCI");
                             map_access_server_send_get_put_response(map_cid, OBEX_RESP_SUCCESS, NULL, 0, (uint16_t)sizeof(MAS_INSTANCE_INFORMATION), MAS_INSTANCE_INFORMATION);
                             break;
-
+                        }
                         default:
                             log_info("unknown map meta event %d\n", hci_event_map_meta_get_subevent_code(packet));
                             break;
