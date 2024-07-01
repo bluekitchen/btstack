@@ -196,8 +196,6 @@ static struct {
     {"draft",   MAS_FOLDER_TELECOM_MSG_DRAFT, "telecom/msg/draft.vcf"},
 };
 
-static const char map_access_server_default_service_name[] = "MAP";
-
 static const uint8_t map_uuid[] = { 0xbb, 0x58, 0x2b, 0x40, 0x42, 0xc, 0x11, 0xdb, 0xb0, 0xde, 0x8, 0x0, 0x20, 0xc, 0x9a, 0x66 };
 
 // Prototypes
