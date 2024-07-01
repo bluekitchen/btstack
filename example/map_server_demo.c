@@ -81,23 +81,23 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 
 static uint16_t map_cid;
 // singleton instance required to configure GOEP
-static uint8_t service_buffer[150];
+//static uint8_t service_buffer[150];
 static uint8_t upload_buffer[1000];
 
 
 #ifdef ENABLE_GOEP_L2CAP
-static uint8_t map_notification_client_ertm_buffer_mas_0[4000];
-static uint8_t map_notification_client_ertm_buffer_mas_1[4000];
-static l2cap_ertm_config_t map_notification_client_ertm_config = {
-        1,  // ertm mandatory
-        2,  // max transmit, some tests require > 1
-        2000,
-        12000,
-        512,    // l2cap ertm mtu
-        4,
-        4,
-        1,      // 16-bit FCS
-};
+//static uint8_t map_notification_client_ertm_buffer_mas_0[4000];
+//static uint8_t map_notification_client_ertm_buffer_mas_1[4000];
+//static l2cap_ertm_config_t map_notification_client_ertm_config = {
+//        1,  // ertm mandatory
+//        2,  // max transmit, some tests require > 1
+//        2000,
+//        12000,
+//        512,    // l2cap ertm mtu
+//        4,
+//        4,
+//        1,      // 16-bit FCS
+//};
 #endif
 
 
@@ -610,7 +610,7 @@ static void handle_set_message_status(char *msg_handle_str, uint8_t StatusIndica
     if (msg_handle_str == NULL)
         ERROR("msg_handle_str invalid");
 
-    if (strnlen_s(msg_handle_str,10) != 2)
+    if (strnlen(msg_handle_str,10) != 2)
         ERROR("String is not 2 digits long");
 
     if (msg_handle_str[1] < '0' || msg_handle_str[1] > '9')
@@ -874,7 +874,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                     break;
             }
 
-        case MAP_DATA_PACKET:
+        case MAP_DATA_PACKET: {
 #if 0 // set to 0 to only print data
             switch (map_da) {
             case HCI_EVENT_MAP_META:
@@ -893,14 +893,15 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                 break;
             }
 #endif
-            
+
             char buf[100]; int i;
-            for (i=0;i<size;i++){
-                snprintf(&buf[3*i], 4, "%02x ", packet[i]);
+            for (i = 0; i < size; i++) {
+                snprintf(&buf[3 * i], 4, "%02x ", packet[i]);
             }
             //buf[3 * i] = 0;
             MAP_PRINTF("MAP_DATA_PACKET (%u bytes): %s", size, buf);
             break;
+        }
         default:
             MAP_PRINTF ("unknown event of type %d\n", packet_type);
             break;
