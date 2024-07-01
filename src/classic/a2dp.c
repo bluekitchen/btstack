@@ -35,6 +35,8 @@
  *
  */
 
+#define BTSTACK_FILE__ "a2dp.c"
+
 #include <stdint.h>
 #include <string.h>
 #include "a2dp.h"
@@ -45,8 +47,6 @@
 #include "btstack_event.h"
 #include "bluetooth_sdp.h"
 #include "bluetooth_psm.h"
-
-#define BTSTACK_FILE__ "a2dp.c"
 
 #include <stddef.h>
 #include "bluetooth.h"
