@@ -116,14 +116,14 @@ void little_endian_store_32(uint8_t * buffer, uint16_t position, uint32_t value)
 
 // we \0 terminate strings in APP messages
 uint16_t app_write_str(uint8_t* buffer, uint16_t *pos, uint16_t dest_size, char * str) {
-    uint16_t bytes = btstack_strcpy(&buffer[*pos], dest_size, str);
+    uint16_t bytes = btstack_strcpy((char *) &buffer[*pos], dest_size, str);
     *pos += bytes; // including terminating \0
     return bytes;
 }
 
 // we \0 terminate strings in APP messages
 uint16_t app_read_str(uint8_t* buffer, uint16_t* pos, uint16_t dest_size, char* str) {
-    uint16_t bytes = btstack_strcpy(str, dest_size , &buffer[*pos]);
+    uint16_t bytes = btstack_strcpy(str, dest_size , (char *) &buffer[*pos]);
     *pos += bytes; // including terminating \0
     return bytes;
 }
