@@ -942,7 +942,7 @@ int btstack_main(int argc, const char * argv[]){
                                       | MAP_SUPPORTED_MESSAGE_TYPE_SMS_CDMA
                                       | MAP_SUPPORTED_MESSAGE_TYPE_MMS
                                       | MAP_SUPPORTED_MESSAGE_TYPE_IM;
-    uint32_t supported_features = 0x1F;
+
     memset(map_message_access_service_buffer, 0, sizeof(map_message_access_service_buffer));
     map_util_create_access_service_sdp_record(map_message_access_service_buffer,
                                                     sdp_create_service_record_handle(),
@@ -950,7 +950,7 @@ int btstack_main(int argc, const char * argv[]){
                                                     MAS_SERVER_RFCOMM_CHANNEL_NR,
                                                     MAS_SERVER_GOEP_PSM,
                                                     supported_message_types,
-                                                    supported_features,
+                                                    MAP_SUPPORTED_FEATURES_ALL,
                                                     name);
     sdp_register_service(map_message_access_service_buffer);
     map_access_server_init(mas_packet_handler, MAS_SERVER_RFCOMM_CHANNEL_NR, MAS_SERVER_GOEP_PSM, 0xffff);
