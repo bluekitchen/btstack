@@ -15,6 +15,7 @@ elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "Intel")
 	# using Intel C++
 elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "MSVC")
 	# using Visual Studio C++
+	SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /w34189 /w15038 /WX")
 endif()
 
 
