@@ -425,11 +425,6 @@ static uint16_t map_access_server_application_params_add_uint128hex(uint8_t* app
     return pos;
 }
 
-static uint16_t map_access_server_application_params_add_folder_version(map_access_server_t* map_access_server, uint8_t *folder_version){
-    //return pbap_server_application_params_add_uint16(map_access_server->, PBAP_APPLICATION_PARAMETER_PHONEBOOK_SIZE, phonebook_size);
-}
-
-
 static void map_access_server_default_headers(map_access_server_t* map_access_server) {
     (void)memset(&map_access_server->request, 0, sizeof(map_access_server->request));
     map_access_server->request.app_params.MaxListCount = 0xffffU;
