@@ -217,7 +217,7 @@ static inline void store_arr(uint8_t* buffer, uint16_t position, uint8_t* arr, s
 #define BT_APP_PARAM_READ_16( buffer, ppos, pvalue, size)	{ uint16_t tpos = *ppos; *pvalue = big_endian_read_16(buffer, tpos);           log_app_messaging("BT_APP_PARAM_READ_16: pos:%u %s:%u (0x%04X)"          ,tpos, #pvalue, (unsigned int)*pvalue, (unsigned int)*pvalue); *ppos += 2; }
 #define BT_APP_PARAM_READ_24( buffer, ppos, pvalue, size)	{ uint16_t tpos = *ppos; *pvalue = big_endian_read_24(buffer, tpos);           log_app_messaging("BT_APP_PARAM_READ_24: pos:%u %s:%u (0x%04X)"          ,tpos, #pvalue, (unsigned int)*pvalue, (unsigned int)*pvalue); *ppos += 3; }
 #define BT_APP_PARAM_READ_32( buffer, ppos, pvalue, size)	{ uint16_t tpos = *ppos; *pvalue = big_endian_read_32(buffer, tpos);           log_app_messaging("BT_APP_PARAM_READ_32: pos:%u %s:%u (0x%04X)"          ,tpos, #pvalue, (unsigned int)*pvalue, (unsigned int)*pvalue); *ppos += 4; }
-#define BT_APP_PARAM_READ_ARR(buffer, ppos, pvalue, size)   { uint16_t tpos = *ppos;          read_arr(buffer, *ppos, (char*)pvalue, size);log_app_messaging("BT_APP_PARAM_READ_ARR: pos:%u %s:<%s>"                ,tpos, #pvalue, pvalue);                                       *ppos += size; } 
+#define BT_APP_PARAM_READ_ARR(buffer, ppos, pvalue, size)   { uint16_t tpos = *ppos;          read_arr(buffer, *ppos, (uint8_t*)pvalue, size);log_app_messaging("BT_APP_PARAM_READ_ARR: pos:%u %s:<%s>"                ,tpos, #pvalue, pvalue);                                       *ppos += size; } 
 
 /**
  * @brief Swap bytes in 16 bit integer
