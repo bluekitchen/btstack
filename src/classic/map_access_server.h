@@ -263,16 +263,16 @@ typedef uint8_t mas_UTCstmpoffstr_t[20];
 
 
 // MAP Supported Features
-#define MAP_SUPPORTED_FEATURES_NOTIFICATION_REGISTRATION                    (1 << 0) // Notification Registration                 
-#define MAP_SUPPORTED_FEATURES_NOTIFICATION                                 (1 << 1) // Notification                              
-#define MAP_SUPPORTED_FEATURES_BROWSING                                     (1 << 2) // Browsing                                  
-#define MAP_SUPPORTED_FEATURES_UPLOADING                                    (1 << 3) // Uploading                                 
-#define MAP_SUPPORTED_FEATURES_DELETE                                       (1 << 4) // Delete                                    
-#define MAP_SUPPORTED_FEATURES_INSTANCE_INFORMATION                         (1 << 5) // Instance Information                      
-#define MAP_SUPPORTED_FEATURES_EXTENDED_EVENT_REPORT_1_1                    (1 << 6) // Extended Event Report 1.1                 
-#define MAP_SUPPORTED_FEATURES_EVENT_REPORT_VERSION_1_2                     (1 << 7) // Event Report Version 1.2                  
-#define MAP_SUPPORTED_FEATURES_MESSAGE_FORMAT_VERSION_1_1                   (1 << 8) // Message Format Version 1.1                
-#define MAP_SUPPORTED_FEATURES_MESSAGES_LISTING_FORMAT_VERSION_1_1          (1 << 9) // Messages-Listing Format Version 1.1       
+#define MAP_SUPPORTED_FEATURES_NOTIFICATION_REGISTRATION                    (1 <<  0) // Notification Registration                 
+#define MAP_SUPPORTED_FEATURES_NOTIFICATION                                 (1 <<  1) // Notification                              
+#define MAP_SUPPORTED_FEATURES_BROWSING                                     (1 <<  2) // Browsing                                  
+#define MAP_SUPPORTED_FEATURES_UPLOADING                                    (1 <<  3) // Uploading                                 
+#define MAP_SUPPORTED_FEATURES_DELETE                                       (1 <<  4) // Delete                                    
+#define MAP_SUPPORTED_FEATURES_INSTANCE_INFORMATION                         (1 <<  5) // Instance Information                      
+#define MAP_SUPPORTED_FEATURES_EXTENDED_EVENT_REPORT_1_1                    (1 <<  6) // Extended Event Report 1.1                 
+#define MAP_SUPPORTED_FEATURES_EVENT_REPORT_VERSION_1_2                     (1 <<  7) // Event Report Version 1.2                  
+#define MAP_SUPPORTED_FEATURES_MESSAGE_FORMAT_VERSION_1_1                   (1 <<  8) // Message Format Version 1.1                
+#define MAP_SUPPORTED_FEATURES_MESSAGES_LISTING_FORMAT_VERSION_1_1          (1 <<  9) // Messages-Listing Format Version 1.1       
 #define MAP_SUPPORTED_FEATURES_PERSISTENT_MESSAGE_HANDLES                   (1 << 10) // Persistent Message Handles                
 #define MAP_SUPPORTED_FEATURES_DATABASE_IDENTIFIER                          (1 << 11) // Database Identifier                       
 #define MAP_SUPPORTED_FEATURES_FOLDER_VERSION_COUNTER                       (1 << 12) // Folder Version Counter                    
@@ -282,16 +282,18 @@ typedef uint8_t mas_UTCstmpoffstr_t[20];
 #define MAP_SUPPORTED_FEATURES_PBAP_CONTACT_CROSS_REFERENCE                 (1 << 16) // PBAP Contact Cross Reference              
 #define MAP_SUPPORTED_FEATURES_NOTIFICATION_FILTERING                       (1 << 17) // Notification Filtering                    
 #define MAP_SUPPORTED_FEATURES_UTC_OFFSET_TIMESTAMP_FORMAT                  (1 << 18) // UTC Offset Timestamp Format               
-#define MAP_SUPPORTED_FEATURES_RESERVED                                     (1 << 19) // Reserved                                  
+#define MAP_SUPPORTED_FEATURES_MAPSUPPORTEDFEATURES_IN_CONNECT_REQUEST      (1 << 19) // Reserved                                  
 #define MAP_SUPPORTED_FEATURES_CONVERSATION_LISTING                         (1 << 20) // Conversation listing                      
-#define MAP_SUPPORTED_FEATURES_OWNER_STATUS                                 (1 << 21) // Owner status                              
+#define MAP_SUPPORTED_FEATURES_OWNER_STATUS                                 (1 << 21) // Owner status
+#define MAP_SUPPORTED_FEATURES_MESSAGE_FORWARDING                           (1 << 22) // Message Forwarding
+#define MAP_SUPPORTED_FEATURES_ALL                                          0x7FFFFF  // we support all features
 
 // SupportedMessageTypes                                                    
 #define MAP_SUPPORTED_MESSAGE_TYPE_EMAIL                                    (1 << 0) //  EMAIL   
 #define MAP_SUPPORTED_MESSAGE_TYPE_SMS_GSM                                  (1 << 1) //  SMS_GSM 
 #define MAP_SUPPORTED_MESSAGE_TYPE_SMS_CDMA                                 (1 << 2) //  SMS_CDMA
 #define MAP_SUPPORTED_MESSAGE_TYPE_MMS                                      (1 << 3) //  MMS     
-#define MAP_SUPPORTED_MESSAGE_TYPE_IM                                       (1 << 4) //  IM      
+#define MAP_SUPPORTED_MESSAGE_TYPE_IM                                       (1 << 4) //  IM
 
 // MAP vCardSelectorOperator
 #define MAP_MSG_SELECTOR_OPERATOR_OR          0
