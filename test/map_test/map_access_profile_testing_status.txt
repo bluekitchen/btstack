@@ -41,3 +41,4 @@ MAP/MSE/MMI/BV-02-I: PASS (2024-06-28) Verify that the MCE can return user-reada
 MAP/MSE/GOEP/BC/BV-01-I: PASS (2024-07-01) Verify that the IUT is able to accept and process an incoming PUT request from a legacy device.
 MAP/MSE/GOEP/BC/BV-03-I: PASS (2024-07-01) Verify that the IUT is able to accept and process an incoming GET request from a legacy device.
 MAP/MSE/GOEP/ROB/BV-02-C: PASS (2024-07-01) Verify that an IUT, that does not support Reliable Sessions, is able to reject an incoming request to create a Reliable Session.
+MAP/MSE/GOEP/ROB/BV-01-C: PASS (2024-07-01) Verify that an IUT, that does not support Action Commands, is able to reject an incoming ACTION command.
