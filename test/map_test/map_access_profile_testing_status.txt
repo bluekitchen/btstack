@@ -50,5 +50,7 @@ MAP/MSE/GOEP/SRM/BV-04-C: PASS (2024-07-01) Verify that the Server issues a PUT 
 MAP/MSE/GOEP/SRM/BV-08-C: PASS (2024-07-01) Verify that the Server issues a GET response with a valid SRM header value, i.e. 0x01, wanting SRM to be enabled for the GET transaction.
 
 
-Tests, which require the MAP server to connect back to PTS:
-MAP/MSE/GOEP/CON/BV-01-C
+Open Test Cases:
+MAP/MSE/GOEP/CON/BV-01-C requires MAP server to connect back to PTS
+MAP/MSE/GOEP/SRMP/BI-02-C "The GET operation ended before the test case purpose could be verified.  Please increase the size of the file being requested by the GET operationr ((gt) 50 KB should be sufficient)."
+MAP/MSE/GOEP/SRMP/BV-02-C Verify that the Server keeps waiting for GET requests until the remote device stops sending SRMP wait headers.- MTC INCONC: Unexepected GET_RSP for this testcase.
