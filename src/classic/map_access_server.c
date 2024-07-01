@@ -87,7 +87,6 @@ typedef enum {
     MAP_SERVER_STATE_W4_GET_REQUEST,
     MAP_SERVER_STATE_SEND_INTERNAL_RESPONSE,
     MAP_SERVER_STATE_SEND_USER_RESPONSE,
-    MAP_SERVER_STATE_SEND_PHONEBOOK_SIZE,
     MAP_SERVER_STATE_SEND_DISCONNECT_RESPONSE,
     MAP_SERVER_STATE_ABOUT_TO_SEND,
 } map_access_server_state_t;
@@ -359,16 +358,16 @@ static void map_access_server_handle_srm_headers(map_access_server_t* map_access
     case SRM_DISABLED:
         if (obex_srm->srm_value == OBEX_SRM_ENABLE) {
             if (obex_srm->srmp_value == OBEX_SRMP_WAIT) {
-                map_access_server->srm_state = SRM_SEND_CONFIRM_WAIT;
+                RUN_AND_LOG_ACTION(map_access_server->srm_state = SRM_SEND_CONFIRM_WAIT;)
             }
             else {
-                map_access_server->srm_state = SRM_SEND_CONFIRM;
+                RUN_AND_LOG_ACTION(map_access_server->srm_state = SRM_SEND_CONFIRM;)
             }
         }
         break;
     case SRM_ENABLED_WAIT:
         if (obex_srm->srmp_value == OBEX_SRMP_NEXT) {
-            map_access_server->srm_state = SRM_ENABLED;
+            RUN_AND_LOG_ACTION(map_access_server->srm_state = SRM_ENABLED;)
         }
         break;
     default:
@@ -380,11 +379,11 @@ static void map_access_server_add_srm_headers(map_access_server_t* map_access_se
     switch (map_access_server->srm_state) {
     case SRM_SEND_CONFIRM:
         goep_server_header_add_srm_enable(map_access_server->goep_cid);
-        map_access_server->srm_state = SRM_ENABLED;
+        RUN_AND_LOG_ACTION(map_access_server->srm_state = SRM_ENABLED;)
         break;
     case SRM_SEND_CONFIRM_WAIT:
         goep_server_header_add_srm_enable(map_access_server->goep_cid);
-        map_access_server->srm_state = SRM_ENABLED_WAIT;
+        RUN_AND_LOG_ACTION(map_access_server->srm_state = SRM_ENABLED_WAIT;)
         break;
     default:
         break;
@@ -709,6 +708,15 @@ static void map_access_server_parser_callback_get(void* user_data, uint8_t heade
 // sends MAP_SUBEVENT_xyz messages to the application using serialized stack-internal app-parameters
 static void map_access_server_handle_get_put_request(map_access_server_t* map_access_server) {
     map_access_server_handle_srm_headers(map_access_server);
+
+    if (map_access_server->srm_state == SRM_SEND_CONFIRM_WAIT) {
+        map_access_server->state = MAP_SERVER_STATE_SEND_INTERNAL_RESPONSE;
+        //map_access_server->response.code = OBEX_RESP_CONTINUE;
+        map_access_server->obex_srm.srm_value = OBEX_SRM_ENABLE;
+        goep_server_request_can_send_now(map_access_server->goep_cid);
+        return;
+    }
+
     map_access_server->request.object_type = map_access_server_parse_object_type(map_access_server, map_access_server->request.type);
     mas_folder_t folder = map_access_server->map_access_server_dir;
     uint16_t name_len = (uint16_t)strlen(map_access_server->request.name);
@@ -1021,7 +1029,7 @@ static bool map_access_server_valid_header_for_request(map_access_server_t* map_
     case MAP_OBJECT_TYPE_GET_MSG_LISTING:
     case MAP_OBJECT_TYPE_GET_CONVO_LISTING:
     case MAP_OBJECT_TYPE_GET_MAS_INSTANCE_INFORMATION:
-        RUN_AND_LOG_ACTION(return true;)
+        return true;
     default:
         RUN_AND_LOG_ACTION(return false;)
     }
@@ -1048,7 +1056,7 @@ int map_access_server_set_response_app_param(uint16_t map_cid, enum MAP_APP_PARA
     case MAP_APP_PARAM_ ## name: \
         len = (MAP_APP_PARAMS_OPTIONS_ ## name & OPT_STR0) ? strlen(param):sizeof(type); \
         /* Type: 1 Byte  */BT_APP_PARAM_WRITE_08(mas->response.header_data, &mas->response.header_pos, MAP_APP_PARAM_ ## name, 1); \
-        /* Size: 1 Byte  */BT_APP_PARAM_WRITE_08(mas->response.header_data, &mas->response.header_pos, len, 1); \
+        /* Size: 1 Byte  */BT_APP_PARAM_WRITE_08(mas->response.header_data, &mas->response.header_pos, (uint8_t)len, 1); \
         /* Data: N Bytes */app_param_write_ ## type (mas->response.header_data, &mas->response.header_pos, *((type*)param), (uint16_t) len); \
         return ERROR_CODE_SUCCESS;
 
