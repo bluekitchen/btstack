@@ -799,7 +799,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             APP_READ_08(packet, &pos, &Charset);
                             APP_READ_08(packet, &pos, &Attachment);
                             APP_READ_08(packet, &pos, &ModifyText);
-                            APP_READ_STR(packet, &pos, sizeof(MessageHandle), MessageHandle);
+                            APP_READ_STR(packet, &pos, sizeof(MessageHandle), (char *) MessageHandle);
                             APP_READ_STR(packet, &pos, sizeof(request_name), request_name);
 
                             MAP_PRINTF("[+] Put Message Charset:%u Attachment:%u MessageHandle:%s\n", Charset, Attachment, MessageHandle);
@@ -842,7 +842,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             APP_READ_STR(packet, &pos, sizeof(FilterPeriodBegin), (char*)FilterPeriodBegin);
                             APP_READ_STR(packet, &pos, sizeof(EndFilterPeriodEnd), (char*)EndFilterPeriodEnd);
                             APP_READ_STR(packet, &pos, sizeof(EndFilterPeriodEnd), (char*)FilterRecipient);
-                            APP_READ_STR(packet, &pos, sizeof(ConversationID), ConversationID);
+                            APP_READ_STR(packet, &pos, sizeof(ConversationID), (char *) ConversationID);
                             map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_DatabaseIdentifier, DatabaseIdentifier);
                             map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_ConversationListingVersionCounter, ConversationListingVersionCounter);
                             map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_ListingSize, &ListingSize);
@@ -860,7 +860,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             APP_READ_16(packet, &pos, &dummy_map_cid);
                             APP_READ_08(packet, &pos, &MASInstanceID);
                             map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_OwnerUCI, "BTstack OwnerUCI");
-                            map_access_server_send_get_put_response(map_cid, OBEX_RESP_SUCCESS, NULL, 0, (uint16_t)sizeof(MAS_INSTANCE_INFORMATION), MAS_INSTANCE_INFORMATION);
+                            map_access_server_send_get_put_response(map_cid, OBEX_RESP_SUCCESS, NULL, 0, (uint16_t)sizeof(MAS_INSTANCE_INFORMATION), (uint8_t *) MAS_INSTANCE_INFORMATION);
                             break;
                         }
                         default:
