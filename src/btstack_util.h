@@ -87,7 +87,7 @@ extern "C" {
  */
 #define DEVICE_NAME_LEN 248
 typedef uint8_t device_name_t[DEVICE_NAME_LEN+1];
-typedef enum { read = 0, write = 1 } subevent_value_read_write_t;
+//typedef enum { read = 0, write = 1 } subevent_value_read_write_t;
 
 /* API_START */
 
