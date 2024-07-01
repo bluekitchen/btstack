@@ -42,3 +42,4 @@ MAP/MSE/GOEP/BC/BV-01-I: PASS (2024-07-01) Verify that the IUT is able to accept
 MAP/MSE/GOEP/BC/BV-03-I: PASS (2024-07-01) Verify that the IUT is able to accept and process an incoming GET request from a legacy device.
 MAP/MSE/GOEP/ROB/BV-02-C: PASS (2024-07-01) Verify that an IUT, that does not support Reliable Sessions, is able to reject an incoming request to create a Reliable Session.
 MAP/MSE/GOEP/ROB/BV-01-C: PASS (2024-07-01) Verify that an IUT, that does not support Action Commands, is able to reject an incoming ACTION command.MAP/MSE/GOEP/ROB/BV-01-C: PASS (2024-07-01) Verify that an IUT, that does not support Action Commands, is able to reject an incoming ACTION command.
+MAP/MSE/GOEP/CON/BV-02-C: PASS (2024-07-01) Verify that the GoepL2CapPsm attribute is present in IUT's SDP record.
