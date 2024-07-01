@@ -46,7 +46,6 @@
 #include "btstack_util.h"
 
 #ifdef ENABLE_LOG_OBEX
-    #define log_app_messaging log_debug
     #define RETURN_OBEX_STATE(state) { log_debug("RETURN_OBEX_STATE <%s>(%d)", #state, state); return state; } 
 #else
     #define log_app_messaging(...)

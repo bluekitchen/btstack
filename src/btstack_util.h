@@ -59,8 +59,10 @@ extern "C" {
 
 #ifdef ENABLE_LOG_APP_MESSAGING
 	#define log_app_messaging log_debug
+	#define LOG_APP_CODE(...) __VA_ARGS__
 #else
 	#define log_app_messaging(...)
+#define LOG_APP_CODE(...)
 #endif
 	
 // hack: compilation with the android ndk causes an error as there's a reverse_64 macro
@@ -172,13 +174,13 @@ static inline uint16_t LITTLE_ENDIAN_READ_32(const uint8_t* buffer, uint16_t pos
 #define APP_WRITE_LEN(buffer, pos)         { btstack_assert(pos <= 255);log_app_messaging("APP_WRITE_LEN: buf[1]=%u", pos); buffer[1] = (uint8_t)pos; }
 
 
-#define APP_READ_08(buffer, ppos, pvalue)  { uint16_t tmp_pos = *ppos; app_read_08(buffer, ppos, pvalue); log_app_messaging("APP_READ_08: pos:%u %s:%u (0x%04X)" , tmp_pos, #pvalue, (unsigned int)*pvalue, (unsigned int)*pvalue); } 
-#define APP_READ_16(buffer, ppos, pvalue)  { uint16_t tmp_pos = *ppos; app_read_16(buffer, ppos, pvalue); log_app_messaging("APP_READ_16: pos:%u %s:%u (0x%04X)" , tmp_pos, #pvalue, (unsigned int)*pvalue, (unsigned int)*pvalue); } 
-#define APP_READ_24(buffer, ppos, pvalue)  { uint16_t tmp_pos = *ppos; app_read_24(buffer, ppos, pvalue); log_app_messaging("APP_READ_24: pos:%u %s:%u (0x%04X)" , tmp_pos, #pvalue, (unsigned int)*pvalue, (unsigned int)*pvalue); } 
-#define APP_READ_32(buffer, ppos, pvalue)  { uint16_t tmp_pos = *ppos; app_read_32(buffer, ppos, pvalue); log_app_messaging("APP_READ_32: pos:%u %s:%u (0x%04X)" , tmp_pos, #pvalue, (unsigned int)*pvalue, (unsigned int)*pvalue); } 
+#define APP_READ_08(buffer, ppos, pvalue)  { LOG_APP_CODE(uint16_t tmp_pos = *ppos;) app_read_08(buffer, ppos, pvalue); log_app_messaging("APP_READ_08: pos:%u %s:%u (0x%04X)" , tmp_pos, #pvalue, (unsigned int)*pvalue, (unsigned int)*pvalue); } 
+#define APP_READ_16(buffer, ppos, pvalue)  { LOG_APP_CODE(uint16_t tmp_pos = *ppos;) app_read_16(buffer, ppos, pvalue); log_app_messaging("APP_READ_16: pos:%u %s:%u (0x%04X)" , tmp_pos, #pvalue, (unsigned int)*pvalue, (unsigned int)*pvalue); } 
+#define APP_READ_24(buffer, ppos, pvalue)  { LOG_APP_CODE(uint16_t tmp_pos = *ppos;) app_read_24(buffer, ppos, pvalue); log_app_messaging("APP_READ_24: pos:%u %s:%u (0x%04X)" , tmp_pos, #pvalue, (unsigned int)*pvalue, (unsigned int)*pvalue); } 
+#define APP_READ_32(buffer, ppos, pvalue)  { LOG_APP_CODE(uint16_t tmp_pos = *ppos;) app_read_32(buffer, ppos, pvalue); log_app_messaging("APP_READ_32: pos:%u %s:%u (0x%04X)" , tmp_pos, #pvalue, (unsigned int)*pvalue, (unsigned int)*pvalue); } 
 
-#define APP_WRITE_STR(buffer, ppos, dest_size, str) { uint16_t tmp_pos = *ppos, bytes = app_write_str(buffer, ppos, dest_size, str); log_app_messaging("APP_WRITE_STR: pos:%u dest_size:%u bytes:%u str(%s):%s", (unsigned int)tmp_pos, (unsigned int)dest_size, bytes, #str, str); }
-#define APP_READ_STR(buffer, ppos, dest_size, str)  { uint16_t tmp_pos = *ppos, bytes = app_read_str(buffer, ppos, dest_size, str); log_app_messaging("APP_READ_STR: pos:%u dest_size:%u bytes:%u str(%s):%s", (unsigned int)tmp_pos, (unsigned int)dest_size, bytes, #str, str); }
+#define APP_WRITE_STR(buffer, ppos, dest_size, str) { LOG_APP_CODE(uint16_t tmp_pos = *ppos, bytes =) app_write_str(buffer, ppos, dest_size, str); log_app_messaging("APP_WRITE_STR: pos:%u dest_size:%u bytes:%u str(%s):%s", (unsigned int)tmp_pos, (unsigned int)dest_size, bytes, #str, str); }
+#define APP_READ_STR(buffer, ppos, dest_size, str)  { LOG_APP_CODE(uint16_t tmp_pos = *ppos, bytes =) app_read_str(buffer, ppos, dest_size, str); log_app_messaging("APP_READ_STR: pos:%u dest_size:%u bytes:%u str(%s):%s", (unsigned int)tmp_pos, (unsigned int)dest_size, bytes, #str, str); }
 
 /** 
  * @brief Read 16/24/32 bit big endian value from buffer
@@ -211,13 +213,13 @@ static inline void store_arr(uint8_t* buffer, uint16_t position, uint8_t* arr, s
 #define BT_APP_PARAM_WRITE_16( buffer, ppos, value,  size)	{ big_endian_store_16(buffer, (uint16_t)*ppos, value); log_app_messaging("BT_APP_PARAM_STORE_16: pos:%u %s:%u (0x%04X)"         ,*ppos, #value, (unsigned int)value, (unsigned int)value);      *ppos += 2; }
 #define BT_APP_PARAM_WRITE_24( buffer, ppos, value,  size)	{ big_endian_store_24(buffer, (uint16_t)*ppos, value); log_app_messaging("BT_APP_PARAM_STORE_24: pos:%u %s:%u (0x%04X)"         ,*ppos, #value, (unsigned int)value, (unsigned int)value);      *ppos += 3; }
 #define BT_APP_PARAM_WRITE_32( buffer, ppos, value,  size)	{ big_endian_store_32(buffer, (uint16_t)*ppos, value); log_app_messaging("BT_APP_PARAM_STORE_32: pos:%u %s:%u (0x%04X)"         ,*ppos, #value, (unsigned int)value, (unsigned int)value);      *ppos += 4; }
-#define BT_APP_PARAM_WRITE_ARR(buffer, ppos, pvalue, size) { store_arr(buffer, *ppos, pvalue, size);               log_app_messaging("BT_APP_PARAM_STORE_ARR: pos:%u size:%u %s:<%s>"        , *ppos, size, #pvalue, pvalue, pvalue);                                *ppos += size; }
+#define BT_APP_PARAM_WRITE_ARR(buffer, ppos, pvalue, size)  { store_arr(buffer, *ppos, pvalue, size);              log_app_messaging("BT_APP_PARAM_STORE_ARR: pos:%u size:%u %s:<%s>"        , *ppos, size, #pvalue, pvalue, pvalue);                                *ppos += size; }
 
-#define BT_APP_PARAM_READ_08( buffer, ppos, pvalue, size)	{ uint16_t tpos = *ppos; *pvalue = big_endian_read_08(buffer, tpos);           log_app_messaging("BT_APP_PARAM_READ_08: pos:%u %s:%u (0x%04X)"          ,tpos, #pvalue, (unsigned int)*pvalue, (unsigned int)*pvalue); *ppos += 1; }
-#define BT_APP_PARAM_READ_16( buffer, ppos, pvalue, size)	{ uint16_t tpos = *ppos; *pvalue = big_endian_read_16(buffer, tpos);           log_app_messaging("BT_APP_PARAM_READ_16: pos:%u %s:%u (0x%04X)"          ,tpos, #pvalue, (unsigned int)*pvalue, (unsigned int)*pvalue); *ppos += 2; }
-#define BT_APP_PARAM_READ_24( buffer, ppos, pvalue, size)	{ uint16_t tpos = *ppos; *pvalue = big_endian_read_24(buffer, tpos);           log_app_messaging("BT_APP_PARAM_READ_24: pos:%u %s:%u (0x%04X)"          ,tpos, #pvalue, (unsigned int)*pvalue, (unsigned int)*pvalue); *ppos += 3; }
-#define BT_APP_PARAM_READ_32( buffer, ppos, pvalue, size)	{ uint16_t tpos = *ppos; *pvalue = big_endian_read_32(buffer, tpos);           log_app_messaging("BT_APP_PARAM_READ_32: pos:%u %s:%u (0x%04X)"          ,tpos, #pvalue, (unsigned int)*pvalue, (unsigned int)*pvalue); *ppos += 4; }
-#define BT_APP_PARAM_READ_ARR(buffer, ppos, pvalue, size)   { uint16_t tpos = *ppos;          read_arr(buffer, *ppos, (uint8_t*)pvalue, size);log_app_messaging("BT_APP_PARAM_READ_ARR: pos:%u %s:<%s>"                ,tpos, #pvalue, pvalue);                                       *ppos += size; } 
+#define BT_APP_PARAM_READ_08( buffer, ppos, pvalue, size)	{ uint16_t tpos = *ppos; *pvalue = big_endian_read_08(buffer, tpos);              log_app_messaging("BT_APP_PARAM_READ_08: pos:%u %s:%u (0x%04X)"          ,tpos, #pvalue, (unsigned int)*pvalue, (unsigned int)*pvalue); *ppos += 1; }
+#define BT_APP_PARAM_READ_16( buffer, ppos, pvalue, size)	{ uint16_t tpos = *ppos; *pvalue = big_endian_read_16(buffer, tpos);              log_app_messaging("BT_APP_PARAM_READ_16: pos:%u %s:%u (0x%04X)"          ,tpos, #pvalue, (unsigned int)*pvalue, (unsigned int)*pvalue); *ppos += 2; }
+#define BT_APP_PARAM_READ_24( buffer, ppos, pvalue, size)	{ uint16_t tpos = *ppos; *pvalue = big_endian_read_24(buffer, tpos);              log_app_messaging("BT_APP_PARAM_READ_24: pos:%u %s:%u (0x%04X)"          ,tpos, #pvalue, (unsigned int)*pvalue, (unsigned int)*pvalue); *ppos += 3; }
+#define BT_APP_PARAM_READ_32( buffer, ppos, pvalue, size)	{ uint16_t tpos = *ppos; *pvalue = big_endian_read_32(buffer, tpos);              log_app_messaging("BT_APP_PARAM_READ_32: pos:%u %s:%u (0x%04X)"          ,tpos, #pvalue, (unsigned int)*pvalue, (unsigned int)*pvalue); *ppos += 4; }
+#define BT_APP_PARAM_READ_ARR(buffer, ppos, pvalue, size)   { uint16_t tpos = *ppos;          read_arr(buffer, tpos, (uint8_t*)pvalue, size); log_app_messaging("BT_APP_PARAM_READ_ARR: pos:%u %s:<%s>"                ,tpos, #pvalue, pvalue);                                       *ppos += size; } 
 
 /**
  * @brief Swap bytes in 16 bit integer

@@ -58,11 +58,10 @@
 #include "classic/map_access_server.h"
 
 #ifdef ENABLE_LOG_MAP_ACCESS_SERVER
-#define log_app_messaging log_debug
-#define RUN_AND_LOG_ACTION(code) { log_debug("RUN_AND_LOG_ACTION <%s>", #code); code } 
+#define RUN_AND_LOG_ACTION(...) { log_debug("RUN_AND_LOG_ACTION <%s>", #  __VA_ARGS__);  __VA_ARGS__ } 
 #else
 #define log_app_messaging(...)
-#define RUN_AND_LOG_ACTION(code) code
+#define RUN_AND_LOG_ACTION(...) __VA_ARGS__
 #endif
 
  // TODO: copied from PBAP_server, to be adapted to MAS server
