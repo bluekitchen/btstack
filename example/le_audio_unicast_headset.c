@@ -726,7 +726,7 @@ static void ascs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
             con_handle = leaudio_subevent_ascs_server_disable_get_con_handle(packet);
             printf("ASCS: ENABLE ase_id %d\n", ascs_server_current_ase_id);
             le_audio_util_metadata_using_mask_from_enable_event(packet, size, &ascs_server_audio_metadata);
-            audio_stream_control_service_server_streamendpoint_enable(con_handle, ase_id, &ascs_server_audio_metadata);
+            audio_stream_control_service_server_streamendpoint_enable(con_handle, ascs_server_current_ase_id, &ascs_server_audio_metadata);
             break;
         case LEAUDIO_SUBEVENT_ASCS_SERVER_METADATA:
             con_handle = leaudio_subevent_ascs_server_metadata_get_con_handle(packet);
