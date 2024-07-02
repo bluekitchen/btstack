@@ -80,25 +80,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 
 
 static uint16_t map_cid;
-// singleton instance required to configure GOEP
-//static uint8_t service_buffer[150];
 static uint8_t upload_buffer[1000];
-
-
-#ifdef ENABLE_GOEP_L2CAP
-//static uint8_t map_notification_client_ertm_buffer_mas_0[4000];
-//static uint8_t map_notification_client_ertm_buffer_mas_1[4000];
-//static l2cap_ertm_config_t map_notification_client_ertm_config = {
-//        1,  // ertm mandatory
-//        2,  // max transmit, some tests require > 1
-//        2000,
-//        12000,
-//        512,    // l2cap ertm mtu
-//        4,
-//        4,
-//        1,      // 16-bit FCS
-//};
-#endif
 
 
 static bd_addr_t    remote_addr;
