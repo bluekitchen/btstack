@@ -103,7 +103,7 @@ static l2cap_ertm_config_t map_notification_client_ertm_config = {
 #endif
 
 static bd_addr_t    remote_addr;
-static const char* remote_addr_string = "001BDC08E272";
+static const char* remote_addr_string = "008098090C1D"; // BDADDR MW //"001BDC08E272";
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 #define MSG_LISTING_HEADER   "<MAP-msg-listing version=\"1.1\">"
