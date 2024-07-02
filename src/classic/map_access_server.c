@@ -379,7 +379,7 @@ static void map_access_server_add_srm_headers(map_access_server_t* map_access_se
         RUN_AND_LOG_ACTION(map_access_server->srm_state = SRM_ENABLED;)
         break;
     case SRM_SEND_CONFIRM_WAIT:
-        goep_server_header_add_srm_enable(map_access_server->goep_cid);
+        goep_server_header_add_srm_enable_wait(map_access_server->goep_cid);
         RUN_AND_LOG_ACTION(map_access_server->srm_state = SRM_ENABLED_WAIT;)
         break;
     default:
@@ -1126,6 +1126,10 @@ uint16_t map_access_server_send_get_put_response(uint16_t map_cid, uint8_t respo
     if (body_len > max_body_size) {
         return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
     }
+#if 0 // MAP/MSE/GOEP/SRMP/BV-03-C this one gets PTS to send a second PUT (more packets to follow)
+ map_access_server->srm_state = SRM_SEND_CONFIRM_WAIT;
+ map_access_server->response.code = OBEX_RESP_CONTINUE;
+#endif
 
     // set data for response and trigger execute
     map_access_server->response.code = response_code;

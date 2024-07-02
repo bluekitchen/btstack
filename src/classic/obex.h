@@ -107,10 +107,17 @@
 #define OBEX_SRM_ENABLE                             0x01
 #define OBEX_SRM_INDICATE                           0x02
 
-/* SRMP header values */
-#define OBEX_SRMP_NEXT                              0x00
-#define OBEX_SRMP_WAIT                              0x01
-#define OBEX_SRMP_NEXT_WAIT                         0x02
+/** SRMP header values 
+* BLUETOOTH SPECIFICATION Generic Object Exchange Profile (GOEP) v1.1.1 page 16
+* 4.6.1 MP Use Cases 
+* The SRMP header shall support the following two use cases. Both cases utilize the 
+* SRMP “wait” option (0x01). At this time no valid use cases exist for the SRMP 
+* “additional request” (0x00) and “additional request + wait” (0x02) options, therefore they 
+* shall not be used. 
+*/
+#define OBEX_SRMP_NEXT                              0x00 // should not be sent 
+#define OBEX_SRMP_WAIT                              0x01 // only viable option to be sent
+#define OBEX_SRMP_NEXT_WAIT                         0x02 // should not be sent
 
 /* SETPATH header Values */
 #define OBEX_SP_BIT0_DIR_UP							0x01

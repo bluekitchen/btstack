@@ -172,6 +172,15 @@ uint8_t obex_message_builder_set_final_bit (uint8_t * buffer, uint16_t buffer_le
 uint8_t obex_message_builder_header_add_srm_enable(uint8_t * buffer, uint16_t buffer_len);
 
 /**
+ * @brief Add SRMP wait header
+ * @param buffer
+ * @param buffer_len
+ * @return status
+ */
+uint8_t obex_message_builder_header_add_srmp_wait(uint8_t* buffer, uint16_t buffer_len);
+
+
+/**
  * @brief Add header with single byte value (8 bit)
  * @param buffer
  * @param buffer_len

@@ -106,7 +106,7 @@ void obex_srm_add_srm_headers (obex_srm_t *obex_srm,
             obex_srm->srm_state = OBEX_SRM_STATE_ENABLED;
             break;
         case OBEX_SRM_STATE_SEND_CONFIRM_WAIT:
-            goep_server_header_add_srm_enable (goep_cid);
+            goep_server_header_add_srm_enable_wait(goep_cid);
             obex_srm->srm_state = OBEX_SRM_STATE_ENABLED_WAIT;
             break;
         default:
