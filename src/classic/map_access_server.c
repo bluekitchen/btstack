@@ -1129,10 +1129,10 @@ uint16_t map_access_server_send_get_put_response(uint16_t map_cid, uint8_t respo
 #if 0 // MAP/MSE/GOEP/SRMP/BV-03-C this one gets PTS to send a second PUT (more packets to follow)
  map_access_server->srm_state = SRM_SEND_CONFIRM_WAIT;
  map_access_server->response.code = OBEX_RESP_CONTINUE;
-#endif
-
+#else
     // set data for response and trigger execute
     map_access_server->response.code = response_code;
+#endif
     map_access_server->response.hdr_name = hdr_name;
     map_access_server->request.continuation = continuation;
     map_access_server->state = MAP_SERVER_STATE_SEND_USER_RESPONSE;
