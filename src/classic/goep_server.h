@@ -192,6 +192,13 @@ uint8_t goep_server_header_add_end_of_body(uint16_t goep_cid, const uint8_t * en
 uint8_t goep_server_header_add_srm_enable(uint16_t goep_cid);
 
 /**
+ * @brief Add SRM ENABLE_WAIT header to current response
+ * @param goep_cid
+ * @return
+ */
+uint8_t goep_server_header_add_srm_enable_wait(uint16_t goep_cid);
+
+/**
  * @brief Add name header to current response
  * @param goep_cid
  * @param name \0 terminated string

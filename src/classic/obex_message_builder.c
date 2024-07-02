@@ -206,6 +206,10 @@ uint8_t obex_message_builder_header_add_srm_enable(uint8_t * buffer, uint16_t bu
     return obex_message_builder_header_add_byte(buffer, buffer_len, OBEX_HEADER_SINGLE_RESPONSE_MODE, OBEX_SRM_ENABLE);
 }
 
+uint8_t obex_message_builder_header_add_srmp_wait(uint8_t* buffer, uint16_t buffer_len) {
+    return obex_message_builder_header_add_byte(buffer, buffer_len, OBEX_HEADER_SINGLE_RESPONSE_MODE_PARAMETER, OBEX_SRMP_WAIT);
+}
+
 uint8_t obex_message_builder_header_add_target(uint8_t * buffer, uint16_t buffer_len, const uint8_t * target, uint16_t length){
     return obex_message_builder_header_add_variable(buffer, buffer_len, OBEX_HEADER_TARGET, target, length);
 }
