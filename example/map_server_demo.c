@@ -57,6 +57,7 @@
 #include "classic/goep_server.h"
 #include "classic/map.h"
 #include "classic/map_access_server.h"
+#include "classic/map_notification_client.h"
 #include "classic/map_util.h"
 #include "classic/obex.h"
 #include "classic/rfcomm.h"
@@ -77,11 +78,29 @@
 #define MAS_SERVER_GOEP_PSM 0x1001
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+static void mns_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 
 static uint16_t map_cid;
 static uint8_t upload_buffer[1000];
 
+// MAP Notification Client
+static map_notification_client_t map_notification_client;
+static uint16_t map_notification_client_cid;
+#ifdef ENABLE_GOEP_L2CAP
+// singleton instance
+static uint8_t map_notification_client_ertm_buffer[4000];
+static l2cap_ertm_config_t map_notification_client_ertm_config = {
+    1,  // ertm mandatory
+    2,  // max transmit, some tests require > 1
+    2000,
+    12000,
+    512,    // l2cap ertm mtu
+    4,
+    4,
+    1,      // 16-bit FCS
+};
+#endif
 
 static bd_addr_t    remote_addr;
 static const char* remote_addr_string = "001BDC08E272";
@@ -494,8 +513,7 @@ static void show_usage(void){
     MAP_PRINTF("<a> add one object\n");
     MAP_PRINTF("<d> delete one object\n");
     MAP_PRINTF("<r> reset current test case\n");
-
-
+    MAP_PRINTF("<N> connect to MCE Notification Server\n");
 }
 
 static void stdin_process(char c){
@@ -572,6 +590,12 @@ static void stdin_process(char c){
         //    MAP_PRINTF("DatabaseIdentifier:");
         //    increase_version_counter_by_1(DatabaseIdentifier);
         //    break;
+
+        case 'N':
+            map_notification_client_connect(&map_notification_client, &map_notification_client_ertm_config,
+                                            sizeof(map_notification_client_ertm_buffer), map_notification_client_ertm_buffer,
+                                            mns_packet_handler, remote_addr, 0, &map_notification_client_cid);
+            break;
 
         default:
             show_usage();
@@ -690,6 +714,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             } else {
                                 map_cid = map_subevent_connection_opened_get_map_cid(packet);
                                 MAP_PRINTF("[+] Connected map_cid 0x%04x\n", map_cid);
+                                map_subevent_connection_opened_get_bd_addr(packet, remote_addr);
                             }
                             break;
                         case MAP_SUBEVENT_CONNECTION_CLOSED:
@@ -890,6 +915,45 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
     }
 }
 
+static void mns_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+    UNUSED(size);
+    uint8_t status;
+
+    switch (packet_type) {
+        case HCI_EVENT_PACKET:
+            switch (hci_event_packet_get_type(packet)) {
+                case HCI_EVENT_MAP_META:
+                    switch (hci_event_map_meta_get_subevent_code(packet)) {
+                        case MAP_SUBEVENT_CONNECTION_OPENED:
+                            status = map_subevent_connection_opened_get_status(packet);
+                            if (status) {
+                                MAP_PRINTF("[!] Notification Connection failed, status 0x%02x\n", status);
+                            } else {
+                                map_cid = map_subevent_connection_opened_get_map_cid(packet);
+                                MAP_PRINTF("[+] Connected map_notification_client_cid 0x%04x\n",
+                                           map_notification_client_cid);
+                            }
+                            break;
+                        case MAP_SUBEVENT_CONNECTION_CLOSED:
+                        MAP_PRINTF("[+] Notification Connection closed\n");
+                            break;
+                        default:
+                        MAP_PRINTF ("unknown MAP subevent of type %d\n", packet_type);
+                            break;
+                    }
+                    break;
+                default:
+                    MAP_PRINTF ("unknown event of type %d\n", hci_event_map_meta_get_subevent_code(packet));
+                    break;
+            }
+            break;
+        default:
+            MAP_PRINTF ("unknown packet type %d\n", packet_type);
+            break;
+    }
+}
+
 static uint8_t  map_message_access_service_buffer[150];
 const char * name = "MAS";
 
@@ -941,6 +1005,9 @@ int btstack_main(int argc, const char * argv[]){
                                                     name);
     sdp_register_service(map_message_access_service_buffer);
     map_access_server_init(mas_packet_handler, MAS_SERVER_RFCOMM_CHANNEL_NR, MAS_SERVER_GOEP_PSM, 0xffff);
+
+    // setup MAP Notfication Client
+    map_notification_client_init();
 
 #ifdef HAVE_BTSTACK_STDIN
     btstack_stdin_setup(stdin_process);
