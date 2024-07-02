@@ -42,9 +42,77 @@
 #ifndef MAP_NOTIFICATION_CLIENT_H
 #define MAP_NOTIFICATION_CLIENT_H
 
+#include <stdint.h>
+#include "bluetooth.h"
+#include "btstack_defines.h"
+#include "goep_client.h"
+#include "obex_parser.h"
+
 #if defined __cplusplus
 extern "C" {
 #endif
+
+typedef enum {
+    MAP_NOTIFICATION_CLIENT_STATE_INIT = 0,
+    MAP_NOTIFICATION_CLIENT_STATE_W4_GOEP_CONNECTION,
+    MAP_NOTIFICATION_CLIENT_STATE_W2_SEND_CONNECT_REQUEST,
+    MAP_NOTIFICATION_CLIENT_STATE_W4_CONNECT_RESPONSE,
+    MAP_NOTIFICATION_CLIENT_STATE_CONNECT_RESPONSE_RECEIVED,
+    MAP_NOTIFICATION_CLIENT_STATE_CONNECTED,
+
+    MAP_NOTIFICATION_CLIENT_STATE_W2_SEND_DISCONNECT_REQUEST,
+    MAP_NOTIFICATION_CLIENT_STATE_W4_DISCONNECT_RESPONSE,
+} map_notification_client_state_t;
+
+typedef struct {
+    // opaque storage for goep_client
+    goep_client_t goep_client;
+
+    // lookup via linked list and cid
+    btstack_linked_item_t item;
+    uint16_t cid;
+
+    map_notification_client_state_t state;
+    bd_addr_t bd_addr;
+    hci_con_handle_t con_handle;
+    uint8_t   incoming;
+    btstack_packet_handler_t client_handler;
+
+    /* obex parser */
+    bool obex_parser_waiting_for_response;
+    obex_parser_t obex_parser;
+    uint8_t obex_header_buffer[4];
+
+} map_notification_client_t;
+
+/**
+*
+*/
+void map_notification_client_init(void);
+
+/**
+ * @brief Create MAP Notification Client connection.
+ * @param map_notification_client_t to store state
+ * @param l2cap_ertm_config
+ * @param l2cap_ertm_buffer_size
+ * @param l2cap_ertm_buffer
+ * @param handler
+ * @param addr
+ * @param instance_id of MAP Notification Server, use 0 for default instance
+ * @param out_cid to use for further commands
+ * @result status
+*/
+uint8_t map_notification_client_connect(map_notification_client_t *map_notification_client, l2cap_ertm_config_t *l2cap_ertm_config,
+                                  uint16_t l2cap_ertm_buffer_size, uint8_t *l2cap_ertm_buffer,
+                                  btstack_packet_handler_t handler, bd_addr_t addr, uint8_t instance_id,
+                                  uint16_t *out_cid);
+
+/**
+ * @brief Disconnects MAP connection with given identifier.
+ * @param map_cid
+ * @return status
+ */
+uint8_t map_notification_client_disconnect(uint16_t map_cid);
 
 #if defined __cplusplus
 }
