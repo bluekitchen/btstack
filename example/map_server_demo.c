@@ -492,6 +492,16 @@ static void print_current_test_config(void)
     MAP_PRINTF("config #%d:%s obj_count:%d hdr:%s\n", config->nr, config->descr, config->obj_count, config->type->header);
 }
 
+static void connect_map_notification_client(void) {
+    #ifdef ENABLE_GOEP_L2CAP
+        map_notification_client_connect(&map_notification_client, &map_notification_client_ertm_config,
+            sizeof(map_notification_client_ertm_buffer), map_notification_client_ertm_buffer,
+            mns_packet_handler, remote_addr, 0, &map_notification_client_cid);
+    #else
+        MAP_PRINTF("please enable ENABLE_GOEP_L2CAP to use this featue");
+    #endif
+}
+
 #ifdef HAVE_BTSTACK_STDIN
 // Testing User Interface
 static void show_usage(void){
@@ -592,9 +602,7 @@ static void stdin_process(char c){
         //    break;
 
         case 'N':
-            map_notification_client_connect(&map_notification_client, &map_notification_client_ertm_config,
-                                            sizeof(map_notification_client_ertm_buffer), map_notification_client_ertm_buffer,
-                                            mns_packet_handler, remote_addr, 0, &map_notification_client_cid);
+            connect_map_notification_client();
             break;
 
         default:
@@ -822,9 +830,15 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             APP_READ_08(packet, &pos, &NotificationStatus);
                             MAP_PRINTF("[+] Put NotificationRegistration\n");
                             map_access_server_send_get_put_response(map_cid, OBEX_RESP_SUCCESS, NULL, 0, 0, NULL);
-                            // BT SIG Test case MAP/MSE/MMB/BV-23-I asks for one more message after
-                            // issuing a "update messages" request so we just simulate one
-                            one_object_more_or_less = 1;
+                            if (NotificationStatus == 1) {
+                                connect_map_notification_client();
+                                MAP_PRINTF("[-] Connect back to PTS MAP-MNS\n");
+                            }
+                            else {
+                                // BT SIG Test case MAP/MSE/MMB/BV-23-I asks for one more message after
+                                // issuing a "update messages" request so we just simulate one
+                                one_object_more_or_less = 1;
+                            }
                             break;
 
                         case MAP_SUBEVENT_PUT_OWNER_STATUS: {
