@@ -161,7 +161,7 @@ static uint16_t gatt_service_client_get_next_cid(gatt_service_client_helper_t * 
     return client->cid_counter;
 }
 
-static bool gatt_service_client_next_index_for_descriptor_query(gatt_service_client_connection_helper_t * connection) {
+static bool gatt_service_client_more_descriptor_queries(gatt_service_client_connection_helper_t * connection) {
     bool next_query_found = false;
     while (!next_query_found && (connection->characteristic_index < connection->characteristics_num)) {
         if ((connection->characteristics[connection->characteristic_index].properties & ATT_PROPERTY_NOTIFY) != 0u){
@@ -177,7 +177,7 @@ static bool gatt_service_client_next_index_for_descriptor_query(gatt_service_cli
     return next_query_found;
 }
 
-static bool gatt_service_client_next_index_for_notification_query(gatt_service_client_connection_helper_t * connection) {
+static bool gatt_service_client_have_more_notifications_to_enable(gatt_service_client_connection_helper_t * connection) {
     bool next_query_found = false;
     while (!next_query_found && (connection->characteristic_index < connection->characteristics_num)) {
         if (connection->characteristics[connection->characteristic_index].client_configuration_handle != 0) {
@@ -349,13 +349,13 @@ static bool gatt_service_client_handle_query_complete(gatt_service_client_helper
             break;
 
         case GATT_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_DESCRIPTORS_RESULT:
-            if (gatt_service_client_next_index_for_descriptor_query(connection)){
+            if (gatt_service_client_more_descriptor_queries(connection)){
                 connection->state = GATT_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTIC_DESCRIPTORS;
                 break;
             }
 
             connection->characteristic_index = 0;
-            if (gatt_service_client_next_index_for_notification_query(connection)){
+            if (gatt_service_client_have_more_notifications_to_enable(connection)){
                 connection->state = GATT_SERVICE_CLIENT_STATE_W2_REGISTER_NOTIFICATION;
             } else {
                 connection->characteristic_index = 0;
@@ -365,7 +365,7 @@ static bool gatt_service_client_handle_query_complete(gatt_service_client_helper
             break;
 
         case GATT_SERVICE_CLIENT_STATE_W4_NOTIFICATION_REGISTERED:
-            if (gatt_service_client_next_index_for_notification_query(connection)){
+            if (gatt_service_client_have_more_notifications_to_enable(connection)){
                 connection->state = GATT_SERVICE_CLIENT_STATE_W2_REGISTER_NOTIFICATION;
                 break;
             }
