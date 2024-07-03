@@ -83,6 +83,8 @@
 
 #define NR_RSI_ENTRIES 5
 
+#define SET_DISCOVERY_TIMEOUT_MS 15000
+
 #define ASCS_CLIENT_COUNT 2
 #define ASCS_CLIENT_NUM_STREAMENDPOINTS 4
 
@@ -181,6 +183,9 @@ static uint8_t num_active_servers;
 
 // CSIS Find Set Members
 static csis_client_rsi_entry_t rsi_entries[NR_RSI_ENTRIES];
+
+// Timeout for Set Discovery
+static btstack_timer_source_t set_discovery_timer;
 
 // PACS
 // #define PACS_QUERY
@@ -284,6 +289,7 @@ static struct {
 };
 
 static void show_usage(void);
+static void app_run(void);
 
 static void print_config(void) {
     static const char * generator[] = { "Sine", "Modplayer", "Recording"};
@@ -483,6 +489,28 @@ static void all_members_connected(void){
     }
 }
 
+static void set_discovery_complete(void) {
+    // stop scanning and start connecting if needed
+    gap_stop_scan();
+    if (num_active_servers > 1){
+        app_state = APP_CONNECT_TO_NEXT_MEMBER;
+    } else {
+        all_members_connected();
+    }
+    app_run();
+}
+
+static void set_discovery_timeout_handler(btstack_timer_source_t * ts){
+    (void) ts;
+
+    // we could not find all members, continue
+    printf("Set discovery incomplete, only %u out of %u members found, continue with subset\n", num_active_servers, num_servers);
+    num_servers  = num_active_servers;
+    num_channels = num_active_servers;
+
+    set_discovery_complete();
+}
+
 static void app_run(void){
     // run main
     uint8_t i;
@@ -513,7 +541,11 @@ static void app_run(void){
                     // need more servers
                     app_state = APP_W4_COORDINATED_SET_ADV;
                     coordinated_set_identification_service_client_find_members(rsi_entries, NR_RSI_ENTRIES, servers[0].sirk);
-                    printf("CAP client %u: look for %u more Set Members\n", servers[0].server_id, set_size - 1);
+                    printf("CAP client %u: look for %u more Set Members, timeout %u seconds\n", servers[0].server_id, set_size - 1, SET_DISCOVERY_TIMEOUT_MS / 1000);
+                    btstack_run_loop_remove_timer(&set_discovery_timer);
+                    btstack_run_loop_set_timer_handler(&set_discovery_timer, &set_discovery_timeout_handler);
+                    btstack_run_loop_set_timer(&set_discovery_timer, SET_DISCOVERY_TIMEOUT_MS);
+                    btstack_run_loop_add_timer(&set_discovery_timer);
                     // start scanning
                     app_start_scanning();
                 } else {
@@ -563,10 +595,8 @@ static void rsi_match_handler(bd_addr_type_t addr_type, bd_addr_t addr){
 
     // all found?
     if (num_active_servers >= num_servers){
-        // stop scanning and start connecting
-        app_state = APP_CONNECT_TO_NEXT_MEMBER;
-        gap_stop_scan();
-        app_run();
+        btstack_run_loop_remove_timer(&set_discovery_timer);
+        set_discovery_complete();
     }
 }
 
