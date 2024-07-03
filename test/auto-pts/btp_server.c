@@ -81,71 +81,26 @@ server_t * btp_server_for_address(bd_addr_type_t address_type, bd_addr_t address
     return server;
 }
 
-server_t * btp_server_for_csis_cid(uint16_t csis_cid){
-    uint8_t i;
-    for (i=0; i < MAX_NUM_SERVERS; i++){
-        server_t * server = &servers[i];
-        if (server->csis_cid == csis_cid){
-            return server;
-        }
-    }
-    return NULL;
+// Use macro for lookup function
+// TODO: enumerate clients, use array to lookup number in array
+#define BTP_SERVER_LOOPUP( FIELD ) \
+server_t * btp_server_for_ ## FIELD (uint16_t FIELD){   \
+    uint8_t i;                                          \
+    for (i=0; i < MAX_NUM_SERVERS; i++){                \
+        server_t * server = &servers[i];                \
+        if (server->FIELD == FIELD){              \
+            return server;                              \
+        }                                               \
+    }                                                   \
+    return NULL;                                        \
 }
 
-server_t * btp_server_for_pacs_cid(uint16_t pacs_cid){
-    uint8_t i;
-    for (i=0; i < MAX_NUM_SERVERS; i++){
-        server_t * server = &servers[i];
-        if (server->pacs_cid == pacs_cid){
-            return server;
-        }
-    }
-    return NULL;
-}
-
-server_t * btp_server_for_ascs_cid(uint16_t ascs_cid){
-    uint8_t i;
-    for (i=0; i < MAX_NUM_SERVERS; i++){
-        server_t * server = &servers[i];
-        if (server->ascs_cid == ascs_cid){
-            return server;
-        }
-    }
-    return NULL;
-}
-
-server_t * btp_server_for_bass_cid(uint16_t bass_cid){
-    uint8_t i;
-    for (i=0; i < MAX_NUM_SERVERS; i++){
-        server_t * server = &servers[i];
-        if (server->bass_cid == bass_cid){
-            return server;
-        }
-    }
-    return NULL;
-}
-
-server_t * btp_server_for_vcs_cid(uint16_t vcs_cid){
-    uint8_t i;
-    for (i=0; i < MAX_NUM_SERVERS; i++){
-        server_t * server = &servers[i];
-        if (server->vcs_cid == vcs_cid){
-            return server;
-        }
-    }
-    return NULL;
-}
-
-server_t * btp_server_for_mics_cid(uint16_t mics_cid){
-    uint8_t i;
-    for (i=0; i < MAX_NUM_SERVERS; i++){
-        server_t * server = &servers[i];
-        if (server->mics_cid == mics_cid){
-            return server;
-        }
-    }
-    return NULL;
-}
+BTP_SERVER_LOOPUP( csis_cid )
+BTP_SERVER_LOOPUP( pacs_cid )
+BTP_SERVER_LOOPUP( ascs_cid )
+BTP_SERVER_LOOPUP( bass_cid )
+BTP_SERVER_LOOPUP( vcs_cid  )
+BTP_SERVER_LOOPUP( mics_cid )
 
 server_t * btp_server_for_acl_con_handle(hci_con_handle_t acl_con_handle){
     uint8_t i;
