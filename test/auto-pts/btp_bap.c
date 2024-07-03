@@ -63,6 +63,8 @@
 #include "le-audio/le_audio_base_parser.h"
 #include "btp_tmap.h"
 #include "btp_tbs.h"
+#include "le-audio/gatt-service/telephone_bearer_service_client.h"
+#include "btp_ccp.h"
 
 #define  MAX_NUM_BIS 2
 #define  MAX_CHANNELS 2
@@ -1439,6 +1441,26 @@ static void tbs_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
     }
 }
 
+// VCS Server Handler
+static void btp_vcs_server_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+    UNUSED(size);
+
+    if (packet_type != HCI_EVENT_PACKET) return;
+    if (hci_event_packet_get_type(packet) != HCI_EVENT_LEAUDIO_META) return;
+
+    uint8_t playback_volume;
+
+    switch (hci_event_leaudio_meta_get_subevent_code(packet)){
+        case LEAUDIO_SUBEVENT_VCS_SERVER_VOLUME_STATE:
+            playback_volume = leaudio_subevent_vcs_server_volume_state_get_volume_setting(packet);
+            MESSAGE("VCS Server: set volume %3u\n", playback_volume);
+            break;
+        default:
+            break;
+    }
+}
+
 // BTP
 
 void btp_bap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, const uint8_t *data) {
@@ -1880,6 +1902,9 @@ void btp_bap_init(void){
     // TMAP = TMAS Client
     telephony_and_media_audio_service_client_init();
 
+    // CCP - TBS Client
+    telephone_bearer_service_client_init();
+
     // -- Servers --
 
     // GTBS Server
@@ -1894,6 +1919,7 @@ void btp_bap_init(void){
 
     // VCS Server without AICS or VOCS
     volume_control_service_server_init(128, VCS_MUTE_OFF, 0, NULL, 0, NULL);
+    volume_control_service_server_register_packet_handler(&btp_vcs_server_packet_handler);
 }
 
 void btp_bap_register_higher_layer(btstack_packet_handler_t handler){
@@ -2376,6 +2402,144 @@ void btp_tbs_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, 
             break;
         default:
             MESSAGE("BTP TBS Operation 0x%02x not implemented", opcode);
+            btstack_assert(false);
+            break;
+    }
+};
+
+// CCP = TBS Client
+
+static void btp_ccp_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) {
+    UNUSED(channel);
+    UNUSED(size);
+
+    if (packet_type != HCI_EVENT_PACKET) return;
+    if (hci_event_packet_get_type(packet) != HCI_EVENT_LEAUDIO_META) return;
+
+    hci_con_handle_t con_handle;
+    uint8_t status;
+    server_t * server;
+    uint16_t tbs_cid;
+
+    MESSAGE("btp_ccp_event_handler, subevent code 0x%02x", hci_event_leaudio_meta_get_subevent_code(packet));
+
+    switch (hci_event_leaudio_meta_get_subevent_code(packet)) {
+        case LEAUDIO_SUBEVENT_TBS_CLIENT_CONNECTED:
+            tbs_cid = leaudio_subevent_mics_client_connected_get_mics_cid(packet);
+            status = leaudio_subevent_mics_client_connected_get_att_status(packet);
+            server = btp_server_for_tbs_cid(tbs_cid);
+            btstack_assert(server != NULL);
+            MESSAGE("BTP CCP %u: connected with status 0x%04x, CCP Client cid %02x", server->server_id, status, tbs_cid);
+            struct btp_ccp_discovered_ev event;
+            /*
+                int     status;
+                uint8_t tbs_count;
+                bool	gtbs_found;
+             */
+            memset(&event, 0, sizeof(event));
+            little_endian_store_32((uint8_t*)&event, 0, status);
+            if (status == 0){
+                // TODO: get number of TBS and GBTS
+                event.tbs_count  = 0;
+                event.gtbs_found = 1;
+            }
+            btp_send(BTP_SERVICE_ID_CCP, BTP_CCP_EV_DISCOVERED, 0, sizeof(event), (uint8_t *) &event);
+            break;
+        default:
+            break;
+    }
+}
+
+void btp_ccp_init(void){
+}
+
+void btp_ccp_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, const uint8_t *data){
+    // provide op info for response
+    response_len = 0;
+    response_service_id = BTP_SERVICE_ID_CCP;
+    response_op = opcode;
+    server_t * server;
+    uint16_t offset = 0;
+    switch (opcode) {
+        case BTP_CCP_READ_SUPPORTED_COMMANDS:
+        MESSAGE("BTP_CCP_READ_SUPPORTED_COMMANDS");
+            if (controller_index == BTP_INDEX_NON_CONTROLLER) {
+                uint8_t commands = 0;
+                btp_send(response_service_id, opcode, controller_index, 1, &commands);
+            }
+            break;
+        case BTP_CCP_DISCOVER_TBS:
+            /**
+                bt_addr_le_t address;
+             */
+            if (controller_index == 0) {
+                // get server struct
+                bd_addr_type_t addr_type = (bd_addr_type_t) data[0];
+                bd_addr_t address;
+                reverse_bd_addr(&data[1], address);
+                MESSAGE("BTP_CCP_DISCOVER_TBS %s", bd_addr_to_str(address));
+                server = btp_server_for_address(addr_type, address);
+                // query role
+                telephone_generic_bearer_service_client_connect(server->acl_con_handle, &btp_ccp_event_handler, &server->tbs_client_connection, 0, &server->tbs_cid);
+                // report started
+                btp_send(response_service_id, opcode, controller_index, 0, NULL);
+                break;
+            }
+            break;
+        case BTP_CCP_ORIGINATE_CALL:
+            /**
+                bt_addr_le_t address;
+                uint8_t inst_index;
+                uint8_t uri_len;
+                char    uri[0];
+             */
+            if (controller_index == 0) {
+                // get server struct
+                bd_addr_type_t addr_type = (bd_addr_type_t) data[0];
+                bd_addr_t address;
+                reverse_bd_addr(&data[1], address);
+                server = btp_server_for_address(addr_type, address);
+                offset = 7;
+                uint8_t tbs_index = data[offset++];
+                uint8_t call_uri_len = data[offset++];
+                char call_uri[30];
+                btstack_assert(call_uri_len < sizeof(call_uri));
+                memcpy(call_uri, &data[offset], call_uri_len);
+                call_uri[call_uri_len] = 0;
+                MESSAGE("BTP_CCP_ORIGINATE_CALL index %u, %s", tbs_index, call_uri);
+                // TODO: handle tbs index, we assume it's GTBS
+                // TODO: call_id is assigned by TBS Server
+                telephone_bearer_service_client_call_originate(server->tbs_cid, 0, call_uri);
+                // report started
+                btp_send(response_service_id, opcode, controller_index, 0, NULL);
+                break;
+            }
+            break;
+        case BTP_CCP_TERMINATE_CALL:
+            /**
+                bt_addr_le_t address;
+                uint8_t inst_index;
+                uint8_t call_id;
+             */
+            if (controller_index == 0) {
+                // get server struct
+                bd_addr_type_t addr_type = (bd_addr_type_t) data[0];
+                bd_addr_t address;
+                reverse_bd_addr(&data[1], address);
+                server = btp_server_for_address(addr_type, address);
+                offset = 7;
+                uint8_t tbs_index = data[offset++];
+                uint8_t call_id = data[offset++];
+                MESSAGE("BTP_CCP_TERMINATE_CALL index %u, call id %u", tbs_index, call_id);
+                // TODO: handle tbs index, we assume it's GTBS
+                telephone_bearer_service_client_call_terminate(server->tbs_cid, call_id);
+                // report started
+                btp_send(response_service_id, opcode, controller_index, 0, NULL);
+                break;
+            }
+            break;
+        default:
+            MESSAGE("BTP CCP Operation 0x%02x not implemented", opcode);
             btstack_assert(false);
             break;
     }
