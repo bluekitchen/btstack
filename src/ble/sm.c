@@ -3319,10 +3319,16 @@ static void sm_run(void){
                 sm_send_connectionless(connection, (uint8_t *) &setup->sm_s_pres, sizeof(sm_pairing_packet_t));
                 break;
             case SM_BR_EDR_DISTRIBUTE_KEYS:
+                // send next key
                 if (setup->sm_key_distribution_send_set != 0) {
                     sm_run_distribute_keys(connection);
+                }
+
+                // more to send?
+                if (setup->sm_key_distribution_send_set != 0){
                     return;
                 }
+
                 // keys are sent
                 if (IS_RESPONDER(connection->sm_role)) {
                     // responder -> receive master keys if there are any
