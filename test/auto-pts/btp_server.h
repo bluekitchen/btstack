@@ -51,6 +51,7 @@
 #include "le-audio/gatt-service/published_audio_capabilities_service_client.h"
 #include "le-audio/gatt-service/volume_control_service_client.h"
 #include "le-audio/gatt-service/microphone_control_service_client.h"
+#include "le-audio/gatt-service/telephone_bearer_service_client.h"
 
 #if defined __cplusplus
 extern "C" {
@@ -110,6 +111,10 @@ typedef struct {
     aics_client_connection_t aics_connections[2];
     gatt_service_client_characteristic_t aics_characteristics[2 * AUDIO_INPUT_CONTROL_SERVICE_NUM_CHARACTERISTICS];
     uint16_t mics_cid;
+
+    // tbs client
+    tbs_client_connection_t tbs_client_connection;
+    uint16_t tbs_cid;
 
 } server_t;
 
@@ -195,6 +200,13 @@ server_t * btp_server_for_vcs_cid(uint16_t pacs_cid);
  * @return
  */
 server_t * btp_server_for_mics_cid(uint16_t mics_cid);
+
+/**
+ * @brief Lookup server by tbs_cid
+ * @param mics_cid
+ * @return
+ */
+server_t * btp_server_for_tbs_cid(uint16_t mics_cid);
 
 #if defined __cplusplus
 }
