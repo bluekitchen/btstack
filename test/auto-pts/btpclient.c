@@ -68,6 +68,7 @@
 #include "btp_aics.h"
 #include "btp_tmap.h"
 #include "btp_tbs.h"
+#include "btp_ccp.h"
 
 #define AUTOPTS_SOCKET_NAME "/tmp/bt-stack-tester"
 
@@ -1880,6 +1881,9 @@ static void btp_packet_handler(uint8_t service_id, uint8_t opcode, uint8_t contr
             break;
         case BTP_SERVICE_ID_AICS:
             btp_aics_handler(opcode, controller_index, length, data);
+            break;
+        case BTP_SERVICE_ID_CCP:
+            btp_ccp_handler(opcode, controller_index, length, data);
             break;
         case BTP_SERVICE_ID_LE_AUDIO:
             btp_le_audio_handler(opcode, controller_index, length, data);
