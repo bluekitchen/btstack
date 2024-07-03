@@ -95,6 +95,7 @@ server_t * btp_server_for_ ## FIELD (uint16_t FIELD){   \
     return NULL;                                        \
 }
 
+BTP_SERVER_LOOPUP( tbs_cid  )
 BTP_SERVER_LOOPUP( csis_cid )
 BTP_SERVER_LOOPUP( pacs_cid )
 BTP_SERVER_LOOPUP( ascs_cid )
