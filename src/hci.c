@@ -7148,7 +7148,7 @@ static bool hci_run_iso_tasks(void){
                 hci_send_cmd(&hci_le_create_cis, cig->num_cis, cig->cis_con_handles, cig->acl_con_handles);
                 return true;
             case LE_AUDIO_CIG_STATE_SETUP_ISO_PATH:
-                while (cig->state_vars.next_cis < (cig->num_cis * 2)){
+                for ( ; cig->state_vars.next_cis < (cig->num_cis * 2) ; cig->state_vars.next_cis++ ){
                     // find next path to setup
                     uint8_t cis_index = cig->state_vars.next_cis >> 1;
                     if (cig->cis_established[cis_index] == false) {
@@ -7172,9 +7172,7 @@ static bool hci_run_iso_tasks(void){
                         hci_send_cmd(&hci_le_setup_iso_data_path, cig->cis_con_handles[cis_index], cis_direction, 0, HCI_AUDIO_CODING_FORMAT_TRANSPARENT, 0, 0, 0, 0, NULL);
                         return true;
                     }
-                    cig->state_vars.next_cis++;
                 }
-                // emit done
                 cig->state = LE_AUDIO_CIG_STATE_ACTIVE;
                 break;
             case LE_AUDIO_CIG_STATE_REMOVE:
