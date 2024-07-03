@@ -323,11 +323,16 @@ static bool gatt_service_client_handle_query_complete(gatt_service_client_helper
     if (status != ATT_ERROR_SUCCESS){
         switch (connection->state){
             case GATT_SERVICE_CLIENT_STATE_W4_SERVICE_RESULT:
-            case GATT_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTICS:
+            case GATT_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_RESULT:
+            case GATT_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_DESCRIPTORS_RESULT:
+            case GATT_SERVICE_CLIENT_STATE_W4_NOTIFICATION_REGISTERED:
                 gatt_service_client_emit_connected(client->packet_handler, connection->con_handle, connection->cid, gatt_service_client_att_status_to_error_code(status));
                 gatt_service_client_finalize_connection(client, connection);
                 return false;
+            case GATT_SERVICE_CLIENT_STATE_CONNECTED:
+                break;
             default:
+                btstack_unreachable();
                 break;
         }
     }
