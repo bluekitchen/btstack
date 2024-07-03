@@ -48,7 +48,7 @@ MAP/MSE/GOEP/SRM/BI-03-C: PASS (2024-07-01) Verify that the Server accepts an OB
 MAP/MSE/GOEP/SRM/BI-05-C: PASS (2024-07-01) Verify that the Server ignores a SRM header with an invalid value in the GET request and carries on with the GET operation with SRM disabled.
 MAP/MSE/GOEP/SRM/BV-04-C: PASS (2024-07-01) Verify that the Server issues a PUT response with a valid SRM header value, i.e. 0x01, wanting SRM to be enabled for the PUT transaction.
 MAP/MSE/GOEP/SRM/BV-08-C: PASS (2024-07-01) Verify that the Server issues a GET response with a valid SRM header value, i.e. 0x01, wanting SRM to be enabled for the GET transaction.
-
+MAP/MSE/MSM/BV-06-I: WIP Verify that the MSE can properly respond to a MAP session establishment request.
 
 Open Test Cases:
 MAP/MSE/MSM/BV-06-I Verify that the MSE can properly respond to a MAP session establishment request.
