@@ -13,8 +13,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Fixed
 - RFCOMM: shut down multiplexer after closing last channel instead of multiplexer idle timer
 - HID Host: return complete HID report
-- SM: fix CTDK key distribution over BR/EDR
- 
+- SM: fix CTKD key distribution over BR/EDR
+- SM: fix CTKD after BR/EDR Role Change
+
 ### Changed
 - GAP: return command disallowed if disconnect already requested
 
