@@ -286,7 +286,9 @@ typedef uint8_t mas_UTCstmpoffstr_t[20];
 #define MAP_SUPPORTED_FEATURES_CONVERSATION_LISTING                         (1 << 20) // Conversation listing                      
 #define MAP_SUPPORTED_FEATURES_OWNER_STATUS                                 (1 << 21) // Owner status
 #define MAP_SUPPORTED_FEATURES_MESSAGE_FORWARDING                           (1 << 22) // Message Forwarding
-#define MAP_SUPPORTED_FEATURES_ALL                                          0x7FFFFF  // we support all features
+#define MAP_SUPPORTED_FEATURES_UNACKNOWLEDGED_MESSAGE_INDICATION            (1 << 23) // PTS: UnacknowledgedMessageIndication???
+#define MAP_SUPPORTED_FEATURES_EVENTREPORT_1_3                              (1 << 24) // PTS: EventReport_1_3 ???
+#define MAP_SUPPORTED_FEATURES_ALL                                          0x1FFFFFF  // we support all features
 
 // SupportedMessageTypes                                                    
 #define MAP_SUPPORTED_MESSAGE_TYPE_EMAIL                                    (1 << 0) //  EMAIL   
