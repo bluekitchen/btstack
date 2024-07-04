@@ -523,7 +523,8 @@ static void show_usage(void){
     MAP_PRINTF("<a> add one object\n");
     MAP_PRINTF("<d> delete one object\n");
     MAP_PRINTF("<r> reset current test case\n");
-    MAP_PRINTF("<N> connect to MCE Notification Server\n");
+    MAP_PRINTF("<C> connect to MCE Notification Server\n");
+    MAP_PRINTF("<N> send PUT Notification to MCE Server\n");
 }
 
 static void stdin_process(char c){
@@ -595,16 +596,14 @@ static void stdin_process(char c){
             increase_version_counter_by_1(ConversationListingVersionCounter);
             break;
 
-        //case 'd':
-        //    print_current_test_config();
-        //    MAP_PRINTF("DatabaseIdentifier:");
-        //    increase_version_counter_by_1(DatabaseIdentifier);
-        //    break;
-
-        case 'N':
+        case 'C':
             connect_map_notification_client();
             break;
 
+        case 'N':
+            map_notification_client_put_send_event(map_notification_client_cid);
+            MAP_PRINTF("map_notification_client_put_send_event map_notification_client_cid:%04x", map_notification_client_cid);
+            break;
         default:
             show_usage();
             break;
