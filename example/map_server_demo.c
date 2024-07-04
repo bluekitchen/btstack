@@ -979,6 +979,9 @@ static void mns_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
 static uint8_t  map_message_access_service_buffer[150];
 const char * name = "MAS";
 
+
+
+
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
 
@@ -1025,6 +1028,15 @@ int btstack_main(int argc, const char * argv[]){
                                                     supported_message_types,
                                                     MAP_SUPPORTED_FEATURES_ALL,
                                                     name);
+    sdp_register_service(map_message_access_service_buffer);
+    map_util_create_access_service_sdp_record(map_message_access_service_buffer,
+        sdp_create_service_record_handle(),
+        2,
+        MAS_SERVER_RFCOMM_CHANNEL_NR,
+        MAS_SERVER_GOEP_PSM,
+        supported_message_types,
+        MAP_SUPPORTED_FEATURES_ALL,
+        name);
     sdp_register_service(map_message_access_service_buffer);
     map_access_server_init(mas_packet_handler, MAS_SERVER_RFCOMM_CHANNEL_NR, MAS_SERVER_GOEP_PSM, 0xffff);
 
