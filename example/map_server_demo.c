@@ -502,6 +502,10 @@ static void connect_map_notification_client(void) {
     #endif
 }
 
+static void disconnect_map_notification_client(void) {
+    map_notification_client_disconnect(map_notification_client_cid);
+}
+
 #ifdef HAVE_BTSTACK_STDIN
 // Testing User Interface
 static void show_usage(void){
@@ -524,6 +528,7 @@ static void show_usage(void){
     MAP_PRINTF("<d> delete one object\n");
     MAP_PRINTF("<r> reset current test case\n");
     MAP_PRINTF("<C> connect to MCE Notification Server\n");
+    MAP_PRINTF("<D> disconnect the MCE Notification Server\n");
     MAP_PRINTF("<N> send PUT Notification to MCE Server\n");
 }
 
@@ -598,6 +603,10 @@ static void stdin_process(char c){
 
         case 'C':
             connect_map_notification_client();
+            break;
+
+        case 'D':
+            disconnect_map_notification_client();
             break;
 
         case 'N':
