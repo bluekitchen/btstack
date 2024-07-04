@@ -978,8 +978,24 @@ static void mns_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
 
 static uint8_t  map_message_access_service_buffer[150];
 const char * name = "MAS";
+const uint8_t supported_message_types =
+  MAP_SUPPORTED_MESSAGE_TYPE_EMAIL
+| MAP_SUPPORTED_MESSAGE_TYPE_SMS_GSM
+| MAP_SUPPORTED_MESSAGE_TYPE_SMS_CDMA
+| MAP_SUPPORTED_MESSAGE_TYPE_MMS
+| MAP_SUPPORTED_MESSAGE_TYPE_IM;
 
-
+static void register_map_access_server(uint8_t instance_id) {
+    map_util_create_access_service_sdp_record(map_message_access_service_buffer,
+        sdp_create_service_record_handle(),
+        1,
+        MAS_SERVER_RFCOMM_CHANNEL_NR,
+        MAS_SERVER_GOEP_PSM,
+        supported_message_types,
+        MAP_SUPPORTED_FEATURES_ALL,
+        name);
+    sdp_register_service(map_message_access_service_buffer);
+}
 
 
 int btstack_main(int argc, const char * argv[]);
@@ -1012,32 +1028,11 @@ int btstack_main(int argc, const char * argv[]){
     // init MAP Access Server test cases
     init_testcases();
 
-    // setup MAP Access Server
-    uint8_t supported_message_types =   MAP_SUPPORTED_MESSAGE_TYPE_EMAIL
-                                      | MAP_SUPPORTED_MESSAGE_TYPE_SMS_GSM
-                                      | MAP_SUPPORTED_MESSAGE_TYPE_SMS_CDMA
-                                      | MAP_SUPPORTED_MESSAGE_TYPE_MMS
-                                      | MAP_SUPPORTED_MESSAGE_TYPE_IM;
-
     memset(map_message_access_service_buffer, 0, sizeof(map_message_access_service_buffer));
-    map_util_create_access_service_sdp_record(map_message_access_service_buffer,
-                                                    sdp_create_service_record_handle(),
-                                                    1,
-                                                    MAS_SERVER_RFCOMM_CHANNEL_NR,
-                                                    MAS_SERVER_GOEP_PSM,
-                                                    supported_message_types,
-                                                    MAP_SUPPORTED_FEATURES_ALL,
-                                                    name);
-    sdp_register_service(map_message_access_service_buffer);
-    map_util_create_access_service_sdp_record(map_message_access_service_buffer,
-        sdp_create_service_record_handle(),
-        2,
-        MAS_SERVER_RFCOMM_CHANNEL_NR,
-        MAS_SERVER_GOEP_PSM,
-        supported_message_types,
-        MAP_SUPPORTED_FEATURES_ALL,
-        name);
-    sdp_register_service(map_message_access_service_buffer);
+    
+    register_map_access_server(1);
+    register_map_access_server(2);
+
     map_access_server_init(mas_packet_handler, MAS_SERVER_RFCOMM_CHANNEL_NR, MAS_SERVER_GOEP_PSM, 0xffff);
 
     // setup MAP Notfication Client
