@@ -3916,16 +3916,16 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                     sm_conn->sm_engine_state = SM_BR_EDR_W4_ENCRYPTION_COMPLETE;
 			        break;
 
+#endif
+
+#ifdef ENABLE_CROSS_TRANSPORT_KEY_DERIVATION
                 case HCI_EVENT_ROLE_CHANGE:
-                    // needed
                     hci_event_role_change_get_bd_addr(packet, addr);
                     sm_conn = sm_get_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
                     if (sm_conn == NULL) break;
                     sm_conn->sm_role = hci_event_role_change_get_role(packet);
                     break;
-#endif
 
-#ifdef ENABLE_CROSS_TRANSPORT_KEY_DERIVATION
 			    case HCI_EVENT_SIMPLE_PAIRING_COMPLETE:
 			        if (hci_event_simple_pairing_complete_get_status(packet) != ERROR_CODE_SUCCESS) break;
                     hci_event_simple_pairing_complete_get_bd_addr(packet, addr);
