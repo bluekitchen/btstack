@@ -53,16 +53,31 @@ extern "C" {
 #endif
 
 typedef enum {
-    MAP_NOTIFICATION_CLIENT_STATE_INIT = 0,
-    MAP_NOTIFICATION_CLIENT_STATE_W4_GOEP_CONNECTION,
-    MAP_NOTIFICATION_CLIENT_STATE_W2_SEND_CONNECT_REQUEST,
-    MAP_NOTIFICATION_CLIENT_STATE_W4_CONNECT_RESPONSE,
-    MAP_NOTIFICATION_CLIENT_STATE_CONNECT_RESPONSE_RECEIVED,
-    MAP_NOTIFICATION_CLIENT_STATE_CONNECTED,
+    MNC_STATE_INIT = 0,
+    MNC_STATE_W4_GOEP_CONNECTION,
+    MNC_STATE_W2_SEND_CONNECT_REQUEST,
+    MNC_STATE_W4_CONNECT_RESPONSE,
+    MNC_STATE_CONNECT_RESPONSE_RECEIVED,
+    MNC_STATE_CONNECTED,
 
-    MAP_NOTIFICATION_CLIENT_STATE_W2_SEND_DISCONNECT_REQUEST,
-    MAP_NOTIFICATION_CLIENT_STATE_W4_DISCONNECT_RESPONSE,
+    MNC_STATE_W2_SEND_DISCONNECT_REQUEST,
+    MNC_STATE_W4_DISCONNECT_RESPONSE,
+
+    MNC_STATE_W2_PUT_SEND_EVENT,
+    MNC_STATE_W4_PUT_SEND_EVENT,
 } map_notification_client_state_t;
+
+typedef enum {
+    SRM_DISABLED,
+    SRM_W4_CONFIRM,
+    SRM_ENABLED_BUT_WAITING,
+    SRM_ENABLED
+} map_access_client_srm_state_t;
+
+typedef struct {
+    uint8_t srm_value;
+    uint8_t srmp_value;
+} map_access_client_obex_srm_t;
 
 typedef struct {
     // opaque storage for goep_client
@@ -78,12 +93,20 @@ typedef struct {
     uint8_t   incoming;
     btstack_packet_handler_t client_handler;
 
+    int request_number;
+
     /* obex parser */
     bool obex_parser_waiting_for_response;
     obex_parser_t obex_parser;
     uint8_t obex_header_buffer[4];
+    /* srm */
+    map_access_client_obex_srm_t obex_srm;
+    map_access_client_srm_state_t srm_state;
 
 } map_notification_client_t;
+
+
+uint8_t map_notification_client_put_send_event(uint16_t map_cid);
 
 /**
 *
