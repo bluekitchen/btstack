@@ -493,12 +493,15 @@ static void print_current_test_config(void)
 }
 
 static void connect_map_notification_client(void) {
+
     #ifdef ENABLE_GOEP_L2CAP
         map_notification_client_connect(&map_notification_client, &map_notification_client_ertm_config,
             sizeof(map_notification_client_ertm_buffer), map_notification_client_ertm_buffer,
             mns_packet_handler, remote_addr, 0, &map_notification_client_cid);
     #else
-        MAP_PRINTF("please enable ENABLE_GOEP_L2CAP to use this featue");
+    map_notification_client_connect(&map_notification_client, NULL,
+        0, NULL,
+        mns_packet_handler, remote_addr, 0, &map_notification_client_cid);
     #endif
 }
 
