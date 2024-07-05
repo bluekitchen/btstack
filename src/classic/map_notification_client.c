@@ -234,6 +234,7 @@ static void map_notification_client_handle_can_send_now(uint16_t goep_cid) {
                 "</MAP-event-report>";
 
             goep_client_request_create_put(map_notification_client->goep_client.cid);
+            goep_client_header_add_srm_enable(map_notification_client->goep_client.cid);
             goep_client_header_add_type(map_notification_client->goep_client.cid, "x-bt/MAP-event-report");
             
             application_parameters[pos++] = MAP_APP_PARAM_MASInstanceID;
