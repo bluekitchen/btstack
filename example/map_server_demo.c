@@ -1032,8 +1032,8 @@ int btstack_main(int argc, const char * argv[]){
 
     memset(map_message_access_service_buffer, 0, sizeof(map_message_access_service_buffer));
     
-    register_map_access_server(0);
     register_map_access_server(1);
+    register_map_access_server(2);
 
     map_access_server_init(mas_packet_handler, MAS_SERVER_RFCOMM_CHANNEL_NR, MAS_SERVER_GOEP_PSM, 0xffff);
 
