@@ -57,13 +57,6 @@
 #include "classic/map.h"
 #include "classic/map_access_server.h"
 
-#ifdef ENABLE_LOG_MAP_ACCESS_SERVER
-#define RUN_AND_LOG_ACTION(...) { log_debug("RUN_AND_LOG_ACTION <%s>", #  __VA_ARGS__);  __VA_ARGS__ } 
-#else
-#define log_app_messaging(...)
-#define RUN_AND_LOG_ACTION(...) __VA_ARGS__
-#endif
-
  // TODO: copied from PBAP_server, to be adapted to MAS server
  // max app params for vcard listing and folder response:
  // - NewMissedCalls
@@ -209,7 +202,13 @@ static map_access_server_t* map_access_server_for_goep_cid(uint16_t goep_cid) {
 }
 
 static map_access_server_t* map_access_server_for_map_cid(uint16_t map_cid) {
-    return (map_cid == map_access_server_singleton.map_cid) ? &map_access_server_singleton : NULL;
+    log_debug("our map_cid is <%u> ask for <%u>%s", map_cid, map_access_server_singleton.map_cid, map_cid == map_access_server_singleton.map_cid? "":"UNKNOWN!");
+    if (map_cid == map_access_server_singleton.map_cid) {
+        return &map_access_server_singleton;
+    }
+    else {
+        return NULL;
+    }
 }
 
 /* only to be called if the GEOP connection is closed
@@ -1116,7 +1115,7 @@ uint16_t map_access_server_get_max_body_size(uint16_t map_cid) {
 uint16_t map_access_server_send_get_put_response(uint16_t map_cid, uint8_t response_code, char* hdr_name, uint32_t continuation, uint16_t body_len, const uint8_t* body) {
     map_access_server_t* map_access_server = map_access_server_for_map_cid(map_cid);
     if (map_access_server == NULL) {
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+        RUN_AND_LOG_ACTION(return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;)
     }
 
     // double check size
@@ -1124,7 +1123,7 @@ uint16_t map_access_server_send_get_put_response(uint16_t map_cid, uint8_t respo
     // calc max body size without reserving outgoing buffer: packet size - OBEX Header (3) - SRM Header (2) - Body Header (3)
     uint16_t max_body_size = goep_server_response_get_max_message_size(map_access_server->goep_cid) - (3 + 2 + 3);
     if (body_len > max_body_size) {
-        return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
+        RUN_AND_LOG_ACTION(return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;)
     }
 #if 0 // MAP/MSE/GOEP/SRMP/BV-03-C this one gets PTS to send a second PUT (more packets to follow)
  map_access_server->srm_state = SRM_SEND_CONFIRM_WAIT;
@@ -1138,7 +1137,7 @@ uint16_t map_access_server_send_get_put_response(uint16_t map_cid, uint8_t respo
     map_access_server->state = MAP_SERVER_STATE_SEND_USER_RESPONSE;
     map_access_server->response.body_data = body;
     map_access_server->response.body_len = body_len;
-    return goep_server_request_can_send_now(map_access_server->goep_cid);
+    RUN_AND_LOG_ACTION(return goep_server_request_can_send_now(map_access_server->goep_cid);)
 }
 
 // suppress MSVC C4244: unchecked upper bound for enum folder used as index

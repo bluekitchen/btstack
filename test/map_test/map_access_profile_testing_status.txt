@@ -48,20 +48,13 @@ MAP/MSE/GOEP/SRM/BI-03-C: PASS (2024-07-01) Verify that the Server accepts an OB
 MAP/MSE/GOEP/SRM/BI-05-C: PASS (2024-07-01) Verify that the Server ignores a SRM header with an invalid value in the GET request and carries on with the GET operation with SRM disabled.
 MAP/MSE/GOEP/SRM/BV-04-C: PASS (2024-07-01) Verify that the Server issues a PUT response with a valid SRM header value, i.e. 0x01, wanting SRM to be enabled for the PUT transaction.
 MAP/MSE/GOEP/SRM/BV-08-C: PASS (2024-07-01) Verify that the Server issues a GET response with a valid SRM header value, i.e. 0x01, wanting SRM to be enabled for the GET transaction.
-MAP/MSE/MSM/BV-06-I: WIP Verify that the MSE can properly respond to a MAP session establishment request.
 MAP/MSE/MSM/BV-08-I: PASS (2024-07-04) Verify that the MSE can properly respond to multiple MAP session establishment requests.
 MAP/MSE/MSM/BV-09-I: PASS (2024-07-04) Verify that the MSE can properly respond to multiple MAP session establishment requests.
 MAP/MSE/MSM/BV-06-I: PASS (2024-07-05 with L2CAP disabled, PTS doesn't support L2CAP in this TC) WIP Verify that the MSE can properly respond to a MAP session establishment request.
 MAP/MSE/MNR/BV-04-I: PASS (2024-07-05 with L2CAP disabled, PTS doesn't support L2CAP in this TC) Verify that the MSE can establish a Message Notification.
 
-Open Test Cases:
-MAP/MSE/MSM/BV-06-I Verify that the MSE can properly respond to a MAP session establishment request.
-Error:                   
-	Test case error in 'MAP/MSE/MSM/BV-06-I'.
-	The value 'lcid' (-1) is not fully defined.
-	The value 'connection_id' (-1) is not fully defined.
-	We now send a correct PUT "x-bt/MAP-event-report" but PTS is still showing a Final Verdict "None"
-MAP/MSE/GOEP/CON/BV-01-C requires MAP server to connect back to PTS
+MAP/MSE/MSM/BV-07-I - need to implement notification off
+MAP/MSE/MSM/BV-10-I - Transmission of OBEX_CONNECT_REQ failed unexpectedly.
 MAP/MSE/GOEP/SRMP/BI-02-C "The GET operation ended before the test case purpose could be verified.  Please increase the size of the file being requested by the GET operationr ((gt) 50 KB should be sufficient)." TODO MW: add final PUT/GET bit e.g. for MAP/MSE/GOEP/SRMP/BI-02-C
 MAP/MSE/GOEP/SRMP/BV-02-C Verify that the Server keeps waiting for GET requests until the remote device stops sending SRMP wait headers.- MTC INCONC: Unexepected GET_RSP for this testcase.
 MAP/MSE/GOEP/SRMP/BV-03-C Verify that the Server does not issue a PUT response containing a SRMP header with some value other than 0x01.
