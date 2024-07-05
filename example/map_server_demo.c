@@ -845,10 +845,9 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                                 connect_map_notification_client();
                                 MAP_PRINTF("[-] Connect back to PTS MAP-MNS\n");
                             }
-                            else {
-                                // BT SIG Test case MAP/MSE/MMB/BV-23-I asks for one more message after
-                                // issuing a "update messages" request so we just simulate one
-                                one_object_more_or_less = 1;
+                            else if (NotificationStatus == 0) {
+                                disconnect_map_notification_client();
+                                MAP_PRINTF("[-] Disable Notifications for MAP-MNS\n");
                             }
                             break;
 
@@ -955,7 +954,7 @@ static void mns_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             if (status) {
                                 MAP_PRINTF("[!] Notification Connection failed, status 0x%02x\n", status);
                             } else {
-                                map_cid = map_subevent_connection_opened_get_map_cid(packet);
+                                map_notification_client_cid = map_subevent_connection_opened_get_map_cid(packet);
                                 MAP_PRINTF("[+] Connected map_notification_client_cid 0x%04x\n",
                                            map_notification_client_cid);
                             }

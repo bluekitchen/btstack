@@ -52,8 +52,9 @@ MAP/MSE/MSM/BV-08-I: PASS (2024-07-04) Verify that the MSE can properly respond 
 MAP/MSE/MSM/BV-09-I: PASS (2024-07-04) Verify that the MSE can properly respond to multiple MAP session establishment requests.
 MAP/MSE/MSM/BV-06-I: PASS (2024-07-05 with L2CAP disabled, PTS doesn't support L2CAP in this TC) WIP Verify that the MSE can properly respond to a MAP session establishment request.
 MAP/MSE/MNR/BV-04-I: PASS (2024-07-05 with L2CAP disabled, PTS doesn't support L2CAP in this TC) Verify that the MSE can establish a Message Notification.
+MAP/MSE/MSM/BV-07-C: PASS (2024-07-05 with L2CAP disabled, PTS doesn't support L2CAP in this TC) Verify that the MSE can close a MAP session
 
-MAP/MSE/MSM/BV-07-I - need to implement notification off
+Open tests
 MAP/MSE/MSM/BV-10-I - Transmission of OBEX_CONNECT_REQ failed unexpectedly.
 MAP/MSE/GOEP/SRMP/BI-02-C "The GET operation ended before the test case purpose could be verified.  Please increase the size of the file being requested by the GET operationr ((gt) 50 KB should be sufficient)." TODO MW: add final PUT/GET bit e.g. for MAP/MSE/GOEP/SRMP/BI-02-C
 MAP/MSE/GOEP/SRMP/BV-02-C Verify that the Server keeps waiting for GET requests until the remote device stops sending SRMP wait headers.- MTC INCONC: Unexepected GET_RSP for this testcase.
