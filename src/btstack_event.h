@@ -21083,6 +21083,257 @@ static inline uint8_t leaudio_subevent_tmas_client_supported_roles_bitmap_get_st
 }
 
 /**
+ * @brief Get field con_handle from event LEAUDIO_SUBEVENT_HAS_CLIENT_CONNECTED
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t leaudio_subevent_has_client_connected_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field has_cid from event LEAUDIO_SUBEVENT_HAS_CLIENT_CONNECTED
+ * @param event packet
+ * @return has_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t leaudio_subevent_has_client_connected_get_has_cid(const uint8_t * event){
+    return little_endian_read_16(event, 5);
+}
+/**
+ * @brief Get field status from event LEAUDIO_SUBEVENT_HAS_CLIENT_CONNECTED
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_has_client_connected_get_status(const uint8_t * event){
+    return event[7];
+}
+
+/**
+ * @brief Get field has_cid from event LEAUDIO_SUBEVENT_HAS_CLIENT_DISCONNECTED
+ * @param event packet
+ * @return has_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t leaudio_subevent_has_client_disconnected_get_has_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+
+/**
+ * @brief Get field has_cid from event LEAUDIO_SUBEVENT_HAS_CLIENT_HEARING_AID_FEATURES
+ * @param event packet
+ * @return has_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t leaudio_subevent_has_client_hearing_aid_features_get_has_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field features from event LEAUDIO_SUBEVENT_HAS_CLIENT_HEARING_AID_FEATURES
+ * @param event packet
+ * @return features
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_has_client_hearing_aid_features_get_features(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field att_status from event LEAUDIO_SUBEVENT_HAS_CLIENT_HEARING_AID_FEATURES
+ * @param event packet
+ * @return att_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_has_client_hearing_aid_features_get_att_status(const uint8_t * event){
+    return event[6];
+}
+
+/**
+ * @brief Get field has_cid from event LEAUDIO_SUBEVENT_HAS_CLIENT_ACTIVE_PRESET_INDEX
+ * @param event packet
+ * @return has_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t leaudio_subevent_has_client_active_preset_index_get_has_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field features from event LEAUDIO_SUBEVENT_HAS_CLIENT_ACTIVE_PRESET_INDEX
+ * @param event packet
+ * @return features
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_has_client_active_preset_index_get_features(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field att_status from event LEAUDIO_SUBEVENT_HAS_CLIENT_ACTIVE_PRESET_INDEX
+ * @param event packet
+ * @return att_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_has_client_active_preset_index_get_att_status(const uint8_t * event){
+    return event[6];
+}
+
+/**
+ * @brief Get field has_cid from event LEAUDIO_SUBEVENT_HAS_CLIENT_GENERIC_UPDATE
+ * @param event packet
+ * @return has_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t leaudio_subevent_has_client_generic_update_get_has_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field is_last from event LEAUDIO_SUBEVENT_HAS_CLIENT_GENERIC_UPDATE
+ * @param event packet
+ * @return is_last
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_has_client_generic_update_get_is_last(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field prev_index from event LEAUDIO_SUBEVENT_HAS_CLIENT_GENERIC_UPDATE
+ * @param event packet
+ * @return prev_index
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_has_client_generic_update_get_prev_index(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field newly_added_preset_index from event LEAUDIO_SUBEVENT_HAS_CLIENT_GENERIC_UPDATE
+ * @param event packet
+ * @return newly_added_preset_index
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_has_client_generic_update_get_newly_added_preset_index(const uint8_t * event){
+    return event[7];
+}
+/**
+ * @brief Get field newly_added_preset_is_writable from event LEAUDIO_SUBEVENT_HAS_CLIENT_GENERIC_UPDATE
+ * @param event packet
+ * @return newly_added_preset_is_writable
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_has_client_generic_update_get_newly_added_preset_is_writable(const uint8_t * event){
+    return event[8];
+}
+/**
+ * @brief Get field newly_added_preset_is_available from event LEAUDIO_SUBEVENT_HAS_CLIENT_GENERIC_UPDATE
+ * @param event packet
+ * @return newly_added_preset_is_available
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_has_client_generic_update_get_newly_added_preset_is_available(const uint8_t * event){
+    return event[9];
+}
+/**
+ * @brief Get field newly_added_preset_name_length from event LEAUDIO_SUBEVENT_HAS_CLIENT_GENERIC_UPDATE
+ * @param event packet
+ * @return newly_added_preset_name_length
+ * @note: btstack_type J
+ */
+static inline uint8_t leaudio_subevent_has_client_generic_update_get_newly_added_preset_name_length(const uint8_t * event){
+    return event[10];
+}
+/**
+ * @brief Get field newly_added_preset_name from event LEAUDIO_SUBEVENT_HAS_CLIENT_GENERIC_UPDATE
+ * @param event packet
+ * @return newly_added_preset_name
+ * @note: btstack_type V
+ */
+static inline const uint8_t * leaudio_subevent_has_client_generic_update_get_newly_added_preset_name(const uint8_t * event){
+    return &event[11];
+}
+
+/**
+ * @brief Get field has_cid from event LEAUDIO_SUBEVENT_HAS_CLIENT_PRESET_RECORD_DELETED
+ * @param event packet
+ * @return has_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t leaudio_subevent_has_client_preset_record_deleted_get_has_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field is_last from event LEAUDIO_SUBEVENT_HAS_CLIENT_PRESET_RECORD_DELETED
+ * @param event packet
+ * @return is_last
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_has_client_preset_record_deleted_get_is_last(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field preset_index from event LEAUDIO_SUBEVENT_HAS_CLIENT_PRESET_RECORD_DELETED
+ * @param event packet
+ * @return preset_index
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_has_client_preset_record_deleted_get_preset_index(const uint8_t * event){
+    return event[6];
+}
+
+/**
+ * @brief Get field has_cid from event LEAUDIO_SUBEVENT_HAS_CLIENT_PRESET_RECORD_AVAILABLE
+ * @param event packet
+ * @return has_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t leaudio_subevent_has_client_preset_record_available_get_has_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field is_last from event LEAUDIO_SUBEVENT_HAS_CLIENT_PRESET_RECORD_AVAILABLE
+ * @param event packet
+ * @return is_last
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_has_client_preset_record_available_get_is_last(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field preset_index from event LEAUDIO_SUBEVENT_HAS_CLIENT_PRESET_RECORD_AVAILABLE
+ * @param event packet
+ * @return preset_index
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_has_client_preset_record_available_get_preset_index(const uint8_t * event){
+    return event[6];
+}
+
+/**
+ * @brief Get field has_cid from event LEAUDIO_SUBEVENT_HAS_CLIENT_PRESET_RECORD_UNAVAILABLE
+ * @param event packet
+ * @return has_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t leaudio_subevent_has_client_preset_record_unavailable_get_has_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field is_last from event LEAUDIO_SUBEVENT_HAS_CLIENT_PRESET_RECORD_UNAVAILABLE
+ * @param event packet
+ * @return is_last
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_has_client_preset_record_unavailable_get_is_last(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field preset_index from event LEAUDIO_SUBEVENT_HAS_CLIENT_PRESET_RECORD_UNAVAILABLE
+ * @param event packet
+ * @return preset_index
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_has_client_preset_record_unavailable_get_preset_index(const uint8_t * event){
+    return event[6];
+}
+
+/**
  * @brief Get field map_cid from event MAP_SUBEVENT_CONNECTION_OPENED
  * @param event packet
  * @return map_cid

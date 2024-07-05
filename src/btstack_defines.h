@@ -6321,6 +6321,82 @@ typedef uint8_t sm_key_t[16];
  */
 #define LEAUDIO_SUBEVENT_TMAS_CLIENT_SUPPORTED_ROLES_BITMAP                         0xD5u
 
+
+/**
+ * @format 1H21
+ * @param subevent_code
+ * @param con_handle
+ * @param has_cid
+ * @param status
+*/
+#define LEAUDIO_SUBEVENT_HAS_CLIENT_CONNECTED                                       0xD6u
+
+/**
+ * @format 12
+ * @param subevent_code
+ * @param has_cid
+*/
+#define LEAUDIO_SUBEVENT_HAS_CLIENT_DISCONNECTED                                    0xD7u
+
+/**
+ * @format 1211
+ * @param subevent_code
+ * @param has_cid
+ * @param features
+ * @param att_status
+*/
+#define LEAUDIO_SUBEVENT_HAS_CLIENT_HEARING_AID_FEATURES                            0xD8u
+
+/**
+ * @format 1211
+ * @param subevent_code
+ * @param has_cid
+ * @param features
+ * @param att_status
+*/
+#define LEAUDIO_SUBEVENT_HAS_CLIENT_ACTIVE_PRESET_INDEX                             0xD9u
+
+/**
+ * @format 1211111JV
+ * @param subevent_code
+ * @param has_cid
+ * @param is_last
+ * @param prev_index
+ * @param newly_added_preset_index
+ * @param newly_added_preset_is_writable
+ * @param newly_added_preset_is_available
+ * @param newly_added_preset_name_length
+ * @param newly_added_preset_name
+*/
+#define LEAUDIO_SUBEVENT_HAS_CLIENT_GENERIC_UPDATE                        0xDAu
+
+/**
+ * @format 1211
+ * @param subevent_code
+ * @param has_cid
+ * @param is_last
+ * @param preset_index
+*/
+#define LEAUDIO_SUBEVENT_HAS_CLIENT_PRESET_RECORD_DELETED                 0xDBu
+
+/**
+ * @format 1211
+ * @param subevent_code
+ * @param has_cid
+ * @param is_last
+ * @param preset_index
+*/
+#define LEAUDIO_SUBEVENT_HAS_CLIENT_PRESET_RECORD_AVAILABLE               0xDCu
+
+/**
+ * @format 1211
+ * @param subevent_code
+ * @param has_cid
+ * @param is_last
+ * @param preset_index
+*/
+#define LEAUDIO_SUBEVENT_HAS_CLIENT_PRESET_RECORD_UNAVAILABLE             0xDDu
+
 // MAP Meta Event Group
 
 /**
