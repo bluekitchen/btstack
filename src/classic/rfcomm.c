@@ -2220,7 +2220,7 @@ bool rfcomm_can_send_packet_now(uint16_t rfcomm_cid){
 
 uint8_t rfcomm_request_can_send_now_event(uint16_t rfcomm_cid){
     rfcomm_channel_t * channel = rfcomm_channel_for_rfcomm_cid(rfcomm_cid);
-    if (!channel) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    if (!channel) RUN_AND_LOG_ACTION(return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;)
     channel->waiting_for_can_send_now = 1;
     l2cap_request_can_send_now_event(channel->multiplexer->l2cap_cid);
     return ERROR_CODE_SUCCESS;
