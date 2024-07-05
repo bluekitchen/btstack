@@ -52,6 +52,7 @@ MAP/MSE/MSM/BV-06-I: WIP Verify that the MSE can properly respond to a MAP sessi
 MAP/MSE/MSM/BV-08-I: PASS (2024-07-04) Verify that the MSE can properly respond to multiple MAP session establishment requests.
 MAP/MSE/MSM/BV-09-I: PASS (2024-07-04) Verify that the MSE can properly respond to multiple MAP session establishment requests.
 MAP/MSE/MSM/BV-06-I: PASS (2024-07-05 with L2CAP disabled, PTS doesn't support L2CAP in this TC) WIP Verify that the MSE can properly respond to a MAP session establishment request.
+MAP/MSE/MNR/BV-04-I: PASS (2024-07-05 with L2CAP disabled, PTS doesn't support L2CAP in this TC) Verify that the MSE can establish a Message Notification.
 
 Open Test Cases:
 MAP/MSE/MSM/BV-06-I Verify that the MSE can properly respond to a MAP session establishment request.
