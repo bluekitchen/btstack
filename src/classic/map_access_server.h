@@ -48,6 +48,8 @@ extern "C" {
 #include "btstack_config.h"
 #include "btstack_defines.h"
 
+// BT SIG Mapp Access Server Spec tests up to 2 open connections
+#define MAS_MAX_CONNECTIONS 2
 
 // max name header len
 #define MAP_SERVER_MAX_NAME_LEN 32
