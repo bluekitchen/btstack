@@ -768,14 +768,12 @@ void a2dp_config_process_avdtp_event_handler(avdtp_role_t role, uint8_t *packet,
             status = avdtp_subevent_streaming_connection_established_get_status(packet);
             if (status != ERROR_CODE_SUCCESS){
                 log_info("A2DP source streaming connection could not be established, avdtp_cid 0x%02x, status 0x%02x ---", cid, status);
-                a2dp_replace_subevent_id_and_emit_for_role(role, packet, size, A2DP_SUBEVENT_STREAM_ESTABLISHED);
-                break;
+            } else {
+                log_info("A2DP source streaming connection established --- avdtp_cid 0x%02x, local seid 0x%02x, remote seid 0x%02x", cid,
+                         avdtp_subevent_streaming_connection_established_get_local_seid(packet),
+                         avdtp_subevent_streaming_connection_established_get_remote_seid(packet));
+                config_process->state = A2DP_STREAMING_OPENED;
             }
-
-            log_info("A2DP source streaming connection established --- avdtp_cid 0x%02x, local seid 0x%02x, remote seid 0x%02x", cid,
-                     avdtp_subevent_streaming_connection_established_get_local_seid(packet),
-                     avdtp_subevent_streaming_connection_established_get_remote_seid(packet));
-            config_process->state = A2DP_STREAMING_OPENED;
             a2dp_replace_subevent_id_and_emit_for_role(role, packet, size, A2DP_SUBEVENT_STREAM_ESTABLISHED);
             break;
 
