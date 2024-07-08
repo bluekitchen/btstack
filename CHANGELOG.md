@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - HID Host: return complete HID report
 - SM: fix CTKD key distribution over BR/EDR
 - SM: fix CTKD after BR/EDR Role Change
+- A2DP: emit stream established if peer set-up configuration
 
 ### Changed
 - GAP: return command disallowed if disconnect already requested
