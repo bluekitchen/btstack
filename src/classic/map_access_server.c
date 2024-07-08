@@ -176,7 +176,7 @@ typedef struct {
     } response;
 } map_access_server_t;
 
-static map_access_server_t map_access_server_singleton;
+static map_access_server_t map_access_server_singleton[MAS_MAX_CONNECTIONS];
 
 static struct {
     char* name;
@@ -196,19 +196,30 @@ static void map_access_server_handle_get_put_request(map_access_server_t* map_ac
 static void map_access_server_build_response(map_access_server_t* map_access_server);
 
 static map_access_server_t* map_access_server_for_goep_cid(uint16_t goep_cid) {
-    // TODO: check goep_cid after incoming connection -> accept/reject is implemented and state has been setup
-    // return map_access_server_singleton.goep_cid == goep_cid ? &map_access_server_singleton : NULL;
-    return &map_access_server_singleton;
+    int i;
+
+    for (i = 0; i< MAS_MAX_CONNECTIONS; i++)
+        if (map_access_server_singleton[i].goep_cid == 0 || map_access_server_singleton[i].goep_cid == goep_cid) {
+            log_debug("use map_access_server_singleton[%d] for goep_cid <%u>(0x%04x)", i, goep_cid, goep_cid);
+            return &map_access_server_singleton[i];
+        }
+
+    log_debug("cannot open more than MAS_MAX_CONNECTIONS (%d)", MAS_MAX_CONNECTIONS);
+    return NULL;
 }
 
 static map_access_server_t* map_access_server_for_map_cid(uint16_t map_cid) {
-    log_debug("our map_cid is <%u> ask for <%u>%s", map_cid, map_access_server_singleton.map_cid, map_cid == map_access_server_singleton.map_cid? "":"UNKNOWN!");
-    if (map_cid == map_access_server_singleton.map_cid) {
-        return &map_access_server_singleton;
-    }
-    else {
-        return NULL;
-    }
+    //
+    int i;
+
+    for (i = 0; i < MAS_MAX_CONNECTIONS; i++)
+        if (map_access_server_singleton[i].map_cid == map_cid) {
+            log_debug("map_access_server_singleton[%d] is map_cid <%u>(0x%04x)", i, map_cid, map_cid);
+            return &map_access_server_singleton[i];
+        }
+
+    log_debug("map_cid <%u>(0x%04x) NOT FOUND!", map_cid);
+    return NULL;
 }
 
 /* only to be called if the GEOP connection is closed
@@ -552,6 +563,8 @@ static void map_access_server_packet_handler_hci(uint8_t* packet, uint16_t size)
         case GOEP_SUBEVENT_CONNECTION_CLOSED:
             goep_cid = goep_subevent_connection_opened_get_goep_cid(packet);
             map_access_server = map_access_server_for_goep_cid(goep_cid);
+            log_debug("free up map_access_server slot goep_cid <%u>(0x%04x) for another connect", goep_cid, goep_cid);
+            map_access_server->goep_cid = 0;
             btstack_assert(map_access_server != NULL);
             break;
         case GOEP_SUBEVENT_CAN_SEND_NOW:

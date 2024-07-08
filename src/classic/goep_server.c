@@ -131,9 +131,11 @@ static goep_server_connection_t * goep_server_get_connection_for_goep_cid(uint16
     for (it = (btstack_linked_item_t *) goep_server_connections; it ; it = it->next){
         goep_server_connection_t * connection = ((goep_server_connection_t *) it);
         if (connection->goep_cid == goep_cid){
+            log_debug("connection for goep_cid <%u (0x%04x)> bearer_cid <%u> (0x%04x) found", goep_cid, goep_cid, connection->bearer_cid, connection->bearer_cid);
             return connection;
         };
     }
+    log_debug("connection for goep_cid <%u (0x%04x)> NOT FOUND!", goep_cid, goep_cid);
     return NULL;
 }
 
