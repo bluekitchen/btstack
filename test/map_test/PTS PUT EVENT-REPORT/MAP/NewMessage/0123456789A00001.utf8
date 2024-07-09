@@ -1,0 +1,35 @@
+BEGIN:BMSG
+VERSION:1.0
+STATUS:UNREAD
+TYPE:SMS_GSM
+FOLDER:TELECOM/MSG/INBOX
+BEGIN:VCARD
+VERSION:2.1
+N:PTS (New Message For Testing UpdateInbox Function)
+TEL:1234567891
+END:VCARD
+BEGIN:BENV
+BEGIN:VCARD
+VERSION:2.1
+N:IUT (New Message For Testing UpdateInbox Function)
+TEL:14256913524
+END:VCARD
+BEGIN:BBODY
+CHARSET:UTF-8
+LENGTH:1549
+BEGIN:MSG
+
+PTS new message for UpdateInbox Function.PTS new message for UpdateInbox Function.PTS new message for UpdateInbox Function.PTS new message for UpdateInbox Function.
+PTS new message for UpdateInbox Function.PTS new message for UpdateInbox Function.PTS new message for UpdateInbox Function.PTS new message for UpdateInbox Function.
+PTS new message for UpdateInbox Function.PTS new message for UpdateInbox Function.PTS new message for UpdateInbox Function.PTS new message for UpdateInbox Function.
+PTS new message for UpdateInbox Function.PTS new message for UpdateInbox Function.PTS new message for UpdateInbox Function.PTS new message for UpdateInbox Function.
+PTS new message for UpdateInbox Function.PTS new message for UpdateInbox Function.PTS new message for UpdateInbox Function.PTS new message for UpdateInbox Function.
+PTS new message for UpdateInbox Function.PTS new message for UpdateInbox Function.PTS new message for UpdateInbox Function.PTS new message for UpdateInbox Function.
+PTS new message for UpdateInbox Function.PTS new message for UpdateInbox Function.PTS new message for UpdateInbox Function.PTS new message for UpdateInbox Function.
+PTS new message for UpdateInbox Function.PTS new message for UpdateInbox Function.PTS new message for UpdateInbox Function.PTS new message for UpdateInbox Function.
+PTS new message for UpdateInbox Function.PTS new message for UpdateInbox Function.PTS new message for UpdateInbox Function.PTS new message for UpdateInbox Function.
+
+END:MSG
+END:BBODY
+END:BENV
+END:BMSG

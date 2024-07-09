@@ -1,0 +1,82 @@
+BEGIN:BMSG
+VERSION:1.0
+STATUS:UNREAD
+TYPE:EMAIL
+FOLDER:TELECOM/MSG/INBOX
+BEGIN:VCARD
+VERSION:2.1
+N:IUT
+EMAIL:member@iut.com
+END:VCARD
+BEGIN:BENV
+BEGIN:VCARD
+VERSION:2.1
+N:PTS
+EMAIL:PTS@bluetooth.com
+END:VCARD
+BEGIN:BENV
+BEGIN:VCARD
+VERSION:2.1
+N:PTS1
+EMAIL:PTS1@bluetooth.com
+END:VCARD
+BEGIN:BBODY
+ENCODING:8BIT
+LENGTH:4975
+BEGIN:MSG
+Date: Mon, 14 Mar 2014 09:09:09 -0900
+Subject: PTS testing
+From: PTS@bluetooth.com
+To: IUT@bluetooth.com
+
+PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.
+PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.
+PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.
+PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.
+PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.
+PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.
+PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.
+PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.
+PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.
+PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.
+PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.
+PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.
+PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.
+PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.
+PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.
+PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.
+PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.
+PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.
+PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.
+PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.
+PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.
+PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.
+PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.
+PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.
+PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.
+PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.
+PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.
+PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.
+PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.
+PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.
+PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.
+PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.
+PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.
+PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.
+PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.
+PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.
+PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.
+PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.
+PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.
+PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.
+PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.
+PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.
+PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.
+PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.PTS EMAIL message upload 1.
+
+
+END:MSG
+END:BBODY
+END:BENV
+END:BENV
+END:BMSG

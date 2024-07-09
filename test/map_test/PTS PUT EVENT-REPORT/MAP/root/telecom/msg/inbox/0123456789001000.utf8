@@ -1,0 +1,74 @@
+BEGIN:BMSG
+VERSION:1.1
+STATUS:UNREAD
+TYPE:IM
+FOLDER:TELECOM/MSG/INBOX
+EXTENDEDDATA:0:3;
+BEGIN:VCARD
+VERSION:2.1
+N:IUT;ONE
+X-BT-UCI:skype:beastmode1 
+END:VCARD
+BEGIN:BENV
+BEGIN:VCARD
+VERSION:2.1
+N:PTS;ONE
+X-BT-UCI:skype:beastmode2
+END:VCARD
+BEGIN:BBODY
+ENCODING:8BIT
+LENGTH:4602
+BEGIN:MSG
+Date: 14 March 2016
+From: skype:beastmode2
+To: skype:beastmode1
+Content-Type: text/plain;
+
+PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.
+PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.
+PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.
+PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.
+PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.
+PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.
+PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.
+PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.
+PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.
+PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.
+PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.
+PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.
+PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.
+PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.
+PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.
+PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.
+PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.
+PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.
+PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.
+PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.
+PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.
+PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.
+PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.
+PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.
+PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.
+PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.
+PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.
+PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.
+PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.
+PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.
+PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.
+PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.
+PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.
+PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.
+PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.
+PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.
+PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.
+PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.
+PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.
+PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.
+PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.
+PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.
+PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.
+PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.PTS IM message testing 6.
+END:MSG
+END:BBODY
+END:BENV
+END:BMSG

@@ -1,0 +1,3 @@
+<MAP-event-report version = "1.1">
+<event type = "ReadStatusChanged" handle = "0123456789000002" folder = "TELECOM/MSG/INBOX"  msg_type = "SMS_CDMA" read_status = "yes" acknowledged_status = "yes"/> 
+</MAP-event-report>

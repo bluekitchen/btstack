@@ -1,0 +1,47 @@
+BEGIN:BMSG
+VERSION:1.0
+STATUS:UNREAD
+TYPE:SMS_CDMA
+FOLDER:TELECOM/MSG/INBOX
+BEGIN:VCARD
+VERSION:2.1
+N:IUT
+TEL:12061234567
+END:VCARD
+BEGIN:BENV
+BEGIN:VCARD
+VERSION:2.1
+N:PTS
+TEL:14256913524
+END:VCARD
+BEGIN:BBODY
+CHARSET:UTF-8
+LENGTH:865
+BEGIN:MSG
+PTS CDMA message test 2. PTS CDMA message test 2.
+PTS CDMA message test 2. PTS CDMA message test 2.
+PTS CDMA message test 2. PTS CDMA message test 2.
+END:MSG
+BEGIN:MSG
+PTS CDMA message test 2. PTS CDMA message test 2.
+PTS CDMA message test 2. PTS CDMA message test 2.
+PTS CDMA message test 2. PTS CDMA message test 2.
+END:MSG
+BEGIN:MSG
+PTS CDMA message test 2. PTS CDMA message test 2.
+PTS CDMA message test 2. PTS CDMA message test 2.
+PTS CDMA message test 2. PTS CDMA message test 2.
+END:MSG
+BEGIN:MSG
+PTS CDMA message test 2. PTS CDMA message test 2.
+PTS CDMA message test 2. PTS CDMA message test 2.
+PTS CDMA message test 2. PTS CDMA message test 2.
+END:MSG
+BEGIN:MSG
+PTS CDMA message test 2. PTS CDMA message test 2.
+PTS CDMA message test 2. PTS CDMA message test 2.
+PTS CDMA message test 2. PTS CDMA message test 2.
+END:MSG
+END:BBODY
+END:BENV
+END:BMSG

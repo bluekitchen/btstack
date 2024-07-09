@@ -1,0 +1,3 @@
+<MAP-event-report version = "1.2">
+<event type = "MessageRemoved" handle = "0123456789001000" folder = "TELECOM/MSG/INBOX"  msg_type = "IM" /> 
+</MAP-event-report>

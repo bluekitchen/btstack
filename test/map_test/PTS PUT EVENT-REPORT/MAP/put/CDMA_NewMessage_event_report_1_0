@@ -1,0 +1,3 @@
+<MAP-event-report version = "1.0">
+<event type = "NewMessage" handle = "0123456789000003" folder = "TELECOM/MSG/INBOX" msg_type = "CDMA" read_status = "no" acknowledged_status = "no"/> 
+</MAP-event-report>

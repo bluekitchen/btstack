@@ -1,0 +1,35 @@
+BEGIN:BMSG
+VERSION:1.0
+STATUS:UNREAD
+TYPE:SMS_CDMA
+FOLDER:TELECOM/MSG/INBOX
+BEGIN:VCARD
+ERSION:5.1
+N:IUT. make the name 256 bytes long. make the name 256 bytes long. make the name 256 bytes long. make the name 256 bytes long. make the name 256 bytes long. make the name 256 bytes long. make the name 256 bytes long. make the name 256 bytes long.
+TEL:1534567895
+END:VCARD
+BEGIN:BENV
+BEGIN:VCARD
+VERSION:5.1
+N:PTS. make the name 256 bytes long. make the name 256 bytes long. make the name 256 bytes long. make the name 256 bytes long. make the name 256 bytes long. make the name 256 bytes long. make the name 256 bytes long. make the name 256 bytes long.
+TEL:14556913554
+END:VCARD
+BEGIN:BBODY
+CHARSET:UTF-8
+LENGTH:1014
+BEGIN:MSG
+
+PTS CDMA message testing 5.PTS CDMA message testing 5.PTS CDMA message testing 5.PTS CDMA message testing 5.
+PTS CDMA message testing 5.PTS CDMA message testing 5.PTS CDMA message testing 5.PTS CDMA message testing 5.
+PTS CDMA message testing 5.PTS CDMA message testing 5.PTS CDMA message testing 5.PTS CDMA message testing 5.
+PTS CDMA message testing 5.PTS CDMA message testing 5.PTS CDMA message testing 5.PTS CDMA message testing 5.
+PTS CDMA message testing 5.PTS CDMA message testing 5.PTS CDMA message testing 5.PTS CDMA message testing 5.
+PTS CDMA message testing 5.PTS CDMA message testing 5.PTS CDMA message testing 5.PTS CDMA message testing 5.
+PTS CDMA message testing 5.PTS CDMA message testing 5.PTS CDMA message testing 5.PTS CDMA message testing 5.
+PTS CDMA message testing 5.PTS CDMA message testing 5.PTS CDMA message testing 5.PTS CDMA message testing 5.
+PTS CDMA message testing 5.PTS CDMA message testing 5.PTS CDMA message testing 5.PTS CDMA message testing 5.
+
+END:MSG
+END:BBODY
+END:BENV
+END:BMSG
