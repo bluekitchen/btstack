@@ -69,6 +69,7 @@
 #include "btp_tmap.h"
 #include "btp_tbs.h"
 #include "btp_ccp.h"
+#include "btp_pbp.h"
 
 #define AUTOPTS_SOCKET_NAME "/tmp/bt-stack-tester"
 
@@ -1885,6 +1886,9 @@ static void btp_packet_handler(uint8_t service_id, uint8_t opcode, uint8_t contr
         case BTP_SERVICE_ID_CCP:
             btp_ccp_handler(opcode, controller_index, length, data);
             break;
+        case BTP_SERVICE_ID_PBP:
+            btp_pbp_handler(opcode, controller_index, length, data);
+            break;
         case BTP_SERVICE_ID_LE_AUDIO:
             btp_le_audio_handler(opcode, controller_index, length, data);
             break;
@@ -2206,7 +2210,7 @@ int btstack_main(int argc, const char * argv[])
     btp_micp_init();
     btp_tmap_init();
     btp_tbs_init();
-
+    btp_pbp_init();
     MESSAGE("auto-pts iut-btp-client started");
 
     // connect to auto-pts client 
