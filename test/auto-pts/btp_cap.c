@@ -737,9 +737,11 @@ void btp_cap_setup_periodic_advertising_data(void) {
     uint8_t stream_codec_ltv_len = 0;
     const uint8_t * stream_codec_ltv_bytes = NULL;
     if (btp_cap_broadcast_source_codec_config_at_subgroup){
+        log_info("Broadcast Source Codec Config at Subgroup Level");
         subgroup_codec_ltv_len = subgroup->codec_config_len;
         subgroup_codec_ltv_bytes = subgroup->codec_config_data;
     } else {
+        log_info("Broadcast Source Codec Config at BIS Level");
         stream_codec_ltv_len = stream->codec_config_len;
         stream_codec_ltv_bytes = subgroup->codec_config_data;
     }
@@ -1040,8 +1042,6 @@ void btp_cap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, 
 #define BTP_CAP_BROADCAST_SOURCE_SETUP_FLAG_SUBGROUP_CODEC	BIT(1)
 #endif
             if (controller_index == 0) {
-                MESSAGE("BTP_CAP_BROADCAST_SOURCE_SETUP, subgroups %u, streams %u",
-                        btp_cap_broadcast_subgroup_count, btp_cap_broadcast_stream_count);
                 uint16_t pos = 0;
                 uint8_t  source_id = data[pos++];
                 uint32_t broadcast_id = little_endian_read_24(data, pos);
@@ -1073,6 +1073,9 @@ void btp_cap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, 
                 memcpy(btp_bap_big_params.broadcast_code, broadcast_code, 16);
                 btp_cap_broadcast_source_codec_config_at_subgroup = (flags & BTP_CAP_BROADCAST_SOURCE_SETUP_FLAG_SUBGROUP_CODEC) != 0;
                 btp_cap_broadcast_source_presenentation_delay_us = presentation_delay;
+
+                MESSAGE("BTP_CAP_BROADCAST_SOURCE_SETUP, subgroups %u, streams %u, flags %u, codec config at subgroup %u",
+                        btp_cap_broadcast_subgroup_count, btp_cap_broadcast_stream_count, flags, btp_cap_broadcast_source_codec_config_at_subgroup);
 
                 // setup data for periodic advertising
                 btp_cap_setup_periodic_advertising_data();
