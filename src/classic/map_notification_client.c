@@ -227,10 +227,13 @@ static void map_notification_client_handle_can_send_now(uint16_t goep_cid) {
             break;
 
         case MNC_STATE_W2_PUT_SEND_EVENT: 
-            const char* dummy_report = "<MAP-event-report version = \"1.1\">"
-                "<event type = \"NewMessage\" handle = \"12345678\" folder =\"TELECOM/MSG/INBOX\""
-                " msg_type=\"SMS_CDMA\" subject=\"Hello\" datetime=\"20110221T130510\""
-                " sender_name=\"Jamie\" priority=\"yes\"/>"
+            const char* dummy_report = 
+                "<MAP-event-report version = \"1.1\">"
+                "<event type = \"NewMessage\""
+                //" handle = \"12345678\" folder =\"TELECOM/MSG/INBOX\""
+                " msg_type=\"EMAIL\""
+                //" subject=\"Hello\" datetime=\"20110221T130510\""
+                //" sender_name=\"Jamie\" priority=\"yes\"/>"
                 "</MAP-event-report>";
 
             goep_client_request_create_put(map_notification_client->goep_client.cid);
@@ -239,7 +242,7 @@ static void map_notification_client_handle_can_send_now(uint16_t goep_cid) {
             
             application_parameters[pos++] = MAP_APP_PARAM_MASInstanceID;
             application_parameters[pos++] = 1;
-            application_parameters[pos++] = 1; // First MASInstanceID should be 0 (BT SIG MAS SPEC)
+            application_parameters[pos++] = 0; // First MASInstanceID should be 0 (BT SIG MAS SPEC, hard coded expactation in PTS MAP/MSE/MMN/BV-02-C)
             goep_client_header_add_application_parameters(map_notification_client->goep_client.cid, &application_parameters[0], pos);
 
             goep_client_body_add_static(map_notification_client->goep_client.cid, dummy_report, (uint32_t)strlen(dummy_report));
