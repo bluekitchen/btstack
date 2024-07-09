@@ -1,0 +1,36 @@
+BEGIN:BMSG
+VERSION:1.0
+STATUS:UNREAD
+TYPE:MMS
+FOLDER:TELECOM/MSG/INBOX
+BEGIN:VCARD
+VERSION:2.1
+N:IUT. make the name 256 bytes long. make the name 256 bytes long. make the name 256 bytes long. make the name 256 bytes long. make the name 256 bytes long. make the name 256 bytes long. make the name 256 bytes long. make the name 256 bytes long.
+TEL:1237567897
+END:VCARD
+BEGIN:BENV
+BEGIN:VCARD
+VERSION:2.1
+N:PTS. make the name 256 bytes long. make the name 256 bytes long. make the name 256 bytes long. make the name 256 bytes long. make the name 256 bytes long. make the name 256 bytes long. make the name 256 bytes long. make the name 256 bytes long.
+TEL:14256913524
+END:VCARD
+BEGIN:BBODY
+CHARSET:UTF-8
+LENGTH:980
+BEGIN:MSG
+
+PTS MMS message testing 7.PTS MMS message testing 7.PTS MMS message testing 7.PTS MMS message testing 7.
+PTS MMS message testing 7.PTS MMS message testing 7.PTS MMS message testing 7.PTS MMS message testing 7.
+PTS MMS message testing 7.PTS MMS message testing 7.PTS MMS message testing 7.PTS MMS message testing 7.
+PTS MMS message testing 7.PTS MMS message testing 7.PTS MMS message testing 7.PTS MMS message testing 7.
+PTS MMS message testing 7.PTS MMS message testing 7.PTS MMS message testing 7.PTS MMS message testing 7.
+PTS MMS message testing 7.PTS MMS message testing 7.PTS MMS message testing 7.PTS MMS message testing 7.
+PTS MMS message testing 7.PTS MMS message testing 7.PTS MMS message testing 7.PTS MMS message testing 7.
+PTS MMS message testing 7.PTS MMS message testing 7.PTS MMS message testing 7.PTS MMS message testing 7.
+PTS MMS message testing 7.PTS MMS message testing 7.PTS MMS message testing 7.PTS MMS message testing 7.
+
+
+END:MSG
+END:BBODY
+END:BENV
+END:BMSG

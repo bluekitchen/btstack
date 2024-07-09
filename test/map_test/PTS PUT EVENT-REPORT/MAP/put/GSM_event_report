@@ -1,0 +1,3 @@
+<MAP-event-report version = "1.0">
+<event type = "NewMessage" handle = "0123456789000001" folder = "TELECOM/MSG/INBOX" msg_type = "SMS_GSM" /> 
+</MAP-event-report>

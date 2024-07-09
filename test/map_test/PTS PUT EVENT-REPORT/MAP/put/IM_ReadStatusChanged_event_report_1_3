@@ -1,0 +1,3 @@
+<MAP-event-report version = "1.3">
+<event type = "ReadStatusChanged " handle = "0123456789000003" folder = "TELECOM/MSG/INBOX" msg_type = "IM" subject = "PTS testing PTS testing PTS testing PTS testing  PTS testing PTS testing PTS testing PTS testing PTS testing  PTS testing PTS testing PTS testing PTS testing PTS testing  PTS testing PTS testing PTS testing PTS testing PTS testing" datetime = "20130121T130510" sender_name = "PTS" priority = "no" read_status = "yes" acknowledged_status = "yes"/> 
+</MAP-event-report>

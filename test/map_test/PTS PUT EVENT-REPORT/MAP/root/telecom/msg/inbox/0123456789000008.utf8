@@ -1,0 +1,35 @@
+BEGIN:BMSG
+VERSION:8.0
+STATUS:UNREAD
+TYPE:SMS_GSM
+FOLDER:TELECOM/MSG/INBOX
+BEGIN:VCARD
+VERSION:2.8
+N:IUT. make the name 256 bytes long. make the name 256 bytes long. make the name 256 bytes long. make the name 256 bytes long. make the name 256 bytes long. make the name 256 bytes long. make the name 256 bytes long. make the name 256 bytes long.
+TEL:1234567898
+END:VCARD
+BEGIN:BENV
+BEGIN:VCARD
+VERSION:2.8
+N:PTS. make the name 256 bytes long. make the name 256 bytes long. make the name 256 bytes long. make the name 256 bytes long. make the name 256 bytes long. make the name 256 bytes long. make the name 256 bytes long. make the name 256 bytes long.
+TEL:14256983524
+END:VCARD
+BEGIN:BBODY
+CHARSET:UTF-8
+LENGTH:978
+BEGIN:MSG
+
+PTS GSM message testing 8.PTS GSM message testing 8.PTS GSM message testing 8.PTS GSM message testing 8.
+PTS GSM message testing 8.PTS GSM message testing 8.PTS GSM message testing 8.PTS GSM message testing 8.
+PTS GSM message testing 8.PTS GSM message testing 8.PTS GSM message testing 8.PTS GSM message testing 8.
+PTS GSM message testing 8.PTS GSM message testing 8.PTS GSM message testing 8.PTS GSM message testing 8.
+PTS GSM message testing 8.PTS GSM message testing 8.PTS GSM message testing 8.PTS GSM message testing 8.
+PTS GSM message testing 8.PTS GSM message testing 8.PTS GSM message testing 8.PTS GSM message testing 8.
+PTS GSM message testing 8.PTS GSM message testing 8.PTS GSM message testing 8.PTS GSM message testing 8.
+PTS GSM message testing 8.PTS GSM message testing 8.PTS GSM message testing 8.PTS GSM message testing 8.
+PTS GSM message testing 8.PTS GSM message testing 8.PTS GSM message testing 8.PTS GSM message testing 8.
+
+END:MSG
+END:BBODY
+END:BENV
+END:BMSG

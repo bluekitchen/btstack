@@ -1,0 +1,6 @@
+<MAP-event-report version = "1.2"> 
+<event type = "MessageExtendedDataChanged" msg_type="IM" handle = "0123456789000002" folder = "TELECOM/MSG/INBOX" sender_name="PTS" 
+datatime="20160925T133700" extended_data="0:54;"
+conversation_id=”3909231965” 
+participant_uci=”skype:beastmode2”/> 
+</MAP-event-report> 

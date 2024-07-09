@@ -1,0 +1,53 @@
+BEGIN:BMSG
+VERSION:1.0
+STATUS:UNREAD
+TYPE:EMAIL
+FOLDER:TELECOM/MSG/INBOX
+BEGIN:VCARD
+VERSION:2.1
+N:IUT. make the name 256 bytes long. make the name 256 bytes long. make the name 256 bytes long. make the name 256 bytes long. make the name 256 bytes long. make the name 256 bytes long. make the name 256 bytes long. make the name 256 bytes long.
+EMAIL:momber@iut.com
+END:VCARD
+BEGIN:BENV
+BEGIN:VCARD
+VERSION:2.1
+N:PTS. make the name 256 bytes long. make the name 256 bytes long. make the name 256 bytes long. make the name 256 bytes long. make the name 256 bytes long. make the name 256 bytes long. make the name 256 bytes long. make the name 256 bytes long.
+EMAIL:PTS@bluetooth.com
+END:VCARD
+BEGIN:BENV
+BEGIN:VCARD
+VERSION:2.1
+N:PTS1
+EMAIL:PTS1@bluetooth.com
+END:VCARD
+BEGIN:BBODY
+ENCODING:8BIT
+CHARSET:UTF-8
+LENGTH:702
+BEGIN:MSG
+Date: Wed, 14 Sep 2016 15:53:03 -0700
+Subject: =?UTF-8?Q?TEST?=
+To: =?UTF-8?Q?'ptsptsp@hotmail.com'?= <ptsptsp@hotmail.com>
+From: =?UTF-8?Q?PtsPts=20PTSP?= <PTS12@bluetooth.com>
+Message-Id: <146>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="=-pyZKj0i0gbQsi4X9evCs"
+
+--=-pyZKj0i0gbQsi4X9evCs
+Content-Type: text/plain
+Content-Description: inline
+Content-Transfer-Encoding: quoted-printable
+
+TEST
+--=-pyZKj0i0gbQsi4X9evCs
+Content-Type: ion/ion; name=PTS.txt
+Content-Disposition: attachment; filename=PTS.txt
+
+PTS EMAIL message testing 3.PTS EMAIL message testing 3.PTS EMAIL message testing 3.PTS EMAIL message testing 3.
+--=-pyZKj0i0gbQsi4X9evCs--
+
+END:MSG
+END:BBODY
+END:BENV
+END:BENV
+END:BMSG
