@@ -65,6 +65,7 @@
 #include "btp_tbs.h"
 #include "le-audio/gatt-service/telephone_bearer_service_client.h"
 #include "btp_ccp.h"
+#include "btp_pbp.h"
 
 #define  MAX_NUM_BIS 2
 #define  MAX_CHANNELS 2
@@ -138,13 +139,14 @@ static le_extended_advertising_parameters_t extended_params = {
         .scan_request_notification_enable = 0,
 };
 
-static uint8_t extended_adv_data[] = {
-        // 16 bit service data, ORG_BLUETOOTH_SERVICE_BASIC_AUDIO_ANNOUNCEMENT_SERVICE, Broadcast ID
-        6, BLUETOOTH_DATA_TYPE_SERVICE_DATA_16_BIT_UUID, 0x52, 0x18, 0, 0, 0,
-        // name
-        7, BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME, 'P', 'T', 'S', '-', 'x', 'x',
-        7, BLUETOOTH_DATA_TYPE_BROADCAST_NAME ,     'P', 'T', 'S', '-', 'x', 'x',
-};
+static uint8_t extended_adv_data_buffer[100];
+
+// PBP
+static uint8_t pbp_features;
+static uint8_t pbp_metadata_len;
+static uint8_t pbp_metadata_buffer[50];
+static uint8_t pbp_broadcast_name_len;
+static uint8_t pbp_broadcast_name_buffer[50];
 
 // TBS
 #define TBS_BEARERS_MAX_NUM 2
@@ -609,6 +611,8 @@ static void expect_status_no_error(uint8_t status){
 }
 
 void btp_bap_start_advertising(uint32_t broadcast_id) {
+
+    // setup advertising set once
     if (adv_handle == 0xff){
         bd_addr_t local_addr;
         gap_local_bd_addr(local_addr);
@@ -623,11 +627,45 @@ void btp_bap_start_advertising(uint32_t broadcast_id) {
         }
     }
 
-    // set broadcast id
-    little_endian_store_24(extended_adv_data, 4, broadcast_id);
+    // construct advertisement
+    uint16_t offset = 0;
+    // BLUETOOTH_DATA_TYPE_SERVICE_DATA_16_BIT_UUID - ORG_BLUETOOTH_SERVICE_BROADCAST_AUDIO_ANNOUNCEMENT_SERVICE
+    extended_adv_data_buffer[offset++] = 6;
+    extended_adv_data_buffer[offset++] = BLUETOOTH_DATA_TYPE_SERVICE_DATA_16_BIT_UUID;
+    little_endian_store_16(extended_adv_data_buffer, offset, ORG_BLUETOOTH_SERVICE_BROADCAST_AUDIO_ANNOUNCEMENT_SERVICE);
+    offset += 2;
+    little_endian_store_24(extended_adv_data_buffer, offset, broadcast_id);
+    offset += 3;
+    // BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME
+    extended_adv_data_buffer[offset++] = 7;
+    extended_adv_data_buffer[offset++] = BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME;
+    const char * local_name = "PTS-XX";
+    uint8_t local_name_len = strlen(local_name);
+    memcpy(&extended_adv_data_buffer[offset], local_name, local_name_len);
+    offset += local_name_len;
+    // BLUETOOTH_DATA_TYPE_BROADCAST_NAME
+    if (pbp_broadcast_name_len > 0){
+        extended_adv_data_buffer[offset++] = 1 + pbp_broadcast_name_len;
+        extended_adv_data_buffer[offset++] = BLUETOOTH_DATA_TYPE_BROADCAST_NAME;
+        btstack_assert(offset + pbp_broadcast_name_len < sizeof(extended_adv_data_buffer));
+        memcpy(&extended_adv_data_buffer[offset], pbp_broadcast_name_buffer, pbp_broadcast_name_len);
+        offset += pbp_broadcast_name_len;
+    }
+    // ORG_BLUETOOTH_SERVICE_PUBLIC_BROADCAST_ANNOUNCEMENT
+    if (pbp_features != 0){
+        extended_adv_data_buffer[offset++] = 5 + pbp_metadata_len;
+        extended_adv_data_buffer[offset++] = BLUETOOTH_DATA_TYPE_SERVICE_DATA_16_BIT_UUID;
+        little_endian_store_16(extended_adv_data_buffer, offset, ORG_BLUETOOTH_SERVICE_PUBLIC_BROADCAST_ANNOUNCEMENT);
+        offset += 2;
+        extended_adv_data_buffer[offset++] = pbp_features;
+        extended_adv_data_buffer[offset++] = pbp_metadata_len;
+        btstack_assert(offset + pbp_metadata_len < sizeof(extended_adv_data_buffer));
+        memcpy(&extended_adv_data_buffer[offset], pbp_metadata_buffer, pbp_metadata_len);
+        offset += pbp_metadata_len;
+    }
 
     uint8_t status;
-    status = gap_extended_advertising_set_adv_data(adv_handle, sizeof(extended_adv_data), extended_adv_data);
+    status = gap_extended_advertising_set_adv_data(adv_handle, offset, extended_adv_data_buffer);
     if (status != 0) MESSAGE("Status 0x%02x", status);
     status = gap_periodic_advertising_set_params(adv_handle, &periodic_params);
     if (status != 0) MESSAGE("Status 0x%02x", status);
@@ -2544,3 +2582,61 @@ void btp_ccp_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, 
             break;
     }
 };
+
+void btp_pbp_init(void){
+    pbp_features = 0;
+    pbp_broadcast_name_len = 0;
+}
+
+void btp_pbp_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, const uint8_t *data){
+    // provide op info for response
+    response_len = 0;
+    response_service_id = BTP_SERVICE_ID_PBP;
+    response_op = opcode;
+    server_t * server;
+    uint16_t offset = 0;
+    switch (opcode) {
+        case BTP_PBP_READ_SUPPORTED_COMMANDS:
+        MESSAGE("BTP_CCP_READ_SUPPORTED_COMMANDS");
+            if (controller_index == BTP_INDEX_NON_CONTROLLER) {
+                uint8_t commands = 0;
+                btp_send(response_service_id, opcode, controller_index, 1, &commands);
+            }
+            break;
+        case BTP_PBP_SET_PUBLIC_BROADCAST_ANNOUNCEMENT:
+            /**
+                uint8_t features;
+                uint8_t metadata_len;
+                uint8_t metadata[0];
+             */
+            if (controller_index == 0) {
+                pbp_features = data[offset++];
+                pbp_metadata_len = data[offset++];
+                btstack_assert(pbp_metadata_len <= sizeof(pbp_metadata_buffer));
+                memcpy(pbp_metadata_buffer, &data[offset], pbp_metadata_len);
+                // report success
+                btp_send(response_service_id, opcode, controller_index, 0, NULL);
+                break;
+            }
+            break;
+        case BTP_PBP_SET_BROADCAST_NAME:
+            /**
+                uint8_t name_len;
+                uint8_t name[0];
+             */
+            if (controller_index == 0) {
+                // get server struct
+                pbp_broadcast_name_len = data[offset++];
+                btstack_assert(pbp_broadcast_name_len <= sizeof(pbp_broadcast_name_buffer));
+                memcpy(pbp_broadcast_name_buffer, &data[offset], pbp_broadcast_name_len);
+                // report success
+                btp_send(response_service_id, opcode, controller_index, 0, NULL);
+                break;
+            }
+            break;
+        default:
+            MESSAGE("BTP PBP Operation 0x%02x not implemented", opcode);
+            btstack_assert(false);
+            break;
+    }
+}
