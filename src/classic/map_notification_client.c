@@ -142,7 +142,13 @@ struct objconfig_s cc_v1_2 = {
     .body   = "<event type=\"ConversationChanged\" msg_type=\"IM\" sender_name=\"PTS\""
               " conversation_id=”3909231965”  presence_availability=\"1\"  chat_state=\"1\" last_activity=\"20160625T133700\""
               " participant_uci=”skype:beastmode2”/>"
+};
 
+// copied from PTS v8.6.0B6 file IM_MessageRemoved_event_report_1_2
+struct objconfig_s mr_v1_2 = {
+    .header = "<MAP-event-report version=\"1.2\">",
+    .footer = "</MAP-event-report>",
+    .body   = "<event type = \"MessageRemoved\" handle=\"0123456789001000\" folder=\"TELECOM/MSG/INBOX\"  msg_type=\"IM\"/>"
 };
 
 
@@ -165,6 +171,7 @@ static struct test_config_s
     {.nr = 4, .descr = "MAP/MSE/MMN/BV-10-C"    , .type = &pp_v1_2   ,.obj_count = 1, .msg_types = { ""},},
     {.nr = 5, .descr = "MAP/MSE/MMN/BV-11-C"    , .type = &pc_v1_2   ,.obj_count = 1, .msg_types = { ""},},
     {.nr = 6, .descr = "MAP/MSE/MMN/BV-12-C 13" , .type = &cc_v1_2   ,.obj_count = 1, .msg_types = { ""},},
+    {.nr = 7, .descr = "MAP/MSE/MMN/BV-14-C"    , .type = &mr_v1_2   ,.obj_count = 1, .msg_types = { ""},},
 };
 
 static struct test_config_s* mac_cfg = &test_configs[0];
