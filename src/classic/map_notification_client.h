@@ -103,10 +103,13 @@ typedef struct {
     map_access_client_obex_srm_t obex_srm;
     map_access_client_srm_state_t srm_state;
 
+    uint8_t* body_buf;
+    uint8_t  body_buf_len;
+
 } map_notification_client_t;
 
 
-uint8_t map_notification_client_put_send_event(uint16_t map_cid);
+uint8_t map_notification_client_put_send_event(uint16_t map_cid, uint8_t* body_buf, uint8_t  body_buf_len);
 
 /**
 *
