@@ -737,7 +737,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
     UNUSED(size);
     uint8_t status, NotificationStatus, ChatState;
     uint16_t pos, start_index, max_list_count = 0, dummy_map_cid;
-    uint32_t continuation;
+    uint32_t continuation, NotificationFilterMask;
 	
     switch (packet_type){
         case HCI_EVENT_PACKET:
@@ -859,7 +859,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             break;
                         }
 
-                        case MAP_SUBEVENT_PUT_NOTIFICATION_REGISTRATION:
+                        case MAP_SUBEVENT_PUT_SET_NOTIFICATION_REGISTRATION:
                             APP_READ_16(packet, &pos, &dummy_map_cid);
                             APP_READ_08(packet, &pos, &NotificationStatus);
                             MAP_PRINTF("[+] Put NotificationRegistration\n");
@@ -872,6 +872,13 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                                 disconnect_map_notification_client();
                                 MAP_PRINTF("[-] Disable Notifications for MAP-MNS map_cid: <%u>(0x%04u)\n", dummy_map_cid, dummy_map_cid);
                             }
+                            break;
+
+                        case MAP_SUBEVENT_PUT_SET_NOTIFICATION_FILTER:
+                            APP_READ_16(packet, &pos, &dummy_map_cid);
+                            APP_READ_32(packet, &pos, &NotificationFilterMask);
+                            MAP_PRINTF("[+] Put SetNotificationFilter NotificationFilterMask:0x%08x\n", NotificationFilterMask);
+                            map_access_server_send_get_put_response(map_cid, OBEX_RESP_SUCCESS, NULL, 0, 0, NULL);
                             break;
 
                         case MAP_SUBEVENT_PUT_OWNER_STATUS: {
