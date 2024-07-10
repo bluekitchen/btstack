@@ -171,7 +171,23 @@ typedef uint8_t mas_UTCstmpoffstr_t[20];
  PARAM_REQRSP( ConversationID                    , 0x22, mas_uint128hex_t   , NO_OPTS   , DSCR( (max 3uint16_t)    ;   128 - bit value in hex string format                     ))\
  PARAM_RESPON( FolderVersionCounter              , 0x23, mas_uint128hex_t   , NO_OPTS   , DSCR( (max 3uint16_t);   128 - bit value in hex string format                         ))\
  PARAM_UNUSED( FilterMessageHandle               , 0x24, mas_uint64_t       , NO_OPTS   , DSCR( 64 - bit value in hex string format                                             ))\
- PARAM_UNUSED( NotificationFilterMask            , 0x25, uint32_t           , NO_OPTS   , DSCR( Bit mask settings; see Section 5.14.3.1                                         ))\
+ PARAM_REQUST( NotificationFilterMask            , 0x25, uint32_t           , NO_OPTS   , DSCR( Bit mask settings; see Section 5.14.3.1 )                                         \
+                                                                                          ENUM(      1 << 0  , NewMessage                   )                                     \
+                                                                                          ENUM(      1 << 1  , MessageDeleted               )                                     \
+                                                                                          ENUM(      1 << 2  , MessageShift                 )                                     \
+                                                                                          ENUM(      1 << 3  , SendingSuccess               )                                     \
+                                                                                          ENUM(      1 << 4  , SendingFailure               )                                     \
+                                                                                          ENUM(      1 << 5  , DeliverySuccess              )                                     \
+                                                                                          ENUM(      1 << 6  , DeliveryFailure              )                                     \
+                                                                                          ENUM(      1 << 7  , MemoryFull                   )                                     \
+                                                                                          ENUM(      1 << 8  , MemoryAvailable              )                                     \
+                                                                                          ENUM(      1 << 9  , ReadStatusChanged            )                                     \
+                                                                                          ENUM(      1 << 10 , ConversationChanged          )                                     \
+                                                                                          ENUM(      1 << 11 , ParticipantPresenceChanged   )                                     \
+                                                                                          ENUM(      1 << 12 , ParticipantChatStateChanged  )                                     \
+                                                                                          ENUM(      1 << 13 , MessageExtendedDataChanged   )                                     \
+                                                                                          ENUM(      1 << 14 , MessageRemoved               )                                     \
+                                                                                          ENUM(0x1FFFF << 15 , Reserved_Mask                )                                    )\
  PARAM_UNUSED( ConvParameterMask                 , 0x26, uint32_t           , NO_OPTS   , DSCR( Bit mask settings; see Section 5.13.3.10                                        ))\
  PARAM_RESPON( OwnerUCI                          , 0x27, mas_utf8_t         , OPT_STR0  , DSCR( Text UTF - 8                                                                    ))\
  PARAM_UNUSED( ExtendedData                      , 0x28, mas_utf8_t         , NO_OPTS   , DSCR( Text UTF - 8                                                                    ))\
@@ -321,6 +337,7 @@ typedef enum {
     MAP_OBJECT_TYPE_PUT_MESSAGE_UPDATE,
     MAP_OBJECT_TYPE_PUT_MESSAGE,
     MAP_OBJECT_TYPE_PUT_NOTIFICATION_REGISTRATION,
+    MAP_OBJECT_TYPE_PUT_SET_NOTIFICATION_FILTER,
     MAP_OBJECT_TYPE_PUT_OWNER_STATUS
 } map_object_type_t;
 

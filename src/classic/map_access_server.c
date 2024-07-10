@@ -346,6 +346,10 @@ static map_object_type_t map_access_server_parse_object_type(map_access_server_t
         RUN_AND_LOG_ACTION(return MAP_OBJECT_TYPE_PUT_NOTIFICATION_REGISTRATION;)
     }
 
+    if (strcmp("x-bt/MAP-notification-filter", type_string) == 0) {
+        RUN_AND_LOG_ACTION(return MAP_OBJECT_TYPE_PUT_SET_NOTIFICATION_FILTER;)
+    }
+
     if (strcmp("x-bt/ownerStatus", type_string) == 0) {
         RUN_AND_LOG_ACTION(return MAP_OBJECT_TYPE_PUT_OWNER_STATUS;)
     }
@@ -744,6 +748,7 @@ static void map_access_server_handle_get_put_request(map_access_server_t* map_ac
     case MAP_OBJECT_TYPE_PUT_MESSAGE_UPDATE:
     case MAP_OBJECT_TYPE_PUT_MESSAGE:
     case MAP_OBJECT_TYPE_PUT_NOTIFICATION_REGISTRATION:
+    case MAP_OBJECT_TYPE_PUT_SET_NOTIFICATION_FILTER:
     case MAP_OBJECT_TYPE_PUT_OWNER_STATUS:
         break;
 
@@ -833,9 +838,17 @@ static void map_access_server_handle_get_put_request(map_access_server_t* map_ac
         break;
 
     case MAP_OBJECT_TYPE_PUT_NOTIFICATION_REGISTRATION:
-        APP_WRITE_08(event, &pos, MAP_SUBEVENT_PUT_NOTIFICATION_REGISTRATION);
+        APP_WRITE_08(event, &pos, MAP_SUBEVENT_PUT_SET_NOTIFICATION_REGISTRATION);
         APP_WRITE_16(event, &pos, map_access_server->map_cid);
         APP_WRITE_08(event, &pos, map_access_server->request.app_params.NotificationStatus);
+        APP_WRITE_LEN(event, pos);
+        break;
+		
+
+    case MAP_OBJECT_TYPE_PUT_SET_NOTIFICATION_FILTER:
+        APP_WRITE_08(event, &pos, MAP_SUBEVENT_PUT_SET_NOTIFICATION_FILTER);
+        APP_WRITE_16(event, &pos, map_access_server->map_cid);
+        APP_WRITE_32(event, &pos, map_access_server->request.app_params.NotificationFilterMask);
         APP_WRITE_LEN(event, pos);
         break;
 
