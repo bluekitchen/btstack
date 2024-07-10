@@ -158,7 +158,7 @@ struct objconfig_s convo = {
     .fbody = body_convo
 };
 
-enum msg_status_read { no, yes };
+
 #define MAX_TC_OBJECTS 10
 static struct test_config_s
 {
