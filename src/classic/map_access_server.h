@@ -343,6 +343,16 @@ uint16_t map_access_server_get_max_body_size(uint16_t map_cid);
 int map_access_server_set_response_app_param(uint16_t map_cid, enum MAP_APP_PARAMS app_param, void* param);
 void map_access_server_init(btstack_packet_handler_t packet_handler, uint8_t rfcomm_channel_nr, uint16_t l2cap_psm, uint16_t mtu);
 
+
+// function pointers to some test case management functions
+struct test_set_config {
+    void (*fp_init_test_cases)(struct test_set_config* cfg);
+    void (*fp_next_test_case)(struct test_set_config* cfg);
+    void (*fp_select_test_case_n)(struct test_set_config* cfg, uint8_t n);
+    void (*fp_print_test_config)(struct test_set_config* cfg);
+    void (*fp_print_test_cases)(struct test_set_config* cfg);
+};
+
 #if defined __cplusplus
 }
 #endif

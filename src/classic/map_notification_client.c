@@ -71,6 +71,13 @@
 #include "classic/goep_client.h"
 #include "map_notification_client.h"
 
+#define PRINTF_TO_PKTLOG
+#ifdef PRINTF_TO_PKTLOG
+#define MAP_PRINTF(format, ...)  printf(format,  ## __VA_ARGS__); HCI_DUMP_LOG("PRINTF", HCI_DUMP_LOG_LEVEL_INFO, format,  ## __VA_ARGS__)
+#else
+#define MAP_PRINTF MAP_PRINTF
+#endif
+
 // MAP 1.4.2, 6.3 - OBEX Header: map notification service bb582b41-420c-11db-b0de-0800200c9a66
 static const uint8_t map_notification_client_service_uuid[] = { 0xbb, 0x58, 0x2b, 0x41, 0x42, 0xc, 0x11, 0xdb, 0xb0, 0xde, 0x8, 0x0, 0x20, 0xc, 0x9a, 0x66 };
 
@@ -106,19 +113,69 @@ static struct test_config_s
     bool msg_deleted[MAX_TC_OBJECTS];
 } test_configs[] =
 {
-    {.nr=0, .descr = "MAP/MSE/MMN/BV-04-C" , .type = &v1_1,.obj_count = 1, .objects = { "EMAIL", "SMS_GSM", "SMS_CDMA", "MMS", "IM"},},
-    {.nr = 1, .descr = "MAP/MSE/MMN/BV-02-C" , .type = &v1_0,.obj_count = 1, .objects = { "EMAIL", "SMS_GSM", "SMS_CDMA", "MMS", "IM"},}, 
+    {.nr = 0, .descr = "MAP/MSE/MMN/BV-02-C" , .type = &v1_0,.obj_count = 1, .objects = { "EMAIL", "SMS_GSM", "SMS_CDMA", "MMS", "IM"},},
+    {.nr = 1, .descr = "MAP/MSE/MMN/BV-04-C" , .type = &v1_1,.obj_count = 1, .objects = { "EMAIL", "SMS_GSM", "SMS_CDMA", "MMS", "IM"},},
 };
 
-static struct test_config_s* config = &test_configs[0];
+static struct test_config_s* mac_cfg = &test_configs[0];
+static int cfg_start_index = 0;
+static int curent_event_type = 0;
 
-static int gen_event_report(char* buf, int maxsize, int index) {
-    index = index % ARRAYSIZE(config->objects);
+static void mac_print_test_config(struct test_set_config* cfg)
+{
+    MAP_PRINTF("mac_cfg #%d:%s obj_count:%d hdr:%s\n", mac_cfg->nr, mac_cfg->descr, mac_cfg->obj_count, mac_cfg->type->header);
+}
+
+static void mac_init_test_cases(struct test_set_config* cfg) {
+    cfg_start_index = 0;
+    curent_event_type = 0;
+    cfg->fp_print_test_config(cfg);
+}
+
+void mac_next_test_case(struct test_set_config* cfg) {
+    // cycle throug all test cases
+    if (++mac_cfg >= &test_configs[ARRAYSIZE(test_configs)])
+        mac_cfg = &test_configs[0];
+    // init MAP Access Server test cases
+    cfg->fp_init_test_cases(cfg);
+}
+
+void mac_select_test_case_n(struct test_set_config* cfg, uint8_t n) {
+    if (n < ARRAYSIZE(test_configs))
+    {
+        mac_cfg = &test_configs[n];
+        // init MAP Access Server test cases
+        cfg->fp_init_test_cases(cfg);
+    }
+    else
+        MAP_PRINTF("Error: coulnd't set config <%d>", n);
+}
+
+static void mac_print_test_cases(struct test_set_config* cfg)
+{
+    struct test_config_s* tc = &test_configs[0];
+    
+    do {
+        MAP_PRINTF("[%d] <%s>\n", tc->nr, tc->descr);
+    } while (++tc < &test_configs[ARRAYSIZE(test_configs)]);
+}
+struct test_set_config mac_test_set =
+{
+    .fp_init_test_cases    = mac_init_test_cases,
+    .fp_next_test_case     = mac_next_test_case,
+    .fp_select_test_case_n = mac_select_test_case_n,
+    .fp_print_test_config  = mac_print_test_config,
+    .fp_print_test_cases   = mac_print_test_cases,
+};
+
+static int gen_event_report(char* buf, int maxsize, int index)
+{
+    index = index % ARRAYSIZE(mac_cfg->objects);
     int pos = 0;
     
-    pos += snprintf(&buf[pos], maxsize - pos, config->type->header);
-    pos += snprintf(&buf[pos], maxsize - pos, config->type->body, config->objects[index]);
-    pos += snprintf(&buf[pos], maxsize - pos, config->type->footer);
+    pos += snprintf(&buf[pos], maxsize - pos, mac_cfg->type->header);
+    pos += snprintf(&buf[pos], maxsize - pos, mac_cfg->type->body, mac_cfg->objects[index]);
+    pos += snprintf(&buf[pos], maxsize - pos, mac_cfg->type->footer);
 
     return pos;
 }
@@ -278,10 +335,9 @@ static void map_notification_client_handle_can_send_now(uint16_t goep_cid) {
             {
                 uint8_t application_parameters[20];
                 uint16_t pos = 0;
-                static int type = 0;
 
                 char dummy_report[300];
-                gen_event_report(dummy_report, sizeof(dummy_report), type);
+                gen_event_report(dummy_report, sizeof(dummy_report), curent_event_type);
 
                 goep_client_request_create_put(map_notification_client->goep_client.cid);
                 goep_client_header_add_srm_enable(map_notification_client->goep_client.cid);
@@ -295,8 +351,8 @@ static void map_notification_client_handle_can_send_now(uint16_t goep_cid) {
                 goep_client_body_add_static(map_notification_client->goep_client.cid, dummy_report, (uint32_t)strlen(dummy_report));
 
                 // cycle through message types
-                if (++type >= ARRAYSIZE(dummy_report))
-                    type = 0;
+                if (++curent_event_type >= ARRAYSIZE(dummy_report))
+                    curent_event_type = 0;
 
                 //goep_client_body_add_static(map_notification_client->goep_client.cid, (uint8_t *) "0", 1);
                 map_notification_client->state = MNC_STATE_W4_PUT_SEND_EVENT;

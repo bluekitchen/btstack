@@ -191,11 +191,79 @@ static struct test_config_s
 {.nr = 19, .descr = "MAP/MSE/MMD/BV-02-I"                      , .type = &msg,    .obj_count = 1, .objects = { "EMAIL","MMS", "SMS_GSM","SMS_CDMA", "IM", "dummy"}, .fGetMsgListng = MAP_MSE_MMD_BV_02_I_getMsgListng, .fdiscon = MAP_MSE_MMD_BV_02_I_disc}, // PTS 8.5.4 Build 6 issue: sends a sequence of OBEX connect, GetMessageListing (expects 1 EMAIL, nothing else, no more messages), PUT MessageStatus (Delete Message), GetMessageListing (expects empty listing), OBEX discoonect, repeat (MMS, SMS_GSM, SMS_CDMA) - the last repeat for IM misses the disconnect and fails on the Get because the list is still empty
 };
 
-static struct test_config_s* config = &test_configs[0];
+static struct test_config_s* mas_cfg = &test_configs[0];
 static int cfg_start_index = 0;
 static int cfg_MAP_MSE_MMD_BV_02_I_getMsgListng_counter = 0;
 static int one_object_more_or_less = 0;
 static uint16_t ListingSize = 0;
+
+extern void mac_select_test_set(struct test_set_config* cfg);
+
+static void mas_init_test_cases(struct test_set_config* cfg) {
+    cfg_start_index = 0;
+    one_object_more_or_less = 0;
+    ListingSize = mas_cfg->obj_count + one_object_more_or_less;
+    cfg_MAP_MSE_MMD_BV_02_I_getMsgListng_counter = 0;
+    cfg->fp_print_test_config(cfg);
+}
+
+static void mas_next_test_case(struct test_set_config* cfg) {
+    // cycle throug all test cases
+    if (++mas_cfg >= &test_configs[ARRAYSIZE(test_configs)])
+        mas_cfg = &test_configs[0];
+    // init MAP Access Server test cases
+    cfg->fp_init_test_cases(cfg);
+}
+
+static void mas_select_test_case_n(struct test_set_config* cfg, uint8_t n) {
+    if (n < ARRAYSIZE(test_configs))
+    {
+        mas_cfg = &test_configs[n];
+        // init MAP Access Server test cases
+        cfg->fp_init_test_cases(cfg);
+    }
+    else
+        MAP_PRINTF("Error: coulnd't set mas_cfg <%d>", n);
+}
+
+static void mas_print_test_config(struct test_set_config* cfg) {
+    MAP_PRINTF("mas_cfg #%d:%s obj_count:%d hdr:%s\n", mas_cfg->nr, mas_cfg->descr, mas_cfg->obj_count, mas_cfg->type->header);
+}
+
+static void mas_print_test_cases(struct test_set_config* cfg)
+{
+    struct test_config_s* tc = &test_configs[0];
+    do {
+        MAP_PRINTF("[%d] <%s>\n", tc->nr, tc->descr);
+    } while (++tc < &test_configs[ARRAYSIZE(test_configs)]);
+}
+
+struct test_set_config mas_test_set = 
+{
+    .fp_init_test_cases    = mas_init_test_cases,
+    .fp_next_test_case     = mas_next_test_case,
+    .fp_select_test_case_n = mas_select_test_case_n,
+    .fp_print_test_config  = mas_print_test_config,
+    .fp_print_test_cases   = mas_print_test_cases,
+};
+
+struct test_set_config* test_set = &mas_test_set;
+
+// declaration of config struct in map_notification_client.c
+struct test_set_config mac_test_set;
+static select_test_set(char c) {
+    if (c == 'S') {
+        test_set = &mas_test_set;
+    }
+    else if (c == 'C') {
+        test_set = &mac_test_set;
+    }
+    test_set->fp_print_test_cases(test_set);
+    test_set->fp_init_test_cases(test_set);
+}
+
+
+
 
 static void MAP_MSE_MMD_BV_02_I_disc(void) {
     log_debug("disabled default discconect behaviour");
@@ -243,21 +311,6 @@ static mas_uint128hex_t ConversationID = { 0 };
 static void increase_version_counter_by_1(mas_uint128hex_t counter) {
     counter[BT_UINT128_HEX_LEN_BYTES - 1]++;
     log_debug_hexdump(counter, BT_UINT128_HEX_LEN_BYTES);
-}
-
-static void set_test_config(int nr) {
-    if (nr < ARRAYSIZE(test_configs))
-        config = &test_configs[nr];
-    else
-        printf("couldn't set test setup nr %d\n", nr);
-}
-
-
-static void init_testcases(void) {
-    cfg_start_index = 0;
-    one_object_more_or_less = 0;
-    ListingSize = config->obj_count + one_object_more_or_less;
-    cfg_MAP_MSE_MMD_BV_02_I_getMsgListng_counter = 0;
 }
 
 
@@ -315,9 +368,9 @@ attachment_mime_types=”video/mpeg”/>
 
 
 static int body_msg(char* msg_buffer, uint16_t index, int maxsize) {
-    index = index % ARRAYSIZE(config->objects);
+    index = index % ARRAYSIZE(mas_cfg->objects);
     int size = 0;
-    if (!config->msg_deleted[index])
+    if (!mas_cfg->msg_deleted[index])
         size = snprintf(msg_buffer, maxsize,
             "<msg handle=\"A%X\""
             " type=\"%s\""
@@ -330,8 +383,8 @@ static int body_msg(char* msg_buffer, uint16_t index, int maxsize) {
             " attachment_mime_types=\"video/mpeg\"/>" // PTS wants this in MAP/MSE/MMD/BV-02-I, otherwise "no EMAIL message in message listing"
             ,
             index,
-            config->objects[index],
-            config->objects[index] ? "yes" : "no"
+            mas_cfg->objects[index],
+            mas_cfg->objects[index] ? "yes" : "no"
         );
     return size;
 }
@@ -339,9 +392,9 @@ static int body_msg(char* msg_buffer, uint16_t index, int maxsize) {
 
 // TODO: PTS MAP/MSE/MMU/BV-02-I fails to handle multi-segment chunked responses so we had to send 2 message in a single rfcom/goep/obex response packet.
 static int body_msg_short(char* msg_buffer, uint16_t index, int maxsize) {
-    index = index % ARRAYSIZE(config->objects);
+    index = index % ARRAYSIZE(mas_cfg->objects);
     int size = 0;
-    if (!config->msg_deleted[index])
+    if (!mas_cfg->msg_deleted[index])
         size = snprintf(msg_buffer, maxsize,
             "<msg handle=\"A%X\""
             " type=\"%s\""
@@ -356,8 +409,8 @@ static int body_msg_short(char* msg_buffer, uint16_t index, int maxsize) {
             //" attachment_mime_types=\"video/mpeg\"/>" // PTS wants this in MAP/MSE/MMD/BV-02-I, otherwise "no EMAIL message in message listing"
             ,
             index,
-            config->objects[index],
-            config->objects[index] ? "yes" : "no"
+            mas_cfg->objects[index],
+            mas_cfg->objects[index] ? "yes" : "no"
         );
     return size;
 }
@@ -403,8 +456,8 @@ static uint16_t send_listing(bool header,  uint16_t first, uint16_t last) {
 
     if (header){
         // add header
-        uint16_t len = (uint16_t)strlen(config->type->header);
-        memcpy(upload_buffer, config->type->header, len);
+        uint16_t len = (uint16_t)strlen(mas_cfg->type->header);
+        memcpy(upload_buffer, mas_cfg->type->header, len);
         pos += len;
         max_body_size -= len;
     }
@@ -413,7 +466,7 @@ static uint16_t send_listing(bool header,  uint16_t first, uint16_t last) {
         log_debug("2 first:%d last:%d pos:%d", first, last, pos);
         
         // add entry
-        len = config->type->fbody(listing_buffer, first, sizeof(listing_buffer));
+        len = mas_cfg->type->fbody(listing_buffer, first, sizeof(listing_buffer));
         
         log_debug("2.5 first:%d last:%d pos:%d len:%d", first, last, pos, len);
         if (len > max_body_size){
@@ -429,14 +482,14 @@ static uint16_t send_listing(bool header,  uint16_t first, uint16_t last) {
     }
 
 
-    len = (uint16_t)strlen(config->type->footer);
+    len = (uint16_t)strlen(mas_cfg->type->footer);
 
     if (first >= last && len < sizeof(listing_buffer) - pos){
         log_debug("5 first:%d last:%d pos:%d len:%d", first, last, pos, len);
         if (len < max_body_size){
             log_debug("6 first:%d last:%d pos:%d len:%d", first, last, pos, len);
             // add footer
-            memcpy(&upload_buffer[pos], (const uint8_t *)config->type->footer, len);
+            memcpy(&upload_buffer[pos], (const uint8_t *)mas_cfg->type->footer, len);
             pos += len;
             max_body_size -= len;
             done = true;
@@ -465,13 +518,13 @@ static void send_get_listing_object(uint8_t* packet, uint16_t start_index, uint1
     uint16_t total_messages, num_msgs_selected, end_index;
 
     // send messages listing
-    total_messages = config->obj_count + one_object_more_or_less;
+    total_messages = mas_cfg->obj_count + one_object_more_or_less;
 
     num_msgs_selected = total_messages - start_index;
     if (max_list_count < 0xffff) {
         num_msgs_selected = btstack_min(max_list_count, num_msgs_selected);
     }
-    MAP_PRINTF("[+] get message listing - obj_count:%u add_one_object:%u list offset %u, num messages %u max_list_count %u\n", config->obj_count, one_object_more_or_less, start_index, num_msgs_selected, max_list_count);
+    MAP_PRINTF("[+] get message listing - obj_count:%u add_one_object:%u list offset %u, num messages %u max_list_count %u\n", mas_cfg->obj_count, one_object_more_or_less, start_index, num_msgs_selected, max_list_count);
     // consider already sent cards
     if (continuation > 0xffff) {
         // just missed the footer
@@ -485,11 +538,6 @@ static void send_get_listing_object(uint8_t* packet, uint16_t start_index, uint1
     end_index = start_index + num_msgs_selected;
     MAP_PRINTF("[-] continuation %u, num messages %u, start index %u, end index %u\n", continuation, num_msgs_selected, start_index, end_index);
     send_listing(continuation == 0, start_index, end_index);
-}
-
-static void print_current_test_config(void)
-{
-    MAP_PRINTF("config #%d:%s obj_count:%d hdr:%s\n", config->nr, config->descr, config->obj_count, config->type->header);
 }
 
 static void connect_map_notification_client(void) {
@@ -514,15 +562,14 @@ static void disconnect_map_notification_client(void) {
 static void show_usage(void){
     bd_addr_t iut_address;
     gap_local_bd_addr(iut_address);
-    struct test_config_s* cfg = &test_configs[0];
+    
+    MAP_PRINTF("\n--- Bluetooth MAP Client Test Console %s ---\n", bd_addr_to_str(iut_address));
 
-    MAP_PRINTF("\n--- Bluetooth MAP Server Test Console %s ---\n", bd_addr_to_str(iut_address));
-    do {
-        MAP_PRINTF("[%d] <%s>\n", cfg->nr, cfg->descr);
-    } while (++cfg < &test_configs[ARRAYSIZE(test_configs)]);
-
-    print_current_test_config();
-    MAP_PRINTF("<n> switch to next test config\n");
+    test_set->fp_print_test_cases(test_set);
+    test_set->fp_print_test_config(test_set);
+    MAP_PRINTF("<S> switch to Map Server test cases\n");
+    MAP_PRINTF("<C> switch to Map Client test cases\n");
+    MAP_PRINTF("<n> switch to next test mas_cfg\n");
     MAP_PRINTF("<0..9> select # 0..9\n");
     MAP_PRINTF("<f> FolderVersionCounter++\n");
     MAP_PRINTF("<c> ConversationListingVersionCounter++\n");
@@ -530,44 +577,25 @@ static void show_usage(void){
     MAP_PRINTF("<a> add one object\n");
     MAP_PRINTF("<d> delete one object\n");
     MAP_PRINTF("<r> reset current test case\n");
-    MAP_PRINTF("<C> connect to MCE Notification Server\n");
     MAP_PRINTF("<D> disconnect the MCE Notification Server\n");
-    MAP_PRINTF("<N> send PUT Notification to MCE Server\n");
+    MAP_PRINTF("<e> send Event report PUT Notification to MCE Server\n");
 }
 
 static void stdin_process(char c){
-    uint8_t tc;
-
     switch (c){
         case 'n':
-            // cycle throug all test cases
-            if (++config >= &test_configs[ARRAYSIZE(test_configs)])
-                config = &test_configs[0];
-            // init MAP Access Server test cases
-            init_testcases();
-            print_current_test_config();
+            test_set->fp_next_test_case(test_set);
             break;
 
-        case '0':
-        case '1':
-        case '2':
-        case '3':
-        case '4':
-        case '5':
-        case '6':
-        case '7':
-        case '8':
-        case '9':
-            tc = c - '0';
-            if (tc < ARRAYSIZE(test_configs))
-            {
-                config = &test_configs[c - '0'];
-                // init MAP Access Server test cases
-                init_testcases();
-                print_current_test_config();
-            }
-            else
-                MAP_PRINTF("Error: coulnd't set config <%c>", c);
+        case '0': case '1': case '2': case '3': case '4':
+        case '5': case '6': case '7': case '8': case '9':
+            test_set->fp_select_test_case_n(test_set, c - '0');
+            break;
+
+        case 'S': case 'C':
+            // switch to Server test cases
+            MAP_PRINTF("\nSelected %s Test Set\n", c == 'S' ? "Server" : "Client")
+            select_test_set(c);
             break;
 
         case 'a':
@@ -582,37 +610,32 @@ static void stdin_process(char c){
 
         case 'r':
             // reset current test cases
-            init_testcases();
-            print_current_test_config();
+            test_set->fp_init_test_cases(test_set);
             break;
 
         case 'f':
-            print_current_test_config();
+            test_set->fp_print_test_config(test_set);
             MAP_PRINTF("FolderVersionCounter:");
             increase_version_counter_by_1(FolderVersionCounter);
             break;
 
         case 'i':
-            print_current_test_config();
+            test_set->fp_print_test_config(test_set);
             MAP_PRINTF("ConversationID:");
             increase_version_counter_by_1(ConversationID);
             break;
 
         case 'c':
-            print_current_test_config();
+            test_set->fp_print_test_config(test_set);
             MAP_PRINTF("ConversationListingVersionCounter:");
             increase_version_counter_by_1(ConversationListingVersionCounter);
-            break;
-
-        case 'C':
-            connect_map_notification_client();
             break;
 
         case 'D':
             disconnect_map_notification_client();
             break;
 
-        case 'N':
+        case 'e':
             map_notification_client_put_send_event(map_notification_client_cid);
             MAP_PRINTF("map_notification_client_put_send_event map_notification_client_cid:%04x", map_notification_client_cid);
             break;
@@ -643,18 +666,18 @@ static void handle_set_message_status(char *msg_handle_str, uint8_t StatusIndica
 
     msg_handle = msg_handle_str[1] - '0';
 
-    if (msg_handle > ARRAYSIZE(config->objects) - 1)
+    if (msg_handle > ARRAYSIZE(mas_cfg->objects) - 1)
         ERROR("handle exceeds our nr of messages");
 
 
     switch (StatusIndicator) {
     
     case readStatus:
-        config->msg_stati[msg_handle] = StatusValue;
+        mas_cfg->msg_stati[msg_handle] = StatusValue;
         break;
     
     case deletedStatus:
-        config->msg_deleted[msg_handle] = StatusValue;
+        mas_cfg->msg_deleted[msg_handle] = StatusValue;
         break;
     
     default:
@@ -737,11 +760,11 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             }
                             break;
                         case MAP_SUBEVENT_CONNECTION_CLOSED:
-                            MAP_PRINTF("[+] Connection closed, %s\n", config->fdiscon?"disconnect handler":"re-init test case states");
-                            if (config->fdiscon != NULL)
-                                config->fdiscon();
+                            MAP_PRINTF("[+] Connection closed, %s\n", mas_cfg->fdiscon?"disconnect handler":"re-init test case states");
+                            if (mas_cfg->fdiscon != NULL)
+                                mas_cfg->fdiscon();
                             else
-                                init_testcases();
+                                test_set->fp_init_test_cases(test_set);
                             break;
                         case MAP_SUBEVENT_OPERATION_COMPLETED:
                             MAP_PRINTF("[+] Operation complete, status 0x%02x\n",
@@ -752,7 +775,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_DatabaseIdentifier, DatabaseIdentifier);
                             map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_FolderVersionCounter, FolderVersionCounter);
                             MAP_PRINTF("[+] Get Folder listing\n");
-                            send_listing(true, 0, config->obj_count-1 + one_object_more_or_less);
+                            send_listing(true, 0, mas_cfg->obj_count-1 + one_object_more_or_less);
                             break;
 							
                         case MAP_SUBEVENT_GET_MESSAGE_LISTING:
@@ -782,8 +805,8 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                                 send_get_listing_object(packet, start_index, max_list_count, continuation);
 
                             // some PTS tests require strange behaviour so we need a handler to modify default behaviour for GetMessageListing
-                            if (config->fGetMsgListng != NULL)
-                                config->fGetMsgListng();
+                            if (mas_cfg->fGetMsgListng != NULL)
+                                mas_cfg->fGetMsgListng();
 
                             break;
 
@@ -831,8 +854,8 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             MAP_PRINTF("[+] Put Message Charset:%u Attachment:%u MessageHandle:%s\n", Charset, Attachment, MessageHandle);
                             map_access_server_send_get_put_response(map_cid, OBEX_RESP_SUCCESS, obex_name_hdr_new_msg_handle, 0, 0, NULL);
 
-                            if (config->fPutMsg != NULL)
-                                config->fPutMsg();
+                            if (mas_cfg->fPutMsg != NULL)
+                                mas_cfg->fPutMsg();
                             break;
                         }
 
@@ -878,7 +901,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_ConversationListingVersionCounter, ConversationListingVersionCounter);
                             map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_ListingSize, &ListingSize);
                             // BT MAP Spec requires to skip the body if max_list_count == 0
-                            if (config->obj_count == 0 && one_object_more_or_less == 0)
+                            if (mas_cfg->obj_count == 0 && one_object_more_or_less == 0)
                                 map_access_server_send_get_put_response(map_cid, OBEX_RESP_SUCCESS, NULL, 0, 0, NULL);
                             else
                                 send_get_listing_object(packet, 0, 0xffff, continuation);
@@ -1027,8 +1050,8 @@ int btstack_main(int argc, const char * argv[]){
 
     sscanf_bd_addr(remote_addr_string, remote_addr);
 
-    // init MAP Access Server test cases
-    init_testcases();
+    // init test setups    
+    test_set->fp_init_test_cases(test_set);
 
     memset(map_message_access_service_buffer, 0, sizeof(map_message_access_service_buffer));
     
@@ -1039,6 +1062,7 @@ int btstack_main(int argc, const char * argv[]){
 
     // setup MAP Notfication Client
     map_notification_client_init();
+
 
 #ifdef HAVE_BTSTACK_STDIN
     btstack_stdin_setup(stdin_process);
