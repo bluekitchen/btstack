@@ -89,22 +89,36 @@ struct objconfig_s {
     char* footer;
 };
 
+// copied from PTS v8.6.0B6 file EMAIL_NewMessage_event_report_1_0
 struct objconfig_s v1_0 = {
     .header = "<MAP-event-report version=\"1.0\">",
     .footer = "</MAP-event-report>",
     .body   = "<event type=\"NewMessage\" handle=\"0123456789000003\" folder=\"TELECOM/MSG/INBOX\" msg_type=\"%s\" read_status=\"yes\" acknowledged_status=\"no\"/>"
 };
 
+// copied from PTS v8.6.0B6 file GSM_NewMessage_event_report_1_1
 struct objconfig_s v1_1 = {
     .header = "<MAP-event-report version=\"1.1\">",
     .footer = "</MAP-event-report>",
     .body   = "<event type = \"NewMessage\" handle=\"0123456789000001\" folder=\"TELECOM/MSG/OUTBOX\" msg_type=\"%s\" subject=\"Subject\" datetime=\"20130121T130510\" sender_name=\"Xyz\" priority=\"no\"/>"
 };
 
+// copied and adapted from PTS v8.6.0B6 file GSM_NewMessage_event_report_1_1
 struct objconfig_s v1_2 = {
     .header = "<MAP-event-report version=\"1.2\">",
     .footer = "</MAP-event-report>",
     .body = "<event type = \"NewMessage\" handle=\"0123456789000001\" folder=\"TELECOM/MSG/OUTBOX\" msg_type=\"%s\" subject=\"Subject\" datetime=\"20130121T130510\" sender_name=\"Xyz\" priority=\"no\"/>"
+};
+
+// copied from PTS v8.6.0B6 file ExtendedDataChanged_event_report_1_2
+struct objconfig_s v1_2_ed = {
+    .header = "<MAP-event-report version=\"1.2\">",
+    .footer = "</MAP-event-report>",
+    .body = "<event type=\"MessageExtendedDataChanged\" msg_type=\"IM\" handle=\"0123456789000002\" folder=\"TELECOM/MSG/INBOX\" sender_name=\"PTS\""
+            " datatime=\"20160925T133700\" extended_data=\"0:54;\""
+            " conversation_id=\"3909231965\""
+            " participant_uci=\"skype:beastmode2\""
+            "/>"
 };
 
 #define MAX_TC_OBJECTS 10 // maximum MAX_TC_OBJECTS-1 entries, last one is null
@@ -119,9 +133,10 @@ static struct test_config_s
     bool msg_deleted[MAX_TC_OBJECTS];
 } test_configs[] =
 {
-    {.nr = 0, .descr = "MAP/MSE/MMN/BV-02-C"    , .type = &v1_0,.obj_count = 1, .objects = { "EMAIL", "SMS_GSM", "SMS_CDMA", "MMS", "IM"},},
-    {.nr = 1, .descr = "MAP/MSE/MMN/BV-04-C 06" , .type = &v1_1,.obj_count = 1, .objects = { "EMAIL", "SMS_GSM", "SMS_CDMA", "MMS", "IM"},},
-    {.nr = 2, .descr = "MAP/MSE/MMN/BV-07-C"    , .type = &v1_2,.obj_count = 1, .objects = { "EMAIL"},},
+    {.nr = 0, .descr = "MAP/MSE/MMN/BV-02-C"    , .type = &v1_0   ,.obj_count = 1, .objects = { "EMAIL", "SMS_GSM", "SMS_CDMA", "MMS", "IM"},},
+    {.nr = 1, .descr = "MAP/MSE/MMN/BV-04-C 06" , .type = &v1_1   ,.obj_count = 1, .objects = { "EMAIL", "SMS_GSM", "SMS_CDMA", "MMS", "IM"},},
+    {.nr = 2, .descr = "MAP/MSE/MMN/BV-07-C"    , .type = &v1_2   ,.obj_count = 1, .objects = { "EMAIL"},},
+    {.nr = 3, .descr = "MAP/MSE/MMN/BV-08-C"    , .type = &v1_2_ed,.obj_count = 1, .objects = { "EMAIL"},},
 };
 
 static struct test_config_s* mac_cfg = &test_configs[0];
