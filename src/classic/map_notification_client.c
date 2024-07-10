@@ -76,6 +76,46 @@ static const uint8_t map_notification_client_service_uuid[] = { 0xbb, 0x58, 0x2b
 
 static btstack_linked_list_t map_notification_clients;
 
+struct objconfig_s {
+    char* header;
+    char* body;
+    char* footer;
+};
+
+struct objconfig_s v1_0 = {
+    .header = "<MAP-event-report version=\"1.0\">",
+    .footer = "</MAP-event-report>",
+    .body   = "<event type=\"NewMessage\" handle=\"0123456789000003\" folder=\"TELECOM/MSG/INBOX\" msg_type=\"%s\" read_status=\"yes\" acknowledged_status=\"no\"/>"
+};
+
+#define MAX_TC_OBJECTS 10 // maximum MAX_TC_OBJECTS-1 entries, last one is null
+static struct test_config_s
+{
+    int nr;
+    char* descr;
+    struct objconfig_s* type;
+    int obj_count;
+    char* objects[MAX_TC_OBJECTS]; 
+    enum msg_status_read msg_stati[MAX_TC_OBJECTS]; 
+    bool msg_deleted[MAX_TC_OBJECTS];
+} test_configs[] =
+{
+{.nr = 0, .descr = "MAP/MSE/MMN/BV-02-C" , .type = &v1_0,.obj_count = 1, .objects = { "EMAIL", "SMS_GSM", "SMS_CDMA", "MMS", "IM"},}, 
+};
+
+static struct test_config_s* config = &test_configs[0];
+
+static int gen_event_report(char* buf, int maxsize, int index) {
+    index = index % ARRAYSIZE(config->objects);
+    int pos = 0;
+    
+    pos += snprintf(&buf[pos], maxsize - pos, config->type->header);
+    pos += snprintf(&buf[pos], maxsize - pos, config->type->body, config->objects[index]);
+    pos += snprintf(&buf[pos], maxsize - pos, config->type->footer);
+
+    return pos;
+}
+
 static void map_notification_client_emit_connected_event(map_notification_client_t* context, uint8_t status) {
     uint8_t event[15];
     int pos = 0;
@@ -227,28 +267,13 @@ static void map_notification_client_handle_can_send_now(uint16_t goep_cid) {
             break;
 
         case MNC_STATE_W2_PUT_SEND_EVENT: 
-
+#ifdef ENABLE_GOEP_L2CAP
+#pragma Error("With L2CAP in MAP_OLD MAP/MSE/MMN/BV-04-C PTS 8.6.0B6 sets maximum packet length suddendly to only 150 bytes but minimum size reports are 200+")
+#endif
             static int type = 0;
-            
-            const char* dummy_report[] =
-            { // copied from PTS-File: EMAIL_NewMessage_event_report_1_0
-              "<MAP-event-report version = \"1.0\">"
-              "<event type = \"NewMessage\" handle = \"0123456789000003\" folder = \"TELECOM/MSG/INBOX\" msg_type = \"EMAIL\" read_status = \"yes\" acknowledged_status = \"no\"/>"
-              "</MAP-event-report>",
-              "<MAP-event-report version = \"1.0\">"
-              "<event type = \"NewMessage\" handle = \"0123456789000003\" folder = \"TELECOM/MSG/INBOX\" msg_type = \"SMS_GSM\" read_status = \"yes\" acknowledged_status = \"no\"/>"
-              "</MAP-event-report>",
-              "<MAP-event-report version = \"1.0\">"
-              "<event type = \"NewMessage\" handle = \"0123456789000003\" folder = \"TELECOM/MSG/INBOX\" msg_type = \"SMS_CDMA\" read_status = \"yes\" acknowledged_status = \"no\"/>"
-              "</MAP-event-report>",
-              "<MAP-event-report version = \"1.0\">"
-              "<event type = \"NewMessage\" handle = \"0123456789000003\" folder = \"TELECOM/MSG/INBOX\" msg_type = \"MMS\" read_status = \"yes\" acknowledged_status = \"no\"/>"
-              "</MAP-event-report>",
-              "<MAP-event-report version = \"1.0\">"
-              "<event type = \"NewMessage\" handle = \"0123456789000003\" folder = \"TELECOM/MSG/INBOX\" msg_type = \"IM\" read_status = \"yes\" acknowledged_status = \"no\"/>"
-              "</MAP-event-report>",
-            };
 
+            char dummy_report[300];
+            gen_event_report(dummy_report, sizeof(dummy_report), type);
 
             goep_client_request_create_put(map_notification_client->goep_client.cid);
             goep_client_header_add_srm_enable(map_notification_client->goep_client.cid);
@@ -259,7 +284,7 @@ static void map_notification_client_handle_can_send_now(uint16_t goep_cid) {
             application_parameters[pos++] = 0; // First MASInstanceID should be 0 (BT SIG MAS SPEC, hard coded expactation in PTS MAP/MSE/MMN/BV-02-C)
             goep_client_header_add_application_parameters(map_notification_client->goep_client.cid, &application_parameters[0], pos);
 
-            goep_client_body_add_static(map_notification_client->goep_client.cid, dummy_report[type], (uint32_t)strlen(dummy_report[type]));
+            goep_client_body_add_static(map_notification_client->goep_client.cid, dummy_report, (uint32_t)strlen(dummy_report));
 
             // cycle through message types
             if (++type >= ARRAYSIZE(dummy_report))

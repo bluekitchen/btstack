@@ -191,11 +191,11 @@ static struct test_config_s
 {.nr = 19, .descr = "MAP/MSE/MMD/BV-02-I"                      , .type = &msg,    .obj_count = 1, .objects = { "EMAIL","MMS", "SMS_GSM","SMS_CDMA", "IM", "dummy"}, .fGetMsgListng = MAP_MSE_MMD_BV_02_I_getMsgListng, .fdiscon = MAP_MSE_MMD_BV_02_I_disc}, // PTS 8.5.4 Build 6 issue: sends a sequence of OBEX connect, GetMessageListing (expects 1 EMAIL, nothing else, no more messages), PUT MessageStatus (Delete Message), GetMessageListing (expects empty listing), OBEX discoonect, repeat (MMS, SMS_GSM, SMS_CDMA) - the last repeat for IM misses the disconnect and fails on the Get because the list is still empty
 };
 
-struct test_config_s* config = &test_configs[0];
+static struct test_config_s* config = &test_configs[0];
 static int cfg_start_index = 0;
 static int cfg_MAP_MSE_MMD_BV_02_I_getMsgListng_counter = 0;
 static int one_object_more_or_less = 0;
-uint16_t ListingSize = 0;
+static uint16_t ListingSize = 0;
 
 static void MAP_MSE_MMD_BV_02_I_disc(void) {
     log_debug("disabled default discconect behaviour");
