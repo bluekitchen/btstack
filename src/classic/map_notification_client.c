@@ -168,7 +168,7 @@ static struct test_config_s
     {.nr = 1, .descr = "MAP/MSE/MMN/BV-04-C 06" , .type = &nm_v1_1   ,.obj_count = 1, .msg_types = { "EMAIL", "SMS_GSM", "SMS_CDMA", "MMS", "IM"},},
     {.nr = 2, .descr = "MAP/MSE/MMN/BV-07-C"    , .type = &nm_v1_2   ,.obj_count = 1, .msg_types = { "EMAIL"},},
     {.nr = 3, .descr = "MAP/MSE/MMN/BV-08-C 09" , .type = &ed_v1_2   ,.obj_count = 1, .msg_types = { "IM"},},
-    {.nr = 4, .descr = "MAP/MSE/MMN/BV-10-C"    , .type = &pp_v1_2   ,.obj_count = 1, .msg_types = { ""},},
+    {.nr = 4, .descr = "MAP/MSE/MMN/BV-10-C 15" , .type = &pp_v1_2   ,.obj_count = 1, .msg_types = { ""},},
     {.nr = 5, .descr = "MAP/MSE/MMN/BV-11-C"    , .type = &pc_v1_2   ,.obj_count = 1, .msg_types = { ""},},
     {.nr = 6, .descr = "MAP/MSE/MMN/BV-12-C 13" , .type = &cc_v1_2   ,.obj_count = 1, .msg_types = { ""},},
     {.nr = 7, .descr = "MAP/MSE/MMN/BV-14-C"    , .type = &mr_v1_2   ,.obj_count = 1, .msg_types = { ""},},

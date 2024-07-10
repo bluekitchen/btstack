@@ -67,6 +67,9 @@ MAP/MSE/MMN/BV-11-CC:PASS (2024-07-10) Verify that the MSE sends a 'ParticipantC
 MAP/MSE/MMN/BV-12-C: PASS (2024-07-10) Verify that the MSE sends a 'ConversationChanged' event-report when a participant is added to a conversation. 
 MAP/MSE/MMN/BV-13-C: PASS (2024-07-10) Verify that the MSE sends a 'ConversationChanged' event-report when a participant is removed from a conversation. 
 MAP/MSE/MMN/BV-14-C: PASS (2024-07-10) Verify that the MSE sends a 'MessageRemoved' event-report when a message is removed from a conversation. 
+MAP/MSE/MMN/BV-15-C: PASS (2024-07-10) Verify that the MSE sends a 'ParticipantPresenceChanged' event-report when the presence of the owner is changed on the IUT. 
+
+
 
 Open tests
 MAP/MSE/MSM/BV-10-C: WIP - 2 MAS, 1 MAC, MASInstanceID Verify that the MSE can properly respond to multiple MAP session establishment requests.
