@@ -672,11 +672,11 @@ static void handle_set_message_status(char *msg_handle_str, uint8_t StatusIndica
 
     switch (StatusIndicator) {
     
-    case readStatus:
+    case MAP_APP_PARAM_SUB_readStatus:
         mas_cfg->msg_stati[msg_handle] = StatusValue;
         break;
     
-    case deletedStatus:
+    case MAP_APP_PARAM_SUB_deletedStatus:
         mas_cfg->msg_deleted[msg_handle] = StatusValue;
         break;
     
