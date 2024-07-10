@@ -59,7 +59,7 @@ MAP/MSE/MSM/BV-10-C: WIP - 2 MAS, 1 MAC, MASInstanceID Verify that the MSE can p
 MAP/MSE/MMN/BV-02-C: PASS (2024-07-08) Verify that the MSE can send a message notification
 MAP/MSE/MMN/BV-04-C: PASS (2024-07-08) Verify that the MSE can send a message notification.
 MAP/MSE/MMN/BV-06-C: PASS (2024-07-08) Verify that the MSE correctly responds to a request to filter notifications (PUT SetNotificationFilter)
-
+MAP/MSE/MMN/BV-07-C: PASS (2024-07-08) Verify that the MSE sends an event-report in format 1.2.
 
 Open tests
 MAP/MSE/MSM/BV-10-C: WIP - 2 MAS, 1 MAC, MASInstanceID Verify that the MSE can properly respond to multiple MAP session establishment requests.
