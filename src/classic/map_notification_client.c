@@ -121,6 +121,13 @@ struct objconfig_s v1_2_ed = {
             "/>"
 };
 
+// copied from PTS v8.6.0B6 file ParticipantPresenceChanged_event_report_1_2
+struct objconfig_s v1_2_pp = {
+    .header = "<MAP-event-report version=\"1.2\">",
+    .footer = "</MAP-event-report>",
+    .body   = "<event type = \"ParticipantPresenceChanged\" sender_name=\"PTS\" conversation_id=”3909231965” presence_availability=\"1\" last_activity=\"20160625T133700\" participant_uci=”skype:beastmode2”/>"
+};
+
 #define MAX_TC_OBJECTS 10 // maximum MAX_TC_OBJECTS-1 entries, last one is null
 static struct test_config_s
 {
@@ -137,6 +144,7 @@ static struct test_config_s
     {.nr = 1, .descr = "MAP/MSE/MMN/BV-04-C 06" , .type = &v1_1   ,.obj_count = 1, .msg_types = { "EMAIL", "SMS_GSM", "SMS_CDMA", "MMS", "IM"},},
     {.nr = 2, .descr = "MAP/MSE/MMN/BV-07-C"    , .type = &v1_2   ,.obj_count = 1, .msg_types = { "EMAIL"},},
     {.nr = 3, .descr = "MAP/MSE/MMN/BV-08-C 09" , .type = &v1_2_ed,.obj_count = 1, .msg_types = { "IM"},},
+    {.nr = 4, .descr = "MAP/MSE/MMN/BV-10-C"    , .type = &v1_2_pp,.obj_count = 1, .msg_types = { ""},},
 };
 
 static struct test_config_s* mac_cfg = &test_configs[0];

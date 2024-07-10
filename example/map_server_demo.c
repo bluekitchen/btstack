@@ -877,7 +877,8 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                         case MAP_SUBEVENT_PUT_SET_NOTIFICATION_FILTER:
                             APP_READ_16(packet, &pos, &dummy_map_cid);
                             APP_READ_32(packet, &pos, &NotificationFilterMask);
-                            MAP_PRINTF("[+] Put SetNotificationFilter NotificationFilterMask:0x%08x\n", NotificationFilterMask);
+                            MAP_PRINTF("[+] Put SetNotificationFilter NotificationFilterMask:0x%08x ReadStatusChanged:%s\n",
+                                NotificationFilterMask, NotificationFilterMask & MAP_APP_PARAM_SUB_ReadStatusChanged ? "ON":"OFF");
                             map_access_server_send_get_put_response(map_cid, OBEX_RESP_SUCCESS, NULL, 0, 0, NULL);
                             break;
 
