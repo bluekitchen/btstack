@@ -88,6 +88,12 @@ struct objconfig_s v1_0 = {
     .body   = "<event type=\"NewMessage\" handle=\"0123456789000003\" folder=\"TELECOM/MSG/INBOX\" msg_type=\"%s\" read_status=\"yes\" acknowledged_status=\"no\"/>"
 };
 
+struct objconfig_s v1_1 = {
+    .header = "<MAP-event-report version=\"1.1\">",
+    .footer = "</MAP-event-report>",
+    .body   = "<event type = \"NewMessage\" handle=\"0123456789000001\" folder=\"TELECOM/MSG/OUTBOX\" msg_type=\"%s\" subject=\"Subject\" datetime=\"20130121T130510\" sender_name=\"Xyz\" priority=\"no\"/>"
+};
+
 #define MAX_TC_OBJECTS 10 // maximum MAX_TC_OBJECTS-1 entries, last one is null
 static struct test_config_s
 {
@@ -100,7 +106,8 @@ static struct test_config_s
     bool msg_deleted[MAX_TC_OBJECTS];
 } test_configs[] =
 {
-{.nr = 0, .descr = "MAP/MSE/MMN/BV-02-C" , .type = &v1_0,.obj_count = 1, .objects = { "EMAIL", "SMS_GSM", "SMS_CDMA", "MMS", "IM"},}, 
+    {.nr=0, .descr = "MAP/MSE/MMN/BV-04-C" , .type = &v1_1,.obj_count = 1, .objects = { "EMAIL", "SMS_GSM", "SMS_CDMA", "MMS", "IM"},},
+    {.nr = 1, .descr = "MAP/MSE/MMN/BV-02-C" , .type = &v1_0,.obj_count = 1, .objects = { "EMAIL", "SMS_GSM", "SMS_CDMA", "MMS", "IM"},}, 
 };
 
 static struct test_config_s* config = &test_configs[0];
@@ -237,9 +244,7 @@ static void map_notification_client_prepare_operation(map_notification_client_t*
 }
 
 static void map_notification_client_handle_can_send_now(uint16_t goep_cid) {
-    uint8_t application_parameters[20];
-    uint16_t pos = 0;
-    
+   
     map_notification_client_t* map_notification_client = map_notification_client_for_goep_cid(goep_cid);
     btstack_assert(map_notification_client != NULL);
 
@@ -268,33 +273,39 @@ static void map_notification_client_handle_can_send_now(uint16_t goep_cid) {
 
         case MNC_STATE_W2_PUT_SEND_EVENT: 
 #ifdef ENABLE_GOEP_L2CAP
-#pragma Error("With L2CAP in MAP_OLD MAP/MSE/MMN/BV-04-C PTS 8.6.0B6 sets maximum packet length suddendly to only 150 bytes but minimum size reports are 200+")
+            log_error("With L2CAP in MAP_OLD MAP/MSE/MMN/BV-04-C PTS 8.6.0B6 sets maximum packet length suddendly to only 150 bytes but minimum size reports are 200+")
+#else
+            {
+                uint8_t application_parameters[20];
+                uint16_t pos = 0;
+                static int type = 0;
+
+                char dummy_report[300];
+                gen_event_report(dummy_report, sizeof(dummy_report), type);
+
+                goep_client_request_create_put(map_notification_client->goep_client.cid);
+                goep_client_header_add_srm_enable(map_notification_client->goep_client.cid);
+                goep_client_header_add_type(map_notification_client->goep_client.cid, "x-bt/MAP-event-report");
+
+                application_parameters[pos++] = MAP_APP_PARAM_MASInstanceID;
+                application_parameters[pos++] = 1;
+                application_parameters[pos++] = 0; // First MASInstanceID should be 0 (BT SIG MAS SPEC, hard coded expactation in PTS MAP/MSE/MMN/BV-02-C)
+                goep_client_header_add_application_parameters(map_notification_client->goep_client.cid, &application_parameters[0], pos);
+
+                goep_client_body_add_static(map_notification_client->goep_client.cid, dummy_report, (uint32_t)strlen(dummy_report));
+
+                // cycle through message types
+                if (++type >= ARRAYSIZE(dummy_report))
+                    type = 0;
+
+                //goep_client_body_add_static(map_notification_client->goep_client.cid, (uint8_t *) "0", 1);
+                map_notification_client->state = MNC_STATE_W4_PUT_SEND_EVENT;
+                map_notification_client_prepare_operation(map_notification_client, OBEX_OPCODE_PUT);
+                map_notification_client->request_number++;
+                goep_client_execute(map_notification_client->goep_client.cid);
+            }
+
 #endif
-            static int type = 0;
-
-            char dummy_report[300];
-            gen_event_report(dummy_report, sizeof(dummy_report), type);
-
-            goep_client_request_create_put(map_notification_client->goep_client.cid);
-            goep_client_header_add_srm_enable(map_notification_client->goep_client.cid);
-            goep_client_header_add_type(map_notification_client->goep_client.cid, "x-bt/MAP-event-report");
-            
-            application_parameters[pos++] = MAP_APP_PARAM_MASInstanceID;
-            application_parameters[pos++] = 1;
-            application_parameters[pos++] = 0; // First MASInstanceID should be 0 (BT SIG MAS SPEC, hard coded expactation in PTS MAP/MSE/MMN/BV-02-C)
-            goep_client_header_add_application_parameters(map_notification_client->goep_client.cid, &application_parameters[0], pos);
-
-            goep_client_body_add_static(map_notification_client->goep_client.cid, dummy_report, (uint32_t)strlen(dummy_report));
-
-            // cycle through message types
-            if (++type >= ARRAYSIZE(dummy_report))
-                type = 0;
-
-            //goep_client_body_add_static(map_notification_client->goep_client.cid, (uint8_t *) "0", 1);
-            map_notification_client->state = MNC_STATE_W4_PUT_SEND_EVENT;
-            map_notification_client_prepare_operation(map_notification_client, OBEX_OPCODE_PUT);
-            map_notification_client->request_number++;
-            goep_client_execute(map_notification_client->goep_client.cid);
             break;
 
         default:

@@ -57,6 +57,7 @@ MAP/MSE/MNR/BV-03-C: PASS (2024-07-08) Verify that the MSE can terminate the Mes
 MAP/MSE/MSM/BV-09-C: PASS (2024-07-08 with L2CAP enabled otherwise fails on the second connect) Verify that the MSE can properly respond to multiple MAP session establishment requests.
 MAP/MSE/MSM/BV-10-C: WIP - 2 MAS, 1 MAC, MASInstanceID Verify that the MSE can properly respond to multiple MAP session establishment requests.
 MAP/MSE/MMN/BV-02-C: PASS (2024-07-08) Verify that the MSE can send a message notification
+MAP/MSE/MMN/BV-04-C: PASS (2024-07-08) Verify that the MSE can send a message notification.
 
 Open tests
 MAP/MSE/MSM/BV-10-C: WIP - 2 MAS, 1 MAC, MASInstanceID Verify that the MSE can properly respond to multiple MAP session establishment requests.
