@@ -64,6 +64,7 @@ MAP/MSE/MMN/BV-08-C: PASS (2024-07-08) Verify that the MSE sends a MessageExtend
 MAP/MSE/MMN/BV-09-C: PASS (2024-07-08) Verify that the read status of a message is changed on the MSE, after the read status notification has been disabled via notification filtering, and ensure there is no event-report for the read status.
 MAP/MSE/MMN/BV-10-C: PASS (2024-07-08) Verify that the MSE sends a 'ParticipantPresenceChanged' event-report when the presence of a participant is changed.
 MAP/MSE/MMN/BV-11-CC: PASS (2024-07-08) Verify that the MSE sends a 'ParticipantChatStateChanged' event-report when the chat-state of a participant is changed. 
+MAP/MSE/MMN/BV-12-C: PASS (2024-07-08) Verify that the MSE sends a 'ConversationChanged' event-report when a participant is added to a conversation. 
 
 Open tests
 MAP/MSE/MSM/BV-10-C: WIP - 2 MAS, 1 MAC, MASInstanceID Verify that the MSE can properly respond to multiple MAP session establishment requests.
