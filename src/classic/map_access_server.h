@@ -262,10 +262,10 @@ typedef uint8_t mas_UTCstmpoffstr_t[20];
 
         // the following X-Macro (https://en.wikipedia.org/wiki/X_macro)
         // below defines enum MAP_APP_PARAMS members MAP_APP_PARAM_xyz = tag with BT SPECs tag values
-#define ENUM(value, enumname) enumname = value,
+#define ENUM(value, enumname) MAP_APP_PARAM_SUB_ ## enumname = value,
 #define DSCR(...)
 
-#define PARAM_REQUST(name, tag, type, opts, descr) enum MAP_APP_PARAM_SUB_ ## name { MAP_APP_PARAM_SUB_ ## name ## min = 0, descr };
+#define PARAM_REQUST(name, tag, type, opts, descr) enum MAP_APP_PARAM_SUB_ ## name { MAP_APP_PARAM_SUB_ ## name ## _min = 0, descr };
 #define PARAM_RESPON PARAM_REQUST
 #define PARAM_REQRSP PARAM_REQUST
 #define PARAM_UNUSED PARAM_REQUST
