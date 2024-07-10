@@ -102,6 +102,13 @@ static const uint8_t adv_sid = 0;
 // Scan
 static bool scan_for_scan_delegator;
 static bool scan_for_broadcast_audio_announcement;
+static bool scan_for_public_broadcast_announcement;
+static enum {
+    SCAN_FOR_SCAN_DELEGATOR,
+    SCAN_FOR_BROADCAST_AUDIO_ANNOUNCEMENT,
+    SCAN_FOR_PUBLIC_BROADCAST_ANNOUNCEMENT
+} scan_mode;
+
 static bool have_base;
 static bool have_big_info;
 static uint32_t       periodic_advertising_sync_broadcast_id;
@@ -176,49 +183,89 @@ static void btp_trigger_iso(btstack_timer_source_t * ts){
     hci_request_bis_can_send_now_events(btp_bap_big_params.big_handle);
 }
 
-static void handle_extended_advertisement(const uint8_t * packet, uint16_t size){
+static void handle_extended_advertisement(const uint8_t * packet, uint16_t size) {
     ad_context_t context;
     uint16_t uuid;
     uint16_t adv_size = gap_event_extended_advertising_report_get_data_length(packet);
-    const uint8_t * const adv_data = gap_event_extended_advertising_report_get_data(packet);
-    for (ad_iterator_init(&context, adv_size, adv_data) ; ad_iterator_has_more(&context) ; ad_iterator_next(&context)) {
+    const uint8_t *const adv_data = gap_event_extended_advertising_report_get_data(packet);
+    uint8_t broadcast_name_len = 0;
+    char broadcast_name[100];
+    uint8_t pba_features = 0;
+    bool have_baa = false;
+    bool have_broadcast_name = false;
+    bool have_bass = false;
+    uint32_t broadcast_id;
+    bd_addr_t addr;
+    uint8_t buffer[100];
+    uint8_t pos = 0;
+    for (ad_iterator_init(&context, adv_size, adv_data); ad_iterator_has_more(&context); ad_iterator_next(&context)) {
         uint8_t data_type = ad_iterator_get_data_type(&context);
         const uint8_t *data = ad_iterator_get_data(&context);
-        switch (data_type){
+        uint8_t data_len = ad_iterator_get_data_len(&context);
+        switch (data_type) {
             case BLUETOOTH_DATA_TYPE_SERVICE_DATA_16_BIT_UUID:
                 uuid = little_endian_read_16(data, 0);
-                switch (uuid){
+                switch (uuid) {
                     case ORG_BLUETOOTH_SERVICE_BROADCAST_AUDIO_ANNOUNCEMENT_SERVICE:
-                        if (scan_for_broadcast_audio_announcement) {
-                            uint32_t broadcast_id = little_endian_read_24(data, 2);
-                            uint8_t buffer[13];
-                            uint8_t pos = 0;
-                            buffer[pos++] = gap_event_extended_advertising_report_get_address_type(packet);
-                            bd_addr_t addr;
-                            gap_event_extended_advertising_report_get_address(packet, addr);
-                            reverse_bd_addr(addr, &buffer[pos]);
-                            pos += 6;
-                            little_endian_store_24(buffer, pos, broadcast_id);
-                            pos += 3;
-                            buffer[pos++] = gap_event_extended_advertising_report_get_advertising_sid(packet);
-                            uint16_t pa_interval = gap_event_extended_advertising_report_get_periodic_advertising_interval(packet);
-                            little_endian_store_16(buffer, pos, pa_interval);
-                            pos += 2;
-                            btstack_assert(pos == sizeof(buffer));
-                            btp_send(BTP_SERVICE_ID_BAP, BTP_BAP_EV_BAA_FOUND, 0, sizeof(buffer), buffer);
-                        }
+                        broadcast_id = little_endian_read_24(data, 2);
+                        buffer[pos++] = gap_event_extended_advertising_report_get_address_type(packet);
+                        gap_event_extended_advertising_report_get_address(packet, addr);
+                        reverse_bd_addr(addr, &buffer[pos]);
+                        pos += 6;
+                        little_endian_store_24(buffer, pos, broadcast_id);
+                        pos += 3;
+                        buffer[pos++] = gap_event_extended_advertising_report_get_advertising_sid(packet);
+                        uint16_t pa_interval = gap_event_extended_advertising_report_get_periodic_advertising_interval(packet);
+                        little_endian_store_16(buffer, pos, pa_interval);
+                        pos += 2;
+                        btstack_assert(pos == 13);
+                        have_baa = true;
                         break;
                     case ORG_BLUETOOTH_SERVICE_BROADCAST_AUDIO_SCAN_SERVICE:
-                        if (scan_for_scan_delegator) {
-                        }
+                        have_bass = true;
+                        break;
+                    case ORG_BLUETOOTH_SERVICE_PUBLIC_BROADCAST_ANNOUNCEMENT:
+                        pba_features = data[2];
                         break;
                     default:
                         break;
                 }
                 break;
+            case BLUETOOTH_DATA_TYPE_BROADCAST_NAME:
+                btstack_assert(data_len <= sizeof(broadcast_name));
+                broadcast_name_len = data_len;
+                memcpy(broadcast_name, data, data_len);
+                have_broadcast_name = true;
+                break;
             default:
                 break;
         }
+    }
+
+    switch (scan_mode){
+        case SCAN_FOR_SCAN_DELEGATOR:
+            if (have_bass){
+                MESSAGE("SCAN_FOR_SCAN_DELEGATOR found BASS Service, sending event not implemented");
+            }
+            break;
+        case SCAN_FOR_BROADCAST_AUDIO_ANNOUNCEMENT:
+            if (have_baa) {
+                btp_send(BTP_SERVICE_ID_BAP, BTP_BAP_EV_BAA_FOUND, 0, pos, buffer);
+            }
+            break;
+        case SCAN_FOR_PUBLIC_BROADCAST_ANNOUNCEMENT:
+            if (have_baa && have_broadcast_name){
+                btstack_assert((pos + broadcast_name_len + 2) <= sizeof(buffer));
+                buffer[pos++] = pba_features;
+                buffer[pos++] = broadcast_name_len;
+                memcpy(&buffer[pos], broadcast_name, broadcast_name_len);
+                pos += broadcast_name_len;
+                btp_send(BTP_SERVICE_ID_PBP, BTP_PBP_EV_PUBLIC_BROADCAST_ANNOUNCEMENT_FOUND, 0, pos, buffer);
+            }
+            break;
+        default:
+            btstack_unreachable();
+            break;
     }
 }
 
@@ -1670,7 +1717,9 @@ void btp_bap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, 
             if (controller_index == 0) {
                 MESSAGE("BTP_BAP_BROADCAST_SCAN_START");
                 scan_for_broadcast_audio_announcement = true;
+                scan_for_public_broadcast_announcement = false;
                 scan_for_scan_delegator = false;
+                scan_mode = SCAN_FOR_BROADCAST_AUDIO_ANNOUNCEMENT;
                 start_scanning();
                 btp_send(BTP_SERVICE_ID_BAP, opcode, controller_index, 0, NULL);
                 break;
@@ -1752,7 +1801,10 @@ void btp_bap_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, 
             if (controller_index == 0) {
                 MESSAGE("BTP_BAP_BROADCAST_ASSISTANT_SCAN_START");
                 scan_for_broadcast_audio_announcement = false;
+                scan_for_public_broadcast_announcement = false;
                 scan_for_scan_delegator = true;
+                scan_mode = SCAN_FOR_SCAN_DELEGATOR;
+                start_scanning();
                 btp_send(BTP_SERVICE_ID_BAP, opcode, controller_index, 0, NULL);
                 break;
             }
@@ -2630,6 +2682,26 @@ void btp_pbp_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, 
                 btstack_assert(pbp_broadcast_name_len <= sizeof(pbp_broadcast_name_buffer));
                 memcpy(pbp_broadcast_name_buffer, &data[offset], pbp_broadcast_name_len);
                 // report success
+                btp_send(response_service_id, opcode, controller_index, 0, NULL);
+                break;
+            }
+            break;
+        case BTP_PBP_BROADCAST_SCAN_START:
+            if (controller_index == 0) {
+                MESSAGE("BTP_PBP_BROADCAST_SCAN_START");
+                scan_for_broadcast_audio_announcement = false;
+                scan_for_public_broadcast_announcement = true;
+                scan_for_scan_delegator = false;
+                scan_mode = SCAN_FOR_PUBLIC_BROADCAST_ANNOUNCEMENT;
+                start_scanning();
+                btp_send(response_service_id, opcode, controller_index, 0, NULL);
+                break;
+            }
+            break;
+        case BTP_PBP_BROADCAST_SCAN_STOP:
+            if (controller_index == 0) {
+                MESSAGE("BTP_PBP_BROADCAST_SCAN_STOP");
+                stop_scanning();
                 btp_send(response_service_id, opcode, controller_index, 0, NULL);
                 break;
             }
