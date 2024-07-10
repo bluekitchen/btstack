@@ -114,7 +114,7 @@ struct objconfig_s v1_2 = {
 struct objconfig_s v1_2_ed = {
     .header = "<MAP-event-report version=\"1.2\">",
     .footer = "</MAP-event-report>",
-    .body = "<event type=\"MessageExtendedDataChanged\" msg_type=\"IM\" handle=\"0123456789000002\" folder=\"TELECOM/MSG/INBOX\" sender_name=\"PTS\""
+    .body = "<event type=\"MessageExtendedDataChanged\" msg_type=\"%s\" handle=\"0123456789000002\" folder=\"TELECOM/MSG/INBOX\" sender_name=\"PTS\""
             " datatime=\"20160925T133700\" extended_data=\"0:54;\""
             " conversation_id=\"3909231965\""
             " participant_uci=\"skype:beastmode2\""
@@ -128,15 +128,15 @@ static struct test_config_s
     char* descr;
     struct objconfig_s* type;
     int obj_count;
-    char* objects[MAX_TC_OBJECTS]; 
+    char* msg_types[MAX_TC_OBJECTS]; 
     enum msg_status_read msg_stati[MAX_TC_OBJECTS]; 
     bool msg_deleted[MAX_TC_OBJECTS];
 } test_configs[] =
 {
-    {.nr = 0, .descr = "MAP/MSE/MMN/BV-02-C"    , .type = &v1_0   ,.obj_count = 1, .objects = { "EMAIL", "SMS_GSM", "SMS_CDMA", "MMS", "IM"},},
-    {.nr = 1, .descr = "MAP/MSE/MMN/BV-04-C 06" , .type = &v1_1   ,.obj_count = 1, .objects = { "EMAIL", "SMS_GSM", "SMS_CDMA", "MMS", "IM"},},
-    {.nr = 2, .descr = "MAP/MSE/MMN/BV-07-C"    , .type = &v1_2   ,.obj_count = 1, .objects = { "EMAIL"},},
-    {.nr = 3, .descr = "MAP/MSE/MMN/BV-08-C"    , .type = &v1_2_ed,.obj_count = 1, .objects = { "EMAIL"},},
+    {.nr = 0, .descr = "MAP/MSE/MMN/BV-02-C"    , .type = &v1_0   ,.obj_count = 1, .msg_types = { "EMAIL", "SMS_GSM", "SMS_CDMA", "MMS", "IM"},},
+    {.nr = 1, .descr = "MAP/MSE/MMN/BV-04-C 06" , .type = &v1_1   ,.obj_count = 1, .msg_types = { "EMAIL", "SMS_GSM", "SMS_CDMA", "MMS", "IM"},},
+    {.nr = 2, .descr = "MAP/MSE/MMN/BV-07-C"    , .type = &v1_2   ,.obj_count = 1, .msg_types = { "EMAIL"},},
+    {.nr = 3, .descr = "MAP/MSE/MMN/BV-08-C 09" , .type = &v1_2_ed,.obj_count = 1, .msg_types = { "IM"},},
 };
 
 static struct test_config_s* mac_cfg = &test_configs[0];
@@ -192,11 +192,11 @@ struct test_set_config mac_test_set =
 
 static int gen_event_report(char* buf, int maxsize, int index)
 {
-    index = index % ARRAYSIZE(mac_cfg->objects);
+    index = index % ARRAYSIZE(mac_cfg->msg_types);
     int pos = 0;
     
     pos += snprintf(&buf[pos], maxsize - pos, mac_cfg->type->header);
-    pos += snprintf(&buf[pos], maxsize - pos, mac_cfg->type->body, mac_cfg->objects[index]);
+    pos += snprintf(&buf[pos], maxsize - pos, mac_cfg->type->body, mac_cfg->msg_types[index]);
     pos += snprintf(&buf[pos], maxsize - pos, mac_cfg->type->footer);
 
     return pos;

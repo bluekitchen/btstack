@@ -61,6 +61,7 @@ MAP/MSE/MMN/BV-04-C: PASS (2024-07-08) Verify that the MSE can send a message no
 MAP/MSE/MMN/BV-06-C: PASS (2024-07-08) Verify that the MSE correctly responds to a request to filter notifications (PUT SetNotificationFilter)
 MAP/MSE/MMN/BV-07-C: PASS (2024-07-08) Verify that the MSE sends an event-report in format 1.2.
 MAP/MSE/MMN/BV-08-C: PASS (2024-07-08) Verify that the MSE sends a MessageExtendedDataChanged event-report when the extended data of a message is changed.
+MAP/MSE/MMN/BV-09-C: PASS (2024-07-08) Verify that the read status of a message is changed on the MSE, after the read status notification has been disabled via notification filtering, and ensure there is no event-report for the read status.
 
 
 Open tests

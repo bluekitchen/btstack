@@ -370,6 +370,8 @@ struct test_set_config {
     void (*fp_print_test_cases)(struct test_set_config* cfg);
 };
 
+enum msg_status_read { no, yes };
+
 #if defined __cplusplus
 }
 #endif
