@@ -101,6 +101,12 @@ struct objconfig_s v1_1 = {
     .body   = "<event type = \"NewMessage\" handle=\"0123456789000001\" folder=\"TELECOM/MSG/OUTBOX\" msg_type=\"%s\" subject=\"Subject\" datetime=\"20130121T130510\" sender_name=\"Xyz\" priority=\"no\"/>"
 };
 
+struct objconfig_s v1_2 = {
+    .header = "<MAP-event-report version=\"1.2\">",
+    .footer = "</MAP-event-report>",
+    .body = "<event type = \"NewMessage\" handle=\"0123456789000001\" folder=\"TELECOM/MSG/OUTBOX\" msg_type=\"%s\" subject=\"Subject\" datetime=\"20130121T130510\" sender_name=\"Xyz\" priority=\"no\"/>"
+};
+
 #define MAX_TC_OBJECTS 10 // maximum MAX_TC_OBJECTS-1 entries, last one is null
 static struct test_config_s
 {
@@ -113,8 +119,9 @@ static struct test_config_s
     bool msg_deleted[MAX_TC_OBJECTS];
 } test_configs[] =
 {
-    {.nr = 0, .descr = "MAP/MSE/MMN/BV-02-C" , .type = &v1_0,.obj_count = 1, .objects = { "EMAIL", "SMS_GSM", "SMS_CDMA", "MMS", "IM"},},
-    {.nr = 1, .descr = "MAP/MSE/MMN/BV-04-C" , .type = &v1_1,.obj_count = 1, .objects = { "EMAIL", "SMS_GSM", "SMS_CDMA", "MMS", "IM"},},
+    {.nr = 0, .descr = "MAP/MSE/MMN/BV-02-C"    , .type = &v1_0,.obj_count = 1, .objects = { "EMAIL", "SMS_GSM", "SMS_CDMA", "MMS", "IM"},},
+    {.nr = 1, .descr = "MAP/MSE/MMN/BV-04-C 06" , .type = &v1_1,.obj_count = 1, .objects = { "EMAIL", "SMS_GSM", "SMS_CDMA", "MMS", "IM"},},
+    {.nr = 2, .descr = "MAP/MSE/MMN/BV-07-C"    , .type = &v1_2,.obj_count = 1, .objects = { "EMAIL"},},
 };
 
 static struct test_config_s* mac_cfg = &test_configs[0];
