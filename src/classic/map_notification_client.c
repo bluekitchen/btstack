@@ -164,7 +164,7 @@ static struct test_config_s
     {.nr = 3, .descr = "MAP/MSE/MMN/BV-08-C 09" , .type = &v1_2_ed,.obj_count = 1, .msg_types = { "IM"},},
     {.nr = 4, .descr = "MAP/MSE/MMN/BV-10-C"    , .type = &v1_2_pp,.obj_count = 1, .msg_types = { ""},},
     {.nr = 5, .descr = "MAP/MSE/MMN/BV-11-C"    , .type = &v1_2_pc,.obj_count = 1, .msg_types = { ""},},
-    {.nr = 6, .descr = "MAP/MSE/MMN/BV-12-C"    , .type = &v1_2_cc,.obj_count = 1, .msg_types = { ""},},
+    {.nr = 6, .descr = "MAP/MSE/MMN/BV-12-C 13" , .type = &v1_2_cc,.obj_count = 1, .msg_types = { ""},},
 };
 
 static struct test_config_s* mac_cfg = &test_configs[0];
