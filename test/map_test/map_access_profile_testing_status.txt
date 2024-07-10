@@ -68,7 +68,7 @@ MAP/MSE/MMN/BV-12-C: PASS (2024-07-10) Verify that the MSE sends a 'Conversation
 MAP/MSE/MMN/BV-13-C: PASS (2024-07-10) Verify that the MSE sends a 'ConversationChanged' event-report when a participant is removed from a conversation. 
 MAP/MSE/MMN/BV-14-C: PASS (2024-07-10) Verify that the MSE sends a 'MessageRemoved' event-report when a message is removed from a conversation. 
 MAP/MSE/MMN/BV-15-C: PASS (2024-07-10) Verify that the MSE sends a 'ParticipantPresenceChanged' event-report when the presence of the owner is changed on the IUT. 
-
+MAP/MSE/MMN/BV-16-C: PASS (2024-07-10) Verify that the MSE sends a 'ParticipantChatStateChanged' event-report when the chat state of the owner is changed on the IUT. 
 
 
 Open tests
