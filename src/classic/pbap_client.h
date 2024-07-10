@@ -135,6 +135,22 @@ uint8_t pbap_set_vcard_selector_operator(uint16_t pbap_cid, int vcard_selector_o
 uint8_t pbap_set_property_selector(uint16_t pbap_cid, uint32_t property_selector);
 
 /**
+ * @brief Set number of items returned by pull phonebook.
+ * @param pbap_cid
+ * @param max_list_count
+ * @return
+ */
+uint8_t pbap_set_max_list_count(uint16_t pbap_cid, uint16_t max_list_count);
+
+/**
+ * @bbrief Set start offset for pull phonebook
+ * @param pbap_cid
+ * @param list_start_offset
+ * @return
+ */
+uint8_t pbap_set_list_start_offset(uint16_t pbap_cid, uint16_t list_start_offset);
+
+/**
  * @brief Get size of phone book from PSE. The result is reported via PBAP_SUBEVENT_PHONEBOOK_SIZE event. 
  * 
  * @param pbap_cid

@@ -170,6 +170,8 @@ typedef struct pbap_client {
     uint8_t  vcard_selector_supported;
     /* property selector */
     uint32_t property_selector;
+    uint16_t list_start_offset;
+    uint16_t max_list_count;
     /* abort */
     uint8_t  abort_operation;
     /* obex parser */
@@ -596,6 +598,18 @@ static uint16_t pbap_client_application_params_add_max_list_count(const pbap_cli
     return pos;
 }
 
+static uint16_t pbap_client_application_params_add_list_start_offset(const pbap_client_t * client, uint8_t * application_parameters, uint16_t list_start_offset){
+    UNUSED(client);
+    uint16_t pos = 0;
+    if (pbap_client->list_start_offset != 0){
+        application_parameters[pos++] = PBAP_APPLICATION_PARAMETER_LIST_START_OFFSET;
+        application_parameters[pos++] = 2;
+        big_endian_store_16(application_parameters, 2, list_start_offset);
+        pos += 2;
+    }
+    return pos;
+}
+
 // max size: PBAP_MAX_PHONE_NUMBER_LEN + 5
 static uint16_t pbap_client_application_params_add_phone_number(const pbap_client_t * client, uint8_t * application_parameters){
     uint16_t pos = 0;
@@ -762,7 +776,8 @@ static void pbap_handle_can_send_now(void){
 
             pos = 0;
             pos += pbap_client_application_params_add_vcard_selector(pbap_client, &application_parameters[pos]);
-            pos += pbap_client_application_params_add_max_list_count(pbap_client, &application_parameters[pos], 0); // just get size
+            // just get size
+            pos += pbap_client_application_params_add_max_list_count(pbap_client, &application_parameters[pos], 0);
             pbap_client_add_application_parameters(pbap_client, application_parameters, pos);
 
             // state
@@ -785,6 +800,10 @@ static void pbap_handle_can_send_now(void){
 
                 pos = 0;
                 pos += pbap_client_application_params_add_property_selector(pbap_client, &application_parameters[pos]);
+                if (pbap_client->max_list_count){
+                    pos += pbap_client_application_params_add_max_list_count(pbap_client, &application_parameters[pos], pbap_client->max_list_count);
+                }
+                pos += pbap_client_application_params_add_list_start_offset (pbap_client, &application_parameters[pos], pbap_client->list_start_offset);
                 pos += pbap_client_application_params_add_vcard_selector(pbap_client, &application_parameters[pos]);
                 pbap_client_add_application_parameters(pbap_client, application_parameters, pos);
             }
@@ -1345,5 +1364,23 @@ uint8_t pbap_set_property_selector(uint16_t pbap_cid, uint32_t property_selector
         return BTSTACK_BUSY;
     }
     pbap_client->property_selector  = property_selector;
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t pbap_set_max_list_count(uint16_t pbap_cid, uint16_t max_list_count){
+    UNUSED(pbap_cid);
+    if (pbap_client->state != PBAP_CONNECTED){
+        return BTSTACK_BUSY;
+    }
+    pbap_client->max_list_count = max_list_count;
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t pbap_set_list_start_offset(uint16_t pbap_cid, uint16_t list_start_offset){
+    UNUSED(pbap_cid);
+    if (pbap_client->state != PBAP_CONNECTED){
+        return BTSTACK_BUSY;
+    }
+    pbap_client->list_start_offset = list_start_offset;
     return ERROR_CODE_SUCCESS;
 }
