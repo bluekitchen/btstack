@@ -57,15 +57,15 @@ MAP/MSE/MNR/BV-03-C: PASS (2024-07-08) Verify that the MSE can terminate the Mes
 MAP/MSE/MSM/BV-09-C: PASS (2024-07-08 with L2CAP enabled otherwise fails on the second connect) Verify that the MSE can properly respond to multiple MAP session establishment requests.
 MAP/MSE/MSM/BV-10-C: WIP - 2 MAS, 1 MAC, MASInstanceID Verify that the MSE can properly respond to multiple MAP session establishment requests.
 MAP/MSE/MMN/BV-02-C: PASS (2024-07-08) Verify that the MSE can send a message notification
-MAP/MSE/MMN/BV-04-C: PASS (2024-07-08) Verify that the MSE can send a message notification.
-MAP/MSE/MMN/BV-06-C: PASS (2024-07-08) Verify that the MSE correctly responds to a request to filter notifications (PUT SetNotificationFilter)
-MAP/MSE/MMN/BV-07-C: PASS (2024-07-08) Verify that the MSE sends an event-report in format 1.2.
-MAP/MSE/MMN/BV-08-C: PASS (2024-07-08) Verify that the MSE sends a MessageExtendedDataChanged event-report when the extended data of a message is changed.
-MAP/MSE/MMN/BV-09-C: PASS (2024-07-08) Verify that the read status of a message is changed on the MSE, after the read status notification has been disabled via notification filtering, and ensure there is no event-report for the read status.
-MAP/MSE/MMN/BV-10-C: PASS (2024-07-08) Verify that the MSE sends a 'ParticipantPresenceChanged' event-report when the presence of a participant is changed.
-MAP/MSE/MMN/BV-11-CC: PASS (2024-07-08) Verify that the MSE sends a 'ParticipantChatStateChanged' event-report when the chat-state of a participant is changed. 
-MAP/MSE/MMN/BV-12-C: PASS (2024-07-08) Verify that the MSE sends a 'ConversationChanged' event-report when a participant is added to a conversation. 
-MAP/MSE/MMN/BV-13-C: PASS (2024-07-08) Verify that the MSE sends a 'ConversationChanged' event-report when a participant is removed from a conversation. 
+MAP/MSE/MMN/BV-04-C: PASS (2024-07-10) Verify that the MSE can send a message notification.
+MAP/MSE/MMN/BV-06-C: PASS (2024-07-10) Verify that the MSE correctly responds to a request to filter notifications (PUT SetNotificationFilter)
+MAP/MSE/MMN/BV-07-C: PASS (2024-07-10) Verify that the MSE sends an event-report in format 1.2.
+MAP/MSE/MMN/BV-08-C: PASS (2024-07-10) Verify that the MSE sends a MessageExtendedDataChanged event-report when the extended data of a message is changed.
+MAP/MSE/MMN/BV-09-C: PASS (2024-07-10) Verify that the read status of a message is changed on the MSE, after the read status notification has been disabled via notification filtering, and ensure there is no event-report for the read status.
+MAP/MSE/MMN/BV-10-C: PASS (2024-07-10) Verify that the MSE sends a 'ParticipantPresenceChanged' event-report when the presence of a participant is changed.
+MAP/MSE/MMN/BV-11-CC:PASS (2024-07-10) Verify that the MSE sends a 'ParticipantChatStateChanged' event-report when the chat-state of a participant is changed. 
+MAP/MSE/MMN/BV-12-C: PASS (2024-07-10) Verify that the MSE sends a 'ConversationChanged' event-report when a participant is added to a conversation. 
+MAP/MSE/MMN/BV-13-C: PASS (2024-07-10) Verify that the MSE sends a 'ConversationChanged' event-report when a participant is removed from a conversation. 
 
 Open tests
 MAP/MSE/MSM/BV-10-C: WIP - 2 MAS, 1 MAC, MASInstanceID Verify that the MSE can properly respond to multiple MAP session establishment requests.
