@@ -90,28 +90,28 @@ struct objconfig_s {
 };
 
 // copied from PTS v8.6.0B6 file EMAIL_NewMessage_event_report_1_0
-struct objconfig_s v1_0 = {
+struct objconfig_s nm_v1_0 = {
     .header = "<MAP-event-report version=\"1.0\">",
     .footer = "</MAP-event-report>",
     .body   = "<event type=\"NewMessage\" handle=\"0123456789000003\" folder=\"TELECOM/MSG/INBOX\" msg_type=\"%s\" read_status=\"yes\" acknowledged_status=\"no\"/>"
 };
 
 // copied from PTS v8.6.0B6 file GSM_NewMessage_event_report_1_1
-struct objconfig_s v1_1 = {
+struct objconfig_s nm_v1_1 = {
     .header = "<MAP-event-report version=\"1.1\">",
     .footer = "</MAP-event-report>",
     .body   = "<event type = \"NewMessage\" handle=\"0123456789000001\" folder=\"TELECOM/MSG/OUTBOX\" msg_type=\"%s\" subject=\"Subject\" datetime=\"20130121T130510\" sender_name=\"Xyz\" priority=\"no\"/>"
 };
 
 // copied and adapted from PTS v8.6.0B6 file GSM_NewMessage_event_report_1_1
-struct objconfig_s v1_2 = {
+struct objconfig_s nm_v1_2 = {
     .header = "<MAP-event-report version=\"1.2\">",
     .footer = "</MAP-event-report>",
     .body = "<event type = \"NewMessage\" handle=\"0123456789000001\" folder=\"TELECOM/MSG/OUTBOX\" msg_type=\"%s\" subject=\"Subject\" datetime=\"20130121T130510\" sender_name=\"Xyz\" priority=\"no\"/>"
 };
 
 // copied from PTS v8.6.0B6 file ExtendedDataChanged_event_report_1_2
-struct objconfig_s v1_2_ed = {
+struct objconfig_s ed_v1_2 = {
     .header = "<MAP-event-report version=\"1.2\">",
     .footer = "</MAP-event-report>",
     .body = "<event type=\"MessageExtendedDataChanged\" msg_type=\"%s\" handle=\"0123456789000002\" folder=\"TELECOM/MSG/INBOX\" sender_name=\"PTS\""
@@ -122,21 +122,21 @@ struct objconfig_s v1_2_ed = {
 };
 
 // copied from PTS v8.6.0B6 file ParticipantPresenceChanged_event_report_1_2
-struct objconfig_s v1_2_pp = {
+struct objconfig_s pp_v1_2 = {
     .header = "<MAP-event-report version=\"1.2\">",
     .footer = "</MAP-event-report>",
     .body   = "<event type = \"ParticipantPresenceChanged\" sender_name=\"PTS\" conversation_id=”3909231965” presence_availability=\"1\" last_activity=\"20160625T133700\" participant_uci=”skype:beastmode2”/>"
 };
 
 // copied from PTS v8.6.0B6 file ParticipantChatStateChanged_event_report_1_2
-struct objconfig_s v1_2_pc = {
+struct objconfig_s pc_v1_2 = {
     .header = "<MAP-event-report version=\"1.2\">",
     .footer = "</MAP-event-report>",
     .body   = "<event type = \"ParticipantChatStateChanged\" sender_name=\"PTS\" conversation_id=”3909231965” last_activity=\"20160625T133700\" chat_state=\"1\" participant_uci=”skype:beastmode2”/>"
 };
 
 // copied from PTS v8.6.0B6 file ConvrsationChanged_event_report_1_2
-struct objconfig_s v1_2_cc = {
+struct objconfig_s cc_v1_2 = {
     .header = "<MAP-event-report version=\"1.2\">",
     .footer = "</MAP-event-report>",
     .body   = "<event type=\"ConversationChanged\" msg_type=\"IM\" sender_name=\"PTS\""
@@ -158,13 +158,13 @@ static struct test_config_s
     bool msg_deleted[MAX_TC_OBJECTS];
 } test_configs[] =
 {
-    {.nr = 0, .descr = "MAP/MSE/MMN/BV-02-C"    , .type = &v1_0   ,.obj_count = 1, .msg_types = { "EMAIL", "SMS_GSM", "SMS_CDMA", "MMS", "IM"},},
-    {.nr = 1, .descr = "MAP/MSE/MMN/BV-04-C 06" , .type = &v1_1   ,.obj_count = 1, .msg_types = { "EMAIL", "SMS_GSM", "SMS_CDMA", "MMS", "IM"},},
-    {.nr = 2, .descr = "MAP/MSE/MMN/BV-07-C"    , .type = &v1_2   ,.obj_count = 1, .msg_types = { "EMAIL"},},
-    {.nr = 3, .descr = "MAP/MSE/MMN/BV-08-C 09" , .type = &v1_2_ed,.obj_count = 1, .msg_types = { "IM"},},
-    {.nr = 4, .descr = "MAP/MSE/MMN/BV-10-C"    , .type = &v1_2_pp,.obj_count = 1, .msg_types = { ""},},
-    {.nr = 5, .descr = "MAP/MSE/MMN/BV-11-C"    , .type = &v1_2_pc,.obj_count = 1, .msg_types = { ""},},
-    {.nr = 6, .descr = "MAP/MSE/MMN/BV-12-C 13" , .type = &v1_2_cc,.obj_count = 1, .msg_types = { ""},},
+    {.nr = 0, .descr = "MAP/MSE/MMN/BV-02-C"    , .type = &nm_v1_0   ,.obj_count = 1, .msg_types = { "EMAIL", "SMS_GSM", "SMS_CDMA", "MMS", "IM"},},
+    {.nr = 1, .descr = "MAP/MSE/MMN/BV-04-C 06" , .type = &nm_v1_1   ,.obj_count = 1, .msg_types = { "EMAIL", "SMS_GSM", "SMS_CDMA", "MMS", "IM"},},
+    {.nr = 2, .descr = "MAP/MSE/MMN/BV-07-C"    , .type = &nm_v1_2   ,.obj_count = 1, .msg_types = { "EMAIL"},},
+    {.nr = 3, .descr = "MAP/MSE/MMN/BV-08-C 09" , .type = &ed_v1_2   ,.obj_count = 1, .msg_types = { "IM"},},
+    {.nr = 4, .descr = "MAP/MSE/MMN/BV-10-C"    , .type = &pp_v1_2   ,.obj_count = 1, .msg_types = { ""},},
+    {.nr = 5, .descr = "MAP/MSE/MMN/BV-11-C"    , .type = &pc_v1_2   ,.obj_count = 1, .msg_types = { ""},},
+    {.nr = 6, .descr = "MAP/MSE/MMN/BV-12-C 13" , .type = &cc_v1_2   ,.obj_count = 1, .msg_types = { ""},},
 };
 
 static struct test_config_s* mac_cfg = &test_configs[0];
