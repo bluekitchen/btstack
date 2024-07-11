@@ -87,7 +87,7 @@ static uint8_t upload_buffer[1000];
 
 // MAP Notification Client
 static map_notification_client_t map_notification_client;
-static uint16_t map_notification_client_cid;
+static uint16_t mnc_cid;
 #ifdef ENABLE_GOEP_L2CAP
 // singleton instance
 static uint8_t map_notification_client_ertm_buffer[4000];
@@ -550,12 +550,12 @@ static void connect_map_notification_client(void) {
     #else
     map_notification_client_connect(&map_notification_client, NULL,
         0, NULL,
-        mns_packet_handler, remote_addr, 0, &map_notification_client_cid);
+        mns_packet_handler, remote_addr, 0, &mnc_cid);
     #endif
 }
 
 static void disconnect_map_notification_client(void) {
-    map_notification_client_disconnect(map_notification_client_cid);
+    map_notification_client_disconnect(mnc_cid);
 }
 
 #ifdef HAVE_BTSTACK_STDIN
@@ -965,11 +965,11 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                 snprintf(&buf[3 * i], 4, "%02x ", packet[i]);
             }
             //buf[3 * i] = 0;
-            MAP_PRINTF("MAP_DATA_PACKET (%u bytes): %s", size, buf);
+            log_debug("MAP_DATA_PACKET (%u bytes): %s", size, buf);
             break;
         }
         default:
-            MAP_PRINTF ("unknown event of type %d\n", packet_type);
+            log_debug("unknown event of type %d\n", packet_type);
             break;
     }
 }
@@ -989,26 +989,26 @@ static void mns_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             if (status) {
                                 MAP_PRINTF("[!] Notification Connection failed, status 0x%02x\n", status);
                             } else {
-                                map_notification_client_cid = map_subevent_connection_opened_get_map_cid(packet);
+                                mnc_cid = map_subevent_connection_opened_get_map_cid(packet);
                                 MAP_PRINTF("[+] Connected map_notification_client_cid 0x%04x\n",
-                                           map_notification_client_cid);
+                                           mnc_cid);
                             }
                             break;
                         case MAP_SUBEVENT_CONNECTION_CLOSED:
                         MAP_PRINTF("[+] Notification Connection closed\n");
                             break;
                         default:
-                        MAP_PRINTF ("unknown MAP subevent of type %d\n", packet_type);
+                        log_debug ("unknown MAP subevent of type %d\n", packet_type);
                             break;
                     }
                     break;
                 default:
-                    MAP_PRINTF ("unknown event of type %d\n", hci_event_map_meta_get_subevent_code(packet));
+                    log_debug("unknown event of type %d\n", hci_event_map_meta_get_subevent_code(packet));
                     break;
             }
             break;
         default:
-            MAP_PRINTF ("unknown packet type %d\n", packet_type);
+            log_debug("unknown packet type %d\n", packet_type);
             break;
     }
 }
