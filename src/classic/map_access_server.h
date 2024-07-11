@@ -213,7 +213,10 @@ typedef uint8_t mas_UTCstmpoffstr_t[20];
                                                                                                 Bit 19 = Reserved                                                                 \
                                                                                                 Bit 20 = Conversation listing                                                     \
                                                                                                 Bit 21 = Owner status                                                             \
-                                                                                                Bits 22 to 31 = Reserved for Future Use0F                                       ))\
+                                                                                                Bit 22 = Message Forwarding                                                       \
+                                                                                                Bit 23 = Unacknowledged Message Indication                                        \
+                                                                                                Bit 24 = Eventreport 1.3                                                          \
+                                                                                                Bits 22 to 31 = Reserved for Future Use                                         ))\
  PARAM_REQUST( MessageHandle                     , 0x2A, mas_uint64hex_t    , NO_OPTS   , DSCR( 64 - bit value in hex string format                                             ))\
  PARAM_REQUST( ModifyText                        , 0x2B, uint8_t            , NO_OPTS   , ENUM( 0 , REPLACE)                                                                     )
 
