@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - SM: fix CTKD key distribution over BR/EDR
 - SM: fix CTKD after BR/EDR Role Change
 - A2DP: emit stream established if peer set-up configuration
+- HIOS Client: emit disconnected event on HCI disconnect and free connection struct
 
 ### Changed
 - GAP: return command disallowed if disconnect already requested

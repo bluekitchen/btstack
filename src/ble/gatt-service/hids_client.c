@@ -62,6 +62,8 @@
 #define HID_REPORT_MODE_HID_INFORMATION_ID      5
 #define HID_REPORT_MODE_HID_CONTROL_POINT_ID    6
 
+static btstack_packet_callback_registration_t hci_event_callback_registration;
+
 static btstack_linked_list_t clients;
 static uint16_t hids_cid_counter = 0;
 
@@ -523,6 +525,18 @@ static void hids_emit_connection_established(hids_client_t * client, uint8_t sta
     event[pos++] = client->services[0].protocol_mode;
     event[pos++] = client->num_instances;
     (*client->client_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
+static void hids_emit_disconnected(btstack_packet_handler_t packet_handler, uint16_t cid){
+    uint8_t event[5];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = GATTSERVICE_SUBEVENT_HID_SERVICE_DISCONNECTED;
+    little_endian_store_16(event, pos, cid);
+    pos += 2;
+    btstack_assert(pos == sizeof(event));
+    (*packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
 static void hids_emit_notifications_configuration(hids_client_t * client){
@@ -1387,6 +1401,32 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
     }
 }
 
+static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(packet_type); // ok: only hci events
+    UNUSED(channel);     // ok: there is no channel
+    UNUSED(size);        // ok: fixed format events read from HCI buffer
+
+    hci_con_handle_t con_handle;
+    hids_client_t * client;
+
+    switch (hci_event_packet_get_type(packet)) {
+        case HCI_EVENT_DISCONNECTION_COMPLETE:
+            con_handle = hci_event_disconnection_complete_get_connection_handle(packet);
+            client = hids_get_client_for_con_handle(con_handle);
+            if (client != NULL){
+                // emit disconnected
+                btstack_packet_handler_t packet_handler = client->client_handler;
+                uint16_t cid = client->cid;
+                hids_emit_disconnected(packet_handler, cid);
+                // finalize
+                hids_finalize_client(client);
+            }
+            break;
+        default:
+            break;
+    }
+}
+
 uint8_t hids_client_connect(hci_con_handle_t con_handle, btstack_packet_handler_t packet_handler, hid_protocol_mode_t protocol_mode, uint16_t * hids_cid){
     btstack_assert(packet_handler != NULL);
     
@@ -1625,6 +1665,9 @@ uint8_t hids_client_disable_notifications(uint16_t hids_cid){
 void hids_client_init(uint8_t * hid_descriptor_storage, uint16_t hid_descriptor_storage_len){
     hids_client_descriptor_storage = hid_descriptor_storage;
     hids_client_descriptor_storage_len = hid_descriptor_storage_len;
+
+    hci_event_callback_registration.callback = &handle_hci_event;
+    hci_add_event_handler(&hci_event_callback_registration);
 }
 
 void hids_client_deinit(void){}
