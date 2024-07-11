@@ -104,12 +104,19 @@ typedef struct {
     map_access_client_srm_state_t srm_state;
 
     uint8_t* body_buf;
-    uint8_t  body_buf_len;
+    size_t  body_buf_len;
+
+    uint8_t app_params[20];
+    size_t app_params_len;
 
 } map_notification_client_t;
 
+/**
+* @brief returns map_notification_client_t* for mnc_cid
+*/
+map_notification_client_t* map_notification_client_for_mnc_cid(uint16_t mnc_cid);
 
-uint8_t map_notification_client_put_send_event(uint16_t map_cid, uint8_t* body_buf, uint8_t  body_buf_len);
+uint8_t map_notification_client_put_send_event(uint16_t mnc_cid, uint8_t MASInstanceID, uint8_t* body_buf, size_t  body_buf_len);
 
 /**
 *
@@ -135,10 +142,10 @@ uint8_t map_notification_client_connect(map_notification_client_t *map_notificat
 
 /**
  * @brief Disconnects MAP connection with given identifier.
- * @param map_cid
+ * @param mnc_cid
  * @return status
  */
-uint8_t map_notification_client_disconnect(uint16_t map_cid);
+uint8_t map_notification_client_disconnect(uint16_t mnc_cid);
 
 #if defined __cplusplus
 }
