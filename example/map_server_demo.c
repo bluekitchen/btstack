@@ -58,6 +58,7 @@
 #include "classic/map.h"
 #include "classic/map_access_server.h"
 #include "classic/map_notification_client.h"
+#include "classic/map_server_client_demo.h"
 #include "classic/map_util.h"
 #include "classic/obex.h"
 #include "classic/rfcomm.h"
@@ -635,10 +636,13 @@ static void stdin_process(char c){
             disconnect_map_notification_client();
             break;
 
-        case 'e':
-            map_notification_client_put_send_event(map_notification_client_cid);
+        case 'e': {
+            char* body = create_next_mnc_event_report_body_object();
+            map_notification_client_put_send_event(map_notification_client_cid, 0, body, strlen(body));
             MAP_PRINTF("map_notification_client_put_send_event map_notification_client_cid:%04x", map_notification_client_cid);
+            log_debug("sent event report:%s", body)
             break;
+        }
         default:
             show_usage();
             break;

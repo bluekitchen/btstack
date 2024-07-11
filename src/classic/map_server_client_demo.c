@@ -174,6 +174,7 @@ static struct test_config_s
     {.nr = 7, .descr = "MAP/MSE/MMN/BV-14-C"    , .type = &mr_v1_2   ,.obj_count = 1, .msg_types = { ""},},
 };
 
+static char event_report_body_object[300];
 static struct test_config_s* mac_cfg = &test_configs[0];
 static int cfg_start_index = 0;
 static int curent_event_type = 0;
@@ -227,7 +228,9 @@ struct test_set_config mac_test_set =
 
 static int gen_event_report(char* buf, int maxsize, int index)
 {
-    index = index % ARRAYSIZE(mac_cfg->msg_types);
+    if (mac_cfg->msg_types[index] == NULL)
+        return 0;
+
     int pos = 0;
     
     pos += snprintf(&buf[pos], maxsize - pos, mac_cfg->type->header);
@@ -236,3 +239,15 @@ static int gen_event_report(char* buf, int maxsize, int index)
 
     return pos;
 }
+
+char* create_next_mnc_event_report_body_object(void) {
+    gen_event_report(event_report_body_object, sizeof(event_report_body_object), curent_event_type);
+
+    // cycle through message types
+    curent_event_type++;
+    if (mac_cfg->msg_types[curent_event_type] == NULL)
+        curent_event_type = 0;
+
+    return event_report_body_object;
+}
+
