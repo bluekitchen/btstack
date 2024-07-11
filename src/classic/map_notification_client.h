@@ -116,7 +116,7 @@ typedef struct {
 */
 map_notification_client_t* map_notification_client_for_mnc_cid(uint16_t mnc_cid);
 
-uint8_t map_notification_client_put_send_event(uint16_t mnc_cid, uint8_t MASInstanceID, uint8_t* body_buf, size_t  body_buf_len);
+uint8_t map_notification_client_send_event(uint16_t mnc_cid, uint8_t MASInstanceID, uint8_t* body_buf, size_t  body_buf_len);
 
 /**
 *
