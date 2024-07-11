@@ -13174,6 +13174,16 @@ static inline uint8_t gattservice_subevent_scan_parameters_service_connected_get
 }
 
 /**
+ * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_SCAN_PARAMETERS_SERVICE_DISCONNECTED
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t gattservice_subevent_scan_parameters_service_disconnected_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+
+/**
  * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_SPP_SERVICE_CONNECTED
  * @param event packet
  * @return con_handle
@@ -13228,6 +13238,16 @@ static inline uint8_t gattservice_subevent_hid_service_connected_get_protocol_mo
  */
 static inline uint8_t gattservice_subevent_hid_service_connected_get_num_instances(const uint8_t * event){
     return event[7];
+}
+
+/**
+ * @brief Get field hids_cid from event GATTSERVICE_SUBEVENT_HID_SERVICE_DISCONNECTED
+ * @param event packet
+ * @return hids_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_hid_service_disconnected_get_hids_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
 }
 
 /**

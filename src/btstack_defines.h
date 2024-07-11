@@ -4100,14 +4100,21 @@ typedef uint8_t sm_key_t[16];
  * @param subevent_code
  * @param con_handle
  */
-#define GATTSERVICE_SUBEVENT_SPP_SERVICE_CONNECTED                        0x11u
+#define GATTSERVICE_SUBEVENT_SCAN_PARAMETERS_SERVICE_DISCONNECTED         0x11u
 
 /**
  * @format 1H
  * @param subevent_code
  * @param con_handle
  */
-#define GATTSERVICE_SUBEVENT_SPP_SERVICE_DISCONNECTED                     0x12u
+#define GATTSERVICE_SUBEVENT_SPP_SERVICE_CONNECTED                        0x12u
+
+/**
+ * @format 1H
+ * @param subevent_code
+ * @param con_handle
+ */
+#define GATTSERVICE_SUBEVENT_SPP_SERVICE_DISCONNECTED                     0x13u
 
 /**
  * @format 12111
@@ -4117,9 +4124,16 @@ typedef uint8_t sm_key_t[16];
  * @param protocol_mode
  * @param num_instances
 */
-#define GATTSERVICE_SUBEVENT_HID_SERVICE_CONNECTED                        0x13u
+#define GATTSERVICE_SUBEVENT_HID_SERVICE_CONNECTED                        0x14u
 
-/** 
+/**
+ * @format 12
+ * @param subevent_code
+ * @param hids_cid
+*/
+#define GATTSERVICE_SUBEVENT_HID_SERVICE_DISCONNECTED                     0x15u
+
+/**
  * @format 1211LV
  * @param subevent_code
  * @param hids_cid
@@ -4128,7 +4142,7 @@ typedef uint8_t sm_key_t[16];
  * @param report_len
  * @param report
 */
-#define GATTSERVICE_SUBEVENT_HID_REPORT                                   0x14u
+#define GATTSERVICE_SUBEVENT_HID_REPORT                                   0x16u
 
 /**
  * @format 1212111
@@ -4140,7 +4154,7 @@ typedef uint8_t sm_key_t[16];
  * @param remote_wake               Indicates whether HID Device is capable of sending a wake-signal to a HID Host
  * @param normally_connectable      Indicates whether HID Device will be advertising when bonded but not connected.
 */
-#define GATTSERVICE_SUBEVENT_HID_INFORMATION                              0x15u
+#define GATTSERVICE_SUBEVENT_HID_INFORMATION                              0x17u
 
 /**
  * @format 1211
@@ -4149,7 +4163,7 @@ typedef uint8_t sm_key_t[16];
  * @param service_index
  * @param protocol_mode    see hid_protocol_mode_t in btstack_hid.h
 */
-#define GATTSERVICE_SUBEVENT_HID_PROTOCOL_MODE                            0x16u
+#define GATTSERVICE_SUBEVENT_HID_PROTOCOL_MODE                            0x18u
 
 /**
  * @format 121
@@ -4157,7 +4171,7 @@ typedef uint8_t sm_key_t[16];
  * @param hids_cid
  * @param configuration    
 */
-#define GATTSERVICE_SUBEVENT_HID_SERVICE_REPORTS_NOTIFICATION             0x17u
+#define GATTSERVICE_SUBEVENT_HID_SERVICE_REPORTS_NOTIFICATION             0x19u
 
 /**
  * @format 1211
@@ -4166,7 +4180,7 @@ typedef uint8_t sm_key_t[16];
  * @param service_index
  * @param report_id
 */
-#define GATTSERVICE_SUBEVENT_HID_REPORT_WRITTEN                           0x18u
+#define GATTSERVICE_SUBEVENT_HID_REPORT_WRITTEN                           0x1Au
 
 /**
  * @format 1H22
@@ -4175,7 +4189,8 @@ typedef uint8_t sm_key_t[16];
  * @param max_scan_interval
  * @param min_scan_window
  */
-#define GATTSERVICE_SUBEVENT_SCAN_PARAMETERS_SERVICE_SCAN_INTERVAL_UPDATE 0x19u
+#define GATTSERVICE_SUBEVENT_SCAN_PARAMETERS_SERVICE_SCAN_INTERVAL_UPDATE 0x1Bu
+
 
 // LE Audio
 
