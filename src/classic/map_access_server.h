@@ -187,6 +187,7 @@ typedef uint8_t mas_UTCstmpoffstr_t[20];
                                                                                           ENUM(      1 << 12 , ParticipantChatStateChanged  )                                     \
                                                                                           ENUM(      1 << 13 , MessageExtendedDataChanged   )                                     \
                                                                                           ENUM(      1 << 14 , MessageRemoved               )                                     \
+                                                                                          ENUM(   N_BITS(15) , AllNotifications             )                                     \
                                                                                           ENUM(0x1FFFF << 15 , Reserved_Mask                )                                    )\
  PARAM_UNUSED( ConvParameterMask                 , 0x26, uint32_t           , NO_OPTS   , DSCR( Bit mask settings; see Section 5.13.3.10                                        ))\
  PARAM_RESPON( OwnerUCI                          , 0x27, mas_utf8_t         , OPT_STR0  , DSCR( Text UTF - 8                                                                    ))\

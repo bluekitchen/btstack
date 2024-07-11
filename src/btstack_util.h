@@ -84,6 +84,11 @@ extern "C" {
  */
 #define IS_BIT_SET(value, flag_mask) (((value) & flag_mask) == flag_mask)
 
+ /**
+  * @brief returns a value with number of lowest bits set to <1>
+  */
+#define N_BITS(value) ((1<<value) - 1)
+
 /**
  * @brief The device name type
  */
