@@ -741,7 +741,9 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
     UNUSED(size);
     uint8_t status, NotificationStatus, ChatState;
     uint16_t pos, start_index, max_list_count = 0, dummy_map_cid;
-    uint32_t continuation, NotificationFilterMask;
+    uint32_t continuation, 
+           NotificationFilterMask = MAP_APP_PARAM_SUB_AllNotifications,
+        newNotificationFilterMask = MAP_APP_PARAM_SUB_AllNotifications;
 	
     switch (packet_type){
         case HCI_EVENT_PACKET:
@@ -881,8 +883,9 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                         case MAP_SUBEVENT_PUT_SET_NOTIFICATION_FILTER:
                             APP_READ_16(packet, &pos, &dummy_map_cid);
                             APP_READ_32(packet, &pos, &NotificationFilterMask);
-                            MAP_PRINTF("[+] Put SetNotificationFilter NotificationFilterMask:0x%08x ReadStatusChanged:%s\n",
-                                NotificationFilterMask, NotificationFilterMask & MAP_APP_PARAM_SUB_ReadStatusChanged ? "ON":"OFF");
+                            MAP_PRINTF("[+] Put SetNotificationFilter NotificationFilterMask old:0x%08x new:0x%08x changed:0x%08x ReadStatusChanged:%s\n",
+                                NotificationFilterMask, newNotificationFilterMask, NotificationFilterMask ^ newNotificationFilterMask, NotificationFilterMask & MAP_APP_PARAM_SUB_ReadStatusChanged ? "ON":"OFF");
+                            newNotificationFilterMask = NotificationFilterMask;
                             map_access_server_send_get_put_response(map_cid, OBEX_RESP_SUCCESS, NULL, 0, 0, NULL);
                             break;
 
