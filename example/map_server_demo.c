@@ -638,8 +638,8 @@ static void stdin_process(char c){
 
         case 'e': {
             char* body = create_next_mnc_event_report_body_object();
-            map_notification_client_put_send_event(map_notification_client_cid, 0, body, strlen(body));
-            MAP_PRINTF("map_notification_client_put_send_event map_notification_client_cid:%04x", map_notification_client_cid);
+            map_notification_client_send_event(mnc_cid, 0, body, strlen(body));
+            MAP_PRINTF("map_notification_client_send_event mnc_cid:%04x", mnc_cid);
             log_debug("sent event report:%s", body)
             break;
         }
