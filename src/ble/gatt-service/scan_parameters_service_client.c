@@ -57,6 +57,8 @@
 #include "btstack_run_loop.h"
 #include "gap.h"
 
+static btstack_packet_callback_registration_t hci_event_callback_registration;
+
 static btstack_linked_list_t clients;
 static uint16_t scan_parameters_service_cid_counter = 0;
 static uint16_t scan_parameters_service_scan_window = 0;
@@ -132,6 +134,18 @@ static void scan_parameters_service_emit_connection_established(scan_parameters_
     pos += 2;
     event[pos++] = status;
     (*client->client_handler)(HCI_EVENT_GATTSERVICE_META, 0, event, sizeof(event));
+}
+
+static void scan_parameters_service_emit_disconnected(btstack_packet_handler_t packet_handler, uint16_t cid){
+    uint8_t event[5];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = GATTSERVICE_SUBEVENT_SCAN_PARAMETERS_SERVICE_DISCONNECTED;
+    little_endian_store_16(event, pos, cid);
+    pos += 2;
+    btstack_assert(pos == sizeof(event));
+    (*packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
 static void handle_notification_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) {
@@ -384,6 +398,32 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
     }
 }
 
+static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(packet_type); // ok: only hci events
+    UNUSED(channel);     // ok: there is no channel
+    UNUSED(size);        // ok: fixed format events read from HCI buffer
+
+    hci_con_handle_t con_handle;
+    scan_parameters_service_client_t * client;
+
+    switch (hci_event_packet_get_type(packet)) {
+        case HCI_EVENT_DISCONNECTION_COMPLETE:
+            con_handle = hci_event_disconnection_complete_get_connection_handle(packet);
+            client = scan_parameters_service_get_client_for_con_handle(con_handle);
+            if (client != NULL){
+                // emit disconnected
+                btstack_packet_handler_t packet_handler = client->client_handler;
+                uint16_t cid = client->cid;
+                scan_parameters_service_emit_disconnected(packet_handler, cid);
+                // finalize
+                scan_parameters_service_finalize_client(client);
+            }
+            break;
+        default:
+            break;
+    }
+}
+
 void scan_parameters_service_client_set(uint16_t scan_interval, uint16_t scan_window){
     scan_parameters_service_scan_interval = scan_interval; 
     scan_parameters_service_scan_window = scan_window; 
@@ -447,7 +487,11 @@ uint8_t scan_parameters_service_client_disconnect(uint16_t scan_parameters_servi
     return ERROR_CODE_SUCCESS;
 }
 
-void scan_parameters_service_client_init(void){}
+void scan_parameters_service_client_init(void){
+    hci_event_callback_registration.callback = &handle_hci_event;
+    hci_add_event_handler(&hci_event_callback_registration);
+}
 
-void scan_parameters_service_client_deinit(void){}
+void scan_parameters_service_client_deinit(void){
+}
 

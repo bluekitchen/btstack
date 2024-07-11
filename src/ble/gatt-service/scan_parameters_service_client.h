@@ -120,10 +120,14 @@ void scan_parameters_service_client_set(uint16_t scan_interval, uint16_t scan_wi
  *
  * The GATTSERVICE_SUBEVENT_SCAN_PARAMETERS_SERVICE_CONNECTED event completes the request. 
  * Its status is set to ERROR_CODE_SUCCESS if remote service and SCAN_INTERVAL_WINDOW characteristic are found. 
+ * *
  * Other status codes of this event:
  * - GATT_CLIENT_IN_WRONG_STATE: client in wrong state
  * - ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE: service or characteristic not found
  * - ATT errors, see bluetooth.h
+ *
+ * Connection state is stored in hids_client_t objects provided via memory pool
+ * Max number of connections is limited by MAX_NR_HIDS_CLIENTS unless HAVE_MALLOC is used
  *
  * @param con_handle
  * @param packet_handler
