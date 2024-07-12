@@ -75,6 +75,7 @@ MAP/MSE/SGSIT/ATTR/BV-02-C MAP_NEW: PASS (2024-07-12) Attribute GSIT - Bluetooth
 MAP/MSE/SGSIT/ATTR/BV-03-C MAP_NEW: PASS (2024-07-12) Attribute GSIT - Bluetooth Profile Descriptor List, MAP 1.4
 MAP/MSE/SGSIT/ATTR/BV-04-C MAP_NEW: PASS (2024-07-12) Attribute GSIT - GoepL2CapPsm
 MAP/MSE/SGSIT/ATTR/BV-05-C MAP_NEW: PASS (2024-07-12) Attribute GSIT - MAS Instance ID
+MAP/MSE/SGSIT/ATTR/BV-06-C MAP_NEW: PASS (2024-07-12) Attribute GSIT - Supported Messages Types
 
 Open tests
 MAP/MSE/MSM/BV-10-C: WIP - 2 MAS, 1 MAC, MASInstanceID Verify that the MSE can properly respond to multiple MAP session establishment requests.
