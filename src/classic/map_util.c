@@ -132,6 +132,8 @@ static void map_create_sdp_record(uint8_t * service, uint32_t service_record_han
         de_add_number(service, DE_UINT, DE_SIZE_16, 0x0200);
         de_add_number(service, DE_UINT, DE_SIZE_16, goep_l2cap_psm);
     }
+#else
+    log_debug("PTS might warn 'Attribute Id 0x0200 not found.'");
 #endif
 
     // 0x0315 "MASInstanceID"
