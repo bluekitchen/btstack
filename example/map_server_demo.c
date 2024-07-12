@@ -872,7 +872,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             map_access_server_send_get_put_response(map_cid, OBEX_RESP_SUCCESS, NULL, 0, 0, NULL);
                             if (NotificationStatus == 1) {
                                 connect_map_notification_client();
-                                MAP_PRINTF("[-] Connect back to PTS MAP-MNS map_cid: <%u>(0x%04u)\n", dummy_map_cid, dummy_map_cid);
+                                MAP_PRINTF("[-] Connect back to PTS MAP-MNS mnc_cid: <%u>(0x%04u)\n", mnc_cid, mnc_cid);
                             }
                             else if (NotificationStatus == 0) {
                                 disconnect_map_notification_client();
