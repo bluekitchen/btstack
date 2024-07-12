@@ -149,6 +149,14 @@ struct objconfig_s convo = {
     .fbody = body_convo
 };
 
+#define TC_NORM(data, ...)  , data,  ## __VA_ARGS__
+#ifdef ENABLE_GOEP_L2CAP
+#define TC_RFCOM(...)       " Please disable ENABLE_GOEP_L2CAP" },
+#define TC_L2CAP            TC_NORM
+#else
+#define TC_RFCOM            TC_NORM
+#define TC_L2CAP(...)       " Please enaable ENABLE_GOEP_L2CAP" },
+#endif
 
 #define MAX_TC_OBJECTS 10
 static struct test_config_s
@@ -165,21 +173,23 @@ static struct test_config_s
     bool msg_deleted[MAX_TC_OBJECTS]; // maximum 6-1 entries, last one is null
 } test_configs[] =
 {
-{.nr =  0, .descr = "MAP/MSE/GOEP/SRM/BI-05-C"                 , .type = &msgshrt,.obj_count = 1, .objects = { "EMAIL"                                           }, }, // PTS needs both L2CAP with 214 bytes short PDU and working messages (continue) so we need to create short messages to pass
-{.nr =  6, .descr = "MAP/MSE/MFMH/BV-01-I..05"                 , .type = &msg,    .obj_count = 1, .objects = { "EMAIL"                                           }, },
-{.nr =  7, .descr = "MAP/MSE/MFB/BV-02-I 05 07"                , .type = &msg,    .obj_count = 0, .objects = { ""                                                }, },
-{.nr =  8, .descr = "MAP/MSE/MMU/BV-03-I"                      , .type = &msg,    .obj_count = 0, .objects = { "", "EMAIL", "MMS"                                }, .fPutMsg = MAP_MSE_MMU_BV_02_I_PutMsg}, // WIP add OBEX NAME Header (Handle) PTS [50] Enter Test Step TS_MTC_OBEX_extract_handle_name ( , (lt)Not Defined Value(gt)  ) Test case error in 'MAP/MSE/MMU/BV-03-I'. The value 'headers_received' (-1) is not fully defined. See Screenshots in ...\test\map_test\MAP_MSE_MMU_BV_03_I_2024_06_28_12_02_17
-{.nr =  9, .descr = "MAP/MSE/MMU/BV-02-I"                      , .type = &msgshrt,.obj_count = 0, .objects = { "", "EMAIL", "MMS" , "EMAIL", "EMAIL"             }, .fPutMsg = MAP_MSE_MMU_BV_02_I_PutMsg}, // WIP: PTS accepts the EMAIL but not the MMS. No idea why...
-{.nr = 10, .descr = "MAP/MSE/MMB/BV-09-I 10 11 13 14 42 46"    , .type = &msg,    .obj_count = 2, .objects = { "SMS_GSM","SMS_CDMA"                              }, },
-{.nr = 11, .descr = "MAP/MSE/MMB/BV-12-I"                      , .type = &msg,    .obj_count = 1, .objects = { "EMAIL", "SMS_GSM","SMS_CDMA"                     }, },
-{.nr = 12, .descr = "MAP/MSE/MMB/BV-15-I 18 20 22"             , .type = &msg,    .obj_count = 5, .objects = { "EMAIL","SMS_GSM","SMS_CDMA", "MMS", "IM"         }, },
-{.nr = 13, .descr = "MAP/MSE/MMB/BV-16-I 23"                   , .type = &msg,    .obj_count = 1, .objects = { "EMAIL","EMAIL"                                   }, },
-{.nr = 14, .descr = "MAP/MSE/MMB/BV-24-I <a><OK>"              , .type = &convo,  .obj_count = 0, .objects = { "",""                                             }, },
-{.nr = 15, .descr = "MAP/MSE/MMB/BV-25-I <c><OK>"              , .type = &convo,  .obj_count = 0, .objects = { "",""                                             }, },
-{.nr = 16, .descr = "MAP/MSE/MMB/BV-34-I 38 39 40 41 44"       , .type = &convo,  .obj_count = 1, .objects = { "",""                                             }, },
-{.nr = 17, .descr = "MAP/MSE/MMB/BV-35-I 36 37"                , .type = &msg,    .obj_count = 1, .objects = { "EMAIL"                                           }, },
-{.nr = 18, .descr = "MAP/MSE/MMB/BV-47-I"                      , .type = &msg,    .obj_count = 1, .objects = { "IM","IM"                                         }, }, // PTS.EXE fails with "- MTC INCONC: no email message in message listing" but expects type="IM"
-{.nr = 19, .descr = "MAP/MSE/MMD/BV-02-I"                      , .type = &msg,    .obj_count = 1, .objects = { "EMAIL","MMS", "SMS_GSM","SMS_CDMA", "IM", "dummy"}, .fGetMsgListng = MAP_MSE_MMD_BV_02_I_getMsgListng, .fdiscon = MAP_MSE_MMD_BV_02_I_disc}, // PTS 8.5.4 Build 6 issue: sends a sequence of OBEX connect, GetMessageListing (expects 1 EMAIL, nothing else, no more messages), PUT MessageStatus (Delete Message), GetMessageListing (expects empty listing), OBEX discoonect, repeat (MMS, SMS_GSM, SMS_CDMA) - the last repeat for IM misses the disconnect and fails on the Get because the list is still empty
+{.nr =  0, .descr = "MAP/MSE/SGSIT/ATTR/BV-01-C"               TC_NORM( .type = &msgshrt,.obj_count = 1, .objects = { "EMAIL"                                           },                                                     },)
+{.nr =  1, .descr = "MAP/MSE/GOEP/SRM/BI-05-C"                 TC_NORM( .type = &msgshrt,.obj_count = 1, .objects = { "EMAIL"                                           },                                                     },) // PTS needs both L2CAP with 214 bytes short PDU and working messages (continue) so we need to create short messages to pass
+{.nr =  6, .descr = "MAP/MSE/MFMH/BV-01-I..05"                 TC_NORM( .type = &msg,    .obj_count = 1, .objects = { "EMAIL"                                           },                                                     },)
+{.nr =  7, .descr = "MAP/MSE/MFB/BV-02-I 05 07"                TC_NORM( .type = &msg,    .obj_count = 0, .objects = { ""                                                },                                                     },)
+{.nr =  8, .descr = "MAP/MSE/MMU/BV-03-I"                      TC_NORM( .type = &msg,    .obj_count = 0, .objects = { "", "EMAIL", "MMS"                                }, .fPutMsg = MAP_MSE_MMU_BV_02_I_PutMsg               },) // WIP add OBEX NAME Header (Handle) PTS [50] Enter Test Step TS_MTC_OBEX_extract_handle_name ( , (lt)Not Defined Value(gt)  ) Test case error in 'MAP/MSE/MMU/BV-03-I'. The value 'headers_received' (-1) is not fully defined. See Screenshots in ...\test\map_test\MAP_MSE_MMU_BV_03_I_2024_06_28_12_02_17
+{.nr =  9, .descr = "MAP/MSE/MMU/BV-02-I"                      TC_NORM( .type = &msgshrt,.obj_count = 0, .objects = { "", "EMAIL", "MMS" , "EMAIL", "EMAIL"             }, .fPutMsg = MAP_MSE_MMU_BV_02_I_PutMsg               },) // WIP: PTS accepts the EMAIL but not the MMS. No idea why...
+{.nr = 10, .descr = "MAP/MSE/MMB/BV-09-I 10 11 13 14 42 46"    TC_NORM( .type = &msg,    .obj_count = 2, .objects = { "SMS_GSM","SMS_CDMA"                              },                                                     },)
+{.nr = 11, .descr = "MAP/MSE/MMB/BV-12-I"                      TC_NORM( .type = &msg,    .obj_count = 1, .objects = { "EMAIL", "SMS_GSM","SMS_CDMA"                     },                                                     },)
+{.nr = 12, .descr = "MAP/MSE/MMB/BV-15-I 18 20 22"             TC_NORM( .type = &msg,    .obj_count = 5, .objects = { "EMAIL","SMS_GSM","SMS_CDMA", "MMS", "IM"         },                                                     },)
+{.nr = 13, .descr = "MAP/MSE/MMB/BV-16-I 23"                   TC_NORM( .type = &msg,    .obj_count = 1, .objects = { "EMAIL","EMAIL"                                   },                                                     },)
+{.nr = 14, .descr = "MAP/MSE/MMB/BV-24-I <a><OK>"              TC_NORM( .type = &convo,  .obj_count = 0, .objects = { "",""                                             },                                                     },)
+{.nr = 15, .descr = "MAP/MSE/MMB/BV-25-I <c><OK>"              TC_NORM( .type = &convo,  .obj_count = 0, .objects = { "",""                                             },                                                     },)
+{.nr = 16, .descr = "MAP/MSE/MMB/BV-34-I 38 39 40 41 44"       TC_NORM( .type = &convo,  .obj_count = 1, .objects = { "",""                                             },                                                     },)
+{.nr = 17, .descr = "MAP/MSE/MMB/BV-35-I 36 37"                TC_NORM( .type = &msg,    .obj_count = 1, .objects = { "EMAIL"                                           },                                                     },)
+{.nr = 18, .descr = "MAP/MSE/MMB/BV-47-I"                      TC_NORM( .type = &msg,    .obj_count = 1, .objects = { "IM","IM"                                         },                                                     },) // PTS.EXE fails with "- MTC INCONC: no email message in message listing" but expects type="IM"
+{.nr = 19, .descr = "MAP/MSE/MMD/BV-02-I"                      TC_NORM( .type = &msg,    .obj_count = 1, .objects = { "EMAIL","MMS", "SMS_GSM","SMS_CDMA", "IM", "dummy"}, .fGetMsgListng = MAP_MSE_MMD_BV_02_I_getMsgListng,
+                                                                                                                                                                           .fdiscon = MAP_MSE_MMD_BV_02_I_disc                 },) // PTS 8.5.4 Build 6 issue: sends a sequence of OBEX connect, GetMessageListing (expects 1 EMAIL, nothing else, no more messages), PUT MessageStatus (Delete Message), GetMessageListing (expects empty listing), OBEX discoonect, repeat (MMS, SMS_GSM, SMS_CDMA) - the last repeat for IM misses the disconnect and fails on the Get because the list is still empty
 };
 
 static struct test_config_s* mas_cfg = &test_configs[0];
@@ -218,7 +228,7 @@ static void mas_select_test_case_n(struct test_set_config* cfg, uint8_t n) {
 }
 
 static void mas_print_test_config(struct test_set_config* cfg) {
-    MAP_PRINTF("mas_cfg #%d:%s obj_count:%d hdr:%s\n", mas_cfg->nr, mas_cfg->descr, mas_cfg->obj_count, mas_cfg->type->header);
+    MAP_PRINTF("mas_cfg #%d:%s obj_count:%d hdr:%s\n", mas_cfg->nr, mas_cfg->descr, mas_cfg->obj_count, mas_cfg->type?mas_cfg->type->header:"");
 }
 
 static void mas_print_test_cases(struct test_set_config* cfg)
