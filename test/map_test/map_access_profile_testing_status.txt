@@ -70,6 +70,7 @@ MAP/MSE/MMN/BV-14-C: PASS (2024-07-10) Verify that the MSE sends a 'MessageRemov
 MAP/MSE/MMN/BV-15-C: PASS (2024-07-10) Verify that the MSE sends a 'ParticipantPresenceChanged' event-report when the presence of the owner is changed on the IUT. 
 MAP/MSE/MMN/BV-16-C: PASS (2024-07-10) Verify that the MSE sends a 'ParticipantChatStateChanged' event-report when the chat state of the owner is changed on the IUT. 
 MAP/MSE/SGSIT/SERR/BV-01-C MAP_NEW: PASS (2024-07-12) Service record GSIT – MAP MSE Message Access Service
+MAP/MSE/SGSIT/ATTR/BV-01-C MAP_NEW: PASS (2024-07-12) Attribute GSIT - Protocol Descriptor List
 Open tests
 
 MAP/MSE/MSM/BV-10-C: WIP - 2 MAS, 1 MAC, MASInstanceID Verify that the MSE can properly respond to multiple MAP session establishment requests.
