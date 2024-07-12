@@ -71,8 +71,9 @@ MAP/MSE/MMN/BV-15-C: PASS (2024-07-10) Verify that the MSE sends a 'ParticipantP
 MAP/MSE/MMN/BV-16-C: PASS (2024-07-10) Verify that the MSE sends a 'ParticipantChatStateChanged' event-report when the chat state of the owner is changed on the IUT. 
 MAP/MSE/SGSIT/SERR/BV-01-C MAP_NEW: PASS (2024-07-12) Service record GSIT – MAP MSE Message Access Service
 MAP/MSE/SGSIT/ATTR/BV-01-C MAP_NEW: PASS (2024-07-12) Attribute GSIT - Protocol Descriptor List
-Open tests
+MAP/MSE/SGSIT/ATTR/BV-02-C MAP_NEW: PASS (2024-07-12) Attribute GSIT - Bluetooth Profile Descriptor List, MAP 1.3
 
+Open tests
 MAP/MSE/MSM/BV-10-C: WIP - 2 MAS, 1 MAC, MASInstanceID Verify that the MSE can properly respond to multiple MAP session establishment requests.
  5.1.3.1  MASInstanceID 
  This header shall be used by the MSE to indicate the corresponding ‘MASInstanceID’ of the MAS 
