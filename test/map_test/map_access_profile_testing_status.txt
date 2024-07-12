@@ -72,6 +72,7 @@ MAP/MSE/MMN/BV-16-C: PASS (2024-07-10) Verify that the MSE sends a 'ParticipantC
 MAP/MSE/SGSIT/SERR/BV-01-C MAP_NEW: PASS (2024-07-12) Service record GSIT – MAP MSE Message Access Service
 MAP/MSE/SGSIT/ATTR/BV-01-C MAP_NEW: PASS (2024-07-12) Attribute GSIT - Protocol Descriptor List
 MAP/MSE/SGSIT/ATTR/BV-02-C MAP_NEW: PASS (2024-07-12) Attribute GSIT - Bluetooth Profile Descriptor List, MAP 1.3
+MAP/MSE/SGSIT/ATTR/BV-03-C MAP_NEW: PASS (2024-07-12) Attribute GSIT - Bluetooth Profile Descriptor List, MAP 1.4
 
 Open tests
 MAP/MSE/MSM/BV-10-C: WIP - 2 MAS, 1 MAC, MASInstanceID Verify that the MSE can properly respond to multiple MAP session establishment requests.
