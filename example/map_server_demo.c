@@ -107,22 +107,7 @@ static bd_addr_t    remote_addr;
 static const char* remote_addr_string = "001bdc0732ef"; // BDADDR PTS New MW  "008098090C1D"; // BDADDR PTS Old MW //"001BDC08E272";
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
-#define MSG_LISTING_HEADER   "<MAP-msg-listing version=\"1.1\">"
-#define MSG_LISTING_FOOTER   "</MAP-msg-listing>"
-/* Sample from BT SIG MAP Spec Page 54
-<MAP-convo-listing version = "1.0">
-<conversation id="E1E2E3E4F1F2F3F4A1A2A3A4B1B2B3B4" name="Beergarden
-Connection" last_activity="20140612T105430+0100" read_status="no"
-version_counter="A1A1B2B2C3C3D4D5E5E6F6F7A7A8B8B">
-<participant uci="4986925814@s.whateverapp.net" display_name="Tien"
-chat_state="3" last_activity="20140612T105430+0100"/>
-<participant uci="4912345678@s.whateverapp.net" display_name="Jonas"
-chat_state="5" last_activity="20140610T115130+0100"/>
-</conversation>
-</MAP-convo-listing>
-*/
-#define CONVO_LISTING_HEADER "<MAP-convo-listing version=\"1.0\">"
-#define CONVO_LISTING_FOOTER "</MAP-convo-listing>"
+
 
 struct objconfig_s {
     char* header;
@@ -140,6 +125,11 @@ static void MAP_MSE_MMD_BV_02_I_disc(void);
 static void MAP_MSE_MMD_BV_02_I_getMsgListng(void);
 static void MAP_MSE_MMU_BV_02_I_PutMsg(void);
 
+#define MSG_LISTING_HEADER   "<MAP-msg-listing version=\"1.1\">"
+#define MSG_LISTING_FOOTER   "</MAP-msg-listing>"
+
+#define CONVO_LISTING_HEADER "<MAP-convo-listing version=\"1.0\">"
+#define CONVO_LISTING_FOOTER "</MAP-convo-listing>"
 
 struct objconfig_s msg = {
     .header = MSG_LISTING_HEADER,
