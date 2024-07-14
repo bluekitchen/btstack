@@ -49,7 +49,7 @@ def read_defines(infile):
             parts = re.match('#define\s+(\w+)\s+(\w*)[u]',line)
             if parts and len(parts.groups()) == 2:
                 (key, value) = parts.groups()
-                defines[key] = value
+                defines[key] = value.lower()
     return defines
 
 def parse_defines():
