@@ -67,6 +67,7 @@
 #include "l2cap.h"
 #include "le-audio/gatt-service/audio_stream_control_service_client.h"
 #include "le-audio/gatt-service/coordinated_set_identification_service_client.h"
+#include "le-audio/gatt-service/media_control_service_server.h"
 #include "le-audio/gatt-service/published_audio_capabilities_service_client.h"
 #include "mods/mod.h"
 #include "ble/att_db_util.h"
@@ -187,6 +188,18 @@ static csis_client_rsi_entry_t rsi_entries[NR_RSI_ENTRIES];
 // Timeout for Set Discovery
 static btstack_timer_source_t set_discovery_timer;
 
+// MCS
+typedef struct {
+    media_control_service_server_t media_server;
+    uint16_t id;
+    uint8_t playback_speed_index;
+    uint8_t seeking_speed_index;
+    bool    seeking_forward;
+    mcs_media_state_t media_state;
+} mcs_media_player_t;
+
+static mcs_media_player_t generic_media_player;
+
 // PACS
 // #define PACS_QUERY
 #ifdef PACS_QUERY
@@ -213,7 +226,7 @@ static uint8_t sink_ase_count;
 static ascs_qos_configuration_t ascs_qos_configuration;
 
 
-// sinnk configuration
+// sink configuration
 static uint8_t num_servers = 1;
 
 // lc3 codec config
@@ -1241,6 +1254,181 @@ static void csis_client_event_handler(uint8_t packet_type, uint16_t channel, uin
     app_run();
 }
 
+static mcs_media_player_t * mcs_get_media_player_for_id(uint16_t media_player_id){
+    mcs_media_player_t * media_player = NULL;
+    if (media_player_id == generic_media_player.id){
+        media_player = &generic_media_player;
+    }
+    return media_player;
+}
+
+static void mcs_seeking_speed_timer_start(uint16_t media_player_id){
+    log_info("timer start");
+}
+
+static void mcs_seeking_speed_timer_stop(uint16_t media_player_id){
+    log_info("timer stop");
+}
+
+static void mcs_server_trigger_notifications_for_opcode(mcs_media_player_t * media_player, media_control_point_opcode_t opcode){
+    log_info("mcs_server_trigger_notifications_for_opcode %u", (uint8_t) opcode);
+}
+
+static void mcs_server_execute_track_operation(mcs_media_player_t * media_player,
+                                               media_control_point_opcode_t opcode, uint8_t * packet, uint16_t packet_size) {
+    log_info("mcs_server_execute_track_operation %u", (uint8_t) opcode);
+}
+
+static void mcs_server_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+    UNUSED(size);
+
+    if (packet_type != HCI_EVENT_PACKET) return;
+    if (hci_event_packet_get_type(packet) != HCI_EVENT_LEAUDIO_META) return;
+
+    uint8_t characteristic_id;
+    media_control_point_opcode_t opcode;
+    uint16_t media_player_id;
+    mcs_media_player_t * media_player;
+    uint8_t status;
+
+    switch (hci_event_leaudio_meta_get_subevent_code(packet)){
+        case LEAUDIO_SUBEVENT_MCS_SERVER_VALUE_CHANGED:
+            characteristic_id = leaudio_subevent_mcs_server_value_changed_get_characteristic_id(packet);
+            printf("MCS Server App: changed value, characteristic_id %d\n", characteristic_id);
+            break;
+
+        case LEAUDIO_SUBEVENT_MCS_SERVER_MEDIA_CONTROL_POINT_NOTIFICATION_TASK:
+            opcode = (media_control_point_opcode_t)leaudio_subevent_mcs_server_media_control_point_notification_task_get_opcode(packet);
+            media_player_id = leaudio_subevent_mcs_server_media_control_point_notification_task_get_media_player_id(packet);
+            media_player = mcs_get_media_player_for_id(media_player_id);
+
+            if (media_player == NULL){
+                return;
+            }
+
+            printf("MCS Server App: Control Notification, opcode %s, state %s\n",
+                   mcs_server_media_control_opcode2str(opcode),
+                   mcs_server_media_state2str(media_player->media_state));
+
+            if (media_player->media_state == MCS_MEDIA_STATE_INACTIVE){
+                switch (opcode){
+                    case MEDIA_CONTROL_POINT_OPCODE_PLAY:
+                    case MEDIA_CONTROL_POINT_OPCODE_PAUSE:
+                        // the application should deal with this state below
+                        break;
+                    default:
+                        media_control_service_server_respond_to_media_control_point_command(media_player_id, opcode,
+                                                                                            MEDIA_CONTROL_POINT_ERROR_CODE_MEDIA_PLAYER_INACTIVE);
+                        return;
+                }
+            }
+
+            // accept command
+            media_control_service_server_respond_to_media_control_point_command(media_player_id, opcode,
+                                                                                MEDIA_CONTROL_POINT_ERROR_CODE_SUCCESS);
+
+            switch (opcode){
+                case MEDIA_CONTROL_POINT_OPCODE_FAST_REWIND:
+                case MEDIA_CONTROL_POINT_OPCODE_FAST_FORWARD:
+                    mcs_seeking_speed_timer_stop(media_player_id);
+
+                    if (opcode == MEDIA_CONTROL_POINT_OPCODE_FAST_FORWARD){
+                        media_player->seeking_forward = true;
+                    } else {
+                        media_player->seeking_forward = false;
+                    }
+
+                    status = media_control_service_server_set_seeking_speed(media_player_id, 64);
+                    if (status != ERROR_CODE_SUCCESS){
+                        return;
+                    }
+
+                    status = media_control_service_server_set_media_state(media_player_id, MCS_MEDIA_STATE_SEEKING);
+                    if (status == ERROR_CODE_SUCCESS){
+                        media_player->media_state = MCS_MEDIA_STATE_SEEKING;
+                        mcs_seeking_speed_timer_start(media_player_id);
+                    }
+                    return;
+
+                case MEDIA_CONTROL_POINT_OPCODE_PLAY:
+                    if (media_player->media_state == MCS_MEDIA_STATE_PLAYING){
+                        // ignore command
+                        return;
+                    }
+                    mcs_seeking_speed_timer_stop(media_player_id);
+                    status = media_control_service_server_set_media_state(media_player_id, MCS_MEDIA_STATE_PLAYING);
+                    if (status == ERROR_CODE_SUCCESS){
+                        media_player->media_state = MCS_MEDIA_STATE_PLAYING;
+                        mcs_seeking_speed_timer_start(media_player_id);
+                    }
+                    return;
+
+                case MEDIA_CONTROL_POINT_OPCODE_PAUSE:
+                    if (media_player->media_state == MCS_MEDIA_STATE_PAUSED){
+                        // ignore command
+                        return;
+                    }
+                    status = media_control_service_server_set_media_state(media_player_id, MCS_MEDIA_STATE_PAUSED);
+                    if (status == ERROR_CODE_SUCCESS){
+                        media_player->media_state = MCS_MEDIA_STATE_PAUSED;
+                        mcs_seeking_speed_timer_stop(media_player_id);
+                    }
+                    mcs_server_trigger_notifications_for_opcode(media_player, opcode);
+                    return;
+
+                case MEDIA_CONTROL_POINT_OPCODE_STOP:
+                    status = media_control_service_server_set_media_state(media_player_id, MCS_MEDIA_STATE_PAUSED);
+                    if (status == ERROR_CODE_SUCCESS){
+                        media_player->media_state = MCS_MEDIA_STATE_PAUSED;
+                    }
+                    mcs_server_execute_track_operation(media_player, opcode, packet, size);
+                    return;
+
+                case MEDIA_CONTROL_POINT_OPCODE_MOVE_RELATIVE:
+                    mcs_server_execute_track_operation(media_player, opcode, packet, size);
+                    break;
+
+                case MEDIA_CONTROL_POINT_OPCODE_FIRST_TRACK:
+                case MEDIA_CONTROL_POINT_OPCODE_LAST_TRACK:
+                case MEDIA_CONTROL_POINT_OPCODE_PREVIOUS_TRACK:
+                case MEDIA_CONTROL_POINT_OPCODE_NEXT_TRACK:
+                case MEDIA_CONTROL_POINT_OPCODE_GOTO_TRACK:
+                case MEDIA_CONTROL_POINT_OPCODE_PREVIOUS_SEGMENT:
+                case MEDIA_CONTROL_POINT_OPCODE_NEXT_SEGMENT:
+                case MEDIA_CONTROL_POINT_OPCODE_FIRST_SEGMENT:
+                case MEDIA_CONTROL_POINT_OPCODE_LAST_SEGMENT:
+                case MEDIA_CONTROL_POINT_OPCODE_GOTO_SEGMENT:
+                    mcs_server_execute_track_operation(media_player, opcode, packet, size);
+                    return;
+
+                case MEDIA_CONTROL_POINT_OPCODE_PREVIOUS_GROUP:
+                case MEDIA_CONTROL_POINT_OPCODE_NEXT_GROUP:
+                case MEDIA_CONTROL_POINT_OPCODE_FIRST_GROUP:
+                case MEDIA_CONTROL_POINT_OPCODE_LAST_GROUP:
+                case MEDIA_CONTROL_POINT_OPCODE_GOTO_GROUP:
+                    if (media_player->media_state == MCS_MEDIA_STATE_SEEKING){
+                        status = media_control_service_server_set_media_state(media_player_id, MCS_MEDIA_STATE_PAUSED);
+                        if (status == ERROR_CODE_SUCCESS){
+                            mcs_seeking_speed_timer_stop(media_player_id);
+                            media_player->media_state = MCS_MEDIA_STATE_PAUSED;
+                        }
+                    }
+
+                    mcs_server_execute_track_operation(media_player, opcode, packet, size);
+                    return;
+
+                default:
+                    break;
+            }
+
+            break;
+
+        default:
+            break;
+    }
+}
+
 void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
@@ -1525,6 +1713,12 @@ int btstack_main(int argc, const char * argv[]){
     att_db_util_init();
     att_server_init(profile_data, att_read_callback, att_write_callback);
 
+    // setup MCS
+    media_control_service_server_init();
+
+    media_control_service_server_register_generic_player(&generic_media_player.media_server,
+                                                         &mcs_server_packet_handler, 0x1FFFFF,
+                                                         &generic_media_player.id);
     // register for HCI events
     hci_event_callback_registration.callback = &hci_packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
