@@ -167,14 +167,19 @@ typedef struct {
     uint8_t  coordinated_set_size;
 
     // ascs
-    uint16_t ascs_cid;
-    bool     ascs_have_source;
-    bool     ascs_have_sink;
-    uint8_t  ase_id_sink;
-    uint8_t  ase_id_source;
     ascs_client_connection_t ascs_connection;
-    uint8_t channel_allocation;
     ascs_streamendpoint_characteristic_t streamendpoint_characteristics[ASCS_CLIENT_NUM_STREAMENDPOINTS];
+    uint16_t ascs_cid;
+
+    uint8_t  ascs_ase_ids[ASCS_CLIENT_NUM_STREAMENDPOINTS];
+    uint8_t  ascs_ase_roles[ASCS_CLIENT_NUM_STREAMENDPOINTS];
+    bool     ascs_ase_streaming[ASCS_CLIENT_NUM_STREAMENDPOINTS];
+
+    uint8_t  ascs_selected_ases_num;
+    // used to perform operation on all ASEs
+    uint8_t  ascs_operation_ase_index;
+
+    uint8_t channel_allocation;
 
     // CIS
     uint8_t          cis_id;
@@ -382,6 +387,7 @@ static void configure_stream(void) {
 
 static void run_for_server(server_t * server){
     uint8_t status;
+    uint8_t ase_id;
     switch (server->server_state){
         case SERVER_READY:
             server->server_state = SERVER_W4_CONNECTED;
@@ -409,6 +415,7 @@ static void run_for_server(server_t * server){
             break;
         case SERVER_ASCS_CONNECTED:
             // configure codec
+            ase_id = server->ascs_ase_ids[server->ascs_operation_ase_index];
             ascs_codec_configuration_request.target_latency = LE_AUDIO_CLIENT_TARGET_LATENCY_LOW_LATENCY;
             ascs_codec_configuration_request.target_phy = LE_AUDIO_CLIENT_TARGET_PHY_BALANCED;
             ascs_codec_configuration_request.coding_format = HCI_AUDIO_CODING_FORMAT_LC3;
@@ -422,7 +429,7 @@ static void run_for_server(server_t * server){
             ascs_codec_configuration_request.specific_codec_configuration.audio_channel_allocation_mask = server->channel_allocation;
             ascs_codec_configuration_request.specific_codec_configuration.octets_per_codec_frame = codec_configurations[menu_sampling_frequency].variants[menu_variant].octets_per_frame;
             ascs_codec_configuration_request.specific_codec_configuration.codec_frame_blocks_per_sdu = num_channels;
-            status = audio_stream_control_service_client_streamendpoint_configure_codec(server->ascs_cid, server->ase_id_sink, &ascs_codec_configuration_request);
+            status = audio_stream_control_service_client_streamendpoint_configure_codec(server->ascs_cid, ase_id, &ascs_codec_configuration_request);
             server->server_state = SERVER_W4_ASCS_CODEC_CONFIGURED;
             btstack_assert(status == ERROR_CODE_SUCCESS);
             break;
@@ -435,8 +442,9 @@ static void run_for_server(server_t * server){
                 uint8_t retransmission_number = NUM_CIS_RETRANSMISSIONS;
                 uint16_t max_transport_latency_ms = 40;
 
+                ase_id = server->ascs_ase_ids[server->ascs_operation_ase_index];
                 printf("ASCS_CONFIGURE_QOS ase_id %u, cig_id %u / cis %u, interval %u, framing %u, sdu_size %u, retrans %u, latency %u\n",
-                       server->ase_id_sink, cig_id, cis_id, sdu_interval_us, framing, max_sdu, retransmission_number, max_transport_latency_ms);
+                       ase_id, cig_id, cis_id, sdu_interval_us, framing, max_sdu, retransmission_number, max_transport_latency_ms);
                 ascs_qos_configuration.cig_id = cig_id;
                 ascs_qos_configuration.cis_id = cis_id;
                 ascs_qos_configuration.sdu_interval = sdu_interval_us;
@@ -447,13 +455,15 @@ static void run_for_server(server_t * server){
                 ascs_qos_configuration.max_transport_latency_ms = max_transport_latency_ms;
                 ascs_qos_configuration.presentation_delay_us = 40000;
                 server->server_state = SERVER_W4_ASCS_QOS_CONFIGURED;
-                status = audio_stream_control_service_client_streamendpoint_configure_qos(server->ascs_cid, server->ase_id_sink, &ascs_qos_configuration);
+                status = audio_stream_control_service_client_streamendpoint_configure_qos(server->ascs_cid, ase_id, &ascs_qos_configuration);
                 btstack_assert(status == ERROR_CODE_SUCCESS);
             }
             break;
         case SERVER_ASCS_W2_ENABLE:
             server->server_state = SERVER_ASCS_W4_ENABLING;
-            status = audio_stream_control_service_client_streamendpoint_enable(server->ascs_cid, server->ase_id_sink, &test_ascs_metadata);
+            // for each ASE
+            ase_id = server->ascs_ase_ids[server->ascs_operation_ase_index];
+            status = audio_stream_control_service_client_streamendpoint_enable(server->ascs_cid, ase_id, &test_ascs_metadata);
             btstack_assert(status == ERROR_CODE_SUCCESS);
             break;
 
@@ -1443,7 +1453,7 @@ void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
     ascs_state_t ase_state;
     uint8_t response_code;
     uint8_t reason;
-    // uint8_t ase_id;
+    uint8_t ase_id;
     uint8_t opcode;
     uint8_t i;
     uint8_t status;
@@ -1467,20 +1477,32 @@ void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                        server->server_id, con_handle, sink_ase_count, source_ase_count);
 
                 // dump ASEs and assign ASE IDs for sink and source
+                server->ascs_selected_ases_num = 0;
+                bool have_source_ase = false;
+                bool have_sink_ase = false;
                 for (i=0;i<source_ase_count+sink_ase_count;i++){
                     ascs_streamendpoint_characteristic_t * characteristic = server->ascs_connection.streamendpoints[i].ase_characteristic;
                     printf("ASCS Client %u: ASE ID: %u - role %s\n", server->server_id, characteristic->ase_id, characteristic->role == LE_AUDIO_ROLE_SOURCE ? "Source" : "Sink");
-                    if (!server->ascs_have_sink && (characteristic->role == LE_AUDIO_ROLE_SINK)){
-                        server->ase_id_sink = characteristic->ase_id;
-                        printf("ASCS Client %u: Using ASE ID %u as audio sink\n", server->server_id, server->ase_id_sink);
+                    if (!have_sink_ase && (characteristic->role == LE_AUDIO_ROLE_SINK)){
+                        have_sink_ase = true;
+                        printf("ASCS Client %u: Using ASE ID %u as audio sink\n", server->server_id, characteristic->ase_id);
+                        server->ascs_ase_ids[server->ascs_selected_ases_num] = characteristic->ase_id;
+                        server->ascs_ase_roles[server->ascs_selected_ases_num] = LE_AUDIO_ROLE_SINK;
+                        server->ascs_ase_streaming[server->ascs_selected_ases_num] = false;
+                        server->ascs_selected_ases_num++;
                         break;
                     }
-                    if (!server->ascs_have_source && (characteristic->role == LE_AUDIO_ROLE_SOURCE)){
-                        server->ase_id_sink = characteristic->ase_id;
-                        printf("ASCS Client %u: Using ASE ID %u as audio source\n", server->server_id, server->ase_id_sink);
+                    if (!have_source_ase && (characteristic->role == LE_AUDIO_ROLE_SOURCE)){
+                        have_source_ase = true;
+                        printf("ASCS Client %u: Using ASE ID %u as audio source\n", server->server_id, characteristic->ase_id);
+                        server->ascs_ase_ids[server->ascs_selected_ases_num] = characteristic->ase_id;
+                        server->ascs_ase_roles[server->ascs_selected_ases_num] = LE_AUDIO_ROLE_SOURCE;
+                        server->ascs_ase_streaming[server->ascs_selected_ases_num] = false;
+                        server->ascs_selected_ases_num++;
                         break;
                     }
                 }
+                server->ascs_operation_ase_index = 0;
                 server->server_state = SERVER_ASCS_CONNECTED;
             }
             break;
@@ -1494,6 +1516,7 @@ void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
 
         case LEAUDIO_SUBEVENT_ASCS_CLIENT_CODEC_CONFIGURATION:
             server = server_for_ascs_cid(leaudio_subevent_ascs_client_codec_configuration_get_ascs_cid(packet));
+            ase_id = leaudio_subevent_ascs_client_codec_configuration_get_ase_id(packet);
             if (server != NULL){
                 // codec id:
                 codec_configuration.coding_format =  leaudio_subevent_ascs_client_codec_configuration_get_coding_format(packet);;
@@ -1506,13 +1529,13 @@ void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                 codec_configuration.specific_codec_configuration.audio_channel_allocation_mask = leaudio_subevent_ascs_client_codec_configuration_get_audio_channel_allocation_mask(packet);
                 codec_configuration.specific_codec_configuration.octets_per_codec_frame = leaudio_subevent_ascs_client_codec_configuration_get_octets_per_frame(packet);
                 codec_configuration.specific_codec_configuration.codec_frame_blocks_per_sdu = leaudio_subevent_ascs_client_codec_configuration_get_frame_blocks_per_sdu(packet);
-                printf("ASCS Client %u: CODEC CONFIGURATION - ase_id %d,\n", server->server_id, server->ase_id_sink);
-                server->server_state = SERVER_ASCS_CODEC_CONFIGURED;
+                printf("ASCS Client %u: CODEC CONFIGURATION - ase_id %d,\n", server->server_id, ase_id);
             }
             break;
 
         case LEAUDIO_SUBEVENT_ASCS_CLIENT_QOS_CONFIGURATION:
             server = server_for_ascs_cid(leaudio_subevent_ascs_client_qos_configuration_get_ascs_cid(packet));
+            ase_id = leaudio_subevent_ascs_client_qos_configuration_get_ase_id(packet);
             if (server != NULL){
                 printf("ASCS Client %u: QOS CONFIGURATION - ase_id %u\n", server->server_id,
                     leaudio_subevent_ascs_client_qos_configuration_get_ase_id(packet));
@@ -1544,11 +1567,23 @@ void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
             server = server_for_ascs_cid(leaudio_subevent_ascs_client_streamendpoint_state_get_ascs_cid(packet));
             if (server != NULL){
                 ase_state  = leaudio_subevent_ascs_client_streamendpoint_state_get_state(packet);
+                ase_id = leaudio_subevent_ascs_client_streamendpoint_state_get_ase_id(packet);
                 printf("ASCS Client %u: ASE STATE (%s) - ase_id %d, role %s\n", server->server_id,
-                       ascs_util_ase_state2str(ase_state), server->ase_id_sink,
-                       (audio_stream_control_service_client_get_ase_role(server->ascs_cid, server->ase_id_sink) == LE_AUDIO_ROLE_SOURCE) ? "SOURCE" : "SINK" );
+                       ascs_util_ase_state2str(ase_state), ase_id,
+                       (audio_stream_control_service_client_get_ase_role(server->ascs_cid, ase_id) == LE_AUDIO_ROLE_SOURCE) ? "SOURCE" : "SINK" );
                 switch (ase_state) {
                     case ASCS_STATE_CODEC_CONFIGURED:
+                        // trigger next ASE Configuration
+                        btstack_assert(ase_id == server->ascs_ase_ids[server->ascs_operation_ase_index]);
+                        server->ascs_operation_ase_index++;
+                        if (server->ascs_operation_ase_index < server->ascs_selected_ases_num){
+                            // next ASE
+                            server->server_state = SERVER_ASCS_CONNECTED;
+                        } else {
+                            // done
+                            server->ascs_operation_ase_index = 0;
+                            server->server_state = SERVER_ASCS_CODEC_CONFIGURED;
+                        }
                         // trigger cig creation if all are configured
                         if (servers_in_state(SERVER_ASCS_CODEC_CONFIGURED)){
                             create_cig();
@@ -1559,7 +1594,18 @@ void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             // set metadata: streaming audio context = audo context unspecified
                             test_ascs_metadata.metadata_mask |= 1 << LE_AUDIO_METADATA_TYPE_STREAMING_AUDIO_CONTEXTS;
                             test_ascs_metadata.streaming_audio_contexts_mask = LE_AUDIO_CONTEXT_MASK_UNSPECIFIED;
-                            server->server_state = SERVER_ASCS_QOS_CONFIGURED;
+                            // trigger next ASE QoS Config
+                            btstack_assert(ase_id == server->ascs_ase_ids[server->ascs_operation_ase_index]);
+                            server->ascs_operation_ase_index++;
+                            if (server->ascs_operation_ase_index < server->ascs_selected_ases_num){
+                                // next ASE
+                                server->server_state = SERVER_ASCS_CODEC_CONFIGURED;
+                            } else {
+                                // done
+                                server->ascs_operation_ase_index = 0;
+                                server->server_state = SERVER_ASCS_QOS_CONFIGURED;
+                            }
+                            // trigger ENABLE if all are qos configured
                             if (servers_in_state(SERVER_ASCS_QOS_CONFIGURED)){
                                 servers_set_state(SERVER_ASCS_W2_ENABLE);
                             }
@@ -1567,7 +1613,17 @@ void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                         break;
                     case ASCS_STATE_ENABLING:
                         if (server->server_state == SERVER_ASCS_W4_ENABLING){
-                            server->server_state = SERVER_ASCS_ENABLING;
+                            // trigger next ASE Enable
+                            btstack_assert(ase_id == server->ascs_ase_ids[server->ascs_operation_ase_index]);
+                            server->ascs_operation_ase_index++;
+                            if (server->ascs_operation_ase_index < server->ascs_selected_ases_num){
+                                // next ASE
+                                server->server_state = SERVER_ASCS_W2_ENABLE;
+                            } else {
+                                // done
+                                server->ascs_operation_ase_index = 0;
+                                server->server_state = SERVER_ASCS_ENABLING;
+                            }
                             if (servers_in_state(SERVER_ASCS_ENABLING)){
                                 // all servers are in state enabling, create all cis
                                 printf("Create all CIS\n");
@@ -1581,6 +1637,22 @@ void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                         break;
                     case ASCS_STATE_STREAMING:
                         if (server->server_state == SERVER_ASCS_ENABLING){
+                            // find index
+                            for (i=0;i<server->ascs_selected_ases_num;i++){
+                                if (server->ascs_ase_ids[i] == ase_id){
+                                    server->ascs_ase_streaming[i] = true;
+                                }
+                            }
+                            // check if all streaming
+                            bool all_streaming = true;
+                            for (i=0;i<server->ascs_selected_ases_num;i++){
+                                if (server->ascs_ase_streaming[i] == false){
+                                    all_streaming = false;
+                                }
+                            }
+                            if (all_streaming == false){
+                                break;
+                            }
                             server->server_state = SERVER_ASCS_STREAMING;
                         }
                         try_transition_to_streaming();
