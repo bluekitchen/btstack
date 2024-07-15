@@ -313,8 +313,8 @@ static void map_notification_client_packet_handler_hci(uint8_t* packet, uint16_t
                         map_notification_client_emit_connected_event(mnc, status);
                     }
                     else {
-                        log_info("map: connection established");
                         mnc->goep_client.cid = goep_subevent_connection_opened_get_goep_cid(packet);
+                        log_info("map: connection established mnc->goep_client.cid:%u(0x%x)", mnc->goep_client.cid, mnc->goep_client.cid);
                         mnc->state = MNC_STATE_W2_SEND_CONNECT_REQUEST;
                         goep_client_request_can_send_now(mnc->goep_client.cid);
                     }
