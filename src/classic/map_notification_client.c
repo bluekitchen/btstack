@@ -482,6 +482,7 @@ uint8_t map_notification_client_connect(map_notification_client_t* mnc, l2cap_er
     btstack_assert(status == ERROR_CODE_SUCCESS);
     btstack_linked_list_add(&map_notification_clients, (btstack_linked_item_t*)mnc);
     *out_cid = mnc->cid;
+    log_debug("mnc->cid:0x%x mnc->goep_client.cid:0x%x mnc->goep_client.bearer_cid:0x%x", mnc->cid, mnc->goep_client.cid,mnc->goep_client.bearer_cid);
     return status;
 }
 
@@ -497,5 +498,6 @@ uint8_t map_notification_client_disconnect(uint16_t mnc_cid) {
 
     mnc->state = MNC_STATE_W2_SEND_DISCONNECT_REQUEST;
     goep_client_request_can_send_now(mnc->goep_client.cid);
+    log_debug("mnc->goep_client.cid:0x%x", mnc->goep_client.cid);
     return 0;
 }
