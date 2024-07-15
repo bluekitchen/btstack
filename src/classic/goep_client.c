@@ -516,6 +516,7 @@ goep_client_connect(goep_client_t *goep_client, l2cap_ertm_config_t *l2cap_ertm_
     sdp_client_register_query_callback(&goep_client->sdp_query_request);
 
     *out_cid = goep_client->cid;
+    log_debug("goep_client->cid:0x%x", goep_client->cid);
     return ERROR_CODE_SUCCESS;
 }
 
@@ -549,7 +550,7 @@ uint8_t goep_client_connect_l2cap(goep_client_t *goep_client, l2cap_ertm_config_
     goep_client->l2cap_psm = l2cap_psm;
 
     *out_cid = goep_client->cid;
-
+    log_debug("goep_client->cid:0x%x", goep_client->cid);
     return goep_client_start_connect(goep_client);
 }
 #endif
