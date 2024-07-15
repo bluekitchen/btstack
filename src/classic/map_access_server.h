@@ -57,6 +57,13 @@ extern "C" {
 // max type header len
 #define MAP_SERVER_MAX_TYPE_LEN 42
 
+#define MAP_SERVER_MAX_OBEX_HEADER_BUF 20
+
+// max APP_PARAM_BUFFER len
+#define MAP_SERVER_MAX_APP_PARAM_BUFFER 200
+
+
+
 // max search value len
 #define MAP_SERVER_MAX_SEARCH_VALUE_LEN 32
 

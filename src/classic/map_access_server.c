@@ -128,6 +128,7 @@ typedef struct {
     bool     incoming;
     map_access_server_state_t state;
     obex_parser_t obex_parser;
+    uint8_t obex_header_buffer[MAP_SERVER_MAX_OBEX_HEADER_BUF];
     uint16_t map_supported_features;
     mas_folder_t map_access_server_dir;
     mas_folder_t  map_folder;
@@ -140,9 +141,12 @@ typedef struct {
         char name[MAP_SERVER_MAX_NAME_LEN];
         char type[MAP_SERVER_MAX_TYPE_LEN];
         map_object_type_t object_type; // parsed from type string
+        struct {
+            uint32_t ConnectionID;
+        } hdr;
         uint32_t continuation;
         obex_app_param_parser_t app_param_parser;
-        uint8_t app_param_buffer[200];
+        uint8_t app_param_buffer[MAP_SERVER_MAX_APP_PARAM_BUFFER];
         struct {
 // the following X-Macro (https://en.wikipedia.org/wiki/X_macro)
 // below generates request.app_param struct members
@@ -402,9 +406,9 @@ static void map_access_server_add_srm_headers(map_access_server_t* map_access_se
 }
 
 static void map_access_server_add_name_header(map_access_server_t* map_access_server) {
-log_debug("1");
+
     if (map_access_server->response.hdr_name != NULL) {
-log_debug("2 hdr_name:<%s>", map_access_server->response.hdr_name);
+
         goep_server_header_add_name(map_access_server->goep_cid, map_access_server->response.hdr_name);
     }
 }
@@ -677,7 +681,11 @@ static void map_access_server_parser_callback_get(void* user_data, uint8_t heade
         obex_parser_header_store(&map_access_server->obex_srm.srmp_value, 1, total_len, data_offset, data_buffer, data_len);
         break;
     case OBEX_HEADER_CONNECTION_ID:
-        // TODO: verify connection id
+        log_debug("OBEX_HEADER_CONNECTION_ID: total_len:%u, data_offset:%u, data_len:%u", total_len, data_offset, data_len);
+        if (obex_parser_header_store(map_access_server->obex_header_buffer, sizeof(map_access_server->obex_header_buffer), total_len, data_offset, data_buffer, data_len) == OBEX_PARSER_HEADER_COMPLETE) {
+            map_access_server->request.hdr.ConnectionID = big_endian_read_32(map_access_server->obex_header_buffer, 0);
+            log_info("OBEX_HEADER_CONNECTION_ID:%x", map_access_server->request.hdr.ConnectionID);
+        }
         break;
     case OBEX_HEADER_NAME:
         // name is stored in big endian unicode-16
@@ -840,6 +848,7 @@ static void map_access_server_handle_get_put_request(map_access_server_t* map_ac
     case MAP_OBJECT_TYPE_PUT_NOTIFICATION_REGISTRATION:
         APP_WRITE_08(event, &pos, MAP_SUBEVENT_PUT_SET_NOTIFICATION_REGISTRATION);
         APP_WRITE_16(event, &pos, map_access_server->map_cid);
+        APP_WRITE_32(event, &pos, map_access_server->request.hdr.ConnectionID);
         APP_WRITE_08(event, &pos, map_access_server->request.app_params.NotificationStatus);
         APP_WRITE_LEN(event, pos);
         break;

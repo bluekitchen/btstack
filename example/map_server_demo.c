@@ -542,10 +542,12 @@ static void send_get_listing_object(uint8_t* packet, uint16_t start_index, uint1
     send_listing(continuation == 0, start_index, end_index);
 }
 
-static void connect_map_notification_client(void) {
-
-    #ifdef ENABLE_GOEP_L2CAP
-        map_notification_client_connect(&map_notification_client, &map_notification_client_ertm_config,
+static uint8_t connect_map_notification_client(void) {
+    log_debug("mnc_cid:0x%x", mnc_cid);
+    if (mnc_cid == 0)
+    {
+#ifdef ENABLE_GOEP_L2CAP
+        return map_notification_client_connect(&map_notification_client, &map_notification_client_ertm_config,
             sizeof(map_notification_client_ertm_buffer), map_notification_client_ertm_buffer,
             mns_packet_handler, remote_addr, 0, &mnc_cid);
     #else
@@ -553,10 +555,25 @@ static void connect_map_notification_client(void) {
         0, NULL,
         mns_packet_handler, remote_addr, 0, &mnc_cid);
     #endif
+    }
+    else {
+        log_info("we have already an open client connnection, mnc_cid:0x%x", mnc_cid);
+        return 0;
+    }
+
+
 }
 
-static void disconnect_map_notification_client(void) {
-    map_notification_client_disconnect(mnc_cid);
+static uint8_t disconnect_map_notification_client(void) {
+    log_debug("mnc_cid:0x%x", mnc_cid);
+    if (mnc_cid != 0)
+    {
+        return map_notification_client_disconnect(mnc_cid);
+        mnc_cid = 0;
+    } else {
+        log_info("client connection already closed, mnc_cid:0x%x", mnc_cid);
+        return 0;
+    }
 }
 
 #ifdef HAVE_BTSTACK_STDIN
@@ -742,7 +759,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
     UNUSED(size);
     uint8_t status, NotificationStatus, ChatState;
     uint16_t pos, start_index, max_list_count = 0, dummy_map_cid;
-    uint32_t continuation, 
+    uint32_t continuation, ConnectionID,
            NotificationFilterMask = MAP_APP_PARAM_SUB_AllNotifications,
         newNotificationFilterMask = MAP_APP_PARAM_SUB_AllNotifications;
 	
@@ -868,16 +885,20 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
 
                         case MAP_SUBEVENT_PUT_SET_NOTIFICATION_REGISTRATION:
                             APP_READ_16(packet, &pos, &dummy_map_cid);
+                            APP_READ_32(packet, &pos, &ConnectionID);
                             APP_READ_08(packet, &pos, &NotificationStatus);
-                            MAP_PRINTF("[+] Put NotificationRegistration\n");
+                            MAP_PRINTF("[+] Put NotificationRegistration \n");
                             map_access_server_send_get_put_response(map_cid, OBEX_RESP_SUCCESS, NULL, 0, 0, NULL);
                             if (NotificationStatus == 1) {
-                                connect_map_notification_client();
-                                MAP_PRINTF("[-] Connect back to PTS MAP-MNS mnc_cid: <%u>(0x%04u)\n", mnc_cid, mnc_cid);
+                                status = connect_map_notification_client();
+                                MAP_PRINTF("[-] Connect back to PTS MAP-MNS mnc_cid: <%u>(0x%04u), status:%u\n", mnc_cid, mnc_cid, status);
                             }
                             else if (NotificationStatus == 0) {
-                                disconnect_map_notification_client();
-                                MAP_PRINTF("[-] Disable Notifications for MAP-MNS map_cid: <%u>(0x%04u)\n", dummy_map_cid, dummy_map_cid);
+                                status = disconnect_map_notification_client();
+                                MAP_PRINTF("[-] Disable Notifications for MAP-MNS map_cid: <%u>(0x%04u), status:%u\n", mnc_cid, mnc_cid, status);
+                            }
+                            else {
+                                btstack_assert(NotificationStatus < 2);
                             }
                             break;
 
@@ -994,7 +1015,7 @@ static void mns_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                                 MAP_PRINTF("[!] Notification Connection failed, status 0x%02x\n", status);
                             } else {
                                 mnc_cid = map_subevent_connection_opened_get_map_cid(packet);
-                                MAP_PRINTF("[+] Connected map_notification_client_cid 0x%04x\n",
+                                MAP_PRINTF("[+] Connected mnc_cid 0x%04x\n",
                                            mnc_cid);
                             }
                             break;
