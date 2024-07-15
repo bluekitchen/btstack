@@ -145,6 +145,9 @@ typedef enum {
     SERVER_ASCS_W2_ENABLE,
     SERVER_ASCS_W4_ENABLING,
     SERVER_ASCS_ENABLING,
+    SERVER_ASCS_W2_RECEIVER_READY,
+    SERVER_ASCS_W4_RECEIVER_READY_COMPLETE,
+    SERVER_ASCS_W4_STREAMING,
     SERVER_ASCS_STREAMING,
     SERVER_DISCONNECT,
     SERVER_W4_DISCONNECTED
@@ -467,6 +470,24 @@ static void run_for_server(server_t * server){
             btstack_assert(status == ERROR_CODE_SUCCESS);
             break;
 
+        case SERVER_ASCS_W2_RECEIVER_READY:
+            while (server->ascs_operation_ase_index < server->ascs_selected_ases_num){
+                ase_id = server->ascs_ase_ids[server->ascs_operation_ase_index];
+                if (server->ascs_ase_roles[server->ascs_operation_ase_index] == LE_AUDIO_ROLE_SOURCE){
+                    server->server_state = SERVER_ASCS_W4_RECEIVER_READY_COMPLETE;
+                    printf("ASCS Client %u: Send Receiver Ready for ASE ID %u\n", server->server_id, ase_id);
+                    status = audio_stream_control_service_client_streamendpoint_receiver_start_ready(server->ascs_cid, ase_id);
+                    btstack_assert(status == ERROR_CODE_SUCCESS);
+                    break;
+                } else {
+                    server->ascs_operation_ase_index++;
+                }
+            }
+            if (server->ascs_operation_ase_index >= server->ascs_selected_ases_num){
+                // done
+                server->server_state = SERVER_ASCS_W4_STREAMING;
+            }
+            break;
         case SERVER_DISCONNECT:
             server->server_state = SERVER_W4_DISCONNECTED;
             gap_disconnect(server->acl_con_handle);
@@ -901,6 +922,12 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                                 cis_established[i] = true;
                             }
                         }
+                        // all CIS established? then send Receiver Ready for all local source ases
+                        if (all_cis_established()){
+                            printf("All CIS Established, send Receiver Start Ready\n");
+                            servers_set_state(SERVER_ASCS_W2_RECEIVER_READY);
+                        }
+                        // transition to streaming if ready
                         try_transition_to_streaming();
                     break;
                 }
@@ -1480,7 +1507,7 @@ void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                 server->ascs_selected_ases_num = 0;
                 bool have_source_ase = false;
                 bool have_sink_ase = false;
-                for (i=0;i<source_ase_count+sink_ase_count;i++){
+                for (i=0 ; i < (source_ase_count+sink_ase_count) ; i++){
                     ascs_streamendpoint_characteristic_t * characteristic = server->ascs_connection.streamendpoints[i].ase_characteristic;
                     printf("ASCS Client %u: ASE ID: %u - role %s\n", server->server_id, characteristic->ase_id, characteristic->role == LE_AUDIO_ROLE_SOURCE ? "Source" : "Sink");
                     if (!have_sink_ase && (characteristic->role == LE_AUDIO_ROLE_SINK)){
@@ -1490,7 +1517,6 @@ void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                         server->ascs_ase_roles[server->ascs_selected_ases_num] = LE_AUDIO_ROLE_SINK;
                         server->ascs_ase_streaming[server->ascs_selected_ases_num] = false;
                         server->ascs_selected_ases_num++;
-                        break;
                     }
                     if (!have_source_ase && (characteristic->role == LE_AUDIO_ROLE_SOURCE)){
                         have_source_ase = true;
@@ -1499,7 +1525,6 @@ void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                         server->ascs_ase_roles[server->ascs_selected_ases_num] = LE_AUDIO_ROLE_SOURCE;
                         server->ascs_ase_streaming[server->ascs_selected_ases_num] = false;
                         server->ascs_selected_ases_num++;
-                        break;
                     }
                 }
                 server->ascs_operation_ase_index = 0;
@@ -1560,6 +1585,21 @@ void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                        server->server_id,
                        leaudio_subevent_ascs_client_control_point_operation_response_get_ase_id(packet),
                        opcode, response_code, reason);
+                // trigger next Receiver Ready
+                if (server->server_state == SERVER_ASCS_W4_RECEIVER_READY_COMPLETE){
+                    server->ascs_operation_ase_index++;
+                    if (server->ascs_operation_ase_index < server->ascs_selected_ases_num){
+                        // next ASE
+                        server->server_state = SERVER_ASCS_W2_RECEIVER_READY;
+                    } else {
+                        // done
+                        server->ascs_operation_ase_index = 0;
+                        server->server_state = SERVER_ASCS_W4_STREAMING;
+                        printf("ASCS Client %u: Receiver Start Ready for all Source ASEs sent\n", server->server_id);
+
+                        try_transition_to_streaming();
+                    }
+                }
             }
             break;
 
@@ -1613,8 +1653,8 @@ void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                         break;
                     case ASCS_STATE_ENABLING:
                         if (server->server_state == SERVER_ASCS_W4_ENABLING){
-                            // trigger next ASE Enable
                             btstack_assert(ase_id == server->ascs_ase_ids[server->ascs_operation_ase_index]);
+                            // trigger next ASE Enable
                             server->ascs_operation_ase_index++;
                             if (server->ascs_operation_ase_index < server->ascs_selected_ases_num){
                                 // next ASE
@@ -1636,25 +1676,24 @@ void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                         }
                         break;
                     case ASCS_STATE_STREAMING:
-                        if (server->server_state == SERVER_ASCS_ENABLING){
-                            // find index
-                            for (i=0;i<server->ascs_selected_ases_num;i++){
-                                if (server->ascs_ase_ids[i] == ase_id){
-                                    server->ascs_ase_streaming[i] = true;
-                                }
+                        // find index
+                        for (i=0;i<server->ascs_selected_ases_num;i++){
+                            if (server->ascs_ase_ids[i] == ase_id){
+                                server->ascs_ase_streaming[i] = true;
                             }
-                            // check if all streaming
-                            bool all_streaming = true;
-                            for (i=0;i<server->ascs_selected_ases_num;i++){
-                                if (server->ascs_ase_streaming[i] == false){
-                                    all_streaming = false;
-                                }
-                            }
-                            if (all_streaming == false){
-                                break;
-                            }
-                            server->server_state = SERVER_ASCS_STREAMING;
                         }
+                        // check if all streaming
+                        bool all_streaming = true;
+                        for (i=0;i<server->ascs_selected_ases_num;i++){
+                            if (server->ascs_ase_streaming[i] == false){
+                                all_streaming = false;
+                            }
+                        }
+                        if (all_streaming == false){
+                            break;
+                        }
+                        server->server_state = SERVER_ASCS_STREAMING;
+
                         try_transition_to_streaming();
                         break;
                     default:
