@@ -268,6 +268,9 @@ static le_audio_metadata_t     ascs_server_audio_metadata;
 static hci_con_handle_t ascs_server_current_client_con_handle;
 static uint8_t ascs_server_current_ase_id;
 
+static uint8_t ascs_server_source_ase_id;
+static uint8_t ascs_server_sink_ase_id;
+
 #ifdef ENABLE_MCS_CLIENT
 // MCS Client Handler
 #define MCS_CHARACTERISTICS_COUNT 30
@@ -432,6 +435,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     bd_addr_t event_addr;
     hci_con_handle_t cis_handle;
     hci_con_handle_t acl_handle;
+    bool complete;
     unsigned int i;
     if (packet_type != HCI_EVENT_PACKET) return;
     switch (packet[0]) {
@@ -486,7 +490,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                         }
                     }
                     // check for complete
-                    bool complete = true;
+                    complete = true;
                     for (i=0; i < num_cis; i++) {
                         complete &= cis_established[i];
                     }
@@ -497,8 +501,11 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                         printf("- Flush Timeout: %u\n", flush_timeout);
 
                         enter_streaming();
-                        audio_stream_control_service_server_streamendpoint_receiver_start_ready(acl_handle,
-                                                                                                ascs_server_current_ase_id);
+                        // Trigger streaming for single Source ASE
+                        if (microphone_enabled && (ascs_server_sink_ase_id != 0)){
+                            printf("ASCS Server: Receiver Start Ready for ASE ID %u\n", ascs_server_sink_ase_id);
+                            audio_stream_control_service_server_streamendpoint_receiver_start_ready(acl_handle, ascs_server_sink_ase_id);
+                        }
                         app_state = APP_STREAMING;
                     }
                     break;
@@ -979,6 +986,22 @@ int btstack_main(int argc, const char * argv[]){
     // ASCS Server
     audio_stream_control_service_server_init(ASCS_NUM_STREAMENDPOINT_CHARACTERISTICS, ascs_streamendpoint_characteristics, ASCS_NUM_CLIENTS, ascs_clients);
     audio_stream_control_service_server_register_packet_handler(&ascs_server_packet_handler);
+
+    // hack: identify sink and source ASE IDs
+    uint8_t i;
+    bool have_source_ase = false;
+    bool have_sink_ase = false;
+    for (i=0 ; i < ASCS_NUM_STREAMENDPOINT_CHARACTERISTICS ; i++){
+        ascs_streamendpoint_characteristic_t * characteristic = &ascs_streamendpoint_characteristics[i];
+        if (!have_sink_ase && (characteristic->role == LE_AUDIO_ROLE_SINK)){
+            have_sink_ase = true;
+            ascs_server_sink_ase_id = characteristic->ase_id;
+        }
+        if (!have_source_ase && (characteristic->role == LE_AUDIO_ROLE_SOURCE)){
+            have_source_ase = true;
+            ascs_server_source_ase_id = characteristic->ase_id;
+        }
+    }
 
     // VCS Server
     volume_control_service_server_init(255, VCS_MUTE_OFF, 0, NULL, 0, NULL);
