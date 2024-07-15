@@ -93,7 +93,11 @@
 #define OBEX_HEADER_CONNECTION_ID                  0xCB
 // user defined 0xF0..0xFF: 4 byte integer
 
-#define OBEX_VERSION                       0x14
+#ifdef ENABLE_FORCE_OBEX_VERSION
+#define OBEX_VERSION						ENABLE_FORCE_OBEX_VERSION
+#else
+#define OBEX_VERSION						0x14
+#endif
 
 #define OBEX_PACKET_HEADER_SIZE            3
 #define OBEX_PACKET_OPCODE_OFFSET          0
