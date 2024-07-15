@@ -168,7 +168,10 @@ typedef struct {
 
     // ascs
     uint16_t ascs_cid;
+    bool     ascs_have_source;
+    bool     ascs_have_sink;
     uint8_t  ase_id_sink;
+    uint8_t  ase_id_source;
     ascs_client_connection_t ascs_connection;
     uint8_t channel_allocation;
     ascs_streamendpoint_characteristic_t streamendpoint_characteristics[ASCS_CLIENT_NUM_STREAMENDPOINTS];
@@ -1463,13 +1466,18 @@ void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                 printf("ASCS Client %u: connected, con_handle 0x%04x, num Sink ASEs: %u, num Source ASEs: %u\n",
                        server->server_id, con_handle, sink_ase_count, source_ase_count);
 
-                // dump ASEs
+                // dump ASEs and assign ASE IDs for sink and source
                 for (i=0;i<source_ase_count+sink_ase_count;i++){
                     ascs_streamendpoint_characteristic_t * characteristic = server->ascs_connection.streamendpoints[i].ase_characteristic;
                     printf("ASCS Client %u: ASE ID: %u - role %s\n", server->server_id, characteristic->ase_id, characteristic->role == LE_AUDIO_ROLE_SOURCE ? "Source" : "Sink");
-                    if (characteristic->role == LE_AUDIO_ROLE_SINK){
+                    if (!server->ascs_have_sink && (characteristic->role == LE_AUDIO_ROLE_SINK)){
                         server->ase_id_sink = characteristic->ase_id;
-                        printf("ASCS Client %u: Using ASE ID %u for audio\n", server->server_id, server->ase_id_sink);
+                        printf("ASCS Client %u: Using ASE ID %u as audio sink\n", server->server_id, server->ase_id_sink);
+                        break;
+                    }
+                    if (!server->ascs_have_source && (characteristic->role == LE_AUDIO_ROLE_SOURCE)){
+                        server->ase_id_sink = characteristic->ase_id;
+                        printf("ASCS Client %u: Using ASE ID %u as audio source\n", server->server_id, server->ase_id_sink);
                         break;
                     }
                 }
