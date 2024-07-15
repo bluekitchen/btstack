@@ -241,7 +241,7 @@ static void goep_client_handle_sdp_query_end_of_record(goep_client_t * goep_clie
 static uint8_t goep_client_start_connect(goep_client_t * goep_client){
 #ifdef ENABLE_GOEP_L2CAP
     if (goep_client->l2cap_psm && (goep_client->ertm_buffer != NULL)){
-        log_info("Remote GOEP L2CAP PSM: %u", goep_client->l2cap_psm);
+        log_info("Remote GOEP L2CAP PSM: %u(0x%x)", goep_client->l2cap_psm, goep_client->l2cap_psm);
         return l2cap_ertm_create_channel(&goep_client_packet_handler, goep_client->bd_addr, goep_client->l2cap_psm,
         &goep_client->ertm_config, goep_client->ertm_buffer,
         goep_client->ertm_buffer_size, &goep_client->bearer_cid);
