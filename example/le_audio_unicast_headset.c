@@ -209,6 +209,7 @@ static pacs_record_t source_pac_records[] = {
         }
     }
 };
+static bool microphone_enabled;
 #endif
 
 //
@@ -350,14 +351,18 @@ void setup_pacs(uint8_t audio_location_mask) {
     // - sources
     pacs_streamendpoint_t * sources = NULL;
 #ifdef ENABLE_MICROPHONE
-    sources = &source_node;
-    source_node.records_num = 1;
-    source_node.records = &source_pac_records[0];
-    source_node.audio_locations_mask = 1;
-    source_node.available_audio_contexts_mask = LE_AUDIO_CONTEXT_MASK_UNSPECIFIED;
-    source_node.supported_audio_contexts_mask = LE_AUDIO_CONTEXT_MASK_UNSPECIFIED;
+    if (microphone_enabled){
+        sources = &source_node;
+        source_node.records_num = 1;
+        source_node.records = &source_pac_records[0];
+        source_node.audio_locations_mask = 1;
+        source_node.available_audio_contexts_mask = LE_AUDIO_CONTEXT_MASK_UNSPECIFIED;
+        source_node.supported_audio_contexts_mask = LE_AUDIO_CONTEXT_MASK_UNSPECIFIED;
+    }
 #endif
+
     published_audio_capabilities_service_server_init(&sink_node, sources);
+
     published_audio_capabilities_service_server_register_packet_handler(&pacs_server_packet_handler);
 }
 
@@ -412,6 +417,13 @@ static void list_configurations(void){
         printf("%c => %u speakers - %s\n", 'a' + option, configurations[option].set_size,
                channel_names[configurations[option].channel_id]);
     }
+#ifdef ENABLE_MICROPHONE
+    if (microphone_enabled){
+        printf("Microphone enabled\n");
+    } else {
+        printf("z => enable microphone\n");
+    }
+#endif
     printf("\n");
 }
 
@@ -861,6 +873,12 @@ static void stdin_process(char c){
 
     // handle config selection
     if (ui_wait_for_configuration){
+#ifdef ENABLE_MICROPHONE
+        if (c == 'z'){
+            printf("Microphone enabled\n");
+            microphone_enabled = true;
+        }
+#endif
         if (c >= 'a'){
             uint8_t option = c - 'a';
             if (option < configuration_count){
@@ -870,6 +888,7 @@ static void stdin_process(char c){
                 list_configurations();
             }
         }
+        return;
     }
 
     uint8_t volume_step = 10;
