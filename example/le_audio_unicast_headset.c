@@ -209,7 +209,6 @@ static pacs_record_t source_pac_records[] = {
         }
     }
 };
-static bool microphone_enabled;
 static le_audio_demo_source_generator audio_source = AUDIO_SOURCE_SINE;
 #endif
 
@@ -356,14 +355,12 @@ void setup_pacs(uint8_t audio_location_mask) {
     // - sources
     pacs_streamendpoint_t * sources = NULL;
 #ifdef ENABLE_MICROPHONE
-    if (microphone_enabled){
-        sources = &source_node;
-        source_node.records_num = 1;
-        source_node.records = &source_pac_records[0];
-        source_node.audio_locations_mask = 1;
-        source_node.available_audio_contexts_mask = LE_AUDIO_CONTEXT_MASK_UNSPECIFIED;
-        source_node.supported_audio_contexts_mask = LE_AUDIO_CONTEXT_MASK_UNSPECIFIED;
-    }
+    sources = &source_node;
+    source_node.records_num = 1;
+    source_node.records = &source_pac_records[0];
+    source_node.audio_locations_mask = 1;
+    source_node.available_audio_contexts_mask = LE_AUDIO_CONTEXT_MASK_UNSPECIFIED;
+    source_node.supported_audio_contexts_mask = LE_AUDIO_CONTEXT_MASK_UNSPECIFIED;
 #endif
 
     published_audio_capabilities_service_server_init(&sink_node, sources);
@@ -384,7 +381,7 @@ static void enter_streaming(void){
                                               frame_duration, octets_per_frame, iso_interval_1250us, flush_timeout);
     playback_active = true;
 #ifdef ENABLE_MICROPHONE
-    if (microphone_enabled && (source_num_channels > 0)){
+    if (source_num_channels > 0){
         // init source
         le_audio_demo_util_source_configure(1, source_num_channels, sampling_frequency_hz, frame_duration, octets_per_frame);
         le_audio_demo_util_source_generate_iso_frame(audio_source);
@@ -430,13 +427,6 @@ static void list_configurations(void){
         printf("%c => %u speakers - %s\n", 'a' + option, configurations[option].set_size,
                channel_names[configurations[option].channel_id]);
     }
-#ifdef ENABLE_MICROPHONE
-    if (microphone_enabled){
-        printf("Microphone enabled\n");
-    } else {
-        printf("z => enable microphone\n");
-    }
-#endif
     printf("\n");
 }
 
@@ -520,7 +510,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                         printf("- Flush Timeout: %u\n", flush_timeout);
 
                         // Trigger streaming for single Source ASE
-                        if (microphone_enabled && (ascs_server_sink_ase_id != 0)){
+                        if (ascs_server_sink_ase_id != 0){
                             printf("ASCS Server: Receiver Start Ready for ASE ID %u\n", ascs_server_sink_ase_id);
                             audio_stream_control_service_server_streamendpoint_receiver_start_ready(acl_handle, ascs_server_sink_ase_id);
                         }
@@ -909,12 +899,6 @@ static void stdin_process(char c){
 
     // handle config selection
     if (ui_wait_for_configuration){
-#ifdef ENABLE_MICROPHONE
-        if (c == 'z'){
-            printf("Microphone enabled\n");
-            microphone_enabled = true;
-        }
-#endif
         if (c >= 'a'){
             uint8_t option = c - 'a';
             if (option < configuration_count){
