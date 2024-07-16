@@ -85,9 +85,14 @@ static void mns_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
 static uint16_t map_cid;
 static uint8_t upload_buffer[1000];
 
-// MAP Notification Client
-static map_notification_client_t map_notification_client;
-static uint16_t mnc_cid;
+// MAP Notification Client - MAP allows only 1 client connection
+// which can be used from multiple map access server connections by using the MASInstanceID
+static struct {
+    int active;
+    map_notification_client_t mnc;
+    uint16_t cid;
+} mnc = {0};
+
 #ifdef ENABLE_GOEP_L2CAP
 // singleton instance
 static uint8_t map_notification_client_ertm_buffer[4000];
@@ -258,7 +263,7 @@ struct test_set_config mas_test_set =
 
 struct test_set_config* test_set = &mas_test_set;
 
-// declaration of config struct in map_notification_client.c
+// declaration of config struct in mnc.mnc.c
 struct test_set_config mac_test_set;
 static select_test_set(char c) {
     if (c == 'S') {
@@ -488,37 +493,52 @@ static void send_get_listing_object(uint8_t* packet, uint16_t start_index, uint1
 }
 
 static uint8_t connect_map_notification_client(void) {
-    log_debug("mnc_cid:0x%x", mnc_cid);
-    if (mnc_cid == 0)
+    uint8_t status = 0;
+    
+    log_debug("mnc.cid:0x%x mnc.active:%u", mnc.cid, mnc.active);
+    
+    if (mnc.active == 0)
     {
 #ifdef ENABLE_GOEP_L2CAP
-        return map_notification_client_connect(&map_notification_client, &map_notification_client_ertm_config,
+        status = map_notification_client_connect(&mnc.mnc, &map_notification_client_ertm_config,
             sizeof(map_notification_client_ertm_buffer), map_notification_client_ertm_buffer,
-            mns_packet_handler, remote_addr, 0, &mnc_cid);
-    #else
-    map_notification_client_connect(&map_notification_client, NULL,
-        0, NULL,
-        mns_packet_handler, remote_addr, 0, &mnc_cid);
-    #endif
+            mns_packet_handler, remote_addr, 0, &mnc.cid);
+ #else
+        status = map_notification_client_connect(&mnc.mnc, NULL,
+                    0, NULL,
+                    mns_packet_handler, remote_addr, 0, &mnc.cid);
+#endif
     }
     else {
-        log_info("we have already an open client connnection, mnc_cid:0x%x", mnc_cid);
-        return 0;
+        log_info("we have already %i open client notifications, mnc.cid:0x%x", mnc.active, mnc.cid);
     }
 
-
+    mnc.active++;
+    return status;
 }
 
 static uint8_t disconnect_map_notification_client(void) {
-    log_debug("mnc_cid:0x%x", mnc_cid);
-    if (mnc_cid != 0)
+    uint8_t status = 0;
+    
+    log_debug("mnc.cid:0x%x mnc.active:%u", mnc.cid, mnc.active);
+
+    if (mnc.active > 0)
     {
-        return map_notification_client_disconnect(mnc_cid);
-        mnc_cid = 0;
+        mnc.active--;
+        
+        if (mnc.active == 0) {
+            status = map_notification_client_disconnect(mnc.cid);
+            mnc.cid = 0;
+        }
+        else {
+            log_debug("not closed, still mnc.active:%u mnc.cid:0x%x ", mnc.active, mnc.cid);
+        }
+
     } else {
-        log_info("client connection already closed, mnc_cid:0x%x", mnc_cid);
-        return 0;
+        log_info("client connection already closed, mnc.cid:0x%x", mnc.cid);
     }
+
+    return status;
 }
 
 #ifdef HAVE_BTSTACK_STDIN
@@ -606,8 +626,8 @@ static void stdin_process(char c){
 
         case 'e': {
             char* body = create_next_mnc_event_report_body_object();
-            map_notification_client_send_event(mnc_cid, 0, body, strlen(body));
-            MAP_PRINTF("map_notification_client_send_event mnc_cid:%04x", mnc_cid);
+            map_notification_client_send_event(mnc.cid, 0, body, strlen(body));
+            MAP_PRINTF("map_notification_client_send_event mnc.cid:%04x", mnc.cid);
             log_debug("sent event report:%s", body)
             break;
         }
@@ -841,11 +861,11 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             map_access_server_send_get_put_response(current_map_cid, OBEX_RESP_SUCCESS, NULL, 0, 0, NULL);
                             if (NotificationStatus == 1) {
                                 status = connect_map_notification_client();
-                                MAP_PRINTF("[-] Connect back to PTS MAP-MNS mnc_cid: <%u>(0x%04u), status:%u\n", mnc_cid, mnc_cid, status);
+                                MAP_PRINTF("[-] Connect back to PTS MAP-MNS mnc.cid: <%u>(0x%04u), status:%u\n", mnc.cid, mnc.cid, status);
                             }
                             else if (NotificationStatus == 0) {
                                 status = disconnect_map_notification_client();
-                                MAP_PRINTF("[-] Disable Notifications for MAP-MNS map_cid: <%u>(0x%04u), status:%u\n", mnc_cid, mnc_cid, status);
+                                MAP_PRINTF("[-] Disable Notifications for MAP-MNS map_cid: <%u>(0x%04u), status:%u\n", mnc.cid, mnc.cid, status);
                             }
                             else {
                                 btstack_assert(NotificationStatus < 2);
@@ -964,9 +984,9 @@ static void mns_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             if (status) {
                                 MAP_PRINTF("[!] Notification Connection failed, status 0x%02x\n", status);
                             } else {
-                                mnc_cid = map_subevent_connection_opened_get_map_cid(packet);
-                                MAP_PRINTF("[+] Connected mnc_cid 0x%04x\n",
-                                           mnc_cid);
+                                mnc.cid = map_subevent_connection_opened_get_map_cid(packet);
+                                MAP_PRINTF("[+] Connected mnc.cid 0x%04x\n",
+                                           mnc.cid);
                             }
                             break;
                         case MAP_SUBEVENT_CONNECTION_CLOSED:
