@@ -708,7 +708,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
     UNUSED(channel);
     UNUSED(size);
     uint8_t status, NotificationStatus, ChatState;
-    uint16_t pos, start_index, max_list_count = 0, dummy_map_cid;
+    uint16_t pos, start_index, max_list_count = 0, current_map_cid;
     uint32_t continuation, ConnectionID,
            NotificationFilterMask = MAP_APP_PARAM_SUB_AllNotifications,
         newNotificationFilterMask = MAP_APP_PARAM_SUB_AllNotifications;
@@ -754,7 +754,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
 							
                         case MAP_SUBEVENT_GET_MESSAGE_LISTING:
                             APP_READ_32(packet, &pos, &continuation);
-                            APP_READ_16(packet, &pos, &dummy_map_cid);
+                            APP_READ_16(packet, &pos, &current_map_cid);
                             APP_READ_16(packet, &pos, &max_list_count);
                             APP_READ_16(packet, &pos, &start_index);
                             uint8_t tmp_NewMessage = 0;
@@ -793,7 +793,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             uint8_t StatusIndicator;
                             uint8_t StatusValue;
                             char request_name[32];
-                            APP_READ_16(packet, &pos, &dummy_map_cid);
+                            APP_READ_16(packet, &pos, &current_map_cid);
                             APP_READ_08(packet, &pos, &StatusIndicator);
                             APP_READ_08(packet, &pos, &StatusValue);
                             APP_READ_STR(packet, &pos, sizeof(request_name), request_name);
@@ -803,7 +803,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             break;
                         }
                         case MAP_SUBEVENT_PUT_MESSAGE_UPDATE:
-                            APP_READ_16(packet, &pos, &dummy_map_cid);
+                            APP_READ_16(packet, &pos, &current_map_cid);
                             MAP_PRINTF("[+] Put MessageUpdate\n");
                             map_access_server_send_get_put_response(map_cid, OBEX_RESP_SUCCESS, NULL, 0, 0, NULL);
                             // BT SIG Test case MAP/MSE/MMB/BV-23-I asks for one more message after
@@ -818,7 +818,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             uint8_t Charset;
                             uint8_t ModifyText;
                             mas_uint64hex_t MessageHandle;
-                            APP_READ_16(packet, &pos, &dummy_map_cid);
+                            APP_READ_16(packet, &pos, &current_map_cid);
                             APP_READ_08(packet, &pos, &Charset);
                             APP_READ_08(packet, &pos, &Attachment);
                             APP_READ_08(packet, &pos, &ModifyText);
@@ -834,11 +834,11 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                         }
 
                         case MAP_SUBEVENT_PUT_SET_NOTIFICATION_REGISTRATION:
-                            APP_READ_16(packet, &pos, &dummy_map_cid);
+                            APP_READ_16(packet, &pos, &current_map_cid);
                             APP_READ_32(packet, &pos, &ConnectionID);
                             APP_READ_08(packet, &pos, &NotificationStatus);
                             MAP_PRINTF("[+] Put NotificationRegistration \n");
-                            map_access_server_send_get_put_response(map_cid, OBEX_RESP_SUCCESS, NULL, 0, 0, NULL);
+                            map_access_server_send_get_put_response(current_map_cid, OBEX_RESP_SUCCESS, NULL, 0, 0, NULL);
                             if (NotificationStatus == 1) {
                                 status = connect_map_notification_client();
                                 MAP_PRINTF("[-] Connect back to PTS MAP-MNS mnc_cid: <%u>(0x%04u), status:%u\n", mnc_cid, mnc_cid, status);
@@ -853,7 +853,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             break;
 
                         case MAP_SUBEVENT_PUT_SET_NOTIFICATION_FILTER:
-                            APP_READ_16(packet, &pos, &dummy_map_cid);
+                            APP_READ_16(packet, &pos, &current_map_cid);
                             APP_READ_32(packet, &pos, &NotificationFilterMask);
                             MAP_PRINTF("[+] Put SetNotificationFilter NotificationFilterMask old:0x%08x new:0x%08x changed:0x%08x ReadStatusChanged:%s\n",
                                 NotificationFilterMask, newNotificationFilterMask, NotificationFilterMask ^ newNotificationFilterMask, NotificationFilterMask & MAP_APP_PARAM_SUB_ReadStatusChanged ? "ON":"OFF");
@@ -863,7 +863,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
 
                         case MAP_SUBEVENT_PUT_OWNER_STATUS: {
                             mas_UTCstmpoffstr_t LastActivity;
-                            APP_READ_16(packet, &pos, &dummy_map_cid);
+                            APP_READ_16(packet, &pos, &current_map_cid);
                             APP_READ_STR(packet, &pos, sizeof(LastActivity), (char*)LastActivity);
                             APP_READ_08(packet, &pos, &ChatState);
                             MAP_PRINTF("[+] Put OwnerStatus\n");
@@ -879,7 +879,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             mas_UTCstmpoffstr_t EndFilterPeriodEnd;
                             mas_string_t FilterRecipient;
                             APP_READ_32(packet, &pos, &continuation);
-                            APP_READ_16(packet, &pos, &dummy_map_cid);
+                            APP_READ_16(packet, &pos, &current_map_cid);
                             APP_READ_STR(packet, &pos, sizeof(FilterPeriodBegin), (char*)FilterPeriodBegin);
                             APP_READ_STR(packet, &pos, sizeof(EndFilterPeriodEnd), (char*)EndFilterPeriodEnd);
                             APP_READ_STR(packet, &pos, sizeof(EndFilterPeriodEnd), (char*)FilterRecipient);
@@ -898,7 +898,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             uint8_t MASInstanceID;
                             const char MAS_INSTANCE_INFORMATION[] = "BTstack MAS INSTANCE";
                             APP_READ_32(packet, &pos, &continuation);
-                            APP_READ_16(packet, &pos, &dummy_map_cid);
+                            APP_READ_16(packet, &pos, &current_map_cid);
                             APP_READ_08(packet, &pos, &MASInstanceID);
                             map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_OwnerUCI, "BTstack OwnerUCI");
                             map_access_server_send_get_put_response(map_cid, OBEX_RESP_SUCCESS, NULL, 0, (uint16_t)sizeof(MAS_INSTANCE_INFORMATION), (uint8_t *) MAS_INSTANCE_INFORMATION);
