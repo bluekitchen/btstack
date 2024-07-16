@@ -29,3 +29,13 @@ build-coverage
 .vs
 .vscode
 enc_temp_folder
+/test/map_test/PTS_MAP/MAP
+/test/map_test/PTS_MAP/MAP_NEW
+/test/map_test/PTS_MAP/MAP_OLD
+/test/map_test/PTS_MAP/SIGDatabase
+/test/map_test/PTS_MAP/implicit_send_log.txt
+/test/map_test/PTS_MAP/le_security_info.txt
+/test/map_test/PTS_MAP/link_key.txt
+/test/map_test/PTS_MAP/PTS_Error.log
+/test/map_test/PTS_MAP/Backup
+/test/map_test/PTS_MAP/logfiles
