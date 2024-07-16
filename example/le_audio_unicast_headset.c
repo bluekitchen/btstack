@@ -210,6 +210,7 @@ static pacs_record_t source_pac_records[] = {
     }
 };
 static bool microphone_enabled;
+static le_audio_demo_source_generator audio_source = AUDIO_SOURCE_SINE;
 #endif
 
 //
@@ -382,6 +383,14 @@ static void enter_streaming(void){
     le_audio_demo_util_sink_configure_unicast(1, sink_num_channels, sampling_frequency_hz,
                                               frame_duration, octets_per_frame, iso_interval_1250us, flush_timeout);
     playback_active = true;
+#ifdef ENABLE_MICROPHONE
+    if (microphone_enabled && (source_num_channels > 0)){
+        // init source
+        le_audio_demo_util_source_configure(1, source_num_channels, sampling_frequency_hz, frame_duration, octets_per_frame);
+        le_audio_demo_util_source_generate_iso_frame(audio_source);
+        hci_request_cis_can_send_now_events(cis_con_handles[0]);
+    }
+#endif
 }
 
 static void stop_streaming(void){
@@ -470,6 +479,15 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     break;
             }
             break;
+        case HCI_EVENT_CIS_CAN_SEND_NOW:
+            if (app_state == APP_STREAMING){
+                cis_handle = hci_event_cis_can_send_now_get_cis_con_handle(packet);
+                log_info("ISO can send now %04x", cis_handle);
+                le_audio_demo_util_source_send(i, cis_handle);
+                le_audio_demo_util_source_generate_iso_frame(audio_source);
+                hci_request_cis_can_send_now_events(cis_handle);
+            }
+            break;
         case HCI_EVENT_META_GAP:
             switch (hci_event_gap_meta_get_subevent_code(packet)){
                 case GAP_SUBEVENT_LE_CONNECTION_COMPLETE:
@@ -501,13 +519,15 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                         printf("- Burst NUmber:  %u\n", burst_number);
                         printf("- Flush Timeout: %u\n", flush_timeout);
 
-                        enter_streaming();
                         // Trigger streaming for single Source ASE
                         if (microphone_enabled && (ascs_server_sink_ase_id != 0)){
                             printf("ASCS Server: Receiver Start Ready for ASE ID %u\n", ascs_server_sink_ase_id);
                             audio_stream_control_service_server_streamendpoint_receiver_start_ready(acl_handle, ascs_server_sink_ase_id);
                         }
+
+                        // ready
                         app_state = APP_STREAMING;
+                        enter_streaming();
                     }
                     break;
                 default:
@@ -1030,7 +1050,9 @@ int btstack_main(int argc, const char * argv[]){
 #endif
 
     // setup audio processing
+#ifdef ENABLE_MICROPHONE
     le_audio_demo_util_source_init();
+#endif
 
     // turn on!
     hci_power_control(HCI_POWER_ON);
