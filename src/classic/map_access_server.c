@@ -121,7 +121,7 @@ typedef struct {
 } app_params_compile_time_check;
 
 typedef struct {
-    uint16_t map_cid;
+    uint8_t entry;
     uint16_t goep_cid;
     bd_addr_t bd_addr;
     hci_con_handle_t con_handle;
@@ -180,7 +180,10 @@ typedef struct {
     } response;
 } map_access_server_t;
 
-static map_access_server_t map_access_server_singleton[MAS_MAX_CONNECTIONS];
+static map_access_server_t map_access_server_connections[MAS_MAX_CONNECTIONS] = {
+    [0] = { .entry = 0 },
+    [0] = { .entry = 1 },
+};
 
 static struct {
     char* name;
@@ -211,20 +214,6 @@ static map_access_server_t* map_access_server_for_goep_cid(uint16_t goep_cid) {
     log_error("cannot open more than MAS_MAX_CONNECTIONS (%d)", MAS_MAX_CONNECTIONS);
     return NULL;
 }
-
-//static map_access_server_t* map_access_server_for_map_cid(uint16_t map_cid) {
-//    //
-//    int i;
-//
-//    for (i = 0; i < MAS_MAX_CONNECTIONS; i++)
-//        if (map_access_server_connections[i].map_cid == map_cid) {
-//            log_debug("map_access_server_connections[%d] is map_cid0x%x", i, map_cid);
-//            return &map_access_server_connections[i];
-//        }
-//
-//    log_error("map_cid <%u>(0x%04x) NOT FOUND!", map_cid);
-//    return NULL;
-//}
 
 /* only to be called if the GEOP connection is closed
 * if only OBEX connection is closed we need to go to  MAP_SERVER_STATE_W4_CONNECT_OPCODE
@@ -514,7 +503,7 @@ static void map_access_server_handle_can_send_now(map_access_server_t* map_acces
     case MAP_SERVER_STATE_SEND_DISCONNECT_RESPONSE:
     {
         // cache data
-        //uint16_t map_cid = map_access_server->map_cid;
+        //uint16_t map_cid = map_access_server->goep_cid;
         uint16_t goep_cid = map_access_server->goep_cid;
 
         // reset MAP/OBEX connection state
@@ -530,7 +519,7 @@ static void map_access_server_handle_can_send_now(map_access_server_t* map_acces
         APP_WRITE_08(event, &pos, HCI_EVENT_MAP_META);
         APP_WRITE_08(event, &pos, 0);
         APP_WRITE_08(event, &pos, MAP_SUBEVENT_CONNECTION_CLOSED);
-        APP_WRITE_16(event, &pos, map_access_server->map_cid);
+        APP_WRITE_16(event, &pos, map_access_server->goep_cid);
         (*map_access_server_user_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
         break;
     }
@@ -781,14 +770,14 @@ static void map_access_server_handle_get_put_request(map_access_server_t* map_ac
 
     case MAP_OBJECT_TYPE_GET_FOLDER_LISTING:
         APP_WRITE_08(event, &pos, MAP_SUBEVENT_FOLDER_LISTING_ITEM);
-        APP_WRITE_16(event, &pos, map_access_server->map_cid);
+        APP_WRITE_16(event, &pos, map_access_server->goep_cid);
         APP_WRITE_LEN(event, pos);
         break;
 
     case MAP_OBJECT_TYPE_GET_MSG_LISTING:
         APP_WRITE_08(event, &pos, MAP_SUBEVENT_GET_MESSAGE_LISTING);
         APP_WRITE_32(event, &pos, map_access_server->request.continuation);
-        APP_WRITE_16(event, &pos, map_access_server->map_cid);
+        APP_WRITE_16(event, &pos, map_access_server->goep_cid);
         APP_WRITE_16(event, &pos, map_access_server->request.app_params.MaxListCount);
         APP_WRITE_16(event, &pos, map_access_server->request.app_params.ListStartOffset);
         APP_WRITE_LEN(event, pos);
@@ -797,7 +786,7 @@ static void map_access_server_handle_get_put_request(map_access_server_t* map_ac
     case MAP_OBJECT_TYPE_GET_CONVO_LISTING:
         APP_WRITE_08(event, &pos, MAP_SUBEVENT_GET_CONVO_LISTING);
         APP_WRITE_32(event, &pos, map_access_server->request.continuation);
-        APP_WRITE_16(event, &pos, map_access_server->map_cid);
+        APP_WRITE_16(event, &pos, map_access_server->goep_cid);
         APP_WRITE_STR(event, &pos, sizeof(map_access_server->request.app_params.FilterPeriodBegin), (char*)map_access_server->request.app_params.FilterPeriodBegin);
         APP_WRITE_STR(event, &pos, sizeof(map_access_server->request.app_params.EndFilterPeriodEnd), (char*)map_access_server->request.app_params.EndFilterPeriodEnd);
         APP_WRITE_STR(event, &pos, sizeof(map_access_server->request.app_params.EndFilterPeriodEnd), (char*)map_access_server->request.app_params.FilterRecipient);
@@ -808,20 +797,20 @@ static void map_access_server_handle_get_put_request(map_access_server_t* map_ac
     case MAP_OBJECT_TYPE_GET_MAS_INSTANCE_INFORMATION:
         APP_WRITE_08(event, &pos, MAP_SUBEVENT_GET_MAS_INSTANCE_INFORMATION);
         APP_WRITE_32(event, &pos, map_access_server->request.continuation);
-        APP_WRITE_16(event, &pos, map_access_server->map_cid);
+        APP_WRITE_16(event, &pos, map_access_server->goep_cid);
         APP_WRITE_08(event, &pos, map_access_server->request.app_params.MASInstanceID)
         APP_WRITE_LEN(event, pos);
         break;
 
     case MAP_OBJECT_TYPE_GET_MESSAGE:
         APP_WRITE_08(event, &pos, MAP_SUBEVENT_GET_MESSAGE);
-        APP_WRITE_16(event, &pos, map_access_server->map_cid);
+        APP_WRITE_16(event, &pos, map_access_server->goep_cid);
         APP_WRITE_LEN(event, pos);
         break;
 
     case MAP_OBJECT_TYPE_PUT_MESSAGE_STATUS:
         APP_WRITE_08(event, &pos, MAP_SUBEVENT_PUT_MESSAGE_STATUS);
-        APP_WRITE_16(event, &pos, map_access_server->map_cid);
+        APP_WRITE_16(event, &pos, map_access_server->goep_cid);
         APP_WRITE_08(event, &pos, map_access_server->request.app_params.StatusIndicator);
         APP_WRITE_08(event, &pos, map_access_server->request.app_params.StatusValue);
         APP_WRITE_STR(event, &pos, sizeof(event) - pos, map_access_server->request.name);
@@ -830,7 +819,7 @@ static void map_access_server_handle_get_put_request(map_access_server_t* map_ac
 
     case MAP_OBJECT_TYPE_PUT_MESSAGE:
         APP_WRITE_08(event, &pos, MAP_SUBEVENT_PUT_MESSAGE);
-        APP_WRITE_16(event, &pos, map_access_server->map_cid);
+        APP_WRITE_16(event, &pos, map_access_server->goep_cid);
         APP_WRITE_08(event, &pos, map_access_server->request.app_params.Charset);
         APP_WRITE_08(event, &pos, map_access_server->request.app_params.Attachment);
         APP_WRITE_08(event, &pos, map_access_server->request.app_params.ModifyText);
@@ -841,13 +830,13 @@ static void map_access_server_handle_get_put_request(map_access_server_t* map_ac
 
     case MAP_OBJECT_TYPE_PUT_MESSAGE_UPDATE:
         APP_WRITE_08(event, &pos, MAP_SUBEVENT_PUT_MESSAGE_UPDATE);
-        APP_WRITE_16(event, &pos, map_access_server->map_cid);
+        APP_WRITE_16(event, &pos, map_access_server->goep_cid);
         APP_WRITE_LEN(event, pos);
         break;
 
     case MAP_OBJECT_TYPE_PUT_NOTIFICATION_REGISTRATION:
         APP_WRITE_08(event, &pos, MAP_SUBEVENT_PUT_SET_NOTIFICATION_REGISTRATION);
-        APP_WRITE_16(event, &pos, map_access_server->map_cid);
+        APP_WRITE_16(event, &pos, map_access_server->goep_cid);
         APP_WRITE_32(event, &pos, map_access_server->request.hdr.ConnectionID);
         APP_WRITE_08(event, &pos, map_access_server->request.app_params.NotificationStatus);
         APP_WRITE_LEN(event, pos);
@@ -856,14 +845,14 @@ static void map_access_server_handle_get_put_request(map_access_server_t* map_ac
 
     case MAP_OBJECT_TYPE_PUT_SET_NOTIFICATION_FILTER:
         APP_WRITE_08(event, &pos, MAP_SUBEVENT_PUT_SET_NOTIFICATION_FILTER);
-        APP_WRITE_16(event, &pos, map_access_server->map_cid);
+        APP_WRITE_16(event, &pos, map_access_server->goep_cid);
         APP_WRITE_32(event, &pos, map_access_server->request.app_params.NotificationFilterMask);
         APP_WRITE_LEN(event, pos);
         break;
 
     case MAP_OBJECT_TYPE_PUT_OWNER_STATUS:
         APP_WRITE_08(event, &pos, MAP_OBJECT_TYPE_PUT_OWNER_STATUS);
-        APP_WRITE_16(event, &pos, map_access_server->map_cid);
+        APP_WRITE_16(event, &pos, map_access_server->goep_cid);
         APP_WRITE_08(event, &pos, map_access_server->request.app_params.ChatState);
         APP_WRITE_STR(event, &pos, sizeof(event) - pos, (char*)map_access_server->request.app_params.LastActivity);
         APP_WRITE_LEN(event, pos);
@@ -1064,7 +1053,7 @@ static bool map_access_server_valid_header_for_request(map_access_server_t* map_
 
 
 int map_access_server_set_response_app_param(uint16_t map_cid, enum MAP_APP_PARAMS app_param, void* param) {
-    map_access_server_t* mas = map_access_server_for_map_cid(map_cid);
+    map_access_server_t* mas = map_access_server_for_goep_cid(map_cid);
     size_t len;
 
     if (mas == NULL)
@@ -1109,21 +1098,6 @@ int map_access_server_set_response_app_param(uint16_t map_cid, enum MAP_APP_PARA
     } // end of switch
 }
 
-uint8_t map_access_server_set_database_identifier(uint16_t map_cid, const uint8_t* database_identifier) {
-    //map_access_server_t* map_access_server = map_access_server_for_map_cid(map_cid);
-    //if (map_access_server == NULL) {
-    //    return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    //}
-    //if (map_access_server->state != MAP_SERVER_STATE_W4_USER_DATA) {
-    //    return ERROR_CODE_COMMAND_DISALLOWED;
-    //}
-    //btstack_assert(map_access_server->request.object_type != MAP_OBJECT_TYPE_INVALID);
-
-    //(void)memcpy(map_access_server->response.app_params.DatabaseIdentifier, DatabaseIdentifier, BT_UINT128_LEN_BYTES);
-    ////map_access_server->response.database_identifier_set = true;
-    return ERROR_CODE_SUCCESS;
-};
-
 static void map_access_server_build_response(map_access_server_t* map_access_server) {
     goep_server_response_create_general(map_access_server->goep_cid);
     map_access_server_add_srm_headers(map_access_server);
@@ -1134,7 +1108,7 @@ static void map_access_server_build_response(map_access_server_t* map_access_ser
 }
 
 uint16_t map_access_server_get_max_body_size(uint16_t map_cid) {
-    map_access_server_t* map_access_server = map_access_server_for_map_cid(map_cid);
+    map_access_server_t* map_access_server = map_access_server_for_goep_cid(map_cid);
     if (map_access_server == NULL) {
         return 0;
     }
@@ -1148,7 +1122,7 @@ uint16_t map_access_server_get_max_body_size(uint16_t map_cid) {
 }
 
 uint16_t map_access_server_send_get_put_response(uint16_t map_cid, uint8_t response_code, char* hdr_name, uint32_t continuation, uint16_t body_len, const uint8_t* body) {
-    map_access_server_t* map_access_server = map_access_server_for_map_cid(map_cid);
+    map_access_server_t* map_access_server = map_access_server_for_goep_cid(map_cid);
     if (map_access_server == NULL) {
         RUN_AND_LOG_ACTION(return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;)
     }
