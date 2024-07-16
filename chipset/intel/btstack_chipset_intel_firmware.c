@@ -103,7 +103,7 @@ typedef struct {
 // Vendor sepcific commands
 
 static const hci_cmd_t hci_intel_read_version = {
-    0xfc05, ""
+    0xfc05, "1"
 };
 static const hci_cmd_t hci_intel_read_secure_boot_params = {
     0xfc0d, ""
@@ -267,7 +267,7 @@ static void state_machine(uint8_t * packet){
 
             // Read Intel Version
             state++;
-            transport_send_cmd(&hci_intel_read_version);
+            transport_send_cmd(&hci_intel_read_version, 0xff);
             break;
         case 2:
             version = (intel_version_t*) hci_event_command_complete_get_return_parameters(packet);
