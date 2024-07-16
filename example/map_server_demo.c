@@ -299,14 +299,6 @@ static mas_uint128hex_t DatabaseIdentifier = { 0 };
 // "00000001"
 // { 0 } works
 static mas_uint128hex_t FolderVersionCounter = { 0 };
-// BT SIG Test Suite PTS is not acepting what BT SIG MAP spec describes as valid counters:
-// "variable length (max. 32 bytes), 128 - bit value in hex string format":
-// "00000000000000000000000000000001"
-// "0000000000000000"
-// "0000000000000001"
-// "00000000"
-// "00000001"
-// { 0 } doesn't work neither
 static mas_uint128hex_t ConversationListingVersionCounter = { 0 };
 static mas_uint128hex_t ConversationID = { 0 };
 
@@ -314,60 +306,6 @@ static void increase_version_counter_by_1(mas_uint128hex_t counter) {
     counter[BT_UINT128_HEX_LEN_BYTES - 1]++;
     log_debug_hexdump(counter, BT_UINT128_HEX_LEN_BYTES);
 }
-
-
-/* BT SIG MAP SPEC1.1 Page 37 & 38:
-
-<!DTD for the MAP Messages-Listing Object-->
-
-<!DOCTYPE MAP-msg-listing [
-
-<!ELEMENT MAP-msg-listing ( msg )* >
-<!ATTLIST MAP-msg-listing version CDATA #FIXED "1.1">
-
-<!ELEMENT msg EMPTY>
-<!ATTLIST msg
-  handle CDATA #REQUIRED
-  subject CDATA #REQUIRED
-  datetime CDATA #REQUIRED
-  sender_name CDATA #IMPLIED
-  sender_addressing CDATA #IMPLIED
-  replyto_addressing CDATA #IMPLIED
-  recipient_name CDATA #IMPLIED
-  recipient_addressing CDATA #REQUIRED
-  type CDATA #REQUIRED
-  size CDATA #REQUIRED
-  text (yes|no) "no"
-   reception_status CDATA #REQUIRED
-  attachment_size CDATA #REQUIRED
-  priority (yes|no) "no"
-  read (yes|no) "no"
-  sent (yes|no) "no"
-  protected (yes|no) "no"
-  delivery_status CDATA #IMPLIED
-  conversation_id CDATA #REQUIRED
-  conversation_name CDATA #IMPLIED
-  direction CDATA #REQUIRED
-  attachment_mime_types CDATA #IMPLIED
->
-]>
-
-<MAP-msg-listing version="1.1">
-  <msg handle="20000100001" subject="Welcome Clara Nicole” datetime="20140706T095000-0400"
-sender_name="Max" sender_addressing="4924689753@s.whateverapp.net"
-recipient_addressing="" type="IM" size="256" attachment_size="0" priority="no" read="no" sent="no"
-protected="no" conversation_id=”E1E2E3E4F1F2F3F4A1A2A3A4B1B2B3B4” direction=”incoming”
-/>
-  <msg handle = "20000100002" subject= "What’s the progress Max?"
-datetime="20140705T092200+0100" sender_name="Jonas"
-sender_addressing="4913579864@s.whateverapp.net" recipient_addressing = "" type="IM"
-size="512" attachment_size="8671724" priority="no" read="yes" sent="yes" protected="no"
-conversation_id=”E1E2E3E4F1F2F3F4A1A2A3A4B1B2B3B4” direction=”incoming”
-attachment_mime_types=”video/mpeg”/>
-</MAP-msg-listing>
-*/
-
-
 
 static int body_msg(char* msg_buffer, uint16_t index, int maxsize) {
     index = index % ARRAYSIZE(mas_cfg->objects);
