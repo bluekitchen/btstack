@@ -231,7 +231,8 @@ static uint8_t  flush_timeout;
 static uint16_t sampling_frequency_hz;
 static btstack_lc3_frame_duration_t frame_duration;
 static uint16_t octets_per_frame;
-static uint8_t  num_channels;
+static uint8_t  sink_num_channels;
+static uint8_t  source_num_channels;
 
 // playback - volume in 0..255 to match VCS
 static uint8_t  playback_volume = 255;
@@ -378,7 +379,7 @@ static void update_playback_volume(void){
 
 static void enter_streaming(void){
     // init sink
-    le_audio_demo_util_sink_configure_unicast(1, num_channels, sampling_frequency_hz,
+    le_audio_demo_util_sink_configure_unicast(1, sink_num_channels, sampling_frequency_hz,
                                               frame_duration, octets_per_frame, iso_interval_1250us, flush_timeout);
     playback_active = true;
 }
@@ -655,6 +656,7 @@ static void ascs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
     ascs_codec_configuration_t codec_configuration;
     ascs_qos_configuration_t   qos_configuration;
     uint8_t ase_id;
+    uint8_t num_channels;
 
     switch (hci_event_leaudio_meta_get_subevent_code(packet)){
         case LEAUDIO_SUBEVENT_ASCS_SERVER_CONNECTED:
@@ -718,6 +720,13 @@ static void ascs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
                 }
                 printf("- channel allocation: 0x%02x -> %u channels\n", codec_configuration.specific_codec_configuration.audio_channel_allocation_mask, num_channels);
             }
+            // same codec configuration, but individual number of channels per ASE
+            if (ase_id == ascs_server_sink_ase_id){
+                sink_num_channels = num_channels;
+            } else {
+                source_num_channels = num_channels;
+            }
+
             if (codec_configuration.specific_codec_configuration.codec_configuration_mask & (1 <<LE_AUDIO_CODEC_CONFIGURATION_TYPE_OCTETS_PER_CODEC_FRAME)){
                 printf("- octets per codec frame: %3u\n", codec_configuration.specific_codec_configuration.octets_per_codec_frame);
             }
