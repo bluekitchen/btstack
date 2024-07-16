@@ -78,7 +78,7 @@
 #define MAS_SERVER_RFCOMM_CHANNEL_NR 1
 #define MAS_SERVER_GOEP_PSM 0x1001
 
-static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+static void hci_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static void mns_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 
@@ -663,7 +663,7 @@ error:
     log_error("%s", error_msg);
 }
 
-static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void hci_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
     int i;
@@ -1032,7 +1032,7 @@ int btstack_main(int argc, const char * argv[]){
     goep_server_init();
 
     // register for HCI events
-    hci_event_callback_registration.callback = &packet_handler;
+    hci_event_callback_registration.callback = &hci_packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
 
     sscanf_bd_addr(remote_addr_string, remote_addr);
