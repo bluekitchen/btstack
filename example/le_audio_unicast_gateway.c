@@ -1556,7 +1556,8 @@ void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                         server->ascs_ase_streaming[server->ascs_selected_ases_num] = false;
                         server->ascs_selected_ases_num++;
                     }
-                    if (enable_microphone && !have_source_ase && (characteristic->role == LE_AUDIO_ROLE_SOURCE)){
+                    // only enable microphone on first server
+                    if (enable_microphone && (server->server_id == 0) && !have_source_ase && (characteristic->role == LE_AUDIO_ROLE_SOURCE)){
                         have_source_ase = true;
                         printf("ASCS Client %u: Using ASE ID %u as audio source\n", server->server_id, characteristic->ase_id);
                         server->ascs_ase_ids[server->ascs_selected_ases_num] = characteristic->ase_id;
