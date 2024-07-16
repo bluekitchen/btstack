@@ -379,6 +379,7 @@ struct test_set_config {
     void (*fp_select_test_case_n)(struct test_set_config* cfg, uint8_t n);
     void (*fp_print_test_config)(struct test_set_config* cfg);
     void (*fp_print_test_cases)(struct test_set_config* cfg);
+    void (*fp_print_test_case_help)(struct test_set_config* cfg);
 };
 
 enum msg_status_read { no, yes };
