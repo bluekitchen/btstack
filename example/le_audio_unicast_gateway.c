@@ -75,6 +75,7 @@
 #include "le_audio_demo_util_source.h"
 
 #include "le_audio_unicast_gateway.h"
+#include "le_audio_demo_util_sink.h"
 
 // max config
 #define MAX_NUM_CIS 5
@@ -226,6 +227,9 @@ static ascs_codec_configuration_t codec_configuration;
 static le_audio_cig_t        cig;
 static le_audio_cig_params_t cig_params;
 static uint16_t              cig_id;
+
+static uint16_t iso_interval_1250us;
+static uint8_t  flush_timeout;
 
 static hci_con_handle_t cis_con_handles[MAX_NUM_CIS];
 static hci_con_handle_t acl_con_handles[MAX_NUM_CIS];
@@ -386,6 +390,11 @@ static void configure_stream(void) {
     uint8_t num_channels_per_stream = num_channels / num_servers;
     le_audio_demo_util_source_configure(num_servers, num_channels_per_stream, sampling_frequency_hz, frame_duration, octets_per_frame);
     le_audio_demo_util_source_generate_iso_frame(audio_source);
+
+    // init sink
+    le_audio_demo_util_sink_configure_unicast(1, 1, sampling_frequency_hz,
+                                              frame_duration, octets_per_frame, iso_interval_1250us, flush_timeout);
+
 }
 
 static void run_for_server(server_t * server){
@@ -831,6 +840,12 @@ static void create_cig(void){
     btstack_assert(status == ERROR_CODE_SUCCESS);
 }
 
+static void iso_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(packet_type);
+    UNUSED(channel);
+    le_audio_demo_util_sink_receive(0, packet, size);
+}
+
 static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     if (packet_type != HCI_EVENT_PACKET) return;
@@ -939,6 +954,10 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                                 cis_established[i] = true;
                             }
                         }
+                        // cache cis info
+                        iso_interval_1250us = gap_subevent_cis_created_get_iso_interval_1250us(packet);
+                        flush_timeout       = gap_subevent_cis_created_get_flush_timeout_c_to_p(packet);
+
                         // all CIS established? then send Receiver Ready for all local source ases
                         if (all_cis_established()){
                             printf("All CIS Established, send Receiver Start Ready\n");
@@ -1859,6 +1878,9 @@ int btstack_main(int argc, const char * argv[]){
     hci_event_callback_registration.callback = &hci_packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
 
+    // register for ISO Packet
+    hci_register_iso_packet_handler(&iso_packet_handler);
+
     // register for SM events
     sm_event_callback_registration.callback = &sm_packet_handler;
     sm_add_event_handler(&sm_event_callback_registration);
@@ -1870,6 +1892,7 @@ int btstack_main(int argc, const char * argv[]){
 
     // setup audio processing
     le_audio_demo_util_source_init();
+    le_audio_demo_util_sink_init("gateway.wav");
 #ifdef INPUT_DEVICE_NAME
     btstack_audio_portaudio_source_set_device(INPUT_DEVICE_NAME);
 #endif
