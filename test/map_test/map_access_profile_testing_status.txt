@@ -79,6 +79,7 @@ MAP/MSE/SGSIT/ATTR/BV-06-C MAP_NEW: PASS (2024-07-12) Attribute GSIT - Supported
 MAP/MSE/SGSIT/ATTR/BV-07-C MAP_NEW: PASS (2024-07-15) Attribute GSIT - MAP Supported Features
 MAP/MSE/SGSIT/OFFS/BV-01-C MAP_NEW: PASS (2024-07-15) Attribute ID Offset String GSIT - Service Name
 MAP/MSE/MSM/BV-07-C MAP_NEW: PASS (2024-07-15) Verify that the MSE can close a MAP session
+MAP/MSE/MSM/BV-10-C MAP_OLD&MAP_NEW: PASS (2024-07-16) Verify that the MSE can properly respond to multiple MAP session establishment requests.
 
 Open tests
 MAP/MSE/MNR/BV-03-C: PASS on the first run, no client_connection from the 2nd run. Same with other tests using multiple connections
