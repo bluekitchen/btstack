@@ -483,7 +483,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             if (app_state == APP_STREAMING){
                 cis_handle = hci_event_cis_can_send_now_get_cis_con_handle(packet);
                 log_info("ISO can send now %04x", cis_handle);
-                le_audio_demo_util_source_send(i, cis_handle);
+                le_audio_demo_util_source_send(0, cis_handle);
                 le_audio_demo_util_source_generate_iso_frame(audio_source);
                 hci_request_cis_can_send_now_events(cis_handle);
             }
