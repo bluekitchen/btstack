@@ -80,6 +80,8 @@ MAP/MSE/SGSIT/ATTR/BV-07-C MAP_NEW: PASS (2024-07-15) Attribute GSIT - MAP Suppo
 MAP/MSE/SGSIT/OFFS/BV-01-C MAP_NEW: PASS (2024-07-15) Attribute ID Offset String GSIT - Service Name
 MAP/MSE/MSM/BV-07-C MAP_NEW: PASS (2024-07-15) Verify that the MSE can close a MAP session
 MAP/MSE/MSM/BV-10-C MAP_OLD&MAP_NEW: PASS (2024-07-16) Verify that the MSE can properly respond to multiple MAP session establishment requests.
+MAP/MSE/MSM/BV-10-C MAP_OLD (2024-07-16) Verify that the MSE can properly respond to multiple MAP session establishment requests.
+MAP/MSE/MSM/BV-11-C MAP_OLD (2024-07-16) Verify that the MSE can close a MAP session with at least two MAS and one MNS active.
 
 Open tests
 MAP/MSE/MNR/BV-03-C: PASS on the first run, no client_connection from the 2nd run. Same with other tests using multiple connections
