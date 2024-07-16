@@ -203,28 +203,28 @@ static map_access_server_t* map_access_server_for_goep_cid(uint16_t goep_cid) {
     int i;
 
     for (i = 0; i< MAS_MAX_CONNECTIONS; i++)
-        if (map_access_server_singleton[i].goep_cid == 0 || map_access_server_singleton[i].goep_cid == goep_cid) {
-            log_debug("use map_access_server_singleton[%d] for goep_cid <%u>(0x%04x)", i, goep_cid, goep_cid);
-            return &map_access_server_singleton[i];
+        if (map_access_server_connections[i].goep_cid == 0 || map_access_server_connections[i].goep_cid == goep_cid) {
+            log_debug("use map_access_server_connections[%d] for goep_cid:0x%x", i, goep_cid);
+            return &map_access_server_connections[i];
         }
 
-    log_debug("cannot open more than MAS_MAX_CONNECTIONS (%d)", MAS_MAX_CONNECTIONS);
+    log_error("cannot open more than MAS_MAX_CONNECTIONS (%d)", MAS_MAX_CONNECTIONS);
     return NULL;
 }
 
-static map_access_server_t* map_access_server_for_map_cid(uint16_t map_cid) {
-    //
-    int i;
-
-    for (i = 0; i < MAS_MAX_CONNECTIONS; i++)
-        if (map_access_server_singleton[i].map_cid == map_cid) {
-            log_debug("map_access_server_singleton[%d] is map_cid <%u>(0x%04x)", i, map_cid, map_cid);
-            return &map_access_server_singleton[i];
-        }
-
-    log_debug("map_cid <%u>(0x%04x) NOT FOUND!", map_cid);
-    return NULL;
-}
+//static map_access_server_t* map_access_server_for_map_cid(uint16_t map_cid) {
+//    //
+//    int i;
+//
+//    for (i = 0; i < MAS_MAX_CONNECTIONS; i++)
+//        if (map_access_server_connections[i].map_cid == map_cid) {
+//            log_debug("map_access_server_connections[%d] is map_cid0x%x", i, map_cid);
+//            return &map_access_server_connections[i];
+//        }
+//
+//    log_error("map_cid <%u>(0x%04x) NOT FOUND!", map_cid);
+//    return NULL;
+//}
 
 /* only to be called if the GEOP connection is closed
 * if only OBEX connection is closed we need to go to  MAP_SERVER_STATE_W4_CONNECT_OPCODE
