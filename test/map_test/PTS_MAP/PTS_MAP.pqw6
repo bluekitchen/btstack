@@ -1,0 +1,2959 @@
+<WORKSPACE_INFORMATION NAME="Map_server_demo" PATH="C:\SVN\BlueKitchen\Tools\PTS\Workspaces\Map_server_demo" CREATED_WITH="Profile Tuning Suite, 8.5.3, 4" BD_ADDR="5CF370607B87" QDID="" SWITCH_TTCN="FALSE">
+  <PROJECTS_INFORMATION>
+    <PROJECT_INFORMATION NAME="MAP_OLD" TC_LOG="tc_log.xml" TC_SCRIPT="tc_sqript.xml" USERDLL="" USE_USERDLL="False" RUNTIME_LOGGING="False">
+      <PICS>
+        <Name>MAP_OLD</Name>
+        <Version />
+        <Rows>
+          <Row>
+            <Name>TSPC_MAP_0_1</Name>
+            <Description>Role: MAP v1.0** (Deprecated 2015-07-16 Withdrawn 2023-02-01)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_0_2</Name>
+            <Description>Role: Map v1.1** (Deprecated 2023-02-01. Withdrawn 2024-02-01.)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_0_3</Name>
+            <Description>Role: Map v1.2** (Deprecated 2021-02-01. Withdrawn 2024-02-01.)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_0_5</Name>
+            <Description>Role: Map v1.3 (C.1, C.2)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_0_6</Name>
+            <Description>Role: Map v1.4 (C.1, C.2)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_0a_1</Name>
+            <Description>Role: Map v1.2.1** (Deprecated 2021-02-01.Withdrawn 2024-02-01.)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_0a_2</Name>
+            <Description>Role: Map v1.2.2** (Deprecated 2023-02-01.Withdrawn 2024-02-01.)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_0a_3</Name>
+            <Description>Role: MAP v1.3.1 (C.2)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_0a_4</Name>
+            <Description>Role: MAP v1.4.1** (Deprecated 2019-11-20.Withdrawn 2024-02-01.)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_0a_5</Name>
+            <Description>Role: Map v1.4.2 (C.3)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_1_1</Name>
+            <Description>Role: Messaging Server Equipment (C.1)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_1_2</Name>
+            <Description>Role: Messaging Client Equipment (C.1)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_1</Name>
+            <Description>MCE: Notification (C.1)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_1a</Name>
+            <Description>MCE: SendEvent (C.4)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_1b</Name>
+            <Description>MCE: SetNotificationFilter (C.11)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_2</Name>
+            <Description>MCE: Browsing (C.1)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_2a</Name>
+            <Description>MCE: SetFolder (C.5)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_2b</Name>
+            <Description>MCE: GetFolderListing (C.5)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_2c</Name>
+            <Description>MCE: GetMessagesListing (C.5)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_2d</Name>
+            <Description>MCE: GetMessage (O)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_2e</Name>
+            <Description>MCE: SetMessageStatus (O)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_2f</Name>
+            <Description>MCE: UpdateInbox (O)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_2g</Name>
+            <Description>MCE: Filtering (O)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_2h</Name>
+            <Description>MCE: Multiple simultaneous MAS instances (O)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_2i</Name>
+            <Description>MCE: GetConversationListing (C.18)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_3</Name>
+            <Description>MCE: Uploading (O)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_3a</Name>
+            <Description>MCE: SetFolder (C.6)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_3b</Name>
+            <Description>MCE: GetFoldersListing (C.6)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_3c</Name>
+            <Description>MCE: PushMessage (C.20)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_3d</Name>
+            <Description>MCE: SetOwnerStatus  (C.15)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_3e</Name>
+            <Description>MCE: GetOwnerStatus  (C.15)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_4</Name>
+            <Description>MCE: Delete (O)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_4a</Name>
+            <Description>MCE: SetMessageStatus (C.7)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_5</Name>
+            <Description>MCE: Notification Registration (C.2)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_5a</Name>
+            <Description>MCE: SetNotificationRegistration off (O)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_5b</Name>
+            <Description>MCE: SetNotificationRegistration on (C.8)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_6a</Name>
+            <Description>MCE: EMAIL (C.3)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_6b</Name>
+            <Description>MCE: SMS_GSM (C.3)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_6c</Name>
+            <Description>MCE: SMS_CDMA (C.3)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_6d</Name>
+            <Description>MCE: MMS (C.3)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_6e</Name>
+            <Description>MCE: IM (C.12)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_7</Name>
+            <Description>MCE: Instance Information (O)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_7a</Name>
+            <Description>MCE: GetMASInstanceInformation (O)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_8</Name>
+            <Description>MCE: Extended MAP-Event-Report (C.4)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_8a</Name>
+            <Description>MCE: MAP-Event-Report: Version 1.1 (C.4)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_8b</Name>
+            <Description>MCE: MAP-Event-Report: Version 1.2 (O)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_9a</Name>
+            <Description>MCE: Message format Version 1.0 (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_9b</Name>
+            <Description>MCE: Message format Version 1.1 (O)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_10a</Name>
+            <Description>MCE: Messages-Listing Object Version 1.0 (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_10b</Name>
+            <Description>MCE: Messages-Listing Format Version 1.1 (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_11</Name>
+            <Description>MCE: Persistent Message Handles (O) </Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_12</Name>
+            <Description>MCE: Database Identifier (C.17) </Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_13a</Name>
+            <Description>MCE: Folder Version Counter (O)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_13b</Name>
+            <Description>MCE: Conversation Version Counters (C.14)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_13c</Name>
+            <Description>MCE: Conversation-Listing Version Counter (C.14)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_14</Name>
+            <Description>MCE: Participant Presence Change Notification (O) </Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_15</Name>
+            <Description>MCE: Participant Chat State Change Notification (O) </Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_16</Name>
+            <Description>MCE: PBAP Contact Cross Reference (O)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_17</Name>
+            <Description>MCE: Notification Filtering (O) </Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_18</Name>
+            <Description>MCE: UTC Offset Timestamp Format (O) </Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_19</Name>
+            <Description>MCE: Conversation listing (O) </Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_20</Name>
+            <Description>MCE: Owner status (O) </Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_21</Name>
+            <Description>MCE: Message Forwarding (C.19) </Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_1</Name>
+            <Description>MSE: Notification (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_1a</Name>
+            <Description>MSE: SendEvent (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_1b</Name>
+            <Description>MSE: SetNotificationFilter (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_2</Name>
+            <Description>MSE: Browsing (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_2a</Name>
+            <Description>MSE: SetFolder (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_2b</Name>
+            <Description>MSE: GetFoldersListing (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_2c</Name>
+            <Description>MSE: GetMessagesListing (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_2d</Name>
+            <Description>MSE: GetMessage (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_2e</Name>
+            <Description>MSE: SetMessageStatus (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_2f</Name>
+            <Description>MSE: UpdateInbox (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_2g</Name>
+            <Description>MSE: Multiple simultaneous MAS instances (O)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_2h</Name>
+            <Description>MSE: GetConversationListing (C.9)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_3</Name>
+            <Description>MSE: Uploading (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_3a</Name>
+            <Description>MSE: SetFolder (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_3b</Name>
+            <Description>MSE: GetFoldersListing (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_3c</Name>
+            <Description>MSE: PushMessage (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_3d</Name>
+            <Description>MSE: SetOwnerStatus  (C.7)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_3e</Name>
+            <Description>MSE: GetOwnerStatus  (C.7)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_4</Name>
+            <Description>MSE: Delete (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_4a</Name>
+            <Description>MSE: SetMessageStatus (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_5</Name>
+            <Description>MSE: Notification Registration (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_5a</Name>
+            <Description>MSE: SetNotificationRegistration (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_6a</Name>
+            <Description>MSE: EMAIL (C.1)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_6b</Name>
+            <Description>MSE: SMS_GSM (C.1)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_6c</Name>
+            <Description>MSE: SMS_CDMA (C.1)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_6d</Name>
+            <Description>MSE: MMS (C.1)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_6e</Name>
+            <Description>MSE: IM (O)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_7</Name>
+            <Description>MSE: Instance Information (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_7a</Name>
+            <Description>MSE: GetMASInstanceInformation (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_8</Name>
+            <Description>MSE: Extended MAP-Event-Report (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_8a</Name>
+            <Description>MSE: MAP-Event-Report: Version 1.1 (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_8b</Name>
+            <Description>MSE: MAP-Event-Report: Version 1.2 (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_9a</Name>
+            <Description>MSE: Message format Version 1.0 (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_9b</Name>
+            <Description>MSE: Message format Version 1.1 (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_10a</Name>
+            <Description>MSE: Messages-Listing Object Version 1.0 (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_10b</Name>
+            <Description>MSE: Messages-Listing Format Version 1.1 (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_11</Name>
+            <Description>MSE: Persistent Message Handles (O) </Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_12</Name>
+            <Description>MSE: Database Identifier (C.8) </Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_13a</Name>
+            <Description>MSE: Folder Version Counter (O)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_13b</Name>
+            <Description>MSE: Conversation Version Counters (C.10)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_13c</Name>
+            <Description>MSE: Conversation-Listing Version Counter (C.10)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_14</Name>
+            <Description>MSE: Participant Presence Change Notification (O) </Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_15</Name>
+            <Description>MSE: Participant Chat State Change Notification (O) </Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_16</Name>
+            <Description>MSE: PBAP Contact Cross Reference (O)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_17</Name>
+            <Description>MSE: Notification Filtering (M) </Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_18</Name>
+            <Description>MSE: UTC Offset Timestamp Format (M) </Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_19</Name>
+            <Description>MSE: Conversation listing (O) </Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_20</Name>
+            <Description>MSE: Owner status (O) </Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_21</Name>
+            <Description>MSE: Message Forwarding (C.11) </Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_4_1</Name>
+            <Description>MCE: General discoverable mode (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_4_2</Name>
+            <Description>MCE: Bondable mode (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_5_1</Name>
+            <Description>MCE: Initiation of general inquiry (O)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_5_2</Name>
+            <Description>MCE: Initiation of limited inquiry (O)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_6_1</Name>
+            <Description>MSE: General discoverable mode (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_6_2</Name>
+            <Description>MSE: Bondable mode (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_7_1</Name>
+            <Description>MSE: Initiation of general inquiry (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_7_2</Name>
+            <Description>MSE: Initiation of limited inquiry (O)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_7_3</Name>
+            <Description>MSE: Initiation of general bonding (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_7b_1</Name>
+            <Description>GOEP v2.0 or later (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_7b_2</Name>
+            <Description>GOEP v2.0 or later Backwards Compatibility (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_7b_3</Name>
+            <Description>OBEX over L2CAP (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_8_1</Name>
+            <Description>MCE: Connect (C.lient) (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_8_2</Name>
+            <Description>MCE: Disconnect (C.lient) (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_8_3</Name>
+            <Description>MCE: Put (C.lient) (C.1)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_8_4</Name>
+            <Description>MCE: Get (C.lient) (C.2)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_8_5</Name>
+            <Description>MCE: Abort (C.lient) (C.3)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_8_6</Name>
+            <Description>MCE: SetPath (C.lient) (C.4)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_9_1</Name>
+            <Description>MCE: Connect (Server) (C.1)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_9_2</Name>
+            <Description>MCE: Disconnect (Server) (C.1)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_9_3</Name>
+            <Description>MCE: Put (Server) (C.1)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_9_4</Name>
+            <Description>MCE: Abort (Server) (C.1)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_10_1</Name>
+            <Description>MCE: Name (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_10_2</Name>
+            <Description>MCE: Type (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_10_3</Name>
+            <Description>MCE: Body (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_10_4</Name>
+            <Description>MCE: End of Body (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_10_5</Name>
+            <Description>MCE: Target (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_10_6</Name>
+            <Description>MCE: Who (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_10_7</Name>
+            <Description>MCE: Connection ID (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_10_8</Name>
+            <Description>MCE: Application Parameters (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_10_9</Name>
+            <Description>MCE: SRM (C.1)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_10_10</Name>
+            <Description>MCE: Receive SRMP (C.1)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_10_11</Name>
+            <Description>MCE: Send SRMP (C.2)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_11_1</Name>
+            <Description>MCE: Bad Request (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_11_2</Name>
+            <Description>MCE: Not Implemented (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_11_3</Name>
+            <Description>MCE: Unauthorized (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_11_4</Name>
+            <Description>MCE: Precondition Failed (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_11_5</Name>
+            <Description>MCE: Not Found (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_11_6</Name>
+            <Description>MCE: Not Acceptable (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_11_7</Name>
+            <Description>MCE: Service Unavailable (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_11_8</Name>
+            <Description>MCE: Forbidden(M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_12_1</Name>
+            <Description>MCE: Bad Request (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_12_2</Name>
+            <Description>MCE: Not Implemented (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_12_3</Name>
+            <Description>MCE: Unauthorized (O)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_12_4</Name>
+            <Description>MCE: Precondition Failed (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_12_5</Name>
+            <Description>MCE: Item no longer used (N/A)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_12_6</Name>
+            <Description>MCE: Not Acceptable (O)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_12_7</Name>
+            <Description>MCE: Service Unavailable (O)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_12_8</Name>
+            <Description>MCE: Forbidden(O)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_13_1</Name>
+            <Description>MSE: Connect (Server) (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_13_2</Name>
+            <Description>MSE: Disconnect (Server) (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_13_3</Name>
+            <Description>MSE: Put (Server) (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_13_4</Name>
+            <Description>MSE: Get (Server) (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_13_5</Name>
+            <Description>MSE: Abort (Server) (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_13_6</Name>
+            <Description>MSE: SetPath (Server) (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_14_1</Name>
+            <Description>MSE: Connect (C.lient) (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_14_2</Name>
+            <Description>MSE: Disconnect (C.lient) (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_14_3</Name>
+            <Description>MSE: Put (C.lient) (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_14_4</Name>
+            <Description>MSE: Abort (C.lient) (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_15_1</Name>
+            <Description>MSE: Name (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_15_2</Name>
+            <Description>MSE: Type (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_15_3</Name>
+            <Description>MSE: Body (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_15_4</Name>
+            <Description>MSE: End of Body (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_15_5</Name>
+            <Description>MSE: Target (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_15_6</Name>
+            <Description>MSE: Who (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_15_7</Name>
+            <Description>MSE: Connection ID (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_15_8</Name>
+            <Description>MSE: Application Parameters (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_15_9</Name>
+            <Description>MSE: SRM (C.1)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_15_10</Name>
+            <Description>MSE: Receive SRMP (C.1)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_15_11</Name>
+            <Description>MSE: Send SRMP (C.2)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_16_1</Name>
+            <Description>MSE: Bad Request (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_16_2</Name>
+            <Description>MSE: Not Implemented (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_16_3</Name>
+            <Description>MSE: Unauthorized (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_16_4</Name>
+            <Description>MSE: Precondition Failed (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_16_5</Name>
+            <Description>MSE: Item no longer used (N/A)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_16_6</Name>
+            <Description>MSE: Not Acceptable (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_16_7</Name>
+            <Description>MSE: Service Unavailable (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_16_8</Name>
+            <Description>MSE: Forbidden(M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_17_1</Name>
+            <Description>MSE: Bad Request (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_17_2</Name>
+            <Description>MSE: Not Implemented (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_17_3</Name>
+            <Description>MSE: Unauthorized (O)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_17_4</Name>
+            <Description>MSE: Precondition Failed (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_17_5</Name>
+            <Description>MSE: Not found (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_17_6</Name>
+            <Description>MSE: Not Acceptable (O)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_17_7</Name>
+            <Description>MSE: Service Unavailable (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_17_8</Name>
+            <Description>MSE: Forbidden(O)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_18_1</Name>
+            <Description>MCE: ProtocolDescriptorList (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_18_2</Name>
+            <Description>MCE: BluetoothProfileDescriptorList (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_18_3</Name>
+            <Description>MCE: ServiceName (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_19_1</Name>
+            <Description>MSE: ProtocolDescriptorList (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_19_2</Name>
+            <Description>MSE: BluetoothProfileDescriptorList (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_19_3</Name>
+            <Description>MSE: ServiceName (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_20_1</Name>
+            <Description>FilterMessageType (O)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_20_2</Name>
+            <Description>FilterPeriodBegin (O)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_20_3</Name>
+            <Description>FilterPeriodEnd (O)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_20_4</Name>
+            <Description>FilterReadStatus (O)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_20_5</Name>
+            <Description>FilterRecipient (O)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_20_6</Name>
+            <Description>FilterOriginator (O)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_20_7</Name>
+            <Description>FilterPriority (O)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_20_8</Name>
+            <Description>ConversationID (C.1)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_20_9</Name>
+            <Description>FilterMessageHandle (O)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_ALL</Name>
+            <Description>Turns on all the test cases</Description>
+            <Value>TRUE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+        </Rows>
+      </PICS>
+      <PIXIT>
+        <Name>MAP_OLD</Name>
+        <Version />
+        <Rows>
+          <Row>
+            <Name>TSPX_auth_password</Name>
+            <Description>Password used during the AUTHENTICATION digest resposne. (Default: "0000")</Description>
+            <Type>IA5STRING</Type>
+            <Value>0000</Value>
+          </Row>
+          <Row>
+            <Name>TSPX_auth_user_id</Name>
+            <Description>User ID used during the AUTEHNTICATION digest response.  (Default: "PTS")</Description>
+            <Type>IA5STRING</Type>
+            <Value>PTS</Value>
+          </Row>
+          <Row>
+            <Name>TSPX_bd_addr_iut</Name>
+            <Description>The unique 48-bit Bluetooth device address (BD_ADDR) of the IUT. This was filled in during workspace creation.</Description>
+            <Type>OCTETSTRING</Type>
+            <Value>5CF370607B87</Value>
+          </Row>
+          <Row>
+            <Name>TSPX_client_class_of_device</Name>
+            <Description>The indicated capabilities of PTS in CLIENT role (Default: 100204)</Description>
+            <Type>OCTETSTRING</Type>
+            <Value>100204</Value>
+          </Row>
+          <Row>
+            <Name>TSPX_delete_link_key</Name>
+            <Description>Whether to delete the stored link key in PTS at the beginning of each test case. (Default: FALSE)</Description>
+            <Type>BOOLEAN</Type>
+            <Value>FALSE</Value>
+          </Row>
+          <Row>
+            <Name>TSPX_get_object_name</Name>
+            <Description>Name of the object to Get from  the server during a Get test. (Default: "put.gif")</Description>
+            <Type>IA5STRING</Type>
+            <Value>put.gif</Value>
+          </Row>
+          <Row>
+            <Name>TSPX_initial_path</Name>
+            <Description>If not empty, PTS will send a SET_PATH before doing a PUT or GET. (Default: "")</Description>
+            <Type>IA5STRING</Type>
+            <Value />
+          </Row>
+          <Row>
+            <Name>TSPX_l2cap_psm</Name>
+            <Description>The PSM PTS advertises in its SDP record if GOEP 2.0 is being tested.  This value should be in hexadecimal format, but should not include a leading 0x. (Default: 1001)</Description>
+            <Type>OCTETSTRING</Type>
+            <Value>1001</Value>
+          </Row>
+          <Row>
+            <Name>TSPX_no_confirmations</Name>
+            <Description>Must be set to FALSE for qualification.  Setting to TRUE will disable requests for the user to confirm the PUT and GET commands, but will not be usable for qualification test results.  (Default: FALSE)</Description>
+            <Type>BOOLEAN</Type>
+            <Value>FALSE</Value>
+          </Row>
+          <Row>
+            <Name>TSPX_pin_code</Name>
+            <Description>The PIN code that is used to authenticate connections between PTS and IUT. (Default: 0000)</Description>
+            <Type>IA5STRING</Type>
+            <Value>0000</Value>
+          </Row>
+          <Row>
+            <Name>TSPX_rfcomm_channel</Name>
+            <Description>RFCOMM server channel that will be opened for incoming OBEX connections from the IUT for OBEX. (Default: 8)</Description>
+            <Type>INTEGER</Type>
+            <Value>8</Value>
+          </Row>
+          <Row>
+            <Name>TSPX_secure_simple_pairing_pass_key_confirmation</Name>
+            <Description>Whether manual confirmation on generated key is required during secure simple pairing (Default: FALSE)</Description>
+            <Type>BOOLEAN</Type>
+            <Value>TRUE</Value>
+          </Row>
+          <Row>
+            <Name>TSPX_security_enabled</Name>
+            <Description>Whether security is required for establishing connections. (Default: FALSE)</Description>
+            <Type>BOOLEAN</Type>
+            <Value>TRUE</Value>
+          </Row>
+          <Row>
+            <Name>TSPX_server_class_of_device</Name>
+            <Description>The indicated capabilities of PTS in SERVER role (Default: 100204)</Description>
+            <Type>OCTETSTRING</Type>
+            <Value>100204</Value>
+          </Row>
+          <Row>
+            <Name>TSPX_time_guard</Name>
+            <Description>The time in milliseconds, to break PTS from waiting for a required event, if time guard is used by the test case. (Default: 300000)</Description>
+            <Type>INTEGER</Type>
+            <Value>300000</Value>
+          </Row>
+          <Row>
+            <Name>TSPX_use_implicit_send</Name>
+            <Description>Whether to receive a message via Implicit Send when an action or attention is needed by test operator. (Default: TRUE)</Description>
+            <Type>BOOLEAN</Type>
+            <Value>TRUE</Value>
+          </Row>
+          <Row>
+            <Name>TSPX_Message_Access_rfcomm_channel</Name>
+            <Description>The RFCOMM server channel to be used in the PTS for message access. (Default: 1)</Description>
+            <Type>INTEGER</Type>
+            <Value>1</Value>
+          </Row>
+          <Row>
+            <Name>TSPX_SPP_rfcomm_channel</Name>
+            <Description>The RFCOMM server channel to be used in the PTS for SPP. (Default: 03)</Description>
+            <Type>OCTETSTRING</Type>
+            <Value>03</Value>
+          </Row>
+          <Row>
+            <Name>TSPX_filter_period_begin</Name>
+            <Description>Parameter in "YYYYMMDDTHHMMSS" to filter with if IUT supports FilterPeriodBegin. (Default: 20100101T000000)</Description>
+            <Type>IA5STRING</Type>
+            <Value>20100101T000000</Value>
+          </Row>
+          <Row>
+            <Name>TSPX_filter_period_end</Name>
+            <Description>Parameter in "YYYYMMDDTHHMMSS" to filter with if IUT supports FilterPeriodEnd. (Default: 20111231T125959)</Description>
+            <Type>IA5STRING</Type>
+            <Value>20111231T125959</Value>
+          </Row>
+          <Row>
+            <Name>TSPX_filter_recipient</Name>
+            <Description>Name of recipient to filter with if IUT supports FilterRecipient. (Default: IUT)</Description>
+            <Type>IA5STRING</Type>
+            <Value>IUT</Value>
+          </Row>
+          <Row>
+            <Name>TSPX_filter_originator</Name>
+            <Description>Name of originator to filter with if IUT supports FilterOriginator. (Default: PTS)</Description>
+            <Type>IA5STRING</Type>
+            <Value>PTS</Value>
+          </Row>
+          <Row>
+            <Name>TSPX_filter_last_activity_begin</Name>
+            <Description>Parameter in "YYYYMMDDTHHMMSS" to filter with if IUT supports FilterPeriodBegin. (Default: 20100101T000000)</Description>
+            <Type>IA5STRING</Type>
+            <Value>20100101T000000</Value>
+          </Row>
+          <Row>
+            <Name>TSPX_filter_last_activity_end</Name>
+            <Description>Parameter in "YYYYMMDDTHHMMSS" to filter with if IUT supports FilterPeriodEnd. (Default: 20111231T125959)</Description>
+            <Type>IA5STRING</Type>
+            <Value>20111231T125959</Value>
+          </Row>
+          <Row>
+            <Name>TSPX_default_message_upload_folder_in_msg</Name>
+            <Description>Name of the default folder on the MSE where a message will be uploaded to. (Default: draft)</Description>
+            <Type>IA5STRING</Type>
+            <Value>draft</Value>
+          </Row>
+          <Row>
+            <Name>TSPX_default_test_folder_in_msg</Name>
+            <Description>Name of the default folder on the MSE where messages will be used for testing if particular folder is not specified in the test case. (Default: inbox)</Description>
+            <Type>IA5STRING</Type>
+            <Value>inbox</Value>
+          </Row>
+          <Row>
+            <Name>TSPX_message_notification_l2cap_psm</Name>
+            <Description>The PSM PTS advertises in its SDP record if GOEP 2.0 is being tested.  This value should be in hexadecimal format, but should not include a leading 0x. (Default: 1003)</Description>
+            <Type>OCTETSTRING</Type>
+            <Value>1003</Value>
+          </Row>
+          <Row>
+            <Name>TSPX_message_notification_rfcomm_channel</Name>
+            <Description>RFCOMM server channel that will be opened for incoming OBEX connections from the IUT for OBEX. (Default: 9)</Description>
+            <Type>INTEGER</Type>
+            <Value>9</Value>
+          </Row>
+          <Row>
+            <Name>TSPX_upload_msg_phonenumber</Name>
+            <Description>Name of the phone number on the MSE where a message will be used for sending to network. (Default: 0000000)</Description>
+            <Type>IA5STRING</Type>
+            <Value>0000000</Value>
+          </Row>
+          <Row>
+            <Name>TSPX_upload_msg_emailaddress</Name>
+            <Description>Name of the email address on the MSE where a message will be used for sending to network. (Default: Iut_emailaddress)</Description>
+            <Type>IA5STRING</Type>
+            <Value>Iut_emailaddress</Value>
+          </Row>
+          <Row>
+            <Name>TSPX_Automation</Name>
+            <Description>Automation state. (Default: FALSE)</Description>
+            <Type>BOOLEAN</Type>
+            <Value>FALSE</Value>
+          </Row>
+        </Rows>
+      </PIXIT>
+    </PROJECT_INFORMATION>
+    <PROJECT_INFORMATION NAME="MAP" TC_LOG="tc_log.xml" TC_SCRIPT="tc_sqript.xml" USERDLL="" USE_USERDLL="False" RUNTIME_LOGGING="False">
+      <PICS>
+        <Name>MAP</Name>
+        <Rows>
+          <Row>
+            <Name>TSPC_MAP_0_1</Name>
+            <Description>Role: MAP v1.0** (Deprecated 2015-07-16. Withdrawn 2023-02-01.)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_0_2</Name>
+            <Description>Role: MAP v1.1** (Deprecated 2023-02-01. Withdrawn 2024-02-01.)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_0_3</Name>
+            <Description>Role: MAP v1.2** (Deprecated 2021-02-01. Withdrawn 2024-02-01.)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_0_5</Name>
+            <Description>Role: MAP v1.3 (C.1, C.2)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_0_6</Name>
+            <Description>Role: MAP v1.4 (C.1, C.2)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_0a_1</Name>
+            <Description>Role: MAP v1.2.1** (Deprecated 2021-02-01. Withdrawn 2024-02-01.)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_0a_2</Name>
+            <Description>Role: MAP v1.2.2** (Deprecated 2023-02-01. Withdrawn 2024-02-01.)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_0a_3</Name>
+            <Description>Role: MAP v1.3.1 (C.2)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_0a_4</Name>
+            <Description>Role: MAP v1.4.1** (Deprecated 2019-11-20. Withdrawn 2024-02-01.)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_0a_5</Name>
+            <Description>Role: MAP v1.4.2 (C.3)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_1_1</Name>
+            <Description>Role: Messaging Server Equipment (C.1)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_1_2</Name>
+            <Description>Role: Messaging Client Equipment (C.1)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_1</Name>
+            <Description>MCE: Notification (C.1)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_1a</Name>
+            <Description>MCE: SendEvent (C.4)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_1b</Name>
+            <Description>MCE: SetNotificationFilter (C.11)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_2</Name>
+            <Description>MCE: Browsing (C.1)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_2a</Name>
+            <Description>MCE: SetFolder (C.5)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_2b</Name>
+            <Description>MCE: GetFolderListing (C.5)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_2c</Name>
+            <Description>MCE: GetMessagesListing (C.5)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_2d</Name>
+            <Description>MCE: GetMessage (O)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_2e</Name>
+            <Description>MCE: SetMessageStatus (O)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_2f</Name>
+            <Description>MCE: UpdateInbox (O)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_2g</Name>
+            <Description>MCE: Filtering (O)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_2h</Name>
+            <Description>MCE: Multiple Simultaneous MAS Instances (O)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_2i</Name>
+            <Description>MCE: GetConversationListing (C.18)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_3</Name>
+            <Description>MCE: Uploading (O)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_3a</Name>
+            <Description>MCE: SetFolder (C.6)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_3b</Name>
+            <Description>MCE: GetFoldersListing (C.6)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_3c</Name>
+            <Description>MCE: PushMessage (C.20)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_3d</Name>
+            <Description>MCE: SetOwnerStatus  (C.15)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_3e</Name>
+            <Description>MCE: GetOwnerStatus  (C.15)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_4</Name>
+            <Description>MCE: Delete (O)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_4a</Name>
+            <Description>MCE: SetMessageStatus (C.7)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_5</Name>
+            <Description>MCE: Notification Registration (C.2)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_5a</Name>
+            <Description>MCE: SetNotificationRegistration off (O)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_5b</Name>
+            <Description>MCE: SetNotificationRegistration on (C.8)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_6a</Name>
+            <Description>MCE: EMAIL (C.3)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_6b</Name>
+            <Description>MCE: SMS_GSM (C.3)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_6c</Name>
+            <Description>MCE: SMS_CDMA (C.3)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_6d</Name>
+            <Description>MCE: MMS (C.3)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_6e</Name>
+            <Description>MCE: IM (C.12)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_7</Name>
+            <Description>MCE: Instance Information (O)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_7a</Name>
+            <Description>MCE: GetMASInstanceInformation (O)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_8</Name>
+            <Description>MCE: Extended MAP-Event-Report (C.4)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_8a</Name>
+            <Description>MCE: MAP-Event-Report: Version 1.1 (C.4)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_8b</Name>
+            <Description>MCE: MAP-Event-Report: Version 1.2 (O)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_9a</Name>
+            <Description>MCE: Message format Version 1.0 (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_9b</Name>
+            <Description>MCE: Message format Version 1.1 (O)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_10a</Name>
+            <Description>MCE: Messages-Listing Object Version 1.0 (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_10b</Name>
+            <Description>MCE: Messages-Listing Format Version 1.1 (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_11</Name>
+            <Description>MCE: Persistent Message Handles (O)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_12</Name>
+            <Description>MCE: Database Identifier (C.17)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_13a</Name>
+            <Description>MCE: Folder Version Counter (O)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_13b</Name>
+            <Description>MCE: Conversation Version Counters (C.14)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_13c</Name>
+            <Description>MCE: Conversation-Listing Version Counter (C.14)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_14</Name>
+            <Description>MCE: Participant Presence Change Notification (O)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_15</Name>
+            <Description>MCE: Participant Chat State Change Notification (O)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_16</Name>
+            <Description>MCE: PBAP Contact Cross Reference (O)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_17</Name>
+            <Description>MCE: Notification Filtering (O)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_18</Name>
+            <Description>MCE: UTC Offset Timestamp Format (O)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_19</Name>
+            <Description>MCE: Conversation listing (O)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_20</Name>
+            <Description>MCE: Owner status (O)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_2_21</Name>
+            <Description>MCE: Message Forwarding (C.19)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_1</Name>
+            <Description>MSE: Notification (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_1a</Name>
+            <Description>MSE: SendEvent (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_1b</Name>
+            <Description>MSE: SetNotificationFilter (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_2</Name>
+            <Description>MSE: Browsing (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_2a</Name>
+            <Description>MSE: SetFolder (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_2b</Name>
+            <Description>MSE: GetFoldersListing (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_2c</Name>
+            <Description>MSE: GetMessagesListing (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_2d</Name>
+            <Description>MSE: GetMessage (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_2e</Name>
+            <Description>MSE: SetMessageStatus (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_2f</Name>
+            <Description>MSE: UpdateInbox (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_2g</Name>
+            <Description>MSE: Multiple Simultaneous MAS Instances (O)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_2h</Name>
+            <Description>MSE: GetConversationListing (C.9)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_3</Name>
+            <Description>MSE: Uploading (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_3a</Name>
+            <Description>MSE: SetFolder (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_3b</Name>
+            <Description>MSE: GetFoldersListing (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_3c</Name>
+            <Description>MSE: PushMessage (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_3d</Name>
+            <Description>MSE: SetOwnerStatus  (C.7)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_3e</Name>
+            <Description>MSE: GetOwnerStatus  (C.7)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_4</Name>
+            <Description>MSE: Delete (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_4a</Name>
+            <Description>MSE: SetMessageStatus (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_5</Name>
+            <Description>MSE: Notification Registration (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_5a</Name>
+            <Description>MSE: SetNotificationRegistration (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_6a</Name>
+            <Description>MSE: EMAIL (C.1)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_6b</Name>
+            <Description>MSE: SMS_GSM (C.1)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_6c</Name>
+            <Description>MSE: SMS_CDMA (C.1)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_6d</Name>
+            <Description>MSE: MMS (C.1)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_6e</Name>
+            <Description>MSE: IM (O)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_7</Name>
+            <Description>MSE: Instance Information (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_7a</Name>
+            <Description>MSE: GetMASInstanceInformation (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_8</Name>
+            <Description>MSE: Extended MAP-Event-Report (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_8a</Name>
+            <Description>MSE: MAP-Event-Report: Version 1.1 (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_8b</Name>
+            <Description>MSE: MAP-Event-Report: Version 1.2 (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_9a</Name>
+            <Description>MSE: Message format Version 1.0 (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_9b</Name>
+            <Description>MSE: Message format Version 1.1 (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_10a</Name>
+            <Description>MSE: Messages-Listing Object Version 1.0 (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_10b</Name>
+            <Description>MSE: Messages-Listing Format Version 1.1 (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_11</Name>
+            <Description>MSE: Persistent Message Handles (O)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_12</Name>
+            <Description>MSE: Database Identifier (C.8)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_13a</Name>
+            <Description>MSE: Folder Version Counter (O)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_13b</Name>
+            <Description>MSE: Conversation Version Counters (C.10)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_13c</Name>
+            <Description>MSE: Conversation-Listing Version Counter (C.10)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_14</Name>
+            <Description>MSE: Participant Presence Change Notification (O)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_15</Name>
+            <Description>MSE: Participant Chat State Change Notification (O)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_16</Name>
+            <Description>MSE: PBAP Contact Cross Reference (O)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_17</Name>
+            <Description>MSE: Notification Filtering (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_18</Name>
+            <Description>MSE: UTC Offset Timestamp Format (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_19</Name>
+            <Description>MSE: Conversation listing (O)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_20</Name>
+            <Description>MSE: Owner status (O)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_3_21</Name>
+            <Description>MSE: Message Forwarding (C.11)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_4_1</Name>
+            <Description>MCE: General discoverable mode (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_4_2</Name>
+            <Description>MCE: Bondable mode (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_5_1</Name>
+            <Description>MCE: Initiation of general inquiry (O)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_5_2</Name>
+            <Description>MCE: Initiation of limited inquiry (O)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_6_1</Name>
+            <Description>MSE: General discoverable mode (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_6_2</Name>
+            <Description>MSE: Bondable mode (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_7_1</Name>
+            <Description>MSE: Initiation of general inquiry (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_7_2</Name>
+            <Description>MSE: Initiation of limited inquiry (O)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_7_3</Name>
+            <Description>MSE: Initiation of general bonding (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_7b_1</Name>
+            <Description>MSE: GOEP v2.0 or later (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_7b_2</Name>
+            <Description>MSE: GOEP v2.0 or later Backwards Compatibility (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_7b_3</Name>
+            <Description>MSE: OBEX over L2CAP (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_8_1</Name>
+            <Description>MCE: Connect (Client) (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_8_2</Name>
+            <Description>MCE: Disconnect (Client) (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_8_3</Name>
+            <Description>MCE: Put (Client) (C.1)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_8_4</Name>
+            <Description>MCE: Get (Client) (C.2)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_8_5</Name>
+            <Description>MCE: Abort (Client) (C.3)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_8_6</Name>
+            <Description>MCE: SetPath (Client) (C.4)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_9_1</Name>
+            <Description>MCE: Connect (Server) (C.1)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_9_2</Name>
+            <Description>MCE: Disconnect (Server) (C.1)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_9_3</Name>
+            <Description>MCE: Put (Server) (C.1)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_9_4</Name>
+            <Description>MCE: Abort (Server) (C.1)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_10_1</Name>
+            <Description>MCE: Name (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_10_2</Name>
+            <Description>MCE: Type (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_10_3</Name>
+            <Description>MCE: Body (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_10_4</Name>
+            <Description>MCE: End of Body (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_10_5</Name>
+            <Description>MCE: Target (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_10_6</Name>
+            <Description>MCE: Who (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_10_7</Name>
+            <Description>MCE: Connection ID (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_10_8</Name>
+            <Description>MCE: Application Parameters (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_10_9</Name>
+            <Description>MCE: SRM (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_10_10</Name>
+            <Description>MCE: Receive SRMP (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_10_11</Name>
+            <Description>MCE: Send SRMP (O)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_11_1</Name>
+            <Description>MCE: Bad Request (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_11_2</Name>
+            <Description>MCE: Not Implemented (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_11_3</Name>
+            <Description>MCE: Unauthorized (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_11_4</Name>
+            <Description>MCE: Precondition Failed (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_11_5</Name>
+            <Description>MCE: Not Found (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_11_6</Name>
+            <Description>MCE: Not Acceptable (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_11_7</Name>
+            <Description>MCE: Service Unavailable (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_11_8</Name>
+            <Description>MCE: Forbidden (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_12_1</Name>
+            <Description>MCE: Bad Request (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_12_2</Name>
+            <Description>MCE: Not Implemented (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_12_3</Name>
+            <Description>MCE: Unauthorized (O)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_12_4</Name>
+            <Description>MCE: Precondition Failed (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_12_5</Name>
+            <Description>MCE: Item no longer used (N/A)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_12_6</Name>
+            <Description>MCE: Not Acceptable (O)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_12_7</Name>
+            <Description>MCE: Service Unavailable (O)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_12_8</Name>
+            <Description>MCE: Forbidden (O)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_13_1</Name>
+            <Description>MSE: Connect (Server) (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_13_2</Name>
+            <Description>MSE: Disconnect (Server) (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_13_3</Name>
+            <Description>MSE: Put (Server) (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_13_4</Name>
+            <Description>MSE: Get (Server) (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_13_5</Name>
+            <Description>MSE: Abort (Server) (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_13_6</Name>
+            <Description>MSE: SetPath (Server) (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_14_1</Name>
+            <Description>MSE: Connect (Client) (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_14_2</Name>
+            <Description>MSE: Disconnect (Client) (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_14_3</Name>
+            <Description>MSE: Put (Client) (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_14_4</Name>
+            <Description>MSE: Abort (Client) (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_15_1</Name>
+            <Description>MSE: Name (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_15_2</Name>
+            <Description>MSE: Type (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_15_3</Name>
+            <Description>MSE: Body (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_15_4</Name>
+            <Description>MSE: End of Body (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_15_5</Name>
+            <Description>MSE: Target (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_15_6</Name>
+            <Description>MSE: Who (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_15_7</Name>
+            <Description>MSE: Connection ID (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_15_8</Name>
+            <Description>MSE: Application Parameters (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_15_9</Name>
+            <Description>MSE: SRM (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_15_10</Name>
+            <Description>MSE: Receive SRMP (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_15_11</Name>
+            <Description>MSE: Send SRMP (O)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_16_1</Name>
+            <Description>MSE: Bad Request (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_16_2</Name>
+            <Description>MSE: Not Implemented (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_16_3</Name>
+            <Description>MSE: Unauthorized (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_16_4</Name>
+            <Description>MSE: Precondition Failed (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_16_5</Name>
+            <Description>MSE: Item no longer used (N/A)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_16_6</Name>
+            <Description>MSE: Not Acceptable (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_16_7</Name>
+            <Description>MSE: Service Unavailable (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_16_8</Name>
+            <Description>MSE: Forbidden (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_17_1</Name>
+            <Description>MSE: Bad Request (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_17_2</Name>
+            <Description>MSE: Not Implemented (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_17_3</Name>
+            <Description>MSE: Unauthorized (O)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_17_4</Name>
+            <Description>MSE: Precondition Failed (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_17_5</Name>
+            <Description>MSE: Not Found (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_17_6</Name>
+            <Description>MSE: Not Acceptable (O)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_17_7</Name>
+            <Description>MSE: Service Unavailable (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_17_8</Name>
+            <Description>MSE: Forbidden (O)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_18_1</Name>
+            <Description>MCE: ProtocolDescriptorList (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_18_2</Name>
+            <Description>MCE: BluetoothProfileDescriptorList (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_18_3</Name>
+            <Description>MCE: ServiceName (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_19_1</Name>
+            <Description>MSE: ProtocolDescriptorList (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_19_2</Name>
+            <Description>MSE: BluetoothProfileDescriptorList (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_19_3</Name>
+            <Description>MSE: ServiceName (M)</Description>
+            <Value>TRUE</Value>
+            <Mandatory>TRUE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_20_1</Name>
+            <Description>FilterMessageType (O)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_20_2</Name>
+            <Description>FilterPeriodBegin (O)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_20_3</Name>
+            <Description>FilterPeriodEnd (O)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_20_4</Name>
+            <Description>FilterReadStatus (O)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_20_5</Name>
+            <Description>FilterRecipient (O)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_20_6</Name>
+            <Description>FilterOriginator (O)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_20_7</Name>
+            <Description>FilterPriority (O)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_20_8</Name>
+            <Description>ConversationID (C.1)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_MAP_20_9</Name>
+            <Description>FilterMessageHandle (O)</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+          <Row>
+            <Name>TSPC_ALL</Name>
+            <Description>Turns on all the test cases</Description>
+            <Value>FALSE</Value>
+            <Mandatory>FALSE</Mandatory>
+          </Row>
+        </Rows>
+      </PICS>
+      <PIXIT>
+        <Name>MAP</Name>
+        <Version />
+        <Rows>
+          <Row>
+            <Name>TSPX_auth_password</Name>
+            <Description>Password used during the AUTHENTICATION digest resposne. (Default: "0000")</Description>
+            <Type>IA5STRING</Type>
+            <Value>0000</Value>
+          </Row>
+          <Row>
+            <Name>TSPX_auth_user_id</Name>
+            <Description>User ID used during the AUTEHNTICATION digest response.  (Default: "PTS")</Description>
+            <Type>IA5STRING</Type>
+            <Value>PTS</Value>
+          </Row>
+          <Row>
+            <Name>TSPX_bd_addr_iut</Name>
+            <Description>The unique 48-bit Bluetooth device address (BD_ADDR) of the IUT. This was filled in during workspace creation.</Description>
+            <Type>OCTETSTRING</Type>
+            <Value>5CF370607B87</Value>
+          </Row>
+          <Row>
+            <Name>TSPX_client_class_of_device</Name>
+            <Description>The indicated capabilities of PTS in CLIENT role (Default: 100204)</Description>
+            <Type>OCTETSTRING</Type>
+            <Value>100204</Value>
+          </Row>
+          <Row>
+            <Name>TSPX_delete_link_key</Name>
+            <Description>Whether to delete the stored link key in PTS at the beginning of each test case. (Default: FALSE)</Description>
+            <Type>BOOLEAN</Type>
+            <Value>FALSE</Value>
+          </Row>
+          <Row>
+            <Name>TSPX_initial_path</Name>
+            <Description>If not empty, PTS will send a SET_PATH before doing a PUT or GET. (Default: "")</Description>
+            <Type>IA5STRING</Type>
+            <Value />
+          </Row>
+          <Row>
+            <Name>TSPX_l2cap_psm</Name>
+            <Description>The PSM PTS advertises in its SDP record if GOEP 2.0 is being tested.  This value should be in hexadecimal format, but should not include a leading 0x. (Default: 1001)</Description>
+            <Type>OCTETSTRING</Type>
+            <Value>1001</Value>
+          </Row>
+          <Row>
+            <Name>TSPX_no_confirmations</Name>
+            <Description>Must be set to FALSE for qualification.  Setting to TRUE will disable requests for the user to confirm the PUT and GET commands, but will not be usable for qualification test results.  (Default: FALSE)</Description>
+            <Type>BOOLEAN</Type>
+            <Value>FALSE</Value>
+          </Row>
+          <Row>
+            <Name>TSPX_pin_code</Name>
+            <Description>The PIN code that is used to authenticate connections between PTS and IUT. (Default: 0000)</Description>
+            <Type>IA5STRING</Type>
+            <Value>0000</Value>
+          </Row>
+          <Row>
+            <Name>TSPX_rfcomm_channel</Name>
+            <Description>RFCOMM server channel that will be opened for incoming OBEX connections from the IUT for OBEX. (Default: 8)</Description>
+            <Type>INTEGER</Type>
+            <Value>8</Value>
+          </Row>
+          <Row>
+            <Name>TSPX_secure_simple_pairing_pass_key_confirmation</Name>
+            <Description>Whether manual confirmation on generated key is required during secure simple pairing (Default: FALSE)</Description>
+            <Type>BOOLEAN</Type>
+            <Value>FALSE</Value>
+          </Row>
+          <Row>
+            <Name>TSPX_security_enabled</Name>
+            <Description>Whether security is required for establishing connections. (Default: FALSE)</Description>
+            <Type>BOOLEAN</Type>
+            <Value>TRUE</Value>
+          </Row>
+          <Row>
+            <Name>TSPX_server_class_of_device</Name>
+            <Description>The indicated capabilities of PTS in SERVER role (Default: 100204)</Description>
+            <Type>OCTETSTRING</Type>
+            <Value>100204</Value>
+          </Row>
+          <Row>
+            <Name>TSPX_time_guard</Name>
+            <Description>The time in milliseconds, to break PTS from waiting for a required event, if time guard is used by the test case. (Default: 300000)</Description>
+            <Type>INTEGER</Type>
+            <Value>300000</Value>
+          </Row>
+          <Row>
+            <Name>TSPX_use_implicit_send</Name>
+            <Description>Whether to receive a message via Implicit Send when an action or attention is needed by test operator. (Default: TRUE)</Description>
+            <Type>BOOLEAN</Type>
+            <Value>TRUE</Value>
+          </Row>
+          <Row>
+            <Name>TSPX_SPP_rfcomm_channel</Name>
+            <Description>The RFCOMM server channel to be used in the PTS for SPP. (Default: 03)</Description>
+            <Type>OCTETSTRING</Type>
+            <Value>03</Value>
+          </Row>
+          <Row>
+            <Name>TSPX_filter_period_begin</Name>
+            <Description>Parameter in "YYYYMMDDTHHMMSS" to filter with if IUT supports FilterPeriodBegin. (Default: 20100101T000000)</Description>
+            <Type>IA5STRING</Type>
+            <Value>20100101T000000</Value>
+          </Row>
+          <Row>
+            <Name>TSPX_filter_period_end</Name>
+            <Description>Parameter in "YYYYMMDDTHHMMSS" to filter with if IUT supports FilterPeriodEnd. (Default: 20111231T125959)</Description>
+            <Type>IA5STRING</Type>
+            <Value>20111231T125959</Value>
+          </Row>
+          <Row>
+            <Name>TSPX_filter_recipient</Name>
+            <Description>Name of recipient to filter with if IUT supports FilterRecipient. (Default: IUT)</Description>
+            <Type>IA5STRING</Type>
+            <Value>IUT</Value>
+          </Row>
+          <Row>
+            <Name>TSPX_filter_originator</Name>
+            <Description>Name of originator to filter with if IUT supports FilterOriginator. (Default: PTS)</Description>
+            <Type>IA5STRING</Type>
+            <Value>PTS</Value>
+          </Row>
+          <Row>
+            <Name>TSPX_filter_last_activity_begin</Name>
+            <Description>Parameter in "YYYYMMDDTHHMMSS" to filter with if IUT supports FilterPeriodBegin. (Default: 20100101T000000)</Description>
+            <Type>IA5STRING</Type>
+            <Value>20100101T000000</Value>
+          </Row>
+          <Row>
+            <Name>TSPX_filter_last_activity_end</Name>
+            <Description>Parameter in "YYYYMMDDTHHMMSS" to filter with if IUT supports FilterPeriodEnd. (Default: 20111231T125959)</Description>
+            <Type>IA5STRING</Type>
+            <Value>20111231T125959</Value>
+          </Row>
+          <Row>
+            <Name>TSPX_default_message_upload_folder_in_msg</Name>
+            <Description>Name of the default folder on the MSE where a message will be uploaded to. (Default: draft)</Description>
+            <Type>IA5STRING</Type>
+            <Value>draft</Value>
+          </Row>
+          <Row>
+            <Name>TSPX_default_test_folder_in_msg</Name>
+            <Description>Name of the default folder on the MSE where messages will be used for testing if particular folder is not specified in the test case. (Default: inbox)</Description>
+            <Type>IA5STRING</Type>
+            <Value>inbox</Value>
+          </Row>
+          <Row>
+            <Name>TSPX_message_notification_l2cap_psm</Name>
+            <Description>The PSM PTS advertises in its SDP record if GOEP 2.0 is being tested.  This value should be in hexadecimal format, but should not include a leading 0x. (Default: 1005)</Description>
+            <Type>OCTETSTRING</Type>
+            <Value>1005</Value>
+          </Row>
+          <Row>
+            <Name>TSPX_message_notification_rfcomm_channel</Name>
+            <Description>RFCOMM server channel that will be opened for incoming OBEX connections from the IUT for OBEX. (Default: 10)</Description>
+            <Type>INTEGER</Type>
+            <Value>10</Value>
+          </Row>
+          <Row>
+            <Name>TSPX_upload_msg_phonenumber</Name>
+            <Description>Name of the phone number on the MSE where a message will be used for sending to network. (Default: 0000000)</Description>
+            <Type>IA5STRING</Type>
+            <Value>0000000</Value>
+          </Row>
+          <Row>
+            <Name>TSPX_upload_msg_emailaddress</Name>
+            <Description>Name of the email address on the MSE where a message will be used for sending to network. (Default: Iut_emailaddress)</Description>
+            <Type>IA5STRING</Type>
+            <Value>Iut_emailaddress</Value>
+          </Row>
+          <Row>
+            <Name>TSPX_Automation</Name>
+            <Description>Automation state. (Default: FALSE)</Description>
+            <Type>BOOLEAN</Type>
+            <Value>FALSE</Value>
+          </Row>
+        </Rows>
+      </PIXIT>
+    </PROJECT_INFORMATION>
+  </PROJECTS_INFORMATION>
+</WORKSPACE_INFORMATION>
