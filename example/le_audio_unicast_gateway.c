@@ -182,7 +182,7 @@ typedef struct {
     // used to perform operation on all ASEs
     uint8_t  ascs_operation_ase_index;
 
-    uint8_t channel_allocation;
+    uint8_t sink_channel_allocation;
 
     // CIS
     uint8_t          cis_id;
@@ -429,7 +429,12 @@ static void run_for_server(server_t * server){
             ascs_codec_configuration_request.specific_codec_configuration.frame_duration_index =
                     codec_configurations[menu_sampling_frequency].variants[menu_variant].frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US ?
                     LE_AUDIO_CODEC_FRAME_DURATION_INDEX_7500US : LE_AUDIO_CODEC_FRAME_DURATION_INDEX_10000US;
-            ascs_codec_configuration_request.specific_codec_configuration.audio_channel_allocation_mask = server->channel_allocation;
+            // use mono for microphone
+            if (server->ascs_ase_roles[server->ascs_operation_ase_index] == LE_AUDIO_ROLE_SOURCE){
+                ascs_codec_configuration_request.specific_codec_configuration.audio_channel_allocation_mask = 1;
+            } else {
+                ascs_codec_configuration_request.specific_codec_configuration.audio_channel_allocation_mask = server->sink_channel_allocation;
+            }
             ascs_codec_configuration_request.specific_codec_configuration.octets_per_codec_frame = codec_configurations[menu_sampling_frequency].variants[menu_variant].octets_per_frame;
             ascs_codec_configuration_request.specific_codec_configuration.codec_frame_blocks_per_sdu = num_channels;
             status = audio_stream_control_service_client_streamendpoint_configure_codec(server->ascs_cid, ase_id, &ascs_codec_configuration_request);
@@ -441,9 +446,16 @@ static void run_for_server(server_t * server){
                 uint8_t cis_id = server->cis_id;
                 uint16_t sdu_interval_us = codec_configurations[menu_sampling_frequency].variants[menu_variant].frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US ? 7500 : 10000;
                 uint8_t framing = 0;
-                uint16_t max_sdu = num_channels *  codec_configurations[menu_sampling_frequency].variants[menu_variant].octets_per_frame;
                 uint8_t retransmission_number = NUM_CIS_RETRANSMISSIONS;
                 uint16_t max_transport_latency_ms = 40;
+                // use mono for microphone
+                uint8_t num_ase_channels;
+                if (server->ascs_ase_roles[server->ascs_operation_ase_index] == LE_AUDIO_ROLE_SOURCE) {
+                    num_ase_channels = 1;
+                } else {
+                    num_ase_channels = num_channels;
+                }
+                uint16_t max_sdu = num_ase_channels * codec_configurations[menu_sampling_frequency].variants[menu_variant].octets_per_frame;
 
                 ase_id = server->ascs_ase_ids[server->ascs_operation_ase_index];
                 printf("ASCS_CONFIGURE_QOS ase_id %u, cig_id %u / cis %u, interval %u, framing %u, sdu_size %u, retrans %u, latency %u\n",
@@ -525,14 +537,14 @@ static void all_members_connected(void){
     printf("[-] CSIS - all members connected\n");
     // distribute audio channels
     if (num_servers == 1){
-        servers[0].channel_allocation = 3;
+        servers[0].sink_channel_allocation = 3;
     } else {
-        servers[0].channel_allocation = 1;
-        servers[1].channel_allocation = 2;
+        servers[0].sink_channel_allocation = 1;
+        servers[1].sink_channel_allocation = 2;
     }
     uint8_t i;
     for (i=0;i<num_servers;i++){
-        printf("ASCS client %u - channel allocation %u\n", servers[i].server_id, servers[i].channel_allocation);
+        printf("ASCS client %u - channel allocation %u\n", servers[i].server_id, servers[i].sink_channel_allocation);
     }
 }
 
@@ -795,7 +807,12 @@ static void create_cig(void){
 
         cig_params.cis_params[i].cis_id = cis_id;
         cig_params.cis_params[i].max_sdu_c_to_p = codec_configuration.specific_codec_configuration.octets_per_codec_frame * num_channels / num_servers;
-        cig_params.cis_params[i].max_sdu_p_to_c = 0;
+        // use mono for microphone
+        if (servers[i].ascs_selected_ases_num > 1){
+            cig_params.cis_params[i].max_sdu_p_to_c =  codec_configuration.specific_codec_configuration.octets_per_codec_frame * 1;
+        } else {
+            cig_params.cis_params[i].max_sdu_p_to_c =  0;
+        }
         cig_params.cis_params[i].phy_c_to_p = LE_AUDIO_SERVER_PHY_MASK_2M;
         cig_params.cis_params[i].phy_p_to_c = LE_AUDIO_SERVER_PHY_MASK_2M;
         cig_params.cis_params[i].rtn_c_to_p = NUM_CIS_RETRANSMISSIONS;
