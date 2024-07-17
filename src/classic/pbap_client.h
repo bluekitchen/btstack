@@ -116,7 +116,6 @@ typedef struct pbap_client {
     // goep client linked list
     goep_client_t goep_client;
 
-    uint16_t  cid;
     pbap_client_state_t state;
     bd_addr_t bd_addr;
     hci_con_handle_t con_handle;

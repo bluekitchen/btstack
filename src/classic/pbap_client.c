@@ -80,7 +80,7 @@ static void pbap_client_emit_connected_event(pbap_client_t * context, uint8_t st
     event[pos++] = HCI_EVENT_PBAP_META;
     pos++;  // skip len
     event[pos++] = PBAP_SUBEVENT_CONNECTION_OPENED;
-    little_endian_store_16(event,pos,context->cid);
+    little_endian_store_16(event,pos,context->goep_cid);
     pos+=2;
     event[pos++] = status;
     (void)memcpy(&event[pos], context->bd_addr, 6);
@@ -90,7 +90,7 @@ static void pbap_client_emit_connected_event(pbap_client_t * context, uint8_t st
     event[pos++] = context->incoming;
     event[1] = pos - 2;
     if (pos != sizeof(event)) log_error("goep_client_emit_connected_event size %u", pos);
-    context->client_handler(HCI_EVENT_PACKET, context->cid, &event[0], pos);
+    context->client_handler(HCI_EVENT_PACKET, context->goep_cid, &event[0], pos);
 }   
 
 static void pbap_client_emit_connection_closed_event(pbap_client_t * context){
@@ -99,11 +99,11 @@ static void pbap_client_emit_connection_closed_event(pbap_client_t * context){
     event[pos++] = HCI_EVENT_PBAP_META;
     pos++;  // skip len
     event[pos++] = PBAP_SUBEVENT_CONNECTION_CLOSED;
-    little_endian_store_16(event,pos,context->cid);
+    little_endian_store_16(event,pos,context->goep_cid);
     pos+=2;
     event[1] = pos - 2;
     if (pos != sizeof(event)) log_error("pbap_client_emit_connection_closed_event size %u", pos);
-    context->client_handler(HCI_EVENT_PACKET, context->cid, &event[0], pos);
+    context->client_handler(HCI_EVENT_PACKET, context->goep_cid, &event[0], pos);
 }   
 
 static void pbap_client_emit_operation_complete_event(pbap_client_t * context, uint8_t status){
@@ -112,12 +112,12 @@ static void pbap_client_emit_operation_complete_event(pbap_client_t * context, u
     event[pos++] = HCI_EVENT_PBAP_META;
     pos++;  // skip len
     event[pos++] = PBAP_SUBEVENT_OPERATION_COMPLETED;
-    little_endian_store_16(event,pos,context->cid);
+    little_endian_store_16(event,pos,context->goep_cid);
     pos+=2;
     event[pos++]= status;
     event[1] = pos - 2;
     if (pos != sizeof(event)) log_error("pbap_client_emit_can_send_now_event size %u", pos);
-    context->client_handler(HCI_EVENT_PACKET, context->cid, &event[0], pos);
+    context->client_handler(HCI_EVENT_PACKET, context->goep_cid, &event[0], pos);
 }
 
 static void pbap_client_emit_phonebook_size_event(pbap_client_t * context, uint8_t status, uint16_t phonebook_size){
@@ -126,14 +126,14 @@ static void pbap_client_emit_phonebook_size_event(pbap_client_t * context, uint8
     event[pos++] = HCI_EVENT_PBAP_META;
     pos++;  // skip len
     event[pos++] = PBAP_SUBEVENT_PHONEBOOK_SIZE;
-    little_endian_store_16(event,pos,context->cid);
+    little_endian_store_16(event,pos,context->goep_cid);
     pos+=2;
     event[pos++] = status;
     little_endian_store_16(event,pos, phonebook_size);
     pos+=2;
     event[1] = pos - 2;
     if (pos != sizeof(event)) log_error("pbap_client_emit_phonebook_size_event size %u", pos);
-    context->client_handler(HCI_EVENT_PACKET, context->cid, &event[0], pos);
+    context->client_handler(HCI_EVENT_PACKET, context->goep_cid, &event[0], pos);
 }
 
 static void pbap_client_emit_authentication_event(pbap_client_t * context, uint8_t options){
@@ -146,12 +146,12 @@ static void pbap_client_emit_authentication_event(pbap_client_t * context, uint8
     event[pos++] = HCI_EVENT_PBAP_META;
     pos++;  // skip len
     event[pos++] = PBAP_SUBEVENT_AUTHENTICATION_REQUEST;
-    little_endian_store_16(event,pos,context->cid);
+    little_endian_store_16(event,pos,context->goep_cid);
     pos+=2;
     event[pos++] = user_id_required;
     event[pos++] = full_access;
     if (pos != sizeof(event)) log_error("pbap_client_emit_authentication_event size %u", pos);
-    context->client_handler(HCI_EVENT_PACKET, context->cid, &event[0], pos);
+    context->client_handler(HCI_EVENT_PACKET, context->goep_cid, &event[0], pos);
 }
 
 static void pbap_client_emit_card_result_event(pbap_client_t * context, const char * name, const char * handle){
@@ -160,7 +160,7 @@ static void pbap_client_emit_card_result_event(pbap_client_t * context, const ch
     event[pos++] = HCI_EVENT_PBAP_META;
     pos++;  // skip len
     event[pos++] = PBAP_SUBEVENT_CARD_RESULT;
-    little_endian_store_16(event,pos,context->cid);
+    little_endian_store_16(event,pos,context->goep_cid);
     pos+=2;
     int name_len = btstack_min(PBAP_MAX_NAME_LEN, (uint16_t) strlen(name));
     event[pos++] = name_len;
@@ -171,7 +171,7 @@ static void pbap_client_emit_card_result_event(pbap_client_t * context, const ch
     (void)memcpy(&event[pos], handle, handle_len);
     pos += handle_len;
     event[1] = pos - 2;
-    context->client_handler(HCI_EVENT_PACKET, context->cid, &event[0], pos);
+    context->client_handler(HCI_EVENT_PACKET, context->goep_cid, &event[0], pos);
 }
 
 static const uint8_t collon = (uint8_t) ':';
@@ -415,7 +415,7 @@ static void pbap_client_parser_callback_get_operation(void * user_data, uint8_t 
             switch(pbap_client->state){
                 case PBAP_CLIENT_W4_PHONEBOOK:
                 case PBAP_CLIENT_W4_GET_CARD_ENTRY_COMPLETE:
-                    client->client_handler(PBAP_DATA_PACKET, client->cid, (uint8_t *) data_buffer, data_len);
+                    client->client_handler(PBAP_DATA_PACKET, client->goep_cid, (uint8_t *) data_buffer, data_len);
                     if (data_offset + data_len == total_len){
                         client->flow_wait_for_user = true;
                     }
@@ -1042,7 +1042,6 @@ static void pbap_client_reset_state(void) {
             PBAP_SUPPORTED_FEATURES_X_BT_UID_VCARD_PROPERTY |
             PBAP_SUPPORTED_FEATURES_CONTACT_REFERENCING;
     pbap_client->state = PBAP_CLIENT_INIT;
-    pbap_client->cid = 1;
 }
 
 void pbap_client_init(void){
@@ -1065,7 +1064,7 @@ uint8_t pbap_connect(btstack_packet_handler_t handler, bd_addr_t addr, uint16_t 
     pbap_client->vcard_selector_operator = PBAP_VCARD_SELECTOR_OPERATOR_OR;
 
     uint8_t err = goep_client_create_connection(&pbap_packet_handler, addr, BLUETOOTH_SERVICE_CLASS_PHONEBOOK_ACCESS_PSE, &pbap_client->goep_cid);
-    *out_cid = pbap_client->cid;
+    *out_cid = pbap_client->goep_cid;
     if (err) return err;
     return ERROR_CODE_SUCCESS;
 }
