@@ -72,7 +72,7 @@ const char * pbap_vcard_listing_name = "pb";
 static uint32_t pbap_client_supported_features;
 
 static pbap_client_t pbap_client_singleton;
-static pbap_client_t * pbap_client = &pbap_client_singleton;
+static pbap_client_t * pbap_client_singleton_pointer = &pbap_client_singleton;
 
 static void pbap_client_emit_connected_event(pbap_client_t * context, uint8_t status){
     uint8_t event[15];
@@ -322,6 +322,9 @@ static void pbap_client_yml_append_character(yxml_t * xml_parser, char * buffer,
 }
 
 static void pbap_client_process_vcard_list_body(const uint8_t * data, uint16_t data_len){
+
+    pbap_client_t * pbap_client = pbap_client_singleton_pointer;
+
     while (data_len--) {
         yxml_ret_t r = yxml_parse(&pbap_client->xml_parser, *data++);
         switch (r) {
@@ -560,6 +563,8 @@ static void pbap_handle_can_send_now(void){
     uint16_t pos;
 
     MD5_CTX md5_ctx;
+
+    pbap_client_t * pbap_client = pbap_client_singleton_pointer;
 
     if (pbap_client->abort_operation){
         pbap_client->abort_operation = 0;
@@ -811,6 +816,9 @@ static void pbap_client_handle_srm_headers(pbap_client_t *client) {
 static void pbap_packet_handler_hci(uint8_t *packet, uint16_t size){
     UNUSED(size);
     uint8_t status;
+
+    pbap_client_t * pbap_client = pbap_client_singleton_pointer;
+
     switch (hci_event_packet_get_type(packet)) {
         case HCI_EVENT_GOEP_META:
             switch (hci_event_goep_meta_get_subevent_code(packet)){
@@ -850,6 +858,8 @@ static void pbap_packet_handler_hci(uint8_t *packet, uint16_t size){
 }
 
 static void pbap_packet_handler_goep(uint8_t *packet, uint16_t size){
+    pbap_client_t * pbap_client = pbap_client_singleton_pointer;
+
     if (pbap_client->obex_parser_waiting_for_response == false) return;
 
     obex_parser_object_state_t parser_state;
