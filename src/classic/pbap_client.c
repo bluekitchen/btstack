@@ -1049,20 +1049,24 @@ void pbap_client_init(void){
 void pbap_client_deinit(void){
 }
 
-uint8_t pbap_connect(btstack_packet_handler_t handler, bd_addr_t addr, uint16_t * out_cid){
-    if (pbap_client->state != PBAP_CLIENT_INIT){
-        return BTSTACK_MEMORY_ALLOC_FAILED;
-    } 
 
-    pbap_client->state = PBAP_CLIENT_W4_GOEP_CONNECTION;
-    pbap_client->client_handler = handler;
-    pbap_client->vcard_selector = 0;
-    pbap_client->vcard_selector_operator = PBAP_VCARD_SELECTOR_OPERATOR_OR;
+static uint8_t pbap_client_connect(pbap_client_t * client, btstack_packet_handler_t handler, bd_addr_t addr, uint16_t * out_cid) {
+    client->state = PBAP_CLIENT_W4_GOEP_CONNECTION;
+    client->client_handler = handler;
+    client->vcard_selector = 0;
+    client->vcard_selector_operator = PBAP_VCARD_SELECTOR_OPERATOR_OR;
 
-    uint8_t err = goep_client_create_connection(&pbap_packet_handler, addr, BLUETOOTH_SERVICE_CLASS_PHONEBOOK_ACCESS_PSE, &pbap_client->goep_cid);
-    *out_cid = pbap_client->goep_cid;
+    uint8_t err = goep_client_create_connection(&pbap_packet_handler, addr, BLUETOOTH_SERVICE_CLASS_PHONEBOOK_ACCESS_PSE, &client->goep_cid);
+    *out_cid = client->goep_cid;
     if (err) return err;
     return ERROR_CODE_SUCCESS;
+}
+
+uint8_t pbap_connect(btstack_packet_handler_t handler, bd_addr_t addr, uint16_t * out_cid){
+    if (pbap_client_singleton.state != PBAP_CLIENT_INIT){
+        return BTSTACK_MEMORY_ALLOC_FAILED;
+    }
+    return pbap_client_connect(&pbap_client_singleton, handler, addr, out_cid);
 }
 
 uint8_t pbap_disconnect(uint16_t pbap_cid){
