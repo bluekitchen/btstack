@@ -67,6 +67,9 @@ extern "C" {
 // max search value len
 #define MAP_SERVER_MAX_SEARCH_VALUE_LEN 32
 
+// we asume our own MAS ConnectionIDs are in the range of 1..31 max
+#define HIGHEST_MAS_CONNECTION_ID_VALUE 31
+
     /* API_START */
 
     // lengths
