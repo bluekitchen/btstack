@@ -71,36 +71,35 @@ const char * pbap_vcard_entry_type   = "x-bt/vcard";
 const char * pbap_vcard_listing_name = "pb";
 
 typedef enum {
-    PBAP_INIT = 0,
-    PBAP_W4_GOEP_CONNECTION,
-    PBAP_W2_SEND_CONNECT_REQUEST,
-    PBAP_W4_CONNECT_RESPONSE,
-    PBAP_W4_USER_AUTHENTICATION,
-    PBAP_W2_SEND_AUTHENTICATED_CONNECT,
-    PBAP_CONNECT_RESPONSE_RECEIVED,
-    PBAP_CONNECTED,
+    PBAP_CLIENT_INIT = 0,
+    PBAP_CLIENT_W4_GOEP_CONNECTION,
+    PBAP_CLIENT_W2_SEND_CONNECT_REQUEST,
+    PBAP_CLIENT_W4_CONNECT_RESPONSE,
+    PBAP_CLIENT_W4_USER_AUTHENTICATION,
+    PBAP_CLIENT_W2_SEND_AUTHENTICATED_CONNECT,
+    PBAP_CLIENT_CONNECTED,
     //
-    PBAP_W2_SEND_DISCONNECT_REQUEST,
-    PBAP_W4_DISCONNECT_RESPONSE,
+    PBAP_CLIENT_W2_SEND_DISCONNECT_REQUEST,
+    PBAP_CLIENT_W4_DISCONNECT_RESPONSE,
     //
-    PBAP_W2_PULL_PHONEBOOK,
-    PBAP_W4_PHONEBOOK,
-    PBAP_W2_SET_PATH_ROOT,
-    PBAP_W4_SET_PATH_ROOT_COMPLETE,
-    PBAP_W2_SET_PATH_ELEMENT,
-    PBAP_W4_SET_PATH_ELEMENT_COMPLETE,
-    PBAP_W2_GET_PHONEBOOK_SIZE,
-    PBAP_W4_GET_PHONEBOOK_SIZE_COMPLETE,
+    PBAP_CLIENT_W2_PULL_PHONEBOOK,
+    PBAP_CLIENT_W4_PHONEBOOK,
+    PBAP_CLIENT_W2_SET_PATH_ROOT,
+    PBAP_CLIENT_W4_SET_PATH_ROOT_COMPLETE,
+    PBAP_CLIENT_W2_SET_PATH_ELEMENT,
+    PBAP_CLIENT_W4_SET_PATH_ELEMENT_COMPLETE,
+    PBAP_CLIENT_W2_GET_PHONEBOOK_SIZE,
+    PBAP_CLIENT_W4_GET_PHONEBOOK_SIZE_COMPLETE,
     // - pull vacard liast
-    PBAP_W2_GET_CARD_LIST,
-    PBAP_W4_GET_CARD_LIST_COMPLETE,
+    PBAP_CLIENT_W2_GET_CARD_LIST,
+    PBAP_CLIENT_W4_GET_CARD_LIST_COMPLETE,
     // - pull vcard entry
-    PBAP_W2_GET_CARD_ENTRY,
-    PBAP_W4_GET_CARD_ENTRY_COMPLETE,
+    PBAP_CLIENT_W2_GET_CARD_ENTRY,
+    PBAP_CLIENT_W4_GET_CARD_ENTRY_COMPLETE,
     // abort operation
-    PBAP_W4_ABORT_COMPLETE,
+    PBAP_CLIENT_W4_ABORT_COMPLETE,
 
-} pbap_state_t;
+} pbap_client_state_t;
 
 typedef enum {
     PBAP_CLIENT_PHONEBOOK_SIZE_PARSER_STATE_W4_TYPE = 0,
@@ -121,7 +120,7 @@ typedef struct {
 } pbap_client_phonebook_size_parser_t;
 
 typedef struct pbap_client {
-    pbap_state_t state;
+    pbap_client_state_t state;
     uint16_t  cid;
     bd_addr_t bd_addr;
     hci_con_handle_t con_handle;
@@ -515,14 +514,14 @@ static void pbap_client_parser_callback_get_operation(void * user_data, uint8_t 
         case OBEX_HEADER_BODY:
         case OBEX_HEADER_END_OF_BODY:
             switch(pbap_client->state){
-                case PBAP_W4_PHONEBOOK:
-                case PBAP_W4_GET_CARD_ENTRY_COMPLETE:
+                case PBAP_CLIENT_W4_PHONEBOOK:
+                case PBAP_CLIENT_W4_GET_CARD_ENTRY_COMPLETE:
                     client->client_handler(PBAP_DATA_PACKET, client->cid, (uint8_t *) data_buffer, data_len);
                     if (data_offset + data_len == total_len){
                         client->flow_wait_for_user = true;
                     }
                     break;
-                case PBAP_W4_GET_CARD_LIST_COMPLETE:
+                case PBAP_CLIENT_W4_GET_CARD_LIST_COMPLETE:
                     pbap_client_process_vcard_list_body(data_buffer, data_len);
                     break;
                 default:
@@ -668,7 +667,7 @@ static void pbap_handle_can_send_now(void){
         // prepare request
         goep_client_request_create_abort(pbap_client->goep_cid);
         // state
-        pbap_client->state = PBAP_W4_ABORT_COMPLETE;
+        pbap_client->state = PBAP_CLIENT_W4_ABORT_COMPLETE;
         // prepare response
         obex_parser_init_for_response(&pbap_client->obex_parser, OBEX_OPCODE_ABORT, NULL, pbap_client);
         obex_srm_init(&pbap_client->obex_srm);
@@ -679,7 +678,7 @@ static void pbap_handle_can_send_now(void){
     }
 
     switch (pbap_client->state){
-        case PBAP_W2_SEND_CONNECT_REQUEST:
+        case PBAP_CLIENT_W2_SEND_CONNECT_REQUEST:
             // prepare request
             goep_client_request_create_connect(pbap_client->goep_cid, OBEX_VERSION, 0, OBEX_MAX_PACKETLEN_DEFAULT);
             goep_client_header_add_target(pbap_client->goep_cid, pbap_uuid, 16);
@@ -687,7 +686,7 @@ static void pbap_handle_can_send_now(void){
             pos += pbap_client_application_parameters_add_supported_features(pbap_client, &application_parameters[pos]);
             pbap_client_add_application_parameters(pbap_client, application_parameters, pos);
             // state
-            pbap_client->state = PBAP_W4_CONNECT_RESPONSE;
+            pbap_client->state = PBAP_CLIENT_W4_CONNECT_RESPONSE;
             // prepare response
             obex_parser_init_for_response(&pbap_client->obex_parser, OBEX_OPCODE_CONNECT, pbap_client_parser_callback_connect, pbap_client);
             obex_auth_parser_init(&pbap_client->obex_auth_parser);
@@ -696,7 +695,7 @@ static void pbap_handle_can_send_now(void){
             // send packet
             goep_client_execute(pbap_client->goep_cid);
             break;
-        case PBAP_W2_SEND_AUTHENTICATED_CONNECT:
+        case PBAP_CLIENT_W2_SEND_AUTHENTICATED_CONNECT:
             // prepare request
             goep_client_request_create_connect(pbap_client->goep_cid, OBEX_VERSION, 0, OBEX_MAX_PACKETLEN_DEFAULT);
             goep_client_header_add_target(pbap_client->goep_cid, pbap_uuid, 16);
@@ -717,7 +716,7 @@ static void pbap_handle_can_send_now(void){
             pos += 16;
             goep_client_header_add_challenge_response(pbap_client->goep_cid, challenge_response, pos);
             // state
-            pbap_client->state = PBAP_W4_CONNECT_RESPONSE;
+            pbap_client->state = PBAP_CLIENT_W4_CONNECT_RESPONSE;
             // prepare response
             obex_parser_init_for_response(&pbap_client->obex_parser, OBEX_OPCODE_CONNECT, pbap_client_parser_callback_connect, pbap_client);
             obex_srm_init(&pbap_client->obex_srm);
@@ -725,11 +724,11 @@ static void pbap_handle_can_send_now(void){
             // send packet
             goep_client_execute(pbap_client->goep_cid);
             break;
-        case PBAP_W2_SEND_DISCONNECT_REQUEST:
+        case PBAP_CLIENT_W2_SEND_DISCONNECT_REQUEST:
             // prepare request
             goep_client_request_create_disconnect(pbap_client->goep_cid);
             // state
-            pbap_client->state = PBAP_W4_DISCONNECT_RESPONSE;
+            pbap_client->state = PBAP_CLIENT_W4_DISCONNECT_RESPONSE;
             // prepare response
             obex_parser_init_for_response(&pbap_client->obex_parser, OBEX_OPCODE_DISCONNECT, NULL, pbap_client);
             obex_srm_init(&pbap_client->obex_srm);
@@ -737,7 +736,7 @@ static void pbap_handle_can_send_now(void){
             // send packet
             goep_client_execute(pbap_client->goep_cid);
             return;
-        case PBAP_W2_GET_PHONEBOOK_SIZE:
+        case PBAP_CLIENT_W2_GET_PHONEBOOK_SIZE:
             // prepare request
             goep_client_request_create_get(pbap_client->goep_cid);
             pbap_client_prepare_srm_header(pbap_client);
@@ -751,7 +750,7 @@ static void pbap_handle_can_send_now(void){
             pbap_client_add_application_parameters(pbap_client, application_parameters, pos);
 
             // state
-            pbap_client->state = PBAP_W4_GET_PHONEBOOK_SIZE_COMPLETE;
+            pbap_client->state = PBAP_CLIENT_W4_GET_PHONEBOOK_SIZE_COMPLETE;
             // prepare response
             obex_parser_init_for_response(&pbap_client->obex_parser, OBEX_OPCODE_GET, pbap_client_parser_callback_get_phonebook_size, pbap_client);
             obex_srm_init(&pbap_client->obex_srm);
@@ -760,7 +759,7 @@ static void pbap_handle_can_send_now(void){
             // send packet
             goep_client_execute(pbap_client->goep_cid);
             break;
-        case PBAP_W2_PULL_PHONEBOOK:
+        case PBAP_CLIENT_W2_PULL_PHONEBOOK:
             // prepare request
             goep_client_request_create_get(pbap_client->goep_cid);
             if (pbap_client->request_number == 0){
@@ -778,7 +777,7 @@ static void pbap_handle_can_send_now(void){
                 pbap_client_add_application_parameters(pbap_client, application_parameters, pos);
             }
             // state
-            pbap_client->state = PBAP_W4_PHONEBOOK;
+            pbap_client->state = PBAP_CLIENT_W4_PHONEBOOK;
             pbap_client->flow_next_triggered = 0;
             pbap_client->flow_wait_for_user = 0;
             // prepare response
@@ -787,7 +786,7 @@ static void pbap_handle_can_send_now(void){
             pbap_client->request_number++;
             goep_client_execute(pbap_client->goep_cid);
             break;
-        case PBAP_W2_GET_CARD_LIST:
+        case PBAP_CLIENT_W2_GET_CARD_LIST:
             // prepare request
             goep_client_request_create_get(pbap_client->goep_cid);
             if (pbap_client->request_number == 0){
@@ -801,14 +800,14 @@ static void pbap_handle_can_send_now(void){
                 pbap_client_add_application_parameters(pbap_client, application_parameters, pos);
             }
             // state
-            pbap_client->state = PBAP_W4_GET_CARD_LIST_COMPLETE;
+            pbap_client->state = PBAP_CLIENT_W4_GET_CARD_LIST_COMPLETE;
             // prepare response
             pbap_client_prepare_get_operation(pbap_client);
             // send packet
             pbap_client->request_number++;
             goep_client_execute(pbap_client->goep_cid);
             break;
-        case PBAP_W2_GET_CARD_ENTRY:
+        case PBAP_CLIENT_W2_GET_CARD_ENTRY:
             // prepare request
             goep_client_request_create_get(pbap_client->goep_cid);
             if (pbap_client->request_number == 0){
@@ -821,19 +820,19 @@ static void pbap_handle_can_send_now(void){
                 pbap_client_add_application_parameters(pbap_client, application_parameters, pos);
             }
             // state
-            pbap_client->state = PBAP_W4_GET_CARD_ENTRY_COMPLETE;
+            pbap_client->state = PBAP_CLIENT_W4_GET_CARD_ENTRY_COMPLETE;
             // prepare response
             pbap_client_prepare_get_operation(pbap_client);
             // send packet
             pbap_client->request_number++;
             goep_client_execute(pbap_client->goep_cid);
             break;
-        case PBAP_W2_SET_PATH_ROOT:
+        case PBAP_CLIENT_W2_SET_PATH_ROOT:
             // prepare request
             goep_client_request_create_set_path(pbap_client->goep_cid, 1 << 1); // Don’t create directory
             goep_client_header_add_name(pbap_client->goep_cid, "");
             // state
-            pbap_client->state = PBAP_W4_SET_PATH_ROOT_COMPLETE;
+            pbap_client->state = PBAP_CLIENT_W4_SET_PATH_ROOT_COMPLETE;
             // prepare response
             obex_parser_init_for_response(&pbap_client->obex_parser, OBEX_OPCODE_SETPATH, NULL, pbap_client);
             obex_srm_init(&pbap_client->obex_srm);
@@ -841,7 +840,7 @@ static void pbap_handle_can_send_now(void){
             // send packet
             goep_client_execute(pbap_client->goep_cid);
             break;
-        case PBAP_W2_SET_PATH_ELEMENT:
+        case PBAP_CLIENT_W2_SET_PATH_ELEMENT:
             // prepare request
             // find '/' or '\0'
             path_element_start = pbap_client->set_path_offset;
@@ -860,7 +859,7 @@ static void pbap_handle_can_send_now(void){
             goep_client_request_create_set_path(pbap_client->goep_cid, 1 << 1); // Don’t create directory
             goep_client_header_add_name_prefix(pbap_client->goep_cid, path_element, path_element_len); // next element
             // state
-            pbap_client->state = PBAP_W4_SET_PATH_ELEMENT_COMPLETE;
+            pbap_client->state = PBAP_CLIENT_W4_SET_PATH_ELEMENT_COMPLETE;
             // prepare response
             obex_parser_init_for_response(&pbap_client->obex_parser, OBEX_OPCODE_SETPATH, NULL, pbap_client);
             obex_srm_init(&pbap_client->obex_srm);
@@ -923,20 +922,20 @@ static void pbap_packet_handler_hci(uint8_t *packet, uint16_t size){
                     goep_subevent_connection_opened_get_bd_addr(packet, pbap_client->bd_addr);
                     if (status){
                         log_info("pbap: connection failed %u", status);
-                        pbap_client->state = PBAP_INIT;
+                        pbap_client->state = PBAP_CLIENT_INIT;
                         pbap_client_emit_connected_event(pbap_client, status);
                     } else {
                         log_info("pbap: connection established");
                         pbap_client->goep_cid = goep_subevent_connection_opened_get_goep_cid(packet);
-                        pbap_client->state = PBAP_W2_SEND_CONNECT_REQUEST;
+                        pbap_client->state = PBAP_CLIENT_W2_SEND_CONNECT_REQUEST;
                         goep_client_request_can_send_now(pbap_client->goep_cid);
                     }
                     break;
                 case GOEP_SUBEVENT_CONNECTION_CLOSED:
-                    if (pbap_client->state > PBAP_CONNECTED){
+                    if (pbap_client->state > PBAP_CLIENT_CONNECTED){
                         pbap_client_emit_operation_complete_event(pbap_client, OBEX_DISCONNECTED);
                     }
-                    pbap_client->state = PBAP_INIT;
+                    pbap_client->state = PBAP_CLIENT_INIT;
                     pbap_client_emit_connection_closed_event(pbap_client);
                     break;
                 case GOEP_SUBEVENT_CAN_SEND_NOW:
@@ -961,52 +960,52 @@ static void pbap_packet_handler_goep(uint8_t *packet, uint16_t size){
         obex_parser_operation_info_t op_info;
         obex_parser_get_operation_info(&pbap_client->obex_parser, &op_info);
         switch (pbap_client->state){
-            case PBAP_W4_CONNECT_RESPONSE:
+            case PBAP_CLIENT_W4_CONNECT_RESPONSE:
                 switch (op_info.response_code) {
                     case OBEX_RESP_SUCCESS:
-                        pbap_client->state = PBAP_CONNECTED;
+                        pbap_client->state = PBAP_CLIENT_CONNECTED;
                         pbap_client->vcard_selector_supported = pbap_client_supported_features & goep_client_get_pbap_supported_features( pbap_client->goep_cid) & PBAP_SUPPORTED_FEATURES_VCARD_SELECTING;
                         pbap_client_emit_connected_event(pbap_client, ERROR_CODE_SUCCESS);
                         break;
                     case OBEX_RESP_UNAUTHORIZED:
-                        pbap_client->state = PBAP_W4_USER_AUTHENTICATION;
+                        pbap_client->state = PBAP_CLIENT_W4_USER_AUTHENTICATION;
                         pbap_client_emit_authentication_event(pbap_client, pbap_client->obex_auth_parser.authentication_options);
                         break;
                     default:
                         log_info("pbap: obex connect failed, result 0x%02x", packet[0]);
-                        pbap_client->state = PBAP_INIT;
+                        pbap_client->state = PBAP_CLIENT_INIT;
                         pbap_client_emit_connected_event(pbap_client, OBEX_CONNECT_FAILED);
                         break;
                 }
                 break;
-            case PBAP_W4_DISCONNECT_RESPONSE:
+            case PBAP_CLIENT_W4_DISCONNECT_RESPONSE:
                 goep_client_disconnect(pbap_client->goep_cid);
                 break;
-            case PBAP_W4_SET_PATH_ROOT_COMPLETE:
-            case PBAP_W4_SET_PATH_ELEMENT_COMPLETE:
+            case PBAP_CLIENT_W4_SET_PATH_ROOT_COMPLETE:
+            case PBAP_CLIENT_W4_SET_PATH_ELEMENT_COMPLETE:
                 switch (op_info.response_code) {
                     case OBEX_RESP_SUCCESS:
                         // more path?
                         if (pbap_client->current_folder[pbap_client->set_path_offset]) {
-                            pbap_client->state = PBAP_W2_SET_PATH_ELEMENT;
+                            pbap_client->state = PBAP_CLIENT_W2_SET_PATH_ELEMENT;
                             goep_client_request_can_send_now(pbap_client->goep_cid);
                         } else {
                             pbap_client->current_folder = NULL;
-                            pbap_client->state = PBAP_CONNECTED;
+                            pbap_client->state = PBAP_CLIENT_CONNECTED;
                             pbap_client_emit_operation_complete_event(pbap_client, ERROR_CODE_SUCCESS);
                         }
                         break;
                     case OBEX_RESP_NOT_FOUND:
-                        pbap_client->state = PBAP_CONNECTED;
+                        pbap_client->state = PBAP_CLIENT_CONNECTED;
                         pbap_client_emit_operation_complete_event(pbap_client, OBEX_NOT_FOUND);
                         break;
                     default:
-                        pbap_client->state = PBAP_CONNECTED;
+                        pbap_client->state = PBAP_CLIENT_CONNECTED;
                         pbap_client_emit_operation_complete_event(pbap_client, OBEX_UNKNOWN_ERROR);
                         break;
                 }
                 break;
-            case PBAP_W4_PHONEBOOK:
+            case PBAP_CLIENT_W4_PHONEBOOK:
                 switch (op_info.response_code) {
                     case OBEX_RESP_CONTINUE:
                         pbap_client_handle_srm_headers(pbap_client);
@@ -1015,40 +1014,40 @@ static void pbap_packet_handler_goep(uint8_t *packet, uint16_t size){
                             pbap_client_prepare_get_operation(pbap_client);
                             break;
                         }
-                        pbap_client->state = PBAP_W2_PULL_PHONEBOOK;
+                        pbap_client->state = PBAP_CLIENT_W2_PULL_PHONEBOOK;
                         if (!pbap_client->flow_control_enabled || !pbap_client->flow_wait_for_user ||
                             pbap_client->flow_next_triggered) {
                             goep_client_request_can_send_now(pbap_client->goep_cid);
                         }
                         break;
                     case OBEX_RESP_SUCCESS:
-                        pbap_client->state = PBAP_CONNECTED;
+                        pbap_client->state = PBAP_CLIENT_CONNECTED;
                         pbap_client_emit_operation_complete_event(pbap_client, ERROR_CODE_SUCCESS);
                         break;
                     default:
                         log_info("unexpected response 0x%02x", packet[0]);
-                        pbap_client->state = PBAP_CONNECTED;
+                        pbap_client->state = PBAP_CLIENT_CONNECTED;
                         pbap_client_emit_operation_complete_event(pbap_client, OBEX_UNKNOWN_ERROR);
                         break;
                 }
                 break;
-            case PBAP_W4_GET_PHONEBOOK_SIZE_COMPLETE:
+            case PBAP_CLIENT_W4_GET_PHONEBOOK_SIZE_COMPLETE:
                 switch (op_info.response_code) {
                     case OBEX_RESP_SUCCESS:
                         if (pbap_client->phonebook_size_parser.have_size) {
                             uint16_t phonebook_size = big_endian_read_16(pbap_client->phonebook_size_parser.size_buffer, 0);
-                            pbap_client->state = PBAP_CONNECTED;
+                            pbap_client->state = PBAP_CLIENT_CONNECTED;
                             pbap_client_emit_phonebook_size_event(pbap_client, 0, phonebook_size);
                             break;
                         }
                         /* fall through */
                     default:
-                        pbap_client->state = PBAP_CONNECTED;
+                        pbap_client->state = PBAP_CLIENT_CONNECTED;
                         pbap_client_emit_phonebook_size_event(pbap_client, OBEX_UNKNOWN_ERROR, 0);
                         break;
                 }
                 break;
-            case PBAP_W4_GET_CARD_LIST_COMPLETE:
+            case PBAP_CLIENT_W4_GET_CARD_LIST_COMPLETE:
                 switch (op_info.response_code) {
                     case OBEX_RESP_CONTINUE:
                         // handle continue
@@ -1058,26 +1057,26 @@ static void pbap_packet_handler_goep(uint8_t *packet, uint16_t size){
                             pbap_client_prepare_get_operation(pbap_client);
                             break;
                         }
-                        pbap_client->state = PBAP_W2_GET_CARD_LIST;
+                        pbap_client->state = PBAP_CLIENT_W2_GET_CARD_LIST;
                         goep_client_request_can_send_now(pbap_client->goep_cid);
                         break;
                     case OBEX_RESP_SUCCESS:
                         // done
-                        pbap_client->state = PBAP_CONNECTED;
+                        pbap_client->state = PBAP_CLIENT_CONNECTED;
                         pbap_client_emit_operation_complete_event(pbap_client, ERROR_CODE_SUCCESS);
                         break;
                     case OBEX_RESP_NOT_ACCEPTABLE:
-                        pbap_client->state = PBAP_CONNECTED;
+                        pbap_client->state = PBAP_CLIENT_CONNECTED;
                         pbap_client_emit_operation_complete_event(pbap_client, OBEX_NOT_ACCEPTABLE);
                         break;
                     default:
                         log_info("unexpected response 0x%02x", packet[0]);
-                        pbap_client->state = PBAP_CONNECTED;
+                        pbap_client->state = PBAP_CLIENT_CONNECTED;
                         pbap_client_emit_operation_complete_event(pbap_client, OBEX_UNKNOWN_ERROR);
                         break;
                 }
                 break;
-            case PBAP_W4_GET_CARD_ENTRY_COMPLETE:
+            case PBAP_CLIENT_W4_GET_CARD_ENTRY_COMPLETE:
                 switch (op_info.response_code) {
                     case OBEX_RESP_CONTINUE:
                         pbap_client_handle_srm_headers(pbap_client);
@@ -1086,26 +1085,26 @@ static void pbap_packet_handler_goep(uint8_t *packet, uint16_t size){
                             pbap_client_prepare_get_operation(pbap_client);
                             break;
                         }
-                        pbap_client->state = PBAP_W2_GET_CARD_ENTRY;
+                        pbap_client->state = PBAP_CLIENT_W2_GET_CARD_ENTRY;
                         goep_client_request_can_send_now(pbap_client->goep_cid);
                         break;
                     case OBEX_RESP_SUCCESS:
-                        pbap_client->state = PBAP_CONNECTED;
+                        pbap_client->state = PBAP_CLIENT_CONNECTED;
                         pbap_client_emit_operation_complete_event(pbap_client, ERROR_CODE_SUCCESS);
                         break;
                     case OBEX_RESP_NOT_ACCEPTABLE:
-                        pbap_client->state = PBAP_CONNECTED;
+                        pbap_client->state = PBAP_CLIENT_CONNECTED;
                         pbap_client_emit_operation_complete_event(pbap_client, OBEX_NOT_ACCEPTABLE);
                         break;
                     default:
                         log_info("unexpected response 0x%02x", packet[0]);
-                        pbap_client->state = PBAP_CONNECTED;
+                        pbap_client->state = PBAP_CLIENT_CONNECTED;
                         pbap_client_emit_operation_complete_event(pbap_client, OBEX_UNKNOWN_ERROR);
                         break;
                 }
                 break;
-            case PBAP_W4_ABORT_COMPLETE:
-                pbap_client->state = PBAP_CONNECTED;
+            case PBAP_CLIENT_W4_ABORT_COMPLETE:
+                pbap_client->state = PBAP_CLIENT_CONNECTED;
                 pbap_client_emit_operation_complete_event(pbap_client, OBEX_ABORTED);
                 break;
             default:
@@ -1143,7 +1142,7 @@ static void pbap_client_reset_state(void) {
             PBAP_SUPPORTED_FEATURES_X_BT_UCI_VCARD_PROPERTY |
             PBAP_SUPPORTED_FEATURES_X_BT_UID_VCARD_PROPERTY |
             PBAP_SUPPORTED_FEATURES_CONTACT_REFERENCING;
-    pbap_client->state = PBAP_INIT;
+    pbap_client->state = PBAP_CLIENT_INIT;
     pbap_client->cid = 1;
 }
 
@@ -1157,11 +1156,11 @@ void pbap_client_deinit(void){
 }
 
 uint8_t pbap_connect(btstack_packet_handler_t handler, bd_addr_t addr, uint16_t * out_cid){
-    if (pbap_client->state != PBAP_INIT){
+    if (pbap_client->state != PBAP_CLIENT_INIT){
         return BTSTACK_MEMORY_ALLOC_FAILED;
     } 
 
-    pbap_client->state = PBAP_W4_GOEP_CONNECTION;
+    pbap_client->state = PBAP_CLIENT_W4_GOEP_CONNECTION;
     pbap_client->client_handler = handler;
     pbap_client->vcard_selector = 0;
     pbap_client->vcard_selector_operator = PBAP_VCARD_SELECTOR_OPERATOR_OR;
@@ -1174,20 +1173,20 @@ uint8_t pbap_connect(btstack_packet_handler_t handler, bd_addr_t addr, uint16_t 
 
 uint8_t pbap_disconnect(uint16_t pbap_cid){
     UNUSED(pbap_cid);
-    if (pbap_client->state < PBAP_CONNECTED){
+    if (pbap_client->state < PBAP_CLIENT_CONNECTED){
         return BTSTACK_BUSY;
     }
-    pbap_client->state = PBAP_W2_SEND_DISCONNECT_REQUEST;
+    pbap_client->state = PBAP_CLIENT_W2_SEND_DISCONNECT_REQUEST;
     goep_client_request_can_send_now(pbap_client->goep_cid);
     return ERROR_CODE_SUCCESS;
 }
 
 uint8_t pbap_get_phonebook_size(uint16_t pbap_cid, const char * path){
     UNUSED(pbap_cid);
-    if (pbap_client->state != PBAP_CONNECTED){
+    if (pbap_client->state != PBAP_CLIENT_CONNECTED){
         return BTSTACK_BUSY;
     }
-    pbap_client->state = PBAP_W2_GET_PHONEBOOK_SIZE;
+    pbap_client->state = PBAP_CLIENT_W2_GET_PHONEBOOK_SIZE;
     pbap_client->phonebook_path = path;
     pbap_client->request_number = 0;
     goep_client_request_can_send_now(pbap_client->goep_cid);
@@ -1196,10 +1195,10 @@ uint8_t pbap_get_phonebook_size(uint16_t pbap_cid, const char * path){
 
 uint8_t pbap_pull_phonebook(uint16_t pbap_cid, const char * path){
     UNUSED(pbap_cid);
-    if (pbap_client->state != PBAP_CONNECTED){
+    if (pbap_client->state != PBAP_CLIENT_CONNECTED){
         return BTSTACK_BUSY;
     }
-    pbap_client->state = PBAP_W2_PULL_PHONEBOOK;
+    pbap_client->state = PBAP_CLIENT_W2_PULL_PHONEBOOK;
     pbap_client->phonebook_path = path;
     pbap_client->vcard_name = NULL;
     pbap_client->request_number = 0;
@@ -1209,10 +1208,10 @@ uint8_t pbap_pull_phonebook(uint16_t pbap_cid, const char * path){
 
 uint8_t pbap_set_phonebook(uint16_t pbap_cid, const char * path){
     UNUSED(pbap_cid);
-    if (pbap_client->state != PBAP_CONNECTED){
+    if (pbap_client->state != PBAP_CLIENT_CONNECTED){
         return BTSTACK_BUSY;
     }
-    pbap_client->state = PBAP_W2_SET_PATH_ROOT;
+    pbap_client->state = PBAP_CLIENT_W2_SET_PATH_ROOT;
     pbap_client->current_folder = path;
     pbap_client->set_path_offset = 0;
     goep_client_request_can_send_now(pbap_client->goep_cid);
@@ -1221,10 +1220,10 @@ uint8_t pbap_set_phonebook(uint16_t pbap_cid, const char * path){
 
 uint8_t pbap_authentication_password(uint16_t pbap_cid, const char * password){
     UNUSED(pbap_cid);
-    if (pbap_client->state != PBAP_W4_USER_AUTHENTICATION){
+    if (pbap_client->state != PBAP_CLIENT_W4_USER_AUTHENTICATION){
         return BTSTACK_BUSY;
     }
-    pbap_client->state = PBAP_W2_SEND_AUTHENTICATED_CONNECT;
+    pbap_client->state = PBAP_CLIENT_W2_SEND_AUTHENTICATED_CONNECT;
     pbap_client->authentication_password = password;
     goep_client_request_can_send_now(pbap_client->goep_cid);
     return ERROR_CODE_SUCCESS;
@@ -1232,10 +1231,10 @@ uint8_t pbap_authentication_password(uint16_t pbap_cid, const char * password){
 
 uint8_t pbap_pull_vcard_listing(uint16_t pbap_cid, const char * path){
     UNUSED(pbap_cid);
-    if (pbap_client->state != PBAP_CONNECTED){
+    if (pbap_client->state != PBAP_CLIENT_CONNECTED){
         return BTSTACK_BUSY;
     }
-    pbap_client->state = PBAP_W2_GET_CARD_LIST;
+    pbap_client->state = PBAP_CLIENT_W2_GET_CARD_LIST;
     pbap_client->phonebook_path = path;
     pbap_client->phone_number = NULL;
     pbap_client->request_number = 0;
@@ -1246,10 +1245,10 @@ uint8_t pbap_pull_vcard_listing(uint16_t pbap_cid, const char * path){
 
 uint8_t pbap_pull_vcard_entry(uint16_t pbap_cid, const char * path){
     UNUSED(pbap_cid);
-    if (pbap_client->state != PBAP_CONNECTED){
+    if (pbap_client->state != PBAP_CLIENT_CONNECTED){
         return BTSTACK_BUSY;
     }
-    pbap_client->state = PBAP_W2_GET_CARD_ENTRY;
+    pbap_client->state = PBAP_CLIENT_W2_GET_CARD_ENTRY;
     // pbap_client->phonebook_path = NULL;
     // pbap_client->phone_number = NULL;
     pbap_client->vcard_name = path;
@@ -1260,10 +1259,10 @@ uint8_t pbap_pull_vcard_entry(uint16_t pbap_cid, const char * path){
 
 uint8_t pbap_lookup_by_number(uint16_t pbap_cid, const char * phone_number){
     UNUSED(pbap_cid);
-    if (pbap_client->state != PBAP_CONNECTED){
+    if (pbap_client->state != PBAP_CLIENT_CONNECTED){
         return BTSTACK_BUSY;
     }
-    pbap_client->state = PBAP_W2_GET_CARD_LIST;
+    pbap_client->state = PBAP_CLIENT_W2_GET_CARD_LIST;
     pbap_client->phonebook_path = pbap_vcard_listing_name;
     pbap_client->phone_number   = phone_number;
     pbap_client->request_number = 0;
@@ -1274,7 +1273,7 @@ uint8_t pbap_lookup_by_number(uint16_t pbap_cid, const char * phone_number){
 
 uint8_t pbap_abort(uint16_t pbap_cid){
     UNUSED(pbap_cid);
-    if ((pbap_client->state < PBAP_CONNECTED) || (pbap_client->abort_operation != 0)){
+    if ((pbap_client->state < PBAP_CLIENT_CONNECTED) || (pbap_client->abort_operation != 0)){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
     log_info("abort current operation, state 0x%02x", pbap_client->state);
@@ -1289,10 +1288,10 @@ uint8_t pbap_next_packet(uint16_t pbap_cid){
         return ERROR_CODE_SUCCESS;
     }
     switch (pbap_client->state){
-        case PBAP_W2_PULL_PHONEBOOK:
+        case PBAP_CLIENT_W2_PULL_PHONEBOOK:
             goep_client_request_can_send_now(pbap_client->goep_cid);
             break;
-        case PBAP_W4_PHONEBOOK:
+        case PBAP_CLIENT_W4_PHONEBOOK:
             pbap_client->flow_next_triggered = 1;
             break;
         default:
@@ -1303,7 +1302,7 @@ uint8_t pbap_next_packet(uint16_t pbap_cid){
 
 uint8_t pbap_set_flow_control_mode(uint16_t pbap_cid, int enable){
     UNUSED(pbap_cid);
-    if (pbap_client->state != PBAP_CONNECTED){
+    if (pbap_client->state != PBAP_CLIENT_CONNECTED){
         return BTSTACK_BUSY;
     }
     pbap_client->flow_control_enabled = enable;
@@ -1312,7 +1311,7 @@ uint8_t pbap_set_flow_control_mode(uint16_t pbap_cid, int enable){
 
 uint8_t pbap_set_vcard_selector(uint16_t pbap_cid, uint32_t vcard_selector){
     UNUSED(pbap_cid);
-    if (pbap_client->state != PBAP_CONNECTED){
+    if (pbap_client->state != PBAP_CLIENT_CONNECTED){
         return BTSTACK_BUSY;
     }
     pbap_client->vcard_selector = vcard_selector;
@@ -1321,7 +1320,7 @@ uint8_t pbap_set_vcard_selector(uint16_t pbap_cid, uint32_t vcard_selector){
 
 uint8_t pbap_set_vcard_selector_operator(uint16_t pbap_cid, int vcard_selector_operator){
     UNUSED(pbap_cid);
-    if (pbap_client->state != PBAP_CONNECTED){
+    if (pbap_client->state != PBAP_CLIENT_CONNECTED){
         return BTSTACK_BUSY;
     }
     pbap_client->vcard_selector_operator = vcard_selector_operator;
@@ -1330,7 +1329,7 @@ uint8_t pbap_set_vcard_selector_operator(uint16_t pbap_cid, int vcard_selector_o
 
 uint8_t pbap_set_property_selector(uint16_t pbap_cid, uint32_t property_selector){
     UNUSED(pbap_cid);
-    if (pbap_client->state != PBAP_CONNECTED){
+    if (pbap_client->state != PBAP_CLIENT_CONNECTED){
         return BTSTACK_BUSY;
     }
     pbap_client->property_selector  = property_selector;
@@ -1339,7 +1338,7 @@ uint8_t pbap_set_property_selector(uint16_t pbap_cid, uint32_t property_selector
 
 uint8_t pbap_set_max_list_count(uint16_t pbap_cid, uint16_t max_list_count){
     UNUSED(pbap_cid);
-    if (pbap_client->state != PBAP_CONNECTED){
+    if (pbap_client->state != PBAP_CLIENT_CONNECTED){
         return BTSTACK_BUSY;
     }
     pbap_client->max_list_count = max_list_count;
@@ -1348,7 +1347,7 @@ uint8_t pbap_set_max_list_count(uint16_t pbap_cid, uint16_t max_list_count){
 
 uint8_t pbap_set_list_start_offset(uint16_t pbap_cid, uint16_t list_start_offset){
     UNUSED(pbap_cid);
-    if (pbap_client->state != PBAP_CONNECTED){
+    if (pbap_client->state != PBAP_CLIENT_CONNECTED){
         return BTSTACK_BUSY;
     }
     pbap_client->list_start_offset = list_start_offset;
