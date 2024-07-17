@@ -1049,6 +1049,13 @@ void pbap_client_init(void){
 void pbap_client_deinit(void){
 }
 
+static pbap_client_t * pbap_client_for_cid(uint16_t cid){
+    if (pbap_client_singleton.goep_cid == cid){
+        return &pbap_client_singleton;
+    } else {
+        return NULL;
+    }
+}
 
 static uint8_t pbap_client_connect(pbap_client_t * client, btstack_packet_handler_t handler, bd_addr_t addr, uint16_t * out_cid) {
     client->state = PBAP_CLIENT_W4_GOEP_CONNECTION;
@@ -1070,7 +1077,10 @@ uint8_t pbap_connect(btstack_packet_handler_t handler, bd_addr_t addr, uint16_t 
 }
 
 uint8_t pbap_disconnect(uint16_t pbap_cid){
-    UNUSED(pbap_cid);
+    pbap_client_t * pbap_client = pbap_client_for_cid(pbap_cid);
+    if (pbap_client == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
     if (pbap_client->state < PBAP_CLIENT_CONNECTED){
         return BTSTACK_BUSY;
     }
@@ -1080,7 +1090,10 @@ uint8_t pbap_disconnect(uint16_t pbap_cid){
 }
 
 uint8_t pbap_get_phonebook_size(uint16_t pbap_cid, const char * path){
-    UNUSED(pbap_cid);
+    pbap_client_t * pbap_client = pbap_client_for_cid(pbap_cid);
+    if (pbap_client == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
     if (pbap_client->state != PBAP_CLIENT_CONNECTED){
         return BTSTACK_BUSY;
     }
@@ -1092,7 +1105,10 @@ uint8_t pbap_get_phonebook_size(uint16_t pbap_cid, const char * path){
 }
 
 uint8_t pbap_pull_phonebook(uint16_t pbap_cid, const char * path){
-    UNUSED(pbap_cid);
+    pbap_client_t * pbap_client = pbap_client_for_cid(pbap_cid);
+    if (pbap_client == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
     if (pbap_client->state != PBAP_CLIENT_CONNECTED){
         return BTSTACK_BUSY;
     }
@@ -1105,7 +1121,10 @@ uint8_t pbap_pull_phonebook(uint16_t pbap_cid, const char * path){
 }
 
 uint8_t pbap_set_phonebook(uint16_t pbap_cid, const char * path){
-    UNUSED(pbap_cid);
+    pbap_client_t * pbap_client = pbap_client_for_cid(pbap_cid);
+    if (pbap_client == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
     if (pbap_client->state != PBAP_CLIENT_CONNECTED){
         return BTSTACK_BUSY;
     }
@@ -1117,7 +1136,10 @@ uint8_t pbap_set_phonebook(uint16_t pbap_cid, const char * path){
 }
 
 uint8_t pbap_authentication_password(uint16_t pbap_cid, const char * password){
-    UNUSED(pbap_cid);
+    pbap_client_t * pbap_client = pbap_client_for_cid(pbap_cid);
+    if (pbap_client == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
     if (pbap_client->state != PBAP_CLIENT_W4_USER_AUTHENTICATION){
         return BTSTACK_BUSY;
     }
@@ -1128,7 +1150,10 @@ uint8_t pbap_authentication_password(uint16_t pbap_cid, const char * password){
 }
 
 uint8_t pbap_pull_vcard_listing(uint16_t pbap_cid, const char * path){
-    UNUSED(pbap_cid);
+    pbap_client_t * pbap_client = pbap_client_for_cid(pbap_cid);
+    if (pbap_client == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
     if (pbap_client->state != PBAP_CLIENT_CONNECTED){
         return BTSTACK_BUSY;
     }
@@ -1142,7 +1167,10 @@ uint8_t pbap_pull_vcard_listing(uint16_t pbap_cid, const char * path){
 }
 
 uint8_t pbap_pull_vcard_entry(uint16_t pbap_cid, const char * path){
-    UNUSED(pbap_cid);
+    pbap_client_t * pbap_client = pbap_client_for_cid(pbap_cid);
+    if (pbap_client == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
     if (pbap_client->state != PBAP_CLIENT_CONNECTED){
         return BTSTACK_BUSY;
     }
@@ -1156,7 +1184,10 @@ uint8_t pbap_pull_vcard_entry(uint16_t pbap_cid, const char * path){
 }
 
 uint8_t pbap_lookup_by_number(uint16_t pbap_cid, const char * phone_number){
-    UNUSED(pbap_cid);
+    pbap_client_t * pbap_client = pbap_client_for_cid(pbap_cid);
+    if (pbap_client == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
     if (pbap_client->state != PBAP_CLIENT_CONNECTED){
         return BTSTACK_BUSY;
     }
@@ -1170,7 +1201,10 @@ uint8_t pbap_lookup_by_number(uint16_t pbap_cid, const char * phone_number){
 }
 
 uint8_t pbap_abort(uint16_t pbap_cid){
-    UNUSED(pbap_cid);
+    pbap_client_t * pbap_client = pbap_client_for_cid(pbap_cid);
+    if (pbap_client == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
     if ((pbap_client->state < PBAP_CLIENT_CONNECTED) || (pbap_client->abort_operation != 0)){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
@@ -1180,8 +1214,10 @@ uint8_t pbap_abort(uint16_t pbap_cid){
 }
 
 uint8_t pbap_next_packet(uint16_t pbap_cid){
-    // log_info("pbap_next_packet, state %x", pbap_client->state);
-    UNUSED(pbap_cid);
+    pbap_client_t * pbap_client = pbap_client_for_cid(pbap_cid);
+    if (pbap_client == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
     if (!pbap_client->flow_control_enabled){
         return ERROR_CODE_SUCCESS;
     }
@@ -1199,7 +1235,10 @@ uint8_t pbap_next_packet(uint16_t pbap_cid){
 }
 
 uint8_t pbap_set_flow_control_mode(uint16_t pbap_cid, int enable){
-    UNUSED(pbap_cid);
+    pbap_client_t * pbap_client = pbap_client_for_cid(pbap_cid);
+    if (pbap_client == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
     if (pbap_client->state != PBAP_CLIENT_CONNECTED){
         return BTSTACK_BUSY;
     }
@@ -1208,7 +1247,10 @@ uint8_t pbap_set_flow_control_mode(uint16_t pbap_cid, int enable){
 }
 
 uint8_t pbap_set_vcard_selector(uint16_t pbap_cid, uint32_t vcard_selector){
-    UNUSED(pbap_cid);
+    pbap_client_t * pbap_client = pbap_client_for_cid(pbap_cid);
+    if (pbap_client == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
     if (pbap_client->state != PBAP_CLIENT_CONNECTED){
         return BTSTACK_BUSY;
     }
@@ -1217,7 +1259,10 @@ uint8_t pbap_set_vcard_selector(uint16_t pbap_cid, uint32_t vcard_selector){
 }
 
 uint8_t pbap_set_vcard_selector_operator(uint16_t pbap_cid, int vcard_selector_operator){
-    UNUSED(pbap_cid);
+    pbap_client_t * pbap_client = pbap_client_for_cid(pbap_cid);
+    if (pbap_client == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
     if (pbap_client->state != PBAP_CLIENT_CONNECTED){
         return BTSTACK_BUSY;
     }
@@ -1226,7 +1271,10 @@ uint8_t pbap_set_vcard_selector_operator(uint16_t pbap_cid, int vcard_selector_o
 }
 
 uint8_t pbap_set_property_selector(uint16_t pbap_cid, uint32_t property_selector){
-    UNUSED(pbap_cid);
+    pbap_client_t * pbap_client = pbap_client_for_cid(pbap_cid);
+    if (pbap_client == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
     if (pbap_client->state != PBAP_CLIENT_CONNECTED){
         return BTSTACK_BUSY;
     }
@@ -1235,7 +1283,10 @@ uint8_t pbap_set_property_selector(uint16_t pbap_cid, uint32_t property_selector
 }
 
 uint8_t pbap_set_max_list_count(uint16_t pbap_cid, uint16_t max_list_count){
-    UNUSED(pbap_cid);
+    pbap_client_t * pbap_client = pbap_client_for_cid(pbap_cid);
+    if (pbap_client == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
     if (pbap_client->state != PBAP_CLIENT_CONNECTED){
         return BTSTACK_BUSY;
     }
@@ -1244,7 +1295,10 @@ uint8_t pbap_set_max_list_count(uint16_t pbap_cid, uint16_t max_list_count){
 }
 
 uint8_t pbap_set_list_start_offset(uint16_t pbap_cid, uint16_t list_start_offset){
-    UNUSED(pbap_cid);
+    pbap_client_t * pbap_client = pbap_client_for_cid(pbap_cid);
+    if (pbap_client == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
     if (pbap_client->state != PBAP_CLIENT_CONNECTED){
         return BTSTACK_BUSY;
     }
