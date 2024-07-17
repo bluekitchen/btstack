@@ -412,7 +412,7 @@ static void pbap_client_parser_callback_get_operation(void * user_data, uint8_t 
             break;
         case OBEX_HEADER_BODY:
         case OBEX_HEADER_END_OF_BODY:
-            switch(pbap_client->state){
+            switch(client->state){
                 case PBAP_CLIENT_W4_PHONEBOOK:
                 case PBAP_CLIENT_W4_GET_CARD_ENTRY_COMPLETE:
                     client->client_handler(PBAP_DATA_PACKET, client->goep_cid, (uint8_t *) data_buffer, data_len);
@@ -438,7 +438,7 @@ static uint16_t pbap_client_application_params_add_vcard_selector(const pbap_cli
     uint16_t pos = 0;
     if (client->vcard_selector_supported){
         // vCard Selector
-        if (pbap_client->vcard_selector){
+        if (client->vcard_selector){
             application_parameters[pos++] = PBAP_APPLICATION_PARAMETER_VCARD_SELECTOR;
             application_parameters[pos++] = 8;
             memset(&application_parameters[pos], 0, 4);
@@ -469,7 +469,7 @@ static uint16_t pbap_client_application_params_add_max_list_count(const pbap_cli
 static uint16_t pbap_client_application_params_add_list_start_offset(const pbap_client_t * client, uint8_t * application_parameters, uint16_t list_start_offset){
     UNUSED(client);
     uint16_t pos = 0;
-    if (pbap_client->list_start_offset != 0){
+    if (client->list_start_offset != 0){
         application_parameters[pos++] = PBAP_APPLICATION_PARAMETER_LIST_START_OFFSET;
         application_parameters[pos++] = 2;
         big_endian_store_16(application_parameters, 2, list_start_offset);
@@ -488,7 +488,7 @@ static uint16_t pbap_client_application_params_add_phone_number(const pbap_clien
 		btstack_assert(phone_number_len <= 255);
         application_parameters[pos++] = (uint8_t) phone_number_len;
         (void)memcpy(&application_parameters[pos],
-                     pbap_client->phone_number, phone_number_len);
+                     client->phone_number, phone_number_len);
         pos += phone_number_len;
         application_parameters[pos++] = PBAP_APPLICATION_PARAMETER_SEARCH_PROPERTY;
         application_parameters[pos++] = 1;
@@ -501,11 +501,11 @@ static uint16_t pbap_client_application_params_add_property_selector(const pbap_
     // TODO: support format
     uint16_t pos = 0;
     uint32_t property_selector_lower = client->property_selector;
-    if (pbap_client->vcard_name != NULL){
-        if (strncmp(pbap_client->vcard_name, "X-BT-UID:", 9) == 0) {
+    if (client->vcard_name != NULL){
+        if (strncmp(client->vcard_name, "X-BT-UID:", 9) == 0) {
             property_selector_lower |= 1U << 31;
         }
-        if (strncmp(pbap_client->vcard_name, "X-BT-UCI:", 9) == 0) {
+        if (strncmp(client->vcard_name, "X-BT-UCI:", 9) == 0) {
             property_selector_lower |= 1U << 30;
         }
     }
@@ -538,15 +538,15 @@ static void pbap_client_add_application_parameters(const pbap_client_t * client,
     }
 }
 
-static void pbap_client_prepare_srm_header(const pbap_client_t * client){
+static void pbap_client_prepare_srm_header(pbap_client_t * client){
     if (!client->flow_control_enabled && goep_client_version_20_or_higher(client->goep_cid)){
         goep_client_header_add_srm_enable(client->goep_cid);
-        pbap_client->srm_state = SRM_W4_CONFIRM;
+        client->srm_state = SRM_W4_CONFIRM;
     }
 }
 
 static void pbap_client_prepare_get_operation(pbap_client_t * client){
-    obex_parser_init_for_response(&client->obex_parser, OBEX_OPCODE_GET, pbap_client_parser_callback_get_operation, pbap_client);
+    obex_parser_init_for_response(&client->obex_parser, OBEX_OPCODE_GET, pbap_client_parser_callback_get_operation, client);
     obex_srm_init(&client->obex_srm);
     client->obex_parser_waiting_for_response = true;
 }
@@ -771,41 +771,41 @@ static void pbap_handle_can_send_now(void){
     }
 }
 
-static void pbap_client_handle_srm_headers(pbap_client_t *context) {
-    const obex_srm_t * obex_srm = &pbap_client->obex_srm;
+static void pbap_client_handle_srm_headers(pbap_client_t *client) {
+    const obex_srm_t * obex_srm = &client->obex_srm;
     // Update SRM state based on SRM headers
-    switch (context->srm_state){
+    switch (client->srm_state){
         case SRM_W4_CONFIRM:
             switch (obex_srm->srm_value){
                 case OBEX_SRM_ENABLE:
                     switch (obex_srm->srmp_value){
                         case OBEX_SRMP_WAIT:
-                            context->srm_state = SRM_ENABLED_BUT_WAITING;
+                            client->srm_state = SRM_ENABLED_BUT_WAITING;
                             break;
                         default:
-                            context->srm_state = SRM_ENABLED;
+                            client->srm_state = SRM_ENABLED;
                             break;
                     }
                     break;
                 default:
-                    context->srm_state = SRM_DISABLED;
+                    client->srm_state = SRM_DISABLED;
                     break;
             }
             break;
         case SRM_ENABLED_BUT_WAITING:
             switch (obex_srm->srmp_value){
                 case OBEX_SRMP_WAIT:
-                    context->srm_state = SRM_ENABLED_BUT_WAITING;
+                    client->srm_state = SRM_ENABLED_BUT_WAITING;
                     break;
                 default:
-                    context->srm_state = SRM_ENABLED;
+                    client->srm_state = SRM_ENABLED;
                     break;
             }
             break;
         default:
             break;
     }
-    log_info("SRM state %u", context->srm_state);
+    log_info("SRM state %u", client->srm_state);
 }
 
 static void pbap_packet_handler_hci(uint8_t *packet, uint16_t size){
