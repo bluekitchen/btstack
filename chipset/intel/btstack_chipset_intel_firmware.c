@@ -100,7 +100,12 @@ typedef struct {
     uint8_t     unlocked_state;
 } intel_boot_params_t;
 
-// Vendor sepcific commands
+typedef enum {
+    INTEL_CONTROLLER_LEGACY,
+    INTEL_CONTROLLER_TLV,
+} intel_controller_mode_t;
+
+// Vendor specific commands
 
 static const hci_cmd_t hci_intel_read_version = {
     0xfc05, "1"
@@ -124,6 +129,8 @@ static const hci_cmd_t hci_intel_fc9f = {
 // state
 
 const char * firmware_path = ".";
+
+static intel_controller_mode_t controller_mode;
 
 const hci_transport_t * transport;
 
@@ -254,6 +261,7 @@ static void state_machine(uint8_t *packet, uint16_t size) {
 
     switch (state){
         case 0:
+            controller_mode = INTEL_CONTROLLER_LEGACY;
             state++;
             transport_send_cmd(&hci_reset);
             break;
@@ -270,6 +278,17 @@ static void state_machine(uint8_t *packet, uint16_t size) {
             transport_send_cmd(&hci_intel_read_version, 0xff);
             break;
         case 2:
+            // detect legacy vs. new TLV mode
+            if ((size == sizeof(intel_version_t)) || (packet[1] != 0x037)){
+                controller_mode = INTEL_CONTROLLER_TLV;
+                printf("\nERROR: Intel Controller uses new TLV mode. TLV mode is not supported yet\n");
+                printf("Details: https://github.com/torvalds/linux/blob/master/drivers/bluetooth/btintel.c\n\n");
+                log_error("TLV mode not supported");
+                (*done)(1);
+                break;
+            }
+
+            // legacy mode
             version = (intel_version_t*) hci_event_command_complete_get_return_parameters(packet);
             dump_intel_version(version);
 
