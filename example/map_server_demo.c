@@ -114,7 +114,7 @@ static l2cap_ertm_config_t map_notification_client_ertm_config = {
 static l2cap_ertm_config_t *p_mnc_ertm_cfg = &map_notification_client_ertm_config;
 #else
 static uint8_t mnc_ertm_buffer[0];
-static l2cap_ertm_config_t p_mnc_ertm_cfg = NULL;
+static l2cap_ertm_config_t *p_mnc_ertm_cfg = NULL;
 #endif
 
 static bd_addr_t    remote_addr;
