@@ -88,10 +88,15 @@ static uint8_t upload_buffer[1000];
 // MAP Notification Client - MAP allows only 1 client connection
 // which can be used from multiple map access server connections by using the MASInstanceID
 static struct {
-    int active;
+    // bitmask of open notifications
+    // we asume our own MAS ConnectionIDs are in the range of 1..HIGHEST_MAS_CONNECTION_ID_VALUE
+    uint32_t active_notifications;
     map_notification_client_t mnc;
     uint16_t cid;
 } mnc = {0};
+
+// we asume our own MAS ConnectionIDs are in the range of 1..HIGHEST_MAS_CONNECTION_ID_VALUE
+STATIC_ASSERT(sizeof(mnc.active_notifications)*CHAR_BIT >= HIGHEST_MAS_CONNECTION_ID_VALUE, active_notifications_bit_mask_too_small);
 
 #ifdef ENABLE_GOEP_L2CAP
 // singleton instance
@@ -492,12 +497,14 @@ static void send_get_listing_object(uint8_t* packet, uint16_t start_index, uint1
     send_listing(continuation == 0, start_index, end_index);
 }
 
-static uint8_t connect_map_notification_client(void) {
+static uint8_t connect_map_notification_client(int connection_id) {
     uint8_t status = 0;
+
+    btstack_assert(connection_id < HIGHEST_MAS_CONNECTION_ID_VALUE);
     
-    log_debug("mnc.cid:0x%x mnc.active:%u", mnc.cid, mnc.active);
+    log_debug("mnc.cid:0x%x mnc.active_notifications:0x%02x connection_id:%u", mnc.cid, mnc.active_notifications, connection_id);
     
-    if (mnc.active == 0)
+    if (mnc.active_notifications == 0)
     {
 #ifdef ENABLE_GOEP_L2CAP
         status = map_notification_client_connect(&mnc.mnc, &map_notification_client_ertm_config,
@@ -510,32 +517,37 @@ static uint8_t connect_map_notification_client(void) {
 #endif
     }
     else {
-        log_info("we have already %i open client notifications, mnc.cid:0x%x", mnc.active, mnc.cid);
+        log_info("we have already 0x%02x open client notifications, mnc.cid:0x%x connection_id:%u", mnc.active_notifications, mnc.cid, connection_id);
     }
 
-    mnc.active++;
+    // set the corresponding bit in the active notifications bitmask
+    mnc.active_notifications |= 1 << connection_id;
+
+    log_debug("mnc.cid:0x%x mnc.active_notifications:0x%02x connection_id:%u", mnc.cid, mnc.active_notifications, connection_id);
+
     return status;
 }
 
-static uint8_t disconnect_map_notification_client(void) {
+static uint8_t disconnect_map_notification_client(int connection_id) {
     uint8_t status = 0;
     
-    log_debug("mnc.cid:0x%x mnc.active:%u", mnc.cid, mnc.active);
+    log_debug("mnc.cid:0x%x mnc.active_notifications:0x%02x connection_id:%u", mnc.cid, mnc.active_notifications, connection_id);
 
-    if (mnc.active > 0)
+    if (mnc.active_notifications != 0)
     {
-        mnc.active--;
+        // reset the corresponding bit in the active notifications bitmask
+        mnc.active_notifications &= ~(1 << connection_id);
         
-        if (mnc.active == 0) {
+        if (mnc.active_notifications == 0) {
             status = map_notification_client_disconnect(mnc.cid);
             mnc.cid = 0;
         }
         else {
-            log_debug("not closed, still mnc.active:%u mnc.cid:0x%x ", mnc.active, mnc.cid);
+            log_debug("not closed, still mnc.active_notifications:0x%02x mnc.cid:0x%x connection_id:%u", mnc.active_notifications, mnc.cid, connection_id);
         }
 
     } else {
-        log_info("client connection already closed, mnc.cid:0x%x", mnc.cid);
+        log_info("client connection already closed, mnc.cid:0x%x connection_id:%u", mnc.cid, connection_id);
     }
 
     return status;
@@ -562,7 +574,6 @@ static void show_usage(void){
     MAP_PRINTF("<a> add one object\n");
     MAP_PRINTF("<d> delete one object\n");
     MAP_PRINTF("<r> reset current test case\n");
-    MAP_PRINTF("<D> disconnect the MCE Notification Server\n");
     MAP_PRINTF("<e> send Event report PUT Notification to MCE Server\n");
 }
 
@@ -618,10 +629,6 @@ static void stdin_process(char c){
             test_set->fp_print_test_config(test_set);
             MAP_PRINTF("ConversationListingVersionCounter:");
             increase_version_counter_by_1(ConversationListingVersionCounter);
-            break;
-
-        case 'D':
-            disconnect_map_notification_client();
             break;
 
         case 'e': {
@@ -754,7 +761,9 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             }
                             break;
                         case MAP_SUBEVENT_CONNECTION_CLOSED:
-                            MAP_PRINTF("[+] Connection closed, %s\n", mas_cfg->fdiscon?"disconnect handler":"re-init test case states");
+                            APP_READ_16(packet, &pos, &current_map_cid);
+                            status = disconnect_map_notification_client(current_map_cid);
+                            MAP_PRINTF("[+] Connection closed current_map_cid:0x%04x client disconnect status %u, %s\n", current_map_cid, status, mas_cfg->fdiscon?"disconnect handler":"re-init test case states");
                             if (mas_cfg->fdiscon != NULL)
                                 mas_cfg->fdiscon();
                             else
@@ -860,11 +869,11 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             MAP_PRINTF("[+] Put NotificationRegistration \n");
                             map_access_server_send_get_put_response(current_map_cid, OBEX_RESP_SUCCESS, NULL, 0, 0, NULL);
                             if (NotificationStatus == 1) {
-                                status = connect_map_notification_client();
+                                status = connect_map_notification_client(ConnectionID);
                                 MAP_PRINTF("[-] Connect back to PTS MAP-MNS mnc.cid: <%u>(0x%04u), status:%u\n", mnc.cid, mnc.cid, status);
                             }
                             else if (NotificationStatus == 0) {
-                                status = disconnect_map_notification_client();
+                                status = disconnect_map_notification_client(ConnectionID);
                                 MAP_PRINTF("[-] Disable Notifications for MAP-MNS map_cid: <%u>(0x%04u), status:%u\n", mnc.cid, mnc.cid, status);
                             }
                             else {
