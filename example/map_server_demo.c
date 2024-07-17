@@ -503,24 +503,19 @@ static void send_get_listing_object(uint8_t* packet, uint16_t start_index, uint1
 
 static uint8_t connect_map_notification_client(int connection_id) {
     uint8_t status = 0;
-
     btstack_assert(connection_id < HIGHEST_MAS_CONNECTION_ID_VALUE);
-    
     log_debug("mnc.cid:0x%x mnc.active_notifications:0x%02x connection_id:%u", mnc.cid, mnc.active_notifications, connection_id);
     
-    if (mnc.active_notifications == 0)
-    {
+    if (mnc.active_notifications == 0) {
         status = map_notification_client_connect(&mnc.mnc, p_mnc_ertm_cfg,
             sizeof(mnc_ertm_buffer), mnc_ertm_buffer,
             mns_packet_handler, remote_addr, 0, &mnc.cid);
-    }
-    else {
+    } else {
         log_info("we have already 0x%02x open client notifications, mnc.cid:0x%x connection_id:%u", mnc.active_notifications, mnc.cid, connection_id);
     }
 
     // set the corresponding bit in the active notifications bitmask
     mnc.active_notifications |= 1 << connection_id;
-
     log_debug("mnc.cid:0x%x mnc.active_notifications:0x%02x connection_id:%u", mnc.cid, mnc.active_notifications, connection_id);
 
     return status;
@@ -528,19 +523,17 @@ static uint8_t connect_map_notification_client(int connection_id) {
 
 static uint8_t disconnect_map_notification_client(int connection_id) {
     uint8_t status = 0;
-    
+    btstack_assert(connection_id < HIGHEST_MAS_CONNECTION_ID_VALUE);
     log_debug("mnc.cid:0x%x mnc.active_notifications:0x%02x connection_id:%u", mnc.cid, mnc.active_notifications, connection_id);
 
-    if (mnc.active_notifications != 0)
-    {
+    if (mnc.active_notifications != 0) {
         // reset the corresponding bit in the active notifications bitmask
         mnc.active_notifications &= ~(1 << connection_id);
         
         if (mnc.active_notifications == 0) {
             status = map_notification_client_disconnect(mnc.cid);
             mnc.cid = 0;
-        }
-        else {
+        } else {
             log_debug("not closed, still mnc.active_notifications:0x%02x mnc.cid:0x%x connection_id:%u", mnc.active_notifications, mnc.cid, connection_id);
         }
 
