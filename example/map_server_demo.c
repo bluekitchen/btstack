@@ -100,7 +100,7 @@ STATIC_ASSERT(sizeof(mnc.active_notifications)*CHAR_BIT >= HIGHEST_MAS_CONNECTIO
 
 #ifdef ENABLE_GOEP_L2CAP
 // singleton instance
-static uint8_t map_notification_client_ertm_buffer[4000];
+static uint8_t mnc_ertm_buffer[4000];
 static l2cap_ertm_config_t map_notification_client_ertm_config = {
     1,  // ertm mandatory
     2,  // max transmit, some tests require > 1
@@ -111,6 +111,10 @@ static l2cap_ertm_config_t map_notification_client_ertm_config = {
     4,
     1,      // 16-bit FCS
 };
+static l2cap_ertm_config_t *p_mnc_ertm_cfg = &map_notification_client_ertm_config;
+#else
+static uint8_t mnc_ertm_buffer[0];
+static l2cap_ertm_config_t p_mnc_ertm_cfg = NULL;
 #endif
 
 static bd_addr_t    remote_addr;
@@ -506,15 +510,9 @@ static uint8_t connect_map_notification_client(int connection_id) {
     
     if (mnc.active_notifications == 0)
     {
-#ifdef ENABLE_GOEP_L2CAP
-        status = map_notification_client_connect(&mnc.mnc, &map_notification_client_ertm_config,
-            sizeof(map_notification_client_ertm_buffer), map_notification_client_ertm_buffer,
+        status = map_notification_client_connect(&mnc.mnc, p_mnc_ertm_cfg,
+            sizeof(mnc_ertm_buffer), mnc_ertm_buffer,
             mns_packet_handler, remote_addr, 0, &mnc.cid);
- #else
-        status = map_notification_client_connect(&mnc.mnc, NULL,
-                    0, NULL,
-                    mns_packet_handler, remote_addr, 0, &mnc.cid);
-#endif
     }
     else {
         log_info("we have already 0x%02x open client notifications, mnc.cid:0x%x connection_id:%u", mnc.active_notifications, mnc.cid, connection_id);
