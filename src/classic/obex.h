@@ -38,6 +38,8 @@
 #ifndef OBEX_H
 #define OBEX_H
 
+#include <stdint.h>
+
 // From IR OBEX V1.5 - some opcodes have high bit always set
 #define OBEX_OPCODE_CONNECT                0x80
 #define OBEX_OPCODE_DISCONNECT             0x81
@@ -145,5 +147,37 @@
 #define PBAP_APPLICATION_PARAMETER_RESET_NEW_MISSED_CALLS 0x0F
 // PbapSupportedFeatures - 0x10 - 4 bytes
 #define PBAP_APPLICATION_PARAMETER_PBAP_SUPPORTED_FEATURES 0x10
+
+// OBEX related structs used by BTstack
+
+typedef enum {
+    SRM_DISABLED,
+    SRM_W4_CONFIRM,
+    SRM_ENABLED_BUT_WAITING,
+    SRM_ENABLED
+} obex_srm_state_t;
+
+typedef enum {
+    OBEX_AUTH_PARSER_STATE_W4_TYPE = 0,
+    OBEX_AUTH_PARSER_STATE_W4_LEN,
+    OBEX_AUTH_PARSER_STATE_W4_VALUE,
+    OBEX_AUTH_PARSER_STATE_INVALID,
+} obex_auth_parser_state_t;
+
+typedef struct {
+    // parsing
+    obex_auth_parser_state_t state;
+    uint8_t type;
+    uint8_t len;
+    uint8_t pos;
+    // data
+    uint8_t  authentication_options;
+    uint16_t authentication_nonce[16];
+} obex_auth_parser_t;
+
+typedef struct {
+    uint8_t srm_value;
+    uint8_t srmp_value;
+} obex_srm_t;
 
 #endif

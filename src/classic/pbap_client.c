@@ -103,36 +103,6 @@ typedef enum {
 } pbap_state_t;
 
 typedef enum {
-    SRM_DISABLED,
-    SRM_W4_CONFIRM,
-    SRM_ENABLED_BUT_WAITING,
-    SRM_ENABLED
-} srm_state_t;
-
-typedef enum {
-    OBEX_AUTH_PARSER_STATE_W4_TYPE = 0,
-    OBEX_AUTH_PARSER_STATE_W4_LEN,
-    OBEX_AUTH_PARSER_STATE_W4_VALUE,
-    OBEX_AUTH_PARSER_STATE_INVALID,
-} obex_auth_parser_state_t;
-
-typedef struct {
-    // parsing
-    obex_auth_parser_state_t state;
-    uint8_t type;
-    uint8_t len;
-    uint8_t pos;
-    // data
-    uint8_t  authentication_options;
-    uint16_t authentication_nonce[16];
-} obex_auth_parser_t;
-
-typedef struct {
-    uint8_t srm_value;
-    uint8_t srmp_value;
-} obex_srm_t;
-
-typedef enum {
     PBAP_CLIENT_PHONEBOOK_SIZE_PARSER_STATE_W4_TYPE = 0,
     PBAP_CLIENT_PHONEBOOK_SIZE_PARSER_STATE_W4_LEN,
     PBAP_CLIENT_PHONEBOOK_SIZE_PARSER_STATE_W4_VALUE,
@@ -198,7 +168,7 @@ typedef struct pbap_client {
     bool flow_wait_for_user;
     /* srm */
     obex_srm_t obex_srm;
-    srm_state_t srm_state;
+    obex_srm_state_t srm_state;
 } pbap_client_t;
 
 static uint32_t pbap_client_supported_features;
