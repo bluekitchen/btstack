@@ -110,10 +110,14 @@ typedef struct {
 } pbap_client_phonebook_size_parser_t;
 
 typedef struct pbap_client {
+    // pbap client linked list
+    btstack_linked_item_t item;
+
+    // goep client linked list
     goep_client_t goep_client;
 
-    pbap_client_state_t state;
     uint16_t  cid;
+    pbap_client_state_t state;
     bd_addr_t bd_addr;
     hci_con_handle_t con_handle;
     uint8_t   incoming;
