@@ -390,8 +390,7 @@ static void goep_client_handle_sdp_query_event(uint8_t packet_type, uint16_t cha
             status = sdp_event_query_complete_get_status(packet);
             if (status != ERROR_CODE_SUCCESS){
                 log_info("GOEP client, SDP query failed 0x%02x", status);
-                goep_client->state = GOEP_CLIENT_INIT;
-                goep_client_emit_connected_event(goep_client, status);
+                goep_client_handle_connection_opened(goep_client, status, 0);
                 break;
             }
             goep_server_found = false;
@@ -405,8 +404,7 @@ static void goep_client_handle_sdp_query_event(uint8_t packet_type, uint16_t cha
 #endif
             if (goep_server_found == false){
                 log_info("No GOEP RFCOMM or L2CAP server found");
-                goep_client->state = GOEP_CLIENT_INIT;
-                goep_client_emit_connected_event(goep_client, SDP_SERVICE_NOT_FOUND);
+                goep_client_handle_connection_opened(goep_client, SDP_SERVICE_NOT_FOUND, 0);
                 break;
             }
             (void) goep_client_start_connect(goep_client);
