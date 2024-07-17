@@ -136,6 +136,10 @@ static void intel_firmware_done(int result){
 
     printf("Done %x\n", result);
 
+    if (result != 0){
+        exit(result);
+    }
+
     intel_firmware_loaded = 1;
 
     // init HCI
