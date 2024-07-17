@@ -139,6 +139,7 @@ static inline void goep_client_emit_can_send_now_event(goep_client_t * goep_clie
 static void goep_client_handle_connection_opened(goep_client_t * goep_client, uint8_t status, uint16_t mtu){
     if (status) {
         goep_client->state = GOEP_CLIENT_INIT;
+        btstack_linked_list_remove(&goep_clients, (btstack_linked_item_t *) goep_client);
         log_info("goep_client: open failed, status %u", status);
     } else {
         goep_client->bearer_mtu = mtu;
