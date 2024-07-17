@@ -178,7 +178,7 @@ static int transport_send_intel_ddc(const uint8_t * data, uint8_t len){
     return transport_send_packet(HCI_COMMAND_DATA_PACKET, hci_outgoing, size);
 }
 
-static void state_machine(uint8_t * packet);
+static void state_machine(uint8_t *packet, uint16_t size);
 
 // read data from fw file and send it via intel_secure + update state
 static int intel_send_fragment(uint8_t fragment_type, uint8_t len){
@@ -232,7 +232,7 @@ static void dump_intel_boot_params(intel_boot_params_t * boot_params){
 static int vendor_firmware_complete_received;
 static int waiting_for_command_complete;
 
-static void state_machine(uint8_t * packet){
+static void state_machine(uint8_t *packet, uint16_t size) {
     intel_version_t     * version;
     intel_boot_params_t * boot_params;
     size_t res;
@@ -456,7 +456,7 @@ static void transport_packet_handler (uint8_t packet_type, uint8_t *packet, uint
     switch (hci_event_packet_get_type(packet)){
         case HCI_EVENT_COMMAND_COMPLETE:
         case HCI_EVENT_VENDOR_SPECIFIC:
-            state_machine(packet);
+            state_machine(packet, size);
             break;
         default:
             break;
@@ -478,5 +478,5 @@ void btstack_chipset_intel_download_firmware(const hci_transport_t * hci_transpo
 
     // get started
     state = 0;
-    state_machine(NULL);
+    state_machine(NULL, 0);
 }
