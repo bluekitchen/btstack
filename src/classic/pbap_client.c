@@ -319,7 +319,7 @@ static void pbap_client_phonebook_size_parser_init(pbap_client_phonebook_size_pa
     memset(phonebook_size_parer, 0, sizeof(pbap_client_phonebook_size_parser_t));
 }
 
-static void pbap_client_phoneboook_size_parser_process_data(pbap_client_phonebook_size_parser_t * phonebook_size_parser, const uint8_t * data_buffer, uint16_t data_len){
+static void pbap_client_phonebook_size_parser_process_data(pbap_client_phonebook_size_parser_t * phonebook_size_parser, const uint8_t * data_buffer, uint16_t data_len){
     while (data_len){
         uint16_t bytes_to_consume = 1;
         switch(phonebook_size_parser->state){
@@ -526,7 +526,7 @@ static void pbap_client_parser_callback_get_phonebook_size(void * user_data, uin
     pbap_client_t *client = (pbap_client_t *) user_data;
     switch (header_id) {
         case OBEX_HEADER_APPLICATION_PARAMETERS:
-            pbap_client_phoneboook_size_parser_process_data(&client->phonebook_size_parser, data_buffer, data_len);
+            pbap_client_phonebook_size_parser_process_data(&client->phonebook_size_parser, data_buffer, data_len);
             break;
         default:
             break;
