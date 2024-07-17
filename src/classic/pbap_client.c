@@ -53,7 +53,6 @@
 #include "classic/sdp_client_rfcomm.h"
 #include "btstack_event.h"
 #include "md5.h"
-#include "yxml.h"
 
 #include "classic/obex.h"
 #include "classic/obex_parser.h"
@@ -69,106 +68,6 @@ const char * pbap_vcard_listing_type = "x-bt/vcard-listing";
 const char * pbap_vcard_entry_type   = "x-bt/vcard";
 
 const char * pbap_vcard_listing_name = "pb";
-
-typedef enum {
-    PBAP_CLIENT_INIT = 0,
-    PBAP_CLIENT_W4_GOEP_CONNECTION,
-    PBAP_CLIENT_W2_SEND_CONNECT_REQUEST,
-    PBAP_CLIENT_W4_CONNECT_RESPONSE,
-    PBAP_CLIENT_W4_USER_AUTHENTICATION,
-    PBAP_CLIENT_W2_SEND_AUTHENTICATED_CONNECT,
-    PBAP_CLIENT_CONNECTED,
-    //
-    PBAP_CLIENT_W2_SEND_DISCONNECT_REQUEST,
-    PBAP_CLIENT_W4_DISCONNECT_RESPONSE,
-    //
-    PBAP_CLIENT_W2_PULL_PHONEBOOK,
-    PBAP_CLIENT_W4_PHONEBOOK,
-    PBAP_CLIENT_W2_SET_PATH_ROOT,
-    PBAP_CLIENT_W4_SET_PATH_ROOT_COMPLETE,
-    PBAP_CLIENT_W2_SET_PATH_ELEMENT,
-    PBAP_CLIENT_W4_SET_PATH_ELEMENT_COMPLETE,
-    PBAP_CLIENT_W2_GET_PHONEBOOK_SIZE,
-    PBAP_CLIENT_W4_GET_PHONEBOOK_SIZE_COMPLETE,
-    // - pull vacard liast
-    PBAP_CLIENT_W2_GET_CARD_LIST,
-    PBAP_CLIENT_W4_GET_CARD_LIST_COMPLETE,
-    // - pull vcard entry
-    PBAP_CLIENT_W2_GET_CARD_ENTRY,
-    PBAP_CLIENT_W4_GET_CARD_ENTRY_COMPLETE,
-    // abort operation
-    PBAP_CLIENT_W4_ABORT_COMPLETE,
-
-} pbap_client_state_t;
-
-typedef enum {
-    PBAP_CLIENT_PHONEBOOK_SIZE_PARSER_STATE_W4_TYPE = 0,
-    PBAP_CLIENT_PHONEBOOK_SIZE_PARSER_STATE_W4_LEN,
-    PBAP_CLIENT_PHONEBOOK_SIZE_PARSER_STATE_W4_VALUE,
-    PBAP_CLIENT_PHONEBOOK_SIZE_PARSER_STATE_INVALID,
-} pbap_client_phonebook_size_parser_state_t;
-
-typedef struct {
-    // parsing
-    pbap_client_phonebook_size_parser_state_t state;
-    uint8_t type;
-    uint8_t len;
-    uint8_t pos;
-    // data
-    bool have_size;
-    uint8_t  size_buffer[2];
-} pbap_client_phonebook_size_parser_t;
-
-typedef struct pbap_client {
-    pbap_client_state_t state;
-    uint16_t  cid;
-    bd_addr_t bd_addr;
-    hci_con_handle_t con_handle;
-    uint8_t   incoming;
-    uint16_t  goep_cid;
-    btstack_packet_handler_t client_handler;
-    int request_number;
-    const char * current_folder;
-    const char * phone_number;
-    const char * phonebook_path;
-    const char * vcard_name;
-    uint16_t set_path_offset;
-    /* vcard selector / operator */
-    uint32_t vcard_selector;
-    uint8_t  vcard_selector_operator;
-    uint8_t  vcard_selector_supported;
-    /* property selector */
-    uint32_t property_selector;
-    uint16_t list_start_offset;
-    uint16_t max_list_count;
-    /* abort */
-    uint8_t  abort_operation;
-    /* obex parser */
-    bool obex_parser_waiting_for_response;
-    obex_parser_t obex_parser;
-    uint8_t obex_header_buffer[4];
-    /* authentication */
-    obex_auth_parser_t obex_auth_parser;
-    const char * authentication_password;
-    /* xml parser */
-    yxml_t  xml_parser;
-    uint8_t xml_buffer[50];
-    /* vcard listing parser */
-    bool parser_card_found;
-    bool parser_name_found;
-    bool parser_handle_found;
-    char parser_name[PBAP_MAX_NAME_LEN];
-    char parser_handle[PBAP_MAX_HANDLE_LEN];
-    /* phonebook size */
-    pbap_client_phonebook_size_parser_t phonebook_size_parser;
-    /* flow control mode */
-    uint8_t flow_control_enabled;
-    uint8_t flow_next_triggered;
-    bool flow_wait_for_user;
-    /* srm */
-    obex_srm_t obex_srm;
-    obex_srm_state_t srm_state;
-} pbap_client_t;
 
 static uint32_t pbap_client_supported_features;
 
