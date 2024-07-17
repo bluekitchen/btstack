@@ -168,6 +168,37 @@ static void (*done)(int result);
 
 // functions
 
+static int intel_get_firmware_name(intel_version_t *version, intel_boot_params_t *params, const char *folder_path,
+                                   const char *suffix, char *firmware_path, size_t firmware_path_len) {
+    switch (version->hw_variant)
+    {
+        case 0x0b: /* SfP */
+        case 0x0c: /* WsP */
+            snprintf(firmware_path, firmware_path_len, "%s/ibt-%u-%u.%s",
+                     folder_path,
+                     version->hw_variant,
+                     little_endian_read_16((const uint8_t *)&params->dev_revid, 0),
+                     suffix);
+            break;
+        case 0x11: /* JfP */
+        case 0x12: /* ThP */
+        case 0x13: /* HrP */
+        case 0x14: /* CcP */
+            snprintf(firmware_path, firmware_path_len, "%s/ibt-%u-%u-%u.%s",
+                     folder_path,
+                     version->hw_variant,
+                     version->hw_revision,
+                     version->fw_revision,
+                     suffix);
+            break;
+        default:
+            printf("Unsupported Intel hardware variant (%u)\n", version->hw_variant);
+            break;
+    }
+
+    return 0;
+}
+
 static int transport_send_packet(uint8_t packet_type, const uint8_t * packet, uint16_t size){
     hci_dump_packet(HCI_COMMAND_DATA_PACKET, 0, (uint8_t*) packet, size);
     return transport->send_packet(packet_type, (uint8_t *) packet, size);
@@ -333,7 +364,8 @@ static void state_machine(uint8_t *packet, uint16_t size) {
             if (intel_boot_params.limited_cce != 0) break;
 
             // firmware file
-            snprintf(fw_path, sizeof(fw_path), "%s/ibt-%u-%u.sfi", firmware_folder_path, hw_variant, dev_revid);
+            intel_get_firmware_name(&intel_version, &intel_boot_params, firmware_folder_path,
+                                    "sfi", fw_path, sizeof(fw_path));
             log_info("Open firmware %s", fw_path);
             printf("Firmware %s\n", fw_path);
 
@@ -439,7 +471,8 @@ static void state_machine(uint8_t *packet, uint16_t size) {
             dump_intel_version(&intel_version);
 
             // ddc config
-            snprintf(fw_path, sizeof(fw_path), "%s/ibt-%u-%u.ddc", firmware_folder_path, hw_variant, dev_revid);
+            intel_get_firmware_name(&intel_version, &intel_boot_params, firmware_folder_path,
+                                    "ddc", fw_path, sizeof(fw_path));
             log_info("Open DDC %s", fw_path);
 
             // open ddc file
