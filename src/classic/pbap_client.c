@@ -1029,7 +1029,7 @@ static void pbap_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
     }
 }
 
-static void pbap_client_reset_state(void) {
+void pbap_client_init(void){
     pbap_client_supported_features =
             PBAP_SUPPORTED_FEATURES_DOWNLOAD |
             PBAP_SUPPORTED_FEATURES_BROWSING |
@@ -1041,16 +1041,12 @@ static void pbap_client_reset_state(void) {
             PBAP_SUPPORTED_FEATURES_X_BT_UCI_VCARD_PROPERTY |
             PBAP_SUPPORTED_FEATURES_X_BT_UID_VCARD_PROPERTY |
             PBAP_SUPPORTED_FEATURES_CONTACT_REFERENCING;
-    pbap_client->state = PBAP_CLIENT_INIT;
-}
 
-void pbap_client_init(void){
-    pbap_client_reset_state();
+    memset(&pbap_client_singleton, 0, sizeof(pbap_client_t));
+    pbap_client_singleton.state = PBAP_CLIENT_INIT;
 }
 
 void pbap_client_deinit(void){
-    pbap_client_reset_state();
-    memset(pbap_client, 0, sizeof(pbap_client_t));
 }
 
 uint8_t pbap_connect(btstack_packet_handler_t handler, bd_addr_t addr, uint16_t * out_cid){
