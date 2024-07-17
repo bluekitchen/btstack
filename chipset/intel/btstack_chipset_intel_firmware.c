@@ -158,17 +158,47 @@ static int waiting_for_command_complete;
 static uint8_t hci_outgoing[300];
 static uint8_t fw_buffer[300];
 
-static uint8_t  hw_variant;
-static uint16_t dev_revid;
-
 static FILE *   fw_file;
 static size_t   fw_offset;
 
 static void (*done)(int result);
 
+// protogtypes
+
+static void state_machine(uint8_t *packet, uint16_t size);
+
 // functions
 
-static int intel_get_firmware_name(intel_version_t *version, intel_boot_params_t *params, const char *folder_path,
+static uint16_t intel_get_dev_revid(intel_boot_params_t * boot_params){
+    return little_endian_read_16((uint8_t*)&intel_boot_params.dev_revid, 0);
+}
+
+static void dump_intel_version(intel_version_t     * version){
+    log_info("status       0x%02x", version->status);
+    log_info("hw_platform  0x%02x", version->hw_platform);
+    log_info("hw_variant   0x%02x", version->hw_variant);
+    log_info("hw_revision  0x%02x", version->hw_revision);
+    log_info("fw_variant   0x%02x", version->fw_variant);
+    log_info("fw_revision  0x%02x", version->fw_revision);
+    log_info("fw_build_num 0x%02x", version->fw_build_num);
+    log_info("fw_build_ww  0x%02x", version->fw_build_ww);
+    log_info("fw_build_yy  0x%02x", version->fw_build_yy);
+    log_info("fw_patch_num 0x%02x", version->fw_patch_num);
+}
+
+static void dump_intel_boot_params(intel_boot_params_t * boot_params){
+    bd_addr_t addr;
+    reverse_bd_addr(boot_params->otp_bdaddr, addr);
+    log_info("Device revision: %u", intel_get_dev_revid(boot_params));
+    log_info("Secure Boot:  %s", boot_params->secure_boot ? "enabled" : "disabled");
+    log_info("OTP lock:     %s", boot_params->otp_lock    ? "enabled" : "disabled");
+    log_info("API lock:     %s", boot_params->api_lock    ? "enabled" : "disabled");
+    log_info("Debug lock:   %s", boot_params->debug_lock  ? "enabled" : "disabled");
+    log_info("Minimum firmware build %u week %u %u", boot_params->min_fw_build_nn, boot_params->min_fw_build_cw, 2000 + boot_params->min_fw_build_yy);
+    log_info("OTC BD_ADDR:  %s", bd_addr_to_str(addr));
+}
+
+static int intel_get_firmware_name(intel_version_t *version, intel_boot_params_t *boot_params, const char *folder_path,
                                    const char *suffix, char *firmware_path, size_t firmware_path_len) {
     switch (version->hw_variant)
     {
@@ -177,7 +207,7 @@ static int intel_get_firmware_name(intel_version_t *version, intel_boot_params_t
             snprintf(firmware_path, firmware_path_len, "%s/ibt-%u-%u.%s",
                      folder_path,
                      version->hw_variant,
-                     little_endian_read_16((const uint8_t *)&params->dev_revid, 0),
+                     intel_get_dev_revid(boot_params),
                      suffix);
             break;
         case 0x11: /* JfP */
@@ -235,8 +265,6 @@ static int transport_send_intel_ddc(const uint8_t * data, uint8_t len){
     return transport_send_packet(HCI_COMMAND_DATA_PACKET, hci_outgoing, size);
 }
 
-static void state_machine(uint8_t *packet, uint16_t size);
-
 // read data from fw file and send it via intel_secure + update state
 static int intel_send_fragment(uint8_t fragment_type, uint8_t len){
     size_t res = fread(fw_buffer, 1, len, fw_file);
@@ -258,31 +286,6 @@ static int intel_send_ddc(void){
     res = fread(&fw_buffer[1], 1, len, fw_file);
     log_info("offset %6" PRId32 ", read %u -> res %" PRId32 "", (int32_t)fw_offset, 1, (int32_t)res);
     return transport_send_intel_ddc(fw_buffer, 1 + len);
-}
-
-static void dump_intel_version(intel_version_t     * version){
-    log_info("status       0x%02x", version->status);
-    log_info("hw_platform  0x%02x", version->hw_platform);
-    log_info("hw_variant   0x%02x", version->hw_variant);
-    log_info("hw_revision  0x%02x", version->hw_revision);
-    log_info("fw_variant   0x%02x", version->fw_variant);
-    log_info("fw_revision  0x%02x", version->fw_revision);
-    log_info("fw_build_num 0x%02x", version->fw_build_num);
-    log_info("fw_build_ww  0x%02x", version->fw_build_ww);
-    log_info("fw_build_yy  0x%02x", version->fw_build_yy);
-    log_info("fw_patch_num 0x%02x", version->fw_patch_num);
-}
-
-static void dump_intel_boot_params(intel_boot_params_t * boot_params){
-    bd_addr_t addr;
-    reverse_bd_addr(boot_params->otp_bdaddr, addr);
-    log_info("Device revision: %u", dev_revid);
-    log_info("Secure Boot:  %s", boot_params->secure_boot ? "enabled" : "disabled");
-    log_info("OTP lock:     %s", boot_params->otp_lock    ? "enabled" : "disabled");
-    log_info("API lock:     %s", boot_params->api_lock    ? "enabled" : "disabled");
-    log_info("Debug lock:   %s", boot_params->debug_lock  ? "enabled" : "disabled");
-    log_info("Minimum firmware build %u week %u %u", boot_params->min_fw_build_nn, boot_params->min_fw_build_cw, 2000 + boot_params->min_fw_build_yy);
-    log_info("OTC BD_ADDR:  %s", bd_addr_to_str(addr));
 }
 
 static void state_machine(uint8_t *packet, uint16_t size) {
@@ -336,8 +339,6 @@ static void state_machine(uint8_t *packet, uint16_t size) {
             intel_version =  *(intel_version_t*) hci_event_command_complete_get_return_parameters(packet);
             dump_intel_version(&intel_version);
 
-            hw_variant = intel_version.hw_variant;
-
             // fw_variant = 0x06 bootloader mode / 0x23 operational mode
             if (intel_version.fw_variant == 0x23) {
                 (*done)(0);
@@ -358,7 +359,6 @@ static void state_machine(uint8_t *packet, uint16_t size) {
             dump_intel_boot_params(&intel_boot_params);
 
             reverse_bd_addr(intel_boot_params.otp_bdaddr, addr);
-            dev_revid = little_endian_read_16((uint8_t*)&intel_boot_params.dev_revid, 0);
 
             // assert command complete is required
             if (intel_boot_params.limited_cce != 0) break;
