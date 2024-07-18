@@ -69,18 +69,16 @@ const char * pbap_vcard_entry_type   = "x-bt/vcard";
 
 const char * pbap_vcard_listing_name = "pb";
 
+// used for MD5
+static const uint8_t colon = (uint8_t) ':';
+
 static uint32_t pbap_client_supported_features;
 
 static pbap_client_t pbap_client_singleton;
 
-static pbap_client_t * pbap_client_for_cid(uint16_t cid){
-    if (pbap_client_singleton.goep_cid == cid){
-        return &pbap_client_singleton;
-    } else {
-        return NULL;
-    }
-}
+static btstack_linked_list_t pbap_clients;
 
+// emit events
 static void pbap_client_emit_connected_event(pbap_client_t * context, uint8_t status){
     uint8_t event[15];
     int pos = 0;
@@ -181,7 +179,22 @@ static void pbap_client_emit_card_result_event(pbap_client_t * context, const ch
     context->client_handler(HCI_EVENT_PACKET, context->goep_cid, &event[0], pos);
 }
 
-static const uint8_t collon = (uint8_t) ':';
+static pbap_client_t * pbap_client_for_cid(uint16_t cid){
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &pbap_clients);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        pbap_client_t * client = (pbap_client_t *) btstack_linked_list_iterator_next(&it);
+        if (client->goep_cid == cid){
+            return client;
+        }
+    }
+    return NULL;
+}
+
+static void pbap_client_finalize(pbap_client_t *client) {
+    client->state = PBAP_CLIENT_INIT;
+    btstack_linked_list_remove(&pbap_clients, (btstack_linked_item_t*) client);
+}
 
 static void pbap_client_vcard_listing_init_parser(pbap_client_t * client){
     yxml_init(&client->xml_parser, client->xml_buffer, sizeof(client->xml_buffer));
@@ -612,7 +625,7 @@ static void pbap_handle_can_send_now(pbap_client_t *pbap_client) {
             // calculate md5
             MD5_Init(&md5_ctx);
             MD5_Update(&md5_ctx, pbap_client->obex_auth_parser.authentication_nonce, 16);
-            MD5_Update(&md5_ctx, &collon, 1);
+            MD5_Update(&md5_ctx, &colon, 1);
             MD5_Update(&md5_ctx, pbap_client->authentication_password, (uint16_t) strlen(pbap_client->authentication_password));
             MD5_Final(&challenge_response[pos], &md5_ctx);
             pos += 16;
@@ -819,40 +832,40 @@ static void pbap_packet_handler_hci(uint8_t *packet, uint16_t size){
     UNUSED(size);
     uint8_t status;
 
-    pbap_client_t * pbap_client;
+    pbap_client_t * client;
 
     switch (hci_event_packet_get_type(packet)) {
         case HCI_EVENT_GOEP_META:
             switch (hci_event_goep_meta_get_subevent_code(packet)){
                 case GOEP_SUBEVENT_CONNECTION_OPENED:
-                    pbap_client = pbap_client_for_cid(goep_subevent_connection_opened_get_goep_cid(packet));
-                    btstack_assert(pbap_client != NULL);
+                    client = pbap_client_for_cid(goep_subevent_connection_opened_get_goep_cid(packet));
+                    btstack_assert(client != NULL);
                     status = goep_subevent_connection_opened_get_status(packet);
-                    goep_subevent_connection_opened_get_bd_addr(packet, pbap_client->bd_addr);
+                    goep_subevent_connection_opened_get_bd_addr(packet, client->bd_addr);
                     if (status){
                         log_info("pbap: connection failed %u", status);
-                        pbap_client->state = PBAP_CLIENT_INIT;
-                        pbap_client_emit_connected_event(pbap_client, status);
+                        pbap_client_finalize(client);
+                        pbap_client_emit_connected_event(client, status);
                     } else {
                         log_info("pbap: connection established");
-                        pbap_client->con_handle = goep_subevent_connection_opened_get_con_handle(packet);
-                        pbap_client->state = PBAP_CLIENT_W2_SEND_CONNECT_REQUEST;
-                        goep_client_request_can_send_now(pbap_client->goep_cid);
+                        client->con_handle = goep_subevent_connection_opened_get_con_handle(packet);
+                        client->state = PBAP_CLIENT_W2_SEND_CONNECT_REQUEST;
+                        goep_client_request_can_send_now(client->goep_cid);
                     }
                     break;
                 case GOEP_SUBEVENT_CONNECTION_CLOSED:
-                    pbap_client = pbap_client_for_cid(goep_subevent_connection_closed_get_goep_cid(packet));
-                    btstack_assert(pbap_client != NULL);
-                    if (pbap_client->state > PBAP_CLIENT_CONNECTED){
-                        pbap_client_emit_operation_complete_event(pbap_client, OBEX_DISCONNECTED);
+                    client = pbap_client_for_cid(goep_subevent_connection_closed_get_goep_cid(packet));
+                    btstack_assert(client != NULL);
+                    if (client->state > PBAP_CLIENT_CONNECTED){
+                        pbap_client_emit_operation_complete_event(client, OBEX_DISCONNECTED);
                     }
-                    pbap_client->state = PBAP_CLIENT_INIT;
-                    pbap_client_emit_connection_closed_event(pbap_client);
+                    pbap_client_finalize(client);
+                    pbap_client_emit_connection_closed_event(client);
                     break;
                 case GOEP_SUBEVENT_CAN_SEND_NOW:
-                    pbap_client = pbap_client_for_cid(goep_subevent_can_send_now_get_goep_cid(packet));
-                    btstack_assert(pbap_client != NULL);
-                    pbap_handle_can_send_now(pbap_client);
+                    client = pbap_client_for_cid(goep_subevent_can_send_now_get_goep_cid(packet));
+                    btstack_assert(client != NULL);
+                    pbap_handle_can_send_now(client);
                     break;
                 default:
                     break;
@@ -1074,10 +1087,15 @@ static uint8_t pbap_client_connect(pbap_client_t * client, btstack_packet_handle
     client->vcard_selector = 0;
     client->vcard_selector_operator = PBAP_VCARD_SELECTOR_OPERATOR_OR;
 
-    uint8_t err = goep_client_create_connection(&pbap_packet_handler, addr, BLUETOOTH_SERVICE_CLASS_PHONEBOOK_ACCESS_PSE, &client->goep_cid);
+    btstack_linked_list_add(&pbap_clients, (btstack_linked_item_t*) client);
+
+    uint8_t status = goep_client_create_connection(&pbap_packet_handler, addr, BLUETOOTH_SERVICE_CLASS_PHONEBOOK_ACCESS_PSE, &client->goep_cid);
     *out_cid = client->goep_cid;
-    if (err) return err;
-    return ERROR_CODE_SUCCESS;
+
+    if (status) {
+        pbap_client_finalize(client);
+    }
+    return status;
 }
 
 uint8_t pbap_connect(btstack_packet_handler_t handler, bd_addr_t addr, uint16_t * out_cid){
