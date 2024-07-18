@@ -72,7 +72,14 @@ const char * pbap_vcard_listing_name = "pb";
 static uint32_t pbap_client_supported_features;
 
 static pbap_client_t pbap_client_singleton;
-static pbap_client_t * pbap_client_singleton_pointer = &pbap_client_singleton;
+
+static pbap_client_t * pbap_client_for_cid(uint16_t cid){
+    if (pbap_client_singleton.goep_cid == cid){
+        return &pbap_client_singleton;
+    } else {
+        return NULL;
+    }
+}
 
 static void pbap_client_emit_connected_event(pbap_client_t * context, uint8_t status){
     uint8_t event[15];
@@ -468,7 +475,6 @@ static uint16_t pbap_client_application_params_add_max_list_count(const pbap_cli
 }
 
 static uint16_t pbap_client_application_params_add_list_start_offset(const pbap_client_t * client, uint8_t * application_parameters, uint16_t list_start_offset){
-    UNUSED(client);
     uint16_t pos = 0;
     if (client->list_start_offset != 0){
         application_parameters[pos++] = PBAP_APPLICATION_PARAMETER_LIST_START_OFFSET;
@@ -813,15 +819,16 @@ static void pbap_packet_handler_hci(uint8_t *packet, uint16_t size){
     UNUSED(size);
     uint8_t status;
 
-    pbap_client_t * pbap_client = pbap_client_singleton_pointer;
+    pbap_client_t * pbap_client;
 
     switch (hci_event_packet_get_type(packet)) {
         case HCI_EVENT_GOEP_META:
             switch (hci_event_goep_meta_get_subevent_code(packet)){
                 case GOEP_SUBEVENT_CONNECTION_OPENED:
+                    pbap_client = pbap_client_for_cid(goep_subevent_connection_opened_get_goep_cid(packet));
+                    btstack_assert(pbap_client != NULL);
                     status = goep_subevent_connection_opened_get_status(packet);
-                    pbap_client->con_handle = goep_subevent_connection_opened_get_con_handle(packet);
-                    pbap_client->incoming = goep_subevent_connection_opened_get_incoming(packet);
+                    pbap_client->incoming = 0;
                     goep_subevent_connection_opened_get_bd_addr(packet, pbap_client->bd_addr);
                     if (status){
                         log_info("pbap: connection failed %u", status);
@@ -829,12 +836,14 @@ static void pbap_packet_handler_hci(uint8_t *packet, uint16_t size){
                         pbap_client_emit_connected_event(pbap_client, status);
                     } else {
                         log_info("pbap: connection established");
-                        pbap_client->goep_cid = goep_subevent_connection_opened_get_goep_cid(packet);
+                        pbap_client->con_handle = goep_subevent_connection_opened_get_con_handle(packet);
                         pbap_client->state = PBAP_CLIENT_W2_SEND_CONNECT_REQUEST;
                         goep_client_request_can_send_now(pbap_client->goep_cid);
                     }
                     break;
                 case GOEP_SUBEVENT_CONNECTION_CLOSED:
+                    pbap_client = pbap_client_for_cid(goep_subevent_connection_closed_get_goep_cid(packet));
+                    btstack_assert(pbap_client != NULL);
                     if (pbap_client->state > PBAP_CLIENT_CONNECTED){
                         pbap_client_emit_operation_complete_event(pbap_client, OBEX_DISCONNECTED);
                     }
@@ -842,6 +851,8 @@ static void pbap_packet_handler_hci(uint8_t *packet, uint16_t size){
                     pbap_client_emit_connection_closed_event(pbap_client);
                     break;
                 case GOEP_SUBEVENT_CAN_SEND_NOW:
+                    pbap_client = pbap_client_for_cid(goep_subevent_can_send_now_get_goep_cid(packet));
+                    btstack_assert(pbap_client != NULL);
                     pbap_handle_can_send_now(pbap_client);
                     break;
                 default:
@@ -1029,7 +1040,8 @@ static void pbap_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
             pbap_packet_handler_hci(packet, size);
             break;
         case GOEP_DATA_PACKET:
-            client = pbap_client_singleton_pointer;
+            client = pbap_client_for_cid(channel);
+            btstack_assert(client != NULL);
             pbap_packet_handler_goep(client, packet, size);
             break;
         default:
@@ -1055,14 +1067,6 @@ void pbap_client_init(void){
 }
 
 void pbap_client_deinit(void){
-}
-
-static pbap_client_t * pbap_client_for_cid(uint16_t cid){
-    if (pbap_client_singleton.goep_cid == cid){
-        return &pbap_client_singleton;
-    } else {
-        return NULL;
-    }
 }
 
 static uint8_t pbap_client_connect(pbap_client_t * client, btstack_packet_handler_t handler, bd_addr_t addr, uint16_t * out_cid) {
