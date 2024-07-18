@@ -74,7 +74,7 @@ static const uint8_t colon = (uint8_t) ':';
 
 static uint32_t pbap_client_supported_features;
 
-static pbap_client_t pbap_client_singleton;
+static bool pbap_client_singleton_used;
 
 static btstack_linked_list_t pbap_clients;
 
@@ -1074,8 +1074,7 @@ void pbap_client_init(void){
             PBAP_SUPPORTED_FEATURES_X_BT_UID_VCARD_PROPERTY |
             PBAP_SUPPORTED_FEATURES_CONTACT_REFERENCING;
 
-    memset(&pbap_client_singleton, 0, sizeof(pbap_client_t));
-    pbap_client_singleton.state = PBAP_CLIENT_INIT;
+    pbap_client_singleton_used = false;
 }
 
 void pbap_client_deinit(void){
@@ -1099,9 +1098,15 @@ static uint8_t pbap_client_connect(pbap_client_t * client, btstack_packet_handle
 }
 
 uint8_t pbap_connect(btstack_packet_handler_t handler, bd_addr_t addr, uint16_t * out_cid){
-    if (pbap_client_singleton.state != PBAP_CLIENT_INIT){
+    static pbap_client_t pbap_client_singleton;
+
+    if (pbap_client_singleton_used && pbap_client_singleton.state != PBAP_CLIENT_INIT){
         return BTSTACK_MEMORY_ALLOC_FAILED;
     }
+
+    pbap_client_singleton_used = true;
+
+    memset(&pbap_client_singleton, 0, sizeof(pbap_client_t));
     return pbap_client_connect(&pbap_client_singleton, handler, addr, out_cid);
 }
 
