@@ -18,6 +18,9 @@ CFLAGS += -I$(BTSTACK_ROOT)/platform/posix
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/include
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/include
 CFLAGS += -I$(BTSTACK_ROOT)/3rd-party/md5
+CFLAGS += -I$(BTSTACK_ROOT)/3rd-party/micro-ecc
+CFLAGS += -I$(BTSTACK_ROOT)/3rd-party/rijndael
+CFLAGS += -I$(BTSTACK_ROOT)/3rd-party/yml
 CFLAGS += -I.
 
 VPATH += $(BTSTACK_ROOT)/src
