@@ -81,8 +81,6 @@
 static void hci_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static void mns_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
-
-static uint16_t map_cid;
 static uint8_t upload_buffer[1000];
 
 // MAP Notification Client - MAP allows only 1 client connection
@@ -406,7 +404,7 @@ static int body_convo(char* msg_buffer, uint16_t index, int maxsize) {
 }
 
 // TODO enable to send message larger as one OBEX/MAP packet
-static uint16_t send_listing(bool header,  uint16_t first, uint16_t last) {
+static uint16_t send_listing(uint16_t map_cid, bool header,  uint16_t first, uint16_t last) {
     uint16_t max_body_size = map_access_server_get_max_body_size(map_cid);
     char listing_buffer[500]; // only for message items
     uint16_t pos = 0;
@@ -474,7 +472,7 @@ static uint16_t send_listing(bool header,  uint16_t first, uint16_t last) {
     return first;
 }
 
-static void send_get_listing_object(uint8_t* packet, uint16_t start_index, uint16_t max_list_count, uint32_t continuation) {
+static void send_get_listing_object(uint16_t map_cid, uint8_t* packet, uint16_t start_index, uint16_t max_list_count, uint32_t continuation) {
 
     uint16_t total_messages, num_msgs_selected, end_index;
 
@@ -498,7 +496,7 @@ static void send_get_listing_object(uint8_t* packet, uint16_t start_index, uint1
     }
     end_index = start_index + num_msgs_selected;
     MAP_PRINTF("[-] continuation %u, num messages %u, start index %u, end index %u\n", continuation, num_msgs_selected, start_index, end_index);
-    send_listing(continuation == 0, start_index, end_index);
+    send_listing(map_cid, continuation == 0, start_index, end_index);
 }
 
 static uint8_t connect_map_notification_client(int connection_id) {
@@ -741,16 +739,13 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                         case MAP_SUBEVENT_NOTIFICATION_EVENT:
                             log_info("Notification!");
                             break;
+
                         case MAP_SUBEVENT_CONNECTION_OPENED:
-                            status = map_subevent_connection_opened_get_status(packet);
-                            if (status){
-                                MAP_PRINTF("[!] Connection failed, status 0x%02x\n", status);
-                            } else {
-                                map_cid = map_subevent_connection_opened_get_map_cid(packet);
-                                MAP_PRINTF("[+] Connected map_cid 0x%04x\n", map_cid);
-                                map_subevent_connection_opened_get_bd_addr(packet, remote_addr);
-                            }
+                            APP_READ_16(packet, &pos, &current_map_cid);
+                            MAP_PRINTF("[+] Connected current_map_cid 0x%04x\n", current_map_cid);
+                            map_subevent_connection_opened_get_bd_addr(packet, remote_addr);
                             break;
+
                         case MAP_SUBEVENT_CONNECTION_CLOSED:
                             APP_READ_16(packet, &pos, &current_map_cid);
                             status = disconnect_map_notification_client(current_map_cid);
@@ -760,16 +755,20 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             else
                                 test_set->fp_init_test_cases(test_set);
                             break;
+
                         case MAP_SUBEVENT_OPERATION_COMPLETED:
                             MAP_PRINTF("[+] Operation complete, status 0x%02x\n",
                                    map_subevent_operation_completed_get_status(packet));
                             break;
 							
                         case MAP_SUBEVENT_FOLDER_LISTING_ITEM:
-                            map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_DatabaseIdentifier, DatabaseIdentifier);
-                            map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_FolderVersionCounter, FolderVersionCounter);
+                            APP_READ_32(packet, &pos, &continuation);
+                            APP_READ_16(packet, &pos, &current_map_cid);
+                            APP_READ_16(packet, &pos, &max_list_count);
+                            APP_READ_16(packet, &pos, &start_index);
+                            map_access_server_set_response_app_param(current_map_cid, MAP_APP_PARAM_ListingSize, &ListingSize);
                             MAP_PRINTF("[+] Get Folder listing\n");
-                            send_listing(true, 0, mas_cfg->obj_count-1 + one_object_more_or_less);
+                            send_listing(current_map_cid, true, 0, mas_cfg->obj_count-1 + one_object_more_or_less);
                             break;
 							
                         case MAP_SUBEVENT_GET_MESSAGE_LISTING:
@@ -779,12 +778,12 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             APP_READ_16(packet, &pos, &start_index);
                             uint8_t tmp_NewMessage = 0;
                             char MSETime[] = "20140612T105430+0100";
-                            map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_NewMessage, &tmp_NewMessage);
+                            map_access_server_set_response_app_param(current_map_cid, MAP_APP_PARAM_NewMessage, &tmp_NewMessage);
                             // needs ro be present for MAP/MSE/MMB/BV-35-I
-                            map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_MSETime, &MSETime[0]);
-                            map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_ListingSize, &ListingSize);
-                            map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_DatabaseIdentifier, DatabaseIdentifier);
-                            map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_FolderVersionCounter, FolderVersionCounter);
+                            map_access_server_set_response_app_param(current_map_cid, MAP_APP_PARAM_MSETime, &MSETime[0]);
+                            map_access_server_set_response_app_param(current_map_cid, MAP_APP_PARAM_ListingSize, &ListingSize);
+                            map_access_server_set_response_app_param(current_map_cid, MAP_APP_PARAM_DatabaseIdentifier, DatabaseIdentifier);
+                            map_access_server_set_response_app_param(current_map_cid, MAP_APP_PARAM_FolderVersionCounter, FolderVersionCounter);
 
                             if (cfg_start_index != 0) {
                                 start_index = cfg_start_index;
@@ -794,9 +793,9 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
 
                             // BT MAP Spec requires to skip the body if max_list_count == 0
                             if (max_list_count == 0)
-                                map_access_server_send_get_put_response(map_cid, OBEX_RESP_SUCCESS, NULL, 0, 0, NULL);
+                                map_access_server_send_get_put_response(current_map_cid, OBEX_RESP_SUCCESS, NULL, 0, 0, NULL);
                             else
-                                send_get_listing_object(packet, start_index, max_list_count, continuation);
+                                send_get_listing_object(current_map_cid, packet, start_index, max_list_count, continuation);
 
                             // some PTS tests require strange behaviour so we need a handler to modify default behaviour for GetMessageListing
                             if (mas_cfg->fGetMsgListng != NULL)
@@ -805,8 +804,10 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             break;
 
                         case MAP_SUBEVENT_GET_MESSAGE:
+                            APP_READ_32(packet, &pos, &continuation);
+                            APP_READ_16(packet, &pos, &current_map_cid);
                             MAP_PRINTF("[+] Get Message\n");
-                            send_listing(true, 0, 1);
+                            send_listing(current_map_cid, true, 0, 1);
                             break;
 
                         case MAP_SUBEVENT_PUT_MESSAGE_STATUS: {
@@ -818,14 +819,14 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             APP_READ_08(packet, &pos, &StatusValue);
                             APP_READ_STR(packet, &pos, sizeof(request_name), request_name);
                             MAP_PRINTF("[+] Put MessageStatus ObjectName:%s StatusIndicator:0x%02X StatusValue:0x%02X\n", request_name, (unsigned int)StatusIndicator, (unsigned int)StatusValue);
-                            map_access_server_send_get_put_response(map_cid, OBEX_RESP_SUCCESS, NULL, 0, 0, NULL);
+                            map_access_server_send_get_put_response(current_map_cid, OBEX_RESP_SUCCESS, NULL, 0, 0, NULL);
                             handle_set_message_status(request_name, StatusIndicator, (unsigned int)StatusValue);
                             break;
                         }
                         case MAP_SUBEVENT_PUT_MESSAGE_UPDATE:
                             APP_READ_16(packet, &pos, &current_map_cid);
                             MAP_PRINTF("[+] Put MessageUpdate\n");
-                            map_access_server_send_get_put_response(map_cid, OBEX_RESP_SUCCESS, NULL, 0, 0, NULL);
+                            map_access_server_send_get_put_response(current_map_cid, OBEX_RESP_SUCCESS, NULL, 0, 0, NULL);
                             // BT SIG Test case MAP/MSE/MMB/BV-23-I asks for one more message after
                             // issuing a "update messages" request so we just simulate one
                             one_object_more_or_less = 1;
@@ -846,7 +847,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             APP_READ_STR(packet, &pos, sizeof(request_name), request_name);
 
                             MAP_PRINTF("[+] Put Message Charset:%u Attachment:%u MessageHandle:%s\n", Charset, Attachment, MessageHandle);
-                            map_access_server_send_get_put_response(map_cid, OBEX_RESP_SUCCESS, obex_name_hdr_new_msg_handle, 0, 0, NULL);
+                            map_access_server_send_get_put_response(current_map_cid, OBEX_RESP_SUCCESS, obex_name_hdr_new_msg_handle, 0, 0, NULL);
 
                             if (mas_cfg->fPutMsg != NULL)
                                 mas_cfg->fPutMsg();
@@ -865,7 +866,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             }
                             else if (NotificationStatus == 0) {
                                 status = disconnect_map_notification_client(ConnectionID);
-                                MAP_PRINTF("[-] Disable Notifications for MAP-MNS map_cid: <%u>(0x%04u), status:%u\n", mnc.cid, mnc.cid, status);
+                                MAP_PRINTF("[-] Disable Notifications for MAP-MNS current_map_cid: <%u>(0x%04u), status:%u\n", mnc.cid, mnc.cid, status);
                             }
                             else {
                                 btstack_assert(NotificationStatus < 2);
@@ -878,7 +879,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             MAP_PRINTF("[+] Put SetNotificationFilter NotificationFilterMask old:0x%08x new:0x%08x changed:0x%08x ReadStatusChanged:%s\n",
                                 NotificationFilterMask, newNotificationFilterMask, NotificationFilterMask ^ newNotificationFilterMask, NotificationFilterMask & MAP_APP_PARAM_SUB_ReadStatusChanged ? "ON":"OFF");
                             newNotificationFilterMask = NotificationFilterMask;
-                            map_access_server_send_get_put_response(map_cid, OBEX_RESP_SUCCESS, NULL, 0, 0, NULL);
+                            map_access_server_send_get_put_response(current_map_cid, OBEX_RESP_SUCCESS, NULL, 0, 0, NULL);
                             break;
 
                         case MAP_SUBEVENT_PUT_OWNER_STATUS: {
@@ -887,7 +888,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             APP_READ_STR(packet, &pos, sizeof(LastActivity), (char*)LastActivity);
                             APP_READ_08(packet, &pos, &ChatState);
                             MAP_PRINTF("[+] Put OwnerStatus\n");
-                            map_access_server_send_get_put_response(map_cid, OBEX_RESP_SUCCESS, NULL, 0, 0, NULL);
+                            map_access_server_send_get_put_response(current_map_cid, OBEX_RESP_SUCCESS, NULL, 0, 0, NULL);
                             // BT SIG Test case MAP/MSE/MMB/BV-23-I asks for one more message after
                             // issuing a "update messages" request so we just simulate one
                             one_object_more_or_less = 1;
@@ -904,14 +905,14 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             APP_READ_STR(packet, &pos, sizeof(EndFilterPeriodEnd), (char*)EndFilterPeriodEnd);
                             APP_READ_STR(packet, &pos, sizeof(EndFilterPeriodEnd), (char*)FilterRecipient);
                             APP_READ_STR(packet, &pos, sizeof(ConversationID), (char *) ConversationID);
-                            map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_DatabaseIdentifier, DatabaseIdentifier);
-                            map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_ConversationListingVersionCounter, ConversationListingVersionCounter);
-                            map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_ListingSize, &ListingSize);
+                            map_access_server_set_response_app_param(current_map_cid, MAP_APP_PARAM_DatabaseIdentifier, DatabaseIdentifier);
+                            map_access_server_set_response_app_param(current_map_cid, MAP_APP_PARAM_ConversationListingVersionCounter, ConversationListingVersionCounter);
+                            map_access_server_set_response_app_param(current_map_cid, MAP_APP_PARAM_ListingSize, &ListingSize);
                             // BT MAP Spec requires to skip the body if max_list_count == 0
                             if (mas_cfg->obj_count == 0 && one_object_more_or_less == 0)
-                                map_access_server_send_get_put_response(map_cid, OBEX_RESP_SUCCESS, NULL, 0, 0, NULL);
+                                map_access_server_send_get_put_response(current_map_cid, OBEX_RESP_SUCCESS, NULL, 0, 0, NULL);
                             else
-                                send_get_listing_object(packet, 0, 0xffff, continuation);
+                                send_get_listing_object(current_map_cid, packet, 0, 0xffff, continuation);
                             break;
                         }
                         case MAP_SUBEVENT_GET_MAS_INSTANCE_INFORMATION: {
@@ -920,8 +921,8 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             APP_READ_32(packet, &pos, &continuation);
                             APP_READ_16(packet, &pos, &current_map_cid);
                             APP_READ_08(packet, &pos, &MASInstanceID);
-                            map_access_server_set_response_app_param(map_cid, MAP_APP_PARAM_OwnerUCI, "BTstack OwnerUCI");
-                            map_access_server_send_get_put_response(map_cid, OBEX_RESP_SUCCESS, NULL, 0, (uint16_t)sizeof(MAS_INSTANCE_INFORMATION), (uint8_t *) MAS_INSTANCE_INFORMATION);
+                            map_access_server_set_response_app_param(current_map_cid, MAP_APP_PARAM_OwnerUCI, "BTstack OwnerUCI");
+                            map_access_server_send_get_put_response(current_map_cid, OBEX_RESP_SUCCESS, NULL, 0, (uint16_t)sizeof(MAS_INSTANCE_INFORMATION), (uint8_t *) MAS_INSTANCE_INFORMATION);
                             break;
                         }
                         default:
