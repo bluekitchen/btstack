@@ -85,13 +85,8 @@ MAP/MSE/MSM/BV-11-C MAP_OLD PASS (2024-07-16) Verify that the MSE can close a MA
 MAP/MSE/MSM/BV-12-C MAP_OLD PASS (2024-07-17) Verify that the MSE can close a MAP session with at least two active MAS and one MNS without having the client send Notification Registration off for the different instances.
 
 Open tests
+MAP/MSE/MMB/BV-09-C Regression - Verify that the MSE can return a Folders Listing to the MCE.
 MAP/MSE/MNR/BV-03-C: PASS on the first run, no client_connection from the 2nd run. Same with other tests using multiple connections
-MAP/MSE/MSM/BV-10-C: WIP - 2 MAS, 1 MAC, MASInstanceID Verify that the MSE can properly respond to multiple MAP session establishment requests.
- 5.1.3.1  MASInstanceID 
- This header shall be used by the MSE to indicate the corresponding ‘MASInstanceID’ of the MAS 
- Instance (see Sections 3.1.7.2 and 7.1). As only one MNS service connection can be established from 
- the MSE device to the MCE, this parameter is required by the MCE to determine for which MAS Instance 
- this event is delivered. For further details, see Section 6.3.1. 
 MAP/MSE/MSM/BV-10-I - Transmission of OBEX_CONNECT_REQ failed unexpectedly.
 MAP/MSE/GOEP/SRMP/BI-02-C "The GET operation ended before the test case purpose could be verified.  Please increase the size of the file being requested by the GET operationr ((gt) 50 KB should be sufficient)." TODO MW: add final PUT/GET bit e.g. for MAP/MSE/GOEP/SRMP/BI-02-C
 MAP/MSE/GOEP/SRMP/BV-02-C Verify that the Server keeps waiting for GET requests until the remote device stops sending SRMP wait headers.- MTC INCONC: Unexepected GET_RSP for this testcase.
