@@ -51,7 +51,6 @@
 #include "CppUTest/CommandLineTestRunner.h"
 
 #include "classic/avdtp_util.h"
-#include "btstack.h"
 #include "classic/avdtp.h"
 #include "classic/avdtp_util.h"
 
