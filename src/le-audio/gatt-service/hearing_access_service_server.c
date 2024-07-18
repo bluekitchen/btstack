@@ -103,7 +103,7 @@ static uint8_t  has_queued_preset_records_num = 0;
 static uint16_t   has_active_preset_index_client_configuration_handle;
 static uint16_t   has_active_preset_index_client_configuration;
 
-static bool has_server_schedule_preset_changed_task(void);
+static bool has_server_schedule_task(void);
 static void has_server_can_send_now(void * context);
 
 static void has_clear_preset_record(uint8_t record_pos);
@@ -265,17 +265,6 @@ static bool preset_calc_final_state(uint8_t index, has_preset_record_t * out_pre
     return exists;
 }
 
-static bool sheduled_add_operation(void){
-    uint8_t i;
-    for (i = has_preset_records_num ; i < has_preset_records_num + has_queued_preset_records_num; i++) {
-        has_preset_record_t *preset = &has_preset_records[i];
-        if (preset->scheduled_task == HAS_NOTIFICATION_TASK_PRESET_RECORD_ADDED){
-
-        }
-    }
-    return false;
-}
-
 static has_server_connection_t * has_server_add_connection(hci_con_handle_t con_handle){
     uint8_t i;
 
@@ -364,49 +353,23 @@ static has_preset_record_t * find_regular_preset_record_with_index(uint8_t index
     return NULL;
 }
 
-static void has_schedule_control_point_notification(has_server_connection_t * connection, uint8_t task){
-    // HAS_CP_NOTIFICATION_TASK_READ_PRESETS
-
-    if (connection->con_handle == HCI_CON_HANDLE_INVALID){
-        log_debug("HCI_CON_HANDLE_INVALID");
-        has_server_reset_client(connection);
-        return;
-    }
-
-    // check if control point chr notification enabled
-    if (has_control_point_client_configuration == 0){
-        log_debug("has_control_point_client_configuration == 0");
-        return;
-    }
-
-    uint16_t scheduled_tasks = connection->scheduled_control_point_notification_tasks;
-    connection->scheduled_control_point_notification_tasks |= task;
-
-    log_debug("scheduled tasks 0x%02x", connection->scheduled_tasks);
-
-    if (scheduled_tasks == 0){
-        connection->scheduled_tasks_callback.callback = &has_server_can_send_now;
-        connection->scheduled_tasks_callback.context  = (void*) connection;
-        att_server_register_can_send_now_callback(&connection->scheduled_tasks_callback, connection->con_handle);
-    }
-}
 static uint8_t is_read_operation_valid(has_server_connection_t * connection){
     if ((connection->scheduled_control_point_notification_tasks & HAS_CP_NOTIFICATION_TASK_READ_PRESETS) != 0u){
-        return ATT_ERROR_CODE_PROCEDURE_ALREADY_IN_PROGRESS;
+        return ATT_ERROR_PROCEDURE_ALREADY_IN_PROGRESS;
     }
 
     uint8_t i;
     for (i = 0; i < has_clients_num; i++) {
         if ((has_clients[i].scheduled_control_point_notification_tasks & HAS_CP_NOTIFICATION_TASK_WRITE_PRESET) != 0u) {
-            return ATT_ERROR_CODE_PROCEDURE_ALREADY_IN_PROGRESS;
+            return ATT_ERROR_PROCEDURE_ALREADY_IN_PROGRESS;
         }
     }
 
     if ((has_preset_records_num == 0) ||
         (connection->start_index > has_preset_records[has_preset_records_num - 1].index) ){
-        return ATT_ERROR_CODE_OUT_OF_RANGE;
+        return ATT_ERROR_OUT_OF_RANGE;
     }
-    return ATT_ERROR_CODE_SUCCESS;
+    return ATT_ERROR_SUCCESS;
 }
 
 static int has_server_write_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
@@ -439,7 +402,7 @@ static int has_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
             case HAS_OPCODE_SET_ACTIVE_PRESET:
             case HAS_OPCODE_SET_ACTIVE_PRESET_SYNCHRONIZED_LOCALLY:
                 if (has_control_point_client_configuration == 0){
-                    return ATT_ERROR_CODE_CLIENT_CHARACTERISTIC_CONFIGURATION_DESCRIPTOR_IMPROPERLY_CONFIGURED;
+                    return ATT_ERROR_CLIENT_CHARACTERISTIC_CONFIGURATION_DESCRIPTOR_IMPROPERLY_CONFIGURED;
                 }
                 if (!has_valid_opcode_parameters_length(opcode, buffer_size - pos)){
                     return HAS_CONTROL_POINT_ATT_ERROR_RESPONSE_INVALID_PARAMETERS_LENGTH;
@@ -470,9 +433,9 @@ static int has_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
             case HAS_OPCODE_READ_PRESETS_REQUEST:
                 if (connection->state == HAS_SERVER_CONNECTION_STATE_PENDING_ATT_RESPONSE){
                     att_error_code = is_read_operation_valid(connection);
-                    if (att_error_code == ATT_ERROR_CODE_SUCCESS){
+                    if (att_error_code == ATT_ERROR_SUCCESS){
                         connection->state = HAS_SERVER_CONNECTION_STATE_PENDING_ATT_NOTIFICATION;
-                        has_server_schedule_preset_changed_task();
+                        has_server_schedule_task();
                     } else {
                         has_remove_task_from_queue();
                         connection->state = HAS_SERVER_CONNECTION_STATE_READY;
@@ -483,10 +446,10 @@ static int has_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
                 num_presets = buffer[pos];
 
                 if ((index == 0) || (num_presets == 0)){
-                    return ATT_ERROR_CODE_OUT_OF_RANGE;
+                    return ATT_ERROR_OUT_OF_RANGE;
                 }
 
-                if ( (has_preset_records + has_queued_preset_records_num) >= (has_preset_records_max_num - 1) ){
+                if ( (has_preset_records_num + has_queued_preset_records_num) >= (has_preset_records_max_num - 1) ){
                     return ATT_ERROR_INSUFFICIENT_RESOURCES;
                 }
 
@@ -496,14 +459,14 @@ static int has_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
                 connection->state = HAS_SERVER_CONNECTION_STATE_PENDING_ATT_RESPONSE;
 
                 has_add_cp_operation_to_queue(connection, HAS_NOTIFICATION_TASK_CONTROL_POINT_OPERATION);
-                has_server_schedule_preset_changed_task();
+                has_server_schedule_task();
                 return ATT_READ_RESPONSE_PENDING;
 
             case HAS_OPCODE_WRITE_PRESET_NAME:
                 index = buffer[pos++];
                 preset = find_regular_preset_record_with_index(index);
                 if (preset == NULL){
-                    return ATT_ERROR_CODE_OUT_OF_RANGE;
+                    return ATT_ERROR_OUT_OF_RANGE;
                 }
                 if ((preset->properties & HEARING_AID_PRESET_PROPERTIES_MASK_NAME_WRITABLE) == 0u){
                     return HAS_CONTROL_POINT_ATT_ERROR_RESPONSE_WRITE_NAME_NOT_ALLOWED;
@@ -968,12 +931,12 @@ static void has_server_can_send_now(void * context){
     }
 
     if (has_queued_preset_records_num > 0){
-        has_server_schedule_preset_changed_task();
+        has_server_schedule_task();
     }
 }
 
 
-static bool has_server_schedule_preset_changed_task(void){
+static bool has_server_schedule_task(void){
     uint8_t i;
     int16_t connection_index = -1;
     has_server_connection_t * connection;
@@ -1053,7 +1016,7 @@ uint8_t hearing_access_service_server_add_preset(uint8_t index, uint8_t properti
                                                               HAS_NOTIFICATION_TASK_PRESET_RECORD_ADDED);
 
     // schedule notifications
-    if (!has_server_schedule_preset_changed_task()){
+    if (!has_server_schedule_task()){
         uint8_t insert_pos = find_position_of_regular_preset_record_to_insert(&has_preset_records[queue_pos]);
         has_insert_preset_record(insert_pos, index, properties, name);
     }
@@ -1072,7 +1035,7 @@ uint8_t hearing_access_service_server_delete_preset(uint8_t index){
     uint8_t queue_pos = has_add_preset_record_change_to_queue(index, 0, "", HAS_NOTIFICATION_TASK_PRESET_RECORD_DELETED);
 
     // schedule notifications
-    if (!has_server_schedule_preset_changed_task()){
+    if (!has_server_schedule_task()){
         uint8_t delete_pos = find_position_of_regular_preset_record_to_delete(&has_preset_records[queue_pos]);
         has_delete_preset_record(delete_pos);
     }
@@ -1089,7 +1052,7 @@ uint8_t hearing_access_service_server_preset_record_set_active(uint8_t index){
 
     uint8_t queue_pos = has_add_preset_record_change_to_queue(index, 0, "", HAS_NOTIFICATION_TASK_PRESET_RECORD_ACTIVE);
 
-    if (!has_server_schedule_preset_changed_task()){
+    if (!has_server_schedule_task()){
         uint8_t update_pos = find_position_of_regular_preset_record_with_index(has_preset_records[queue_pos].index);
         has_set_active_preset_record(update_pos);
     }
@@ -1107,7 +1070,7 @@ uint8_t hearing_access_service_server_preset_record_set_available(uint8_t index)
     uint8_t queue_pos = has_add_preset_record_change_to_queue(index, 0, "",
                                                               HAS_NOTIFICATION_TASK_PRESET_RECORD_AVAILABLE);
 
-    if (!has_server_schedule_preset_changed_task()){
+    if (!has_server_schedule_task()){
         uint8_t update_pos = find_position_of_regular_preset_record_with_index(has_preset_records[queue_pos].index);
         has_set_active_preset_record(update_pos);
     }
@@ -1126,7 +1089,7 @@ uint8_t hearing_access_service_server_preset_record_set_unavailable(uint8_t inde
     uint8_t queue_pos = has_add_preset_record_change_to_queue(index, 0, "",
                                                               HAS_NOTIFICATION_TASK_PRESET_RECORD_UNAVAILABLE);
 
-    if (!has_server_schedule_preset_changed_task()){
+    if (!has_server_schedule_task()){
         uint8_t update_pos = find_position_of_regular_preset_record_with_index(has_preset_records[queue_pos].index);
         has_set_active_preset_record(update_pos);
     }
