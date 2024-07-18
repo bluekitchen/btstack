@@ -150,7 +150,7 @@ typedef struct {
         struct {
 // the following X-Macro (https://en.wikipedia.org/wiki/X_macro)
 // below generates request.app_param struct members
-#define PARAM_REQUST(name, tag, type, opts, descr) type name; bool name ## _was_set;
+#define PARAM_REQUST(name, tag, type, opts, descr) type name;
 #define PARAM_REQRSP PARAM_REQUST
 #define PARAM_RESPON(...)
 #define PARAM_UNUSED(...)
@@ -431,7 +431,8 @@ static uint16_t map_access_server_application_params_add_uint128hex(uint8_t* app
 
 static void map_access_server_default_headers(map_access_server_t* map_access_server) {
     (void)memset(&map_access_server->request, 0, sizeof(map_access_server->request));
-    map_access_server->request.app_params.MaxListCount = 0xffffU;
+    map_access_server->request.app_params.MaxListCount = 1024;
+    log_debug("set default headers for request");
 }
 static void map_access_server_reset_response(map_access_server_t* map_access_server) {
     (void)memset(&map_access_server->response, 0, sizeof(map_access_server->response));
@@ -644,7 +645,6 @@ static void map_access_server_app_param_callback_get(void* user_data, uint8_t ta
 #define PARAM_REQUST(name, tag, type, opts, descr) \
             case MAP_APP_PARAM_ ## name: \
                     app_param_read_ ## type (map_access_server->request.app_param_buffer, &pos, &map_access_server->request.app_params. name, sizeof(type)); \
-                    map_access_server->request.app_params. name ## _was_set = true; \
                 break;
 
 #define PARAM_REQRSP PARAM_REQUST
@@ -784,7 +784,7 @@ static void map_access_server_handle_get_put_request(map_access_server_t* mas) {
         APP_WRITE_08(event, &pos, MAP_SUBEVENT_FOLDER_LISTING_ITEM);
         APP_WRITE_32(event, &pos, mas->request.continuation);
         APP_WRITE_16(event, &pos, mas->goep_cid);
-        APP_WRITE_16(event, &pos, mas->request.app_params.MaxListCount_was_set ? mas->request.app_params.MaxListCount : 1024);
+        APP_WRITE_16(event, &pos, mas->request.app_params.MaxListCount);
         APP_WRITE_16(event, &pos, mas->request.app_params.ListStartOffset);
         APP_WRITE_LEN(event, pos);
         break;
@@ -793,7 +793,7 @@ static void map_access_server_handle_get_put_request(map_access_server_t* mas) {
         APP_WRITE_08(event, &pos, MAP_SUBEVENT_GET_MESSAGE_LISTING);
         APP_WRITE_32(event, &pos, mas->request.continuation);
         APP_WRITE_16(event, &pos, mas->goep_cid);
-        APP_WRITE_16(event, &pos, mas->request.app_params.MaxListCount_was_set ? mas->request.app_params.MaxListCount : 1024);
+        APP_WRITE_16(event, &pos, mas->request.app_params.MaxListCount);
         APP_WRITE_16(event, &pos, mas->request.app_params.ListStartOffset);
         APP_WRITE_LEN(event, pos);
         break;
@@ -802,6 +802,7 @@ static void map_access_server_handle_get_put_request(map_access_server_t* mas) {
         APP_WRITE_08(event, &pos, MAP_SUBEVENT_GET_CONVO_LISTING);
         APP_WRITE_32(event, &pos, mas->request.continuation);
         APP_WRITE_16(event, &pos, mas->goep_cid);
+        APP_WRITE_16(event, &pos, mas->request.app_params.MaxListCount);
         APP_WRITE_STR(event, &pos, sizeof(mas->request.app_params.FilterPeriodBegin), (char*)mas->request.app_params.FilterPeriodBegin);
         APP_WRITE_STR(event, &pos, sizeof(mas->request.app_params.EndFilterPeriodEnd), (char*)mas->request.app_params.EndFilterPeriodEnd);
         APP_WRITE_STR(event, &pos, sizeof(mas->request.app_params.EndFilterPeriodEnd), (char*)mas->request.app_params.FilterRecipient);
