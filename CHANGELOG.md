@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 - PBAP Client: allow to set start offset and max list count for pull phonebook operation
+- PBAP Client: support multiple parallel connections
 
 ### Fixed
 - RFCOMM: shut down multiplexer after closing last channel instead of multiplexer idle timer

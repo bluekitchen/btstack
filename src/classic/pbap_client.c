@@ -1080,7 +1080,7 @@ void pbap_client_init(void){
 void pbap_client_deinit(void){
 }
 
-static uint8_t pbap_client_connect(pbap_client_t * client, btstack_packet_handler_t handler, bd_addr_t addr, uint16_t * out_cid) {
+uint8_t pbap_client_connect(pbap_client_t * client, btstack_packet_handler_t handler, bd_addr_t addr, uint16_t * out_cid) {
     client->state = PBAP_CLIENT_W4_GOEP_CONNECTION;
     client->client_handler = handler;
     client->vcard_selector = 0;

@@ -172,12 +172,33 @@ typedef struct pbap_client {
 void pbap_client_init(void);
 
 /**
+ * @brief Create PBAP connection to a Phone Book Server (PSE) server on a remote device.
+ * If the server requires authentication, a PBAP_SUBEVENT_AUTHENTICATION_REQUEST is emitted, which
+ * can be answered with pbap_authentication_password(..).
+ * The status of PBAP connection establishment is reported via PBAP_SUBEVENT_CONNECTION_OPENED event,
+ * i.e. on success status field is set to ERROR_CODE_SUCCESS.
+ *
+ * This function allows for multiple parallel connections.
+ *
+ * @param client storage for connection state. Must stay valid until connection closes
+ * @param handler
+ * @param addr
+ * @param out_cid to use for further commands
+ * @return status ERROR_CODE_SUCCESS on success, otherwise BTSTACK_MEMORY_ALLOC_FAILED if PBAP or GOEP connection already exists.
+ */
+
+uint8_t pbap_client_connect(pbap_client_t * client, btstack_packet_handler_t handler, bd_addr_t addr, uint16_t * out_cid);
+
+/**
  * @brief Create PBAP connection to a Phone Book Server (PSE) server on a remote device. 
  * If the server requires authentication, a PBAP_SUBEVENT_AUTHENTICATION_REQUEST is emitted, which
  * can be answered with pbap_authentication_password(..).
  * The status of PBAP connection establishment is reported via PBAP_SUBEVENT_CONNECTION_OPENED event, 
  * i.e. on success status field is set to ERROR_CODE_SUCCESS.
- *    
+ *
+ * This function uses a single pbap_client_t instance and can only be used for a single connection.
+ * Fur multiple parallel connections, use pbap_client_connect.
+ *
  * @param handler 
  * @param addr
  * @param out_cid to use for further commands
