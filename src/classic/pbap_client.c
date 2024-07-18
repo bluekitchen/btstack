@@ -321,53 +321,51 @@ static void pbap_client_yml_append_character(yxml_t * xml_parser, char * buffer,
     buffer[zero_pos] = '\0';
 }
 
-static void pbap_client_process_vcard_list_body(const uint8_t * data, uint16_t data_len){
-
-    pbap_client_t * pbap_client = pbap_client_singleton_pointer;
+static void pbap_client_process_vcard_list_body(pbap_client_t *client, const uint8_t *data, uint16_t data_len) {
 
     while (data_len--) {
-        yxml_ret_t r = yxml_parse(&pbap_client->xml_parser, *data++);
+        yxml_ret_t r = yxml_parse(&client->xml_parser, *data++);
         switch (r) {
             case YXML_ELEMSTART:
-                pbap_client->parser_card_found = strcmp("card", pbap_client->xml_parser.elem) == 0;
+                client->parser_card_found = strcmp("card", client->xml_parser.elem) == 0;
                 break;
             case YXML_ELEMEND:
-                if (pbap_client->parser_card_found) {
-                    pbap_client_emit_card_result_event(pbap_client, pbap_client->parser_name,
-                                                       pbap_client->parser_handle);
+                if (client->parser_card_found) {
+                    pbap_client_emit_card_result_event(client, client->parser_name,
+                                                       client->parser_handle);
                 }
-                pbap_client->parser_card_found = false;
+                client->parser_card_found = false;
                 break;
             case YXML_ATTRSTART:
-                if (!pbap_client->parser_card_found) break;
-                if (strcmp("name", pbap_client->xml_parser.attr) == 0) {
-                    pbap_client->parser_name_found = true;
-                    pbap_client->parser_name[0] = 0;
+                if (!client->parser_card_found) break;
+                if (strcmp("name", client->xml_parser.attr) == 0) {
+                    client->parser_name_found = true;
+                    client->parser_name[0] = 0;
                     break;
                 }
-                if (strcmp("handle", pbap_client->xml_parser.attr) == 0) {
-                    pbap_client->parser_handle_found = true;
-                    pbap_client->parser_handle[0] = 0;
+                if (strcmp("handle", client->xml_parser.attr) == 0) {
+                    client->parser_handle_found = true;
+                    client->parser_handle[0] = 0;
                     break;
                 }
                 break;
             case YXML_ATTRVAL:
-                if (pbap_client->parser_name_found) {
-                    pbap_client_yml_append_character(&pbap_client->xml_parser,
-                                                     pbap_client->parser_name,
-                                                     sizeof(pbap_client->parser_name));
+                if (client->parser_name_found) {
+                    pbap_client_yml_append_character(&client->xml_parser,
+                                                     client->parser_name,
+                                                     sizeof(client->parser_name));
                     break;
                 }
-                if (pbap_client->parser_handle_found) {
-                    pbap_client_yml_append_character(&pbap_client->xml_parser,
-                                                     pbap_client->parser_handle,
-                                                     sizeof(pbap_client->parser_handle));
+                if (client->parser_handle_found) {
+                    pbap_client_yml_append_character(&client->xml_parser,
+                                                     client->parser_handle,
+                                                     sizeof(client->parser_handle));
                     break;
                 }
                 break;
             case YXML_ATTREND:
-                pbap_client->parser_name_found = false;
-                pbap_client->parser_handle_found = false;
+                client->parser_name_found = false;
+                client->parser_handle_found = false;
                 break;
             default:
                 break;
@@ -424,7 +422,7 @@ static void pbap_client_parser_callback_get_operation(void * user_data, uint8_t 
                     }
                     break;
                 case PBAP_CLIENT_W4_GET_CARD_LIST_COMPLETE:
-                    pbap_client_process_vcard_list_body(data_buffer, data_len);
+                    pbap_client_process_vcard_list_body(client, data_buffer, data_len);
                     break;
                 default:
                     btstack_unreachable();
@@ -554,7 +552,7 @@ static void pbap_client_prepare_get_operation(pbap_client_t * client){
     client->obex_parser_waiting_for_response = true;
 }
 
-static void pbap_handle_can_send_now(void){
+static void pbap_handle_can_send_now(pbap_client_t *pbap_client) {
     uint16_t path_element_start;
     uint16_t path_element_len;
     const char * path_element;
@@ -563,8 +561,6 @@ static void pbap_handle_can_send_now(void){
     uint16_t pos;
 
     MD5_CTX md5_ctx;
-
-    pbap_client_t * pbap_client = pbap_client_singleton_pointer;
 
     if (pbap_client->abort_operation){
         pbap_client->abort_operation = 0;
@@ -846,7 +842,7 @@ static void pbap_packet_handler_hci(uint8_t *packet, uint16_t size){
                     pbap_client_emit_connection_closed_event(pbap_client);
                     break;
                 case GOEP_SUBEVENT_CAN_SEND_NOW:
-                    pbap_handle_can_send_now();
+                    pbap_handle_can_send_now(pbap_client);
                     break;
                 default:
                     break;
@@ -857,102 +853,101 @@ static void pbap_packet_handler_hci(uint8_t *packet, uint16_t size){
     }
 }
 
-static void pbap_packet_handler_goep(uint8_t *packet, uint16_t size){
-    pbap_client_t * pbap_client = pbap_client_singleton_pointer;
+static void pbap_packet_handler_goep(pbap_client_t *client, uint8_t *packet, uint16_t size) {
 
-    if (pbap_client->obex_parser_waiting_for_response == false) return;
+    if (client->obex_parser_waiting_for_response == false) return;
 
     obex_parser_object_state_t parser_state;
-    parser_state = obex_parser_process_data(&pbap_client->obex_parser, packet, size);
+    parser_state = obex_parser_process_data(&client->obex_parser, packet, size);
     if (parser_state == OBEX_PARSER_OBJECT_STATE_COMPLETE){
-        pbap_client->obex_parser_waiting_for_response = false;
+        client->obex_parser_waiting_for_response = false;
         obex_parser_operation_info_t op_info;
-        obex_parser_get_operation_info(&pbap_client->obex_parser, &op_info);
-        switch (pbap_client->state){
+        obex_parser_get_operation_info(&client->obex_parser, &op_info);
+        switch (client->state){
             case PBAP_CLIENT_W4_CONNECT_RESPONSE:
                 switch (op_info.response_code) {
                     case OBEX_RESP_SUCCESS:
-                        pbap_client->state = PBAP_CLIENT_CONNECTED;
-                        pbap_client->vcard_selector_supported = pbap_client_supported_features & goep_client_get_pbap_supported_features( pbap_client->goep_cid) & PBAP_SUPPORTED_FEATURES_VCARD_SELECTING;
-                        pbap_client_emit_connected_event(pbap_client, ERROR_CODE_SUCCESS);
+                        client->state = PBAP_CLIENT_CONNECTED;
+                        client->vcard_selector_supported = pbap_client_supported_features & goep_client_get_pbap_supported_features(client->goep_cid) & PBAP_SUPPORTED_FEATURES_VCARD_SELECTING;
+                        pbap_client_emit_connected_event(client, ERROR_CODE_SUCCESS);
                         break;
                     case OBEX_RESP_UNAUTHORIZED:
-                        pbap_client->state = PBAP_CLIENT_W4_USER_AUTHENTICATION;
-                        pbap_client_emit_authentication_event(pbap_client, pbap_client->obex_auth_parser.authentication_options);
+                        client->state = PBAP_CLIENT_W4_USER_AUTHENTICATION;
+                        pbap_client_emit_authentication_event(client, client->obex_auth_parser.authentication_options);
                         break;
                     default:
                         log_info("pbap: obex connect failed, result 0x%02x", packet[0]);
-                        pbap_client->state = PBAP_CLIENT_INIT;
-                        pbap_client_emit_connected_event(pbap_client, OBEX_CONNECT_FAILED);
+                        client->state = PBAP_CLIENT_INIT;
+                        pbap_client_emit_connected_event(client, OBEX_CONNECT_FAILED);
                         break;
                 }
                 break;
             case PBAP_CLIENT_W4_DISCONNECT_RESPONSE:
-                goep_client_disconnect(pbap_client->goep_cid);
+                goep_client_disconnect(client->goep_cid);
                 break;
             case PBAP_CLIENT_W4_SET_PATH_ROOT_COMPLETE:
             case PBAP_CLIENT_W4_SET_PATH_ELEMENT_COMPLETE:
                 switch (op_info.response_code) {
                     case OBEX_RESP_SUCCESS:
                         // more path?
-                        if (pbap_client->current_folder[pbap_client->set_path_offset]) {
-                            pbap_client->state = PBAP_CLIENT_W2_SET_PATH_ELEMENT;
-                            goep_client_request_can_send_now(pbap_client->goep_cid);
+                        if (client->current_folder[client->set_path_offset]) {
+                            client->state = PBAP_CLIENT_W2_SET_PATH_ELEMENT;
+                            goep_client_request_can_send_now(client->goep_cid);
                         } else {
-                            pbap_client->current_folder = NULL;
-                            pbap_client->state = PBAP_CLIENT_CONNECTED;
-                            pbap_client_emit_operation_complete_event(pbap_client, ERROR_CODE_SUCCESS);
+                            client->current_folder = NULL;
+                            client->state = PBAP_CLIENT_CONNECTED;
+                            pbap_client_emit_operation_complete_event(client, ERROR_CODE_SUCCESS);
                         }
                         break;
                     case OBEX_RESP_NOT_FOUND:
-                        pbap_client->state = PBAP_CLIENT_CONNECTED;
-                        pbap_client_emit_operation_complete_event(pbap_client, OBEX_NOT_FOUND);
+                        client->state = PBAP_CLIENT_CONNECTED;
+                        pbap_client_emit_operation_complete_event(client, OBEX_NOT_FOUND);
                         break;
                     default:
-                        pbap_client->state = PBAP_CLIENT_CONNECTED;
-                        pbap_client_emit_operation_complete_event(pbap_client, OBEX_UNKNOWN_ERROR);
+                        client->state = PBAP_CLIENT_CONNECTED;
+                        pbap_client_emit_operation_complete_event(client, OBEX_UNKNOWN_ERROR);
                         break;
                 }
                 break;
             case PBAP_CLIENT_W4_PHONEBOOK:
                 switch (op_info.response_code) {
                     case OBEX_RESP_CONTINUE:
-                        pbap_client_handle_srm_headers(pbap_client);
-                        if (pbap_client->srm_state == SRM_ENABLED) {
+                        pbap_client_handle_srm_headers(client);
+                        if (client->srm_state == SRM_ENABLED) {
                             // prepare response
-                            pbap_client_prepare_get_operation(pbap_client);
+                            pbap_client_prepare_get_operation(client);
                             break;
                         }
-                        pbap_client->state = PBAP_CLIENT_W2_PULL_PHONEBOOK;
-                        if (!pbap_client->flow_control_enabled || !pbap_client->flow_wait_for_user ||
-                            pbap_client->flow_next_triggered) {
-                            goep_client_request_can_send_now(pbap_client->goep_cid);
+                        client->state = PBAP_CLIENT_W2_PULL_PHONEBOOK;
+                        if (!client->flow_control_enabled || !client->flow_wait_for_user ||
+                            client->flow_next_triggered) {
+                            goep_client_request_can_send_now(client->goep_cid);
                         }
                         break;
                     case OBEX_RESP_SUCCESS:
-                        pbap_client->state = PBAP_CLIENT_CONNECTED;
-                        pbap_client_emit_operation_complete_event(pbap_client, ERROR_CODE_SUCCESS);
+                        client->state = PBAP_CLIENT_CONNECTED;
+                        pbap_client_emit_operation_complete_event(client, ERROR_CODE_SUCCESS);
                         break;
                     default:
                         log_info("unexpected response 0x%02x", packet[0]);
-                        pbap_client->state = PBAP_CLIENT_CONNECTED;
-                        pbap_client_emit_operation_complete_event(pbap_client, OBEX_UNKNOWN_ERROR);
+                        client->state = PBAP_CLIENT_CONNECTED;
+                        pbap_client_emit_operation_complete_event(client, OBEX_UNKNOWN_ERROR);
                         break;
                 }
                 break;
             case PBAP_CLIENT_W4_GET_PHONEBOOK_SIZE_COMPLETE:
                 switch (op_info.response_code) {
                     case OBEX_RESP_SUCCESS:
-                        if (pbap_client->phonebook_size_parser.have_size) {
-                            uint16_t phonebook_size = big_endian_read_16(pbap_client->phonebook_size_parser.size_buffer, 0);
-                            pbap_client->state = PBAP_CLIENT_CONNECTED;
-                            pbap_client_emit_phonebook_size_event(pbap_client, 0, phonebook_size);
+                        if (client->phonebook_size_parser.have_size) {
+                            uint16_t phonebook_size = big_endian_read_16(client->phonebook_size_parser.size_buffer, 0);
+                            client->state = PBAP_CLIENT_CONNECTED;
+                            pbap_client_emit_phonebook_size_event(client, 0, phonebook_size);
                             break;
                         }
                         /* fall through */
                     default:
-                        pbap_client->state = PBAP_CLIENT_CONNECTED;
-                        pbap_client_emit_phonebook_size_event(pbap_client, OBEX_UNKNOWN_ERROR, 0);
+                        client->state = PBAP_CLIENT_CONNECTED;
+                        pbap_client_emit_phonebook_size_event(client, OBEX_UNKNOWN_ERROR, 0);
                         break;
                 }
                 break;
@@ -960,61 +955,61 @@ static void pbap_packet_handler_goep(uint8_t *packet, uint16_t size){
                 switch (op_info.response_code) {
                     case OBEX_RESP_CONTINUE:
                         // handle continue
-                        pbap_client_handle_srm_headers(pbap_client);
-                        if (pbap_client->srm_state == SRM_ENABLED) {
+                        pbap_client_handle_srm_headers(client);
+                        if (client->srm_state == SRM_ENABLED) {
                             // prepare response
-                            pbap_client_prepare_get_operation(pbap_client);
+                            pbap_client_prepare_get_operation(client);
                             break;
                         }
-                        pbap_client->state = PBAP_CLIENT_W2_GET_CARD_LIST;
-                        goep_client_request_can_send_now(pbap_client->goep_cid);
+                        client->state = PBAP_CLIENT_W2_GET_CARD_LIST;
+                        goep_client_request_can_send_now(client->goep_cid);
                         break;
                     case OBEX_RESP_SUCCESS:
                         // done
-                        pbap_client->state = PBAP_CLIENT_CONNECTED;
-                        pbap_client_emit_operation_complete_event(pbap_client, ERROR_CODE_SUCCESS);
+                        client->state = PBAP_CLIENT_CONNECTED;
+                        pbap_client_emit_operation_complete_event(client, ERROR_CODE_SUCCESS);
                         break;
                     case OBEX_RESP_NOT_ACCEPTABLE:
-                        pbap_client->state = PBAP_CLIENT_CONNECTED;
-                        pbap_client_emit_operation_complete_event(pbap_client, OBEX_NOT_ACCEPTABLE);
+                        client->state = PBAP_CLIENT_CONNECTED;
+                        pbap_client_emit_operation_complete_event(client, OBEX_NOT_ACCEPTABLE);
                         break;
                     default:
                         log_info("unexpected response 0x%02x", packet[0]);
-                        pbap_client->state = PBAP_CLIENT_CONNECTED;
-                        pbap_client_emit_operation_complete_event(pbap_client, OBEX_UNKNOWN_ERROR);
+                        client->state = PBAP_CLIENT_CONNECTED;
+                        pbap_client_emit_operation_complete_event(client, OBEX_UNKNOWN_ERROR);
                         break;
                 }
                 break;
             case PBAP_CLIENT_W4_GET_CARD_ENTRY_COMPLETE:
                 switch (op_info.response_code) {
                     case OBEX_RESP_CONTINUE:
-                        pbap_client_handle_srm_headers(pbap_client);
-                        if (pbap_client->srm_state == SRM_ENABLED) {
+                        pbap_client_handle_srm_headers(client);
+                        if (client->srm_state == SRM_ENABLED) {
                             // prepare response
-                            pbap_client_prepare_get_operation(pbap_client);
+                            pbap_client_prepare_get_operation(client);
                             break;
                         }
-                        pbap_client->state = PBAP_CLIENT_W2_GET_CARD_ENTRY;
-                        goep_client_request_can_send_now(pbap_client->goep_cid);
+                        client->state = PBAP_CLIENT_W2_GET_CARD_ENTRY;
+                        goep_client_request_can_send_now(client->goep_cid);
                         break;
                     case OBEX_RESP_SUCCESS:
-                        pbap_client->state = PBAP_CLIENT_CONNECTED;
-                        pbap_client_emit_operation_complete_event(pbap_client, ERROR_CODE_SUCCESS);
+                        client->state = PBAP_CLIENT_CONNECTED;
+                        pbap_client_emit_operation_complete_event(client, ERROR_CODE_SUCCESS);
                         break;
                     case OBEX_RESP_NOT_ACCEPTABLE:
-                        pbap_client->state = PBAP_CLIENT_CONNECTED;
-                        pbap_client_emit_operation_complete_event(pbap_client, OBEX_NOT_ACCEPTABLE);
+                        client->state = PBAP_CLIENT_CONNECTED;
+                        pbap_client_emit_operation_complete_event(client, OBEX_NOT_ACCEPTABLE);
                         break;
                     default:
                         log_info("unexpected response 0x%02x", packet[0]);
-                        pbap_client->state = PBAP_CLIENT_CONNECTED;
-                        pbap_client_emit_operation_complete_event(pbap_client, OBEX_UNKNOWN_ERROR);
+                        client->state = PBAP_CLIENT_CONNECTED;
+                        pbap_client_emit_operation_complete_event(client, OBEX_UNKNOWN_ERROR);
                         break;
                 }
                 break;
             case PBAP_CLIENT_W4_ABORT_COMPLETE:
-                pbap_client->state = PBAP_CLIENT_CONNECTED;
-                pbap_client_emit_operation_complete_event(pbap_client, OBEX_ABORTED);
+                client->state = PBAP_CLIENT_CONNECTED;
+                pbap_client_emit_operation_complete_event(client, OBEX_ABORTED);
                 break;
             default:
                 btstack_unreachable();
@@ -1027,12 +1022,15 @@ static void pbap_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
     UNUSED(channel); // ok: there is no channel
     UNUSED(size);    // ok: handling own geop events
 
+    pbap_client_t * client;
+
     switch (packet_type){
         case HCI_EVENT_PACKET:
             pbap_packet_handler_hci(packet, size);
             break;
         case GOEP_DATA_PACKET:
-            pbap_packet_handler_goep(packet, size);
+            client = pbap_client_singleton_pointer;
+            pbap_packet_handler_goep(client, packet, size);
             break;
         default:
             break;
