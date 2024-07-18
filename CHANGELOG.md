@@ -20,10 +20,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - A2DP: emit stream established if peer set-up configuration
 - HIOS Client: emit disconnected event on HCI disconnect and free connection struct
 - Scan Parameter Service Client: emit disconnected event on HCI disconnect and free connection struct
-
+- PBAP Client: fix PBAP_SUBEVENT_OPERATION_COMPLETED with OBEX_DISCONNECTED for pbap_disconnect
+ 
 ### Changed
 - GAP: return command disallowed if disconnect already requested
 - GAP: improve handling of incorrectly resolved addresses in HCI_SUBEVENT_LE_CONNECTION_COMPLETE
+
 
 ## Release v1.6.1
 

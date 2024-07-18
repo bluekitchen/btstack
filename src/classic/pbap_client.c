@@ -906,6 +906,7 @@ static void pbap_packet_handler_goep(pbap_client_t *client, uint8_t *packet, uin
                 }
                 break;
             case PBAP_CLIENT_W4_DISCONNECT_RESPONSE:
+                client->state = PBAP_CLIENT_CONNECTED;
                 goep_client_disconnect(client->goep_cid);
                 break;
             case PBAP_CLIENT_W4_SET_PATH_ROOT_COMPLETE:
