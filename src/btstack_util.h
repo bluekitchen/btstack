@@ -48,6 +48,7 @@
 extern "C" {
 #endif
 
+#include <stdlib.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
@@ -88,6 +89,11 @@ extern "C" {
   * @brief returns a value with number of lowest bits set to <1>
   */
 #define N_BITS(value) ((1<<value) - 1)
+
+/**
+* @brief type independed min-macro for 3 values
+*/
+#define min3(a, b, c) (min(min(a, b), c))
 
 /**
  * @brief The device name type
