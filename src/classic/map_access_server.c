@@ -446,26 +446,10 @@ static void map_access_server_operation_complete(map_access_server_t* map_access
 
 static void map_access_server_handle_can_send_now(map_access_server_t* map_access_server) {
     uint8_t response_code;
+    uint8_t event[10];
+    uint16_t pos = 0;
+
     switch (map_access_server->state) {
-    case MAP_SERVER_STATE_SEND_CONNECT_RESPONSE_ERROR:
-        // prepare response
-        goep_server_response_create_general(map_access_server->goep_cid);
-        // next state
-        map_access_server->state = MAP_SERVER_STATE_W4_CONNECT_OPCODE;
-        // send packet
-        goep_server_execute(map_access_server->goep_cid, OBEX_RESP_BAD_REQUEST);
-        break;
-    case MAP_SERVER_STATE_SEND_CONNECT_RESPONSE_SUCCESS:
-        // prepare response
-        goep_server_response_create_connect(map_access_server->goep_cid, OBEX_VERSION, 0, OBEX_MAX_PACKETLEN_DEFAULT);
-        goep_server_header_add_who(map_access_server->goep_cid, map_uuid);
-        // next state
-        map_access_server->map_access_server_dir = MAS_FOLDER_ROOT;
-        map_access_server->map_folder = MAS_FOLDER_INVALID;
-        map_access_server_operation_complete(map_access_server);
-        // send packet
-        goep_server_execute(map_access_server->goep_cid, OBEX_RESP_SUCCESS);
-        break;
     case MAP_SERVER_STATE_SEND_INTERNAL_RESPONSE:
         // prepare response
         goep_server_response_create_general(map_access_server->goep_cid);
@@ -500,6 +484,34 @@ static void map_access_server_handle_can_send_now(map_access_server_t* map_acces
             map_access_server_handle_get_put_request(map_access_server);
         }
         break;
+    case MAP_SERVER_STATE_SEND_CONNECT_RESPONSE_ERROR:
+        // prepare response
+        goep_server_response_create_general(map_access_server->goep_cid);
+        // next state
+        map_access_server->state = MAP_SERVER_STATE_W4_CONNECT_OPCODE;
+        // send packet
+        goep_server_execute(map_access_server->goep_cid, OBEX_RESP_BAD_REQUEST);
+        break;
+    case MAP_SERVER_STATE_SEND_CONNECT_RESPONSE_SUCCESS:
+        // prepare response
+        goep_server_response_create_connect(map_access_server->goep_cid, OBEX_VERSION, 0, OBEX_MAX_PACKETLEN_DEFAULT);
+        goep_server_header_add_who(map_access_server->goep_cid, map_uuid);
+        // next state
+        map_access_server->map_access_server_dir = MAS_FOLDER_ROOT;
+        map_access_server->map_folder = MAS_FOLDER_INVALID;
+        map_access_server_operation_complete(map_access_server);
+        // send packet
+        goep_server_execute(map_access_server->goep_cid, OBEX_RESP_SUCCESS);
+        
+        // emit event
+        APP_WRITE_08(event, &pos, HCI_EVENT_MAP_META);
+        APP_WRITE_08(event, &pos, 0);
+        APP_WRITE_08(event, &pos, MAP_SUBEVENT_CONNECTION_CLOSED);
+        APP_WRITE_16(event, &pos, map_access_server->goep_cid);
+        APP_WRITE_LEN(event, pos);
+        (*map_access_server_user_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
+        break;
+
     case MAP_SERVER_STATE_SEND_DISCONNECT_RESPONSE:
     {
         // cache data
@@ -514,12 +526,11 @@ static void map_access_server_handle_can_send_now(map_access_server_t* map_acces
         goep_server_execute(goep_cid, OBEX_RESP_SUCCESS);
 
         // emit event
-        uint8_t event[2 + 3];
-        uint16_t pos = 0;
         APP_WRITE_08(event, &pos, HCI_EVENT_MAP_META);
         APP_WRITE_08(event, &pos, 0);
         APP_WRITE_08(event, &pos, MAP_SUBEVENT_CONNECTION_CLOSED);
         APP_WRITE_16(event, &pos, map_access_server->goep_cid);
+        APP_WRITE_LEN(event, pos);
         (*map_access_server_user_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
         break;
     }
