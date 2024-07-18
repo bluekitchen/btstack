@@ -83,9 +83,10 @@ MAP/MSE/MSM/BV-10-C MAP_OLD&MAP_NEW: PASS (2024-07-16) Verify that the MSE can p
 MAP/MSE/MSM/BV-10-C MAP_OLD PASS (2024-07-16) Verify that the MSE can properly respond to multiple MAP session establishment requests.
 MAP/MSE/MSM/BV-11-C MAP_OLD PASS (2024-07-16) Verify that the MSE can close a MAP session with at least two MAS and one MNS active.
 MAP/MSE/MSM/BV-12-C MAP_OLD PASS (2024-07-17) Verify that the MSE can close a MAP session with at least two active MAS and one MNS without having the client send Notification Registration off for the different instances.
+MAP/MSE/MMB/BV-09-C MAP_OLD PASS (2024-07-18) Verify that the MSE can return a Folders Listing to the MCE.
+
 
 Open tests
-MAP/MSE/MMB/BV-09-C Regression - Verify that the MSE can return a Folders Listing to the MCE.
 MAP/MSE/MNR/BV-03-C: PASS on the first run, no client_connection from the 2nd run. Same with other tests using multiple connections
 MAP/MSE/MSM/BV-10-I - Transmission of OBEX_CONNECT_REQ failed unexpectedly.
 MAP/MSE/GOEP/SRMP/BI-02-C "The GET operation ended before the test case purpose could be verified.  Please increase the size of the file being requested by the GET operationr ((gt) 50 KB should be sufficient)." TODO MW: add final PUT/GET bit e.g. for MAP/MSE/GOEP/SRMP/BI-02-C
