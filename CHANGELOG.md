@@ -22,7 +22,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 - GAP: return command disallowed if disconnect already requested
-
+- GAP: improve handling of incorrectly resolved addresses in HCI_SUBEVENT_LE_CONNECTION_COMPLETE
 
 ## Release v1.6.1
 

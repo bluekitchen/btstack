@@ -3343,6 +3343,10 @@ static void hci_create_gap_connection_complete_event(const uint8_t * hci_event, 
             memset(&gap_event[14], 0, 12);
             memcpy(&gap_event[26], &hci_event[14], 7);
             memset(&gap_event[33], 0xff, 3);
+            // Some Controllers incorrectly report a resolved identity address in HCI_SUBEVENT_LE_CONNECTION_COMPLETE.
+            // If an address is resolved, we're working with it, but this event does not provide it.
+            // As a workaround, we map identity addresses to regular addresses.
+            gap_event[7] = gap_event[7] & 1;
             break;
         case HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE_V1:
             memcpy(&gap_event[3], &hci_event[3], 30);
