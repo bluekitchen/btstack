@@ -710,31 +710,32 @@ static void map_access_server_parser_callback_get(void* user_data, uint8_t heade
 }
 
 
-// sends MAP_SUBEVENT_xyz messages to the application using serialized stack-internal app-parameters
-static void map_access_server_handle_get_put_request(map_access_server_t* map_access_server) {
-    map_access_server_handle_srm_headers(map_access_server);
 
-    if (map_access_server->srm_state == SRM_SEND_CONFIRM_WAIT) {
-        map_access_server->state = MAP_SERVER_STATE_SEND_INTERNAL_RESPONSE;
-        //map_access_server->response.code = OBEX_RESP_CONTINUE;
-        map_access_server->obex_srm.srm_value = OBEX_SRM_ENABLE;
-        goep_server_request_can_send_now(map_access_server->goep_cid);
+// sends MAP_SUBEVENT_xyz messages to the application using serialized stack-internal app-parameters
+static void map_access_server_handle_get_put_request(map_access_server_t* mas) {
+    map_access_server_handle_srm_headers(mas);
+
+    if (mas->srm_state == SRM_SEND_CONFIRM_WAIT) {
+        mas->state = MAP_SERVER_STATE_SEND_INTERNAL_RESPONSE;
+        //mas->response.code = OBEX_RESP_CONTINUE;
+        mas->obex_srm.srm_value = OBEX_SRM_ENABLE;
+        goep_server_request_can_send_now(mas->goep_cid);
         return;
     }
 
-    map_access_server->request.object_type = map_access_server_parse_object_type(map_access_server, map_access_server->request.type);
-    mas_folder_t folder = map_access_server->map_access_server_dir;
-    //uint16_t name_len = (uint16_t)strlen(map_access_server->request.name);
-    switch (map_access_server->request.object_type) {
+    mas->request.object_type = map_access_server_parse_object_type(mas, mas->request.type);
+    mas_folder_t folder = mas->map_access_server_dir;
+    //uint16_t name_len = (uint16_t)strlen(mas->request.name);
+    switch (mas->request.object_type) {
     case MAP_OBJECT_TYPE_INVALID:
         // unknown object type
-        map_access_server->state = MAP_SERVER_STATE_SEND_INTERNAL_RESPONSE;
-        map_access_server->response.code = OBEX_RESP_BAD_REQUEST;
-        goep_server_request_can_send_now(map_access_server->goep_cid);
+        mas->state = MAP_SERVER_STATE_SEND_INTERNAL_RESPONSE;
+        mas->response.code = OBEX_RESP_BAD_REQUEST;
+        goep_server_request_can_send_now(mas->goep_cid);
         return;
 
     case MAP_OBJECT_TYPE_GET_MSG_LISTING:
-        folder = map_access_server_get_folder_by_path(map_access_server->request.name);
+        folder = map_access_server_get_folder_by_path(mas->request.name);
         break;
 
     case MAP_OBJECT_TYPE_GET_MESSAGE:
@@ -755,9 +756,9 @@ static void map_access_server_handle_get_put_request(map_access_server_t* map_ac
     }
 
     if (folder == MAS_FOLDER_INVALID) {
-        map_access_server->state = MAP_SERVER_STATE_SEND_INTERNAL_RESPONSE;
-        map_access_server->response.code = OBEX_RESP_NOT_FOUND;
-        goep_server_request_can_send_now(map_access_server->goep_cid);
+        mas->state = MAP_SERVER_STATE_SEND_INTERNAL_RESPONSE;
+        mas->response.code = OBEX_RESP_NOT_FOUND;
+        goep_server_request_can_send_now(mas->goep_cid);
         return;
     }
 
@@ -766,95 +767,99 @@ static void map_access_server_handle_get_put_request(map_access_server_t* map_ac
     uint16_t pos = 0;
     APP_WRITE_08(event, &pos, HCI_EVENT_MAP_META);
     pos = 2; // skip size header, its written at the end
-    switch (map_access_server->request.object_type) {
+    switch (mas->request.object_type) {
 
     case MAP_OBJECT_TYPE_GET_FOLDER_LISTING:
         APP_WRITE_08(event, &pos, MAP_SUBEVENT_FOLDER_LISTING_ITEM);
-        APP_WRITE_16(event, &pos, map_access_server->goep_cid);
+        APP_WRITE_32(event, &pos, mas->request.continuation);
+        APP_WRITE_16(event, &pos, mas->goep_cid);
+        APP_WRITE_16(event, &pos, mas->request.app_params.MaxListCount_was_set ? mas->request.app_params.MaxListCount : 1024);
+        APP_WRITE_16(event, &pos, mas->request.app_params.ListStartOffset);
         APP_WRITE_LEN(event, pos);
         break;
 
     case MAP_OBJECT_TYPE_GET_MSG_LISTING:
         APP_WRITE_08(event, &pos, MAP_SUBEVENT_GET_MESSAGE_LISTING);
-        APP_WRITE_32(event, &pos, map_access_server->request.continuation);
-        APP_WRITE_16(event, &pos, map_access_server->goep_cid);
-        APP_WRITE_16(event, &pos, map_access_server->request.app_params.MaxListCount);
-        APP_WRITE_16(event, &pos, map_access_server->request.app_params.ListStartOffset);
+        APP_WRITE_32(event, &pos, mas->request.continuation);
+        APP_WRITE_16(event, &pos, mas->goep_cid);
+        APP_WRITE_16(event, &pos, mas->request.app_params.MaxListCount_was_set ? mas->request.app_params.MaxListCount : 1024);
+        APP_WRITE_16(event, &pos, mas->request.app_params.ListStartOffset);
         APP_WRITE_LEN(event, pos);
         break;
 
     case MAP_OBJECT_TYPE_GET_CONVO_LISTING:
         APP_WRITE_08(event, &pos, MAP_SUBEVENT_GET_CONVO_LISTING);
-        APP_WRITE_32(event, &pos, map_access_server->request.continuation);
-        APP_WRITE_16(event, &pos, map_access_server->goep_cid);
-        APP_WRITE_STR(event, &pos, sizeof(map_access_server->request.app_params.FilterPeriodBegin), (char*)map_access_server->request.app_params.FilterPeriodBegin);
-        APP_WRITE_STR(event, &pos, sizeof(map_access_server->request.app_params.EndFilterPeriodEnd), (char*)map_access_server->request.app_params.EndFilterPeriodEnd);
-        APP_WRITE_STR(event, &pos, sizeof(map_access_server->request.app_params.EndFilterPeriodEnd), (char*)map_access_server->request.app_params.FilterRecipient);
-        APP_WRITE_STR(event, &pos, sizeof(map_access_server->request.app_params.ConversationID),(char*)map_access_server->request.app_params.ConversationID);
+        APP_WRITE_32(event, &pos, mas->request.continuation);
+        APP_WRITE_16(event, &pos, mas->goep_cid);
+        APP_WRITE_STR(event, &pos, sizeof(mas->request.app_params.FilterPeriodBegin), (char*)mas->request.app_params.FilterPeriodBegin);
+        APP_WRITE_STR(event, &pos, sizeof(mas->request.app_params.EndFilterPeriodEnd), (char*)mas->request.app_params.EndFilterPeriodEnd);
+        APP_WRITE_STR(event, &pos, sizeof(mas->request.app_params.EndFilterPeriodEnd), (char*)mas->request.app_params.FilterRecipient);
+        APP_WRITE_STR(event, &pos, sizeof(mas->request.app_params.ConversationID),(char*)mas->request.app_params.ConversationID);
         APP_WRITE_LEN(event, pos);
         break;
 
     case MAP_OBJECT_TYPE_GET_MAS_INSTANCE_INFORMATION:
         APP_WRITE_08(event, &pos, MAP_SUBEVENT_GET_MAS_INSTANCE_INFORMATION);
-        APP_WRITE_32(event, &pos, map_access_server->request.continuation);
-        APP_WRITE_16(event, &pos, map_access_server->goep_cid);
-        APP_WRITE_08(event, &pos, map_access_server->request.app_params.MASInstanceID)
+        APP_WRITE_32(event, &pos, mas->request.continuation);
+        APP_WRITE_16(event, &pos, mas->goep_cid);
+        APP_WRITE_08(event, &pos, mas->request.app_params.MASInstanceID)
         APP_WRITE_LEN(event, pos);
         break;
 
     case MAP_OBJECT_TYPE_GET_MESSAGE:
         APP_WRITE_08(event, &pos, MAP_SUBEVENT_GET_MESSAGE);
-        APP_WRITE_16(event, &pos, map_access_server->goep_cid);
+        APP_WRITE_32(event, &pos, mas->request.continuation);
+        APP_WRITE_16(event, &pos, mas->goep_cid);
         APP_WRITE_LEN(event, pos);
         break;
 
     case MAP_OBJECT_TYPE_PUT_MESSAGE_STATUS:
         APP_WRITE_08(event, &pos, MAP_SUBEVENT_PUT_MESSAGE_STATUS);
-        APP_WRITE_16(event, &pos, map_access_server->goep_cid);
-        APP_WRITE_08(event, &pos, map_access_server->request.app_params.StatusIndicator);
-        APP_WRITE_08(event, &pos, map_access_server->request.app_params.StatusValue);
-        APP_WRITE_STR(event, &pos, sizeof(event) - pos, map_access_server->request.name);
+        APP_WRITE_16(event, &pos, mas->goep_cid);
+        APP_WRITE_08(event, &pos, mas->request.app_params.StatusIndicator);
+        APP_WRITE_08(event, &pos, mas->request.app_params.StatusValue);
+        APP_WRITE_STR(event, &pos, sizeof(event) - pos, mas->request.name);
         APP_WRITE_LEN(event, pos);
         break;
 
     case MAP_OBJECT_TYPE_PUT_MESSAGE:
         APP_WRITE_08(event, &pos, MAP_SUBEVENT_PUT_MESSAGE);
-        APP_WRITE_16(event, &pos, map_access_server->goep_cid);
-        APP_WRITE_08(event, &pos, map_access_server->request.app_params.Charset);
-        APP_WRITE_08(event, &pos, map_access_server->request.app_params.Attachment);
-        APP_WRITE_08(event, &pos, map_access_server->request.app_params.ModifyText);
-        APP_WRITE_STR(event, &pos, sizeof(map_access_server->request.app_params.MessageHandle), (char*)map_access_server->request.app_params.MessageHandle);
-        APP_WRITE_STR(event, &pos, sizeof(event) - pos, map_access_server->request.name);
+        APP_WRITE_16(event, &pos, mas->goep_cid);
+        APP_WRITE_08(event, &pos, mas->request.app_params.Charset);
+        APP_WRITE_08(event, &pos, mas->request.app_params.Attachment);
+        APP_WRITE_08(event, &pos, mas->request.app_params.ModifyText);
+        APP_WRITE_STR(event, &pos, sizeof(mas->request.app_params.MessageHandle), (char*)mas->request.app_params.MessageHandle);
+        APP_WRITE_STR(event, &pos, sizeof(event) - pos, mas->request.name);
         APP_WRITE_LEN(event, pos);
         break;
 
     case MAP_OBJECT_TYPE_PUT_MESSAGE_UPDATE:
         APP_WRITE_08(event, &pos, MAP_SUBEVENT_PUT_MESSAGE_UPDATE);
-        APP_WRITE_16(event, &pos, map_access_server->goep_cid);
+        APP_WRITE_16(event, &pos, mas->goep_cid);
         APP_WRITE_LEN(event, pos);
         break;
 
     case MAP_OBJECT_TYPE_PUT_NOTIFICATION_REGISTRATION:
         APP_WRITE_08(event, &pos, MAP_SUBEVENT_PUT_SET_NOTIFICATION_REGISTRATION);
-        APP_WRITE_16(event, &pos, map_access_server->goep_cid);
-        APP_WRITE_32(event, &pos, map_access_server->request.hdr.ConnectionID);
-        APP_WRITE_08(event, &pos, map_access_server->request.app_params.NotificationStatus);
+        APP_WRITE_16(event, &pos, mas->goep_cid);
+        APP_WRITE_32(event, &pos, mas->request.hdr.ConnectionID);
+        APP_WRITE_08(event, &pos, mas->request.app_params.NotificationStatus);
         APP_WRITE_LEN(event, pos);
         break;
 		
 
     case MAP_OBJECT_TYPE_PUT_SET_NOTIFICATION_FILTER:
         APP_WRITE_08(event, &pos, MAP_SUBEVENT_PUT_SET_NOTIFICATION_FILTER);
-        APP_WRITE_16(event, &pos, map_access_server->goep_cid);
-        APP_WRITE_32(event, &pos, map_access_server->request.app_params.NotificationFilterMask);
+        APP_WRITE_16(event, &pos, mas->goep_cid);
+        APP_WRITE_32(event, &pos, mas->request.app_params.NotificationFilterMask);
         APP_WRITE_LEN(event, pos);
         break;
 
     case MAP_OBJECT_TYPE_PUT_OWNER_STATUS:
         APP_WRITE_08(event, &pos, MAP_OBJECT_TYPE_PUT_OWNER_STATUS);
-        APP_WRITE_16(event, &pos, map_access_server->goep_cid);
-        APP_WRITE_08(event, &pos, map_access_server->request.app_params.ChatState);
-        APP_WRITE_STR(event, &pos, sizeof(event) - pos, (char*)map_access_server->request.app_params.LastActivity);
+        APP_WRITE_16(event, &pos, mas->goep_cid);
+        APP_WRITE_08(event, &pos, mas->request.app_params.ChatState);
+        APP_WRITE_STR(event, &pos, sizeof(event) - pos, (char*)mas->request.app_params.LastActivity);
         APP_WRITE_LEN(event, pos);
         break;
 
@@ -862,7 +867,7 @@ static void map_access_server_handle_get_put_request(map_access_server_t* map_ac
         btstack_unreachable();
         break;
     }
-    map_access_server->state = MAP_SERVER_STATE_W4_USER_DATA;
+    mas->state = MAP_SERVER_STATE_W4_USER_DATA;
     (*map_access_server_user_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
