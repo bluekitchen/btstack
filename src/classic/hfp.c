@@ -1116,6 +1116,15 @@ void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
             bd_addr_copy(hfp_connection->remote_addr, event_addr);
             hfp_connection->state = HFP_EXCHANGE_SUPPORTED_FEATURES;
             
+            if (local_role == HFP_ROLE_HF) {
+                // setup HF Indicators
+                uint8_t i;
+                for (i=0; i < hfp_hf_indicators_nr; i++){
+                    hfp_connection->generic_status_indicators[i].uuid = hfp_hf_indicators[i];
+                    hfp_connection->generic_status_indicators[i].state = 0;
+                }
+            }
+
             rfcomm_request_can_send_now_event(hfp_connection->rfcomm_cid);
             break;
 
@@ -1892,15 +1901,6 @@ uint8_t hfp_establish_service_level_connection(bd_addr_t bd_addr, uint16_t servi
     
     bd_addr_copy(connection->remote_addr, bd_addr);
     connection->service_uuid = service_uuid;
-
-    if (local_role == HFP_ROLE_HF) {
-        // setup HF Indicators
-        uint8_t i;
-        for (i=0; i < hfp_hf_indicators_nr; i++){
-            connection->generic_status_indicators[i].uuid = hfp_hf_indicators[i];
-            connection->generic_status_indicators[i].state = 0;
-        }
-    }
 
     hfp_sdp_query_request.callback = &hfp_handle_start_sdp_client_query;
     // ignore ERROR_CODE_COMMAND_DISALLOWED because in that case, we already have requested an SDP callback

@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - HIOS Client: emit disconnected event on HCI disconnect and free connection struct
 - Scan Parameter Service Client: emit disconnected event on HCI disconnect and free connection struct
 - PBAP Client: fix PBAP_SUBEVENT_OPERATION_COMPLETED with OBEX_DISCONNECTED for pbap_disconnect
+- HFP HF: send HF Indicator update only if enabled by AG
  
 ### Changed
 - GAP: return command disallowed if disconnect already requested
