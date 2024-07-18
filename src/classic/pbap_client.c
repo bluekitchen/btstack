@@ -94,7 +94,7 @@ static void pbap_client_emit_connected_event(pbap_client_t * context, uint8_t st
     pos += 6;
     little_endian_store_16(event,pos,context->con_handle);
     pos += 2;
-    event[pos++] = context->incoming;
+    event[pos++] = 0;
     event[1] = pos - 2;
     if (pos != sizeof(event)) log_error("goep_client_emit_connected_event size %u", pos);
     context->client_handler(HCI_EVENT_PACKET, context->goep_cid, &event[0], pos);
@@ -828,7 +828,6 @@ static void pbap_packet_handler_hci(uint8_t *packet, uint16_t size){
                     pbap_client = pbap_client_for_cid(goep_subevent_connection_opened_get_goep_cid(packet));
                     btstack_assert(pbap_client != NULL);
                     status = goep_subevent_connection_opened_get_status(packet);
-                    pbap_client->incoming = 0;
                     goep_subevent_connection_opened_get_bd_addr(packet, pbap_client->bd_addr);
                     if (status){
                         log_info("pbap: connection failed %u", status);

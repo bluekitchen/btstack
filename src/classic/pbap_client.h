@@ -119,7 +119,6 @@ typedef struct pbap_client {
     pbap_client_state_t state;
     bd_addr_t bd_addr;
     hci_con_handle_t con_handle;
-    uint8_t   incoming;
     uint16_t  goep_cid;
     btstack_packet_handler_t client_handler;
     int request_number;
