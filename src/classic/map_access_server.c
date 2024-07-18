@@ -1138,8 +1138,11 @@ uint16_t map_access_server_get_max_body_size(uint16_t map_cid) {
     return goep_server_response_get_max_message_size(map_access_server->goep_cid) - (3 + 2 + 3);
 }
 
-uint16_t map_access_server_send_get_put_response(uint16_t map_cid, uint8_t response_code, char* hdr_name, uint32_t continuation, uint16_t body_len, const uint8_t* body) {
+uint16_t map_access_server_send_get_put_response(uint16_t map_cid, uint8_t response_code, char* hdr_name, uint32_t continuation, size_t body_len, const uint8_t* body) {
     map_access_server_t* map_access_server = map_access_server_for_goep_cid(map_cid);
+    log_debug("map_cid:%u, response_code:0x%02x, hdr_name:%s, continuation:%u, body_len:%u, body [%s]",
+        map_cid, response_code, hdr_name, continuation, body_len, body);
+
     if (map_access_server == NULL) {
         RUN_AND_LOG_ACTION(return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;)
     }
@@ -1162,7 +1165,7 @@ uint16_t map_access_server_send_get_put_response(uint16_t map_cid, uint8_t respo
     map_access_server->request.continuation = continuation;
     map_access_server->state = MAP_SERVER_STATE_SEND_USER_RESPONSE;
     map_access_server->response.body_data = body;
-    map_access_server->response.body_len = body_len;
+    map_access_server->response.body_len = (uint16_t)body_len;
     RUN_AND_LOG_ACTION(return goep_server_request_can_send_now(map_access_server->goep_cid);)
 }
 
