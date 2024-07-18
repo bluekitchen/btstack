@@ -82,6 +82,8 @@ static void hci_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
 static void mns_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 static uint8_t upload_buffer[1000];
+// we create the full obex body object and send it in chunks via continuations
+static uint8_t OBEX_body_object[4000];
 
 // MAP Notification Client - MAP allows only 1 client connection
 // which can be used from multiple map access server connections by using the MASInstanceID
@@ -126,13 +128,13 @@ struct objconfig_s {
     char* footer;
     // array of up to 3 function pointers for creation of body
     // last entry needs to be NULL
-    int (*fbody)(char* msg_buffer, uint16_t index, int maxsize);
+    size_t(*fbody)(char* msg_buffer, uint16_t index, size_t maxsize);
 
 };
 
-static int body_msg(char* msg_buffer, uint16_t index, int maxsize);
-static int body_msg_short(char* msg_buffer, uint16_t index, int maxsize);
-static int body_convo(char* msg_buffer, uint16_t index, int maxsize);
+static size_t body_msg(char* msg_buffer, uint16_t index, size_t maxsize);
+static size_t body_msg_short(char* msg_buffer, uint16_t index, size_t maxsize);
+static size_t body_convo(char* msg_buffer, uint16_t index, size_t maxsize);
 static void MAP_MSE_MMD_BV_02_I_disc(void);
 static void MAP_MSE_MMD_BV_02_I_getMsgListng(void);
 static void MAP_MSE_MMU_BV_02_I_PutMsg(void);
@@ -189,20 +191,20 @@ static struct test_config_s
 {.nr =  0, .descr = "MAP/MSE/MSM/*../MNR/*"                    TC_NORM( .type = &msgshrt,.obj_count = 1, .objects = { "EMAIL"                                           }                                                      ,.helpstr = "PTS IXIT set 'TSPX_secure_simple_pairing_pass_key_confirmation' to 'true'"                                                                                                                                                                                                                                                      },)
 {.nr =  4, .descr = "MAP/MSE/SGSIT/ATTR/BV-01-C"               TC_NORM( .type = &msgshrt,.obj_count = 1, .objects = { "EMAIL"                                           }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
 {.nr =  5, .descr = "MAP/MSE/GOEP/SRM/BI-05-C"                 TC_NORM( .type = &msgshrt,.obj_count = 1, .objects = { "EMAIL"                                           }                                                      ,.helpstr = "PTS needs both L2CAP with 214 bytes short PDU and working messages(continue) so we need to create short messages to pass"                                                                                                                                                                                                                                                      },)
-{.nr =  6, .descr = "MAP/MSE/MFMH/BV-01-I..05"                 TC_NORM( .type = &msg,    .obj_count = 1, .objects = { "EMAIL"                                           }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
-{.nr =  7, .descr = "MAP/MSE/MFB/BV-02-I 05 07"                TC_NORM( .type = &msg,    .obj_count = 0, .objects = { ""                                                }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
-{.nr =  8, .descr = "MAP/MSE/MMU/BV-03-I"                      TC_NORM( .type = &msg,    .obj_count = 0, .objects = { "", "EMAIL", "MMS"                                }, .fPutMsg = MAP_MSE_MMU_BV_02_I_PutMsg               ,.helpstr = "WIP add OBEX NAME Header (Handle) PTS [50] Enter Test Step TS_MTC_OBEX_extract_handle_name ( , (lt)Not Defined Value(gt)  ) Test case error in 'MAP/MSE/MMU/BV-03-I'. The value 'headers_received' (-1) is not fully defined. See Screenshots in MAP_MSE_MMU_BV_03_I_2024_06_28_12_02_17"                                                                                      },)
-{.nr =  9, .descr = "MAP/MSE/MMU/BV-02-I"                      TC_NORM( .type = &msgshrt,.obj_count = 0, .objects = { "", "EMAIL", "MMS" , "EMAIL", "EMAIL"             }, .fPutMsg = MAP_MSE_MMU_BV_02_I_PutMsg               ,.helpstr = "WIP: PTS accepts the EMAIL but not the MMS. No idea why..."                                                                                                                                                                                                                                                                                                                    },)
-{.nr = 10, .descr = "MAP/MSE/MMB/BV-09-I 10 11 13 14 42 46"    TC_NORM( .type = &msg,    .obj_count = 2, .objects = { "SMS_GSM","SMS_CDMA"                              }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
-{.nr = 11, .descr = "MAP/MSE/MMB/BV-12-I"                      TC_NORM( .type = &msg,    .obj_count = 1, .objects = { "EMAIL", "SMS_GSM","SMS_CDMA"                     }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
-{.nr = 12, .descr = "MAP/MSE/MMB/BV-15-I 18 20 22"             TC_NORM( .type = &msg,    .obj_count = 5, .objects = { "EMAIL","SMS_GSM","SMS_CDMA", "MMS", "IM"         }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
-{.nr = 13, .descr = "MAP/MSE/MMB/BV-16-I 23"                   TC_NORM( .type = &msg,    .obj_count = 1, .objects = { "EMAIL","EMAIL"                                   }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
-{.nr = 14, .descr = "MAP/MSE/MMB/BV-24-I <a><OK>"              TC_NORM( .type = &convo,  .obj_count = 0, .objects = { "",""                                             }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
-{.nr = 15, .descr = "MAP/MSE/MMB/BV-25-I <c><OK>"              TC_NORM( .type = &convo,  .obj_count = 0, .objects = { "",""                                             }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
-{.nr = 16, .descr = "MAP/MSE/MMB/BV-34-I 38 39 40 41 44"       TC_NORM( .type = &convo,  .obj_count = 1, .objects = { "",""                                             }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
-{.nr = 17, .descr = "MAP/MSE/MMB/BV-35-I 36 37"                TC_NORM( .type = &msg,    .obj_count = 1, .objects = { "EMAIL"                                           }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
-{.nr = 18, .descr = "MAP/MSE/MMB/BV-47-I"                      TC_NORM( .type = &msg,    .obj_count = 1, .objects = { "IM","IM"                                         }                                                      ,.helpstr = "PTS.EXE fails with '- MTC INCONC: no email message in message listing' but expects type=\"IM\""                                                                                                                                                                                                                                                                                },)
-{.nr = 19, .descr = "MAP/MSE/MMD/BV-02-I"                      TC_NORM( .type = &msg,    .obj_count = 1, .objects = { "EMAIL","MMS", "SMS_GSM","SMS_CDMA", "IM", "dummy"}, .fGetMsgListng = MAP_MSE_MMD_BV_02_I_getMsgListng   ,
+{.nr =  6, .descr = "MAP/MSE/MFMH/BV-01..05"                 TC_NORM( .type = &msg,    .obj_count = 1, .objects = { "EMAIL"                                           }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
+{.nr =  7, .descr = "MAP/MSE/MFB/BV-02 05 07"                TC_NORM( .type = &msg,    .obj_count = 0, .objects = { ""                                                }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
+{.nr =  8, .descr = "MAP/MSE/MMU/BV-03"                      TC_NORM( .type = &msg,    .obj_count = 0, .objects = { "", "EMAIL", "MMS"                                }, .fPutMsg = MAP_MSE_MMU_BV_02_I_PutMsg               ,.helpstr = "WIP add OBEX NAME Header (Handle) PTS [50] Enter Test Step TS_MTC_OBEX_extract_handle_name ( , (lt)Not Defined Value(gt)  ) Test case error in 'MAP/MSE/MMU/BV-03'. The value 'headers_received' (-1) is not fully defined. See Screenshots in MAP_MSE_MMU_BV_03_I_2024_06_28_12_02_17"                                                                                      },)
+{.nr =  9, .descr = "MAP/MSE/MMU/BV-02"                      TC_NORM( .type = &msgshrt,.obj_count = 0, .objects = { "", "EMAIL", "MMS" , "EMAIL", "EMAIL"             }, .fPutMsg = MAP_MSE_MMU_BV_02_I_PutMsg               ,.helpstr = "WIP: PTS accepts the EMAIL but not the MMS. No idea why..."                                                                                                                                                                                                                                                                                                                    },)
+{.nr = 10, .descr = "MAP/MSE/MMB/BV-09 10 11 13 14 42 46"    TC_NORM( .type = &msg,    .obj_count = 2, .objects = { "SMS_GSM","SMS_CDMA"                              }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
+{.nr = 11, .descr = "MAP/MSE/MMB/BV-12"                      TC_NORM( .type = &msg,    .obj_count = 1, .objects = { "EMAIL", "SMS_GSM","SMS_CDMA"                     }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
+{.nr = 12, .descr = "MAP/MSE/MMB/BV-15 18 20 22"             TC_NORM( .type = &msg,    .obj_count = 5, .objects = { "EMAIL","SMS_GSM","SMS_CDMA", "MMS", "IM"         }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
+{.nr = 13, .descr = "MAP/MSE/MMB/BV-16 23"                   TC_NORM( .type = &msg,    .obj_count = 1, .objects = { "EMAIL","EMAIL"                                   }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
+{.nr = 14, .descr = "MAP/MSE/MMB/BV-24 <a><OK>"              TC_NORM( .type = &convo,  .obj_count = 0, .objects = { "",""                                             }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
+{.nr = 15, .descr = "MAP/MSE/MMB/BV-25 <c><OK>"              TC_NORM( .type = &convo,  .obj_count = 0, .objects = { "",""                                             }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
+{.nr = 16, .descr = "MAP/MSE/MMB/BV-34 38 39 40 41 44"       TC_NORM( .type = &convo,  .obj_count = 1, .objects = { "",""                                             }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
+{.nr = 17, .descr = "MAP/MSE/MMB/BV-35 36 37"                TC_NORM( .type = &msg,    .obj_count = 1, .objects = { "EMAIL"                                           }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
+{.nr = 18, .descr = "MAP/MSE/MMB/BV-47"                      TC_NORM( .type = &msg,    .obj_count = 1, .objects = { "IM","IM"                                         }                                                      ,.helpstr = "PTS.EXE fails with '- MTC INCONC: no email message in message listing' but expects type=\"IM\""                                                                                                                                                                                                                                                                                },)
+{.nr = 19, .descr = "MAP/MSE/MMD/BV-02"                      TC_NORM( .type = &msg,    .obj_count = 1, .objects = { "EMAIL","MMS", "SMS_GSM","SMS_CDMA", "IM", "dummy"}, .fGetMsgListng = MAP_MSE_MMD_BV_02_I_getMsgListng   ,
                                                                                                                                                                            .fdiscon = MAP_MSE_MMD_BV_02_I_disc                 ,.helpstr = "PTS 8.5.4 Build 6 issue: sends a sequence of OBEX connect, GetMessageListing (expects 1 EMAIL, nothing else, no more messages), PUT MessageStatus (Delete Message), GetMessageListing (expects empty listing), OBEX discoonect, repeat (MMS, SMS_GSM, SMS_CDMA) - the last repeat for IM misses the disconnect and fails on the Get because the list is still empty"           },)
 };
 
@@ -326,7 +328,7 @@ static void increase_version_counter_by_1(mas_uint128hex_t counter) {
     log_debug_hexdump(counter, BT_UINT128_HEX_LEN_BYTES);
 }
 
-static int body_msg(char* msg_buffer, uint16_t index, int maxsize) {
+static size_t body_msg(char* msg_buffer, uint16_t index, size_t maxsize) {
     index = index % ARRAYSIZE(mas_cfg->objects);
     int size = 0;
     if (!mas_cfg->msg_deleted[index])
@@ -339,7 +341,7 @@ static int body_msg(char* msg_buffer, uint16_t index, int maxsize) {
             " size=\"512\" attachment_size=\"123\" priority=\"no\" read=\"%s\" sent=\"yes\" protected=\"no\""
             " conversation_id=\"E1E2E3E4\"" // "E1" is to short for PTS but happy with "E1E2E3E4\"
             " direction=\"incoming\""
-            " attachment_mime_types=\"video/mpeg\"/>" // PTS wants this in MAP/MSE/MMD/BV-02-I, otherwise "no EMAIL message in message listing"
+            " attachment_mime_types=\"video/mpeg\"/>" // PTS wants this in MAP/MSE/MMD/BV-02, otherwise "no EMAIL message in message listing"
             ,
             index,
             mas_cfg->objects[index],
@@ -349,8 +351,8 @@ static int body_msg(char* msg_buffer, uint16_t index, int maxsize) {
 }
 
 
-// TODO: PTS MAP/MSE/MMU/BV-02-I fails to handle multi-segment chunked responses so we had to send 2 message in a single rfcom/goep/obex response packet.
-static int body_msg_short(char* msg_buffer, uint16_t index, int maxsize) {
+// TODO: PTS MAP/MSE/MMU/BV-02 fails to handle multi-segment chunked responses so we had to send 2 message in a single rfcom/goep/obex response packet.
+static size_t body_msg_short(char* msg_buffer, uint16_t index, size_t maxsize) {
     index = index % ARRAYSIZE(mas_cfg->objects);
     int size = 0;
     if (!mas_cfg->msg_deleted[index])
@@ -365,7 +367,7 @@ static int body_msg_short(char* msg_buffer, uint16_t index, int maxsize) {
             //" sent=\"yes\" protected=\"no\""
             //" conversation_id=\"E1E2E3E4\"" // "E1" is to short for PTS but happy with "E1E2E3E4\"
             //" direction=\"incoming\""
-            //" attachment_mime_types=\"video/mpeg\"/>" // PTS wants this in MAP/MSE/MMD/BV-02-I, otherwise "no EMAIL message in message listing"
+            //" attachment_mime_types=\"video/mpeg\"/>" // PTS wants this in MAP/MSE/MMD/BV-02, otherwise "no EMAIL message in message listing"
             ,
             index,
             mas_cfg->objects[index],
@@ -374,7 +376,7 @@ static int body_msg_short(char* msg_buffer, uint16_t index, int maxsize) {
     return size;
 }
 
-static int body_convo(char* msg_buffer, uint16_t index, int maxsize) {
+static size_t body_convo(char* msg_buffer, uint16_t index, size_t maxsize) {
     static int version = 0, size = 0;
     // Implement the function to create a conversation
     size = snprintf(msg_buffer, maxsize,
@@ -403,100 +405,73 @@ static int body_convo(char* msg_buffer, uint16_t index, int maxsize) {
     return size;
 }
 
-// TODO enable to send message larger as one OBEX/MAP packet
-static uint16_t send_listing(uint16_t map_cid, bool header,  uint16_t first, uint16_t last) {
-    uint16_t max_body_size = map_access_server_get_max_body_size(map_cid);
-    char listing_buffer[500]; // only for message items
-    uint16_t pos = 0;
-    uint16_t len = 0;
-    bool done = false;
+// we create a full obex body message in a local buffer
+static size_t create_obex_body(uint16_t first, uint16_t last) {
+    size_t pos = 0;
+    size_t len = 0;
+    size_t size = sizeof(OBEX_body_object);
 
-    log_debug("1 first:%d last:%d max_body_size:%d", first, last, max_body_size);
+    log_debug("1 first:%d last:%d pos:%d size:%d <%s>", first, last, pos, size, OBEX_body_object);
 
-    if (header){
-        // add header
-        uint16_t len = (uint16_t)strlen(mas_cfg->type->header);
-        memcpy(upload_buffer, mas_cfg->type->header, len);
-        pos += len;
-        max_body_size -= len;
-    }
-
-    while ((max_body_size > 0) && (first < last)){
-        log_debug("2 first:%d last:%d pos:%d", first, last, pos);
-        
+    // clear OBEX_body_object
+    OBEX_body_object[0] = 0;
+    
+    // header
+    len = snprintf(&OBEX_body_object[pos], size, mas_cfg->type->header);
+    pos += len; size -= len;
+    log_debug("first:%d last:%d pos:%d size:%d <%s>", first, last, pos, size, OBEX_body_object);
+    
+    while ((size > 0) && (first < last)){        
         // add entry
-        len = mas_cfg->type->fbody(listing_buffer, first, sizeof(listing_buffer));
-        
-        log_debug("2.5 first:%d last:%d pos:%d len:%d", first, last, pos, len);
-        if (len > max_body_size){
-            log_debug("2.8 first:%d last:%d len%d max_body_size %d", first, last, len, max_body_size);
-            break;
-        }
-        memcpy(&upload_buffer[pos], (const uint8_t *) listing_buffer, len);
-        pos += len;
-        max_body_size -= len;
+        len = mas_cfg->type->fbody(&OBEX_body_object[pos], first, size);
+        pos += len; size -= len;
         first++;
-        log_debug("3 first:%d last:%d pos:%d len:%d", first, last, pos, len);
-        log_debug("4 %.*s", btstack_min(pos, sizeof(upload_buffer)),upload_buffer);
+        log_debug("first:%d last:%d pos:%d size:%d <%s>", first, last, pos, size, OBEX_body_object);
     }
 
+    // footer
+    len = snprintf(&OBEX_body_object[pos], size, mas_cfg->type->footer);
+    pos += len; size -= len;
 
-    len = (uint16_t)strlen(mas_cfg->type->footer);
+    log_debug("first:%d last:%d pos:%d size:%d <%s>", first, last, pos, size, OBEX_body_object);
 
-    if (first >= last && len < sizeof(listing_buffer) - pos){
-        log_debug("5 first:%d last:%d pos:%d len:%d", first, last, pos, len);
-        if (len < max_body_size){
-            log_debug("6 first:%d last:%d pos:%d len:%d", first, last, pos, len);
-            // add footer
-            memcpy(&upload_buffer[pos], (const uint8_t *)mas_cfg->type->footer, len);
-            pos += len;
-            max_body_size -= len;
-            done = true;
-        }
-    }
-
-
-    uint8_t response_code;
-	uint32_t continuation;
-
-    if (done) {
-        response_code = OBEX_RESP_SUCCESS;
-        continuation = 0x10000;
-    }
-    else {
-        response_code = OBEX_RESP_CONTINUE;
-        continuation = first;
-    }
-    log_debug("7 send response %.*s", btstack_min(pos, sizeof(upload_buffer)), upload_buffer);
-    map_access_server_send_get_put_response(map_cid, response_code, NULL, continuation, pos, upload_buffer);
-    return first;
+    return pos;
 }
 
-static void send_get_listing_object(uint16_t map_cid, uint8_t* packet, uint16_t start_index, uint16_t max_list_count, uint32_t continuation) {
+static void send_obex_object(uint16_t map_cid, uint16_t start_index, uint16_t end_index, uint32_t pos) {
 
-    uint16_t total_messages, num_msgs_selected, end_index;
+    static size_t object_size = 0;
+    size_t len, body_size = map_access_server_get_max_body_size(map_cid);
+    uint8_t response_code;
 
-    // send messages listing
-    total_messages = mas_cfg->obj_count + one_object_more_or_less;
+    if (pos == 0) {
+        uint16_t total_messages, num_msgs_selected, end_index;
 
-    num_msgs_selected = total_messages - start_index;
-    if (max_list_count < 0xffff) {
-        num_msgs_selected = btstack_min(max_list_count, num_msgs_selected);
+        // send messages listing
+        total_messages = mas_cfg->obj_count + one_object_more_or_less;
+
+        num_msgs_selected = total_messages - start_index;
+        end_index = start_index + num_msgs_selected;
+        object_size = create_obex_body(start_index, end_index);
+
+        log_debug("obj_count:%u one_object_more_or_less:%d start_index:%u end_index:%u num_msgs_selected:%u\n", 
+            mas_cfg->obj_count, one_object_more_or_less, start_index, end_index, num_msgs_selected);
     }
-    MAP_PRINTF("[+] get message listing - obj_count:%u add_one_object:%u list offset %u, num messages %u max_list_count %u\n", mas_cfg->obj_count, one_object_more_or_less, start_index, num_msgs_selected, max_list_count);
-    // consider already sent cards
-    if (continuation > 0xffff) {
-        // just missed the footer
-        start_index = 0xffff;
-        num_msgs_selected = 0;
+
+    // copy first part of OBEX body object into upload_buffer, limit len to space, buf size and packet size
+    len = object_size - pos; log_debug("len:%d", len);
+    len = min3(len, sizeof(upload_buffer), body_size);
+    memcpy(upload_buffer, &OBEX_body_object[pos], len);
+    pos += (uint32_t)len;
+    log_debug("len:%d pos:%d upload_buffer [%s]", len, pos, upload_buffer);
+
+    if (pos == object_size) {
+        response_code = OBEX_RESP_SUCCESS;
+        object_size = 0;
+    } else {
+        response_code = OBEX_RESP_CONTINUE;
     }
-    else {
-        num_msgs_selected -= continuation;
-        start_index += continuation;
-    }
-    end_index = start_index + num_msgs_selected;
-    MAP_PRINTF("[-] continuation %u, num messages %u, start index %u, end index %u\n", continuation, num_msgs_selected, start_index, end_index);
-    send_listing(map_cid, continuation == 0, start_index, end_index);
+    map_access_server_send_get_put_response(map_cid, response_code, NULL, pos, len, upload_buffer);
 }
 
 static uint8_t connect_map_notification_client(int connection_id) {
@@ -768,7 +743,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             APP_READ_16(packet, &pos, &start_index);
                             map_access_server_set_response_app_param(current_map_cid, MAP_APP_PARAM_ListingSize, &ListingSize);
                             MAP_PRINTF("[+] Get Folder listing\n");
-                            send_listing(current_map_cid, true, 0, mas_cfg->obj_count-1 + one_object_more_or_less);
+                            send_obex_object(current_map_cid, 0, mas_cfg->obj_count-1 + one_object_more_or_less, continuation);
                             break;
 							
                         case MAP_SUBEVENT_GET_MESSAGE_LISTING:
@@ -779,7 +754,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             uint8_t tmp_NewMessage = 0;
                             char MSETime[] = "20140612T105430+0100";
                             map_access_server_set_response_app_param(current_map_cid, MAP_APP_PARAM_NewMessage, &tmp_NewMessage);
-                            // needs ro be present for MAP/MSE/MMB/BV-35-I
+                            // needs ro be present for MAP/MSE/MMB/BV-35
                             map_access_server_set_response_app_param(current_map_cid, MAP_APP_PARAM_MSETime, &MSETime[0]);
                             map_access_server_set_response_app_param(current_map_cid, MAP_APP_PARAM_ListingSize, &ListingSize);
                             map_access_server_set_response_app_param(current_map_cid, MAP_APP_PARAM_DatabaseIdentifier, DatabaseIdentifier);
@@ -795,7 +770,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             if (max_list_count == 0)
                                 map_access_server_send_get_put_response(current_map_cid, OBEX_RESP_SUCCESS, NULL, 0, 0, NULL);
                             else
-                                send_get_listing_object(current_map_cid, packet, start_index, max_list_count, continuation);
+                                send_obex_object(current_map_cid, start_index, max_list_count, continuation);
 
                             // some PTS tests require strange behaviour so we need a handler to modify default behaviour for GetMessageListing
                             if (mas_cfg->fGetMsgListng != NULL)
@@ -807,7 +782,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             APP_READ_32(packet, &pos, &continuation);
                             APP_READ_16(packet, &pos, &current_map_cid);
                             MAP_PRINTF("[+] Get Message\n");
-                            send_listing(current_map_cid, true, 0, 1);
+                            create_obex_body(0, 1);
                             break;
 
                         case MAP_SUBEVENT_PUT_MESSAGE_STATUS: {
@@ -827,7 +802,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             APP_READ_16(packet, &pos, &current_map_cid);
                             MAP_PRINTF("[+] Put MessageUpdate\n");
                             map_access_server_send_get_put_response(current_map_cid, OBEX_RESP_SUCCESS, NULL, 0, 0, NULL);
-                            // BT SIG Test case MAP/MSE/MMB/BV-23-I asks for one more message after
+                            // BT SIG Test case MAP/MSE/MMB/BV-23 asks for one more message after
                             // issuing a "update messages" request so we just simulate one
                             one_object_more_or_less = 1;
                             break;
@@ -889,7 +864,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             APP_READ_08(packet, &pos, &ChatState);
                             MAP_PRINTF("[+] Put OwnerStatus\n");
                             map_access_server_send_get_put_response(current_map_cid, OBEX_RESP_SUCCESS, NULL, 0, 0, NULL);
-                            // BT SIG Test case MAP/MSE/MMB/BV-23-I asks for one more message after
+                            // BT SIG Test case MAP/MSE/MMB/BV-23 asks for one more message after
                             // issuing a "update messages" request so we just simulate one
                             one_object_more_or_less = 1;
                             break;
@@ -912,7 +887,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             if (mas_cfg->obj_count == 0 && one_object_more_or_less == 0)
                                 map_access_server_send_get_put_response(current_map_cid, OBEX_RESP_SUCCESS, NULL, 0, 0, NULL);
                             else
-                                send_get_listing_object(current_map_cid, packet, 0, 0xffff, continuation);
+                                send_obex_object(current_map_cid, 0, 0xffff, continuation);
                             break;
                         }
                         case MAP_SUBEVENT_GET_MAS_INSTANCE_INFORMATION: {
