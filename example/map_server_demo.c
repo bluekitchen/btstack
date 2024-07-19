@@ -134,6 +134,7 @@ struct objconfig_s {
 
 static size_t body_msg(char* msg_buffer, uint16_t index, size_t maxsize);
 static size_t body_msg_short(char* msg_buffer, uint16_t index, size_t maxsize);
+static size_t body_msg_email_1_1(char* msg_buffer, uint16_t index, size_t maxsize);
 static size_t body_convo(char* msg_buffer, uint16_t index, size_t maxsize);
 static void MAP_MSE_MMD_BV_02_I_disc(void);
 static void MAP_MSE_MMD_BV_02_I_getMsgListng(void);
@@ -155,6 +156,12 @@ struct objconfig_s msgshrt = {
     .header = MSG_LISTING_HEADER,
     .footer = MSG_LISTING_FOOTER,
     .fbody = body_msg_short
+};
+
+struct objconfig_s msg1_1 = {
+    .header = MSG_LISTING_HEADER,
+    .footer = MSG_LISTING_FOOTER,
+    .fbody = body_msg_email_1_1
 };
 
 struct objconfig_s convo = {
@@ -198,7 +205,7 @@ static struct test_config_s
 {.nr =  6, TC_NORM( .descr = "MAP/MSE/MMU/BV-02"                 ,.type = &msgshrt,.obj_count = 0, .objects = { "", "EMAIL", "MMS" , "EMAIL", "EMAIL"             }, .fPutMsg = MAP_MSE_MMU_BV_02_I_PutMsg               ,.helpstr = "WIP: PTS accepts the EMAIL but not the MMS. No idea why..."                                                                                                                                                                                                                                                                                                                    },)
 {.nr =  7, TC_NORM( .descr = "MAP/MSE/MMB/BV-09 10"              ,.type = &msg,    .obj_count = 2, .objects = { "SMS_GSM","SMS_CDMA"                              }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
 {.nr =  8, TC_L2CAP(.descr = "MAP/MSE/MMB/BV-11 13 14 42 46"     ,.type = &msg,    .obj_count = 3, .objects = { "SMS_GSM","SMS_CDMA"                              }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
-{.nr =  9, TC_NORM( .descr = "MAP/MSE/MMB/BV-12"                 ,.type = &msg,    .obj_count = 1, .objects = { "EMAIL", "EMAIL",                                 }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
+{.nr =  9, TC_NORM( .descr = "MAP/MSE/MMB/BV-12"                 ,.type = &msg1_1, .obj_count = 1, .objects = { "EMAIL", "EMAIL",                                 }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
 {.nr = 10, TC_NORM( .descr = "MAP/MSE/MMB/BV-15 18 20 22"        ,.type = &msg,    .obj_count = 5, .objects = { "EMAIL","SMS_GSM","SMS_CDMA", "MMS", "IM"         }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
 {.nr = 11, TC_NORM( .descr = "MAP/MSE/MMB/BV-16 23"              ,.type = &msg,    .obj_count = 1, .objects = { "EMAIL","EMAIL"                                   }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
 {.nr = 12, TC_NORM( .descr = "MAP/MSE/MMB/BV-24 <a><OK>"         ,.type = &convo,  .obj_count = 0, .objects = { "",""                                             }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
@@ -374,6 +381,17 @@ static size_t body_msg_short(char* msg_buffer, uint16_t index, size_t maxsize) {
             index,
             mas_cfg->objects[index],
             mas_cfg->objects[index] ? "yes" : "no"
+        );
+    return size;
+}
+
+static size_t body_msg_email_1_1(char* msg_buffer, uint16_t index, size_t maxsize) {
+    index = index % ARRAYSIZE(mas_cfg->objects);
+    int size = 0;
+    if (!mas_cfg->msg_deleted[index])
+        size = snprintf(msg_buffer, maxsize,
+            "<event type = \"NewMessage\" handle=\"0123456789000001\" folder=\"TELECOM/MSG/OUTBOX\" msg_type=\"%s\" subject=\"Subject\" datetime=\"20130121T130510\" sender_name=\"Xyz\" priority=\"no\"/>",
+            mas_cfg->objects[index]
         );
     return size;
 }
