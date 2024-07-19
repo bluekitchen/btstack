@@ -127,13 +127,24 @@ static void has_shift_left_preset_records(uint8_t start_pos, uint8_t end_pos){
         has_preset_records[i] = has_preset_records[i + 1];
     }
 }
-
+static void has_dump_queue(const char * msg){
+#ifdef ENABLE_TESTING_SUPPORT
+    printf("\n%s: queued %d\n", msg, has_queued_preset_records_num);
+    uint8_t i;
+    for (i = has_preset_records_num; i < has_queued_preset_records_num; i++){
+        has_preset_record_t * preset = &has_preset_records[i];
+        printf("Q[%02d] - %02d, %s, P:0x%02x, A:%d, scheduled_task = %0x%04X\n", i, preset->index, preset->name, preset->properties, preset->active?1u:0u, preset->scheduled_task);
+    }
+#endif
+}
 
 static void has_remove_task_from_queue(void){
     uint8_t end_pos = has_preset_records_num + has_queued_preset_records_num - 1;
     has_shift_left_preset_records(has_preset_records_num, has_preset_records_num + has_queued_preset_records_num - 1);
     has_queued_preset_records_num--;
     has_clear_preset_record(end_pos);
+
+    has_dump_queue("After remove");
 }
 
 static void has_delete_preset_record(uint8_t delete_pos){
@@ -164,19 +175,22 @@ static uint8_t find_position_of_regular_preset_record_with_index(uint8_t index){
 
 static has_preset_record_t * has_read_presets_operation_get_next_preset_record(has_server_connection_t * connection, bool * is_last_preset){
     btstack_assert(has_preset_records_num > 0);
-
+    // check if it is initial value
     if (connection->preset_position == HAS_INVALID_PRESET_RECORD_POSITION) {
+        // find first index equal to or greater then start_index
         uint8_t i;
         for (i = 0; i < has_preset_records_num; i++) {
             has_preset_record_t *preset = &has_preset_records[i];
             if (preset->index >= connection->start_index) {
                 connection->preset_position = i;
+                printf("Initial preset found R[%02d].index = %02d [%d]\n", connection->preset_position, preset->index, connection->num_presets_to_read);
                 break;
             }
         }
         btstack_assert(connection->preset_position != HAS_INVALID_PRESET_RECORD_POSITION);
     } else {
         connection->preset_position++;
+        printf("Next preset found R[%02d].index = %02d [%d]\n", connection->preset_position, has_preset_records[connection->preset_position].index, connection->num_presets_to_read);
     }
     connection->num_presets_to_read--;
 
@@ -189,17 +203,17 @@ static uint8_t has_add_cp_operation_to_queue(has_server_connection_t * connectio
     // queue the change at the tail for later processing
     uint8_t queue_pos = has_preset_records_num + has_queued_preset_records_num;
 
-    connection->scheduled_control_point_notification_tasks |= HAS_NOTIFICATION_TASK_CONTROL_POINT_OPERATION;
+    connection->scheduled_control_point_notification_tasks |= scheduled_task;
 
     has_preset_records[queue_pos].con_handle = connection->con_handle;
-    has_preset_records[queue_pos].scheduled_task = scheduled_task;
-
+    has_preset_records[queue_pos].scheduled_task = HAS_NOTIFICATION_TASK_CONTROL_POINT_OPERATION;
     has_preset_records[queue_pos].index = 0;
     has_preset_records[queue_pos].properties = 0;
     has_preset_records[queue_pos].active = false;
     has_preset_records[queue_pos].calculated_position = HAS_INVALID_PRESET_RECORD_POSITION;
     // increase count
     has_queued_preset_records_num++;
+    has_dump_queue("ADD CP Operation");
     return queue_pos;
 }
 
@@ -431,17 +445,17 @@ static int has_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
 
         switch (opcode) {
             case HAS_OPCODE_READ_PRESETS_REQUEST:
-                if (connection->state == HAS_SERVER_CONNECTION_STATE_PENDING_ATT_RESPONSE){
-                    att_error_code = is_read_operation_valid(connection);
-                    if (att_error_code == ATT_ERROR_SUCCESS){
-                        connection->state = HAS_SERVER_CONNECTION_STATE_PENDING_ATT_NOTIFICATION;
-                        has_server_schedule_task();
-                    } else {
-                        has_remove_task_from_queue();
-                        connection->state = HAS_SERVER_CONNECTION_STATE_READY;
-                    }
-                    return ATT_READ_ERROR_CODE_OFFSET + att_error_code;
-                }
+//                if (connection->state == HAS_SERVER_CONNECTION_STATE_PENDING_ATT_RESPONSE){
+//                    att_error_code = is_read_operation_valid(connection);
+//                    if (att_error_code == ATT_ERROR_SUCCESS){
+//                        connection->state = HAS_SERVER_CONNECTION_STATE_PENDING_ATT_INDICATION;
+//                        has_server_schedule_task();
+//                    } else {
+//                        has_remove_task_from_queue();
+//                        connection->state = HAS_SERVER_CONNECTION_STATE_READY;
+//                    }
+//                    return ATT_READ_ERROR_CODE_OFFSET + att_error_code;
+//                }
                 index = buffer[pos++];
                 num_presets = buffer[pos];
 
@@ -456,11 +470,23 @@ static int has_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
                 connection->start_index = index;
                 connection->num_presets_to_read  = num_presets;
                 connection->preset_position = HAS_INVALID_PRESET_RECORD_POSITION;
-                connection->state = HAS_SERVER_CONNECTION_STATE_PENDING_ATT_RESPONSE;
+                // try
+                connection->state = HAS_SERVER_CONNECTION_STATE_PENDING_ATT_INDICATION;
 
-                has_add_cp_operation_to_queue(connection, HAS_NOTIFICATION_TASK_CONTROL_POINT_OPERATION);
-                has_server_schedule_task();
-                return ATT_READ_RESPONSE_PENDING;
+                att_error_code = is_read_operation_valid(connection);
+                if (att_error_code == ATT_ERROR_SUCCESS) {
+                    printf("Schedule read %d presets from index %d\n", index, num_presets);
+                    connection->state = HAS_SERVER_CONNECTION_STATE_PENDING_ATT_INDICATION;
+                    has_add_cp_operation_to_queue(connection, HAS_CP_NOTIFICATION_TASK_READ_PRESETS);
+                    has_server_schedule_task();
+                } else {
+                    connection->state = HAS_SERVER_CONNECTION_STATE_READY;
+                }
+                return att_error_code;
+//
+//                has_add_cp_operation_to_queue(connection, HAS_NOTIFICATION_TASK_CONTROL_POINT_OPERATION);
+//                has_server_schedule_task();
+//                return ATT_INTERNAL_WRITE_RESPONSE_PENDING;
 
             case HAS_OPCODE_WRITE_PRESET_NAME:
                 index = buffer[pos++];
@@ -779,16 +805,15 @@ static void has_server_can_send_now(void * context){
     // first preset record in "wait to process" queue:
     uint8_t queued_preset_pos = has_preset_records_num;
     has_preset_record_t * queued_preset = &has_preset_records[queued_preset_pos];
-
+    uint8_t status;
     if (queued_preset->scheduled_task == HAS_NOTIFICATION_TASK_CONTROL_POINT_OPERATION){
-
         if ((connection->scheduled_control_point_notification_tasks & HAS_CP_NOTIFICATION_TASK_READ_PRESETS) > 0u){
             switch (connection->state){
                 case HAS_SERVER_CONNECTION_STATE_PENDING_ATT_RESPONSE:
                     att_server_response_ready(connection->con_handle);
                     return;
 
-                case HAS_SERVER_CONNECTION_STATE_PENDING_ATT_NOTIFICATION: {
+                case HAS_SERVER_CONNECTION_STATE_PENDING_ATT_INDICATION: {
                     bool is_last_preset_record;
                     has_preset_record_t *preset = has_read_presets_operation_get_next_preset_record(connection,
                                                                                                     &is_last_preset_record);
@@ -807,13 +832,14 @@ static void has_server_can_send_now(void * context){
                     btstack_strcpy((char *) &value[pos], name_len, preset->name);
                     pos += name_len;
 
-                    att_server_indicate(connection->con_handle, has_control_point_value_handle, &value[0], pos);
-                    if (!is_last_preset_record) {
-                        return;
+                    status = att_server_indicate(connection->con_handle, has_control_point_value_handle, &value[0], pos);
+                    printf("Indication status 0x%02x\n", status);
+                    if (is_last_preset_record) {
+                        connection->state = HAS_SERVER_CONNECTION_STATE_READY;
+                        connection->scheduled_control_point_notification_tasks &= ~HAS_CP_NOTIFICATION_TASK_READ_PRESETS;
+                        has_remove_task_from_queue();
+                        break;
                     }
-                    connection->state = HAS_SERVER_CONNECTION_STATE_READY;
-                    connection->scheduled_control_point_notification_tasks &= ~HAS_CP_NOTIFICATION_TASK_READ_PRESETS;
-                    has_remove_task_from_queue();
                     break;
                 }
                 default:
@@ -958,10 +984,11 @@ static bool has_server_schedule_task(void){
     }
 
     if (connection_index > -1){
+        printf("Schedule Task 0%04X\n", has_preset_records[has_preset_records_num + has_queued_preset_records_num - 1].scheduled_task);
         connection = &has_clients[(uint8_t)connection_index];
         connection->scheduled_tasks_callback.callback = &has_server_can_send_now;
         connection->scheduled_tasks_callback.context  = (void*) connection;
-        att_server_register_can_send_now_callback(&connection->scheduled_tasks_callback, connection->con_handle);
+        att_server_request_to_send_indication(&connection->scheduled_tasks_callback, connection->con_handle);
         return true;
     }
 

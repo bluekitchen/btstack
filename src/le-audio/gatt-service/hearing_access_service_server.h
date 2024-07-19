@@ -54,7 +54,7 @@ extern "C" {
     typedef enum {
         HAS_SERVER_CONNECTION_STATE_READY = 0,
         HAS_SERVER_CONNECTION_STATE_PENDING_ATT_RESPONSE,
-        HAS_SERVER_CONNECTION_STATE_PENDING_ATT_NOTIFICATION,
+        HAS_SERVER_CONNECTION_STATE_PENDING_ATT_INDICATION,
     } has_server_connection_state_t;
 
 typedef struct {
@@ -104,23 +104,6 @@ uint8_t hearing_access_service_server_delete_preset(uint8_t index);
 uint8_t hearing_access_service_server_preset_record_set_active(uint8_t index);
 uint8_t hearing_access_service_server_preset_record_set_available(uint8_t index);
 uint8_t hearing_access_service_server_preset_record_set_unavailable(uint8_t index);
-
-// uint8_t hearing_access_service_server_update_preset(uint8_t index);
-
-/**
- * @brief Response to a Read Presets Request
- * @param has_cid
- * @return status
- */
-// uint8_t hearing_access_service_server_read_presets_response(hci_con_handle_t con_handle, bool is_last, uint8_t * preset_record);
-
-
-/**
- * @brief Used by the server to inform clients of changes to a preset record.
- * @param has_cid
- * @return status
- */
-// uint8_t hearing_access_service_server_presets_changed(bool is_last, uint8_t * change_id);
 
 #ifdef ENABLE_TESTING_SUPPORT
 void hearing_access_service_server_execute(void);
