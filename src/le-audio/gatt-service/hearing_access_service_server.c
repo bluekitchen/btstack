@@ -50,7 +50,6 @@
 #include "btstack_event.h"
 #include "ble/att_db.h"
 #include "ble/att_server.h"
-#include "btstack_util.h"
 #include "bluetooth_gatt.h"
 #include "btstack_debug.h"
 
@@ -64,12 +63,10 @@
 #define HAS_NOTIFICATION_TASK_PRESET_RECORD_AVAILABLE                                  0x00000008
 #define HAS_NOTIFICATION_TASK_PRESET_RECORD_UNAVAILABLE                                0x00000010
 #define HAS_NOTIFICATION_TASK_ACTIVE_PRESET_INDEX                                      0x00000020
-#define HAS_NOTIFICATION_TASK_CONTROL_POINT_OPERATION                           0x00000040
+#define HAS_NOTIFICATION_TASK_CONTROL_POINT_OPERATION                                  0x00000040
 
 #define HAS_CP_NOTIFICATION_TASK_READ_PRESETS                                          0x00000001
 #define HAS_CP_NOTIFICATION_TASK_WRITE_PRESET                                          0x00000002
-
-// #define HAS_NOTIFICATION_TASK_HEARING_AID_FEATURES                                     0x00000020
 
 #define HAS_EMPTY_PRESET_RECORD_INDEX                                                  0x00
 #define HAS_INVALID_PRESET_RECORD_POSITION                                             0xFF
@@ -106,8 +103,46 @@ static uint16_t   has_active_preset_index_client_configuration;
 static bool has_server_schedule_task(void);
 static void has_server_can_send_now(void * context);
 
-static void has_clear_preset_record(uint8_t record_pos);
+static void has_dump_queue(const char * msg){
+#ifdef ENABLE_TESTING_SUPPORT
+    printf("\n%s: queued %d\n", msg, has_queued_preset_records_num);
+    uint8_t i;
+    for (i = has_preset_records_num; i < has_queued_preset_records_num; i++){
+        has_preset_record_t * preset = &has_preset_records[i];
+        printf("Q[%02d] - %02d, %s, P:0x%02x, A:%d, scheduled_task = 0x%04X\n", i, preset->index, preset->name, preset->properties, preset->active?1u:0u, preset->scheduled_task);
+    }
+#else
+    UNUSED(msg);
+#endif
+}
 
+static void dump_preset_records(char * msg){
+#ifdef ENABLE_TESTING_SUPPORT
+    printf("%s: regular %d, queued %d\n", msg, has_preset_records_num, has_queued_preset_records_num);
+    uint8_t i;
+    for (i = 0; i < has_preset_records_num; i++){
+        has_preset_record_t * preset = &has_preset_records[i];
+        printf("N[%d] - %d, %s, P:0x%02x, A:%d, scheduled_task = %d\n", i, preset->index, preset->name, preset->properties, preset->active?1u:0u, preset->scheduled_task);
+    }
+    for (i = has_preset_records_num; i < has_preset_records_max_num; i++){
+        has_preset_record_t * preset = &has_preset_records[i];
+        printf("Q[%d] - %d, %s, P:0x%02x, A:%d, scheduled_task = %d\n", i, preset->index, preset->name, preset->properties, preset->active?1u:0u, preset->scheduled_task);
+    }
+#else
+    UNUSED(msg);
+    UNUSED(pos);
+    UNUSED(index);
+#endif
+}
+
+static void has_clear_preset_record(uint8_t record_pos) {// clear the last element (optional, for cleanliness)
+    has_preset_records[record_pos].index = HAS_EMPTY_PRESET_RECORD_INDEX;
+    has_preset_records[record_pos].properties = 0;
+    has_preset_records[record_pos].name[0] = '\0';
+    has_preset_records[record_pos].active = false;
+    has_preset_records[record_pos].scheduled_task = 0;
+    has_preset_records[record_pos].calculated_position = HAS_INVALID_PRESET_RECORD_POSITION;
+}
 
 static has_server_connection_t * has_server_find_connection_for_con_handle(hci_con_handle_t con_handle){
     uint8_t i;
@@ -121,35 +156,27 @@ static has_server_connection_t * has_server_find_connection_for_con_handle(hci_c
 
 
 static void has_shift_left_preset_records(uint8_t start_pos, uint8_t end_pos){
-    uint8_t i;;
-    // shift queued elements to the left to fill the gap of deleted "task" preset record
+    uint8_t i;
+    // Shift queued elements to the left.
+    // Record with index start_pos will be lost/removed.
     for (i = start_pos; i < end_pos; i++) {
         has_preset_records[i] = has_preset_records[i + 1];
     }
 }
-static void has_dump_queue(const char * msg){
-#ifdef ENABLE_TESTING_SUPPORT
-    printf("\n%s: queued %d\n", msg, has_queued_preset_records_num);
-    uint8_t i;
-    for (i = has_preset_records_num; i < has_queued_preset_records_num; i++){
-        has_preset_record_t * preset = &has_preset_records[i];
-        printf("Q[%02d] - %02d, %s, P:0x%02x, A:%d, scheduled_task = %0x%04X\n", i, preset->index, preset->name, preset->properties, preset->active?1u:0u, preset->scheduled_task);
-    }
-#endif
-}
 
 static void has_remove_task_from_queue(void){
     uint8_t end_pos = has_preset_records_num + has_queued_preset_records_num - 1;
-    has_shift_left_preset_records(has_preset_records_num, has_preset_records_num + has_queued_preset_records_num - 1);
-    has_queued_preset_records_num--;
+    has_shift_left_preset_records(has_preset_records_num, end_pos);
     has_clear_preset_record(end_pos);
+    has_queued_preset_records_num--;
 
     has_dump_queue("After remove");
 }
 
 static void has_delete_preset_record(uint8_t delete_pos){
     has_remove_task_from_queue();
-    // shift elements to the left to fill the gap of deleted preset record
+
+    // shift elements to the left to remove preset record with index delete_pos
     uint8_t end_pos = has_preset_records_num + has_queued_preset_records_num - 1;
     has_shift_left_preset_records(delete_pos, end_pos);
     has_preset_records_num--;
@@ -177,7 +204,7 @@ static has_preset_record_t * has_read_presets_operation_get_next_preset_record(h
     btstack_assert(has_preset_records_num > 0);
     // check if it is initial value
     if (connection->preset_position == HAS_INVALID_PRESET_RECORD_POSITION) {
-        // find first index equal to or greater then start_index
+        // find first index equal to or greater than start_index
         uint8_t i;
         for (i = 0; i < has_preset_records_num; i++) {
             has_preset_record_t *preset = &has_preset_records[i];
@@ -268,7 +295,6 @@ static bool preset_calc_final_state(uint8_t index, has_preset_record_t * out_pre
                     break;
                 default:
                     btstack_unreachable();
-                    break;
             }
         } else {
             if (preset->scheduled_task == HAS_NOTIFICATION_TASK_ACTIVE_PRESET_INDEX) {
@@ -331,29 +357,27 @@ static uint16_t has_server_read_callback(hci_con_handle_t con_handle, uint16_t a
     return 0;
 }
 
-static bool has_valid_opcode_parameters_length(has_opcode_t opcode, uint16_t parameter_lenght){
+static bool has_valid_opcode_parameters_length(has_opcode_t opcode, uint16_t parameter_length){
     switch (opcode) {
         case HAS_OPCODE_READ_PRESETS_REQUEST:
-            return (parameter_lenght == 2);
+            return (parameter_length == 2);
 
         case HAS_OPCODE_WRITE_PRESET_NAME:
-            return (parameter_lenght < 42);
+            return (parameter_length < 42);
 
         case HAS_OPCODE_SET_ACTIVE_PRESET:
         case HAS_OPCODE_SET_ACTIVE_PRESET_SYNCHRONIZED_LOCALLY:
-            return (parameter_lenght == 1);
+            return (parameter_length == 1);
             
         case HAS_OPCODE_SET_NEXT_PRESET:
         case HAS_OPCODE_SET_PREVIOUS_PRESET:
         case HAS_OPCODE_SET_NEXT_PRESET_SYNCHRONIZED_LOCALLY:
         case HAS_OPCODE_SET_PREVIOUS_PRESET_SYNCHRONIZED_LOCALLY:
-            return (parameter_lenght == 0);
+            return (parameter_length == 0);
         
         default:
             btstack_unreachable();
-            break;
     }
-    return true;
 }
 
 static has_preset_record_t * find_regular_preset_record_with_index(uint8_t index){
@@ -536,7 +560,6 @@ static int has_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
 
 static void has_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
-    UNUSED(packet);
     UNUSED(size);
 
     if (packet_type != HCI_EVENT_PACKET){
@@ -681,22 +704,6 @@ uint8_t find_position_of_regular_preset_record_to_insert(has_preset_record_t * n
     return insert_pos;
 }
 
-
-static void dump_preset_records(char * msg, uint8_t pos, uint8_t index){
-#ifdef ENABLE_TESTING_SUPPORT
-    printf("\n%s: [%d] index %d, total %d, queued %d\n", msg, pos, index, has_preset_records_num, has_queued_preset_records_num);
-    uint8_t i;
-    for (i = 0; i < has_preset_records_num; i++){
-        has_preset_record_t * preset = &has_preset_records[i];
-        printf("N[%d] - %d, %s, P:0x%02x, A:%d, scheduled_task = %d\n", i, preset->index, preset->name, preset->properties, preset->active?1u:0u, preset->scheduled_task);
-    }
-    for (i = has_preset_records_num; i < has_preset_records_max_num; i++){
-        has_preset_record_t * preset = &has_preset_records[i];
-        printf("Q[%d] - %d, %s, P:0x%02x, A:%d, cheduled_task = %d\n", i, preset->index, preset->name, preset->properties, preset->active?1u:0u, preset->scheduled_task);
-    }
-#endif
-}
-
 static void has_insert_preset_record(uint8_t insert_pos, uint8_t index, uint8_t properties, char * name){
     // move up, the queued change will be overwritten
     has_preset_records_num++;
@@ -737,20 +744,11 @@ uint8_t find_position_of_regular_preset_record_to_delete(has_preset_record_t * d
 }
 
 static void has_set_active_preset_record(uint8_t update_pos) {
-    uint8_t i;
-    uint8_t last_record_pos;
-
-    // shift queued elements to the left to fill the gap of deleted "task" preset record
-    last_record_pos = has_preset_records_num + has_queued_preset_records_num - 1;
-    for (i = has_preset_records_num; i < last_record_pos; i++) {
-        has_preset_records[i] = has_preset_records[i + 1];
-    }
-    has_queued_preset_records_num--;
-    has_clear_preset_record(last_record_pos);
-
     btstack_assert(update_pos < has_preset_records_num);
+    has_remove_task_from_queue();
 
     // reset old active
+    uint8_t i;
     for (i = 0; i < has_preset_records_num; i++) {
         has_preset_records[i].active = false;
     }
@@ -760,22 +758,12 @@ static void has_set_active_preset_record(uint8_t update_pos) {
     has_active_preset_index = preset_record->index;
     has_preset_records[update_pos].active = true;
 
-    dump_preset_records("After execute active", 0, 0);
+    dump_preset_records("After execute active");
 }
 
 static void has_set_preset_record_availability(uint8_t update_pos, bool available) {
-    uint8_t i;
-    uint8_t last_record_pos;
-
-    // shift queued elements to the left to fill the gap of deleted "task" preset record
-    last_record_pos = has_preset_records_num + has_queued_preset_records_num - 1;
-    for (i = has_preset_records_num; i < last_record_pos; i++) {
-        has_preset_records[i] = has_preset_records[i + 1];
-    }
-    has_queued_preset_records_num--;
-    has_clear_preset_record(last_record_pos);
-
     btstack_assert(update_pos < has_preset_records_num);
+    has_remove_task_from_queue();
 
     has_preset_record_t * preset_record = &has_preset_records[update_pos];
     // update
@@ -786,16 +774,7 @@ static void has_set_preset_record_availability(uint8_t update_pos, bool availabl
         has_preset_records[update_pos].properties &= ~HEARING_AID_PRESET_PROPERTIES_MASK_NAME_IS_AVAILABLE;
     }
 
-    dump_preset_records("After execute availability", 0, 0);
-}
-
-static void has_clear_preset_record(uint8_t record_pos) {// clear the last element (optional, for cleanliness)
-    has_preset_records[record_pos].index = HAS_EMPTY_PRESET_RECORD_INDEX;
-    has_preset_records[record_pos].properties = 0;
-    has_preset_records[record_pos].name[0] = '\0';
-    has_preset_records[record_pos].active = false;
-    has_preset_records[record_pos].scheduled_task = 0;
-    has_preset_records[record_pos].calculated_position = HAS_INVALID_PRESET_RECORD_POSITION;
+    dump_preset_records("After execute availability");
 }
 
 static void has_server_can_send_now(void * context){
@@ -844,7 +823,6 @@ static void has_server_can_send_now(void * context){
                 }
                 default:
                     btstack_unreachable();
-                    return;
             }
         }
 
@@ -1152,10 +1130,6 @@ void hearing_access_service_server_execute(void){
             has_insert_preset_record(insert_pos, value[4], value[5], (char *) &value[6]);
 
         } else if (preset->scheduled_task == HAS_NOTIFICATION_TASK_PRESET_RECORD_DELETED){
-            // first in queue:
-            uint8_t preset_pos = has_preset_records_num;
-            has_preset_record_t * preset = &has_preset_records[preset_pos];
-            btstack_assert(preset->scheduled_task > 0);
 
             uint8_t delete_pos = find_position_of_regular_preset_record_to_delete(preset);
             if (delete_pos != HAS_INVALID_PRESET_RECORD_POSITION){
@@ -1172,6 +1146,6 @@ void hearing_access_service_server_execute(void){
         }
     }
 
-   dump_preset_records("After execute", 0, 0);
+   dump_preset_records("After execute");
 }
 #endif

@@ -54,7 +54,7 @@ extern "C" {
     typedef enum {
         HAS_SERVER_CONNECTION_STATE_READY = 0,
         HAS_SERVER_CONNECTION_STATE_PENDING_ATT_RESPONSE,
-        HAS_SERVER_CONNECTION_STATE_PENDING_ATT_INDICATION,
+        HAS_SERVER_CONNECTION_STATE_PENDING_ATT_INDICATION
     } has_server_connection_state_t;
 
 typedef struct {
