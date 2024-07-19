@@ -58,7 +58,7 @@ extern "C" {
 #include "btstack_linked_list.h"
 #include "btstack_debug.h"
 
-#ifdef ENABLE_LOG_APP_MESSAGING
+#if defined(ENABLE_LOG_APP_MESSAGING) && defined(ENABLE_LOG_DEBUG)
 	#define log_app_messaging log_debug
 	#define LOG_APP_CODE(...) __VA_ARGS__
 #else
