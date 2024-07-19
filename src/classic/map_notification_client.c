@@ -233,7 +233,7 @@ static void map_notification_client_handle_can_send_now(uint16_t goep_cid) {
 
         case MNC_STATE_W2_PUT_SEND_EVENT: 
 #ifdef ENABLE_GOEP_L2CAP
-            log_error("With L2CAP in MAP_OLD MAP/MSE/MMN/BV-04-C PTS 8.6.0B6 sets maximum packet length suddendly to only 150 bytes but minimum size reports are 200+")
+            log_error("With L2CAP in MAP_OLD MAP/MSE/MMN/BV-04-C PTS 8.6.0B6 sets maximum packet length suddendly to only 150 bytes but minimum size reports are 200+");
 #else
             goep_client_request_create_put(mnc->goep_client.cid);
             goep_client_header_add_srm_enable(mnc->goep_client.cid);

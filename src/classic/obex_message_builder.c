@@ -47,7 +47,7 @@
 #include "classic/obex.h"
 #include "classic/obex_message_builder.h"
 
-#ifdef ENABLE_LOG_DEBUG
+#if defined(ENABLE_LOG_DEBUG) || defined(ENABLE_LOG_ERROR)
 #define LUT(which) [which] = #which
 const char* lut_type[0xFF] = {
 LUT(OBEX_HEADER_NAME),
