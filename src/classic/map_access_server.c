@@ -1135,7 +1135,7 @@ uint16_t map_access_server_get_max_body_size(uint16_t map_cid) {
     btstack_assert(map_access_server->request.object_type != MAP_OBJECT_TYPE_INVALID);
     
     uint16_t goep_max_message_size = goep_server_response_get_max_message_size(map_access_server->goep_cid);
-    log_debug("goep_max_message_size:%u app_params header_size:%u", goep_max_message_size, map_access_server->response.header_pos)
+    log_debug("goep_max_message_size:%u app_params header_size:%u", goep_max_message_size, map_access_server->response.header_pos);
     // calc max body size without reserving outgoing buffer: packet size - OBEX Header (3) - SRM Header (2) - Body Header (3)
     return goep_max_message_size - 3 - 2 - 3 - map_access_server->response.header_pos;
 }
