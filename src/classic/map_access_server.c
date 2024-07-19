@@ -1156,7 +1156,7 @@ uint16_t map_access_server_get_max_body_size(uint16_t map_cid) {
     return goep_max_message_size - 3 - 2 - 3 - 3 - map_access_server->response.header_pos - hdr_name_len - hdr_type_len;
 }
 
-uint16_t map_access_server_send_get_put_response(uint16_t map_cid, uint8_t response_code, char* hdr_name, uint32_t continuation, size_t body_len, const uint8_t* body) {
+uint16_t map_access_server_send_response(uint16_t map_cid, uint8_t response_code, char* hdr_name, char* type_name, uint32_t continuation, size_t body_len, const uint8_t* body) {
     map_access_server_t* map_access_server = map_access_server_for_goep_cid(map_cid);
     log_debug("map_cid:%u, response_code:0x%02x, hdr_name:%s, continuation:%u, body_len:%u, body [%s]",
         map_cid, response_code, hdr_name, continuation, body_len, body);
