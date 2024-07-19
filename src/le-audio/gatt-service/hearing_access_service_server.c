@@ -784,45 +784,41 @@ static void has_server_can_send_now(void * context){
     // first preset record in "wait to process" queue:
     uint8_t queued_preset_pos = has_preset_records_num;
     has_preset_record_t * queued_preset = &has_preset_records[queued_preset_pos];
-    uint8_t status;
+
     if (queued_preset->scheduled_task == HAS_NOTIFICATION_TASK_CONTROL_POINT_OPERATION){
+        if (connection->state == HAS_SERVER_CONNECTION_STATE_PENDING_ATT_RESPONSE){
+            att_server_response_ready(connection->con_handle);
+            return;
+        }
+
         if ((connection->scheduled_control_point_notification_tasks & HAS_CP_NOTIFICATION_TASK_READ_PRESETS) > 0u){
-            switch (connection->state){
-                case HAS_SERVER_CONNECTION_STATE_PENDING_ATT_RESPONSE:
-                    att_server_response_ready(connection->con_handle);
-                    return;
+            btstack_assert(connection->state == HAS_SERVER_CONNECTION_STATE_PENDING_ATT_INDICATION);
 
-                case HAS_SERVER_CONNECTION_STATE_PENDING_ATT_INDICATION: {
-                    bool is_last_preset_record;
-                    has_preset_record_t *preset = has_read_presets_operation_get_next_preset_record(connection,
-                                                                                                    &is_last_preset_record);
+            bool is_last_preset_record;
+            has_preset_record_t *preset = has_read_presets_operation_get_next_preset_record(connection,
+                                                                                            &is_last_preset_record);
 
-                    uint8_t value[6 + HAS_PRESET_RECORD_NAME_MAX_LENGTH];
-                    uint8_t pos = 0;
-                    value[pos++] = (uint8_t) HAS_OPCODE_READ_PRESET_RESPONSE;
-                    value[pos++] = is_last_preset_record ? 1u : 0u;
-                    value[pos++] = preset->index;
-                    value[pos++] = preset->properties;
+            uint8_t value[6 + HAS_PRESET_RECORD_NAME_MAX_LENGTH];
+            uint8_t pos = 0;
+            value[pos++] = (uint8_t) HAS_OPCODE_READ_PRESET_RESPONSE;
+            value[pos++] = is_last_preset_record ? 1u : 0u;
+            value[pos++] = preset->index;
+            value[pos++] = preset->properties;
 
-                    uint16_t mtu = att_server_get_mtu(connection->con_handle);
-                    btstack_assert(mtu > (pos + 3));
-                    uint16_t available_payload_size = mtu - 3 - pos;
-                    uint16_t name_len = btstack_min(available_payload_size, strlen(preset->name));
-                    btstack_strcpy((char *) &value[pos], name_len, preset->name);
-                    pos += name_len;
+            uint16_t mtu = att_server_get_mtu(connection->con_handle);
+            btstack_assert(mtu > (pos + 3));
+            uint16_t available_payload_size = mtu - 3 - pos;
+            uint16_t name_len = btstack_min(available_payload_size, strlen(preset->name));
+            btstack_strcpy((char *) &value[pos], name_len, preset->name);
+            pos += name_len;
 
-                    status = att_server_indicate(connection->con_handle, has_control_point_value_handle, &value[0], pos);
-                    printf("Indication status 0x%02x\n", status);
-                    if (is_last_preset_record) {
-                        connection->state = HAS_SERVER_CONNECTION_STATE_READY;
-                        connection->scheduled_control_point_notification_tasks &= ~HAS_CP_NOTIFICATION_TASK_READ_PRESETS;
-                        has_remove_task_from_queue();
-                        break;
-                    }
-                    break;
-                }
-                default:
-                    btstack_unreachable();
+            (void) att_server_indicate(connection->con_handle, has_control_point_value_handle, &value[0], pos);
+
+            if (is_last_preset_record) {
+                connection->state = HAS_SERVER_CONNECTION_STATE_READY;
+                connection->scheduled_control_point_notification_tasks &= ~HAS_CP_NOTIFICATION_TASK_READ_PRESETS;
+                has_remove_task_from_queue();
+
             }
         }
 
