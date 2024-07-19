@@ -223,6 +223,14 @@ uint8_t obex_message_builder_header_add_variable(uint8_t * buffer, uint16_t buff
  */
 uint8_t obex_message_builder_header_fillup_variable(uint8_t * buffer, uint16_t buffer_len, uint8_t header_type, const uint8_t * header_data, uint16_t header_data_length, uint32_t * ret_length);
 
+
+/**
+ * @brief returns name header size in bytes from its string len
+ * @param name_len - use value returned by strlen
+ * @return header size in bytes
+ */
+uint8_t obex_message_builder_get_header_name_len_from_strlen(uint16_t name_len);
+
 /**
  * @brief Add name header to current request
  * @param buffer
@@ -271,6 +279,13 @@ uint8_t obex_message_builder_header_add_target(uint8_t * buffer, uint16_t buffer
  * @return status
  */
 uint8_t obex_message_builder_header_add_who(uint8_t * buffer, uint16_t buffer_len, const uint8_t * who);
+
+/**
+ * @brief returns the length of the type header for string <type>
+ * @param type
+ * @return header len in bytes
+ */
+uint8_t obex_message_builder_get_header_type_len(char* type);
 
 
 /**
