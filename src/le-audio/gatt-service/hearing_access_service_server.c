@@ -469,6 +469,39 @@ static int has_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
 
         switch (opcode) {
             case HAS_OPCODE_READ_PRESETS_REQUEST:
+                switch (connection->state){
+                    case HAS_SERVER_CONNECTION_STATE_READY:
+                        index = buffer[pos++];
+                        num_presets = buffer[pos];
+
+                        if ((index == 0) || (num_presets == 0)){
+                            return ATT_ERROR_OUT_OF_RANGE;
+                        }
+
+                        if ( (has_preset_records_num + has_queued_preset_records_num) >= (has_preset_records_max_num - 1) ){
+                            return ATT_ERROR_INSUFFICIENT_RESOURCES;
+                        }
+
+                        connection->start_index = index;
+                        connection->num_presets_to_read  = num_presets;
+                        connection->preset_position = HAS_INVALID_PRESET_RECORD_POSITION;
+                        // try
+                        connection->state = HAS_SERVER_CONNECTION_STATE_PENDING_ATT_INDICATION;
+
+                        att_error_code = is_read_operation_valid(connection);
+                        if (att_error_code == ATT_ERROR_SUCCESS) {
+                            printf("Schedule read %d presets from index %d\n", index, num_presets);
+                            connection->state = HAS_SERVER_CONNECTION_STATE_PENDING_ATT_INDICATION;
+                            has_add_cp_operation_to_queue(connection, HAS_CP_NOTIFICATION_TASK_READ_PRESETS);
+                            has_server_schedule_task();
+                        } else {
+                            connection->state = HAS_SERVER_CONNECTION_STATE_READY;
+                        }
+                        return att_error_code;
+
+                    default:
+                        break;
+                }
 //                if (connection->state == HAS_SERVER_CONNECTION_STATE_PENDING_ATT_RESPONSE){
 //                    att_error_code = is_read_operation_valid(connection);
 //                    if (att_error_code == ATT_ERROR_SUCCESS){
@@ -480,33 +513,7 @@ static int has_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
 //                    }
 //                    return ATT_READ_ERROR_CODE_OFFSET + att_error_code;
 //                }
-                index = buffer[pos++];
-                num_presets = buffer[pos];
 
-                if ((index == 0) || (num_presets == 0)){
-                    return ATT_ERROR_OUT_OF_RANGE;
-                }
-
-                if ( (has_preset_records_num + has_queued_preset_records_num) >= (has_preset_records_max_num - 1) ){
-                    return ATT_ERROR_INSUFFICIENT_RESOURCES;
-                }
-
-                connection->start_index = index;
-                connection->num_presets_to_read  = num_presets;
-                connection->preset_position = HAS_INVALID_PRESET_RECORD_POSITION;
-                // try
-                connection->state = HAS_SERVER_CONNECTION_STATE_PENDING_ATT_INDICATION;
-
-                att_error_code = is_read_operation_valid(connection);
-                if (att_error_code == ATT_ERROR_SUCCESS) {
-                    printf("Schedule read %d presets from index %d\n", index, num_presets);
-                    connection->state = HAS_SERVER_CONNECTION_STATE_PENDING_ATT_INDICATION;
-                    has_add_cp_operation_to_queue(connection, HAS_CP_NOTIFICATION_TASK_READ_PRESETS);
-                    has_server_schedule_task();
-                } else {
-                    connection->state = HAS_SERVER_CONNECTION_STATE_READY;
-                }
-                return att_error_code;
 //
 //                has_add_cp_operation_to_queue(connection, HAS_NOTIFICATION_TASK_CONTROL_POINT_OPERATION);
 //                has_server_schedule_task();
