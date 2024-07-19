@@ -47,6 +47,33 @@
 #include "classic/obex.h"
 #include "classic/obex_message_builder.h"
 
+#ifdef ENABLE_LOG_DEBUG
+#define LUT(which) [which] = #which
+const char* lut_type[0xFF] = {
+LUT(OBEX_HEADER_NAME),
+LUT(OBEX_HEADER_DESCRIPTION),
+LUT(OBEX_HEADER_IMG_HANDLE),
+LUT(OBEX_HEADER_TYPE),
+LUT(OBEX_HEADER_TIME_ISO_8601),
+LUT(OBEX_HEADER_TARGET),
+LUT(OBEX_HEADER_HTTP),
+LUT(OBEX_HEADER_BODY),
+LUT(OBEX_HEADER_END_OF_BODY),
+LUT(OBEX_HEADER_WHO),
+LUT(OBEX_HEADER_APPLICATION_PARAMETERS),
+LUT(OBEX_HEADER_AUTHENTICATION_CHALLENGE),
+LUT(OBEX_HEADER_AUTHENTICATION_RESPONSE),
+LUT(OBEX_HEADER_OBJECT_CLASS),
+LUT(OBEX_HEADER_IMG_DESCRIPTOR),
+LUT(OBEX_HEADER_SINGLE_RESPONSE_MODE),
+LUT(OBEX_HEADER_SINGLE_RESPONSE_MODE_PARAMETER),
+LUT(OBEX_HEADER_COUNT),
+LUT(OBEX_HEADER_LENGTH),
+LUT(OBEX_HEADER_TIME_4_BYTE),
+LUT(OBEX_HEADER_CONNECTION_ID),
+};
+#endif
+
 static uint8_t obex_message_builder_packet_init(uint8_t * buffer, uint16_t buffer_len, uint8_t opcode_or_response_code){
     if (buffer_len < 3) return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
     buffer[0] = opcode_or_response_code;
@@ -56,10 +83,14 @@ static uint8_t obex_message_builder_packet_init(uint8_t * buffer, uint16_t buffe
 
 static uint8_t obex_message_builder_packet_append(uint8_t * buffer, uint16_t buffer_len, const uint8_t * data, uint16_t len){
     uint16_t pos = big_endian_read_16(buffer, 1);
+    
+    log_error("add type:0x%02x(%s) buffer_len:%u size:%u pos:%u len:%u", data[0], lut_type[data[0]], buffer_len, pos + len, pos, len);
+    
     if (buffer_len < pos + len) {
-        log_error("ERROR_CODE_MEMORY_CAPACITY_EXCEEDED buffer_len:%u size:%u", buffer_len, pos + len);
+        log_error("ERROR_CODE_MEMORY_CAPACITY_EXCEEDED type:0x%02x(%s) buffer_len:%u size:%u pos:%u len:%u", buffer[0], lut_type[buffer[0]], buffer_len, pos + len, pos, len);
         return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
     }
+    
     (void)memcpy(&buffer[pos], data, len);
     pos += len;
     big_endian_store_16(buffer, 1, pos);
