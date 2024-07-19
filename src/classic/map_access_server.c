@@ -52,6 +52,7 @@
 
 #include "classic/obex.h"
 #include "classic/obex_parser.h"
+#include "classic/obex_message_builder.h"
 #include "classic/goep_server.h"
 #include "classic/sdp_util.h"
 #include "classic/map.h"
@@ -172,6 +173,7 @@ typedef struct {
     struct {
         uint8_t code;
         char *hdr_name; // pointer to a name string for the response header provided by the application or NULL
+        char *hdr_type; // pointer to a type string for the response header provided by the application or NULL
         uint8_t header_data[MAP_SERVER_MAX_APP_PARAMS_LEN];
         uint16_t header_pos;
         uint16_t body_len;
@@ -399,6 +401,14 @@ static void map_access_server_add_name_header(map_access_server_t* map_access_se
     if (map_access_server->response.hdr_name != NULL) {
 
         goep_server_header_add_name(map_access_server->goep_cid, map_access_server->response.hdr_name);
+    }
+}
+
+static void map_access_server_add_type_header(map_access_server_t* map_access_server) {
+
+    if (map_access_server->response.hdr_type != NULL) {
+
+        goep_server_header_add_type(map_access_server->goep_cid, map_access_server->response.hdr_type);
     }
 }
 
@@ -1119,13 +1129,19 @@ static void map_access_server_build_response(map_access_server_t* map_access_ser
     goep_server_response_create_general(map_access_server->goep_cid);
     map_access_server_add_srm_headers(map_access_server);
     map_access_server_add_name_header(map_access_server);
+    map_access_server_add_type_header(map_access_server);
+
     // Application Params already in map_access_server->response.header_data
     if (map_access_server->response.header_pos > 0)
         goep_server_header_add_application_parameters(map_access_server->goep_cid, map_access_server->response.header_data, map_access_server->response.header_pos);
 }
 
+// TODO: currently a lot of heuristics/hard coded to determine the available body space - should reflect the real packet created later
 uint16_t map_access_server_get_max_body_size(uint16_t map_cid) {
     map_access_server_t* map_access_server = map_access_server_for_goep_cid(map_cid);
+    uint16_t hdr_name_len = obex_message_builder_get_header_name_len_from_strlen(map_access_server->response.hdr_name ? (uint16_t)strlen(map_access_server->response.hdr_name) : 0);
+    uint16_t hdr_type_len = obex_message_builder_get_header_type_len(map_access_server->response.hdr_type);
+
     if (map_access_server == NULL) {
         return 0;
     }
@@ -1136,8 +1152,8 @@ uint16_t map_access_server_get_max_body_size(uint16_t map_cid) {
     
     uint16_t goep_max_message_size = goep_server_response_get_max_message_size(map_access_server->goep_cid);
     log_debug("goep_max_message_size:%u app_params header_size:%u", goep_max_message_size, map_access_server->response.header_pos);
-    // calc max body size without reserving outgoing buffer: packet size - OBEX Header (3) - SRM Header (2) - Body Header (3)
-    return goep_max_message_size - 3 - 2 - 3 - map_access_server->response.header_pos;
+    // calc max body size without reserving outgoing buffer: packet size - OBEX Header (3) - SRM Header (2) - Body Header (3) - Unknown additional 3 bytes???
+    return goep_max_message_size - 3 - 2 - 3 - 3 - map_access_server->response.header_pos - hdr_name_len - hdr_type_len;
 }
 
 uint16_t map_access_server_send_get_put_response(uint16_t map_cid, uint8_t response_code, char* hdr_name, uint32_t continuation, size_t body_len, const uint8_t* body) {
@@ -1152,7 +1168,7 @@ uint16_t map_access_server_send_get_put_response(uint16_t map_cid, uint8_t respo
     // double check size
 
     // calc max body size without reserving outgoing buffer: packet size - OBEX Header (3) - SRM Header (2) - Body Header (3)
-    uint16_t max_body_size = goep_server_response_get_max_message_size(map_access_server->goep_cid) - (3 + 2 + 3);
+    uint16_t max_body_size = map_access_server_get_max_body_size(map_access_server->goep_cid);
     if (body_len > max_body_size) {
         RUN_AND_LOG_ACTION(return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;)
     }
@@ -1164,6 +1180,7 @@ uint16_t map_access_server_send_get_put_response(uint16_t map_cid, uint8_t respo
     map_access_server->response.code = response_code;
 #endif
     map_access_server->response.hdr_name = hdr_name;
+    map_access_server->response.hdr_type = type_name;
     map_access_server->request.continuation = continuation;
     map_access_server->state = MAP_SERVER_STATE_SEND_USER_RESPONSE;
     map_access_server->response.body_data = body;
