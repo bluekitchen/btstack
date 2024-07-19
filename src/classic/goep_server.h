@@ -207,6 +207,14 @@ uint8_t goep_server_header_add_srm_enable_wait(uint16_t goep_cid);
 uint8_t goep_server_header_add_name(uint16_t goep_cid, const char *name);
 
 /**
+ * @brief Add type header to current response
+ * @param goep_cid
+ * @param name \0 terminated string
+ * @return
+ */
+uint8_t goep_server_header_add_type(uint16_t goep_cid, const char *type);
+
+/**
  * @brief Add application parameters header to current request
  * @param goep_cid
  * @param data

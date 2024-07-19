@@ -680,6 +680,22 @@ uint8_t goep_server_header_add_name(uint16_t goep_cid, const char* name) {
     return obex_message_builder_header_add_name(buffer, buffer_len, name);
 }
 
+uint8_t goep_server_header_add_type(uint16_t goep_cid, const char* type) {
+
+    if (type == NULL) {
+        return OBEX_UNKNOWN_ERROR;
+    }
+
+    goep_server_connection_t* connection = goep_server_get_connection_for_goep_cid(goep_cid);
+    if (connection == NULL) {
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+
+    uint8_t* buffer = goep_server_get_outgoing_buffer(connection);
+    uint16_t buffer_len = goep_server_get_outgoing_buffer_len(connection);
+    return obex_message_builder_header_add_type(buffer, buffer_len, type);
+}
+
 uint8_t goep_server_header_add_application_parameters(uint16_t goep_cid, const uint8_t * data, uint16_t length){
     goep_server_connection_t * connection = goep_server_get_connection_for_goep_cid(goep_cid);
     if (connection == NULL) {
