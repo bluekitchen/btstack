@@ -127,13 +127,17 @@ typedef struct att_connection {
 #define ATT_READ_RESPONSE_PENDING                 0xffffu
 
 // internally used to signal write response pending
+// To ask ATT Server to defer the write response, you can return ATT_ERROR_WRITE_RESPONSE_PENDING in your att_write_callback
 #define ATT_INTERNAL_WRITE_RESPONSE_PENDING       0xfffeu
 
 /**
  * @brief ATT Client Read Callback for Dynamic Data
  * - if buffer == NULL, don't copy data, just return size of value
  * - if buffer != NULL, copy data and return number bytes copied
+ *
  * If ENABLE_ATT_DELAYED_READ_RESPONSE is defined, you may return ATT_READ_RESPONSE_PENDING if data isn't available yet
+ * and call att_server_response_ready to re-trigger the callback.
+ *
  * @param con_handle of hci le connection
  * @param attribute_handle to be read
  * @param offset defines start of attribute value
@@ -151,6 +155,9 @@ typedef uint16_t (*att_read_callback_t)(hci_con_handle_t con_handle, uint16_t at
  * Otherwise, all callbacks will be called with ATT_TRANSACTION_MODE_CANCEL.
  *
  * If the additional validation step is not needed, just return 0 for all callbacks with transaction mode ATT_TRANSACTION_MODE_VALIDATE.
+ *
+ * If ENABLE_ATT_DELAYED_READ_RESPONSE is defined, you may return ATT_ERROR_WRITE_RESPONSE_PENDING if data isn't available yet
+ * and call att_server_response_ready to re-trigger the callback.
  *
  * @param con_handle of hci le connection
  * @param attribute_handle to be written

@@ -633,6 +633,8 @@ Similar to other protocols, it might be not possible to send any time.
 To send a Notification, you can call *att_server_request_to_send_notification*
 to request a callback, when yuo can send the Notification.
 
+### Deferred Handling of ATT Read / Write Requests
+
 If your application cannot handle an ATT Read Request in the *att_read_callback*
 in some situations, you can enable support for this by adding ENABLE_ATT_DELAYED_RESPONSE
 to *btstack_config.h*. Now, you can store the requested attribute handle and return
@@ -645,6 +647,12 @@ When you've got the data for all requested attributes ready, you can call
 *att_server_response_ready*, which will trigger processing of the current request.
 Please keep in mind that there is only one active ATT operation and that it has a 30 second
 timeout after which the ATT server is considered defunct by the GATT Client.
+
+Similarly, you can return ATT_ERROR_WRITE_RESPONSE_PENDING in the *att_write_callback*.
+The ATT Server will not respond to the ATT Client in this case and wait for your code to
+call *att_server_response_ready*, which then triggers the  *att_write_callback* again.
+
+Please have a look at the [ATT Delayed Response example](../examples/examples/#sec:attdelayedresponseExample).
 
 ### Implementing Standard GATT Services {#sec:GATTStandardServices}
 
