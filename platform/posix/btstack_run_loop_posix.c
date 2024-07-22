@@ -172,6 +172,9 @@ static void btstack_run_loop_posix_execute(void) {
     log_info("POSIX run loop using ettimeofday fallback.");
 #endif
 
+    // clear exit flag
+    btstack_run_loop_posix_exit_requested = false;
+
     while (btstack_run_loop_posix_exit_requested == false) {
         // collect FDs
         FD_ZERO(&descriptors_read);
