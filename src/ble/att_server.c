@@ -560,11 +560,6 @@ static void att_signed_write_handle_cmac_result(uint8_t hash[8]){
 static void att_server_handle_response_pending(att_server_t *att_server, const att_connection_t *att_connection,
                                                const uint8_t *eatt_buffer,
                                                uint16_t att_response_size) {
-    // free reserved buffer
-    if (eatt_buffer == NULL){
-        l2cap_release_packet_buffer();
-    }
-
     // update state
     att_server->state = ATT_SERVER_RESPONSE_PENDING;
 
@@ -586,6 +581,11 @@ static void att_server_handle_response_pending(att_server_t *att_server, const a
             btstack_assert(att_server_client_read_callback != NULL);
             (*att_server_client_read_callback)(att_connection->con_handle, ATT_READ_RESPONSE_PENDING, 0, NULL, 0);
         }
+    }
+
+    // free reserved buffer - might trigger next read/write
+    if (eatt_buffer == NULL){
+        l2cap_release_packet_buffer();
     }
 }
 #endif
