@@ -2760,22 +2760,8 @@ static uint8_t hfp_ag_setup_audio_connection(hfp_connection_t * hfp_connection){
         return ERROR_CODE_SUCCESS;
     } 
 
-    uint8_t i;
-    bool codec_was_in_use = false;
-    bool better_codec_can_be_used = false;
-
-    for (i = 0; i<hfp_connection->remote_codecs_nr; i++){
-        if (hfp_connection->negotiated_codec == hfp_connection->remote_codecs[i]){
-            codec_was_in_use = true;
-        } else if (hfp_connection->negotiated_codec < hfp_connection->remote_codecs[i]){
-            better_codec_can_be_used = true;
-        }
-    }
-    
-    if (!codec_was_in_use || better_codec_can_be_used){
-        hfp_connection->ag_send_common_codec = true;
-        hfp_connection->codecs_state = HFP_CODECS_IDLE;
-    }
+    hfp_connection->ag_send_common_codec = true;
+    hfp_connection->codecs_state = HFP_CODECS_IDLE;
     return ERROR_CODE_SUCCESS;
 }
 
