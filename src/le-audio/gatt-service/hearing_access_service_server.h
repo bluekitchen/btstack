@@ -104,6 +104,7 @@ uint8_t hearing_access_service_server_delete_preset(uint8_t index);
 uint8_t hearing_access_service_server_preset_record_set_active(uint8_t index);
 uint8_t hearing_access_service_server_preset_record_set_available(uint8_t index);
 uint8_t hearing_access_service_server_preset_record_set_unavailable(uint8_t index);
+uint8_t hearing_access_service_server_preset_record_set_name(uint8_t index, const char * name);
 
 #ifdef ENABLE_TESTING_SUPPORT
 void hearing_access_service_server_execute(void);
