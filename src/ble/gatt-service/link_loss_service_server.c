@@ -111,6 +111,7 @@ static void lls_server_stop_alerting(void){
 } 
 
 static void lls_server_timer_timeout_handler(btstack_timer_source_t * timer){
+    UNUSED(timer);
     lls_server_emit_alarm_stopped(true);
     lls_server_alert_state = LLS_SERVER_ALERT_STATE_IDLE;
 }
