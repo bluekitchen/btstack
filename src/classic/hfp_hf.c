@@ -87,6 +87,13 @@ static uint8_t  hfp_hf_speaker_gain;
 static uint8_t  hfp_hf_microphone_gain;
 static char hfp_hf_phone_number[25];
 
+// Apple Accessory Information
+static uint16_t hfp_hf_apple_vendor_id;
+static uint16_t hfp_hf_apple_product_id;
+static const char * hfp_hf_apple_version;
+static uint8_t  hfp_hf_apple_features;
+
+
 static int has_codec_negotiation_feature(hfp_connection_t * hfp_connection){
 	int hf = get_bit(hfp_hf_supported_features, HFP_HFSF_CODEC_NEGOTIATION);
 	int ag = get_bit(hfp_connection->remote_supported_features, HFP_AGSF_CODEC_NEGOTIATION);
@@ -1059,6 +1066,17 @@ static void hfp_hf_run_for_context(hfp_connection_t * hfp_connection){
         }
     }
 
+    if (hfp_connection->send_apple_information){
+        hfp_connection->send_apple_information = false;
+        hfp_connection->ok_pending = 1;
+        hfp_connection->response_pending_for_command = HFP_CMD_APPLE_ACCESSORY_INFORMATION;
+        char buffer[40];
+        snprintf(buffer, sizeof(buffer), "AT%s=%04x-%04x-%s,%u\r", HFP_APPLE_ACCESSORY_INFORMATION,
+                 hfp_hf_apple_vendor_id, hfp_hf_apple_product_id, hfp_hf_apple_version, hfp_hf_apple_features);
+        (void) send_str_over_rfcomm(hfp_connection->rfcomm_cid, buffer);
+        return;
+    }
+
     if (hfp_connection->send_custom_message != NULL){
         const char * message = hfp_connection->send_custom_message;
         hfp_connection->send_custom_message = NULL;
@@ -1096,6 +1114,9 @@ static void hfp_hf_slc_established(hfp_connection_t * hfp_connection){
         hfp_emit_ag_indicator_status_event(hfp_connection, &hfp_connection->ag_indicators[i]);
     }
     
+    hfp_connection->apple_accessory_commands_supported = false;
+    hfp_connection->send_apple_information = hfp_hf_apple_vendor_id != 0;
+
     // restore volume settings
     hfp_connection->speaker_gain = hfp_hf_speaker_gain;
     hfp_connection->send_speaker_gain = 1;
@@ -1124,6 +1145,11 @@ static void hfp_hf_handle_suggested_codec(hfp_connection_t * hfp_connection){
 		hfp_connection->hf_send_supported_codecs = true;
 	}
 }
+static void hfp_hf_apple_extension_supported(hfp_connection_t * hfp_connection, bool supported){
+    hfp_connection->apple_accessory_commands_supported = supported;
+    log_info("Apple Extension supported: %u", supported);
+    hfp_emit_event(hfp_connection, HFP_SUBEVENT_APPLE_EXTENSION_SUPPORTED, hfp_hf_microphone_gain);
+}
 
 static bool hfp_hf_switch_on_ok_pending(hfp_connection_t *hfp_connection, uint8_t status){
     bool event_emited = true;
@@ -1140,6 +1166,9 @@ static bool hfp_hf_switch_on_ok_pending(hfp_connection_t *hfp_connection, uint8_
             break;
         case HFP_CMD_CUSTOM_MESSAGE:
             hfp_emit_event(hfp_connection, HFP_SUBEVENT_CUSTOM_AT_MESSAGE_SENT, status);
+            break;
+        case HFP_CMD_APPLE_ACCESSORY_INFORMATION:
+            hfp_hf_apple_extension_supported(hfp_connection, true);
             break;
         default:
             event_emited = false;
@@ -1368,6 +1397,15 @@ static void hfp_hf_handle_rfcomm_command(hfp_connection_t * hfp_connection){
                     break;
             }           
             
+            switch (hfp_connection->response_pending_for_command){
+                case HFP_CMD_APPLE_ACCESSORY_INFORMATION:
+                    hfp_connection->response_pending_for_command = HFP_CMD_NONE;
+                    hfp_hf_apple_extension_supported(hfp_connection, false);
+                    return;
+                default:
+                    break;
+            }
+
             // handle error response for voice activation (HF initiated)
             switch(hfp_connection->vra_state_requested){
                 case HFP_VRA_W4_ENHANCED_VOICE_RECOGNITION_READY_FOR_AUDIO:
@@ -1535,6 +1573,7 @@ void hfp_hf_deinit(void){
     hfp_hf_set_defaults();
 
     hfp_hf_callback = NULL;
+    hfp_hf_apple_vendor_id = 0;
     (void) memset(&hfp_hf_hci_event_callback_registration, 0, sizeof(btstack_packet_callback_registration_t));
     (void) memset(hfp_hf_phone_number, 0, sizeof(hfp_hf_phone_number));
 }
@@ -2220,6 +2259,13 @@ uint8_t hfp_hf_set_hf_indicator(hci_con_handle_t acl_handle, int assigned_number
         }
     }
     return ERROR_CODE_SUCCESS;
+}
+
+void hfp_hf_apple_set_identification(uint16_t vendor_id, uint16_t product_id, const char * version, uint8_t features){
+    hfp_hf_apple_vendor_id  = vendor_id;
+    hfp_hf_apple_product_id = product_id;
+    hfp_hf_apple_version    = version;
+    hfp_hf_apple_features   = features;
 }
 
 uint8_t hfp_hf_send_at_command(hci_con_handle_t acl_handle, const char * at_command){

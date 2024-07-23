@@ -549,6 +549,15 @@ uint8_t hfp_hf_set_hf_indicator(hci_con_handle_t acl_handle, int assigned_number
 int hfp_hf_in_band_ringtone_active(hci_con_handle_t acl_handle);
 
 /**
+ * @brief Provide Apple Accessory information after SLC
+ * @param vendor_id
+ * @param product_id
+ * @param version
+ * @param features bitmask: bit 0 = reserved, bit 1 = battery reporting, bit 2 = docked or powered, bit 3 = Siri
+ */
+void hfp_hf_apple_set_identification(uint16_t vendor_id, uint16_t product_id, const char * version, uint8_t features);
+
+/**
  * @brief Send AT command (most likely a vendor-specific command not part of standard HFP).
  * @note  Result (OK/ERROR) is reported via HFP_SUBEVENT_CUSTOM_AT_MESSAGE_SENT
  *        To receive potential unsolicited result code, add ENABLE_HFP_AT_MESSAGES to get all message via HFP_SUBEVENT_AT_MESSAGE_RECEIVED
