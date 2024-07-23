@@ -92,6 +92,8 @@ static uint16_t hfp_hf_apple_vendor_id;
 static uint16_t hfp_hf_apple_product_id;
 static const char * hfp_hf_apple_version;
 static uint8_t  hfp_hf_apple_features;
+static int8_t hfp_hf_apple_battery_level;
+static int8_t hfp_hf_apple_docked;
 
 
 static int has_codec_negotiation_feature(hfp_connection_t * hfp_connection){
@@ -1077,6 +1079,46 @@ static void hfp_hf_run_for_context(hfp_connection_t * hfp_connection){
         return;
     }
 
+    if (hfp_connection->apple_accessory_commands_supported){
+        uint8_t num_apple_values = 0;
+        uint8_t first_key = 0;
+        uint8_t first_value = 0;
+        if (hfp_connection->apple_accessory_battery_level >= 0){
+            num_apple_values++;
+            first_key = 1;
+            first_value = hfp_connection->apple_accessory_battery_level;
+        }
+        if (hfp_connection->apple_accessory_docked >= 0){
+            num_apple_values++;
+            first_key = 2;
+            first_value = hfp_connection->apple_accessory_docked;
+        }
+        if (num_apple_values > 0){
+            char buffer[40];
+            switch (num_apple_values){
+                case 1:
+                    snprintf(buffer, sizeof(buffer), "AT%s=1,%u,%u\r", HFP_APPLE_ACCESSORY_STATE,
+                             first_key, first_value);
+                    break;
+                case 2:
+                    snprintf(buffer, sizeof(buffer), "AT%s=2,1,%u,2,%u\r", HFP_APPLE_ACCESSORY_STATE,
+                             hfp_connection->apple_accessory_battery_level, hfp_connection->apple_accessory_docked);
+                    break;
+                default:
+                    btstack_unreachable();
+                    break;
+            }
+            // clear
+            hfp_connection->apple_accessory_battery_level = -1;
+            hfp_connection->apple_accessory_docked = -1;
+            // construct
+            hfp_connection->ok_pending = 1;
+            hfp_connection->response_pending_for_command = HFP_CMD_APPLE_ACCESSORY_STATE;
+            (void) send_str_over_rfcomm(hfp_connection->rfcomm_cid, buffer);
+            return;
+        }
+    }
+
     if (hfp_connection->send_custom_message != NULL){
         const char * message = hfp_connection->send_custom_message;
         hfp_connection->send_custom_message = NULL;
@@ -1096,6 +1138,19 @@ static void hfp_hf_run_for_context(hfp_connection_t * hfp_connection){
 
         default:
             break;
+    }
+}
+
+
+static void hfp_hf_apple_trigger_send(void){
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, hfp_get_connections());
+    while (btstack_linked_list_iterator_has_next(&it)){
+        hfp_connection_t * hfp_connection = (hfp_connection_t *)btstack_linked_list_iterator_next(&it);
+        if (hfp_connection->local_role == HFP_ROLE_HF) {
+            hfp_connection->apple_accessory_battery_level = hfp_hf_apple_battery_level;
+            hfp_connection->apple_accessory_docked = hfp_hf_apple_docked;
+        }
     }
 }
 
@@ -1533,6 +1588,9 @@ static void hfp_hf_set_defaults(void){
     hfp_hf_speaker_gain = 9;
     hfp_hf_microphone_gain = 9;
     hfp_hf_indicators_nr = 0;
+    // Apple extension
+    hfp_hf_apple_docked = -1;
+    hfp_hf_apple_battery_level = -1;
 }
 
 uint8_t hfp_hf_set_default_microphone_gain(uint8_t gain){
@@ -1562,7 +1620,7 @@ uint8_t hfp_hf_init(uint8_t rfcomm_channel_nr){
 
     hfp_hf_hci_event_callback_registration.callback = &hfp_hf_hci_event_packet_handler;
     hci_add_event_handler(&hfp_hf_hci_event_callback_registration);
-    
+
     // used to set packet handler for outgoing rfcomm connections - could be handled by emitting an event to us
     hfp_set_hf_rfcomm_packet_handler(&hfp_hf_rfcomm_packet_handler);
     return ERROR_CODE_SUCCESS;
@@ -2266,6 +2324,24 @@ void hfp_hf_apple_set_identification(uint16_t vendor_id, uint16_t product_id, co
     hfp_hf_apple_product_id = product_id;
     hfp_hf_apple_version    = version;
     hfp_hf_apple_features   = features;
+}
+
+uint8_t hfp_hf_apple_set_battery_level(uint8_t battery_level){
+    if (battery_level > 9) {
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
+    hfp_hf_apple_battery_level = (int8_t) battery_level;
+    hfp_hf_apple_trigger_send();
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t hfp_hf_apple_set_docked_state(uint8_t docked){
+    if (docked > 1) {
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
+    hfp_hf_apple_docked = (int8_t) docked;
+    hfp_hf_apple_trigger_send();
+    return ERROR_CODE_SUCCESS;
 }
 
 uint8_t hfp_hf_send_at_command(hci_con_handle_t acl_handle, const char * at_command){

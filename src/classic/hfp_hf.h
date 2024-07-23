@@ -558,6 +558,20 @@ int hfp_hf_in_band_ringtone_active(hci_con_handle_t acl_handle);
 void hfp_hf_apple_set_identification(uint16_t vendor_id, uint16_t product_id, const char * version, uint8_t features);
 
 /**
+ * @brief Set Apple Accessory Battery Level
+ * @param battery_level range: 0..9
+ * @return status ERROR_CODE_SUCCESS if successful, otherwise ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS battery level out of range
+ */
+uint8_t hfp_hf_apple_set_battery_level(uint8_t battery_level);
+
+/**
+ * @brief Set Apple Accessory Docked State
+ * @param docked 0 = undocked, 1 = docked
+ * @return status ERROR_CODE_SUCCESS if successful, otherwise ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS docked state invalid
+ */
+uint8_t hfp_hf_apple_set_docked_state(uint8_t docked);
+
+/**
  * @brief Send AT command (most likely a vendor-specific command not part of standard HFP).
  * @note  Result (OK/ERROR) is reported via HFP_SUBEVENT_CUSTOM_AT_MESSAGE_SENT
  *        To receive potential unsolicited result code, add ENABLE_HFP_AT_MESSAGES to get all message via HFP_SUBEVENT_AT_MESSAGE_RECEIVED
