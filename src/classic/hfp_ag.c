@@ -125,6 +125,11 @@ static int                  hfp_ag_subscriber_numbers_count;
 // call state
 static btstack_timer_source_t hfp_ag_ring_timeout;
 
+// Apple extension
+static const char * hfp_ag_apple_device;
+static uint8_t hfp_ag_apple_features;
+
+
 // code
 static int hfp_ag_get_ag_indicators_nr(hfp_connection_t * hfp_connection){
     if (hfp_connection->ag_indicators_nr != hfp_ag_indicators_nr){
@@ -283,6 +288,14 @@ static int hfp_ag_send_report_extended_audio_gateway_error(uint16_t cid, uint8_t
     char buffer[20];
     snprintf(buffer, sizeof(buffer), "\r\n%s=%d\r\n",
              HFP_EXTENDED_AUDIO_GATEWAY_ERROR, error);
+    buffer[sizeof(buffer) - 1] = 0;
+    return send_str_over_rfcomm(cid, buffer);
+}
+
+static int hfp_ag_send_apple_information(uint16_t cid){
+    char buffer[50];
+    snprintf(buffer, sizeof(buffer), "\r\n%s:%s,%d\r\n",
+             HFP_APPLE_ACCESSORY_INFORMATION, hfp_ag_apple_device, hfp_ag_apple_features);
     buffer[sizeof(buffer) - 1] = 0;
     return send_str_over_rfcomm(cid, buffer);
 }
@@ -893,6 +906,37 @@ static void hfp_ag_emit_general_simple_event(uint8_t event_subtype){
     event[2] = event_subtype;
     little_endian_store_16(event, 3, HCI_CON_HANDLE_INVALID);
     (*hfp_ag_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
+void hfp_ag_emit_apple_accessory_information(hfp_connection_t *hfp_connection){
+    uint8_t event[40];
+    uint16_t version_len = strlen(hfp_connection->apple_accessory_version);
+    event[0] = HCI_EVENT_HFP_META;
+    event[1] = 9 + version_len;
+    event[2] = HFP_SUBEVENT_APPLE_ACCESSORY_INFORMATION;
+    little_endian_store_16(event, 3, hfp_connection->acl_handle);
+    little_endian_store_16(event, 5, hfp_connection->apple_accessory_vendor_id);
+    little_endian_store_16(event, 7, hfp_connection->apple_accessory_product_id);
+    event[9] = hfp_connection->apple_accessory_features;
+    event[10] = version_len;
+    memcpy(&event[11], hfp_connection->apple_accessory_version, version_len);
+    (*hfp_ag_callback)(HCI_EVENT_PACKET, 0, event, 11 + version_len);
+}
+
+void hfp_ag_emit_apple_accessory_state(hfp_connection_t *hfp_connection){
+    uint8_t event[40];
+    event[0] = HCI_EVENT_HFP_META;
+    event[1] = 2;
+    if (hfp_connection->apple_accessory_battery_level >= 0){
+        event[2] = HFP_SUBEVENT_APPLE_BATTERY_LEVEL;
+        event[3] = hfp_connection->apple_accessory_battery_level;
+        (*hfp_ag_callback)(HCI_EVENT_PACKET, 0, event, 4);
+    }
+    if (hfp_connection->apple_accessory_docked >= 0){
+        event[2] = HFP_SUBEVENT_APPLE_DOCKED_STATE;
+        event[3] = hfp_connection->apple_accessory_docked;
+        (*hfp_ag_callback)(HCI_EVENT_PACKET, 0, event, 4);
+    }
 }
 
 static void hfp_ag_emit_custom_command_event(hfp_connection_t * hfp_connection){
@@ -2101,6 +2145,13 @@ static int hfp_ag_send_commands(hfp_connection_t *hfp_connection){
         return 1;
     }
 
+    // note: before ok_pending and send_error
+    if (hfp_connection->send_apple_information){
+        hfp_connection->send_apple_information = false;
+        hfp_ag_send_apple_information(hfp_connection->rfcomm_cid);
+        return 1;
+    }
+
     if (hfp_connection->send_error > 0){
         hfp_connection->send_error--;
         hfp_connection->command = HFP_CMD_NONE;
@@ -2574,6 +2625,25 @@ static void hfp_ag_handle_rfcomm_data(hfp_connection_t * hfp_connection, uint8_t
                 log_info("Custom AT Command ID 0x%04x", hfp_connection->custom_at_command_id);
                 hfp_ag_emit_custom_command_event(hfp_connection);
                 break;
+            case HFP_CMD_APPLE_ACCESSORY_INFORMATION:
+                hfp_connection->command = HFP_CMD_NONE;
+                if (hfp_ag_apple_device != NULL){
+                    hfp_connection->send_apple_information = true;
+                    hfp_ag_queue_ok(hfp_connection);
+                    hfp_ag_emit_apple_accessory_information(hfp_connection);
+                } else {
+                    hfp_ag_queue_error(hfp_connection);
+                };
+                break;
+            case HFP_CMD_APPLE_ACCESSORY_STATE:
+                hfp_connection->command = HFP_CMD_NONE;
+                if (hfp_ag_apple_device != NULL) {
+                    hfp_ag_emit_apple_accessory_state(hfp_connection);
+                    hfp_ag_queue_ok(hfp_connection);
+                } else {
+                    hfp_ag_queue_error(hfp_connection);
+                }
+                break;
             case HFP_CMD_UNKNOWN:
                 hfp_connection->command = HFP_CMD_NONE;
                 hfp_ag_queue_error(hfp_connection);
@@ -2667,6 +2737,10 @@ void hfp_ag_init_call_hold_services(int call_hold_services_nr, const char * call
                  call_hold_services_nr * sizeof(char *));
 }
 
+void hfp_ag_init_apple_identification(const char * device, uint8_t features){
+    hfp_ag_apple_device = device;
+    hfp_ag_apple_features = features;
+}
 
 void hfp_ag_init(uint8_t rfcomm_channel_nr){
 
@@ -2700,6 +2774,7 @@ void hfp_ag_deinit(void){
     hfp_ag_codecs_nr = 0;
     hfp_ag_indicators_nr = 0;
     hfp_ag_call_hold_services_nr = 0;
+    hfp_ag_apple_device = NULL;
     (void) memset(&hfp_ag_call_hold_services, 0, sizeof(hfp_ag_call_hold_services));
     hfp_ag_response_and_hold_state = HFP_RESPONSE_AND_HOLD_INCOMING_ON_HOLD;
     (void) memset(&hfp_ag_response_and_hold_state, 0, sizeof(hfp_response_and_hold_state_t));
