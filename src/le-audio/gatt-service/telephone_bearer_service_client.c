@@ -186,7 +186,8 @@ static void tbs_client_emit_nbytes( const emitter_t * emit ) {
 }
 
 static void tbs_client_emit_read_event(gatt_service_client_connection_helper_t * connection_helper, uint8_t characteristic_index, uint8_t att_status, const uint8_t * data, uint16_t data_size){
-    
+    UNUSED(att_status);
+
     emitter_t emitter = {
             .callback = connection_helper->event_callback,
             .cid = connection_helper->cid,
@@ -354,6 +355,8 @@ uint8_t telephone_bearer_service_client_call_retrieve(uint16_t tbs_cid, uint8_t 
 }
 
 uint8_t telephone_bearer_service_client_call_originate(uint16_t tbs_cid, uint8_t call_id, const char *uri){
+    UNUSED(call_id);
+
     tbs_client_connection_t * connection = (tbs_client_connection_t *) gatt_service_client_get_connection_for_cid(&tbs_client, tbs_cid);
     if (connection == NULL) {
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
