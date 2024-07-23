@@ -908,7 +908,7 @@ static void hfp_ag_emit_general_simple_event(uint8_t event_subtype){
     (*hfp_ag_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-void hfp_ag_emit_apple_accessory_information(hfp_connection_t *hfp_connection){
+static void hfp_ag_emit_apple_accessory_information(hfp_connection_t *hfp_connection){
     uint8_t event[40];
     uint16_t version_len = strlen(hfp_connection->apple_accessory_version);
     event[0] = HCI_EVENT_HFP_META;
@@ -923,7 +923,7 @@ void hfp_ag_emit_apple_accessory_information(hfp_connection_t *hfp_connection){
     (*hfp_ag_callback)(HCI_EVENT_PACKET, 0, event, 11 + version_len);
 }
 
-void hfp_ag_emit_apple_accessory_state(hfp_connection_t *hfp_connection){
+static void hfp_ag_emit_apple_accessory_state(hfp_connection_t *hfp_connection){
     uint8_t event[40];
     event[0] = HCI_EVENT_HFP_META;
     event[1] = 2;
