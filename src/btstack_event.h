@@ -7427,6 +7427,118 @@ static inline uint8_t hfp_subevent_custom_at_message_sent_get_status(const uint8
     return event[5];
 }
 
+/**
+ * @brief Get field acl_handle from event HFP_SUBEVENT_APPLE_EXTENSION_SUPPORTED
+ * @param event packet
+ * @return acl_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t hfp_subevent_apple_extension_supported_get_acl_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field supported from event HFP_SUBEVENT_APPLE_EXTENSION_SUPPORTED
+ * @param event packet
+ * @return supported
+ * @note: btstack_type 1
+ */
+static inline uint8_t hfp_subevent_apple_extension_supported_get_supported(const uint8_t * event){
+    return event[5];
+}
+
+/**
+ * @brief Get field acl_handle from event HFP_SUBEVENT_APPLE_ACCESSORY_INFORMATION
+ * @param event packet
+ * @return acl_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t hfp_subevent_apple_accessory_information_get_acl_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field vendor_id from event HFP_SUBEVENT_APPLE_ACCESSORY_INFORMATION
+ * @param event packet
+ * @return vendor_id
+ * @note: btstack_type 2
+ */
+static inline uint16_t hfp_subevent_apple_accessory_information_get_vendor_id(const uint8_t * event){
+    return little_endian_read_16(event, 5);
+}
+/**
+ * @brief Get field product_id from event HFP_SUBEVENT_APPLE_ACCESSORY_INFORMATION
+ * @param event packet
+ * @return product_id
+ * @note: btstack_type 2
+ */
+static inline uint16_t hfp_subevent_apple_accessory_information_get_product_id(const uint8_t * event){
+    return little_endian_read_16(event, 7);
+}
+/**
+ * @brief Get field features from event HFP_SUBEVENT_APPLE_ACCESSORY_INFORMATION
+ * @param event packet
+ * @return features
+ * @note: btstack_type 1
+ */
+static inline uint8_t hfp_subevent_apple_accessory_information_get_features(const uint8_t * event){
+    return event[9];
+}
+/**
+ * @brief Get field version_len from event HFP_SUBEVENT_APPLE_ACCESSORY_INFORMATION
+ * @param event packet
+ * @return version_len
+ * @note: btstack_type J
+ */
+static inline uint8_t hfp_subevent_apple_accessory_information_get_version_len(const uint8_t * event){
+    return event[10];
+}
+/**
+ * @brief Get field version from event HFP_SUBEVENT_APPLE_ACCESSORY_INFORMATION
+ * @param event packet
+ * @return version
+ * @note: btstack_type V
+ */
+static inline const uint8_t * hfp_subevent_apple_accessory_information_get_version(const uint8_t * event){
+    return &event[11];
+}
+
+/**
+ * @brief Get field acl_handle from event HFP_SUBEVENT_APPLE_BATTERY_LEVEL
+ * @param event packet
+ * @return acl_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t hfp_subevent_apple_battery_level_get_acl_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field battery_level from event HFP_SUBEVENT_APPLE_BATTERY_LEVEL
+ * @param event packet
+ * @return battery_level
+ * @note: btstack_type 1
+ */
+static inline uint8_t hfp_subevent_apple_battery_level_get_battery_level(const uint8_t * event){
+    return event[5];
+}
+
+/**
+ * @brief Get field acl_handle from event HFP_SUBEVENT_APPLE_DOCKED_STATE
+ * @param event packet
+ * @return acl_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t hfp_subevent_apple_docked_state_get_acl_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field docket from event HFP_SUBEVENT_APPLE_DOCKED_STATE
+ * @param event packet
+ * @return docket
+ * @note: btstack_type 1
+ */
+static inline uint8_t hfp_subevent_apple_docked_state_get_docket(const uint8_t * event){
+    return event[5];
+}
+
 #ifdef ENABLE_BLE
 /**
  * @brief Get field handle from event ANCS_SUBEVENT_CLIENT_CONNECTED

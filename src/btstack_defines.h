@@ -2473,6 +2473,43 @@ typedef uint8_t sm_key_t[16];
  */
 #define HFP_SUBEVENT_CUSTOM_AT_MESSAGE_SENT                          0x29u
 
+/**
+ * @format 1H1
+ * @param subevent_code
+ * @param acl_handle
+ * @param supported
+ */
+#define HFP_SUBEVENT_APPLE_EXTENSION_SUPPORTED                       0x2Au
+
+/**
+ * @format 1H221JV
+ * @param subevent_code
+ * @param acl_handle
+ * @param vendor_id
+ * @param product_id
+ * @param features
+ * @param version_len
+ * @param version
+ */
+#define HFP_SUBEVENT_APPLE_ACCESSORY_INFORMATION                     0x2Bu
+
+/**
+ * @format 1H1
+ * @param subevent_code
+ * @param acl_handle
+ * @param battery_level range:0..9
+ */
+#define HFP_SUBEVENT_APPLE_BATTERY_LEVEL                             0x2Cu
+
+/**
+ * @format 1H1
+ * @param subevent_code
+ * @param acl_handle
+ * @param docket 0 = undocked, 1 = docked
+ */
+#define HFP_SUBEVENT_APPLE_DOCKED_STATE                              0x2Du
+
+
 // ANCS Client
 
 /**
