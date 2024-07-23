@@ -434,6 +434,8 @@ static bool sm_passkey_entry(stk_generation_method_t method);
 static void sm_pairing_complete(sm_connection_t * sm_conn, uint8_t status, uint8_t reason);
 
 static void log_info_hex16(const char * name, uint16_t value){
+    UNUSED(name);
+    UNUSED(value);
     log_info("%-6s 0x%04x", name, value);
 }
 
@@ -1584,6 +1586,8 @@ static void sm_remove_le_device_db_entry(uint16_t i) {
 }
 
 static uint8_t sm_key_distribution_validate_received(sm_connection_t * sm_conn){
+    UNUSED(sm_conn);
+
     // if identity is provided, abort if we have bonding with same address but different irk
     if ((setup->sm_key_distribution_received_set & SM_KEYDIST_FLAG_IDENTITY_INFORMATION) != 0u){
         int index = sm_le_device_db_index_lookup(BD_ADDR_TYPE_LE_PUBLIC, setup->sm_peer_address);
