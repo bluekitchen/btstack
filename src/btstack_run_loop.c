@@ -96,7 +96,7 @@ void btstack_run_loop_base_add_timer(btstack_timer_source_t * timer){
         btstack_timer_source_t * next = (btstack_timer_source_t *) it->next;
 
         if (next == timer){
-            log_error("Timer %p already registered! Please read source code comment.", timer);
+            log_error("Timer %p already registered! Please read source code comment.", (void*)timer);
             //
             // Dear BTstack User!
             //
