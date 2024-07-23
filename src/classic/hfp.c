@@ -1860,6 +1860,52 @@ static void parse_sequence(hfp_connection_t * hfp_connection){
             }
             hfp_connection->parser_item_index++;
             break;
+        case HFP_CMD_APPLE_ACCESSORY_INFORMATION:
+            switch (hfp_connection->parser_item_index){
+                case 0:
+                    hfp_connection->apple_accessory_vendor_id = 0;
+                    for (i = 0 ; i < 4; i++){
+                        hfp_connection->apple_accessory_vendor_id = (hfp_connection->apple_accessory_vendor_id << 4) | nibble_for_char(hfp_connection->line_buffer[i]);
+                    }
+                    break;
+                case 1:
+                    hfp_connection->apple_accessory_product_id = 0;
+                    for (i = 0 ; i < 4; i++){
+                        hfp_connection->apple_accessory_product_id = (hfp_connection->apple_accessory_product_id << 4) | nibble_for_char(hfp_connection->line_buffer[i]);
+                    }
+                    break;
+                case 2:
+                    btstack_strcpy(hfp_connection->apple_accessory_version, sizeof(hfp_connection->apple_accessory_version), (const char *) hfp_connection->line_buffer);
+                    break;
+                case 3:
+                    hfp_connection->apple_accessory_features = btstack_atoi((char *)hfp_connection->line_buffer);
+                    break;
+                default:
+                    break;
+            }
+            hfp_connection->parser_item_index++;
+            break;
+        case HFP_CMD_APPLE_ACCESSORY_STATE:
+            // ignore K/V count
+            if (hfp_connection->parser_item_index > 0){
+                if ((hfp_connection->parser_item_index & 1) == 1){
+                    hfp_connection->apple_accessory_key = btstack_atoi((char *)hfp_connection->line_buffer);
+                } else {
+                    switch (hfp_connection->apple_accessory_key){
+                        case 1:
+                            hfp_connection->apple_accessory_battery_level = btstack_atoi((char *)hfp_connection->line_buffer);
+                            break;
+                        case 2:
+                            hfp_connection->apple_accessory_docked = btstack_atoi((char *)hfp_connection->line_buffer);
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+            hfp_connection->parser_item_index++;
+            break;
+
         default:
             break;
     }  
