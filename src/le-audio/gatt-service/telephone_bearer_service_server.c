@@ -428,6 +428,8 @@ static uint16_t tbs_server_serialize_first_call_friendly_name( memcat_t *storage
 
 static uint16_t tbs_server_serialize_call_control_point_notification(memcat_t *storage, telephone_bearer_service_server_t *bearer,
                                                      tbs_server_connection_t *bearer_connection) {
+    UNUSED( bearer );
+
     memcat(storage, bearer_connection->call_control_point_notification, sizeof(bearer_connection->call_control_point_notification) );
     return memcat_get_size(storage);
 }
@@ -446,16 +448,6 @@ static uint16_t tbs_server_serialize_termination_reason( memcat_t *storage, tele
         }
     }
     return memcat_get_size(storage);
-}
-
-static uint32_t tbs_server_merge_calls_scheduled_tasks( telephone_bearer_service_server_t *tbs_bearer, uint32_t tasks ) {
-    btstack_linked_list_iterator_t it;
-    btstack_linked_list_iterator_init(&it, &tbs_bearer->calls);
-    while(btstack_linked_list_iterator_has_next(&it)){
-        tbs_call_data_t * call = (tbs_call_data_t *)btstack_linked_list_iterator_next(&it);
-        tasks |= call->scheduled_tasks;
-    }
-    return tasks;
 }
 
 static uint8_t tbs_get_next_bearer_connection_to_notify_for_tasks(telephone_bearer_service_server_t * tbs_bearer, tbs_characteristic_index_t characteristic_index){
@@ -669,6 +661,8 @@ static void tbs_server_can_send_now(void * context){
 }
 
 static void tbs_server_bearer_connection_schedule_task(telephone_bearer_service_server_t * tbs_bearer, tbs_server_connection_t * bearer_connection, tbs_characteristic_index_t characteristic_index){
+    UNUSED( tbs_bearer );
+
     if (bearer_connection->con_handle == HCI_CON_HANDLE_INVALID){
         return;
     }
@@ -806,6 +800,8 @@ tbs_server_bearer_connection_emit_call_control_notification_task(telephone_beare
                                                                  hci_con_handle_t con_handle,
                                                                  tbs_control_point_opcode_t opcode, uint8_t *buffer,
                                                                  uint16_t buffer_size) {
+    UNUSED( opcode );
+
     uint8_t event[TELEPHONE_BEARER_SERVICE_URI_MAX_LENGTH] = { 0 };
 
     uint8_t pos = 0;
@@ -919,6 +915,9 @@ static uint16_t tbs_server_read_callback(hci_con_handle_t con_handle, uint16_t a
 
 
 static int tbs_server_write_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
+    UNUSED(transaction_mode);
+    UNUSED(offset);
+
     telephone_bearer_service_server_t * tbs_bearer = tbs_server_find_bearer_for_attribute_handle(attribute_handle);
     if (tbs_bearer == NULL) {
         return 0;
@@ -962,10 +961,8 @@ static int tbs_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
                 telephone_bearer_service_server_call_control_point_notification(con_handle, tbs_bearer->bearer_id, 0, TBS_CONTROL_POINT_OPCODE_LOCAL_HOLD, TBS_CONTROL_POINT_RESULT_OPCODE_NOT_SUPPORTED);
                 break;
             }
-            telephone_bearer_service_server_t *tbsBearer;
-            uint16_t bufferSize;
-            btstack_assert(tbsBearer->event_callback != NULL);
-            btstack_assert(bufferSize <= TELEPHONE_BEARER_SERVICE_URI_MAX_LENGTH);
+            btstack_assert(tbs_bearer->event_callback != NULL);
+            btstack_assert(buffer_size <= TELEPHONE_BEARER_SERVICE_URI_MAX_LENGTH);
             tbs_server_bearer_connection_emit_call_control_notification_task(tbs_bearer, con_handle, opcode, buffer, buffer_size);
             break;
         }
