@@ -351,6 +351,8 @@ uint16_t asce_util_metadata_serialize(const le_audio_metadata_t *metadata, uint8
 }
 
 void ascs_util_emit_codec_configuration(btstack_packet_handler_t ascs_event_callback, bool client_request, uint16_t con_identifier, uint8_t ase_id, ascs_state_t state, const ascs_codec_configuration_t *codec_configuration){
+    UNUSED( state );
+
     btstack_assert(ascs_event_callback != NULL);
     
     uint8_t event[39];
@@ -371,6 +373,8 @@ void ascs_util_emit_codec_configuration(btstack_packet_handler_t ascs_event_call
 }
 
 void ascs_util_emit_qos_configuration(btstack_packet_handler_t ascs_event_callback, bool client_request, uint16_t con_identifier, uint8_t ase_id, ascs_state_t state, const ascs_qos_configuration_t *qos_configuration){
+    UNUSED( state );
+
     btstack_assert(ascs_event_callback != NULL);
     
     uint8_t event[21];
@@ -390,6 +394,8 @@ void ascs_util_emit_qos_configuration(btstack_packet_handler_t ascs_event_callba
 }
 
 static void ascs_util_emit_event_with_metadata(btstack_packet_handler_t ascs_event_callback, uint8_t subevent, uint16_t con_identifier, uint8_t ase_id, ascs_state_t state, const le_audio_metadata_t *metadata){
+    UNUSED( state );
+
     btstack_assert(ascs_event_callback != NULL);
 
     uint8_t event[25 + LE_AUDIO_PROGRAM_INFO_MAX_LENGTH
