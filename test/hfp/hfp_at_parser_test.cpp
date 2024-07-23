@@ -677,6 +677,42 @@ TEST(HFPParser, long_command){
     parse_hf(command);
 }
 
+TEST(HFPParser, apple_accessory_information){
+    parse_ag("\n\rAT+XAPL=ABCD-1234-0100,10\r\n");
+    CHECK_EQUAL(HFP_CMD_APPLE_ACCESSORY_INFORMATION, context.command);
+    CHECK_EQUAL(0xABCD, context.apple_accessory_vendor_id);
+    CHECK_EQUAL(0x1234, context.apple_accessory_product_id);
+    STRCMP_EQUAL("0100",context.apple_accessory_version);
+    CHECK_EQUAL(10, context.apple_accessory_features);
+}
+
+TEST(HFPParser, apple_accessory_state_battery){
+    context.apple_accessory_battery_level = -1;
+    context.apple_accessory_docked = -1;
+    parse_ag("\n\rAT+IPHONEACCEV=1,1,3\r\n");
+    CHECK_EQUAL(HFP_CMD_APPLE_ACCESSORY_STATE, context.command);
+    CHECK_EQUAL(3, context.apple_accessory_battery_level);
+    CHECK_EQUAL(-1, context.apple_accessory_docked);
+}
+
+TEST(HFPParser, apple_accessory_state_docked){
+    context.apple_accessory_battery_level = -1;
+    context.apple_accessory_docked = -1;
+    parse_ag("\n\rAT+IPHONEACCEV=1,2,1\r\n");
+    CHECK_EQUAL(HFP_CMD_APPLE_ACCESSORY_STATE, context.command);
+    CHECK_EQUAL(-1, context.apple_accessory_battery_level);
+    CHECK_EQUAL(1, context.apple_accessory_docked);
+}
+
+TEST(HFPParser, apple_accessory_state_both){
+    context.apple_accessory_battery_level = -1;
+    context.apple_accessory_docked = -1;
+    parse_ag("\n\rAT+IPHONEACCEV=1,1,3,2,1\r\n");
+    CHECK_EQUAL(HFP_CMD_APPLE_ACCESSORY_STATE, context.command);
+    CHECK_EQUAL(3, context.apple_accessory_battery_level);
+    CHECK_EQUAL(1, context.apple_accessory_docked);
+}
+
 TEST(HFPParser,dummy){
     unsigned char data[] = {
         0x99, 0x08, 0x0a
