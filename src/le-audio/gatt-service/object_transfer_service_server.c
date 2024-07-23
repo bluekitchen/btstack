@@ -231,22 +231,27 @@ static uint16_t ots_server_get_value_handle_for_characteristic_index(ots_charact
 }
 
 static void ots_server_reset_current_object_name(ots_server_connection_t * connection){
+    UNUSED(connection);
     // TODO
 }
 
 static void ots_server_emit_current_object_name_changed(ots_server_connection_t * connection){
+    UNUSED(connection);
     // TODO
 }
 
 static void ots_server_emit_current_object_first_created_time_changed(ots_server_connection_t * connection){
+    UNUSED(connection);
     // TODO
 }
 
 static void ots_server_emit_current_object_last_modified_time_changed(ots_server_connection_t * connection){
+    UNUSED(connection);
     // TODO
 }
 
 static void ots_server_emit_current_object_properties_changed(ots_server_connection_t * connection){
+    UNUSED(connection);
     // TODO
 }
 
@@ -255,6 +260,8 @@ static void ots_server_emit_current_object_properties_changed(ots_server_connect
 // }
 
 static void ots_server_emit_current_object_filter_changed(ots_server_connection_t * connection, uint8_t filter_index){
+    UNUSED(connection);
+    UNUSED(filter_index);
     // TODO
 }
 
@@ -370,6 +377,8 @@ static void btstack_utc_read_time(uint8_t * time_buffer, uint16_t time_buffer_si
 }
 
 static uint16_t ots_server_store_filter_list(const ots_filter_t * filter, uint8_t i, uint8_t * buffer, uint16_t buffer_size, uint16_t buffer_offset){
+    UNUSED(i);
+
     uint8_t  field_data[5];
     uint16_t filters_offset = 0;
     uint16_t stored_bytes = 0;
@@ -1393,6 +1402,8 @@ static void ots_server_packet_handler(uint8_t packet_type, uint16_t channel, uin
 
     bd_addr_t event_address;
     uint16_t psm;
+    UNUSED(psm); // used only in log_info
+
     uint16_t cid;
     uint16_t mtu;
     hci_con_handle_t handle;
@@ -1667,6 +1678,10 @@ void object_transfer_service_server_register_packet_handler(btstack_packet_handl
 }
 
 uint8_t object_transfer_service_server_update_current_object_filter(hci_con_handle_t con_handle, uint8_t filter_index, ots_filter_t * filter){
+    UNUSED(con_handle);
+    UNUSED(filter_index);
+    UNUSED(filter);
+
     return ERROR_CODE_SUCCESS;
 }
 
