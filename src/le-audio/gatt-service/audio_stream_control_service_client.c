@@ -307,7 +307,7 @@ static uint16_t ascs_client_parse_ase(const uint8_t * value, uint16_t value_size
 }
 
 static void ascs_client_handle_gatt_server_control_point_notification(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    UNUSED(packet_type); 
+    UNUSED(packet_type);
     UNUSED(channel);
     UNUSED(size);
 
@@ -344,7 +344,7 @@ static void ascs_client_handle_gatt_server_control_point_notification(uint8_t pa
 }
 
 static void ascs_client_handle_gatt_server_notification(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    UNUSED(packet_type); 
+    UNUSED(packet_type);
     UNUSED(channel);
     UNUSED(size);
 
@@ -922,6 +922,8 @@ uint8_t audio_stream_control_service_client_connect(ascs_client_connection_t * c
 }
 
 static uint8_t ascs_client_connection_for_parameters_ready(uint16_t ascs_cid, bool write_requested, ascs_client_connection_t ** out_connection){
+    UNUSED(write_requested);
+
     // find connection
     ascs_client_connection_t * connection = ascs_client_get_connection_for_cid(ascs_cid);
     // set out variable
@@ -1119,6 +1121,8 @@ uint8_t audio_stream_control_service_client_streamendpoint_receiver_stop_ready(u
  * @param caching
  */
 uint8_t audio_stream_control_service_client_streamendpoint_release(uint16_t ascs_cid, uint8_t ase_id, bool caching){
+    UNUSED(caching);
+
     ascs_client_connection_t * connection = NULL;
     uint8_t status = ascs_client_connection_for_parameters_ready(ascs_cid, true, &connection);
     if (status != ERROR_CODE_SUCCESS){
