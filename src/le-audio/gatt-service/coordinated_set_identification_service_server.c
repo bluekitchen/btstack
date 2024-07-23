@@ -103,7 +103,7 @@ static btstack_crypto_aes128_cmac_t aes128_cmac_request;
 static uint8_t  s1[16];
 static uint8_t   T[16];
 static uint8_t  k1[16];
-const static uint8_t s1_string[] = { 'S', 'I', 'R', 'K', 'e', 'n', 'c'};
+static const uint8_t s1_string[] = { 'S', 'I', 'R', 'K', 'e', 'n', 'c'};
 
 static uint8_t key_ltk[16];
 
@@ -175,6 +175,8 @@ static csis_server_connection_t * csis_server_get_next_coordinator_for_sirk_calc
 }
 
 static void csis_server_handle_k1(void * context){
+    UNUSED(context);
+
     if (csis_server_active_coordinator == NULL){
         return;
     }
@@ -205,14 +207,18 @@ static void csis_server_handle_k1(void * context){
 }
 
 static void csis_server_handle_T(void * context){
+    UNUSED(context);
+
     if (csis_server_active_coordinator == NULL){
         return;
     }
-    const static uint8_t csis_string[] = { 'c', 's', 'i', 's'};
+    static const uint8_t csis_string[] = { 'c', 's', 'i', 's'};
     btstack_crypto_aes128_cmac_message(&aes128_cmac_request, T, sizeof(csis_string), csis_string, k1, csis_server_handle_k1, NULL);
 }
 
 static void csis_server_handle_s1(void * context){
+    UNUSED(context);
+
     if (csis_server_active_coordinator == NULL){
         return;
     }
@@ -520,6 +526,10 @@ static uint8_t csis_server_set_member_lock(csis_server_connection_t * coordinato
 }
 
 static int csis_server_write_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
+    UNUSED(transaction_mode);
+    UNUSED(offset);
+    UNUSED(buffer_size);
+
     csis_server_connection_t * coordinator = csis_server_get_coordinator_for_con_handle(con_handle);
     if (coordinator == NULL){
         coordinator = csis_server_add_coordinator(con_handle);
