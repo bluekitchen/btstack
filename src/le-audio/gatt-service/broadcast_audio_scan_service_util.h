@@ -109,7 +109,7 @@ typedef struct {
     // state send to client by server
     le_audio_pa_sync_state_t  pa_sync_state;
     le_audio_big_encryption_t big_encryption;
-    uint16_t                  bad_code[16];
+    uint8_t                  bad_code[16];
 } bass_source_data_t;
 
 // offset gives position into fully serialized BASS record
