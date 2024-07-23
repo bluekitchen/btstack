@@ -402,6 +402,8 @@ static void mcs_client_emit_search_control_point_notification_result_event(uint1
 }
 
 static void mcs_client_emit_read_event(mcs_client_connection_t * connection, uint8_t index, uint8_t status, const uint8_t * data, uint16_t data_size){
+    UNUSED(status);
+
     if ((data_size > 0) && (data == NULL)){
         return;
     }
@@ -476,6 +478,8 @@ static void mcs_client_emit_read_event(mcs_client_connection_t * connection, uin
 }
 
 static void mcs_client_emit_notify_event(mcs_client_connection_t * connection, uint16_t value_handle, uint8_t status, const uint8_t * data, uint16_t data_size){
+    UNUSED(status);
+
     if ((data_size > 0) && (data == NULL)){
         return;
     }
@@ -1096,7 +1100,7 @@ uint8_t media_control_service_client_search_control_command_add(uint16_t mcs_cid
         connection->write_buffer[connection->write_buffer_length++] = 1;
         connection->write_buffer[connection->write_buffer_length++] = (uint8_t) type;
     } else {
-        if ((remaining_bytes - 2) < strlen(data)){
+        if ((unsigned)(remaining_bytes - 2) < strlen(data)){
             return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
         } else {
             connection->write_buffer[connection->write_buffer_length++] = 1 + strlen(data);
