@@ -146,6 +146,8 @@ static void lls_client_emit_done_event(lls_client_connection_t * connection, uin
 
 
 static void lls_client_emit_read_event(lls_client_connection_t * connection, uint8_t index, uint8_t status, const uint8_t * data, uint16_t data_size){
+    UNUSED(status);
+
     if ((data_size > 0) && (data == NULL)){
         return;
     }
