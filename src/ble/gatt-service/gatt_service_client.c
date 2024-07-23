@@ -86,6 +86,7 @@ static void gatt_client_emit_service_changed(gatt_service_client_connection_help
 }
 
 static void gatts_client_emit_indication(gatt_service_client_connection_helper_t * connection_helper, uint16_t value_handle, uint8_t att_status, const uint8_t * data, uint16_t data_size){
+    UNUSED(att_status);
     uint16_t characteristic_uuid16 = gatt_service_client_helper_characteristic_uuid16_for_value_handle(&gatts_client, connection_helper, value_handle);
     
     switch (characteristic_uuid16){
