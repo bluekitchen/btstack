@@ -1195,10 +1195,12 @@ static hfp_command_entry_t hfp_ag_command_table[] = {
     { "AT+CNUM",   HFP_CMD_GET_SUBSCRIBER_NUMBER_INFORMATION },
     { "AT+COPS=",  HFP_CMD_QUERY_OPERATOR_SELECTION_NAME_FORMAT },
     { "AT+COPS?",  HFP_CMD_QUERY_OPERATOR_SELECTION_NAME },
+    { "AT+IPHONEACCEV=", HFP_CMD_APPLE_ACCESSORY_STATE },
     { "AT+NREC=",  HFP_CMD_TURN_OFF_EC_AND_NR, },
     { "AT+VGM=",   HFP_CMD_SET_MICROPHONE_GAIN },
     { "AT+VGS=",   HFP_CMD_SET_SPEAKER_GAIN },
     { "AT+VTS=",   HFP_CMD_TRANSMIT_DTMF_CODES },
+    { "AT+XAPL=",  HFP_CMD_APPLE_ACCESSORY_INFORMATION },
     { "ATA",       HFP_CMD_CALL_ANSWERED },
 };
 
@@ -1223,6 +1225,7 @@ static hfp_command_entry_t hfp_hf_command_table[] = {
     { "+VGM=",  HFP_CMD_SET_MICROPHONE_GAIN },
     { "+VGS:",  HFP_CMD_SET_SPEAKER_GAIN},
     { "+VGS=",  HFP_CMD_SET_SPEAKER_GAIN},
+    { "+XAPL=",  HFP_CMD_APPLE_DEVICE_INFORMATION },
     { "ERROR",  HFP_CMD_ERROR},
     { "NOP",    HFP_CMD_NONE}, // dummy command used by unit tests
     { "OK",     HFP_CMD_OK },
