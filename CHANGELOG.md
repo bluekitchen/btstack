@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## Unreleased
 
 ### Added
+- HFP HFP: support Apple Accessory information with:
+  - hfp_hf_apple_set_identification
+  - hfp_hf_apple_set_battery_level
+  - hfp_hf_apple_set_docked_state
 - PBAP Client: allow to set start offset and max list count for pull phonebook operation
 - PBAP Client: support multiple parallel connections
 - HCI Dump Dispatch: allow to use multiple HCI Dump implementations
