@@ -272,6 +272,8 @@ static void ots_client_emit_features_event(gatt_service_client_connection_helper
 }
 
 static void ots_client_emit_string_value(gatt_service_client_connection_helper_t * connection_helper, uint8_t subevent, const uint8_t * data, uint16_t data_size, uint8_t att_status){
+    UNUSED(data_size);
+
     btstack_assert(connection_helper != NULL);
     btstack_assert(connection_helper->event_callback != NULL);
 
@@ -835,7 +837,7 @@ static void ots_client_handle_gatt_client_event(uint8_t packet_type, uint16_t ch
                     ots_client_emit_read_event(connection_helper, connection->characteristic_index, ATT_ERROR_SUCCESS,
                                                connection->long_value_buffer, connection->long_value_buffer_length);
                     connection->state = OBJECT_TRANSFER_SERVICE_CLIENT_STATE_READY;
-
+                    break;
                 default:
                     connection->state = OBJECT_TRANSFER_SERVICE_CLIENT_STATE_READY;
                     break;
@@ -930,9 +932,11 @@ uint8_t object_transfer_service_client_connect(
     hci_con_handle_t con_handle,
     btstack_packet_handler_t packet_handler,
     ots_client_connection_t * connection,
-    uint16_t service_start_handle, uint16_t service_end_handle, 
+    uint16_t service_start_handle, uint16_t service_end_handle,
     uint8_t  service_index,
     uint16_t * ots_cid){
+    UNUSED(service_start_handle);
+    UNUSED(service_end_handle);
 
     btstack_assert(packet_handler != NULL);
     btstack_assert(connection != NULL);
@@ -1151,7 +1155,7 @@ uint8_t object_transfer_service_client_write_object_properties(ots_client_connec
 uint8_t ots_client_write_filter(ots_client_connection_t * connection, ots_client_characteristic_index_t characteristic_index, ots_filter_type_t filter_type, uint8_t data_length, const uint8_t * data){
     btstack_assert(connection != NULL);
 
-    if (data_length + 1 > sizeof(connection->data.data_bytes)){
+    if (data_length + 1 > (int)sizeof(connection->data.data_bytes)){
         return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
     }
 
@@ -1241,6 +1245,8 @@ uint8_t object_transfer_service_client_command_request_clear_marking(ots_client_
 static void ots_client_l2cap_cbm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) {
     bd_addr_t event_address;
     uint16_t psm;
+    UNUSED(psm); // only used in log_info
+
     uint16_t cid;
     hci_con_handle_t handle;
     uint8_t status;
