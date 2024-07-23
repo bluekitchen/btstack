@@ -872,13 +872,13 @@ static int mcs_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
             value = (int32_t) little_endian_read_32(buffer, 0);
             if (value < 0){
                 value = -value;
-                if (value <= media_player->data.track_duration_10ms) {
+                if (value <= (int32_t)media_player->data.track_duration_10ms) {
                     media_player->data.track_position_10ms = media_player->data.track_duration_10ms - value;
                     mcs_server_emit_media_value_changed(media_player, characteristic_id);
                     mcs_server_schedule_task(media_player, characteristic_id);
                 }
             } else {
-                if (value <= media_player->data.track_duration_10ms){
+                if (value <= (int32_t)media_player->data.track_duration_10ms){
                     media_player->data.track_position_10ms = (int32_t) little_endian_read_32(buffer, 0);
                     mcs_server_emit_media_value_changed(media_player, characteristic_id);
                     mcs_server_schedule_task(media_player, characteristic_id);
