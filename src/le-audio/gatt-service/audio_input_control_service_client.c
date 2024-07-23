@@ -115,9 +115,11 @@ static uint16_t gatt_service_client_characteristic_value_handle2uuid16(aics_clie
 }
 
 static void aics_client_emit_string_value(gatt_service_client_connection_helper_t * connection_helper, uint8_t subevent, const uint8_t * data, uint16_t data_size, uint8_t att_status){
+    UNUSED( data_size );
+
     btstack_assert(connection_helper != NULL);
     btstack_assert(connection_helper->event_callback != NULL);
-    
+
     uint8_t event[AICS_MAX_AUDIO_INPUT_DESCRIPTION_LENGTH + 7];
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_LEAUDIO_META;
