@@ -1514,7 +1514,7 @@ void gap_le_get_own_address(uint8_t * addr_type, bd_addr_t addr){
 void gap_le_get_own_advertisements_address(uint8_t * addr_type, bd_addr_t addr){
     *addr_type = hci_stack->le_advertisements_own_addr_type;
     hci_get_own_address_for_addr_type(hci_stack->le_advertisements_own_addr_type, addr);
-};
+}
 #ifdef ENABLE_LE_EXTENDED_ADVERTISING
 void gap_le_get_own_advertising_set_address(uint8_t * addr_type, bd_addr_t addr, uint8_t advertising_handle){
     if (advertising_handle == 0){
@@ -1540,7 +1540,7 @@ void gap_le_get_own_advertising_set_address(uint8_t * addr_type, bd_addr_t addr,
             }
         }
     }
-};
+}
 #endif
 #endif
 
@@ -1602,24 +1602,24 @@ static void le_handle_extended_advertisement_report(uint8_t *packet, uint16_t si
            // setup legacy event
             uint8_t legacy_event_type;
             switch (event_type){
-                case 0b0010011:
+                case 0x13: // 0b0010011
                     // ADV_IND
                     legacy_event_type = 0;
                     break;
-                case 0b0010101:
+                case 0x15: // 0b0010101
                     // ADV_DIRECT_IND
                     legacy_event_type = 1;
                     break;
-                case 0b0010010:
+                case 0x12: // 0b0010010
                     // ADV_SCAN_IND
                     legacy_event_type = 2;
                     break;
-                case 0b0010000:
+                case 0x10: // 0b0010000:
                     // ADV_NONCONN_IND
                     legacy_event_type = 3;
                     break;
-                case 0b0011011:
-                case 0b0011010:
+                case 0x1B: // 0b0011011
+                case 0x1A: // 0b0011010
                     // SCAN_RSP
                     legacy_event_type = 4;
                     break;
@@ -2357,10 +2357,11 @@ static void hci_initializing_run(void){
             }
 #endif
 #endif
-            /* fall through */
 
 #ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
-    case HCI_INIT_LE_SET_HOST_FEATURE_CONNECTED_ISO_STREAMS:
+            /* fall through */
+
+        case HCI_INIT_LE_SET_HOST_FEATURE_CONNECTED_ISO_STREAMS:
             if (hci_le_supported()) {
                 hci_stack->substate = HCI_INIT_W4_LE_SET_HOST_FEATURE_CONNECTED_ISO_STREAMS;
                 hci_send_cmd(&hci_le_set_host_feature, 32, 1);
@@ -2805,7 +2806,7 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
 #ifdef ENABLE_CLASSIC
     hci_connection_t * conn;
 #endif
-#if defined(ENABLE_CLASSIC) || (defined(ENABLE_BLE) && defined(ENABLE_LE_ISOCHRONOUS_STREAMS))
+#if defined(ENABLE_CLASSIC)
     hci_con_handle_t handle;
 #endif
 #ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
@@ -3132,7 +3133,6 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
                     btstack_linked_list_iterator_init(&it, &hci_stack->iso_streams);
                     while (btstack_linked_list_iterator_has_next(&it)){
                         hci_iso_stream_t * iso_stream = (hci_iso_stream_t *) btstack_linked_list_iterator_next(&it);
-                        handle = iso_stream->cis_handle;
                         bool emit_cis_created = false;
                         switch (iso_stream->state){
                             case HCI_ISO_STREAM_STATE_W4_ISO_SETUP_INPUT:
@@ -5729,7 +5729,7 @@ static void hci_halting_run(void) {
         default:
             break;
     }
-};
+}
 
 static void hci_falling_asleep_run(void){
     hci_connection_t * connection;
@@ -6529,7 +6529,8 @@ static bool hci_run_general_gap_le(void){
         if (hci_le_extended_advertising_supported()){
             // map advertisment type to advertising event properties
             uint16_t adv_event_properties = 0;
-            const uint16_t mapping[] = { 0b00010011, 0b00010101, 0b00011101, 0b00010010, 0b00010000};
+            //                           0b00010011, 0b00010101, 0b00011101, 0b00010010, 0b00010000
+            const uint16_t mapping[] = {       0x13,       0x15,       0x1D,       0x12,       0x10 };
             if (hci_stack->le_advertisements_type < (sizeof(mapping)/sizeof(uint16_t))){
                 adv_event_properties = mapping[hci_stack->le_advertisements_type];
             }
@@ -10159,7 +10160,10 @@ static void hci_iso_stream_requested_finalize(uint8_t group_id) {
         }
     }
 }
+
 static void hci_iso_stream_requested_confirm(uint8_t big_handle){
+    UNUSED(big_handle);
+
     btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, &hci_stack->iso_streams);
     while (btstack_linked_list_iterator_has_next(&it)){
@@ -10423,8 +10427,8 @@ static void hci_iso_notify_can_send_now(void){
             big->num_completed_timestamp_current_valid = false;
             if (big->num_completed_timestamp_previous_valid){
                 // detect delayed sending of all BIS: tolerate up to 50% delayed event handling
-                uint32_t iso_interval_missed_threshold_ms = big->params->sdu_interval_us * 3 / 2000;
-                int32_t  num_completed_timestamp_delta_ms = btstack_time_delta(big->num_completed_timestamp_current_ms,
+                int32_t iso_interval_missed_threshold_ms = big->params->sdu_interval_us * 3 / 2000;
+                int32_t num_completed_timestamp_delta_ms = btstack_time_delta(big->num_completed_timestamp_current_ms,
                                                                                big->num_completed_timestamp_previous_ms);
                 if (num_completed_timestamp_delta_ms > iso_interval_missed_threshold_ms){
                     // to catch up, skip packet on all BIS
