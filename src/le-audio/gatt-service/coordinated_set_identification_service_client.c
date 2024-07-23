@@ -70,7 +70,7 @@ static btstack_crypto_aes128_cmac_t aes128_cmac_request;
 static uint8_t  s1[16];
 static uint8_t   T[16];
 static uint8_t  k1[16];
-const static uint8_t s1_string[] = { 'S', 'I', 'R', 'K', 'e', 'n', 'c'};
+static const uint8_t s1_string[] = { 'S', 'I', 'R', 'K', 'e', 'n', 'c'};
 static uint8_t key_ltk[16];
 static bool csis_client_sirk_decryption_ongoing;
 
@@ -319,7 +319,7 @@ static void csis_client_handle_k1(void * context){
 }
 
 static void csis_client_handle_T(void * context){
-    const static uint8_t csis_string[] = { 'c', 's', 'i', 's'};
+    static const uint8_t csis_string[] = { 'c', 's', 'i', 's'};
     btstack_crypto_aes128_cmac_message(&aes128_cmac_request, T, sizeof(csis_string), csis_string,
                                        k1, csis_client_handle_k1, context);
 }
@@ -1068,6 +1068,8 @@ uint8_t coordinated_set_identification_service_client_check_advertisement(bd_add
 }
 
 uint8_t coordinated_set_identification_service_client_check_hci_event(uint8_t const * const packet, uint16_t size){
+    UNUSED(size);
+
     bd_addr_t adv_addr;
     bd_addr_type_t adv_addr_type;
     uint8_t adv_size;
