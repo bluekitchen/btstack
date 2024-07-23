@@ -181,6 +181,8 @@ static void mics_client_emit_done_event(mics_client_connection_t * connection, u
 }
 
 static void mics_client_emit_read_event(mics_client_connection_t * connection, uint8_t index, uint8_t status, const uint8_t * data, uint16_t data_size){
+    UNUSED(status);
+
     if ((data_size > 0) && (data == NULL)){
         return;
     }
@@ -202,6 +204,8 @@ static void mics_client_emit_read_event(mics_client_connection_t * connection, u
 }
 
 static void mics_client_emit_notify_event(mics_client_connection_t * connection, uint16_t value_handle, uint8_t status, const uint8_t * data, uint16_t data_size){
+    UNUSED(status);
+
     if ((data_size > 0) && (data == NULL)){
         return;
     }
