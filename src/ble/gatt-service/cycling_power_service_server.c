@@ -862,10 +862,18 @@ static int cycling_power_service_write_callback(hci_con_handle_t con_handle, uin
                 break;
 
             case CP_OPCODE_START_OFFSET_COMPENSATION:
-            case CP_OPCODE_START_ENHANCED_OFFSET_COMPENSATION:
                 if (has_feature(CP_FEATURE_FLAG_OFFSET_COMPENSATION_SUPPORTED)){
                     instance->response_value = CP_RESPONSE_VALUE_W4_VALUE_AVAILABLE;
-                    cycling_power_service_server_emit_start_calibration(instance, instance->request_opcode == CP_OPCODE_START_ENHANCED_OFFSET_COMPENSATION);
+                    cycling_power_service_server_emit_start_calibration(instance, false);
+                } else {
+                    instance->response_value = CP_RESPONSE_VALUE_INVALID_PARAMETER;
+                }
+                break;
+
+            case CP_OPCODE_START_ENHANCED_OFFSET_COMPENSATION:
+                if (has_feature(CP_FEATURE_FLAG_ENHANCED_OFFSET_COMPENSATION_SUPPORTED)){
+                    instance->response_value = CP_RESPONSE_VALUE_W4_VALUE_AVAILABLE;
+                    cycling_power_service_server_emit_start_calibration(instance, true);
                 } else {
                     instance->response_value = CP_RESPONSE_VALUE_INVALID_PARAMETER;
                 }
