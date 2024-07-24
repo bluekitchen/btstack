@@ -669,9 +669,11 @@ static void cycling_power_service_response_can_send_now(void * context){
     }
 }
 
-static void cycling_power_service_server_emit_start_calibration(const cycling_power_t *instance,
-                                                                cycling_power_sensor_measurement_context_t measurement_type,
-                                                                bool enhanced) {
+static void cycling_power_service_server_emit_start_calibration(const cycling_power_t *instance, bool enhanced) {
+
+    cycling_power_sensor_measurement_context_t measurement_type =
+            has_feature(CP_FEATURE_FLAG_SENSOR_MEASUREMENT_CONTEXT) ? CP_SENSOR_MEASUREMENT_CONTEXT_TORQUE : CP_SENSOR_MEASUREMENT_CONTEXT_FORCE;
+
     uint8_t event[7];
     int index = 0;
     event[index++] = HCI_EVENT_GATTSERVICE_META;
@@ -867,9 +869,8 @@ static int cycling_power_service_write_callback(hci_con_handle_t con_handle, uin
                 } 
                 if (has_feature(CP_FEATURE_FLAG_EXTREME_MAGNITUDES_SUPPORTED)){
                     instance->response_value = CP_RESPONSE_VALUE_W4_VALUE_AVAILABLE;
-                    cycling_power_sensor_measurement_context_t measurement_type =
-                            has_feature(CP_FEATURE_FLAG_SENSOR_MEASUREMENT_CONTEXT) ? CP_SENSOR_MEASUREMENT_CONTEXT_TORQUE : CP_SENSOR_MEASUREMENT_CONTEXT_FORCE;
-                    cycling_power_service_server_emit_start_calibration(instance, measurement_type, instance->request_opcode == CP_OPCODE_START_ENHANCED_OFFSET_COMPENSATION);
+                    cycling_power_service_server_emit_start_calibration(instance, instance->request_opcode ==
+                                                                                  CP_OPCODE_START_ENHANCED_OFFSET_COMPENSATION);
                 } else {
                     instance->current_force_magnitude_N = 0xffff;
                     instance->current_torque_magnitude_Nm = 0xffff;
