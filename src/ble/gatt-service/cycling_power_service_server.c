@@ -179,8 +179,8 @@ typedef struct {
     
     uint8_t  sampling_rate_Hz;                          // resolution 1 Herz
     
-    int16_t  current_force_magnitude_N;
-    int16_t  current_torque_magnitude_Nm;               // newton-meters, resolution 1/32
+    uint16_t  current_force_magnitude_N;
+    uint16_t  current_torque_magnitude_Nm;               // newton-meters, resolution 1/32
     uint16_t manufacturer_company_id;
     uint8_t num_manufacturer_specific_data;
     uint8_t * manufacturer_specific_data;
@@ -191,9 +191,9 @@ typedef struct {
     uint16_t vector_last_crank_event_time_s;                           // seconds, resolution 1/1024
     uint16_t vector_first_crank_measurement_angle_degree;
     int16_t  * vector_instantaneous_force_magnitude_N_array;           // newton
-    int force_magnitude_count;
+    uint16_t force_magnitude_count;
     int16_t  * vector_instantaneous_torque_magnitude_Nm_array;         // newton-meter, resolution 1/32
-    int torque_magnitude_count;
+    uint16_t torque_magnitude_count;
     cycling_power_instantaneous_measurement_direction_t vector_instantaneous_measurement_direction;
 
     // CP Vector Notification (Client Characteristic Configuration)
