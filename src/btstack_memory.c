@@ -145,7 +145,7 @@ hci_connection_t * btstack_memory_hci_connection_get(void){
 }
 void btstack_memory_hci_connection_free(hci_connection_t *hci_connection){
     UNUSED(hci_connection);
-};
+}
 #endif
 #elif defined(HAVE_MALLOC)
 
@@ -203,7 +203,7 @@ l2cap_service_t * btstack_memory_l2cap_service_get(void){
 }
 void btstack_memory_l2cap_service_free(l2cap_service_t *l2cap_service){
     UNUSED(l2cap_service);
-};
+}
 #endif
 #elif defined(HAVE_MALLOC)
 
@@ -260,7 +260,7 @@ l2cap_channel_t * btstack_memory_l2cap_channel_get(void){
 }
 void btstack_memory_l2cap_channel_free(l2cap_channel_t *l2cap_channel){
     UNUSED(l2cap_channel);
-};
+}
 #endif
 #elif defined(HAVE_MALLOC)
 
@@ -319,7 +319,7 @@ rfcomm_multiplexer_t * btstack_memory_rfcomm_multiplexer_get(void){
 }
 void btstack_memory_rfcomm_multiplexer_free(rfcomm_multiplexer_t *rfcomm_multiplexer){
     UNUSED(rfcomm_multiplexer);
-};
+}
 #endif
 #elif defined(HAVE_MALLOC)
 
@@ -376,7 +376,7 @@ rfcomm_service_t * btstack_memory_rfcomm_service_get(void){
 }
 void btstack_memory_rfcomm_service_free(rfcomm_service_t *rfcomm_service){
     UNUSED(rfcomm_service);
-};
+}
 #endif
 #elif defined(HAVE_MALLOC)
 
@@ -433,7 +433,7 @@ rfcomm_channel_t * btstack_memory_rfcomm_channel_get(void){
 }
 void btstack_memory_rfcomm_channel_free(rfcomm_channel_t *rfcomm_channel){
     UNUSED(rfcomm_channel);
-};
+}
 #endif
 #elif defined(HAVE_MALLOC)
 
@@ -491,7 +491,7 @@ btstack_link_key_db_memory_entry_t * btstack_memory_btstack_link_key_db_memory_e
 }
 void btstack_memory_btstack_link_key_db_memory_entry_free(btstack_link_key_db_memory_entry_t *btstack_link_key_db_memory_entry){
     UNUSED(btstack_link_key_db_memory_entry);
-};
+}
 #endif
 #elif defined(HAVE_MALLOC)
 
@@ -549,7 +549,7 @@ bnep_service_t * btstack_memory_bnep_service_get(void){
 }
 void btstack_memory_bnep_service_free(bnep_service_t *bnep_service){
     UNUSED(bnep_service);
-};
+}
 #endif
 #elif defined(HAVE_MALLOC)
 
@@ -606,7 +606,7 @@ bnep_channel_t * btstack_memory_bnep_channel_get(void){
 }
 void btstack_memory_bnep_channel_free(bnep_channel_t *bnep_channel){
     UNUSED(bnep_channel);
-};
+}
 #endif
 #elif defined(HAVE_MALLOC)
 
@@ -664,7 +664,7 @@ goep_server_service_t * btstack_memory_goep_server_service_get(void){
 }
 void btstack_memory_goep_server_service_free(goep_server_service_t *goep_server_service){
     UNUSED(goep_server_service);
-};
+}
 #endif
 #elif defined(HAVE_MALLOC)
 
@@ -721,7 +721,7 @@ goep_server_connection_t * btstack_memory_goep_server_connection_get(void){
 }
 void btstack_memory_goep_server_connection_free(goep_server_connection_t *goep_server_connection){
     UNUSED(goep_server_connection);
-};
+}
 #endif
 #elif defined(HAVE_MALLOC)
 
@@ -779,7 +779,7 @@ hfp_connection_t * btstack_memory_hfp_connection_get(void){
 }
 void btstack_memory_hfp_connection_free(hfp_connection_t *hfp_connection){
     UNUSED(hfp_connection);
-};
+}
 #endif
 #elif defined(HAVE_MALLOC)
 
@@ -837,7 +837,7 @@ hid_host_connection_t * btstack_memory_hid_host_connection_get(void){
 }
 void btstack_memory_hid_host_connection_free(hid_host_connection_t *hid_host_connection){
     UNUSED(hid_host_connection);
-};
+}
 #endif
 #elif defined(HAVE_MALLOC)
 
@@ -895,7 +895,7 @@ service_record_item_t * btstack_memory_service_record_item_get(void){
 }
 void btstack_memory_service_record_item_free(service_record_item_t *service_record_item){
     UNUSED(service_record_item);
-};
+}
 #endif
 #elif defined(HAVE_MALLOC)
 
@@ -953,7 +953,7 @@ avdtp_stream_endpoint_t * btstack_memory_avdtp_stream_endpoint_get(void){
 }
 void btstack_memory_avdtp_stream_endpoint_free(avdtp_stream_endpoint_t *avdtp_stream_endpoint){
     UNUSED(avdtp_stream_endpoint);
-};
+}
 #endif
 #elif defined(HAVE_MALLOC)
 
@@ -1011,7 +1011,7 @@ avdtp_connection_t * btstack_memory_avdtp_connection_get(void){
 }
 void btstack_memory_avdtp_connection_free(avdtp_connection_t *avdtp_connection){
     UNUSED(avdtp_connection);
-};
+}
 #endif
 #elif defined(HAVE_MALLOC)
 
@@ -1069,7 +1069,7 @@ avrcp_connection_t * btstack_memory_avrcp_connection_get(void){
 }
 void btstack_memory_avrcp_connection_free(avrcp_connection_t *avrcp_connection){
     UNUSED(avrcp_connection);
-};
+}
 #endif
 #elif defined(HAVE_MALLOC)
 
@@ -1127,7 +1127,7 @@ avrcp_browsing_connection_t * btstack_memory_avrcp_browsing_connection_get(void)
 }
 void btstack_memory_avrcp_browsing_connection_free(avrcp_browsing_connection_t *avrcp_browsing_connection){
     UNUSED(avrcp_browsing_connection);
-};
+}
 #endif
 #elif defined(HAVE_MALLOC)
 
@@ -1187,7 +1187,7 @@ battery_service_client_t * btstack_memory_battery_service_client_get(void){
 }
 void btstack_memory_battery_service_client_free(battery_service_client_t *battery_service_client){
     UNUSED(battery_service_client);
-};
+}
 #endif
 #elif defined(HAVE_MALLOC)
 
@@ -1244,7 +1244,7 @@ gatt_client_t * btstack_memory_gatt_client_get(void){
 }
 void btstack_memory_gatt_client_free(gatt_client_t *gatt_client){
     UNUSED(gatt_client);
-};
+}
 #endif
 #elif defined(HAVE_MALLOC)
 
@@ -1301,7 +1301,7 @@ hids_client_t * btstack_memory_hids_client_get(void){
 }
 void btstack_memory_hids_client_free(hids_client_t *hids_client){
     UNUSED(hids_client);
-};
+}
 #endif
 #elif defined(HAVE_MALLOC)
 
@@ -1358,7 +1358,7 @@ scan_parameters_service_client_t * btstack_memory_scan_parameters_service_client
 }
 void btstack_memory_scan_parameters_service_client_free(scan_parameters_service_client_t *scan_parameters_service_client){
     UNUSED(scan_parameters_service_client);
-};
+}
 #endif
 #elif defined(HAVE_MALLOC)
 
@@ -1415,7 +1415,7 @@ sm_lookup_entry_t * btstack_memory_sm_lookup_entry_get(void){
 }
 void btstack_memory_sm_lookup_entry_free(sm_lookup_entry_t *sm_lookup_entry){
     UNUSED(sm_lookup_entry);
-};
+}
 #endif
 #elif defined(HAVE_MALLOC)
 
@@ -1472,7 +1472,7 @@ whitelist_entry_t * btstack_memory_whitelist_entry_get(void){
 }
 void btstack_memory_whitelist_entry_free(whitelist_entry_t *whitelist_entry){
     UNUSED(whitelist_entry);
-};
+}
 #endif
 #elif defined(HAVE_MALLOC)
 
@@ -1529,7 +1529,7 @@ periodic_advertiser_list_entry_t * btstack_memory_periodic_advertiser_list_entry
 }
 void btstack_memory_periodic_advertiser_list_entry_free(periodic_advertiser_list_entry_t *periodic_advertiser_list_entry){
     UNUSED(periodic_advertiser_list_entry);
-};
+}
 #endif
 #elif defined(HAVE_MALLOC)
 
@@ -1589,7 +1589,7 @@ mesh_network_pdu_t * btstack_memory_mesh_network_pdu_get(void){
 }
 void btstack_memory_mesh_network_pdu_free(mesh_network_pdu_t *mesh_network_pdu){
     UNUSED(mesh_network_pdu);
-};
+}
 #endif
 #elif defined(HAVE_MALLOC)
 
@@ -1646,7 +1646,7 @@ mesh_segmented_pdu_t * btstack_memory_mesh_segmented_pdu_get(void){
 }
 void btstack_memory_mesh_segmented_pdu_free(mesh_segmented_pdu_t *mesh_segmented_pdu){
     UNUSED(mesh_segmented_pdu);
-};
+}
 #endif
 #elif defined(HAVE_MALLOC)
 
@@ -1703,7 +1703,7 @@ mesh_upper_transport_pdu_t * btstack_memory_mesh_upper_transport_pdu_get(void){
 }
 void btstack_memory_mesh_upper_transport_pdu_free(mesh_upper_transport_pdu_t *mesh_upper_transport_pdu){
     UNUSED(mesh_upper_transport_pdu);
-};
+}
 #endif
 #elif defined(HAVE_MALLOC)
 
@@ -1760,7 +1760,7 @@ mesh_network_key_t * btstack_memory_mesh_network_key_get(void){
 }
 void btstack_memory_mesh_network_key_free(mesh_network_key_t *mesh_network_key){
     UNUSED(mesh_network_key);
-};
+}
 #endif
 #elif defined(HAVE_MALLOC)
 
@@ -1817,7 +1817,7 @@ mesh_transport_key_t * btstack_memory_mesh_transport_key_get(void){
 }
 void btstack_memory_mesh_transport_key_free(mesh_transport_key_t *mesh_transport_key){
     UNUSED(mesh_transport_key);
-};
+}
 #endif
 #elif defined(HAVE_MALLOC)
 
@@ -1874,7 +1874,7 @@ mesh_virtual_address_t * btstack_memory_mesh_virtual_address_get(void){
 }
 void btstack_memory_mesh_virtual_address_free(mesh_virtual_address_t *mesh_virtual_address){
     UNUSED(mesh_virtual_address);
-};
+}
 #endif
 #elif defined(HAVE_MALLOC)
 
@@ -1931,7 +1931,7 @@ mesh_subnet_t * btstack_memory_mesh_subnet_get(void){
 }
 void btstack_memory_mesh_subnet_free(mesh_subnet_t *mesh_subnet){
     UNUSED(mesh_subnet);
-};
+}
 #endif
 #elif defined(HAVE_MALLOC)
 
@@ -1991,7 +1991,7 @@ hci_iso_stream_t * btstack_memory_hci_iso_stream_get(void){
 }
 void btstack_memory_hci_iso_stream_free(hci_iso_stream_t *hci_iso_stream){
     UNUSED(hci_iso_stream);
-};
+}
 #endif
 #elif defined(HAVE_MALLOC)
 
