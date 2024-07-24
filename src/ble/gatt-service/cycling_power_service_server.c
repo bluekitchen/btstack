@@ -669,6 +669,21 @@ static void cycling_power_service_response_can_send_now(void * context){
     }
 }
 
+static void cycling_power_service_server_emit_start_calibration(const cycling_power_t *instance,
+                                                                cycling_power_sensor_measurement_context_t measurement_type,
+                                                                bool enhanced) {
+    uint8_t event[7];
+    int index = 0;
+    event[index++] = HCI_EVENT_GATTSERVICE_META;
+    event[index++] = sizeof(event) - 2u;
+    event[index++] = GATTSERVICE_SUBEVENT_CYCLING_POWER_START_CALIBRATION;
+    little_endian_store_16(event, index, instance->con_handle);
+    index += 2;
+    event[index++] = (uint8_t) measurement_type;
+    event[index++] = enhanced ? 1 : 0;
+    (*instance->calibration_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
 static int cycling_power_service_write_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
     UNUSED(con_handle);
     UNUSED(offset);
@@ -854,17 +869,11 @@ static int cycling_power_service_write_callback(hci_con_handle_t con_handle, uin
                         ((has_feature(CP_FEATURE_FLAG_SENSOR_MEASUREMENT_CONTEXT) == CP_SENSOR_MEASUREMENT_CONTEXT_FORCE) || 
                          (has_feature(CP_FEATURE_FLAG_SENSOR_MEASUREMENT_CONTEXT) == CP_SENSOR_MEASUREMENT_CONTEXT_TORQUE))
                 ){
-                    uint8_t event[7];
-                    int index = 0;
-                    event[index++] = HCI_EVENT_GATTSERVICE_META;
-                    event[index++] = sizeof(event) - 2u;
-                    event[index++] = GATTSERVICE_SUBEVENT_CYCLING_POWER_START_CALIBRATION;
-                    little_endian_store_16(event, index, con_handle);
-                    index += 2;
-                    event[index++] = has_feature(CP_FEATURE_FLAG_SENSOR_MEASUREMENT_CONTEXT) == CP_SENSOR_MEASUREMENT_CONTEXT_TORQUE;
-                    event[index++] = (instance->request_opcode == CP_OPCODE_START_ENHANCED_OFFSET_COMPENSATION);
                     instance->response_value = CP_RESPONSE_VALUE_W4_VALUE_AVAILABLE;
-                    (*instance->calibration_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+                    cycling_power_sensor_measurement_context_t measurement_type =
+                            has_feature(CP_FEATURE_FLAG_SENSOR_MEASUREMENT_CONTEXT) ? CP_SENSOR_MEASUREMENT_CONTEXT_TORQUE : CP_SENSOR_MEASUREMENT_CONTEXT_FORCE;
+                    cycling_power_service_server_emit_start_calibration(instance, measurement_type, instance->request_opcode ==
+                                                                                                    CP_OPCODE_START_ENHANCED_OFFSET_COMPENSATION);
                     return 0;
                 }
                 instance->current_force_magnitude_N = 0xffff;
