@@ -341,6 +341,8 @@ uint16_t le_audio_util_metadata_parse(const uint8_t *buffer, uint8_t buffer_size
 }
 
 uint16_t le_audio_util_metadata_serialize(const le_audio_metadata_t *metadata, uint8_t * event, uint16_t event_size){
+    UNUSED(event_size);
+
     uint8_t pos = 0;
     
     event[pos++] = (uint8_t)metadata->metadata_mask;
