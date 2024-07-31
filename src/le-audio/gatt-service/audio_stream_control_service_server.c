@@ -36,6 +36,7 @@
  */
 
 #define BTSTACK_FILE__ "audio_stream_control_service_server.c"
+#include <inttypes.h>
 
 #include "ble/att_db.h"
 #include "ble/att_server.h"
@@ -1175,7 +1176,7 @@ static int ascs_server_write_callback(hci_con_handle_t con_handle, uint16_t attr
                     // store in buffer
                     new_length = (uint32_t) offset + buffer_size;
                     if (new_length <= sizeof(connection->write_long_buffer)){
-                        log_info("write long, offset %u, len %u -> new len %u", offset, buffer_size, new_length);
+                        log_info("write long, offset %u, len %u -> new len %" PRIu32 "", offset, buffer_size, new_length);
                         memcpy(&connection->write_long_buffer[offset], buffer, buffer_size);
                         connection->write_long_length = new_length;
                     } else {
