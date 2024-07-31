@@ -45,6 +45,7 @@
 #include "btstack_config.h"
 
 #include <stdint.h>
+#include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -167,11 +168,11 @@ static pacs_record_t sink_pac_records[] = {
         // metadata
         {
             // all metadata set
-            0x0FFE,
+            .metadata_mask = 0x0FFE,
             // (2) preferred_audio_contexts_mask
-            LE_AUDIO_CONTEXT_MASK_UNSPECIFIED,
+            .preferred_audio_contexts_mask = LE_AUDIO_CONTEXT_MASK_UNSPECIFIED,
             // (2) streaming_audio_contexts_mask
-            LE_AUDIO_CONTEXT_MASK_UNSPECIFIED,
+            .streaming_audio_contexts_mask = LE_AUDIO_CONTEXT_MASK_UNSPECIFIED,
         }
     }
 };
@@ -201,11 +202,11 @@ static pacs_record_t source_pac_records[] = {
         // metadata
         {
             // all metadata set
-            0x0FFE,
+            .metadata_mask = 0x0FFE,
             // (2) preferred_audio_contexts_mask
-            LE_AUDIO_CONTEXT_MASK_UNSPECIFIED,
+            .preferred_audio_contexts_mask = LE_AUDIO_CONTEXT_MASK_UNSPECIFIED,
             // (2) streaming_audio_contexts_mask
-            LE_AUDIO_CONTEXT_MASK_UNSPECIFIED,
+            .streaming_audio_contexts_mask = LE_AUDIO_CONTEXT_MASK_UNSPECIFIED,
         }
     }
 };
@@ -432,6 +433,8 @@ static void list_configurations(void){
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
+    UNUSED(size);
+
     bd_addr_t event_addr;
     hci_con_handle_t cis_handle;
     hci_con_handle_t acl_handle;
@@ -530,6 +533,8 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 }
 
 static void iso_packet_handler(uint8_t packet_type, uint16_t a_channel, uint8_t *packet, uint16_t size){
+    UNUSED(packet_type);
+    UNUSED(a_channel);
 
     if (playback_active == false) return;
 
@@ -563,6 +568,9 @@ static void pacs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
 #ifdef ENABLE_CSIS_SERVER
 // CSIS Server Handler
 static void csis_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) {
+    UNUSED(channel);
+    UNUSED(size);
+
     if (packet_type != HCI_EVENT_PACKET) return;
     if (hci_event_packet_get_type(packet) != HCI_EVENT_LEAUDIO_META) return;
 
@@ -640,6 +648,8 @@ void mcs_client_connect(hci_con_handle_t con_handle){
 }
 
 void mcs_client_disconnect(hci_con_handle_t con_handle) {
+    UNUSED(con_handle);
+
     if (mcs_cid != 0) {
         printf("MCS Client: disconnect\n");
         media_control_service_client_disconnect(mcs_cid);
@@ -728,7 +738,7 @@ static void ascs_server_packet_handler(uint8_t packet_type, uint16_t channel, ui
                 if (codec_configuration.specific_codec_configuration.audio_channel_allocation_mask == 3){
                     num_channels = 2;
                 }
-                printf("- channel allocation: 0x%02x -> %u channels\n", codec_configuration.specific_codec_configuration.audio_channel_allocation_mask, num_channels);
+                printf("- channel allocation: 0x%02" PRIx32 " -> %u channels\n", codec_configuration.specific_codec_configuration.audio_channel_allocation_mask, num_channels);
             }
             // same codec configuration, but individual number of channels per ASE
             if (ase_id == ascs_server_sink_ase_id){
