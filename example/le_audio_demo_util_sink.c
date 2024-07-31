@@ -202,7 +202,7 @@ static void * decoder_contexts[MAX_CHANNELS];
 
 static void le_audio_connection_sink_playback(int16_t * buffer, uint16_t num_samples){
     // called from lower-layer but guaranteed to be on main thread
-    log_info("Playback: need %u, have %u", num_samples, btstack_ring_buffer_bytes_available(&playback_buffer) / (le_audio_demo_sink_num_channels * 2));
+    log_info("Playback: need %u, have %" PRIu32 "", num_samples, btstack_ring_buffer_bytes_available(&playback_buffer) / (le_audio_demo_sink_num_channels * 2));
 
     samples_played += num_samples;
 
@@ -243,6 +243,8 @@ void le_audio_demo_util_sink_enable_lc3plus(bool enable){
 }
 
 static void setup_lc3_decoder(bool use_lc3plus_decoder){
+    UNUSED(use_lc3plus_decoder);
+
     uint8_t channel;
     for (channel = 0 ; channel < le_audio_demo_sink_num_channels ; channel++){
         // pick decoder
@@ -291,7 +293,7 @@ void le_audio_demo_util_sink_configure_general(uint8_t num_streams, uint8_t num_
     // init decoder
     setup_lc3_decoder(use_lc3plus_decoder);
 
-    printf("Configure: %u streams, %u channels per stream, sampling rate %u, samples per frame %u, lc3plus %u\n",
+    printf("Configure: %u streams, %u channels per stream, sampling rate %" PRIu32 ", samples per frame %u, lc3plus %u\n",
            num_streams, num_channels_per_stream, sampling_frequency_hz, le_audio_demo_sink_num_samples_per_frame, use_lc3plus_decoder);
 
 #ifdef HAVE_POSIX_FILE_IO
@@ -351,6 +353,7 @@ void le_audio_demo_util_sink_configure_broadcast(uint8_t num_streams, uint8_t nu
 }
 
 void le_audio_demo_util_sink_count(uint8_t stream_index, uint8_t *packet, uint16_t size) {
+    UNUSED(size);
     // check for missing packet
     uint16_t header = little_endian_read_16(packet, 0);
     uint8_t ts_flag = (header >> 14) & 1;
@@ -361,7 +364,8 @@ void le_audio_demo_util_sink_count(uint8_t stream_index, uint8_t *packet, uint16
         time_stamp = little_endian_read_32(packet, offset);
         offset += 4;
     }
-(void)time_stamp;
+
+    UNUSED(time_stamp);
     uint32_t receive_time_ms = btstack_run_loop_get_time_ms();
 
     uint16_t packet_sequence_number = little_endian_read_16(packet, offset);
@@ -393,6 +397,7 @@ void le_audio_demo_util_sink_count(uint8_t stream_index, uint8_t *packet, uint16
 }
 
 static btstack_fsm_state_t audio_processing_initial( audio_processing_t * const me, btstack_fsm_event_t const * const e ) {
+    UNUSED(e);
     audio_fsm_debug("%s\n", __FUNCTION__ );
     return TRAN(audio_processing_waiting);
 }
@@ -452,7 +457,7 @@ static btstack_fsm_state_t audio_processing_waiting( audio_processing_t * const 
 static void audio_processing_resample( audio_processing_t * const me, data_event_t *e ) {
     // mark current packet as handled
     e->data = NULL;
-    if( me->have_pcm != ((1<<(le_audio_demo_sink_num_streams*le_audio_demo_sink_num_channels_per_stream))-1) ) {
+    if( me->have_pcm != (uint32_t)((1<<(le_audio_demo_sink_num_streams*le_audio_demo_sink_num_channels_per_stream))-1) ) {
         return;
     }
 
@@ -473,7 +478,7 @@ static void audio_processing_resample( audio_processing_t * const me, data_event
 
     if (btstack_ring_buffer_bytes_free(&playback_buffer) >= bytes_to_store) {
         btstack_ring_buffer_write(&playback_buffer, (uint8_t *)data_out, bytes_to_store);
-        log_info("Samples in playback buffer %5u", btstack_ring_buffer_bytes_available(&playback_buffer) / (le_audio_demo_sink_num_channels * 2));
+        log_info("Samples in playback buffer %5" PRIu32 "", btstack_ring_buffer_bytes_available(&playback_buffer) / (le_audio_demo_sink_num_channels * 2));
     } else {
         printf("Samples dropped\n");
         samples_dropped += le_audio_demo_sink_num_samples_per_frame;
@@ -560,7 +565,7 @@ static btstack_fsm_state_t audio_processing_streaming( audio_processing_t * cons
         }
         case TIME_SIG: {
             time_event_t *time = (time_event_t*)e;
-            printf("time: %d - %d %d\n", time->time_ms, me->last_receive_time_ms, time->time_ms-me->last_receive_time_ms );
+            printf("time: %" PRId32 " - %" PRId32 " %" PRId32 "\n", time->time_ms, me->last_receive_time_ms, time->time_ms-me->last_receive_time_ms );
             // we were last called ages ago, so just start waiting again
             if( btstack_time_delta( time->time_ms, me->last_receive_time_ms ) > 100) {
                 status = TRAN(audio_processing_waiting);
@@ -619,12 +624,14 @@ static void audio_processing_task( audio_processing_t *me, btstack_fsm_event_t c
 
 static bool audio_processing_is_streaming( audio_processing_t *me ) {
     btstack_fsm_t *fsm = &me->super;
-    time_event_t const time_event = { TIME_SIG, btstack_run_loop_get_time_ms() };
+    time_event_t const time_event = { { TIME_SIG }, btstack_run_loop_get_time_ms() };
     audio_processing_task( me, &time_event.super );
     return fsm->state == (btstack_fsm_state_handler_t)&audio_processing_streaming;
 }
 
 void le_audio_demo_util_sink_receive(uint8_t stream_index, uint8_t *packet, uint16_t size) {
+    UNUSED(size);
+
     if (le_audio_demo_util_sink_state != LE_AUDIO_SINK_CONFIGURED) return;
 
     uint16_t header = little_endian_read_16(packet, 0);
@@ -672,7 +679,7 @@ void le_audio_demo_util_sink_receive(uint8_t stream_index, uint8_t *packet, uint
     le_audio_demo_sink_lc3_frames++;
 
     if (samples_received >= 10 * le_audio_demo_sink_sampling_frequency_hz){
-        printf("LC3 Frames: %4u - samples received %5u, played %5u, dropped %5u\n", le_audio_demo_sink_lc3_frames, samples_received, samples_played, samples_dropped);
+        printf("LC3 Frames: %4" PRIu32 " - samples received %5" PRIu32 ", played %5" PRIu32 ", dropped %5" PRIu32 "\n", le_audio_demo_sink_lc3_frames, samples_received, samples_played, samples_dropped);
         samples_received = 0;
         samples_dropped  =  0;
         samples_played = 0;
