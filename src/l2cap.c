@@ -2506,13 +2506,13 @@ static l2cap_channel_t * l2cap_create_channel_entry(btstack_packet_handler_t pac
     channel->remote_sig_id = L2CAP_SIG_ID_INVALID;
     channel->local_sig_id = L2CAP_SIG_ID_INVALID;
 
-    log_info("create channel %p, local_cid 0x%04x", channel, channel->local_cid);
+    log_info("create channel %p, local_cid 0x%04x", (void*)channel, channel->local_cid);
 
     return channel;
 }
 
 static void l2cap_free_channel_entry(l2cap_channel_t * channel){
-    log_info("free channel %p, local_cid 0x%04x", channel, channel->local_cid);
+    log_info("free channel %p, local_cid 0x%04x", (void*)channel, channel->local_cid);
     // assert all timers are stopped
     l2cap_stop_rtx(channel);
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
@@ -5445,7 +5445,7 @@ uint8_t l2cap_cbm_create_channel(btstack_packet_handler_t packet_handler, hci_co
     if (!channel) {
         return BTSTACK_MEMORY_ALLOC_FAILED;
     }
-    log_info("created %p", channel);
+    log_info("created %p", (void*)channel);
 
     // store local_cid
     if (out_local_cid){
