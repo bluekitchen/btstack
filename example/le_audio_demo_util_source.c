@@ -40,6 +40,7 @@
 #include "le_audio_demo_util_source.h"
 
 #include <stdio.h>
+#include <inttypes.h>
 #include <math.h>
 
 #include "btstack_config.h"
@@ -160,7 +161,7 @@ static void le_audio_demo_source_setup_lc3_encoder(void){
         le_audio_demo_source_lc3_encoder->configure(context, le_audio_demo_source_sampling_frequency_hz, le_audio_demo_source_frame_duration, le_audio_demo_source_octets_per_frame);
     }
 
-    printf("LC3 Encoder config: %u hz, frame duration %s ms, num samples %u, num octets %u\n",
+    printf("LC3 Encoder config: %" PRIu32 " hz, frame duration %s ms, num samples %u, num octets %u\n",
            le_audio_demo_source_sampling_frequency_hz, le_audio_demo_source_frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US ? "7.5" : "10",
            le_audio_demo_source_num_samples_per_frame, le_audio_demo_source_octets_per_frame);
 }
@@ -214,7 +215,7 @@ void le_audio_demo_util_source_configure(uint8_t num_streams, uint8_t num_channe
 
     // setup mod player
     le_audio_demo_source_setup_mod_player();
-};
+}
 
 void le_audio_demo_util_source_generate_iso_frame(le_audio_demo_source_generator generator) {
     btstack_assert(le_audio_demo_source_octets_per_frame != 0);
@@ -316,7 +317,7 @@ void le_audio_demo_util_source_generate_iso_frame(le_audio_demo_source_generator
     }
 
     le_audio_demo_util_source_generator = generator;
-};
+}
 
 void le_audio_demo_util_source_send(uint8_t stream_index, hci_con_handle_t con_handle){
     btstack_assert(le_audio_demo_source_octets_per_frame != 0);
