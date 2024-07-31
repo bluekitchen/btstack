@@ -5661,7 +5661,7 @@ static void hci_halting_run(void) {
             if (connection) {
                 hci_con_handle_t con_handle = (uint16_t) connection->con_handle;
 
-                log_info("HCI_STATE_HALTING, connection %p, handle %u, state %u", connection, con_handle, connection->state);
+                log_info("HCI_STATE_HALTING, connection %p, handle %u, state %u", (void*)connection, con_handle, connection->state);
 
                 // check state
                 switch(connection->state) {
@@ -5743,7 +5743,7 @@ static void hci_falling_asleep_run(void){
                 // send disconnect
                 if (!hci_can_send_command_packet_now()) return;
 
-                log_info("HCI_STATE_FALLING_ASLEEP, connection %p, handle %u", connection, (uint16_t)connection->con_handle);
+                log_info("HCI_STATE_FALLING_ASLEEP, connection %p, handle %u", (void*)connection, (uint16_t)connection->con_handle);
                 hci_send_cmd(&hci_disconnect, connection->con_handle, ERROR_CODE_REMOTE_USER_TERMINATED_CONNECTION);
 
                 // send disconnected event right away - causes higher layer connections to get closed, too.
