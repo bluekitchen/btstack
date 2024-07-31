@@ -121,7 +121,7 @@ static uint16_t tbs_server_get_next_call_id( telephone_bearer_service_server_t *
 }
 
 static void tbs_server_reset_bearer_connection(tbs_server_connection_t * bearer_connection) {
-    log_info("tbs_server_reset_bearer_connection, connection %p", bearer_connection);
+    log_info("tbs_server_reset_bearer_connection, connection %p", (void*)bearer_connection);
     bearer_connection->con_handle = HCI_CON_HANDLE_INVALID;
     bearer_connection->scheduled_tasks = 0;
     bearer_connection->characteristics_dirty = 0;
@@ -192,7 +192,7 @@ static tbs_characteristic_index_t tbs_server_find_characteristic_index_for_attri
 static void tbs_server_handle_cccd_write(telephone_bearer_service_server_t * tbs_bearer, uint16_t characteristic_index, hci_con_handle_t con_handle, uint16_t configuration){
     // find connection for con handle
     tbs_server_connection_t * bearer_connection = tbs_server_get_bearer_connection_for_con_handle(tbs_bearer, con_handle);
-    log_info("tbs_server_handle_cccd_write config = %u, characteristic %u, connection %p", configuration, characteristic_index, bearer_connection);
+    log_info("tbs_server_handle_cccd_write config = %u, characteristic %u, connection %p", configuration, characteristic_index, (void*)bearer_connection);
 
     if (configuration == 0){
         if (bearer_connection != NULL) {
@@ -507,7 +507,7 @@ static void tbs_server_can_send_now(void * context){
     uint16_t value_handle = tbs_bearer->characteristics[characteristic_index].value_handle;
     hci_con_handle_t con_handle = bearer_connection->con_handle;
 
-    log_info("tbs_server_can_send_now, connection %p, index %u", bearer_connection, characteristic_index);
+    log_info("tbs_server_can_send_now, connection %p, index %u", (void*)bearer_connection, characteristic_index);
 
     switch( tbs_bearer->scheduled_characteristic_to_notify ) {
     case TBS_CHARACTERISTIC_INDEX_BEARER_PROVIDER_NAME:
@@ -668,7 +668,7 @@ static void tbs_server_bearer_connection_schedule_task(telephone_bearer_service_
     }
 
     if (bearer_connection->client_configuration[characteristic_index] == 0){
-        log_info("tbs_server_bearer_connection_schedule_task %u not subscribed, connection %p", (int) characteristic_index, bearer_connection);
+        log_info("tbs_server_bearer_connection_schedule_task %u not subscribed, connection %p", (int) characteristic_index, (void*)bearer_connection);
         return;
     }
 
