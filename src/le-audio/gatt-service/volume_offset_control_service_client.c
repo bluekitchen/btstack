@@ -100,6 +100,8 @@ static uint16_t vocs_client_value_handle_for_index(vocs_client_connection_t * co
 }
 
 static void vocs_client_emit_string_value(gatt_service_client_connection_helper_t * connection_helper, uint8_t subevent, const uint8_t * data, uint16_t data_size, uint8_t att_status){
+    UNUSED( data_size );
+
     btstack_assert(connection_helper != NULL);
     btstack_assert(connection_helper->event_callback != NULL);
     
