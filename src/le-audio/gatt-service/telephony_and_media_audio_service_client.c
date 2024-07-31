@@ -70,6 +70,7 @@ static uint16_t tmap_supported_roles;
 
 
 static void tmas_client_emit_supported_roles(hci_con_handle_t con_handle, uint8_t status){
+    UNUSED(con_handle);
     btstack_assert(tmas_client_event_callback != NULL);
 
     uint8_t event[10];
