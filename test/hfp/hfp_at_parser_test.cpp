@@ -652,10 +652,16 @@ TEST(HFPParser, custom_command_hf_with_assignment){
 }
 
 TEST(HFPParser, HFP_GABRBAGE_AND_ANSWER_CALL){
-    parse_ag("\r\nABCDEF\r\n");
+    parse_ag("\r\nAT+ABCDEF\r\n");
+    CHECK_EQUAL(HFP_CMD_UNKNOWN, context.command);
     snprintf(packet, sizeof(packet), "\r\n%s\r\n", HFP_ANSWER_CALL);
     parse_ag(packet);
     CHECK_EQUAL(HFP_CMD_CALL_ANSWERED, context.command);
+}
+
+TEST(HFPParser, AG_SENDS_RANDOM){
+    parse_hf("\r\n+$PATH:511\r\n");
+    CHECK_EQUAL(HFP_CMD_UNKNOWN, context.command);
 }
 
 TEST(HFPParser, long_command){
