@@ -112,20 +112,17 @@ static const char * tbs_characteristic_names[TBS_CHARACTERISTICS_NUM] = {
 };
 
 const char *tbs_characteristic_index_to_name( tbs_characteristic_index_t index ) {
-    btstack_assert( index >= 0 );
     btstack_assert( index < TBS_CHARACTERISTICS_NUM );
     return tbs_characteristic_names[index];
 }
 #endif
 
 uint16_t tbs_characteristic_index_to_uuid( tbs_characteristic_index_t index ) {
-    btstack_assert( index >= 0 );
     btstack_assert( index < TBS_CHARACTERISTICS_NUM );
     return tbs_characteristic_uuids[index];
 }
 
 uint8_t tbs_characteristic_index_to_subevent( tbs_characteristic_index_t index ) {
-    btstack_assert( index >= 0 );
     btstack_assert( index < TBS_CHARACTERISTICS_NUM );
     return tbs_characteristic_meta_subevent[index];
 }
