@@ -658,68 +658,61 @@ Please have a look at the [ATT Delayed Response example](../examples/examples/#s
 
 Implementation of a standard GATT Service consists of the following 4 steps:
 
-  1. Identify full Service Name
-  2. Use Service Name to fetch XML definition at Bluetooth SIG site and convert into generic .gatt file
-  3. Edit .gatt file to set constant values and exclude unwanted Characteristics
+  1. Get the Service specification from Bluetooth SIG
+  2. Find the Service Characteristics table and their properties
+  3. Create .gatt file from Service Characteristics table
   4. Implement Service server, e.g., battery_service_server.c
 
 Step 1:
 
-To facilitate the creation of .gatt files for standard profiles defined by the Bluetooth SIG,
-the *tool/convert_gatt_service.py* script can be used. When run without a parameter, it queries the
-Bluetooth SIG website and lists the available Services by their Specification Name, e.g.,
-*org.bluetooth.service.battery_service*.
+All GATT Service specifications can be found [here](https://www.bluetooth.com/specifications/specs/).
 
-    $ tool/convert_gatt_service.py
-    Fetching list of services from https://www.bluetooth.com/specifications/gatt/services
-
-    Specification Type                                     | Specification Name            | UUID
-    -------------------------------------------------------+-------------------------------+-----------
-    org.bluetooth.service.alert_notification               | Alert Notification Service    | 0x1811
-    org.bluetooth.service.automation_io                    | Automation IO                 | 0x1815
-    org.bluetooth.service.battery_service                  | Battery Service               | 0x180F
-    ...
-    org.bluetooth.service.weight_scale                     | Weight Scale                  | 0x181D
-
-    To convert a service into a .gatt file template, please call the script again with the requested Specification Type and the output file name
-    Usage: tool/convert_gatt_service.py SPECIFICATION_TYPE [service_name.gatt]
 
 Step 2:
 
-To convert service into .gatt file, call *tool/convert_gatt_service.py with the requested Specification Type and the output file name.
+The Service Characteristics table is usually in chapter "Service Characteristics". 
 
-    $ tool/convert_gatt_service.py org.bluetooth.service.battery_service battery_service.gatt
-    Fetching org.bluetooth.service.battery_service from
-    https://www.bluetooth.com/api/gatt/xmlfile?xmlFileName=org.bluetooth.service.battery_service.xml
+Let's have a look at an actual example, the [Battery Service Specification v1.0](https://www.bluetooth.org/docman/handlers/downloaddoc.ashx?doc_id=245138).
+In it, we find this:
 
-    Service Battery Service
-    - Characteristic Battery Level - properties ['Read', 'Notify']
-    -- Descriptor Characteristic Presentation Format       - TODO: Please set values
-    -- Descriptor Client Characteristic Configuration
+Characteristic | Ref | Mandatory/Optional
+---------------|-----|-------------------
+Battery Level  | 3.1 | M
 
-    Service successfully converted into battery_service.gatt
-    Please check for TODOs in the .gatt file
+So, the Battery Service has a single mandatory Characteristic.
+
+Characteristic | Broadcast | Read | Write without Response | Write | Notify | Indicate | Signed Write | Reliable Write | Writable Auxiliaries
+---------------|-----------|------|------------------------|-------|--------|----------|--------------|----------------|---------
+Battery Level  |      x    |  M   |            x           |  x    |  O     |     x    |      x       |        x       |     x
+
+The Battery Level Characteristic must supports Read and optionally allows for Notifications.
 
 
 Step 3:
 
-In most cases, you will need to customize the .gatt file. Please pay attention to the tool output and have a look
-at the generated .gatt file.
+Following the Battery Service v1.0 example, let's create `battery_service.gatt`.
 
-E.g. in the generated .gatt file for the Battery Service
+BTstack has a list of most GATT Service and Characteristics UUIDs in `src/bluetooth_gatt.h`, which can be used in .gatt files.
 
-    // Specification Type org.bluetooth.service.battery_service
-    // https://www.bluetooth.com/api/gatt/xmlfile?xmlFileName=org.bluetooth.service.battery_service.xml
+Missing UUIDs can be found in Bluetooth SIG Bitbucket repo:
+- [Service UUIDs](https://bitbucket.org/bluetooth-SIG/public/src/main/assigned_numbers/uuids/service_uuids.yaml)
+- [Characteristic UUIDs](https://bitbucket.org/bluetooth-SIG/public/src/main/assigned_numbers/uuids/characteristic_uuids.yaml)
 
-    // Battery Service 180F
-    PRIMARY_SERVICE, ORG_BLUETOOTH_SERVICE_BATTERY_SERVICE
-    CHARACTERISTIC, ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_LEVEL, DYNAMIC | READ | NOTIFY,
-    // TODO: Characteristic Presentation Format: please set values
-    #TODO CHARACTERISTIC_FORMAT, READ, _format_, _exponent_, _unit_, _name_space_, _description_
-    CLIENT_CHARACTERISTIC_CONFIGURATION, READ | WRITE,
+First we add the Primary Service definition:
 
-you could delete the line regarding the CHARACTERISTIC_FORMAT, since it's not required if there is a single instance of the service.
-Please compare the .gatt file against the [Adopted Specifications](https://www.bluetooth.com/specifications/adopted-specifications).
+```
+// Battery Service v1.0
+PRIMARY_SERVICE, ORG_BLUETOOTH_SERVICE_BATTERY_SERVICE
+```
+
+Next, we add all Characteristics and map their properties into the format of the .gatt file.
+
+In this example, the Battery Level is dynamic and supports Read and Notification.
+```
+CHARACTERISTIC, ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_LEVEL, DYNAMIC | READ | NOTIFY,
+```
+
+Feel free to take a look at already implemented GATT Service .gatt files in `src/ble/gatt-service/`.
 
 Step 4:
 
