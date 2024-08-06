@@ -86,7 +86,10 @@ static void btstack_run_loop_windows_execute(void) {
 
     btstack_linked_list_iterator_t it;
 
-    while (true) {
+    // clear exit flag
+    run_loop_exit_requested = false;
+
+    while (run_loop_exit_requested == false) {
 
         // process timers
         uint32_t now_ms = btstack_run_loop_windows_get_time_ms();
