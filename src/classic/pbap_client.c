@@ -1103,6 +1103,29 @@ uint8_t pbap_client_connect(pbap_client_t * client, l2cap_ertm_config_t *l2cap_e
 uint8_t pbap_connect(btstack_packet_handler_t handler, bd_addr_t addr, uint16_t * out_cid){
     static pbap_client_t pbap_client_singleton;
 
+    l2cap_ertm_config_t *l2cap_ertm_config = NULL;
+    uint8_t *l2cap_ertm_buffer = NULL;
+    uint16_t l2cap_ertm_buffer_size = 0;
+
+#ifdef ENABLE_GOEP_L2CAP
+// singleton instance
+    static uint8_t pbap_client_singleton_ertm_buffer[1000];
+    static l2cap_ertm_config_t pbap_client_singleton_ertm_config = {
+            1,  // ertm mandatory
+            2,  // max transmit, some tests require > 1
+            2000,
+            12000,
+            512,    // l2cap ertm mtu
+            2,
+            2,
+            1,      // 16-bit FCS
+    };
+
+    l2cap_ertm_config = &pbap_client_singleton_ertm_config;
+    l2cap_ertm_buffer = pbap_client_singleton_ertm_buffer;
+    l2cap_ertm_buffer_size = sizeof(pbap_client_singleton_ertm_buffer);
+#endif
+
     if (pbap_client_singleton_used && pbap_client_singleton.state != PBAP_CLIENT_INIT){
         return BTSTACK_MEMORY_ALLOC_FAILED;
     }
@@ -1110,7 +1133,7 @@ uint8_t pbap_connect(btstack_packet_handler_t handler, bd_addr_t addr, uint16_t 
     pbap_client_singleton_used = true;
 
     memset(&pbap_client_singleton, 0, sizeof(pbap_client_t));
-    return pbap_client_connect(&pbap_client_singleton, handler, addr, out_cid);
+    return pbap_client_connect(&pbap_client_singleton, l2cap_ertm_config, l2cap_ertm_buffer, l2cap_ertm_buffer_size, handler, addr, out_cid);
 }
 
 uint8_t pbap_disconnect(uint16_t pbap_cid){

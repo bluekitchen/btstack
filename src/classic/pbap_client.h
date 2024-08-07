@@ -200,7 +200,7 @@ uint8_t pbap_client_connect(pbap_client_t * client, l2cap_ertm_config_t *l2cap_e
  * The status of PBAP connection establishment is reported via PBAP_SUBEVENT_CONNECTION_OPENED event, 
  * i.e. on success status field is set to ERROR_CODE_SUCCESS.
  *
- * This function uses a single pbap_client_t instance and can only be used for a single connection.
+ * This function uses a single pbap_client_t and l2cap ertm buffer instance and can only be used for a single connection.
  * Fur multiple parallel connections, use pbap_client_connect.
  *
  * @param handler 
