@@ -79,17 +79,19 @@ typedef enum {
     AVRCP_COVER_ART_W4_ABORT_COMPLETE,
 } avrcp_cover_art_state_t;
 
-typedef struct {
-    uint8_t srm_value;
-    uint8_t srmp_value;
-} avrcp_cover_art_obex_srm_t;
-
 typedef enum {
     AVRCP_COVER_ART_SRM_DISABLED,
     AVRCP_COVER_ART_SRM_W4_CONFIRM,
     AVRCP_COVER_ART_SRM_ENABLED_BUT_WAITING,
     AVRCP_COVER_ART_SRM_ENABLED
 } avrcp_cover_art_srm_state_t;
+
+typedef struct {
+    avrcp_cover_art_srm_state_t srm_state;
+
+    uint8_t srm_value;
+    uint8_t srmp_value;
+} avrcp_cover_art_obex_srm_t;
 
 typedef  struct {
     btstack_linked_item_t item;
@@ -121,7 +123,6 @@ typedef  struct {
 
     // obex srm
     avrcp_cover_art_obex_srm_t obex_srm;
-    avrcp_cover_art_srm_state_t srm_state;
 
     // request
     const char * object_type;
