@@ -43,7 +43,17 @@
 
 #include <string.h>
 #include <stdio.h>
+
+#ifdef _MSC_VER
+// map sleep() to Sleep()
+#include "Windows.h"
+unsigned int sleep(unsigned int seconds){
+    _Sleep(seconds * 1000);
+    return 0;
+}
+#else
 #include <unistd.h>
+#endif
 
 #include "hci_dump.h"
 #include "btstack_chipset_bcm.h"
