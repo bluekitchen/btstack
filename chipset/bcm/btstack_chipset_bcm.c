@@ -62,6 +62,9 @@
 #ifdef _MSC_VER
 // ignore deprecated warning for fopen
 #pragma warning(disable : 4996)
+
+// map strncasecmp
+#define strncasecmp _strnicmp
 #endif
 
 // assert outgoing and incoming hci packet buffers can hold max hci command resp. event packet
