@@ -181,13 +181,17 @@ void pbap_client_init(void);
  * This function allows for multiple parallel connections.
  *
  * @param client storage for connection state. Must stay valid until connection closes
+ * @param l2cap_ertm_config
+ * @param l2cap_ertm_buffer_size
+ * @param l2cap_ertm_buffer
  * @param handler
  * @param addr
  * @param out_cid to use for further commands
  * @return status ERROR_CODE_SUCCESS on success, otherwise BTSTACK_MEMORY_ALLOC_FAILED if PBAP or GOEP connection already exists.
  */
 
-uint8_t pbap_client_connect(pbap_client_t * client, btstack_packet_handler_t handler, bd_addr_t addr, uint16_t * out_cid);
+uint8_t pbap_client_connect(pbap_client_t * client, l2cap_ertm_config_t *l2cap_ertm_config, uint8_t *l2cap_ertm_buffer,
+                            uint16_t l2cap_ertm_buffer_size, btstack_packet_handler_t handler, bd_addr_t addr, uint16_t * out_cid);
 
 /**
  * @brief Create PBAP connection to a Phone Book Server (PSE) server on a remote device. 

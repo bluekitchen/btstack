@@ -1081,7 +1081,8 @@ void pbap_client_init(void){
 void pbap_client_deinit(void){
 }
 
-uint8_t pbap_client_connect(pbap_client_t * client, btstack_packet_handler_t handler, bd_addr_t addr, uint16_t * out_cid) {
+uint8_t pbap_client_connect(pbap_client_t * client, l2cap_ertm_config_t *l2cap_ertm_config, uint8_t *l2cap_ertm_buffer,
+                            uint16_t l2cap_ertm_buffer_size, btstack_packet_handler_t handler, bd_addr_t addr, uint16_t * out_cid) {
     client->state = PBAP_CLIENT_W4_GOEP_CONNECTION;
     client->client_handler = handler;
     client->vcard_selector = 0;
@@ -1089,7 +1090,8 @@ uint8_t pbap_client_connect(pbap_client_t * client, btstack_packet_handler_t han
 
     btstack_linked_list_add(&pbap_clients, (btstack_linked_item_t*) client);
 
-    uint8_t status = goep_client_create_connection(&pbap_packet_handler, addr, BLUETOOTH_SERVICE_CLASS_PHONEBOOK_ACCESS_PSE, &client->goep_cid);
+    uint8_t status = goep_client_connect(&client->goep_client, l2cap_ertm_config, l2cap_ertm_buffer, l2cap_ertm_buffer_size,
+                                         &pbap_packet_handler, addr, BLUETOOTH_SERVICE_CLASS_PHONEBOOK_ACCESS_PSE, 0, &client->goep_cid);
     *out_cid = client->goep_cid;
 
     if (status) {
