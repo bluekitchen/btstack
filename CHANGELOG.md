@@ -34,7 +34,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Changed
 - GAP: return command disallowed if disconnect already requested
 - GAP: improve handling of incorrectly resolved addresses in HCI_SUBEVENT_LE_CONNECTION_COMPLETE
-
+- GOEP Client: remove goep_client_create_connection. Use goep_client_connect instead.
 
 ## Release v1.6.1
 

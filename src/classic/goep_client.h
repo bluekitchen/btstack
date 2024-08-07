@@ -159,18 +159,6 @@ goep_client_connect_l2cap(goep_client_t *goep_client, l2cap_ertm_config_t *l2cap
                     uint16_t l2cap_ertm_buffer_size, btstack_packet_handler_t handler, bd_addr_t addr, uint16_t l2cap_psm,
                     uint16_t *out_cid);
 
-/*
- * @brief Connect to a GEOP server with specified UUID on a remote device.
- * @note This functions uses a single goep_client_t instance and only allows for a single goep connection
- *       Please use goep_client_connect instead
- * @param handler 
- * @param addr
- * @param uuid
- * @param out_cid to use for further commands
- * @result status
-*/
-uint8_t goep_client_create_connection(btstack_packet_handler_t handler, bd_addr_t addr, uint16_t uuid, uint16_t * out_cid);
-
 /** 
  * @brief Disconnects GOEP connection with given identifier.
  * @param goep_cid

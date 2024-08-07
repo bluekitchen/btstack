@@ -73,24 +73,6 @@ static uint8_t            goep_client_sdp_query_attribute_value[30];
 static const unsigned int goep_client_sdp_query_attribute_value_buffer_size = sizeof(goep_client_sdp_query_attribute_value);
 static uint8_t goep_packet_buffer[150];
 
-// singleton instance
-static goep_client_t   goep_client_singleton;
-
-#ifdef ENABLE_GOEP_L2CAP
-// singleton instance
-static uint8_t goep_client_singleton_ertm_buffer[1000];
-static l2cap_ertm_config_t goep_client_singleton_ertm_config = {
-    1,  // ertm mandatory
-    2,  // max transmit, some tests require > 1
-    2000,
-    12000,
-    512,    // l2cap ertm mtu
-    2,
-    2,
-    1,      // 16-bit FCS
-};
-#endif
-
 static inline void goep_client_emit_connected_event(goep_client_t * goep_client, uint8_t status){
     uint8_t event[15];
     int pos = 0;
@@ -442,13 +424,11 @@ static void goep_client_packet_init(goep_client_t *goep_client, uint8_t opcode) 
 }
 
 void goep_client_init(void){
-    goep_client_singleton.state = GOEP_CLIENT_INIT;
 }
 
 void goep_client_deinit(void){
     goep_clients = NULL;
     goep_client_cid = 0;
-    memset(&goep_client_singleton, 0, sizeof(goep_client_t));
     memset(goep_client_sdp_query_attribute_value, 0, sizeof(goep_client_sdp_query_attribute_value));
     memset(goep_packet_buffer, 0, sizeof(goep_packet_buffer));
 }
@@ -537,19 +517,6 @@ uint8_t goep_client_connect_l2cap(goep_client_t *goep_client, l2cap_ertm_config_
     return goep_client_start_connect(goep_client);
 }
 #endif
-
-uint8_t goep_client_create_connection(btstack_packet_handler_t handler, bd_addr_t addr, uint16_t uuid, uint16_t * out_cid){
-    goep_client_t * goep_client = &goep_client_singleton;
-    if (goep_client->state != GOEP_CLIENT_INIT) {
-        return BTSTACK_MEMORY_ALLOC_FAILED;
-    }
-#ifdef ENABLE_GOEP_L2CAP
-    return goep_client_connect(goep_client, &goep_client_singleton_ertm_config, goep_client_singleton_ertm_buffer,
-                               sizeof(goep_client_singleton_ertm_buffer), handler, addr, uuid, 0, out_cid);
-#else
-    return goep_client_connect(goep_client,NULL, NULL, 0, handler, addr, uuid, 0, out_cid);
-#endif
-}
 
 uint32_t goep_client_get_pbap_supported_features(uint16_t goep_cid){
     goep_client_t * goep_client = goep_client_for_cid(goep_cid);
