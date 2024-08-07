@@ -112,8 +112,8 @@ static void has_dump_queue(const char * msg){
     for (i = has_preset_records_num; i < has_preset_records_num + has_queued_preset_records_num; i++){
         has_preset_record_t * preset = &has_preset_records[i];
         printf("Q[%02d] - index %02d, Writable %d, Available %d, Active %d, scheduled_task = %d, Name %s\n", i, preset->index,
-               (preset->properties & HEARING_AID_PRESET_PROPERTIES_MASK_NAME_WRITABLE) > 0 ? 1u : 0u,
-               (preset->properties & HEARING_AID_PRESET_PROPERTIES_MASK_NAME_IS_AVAILABLE) > 0 ? 1u : 0u,
+               (preset->properties & HEARING_AID_PRESET_PROPERTIES_MASK_WRITABLE) > 0 ? 1u : 0u,
+               (preset->properties & HEARING_AID_PRESET_PROPERTIES_MASK_AVAILABLE) > 0 ? 1u : 0u,
                preset->active?1u:0u, preset->scheduled_task, preset->name);
     }
 #else
@@ -128,15 +128,15 @@ static void dump_preset_records(char * msg){
     for (i = 0; i < has_preset_records_num; i++){
         has_preset_record_t * preset = &has_preset_records[i];
         printf("N[%02d] - index %02d, Writable %d, Available %d, Active %d, scheduled_task = %d, Name %s\n", i, preset->index,
-               (preset->properties & HEARING_AID_PRESET_PROPERTIES_MASK_NAME_WRITABLE) > 0 ? 1u : 0u,
-               (preset->properties & HEARING_AID_PRESET_PROPERTIES_MASK_NAME_IS_AVAILABLE) > 0 ? 1u : 0u,
+               (preset->properties & HEARING_AID_PRESET_PROPERTIES_MASK_WRITABLE) > 0 ? 1u : 0u,
+               (preset->properties & HEARING_AID_PRESET_PROPERTIES_MASK_AVAILABLE) > 0 ? 1u : 0u,
                preset->active?1u:0u, preset->scheduled_task, preset->name);
     }
     for (i = has_preset_records_num; i < has_preset_records_num; i++){
         has_preset_record_t * preset = &has_preset_records[i];
         printf("Q[%02d] - index %02d, Writable %d, Available %d, Active %d, scheduled_task = %d, Name %s\n", i, preset->index,
-               (preset->properties & HEARING_AID_PRESET_PROPERTIES_MASK_NAME_WRITABLE) > 0 ? 1u : 0u,
-               (preset->properties & HEARING_AID_PRESET_PROPERTIES_MASK_NAME_IS_AVAILABLE) > 0 ? 1u : 0u,
+               (preset->properties & HEARING_AID_PRESET_PROPERTIES_MASK_WRITABLE) > 0 ? 1u : 0u,
+               (preset->properties & HEARING_AID_PRESET_PROPERTIES_MASK_AVAILABLE) > 0 ? 1u : 0u,
                preset->active?1u:0u, preset->scheduled_task, preset->name);
     }
 #else
@@ -301,10 +301,10 @@ static bool preset_calc_final_state(uint8_t index, has_preset_record_t * out_pre
                     out_preset->active = true;
                     break;
                 case HAS_NOTIFICATION_TASK_PRESET_RECORD_AVAILABLE:
-                    out_preset->properties |= HEARING_AID_PRESET_PROPERTIES_MASK_NAME_IS_AVAILABLE;
+                    out_preset->properties |= HEARING_AID_PRESET_PROPERTIES_MASK_AVAILABLE;
                     break;
                 case HAS_NOTIFICATION_TASK_PRESET_RECORD_UNAVAILABLE:
-                    out_preset->properties &= ~HEARING_AID_PRESET_PROPERTIES_MASK_NAME_IS_AVAILABLE;
+                    out_preset->properties &= ~HEARING_AID_PRESET_PROPERTIES_MASK_AVAILABLE;
                     break;
                 case HAS_NOTIFICATION_TASK_PRESET_RECORD_UPDATE_NAME:
                     btstack_strcpy(out_preset->name, sizeof(out_preset->name), preset->name);
@@ -530,7 +530,7 @@ static int has_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
                 if (preset == NULL){
                     return ATT_ERROR_OUT_OF_RANGE;
                 }
-                if ((preset->properties & HEARING_AID_PRESET_PROPERTIES_MASK_NAME_WRITABLE) == 0u){
+                if ((preset->properties & HEARING_AID_PRESET_PROPERTIES_MASK_WRITABLE) == 0u){
                     return HAS_CONTROL_POINT_ATT_ERROR_RESPONSE_WRITE_NAME_NOT_ALLOWED;
                 }
                 break;
@@ -554,6 +554,11 @@ static int has_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
 
     if (attribute_handle == has_control_point_client_configuration_handle){
         has_control_point_client_configuration = little_endian_read_16(buffer, 0);
+        if (has_control_point_client_configuration > 0){
+            connection->state = HAS_SERVER_CONNECTION_STATE_PENDING_ATT_INDICATION;
+            has_add_cp_operation_to_queue(connection, HAS_CP_NOTIFICATION_TASK_READ_PRESETS);
+            has_server_schedule_task();
+        }
         return 0;
     }
     
@@ -769,7 +774,7 @@ static void has_set_active_preset_record(uint8_t update_pos) {
     // update
     has_active_preset_index = preset_record->index;
     has_preset_records[update_pos].active = true;
-    has_preset_records[update_pos].properties |= HEARING_AID_PRESET_PROPERTIES_MASK_NAME_IS_AVAILABLE;
+    has_preset_records[update_pos].properties |= HEARING_AID_PRESET_PROPERTIES_MASK_AVAILABLE;
 
     dump_preset_records("After execute active");
 }
@@ -782,9 +787,9 @@ static void has_set_preset_record_availability(uint8_t update_pos, bool availabl
     // update
     has_active_preset_index = preset_record->index;
     if (available){
-        has_preset_records[update_pos].properties |= HEARING_AID_PRESET_PROPERTIES_MASK_NAME_IS_AVAILABLE;
+        has_preset_records[update_pos].properties |= HEARING_AID_PRESET_PROPERTIES_MASK_AVAILABLE;
     } else {
-        has_preset_records[update_pos].properties &= ~HEARING_AID_PRESET_PROPERTIES_MASK_NAME_IS_AVAILABLE;
+        has_preset_records[update_pos].properties &= ~HEARING_AID_PRESET_PROPERTIES_MASK_AVAILABLE;
     }
 
     dump_preset_records("After execute availability");
@@ -821,7 +826,7 @@ static void has_server_can_send_now(void * context){
             uint16_t mtu = att_server_get_mtu(connection->con_handle);
             btstack_assert(mtu > (pos + 3));
             uint16_t available_payload_size = mtu - 3 - pos;
-            uint16_t name_len = btstack_min(available_payload_size, strlen(preset->name));
+            uint16_t name_len = btstack_min(available_payload_size, strlen(preset->name) + 1);
             btstack_strcpy((char *) &value[pos], name_len, preset->name);
             pos += name_len;
 
@@ -1027,7 +1032,7 @@ static bool is_set_active_operation_valid(uint8_t index){
     if (!exists){
         return false;
     }
-    if ( (preset.properties & HEARING_AID_PRESET_PROPERTIES_MASK_NAME_IS_AVAILABLE) == 0u ){
+    if ((preset.properties & HEARING_AID_PRESET_PROPERTIES_MASK_AVAILABLE) == 0u ){
         return false;
     }
     return (preset.active == false);
@@ -1048,7 +1053,7 @@ static bool is_set_unavailable_operation_valid(uint8_t index){
 static bool is_set_name_operation_valid(uint8_t index){
     has_preset_record_t preset;
     bool exists = preset_calc_final_state(index, &preset);
-    return exists && ((preset.properties & HEARING_AID_PRESET_PROPERTIES_MASK_NAME_IS_AVAILABLE) > 0u );
+    return exists && ((preset.properties & HEARING_AID_PRESET_PROPERTIES_MASK_AVAILABLE) > 0u );
 }
 
 uint8_t hearing_access_service_server_add_preset(uint8_t index, uint8_t properties, char * name){

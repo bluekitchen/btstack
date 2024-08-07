@@ -163,8 +163,8 @@ static void has_client_emit_generic_update(gatt_service_client_connection_helper
     event[pos++] = data[2]; // is_last
     event[pos++] = data[3]; // prev_index
     event[pos++] = data[4]; // newly_added_preset_index
-    event[pos++] = data[5] & HEARING_AID_PRESET_PROPERTIES_MASK_NAME_WRITABLE;     // newly_added_preset_is_writable 
-    event[pos++] = data[5] & HEARING_AID_PRESET_PROPERTIES_MASK_NAME_IS_AVAILABLE; // newly_added_preset_is_available
+    event[pos++] = data[5] & HEARING_AID_PRESET_PROPERTIES_MASK_WRITABLE;     // newly_added_preset_is_writable
+    event[pos++] = data[5] & HEARING_AID_PRESET_PROPERTIES_MASK_AVAILABLE; // newly_added_preset_is_available
     
     uint16_t name_length = 0;
     event[pos++] = name_length;
