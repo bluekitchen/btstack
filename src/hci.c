@@ -5611,12 +5611,12 @@ static void hci_halting_run(void) {
                         return;
                     }
                     if ((advertising_set->state & LE_ADVERTISEMENT_STATE_ACTIVE) != 0) {
-                        stop_advertismenets = true;
+                        stop_advertisements = true;
                         advertising_set->state &= ~LE_ADVERTISEMENT_STATE_ACTIVE;
                     }
                 }
 #endif /* ENABLE_LE_PERIODIC_ADVERTISING */
-                if (stop_advertismenets){
+                if (stop_advertisements){
                     hci_stack->le_advertisements_state &= ~LE_ADVERTISEMENT_STATE_ACTIVE;
                     hci_send_cmd(&hci_le_set_extended_advertising_enable, 0, 0, NULL, NULL, NULL);
                     return;
