@@ -464,7 +464,7 @@ uint8_t btstack_clz(uint32_t value) {
 #elif defined(_MSC_VER)
     // use MSVC intrinsic
     DWORD leading_zero = 0;
-    _BitScanReverse( &leading_zero, value )
+    _BitScanReverse( &leading_zero, value );
 	return (uint8_t)(31 - leading_zero);
 #else
     // divide-and-conquer implementation for 32-bit integers
