@@ -101,36 +101,39 @@
 #define RTL8822EU	0x79
 #define RTL8851BU	0x7A
 
+#pragma pack(push, 1)
 struct rtk_epatch_entry {
     uint16_t chipID;
     uint16_t patch_length;
     uint32_t start_offset;
-} __attribute__ ((packed));
+};
 
 struct rtk_epatch {
     uint8_t signature[8];
     uint32_t fw_version;
     uint16_t number_of_total_patch;
     struct rtk_epatch_entry entry[0];
-} __attribute__ ((packed));
+};
 
 struct rtk_extension_entry {
     uint8_t opcode;
     uint8_t length;
     uint8_t *data;
-} __attribute__ ((packed));
+};
 
 struct rtb_section_hdr {
     uint32_t opcode;
     uint32_t section_len;
     uint32_t soffset;
-} __attribute__ ((packed));
+};
 
 struct rtb_new_patch_hdr {
     uint8_t signature[8];
     uint8_t fw_version[8];
     uint32_t number_of_section;
-} __attribute__ ((packed));
+};
+#pragma pack(pop)
+
 
 enum {
     // Pre-Init: runs before HCI Reset
