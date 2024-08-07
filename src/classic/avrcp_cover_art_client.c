@@ -163,7 +163,7 @@ static void avrcp_cover_art_client_parser_callback_connect(void * user_data, uin
 static void avrcp_cover_art_client_prepare_srm_header(avrcp_cover_art_client_t * cover_art_client){
     if (cover_art_client->flow_control_enabled == false){
         goep_client_header_add_srm_enable(cover_art_client->goep_cid);
-        cover_art_client->srm_state = SRM_W4_CONFIRM;
+        cover_art_client->srm_state = AVRCP_COVER_ART_SRM_W4_CONFIRM;
     }
 }
 
@@ -176,30 +176,30 @@ static void avrcp_cover_art_client_handle_srm_headers(avrcp_cover_art_client_t *
     const avrcp_cover_art_obex_srm_t * obex_srm = &context->obex_srm;
     // Update SRM state based on SRM headers
     switch (context->srm_state){
-        case SRM_W4_CONFIRM:
+        case AVRCP_COVER_ART_SRM_W4_CONFIRM:
             switch (obex_srm->srm_value){
                 case OBEX_SRM_ENABLE:
                     switch (obex_srm->srmp_value){
                         case OBEX_SRMP_WAIT:
-                            context->srm_state = SRM_ENABLED_BUT_WAITING;
+                            context->srm_state = AVRCP_COVER_ART_SRM_ENABLED_BUT_WAITING;
                             break;
                         default:
-                            context->srm_state = SRM_ENABLED;
+                            context->srm_state = AVRCP_COVER_ART_SRM_ENABLED;
                             break;
                     }
                     break;
                 default:
-                    context->srm_state = SRM_DISABLED;
+                    context->srm_state = AVRCP_COVER_ART_SRM_DISABLED;
                     break;
             }
             break;
-        case SRM_ENABLED_BUT_WAITING:
+        case AVRCP_COVER_ART_SRM_ENABLED_BUT_WAITING:
             switch (obex_srm->srmp_value){
                 case OBEX_SRMP_WAIT:
-                    context->srm_state = SRM_ENABLED_BUT_WAITING;
+                    context->srm_state = AVRCP_COVER_ART_SRM_ENABLED_BUT_WAITING;
                     break;
                 default:
-                    context->srm_state = SRM_ENABLED;
+                    context->srm_state = AVRCP_COVER_ART_SRM_ENABLED;
                     break;
             }
             break;
@@ -384,7 +384,7 @@ static void avrcp_cover_art_client_goep_data_handler(avrcp_cover_art_client_t * 
                 switch (op_info.response_code) {
                     case OBEX_RESP_CONTINUE:
                         avrcp_cover_art_client_handle_srm_headers(cover_art_client);
-                        if (cover_art_client->srm_state == SRM_ENABLED) {
+                        if (cover_art_client->srm_state == AVRCP_COVER_ART_SRM_ENABLED) {
                             // prepare response
                             avrcp_cover_art_client_prepare_get_operation(cover_art_client);
                             break;

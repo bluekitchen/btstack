@@ -109,6 +109,36 @@ typedef struct {
     uint8_t  size_buffer[2];
 } pbap_client_phonebook_size_parser_t;
 
+typedef enum {
+    PBAP_CLIENT_SRM_DISABLED,
+    PBAP_CLIENT_SRM_W4_CONFIRM,
+    PBAP_CLIENT_SRM_ENABLED_BUT_WAITING,
+    PBAP_CLIENT_SRM_ENABLED
+} pbap_client_obex_srm_state_t;
+
+typedef struct {
+    uint8_t srm_value;
+    uint8_t srmp_value;
+} pbap_client_obex_srm_t;
+
+typedef enum {
+    OBEX_AUTH_PARSER_STATE_W4_TYPE = 0,
+    OBEX_AUTH_PARSER_STATE_W4_LEN,
+    OBEX_AUTH_PARSER_STATE_W4_VALUE,
+    OBEX_AUTH_PARSER_STATE_INVALID,
+} pbap_client_obex_auth_parser_state_t;
+
+typedef struct {
+    // parsing
+    pbap_client_obex_auth_parser_state_t state;
+    uint8_t type;
+    uint8_t len;
+    uint8_t pos;
+    // data
+    uint8_t  authentication_options;
+    uint16_t authentication_nonce[16];
+} pbap_client_obex_auth_parser_t;
+
 typedef struct pbap_client {
     // pbap client linked list
     btstack_linked_item_t item;
@@ -142,7 +172,7 @@ typedef struct pbap_client {
     obex_parser_t obex_parser;
     uint8_t obex_header_buffer[4];
     /* authentication */
-    obex_auth_parser_t obex_auth_parser;
+    pbap_client_obex_auth_parser_t obex_auth_parser;
     const char * authentication_password;
     /* xml parser */
     yxml_t  xml_parser;
@@ -160,8 +190,8 @@ typedef struct pbap_client {
     uint8_t flow_next_triggered;
     bool flow_wait_for_user;
     /* srm */
-    obex_srm_t obex_srm;
-    obex_srm_state_t srm_state;
+    pbap_client_obex_srm_t obex_srm;
+    pbap_client_obex_srm_state_t srm_state;
 } pbap_client_t;
 
 /* API_START */
