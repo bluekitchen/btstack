@@ -330,6 +330,7 @@ static void obex_srm_init(pbap_client_obex_srm_t * obex_srm){
     obex_srm->srm_value = OBEX_SRM_DISABLE;
     obex_srm->srmp_value = OBEX_SRMP_NEXT;
 }
+
 static void pbap_client_yml_append_character(yxml_t * xml_parser, char * buffer, uint16_t buffer_size){
     // "In UTF-8, characters from the U+0000..U+10FFFF range (the UTF-16 accessible range) are encoded using sequences of 1 to 4 octets."
     uint16_t char_len = (uint16_t) strlen(xml_parser->data);
@@ -561,7 +562,7 @@ static void pbap_client_add_application_parameters(const pbap_client_t * client,
 static void pbap_client_prepare_srm_header(pbap_client_t * client){
     if (!client->flow_control_enabled && goep_client_version_20_or_higher(client->goep_cid)){
         goep_client_header_add_srm_enable(client->goep_cid);
-        client->srm_state = PBAP_CLIENT_SRM_W4_CONFIRM;
+        client->obex_srm.srm_state = PBAP_CLIENT_SRM_W4_CONFIRM;
     }
 }
 
@@ -792,40 +793,40 @@ static void pbap_handle_can_send_now(pbap_client_t *pbap_client) {
 }
 
 static void pbap_client_handle_srm_headers(pbap_client_t *client) {
-    const pbap_client_obex_srm_t * obex_srm = &client->obex_srm;
+    pbap_client_obex_srm_t * obex_srm = &client->obex_srm;
     // Update SRM state based on SRM headers
-    switch (client->srm_state){
+    switch (obex_srm->srm_state){
         case PBAP_CLIENT_SRM_W4_CONFIRM:
             switch (obex_srm->srm_value){
                 case OBEX_SRM_ENABLE:
                     switch (obex_srm->srmp_value){
                         case OBEX_SRMP_WAIT:
-                            client->srm_state = PBAP_CLIENT_SRM_ENABLED_BUT_WAITING;
+                            obex_srm->srm_state = PBAP_CLIENT_SRM_ENABLED_BUT_WAITING;
                             break;
                         default:
-                            client->srm_state = PBAP_CLIENT_SRM_ENABLED;
+                            obex_srm->srm_state = PBAP_CLIENT_SRM_ENABLED;
                             break;
                     }
                     break;
                 default:
-                    client->srm_state = PBAP_CLIENT_SRM_DISABLED;
+                    obex_srm->srm_state = PBAP_CLIENT_SRM_DISABLED;
                     break;
             }
             break;
         case PBAP_CLIENT_SRM_ENABLED_BUT_WAITING:
             switch (obex_srm->srmp_value){
                 case OBEX_SRMP_WAIT:
-                    client->srm_state = PBAP_CLIENT_SRM_ENABLED_BUT_WAITING;
+                    obex_srm->srm_state = PBAP_CLIENT_SRM_ENABLED_BUT_WAITING;
                     break;
                 default:
-                    client->srm_state = PBAP_CLIENT_SRM_ENABLED;
+                    obex_srm->srm_state = PBAP_CLIENT_SRM_ENABLED;
                     break;
             }
             break;
         default:
             break;
     }
-    log_info("SRM state %u", client->srm_state);
+    log_info("SRM state %u", obex_srm->srm_state);
 }
 
 static void pbap_packet_handler_hci(uint8_t *packet, uint16_t size){
@@ -937,7 +938,7 @@ static void pbap_packet_handler_goep(pbap_client_t *client, uint8_t *packet, uin
                 switch (op_info.response_code) {
                     case OBEX_RESP_CONTINUE:
                         pbap_client_handle_srm_headers(client);
-                        if (client->srm_state == PBAP_CLIENT_SRM_ENABLED) {
+                        if (client->obex_srm.srm_state == PBAP_CLIENT_SRM_ENABLED) {
                             // prepare response
                             pbap_client_prepare_get_operation(client);
                             break;
@@ -980,7 +981,7 @@ static void pbap_packet_handler_goep(pbap_client_t *client, uint8_t *packet, uin
                     case OBEX_RESP_CONTINUE:
                         // handle continue
                         pbap_client_handle_srm_headers(client);
-                        if (client->srm_state == PBAP_CLIENT_SRM_ENABLED) {
+                        if (client->obex_srm.srm_state == PBAP_CLIENT_SRM_ENABLED) {
                             // prepare response
                             pbap_client_prepare_get_operation(client);
                             break;
@@ -1008,7 +1009,7 @@ static void pbap_packet_handler_goep(pbap_client_t *client, uint8_t *packet, uin
                 switch (op_info.response_code) {
                     case OBEX_RESP_CONTINUE:
                         pbap_client_handle_srm_headers(client);
-                        if (client->srm_state == PBAP_CLIENT_SRM_ENABLED) {
+                        if (client->obex_srm.srm_state == PBAP_CLIENT_SRM_ENABLED) {
                             // prepare response
                             pbap_client_prepare_get_operation(client);
                             break;

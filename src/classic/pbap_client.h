@@ -117,6 +117,8 @@ typedef enum {
 } pbap_client_obex_srm_state_t;
 
 typedef struct {
+    pbap_client_obex_srm_state_t srm_state;
+
     uint8_t srm_value;
     uint8_t srmp_value;
 } pbap_client_obex_srm_t;
@@ -191,7 +193,6 @@ typedef struct pbap_client {
     bool flow_wait_for_user;
     /* srm */
     pbap_client_obex_srm_t obex_srm;
-    pbap_client_obex_srm_state_t srm_state;
 } pbap_client_t;
 
 /* API_START */
