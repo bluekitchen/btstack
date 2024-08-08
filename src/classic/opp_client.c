@@ -610,10 +610,35 @@ uint8_t opp_client_connect(btstack_packet_handler_t handler, bd_addr_t addr, uin
         return BTSTACK_MEMORY_ALLOC_FAILED;
     }
 
+    l2cap_ertm_config_t *l2cap_ertm_config = NULL;
+    uint8_t *l2cap_ertm_buffer = NULL;
+    uint16_t l2cap_ertm_buffer_size = 0;
+
+#ifdef ENABLE_GOEP_L2CAP
+    // singleton instance
+    static goep_client_t opp_client_goep_singleton_goep_client;
+    static uint8_t opp_client_singleton_ertm_buffer[1000];
+    static l2cap_ertm_config_t opp_client_singleton_ertm_config = {
+            1,  // ertm mandatory
+            2,  // max transmit, some tests require > 1
+            2000,
+            12000,
+            512,    // l2cap ertm mtu
+            2,
+            2,
+            1,      // 16-bit FCS
+    };
+
+    l2cap_ertm_config = &opp_client_singleton_ertm_config;
+    l2cap_ertm_buffer = opp_client_singleton_ertm_buffer;
+    l2cap_ertm_buffer_size = sizeof(opp_client_singleton_ertm_buffer);
+#endif
+
     opp_client->state = OPP_W4_GOEP_CONNECTION;
     opp_client->client_handler = handler;
 
-    uint8_t err = goep_client_create_connection(&opp_client_packet_handler, addr, BLUETOOTH_SERVICE_CLASS_OBEX_OBJECT_PUSH, &opp_client->goep_cid);
+    uint8_t err = goep_client_connect(&opp_client_goep_singleton_goep_client, l2cap_ertm_config, l2cap_ertm_buffer, l2cap_ertm_buffer_size,
+                                      &opp_client_packet_handler, addr, BLUETOOTH_SERVICE_CLASS_OBEX_OBJECT_PUSH, 0, &opp_client->goep_cid);
     *out_cid = opp_client->opp_cid;
     if (err) return err;
     return ERROR_CODE_SUCCESS;
