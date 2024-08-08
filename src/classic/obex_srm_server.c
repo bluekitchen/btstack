@@ -115,7 +115,6 @@ void obex_srm_server_add_srm_headers (obex_srm_server_t *obex_srm,
 
 bool obex_srm_server_is_enabled (obex_srm_server_t *obex_srm)
 {
-    obex_srm_server_handle_headers(obex_srm);
     return obex_srm->srm_state == OBEX_SRM_STATE_ENABLED;
 }
 
