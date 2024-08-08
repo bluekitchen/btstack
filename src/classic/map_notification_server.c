@@ -42,7 +42,7 @@
 #include "btstack_debug.h"
 #include "btstack_event.h"
 #include "classic/obex.h"
-#include "classic/obex_srm.h"
+#include "classic/obex_srm_server.h"
 #include "classic/obex_parser.h"
 #include "classic/goep_server.h"
 
