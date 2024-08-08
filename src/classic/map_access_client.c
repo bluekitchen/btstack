@@ -41,26 +41,22 @@
 
 #include <stdint.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 #include "hci_cmd.h"
-#include "btstack_run_loop.h"
 #include "btstack_debug.h"
 #include "hci.h"
 #include "btstack_memory.h"
-#include "hci_dump.h"
-#include "l2cap.h"
 #include "bluetooth_sdp.h"
-#include "classic/sdp_client_rfcomm.h"
 #include "btstack_event.h"
-#include "classic/sdp_client.h"
-#include "classic/sdp_util.h"
 
+#include "classic/goep_client.h"
 #include "classic/obex.h"
 #include "classic/obex_parser.h"
-#include "classic/goep_client.h"
-#include "map_access_client.h"
+#include "classic/sdp_client.h"
+#include "classic/sdp_client_rfcomm.h"
+#include "classic/sdp_util.h"
+#include "classic/map_access_client.h"
 
 #define MAP_MAX_NUM_ENTRIES 1024
 
@@ -147,11 +143,6 @@ static void map_access_client_message_handle_to_str(char * p, const map_message_
     *p = 0;
 }
 
-static void map_access_client_obex_srm_init(map_access_client_obex_srm_t * obex_srm){
-    obex_srm->srm_value = OBEX_SRM_DISABLE;
-    obex_srm->srmp_value = OBEX_SRMP_NEXT;
-}
-
 static void map_access_client_parser_callback_connect(void * user_data, uint8_t header_id, uint16_t total_len, uint16_t data_offset, const uint8_t * data_buffer, uint16_t data_len){
     map_access_client_t * client = (map_access_client_t *) user_data;
     switch (header_id){
@@ -207,10 +198,7 @@ static void map_access_client_parser_callback_get_operation(void * user_data, ui
 }
 
 static void map_access_client_prepare_srm_header(map_access_client_t * map_access_client){
-    if (goep_client_version_20_or_higher(map_access_client->goep_client.cid)){
-        goep_client_header_add_srm_enable(map_access_client->goep_client.cid);
-        map_access_client->srm_state = SRM_W4_CONFIRM;
-    }
+    obex_srm_client_prepare_header(&map_access_client->obex_srm, map_access_client->goep_client.cid);
 }
 
 static void map_access_client_prepare_operation(map_access_client_t * client, uint8_t op){
@@ -231,7 +219,7 @@ static void map_access_client_prepare_operation(map_access_client_t * client, ui
     }
 
     obex_parser_init_for_response(&client->obex_parser, op, callback, client);
-    map_access_client_obex_srm_init(&client->obex_srm);
+    obex_srm_client_init(&client->obex_srm);
     client->obex_parser_waiting_for_response = true;
 }
 
@@ -262,7 +250,7 @@ static void map_access_client_handle_can_send_now(uint16_t goep_cid) {
             map_access_client->state = MAP_W4_CONNECT_RESPONSE;
             // prepare response
             map_access_client_prepare_operation(map_access_client, OBEX_OPCODE_CONNECT);
-            map_access_client_obex_srm_init(&map_access_client->obex_srm);
+            obex_srm_client_init(&map_access_client->obex_srm);
             map_access_client->obex_parser_waiting_for_response = true;
             // send packet
             goep_client_execute(map_access_client->goep_client.cid);
@@ -496,45 +484,6 @@ static void map_access_client_handle_can_send_now(uint16_t goep_cid) {
     }
 }
 
-
-static void map_access_client_handle_srm_headers(map_access_client_t *context) {
-    const map_access_client_obex_srm_t * obex_srm = &context->obex_srm;
-    // Update SRM state based on SRM headers
-    switch (context->srm_state){
-        case SRM_W4_CONFIRM:
-            switch (obex_srm->srm_value){
-                case OBEX_SRM_ENABLE:
-                    switch (obex_srm->srmp_value){
-                        case OBEX_SRMP_WAIT:
-                            context->srm_state = SRM_ENABLED_BUT_WAITING;
-                            break;
-                        default:
-                            context->srm_state = SRM_ENABLED;
-                            break;
-                    }
-                    break;
-                default:
-                    context->srm_state = SRM_DISABLED;
-                    break;
-            }
-            break;
-        case SRM_ENABLED_BUT_WAITING:
-            switch (obex_srm->srmp_value){
-                case OBEX_SRMP_WAIT:
-                    context->srm_state = SRM_ENABLED_BUT_WAITING;
-                    break;
-                default:
-                    context->srm_state = SRM_ENABLED;
-                    break;
-            }
-            break;
-        default:
-            break;
-    }
-    log_info("SRM state %u", context->srm_state);
-}
-
-
 static void map_access_client_packet_handler_hci(uint8_t *packet, uint16_t size){
     UNUSED(size);
     uint8_t status;
@@ -652,8 +601,8 @@ map_access_client_packet_handler_goep(uint16_t goep_cid, uint8_t *packet, uint16
         case MAP_W4_MAS_INSTANCE_INFO:
             switch (op_info.response_code) {
                 case OBEX_RESP_CONTINUE:
-                    map_access_client_handle_srm_headers(map_access_client);
-                    if (map_access_client->srm_state == SRM_ENABLED) {
+                    obex_srm_client_handle_headers(&map_access_client->obex_srm);
+                    if (map_access_client->obex_srm.srm_state == OBEX_SRM_CLIENT_STATE_ENABLED) {
                         map_access_client_prepare_operation(map_access_client, OBEX_OPCODE_GET);
                         break;
                     }
