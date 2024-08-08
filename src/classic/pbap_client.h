@@ -46,10 +46,12 @@
 #if defined __cplusplus
 extern "C" {
 #endif
- 
+
+#include <stdint.h>
+
 #include "btstack_config.h"
 #include "yxml.h"
-#include <stdint.h>
+#include "classic/obex_srm_client.h"
 
 // max len of phone number used for lookup in pbap_lookup_by_number
 #define PBAP_MAX_PHONE_NUMBER_LEN 32
@@ -108,20 +110,6 @@ typedef struct {
     bool have_size;
     uint8_t  size_buffer[2];
 } pbap_client_phonebook_size_parser_t;
-
-typedef enum {
-    PBAP_CLIENT_SRM_DISABLED,
-    PBAP_CLIENT_SRM_W4_CONFIRM,
-    PBAP_CLIENT_SRM_ENABLED_BUT_WAITING,
-    PBAP_CLIENT_SRM_ENABLED
-} pbap_client_obex_srm_state_t;
-
-typedef struct {
-    pbap_client_obex_srm_state_t srm_state;
-
-    uint8_t srm_value;
-    uint8_t srmp_value;
-} pbap_client_obex_srm_t;
 
 typedef enum {
     OBEX_AUTH_PARSER_STATE_W4_TYPE = 0,
@@ -192,7 +180,7 @@ typedef struct pbap_client {
     uint8_t flow_next_triggered;
     bool flow_wait_for_user;
     /* srm */
-    pbap_client_obex_srm_t obex_srm;
+    obex_srm_client_t obex_srm;
 } pbap_client_t;
 
 /* API_START */

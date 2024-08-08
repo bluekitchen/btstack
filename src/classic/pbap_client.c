@@ -326,11 +326,6 @@ static void obex_auth_parser_process_data(pbap_client_obex_auth_parser_t * auth_
     }
 }
 
-static void obex_srm_init(pbap_client_obex_srm_t * obex_srm){
-    obex_srm->srm_value = OBEX_SRM_DISABLE;
-    obex_srm->srmp_value = OBEX_SRMP_NEXT;
-}
-
 static void pbap_client_yml_append_character(yxml_t * xml_parser, char * buffer, uint16_t buffer_size){
     // "In UTF-8, characters from the U+0000..U+10FFFF range (the UTF-16 accessible range) are encoded using sequences of 1 to 4 octets."
     uint16_t char_len = (uint16_t) strlen(xml_parser->data);
@@ -560,15 +555,14 @@ static void pbap_client_add_application_parameters(const pbap_client_t * client,
 }
 
 static void pbap_client_prepare_srm_header(pbap_client_t * client){
-    if (!client->flow_control_enabled && goep_client_version_20_or_higher(client->goep_cid)){
-        goep_client_header_add_srm_enable(client->goep_cid);
-        client->obex_srm.srm_state = PBAP_CLIENT_SRM_W4_CONFIRM;
+    if (client->flow_control_enabled == false){
+        obex_srm_client_prepare_header(&client->obex_srm, client->goep_cid);
     }
 }
 
 static void pbap_client_prepare_get_operation(pbap_client_t * client){
     obex_parser_init_for_response(&client->obex_parser, OBEX_OPCODE_GET, pbap_client_parser_callback_get_operation, client);
-    obex_srm_init(&client->obex_srm);
+    obex_srm_client_init(&client->obex_srm);
     client->obex_parser_waiting_for_response = true;
 }
 
@@ -590,7 +584,7 @@ static void pbap_handle_can_send_now(pbap_client_t *pbap_client) {
         pbap_client->state = PBAP_CLIENT_W4_ABORT_COMPLETE;
         // prepare response
         obex_parser_init_for_response(&pbap_client->obex_parser, OBEX_OPCODE_ABORT, NULL, pbap_client);
-        obex_srm_init(&pbap_client->obex_srm);
+        obex_srm_client_init(&pbap_client->obex_srm);
         pbap_client->obex_parser_waiting_for_response = true;
         // send packet
         goep_client_execute(pbap_client->goep_cid);
@@ -610,7 +604,7 @@ static void pbap_handle_can_send_now(pbap_client_t *pbap_client) {
             // prepare response
             obex_parser_init_for_response(&pbap_client->obex_parser, OBEX_OPCODE_CONNECT, pbap_client_parser_callback_connect, pbap_client);
             obex_auth_parser_init(&pbap_client->obex_auth_parser);
-            obex_srm_init(&pbap_client->obex_srm);
+            obex_srm_client_init(&pbap_client->obex_srm);
             pbap_client->obex_parser_waiting_for_response = true;
             // send packet
             goep_client_execute(pbap_client->goep_cid);
@@ -639,7 +633,7 @@ static void pbap_handle_can_send_now(pbap_client_t *pbap_client) {
             pbap_client->state = PBAP_CLIENT_W4_CONNECT_RESPONSE;
             // prepare response
             obex_parser_init_for_response(&pbap_client->obex_parser, OBEX_OPCODE_CONNECT, pbap_client_parser_callback_connect, pbap_client);
-            obex_srm_init(&pbap_client->obex_srm);
+            obex_srm_client_init(&pbap_client->obex_srm);
             pbap_client->obex_parser_waiting_for_response = true;
             // send packet
             goep_client_execute(pbap_client->goep_cid);
@@ -651,7 +645,7 @@ static void pbap_handle_can_send_now(pbap_client_t *pbap_client) {
             pbap_client->state = PBAP_CLIENT_W4_DISCONNECT_RESPONSE;
             // prepare response
             obex_parser_init_for_response(&pbap_client->obex_parser, OBEX_OPCODE_DISCONNECT, NULL, pbap_client);
-            obex_srm_init(&pbap_client->obex_srm);
+            obex_srm_client_init(&pbap_client->obex_srm);
             pbap_client->obex_parser_waiting_for_response = true;
             // send packet
             goep_client_execute(pbap_client->goep_cid);
@@ -673,7 +667,7 @@ static void pbap_handle_can_send_now(pbap_client_t *pbap_client) {
             pbap_client->state = PBAP_CLIENT_W4_GET_PHONEBOOK_SIZE_COMPLETE;
             // prepare response
             obex_parser_init_for_response(&pbap_client->obex_parser, OBEX_OPCODE_GET, pbap_client_parser_callback_get_phonebook_size, pbap_client);
-            obex_srm_init(&pbap_client->obex_srm);
+            obex_srm_client_init(&pbap_client->obex_srm);
             pbap_client_phonebook_size_parser_init(&pbap_client->phonebook_size_parser);
             pbap_client->obex_parser_waiting_for_response = true;
             // send packet
@@ -755,7 +749,7 @@ static void pbap_handle_can_send_now(pbap_client_t *pbap_client) {
             pbap_client->state = PBAP_CLIENT_W4_SET_PATH_ROOT_COMPLETE;
             // prepare response
             obex_parser_init_for_response(&pbap_client->obex_parser, OBEX_OPCODE_SETPATH, NULL, pbap_client);
-            obex_srm_init(&pbap_client->obex_srm);
+            obex_srm_client_init(&pbap_client->obex_srm);
             pbap_client->obex_parser_waiting_for_response = true;
             // send packet
             goep_client_execute(pbap_client->goep_cid);
@@ -782,7 +776,7 @@ static void pbap_handle_can_send_now(pbap_client_t *pbap_client) {
             pbap_client->state = PBAP_CLIENT_W4_SET_PATH_ELEMENT_COMPLETE;
             // prepare response
             obex_parser_init_for_response(&pbap_client->obex_parser, OBEX_OPCODE_SETPATH, NULL, pbap_client);
-            obex_srm_init(&pbap_client->obex_srm);
+            obex_srm_client_init(&pbap_client->obex_srm);
             pbap_client->obex_parser_waiting_for_response = true;
             // send packet
             goep_client_execute(pbap_client->goep_cid);
@@ -790,43 +784,6 @@ static void pbap_handle_can_send_now(pbap_client_t *pbap_client) {
         default:
             break;
     }
-}
-
-static void pbap_client_handle_srm_headers(pbap_client_t *client) {
-    pbap_client_obex_srm_t * obex_srm = &client->obex_srm;
-    // Update SRM state based on SRM headers
-    switch (obex_srm->srm_state){
-        case PBAP_CLIENT_SRM_W4_CONFIRM:
-            switch (obex_srm->srm_value){
-                case OBEX_SRM_ENABLE:
-                    switch (obex_srm->srmp_value){
-                        case OBEX_SRMP_WAIT:
-                            obex_srm->srm_state = PBAP_CLIENT_SRM_ENABLED_BUT_WAITING;
-                            break;
-                        default:
-                            obex_srm->srm_state = PBAP_CLIENT_SRM_ENABLED;
-                            break;
-                    }
-                    break;
-                default:
-                    obex_srm->srm_state = PBAP_CLIENT_SRM_DISABLED;
-                    break;
-            }
-            break;
-        case PBAP_CLIENT_SRM_ENABLED_BUT_WAITING:
-            switch (obex_srm->srmp_value){
-                case OBEX_SRMP_WAIT:
-                    obex_srm->srm_state = PBAP_CLIENT_SRM_ENABLED_BUT_WAITING;
-                    break;
-                default:
-                    obex_srm->srm_state = PBAP_CLIENT_SRM_ENABLED;
-                    break;
-            }
-            break;
-        default:
-            break;
-    }
-    log_info("SRM state %u", obex_srm->srm_state);
 }
 
 static void pbap_packet_handler_hci(uint8_t *packet, uint16_t size){
@@ -937,8 +894,8 @@ static void pbap_packet_handler_goep(pbap_client_t *client, uint8_t *packet, uin
             case PBAP_CLIENT_W4_PHONEBOOK:
                 switch (op_info.response_code) {
                     case OBEX_RESP_CONTINUE:
-                        pbap_client_handle_srm_headers(client);
-                        if (client->obex_srm.srm_state == PBAP_CLIENT_SRM_ENABLED) {
+                        obex_srm_client_handle_headers(&client->obex_srm);
+                        if (client->obex_srm.srm_state == OBEX_SRM_CLIENT_STATE_ENABLED) {
                             // prepare response
                             pbap_client_prepare_get_operation(client);
                             break;
@@ -980,8 +937,8 @@ static void pbap_packet_handler_goep(pbap_client_t *client, uint8_t *packet, uin
                 switch (op_info.response_code) {
                     case OBEX_RESP_CONTINUE:
                         // handle continue
-                        pbap_client_handle_srm_headers(client);
-                        if (client->obex_srm.srm_state == PBAP_CLIENT_SRM_ENABLED) {
+                        obex_srm_client_handle_headers(&client->obex_srm);
+                        if (client->obex_srm.srm_state == OBEX_SRM_CLIENT_STATE_ENABLED) {
                             // prepare response
                             pbap_client_prepare_get_operation(client);
                             break;
@@ -1008,8 +965,8 @@ static void pbap_packet_handler_goep(pbap_client_t *client, uint8_t *packet, uin
             case PBAP_CLIENT_W4_GET_CARD_ENTRY_COMPLETE:
                 switch (op_info.response_code) {
                     case OBEX_RESP_CONTINUE:
-                        pbap_client_handle_srm_headers(client);
-                        if (client->obex_srm.srm_state == PBAP_CLIENT_SRM_ENABLED) {
+                        obex_srm_client_handle_headers(&client->obex_srm);
+                        if (client->obex_srm.srm_state == OBEX_SRM_CLIENT_STATE_ENABLED) {
                             // prepare response
                             pbap_client_prepare_get_operation(client);
                             break;
