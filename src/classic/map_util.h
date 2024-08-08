@@ -41,10 +41,12 @@
 #if defined __cplusplus
 extern "C" {
 #endif
- 
-#include "btstack_config.h"
+
 #include <stdint.h>
-#include "map.h"
+
+#include "btstack_config.h"
+#include "classic/map.h"
+#include "yxml.h"
 
 /* API_START */
 
