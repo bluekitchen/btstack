@@ -60,8 +60,7 @@ void obex_srm_server_header_store (obex_srm_server_t    *obex_srm,
                                    uint16_t       total_len,
                                    uint16_t       data_offset,
                                    const uint8_t *data_buffer,
-                                   uint16_t       data_len)
-{
+                                   uint16_t       data_len){
     switch (header_id) {
         case OBEX_HEADER_SINGLE_RESPONSE_MODE:
             obex_parser_header_store(&obex_srm->srm_value, 1, total_len, data_offset, data_buffer, data_len);
@@ -74,8 +73,7 @@ void obex_srm_server_header_store (obex_srm_server_t    *obex_srm,
     }
 }
 
-void obex_srm_server_handle_headers (obex_srm_server_t *obex_srm)
-{
+void obex_srm_server_handle_headers (obex_srm_server_t *obex_srm){
     switch (obex_srm->srm_state) {
         case OBEX_SRM_STATE_DISABLED:
             if (obex_srm->srm_value == OBEX_SRM_ENABLE) {
@@ -97,8 +95,7 @@ void obex_srm_server_handle_headers (obex_srm_server_t *obex_srm)
 }
 
 void obex_srm_server_add_srm_headers (obex_srm_server_t *obex_srm,
-                                      uint16_t    goep_cid)
-{
+                                      uint16_t    goep_cid){
     switch (obex_srm->srm_state) {
         case OBEX_SRM_STATE_SEND_CONFIRM:
             goep_server_header_add_srm_enable (goep_cid);
@@ -113,8 +110,7 @@ void obex_srm_server_add_srm_headers (obex_srm_server_t *obex_srm,
     }
 }
 
-bool obex_srm_server_is_enabled (obex_srm_server_t *obex_srm)
-{
+bool obex_srm_server_is_enabled (obex_srm_server_t *obex_srm){
     return obex_srm->srm_state == OBEX_SRM_STATE_ENABLED;
 }
 
