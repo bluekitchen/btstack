@@ -584,7 +584,7 @@ static void stdin_process(char c){
             break;
         case 'a':
             printf("[+] Connecting to %s...\n", bd_addr_to_str(remote_addr));
-            opp_client_connect(&packet_handler, remote_addr, &opp_cid);
+            opp_client_create_connection(&packet_handler, remote_addr, &opp_cid);
             break;
         case 'd':
             printf("[+] Pulling default Object");
