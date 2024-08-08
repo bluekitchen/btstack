@@ -47,7 +47,7 @@
 #include "classic/obex_parser.h"
 #include "classic/goep_server.h"
 
-#include "classic/obex_srm.h"
+#include "classic/obex_srm_server.h"
 
 void obex_srm_init (obex_srm_t *obex_srm){
     obex_srm->srm_value = OBEX_SRM_DISABLE;
