@@ -6053,7 +6053,7 @@ typedef uint8_t sm_key_t[16];
 #define LEAUDIO_SUBEVENT_TBS_CLIENT_BEARER_SIGNAL_STRENGTH_REPORTING_INTERVAL       0xC9u
 
 /**
- * @format 12J(J111V)
+ * @format 12J[J111V]
  * @param subevent_code
  * @param tbs_cid
  * @param list_length
@@ -6094,7 +6094,7 @@ typedef uint8_t sm_key_t[16];
 #define LEAUDIO_SUBEVENT_TBS_CLIENT_INCOMING_CALL_TARGET_BEARER_URI                 0xCDu
 
 /**
- * @format 12J(111)
+ * @format 12J[111]
  * @param subevent_code
  * @param tbs_cid
  * @param list_length
