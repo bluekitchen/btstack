@@ -20173,23 +20173,93 @@ static inline uint16_t leaudio_subevent_tbs_client_bearer_list_current_calls_get
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field length from event LEAUDIO_SUBEVENT_TBS_CLIENT_BEARER_LIST_CURRENT_CALLS
+ * @brief Get field list_length from event LEAUDIO_SUBEVENT_TBS_CLIENT_BEARER_LIST_CURRENT_CALLS
+ * @param event packet
+ * @return list_length
+ * @note: btstack_type J
+ */
+static inline uint8_t leaudio_subevent_tbs_client_bearer_list_current_calls_get_list_length(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Initialize iterator for list list of leaudio_subevent_tbs_client_bearer_list_current_calls
+ * @param iterator
+ * @param event packet
+ * @note: btstack_type (
+ */
+static inline void leaudio_subevent_tbs_client_bearer_list_current_calls_list_init(btstack_event_iterator_t * iter, const uint8_t * event){
+    *iter = (btstack_event_iterator_t)&event[6];
+}
+
+/**
+ * @brief Returns true if iterator of list list of leaudio_subevent_tbs_client_bearer_list_current_calls has more elements, false otherwise.
+ * @param iterator
+ * @param event packet
+ * @return
+ * @note: btstack_type (
+ */
+static inline bool leaudio_subevent_tbs_client_bearer_list_current_calls_list_has_next(btstack_event_iterator_t * iter, const uint8_t * event){
+    uint8_t length = event[5];
+    const uint8_t *begin = &event[6];
+    const uint8_t *end = begin+length;
+    return *iter<end;
+}
+
+/**
+ * @brief Get element of list field length from event LEAUDIO_SUBEVENT_TBS_CLIENT_BEARER_LIST_CURRENT_CALLS
  * @param event packet
  * @return length
  * @note: btstack_type J
  */
-static inline uint8_t leaudio_subevent_tbs_client_bearer_list_current_calls_get_length(const uint8_t * event){
-    return event[5];
+static inline uint8_t leaudio_subevent_tbs_client_bearer_list_current_calls_get_list_item_length(btstack_event_iterator_t * iter){
+    return (*iter)[0] + 1;
 }
 /**
- * @brief Get field list from event LEAUDIO_SUBEVENT_TBS_CLIENT_BEARER_LIST_CURRENT_CALLS
+ * @brief Get element of list field call_index from event LEAUDIO_SUBEVENT_TBS_CLIENT_BEARER_LIST_CURRENT_CALLS
  * @param event packet
- * @return list
+ * @return call_index
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_tbs_client_bearer_list_current_calls_get_list_item_call_index(btstack_event_iterator_t * iter){
+    return (*iter)[1];
+}
+/**
+ * @brief Get element of list field state from event LEAUDIO_SUBEVENT_TBS_CLIENT_BEARER_LIST_CURRENT_CALLS
+ * @param event packet
+ * @return state
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_tbs_client_bearer_list_current_calls_get_list_item_state(btstack_event_iterator_t * iter){
+    return (*iter)[2];
+}
+/**
+ * @brief Get element of list field flags from event LEAUDIO_SUBEVENT_TBS_CLIENT_BEARER_LIST_CURRENT_CALLS
+ * @param event packet
+ * @return flags
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_tbs_client_bearer_list_current_calls_get_list_item_flags(btstack_event_iterator_t * iter){
+    return (*iter)[3];
+}
+/**
+ * @brief Get element of list field uri from event LEAUDIO_SUBEVENT_TBS_CLIENT_BEARER_LIST_CURRENT_CALLS
+ * @param event packet
+ * @return uri
  * @note: btstack_type V
  */
-static inline const uint8_t * leaudio_subevent_tbs_client_bearer_list_current_calls_get_list(const uint8_t * event){
-    return &event[6];
+static inline const uint8_t * leaudio_subevent_tbs_client_bearer_list_current_calls_get_list_item_uri(btstack_event_iterator_t * iter){
+    return &((*iter)[4]);
 }
+/**
+ * @brief Advances the iterator to the next element
+ * @param event packet
+ * @note: btstack_type )
+ */
+static inline void leaudio_subevent_tbs_client_bearer_list_current_calls_list_next(btstack_event_iterator_t * iter){
+    uint8_t length = *iter[0] + 1;
+    *iter = *iter+length;
+}
+
 
 /**
  * @brief Get field tbs_cid from event LEAUDIO_SUBEVENT_TBS_CLIENT_CONTENT_CONTROL_ID
@@ -20276,23 +20346,75 @@ static inline uint16_t leaudio_subevent_tbs_client_call_state_get_tbs_cid(const 
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field length from event LEAUDIO_SUBEVENT_TBS_CLIENT_CALL_STATE
+ * @brief Get field list_length from event LEAUDIO_SUBEVENT_TBS_CLIENT_CALL_STATE
  * @param event packet
- * @return length
+ * @return list_length
  * @note: btstack_type J
  */
-static inline uint8_t leaudio_subevent_tbs_client_call_state_get_length(const uint8_t * event){
+static inline uint8_t leaudio_subevent_tbs_client_call_state_get_list_length(const uint8_t * event){
     return event[5];
 }
 /**
- * @brief Get field state from event LEAUDIO_SUBEVENT_TBS_CLIENT_CALL_STATE
+ * @brief Initialize iterator for list list of leaudio_subevent_tbs_client_call_state
+ * @param iterator
  * @param event packet
- * @return state
- * @note: btstack_type V
+ * @note: btstack_type (
  */
-static inline const uint8_t * leaudio_subevent_tbs_client_call_state_get_state(const uint8_t * event){
-    return &event[6];
+static inline void leaudio_subevent_tbs_client_call_state_list_init(btstack_event_iterator_t * iter, const uint8_t * event){
+    *iter = (btstack_event_iterator_t)&event[6];
 }
+
+/**
+ * @brief Returns true if iterator of list list of leaudio_subevent_tbs_client_call_state has more elements, false otherwise.
+ * @param iterator
+ * @param event packet
+ * @return
+ * @note: btstack_type (
+ */
+static inline bool leaudio_subevent_tbs_client_call_state_list_has_next(btstack_event_iterator_t * iter, const uint8_t * event){
+    uint8_t length = event[5];
+    const uint8_t *begin = &event[6];
+    const uint8_t *end = begin+length;
+    return *iter<end;
+}
+
+/**
+ * @brief Get element of list field call_index from event LEAUDIO_SUBEVENT_TBS_CLIENT_CALL_STATE
+ * @param event packet
+ * @return call_index
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_tbs_client_call_state_get_list_item_call_index(btstack_event_iterator_t * iter){
+    return (*iter)[0];
+}
+/**
+ * @brief Get element of list field call_state from event LEAUDIO_SUBEVENT_TBS_CLIENT_CALL_STATE
+ * @param event packet
+ * @return call_state
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_tbs_client_call_state_get_list_item_call_state(btstack_event_iterator_t * iter){
+    return (*iter)[1];
+}
+/**
+ * @brief Get element of list field flags from event LEAUDIO_SUBEVENT_TBS_CLIENT_CALL_STATE
+ * @param event packet
+ * @return flags
+ * @note: btstack_type 1
+ */
+static inline uint8_t leaudio_subevent_tbs_client_call_state_get_list_item_flags(btstack_event_iterator_t * iter){
+    return (*iter)[2];
+}
+/**
+ * @brief Advances the iterator to the next element
+ * @param event packet
+ * @note: btstack_type )
+ */
+static inline void leaudio_subevent_tbs_client_call_state_list_next(btstack_event_iterator_t * iter){
+    uint8_t length = 3;
+    *iter = *iter+length;
+}
+
 
 /**
  * @brief Get field tbs_cid from event LEAUDIO_SUBEVENT_TBS_CLIENT_CALL_CONTROL_POINT
