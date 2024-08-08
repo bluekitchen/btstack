@@ -87,12 +87,14 @@ typedef enum {
     SRM_W4_CONFIRM,
     SRM_ENABLED_BUT_WAITING,
     SRM_ENABLED
-} srm_state_t;
+} opp_client_obex_srm_state_t;
 
 typedef struct {
+    opp_client_obex_srm_state_t srm_state;
+
     uint8_t srm_value;
     uint8_t srmp_value;
-} obex_srm_t;
+} opp_client_obex_srm_t;
 
 typedef struct opp_client {
     opp_state_t state;
@@ -118,8 +120,7 @@ typedef struct opp_client {
     uint32_t  object_total_size;
     uint32_t  object_total_pos;
     /* srm */
-    obex_srm_t obex_srm;
-    srm_state_t srm_state;
+    opp_client_obex_srm_t obex_srm;
 } opp_client_t;
 
 static opp_client_t opp_client_singleton;
@@ -188,7 +189,7 @@ static void opp_client_emit_operation_complete_event(opp_client_t * context, uin
     context->client_handler(HCI_EVENT_PACKET, context->opp_cid, &event[0], pos);
 }
 
-static void obex_srm_init(obex_srm_t * obex_srm){
+static void obex_srm_init(opp_client_obex_srm_t * obex_srm){
     obex_srm->srm_value = OBEX_SRM_DISABLE;
     obex_srm->srmp_value = OBEX_SRMP_NEXT;
 }
@@ -240,7 +241,7 @@ static void opp_client_parser_callback_get_operation(void * user_data, uint8_t h
 static void opp_client_prepare_srm_header(const opp_client_t * client){
     if (goep_client_version_20_or_higher(client->goep_cid)){
         goep_client_header_add_srm_enable(client->goep_cid);
-        opp_client->srm_state = SRM_W4_CONFIRM;
+        opp_client->obex_srm.srm_state = SRM_W4_CONFIRM;
     }
 }
 
@@ -329,7 +330,7 @@ static void opp_client_handle_can_send_now(void){
                 // there still is more data to transfer
                 goep_client_execute_with_final_bit(opp_client->goep_cid, false);
 
-                if (opp_client->srm_state == SRM_ENABLED) {
+                if (opp_client->obex_srm.srm_state == SRM_ENABLED) {
                     opp_client->state = OPP_W2_PUT_OBJECT;
                 } else {
                     opp_client->state = OPP_W4_PUT_OBJECT;
@@ -345,7 +346,7 @@ static void opp_client_handle_can_send_now(void){
                 } else {
                     // we do have data readily available. If SRM is enabled
                     // we immediately can request the next can_send.
-                    if (opp_client->srm_state == SRM_ENABLED) {
+                    if (opp_client->obex_srm.srm_state == SRM_ENABLED) {
                         goep_client_request_can_send_now(opp_client->goep_cid);
                     }
                 }
@@ -375,40 +376,40 @@ static void opp_client_handle_can_send_now(void){
 }
 
 static void opp_client_handle_srm_headers(opp_client_t *context) {
-    const obex_srm_t * obex_srm = &opp_client->obex_srm;
+    opp_client_obex_srm_t * obex_srm = &opp_client->obex_srm;
     // Update SRM state based on SRM headers
-    switch (context->srm_state){
+    switch (obex_srm->srm_state){
         case SRM_W4_CONFIRM:
             switch (obex_srm->srm_value){
                 case OBEX_SRM_ENABLE:
                     switch (obex_srm->srmp_value){
                         case OBEX_SRMP_WAIT:
-                            context->srm_state = SRM_ENABLED_BUT_WAITING;
+                            obex_srm->srm_state = SRM_ENABLED_BUT_WAITING;
                             break;
                         default:
-                            context->srm_state = SRM_ENABLED;
+                            obex_srm->srm_state = SRM_ENABLED;
                             break;
                     }
                     break;
                 default:
-                    context->srm_state = SRM_DISABLED;
+                    obex_srm->srm_state = SRM_DISABLED;
                     break;
             }
             break;
         case SRM_ENABLED_BUT_WAITING:
             switch (obex_srm->srmp_value){
                 case OBEX_SRMP_WAIT:
-                    context->srm_state = SRM_ENABLED_BUT_WAITING;
+                    obex_srm->srm_state = SRM_ENABLED_BUT_WAITING;
                     break;
                 default:
-                    context->srm_state = SRM_ENABLED;
+                    obex_srm->srm_state = SRM_ENABLED;
                     break;
             }
             break;
         default:
             break;
     }
-    log_info("SRM state %u", context->srm_state);
+    log_info("SRM state %u", obex_srm->srm_state);
 }
 
 static void opp_client_packet_handler_hci(uint8_t *packet, uint16_t size){
@@ -529,7 +530,7 @@ static void opp_client_packet_handler_goep(uint8_t *packet, uint16_t size){
                 switch (op_info.response_code) {
                     case OBEX_RESP_CONTINUE:
                         opp_client_handle_srm_headers(opp_client);
-                        if (opp_client->srm_state == SRM_ENABLED) {
+                        if (opp_client->obex_srm.srm_state == SRM_ENABLED) {
                             // prepare response
                             opp_client_prepare_get_operation(opp_client);
                             break;
