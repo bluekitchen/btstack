@@ -74,7 +74,7 @@ typedef struct {
     hci_con_handle_t con_handle;
     map_notification_server_state_t state;
     obex_parser_t obex_parser;
-    obex_srm_t obex_srm;
+    obex_srm_server_t obex_srm;
     // request
     struct {
         bool is_event_report;
@@ -149,8 +149,8 @@ static void map_notification_server_obex_parser_callback (void *user_data, uint8
     switch (header_id) {
         case OBEX_HEADER_SINGLE_RESPONSE_MODE:
         case OBEX_HEADER_SINGLE_RESPONSE_MODE_PARAMETER:
-            obex_srm_header_store (&mns->obex_srm, header_id,
-                                   total_len, data_offset, data_buffer, data_len);
+            obex_srm_server_header_store(&mns->obex_srm, header_id,
+                                         total_len, data_offset, data_buffer, data_len);
             break;
         case OBEX_HEADER_CONNECTION_ID:
             // TODO: verify connection id
@@ -189,7 +189,7 @@ static void map_notification_server_obex_parser_callback (void *user_data, uint8
 
 static void map_notification_server_handle_put_request (map_notification_server_t *mns, uint8_t opcode, bool do_push_event){
     if (opcode & OBEX_OPCODE_FINAL_BIT_MASK ||
-        !obex_srm_is_enabled (&mns->obex_srm)) {
+        !obex_srm_server_is_enabled(&mns->obex_srm)) {
         ENTER_STATE (mns, MAP_SEND_REQUEST_RESPONSE);
     } else {
         ENTER_STATE (mns, MAP_W4_REQUEST);
@@ -362,7 +362,7 @@ static void map_notification_server_packet_handler_goep(map_notification_server_
             /* fall through */
 
         case MAP_W4_REQUEST:
-            obex_srm_init(&mns->obex_srm);
+            obex_srm_server_init(&mns->obex_srm);
             parser_state = obex_parser_process_data(&mns->obex_parser, packet, size);
             if (parser_state == OBEX_PARSER_OBJECT_STATE_COMPLETE){
                 obex_parser_operation_info_t op_info;
