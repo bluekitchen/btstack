@@ -52,6 +52,7 @@
 
 #include "classic/obex.h"
 #include "classic/obex_parser.h"
+#include "classic/obex_srm_server.h"
 #include "classic/goep_server.h"
 #include "classic/sdp_util.h"
 #include "classic/opp_server.h"
@@ -84,19 +85,6 @@ typedef enum {
     OPP_SERVER_STATE_ABOUT_TO_SEND,
 } opp_server_state_t;
 
-typedef struct {
-    uint8_t srm_value;
-    uint8_t srmp_value;
-} obex_srm_t;
-
-typedef enum {
-    SRM_DISABLED,
-    SRM_SEND_CONFIRM,
-    SRM_SEND_CONFIRM_WAIT,
-    SRM_ENABLED,
-    SRM_ENABLED_WAIT,
-} srm_state_t;
-
 static  btstack_packet_handler_t opp_server_user_packet_handler;
 
 typedef struct {
@@ -109,8 +97,7 @@ typedef struct {
     obex_parser_t obex_parser;
     uint16_t opp_supported_features;
     // SRM
-    obex_srm_t  obex_srm;
-    srm_state_t srm_state;
+    obex_srm_server_t  obex_srm;
     // request
     struct {
         char name[OPP_SERVER_MAX_NAME_LEN];
@@ -232,49 +219,6 @@ void opp_server_create_sdp_record(uint8_t *service, uint32_t service_record_hand
     de_pop_sequence(service, attribute);
 }
 
-static void obex_srm_init(obex_srm_t * obex_srm){
-    obex_srm->srm_value = OBEX_SRM_DISABLE;
-    obex_srm->srmp_value = OBEX_SRMP_NEXT;
-}
-
-static void opp_server_handle_srm_headers(opp_server_t *opp_server) {
-    const obex_srm_t *obex_srm = &opp_server->obex_srm;
-    // Update SRM state based on SRM headers
-    switch (opp_server->srm_state) {
-        case SRM_DISABLED:
-            if (obex_srm->srm_value == OBEX_SRM_ENABLE) {
-                if (obex_srm->srmp_value == OBEX_SRMP_WAIT){
-                    opp_server->srm_state = SRM_SEND_CONFIRM_WAIT;
-                } else {
-                    opp_server->srm_state = SRM_SEND_CONFIRM;
-                }
-            }
-            break;
-        case SRM_ENABLED_WAIT:
-            if (obex_srm->srmp_value == OBEX_SRMP_NEXT){
-                opp_server->srm_state = SRM_ENABLED;
-            }
-            break;
-        default:
-            break;
-    }
-}
-
-static void opp_server_add_srm_headers(opp_server_t *opp_server){
-    switch (opp_server->srm_state) {
-        case SRM_SEND_CONFIRM:
-            goep_server_header_add_srm_enable(opp_server->goep_cid);
-            opp_server->srm_state = SRM_ENABLED;
-            break;
-        case SRM_SEND_CONFIRM_WAIT:
-            goep_server_header_add_srm_enable(opp_server->goep_cid);
-            opp_server->srm_state = SRM_ENABLED_WAIT;
-            break;
-        default:
-            break;
-    }
-}
-
 static void opp_server_reset_request(opp_server_t * opp_server){
     (void) memset(&opp_server->request, 0, sizeof(opp_server->request));
 }
@@ -303,7 +247,7 @@ static void opp_server_operation_complete(opp_server_t * opp_server){
     opp_server->operation_complete_send = false;
 
     ENTER_STATE (opp_server, OPP_SERVER_STATE_CONNECTED);
-    opp_server->srm_state = SRM_DISABLED;
+    opp_server->obex_srm.srm_state = OBEX_SRM_STATE_DISABLED;
     opp_server_reset_response(opp_server);
 
     if (operation_complete_send){
@@ -344,7 +288,7 @@ static void opp_server_handle_can_send_now(opp_server_t * opp_server){
         case OPP_SERVER_STATE_SEND_USER_RESPONSE:
             // prepare response
             goep_server_response_create_general(opp_server->goep_cid);
-            opp_server_add_srm_headers(opp_server);
+            obex_srm_server_add_srm_headers(&opp_server->obex_srm, opp_server->goep_cid);
             goep_server_header_add_end_of_body(opp_server->goep_cid,
                                                opp_server->response.body_data,
                                                opp_server->response.body_len);
@@ -354,17 +298,18 @@ static void opp_server_handle_can_send_now(opp_server_t * opp_server){
             if (response_code == OBEX_RESP_CONTINUE){
                 opp_server_reset_response(opp_server);
                 // next state
-                if (opp_server->srm_state == SRM_ENABLED)
+                if (opp_server->obex_srm.srm_state == OBEX_SRM_STATE_ENABLED) {
                     ENTER_STATE (opp_server, OPP_SERVER_STATE_ABOUT_TO_SEND);
-                else
+                } else {
                     ENTER_STATE (opp_server, OPP_SERVER_STATE_W4_GET_OPCODE);
+                }
             } else {
                 opp_server_operation_complete(opp_server);
             }
             // send packet
             goep_server_execute(opp_server->goep_cid, response_code);
             // trigger next user response in SRM
-            if (opp_server->srm_state == SRM_ENABLED){
+            if (opp_server->obex_srm.srm_state == OBEX_SRM_STATE_ENABLED){
                 ENTER_STATE (opp_server, OPP_SERVER_STATE_W4_USER_DATA);
                 opp_server_handle_get_request(opp_server, false);
             }
@@ -398,7 +343,7 @@ static void opp_server_handle_can_send_now(opp_server_t * opp_server){
             // next state
             response_code = opp_server->response.code;
             goep_server_response_create_general(opp_server->goep_cid);
-            opp_server_add_srm_headers(opp_server);
+            obex_srm_server_add_srm_headers(&opp_server->obex_srm, opp_server->goep_cid);
             if (response_code == OBEX_RESP_CONTINUE){
                 // next state
                 ENTER_STATE (opp_server, OPP_SERVER_STATE_W4_PUT_OPCODE);
@@ -533,7 +478,7 @@ static void opp_server_parser_callback_get(void * user_data, uint8_t header_id, 
 
 static void opp_server_handle_get_request(opp_server_t * opp_server, bool first){
 
-    opp_server_handle_srm_headers(opp_server);
+    obex_srm_server_handle_headers(&opp_server->obex_srm);
     if (strcasecmp("text/x-vcard", opp_server->request.type) != 0 ||
         opp_server->request.name[0] != '\0') {
         // wrong default object request
@@ -577,12 +522,12 @@ static void opp_server_handle_get_request(opp_server_t * opp_server, bool first)
 }
 
 static void opp_server_handle_put_request(opp_server_t * opp_server, uint8_t opcode, bool do_push_event){
-    opp_server_handle_srm_headers(opp_server);
+    obex_srm_server_handle_headers(&opp_server->obex_srm);
 
     log_info ("handle put request");
     // emit received opp data
     if (opcode & OBEX_OPCODE_FINAL_BIT_MASK ||
-        opp_server->srm_state != SRM_ENABLED) {
+        opp_server->obex_srm.srm_state != OBEX_SRM_STATE_ENABLED) {
         ENTER_STATE (opp_server, OPP_SERVER_STATE_SEND_PUT_RESPONSE);
     } else {
         ENTER_STATE (opp_server, OPP_SERVER_STATE_W4_PUT_OPCODE);
@@ -695,7 +640,7 @@ static void opp_server_packet_handler_goep(opp_server_t * opp_server, uint8_t *p
             /* fall through */
 
         case OPP_SERVER_STATE_W4_REQUEST:
-            obex_srm_init(&opp_server->obex_srm);
+            obex_srm_server_init(&opp_server->obex_srm);
             parser_state = obex_parser_process_data(&opp_server->obex_parser, packet, size);
             if (parser_state == OBEX_PARSER_OBJECT_STATE_COMPLETE){
                 obex_parser_operation_info_t op_info;
@@ -738,7 +683,7 @@ static void opp_server_packet_handler_goep(opp_server_t * opp_server, uint8_t *p
             /* fall through */
 
         case OPP_SERVER_STATE_W4_GET_REQUEST:
-            obex_srm_init(&opp_server->obex_srm);
+            obex_srm_server_init(&opp_server->obex_srm);
             parser_state = obex_parser_process_data(&opp_server->obex_parser, packet, size);
             if (parser_state == OBEX_PARSER_OBJECT_STATE_COMPLETE) {
                 obex_parser_operation_info_t op_info;
@@ -770,7 +715,7 @@ static void opp_server_packet_handler_goep(opp_server_t * opp_server, uint8_t *p
             /* fall through */
 
         case OPP_SERVER_STATE_W4_PUT_REQUEST:
-            obex_srm_init(&opp_server->obex_srm);
+            obex_srm_server_init(&opp_server->obex_srm);
             parser_state = obex_parser_process_data(&opp_server->obex_parser, packet, size);
             if (parser_state == OBEX_PARSER_OBJECT_STATE_COMPLETE) {
                 obex_parser_operation_info_t op_info;
