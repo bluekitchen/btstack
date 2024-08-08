@@ -4319,28 +4319,12 @@ typedef uint8_t sm_key_t[16];
 
 // LE Audio
 
-/**
- * @format 121
- * @param subevent_code
- * @param hids_cid
- * @param status
-*/
-#define GATTSERVICE_SUBEVENT_MICS_CLIENT_CONNECTED                               0x19u
-
-/**
- * @format 1211
- * @param subevent_code
- * @param cid
- * @param status
- * @param state
-*/
-#define GATTSERVICE_SUBEVENT_MICS_CLIENT_MUTE                              0x1Au
 
 /**
  * @format 1H1
  * @param subevent_code
  * @param con_handle
- * @param state
+ * @param mute
 */
 #define GATTSERVICE_SUBEVENT_MICS_SERVER_MUTE                                0x1Bu
 
@@ -4425,7 +4409,7 @@ typedef uint8_t sm_key_t[16];
  * @param con_handle
  * @param flags
 */
-#define GATTSERVICE_SUBEVENT_VCS_VOLUME_FLAGS                                 0x25u
+#define GATTSERVICE_SUBEVENT_VCS_SERVER_VOLUME_FLAGS                                 0x25u
 
 /**
  * @format 1H1
@@ -5116,17 +5100,11 @@ typedef uint8_t sm_key_t[16];
 
 
 /**
- * @format 12
- * @param subevent_code
- * @param mics_cid
-*/
-#define GATTSERVICE_SUBEVENT_MICS_CLIENT_DISCONNECTED                           0x7Au
-
-/**
- * @format 1H21
+ * @format 1H211
  * @param subevent_code
  * @param con_handle
  * @param cid
+ * @param num_included_services
  * @param status
 */
 #define GATTSERVICE_SUBEVENT_CLIENT_CONNECTED                                  0x7Bu
@@ -5140,10 +5118,11 @@ typedef uint8_t sm_key_t[16];
 #define GATTSERVICE_SUBEVENT_CLIENT_DISCONNECTED                               0x7Cu
 
 /**
- * @format 1H21
+ * @format 1H211
  * @param subevent_code
  * @param con_handle
  * @param mcs_cid
+ * @param num_included_clients
  * @param status
 */
 #define GATTSERVICE_SUBEVENT_MCS_CLIENT_CONNECTED                               0x7Du
@@ -5434,8 +5413,553 @@ typedef uint8_t sm_key_t[16];
  * @param con_handle
  */
 #define GATTSERVICE_SUBEVENT_OTS_SERVER_DISCONNECT                                      0x99u
+/**
+ * @format 1H211
+ * @param subevent_code
+ * @param con_handle
+ * @param aics_cid
+ * @param aics_index
+ * @param att_status
+*/
+#define GATTSERVICE_SUBEVENT_AICS_CLIENT_CONNECTED                                        0x9Au
 
-// TBS Meat Event Group
+/**
+ * @format 121
+ * @param subevent_code
+ * @param aics_cid
+ * @param aics_index
+*/
+#define GATTSERVICE_SUBEVENT_AICS_CLIENT_DISCONNECTED                                     0x9Bu
+
+/**
+ * @format 12111111
+ * @param subevent_code
+ * @param aics_cid
+ * @param aics_index
+ * @param gain_setting
+ * @param mute
+ * @param gain_mode
+ * @param change_counter
+ * @param att_status
+*/
+#define GATTSERVICE_SUBEVENT_AICS_CLIENT_AUDIO_INPUT_STATE                                0x9Cu
+
+/**
+ * @format 1211111
+ * @param subevent_code
+ * @param aics_cid
+ * @param aics_index
+ * @param units
+ * @param minimum_value
+ * @param maximum_value
+ * @param att_status
+*/
+#define GATTSERVICE_SUBEVENT_AICS_CLIENT_GAIN_SETTINGS_PROPERTIES                         0x9Du
+
+/**
+ * @format 12111
+ * @param subevent_code
+ * @param aics_cid
+ * @param aics_index
+ * @param input_type
+ * @param att_status
+*/
+#define GATTSERVICE_SUBEVENT_AICS_CLIENT_AUDIO_INPUT_TYPE                                 0x9Eu
+
+/**
+ * @format 12111
+ * @param subevent_code
+ * @param aics_cid
+ * @param aics_index
+ * @param input_status
+ * @param att_status
+*/
+#define GATTSERVICE_SUBEVENT_AICS_CLIENT_AUDIO_INPUT_STATUS                               0x9Fu
+
+/**
+ * @format 121JV1
+ * @param subevent_code
+ * @param aics_cid
+ * @param aics_index
+ * @param value_len        // Capped at ATT_MTU - 3
+ * @param value
+ * @param att_status
+ */
+#define GATTSERVICE_SUBEVENT_AICS_CLIENT_AUDIO_DESCRIPTION                                0xA0u
+
+/**
+ * @format 12121
+ * @param subevent_code
+ * @param aics_cid
+ * @param aics_index
+ * @param characteristic_uuid
+ * @param att_status
+*/
+#define GATTSERVICE_SUBEVENT_AICS_CLIENT_WRITE_DONE                                       0xA1u
+
+/**
+ * @format 1H211
+ * @param subevent_code
+ * @param con_handle
+ * @param mics_cid
+ * @param aics_services_num
+ * @param att_status
+ */
+#define GATTSERVICE_SUBEVENT_MICS_CLIENT_CONNECTED                                        0xA2u
+
+/**
+ * @format 12
+ * @param subevent_code
+ * @param mics_cid
+*/
+#define GATTSERVICE_SUBEVENT_MICS_CLIENT_DISCONNECTED                                     0xA3u
+
+/**
+ * @format 12111111
+ * @param subevent_code
+ * @param mics_cid
+ * @param aics_index
+ * @param gain_setting
+ * @param mute
+ * @param gain_mode
+ * @param change_counter
+ * @param att_status
+*/
+#define GATTSERVICE_SUBEVENT_MICS_CLIENT_AUDIO_INPUT_STATE                                0xA4u
+
+/**
+ * @format 1211111
+ * @param subevent_code
+ * @param mics_cid
+ * @param aics_index
+ * @param units
+ * @param minimum_value
+ * @param maximum_value
+ * @param att_status
+*/
+#define GATTSERVICE_SUBEVENT_MICS_CLIENT_GAIN_SETTINGS_PROPERTIES                         0xA5u
+
+/**
+ * @format 12111
+ * @param subevent_code
+ * @param mics_cid
+ * @param aics_index
+ * @param input_type
+ * @param att_status
+*/
+#define GATTSERVICE_SUBEVENT_MICS_CLIENT_AUDIO_INPUT_TYPE                                 0xA6u
+
+/**
+ * @format 12111
+ * @param subevent_code
+ * @param mics_cid
+ * @param aics_index
+ * @param input_status
+ * @param att_status
+*/
+#define GATTSERVICE_SUBEVENT_MICS_CLIENT_AUDIO_INPUT_STATUS                               0xA7u
+
+/**
+ * @format 121JV1
+ * @param subevent_code
+ * @param mics_cid
+ * @param aics_index
+ * @param value_len        // Capped at ATT_MTU - 3
+ * @param value
+ * @param att_status
+ */
+#define GATTSERVICE_SUBEVENT_MICS_CLIENT_AUDIO_DESCRIPTION                                0xA8u
+
+/**
+ * @format 12121
+ * @param subevent_code
+ * @param mics_cid
+ * @param aics_index
+ * @param characteristic_uuid
+ * @param att_status
+*/
+#define GATTSERVICE_SUBEVENT_MICS_CLIENT_WRITE_DONE                                       0xA9u
+
+/**
+ * @format 1211
+ * @param subevent_code
+ * @param cid
+ * @param state
+ * @param att_status
+*/
+#define GATTSERVICE_SUBEVENT_MICS_CLIENT_MUTE                                             0xAAu
+
+
+/**
+ * @format 1H211
+ * @param subevent_code
+ * @param con_handle
+ * @param vocs_cid
+ * @param vocs_index
+ * @param att_status
+*/
+#define GATTSERVICE_SUBEVENT_VOCS_CLIENT_CONNECTED                                        0xABu
+
+/**
+ * @format 121
+ * @param subevent_code
+ * @param vocs_cid
+ * @param vocs_index
+*/
+#define GATTSERVICE_SUBEVENT_VOCS_CLIENT_DISCONNECTED                                     0xACu
+
+/**
+ * @format 121211
+ * @param subevent_code
+ * @param vocs_cid
+ * @param vocs_index
+ * @param volume_offset
+ * @param change_counter
+ * @param att_status
+*/
+#define GATTSERVICE_SUBEVENT_VOCS_CLIENT_OFFSET_STATE                                     0xADu
+
+/**
+ * @format 12141
+ * @param subevent_code
+ * @param vocs_cid
+ * @param vocs_index
+ * @param audio_location
+ * @param att_status
+*/
+#define GATTSERVICE_SUBEVENT_VOCS_CLIENT_AUDIO_LOCATION                                   0xAEu
+
+/**
+ * @format 121JV1
+ * @param subevent_code
+ * @param vocs_cid
+ * @param vocs_index
+ * @param description_len
+ * @param description 
+ * @param att_status
+*/
+#define GATTSERVICE_SUBEVENT_VOCS_CLIENT_AUDIO_OUTPUT_DESCRIPTION                         0xAFu
+
+
+/**
+ * @format 1H2111
+ * @param subevent_code
+ * @param con_handle
+ * @param vcs_cid
+ * @param aics_services_num
+ * @param vocs_services_num
+ * @param att_status
+ */
+#define GATTSERVICE_SUBEVENT_VCS_CLIENT_CONNECTED                                         0xB0u
+
+/**
+ * @format 12
+ * @param subevent_code
+ * @param vcs_cid
+*/
+#define GATTSERVICE_SUBEVENT_VCS_CLIENT_DISCONNECTED                                      0xB1u
+
+
+/**
+ * @format 121111
+ * @param subevent_code
+ * @param vcs_cid
+ * @param volume_setting
+ * @param volume_change_step
+ * @param mute 
+ * @param att_status
+*/
+#define GATTSERVICE_SUBEVENT_VCS_CLIENT_VOLUME_STATE                                      0xB2u
+
+/**
+ * @format 1211
+ * @param subevent_code
+ * @param vcs_cid
+ * @param flags
+ * @param att_status
+*/
+#define GATTSERVICE_SUBEVENT_VCS_CLIENT_VOLUME_FLAGS                                      0xB3u
+
+/**
+ * @format 12111111
+ * @param subevent_code
+ * @param vcs_cid
+ * @param aics_index
+ * @param gain_setting
+ * @param mute
+ * @param gain_mode
+ * @param change_counter
+ * @param att_status
+*/
+#define GATTSERVICE_SUBEVENT_VCS_CLIENT_AUDIO_INPUT_STATE                                0xB4u
+
+/**
+ * @format 1211111
+ * @param subevent_code
+ * @param vcs_cid
+ * @param aics_index
+ * @param units
+ * @param minimum_value
+ * @param maximum_value
+ * @param att_status
+*/
+#define GATTSERVICE_SUBEVENT_VCS_CLIENT_GAIN_SETTINGS_PROPERTIES                         0xB5u
+
+/**
+ * @format 12111
+ * @param subevent_code
+ * @param vcs_cid
+ * @param aics_index
+ * @param input_type
+ * @param att_status
+*/
+#define GATTSERVICE_SUBEVENT_VCS_CLIENT_AUDIO_INPUT_TYPE                                 0xB6u
+
+/**
+ * @format 12111
+ * @param subevent_code
+ * @param vcs_cid
+ * @param aics_index
+ * @param input_status
+ * @param att_status
+*/
+#define GATTSERVICE_SUBEVENT_VCS_CLIENT_AUDIO_INPUT_STATUS                               0xB7u
+
+/**
+ * @format 121JV1
+ * @param subevent_code
+ * @param vcs_cid
+ * @param aics_index
+ * @param value_len        // Capped at ATT_MTU - 3
+ * @param value
+ * @param att_status
+ */
+#define GATTSERVICE_SUBEVENT_VCS_CLIENT_AUDIO_DESCRIPTION                                0xB8u
+
+/**
+ * @format 12121
+ * @param subevent_code
+ * @param vcs_cid
+ * @param vocs_index
+ * @param volume_offset
+ * @param att_status
+*/
+#define GATTSERVICE_SUBEVENT_VCS_CLIENT_VOLUME_OFFSET                                    0xBCu
+
+/**
+ * @format 12141
+ * @param subevent_code
+ * @param vcs_cid
+ * @param vocs_index
+ * @param audio_location
+ * @param att_status
+*/
+#define GATTSERVICE_SUBEVENT_VCS_CLIENT_AUDIO_LOCATION                                   0xBDu
+
+/**
+ * @format 121JV1
+ * @param subevent_code
+ * @param vcs_cid
+ * @param vocs_index
+ * @param description_len
+ * @param description
+ * @param att_status
+*/
+#define GATTSERVICE_SUBEVENT_VCS_CLIENT_AUDIO_OUTPUT_DESCRIPTION                         0xBEu
+
+
+/**
+ * @format 12121
+ * @param subevent_code
+ * @param vcs_cid
+ * @param included_service_index
+ * @param characteristic_uuid
+ * @param att_status
+*/
+#define GATTSERVICE_SUBEVENT_VCS_CLIENT_WRITE_DONE                                        0xBFu
+
+/**
+ * @format 1H21441
+ * @param subevent_code
+ * @param con_handle
+ * @param ots_cid
+ * @param ots_index
+ * @param oacp_features
+ * @param olcp_features
+ * @param att_status
+*/
+#define GATTSERVICE_SUBEVENT_OTS_CLIENT_CONNECTED                                        0xC0u
+
+/**
+ * @format 121
+ * @param subevent_code
+ * @param ots_cid
+ * @param ots_index
+*/
+#define GATTSERVICE_SUBEVENT_OTS_CLIENT_DISCONNECTED                                     0xC1u
+
+/**
+ * @format 12121
+ * @param subevent_code
+ * @param ots_cid
+ * @param ots_index
+ * @param characteristic_uuid
+ * @param att_status
+*/
+#define GATTSERVICE_SUBEVENT_OTS_CLIENT_WRITE_DONE                                       0xC2u
+
+/**
+ * @format 12441
+ * @param subevent_code
+ * @param ots_cid
+ * @param oacp_features
+ * @param olcp_features
+ * @param att_status
+*/
+#define GATTSERVICE_SUBEVENT_OTS_CLIENT_FEATURES                                        0xC3u
+
+/**
+ * @format 12JV1
+ * @param subevent_code
+ * @param ots_cid
+ * @param value_len
+ * @param value
+ * @param att_status
+*/
+#define GATTSERVICE_SUBEVENT_OTS_CLIENT_OBJECT_NAME                                      0xC4u
+
+/**
+ * @format 12JV1
+ * @param subevent_code
+ * @param ots_cid
+ * @param value_len
+ * @param value
+ * @param att_status
+*/
+#define GATTSERVICE_SUBEVENT_OTS_CLIENT_OBJECT_TYPE                                      0xC5u
+
+/**
+ * @format 12441
+ * @param subevent_code
+ * @param ots_cid
+ * @param current_size
+ * @param allocated_size
+ * @param att_status
+*/
+#define GATTSERVICE_SUBEVENT_OTS_CLIENT_OBJECT_SIZE                                      0xC6u
+
+/**
+ * @format 122111111
+ * @param subevent_code
+ * @param ots_cid
+ * @param year
+ * @param month
+ * @param day
+ * @param hours
+ * @param minutes
+ * @param seconds
+ * @param att_status
+*/
+#define GATTSERVICE_SUBEVENT_OTS_CLIENT_OBJECT_FIRST_CREATED                             0xC7u
+
+/**
+ * @format 122111111
+ * @param subevent_code
+ * @param ots_cid
+ * @param year
+ * @param month
+ * @param day
+ * @param hours
+ * @param minutes
+ * @param seconds
+ * @param att_status
+*/
+#define GATTSERVICE_SUBEVENT_OTS_CLIENT_OBJECT_LAST_MODIFIED                             0xC8u
+
+/**
+ * @format 12JV1
+ * @param subevent_code
+ * @param ots_cid
+ * @param value_len
+ * @param value
+ * @param att_status
+*/
+#define GATTSERVICE_SUBEVENT_OTS_CLIENT_OBJECT_ID                                       0xC9u
+
+/**
+ * @format 1241
+ * @param subevent_code
+ * @param ots_cid
+ * @param bitmask
+ * @param att_status
+*/
+#define GATTSERVICE_SUBEVENT_OTS_CLIENT_OBJECT_PROPERTIES                                0xCAu
+
+/**
+ * @format 1211JV1
+ * @param subevent_code
+ * @param ots_cid
+ * @param index
+ * @param type
+ * @param value_len
+ * @param value
+ * @param att_status
+*/
+#define GATTSERVICE_SUBEVENT_OTS_CLIENT_FILTER                                          0xCBu
+
+/**
+ * @format 121JV1
+ * @param subevent_code
+ * @param ots_cid
+ * @param flags
+ * @param id_len
+ * @param id
+ * @param att_status
+*/
+#define GATTSERVICE_SUBEVENT_OTS_CLIENT_OBJECT_CHANGED                                  0xCCu
+
+/**
+ * @format 12111
+ * @param subevent_code
+ * @param ots_cid
+ * @param opcode
+ * @param result_code
+ * @param att_status
+*/
+#define GATTSERVICE_SUBEVENT_OTS_CLIENT_OLCP_RESPONSE                                  0xCDu
+
+/**
+ * @format 12111
+ * @param subevent_code
+ * @param ots_cid
+ * @param opcode
+ * @param result_code
+ * @param att_status
+*/
+#define GATTSERVICE_SUBEVENT_OTS_CLIENT_OACP_RESPONSE                                  0xCEu
+
+/**
+ * @format 121444
+ * @param subevent_code
+ * @param ots_cid
+ * @param state
+ * @param length
+ * @param offset
+ * @param bytes_transferred_num
+*/
+#define GATTSERVICE_SUBEVENT_OTS_CLIENT_DATA_CHUNK                                      0xCFu
+
+/**
+ * @format 122
+ * @param subevent_code
+ * @param ots_cid
+ * @param characterictic_uuid
+ */
+#define GATTSERVICE_SUBEVENT_OTS_CLIENT_TIMEOUT                                         0xD0u
+
+
+// TBS Meta Event Group
+
 /**
  * @format 1H211
  * @param subevent_code
@@ -5618,6 +6142,7 @@ typedef uint8_t sm_key_t[16];
 #define GATTSERVICE_SUBEVENT_TBS_CLIENT_WRITE_DONE                                      0xD3u
 
 #define GATTSERVICE_SUBEVENT_TBS_CLIENT_DISCONNECTED                                    0xD4u
+
 // MAP Meta Event Group
 
 /**
