@@ -188,6 +188,8 @@ static void map_notification_server_obex_parser_callback (void *user_data, uint8
 }
 
 static void map_notification_server_handle_put_request (map_notification_server_t *mns, uint8_t opcode, bool do_push_event){
+    obex_srm_server_handle_headers(&mns->obex_srm);
+
     if (opcode & OBEX_OPCODE_FINAL_BIT_MASK ||
         !obex_srm_server_is_enabled(&mns->obex_srm)) {
         ENTER_STATE (mns, MAP_SEND_REQUEST_RESPONSE);
