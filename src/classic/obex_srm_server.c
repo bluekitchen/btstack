@@ -49,11 +49,10 @@
 
 #include "classic/obex_srm_server.h"
 
-void obex_srm_init (obex_srm_server_t *obex_srm){
+void obex_srm_server_init (obex_srm_server_t *obex_srm){
+    obex_srm->srm_state = OBEX_SRM_STATE_DISABLED;
     obex_srm->srm_value = OBEX_SRM_DISABLE;
     obex_srm->srmp_value = OBEX_SRMP_NEXT;
-
-    obex_srm->srm_state = OBEX_SRM_STATE_DISABLED;
 }
 
 void obex_srm_server_header_store (obex_srm_server_t    *obex_srm,
@@ -75,7 +74,7 @@ void obex_srm_server_header_store (obex_srm_server_t    *obex_srm,
     }
 }
 
-static void obex_srm_handle_headers (obex_srm_server_t *obex_srm)
+void obex_srm_server_handle_headers (obex_srm_server_t *obex_srm)
 {
     switch (obex_srm->srm_state) {
         case OBEX_SRM_STATE_DISABLED:
@@ -116,7 +115,7 @@ void obex_srm_server_add_srm_headers (obex_srm_server_t *obex_srm,
 
 bool obex_srm_server_is_enabled (obex_srm_server_t *obex_srm)
 {
-    obex_srm_handle_headers (obex_srm);
+    obex_srm_server_handle_headers(obex_srm);
     return obex_srm->srm_state == OBEX_SRM_STATE_ENABLED;
 }
 

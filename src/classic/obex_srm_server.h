@@ -66,6 +66,7 @@ void obex_srm_server_header_store   (obex_srm_server_t    *obex_srm,
                                      uint16_t       data_offset,
                                      const uint8_t *data_buffer,
                                      uint16_t       data_len);
+void obex_srm_server_handle_headers  (obex_srm_server_t *obex_srm);
 void obex_srm_server_add_srm_headers (obex_srm_server_t   *obex_srm,
                                       uint16_t      goep_cid);
 bool obex_srm_server_is_enabled      (obex_srm_server_t   *obex_srm);
