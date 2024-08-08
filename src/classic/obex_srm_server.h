@@ -50,25 +50,25 @@ typedef enum {
     OBEX_SRM_STATE_SEND_CONFIRM_WAIT,
     OBEX_SRM_STATE_ENABLED,
     OBEX_SRM_STATE_ENABLED_WAIT,
-} obex_srm_state_t;
+} obex_srm_server_state_t;
 
 typedef struct {
-    obex_srm_state_t srm_state;
+    obex_srm_server_state_t srm_state;
 
     uint8_t srm_value;
     uint8_t srmp_value;
-} obex_srm_t;
+} obex_srm_server_t;
 
-void obex_srm_init           (obex_srm_t    *obex_srm);
-void obex_srm_header_store   (obex_srm_t    *obex_srm,
-                              uint8_t        header_id,
-                              uint16_t       total_len,
-                              uint16_t       data_offset,
-                              const uint8_t *data_buffer,
-                              uint16_t       data_len);
-void obex_srm_add_srm_headers (obex_srm_t   *obex_srm,
-                               uint16_t      goep_cid);
-bool obex_srm_is_enabled      (obex_srm_t   *obex_srm);
+void obex_srm_server_init           (obex_srm_server_t    *obex_srm);
+void obex_srm_server_header_store   (obex_srm_server_t    *obex_srm,
+                                     uint8_t        header_id,
+                                     uint16_t       total_len,
+                                     uint16_t       data_offset,
+                                     const uint8_t *data_buffer,
+                                     uint16_t       data_len);
+void obex_srm_server_add_srm_headers (obex_srm_server_t   *obex_srm,
+                                      uint16_t      goep_cid);
+bool obex_srm_server_is_enabled      (obex_srm_server_t   *obex_srm);
 
 #if defined __cplusplus
 }

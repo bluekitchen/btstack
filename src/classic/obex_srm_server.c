@@ -49,19 +49,19 @@
 
 #include "classic/obex_srm_server.h"
 
-void obex_srm_init (obex_srm_t *obex_srm){
+void obex_srm_init (obex_srm_server_t *obex_srm){
     obex_srm->srm_value = OBEX_SRM_DISABLE;
     obex_srm->srmp_value = OBEX_SRMP_NEXT;
 
     obex_srm->srm_state = OBEX_SRM_STATE_DISABLED;
 }
 
-void obex_srm_header_store (obex_srm_t    *obex_srm,
-                            uint8_t        header_id,
-                            uint16_t       total_len,
-                            uint16_t       data_offset,
-                            const uint8_t *data_buffer,
-                            uint16_t       data_len)
+void obex_srm_server_header_store (obex_srm_server_t    *obex_srm,
+                                   uint8_t        header_id,
+                                   uint16_t       total_len,
+                                   uint16_t       data_offset,
+                                   const uint8_t *data_buffer,
+                                   uint16_t       data_len)
 {
     switch (header_id) {
         case OBEX_HEADER_SINGLE_RESPONSE_MODE:
@@ -75,7 +75,7 @@ void obex_srm_header_store (obex_srm_t    *obex_srm,
     }
 }
 
-static void obex_srm_handle_headers (obex_srm_t *obex_srm)
+static void obex_srm_handle_headers (obex_srm_server_t *obex_srm)
 {
     switch (obex_srm->srm_state) {
         case OBEX_SRM_STATE_DISABLED:
@@ -97,8 +97,8 @@ static void obex_srm_handle_headers (obex_srm_t *obex_srm)
     }
 }
 
-void obex_srm_add_srm_headers (obex_srm_t *obex_srm,
-                               uint16_t    goep_cid)
+void obex_srm_server_add_srm_headers (obex_srm_server_t *obex_srm,
+                                      uint16_t    goep_cid)
 {
     switch (obex_srm->srm_state) {
         case OBEX_SRM_STATE_SEND_CONFIRM:
@@ -114,7 +114,7 @@ void obex_srm_add_srm_headers (obex_srm_t *obex_srm,
     }
 }
 
-bool obex_srm_is_enabled (obex_srm_t *obex_srm)
+bool obex_srm_server_is_enabled (obex_srm_server_t *obex_srm)
 {
     obex_srm_handle_headers (obex_srm);
     return obex_srm->srm_state == OBEX_SRM_STATE_ENABLED;
