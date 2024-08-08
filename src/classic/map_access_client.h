@@ -46,9 +46,9 @@ extern "C" {
 #include "btstack_config.h"
 #include "btstack_defines.h"
 #include "classic/map.h"
-#include "classic/obex_parser.h"
-#include "yxml.h"
 #include "classic/map_util.h"
+#include "classic/obex_parser.h"
+#include "classic/obex_srm_client.h"
 
 #include <stdint.h>
 
@@ -93,18 +93,6 @@ typedef enum {
     MAP_W4_DISCONNECT_RESPONSE,
 } map_access_client_state_t;
 
-typedef enum {
-    SRM_DISABLED,
-    SRM_W4_CONFIRM,
-    SRM_ENABLED_BUT_WAITING,
-    SRM_ENABLED
-} map_access_client_srm_state_t;
-
-typedef struct {
-    uint8_t srm_value;
-    uint8_t srmp_value;
-} map_access_client_obex_srm_t;
-
 typedef struct {
     // opaque storage for goep_client
     goep_client_t goep_client;
@@ -125,8 +113,7 @@ typedef struct {
     obex_parser_t obex_parser;
     uint8_t obex_header_buffer[4];
     /* srm */
-    map_access_client_obex_srm_t obex_srm;
-    map_access_client_srm_state_t srm_state;
+    obex_srm_client_t obex_srm;
 
     const char * folder_name;
     const char * current_folder;
