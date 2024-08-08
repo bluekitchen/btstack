@@ -62,12 +62,14 @@ void opp_client_init(void);
  * The status of OPP connection establishment is reported via OPP_SUBEVENT_CONNECTION_OPENED event,
  * i.e. on success status field is set to ERROR_CODE_SUCCESS.
  *
+ * @note: only one connection supported in parallel
+ *
  * @param handler
  * @param addr
  * @param out_cid to use for further commands
  * @return status ERROR_CODE_SUCCESS on success, otherwise BTSTACK_MEMORY_ALLOC_FAILED if OPP or GOEP connection already exists.
  */
-uint8_t opp_client_connect(btstack_packet_handler_t handler, bd_addr_t addr, uint16_t * out_cid);
+uint8_t opp_client_create_connection(btstack_packet_handler_t handler, bd_addr_t addr, uint16_t * out_cid);
 
 /**
  * @brief Disconnects OPP connection with given identifier.

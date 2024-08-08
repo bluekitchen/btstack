@@ -605,7 +605,7 @@ void opp_client_deinit(void){
     memset(opp_client, 0, sizeof(opp_client_t));
 }
 
-uint8_t opp_client_connect(btstack_packet_handler_t handler, bd_addr_t addr, uint16_t * out_cid){
+uint8_t opp_client_create_connection(btstack_packet_handler_t handler, bd_addr_t addr, uint16_t * out_cid){
     if (opp_client->state != OPP_INIT){
         return BTSTACK_MEMORY_ALLOC_FAILED;
     }
