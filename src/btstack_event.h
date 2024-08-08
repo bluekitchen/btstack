@@ -20185,7 +20185,7 @@ static inline uint8_t leaudio_subevent_tbs_client_bearer_list_current_calls_get_
  * @brief Initialize iterator for list list of leaudio_subevent_tbs_client_bearer_list_current_calls
  * @param iterator
  * @param event packet
- * @note: btstack_type (
+ * @note: btstack_type [
  */
 static inline void leaudio_subevent_tbs_client_bearer_list_current_calls_list_init(btstack_event_iterator_t * iter, const uint8_t * event){
     *iter = (btstack_event_iterator_t)&event[6];
@@ -20196,7 +20196,7 @@ static inline void leaudio_subevent_tbs_client_bearer_list_current_calls_list_in
  * @param iterator
  * @param event packet
  * @return
- * @note: btstack_type (
+ * @note: btstack_type [
  */
 static inline bool leaudio_subevent_tbs_client_bearer_list_current_calls_list_has_next(btstack_event_iterator_t * iter, const uint8_t * event){
     uint8_t length = event[5];
@@ -20253,7 +20253,7 @@ static inline const uint8_t * leaudio_subevent_tbs_client_bearer_list_current_ca
 /**
  * @brief Advances the iterator to the next element
  * @param event packet
- * @note: btstack_type )
+ * @note: btstack_type ]
  */
 static inline void leaudio_subevent_tbs_client_bearer_list_current_calls_list_next(btstack_event_iterator_t * iter){
     uint8_t length = *iter[0] + 1;
@@ -20358,7 +20358,7 @@ static inline uint8_t leaudio_subevent_tbs_client_call_state_get_list_length(con
  * @brief Initialize iterator for list list of leaudio_subevent_tbs_client_call_state
  * @param iterator
  * @param event packet
- * @note: btstack_type (
+ * @note: btstack_type [
  */
 static inline void leaudio_subevent_tbs_client_call_state_list_init(btstack_event_iterator_t * iter, const uint8_t * event){
     *iter = (btstack_event_iterator_t)&event[6];
@@ -20369,7 +20369,7 @@ static inline void leaudio_subevent_tbs_client_call_state_list_init(btstack_even
  * @param iterator
  * @param event packet
  * @return
- * @note: btstack_type (
+ * @note: btstack_type [
  */
 static inline bool leaudio_subevent_tbs_client_call_state_list_has_next(btstack_event_iterator_t * iter, const uint8_t * event){
     uint8_t length = event[5];
@@ -20408,7 +20408,7 @@ static inline uint8_t leaudio_subevent_tbs_client_call_state_get_list_item_flags
 /**
  * @brief Advances the iterator to the next element
  * @param event packet
- * @note: btstack_type )
+ * @note: btstack_type ]
  */
 static inline void leaudio_subevent_tbs_client_call_state_list_next(btstack_event_iterator_t * iter){
     uint8_t length = 3;
