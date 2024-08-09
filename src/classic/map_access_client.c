@@ -261,6 +261,7 @@ static void map_access_client_handle_can_send_now(uint16_t goep_cid) {
             map_access_client->state = MAP_W4_DISCONNECT_RESPONSE;
             // prepare response
             map_access_client_prepare_operation(map_access_client, OBEX_OPCODE_DISCONNECT);
+            obex_srm_client_init(&map_access_client->obex_srm);
             // send packet
             goep_client_execute(map_access_client->goep_client.cid);
             break;
@@ -271,8 +272,11 @@ static void map_access_client_handle_can_send_now(uint16_t goep_cid) {
 
             goep_client_body_add_static(map_access_client->goep_client.cid, (uint8_t *) "0", 1);
             map_access_client->state = MAP_W4_UPDATE_INBOX;
+            // prepare response
             map_access_client_prepare_operation(map_access_client, OBEX_OPCODE_PUT);
+            obex_srm_client_init(&map_access_client->obex_srm);
             map_access_client->request_number++;
+            // send packet
             goep_client_execute(map_access_client->goep_client.cid);
             break;
 
@@ -282,6 +286,7 @@ static void map_access_client_handle_can_send_now(uint16_t goep_cid) {
             // state
             map_access_client->state = MAP_W4_SET_PATH_ROOT_COMPLETE;
             map_access_client_prepare_operation(map_access_client, OBEX_OPCODE_SETPATH);
+            obex_srm_client_init(&map_access_client->obex_srm);
             // send packet
             map_access_client->request_number++;
             goep_client_execute(map_access_client->goep_client.cid);
@@ -313,6 +318,7 @@ static void map_access_client_handle_can_send_now(uint16_t goep_cid) {
             // state
             map_access_client->state = MAP_W4_SET_PATH_ELEMENT_COMPLETE;
             map_access_client_prepare_operation(map_access_client, OBEX_OPCODE_SETPATH);
+            obex_srm_client_init(&map_access_client->obex_srm);
             // send packet
             map_access_client->request_number++;
             goep_client_execute(map_access_client->goep_client.cid);
@@ -321,6 +327,7 @@ static void map_access_client_handle_can_send_now(uint16_t goep_cid) {
         case MAP_W2_SEND_GET_FOLDERS:
             goep_client_request_create_get(map_access_client->goep_client.cid);
             if (map_access_client->request_number == 0){
+                obex_srm_client_init(&map_access_client->obex_srm);
                 map_access_client_prepare_srm_header(map_access_client);
                 goep_client_header_add_type(map_access_client->goep_client.cid, "x-obex/folder-listing");
             }
@@ -333,6 +340,7 @@ static void map_access_client_handle_can_send_now(uint16_t goep_cid) {
         case MAP_W2_SEND_GET_MESSAGES_FOR_FOLDER:
             goep_client_request_create_get(map_access_client->goep_client.cid);
             if (map_access_client->request_number == 0){
+                obex_srm_client_init(&map_access_client->obex_srm);
                 map_access_client_prepare_srm_header(map_access_client);
                 goep_client_header_add_type(map_access_client->goep_client.cid, "x-bt/MAP-msg-listing");
                 goep_client_header_add_name(map_access_client->goep_client.cid, map_access_client->folder_name);
@@ -347,6 +355,7 @@ static void map_access_client_handle_can_send_now(uint16_t goep_cid) {
             goep_client_request_create_get(map_access_client->goep_client.cid);
 
             if (map_access_client->request_number == 0){
+                obex_srm_client_init(&map_access_client->obex_srm);
                 map_access_client_prepare_srm_header(map_access_client);
 
                 map_access_client_message_handle_to_str(map_message_handle_to_str_buffer, map_access_client->message_handle);
@@ -374,6 +383,7 @@ static void map_access_client_handle_can_send_now(uint16_t goep_cid) {
             goep_client_request_create_get(map_access_client->goep_client.cid);
 
             if (map_access_client->request_number == 0){
+                obex_srm_client_init(&map_access_client->obex_srm);
                 map_access_client_prepare_srm_header(map_access_client);
 
                 goep_client_header_add_type(map_access_client->goep_client.cid, "x-bt/MAP-convo-listing");
@@ -413,6 +423,8 @@ static void map_access_client_handle_can_send_now(uint16_t goep_cid) {
                 application_parameters[pos++] = 1;
                 application_parameters[pos++] = map_access_client->read_status;
                 goep_client_header_add_application_parameters(map_access_client->goep_client.cid, &application_parameters[0], pos);
+            } else {
+                obex_srm_client_init(&map_access_client->obex_srm);
             }
 
             goep_client_body_add_static(map_access_client->goep_client.cid, (uint8_t *) "0", 1);
@@ -435,6 +447,7 @@ static void map_access_client_handle_can_send_now(uint16_t goep_cid) {
             goep_client_body_add_static(map_access_client->goep_client.cid, (uint8_t *) "0", 1);
             map_access_client->state = MAP_W4_SET_NOTIFICATION;
             map_access_client_prepare_operation(map_access_client, OBEX_OPCODE_PUT);
+            obex_srm_client_init(&map_access_client->obex_srm);
             map_access_client->request_number++;
             goep_client_execute(map_access_client->goep_client.cid);
             break;
@@ -454,6 +467,7 @@ static void map_access_client_handle_can_send_now(uint16_t goep_cid) {
             goep_client_body_add_static(map_access_client->goep_client.cid, (uint8_t *) "0", 1);
             map_access_client->state = MAP_W4_SET_NOTIFICATION_FILTER;
             map_access_client_prepare_operation(map_access_client, OBEX_OPCODE_PUT);
+            obex_srm_client_init(&map_access_client->obex_srm);
             map_access_client->request_number++;
             goep_client_execute(map_access_client->goep_client.cid);
             break;
@@ -462,6 +476,7 @@ static void map_access_client_handle_can_send_now(uint16_t goep_cid) {
             goep_client_request_create_get(map_access_client->goep_client.cid);
 
             if (map_access_client->request_number == 0){
+                obex_srm_client_init(&map_access_client->obex_srm);
                 map_access_client_prepare_srm_header(map_access_client);
 
                 goep_client_header_add_type(map_access_client->goep_client.cid, "x-bt/MASInstanceInformation");
