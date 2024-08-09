@@ -219,7 +219,7 @@ static void map_access_client_prepare_operation(map_access_client_t * client, ui
     }
 
     obex_parser_init_for_response(&client->obex_parser, op, callback, client);
-    obex_srm_client_init(&client->obex_srm);
+    obex_srm_client_reset_fields(&client->obex_srm);
     client->obex_parser_waiting_for_response = true;
 }
 
@@ -240,13 +240,13 @@ static void map_access_client_handle_can_send_now(uint16_t goep_cid) {
             goep_client_request_create_connect(map_access_client->goep_client.cid, OBEX_VERSION, 0, OBEX_MAX_PACKETLEN_DEFAULT);
             goep_client_header_add_target(map_access_client->goep_client.cid, map_access_client_service_uuid, 16);
             // Mandatory if the PSE advertises a PbapSupportedFeatures attribute in its SDP record, else excluded.
-            // if (goep_client_get_map_supported_features(map_client->goep_client.cid) != MAP_FEATURES_NOT_PRESENT){
+            if (goep_client_get_map_supported_features(map_access_client->goep_client.cid) != MAP_FEATURES_NOT_PRESENT){
                 application_parameters[0] = 0x29; // MAP_APPLICATION_PARAMETER_MAP_SUPPORTED_FEATURES;
                 application_parameters[1] = 4;
                 big_endian_store_32(application_parameters, 2, map_access_client_supported_features);
                 goep_client_header_add_application_parameters(map_access_client->goep_client.cid, &application_parameters[0], 6);
 
-            // }
+            }
             map_access_client->state = MAP_W4_CONNECT_RESPONSE;
             // prepare response
             map_access_client_prepare_operation(map_access_client, OBEX_OPCODE_CONNECT);
@@ -602,7 +602,7 @@ map_access_client_packet_handler_goep(uint16_t goep_cid, uint8_t *packet, uint16
             switch (op_info.response_code) {
                 case OBEX_RESP_CONTINUE:
                     obex_srm_client_handle_headers(&map_access_client->obex_srm);
-                    if (map_access_client->obex_srm.srm_state == OBEX_SRM_CLIENT_STATE_ENABLED) {
+                    if (obex_srm_client_is_srm_active(&map_access_client->obex_srm)) {
                         map_access_client_prepare_operation(map_access_client, OBEX_OPCODE_GET);
                         break;
                     }
