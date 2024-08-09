@@ -250,6 +250,8 @@ static void opp_server_operation_complete(opp_server_t * opp_server){
     opp_server->obex_srm.srm_state = OBEX_SRM_STATE_DISABLED;
     opp_server_reset_response(opp_server);
 
+    obex_srm_server_init(&opp_server->obex_srm);
+
     if (operation_complete_send){
         opp_server_emit_operation_complete_event(opp_server, opeation_complete_status);
     }
@@ -582,6 +584,8 @@ static void opp_server_packet_handler_goep(opp_server_t * opp_server, uint8_t *p
             /* fall through */
 
         case OPP_SERVER_STATE_W4_CONNECT_REQUEST:
+            // reset SRM state upon connected
+            obex_srm_server_init(opp_server->obex_srm);
             parser_state = obex_parser_process_data(&opp_server->obex_parser, packet, size);
             if (parser_state == OBEX_PARSER_OBJECT_STATE_COMPLETE){
                 obex_parser_operation_info_t op_info;
