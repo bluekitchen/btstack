@@ -324,6 +324,9 @@ static void map_notification_server_packet_handler_goep(map_notification_server_
                 obex_parser_get_operation_info(&mns->obex_parser, &op_info);
                 switch (op_info.opcode){
                     case OBEX_OPCODE_CONNECT:
+                        // reset SRM state upon connected
+                        obex_srm_server_init(&mns->obex_srm);
+
                         ENTER_STATE (mns, MAP_W2_SEND_CONNECT_RESPONSE);
                         mns->flags = packet[2];
                         mns->maximum_obex_packet_length = btstack_min(maximum_obex_packet_length, big_endian_read_16(packet, 3));
@@ -376,6 +379,10 @@ static void map_notification_server_packet_handler_goep(map_notification_server_
                         map_notification_server_handle_put_request(mns, op_info.opcode, false);
                         if (mns->request.abort_response == 0) {
                             (*map_notification_server_user_packet_handler)(MAP_DATA_PACKET, mns->mns_cid, (uint8_t *) mns->request.payload_data, mns->request.payload_len);
+                        }
+                        if ((op_info.opcode & OBEX_OPCODE_FINAL_BIT_MASK) != 0){
+                            // reset SRM state upon operation complete
+                            obex_srm_server_init(&mns->obex_srm);
                         }
                         break;
                     case OBEX_OPCODE_DISCONNECT:
