@@ -908,7 +908,7 @@ static void pbap_server_packet_handler_goep(pbap_server_t * pbap_server, uint8_t
             /* fall through */
 
         case PBAP_SERVER_STATE_W4_REQUEST:
-            obex_srm_server_init(&pbap_server->obex_srm);
+            obex_srm_server_reset_fields(&pbap_server->obex_srm);
             parser_state = obex_parser_process_data(&pbap_server->obex_parser, packet, size);
             if (parser_state == OBEX_PARSER_OBJECT_STATE_COMPLETE){
                 obex_parser_operation_info_t op_info;
@@ -945,7 +945,7 @@ static void pbap_server_packet_handler_goep(pbap_server_t * pbap_server, uint8_t
             /* fall through */
 
         case PBAP_SERVER_STATE_W4_GET_REQUEST:
-            obex_srm_server_init(&pbap_server->obex_srm);
+            obex_srm_server_reset_fields(&pbap_server->obex_srm);
             parser_state = obex_parser_process_data(&pbap_server->obex_parser, packet, size);
             if (parser_state == OBEX_PARSER_OBJECT_STATE_COMPLETE) {
                 obex_parser_operation_info_t op_info;
@@ -1074,7 +1074,7 @@ uint8_t pbap_server_set_database_identifier(uint16_t pbap_cid, const uint8_t * d
 
 static void pbap_server_build_response(pbap_server_t * pbap_server){
     goep_server_response_create_general(pbap_server->goep_cid);
-    obex_srm_server_init(&pbap_server->obex_srm);
+    obex_srm_server_reset_fields(&pbap_server->obex_srm);
     // Application Params
     uint8_t app_params[PBAP_SERVER_MAX_APP_PARAMS_LEN];
     uint16_t app_params_pos = 0;
