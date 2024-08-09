@@ -677,6 +677,7 @@ static void pbap_handle_can_send_now(pbap_client_t *pbap_client) {
             // prepare request
             goep_client_request_create_get(pbap_client->goep_cid);
             if (pbap_client->request_number == 0){
+                obex_srm_client_init(&pbap_client->obex_srm);
                 pbap_client_prepare_srm_header(pbap_client);
                 goep_client_header_add_name(pbap_client->goep_cid, pbap_client->phonebook_path);
                 goep_client_header_add_type(pbap_client->goep_cid, pbap_phonebook_type);
@@ -704,6 +705,7 @@ static void pbap_handle_can_send_now(pbap_client_t *pbap_client) {
             // prepare request
             goep_client_request_create_get(pbap_client->goep_cid);
             if (pbap_client->request_number == 0){
+                obex_srm_client_init(&pbap_client->obex_srm);
                 pbap_client_prepare_srm_header(pbap_client);
                 goep_client_header_add_name(pbap_client->goep_cid, pbap_client->phonebook_path);
                 goep_client_header_add_type(pbap_client->goep_cid, pbap_vcard_listing_type);
@@ -725,6 +727,7 @@ static void pbap_handle_can_send_now(pbap_client_t *pbap_client) {
             // prepare request
             goep_client_request_create_get(pbap_client->goep_cid);
             if (pbap_client->request_number == 0){
+                obex_srm_client_init(&pbap_client->obex_srm);
                 pbap_client_prepare_srm_header(pbap_client);
                 goep_client_header_add_name(pbap_client->goep_cid, pbap_client->vcard_name);
                 goep_client_header_add_type(pbap_client->goep_cid, pbap_vcard_entry_type);
