@@ -431,6 +431,9 @@ static void pbap_server_operation_complete(pbap_server_t * pbap_server){
     pbap_server->state = PBAP_SERVER_STATE_CONNECTED;
     pbap_server_default_headers(pbap_server);
     pbap_server_reset_response(pbap_server);
+
+    // reset SRM state upon operation complete
+    obex_srm_server_init(&pbap_server->obex_srm);
 }
 
 static void pbap_server_handle_can_send_now(pbap_server_t * pbap_server){
@@ -861,6 +864,8 @@ static void pbap_server_packet_handler_goep(pbap_server_t * pbap_server, uint8_t
             /* fall through */
 
         case PBAP_SERVER_STATE_W4_CONNECT_REQUEST:
+            // reset SRM state upon connected
+            obex_srm_server_init(&pbap_server->obex_srm);
             parser_state = obex_parser_process_data(&pbap_server->obex_parser, packet, size);
             if (parser_state == OBEX_PARSER_OBJECT_STATE_COMPLETE){
                 obex_parser_operation_info_t op_info;
