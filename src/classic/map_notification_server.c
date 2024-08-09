@@ -191,7 +191,7 @@ static void map_notification_server_handle_put_request (map_notification_server_
     obex_srm_server_handle_headers(&mns->obex_srm);
 
     if (opcode & OBEX_OPCODE_FINAL_BIT_MASK ||
-        !obex_srm_server_is_enabled(&mns->obex_srm)) {
+        !obex_srm_server_is_srm_active(&mns->obex_srm)) {
         ENTER_STATE (mns, MAP_SEND_REQUEST_RESPONSE);
     } else {
         ENTER_STATE (mns, MAP_W4_REQUEST);
@@ -364,7 +364,7 @@ static void map_notification_server_packet_handler_goep(map_notification_server_
             /* fall through */
 
         case MAP_W4_REQUEST:
-            obex_srm_server_init(&mns->obex_srm);
+            obex_srm_server_reset_fields(&mns->obex_srm);
             parser_state = obex_parser_process_data(&mns->obex_parser, packet, size);
             if (parser_state == OBEX_PARSER_OBJECT_STATE_COMPLETE){
                 obex_parser_operation_info_t op_info;
