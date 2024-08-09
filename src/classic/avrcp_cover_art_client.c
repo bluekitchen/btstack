@@ -197,7 +197,7 @@ static void avrcp_cover_art_client_parser_callback_get_operation(void * user_dat
 
 static void avrcp_cover_art_client_prepare_get_operation(avrcp_cover_art_client_t * cover_art_client){
     obex_parser_init_for_response(&cover_art_client->obex_parser, OBEX_OPCODE_GET, avrcp_cover_art_client_parser_callback_get_operation, cover_art_client);
-    obex_srm_client_init(&cover_art_client->obex_srm);
+    obex_srm_client_reset_fields(&cover_art_client->obex_srm);
     cover_art_client->obex_parser_waiting_for_response = true;
 }
 
@@ -221,6 +221,7 @@ static void avrcp_cover_art_client_handle_can_send_now(avrcp_cover_art_client_t 
             goep_client_request_create_get(cover_art_client->goep_cid);
             if (cover_art_client->first_request){
                 cover_art_client->first_request = false;
+                obex_srm_client_init(&cover_art_client->obex_srm);
                 avrcp_cover_art_client_prepare_srm_header(cover_art_client);
                 goep_client_header_add_type(cover_art_client->goep_cid, cover_art_client->object_type);
                 if (cover_art_client->image_descriptor != NULL){
@@ -341,7 +342,7 @@ static void avrcp_cover_art_client_goep_data_handler(avrcp_cover_art_client_t * 
                 switch (op_info.response_code) {
                     case OBEX_RESP_CONTINUE:
                         obex_srm_client_handle_headers(&cover_art_client->obex_srm);
-                        if (cover_art_client->obex_srm.srm_state == OBEX_SRM_CLIENT_STATE_ENABLED) {
+                        if (obex_srm_client_is_srm_active(&cover_art_client->obex_srm)) {
                             // prepare response
                             avrcp_cover_art_client_prepare_get_operation(cover_art_client);
                             break;
