@@ -562,7 +562,7 @@ static void pbap_client_prepare_srm_header(pbap_client_t * client){
 
 static void pbap_client_prepare_get_operation(pbap_client_t * client){
     obex_parser_init_for_response(&client->obex_parser, OBEX_OPCODE_GET, pbap_client_parser_callback_get_operation, client);
-    obex_srm_client_init(&client->obex_srm);
+    obex_srm_client_reset_fields(&client->obex_srm);
     client->obex_parser_waiting_for_response = true;
 }
 
@@ -895,7 +895,7 @@ static void pbap_packet_handler_goep(pbap_client_t *client, uint8_t *packet, uin
                 switch (op_info.response_code) {
                     case OBEX_RESP_CONTINUE:
                         obex_srm_client_handle_headers(&client->obex_srm);
-                        if (client->obex_srm.srm_state == OBEX_SRM_CLIENT_STATE_ENABLED) {
+                        if (obex_srm_client_is_srm_active(&client->obex_srm)) {
                             // prepare response
                             pbap_client_prepare_get_operation(client);
                             break;
@@ -938,7 +938,7 @@ static void pbap_packet_handler_goep(pbap_client_t *client, uint8_t *packet, uin
                     case OBEX_RESP_CONTINUE:
                         // handle continue
                         obex_srm_client_handle_headers(&client->obex_srm);
-                        if (client->obex_srm.srm_state == OBEX_SRM_CLIENT_STATE_ENABLED) {
+                        if (obex_srm_client_is_srm_active(&client->obex_srm)) {
                             // prepare response
                             pbap_client_prepare_get_operation(client);
                             break;
@@ -966,7 +966,7 @@ static void pbap_packet_handler_goep(pbap_client_t *client, uint8_t *packet, uin
                 switch (op_info.response_code) {
                     case OBEX_RESP_CONTINUE:
                         obex_srm_client_handle_headers(&client->obex_srm);
-                        if (client->obex_srm.srm_state == OBEX_SRM_CLIENT_STATE_ENABLED) {
+                        if (obex_srm_client_is_srm_active(&client->obex_srm)) {
                             // prepare response
                             pbap_client_prepare_get_operation(client);
                             break;
