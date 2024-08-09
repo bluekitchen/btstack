@@ -59,17 +59,54 @@ typedef struct {
     uint8_t srmp_value;
 } obex_srm_server_t;
 
-void obex_srm_server_init           (obex_srm_server_t    *obex_srm);
-void obex_srm_server_header_store   (obex_srm_server_t    *obex_srm,
+/**
+ * Init SRM to disabled state
+ * SRM needs to be disabled for each new GET/PUT operation
+ * @param obex_srm
+ */
+void obex_srm_server_init (obex_srm_server_t    *obex_srm);
+
+/**
+ * Reset SRM/SRMP fields
+ * Needs to be called before parsing request
+ * @param obex_srm
+ */
+void obex_srm_server_reset_fields (obex_srm_server_t *obex_srm);
+
+/**
+ * Store SRM or SRMP header field
+ * @param obex_srm
+ * @param header_id
+ * @param total_len
+ * @param data_offset
+ * @param data_buffer
+ * @param data_len
+ */
+void obex_srm_server_header_store (obex_srm_server_t    *obex_srm,
                                      uint8_t        header_id,
                                      uint16_t       total_len,
                                      uint16_t       data_offset,
                                      const uint8_t *data_buffer,
                                      uint16_t       data_len);
-void obex_srm_server_handle_headers  (obex_srm_server_t *obex_srm);
+
+/**
+ * Update SRM state based on SRM headers
+ * @param obex_srm
+ */
+void obex_srm_server_handle_headers (obex_srm_server_t *obex_srm);
+
+/**
+ * Add SRM headers to current response
+ * @param obex_srm
+ * @param goep_cid
+ */
 void obex_srm_server_add_srm_headers (obex_srm_server_t   *obex_srm,
-                                      uint16_t      goep_cid);
-bool obex_srm_server_is_enabled      (obex_srm_server_t   *obex_srm);
+                                      uint16_t             goep_cid);
+/**
+ * Check if SRM is active
+ * @param obex_srm
+ */
+bool obex_srm_server_is_srm_active (obex_srm_server_t   *obex_srm);
 
 #if defined __cplusplus
 }

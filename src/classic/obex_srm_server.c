@@ -51,6 +51,10 @@
 
 void obex_srm_server_init (obex_srm_server_t *obex_srm){
     obex_srm->srm_state = OBEX_SRM_STATE_DISABLED;
+    obex_srm_server_reset_fields(obex_srm);
+}
+
+void obex_srm_server_reset_fields (obex_srm_server_t *obex_srm){
     obex_srm->srm_value = OBEX_SRM_DISABLE;
     obex_srm->srmp_value = OBEX_SRMP_NEXT;
 }
@@ -110,7 +114,7 @@ void obex_srm_server_add_srm_headers (obex_srm_server_t *obex_srm,
     }
 }
 
-bool obex_srm_server_is_enabled (obex_srm_server_t *obex_srm){
+bool obex_srm_server_is_srm_active (obex_srm_server_t *obex_srm){
     return obex_srm->srm_state == OBEX_SRM_STATE_ENABLED;
 }
 
