@@ -674,6 +674,11 @@ static void hid_host_handle_sdp_client_query_result(uint8_t packet_type, uint16_
                     // report mode possible
                     break;
 
+                // SDP query incomplete (e.g. disconnect)
+                case SDP_QUERY_INCOMPLETE:
+                    finalize_connection = true;
+                    break;
+
                 // SDP connection failed or remote does not have SDP server
                 default:
                     if (connection->requested_protocol_mode == HID_PROTOCOL_MODE_REPORT_WITH_FALLBACK_TO_BOOT){
