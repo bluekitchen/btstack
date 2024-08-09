@@ -45,6 +45,10 @@
 
 void obex_srm_client_init(obex_srm_client_t * obex_srm){
     obex_srm->srm_state = OBEX_SRM_CLIENT_STATE_DISABLED;
+    obex_srm_client_reset_fields(obex_srm);
+}
+
+void obex_srm_client_reset_fields(obex_srm_client_t * obex_srm){
     obex_srm->srm_value = OBEX_SRM_DISABLE;
     obex_srm->srmp_value = OBEX_SRMP_NEXT;
 }
@@ -90,4 +94,8 @@ void obex_srm_client_prepare_header(obex_srm_client_t *obex_srm, uint16_t goep_c
         goep_client_header_add_srm_enable(goep_cid);
         obex_srm->srm_state = OBEX_SRM_CLIENT_STATE_W4_CONFIRM;
     }
+}
+
+bool obex_srm_client_is_srm_active(obex_srm_client_t *obex_srm){
+    return obex_srm->srm_state == OBEX_SRM_CLIENT_STATE_ENABLED;
 }

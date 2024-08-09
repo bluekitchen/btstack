@@ -39,6 +39,7 @@
 #define OBEX_SRM_CLIENT_H
 
 #include <stdint.h>
+#include "btstack_bool.h"
 
 #if defined __cplusplus
 extern "C" {
@@ -59,16 +60,30 @@ typedef struct {
 } obex_srm_client_t;
 
 /**
- * Init SRM state
+ * Init SRM to disabled state
+ * SRM needs to be disabled for each new GET/PUT operation
  * @param obex_srm
  */
 void obex_srm_client_init(obex_srm_client_t * obex_srm);
+
+/**
+ * Reset SRM/SRMP fields
+ * Needs to be called before parsing response
+ * @param obex_srm
+ */
+void obex_srm_client_reset_fields(obex_srm_client_t * obex_srm);
 
 /**
  * Update SRM state based on SRM headers
  * @param obex_srm
  */
 void obex_srm_client_handle_headers(obex_srm_client_t *obex_srm);
+
+/**
+ * Check if SRM is active
+ * @param obex_srm
+ */
+bool obex_srm_client_is_srm_active(obex_srm_client_t *obex_srm);
 
 /**
  * Add SRM headers if
