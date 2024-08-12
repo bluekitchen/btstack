@@ -155,7 +155,7 @@ static void lls_client_emit_read_event(lls_client_connection_t * connection, uin
     uint16_t characteristic_uuid16 = gatt_service_client_characteristic_index2uuid16(&lls_client, index);
     switch (characteristic_uuid16){
         case ORG_BLUETOOTH_CHARACTERISTIC_ALERT_LEVEL:
-            lls_client_emit_uint8(connection->basic_connection.cid, connection->basic_connection.event_callback, GATTSERVICE_SUBEVENT_LLS_CLIENT_ALERT_LEVEL, data, data_size);
+            lls_client_emit_uint8(connection->basic_connection.cid, connection->basic_connection.event_callback, GATTSERVICE_SUBEVENT_LLS_CLIENT_ALERT_LEVEL, data, (uint8_t)data_size);
             break;
         default:
             btstack_assert(false);

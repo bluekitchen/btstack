@@ -133,7 +133,7 @@ static void txps_client_emit_read_event(txps_client_connection_t * connection, u
     uint16_t characteristic_uuid16 = gatt_service_client_characteristic_index2uuid16(&txps_client, index);
     switch (characteristic_uuid16){
         case ORG_BLUETOOTH_CHARACTERISTIC_TX_POWER_LEVEL:
-           txps_client_emit_uint8(connection->basic_connection.cid,  connection->basic_connection.event_callback, GATTSERVICE_SUBEVENT_TXPS_CLIENT_TX_POWER_LEVEL, data, data_size);
+           txps_client_emit_uint8(connection->basic_connection.cid,  connection->basic_connection.event_callback, GATTSERVICE_SUBEVENT_TXPS_CLIENT_TX_POWER_LEVEL, data, (uint8_t)data_size);
            break;
         default:
             btstack_assert(false);
