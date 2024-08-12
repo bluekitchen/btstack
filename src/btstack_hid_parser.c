@@ -330,26 +330,28 @@ static void hid_process_item(btstack_hid_parser_t * parser, hid_descriptor_item_
 }
 
 static void btstack_hid_parser_find_next_usage(btstack_hid_parser_t * parser){
-    while (parser->state == BTSTACK_HID_PARSER_SCAN_FOR_REPORT_ITEM){
+    while (true){
         if (parser->descriptor_pos >= parser->descriptor_len){
             // end of descriptor
             parser->state = BTSTACK_HID_PARSER_COMPLETE;
-            break;
+            return;
         }
         bool ok = btstack_hid_parse_descriptor_item(&parser->descriptor_item, &parser->descriptor[parser->descriptor_pos], parser->descriptor_len - parser->descriptor_pos);
         if (ok == false){
             // abort parsing
             parser->state = BTSTACK_HID_PARSER_COMPLETE;
-            break;
+            return;
         }
         hid_process_item(parser, &parser->descriptor_item);
         if (parser->required_usages){
             hid_find_next_usage(parser);
             if (parser->available_usages) {
                 parser->state = BTSTACK_HID_PARSER_USAGES_AVAILABLE;
+                return;
             } else {
                 log_debug("no usages found");
                 parser->state = BTSTACK_HID_PARSER_COMPLETE;
+                return;
             }
         } else {
             if ((TagType) (&parser->descriptor_item)->item_type == Main) {
