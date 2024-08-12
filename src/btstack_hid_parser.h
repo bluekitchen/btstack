@@ -126,6 +126,7 @@ typedef struct {
     // Descriptor
     const uint8_t * descriptor;
     uint16_t        descriptor_len;
+    btstack_hid_descriptor_iterator_t descriptor_iterator;
 
     // Report
     hid_report_type_t report_type;
@@ -137,7 +138,6 @@ typedef struct {
 
     hid_descriptor_item_t descriptor_item;
 
-    uint16_t        descriptor_pos;
     uint16_t        report_pos_in_bit;
 
     // usage pos and usage_page after last main item, used to find next usage
