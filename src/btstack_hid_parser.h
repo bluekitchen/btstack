@@ -110,6 +110,16 @@ typedef enum {
     BTSTACK_HID_PARSER_COMPLETE,
 } btstack_hid_parser_state_t;
 
+typedef struct {
+    // Descriptor
+    const uint8_t * descriptor;
+    uint16_t        descriptor_pos;
+    uint16_t        descriptor_len;
+    // parsed item
+    bool            item_ready;
+    bool            valid;
+    hid_descriptor_item_t descriptor_item;
+} btstack_hid_descriptor_iterator_t;
 
 typedef struct {
 
@@ -151,7 +161,37 @@ typedef struct {
     uint8_t         global_report_id;
 } btstack_hid_parser_t;
 
+
 /* API_START */
+
+/**
+ * @brief Init HID Descriptor iterator
+ * @param iterator
+ * @param hid_descriptor
+ * @param hid_descriptor_len
+ */
+void btstack_hid_descriptor_iterator_init(btstack_hid_descriptor_iterator_t * iterator, const uint8_t * hid_descriptor, uint16_t hid_descriptor_len);
+
+/**
+ * @brief Check if HID Descriptor Items are available
+ * @param iterator
+ * @return
+ */
+bool btstack_hid_descriptor_iterator_has_more(btstack_hid_descriptor_iterator_t * iterator);
+
+/**
+ * @brief Get next HID Descriptor Item
+ * @param iterator
+ * @return
+ */
+const hid_descriptor_item_t * const btstack_hid_descriptor_iterator_get_item(btstack_hid_descriptor_iterator_t * iterator);
+
+/**
+ * @brief Returns if HID Descriptor was well formed
+ * @param iterator
+ * @return
+ */
+bool btstack_hid_descriptor_iterator_valid(btstack_hid_descriptor_iterator_t * iterator);
 
 /**
  * @brief Initialize HID Parser.
@@ -178,6 +218,7 @@ bool btstack_hid_parser_has_more(btstack_hid_parser_t * parser);
  * @param value provided in HID report
  */
 void btstack_hid_parser_get_field(btstack_hid_parser_t * parser, uint16_t * usage_page, uint16_t * usage, int32_t * value);
+
 
 /**
  * @brief Parses descriptor item
@@ -214,6 +255,7 @@ hid_report_id_status_t btstack_hid_id_valid(int report_id, uint16_t hid_descript
  * @return true if report ID declared in descriptor
  */
 bool btstack_hid_report_id_declared(uint16_t hid_descriptor_len, const uint8_t * hid_descriptor);
+
 /* API_END */
 
 #if defined __cplusplus

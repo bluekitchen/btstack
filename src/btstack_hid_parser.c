@@ -448,6 +448,42 @@ void btstack_hid_parser_get_field(btstack_hid_parser_t * parser, uint16_t * usag
     }
 }
 
+void btstack_hid_descriptor_iterator_init(btstack_hid_descriptor_iterator_t * iterator, const uint8_t * hid_descriptor, uint16_t hid_descriptor_len){
+    iterator->descriptor = hid_descriptor;
+    iterator->descriptor_pos = 0;
+    iterator->descriptor_len = hid_descriptor_len;
+    iterator->item_ready = false;
+    iterator->valid = true;
+}
+
+bool btstack_hid_descriptor_iterator_has_more(btstack_hid_descriptor_iterator_t * iterator){
+    if ((iterator->item_ready == false) && (iterator->descriptor_len > 0)){
+        uint16_t  item_len = iterator->descriptor_len - iterator->descriptor_pos;
+        const uint8_t *item_data = &iterator->descriptor[iterator->descriptor_pos];
+        bool ok = btstack_hid_parse_descriptor_item(&iterator->descriptor_item, item_data, item_len);
+        if (ok){
+            iterator->item_ready = true;
+        } else {
+            iterator->valid = false;
+        }
+    }
+    return iterator->item_ready;
+}
+
+const hid_descriptor_item_t * const btstack_hid_descriptor_iterator_get_item(btstack_hid_descriptor_iterator_t * iterator){
+
+    btstack_assert(iterator->descriptor_len >= iterator->descriptor_item.item_size);
+
+    iterator->descriptor_len -= iterator->descriptor_item.item_size;
+    iterator->descriptor     += iterator->descriptor_item.item_size;
+    iterator->item_ready = false;
+    return &iterator->descriptor_item;
+}
+
+bool btstack_hid_descriptor_iterator_valid(btstack_hid_descriptor_iterator_t * iterator){
+    return iterator->valid;
+}
+
 int btstack_hid_get_report_size_for_id(int report_id, hid_report_type_t report_type, uint16_t hid_descriptor_len, const uint8_t * hid_descriptor){
     int total_report_size = 0;
     int report_size = 0;
