@@ -48,6 +48,12 @@ extern "C" {
 #include "classic/map.h"
 #include "yxml.h"
 
+#ifdef ENABLE_PRINTF_TO_PKTLOG
+#define MAP_PRINTF(format, ...)  printf(format, __VA_ARGS__); HCI_DUMP_LOG("PRT", HCI_DUMP_LOG_LEVEL_INFO,  format, ## __VA_ARGS__);
+#else
+#define MAP_PRINTF printf
+#endif
+
 /* API_START */
 
 

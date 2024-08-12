@@ -71,13 +71,6 @@
 #include "classic/goep_client.h"
 #include "map_notification_client.h"
 
-#define PRINTF_TO_PKTLOG
-#ifdef PRINTF_TO_PKTLOG
-#define MAP_PRINTF(format, ...)  printf(format,  ## __VA_ARGS__); HCI_DUMP_LOG("PRINTF", HCI_DUMP_LOG_LEVEL_INFO, format,  ## __VA_ARGS__)
-#else
-#define MAP_PRINTF MAP_PRINTF
-#endif
-
 // MAP 1.4.2, 6.3 - OBEX Header: map notification service bb582b41-420c-11db-b0de-0800200c9a66
 static const uint8_t map_notification_client_service_uuid[] = { 0xbb, 0x58, 0x2b, 0x41, 0x42, 0xc, 0x11, 0xdb, 0xb0, 0xde, 0x8, 0x0, 0x20, 0xc, 0x9a, 0x66 };
 
