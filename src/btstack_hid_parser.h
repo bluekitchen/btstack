@@ -166,7 +166,7 @@ typedef struct {
     uint16_t        global_usage_page; 
     uint8_t         global_report_size;
     uint8_t         global_report_count;
-    uint8_t         global_report_id;
+    uint16_t        global_report_id;
 } btstack_hid_parser_t;
 
 
