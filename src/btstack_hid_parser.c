@@ -241,13 +241,10 @@ static void hid_find_next_usage(btstack_hid_parser_t * parser){
     bool have_usage_min = false;
     bool have_usage_max = false;
     parser->usage_range = false;
-    while ((parser->available_usages == 0u) && (parser->usage_pos < parser->descriptor_pos)){
-        hid_descriptor_item_t usage_item;
-        // parser->usage_pos < parser->descriptor_pos < parser->descriptor_len
-        bool ok = btstack_hid_parse_descriptor_item(&usage_item, &parser->descriptor[parser->usage_pos], parser->descriptor_len - parser->usage_pos);
-        if (ok == false){
-            break;
-        }
+    btstack_hid_descriptor_iterator_t iterator;
+    btstack_hid_descriptor_iterator_init(&iterator, &parser->descriptor[parser->usage_pos], parser->descriptor_len - parser->usage_pos);
+    while ((parser->available_usages == 0u) && btstack_hid_descriptor_iterator_has_more(&iterator) ){
+        hid_descriptor_item_t usage_item = *btstack_hid_descriptor_iterator_get_item(&iterator);
         if ((usage_item.item_type == Global) && (usage_item.item_tag == UsagePage)){
             parser->usage_page = usage_item.item_value;
         }
@@ -277,8 +274,8 @@ static void hid_find_next_usage(btstack_hid_parser_t * parser){
                 }
             }
         }
-        parser->usage_pos += usage_item.item_size;
     }
+    parser->usage_pos += iterator.descriptor_pos;
 }
 
 static void hid_process_item(btstack_hid_parser_t * parser, hid_descriptor_item_t * item){
