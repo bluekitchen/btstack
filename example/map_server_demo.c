@@ -68,13 +68,6 @@
 #include "btstack_stdin.h"
 #endif
 
-#define PRINTF_TO_PKTLOG
-#ifdef PRINTF_TO_PKTLOG
-#define MAP_PRINTF(...)  printf( __VA_ARGS__); HCI_DUMP_LOG("PRINTF", HCI_DUMP_LOG_LEVEL_INFO, ## __VA_ARGS__)
-#else
-#define MAP_PRINTF MAP_PRINTF
-#endif
-
 #define MAS_SERVER_RFCOMM_CHANNEL_NR 1
 #define MAS_SERVER_GOEP_PSM 0x1001
 
