@@ -188,6 +188,19 @@ bool btstack_hid_parse_descriptor_item(hid_descriptor_item_t * item, const uint8
     return true;
 }
 
+static bool btstack_hid_main_item_tag_matches_report_type(MainItemTag tag, hid_report_type_t report_type){
+    switch (tag){
+        case Input:
+            return report_type == HID_REPORT_TYPE_INPUT;
+        case Output:
+            return report_type == HID_REPORT_TYPE_OUTPUT;
+        case Feature:
+            return report_type == HID_REPORT_TYPE_FEATURE;
+        default:
+            return false;
+    }
+}
+
 static void btstack_hid_handle_global_item(btstack_hid_parser_t * parser, hid_descriptor_item_t * item){
     switch((GlobalItemTag)item->item_tag){
         case UsagePage:
@@ -274,19 +287,8 @@ static void hid_process_item(btstack_hid_parser_t * parser, hid_descriptor_item_
     uint16_t report_id_before;
     switch ((TagType)item->item_type){
         case Main:
-            switch ((MainItemTag)item->item_tag){
-                case Input:
-                    valid_field = parser->report_type == HID_REPORT_TYPE_INPUT;
-                    break;
-                case Output:
-                    valid_field = parser->report_type == HID_REPORT_TYPE_OUTPUT;
-                    break;
-                case Feature:
-                    valid_field = parser->report_type == HID_REPORT_TYPE_FEATURE;
-                    break;
-                default:
-                    break;
-            }
+            valid_field = btstack_hid_main_item_tag_matches_report_type((MainItemTag) item->item_tag,
+                                                                        parser->report_type);
             break;
         case Global:
             report_id_before = parser->global_report_id;
