@@ -484,38 +484,36 @@ bool btstack_hid_descriptor_iterator_valid(btstack_hid_descriptor_iterator_t * i
     return iterator->valid;
 }
 
-int btstack_hid_get_report_size_for_id(int report_id, hid_report_type_t report_type, uint16_t hid_descriptor_len, const uint8_t * hid_descriptor){
+int btstack_hid_get_report_size_for_id(int report_id, hid_report_type_t report_type, uint16_t hid_descriptor_len, const uint8_t * hid_descriptor) {
     int total_report_size = 0;
     int report_size = 0;
     int report_count = 0;
     int current_report_id = 0;
-    
-    while (hid_descriptor_len){
+
+    btstack_hid_descriptor_iterator_t iterator;
+    btstack_hid_descriptor_iterator_init(&iterator, hid_descriptor, hid_descriptor_len);
+    while (btstack_hid_descriptor_iterator_has_more(&iterator)) {
+        const hid_descriptor_item_t *const item = btstack_hid_descriptor_iterator_get_item(&iterator);
         int valid_report_type = 0;
-        hid_descriptor_item_t item;
-        bool ok = btstack_hid_parse_descriptor_item(&item, hid_descriptor, hid_descriptor_len);
-        if (ok == false) {
-            return 0;
-        }
-        switch (item.item_type){
+        switch (item->item_type) {
             case Global:
-                switch ((GlobalItemTag)item.item_tag){
+                switch ((GlobalItemTag) item->item_tag) {
                     case ReportID:
-                        current_report_id = item.item_value;
+                        current_report_id = item->item_value;
                         break;
                     case ReportCount:
-                        report_count = item.item_value;
+                        report_count = item->item_value;
                         break;
                     case ReportSize:
-                        report_size = item.item_value;
+                        report_size = item->item_value;
                         break;
                     default:
                         break;
                 }
                 break;
-            case Main:  
+            case Main:
                 if (current_report_id != report_id) break;
-                switch ((MainItemTag)item.item_tag){
+                switch ((MainItemTag) item->item_tag) {
                     case Input:
                         if (report_type != HID_REPORT_TYPE_INPUT) break;
                         valid_report_type = 1;
@@ -537,26 +535,27 @@ int btstack_hid_get_report_size_for_id(int report_id, hid_report_type_t report_t
             default:
                 break;
         }
-		if (total_report_size > 0 && current_report_id != report_id) break;
-        hid_descriptor_len -= item.item_size;
-        hid_descriptor += item.item_size;
+        if (total_report_size > 0 && current_report_id != report_id) break;
     }
-    return (total_report_size + 7)/8;
+
+    if (btstack_hid_descriptor_iterator_valid(&iterator)){
+        return (total_report_size + 7) / 8;
+    } else {
+        return 0;
+    }
 }
 
 hid_report_id_status_t btstack_hid_id_valid(int report_id, uint16_t hid_descriptor_len, const uint8_t * hid_descriptor){
-    int current_report_id = 0;
-    while (hid_descriptor_len){
-        hid_descriptor_item_t item;
-        bool ok = btstack_hid_parse_descriptor_item(&item, hid_descriptor, hid_descriptor_len);
-        if (ok == false){
-            return HID_REPORT_ID_INVALID;
-        }
-        switch (item.item_type){
+    int current_report_id = -1;
+    btstack_hid_descriptor_iterator_t iterator;
+    btstack_hid_descriptor_iterator_init(&iterator, hid_descriptor, hid_descriptor_len);
+    while (btstack_hid_descriptor_iterator_has_more(&iterator)) {
+        const hid_descriptor_item_t *const item = btstack_hid_descriptor_iterator_get_item(&iterator);
+        switch (item->item_type){
             case Global:
-                switch ((GlobalItemTag)item.item_tag){
+                switch ((GlobalItemTag)item->item_tag){
                     case ReportID:
-                        current_report_id = item.item_value;
+                        current_report_id = item->item_value;
                         if (current_report_id != report_id) break;
                         return HID_REPORT_ID_VALID;
                     default:
@@ -566,23 +565,27 @@ hid_report_id_status_t btstack_hid_id_valid(int report_id, uint16_t hid_descript
             default:
                 break;
         }
-        hid_descriptor_len -= item.item_size;
-        hid_descriptor += item.item_size;
     }
-    if (current_report_id != 0) return HID_REPORT_ID_INVALID;
-    return HID_REPORT_ID_UNDECLARED;
+
+    if (btstack_hid_descriptor_iterator_valid(&iterator)) {
+        if (current_report_id != -1) {
+            return HID_REPORT_ID_INVALID;
+        } else {
+            return HID_REPORT_ID_UNDECLARED;
+        }
+    } else {
+        return HID_REPORT_ID_INVALID;
+    }
 }
 
 bool btstack_hid_report_id_declared(uint16_t hid_descriptor_len, const uint8_t * hid_descriptor){
-    while (hid_descriptor_len){
-        hid_descriptor_item_t item;
-        bool ok = btstack_hid_parse_descriptor_item(&item, hid_descriptor, hid_descriptor_len);
-        if (ok == false){
-            break;
-        }
-        switch (item.item_type){
+    btstack_hid_descriptor_iterator_t iterator;
+    btstack_hid_descriptor_iterator_init(&iterator, hid_descriptor, hid_descriptor_len);
+    while (btstack_hid_descriptor_iterator_has_more(&iterator)) {
+        const hid_descriptor_item_t *const item = btstack_hid_descriptor_iterator_get_item(&iterator);
+        switch (item->item_type){
             case Global:
-                switch ((GlobalItemTag)item.item_tag){
+                switch ((GlobalItemTag)item->item_tag){
                     case ReportID:
                         return true;
                     default:
@@ -592,8 +595,6 @@ bool btstack_hid_report_id_declared(uint16_t hid_descriptor_len, const uint8_t *
             default:
                 break;
         }
-        hid_descriptor_len -= item.item_size;
-        hid_descriptor += item.item_size;
     }
     return false;
 }
