@@ -106,6 +106,26 @@ void btstack_assert_failed(const char * file, uint16_t line_nr);
 #endif
 #endif
 
+#ifdef ENABLE_HCI_LOG_TO_CONSOLE
+	#define HCI_CONSOLE_PRINTF dbg_printf
+#else
+	#define HCI_CONSOLE_PRINTF(...)
+#endif
+
+#ifdef ENABLE_DBG_PRINTF
+#define dbg_printf(format, ...)  printf("[DBG] %s.%u: " format, BTSTACK_FILE__, __LINE__, ## __VA_ARGS__)
+#else
+#define dbg_printf(...) (void)(0)
+#endif
+
+#ifdef ENABLE_HCI_LOG_FUNCTION_NAME
+#define ___FUNCTION___ __func__
+#define FUNC_FMT "[%s()]"
+#else
+#define ___FUNCTION___ ""
+#define FUNC_FMT "%s"
+#endif
+
 #ifdef __AVR__
 #define HCI_DUMP_LOG_PRINTF(log_level, format, ...) hci_dump_log_P(log_level, PSTR("%S.%u: " format), PSTR(BTSTACK_FILE__), __LINE__, ## __VA_ARGS__)
 #define HCI_DUMP_LOG_PUTS(log_level, format)        hci_dump_log_P(log_level, PSTR("%S.%u: " format), PSTR(BTSTACK_FILE__), __LINE__)
@@ -131,15 +151,16 @@ void btstack_assert_failed(const char * file, uint16_t line_nr);
 #endif
 
 #ifdef ENABLE_LOG_ERROR
-#define log_error(...)  HCI_DUMP_LOG(HCI_DUMP_LOG_LEVEL_ERROR, ## __VA_ARGS__)
+#define log_error(...)  HCI_DUMP_LOG("ERR", HCI_DUMP_LOG_LEVEL_ERROR, ## __VA_ARGS__)
 #else
 #define log_error(...) (void)(0)
 #endif
 
-#ifdef ENABLE_DBG_PRINTF
-#define dbg_printf(format, ...)  printf("[DBG] %s.%u: " format, BTSTACK_FILE__, __LINE__, ## __VA_ARGS__)
+#ifdef ENABLE_LOG_ACTIONS
+#define RUN_AND_LOG_ACTION(...) { log_debug("RUN_AND_LOG_ACTION <%s>", #  __VA_ARGS__);  __VA_ARGS__ } 
 #else
-#define dbg_printf(...) (void)(0)
+#define log_app_messaging(...)
+#define RUN_AND_LOG_ACTION(...) __VA_ARGS__
 #endif
 
 /* API_START */
