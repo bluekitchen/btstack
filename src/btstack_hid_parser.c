@@ -203,9 +203,6 @@ static void btstack_hid_handle_global_item(btstack_hid_parser_t * parser, hid_de
             parser->global_report_size = item->item_value;
             break;
         case ReportID:
-            if (parser->active_record && (parser->global_report_id != item->item_value)){
-                parser->active_record = 0;
-            }
             parser->global_report_id = item->item_value;
             break;
         case ReportCount:
@@ -274,6 +271,7 @@ static void hid_find_next_usage(btstack_hid_parser_t * parser){
 static void hid_process_item(btstack_hid_parser_t * parser, hid_descriptor_item_t * item){
     hid_pretty_print_item(parser, item);
     int valid_field = 0;
+    uint16_t report_id_before;
     switch ((TagType)item->item_type){
         case Main:
             switch ((MainItemTag)item->item_tag){
@@ -291,7 +289,14 @@ static void hid_process_item(btstack_hid_parser_t * parser, hid_descriptor_item_
             }
             break;
         case Global:
+            report_id_before = parser->global_report_id;
             btstack_hid_handle_global_item(parser, item);
+            // track record id for report handling
+            if ((GlobalItemTag)item->item_tag == ReportID){
+                if (parser->active_record && (report_id_before != item->item_value)){
+                    parser->active_record = 0;
+                }
+            }
             break;
         case Local:
         case Reserved:
