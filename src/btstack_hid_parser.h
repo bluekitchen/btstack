@@ -122,6 +122,14 @@ typedef struct {
 } btstack_hid_descriptor_iterator_t;
 
 typedef struct {
+    uint16_t report_id; // 8-bit report ID or 0xffff if not set
+    uint16_t bit_pos;   // position in bit
+    uint16_t usage_page;
+    uint16_t usage;
+    uint8_t  size;      // in bit
+} btstack_hid_usage_item_t;
+
+typedef struct {
 
     // Descriptor
     const uint8_t * descriptor;
@@ -192,6 +200,30 @@ const hid_descriptor_item_t * const btstack_hid_descriptor_iterator_get_item(bts
  * @return
  */
 bool btstack_hid_descriptor_iterator_valid(btstack_hid_descriptor_iterator_t * iterator);
+
+
+/**
+ * @brief Initialize usages iterator for HID Descriptor and report type
+ * @param parser
+ * @param hid_descriptor
+ * @param hid_descriptor_len
+ * @param hid_report_type
+ */
+void btstack_hid_usage_iterator_init(btstack_hid_parser_t * parser, const uint8_t * hid_descriptor, uint16_t hid_descriptor_len, hid_report_type_t hid_report_type);
+
+/**
+ * @brief Checks if more usages are available
+ * @param parser
+ */
+bool btstack_hid_usage_iterator_has_more(btstack_hid_parser_t * parser);
+
+/**
+ * @brief Get current usage item
+ * @param parser
+ * @param item
+ */
+void btstack_hid_usage_iterator_get_item(btstack_hid_parser_t * parser, btstack_hid_usage_item_t * item);
+
 
 /**
  * @brief Initialize HID Parser.

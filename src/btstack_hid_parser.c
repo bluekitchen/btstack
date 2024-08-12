@@ -583,3 +583,134 @@ bool btstack_hid_report_id_declared(uint16_t hid_descriptor_len, const uint8_t *
     }
     return false;
 }
+
+static void btstack_parser_usage_iterator_process_item2(btstack_hid_parser_t * parser, hid_descriptor_item_t * item){
+    hid_pretty_print_item(parser, item);
+    int valid_field = 0;
+    uint16_t report_id_before;
+    switch ((TagType)item->item_type){
+        case Main:
+            valid_field = btstack_hid_main_item_tag_matches_report_type((MainItemTag) item->item_tag,
+                                                                        parser->report_type);
+            break;
+        case Global:
+            report_id_before = parser->global_report_id;
+            btstack_hid_handle_global_item(parser, item);
+            // track record id for report handling, reset report position
+            if (report_id_before != parser->global_report_id){
+                parser->report_pos_in_bit = 8u;
+            }
+            break;
+        case Local:
+        case Reserved:
+            break;
+        default:
+            btstack_assert(false);
+            break;
+    }
+    if (!valid_field) return;
+
+    // handle constant fields used for padding
+    if (item->item_value & 1){
+        int item_bits = parser->global_report_size * parser->global_report_count;
+#ifdef HID_PARSER_PRETTY_PRINT
+        log_info("- Skip %u constant bits", item_bits);
+#endif
+        parser->report_pos_in_bit += item_bits;
+        return;
+    }
+    // Empty Item
+    if (parser->global_report_count == 0u) return;
+    // let's start
+    parser->required_usages = parser->global_report_count;
+}
+
+static void btstack_hid_usage_iterator_find_next_usage(btstack_hid_parser_t * parser) {
+    while (btstack_hid_descriptor_iterator_has_more(&parser->descriptor_iterator)){
+        parser->descriptor_item = * btstack_hid_descriptor_iterator_get_item(&parser->descriptor_iterator);
+
+        btstack_parser_usage_iterator_process_item2(parser, &parser->descriptor_item);
+
+        if (parser->required_usages){
+            hid_find_next_usage(parser);
+            if (parser->available_usages) {
+                parser->state = BTSTACK_HID_PARSER_USAGES_AVAILABLE;
+                return;
+            } else {
+                log_debug("no usages found");
+                parser->state = BTSTACK_HID_PARSER_COMPLETE;
+                return;
+            }
+        } else {
+            if ((TagType) (&parser->descriptor_item)->item_type == Main) {
+                // reset usage
+                parser->usage_pos = parser->descriptor_iterator.descriptor_pos;
+                parser->usage_page = parser->global_usage_page;
+            }
+        }
+    }
+    // end of descriptor
+    parser->state = BTSTACK_HID_PARSER_COMPLETE;
+}
+
+void btstack_hid_usage_iterator_init(btstack_hid_parser_t * parser, const uint8_t * hid_descriptor, uint16_t hid_descriptor_len, hid_report_type_t hid_report_type){
+    memset(parser, 0, sizeof(btstack_hid_parser_t));
+
+    parser->descriptor     = hid_descriptor;
+    parser->descriptor_len = hid_descriptor_len;
+    parser->report_type    = hid_report_type;
+    parser->state          = BTSTACK_HID_PARSER_SCAN_FOR_REPORT_ITEM;
+    btstack_hid_descriptor_iterator_init(&parser->descriptor_iterator, hid_descriptor, hid_descriptor_len);
+
+    btstack_hid_usage_iterator_find_next_usage(parser);
+}
+
+bool btstack_hid_usage_iterator_has_more(btstack_hid_parser_t * parser){
+    return parser->state == BTSTACK_HID_PARSER_USAGES_AVAILABLE;
+}
+
+void btstack_hid_usage_iterator_get_item(btstack_hid_parser_t * parser, btstack_hid_usage_item_t * item){
+    // cache current values
+    memset(item, 0, sizeof(btstack_hid_usage_item_t));
+    item->size = parser->global_report_size;
+    item->report_id = parser->global_report_id;
+    item->usage_page = parser->usage_minimum >> 16;
+    item->bit_pos = parser->report_pos_in_bit;
+
+    bool is_variable  = (parser->descriptor_item.item_value & 2) != 0;
+    if (is_variable){
+        item->usage = parser->usage_minimum & 0xffffu;
+    }
+    parser->required_usages--;
+    parser->report_pos_in_bit += parser->global_report_size;
+
+    // next usage
+    if (is_variable){
+        parser->usage_minimum++;
+        parser->available_usages--;
+        if (parser->usage_range && (parser->usage_minimum > parser->usage_maximum)){
+            // usage min - max range smaller than report count, ignore remaining bit in report
+            log_debug("Ignoring %u items without Usage", parser->required_usages);
+            parser->report_pos_in_bit += parser->global_report_size * parser->required_usages;
+            parser->required_usages = 0;
+        }
+    } else {
+        if (parser->required_usages == 0u){
+            parser->available_usages = 0;
+        }
+    }
+    if (parser->available_usages) {
+        return;
+    }
+    if (parser->required_usages == 0u){
+        parser->state = BTSTACK_HID_PARSER_SCAN_FOR_REPORT_ITEM;
+        btstack_hid_usage_iterator_find_next_usage(parser);
+    } else {
+        hid_find_next_usage(parser);
+        if (parser->available_usages == 0u) {
+            parser->state = BTSTACK_HID_PARSER_COMPLETE;
+        }
+    }
+}
+
+//
