@@ -584,7 +584,7 @@ bool btstack_hid_report_id_declared(uint16_t hid_descriptor_len, const uint8_t *
     return false;
 }
 
-static void btstack_parser_usage_iterator_process_item2(btstack_hid_parser_t * parser, hid_descriptor_item_t * item){
+static void btstack_parser_usage_iterator_process_item(btstack_hid_parser_t * parser, hid_descriptor_item_t * item){
     hid_pretty_print_item(parser, item);
     int valid_field = 0;
     uint16_t report_id_before;
@@ -629,7 +629,7 @@ static void btstack_hid_usage_iterator_find_next_usage(btstack_hid_parser_t * pa
     while (btstack_hid_descriptor_iterator_has_more(&parser->descriptor_iterator)){
         parser->descriptor_item = * btstack_hid_descriptor_iterator_get_item(&parser->descriptor_iterator);
 
-        btstack_parser_usage_iterator_process_item2(parser, &parser->descriptor_item);
+        btstack_parser_usage_iterator_process_item(parser, &parser->descriptor_item);
 
         if (parser->required_usages){
             hid_find_next_usage(parser);
@@ -660,6 +660,7 @@ void btstack_hid_usage_iterator_init(btstack_hid_parser_t * parser, const uint8_
     parser->descriptor_len = hid_descriptor_len;
     parser->report_type    = hid_report_type;
     parser->state          = BTSTACK_HID_PARSER_SCAN_FOR_REPORT_ITEM;
+    parser->global_report_id = 0xffff;
     btstack_hid_descriptor_iterator_init(&parser->descriptor_iterator, hid_descriptor, hid_descriptor_len);
 
     btstack_hid_usage_iterator_find_next_usage(parser);
