@@ -6752,23 +6752,24 @@ typedef uint8_t sm_key_t[16];
 #define MAP_SUBEVENT_FOLDER_LISTING_ITEM                                  0x04u
 
  /**
-  * @format 124122411JV
+  * @format 14222
   * @param subevent_code
-  * @param goep_cid
-  * @param continuation - value provided by caller of pbap_server_send_pull_response
-  * @param order
-  * @param max_list_count 0xffff for unlimited
-  * @param list_start_offset
-  * @param vcard_selector
-  * @param vcard_selector_operator
-  * @param search_property
-  * @param search_value_len
-  * @param search_value
- 
+  * @param continuation internal state set from app via map_access_server_send_get_put_response
+  * @param map_cid
+  * @param MaxListCount
+  * @param ListStartOffset
   */
-#define MAP_SUBEVENT_MESSAGE_LISTING_ITEM                                 0x05u
-// todo: quick fix to have a subevent for "x-bt/message"
-#define MAP_SUBEVENT_MESSAGE                                0x55u
+#define MAP_SUBEVENT_GET_MESSAGE_LISTING                                  0x05u
+
+  /**
+   * @format 14222
+   * @param subevent_code
+   * @param continuation internal state set from app via map_access_server_send_get_put_response
+   * @param map_cid
+   * @param MaxListCount
+   * @param ListStartOffset
+   */
+#define MAP_SUBEVENT_GET_CONVO_LISTING                                    0x06u
 
 /**
  * @format 12P
@@ -6776,14 +6777,14 @@ typedef uint8_t sm_key_t[16];
  * @param map_cid
  * @param id
  */
-#define MAP_SUBEVENT_CONVERSATION_LISTING_ITEM                            0x06u
+#define MAP_SUBEVENT_CONVERSATION_LISTING_ITEM                            0x07u
 
 /**
  * @format 12
  * @param subevent_code
  * @param map_cid
  */
-#define MAP_SUBEVENT_PARSING_DONE                                         0x07u
+#define MAP_SUBEVENT_PARSING_DONE                                         0x08u
 
 /**
  * @format 1214
@@ -6792,22 +6793,19 @@ typedef uint8_t sm_key_t[16];
  * @param mas_instance_id
  * @param length
  */
-#define MAP_SUBEVENT_NOTIFICATION_EVENT                                   0x08u
+#define MAP_SUBEVENT_NOTIFICATION_EVENT                                   0x09u
 
-/**
- * @format 1H1
- * @param subevent_code
- * @param con_handle
- * @param status
-*/
-#define GATTSERVICE_SUBEVENT_PACS_SERVER_CONNECTED                              0x74u
+// subevent for "x-bt/message"
 
-/**GATTSERVICE_SUBEVENT_VOCS_SERVER_AUDIO_OUTPUT_DESCRIPTION
- * @format 1H
- * @param subevent_code
- * @param con_handle
-*/
-#define GATTSERVICE_SUBEVENT_PACS_SERVER_DISCONNECTED                           0x75u0
+ /**
+  * @format 12D11
+  * @param subevent_code
+  * @param map_cid
+  * @param handle
+  * @param type map_message_type_t
+  * @param read map_message_status_t
+  */
+#define MAP_SUBEVENT_GET_MESSAGE                                           0x0Au
 
   /**
    * @format 12D11
@@ -6817,17 +6815,19 @@ typedef uint8_t sm_key_t[16];
    * @param type map_message_type_t
    * @param read map_message_status_t
    */
-#define MAP_SUBEVENT_PUT_MESSAGE_STATUS                                    0x0Au
+#define MAP_SUBEVENT_PUT_MESSAGE_STATUS                     0x0Bu               
 
-#define MAP_SUBEVENT_PUT_MESSAGE_UPDATE                                    0x0Bu
+#define MAP_SUBEVENT_PUT_MESSAGE_UPDATE                     0x0Cu
 
-#define MAP_SUBEVENT_PUT_NOTIFICATION_REGISTRATION                         0x0Du
+#define MAP_SUBEVENT_PUT_MESSAGE                            0x0Du          
 
-#define MAP_SUBEVENT_PUT_OWNER_STATUS                                      0x0Eu
+#define MAP_SUBEVENT_PUT_SET_NOTIFICATION_REGISTRATION      0x0Eu               
 
-#define MAP_SUBEVENT_PUT_MESSAGE                                           0x0Fu
+#define MAP_SUBEVENT_PUT_SET_NOTIFICATION_FILTER            0x0Fu
 
-#define MAP_SUBEVENT_GET_MAS_INSTANCE_INFORMATION                          0x10u
+#define MAP_SUBEVENT_PUT_OWNER_STATUS                       0x10u                 
+
+#define MAP_SUBEVENT_GET_MAS_INSTANCE_INFORMATION           0x11u               
 
 // MESH Meta Event Group
 

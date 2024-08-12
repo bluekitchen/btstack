@@ -70,7 +70,7 @@
 
 #define PRINTF_TO_PKTLOG
 #ifdef PRINTF_TO_PKTLOG
-#define MAP_PRINTF(format, ...)  printf(format,  ## __VA_ARGS__); HCI_DUMP_LOG("PRINTF", HCI_DUMP_LOG_LEVEL_INFO, format,  ## __VA_ARGS__)
+#define MAP_PRINTF(...)  printf( __VA_ARGS__); HCI_DUMP_LOG("PRINTF", HCI_DUMP_LOG_LEVEL_INFO, ## __VA_ARGS__)
 #else
 #define MAP_PRINTF MAP_PRINTF
 #endif
@@ -574,7 +574,7 @@ static void stdin_process(char c){
 
         case 'S': case 'C':
             // switch to Server test cases
-            MAP_PRINTF("\nSelected %s Test Set\n", c == 'S' ? "Server" : "Client")
+            MAP_PRINTF("\nSelected %s Test Set\n", c == 'S' ? "Server" : "Client");
             select_test_set(c);
             break;
 
