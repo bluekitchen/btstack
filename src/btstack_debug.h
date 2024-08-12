@@ -106,6 +106,13 @@ void btstack_assert_failed(const char * file, uint16_t line_nr);
 #endif
 #endif
 
+// Prefix log messages with [DBG/INF/ERR] - using Wireshark filter to show or hide log levels <!_ws.col.info matches "DBG">
+#ifdef ENABLE_LOG_PREFIXES
+#define LOG_PREFIX(prefix) "[" ## prefix ## "] "
+#else
+#define LOG_PREFIX(prefix) ""
+#endif
+
 #ifdef ENABLE_HCI_LOG_TO_CONSOLE
 	#define HCI_CONSOLE_PRINTF dbg_printf
 #else
@@ -127,31 +134,29 @@ void btstack_assert_failed(const char * file, uint16_t line_nr);
 #endif
 
 #ifdef __AVR__
+#define HCI_DUMP_LOG(prefix, log_level, format, ...) hci_dump_log_P(log_level, PSTR(LOG_PREFIX(prefix) "%S.%u" FUNC_FMT ": " format), PSTR(BTSTACK_FILE__), __LINE__, ___FUNCTION___, ## __VA_ARGS__)
 #define HCI_DUMP_LOG_PRINTF(log_level, format, ...) hci_dump_log_P(log_level, PSTR("%S.%u: " format), PSTR(BTSTACK_FILE__), __LINE__, ## __VA_ARGS__)
 #define HCI_DUMP_LOG_PUTS(log_level, format)        hci_dump_log_P(log_level, PSTR("%S.%u: " format), PSTR(BTSTACK_FILE__), __LINE__)
 #else
+#define HCI_DUMP_LOG(prefix, log_level, format, ...) hci_dump_log(log_level, LOG_PREFIX(prefix) "%s.%u" FUNC_FMT ": " format, BTSTACK_FILE__, __LINE__, ___FUNCTION___,## __VA_ARGS__); HCI_CONSOLE_PRINTF(LOG_PREFIX(prefix) "%s.%u: " format "\n", BTSTACK_FILE__, __LINE__, ## __VA_ARGS__)
 #define HCI_DUMP_LOG_PRINTF(log_level, format, ...) hci_dump_log(log_level, "%s.%u: " format, BTSTACK_FILE__, __LINE__, ## __VA_ARGS__)
 #define HCI_DUMP_LOG_PUTS(log_level, format)        hci_dump_log(log_level, "%s.%u: " format, BTSTACK_FILE__, __LINE__);
 #endif
 
-#define GET_LOGGER_TYPE_FOR_ARG_COUNT( _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, NAME, ... ) NAME
-
-#define HCI_DUMP_LOG( ... ) GET_LOGGER_TYPE_FOR_ARG_COUNT(__VA_ARGS__, HCI_DUMP_LOG_PRINTF, HCI_DUMP_LOG_PRINTF, HCI_DUMP_LOG_PRINTF, HCI_DUMP_LOG_PRINTF, HCI_DUMP_LOG_PRINTF, HCI_DUMP_LOG_PRINTF, HCI_DUMP_LOG_PRINTF, HCI_DUMP_LOG_PRINTF, HCI_DUMP_LOG_PRINTF, HCI_DUMP_LOG_PRINTF, HCI_DUMP_LOG_PUTS, UNUSED)( __VA_ARGS__ )
-
 #ifdef ENABLE_LOG_DEBUG
-#define log_debug(...)  HCI_DUMP_LOG(HCI_DUMP_LOG_LEVEL_DEBUG, ## __VA_ARGS__)
+#define log_debug(format, ...)  HCI_DUMP_LOG("DBG", HCI_DUMP_LOG_LEVEL_DEBUG, format,  ## __VA_ARGS__)
 #else
 #define log_debug(...) (void)(0)
 #endif
 
 #ifdef ENABLE_LOG_INFO
-#define log_info(...)  HCI_DUMP_LOG(HCI_DUMP_LOG_LEVEL_INFO, ## __VA_ARGS__)
+#define log_info(format, ...)  HCI_DUMP_LOG("INF", HCI_DUMP_LOG_LEVEL_INFO, format,  ## __VA_ARGS__)
 #else
 #define log_info(...) (void)(0)
 #endif
 
 #ifdef ENABLE_LOG_ERROR
-#define log_error(...)  HCI_DUMP_LOG("ERR", HCI_DUMP_LOG_LEVEL_ERROR, ## __VA_ARGS__)
+#define log_error(format, ...)  HCI_DUMP_LOG("ERR", HCI_DUMP_LOG_LEVEL_ERROR, format,  ## __VA_ARGS__)
 #else
 #define log_error(...) (void)(0)
 #endif
