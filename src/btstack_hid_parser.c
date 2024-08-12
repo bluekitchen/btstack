@@ -455,7 +455,7 @@ void btstack_hid_descriptor_iterator_init(btstack_hid_descriptor_iterator_t * it
 }
 
 bool btstack_hid_descriptor_iterator_has_more(btstack_hid_descriptor_iterator_t * iterator){
-    if ((iterator->item_ready == false) && (iterator->descriptor_len > 0)){
+    if ((iterator->item_ready == false) && (iterator->descriptor_len > iterator->descriptor_pos)){
         uint16_t  item_len = iterator->descriptor_len - iterator->descriptor_pos;
         const uint8_t *item_data = &iterator->descriptor[iterator->descriptor_pos];
         bool ok = btstack_hid_parse_descriptor_item(&iterator->descriptor_item, item_data, item_len);
@@ -469,11 +469,7 @@ bool btstack_hid_descriptor_iterator_has_more(btstack_hid_descriptor_iterator_t 
 }
 
 const hid_descriptor_item_t * const btstack_hid_descriptor_iterator_get_item(btstack_hid_descriptor_iterator_t * iterator){
-
-    btstack_assert(iterator->descriptor_len >= iterator->descriptor_item.item_size);
-
-    iterator->descriptor_len -= iterator->descriptor_item.item_size;
-    iterator->descriptor     += iterator->descriptor_item.item_size;
+    iterator->descriptor_pos += iterator->descriptor_item.item_size;
     iterator->item_ready = false;
     return &iterator->descriptor_item;
 }
