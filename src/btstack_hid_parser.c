@@ -330,15 +330,6 @@ static void hid_process_item(btstack_hid_parser_t * parser, hid_descriptor_item_
     parser->required_usages = parser->global_report_count;
 }
 
-static void hid_post_process_item(btstack_hid_parser_t * parser, hid_descriptor_item_t * item){
-    if ((TagType)item->item_type == Main){
-        // reset usage
-        parser->usage_pos  = parser->descriptor_pos;
-        parser->usage_page = parser->global_usage_page;
-    }
-    parser->descriptor_pos += item->item_size;
-}
-
 static void btstack_hid_parser_find_next_usage(btstack_hid_parser_t * parser){
     while (parser->state == BTSTACK_HID_PARSER_SCAN_FOR_REPORT_ITEM){
         if (parser->descriptor_pos >= parser->descriptor_len){
@@ -362,7 +353,12 @@ static void btstack_hid_parser_find_next_usage(btstack_hid_parser_t * parser){
                 parser->state = BTSTACK_HID_PARSER_COMPLETE;
             }
         } else {
-            hid_post_process_item(parser, &parser->descriptor_item);
+            if ((TagType) (&parser->descriptor_item)->item_type == Main) {
+                // reset usage
+                parser->usage_pos = parser->descriptor_pos;
+                parser->usage_page = parser->global_usage_page;
+            }
+            parser->descriptor_pos += parser->descriptor_item.item_size;
         }
     }
 }
@@ -437,7 +433,7 @@ void btstack_hid_parser_get_field(btstack_hid_parser_t * parser, uint16_t * usag
         return;
     }
     if (parser->required_usages == 0u){
-        hid_post_process_item(parser, &parser->descriptor_item);
+        parser->descriptor_pos += parser->descriptor_item.item_size;
         parser->state = BTSTACK_HID_PARSER_SCAN_FOR_REPORT_ITEM;
         btstack_hid_parser_find_next_usage(parser);
     } else {
