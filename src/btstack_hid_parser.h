@@ -127,6 +127,9 @@ typedef struct {
     uint16_t usage_page;
     uint16_t usage;
     uint8_t  size;      // in bit
+    // cached values of relevant descriptor item (input,output,feature)
+    hid_descriptor_item_t descriptor_item;
+    int32_t global_logical_minimum;
 } btstack_hid_usage_item_t;
 
 typedef struct {
@@ -167,10 +170,16 @@ typedef struct {
     uint8_t         global_report_size;
     uint8_t         global_report_count;
     uint16_t        global_report_id;
+
+    // for HID Parser
+    bool have_report_usage_ready;
+    btstack_hid_usage_item_t descriptor__usage_item;
 } btstack_hid_parser_t;
 
 
 /* API_START */
+
+// HID Descriptor Iterator
 
 /**
  * @brief Init HID Descriptor iterator
@@ -202,6 +211,8 @@ const hid_descriptor_item_t * const btstack_hid_descriptor_iterator_get_item(bts
 bool btstack_hid_descriptor_iterator_valid(btstack_hid_descriptor_iterator_t * iterator);
 
 
+// HID Descriptor Usage Iterator
+
 /**
  * @brief Initialize usages iterator for HID Descriptor and report type
  * @param parser
@@ -224,6 +235,8 @@ bool btstack_hid_usage_iterator_has_more(btstack_hid_parser_t * parser);
  */
 void btstack_hid_usage_iterator_get_item(btstack_hid_parser_t * parser, btstack_hid_usage_item_t * item);
 
+
+// HID Report Iterator
 
 /**
  * @brief Initialize HID Parser.
@@ -287,6 +300,7 @@ hid_report_id_status_t btstack_hid_id_valid(int report_id, uint16_t hid_descript
  * @return true if report ID declared in descriptor
  */
 bool btstack_hid_report_id_declared(uint16_t hid_descriptor_len, const uint8_t * hid_descriptor);
+
 
 /* API_END */
 

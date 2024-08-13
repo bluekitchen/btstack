@@ -46,8 +46,7 @@
 
 // Not implemented:
 // - Support for Push/Pop
-// - Optional Pretty Print of HID Descripor
-// - Support to query descriptort for contained usages, e.g. to detect keyboard or mouse
+// - Optional Pretty Print of HID Descriptor
 
 // #define HID_PARSER_PRETTY_PRINT
 
@@ -329,113 +328,9 @@ static void hid_process_item(btstack_hid_parser_t * parser, hid_descriptor_item_
     parser->required_usages = parser->global_report_count;
 }
 
-static void btstack_hid_parser_find_next_usage(btstack_hid_parser_t * parser){
-    while (btstack_hid_descriptor_iterator_has_more(&parser->descriptor_iterator)){
-        parser->descriptor_item = * btstack_hid_descriptor_iterator_get_item(&parser->descriptor_iterator);
-        hid_process_item(parser, &parser->descriptor_item);
-        if (parser->required_usages){
-            hid_find_next_usage(parser);
-            if (parser->available_usages) {
-                parser->state = BTSTACK_HID_PARSER_USAGES_AVAILABLE;
-                return;
-            } else {
-                log_debug("no usages found");
-                parser->state = BTSTACK_HID_PARSER_COMPLETE;
-                return;
-            }
-        } else {
-            if ((TagType) (&parser->descriptor_item)->item_type == Main) {
-                // reset usage
-                parser->usage_pos = parser->descriptor_iterator.descriptor_pos;
-                parser->usage_page = parser->global_usage_page;
-            }
-        }
-    }
-    // end of descriptor
-    parser->state = BTSTACK_HID_PARSER_COMPLETE;
-}
-
 // PUBLIC API
 
-void btstack_hid_parser_init(btstack_hid_parser_t * parser, const uint8_t * hid_descriptor, uint16_t hid_descriptor_len, hid_report_type_t hid_report_type, const uint8_t * hid_report, uint16_t hid_report_len){
-
-    memset(parser, 0, sizeof(btstack_hid_parser_t));
-
-    parser->descriptor     = hid_descriptor;
-    parser->descriptor_len = hid_descriptor_len;
-    parser->report_type    = hid_report_type;
-    parser->report         = hid_report;
-    parser->report_len     = hid_report_len;
-    parser->state          = BTSTACK_HID_PARSER_SCAN_FOR_REPORT_ITEM;
-
-    btstack_hid_descriptor_iterator_init(&parser->descriptor_iterator, hid_descriptor, hid_descriptor_len);
-
-    btstack_hid_parser_find_next_usage(parser);
-}
-
-bool btstack_hid_parser_has_more(btstack_hid_parser_t * parser){
-    return parser->state == BTSTACK_HID_PARSER_USAGES_AVAILABLE;
-}
-
-void btstack_hid_parser_get_field(btstack_hid_parser_t * parser, uint16_t * usage_page, uint16_t * usage, int32_t * value){
-
-    *usage_page = parser->usage_minimum >> 16;
-
-    // read field (up to 32 bit unsigned, up to 31 bit signed - 32 bit signed behaviour is undefined) - check report len
-    bool is_variable   = (parser->descriptor_item.item_value & 2) != 0;
-    bool is_signed     = parser->global_logical_minimum < 0;
-    int pos_start     = btstack_min(  parser->report_pos_in_bit >> 3, parser->report_len);
-    int pos_end       = btstack_min( (parser->report_pos_in_bit + parser->global_report_size - 1u) >> 3u, parser->report_len);
-    int bytes_to_read = pos_end - pos_start + 1;
-    int i;
-    uint32_t multi_byte_value = 0;
-    for (i=0;i < bytes_to_read;i++){
-        multi_byte_value |= parser->report[pos_start+i] << (i*8);
-    }
-    uint32_t unsigned_value = (multi_byte_value >> (parser->report_pos_in_bit & 0x07u)) & ((1u<<parser->global_report_size)-1u);
-    // log_debug("bit pos %2u, report size %u, start %u, end %u, len %u;; unsigned value %08x", parser->report_pos_in_bit, parser->global_report_size, pos_start, pos_end, parser->report_len, unsigned_value);
-    if (is_variable){
-        *usage      = parser->usage_minimum & 0xffffu;
-        if (is_signed && (unsigned_value & (1u<<(parser->global_report_size-1u)))){
-            *value = unsigned_value - (1u<<parser->global_report_size);
-        } else {
-            *value = unsigned_value;
-        }
-    } else {
-        *usage  = unsigned_value;
-        *value  = 1;
-    }
-    parser->required_usages--;
-    parser->report_pos_in_bit += parser->global_report_size;
-
-    // next usage
-    if (is_variable){
-        parser->usage_minimum++;
-        parser->available_usages--;
-        if (parser->usage_range && (parser->usage_minimum > parser->usage_maximum)){
-            // usage min - max range smaller than report count, ignore remaining bit in report
-            log_debug("Ignoring %u items without Usage", parser->required_usages);
-            parser->report_pos_in_bit += parser->global_report_size * parser->required_usages;
-            parser->required_usages = 0;
-        }
-    } else {
-        if (parser->required_usages == 0u){
-            parser->available_usages = 0;
-        }
-    }
-    if (parser->available_usages) {
-        return;
-    }
-    if (parser->required_usages == 0u){
-        parser->state = BTSTACK_HID_PARSER_SCAN_FOR_REPORT_ITEM;
-        btstack_hid_parser_find_next_usage(parser);
-    } else {
-        hid_find_next_usage(parser);
-        if (parser->available_usages == 0u) {
-            parser->state = BTSTACK_HID_PARSER_COMPLETE;
-        }
-    }
-}
+// HID Descriptor Iterator
 
 void btstack_hid_descriptor_iterator_init(btstack_hid_descriptor_iterator_t * iterator, const uint8_t * hid_descriptor, uint16_t hid_descriptor_len){
     iterator->descriptor = hid_descriptor;
@@ -468,6 +363,7 @@ const hid_descriptor_item_t * const btstack_hid_descriptor_iterator_get_item(bts
 bool btstack_hid_descriptor_iterator_valid(btstack_hid_descriptor_iterator_t * iterator){
     return iterator->valid;
 }
+
 
 int btstack_hid_get_report_size_for_id(int report_id, hid_report_type_t report_type, uint16_t hid_descriptor_len, const uint8_t * hid_descriptor) {
     int total_report_size = 0;
@@ -584,6 +480,8 @@ bool btstack_hid_report_id_declared(uint16_t hid_descriptor_len, const uint8_t *
     return false;
 }
 
+// HID Descriptor Usage Iterator
+
 static void btstack_parser_usage_iterator_process_item(btstack_hid_parser_t * parser, hid_descriptor_item_t * item){
     hid_pretty_print_item(parser, item);
     int valid_field = 0;
@@ -685,6 +583,10 @@ void btstack_hid_usage_iterator_get_item(btstack_hid_parser_t * parser, btstack_
     parser->required_usages--;
     parser->report_pos_in_bit += parser->global_report_size;
 
+    // cache descriptor item and
+    item->descriptor_item = parser->descriptor_item;
+    item->global_logical_minimum = parser->global_logical_minimum;
+
     // next usage
     if (is_variable){
         parser->usage_minimum++;
@@ -714,4 +616,75 @@ void btstack_hid_usage_iterator_get_item(btstack_hid_parser_t * parser, btstack_
     }
 }
 
-//
+
+// HID Report Parser
+
+void btstack_hid_parser_init(btstack_hid_parser_t * parser, const uint8_t * hid_descriptor, uint16_t hid_descriptor_len, hid_report_type_t hid_report_type, const uint8_t * hid_report, uint16_t hid_report_len){
+    btstack_hid_usage_iterator_init(parser, hid_descriptor, hid_descriptor_len, hid_report_type);
+    parser->report = hid_report;
+    parser->report_len = hid_report_len;
+    parser->have_report_usage_ready = false;
+}
+
+/**
+ * @brief Checks if more fields are available
+ * @param parser
+ */
+bool btstack_hid_parser_has_more(btstack_hid_parser_t * parser){
+    while ((parser->have_report_usage_ready == false) && btstack_hid_usage_iterator_has_more(parser)){
+        btstack_hid_usage_iterator_get_item(parser, &parser->descriptor__usage_item);
+        // ignore usages for other report ids
+        if (parser->descriptor__usage_item.report_id != 0xffff){
+            if (parser->descriptor__usage_item.report_id != parser->report[0]){
+                continue;
+            }
+        }
+        parser->have_report_usage_ready = true;
+    }
+    return parser->have_report_usage_ready;
+}
+
+/**
+ * @brief Get next field
+ * @param parser
+ * @param usage_page
+ * @param usage
+ * @param value provided in HID report
+ */
+
+void btstack_hid_parser_get_field(btstack_hid_parser_t * parser, uint16_t * usage_page, uint16_t * usage, int32_t * value){
+
+    // fetch data from descriptor usage item
+    uint16_t bit_pos = parser->descriptor__usage_item.bit_pos;
+    uint16_t size    = parser->descriptor__usage_item.size;
+    *usage_page      = parser->descriptor__usage_item.usage_page;
+    *usage           = parser->descriptor__usage_item.usage;
+
+
+    // read field (up to 32 bit unsigned, up to 31 bit signed - 32 bit signed behaviour is undefined) - check report len
+    bool is_variable   = (parser->descriptor__usage_item.descriptor_item.item_value & 2) != 0;
+    bool is_signed     = parser->descriptor__usage_item.global_logical_minimum < 0;
+    int pos_start     = btstack_min(  bit_pos >> 3, parser->report_len);
+    int pos_end       = btstack_min( (bit_pos + size - 1u) >> 3u, parser->report_len);
+    int bytes_to_read = pos_end - pos_start + 1;
+
+    int i;
+    uint32_t multi_byte_value = 0;
+    for (i=0;i < bytes_to_read;i++){
+        multi_byte_value |= parser->report[pos_start+i] << (i*8);
+    }
+    uint32_t unsigned_value = (multi_byte_value >> (bit_pos & 0x07u)) & ((1u<<size)-1u);
+    // log_debug("bit pos %2u, report size %u, start %u, end %u, len %u;; unsigned value %08x", parser->report_pos_in_bit, parser->global_report_size, pos_start, pos_end, parser->report_len, unsigned_value);
+    if (is_variable){
+        if (is_signed && (unsigned_value & (1u<<(size-1u)))){
+            *value = unsigned_value - (1u<<size);
+        } else {
+            *value = unsigned_value;
+        }
+    } else {
+        *usage  = unsigned_value;
+        *value  = 1;
+    }
+
+    parser->have_report_usage_ready = false;
+}
