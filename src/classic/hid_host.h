@@ -116,7 +116,7 @@ typedef struct {
 
     // get report
     hid_report_type_t report_type;
-    uint8_t           report_id;
+    uint16_t          report_id;
 
     // control message, bit mask:
     // SUSSPEND             1
@@ -231,12 +231,12 @@ uint8_t hid_host_send_get_protocol(uint16_t hid_cid);
  * @brief Send report to a Bluetooth HID Device and emit HID_SUBEVENT_SET_REPORT_RESPONSE with handshake_status, see hid_handshake_param_type_t. The Bluetooth HID Host shall send complete reports.
  * @param hid_cid
  * @param report_type see hid_report_type_t in btstack_hid.h
- * @param report_id
+ * @param report_id or HID_REPORT_ID_UNDEFINED
  * @param report
  * @param report_len
  * @result status ERROR_CODE_SUCCESS on success, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, ERROR_CODE_COMMAND_DISALLOWED
  */
-uint8_t hid_host_send_set_report(uint16_t hid_cid, hid_report_type_t report_type, uint8_t report_id, const uint8_t * report, uint8_t report_len);
+uint8_t hid_host_send_set_report(uint16_t hid_cid, hid_report_type_t report_type, uint16_t report_id, const uint8_t * report, uint8_t report_len);
 
 /**
  * @brief Request a HID report from the Bluetooth HID Device and emit HID_SUBEVENT_GET_REPORT_RESPONSE event with with handshake_status, see hid_handshake_param_type_t. 
@@ -246,20 +246,20 @@ uint8_t hid_host_send_set_report(uint16_t hid_cid, hid_report_type_t report_type
  * then the report should be reported over the more efficient Interrupt channel, see hid_host_send_report.
  * @param hid_cid
  * @param report_type see hid_report_type_t in btstack_hid.h
- * @param report_id
+ * @param report_id or HID_REPORT_ID_UNDEFINED
  * @result status ERROR_CODE_SUCCESS on success, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, ERROR_CODE_COMMAND_DISALLOWED
  */
-uint8_t hid_host_send_get_report(uint16_t hid_cid, hid_report_type_t report_type, uint8_t report_id);
+uint8_t hid_host_send_get_report(uint16_t hid_cid, hid_report_type_t report_type, uint16_t report_id);
 
 /**
  * @brief Send HID output report on interrupt channel.
  * @param hid_cid
- * @param report_id
+ * @param report_id or HID_REPORT_ID_UNDEFINED
  * @param report
  * @param report_len
  * @result status ERROR_CODE_SUCCESS on success, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, ERROR_CODE_COMMAND_DISALLOWED
  */
-uint8_t hid_host_send_report(uint16_t hid_cid, uint8_t report_id, const uint8_t * report, uint8_t report_len);
+uint8_t hid_host_send_report(uint16_t hid_cid, uint16_t report_id, const uint8_t * report, uint8_t report_len);
 
 /**
  * @brief Get descriptor data
