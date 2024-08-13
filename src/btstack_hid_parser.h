@@ -104,12 +104,6 @@ typedef struct  {
     uint8_t  data_size;
 } hid_descriptor_item_t;
 
-typedef enum {
-    BTSTACK_HID_PARSER_SCAN_FOR_REPORT_ITEM,
-    BTSTACK_HID_PARSER_USAGES_AVAILABLE,
-    BTSTACK_HID_PARSER_COMPLETE,
-} btstack_hid_parser_state_t;
-
 typedef struct {
     // Descriptor
     const uint8_t * descriptor;
@@ -120,6 +114,12 @@ typedef struct {
     bool            valid;
     hid_descriptor_item_t descriptor_item;
 } btstack_hid_descriptor_iterator_t;
+
+typedef enum {
+    BTSTACK_HID_USAGE_ITERATOR_STATE_SCAN_FOR_REPORT_ITEM,
+    BTSTACK_HID_USAGE_ITERATOR_USAGES_AVAILABLE,
+    BTSTACK_HID_USAGE_ITERATOR_PARSER_COMPLETE,
+} btstack_hid_usage_iterator_state_t;
 
 typedef struct {
     uint16_t report_id; // 8-bit report ID or 0xffff if not set
@@ -145,7 +145,7 @@ typedef struct {
     uint16_t        report_len;
 
     // State
-    btstack_hid_parser_state_t state;
+    btstack_hid_usage_iterator_state_t state;
 
     hid_descriptor_item_t descriptor_item;
 

@@ -537,11 +537,11 @@ static void btstack_hid_usage_iterator_find_next_usage(btstack_hid_parser_t * pa
         if (parser->required_usages){
             hid_find_next_usage(parser);
             if (parser->available_usages) {
-                parser->state = BTSTACK_HID_PARSER_USAGES_AVAILABLE;
+                parser->state = BTSTACK_HID_USAGE_ITERATOR_USAGES_AVAILABLE;
                 return;
             } else {
                 log_debug("no usages found");
-                parser->state = BTSTACK_HID_PARSER_COMPLETE;
+                parser->state = BTSTACK_HID_USAGE_ITERATOR_PARSER_COMPLETE;
                 return;
             }
         } else {
@@ -553,7 +553,7 @@ static void btstack_hid_usage_iterator_find_next_usage(btstack_hid_parser_t * pa
         }
     }
     // end of descriptor
-    parser->state = BTSTACK_HID_PARSER_COMPLETE;
+    parser->state = BTSTACK_HID_USAGE_ITERATOR_PARSER_COMPLETE;
 }
 
 void btstack_hid_usage_iterator_init(btstack_hid_parser_t * parser, const uint8_t * hid_descriptor, uint16_t hid_descriptor_len, hid_report_type_t hid_report_type){
@@ -562,16 +562,16 @@ void btstack_hid_usage_iterator_init(btstack_hid_parser_t * parser, const uint8_
     parser->descriptor     = hid_descriptor;
     parser->descriptor_len = hid_descriptor_len;
     parser->report_type    = hid_report_type;
-    parser->state          = BTSTACK_HID_PARSER_SCAN_FOR_REPORT_ITEM;
+    parser->state          = BTSTACK_HID_USAGE_ITERATOR_STATE_SCAN_FOR_REPORT_ITEM;
     parser->global_report_id = HID_REPORT_ID_UNDEFINED;
     btstack_hid_descriptor_iterator_init(&parser->descriptor_iterator, hid_descriptor, hid_descriptor_len);
 }
 
 bool btstack_hid_usage_iterator_has_more(btstack_hid_parser_t * parser){
-    while (parser->state == BTSTACK_HID_PARSER_SCAN_FOR_REPORT_ITEM){
+    while (parser->state == BTSTACK_HID_USAGE_ITERATOR_STATE_SCAN_FOR_REPORT_ITEM){
         btstack_hid_usage_iterator_find_next_usage(parser);
     }
-    return parser->state == BTSTACK_HID_PARSER_USAGES_AVAILABLE;
+    return parser->state == BTSTACK_HID_USAGE_ITERATOR_USAGES_AVAILABLE;
 }
 
 void btstack_hid_usage_iterator_get_item(btstack_hid_parser_t * parser, btstack_hid_usage_item_t * item){
@@ -613,11 +613,11 @@ void btstack_hid_usage_iterator_get_item(btstack_hid_parser_t * parser, btstack_
         return;
     }
     if (parser->required_usages == 0u){
-        parser->state = BTSTACK_HID_PARSER_SCAN_FOR_REPORT_ITEM;
+        parser->state = BTSTACK_HID_USAGE_ITERATOR_STATE_SCAN_FOR_REPORT_ITEM;
     } else {
         hid_find_next_usage(parser);
         if (parser->available_usages == 0u) {
-            parser->state = BTSTACK_HID_PARSER_COMPLETE;
+            parser->state = BTSTACK_HID_USAGE_ITERATOR_PARSER_COMPLETE;
         }
     }
 }
