@@ -180,6 +180,10 @@ static void mac_print_test_config(struct test_set_config* cfg)
 }
 
 static void mac_init_test_cases(struct test_set_config* cfg) {
+    int i;
+    for (i = 0; i < ARRAYSIZE(test_configs); i++)
+        test_configs[i].nr = i;
+
     cfg_start_index = 0;
     curent_event_type = 0;
     cfg->fp_print_test_config(cfg);
