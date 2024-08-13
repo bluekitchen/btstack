@@ -570,9 +570,9 @@ TEST(HID, GetReportSize){
 
     hid_descriptor = hid_descriptor_keyboard_boot_mode;
     hid_descriptor_len = sizeof(hid_descriptor_keyboard_boot_mode);
-    report_size = btstack_hid_get_report_size_for_id(0, HID_REPORT_TYPE_OUTPUT, hid_descriptor_len, hid_descriptor);
+    report_size = btstack_hid_get_report_size_for_id(HID_REPORT_ID_UNDEFINED, HID_REPORT_TYPE_OUTPUT, hid_descriptor_len, hid_descriptor);
     CHECK_EQUAL(1, report_size);
-    report_size = btstack_hid_get_report_size_for_id(0, HID_REPORT_TYPE_INPUT, hid_descriptor_len, hid_descriptor);
+    report_size = btstack_hid_get_report_size_for_id(HID_REPORT_ID_UNDEFINED, HID_REPORT_TYPE_INPUT, hid_descriptor_len, hid_descriptor);
     CHECK_EQUAL(8, report_size);
 }
 
@@ -600,7 +600,19 @@ TEST(HID, UsageIteratorCombo1){
     }
 }
 
-#include "btstack_debug.h"
+TEST(HID, ValidateReportIdBootKeyboard){
+    const uint8_t * hid_descriptor =  hid_descriptor_keyboard_boot_mode;
+    uint16_t hid_descriptor_len = sizeof(hid_descriptor_keyboard_boot_mode);
+    CHECK_EQUAL(HID_REPORT_ID_VALID, btstack_hid_report_id_valid(HID_REPORT_ID_UNDEFINED, hid_descriptor, hid_descriptor_len));
+    CHECK_EQUAL(HID_REPORT_ID_UNDECLARED, btstack_hid_report_id_valid(1, hid_descriptor, hid_descriptor_len));
+}
+
+TEST(HID, ValidateReportIdMouseWithReportId){
+    const uint8_t * hid_descriptor =  mouse_descriptor_with_report_id;
+    uint16_t hid_descriptor_len = sizeof(mouse_descriptor_with_report_id);
+    CHECK_EQUAL(HID_REPORT_ID_UNDECLARED, btstack_hid_report_id_valid(HID_REPORT_ID_UNDEFINED, hid_descriptor, hid_descriptor_len));
+    CHECK_EQUAL(HID_REPORT_ID_VALID, btstack_hid_report_id_valid(1, hid_descriptor, hid_descriptor_len));
+}
 
 int main (int argc, const char * argv[]){
 #if 1

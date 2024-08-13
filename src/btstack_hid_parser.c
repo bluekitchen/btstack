@@ -365,11 +365,11 @@ bool btstack_hid_descriptor_iterator_valid(btstack_hid_descriptor_iterator_t * i
 }
 
 
-int btstack_hid_get_report_size_for_id(int report_id, hid_report_type_t report_type, uint16_t hid_descriptor_len, const uint8_t * hid_descriptor) {
+int btstack_hid_get_report_size_for_id(uint16_t report_id, hid_report_type_t report_type, uint16_t hid_descriptor_len, const uint8_t * hid_descriptor) {
     int total_report_size = 0;
     int report_size = 0;
     int report_count = 0;
-    int current_report_id = 0;
+    int current_report_id = HID_REPORT_ID_UNDEFINED;
 
     btstack_hid_descriptor_iterator_t iterator;
     btstack_hid_descriptor_iterator_init(&iterator, hid_descriptor, hid_descriptor_len);
@@ -426,10 +426,11 @@ int btstack_hid_get_report_size_for_id(int report_id, hid_report_type_t report_t
     }
 }
 
-hid_report_id_status_t btstack_hid_id_valid(int report_id, uint16_t hid_descriptor_len, const uint8_t * hid_descriptor){
-    int current_report_id = -1;
+hid_report_id_status_t btstack_hid_report_id_valid(uint16_t report_id, const uint8_t * hid_descriptor, uint16_t hid_descriptor_len){
+    uint16_t current_report_id = HID_REPORT_ID_UNDEFINED;
     btstack_hid_descriptor_iterator_t iterator;
     btstack_hid_descriptor_iterator_init(&iterator, hid_descriptor, hid_descriptor_len);
+    bool report_id_found = false;
     while (btstack_hid_descriptor_iterator_has_more(&iterator)) {
         const hid_descriptor_item_t *const item = btstack_hid_descriptor_iterator_get_item(&iterator);
         switch (item->item_type){
@@ -437,8 +438,9 @@ hid_report_id_status_t btstack_hid_id_valid(int report_id, uint16_t hid_descript
                 switch ((GlobalItemTag)item->item_tag){
                     case ReportID:
                         current_report_id = item->item_value;
-                        if (current_report_id != report_id) break;
-                        return HID_REPORT_ID_VALID;
+                        if (current_report_id == report_id) {
+                            report_id_found = true;
+                        }
                     default:
                         break;
                 }
@@ -449,11 +451,13 @@ hid_report_id_status_t btstack_hid_id_valid(int report_id, uint16_t hid_descript
     }
 
     if (btstack_hid_descriptor_iterator_valid(&iterator)) {
-        if (current_report_id != -1) {
-            return HID_REPORT_ID_INVALID;
-        } else {
-            return HID_REPORT_ID_UNDECLARED;
+        if (report_id_found){
+            return HID_REPORT_ID_VALID;
         }
+        if ((report_id  == HID_REPORT_ID_UNDEFINED) && (current_report_id == HID_REPORT_ID_UNDEFINED)) {
+            return HID_REPORT_ID_VALID;
+        }
+        return HID_REPORT_ID_UNDECLARED;
     } else {
         return HID_REPORT_ID_INVALID;
     }
@@ -558,7 +562,7 @@ void btstack_hid_usage_iterator_init(btstack_hid_parser_t * parser, const uint8_
     parser->descriptor_len = hid_descriptor_len;
     parser->report_type    = hid_report_type;
     parser->state          = BTSTACK_HID_PARSER_SCAN_FOR_REPORT_ITEM;
-    parser->global_report_id = 0xffff;
+    parser->global_report_id = HID_REPORT_ID_UNDEFINED;
     btstack_hid_descriptor_iterator_init(&parser->descriptor_iterator, hid_descriptor, hid_descriptor_len);
 
     btstack_hid_usage_iterator_find_next_usage(parser);
@@ -634,7 +638,7 @@ bool btstack_hid_parser_has_more(btstack_hid_parser_t * parser){
     while ((parser->have_report_usage_ready == false) && btstack_hid_usage_iterator_has_more(parser)){
         btstack_hid_usage_iterator_get_item(parser, &parser->descriptor__usage_item);
         // ignore usages for other report ids
-        if (parser->descriptor__usage_item.report_id != 0xffff){
+        if (parser->descriptor__usage_item.report_id != HID_REPORT_ID_UNDEFINED){
             if (parser->descriptor__usage_item.report_id != parser->report[0]){
                 continue;
             }

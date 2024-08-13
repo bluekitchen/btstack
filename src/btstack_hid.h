@@ -53,6 +53,9 @@ extern "C" {
 #define HID_BOOT_MODE_KEYBOARD_ID 1
 #define HID_BOOT_MODE_MOUSE_ID    2
 
+// used to indicate that no 8-bit Report ID has been set / is used
+#define HID_REPORT_ID_UNDEFINED 0xffff
+
 typedef enum {
     HID_MESSAGE_TYPE_HANDSHAKE = 0,
     HID_MESSAGE_TYPE_HID_CONTROL,
