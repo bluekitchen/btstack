@@ -178,7 +178,7 @@ typedef struct {
     uint16_t          report_len;
 
     bool have_report_usage_ready;
-    btstack_hid_usage_item_t descriptor__usage_item;
+    btstack_hid_usage_item_t descriptor_usage_item;
 
 } btstack_hid_parser_t;
 

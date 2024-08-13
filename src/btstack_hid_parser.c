@@ -463,10 +463,10 @@ void btstack_hid_parser_init(btstack_hid_parser_t * parser, const uint8_t * hid_
  */
 bool btstack_hid_parser_has_more(btstack_hid_parser_t * parser){
     while ((parser->have_report_usage_ready == false) && btstack_hid_usage_iterator_has_more(&parser->usage_iterator)){
-        btstack_hid_usage_iterator_get_item(&parser->usage_iterator, &parser->descriptor__usage_item);
+        btstack_hid_usage_iterator_get_item(&parser->usage_iterator, &parser->descriptor_usage_item);
         // ignore usages for other report ids
-        if (parser->descriptor__usage_item.report_id != HID_REPORT_ID_UNDEFINED){
-            if (parser->descriptor__usage_item.report_id != parser->report[0]){
+        if (parser->descriptor_usage_item.report_id != HID_REPORT_ID_UNDEFINED){
+            if (parser->descriptor_usage_item.report_id != parser->report[0]){
                 continue;
             }
         }
@@ -486,15 +486,15 @@ bool btstack_hid_parser_has_more(btstack_hid_parser_t * parser){
 void btstack_hid_parser_get_field(btstack_hid_parser_t * parser, uint16_t * usage_page, uint16_t * usage, int32_t * value){
 
     // fetch data from descriptor usage item
-    uint16_t bit_pos = parser->descriptor__usage_item.bit_pos;
-    uint16_t size    = parser->descriptor__usage_item.size;
-    *usage_page      = parser->descriptor__usage_item.usage_page;
-    *usage           = parser->descriptor__usage_item.usage;
+    uint16_t bit_pos = parser->descriptor_usage_item.bit_pos;
+    uint16_t size    = parser->descriptor_usage_item.size;
+    *usage_page      = parser->descriptor_usage_item.usage_page;
+    *usage           = parser->descriptor_usage_item.usage;
 
 
     // read field (up to 32 bit unsigned, up to 31 bit signed - 32 bit signed behaviour is undefined) - check report len
-    bool is_variable   = (parser->descriptor__usage_item.descriptor_item.item_value & 2) != 0;
-    bool is_signed     = parser->descriptor__usage_item.global_logical_minimum < 0;
+    bool is_variable   = (parser->descriptor_usage_item.descriptor_item.item_value & 2) != 0;
+    bool is_signed     = parser->descriptor_usage_item.global_logical_minimum < 0;
     int pos_start     = btstack_min(  bit_pos >> 3, parser->report_len);
     int pos_end       = btstack_min( (bit_pos + size - 1u) >> 3u, parser->report_len);
     int bytes_to_read = pos_end - pos_start + 1;
