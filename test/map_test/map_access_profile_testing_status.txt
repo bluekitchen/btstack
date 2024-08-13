@@ -87,8 +87,11 @@ MAP/MSE/MMB/BV-09-C MAP_OLD PASS (2024-07-18) Verify that the MSE can return a F
 MAP/MSE/MMB/BV-10-C MAP_OLD STLL PASS (2024-07-18) Verify that the MSE changes the current folder as requested by the MCE.
 MAP/MSE/MMB/BV-11-C MAP_OLD PASS AGAIN (2024-07-19) Verify that the MSE can return a messages-listing object to the MCE.
 Retest: MAP_OLD/MAP/MSE/*, MNR*, MMB/BV-09..11: PASS (2024-08-13)
+MAP/MSE/MMB/BV-12-C WIP (2024-08-19)
+MAP/MSE/MMB/BV-13-C WIP (2024-08-19)
 
 Open tests
+MAP/MSE/MMB/BV-13-C MAP_OLD FAIL (2024-08-19) - MTC INCONC: no GSM message in message listing
 MAP/MSE/MMB/BV-12-C REGRESSION (2024-07-19) PTS fails due to map_access_server_get_max_body_size miscalculates the body size - Verify that the MSE can return an email message to the MCE.
 	TODO: introduce a Dry-Run-concept for getting the exact free space 
 MAP/MSE/MNR/BV-03-C: PASS on the first run, no client_connection from the 2nd run. Same with other tests using multiple connections

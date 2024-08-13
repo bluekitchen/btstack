@@ -119,6 +119,7 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 struct objconfig_s {
     char* header;
     char* footer;
+    const char* body;
     // array of up to 3 function pointers for creation of body
     // last entry needs to be NULL
     size_t(*fbody)(char* msg_buffer, uint16_t index, size_t maxsize);
@@ -129,6 +130,8 @@ static size_t body_msg(char* msg_buffer, uint16_t index, size_t maxsize);
 static size_t body_msg_short(char* msg_buffer, uint16_t index, size_t maxsize);
 static size_t body_msg_email_1_1(char* msg_buffer, uint16_t index, size_t maxsize);
 static size_t body_convo(char* msg_buffer, uint16_t index, size_t maxsize);
+static size_t PRINT_SMS_native_vcard(char* msg_buffer, uint16_t index, size_t maxsize);
+
 static void MAP_MSE_MMD_BV_02_I_disc(void);
 static void MAP_MSE_MMD_BV_02_I_getMsgListng(void);
 static void MAP_MSE_MMU_BV_02_I_PutMsg(void);
@@ -161,6 +164,12 @@ struct objconfig_s convo = {
     .header = CONVO_LISTING_HEADER,
     .footer = CONVO_LISTING_FOOTER,
     .fbody = body_convo
+};
+
+struct objconfig_s vcard = {
+    .header = "",
+    .footer = "",
+    .fbody = PRINT_SMS_native_vcard
 };
 
 #define TC_NORM(data, ...)  data,  ## __VA_ARGS__
@@ -197,8 +206,9 @@ static struct test_config_s
 {TC_NORM( .descr = "MAP/MSE/MMU/BV-03"                 ,.type = &msg,    .obj_count = 0, .objects = { "", "EMAIL", "MMS"                                }, .fPutMsg = MAP_MSE_MMU_BV_02_I_PutMsg               ,.helpstr = "WIP add OBEX NAME Header (Handle) PTS [50] Enter Test Step TS_MTC_OBEX_extract_handle_name ( , (lt)Not Defined Value(gt)  ) Test case error in 'MAP/MSE/MMU/BV-03'. The value 'headers_received' (-1) is not fully defined. See Screenshots in MAP_MSE_MMU_BV_03_I_2024_06_28_12_02_17"                                                                                      },)
 {TC_NORM( .descr = "MAP/MSE/MMU/BV-02"                 ,.type = &msgshrt,.obj_count = 0, .objects = { "", "EMAIL", "MMS" , "EMAIL", "EMAIL"             }, .fPutMsg = MAP_MSE_MMU_BV_02_I_PutMsg               ,.helpstr = "WIP: PTS accepts the EMAIL but not the MMS. No idea why..."                                                                                                                                                                                                                                                                                                                    },)
 {TC_NORM( .descr = "MAP/MSE/MMB/BV-09 10"              ,.type = &msg,    .obj_count = 2, .objects = { "SMS_GSM","SMS_CDMA"                              }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
-{TC_L2CAP(.descr = "MAP/MSE/MMB/BV-11 13 14 42 46"     ,.type = &msg,    .obj_count = 3, .objects = { "SMS_GSM","SMS_CDMA"                              }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
+{TC_L2CAP(.descr = "MAP/MSE/MMB/BV-11 13 14 42 46"     ,.type = &msg,    .obj_count = 1, .objects = { "SMS_GSM","SMS_CDMA"                              }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
 {TC_NORM( .descr = "MAP/MSE/MMB/BV-12"                 ,.type = &msg1_1, .obj_count = 1, .objects = { "EMAIL", "EMAIL",                                 }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
+{TC_NORM( .descr = "MAP/MSE/MMB/BV-13"                 ,.type = &vcard,  .obj_count = 1, .objects = { "",                                               }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
 {TC_NORM( .descr = "MAP/MSE/MMB/BV-15 18 20 22"        ,.type = &msg,    .obj_count = 5, .objects = { "EMAIL","SMS_GSM","SMS_CDMA", "MMS", "IM"         }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
 {TC_NORM( .descr = "MAP/MSE/MMB/BV-16 23"              ,.type = &msg,    .obj_count = 1, .objects = { "EMAIL","EMAIL"                                   }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
 {TC_NORM( .descr = "MAP/MSE/MMB/BV-24 <a><OK>"         ,.type = &convo,  .obj_count = 0, .objects = { "",""                                             }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
@@ -334,6 +344,42 @@ static mas_uint128hex_t ConversationID = { 0 };
 static void increase_version_counter_by_1(mas_uint128hex_t counter) {
     counter[BT_UINT128_HEX_LEN_BYTES - 1]++;
     log_debug_hexdump(counter, BT_UINT128_HEX_LEN_BYTES);
+}
+
+static size_t PRINT_SMS_native_vcard(char* msg_buffer, uint16_t index, size_t maxsize) {
+    index = index % ARRAYSIZE(mas_cfg->objects);
+    int size = 0;
+    if (!mas_cfg->msg_deleted[index])
+        size = snprintf(msg_buffer, maxsize,
+            "BEGIN:BMSG\r\n"
+            "VERSION:1.0\r\n"
+            "STATUS:UNREAD\r\n"
+            "TYPE:SMS_GSM\r\n"
+            "FOLDER:TELECOM/MSG/INBOX\r\n"
+            "BEGIN:VCARD\r\n"
+            "VERSION:2.1\r\n"
+            "N:IUT. make the name 256 bytes long.\r\n"
+            "TEL:1234567898\r\n"
+            "END:VCARD\r\n"
+            "BEGIN:BENV\r\n"
+            "BEGIN:VCARD\r\n"
+            "VERSION:2.1\r\n"
+            "N:PTS. make the name 256 bytes long.\r\n"
+            "TEL:14256913524\r\n"
+            "END:VCARD\r\n"
+            "BEGIN:BBODY\r\n"
+            "ENCODING:G-7BIT\r\n"
+            "CHARSET:native\r\n"
+            "LENGTH:290\r\n"
+            "BEGIN:MSG\r\n"
+            "0681000000000004048117600000218013219101C97FC8F71D340FD3D37373BA4C06DDCBF23228FFAE83EE693A1A44479741F3B2DC9E1E974170F9DB9E2697C920711E249487DDE4B71BF4AECB41F2323D9C6683A46538A8057ABB4161D07C1C66974166F9BB0D8AC140A8F1BB0D6797E965763E05A2BF413110CAFDA683C2745098CD4EFD00\r\n"
+            "END:MSG\r\n"
+            "END:BBODY\r\n"
+            "END:BENV\r\n"
+            "END:BMSG\r\n"
+
+        );
+    return size;
 }
 
 static size_t body_msg(char* msg_buffer, uint16_t index, size_t maxsize) {
