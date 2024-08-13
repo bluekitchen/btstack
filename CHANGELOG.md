@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - HFP AG: report Apple Accessory information, battery level and docked state
 - PBAP Client: allow to set start offset and max list count for pull phonebook operation
 - PBAP Client: support multiple parallel connections
+- HID Parser: introduce HID Descriptor and HID Descriptor Usage iterators
 - HCI Dump Dispatch: allow to use multiple HCI Dump implementations
  
 ### Fixed
@@ -36,6 +37,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - GAP: return command disallowed if disconnect already requested
 - GAP: improve handling of incorrectly resolved addresses in HCI_SUBEVENT_LE_CONNECTION_COMPLETE
 - GOEP Client: remove goep_client_create_connection. Use goep_client_connect instead.
+- HID Parser: cleanup of function names and signatures
 
 ## Release v1.6.1
 
