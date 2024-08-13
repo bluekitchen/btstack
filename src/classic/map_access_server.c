@@ -176,6 +176,7 @@ typedef struct {
         char *hdr_type; // pointer to a type string for the response header provided by the application or NULL
         uint8_t header_data[MAP_SERVER_MAX_APP_PARAMS_LEN];
         uint16_t header_pos;
+        bool hdr_finalized; // all header data set?
         uint16_t body_len;
         const uint8_t* body_data;
         bool folder_version_set;
@@ -1136,11 +1137,16 @@ static void map_access_server_build_response(map_access_server_t* map_access_ser
         goep_server_header_add_application_parameters(map_access_server->goep_cid, map_access_server->response.header_data, map_access_server->response.header_pos);
 }
 
+#define OBEX_SIZE_HDR 3
+#define OBEX_SIZE_SRM 2
+#define OBEX_SIZE_SRM 2
+
 // TODO: currently a lot of heuristics/hard coded to determine the available body space - should reflect the real packet created later
 uint16_t map_access_server_get_max_body_size(uint16_t map_cid) {
     map_access_server_t* map_access_server = map_access_server_for_goep_cid(map_cid);
-    uint16_t hdr_name_len = obex_message_builder_get_header_name_len_from_strlen(map_access_server->response.hdr_name ? (uint16_t)strlen(map_access_server->response.hdr_name) : 0);
-    uint16_t hdr_type_len = obex_message_builder_get_header_type_len(map_access_server->response.hdr_type);
+
+    btstack_assert(map_access_server->request.object_type != MAP_OBJECT_TYPE_INVALID);
+    btstack_assert(map_access_server->response.hdr_finalized);
 
     if (map_access_server == NULL) {
         return 0;
@@ -1148,44 +1154,57 @@ uint16_t map_access_server_get_max_body_size(uint16_t map_cid) {
     if (map_access_server->state != MAP_SERVER_STATE_W4_USER_DATA) {
         return 0;
     }
-    btstack_assert(map_access_server->request.object_type != MAP_OBJECT_TYPE_INVALID);
+
+    uint16_t hdr_name_len = obex_message_builder_get_header_name_len_from_strlen(map_access_server->response.hdr_name ? (uint16_t)strlen(map_access_server->response.hdr_name) : 0);
+    uint16_t hdr_type_len = obex_message_builder_get_header_type_len(map_access_server->response.hdr_type);
     
     uint16_t goep_max_message_size = goep_server_response_get_max_message_size(map_access_server->goep_cid);
-    log_debug("goep_max_message_size:%u app_params header_size:%u", goep_max_message_size, map_access_server->response.header_pos);
+    log_debug("goep_max_message_size:%u response.header_pos:%u hdr_name:%u, hdr_type:%u", goep_max_message_size, map_access_server->response.header_pos, hdr_name_len, hdr_type_len);
     // calc max body size without reserving outgoing buffer: packet size - OBEX Header (3) - SRM Header (2) - Body Header (3) - Unknown additional 3 bytes???
     return goep_max_message_size - 3 - 2 - 3 - 3 - map_access_server->response.header_pos - hdr_name_len - hdr_type_len;
 }
 
-uint16_t map_access_server_send_response(uint16_t map_cid, uint8_t response_code, char* hdr_name, char* type_name, uint32_t continuation, size_t body_len, const uint8_t* body) {
-    map_access_server_t* map_access_server = map_access_server_for_goep_cid(map_cid);
-    log_debug("map_cid:%u, response_code:0x%02x, hdr_name:%s, continuation:%u, body_len:%u, body [%s]",
-        map_cid, response_code, hdr_name, continuation, body_len, body);
+void map_access_server_set_response_type_and_name(uint16_t map_cid, char* hdr_name, char* type_name) {
+    map_access_server_t* mas = map_access_server_for_goep_cid(map_cid);
+    if (mas == NULL) {
+        RUN_AND_LOG_ACTION(return;)
+    }
 
-    if (map_access_server == NULL) {
+    mas->response.hdr_name = hdr_name;
+    mas->response.hdr_type = type_name;
+    mas->response.hdr_finalized = true;
+}
+
+uint16_t map_access_server_send_response(uint16_t map_cid, uint8_t response_code, uint32_t continuation, size_t body_len, const uint8_t* body) {
+    map_access_server_t* mas = map_access_server_for_goep_cid(map_cid);
+
+    if (mas == NULL) {
         RUN_AND_LOG_ACTION(return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;)
     }
+
+    log_debug("map_cid:%u, response_code:0x%02x, hdr_name:%s, continuation:%u, body_len:%u, body [%s]",
+        map_cid, response_code, mas->response.hdr_name, continuation, body_len, body);
 
     // double check size
 
     // calc max body size without reserving outgoing buffer: packet size - OBEX Header (3) - SRM Header (2) - Body Header (3)
-    uint16_t max_body_size = map_access_server_get_max_body_size(map_access_server->goep_cid);
+    uint16_t max_body_size = map_access_server_get_max_body_size(mas->goep_cid);
     if (body_len > max_body_size) {
         RUN_AND_LOG_ACTION(return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;)
     }
 #if 0 // MAP/MSE/GOEP/SRMP/BV-03-C this one gets PTS to send a second PUT (more packets to follow)
- map_access_server->srm_state = SRM_SEND_CONFIRM_WAIT;
- map_access_server->response.code = OBEX_RESP_CONTINUE;
+ mas->srm_state = SRM_SEND_CONFIRM_WAIT;
+ mas->response.code = OBEX_RESP_CONTINUE;
 #else
     // set data for response and trigger execute
-    map_access_server->response.code = response_code;
+    mas->response.code = response_code;
 #endif
-    map_access_server->response.hdr_name = hdr_name;
-    map_access_server->response.hdr_type = type_name;
-    map_access_server->request.continuation = continuation;
-    map_access_server->state = MAP_SERVER_STATE_SEND_USER_RESPONSE;
-    map_access_server->response.body_data = body;
-    map_access_server->response.body_len = (uint16_t)body_len;
-    RUN_AND_LOG_ACTION(return goep_server_request_can_send_now(map_access_server->goep_cid);)
+
+    mas->request.continuation = continuation;
+    mas->state = MAP_SERVER_STATE_SEND_USER_RESPONSE;
+    mas->response.body_data = body;
+    mas->response.body_len = (uint16_t)body_len;
+    RUN_AND_LOG_ACTION(return goep_server_request_can_send_now(mas->goep_cid);)
 }
 
 // suppress MSVC C4244: unchecked upper bound for enum folder used as index

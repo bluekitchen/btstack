@@ -84,7 +84,7 @@ static uint8_t obex_message_builder_packet_init(uint8_t * buffer, uint16_t buffe
 static uint8_t obex_message_builder_packet_append(uint8_t * buffer, uint16_t buffer_len, const uint8_t * data, uint16_t len){
     uint16_t pos = big_endian_read_16(buffer, 1);
     
-    log_error("add type:0x%02x(%s) buffer_len:%u size:%u pos:%u len:%u", data[0], lut_type[data[0]], buffer_len, pos + len, pos, len);
+    log_debug("add type:0x%02x(%s) buffer_len:%u pos+len:%u pos:%u len:%u", data[0], lut_type[data[0]], buffer_len, pos + len, pos, len);
     
     if (buffer_len < pos + len) {
         log_error("ERROR_CODE_MEMORY_CAPACITY_EXCEEDED type:0x%02x(%s) buffer_len:%u size:%u pos:%u len:%u", buffer[0], lut_type[buffer[0]], buffer_len, pos + len, pos, len);
