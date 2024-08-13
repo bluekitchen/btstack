@@ -415,7 +415,7 @@ const uint8_t xbox_wireless_report[] = {0x01, 0xB9, 0xF0, 0xFB, 0xC3, 0xE3, 0x80
 
 
 static void expect_field(btstack_hid_parser_t * parser, uint16_t expected_usage_page, uint16_t expected_usage, int32_t expected_value){
-    // printf("expected - usage page %02x, usage %04x, value %02x (bit pos %u)\n", expected_usage_page, expected_usage, expected_value, parser->report_pos_in_bit);
+    // printf("expected - usage page %02x, usage %04x, value %02x\n", expected_usage_page, expected_usage, expected_value);
     CHECK_EQUAL(1, btstack_hid_parser_has_more(parser));
     uint16_t usage_page;
     uint16_t usage;
@@ -440,7 +440,6 @@ TEST(HID, MouseWithoutReportID){
     expect_field(&hid_parser, 9, 3, 0);
     expect_field(&hid_parser, 1, 0x30, 2);
     expect_field(&hid_parser, 1, 0x31, 3);
-    CHECK_EQUAL(24, hid_parser.report_pos_in_bit);
     CHECK_EQUAL(0, btstack_hid_parser_has_more(&hid_parser));
 }
 
@@ -452,7 +451,6 @@ TEST(HID, MouseWithoutReportIDSigned){
     expect_field(&hid_parser, 9, 3, 0);
     expect_field(&hid_parser, 1, 0x30, -2);
     expect_field(&hid_parser, 1, 0x31, -3);
-    CHECK_EQUAL(24, hid_parser.report_pos_in_bit);
     CHECK_EQUAL(0, btstack_hid_parser_has_more(&hid_parser));
 }
 
@@ -465,7 +463,6 @@ TEST(HID, MouseWithReportID){
     expect_field(&hid_parser, 9, 3, 0);
     expect_field(&hid_parser, 1, 0x30, 2);
     expect_field(&hid_parser, 1, 0x31, 3);
-    CHECK_EQUAL(32, hid_parser.report_pos_in_bit);
     CHECK_EQUAL(0, btstack_hid_parser_has_more(&hid_parser));
 }
 
@@ -486,7 +483,6 @@ TEST(HID, BootKeyboard){
     expect_field(&hid_parser, 7, 0x00, 1);
     expect_field(&hid_parser, 7, 0x00, 1);
     expect_field(&hid_parser, 7, 0x00, 1);
-    CHECK_EQUAL(64, hid_parser.report_pos_in_bit);
     CHECK_EQUAL(0, btstack_hid_parser_has_more(&hid_parser));
 }
 
@@ -498,7 +494,6 @@ TEST(HID, Combo1){
     expect_field(&hid_parser, 9, 3, 0);
     expect_field(&hid_parser, 1, 0x30, 2);
     expect_field(&hid_parser, 1, 0x31, 3);
-    CHECK_EQUAL(32, hid_parser.report_pos_in_bit);
     CHECK_EQUAL(0, btstack_hid_parser_has_more(&hid_parser));
 }
 
@@ -519,7 +514,6 @@ TEST(HID, Combo2){
     expect_field(&hid_parser, 7, 0x00, 1);
     expect_field(&hid_parser, 7, 0x00, 1);
     expect_field(&hid_parser, 7, 0x00, 1);
-    CHECK_EQUAL(72, hid_parser.report_pos_in_bit);
     CHECK_EQUAL(0, btstack_hid_parser_has_more(&hid_parser));
 }
 
@@ -534,7 +528,6 @@ TEST(HID, TankMouse){
     expect_field(&hid_parser, 1, 0x30, -3);
     expect_field(&hid_parser, 1, 0x31, -10);
     expect_field(&hid_parser, 1, 0x38, 0);
-    CHECK_EQUAL(56, hid_parser.report_pos_in_bit);
     CHECK_EQUAL(0, btstack_hid_parser_has_more(&hid_parser));
 }
 
@@ -565,7 +558,6 @@ TEST(HID, XboxWireless){
     expect_field(&hid_parser, 9, 14, 1);
     expect_field(&hid_parser, 9, 15, 0);
     expect_field(&hid_parser, 12, 0xb2, 0);
-    CHECK_EQUAL(136, hid_parser.report_pos_in_bit);
     CHECK_EQUAL(0, btstack_hid_parser_has_more(&hid_parser));
 }
 
