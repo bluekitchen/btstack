@@ -456,7 +456,8 @@ TEST(HID, MouseWithoutReportIDSigned){
 
 TEST(HID, MouseWithReportID){
     static btstack_hid_parser_t hid_parser;
-    CHECK_EQUAL(3, btstack_hid_get_report_size_for_id(1, HID_REPORT_TYPE_INPUT, sizeof(mouse_descriptor_with_report_id), mouse_descriptor_with_report_id));
+    CHECK_EQUAL(3, btstack_hid_get_report_size_for_id(1, HID_REPORT_TYPE_INPUT, mouse_descriptor_with_report_id,
+                                                      sizeof(mouse_descriptor_with_report_id)));
     btstack_hid_parser_init(&hid_parser, mouse_descriptor_with_report_id, sizeof(mouse_descriptor_with_report_id), HID_REPORT_TYPE_INPUT, mouse_report_with_id_1, sizeof(mouse_report_with_id_1));
     expect_field(&hid_parser, 9, 1, 1);
     expect_field(&hid_parser, 9, 2, 1);
@@ -519,7 +520,8 @@ TEST(HID, Combo2){
 
 TEST(HID, TankMouse){
     static btstack_hid_parser_t hid_parser;
-    CHECK_EQUAL(6, btstack_hid_get_report_size_for_id(3, HID_REPORT_TYPE_INPUT, sizeof(tank_mouse_descriptor), tank_mouse_descriptor));
+    CHECK_EQUAL(6, btstack_hid_get_report_size_for_id(3, HID_REPORT_TYPE_INPUT, tank_mouse_descriptor,
+                                                      sizeof(tank_mouse_descriptor)));
     btstack_hid_parser_init(&hid_parser, tank_mouse_descriptor, sizeof(tank_mouse_descriptor), HID_REPORT_TYPE_INPUT, tank_mouse_report, sizeof(tank_mouse_report));
     expect_field(&hid_parser, 9, 1, 1);
     expect_field(&hid_parser, 9, 2, 1);
@@ -533,7 +535,8 @@ TEST(HID, TankMouse){
 
 TEST(HID, XboxWireless){
     static btstack_hid_parser_t hid_parser;
-    CHECK_EQUAL(16, btstack_hid_get_report_size_for_id(1, HID_REPORT_TYPE_INPUT, sizeof(xbox_wireless_descriptor), xbox_wireless_descriptor));
+    CHECK_EQUAL(16, btstack_hid_get_report_size_for_id(1, HID_REPORT_TYPE_INPUT, xbox_wireless_descriptor,
+                                                       sizeof(xbox_wireless_descriptor)));
     btstack_hid_parser_init(&hid_parser, xbox_wireless_descriptor, sizeof(xbox_wireless_descriptor), HID_REPORT_TYPE_INPUT, xbox_wireless_report, sizeof(xbox_wireless_report));
     expect_field(&hid_parser, 1, 0x30, 0xf0b9);
     expect_field(&hid_parser, 1, 0x31, 0xc3fb);
@@ -565,14 +568,16 @@ TEST(HID, GetReportSize){
     int report_size = 0;
     const uint8_t * hid_descriptor =  combo_descriptor_with_report_ids;
     uint16_t hid_descriptor_len = sizeof(combo_descriptor_with_report_ids);
-    report_size = btstack_hid_get_report_size_for_id(1, HID_REPORT_TYPE_INPUT, hid_descriptor_len, hid_descriptor);
+    report_size = btstack_hid_get_report_size_for_id(1, HID_REPORT_TYPE_INPUT, hid_descriptor, hid_descriptor_len);
     CHECK_EQUAL(3, report_size);
 
     hid_descriptor = hid_descriptor_keyboard_boot_mode;
     hid_descriptor_len = sizeof(hid_descriptor_keyboard_boot_mode);
-    report_size = btstack_hid_get_report_size_for_id(HID_REPORT_ID_UNDEFINED, HID_REPORT_TYPE_OUTPUT, hid_descriptor_len, hid_descriptor);
+    report_size = btstack_hid_get_report_size_for_id(HID_REPORT_ID_UNDEFINED, HID_REPORT_TYPE_OUTPUT, hid_descriptor,
+                                                     hid_descriptor_len);
     CHECK_EQUAL(1, report_size);
-    report_size = btstack_hid_get_report_size_for_id(HID_REPORT_ID_UNDEFINED, HID_REPORT_TYPE_INPUT, hid_descriptor_len, hid_descriptor);
+    report_size = btstack_hid_get_report_size_for_id(HID_REPORT_ID_UNDEFINED, HID_REPORT_TYPE_INPUT, hid_descriptor,
+                                                     hid_descriptor_len);
     CHECK_EQUAL(8, report_size);
 }
 

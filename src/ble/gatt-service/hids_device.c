@@ -497,7 +497,7 @@ void hids_device_init_with_storage(uint8_t hid_country_code, const uint8_t * hid
         report->client_configuration_value = 0;
         report->id   = report_id;
         report->type = report_type;
-        report->size = btstack_hid_get_report_size_for_id(report_id, report_type, hid_descriptor_size, hid_descriptor);
+        report->size = btstack_hid_get_report_size_for_id(report_id, report_type, hid_descriptor, hid_descriptor_size);
 
         switch (report->type){
             case HID_REPORT_TYPE_INPUT:

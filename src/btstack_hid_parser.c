@@ -365,7 +365,8 @@ bool btstack_hid_descriptor_iterator_valid(btstack_hid_descriptor_iterator_t * i
 }
 
 
-int btstack_hid_get_report_size_for_id(uint16_t report_id, hid_report_type_t report_type, uint16_t hid_descriptor_len, const uint8_t * hid_descriptor) {
+int btstack_hid_get_report_size_for_id(uint16_t report_id, hid_report_type_t report_type, const uint8_t *hid_descriptor,
+                                       uint16_t hid_descriptor_len) {
     int total_report_size = 0;
     int report_size = 0;
     int report_count = 0;
@@ -463,7 +464,7 @@ hid_report_id_status_t btstack_hid_report_id_valid(uint16_t report_id, const uin
     }
 }
 
-bool btstack_hid_report_id_declared(uint16_t hid_descriptor_len, const uint8_t * hid_descriptor){
+bool btstack_hid_report_id_declared(const uint8_t *hid_descriptor, uint16_t hid_descriptor_len) {
     btstack_hid_descriptor_iterator_t iterator;
     btstack_hid_descriptor_iterator_init(&iterator, hid_descriptor, hid_descriptor_len);
     while (btstack_hid_descriptor_iterator_has_more(&iterator)) {
