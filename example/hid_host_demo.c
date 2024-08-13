@@ -270,7 +270,7 @@ static void hid_host_handle_interrupt_report(const uint8_t * report, uint16_t re
     memcpy(last_keys, new_keys, NUM_KEYS);
 }
 
-void hid_host_demo_lookup_caps_lock_led(void){
+static void hid_host_demo_lookup_caps_lock_led(void){
     btstack_hid_usage_iterator_t iterator;
     const uint8_t *hid_descriptor = hid_descriptor_storage_get_descriptor_data(hid_host_cid);
     const uint16_t hid_descriptor_len = hid_descriptor_storage_get_descriptor_len(hid_host_cid);
