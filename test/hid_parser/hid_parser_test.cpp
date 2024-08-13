@@ -584,11 +584,11 @@ TEST(HID, GetReportSize){
 TEST(HID, UsageIteratorBootKeyboard){
     const uint8_t * hid_descriptor =  hid_descriptor_keyboard_boot_mode;
     uint16_t hid_descriptor_len = sizeof(hid_descriptor_keyboard_boot_mode);
-    btstack_hid_parser_t parser;
-    btstack_hid_usage_iterator_init(&parser, hid_descriptor, hid_descriptor_len, HID_REPORT_TYPE_INPUT);
-    while (btstack_hid_usage_iterator_has_more(&parser)){
+    btstack_hid_usage_iterator_t iterator;
+    btstack_hid_usage_iterator_init(&iterator, hid_descriptor, hid_descriptor_len, HID_REPORT_TYPE_INPUT);
+    while (btstack_hid_usage_iterator_has_more(&iterator)){
         btstack_hid_usage_item_t item;
-        btstack_hid_usage_iterator_get_item(&parser, &item);
+        btstack_hid_usage_iterator_get_item(&iterator, &item);
         // printf("Report ID 0x%04x, bitpos %3u, usage page 0x%04x, usage 0x%04x, size %u\n", item.report_id, item.bit_pos, item.usage_page, item.usage, item.size);
     }
 }
@@ -596,11 +596,11 @@ TEST(HID, UsageIteratorBootKeyboard){
 TEST(HID, UsageIteratorCombo1){
     const uint8_t * hid_descriptor =  combo_descriptor_with_report_ids;
     uint16_t hid_descriptor_len = sizeof(combo_descriptor_with_report_ids);
-    btstack_hid_parser_t parser;
-    btstack_hid_usage_iterator_init(&parser, hid_descriptor, hid_descriptor_len, HID_REPORT_TYPE_INPUT);
-    while (btstack_hid_usage_iterator_has_more(&parser)){
+    btstack_hid_usage_iterator_t iterator;
+    btstack_hid_usage_iterator_init(&iterator, hid_descriptor, hid_descriptor_len, HID_REPORT_TYPE_INPUT);
+    while (btstack_hid_usage_iterator_has_more(&iterator)){
         btstack_hid_usage_item_t item;
-        btstack_hid_usage_iterator_get_item(&parser, &item);
+        btstack_hid_usage_iterator_get_item(&iterator, &item);
         // printf("Report ID 0x%04x, bitpos %3u, usage page 0x%04x, usage 0x%04x, size %u\n", item.report_id, item.bit_pos, item.usage_page, item.usage, item.size);
     }
 }

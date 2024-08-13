@@ -115,6 +115,7 @@ typedef struct {
     hid_descriptor_item_t descriptor_item;
 } btstack_hid_descriptor_iterator_t;
 
+
 typedef enum {
     BTSTACK_HID_USAGE_ITERATOR_STATE_SCAN_FOR_REPORT_ITEM,
     BTSTACK_HID_USAGE_ITERATOR_USAGES_AVAILABLE,
@@ -122,33 +123,17 @@ typedef enum {
 } btstack_hid_usage_iterator_state_t;
 
 typedef struct {
-    uint16_t report_id; // 8-bit report ID or 0xffff if not set
-    uint16_t bit_pos;   // position in bit
-    uint16_t usage_page;
-    uint16_t usage;
-    uint8_t  size;      // in bit
-    // cached values of relevant descriptor item (input,output,feature)
-    hid_descriptor_item_t descriptor_item;
-    int32_t global_logical_minimum;
-} btstack_hid_usage_item_t;
-
-typedef struct {
-
     // Descriptor
     const uint8_t * descriptor;
     uint16_t        descriptor_len;
     btstack_hid_descriptor_iterator_t descriptor_iterator;
-
-    // Report
-    hid_report_type_t report_type;
-    const uint8_t * report;
-    uint16_t        report_len;
 
     // State
     btstack_hid_usage_iterator_state_t state;
 
     hid_descriptor_item_t descriptor_item;
 
+    hid_report_type_t report_type;
     uint16_t        report_pos_in_bit;
 
     // usage pos and usage_page after last main item, used to find next usage
@@ -158,7 +143,7 @@ typedef struct {
     // usage generator
     uint32_t        usage_minimum;
     uint32_t        usage_maximum;
-    uint16_t        available_usages;    
+    uint16_t        available_usages;
     uint16_t        required_usages;
     bool            usage_range;
     uint8_t         active_record;
@@ -166,14 +151,35 @@ typedef struct {
     // global
     int32_t         global_logical_minimum;
     int32_t         global_logical_maximum;
-    uint16_t        global_usage_page; 
+    uint16_t        global_usage_page;
     uint8_t         global_report_size;
     uint8_t         global_report_count;
     uint16_t        global_report_id;
 
-    // for HID Parser
+} btstack_hid_usage_iterator_t;
+
+typedef struct {
+    uint16_t report_id; // 8-bit report ID or 0xffff if not set
+    uint16_t bit_pos;   // position in bit
+    uint16_t usage_page;
+    uint16_t usage;
+    uint8_t  size;      // in bit
+
+    // cached values of relevant descriptor item (input,output,feature)
+    hid_descriptor_item_t descriptor_item;
+    int32_t               global_logical_minimum;
+} btstack_hid_usage_item_t;
+
+
+typedef struct {
+    btstack_hid_usage_iterator_t usage_iterator;
+
+    const uint8_t *   report;
+    uint16_t          report_len;
+
     bool have_report_usage_ready;
     btstack_hid_usage_item_t descriptor__usage_item;
+
 } btstack_hid_parser_t;
 
 
@@ -220,20 +226,20 @@ bool btstack_hid_descriptor_iterator_valid(btstack_hid_descriptor_iterator_t * i
  * @param hid_descriptor_len
  * @param hid_report_type
  */
-void btstack_hid_usage_iterator_init(btstack_hid_parser_t * parser, const uint8_t * hid_descriptor, uint16_t hid_descriptor_len, hid_report_type_t hid_report_type);
+void btstack_hid_usage_iterator_init(btstack_hid_usage_iterator_t * iterator, const uint8_t * hid_descriptor, uint16_t hid_descriptor_len, hid_report_type_t hid_report_type);
 
 /**
  * @brief Checks if more usages are available
  * @param parser
  */
-bool btstack_hid_usage_iterator_has_more(btstack_hid_parser_t * parser);
+bool btstack_hid_usage_iterator_has_more(btstack_hid_usage_iterator_t * iterator);
 
 /**
  * @brief Get current usage item
  * @param parser
  * @param item
  */
-void btstack_hid_usage_iterator_get_item(btstack_hid_parser_t * parser, btstack_hid_usage_item_t * item);
+void btstack_hid_usage_iterator_get_item(btstack_hid_usage_iterator_t * iterator, btstack_hid_usage_item_t * item);
 
 
 // HID Report Iterator

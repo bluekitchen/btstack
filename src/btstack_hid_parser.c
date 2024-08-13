@@ -118,7 +118,7 @@ static const char * local_tags[] = {
 };
 #endif
 
-static void hid_pretty_print_item(btstack_hid_parser_t * parser, hid_descriptor_item_t * item){
+static void hid_pretty_print_item(btstack_hid_usage_iterator_t * iterator, hid_descriptor_item_t * item){
 #ifdef HID_PARSER_PRETTY_PRINT
     const char ** item_tag_table;
     switch ((TagType)item->item_type){
@@ -139,9 +139,9 @@ static void hid_pretty_print_item(btstack_hid_parser_t * parser, hid_descriptor_
     if (item_tag_table){
         item_tag_name = item_tag_table[item->item_tag];
     }
-    log_info("%-15s (%-6s) // %02x 0x%0008x", item_tag_name, type_names[item->item_type], parser->descriptor[parser->descriptor_pos], item->item_value);
+    log_info("%-15s (%-6s) // %02x 0x%0008x", item_tag_name, type_names[item->item_type], iterator->descriptor[iterator->descriptor_pos], item->item_value);
 #else
-    UNUSED(parser);
+    UNUSED(iterator);
     UNUSED(item);
 #endif
 }
@@ -200,25 +200,25 @@ static bool btstack_hid_main_item_tag_matches_report_type(MainItemTag tag, hid_r
     }
 }
 
-static void btstack_hid_handle_global_item(btstack_hid_parser_t * parser, hid_descriptor_item_t * item){
+static void btstack_hid_handle_global_item(btstack_hid_usage_iterator_t * iterator, hid_descriptor_item_t * item){
     switch((GlobalItemTag)item->item_tag){
         case UsagePage:
-            parser->global_usage_page = item->item_value;
+            iterator->global_usage_page = item->item_value;
             break;
         case LogicalMinimum:
-            parser->global_logical_minimum = item->item_value;
+            iterator->global_logical_minimum = item->item_value;
             break;
         case LogicalMaximum:
-            parser->global_logical_maximum = item->item_value;
+            iterator->global_logical_maximum = item->item_value;
             break;
         case ReportSize:
-            parser->global_report_size = item->item_value;
+            iterator->global_report_size = item->item_value;
             break;
         case ReportID:
-            parser->global_report_id = item->item_value;
+            iterator->global_report_id = item->item_value;
             break;
         case ReportCount:
-            parser->global_report_count = item->item_value;
+            iterator->global_report_count = item->item_value;
             break;
 
         // TODO handle tags
@@ -236,97 +236,47 @@ static void btstack_hid_handle_global_item(btstack_hid_parser_t * parser, hid_de
     }
 }
 
-static void hid_find_next_usage(btstack_hid_parser_t * parser){
+static void hid_find_next_usage(btstack_hid_usage_iterator_t * main_iterator){
     bool have_usage_min = false;
     bool have_usage_max = false;
-    parser->usage_range = false;
+    main_iterator->usage_range = false;
     btstack_hid_descriptor_iterator_t iterator;
-    btstack_hid_descriptor_iterator_init(&iterator, &parser->descriptor[parser->usage_pos], parser->descriptor_len - parser->usage_pos);
-    while ((parser->available_usages == 0u) && btstack_hid_descriptor_iterator_has_more(&iterator) ){
+    btstack_hid_descriptor_iterator_init(&iterator, &main_iterator->descriptor[main_iterator->usage_pos], main_iterator->descriptor_len - main_iterator->usage_pos);
+    while ((main_iterator->available_usages == 0u) && btstack_hid_descriptor_iterator_has_more(&iterator) ){
         hid_descriptor_item_t usage_item = *btstack_hid_descriptor_iterator_get_item(&iterator);
         if ((usage_item.item_type == Global) && (usage_item.item_tag == UsagePage)){
-            parser->usage_page = usage_item.item_value;
+            main_iterator->usage_page = usage_item.item_value;
         }
         if (usage_item.item_type == Local){
-            uint32_t usage_value = (usage_item.data_size > 2u) ? usage_item.item_value : ((parser->usage_page << 16u) | usage_item.item_value);
+            uint32_t usage_value = (usage_item.data_size > 2u) ? usage_item.item_value : ((main_iterator->usage_page << 16u) | usage_item.item_value);
             switch (usage_item.item_tag){
                 case Usage:
-                    parser->available_usages = 1;
-                    parser->usage_minimum = usage_value;
+                    main_iterator->available_usages = 1;
+                    main_iterator->usage_minimum = usage_value;
                     break;
                 case UsageMinimum:
-                    parser->usage_minimum = usage_value;
+                    main_iterator->usage_minimum = usage_value;
                     have_usage_min = true;
                     break;
                 case UsageMaximum:
-                    parser->usage_maximum = usage_value;
+                    main_iterator->usage_maximum = usage_value;
                     have_usage_max = true;
                     break;
                 default:
                     break;
             }
             if (have_usage_min && have_usage_max){
-                parser->available_usages = parser->usage_maximum - parser->usage_minimum + 1u;
-                parser->usage_range = true;
-                if (parser->available_usages < parser->required_usages){
-                    log_debug("Usage Min - Usage Max [%04"PRIx32"..%04"PRIx32"] < Report Count %u", parser->usage_minimum & 0xffff, parser->usage_maximum & 0xffff, parser->required_usages);
+                main_iterator->available_usages = main_iterator->usage_maximum - main_iterator->usage_minimum + 1u;
+                main_iterator->usage_range = true;
+                if (main_iterator->available_usages < main_iterator->required_usages){
+                    log_debug("Usage Min - Usage Max [%04"PRIx32"..%04"PRIx32"] < Report Count %u", main_iterator->usage_minimum & 0xffff, main_iterator->usage_maximum & 0xffff, main_iterator->required_usages);
                 }
             }
         }
     }
-    parser->usage_pos += iterator.descriptor_pos;
+    main_iterator->usage_pos += iterator.descriptor_pos;
 }
 
-static void hid_process_item(btstack_hid_parser_t * parser, hid_descriptor_item_t * item){
-    hid_pretty_print_item(parser, item);
-    int valid_field = 0;
-    uint16_t report_id_before;
-    switch ((TagType)item->item_type){
-        case Main:
-            valid_field = btstack_hid_main_item_tag_matches_report_type((MainItemTag) item->item_tag,
-                                                                        parser->report_type);
-            break;
-        case Global:
-            report_id_before = parser->global_report_id;
-            btstack_hid_handle_global_item(parser, item);
-            // track record id for report handling
-            if ((GlobalItemTag)item->item_tag == ReportID){
-                if (parser->active_record && (report_id_before != item->item_value)){
-                    parser->active_record = 0;
-                }
-            }
-            break;
-        case Local:
-        case Reserved:
-            break;
-        default:
-            btstack_assert(false);
-            break;
-    }
-    if (!valid_field) return;
-
-    // verify record id
-    if (parser->global_report_id && !parser->active_record){
-        if (parser->report[0] != parser->global_report_id){
-            return;
-        }
-        parser->report_pos_in_bit += 8u;
-    }
-    parser->active_record = 1;
-    // handle constant fields used for padding
-    if (item->item_value & 1){
-        int item_bits = parser->global_report_size * parser->global_report_count;
-#ifdef HID_PARSER_PRETTY_PRINT
-        log_info("- Skip %u constant bits", item_bits);
-#endif
-        parser->report_pos_in_bit += item_bits;
-        return;
-    }
-    // Empty Item
-    if (parser->global_report_count == 0u) return;
-    // let's start
-    parser->required_usages = parser->global_report_count;
-}
 
 // PUBLIC API
 
@@ -487,21 +437,21 @@ bool btstack_hid_report_id_declared(const uint8_t *hid_descriptor, uint16_t hid_
 
 // HID Descriptor Usage Iterator
 
-static void btstack_parser_usage_iterator_process_item(btstack_hid_parser_t * parser, hid_descriptor_item_t * item){
-    hid_pretty_print_item(parser, item);
+static void btstack_parser_usage_iterator_process_item(btstack_hid_usage_iterator_t * iterator, hid_descriptor_item_t * item){
+    hid_pretty_print_item(iterator, item);
     int valid_field = 0;
     uint16_t report_id_before;
     switch ((TagType)item->item_type){
         case Main:
             valid_field = btstack_hid_main_item_tag_matches_report_type((MainItemTag) item->item_tag,
-                                                                        parser->report_type);
+                                                                        iterator->report_type);
             break;
         case Global:
-            report_id_before = parser->global_report_id;
-            btstack_hid_handle_global_item(parser, item);
+            report_id_before = iterator->global_report_id;
+            btstack_hid_handle_global_item(iterator, item);
             // track record id for report handling, reset report position
-            if (report_id_before != parser->global_report_id){
-                parser->report_pos_in_bit = 8u;
+            if (report_id_before != iterator->global_report_id){
+                iterator->report_pos_in_bit = 8u;
             }
             break;
         case Local:
@@ -515,109 +465,109 @@ static void btstack_parser_usage_iterator_process_item(btstack_hid_parser_t * pa
 
     // handle constant fields used for padding
     if (item->item_value & 1){
-        int item_bits = parser->global_report_size * parser->global_report_count;
+        int item_bits = iterator->global_report_size * iterator->global_report_count;
 #ifdef HID_PARSER_PRETTY_PRINT
         log_info("- Skip %u constant bits", item_bits);
 #endif
-        parser->report_pos_in_bit += item_bits;
+        iterator->report_pos_in_bit += item_bits;
         return;
     }
     // Empty Item
-    if (parser->global_report_count == 0u) return;
+    if (iterator->global_report_count == 0u) return;
     // let's start
-    parser->required_usages = parser->global_report_count;
+    iterator->required_usages = iterator->global_report_count;
 }
 
-static void btstack_hid_usage_iterator_find_next_usage(btstack_hid_parser_t * parser) {
-    while (btstack_hid_descriptor_iterator_has_more(&parser->descriptor_iterator)){
-        parser->descriptor_item = * btstack_hid_descriptor_iterator_get_item(&parser->descriptor_iterator);
+static void btstack_hid_usage_iterator_find_next_usage(btstack_hid_usage_iterator_t * iterator) {
+    while (btstack_hid_descriptor_iterator_has_more(&iterator->descriptor_iterator)){
+        iterator->descriptor_item = * btstack_hid_descriptor_iterator_get_item(&iterator->descriptor_iterator);
 
-        btstack_parser_usage_iterator_process_item(parser, &parser->descriptor_item);
+        btstack_parser_usage_iterator_process_item(iterator, &iterator->descriptor_item);
 
-        if (parser->required_usages){
-            hid_find_next_usage(parser);
-            if (parser->available_usages) {
-                parser->state = BTSTACK_HID_USAGE_ITERATOR_USAGES_AVAILABLE;
+        if (iterator->required_usages){
+            hid_find_next_usage(iterator);
+            if (iterator->available_usages) {
+                iterator->state = BTSTACK_HID_USAGE_ITERATOR_USAGES_AVAILABLE;
                 return;
             } else {
                 log_debug("no usages found");
-                parser->state = BTSTACK_HID_USAGE_ITERATOR_PARSER_COMPLETE;
+                iterator->state = BTSTACK_HID_USAGE_ITERATOR_PARSER_COMPLETE;
                 return;
             }
         } else {
-            if ((TagType) (&parser->descriptor_item)->item_type == Main) {
+            if ((TagType) (&iterator->descriptor_item)->item_type == Main) {
                 // reset usage
-                parser->usage_pos = parser->descriptor_iterator.descriptor_pos;
-                parser->usage_page = parser->global_usage_page;
+                iterator->usage_pos = iterator->descriptor_iterator.descriptor_pos;
+                iterator->usage_page = iterator->global_usage_page;
             }
         }
     }
     // end of descriptor
-    parser->state = BTSTACK_HID_USAGE_ITERATOR_PARSER_COMPLETE;
+    iterator->state = BTSTACK_HID_USAGE_ITERATOR_PARSER_COMPLETE;
 }
 
-void btstack_hid_usage_iterator_init(btstack_hid_parser_t * parser, const uint8_t * hid_descriptor, uint16_t hid_descriptor_len, hid_report_type_t hid_report_type){
-    memset(parser, 0, sizeof(btstack_hid_parser_t));
+void btstack_hid_usage_iterator_init(btstack_hid_usage_iterator_t * iterator, const uint8_t * hid_descriptor, uint16_t hid_descriptor_len, hid_report_type_t hid_report_type){
+    memset(iterator, 0, sizeof(btstack_hid_usage_iterator_t));
 
-    parser->descriptor     = hid_descriptor;
-    parser->descriptor_len = hid_descriptor_len;
-    parser->report_type    = hid_report_type;
-    parser->state          = BTSTACK_HID_USAGE_ITERATOR_STATE_SCAN_FOR_REPORT_ITEM;
-    parser->global_report_id = HID_REPORT_ID_UNDEFINED;
-    btstack_hid_descriptor_iterator_init(&parser->descriptor_iterator, hid_descriptor, hid_descriptor_len);
+    iterator->descriptor     = hid_descriptor;
+    iterator->descriptor_len = hid_descriptor_len;
+    iterator->report_type    = hid_report_type;
+    iterator->state          = BTSTACK_HID_USAGE_ITERATOR_STATE_SCAN_FOR_REPORT_ITEM;
+    iterator->global_report_id = HID_REPORT_ID_UNDEFINED;
+    btstack_hid_descriptor_iterator_init(&iterator->descriptor_iterator, hid_descriptor, hid_descriptor_len);
 }
 
-bool btstack_hid_usage_iterator_has_more(btstack_hid_parser_t * parser){
-    while (parser->state == BTSTACK_HID_USAGE_ITERATOR_STATE_SCAN_FOR_REPORT_ITEM){
-        btstack_hid_usage_iterator_find_next_usage(parser);
+bool btstack_hid_usage_iterator_has_more(btstack_hid_usage_iterator_t * iterator){
+    while (iterator->state == BTSTACK_HID_USAGE_ITERATOR_STATE_SCAN_FOR_REPORT_ITEM){
+        btstack_hid_usage_iterator_find_next_usage(iterator);
     }
-    return parser->state == BTSTACK_HID_USAGE_ITERATOR_USAGES_AVAILABLE;
+    return iterator->state == BTSTACK_HID_USAGE_ITERATOR_USAGES_AVAILABLE;
 }
 
-void btstack_hid_usage_iterator_get_item(btstack_hid_parser_t * parser, btstack_hid_usage_item_t * item){
+void btstack_hid_usage_iterator_get_item(btstack_hid_usage_iterator_t * iterator, btstack_hid_usage_item_t * item){
     // cache current values
     memset(item, 0, sizeof(btstack_hid_usage_item_t));
-    item->size = parser->global_report_size;
-    item->report_id = parser->global_report_id;
-    item->usage_page = parser->usage_minimum >> 16;
-    item->bit_pos = parser->report_pos_in_bit;
+    item->size = iterator->global_report_size;
+    item->report_id = iterator->global_report_id;
+    item->usage_page = iterator->usage_minimum >> 16;
+    item->bit_pos = iterator->report_pos_in_bit;
 
-    bool is_variable  = (parser->descriptor_item.item_value & 2) != 0;
+    bool is_variable  = (iterator->descriptor_item.item_value & 2) != 0;
     if (is_variable){
-        item->usage = parser->usage_minimum & 0xffffu;
+        item->usage = iterator->usage_minimum & 0xffffu;
     }
-    parser->required_usages--;
-    parser->report_pos_in_bit += parser->global_report_size;
+    iterator->required_usages--;
+    iterator->report_pos_in_bit += iterator->global_report_size;
 
     // cache descriptor item and
-    item->descriptor_item = parser->descriptor_item;
-    item->global_logical_minimum = parser->global_logical_minimum;
+    item->descriptor_item = iterator->descriptor_item;
+    item->global_logical_minimum = iterator->global_logical_minimum;
 
     // next usage
     if (is_variable){
-        parser->usage_minimum++;
-        parser->available_usages--;
-        if (parser->usage_range && (parser->usage_minimum > parser->usage_maximum)){
+        iterator->usage_minimum++;
+        iterator->available_usages--;
+        if (iterator->usage_range && (iterator->usage_minimum > iterator->usage_maximum)){
             // usage min - max range smaller than report count, ignore remaining bit in report
             log_debug("Ignoring %u items without Usage", parser->required_usages);
-            parser->report_pos_in_bit += parser->global_report_size * parser->required_usages;
-            parser->required_usages = 0;
+            iterator->report_pos_in_bit += iterator->global_report_size * iterator->required_usages;
+            iterator->required_usages = 0;
         }
     } else {
-        if (parser->required_usages == 0u){
-            parser->available_usages = 0;
+        if (iterator->required_usages == 0u){
+            iterator->available_usages = 0;
         }
     }
 
-    if (parser->available_usages) {
+    if (iterator->available_usages) {
         return;
     }
-    if (parser->required_usages == 0u){
-        parser->state = BTSTACK_HID_USAGE_ITERATOR_STATE_SCAN_FOR_REPORT_ITEM;
+    if (iterator->required_usages == 0u){
+        iterator->state = BTSTACK_HID_USAGE_ITERATOR_STATE_SCAN_FOR_REPORT_ITEM;
     } else {
-        hid_find_next_usage(parser);
-        if (parser->available_usages == 0u) {
-            parser->state = BTSTACK_HID_USAGE_ITERATOR_PARSER_COMPLETE;
+        hid_find_next_usage(iterator);
+        if (iterator->available_usages == 0u) {
+            iterator->state = BTSTACK_HID_USAGE_ITERATOR_PARSER_COMPLETE;
         }
     }
 }
@@ -626,7 +576,7 @@ void btstack_hid_usage_iterator_get_item(btstack_hid_parser_t * parser, btstack_
 // HID Report Parser
 
 void btstack_hid_parser_init(btstack_hid_parser_t * parser, const uint8_t * hid_descriptor, uint16_t hid_descriptor_len, hid_report_type_t hid_report_type, const uint8_t * hid_report, uint16_t hid_report_len){
-    btstack_hid_usage_iterator_init(parser, hid_descriptor, hid_descriptor_len, hid_report_type);
+    btstack_hid_usage_iterator_init(&parser->usage_iterator, hid_descriptor, hid_descriptor_len, hid_report_type);
     parser->report = hid_report;
     parser->report_len = hid_report_len;
     parser->have_report_usage_ready = false;
@@ -637,8 +587,8 @@ void btstack_hid_parser_init(btstack_hid_parser_t * parser, const uint8_t * hid_
  * @param parser
  */
 bool btstack_hid_parser_has_more(btstack_hid_parser_t * parser){
-    while ((parser->have_report_usage_ready == false) && btstack_hid_usage_iterator_has_more(parser)){
-        btstack_hid_usage_iterator_get_item(parser, &parser->descriptor__usage_item);
+    while ((parser->have_report_usage_ready == false) && btstack_hid_usage_iterator_has_more(&parser->usage_iterator)){
+        btstack_hid_usage_iterator_get_item(&parser->usage_iterator, &parser->descriptor__usage_item);
         // ignore usages for other report ids
         if (parser->descriptor__usage_item.report_id != HID_REPORT_ID_UNDEFINED){
             if (parser->descriptor__usage_item.report_id != parser->report[0]){
