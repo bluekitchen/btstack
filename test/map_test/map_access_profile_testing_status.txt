@@ -86,9 +86,11 @@ MAP/MSE/MSM/BV-12-C MAP_OLD PASS (2024-07-17) Verify that the MSE can close a MA
 MAP/MSE/MMB/BV-09-C MAP_OLD PASS (2024-07-18) Verify that the MSE can return a Folders Listing to the MCE.
 MAP/MSE/MMB/BV-10-C MAP_OLD STLL PASS (2024-07-18) Verify that the MSE changes the current folder as requested by the MCE.
 MAP/MSE/MMB/BV-11-C MAP_OLD PASS AGAIN (2024-07-19) Verify that the MSE can return a messages-listing object to the MCE.
+Retest: MAP_OLD/MAP/MSE/*, MNR*, MMB/BV-09..11: PASS (2024-08-13)
 
 Open tests
 MAP/MSE/MMB/BV-12-C REGRESSION (2024-07-19) PTS fails due to map_access_server_get_max_body_size miscalculates the body size - Verify that the MSE can return an email message to the MCE.
+	TODO: introduce a Dry-Run-concept for getting the exact free space 
 MAP/MSE/MNR/BV-03-C: PASS on the first run, no client_connection from the 2nd run. Same with other tests using multiple connections
 MAP/MSE/MSM/BV-10-I - Transmission of OBEX_CONNECT_REQ failed unexpectedly.
 MAP/MSE/GOEP/SRMP/BI-02-C "The GET operation ended before the test case purpose could be verified.  Please increase the size of the file being requested by the GET operationr ((gt) 50 KB should be sufficient)." TODO MW: add final PUT/GET bit e.g. for MAP/MSE/GOEP/SRMP/BI-02-C
