@@ -134,6 +134,8 @@ typedef struct {
     hid_descriptor_item_t descriptor_item;
 
     hid_report_type_t report_type;
+
+    // report bit pos does not include the optional Report ID
     uint16_t        report_pos_in_bit;
 
     // usage pos and usage_page after last main item, used to find next usage

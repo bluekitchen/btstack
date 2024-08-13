@@ -326,7 +326,7 @@ static void btstack_parser_usage_iterator_process_item(btstack_hid_usage_iterato
             btstack_hid_usage_iterator_handle_global_item(iterator, item);
             // track record id for report handling, reset report position
             if (report_id_before != iterator->global_report_id){
-                iterator->report_pos_in_bit = 8u;
+                iterator->report_pos_in_bit = 0u;
             }
             break;
         case Local:
@@ -491,6 +491,10 @@ void btstack_hid_parser_get_field(btstack_hid_parser_t * parser, uint16_t * usag
     *usage_page      = parser->descriptor_usage_item.usage_page;
     *usage           = parser->descriptor_usage_item.usage;
 
+    // skip optional Report ID
+    if (parser->descriptor_usage_item.report_id != HID_REPORT_ID_UNDEFINED){
+        bit_pos += 8;
+    }
 
     // read field (up to 32 bit unsigned, up to 31 bit signed - 32 bit signed behaviour is undefined) - check report len
     bool is_variable   = (parser->descriptor_usage_item.descriptor_item.item_value & 2) != 0;
