@@ -565,11 +565,12 @@ void btstack_hid_usage_iterator_init(btstack_hid_parser_t * parser, const uint8_
     parser->state          = BTSTACK_HID_PARSER_SCAN_FOR_REPORT_ITEM;
     parser->global_report_id = HID_REPORT_ID_UNDEFINED;
     btstack_hid_descriptor_iterator_init(&parser->descriptor_iterator, hid_descriptor, hid_descriptor_len);
-
-    btstack_hid_usage_iterator_find_next_usage(parser);
 }
 
 bool btstack_hid_usage_iterator_has_more(btstack_hid_parser_t * parser){
+    while (parser->state == BTSTACK_HID_PARSER_SCAN_FOR_REPORT_ITEM){
+        btstack_hid_usage_iterator_find_next_usage(parser);
+    }
     return parser->state == BTSTACK_HID_PARSER_USAGES_AVAILABLE;
 }
 
@@ -607,12 +608,12 @@ void btstack_hid_usage_iterator_get_item(btstack_hid_parser_t * parser, btstack_
             parser->available_usages = 0;
         }
     }
+
     if (parser->available_usages) {
         return;
     }
     if (parser->required_usages == 0u){
         parser->state = BTSTACK_HID_PARSER_SCAN_FOR_REPORT_ITEM;
-        btstack_hid_usage_iterator_find_next_usage(parser);
     } else {
         hid_find_next_usage(parser);
         if (parser->available_usages == 0u) {
