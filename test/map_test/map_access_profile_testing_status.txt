@@ -87,8 +87,8 @@ MAP/MSE/MMB/BV-09-C MAP_OLD PASS (2024-07-18) Verify that the MSE can return a F
 MAP/MSE/MMB/BV-10-C MAP_OLD STLL PASS (2024-07-18) Verify that the MSE changes the current folder as requested by the MCE.
 MAP/MSE/MMB/BV-11-C MAP_OLD PASS AGAIN (2024-07-19) Verify that the MSE can return a messages-listing object to the MCE.
 Retest: MAP_OLD/MAP/MSE/*, MNR*, MMB/BV-09..11: PASS (2024-08-13)
-MAP/MSE/MMB/BV-12-C WIP (2024-08-19)
-MAP/MSE/MMB/BV-13-I: RE-PASS (2024-08-14) WARNING PTS vs BT SPEC: PTS first sends a GET x-bt-/MAP-msg-listing, map_demo_server sends a <message lsiting object XML>, the PTS sends a GET x-bt/message on the first listet message "A0" which needs to be asnwered with a bmessage (VCARD like format) but we fail with bmessage responses and pass the test with a second transmission of the <message lsiting object XML>
+MAP/MSE/MMB/BV-12-I: RE-PASS (2024-08-14) now with L2CAP & full chunking enabled
+MAP/MSE/MMB/BV-13-I: RE-PASS (2024-08-14) now with L2CAP & full chunking enabled, WARNING PTS vs BT SPEC: PTS first sends a GET x-bt-/MAP-msg-listing, map_demo_server sends a <message lsiting object XML>, the PTS sends a GET x-bt/message on the first listet message "A0" which needs to be asnwered with a bmessage (VCARD like format) but we fail with bmessage responses and pass the test with a second transmission of the <message lsiting object XML>
 
 Open tests
 MAP/MSE/MMB/BV-13-C MAP_OLD FAIL (2024-08-19) - MTC INCONC: no GSM message in message listing
