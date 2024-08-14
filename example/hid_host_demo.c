@@ -197,6 +197,23 @@ static void hid_host_set_leds(void){
     hid_host_send_set_report(hid_host_cid, HID_REPORT_TYPE_OUTPUT, hid_host_led_report_id, output_report, hid_host_led_report_len);
 }
 
+static void hid_host_demo_lookup_caps_lock_led(void){
+    btstack_hid_usage_iterator_t iterator;
+    const uint8_t *hid_descriptor = hid_descriptor_storage_get_descriptor_data(hid_host_cid);
+    const uint16_t hid_descriptor_len = hid_descriptor_storage_get_descriptor_len(hid_host_cid);
+    btstack_hid_usage_iterator_init(&iterator, hid_descriptor, hid_descriptor_len, HID_REPORT_TYPE_OUTPUT);
+    while (btstack_hid_usage_iterator_has_more(&iterator)){
+        btstack_hid_usage_item_t item;
+        btstack_hid_usage_iterator_get_item(&iterator, &item);
+        if (item.usage_page == HID_USAGE_PAGE_LED && item.usage == HID_USAGE_LED_CAPS_LOCK){
+            hid_host_led_report_id     = item.report_id;
+            hid_host_led_report_len    = btstack_hid_get_report_size_for_id(hid_host_led_report_id, HID_REPORT_TYPE_OUTPUT, hid_descriptor, hid_descriptor_len);
+            hid_host_led_caps_lock_bit = (uint8_t) item.bit_pos;
+            printf("Found CAPS LOCK in Output Report with ID 0x%04x at bit %3u\n", hid_host_led_report_id, hid_host_led_caps_lock_bit);
+        }
+    }
+}
+
 static void hid_host_handle_interrupt_report(const uint8_t * report, uint16_t report_len){
     // check if HID Input Report
     if (report_len < 1) return;
@@ -268,23 +285,6 @@ static void hid_host_handle_interrupt_report(const uint8_t * report, uint16_t re
         printf("%c", key);
     }
     memcpy(last_keys, new_keys, NUM_KEYS);
-}
-
-static void hid_host_demo_lookup_caps_lock_led(void){
-    btstack_hid_usage_iterator_t iterator;
-    const uint8_t *hid_descriptor = hid_descriptor_storage_get_descriptor_data(hid_host_cid);
-    const uint16_t hid_descriptor_len = hid_descriptor_storage_get_descriptor_len(hid_host_cid);
-    btstack_hid_usage_iterator_init(&iterator, hid_descriptor, hid_descriptor_len, HID_REPORT_TYPE_OUTPUT);
-    while (btstack_hid_usage_iterator_has_more(&iterator)){
-        btstack_hid_usage_item_t item;
-        btstack_hid_usage_iterator_get_item(&iterator, &item);
-        if (item.usage_page == HID_USAGE_PAGE_LED && item.usage == HID_USAGE_LED_CAPS_LOCK){
-            hid_host_led_report_id     = item.report_id;
-            hid_host_led_report_len    = btstack_hid_get_report_size_for_id(hid_host_led_report_id, HID_REPORT_TYPE_OUTPUT, hid_descriptor, hid_descriptor_len);
-            hid_host_led_caps_lock_bit = item.bit_pos;
-            printf("Found CAPS LOCK in Output Report with ID 0x%04x at bit %3u\n", hid_host_led_report_id, hid_host_led_caps_lock_bit);
-        }
-    }
 }
 
 /*
