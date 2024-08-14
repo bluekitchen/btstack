@@ -223,19 +223,19 @@ static void hid_host_handle_interrupt_report(const uint8_t * report, uint16_t re
         btstack_hid_parser_get_field(&parser, &usage_page, &usage, &value);
         if (usage_page != 0x07) continue;   
         switch (usage){
-            case 0x39:
+            case HID_USAGE_KEY_KEYBOARD_CAPS_LOCK:
                 // Toggle Caps Lock
                 hid_host_caps_lock = !hid_host_caps_lock;
                 // update LEDs
                 hid_host_set_leds();
                 break;
-            case 0xe1:
-            case 0xe6:
+            case HID_USAGE_KEY_KEYBOARD_LEFTSHIFT:
+            case HID_USAGE_KEY_KEYBOARD_RIGHTSHIFT:
                 if (value){
                     shift = 1;
                 }
                 continue;
-            case 0x00:
+            case HID_USAGE_KEY_RESERVED:
                 continue;
             default:
                 break;
@@ -278,13 +278,11 @@ static void hid_host_demo_lookup_caps_lock_led(void){
     while (btstack_hid_usage_iterator_has_more(&iterator)){
         btstack_hid_usage_item_t item;
         btstack_hid_usage_iterator_get_item(&iterator, &item);
-        if (item.usage_page == 0x0008){
-            if (item.usage == 0x0001){
-                hid_host_led_report_id     = item.report_id;
-                hid_host_led_report_len    = btstack_hid_get_report_size_for_id(hid_host_led_report_id, HID_REPORT_TYPE_OUTPUT, hid_descriptor, hid_descriptor_len);
-                hid_host_led_caps_lock_bit = item.bit_pos;
-                printf("Found CAPS LOCK in Output Report with ID 0x%04x at bitpos %3u\n", hid_host_led_report_id, hid_host_led_caps_lock_bit);
-            }
+        if (item.usage_page == HID_USAGE_PAGE_LED && item.usage == HID_USAGE_LED_CAPS_LOCK){
+            hid_host_led_report_id     = item.report_id;
+            hid_host_led_report_len    = btstack_hid_get_report_size_for_id(hid_host_led_report_id, HID_REPORT_TYPE_OUTPUT, hid_descriptor, hid_descriptor_len);
+            hid_host_led_caps_lock_bit = item.bit_pos;
+            printf("Found CAPS LOCK in Output Report with ID 0x%04x at bit %3u\n", hid_host_led_report_id, hid_host_led_caps_lock_bit);
         }
     }
 }
