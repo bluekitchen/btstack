@@ -585,7 +585,7 @@ static void opp_server_packet_handler_goep(opp_server_t * opp_server, uint8_t *p
 
         case OPP_SERVER_STATE_W4_CONNECT_REQUEST:
             // reset SRM state upon connected
-            obex_srm_server_init(opp_server->obex_srm);
+            obex_srm_server_init(&opp_server->obex_srm);
             parser_state = obex_parser_process_data(&opp_server->obex_parser, packet, size);
             if (parser_state == OBEX_PARSER_OBJECT_STATE_COMPLETE){
                 obex_parser_operation_info_t op_info;
