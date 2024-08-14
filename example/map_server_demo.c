@@ -398,7 +398,7 @@ static size_t body_msg(char* msg_buffer, uint16_t index, size_t maxsize) {
             ,
             index,
             mas_cfg->objects[index],
-            mas_cfg->objects[index] ? "yes" : "no"
+            mas_cfg->msg_stati[index] ? "yes" : "no"
         );
     return size;
 }
@@ -424,7 +424,7 @@ static size_t body_msg_short(char* msg_buffer, uint16_t index, size_t maxsize) {
             ,
             index,
             mas_cfg->objects[index],
-            mas_cfg->objects[index] ? "yes" : "no"
+            mas_cfg->msg_stati[index] ? "yes" : "no"
         );
     return size;
 }
