@@ -561,10 +561,11 @@ uint8_t opp_client_create_connection(btstack_packet_handler_t handler, bd_addr_t
     l2cap_ertm_config_t *l2cap_ertm_config = NULL;
     uint8_t *l2cap_ertm_buffer = NULL;
     uint16_t l2cap_ertm_buffer_size = 0;
-
-#ifdef ENABLE_GOEP_L2CAP
     // singleton instance
     static goep_client_t opp_client_goep_singleton_goep_client;
+
+#ifdef ENABLE_GOEP_L2CAP
+
     static uint8_t opp_client_singleton_ertm_buffer[1000];
     static l2cap_ertm_config_t opp_client_singleton_ertm_config = {
             1,  // ertm mandatory
