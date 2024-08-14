@@ -134,6 +134,7 @@ static size_t PRINT_SMS_native_vcard(char* msg_buffer, uint16_t index, size_t ma
 
 static void MAP_MSE_MMD_BV_02_I_disc(void);
 static void MAP_MSE_MMD_BV_02_I_getMsgListng(void);
+static void MAP_MSE_MMB_BV_23_getMsgListng(void);
 static void MAP_MSE_MMU_BV_02_I_PutMsg(void);
 
 #define MSG_LISTING_HEADER   "<MAP-msg-listing version=\"1.1\">"
@@ -209,7 +210,8 @@ static struct test_config_s
 {TC_L2CAP(.descr = "MAP/MSE/MMB/BV-11 13 14 42 46"     ,.type = &msg,    .obj_count = 2, .objects = { "SMS_GSM","SMS_CDMA"                              }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
 {TC_NORM( .descr = "MAP/MSE/MMB/BV-12"                 ,.type = &msg,    .obj_count = 1, .objects = { "EMAIL", "EMAIL",                                 }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
 {TC_NORM( .descr = "MAP/MSE/MMB/BV-15 18 20 22"        ,.type = &msg,    .obj_count = 5, .objects = { "EMAIL","SMS_GSM","SMS_CDMA", "MMS", "IM"         }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
-{TC_NORM( .descr = "MAP/MSE/MMB/BV-16 23"              ,.type = &msg,    .obj_count = 1, .objects = { "EMAIL","EMAIL"                                   }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
+{TC_NORM( .descr = "MAP/MSE/MMB/BV-16"                 ,.type = &msg,    .obj_count = 1, .objects = { "EMAIL","EMAIL"                                   }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
+{TC_NORM( .descr = "MAP/MSE/MMB/BV-23"                 ,.type = &msg,    .obj_count = 1, .objects = { "EMAIL","EMAIL"                                   }, .fGetMsgListng = MAP_MSE_MMB_BV_23_getMsgListng     ,                                                                                                                                                                                                                                                                                                                                                                                           },)
 {TC_NORM( .descr = "MAP/MSE/MMB/BV-24 <a><OK>"         ,.type = &convo,  .obj_count = 0, .objects = { "",""                                             }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
 {TC_NORM( .descr = "MAP/MSE/MMB/BV-25 <c><OK>"         ,.type = &convo,  .obj_count = 0, .objects = { "",""                                             }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
 {TC_NORM( .descr = "MAP/MSE/MMB/BV-34 38 39 40 41 44"  ,.type = &convo,  .obj_count = 1, .objects = { "",""                                             }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
@@ -302,9 +304,29 @@ static select_test_set(char c) {
     test_set->fp_init_test_cases(test_set);
 }
 
+static mas_uint128hex_t DatabaseIdentifier = { 0 };
+// BT SIG Test Suite PTS is not acepting what BT SIG MAP spec describes as valid counters:
+// "variable length (max. 32 bytes), 128 - bit value in hex string format":
+// "00112233445566778899AABBCCDDEEFF"
+// "0000000000000000"
+// "0000000000000001"
+// "00000000"
+// "00000001"
+// { 0 } works
+static mas_uint128hex_t FolderVersionCounter = { 0 };
+static mas_uint128hex_t ConversationListingVersionCounter = { 0 };
+static mas_uint128hex_t ConversationID = { 0 };
+
+static void increase_version_counter_by_1(mas_uint128hex_t counter) {
+    counter[BT_UINT128_HEX_LEN_BYTES - 1]++;
+    log_debug("New version_counter:")
+    log_debug_hexdump(counter, BT_UINT128_HEX_LEN_BYTES);
+}
 
 
-
+/*
+* Call-backs which update/change the state or behaviour of a test case, e.g. add one more message after each GetMessageListing
+*/
 static void MAP_MSE_MMD_BV_02_I_disc(void) {
     log_debug("disabled default discconect behaviour");
     //cfg_start_index++;
@@ -322,27 +344,13 @@ static void MAP_MSE_MMD_BV_02_I_getMsgListng(void) {
     cfg_MAP_MSE_MMD_BV_02_I_getMsgListng_counter++;
 }
 
+static void MAP_MSE_MMB_BV_23_getMsgListng(void) {
+    increase_version_counter_by_1(FolderVersionCounter);
+}
+
 static void MAP_MSE_MMU_BV_02_I_PutMsg(void) {
     one_object_more_or_less++;
     log_debug("one_object_more_or_less:%d", one_object_more_or_less);
-}
-
-static mas_uint128hex_t DatabaseIdentifier = { 0 };
-// BT SIG Test Suite PTS is not acepting what BT SIG MAP spec describes as valid counters:
-// "variable length (max. 32 bytes), 128 - bit value in hex string format":
-// "00112233445566778899AABBCCDDEEFF"
-// "0000000000000000"
-// "0000000000000001"
-// "00000000"
-// "00000001"
-// { 0 } works
-static mas_uint128hex_t FolderVersionCounter = { 0 };
-static mas_uint128hex_t ConversationListingVersionCounter = { 0 };
-static mas_uint128hex_t ConversationID = { 0 };
-
-static void increase_version_counter_by_1(mas_uint128hex_t counter) {
-    counter[BT_UINT128_HEX_LEN_BYTES - 1]++;
-    log_debug_hexdump(counter, BT_UINT128_HEX_LEN_BYTES);
 }
 
 static size_t PRINT_SMS_native_vcard(char* msg_buffer, uint16_t index, size_t maxsize) {
