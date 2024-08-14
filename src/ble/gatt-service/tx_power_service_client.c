@@ -98,7 +98,7 @@ static void txps_client_connected(txps_client_connection_t * connection, uint8_t
                                              GATTSERVICE_SUBEVENT_TXPS_CLIENT_CONNECTED);
 }
 
-static void txps_client_emit_uint8(uint16_t cid, btstack_packet_handler_t event_callback, uint8_t subevent, const uint8_t * data, uint8_t data_size){
+static void txps_client_emit_uint8(uint16_t cid, btstack_packet_handler_t event_callback, uint8_t subevent, const uint8_t * data, uint16_t data_size){
     UNUSED(data_size);
     btstack_assert(event_callback != NULL);
     
