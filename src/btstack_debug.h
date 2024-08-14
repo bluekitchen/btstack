@@ -111,6 +111,34 @@ void btstack_assert_failed(const char * file, uint16_t line_nr);
 #define HCI_DUMP_LOG_PUTS(log_level, format)        hci_dump_log(log_level, "%s.%u: " format, BTSTACK_FILE__, __LINE__);
 #endif
 
+#ifdef _MSC_VER
+
+// original version that requires GNU Macro extensions, but works with Visual Studio 2022
+
+#define HCI_DUMP_LOG HCI_DUMP_LOG_PRINTF
+
+#ifdef ENABLE_LOG_DEBUG
+#define log_debug(format, ...)  HCI_DUMP_LOG(HCI_DUMP_LOG_LEVEL_DEBUG, format,  ## __VA_ARGS__)
+#else
+#define log_debug(...) (void)(0)
+#endif
+
+#ifdef ENABLE_LOG_INFO
+#define log_info(format, ...)  HCI_DUMP_LOG(HCI_DUMP_LOG_LEVEL_INFO, format,  ## __VA_ARGS__)
+#else
+#define log_info(...) (void)(0)
+#endif
+
+#ifdef ENABLE_LOG_ERROR
+#define log_error(format, ...)  HCI_DUMP_LOG(HCI_DUMP_LOG_LEVEL_ERROR, format,  ## __VA_ARGS__)
+#else
+#define log_error(...) (void)(0)
+#endif
+
+#else  /* _MSC_VER */
+
+// C99 Pedantic version - does not work for Visual Studio 2022
+
 #define GET_LOGGER_TYPE_FOR_ARG_COUNT( _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, NAME, ... ) NAME
 
 #define HCI_DUMP_LOG( ... ) GET_LOGGER_TYPE_FOR_ARG_COUNT(__VA_ARGS__, HCI_DUMP_LOG_PRINTF, HCI_DUMP_LOG_PRINTF, HCI_DUMP_LOG_PRINTF, HCI_DUMP_LOG_PRINTF, HCI_DUMP_LOG_PRINTF, HCI_DUMP_LOG_PRINTF, HCI_DUMP_LOG_PRINTF, HCI_DUMP_LOG_PRINTF, HCI_DUMP_LOG_PRINTF, HCI_DUMP_LOG_PRINTF, HCI_DUMP_LOG_PUTS, UNUSED)( __VA_ARGS__ )
@@ -132,6 +160,9 @@ void btstack_assert_failed(const char * file, uint16_t line_nr);
 #else
 #define log_error(...) (void)(0)
 #endif
+
+#endif /* _MSC_VER */
+
 
 /* API_START */
 
