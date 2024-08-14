@@ -70,7 +70,7 @@
 #define MAX_SAMPLES_PER_FRAME 480
 #define MAX_LC3_FRAME_BYTES   155
 
-static const uint8_t adv_sid = 0;
+#define ADVERTISING_SID  0
 
 static le_advertising_set_t le_advertising_set;
 
@@ -87,7 +87,7 @@ static le_extended_advertising_parameters_t extended_params = {
         .primary_advertising_phy = 1, // LE 1M PHY
         .secondary_advertising_max_skip = 0,
         .secondary_advertising_phy = 1, // LE 1M PHY
-        .advertising_sid = adv_sid,
+        .advertising_sid = ADVERTISING_SID,
         .scan_request_notification_enable = 0,
 };
 
