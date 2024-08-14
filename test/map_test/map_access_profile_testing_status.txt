@@ -94,6 +94,7 @@ MAP/MSE/MMB/BV-16-C: RE-PASS (2024-08-14)
 MAP/MSE/MMB/BV-18-C: RE-PASS (2024-08-14) 
 MAP/MSE/MMB/BV-20-C: RE-PASS (2024-08-14)
 MAP/MSE/MMB/BV-22-C: RE-PASS (2024-08-14)
+MAP/MSE/MMB/BV-23-C: RE-PASS (2024-08-14) now with automated callback, no manual counter increase required any more.
 
 Open tests
 MAP/MSE/MMB/BV-13-C MAP_OLD FAIL (2024-08-19) - MTC INCONC: no GSM message in message listing
