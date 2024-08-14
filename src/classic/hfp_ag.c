@@ -909,8 +909,8 @@ static void hfp_ag_emit_general_simple_event(uint8_t event_subtype){
 }
 
 static void hfp_ag_emit_apple_accessory_information(hfp_connection_t *hfp_connection){
-    uint8_t event[40];
-    uint16_t version_len = strlen(hfp_connection->apple_accessory_version);
+    uint8_t event[11 + HFP_APPLE_ACCESSORY_VERSION_LEN];
+    uint8_t version_len = (uint8_t) strlen(hfp_connection->apple_accessory_version);
     event[0] = HCI_EVENT_HFP_META;
     event[1] = 9 + version_len;
     event[2] = HFP_SUBEVENT_APPLE_ACCESSORY_INFORMATION;

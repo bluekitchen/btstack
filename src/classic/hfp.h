@@ -163,6 +163,7 @@ extern "C" {
 #define HFP_APPLE_ACCESSORY_STATE "+IPHONEACCEV"
 #define HFP_APPLE_SIRI_STATE "+APLSIRI"
 #define HFP_APPLE_SIRI_EYES_FREE_MODE "+APLEFM"
+#define HFP_APPLE_ACCESSORY_VERSION_LEN  16
 
 #define HFP_OK "OK"
 #define HFP_ERROR "ERROR"
@@ -658,7 +659,7 @@ typedef struct hfp_connection {
     uint16_t apple_accessory_vendor_id;
     uint8_t  apple_accessory_features;
     uint8_t  apple_accessory_key;
-    char     apple_accessory_version[16];
+    char     apple_accessory_version[HFP_APPLE_ACCESSORY_VERSION_LEN];
     // HF: AT Command, AG: Unsolicited Result Code
     const char * send_custom_message;
 
