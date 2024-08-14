@@ -108,7 +108,7 @@ void hci_event_builder_add_con_handle(hci_event_builder_context_t * context, hci
 }
 
 void hci_event_builder_add_string(hci_event_builder_context_t * context, const char * text){
-    uint16_t length = strlen(text);
+    uint16_t length = (uint16_t) strlen(text);
     uint16_t pos = context->pos;
     hci_event_builder_increment_pos(context, length);
     memcpy(&context->buffer[pos], text, length);
