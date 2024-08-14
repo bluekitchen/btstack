@@ -702,6 +702,13 @@ uint8_t l2cap_cbm_create_channel(btstack_packet_handler_t packet_handler, hci_co
  */
 uint8_t l2cap_cbm_provide_credits(uint16_t local_cid, uint16_t credits);
 
+/**
+ * @brief Returns the number of credits provided by peer
+ * @param local_cid
+ * @return number of credits
+ */
+uint16_t l2cap_cbm_available_credits(uint16_t local_cid);
+
 //
 // L2CAP Connection-Oriented Channels in Enhanced Credit-Based Flow-Control Mode - ECBM
 //
@@ -812,6 +819,13 @@ uint8_t l2cap_ecbm_reconfigure_channels(uint8_t num_cids, uint16_t * local_cids,
  * @param con_handle
  */
 void l2cap_ecbm_trigger_pending_connection_responses(hci_con_handle_t con_handle);
+
+/**
+ * @brief Returns the number of outgoing credits provided by peer
+ * @param local_cid
+ * @return number of credits
+ */
+uint16_t l2cap_ecbm_available_credits(uint16_t local_cid);
 
 /**
  * @brief De-Init L2CAP

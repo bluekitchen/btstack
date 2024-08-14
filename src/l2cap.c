@@ -5250,6 +5250,15 @@ static void l2cap_credit_based_notify_channel_can_send(l2cap_channel_t *channel)
     log_debug("le can send now, local_cid 0x%x", channel->local_cid);
     l2cap_emit_simple_event_with_cid(channel, L2CAP_EVENT_CAN_SEND_NOW);
 }
+
+static uint16_t l2cap_credit_based_available_credits(uint16_t local_cid){
+    l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
+    if (channel != NULL) {
+        return channel->credits_outgoing;
+    }
+    return 0;
+}
+
 #endif
 
 #ifdef ENABLE_L2CAP_LE_CREDIT_BASED_FLOW_CONTROL_MODE
@@ -5485,6 +5494,10 @@ uint8_t l2cap_cbm_create_channel(btstack_packet_handler_t packet_handler, hci_co
 uint8_t l2cap_cbm_provide_credits(uint16_t local_cid, uint16_t credits){
     return l2cap_credit_based_provide_credits(local_cid, credits);
 }
+
+uint16_t l2cap_cbm_available_credits(uint16_t local_cid){
+    return l2cap_credit_based_available_credits(local_cid);
+}
 #endif
 
 #ifdef ENABLE_L2CAP_ENHANCED_CREDIT_BASED_FLOW_CONTROL_MODE
@@ -5718,6 +5731,10 @@ uint8_t l2cap_ecbm_reconfigure_channels(uint8_t num_cids, uint16_t * local_cids,
 
 uint8_t l2cap_ecbm_provide_credits(uint16_t local_cid, uint16_t credits){
     return l2cap_credit_based_provide_credits(local_cid, credits);
+}
+
+uint16_t l2cap_ecbm_available_credits(uint16_t local_cid){
+    return l2cap_credit_based_available_credits(local_cid);
 }
 #endif
 
