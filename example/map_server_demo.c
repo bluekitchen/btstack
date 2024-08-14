@@ -134,7 +134,8 @@ static size_t PRINT_SMS_native_vcard(char* msg_buffer, uint16_t index, size_t ma
 
 static void MAP_MSE_MMD_BV_02_I_disc(void);
 static void MAP_MSE_MMD_BV_02_I_getMsgListng(void);
-static void MAP_MSE_MMB_BV_23_getMsgListng(void);
+static void MAP_MSE_MMB_BV_23_inc_VersCnt(void);
+static void MAP_MSE_MMB_BV_24_inc_ConvCnt(void);
 static void MAP_MSE_MMU_BV_02_I_PutMsg(void);
 
 #define MSG_LISTING_HEADER   "<MAP-msg-listing version=\"1.1\">"
@@ -191,6 +192,7 @@ static struct test_config_s
     struct objconfig_s* type;
     void (*fdiscon)(void); // optional handler for OBEX disconnect
     void (*fGetMsgListng)(void); // optional handler for OBEX getMessageListing
+    void (*fGetConvoListng)(void); // optional handler for OBEX getConvoListing
     void (*fPutMsg)(void); // optional handler for OBEX PutMessage
     int obj_count;
     char* objects[MAX_TC_OBJECTS]; // maximum 6-1 entries, last one is null
@@ -211,8 +213,8 @@ static struct test_config_s
 {TC_NORM( .descr = "MAP/MSE/MMB/BV-12"                 ,.type = &msg,    .obj_count = 1, .objects = { "EMAIL", "EMAIL",                                 }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
 {TC_NORM( .descr = "MAP/MSE/MMB/BV-15 18 20 22"        ,.type = &msg,    .obj_count = 5, .objects = { "EMAIL","SMS_GSM","SMS_CDMA", "MMS", "IM"         }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
 {TC_NORM( .descr = "MAP/MSE/MMB/BV-16"                 ,.type = &msg,    .obj_count = 1, .objects = { "EMAIL","EMAIL"                                   }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
-{TC_NORM( .descr = "MAP/MSE/MMB/BV-23"                 ,.type = &msg,    .obj_count = 1, .objects = { "EMAIL","EMAIL"                                   }, .fGetMsgListng = MAP_MSE_MMB_BV_23_getMsgListng     ,                                                                                                                                                                                                                                                                                                                                                                                           },)
-{TC_NORM( .descr = "MAP/MSE/MMB/BV-24 <a><OK>"         ,.type = &convo,  .obj_count = 0, .objects = { "",""                                             }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
+{TC_NORM( .descr = "MAP/MSE/MMB/BV-23"                 ,.type = &msg,    .obj_count = 1, .objects = { "EMAIL","EMAIL"                                   }, .fGetMsgListng = MAP_MSE_MMB_BV_23_inc_VersCnt      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
+{TC_NORM( .descr = "MAP/MSE/MMB/BV-24"                 ,.type = &convo,  .obj_count = 0, .objects = { "",""                                             }, .fGetConvoListng = MAP_MSE_MMB_BV_24_inc_ConvCnt    ,                                                                                                                                                                                                                                                                                                                                                                                           },)
 {TC_NORM( .descr = "MAP/MSE/MMB/BV-25 <c><OK>"         ,.type = &convo,  .obj_count = 0, .objects = { "",""                                             }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
 {TC_NORM( .descr = "MAP/MSE/MMB/BV-34 38 39 40 41 44"  ,.type = &convo,  .obj_count = 1, .objects = { "",""                                             }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
 {TC_NORM( .descr = "MAP/MSE/MMB/BV-35 36 37"           ,.type = &msg,    .obj_count = 1, .objects = { "EMAIL"                                           }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
@@ -317,9 +319,9 @@ static mas_uint128hex_t FolderVersionCounter = { 0 };
 static mas_uint128hex_t ConversationListingVersionCounter = { 0 };
 static mas_uint128hex_t ConversationID = { 0 };
 
-static void increase_version_counter_by_1(mas_uint128hex_t counter) {
+static void increase_version_counter_by_1(char* name, mas_uint128hex_t counter) {
     counter[BT_UINT128_HEX_LEN_BYTES - 1]++;
-    log_debug("New version_counter:")
+    log_debug("%s:", name)
     log_debug_hexdump(counter, BT_UINT128_HEX_LEN_BYTES);
 }
 
@@ -344,10 +346,14 @@ static void MAP_MSE_MMD_BV_02_I_getMsgListng(void) {
     cfg_MAP_MSE_MMD_BV_02_I_getMsgListng_counter++;
 }
 
-static void MAP_MSE_MMB_BV_23_getMsgListng(void) {
-    increase_version_counter_by_1(FolderVersionCounter);
+static void MAP_MSE_MMB_BV_23_inc_VersCnt(void) {
+    increase_version_counter_by_1("FolderVersionCounter", FolderVersionCounter);
 }
-
+static void MAP_MSE_MMB_BV_24_inc_ConvCnt(void) {
+    //increase_version_counter_by_1("ConversationListingVersionCounter",ConversationListingVersionCounter);
+    cfg_start_index++;
+    one_object_more_or_less++;
+}
 static void MAP_MSE_MMU_BV_02_I_PutMsg(void) {
     one_object_more_or_less++;
     log_debug("one_object_more_or_less:%d", one_object_more_or_less);
@@ -647,13 +653,13 @@ static void stdin_process(char c){
         case 'f':
             test_set->fp_print_test_config(test_set);
             MAP_PRINTF("FolderVersionCounter:");
-            increase_version_counter_by_1(FolderVersionCounter);
+            increase_version_counter_by_1("FolderVersionCounter", FolderVersionCounter);
             break;
 
         case 'i':
             test_set->fp_print_test_config(test_set);
             MAP_PRINTF("ConversationID:");
-            increase_version_counter_by_1(ConversationID);
+            increase_version_counter_by_1("ConversationID", ConversationID);
             break;
 
         case 'h':
@@ -663,7 +669,7 @@ static void stdin_process(char c){
         case 'c':
             test_set->fp_print_test_config(test_set);
             MAP_PRINTF("ConversationListingVersionCounter:");
-            increase_version_counter_by_1(ConversationListingVersionCounter);
+            increase_version_counter_by_1("ConversationListingVersionCounter", ConversationListingVersionCounter);
             break;
 
         case 'e': {
@@ -961,19 +967,27 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             mas_string_t FilterRecipient;
                             APP_READ_32(packet, &pos, &continuation);
                             APP_READ_16(packet, &pos, &current_map_cid);
+                            APP_READ_16(packet, &pos, &max_list_count);
                             APP_READ_STR(packet, &pos, sizeof(FilterPeriodBegin), (char*)FilterPeriodBegin);
                             APP_READ_STR(packet, &pos, sizeof(EndFilterPeriodEnd), (char*)EndFilterPeriodEnd);
                             APP_READ_STR(packet, &pos, sizeof(EndFilterPeriodEnd), (char*)FilterRecipient);
                             APP_READ_STR(packet, &pos, sizeof(ConversationID), (char *) ConversationID);
                             map_access_server_set_response_app_param(current_map_cid, MAP_APP_PARAM_DatabaseIdentifier, DatabaseIdentifier);
-                            map_access_server_set_response_app_param(current_map_cid, MAP_APP_PARAM_ConversationListingVersionCounter, ConversationListingVersionCounter);
                             map_access_server_set_response_app_param(current_map_cid, MAP_APP_PARAM_ListingSize, &ListingSize);
+                            if (max_list_count == 0) {
+                                map_access_server_set_response_app_param(current_map_cid, MAP_APP_PARAM_ConversationListingVersionCounter, ConversationListingVersionCounter);
+                            }
                             map_access_server_set_response_type_and_name(current_map_cid, NULL, NULL);
                             // BT MAP Spec requires to skip the body if max_list_count == 0
                             if (mas_cfg->obj_count == 0 && one_object_more_or_less == 0)
                                 map_access_server_send_response(current_map_cid, OBEX_RESP_SUCCESS, 0, 0, NULL);
                             else
                                 send_obex_object(current_map_cid, 0, 0xffff, continuation);
+
+                            // some PTS tests require strange behaviour so we need a handler to modify default behaviour for GetConvoListing
+                            if (mas_cfg->fGetConvoListng != NULL)
+                                mas_cfg->fGetConvoListng();
+
                             break;
                         }
                         case MAP_SUBEVENT_GET_MAS_INSTANCE_INFORMATION: {
