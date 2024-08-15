@@ -190,10 +190,13 @@ typedef struct gatt_client{
 
     att_bearer_type_t bearer_type;
 
+#if defined(ENABLE_GATT_OVER_CLASSIC) || defined(ENABLE_GATT_OVER_EATT)
+    uint16_t  l2cap_cid;
+#endif
+
 #ifdef ENABLE_GATT_OVER_CLASSIC
     bd_addr_t addr;
     uint16_t  l2cap_psm;
-    uint16_t  l2cap_cid;
     btstack_context_callback_registration_t callback_request;
 #endif
 
