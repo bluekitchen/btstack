@@ -132,12 +132,70 @@ static size_t body_msg_email_1_1(char* msg_buffer, uint16_t index, size_t maxsiz
 static size_t body_convo(char* msg_buffer, uint16_t index, size_t maxsize);
 static size_t PRINT_SMS_native_vcard(char* msg_buffer, uint16_t index, size_t maxsize);
 
-static void MAP_MSE_MMD_BV_02_I_disc(void);
-static void MAP_MSE_MMD_BV_02_I_getMsgListng(void);
-static void MAP_MSE_MMB_BV_23_inc_VersCnt(void);
-static void MAP_MSE_MMB_BV_24_inc_ConvCnt(void);
-static void MAP_MSE_MMB_BV_25_inc_ConvListCnt(void);
-static void MAP_MSE_MMU_BV_02_I_PutMsg(void);
+
+static int cfg_start_index = 0;
+static int cfg_MAP_MSE_MMD_BV_02_I_getMsgListng_counter = 0;
+static int one_object_more_or_less = 0;
+static uint16_t ListingSize = 0;
+
+static mas_uint128hex_t DatabaseIdentifier = { 0 };
+// BT SIG Test Suite PTS is not acepting what BT SIG MAP spec describes as valid counters:
+// "variable length (max. 32 bytes), 128 - bit value in hex string format":
+// "00112233445566778899AABBCCDDEEFF"
+// "0000000000000000"
+// "0000000000000001"
+// "00000000"
+// "00000001"
+// { 0 } works
+static mas_uint128hex_t FolderVersionCounter = { 0 };
+static mas_uint128hex_t ConversationListingVersionCounter = { 0 };
+static mas_uint128hex_t ConversationID = { 0 };
+
+static void increase_version_counter_by_1(char* name, mas_uint128hex_t counter) {
+    counter[BT_UINT128_HEX_LEN_BYTES - 1]++;
+    log_debug("%s:", name)
+        log_debug_hexdump(counter, BT_UINT128_HEX_LEN_BYTES);
+}
+
+
+/*
+* Call-backs which update/change the state or behaviour of a test case, e.g. add one more message after each GetMessageListing
+*/
+static void MAP_MSE_MMD_BV_02_I_disc(void) {
+    log_debug("disabled default discconect behaviour");
+    //cfg_start_index++;
+    //one_object_more_or_less++;
+    //log_debug("counter:%d cfg_start_index:%d one_object_more_or_less:%d", cfg_MAP_MSE_MMD_BV_02_I_getMsgListng_counter, cfg_start_index, one_object_more_or_less);
+    //cfg_MAP_MSE_MMD_BV_02_I_getMsgListng_counter++;
+}
+
+static void MAP_MSE_MMD_BV_02_I_getMsgListng(void) {
+    if ((cfg_MAP_MSE_MMD_BV_02_I_getMsgListng_counter & 0x1) == 1) {
+        cfg_start_index++;
+        one_object_more_or_less++;
+    }
+    log_debug("counter:%d cfg_start_index:%d one_object_more_or_less:%d", cfg_MAP_MSE_MMD_BV_02_I_getMsgListng_counter, cfg_start_index, one_object_more_or_less);
+    cfg_MAP_MSE_MMD_BV_02_I_getMsgListng_counter++;
+}
+
+static void MAP_MSE_MMB_BV_23_inc_VersCnt(void) {
+    increase_version_counter_by_1("FolderVersionCounter", FolderVersionCounter);
+}
+
+static void MAP_MSE_MMB_BV_24_inc_ConvCnt(void) {
+    //increase_version_counter_by_1("ConversationListingVersionCounter",ConversationListingVersionCounter);
+    cfg_start_index++;
+    one_object_more_or_less++;
+}
+
+static void MAP_MSE_MMB_BV_25_inc_ConvListCnt(void) {
+    increase_version_counter_by_1("FolderVersionCounter", ConversationListingVersionCounter);
+}
+
+static void MAP_MSE_MMU_BV_02_I_PutMsg(void) {
+    one_object_more_or_less++;
+    log_debug("one_object_more_or_less:%d", one_object_more_or_less);
+}
 
 #define MSG_LISTING_HEADER   "<MAP-msg-listing version=\"1.1\">"
 #define MSG_LISTING_FOOTER   "</MAP-msg-listing>"
@@ -203,32 +261,28 @@ static struct test_config_s
 } test_configs[] =
 {
 {TC_NORM( .descr = "MAP/MSE/MSM/*../MNR/*"             ,.type = &msgshrt,.obj_count = 1, .objects = { "EMAIL"                                           }                                                      ,.helpstr = "PTS IXIT set 'TSPX_secure_simple_pairing_pass_key_confirmation' to 'true'"                                                                                                                                                                                                                                                      },)
-{TC_NORM( .descr = "MAP/MSE/SGSIT/ATTR/BV-01"          ,.type = &msgshrt,.obj_count = 1, .objects = { "EMAIL"                                           }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
-{TC_NORM( .descr = "MAP/MSE/GOEP/SRM/BI-05"            ,.type = &msgshrt,.obj_count = 1, .objects = { "EMAIL"                                           }                                                      ,.helpstr = "PTS needs both L2CAP with 214 bytes short PDU and working messages(continue) so we need to create short messages to pass"                                                                                                                                                                                                                                                      },)
-{TC_NORM( .descr = "MAP/MSE/MFMH/BV-01..05"            ,.type = &msg,    .obj_count = 1, .objects = { "EMAIL"                                           }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
-{TC_NORM( .descr = "MAP/MSE/MFB/BV-02 05 07"           ,.type = &msg,    .obj_count = 0, .objects = { ""                                                }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
-{TC_NORM( .descr = "MAP/MSE/MMU/BV-03"                 ,.type = &msg,    .obj_count = 0, .objects = { "", "EMAIL", "MMS"                                }, .fPutMsg = MAP_MSE_MMU_BV_02_I_PutMsg               ,.helpstr = "WIP add OBEX NAME Header (Handle) PTS [50] Enter Test Step TS_MTC_OBEX_extract_handle_name ( , (lt)Not Defined Value(gt)  ) Test case error in 'MAP/MSE/MMU/BV-03'. The value 'headers_received' (-1) is not fully defined. See Screenshots in MAP_MSE_MMU_BV_03_I_2024_06_28_12_02_17"                                                                                      },)
-{TC_NORM( .descr = "MAP/MSE/MMU/BV-02"                 ,.type = &msgshrt,.obj_count = 0, .objects = { "", "EMAIL", "MMS" , "EMAIL", "EMAIL"             }, .fPutMsg = MAP_MSE_MMU_BV_02_I_PutMsg               ,.helpstr = "WIP: PTS accepts the EMAIL but not the MMS. No idea why..."                                                                                                                                                                                                                                                                                                                    },)
 {TC_NORM( .descr = "MAP/MSE/MMB/BV-09 10"              ,.type = &msg,    .obj_count = 2, .objects = { "SMS_GSM","SMS_CDMA"                              }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
 {TC_L2CAP(.descr = "MAP/MSE/MMB/BV-11 13 14 42 46"     ,.type = &msg,    .obj_count = 2, .objects = { "SMS_GSM","SMS_CDMA"                              }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
 {TC_NORM( .descr = "MAP/MSE/MMB/BV-12"                 ,.type = &msg,    .obj_count = 1, .objects = { "EMAIL", "EMAIL",                                 }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
 {TC_NORM( .descr = "MAP/MSE/MMB/BV-15 18 20 22"        ,.type = &msg,    .obj_count = 5, .objects = { "EMAIL","SMS_GSM","SMS_CDMA", "MMS", "IM"         }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
 {TC_NORM( .descr = "MAP/MSE/MMB/BV-16"                 ,.type = &msg,    .obj_count = 1, .objects = { "EMAIL","EMAIL"                                   }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
-{TC_NORM( .descr = "MAP/MSE/MMB/BV-23"                 ,.type = &msg,    .obj_count = 1, .objects = { "EMAIL","EMAIL"                                   }, .fGetMsgListng = MAP_MSE_MMB_BV_23_inc_VersCnt      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
+{TC_NORM( .descr = "MAP/MSE/MMB/BV-23"                 ,.type = &msg,    .obj_count = 1, .objects = { "EMAIL","EMAIL"                                   }, .fGetMsgListng   = MAP_MSE_MMB_BV_23_inc_VersCnt    ,                                                                                                                                                                                                                                                                                                                                                                                           },)
 {TC_NORM( .descr = "MAP/MSE/MMB/BV-24"                 ,.type = &convo,  .obj_count = 0, .objects = { "",""                                             }, .fGetConvoListng = MAP_MSE_MMB_BV_24_inc_ConvCnt    ,                                                                                                                                                                                                                                                                                                                                                                                           },)
 {TC_NORM( .descr = "MAP/MSE/MMB/BV-25"                 ,.type = &convo,  .obj_count = 0, .objects = { "",""                                             }, .fGetConvoListng = MAP_MSE_MMB_BV_25_inc_ConvListCnt,                                                                                                                                                                                                                                                                                                                                                                                           },)
 {TC_NORM( .descr = "MAP/MSE/MMB/BV-34 38 39 40 41 44"  ,.type = &convo,  .obj_count = 1, .objects = { "",""                                             }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
 {TC_NORM( .descr = "MAP/MSE/MMB/BV-35 36 37"           ,.type = &msg,    .obj_count = 1, .objects = { "EMAIL"                                           }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
 {TC_NORM( .descr = "MAP/MSE/MMB/BV-47"                 ,.type = &msg,    .obj_count = 1, .objects = { "IM","IM"                                         }                                                      ,.helpstr = "PTS.EXE fails with '- MTC INCONC: no email message in message listing' but expects type=\"IM\""                                                                                                                                                                                                                                                                                },)
 {TC_NORM( .descr = "MAP/MSE/MMD/BV-02"                 ,.type = &msg,    .obj_count = 1, .objects = { "EMAIL","MMS", "SMS_GSM","SMS_CDMA", "IM", "dummy"}, .fGetMsgListng = MAP_MSE_MMD_BV_02_I_getMsgListng   ,
-                                                                                                                                                                           .fdiscon = MAP_MSE_MMD_BV_02_I_disc           ,.helpstr = "PTS 8.5.4 Build 6 issue: sends a sequence of OBEX connect, GetMessageListing (expects 1 EMAIL, nothing else, no more messages), PUT MessageStatus (Delete Message), GetMessageListing (expects empty listing), OBEX discoonect, repeat (MMS, SMS_GSM, SMS_CDMA) - the last repeat for IM misses the disconnect and fails on the Get because the list is still empty"           },)
-};
+                                                                                                                                                           .fdiscon       = MAP_MSE_MMD_BV_02_I_disc           ,.helpstr = "PTS 8.5.4 Build 6 issue: sends a sequence of OBEX connect, GetMessageListing (expects 1 EMAIL, nothing else, no more messages), PUT MessageStatus (Delete Message), GetMessageListing (expects empty listing), OBEX discoonect, repeat (MMS, SMS_GSM, SMS_CDMA) - the last repeat for IM misses the disconnect and fails on the Get because the list is still empty"           },)
+{TC_NORM( .descr = "MAP/MSE/SGSIT/ATTR/BV-01"          ,.type = &msgshrt,.obj_count = 1, .objects = { "EMAIL"                                           }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
+{TC_NORM( .descr = "MAP/MSE/GOEP/SRM/BI-05"            ,.type = &msgshrt,.obj_count = 1, .objects = { "EMAIL"                                           }                                                      ,.helpstr = "PTS needs both L2CAP with 214 bytes short PDU and working messages(continue) so we need to create short messages to pass"                                                                                                                                                                                                                                                      },)
+{TC_NORM( .descr = "MAP/MSE/MFMH/BV-01..05"            ,.type = &msg,    .obj_count = 1, .objects = { "EMAIL"                                           }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
+{TC_NORM( .descr = "MAP/MSE/MFB/BV-02 05 07"           ,.type = &msg,    .obj_count = 0, .objects = { ""                                                }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
+{TC_NORM( .descr = "MAP/MSE/MMU/BV-03"                 ,.type = &msg,    .obj_count = 0, .objects = { "", "EMAIL", "MMS"                                }, .fPutMsg = MAP_MSE_MMU_BV_02_I_PutMsg               ,.helpstr = "WIP add OBEX NAME Header (Handle) PTS [50] Enter Test Step TS_MTC_OBEX_extract_handle_name ( , (lt)Not Defined Value(gt)  ) Test case error in 'MAP/MSE/MMU/BV-03'. The value 'headers_received' (-1) is not fully defined. See Screenshots in MAP_MSE_MMU_BV_03_I_2024_06_28_12_02_17"                                                                                      },)
+{TC_NORM( .descr = "MAP/MSE/MMU/BV-02"                 ,.type = &msgshrt,.obj_count = 0, .objects = { "", "EMAIL", "MMS" , "EMAIL", "EMAIL"             }, .fPutMsg = MAP_MSE_MMU_BV_02_I_PutMsg               ,.helpstr = "WIP: PTS accepts the EMAIL but not the MMS. No idea why..."                                                                                                                                                                                                                                                                                                                    },)
 
+};
 static struct test_config_s* mas_cfg = &test_configs[0];
-static int cfg_start_index = 0;
-static int cfg_MAP_MSE_MMD_BV_02_I_getMsgListng_counter = 0;
-static int one_object_more_or_less = 0;
-static uint16_t ListingSize = 0;
 
 extern void mac_select_test_set(struct test_set_config* cfg);
 
@@ -305,65 +359,6 @@ static select_test_set(char c) {
     }
     test_set->fp_print_test_cases(test_set);
     test_set->fp_init_test_cases(test_set);
-}
-
-static mas_uint128hex_t DatabaseIdentifier = { 0 };
-// BT SIG Test Suite PTS is not acepting what BT SIG MAP spec describes as valid counters:
-// "variable length (max. 32 bytes), 128 - bit value in hex string format":
-// "00112233445566778899AABBCCDDEEFF"
-// "0000000000000000"
-// "0000000000000001"
-// "00000000"
-// "00000001"
-// { 0 } works
-static mas_uint128hex_t FolderVersionCounter = { 0 };
-static mas_uint128hex_t ConversationListingVersionCounter = { 0 };
-static mas_uint128hex_t ConversationID = { 0 };
-
-static void increase_version_counter_by_1(char* name, mas_uint128hex_t counter) {
-    counter[BT_UINT128_HEX_LEN_BYTES - 1]++;
-    log_debug("%s:", name)
-    log_debug_hexdump(counter, BT_UINT128_HEX_LEN_BYTES);
-}
-
-
-/*
-* Call-backs which update/change the state or behaviour of a test case, e.g. add one more message after each GetMessageListing
-*/
-static void MAP_MSE_MMD_BV_02_I_disc(void) {
-    log_debug("disabled default discconect behaviour");
-    //cfg_start_index++;
-    //one_object_more_or_less++;
-    //log_debug("counter:%d cfg_start_index:%d one_object_more_or_less:%d", cfg_MAP_MSE_MMD_BV_02_I_getMsgListng_counter, cfg_start_index, one_object_more_or_less);
-    //cfg_MAP_MSE_MMD_BV_02_I_getMsgListng_counter++;
-}
-
-static void MAP_MSE_MMD_BV_02_I_getMsgListng(void) {
-    if ((cfg_MAP_MSE_MMD_BV_02_I_getMsgListng_counter & 0x1) == 1) {
-        cfg_start_index++;
-        one_object_more_or_less++;
-    }
-    log_debug("counter:%d cfg_start_index:%d one_object_more_or_less:%d", cfg_MAP_MSE_MMD_BV_02_I_getMsgListng_counter, cfg_start_index, one_object_more_or_less);
-    cfg_MAP_MSE_MMD_BV_02_I_getMsgListng_counter++;
-}
-
-static void MAP_MSE_MMB_BV_23_inc_VersCnt(void) {
-    increase_version_counter_by_1("FolderVersionCounter", FolderVersionCounter);
-}
-
-static void MAP_MSE_MMB_BV_24_inc_ConvCnt(void) {
-    //increase_version_counter_by_1("ConversationListingVersionCounter",ConversationListingVersionCounter);
-    cfg_start_index++;
-    one_object_more_or_less++;
-}
-
-static void MAP_MSE_MMB_BV_25_inc_ConvListCnt(void) {
-    increase_version_counter_by_1("FolderVersionCounter", ConversationListingVersionCounter);
-}
-
-static void MAP_MSE_MMU_BV_02_I_PutMsg(void) {
-    one_object_more_or_less++;
-    log_debug("one_object_more_or_less:%d", one_object_more_or_less);
 }
 
 static size_t PRINT_SMS_native_vcard(char* msg_buffer, uint16_t index, size_t maxsize) {
