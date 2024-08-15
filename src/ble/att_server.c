@@ -54,6 +54,7 @@
 #include "ble/core.h"
 #include "ble/le_device_db.h"
 #include "ble/sm.h"
+#include "bluetooth_psm.h"
 #include "btstack_debug.h"
 #include "btstack_event.h"
 #include "btstack_memory.h"
