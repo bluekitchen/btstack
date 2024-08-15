@@ -136,6 +136,7 @@ static void MAP_MSE_MMD_BV_02_I_disc(void);
 static void MAP_MSE_MMD_BV_02_I_getMsgListng(void);
 static void MAP_MSE_MMB_BV_23_inc_VersCnt(void);
 static void MAP_MSE_MMB_BV_24_inc_ConvCnt(void);
+static void MAP_MSE_MMB_BV_25_inc_ConvListCnt(void);
 static void MAP_MSE_MMU_BV_02_I_PutMsg(void);
 
 #define MSG_LISTING_HEADER   "<MAP-msg-listing version=\"1.1\">"
@@ -215,7 +216,7 @@ static struct test_config_s
 {TC_NORM( .descr = "MAP/MSE/MMB/BV-16"                 ,.type = &msg,    .obj_count = 1, .objects = { "EMAIL","EMAIL"                                   }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
 {TC_NORM( .descr = "MAP/MSE/MMB/BV-23"                 ,.type = &msg,    .obj_count = 1, .objects = { "EMAIL","EMAIL"                                   }, .fGetMsgListng = MAP_MSE_MMB_BV_23_inc_VersCnt      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
 {TC_NORM( .descr = "MAP/MSE/MMB/BV-24"                 ,.type = &convo,  .obj_count = 0, .objects = { "",""                                             }, .fGetConvoListng = MAP_MSE_MMB_BV_24_inc_ConvCnt    ,                                                                                                                                                                                                                                                                                                                                                                                           },)
-{TC_NORM( .descr = "MAP/MSE/MMB/BV-25 <c><OK>"         ,.type = &convo,  .obj_count = 0, .objects = { "",""                                             }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
+{TC_NORM( .descr = "MAP/MSE/MMB/BV-25"                 ,.type = &convo,  .obj_count = 0, .objects = { "",""                                             }, .fGetConvoListng = MAP_MSE_MMB_BV_25_inc_ConvListCnt,                                                                                                                                                                                                                                                                                                                                                                                           },)
 {TC_NORM( .descr = "MAP/MSE/MMB/BV-34 38 39 40 41 44"  ,.type = &convo,  .obj_count = 1, .objects = { "",""                                             }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
 {TC_NORM( .descr = "MAP/MSE/MMB/BV-35 36 37"           ,.type = &msg,    .obj_count = 1, .objects = { "EMAIL"                                           }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
 {TC_NORM( .descr = "MAP/MSE/MMB/BV-47"                 ,.type = &msg,    .obj_count = 1, .objects = { "IM","IM"                                         }                                                      ,.helpstr = "PTS.EXE fails with '- MTC INCONC: no email message in message listing' but expects type=\"IM\""                                                                                                                                                                                                                                                                                },)
@@ -349,11 +350,17 @@ static void MAP_MSE_MMD_BV_02_I_getMsgListng(void) {
 static void MAP_MSE_MMB_BV_23_inc_VersCnt(void) {
     increase_version_counter_by_1("FolderVersionCounter", FolderVersionCounter);
 }
+
 static void MAP_MSE_MMB_BV_24_inc_ConvCnt(void) {
     //increase_version_counter_by_1("ConversationListingVersionCounter",ConversationListingVersionCounter);
     cfg_start_index++;
     one_object_more_or_less++;
 }
+
+static void MAP_MSE_MMB_BV_25_inc_ConvListCnt(void) {
+    increase_version_counter_by_1("FolderVersionCounter", ConversationListingVersionCounter);
+}
+
 static void MAP_MSE_MMU_BV_02_I_PutMsg(void) {
     one_object_more_or_less++;
     log_debug("one_object_more_or_less:%d", one_object_more_or_less);
