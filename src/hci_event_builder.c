@@ -46,7 +46,7 @@
 #include <stddef.h>
 
 static void hci_event_builder_increment_pos(hci_event_builder_context_t * context, uint16_t size){
-    btstack_assert((context->pos + size) < context->size);
+    btstack_assert((context->pos + size) <= context->size);
     context->pos += size;
     context->buffer[1] = (uint8_t) (context->pos - 2);
 }
