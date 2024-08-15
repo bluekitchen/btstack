@@ -96,6 +96,7 @@ MAP/MSE/MMB/BV-20-C: RE-PASS (2024-08-14)
 MAP/MSE/MMB/BV-22-C: RE-PASS (2024-08-14)
 MAP/MSE/MMB/BV-23-C: RE-PASS (2024-08-14) now with automated callback, no manual counter increase required any more.
 MAP/MSE/MMB/BV-24-C: RE-PASS (2024-08-14) now with automated callback, WARNING: (1) PTS expects the <conversation id> in the XML to count up (2) PTS hangs endless, if there is any actual convo object included in the body, so only send header and footer
+MAP/MSE/MMB/BV-25-C: RE-PASS (2024-08-15) now with automated callback
 
 Open tests
 MAP/MSE/MMB/BV-13-C MAP_OLD FAIL (2024-08-19) - MTC INCONC: no GSM message in message listing
