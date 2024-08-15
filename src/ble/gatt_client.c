@@ -62,6 +62,10 @@
 #include "bluetooth_sdp.h"
 #include "classic/sdp_util.h"
 
+#if defined(ENABLE_GATT_OVER_EATT) && !defined(ENABLE_L2CAP_ENHANCED_CREDIT_BASED_FLOW_CONTROL_MODE)
+#error "GATT Over EATT requires support for L2CAP Enhanced CoC. Please enable ENABLE_L2CAP_ENHANCED_CREDIT_BASED_FLOW_CONTROL_MODE"
+#endif
+
 // L2CAP Test Spec p35 defines a minimum of 100 ms, but PTS might indicate an error if we sent after 100 ms
 #define GATT_CLIENT_COLLISION_BACKOFF_MS 150
 
