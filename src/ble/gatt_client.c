@@ -210,6 +210,7 @@ static uint8_t gatt_client_provide_context_for_handle(hci_con_handle_t con_handl
         gatt_client->mtu_state = MTU_AUTO_EXCHANGE_DISABLED;
     }
     gatt_client->state = P_READY;
+    gatt_client->gatt_service_state = GATT_CLIENT_SERVICE_DISCOVER_W2_SEND;
 #ifdef ENABLE_GATT_OVER_EATT
     gatt_client->eatt_state = GATT_CLIENT_EATT_IDLE;
 #endif
@@ -664,6 +665,82 @@ static uint16_t get_last_result_handle_from_included_services_list(uint8_t * pac
     return little_endian_read_16(packet, size - attr_length);
 }
 
+static void gatt_client_service_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    hci_con_handle_t con_handle;
+    gatt_client_t *gatt_client;
+    gatt_client_service_t service;
+    gatt_client_characteristic_t characteristic;
+    switch (packet_type) {
+        case HCI_EVENT_PACKET:
+            switch (hci_event_packet_get_type(packet)) {
+                case GATT_EVENT_SERVICE_QUERY_RESULT:
+                    con_handle = gatt_event_service_query_result_get_handle(packet);
+                    gatt_client = gatt_client_get_context_for_handle(con_handle);
+                    btstack_assert(gatt_client != NULL);
+                    btstack_assert(gatt_client->gatt_service_state == GATT_CLIENT_SERVICE_DISCOVER_W4_DONE);
+                    gatt_event_service_query_result_get_service(packet, &service);
+                    gatt_client->gatt_service_start_group_handle = service.start_group_handle;
+                    gatt_client->gatt_service_end_group_handle = service.end_group_handle;
+                    break;
+                case GATT_EVENT_CHARACTERISTIC_QUERY_RESULT:
+                    con_handle = gatt_event_characteristic_query_result_get_handle(packet);
+                    gatt_client = gatt_client_get_context_for_handle(con_handle);
+                    btstack_assert(gatt_client != NULL);
+                    btstack_assert(gatt_client->gatt_service_state == GATT_CLIENT_SERVICE_DISCOVER_CHARACTERISTICS_W4_DONE);
+                    gatt_event_characteristic_query_result_get_characteristic(packet, &characteristic);
+                    switch (characteristic.uuid16){
+                        case ORG_BLUETOOTH_CHARACTERISTIC_GATT_SERVICE_CHANGED:
+                            gatt_client->gatt_service_changed_value_handle = characteristic.value_handle;
+                            gatt_client->gatt_service_changed_end_handle = characteristic.end_handle;
+                            break;
+                        case ORG_BLUETOOTH_CHARACTERISTIC_DATABASE_HASH:
+                            gatt_client->gatt_service_database_hash_value_handle = characteristic.value_handle;
+                            gatt_client->gatt_service_database_hash_end_handle = characteristic.end_handle;
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                case GATT_EVENT_CHARACTERISTIC_VALUE_QUERY_RESULT:
+                    con_handle = gatt_event_characteristic_value_query_result_get_handle(packet);
+                    gatt_client = gatt_client_get_context_for_handle(con_handle);
+                    btstack_assert(gatt_client != NULL);
+                    btstack_assert(gatt_client->gatt_service_state == GATT_CLIENT_SERVICE_DATABASE_HASH_READ_W4_DONE);
+                    break;
+                case GATT_EVENT_QUERY_COMPLETE:
+                    con_handle = gatt_event_query_complete_get_handle(packet);
+                    gatt_client = gatt_client_get_context_for_handle(con_handle);
+                    btstack_assert(gatt_client != NULL);
+                    switch (gatt_client->gatt_service_state) {
+                        case GATT_CLIENT_SERVICE_DISCOVER_W4_DONE:
+                            gatt_client->gatt_service_state = GATT_CLIENT_SERVICE_DISCOVER_CHARACTERISTICS_W2_SEND;
+                            break;
+                        case GATT_CLIENT_SERVICE_DISCOVER_CHARACTERISTICS_W4_DONE:
+                            gatt_client->gatt_service_state = GATT_CLIENT_SERVICE_SERVICE_CHANGED_WRITE_CCCD_W2_SEND;
+                            break;
+                        case GATT_CLIENT_SERVICE_SERVICE_CHANGED_WRITE_CCCD_W4_DONE:
+                            gatt_client->gatt_service_state = GATT_CLIENT_SERVICE_DATABASE_HASH_READ_W2_SEND;
+                            break;
+                        case GATT_CLIENT_SERVICE_DATABASE_HASH_READ_W4_DONE:
+                            gatt_client->gatt_service_state = GATT_CLIENT_SERVICE_DATABASE_HASH_WRITE_CCCD_W2_SEND;
+                            break;
+                        case GATT_CLIENT_SERVICE_DATABASE_HASH_WRITE_CCCD_W4_DONE:
+                            gatt_client->gatt_service_state = GATT_CLIENT_SERVICE_DONE;
+                            break;
+                        default:
+                            btstack_unreachable();
+                            break;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            break;
+        default:
+            break;
+    }
+}
+
 static void gatt_client_notify_can_send_query(gatt_client_t * gatt_client){
 
 #ifdef ENABLE_GATT_OVER_EATT
@@ -686,9 +763,88 @@ static void gatt_client_notify_can_send_query(gatt_client_t * gatt_client){
     }
 #endif
 
+    uint8_t status = ERROR_CODE_SUCCESS;
+    gatt_client_service_t gatt_service;
+    gatt_client_characteristic_t characteristic;
     while (gatt_client->state == P_READY){
+        bool query_sent = false;
+        switch (gatt_client->gatt_service_state){
+            case GATT_CLIENT_SERVICE_DISCOVER_W2_SEND:
+                gatt_client->gatt_service_state = GATT_CLIENT_SERVICE_DISCOVER_W4_DONE;
+                status = gatt_client_discover_primary_services_by_uuid16(&gatt_client_service_packet_handler,
+                                                                                         gatt_client->con_handle,
+                                                                                         ORG_BLUETOOTH_SERVICE_GENERIC_ATTRIBUTE);
+                query_sent = true;
+                break;
+            case GATT_CLIENT_SERVICE_DISCOVER_CHARACTERISTICS_W2_SEND:
+                if (gatt_client->gatt_service_start_group_handle != 0){
+                    gatt_client->gatt_service_state = GATT_CLIENT_SERVICE_DISCOVER_CHARACTERISTICS_W4_DONE;
+                    gatt_service.start_group_handle = gatt_client->gatt_service_start_group_handle;
+                    gatt_service.end_group_handle   = gatt_client->gatt_service_end_group_handle;
+                    status = gatt_client_discover_characteristics_for_service(&gatt_client_service_packet_handler, gatt_client->con_handle, &gatt_service);
+                    query_sent = true;
+                    break;
+                }
+
+                /* fall through */
+
+            case GATT_CLIENT_SERVICE_SERVICE_CHANGED_WRITE_CCCD_W2_SEND:
+                if (gatt_client->gatt_service_changed_value_handle != 0){
+                    gatt_client->gatt_service_state = GATT_CLIENT_SERVICE_SERVICE_CHANGED_WRITE_CCCD_W4_DONE;
+                    characteristic.value_handle = gatt_client->gatt_service_changed_value_handle;
+                    characteristic.end_handle   = gatt_client->gatt_service_changed_end_handle;
+                    // we assume good case. We cannot do much otherwise
+                    characteristic.properties = ATT_PROPERTY_INDICATE;
+                    status = gatt_client_write_client_characteristic_configuration(&gatt_client_service_packet_handler,
+                                                                                   gatt_client->con_handle, &characteristic,
+                                                                                   GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_INDICATION);
+                    query_sent = true;
+                    break;
+                }
+
+                /* fall through */
+
+            case GATT_CLIENT_SERVICE_DATABASE_HASH_READ_W2_SEND:
+                if (gatt_client->gatt_service_database_hash_value_handle != 0){
+                    gatt_client->gatt_service_state = GATT_CLIENT_SERVICE_DATABASE_HASH_READ_W4_DONE;
+                    status = gatt_client_read_value_of_characteristics_by_uuid16(&gatt_client_service_packet_handler,
+                                                                                         gatt_client->con_handle,
+                                                                                         0x0001, 0xffff, ORG_BLUETOOTH_CHARACTERISTIC_DATABASE_HASH);
+                    query_sent = true;
+                    break;
+                }
+
+                /* fall through */
+
+            case GATT_CLIENT_SERVICE_DATABASE_HASH_WRITE_CCCD_W2_SEND:
+                if (gatt_client->gatt_service_database_hash_value_handle != 0) {
+                    gatt_client->gatt_service_state = GATT_CLIENT_SERVICE_DATABASE_HASH_WRITE_CCCD_W4_DONE;
+                    characteristic.value_handle = gatt_client->gatt_service_database_hash_value_handle;
+                    characteristic.end_handle = gatt_client->gatt_service_database_hash_end_handle;
+                    // we assume good case. We cannot do much otherwise
+                    characteristic.properties = ATT_PROPERTY_INDICATE;
+                    status = gatt_client_write_client_characteristic_configuration(&gatt_client_service_packet_handler,
+                                                                                   gatt_client->con_handle,
+                                                                                   &characteristic,
+                                                                                   GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_INDICATION);
+                    query_sent = true;
+                    break;
+                }
+
+                // DONE
+                gatt_client->gatt_service_state = GATT_CLIENT_SERVICE_DONE;
+                break;
+            default:
+                break;
+        }
+        btstack_assert(status == ERROR_CODE_SUCCESS);
+        UNUSED(status);
+        if (query_sent){
+            continue;
+        }
+
 #ifdef ENABLE_GATT_OVER_EATT
-        bool query_sent = gatt_client_le_enhanced_handle_can_send_query(gatt_client);
+        query_sent = gatt_client_le_enhanced_handle_can_send_query(gatt_client);
         if (query_sent){
             continue;
         }
