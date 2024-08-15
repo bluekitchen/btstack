@@ -144,7 +144,7 @@ typedef enum {
     P_W2_EMIT_CONNECTED,
     P_L2CAP_CLOSED,
 } gatt_client_state_t;
-    
+
     
 typedef enum{
     SEND_MTU_EXCHANGE,
@@ -152,6 +152,20 @@ typedef enum{
     MTU_EXCHANGED,
     MTU_AUTO_EXCHANGE_DISABLED
 } gatt_client_mtu_t;
+
+typedef enum {
+    GATT_CLIENT_SERVICE_DISCOVER_W2_SEND,
+    GATT_CLIENT_SERVICE_DISCOVER_W4_DONE,
+    GATT_CLIENT_SERVICE_DISCOVER_CHARACTERISTICS_W2_SEND,
+    GATT_CLIENT_SERVICE_DISCOVER_CHARACTERISTICS_W4_DONE,
+    GATT_CLIENT_SERVICE_SERVICE_CHANGED_WRITE_CCCD_W2_SEND,
+    GATT_CLIENT_SERVICE_SERVICE_CHANGED_WRITE_CCCD_W4_DONE,
+    GATT_CLIENT_SERVICE_DATABASE_HASH_READ_W2_SEND,
+    GATT_CLIENT_SERVICE_DATABASE_HASH_READ_W4_DONE,
+    GATT_CLIENT_SERVICE_DATABASE_HASH_WRITE_CCCD_W2_SEND,
+    GATT_CLIENT_SERVICE_DATABASE_HASH_WRITE_CCCD_W4_DONE,
+    GATT_CLIENT_SERVICE_DONE,
+} gatt_client_service_state_t;
 
 #ifdef ENABLE_GATT_OVER_EATT
 typedef enum {
@@ -207,8 +221,6 @@ typedef struct gatt_client{
     uint16_t eatt_storage_size;
     uint8_t  eatt_num_clients;
     uint8_t  gatt_server_supported_features;
-    uint16_t gatt_service_start_group_handle;
-    uint16_t gatt_service_end_group_handle;
     uint16_t gatt_client_supported_features_handle;
 #endif
 
@@ -255,6 +267,19 @@ typedef struct gatt_client{
     uint8_t  reencryption_result;
 
     gap_security_level_t security_level;
+
+    // GATT Service Changes
+    gatt_client_service_state_t gatt_service_state;
+    uint16_t                    gatt_service_start_group_handle;
+    uint16_t                    gatt_service_end_group_handle;
+    // - Service Changed
+    uint16_t                    gatt_service_changed_value_handle;
+    uint16_t                    gatt_service_changed_cccd_handle;
+    uint16_t                    gatt_service_changed_end_handle;
+    // - Database Hash
+    uint16_t                    gatt_service_database_hash_value_handle;
+    uint16_t                    gatt_service_database_hash_cccd_handle;
+    uint16_t                    gatt_service_database_hash_end_handle;
 
 } gatt_client_t;
 
