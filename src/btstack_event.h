@@ -13741,6 +13741,53 @@ static inline uint16_t gattservice_subevent_scan_parameters_service_scan_interva
 }
 
 /**
+ * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_GATT_SERVICE_CHANGED
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t gattservice_subevent_gatt_service_changed_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field attribute_handle_start from event GATTSERVICE_SUBEVENT_GATT_SERVICE_CHANGED
+ * @param event packet
+ * @return attribute_handle_start
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_gatt_service_changed_get_attribute_handle_start(const uint8_t * event){
+    return little_endian_read_16(event, 5);
+}
+/**
+ * @brief Get field attribute_handle_end from event GATTSERVICE_SUBEVENT_GATT_SERVICE_CHANGED
+ * @param event packet
+ * @return attribute_handle_end
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_gatt_service_changed_get_attribute_handle_end(const uint8_t * event){
+    return little_endian_read_16(event, 7);
+}
+
+/**
+ * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_GATT_DATABASE_HASH
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t gattservice_subevent_gatt_database_hash_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field database_hash from event GATTSERVICE_SUBEVENT_GATT_DATABASE_HASH
+ * @param event packet
+ * @param Pointer to storage for database_hash
+ * @note: btstack_type K
+ */
+static inline void gattservice_subevent_gatt_database_hash_get_database_hash(const uint8_t * event, uint8_t * database_hash){
+    reverse_bytes(&event[5], database_hash, 16);
+}
+
+/**
  * @brief Get field con_handle from event LEAUDIO_SUBEVENT_BASS_SERVER_CONNECTED
  * @param event packet
  * @return con_handle

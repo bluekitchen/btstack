@@ -4236,6 +4236,23 @@ typedef uint8_t sm_key_t[16];
  */
 #define GATTSERVICE_SUBEVENT_SCAN_PARAMETERS_SERVICE_SCAN_INTERVAL_UPDATE 0x1Bu
 
+/**
+ * @format 1H22
+ * @param subevent_code
+ * @param con_handle
+ * @param attribute_handle_start
+ * @param attribute_handle_end
+ */
+#define GATTSERVICE_SUBEVENT_GATT_SERVICE_CHANGED                          0x1Cu
+
+/**
+ * @format 1HK
+ * @param subevent_code
+ * @param con_handle
+ * @param database_hash
+ */
+#define GATTSERVICE_SUBEVENT_GATT_DATABASE_HASH                            0x1Du
+
 
 // LE Audio
 
