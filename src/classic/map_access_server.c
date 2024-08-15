@@ -202,7 +202,7 @@ static struct {
 static const uint8_t map_uuid[] = { 0xbb, 0x58, 0x2b, 0x40, 0x42, 0xc, 0x11, 0xdb, 0xb0, 0xde, 0x8, 0x0, 0x20, 0xc, 0x9a, 0x66 };
 
 // Prototypes
-static void map_access_server_handle_get_put_request(map_access_server_t* map_access_server);
+static void map_access_server_handle_get_or_put_request(map_access_server_t* map_access_server);
 static void map_access_server_build_response(map_access_server_t* map_access_server);
 
 static map_access_server_t* map_access_server_for_goep_cid(uint16_t goep_cid) {
@@ -493,7 +493,7 @@ static void map_access_server_handle_can_send_now(map_access_server_t* map_acces
         goep_server_execute(map_access_server->goep_cid, response_code);
         // trigger next user response in SRM
         if (map_access_server->srm_state == SRM_ENABLED) {
-            map_access_server_handle_get_put_request(map_access_server);
+            map_access_server_handle_get_or_put_request(map_access_server);
         }
         break;
     case MAP_SERVER_STATE_SEND_CONNECT_RESPONSE_ERROR:
@@ -734,7 +734,7 @@ static void map_access_server_parser_callback_get(void* user_data, uint8_t heade
 
 
 // sends MAP_SUBEVENT_xyz messages to the application using serialized stack-internal app-parameters
-static void map_access_server_handle_get_put_request(map_access_server_t* mas) {
+static void map_access_server_handle_get_or_put_request(map_access_server_t* mas) {
     map_access_server_handle_srm_headers(mas);
 
     if (mas->srm_state == SRM_SEND_CONFIRM_WAIT) {
@@ -977,7 +977,7 @@ static void map_access_server_packet_handler_goep(map_access_server_t* map_acces
             case (OBEX_OPCODE_GET | OBEX_OPCODE_FINAL_BIT_MASK):
             case OBEX_OPCODE_PUT:
             case (OBEX_OPCODE_PUT | OBEX_OPCODE_FINAL_BIT_MASK):
-                map_access_server_handle_get_put_request(map_access_server);
+                map_access_server_handle_get_or_put_request(map_access_server);
                 break;
             case OBEX_OPCODE_SETPATH:
                 map_access_server_handle_set_path_request(map_access_server, op_info.flags, &map_access_server->request.name[0]);
@@ -1013,7 +1013,7 @@ static void map_access_server_packet_handler_goep(map_access_server_t* map_acces
             obex_parser_get_operation_info(&map_access_server->obex_parser, &op_info);
             switch ((op_info.opcode & 0x7f)) {
             case OBEX_OPCODE_GET:
-                map_access_server_handle_get_put_request(map_access_server);
+                map_access_server_handle_get_or_put_request(map_access_server);
                 break;
             case (OBEX_OPCODE_ABORT & 0x7f):
                 map_access_server->response.code = OBEX_RESP_SUCCESS;
