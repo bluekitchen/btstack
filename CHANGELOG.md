@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## Unreleased
 
 ### Added
+- GATT Client: gatt_client_add_service_changed_handler to receive Service Changed and Database Hash events
 - L2CAP: provide access to number of available credits in CBM/ECBM
 - HFP HF: support Apple Accessory information with:
   - hfp_hf_apple_set_identification

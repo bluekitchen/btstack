@@ -952,6 +952,21 @@ uint8_t gatt_client_write_long_characteristic_descriptor_using_descriptor_handle
 uint8_t gatt_client_write_client_characteristic_configuration(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_characteristic_t * characteristic, uint16_t configuration);
 
 /**
+ * @brief Register for changes to the Service Changed and Database Hash Characteristics of the remote GATT Service
+ * When configured, GATT_EVENT_QUERY_COMPLETE event is emitted
+ * If supported, the Database Hash is read as well
+ *
+ * @param callback
+ */
+void gatt_client_add_service_changed_handler(btstack_packet_callback_registration_t * callback);
+
+/**
+ * @brief Remove callback for service changes
+ * @param callback
+ */
+void gatt_client_remove_service_changed_handler(btstack_packet_callback_registration_t * callback);
+
+/**
  * @brief Register for notifications and indications of a characteristic enabled by 
  * the gatt_client_write_client_characteristic_configuration function.
  * @param notification struct used to store registration
