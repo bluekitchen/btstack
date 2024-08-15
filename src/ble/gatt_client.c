@@ -3299,8 +3299,6 @@ static void gatt_client_le_enhanced_packet_handler(uint8_t packet_type, uint16_t
     uint8_t status;
     gatt_client_characteristic_t characteristic;
     gatt_client_service_t service;
-    btstack_linked_list_iterator_t it;
-    uint8_t num_pending_channels;
     switch (packet_type) {
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)) {
