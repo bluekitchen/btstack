@@ -114,8 +114,8 @@ MAP/MSE/MMB/BV-47-C: RE-PASS (2024-08-16) PTS 8.6.0 & L2CAP & MAP_NEW PASS, INFO
 Open tests
 TODO: automated response with msg or convo listing according to the GET request
 MAP/MSE/MMB/BV-43-C PUT missing, move TC to Client Connection Verify that the MSE correctly updates the Conversation-Listing version counter when a new conversation is being created.
-PTS: User Action Required:    Please create a new conversation, then click OK.  Otherwise click Cancel.
-PTS: User Action Required:    Send Set Event Report for adding a conversation
+	PTS: User Action Required:    Please create a new conversation, then click OK.  Otherwise click Cancel.
+	PTS: User Action Required:    Send Set Event Report for adding a conversation
 MAP/MSE/MNR/BV-03-C: PASS on the first run, no client_connection from the 2nd run. Same with other tests using multiple connections
 MAP/MSE/MSM/BV-10-I - Transmission of OBEX_CONNECT_REQ failed unexpectedly.
 MAP/MSE/GOEP/SRMP/BI-02-C "The GET operation ended before the test case purpose could be verified.  Please increase the size of the file being requested by the GET operationr ((gt) 50 KB should be sufficient)." TODO MW: add final PUT/GET bit e.g. for MAP/MSE/GOEP/SRMP/BI-02-C

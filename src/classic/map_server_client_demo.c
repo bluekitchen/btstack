@@ -146,12 +146,22 @@ struct objconfig_s mr_v1_2 = {
     .body   = "<event type = \"MessageRemoved\" handle=\"0123456789001000\" folder=\"TELECOM/MSG/INBOX\"  msg_type=\"IM\"/>"
 };
 
+#define TC_NORM(data, ...)  data,  ## __VA_ARGS__
+#ifdef ENABLE_GOEP_L2CAP
+#define TC_RFCOM(...)       .descr = " Please disable ENABLE_GOEP_L2CAP", .disabled = true },
+#define TC_L2CAP            TC_NORM
+#else
+#define TC_RFCOM            TC_NORM
+#define TC_L2CAP(...)       .descr = " Please enable ENABLE_GOEP_L2CAP", .disabled = true },
+#endif
+
 
 #define MAX_TC_OBJECTS 10 // maximum MAX_TC_OBJECTS-1 entries, last one is null
 static struct test_config_s
 {
     int nr;
     char* descr;
+    bool disabled;
     struct objconfig_s* type;
     int obj_count;
     char* msg_types[MAX_TC_OBJECTS]; 
@@ -159,15 +169,15 @@ static struct test_config_s
     bool msg_deleted[MAX_TC_OBJECTS];
 } test_configs[] =
 {
-    {.nr = 0, .descr = "MAP/MSE/MMN/BV-02-C"    , .type = &nm_v1_0   ,.obj_count = 1, .msg_types = { "EMAIL", "SMS_GSM", "SMS_CDMA", "MMS", "IM"},},
-    {.nr = 1, .descr = "MAP/MSE/MMN/BV-04-C 06" , .type = &nm_v1_1   ,.obj_count = 1, .msg_types = { "EMAIL", "SMS_GSM", "SMS_CDMA", "MMS", "IM"},},
-    {.nr = 2, .descr = "MAP/MSE/MMN/BV-07-C"    , .type = &nm_v1_2   ,.obj_count = 1, .msg_types = { "EMAIL"},},
-    {.nr = 3, .descr = "MAP/MSE/MMN/BV-08-C 09" , .type = &ed_v1_2   ,.obj_count = 1, .msg_types = { "IM"},},
-    {.nr = 4, .descr = "MAP/MSE/MMN/BV-10-C 15" , .type = &pp_v1_2   ,.obj_count = 1, .msg_types = { ""},},
-    {.nr = 5, .descr = "MAP/MSE/MMN/BV-11-C 16" , .type = &pc_v1_2   ,.obj_count = 1, .msg_types = { ""},},
-    {.nr = 6, .descr = "MAP/MSE/MMN/BV-12-C 13" , .type = &cc_v1_2   ,.obj_count = 1, .msg_types = { ""},},
-    {.nr = 7, .descr = "MAP/MSE/MMN/BV-14-C"    , .type = &mr_v1_2   ,.obj_count = 1, .msg_types = { ""},},
-};
+    {TC_RFCOM(.descr = "MAP/MSE/MMN/BV-02-C <e><e><e>..."    , .type = &nm_v1_0   ,.obj_count = 1, .msg_types = { "EMAIL", "SMS_GSM", "SMS_CDMA", "MMS", "IM"},}, )
+    {TC_NORM( .descr = "MAP/MSE/MMN/BV-04-C 06"              , .type = &nm_v1_1   ,.obj_count = 1, .msg_types = { "EMAIL", "SMS_GSM", "SMS_CDMA", "MMS", "IM"},}, )
+    {TC_NORM( .descr = "MAP/MSE/MMN/BV-07-C"                 , .type = &nm_v1_2   ,.obj_count = 1, .msg_types = { "EMAIL"},},                                     )
+    {TC_NORM( .descr = "MAP/MSE/MMN/BV-08-C 09"              , .type = &ed_v1_2   ,.obj_count = 1, .msg_types = { "IM"},},                                        )
+    {TC_NORM( .descr = "MAP/MSE/MMN/BV-10-C 15"              , .type = &pp_v1_2   ,.obj_count = 1, .msg_types = { ""},},                                          )
+    {TC_NORM( .descr = "MAP/MSE/MMN/BV-11-C 16"              , .type = &pc_v1_2   ,.obj_count = 1, .msg_types = { ""},},                                          )
+    {TC_NORM( .descr = "MAP/MSE/MMN/BV-12-C 13"              , .type = &cc_v1_2   ,.obj_count = 1, .msg_types = { ""},},                                          )
+    {TC_NORM( .descr = "MAP/MSE/MMN/BV-14-C"                 , .type = &mr_v1_2   ,.obj_count = 1, .msg_types = { ""},},                                          )
+};                                                                                                                                                  
 
 static char event_report_body_object[300];
 static struct test_config_s* mac_cfg = &test_configs[0];
@@ -176,7 +186,7 @@ static int curent_event_type = 0;
 
 static void mac_print_test_config(struct test_set_config* cfg)
 {
-    MAP_PRINTF("mac_cfg #%d:%s obj_count:%d hdr:%s\n", mac_cfg->nr, mac_cfg->descr, mac_cfg->obj_count, mac_cfg->type->header);
+    MAP_PRINTF("mac_cfg #%d:%s obj_count:%d hdr:%s\n", mac_cfg->nr, mac_cfg->descr, mac_cfg->obj_count, mac_cfg->type ? mac_cfg->type->header : "");
 }
 
 static void mac_init_test_cases(struct test_set_config* cfg) {
