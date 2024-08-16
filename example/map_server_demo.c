@@ -357,8 +357,8 @@ static select_test_set(char c) {
     else if (c == 'C') {
         test_set = &mac_test_set;
     }
-    test_set->fp_print_test_cases(test_set);
     test_set->fp_init_test_cases(test_set);
+    test_set->fp_print_test_cases(test_set);
 }
 
 static size_t PRINT_SMS_native_vcard(char* msg_buffer, uint16_t index, size_t maxsize) {
