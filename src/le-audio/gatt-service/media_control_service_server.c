@@ -1089,6 +1089,7 @@ static uint8_t mcs_server_register_player(uint16_t service_uuid, media_control_s
     media_player->service.start_handle   = mcs_services_start_handle;
     media_player->service.end_handle     = mcs_services_end_handle;
     media_player->data.media_control_point_opcodes_supported = media_control_point_opcodes_supported;
+    media_player->data.name = "";
     // get characteristic value handles
     uint16_t i;
     for (i = 0; i < NUM_MCS_CHARACTERISTICS; i++){
