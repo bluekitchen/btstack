@@ -116,6 +116,7 @@ MAP/MSE/MMN/BV-06-C: RE-PASS (2024-08-16) PTS 8.6.0 & L2CAP & MAP_NEW PASS
 MAP/MSE/MMN/BV-07-C: RE-PASS (2024-08-16) PTS 8.6.0 & L2CAP & MAP_NEW PASS, INFO: still manual event emmiting <e> required
 MAP/MSE/MMN/BV-08-C: RE-PASS (2024-08-16) PTS 8.6.0 & L2CAP & MAP_NEW PASS, INFO: still manual event emmiting <e> required
 MAP/MSE/MMN/BV-09-C: RE-PASS (2024-08-16) PTS 8.6.0 & L2CAP & MAP_NEW PASS
+MAP/MSE/MMN/BV-10-C: RE-PASS (2024-08-16) PTS 8.6.0 & L2CAP & MAP_NEW PASS, INFO: still manual event emmiting <e> required
 
 Open tests
 TODO: automated response with msg or convo listing according to the GET request
