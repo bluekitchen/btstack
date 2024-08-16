@@ -518,12 +518,20 @@ static size_t create_obex_body(uint16_t first, uint16_t last) {
     return pos;
 }
 
-static void send_obex_object(uint16_t map_cid, uint16_t start_index, uint16_t end_index, uint32_t pos) {
+#define MAP_DEMO_ENABLE_AUTO_BODY_OBJECT
+enum body_object { o_msg, o_convo };
+
+static void send_obex_object(enum body_object obj, uint16_t map_cid, uint16_t start_index, uint16_t end_index, uint32_t pos) {
 
     static size_t object_size = 0;
     size_t start = pos, len, body_size = map_access_server_get_max_body_size(map_cid);
     uint8_t response_code;
-
+#ifdef MAP_DEMO_ENABLE_AUTO_BODY_OBJECT
+    switch (obj) {
+    case o_msg  : mas_cfg->type = &msg; break;
+    case o_convo: mas_cfg->type = &convo; break;
+    }
+#endif
     if (pos == 0) {
         uint16_t total_messages, num_msgs_selected, end_index;
 
@@ -828,7 +836,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             map_access_server_set_response_app_param(current_map_cid, MAP_APP_PARAM_ListingSize, &ListingSize);
                             map_access_server_set_response_type_and_name(current_map_cid, "", "x-obex/folder-listing");
                             MAP_PRINTF("[+] Get Folder listing\n");
-                            send_obex_object(current_map_cid, 0, mas_cfg->obj_count - 1 + one_object_more_or_less, continuation);
+                            send_obex_object(o_msg, current_map_cid, 0, mas_cfg->obj_count - 1 + one_object_more_or_less, continuation);
                             break;
 							
                         case MAP_SUBEVENT_GET_MESSAGE_LISTING:
@@ -856,7 +864,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             if (max_list_count == 0)
                                 map_access_server_send_response(current_map_cid, OBEX_RESP_SUCCESS, 0, 0, NULL);
                             else
-                                send_obex_object(current_map_cid, start_index, max_list_count, continuation);
+                                send_obex_object(o_msg, current_map_cid, start_index, max_list_count, continuation);
 
                             // some PTS tests require strange behaviour so we need a handler to modify default behaviour for GetMessageListing
                             if (mas_cfg->fGetMsgListng != NULL)
@@ -869,7 +877,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             APP_READ_16(packet, &pos, &current_map_cid);
                             MAP_PRINTF("[+] Get Message\n");
                             map_access_server_set_response_type_and_name(current_map_cid, NULL, NULL);
-                            send_obex_object(current_map_cid, 0, 1, continuation);
+                            send_obex_object(o_msg, current_map_cid, 0, 1, continuation);
                             break;
 
                         case MAP_SUBEVENT_PUT_MESSAGE_STATUS: {
@@ -984,7 +992,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             if (mas_cfg->obj_count == 0 && one_object_more_or_less == 0)
                                 map_access_server_send_response(current_map_cid, OBEX_RESP_SUCCESS, 0, 0, NULL);
                             else
-                                send_obex_object(current_map_cid, 0, 0xffff, continuation);
+                                send_obex_object(o_convo, current_map_cid, 0, 0xffff, continuation);
 
                             // some PTS tests require strange behaviour so we need a handler to modify default behaviour for GetConvoListing
                             if (mas_cfg->fGetConvoListng != NULL)
