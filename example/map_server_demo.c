@@ -129,6 +129,7 @@ struct objconfig_s {
 static size_t body_msg(char* msg_buffer, uint16_t index, size_t maxsize);
 static size_t body_msg_short(char* msg_buffer, uint16_t index, size_t maxsize);
 static size_t body_msg_email_1_1(char* msg_buffer, uint16_t index, size_t maxsize);
+//static size_t body_msg_email_1_1_del(char* msg_buffer, uint16_t index, size_t maxsize);
 static size_t body_convo(char* msg_buffer, uint16_t index, size_t maxsize);
 static size_t PRINT_SMS_native_vcard(char* msg_buffer, uint16_t index, size_t maxsize);
 
@@ -221,6 +222,12 @@ struct objconfig_s msg1_1 = {
     .fbody = body_msg_email_1_1
 };
 
+//struct objconfig_s msg_del = {
+//    .header = MSG_LISTING_HEADER,
+//    .footer = MSG_LISTING_FOOTER,
+//    .fbody = body_msg_email_1_1_del
+//};
+
 struct objconfig_s convo = {
     .header = CONVO_LISTING_HEADER,
     .footer = CONVO_LISTING_FOOTER,
@@ -272,7 +279,7 @@ static struct test_config_s
 {TC_NORM( .descr = "MAP/MSE/MMB/BV-34 38 39 40 41 44"  ,.type = &convo,  .obj_count = 1, .objects = { "",""                                             }                                                      ,.helpstr = "PTS 8.6.0 & L2CAP: sends GET without SRM, we send with SRM and fragmented OBEX packets, PTS hangs"                                                                                                                                                                                                                                                                             },)
 {TC_NORM( .descr = "MAP/MSE/MMB/BV-35 36 37 MAP_NEW"   ,.type = &msg,    .obj_count = 1, .objects = { "EMAIL"                                           }                                                      ,.helpstr = "PTS 8.6.0 & L2CAP & MAP_NEW PASS"                                                                                                                                                                                                                                                                                                                                             },)
 {TC_NORM( .descr = "MAP/MSE/MMB/BV-47"                 ,.type = &msg,    .obj_count = 1, .objects = { "IM","IM"                                         }                                                      ,.helpstr = "PTS.EXE fails with '- MTC INCONC: no email message in message listing' but expects type=\"IM\""                                                                                                                                                                                                                                                                                },)
-{TC_NORM( .descr = "MAP/MSE/MMD/BV-02"                 ,.type = &msg,    .obj_count = 1, .objects = { "EMAIL","MMS", "SMS_GSM","SMS_CDMA", "IM", "dummy"}, .fGetMsgListng = MAP_MSE_MMD_BV_02_I_getMsgListng   ,
+{TC_NORM( .descr = "MAP/MSE/MMD/BV-02"                 ,.type = &msg,    .obj_count = 1, .objects = { "TELECOM/MSG/INBOX","TELECOM/MSG/DELETED"         }, .fGetMsgListng = MAP_MSE_MMD_BV_02_I_getMsgListng   ,
                                                                                                                                                            .fdiscon       = MAP_MSE_MMD_BV_02_I_disc           ,.helpstr = "PTS 8.5.4 Build 6 issue: sends a sequence of OBEX connect, GetMessageListing (expects 1 EMAIL, nothing else, no more messages), PUT MessageStatus (Delete Message), GetMessageListing (expects empty listing), OBEX discoonect, repeat (MMS, SMS_GSM, SMS_CDMA) - the last repeat for IM misses the disconnect and fails on the Get because the list is still empty"           },)
 {TC_NORM( .descr = "MAP/MSE/SGSIT/ATTR/BV-01"          ,.type = &msgshrt,.obj_count = 1, .objects = { "EMAIL"                                           }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
 {TC_NORM( .descr = "MAP/MSE/GOEP/SRM/BI-05"            ,.type = &msgshrt,.obj_count = 1, .objects = { "EMAIL"                                           }                                                      ,.helpstr = "PTS needs both L2CAP with 214 bytes short PDU and working messages(continue) so we need to create short messages to pass"                                                                                                                                                                                                                                                      },)
@@ -404,16 +411,19 @@ static size_t body_msg(char* msg_buffer, uint16_t index, size_t maxsize) {
         size = snprintf(msg_buffer, maxsize,
             "<msg handle=\"A%X\""
             " type=\"%s\""
+            " folder=\"TELECOM/MSG/%s\""
             " subject=\"Sbjct\""
             " datetime=\"20140705T092200+0100\" sender_name=\"Jonas\""
             " sender_addressing=\"1@bla.net\" recipient_addressing=\"\""
-            " size=\"512\" attachment_size=\"123\" priority=\"no\" read=\"%s\" sent=\"yes\" protected=\"no\""
+            " size=\"512\" attachment_size=\"123\" priority=\"no\""
+            " read=\"%s\" sent=\"yes\" protected=\"no\""
             " conversation_id=\"E1E2E3E4\"" // "E1" is to short for PTS but happy with "E1E2E3E4\"
             " direction=\"incoming\""
             " attachment_mime_types=\"video/mpeg\"/>" // PTS wants this in MAP/MSE/MMD/BV-02, otherwise "no EMAIL message in message listing"
             ,
             index,
             mas_cfg->objects[index],
+            mas_cfg->msg_deleted[index] ? "DELETED" : "INBOX",
             mas_cfg->msg_stati[index] ? "yes" : "no"
         );
     return size;
@@ -518,7 +528,7 @@ static size_t create_obex_body(uint16_t first, uint16_t last) {
     return pos;
 }
 
-#define MAP_DEMO_ENABLE_AUTO_BODY_OBJECT
+//#define MAP_DEMO_ENABLE_AUTO_BODY_OBJECT
 enum body_object { o_msg, o_convo };
 
 static void send_obex_object(enum body_object obj, uint16_t map_cid, uint16_t start_index, uint16_t end_index, uint32_t pos) {

@@ -119,9 +119,13 @@ MAP/MSE/MMN/BV-09-C: RE-PASS (2024-08-16) PTS 8.6.0 & L2CAP & MAP_NEW PASS
 MAP/MSE/MMN/BV-10-C: RE-PASS (2024-08-16) PTS 8.6.0 & L2CAP & MAP_NEW PASS, INFO: still manual event emmiting <e> required
 MAP/MSE/MMN/BV-11-C: RE-PASS (2024-08-16) PTS 8.6.0 & L2CAP & MAP_NEW PASS, INFO: still manual event emmiting <e> required
 MAP/MSE/MMN/BV-12-C: RE-PASS (2024-08-16) PTS 8.6.0 & L2CAP & MAP_NEW PASS, INFO: still manual event emmiting <e> required
-
+MAP/MSE/MMN/BV-13-C: RE-PASS (2024-08-16) PTS 8.6.0 & L2CAP & MAP_NEW PASS, INFO: still manual event emmiting <e> required
+MAP/MSE/MMN/BV-14-C: RE-PASS (2024-08-16) PTS 8.6.0 & L2CAP & MAP_NEW PASS, INFO: still manual event emmiting <e> required
+MAP/MSE/MMN/BV-15-C: RE-PASS (2024-08-16) PTS 8.6.0 & L2CAP & MAP_NEW PASS, INFO: still manual event emmiting <e> required
+MAP/MSE/MMN/BV-16-C: RE-PASS (2024-08-16) PTS 8.6.0 & L2CAP & MAP_NEW PASS, INFO: still manual event emmiting <e> required
 
 Open tests
+MAP/MSE/MMD/BV-02: PTS MAP_NEW is now trying to verify the deleted message was moved to "deleted"
 TODO: automated response with msg or convo listing according to the GET request
 MAP/MSE/MMB/BV-43-C PUT missing, move TC to Client Connection Verify that the MSE correctly updates the Conversation-Listing version counter when a new conversation is being created.
 	PTS: User Action Required:    Please create a new conversation, then click OK.  Otherwise click Cancel.
