@@ -110,8 +110,7 @@ MAP/MSE/MMB/BV-44-C: RE-PASS (2024-08-16) PTS 8.6.0 & L2CAP & MAP_NEW PASS
 MAP/MSE/MMB/BV-45-C: RE-PASS (2024-08-16) PTS 8.6.0 & L2CAP & MAP_NEW PASS
 MAP/MSE/MMB/BV-46-C: RE-PASS (2024-08-16) PTS 8.6.0 & L2CAP & MAP_NEW PASS
 MAP/MSE/MMB/BV-47-C: RE-PASS (2024-08-16) PTS 8.6.0 & L2CAP & MAP_NEW PASS, INFO: special test case #4 setup, wants to see message-type "IM" in XML body
-MAP/MSE/MMN/BV-02-C: RE-PASS (2024-08-16) PTS 8.6.0 & L2CAP & MAP_NEW PASS, RFCOM only, we dont yet support chunking of client PUT messages and therefore see a log: [ERR] obex_message_builder.c.90[obex_message_builder_packet_append()]: ERROR_CODE_MEMORY_CAPACITY_EXCEEDED type:0x82((null)) buffer_len:150 size:234 pos:44 len:190
-
+MAP/MSE/MMN/BV-02-C: RE-PASS (2024-08-16) PTS 8.6.0 & L2CAP & MAP_NEW PASS, INFO: still manual event emmiting <e> required
 
 Open tests
 TODO: automated response with msg or convo listing according to the GET request

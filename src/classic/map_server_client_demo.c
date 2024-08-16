@@ -170,14 +170,14 @@ static struct test_config_s
     char* helpstr; // additional help for setup, environment etc.
 } test_configs[] =
 {
-    {TC_RFCOM(.descr = "MAP/MSE/MMN/BV-02-C <e><e><e>..."    , .type = &nm_v1_0   ,.obj_count = 1, .msg_types = { "EMAIL", "SMS_GSM", "SMS_CDMA", "MMS", "IM"},.helpstr = "RFCOM only, we dont yet support chunking of client PUT messages" },)
-    {TC_NORM( .descr = "MAP/MSE/MMN/BV-04-C 06"              , .type = &nm_v1_1   ,.obj_count = 1, .msg_types = { "EMAIL", "SMS_GSM", "SMS_CDMA", "MMS", "IM"},                                                                             },)
-    {TC_NORM( .descr = "MAP/MSE/MMN/BV-07-C"                 , .type = &nm_v1_2   ,.obj_count = 1, .msg_types = { "EMAIL"},                                                                                                                 },)                         
-    {TC_NORM( .descr = "MAP/MSE/MMN/BV-08-C 09"              , .type = &ed_v1_2   ,.obj_count = 1, .msg_types = { "IM"},                                                                                                                    },)                         
-    {TC_NORM( .descr = "MAP/MSE/MMN/BV-10-C 15"              , .type = &pp_v1_2   ,.obj_count = 1, .msg_types = { ""},                                                                                                                      },)                         
-    {TC_NORM( .descr = "MAP/MSE/MMN/BV-11-C 16"              , .type = &pc_v1_2   ,.obj_count = 1, .msg_types = { ""},                                                                                                                      },)                         
-    {TC_NORM( .descr = "MAP/MSE/MMN/BV-12-C 13"              , .type = &cc_v1_2   ,.obj_count = 1, .msg_types = { ""},                                                                                                                      },)                         
-    {TC_NORM( .descr = "MAP/MSE/MMN/BV-14-C"                 , .type = &mr_v1_2   ,.obj_count = 1, .msg_types = { ""},                                                                                                                      },)                         
+    {TC_NORM(.descr = "MAP/MSE/MMN/BV-02-C <e><e><e>..."    , .type = &nm_v1_0   ,.obj_count = 1, .msg_types = { "EMAIL", "SMS_GSM", "SMS_CDMA", "MMS", "IM"}, },)
+    {TC_NORM( .descr = "MAP/MSE/MMN/BV-04-C 06"              , .type = &nm_v1_1   ,.obj_count = 1, .msg_types = { "EMAIL", "SMS_GSM", "SMS_CDMA", "MMS", "IM"},},)
+    {TC_NORM( .descr = "MAP/MSE/MMN/BV-07-C"                 , .type = &nm_v1_2   ,.obj_count = 1, .msg_types = { "EMAIL"},                                    },)                         
+    {TC_NORM( .descr = "MAP/MSE/MMN/BV-08-C 09"              , .type = &ed_v1_2   ,.obj_count = 1, .msg_types = { "IM"},                                       },)                         
+    {TC_NORM( .descr = "MAP/MSE/MMN/BV-10-C 15"              , .type = &pp_v1_2   ,.obj_count = 1, .msg_types = { ""},                                         },)                         
+    {TC_NORM( .descr = "MAP/MSE/MMN/BV-11-C 16"              , .type = &pc_v1_2   ,.obj_count = 1, .msg_types = { ""},                                         },)                         
+    {TC_NORM( .descr = "MAP/MSE/MMN/BV-12-C 13"              , .type = &cc_v1_2   ,.obj_count = 1, .msg_types = { ""},                                         },)                         
+    {TC_NORM( .descr = "MAP/MSE/MMN/BV-14-C"                 , .type = &mr_v1_2   ,.obj_count = 1, .msg_types = { ""},                                         },)                         
 };                                                                                                                                                  
 
 static char event_report_body_object[300];

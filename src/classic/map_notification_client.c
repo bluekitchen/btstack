@@ -225,7 +225,7 @@ static void map_notification_client_handle_can_send_now(uint16_t goep_cid) {
             break;
 
         case MNC_STATE_W2_PUT_SEND_EVENT: 
-#ifdef ENABLE_GOEP_L2CAP
+#if 0 //def ENABLE_GOEP_L2CAP
             log_error("With L2CAP enabled we've got only 150 bytes body size which is too small for our reports. Chunking to be implemented in the MNS client");
 #else
             goep_client_request_create_put(mnc->goep_client.cid);
