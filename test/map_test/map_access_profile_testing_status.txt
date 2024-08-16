@@ -111,7 +111,7 @@ MAP/MSE/MMB/BV-45-C: RE-PASS (2024-08-16) PTS 8.6.0 & L2CAP & MAP_NEW PASS
 MAP/MSE/MMB/BV-46-C: RE-PASS (2024-08-16) PTS 8.6.0 & L2CAP & MAP_NEW PASS
 MAP/MSE/MMB/BV-47-C: RE-PASS (2024-08-16) PTS 8.6.0 & L2CAP & MAP_NEW PASS, INFO: special test case #4 setup, wants to see message-type "IM" in XML body
 MAP/MSE/MMN/BV-02-C: RE-PASS (2024-08-16) PTS 8.6.0 & L2CAP & MAP_NEW PASS, INFO: still manual event emmiting <e> required
-MAP/MSE/MMN/BV-02-C: RE-PASS (2024-08-16) PTS 8.6.0 & L2CAP & MAP_NEW PASS, ="=
+MAP/MSE/MMN/BV-04-C: RE-PASS (2024-08-16) PTS 8.6.0 & L2CAP & MAP_NEW PASS, INFO: still manual event emmiting <e> required
 
 Open tests
 TODO: automated response with msg or convo listing according to the GET request
