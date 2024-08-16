@@ -71,7 +71,7 @@ static btstack_linked_list_t goep_clients;
 static goep_client_t *    goep_client_sdp_active;
 static uint8_t            goep_client_sdp_query_attribute_value[30];
 static const unsigned int goep_client_sdp_query_attribute_value_buffer_size = sizeof(goep_client_sdp_query_attribute_value);
-static uint8_t goep_packet_buffer[150];
+static uint8_t goep_packet_buffer[500]; // TODO Matthias: was 150 - why not bearer-mtu?
 
 static inline void goep_client_emit_connected_event(goep_client_t * goep_client, uint8_t status){
     uint8_t event[15];
@@ -440,7 +440,7 @@ static uint8_t * goep_client_get_outgoing_buffer(goep_client_t * goep_client){
 
 static uint16_t goep_client_get_outgoing_buffer_len(goep_client_t * goep_client){
     if (goep_client->l2cap_psm){
-        return sizeof(goep_packet_buffer);
+        return min(sizeof(goep_packet_buffer), goep_client->bearer_mtu);  // TODO Matthias: was returning 150 - why not bearer-mtu?
     } else {
         return rfcomm_get_max_frame_size(goep_client->bearer_cid);
     }
