@@ -67,8 +67,10 @@
 
 #define HAS_NOTIFICATION_TASK_CONTROL_POINT_OPERATION                                  0x00000080
 
-#define HAS_CP_NOTIFICATION_TASK_READ_PRESETS                                          0x00000001
-#define HAS_CP_NOTIFICATION_TASK_WRITE_PRESET                                          0x00000002
+
+#define HAS_CP_NOTIFICATION_TASK_READ_ALL_PRESETS                                      0x00000001
+#define HAS_CP_NOTIFICATION_TASK_READ_PRESETS                                          0x00000002
+#define HAS_CP_NOTIFICATION_TASK_WRITE_PRESET                                          0x00000004
 
 #define HAS_EMPTY_PRESET_RECORD_INDEX                                                  0x00
 #define HAS_INVALID_PRESET_RECORD_POSITION                                             0xFF
@@ -180,8 +182,6 @@ static void has_remove_task_from_queue(void){
     has_shift_left_preset_records(has_preset_records_num, end_pos);
     has_clear_preset_record(end_pos);
     has_queued_preset_records_num--;
-
-    has_dump_queue("After remove");
 }
 
 static void has_delete_preset_record(uint8_t delete_pos){
@@ -192,6 +192,7 @@ static void has_delete_preset_record(uint8_t delete_pos){
     has_shift_left_preset_records(delete_pos, end_pos);
     has_preset_records_num--;
     has_clear_preset_record(end_pos);
+    dump_preset_records("After delete preset");
 }
 
 static void has_server_reset_client(has_server_connection_t * connection){
@@ -236,6 +237,49 @@ static has_preset_record_t * has_read_presets_operation_get_next_preset_record(h
     return &has_preset_records[connection->preset_position];
 }
 
+static has_preset_record_t * has_read_presets_operation_get_next_changed_preset_record2(has_server_connection_t * connection, bool * is_last_preset, uint8_t * prev_index){
+    btstack_assert(has_preset_records_num > 0);
+    // check if it is initial value
+    static uint8_t changed_preset_positions[] = {0,1,3,6,7};
+    static uint8_t prev_preset_indexes[] = {0,1,3,7,8};
+    static uint8_t changed_preset_pos = 0;
+
+    if (connection->preset_position == HAS_INVALID_PRESET_RECORD_POSITION){
+        changed_preset_pos = 0;
+        *prev_index = prev_preset_indexes[changed_preset_pos];
+        connection->preset_position = changed_preset_positions[changed_preset_pos++];
+
+    } else {
+//        *prev_index = has_preset_records[connection->preset_position].index;
+        *prev_index = prev_preset_indexes[changed_preset_pos];
+        if (changed_preset_pos < 5){// (has_preset_records_num - 1)) {
+            connection->preset_position = changed_preset_positions[changed_preset_pos++];
+        }
+    }
+//    *is_last_preset = (connection->preset_position == (has_preset_records_num - 1));
+//    printf("prev index %d, index %d, is_last %u\n", *prev_index, has_preset_records[connection->preset_position].index, *is_last_preset);
+//    return &has_preset_records[connection->preset_position];
+    *is_last_preset = (changed_preset_pos == 5);
+    printf("prev index %d, index %d, is_last %u\n", *prev_index, has_preset_records[connection->preset_position].index, *is_last_preset);
+    return &has_preset_records[connection->preset_position];
+}
+
+static has_preset_record_t * has_read_presets_operation_get_next_changed_preset_record(has_server_connection_t * connection, bool * is_last_preset, uint8_t * prev_index){
+    btstack_assert(has_preset_records_num > 0);
+    // check if it is initial value
+    static uint8_t changed_preset_pos = 0;
+
+    if (connection->preset_position == HAS_INVALID_PRESET_RECORD_POSITION){
+        connection->preset_position = 0;
+        *prev_index = 0;
+    } else if (changed_preset_pos < (has_preset_records_num - 1)) {
+        *prev_index = has_preset_records[connection->preset_position].index;
+        connection->preset_position++;
+    }
+    *is_last_preset = (connection->preset_position == (has_preset_records_num - 1));
+    printf("prev index %d, index %d, is_last %u\n", *prev_index, has_preset_records[connection->preset_position].index, *is_last_preset);
+    return &has_preset_records[connection->preset_position];
+}
 
 static uint8_t has_add_cp_operation_to_queue(has_server_connection_t * connection, uint8_t scheduled_task) {
     // queue the change at the tail for later processing
@@ -268,6 +312,7 @@ static uint8_t has_add_preset_record_change_to_queue(uint8_t index, uint8_t prop
     has_preset_records[queue_pos].con_handle = HCI_CON_HANDLE_INVALID;
     // increase count
     has_queued_preset_records_num++;
+    has_dump_queue("Server ADD Preset");
     return queue_pos;
 }
 
@@ -555,8 +600,11 @@ static int has_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
     if (attribute_handle == has_control_point_client_configuration_handle){
         has_control_point_client_configuration = little_endian_read_16(buffer, 0);
         if (has_control_point_client_configuration > 0){
-            connection->state = HAS_SERVER_CONNECTION_STATE_PENDING_ATT_INDICATION;
-            has_add_cp_operation_to_queue(connection, HAS_CP_NOTIFICATION_TASK_READ_PRESETS);
+            connection->state = HAS_SERVER_CONNECTION_STATE_PENDING_ATT_INDICATION_OF_ALL_CHANGES;
+            connection->start_index = 0;
+            connection->preset_position = HAS_INVALID_PRESET_RECORD_POSITION;
+            connection->num_presets_to_read = has_preset_records_num;
+            dump_preset_records("Before send all");
             has_server_schedule_task();
         }
         return 0;
@@ -738,6 +786,8 @@ static void has_insert_preset_record(uint8_t insert_pos, uint8_t index, uint8_t 
     has_preset_records[insert_pos].active = false;
     has_preset_records[insert_pos].scheduled_task = 0;
     has_preset_records[insert_pos].calculated_position = HAS_INVALID_PRESET_RECORD_POSITION;
+
+    has_dump_queue("After add preset");
 }
 
 uint8_t find_position_of_regular_preset_record_to_delete(has_preset_record_t * delete_preset){
@@ -776,7 +826,17 @@ static void has_set_active_preset_record(uint8_t update_pos) {
     has_preset_records[update_pos].active = true;
     has_preset_records[update_pos].properties |= HEARING_AID_PRESET_PROPERTIES_MASK_AVAILABLE;
 
-    dump_preset_records("After execute active");
+    dump_preset_records("After set active");
+}
+
+static void has_set_name_preset_record(uint8_t update_pos) {
+    btstack_assert(update_pos < has_preset_records_num);
+
+    // update
+    btstack_strcpy(has_preset_records[update_pos].name, sizeof(has_preset_records[update_pos].name), has_preset_records[has_preset_records_num].name);
+    has_remove_task_from_queue();
+
+    dump_preset_records("After update name");
 }
 
 static void has_set_preset_record_availability(uint8_t update_pos, bool available) {
@@ -798,6 +858,51 @@ static void has_set_preset_record_availability(uint8_t update_pos, bool availabl
 static void has_server_can_send_now(void * context){
     has_server_connection_t * connection = (has_server_connection_t *) context;
     btstack_assert(connection != NULL);
+
+    if (connection->state == HAS_SERVER_CONNECTION_STATE_PENDING_ATT_INDICATION_OF_ALL_CHANGES){
+        bool is_last_preset_record;
+        uint8_t prev_index;
+        has_preset_record_t *preset = has_read_presets_operation_get_next_changed_preset_record(connection,
+                                                                                                &is_last_preset_record, &prev_index);
+        uint8_t value[6 + HAS_PRESET_RECORD_NAME_MAX_LENGTH];
+        uint8_t pos = 0;
+        value[pos++] = (uint8_t)HAS_OPCODE_PRESET_CHANGED;
+
+        switch (preset->index){
+            case 8:
+                value[0] = preset->index;
+                att_server_notify(connection->con_handle, has_active_preset_index_value_handle, &value[0], pos);
+                break;
+            case 3:
+            case 6:
+            case 7:
+                break;
+            default:
+                value[pos++] = (uint8_t)HAS_CHANGEID_GENERIC_UPDATE;
+                value[pos++] = is_last_preset_record ? 1u : 0u;
+                value[pos++] = prev_index;
+
+                value[pos++] = preset->index;
+                value[pos++] = preset->properties;
+
+                uint16_t mtu = att_server_get_mtu(connection->con_handle);
+                btstack_assert(mtu > (pos + 3));
+                uint16_t available_payload_size = mtu - 3 - pos;
+                uint16_t name_len = btstack_min(available_payload_size, strlen(preset->name) + 1);
+                btstack_strcpy((char *) &value[pos], name_len, preset->name);
+                pos += name_len;
+                (void) att_server_indicate(connection->con_handle, has_control_point_value_handle, &value[0], pos);
+                break;
+        }
+
+        if (is_last_preset_record) {
+            connection->state = HAS_SERVER_CONNECTION_STATE_READY;
+            connection->scheduled_control_point_notification_tasks &= ~HAS_CP_NOTIFICATION_TASK_READ_ALL_PRESETS;
+        } else {
+            has_server_schedule_task();
+        }
+        return;
+    }
 
     // first preset record in "wait to process" queue:
     uint8_t queued_preset_pos = has_preset_records_num;
@@ -973,7 +1078,7 @@ static void has_server_can_send_now(void * context){
             return;
         }
         // we are done
-        has_remove_task_from_queue();
+        has_set_name_preset_record(update_pos);
     }
 
     if (has_queued_preset_records_num > 0){
@@ -1056,6 +1161,57 @@ static bool is_set_name_operation_valid(uint8_t index){
     return exists && ((preset.properties & HEARING_AID_PRESET_PROPERTIES_MASK_AVAILABLE) > 0u );
 }
 
+static void process_queue(void){
+    if (has_server_schedule_task()){
+        return;
+    }
+
+    uint8_t i;
+    for (i = has_preset_records_num; i < has_preset_records_num + has_queued_preset_records_num; i++ ){
+        uint8_t queued_preset_pos = i;
+        has_preset_record_t * queued_preset = &has_preset_records[queued_preset_pos];
+
+        if (queued_preset->scheduled_task == HAS_NOTIFICATION_TASK_CONTROL_POINT_OPERATION){
+            has_remove_task_from_queue();
+        } else if (queued_preset->scheduled_task == HAS_NOTIFICATION_TASK_PRESET_RECORD_ADDED) {
+            uint8_t insert_pos = find_position_of_regular_preset_record_to_insert(queued_preset);
+            btstack_assert(insert_pos != HAS_INVALID_PRESET_RECORD_POSITION);
+            // we are done
+            has_insert_preset_record(insert_pos, queued_preset->index, queued_preset->properties, queued_preset->name);
+
+        } else if (queued_preset->scheduled_task == HAS_NOTIFICATION_TASK_PRESET_RECORD_DELETED){
+
+            uint8_t delete_pos = find_position_of_regular_preset_record_to_delete(queued_preset);
+            btstack_assert(delete_pos != HAS_INVALID_PRESET_RECORD_POSITION);
+            has_delete_preset_record(delete_pos);
+
+        } else if (queued_preset->scheduled_task == HAS_NOTIFICATION_TASK_PRESET_RECORD_AVAILABLE){
+            uint8_t update_pos = find_position_of_regular_preset_record_with_index(queued_preset->index);
+            btstack_assert(update_pos != HAS_INVALID_PRESET_RECORD_POSITION);
+            // we are done
+            has_set_preset_record_availability(update_pos, true);
+
+        } else if (queued_preset->scheduled_task == HAS_NOTIFICATION_TASK_PRESET_RECORD_UNAVAILABLE){
+            uint8_t update_pos = find_position_of_regular_preset_record_with_index(queued_preset->index);
+            btstack_assert(update_pos != HAS_INVALID_PRESET_RECORD_POSITION);
+            // we are done
+            has_set_preset_record_availability(update_pos, false);
+
+        } else if (queued_preset->scheduled_task == HAS_NOTIFICATION_TASK_PRESET_RECORD_ACTIVE) {
+            uint8_t update_pos = find_position_of_regular_preset_record_with_index(queued_preset->index);
+            btstack_assert(update_pos != HAS_INVALID_PRESET_RECORD_POSITION);
+            // we are done
+            has_set_active_preset_record(update_pos);
+
+        } else if (queued_preset->scheduled_task == HAS_NOTIFICATION_TASK_PRESET_RECORD_UPDATE_NAME) {
+            uint8_t update_pos = find_position_of_regular_preset_record_with_index(queued_preset->index);
+            btstack_assert(update_pos != HAS_INVALID_PRESET_RECORD_POSITION);
+            // we are done
+            has_set_name_preset_record(update_pos);
+        }
+    }
+}
+
 uint8_t hearing_access_service_server_add_preset(uint8_t index, uint8_t properties, char * name){
     if (!is_add_operation_valid(index)){
         return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
@@ -1068,10 +1224,11 @@ uint8_t hearing_access_service_server_add_preset(uint8_t index, uint8_t properti
                                                               HAS_NOTIFICATION_TASK_PRESET_RECORD_ADDED);
 
     // schedule notifications
-    if (!has_server_schedule_task()){
-        uint8_t insert_pos = find_position_of_regular_preset_record_to_insert(&has_preset_records[queue_pos]);
-        has_insert_preset_record(insert_pos, index, properties, name);
-    }
+//    if (!has_server_schedule_task()){
+//        uint8_t insert_pos = find_position_of_regular_preset_record_to_insert(&has_preset_records[queue_pos]);
+//        has_insert_preset_record(insert_pos, index, properties, name);
+//    }
+    process_queue();
     return ERROR_CODE_SUCCESS;
 }
 
@@ -1087,10 +1244,11 @@ uint8_t hearing_access_service_server_delete_preset(uint8_t index){
     uint8_t queue_pos = has_add_preset_record_change_to_queue(index, 0, "", HAS_NOTIFICATION_TASK_PRESET_RECORD_DELETED);
 
     // schedule notifications
-    if (!has_server_schedule_task()){
-        uint8_t delete_pos = find_position_of_regular_preset_record_to_delete(&has_preset_records[queue_pos]);
-        has_delete_preset_record(delete_pos);
-    }
+//    if (!has_server_schedule_task()){
+//        uint8_t delete_pos = find_position_of_regular_preset_record_to_delete(&has_preset_records[queue_pos]);
+//        has_delete_preset_record(delete_pos);
+//    }
+    process_queue();
     return ERROR_CODE_SUCCESS;
 }
 
@@ -1104,10 +1262,11 @@ uint8_t hearing_access_service_server_preset_record_set_active(uint8_t index){
 
     uint8_t queue_pos = has_add_preset_record_change_to_queue(index, 0, "", HAS_NOTIFICATION_TASK_PRESET_RECORD_ACTIVE);
 
-    if (!has_server_schedule_task()){
-        uint8_t update_pos = find_position_of_regular_preset_record_with_index(has_preset_records[queue_pos].index);
-        has_set_active_preset_record(update_pos);
-    }
+//    if (!has_server_schedule_task()){
+//        uint8_t update_pos = find_position_of_regular_preset_record_with_index(has_preset_records[queue_pos].index);
+//        has_set_active_preset_record(update_pos);
+//    }
+    process_queue();
     return ERROR_CODE_SUCCESS;
 }
 
@@ -1122,10 +1281,11 @@ uint8_t hearing_access_service_server_preset_record_set_available(uint8_t index)
     uint8_t queue_pos = has_add_preset_record_change_to_queue(index, 0, "",
                                                               HAS_NOTIFICATION_TASK_PRESET_RECORD_AVAILABLE);
 
-    if (!has_server_schedule_task()){
-        uint8_t update_pos = find_position_of_regular_preset_record_with_index(has_preset_records[queue_pos].index);
-        has_set_active_preset_record(update_pos);
-    }
+//    if (!has_server_schedule_task()){
+//        uint8_t update_pos = find_position_of_regular_preset_record_with_index(has_preset_records[queue_pos].index);
+//        has_set_active_preset_record(update_pos);
+//    }
+    process_queue();
     return ERROR_CODE_SUCCESS;
 }
 
@@ -1141,12 +1301,14 @@ uint8_t hearing_access_service_server_preset_record_set_unavailable(uint8_t inde
     uint8_t queue_pos = has_add_preset_record_change_to_queue(index, 0, "",
                                                               HAS_NOTIFICATION_TASK_PRESET_RECORD_UNAVAILABLE);
 
-    if (!has_server_schedule_task()){
-        uint8_t update_pos = find_position_of_regular_preset_record_with_index(has_preset_records[queue_pos].index);
-        has_set_active_preset_record(update_pos);
-    }
+//    if (!has_server_schedule_task()){
+//        uint8_t update_pos = find_position_of_regular_preset_record_with_index(has_preset_records[queue_pos].index);
+//        has_set_active_preset_record(update_pos);
+//    }
+    process_queue();
     return ERROR_CODE_SUCCESS;
 }
+
 
 uint8_t hearing_access_service_server_preset_record_set_name(uint8_t index, const char * name){
     if (!is_set_name_operation_valid(index)){
@@ -1159,10 +1321,11 @@ uint8_t hearing_access_service_server_preset_record_set_name(uint8_t index, cons
     uint8_t queue_pos = has_add_preset_record_change_to_queue(index, 0, name,
                                                               HAS_NOTIFICATION_TASK_PRESET_RECORD_UPDATE_NAME);
 
-    if (!has_server_schedule_task()){
-        uint8_t update_pos = find_position_of_regular_preset_record_with_index(has_preset_records[queue_pos].index);
-        has_set_active_preset_record(update_pos);
-    }
+//    if (!has_server_schedule_task()){
+//        uint8_t update_pos = find_position_of_regular_preset_record_with_index(has_preset_records[queue_pos].index);
+//        has_set_name_preset_record(update_pos);
+//    }
+    process_queue();
     return ERROR_CODE_SUCCESS;
 }
 

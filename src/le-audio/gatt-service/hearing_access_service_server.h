@@ -54,7 +54,8 @@ extern "C" {
     typedef enum {
         HAS_SERVER_CONNECTION_STATE_READY = 0,
         HAS_SERVER_CONNECTION_STATE_PENDING_ATT_RESPONSE,
-        HAS_SERVER_CONNECTION_STATE_PENDING_ATT_INDICATION
+        HAS_SERVER_CONNECTION_STATE_PENDING_ATT_INDICATION,
+        HAS_SERVER_CONNECTION_STATE_PENDING_ATT_INDICATION_OF_ALL_CHANGES,
     } has_server_connection_state_t;
 
 typedef struct {
@@ -68,6 +69,7 @@ typedef struct {
     // used for read presets
     uint8_t start_index;
     uint8_t preset_position;
+    uint8_t preset_index;
     uint8_t num_presets_to_read;
     uint8_t param_size;
 
