@@ -394,9 +394,11 @@ static void configure_stream(void) {
     le_audio_demo_util_source_generate_iso_frame(audio_source);
 
     // init sink
-    le_audio_demo_util_sink_configure_unicast(1, 1, sampling_frequency_hz,
-                                              frame_duration, octets_per_frame, iso_interval_1250us, flush_timeout);
-
+    if (enable_microphone){
+        le_audio_demo_util_sink_init("gateway.wav");
+        le_audio_demo_util_sink_configure_unicast(1, 1, sampling_frequency_hz,
+                                                  frame_duration, octets_per_frame, iso_interval_1250us, flush_timeout);
+    }
 }
 
 static void run_for_server(server_t * server){
@@ -909,6 +911,11 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
             }
             //
             if (servers_in_state(SERVER_IDLE)){
+
+                if (enable_microphone){
+                    le_audio_demo_util_sink_close();
+                }
+
                 printf("Headset(s) disconnected\n");
                 app_state = APP_IDLE;
             }
@@ -1904,7 +1911,6 @@ int btstack_main(int argc, const char * argv[]){
 
     // setup audio processing
     le_audio_demo_util_source_init();
-    le_audio_demo_util_sink_init("gateway.wav");
 #ifdef INPUT_DEVICE_NAME
     btstack_audio_portaudio_source_set_device(INPUT_DEVICE_NAME);
 #endif
