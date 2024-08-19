@@ -239,7 +239,7 @@ static void map_notification_client_handle_can_send_now(uint16_t goep_cid) {
             map_notification_client_prepare_operation(mnc, OBEX_OPCODE_PUT);
             mnc->request_number++;
             goep_client_execute(mnc->goep_client.cid);
-
+            log_error("goep_client_execute()");
 
 #endif
             break;
@@ -435,10 +435,10 @@ static void map_notification_client_packet_handler(uint8_t packet_type, uint16_t
 uint8_t map_notification_client_send_event(uint16_t mnc_cid, uint8_t MASInstanceID, uint8_t* body_buf, size_t  body_buf_len){
     map_notification_client_t * mnc = map_notification_client_for_mnc_cid(mnc_cid);
     if (mnc == NULL) {
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+        RUN_AND_LOG_ACTION(return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;)
     }
     if (mnc->state != MNC_STATE_CONNECTED){
-        return BTSTACK_BUSY;
+        RUN_AND_LOG_ACTION(return BTSTACK_BUSY;)
     }
 
     uint16_t pos = 0;
@@ -452,6 +452,7 @@ uint8_t map_notification_client_send_event(uint16_t mnc_cid, uint8_t MASInstance
     mnc->request_number = 0;
     mnc->body_buf = body_buf;
     mnc->body_buf_len = body_buf_len;
+    log_debug("preapred sending goep_client_request_can_send_now");
     goep_client_request_can_send_now(mnc->goep_client.cid);
     return 0;
 }
@@ -483,7 +484,7 @@ uint8_t map_notification_client_connect(map_notification_client_t* mnc, l2cap_er
 uint8_t map_notification_client_disconnect(uint16_t mnc_cid) {
     map_notification_client_t* mnc = map_notification_client_for_mnc_cid(mnc_cid);
     if (mnc == NULL) {
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+        RUN_AND_LOG_ACTION(return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;)
     }
     if (mnc->state != MNC_STATE_CONNECTED) {
         return BTSTACK_BUSY;
