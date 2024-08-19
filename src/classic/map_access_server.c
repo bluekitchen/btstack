@@ -708,7 +708,7 @@ static void map_access_server_parser_callback_get(void* user_data, uint8_t heade
                 }
             }
             map_access_server->request.name[total_len / 2] = 0;
-            log_debug("OBEX_HEADER_NAME:<%*s>", data_len/2, map_access_server->request.name);
+            log_debug("OBEX_HEADER_NAME:<%.*s>", data_len/2, map_access_server->request.name);
         }
         break;
     case OBEX_HEADER_TYPE:
@@ -806,6 +806,7 @@ static void map_access_server_handle_get_or_put_request(map_access_server_t* mas
         APP_WRITE_16(event, &pos, mas->goep_cid);
         APP_WRITE_16(event, &pos, mas->request.app_params.MaxListCount);
         APP_WRITE_16(event, &pos, mas->request.app_params.ListStartOffset);
+        APP_WRITE_STR(event, &pos, sizeof(event) - pos, mas->request.name);
         APP_WRITE_LEN(event, pos);
         break;
 

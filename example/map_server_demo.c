@@ -138,6 +138,7 @@ static int cfg_start_index = 0;
 static int cfg_MAP_MSE_MMD_BV_02_I_getMsgListng_counter = 0;
 static int one_object_more_or_less = 0;
 static uint16_t ListingSize = 0;
+static bool folder_msg_deleted = false;
 
 static mas_uint128hex_t DatabaseIdentifier = { 0 };
 // BT SIG Test Suite PTS is not acepting what BT SIG MAP spec describes as valid counters:
@@ -799,7 +800,8 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
     uint32_t continuation, ConnectionID,
            NotificationFilterMask = MAP_APP_PARAM_SUB_AllNotifications,
         newNotificationFilterMask = MAP_APP_PARAM_SUB_AllNotifications;
-	
+    char request_name[32] = "";
+
     if (mas_cfg->disabled) {
         MAP_PRINTF("TEST CASE DISABLED, %s\n", mas_cfg->descr);
         return;
@@ -853,6 +855,8 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             APP_READ_16(packet, &pos, &current_map_cid);
                             APP_READ_16(packet, &pos, &max_list_count);
                             APP_READ_16(packet, &pos, &start_index);
+                            APP_READ_STR(packet, &pos, sizeof(request_name), request_name);
+                            folder_msg_deleted = (0 == strcmp(request_name, "deleted"))?true:false;
                             uint8_t tmp_NewMessage = 0;
                             char MSETime[] = "20140612T105430+0100";
                             map_access_server_set_response_app_param(current_map_cid, MAP_APP_PARAM_NewMessage, &tmp_NewMessage);
@@ -867,7 +871,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                                 start_index = cfg_start_index;
                             }
 
-                            MAP_PRINTF("[+] Get Message Listing cfg_start_index:%d\n", cfg_start_index);
+                            MAP_PRINTF("[+] Get Message Listing folder:%s folder_msg_deleted:%u cfg_start_index:%d\n", request_name, folder_msg_deleted, cfg_start_index);
 
                             // BT MAP Spec requires to skip the body if max_list_count == 0
                             if (max_list_count == 0)
@@ -892,7 +896,6 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                         case MAP_SUBEVENT_PUT_MESSAGE_STATUS: {
                             uint8_t StatusIndicator;
                             uint8_t StatusValue;
-                            char request_name[32];
                             APP_READ_16(packet, &pos, &current_map_cid);
                             APP_READ_08(packet, &pos, &StatusIndicator);
                             APP_READ_08(packet, &pos, &StatusValue);
