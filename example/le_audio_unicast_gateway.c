@@ -816,7 +816,7 @@ static void create_cig(void){
 
     printf("CIG_CREATE cig %u, num cis %u, interval %u us\n", cig_params.cig_id, cig_params.num_cis, cig_params.sdu_interval_c_to_p );
     for (i = 0; i < cig_params.num_cis; i++) {
-        uint8_t cis_id = 1 + i;
+        uint8_t cis_id = i;
 
         cig_params.cis_params[i].cis_id = cis_id;
         cig_params.cis_params[i].max_sdu_c_to_p = codec_configuration.specific_codec_configuration.octets_per_codec_frame * num_channels / num_servers;
