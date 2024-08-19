@@ -466,7 +466,7 @@ static void run_for_server(server_t * server){
                 if (server->ascs_ase_roles[server->ascs_operation_ase_index] == LE_AUDIO_ROLE_SOURCE) {
                     num_ase_channels = 1;
                 } else {
-                    num_ase_channels = num_channels;
+                    num_ase_channels = num_channels / num_servers;
                 }
                 uint16_t max_sdu = num_ase_channels * codec_configurations[menu_sampling_frequency].variants[menu_variant].octets_per_frame;
 
