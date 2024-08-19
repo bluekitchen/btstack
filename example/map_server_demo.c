@@ -880,7 +880,9 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                                 send_obex_object(o_msg, current_map_cid, start_index, max_list_count, continuation);
 
                             // some PTS tests require strange behaviour so we need a handler to modify default behaviour for GetMessageListing
-                            if (mas_cfg->fGetMsgListng != NULL)
+                            if (   mas_cfg->fGetMsgListng != NULL
+                                // we only want to call the helpers once per GET request, not on each L2CAP chunk
+                                && continuation == 0)
                                 mas_cfg->fGetMsgListng();
 
                             break;
