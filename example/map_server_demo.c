@@ -915,6 +915,9 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             map_access_server_set_response_type_and_name(current_map_cid, "", "x-bt/messageStatus");
                             map_access_server_send_response(current_map_cid, OBEX_RESP_SUCCESS, 0, 0, NULL);
                             handle_set_message_status(request_name, StatusIndicator, (unsigned int)StatusValue);
+
+                            if (mas_cfg->fPutMsg != NULL)
+                                mas_cfg->fPutMsg();
                             break;
                         }
                         case MAP_SUBEVENT_PUT_MESSAGE_UPDATE:
@@ -925,6 +928,9 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             // BT SIG Test case MAP/MSE/MMB/BV-23 asks for one more message after
                             // issuing a "update messages" request so we just simulate one
                             one_object_more_or_less = 1;
+
+                            if (mas_cfg->fPutMsg != NULL)
+                                mas_cfg->fPutMsg();
                             break;
 
                         case MAP_SUBEVENT_PUT_MESSAGE: {
@@ -968,6 +974,8 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             else {
                                 btstack_assert(NotificationStatus < 2);
                             }
+                            if (mas_cfg->fPutMsg != NULL)
+                                mas_cfg->fPutMsg();
                             break;
 
                         case MAP_SUBEVENT_PUT_SET_NOTIFICATION_FILTER:
@@ -978,6 +986,9 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             newNotificationFilterMask = NotificationFilterMask;
                             map_access_server_set_response_type_and_name(current_map_cid, NULL, NULL);
                             map_access_server_send_response(current_map_cid, OBEX_RESP_SUCCESS, 0, 0, NULL);
+
+                            if (mas_cfg->fPutMsg != NULL)
+                                mas_cfg->fPutMsg();
                             break;
 
                         case MAP_SUBEVENT_PUT_OWNER_STATUS: {
@@ -991,6 +1002,9 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             // BT SIG Test case MAP/MSE/MMB/BV-23 asks for one more message after
                             // issuing a "update messages" request so we just simulate one
                             one_object_more_or_less = 1;
+
+                            if (mas_cfg->fPutMsg != NULL)
+                                mas_cfg->fPutMsg();
                             break;
                         }
 
