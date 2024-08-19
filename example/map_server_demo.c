@@ -195,11 +195,11 @@ static void MAP_MSE_MMB_BV_25_inc_ConvListCnt(void) {
 }
 
 static void MAP_MSE_MMD_BV_05_PutMsg(void) {
-    mac_select_tc_MAP_MSE_MMD_BV_05();
+    mac_select_tc_MAP_MSE_MMD_BV_02();
     char* body = create_next_mnc_event_report_body_object();
     map_notification_client_send_event(mnc.cid, 0, body, strlen(body));
     MAP_PRINTF("map_notification_client_send_event mnc.cid:%04x [%s]", mnc.cid, body);
-    log_debug("run mac_select_tc_MAP_MSE_MMD_BV_05 to sent a RemovedMessage notification");
+    log_debug("run mac_select_tc_MAP_MSE_MMD_BV_02 to sent a RemovedMessage notification");
 }
 
 static void MAP_MSE_MMU_BV_02_I_PutMsg(void) {

@@ -246,10 +246,6 @@ struct test_set_config mac_test_set =
     .fp_print_test_cases   = mac_print_test_cases,
 };
 
-void mac_select_tc_MAP_MSE_MMD_BV_05(void) {
-    mac_select_test_case_n(&mac_test_set, 0);
-}
-
 static int gen_event_report(char* buf, int maxsize, int index)
 {
     if (mac_cfg->msg_types[index] == NULL)
@@ -262,6 +258,10 @@ static int gen_event_report(char* buf, int maxsize, int index)
     pos += snprintf(&buf[pos], maxsize - pos, mac_cfg->type->footer);
 
     return pos;
+}
+
+void mac_select_tc_MAP_MSE_MMD_BV_02(void) {
+    mac_select_test_case_n(&mac_test_set, 0);
 }
 
 char* create_next_mnc_event_report_body_object(void) {
