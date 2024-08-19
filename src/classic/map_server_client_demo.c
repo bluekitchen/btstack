@@ -146,6 +146,13 @@ struct objconfig_s mr_v1_2 = {
     .body   = "<event type = \"MessageRemoved\" handle=\"0123456789001000\" folder=\"TELECOM/MSG/INBOX\"  msg_type=\"IM\"/>"
 };
 
+// copied from PTS v8.6.0B6 file IM_MessageRemoved_event_report_1_2
+struct objconfig_s mr_v1_2_A0 = {
+    .header = "<MAP-event-report version=\"1.2\">",
+    .footer = "</MAP-event-report>",
+    .body   = "<event type = \"MessageRemoved\" handle=\"A0\" folder=\"TELECOM/MSG/INBOX\"  msg_type=\"IM\"/>"
+};
+
 #define TC_NORM(data, ...)  data,  ## __VA_ARGS__
 #ifdef ENABLE_GOEP_L2CAP
 #define TC_RFCOM(...)       .descr = " Please disable ENABLE_GOEP_L2CAP", .disabled = true },
@@ -170,7 +177,8 @@ static struct test_config_s
     char* helpstr; // additional help for setup, environment etc.
 } test_configs[] =
 {
-    {TC_NORM( .descr = "MAP/MSE/MMN/BV-02-C <e><e><e>.."    , .type = &nm_v1_0   ,.obj_count = 1, .msg_types = { "EMAIL", "SMS_GSM", "SMS_CDMA", "MMS", "IM"}, },)
+    {TC_NORM( .descr = "MAP/MSE/MMD/BV-05"                  , .type = &mr_v1_2_A0,.obj_count = 1, .msg_types = { "IM"},                                       },)  
+    {TC_NORM( .descr = "MAP/MSE/MMN/BV-02-C <e><e><e>.."    , .type = &nm_v1_0   ,.obj_count = 1, .msg_types = { "EMAIL", "SMS_GSM", "SMS_CDMA", "MMS", "IM"},},)
     {TC_NORM( .descr = "MAP/MSE/MMN/BV-04..06"              , .type = &nm_v1_1   ,.obj_count = 1, .msg_types = { "EMAIL", "SMS_GSM", "SMS_CDMA", "MMS", "IM"},},)
     {TC_NORM( .descr = "MAP/MSE/MMN/BV-07"                  , .type = &nm_v1_2   ,.obj_count = 1, .msg_types = { "EMAIL"},                                    },)                         
     {TC_NORM( .descr = "MAP/MSE/MMN/BV-08..09"              , .type = &ed_v1_2   ,.obj_count = 1, .msg_types = { "IM"},                                       },)                         
@@ -178,6 +186,7 @@ static struct test_config_s
     {TC_NORM( .descr = "MAP/MSE/MMN/BV-11, 16"              , .type = &pc_v1_2   ,.obj_count = 1, .msg_types = { ""},                                         },)                         
     {TC_NORM( .descr = "MAP/MSE/MMN/BV-12..13"              , .type = &cc_v1_2   ,.obj_count = 1, .msg_types = { ""},                                         },)                         
     {TC_NORM( .descr = "MAP/MSE/MMN/BV-14"                  , .type = &mr_v1_2   ,.obj_count = 1, .msg_types = { ""},                                         },)                         
+    
 };                                                                                                                                                  
 
 static char event_report_body_object[300];
@@ -217,6 +226,7 @@ void mac_select_test_case_n(struct test_set_config* cfg, uint8_t n) {
     }
     else
         MAP_PRINTF("Error: coulnd't set config <%d>", n);
+    
 }
 
 static void mac_print_test_cases(struct test_set_config* cfg)
@@ -235,6 +245,10 @@ struct test_set_config mac_test_set =
     .fp_print_test_config  = mac_print_test_config,
     .fp_print_test_cases   = mac_print_test_cases,
 };
+
+void mac_select_tc_MAP_MSE_MMD_BV_05(void) {
+    mac_select_test_case_n(&mac_test_set, 0);
+}
 
 static int gen_event_report(char* buf, int maxsize, int index)
 {
