@@ -123,8 +123,9 @@ MAP/MSE/MMN/BV-13-C: RE-PASS (2024-08-16) PTS 8.6.0 & L2CAP & MAP_NEW PASS, INFO
 MAP/MSE/MMN/BV-14-C: RE-PASS (2024-08-16) PTS 8.6.0 & L2CAP & MAP_NEW PASS, INFO: still manual event emmiting <e> required
 MAP/MSE/MMN/BV-15-C: RE-PASS (2024-08-16) PTS 8.6.0 & L2CAP & MAP_NEW PASS, INFO: still manual event emmiting <e> required
 MAP/MSE/MMN/BV-16-C: RE-PASS (2024-08-16) PTS 8.6.0 & L2CAP & MAP_NEW PASS, INFO: still manual event emmiting <e> required
-MAP/MSE/MMD/BV-02: : RE-PASS (2024-08-16) PTS 8.6.0 & RFCOM & MAP_NEW, INFO: L2CAP fals because test case callback handlers are called for each chunk of a request, not only once
-MAP/MSE/MMD/BV-02: : RE-PASS (2024-08-16) PTS 8.6.0 & L2CAP & MAP_NEW
+MAP/MSE/MMD/BV-02: RE-PASS (2024-08-16) PTS 8.6.0 & RFCOM & MAP_NEW, INFO: L2CAP fals because test case callback handlers are called for each chunk of a request, not only once
+MAP/MSE/MMD/BV-02: RE-PASS (2024-08-16) PTS 8.6.0 & L2CAP & MAP_NEW
+MAP/MSE/MMD/BV-05: PASS (2024-08-16) PTS 8.6.0 & L2CAP & MAP_NEW, Info: manual only. Sending event reports later needs to be implemented yet.
 
 Open tests
 TODO: automated response with msg or convo listing according to the GET request
