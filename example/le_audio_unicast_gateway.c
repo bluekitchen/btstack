@@ -1755,23 +1755,6 @@ void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
     app_run();
 }
 
-static uint16_t att_read_callback(hci_con_handle_t connection_handle, uint16_t att_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
-    UNUSED(connection_handle);
-    printf("ATT Read, handle %04x\n", att_handle);
-    return 0;
-}
-
-static int att_write_callback(hci_con_handle_t connection_handle, uint16_t att_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
-    UNUSED(transaction_mode);
-    UNUSED(offset);
-    UNUSED(buffer_size);
-    server_t * server = server_for_acl_con_handle(connection_handle);
-    if (server != NULL){
-        printf("ATT Write Client %u, handle %04x\n", server->server_id, att_handle);
-    }
-    return 0;
-}
-
 static void show_usage(void){
     printf("\n--- LE Audio Unicast Source Test Console ---\n");
     print_config();
@@ -1885,7 +1868,7 @@ int btstack_main(int argc, const char * argv[]){
 
     // GATT Server
     att_db_util_init();
-    att_server_init(profile_data, att_read_callback, att_write_callback);
+    att_server_init(profile_data, NULL, NULL);
 
     // setup MCS
     media_control_service_server_init();
