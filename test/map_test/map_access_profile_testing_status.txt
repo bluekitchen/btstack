@@ -127,6 +127,7 @@ MAP/MSE/MMD/BV-02: RE-PASS (2024-08-16) PTS 8.6.0 & RFCOM & MAP_NEW, INFO: L2CAP
 MAP/MSE/MMD/BV-02: RE-PASS (2024-08-16) PTS 8.6.0 & L2CAP & MAP_NEW
 MAP/MSE/MMD/BV-05: PASS (2024-08-16) PTS 8.6.0 & L2CAP & MAP_NEW, Info: manual only. Sending event reports later needs to be implemented yet.
 MAP/MSE/MMD/BV-02: RE-PASS (2024-08-16) PTS 8.6.0 & L2CAP & MAP_NEW: Now working fully automated
+MAP/MSE/MMD/BV-05: RE-PASS (2024-08-16) PTS 8.6.0 & L2CAP & MAP_NEW: Now working fully automated
 
 Open tests
 TODO: automated response with msg or convo listing according to the GET request

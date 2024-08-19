@@ -55,7 +55,7 @@ extern "C" {
 /**
 * @brief prepares the notification part for TC MAP_MSE_MMD_BV_02
 */
-void mac_select_tc_MAP_MSE_MMD_BV_02(void);
+void mac_select_tc_MAP_MSE_MMD_BV_0x(void);
 
 /**
 * @brief creates the next mnc event report body object for PTS tests MAP/MSE/MMN/BV-*

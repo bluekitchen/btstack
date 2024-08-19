@@ -260,7 +260,7 @@ static int gen_event_report(char* buf, int maxsize, int index)
     return pos;
 }
 
-void mac_select_tc_MAP_MSE_MMD_BV_02(void) {
+void mac_select_tc_MAP_MSE_MMD_BV_0x(void) {
     mac_select_test_case_n(&mac_test_set, 0);
 }
 
