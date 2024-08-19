@@ -372,7 +372,7 @@ static select_test_set(char c) {
 static size_t PRINT_SMS_native_vcard(char* msg_buffer, uint16_t index, size_t maxsize) {
     index = index % ARRAYSIZE(mas_cfg->objects);
     int size = 0;
-    if (!mas_cfg->msg_deleted[index])
+    if (!mas_cfg->msg_deleted[index] || folder_msg_deleted)
         size = snprintf(msg_buffer, maxsize,
             "BEGIN:BMSG\r\n"
             "VERSION:1.0\r\n"
@@ -408,7 +408,7 @@ static size_t PRINT_SMS_native_vcard(char* msg_buffer, uint16_t index, size_t ma
 static size_t body_msg(char* msg_buffer, uint16_t index, size_t maxsize) {
     index = index % ARRAYSIZE(mas_cfg->objects);
     int size = 0;
-    if (!mas_cfg->msg_deleted[index])
+    if (!mas_cfg->msg_deleted[index] || folder_msg_deleted)
         size = snprintf(msg_buffer, maxsize,
             "<msg handle=\"A%X\""
             " type=\"%s\""
@@ -424,7 +424,7 @@ static size_t body_msg(char* msg_buffer, uint16_t index, size_t maxsize) {
             ,
             index,
             mas_cfg->objects[index],
-            mas_cfg->msg_deleted[index] ? "DELETED" : "INBOX",
+            //mas_cfg->msg_deleted[index] ? "DELETED" : "INBOX",
             mas_cfg->msg_stati[index] ? "yes" : "no"
         );
     return size;
@@ -435,7 +435,7 @@ static size_t body_msg(char* msg_buffer, uint16_t index, size_t maxsize) {
 static size_t body_msg_short(char* msg_buffer, uint16_t index, size_t maxsize) {
     index = index % ARRAYSIZE(mas_cfg->objects);
     int size = 0;
-    if (!mas_cfg->msg_deleted[index])
+    if (!mas_cfg->msg_deleted[index] || folder_msg_deleted)
         size = snprintf(msg_buffer, maxsize,
             "<msg handle=\"A%X\""
             " type=\"%s\""
@@ -459,7 +459,7 @@ static size_t body_msg_short(char* msg_buffer, uint16_t index, size_t maxsize) {
 static size_t body_msg_email_1_1(char* msg_buffer, uint16_t index, size_t maxsize) {
     index = index % ARRAYSIZE(mas_cfg->objects);
     int size = 0;
-    if (!mas_cfg->msg_deleted[index])
+    if (!mas_cfg->msg_deleted[index] || folder_msg_deleted)
         size = snprintf(msg_buffer, maxsize,
             "<event type = \"NewMessage\" handle=\"0123456789000001\" folder=\"TELECOM/MSG/OUTBOX\" msg_type=\"%s\" subject=\"Subject\" datetime=\"20130121T130510\" sender_name=\"Xyz\" priority=\"no\"/>",
             mas_cfg->objects[index]
