@@ -400,7 +400,7 @@ static void servers_set_state(server_state_t state){
     }
 }
 
-static void configure_stream(void) {
+static void configure_audio_stream(void) {
     // use values from table
     sampling_frequency_hz = codec_configurations[menu_sampling_frequency].samplingrate_hz;
     octets_per_frame      = codec_configurations[menu_sampling_frequency].variants[menu_variant].octets_per_frame;
@@ -728,6 +728,8 @@ static void try_transition_to_streaming() {
 
     printf("All CIS Established and IO Paths setup, start streaming\n");
 
+    configure_audio_stream();
+
     app_state = APP_STREAMING;
     uint8_t i;
     for (i=0; i < cig_params.num_cis; i++) {
@@ -828,8 +830,6 @@ static void create_cig(void){
     btstack_assert((num_servers > 0) || (num_servers <= MAX_NR_CIS));
 
     uint8_t i;
-
-    configure_stream();
 
     // select cig id
     cig_id = 1;
