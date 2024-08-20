@@ -20,7 +20,7 @@
 #define ENABLE_CLASSIC
 #define ENABLE_CROSS_TRANSPORT_KEY_DERIVATION
 // traditionally OBEX is sent over RFCOM but this is an additonal layer, diable for better wireshark debugging
-//#define ENABLE_GOEP_L2CAP // needs to be enabled for some PTS test Cases like MAP/MSE/GOEP/ROB/BV-02-C, otherwise it fails with "PTS was unable to find the GoepL2capPSM in the IUT SDP record"
+#define ENABLE_GOEP_L2CAP // needs to be enabled for some PTS test Cases like MAP/MSE/GOEP/ROB/BV-02-C, otherwise it fails with "PTS was unable to find the GoepL2capPSM in the IUT SDP record"
 #define ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
 #define ENABLE_L2CAP_LE_CREDIT_BASED_FLOW_CONTROL_MODE
 #define ENABLE_LE_CENTRAL
