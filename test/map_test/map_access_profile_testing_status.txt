@@ -140,6 +140,7 @@ MAP/MSE/MFMH/BV-03-C: RE-PASS (2024-08-20) PTS 8.6.1 & RFCOM & MAP_NEW, WARNING:
 MAP/MSE/MFMH/BV-04-C: RE-PASS (2024-08-20) PTS 8.6.1 & RFCOM & MAP_NEW, WARNING: PTS 8.6.0&1 fail in L2CAP, forgets to send the PUT message and finally times out
 MAP/MSE/MFMH/BV-05-C: RE-PASS (2024-08-20) PTS 8.6.1 & RFCOM & MAP_NEW, WARNING: PTS 8.6.0&1 fail in L2CAP, forgets to send the PUT message and finally times out
 MAP/MSE/MMI/BV-02-C: RE-PASS (2024-08-20) PTS 8.6.1 & L2CAP & MAP_NEW
+MAP/MSE/GOEP/BC/BV-0*: RE-PASS (2024-08-20) PTS 8.6.1 & L2CAP & MAP_NEW
 
 Open tests
 TODO: WIP MAP/MSE/MMU/BV-03: multi-packet PUT upload, see opp_server.c, see branch develop-map-server-PUT-continue (2024-08-20) PTS 8.6.0 & RFCOM & MAP_NEW fails with many PUT not final upload messages, L2CAP fails without PTS sending anything
