@@ -193,6 +193,9 @@ typedef struct {
     bool     ascs_ase_streaming[ASCS_CLIENT_NUM_STREAMENDPOINTS];
 
     uint8_t  ascs_selected_ases_num;
+    bool     ascs_have_sink_ase;
+    bool     ascs_have_source_ase;
+
     // used to perform operation on all ASEs
     uint8_t  ascs_operation_ase_index;
 
@@ -850,9 +853,14 @@ static void create_cig(void){
         uint8_t cis_id = i;
 
         cig_params.cis_params[i].cis_id = cis_id;
-        cig_params.cis_params[i].max_sdu_c_to_p = codec_configuration.specific_codec_configuration.octets_per_codec_frame * num_channels / num_servers;
-        // use mono for microphone
-        if (servers[i].ascs_selected_ases_num > 1){
+        // SINK
+        if (servers[i].ascs_have_sink_ase){
+            cig_params.cis_params[i].max_sdu_c_to_p = codec_configuration.specific_codec_configuration.octets_per_codec_frame * num_channels / num_servers;
+        } else {
+            cig_params.cis_params[i].max_sdu_c_to_p = 0;
+        }
+        // SOURCE (use mono for microphone)
+        if (servers[i].ascs_have_source_ase){
             cig_params.cis_params[i].max_sdu_p_to_c =  codec_configuration.specific_codec_configuration.octets_per_codec_frame * 1;
         } else {
             cig_params.cis_params[i].max_sdu_p_to_c =  0;
@@ -1582,13 +1590,13 @@ void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
 
                 // dump ASEs and assign ASE IDs for sink and source
                 server->ascs_selected_ases_num = 0;
-                bool have_source_ase = false;
-                bool have_sink_ase = false;
+                server->ascs_have_source_ase = false;
+                server->ascs_have_sink_ase = false;
                 for (i=0 ; i < (source_ase_count+sink_ase_count) ; i++){
                     ascs_streamendpoint_characteristic_t * characteristic = server->ascs_connection.streamendpoints[i].ase_characteristic;
                     printf("ASCS Client %u: ASE ID: %u - role %s\n", server->server_id, characteristic->ase_id, characteristic->role == LE_AUDIO_ROLE_SOURCE ? "Source" : "Sink");
-                    if (!have_sink_ase && (characteristic->role == LE_AUDIO_ROLE_SINK)){
-                        have_sink_ase = true;
+                    if (!server->ascs_have_sink_ase && (characteristic->role == LE_AUDIO_ROLE_SINK)){
+                        server->ascs_have_sink_ase = true;
                         printf("ASCS Client %u: Using ASE ID %u as audio sink\n", server->server_id, characteristic->ase_id);
                         server->ascs_ase_ids[server->ascs_selected_ases_num] = characteristic->ase_id;
                         server->ascs_ase_roles[server->ascs_selected_ases_num] = LE_AUDIO_ROLE_SINK;
@@ -1596,8 +1604,8 @@ void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                         server->ascs_selected_ases_num++;
                     }
                     // only enable microphone on first server
-                    if (enable_microphone && (server->server_id == 0) && !have_source_ase && (characteristic->role == LE_AUDIO_ROLE_SOURCE)){
-                        have_source_ase = true;
+                    if (enable_microphone && (server->server_id == 0) && !server->ascs_have_source_ase && (characteristic->role == LE_AUDIO_ROLE_SOURCE)){
+                        server->ascs_have_source_ase = true;
                         printf("ASCS Client %u: Using ASE ID %u as audio source\n", server->server_id, characteristic->ase_id);
                         server->ascs_ase_ids[server->ascs_selected_ases_num] = characteristic->ase_id;
                         server->ascs_ase_roles[server->ascs_selected_ases_num] = LE_AUDIO_ROLE_SOURCE;
