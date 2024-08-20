@@ -210,6 +210,7 @@ typedef struct {
 static server_t servers[MAX_NUM_SERVERS];
 static uint8_t num_active_servers;
 static bool enable_microphone;
+static bool enable_speaker;
 
 // CSIS Find Set Members
 static csis_client_rsi_entry_t rsi_entries[NR_RSI_ENTRIES];
@@ -331,12 +332,13 @@ static void app_run(void);
 
 static void print_config(void) {
     static const char * generator[] = { "Sine", "Modplayer", "Recording"};
-    printf("Config '%s' -> %u, %s ms, %u octets - %s - Microphone %s\n",
+    printf("Config '%s' -> %u, %s ms, %u octets - %s - Speaker %s - Microphone %s\n",
            codec_configurations[menu_sampling_frequency].variants[menu_variant].name,
            codec_configurations[menu_sampling_frequency].samplingrate_hz,
            codec_configurations[menu_sampling_frequency].variants[menu_variant].frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US ? "7.5" : "10",
            codec_configurations[menu_sampling_frequency].variants[menu_variant].octets_per_frame,
            generator[audio_source - AUDIO_SOURCE_SINE],
+           enable_speaker? "on" : "off",
            enable_microphone ? "on" : "off");
 }
 
@@ -1595,7 +1597,7 @@ void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                 for (i=0 ; i < (source_ase_count+sink_ase_count) ; i++){
                     ascs_streamendpoint_characteristic_t * characteristic = server->ascs_connection.streamendpoints[i].ase_characteristic;
                     printf("ASCS Client %u: ASE ID: %u - role %s\n", server->server_id, characteristic->ase_id, characteristic->role == LE_AUDIO_ROLE_SOURCE ? "Source" : "Sink");
-                    if (!server->ascs_have_sink_ase && (characteristic->role == LE_AUDIO_ROLE_SINK)){
+                    if (enable_speaker && !server->ascs_have_sink_ase && (characteristic->role == LE_AUDIO_ROLE_SINK)){
                         server->ascs_have_sink_ase = true;
                         printf("ASCS Client %u: Using ASE ID %u as audio sink\n", server->server_id, characteristic->ase_id);
                         server->ascs_ase_ids[server->ascs_selected_ases_num] = characteristic->ase_id;
@@ -1803,7 +1805,8 @@ static void show_usage(void){
     printf("v - next codec variant\n");
     printf("x - toggle sine / modplayer / recording\n");
     printf("s - start scanning for headphones\n");
-    printf("m - enable microphone (if available)");
+    printf("m - enable microphone (if available)\n");
+    printf("n - enable speaker(s)\n");
     printf("q - disconnect\n");
     printf("---\n");
 }
@@ -1853,6 +1856,14 @@ static void stdin_process(char c){
                 break;
             }
             enable_microphone = !enable_microphone;
+            print_config();
+            break;
+        case 'n':
+            if (app_state != APP_IDLE){
+                printf("Cannot configure speaker support - not in idle state\n");
+                break;
+            }
+            enable_speaker = !enable_speaker;
             print_config();
             break;
         case 'x':
@@ -1947,6 +1958,7 @@ int btstack_main(int argc, const char * argv[]){
     // default config
     menu_sampling_frequency = 5;
     menu_variant = 3;
+    enable_speaker = true;
 
     // turn on!
     hci_power_control(HCI_POWER_ON);
