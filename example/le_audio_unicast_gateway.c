@@ -77,6 +77,9 @@
 #include "le_audio_unicast_gateway.h"
 #include "le_audio_demo_util_sink.h"
 
+// enable PACS Query (not used for audio streaming yet)
+#define ENABLE_PACS_QUERY
+
 // max config
 #define MAX_NUM_CIS 5
 #define MAX_NUM_SERVERS 5
@@ -87,7 +90,6 @@
 
 #define SET_DISCOVERY_TIMEOUT_MS 15000
 
-#define ASCS_CLIENT_COUNT 2
 #define ASCS_CLIENT_NUM_STREAMENDPOINTS 4
 
 #define PEER_NAME_LEN 31
@@ -136,12 +138,16 @@ typedef enum {
     SERVER_W4_CSIS_CONNECTED,
     SERVER_CSIS_QUERY_COMPLETED,
     SERVER_W4_ALL_MEMBERS,
-    SERVER_W2_ASCS_CONNECT,
-    SERVER_W4_ASCS_CONNECTED,
+    SERVER_PACS_W2_CONNECT,
+    SERVER_PACS_W4_CONNECTED,
+    SERVER_PACS_W4_SINK_PACS,
+    SERVER_PACS_W4_SOURCE_PACS,
+    SERVER_ASCS_W2_CONNECT,
+    SERVER_ASCS_W4_CONNECTED,
     SERVER_ASCS_CONNECTED,
-    SERVER_W4_ASCS_CODEC_CONFIGURED,
+    SERVER_ASCS_W4_CODEC_CONFIGURED,
     SERVER_ASCS_CODEC_CONFIGURED,
-    SERVER_W4_ASCS_QOS_CONFIGURED,
+    SERVER_ASCS_W4_QOS_CONFIGURED,
     SERVER_ASCS_QOS_CONFIGURED,
     SERVER_ASCS_W2_ENABLE,
     SERVER_ASCS_W4_ENABLING,
@@ -169,6 +175,10 @@ typedef struct {
     uint16_t csis_cid;
     uint8_t  sirk[16];
     uint8_t  coordinated_set_size;
+
+    // pacs
+    pacs_client_connection_t pacs_connection;
+    uint16_t pacs_cid;
 
     // ascs
     ascs_client_connection_t ascs_connection;
@@ -212,13 +222,6 @@ typedef struct {
 } mcs_media_player_t;
 
 static mcs_media_player_t generic_media_player;
-
-// PACS
-// #define PACS_QUERY
-#ifdef PACS_QUERY
-static pacs_client_connection_t pacs_connection;
-#endif
-static uint16_t pacs_cid;
 
 // ascs client
 static ascs_client_codec_configuration_request_t ascs_codec_configuration_request;
@@ -353,6 +356,17 @@ static server_t * server_for_ascs_cid(uint16_t ascs_cid){
     return NULL;
 }
 
+static server_t * server_for_pacs_cid(uint16_t ascs_cid){
+    uint8_t i;
+    for (i=0; i < num_active_servers; i++){
+        server_t * server = &servers[i];
+        if (server->pacs_cid == ascs_cid){
+            return server;
+        }
+    }
+    return NULL;
+}
+
 static server_t * server_for_csis_cid(uint16_t csis_cid){
     uint8_t i;
     for (i=0; i < num_active_servers; i++){
@@ -420,10 +434,16 @@ static void run_for_server(server_t * server){
             coordinated_set_identification_service_client_connect(&server->csis_connection,
                                                         server->acl_con_handle, &server->csis_cid);
             break;
-        case SERVER_W2_ASCS_CONNECT:
+        case SERVER_PACS_W2_CONNECT:
+            // connect to PACS
+            printf("PACS Client %u: connect\n", server->server_id);
+            server->server_state = SERVER_PACS_W4_CONNECTED;
+            published_audio_capabilities_service_client_connect(&server->pacs_connection,server->acl_con_handle, &server->pacs_cid);
+            break;
+        case SERVER_ASCS_W2_CONNECT:
             // connect to ASCS
             printf("ASCS Client %u: connect\n", server->server_id);
-            server->server_state = SERVER_W4_ASCS_CONNECTED;
+            server->server_state = SERVER_ASCS_W4_CONNECTED;
             audio_stream_control_service_client_connect(&server->ascs_connection,
                                                         server->streamendpoint_characteristics,
                                                         ASCS_CLIENT_NUM_STREAMENDPOINTS,
@@ -451,7 +471,7 @@ static void run_for_server(server_t * server){
             ascs_codec_configuration_request.specific_codec_configuration.octets_per_codec_frame = codec_configurations[menu_sampling_frequency].variants[menu_variant].octets_per_frame;
             ascs_codec_configuration_request.specific_codec_configuration.codec_frame_blocks_per_sdu = num_channels;
             status = audio_stream_control_service_client_streamendpoint_configure_codec(server->ascs_cid, ase_id, &ascs_codec_configuration_request);
-            server->server_state = SERVER_W4_ASCS_CODEC_CONFIGURED;
+            server->server_state = SERVER_ASCS_W4_CODEC_CONFIGURED;
             btstack_assert(status == ERROR_CODE_SUCCESS);
             break;
         case SERVER_ASCS_CODEC_CONFIGURED:
@@ -482,7 +502,7 @@ static void run_for_server(server_t * server){
                 ascs_qos_configuration.retransmission_number = retransmission_number;
                 ascs_qos_configuration.max_transport_latency_ms = max_transport_latency_ms;
                 ascs_qos_configuration.presentation_delay_us = 40000;
-                server->server_state = SERVER_W4_ASCS_QOS_CONFIGURED;
+                server->server_state = SERVER_ASCS_W4_QOS_CONFIGURED;
                 status = audio_stream_control_service_client_streamendpoint_configure_qos(server->ascs_cid, ase_id, &ascs_qos_configuration);
                 btstack_assert(status == ERROR_CODE_SUCCESS);
             }
@@ -546,8 +566,7 @@ static void trigger_next_connect(void){
 static void all_members_connected(void){
     // all connected
     app_state = APP_SET_CONNECTED;
-    servers_set_state(SERVER_W2_ASCS_CONNECT);
-    printf("[-] CSIS - all members connected\n");
+
     // distribute audio channels
     if (num_servers == 1){
         servers[0].sink_channel_allocation = 3;
@@ -559,6 +578,15 @@ static void all_members_connected(void){
     for (i=0;i<num_servers;i++){
         printf("ASCS client %u - channel allocation %u\n", servers[i].server_id, servers[i].sink_channel_allocation);
     }
+    printf("[-] CSIS - all members connected\n");
+
+#ifdef ENABLE_PACS_QUERY
+    // next: connect to PACS
+    servers_set_state(SERVER_PACS_W2_CONNECT);
+#else
+    // next: connect to ASCS
+    servers_set_state(SERVER_ASCS_W2_CONNECT);
+#endif
 }
 
 static void set_discovery_complete(void) {
@@ -1093,55 +1121,6 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
     app_run();
 }
 
-static void pacs_client_next_query(void){
-    static uint8_t step = 0;
-    uint8_t status=ERROR_CODE_SUCCESS;
-    switch (step++){
-        case 0:
-            printf("PACS Client: Get sink audio locations\n");
-            status = published_audio_capabilities_service_client_get_sink_audio_locations(pacs_cid);
-            break;
-        case 1:
-            printf("PACS Client: Get source audio locations\n");
-            status = published_audio_capabilities_service_client_get_source_audio_locations(pacs_cid);
-            break;
-        case 2:
-            printf("PACS Client: Get available audio contexts\n");
-            status = published_audio_capabilities_service_client_get_available_audio_contexts(pacs_cid);
-            break;
-        case 3:
-            printf("PACS Client: Get supported audio contexts\n");
-            status = published_audio_capabilities_service_client_get_supported_audio_contexts(pacs_cid);
-            break;
-        case 4:
-            printf("PACS Client: Get sink pacs\n");
-            status = published_audio_capabilities_service_client_get_sink_pacs(pacs_cid);
-            break;
-        case 5:
-            printf("PACS Client: Get source pacs\n");
-            status = published_audio_capabilities_service_client_get_source_pacs(pacs_cid);
-            break;
-        case 6:
-            printf("PACS DONE\n");
-#ifdef PACS_QUERY
-            printf("Connect to ASCS\n");
-            status = audio_stream_control_service_client_connect(&ascs_connections[ascs_index],
-                                                                         &streamendpoint_characteristics[ascs_index * ASCS_CLIENT_NUM_STREAMENDPOINTS],
-                                                                         ASCS_CLIENT_NUM_STREAMENDPOINTS,
-                                                                         acl_con_handle, &ascs_cid);
-#endif
-
-            break;
-        default:
-            break;
-    }
-    if (status != ERROR_CODE_SUCCESS){
-        printf("[!] PACS Client: status 0x%02x\n", status);
-    }
-
-    app_run();
-}
-
 static void pacs_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
@@ -1149,64 +1128,114 @@ static void pacs_client_event_handler(uint8_t packet_type, uint16_t channel, uin
     if (packet_type != HCI_EVENT_PACKET) return;
     if (hci_event_packet_get_type(packet) != HCI_EVENT_LEAUDIO_META) return;
 
+    server_t * server = NULL;
+    hci_con_handle_t con_handle;
+    uint8_t status;
     switch (hci_event_leaudio_meta_get_subevent_code(packet)){
         case LEAUDIO_SUBEVENT_PACS_CLIENT_CONNECTED:
-            if (leaudio_subevent_pacs_client_connected_get_status(packet) != ERROR_CODE_SUCCESS){
-                printf("PACS client: connection failed, cid 0x%04x, con_handle 0x%04x, status 0x%02x\n", pacs_cid,
-                       leaudio_subevent_pacs_client_connected_get_con_handle(packet),
-                       leaudio_subevent_pacs_client_connected_get_status(packet));
-                return;
+            con_handle = leaudio_subevent_pacs_client_connected_get_con_handle(packet);
+            server = server_for_acl_con_handle(con_handle);
+            if (server != NULL){
+                status = leaudio_subevent_pacs_client_connected_get_status(packet);
+                if (status!= ERROR_CODE_SUCCESS) {
+                    printf("PACS client %u: connection failed, con_handle 0x%04x, status 0x%02x\n", server->server_id,
+                           con_handle, status);
+                    return;
+                }
+                printf("PACS client %u: connected\n", server->server_id);
+
+                // next: get sink pacs
+                printf("PACS Client %u: Get sink pacs\n", server->server_id);
+                server->server_state = SERVER_PACS_W4_SINK_PACS;
+                status = published_audio_capabilities_service_client_get_sink_pacs(server->pacs_cid);
+                UNUSED(status);
             }
-            printf("PACS client: connected, cid 0x%04x\n", pacs_cid);
-            pacs_client_next_query();
             break;
 
         case LEAUDIO_SUBEVENT_PACS_CLIENT_DISCONNECTED:
-            pacs_cid = 0;
-            printf("PACS Client: disconnected\n");
+            server = server_for_pacs_cid(leaudio_subevent_pacs_client_disconnected_get_pacs_cid(packet));
+            if (server != NULL){
+                server->pacs_cid = 0;
+                printf("PACS Client %u: disconnected\n", server->server_id);
+            }
             break;
 
         case LEAUDIO_SUBEVENT_PACS_CLIENT_OPERATION_DONE:
-            if (leaudio_subevent_pacs_client_operation_done_get_status(packet) == ERROR_CODE_SUCCESS){
-                printf("      Operation successful\n");
-            } else {
-                printf("      Operation failed with status 0x%02x\n", leaudio_subevent_pacs_client_operation_done_get_status(packet));
+            server = server_for_pacs_cid((leaudio_subevent_pacs_client_operation_done_get_pacs_cid(packet)));
+            if (server != NULL){
+                status = leaudio_subevent_pacs_client_operation_done_get_status(packet);
+                if (status == ERROR_CODE_SUCCESS){
+                    printf("PACS Client %u: Operation successful\n", server->server_id);
+                } else {
+                    printf("PACS Client %u: Operation failed with status %u\n", server->server_id, status);
+                }
             }
-            pacs_client_next_query();
+            switch (server->server_state){
+                case SERVER_PACS_W4_SINK_PACS:
+                    printf("PACS Client %u: Get source pacs\n", server->server_id);
+                    server->server_state = SERVER_PACS_W4_SOURCE_PACS;
+                    status = published_audio_capabilities_service_client_get_source_pacs(server->pacs_cid);
+                    UNUSED(status);
+                    break;
+                case SERVER_PACS_W4_SOURCE_PACS:
+                    server->server_state = SERVER_ASCS_W2_CONNECT;
+                    break;
+                default:
+                    btstack_unreachable();
+                    break;
+            }
+
             break;
 
         case LEAUDIO_SUBEVENT_PACS_CLIENT_AUDIO_LOCATIONS:
-            printf("PACS Client: %s Audio Locations - 0x%04x \n",
-                   leaudio_subevent_pacs_client_audio_locations_get_le_audio_role(packet) == LE_AUDIO_ROLE_SINK ? "Sink" : "Source",
-                   leaudio_subevent_pacs_client_audio_locations_get_audio_locations_mask(packet));
+            server = server_for_pacs_cid((leaudio_subevent_pacs_client_audio_locations_get_pacs_cid(packet)));
+            if (server != 0){
+                printf("PACS Client %u: %s Audio Locations - 0x%04x \n", server->server_id,
+                       leaudio_subevent_pacs_client_audio_locations_get_le_audio_role(packet) == LE_AUDIO_ROLE_SINK ? "Sink" : "Source",
+                       leaudio_subevent_pacs_client_audio_locations_get_audio_locations_mask(packet));
+            }
             break;
 
         case LEAUDIO_SUBEVENT_PACS_CLIENT_AVAILABLE_AUDIO_CONTEXTS:
-            printf("PACS Client: Available Audio Contexts:\n");
-            printf("      Sink   0x%02x\n", leaudio_subevent_pacs_client_available_audio_contexts_get_sink_mask(packet));
-            printf("      Source 0x%02x\n", leaudio_subevent_pacs_client_available_audio_contexts_get_source_mask(packet));
+            server = server_for_pacs_cid((leaudio_subevent_pacs_client_available_audio_contexts_get_pacs_cid(packet)));
+            if (server != NULL){
+                printf("PACS Client: Available Audio Contexts:\n");
+                printf("      Sink   0x%02x\n", leaudio_subevent_pacs_client_available_audio_contexts_get_sink_mask(packet));
+                printf("      Source 0x%02x\n", leaudio_subevent_pacs_client_available_audio_contexts_get_source_mask(packet));
+            }
             break;
 
         case LEAUDIO_SUBEVENT_PACS_CLIENT_SUPPORTED_AUDIO_CONTEXTS:
-            printf("PACS Client: Supported Audio Contexts:\n");
-            printf("      Sink   0x%02x\n", leaudio_subevent_pacs_client_supported_audio_contexts_get_sink_mask(packet));
-            printf("      Source 0x%02x\n", leaudio_subevent_pacs_client_supported_audio_contexts_get_source_mask(packet));
+            server = server_for_pacs_cid((leaudio_subevent_pacs_client_supported_audio_contexts_get_pacs_cid(packet)));
+            if (server != NULL){
+                printf("PACS Client: Supported Audio Contexts:\n");
+                printf("      Sink   0x%02x\n", leaudio_subevent_pacs_client_supported_audio_contexts_get_sink_mask(packet));
+                printf("      Source 0x%02x\n", leaudio_subevent_pacs_client_supported_audio_contexts_get_source_mask(packet));
+            }
             break;
 
         case LEAUDIO_SUBEVENT_PACS_CLIENT_PACK_RECORD:
-            printf("PACS Client: %s PAC Record\n", leaudio_subevent_pacs_client_pack_record_get_le_audio_role(packet) == LE_AUDIO_ROLE_SINK ? "Sink" : "Source");
-            printf("              supported_sampling_frequencies_mask 0x%04x\n", leaudio_subevent_pacs_client_pack_record_get_supported_sampling_frequencies_mask(packet));
-            printf("              supported_frame_durations_mask      0x%04x\n", leaudio_subevent_pacs_client_pack_record_get_supported_frame_durations_mask(packet));
-            printf("              supported_audio_channel_counts_mask 0x%04x\n", leaudio_subevent_pacs_client_pack_record_get_supported_audio_channel_counts_mask(packet));
-            printf("              referred_audio_contexts_mask        0x%04x\n", leaudio_subevent_pacs_client_pack_record_get_preferred_audio_contexts_mask(packet));
-            printf("              streaming_audio_contexts_mask       0x%04x\n", leaudio_subevent_pacs_client_pack_record_get_streaming_audio_contexts_mask(packet));
-            printf("              supported_octets_per_frame_min_num  %4u\n", leaudio_subevent_pacs_client_pack_record_get_supported_octets_per_frame_min_num(packet));
-            printf("              supported_octets_per_frame_max_num  %4u\n", leaudio_subevent_pacs_client_pack_record_get_supported_octets_per_frame_max_num(packet));
-            printf("              supported_max_codec_frames_per_sdu  %4u\n", leaudio_subevent_pacs_client_pack_record_get_supported_max_codec_frames_per_sdu(packet));
-            printf("              ccids_num                           %4u\n", leaudio_subevent_pacs_client_pack_record_get_ccids_num(packet));
+            server = server_for_pacs_cid((leaudio_subevent_pacs_client_operation_done_get_pacs_cid(packet)));
+            if (server != NULL){
+                printf("PACS Client %u: %s PAC Record\n", server->server_id,
+                       leaudio_subevent_pacs_client_pack_record_get_le_audio_role(packet) == LE_AUDIO_ROLE_SINK ? "Sink" : "Source");
+                printf("              supported_sampling_frequencies_mask 0x%04x\n", leaudio_subevent_pacs_client_pack_record_get_supported_sampling_frequencies_mask(packet));
+                printf("              supported_frame_durations_mask      0x%04x\n", leaudio_subevent_pacs_client_pack_record_get_supported_frame_durations_mask(packet));
+                printf("              supported_audio_channel_counts_mask 0x%04x\n", leaudio_subevent_pacs_client_pack_record_get_supported_audio_channel_counts_mask(packet));
+                printf("              referred_audio_contexts_mask        0x%04x\n", leaudio_subevent_pacs_client_pack_record_get_preferred_audio_contexts_mask(packet));
+                printf("              streaming_audio_contexts_mask       0x%04x\n", leaudio_subevent_pacs_client_pack_record_get_streaming_audio_contexts_mask(packet));
+                printf("              supported_octets_per_frame_min_num  %4u\n", leaudio_subevent_pacs_client_pack_record_get_supported_octets_per_frame_min_num(packet));
+                printf("              supported_octets_per_frame_max_num  %4u\n", leaudio_subevent_pacs_client_pack_record_get_supported_octets_per_frame_max_num(packet));
+                printf("              supported_max_codec_frames_per_sdu  %4u\n", leaudio_subevent_pacs_client_pack_record_get_supported_max_codec_frames_per_sdu(packet));
+                printf("              ccids_num                           %4u\n", leaudio_subevent_pacs_client_pack_record_get_ccids_num(packet));
+            }
             break;
         case LEAUDIO_SUBEVENT_PACS_CLIENT_PACK_RECORD_DONE:
-            printf("      %s PAC Record DONE\n", leaudio_subevent_pacs_client_pack_record_done_get_le_audio_role(packet) == LE_AUDIO_ROLE_SINK ? "Sink" : "Source");
+            server = server_for_pacs_cid((leaudio_subevent_pacs_client_pack_record_done_get_pacs_cid(packet)));
+            if (server != NULL){
+                printf("PACS Client %u: %s PAC Records DONE\n", server->server_id,
+                       leaudio_subevent_pacs_client_pack_record_get_le_audio_role(packet) == LE_AUDIO_ROLE_SINK ? "Sink" : "Source");
+            }
             break;
 
         default:
@@ -1536,7 +1565,7 @@ void ascs_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
             con_handle = leaudio_subevent_ascs_client_connected_get_con_handle(packet);
             server = server_for_acl_con_handle(con_handle);
             if (server != NULL){
-                btstack_assert(server->server_state == SERVER_W4_ASCS_CONNECTED);
+                btstack_assert(server->server_state == SERVER_ASCS_W4_CONNECTED);
                 if (leaudio_subevent_ascs_client_connected_get_status(packet) != ERROR_CODE_SUCCESS){
                     // TODO send error response
                     printf("ASCS Client %u: connection failed, con_handle 0x%04x, status 0x%02x\n", server->server_id, con_handle,
