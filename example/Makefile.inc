@@ -56,6 +56,7 @@ COMMON += \
 	hci_cmd.c		            \
 	hci_dump.c		            \
 	hci_event.c                 \
+	hci_event_builder.c         \
 	l2cap.c			            \
 	l2cap_signaling.c	        \
 	btstack_audio.c             \

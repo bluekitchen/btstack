@@ -74,6 +74,7 @@ ${BTSTACK_ROOT}/src/btstack_util.c \
 ${BTSTACK_ROOT}/src/hci.c \
 ${BTSTACK_ROOT}/src/hci_cmd.c \
 ${BTSTACK_ROOT}/src/hci_dump.c \
+${BTSTACK_ROOT}/src/hci_event_builder.c \
 ${BTSTACK_ROOT}/src/l2cap.c \
 ${BTSTACK_ROOT}/src/l2cap_signaling.c \
 ${BTSTACK_ROOT}/src/hci_transport_h4.c \
