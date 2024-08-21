@@ -1,0 +1,366 @@
+From the Bluetooth spec: \Bluekitchen\Docs\GOEP_v2.1.1.pdf
+
+4.6  Using Single Response Mode 
+To utilize Single Response Mode (SRM), the Client shall enable this mode as described 
+in Sections 5.5 and 5.6. SRM is deemed enabled when the Client has issued an enable BLUETOOTH SPECIFICATION  page 14 of 43 
+ 
+ 
+ 
+Generic Object Exchange Profile (GOEP) 
+ 
+request and the Server has replied with an enable response. The Server cannot issue 
+an enable request, but can only issue a response to an enable request from the Client. 
+SRM will remain in effect for the duration of the operation that enabled it (PUT or GET), 
+at which time it will automatically be disabled and revert back to the normal GOEP 
+request/response model. SRM headers shall not be sent in CONNECT request or 
+response packets. SRM shall not be disabled during any operation. PUT or GET 
+operations utilizing SRM shall send all non-Body headers first (unless specifically 
+overridden by the application profile), to ensure that proper reliability can be guaranteed 
+when used in combination with OBEX Reliable Sessions. 
+Due to its limited usefulness, the SRM header value 0x02 shall not be used by either the 
+Client or Server. Additionally, in order to encourage the use of SRM (and subsequently 
+increase performance), it is recommended that all PUT and GET operations attempt to 
+enable SRM if this feature is supported by the Client. A Server may choose not to use 
+SRM by not issuing an SRM enable response, but this mode is recommended to be 
+enabled if supported by the Server. 
+GET operations with SRM enabled shall not send a GET response until the GET 
+request + Final Bit has been issued. Until this point is reached, the Client’s GET request 
+phase is ongoing and multiple unacknowledged GET requests may be issued. Once the 
+GET request + Final bit has been issued, the GET request phase is complete and no 
+further GET requests shall be issued (unless triggered by a Single Response Mode 
+Parameters (SRMP) header). After the GET request phase is complete, the Server’s 
+GET responses shall begin. 
+The following diagram shows a normal GET request phase: 
+ 
+Client Requests  SRM Status  Server Responses 
+GET (without Final Bit) 
+SRM header set to “enable” 
+ 
+SRM Disabled 
+ 
+    Continue (with Final Bit) 
+SRM header set to “enable” 
+  SRM Enabled   
+GET (without Final Bit)     
+GET (without Final Bit)     
+…     
+ 
+GET (with Final Bit) 
+GET Request phase complete 
+Body data may occur 
+ 
+    Continue (with Final Bit) 
+Body data may be included 
+    Continue (with Final Bit) 
+Body data may be included 
+    … 
+    Success (with Final Bit)  
+Body data may be included 
+Operation complete  SRM Disabled   
+The Single Response Mode header shall be used to enable this mode, while the SRMP 
+header may be used to alter the normal processing of SRM for a single 
+request/response exchange during the current operation. The use of the SRMP header 
+is optional; however, GOEP devices that support SRM shall be able to receive and 
+process this header. SRMP headers should be used judiciously as this will impact the 
+overall throughput of the operation using SRM. Receipt of invalid or unexpected Single BLUETOOTH SPECIFICATION  page 15 of 43 
+ 
+ 
+Response Mode or SRMP header values shall be ignored by the receiving device. 
+ 
+4.6.1 MP Use Cases 
+The SRMP header shall support the following two use cases. Both cases utilize the 
+SRMP “wait” option (0x01). At this time no valid use cases exist for the SRMP BLUETOOTH SPECIFICATION  page 16 of 43 
+ 
+ 
+ 
+Generic Object Exchange Profile (GOEP) 
+ 
+“additional request” (0x00) and “additional request + wait” (0x02) options, therefore they 
+shall not be used. 
+Each application profile should decide how SRMP headers will be used for their specific 
+uses of GOEP. Application profiles may exclude the SRMP feature altogether if no 
+specific advantage will be gained in using the following use cases within that profile. 
+ 
+4.6.1.1  Setup Headers Use Case 
+This use case points out specific behavior for both the Client and Server, where issuing 
+the SRMP “wait” is useful when exchanging “setup” headers prior to sending object data 
+during PUT or GET operations. 
+In this case, the SRMP header can be used to facilitate additional header exchange, 
+beyond the first request/response packet exchange used to enable SRM. 
+Some potential examples of “setup” headers could include: 
+?  A header indicating the ordering of the items returned in the object. 
+?  The maximum number of items to be returned in the object. 
+?  The character set for the returned object, 
+?  Other headers describing the formatting requirements of the object to be returned. 
+The object can be an image, print document, folder listing, phonebook, message, or 
+a generic file type, so the possible headers can span a very wide range. 
+For example, during a PUT operation a Server may require multiple packets of setup 
+headers in its responses. In this case, a Server would issue the SRMP “wait” as 
+described in Section 4.6.2. 
+During the initiation of a GET operation, the Client and/or Server may require time to 
+process the setup headers sent by the remote device. In the case a Client and/or Server 
+requires extra time, it would issue the SRMP “wait” as described in section 4.6.2. 
+The examples below describe how the SRMP “wait” header may be used in a GET 
+operation. If the SRMP “wait” header is used in a PUT operation, see example 1 in 
+Section 4.6.1.2. 
+ 
+Client Requests  SRM Status  Server Responses 
+GET (without Final Bit) 
+SRM header set to “enable” 
+SRM Disabled   
+    Continue (with Final Bit)  
+SRM header set to “enable” 
+SRMP header set to “wait” 
+GET (without Final Bit)  SRM Enabled but waiting   
+    Continue (with Final Bit) 
+GET (without Final Bit)  SRM Enabled   
+GET (without Final Bit)     
+GET (with Final Bit)  Body data may occur   
+    Continue (with Final Bit) 
+Body data may be included 
+    Continue (with Final Bit) 
+Body data may be included BLUETOOTH SPECIFICATION  page 17 of 43 
+ 
+ 
+ 
+Generic Object Exchange Profile (GOEP) 
+ 
+Client Requests  SRM Status  Server Responses 
+    Success (with Final Bit) 
+Body data may be included 
+Table 4.2: Example 1: SRMP used by a GOEP Server during the “GET request” phase 
+ 
+Client Requests  SRM Status  Server Responses 
+     
+GET (with Final Bit) 
+SRM header set to “enable” 
+SRMP header set to “wait” 
+SRM Disabled 
+Body data may occur 
+ 
+    Continue (with Final Bit) 
+SRM header set to “enable” 
+Body data may be included 
+GET (with Final Bit) 
+SRMP header set to “wait” 
+SRM Enabled but waiting   
+    Continue (with Final Bit) 
+Body data may be included 
+GET (with Final Bit)  SRM Enabled   
+    Continue (with Final Bit) 
+Body data may be included 
+    Continue (with Final Bit) 
+Body data may be included 
+    Continue (with Final Bit)  
+Body data may be included 
+    … 
+    Success (with Final Bit) 
+Body data may be included 
+Table 4.3: Example 2: SRMP used by a GOEP Client 
+ 
+4.6.1.2  User Accept Use Case 
+This use case points out specific behavior for the Server, where issuing the SRMP 
+“wait” is useful when requiring “user acceptance” of an object prior to receiving object 
+data during a PUT operation. In this case, the SRMP “wait” can be used as described in 
+section 4.6.2. 
+See the example below to describe how the SRMP “wait” header may be used in a PUT 
+operation: 
+ 
+Client Requests  SRM Status  Server Responses 
+PUT (without Final Bit) 
+SRM header set to “enable” 
+SRM Disabled   
+    Continue (with Final Bit)  
+SRM header set to “enable” 
+SRMP header to set “wait” 
+PUT (without Final Bit)  SRM Enabled but 
+waiting 
+ 
+    Continue (with Final Bit) 
+SRMP header set to “wait” 
+PUT (without Final Bit)  SRM Enabled but 
+waiting 
+ 
+    Continue (with Final Bit) 
+PUT (without Final Bit)  SRM Enabled   
+PUT (without Final Bit)     
+PUT (without Final Bit)     
+     BLUETOOTH SPECIFICATION  page 18 of 43 
+ 
+ 
+ 
+Generic Object Exchange Profile (GOEP) 
+ 
+Client Requests  SRM Status  Server Responses 
+…     
+PUT (with Final Bit     
+    Success (with Final Bit) 
+Table 4.4: Example 1: SRMP used by a GOEP Server 
+ 
+4.6.2   SRMP Usage Requirements 
+This section outlines the usage of the SRMP header within PUT and GET operations to 
+fulfill the use cases above. 
+GET operation using SRMP Wait: 
+If the SRMP header is used, either the Client or Server Case below shall be used, but 
+both cases are allowed to occur simultaneously. 
+?  Client Case 
+Client instructs the Server to wait for the next request packet during a GET 
+operation. This case will utilize the 0x01 option for the SRMP header, and may be 
+issued by the Client during a GET request to instruct the Server to wait, after 
+sending its response packet, until the next GET request is received from the Client. 
+Once the Client issues a GET request including the Final Bit, no further GET 
+requests shall occur during SRM mode, unless the SRMP header is used during this 
+request packet. 
+ 
+If used, the SRMP header shall be issued in the first GET request, and may be used 
+in consecutive GET request packets to cause the Server to continue its wait; 
+however, once the SRMP header is not issued in a GET request, the SRMP header 
+shall not be used in another GET request for the duration of the operation. 
+ 
+?  Server Case 
+Server instructs the Client to wait for the next response packet during a GET 
+operation. This case will utilize the 0x01 option for the SRMP header, and may be 
+issued by the Server during a GET response to instruct the Client to wait, after 
+sending its request packet, until the next GET response is received from the Server. 
+This case is useful during the “GET request” phase when a Client may be issuing 
+multiple unacknowledged GET request packets, but may be used after the client has 
+sent a GET request with the Final Bit set. 
+ 
+If used, the SRMP header shall be issued in the first GET response, and may be 
+used in consecutive GET response packets to cause the Client to continue its wait; 
+however, once the SRMP header is not issued in a GET response, the SRMP 
+header shall not be used in another GET response for the duration of the operation. 
+ 
+PUT operation using SRMP Wait: 
+?  Client Case: 
+SRMP headers shall not be used in PUT requests. BLUETOOTH SPECIFICATION  page 19 of 43 
+ 
+ 
+ 
+Generic Object Exchange Profile (GOEP) 
+ 
+?  Server Case: 
+Server instructs the Client to wait for the next response packet during a PUT 
+operation. This case will utilize the 0x01 option for the SRMP header, and may be 
+issued by the Server during a PUT response to instruct the Client to wait, after 
+sending its request packet, until the next PUT response is received from the Server. 
+Once the Server issues a PUT response including a SRM header confirming the 
+enabling of SRM, no additional PUT responses shall occur during SRM mode, 
+unless the SRMP header is used during this response packet. 
+ 
+If used, the SRMP header shall be issued in the first PUT response and may be 
+used in consecutive PUT response packets to cause the Client to continue its wait; 
+however, once the SRMP header is not issued in a PUT response, the SRMP 
+header shall not be used in another PUT response for the duration of the operation. 
+
+5.5  Pushing Data to Server 
+The data object(s) is pushed to the Server using the PUT operation of the OBEX 
+protocol. The data can be sent in one or more OBEX packets. 
+ 
+5.5.1  Pushing Data over an OBEX Connection 
+The Client may initiate SRM by sending a Single Response Mode header. SRM allows 
+the Client to issue unacknowledged request packets until the completion of the PUT 
+operation. Additional response packet(s) can be issued during the PUT operation if 
+requested by the Server through the optional SRMP header (see Section 4.6 for SRMP 
+usage requirements). 
+If a PUT operation is ongoing and the server cannot receive more Body data after the 
+initial Body header has been received, and SRM is enabled, the server may send a PUT 
+response including an unsuccessful response code (excluding CONTINUE and 
+SUCCESS) prior to the entire object being received at the server. Alternatively, the 
+server may choose to disconnect the transport in this case without waiting for the PUT 
+operation to complete. If the server sent a PUT response without waiting for the last BLUETOOTH SPECIFICATION  page 30 of 43 
+ 
+ 
+ 
+Generic Object Exchange Profile (GOEP) 
+ 
+chunk of the object, it shall not send another response upon arrival of the entire object 
+in a PUT Request including the Final Bit. 
+If the Client receives a PUT response (other than SUCCESS or CONTINUE) in the 
+middle of the SRM operation it may do one of three things: 1) Cease processing the 
+PUT operation, 2) Complete its queued PUT packets and then cease processing the 
+PUT operation, or 3) Complete the PUT operation and then process the early response 
+packet. In all cases, the Server shall drop any additional Body data until the operation 
+completes. The Server knows the operation is complete when it receives another non- 
+Body header indicating the beginning of a new operation. This non-Body header 
+excludes the Session Sequence Number (SSN) header which arrives in all OBEX 
+packets during a Reliable Session. 
+In the case the Client receives an early PUT response with unexpected CONTINUE 
+response code, the Client should either issue an Abort or disconnect the transport. 
+In the case the Client receives an early PUT response with unexpected SUCCESS 
+response code, the Client should either issue an OBEX disconnect request, disconnect 
+the transport or attempt a new OBEX operation. 
+The first PUT request includes the following fields and headers: 
+ 
+Field/ 
+Header 
+Name  Value  Status  Explanation 
+Field  Opcode for PUT  0x02 or 
+0x82 
+M  - 
+Field  Packet Length  Varies  M  - 
+Header  Session Sequence 
+Number 
+Varies  C1  This header specifies the current sequence 
+number for this OBEX packet. 
+Header  Connection Identifier  Varies  C2  The header value specifies the current 
+connection to the specific service. 
+Header  Single Response 
+Mode 
+0x01  C3  Used to indicate a Single Response Mode 
+enable request. 
+Header  Name  Varies  M  The header value is the name of a single 
+object, object store, or log information. 
+Header  Body/End of Body  Varies  M  End of Body identifies the last chunk of the 
+object body. 
+Table 5.8: Fields and Headers in PUT Request 
+C1: The Session Sequence Number header is mandatory if an active Reliable OBEX Session exists when 
+this operation is issued. 
+C2: The Connection Identifier header is mandatory if the Target header is used when establishing the 
+OBEX connection. This header should be used in the first request of the PUT operation only. 
+C3: The Single Response Mode header is mandatory if Single Response Mode is supported and is 
+requested by the application profile. If this mode is not supported, this header shall not be sent. 
+Other headers, which can be optionally used, are specified in [5]. 
+The response packet for the PUT request has the following fields and headers: 
+ 
+Field/ 
+Header 
+Name  Value  Status  Explanation 
+Field  Response code 
+for PUT 
+Varies  M  0x90 for continue or 0xA0 for success BLUETOOTH SPECIFICATION  page 31 of 43 
+ 
+ 
+Field  Packet Length  Varies  M  - BLUETOOTH SPECIFICATION  page 30 of 43 
+ 
+ 
+ 
+Generic Object Exchange Profile (GOEP) 
+ 
+Field/ 
+Header 
+Name  Value  Status  Explanation 
+Header  Session 
+Sequence 
+Number 
+Varies  C1  This header specifies the sequence number 
+expected in the next OBEX packet. 
+Header  Single Response 
+Mode 
+0x01  C2  Specifies acceptance of the Single Response 
+Mode enable request. 
+Header  Single Response 
+Mode Parameters 
+0x01  O  This header allows the Server to instruct the 
+Client to wait, after sending its request, until 
+the next response has been received before 
+issuing another PUT request. 
+Table 5.9: Fields and Headers in PUT Response 
+C1: The Session Sequence Number header is mandatory if an active Reliable OBEX Session exists when 
+this operation is issued. 
+C2: The Single Response Mode header is mandatory if Single Response Mode is supported and is 
+requested by the application profile. If this mode is supported, requested by the application profile, 
+and a SRM header has been received in the previous PUT request, this header shall be sent back, 
+thereby allowing this mode to be enabled. This header shall not be sent if the Response code 
+indicates a failure. 
+Other headers, which can be optionally used, are specified in [5]. 
