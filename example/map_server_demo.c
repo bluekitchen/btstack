@@ -715,10 +715,8 @@ static void stdin_process(char c){
 
 
 static void handle_set_message_status(char *msg_handle_str, uint8_t StatusIndicator, uint8_t StatusValue) {
-#define ERROR(str_descr) { error_msg = str_descr; goto error; }
+#define ERROR(str_descr) do { log_error(str_descr); return; } while (0)
     int msg_handle;
-    const char* error_msg = "";
-    
     
     if (StatusValue > 1)
         ERROR("we only handle valid change-requests of Status Read=yes/no / deletedStatus");
@@ -737,26 +735,23 @@ static void handle_set_message_status(char *msg_handle_str, uint8_t StatusIndica
     if (msg_handle > ARRAYSIZE(mas_cfg->objects) - 1)
         ERROR("handle exceeds our nr of messages");
 
+    log_debug("msg_handle_str:%s msg_handle:%u StatusIndicator:%u StatusValue:%u", msg_handle_str, msg_handle, StatusIndicator, StatusValue);
 
     switch (StatusIndicator) {
     
     case MAP_APP_PARAM_SUB_readStatus:
         mas_cfg->msg_stati[msg_handle] = StatusValue;
-        break;
+        log_info("MAP_APP_PARAM_SUB_readStatus msg_stati[%u] = StatusValue:%u", msg_handle, StatusValue);
+        return;
     
     case MAP_APP_PARAM_SUB_deletedStatus:
         mas_cfg->msg_deleted[msg_handle] = StatusValue;
-        break;
+        log_info("MAP_APP_PARAM_SUB_deletedStatus msg_deleted[%u] = StatusValue:%u", msg_handle, StatusValue);
+        return;
     
     default:
-        ERROR("we only handle valid change - requests of Status Read=yes/no or deletedStatus");
-        break;
+        ERROR("we only handle valid change - requests of Status StatusIndicator=0: Read=yes/no or =1:deletedStatus");
     }
-
-    return;
-
-error:
-    log_error("%s", error_msg);
 }
 
 static void hci_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
