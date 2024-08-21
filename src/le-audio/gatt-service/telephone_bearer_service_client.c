@@ -63,7 +63,7 @@
 #include "btstack_debug.h"
 #include "btstack_event.h"
 
-static gatt_service_client_helper_t tbs_client;
+static gatt_service_client_t tbs_client;
 
 static void tbs_client_packet_handler_internal(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static void tbs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);

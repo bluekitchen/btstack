@@ -55,7 +55,7 @@
 #include "btstack_event.h"
 
 // IAS Client
-static gatt_service_client_helper_t txps_client;
+static gatt_service_client_t txps_client;
 
 static btstack_context_callback_registration_t txps_client_handle_can_send_now;
 

@@ -68,7 +68,7 @@
 #include "bluetooth_psm.h"
 #include "le-audio/le_audio_util.h"
 
-static gatt_service_client_helper_t ots_client;
+static gatt_service_client_t ots_client;
 
 static void ots_client_packet_handler_internal(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static void ots_client_handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
