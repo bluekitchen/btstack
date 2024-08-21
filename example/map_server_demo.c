@@ -421,7 +421,6 @@ static size_t body_msg(char* msg_buffer, uint16_t index, size_t maxsize) {
         size = snprintf(msg_buffer, maxsize,
             "<msg handle=\"A%X\""
             " type=\"%s\""
-            //" folder=\"TELECOM/MSG/%s\""
             " subject=\"Sbjct\""
             " datetime=\"20140705T092200+0100\" sender_name=\"Jonas\""
             " sender_addressing=\"1@bla.net\" recipient_addressing=\"\""
@@ -433,7 +432,6 @@ static size_t body_msg(char* msg_buffer, uint16_t index, size_t maxsize) {
             ,
             index,
             mas_cfg->objects[index],
-            //mas_cfg->msg_deleted[index] ? "DELETED" : "INBOX",
             mas_cfg->msg_stati[index] ? "yes" : "no"
         );
     return size;
