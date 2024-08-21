@@ -70,7 +70,7 @@ typedef enum {
 } link_loss_service_client_state_t;
 
 typedef struct {
-    gatt_service_client_connection_helper_t basic_connection;
+    gatt_service_client_connection_t basic_connection;
     link_loss_service_client_state_t state;
 
     // Used for read characteristic queries

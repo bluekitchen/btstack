@@ -262,7 +262,7 @@ static void mcs_client_run_for_connection(void * context){
     }
 }
 
-static void mcs_client_emit_connection_established(const gatt_service_client_connection_helper_t *connection_helper, uint8_t num_included_clients, uint8_t status) {
+static void mcs_client_emit_connection_established(const gatt_service_client_connection_t *connection_helper, uint8_t num_included_clients, uint8_t status) {
     btstack_assert(connection_helper != NULL);
     btstack_assert(connection_helper->event_callback != NULL);
 
@@ -554,7 +554,7 @@ static void mcs_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
     UNUSED(size);
 
     if (packet_type != HCI_EVENT_PACKET) return;
-    gatt_service_client_connection_helper_t * connection_helper;
+    gatt_service_client_connection_t * connection_helper;
     mcs_client_connection_t * connection;
     hci_con_handle_t con_handle;
     uint16_t cid;

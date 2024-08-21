@@ -74,7 +74,7 @@ typedef enum {
 } audio_input_service_client_state_t;
 
 typedef struct {
-    gatt_service_client_connection_helper_t basic_connection;
+    gatt_service_client_connection_t basic_connection;
     audio_input_service_client_state_t state;
 
     // Used for read characteristic queries

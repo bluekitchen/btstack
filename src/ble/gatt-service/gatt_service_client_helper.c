@@ -64,30 +64,30 @@ static btstack_packet_handler_t gatt_service_client_get_packet_handler_trampolin
 }
 
 // LE Audio Service Client helper functions
-void gatt_service_client_finalize_connection(gatt_service_client_helper_t * client, gatt_service_client_connection_helper_t * connection){
+void gatt_service_client_finalize_connection(gatt_service_client_helper_t * client, gatt_service_client_connection_t * connection){
     if (client == NULL){
         return;
     }
     btstack_linked_list_remove(&client->connections, (btstack_linked_item_t*) connection);
 }
 
-gatt_service_client_connection_helper_t * gatt_service_client_get_connection_for_con_handle(const gatt_service_client_helper_t * client, hci_con_handle_t con_handle){
+gatt_service_client_connection_t * gatt_service_client_get_connection_for_con_handle(const gatt_service_client_helper_t * client, hci_con_handle_t con_handle){
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, (btstack_linked_list_t *) &client->connections);
     while (btstack_linked_list_iterator_has_next(&it)){
-        gatt_service_client_connection_helper_t * connection = (gatt_service_client_connection_helper_t *)btstack_linked_list_iterator_next(&it);
+        gatt_service_client_connection_t * connection = (gatt_service_client_connection_t *)btstack_linked_list_iterator_next(&it);
         if (connection->con_handle != con_handle) continue;
         return connection;
     }
     return NULL;
 }
 
-gatt_service_client_connection_helper_t * gatt_service_client_get_connection_for_cid(
+gatt_service_client_connection_t * gatt_service_client_get_connection_for_cid(
         const gatt_service_client_helper_t *client, uint16_t connection_cid){
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, (btstack_linked_list_t *) &client->connections);
     while (btstack_linked_list_iterator_has_next(&it)){
-        gatt_service_client_connection_helper_t * connection = (gatt_service_client_connection_helper_t *)btstack_linked_list_iterator_next(&it);
+        gatt_service_client_connection_t * connection = (gatt_service_client_connection_t *)btstack_linked_list_iterator_next(&it);
         if (connection->cid != connection_cid) continue;
         return connection;
     }
@@ -98,11 +98,11 @@ uint16_t gatt_service_client_characteristic_index2uuid16(const gatt_service_clie
     return client->characteristics_desc16[index];
 }
 
-uint16_t gatt_service_client_helper_value_handle_for_index(gatt_service_client_connection_helper_t * connection_helper, uint8_t characteristic_index){
+uint16_t gatt_service_client_helper_value_handle_for_index(gatt_service_client_connection_t * connection_helper, uint8_t characteristic_index){
     return connection_helper->characteristics[characteristic_index].value_handle;
 }
 
-uint16_t gatt_service_client_helper_characteristic_uuid16_for_value_handle(const gatt_service_client_helper_t * client, gatt_service_client_connection_helper_t * connection_helper, uint16_t value_handle) {
+uint16_t gatt_service_client_helper_characteristic_uuid16_for_value_handle(const gatt_service_client_helper_t * client, gatt_service_client_connection_t * connection_helper, uint16_t value_handle) {
     int i;
     for (i = 0; i < connection_helper->characteristics_num; i++){
         if (connection_helper->characteristics[i].value_handle == value_handle) {
@@ -163,7 +163,7 @@ static uint16_t gatt_service_client_get_next_cid(gatt_service_client_helper_t * 
     return client->cid_counter;
 }
 
-static bool gatt_service_client_more_descriptor_queries(gatt_service_client_connection_helper_t * connection) {
+static bool gatt_service_client_more_descriptor_queries(gatt_service_client_connection_t * connection) {
     bool next_query_found = false;
     while (!next_query_found && (connection->characteristic_index < connection->characteristics_num)) {
         if ((connection->characteristics[connection->characteristic_index].properties & ATT_PROPERTY_NOTIFY) != 0u){
@@ -179,7 +179,7 @@ static bool gatt_service_client_more_descriptor_queries(gatt_service_client_conn
     return next_query_found;
 }
 
-static bool gatt_service_client_have_more_notifications_to_enable(gatt_service_client_connection_helper_t * connection) {
+static bool gatt_service_client_have_more_notifications_to_enable(gatt_service_client_connection_t * connection) {
     bool next_query_found = false;
     while (!next_query_found && (connection->characteristic_index < connection->characteristics_num)) {
         if (connection->characteristics[connection->characteristic_index].client_configuration_handle != 0) {
@@ -192,7 +192,7 @@ static bool gatt_service_client_have_more_notifications_to_enable(gatt_service_c
 }
 
 static uint8_t gatt_service_client_register_notification(gatt_service_client_helper_t * client,
-                                                         gatt_service_client_connection_helper_t *connection) {
+                                                         gatt_service_client_connection_t *connection) {
     gatt_client_characteristic_t characteristic;
     uint8_t status = ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
     
@@ -228,7 +228,7 @@ static uint8_t gatt_service_client_register_notification(gatt_service_client_hel
 }
 
 
-static void gatt_service_client_run_for_client(gatt_service_client_helper_t * client, gatt_service_client_connection_helper_t * connection){
+static void gatt_service_client_run_for_client(gatt_service_client_helper_t * client, gatt_service_client_connection_t * connection){
     uint8_t status = ATT_ERROR_SUCCESS;
     gatt_client_service_t service;
     gatt_client_characteristic_t characteristic;
@@ -317,7 +317,7 @@ static void gatt_service_client_run_for_client(gatt_service_client_helper_t * cl
 
 // @return true if client valid / run function should be called
 static bool gatt_service_client_handle_query_complete(gatt_service_client_helper_t *client,
-                                                      gatt_service_client_connection_helper_t *connection,
+                                                      gatt_service_client_connection_t *connection,
                                                       uint8_t status) {
     btstack_assert(client != NULL);
     btstack_assert(connection != NULL);
@@ -392,7 +392,7 @@ static bool gatt_service_client_handle_query_complete(gatt_service_client_helper
 
 static uint8_t gatt_service_client_get_uninitialized_characteristic_index_for_uuid16(
         gatt_service_client_helper_t * client,
-        gatt_service_client_connection_helper_t * connection,
+        gatt_service_client_connection_t * connection,
         uint16_t uuid16){
 
         uint8_t index = 0xff;
@@ -421,7 +421,7 @@ void gatt_service_client_trampoline_packet_handler(gatt_service_client_helper_t 
     if (packet_type != HCI_EVENT_PACKET) return;
 
     hci_con_handle_t con_handle;
-    gatt_service_client_connection_helper_t * connection;
+    gatt_service_client_connection_t * connection;
     gatt_client_service_t service;
     gatt_client_characteristic_t characteristic;
     gatt_client_characteristic_descriptor_t characteristic_descriptor;
@@ -540,11 +540,11 @@ void gatt_service_client_init(
     hci_add_event_handler(&client->hci_event_callback_registration);
 }
 
-btstack_packet_handler_t gatt_service_client_get_event_callback_for_connection(const gatt_service_client_connection_helper_t * connection){
+btstack_packet_handler_t gatt_service_client_get_event_callback_for_connection(const gatt_service_client_connection_t * connection){
     return connection->event_callback;
 }
 
-uint16_t gatt_service_client_get_cid_for_connection(const gatt_service_client_connection_helper_t * connection){
+uint16_t gatt_service_client_get_cid_for_connection(const gatt_service_client_connection_t * connection){
     return connection->cid;
 }
 
@@ -555,7 +555,7 @@ void gatt_service_client_register_packet_handler(gatt_service_client_helper_t * 
     client->packet_handler = packet_hander;
 }
 
-void gatt_service_client_init_connection_storage_with_service(gatt_service_client_connection_helper_t * basic_connection,
+void gatt_service_client_init_connection_storage_with_service(gatt_service_client_connection_t * basic_connection,
                                                               gatt_client_service_t * service){
     btstack_assert(basic_connection != NULL);
     btstack_assert(service != NULL);
@@ -566,7 +566,7 @@ void gatt_service_client_init_connection_storage_with_service(gatt_service_clien
 }
 uint8_t gatt_service_client_connect(
         hci_con_handle_t con_handle, gatt_service_client_helper_t * client,
-        gatt_service_client_connection_helper_t * connection,
+        gatt_service_client_connection_t * connection,
         uint16_t service_uuid16, uint8_t service_index, gatt_service_client_characteristic_t * characteristics,
         uint8_t characteristics_num, btstack_packet_handler_t packet_handler, uint16_t * connection_cid){
     
@@ -605,7 +605,7 @@ uint8_t gatt_service_client_connect(
 
 uint8_t gatt_service_client_connect_secondary_service_ready_to_connect(
         hci_con_handle_t con_handle,
-        gatt_service_client_helper_t * client, gatt_service_client_connection_helper_t * connection,
+        gatt_service_client_helper_t * client, gatt_service_client_connection_t * connection,
         gatt_service_client_characteristic_t * characteristics, uint8_t characteristics_num,
         btstack_packet_handler_t packet_handler){
 
@@ -627,7 +627,7 @@ uint8_t gatt_service_client_connect_secondary_service_ready_to_connect(
 
 uint8_t gatt_service_client_connect_secondary_service(
         hci_con_handle_t con_handle,
-        gatt_service_client_helper_t * client, gatt_service_client_connection_helper_t * connection,
+        gatt_service_client_helper_t * client, gatt_service_client_connection_t * connection,
         uint16_t service_uuid16, uint16_t service_start_handle, uint16_t service_end_handle, uint8_t service_index,
         gatt_service_client_characteristic_t * characteristics, uint8_t characteristics_num,
         btstack_packet_handler_t packet_handler){
@@ -657,7 +657,7 @@ uint8_t gatt_service_client_connect_secondary_service(
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t gatt_service_client_can_query_characteristic(gatt_service_client_connection_helper_t * connection, uint8_t characteristic_index){
+uint8_t gatt_service_client_can_query_characteristic(gatt_service_client_connection_t * connection, uint8_t characteristic_index){
     if (connection->state != GATT_SERVICE_CLIENT_STATE_CONNECTED){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
@@ -671,7 +671,7 @@ uint8_t gatt_service_client_can_query_characteristic(gatt_service_client_connect
 uint8_t gatt_service_client_disconnect(gatt_service_client_helper_t * client, uint16_t connection_cid){
     btstack_assert(client != NULL);
 
-    gatt_service_client_connection_helper_t * connection = gatt_service_client_get_connection_for_cid(client, connection_cid);
+    gatt_service_client_connection_t * connection = gatt_service_client_get_connection_for_cid(client, connection_cid);
     if (connection == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
@@ -692,7 +692,7 @@ void gatt_service_client_deinit(gatt_service_client_helper_t * client){
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, (btstack_linked_list_t *) &client->connections);
     while (btstack_linked_list_iterator_has_next(&it)){
-        gatt_service_client_connection_helper_t * connection = (gatt_service_client_connection_helper_t *)btstack_linked_list_iterator_next(&it);
+        gatt_service_client_connection_t * connection = (gatt_service_client_connection_t *)btstack_linked_list_iterator_next(&it);
         gatt_service_client_finalize_connection(client, connection);
     }
 }

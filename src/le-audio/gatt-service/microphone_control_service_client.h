@@ -75,7 +75,7 @@ typedef enum {
 } microphone_service_client_state_t;
 
 typedef struct {
-    gatt_service_client_connection_helper_t basic_connection;
+    gatt_service_client_connection_t basic_connection;
     microphone_service_client_state_t state;
 
     // btstack_packet_handler_t client_handler;

@@ -79,7 +79,7 @@ typedef enum {
 
 
 typedef struct {
-    gatt_service_client_connection_helper_t basic_connection;
+    gatt_service_client_connection_t basic_connection;
     volume_control_service_client_state_t state;
 
     // btstack_packet_handler_t client_handler;

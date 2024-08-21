@@ -114,7 +114,7 @@ static uint16_t gatt_service_client_characteristic_value_handle2uuid16(aics_clie
     return 0;
 }
 
-static void aics_client_emit_string_value(gatt_service_client_connection_helper_t * connection_helper, uint8_t subevent, const uint8_t * data, uint16_t data_size, uint8_t att_status){
+static void aics_client_emit_string_value(gatt_service_client_connection_t * connection_helper, uint8_t subevent, const uint8_t * data, uint16_t data_size, uint8_t att_status){
     UNUSED( data_size );
 
     btstack_assert(connection_helper != NULL);
@@ -138,7 +138,7 @@ static void aics_client_emit_string_value(gatt_service_client_connection_helper_
     (*connection_helper->event_callback)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
-static void aics_client_emit_connection_established(gatt_service_client_connection_helper_t * connection_helper, uint8_t status){
+static void aics_client_emit_connection_established(gatt_service_client_connection_t * connection_helper, uint8_t status){
     btstack_assert(connection_helper != NULL);
     btstack_assert(connection_helper->event_callback != NULL);
 
@@ -175,7 +175,7 @@ static void aics_client_connected(aics_client_connection_t * connection, uint8_t
     }
 }
 
-static void aics_client_emit_uint8_array(gatt_service_client_connection_helper_t * connection_helper, uint8_t subevent, const uint8_t * data, uint8_t data_size, uint8_t att_status){
+static void aics_client_emit_uint8_array(gatt_service_client_connection_t * connection_helper, uint8_t subevent, const uint8_t * data, uint8_t data_size, uint8_t att_status){
     btstack_assert(connection_helper != NULL);
     btstack_assert(connection_helper->event_callback != NULL);
     btstack_assert(data_size <= 4);
@@ -194,7 +194,7 @@ static void aics_client_emit_uint8_array(gatt_service_client_connection_helper_t
     (*connection_helper->event_callback)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
-static void aics_client_emit_done_event(gatt_service_client_connection_helper_t * connection_helper, uint8_t index, uint8_t att_status){
+static void aics_client_emit_done_event(gatt_service_client_connection_t * connection_helper, uint8_t index, uint8_t att_status){
     btstack_assert(connection_helper != NULL);
     btstack_assert(connection_helper->event_callback != NULL);
 
@@ -215,7 +215,7 @@ static void aics_client_emit_done_event(gatt_service_client_connection_helper_t 
     (*connection_helper->event_callback)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
-static void aics_client_emit_read_event(gatt_service_client_connection_helper_t * connection_helper, uint8_t characteristic_index, uint8_t att_status, const uint8_t * data, uint16_t data_size){
+static void aics_client_emit_read_event(gatt_service_client_connection_t * connection_helper, uint8_t characteristic_index, uint8_t att_status, const uint8_t * data, uint16_t data_size){
     uint8_t subevent_id;
     uint16_t expected_data_size;
     uint8_t null_data[4];
@@ -271,7 +271,7 @@ static void aics_client_emit_read_event(gatt_service_client_connection_helper_t 
     }
 }
 
-static void aics_client_emit_notify_event(gatt_service_client_connection_helper_t * connection_helper, uint16_t value_handle, const uint8_t * data, uint16_t data_size){
+static void aics_client_emit_notify_event(gatt_service_client_connection_t * connection_helper, uint16_t value_handle, const uint8_t * data, uint16_t data_size){
     uint8_t subevent_id;
     uint16_t expected_data_size;
     uint8_t null_data[4];
@@ -417,7 +417,7 @@ static void aics_client_packet_handler_internal(uint8_t packet_type, uint16_t ch
     UNUSED(size);
 
     if (packet_type != HCI_EVENT_PACKET) return;
-    gatt_service_client_connection_helper_t * connection_helper;
+    gatt_service_client_connection_t * connection_helper;
     aics_client_connection_t * connection;
     hci_con_handle_t con_handle;
     uint8_t status;
@@ -486,7 +486,7 @@ static void aics_client_handle_gatt_client_event(uint8_t packet_type, uint16_t c
     UNUSED(channel);
     UNUSED(size);
 
-    gatt_service_client_connection_helper_t * connection_helper = NULL;
+    gatt_service_client_connection_t * connection_helper = NULL;
     hci_con_handle_t con_handle;
     aics_client_connection_t * connection;
     uint8_t status; 

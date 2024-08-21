@@ -75,7 +75,7 @@ typedef enum {
 } media_service_client_state_t;
 
 typedef struct {
-    gatt_service_client_connection_helper_t basic_connection;
+    gatt_service_client_connection_t basic_connection;
     
     media_service_client_state_t state;
     ots_client_connection_t ots_connection;
