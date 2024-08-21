@@ -702,6 +702,7 @@ gatt_client_service_emit_service_changed(gatt_client_t *gatt_client, const uint8
 }
 
 static void gatt_client_service_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(size);
     hci_con_handle_t con_handle;
     gatt_client_t *gatt_client;
     gatt_client_service_t service;
