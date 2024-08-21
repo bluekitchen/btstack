@@ -44,7 +44,6 @@
 #include <string.h>
 
 #include "btstack.h"
-#include "ble/gatt-service/gatt_service_client.h"
 
 #define CBM_RECEIVE_BUFFER_LEN 300
 
@@ -67,7 +66,6 @@ static enum {
 } app_state;
 
 static ots_client_connection_t ots_connection;
-static gatt_service_client_connection_t gatt_service_client_connection;
 
 static advertising_report_t report;
 static btstack_packet_callback_registration_t sm_event_callback_registration;
@@ -95,6 +93,7 @@ static ots_object_id_t object_id = {};
 static olcp_list_sort_order_t sort_order = OLCP_LIST_SORT_ORDER_BY_FIRST_NAME_ASCENDING;
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
+static btstack_packet_callback_registration_t gatt_client_service_changed_callback_registration;
 
 static uint8_t  cbm_receive_buffer[CBM_RECEIVE_BUFFER_LEN];
 static uint32_t cbm_object_size;
@@ -112,8 +111,9 @@ static void object_transfer_service_client_setup(void){
 
     // GATT Client setup
     gatt_client_init();
-    
-    gatt_service_changed_client_init();
+    gatt_client_service_changed_callback_registration.callback = gatt_client_event_handler;
+    gatt_client_add_service_changed_handler(&gatt_client_service_changed_callback_registration);
+\
     object_transfer_service_client_init();
 
     sm_init();
@@ -277,30 +277,6 @@ static void gatt_client_event_handler(uint8_t packet_type, uint16_t channel, uin
         return;
     }
 
-    if (hci_event_packet_get_type(packet) == HCI_EVENT_GATTSERVICE_META) {
-        switch (hci_event_gattservice_meta_get_subevent_code(packet)) {
-            case GATT_EVENT_CONNECTED:
-                status = gatt_event_connected_get_status(packet);
-                switch (status) {
-                    case ERROR_CODE_SUCCESS:
-                        printf("Change Service: Server connected\n");
-                        (void) gatt_service_changed_client_connect(connection_handle, &gatt_client_event_handler,
-                                                                   &gatt_service_client_connection);
-                        break;
-
-                    default:
-                        printf("Change Service: connection failed, err 0x%02x.\n", status);
-                        break;
-                }
-
-                app_state = APP_STATE_CONNECTED;
-                return;
-
-            default:
-                break;
-        }
-    }
-
     if (hci_event_packet_get_type(packet) != HCI_EVENT_LEAUDIO_META) {
         return;
     }
@@ -311,9 +287,8 @@ static void gatt_client_event_handler(uint8_t packet_type, uint16_t channel, uin
 
             switch (status) {
                 case ERROR_CODE_SUCCESS:
-                    app_state = APP_STATE_W4_CHANGE_SERVER_CONNECT;
+                    app_state = APP_STATE_CONNECTED;
                     printf("OTS Client Test: connected\n");
-                    (void) gatt_service_changed_client_connect(connection_handle, &gatt_client_event_handler, &gatt_service_client_connection);
                     break;
 
                 default:
@@ -488,7 +463,6 @@ static void gatt_client_event_handler(uint8_t packet_type, uint16_t channel, uin
 
         case LEAUDIO_SUBEVENT_OTS_CLIENT_DISCONNECTED:
             printf("OTS Client Test: disconnected\n");
-            gatt_service_changed_client_disconnect(&gatt_service_client_connection);
             break;
 
         default:
