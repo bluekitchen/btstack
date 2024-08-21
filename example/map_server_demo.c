@@ -304,8 +304,11 @@ extern void mac_select_test_set(struct test_set_config* cfg);
 static void mas_init_test_cases(struct test_set_config* cfg) {
     
     int i;
-    for (i = 0; i < ARRAYSIZE(test_configs); i++)
+    for (i = 0; i < ARRAYSIZE(test_configs); i++) {
         test_configs[i].nr = i;
+        memset(test_configs[i].msg_stati, 0, sizeof(test_configs[i].msg_stati));
+        memset(test_configs[i].msg_deleted, 0, sizeof(test_configs[i].msg_stati));
+    }
 
     cfg_start_index = 0;
     one_object_more_or_less = 0;
