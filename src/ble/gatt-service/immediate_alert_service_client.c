@@ -215,7 +215,7 @@ static void ias_client_run_for_connection(void * context){
 }
 
 static void ias_client_packet_handler_trampoline(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    gatt_service_client_hci_event_handler(&ias_client, packet_type, channel, packet, size);
+    gatt_service_client_trampoline_packet_handler(&ias_client, packet_type, channel, packet, size);
 }
 
 void immediate_alert_service_client_init(void){

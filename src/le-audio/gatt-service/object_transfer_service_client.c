@@ -917,7 +917,7 @@ static void ots_client_run_for_connection(void * context){
 }
 
 static void ots_client_packet_handler_trampoline(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    gatt_service_client_hci_event_handler(&ots_client, packet_type, channel, packet, size);
+    gatt_service_client_trampoline_packet_handler(&ots_client, packet_type, channel, packet, size);
 }
 
 void object_transfer_service_client_init(void){
