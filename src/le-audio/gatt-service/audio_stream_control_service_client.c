@@ -48,7 +48,7 @@
 #include "le-audio/le_audio_util.h"
 #include "le-audio/gatt-service/audio_stream_control_service_util.h"
 #include "le-audio/gatt-service/audio_stream_control_service_client.h"
-#include "ble/gatt-service/gatt_service_client_helper.h"
+#include "ble/gatt_service_client.h"
 
 #ifdef ENABLE_TESTING_SUPPORT
 #include <stdio.h>

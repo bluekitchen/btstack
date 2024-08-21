@@ -51,7 +51,7 @@
 #include "le-audio/gatt-service/coordinated_set_identification_service_client.h"
 #include "ad_parser.h"
 #include "bluetooth_data_types.h"
-#include "ble/gatt-service/gatt_service_client_helper.h"
+#include "ble/gatt_service_client.h"
 
 #ifdef ENABLE_TESTING_SUPPORT
 #include <stdio.h>
