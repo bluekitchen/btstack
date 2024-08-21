@@ -142,20 +142,6 @@ void gatt_service_client_trampoline_packet_handler(gatt_service_client_t * clien
  */
 void gatt_service_client_register_packet_handler(gatt_service_client_t * client, btstack_packet_handler_t packet_handler);
 
-gatt_service_client_connection_t * gatt_service_client_get_connection_for_cid(const gatt_service_client_t * client, uint16_t connection_cid);
-gatt_service_client_connection_t * gatt_service_client_get_connection_for_con_handle(const gatt_service_client_t * client, hci_con_handle_t con_handle);
-uint16_t gatt_service_client_characteristic_index2uuid16(const gatt_service_client_t * client, uint8_t index);
-btstack_packet_handler_t gatt_service_client_get_event_callback_for_connection(const gatt_service_client_connection_t * connection);
-uint16_t gatt_service_client_get_cid_for_connection(const gatt_service_client_connection_t * connection);
-uint16_t gatt_service_client_helper_value_handle_for_index(gatt_service_client_connection_t * connection_helper, uint8_t characteristic_index);
-uint16_t gatt_service_client_helper_characteristic_uuid16_for_value_handle(const gatt_service_client_t * client, gatt_service_client_connection_t * connection_helper, uint16_t value_handle);
-
-uint8_t gatt_service_client_connect(
-        hci_con_handle_t con_handle,
-        gatt_service_client_t * client, gatt_service_client_connection_t * connection,
-        uint16_t primary_service_uuid16, uint8_t service_index,
-        gatt_service_client_characteristic_t * characteristics, uint8_t characteristics_num,
-        btstack_packet_handler_t packet_handler, uint16_t * connection_cid);
 
 uint8_t gatt_service_client_connect_secondary_service_ready_to_connect(
         hci_con_handle_t con_handle,
@@ -163,6 +149,37 @@ uint8_t gatt_service_client_connect_secondary_service_ready_to_connect(
         gatt_service_client_characteristic_t * characteristics, uint8_t characteristics_num,
         btstack_packet_handler_t packet_handler);
 
+/**
+ * @brief Connect to the n-th instance of Primary GATT Service with UUID16
+ *
+ * @param con_handle
+ * @param client
+ * @param connection
+ * @param primary_service_uuid16
+ * @param service_index
+ * @param characteristics
+ * @param characteristics_num
+ * @param packet_handler
+ * @param connection_cid
+ * @return
+ */
+uint8_t gatt_service_client_connect(
+        hci_con_handle_t con_handle,
+        gatt_service_client_t * client, gatt_service_client_connection_t * connection,
+        uint16_t primary_service_uuid16, uint8_t service_index,
+        gatt_service_client_characteristic_t * characteristics, uint8_t characteristics_num,
+        btstack_packet_handler_t packet_handler, uint16_t * connection_cid);
+
+/**
+ * @brief Connect to the n-th instance of Secondary GATT Service with UUID16
+ * @param con_handle
+ * @param client
+ * @param connection
+ * @param characteristics
+ * @param characteristics_num
+ * @param packet_handler
+ * @return
+ */
 uint8_t gatt_service_client_connect_secondary_service(
         hci_con_handle_t con_handle,
         gatt_service_client_t * client, gatt_service_client_connection_t * connection,
@@ -170,20 +187,34 @@ uint8_t gatt_service_client_connect_secondary_service(
         gatt_service_client_characteristic_t * characteristics, uint8_t characteristics_num,
         btstack_packet_handler_t packet_handler);
 
-
-void gatt_service_client_init_connection_storage_with_service(gatt_service_client_connection_t * basic_connection,
-                                                              gatt_client_service_t * service);
-
-
-uint8_t gatt_service_client_can_query_characteristic(gatt_service_client_connection_t * connection, uint8_t characteristic_index);
-
+/**
+ * @brief Disconnect service client
+ * @param client
+ * @param connection_cid
+ * @return
+ */
 uint8_t gatt_service_client_disconnect(gatt_service_client_t * client, uint16_t connection_cid);
 
-void gatt_service_client_finalize_connection(gatt_service_client_t * client, gatt_service_client_connection_t * connection);
-
+/**
+ * @brief Map ATT Error Code to (extended) Error Codes
+ * @param att_error_code
+ * @return
+ */
 uint8_t gatt_service_client_att_status_to_error_code(uint8_t att_error_code);
 
+/**
+ * @brief De-Init
+ * @param client
+ */
 void gatt_service_client_deinit(gatt_service_client_t * client);
+
+gatt_service_client_connection_t * gatt_service_client_get_connection_for_cid(const gatt_service_client_t * client, uint16_t connection_cid);
+gatt_service_client_connection_t * gatt_service_client_get_connection_for_con_handle(const gatt_service_client_t * client, hci_con_handle_t con_handle);
+uint16_t gatt_service_client_characteristic_index2uuid16(const gatt_service_client_t * client, uint8_t index);
+uint16_t gatt_service_client_helper_value_handle_for_index(gatt_service_client_connection_t * connection_helper, uint8_t characteristic_index);
+uint16_t gatt_service_client_helper_characteristic_uuid16_for_value_handle(const gatt_service_client_t * client, gatt_service_client_connection_t * connection_helper, uint16_t value_handle);
+uint8_t gatt_service_client_can_query_characteristic(gatt_service_client_connection_t * connection, uint8_t characteristic_index);
+void gatt_service_client_finalize_connection(gatt_service_client_t * client, gatt_service_client_connection_t * connection);
 
 /* API_END */
 

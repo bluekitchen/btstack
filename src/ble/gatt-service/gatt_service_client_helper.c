@@ -536,14 +536,6 @@ void gatt_service_client_init(
     hci_add_event_handler(&client->hci_event_callback_registration);
 }
 
-btstack_packet_handler_t gatt_service_client_get_event_callback_for_connection(const gatt_service_client_connection_t * connection){
-    return connection->event_callback;
-}
-
-uint16_t gatt_service_client_get_cid_for_connection(const gatt_service_client_connection_t * connection){
-    return connection->cid;
-}
-
 void gatt_service_client_register_packet_handler(gatt_service_client_t * client, btstack_packet_handler_t packet_hander){
     btstack_assert(client != NULL);
     btstack_assert(packet_hander != NULL);
@@ -551,15 +543,6 @@ void gatt_service_client_register_packet_handler(gatt_service_client_t * client,
     client->packet_handler = packet_hander;
 }
 
-void gatt_service_client_init_connection_storage_with_service(gatt_service_client_connection_t * basic_connection,
-                                                              gatt_client_service_t * service){
-    btstack_assert(basic_connection != NULL);
-    btstack_assert(service != NULL);
-
-    basic_connection->service_uuid16 = service->uuid16;
-    basic_connection->start_handle = service->start_group_handle;
-    basic_connection->end_handle = service->end_group_handle;
-}
 uint8_t gatt_service_client_connect(
         hci_con_handle_t con_handle, gatt_service_client_t * client,
         gatt_service_client_connection_t * connection,
