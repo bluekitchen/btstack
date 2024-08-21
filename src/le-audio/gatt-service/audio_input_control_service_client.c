@@ -637,7 +637,7 @@ static void aics_client_run_for_connection(void * context){
 }
 
 static void aics_client_packet_handler_trampoline(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    gatt_service_client_hci_event_handler(&aics_client, packet_type, channel, packet, size);
+    gatt_service_client_trampoline_packet_handler(&aics_client, packet_type, channel, packet, size);
 }
 
 void audio_input_control_service_client_init(void){

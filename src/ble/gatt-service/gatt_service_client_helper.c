@@ -526,10 +526,6 @@ void gatt_service_client_trampoline_packet_handler(gatt_service_client_t * clien
     }
 }
 
-void gatt_service_client_hci_event_handler(gatt_service_client_t * client, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    gatt_service_client_trampoline_packet_handler(client, packet_type, channel, packet, size);
-}
-
 void gatt_service_client_init(
         gatt_service_client_t * client,
         void (*hci_event_handler_trampoline)(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size)){

@@ -127,17 +127,6 @@ void gatt_service_client_init(gatt_service_client_t * client,
 
 /**
  * @brief Packet Handler to be called by trampoline registered with gatt_service_client_init
- * @deprecated Please call gatt_service_client_trampoline_packet_handler instead
- * @param client
- * @param packet_type
- * @param channel
- * @param packet
- * @param size
- */
-void gatt_service_client_hci_event_handler(gatt_service_client_t * client, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
-
-/**
- * @brief Packet Handler to be called by trampoline registered with gatt_service_client_init
  * @param client
  * @param packet_type
  * @param channel
