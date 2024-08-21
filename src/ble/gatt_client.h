@@ -953,8 +953,11 @@ uint8_t gatt_client_write_client_characteristic_configuration(btstack_packet_han
 
 /**
  * @brief Register for changes to the Service Changed and Database Hash Characteristics of the remote GATT Service
+ * *
  * When configured, GATT_EVENT_QUERY_COMPLETE event is emitted
  * If supported, the Database Hash is read as well
+ *
+ * Requires ENABLE_GATT_CLIENT_SERVICE_CHANGED
  *
  * @param callback
  */
@@ -962,6 +965,9 @@ void gatt_client_add_service_changed_handler(btstack_packet_callback_registratio
 
 /**
  * @brief Remove callback for service changes
+ *
+ * Requires ENABLE_GATT_CLIENT_SERVICE_CHANGED
+ *
  * @param callback
  */
 void gatt_client_remove_service_changed_handler(btstack_packet_callback_registration_t * callback);
