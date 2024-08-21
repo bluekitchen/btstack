@@ -86,7 +86,7 @@ typedef struct {
 } otp_le_cbm_connection_t;
 
 typedef struct {
-    gatt_service_client_connection_helper_t basic_connection;
+    gatt_service_client_connection_t basic_connection;
     object_transfer_service_client_state_t state;
 
     otp_le_cbm_connection_t le_cbm_connection;

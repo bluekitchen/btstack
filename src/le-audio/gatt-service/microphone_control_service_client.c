@@ -87,7 +87,7 @@ static void mics_client_replace_subevent_id_and_emit(btstack_packet_handler_t ca
     (*callback)(HCI_EVENT_PACKET, 0, packet, size);
 }
 
-static void mics_client_emit_connection_established(const gatt_service_client_connection_helper_t *connection_helper, uint8_t num_included_clients, uint8_t status) {
+static void mics_client_emit_connection_established(const gatt_service_client_connection_t *connection_helper, uint8_t num_included_clients, uint8_t status) {
     btstack_assert(connection_helper != NULL);
     btstack_assert(connection_helper->event_callback != NULL);
 
@@ -270,7 +270,7 @@ static void mics_client_packet_handler_internal(uint8_t packet_type, uint16_t ch
     UNUSED(size);
 
     if (packet_type != HCI_EVENT_PACKET) return;
-    gatt_service_client_connection_helper_t * connection_helper;
+    gatt_service_client_connection_t * connection_helper;
     mics_client_connection_t * connection;
     hci_con_handle_t con_handle;
     uint16_t cid;

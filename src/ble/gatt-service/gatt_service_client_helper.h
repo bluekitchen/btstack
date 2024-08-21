@@ -100,7 +100,7 @@ typedef struct {
     gatt_service_client_characteristic_t * characteristics;
 
     btstack_packet_handler_t event_callback;
-} gatt_service_client_connection_helper_t;
+} gatt_service_client_connection_t;
 
 typedef struct {
     btstack_linked_list_t connections;
@@ -153,44 +153,44 @@ void gatt_service_client_trampoline_packet_handler(gatt_service_client_helper_t 
  */
 void gatt_service_client_register_packet_handler(gatt_service_client_helper_t * client, btstack_packet_handler_t packet_handler);
 
-gatt_service_client_connection_helper_t * gatt_service_client_get_connection_for_cid(const gatt_service_client_helper_t * client, uint16_t connection_cid);
-gatt_service_client_connection_helper_t * gatt_service_client_get_connection_for_con_handle(const gatt_service_client_helper_t * client, hci_con_handle_t con_handle);
+gatt_service_client_connection_t * gatt_service_client_get_connection_for_cid(const gatt_service_client_helper_t * client, uint16_t connection_cid);
+gatt_service_client_connection_t * gatt_service_client_get_connection_for_con_handle(const gatt_service_client_helper_t * client, hci_con_handle_t con_handle);
 uint16_t gatt_service_client_characteristic_index2uuid16(const gatt_service_client_helper_t * client, uint8_t index);
-btstack_packet_handler_t gatt_service_client_get_event_callback_for_connection(const gatt_service_client_connection_helper_t * connection);
-uint16_t gatt_service_client_get_cid_for_connection(const gatt_service_client_connection_helper_t * connection);
-uint16_t gatt_service_client_helper_value_handle_for_index(gatt_service_client_connection_helper_t * connection_helper, uint8_t characteristic_index);
-uint16_t gatt_service_client_helper_characteristic_uuid16_for_value_handle(const gatt_service_client_helper_t * client, gatt_service_client_connection_helper_t * connection_helper, uint16_t value_handle);
+btstack_packet_handler_t gatt_service_client_get_event_callback_for_connection(const gatt_service_client_connection_t * connection);
+uint16_t gatt_service_client_get_cid_for_connection(const gatt_service_client_connection_t * connection);
+uint16_t gatt_service_client_helper_value_handle_for_index(gatt_service_client_connection_t * connection_helper, uint8_t characteristic_index);
+uint16_t gatt_service_client_helper_characteristic_uuid16_for_value_handle(const gatt_service_client_helper_t * client, gatt_service_client_connection_t * connection_helper, uint16_t value_handle);
 
 uint8_t gatt_service_client_connect(
         hci_con_handle_t con_handle,
-        gatt_service_client_helper_t * client, gatt_service_client_connection_helper_t * connection,
+        gatt_service_client_helper_t * client, gatt_service_client_connection_t * connection,
         uint16_t primary_service_uuid16, uint8_t service_index,
         gatt_service_client_characteristic_t * characteristics, uint8_t characteristics_num,
         btstack_packet_handler_t packet_handler, uint16_t * connection_cid);
 
 uint8_t gatt_service_client_connect_secondary_service_ready_to_connect(
         hci_con_handle_t con_handle,
-        gatt_service_client_helper_t * client, gatt_service_client_connection_helper_t * connection,
+        gatt_service_client_helper_t * client, gatt_service_client_connection_t * connection,
         gatt_service_client_characteristic_t * characteristics, uint8_t characteristics_num,
         btstack_packet_handler_t packet_handler);
 
 uint8_t gatt_service_client_connect_secondary_service(
         hci_con_handle_t con_handle,
-        gatt_service_client_helper_t * client, gatt_service_client_connection_helper_t * connection,
+        gatt_service_client_helper_t * client, gatt_service_client_connection_t * connection,
         uint16_t service_uuid16, uint16_t service_start_handle, uint16_t service_end_handle, uint8_t service_index,
         gatt_service_client_characteristic_t * characteristics, uint8_t characteristics_num,
         btstack_packet_handler_t packet_handler);
 
 
-void gatt_service_client_init_connection_storage_with_service(gatt_service_client_connection_helper_t * basic_connection,
-                              gatt_client_service_t * service);
+void gatt_service_client_init_connection_storage_with_service(gatt_service_client_connection_t * basic_connection,
+                                                              gatt_client_service_t * service);
 
 
-uint8_t gatt_service_client_can_query_characteristic(gatt_service_client_connection_helper_t * connection, uint8_t characteristic_index);
+uint8_t gatt_service_client_can_query_characteristic(gatt_service_client_connection_t * connection, uint8_t characteristic_index);
 
 uint8_t gatt_service_client_disconnect(gatt_service_client_helper_t * client, uint16_t connection_cid);
 
-void gatt_service_client_finalize_connection(gatt_service_client_helper_t * client, gatt_service_client_connection_helper_t * connection);
+void gatt_service_client_finalize_connection(gatt_service_client_helper_t * client, gatt_service_client_connection_t * connection);
 
 uint8_t gatt_service_client_att_status_to_error_code(uint8_t att_error_code);
 

@@ -69,7 +69,7 @@ typedef enum {
 #define TBS_CLIENT_SERIALISATION_BUFFER_SIZE 255
 
 typedef struct {
-    gatt_service_client_connection_helper_t basic_connection;
+    gatt_service_client_connection_t basic_connection;
     telephone_bearer_service_client_state_t state;
     
     // Used for read characteristic queries

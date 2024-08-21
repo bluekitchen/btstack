@@ -131,7 +131,7 @@ static void ias_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
     UNUSED(size);
 
     if (packet_type != HCI_EVENT_PACKET) return;
-    gatt_service_client_connection_helper_t * connection_helper;
+    gatt_service_client_connection_t * connection_helper;
     uint16_t cid;
     uint8_t status;
 

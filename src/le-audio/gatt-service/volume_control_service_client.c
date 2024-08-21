@@ -96,7 +96,7 @@ static void vcs_client_replace_subevent_id_and_emit(btstack_packet_handler_t cal
     (*callback)(HCI_EVENT_PACKET, 0, packet, size);
 }
 
-static void vcs_client_emit_connection_established(const gatt_service_client_connection_helper_t *connection_helper, uint8_t num_aics_clients, uint8_t num_vocs_clients, uint8_t status) {
+static void vcs_client_emit_connection_established(const gatt_service_client_connection_t *connection_helper, uint8_t num_aics_clients, uint8_t num_vocs_clients, uint8_t status) {
     btstack_assert(connection_helper != NULL);
     btstack_assert(connection_helper->event_callback != NULL);
 
@@ -134,7 +134,7 @@ static void vcs_client_connected(vcs_client_connection_t * connection, uint8_t s
     }
 }
 
-static void vcs_client_emit_uint8_array(gatt_service_client_connection_helper_t * connection_helper, uint8_t subevent, const uint8_t * data, uint8_t data_size, uint8_t att_status){
+static void vcs_client_emit_uint8_array(gatt_service_client_connection_t * connection_helper, uint8_t subevent, const uint8_t * data, uint8_t data_size, uint8_t att_status){
     btstack_assert(connection_helper != NULL);
     btstack_assert(connection_helper->event_callback != NULL);
     btstack_assert(data_size <= 4);
@@ -177,7 +177,7 @@ static void vcs_client_emit_done_event(vcs_client_connection_t * connection, uin
 }
 
 
-static void vcs_client_emit_read_event(gatt_service_client_connection_helper_t * connection_helper, uint8_t characteristic_index, uint8_t att_status, const uint8_t * data, uint16_t data_size){
+static void vcs_client_emit_read_event(gatt_service_client_connection_t * connection_helper, uint8_t characteristic_index, uint8_t att_status, const uint8_t * data, uint16_t data_size){
     uint16_t expected_data_size;
     uint8_t  subevent_id;
     uint8_t  null_data[3];
@@ -212,7 +212,7 @@ static void vcs_client_emit_read_event(gatt_service_client_connection_helper_t *
     }
 }
 
-static void vcs_client_emit_notify_event(gatt_service_client_connection_helper_t * connection_helper, uint16_t value_handle, uint8_t att_status, const uint8_t * data, uint16_t data_size){
+static void vcs_client_emit_notify_event(gatt_service_client_connection_t * connection_helper, uint16_t value_handle, uint8_t att_status, const uint8_t * data, uint16_t data_size){
     int16_t expected_data_size;
     uint8_t  subevent_id;
     uint8_t  null_data[3];
@@ -292,7 +292,7 @@ static void vcs_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
     UNUSED(size);
 
     if (packet_type != HCI_EVENT_PACKET) return;
-    gatt_service_client_connection_helper_t * connection_helper;
+    gatt_service_client_connection_t * connection_helper;
     vcs_client_connection_t * connection;
     hci_con_handle_t con_handle;
     uint16_t cid;
@@ -491,7 +491,7 @@ static void vcs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t ch
     UNUSED(channel);
     UNUSED(size);
 
-    gatt_service_client_connection_helper_t * connection_helper;
+    gatt_service_client_connection_t * connection_helper;
     vcs_client_connection_t * connection = NULL;
     hci_con_handle_t con_handle;
     gatt_client_service_t service;
@@ -698,7 +698,7 @@ static uint16_t vcs_client_serialize_characteristic_value_for_write(vcs_client_c
 
 static void vcs_client_run_for_connection(void * context){
     hci_con_handle_t con_handle = (hci_con_handle_t)(uintptr_t)context;
-    gatt_service_client_connection_helper_t * connection_helper = gatt_service_client_get_connection_for_con_handle(&vcs_client, con_handle);
+    gatt_service_client_connection_t * connection_helper = gatt_service_client_get_connection_for_con_handle(&vcs_client, con_handle);
     vcs_client_connection_t * connection = (vcs_client_connection_t *)connection_helper;
 
     btstack_assert(connection != NULL);

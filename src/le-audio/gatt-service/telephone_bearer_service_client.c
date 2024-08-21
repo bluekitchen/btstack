@@ -73,7 +73,7 @@ static uint16_t tbs_client_value_handle_for_index(tbs_client_connection_t * conn
     return connection->basic_connection.characteristics[connection->characteristic_index].value_handle;
 }
 
-static void tbs_client_emit_connection_established(gatt_service_client_connection_helper_t * connection_helper, uint8_t status){
+static void tbs_client_emit_connection_established(gatt_service_client_connection_t * connection_helper, uint8_t status){
     btstack_assert(connection_helper != NULL);
     btstack_assert(connection_helper->event_callback != NULL);
 
@@ -118,7 +118,7 @@ static void tbs_client_replace_subevent_id_and_emit(btstack_packet_handler_t cal
     (*callback)(HCI_EVENT_PACKET, 0, packet, size);
 }
 
-static void tbs_client_emit_done_event(gatt_service_client_connection_helper_t * connection_helper, uint8_t index, uint8_t att_status){
+static void tbs_client_emit_done_event(gatt_service_client_connection_t * connection_helper, uint8_t index, uint8_t att_status){
     btstack_assert(connection_helper != NULL);
     btstack_assert(connection_helper->event_callback != NULL);
 
@@ -185,7 +185,7 @@ static void tbs_client_emit_nbytes( const emitter_t * emit ) {
     event_callback(HCI_EVENT_PACKET, 0, event, 5 + data_length);
 }
 
-static void tbs_client_emit_read_event(gatt_service_client_connection_helper_t * connection_helper, uint8_t characteristic_index, uint8_t att_status, const uint8_t * data, uint16_t data_size){
+static void tbs_client_emit_read_event(gatt_service_client_connection_t * connection_helper, uint8_t characteristic_index, uint8_t att_status, const uint8_t * data, uint16_t data_size){
     UNUSED(att_status);
 
     emitter_t emitter = {
@@ -232,7 +232,7 @@ static tbs_characteristic_index_t gatt_service_client_characteristic_value_handl
     return 0;
 }
 
-static void tbs_client_emit_notify_event(gatt_service_client_connection_helper_t * connection_helper, uint16_t value_handle, uint8_t att_status, const uint8_t * data, uint16_t data_size){
+static void tbs_client_emit_notify_event(gatt_service_client_connection_t * connection_helper, uint16_t value_handle, uint8_t att_status, const uint8_t * data, uint16_t data_size){
     tbs_characteristic_index_t index = gatt_service_client_characteristic_value_handle_to_index( (tbs_client_connection_t *)connection_helper, value_handle );
     tbs_client_emit_read_event( connection_helper, index, att_status, data, data_size );
 }
@@ -458,7 +458,7 @@ static void tbs_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
     UNUSED(size);
 
     if (packet_type != HCI_EVENT_PACKET) return;
-    gatt_service_client_connection_helper_t * connection_helper;
+    gatt_service_client_connection_t * connection_helper;
     tbs_client_connection_t * connection;
     hci_con_handle_t con_handle;;
     uint8_t status;
@@ -520,7 +520,7 @@ static void tbs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t ch
     UNUSED(size);
 
     hci_con_handle_t con_handle = HCI_CON_HANDLE_INVALID;
-    gatt_service_client_connection_helper_t * connection_helper = NULL;
+    gatt_service_client_connection_t * connection_helper = NULL;
     tbs_client_connection_t * connection = NULL;
 
     switch(hci_event_packet_get_type(packet)){

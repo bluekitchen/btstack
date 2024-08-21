@@ -130,7 +130,7 @@ static char * ots_client_characteristic_name[] = {
 };
 #endif
 
-static void ots_client_emit_timeout(gatt_service_client_connection_helper_t * connection_helper, uint16_t characteristic_uuid){
+static void ots_client_emit_timeout(gatt_service_client_connection_t * connection_helper, uint16_t characteristic_uuid){
     btstack_assert(connection_helper != NULL);
     btstack_assert(connection_helper->event_callback != NULL);
 
@@ -151,7 +151,7 @@ static void ots_client_operations_timer_timeout_handler(btstack_timer_source_t *
     if (connection == NULL){
         return;
     }
-    ots_client_emit_timeout((gatt_service_client_connection_helper_t *) connection, gatt_service_client_characteristic_index2uuid16(&ots_client, connection->characteristic_index));
+    ots_client_emit_timeout((gatt_service_client_connection_t *) connection, gatt_service_client_characteristic_index2uuid16(&ots_client, connection->characteristic_index));
     l2cap_le_disconnect(connection->basic_connection.cid);
 }
 
@@ -188,7 +188,7 @@ static uint16_t ots_client_value_handle_for_index(ots_client_connection_t * conn
 
 static void ots_client_emit_connection_established(ots_client_connection_t * connection, uint8_t status){
     btstack_assert(connection != NULL);
-    gatt_service_client_connection_helper_t * connection_helper = &connection->basic_connection;
+    gatt_service_client_connection_t * connection_helper = &connection->basic_connection;
     btstack_assert(connection_helper != NULL);
     btstack_assert(connection_helper->event_callback != NULL);
 
@@ -229,7 +229,7 @@ static void ots_client_connected(ots_client_connection_t * connection, uint8_t s
     }
 }
 
-static void ots_client_emit_done_event(gatt_service_client_connection_helper_t * connection_helper, uint8_t index, uint8_t att_status){
+static void ots_client_emit_done_event(gatt_service_client_connection_t * connection_helper, uint8_t index, uint8_t att_status){
     btstack_assert(connection_helper != NULL);
     btstack_assert(connection_helper->event_callback != NULL);
 
@@ -250,7 +250,7 @@ static void ots_client_emit_done_event(gatt_service_client_connection_helper_t *
     (*connection_helper->event_callback)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
-static void ots_client_emit_features_event(gatt_service_client_connection_helper_t * connection_helper, uint8_t att_status){
+static void ots_client_emit_features_event(gatt_service_client_connection_t * connection_helper, uint8_t att_status){
     btstack_assert(connection_helper != NULL);
     btstack_assert(connection_helper->event_callback != NULL);
     ots_client_connection_t * connection = (ots_client_connection_t *)connection_helper;
@@ -271,7 +271,7 @@ static void ots_client_emit_features_event(gatt_service_client_connection_helper
     (*connection_helper->event_callback)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
-static void ots_client_emit_string_value(gatt_service_client_connection_helper_t * connection_helper, uint8_t subevent, const uint8_t * data, uint16_t data_size, uint8_t att_status){
+static void ots_client_emit_string_value(gatt_service_client_connection_t * connection_helper, uint8_t subevent, const uint8_t * data, uint16_t data_size, uint8_t att_status){
     UNUSED(data_size);
 
     btstack_assert(connection_helper != NULL);
@@ -295,7 +295,7 @@ static void ots_client_emit_string_value(gatt_service_client_connection_helper_t
     (*connection_helper->event_callback)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
-static void ots_client_emit_filter_value(gatt_service_client_connection_helper_t * connection_helper, uint8_t filter_index, ots_filter_type_t filter_type, const uint8_t * data, uint8_t data_size, uint8_t att_status){
+static void ots_client_emit_filter_value(gatt_service_client_connection_t * connection_helper, uint8_t filter_index, ots_filter_type_t filter_type, const uint8_t * data, uint8_t data_size, uint8_t att_status){
     btstack_assert(connection_helper != NULL);
     btstack_assert(connection_helper->event_callback != NULL);
 
@@ -315,7 +315,7 @@ static void ots_client_emit_filter_value(gatt_service_client_connection_helper_t
     (*connection_helper->event_callback)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
-static void ots_client_emit_variable_uint8_array(gatt_service_client_connection_helper_t * connection_helper, uint8_t subevent, const uint8_t * data, uint8_t data_size, uint8_t att_status){
+static void ots_client_emit_variable_uint8_array(gatt_service_client_connection_t * connection_helper, uint8_t subevent, const uint8_t * data, uint8_t data_size, uint8_t att_status){
     btstack_assert(connection_helper != NULL);
     btstack_assert(connection_helper->event_callback != NULL);
     btstack_assert(data_size <= 16);
@@ -334,7 +334,7 @@ static void ots_client_emit_variable_uint8_array(gatt_service_client_connection_
     (*connection_helper->event_callback)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
-static void ots_client_emit_uint8_array(gatt_service_client_connection_helper_t * connection_helper, uint8_t subevent, const uint8_t * data, uint8_t data_size, uint8_t att_status){
+static void ots_client_emit_uint8_array(gatt_service_client_connection_t * connection_helper, uint8_t subevent, const uint8_t * data, uint8_t data_size, uint8_t att_status){
     btstack_assert(connection_helper != NULL);
     btstack_assert(connection_helper->event_callback != NULL);
     btstack_assert(data_size <= 8);
@@ -353,7 +353,7 @@ static void ots_client_emit_uint8_array(gatt_service_client_connection_helper_t 
 }
 
 
-static void ots_client_emit_data_chunk(gatt_service_client_connection_helper_t * connection_helper, uint8_t state){
+static void ots_client_emit_data_chunk(gatt_service_client_connection_t * connection_helper, uint8_t state){
     btstack_assert(connection_helper != NULL);
     btstack_assert(connection_helper->event_callback != NULL);
 
@@ -404,7 +404,7 @@ static uint16_t ots_client_serialize_characteristic_value_for_write(ots_client_c
     return value_length;
 }
 
-static void ots_client_emit_read_event(gatt_service_client_connection_helper_t * connection_helper, uint8_t characteristic_index, uint8_t att_status, const uint8_t * data, uint16_t data_size){
+static void ots_client_emit_read_event(gatt_service_client_connection_t * connection_helper, uint8_t characteristic_index, uint8_t att_status, const uint8_t * data, uint16_t data_size){
     uint8_t expected_data_size = 0;
     uint8_t  emit_bytes[16];
 
@@ -511,7 +511,7 @@ static void ots_client_emit_read_event(gatt_service_client_connection_helper_t *
     }
 }
 
-static void ots_client_emit_notify_event(gatt_service_client_connection_helper_t * connection_helper, uint16_t value_handle, uint8_t att_status, const uint8_t * data, uint16_t data_size){
+static void ots_client_emit_notify_event(gatt_service_client_connection_t * connection_helper, uint16_t value_handle, uint8_t att_status, const uint8_t * data, uint16_t data_size){
     uint16_t characteristic_uuid16 = gatt_service_client_helper_characteristic_uuid16_for_value_handle(&ots_client, connection_helper, value_handle);
     uint8_t  emit_bytes[2 + OTS_OBJECT_ID_LEN];
     ots_client_connection_t * connection;
@@ -677,7 +677,7 @@ static void ots_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
     UNUSED(size);
 
     if (packet_type != HCI_EVENT_PACKET) return;
-    gatt_service_client_connection_helper_t * connection_helper;
+    gatt_service_client_connection_t * connection_helper;
     ots_client_connection_t * connection;
     hci_con_handle_t con_handle;;
     uint8_t status;
@@ -750,7 +750,7 @@ static void ots_client_handle_gatt_client_event(uint8_t packet_type, uint16_t ch
     UNUSED(channel);
     UNUSED(size);
 
-    gatt_service_client_connection_helper_t * connection_helper = NULL;
+    gatt_service_client_connection_t * connection_helper = NULL;
     hci_con_handle_t con_handle;
     ots_client_connection_t * connection;
     uint8_t offset;
@@ -1266,7 +1266,7 @@ static void ots_client_l2cap_cbm_packet_handler(uint8_t packet_type, uint16_t ch
            state = offset == 0 ? 0 : 1;
         }
         // TODO -> memcpy to connection->cbm_data;
-        ots_client_emit_data_chunk((gatt_service_client_connection_helper_t *) connection, state);
+        ots_client_emit_data_chunk((gatt_service_client_connection_t *) connection, state);
         // printf("emit data[%d] offset %d, chunk length %d, transferred %d \n", state, connection->cbm_data_offset, connection->cbm_data_chunk_length,  connection->cbm_data_chunk_bytes_transferred);
         return;
     }
