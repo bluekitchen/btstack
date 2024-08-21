@@ -165,10 +165,6 @@ static void increase_version_counter_by_1(char* name, mas_uint128hex_t counter) 
 */
 static void MAP_MSE_MMD_BV_02_I_disc(void) {
     log_debug("disabled default discconect behaviour");
-    //cfg_start_index++;
-    //one_object_more_or_less++;
-    //log_debug("counter:%d cfg_start_index:%d one_object_more_or_less:%d", cfg_MAP_MSE_MMD_BV_02_I_getMsgListng_counter, cfg_start_index, one_object_more_or_less);
-    //cfg_MAP_MSE_MMD_BV_02_I_getMsgListng_counter++;
 }
 
 static void MAP_MSE_MMD_BV_02_I_getMsgListng(void) {
@@ -276,8 +272,9 @@ static struct test_config_s
     char* helpstr; // additional help for setup, environment etc.
 } test_configs[] =
 {
-{TC_NORM( .descr = "MAP/MSE/MSM/,MNR/,MMB/,MFB/,MMI/,GEOP/BC,ROB,CON,SRM",.type = &msgshrt,.obj_count = 5, .objects = { "EMAIL","SMS_GSM","SMS_CDMA", "MMS", "IM"         }                                                      ,.helpstr = "PTS IXIT set 'TSPX_secure_simple_pairing_pass_key_confirmation' to 'true'"                                                                                                                                                                                                                                                                                                },)
-{TC_NORM( .descr = "MAP/MSE/MMB/BV-15,18,20,22"                     ,.type = &msg,    .obj_count = 5, .objects = { "EMAIL","SMS_GSM","SMS_CDMA", "MMS", "IM"         }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
+{TC_NORM( .descr = "MAP/MSE/MSM/,MNR/,MMB/,MFB/,MMI/,GEOP/BC,ROB,CON,SRM",.type = &msg,.obj_count = 5, .objects = { "EMAIL","SMS_GSM","SMS_CDMA", "MMS", "IM"         }                                                      ,.helpstr = "PTS IXIT set 'TSPX_secure_simple_pairing_pass_key_confirmation' to 'true'"                                                                                                                                                                                                                                                                                                },)
+//{TC_NORM( .descr = "MAP/MSE/MMB/BV-15,18,20,22"                     ,.type = &msg,    .obj_count = 5, .objects = { "EMAIL","SMS_GSM","SMS_CDMA", "MMS", "IM"         }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
+{TC_NORM( .descr = "MAP/MSE/MMB/BV-15"                              ,.type = &msg,    .obj_count = 1, .objects = { "EMAIL","SMS_GSM","SMS_CDMA", "MMS", "IM"         }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
 {TC_NORM( .descr = "MAP/MSE/MMB/BV-16"                              ,.type = &msg,    .obj_count = 1, .objects = { "EMAIL","EMAIL"                                   }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
 {TC_NORM( .descr = "MAP/MSE/MMB/BV-23"                              ,.type = &msg,    .obj_count = 1, .objects = { "EMAIL","EMAIL"                                   }, .fGetMsgListng   = MAP_MSE_MMB_BV_23_inc_VersCnt    ,                                                                                                                                                                                                                                                                                                                                                                                           },)
 {TC_NORM( .descr = "MAP/MSE/MMB/BV-24"                              ,.type = &convo,  .obj_count = 0, .objects = { "",""                                             }, .fGetConvoListng = MAP_MSE_MMB_BV_24_inc_ConvCnt    ,                                                                                                                                                                                                                                                                                                                                                                                           },)
@@ -307,7 +304,7 @@ static void mas_init_test_cases(struct test_set_config* cfg) {
     for (i = 0; i < ARRAYSIZE(test_configs); i++) {
         test_configs[i].nr = i;
         memset(test_configs[i].msg_stati, 0, sizeof(test_configs[i].msg_stati));
-        memset(test_configs[i].msg_deleted, 0, sizeof(test_configs[i].msg_stati));
+        memset(test_configs[i].msg_deleted, 0, sizeof(test_configs[i].msg_deleted));
     }
 
     cfg_start_index = 0;
@@ -386,7 +383,7 @@ static size_t PRINT_SMS_native_vcard(char* msg_buffer, uint16_t index, size_t ma
         size = snprintf(msg_buffer, maxsize,
             "BEGIN:BMSG\r\n"
             "VERSION:1.0\r\n"
-            "STATUS:UNREAD\r\n"
+            "STATUS:READ\r\n"
             "TYPE:SMS_GSM\r\n"
             "FOLDER:TELECOM/MSG/INBOX\r\n"
             "BEGIN:VCARD\r\n"
@@ -520,66 +517,62 @@ static size_t create_obex_body(uint16_t first, uint16_t last) {
     // header
     len = snprintf(&OBEX_body_object[pos], size, mas_cfg->type->header);
     pos += len; size -= len;
-    log_debug("first:%d last:%d pos:%d size:%d <%s>", first, last, pos, size, OBEX_body_object);
     
     while ((size > 0) && (first < last)){        
+        log_debug("2 first:%d last:%d pos:%d size:%d <%s>", first, last, pos, size, OBEX_body_object);
         // add entry
         len = mas_cfg->type->fbody(&OBEX_body_object[pos], first, size);
         pos += len; size -= len;
         first++;
-        log_debug("first:%d last:%d pos:%d size:%d <%s>", first, last, pos, size, OBEX_body_object);
     }
+
+    log_debug("4 first:%d last:%d pos:%d size:%d <%s>", first, last, pos, size, OBEX_body_object);
 
     // footer
     len = snprintf(&OBEX_body_object[pos], size, mas_cfg->type->footer);
     pos += len; size -= len;
 
-    log_debug("first:%d last:%d pos:%d size:%d <%s>", first, last, pos, size, OBEX_body_object);
+    log_debug("5 first:%d last:%d pos:%d size:%d <%s>", first, last, pos, size, OBEX_body_object);
 
     return pos;
 }
 
-//#define MAP_DEMO_ENABLE_AUTO_BODY_OBJECT
-enum body_object { o_msg, o_convo };
+#define MAP_DEMO_ENABLE_AUTO_BODY_OBJECT
+enum body_object { o_msg, o_convo, o_bmsg };
 
-static void send_obex_object(enum body_object obj, uint16_t map_cid, uint16_t start_index, uint16_t end_index, uint32_t pos) {
+static void send_obex_object(enum body_object obj, uint16_t map_cid, uint16_t start_index, uint16_t end_index, uint32_t continuation) {
 
     static size_t object_size = 0;
-    size_t start = pos, len, body_size = map_access_server_get_max_body_size(map_cid);
+    size_t start = continuation, len, body_size = map_access_server_get_max_body_size(map_cid);
     uint8_t response_code;
 #ifdef MAP_DEMO_ENABLE_AUTO_BODY_OBJECT
     switch (obj) {
     case o_msg  : mas_cfg->type = &msg; break;
     case o_convo: mas_cfg->type = &convo; break;
+    case o_bmsg:  mas_cfg->type = &vcard; break;
     }
 #endif
-    if (pos == 0) {
-        uint16_t total_messages, num_msgs_selected, end_index;
-
-        // send messages listing
-        total_messages = mas_cfg->obj_count + one_object_more_or_less;
-
-        num_msgs_selected = total_messages - start_index;
-        end_index = start_index + num_msgs_selected;
+    if (continuation == 0) {
+        end_index = min(end_index, mas_cfg->obj_count + one_object_more_or_less);
         object_size = create_obex_body(start_index, end_index);
 
-        log_debug("obj_count:%u one_object_more_or_less:%d start_index:%u end_index:%u num_msgs_selected:%u\n", 
-            mas_cfg->obj_count, one_object_more_or_less, start_index, end_index, num_msgs_selected);
+        log_debug("obj_count:%u start_index:%u end_index:%u one_object_more_or_less:%u\n", 
+            mas_cfg->obj_count, start_index, end_index, one_object_more_or_less);
     }
 
     // copy first part of OBEX body object into upload_buffer, limit len to space, buf size and packet size
-    len = object_size - pos; log_debug("len:%d", len);
-    len = min3(len, sizeof(upload_buffer), body_size);
-    pos += (uint32_t)len;
-    log_debug("len:%d pos:%d upload_buffer [%.*s]", len, pos, len, &OBEX_body_object[start]);
+    len = object_size - continuation; log_debug("len:%d", len);
+    len = min3(len, body_size, sizeof(upload_buffer));
+    continuation += (uint32_t)len;
+    log_debug("len:%d pos:%d upload_buffer [%.*s]", len, continuation, len, &OBEX_body_object[start]);
 
-    if (pos == object_size) {
+    if (continuation == object_size) {
         response_code = OBEX_RESP_SUCCESS;
         object_size = 0;
     } else {
         response_code = OBEX_RESP_CONTINUE;
     }
-    map_access_server_send_response(map_cid, response_code, pos, len, &OBEX_body_object[start]);
+    map_access_server_send_response(map_cid, response_code, continuation, len, &OBEX_body_object[start]);
 }
 
 static uint8_t connect_map_notification_client(int connection_id) {
@@ -897,7 +890,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             APP_READ_16(packet, &pos, &current_map_cid);
                             MAP_PRINTF("[+] Get Message\n");
                             map_access_server_set_response_type_and_name(current_map_cid, NULL, NULL);
-                            send_obex_object(o_msg, current_map_cid, 0, 1, continuation);
+                            send_obex_object(o_bmsg, current_map_cid, 0, 1, continuation);
                             break;
 
                         case MAP_SUBEVENT_PUT_MESSAGE_STATUS: {
@@ -1021,7 +1014,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                                 map_access_server_set_response_app_param(current_map_cid, MAP_APP_PARAM_ConversationListingVersionCounter, ConversationListingVersionCounter);
                             }
                             map_access_server_set_response_type_and_name(current_map_cid, NULL, NULL);
-                            // BT MAP Spec requires to skip the body if max_list_count == 0
+                            // BT MAP Spec requires to skip the body if max_list_count == 0 TODO: replace with max_list_count and re-test
                             if (mas_cfg->obj_count == 0 && one_object_more_or_less == 0)
                                 map_access_server_send_response(current_map_cid, OBEX_RESP_SUCCESS, 0, 0, NULL);
                             else
