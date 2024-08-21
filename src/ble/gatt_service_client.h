@@ -36,12 +36,12 @@
  */
 
 /**
- * @title GATT Service Client Helper
+ * @title GATT Service Client
  * 
  */
 
-#ifndef GATT_SERVICE_CLIENT_HELPER_H
-#define GATT_SERVICE_CLIENT_HELPER_H
+#ifndef GATT_SERVICE_CLIENT_H
+#define GATT_SERVICE_CLIENT_H
 
 #include <stdint.h>
 #include "btstack_defines.h"
@@ -54,7 +54,7 @@ extern "C" {
 #endif
 
 /** 
- * @text The Media Control Service Client 
+ * @text A generic GATT Service Client
  */
 
 
@@ -118,7 +118,7 @@ typedef struct {
 /* API_START */
 
 /**
- * @brief Initialize GATT Client Helper
+ * @brief Initialize GATT Service Client
  * @param client
  * @param trampoline_packet_handler packet handler that calls gatt_service_client_trampoline_packet_handler with client
  */

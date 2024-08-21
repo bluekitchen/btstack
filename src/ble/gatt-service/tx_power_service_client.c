@@ -47,7 +47,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "ble/gatt-service/gatt_service_client_helper.h"
+#include "ble/gatt_service_client.h"
 #include "ble/gatt-service/tx_power_service_client.h"
 
 #include "bluetooth_gatt.h"

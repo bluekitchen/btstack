@@ -49,6 +49,7 @@
 
 #include "le-audio/gatt-service/volume_offset_control_service_util.h"
 #include "le-audio/gatt-service/volume_offset_control_service_client.h"
+#include "ble/gatt_service_client.h"
 
 #include "bluetooth_gatt.h"
 #include "btstack_debug.h"
