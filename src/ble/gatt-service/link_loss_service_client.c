@@ -55,7 +55,7 @@
 #include "btstack_event.h"
 
 // LLS Client
-static gatt_service_client_helper_t lls_client;
+static gatt_service_client_t lls_client;
 
 static btstack_context_callback_registration_t lls_client_handle_can_send_now;
 

@@ -56,7 +56,7 @@
 #include "btstack_event.h"
 
 // VCS Client
-static gatt_service_client_helper_t vcs_client;
+static gatt_service_client_t vcs_client;
 
 static btstack_context_callback_registration_t vcs_client_handle_can_send_now;
 

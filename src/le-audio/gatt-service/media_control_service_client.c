@@ -60,7 +60,7 @@
 #include "gap.h"
 
 // MSC Client
-static gatt_service_client_helper_t mcs_client;
+static gatt_service_client_t mcs_client;
 static btstack_context_callback_registration_t mcs_client_handle_can_send_now;
 
 static void mcs_client_packet_handler_internal(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);

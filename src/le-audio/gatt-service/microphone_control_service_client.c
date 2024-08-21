@@ -56,7 +56,7 @@
 #include "btstack_event.h"
 
 // MSC Client
-static gatt_service_client_helper_t mics_client;
+static gatt_service_client_t mics_client;
 
 static void mics_client_packet_handler_internal(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static void mics_client_handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
