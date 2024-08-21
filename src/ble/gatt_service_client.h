@@ -142,13 +142,6 @@ void gatt_service_client_trampoline_packet_handler(gatt_service_client_t * clien
  */
 void gatt_service_client_register_packet_handler(gatt_service_client_t * client, btstack_packet_handler_t packet_handler);
 
-
-uint8_t gatt_service_client_connect_secondary_service_ready_to_connect(
-        hci_con_handle_t con_handle,
-        gatt_service_client_t * client, gatt_service_client_connection_t * connection,
-        gatt_service_client_characteristic_t * characteristics, uint8_t characteristics_num,
-        btstack_packet_handler_t packet_handler);
-
 /**
  * @brief Connect to the n-th instance of Primary GATT Service with UUID16
  *
@@ -169,6 +162,16 @@ uint8_t gatt_service_client_connect(
         uint16_t primary_service_uuid16, uint8_t service_index,
         gatt_service_client_characteristic_t * characteristics, uint8_t characteristics_num,
         btstack_packet_handler_t packet_handler, uint16_t * connection_cid);
+
+/**
+ * @brief Check if connection to peer already exists
+ * @param con_handle
+ * @param client
+ * @return ERROR_CODE_SUCCESS if not connection exists, otherwise ERROR_CODE_COMMAND_DISALLOWED
+ */
+uint8_t gatt_service_client_connect_secondary_service_ready_to_connect(hci_con_handle_t con_handle,
+                                                                       gatt_service_client_t *client);
+
 
 /**
  * @brief Connect to the n-th instance of Secondary GATT Service with UUID16

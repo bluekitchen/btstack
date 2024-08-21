@@ -608,10 +608,7 @@ uint8_t volume_offset_control_service_client_ready_to_connect(
         vocs_client_connection_t * connection){
 
     return gatt_service_client_connect_secondary_service_ready_to_connect(con_handle,
-                                                                          &vocs_client, &connection->basic_connection,
-                                                                          connection->characteristics_storage,
-                                                                          VOLUME_OFFSET_CONTROL_SERVICE_NUM_CHARACTERISTICS,
-                                                                          packet_handler);
+                                                                          &vocs_client);
 }
 
 uint8_t volume_offset_control_service_client_connect(

@@ -654,10 +654,7 @@ uint8_t audio_input_control_service_client_ready_to_connect(
         aics_client_connection_t * connection){
 
     return gatt_service_client_connect_secondary_service_ready_to_connect(con_handle,
-                                                                          &aics_client, &connection->basic_connection,
-                                                                          connection->characteristics_storage,
-                                                                          AUDIO_INPUT_CONTROL_SERVICE_NUM_CHARACTERISTICS,
-                                                                          packet_handler);
+                                                                          &aics_client);
 }
 
 uint8_t audio_input_control_service_client_connect(
