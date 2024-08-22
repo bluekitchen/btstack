@@ -952,11 +952,12 @@ uint8_t object_transfer_service_client_connect(
 
     connection->state = OBJECT_TRANSFER_SERVICE_CLIENT_STATE_W4_CONNECTED;
     memset(connection->characteristics_storage, 0, OBJECT_TRANSFER_SERVICE_NUM_CHARACTERISTICS * sizeof(gatt_service_client_characteristic_t));
-    return gatt_service_client_connect(con_handle,
-                                       &ots_client, &connection->basic_connection,
-                                       ORG_BLUETOOTH_SERVICE_OBJECT_TRANSFER, service_index,
-                                       connection->characteristics_storage, OBJECT_TRANSFER_SERVICE_NUM_CHARACTERISTICS,
-                                       packet_handler, ots_cid);
+    return gatt_service_client_connect_primary_service(con_handle,
+                                                       &ots_client, &connection->basic_connection,
+                                                       ORG_BLUETOOTH_SERVICE_OBJECT_TRANSFER, service_index,
+                                                       connection->characteristics_storage,
+                                                       OBJECT_TRANSFER_SERVICE_NUM_CHARACTERISTICS,
+                                                       packet_handler, ots_cid);
 }
 
 

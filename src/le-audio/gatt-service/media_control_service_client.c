@@ -747,11 +747,11 @@ uint8_t media_control_service_client_connect_generic_player(hci_con_handle_t con
     btstack_assert(mcs_client.characteristics_desc16_num > 0);
     
     connection->state = MEDIA_CONTROL_SERVICE_CLIENT_STATE_W4_CONNECTION;
-    return gatt_service_client_connect(con_handle,
-        &mcs_client, &connection->basic_connection,
-        ORG_BLUETOOTH_SERVICE_GENERIC_MEDIA_CONTROL_SERVICE, 0,
-        characteristics, characteristics_num, packet_handler,
-        mcs_cid);
+    return gatt_service_client_connect_primary_service(con_handle,
+                                                       &mcs_client, &connection->basic_connection,
+                                                       ORG_BLUETOOTH_SERVICE_GENERIC_MEDIA_CONTROL_SERVICE, 0,
+                                                       characteristics, characteristics_num, packet_handler,
+                                                       mcs_cid);
 }
 
 uint8_t media_control_service_client_connect_media_player(hci_con_handle_t con_handle,
@@ -763,11 +763,11 @@ uint8_t media_control_service_client_connect_media_player(hci_con_handle_t con_h
     btstack_assert(mcs_client.characteristics_desc16_num > 0);
     
     connection->state = MEDIA_CONTROL_SERVICE_CLIENT_STATE_W4_CONNECTION;
-    return gatt_service_client_connect(con_handle,
-        &mcs_client, &connection->basic_connection,
-        ORG_BLUETOOTH_SERVICE_MEDIA_CONTROL_SERVICE, service_index,
-        characteristics, characteristics_num, packet_handler,
-        mcs_cid);
+    return gatt_service_client_connect_primary_service(con_handle,
+                                                       &mcs_client, &connection->basic_connection,
+                                                       ORG_BLUETOOTH_SERVICE_MEDIA_CONTROL_SERVICE, service_index,
+                                                       characteristics, characteristics_num, packet_handler,
+                                                       mcs_cid);
 }
 
 static uint8_t mcs_client_can_query_characteristic(mcs_client_connection_t * connection, mcs_client_characteristic_index_t characteristic_index){

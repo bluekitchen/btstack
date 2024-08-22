@@ -156,7 +156,7 @@ void gatt_service_client_register_packet_handler(gatt_service_client_t * client,
  * @param connection_cid
  * @return
  */
-uint8_t gatt_service_client_connect(
+uint8_t gatt_service_client_connect_primary_service(
         hci_con_handle_t con_handle,
         gatt_service_client_t * client, gatt_service_client_connection_t * connection,
         uint16_t service_uuid16, uint8_t service_index,
@@ -217,7 +217,7 @@ uint8_t gatt_service_client_att_status_to_error_code(uint8_t att_error_code);
 void gatt_service_client_deinit(gatt_service_client_t * client);
 
 /**
- * @brief Get connection object provided by gatt_service_client_connect or gatt_service_client_connect_secondary_service by connection id
+ * @brief Get connection object provided by gatt_service_client_connect_primary_service or gatt_service_client_connect_secondary_service by connection id
  * @param client
  * @param connection_cid
  * @return
@@ -225,7 +225,7 @@ void gatt_service_client_deinit(gatt_service_client_t * client);
 gatt_service_client_connection_t * gatt_service_client_get_connection_for_cid(const gatt_service_client_t * client, uint16_t connection_cid);
 
 /**
- * @breif Get connection object  provided by gatt_service_client_connect or gatt_service_client_connect_secondary_service by con handle
+ * @breif Get connection object  provided by gatt_service_client_connect_primary_service or gatt_service_client_connect_secondary_service by con handle
  *
  * This only works if only a single Primary Service is used
  *

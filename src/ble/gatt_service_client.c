@@ -542,7 +542,7 @@ void gatt_service_client_register_packet_handler(gatt_service_client_t * client,
     client->packet_handler = packet_hander;
 }
 
-uint8_t gatt_service_client_connect(
+uint8_t gatt_service_client_connect_primary_service(
         hci_con_handle_t con_handle, gatt_service_client_t * client,
         gatt_service_client_connection_t * connection,
         uint16_t service_uuid16, uint8_t service_index, gatt_service_client_characteristic_t * characteristics,
