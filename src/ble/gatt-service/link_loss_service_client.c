@@ -360,10 +360,11 @@ uint8_t link_loss_service_client_connect(hci_con_handle_t con_handle,
     btstack_assert(lls_characteristics_num == LINK_LOSS_SERVICE_CLIENT_NUM_CHARACTERISTICS);
 
     lls_connection->state = LINK_LOSS_SERVICE_CLIENT_STATE_W4_CONNECTION;
-    return gatt_service_client_connect(con_handle,
-                                       &lls_client, &lls_connection->basic_connection,
-                                       ORG_BLUETOOTH_SERVICE_LINK_LOSS, 0,
-                                       lls_storage_for_characteristics, lls_characteristics_num, packet_handler, lls_cid);
+    return gatt_service_client_connect_primary_service(con_handle,
+                                                       &lls_client, &lls_connection->basic_connection,
+                                                       ORG_BLUETOOTH_SERVICE_LINK_LOSS, 0,
+                                                       lls_storage_for_characteristics, lls_characteristics_num,
+                                                       packet_handler, lls_cid);
 }
 
 uint8_t link_loss_service_client_read_alert_level(uint16_t lls_cid){

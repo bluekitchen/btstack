@@ -626,10 +626,11 @@ uint8_t microphone_control_service_client_connect(hci_con_handle_t con_handle,
     }
     mics_connection->state = MICROPHONE_CONTROL_SERVICE_CLIENT_STATE_W4_CONNECTION;
     mics_connection->aics_events_packet_handler = packet_handler;
-    return gatt_service_client_connect(con_handle,
-                                       &mics_client, &mics_connection->basic_connection,
-                                       ORG_BLUETOOTH_SERVICE_MICROPHONE_CONTROL, 0,
-                                       mics_storage_for_characteristics, mics_characteristics_num, packet_handler, mics_cid);
+    return gatt_service_client_connect_primary_service(con_handle,
+                                                       &mics_client, &mics_connection->basic_connection,
+                                                       ORG_BLUETOOTH_SERVICE_MICROPHONE_CONTROL, 0,
+                                                       mics_storage_for_characteristics, mics_characteristics_num,
+                                                       packet_handler, mics_cid);
 }
 
 /**

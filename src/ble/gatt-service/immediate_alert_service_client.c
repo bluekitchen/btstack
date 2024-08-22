@@ -241,10 +241,11 @@ uint8_t immediate_alert_service_client_connect(hci_con_handle_t con_handle,
     btstack_assert(ias_characteristics_num == IMMEDIATE_ALERT_SERVICE_CLIENT_NUM_CHARACTERISTICS);
 
     ias_connection->state = IMMEDIATE_ALERT_SERVICE_CLIENT_STATE_W4_CONNECTION;
-    return gatt_service_client_connect(con_handle,
-                                       &ias_client, &ias_connection->basic_connection,
-                                       ORG_BLUETOOTH_SERVICE_IMMEDIATE_ALERT, 0,
-                                       ias_storage_for_characteristics, ias_characteristics_num, packet_handler, ias_cid);
+    return gatt_service_client_connect_primary_service(con_handle,
+                                                       &ias_client, &ias_connection->basic_connection,
+                                                       ORG_BLUETOOTH_SERVICE_IMMEDIATE_ALERT, 0,
+                                                       ias_storage_for_characteristics, ias_characteristics_num,
+                                                       packet_handler, ias_cid);
 }
 
 uint8_t immediate_alert_service_client_write_alert_level(uint16_t ias_cid, ias_alert_level_t alert_level){
