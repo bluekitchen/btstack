@@ -945,7 +945,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             APP_READ_STR(packet, &pos, sizeof(request_name), request_name);
 
                             MAP_PRINTF("[+] Put Message Charset:%u Attachment:%u MessageHandle:%s\n", Charset, Attachment, MessageHandle);
-                            map_access_server_set_response_type_and_name(current_map_cid, NULL, NULL);
+                            map_access_server_set_response_type_and_name(current_map_cid, "BEEF", NULL);
                             map_access_server_send_response(current_map_cid, OBEX_RESP_SUCCESS, 0, 0, NULL);
 
                             if (mas_cfg->fPutMsg != NULL)
