@@ -211,12 +211,67 @@ uint8_t gatt_service_client_att_status_to_error_code(uint8_t att_error_code);
  */
 void gatt_service_client_deinit(gatt_service_client_t * client);
 
+/**
+ * @brief Get connection object provided by gatt_service_client_connect or gatt_service_client_connect_secondary_service by connection id
+ * @param client
+ * @param connection_cid
+ * @return
+ */
 gatt_service_client_connection_t * gatt_service_client_get_connection_for_cid(const gatt_service_client_t * client, uint16_t connection_cid);
+
+/**
+ * @breif Get connection object  provided by gatt_service_client_connect or gatt_service_client_connect_secondary_service by con handle
+ *
+ * This only works if only a single Primary Service is used
+ *
+ * @param client
+ * @param con_handle
+ * @return
+ */
 gatt_service_client_connection_t * gatt_service_client_get_connection_for_con_handle(const gatt_service_client_t * client, hci_con_handle_t con_handle);
+
+/**
+ * @brief Get UUID16 for given Characteristic index
+ *
+ * See
+ * @param client
+ * @param index
+ * @return
+ */
 uint16_t gatt_service_client_characteristic_index2uuid16(const gatt_service_client_t * client, uint8_t index);
+
+/**
+ * @brief Get Characteristic Value Handle for given Characteristic index
+ * @param connection_helper
+ * @param characteristic_index
+ * @return
+ */
 uint16_t gatt_service_client_helper_value_handle_for_index(gatt_service_client_connection_t * connection_helper, uint8_t characteristic_index);
+
+/**
+ * @brief Get Characteristic index for UUID16
+ *
+ * @param client
+ * @param connection_helper
+ * @param value_handle
+ * @return
+ */
 uint16_t gatt_service_client_helper_characteristic_uuid16_for_value_handle(const gatt_service_client_t * client, gatt_service_client_connection_t * connection_helper, uint16_t value_handle);
+
+/**
+ * @brief Check if Characteristic is available and can be queried
+ * @param connection
+ * @param characteristic_index
+ * @return
+ */
 uint8_t gatt_service_client_can_query_characteristic(gatt_service_client_connection_t * connection, uint8_t characteristic_index);
+
+/**
+ * @brief Remove connection from connection list
+ *
+ * @param client
+ * @param connection
+ */
 void gatt_service_client_finalize_connection(gatt_service_client_t * client, gatt_service_client_connection_t * connection);
 
 /* API_END */
