@@ -834,6 +834,7 @@ static void map_access_server_handle_get_or_put_request(map_access_server_t* mas
         APP_WRITE_08(event, &pos, MAP_SUBEVENT_GET_MESSAGE);
         APP_WRITE_32(event, &pos, mas->request.continuation);
         APP_WRITE_16(event, &pos, mas->goep_cid);
+        APP_WRITE_STR(event, &pos, sizeof(event) - pos, mas->request.name);
         APP_WRITE_LEN(event, pos);
         break;
 
