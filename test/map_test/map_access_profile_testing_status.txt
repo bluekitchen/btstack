@@ -155,6 +155,7 @@ MAP/MSE/MMB/BV-22-C: RE-PASS (2024-08-22) PTS 8.6.1 & L2CAP & MAP_NEW, INFO: con
 MAP/MSE/MMB/BV-23-C: RE-PASS (2024-08-22) PTS 8.6.1 & L2CAP & MAP_NEW, INFO: cannot consolidatet, PTS wants wants to see an updated Folder version counter on the 2nd GET message listing
 MAP/MSE/MMB/BV-24-C: RE-PASS (2024-08-22) PTS 8.6.1 & L2CAP & MAP_NEW, INFO: cannot consolidatet, PTS wants wants to see an updated Folder version counter on the 2nd GET message listing
 MAP/MSE/MMB/BV-25-C: RE-PASS (2024-08-22) PTS 8.6.1 & L2CAP & MAP_NEW, INFO: cannot consolidatet, PTS wants wants to see an updated Folder version counter on the 2nd GET message listing
+MAP/MSE/MMB/BV-34-C: RE-PASS (2024-08-22) PTS 8.6.1 & L2CAP & MAP_NEW, INFO: consolidatet in default test case #0
 
 Open tests
 TODO: MAP_OLD MAP/MSE/GOEP/SRMP/BV-02-C we send a connect instead of a continue/ok after receiving a GET with SRMP wait set, PTS 8.6.1 & RFCOM & MAP_NEW hangs before sending the PUT request, then time outs and fails 
