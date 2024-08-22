@@ -593,18 +593,10 @@ static void vcs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t ch
 #endif
 
                     // only look for included services if we can use them
-                    status = ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
                     connection->aics_connections_index = 0;
                     connection->aics_connections_connected = 0;
 
                     if ((connection->aics_connections_max_num > 0) && (connection->aics_connections_storage != NULL)){
-                        status = audio_input_control_service_client_ready_to_connect(
-                                connection->basic_connection.con_handle,
-                                &vcs_client_packet_handler_internal,
-                                &connection->aics_connections_storage[0]
-                        );
-                    }
-                    if (status == ERROR_CODE_SUCCESS) {
                         vcs_client_handle_can_send_now.context = (void *) (uintptr_t) connection->basic_connection.con_handle;
                         (void) gatt_client_request_to_send_gatt_query(&vcs_client_handle_can_send_now,
                                                                       connection->basic_connection.con_handle);
