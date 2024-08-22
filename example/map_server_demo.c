@@ -191,11 +191,20 @@ static void MAP_MSE_MMB_BV_25_inc_ConvListCnt(void) {
 }
 
 static void MAP_MSE_MMD_BV_05_PutMsg(void) {
-    mac_select_tc_MAP_MSE_MMD_BV_0x();
+    mac_select_tc_MAP_MSE_MMD_BV_0x(0);
     char* body = create_next_mnc_event_report_body_object();
     map_notification_client_send_event(mnc.cid, 0, body, strlen(body));
     MAP_PRINTF("map_notification_client_send_event mnc.cid:%04x [%s]", mnc.cid, body);
     log_debug("run mac_select_tc_MAP_MSE_MMD_BV_0x to sent a RemovedMessage notification");
+}
+
+static void MAP_MSE_MMB_BV_43_getConvoListng(void) {
+    mac_select_tc_MAP_MSE_MMD_BV_0x(1);
+    increase_version_counter_by_1("ConversationListingVersionCounter", ConversationListingVersionCounter);
+    char* body = create_next_mnc_event_report_body_object();
+    map_notification_client_send_event(mnc.cid, 0, body, strlen(body));
+    MAP_PRINTF("map_notification_client_send_event mnc.cid:%04x [%s]", mnc.cid, body);
+    log_debug("run MAP_MSE_MMB_BV_43_getMsgListng to sent a RemovedMessage notification");
 }
 
 static void MAP_MSE_MMU_BV_02_I_PutMsg(void) {
@@ -276,6 +285,8 @@ static struct test_config_s
 {TC_NORM( .descr = "MAP/MSE/MMB/BV-23"                                   ,.type = &msg,    .obj_count = 1, .objects = { "EMAIL","EMAIL"                                   }, .fGetMsgListng   = MAP_MSE_MMB_BV_23_inc_VersCnt    ,.helpstr = "PTS wants wants to see an updated Folder version counter on the 2nd GET message listing"                                                                                                                                                                                                                                                                                       },)
 {TC_NORM( .descr = "MAP/MSE/MMB/BV-24"                                   ,.type = &convo,  .obj_count = 0, .objects = { "",""                                             }, .fGetConvoListng = MAP_MSE_MMB_BV_24_inc_ConvCnt    ,                                                                                                                                                                                                                                                                                                                                                                                           },)
 {TC_NORM( .descr = "MAP/MSE/MMB/BV-25"                                   ,.type = &convo,  .obj_count = 0, .objects = { "",""                                             }, .fGetConvoListng = MAP_MSE_MMB_BV_25_inc_ConvListCnt,                                                                                                                                                                                                                                                                                                                                                                                           },)
+{TC_NORM( .descr = "MAP/MSE/MMB/BV-43"                                   ,.type = &convo,  .obj_count = 0, .objects = { "",""                                             }, .fGetConvoListng = MAP_MSE_MMB_BV_43_getConvoListng,                                                                                                                                                                                                                                                                                                                                                                                           },)
+
 {TC_NORM( .descr = "MAP/MSE/MMD/BV-02"                                   ,.type = &msg,    .obj_count = 1, .objects = { "EMAIL","SMS_GSM","SMS_CDMA", "MMS", "IM", "dummy"}, .fGetMsgListng = MAP_MSE_MMD_BV_02_I_getMsgListng   ,
                                                                                                                                                                              .fdiscon       = MAP_MSE_MMD_BV_02_I_disc           ,.helpstr = "PTS 8.5.4 Build 6 .. 8.6.0 issue: sends a sequence of OBEX connect, GetMessageListing (expects 1 EMAIL, nothing else, no more messages), PUT MessageStatus (Delete Message), GetMessageListing (expects empty listing), OBEX discoonect, repeat (MMS, SMS_GSM, SMS_CDMA) - the last repeat for IM misses the disconnect and fails on the Get because the list is still empty"  },)
 {TC_NORM( .descr = "MAP/MSE/MMD/BV-05"                                   ,.type = &msg,    .obj_count = 1, .objects = { "IM"                                              }, .fPutMsg       = MAP_MSE_MMD_BV_05_PutMsg           ,                                                                                                                                                                                                                                                                                                                                                                                           },)
