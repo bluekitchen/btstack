@@ -166,6 +166,7 @@ MAP/MSE/MMB/BV-41-C: RE-PASS (2024-08-22) PTS 8.6.1 & L2CAP & MAP_NEW, INFO: con
 MAP/MSE/MMB/BV-42-C: RE-PASS (2024-08-22) PTS 8.6.1 & L2CAP & MAP_NEW, INFO: consolidatet in default test case #0
 MAP/MSE/MMB/BV-44-C: RE-PASS (2024-08-22) PTS 8.6.1 & L2CAP & MAP_NEW, INFO: consolidatet in default test case #0, WARNING: PTS asks for "User Action Required:    Please change the presence, chat-state and LastActivity of a participant, then click OK.  Otherwise click Cancel." but acepts the same data a 2nd time
 MAP/MSE/MMB/BV-45-C: RE-PASS (2024-08-22) PTS 8.6.1 & L2CAP & MAP_NEW, INFO: consolidatet in default test case #0
+MAP/MSE/MMB/BV-46-C: RE-PASS (2024-08-22) PTS 8.6.1 & L2CAP & MAP_NEW, INFO: consolidatet in default test case #0
 
 Open tests
 TODO: MAP_OLD MAP/MSE/GOEP/SRMP/BV-02-C we send a connect instead of a continue/ok after receiving a GET with SRMP wait set, PTS 8.6.1 & RFCOM & MAP_NEW hangs before sending the PUT request, then time outs and fails 
