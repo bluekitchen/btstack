@@ -93,6 +93,19 @@ gatt_service_client_connection_t * gatt_service_client_get_connection_for_cid(
     return NULL;
 }
 
+gatt_service_client_connection_t * gatt_service_client_get_connection_for_con_and_value_handle(const gatt_service_client_t * client, hci_con_handle_t con_handle, uint16_t value_handle){
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, (btstack_linked_list_t *) &client->connections);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        gatt_service_client_connection_t * connection = (gatt_service_client_connection_t *)btstack_linked_list_iterator_next(&it);
+        if (connection->con_handle != con_handle) continue;
+        if (connection->start_handle > value_handle) continue;
+        if (connection->end_handle <= value_handle) continue;
+        return connection;
+    }
+    return NULL;
+}
+
 uint16_t gatt_service_client_characteristic_uuid16_for_index(const gatt_service_client_t * client, uint8_t index){
     return client->characteristics_desc16[index];
 }
