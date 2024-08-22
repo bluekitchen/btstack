@@ -163,19 +163,6 @@ static void increase_version_counter_by_1(char* name, mas_uint128hex_t counter) 
 /*
 * Call-backs which update/change the state or behaviour of a test case, e.g. add one more message after each GetMessageListing
 */
-static void MAP_MSE_MMD_BV_02_I_disc(void) {
-    log_debug("disabled default discconect behaviour");
-}
-
-static void MAP_MSE_MMD_BV_02_I_getMsgListng(void) {
-    if ((cfg_MAP_MSE_MMD_BV_02_I_getMsgListng_counter & 0x1) == 1) {
-        cfg_start_index++;
-        one_object_more_or_less++;
-    }
-    log_debug("counter:%d cfg_start_index:%d one_object_more_or_less:%d", cfg_MAP_MSE_MMD_BV_02_I_getMsgListng_counter, cfg_start_index, one_object_more_or_less);
-    cfg_MAP_MSE_MMD_BV_02_I_getMsgListng_counter++;
-}
-
 static void MAP_MSE_MMB_BV_23_inc_VersCnt(void) {
     increase_version_counter_by_1("FolderVersionCounter", FolderVersionCounter);
 }
@@ -281,17 +268,13 @@ static struct test_config_s
     char* helpstr; // additional help for setup, environment etc.
 } test_configs[] =
 {
-{TC_NORM( .descr = "MAP/MSE/MSM/,MNR/,MMB/,MFB/,MMI/,GEOP/BC,ROB,CON,SRM",.type = &msg,    .obj_count = 5, .objects = { "EMAIL","SMS_GSM","SMS_CDMA", "MMS", "IM"         }                                                     ,.helpstr = "PTS IXIT set 'TSPX_secure_simple_pairing_pass_key_confirmation' to 'true'"                                                                                                                                                                                                                                                                                                      },)
+{TC_NORM( .descr = "MAP/MSE/MSM/,MNR/,MMB/,MFB/,MMI/,GEOP/BC,ROB,CON,SRM",.type = &msg,    .obj_count = 5, .objects = { "EMAIL","SMS_GSM","SMS_CDMA", "MMS", "IM"         }                                                      ,.helpstr = "PTS IXIT set 'TSPX_secure_simple_pairing_pass_key_confirmation' to 'true'"                                                                                                                                                                                                                                                                                                      },)
 {TC_NORM( .descr = "MAP/MSE/MMB/BV-23"                                   ,.type = &msg,    .obj_count = 1, .objects = { "EMAIL","EMAIL"                                   }, .fGetMsgListng   = MAP_MSE_MMB_BV_23_inc_VersCnt    ,.helpstr = "PTS wants wants to see an updated Folder version counter on the 2nd GET message listing"                                                                                                                                                                                                                                                                                       },)
 {TC_NORM( .descr = "MAP/MSE/MMB/BV-24"                                   ,.type = &convo,  .obj_count = 0, .objects = { "",""                                             }, .fGetConvoListng = MAP_MSE_MMB_BV_24_inc_ConvCnt    ,                                                                                                                                                                                                                                                                                                                                                                                           },)
 {TC_NORM( .descr = "MAP/MSE/MMB/BV-25"                                   ,.type = &convo,  .obj_count = 0, .objects = { "",""                                             }, .fGetConvoListng = MAP_MSE_MMB_BV_25_inc_ConvListCnt,                                                                                                                                                                                                                                                                                                                                                                                           },)
 {TC_NORM( .descr = "MAP/MSE/MMB/BV-43"                                   ,.type = &convo,  .obj_count = 0, .objects = { "",""                                             }, .fGetConvoListng = MAP_MSE_MMB_BV_43_getConvoListng,                                                                                                                                                                                                                                                                                                                                                                                           },)
 
-{TC_NORM( .descr = "MAP/MSE/MMD/BV-02"                                   ,.type = &msg,    .obj_count = 1, .objects = { "EMAIL","SMS_GSM","SMS_CDMA", "MMS", "IM", "dummy"}, .fGetMsgListng = MAP_MSE_MMD_BV_02_I_getMsgListng   ,
-                                                                                                                                                                             .fdiscon       = MAP_MSE_MMD_BV_02_I_disc           ,.helpstr = "PTS 8.5.4 Build 6 .. 8.6.0 issue: sends a sequence of OBEX connect, GetMessageListing (expects 1 EMAIL, nothing else, no more messages), PUT MessageStatus (Delete Message), GetMessageListing (expects empty listing), OBEX discoonect, repeat (MMS, SMS_GSM, SMS_CDMA) - the last repeat for IM misses the disconnect and fails on the Get because the list is still empty"  },)
 {TC_NORM( .descr = "MAP/MSE/MMD/BV-05"                                   ,.type = &msg,    .obj_count = 1, .objects = { "IM"                                              }, .fPutMsg       = MAP_MSE_MMD_BV_05_PutMsg           ,                                                                                                                                                                                                                                                                                                                                                                                           },)
-{TC_NORM( .descr = "MAP/MSE/MMU/BV-02"                                   ,.type = &msgshrt,.obj_count = 0, .objects = { "", "EMAIL", "MMS" , "EMAIL", "EMAIL"             }, .fPutMsg = MAP_MSE_MMU_BV_02_I_PutMsg               ,.helpstr = "WIP: PTS accepts the EMAIL but not the MMS. No idea why..."                                                                                                                                                                                                                                                                                                                    },)
-{TC_NORM( .descr = "MAP/MSE/MMU/BV-03"                                   ,.type = &msg,    .obj_count = 0, .objects = { "", "EMAIL", "MMS"                                }, .fPutMsg = MAP_MSE_MMU_BV_02_I_PutMsg               ,.helpstr = "WIP add OBEX NAME Header (Handle) PTS [50] Enter Test Step TS_MTC_OBEX_extract_handle_name ( , (lt)Not Defined Value(gt)  ) Test case error in 'MAP/MSE/MMU/BV-03'. The value 'headers_received' (-1) is not fully defined. See Screenshots in MAP_MSE_MMU_BV_03_I_2024_06_28_12_02_17"                                                                                        },)
                                                                                                                       
 {TC_NORM( .descr = "MAP/MSE/SGSIT/ATTR/BV-01"                            ,.type = &msgshrt,.obj_count = 1, .objects = { "EMAIL"                                           }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
 {TC_RFCOM(.descr = "MAP/MSE/MFMH/BV-01..05"                              ,.type = &msg,    .obj_count = 1, .objects = { "EMAIL"                                           }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
@@ -340,7 +323,7 @@ static void mas_select_test_case_n(struct test_set_config* cfg, uint8_t n) {
 }
 
 static void mas_print_test_config(struct test_set_config* cfg) {
-    MAP_PRINTF("mas_cfg #%d:%s obj_count:%d hdr:%s\n", mas_cfg->nr, mas_cfg->descr, mas_cfg->obj_count, mas_cfg->type?mas_cfg->type->header:"");
+    MAP_PRINTF("mas_cfg #%d:%s obj_count:%d %s\n", mas_cfg->nr, mas_cfg->descr, mas_cfg->obj_count, mas_cfg->helpstr ? mas_cfg->helpstr : "");
 }
 
 static void mas_print_test_case_help(struct test_set_config* cfg) {
