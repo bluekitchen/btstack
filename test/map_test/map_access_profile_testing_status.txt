@@ -152,9 +152,9 @@ MAP/MSE/MMB/BV-16-C: RE-PASS (2024-08-22) PTS 8.6.1 & L2CAP & MAP_NEW, INFO: con
 MAP/MSE/MMB/BV-18-C: RE-PASS (2024-08-22) PTS 8.6.1 & L2CAP & MAP_NEW, INFO: consolidatet in default test case #0
 MAP/MSE/MMB/BV-20-C: RE-PASS (2024-08-22) PTS 8.6.1 & L2CAP & MAP_NEW, INFO: consolidatet in default test case #0
 MAP/MSE/MMB/BV-22-C: RE-PASS (2024-08-22) PTS 8.6.1 & L2CAP & MAP_NEW, INFO: consolidatet in default test case #0
-MAP/MSE/MMB/BV-23-C: RE-PASS (2024-08-22) PTS 8.6.1 & L2CAP & MAP_NEW, INFO: cannot consolidatet, PTS wants wants to see an updated Folder version counter on the 2nd GET message listing
-MAP/MSE/MMB/BV-24-C: RE-PASS (2024-08-22) PTS 8.6.1 & L2CAP & MAP_NEW, INFO: cannot consolidatet, PTS wants wants to see an updated Folder version counter on the 2nd GET message listing
-MAP/MSE/MMB/BV-25-C: RE-PASS (2024-08-22) PTS 8.6.1 & L2CAP & MAP_NEW, INFO: cannot consolidatet, PTS wants wants to see an updated Folder version counter on the 2nd GET message listing
+MAP/MSE/MMB/BV-23-C: RE-PASS (2024-08-22) PTS 8.6.1 & L2CAP & MAP_NEW, INFO: cannot be consolidatet, PTS wants wants to see an updated Folder version counter on the 2nd GET message listing
+MAP/MSE/MMB/BV-24-C: RE-PASS (2024-08-22) PTS 8.6.1 & L2CAP & MAP_NEW, INFO: cannot be consolidatet, PTS wants wants to see an updated Folder version counter on the 2nd GET message listing
+MAP/MSE/MMB/BV-25-C: RE-PASS (2024-08-22) PTS 8.6.1 & L2CAP & MAP_NEW, INFO: cannot be consolidatet, PTS wants wants to see an updated Folder version counter on the 2nd GET message listing
 MAP/MSE/MMB/BV-34-C: RE-PASS (2024-08-22) PTS 8.6.1 & L2CAP & MAP_NEW, INFO: consolidatet in default test case #0
 MAP/MSE/MMB/BV-35-C: RE-PASS (2024-08-22) PTS 8.6.1 & L2CAP & MAP_NEW, INFO: consolidatet in default test case #0
 MAP/MSE/MMB/BV-36-C: RE-PASS (2024-08-22) PTS 8.6.1 & L2CAP & MAP_NEW, INFO: consolidatet in default test case #0
@@ -165,7 +165,7 @@ MAP/MSE/MMB/BV-40-C: RE-PASS (2024-08-22) PTS 8.6.1 & L2CAP & MAP_NEW, INFO: con
 MAP/MSE/MMB/BV-41-C: RE-PASS (2024-08-22) PTS 8.6.1 & L2CAP & MAP_NEW, INFO: consolidatet in default test case #0
 MAP/MSE/MMB/BV-42-C: RE-PASS (2024-08-22) PTS 8.6.1 & L2CAP & MAP_NEW, INFO: consolidatet in default test case #0
 MAP/MSE/MMB/BV-43-C: FAIL (2024-08-22) PTS 8.6.1 & L2CAP & MAP_NEW
-MAP/MSE/MMB/BV-44-C: RE-PASS (2024-08-22) PTS 8.6.1 & L2CAP & MAP_NEW, INFO: consolidatet in default test case #0, WARNING: PTS asks for "User Action Required:    Please change the presence, chat-state and LastActivity of a participant, then click OK.  Otherwise click Cancel." but acepts the same data a 2nd time
+MAP/MSE/MMB/BV-44-C: RE-PASS (2024-08-22) PTS 8.6.1 & L2CAP & MAP_NEW, INFO: consolidatet in default test case #0, WARNING: PTS asks for "User Action Required: Please change the presence, chat-state and LastActivity of a participant, then click OK.  Otherwise click Cancel." but acepts the same data a 2nd time
 MAP/MSE/MMB/BV-45-C: RE-PASS (2024-08-22) PTS 8.6.1 & L2CAP & MAP_NEW, INFO: consolidatet in default test case #0
 MAP/MSE/MMB/BV-46-C: RE-PASS (2024-08-22) PTS 8.6.1 & L2CAP & MAP_NEW, INFO: consolidatet in default test case #0
 MAP/MSE/MMB/BV-47-C: RE-PASS (2024-08-22) PTS 8.6.1 & L2CAP & MAP_NEW, INFO: consolidatet in default test case #0
