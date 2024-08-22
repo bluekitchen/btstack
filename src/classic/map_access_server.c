@@ -350,7 +350,7 @@ static map_object_type_t map_access_server_parse_object_type(map_access_server_t
         RUN_AND_LOG_ACTION(return MAP_OBJECT_TYPE_PUT_OWNER_STATUS;)
     }
 
-    return MAP_OBJECT_TYPE_INVALID;
+    return MAP_OBJECT_TYPE_UNKNOWN;
 }
 
 static void map_access_server_obex_srm_init(obex_srm_t* obex_srm) {
@@ -750,9 +750,15 @@ static void map_access_server_handle_get_or_put_request(map_access_server_t* mas
     //uint16_t name_len = (uint16_t)strlen(mas->request.name);
     switch (mas->request.object_type) {
     case MAP_OBJECT_TYPE_INVALID:
-        // unknown object type
+        // MAP_OBJECT_TYPE_INVALID
         mas->state = MAP_SERVER_STATE_SEND_INTERNAL_RESPONSE;
         mas->response.code = OBEX_RESP_BAD_REQUEST;
+        goep_server_request_can_send_now(mas->goep_cid);
+        return;
+
+    case MAP_OBJECT_TYPE_UNKNOWN:
+        mas->state = MAP_SERVER_STATE_SEND_INTERNAL_RESPONSE;
+        mas->response.code = OBEX_RESP_CONTINUE;
         goep_server_request_can_send_now(mas->goep_cid);
         return;
 
