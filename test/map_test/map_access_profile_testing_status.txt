@@ -151,6 +151,7 @@ MAP/MSE/MMB/BV-15-C: PASS (2024-08-21) PTS 8.6.1 & L2CAP & MAP_NEW, INFO: consol
 MAP/MSE/MMB/BV-16-C: RE-PASS (2024-08-21) PTS 8.6.1 & L2CAP & MAP_NEW, INFO: consolidatet in default test case #0
 MAP/MSE/MMB/BV-18-C: RE-PASS (2024-08-21) PTS 8.6.1 & L2CAP & MAP_NEW, INFO: consolidatet in default test case #0
 MAP/MSE/MMB/BV-20-C: RE-PASS (2024-08-21) PTS 8.6.1 & L2CAP & MAP_NEW, INFO: consolidatet in default test case #0
+MAP/MSE/MMB/BV-22-C: RE-PASS (2024-08-21) PTS 8.6.1 & L2CAP & MAP_NEW, INFO: consolidatet in default test case #0
 
 Open tests
 TODO: MAP_OLD MAP/MSE/GOEP/SRMP/BV-02-C we send a connect instead of a continue/ok after receiving a GET with SRMP wait set, PTS 8.6.1 & RFCOM & MAP_NEW hangs before sending the PUT request, then time outs and fails 
