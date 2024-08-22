@@ -230,11 +230,11 @@ gatt_service_client_connection_t * gatt_service_client_get_connection_for_con_ha
  * Used to handle incoming characteristic indications/notifications
  *
  * @param client
- * @param connection_helper
+ * @param connection
  * @param value_handle
  * @return
  */
-uint16_t gatt_service_client_characteristic_uuid16_for_value_handle(const gatt_service_client_t * client, gatt_service_client_connection_t * connection_helper, uint16_t value_handle);
+uint16_t gatt_service_client_characteristic_uuid16_for_value_handle(const gatt_service_client_t * client, gatt_service_client_connection_t * connection, uint16_t value_handle);
 
 /**
  * @brief Get Characteristic UUID16 for given Characteristic index
@@ -248,11 +248,11 @@ uint16_t gatt_service_client_characteristic_uuid16_for_index(const gatt_service_
 /**
  * @brief Get Characteristic Value Handle for given Characteristic index
  * *
- * @param connection_helper
+ * @param connection
  * @param characteristic_index
  * @return
  */
-uint16_t gatt_service_client_characteristic_value_handle_for_index(gatt_service_client_connection_t * connection_helper, uint8_t characteristic_index);
+uint16_t gatt_service_client_characteristic_value_handle_for_index(gatt_service_client_connection_t * connection, uint8_t characteristic_index);
 
 /**
  * @brief Disconnect service client
