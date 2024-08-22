@@ -177,7 +177,7 @@ static struct test_config_s
     char* helpstr; // additional help for setup, environment etc.
 } test_configs[] =
 {
-    {TC_NORM( .descr = "MAP/MSE/MMD/BV-05"                  , .type = &mr_v1_2_A0,.obj_count = 1, .msg_types = { "IM"},                                       },)  
+    {TC_NORM( .descr = "MAP/MSE/MMD/BV-05 AUTO"             , .type = &mr_v1_2_A0,.obj_count = 1, .msg_types = { "IM"},                                       },)  
     {TC_NORM( .descr = "MAP/MSE/MMB/BV-43 AUTO"             , .type = &cc_v1_2   ,.obj_count = 1, .msg_types = { "IM"},                                       },) 
     {TC_NORM( .descr = "MAP/MSE/MMN/BV-02-C <e><e><e>.."    , .type = &nm_v1_0   ,.obj_count = 1, .msg_types = { "EMAIL", "SMS_GSM", "SMS_CDMA", "MMS", "IM"},},)
     {TC_NORM( .descr = "MAP/MSE/MMN/BV-04..06"              , .type = &nm_v1_1   ,.obj_count = 1, .msg_types = { "EMAIL", "SMS_GSM", "SMS_CDMA", "MMS", "IM"},},)
