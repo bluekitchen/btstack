@@ -174,7 +174,9 @@ uint8_t gatt_service_client_connect_secondary_service_ready_to_connect(hci_con_h
 
 
 /**
- * @brief Connect to the Secondary GATT Service with UUID16 and given handle range
+ * @brief Connect to the Secondary GATT Service with given handle range
+ *
+ * UUID16 and Service Index are stored for GATT Service Client user only
  *
  * @param con_handle
  * @param client
@@ -196,25 +198,12 @@ uint8_t gatt_service_client_connect_secondary_service(
         btstack_packet_handler_t packet_handler);
 
 /**
- * @brief Disconnect service client
- * @param client
- * @param connection_cid
- * @return
+ * @brief Check if Characteristic is available and can be queried
+ * @param connection
+ * @param characteristic_index
+ * @return ERROR_CODE_SUCCESS if ready, ERROR_CODE_COMMAND_DISALLOWED or ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE otherwise
  */
-uint8_t gatt_service_client_disconnect(gatt_service_client_t * client, uint16_t connection_cid);
-
-/**
- * @brief Map ATT Error Code to (extended) Error Codes
- * @param att_error_code
- * @return
- */
-uint8_t gatt_service_client_att_status_to_error_code(uint8_t att_error_code);
-
-/**
- * @brief De-Init
- * @param client
- */
-void gatt_service_client_deinit(gatt_service_client_t * client);
+uint8_t gatt_service_client_can_query_characteristic(gatt_service_client_connection_t * connection, uint8_t characteristic_index);
 
 /**
  * @brief Get connection object provided by gatt_service_client_connect_primary_service or gatt_service_client_connect_secondary_service by connection id
@@ -236,6 +225,18 @@ gatt_service_client_connection_t * gatt_service_client_get_connection_for_cid(co
 gatt_service_client_connection_t * gatt_service_client_get_connection_for_con_handle(const gatt_service_client_t * client, hci_con_handle_t con_handle);
 
 /**
+ * @brief Get Characteristic UUID16 for value handle
+ *
+ * Used to handle incoming characteristic indications/notifications
+ *
+ * @param client
+ * @param connection_helper
+ * @param value_handle
+ * @return
+ */
+uint16_t gatt_service_client_characteristic_uuid16_for_value_handle(const gatt_service_client_t * client, gatt_service_client_connection_t * connection_helper, uint16_t value_handle);
+
+/**
  * @brief Get Characteristic UUID16 for given Characteristic index
  *
  * @param client
@@ -254,24 +255,12 @@ uint16_t gatt_service_client_characteristic_uuid16_for_index(const gatt_service_
 uint16_t gatt_service_client_characteristic_value_handle_for_index(gatt_service_client_connection_t * connection_helper, uint8_t characteristic_index);
 
 /**
- * @brief Get Characteristic index for UUID16
- *
- * Used to handle incoming characteristic indications/notifications
- *
+ * @brief Disconnect service client
  * @param client
- * @param connection_helper
- * @param value_handle
+ * @param connection_cid
  * @return
  */
-uint16_t gatt_service_client_characteristic_uuid16_for_value_handle(const gatt_service_client_t * client, gatt_service_client_connection_t * connection_helper, uint16_t value_handle);
-
-/**
- * @brief Check if Characteristic is available and can be queried
- * @param connection
- * @param characteristic_index
- * @return
- */
-uint8_t gatt_service_client_can_query_characteristic(gatt_service_client_connection_t * connection, uint8_t characteristic_index);
+uint8_t gatt_service_client_disconnect(gatt_service_client_t * client, uint16_t connection_cid);
 
 /**
  * @brief Remove connection from connection list
@@ -280,6 +269,19 @@ uint8_t gatt_service_client_can_query_characteristic(gatt_service_client_connect
  * @param connection
  */
 void gatt_service_client_finalize_connection(gatt_service_client_t * client, gatt_service_client_connection_t * connection);
+
+/**
+ * @brief De-Init
+ * @param client
+ */
+void gatt_service_client_deinit(gatt_service_client_t * client);
+
+/**
+ * @brief Map ATT Error Code to (extended) Error Codes
+ * @param att_error_code
+ * @return
+ */
+uint8_t gatt_service_client_att_status_to_error_code(uint8_t att_error_code);
 
 /* API_END */
 
