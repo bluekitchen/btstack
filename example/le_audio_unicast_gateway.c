@@ -580,9 +580,10 @@ static void all_members_connected(void){
         servers[1].sink_channel_allocation = 2;
     }
     uint8_t i;
-    for (i=0;i<num_servers;i++){
+    for (i=0;i<num_active_servers;i++){
         printf("ASCS client %u - channel allocation %u\n", servers[i].server_id, servers[i].sink_channel_allocation);
     }
+
     printf("[-] CSIS - all members connected\n");
 
 #ifdef ENABLE_PACS_QUERY
@@ -610,8 +611,6 @@ static void set_discovery_timeout_handler(btstack_timer_source_t * ts){
 
     // we could not find all members, continue
     printf("Set discovery incomplete, only %u out of %u members found, continue with subset\n", num_active_servers, num_servers);
-    num_servers  = num_active_servers;
-    num_channels = num_active_servers;
 
     set_discovery_complete();
 }
@@ -829,7 +828,7 @@ static void le_audio_unicast_source_handle_adv(bd_addr_type_t adv_addr_type, bd_
 }
 
 static void create_cig(void){
-    btstack_assert((num_servers > 0) || (num_servers <= MAX_NR_CIS));
+    btstack_assert((num_active_servers > 0) || (num_active_servers <= MAX_NR_CIS));
 
     uint8_t i;
 
@@ -840,7 +839,7 @@ static void create_cig(void){
 
     // TODO: setup CIG
     cig_params.cig_id =  cig_id;
-    cig_params.num_cis = num_servers;
+    cig_params.num_cis = num_active_servers;
     cig_params.sdu_interval_c_to_p = codec_configuration.specific_codec_configuration.frame_duration_index == LE_AUDIO_CODEC_FRAME_DURATION_INDEX_7500US ? 7500 : 10000;
     cig_params.sdu_interval_p_to_c = codec_configuration.specific_codec_configuration.frame_duration_index == LE_AUDIO_CODEC_FRAME_DURATION_INDEX_7500US ? 7500 : 10000;
     cig_params.worst_case_sca = 0; // 251 ppm to 500 ppm
