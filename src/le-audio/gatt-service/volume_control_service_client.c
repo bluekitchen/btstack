@@ -606,13 +606,6 @@ static void vcs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t ch
                         connection->vocs_connections_connected = 0;
 
                         if ((connection->vocs_connections_max_num > 0) && (connection->vocs_connections_storage != NULL)){
-                            status = volume_offset_control_service_client_ready_to_connect(
-                                    connection->basic_connection.con_handle,
-                                    &vcs_client_packet_handler_internal,
-                                    &connection->vocs_connections_storage[0]
-                            );
-                        }
-                        if (status == ERROR_CODE_SUCCESS) {
                             vcs_client_handle_can_send_now.context = (void *) (uintptr_t) connection->basic_connection.con_handle;
                             (void) gatt_client_request_to_send_gatt_query(&vcs_client_handle_can_send_now,
                                                                           connection->basic_connection.con_handle);
