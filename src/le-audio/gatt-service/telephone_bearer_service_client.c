@@ -122,7 +122,7 @@ static void tbs_client_emit_done_event(gatt_service_client_connection_t * connec
     btstack_assert(connection_helper != NULL);
     btstack_assert(connection_helper->event_callback != NULL);
 
-    uint16_t characteristic_uuid16 = gatt_service_client_characteristic_index2uuid16(&tbs_client, index);
+    uint16_t characteristic_uuid16 = gatt_service_client_characteristic_uuid16_for_index(&tbs_client, index);
 
     uint8_t event[9];
     uint16_t pos = 0;

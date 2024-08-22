@@ -148,7 +148,7 @@ void gatt_service_client_register_packet_handler(gatt_service_client_t * client,
  * @param con_handle
  * @param client
  * @param connection
- * @param primary_service_uuid16
+ * @param service_uuid16
  * @param service_index
  * @param characteristics
  * @param characteristics_num
@@ -159,7 +159,7 @@ void gatt_service_client_register_packet_handler(gatt_service_client_t * client,
 uint8_t gatt_service_client_connect(
         hci_con_handle_t con_handle,
         gatt_service_client_t * client, gatt_service_client_connection_t * connection,
-        uint16_t primary_service_uuid16, uint8_t service_index,
+        uint16_t service_uuid16, uint8_t service_index,
         gatt_service_client_characteristic_t * characteristics, uint8_t characteristics_num,
         btstack_packet_handler_t packet_handler, uint16_t * connection_cid);
 
@@ -174,10 +174,15 @@ uint8_t gatt_service_client_connect_secondary_service_ready_to_connect(hci_con_h
 
 
 /**
- * @brief Connect to the n-th instance of Secondary GATT Service with UUID16
+ * @brief Connect to the Secondary GATT Service with UUID16 and given handle range
+ *
  * @param con_handle
  * @param client
  * @param connection
+ * @param service_uuid16
+ * @param service_start_handle
+ * @param service_end_handle
+ * @param service_index
  * @param characteristics
  * @param characteristics_num
  * @param packet_handler
@@ -231,32 +236,34 @@ gatt_service_client_connection_t * gatt_service_client_get_connection_for_cid(co
 gatt_service_client_connection_t * gatt_service_client_get_connection_for_con_handle(const gatt_service_client_t * client, hci_con_handle_t con_handle);
 
 /**
- * @brief Get UUID16 for given Characteristic index
+ * @brief Get Characteristic UUID16 for given Characteristic index
  *
- * See
  * @param client
  * @param index
  * @return
  */
-uint16_t gatt_service_client_characteristic_index2uuid16(const gatt_service_client_t * client, uint8_t index);
+uint16_t gatt_service_client_characteristic_uuid16_for_index(const gatt_service_client_t * client, uint8_t index);
 
 /**
  * @brief Get Characteristic Value Handle for given Characteristic index
+ * *
  * @param connection_helper
  * @param characteristic_index
  * @return
  */
-uint16_t gatt_service_client_helper_value_handle_for_index(gatt_service_client_connection_t * connection_helper, uint8_t characteristic_index);
+uint16_t gatt_service_client_characteristic_value_handle_for_index(gatt_service_client_connection_t * connection_helper, uint8_t characteristic_index);
 
 /**
  * @brief Get Characteristic index for UUID16
+ *
+ * Used to handle incoming characteristic indications/notifications
  *
  * @param client
  * @param connection_helper
  * @param value_handle
  * @return
  */
-uint16_t gatt_service_client_helper_characteristic_uuid16_for_value_handle(const gatt_service_client_t * client, gatt_service_client_connection_t * connection_helper, uint16_t value_handle);
+uint16_t gatt_service_client_characteristic_uuid16_for_value_handle(const gatt_service_client_t * client, gatt_service_client_connection_t * connection_helper, uint16_t value_handle);
 
 /**
  * @brief Check if Characteristic is available and can be queried

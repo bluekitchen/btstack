@@ -151,7 +151,9 @@ static void ots_client_operations_timer_timeout_handler(btstack_timer_source_t *
     if (connection == NULL){
         return;
     }
-    ots_client_emit_timeout((gatt_service_client_connection_t *) connection, gatt_service_client_characteristic_index2uuid16(&ots_client, connection->characteristic_index));
+    ots_client_emit_timeout((gatt_service_client_connection_t *) connection,
+                            gatt_service_client_characteristic_uuid16_for_index(&ots_client,
+                                                                                connection->characteristic_index));
     l2cap_le_disconnect(connection->basic_connection.cid);
 }
 
@@ -233,7 +235,7 @@ static void ots_client_emit_done_event(gatt_service_client_connection_t * connec
     btstack_assert(connection_helper != NULL);
     btstack_assert(connection_helper->event_callback != NULL);
 
-    uint16_t characteristic_uuid16 = gatt_service_client_characteristic_index2uuid16(&ots_client, index);
+    uint16_t characteristic_uuid16 = gatt_service_client_characteristic_uuid16_for_index(&ots_client, index);
 
     uint8_t event[9];
     uint16_t pos = 0;
@@ -512,7 +514,9 @@ static void ots_client_emit_read_event(gatt_service_client_connection_t * connec
 }
 
 static void ots_client_emit_notify_event(gatt_service_client_connection_t * connection_helper, uint16_t value_handle, uint8_t att_status, const uint8_t * data, uint16_t data_size){
-    uint16_t characteristic_uuid16 = gatt_service_client_helper_characteristic_uuid16_for_value_handle(&ots_client, connection_helper, value_handle);
+    uint16_t characteristic_uuid16 = gatt_service_client_characteristic_uuid16_for_value_handle(&ots_client,
+                                                                                                connection_helper,
+                                                                                                value_handle);
     uint8_t  emit_bytes[2 + OTS_OBJECT_ID_LEN];
     ots_client_connection_t * connection;
 
