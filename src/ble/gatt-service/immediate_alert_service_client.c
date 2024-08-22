@@ -177,7 +177,8 @@ static void ias_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
 }
 
 static uint16_t ias_client_serialize_characteristic_value_for_write(ias_client_connection_t * connection, uint8_t ** out_value){
-    uint16_t characteristic_uuid16 = gatt_service_client_characteristic_index2uuid16(&ias_client, connection->characteristic_index);
+    uint16_t characteristic_uuid16 = gatt_service_client_characteristic_uuid16_for_index(&ias_client,
+                                                                                         connection->characteristic_index);
     *out_value = (uint8_t *)connection->write_buffer;
 
     switch (characteristic_uuid16){

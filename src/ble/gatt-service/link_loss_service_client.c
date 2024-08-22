@@ -128,7 +128,7 @@ static void lls_client_emit_done_event(lls_client_connection_t * connection, uin
     btstack_assert(event_callback != NULL);
 
     uint16_t cid = connection->basic_connection.cid;
-    uint16_t characteristic_uuid16 = gatt_service_client_characteristic_index2uuid16(&lls_client, index);
+    uint16_t characteristic_uuid16 = gatt_service_client_characteristic_uuid16_for_index(&lls_client, index);
 
     uint8_t event[8];
     uint16_t pos = 0;
@@ -152,7 +152,7 @@ static void lls_client_emit_read_event(lls_client_connection_t * connection, uin
         return;
     }
 
-    uint16_t characteristic_uuid16 = gatt_service_client_characteristic_index2uuid16(&lls_client, index);
+    uint16_t characteristic_uuid16 = gatt_service_client_characteristic_uuid16_for_index(&lls_client, index);
     switch (characteristic_uuid16){
         case ORG_BLUETOOTH_CHARACTERISTIC_ALERT_LEVEL:
             lls_client_emit_uint8(connection->basic_connection.cid, connection->basic_connection.event_callback, GATTSERVICE_SUBEVENT_LLS_CLIENT_ALERT_LEVEL, data, data_size);
@@ -287,7 +287,8 @@ static void lls_client_handle_gatt_client_event(uint8_t packet_type, uint16_t ch
 }
 
 static uint16_t lls_client_serialize_characteristic_value_for_write(lls_client_connection_t * connection, uint8_t ** out_value){
-    uint16_t characteristic_uuid16 = gatt_service_client_characteristic_index2uuid16(&lls_client, connection->characteristic_index);
+    uint16_t characteristic_uuid16 = gatt_service_client_characteristic_uuid16_for_index(&lls_client,
+                                                                                         connection->characteristic_index);
     *out_value = (uint8_t *)connection->write_buffer;
 
     switch (characteristic_uuid16){

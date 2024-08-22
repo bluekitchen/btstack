@@ -93,19 +93,19 @@ gatt_service_client_connection_t * gatt_service_client_get_connection_for_cid(
     return NULL;
 }
 
-uint16_t gatt_service_client_characteristic_index2uuid16(const gatt_service_client_t * client, uint8_t index){
+uint16_t gatt_service_client_characteristic_uuid16_for_index(const gatt_service_client_t * client, uint8_t index){
     return client->characteristics_desc16[index];
 }
 
-uint16_t gatt_service_client_helper_value_handle_for_index(gatt_service_client_connection_t * connection_helper, uint8_t characteristic_index){
+uint16_t gatt_service_client_characteristic_value_handle_for_index(gatt_service_client_connection_t * connection_helper, uint8_t characteristic_index){
     return connection_helper->characteristics[characteristic_index].value_handle;
 }
 
-uint16_t gatt_service_client_helper_characteristic_uuid16_for_value_handle(const gatt_service_client_t * client, gatt_service_client_connection_t * connection_helper, uint16_t value_handle) {
+uint16_t gatt_service_client_characteristic_uuid16_for_value_handle(const gatt_service_client_t * client, gatt_service_client_connection_t * connection_helper, uint16_t value_handle) {
     int i;
     for (i = 0; i < connection_helper->characteristics_num; i++){
         if (connection_helper->characteristics[i].value_handle == value_handle) {
-            return gatt_service_client_characteristic_index2uuid16(client, i);
+            return gatt_service_client_characteristic_uuid16_for_index(client, i);
         }
     }
     return 0;

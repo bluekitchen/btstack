@@ -184,7 +184,7 @@ static void vocs_client_emit_done_event(gatt_service_client_connection_t * conne
     btstack_assert(connection_helper != NULL);
     btstack_assert(connection_helper->event_callback != NULL);
 
-    uint16_t characteristic_uuid16 = gatt_service_client_characteristic_index2uuid16(&vocs_client, index);
+    uint16_t characteristic_uuid16 = gatt_service_client_characteristic_uuid16_for_index(&vocs_client, index);
 
     uint8_t event[9];
     uint16_t pos = 0;
@@ -252,7 +252,9 @@ static void vocs_client_emit_notify_event(gatt_service_client_connection_t * con
     uint8_t null_data[4];
     memset(null_data, 0, sizeof(null_data));
 
-    uint16_t characteristic_uuid16 = gatt_service_client_helper_characteristic_uuid16_for_value_handle(&vocs_client, connection_helper, value_handle);
+    uint16_t characteristic_uuid16 = gatt_service_client_characteristic_uuid16_for_value_handle(&vocs_client,
+                                                                                                connection_helper,
+                                                                                                value_handle);
 
     switch (characteristic_uuid16){
         case ORG_BLUETOOTH_CHARACTERISTIC_OFFSET_STATE:

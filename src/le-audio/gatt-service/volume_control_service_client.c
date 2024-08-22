@@ -158,7 +158,7 @@ static void vcs_client_emit_done_event(vcs_client_connection_t * connection, uin
     btstack_assert(event_callback != NULL);
 
     uint16_t cid = connection->basic_connection.cid;
-    uint16_t characteristic_uuid16 = gatt_service_client_characteristic_index2uuid16(&vcs_client, index);
+    uint16_t characteristic_uuid16 = gatt_service_client_characteristic_uuid16_for_index(&vcs_client, index);
 
     uint8_t event[9];
     uint16_t pos = 0;
@@ -218,7 +218,9 @@ static void vcs_client_emit_notify_event(gatt_service_client_connection_t * conn
     uint8_t  null_data[3];
     memset(null_data, 0, sizeof(null_data));
 
-    uint16_t characteristic_uuid16 = gatt_service_client_helper_characteristic_uuid16_for_value_handle(&vcs_client, connection_helper, value_handle);
+    uint16_t characteristic_uuid16 = gatt_service_client_characteristic_uuid16_for_value_handle(&vcs_client,
+                                                                                                connection_helper,
+                                                                                                value_handle);
 
     switch (characteristic_uuid16){
         case ORG_BLUETOOTH_CHARACTERISTIC_VOLUME_STATE:
@@ -711,7 +713,8 @@ static void vcs_client_run_for_connection(void * context){
             connection->state = VOLUME_CONTROL_SERVICE_CLIENT_STATE_W4_CHANGE_COUNTER_RESULT;
             (void) gatt_client_read_value_of_characteristic_using_value_handle(
                     &vcs_client_handle_gatt_client_event, con_handle,
-                    gatt_service_client_helper_value_handle_for_index(connection_helper, connection->characteristic_index));
+                    gatt_service_client_characteristic_value_handle_for_index(connection_helper,
+                                                                              connection->characteristic_index));
             break;
 
         case VOLUME_CONTROL_SERVICE_CLIENT_STATE_W2_QUERY_INCLUDED_SERVICES:
@@ -731,8 +734,9 @@ static void vcs_client_run_for_connection(void * context){
             connection->state = VOLUME_CONTROL_SERVICE_CLIENT_STATE_W4_READ_CHARACTERISTIC_VALUE_RESULT;
 
             (void) gatt_client_read_value_of_characteristic_using_value_handle(
-                &vcs_client_handle_gatt_client_event, con_handle,
-                gatt_service_client_helper_value_handle_for_index(connection_helper, connection->characteristic_index));
+                    &vcs_client_handle_gatt_client_event, con_handle,
+                    gatt_service_client_characteristic_value_handle_for_index(connection_helper,
+                                                                              connection->characteristic_index));
             break;
 
         case VOLUME_CONTROL_SERVICE_CLIENT_STATE_W2_WRITE_CHARACTERISTIC_VALUE:
@@ -741,8 +745,9 @@ static void vcs_client_run_for_connection(void * context){
             value_length = vcs_client_serialize_characteristic_value_for_write(connection, &value);
             (void) gatt_client_write_value_of_characteristic(
                     &vcs_client_handle_gatt_client_event, con_handle,
-                    gatt_service_client_helper_value_handle_for_index(connection_helper, connection->characteristic_index),
-                value_length, value);
+                    gatt_service_client_characteristic_value_handle_for_index(connection_helper,
+                                                                              connection->characteristic_index),
+                    value_length, value);
             
             break;
 

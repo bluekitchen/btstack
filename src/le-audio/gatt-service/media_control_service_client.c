@@ -163,14 +163,15 @@ static uint16_t gatt_service_client_characteristic_value_handle2uuid16(mcs_clien
     int i;
     for (i = 0; i < connection->basic_connection.characteristics_num; i++){
         if (connection->basic_connection.characteristics[i].value_handle == value_handle) {
-            return gatt_service_client_characteristic_index2uuid16(&mcs_client, i);
+            return gatt_service_client_characteristic_uuid16_for_index(&mcs_client, i);
         }
     }
     return 0;
 }
 
 static uint16_t mcs_client_serialize_characteristic_value_for_write(mcs_client_connection_t * connection, uint8_t ** out_value){
-    uint16_t characteristic_uuid16 = gatt_service_client_characteristic_index2uuid16(&mcs_client, connection->characteristic_index);
+    uint16_t characteristic_uuid16 = gatt_service_client_characteristic_uuid16_for_index(&mcs_client,
+                                                                                         connection->characteristic_index);
     *out_value = connection->write_buffer;
 
     switch (characteristic_uuid16){
@@ -346,7 +347,7 @@ static void mcs_client_emit_done_event(mcs_client_connection_t * connection, uin
     btstack_assert(event_callback != NULL);
 
     uint16_t cid = connection->basic_connection.cid;
-    uint16_t characteristic_uuid16 = gatt_service_client_characteristic_index2uuid16(&mcs_client, index);
+    uint16_t characteristic_uuid16 = gatt_service_client_characteristic_uuid16_for_index(&mcs_client, index);
 
     uint8_t event[8];
     uint16_t pos = 0;
@@ -412,7 +413,7 @@ static void mcs_client_emit_read_event(mcs_client_connection_t * connection, uin
     btstack_assert(event_callback != NULL);
 
     uint16_t cid = connection->basic_connection.cid;
-    uint16_t characteristic_uuid16 = gatt_service_client_characteristic_index2uuid16(&mcs_client, index);
+    uint16_t characteristic_uuid16 = gatt_service_client_characteristic_uuid16_for_index(&mcs_client, index);
 
     switch (characteristic_uuid16){
         case ORG_BLUETOOTH_CHARACTERISTIC_MEDIA_PLAYER_NAME:
