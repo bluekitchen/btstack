@@ -483,34 +483,31 @@ static void run_for_server(server_t * server){
             btstack_assert(status == ERROR_CODE_SUCCESS);
             break;
         case SERVER_ASCS_CODEC_CONFIGURED:
-            if (app_state == APP_CIG_CREATED){
+            if (app_state == APP_CIG_CREATED) {
                 uint8_t cis_id = server->cis_id;
-                uint16_t sdu_interval_us = codec_configurations[menu_sampling_frequency].variants[menu_variant].frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US ? 7500 : 10000;
-                uint8_t framing = 0;
-                uint8_t retransmission_number = NUM_CIS_RETRANSMISSIONS;
-                uint16_t max_transport_latency_ms = 40;
-                // use mono for microphone
-                uint8_t num_ase_channels;
-                if (server->ascs_ase_roles[server->ascs_operation_ase_index] == LE_AUDIO_ROLE_SOURCE) {
-                    num_ase_channels = 1;
-                } else {
-                    num_ase_channels = num_channels / num_servers;
-                }
-                uint16_t max_sdu = num_ase_channels * codec_configurations[menu_sampling_frequency].variants[menu_variant].octets_per_frame;
-
                 ase_id = server->ascs_ase_ids[server->ascs_operation_ase_index];
-                printf("ASCS_CONFIGURE_QOS ase_id %u, cig_id %u / cis %u, interval %u, framing %u, sdu_size %u, retrans %u, latency %u\n",
-                       ase_id, cig_id, cis_id, sdu_interval_us, framing, max_sdu, retransmission_number, max_transport_latency_ms);
                 ascs_qos_configuration.cig_id = cig_id;
                 ascs_qos_configuration.cis_id = cis_id;
-                ascs_qos_configuration.sdu_interval = sdu_interval_us;
-                ascs_qos_configuration.framing = framing;
+                ascs_qos_configuration.framing = cig_params.framing;
                 ascs_qos_configuration.phy = LE_AUDIO_SERVER_PHY_MASK_2M;
-                ascs_qos_configuration.max_sdu = max_sdu;
-                ascs_qos_configuration.retransmission_number = retransmission_number;
-                ascs_qos_configuration.max_transport_latency_ms = max_transport_latency_ms;
+                if (server->ascs_ase_roles[server->ascs_operation_ase_index] == LE_AUDIO_ROLE_SOURCE){
+                    ascs_qos_configuration.sdu_interval = cig_params.sdu_interval_p_to_c;
+                    ascs_qos_configuration.max_transport_latency_ms = cig_params.max_transport_latency_p_to_c;
+                    ascs_qos_configuration.max_sdu = cig_params.cis_params[cis_id].max_sdu_p_to_c;
+                    ascs_qos_configuration.retransmission_number = cig_params.cis_params[cis_id].rtn_p_to_c;
+                } else {
+                    ascs_qos_configuration.sdu_interval = cig_params.sdu_interval_c_to_p;
+                    ascs_qos_configuration.max_transport_latency_ms = cig_params.max_transport_latency_c_to_p;
+                    ascs_qos_configuration.max_sdu = cig_params.cis_params[cis_id].max_sdu_c_to_p;
+                    ascs_qos_configuration.retransmission_number = cig_params.cis_params[cis_id].rtn_c_to_p;
+                }
                 ascs_qos_configuration.presentation_delay_us = 40000;
                 server->server_state = SERVER_ASCS_W4_QOS_CONFIGURED;
+                printf("ASCS_CONFIGURE_QOS ase_id %u, cig_id %u / cis %u, interval %u, framing %u, sdu_size %u, retrans %u, latency %u\n",
+                       ase_id, cig_id, cis_id,
+                       ascs_qos_configuration.sdu_interval, ascs_qos_configuration.framing,
+                       ascs_qos_configuration.max_sdu, ascs_qos_configuration.retransmission_number,
+                       ascs_qos_configuration.max_transport_latency_ms);
                 status = audio_stream_control_service_client_streamendpoint_configure_qos(server->ascs_cid, ase_id, &ascs_qos_configuration);
                 btstack_assert(status == ERROR_CODE_SUCCESS);
             }
@@ -839,6 +836,8 @@ static void create_cig(void){
     // select cig id
     cig_id = 1;
 
+    uint16_t max_transport_latency_ms = 10;
+
     // TODO: setup CIG
     cig_params.cig_id =  cig_id;
     cig_params.num_cis = num_servers;
@@ -847,8 +846,8 @@ static void create_cig(void){
     cig_params.worst_case_sca = 0; // 251 ppm to 500 ppm
     cig_params.packing = 0;        // sequential
     cig_params.framing =0;
-    cig_params.max_transport_latency_c_to_p = 40;
-    cig_params.max_transport_latency_p_to_c = 40;
+    cig_params.max_transport_latency_c_to_p = max_transport_latency_ms;
+    cig_params.max_transport_latency_p_to_c = max_transport_latency_ms;
 
     printf("CIG_CREATE cig %u, num cis %u, interval %u us\n", cig_params.cig_id, cig_params.num_cis, cig_params.sdu_interval_c_to_p );
     for (i = 0; i < cig_params.num_cis; i++) {
