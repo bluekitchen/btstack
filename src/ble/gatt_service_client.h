@@ -163,15 +163,6 @@ uint8_t gatt_service_client_connect_primary_service(
         gatt_service_client_characteristic_t * characteristics, uint8_t characteristics_num,
         btstack_packet_handler_t packet_handler, uint16_t * connection_cid);
 
-/**
- * @brief Check if connection to peer already exists
- * @param con_handle
- * @param client
- * @return ERROR_CODE_SUCCESS if not connection exists, otherwise ERROR_CODE_COMMAND_DISALLOWED
- */
-uint8_t gatt_service_client_connect_secondary_service_ready_to_connect(hci_con_handle_t con_handle,
-                                                                       gatt_service_client_t *client);
-
 
 /**
  * @brief Connect to the Secondary GATT Service with given handle range

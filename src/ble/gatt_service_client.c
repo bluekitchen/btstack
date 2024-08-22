@@ -594,15 +594,6 @@ uint8_t gatt_service_client_connect_primary_service(
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t gatt_service_client_connect_secondary_service_ready_to_connect(hci_con_handle_t con_handle,
-                                                                       gatt_service_client_t *client) {
-    if (gatt_service_client_get_connection_for_con_handle(client, con_handle) == NULL) {
-        return ERROR_CODE_SUCCESS;
-    } else {
-        return ERROR_CODE_COMMAND_DISALLOWED;
-    }
-}
-
 uint8_t gatt_service_client_connect_secondary_service(
         hci_con_handle_t con_handle,
         gatt_service_client_t * client, gatt_service_client_connection_t * connection,
@@ -616,9 +607,8 @@ uint8_t gatt_service_client_connect_secondary_service(
     btstack_assert(characteristics != NULL);
     btstack_assert(characteristics_num >= client->characteristics_desc16_num);
 
-    uint8_t status = gatt_service_client_connect_secondary_service_ready_to_connect(con_handle, client);
-    if (status != ERROR_CODE_SUCCESS){
-        return status;
+    if (gatt_service_client_get_connection_for_con_handle(client, con_handle) != NULL) {
+        return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
     uint16_t cid = gatt_service_client_get_next_cid(client);
