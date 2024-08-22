@@ -146,12 +146,14 @@ MAP/MSE/GOEP/CON/BV-0*: RE-PASS (2024-08-20) PTS 8.6.1 & L2CAP & MAP_NEW
 MAP/MSE/GOEP/SRM/BI-0*: RE-PASS (2024-08-20) PTS 8.6.1 & L2CAP & MAP_OLD, WARNING: PTS 8.6.1 MAP_NEW fails with many PUT not final upload messages, L2CAP fails without PTS sending anything (discussion with Matthias - SRM, OBEX version, incorrect obex etc.)
 MAP/MSE/GOEP/SRMP/BI-02-C: PASS (2024-08-20) PTS 8.6.1 & L2CAP & MAP_OLD, Warning, wanted to see a 50kbyte+ File for the GET test, but ~3kbyte did it
 MAP/MSE/MMD/BV-02-C: RE-PASS (2024-08-21) PTS 8.6.1 & L2CAP & MAP_NEW
-MAP/MSE/MMB/BV-15-C: PASS (2024-08-21) PTS 8.6.1 & RFCOM & MAP_NEW: now we respond with the correct body (XML msg listing, XML convo listing, VCRAD style bmessage) since PTS 8.6.1 is not acepting XML for a bmessage any more
-MAP/MSE/MMB/BV-15-C: PASS (2024-08-21) PTS 8.6.1 & L2CAP & MAP_NEW, INFO: consolidatet in default test case #0
-MAP/MSE/MMB/BV-16-C: RE-PASS (2024-08-21) PTS 8.6.1 & L2CAP & MAP_NEW, INFO: consolidatet in default test case #0
-MAP/MSE/MMB/BV-18-C: RE-PASS (2024-08-21) PTS 8.6.1 & L2CAP & MAP_NEW, INFO: consolidatet in default test case #0
-MAP/MSE/MMB/BV-20-C: RE-PASS (2024-08-21) PTS 8.6.1 & L2CAP & MAP_NEW, INFO: consolidatet in default test case #0
-MAP/MSE/MMB/BV-22-C: RE-PASS (2024-08-21) PTS 8.6.1 & L2CAP & MAP_NEW, INFO: consolidatet in default test case #0
+MAP/MSE/MMB/BV-15-C: PASS (2024-08-22) PTS 8.6.1 & RFCOM & MAP_NEW: now we respond with the correct body (XML msg listing, XML convo listing, VCRAD style bmessage) since PTS 8.6.1 is not acepting XML for a bmessage any more
+MAP/MSE/MMB/BV-15-C: PASS (2024-08-22) PTS 8.6.1 & L2CAP & MAP_NEW, INFO: consolidatet in default test case #0
+MAP/MSE/MMB/BV-16-C: RE-PASS (2024-08-22) PTS 8.6.1 & L2CAP & MAP_NEW, INFO: consolidatet in default test case #0
+MAP/MSE/MMB/BV-18-C: RE-PASS (2024-08-22) PTS 8.6.1 & L2CAP & MAP_NEW, INFO: consolidatet in default test case #0
+MAP/MSE/MMB/BV-20-C: RE-PASS (2024-08-22) PTS 8.6.1 & L2CAP & MAP_NEW, INFO: consolidatet in default test case #0
+MAP/MSE/MMB/BV-22-C: RE-PASS (2024-08-22) PTS 8.6.1 & L2CAP & MAP_NEW, INFO: consolidatet in default test case #0
+MAP/MSE/MMB/BV-23-C: RE-PASS (2024-08-22) PTS 8.6.1 & L2CAP & MAP_NEW, INFO: cannot consolidatet, PTS wants wants to see an updated Folder version counter on the 2nd GET message listing
+MAP/MSE/MMB/BV-24-C: RE-PASS (2024-08-22) PTS 8.6.1 & L2CAP & MAP_NEW, INFO: cannot consolidatet, PTS wants wants to see an updated Folder version counter on the 2nd GET message listing
 
 Open tests
 TODO: MAP_OLD MAP/MSE/GOEP/SRMP/BV-02-C we send a connect instead of a continue/ok after receiving a GET with SRMP wait set, PTS 8.6.1 & RFCOM & MAP_NEW hangs before sending the PUT request, then time outs and fails 
