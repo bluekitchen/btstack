@@ -301,17 +301,10 @@ static void mics_client_packet_handler_internal(uint8_t packet_type, uint16_t ch
                     printf("\nMICS Client: Query AICS included services\n");
 #endif
                     // only look for included services if we can use them
-                    status = ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
                     connection->aics_connections_index = 0;
-
+                    connection->aics_connections_connected = 0;
+                    
                     if ((connection->aics_connections_max_num > 0) && (connection->aics_connections_storage != NULL)){
-                        status = audio_input_control_service_client_ready_to_connect(
-                                connection->basic_connection.con_handle,
-                                &mics_client_packet_handler_internal,
-                                &connection->aics_connections_storage[0]
-                        );
-                    }
-                    if (status == ERROR_CODE_SUCCESS) {
                         connection->state = MICROPHONE_CONTROL_SERVICE_CLIENT_STATE_W2_QUERY_INCLUDED_SERVICES;
 
                         connection->gatt_query_can_send_now_request.context = (void *) (uintptr_t) connection->basic_connection.con_handle;
