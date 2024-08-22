@@ -333,8 +333,7 @@ static void mas_print_test_config(struct test_set_config* cfg) {
 }
 
 static void mas_print_test_case_help(struct test_set_config* cfg) {
-    struct test_config_s* tc = &test_configs[0];
-    MAP_PRINTF("[%d] <%s> help/hint:%s\n", tc->nr, tc->descr, tc->helpstr? tc->helpstr:"no help/hint available");
+    MAP_PRINTF("[%d] <%s> help/hint:%s\n", mas_cfg->nr, mas_cfg->descr, mas_cfg->helpstr? mas_cfg->helpstr:"no help/hint available");
 }
 
 static void mas_print_test_cases(struct test_set_config* cfg)
