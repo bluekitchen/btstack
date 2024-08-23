@@ -174,7 +174,8 @@ MAP/MSE/MMD/BV-02-C: RE-PASS (2024-08-22) PTS 8.6.1 & L2CAP & MAP_NEW, INFO: con
 MAP/MSE/MMU/BV-02-C: FAIL (2024-08-22) PTS 8.6.1 & L2CAP & MAP_NEW PTS 8.6.1 MAP_NEW L2CAP bug: claims to send a PUT but doesnt.
 MAP/MSE/MMU/BV-03-C: FAIL (2024-08-22) PTS 8.6.1 & L2CAP & MAP_NEW PTS 8.6.1 MAP_NEW L2CAP bug: claims to send a PUT but doesnt.
 MAP/MSE/MMU/BV-03-C: FAIL (2024-08-22) PTS 8.6.1 & RFCOM & MAP_NEW: We need to implement Multi-Packet PUT. PTS sends a PUT_continue x-bt/mesage, we send an OK, the 21x{next PUT_continue (no x-bt/message) and we send "Bad request"}, the PTS says the test failed 
-MAP/MSE/MMU/BV-03-C: PASS (2024-08-23) PTS 8.6.1 & RFCOM & MAP_NEW
+MAP/MSE/MMU/BV-03-C: PASS (2024-08-23) PTS 8.6.1 & RFCOM & MAP_NEW, INFO: PTS 8.6.1 MAP_NEW L2CAP bug: claims to send a PUT but doesnt. could be consolidated into tc #0 otherwise
+MAP/MSE/MMU/BV-02-C: PASS (2024-08-23) PTS 8.6.1 & RFCOM & MAP_NEW, INFO: PTS 8.6.1 MAP_NEW L2CAP bug: claims to send a PUT but doesnt. could be consolidated into tc #0 otherwise
 
 Open tests
 TODO: on PUT_continue send an internal CONTINUE and dont re-init the response data. On the last PUT_FINAL send the normal response date
