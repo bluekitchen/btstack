@@ -79,6 +79,7 @@ typedef enum {
     MAS_STATE_W4_GET_OPCODE,
     MAS_STATE_W4_GET_REQUEST,
     MAS_STATE_SEND_INTERNAL_RESPONSE,
+    MAS_STATE_SEND_RESPONSE_CONTINUE,
     MAS_STATE_SEND_USER_RESPONSE,
     MAS_STATE_SEND_DISCONNECT_RESPONSE,
     MAS_STATE_ABOUT_TO_SEND,
@@ -332,10 +333,17 @@ static map_object_type_t map_server_parse_object_type(map_server_t* mas, const c
     }
 
     if (strcmp("x-bt/message", type_string) == 0) {
-        if ((mas->OBEX_opcode & OBEX_OPCODE_GET) == OBEX_OPCODE_GET)
+        if ((mas->OBEX_opcode & OBEX_OPCODE_GET) == OBEX_OPCODE_GET) {
             RUN_AND_LOG_ACTION(return MAP_OBJECT_TYPE_GET_MESSAGE;)
-        else
-            RUN_AND_LOG_ACTION(return MAP_OBJECT_TYPE_PUT_MESSAGE;)
+        }
+        else {
+            if (mas->OBEX_opcode & OBEX_OPCODE_FINAL_BIT_MASK) {
+                RUN_AND_LOG_ACTION(return MAP_OBJECT_TYPE_PUT_MESSAGE;)
+            }
+            else {
+                RUN_AND_LOG_ACTION(return MAP_OBJECT_TYPE_PUT_MESSAGE_CONTINUE;)
+            }
+        }
     }
 
     if (strcmp("x-bt/MAP-NotificationRegistration", type_string) == 0) {
@@ -439,8 +447,17 @@ static void map_server_handle_can_send_now(map_server_t* mas) {
         // prepare response
         goep_server_response_create_general(mas->goep_cid);
         // next state
-        response_code = mas->response.code;
+        RUN_AND_LOG_ACTION(response_code = mas->response.code;)
         map_server_operation_complete(mas);
+        // send packet
+        goep_server_execute(mas->goep_cid, response_code);
+        break;
+    case MAS_STATE_SEND_RESPONSE_CONTINUE:
+        // prepare response
+        goep_server_response_create_general(mas->goep_cid);
+        // next state
+        RUN_AND_LOG_ACTION(response_code = mas->response.code;)
+        mas->state = MAS_STATE_CONNECTED;
         // send packet
         goep_server_execute(mas->goep_cid, response_code);
         break;
@@ -453,7 +470,7 @@ static void map_server_handle_can_send_now(map_server_t* mas) {
                 mas->response.body_len);
         }
         // next state
-        response_code = mas->response.code;
+        RUN_AND_LOG_ACTION(response_code = mas->response.code;)
         if (response_code == OBEX_RESP_CONTINUE) {
             map_server_reset_response(mas);
             // next state
@@ -473,7 +490,7 @@ static void map_server_handle_can_send_now(map_server_t* mas) {
         // prepare response
         goep_server_response_create_general(mas->goep_cid);
         // next state
-        mas->state = MAS_STATE_W4_CONNECT_OPCODE;
+        RUN_AND_LOG_ACTION(mas->state = MAS_STATE_W4_CONNECT_OPCODE;)
         // send packet
         goep_server_execute(mas->goep_cid, OBEX_RESP_BAD_REQUEST);
         break;
@@ -504,7 +521,7 @@ static void map_server_handle_can_send_now(map_server_t* mas) {
         uint16_t goep_cid = mas->goep_cid;
 
         // reset MAP/OBEX connection state
-        mas->state = MAS_STATE_W4_CONNECT_OPCODE;
+        RUN_AND_LOG_ACTION(mas->state = MAS_STATE_W4_CONNECT_OPCODE;)
 
         // respond to request
         goep_server_response_create_general(goep_cid);
@@ -725,13 +742,13 @@ static void map_server_handle_get_or_put_request(map_server_t* mas) {
     case MAP_OBJECT_TYPE_INVALID:
         // MAP_OBJECT_TYPE_INVALID
         mas->state = MAS_STATE_SEND_INTERNAL_RESPONSE;
-        mas->response.code = OBEX_RESP_BAD_REQUEST;
+        RUN_AND_LOG_ACTION(mas->response.code = OBEX_RESP_BAD_REQUEST;)
         goep_server_request_can_send_now(mas->goep_cid);
         return;
 
-    case MAP_OBJECT_TYPE_UNKNOWN:
-        mas->state = MAS_STATE_SEND_INTERNAL_RESPONSE;
-        mas->response.code = OBEX_RESP_CONTINUE;
+    case MAP_OBJECT_TYPE_PUT_MESSAGE_CONTINUE:
+        mas->state = MAS_STATE_SEND_RESPONSE_CONTINUE;
+        RUN_AND_LOG_ACTION(mas->response.code = OBEX_RESP_CONTINUE;)
         goep_server_request_can_send_now(mas->goep_cid);
         return;
 
@@ -758,7 +775,7 @@ static void map_server_handle_get_or_put_request(map_server_t* mas) {
 
     if (folder == MAS_FOLDER_INVALID) {
         mas->state = MAS_STATE_SEND_INTERNAL_RESPONSE;
-        mas->response.code = OBEX_RESP_NOT_FOUND;
+        RUN_AND_LOG_ACTION(mas->response.code = OBEX_RESP_NOT_FOUND;)
         goep_server_request_can_send_now(mas->goep_cid);
         return;
     }
