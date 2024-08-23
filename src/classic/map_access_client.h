@@ -94,18 +94,18 @@ typedef enum {
 } map_access_client_state_t;
 
 typedef struct {
-    // opaque storage for goep_client
+    // map access client linked list
+    btstack_linked_item_t item;
+
+    // goep client linked list
     goep_client_t goep_client;
 
-    // lookup via linked list and cid
-    btstack_linked_item_t item;
-    uint16_t cid;
-
-    map_access_client_state_t state;
     bd_addr_t bd_addr;
     hci_con_handle_t con_handle;
+    uint16_t cid;
     uint8_t   incoming;
     btstack_packet_handler_t client_handler;
+    map_access_client_state_t state;
 
     int request_number;
     /* obex parser */
