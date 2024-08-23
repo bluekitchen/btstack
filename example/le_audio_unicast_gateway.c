@@ -484,30 +484,23 @@ static void run_for_server(server_t * server){
             break;
         case SERVER_ASCS_CODEC_CONFIGURED:
             if (app_state == APP_CIG_CREATED) {
-                uint8_t cis_id = server->cis_id;
                 ase_id = server->ascs_ase_ids[server->ascs_operation_ase_index];
-                ascs_qos_configuration.cig_id = cig_id;
-                ascs_qos_configuration.cis_id = cis_id;
-                ascs_qos_configuration.framing = cig_params.framing;
-                ascs_qos_configuration.phy = LE_AUDIO_SERVER_PHY_MASK_2M;
-                if (server->ascs_ase_roles[server->ascs_operation_ase_index] == LE_AUDIO_ROLE_SOURCE){
-                    ascs_qos_configuration.sdu_interval = cig_params.sdu_interval_p_to_c;
-                    ascs_qos_configuration.max_transport_latency_ms = cig_params.max_transport_latency_p_to_c;
-                    ascs_qos_configuration.max_sdu = cig_params.cis_params[cis_id].max_sdu_p_to_c;
-                    ascs_qos_configuration.retransmission_number = cig_params.cis_params[cis_id].rtn_p_to_c;
-                } else {
-                    ascs_qos_configuration.sdu_interval = cig_params.sdu_interval_c_to_p;
-                    ascs_qos_configuration.max_transport_latency_ms = cig_params.max_transport_latency_c_to_p;
-                    ascs_qos_configuration.max_sdu = cig_params.cis_params[cis_id].max_sdu_c_to_p;
-                    ascs_qos_configuration.retransmission_number = cig_params.cis_params[cis_id].rtn_c_to_p;
-                }
-                ascs_qos_configuration.presentation_delay_us = 40000;
-                server->server_state = SERVER_ASCS_W4_QOS_CONFIGURED;
+                uint8_t cis_id = server->cis_id;
+                uint32_t presentation_delay_us = 40000;
+                uint8_t role = server->ascs_ase_roles[server->ascs_operation_ase_index];
+                status = audio_stream_control_service_client_qos_configuration_for_cig_params(&ascs_qos_configuration,
+                                                                                              &cig_params, cis_id,
+                                                                                              role,
+                                                                                              presentation_delay_us);
+                btstack_assert(status == ERROR_CODE_SUCCESS);
+
                 printf("ASCS_CONFIGURE_QOS ase_id %u, cig_id %u / cis %u, interval %u, framing %u, sdu_size %u, retrans %u, latency %u\n",
                        ase_id, cig_id, cis_id,
                        ascs_qos_configuration.sdu_interval, ascs_qos_configuration.framing,
                        ascs_qos_configuration.max_sdu, ascs_qos_configuration.retransmission_number,
                        ascs_qos_configuration.max_transport_latency_ms);
+
+                server->server_state = SERVER_ASCS_W4_QOS_CONFIGURED;
                 status = audio_stream_control_service_client_streamendpoint_configure_qos(server->ascs_cid, ase_id, &ascs_qos_configuration);
                 btstack_assert(status == ERROR_CODE_SUCCESS);
             }
