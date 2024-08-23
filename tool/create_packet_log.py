@@ -146,6 +146,14 @@ with open (outfile, 'wb') as fout:
 				if rest:
 					handleHexPacket(fout, timestamp, 9, rest)
 					continue
+				rest = chop(line,'ISO => ')
+				if rest:
+					handleHexPacket(fout, timestamp, 0x0c, rest)
+					continue
+				rest = chop(line,'ISO <= ')
+				if rest:
+					handleHexPacket(fout, timestamp, 0x0d, rest)
+					continue
 				rest = chop(line,'LOG -- ')
 				if rest:
 					line = rest
