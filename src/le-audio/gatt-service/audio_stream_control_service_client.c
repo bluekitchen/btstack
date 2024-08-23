@@ -1277,3 +1277,36 @@ void audio_stream_control_service_client_deinit(void){
     }
 }
 
+uint8_t audio_stream_control_service_client_qos_configuration_for_cig_params(ascs_qos_configuration_t * qos_config, const le_audio_cig_params_t * cig_params,
+                                                                             uint8_t cid_id, le_audio_role_t role, uint32_t presentation_delay_us){
+
+    // lookup CIS index by CIS ID
+    uint8_t i;
+    for (i=0;i<cig_params->num_cis;i++){
+        if (cig_params->cis_params[i].cis_id == cid_id) {
+            break;
+        }
+    }
+    if (i == cig_params->num_cis){
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
+
+    qos_config->cig_id = cig_params->cig_id;
+    qos_config->cis_id = cid_id;
+    qos_config->framing = cig_params->framing;
+    if (role == LE_AUDIO_ROLE_SOURCE){
+        qos_config->sdu_interval                = cig_params->sdu_interval_p_to_c;
+        qos_config->max_transport_latency_ms    = cig_params->max_transport_latency_p_to_c;
+        qos_config->max_sdu                     = cig_params->cis_params[i].max_sdu_p_to_c;
+        qos_config->phy                         = cig_params->cis_params[i].phy_p_to_c;
+        qos_config->retransmission_number       = cig_params->cis_params[i].rtn_p_to_c;
+    } else {
+        qos_config->sdu_interval                = cig_params->sdu_interval_c_to_p;
+        qos_config->max_transport_latency_ms    = cig_params->max_transport_latency_c_to_p;
+        qos_config->max_sdu                     = cig_params->cis_params[i].max_sdu_c_to_p;
+        qos_config->phy                         = cig_params->cis_params[i].phy_c_to_p;
+        qos_config->retransmission_number       = cig_params->cis_params[i].rtn_c_to_p;
+    }
+    qos_config->presentation_delay_us = presentation_delay_us;
+    return ERROR_CODE_SUCCESS;
+}
