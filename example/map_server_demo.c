@@ -127,7 +127,6 @@ struct objconfig_s {
 };
 
 static size_t body_msg(char* msg_buffer, uint16_t index, size_t maxsize);
-static size_t body_msg_short(char* msg_buffer, uint16_t index, size_t maxsize);
 static size_t body_msg_email_1_1(char* msg_buffer, uint16_t index, size_t maxsize);
 //static size_t body_msg_email_1_1_del(char* msg_buffer, uint16_t index, size_t maxsize);
 static size_t body_convo(char* msg_buffer, uint16_t index, size_t maxsize);
@@ -211,23 +210,11 @@ struct objconfig_s msg = {
     .fbody = body_msg
 };
 
-struct objconfig_s msgshrt = {
-    .header = MSG_LISTING_HEADER,
-    .footer = MSG_LISTING_FOOTER,
-    .fbody = body_msg_short
-};
-
 struct objconfig_s msg1_1 = {
     .header = MSG_LISTING_HEADER,
     .footer = MSG_LISTING_FOOTER,
     .fbody = body_msg_email_1_1
 };
-
-//struct objconfig_s msg_del = {
-//    .header = MSG_LISTING_HEADER,
-//    .footer = MSG_LISTING_FOOTER,
-//    .fbody = body_msg_email_1_1_del
-//};
 
 struct objconfig_s convo = {
     .header = CONVO_LISTING_HEADER,
@@ -268,21 +255,21 @@ static struct test_config_s
     char* helpstr; // additional help for setup, environment etc.
 } test_configs[] =
 {
-{TC_NORM( .descr = "MAP/MSE/MSM/,MNR/,MMB/,MFB/,MMI/,GEOP/BC,ROB,CON,SRM",.type = &msg,    .obj_count = 5, .objects = { "EMAIL","SMS_GSM","SMS_CDMA", "MMS", "IM"         }                                                      ,.helpstr = "PTS IXIT set 'TSPX_secure_simple_pairing_pass_key_confirmation' to 'true'"                                                                                                                                                                                                                                                                                                      },)
-{TC_NORM( .descr = "MAP/MSE/MMB/BV-23"                                   ,.type = &msg,    .obj_count = 1, .objects = { "EMAIL","EMAIL"                                   }, .fGetMsgListng   = MAP_MSE_MMB_BV_23_inc_VersCnt    ,.helpstr = "PTS wants wants to see an updated Folder version counter on the 2nd GET message listing"                                                                                                                                                                                                                                                                                       },)
-{TC_NORM( .descr = "MAP/MSE/MMB/BV-24"                                   ,.type = &convo,  .obj_count = 0, .objects = { "",""                                             }, .fGetConvoListng = MAP_MSE_MMB_BV_24_inc_ConvCnt    ,                                                                                                                                                                                                                                                                                                                                                                                           },)
-{TC_NORM( .descr = "MAP/MSE/MMB/BV-25"                                   ,.type = &convo,  .obj_count = 0, .objects = { "",""                                             }, .fGetConvoListng = MAP_MSE_MMB_BV_25_inc_ConvListCnt,                                                                                                                                                                                                                                                                                                                                                                                           },)
-{TC_NORM( .descr = "MAP/MSE/MMB/BV-43"                                   ,.type = &convo,  .obj_count = 0, .objects = { "",""                                             }, .fGetConvoListng = MAP_MSE_MMB_BV_43_getConvoListng,                                                                                                                                                                                                                                                                                                                                                                                           },)
-
-{TC_NORM( .descr = "MAP/MSE/MMD/BV-05"                                   ,.type = &msg,    .obj_count = 1, .objects = { "IM"                                              }, .fPutMsg       = MAP_MSE_MMD_BV_05_PutMsg           ,                                                                                                                                                                                                                                                                                                                                                                                           },)
-
-{TC_RFCOM( .descr = "MAP/MSE/MMU/BV-02"                                   ,.type = &msgshrt,.obj_count = 0, .objects = { "", "EMAIL", "MMS" , "EMAIL", "EMAIL"             }, .fPutMsg = MAP_MSE_MMU_BV_02_I_PutMsg               ,.helpstr = "WIP: PTS 8.6.1 MAP_NEW L2CAP bug: claims to send a PUT but doesnt. We need to implement Multi-Packet PUT"                                                                                                                                                                                                                                                                                                                    },)
-{TC_RFCOM( .descr = "MAP/MSE/MMU/BV-03"                                   ,.type = &msg,    .obj_count = 0, .objects = { "", "EMAIL", "MMS"                                }, .fPutMsg = MAP_MSE_MMU_BV_02_I_PutMsg               ,.helpstr = "WIP: PTS 8.6.1 MAP_NEW L2CAP bug: claims to send a PUT but doesnt. We need to implement Multi-Packet PUT"                                                                                        },)
+{TC_NORM( .descr = "MAP/MSE/MSM/,MNR/,MMB/,MFB/,MMI/,GEOP/BC,ROB,CON,SRM",                 .obj_count = 5, .objects = { "EMAIL","SMS_GSM","SMS_CDMA", "MMS", "IM"         }                                                      ,.helpstr = "PTS IXIT set 'TSPX_secure_simple_pairing_pass_key_confirmation' to 'true'"                                                                                                                                                                                                                                                                                                      },)
+{TC_NORM( .descr = "MAP/MSE/MMB/BV-23"                                   ,                 .obj_count = 1, .objects = { "EMAIL","EMAIL"                                   }, .fGetMsgListng   = MAP_MSE_MMB_BV_23_inc_VersCnt    ,.helpstr = "PTS wants wants to see an updated Folder version counter on the 2nd GET message listing"                                                                                                                                                                                                                                                                                       },)
+{TC_NORM( .descr = "MAP/MSE/MMB/BV-24"                                   ,                 .obj_count = 0, .objects = { "",""                                             }, .fGetConvoListng = MAP_MSE_MMB_BV_24_inc_ConvCnt    ,                                                                                                                                                                                                                                                                                                                                                                                           },)
+{TC_NORM( .descr = "MAP/MSE/MMB/BV-25"                                   ,                 .obj_count = 0, .objects = { "",""                                             }, .fGetConvoListng = MAP_MSE_MMB_BV_25_inc_ConvListCnt,                                                                                                                                                                                                                                                                                                                                                                                           },)
+{TC_NORM( .descr = "MAP/MSE/MMB/BV-43"                                   ,                 .obj_count = 0, .objects = { "",""                                             }, .fGetConvoListng = MAP_MSE_MMB_BV_43_getConvoListng,                                                                                                                                                                                                                                                                                                                                                                                           },)
+                                                                                           
+{TC_NORM( .descr = "MAP/MSE/MMD/BV-05"                                   ,                 .obj_count = 1, .objects = { "IM"                                              }, .fPutMsg       = MAP_MSE_MMD_BV_05_PutMsg           ,                                                                                                                                                                                                                                                                                                                                                                                           },)
+                                                                                           
+{TC_RFCOM( .descr = "MAP/MSE/MMU/BV-02"                                  ,                 .obj_count = 0, .objects = { "", "EMAIL", "MMS" , "EMAIL", "EMAIL"             }, .fPutMsg = MAP_MSE_MMU_BV_02_I_PutMsg               ,.helpstr = "WIP: PTS 8.6.1 MAP_NEW L2CAP bug: claims to send a PUT but doesnt. We need to implement Multi-Packet PUT"                                                                                                                                                                                                                                                                                                                    },)
+{TC_RFCOM( .descr = "MAP/MSE/MMU/BV-03"                                  ,  .obj_count = 0, .objects = { "EMAIL", "MMS"                                    }, .fPutMsg = MAP_MSE_MMU_BV_02_I_PutMsg               ,.helpstr = "WIP: PTS 8.6.1 MAP_NEW L2CAP bug: claims to send a PUT but doesnt. We need to implement Multi-Packet PUT"                                                                                        },)
                                                                                                                       
-{TC_NORM( .descr = "MAP/MSE/SGSIT/ATTR/BV-01"                            ,.type = &msgshrt,.obj_count = 1, .objects = { "EMAIL"                                           }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
-{TC_RFCOM(.descr = "MAP/MSE/MFMH/BV-01..05"                              ,.type = &msg,    .obj_count = 1, .objects = { "EMAIL"                                           }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
-{TC_NORM( .descr = "MAP/MSE/MFB/BV-02 05 07"                             ,.type = &msg,    .obj_count = 0, .objects = { ""                                                }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
-{TC_NORM( .descr = "MAP/MSE/GOEP/SRMP/BI-02-C"                           ,.type = &msg,    .obj_count = 9, .objects = { "IM"                                              }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
+{TC_NORM( .descr = "MAP/MSE/SGSIT/ATTR/BV-01"                            ,                 .obj_count = 1, .objects = { "EMAIL"                                           }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
+{TC_RFCOM(.descr = "MAP/MSE/MFMH/BV-01..05"                              ,                 .obj_count = 1, .objects = { "EMAIL"                                           }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
+{TC_NORM( .descr = "MAP/MSE/MFB/BV-02 05 07"                             ,                 .obj_count = 0, .objects = { ""                                                }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
+{TC_NORM( .descr = "MAP/MSE/GOEP/SRMP/BI-02-C"                           ,                 .obj_count = 9, .objects = { "IM"                                              }                                                      ,                                                                                                                                                                                                                                                                                                                                                                                           },)
 
 };
 static struct test_config_s* mas_cfg = &test_configs[0];
@@ -497,7 +484,7 @@ static size_t body_convo(char* msg_buffer, uint16_t index, size_t maxsize) {
 }
 
 // we create a full obex body message in a local buffer
-static size_t create_obex_body(uint16_t first, uint16_t last) {
+static size_t create_obex_body(struct objconfig_s* type, uint16_t first, uint16_t last) {
     size_t pos = 0;
     size_t len = 0;
     size_t size = sizeof(OBEX_body_object);
@@ -508,13 +495,13 @@ static size_t create_obex_body(uint16_t first, uint16_t last) {
     OBEX_body_object[0] = 0;
     
     // header
-    len = snprintf(&OBEX_body_object[pos], size, mas_cfg->type->header);
+    len = snprintf(&OBEX_body_object[pos], size, type->header);
     pos += len; size -= len;
     
     while ((size > 0) && (first < last)){        
         log_debug("2 first:%d last:%d pos:%d size:%d <%s>", first, last, pos, size, OBEX_body_object);
         // add entry
-        len = mas_cfg->type->fbody(&OBEX_body_object[pos], first, size);
+        len = type->fbody(&OBEX_body_object[pos], first, size);
         pos += len; size -= len;
         first++;
     }
@@ -522,7 +509,7 @@ static size_t create_obex_body(uint16_t first, uint16_t last) {
     log_debug("4 first:%d last:%d pos:%d size:%d <%s>", first, last, pos, size, OBEX_body_object);
 
     // footer
-    len = snprintf(&OBEX_body_object[pos], size, mas_cfg->type->footer);
+    len = snprintf(&OBEX_body_object[pos], size, type->footer);
     pos += len; size -= len;
 
     log_debug("5 first:%d last:%d pos:%d size:%d <%s>", first, last, pos, size, OBEX_body_object);
@@ -530,7 +517,6 @@ static size_t create_obex_body(uint16_t first, uint16_t last) {
     return pos;
 }
 
-#define MAP_DEMO_ENABLE_AUTO_BODY_OBJECT
 enum body_object { o_msg, o_convo, o_bmsg };
 
 static void send_obex_object(enum body_object obj, uint16_t map_cid, uint16_t start_index, uint16_t end_index, uint32_t continuation) {
@@ -538,16 +524,22 @@ static void send_obex_object(enum body_object obj, uint16_t map_cid, uint16_t st
     static size_t object_size = 0;
     size_t start = continuation, len, body_size = map_server_get_max_body_size(map_cid);
     uint8_t response_code;
-#ifdef MAP_DEMO_ENABLE_AUTO_BODY_OBJECT
-    switch (obj) {
-    case o_msg  : mas_cfg->type = &msg; break;
-    case o_convo: mas_cfg->type = &convo; break;
-    case o_bmsg:  mas_cfg->type = &s_bmsg; break;
+    struct objconfig_s* type;
+
+    if (mas_cfg->type != NULL) {
+        // override automatic config of response body object
+        type = mas_cfg->type;
+    } else {
+        switch (obj) {
+        case o_msg:   type = &msg; break;
+        case o_convo: type = &convo; break;
+        case o_bmsg:  type = &s_bmsg; break;
+        }
     }
-#endif
+
     if (continuation == 0) {
         end_index = min(end_index, mas_cfg->obj_count + one_object_more_or_less);
-        object_size = create_obex_body(start_index, end_index);
+        object_size = create_obex_body(type, start_index, end_index);
 
         log_debug("obj_count:%u start_index:%u end_index:%u one_object_more_or_less:%u\n", 
             mas_cfg->obj_count, start_index, end_index, one_object_more_or_less);
