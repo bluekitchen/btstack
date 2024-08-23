@@ -692,7 +692,7 @@ uint8_t map_access_client_connect(map_access_client_t *map_access_client, l2cap_
     map_access_client->state = MAP_W4_GOEP_CONNECTION;
     map_access_client->request_number = 0;
     map_access_client->client_handler = handler;
-    uint8_t status = goep_client_connect((goep_client_t *) map_access_client, l2cap_ertm_config,
+    uint8_t status = goep_client_connect(&map_access_client->goep_client, l2cap_ertm_config,
                                          l2cap_ertm_buffer, l2cap_ertm_buffer_size, &map_access_client_packet_handler,
                                          addr, BLUETOOTH_SERVICE_CLASS_MESSAGE_ACCESS_SERVER, instance_id,
                                          &map_access_client->cid);
