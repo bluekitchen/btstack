@@ -38,7 +38,7 @@
 #define BTSTACK_FILE__ "map_notification_client.c"
 
 #include "classic/map_notification_client.h"
-#include "classic/map_access_server.h"
+#include "classic/map_server.h"
 
 #include "btstack_bool.h"
 #include "btstack_config.h"

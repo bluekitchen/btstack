@@ -56,7 +56,7 @@
 #include "classic/goep_server.h"
 #include "classic/sdp_util.h"
 #include "classic/map.h"
-#include "classic/map_access_server.h"
+#include "classic/map_server.h"
 
  // TODO: copied from PBAP_server, to be adapted to MAS server
  // max app params for vcard listing and folder response:
