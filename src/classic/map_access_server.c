@@ -413,33 +413,6 @@ static void map_server_add_type_header(map_server_t* mas) {
     }
 }
 
-static uint16_t map_server_application_params_add_uint16(uint8_t* application_parameters, uint8_t type, uint16_t value) {
-    uint16_t pos = 0;
-    application_parameters[pos++] = type;
-    application_parameters[pos++] = 2;
-    big_endian_store_16(application_parameters, 2, value);
-    pos += 2;
-    return pos;
-}
-
-static uint16_t map_server_application_params_add_uint128(uint8_t* application_parameters, uint8_t type, const uint8_t* value) {
-    uint16_t pos = 0;
-    application_parameters[pos++] = type;
-    application_parameters[pos++] = 16;
-    memcpy(&application_parameters[pos], value, 16);
-    pos += 16;
-    return pos;
-}
-
-static uint16_t map_server_application_params_add_uint128hex(uint8_t* application_parameters, uint8_t type, const uint8_t* value) {
-    uint16_t pos = 0;
-    application_parameters[pos++] = type;
-    application_parameters[pos++] = BT_UINT128_HEX_LEN_BYTES;
-    memcpy(&application_parameters[pos], value, BT_UINT128_HEX_LEN_BYTES);
-    pos += BT_UINT128_HEX_LEN_BYTES;
-    return pos;
-}
-
 static void map_server_default_headers(map_server_t* mas) {
     (void)memset(&mas->request, 0, sizeof(mas->request));
     mas->request.app_params.MaxListCount = 1024;
