@@ -348,6 +348,18 @@ uint8_t audio_stream_control_service_client_streamendpoint_released(uint16_t asc
  */
 uint8_t audio_stream_control_service_client_streamendpoint_metadata_update(uint16_t ascs_cid, uint8_t ase_id, const le_audio_metadata_t *metadata);
 
+/**
+ * @brief Setup ASCS QoS Configuration based on HCI CIG Params and Presentation Delay
+ * @param qos_config
+ * @param cig_params
+ * @param cid_id
+ * @param role
+ * @param presenetation_delay_us
+ * @return ERROR_CODE_SUCCESS, or ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS if CID_ID not used in HCI CIG Params
+ */
+uint8_t audio_stream_control_service_client_qos_configuration_for_cig_params(ascs_qos_configuration_t * qos_config, const le_audio_cig_params_t * cig_params,
+                                                                             uint8_t cid_id, le_audio_role_t role, uint32_t presentation_delay_us);
+
 
 /**
  * @brief Deinit Audio Stream Control Service Client
