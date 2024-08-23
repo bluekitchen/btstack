@@ -68,20 +68,20 @@
 //#define MAP_SERVER_MAX_APP_PARAMS_LEN ((4*2) + 2 + BT_UINT128_LEN_BYTES + (2*BT_UINT128_LEN_BYTES))
 
 typedef enum {
-    MAP_SERVER_STATE_W4_OPEN,
-    MAP_SERVER_STATE_W4_CONNECT_OPCODE,
-    MAP_SERVER_STATE_W4_CONNECT_REQUEST,
-    MAP_SERVER_STATE_SEND_CONNECT_RESPONSE_ERROR,
-    MAP_SERVER_STATE_SEND_CONNECT_RESPONSE_SUCCESS,
-    MAP_SERVER_STATE_CONNECTED,
-    MAP_SERVER_STATE_W4_REQUEST,
-    MAP_SERVER_STATE_W4_USER_DATA,
-    MAP_SERVER_STATE_W4_GET_OPCODE,
-    MAP_SERVER_STATE_W4_GET_REQUEST,
-    MAP_SERVER_STATE_SEND_INTERNAL_RESPONSE,
-    MAP_SERVER_STATE_SEND_USER_RESPONSE,
-    MAP_SERVER_STATE_SEND_DISCONNECT_RESPONSE,
-    MAP_SERVER_STATE_ABOUT_TO_SEND,
+    MAS_STATE_W4_OPEN,
+    MAS_STATE_W4_CONNECT_OPCODE,
+    MAS_STATE_W4_CONNECT_REQUEST,
+    MAS_STATE_SEND_CONNECT_RESPONSE_ERROR,
+    MAS_STATE_SEND_CONNECT_RESPONSE_SUCCESS,
+    MAS_STATE_CONNECTED,
+    MAS_STATE_W4_REQUEST,
+    MAS_STATE_W4_USER_DATA,
+    MAS_STATE_W4_GET_OPCODE,
+    MAS_STATE_W4_GET_REQUEST,
+    MAS_STATE_SEND_INTERNAL_RESPONSE,
+    MAS_STATE_SEND_USER_RESPONSE,
+    MAS_STATE_SEND_DISCONNECT_RESPONSE,
+    MAS_STATE_ABOUT_TO_SEND,
 } map_access_server_state_t;
 
 typedef struct {
@@ -219,11 +219,11 @@ static map_access_server_t* map_access_server_for_goep_cid(uint16_t goep_cid) {
 }
 
 /* only to be called if the GEOP connection is closed
-* if only OBEX connection is closed we need to go to  MAP_SERVER_STATE_W4_CONNECT_OPCODE
+* if only OBEX connection is closed we need to go to  MAS_STATE_W4_CONNECT_OPCODE
 */
 static void map_access_server_finalize_connection(map_access_server_t* mas) {
     // minimal
-    mas->state = MAP_SERVER_STATE_W4_OPEN;
+    mas->state = MAS_STATE_W4_OPEN;
 }
 
 static mas_folder_t map_access_server_get_folder_by_path(const char* path) {
@@ -300,7 +300,7 @@ static void map_access_server_handle_set_path_request(map_access_server_t* mas, 
             break;
         }
     }
-    mas->state = MAP_SERVER_STATE_SEND_INTERNAL_RESPONSE;
+    mas->state = MAS_STATE_SEND_INTERNAL_RESPONSE;
     mas->response.code = obex_result;
     goep_server_request_can_send_now(mas->goep_cid);
 }
@@ -450,7 +450,7 @@ static void map_access_server_reset_response(map_access_server_t* mas) {
 }
 
 static void map_access_server_operation_complete(map_access_server_t* mas) {
-    mas->state = MAP_SERVER_STATE_CONNECTED;
+    mas->state = MAS_STATE_CONNECTED;
     mas->srm_state = SRM_DISABLED;
     map_access_server_default_headers(mas);
     map_access_server_reset_response(mas);
@@ -462,7 +462,7 @@ static void map_access_server_handle_can_send_now(map_access_server_t* mas) {
     uint16_t pos = 0;
 
     switch (mas->state) {
-    case MAP_SERVER_STATE_SEND_INTERNAL_RESPONSE:
+    case MAS_STATE_SEND_INTERNAL_RESPONSE:
         // prepare response
         goep_server_response_create_general(mas->goep_cid);
         // next state
@@ -471,7 +471,7 @@ static void map_access_server_handle_can_send_now(map_access_server_t* mas) {
         // send packet
         goep_server_execute(mas->goep_cid, response_code);
         break;
-    case MAP_SERVER_STATE_SEND_USER_RESPONSE:
+    case MAS_STATE_SEND_USER_RESPONSE:
         // prepare response
         map_access_server_build_response(mas);
         if (mas->response.body_len > 0) {
@@ -484,7 +484,7 @@ static void map_access_server_handle_can_send_now(map_access_server_t* mas) {
         if (response_code == OBEX_RESP_CONTINUE) {
             map_access_server_reset_response(mas);
             // next state
-            mas->state = (mas->srm_state == SRM_ENABLED) ? MAP_SERVER_STATE_ABOUT_TO_SEND : MAP_SERVER_STATE_W4_GET_OPCODE;
+            mas->state = (mas->srm_state == SRM_ENABLED) ? MAS_STATE_ABOUT_TO_SEND : MAS_STATE_W4_GET_OPCODE;
         }
         else {
             map_access_server_operation_complete(mas);
@@ -496,15 +496,15 @@ static void map_access_server_handle_can_send_now(map_access_server_t* mas) {
             map_access_server_handle_get_or_put_request(mas);
         }
         break;
-    case MAP_SERVER_STATE_SEND_CONNECT_RESPONSE_ERROR:
+    case MAS_STATE_SEND_CONNECT_RESPONSE_ERROR:
         // prepare response
         goep_server_response_create_general(mas->goep_cid);
         // next state
-        mas->state = MAP_SERVER_STATE_W4_CONNECT_OPCODE;
+        mas->state = MAS_STATE_W4_CONNECT_OPCODE;
         // send packet
         goep_server_execute(mas->goep_cid, OBEX_RESP_BAD_REQUEST);
         break;
-    case MAP_SERVER_STATE_SEND_CONNECT_RESPONSE_SUCCESS:
+    case MAS_STATE_SEND_CONNECT_RESPONSE_SUCCESS:
         // prepare response
         goep_server_response_create_connect(mas->goep_cid, OBEX_VERSION, 0, OBEX_MAX_PACKETLEN_DEFAULT);
         goep_server_header_add_who(mas->goep_cid, map_uuid);
@@ -524,14 +524,14 @@ static void map_access_server_handle_can_send_now(map_access_server_t* mas) {
         (*map_access_server_user_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
         break;
 
-    case MAP_SERVER_STATE_SEND_DISCONNECT_RESPONSE:
+    case MAS_STATE_SEND_DISCONNECT_RESPONSE:
     {
         // cache data
         //uint16_t map_cid = mas->goep_cid;
         uint16_t goep_cid = mas->goep_cid;
 
         // reset MAP/OBEX connection state
-        mas->state = MAP_SERVER_STATE_W4_CONNECT_OPCODE;
+        mas->state = MAS_STATE_W4_CONNECT_OPCODE;
 
         // respond to request
         goep_server_response_create_general(goep_cid);
@@ -577,7 +577,7 @@ static void map_access_server_packet_handler_hci(uint8_t* packet, uint16_t size)
                 goep_subevent_connection_opened_get_bd_addr(packet, mas->bd_addr);
                 mas->con_handle = goep_subevent_connection_opened_get_con_handle(packet);
                 mas->incoming = goep_subevent_connection_opened_get_incoming(packet);
-                mas->state = MAP_SERVER_STATE_W4_CONNECT_OPCODE;
+                mas->state = MAS_STATE_W4_CONNECT_OPCODE;
             }
             break;
         case GOEP_SUBEVENT_CONNECTION_CLOSED:
@@ -738,7 +738,7 @@ static void map_access_server_handle_get_or_put_request(map_access_server_t* mas
     map_access_server_handle_srm_headers(mas);
 
     if (mas->srm_state == SRM_SEND_CONFIRM_WAIT) {
-        mas->state = MAP_SERVER_STATE_SEND_INTERNAL_RESPONSE;
+        mas->state = MAS_STATE_SEND_INTERNAL_RESPONSE;
         //mas->response.code = OBEX_RESP_CONTINUE;
         mas->obex_srm.srm_value = OBEX_SRM_ENABLE;
         goep_server_request_can_send_now(mas->goep_cid);
@@ -751,13 +751,13 @@ static void map_access_server_handle_get_or_put_request(map_access_server_t* mas
     switch (mas->request.object_type) {
     case MAP_OBJECT_TYPE_INVALID:
         // MAP_OBJECT_TYPE_INVALID
-        mas->state = MAP_SERVER_STATE_SEND_INTERNAL_RESPONSE;
+        mas->state = MAS_STATE_SEND_INTERNAL_RESPONSE;
         mas->response.code = OBEX_RESP_BAD_REQUEST;
         goep_server_request_can_send_now(mas->goep_cid);
         return;
 
     case MAP_OBJECT_TYPE_UNKNOWN:
-        mas->state = MAP_SERVER_STATE_SEND_INTERNAL_RESPONSE;
+        mas->state = MAS_STATE_SEND_INTERNAL_RESPONSE;
         mas->response.code = OBEX_RESP_CONTINUE;
         goep_server_request_can_send_now(mas->goep_cid);
         return;
@@ -784,7 +784,7 @@ static void map_access_server_handle_get_or_put_request(map_access_server_t* mas
     }
 
     if (folder == MAS_FOLDER_INVALID) {
-        mas->state = MAP_SERVER_STATE_SEND_INTERNAL_RESPONSE;
+        mas->state = MAS_STATE_SEND_INTERNAL_RESPONSE;
         mas->response.code = OBEX_RESP_NOT_FOUND;
         goep_server_request_can_send_now(mas->goep_cid);
         return;
@@ -898,7 +898,7 @@ static void map_access_server_handle_get_or_put_request(map_access_server_t* mas
         btstack_unreachable();
         break;
     }
-    mas->state = MAP_SERVER_STATE_W4_USER_DATA;
+    mas->state = MAS_STATE_W4_USER_DATA;
     (*map_access_server_user_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
@@ -908,17 +908,17 @@ static void map_access_server_packet_handler_goep(map_access_server_t* mas, uint
     obex_parser_object_state_t parser_state;
 
     switch (mas->state) {
-    case MAP_SERVER_STATE_W4_OPEN:
+    case MAS_STATE_W4_OPEN:
         btstack_unreachable();
         break;
-    case MAP_SERVER_STATE_W4_CONNECT_OPCODE:
-        mas->state = MAP_SERVER_STATE_W4_CONNECT_REQUEST;
+    case MAS_STATE_W4_CONNECT_OPCODE:
+        mas->state = MAS_STATE_W4_CONNECT_REQUEST;
         map_access_server_default_headers(mas);
         obex_parser_init_for_request(&mas->obex_parser, &map_access_server_parser_callback_connect, (void*)mas);
 
         /* fall through */
 
-    case MAP_SERVER_STATE_W4_CONNECT_REQUEST:
+    case MAS_STATE_W4_CONNECT_REQUEST:
         parser_state = obex_parser_process_data(&mas->obex_parser, packet, size);
         if (parser_state == OBEX_PARSER_OBJECT_STATE_COMPLETE) {
             obex_parser_operation_info_t op_info;
@@ -931,16 +931,16 @@ static void map_access_server_packet_handler_goep(map_access_server_t* mas, uint
             // TODO: check Target
             if (ok == false) {
                 // send bad request response
-                mas->state = MAP_SERVER_STATE_SEND_CONNECT_RESPONSE_ERROR;
+                mas->state = MAS_STATE_SEND_CONNECT_RESPONSE_ERROR;
             }
             else {
                 // send connect response
-                mas->state = MAP_SERVER_STATE_SEND_CONNECT_RESPONSE_SUCCESS;
+                mas->state = MAS_STATE_SEND_CONNECT_RESPONSE_SUCCESS;
             }
             goep_server_request_can_send_now(mas->goep_cid);
         }
         break;
-    case MAP_SERVER_STATE_CONNECTED:
+    case MAS_STATE_CONNECTED:
         opcode = packet[0];
         mas->OBEX_opcode = opcode;
 
@@ -950,31 +950,31 @@ static void map_access_server_packet_handler_goep(map_access_server_t* mas, uint
         case (OBEX_OPCODE_GET | OBEX_OPCODE_FINAL_BIT_MASK):
         case OBEX_OPCODE_PUT:
         case (OBEX_OPCODE_PUT | OBEX_OPCODE_FINAL_BIT_MASK):
-            log_debug("MAP_SERVER_STATE_W4_REQUEST: OBEX_OPCODE_GET/PUT opcode:0x%02X", opcode);
-            mas->state = MAP_SERVER_STATE_W4_REQUEST;
+            log_debug("MAS_STATE_W4_REQUEST: OBEX_OPCODE_GET/PUT opcode:0x%02X", opcode);
+            mas->state = MAS_STATE_W4_REQUEST;
             obex_parser_init_for_request(&mas->obex_parser, &map_access_server_parser_callback_get, (void*)mas);
             break;
         case OBEX_OPCODE_SETPATH:
-            log_debug("MAP_SERVER_STATE_W4_REQUEST: OBEX_OPCODE_SETPATH opcode:0x%02X", opcode);
-            mas->state = MAP_SERVER_STATE_W4_REQUEST;
+            log_debug("MAS_STATE_W4_REQUEST: OBEX_OPCODE_SETPATH opcode:0x%02X", opcode);
+            mas->state = MAS_STATE_W4_REQUEST;
             obex_parser_init_for_request(&mas->obex_parser, &map_access_server_parser_callback_get, (void*)mas);
             break;
         case OBEX_OPCODE_DISCONNECT:
-            log_debug("MAP_SERVER_STATE_W4_REQUEST: OBEX_OPCODE_DISCONNECT opcode:0x%02X", opcode);
-            mas->state = MAP_SERVER_STATE_W4_REQUEST;
+            log_debug("MAS_STATE_W4_REQUEST: OBEX_OPCODE_DISCONNECT opcode:0x%02X", opcode);
+            mas->state = MAS_STATE_W4_REQUEST;
             obex_parser_init_for_request(&mas->obex_parser, NULL, NULL);
             break;
         case OBEX_OPCODE_ACTION:
         default:
-            log_debug("MAP_SERVER_STATE_W4_REQUEST: OBEX_OPCODE_ACTION/default opcode:0x%02X", opcode);
-            mas->state = MAP_SERVER_STATE_W4_REQUEST;
+            log_debug("MAS_STATE_W4_REQUEST: OBEX_OPCODE_ACTION/default opcode:0x%02X", opcode);
+            mas->state = MAS_STATE_W4_REQUEST;
             obex_parser_init_for_request(&mas->obex_parser, NULL, NULL);
             break;
         }
 
         /* fall through */
 
-    case MAP_SERVER_STATE_W4_REQUEST:
+    case MAS_STATE_W4_REQUEST:
         map_access_server_obex_srm_init(&mas->obex_srm);
         parser_state = obex_parser_process_data(&mas->obex_parser, packet, size);
         if (parser_state == OBEX_PARSER_OBJECT_STATE_COMPLETE) {
@@ -991,7 +991,7 @@ static void map_access_server_packet_handler_goep(map_access_server_t* mas, uint
                 map_access_server_handle_set_path_request(mas, op_info.flags, &mas->request.name[0]);
                 break;
             case OBEX_OPCODE_DISCONNECT:
-                mas->state = MAP_SERVER_STATE_SEND_DISCONNECT_RESPONSE;
+                mas->state = MAS_STATE_SEND_DISCONNECT_RESPONSE;
                 goep_server_request_can_send_now(mas->goep_cid);
                 break;
             case OBEX_OPCODE_ACTION:
@@ -999,7 +999,7 @@ static void map_access_server_packet_handler_goep(map_access_server_t* mas, uint
             case OBEX_OPCODE_SESSION:
             default:
                 // send bad request response
-                mas->state = MAP_SERVER_STATE_SEND_INTERNAL_RESPONSE;
+                mas->state = MAS_STATE_SEND_INTERNAL_RESPONSE;
                 RUN_AND_LOG_ACTION(mas->response.code = OBEX_RESP_BAD_REQUEST;)
                 goep_server_request_can_send_now(mas->goep_cid);
                 break;
@@ -1007,13 +1007,13 @@ static void map_access_server_packet_handler_goep(map_access_server_t* mas, uint
         }
         break;
 
-    case MAP_SERVER_STATE_W4_GET_OPCODE:
-        mas->state = MAP_SERVER_STATE_W4_GET_REQUEST;
+    case MAS_STATE_W4_GET_OPCODE:
+        mas->state = MAS_STATE_W4_GET_REQUEST;
         obex_parser_init_for_request(&mas->obex_parser, &map_access_server_parser_callback_get, (void*)mas);
 
         /* fall through */
 
-    case MAP_SERVER_STATE_W4_GET_REQUEST:
+    case MAS_STATE_W4_GET_REQUEST:
         map_access_server_obex_srm_init(&mas->obex_srm);
         parser_state = obex_parser_process_data(&mas->obex_parser, packet, size);
         if (parser_state == OBEX_PARSER_OBJECT_STATE_COMPLETE) {
@@ -1025,12 +1025,12 @@ static void map_access_server_packet_handler_goep(map_access_server_t* mas, uint
                 break;
             case (OBEX_OPCODE_ABORT & 0x7f):
                 mas->response.code = OBEX_RESP_SUCCESS;
-                mas->state = MAP_SERVER_STATE_SEND_INTERNAL_RESPONSE;
+                mas->state = MAS_STATE_SEND_INTERNAL_RESPONSE;
                 goep_server_request_can_send_now(mas->goep_cid);
                 break;
             default:
                 // send bad request response
-                mas->state = MAP_SERVER_STATE_SEND_INTERNAL_RESPONSE;
+                mas->state = MAS_STATE_SEND_INTERNAL_RESPONSE;
                 RUN_AND_LOG_ACTION(mas->response.code = OBEX_RESP_BAD_REQUEST;)
                 goep_server_request_can_send_now(mas->goep_cid);
                 break;
@@ -1073,7 +1073,7 @@ void map_access_server_deinit(void) {
 
 // note: common code for next four setters
 static bool map_access_server_valid_header_for_request(map_access_server_t* mas) {
-    if (mas->state != MAP_SERVER_STATE_W4_USER_DATA) {
+    if (mas->state != MAS_STATE_W4_USER_DATA) {
         RUN_AND_LOG_ACTION(return false;)
     }
     switch (mas->request.object_type) {
@@ -1159,7 +1159,7 @@ uint16_t map_access_server_get_max_body_size(uint16_t map_cid) {
     if (mas == NULL) {
         return 0;
     }
-    if (mas->state != MAP_SERVER_STATE_W4_USER_DATA) {
+    if (mas->state != MAS_STATE_W4_USER_DATA) {
         return 0;
     }
 
@@ -1209,7 +1209,7 @@ uint16_t map_access_server_send_response(uint16_t map_cid, uint8_t response_code
 #endif
 
     mas->request.continuation = continuation;
-    mas->state = MAP_SERVER_STATE_SEND_USER_RESPONSE;
+    mas->state = MAS_STATE_SEND_USER_RESPONSE;
     mas->response.body_data = body;
     mas->response.body_len = (uint16_t)body_len;
     RUN_AND_LOG_ACTION(return goep_server_request_can_send_now(mas->goep_cid);)
