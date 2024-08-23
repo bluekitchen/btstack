@@ -130,12 +130,6 @@ static void hci_dump_windows_fs_log_packet(uint8_t packet_type, uint8_t in, uint
             header_len = HCI_DUMP_HEADER_SIZE_BLUEZ;
             break;
         case HCI_DUMP_PACKETLOGGER:
-            // ISO packets not supported
-            if (packet_type == HCI_ISO_DATA_PACKET){
-                len = hci_dump_iso_summary(in, packet, len);
-                packet_type = LOG_MESSAGE_PACKET;
-                packet = (uint8_t*) log_message_buffer;
-            }
             hci_dump_setup_header_packetlogger(header.header_packetlogger, tv_sec, tv_us, packet_type, in, len);
             header_len = HCI_DUMP_HEADER_SIZE_PACKETLOGGER;
             break;
