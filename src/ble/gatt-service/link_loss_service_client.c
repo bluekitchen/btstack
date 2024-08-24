@@ -396,6 +396,6 @@ uint8_t link_loss_service_client_disconnect(uint16_t lls_cid){
 }
 
 void link_loss_service_client_deinit(void){
-    gatt_service_client_deinit(&lls_client);
+    gatt_service_client_unregister_client(&lls_client);
 }
 

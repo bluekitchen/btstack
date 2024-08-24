@@ -1498,6 +1498,6 @@ uint8_t object_transfer_service_client_disconnect(ots_client_connection_t * conn
 }
 
 void object_transfer_control_service_client_deinit(void){
-    gatt_service_client_deinit(&ots_client);
+    gatt_service_client_unregister_client(&ots_client);
 }
 

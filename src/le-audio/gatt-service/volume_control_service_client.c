@@ -1061,6 +1061,6 @@ uint8_t volume_control_service_client_disconnect(uint16_t vcs_cid){
 }
 
 void volume_control_service_client_deinit(void){
-    gatt_service_client_deinit(&vcs_client);
+    gatt_service_client_unregister_client(&vcs_client);
 }
 

@@ -1133,6 +1133,6 @@ uint8_t media_control_service_client_disconnect(uint16_t mcs_cid){
 }
 
 void media_control_service_client_deinit(void){
-    gatt_service_client_deinit(&mcs_client);
+    gatt_service_client_unregister_client(&mcs_client);
 }
 

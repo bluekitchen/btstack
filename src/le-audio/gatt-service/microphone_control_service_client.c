@@ -793,6 +793,6 @@ uint8_t microphone_control_service_client_disconnect(uint16_t aics_cid){
 }
 
 void microphone_control_service_client_deinit(void){
-    gatt_service_client_deinit(&mics_client);
+    gatt_service_client_unregister_client(&mics_client);
 }
 

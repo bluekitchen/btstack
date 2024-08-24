@@ -538,6 +538,11 @@ void gatt_service_client_trampoline_packet_handler(gatt_service_client_t * clien
     }
 }
 
+/* API */
+
+void gatt_service_client_init(void){
+}
+
 void gatt_service_client_register_client(
         gatt_service_client_t * client,
         void (*trampoline_packet_handler)(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size)){
@@ -653,7 +658,7 @@ uint8_t gatt_service_client_disconnect(gatt_service_client_t * client, uint16_t 
     return ERROR_CODE_SUCCESS;
 }
 
-void gatt_service_client_deinit(gatt_service_client_t * client){
+void gatt_service_client_unregister_client(gatt_service_client_t * client){
     btstack_assert(client != NULL);
 
     client->packet_handler = NULL;
@@ -669,4 +674,6 @@ void gatt_service_client_deinit(gatt_service_client_t * client){
     }
 }
 
+void gatt_service_client_deinit(void){
+}
 

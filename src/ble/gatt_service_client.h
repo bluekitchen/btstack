@@ -117,6 +117,12 @@ typedef struct {
 
 /* API_START */
 
+
+/**
+ * @brief Initialize GATT Service Client infrastructure
+ */
+void gatt_service_client_init(void);
+
 /**
  * @brief Register new GATT Service Client
  * @param client
@@ -124,6 +130,12 @@ typedef struct {
  */
 void gatt_service_client_register_client(gatt_service_client_t * client,
                                          void (*trampoline_packet_handler)(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size));
+
+/**
+ * @bbreif Unregister GATT Service Client
+ * @param client
+ */
+void gatt_service_client_unregister_client(gatt_service_client_t * client);
 
 /**
  * @brief Packet Handler to be called by trampoline registered with gatt_service_client_register_client
@@ -276,7 +288,7 @@ void gatt_service_client_finalize_connection(gatt_service_client_t * client, gat
  * @brief De-Init
  * @param client
  */
-void gatt_service_client_deinit(gatt_service_client_t * client);
+void gatt_service_client_deinit(void);
 
 /**
  * @brief Map ATT Error Code to (extended) Error Codes
