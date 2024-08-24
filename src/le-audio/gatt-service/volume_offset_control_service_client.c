@@ -597,8 +597,8 @@ static void vocs_client_packet_handler_trampoline(uint8_t packet_type, uint16_t 
 }
 
 void volume_offset_control_service_client_init(void){
-    gatt_service_client_register_client(&vocs_client, &vocs_client_packet_handler_trampoline);
-    gatt_service_client_register_packet_handler(&vocs_client, &vocs_client_packet_handler_internal);
+    gatt_service_client_register_client(&vocs_client, &vocs_client_packet_handler_internal,
+                                        &vocs_client_packet_handler_trampoline);
 
     vocs_client.characteristics_desc16_num = sizeof(vocs_uuid16s)/sizeof(uint16_t);
     vocs_client.characteristics_desc16 = vocs_uuid16s;

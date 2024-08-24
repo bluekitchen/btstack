@@ -581,8 +581,7 @@ static void mics_client_packet_handler_trampoline(uint8_t packet_type, uint16_t 
 }
 
 void microphone_control_service_client_init(void){
-    gatt_service_client_register_client(&mics_client, &mics_client_packet_handler_trampoline);
-    gatt_service_client_register_packet_handler(&mics_client, &mics_client_packet_handler_internal);
+    gatt_service_client_register_client(&mics_client, &mics_client_packet_handler_internal, &mics_client_packet_handler_trampoline);
 
     mics_client.characteristics_desc16_num = sizeof(aics_uuid16s)/sizeof(uint16_t);
     mics_client.characteristics_desc16 = aics_uuid16s;
