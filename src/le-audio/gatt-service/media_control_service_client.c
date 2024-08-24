@@ -729,7 +729,7 @@ static void mcs_client_packet_handler_trampoline(uint8_t packet_type, uint16_t c
 }
 
 void media_control_service_client_init(void){
-    gatt_service_client_init(&mcs_client, &mcs_client_packet_handler_trampoline);
+    gatt_service_client_register_client(&mcs_client, &mcs_client_packet_handler_trampoline);
     gatt_service_client_register_packet_handler(&mcs_client, &mcs_client_packet_handler_internal);
 
     mcs_client.characteristics_desc16_num = sizeof(mcs_characteristics_desc16)/sizeof(uint16_t);

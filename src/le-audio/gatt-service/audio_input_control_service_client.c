@@ -642,7 +642,7 @@ static void aics_client_packet_handler_trampoline(uint8_t packet_type, uint16_t 
 }
 
 void audio_input_control_service_client_init(void){
-    gatt_service_client_init(&aics_client, &aics_client_packet_handler_trampoline);
+    gatt_service_client_register_client(&aics_client, &aics_client_packet_handler_trampoline);
     gatt_service_client_register_packet_handler(&aics_client, &aics_client_packet_handler_internal);
 
     aics_client.characteristics_desc16_num = sizeof(aics_uuid16s)/sizeof(uint16_t);

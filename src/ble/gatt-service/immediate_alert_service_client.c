@@ -220,7 +220,7 @@ static void ias_client_packet_handler_trampoline(uint8_t packet_type, uint16_t c
 }
 
 void immediate_alert_service_client_init(void){
-    gatt_service_client_init(&ias_client, &ias_client_packet_handler_trampoline);
+    gatt_service_client_register_client(&ias_client, &ias_client_packet_handler_trampoline);
     gatt_service_client_register_packet_handler(&ias_client, &ias_client_packet_handler_internal);
 
     ias_client.characteristics_desc16_num = sizeof(ias_uuid16s)/sizeof(uint16_t);
