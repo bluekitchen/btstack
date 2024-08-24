@@ -543,21 +543,14 @@ void gatt_service_client_trampoline_packet_handler(gatt_service_client_t * clien
 void gatt_service_client_init(void){
 }
 
-void gatt_service_client_register_client(
-        gatt_service_client_t * client,
-        void (*trampoline_packet_handler)(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size)){
+void gatt_service_client_register_client(gatt_service_client_t *client, btstack_packet_handler_t packet_handler,
+                                         void (*trampoline_packet_handler)(uint8_t, uint16_t, uint8_t *, uint16_t)) {
 
     client->cid_counter = 0;
     client->characteristics_desc16_num = 0;
     client->hci_event_callback_registration.callback = trampoline_packet_handler;
+    client->packet_handler = packet_handler;
     hci_add_event_handler(&client->hci_event_callback_registration);
-}
-
-void gatt_service_client_register_packet_handler(gatt_service_client_t * client, btstack_packet_handler_t packet_hander){
-    btstack_assert(client != NULL);
-    btstack_assert(packet_hander != NULL);
-
-    client->packet_handler = packet_hander;
 }
 
 uint8_t gatt_service_client_connect_primary_service(

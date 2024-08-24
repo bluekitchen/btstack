@@ -128,8 +128,8 @@ void gatt_service_client_init(void);
  * @param client
  * @param trampoline_packet_handler packet handler that calls gatt_service_client_trampoline_packet_handler with client
  */
-void gatt_service_client_register_client(gatt_service_client_t * client,
-                                         void (*trampoline_packet_handler)(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size));
+void gatt_service_client_register_client(gatt_service_client_t *client, btstack_packet_handler_t packet_handler,
+                                         void (*trampoline_packet_handler)(uint8_t, uint16_t, uint8_t *, uint16_t));
 
 /**
  * @bbreif Unregister GATT Service Client
@@ -146,13 +146,6 @@ void gatt_service_client_unregister_client(gatt_service_client_t * client);
  * @param size
  */
 void gatt_service_client_trampoline_packet_handler(gatt_service_client_t * client, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
-
-/**
- * @brief Register callback for the GATT client. 
- * @param client
- * @param packet_handler
- */
-void gatt_service_client_register_packet_handler(gatt_service_client_t * client, btstack_packet_handler_t packet_handler);
 
 /**
  * @brief Connect to the n-th instance of Primary GATT Service with UUID16

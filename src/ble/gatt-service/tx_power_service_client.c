@@ -283,8 +283,8 @@ static void txps_client_packet_handler_trampoline(uint8_t packet_type, uint16_t 
 }
 
 void tx_power_service_client_init(void){
-    gatt_service_client_register_client(&txps_client, &txps_client_packet_handler_trampoline);
-    gatt_service_client_register_packet_handler(&txps_client, &txps_client_packet_handler_internal);
+    gatt_service_client_register_client(&txps_client, &txps_client_packet_handler_internal,
+                                        &txps_client_packet_handler_trampoline);
 
     txps_client.characteristics_desc16_num = sizeof(txps_uuid16s)/sizeof(uint16_t);
     txps_client.characteristics_desc16 = txps_uuid16s;

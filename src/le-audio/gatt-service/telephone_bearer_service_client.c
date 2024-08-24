@@ -609,8 +609,7 @@ static void tbs_client_packet_handler_trampoline(uint8_t packet_type, uint16_t c
 }
 
 void telephone_bearer_service_client_init(void){
-    gatt_service_client_register_client(&tbs_client, &tbs_client_packet_handler_trampoline);
-    gatt_service_client_register_packet_handler(&tbs_client, &tbs_client_packet_handler_internal);
+    gatt_service_client_register_client(&tbs_client, &tbs_client_packet_handler_internal, &tbs_client_packet_handler_trampoline);
 
     tbs_client.characteristics_desc16_num = TBS_CHARACTERISTICS_NUM;
     tbs_client.characteristics_desc16 = tbs_characteristic_uuids;

@@ -746,8 +746,7 @@ static void vcs_client_packet_handler_trampoline(uint8_t packet_type, uint16_t c
 }
 
 void volume_control_service_client_init(void){
-    gatt_service_client_register_client(&vcs_client, &vcs_client_packet_handler_trampoline);
-    gatt_service_client_register_packet_handler(&vcs_client, &vcs_client_packet_handler_internal);
+    gatt_service_client_register_client(&vcs_client, &vcs_client_packet_handler_internal, &vcs_client_packet_handler_trampoline);
 
     vcs_client.characteristics_desc16_num = sizeof(vcs_uuid16s)/sizeof(uint16_t);
     vcs_client.characteristics_desc16 = vcs_uuid16s;
