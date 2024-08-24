@@ -273,6 +273,6 @@ uint8_t immediate_alert_service_client_disconnect(uint16_t ias_cid){
 }
 
 void immediate_alert_service_client_deinit(void){
-    gatt_service_client_deinit(&ias_client);
+    gatt_service_client_unregister_client(&ias_client);
 }
 

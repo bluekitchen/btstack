@@ -316,6 +316,6 @@ uint8_t tx_power_service_client_read_tx_power_level(uint16_t txps_cid){
 }
 
 void tx_power_service_client_deinit(void){
-    gatt_service_client_deinit(&txps_client);
+    gatt_service_client_unregister_client(&txps_client);
 }
 

@@ -630,6 +630,6 @@ uint8_t volume_offset_control_service_client_disconnect(vocs_client_connection_t
 }
 
 void volume_offset_control_service_client_deinit(void){
-    gatt_service_client_deinit(&vocs_client);
+    gatt_service_client_unregister_client(&vocs_client);
 }
 

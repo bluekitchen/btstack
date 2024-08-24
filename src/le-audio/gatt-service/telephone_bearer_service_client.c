@@ -670,6 +670,6 @@ uint8_t telephone_bearer_service_client_disconnect(uint16_t tbs_cid){
 }
 
 void telephone_bearer_service_client_deinit(void){
-    gatt_service_client_deinit(&tbs_client);
+    gatt_service_client_unregister_client(&tbs_client);
 }
 

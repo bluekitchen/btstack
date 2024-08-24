@@ -676,6 +676,6 @@ uint8_t audio_input_control_service_client_disconnect(aics_client_connection_t *
 }
 
 void audio_input_control_service_client_deinit(void){
-    gatt_service_client_deinit(&aics_client);
+    gatt_service_client_unregister_client(&aics_client);
 }
 
