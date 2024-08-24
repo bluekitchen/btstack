@@ -339,7 +339,7 @@ static void lls_client_packet_handler_trampoline(uint8_t packet_type, uint16_t c
 }
 
 void link_loss_service_client_init(void){
-    gatt_service_client_init(&lls_client, &lls_client_packet_handler_trampoline);
+    gatt_service_client_register_client(&lls_client, &lls_client_packet_handler_trampoline);
     gatt_service_client_register_packet_handler(&lls_client, &lls_client_packet_handler_internal);
 
     lls_client.characteristics_desc16_num = sizeof(lls_uuid16s)/sizeof(uint16_t);

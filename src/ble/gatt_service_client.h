@@ -118,15 +118,15 @@ typedef struct {
 /* API_START */
 
 /**
- * @brief Initialize GATT Service Client
+ * @brief Register new GATT Service Client
  * @param client
  * @param trampoline_packet_handler packet handler that calls gatt_service_client_trampoline_packet_handler with client
  */
-void gatt_service_client_init(gatt_service_client_t * client,
-                              void (*trampoline_packet_handler)(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size));
+void gatt_service_client_register_client(gatt_service_client_t * client,
+                                         void (*trampoline_packet_handler)(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size));
 
 /**
- * @brief Packet Handler to be called by trampoline registered with gatt_service_client_init
+ * @brief Packet Handler to be called by trampoline registered with gatt_service_client_register_client
  * @param client
  * @param packet_type
  * @param channel
