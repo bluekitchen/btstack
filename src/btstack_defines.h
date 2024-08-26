@@ -1423,9 +1423,11 @@ typedef uint8_t sm_key_t[16];
 #define SDP_EVENT_QUERY_SERVICE_RECORD_HANDLE                    0x95u
 
 /**
- * @format H1
+ * @format H221
  * @param handle
- * @param att_status  see ATT errors in bluetooth.h  
+ * @param service_id
+ * @param connection_id
+ * @param att_status  see ATT errors in bluetooth.h
  */
 #define GATT_EVENT_QUERY_COMPLETE                                0xA0u
 
