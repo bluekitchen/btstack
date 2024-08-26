@@ -489,7 +489,7 @@ void gatt_service_client_trampoline_packet_handler(gatt_service_client_t * clien
             break;
 
         case GATT_EVENT_SERVICE_QUERY_RESULT:
-            connection = gatt_service_client_get_connection_for_con_handle(client, gatt_event_service_query_result_get_handle(packet));
+            connection = gatt_service_client_get_connection_for_cid(client, gatt_event_service_query_result_get_connection_id(packet));
             btstack_assert(connection != NULL);
 
             if (connection->service_instances_num < 1){
@@ -507,7 +507,7 @@ void gatt_service_client_trampoline_packet_handler(gatt_service_client_t * clien
             break;
 
         case GATT_EVENT_CHARACTERISTIC_QUERY_RESULT:
-            connection = gatt_service_client_get_connection_for_con_handle(client, gatt_event_characteristic_query_result_get_handle(packet));
+            connection = gatt_service_client_get_connection_for_cid(client, gatt_event_characteristic_query_result_get_connection_id(packet));
             btstack_assert(connection != NULL);
             gatt_event_characteristic_query_result_get_characteristic(packet, &characteristic);
       
@@ -527,7 +527,7 @@ void gatt_service_client_trampoline_packet_handler(gatt_service_client_t * clien
             break;
 
         case GATT_EVENT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT:
-            connection = gatt_service_client_get_connection_for_con_handle(client, gatt_event_all_characteristic_descriptors_query_result_get_handle(packet));
+            connection = gatt_service_client_get_connection_for_cid(client, gatt_event_all_characteristic_descriptors_query_result_get_connection_id(packet));
             btstack_assert(connection != NULL);
             gatt_event_all_characteristic_descriptors_query_result_get_characteristic_descriptor(packet, &characteristic_descriptor);
             
@@ -553,7 +553,7 @@ void gatt_service_client_trampoline_packet_handler(gatt_service_client_t * clien
             break;
 
         case GATT_EVENT_QUERY_COMPLETE:
-            connection = gatt_service_client_get_connection_for_con_handle(client, gatt_event_query_complete_get_handle(packet));
+            connection = gatt_service_client_get_connection_for_cid(client, gatt_event_query_complete_get_connection_id(packet));
             btstack_assert(connection != NULL);
             call_run = gatt_service_client_handle_query_complete(client, connection, gatt_event_query_complete_get_att_status(packet));
             break;
