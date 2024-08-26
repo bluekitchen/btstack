@@ -947,14 +947,13 @@ static void emit_gatt_complete_event(gatt_client_t * gatt_client, uint8_t att_st
 static void emit_gatt_service_query_result_event(gatt_client_t * gatt_client, uint16_t start_group_handle, uint16_t end_group_handle, const uint8_t * uuid128){
     // @format HX
     uint8_t packet[24];
-    packet[0] = GATT_EVENT_SERVICE_QUERY_RESULT;
-    packet[1] = sizeof(packet) - 2u;
-    little_endian_store_16(packet, 2, gatt_client->con_handle);
-    ///
-    little_endian_store_16(packet, 4, start_group_handle);
-    little_endian_store_16(packet, 6, end_group_handle);
-    reverse_128(uuid128, &packet[8]);
-    emit_event_new(gatt_client->callback, packet, sizeof(packet));
+    hci_event_builder_context_t context;
+    hci_event_builder_init(&context, packet, sizeof(packet), GATT_EVENT_SERVICE_QUERY_RESULT, 0);
+    hci_event_builder_add_con_handle(&context, gatt_client->con_handle);
+    hci_event_builder_add_16(&context, start_group_handle);
+    hci_event_builder_add_16(&context, end_group_handle);
+    hci_event_builder_add_128(&context, uuid128);
+    emit_event_new(gatt_client->callback, packet, hci_event_builder_get_length(&context));
 }
 
 static void emit_gatt_included_service_query_result_event(gatt_client_t * gatt_client, uint16_t include_handle, uint16_t start_group_handle, uint16_t end_group_handle, const uint8_t * uuid128){
