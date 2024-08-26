@@ -690,7 +690,7 @@ static void vcs_client_run_for_connection(void * context){
 
     btstack_assert(connection != NULL);
     uint16_t value_length;
-    uint8_t * value;
+    uint8_t * value = NULL;
     gatt_client_service_t service;
 
     switch (connection->state){
