@@ -83,6 +83,18 @@ gatt_service_client_connection_t * gatt_service_client_get_connection_for_con_ha
     return NULL;
 }
 
+static gatt_service_client_connection_t * gatt_service_client_get_connection_for_con_handle_and_service_index(const gatt_service_client_t * client, hci_con_handle_t con_handle, uint8_t service_index){
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, (btstack_linked_list_t *) &client->connections);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        gatt_service_client_connection_t * connection = (gatt_service_client_connection_t *)btstack_linked_list_iterator_next(&it);
+        if (connection->con_handle != con_handle) continue;
+        if (connection->service_index != service_index) continue;
+        return connection;
+    }
+    return NULL;
+}
+
 gatt_service_client_connection_t * gatt_service_client_get_connection_for_cid(
         const gatt_service_client_t *client, uint16_t connection_cid){
     btstack_linked_list_iterator_t it;    
@@ -596,7 +608,7 @@ uint8_t gatt_service_client_connect_primary_service(
     btstack_assert(packet_handler  != NULL);
     btstack_assert(characteristics != NULL);
     
-    if (gatt_service_client_get_connection_for_con_handle(client, con_handle) != NULL){
+    if (gatt_service_client_get_connection_for_con_handle_and_service_index(client, con_handle, service_index) != NULL){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
@@ -637,7 +649,7 @@ uint8_t gatt_service_client_connect_secondary_service(
     btstack_assert(characteristics != NULL);
     btstack_assert(characteristics_num >= client->characteristics_desc16_num);
 
-    if (gatt_service_client_get_connection_for_con_handle(client, con_handle) != NULL) {
+    if (gatt_service_client_get_connection_for_con_handle_and_service_index(client, con_handle, service_index) != NULL){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
