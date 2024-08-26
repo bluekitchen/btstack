@@ -975,11 +975,13 @@ static void emit_gatt_included_service_query_result_event(gatt_client_t * gatt_c
 
 static void emit_gatt_characteristic_query_result_event(gatt_client_t * gatt_client, uint16_t start_handle, uint16_t value_handle, uint16_t end_handle,
                                                         uint16_t properties, const uint8_t * uuid128){
-    // @format HY
-    uint8_t packet[28];
+    // @format H22Y
+    uint8_t packet[32];
     hci_event_builder_context_t context;
     hci_event_builder_init(&context, packet, sizeof(packet), GATT_EVENT_CHARACTERISTIC_QUERY_RESULT, 0);
     hci_event_builder_add_con_handle(&context, gatt_client->con_handle);
+    hci_event_builder_add_16(&context, gatt_client->service_id);
+    hci_event_builder_add_16(&context, gatt_client->connection_id);
     hci_event_builder_add_16(&context, start_handle);
     hci_event_builder_add_16(&context, value_handle);
     hci_event_builder_add_16(&context, end_handle);
