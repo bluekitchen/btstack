@@ -494,8 +494,8 @@ uint8_t gatt_client_find_included_services_for_service(btstack_packet_handler_t 
  * to the list of all primary services.
  * @param  callback
  * @param  con_handle
- * @param service_id    - context provided to callback in events
- * @param connection_id - contest provided to callback in events
+ * @param  service_id    - context provided to callback in events
+ * @param  connection_id - contest provided to callback in events
  * @param  service_id
  * @return status BTSTACK_MEMORY_ALLOC_FAILED, if no GATT client for con_handle is found
  *                GATT_CLIENT_IN_WRONG_STATE , if GATT client is not ready
@@ -609,6 +609,24 @@ uint8_t gatt_client_discover_characteristics_for_service_by_uuid128(btstack_pack
  *                ERROR_CODE_SUCCESS         , if query is successfully registered 
  */
 uint8_t gatt_client_discover_characteristic_descriptors(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_characteristic_t * characteristic);
+
+
+/**
+ * @brief Discovers attribute handle and UUID of a characteristic descriptor within the specified characteristic.
+ * For each found descriptor a GATT_EVENT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT event will be emitted.
+ *
+ * The GATT_EVENT_QUERY_COMPLETE event marks the end of discovery.
+ * @param  callback
+ * @param  con_handle
+ * @param  characteristic
+ * @param  service_id    - context provided to callback in events
+ * @param  connection_id - contest provided to callback in events
+ * @return status BTSTACK_MEMORY_ALLOC_FAILED, if no GATT client for con_handle is found
+ *                GATT_CLIENT_IN_WRONG_STATE , if GATT client is not ready
+ *                ERROR_CODE_SUCCESS         , if query is successfully registered
+ */
+uint8_t gatt_client_discover_characteristic_descriptors_with_context(btstack_packet_handler_t callback, hci_con_handle_t con_handle,
+                                                                     gatt_client_characteristic_t * characteristic, uint16_t service_id, uint16_t connection_it);
 
 /** 
  * @brief Reads the characteristic value using the characteristic's value handle. 
