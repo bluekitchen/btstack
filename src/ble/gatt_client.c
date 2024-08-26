@@ -990,13 +990,12 @@ static void emit_gatt_all_characteristic_descriptors_result_event(
         gatt_client_t * gatt_client, uint16_t descriptor_handle, const uint8_t * uuid128){
     // @format HZ
     uint8_t packet[22];
-    packet[0] = GATT_EVENT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT;
-    packet[1] = sizeof(packet) - 2u;
-    little_endian_store_16(packet, 2, gatt_client->con_handle);
-    ///
-    little_endian_store_16(packet, 4,  descriptor_handle);
-    reverse_128(uuid128, &packet[6]);
-    emit_event_new(gatt_client->callback, packet, sizeof(packet));
+    hci_event_builder_context_t context;
+    hci_event_builder_init(&context, packet, sizeof(packet), GATT_EVENT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT, 0);
+    hci_event_builder_add_con_handle(&context, gatt_client->con_handle);
+    hci_event_builder_add_16(&context, descriptor_handle);
+    hci_event_builder_add_128(&context, uuid128);
+    emit_event_new(gatt_client->callback, packet, hci_event_builder_get_length(&context));
 }
 
 static void emit_gatt_mtu_exchanged_result_event(gatt_client_t * gatt_client, uint16_t new_mtu){
