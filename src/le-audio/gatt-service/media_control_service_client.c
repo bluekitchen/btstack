@@ -233,18 +233,22 @@ static void mcs_client_run_for_connection(void * context){
             service.start_group_handle = connection->basic_connection.start_handle;
             service.end_group_handle = connection->basic_connection.end_handle;
 
-            (void) gatt_client_find_included_services_for_service(
+            (void) gatt_client_find_included_services_for_service_with_context(
                     mcs_client_handle_gatt_client_event,
-                    con_handle,
-                    &service);
+                    connection->basic_connection.con_handle,
+                    &service,
+                    mcs_client.service_id,
+                    connection->basic_connection.cid);
             break;
 
         case MEDIA_CONTROL_SERVICE_CLIENT_STATE_W2_READ_CHARACTERISTIC_VALUE:
             connection->state = MEDIA_CONTROL_SERVICE_CLIENT_STATE_W4_READ_CHARACTERISTIC_VALUE_RESULT;
 
-            (void) gatt_client_read_value_of_characteristic_using_value_handle(
+            (void) gatt_client_read_value_of_characteristic_using_value_handle_with_context(
                 &mcs_client_handle_gatt_client_event, connection->basic_connection.con_handle,
-                mcs_client_value_handle_for_index(connection));
+                mcs_client_value_handle_for_index(connection),
+                mcs_client.service_id,
+                connection->basic_connection.cid);
             break;
 
         case MEDIA_CONTROL_SERVICE_CLIENT_STATE_W2_WRITE_CHARACTERISTIC_VALUE_WITHOUT_RESPONSE:
@@ -648,6 +652,7 @@ static void mcs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t ch
     UNUSED(size);
 
     mcs_client_connection_t * connection = NULL;
+    uint16_t connection_id;
     hci_con_handle_t con_handle;
     gatt_client_service_t service;
     uint8_t status;
@@ -666,8 +671,8 @@ static void mcs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t ch
             break;
 
         case GATT_EVENT_INCLUDED_SERVICE_QUERY_RESULT:
-            con_handle = (hci_con_handle_t)gatt_event_included_service_query_result_get_handle(packet);
-            connection = (mcs_client_connection_t *)gatt_service_client_get_connection_for_con_handle(&mcs_client, con_handle);
+            connection_id = gatt_event_included_service_query_result_get_connection_id(packet);
+            connection = (mcs_client_connection_t *)gatt_service_client_get_connection_for_cid(&mcs_client, connection_id);
             btstack_assert(connection != NULL);
 
             if (connection->ots_connections_num == 0){
