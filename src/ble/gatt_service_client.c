@@ -216,18 +216,21 @@ static uint8_t gatt_service_client_register_notification(gatt_service_client_t *
         characteristic.properties = connection->characteristics[connection->characteristic_index].properties;
 
         if ((connection->characteristics[connection->characteristic_index].properties & ATT_PROPERTY_NOTIFY) != 0u){
-            status = gatt_client_write_client_characteristic_configuration(
+            status = gatt_client_write_client_characteristic_configuration_with_context(
                     gatt_service_client_get_packet_handler_trampoline(client),
                     connection->con_handle,
                     &characteristic,
-                    GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION);
+                    GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION,
+                    client->service_id,
+                    connection->cid);
         } else if ((connection->characteristics[connection->characteristic_index].properties & ATT_PROPERTY_INDICATE) != 0u){
-            status = gatt_client_write_client_characteristic_configuration(
+            status = gatt_client_write_client_characteristic_configuration_with_context(
                     gatt_service_client_get_packet_handler_trampoline(client),
                     connection->con_handle,
                     &characteristic,
-                    GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_INDICATION);
-
+                    GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_INDICATION,
+                    client->service_id,
+                    connection->cid);
         }
 
         // notification supported, register for value updates
@@ -250,10 +253,12 @@ static void gatt_service_client_run_for_client(gatt_service_client_t * client, g
     switch (connection->state){
         case GATT_SERVICE_CLIENT_STATE_W2_QUERY_PRIMARY_SERVICE:
             connection->state = GATT_SERVICE_CLIENT_STATE_W4_SERVICE_RESULT;
-            status = gatt_client_discover_primary_services_by_uuid16(
+            status = gatt_client_discover_primary_services_by_uuid16_with_context(
                     gatt_service_client_get_packet_handler_trampoline(client),
                 connection->con_handle, 
-                connection->service_uuid16);
+                connection->service_uuid16,
+                client->service_id,
+                connection->cid);
             break;
 
         case GATT_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTICS:
@@ -266,10 +271,12 @@ static void gatt_service_client_run_for_client(gatt_service_client_t * client, g
             service.end_group_handle = connection->end_handle;
             service.uuid16 = connection->service_uuid16;
 
-            status = gatt_client_discover_characteristics_for_service(
+            status = gatt_client_discover_characteristics_for_service_with_context(
                 gatt_service_client_get_packet_handler_trampoline(client),
                 connection->con_handle, 
-                &service);
+                &service,
+                client->service_id,
+                connection->cid);
             break;
 
         case GATT_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTIC_DESCRIPTORS:
@@ -284,10 +291,12 @@ static void gatt_service_client_run_for_client(gatt_service_client_t * client, g
             characteristic.properties   = connection->characteristics[connection->characteristic_index].properties;
             characteristic.end_handle   = connection->characteristics[connection->characteristic_index].end_handle;
 
-            (void) gatt_client_discover_characteristic_descriptors(
+            (void) gatt_client_discover_characteristic_descriptors_with_context(
                 gatt_service_client_get_packet_handler_trampoline(client),
                 connection->con_handle, 
-                &characteristic);
+                &characteristic,
+                client->service_id,
+                connection->cid);
             break;
 
         case GATT_SERVICE_CLIENT_STATE_W2_REGISTER_NOTIFICATION:
