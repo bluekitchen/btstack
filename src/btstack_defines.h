@@ -1458,8 +1458,10 @@ typedef uint8_t sm_key_t[16];
 #define GATT_EVENT_INCLUDED_SERVICE_QUERY_RESULT                 0xA3u
 
 /**
- * @format HZ
+ * @format H22Z
  * @param handle
+ * @param service_id
+ * @param connection_id
  * @param characteristic_descriptor
  */
 #define GATT_EVENT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT   0xA4u
