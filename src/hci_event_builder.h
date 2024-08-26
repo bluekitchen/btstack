@@ -113,6 +113,20 @@ void hci_event_builder_add_24(hci_event_builder_context_t * context, uint32_t va
 void hci_event_builder_add_32(hci_event_builder_context_t * context, uint32_t value);
 
 /**
+ * @bbrief Add uint8_t[8] in big_endian to event
+ * @param context
+ * @param value
+ */
+void hci_event_builder_add_64(hci_event_builder_context_t * context, const uint8_t * value);
+
+/**
+ * @bbrief Add uint8_t[16] in big_endian to event
+ * @param context
+ * @param value
+ */
+void hci_event_builder_add_128(hci_event_builder_context_t * context, const uint8_t * value);
+
+/**
  * @bbrief Add Bluetooth address to event
  * @param context
  * @param value
