@@ -2872,7 +2872,8 @@ uint8_t gatt_client_reliable_write_long_value_of_characteristic(btstack_packet_h
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t gatt_client_write_client_characteristic_configuration(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_characteristic_t * characteristic, uint16_t configuration){
+uint8_t gatt_client_write_client_characteristic_configuration_with_context(btstack_packet_handler_t callback, hci_con_handle_t con_handle,
+                                                              gatt_client_characteristic_t * characteristic, uint16_t configuration, uint16_t service_id, uint16_t connection_id){
     gatt_client_t * gatt_client;
     uint8_t status = gatt_client_provide_context_for_request(con_handle, &gatt_client);
     if (status != ERROR_CODE_SUCCESS){
@@ -2894,6 +2895,8 @@ uint8_t gatt_client_write_client_characteristic_configuration(btstack_packet_han
     }
 
     gatt_client->callback = callback;
+    gatt_client->service_id = service_id;
+    gatt_client->connection_id = connection_id;
     gatt_client->start_group_handle = characteristic->value_handle;
     gatt_client->end_group_handle = characteristic->end_handle;
     little_endian_store_16(gatt_client->client_characteristic_configuration_value, 0, configuration);
@@ -2905,6 +2908,10 @@ uint8_t gatt_client_write_client_characteristic_configuration(btstack_packet_han
 #endif
     gatt_client_run();
     return ERROR_CODE_SUCCESS;
+}
+
+uint8_t gatt_client_write_client_characteristic_configuration(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_characteristic_t * characteristic, uint16_t configuration){
+    return gatt_client_write_client_characteristic_configuration_with_context(callback, con_handle, characteristic, configuration, 0, 0);
 }
 
 uint8_t gatt_client_read_characteristic_descriptor_using_descriptor_handle(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t descriptor_handle){

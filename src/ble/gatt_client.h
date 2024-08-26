@@ -1027,6 +1027,30 @@ uint8_t gatt_client_write_long_characteristic_descriptor_using_descriptor_handle
 uint8_t gatt_client_write_client_characteristic_configuration(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_characteristic_t * characteristic, uint16_t configuration);
 
 /**
+ * @brief Writes the client characteristic configuration of the specified characteristic.
+ * It is used to subscribe for notifications or indications of the characteristic value.
+ * For notifications or indications specify: GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION
+ * resp. GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_INDICATION as configuration value.
+ * The GATT_EVENT_QUERY_COMPLETE event marks the end of write.
+ * The write is successfully performed if the event's att_status field is set to ATT_ERROR_SUCCESS (see bluetooth.h for ATT_ERROR codes).
+ * @param  callback
+ * @param  con_handle
+ * @param  characteristic
+ * @param  configuration                                                    GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION, GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_INDICATION
+ * @param  service_id    - context provided to callback in events
+ * @param  connection_id - contest provided to callback in events
+ * @return status ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER                  if no HCI connection for con_handle is found
+ *                BTSTACK_MEMORY_ALLOC_FAILED                               if no GATT client for con_handle could be allocated
+ *                GATT_CLIENT_IN_WRONG_STATE                                if GATT client is not ready
+ *                GATT_CLIENT_CHARACTERISTIC_NOTIFICATION_NOT_SUPPORTED     if configuring notification, but characteristic has no notification property set
+ *                GATT_CLIENT_CHARACTERISTIC_INDICATION_NOT_SUPPORTED       if configuring indication, but characteristic has no indication property set
+ *                ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE         if configuration is invalid
+ *                ERROR_CODE_SUCCESS                                        if query is successfully registered
+ */
+uint8_t gatt_client_write_client_characteristic_configuration_with_context(btstack_packet_handler_t callback, hci_con_handle_t con_handle,
+                                                                           gatt_client_characteristic_t * characteristic, uint16_t configuration, uint16_t service_id, uint16_t connection_id);
+
+/**
  * @brief Register for changes to the Service Changed and Database Hash Characteristics of the remote GATT Service
  * *
  * When configured, GATT_EVENT_QUERY_COMPLETE event is emitted
