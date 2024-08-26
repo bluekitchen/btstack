@@ -145,8 +145,8 @@ static void ots_client_emit_timeout(gatt_service_client_connection_t * connectio
 }
 
 static void ots_client_operations_timer_timeout_handler(btstack_timer_source_t * timer){
-    hci_con_handle_t con_handle = (hci_con_handle_t)(uintptr_t) btstack_run_loop_get_timer_context(timer);
-    ots_client_connection_t * connection = (ots_client_connection_t *)gatt_service_client_get_connection_for_con_handle(&ots_client, con_handle);
+    uint16_t connection_id = (uint16_t)(uintptr_t) btstack_run_loop_get_timer_context(timer);
+    ots_client_connection_t * connection = (ots_client_connection_t *)gatt_service_client_get_connection_for_cid(&ots_client, connection_id);
 
     if (connection == NULL){
         return;
@@ -159,7 +159,7 @@ static void ots_client_operations_timer_timeout_handler(btstack_timer_source_t *
 
 static void ots_client_operations_start_timer(ots_client_connection_t * connection){
     btstack_run_loop_set_timer_handler(&connection->operation_timer, ots_client_operations_timer_timeout_handler);
-    btstack_run_loop_set_timer_context(&connection->operation_timer, (void *)(uintptr_t)connection->basic_connection.con_handle);
+    btstack_run_loop_set_timer_context(&connection->operation_timer, (void *)(uintptr_t)connection->basic_connection.cid);
 
     btstack_run_loop_set_timer(&connection->operation_timer, 30000);
     btstack_run_loop_add_timer(&connection->operation_timer);
