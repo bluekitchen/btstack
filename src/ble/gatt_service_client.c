@@ -424,6 +424,14 @@ static uint8_t gatt_service_client_get_uninitialized_characteristic_index_for_uu
         return index;
 }
 
+void gatt_service_client_handle_disconnect(gatt_service_client_t * client, hci_con_handle_t con_handle){
+    gatt_service_client_connection_t * connection = gatt_service_client_get_connection_for_con_handle(client, con_handle);
+    if (connection != NULL) {
+        gatt_service_client_emit_disconnected(client->packet_handler, connection->con_handle, connection->cid);
+        gatt_service_client_finalize_connection(client, connection);
+    }
+}
+
 void gatt_service_client_trampoline_packet_handler(gatt_service_client_t * client, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
@@ -443,13 +451,8 @@ void gatt_service_client_trampoline_packet_handler(gatt_service_client_t * clien
     switch (hci_event_packet_get_type(packet)){
         case HCI_EVENT_DISCONNECTION_COMPLETE:
             con_handle = hci_event_disconnection_complete_get_connection_handle(packet);
-            connection = gatt_service_client_get_connection_for_con_handle(client, con_handle);
-            if (connection == NULL) {
-                call_run = false;
-            } else {
-                gatt_service_client_emit_disconnected(client->packet_handler, connection->con_handle, connection->cid);
-                gatt_service_client_finalize_connection(client, connection);
-            }
+            gatt_service_client_handle_disconnect(client, con_handle);
+            call_run = false;
             break;
 
         case GATT_EVENT_MTU:
