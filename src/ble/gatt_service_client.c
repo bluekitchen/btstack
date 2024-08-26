@@ -436,10 +436,14 @@ static uint8_t gatt_service_client_get_uninitialized_characteristic_index_for_uu
 }
 
 void gatt_service_client_handle_disconnect(gatt_service_client_t * client, hci_con_handle_t con_handle){
-    gatt_service_client_connection_t * connection = gatt_service_client_get_connection_for_con_handle(client, con_handle);
-    if (connection != NULL) {
-        gatt_service_client_emit_disconnected(client->packet_handler, connection->con_handle, connection->cid);
-        gatt_service_client_finalize_connection(client, connection);
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, (btstack_linked_list_t *) &client->connections);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        gatt_service_client_connection_t * connection = (gatt_service_client_connection_t *)btstack_linked_list_iterator_next(&it);
+        if (connection->con_handle == con_handle) {
+            gatt_service_client_emit_disconnected(client->packet_handler, connection->con_handle, connection->cid);
+            gatt_service_client_finalize_connection(client, connection);
+        }
     }
 }
 
