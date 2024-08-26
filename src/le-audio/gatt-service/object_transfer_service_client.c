@@ -617,8 +617,8 @@ static void ots_client_emit_notify_event(gatt_service_client_connection_t * conn
 
 static uint8_t ots_client_request_send_gatt_query(ots_client_connection_t * connection, ots_client_characteristic_index_t characteristic_index){
      connection->characteristic_index = characteristic_index;
-
-     uint8_t status = gatt_client_request_to_send_gatt_query(&connection->gatt_query_can_send_now, connection->basic_connection.con_handle);
+     connection->gatt_query_can_send_now.context = (void *)(uintptr_t)connection->basic_connection.cid;
+     uint8_t status = gatt_client_request_to_send_gatt_query(&connection->gatt_query_can_send_now, connection->basic_connection.cid);
      if (status != ERROR_CODE_SUCCESS){
          connection->state = OBJECT_TRANSFER_SERVICE_CLIENT_STATE_READY;
      }
@@ -854,8 +854,8 @@ static void ots_client_handle_gatt_client_event(uint8_t packet_type, uint16_t ch
 }
 
 static void ots_client_run_for_connection(void * context){
-    hci_con_handle_t con_handle = (hci_con_handle_t)(uintptr_t)context;
-    ots_client_connection_t * connection = (ots_client_connection_t *)gatt_service_client_get_connection_for_con_handle(&ots_client, con_handle);
+    uint16_t connection_id = (uint16_t)(uintptr_t)context;
+    ots_client_connection_t * connection = (ots_client_connection_t *)gatt_service_client_get_connection_for_cid(&ots_client, connection_id);
 
     btstack_assert(connection != NULL);
     uint16_t value_length;
@@ -865,7 +865,7 @@ static void ots_client_run_for_connection(void * context){
         case OBJECT_TRANSFER_SERVICE_CLIENT_STATE_W2_QUERY_OTS_FEATURES:
             connection->state = OBJECT_TRANSFER_SERVICE_CLIENT_STATE_W4_OTS_FEATURES_RESULT;
             (void) gatt_client_read_value_of_characteristic_using_value_handle(
-                    &ots_client_handle_gatt_client_event, con_handle,
+                    &ots_client_handle_gatt_client_event, connection->basic_connection.con_handle,
                     ots_client_value_handle_for_index(connection));
             break;
 
@@ -873,7 +873,7 @@ static void ots_client_run_for_connection(void * context){
             connection->state = OBJECT_TRANSFER_SERVICE_CLIENT_STATE_W4_READ_CHARACTERISTIC_VALUE_RESULT;
 
             (void) gatt_client_read_value_of_characteristic_using_value_handle(
-                &ots_client_handle_gatt_client_event, con_handle, 
+                &ots_client_handle_gatt_client_event, connection->basic_connection.con_handle,
                 ots_client_value_handle_for_index(connection));
             break;
 
@@ -881,7 +881,7 @@ static void ots_client_run_for_connection(void * context){
             connection->state = OBJECT_TRANSFER_SERVICE_CLIENT_STATE_W4_READ_LONG_CHARACTERISTIC_VALUE_RESULT;
 
             (void) gatt_client_read_long_value_of_characteristic_using_value_handle(
-                    &ots_client_handle_gatt_client_event, con_handle,
+                    &ots_client_handle_gatt_client_event, connection->basic_connection.con_handle,
                     ots_client_value_handle_for_index(connection));
             break;
 
@@ -890,7 +890,7 @@ static void ots_client_run_for_connection(void * context){
 
             value_length = ots_client_serialize_characteristic_value_for_write(connection, &value);
             (void) gatt_client_write_value_of_characteristic_without_response(
-                con_handle,
+                    connection->basic_connection.con_handle,
                 ots_client_value_handle_for_index(connection),
                 value_length, value);
             break;
@@ -900,7 +900,7 @@ static void ots_client_run_for_connection(void * context){
 
             value_length = ots_client_serialize_characteristic_value_for_write(connection, &value);
             (void) gatt_client_write_value_of_characteristic(
-                    &ots_client_handle_gatt_client_event, con_handle,
+                    &ots_client_handle_gatt_client_event, connection->basic_connection.con_handle,
                     ots_client_value_handle_for_index(connection),
                     value_length, value);
             break;
@@ -910,7 +910,7 @@ static void ots_client_run_for_connection(void * context){
 
             value_length = ots_client_serialize_characteristic_value_for_write(connection, &value);
             (void) gatt_client_write_long_value_of_characteristic(
-                    &ots_client_handle_gatt_client_event, con_handle,
+                    &ots_client_handle_gatt_client_event, connection->basic_connection.con_handle,
                     ots_client_value_handle_for_index(connection),
                     value_length, value);
             break;
@@ -945,7 +945,6 @@ uint8_t object_transfer_service_client_connect(
     btstack_assert(connection != NULL);
 
     connection->gatt_query_can_send_now.callback = &ots_client_run_for_connection;
-    connection->gatt_query_can_send_now.context = (void *)(uintptr_t)connection->basic_connection.con_handle;
     connection->le_cbm_connection.connection_handle = HCI_CON_HANDLE_INVALID;
     connection->le_cbm_connection.cid = 0;
 
@@ -970,7 +969,6 @@ uint8_t object_transfer_service_client_connect_secondary_service(
     btstack_assert(connection != NULL);
 
     connection->gatt_query_can_send_now.callback = &ots_client_run_for_connection;
-    connection->gatt_query_can_send_now.context = (void *)(uintptr_t)connection->basic_connection.con_handle;
     connection->le_cbm_connection.connection_handle = HCI_CON_HANDLE_INVALID;
     connection->le_cbm_connection.cid = 0;
 
