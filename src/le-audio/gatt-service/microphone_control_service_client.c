@@ -238,7 +238,7 @@ static uint8_t mics_client_can_query_characteristic(mics_client_connection_t * c
 static uint8_t mics_client_request_send_gatt_query(mics_client_connection_t * connection, mics_client_characteristic_index_t characteristic_index){
     connection->characteristic_index = characteristic_index;
 
-    connection->gatt_query_can_send_now_request.context = (void *)(uintptr_t)connection->basic_connection.con_handle;
+    connection->gatt_query_can_send_now_request.context = (void *)(uintptr_t)connection->basic_connection.cid;
     uint8_t status = gatt_client_request_to_send_gatt_query(&connection->gatt_query_can_send_now_request, connection->basic_connection.con_handle);
     if (status != ERROR_CODE_SUCCESS){
         connection->state = MICROPHONE_CONTROL_SERVICE_CLIENT_STATE_READY;
@@ -307,7 +307,7 @@ static void mics_client_packet_handler_internal(uint8_t packet_type, uint16_t ch
                     if ((connection->aics_connections_max_num > 0) && (connection->aics_connections_storage != NULL)){
                         connection->state = MICROPHONE_CONTROL_SERVICE_CLIENT_STATE_W2_QUERY_INCLUDED_SERVICES;
 
-                        connection->gatt_query_can_send_now_request.context = (void *) (uintptr_t) connection->basic_connection.con_handle;
+                        connection->gatt_query_can_send_now_request.context = (void *) (uintptr_t) connection->basic_connection.cid;
                         (void) gatt_client_request_to_send_gatt_query(&connection->gatt_query_can_send_now_request,
                                                                       connection->basic_connection.con_handle);
                     } else {
@@ -532,8 +532,8 @@ static uint16_t mics_client_serialize_characteristic_value_for_write(mics_client
 }
 
 static void mics_client_run_for_connection(void * context){
-    hci_con_handle_t con_handle = (hci_con_handle_t)(uintptr_t)context;
-    mics_client_connection_t * connection = (mics_client_connection_t *)gatt_service_client_get_connection_for_con_handle(&mics_client, con_handle);
+    uint16_t connection_id = (uint16_t)(uintptr_t)context;
+    mics_client_connection_t * connection = (mics_client_connection_t *)gatt_service_client_get_connection_for_cid(&mics_client, connection_id);
 
     btstack_assert(connection != NULL);
     uint16_t value_length;
@@ -548,7 +548,7 @@ static void mics_client_run_for_connection(void * context){
 
             (void) gatt_client_find_included_services_for_service(
                     mics_client_handle_gatt_client_event,
-                    con_handle,
+                    connection->basic_connection.con_handle,
                     &service);
             break;
 
@@ -556,7 +556,7 @@ static void mics_client_run_for_connection(void * context){
             connection->state = MICROPHONE_CONTROL_SERVICE_CLIENT_STATE_W4_READ_CHARACTERISTIC_VALUE_RESULT;
 
             (void) gatt_client_read_value_of_characteristic_using_value_handle(
-                &mics_client_handle_gatt_client_event, con_handle, 
+                &mics_client_handle_gatt_client_event, connection->basic_connection.con_handle,
                 mics_client_value_handle_for_index(connection));
             break;
 
@@ -565,7 +565,7 @@ static void mics_client_run_for_connection(void * context){
 
             value_length = mics_client_serialize_characteristic_value_for_write(connection, &value);
             (void) gatt_client_write_value_of_characteristic(
-                    &mics_client_handle_gatt_client_event, con_handle,
+                    &mics_client_handle_gatt_client_event, connection->basic_connection.con_handle,
                 mics_client_value_handle_for_index(connection),
                 value_length, value);
             
