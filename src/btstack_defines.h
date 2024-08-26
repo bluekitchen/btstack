@@ -1450,8 +1450,10 @@ typedef uint8_t sm_key_t[16];
 #define GATT_EVENT_CHARACTERISTIC_QUERY_RESULT                   0xA2u
 
 /**
- * @format H2X
+ * @format H222X
  * @param handle
+ * @param service_id
+ * @param connection_id
  * @param include_handle
  * @param service
  */

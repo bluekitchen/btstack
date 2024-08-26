@@ -2787,13 +2787,31 @@ static inline hci_con_handle_t gatt_event_included_service_query_result_get_hand
     return little_endian_read_16(event, 2);
 }
 /**
+ * @brief Get field service_id from event GATT_EVENT_INCLUDED_SERVICE_QUERY_RESULT
+ * @param event packet
+ * @return service_id
+ * @note: btstack_type 2
+ */
+static inline uint16_t gatt_event_included_service_query_result_get_service_id(const uint8_t * event){
+    return little_endian_read_16(event, 4);
+}
+/**
+ * @brief Get field connection_id from event GATT_EVENT_INCLUDED_SERVICE_QUERY_RESULT
+ * @param event packet
+ * @return connection_id
+ * @note: btstack_type 2
+ */
+static inline uint16_t gatt_event_included_service_query_result_get_connection_id(const uint8_t * event){
+    return little_endian_read_16(event, 6);
+}
+/**
  * @brief Get field include_handle from event GATT_EVENT_INCLUDED_SERVICE_QUERY_RESULT
  * @param event packet
  * @return include_handle
  * @note: btstack_type 2
  */
 static inline uint16_t gatt_event_included_service_query_result_get_include_handle(const uint8_t * event){
-    return little_endian_read_16(event, 4);
+    return little_endian_read_16(event, 8);
 }
 /**
  * @brief Get field service from event GATT_EVENT_INCLUDED_SERVICE_QUERY_RESULT
@@ -2802,7 +2820,7 @@ static inline uint16_t gatt_event_included_service_query_result_get_include_hand
  * @note: btstack_type X
  */
 static inline void gatt_event_included_service_query_result_get_service(const uint8_t * event, gatt_client_service_t * service){
-    gatt_client_deserialize_service(event, 6, service);
+    gatt_client_deserialize_service(event, 10, service);
 }
 #endif
 
