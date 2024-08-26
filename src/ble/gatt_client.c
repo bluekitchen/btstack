@@ -2660,12 +2660,16 @@ uint8_t gatt_client_discover_characteristics_for_service_by_uuid128(btstack_pack
     return gatt_client_discover_characteristics_for_handle_range_by_uuid128(callback, con_handle, service->start_group_handle, service->end_group_handle, uuid128);
 }
 
-uint8_t gatt_client_discover_characteristic_descriptors(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_characteristic_t * characteristic){
+uint8_t gatt_client_discover_characteristic_descriptors_with_context(btstack_packet_handler_t callback, hci_con_handle_t con_handle,
+                                                                     gatt_client_characteristic_t * characteristic,  uint16_t service_id, uint16_t connection_id){
     gatt_client_t * gatt_client;
     uint8_t status = gatt_client_provide_context_for_request(con_handle, &gatt_client);
     if (status != ERROR_CODE_SUCCESS){
         return status;
     }
+
+    gatt_client->service_id = service_id;
+    gatt_client->connection_id = connection_id;
 
     // check if there is space for characteristics descriptors
     if (characteristic->end_handle > characteristic->value_handle){
@@ -2681,6 +2685,10 @@ uint8_t gatt_client_discover_characteristic_descriptors(btstack_packet_handler_t
         btstack_run_loop_execute_on_main_thread(&gatt_client_deferred_event_emit);
     }
     return ERROR_CODE_SUCCESS;
+}
+
+uint8_t gatt_client_discover_characteristic_descriptors(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_characteristic_t * characteristic){
+    return gatt_client_discover_characteristic_descriptors_with_context(callback, con_handle, characteristic, 0, 0);
 }
 
 uint8_t gatt_client_read_value_of_characteristic_using_value_handle(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle){
