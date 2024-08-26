@@ -440,7 +440,7 @@ static uint8_t * goep_client_get_outgoing_buffer(goep_client_t * goep_client){
 
 static uint16_t goep_client_get_outgoing_buffer_len(goep_client_t * goep_client){
     if (goep_client->l2cap_psm){
-        return min(sizeof(goep_packet_buffer), goep_client->bearer_mtu);  // TODO Matthias: was returning 150 - why not bearer-mtu?
+        return btstack_min((uint32_t)sizeof(goep_packet_buffer), goep_client->bearer_mtu);  // TODO Matthias: was returning 150 - why not bearer-mtu?
     } else {
         return rfcomm_get_max_frame_size(goep_client->bearer_cid);
     }
