@@ -97,6 +97,18 @@ void hci_event_builder_add_32(hci_event_builder_context_t * context, uint32_t va
     little_endian_store_32(context->buffer, pos, value);
 }
 
+void hci_event_builder_add_64(hci_event_builder_context_t * context, const uint8_t * value){
+    uint16_t pos = context->pos;
+    hci_event_builder_increment_pos(context, 8);
+    reverse_64(value, &context->buffer[pos]);
+}
+
+void hci_event_builder_add_128(hci_event_builder_context_t * context, const uint8_t * value){
+    uint16_t pos = context->pos;
+    hci_event_builder_increment_pos(context, 16);
+    reverse_128(value, &context->buffer[pos]);
+}
+
 void hci_event_builder_add_bd_addr(hci_event_builder_context_t * context, bd_addr_t addr){
     uint16_t pos = context->pos;
     hci_event_builder_increment_pos(context, 6);
