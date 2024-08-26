@@ -935,11 +935,13 @@ static void emit_event_to_registered_listeners(hci_con_handle_t con_handle, uint
 }
 
 static void emit_gatt_complete_event(gatt_client_t * gatt_client, uint8_t att_status){
-    // @format H1
-    uint8_t packet[5];
+    // @format H122
+    uint8_t packet[9];
     hci_event_builder_context_t context;
     hci_event_builder_init(&context, packet, sizeof(packet), GATT_EVENT_QUERY_COMPLETE, 0);
     hci_event_builder_add_con_handle(&context, gatt_client->con_handle);
+    hci_event_builder_add_16(&context, gatt_client->service_id);
+    hci_event_builder_add_16(&context, gatt_client->connection_id);
     hci_event_builder_add_08(&context, att_status);
     emit_event_new(gatt_client->callback, packet, hci_event_builder_get_length(&context));
 }

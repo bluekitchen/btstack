@@ -2670,13 +2670,31 @@ static inline hci_con_handle_t gatt_event_query_complete_get_handle(const uint8_
     return little_endian_read_16(event, 2);
 }
 /**
+ * @brief Get field service_id from event GATT_EVENT_QUERY_COMPLETE
+ * @param event packet
+ * @return service_id
+ * @note: btstack_type 2
+ */
+static inline uint16_t gatt_event_query_complete_get_service_id(const uint8_t * event){
+    return little_endian_read_16(event, 4);
+}
+/**
+ * @brief Get field connection_id from event GATT_EVENT_QUERY_COMPLETE
+ * @param event packet
+ * @return connection_id
+ * @note: btstack_type 2
+ */
+static inline uint16_t gatt_event_query_complete_get_connection_id(const uint8_t * event){
+    return little_endian_read_16(event, 6);
+}
+/**
  * @brief Get field att_status from event GATT_EVENT_QUERY_COMPLETE
  * @param event packet
  * @return att_status
  * @note: btstack_type 1
  */
 static inline uint8_t gatt_event_query_complete_get_att_status(const uint8_t * event){
-    return event[4];
+    return event[8];
 }
 #endif
 
