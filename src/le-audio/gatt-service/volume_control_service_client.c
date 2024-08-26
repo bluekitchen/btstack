@@ -262,7 +262,7 @@ static uint8_t vcs_client_can_query_characteristic(vcs_client_connection_t * con
 static uint8_t vcs_client_request_send_gatt_query(vcs_client_connection_t * connection, vcs_client_characteristic_index_t characteristic_index){
     connection->characteristic_index = characteristic_index;
 
-    vcs_client_handle_can_send_now.context = (void *)(uintptr_t)connection->basic_connection.con_handle;
+    vcs_client_handle_can_send_now.context = (void *)(uintptr_t)connection->basic_connection.cid;
     uint8_t status = gatt_client_request_to_send_gatt_query(&vcs_client_handle_can_send_now, connection->basic_connection.con_handle);
     if (status != ERROR_CODE_SUCCESS){
         connection->state = VOLUME_CONTROL_SERVICE_CLIENT_STATE_READY;
@@ -578,6 +578,7 @@ static void vcs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t ch
 
                 case VOLUME_CONTROL_SERVICE_CLIENT_STATE_W4_CHANGE_COUNTER_RESULT:
                     connection->state = VOLUME_CONTROL_SERVICE_CLIENT_STATE_W2_QUERY_INCLUDED_SERVICES;
+                    vcs_client_handle_can_send_now.context = (void *)(uintptr_t)connection->basic_connection.cid;
                     (void) gatt_client_request_to_send_gatt_query(&vcs_client_handle_can_send_now,
                                                                   connection->basic_connection.con_handle);
                     break;
@@ -597,7 +598,7 @@ static void vcs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t ch
                     connection->aics_connections_connected = 0;
 
                     if ((connection->aics_connections_max_num > 0) && (connection->aics_connections_storage != NULL)){
-                        vcs_client_handle_can_send_now.context = (void *) (uintptr_t) connection->basic_connection.con_handle;
+                        vcs_client_handle_can_send_now.context = (void *)(uintptr_t)connection->basic_connection.cid;
                         (void) gatt_client_request_to_send_gatt_query(&vcs_client_handle_can_send_now,
                                                                       connection->basic_connection.con_handle);
                     } else {
@@ -606,7 +607,7 @@ static void vcs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t ch
                         connection->vocs_connections_connected = 0;
 
                         if ((connection->vocs_connections_max_num > 0) && (connection->vocs_connections_storage != NULL)){
-                            vcs_client_handle_can_send_now.context = (void *) (uintptr_t) connection->basic_connection.con_handle;
+                            vcs_client_handle_can_send_now.context = (void *)(uintptr_t)connection->basic_connection.cid;
                             (void) gatt_client_request_to_send_gatt_query(&vcs_client_handle_can_send_now,
                                                                           connection->basic_connection.con_handle);
                         } else {
@@ -684,8 +685,8 @@ static uint16_t vcs_client_serialize_characteristic_value_for_write(vcs_client_c
 }
 
 static void vcs_client_run_for_connection(void * context){
-    hci_con_handle_t con_handle = (hci_con_handle_t)(uintptr_t)context;
-    gatt_service_client_connection_t * connection_helper = gatt_service_client_get_connection_for_con_handle(&vcs_client, con_handle);
+    uint16_t connection_id = (uint16_t)(uintptr_t)context;
+    gatt_service_client_connection_t * connection_helper = gatt_service_client_get_connection_for_cid(&vcs_client, connection_id);
     vcs_client_connection_t * connection = (vcs_client_connection_t *)connection_helper;
 
     btstack_assert(connection != NULL);
@@ -697,7 +698,7 @@ static void vcs_client_run_for_connection(void * context){
         case VOLUME_CONTROL_SERVICE_CLIENT_STATE_W2_QUERY_CHANGE_COUNTER:
             connection->state = VOLUME_CONTROL_SERVICE_CLIENT_STATE_W4_CHANGE_COUNTER_RESULT;
             (void) gatt_client_read_value_of_characteristic_using_value_handle(
-                    &vcs_client_handle_gatt_client_event, con_handle,
+                    &vcs_client_handle_gatt_client_event, connection->basic_connection.con_handle,
                     gatt_service_client_characteristic_value_handle_for_index(connection_helper,
                                                                               connection->characteristic_index));
             break;
@@ -711,7 +712,7 @@ static void vcs_client_run_for_connection(void * context){
 #endif
             (void) gatt_client_find_included_services_for_service(
                     vcs_client_handle_gatt_client_event,
-                    con_handle,
+                    connection->basic_connection.con_handle,
                     &service);
             break;
 
@@ -719,7 +720,7 @@ static void vcs_client_run_for_connection(void * context){
             connection->state = VOLUME_CONTROL_SERVICE_CLIENT_STATE_W4_READ_CHARACTERISTIC_VALUE_RESULT;
 
             (void) gatt_client_read_value_of_characteristic_using_value_handle(
-                    &vcs_client_handle_gatt_client_event, con_handle,
+                    &vcs_client_handle_gatt_client_event, connection->basic_connection.con_handle,
                     gatt_service_client_characteristic_value_handle_for_index(connection_helper,
                                                                               connection->characteristic_index));
             break;
@@ -729,7 +730,7 @@ static void vcs_client_run_for_connection(void * context){
 
             value_length = vcs_client_serialize_characteristic_value_for_write(connection, &value);
             (void) gatt_client_write_value_of_characteristic(
-                    &vcs_client_handle_gatt_client_event, con_handle,
+                    &vcs_client_handle_gatt_client_event, connection->basic_connection.con_handle,
                     gatt_service_client_characteristic_value_handle_for_index(connection_helper,
                                                                               connection->characteristic_index),
                     value_length, value);
