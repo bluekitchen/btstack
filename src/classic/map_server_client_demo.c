@@ -120,14 +120,14 @@ struct objconfig_s ed_v1_2 = {
 struct objconfig_s pp_v1_2 = {
     .header = "<MAP-event-report version=\"1.2\">",
     .footer = "</MAP-event-report>",
-    .body   = "<event type = \"ParticipantPresenceChanged\" sender_name=\"PTS\" conversation_id=”3909231965” presence_availability=\"1\" last_activity=\"20160625T133700\" participant_uci=”skype:beastmode2”/>"
+    .body   = "<event type = \"ParticipantPresenceChanged\" sender_name=\"PTS\" conversation_id=\"3909231965\" presence_availability=\"1\" last_activity=\"20160625T133700\" participant_uci=\"skype:beastmode2\"/>"
 };
 
 // copied from PTS v8.6.0B6 file ParticipantChatStateChanged_event_report_1_2
 struct objconfig_s pc_v1_2 = {
     .header = "<MAP-event-report version=\"1.2\">",
     .footer = "</MAP-event-report>",
-    .body   = "<event type = \"ParticipantChatStateChanged\" sender_name=\"PTS\" conversation_id=”3909231965” last_activity=\"20160625T133700\" chat_state=\"1\" participant_uci=”skype:beastmode2”/>"
+    .body   = "<event type = \"ParticipantChatStateChanged\" sender_name=\"PTS\" conversation_id=\"3909231965\" last_activity=\"20160625T133700\" chat_state=\"1\" participant_uci=\"skype:beastmode2\"/>"
 };
 
 // copied from PTS v8.6.0B6 file ConvrsationChanged_event_report_1_2
@@ -135,8 +135,8 @@ struct objconfig_s cc_v1_2 = {
     .header = "<MAP-event-report version=\"1.2\">",
     .footer = "</MAP-event-report>",
     .body   = "<event type=\"ConversationChanged\" msg_type=\"IM\" sender_name=\"PTS\""
-              " conversation_id=”3909231965”  presence_availability=\"1\"  chat_state=\"1\" last_activity=\"20160625T133700\""
-              " participant_uci=”skype:beastmode2”/>"
+              " conversation_id=\"3909231965\"  presence_availability=\"1\"  chat_state=\"1\" last_activity=\"20160625T133700\""
+              " participant_uci=\"skype:beastmode2\"/>"
 };
 
 // copied from PTS v8.6.0B6 file IM_MessageRemoved_event_report_1_2
