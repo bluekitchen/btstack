@@ -447,6 +447,17 @@ void gatt_service_client_handle_disconnect(gatt_service_client_t * client, hci_c
     }
 }
 
+void gatt_service_client_handle_mtu(gatt_service_client_t * client, hci_con_handle_t con_handle, uint16_t mtu){
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, (btstack_linked_list_t *) &client->connections);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        gatt_service_client_connection_t * connection = (gatt_service_client_connection_t *)btstack_linked_list_iterator_next(&it);
+        if (connection->con_handle == con_handle) {
+            connection->mtu = mtu;
+        }
+    }
+}
+
 void gatt_service_client_trampoline_packet_handler(gatt_service_client_t * client, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
@@ -456,6 +467,7 @@ void gatt_service_client_trampoline_packet_handler(gatt_service_client_t * clien
     if (packet_type != HCI_EVENT_PACKET) return;
 
     hci_con_handle_t con_handle;
+    uint16_t mtu;
     gatt_service_client_connection_t * connection;
     gatt_client_service_t service;
     gatt_client_characteristic_t characteristic;
@@ -471,9 +483,9 @@ void gatt_service_client_trampoline_packet_handler(gatt_service_client_t * clien
             break;
 
         case GATT_EVENT_MTU:
-            connection = gatt_service_client_get_connection_for_con_handle(client, gatt_event_mtu_get_handle(packet));
-            btstack_assert(connection != NULL);
-            connection->mtu = gatt_event_mtu_get_MTU(packet);
+            con_handle = gatt_event_mtu_get_handle(packet);
+            mtu =  gatt_event_mtu_get_MTU(packet);
+            gatt_service_client_handle_mtu(client, con_handle, mtu);
             break;
 
         case GATT_EVENT_SERVICE_QUERY_RESULT:
