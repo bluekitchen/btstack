@@ -438,7 +438,23 @@ uint8_t gatt_client_discover_secondary_services(btstack_packet_handler_t callbac
  */
 uint8_t gatt_client_discover_primary_services_by_uuid16(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t uuid16);
 
-/** 
+/**
+ * @brief Discovers a specific primary service given its UUID. This service may exist multiple times.
+ * For each found service a GATT_EVENT_SERVICE_QUERY_RESULT event will be emitted.
+ * The GATT_EVENT_QUERY_COMPLETE event marks the end of discovery.
+ * @param callback
+ * @param con_handle
+ * @param uuid16
+ * @param service_id    - context provided to callback in events
+ * @param connection_id - contest provided to callback in events
+ * @return status BTSTACK_MEMORY_ALLOC_FAILED, if no GATT client for con_handle is found
+ *                GATT_CLIENT_IN_WRONG_STATE , if GATT client is not ready
+ *                ERROR_CODE_SUCCESS         , if query is successfully registered
+ */
+uint8_t gatt_client_discover_primary_services_by_uuid16_with_context(btstack_packet_handler_t callback, hci_con_handle_t con_handle,
+                                                                     uint16_t uuid16, uint16_t service_id, uint16_t connection_id);
+
+/**
  * @brief Discovers a specific primary service given its UUID. This service may exist multiple times. 
  * For each found service a GATT_EVENT_SERVICE_QUERY_RESULT event will be emitted.
  * The GATT_EVENT_QUERY_COMPLETE event marks the end of discovery. 
