@@ -2817,13 +2817,31 @@ static inline hci_con_handle_t gatt_event_all_characteristic_descriptors_query_r
     return little_endian_read_16(event, 2);
 }
 /**
+ * @brief Get field service_id from event GATT_EVENT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT
+ * @param event packet
+ * @return service_id
+ * @note: btstack_type 2
+ */
+static inline uint16_t gatt_event_all_characteristic_descriptors_query_result_get_service_id(const uint8_t * event){
+    return little_endian_read_16(event, 4);
+}
+/**
+ * @brief Get field connection_id from event GATT_EVENT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT
+ * @param event packet
+ * @return connection_id
+ * @note: btstack_type 2
+ */
+static inline uint16_t gatt_event_all_characteristic_descriptors_query_result_get_connection_id(const uint8_t * event){
+    return little_endian_read_16(event, 6);
+}
+/**
  * @brief Get field characteristic_descriptor from event GATT_EVENT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT
  * @param event packet
  * @param Pointer to storage for characteristic_descriptor
  * @note: btstack_type Z
  */
 static inline void gatt_event_all_characteristic_descriptors_query_result_get_characteristic_descriptor(const uint8_t * event, gatt_client_characteristic_descriptor_t * characteristic_descriptor){
-    gatt_client_deserialize_characteristic_descriptor(event, 4, characteristic_descriptor);
+    gatt_client_deserialize_characteristic_descriptor(event, 8, characteristic_descriptor);
 }
 #endif
 
