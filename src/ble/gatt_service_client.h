@@ -104,6 +104,7 @@ typedef struct {
 
 typedef struct {
     btstack_linked_list_t connections;
+    uint16_t service_id;
     uint16_t cid_counter;
 
     // characteristics

@@ -58,6 +58,8 @@
 #include "btstack_run_loop.h"
 #include "gap.h"
 
+static uint16_t gatt_service_client_service_cid;
+
 static btstack_packet_handler_t gatt_service_client_get_packet_handler_trampoline(gatt_service_client_t * client){
     return client->hci_event_callback_registration.callback;
 }
@@ -550,6 +552,8 @@ void gatt_service_client_register_client(gatt_service_client_t *client, btstack_
                                          void (*trampoline_packet_handler)(uint8_t, uint16_t, uint8_t *, uint16_t)) {
 
     client->cid_counter = 0;
+    gatt_service_client_service_cid = btstack_next_cid_ignoring_zero(gatt_service_client_service_cid);
+    client->service_id =gatt_service_client_service_cid;
     client->characteristics_desc16_num = 0;
     client->hci_event_callback_registration.callback = trampoline_packet_handler;
     client->packet_handler = packet_handler;
@@ -671,5 +675,6 @@ void gatt_service_client_unregister_client(gatt_service_client_t * client){
 }
 
 void gatt_service_client_deinit(void){
+    gatt_service_client_service_cid = 0;
 }
 
