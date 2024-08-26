@@ -975,16 +975,15 @@ static void emit_gatt_characteristic_query_result_event(gatt_client_t * gatt_cli
                                                         uint16_t properties, const uint8_t * uuid128){
     // @format HY
     uint8_t packet[28];
-    packet[0] = GATT_EVENT_CHARACTERISTIC_QUERY_RESULT;
-    packet[1] = sizeof(packet) - 2u;
-    little_endian_store_16(packet, 2, gatt_client->con_handle);
-    ///
-    little_endian_store_16(packet, 4,  start_handle);
-    little_endian_store_16(packet, 6,  value_handle);
-    little_endian_store_16(packet, 8,  end_handle);
-    little_endian_store_16(packet, 10, properties);
-    reverse_128(uuid128, &packet[12]);
-    emit_event_new(gatt_client->callback, packet, sizeof(packet));
+    hci_event_builder_context_t context;
+    hci_event_builder_init(&context, packet, sizeof(packet), GATT_EVENT_CHARACTERISTIC_QUERY_RESULT, 0);
+    hci_event_builder_add_con_handle(&context, gatt_client->con_handle);
+    hci_event_builder_add_16(&context, start_handle);
+    hci_event_builder_add_16(&context, value_handle);
+    hci_event_builder_add_16(&context, end_handle);
+    hci_event_builder_add_16(&context, properties);
+    hci_event_builder_add_128(&context, uuid128);
+    emit_event_new(gatt_client->callback, packet, hci_event_builder_get_length(&context));
 }
 
 static void emit_gatt_all_characteristic_descriptors_result_event(
