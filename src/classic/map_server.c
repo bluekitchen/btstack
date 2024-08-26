@@ -186,7 +186,7 @@ typedef struct {
 
 static map_server_t map_server_connections[MAS_MAX_CONNECTIONS] = {
     [0] = { .entry = 0 },
-    [0] = { .entry = 1 },
+    [1] = { .entry = 1 },
 };
 
 static struct {
