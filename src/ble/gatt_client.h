@@ -269,6 +269,10 @@ typedef struct gatt_client{
 
     gap_security_level_t security_level;
 
+    // Context
+    uint16_t service_id;
+    uint16_t connection_id;
+
     // GATT Service Changes
     gatt_client_service_state_t gatt_service_state;
     uint16_t                    gatt_service_start_group_handle;
