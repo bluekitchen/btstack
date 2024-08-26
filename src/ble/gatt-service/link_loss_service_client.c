@@ -174,7 +174,7 @@ static uint8_t lls_client_can_query_characteristic(lls_client_connection_t * con
 static uint8_t lls_client_request_send_gatt_query(lls_client_connection_t * connection, lls_client_characteristic_index_t characteristic_index){
     connection->characteristic_index = characteristic_index;
 
-    lls_client_handle_can_send_now.context = (void *)(uintptr_t)connection->basic_connection.con_handle;
+    lls_client_handle_can_send_now.context = (void *)(uintptr_t)connection->basic_connection.cid;
     uint8_t status = gatt_client_request_to_send_gatt_query(&lls_client_handle_can_send_now, connection->basic_connection.con_handle);
     if (status != ERROR_CODE_SUCCESS){
         connection->state = LINK_LOSS_SERVICE_CLIENT_STATE_READY;
@@ -302,8 +302,8 @@ static uint16_t lls_client_serialize_characteristic_value_for_write(lls_client_c
 }
 
 static void lls_client_run_for_connection(void * context){
-    hci_con_handle_t con_handle = (hci_con_handle_t)(uintptr_t)context;
-    lls_client_connection_t * connection = (lls_client_connection_t *)gatt_service_client_get_connection_for_con_handle(&lls_client, con_handle);
+    uint16_t connection_id = (uint16_t)(uintptr_t)context;
+    lls_client_connection_t * connection = (lls_client_connection_t *)gatt_service_client_get_connection_for_cid(&lls_client, connection_id);
 
     btstack_assert(connection != NULL);
     uint16_t value_length;
@@ -314,7 +314,7 @@ static void lls_client_run_for_connection(void * context){
             connection->state = LINK_LOSS_SERVICE_CLIENT_STATE_W4_READ_CHARACTERISTIC_VALUE_RESULT;
 
             (void) gatt_client_read_value_of_characteristic_using_value_handle(
-                &lls_client_handle_gatt_client_event, con_handle, 
+                &lls_client_handle_gatt_client_event, connection->basic_connection.cid,
                 lls_client_value_handle_for_index(connection));
             break;
 
@@ -323,7 +323,7 @@ static void lls_client_run_for_connection(void * context){
 
             value_length = lls_client_serialize_characteristic_value_for_write(connection, &value);
             (void) gatt_client_write_value_of_characteristic(
-                    &lls_client_handle_gatt_client_event, con_handle,
+                    &lls_client_handle_gatt_client_event, connection->basic_connection.cid,
                 lls_client_value_handle_for_index(connection),
                 value_length, value);
             
