@@ -2748,13 +2748,31 @@ static inline hci_con_handle_t gatt_event_characteristic_query_result_get_handle
     return little_endian_read_16(event, 2);
 }
 /**
+ * @brief Get field service_id from event GATT_EVENT_CHARACTERISTIC_QUERY_RESULT
+ * @param event packet
+ * @return service_id
+ * @note: btstack_type 2
+ */
+static inline uint16_t gatt_event_characteristic_query_result_get_service_id(const uint8_t * event){
+    return little_endian_read_16(event, 4);
+}
+/**
+ * @brief Get field connection_id from event GATT_EVENT_CHARACTERISTIC_QUERY_RESULT
+ * @param event packet
+ * @return connection_id
+ * @note: btstack_type 2
+ */
+static inline uint16_t gatt_event_characteristic_query_result_get_connection_id(const uint8_t * event){
+    return little_endian_read_16(event, 6);
+}
+/**
  * @brief Get field characteristic from event GATT_EVENT_CHARACTERISTIC_QUERY_RESULT
  * @param event packet
  * @param Pointer to storage for characteristic
  * @note: btstack_type Y
  */
 static inline void gatt_event_characteristic_query_result_get_characteristic(const uint8_t * event, gatt_client_characteristic_t * characteristic){
-    gatt_client_deserialize_characteristic(event, 4, characteristic);
+    gatt_client_deserialize_characteristic(event, 8, characteristic);
 }
 #endif
 
