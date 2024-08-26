@@ -2566,7 +2566,8 @@ uint8_t gatt_client_discover_primary_services_by_uuid128(btstack_packet_handler_
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t gatt_client_discover_characteristics_for_service(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_service_t * service){
+uint8_t gatt_client_discover_characteristics_for_service_with_context(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_service_t * service,
+                                                                      uint16_t service_id, uint16_t connection_id){
     gatt_client_t * gatt_client;
     uint8_t status = gatt_client_provide_context_for_request(con_handle, &gatt_client);
     if (status != ERROR_CODE_SUCCESS){
@@ -2574,6 +2575,8 @@ uint8_t gatt_client_discover_characteristics_for_service(btstack_packet_handler_
     }
 
     gatt_client->callback = callback;
+    gatt_client->service_id = service_id;
+    gatt_client->connection_id = connection_id;
     gatt_client->start_group_handle = service->start_group_handle;
     gatt_client->end_group_handle   = service->end_group_handle;
     gatt_client->filter_with_uuid = false;
@@ -2582,6 +2585,11 @@ uint8_t gatt_client_discover_characteristics_for_service(btstack_packet_handler_
     gatt_client_run();
     return ERROR_CODE_SUCCESS;
 }
+
+uint8_t gatt_client_discover_characteristics_for_service(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_service_t * service){
+    return gatt_client_discover_characteristics_for_service_with_context(callback, con_handle, service, 0, 0);
+}
+
 uint8_t gatt_client_find_included_services_for_service_with_context(btstack_packet_handler_t callback, hci_con_handle_t con_handle,
                                                                     gatt_client_service_t * service, uint16_t service_id, uint16_t connection_id){
     gatt_client_t * gatt_client;
