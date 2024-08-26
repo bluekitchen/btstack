@@ -297,7 +297,7 @@ static void vocs_client_emit_notify_event(gatt_service_client_connection_t * con
 
 static uint8_t vocs_client_request_send_gatt_query(vocs_client_connection_t * connection, vocs_client_characteristic_index_t characteristic_index){
     connection->characteristic_index = characteristic_index;
-
+    connection->gatt_query_can_send_now.context = (void *)(uintptr_t) connection->basic_connection.cid;
     uint8_t status = gatt_client_request_to_send_gatt_query(&connection->gatt_query_can_send_now, connection->basic_connection.con_handle);
     if (status != ERROR_CODE_SUCCESS){
         connection->state = VOLUME_OFFSET_CONTROL_SERVICE_CLIENT_STATE_READY;
@@ -545,8 +545,8 @@ static uint16_t vocs_client_serialize_characteristic_value_for_write(vocs_client
 }
 
 static void vocs_client_run_for_connection(void * context){
-    hci_con_handle_t con_handle = (hci_con_handle_t)(uintptr_t)context;
-    vocs_client_connection_t * connection = (vocs_client_connection_t *)gatt_service_client_get_connection_for_con_handle(&vocs_client, con_handle);
+    uint16_t connection_id = (hci_con_handle_t)(uintptr_t)context;
+    vocs_client_connection_t * connection = (vocs_client_connection_t *)gatt_service_client_get_connection_for_cid(&vocs_client, connection_id);
 
     btstack_assert(connection != NULL);
     uint16_t value_length;
@@ -556,7 +556,7 @@ static void vocs_client_run_for_connection(void * context){
         case VOLUME_OFFSET_CONTROL_SERVICE_CLIENT_STATE_W2_QUERY_CHANGE_COUNTER:
             connection->state = VOLUME_OFFSET_CONTROL_SERVICE_CLIENT_STATE_W4_CHANGE_COUNTER_RESULT;
             (void) gatt_client_read_value_of_characteristic_using_value_handle(
-                    &vocs_client_handle_gatt_client_event, con_handle,
+                    &vocs_client_handle_gatt_client_event, connection->basic_connection.con_handle,
                     vocs_client_value_handle_for_index(connection));
             break;
 
@@ -564,7 +564,7 @@ static void vocs_client_run_for_connection(void * context){
             connection->state = VOLUME_OFFSET_CONTROL_SERVICE_CLIENT_STATE_W4_READ_CHARACTERISTIC_VALUE_RESULT;
 
             (void) gatt_client_read_value_of_characteristic_using_value_handle(
-                &vocs_client_handle_gatt_client_event, con_handle, 
+                &vocs_client_handle_gatt_client_event, connection->basic_connection.con_handle,
                 vocs_client_value_handle_for_index(connection));
             break;
 
@@ -573,7 +573,7 @@ static void vocs_client_run_for_connection(void * context){
 
             value_length = vocs_client_serialize_characteristic_value_for_write(connection, &value);
             (void) gatt_client_write_value_of_characteristic_without_response(
-                con_handle,
+                    connection->basic_connection.con_handle,
                 vocs_client_value_handle_for_index(connection),
                 value_length, value);
             
@@ -583,7 +583,7 @@ static void vocs_client_run_for_connection(void * context){
 
             value_length = vocs_client_serialize_characteristic_value_for_write(connection, &value);
             (void) gatt_client_write_value_of_characteristic(
-                    &vocs_client_handle_gatt_client_event, con_handle,
+                    &vocs_client_handle_gatt_client_event, connection->basic_connection.con_handle,
                     vocs_client_value_handle_for_index(connection),
                     value_length, value);
             break;
@@ -613,7 +613,6 @@ uint8_t volume_offset_control_service_client_connect(
     vocs_client_connection_t * connection){
 
     connection->gatt_query_can_send_now.callback = &vocs_client_run_for_connection;
-    connection->gatt_query_can_send_now.context = (void *)(uintptr_t) con_handle;
     connection->change_counter = 0;
     connection->state = VOLUME_OFFSET_CONTROL_SERVICE_CLIENT_STATE_W4_CONNECTED;
     return gatt_service_client_connect_secondary_service(con_handle,
