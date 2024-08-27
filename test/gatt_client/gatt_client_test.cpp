@@ -1089,6 +1089,12 @@ TEST(GATTClient, gatt_client_read_long_characteristic_descriptor_using_descripto
 	CHECK_EQUAL(1, gatt_query_complete);
 	CHECK_EQUAL(1, result_counter);
 
+    reset_query_state();
+    status = gatt_client_discover_characteristics_for_service(handle_ble_client_event, gatt_client_handle, &services[0]);
+    CHECK_EQUAL(0, status);
+    CHECK_EQUAL(1, gatt_query_complete);
+    verify_charasteristics();
+
 	reset_query_state();
 	status = gatt_client_discover_characteristic_descriptors(handle_ble_client_event, gatt_client_handle, &characteristics[0]);
 	CHECK_EQUAL(0, status);
