@@ -273,6 +273,7 @@ static void mics_client_packet_handler_internal(uint8_t packet_type, uint16_t ch
     gatt_service_client_connection_t * connection_helper;
     mics_client_connection_t * connection;
     hci_con_handle_t con_handle;
+    uint16_t value_handle;
     uint16_t cid;
     uint8_t status;
 
@@ -413,8 +414,8 @@ static void mics_client_packet_handler_internal(uint8_t packet_type, uint16_t ch
 
         case GATT_EVENT_NOTIFICATION:
             con_handle = (hci_con_handle_t)gatt_event_notification_get_handle(packet);
-            connection = (mics_client_connection_t *)gatt_service_client_get_connection_for_con_handle(&mics_client, con_handle);
-
+            value_handle = gatt_event_notification_get_value_handle(packet);
+            connection = (mics_client_connection_t *)gatt_service_client_get_connection_for_con_handle_and_attribute_handle(&mics_client, con_handle, value_handle);
             btstack_assert(connection != NULL);
 
             mics_client_emit_notify_event(connection, gatt_event_notification_get_value_handle(packet), ATT_ERROR_SUCCESS,
