@@ -431,8 +431,8 @@ static void map_server_reset_response(map_server_t* mas) {
 }
 
 static void map_server_operation_complete(map_server_t* mas) {
-    mas->state = MAS_STATE_CONNECTED;
-    mas->srm_state = SRM_DISABLED;
+    RUN_AND_LOG_ACTION(mas->state = MAS_STATE_CONNECTED;)
+    RUN_AND_LOG_ACTION(mas->srm_state = SRM_DISABLED;)
     map_server_default_headers(mas);
     map_server_reset_response(mas);
 }
@@ -474,7 +474,12 @@ static void map_server_handle_can_send_now(map_server_t* mas) {
         if (response_code == OBEX_RESP_CONTINUE) {
             map_server_reset_response(mas);
             // next state
-            mas->state = (mas->srm_state == SRM_ENABLED) ? MAS_STATE_ABOUT_TO_SEND : MAS_STATE_W4_GET_OPCODE;
+            if (mas->srm_state == SRM_ENABLED) {
+                RUN_AND_LOG_ACTION(mas->state = MAS_STATE_ABOUT_TO_SEND;)
+            }
+            else {
+                RUN_AND_LOG_ACTION(mas->state = MAS_STATE_W4_GET_OPCODE;)
+            }
         }
         else {
             map_server_operation_complete(mas);
@@ -1191,8 +1196,8 @@ uint16_t map_server_send_response(uint16_t map_cid, uint8_t response_code, uint3
         RUN_AND_LOG_ACTION(return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;)
     }
 #if 0 // MAP/MSE/GOEP/SRMP/BV-03-C this one gets PTS to send a second PUT (more packets to follow)
- mas->srm_state = SRM_SEND_CONFIRM_WAIT;
- mas->response.code = OBEX_RESP_CONTINUE;
+    RUN_AND_LOG_ACTION(mas->srm_state = SRM_SEND_CONFIRM_WAIT;)
+    RUN_AND_LOG_ACTION(mas->response.code = OBEX_RESP_CONTINUE;)
 #else
     // set data for response and trigger execute
     mas->response.code = response_code;
