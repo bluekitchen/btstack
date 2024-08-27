@@ -268,9 +268,9 @@ static void txps_client_run_for_connection(void * context){
         case TX_POWER_SERVICE_CLIENT_STATE_W2_READ_CHARACTERISTIC_VALUE:
             connection->state = TX_POWER_SERVICE_CLIENT_STATE_W4_READ_CHARACTERISTIC_VALUE_RESULT;
 
-            (void) gatt_client_read_value_of_characteristic_using_value_handle(
+            (void) gatt_client_read_value_of_characteristic_using_value_handle_with_context(
                 &txps_client_handle_gatt_client_event, connection->basic_connection.cid,
-                txps_client_value_handle_for_index(connection));
+                txps_client_value_handle_for_index(connection), txps_client.service_id, connection->basic_connection.cid);
             break;
 
         default:
