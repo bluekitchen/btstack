@@ -653,14 +653,13 @@ static void mcs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t ch
 
     mcs_client_connection_t * connection = NULL;
     uint16_t connection_id;
-    hci_con_handle_t con_handle;
     gatt_client_service_t service;
     uint8_t status;
 
     switch(hci_event_packet_get_type(packet)){
         case GATT_EVENT_CHARACTERISTIC_VALUE_QUERY_RESULT:
-            con_handle = (hci_con_handle_t)gatt_event_characteristic_value_query_result_get_handle(packet);
-            connection = (mcs_client_connection_t *)gatt_service_client_get_connection_for_con_handle(&mcs_client, con_handle);
+            connection_id = gatt_event_characteristic_value_query_result_get_connection_id(packet);
+            connection = (mcs_client_connection_t *)gatt_service_client_get_connection_for_cid(&mcs_client, connection_id);
             btstack_assert(connection != NULL);                
 
             mcs_client_emit_read_event(connection, connection->characteristic_index, ATT_ERROR_SUCCESS, 
@@ -688,8 +687,8 @@ static void mcs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t ch
             break;
 
         case GATT_EVENT_QUERY_COMPLETE:
-            con_handle = (hci_con_handle_t)gatt_event_query_complete_get_handle(packet);
-            connection = (mcs_client_connection_t *)gatt_service_client_get_connection_for_con_handle(&mcs_client, con_handle);
+            connection_id = (hci_con_handle_t)gatt_event_query_complete_get_connection_id(packet);
+            connection = (mcs_client_connection_t *)gatt_service_client_get_connection_for_cid(&mcs_client, connection_id);
             btstack_assert(connection != NULL);
             
             switch (connection->state){
