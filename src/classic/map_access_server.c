@@ -733,9 +733,9 @@ static void map_server_handle_get_or_put_request(map_server_t* mas) {
     map_server_handle_srm_headers(mas);
 
     if (mas->srm_state == SRM_SEND_CONFIRM_WAIT) {
-        mas->state = MAS_STATE_SEND_INTERNAL_RESPONSE;
-        //mas->response.code = OBEX_RESP_CONTINUE;
-        mas->obex_srm.srm_value = OBEX_SRM_ENABLE;
+        RUN_AND_LOG_ACTION(mas->state = MAS_STATE_SEND_INTERNAL_RESPONSE;)
+        RUN_AND_LOG_ACTION(mas->response.code = OBEX_RESP_CONTINUE;)
+        RUN_AND_LOG_ACTION(mas->obex_srm.srm_value = OBEX_SRM_ENABLE;)
         goep_server_request_can_send_now(mas->goep_cid);
         return;
     }
