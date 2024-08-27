@@ -755,15 +755,15 @@ static void ots_client_handle_gatt_client_event(uint8_t packet_type, uint16_t ch
     UNUSED(size);
 
     gatt_service_client_connection_t * connection_helper = NULL;
-    hci_con_handle_t con_handle;
+    uint16_t connection_id;
     ots_client_connection_t * connection;
     uint8_t offset;
     uint8_t status;
 
     switch(hci_event_packet_get_type(packet)){
         case GATT_EVENT_LONG_CHARACTERISTIC_VALUE_QUERY_RESULT:
-            con_handle = (hci_con_handle_t)gatt_event_long_characteristic_value_query_result_get_handle(packet);
-            connection_helper = gatt_service_client_get_connection_for_con_handle(&ots_client, con_handle);
+            connection_id = gatt_event_long_characteristic_value_query_result_get_connection_id(packet);
+            connection_helper = gatt_service_client_get_connection_for_cid(&ots_client, connection_id);
             btstack_assert(connection_helper != NULL);
             connection = (ots_client_connection_t *)connection_helper;
             switch (connection->state) {
@@ -788,8 +788,8 @@ static void ots_client_handle_gatt_client_event(uint8_t packet_type, uint16_t ch
             break;
 
         case GATT_EVENT_CHARACTERISTIC_VALUE_QUERY_RESULT:
-            con_handle = (hci_con_handle_t)gatt_event_characteristic_value_query_result_get_handle(packet);
-            connection_helper = gatt_service_client_get_connection_for_con_handle(&ots_client, con_handle);
+            connection_id = gatt_event_long_characteristic_value_query_result_get_connection_id(packet);
+            connection_helper = gatt_service_client_get_connection_for_cid(&ots_client, connection_id);
             btstack_assert(connection_helper != NULL);
             connection = (ots_client_connection_t *)connection_helper;
 
@@ -816,8 +816,8 @@ static void ots_client_handle_gatt_client_event(uint8_t packet_type, uint16_t ch
             break;
 
         case GATT_EVENT_QUERY_COMPLETE:
-            con_handle = (hci_con_handle_t)gatt_event_query_complete_get_handle(packet);
-            connection_helper = gatt_service_client_get_connection_for_con_handle(&ots_client, con_handle);
+            connection_id = gatt_event_query_complete_get_connection_id(packet);
+            connection_helper = gatt_service_client_get_connection_for_cid(&ots_client, connection_id);
             btstack_assert(connection_helper != NULL);
 
             status = gatt_event_query_complete_get_att_status(packet);
