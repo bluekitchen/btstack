@@ -24,6 +24,7 @@ COMMON = \
 	btstack_linked_list.c       \
 	btstack_util.c              \
 	hci_dump.c                  \
+	hci_event_builder.c         \
 	mock_gatt_client.c 			\
 
 CFLAGS_COVERAGE = ${CFLAGS} -fprofile-arcs -ftest-coverage

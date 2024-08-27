@@ -26,6 +26,7 @@ set(SOURCES
 	../../src/btstack_linked_list.c
 	../../src/btstack_util.c
 	../../src/hci_dump.c
+	../../src/hci_event_builder.c
 	../../src/ble/gatt-service/ancs_client.c
 	../../src/ble/gatt-service/battery_service_client.c
 	../../src/ble/gatt-service/device_information_service_client.c
