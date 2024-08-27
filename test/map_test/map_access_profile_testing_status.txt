@@ -180,7 +180,7 @@ MAP/MSE/MMN/BV-12-C: RE-PASS (2024-08-26) PTS 8.6.1 & L2CAP & MAP_NEW, INFO: rep
 MAP/MSE/MMN/BV-14-C: RE-PASS (2024-08-26) PTS 8.6.1 & L2CAP & MAP_NEW, INFO: replaced "illegal character encoding in string literal" we had copied from PTS test template files for EventReports
 MAP/MSE/GOEP/SRM/BI-02-C: PTS HANGS PTS 8.6.1 & L2CAP & MAP_NEW PTS 8.6.1 MAP_NEW L2CAP bug: claims to send a PUT but doesnt, hangs till the test case timeouts
 MAP/MSE/GOEP/SRM/BI-02-C: RE-PASS (2024-08-22) PTS 8.6.1 & L2CAP & MAP_OLD
-
+MAP/MSE/GOEP/SRMP/BV-02-C: WIP PTS MAP_OLD: - MTC INCONC: GET RSP must contain an SRM ENABLED header.
 
 Open tests
 TODO: MAP/MSE/GOEP/SRM/BI-02-C: PTS 8.6.1 & L2CAP & MAP_NEW PTS 8.6.1 MAP_NEW L2CAP bug: claims to send a PUT but doesnt, hangs till the test case timeouts
