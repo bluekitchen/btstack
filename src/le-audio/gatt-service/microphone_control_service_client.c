@@ -433,13 +433,13 @@ static void mics_client_handle_gatt_client_event(uint8_t packet_type, uint16_t c
     UNUSED(size);
 
     mics_client_connection_t * connection = NULL;
-    hci_con_handle_t con_handle;
+    uint16_t connection_id;
     gatt_client_service_t service;
 
     switch(hci_event_packet_get_type(packet)){
         case GATT_EVENT_CHARACTERISTIC_VALUE_QUERY_RESULT:
-            con_handle = (hci_con_handle_t)gatt_event_characteristic_value_query_result_get_handle(packet);
-            connection = (mics_client_connection_t *)gatt_service_client_get_connection_for_con_handle(&mics_client, con_handle);
+            connection_id = gatt_event_characteristic_value_query_result_get_connection_id(packet);
+            connection = (mics_client_connection_t *)gatt_service_client_get_connection_for_cid(&mics_client, connection_id);
             btstack_assert(connection != NULL);                
 
             mics_client_emit_read_event(connection, connection->characteristic_index, ATT_ERROR_SUCCESS, 
@@ -450,8 +450,8 @@ static void mics_client_handle_gatt_client_event(uint8_t packet_type, uint16_t c
             break;
 
         case GATT_EVENT_INCLUDED_SERVICE_QUERY_RESULT:
-            con_handle = (hci_con_handle_t)gatt_event_included_service_query_result_get_handle(packet);
-            connection = (mics_client_connection_t *)gatt_service_client_get_connection_for_con_handle(&mics_client, con_handle);
+            connection_id = gatt_event_included_service_query_result_get_connection_id(packet);
+            connection = (mics_client_connection_t *)gatt_service_client_get_connection_for_cid(&mics_client, connection_id);
             btstack_assert(connection != NULL);
 
             gatt_event_included_service_query_result_get_service(packet, &service);
@@ -477,8 +477,8 @@ static void mics_client_handle_gatt_client_event(uint8_t packet_type, uint16_t c
             break;
 
         case GATT_EVENT_QUERY_COMPLETE:
-            con_handle = (hci_con_handle_t)gatt_event_query_complete_get_handle(packet);
-            connection = (mics_client_connection_t *)gatt_service_client_get_connection_for_con_handle(&mics_client, con_handle);
+            connection_id = gatt_event_query_complete_get_connection_id(packet);
+            connection = (mics_client_connection_t *)gatt_service_client_get_connection_for_cid(&mics_client, connection_id);
             btstack_assert(connection != NULL);
 
             switch (connection->state){
