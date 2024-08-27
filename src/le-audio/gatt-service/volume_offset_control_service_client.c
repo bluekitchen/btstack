@@ -371,7 +371,8 @@ static void vocs_client_packet_handler_internal(uint8_t packet_type, uint16_t ch
     if (packet_type != HCI_EVENT_PACKET) return;
     gatt_service_client_connection_t * connection_helper;
     vocs_client_connection_t * connection;
-    hci_con_handle_t con_handle;;
+    hci_con_handle_t con_handle;
+    uint16_t value_handle;
     uint8_t status;
 
     switch(hci_event_packet_get_type(packet)){
@@ -421,11 +422,11 @@ static void vocs_client_packet_handler_internal(uint8_t packet_type, uint16_t ch
 
         case GATT_EVENT_NOTIFICATION:
             con_handle = (hci_con_handle_t)gatt_event_notification_get_handle(packet);
-            connection_helper = gatt_service_client_get_connection_for_con_handle(&vocs_client, con_handle);
-
+            value_handle = gatt_event_notification_get_value_handle(packet);
+            connection_helper = gatt_service_client_get_connection_for_con_handle_and_attribute_handle(&vocs_client, con_handle, value_handle);
             btstack_assert(connection_helper != NULL);
 
-            vocs_client_emit_notify_event(connection_helper, gatt_event_notification_get_value_handle(packet), ATT_ERROR_SUCCESS,
+            vocs_client_emit_notify_event(connection_helper, value_handle, ATT_ERROR_SUCCESS,
                                          gatt_event_notification_get_value(packet),gatt_event_notification_get_value_length(packet));
             break;
         default:
