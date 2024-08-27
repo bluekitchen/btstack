@@ -600,17 +600,17 @@ static void aics_client_run_for_connection(void * context){
     switch (connection->state){
         case AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_W2_QUERY_CHANGE_COUNTER:
             connection->state = AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_W4_CHANGE_COUNTER_RESULT;
-            (void) gatt_client_read_value_of_characteristic_using_value_handle(
+            (void) gatt_client_read_value_of_characteristic_using_value_handle_with_context(
                     &aics_client_handle_gatt_client_event, connection->basic_connection.con_handle,
-                    aics_client_value_handle_for_index(connection));
+                    aics_client_value_handle_for_index(connection), aics_client.service_id, connection->basic_connection.cid);
             break;
 
         case AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_W2_READ_CHARACTERISTIC_VALUE:
             connection->state = AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_W4_READ_CHARACTERISTIC_VALUE_RESULT;
 
-            (void) gatt_client_read_value_of_characteristic_using_value_handle(
+            (void) gatt_client_read_value_of_characteristic_using_value_handle_with_context(
                 &aics_client_handle_gatt_client_event, connection->basic_connection.con_handle,
-                aics_client_value_handle_for_index(connection));
+                aics_client_value_handle_for_index(connection), aics_client.service_id, connection->basic_connection.cid);
             break;
 
         case AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_W2_WRITE_CHARACTERISTIC_VALUE_WITHOUT_RESPONSE:
@@ -627,10 +627,10 @@ static void aics_client_run_for_connection(void * context){
             connection->state = AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_W4_WRITE_CHARACTERISTIC_VALUE_RESULT;
 
             value_length = aics_client_serialize_characteristic_value_for_write(connection, &value);
-            (void) gatt_client_write_value_of_characteristic(
+            (void) gatt_client_write_value_of_characteristic_with_context(
                     &aics_client_handle_gatt_client_event, connection->basic_connection.con_handle,
                     aics_client_value_handle_for_index(connection),
-                    value_length, value);
+                    value_length, value, aics_client.service_id, connection->basic_connection.cid);
             break;
         default:
             break;
