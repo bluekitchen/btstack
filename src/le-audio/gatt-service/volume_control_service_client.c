@@ -350,8 +350,7 @@ static void vcs_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
         case GATT_EVENT_NOTIFICATION:
                     con_handle = (hci_con_handle_t)gatt_event_notification_get_handle(packet);
                     connection_helper = gatt_service_client_get_connection_for_con_handle(&vcs_client, con_handle);
-
-                    btstack_assert(connection != NULL);
+                    btstack_assert(connection_helper != NULL);
 
                     vcs_client_emit_notify_event(connection_helper, gatt_event_notification_get_value_handle(packet), ATT_ERROR_SUCCESS,
                                                  gatt_event_notification_get_value(packet),
@@ -495,14 +494,14 @@ static void vcs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t ch
 
     gatt_service_client_connection_t * connection_helper;
     vcs_client_connection_t * connection = NULL;
-    hci_con_handle_t con_handle;
+    uint16_t connection_id;
     gatt_client_service_t service;
     uint8_t status;
 
     switch(hci_event_packet_get_type(packet)){
         case GATT_EVENT_CHARACTERISTIC_VALUE_QUERY_RESULT:
-            con_handle = (hci_con_handle_t)gatt_event_characteristic_value_query_result_get_handle(packet);
-            connection_helper = gatt_service_client_get_connection_for_con_handle(&vcs_client, con_handle);
+            connection_id = gatt_event_characteristic_value_query_result_get_connection_id(packet);
+            connection_helper = gatt_service_client_get_connection_for_cid(&vcs_client, connection_id);
             btstack_assert(connection_helper != NULL);
             connection = (vcs_client_connection_t *)connection_helper;
 
@@ -525,8 +524,8 @@ static void vcs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t ch
             break;
 
         case GATT_EVENT_INCLUDED_SERVICE_QUERY_RESULT:
-            con_handle = (hci_con_handle_t)gatt_event_included_service_query_result_get_handle(packet);
-            connection = (vcs_client_connection_t *)gatt_service_client_get_connection_for_con_handle(&vcs_client, con_handle);
+            connection_id = gatt_event_included_service_query_result_get_connection_id(packet);
+            connection = (vcs_client_connection_t *)gatt_service_client_get_connection_for_cid(&vcs_client, connection_id);
             btstack_assert(connection != NULL);
 
             gatt_event_included_service_query_result_get_service(packet, &service);
@@ -566,8 +565,8 @@ static void vcs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t ch
             break;
 
         case GATT_EVENT_QUERY_COMPLETE:
-            con_handle = (hci_con_handle_t)gatt_event_query_complete_get_handle(packet);
-            connection = (vcs_client_connection_t *)gatt_service_client_get_connection_for_con_handle(&vcs_client, con_handle);
+            connection_id = gatt_event_query_complete_get_connection_id(packet);
+            connection = (vcs_client_connection_t *)gatt_service_client_get_connection_for_cid(&vcs_client, connection_id);
             btstack_assert(connection != NULL);
 
             status = gatt_event_query_complete_get_att_status(packet);
