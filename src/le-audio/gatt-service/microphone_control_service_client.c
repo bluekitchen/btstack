@@ -546,28 +546,28 @@ static void mics_client_run_for_connection(void * context){
             service.start_group_handle = connection->basic_connection.start_handle;
             service.end_group_handle = connection->basic_connection.end_handle;
 
-            (void) gatt_client_find_included_services_for_service(
+            (void) gatt_client_find_included_services_for_service_with_context(
                     mics_client_handle_gatt_client_event,
                     connection->basic_connection.con_handle,
-                    &service);
+                    &service, mics_client.service_id, connection->basic_connection.cid);
             break;
 
         case MICROPHONE_CONTROL_SERVICE_CLIENT_STATE_W2_READ_CHARACTERISTIC_VALUE:
             connection->state = MICROPHONE_CONTROL_SERVICE_CLIENT_STATE_W4_READ_CHARACTERISTIC_VALUE_RESULT;
 
-            (void) gatt_client_read_value_of_characteristic_using_value_handle(
+            (void) gatt_client_read_value_of_characteristic_using_value_handle_with_context(
                 &mics_client_handle_gatt_client_event, connection->basic_connection.con_handle,
-                mics_client_value_handle_for_index(connection));
+                mics_client_value_handle_for_index(connection), mics_client.service_id, connection->basic_connection.cid);
             break;
 
         case MICROPHONE_CONTROL_SERVICE_CLIENT_STATE_W2_WRITE_CHARACTERISTIC_VALUE:
             connection->state = MICROPHONE_CONTROL_SERVICE_CLIENT_STATE_W4_WRITE_CHARACTERISTIC_VALUE_RESULT;
 
             value_length = mics_client_serialize_characteristic_value_for_write(connection, &value);
-            (void) gatt_client_write_value_of_characteristic(
+            (void) gatt_client_write_value_of_characteristic_with_context(
                     &mics_client_handle_gatt_client_event, connection->basic_connection.con_handle,
                 mics_client_value_handle_for_index(connection),
-                value_length, value);
+                value_length, value, mics_client.service_id, connection->basic_connection.cid);
             
             break;
 
