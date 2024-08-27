@@ -1027,7 +1027,7 @@ static uint8_t * setup_characteristic_value_packet(uint8_t type, hci_con_handle_
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
     // copy value into test packet for testing
     static uint8_t packet[1000];
-    memcpy(&packet[8], value, length);
+    memcpy(&packet[CHARACTERISTIC_VALUE_EVENT_HEADER_SIZE], value, length);
 #else
     // before the value inside the ATT PDU
     uint8_t * packet = value - CHARACTERISTIC_VALUE_EVENT_HEADER_SIZE;
@@ -1043,12 +1043,17 @@ static uint8_t * setup_characteristic_value_packet(uint8_t type, hci_con_handle_
 // @return packet pointer
 // @note assume that value is part of an l2cap buffer - overwrite parts of the HCI/L2CAP/ATT packet (4/4/3) bytes
 #define LONG_CHARACTERISTIC_VALUE_EVENT_HEADER_SIZE 10
+
+// L2CAP Header (4) + ACL Header (4) => 8 bytes
+#if !defined(HCI_INCOMING_PRE_BUFFER_SIZE) || ((HCI_INCOMING_PRE_BUFFER_SIZE < LONG_CHARACTERISTIC_VALUE_EVENT_HEADER_SIZE - 8))
+#error "Long Characteristic reads requires HCI_INCOMING_PRE_BUFFER_SIZE >= 2"
+#endif
+
 static uint8_t * setup_long_characteristic_value_packet(uint8_t type, hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint8_t * value, uint16_t length){
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
     // avoid using pre ATT headers.
     return NULL;
 #endif
-#if defined(HCI_INCOMING_PRE_BUFFER_SIZE) && (HCI_INCOMING_PRE_BUFFER_SIZE >= LONG_CHARACTERISTIC_VALUE_EVENT_HEADER_SIZE - 8) // L2CAP Header (4) - ACL Header (4)
     // before the value inside the ATT PDU
     uint8_t * packet = value - LONG_CHARACTERISTIC_VALUE_EVENT_HEADER_SIZE;
     packet[0] = type;
@@ -1058,10 +1063,6 @@ static uint8_t * setup_long_characteristic_value_packet(uint8_t type, hci_con_ha
     little_endian_store_16(packet, 6, offset);
     little_endian_store_16(packet, 8, length);
     return packet;
-#else
-    log_error("HCI_INCOMING_PRE_BUFFER_SIZE >= 2 required for long characteristic reads");
-    return NULL;
-#endif
 }
 
 #if (LONG_CHARACTERISTIC_VALUE_EVENT_HEADER_SIZE > CHARACTERISTIC_VALUE_EVENT_HEADER_SIZE)
