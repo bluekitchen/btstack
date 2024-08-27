@@ -230,12 +230,12 @@ static void txps_client_handle_gatt_client_event(uint8_t packet_type, uint16_t c
     UNUSED(size);
 
     txps_client_connection_t * connection = NULL;
-    hci_con_handle_t con_handle;
+    uint16_t connection_id;
 
     switch(hci_event_packet_get_type(packet)){
         case GATT_EVENT_CHARACTERISTIC_VALUE_QUERY_RESULT:
-            con_handle = (hci_con_handle_t)gatt_event_characteristic_value_query_result_get_handle(packet);
-            connection = (txps_client_connection_t *)gatt_service_client_get_connection_for_con_handle(&txps_client, con_handle);
+            connection_id = gatt_event_characteristic_value_query_result_get_connection_id(packet);
+            connection = (txps_client_connection_t *)gatt_service_client_get_connection_for_cid(&txps_client, connection_id);
             btstack_assert(connection != NULL);                
 
             txps_client_emit_read_event(connection, connection->characteristic_index, ATT_ERROR_SUCCESS, 
@@ -246,8 +246,8 @@ static void txps_client_handle_gatt_client_event(uint8_t packet_type, uint16_t c
             break;
 
         case GATT_EVENT_QUERY_COMPLETE:
-            con_handle = (hci_con_handle_t)gatt_event_query_complete_get_handle(packet);
-            connection = (txps_client_connection_t *)gatt_service_client_get_connection_for_con_handle(&txps_client, con_handle);
+            connection_id = gatt_event_query_complete_get_connection_id(packet);
+            connection = (txps_client_connection_t *)gatt_service_client_get_connection_for_cid(&txps_client, connection_id);
             btstack_assert(connection != NULL);
 
             connection->state = TX_POWER_SERVICE_CLIENT_STATE_READY;
