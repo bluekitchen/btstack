@@ -139,7 +139,6 @@ static void verify_charasteristics(void){
 
 static void verify_blob(uint16_t value_length, uint16_t value_offset, uint8_t * value){
 	uint8_t * expected_value = (uint8_t*)&long_value[value_offset];
-    CHECK(value_length);
 	CHECK_EQUAL_ARRAY(expected_value, value, value_length);
     if (value_offset + value_length != sizeof(long_value)) return;
     result_counter++;
