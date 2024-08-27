@@ -488,14 +488,14 @@ static void aics_client_handle_gatt_client_event(uint8_t packet_type, uint16_t c
     UNUSED(size);
 
     gatt_service_client_connection_t * connection_helper = NULL;
-    hci_con_handle_t con_handle;
+    uint16_t connection_id;
     aics_client_connection_t * connection;
     uint8_t status; 
 
     switch(hci_event_packet_get_type(packet)){
         case GATT_EVENT_CHARACTERISTIC_VALUE_QUERY_RESULT:
-            con_handle = (hci_con_handle_t)gatt_event_characteristic_value_query_result_get_handle(packet);
-            connection_helper = gatt_service_client_get_connection_for_con_handle(&aics_client, con_handle);
+            connection_id = (uint16_t)gatt_event_characteristic_value_query_result_get_connection_id(packet);
+            connection_helper = gatt_service_client_get_connection_for_cid(&aics_client, connection_id);
 
             btstack_assert(connection_helper != NULL);
 
@@ -531,8 +531,8 @@ static void aics_client_handle_gatt_client_event(uint8_t packet_type, uint16_t c
             break;
 
         case GATT_EVENT_QUERY_COMPLETE:
-            con_handle = (hci_con_handle_t)gatt_event_query_complete_get_handle(packet);
-            connection_helper = gatt_service_client_get_connection_for_con_handle(&aics_client, con_handle);
+            connection_id = (uint16_t)gatt_event_query_complete_get_connection_id(packet);
+            connection_helper = gatt_service_client_get_connection_for_cid(&aics_client, connection_id);
             btstack_assert(connection_helper != NULL);
             connection = (aics_client_connection_t *)connection_helper;
 
