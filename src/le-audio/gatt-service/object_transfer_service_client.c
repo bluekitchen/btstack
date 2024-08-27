@@ -1288,7 +1288,7 @@ static void ots_client_l2cap_cbm_packet_handler(uint8_t packet_type, uint16_t ch
             psm = l2cap_event_cbm_channel_opened_get_psm(packet);
             cid = l2cap_event_cbm_channel_opened_get_local_cid(packet);
             handle = l2cap_event_cbm_channel_opened_get_handle(packet);
-            connection = (ots_client_connection_t *)gatt_service_client_get_connection_for_con_handle(&ots_client, handle);
+            connection = ots_client_get_connection_for_cbm_local_cid(cid);
             btstack_assert(connection != NULL);
 
             status = l2cap_event_cbm_channel_opened_get_status(packet);
