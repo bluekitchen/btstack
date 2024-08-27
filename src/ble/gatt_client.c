@@ -1048,8 +1048,8 @@ setup_characteristic_value_packet(const gatt_client_t *gatt_client, uint8_t type
 }
 
 // @return packet pointer
-// @note assume that value is part of an l2cap buffer - overwrite parts of the HCI/L2CAP/ATT packet (4/4/3) bytes
-#define LONG_CHARACTERISTIC_VALUE_EVENT_HEADER_SIZE 10
+// @note assume that value is part of an l2cap buffer - overwrite HCI + L2CAP packet headers + 6 pre_buffer bytes
+#define LONG_CHARACTERISTIC_VALUE_EVENT_HEADER_SIZE 14
 
 // L2CAP Header (4) + ACL Header (4) => 8 bytes
 #if !defined(HCI_INCOMING_PRE_BUFFER_SIZE) || ((HCI_INCOMING_PRE_BUFFER_SIZE < LONG_CHARACTERISTIC_VALUE_EVENT_HEADER_SIZE - 8))
@@ -1071,9 +1071,11 @@ setup_long_characteristic_value_packet(const gatt_client_t *gatt_client, uint8_t
     packet[0] = type;
     packet[1] = LONG_CHARACTERISTIC_VALUE_EVENT_HEADER_SIZE - 2 + length;
     little_endian_store_16(packet, 2, gatt_client->con_handle);
-    little_endian_store_16(packet, 4, attribute_handle);
-    little_endian_store_16(packet, 6, offset);
-    little_endian_store_16(packet, 8, length);
+    little_endian_store_16(packet, 4, gatt_client->service_id);
+    little_endian_store_16(packet, 6, gatt_client->connection_id);
+    little_endian_store_16(packet, 8, attribute_handle);
+    little_endian_store_16(packet, 10, offset);
+    little_endian_store_16(packet, 12, length);
     return packet;
 }
 
