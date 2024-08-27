@@ -857,7 +857,26 @@ uint8_t gatt_client_write_value_of_characteristic_with_context(btstack_packet_ha
  */
 uint8_t gatt_client_write_long_value_of_characteristic(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle, uint16_t value_length, uint8_t * value);
 
-/** 
+/**
+ * @brief Writes the characteristic value using the characteristic's value handle.
+ * The GATT_EVENT_QUERY_COMPLETE event marks the end of write.
+ * The write is successfully performed if the event's att_status field is set to ATT_ERROR_SUCCESS (see bluetooth.h for ATT_ERROR codes).
+ * @param  callback
+ * @param  con_handle
+ * @param  value_handle
+ * @param  value_length
+ * @param  value is not copied, make sure memory is accessible until write is done, i.e. GATT_EVENT_QUERY_COMPLETE is received
+ * @param  service_id    - context provided to callback in events
+ * @param  connection_id - contest provided to callback in events
+ * @return status ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER                  if no HCI connection for con_handle is found
+ *                BTSTACK_MEMORY_ALLOC_FAILED                               if no GATT client for con_handle could be allocated
+ *                GATT_CLIENT_IN_WRONG_STATE                                if GATT client is not ready
+ *                ERROR_CODE_SUCCESS                                        if query is successfully registered
+ */
+uint8_t gatt_client_write_long_value_of_characteristic_with_context(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle,
+                                                                    uint16_t value_length, uint8_t * value, uint16_t service_id, uint16_t connection_id);
+
+/**
  * @brief Writes the characteristic value using the characteristic's value handle. 
  * The GATT_EVENT_QUERY_COMPLETE event marks the end of write. 
  * The write is successfully performed if the event's att_status field is set to ATT_ERROR_SUCCESS (see bluetooth.h for ATT_ERROR codes).
