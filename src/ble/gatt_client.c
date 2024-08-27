@@ -2817,8 +2817,8 @@ uint8_t gatt_client_write_value_of_characteristic_without_response(hci_con_handl
 
     return att_write_request(gatt_client, ATT_WRITE_COMMAND, value_handle, value_length, value);
 }
-
-uint8_t gatt_client_write_value_of_characteristic(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle, uint16_t value_length, uint8_t * value){
+uint8_t gatt_client_write_value_of_characteristic_with_context(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle,
+                                                               uint16_t value_length, uint8_t * value, uint16_t service_id, uint16_t connection_id){
     gatt_client_t * gatt_client;
     uint8_t status = gatt_client_provide_context_for_request(con_handle, &gatt_client);
     if (status != ERROR_CODE_SUCCESS){
@@ -2826,12 +2826,17 @@ uint8_t gatt_client_write_value_of_characteristic(btstack_packet_handler_t callb
     }
 
     gatt_client->callback = callback;
+    gatt_client->service_id = service_id;
+    gatt_client->connection_id = connection_id;
     gatt_client->attribute_handle = value_handle;
     gatt_client->attribute_length = value_length;
     gatt_client->attribute_value = value;
     gatt_client->state = P_W2_SEND_WRITE_CHARACTERISTIC_VALUE;
     gatt_client_run();
     return ERROR_CODE_SUCCESS;
+}
+uint8_t gatt_client_write_value_of_characteristic(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle, uint16_t value_length, uint8_t * value) {
+    return gatt_client_write_value_of_characteristic_with_context(callback, con_handle, value_handle, value_length, value, 0, 0);
 }
 
 uint8_t gatt_client_write_long_value_of_characteristic_with_offset(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle, uint16_t offset, uint16_t value_length, uint8_t * value){
