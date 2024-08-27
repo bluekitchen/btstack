@@ -281,6 +281,8 @@ TEST_GROUP(GATTClient){
 		result_index = 0;
 		test = IDLE;
 		hci_setup_le_connection(gatt_client_handle);
+        memset(characteristics, 0, sizeof(characteristics));
+        memset(descriptors, 0, sizeof(descriptors));
 	}
 
 	gatt_client_t * get_gatt_client(hci_con_handle_t con_handle){
@@ -1099,7 +1101,7 @@ TEST(GATTClient, gatt_client_read_long_characteristic_descriptor_using_descripto
 	status = gatt_client_discover_characteristic_descriptors(handle_ble_client_event, gatt_client_handle, &characteristics[0]);
 	CHECK_EQUAL(0, status);
 	CHECK_EQUAL(1, gatt_query_complete);
-	CHECK(result_counter);
+	CHECK(result_counter != 0);
 	CHECK_EQUAL(3, result_index);
 	CHECK_EQUAL(0x2902, descriptors[0].uuid16);
 	CHECK_EQUAL(0x2900, descriptors[1].uuid16);
