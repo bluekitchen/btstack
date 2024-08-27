@@ -254,9 +254,9 @@ static int gen_event_report(char* buf, int maxsize, int index)
 
     int pos = 0;
     
-    pos += snprintf(&buf[pos], maxsize - pos, mac_cfg->type->header);
+    pos += snprintf(&buf[pos], maxsize - pos, "%s", mac_cfg->type->header);
     pos += snprintf(&buf[pos], maxsize - pos, mac_cfg->type->body, mac_cfg->msg_types[index]);
-    pos += snprintf(&buf[pos], maxsize - pos, mac_cfg->type->footer);
+    pos += snprintf(&buf[pos], maxsize - pos, "%s", mac_cfg->type->footer);
 
     return pos;
 }
