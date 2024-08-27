@@ -38,7 +38,7 @@
 #define BTSTACK_FILE__ "map_notification_client.c"
 
 #include "classic/map_notification_client.h"
-#include "classic/map_server.h"
+#include "classic/map_access_server.h"
 
 #include "btstack_bool.h"
 #include "btstack_config.h"
@@ -70,8 +70,8 @@
 #include "classic/obex_parser.h"
 #include "classic/goep_client.h"
 
-#include "map_notification_client.h"
-#include "map_util.h"
+#include "classic/map_notification_client.h"
+#include "classic/map_util.h"
 
 // MAP 1.4.2, 6.3 - OBEX Header: map notification service bb582b41-420c-11db-b0de-0800200c9a66
 static const uint8_t map_notification_client_service_uuid[] = { 0xbb, 0x58, 0x2b, 0x41, 0x42, 0xc, 0x11, 0xdb, 0xb0, 0xde, 0x8, 0x0, 0x20, 0xc, 0x9a, 0x66 };

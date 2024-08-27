@@ -41,7 +41,7 @@ include_directories(${BTSTACK_ROOT}/platform/embedded)
 include_directories(${BTSTACK_ROOT}/platform/posix)
 include_directories(${BTSTACK_ROOT}/platform/windows)
 
-file(GLOB SOURCES_SRC       "${BTSTACK_ROOT}/src/*.c" "${BTSTACK_ROOT}/example/sco_demo_util.c" "${BTSTACK_ROOT}/platform/posix/wav_util.c")
+file(GLOB SOURCES_SRC       "${BTSTACK_ROOT}/src/*.c" "${BTSTACK_ROOT}/example/sco_demo_util.c" "${BTSTACK_ROOT}/example/map_notification_client_helper.c"  "${BTSTACK_ROOT}/platform/posix/wav_util.c")
 file(GLOB SOURCES_BLUEDROID "${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/srce/*.c" "${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/srce/*.c")
 file(GLOB SOURCES_CLASSIC   "${BTSTACK_ROOT}/src/classic/*.c")
 file(GLOB SOURCES_BLE       "${BTSTACK_ROOT}/src/ble/*.c")

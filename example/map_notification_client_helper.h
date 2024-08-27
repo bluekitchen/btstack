@@ -45,8 +45,8 @@
 #include <stdint.h>
 #include "bluetooth.h"
 #include "btstack_defines.h"
-#include "goep_client.h"
-#include "obex_parser.h"
+#include "classic/goep_client.h"
+#include "classic/obex_parser.h"
 
 #if defined __cplusplus
 extern "C" {
