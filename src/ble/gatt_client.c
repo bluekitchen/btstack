@@ -1052,10 +1052,13 @@ static uint8_t * setup_characteristic_value_packet(uint8_t type, hci_con_handle_
 static uint8_t * setup_long_characteristic_value_packet(uint8_t type, hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint8_t * value, uint16_t length){
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
     // avoid using pre ATT headers.
-    return NULL;
-#endif
+    // copy value into test packet for testing
+    static uint8_t packet[1000];
+    memcpy(&packet[LONG_CHARACTERISTIC_VALUE_EVENT_HEADER_SIZE], value, length);
+#else
     // before the value inside the ATT PDU
     uint8_t * packet = value - LONG_CHARACTERISTIC_VALUE_EVENT_HEADER_SIZE;
+#endif
     packet[0] = type;
     packet[1] = LONG_CHARACTERISTIC_VALUE_EVENT_HEADER_SIZE - 2 + length;
     little_endian_store_16(packet, 2, con_handle);
@@ -1192,7 +1195,6 @@ static void report_gatt_characteristic_value(gatt_client_t * gatt_client, uint16
 // @note assume that value is part of an l2cap buffer - overwrite parts of the HCI/L2CAP/ATT packet (4/4/3) bytes 
 static void report_gatt_long_characteristic_value_blob(gatt_client_t * gatt_client, uint16_t attribute_handle, uint8_t * blob, uint16_t blob_length, int value_offset){
     uint8_t * packet = setup_long_characteristic_value_packet(GATT_EVENT_LONG_CHARACTERISTIC_VALUE_QUERY_RESULT, gatt_client->con_handle, attribute_handle, value_offset, blob, blob_length);
-    if (!packet) return;
     emit_event_new(gatt_client->callback, packet, blob_length + LONG_CHARACTERISTIC_VALUE_EVENT_HEADER_SIZE);
 }
 
@@ -1204,7 +1206,6 @@ static void report_gatt_characteristic_descriptor(gatt_client_t * gatt_client, u
 
 static void report_gatt_long_characteristic_descriptor(gatt_client_t * gatt_client, uint16_t descriptor_handle, uint8_t *blob, uint16_t blob_length, uint16_t value_offset){
     uint8_t * packet = setup_long_characteristic_value_packet(GATT_EVENT_LONG_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT, gatt_client->con_handle, descriptor_handle, value_offset, blob, blob_length);
-    if (!packet) return;
     emit_event_new(gatt_client->callback, packet, blob_length + LONG_CHARACTERISTIC_VALUE_EVENT_HEADER_SIZE);
 }
 
