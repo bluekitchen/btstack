@@ -1469,8 +1469,10 @@ typedef uint8_t sm_key_t[16];
 #define GATT_EVENT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT   0xA4u
 
 /**
- * @format H2LV
+ * @format H222LV
  * @param handle
+ * @param service_id
+ * @param connection_id
  * @param value_handle
  * @param value_length
  * @param value
@@ -1490,8 +1492,10 @@ typedef uint8_t sm_key_t[16];
 #define GATT_EVENT_LONG_CHARACTERISTIC_VALUE_QUERY_RESULT        0xA6u
 
 /**
- * @format H2LV
+ * @format H222LV
  * @param handle
+ * @param service_id
+ * @param connection_id
  * @param value_handle
  * @param value_length
  * @param value
@@ -1499,8 +1503,10 @@ typedef uint8_t sm_key_t[16];
 #define GATT_EVENT_NOTIFICATION                                  0xA7u
 
 /**
- * @format H2LV
+ * @format H222LV
  * @param handle
+ * @param service_id
+ * @param connection_id
  * @param value_handle
  * @param value_length
  * @param value
@@ -1508,8 +1514,10 @@ typedef uint8_t sm_key_t[16];
 #define GATT_EVENT_INDICATION                                    0xA8u
 
 /**
- * @format H2LV
+ * @format H222LV
  * @param handle
+ * @param service_id
+ * @param connection_id
  * @param descriptor_handle
  * @param descriptor_length
  * @param descriptor
