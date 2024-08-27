@@ -27,6 +27,7 @@ set(SOURCES
 	../../src/btstack_util.c
 	../../src/hci_cmd.c
 	../../src/hci_dump.c
+	../../src/hci_event_builder.c
 	../../src/btstack_crypto.c
 	../../3rd-party/rijndael/rijndael.c
 )
