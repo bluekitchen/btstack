@@ -2874,13 +2874,31 @@ static inline hci_con_handle_t gatt_event_characteristic_value_query_result_get_
     return little_endian_read_16(event, 2);
 }
 /**
+ * @brief Get field service_id from event GATT_EVENT_CHARACTERISTIC_VALUE_QUERY_RESULT
+ * @param event packet
+ * @return service_id
+ * @note: btstack_type 2
+ */
+static inline uint16_t gatt_event_characteristic_value_query_result_get_service_id(const uint8_t * event){
+    return little_endian_read_16(event, 4);
+}
+/**
+ * @brief Get field connection_id from event GATT_EVENT_CHARACTERISTIC_VALUE_QUERY_RESULT
+ * @param event packet
+ * @return connection_id
+ * @note: btstack_type 2
+ */
+static inline uint16_t gatt_event_characteristic_value_query_result_get_connection_id(const uint8_t * event){
+    return little_endian_read_16(event, 6);
+}
+/**
  * @brief Get field value_handle from event GATT_EVENT_CHARACTERISTIC_VALUE_QUERY_RESULT
  * @param event packet
  * @return value_handle
  * @note: btstack_type 2
  */
 static inline uint16_t gatt_event_characteristic_value_query_result_get_value_handle(const uint8_t * event){
-    return little_endian_read_16(event, 4);
+    return little_endian_read_16(event, 8);
 }
 /**
  * @brief Get field value_length from event GATT_EVENT_CHARACTERISTIC_VALUE_QUERY_RESULT
@@ -2889,7 +2907,7 @@ static inline uint16_t gatt_event_characteristic_value_query_result_get_value_ha
  * @note: btstack_type L
  */
 static inline uint16_t gatt_event_characteristic_value_query_result_get_value_length(const uint8_t * event){
-    return little_endian_read_16(event, 6);
+    return little_endian_read_16(event, 10);
 }
 /**
  * @brief Get field value from event GATT_EVENT_CHARACTERISTIC_VALUE_QUERY_RESULT
@@ -2898,7 +2916,7 @@ static inline uint16_t gatt_event_characteristic_value_query_result_get_value_le
  * @note: btstack_type V
  */
 static inline const uint8_t * gatt_event_characteristic_value_query_result_get_value(const uint8_t * event){
-    return &event[8];
+    return &event[12];
 }
 #endif
 
@@ -2979,13 +2997,31 @@ static inline hci_con_handle_t gatt_event_notification_get_handle(const uint8_t 
     return little_endian_read_16(event, 2);
 }
 /**
+ * @brief Get field service_id from event GATT_EVENT_NOTIFICATION
+ * @param event packet
+ * @return service_id
+ * @note: btstack_type 2
+ */
+static inline uint16_t gatt_event_notification_get_service_id(const uint8_t * event){
+    return little_endian_read_16(event, 4);
+}
+/**
+ * @brief Get field connection_id from event GATT_EVENT_NOTIFICATION
+ * @param event packet
+ * @return connection_id
+ * @note: btstack_type 2
+ */
+static inline uint16_t gatt_event_notification_get_connection_id(const uint8_t * event){
+    return little_endian_read_16(event, 6);
+}
+/**
  * @brief Get field value_handle from event GATT_EVENT_NOTIFICATION
  * @param event packet
  * @return value_handle
  * @note: btstack_type 2
  */
 static inline uint16_t gatt_event_notification_get_value_handle(const uint8_t * event){
-    return little_endian_read_16(event, 4);
+    return little_endian_read_16(event, 8);
 }
 /**
  * @brief Get field value_length from event GATT_EVENT_NOTIFICATION
@@ -2994,7 +3030,7 @@ static inline uint16_t gatt_event_notification_get_value_handle(const uint8_t * 
  * @note: btstack_type L
  */
 static inline uint16_t gatt_event_notification_get_value_length(const uint8_t * event){
-    return little_endian_read_16(event, 6);
+    return little_endian_read_16(event, 10);
 }
 /**
  * @brief Get field value from event GATT_EVENT_NOTIFICATION
@@ -3003,7 +3039,7 @@ static inline uint16_t gatt_event_notification_get_value_length(const uint8_t * 
  * @note: btstack_type V
  */
 static inline const uint8_t * gatt_event_notification_get_value(const uint8_t * event){
-    return &event[8];
+    return &event[12];
 }
 #endif
 
@@ -3018,13 +3054,31 @@ static inline hci_con_handle_t gatt_event_indication_get_handle(const uint8_t * 
     return little_endian_read_16(event, 2);
 }
 /**
+ * @brief Get field service_id from event GATT_EVENT_INDICATION
+ * @param event packet
+ * @return service_id
+ * @note: btstack_type 2
+ */
+static inline uint16_t gatt_event_indication_get_service_id(const uint8_t * event){
+    return little_endian_read_16(event, 4);
+}
+/**
+ * @brief Get field connection_id from event GATT_EVENT_INDICATION
+ * @param event packet
+ * @return connection_id
+ * @note: btstack_type 2
+ */
+static inline uint16_t gatt_event_indication_get_connection_id(const uint8_t * event){
+    return little_endian_read_16(event, 6);
+}
+/**
  * @brief Get field value_handle from event GATT_EVENT_INDICATION
  * @param event packet
  * @return value_handle
  * @note: btstack_type 2
  */
 static inline uint16_t gatt_event_indication_get_value_handle(const uint8_t * event){
-    return little_endian_read_16(event, 4);
+    return little_endian_read_16(event, 8);
 }
 /**
  * @brief Get field value_length from event GATT_EVENT_INDICATION
@@ -3033,7 +3087,7 @@ static inline uint16_t gatt_event_indication_get_value_handle(const uint8_t * ev
  * @note: btstack_type L
  */
 static inline uint16_t gatt_event_indication_get_value_length(const uint8_t * event){
-    return little_endian_read_16(event, 6);
+    return little_endian_read_16(event, 10);
 }
 /**
  * @brief Get field value from event GATT_EVENT_INDICATION
@@ -3042,7 +3096,7 @@ static inline uint16_t gatt_event_indication_get_value_length(const uint8_t * ev
  * @note: btstack_type V
  */
 static inline const uint8_t * gatt_event_indication_get_value(const uint8_t * event){
-    return &event[8];
+    return &event[12];
 }
 #endif
 
@@ -3057,13 +3111,31 @@ static inline hci_con_handle_t gatt_event_characteristic_descriptor_query_result
     return little_endian_read_16(event, 2);
 }
 /**
+ * @brief Get field service_id from event GATT_EVENT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT
+ * @param event packet
+ * @return service_id
+ * @note: btstack_type 2
+ */
+static inline uint16_t gatt_event_characteristic_descriptor_query_result_get_service_id(const uint8_t * event){
+    return little_endian_read_16(event, 4);
+}
+/**
+ * @brief Get field connection_id from event GATT_EVENT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT
+ * @param event packet
+ * @return connection_id
+ * @note: btstack_type 2
+ */
+static inline uint16_t gatt_event_characteristic_descriptor_query_result_get_connection_id(const uint8_t * event){
+    return little_endian_read_16(event, 6);
+}
+/**
  * @brief Get field descriptor_handle from event GATT_EVENT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT
  * @param event packet
  * @return descriptor_handle
  * @note: btstack_type 2
  */
 static inline uint16_t gatt_event_characteristic_descriptor_query_result_get_descriptor_handle(const uint8_t * event){
-    return little_endian_read_16(event, 4);
+    return little_endian_read_16(event, 8);
 }
 /**
  * @brief Get field descriptor_length from event GATT_EVENT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT
@@ -3072,7 +3144,7 @@ static inline uint16_t gatt_event_characteristic_descriptor_query_result_get_des
  * @note: btstack_type L
  */
 static inline uint16_t gatt_event_characteristic_descriptor_query_result_get_descriptor_length(const uint8_t * event){
-    return little_endian_read_16(event, 6);
+    return little_endian_read_16(event, 10);
 }
 /**
  * @brief Get field descriptor from event GATT_EVENT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT
@@ -3081,7 +3153,7 @@ static inline uint16_t gatt_event_characteristic_descriptor_query_result_get_des
  * @note: btstack_type V
  */
 static inline const uint8_t * gatt_event_characteristic_descriptor_query_result_get_descriptor(const uint8_t * event){
-    return &event[8];
+    return &event[12];
 }
 #endif
 
