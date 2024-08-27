@@ -212,17 +212,17 @@ gatt_service_client_connection_t * gatt_service_client_get_connection_for_cid(co
 
 /**
  * @brief Get connection object provided by gatt_service_client_connect_primary_service or gatt_service_client_connect_secondary_service
- *          by con handle and characteristic value handle
+ *          by con handle and attribute handle
 
  * @param client
  * @param con_handle
  * @param value_handle
  * @return
  */
-gatt_service_client_connection_t * gatt_service_client_get_connection_for_con_and_value_handle(const gatt_service_client_t * client, hci_con_handle_t con_handle, uint16_t value_handle);
+gatt_service_client_connection_t * gatt_service_client_get_connection_for_con_handle_and_attribute_handle(const gatt_service_client_t * client, hci_con_handle_t con_handle, uint16_t value_handle);
 
 /**
- * @breif Get connection object  provided by gatt_service_client_connect_primary_service or gatt_service_client_connect_secondary_service by con handle
+ * @brief Get connection object  provided by gatt_service_client_connect_primary_service or gatt_service_client_connect_secondary_service by con handle
  *
  * This only works if only a single Primary Service is used
  *
