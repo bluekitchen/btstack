@@ -72,17 +72,6 @@ void gatt_service_client_finalize_connection(gatt_service_client_t * client, gat
     btstack_linked_list_remove(&client->connections, (btstack_linked_item_t*) connection);
 }
 
-gatt_service_client_connection_t * gatt_service_client_get_connection_for_con_handle(const gatt_service_client_t * client, hci_con_handle_t con_handle){
-    btstack_linked_list_iterator_t it;    
-    btstack_linked_list_iterator_init(&it, (btstack_linked_list_t *) &client->connections);
-    while (btstack_linked_list_iterator_has_next(&it)){
-        gatt_service_client_connection_t * connection = (gatt_service_client_connection_t *)btstack_linked_list_iterator_next(&it);
-        if (connection->con_handle != con_handle) continue;
-        return connection;
-    }
-    return NULL;
-}
-
 static gatt_service_client_connection_t * gatt_service_client_get_connection_for_con_handle_and_service_index(const gatt_service_client_t * client, hci_con_handle_t con_handle, uint8_t service_index){
     btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, (btstack_linked_list_t *) &client->connections);
