@@ -297,6 +297,7 @@ static void vcs_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
     gatt_service_client_connection_t * connection_helper;
     vcs_client_connection_t * connection;
     hci_con_handle_t con_handle;
+    uint16_t value_handle;
     uint16_t cid;
     uint8_t status;
 
@@ -348,14 +349,15 @@ static void vcs_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
             break;
 
         case GATT_EVENT_NOTIFICATION:
-                    con_handle = (hci_con_handle_t)gatt_event_notification_get_handle(packet);
-                    connection_helper = gatt_service_client_get_connection_for_con_handle(&vcs_client, con_handle);
-                    btstack_assert(connection_helper != NULL);
+            con_handle = (hci_con_handle_t)gatt_event_notification_get_handle(packet);
+            value_handle = gatt_event_notification_get_value_handle(packet);
+            connection_helper = gatt_service_client_get_connection_for_con_handle_and_attribute_handle(&vcs_client, con_handle, value_handle);
+            btstack_assert(connection_helper != NULL);
 
-                    vcs_client_emit_notify_event(connection_helper, gatt_event_notification_get_value_handle(packet), ATT_ERROR_SUCCESS,
-                                                 gatt_event_notification_get_value(packet),
-                                                 gatt_event_notification_get_value_length(packet));
-                    break;
+            vcs_client_emit_notify_event(connection_helper, value_handle, ATT_ERROR_SUCCESS,
+                                         gatt_event_notification_get_value(packet),
+                                         gatt_event_notification_get_value_length(packet));
+            break;
         
         case HCI_EVENT_LEAUDIO_META:
             switch (hci_event_leaudio_meta_get_subevent_code(packet)){
