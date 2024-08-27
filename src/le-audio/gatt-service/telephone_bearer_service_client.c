@@ -577,9 +577,9 @@ static void tbs_client_run_for_connection(void * context){
         case TELEPHONE_BEARER_SERVICE_CLIENT_STATE_W2_READ_CHARACTERISTIC_VALUE:
             connection->state = TELEPHONE_BEARER_SERVICE_CLIENT_STATE_W4_READ_CHARACTERISTIC_VALUE_RESULT;
 
-            (void) gatt_client_read_value_of_characteristic_using_value_handle(
+            (void) gatt_client_read_value_of_characteristic_using_value_handle_with_context(
                 &tbs_client_handle_gatt_client_event, con_handle, 
-                tbs_client_value_handle_for_index(connection));
+                tbs_client_value_handle_for_index(connection), tbs_client.service_id, connection->basic_connection.cid);
             break;
 
         case TELEPHONE_BEARER_SERVICE_CLIENT_STATE_W2_WRITE_CHARACTERISTIC_VALUE_WITHOUT_RESPONSE:
@@ -594,10 +594,10 @@ static void tbs_client_run_for_connection(void * context){
         case TELEPHONE_BEARER_SERVICE_CLIENT_STATE_W2_WRITE_CHARACTERISTIC_VALUE:
             connection->state = TELEPHONE_BEARER_SERVICE_CLIENT_STATE_W4_WRITE_CHARACTERISTIC_VALUE_RESULT;
 
-            (void) gatt_client_write_value_of_characteristic(
+            (void) gatt_client_write_value_of_characteristic_with_context(
                     &tbs_client_handle_gatt_client_event, con_handle,
                     tbs_client_value_handle_for_index(connection),
-                    value_length, value);
+                    value_length, value, tbs_client.service_id, connection->basic_connection.cid);
             break;
         default:
             break;
