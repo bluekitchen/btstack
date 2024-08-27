@@ -17,6 +17,7 @@
 #include "hci_cmd.h"
 
 #include "btstack_memory.h"
+#include "btstack_event.h"
 #include "hci.h"
 #include "hci_dump.h"
 #include "ble/gatt_client.h"
@@ -152,7 +153,7 @@ static void handle_ble_client_event(uint8_t packet_type, uint16_t channel, uint8
 	gatt_client_characteristic_descriptor_t descriptor;
 	switch (packet[0]){
 		case GATT_EVENT_QUERY_COMPLETE:
-			status = packet[4];
+			status = gatt_event_query_complete_get_att_status(packet);
             gatt_query_complete = 1;
             if (status){
                 gatt_query_complete = 0;
@@ -160,58 +161,36 @@ static void handle_ble_client_event(uint8_t packet_type, uint16_t channel, uint8
             }
             break;
 		case GATT_EVENT_SERVICE_QUERY_RESULT:
-			service.start_group_handle = little_endian_read_16(packet, 4);
-			service.end_group_handle   = little_endian_read_16(packet, 6);
-			service.uuid16 = 0;
-			reverse_128(&packet[8], service.uuid128);
-			if (uuid_has_bluetooth_prefix(service.uuid128)){
-				service.uuid16 = big_endian_read_32(service.uuid128, 0);
-			}
+            gatt_event_service_query_result_get_service(packet, &service);
 			services[result_index++] = service;
 			result_counter++;
             break;
         case GATT_EVENT_INCLUDED_SERVICE_QUERY_RESULT:
-			service.start_group_handle = little_endian_read_16(packet, 6);
-			service.end_group_handle   = little_endian_read_16(packet, 8);
-			service.uuid16 = 0;
-			reverse_128(&packet[10], service.uuid128);
-			if (uuid_has_bluetooth_prefix(service.uuid128)){
-				service.uuid16 = big_endian_read_32(service.uuid128, 0);
-			}
+            gatt_event_included_service_query_result_get_service(packet, &service);
             included_services[result_index++] = service;
             result_counter++;
             break;
         case GATT_EVENT_CHARACTERISTIC_QUERY_RESULT:
-        	characteristic.start_handle = little_endian_read_16(packet, 4);
-        	characteristic.value_handle = little_endian_read_16(packet, 6);
-        	characteristic.end_handle =   little_endian_read_16(packet, 8);
-        	characteristic.properties =   little_endian_read_16(packet, 10);
-			characteristic.uuid16 = 0;
-			reverse_128(&packet[12], characteristic.uuid128);
-			if (uuid_has_bluetooth_prefix(characteristic.uuid128)){
-				characteristic.uuid16 = big_endian_read_32(characteristic.uuid128, 0);
-			}
+            gatt_event_characteristic_query_result_get_characteristic(packet, &characteristic);
         	characteristics[result_index++] = characteristic;
         	result_counter++;
             break;
         case GATT_EVENT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT:
-        	descriptor.handle = little_endian_read_16(packet, 4);
-			reverse_128(&packet[6], descriptor.uuid128);
-			if (uuid_has_bluetooth_prefix(descriptor.uuid128)){
-				descriptor.uuid16 = big_endian_read_32(descriptor.uuid128, 0);
-			}
+            gatt_event_all_characteristic_descriptors_query_result_get_characteristic_descriptor(packet, &descriptor);
         	descriptors[result_index++] = descriptor;
         	result_counter++;
         	break;
         case GATT_EVENT_CHARACTERISTIC_VALUE_QUERY_RESULT:
         case GATT_EVENT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT:
-        	CHECK_EQUAL(short_value_length, little_endian_read_16(packet, 6));
-        	CHECK_EQUAL_ARRAY((uint8_t*)short_value, &packet[8], short_value_length);
+        	CHECK_EQUAL(short_value_length, gatt_event_characteristic_value_query_result_get_value_length(packet));
+        	CHECK_EQUAL_ARRAY((uint8_t*)short_value, (uint8_t *)gatt_event_characteristic_value_query_result_get_value(packet), short_value_length);
         	result_counter++;
         	break;
         case GATT_EVENT_LONG_CHARACTERISTIC_VALUE_QUERY_RESULT:
         case GATT_EVENT_LONG_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT:
-        	verify_blob(little_endian_read_16(packet, 8), little_endian_read_16(packet, 6), &packet[10]);
+        	verify_blob(gatt_event_long_characteristic_value_query_result_get_value_length(packet),
+                        gatt_event_long_characteristic_value_query_result_get_value_offset(packet),
+                        (uint8_t *) gatt_event_long_characteristic_value_query_result_get_value(packet));
         	result_counter++;
         	break;
 	}
