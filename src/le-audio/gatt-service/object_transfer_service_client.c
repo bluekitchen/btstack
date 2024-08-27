@@ -864,25 +864,25 @@ static void ots_client_run_for_connection(void * context){
     switch (connection->state){
         case OBJECT_TRANSFER_SERVICE_CLIENT_STATE_W2_QUERY_OTS_FEATURES:
             connection->state = OBJECT_TRANSFER_SERVICE_CLIENT_STATE_W4_OTS_FEATURES_RESULT;
-            (void) gatt_client_read_value_of_characteristic_using_value_handle(
+            (void) gatt_client_read_value_of_characteristic_using_value_handle_with_context(
                     &ots_client_handle_gatt_client_event, connection->basic_connection.con_handle,
-                    ots_client_value_handle_for_index(connection));
+                    ots_client_value_handle_for_index(connection), ots_client.service_id, connection->basic_connection.cid);
             break;
 
         case OBJECT_TRANSFER_SERVICE_CLIENT_STATE_W2_READ_CHARACTERISTIC_VALUE:
             connection->state = OBJECT_TRANSFER_SERVICE_CLIENT_STATE_W4_READ_CHARACTERISTIC_VALUE_RESULT;
 
-            (void) gatt_client_read_value_of_characteristic_using_value_handle(
+            (void) gatt_client_read_value_of_characteristic_using_value_handle_with_context(
                 &ots_client_handle_gatt_client_event, connection->basic_connection.con_handle,
-                ots_client_value_handle_for_index(connection));
+                ots_client_value_handle_for_index(connection), ots_client.service_id, connection->basic_connection.cid);
             break;
 
         case OBJECT_TRANSFER_SERVICE_CLIENT_STATE_W2_READ_LONG_CHARACTERISTIC_VALUE:
             connection->state = OBJECT_TRANSFER_SERVICE_CLIENT_STATE_W4_READ_LONG_CHARACTERISTIC_VALUE_RESULT;
 
-            (void) gatt_client_read_long_value_of_characteristic_using_value_handle(
+            (void) gatt_client_read_long_value_of_characteristic_using_value_handle_with_context(
                     &ots_client_handle_gatt_client_event, connection->basic_connection.con_handle,
-                    ots_client_value_handle_for_index(connection));
+                    ots_client_value_handle_for_index(connection), ots_client.service_id, connection->basic_connection.cid);
             break;
 
         case OBJECT_TRANSFER_SERVICE_CLIENT_STATE_W2_WRITE_CHARACTERISTIC_VALUE_WITHOUT_RESPONSE:
@@ -899,20 +899,20 @@ static void ots_client_run_for_connection(void * context){
             connection->state = OBJECT_TRANSFER_SERVICE_CLIENT_STATE_W4_WRITE_CHARACTERISTIC_VALUE_RESULT;
 
             value_length = ots_client_serialize_characteristic_value_for_write(connection, &value);
-            (void) gatt_client_write_value_of_characteristic(
+            (void) gatt_client_write_value_of_characteristic_with_context(
                     &ots_client_handle_gatt_client_event, connection->basic_connection.con_handle,
                     ots_client_value_handle_for_index(connection),
-                    value_length, value);
+                    value_length, value, ots_client.service_id, connection->basic_connection.cid);
             break;
 
         case OBJECT_TRANSFER_SERVICE_CLIENT_STATE_W2_WRITE_LONG_CHARACTERISTIC_VALUE:
             connection->state = OBJECT_TRANSFER_SERVICE_CLIENT_STATE_W4_WRITE_CHARACTERISTIC_VALUE_RESULT;
 
             value_length = ots_client_serialize_characteristic_value_for_write(connection, &value);
-            (void) gatt_client_write_long_value_of_characteristic(
+            (void) gatt_client_write_long_value_of_characteristic_with_context(
                     &ots_client_handle_gatt_client_event, connection->basic_connection.con_handle,
                     ots_client_value_handle_for_index(connection),
-                    value_length, value);
+                    value_length, value, ots_client.service_id, connection->basic_connection.cid);
             break;
 
         default:
