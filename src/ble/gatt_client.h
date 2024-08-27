@@ -655,6 +655,23 @@ uint8_t gatt_client_read_value_of_characteristic(btstack_packet_handler_t callba
 uint8_t gatt_client_read_value_of_characteristic_using_value_handle(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle);
 
 /**
+ * @brief Reads the characteristic value using the characteristic's value handle.
+ * If the characteristic value is found a GATT_EVENT_CHARACTERISTIC_VALUE_QUERY_RESULT event will be emitted.
+ * The GATT_EVENT_QUERY_COMPLETE event marks the end of read.
+ * @param  callback
+ * @param  con_handle
+ * @param  value_handle
+ * @return status BTSTACK_MEMORY_ALLOC_FAILED, if no GATT client for con_handle is found
+ *                GATT_CLIENT_IN_WRONG_STATE , if GATT client is not ready
+ *                ERROR_CODE_SUCCESS         , if query is successfully registered
+ */
+uint8_t gatt_client_read_value_of_characteristic_using_value_handle_with_context(btstack_packet_handler_t callback,
+                                                                                 hci_con_handle_t con_handle,
+                                                                                 uint16_t value_handle,
+                                                                                 uint16_t service_id,
+                                                                                 uint16_t connection_id);
+
+/**
  * @brief Reads the characteric value of all characteristics with the uuid. 
  * For each characteristic value found a GATT_EVENT_CHARACTERISTIC_VALUE_QUERY_RESULT event will be emitted.
  * The GATT_EVENT_QUERY_COMPLETE event marks the end of read.
@@ -814,8 +831,8 @@ uint8_t gatt_client_write_value_of_characteristic(btstack_packet_handler_t callb
  * @param  value_handle
  * @param  value_length
  * @param  value is not copied, make sure memory is accessible until write is done, i.e. GATT_EVENT_QUERY_COMPLETE is received
- * @param  service_id
- * @param  connection_id
+ * @param  service_id    - context provided to callback in events
+ * @param  connection_id - contest provided to callback in events
  * @return status ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER                  if no HCI connection for con_handle is found
  *                BTSTACK_MEMORY_ALLOC_FAILED                               if no GATT client for con_handle could be allocated
  *                GATT_CLIENT_IN_WRONG_STATE                                if GATT client is not ready
