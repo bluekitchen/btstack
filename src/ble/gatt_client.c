@@ -1023,7 +1023,9 @@ static void gatt_client_handle_transaction_complete(gatt_client_t *gatt_client, 
 // @return packet pointer
 // @note assume that value is part of an l2cap buffer - overwrite HCI + L2CAP packet headers
 #define CHARACTERISTIC_VALUE_EVENT_HEADER_SIZE 8
-static uint8_t * setup_characteristic_value_packet(uint8_t type, hci_con_handle_t con_handle, uint16_t attribute_handle, uint8_t * value, uint16_t length){
+static uint8_t *
+setup_characteristic_value_packet(const gatt_client_t *gatt_client, uint8_t type, uint16_t attribute_handle,
+                                  uint8_t *value, uint16_t length) {
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
     // copy value into test packet for testing
     static uint8_t packet[1000];
@@ -1034,7 +1036,7 @@ static uint8_t * setup_characteristic_value_packet(uint8_t type, hci_con_handle_
 #endif
     packet[0] = type;
     packet[1] = CHARACTERISTIC_VALUE_EVENT_HEADER_SIZE - 2 + length;
-    little_endian_store_16(packet, 2, con_handle);
+    little_endian_store_16(packet, 2, gatt_client->con_handle);
     little_endian_store_16(packet, 4, attribute_handle);
     little_endian_store_16(packet, 6, length);
     return packet;
@@ -1166,7 +1168,8 @@ static void report_gatt_included_service_uuid128(gatt_client_t * gatt_client, ui
 // @note assume that value is part of an l2cap buffer - overwrite parts of the HCI/L2CAP/ATT packet (4/4/3) bytes 
 static void report_gatt_notification(gatt_client_t *gatt_client, uint16_t value_handle, uint8_t *value, int length) {
 	if (!gatt_client_accept_server_message(gatt_client)) return;
-    uint8_t * packet = setup_characteristic_value_packet(GATT_EVENT_NOTIFICATION, gatt_client->con_handle, value_handle, value, length);
+    uint8_t * packet = setup_characteristic_value_packet(gatt_client, GATT_EVENT_NOTIFICATION, value_handle,
+                                                         value, length);
     emit_event_to_registered_listeners(gatt_client->con_handle, value_handle, packet, CHARACTERISTIC_VALUE_EVENT_HEADER_SIZE + length);
 }
 
@@ -1182,13 +1185,15 @@ static void report_gatt_indication(gatt_client_t *gatt_client, uint16_t value_ha
         gatt_client_service_emit_service_changed(gatt_client, value, length);
     }
 #endif
-    uint8_t * packet = setup_characteristic_value_packet(GATT_EVENT_INDICATION, gatt_client->con_handle, value_handle, value, length);
+    uint8_t * packet = setup_characteristic_value_packet(gatt_client, GATT_EVENT_INDICATION, value_handle,
+                                                         value, length);
     emit_event_to_registered_listeners(gatt_client->con_handle, value_handle, packet, CHARACTERISTIC_VALUE_EVENT_HEADER_SIZE + length);
 }
 
 // @note assume that value is part of an l2cap buffer - overwrite parts of the HCI/L2CAP/ATT packet (4/4/3) bytes 
 static void report_gatt_characteristic_value(gatt_client_t * gatt_client, uint16_t attribute_handle, uint8_t * value, uint16_t length){
-    uint8_t * packet = setup_characteristic_value_packet(GATT_EVENT_CHARACTERISTIC_VALUE_QUERY_RESULT, gatt_client->con_handle, attribute_handle, value, length);
+    uint8_t * packet = setup_characteristic_value_packet(
+            gatt_client, GATT_EVENT_CHARACTERISTIC_VALUE_QUERY_RESULT, attribute_handle, value, length);
     emit_event_new(gatt_client->callback, packet, CHARACTERISTIC_VALUE_EVENT_HEADER_SIZE + length);
 }
 
@@ -1200,7 +1205,9 @@ static void report_gatt_long_characteristic_value_blob(gatt_client_t * gatt_clie
 
 static void report_gatt_characteristic_descriptor(gatt_client_t * gatt_client, uint16_t descriptor_handle, uint8_t *value, uint16_t value_length, uint16_t value_offset){
     UNUSED(value_offset);
-    uint8_t * packet = setup_characteristic_value_packet(GATT_EVENT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT, gatt_client->con_handle, descriptor_handle, value, value_length);
+    uint8_t * packet = setup_characteristic_value_packet(gatt_client, GATT_EVENT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT,
+                                                         descriptor_handle, value,
+                                                         value_length);
     emit_event_new(gatt_client->callback, packet, value_length + 8u);
 }
 
