@@ -947,7 +947,7 @@ TEST(GATTClient, TestReadLongCharacteristicValue){
 	status = gatt_client_read_long_value_of_characteristic(handle_ble_client_event, gatt_client_handle, &characteristics[0]);
 	CHECK_EQUAL(0, status);
 	CHECK_EQUAL(1, gatt_query_complete);
-	CHECK_EQUAL(4, result_counter);
+	CHECK_EQUAL(7, result_counter);
 }
 
 TEST(GATTClient, TestReadLongCharacteristicDescriptor){
@@ -975,7 +975,7 @@ TEST(GATTClient, TestReadLongCharacteristicDescriptor){
 	status = gatt_client_read_long_characteristic_descriptor(handle_ble_client_event, gatt_client_handle, &descriptors[0]);
 	CHECK_EQUAL(0, status);
 	CHECK_EQUAL(1, gatt_query_complete);
-	CHECK_EQUAL(4, result_counter);
+	CHECK_EQUAL(7, result_counter);
 }
 
 
