@@ -729,6 +729,24 @@ uint8_t gatt_client_read_long_value_of_characteristic(btstack_packet_handler_t c
  */
 uint8_t gatt_client_read_long_value_of_characteristic_using_value_handle(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle);
 
+/**
+ * @brief Reads the long characteristic value using the characteristic's value handle.
+ * The value will be returned in several blobs.
+ * For each blob, a GATT_EVENT_LONG_CHARACTERISTIC_VALUE_QUERY_RESULT event with updated value offset will be emitted.
+ * The GATT_EVENT_QUERY_COMPLETE event marks the end of read.
+ * @param  callback
+ * @param  con_handle
+ * @param  value_handle
+ * @param  service_id    - context provided to callback in events
+ * @param  connection_id - contest provided to callback in events
+ * @return status BTSTACK_MEMORY_ALLOC_FAILED, if no GATT client for con_handle is found
+ *                GATT_CLIENT_IN_WRONG_STATE , if GATT client is not ready
+ *                ERROR_CODE_SUCCESS         , if query is successfully registered
+ */
+uint8_t gatt_client_read_long_value_of_characteristic_using_value_handle_with_context(btstack_packet_handler_t callback,
+                                                                                      hci_con_handle_t con_handle, uint16_t value_handle,
+                                                                                      uint16_t service_id, uint16_t connection_id);
+
 /** 
  * @brief Reads the long characteristic value using the characteristic's value handle. 
  * The value will be returned in several blobs. 

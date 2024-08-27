@@ -2774,9 +2774,23 @@ uint8_t gatt_client_read_long_value_of_characteristic_using_value_handle_with_of
     gatt_client_run();
     return ERROR_CODE_SUCCESS;
 }
+uint8_t gatt_client_read_long_value_of_characteristic_using_value_handle_with_context(btstack_packet_handler_t callback,
+                                                                                      hci_con_handle_t con_handle, uint16_t value_handle,
+                                                                                      uint16_t service_id, uint16_t connection_id){
+    // TODO: move into gatt_client_read_long_value_of_characteristic_using_value_handle_with_offset once
+    //       gatt_client_read_long_value_of_characteristic_using_value_handle_with_offset_and_context exists
+    gatt_client_t * gatt_client;
+    uint8_t status = gatt_client_provide_context_for_request(con_handle, &gatt_client);
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
+    }
+    gatt_client->service_id = service_id;
+    gatt_client->connection_id = connection_id;
+    return gatt_client_read_long_value_of_characteristic_using_value_handle_with_offset(callback, con_handle, value_handle, 0);
+}
 
 uint8_t gatt_client_read_long_value_of_characteristic_using_value_handle(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle){
-    return gatt_client_read_long_value_of_characteristic_using_value_handle_with_offset(callback, con_handle, value_handle, 0);
+    return gatt_client_read_long_value_of_characteristic_using_value_handle_with_context(callback, con_handle, value_handle, 0, 0);
 }
 
 uint8_t gatt_client_read_long_value_of_characteristic(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_characteristic_t * characteristic){
