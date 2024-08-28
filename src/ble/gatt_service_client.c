@@ -60,6 +60,7 @@
 
 static uint16_t gatt_service_client_service_cid;
 static btstack_linked_list_t gatt_service_clients;
+btstack_packet_callback_registration_t gatt_service_client_hci_callback_registration;
 
 static btstack_packet_handler_t gatt_service_client_get_packet_handler_trampoline(gatt_service_client_t * client){
     return client->hci_event_callback_registration.callback;
@@ -546,9 +547,18 @@ void gatt_service_client_trampoline_packet_handler(gatt_service_client_t * clien
     }
 }
 
+void gatt_service_client_hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) {
+    UNUSED(channel);
+    UNUSED(size);
+    UNUSED(packet);
+    UNUSED(size);
+}
+
 /* API */
 
 void gatt_service_client_init(void){
+    gatt_service_client_hci_callback_registration.callback = gatt_service_client_hci_event_handler;
+    hci_add_event_handler(&gatt_service_client_hci_callback_registration);
 }
 
 void gatt_service_client_register_client(gatt_service_client_t *client, btstack_packet_handler_t packet_handler,
