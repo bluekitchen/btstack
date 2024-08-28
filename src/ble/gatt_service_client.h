@@ -219,17 +219,6 @@ uint16_t gatt_service_client_get_mtu(const gatt_service_client_t * client, const
 gatt_service_client_connection_t * gatt_service_client_get_connection_for_cid(const gatt_service_client_t * client, uint16_t connection_cid);
 
 /**
- * @brief Get connection object provided by gatt_service_client_connect_primary_service or gatt_service_client_connect_secondary_service
- *          by con handle and attribute handle
-
- * @param client
- * @param con_handle
- * @param value_handle
- * @return
- */
-gatt_service_client_connection_t * gatt_service_client_get_connection_for_con_handle_and_attribute_handle(const gatt_service_client_t * client, hci_con_handle_t con_handle, uint16_t value_handle);
-
-/**
  * @brief Get Characteristic UUID16 for value handle
  *
  * Used to handle incoming characteristic indications/notifications
