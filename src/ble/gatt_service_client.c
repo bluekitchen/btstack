@@ -240,14 +240,6 @@ static uint8_t gatt_service_client_register_notification(gatt_service_client_t *
                     client->service_id,
                     connection->cid);
         }
-
-        // notification supported, register for value updates
-        if (status == ERROR_CODE_SUCCESS){
-            gatt_client_listen_for_characteristic_value_updates(
-                &connection->characteristics[connection->characteristic_index].notification_listener, 
-                client->packet_handler,
-                connection->con_handle, &characteristic);
-        }
     }
     return status;
 }
@@ -405,12 +397,20 @@ static bool gatt_service_client_handle_query_complete(gatt_service_client_t *cli
         case GATT_SERVICE_CLIENT_STATE_W4_NOTIFICATION_REGISTERED:
             if (gatt_service_client_have_more_notifications_to_enable(connection)){
                 connection->state = GATT_SERVICE_CLIENT_STATE_W2_REGISTER_NOTIFICATION;
-                break;
+            } else {
+                // all notifications registered, start listening
+                gatt_client_service_t service;
+                service.start_group_handle = connection->start_handle;
+                service.end_group_handle = connection->end_handle;
+
+                gatt_client_listen_for_service_characteristic_value_updates(&connection->notification_listener, client->packet_handler,
+                                                                            connection->con_handle, &service, client->service_id, connection->cid);
+
+                connection->characteristic_index = 0;
+                connection->state = GATT_SERVICE_CLIENT_STATE_CONNECTED;
+                gatt_service_client_emit_connected(client->packet_handler, connection->con_handle, connection->cid, ERROR_CODE_SUCCESS);
             }
 
-            connection->characteristic_index = 0;
-            connection->state = GATT_SERVICE_CLIENT_STATE_CONNECTED;
-            gatt_service_client_emit_connected(client->packet_handler, connection->con_handle, connection->cid, ERROR_CODE_SUCCESS);
             break;
 
         default:

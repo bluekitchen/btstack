@@ -76,7 +76,6 @@ typedef struct {
     uint16_t client_configuration_handle; 
     uint16_t properties;
     uint16_t end_handle;
-    gatt_client_notification_t notification_listener;
 } gatt_service_client_characteristic_t;
 
 typedef struct {
@@ -97,6 +96,8 @@ typedef struct {
     uint8_t characteristics_num;
     uint8_t characteristic_index;
     gatt_service_client_characteristic_t * characteristics;
+
+    gatt_client_service_notification_t notification_listener;
 
     btstack_packet_handler_t event_callback;
 } gatt_service_client_connection_t;
