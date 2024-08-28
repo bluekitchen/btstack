@@ -924,17 +924,6 @@ static void emit_event_new(btstack_packet_handler_t callback, uint8_t * packet, 
     (*callback)(HCI_EVENT_PACKET, 0, packet, size);
 }
 
-static void emit_event_to_registered_listeners(hci_con_handle_t con_handle, uint16_t attribute_handle, uint8_t * packet, uint16_t size){
-    btstack_linked_list_iterator_t it;    
-    btstack_linked_list_iterator_init(&it, &gatt_client_value_listeners);
-    while (btstack_linked_list_iterator_has_next(&it)){
-        gatt_client_notification_t * notification = (gatt_client_notification_t*) btstack_linked_list_iterator_next(&it);
-        if ((notification->con_handle       != GATT_CLIENT_ANY_CONNECTION)   && (notification->con_handle       != con_handle)) continue;
-        if ((notification->attribute_handle != GATT_CLIENT_ANY_VALUE_HANDLE) && (notification->attribute_handle != attribute_handle)) continue;
-        (*notification->callback)(HCI_EVENT_PACKET, 0, packet, size);
-    } 
-}
-
 static void emit_gatt_complete_event(gatt_client_t * gatt_client, uint8_t att_status){
     // @format H122
     uint8_t packet[9];
@@ -1178,9 +1167,18 @@ static void report_gatt_included_service_uuid128(gatt_client_t * gatt_client, ui
 }
 
 static void report_gatt_characteristic_value_change(gatt_client_t *gatt_client, uint8_t event_type, uint16_t value_handle, uint8_t *value, int length) {
+
     uint8_t * packet = setup_characteristic_value_packet(gatt_client, event_type, value_handle,
                                                          value, length, 0, 0);
-    emit_event_to_registered_listeners(gatt_client->con_handle, value_handle, packet, CHARACTERISTIC_VALUE_EVENT_HEADER_SIZE + length);
+
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &gatt_client_value_listeners);
+    while (btstack_linked_list_iterator_has_next(&it)) {
+        gatt_client_notification_t *notification = (gatt_client_notification_t *) btstack_linked_list_iterator_next(&it);
+        if ((notification->con_handle != GATT_CLIENT_ANY_CONNECTION) && (notification->con_handle != gatt_client->con_handle))    continue;
+        if ((notification->attribute_handle != GATT_CLIENT_ANY_VALUE_HANDLE) && (notification->attribute_handle != value_handle)) continue;
+        (*notification->callback)(HCI_EVENT_PACKET, 0, packet, CHARACTERISTIC_VALUE_EVENT_HEADER_SIZE + length);
+    }
 }
 
 // @note assume that value is part of an l2cap buffer - overwrite parts of the HCI/L2CAP/ATT packet (4/4/3) bytes 
