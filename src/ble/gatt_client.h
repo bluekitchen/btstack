@@ -371,11 +371,11 @@ uint8_t gatt_client_le_enhanced_connect(btstack_packet_handler_t callback, hci_c
  * @brief MTU is available after the first query has completed. If status is equal to ERROR_CODE_SUCCESS, it returns the real value, 
  * otherwise the default value ATT_DEFAULT_MTU (see bluetooth.h). 
  * @param  con_handle   
- * @param  mtu
+ * @param  mtu or 0 in case of error
  * @return status ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER                  if no HCI connection for con_handle is found 
  *                BTSTACK_MEMORY_ALLOC_FAILED                               if no GATT client for con_handle could be allocated 
  *                GATT_CLIENT_IN_WRONG_STATE                                if MTU is not exchanged and MTU auto-exchange is disabled
- *                ERROR_CODE_SUCCESS                                        if query is successfully registered
+ *                ERROR_CODE_SUCCESS                                        on success
  */
 uint8_t gatt_client_get_mtu(hci_con_handle_t con_handle, uint16_t * mtu);
 

@@ -290,6 +290,7 @@ uint8_t gatt_client_get_mtu(hci_con_handle_t con_handle, uint16_t * mtu){
     gatt_client_t * gatt_client;
     uint8_t status = gatt_client_provide_context_for_handle(con_handle, &gatt_client);
     if (status != ERROR_CODE_SUCCESS){
+        *mtu = 0;
         return status;
     }
 
