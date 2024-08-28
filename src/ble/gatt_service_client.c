@@ -59,6 +59,7 @@
 #include "gap.h"
 
 static uint16_t gatt_service_client_service_cid;
+static btstack_linked_list_t gatt_service_clients;
 
 static btstack_packet_handler_t gatt_service_client_get_packet_handler_trampoline(gatt_service_client_t * client){
     return client->hci_event_callback_registration.callback;
@@ -560,6 +561,8 @@ void gatt_service_client_register_client(gatt_service_client_t *client, btstack_
     client->hci_event_callback_registration.callback = trampoline_packet_handler;
     client->packet_handler = packet_handler;
     hci_add_event_handler(&client->hci_event_callback_registration);
+
+    btstack_linked_list_add(&gatt_service_clients, &client->item);
 }
 
 uint8_t gatt_service_client_connect_primary_service(
@@ -674,9 +677,12 @@ void gatt_service_client_unregister_client(gatt_service_client_t * client){
         gatt_service_client_connection_t * connection = (gatt_service_client_connection_t *)btstack_linked_list_iterator_next(&it);
         gatt_service_client_finalize_connection(client, connection);
     }
+
+    btstack_linked_list_remove(&gatt_service_clients, &client->item);
 }
 
 void gatt_service_client_deinit(void){
     gatt_service_client_service_cid = 0;
+    gatt_service_clients = NULL;
 }
 
