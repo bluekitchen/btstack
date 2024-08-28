@@ -1177,12 +1177,16 @@ static void report_gatt_included_service_uuid128(gatt_client_t * gatt_client, ui
                                                   gatt_client->query_end_handle, uuid128);
 }
 
-// @note assume that value is part of an l2cap buffer - overwrite parts of the HCI/L2CAP/ATT packet (4/4/3) bytes 
-static void report_gatt_notification(gatt_client_t *gatt_client, uint16_t value_handle, uint8_t *value, int length) {
-	if (!gatt_client_accept_server_message(gatt_client)) return;
-    uint8_t * packet = setup_characteristic_value_packet(gatt_client, GATT_EVENT_NOTIFICATION, value_handle,
+static void report_gatt_characteristic_value_change(gatt_client_t *gatt_client, uint8_t event_type, uint16_t value_handle, uint8_t *value, int length) {
+    uint8_t * packet = setup_characteristic_value_packet(gatt_client, event_type, value_handle,
                                                          value, length, 0, 0);
     emit_event_to_registered_listeners(gatt_client->con_handle, value_handle, packet, CHARACTERISTIC_VALUE_EVENT_HEADER_SIZE + length);
+}
+
+// @note assume that value is part of an l2cap buffer - overwrite parts of the HCI/L2CAP/ATT packet (4/4/3) bytes 
+static void report_gatt_notification(gatt_client_t *gatt_client, uint16_t value_handle, uint8_t *value, int length) {
+    if (!gatt_client_accept_server_message(gatt_client)) return;
+    report_gatt_characteristic_value_change(gatt_client, GATT_EVENT_NOTIFICATION, value_handle, value, length);
 }
 
 // @note assume that value is part of an l2cap buffer - overwrite parts of the HCI/L2CAP/ATT packet (4/4/3) bytes 
@@ -1197,9 +1201,7 @@ static void report_gatt_indication(gatt_client_t *gatt_client, uint16_t value_ha
         gatt_client_service_emit_service_changed(gatt_client, value, length);
     }
 #endif
-    uint8_t * packet = setup_characteristic_value_packet(gatt_client, GATT_EVENT_INDICATION, value_handle,
-                                                         value, length, 0, 0);
-    emit_event_to_registered_listeners(gatt_client->con_handle, value_handle, packet, CHARACTERISTIC_VALUE_EVENT_HEADER_SIZE + length);
+    report_gatt_characteristic_value_change(gatt_client, GATT_EVENT_INDICATION, value_handle, value, length);
 }
 
 // @note assume that value is part of an l2cap buffer - overwrite parts of the HCI/L2CAP/ATT packet (4/4/3) bytes 
