@@ -591,10 +591,6 @@ static void vocs_client_run_for_connection(void * context){
     }
 }
 
-static void vocs_client_packet_handler_trampoline(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    gatt_service_client_trampoline_packet_handler(&vocs_client, packet_type, channel, packet, size);
-}
-
 void volume_offset_control_service_client_init(void){
     gatt_service_client_register_client(&vocs_client, &vocs_client_packet_handler_internal);
 

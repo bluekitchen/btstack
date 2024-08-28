@@ -137,16 +137,6 @@ void gatt_service_client_register_client(gatt_service_client_t *client, btstack_
 void gatt_service_client_unregister_client(gatt_service_client_t * client);
 
 /**
- * @brief Packet Handler to be called by trampoline registered with gatt_service_client_register_client
- * @param client
- * @param packet_type
- * @param channel
- * @param packet
- * @param size
- */
-void gatt_service_client_trampoline_packet_handler(gatt_service_client_t * client, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
-
-/**
  * @brief Connect to the n-th instance of Primary GATT Service with UUID16
  *
  * @param con_handle

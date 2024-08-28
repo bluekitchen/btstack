@@ -278,10 +278,6 @@ static void txps_client_run_for_connection(void * context){
     }
 }
 
-static void txps_client_packet_handler_trampoline(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    gatt_service_client_trampoline_packet_handler(&txps_client, packet_type, channel, packet, size);
-}
-
 void tx_power_service_client_init(void){
     gatt_service_client_register_client(&txps_client, &txps_client_packet_handler_internal);
 
