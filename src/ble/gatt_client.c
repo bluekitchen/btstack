@@ -72,6 +72,7 @@
 
 static btstack_linked_list_t gatt_client_connections;
 static btstack_linked_list_t gatt_client_value_listeners;
+static btstack_linked_list_t gatt_client_service_value_listeners;
 #ifdef ENABLE_GATT_CLIENT_SERVICE_CHANGED
 static btstack_linked_list_t gatt_client_service_changed_handler;
 #endif
@@ -105,6 +106,8 @@ static void gatt_client_le_enhanced_retry(btstack_timer_source_t * ts);
 
 void gatt_client_init(void){
     gatt_client_connections = NULL;
+    gatt_client_value_listeners = NULL;
+    gatt_client_service_value_listeners = NULL;
 #ifdef ENABLE_GATT_CLIENT_SERVICE_CHANGED
     gatt_client_service_changed_handler = NULL;
 #endif
@@ -1167,16 +1170,29 @@ static void report_gatt_included_service_uuid128(gatt_client_t * gatt_client, ui
 }
 
 static void report_gatt_characteristic_value_change(gatt_client_t *gatt_client, uint8_t event_type, uint16_t value_handle, uint8_t *value, int length) {
+    uint8_t * packet;
 
-    uint8_t * packet = setup_characteristic_value_packet(gatt_client, event_type, value_handle,
-                                                         value, length, 0, 0);
-
+    // Single Characteristic listener, setup packet with service + connection id = 0
+    packet = setup_characteristic_value_packet(gatt_client, event_type, value_handle, value, length, 0, 0);
     btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, &gatt_client_value_listeners);
     while (btstack_linked_list_iterator_has_next(&it)) {
         gatt_client_notification_t *notification = (gatt_client_notification_t *) btstack_linked_list_iterator_next(&it);
         if ((notification->con_handle != GATT_CLIENT_ANY_CONNECTION) && (notification->con_handle != gatt_client->con_handle))    continue;
         if ((notification->attribute_handle != GATT_CLIENT_ANY_VALUE_HANDLE) && (notification->attribute_handle != value_handle)) continue;
+
+        (*notification->callback)(HCI_EVENT_PACKET, 0, packet, CHARACTERISTIC_VALUE_EVENT_HEADER_SIZE + length);
+    }
+
+    // Service characteristics
+    btstack_linked_list_iterator_init(&it, &gatt_client_service_value_listeners);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        const gatt_client_service_notification_t * notification = (gatt_client_service_notification_t*) btstack_linked_list_iterator_next(&it);
+        if (notification->con_handle         != gatt_client->con_handle) continue;
+        if (notification->start_group_handle  > value_handle) continue;
+        if (notification->end_group_handle    < value_handle) continue;
+        // (re)setup value packet with service and connection id (to avoid patching event later)
+        packet = setup_characteristic_value_packet(gatt_client, event_type, value_handle, value, length, notification->service_id, notification->connection_id);
         (*notification->callback)(HCI_EVENT_PACKET, 0, packet, CHARACTERISTIC_VALUE_EVENT_HEADER_SIZE + length);
     }
 }
@@ -1329,6 +1345,30 @@ void gatt_client_listen_for_characteristic_value_updates(gatt_client_notificatio
 
 void gatt_client_stop_listening_for_characteristic_value_updates(gatt_client_notification_t * notification){
     btstack_linked_list_remove(&gatt_client_value_listeners, (btstack_linked_item_t*) notification);
+}
+
+void gatt_client_listen_for_service_characteristic_value_updates(gatt_client_service_notification_t * notification,
+                                                                 btstack_packet_handler_t callback,
+                                                                 hci_con_handle_t con_handle,
+                                                                 gatt_client_service_t * service,
+                                                                 uint16_t service_id,
+                                                                 uint16_t connection_id){
+    notification->callback = callback;
+    notification->con_handle = con_handle;
+    notification->start_group_handle = service->start_group_handle;
+    notification->end_group_handle = service->end_group_handle;
+    notification->service_id = 0;
+    notification->connection_id = 0;
+    btstack_linked_list_add(&gatt_client_value_listeners, (btstack_linked_item_t*) notification);
+};
+
+/**
+ * @brief Stop listening to characteristic value updates for registered service with
+ * the gatt_client_listen_for_characteristic_value_updates function.
+ * @param notification struct used in gatt_client_listen_for_characteristic_value_updates
+ */
+void gatt_client_stop_listening_for_service_characteristic_value_updates(gatt_client_service_notification_t * notification){
+    btstack_linked_list_remove(&gatt_client_service_value_listeners, (btstack_linked_item_t*) notification);
 }
 
 static bool is_value_valid(gatt_client_t *gatt_client, uint8_t *packet, uint16_t size){

@@ -288,12 +288,25 @@ typedef struct gatt_client{
 
 } gatt_client_t;
 
-typedef struct gatt_client_notification {
+// Single characteristic, with wildcards for con_handle and attribute_handle
+typedef struct {
     btstack_linked_item_t    item;
     btstack_packet_handler_t callback;
     hci_con_handle_t con_handle;
     uint16_t attribute_handle;
 } gatt_client_notification_t;
+
+// Attribute range, aka service, no wildcards, used for implementing GATT Service clients
+typedef struct {
+    btstack_linked_item_t    item;
+    btstack_packet_handler_t callback;
+    hci_con_handle_t con_handle;
+    uint16_t start_group_handle;
+    uint16_t end_group_handle;
+    // Context
+    uint16_t service_id;
+    uint16_t connection_id;
+} gatt_client_service_notification_t;
 
 /* API_START */
 
@@ -1162,6 +1175,32 @@ void gatt_client_listen_for_characteristic_value_updates(gatt_client_notificatio
  * @param notification struct used in gatt_client_listen_for_characteristic_value_updates
  */
 void gatt_client_stop_listening_for_characteristic_value_updates(gatt_client_notification_t * notification);
+
+/**
+ * @brief Register for notifications and indications of characteristic in a service
+ * the gatt_client_write_client_characteristic_configuration function.
+ * @param notification struct used to store registration
+ * @param callback
+ * @param con_handle or GATT_CLIENT_ANY_CONNECTION to receive updates from all connected devices
+ * @param service
+ * @param end_handle
+ * @param service_id    - context provided to callback in events
+ * @param connection_id - contest provided to callback in events
+ */
+void gatt_client_listen_for_service_characteristic_value_updates(gatt_client_service_notification_t * notification,
+                                                                 btstack_packet_handler_t callback,
+                                                                 hci_con_handle_t con_handle,
+                                                                 gatt_client_service_t * service,
+                                                                 uint16_t service_id,
+                                                                 uint16_t connection_id);
+
+/**
+ * @brief Stop listening to characteristic value updates for registered service with
+ * the gatt_client_listen_for_characteristic_value_updates function.
+ * @param notification struct used in gatt_client_listen_for_characteristic_value_updates
+ */
+void gatt_client_stop_listening_for_service_characteristic_value_updates(gatt_client_service_notification_t * notification);
+
 
 /**
  * @brief Transactional write. It can be called as many times as it is needed to write the characteristics within the same transaction. 
