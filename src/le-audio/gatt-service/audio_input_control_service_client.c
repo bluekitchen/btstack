@@ -282,7 +282,7 @@ static void aics_client_emit_notify_event(gatt_service_client_connection_t * con
         case ORG_BLUETOOTH_CHARACTERISTIC_AUDIO_INPUT_DESCRIPTION:
             aics_client_emit_string_value(connection_helper, LEAUDIO_SUBEVENT_AICS_CLIENT_AUDIO_DESCRIPTION, NULL,
                                           ATT_ERROR_SUCCESS);
-            break;
+            return;
 
         case ORG_BLUETOOTH_CHARACTERISTIC_AUDIO_INPUT_STATE:
             subevent_id = LEAUDIO_SUBEVENT_AICS_CLIENT_AUDIO_INPUT_STATE;
