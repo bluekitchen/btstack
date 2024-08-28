@@ -63,7 +63,7 @@ static btstack_linked_list_t gatt_service_clients;
 btstack_packet_callback_registration_t gatt_service_client_hci_callback_registration;
 
 static btstack_packet_handler_t gatt_service_client_get_packet_handler_trampoline(gatt_service_client_t * client){
-    return client->hci_event_callback_registration.callback;
+    return client->trampoline_handler;
 }
 
 // LE Audio Service Client helper functions
@@ -432,14 +432,19 @@ static uint8_t gatt_service_client_get_uninitialized_characteristic_index_for_uu
         return index;
 }
 
-void gatt_service_client_handle_disconnect(gatt_service_client_t * client, hci_con_handle_t con_handle){
-    btstack_linked_list_iterator_t it;
-    btstack_linked_list_iterator_init(&it, (btstack_linked_list_t *) &client->connections);
-    while (btstack_linked_list_iterator_has_next(&it)){
-        gatt_service_client_connection_t * connection = (gatt_service_client_connection_t *)btstack_linked_list_iterator_next(&it);
-        if (connection->con_handle == con_handle) {
-            gatt_service_client_emit_disconnected(client->packet_handler, connection->con_handle, connection->cid);
-            gatt_service_client_finalize_connection(client, connection);
+static void gatt_service_client_handle_disconnect(hci_con_handle_t con_handle){
+    btstack_linked_list_iterator_t service_it;
+    btstack_linked_list_iterator_init(&service_it, &gatt_service_clients);
+    while (btstack_linked_list_iterator_has_next(&service_it)){
+        gatt_service_client_t * client = (gatt_service_client_t *)btstack_linked_list_iterator_next(&service_it);
+        btstack_linked_list_iterator_t connection_it;
+        btstack_linked_list_iterator_init(&connection_it, &client->connections);
+        while (btstack_linked_list_iterator_has_next(&connection_it)){
+            gatt_service_client_connection_t * connection = (gatt_service_client_connection_t *)btstack_linked_list_iterator_next(&connection_it);
+            if (connection->con_handle == con_handle) {
+                gatt_service_client_emit_disconnected(client->packet_handler, connection->con_handle, connection->cid);
+                gatt_service_client_finalize_connection(client, connection);
+            }
         }
     }
 }
@@ -452,7 +457,6 @@ void gatt_service_client_trampoline_packet_handler(gatt_service_client_t * clien
 
     if (packet_type != HCI_EVENT_PACKET) return;
 
-    hci_con_handle_t con_handle;
     gatt_service_client_connection_t * connection;
     gatt_client_service_t service;
     gatt_client_characteristic_t characteristic;
@@ -461,12 +465,6 @@ void gatt_service_client_trampoline_packet_handler(gatt_service_client_t * clien
 
     bool call_run = true;
     switch (hci_event_packet_get_type(packet)){
-        case HCI_EVENT_DISCONNECTION_COMPLETE:
-            con_handle = hci_event_disconnection_complete_get_connection_handle(packet);
-            gatt_service_client_handle_disconnect(client, con_handle);
-            call_run = false;
-            break;
-
         case GATT_EVENT_SERVICE_QUERY_RESULT:
             connection = gatt_service_client_get_connection_for_cid(client, gatt_event_service_query_result_get_connection_id(packet));
             btstack_assert(connection != NULL);
@@ -552,6 +550,18 @@ void gatt_service_client_hci_event_handler(uint8_t packet_type, uint16_t channel
     UNUSED(size);
     UNUSED(packet);
     UNUSED(size);
+
+    if (packet_type != HCI_EVENT_PACKET) return;
+
+    hci_con_handle_t con_handle;
+    switch (hci_event_packet_get_type(packet)) {
+        case HCI_EVENT_DISCONNECTION_COMPLETE:
+            con_handle = hci_event_disconnection_complete_get_connection_handle(packet);
+            gatt_service_client_handle_disconnect(con_handle);
+            break;
+        default:
+            break;
+    }
 }
 
 /* API */
@@ -568,9 +578,8 @@ void gatt_service_client_register_client(gatt_service_client_t *client, btstack_
     gatt_service_client_service_cid = btstack_next_cid_ignoring_zero(gatt_service_client_service_cid);
     client->service_id =gatt_service_client_service_cid;
     client->characteristics_desc16_num = 0;
-    client->hci_event_callback_registration.callback = trampoline_packet_handler;
+    client->trampoline_handler = trampoline_packet_handler;
     client->packet_handler = packet_handler;
-    hci_add_event_handler(&client->hci_event_callback_registration);
 
     btstack_linked_list_add(&gatt_service_clients, &client->item);
 }
