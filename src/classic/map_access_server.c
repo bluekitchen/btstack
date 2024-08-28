@@ -438,30 +438,32 @@ static void map_server_operation_complete(map_server_t* mas) {
 }
 
 static void map_server_handle_can_send_now(map_server_t* mas) {
-    uint8_t response_code;
+	// save mas->response.code before its reset by map_server_operation_complete()
+    uint8_t response_code = mas->response.code;
     uint8_t event[10];
     uint16_t pos = 0;
 
     switch (mas->state) {
     case MAS_STATE_SEND_INTERNAL_RESPONSE:
+        log_debug("MAS_STATE_SEND_INTERNAL_RESPONSE");
         // prepare response
         goep_server_response_create_general(mas->goep_cid);
         // next state
-        RUN_AND_LOG_ACTION(response_code = mas->response.code;)
         map_server_operation_complete(mas);
         // send packet
         goep_server_execute(mas->goep_cid, response_code);
         break;
     case MAS_STATE_SEND_RESPONSE_CONTINUE:
+        log_debug("MAS_STATE_SEND_RESPONSE_CONTINUE");
         // prepare response
         goep_server_response_create_general(mas->goep_cid);
         // next state
-        RUN_AND_LOG_ACTION(response_code = mas->response.code;)
         mas->state = MAS_STATE_CONNECTED;
         // send packet
         goep_server_execute(mas->goep_cid, response_code);
         break;
     case MAS_STATE_SEND_USER_RESPONSE:
+        log_debug("MAS_STATE_SEND_USER_RESPONSE");
         // prepare response
         map_server_build_response(mas);
         if (mas->response.body_len > 0) {
@@ -470,7 +472,6 @@ static void map_server_handle_can_send_now(map_server_t* mas) {
                 mas->response.body_len);
         }
         // next state
-        RUN_AND_LOG_ACTION(response_code = mas->response.code;)
         if (response_code == OBEX_RESP_CONTINUE) {
             map_server_reset_response(mas);
             // next state
@@ -492,6 +493,7 @@ static void map_server_handle_can_send_now(map_server_t* mas) {
         }
         break;
     case MAS_STATE_SEND_CONNECT_RESPONSE_ERROR:
+        log_debug("MAS_STATE_SEND_CONNECT_RESPONSE_ERROR");
         // prepare response
         goep_server_response_create_general(mas->goep_cid);
         // next state
@@ -500,6 +502,7 @@ static void map_server_handle_can_send_now(map_server_t* mas) {
         goep_server_execute(mas->goep_cid, OBEX_RESP_BAD_REQUEST);
         break;
     case MAS_STATE_SEND_CONNECT_RESPONSE_SUCCESS:
+        log_debug("MAS_STATE_SEND_CONNECT_RESPONSE_SUCCESS");
         // prepare response
         goep_server_response_create_connect(mas->goep_cid, OBEX_VERSION, 0, OBEX_MAX_PACKETLEN_DEFAULT);
         goep_server_header_add_who(mas->goep_cid, map_uuid);
@@ -521,6 +524,7 @@ static void map_server_handle_can_send_now(map_server_t* mas) {
 
     case MAS_STATE_SEND_DISCONNECT_RESPONSE:
     {
+        log_debug("MAS_STATE_SEND_DISCONNECT_RESPONSE");
         // cache data
         //uint16_t map_cid = mas->goep_cid;
         uint16_t goep_cid = mas->goep_cid;

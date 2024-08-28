@@ -709,6 +709,7 @@ uint8_t goep_server_header_add_application_parameters(uint16_t goep_cid, const u
 
 uint8_t goep_server_execute(uint16_t goep_cid, uint8_t response_code){
     goep_server_connection_t * connection = goep_server_get_connection_for_goep_cid(goep_cid);
+    log_debug("response_code:0x%02X", response_code);
     if (connection == NULL) {
         RUN_AND_LOG_ACTION(return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;)
     }
