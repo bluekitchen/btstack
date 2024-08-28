@@ -461,10 +461,10 @@ static void gatt_service_client_handle_disconnect(hci_con_handle_t con_handle){
     }
 }
 
-void gatt_service_client_trampoline_packet_handler(gatt_service_client_t * client_argument, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void
+gatt_service_client_gatt_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) {
     UNUSED(channel);
     UNUSED(size);
-    UNUSED(client_argument);
 
     if (packet_type != HCI_EVENT_PACKET) return;
 
@@ -565,7 +565,7 @@ void gatt_service_client_trampoline_packet_handler(gatt_service_client_t * clien
     }
 }
 
-void gatt_service_client_hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) {
+static void gatt_service_client_hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) {
     UNUSED(channel);
     UNUSED(size);
     UNUSED(packet);
@@ -583,6 +583,17 @@ void gatt_service_client_hci_event_handler(uint8_t packet_type, uint16_t channel
             break;
     }
 }
+
+void gatt_service_client_trampoline_packet_handler(gatt_service_client_t * client, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) {
+    UNUSED(channel);
+    UNUSED(size);
+    UNUSED(client);
+
+    btstack_assert(client != NULL);
+
+    gatt_service_client_gatt_packet_handler(packet_type, channel, packet, size);
+}
+
 
 /* API */
 
