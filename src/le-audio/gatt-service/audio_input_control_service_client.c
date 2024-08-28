@@ -420,7 +420,7 @@ static void aics_client_packet_handler_internal(uint8_t packet_type, uint16_t ch
     if (packet_type != HCI_EVENT_PACKET) return;
     gatt_service_client_connection_t * connection_helper;
     aics_client_connection_t * connection;
-    hci_con_handle_t con_handle;
+    uint16_t connection_id;
     uint8_t status;
     uint16_t value_handle;
 
@@ -470,9 +470,9 @@ static void aics_client_packet_handler_internal(uint8_t packet_type, uint16_t ch
             break;
 
         case GATT_EVENT_NOTIFICATION:
-            con_handle = (hci_con_handle_t)gatt_event_notification_get_handle(packet);
+            connection_id = gatt_event_notification_get_connection_id(packet);
             value_handle = gatt_event_notification_get_value_handle(packet);
-            connection_helper = gatt_service_client_get_connection_for_con_handle_and_attribute_handle(&aics_client, con_handle, value_handle);
+            connection_helper = gatt_service_client_get_connection_for_cid(&aics_client, connection_id);
             btstack_assert(connection_helper != NULL);
 
             aics_client_emit_notify_event(connection_helper, value_handle, gatt_event_notification_get_value(packet),gatt_event_notification_get_value_length(packet));
