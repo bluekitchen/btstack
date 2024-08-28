@@ -114,9 +114,8 @@ static uint16_t gatt_service_client_characteristic_value_handle2uuid16(aics_clie
     return 0;
 }
 
-static void aics_client_emit_string_value(gatt_service_client_connection_t * connection_helper, uint8_t subevent, const uint8_t * data, uint16_t data_size, uint8_t att_status){
-    UNUSED( data_size );
-
+static void aics_client_emit_string_value(gatt_service_client_connection_t *connection_helper, uint8_t subevent,
+                                          const uint8_t *data, uint8_t att_status) {
     btstack_assert(connection_helper != NULL);
     btstack_assert(connection_helper->event_callback != NULL);
 
@@ -227,7 +226,7 @@ static void aics_client_emit_read_event(gatt_service_client_connection_t * conne
         case ORG_BLUETOOTH_CHARACTERISTIC_AUDIO_INPUT_DESCRIPTION:
             subevent_id = LEAUDIO_SUBEVENT_AICS_CLIENT_AUDIO_DESCRIPTION;
             if (att_status == ATT_ERROR_SUCCESS){
-                aics_client_emit_string_value(connection_helper, subevent_id, data, data_size, ATT_ERROR_SUCCESS);
+                aics_client_emit_string_value(connection_helper, subevent_id, data, ATT_ERROR_SUCCESS);
                 return;
             }
             break;
@@ -281,7 +280,8 @@ static void aics_client_emit_notify_event(gatt_service_client_connection_t * con
     uint16_t characteristic_uuid16 = gatt_service_client_characteristic_value_handle2uuid16((aics_client_connection_t *)connection_helper, value_handle);
     switch (characteristic_uuid16){
         case ORG_BLUETOOTH_CHARACTERISTIC_AUDIO_INPUT_DESCRIPTION:
-            aics_client_emit_string_value(connection_helper, LEAUDIO_SUBEVENT_AICS_CLIENT_AUDIO_DESCRIPTION, NULL, 0, ATT_ERROR_SUCCESS);
+            aics_client_emit_string_value(connection_helper, LEAUDIO_SUBEVENT_AICS_CLIENT_AUDIO_DESCRIPTION, NULL,
+                                          ATT_ERROR_SUCCESS);
             break;
 
         case ORG_BLUETOOTH_CHARACTERISTIC_AUDIO_INPUT_STATE:
