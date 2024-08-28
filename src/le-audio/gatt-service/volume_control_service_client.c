@@ -296,8 +296,7 @@ static void vcs_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
     if (packet_type != HCI_EVENT_PACKET) return;
     gatt_service_client_connection_t * connection_helper;
     vcs_client_connection_t * connection;
-    hci_con_handle_t con_handle;
-    uint16_t value_handle;
+    uint16_t connection_id;
     uint16_t cid;
     uint8_t status;
 
@@ -349,12 +348,11 @@ static void vcs_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
             break;
 
         case GATT_EVENT_NOTIFICATION:
-            con_handle = (hci_con_handle_t)gatt_event_notification_get_handle(packet);
-            value_handle = gatt_event_notification_get_value_handle(packet);
-            connection_helper = gatt_service_client_get_connection_for_con_handle_and_attribute_handle(&vcs_client, con_handle, value_handle);
+            connection_id = gatt_event_notification_get_connection_id(packet);
+            connection_helper = gatt_service_client_get_connection_for_cid(&vcs_client, connection_id);
             btstack_assert(connection_helper != NULL);
 
-            vcs_client_emit_notify_event(connection_helper, value_handle, ATT_ERROR_SUCCESS,
+            vcs_client_emit_notify_event(connection_helper, gatt_event_notification_get_value_handle(packet), ATT_ERROR_SUCCESS,
                                          gatt_event_notification_get_value(packet),
                                          gatt_event_notification_get_value_length(packet));
             break;
