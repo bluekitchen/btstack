@@ -923,7 +923,7 @@ static void ots_client_packet_handler_trampoline(uint8_t packet_type, uint16_t c
 }
 
 void object_transfer_service_client_init(void){
-    gatt_service_client_register_client(&ots_client, &ots_client_packet_handler_internal, &ots_client_packet_handler_trampoline);
+    gatt_service_client_register_client(&ots_client, &ots_client_packet_handler_internal);
 
     ots_client.characteristics_desc16_num = sizeof(ots_uuid16s)/sizeof(uint16_t);
     ots_client.characteristics_desc16 = ots_uuid16s;

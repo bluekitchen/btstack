@@ -600,15 +600,12 @@ void gatt_service_client_init(void){
     hci_add_event_handler(&gatt_service_client_hci_callback_registration);
 }
 
-void gatt_service_client_register_client(gatt_service_client_t *client, btstack_packet_handler_t packet_handler,
-                                         void (*trampoline_packet_handler)(uint8_t, uint16_t, uint8_t *, uint16_t)) {
-
-    client->cid_counter = 0;
+void gatt_service_client_register_client(gatt_service_client_t *client, btstack_packet_handler_t packet_handler) {
     gatt_service_client_service_cid = btstack_next_cid_ignoring_zero(gatt_service_client_service_cid);
     client->service_id =gatt_service_client_service_cid;
+    client->cid_counter = 0;
     client->characteristics_desc16_num = 0;
     client->packet_handler = packet_handler;
-
     btstack_linked_list_add(&gatt_service_clients, &client->item);
 }
 

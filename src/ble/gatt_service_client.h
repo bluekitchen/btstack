@@ -128,8 +128,7 @@ void gatt_service_client_init(void);
  * @param client
  * @param trampoline_packet_handler packet handler that calls gatt_service_client_trampoline_packet_handler with client
  */
-void gatt_service_client_register_client(gatt_service_client_t *client, btstack_packet_handler_t packet_handler,
-                                         void (*trampoline_packet_handler)(uint8_t, uint16_t, uint8_t *, uint16_t));
+void gatt_service_client_register_client(gatt_service_client_t *client, btstack_packet_handler_t packet_handler);
 
 /**
  * @bbreif Unregister GATT Service Client
