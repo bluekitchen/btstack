@@ -84,7 +84,6 @@ typedef struct {
 
     hci_con_handle_t  con_handle;
     uint16_t          cid;
-    uint16_t          mtu;
     gatt_service_client_state_t  state;
 
     // service
