@@ -112,7 +112,6 @@ typedef struct {
     uint8_t  characteristics_desc16_num;     // uuid16s_num
     const uint16_t * characteristics_desc16; // uuid16s
     
-    btstack_packet_handler_t trampoline_handler;
     btstack_packet_handler_t packet_handler;
 } gatt_service_client_t;
 

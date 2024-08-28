@@ -58,13 +58,11 @@
 #include "btstack_run_loop.h"
 #include "gap.h"
 
+static void gatt_service_client_gatt_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+
 static uint16_t gatt_service_client_service_cid;
 static btstack_linked_list_t gatt_service_clients;
 btstack_packet_callback_registration_t gatt_service_client_hci_callback_registration;
-
-static btstack_packet_handler_t gatt_service_client_get_packet_handler_trampoline(gatt_service_client_t * client){
-    return client->trampoline_handler;
-}
 
 // LE Audio Service Client helper functions
 void gatt_service_client_finalize_connection(gatt_service_client_t * client, gatt_service_client_connection_t * connection){
@@ -226,7 +224,7 @@ static uint8_t gatt_service_client_register_notification(gatt_service_client_t *
 
         if ((connection->characteristics[connection->characteristic_index].properties & ATT_PROPERTY_NOTIFY) != 0u){
             status = gatt_client_write_client_characteristic_configuration_with_context(
-                    gatt_service_client_get_packet_handler_trampoline(client),
+                    &gatt_service_client_gatt_packet_handler,
                     connection->con_handle,
                     &characteristic,
                     GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION,
@@ -234,7 +232,7 @@ static uint8_t gatt_service_client_register_notification(gatt_service_client_t *
                     connection->cid);
         } else if ((connection->characteristics[connection->characteristic_index].properties & ATT_PROPERTY_INDICATE) != 0u){
             status = gatt_client_write_client_characteristic_configuration_with_context(
-                    gatt_service_client_get_packet_handler_trampoline(client),
+                    &gatt_service_client_gatt_packet_handler,
                     connection->con_handle,
                     &characteristic,
                     GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_INDICATION,
@@ -255,11 +253,11 @@ static void gatt_service_client_run_for_client(gatt_service_client_t * client, g
         case GATT_SERVICE_CLIENT_STATE_W2_QUERY_PRIMARY_SERVICE:
             connection->state = GATT_SERVICE_CLIENT_STATE_W4_SERVICE_RESULT;
             status = gatt_client_discover_primary_services_by_uuid16_with_context(
-                    gatt_service_client_get_packet_handler_trampoline(client),
-                connection->con_handle, 
-                connection->service_uuid16,
-                client->service_id,
-                connection->cid);
+                    &gatt_service_client_gatt_packet_handler,
+                    connection->con_handle,
+                    connection->service_uuid16,
+                    client->service_id,
+                    connection->cid);
             break;
 
         case GATT_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTICS:
@@ -273,11 +271,11 @@ static void gatt_service_client_run_for_client(gatt_service_client_t * client, g
             service.uuid16 = connection->service_uuid16;
 
             status = gatt_client_discover_characteristics_for_service_with_context(
-                gatt_service_client_get_packet_handler_trampoline(client),
-                connection->con_handle, 
-                &service,
-                client->service_id,
-                connection->cid);
+                    &gatt_service_client_gatt_packet_handler,
+                    connection->con_handle,
+                    &service,
+                    client->service_id,
+                    connection->cid);
             break;
 
         case GATT_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTIC_DESCRIPTORS:
@@ -293,11 +291,11 @@ static void gatt_service_client_run_for_client(gatt_service_client_t * client, g
             characteristic.end_handle   = connection->characteristics[connection->characteristic_index].end_handle;
 
             (void) gatt_client_discover_characteristic_descriptors_with_context(
-                gatt_service_client_get_packet_handler_trampoline(client),
-                connection->con_handle, 
-                &characteristic,
-                client->service_id,
-                connection->cid);
+                    &gatt_service_client_gatt_packet_handler,
+                    connection->con_handle,
+                    &characteristic,
+                    client->service_id,
+                    connection->cid);
             break;
 
         case GATT_SERVICE_CLIENT_STATE_W2_REGISTER_NOTIFICATION:
@@ -609,7 +607,6 @@ void gatt_service_client_register_client(gatt_service_client_t *client, btstack_
     gatt_service_client_service_cid = btstack_next_cid_ignoring_zero(gatt_service_client_service_cid);
     client->service_id =gatt_service_client_service_cid;
     client->characteristics_desc16_num = 0;
-    client->trampoline_handler = trampoline_packet_handler;
     client->packet_handler = packet_handler;
 
     btstack_linked_list_add(&gatt_service_clients, &client->item);
