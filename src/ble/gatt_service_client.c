@@ -134,6 +134,15 @@ uint16_t gatt_service_client_characteristic_uuid16_for_value_handle(const gatt_s
     return 0;
 }
 
+uint8_t gatt_service_client_characteristic_index_for_value_handle(gatt_service_client_connection_t * connection, uint16_t value_handle){
+    for (int i = 0; i < connection->characteristics_num; i++){
+        if (connection->characteristics[i].value_handle == value_handle) {
+            return i;
+        }
+    }
+    return 0;
+}
+
 uint8_t gatt_service_client_att_status_to_error_code(uint8_t att_error_code){
     switch (att_error_code){
         case ATT_ERROR_SUCCESS:
