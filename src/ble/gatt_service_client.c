@@ -60,6 +60,7 @@
 
 static void gatt_service_client_gatt_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
+static bool gatt_service_client_intitialized = false;
 static uint16_t gatt_service_client_service_cid;
 static btstack_linked_list_t gatt_service_clients;
 btstack_packet_callback_registration_t gatt_service_client_hci_callback_registration;
@@ -587,9 +588,13 @@ static void gatt_service_client_hci_event_handler(uint8_t packet_type, uint16_t 
 void gatt_service_client_init(void){
     gatt_service_client_hci_callback_registration.callback = gatt_service_client_hci_event_handler;
     hci_add_event_handler(&gatt_service_client_hci_callback_registration);
+    gatt_service_client_intitialized = true;
 }
 
 void gatt_service_client_register_client(gatt_service_client_t *client, btstack_packet_handler_t packet_handler) {
+
+    btstack_assert(gatt_service_client_intitialized);
+
     gatt_service_client_service_cid = btstack_next_cid_ignoring_zero(gatt_service_client_service_cid);
     client->service_id =gatt_service_client_service_cid;
     client->cid_counter = 0;
@@ -717,5 +722,6 @@ void gatt_service_client_unregister_client(gatt_service_client_t * client){
 void gatt_service_client_deinit(void){
     gatt_service_client_service_cid = 0;
     gatt_service_clients = NULL;
+    gatt_service_client_intitialized = false;
 }
 
