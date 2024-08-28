@@ -96,6 +96,13 @@ gatt_service_client_connection_t * gatt_service_client_get_connection_for_cid(
     return NULL;
 }
 
+uint16_t gatt_service_client_get_mtu(const gatt_service_client_t * client, const gatt_service_client_connection_t * connection){
+    UNUSED(client);
+    uint16_t mtu = 0;
+    gatt_client_get_mtu(connection->con_handle, &mtu);
+    return mtu;
+}
+
 gatt_service_client_connection_t * gatt_service_client_get_connection_for_con_handle_and_attribute_handle(const gatt_service_client_t * client, hci_con_handle_t con_handle, uint16_t value_handle){
     btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, (btstack_linked_list_t *) &client->connections);

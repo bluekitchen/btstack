@@ -203,6 +203,14 @@ uint8_t gatt_service_client_connect_secondary_service(
 uint8_t gatt_service_client_can_query_characteristic(gatt_service_client_connection_t * connection, uint8_t characteristic_index);
 
 /**
+ * @brief Get remote MTU
+ * @param client
+ * @param connection
+ * @returns MTU or 0 in case of error
+ */
+uint16_t gatt_service_client_get_mtu(const gatt_service_client_t * client, const gatt_service_client_connection_t * connection);
+
+/**
  * @brief Get connection object provided by gatt_service_client_connect_primary_service or gatt_service_client_connect_secondary_service by connection id
  * @param client
  * @param connection_cid
