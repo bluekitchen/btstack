@@ -431,7 +431,6 @@ static void aics_client_packet_handler_internal(uint8_t packet_type, uint16_t ch
     UNUSED(size);
 
     if (packet_type != HCI_EVENT_PACKET) return;
-    gatt_service_client_connection_t * connection_helper;
     aics_client_connection_t * connection;
     uint16_t connection_id;
     uint8_t status;
@@ -441,9 +440,9 @@ static void aics_client_packet_handler_internal(uint8_t packet_type, uint16_t ch
         case HCI_EVENT_GATTSERVICE_META:
             switch (hci_event_gattservice_meta_get_subevent_code(packet)){
                 case GATTSERVICE_SUBEVENT_CLIENT_CONNECTED:
-                    connection_helper = gatt_service_client_get_connection_for_cid(&aics_client, gattservice_subevent_client_connected_get_cid(packet));
-                    btstack_assert(connection_helper != NULL);
-                    connection = (aics_client_connection_t *)connection_helper;
+                    connection_id = gattservice_subevent_client_connected_get_cid(packet);
+                    connection = aics_client_get_connection_for_cid(connection_id);
+                    btstack_assert(connection != NULL);
 
                     status = gattservice_subevent_client_connected_get_status(packet);
                     if (status != ERROR_CODE_SUCCESS){
@@ -461,7 +460,6 @@ static void aics_client_packet_handler_internal(uint8_t packet_type, uint16_t ch
                     };
                     printf("AICS Client: Query input state to retrieve and cache change counter\n");
 #endif
-                    connection = (aics_client_connection_t *) connection_helper;
                     if (connection->basic_connection.characteristics[AICS_CLIENT_CHARACTERISTIC_INDEX_AUDIO_INPUT_STATE].value_handle == 0){
                         aics_client_connected(connection, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE);
                         break;
@@ -472,9 +470,11 @@ static void aics_client_packet_handler_internal(uint8_t packet_type, uint16_t ch
                     break;
 
                 case GATTSERVICE_SUBEVENT_CLIENT_DISCONNECTED:
-                    connection_helper = gatt_service_client_get_connection_for_cid(&aics_client, gattservice_subevent_client_disconnected_get_cid(packet));
-                    btstack_assert(connection_helper != NULL);
-                    aics_client_replace_subevent_id_and_emit(connection_helper->event_callback, packet, size, LEAUDIO_SUBEVENT_AICS_CLIENT_DISCONNECTED);
+                    connection_id = gattservice_subevent_client_disconnected_get_cid(packet);
+                    connection = aics_client_get_connection_for_cid(connection_id);
+                    btstack_assert(connection != NULL);
+                    aics_client_finalize_connection(connection);
+                    aics_client_replace_subevent_id_and_emit(gatt_service_client_get_packet_handler(&connection->basic_connection), packet, size, LEAUDIO_SUBEVENT_AICS_CLIENT_DISCONNECTED);
                     break;
 
                 default:
@@ -484,11 +484,10 @@ static void aics_client_packet_handler_internal(uint8_t packet_type, uint16_t ch
 
         case GATT_EVENT_NOTIFICATION:
             connection_id = gatt_event_notification_get_connection_id(packet);
+            connection = aics_client_get_connection_for_cid(connection_id);
+            btstack_assert(connection != NULL);
             value_handle = gatt_event_notification_get_value_handle(packet);
-            connection_helper = gatt_service_client_get_connection_for_cid(&aics_client, connection_id);
-            btstack_assert(connection_helper != NULL);
-
-            aics_client_emit_notify_event(connection_helper, value_handle, gatt_event_notification_get_value(packet),gatt_event_notification_get_value_length(packet));
+            aics_client_emit_notify_event(&connection->basic_connection, value_handle, gatt_event_notification_get_value(packet),gatt_event_notification_get_value_length(packet));
             break;
         default:
             break;
@@ -500,7 +499,6 @@ static void aics_client_handle_gatt_client_event(uint8_t packet_type, uint16_t c
     UNUSED(channel);
     UNUSED(size);
 
-    gatt_service_client_connection_t * connection_helper = NULL;
     uint16_t connection_id;
     aics_client_connection_t * connection;
     uint8_t status; 
@@ -508,11 +506,9 @@ static void aics_client_handle_gatt_client_event(uint8_t packet_type, uint16_t c
     switch(hci_event_packet_get_type(packet)){
         case GATT_EVENT_CHARACTERISTIC_VALUE_QUERY_RESULT:
             connection_id = (uint16_t)gatt_event_characteristic_value_query_result_get_connection_id(packet);
-            connection_helper = gatt_service_client_get_connection_for_cid(&aics_client, connection_id);
+            connection = aics_client_get_connection_for_cid(connection_id);
+            btstack_assert(connection != NULL);
 
-            btstack_assert(connection_helper != NULL);
-
-            connection = (aics_client_connection_t *)connection_helper;
             switch (connection->state){
                 case AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_W4_CHANGE_COUNTER_RESULT:
                     btstack_assert(connection->characteristic_index == AICS_CLIENT_CHARACTERISTIC_INDEX_AUDIO_INPUT_STATE);
@@ -530,7 +526,7 @@ static void aics_client_handle_gatt_client_event(uint8_t packet_type, uint16_t c
 
                 case AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_W4_READ_CHARACTERISTIC_VALUE_RESULT:
                     connection->state = AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_READY;
-                    aics_client_emit_read_event(connection_helper, connection->characteristic_index, ATT_ERROR_SUCCESS,
+                    aics_client_emit_read_event(&connection->basic_connection, connection->characteristic_index, ATT_ERROR_SUCCESS,
                                                 gatt_event_characteristic_value_query_result_get_value(packet),
                                                 gatt_event_characteristic_value_query_result_get_value_length(packet));
                     break;
@@ -545,15 +541,14 @@ static void aics_client_handle_gatt_client_event(uint8_t packet_type, uint16_t c
 
         case GATT_EVENT_QUERY_COMPLETE:
             connection_id = (uint16_t)gatt_event_query_complete_get_connection_id(packet);
-            connection_helper = gatt_service_client_get_connection_for_cid(&aics_client, connection_id);
-            btstack_assert(connection_helper != NULL);
-            connection = (aics_client_connection_t *)connection_helper;
+            connection = aics_client_get_connection_for_cid(connection_id);
+            btstack_assert(connection != NULL);
 
             status = gatt_event_query_complete_get_att_status(packet);
             switch (connection->state){
                 case AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_W4_WRITE_CHARACTERISTIC_VALUE_RESULT:
                     connection->state = AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_READY;
-                    aics_client_emit_done_event(connection_helper, connection->characteristic_index, status);
+                    aics_client_emit_done_event(&connection->basic_connection, connection->characteristic_index, status);
                     break;
 
                 case AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_CHANGE_COUNTER_READ_FAILED:
@@ -604,7 +599,7 @@ static uint16_t aics_client_serialize_characteristic_value_for_write(aics_client
 
 static void aics_client_run_for_connection(void * context){
     uint16_t connection_id = (uint16_t)(uintptr_t)context;
-    aics_client_connection_t * connection = (aics_client_connection_t *)gatt_service_client_get_connection_for_cid(&aics_client, connection_id);
+    aics_client_connection_t * connection = aics_client_get_connection_for_cid(connection_id);
 
     btstack_assert(connection != NULL);
     uint16_t value_length;
