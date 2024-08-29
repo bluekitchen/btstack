@@ -457,6 +457,7 @@ static void map_server_handle_can_send_now(map_server_t* mas) {
         log_debug("MAS_STATE_SEND_RESPONSE_CONTINUE");
         // prepare response
         goep_server_response_create_general(mas->goep_cid);
+        map_server_add_srm_headers(mas);
         // next state
         mas->state = MAS_STATE_CONNECTED;
         // send packet

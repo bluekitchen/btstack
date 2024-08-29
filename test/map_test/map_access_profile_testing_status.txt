@@ -179,8 +179,8 @@ MAP/MSE/MMU/BV-02-C: PASS (2024-08-23) PTS 8.6.1 & RFCOM & MAP_NEW, INFO: PTS 8.
 MAP/MSE/MMN/BV-12-C: RE-PASS (2024-08-26) PTS 8.6.1 & L2CAP & MAP_NEW, INFO: replaced "illegal character encoding in string literal" we had copied from PTS test template files for EventReports
 MAP/MSE/MMN/BV-14-C: RE-PASS (2024-08-26) PTS 8.6.1 & L2CAP & MAP_NEW, INFO: replaced "illegal character encoding in string literal" we had copied from PTS test template files for EventReports
 MAP/MSE/GOEP/SRM/BI-02-C: PTS HANGS PTS 8.6.1 & L2CAP & MAP_NEW PTS 8.6.1 MAP_NEW L2CAP bug: claims to send a PUT but doesnt, hangs till the test case timeouts
-MAP/MSE/GOEP/SRM/BI-02-C: RE-PASS (2024-08-22) PTS 8.6.1 & L2CAP & MAP_OLD
-
+MAP/MSE/GOEP/SRM/BI-02-C: RE-PASS (2024-08-28) PTS 8.6.1 & L2CAP & MAP_OLD
+MAP/MSE/GOEP/SRM/BV-04-C: WIP Passing Test Step to send Continue to a PUT_continue with SRM enabled (Error was "IUT did not send an SRM header during this operation.")
 
 
 Open tests
