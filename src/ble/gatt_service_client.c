@@ -135,11 +135,11 @@ uint16_t gatt_service_client_characteristic_uuid16_for_index(const gatt_service_
     return client->characteristics_desc16[index];
 }
 
-uint16_t gatt_service_client_characteristic_value_handle_for_index(gatt_service_client_connection_t * connection, uint8_t characteristic_index){
+uint16_t gatt_service_client_characteristic_value_handle_for_index(const gatt_service_client_connection_t *connection, uint8_t characteristic_index){
     return connection->characteristics[characteristic_index].value_handle;
 }
 
-uint8_t gatt_service_client_characteristic_index_for_value_handle(gatt_service_client_connection_t * connection, uint16_t value_handle){
+uint8_t gatt_service_client_characteristic_index_for_value_handle(const gatt_service_client_connection_t *connection, uint16_t value_handle){
     for (int i = 0; i < connection->characteristics_num; i++){
         if (connection->characteristics[i].value_handle == value_handle) {
             return i;
