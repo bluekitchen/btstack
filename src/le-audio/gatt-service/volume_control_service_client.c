@@ -57,6 +57,7 @@
 
 // VCS Client
 static gatt_service_client_t vcs_client;
+static btstack_linked_list_t vcs_connections;
 
 static btstack_context_callback_registration_t vcs_client_handle_can_send_now;
 
@@ -88,6 +89,28 @@ static char * vcs_client_characteristic_name[] = {
 };
 #endif
 
+
+static vcs_client_connection_t * vcs_client_get_connection_for_cid(uint16_t connection_cid){
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it,  &vcs_connections);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        vcs_client_connection_t * connection = (vcs_client_connection_t *)btstack_linked_list_iterator_next(&it);
+        if (gatt_service_client_get_connection_id(&connection->basic_connection) == connection_cid) {
+            return connection;
+        }
+    }
+    return NULL;
+}
+
+static void vcs_client_add_connection(vcs_client_connection_t * connection){
+    btstack_linked_list_add(&vcs_connections, (btstack_linked_item_t*) connection);
+}
+
+static void vcs_client_finalize_connection(vcs_client_connection_t * connection){
+    btstack_linked_list_remove(&vcs_connections, (btstack_linked_item_t*) connection);
+}
+
+
 static void vcs_client_replace_subevent_id_and_emit(btstack_packet_handler_t callback, uint8_t * packet, uint16_t size, uint8_t subevent_id){
     UNUSED(size);
     btstack_assert(callback != NULL);
@@ -113,14 +136,6 @@ static void vcs_client_emit_connection_established(const gatt_service_client_con
     event[pos++] = num_vocs_clients; // num included services
     event[pos++] = status;
     (*connection_helper->event_callback)(HCI_EVENT_PACKET, 0, event, pos);
-}
-
-static void vcs_client_finalize_connection(vcs_client_connection_t * connection){
-    // already finalized by GATT CLIENT HELPER
-    if (connection == NULL){
-        return;
-    }
-    gatt_service_client_finalize_connection(&vcs_client, &connection->basic_connection);
 }
 
 static void vcs_client_connected(vcs_client_connection_t * connection, uint8_t status) {
@@ -785,13 +800,18 @@ uint8_t volume_control_service_client_connect(hci_con_handle_t con_handle,
 
     vcs_connection->state = VOLUME_CONTROL_SERVICE_CLIENT_STATE_W4_CONNECTION;
 
-    return gatt_service_client_connect_primary_service(con_handle,
+    uint8_t status = gatt_service_client_connect_primary_service(con_handle,
                                                        &vcs_client, &vcs_connection->basic_connection,
                                                        ORG_BLUETOOTH_SERVICE_VOLUME_CONTROL, 0,
                                                        vcs_connection->characteristics_storage,
                                                        VOLUME_CONTROL_SERVICE_NUM_CHARACTERISTICS,
                                                        packet_handler, out_vcs_cid);
-}
+
+    if (status == ERROR_CODE_SUCCESS){
+        vcs_client_add_connection(vcs_connection);
+    }
+
+    return status;}
 
 
 uint8_t volume_control_service_client_read_volume_state(uint16_t vcs_cid){

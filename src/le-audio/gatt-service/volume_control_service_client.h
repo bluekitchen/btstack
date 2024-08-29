@@ -79,6 +79,8 @@ typedef enum {
 
 
 typedef struct {
+    btstack_linked_item_t item;
+
     gatt_service_client_connection_t basic_connection;
     volume_control_service_client_state_t state;
 
