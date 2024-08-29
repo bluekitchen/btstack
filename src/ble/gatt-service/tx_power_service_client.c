@@ -56,6 +56,7 @@
 
 // IAS Client
 static gatt_service_client_t txps_client;
+static btstack_linked_list_t txps_connections;
 
 static btstack_context_callback_registration_t txps_client_handle_can_send_now;
 
@@ -79,6 +80,28 @@ static char * txps_client_characteristic_name[] = {
     "RFU"
 };
 #endif
+
+
+static txps_client_connection_t * txps_client_get_connection_for_cid(uint16_t connection_cid){
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it,  &txps_connections);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        txps_client_connection_t * connection = (txps_client_connection_t *)btstack_linked_list_iterator_next(&it);
+        if (gatt_service_client_get_connection_id(&connection->basic_connection) == connection_cid) {
+            return connection;
+        }
+    }
+    return NULL;
+}
+
+static void txps_client_add_connection(txps_client_connection_t * connection){
+    btstack_linked_list_add(&txps_connections, (btstack_linked_item_t*) connection);
+}
+
+static void txps_client_finalize_connection(txps_client_connection_t * connection){
+    btstack_linked_list_remove(&txps_connections, (btstack_linked_item_t*) connection);
+}
+
 
 static void txps_client_replace_subevent_id_and_emit(btstack_packet_handler_t callback, uint8_t * packet, uint16_t size, uint8_t subevent_id){
     UNUSED(size);
@@ -299,11 +322,16 @@ uint8_t tx_power_service_client_connect(hci_con_handle_t con_handle,
     btstack_assert(txps_characteristics_num == TX_POWER_SERVICE_CLIENT_NUM_CHARACTERISTICS);
 
     txps_connection->state = TX_POWER_SERVICE_CLIENT_STATE_W4_CONNECTION;
-    return gatt_service_client_connect_primary_service(con_handle,
+    uint8_t status = gatt_service_client_connect_primary_service(con_handle,
                                                        &txps_client, &txps_connection->basic_connection,
                                                        ORG_BLUETOOTH_SERVICE_TX_POWER, 0,
                                                        txps_storage_for_characteristics, txps_characteristics_num,
                                                        packet_handler, txps_cid);
+    if (status == ERROR_CODE_SUCCESS){
+        txps_client_add_connection(txps_connection);
+    }
+
+    return status;
 }
 
 uint8_t tx_power_service_client_read_tx_power_level(uint16_t txps_cid){
