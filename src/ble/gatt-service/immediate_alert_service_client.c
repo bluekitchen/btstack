@@ -56,6 +56,7 @@
 
 // IAS Client
 static gatt_service_client_t ias_client;
+static btstack_linked_list_t ias_connections;
 
 static btstack_context_callback_registration_t ias_client_handle_can_send_now;
 
@@ -78,6 +79,26 @@ static char * ias_client_characteristic_name[] = {
     "RFU"
 };
 #endif
+
+static ias_client_connection_t * ias_client_get_connection_for_cid(uint16_t connection_cid){
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it,  &ias_connections);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        ias_client_connection_t * connection = (ias_client_connection_t *)btstack_linked_list_iterator_next(&it);
+        if (gatt_service_client_get_connection_id(&connection->basic_connection) == connection_cid) {
+            return connection;
+        }
+    }
+    return NULL;
+}
+
+static void ias_client_add_connection(ias_client_connection_t * connection){
+    btstack_linked_list_add(&ias_connections, (btstack_linked_item_t*) connection);
+}
+
+static void ias_client_finalize_connection(ias_client_connection_t * connection){
+    btstack_linked_list_remove(&ias_connections, (btstack_linked_item_t*) connection);
+}
 
 static void ias_client_replace_subevent_id_and_emit(btstack_packet_handler_t callback, uint8_t * packet, uint16_t size, uint8_t subevent_id){
     UNUSED(size);
@@ -236,11 +257,17 @@ uint8_t immediate_alert_service_client_connect(hci_con_handle_t con_handle,
     btstack_assert(ias_characteristics_num == IMMEDIATE_ALERT_SERVICE_CLIENT_NUM_CHARACTERISTICS);
 
     ias_connection->state = IMMEDIATE_ALERT_SERVICE_CLIENT_STATE_W4_CONNECTION;
-    return gatt_service_client_connect_primary_service(con_handle,
+    uint8_t status = gatt_service_client_connect_primary_service(con_handle,
                                                        &ias_client, &ias_connection->basic_connection,
                                                        ORG_BLUETOOTH_SERVICE_IMMEDIATE_ALERT, 0,
                                                        ias_storage_for_characteristics, ias_characteristics_num,
                                                        packet_handler, ias_cid);
+
+    if (status == ERROR_CODE_SUCCESS){
+        ias_client_add_connection(ias_connection);
+    }
+
+    return status;
 }
 
 uint8_t immediate_alert_service_client_write_alert_level(uint16_t ias_cid, ias_alert_level_t alert_level){
