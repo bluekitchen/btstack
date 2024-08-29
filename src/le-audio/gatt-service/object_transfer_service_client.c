@@ -528,12 +528,12 @@ static void ots_client_emit_read_event(gatt_service_client_connection_t * connec
     }
 }
 
-static void ots_client_emit_notify_event(gatt_service_client_connection_t * connection_helper, uint16_t value_handle, uint8_t att_status, const uint8_t * data, uint16_t data_size){
-    uint16_t characteristic_uuid16 = gatt_service_client_characteristic_uuid16_for_value_handle(&ots_client,
-                                                                                                connection_helper,
-                                                                                                value_handle);
+static void ots_client_emit_notify_event(ots_client_connection_t * connection, uint16_t value_handle, uint8_t att_status, const uint8_t * data, uint16_t data_size){
+
+    uint16_t characteristic_index = gatt_service_client_characteristic_index_for_value_handle(&connection->basic_connection, value_handle);
+    uint16_t characteristic_uuid16 = gatt_service_client_characteristic_uuid16_for_index(&ots_client,characteristic_index);
+
     uint8_t  emit_bytes[2 + OTS_OBJECT_ID_LEN];
-    ots_client_connection_t * connection;
 
     uint8_t pos = 0;
 
@@ -546,24 +546,23 @@ static void ots_client_emit_notify_event(gatt_service_client_connection_t * conn
                     emit_bytes[pos++] = OTS_OBJECT_ID_LEN;
                     reverse_bytes(&data[1], emit_bytes + pos, OTS_OBJECT_ID_LEN);
                     pos += OTS_OBJECT_ID_LEN;
-                    ots_client_emit_uint8_array(connection_helper, LEAUDIO_SUBEVENT_OTS_CLIENT_OBJECT_CHANGED, emit_bytes, pos, att_status);
+                    ots_client_emit_uint8_array(&connection->basic_connection, LEAUDIO_SUBEVENT_OTS_CLIENT_OBJECT_CHANGED, emit_bytes, pos, att_status);
                 }
             }
             break;
 
         case ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_ACTION_CONTROL_POINT:
             if (data_size < 3) {
-                ots_client_emit_uint8_array(connection_helper, LEAUDIO_SUBEVENT_OTS_CLIENT_OACP_RESPONSE, emit_bytes, 0, ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH);
+                ots_client_emit_uint8_array(&connection->basic_connection, LEAUDIO_SUBEVENT_OTS_CLIENT_OACP_RESPONSE, emit_bytes, 0, ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH);
                 break;
             }
             if ((oacp_opcode_t)data[0] != OACP_OPCODE_RESPONSE_CODE) {
                 break;
             }
             if (att_status != ATT_ERROR_SUCCESS){
-                ots_client_emit_uint8_array(connection_helper, LEAUDIO_SUBEVENT_OTS_CLIENT_OACP_RESPONSE, emit_bytes, 2, att_status);
+                ots_client_emit_uint8_array(&connection->basic_connection, LEAUDIO_SUBEVENT_OTS_CLIENT_OACP_RESPONSE, emit_bytes, 2, att_status);
             }
 
-            connection = (ots_client_connection_t *)connection_helper;
             // opcode
             emit_bytes[pos++] = data[1];
             // response code
@@ -598,12 +597,12 @@ static void ots_client_emit_notify_event(gatt_service_client_connection_t * conn
                 }
             }
 
-            ots_client_emit_uint8_array(connection_helper, LEAUDIO_SUBEVENT_OTS_CLIENT_OACP_RESPONSE, emit_bytes, 2, att_status);
+            ots_client_emit_uint8_array(&connection->basic_connection, LEAUDIO_SUBEVENT_OTS_CLIENT_OACP_RESPONSE, emit_bytes, 2, att_status);
             break;
         
         case ORG_BLUETOOTH_CHARACTERISTIC_OBJECT_LIST_CONTROL_POINT:
             if (data_size < 3) {
-                ots_client_emit_uint8_array(connection_helper, LEAUDIO_SUBEVENT_OTS_CLIENT_OLCP_RESPONSE, emit_bytes, 0, ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH);
+                ots_client_emit_uint8_array(&connection->basic_connection, LEAUDIO_SUBEVENT_OTS_CLIENT_OLCP_RESPONSE, emit_bytes, 0, ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH);
                 break;
             }
             if ((olcp_opcode_t)data[0] != OLCP_OPCODE_RESPONSE_CODE) {
@@ -616,12 +615,12 @@ static void ots_client_emit_notify_event(gatt_service_client_connection_t * conn
             emit_bytes[1] = data[2];
             if ((olcp_opcode_t)data[0] == OLCP_OPCODE_REQUEST_NUMBER_OF_OBJECTS){
                 if (data_size != 7){
-                    ots_client_emit_uint8_array(connection_helper, LEAUDIO_SUBEVENT_OTS_CLIENT_OLCP_RESPONSE, emit_bytes, 0, ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH);
+                    ots_client_emit_uint8_array(&connection->basic_connection, LEAUDIO_SUBEVENT_OTS_CLIENT_OLCP_RESPONSE, emit_bytes, 0, ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH);
                     break;
                 }
                 reverse_bytes(data + 3, emit_bytes + 2, data_size - 3);
             }
-            ots_client_emit_uint8_array(connection_helper, LEAUDIO_SUBEVENT_OTS_CLIENT_OLCP_RESPONSE, emit_bytes, data_size-1, att_status);
+            ots_client_emit_uint8_array(&connection->basic_connection, LEAUDIO_SUBEVENT_OTS_CLIENT_OLCP_RESPONSE, emit_bytes, data_size - 1, att_status);
             break;
 
         default:
@@ -748,7 +747,7 @@ static void ots_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
             connection = ots_client_get_connection_for_cid(connection_id);
             btstack_assert(connection != NULL);
 
-            ots_client_emit_notify_event(&connection->basic_connection, gatt_event_notification_get_value_handle(packet), ATT_ERROR_SUCCESS,
+            ots_client_emit_notify_event(connection, gatt_event_notification_get_value_handle(packet), ATT_ERROR_SUCCESS,
                                          gatt_event_notification_get_value(packet), gatt_event_notification_get_value_length(packet));
             break;
 
@@ -757,7 +756,7 @@ static void ots_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
             connection = ots_client_get_connection_for_cid(connection_id);
             btstack_assert(connection != NULL);
 
-            ots_client_emit_notify_event(&connection->basic_connection, gatt_event_indication_get_value_handle(packet), ATT_ERROR_SUCCESS,
+            ots_client_emit_notify_event(connection, gatt_event_indication_get_value_handle(packet), ATT_ERROR_SUCCESS,
                                          gatt_event_indication_get_value(packet), gatt_event_indication_get_value_length(packet));
             break;
 
