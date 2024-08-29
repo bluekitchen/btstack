@@ -358,6 +358,10 @@ static map_object_type_t map_server_parse_object_type(map_server_t* mas, const c
         RUN_AND_LOG_ACTION(return MAP_OBJECT_TYPE_PUT_OWNER_STATUS;)
     }
 
+    if (mas->OBEX_opcode == (OBEX_OPCODE_PUT | OBEX_OPCODE_FINAL_BIT_MASK)) {
+        RUN_AND_LOG_ACTION(return MAP_OBJECT_TYPE_PUT_EMPTY;)
+    }
+
     return MAP_OBJECT_TYPE_UNKNOWN;
 }
 
@@ -752,9 +756,14 @@ static void map_server_handle_get_or_put_request(map_server_t* mas) {
     switch (mas->request.object_type) {
     case MAP_OBJECT_TYPE_UNKNOWN:
     case MAP_OBJECT_TYPE_INVALID:
-        // MAP_OBJECT_TYPE_INVALID
         mas->state = MAS_STATE_SEND_INTERNAL_RESPONSE;
         RUN_AND_LOG_ACTION(mas->response.code = OBEX_RESP_BAD_REQUEST;)
+        goep_server_request_can_send_now(mas->goep_cid);
+        return;
+
+    case MAP_OBJECT_TYPE_PUT_EMPTY:
+        mas->state = MAS_STATE_SEND_INTERNAL_RESPONSE;
+        RUN_AND_LOG_ACTION(mas->response.code = OBEX_RESP_NOT_FOUND;)
         goep_server_request_can_send_now(mas->goep_cid);
         return;
 
