@@ -231,18 +231,6 @@ btstack_packet_handler_t gatt_service_client_get_packet_handler(const gatt_servi
 uint16_t gatt_service_client_get_mtu(const gatt_service_client_t * client, const gatt_service_client_connection_t * connection);
 
 /**
- * @brief Get Characteristic UUID16 for value handle
- *
- * Used to handle incoming characteristic indications/notifications
- *
- * @param client
- * @param connection
- * @param value_handle
- * @return
- */
-uint16_t gatt_service_client_characteristic_uuid16_for_value_handle(const gatt_service_client_t * client, gatt_service_client_connection_t * connection, uint16_t value_handle);
-
-/**
  * @brief Get Characteristic UUID16 for given Characteristic index
  *
  * @param client
