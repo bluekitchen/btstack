@@ -750,6 +750,7 @@ static void map_server_handle_get_or_put_request(map_server_t* mas) {
     mas_folder_t folder = mas->map_server_dir;
     //uint16_t name_len = (uint16_t)strlen(mas->request.name);
     switch (mas->request.object_type) {
+    case MAP_OBJECT_TYPE_UNKNOWN:
     case MAP_OBJECT_TYPE_INVALID:
         // MAP_OBJECT_TYPE_INVALID
         mas->state = MAS_STATE_SEND_INTERNAL_RESPONSE;
