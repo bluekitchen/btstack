@@ -57,6 +57,7 @@
 
 // MSC Client
 static gatt_service_client_t mics_client;
+static btstack_linked_list_t mics_connections;
 
 static void mics_client_packet_handler_internal(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static void mics_client_handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
@@ -78,6 +79,28 @@ static char * mics_client_characteristic_name[] = {
     "RFU"
 };
 #endif
+
+
+static mics_client_connection_t * mics_client_get_connection_for_cid(uint16_t connection_cid){
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it,  &mics_connections);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        mics_client_connection_t * connection = (mics_client_connection_t *)btstack_linked_list_iterator_next(&it);
+        if (gatt_service_client_get_connection_id(&connection->basic_connection) == connection_cid) {
+            return connection;
+        }
+    }
+    return NULL;
+}
+
+static void mics_client_add_connection(mics_client_connection_t * connection){
+    btstack_linked_list_add(&mics_connections, (btstack_linked_item_t*) connection);
+}
+
+static void mics_client_finalize_connection(mics_client_connection_t * connection){
+    btstack_linked_list_remove(&mics_connections, (btstack_linked_item_t*) connection);
+}
+
 
 static void mics_client_replace_subevent_id_and_emit(btstack_packet_handler_t callback, uint8_t * packet, uint16_t size, uint8_t subevent_id){
     UNUSED(size);
@@ -103,14 +126,6 @@ static void mics_client_emit_connection_established(const gatt_service_client_co
     event[pos++] = num_included_clients; // num included services
     event[pos++] = status;
     (*connection_helper->event_callback)(HCI_EVENT_PACKET, 0, event, pos);
-}
-
-static void mics_client_finalize_connection(mics_client_connection_t * connection){
-    // already finalized by GATT CLIENT HELPER
-    if (connection == NULL){
-        return;
-    }
-    gatt_service_client_finalize_connection(&mics_client, &connection->basic_connection);
 }
 
 static void mics_client_connected(mics_client_connection_t *connection, uint8_t status) {
@@ -613,11 +628,16 @@ uint8_t microphone_control_service_client_connect(hci_con_handle_t con_handle,
     }
     mics_connection->state = MICROPHONE_CONTROL_SERVICE_CLIENT_STATE_W4_CONNECTION;
     mics_connection->aics_events_packet_handler = packet_handler;
-    return gatt_service_client_connect_primary_service(con_handle,
+    uint8_t status = gatt_service_client_connect_primary_service(con_handle,
                                                        &mics_client, &mics_connection->basic_connection,
                                                        ORG_BLUETOOTH_SERVICE_MICROPHONE_CONTROL, 0,
                                                        mics_storage_for_characteristics, mics_characteristics_num,
                                                        packet_handler, mics_cid);
+    if (status == ERROR_CODE_SUCCESS){
+        mics_client_add_connection(mics_connection);
+    }
+
+    return status;
 }
 
 /**
