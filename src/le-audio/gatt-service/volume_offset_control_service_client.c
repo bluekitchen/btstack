@@ -261,15 +261,14 @@ static void vocs_client_emit_read_event(gatt_service_client_connection_t * conne
     }
 }
 
-static void vocs_client_emit_notify_event(gatt_service_client_connection_t * connection_helper, uint16_t value_handle, uint8_t att_status, const uint8_t * data, uint16_t data_size){
+static void vocs_client_emit_notify_event(vocs_client_connection_t * connection, uint16_t value_handle, uint8_t att_status, const uint8_t * data, uint16_t data_size){
     uint8_t subevent_id;
     uint16_t expected_data_size;
     uint8_t null_data[4];
     memset(null_data, 0, sizeof(null_data));
 
-    uint16_t characteristic_uuid16 = gatt_service_client_characteristic_uuid16_for_value_handle(&vocs_client,
-                                                                                                connection_helper,
-                                                                                                value_handle);
+    uint16_t characteristic_index = gatt_service_client_characteristic_index_for_value_handle(&connection->basic_connection, value_handle);
+    uint16_t characteristic_uuid16 = gatt_service_client_characteristic_uuid16_for_index(&vocs_client,characteristic_index);
 
     switch (characteristic_uuid16){
         case ORG_BLUETOOTH_CHARACTERISTIC_OFFSET_STATE:
@@ -277,7 +276,7 @@ static void vocs_client_emit_notify_event(gatt_service_client_connection_t * con
             expected_data_size = 3;
             // UPDATE change_counter
             if (data_size == expected_data_size){
-                ((vocs_client_connection_t *)connection_helper)->change_counter = data[2];
+                connection->change_counter = data[2];
             }
             break;
         
@@ -289,7 +288,7 @@ static void vocs_client_emit_notify_event(gatt_service_client_connection_t * con
         case ORG_BLUETOOTH_CHARACTERISTIC_AUDIO_OUTPUT_DESCRIPTION:
             subevent_id = LEAUDIO_SUBEVENT_VOCS_CLIENT_AUDIO_OUTPUT_DESCRIPTION;
             if (att_status == ATT_ERROR_SUCCESS){
-                vocs_client_emit_string_value(connection_helper, subevent_id, data, data_size, att_status);
+                vocs_client_emit_string_value(&connection->basic_connection, subevent_id, data, data_size, att_status);
                 return;
             }
             break;
@@ -300,13 +299,13 @@ static void vocs_client_emit_notify_event(gatt_service_client_connection_t * con
     }
 
     if (att_status != ATT_ERROR_SUCCESS){
-        vocs_client_emit_uint8_array(connection_helper,subevent_id, null_data, 0, att_status);
+        vocs_client_emit_uint8_array(&connection->basic_connection, subevent_id, null_data, 0, att_status);
         return;
     }
     if (data_size != expected_data_size){
-        vocs_client_emit_uint8_array(connection_helper,subevent_id, null_data, 0, ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH);
+        vocs_client_emit_uint8_array(&connection->basic_connection, subevent_id, null_data, 0, ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH);
     } else {
-        vocs_client_emit_uint8_array(connection_helper,subevent_id, data, expected_data_size, ERROR_CODE_SUCCESS);
+        vocs_client_emit_uint8_array(&connection->basic_connection, subevent_id, data, expected_data_size, ERROR_CODE_SUCCESS);
     }
 }
 
@@ -440,7 +439,7 @@ static void vocs_client_packet_handler_internal(uint8_t packet_type, uint16_t ch
             connection = vocs_client_get_connection_for_cid(connection_id);
             btstack_assert(connection != NULL);
 
-            vocs_client_emit_notify_event(&connection->basic_connection, gatt_event_notification_get_value_handle(packet), ATT_ERROR_SUCCESS,
+            vocs_client_emit_notify_event(connection, gatt_event_notification_get_value_handle(packet), ATT_ERROR_SUCCESS,
                                           gatt_event_notification_get_value(packet), gatt_event_notification_get_value_length(packet));
             break;
         default:
