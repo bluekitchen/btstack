@@ -56,6 +56,7 @@
 
 // LLS Client
 static gatt_service_client_t lls_client;
+static btstack_linked_list_t lls_connections;
 
 static btstack_context_callback_registration_t lls_client_handle_can_send_now;
 
@@ -79,6 +80,26 @@ static char * lls_client_characteristic_name[] = {
     "RFU"
 };
 #endif
+
+static lls_client_connection_t * lls_client_get_connection_for_cid(uint16_t connection_cid){
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it,  &lls_connections);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        lls_client_connection_t * connection = (lls_client_connection_t *)btstack_linked_list_iterator_next(&it);
+        if (gatt_service_client_get_connection_id(&connection->basic_connection) == connection_cid) {
+            return connection;
+        }
+    }
+    return NULL;
+}
+
+static void lls_client_add_connection(lls_client_connection_t * connection){
+    btstack_linked_list_add(&lls_connections, (btstack_linked_item_t*) connection);
+}
+
+static void lls_client_finalize_connection(lls_client_connection_t * connection){
+    btstack_linked_list_remove(&lls_connections, (btstack_linked_item_t*) connection);
+}
 
 static void lls_client_replace_subevent_id_and_emit(btstack_packet_handler_t callback, uint8_t * packet, uint16_t size, uint8_t subevent_id){
     UNUSED(size);
@@ -233,7 +254,6 @@ static void lls_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
                     break;
 
                 case GATTSERVICE_SUBEVENT_CLIENT_DISCONNECTED:
-                    // TODO reset client
                     cid = gattservice_subevent_client_disconnected_get_cid(packet);
                     connection_helper = gatt_service_client_get_connection_for_cid(&lls_client, cid);
                     btstack_assert(connection_helper != NULL);
@@ -355,11 +375,17 @@ uint8_t link_loss_service_client_connect(hci_con_handle_t con_handle,
     btstack_assert(lls_characteristics_num == LINK_LOSS_SERVICE_CLIENT_NUM_CHARACTERISTICS);
 
     lls_connection->state = LINK_LOSS_SERVICE_CLIENT_STATE_W4_CONNECTION;
-    return gatt_service_client_connect_primary_service(con_handle,
+    uint8_t status = gatt_service_client_connect_primary_service(con_handle,
                                                        &lls_client, &lls_connection->basic_connection,
                                                        ORG_BLUETOOTH_SERVICE_LINK_LOSS, 0,
                                                        lls_storage_for_characteristics, lls_characteristics_num,
                                                        packet_handler, lls_cid);
+
+    if (status == ERROR_CODE_SUCCESS){
+        lls_client_add_connection(lls_connection);
+    }
+
+    return status;
 }
 
 uint8_t link_loss_service_client_read_alert_level(uint16_t lls_cid){
