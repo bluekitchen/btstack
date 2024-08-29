@@ -884,6 +884,7 @@ static void map_server_handle_get_or_put_request(map_server_t* mas) {
     case MAP_OBJECT_TYPE_PUT_MESSAGE:
         APP_WRITE_08(event, &pos, MAP_SUBEVENT_PUT_MESSAGE);
         APP_WRITE_16(event, &pos, mas->goep_cid);
+        APP_WRITE_08(event, &pos, mas->OBEX_opcode);
         APP_WRITE_08(event, &pos, mas->request.app_params.Charset);
         APP_WRITE_08(event, &pos, mas->request.app_params.Attachment);
         APP_WRITE_08(event, &pos, mas->request.app_params.ModifyText);

@@ -924,6 +924,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             break;
 
                         case MAP_SUBEVENT_PUT_MESSAGE: {
+                            uint8_t OBEX_opcode;
                             char request_name[32];
                             //char* obex_name_hdr_new_msg_handle = "A1A2A3A4" // crrently not used
                             uint8_t Attachment;
@@ -931,6 +932,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             uint8_t ModifyText;
                             mas_uint64hex_t MessageHandle;
                             APP_READ_16(packet, &pos, &current_map_cid);
+                            APP_READ_08(packet, &pos, &OBEX_opcode);
                             APP_READ_08(packet, &pos, &Charset);
                             APP_READ_08(packet, &pos, &Attachment);
                             APP_READ_08(packet, &pos, &ModifyText);
