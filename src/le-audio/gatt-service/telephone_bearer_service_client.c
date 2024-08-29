@@ -263,7 +263,7 @@ static uint8_t tbs_client_request_send_gatt_query(tbs_client_connection_t * conn
 }
 
 static uint8_t tbs_client_request_read_characteristic(uint16_t tbs_cid, tbs_characteristic_index_t characteristic_index){
-    tbs_client_connection_t * connection = (tbs_client_connection_t *) gatt_service_client_get_connection_for_cid(&tbs_client, tbs_cid);
+    tbs_client_connection_t * connection = tbs_client_get_connection_for_cid(tbs_cid);
     if (connection == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
@@ -286,7 +286,7 @@ static uint8_t tbs_client_request_write_characteristic_without_response(tbs_clie
 }
 
 uint8_t telephone_bearer_service_client_set_strength_reporting_interval(uint16_t tbs_cid, uint8_t reporting_interval_s){
-    tbs_client_connection_t * connection = (tbs_client_connection_t *) gatt_service_client_get_connection_for_cid(&tbs_client, tbs_cid);
+    tbs_client_connection_t * connection = tbs_client_get_connection_for_cid(tbs_cid);
     if (connection == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
@@ -302,7 +302,7 @@ uint8_t telephone_bearer_service_client_set_strength_reporting_interval(uint16_t
 }
 
 uint8_t telephone_bearer_service_client_call_accept(uint16_t tbs_cid, uint8_t call_id){
-    tbs_client_connection_t * connection = (tbs_client_connection_t *) gatt_service_client_get_connection_for_cid(&tbs_client, tbs_cid);
+    tbs_client_connection_t * connection = tbs_client_get_connection_for_cid(tbs_cid);
     if (connection == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
@@ -319,7 +319,7 @@ uint8_t telephone_bearer_service_client_call_accept(uint16_t tbs_cid, uint8_t ca
 }
 
 uint8_t telephone_bearer_service_client_call_terminate(uint16_t tbs_cid, uint8_t call_id){
-    tbs_client_connection_t * connection = (tbs_client_connection_t *) gatt_service_client_get_connection_for_cid(&tbs_client, tbs_cid);
+    tbs_client_connection_t * connection = tbs_client_get_connection_for_cid(tbs_cid);
     if (connection == NULL) {
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
@@ -336,7 +336,7 @@ uint8_t telephone_bearer_service_client_call_terminate(uint16_t tbs_cid, uint8_t
 }
 
 uint8_t telephone_bearer_service_client_call_hold(uint16_t tbs_cid, uint8_t call_id) {
-    tbs_client_connection_t *connection = (tbs_client_connection_t*) gatt_service_client_get_connection_for_cid(&tbs_client, tbs_cid);
+    tbs_client_connection_t * connection = tbs_client_get_connection_for_cid(tbs_cid);
     if (connection == NULL) {
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
@@ -353,7 +353,7 @@ uint8_t telephone_bearer_service_client_call_hold(uint16_t tbs_cid, uint8_t call
 }
 
 uint8_t telephone_bearer_service_client_call_retrieve(uint16_t tbs_cid, uint8_t call_id){
-    tbs_client_connection_t * connection = (tbs_client_connection_t *) gatt_service_client_get_connection_for_cid(&tbs_client, tbs_cid);
+    tbs_client_connection_t * connection = tbs_client_get_connection_for_cid(tbs_cid);
     if (connection == NULL) {
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
@@ -372,7 +372,7 @@ uint8_t telephone_bearer_service_client_call_retrieve(uint16_t tbs_cid, uint8_t 
 uint8_t telephone_bearer_service_client_call_originate(uint16_t tbs_cid, uint8_t call_id, const char *uri){
     UNUSED(call_id);
 
-    tbs_client_connection_t * connection = (tbs_client_connection_t *) gatt_service_client_get_connection_for_cid(&tbs_client, tbs_cid);
+    tbs_client_connection_t * connection = tbs_client_get_connection_for_cid(tbs_cid);
     if (connection == NULL) {
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
@@ -390,8 +390,7 @@ uint8_t telephone_bearer_service_client_call_originate(uint16_t tbs_cid, uint8_t
 }
 
 uint8_t telephone_bearer_service_client_call_join(uint16_t tbs_cid, const uint8_t *call_index_list, uint16_t size) {
-    tbs_client_connection_t *connection = (tbs_client_connection_t*) gatt_service_client_get_connection_for_cid(&tbs_client, tbs_cid);
-
+    tbs_client_connection_t * connection = tbs_client_get_connection_for_cid(tbs_cid);
     if (connection == NULL) {
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
@@ -473,7 +472,6 @@ static void tbs_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
     UNUSED(size);
 
     if (packet_type != HCI_EVENT_PACKET) return;
-    gatt_service_client_connection_t * connection_helper;
     tbs_client_connection_t * connection;
     uint16_t connection_id;
     uint8_t status;
@@ -482,9 +480,9 @@ static void tbs_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
         case HCI_EVENT_GATTSERVICE_META:
             switch (hci_event_gattservice_meta_get_subevent_code(packet)){
                 case GATTSERVICE_SUBEVENT_CLIENT_CONNECTED:
-                    connection_helper = gatt_service_client_get_connection_for_cid(&tbs_client, gattservice_subevent_client_connected_get_cid(packet));
-                    btstack_assert(connection_helper != NULL);
-                    connection = (tbs_client_connection_t *) connection_helper;
+                    connection_id = gattservice_subevent_client_connected_get_cid(packet);
+                    connection = tbs_client_get_connection_for_cid(connection_id);
+                    btstack_assert(connection != NULL);
 
                     status = gattservice_subevent_client_connected_get_status(packet);
                     if (status != ERROR_CODE_SUCCESS){
@@ -505,9 +503,11 @@ static void tbs_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
                     break;
 
                 case GATTSERVICE_SUBEVENT_CLIENT_DISCONNECTED:
-                    connection_helper = gatt_service_client_get_connection_for_cid(&tbs_client, gattservice_subevent_client_disconnected_get_cid(packet));
-                    btstack_assert(connection_helper != NULL);
-                    tbs_client_replace_subevent_id_and_emit(connection_helper->event_callback, packet, size, LEAUDIO_SUBEVENT_TBS_CLIENT_DISCONNECTED);
+                    connection_id = gattservice_subevent_client_disconnected_get_cid(packet);
+                    connection = tbs_client_get_connection_for_cid(connection_id);
+                    btstack_assert(connection != NULL);
+                    tbs_client_finalize_connection(connection);
+                    tbs_client_replace_subevent_id_and_emit(gatt_service_client_get_packet_handler(&connection->basic_connection), packet, size, LEAUDIO_SUBEVENT_TBS_CLIENT_DISCONNECTED);
                     break;
 
                 default:
@@ -517,10 +517,10 @@ static void tbs_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
 
         case GATT_EVENT_NOTIFICATION:
             connection_id = gatt_event_notification_get_connection_id(packet);
-            connection_helper = gatt_service_client_get_connection_for_cid(&tbs_client, connection_id);
-            btstack_assert(connection_helper != NULL);
+            connection = tbs_client_get_connection_for_cid(connection_id);
+            btstack_assert(connection != NULL);
 
-            tbs_client_emit_notify_event(connection_helper, gatt_event_notification_get_value_handle(packet), ATT_ERROR_SUCCESS,
+            tbs_client_emit_notify_event(&connection->basic_connection, gatt_event_notification_get_value_handle(packet), ATT_ERROR_SUCCESS,
                                          gatt_event_notification_get_value(packet), gatt_event_notification_get_value_length(packet));
             break;
         default:
@@ -540,8 +540,7 @@ static void tbs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t ch
     switch(hci_event_packet_get_type(packet)){
         case GATT_EVENT_CHARACTERISTIC_VALUE_QUERY_RESULT:
             connection_id = gatt_event_characteristic_value_query_result_get_connection_id(packet);
-            connection_helper = gatt_service_client_get_connection_for_cid(&tbs_client, connection_id);
-            connection = (tbs_client_connection_t *)connection_helper;
+            connection = tbs_client_get_connection_for_cid(connection_id);
             btstack_assert(connection != NULL);
             switch (connection->state){
                 case TELEPHONE_BEARER_SERVICE_CLIENT_STATE_W4_READ_CHARACTERISTIC_VALUE_RESULT:
@@ -559,8 +558,7 @@ static void tbs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t ch
 
         case GATT_EVENT_QUERY_COMPLETE:
             connection_id = (hci_con_handle_t)gatt_event_query_complete_get_connection_id(packet);
-            connection_helper = gatt_service_client_get_connection_for_cid(&tbs_client, connection_id);
-            connection = (tbs_client_connection_t *)connection_helper;
+            connection = tbs_client_get_connection_for_cid(connection_id);
             btstack_assert(connection != NULL);
 
             switch (connection->state){
@@ -680,7 +678,7 @@ uint8_t telephone_generic_bearer_service_client_connect(
 
 
 uint8_t telephone_bearer_service_client_disconnect(uint16_t tbs_cid){
-    tbs_client_connection_t * connection = (tbs_client_connection_t *) gatt_service_client_get_connection_for_cid(&tbs_client, tbs_cid);
+    tbs_client_connection_t * connection = tbs_client_get_connection_for_cid(tbs_cid);
     if (connection == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
