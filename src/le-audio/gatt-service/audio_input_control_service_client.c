@@ -125,16 +125,6 @@ static uint16_t aics_client_value_handle_for_index(aics_client_connection_t * co
     return connection->basic_connection.characteristics[connection->characteristic_index].value_handle;
 }
 
-static uint16_t gatt_service_client_characteristic_value_handle2uuid16(aics_client_connection_t * connection, uint16_t value_handle) {
-    int i;
-    for (i = 0; i < connection->basic_connection.characteristics_num; i++){
-        if (connection->basic_connection.characteristics[i].value_handle == value_handle) {
-            return gatt_service_client_characteristic_uuid16_for_index(&aics_client, i);
-        }
-    }
-    return 0;
-}
-
 static void aics_client_emit_string_value(gatt_service_client_connection_t *connection_helper, uint8_t subevent,
                                           const uint8_t *data, uint8_t att_status) {
     btstack_assert(connection_helper != NULL);
@@ -290,7 +280,9 @@ static void aics_client_emit_notify_event(aics_client_connection_t * connection,
     uint8_t null_data[4];
     memset(null_data, 0, sizeof(null_data));
 
-    uint16_t characteristic_uuid16 = gatt_service_client_characteristic_value_handle2uuid16((aics_client_connection_t *) &connection->basic_connection, value_handle);
+    uint16_t characteristic_index = gatt_service_client_characteristic_index_for_value_handle(&connection->basic_connection, value_handle);
+    uint16_t characteristic_uuid16 = gatt_service_client_characteristic_uuid16_for_index(&aics_client, characteristic_index);
+
     switch (characteristic_uuid16){
         case ORG_BLUETOOTH_CHARACTERISTIC_AUDIO_INPUT_DESCRIPTION:
             aics_client_emit_string_value(&connection->basic_connection, LEAUDIO_SUBEVENT_AICS_CLIENT_AUDIO_DESCRIPTION, NULL,
