@@ -184,7 +184,7 @@ static uint8_t txps_client_request_send_gatt_query(txps_client_connection_t * co
 }
 
 static uint8_t txps_client_request_read_characteristic(uint16_t cid, txps_client_characteristic_index_t characteristic_index){
-    txps_client_connection_t * connection = (txps_client_connection_t *) gatt_service_client_get_connection_for_cid(&txps_client, cid);
+    txps_client_connection_t * connection = txps_client_get_connection_for_cid(cid);
     if (connection == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
@@ -202,7 +202,7 @@ static void txps_client_packet_handler_internal(uint8_t packet_type, uint16_t ch
     UNUSED(size);
 
     if (packet_type != HCI_EVENT_PACKET) return;
-    gatt_service_client_connection_t * connection_helper;
+    txps_client_connection_t * connection;
     uint16_t cid;
     uint8_t status;
 
@@ -211,8 +211,8 @@ static void txps_client_packet_handler_internal(uint8_t packet_type, uint16_t ch
             switch (hci_event_gattservice_meta_get_subevent_code(packet)) {
                 case GATTSERVICE_SUBEVENT_CLIENT_CONNECTED:
                     cid = gattservice_subevent_client_connected_get_cid(packet);
-                    connection_helper = gatt_service_client_get_connection_for_cid(&txps_client, cid);
-                    btstack_assert(connection_helper != NULL);
+                    connection = txps_client_get_connection_for_cid(cid);
+                    btstack_assert(connection != NULL);
 
 #ifdef ENABLE_TESTING_SUPPORT
                     {
@@ -225,15 +225,16 @@ static void txps_client_packet_handler_internal(uint8_t packet_type, uint16_t ch
                     };
 #endif
                     status = gattservice_subevent_client_connected_get_status(packet);
-                    txps_client_connected((txps_client_connection_t *) connection_helper, status, packet, size);
+                    txps_client_connected(connection, status, packet, size);
                     break;
 
                 case GATTSERVICE_SUBEVENT_CLIENT_DISCONNECTED:
                     // TODO reset client
                     cid = gattservice_subevent_client_disconnected_get_cid(packet);
-                    connection_helper = gatt_service_client_get_connection_for_cid(&txps_client, cid);
-                    btstack_assert(connection_helper != NULL);
-                    txps_client_replace_subevent_id_and_emit(connection_helper->event_callback, packet, size,
+                    connection = txps_client_get_connection_for_cid(cid);
+                    btstack_assert(connection != NULL);
+                    txps_client_finalize_connection(connection);
+                    txps_client_replace_subevent_id_and_emit(gatt_service_client_get_packet_handler(&connection->basic_connection), packet, size,
                                                             GATTSERVICE_SUBEVENT_TXPS_CLIENT_DISCONNECTED);
                     break;
 
@@ -258,7 +259,7 @@ static void txps_client_handle_gatt_client_event(uint8_t packet_type, uint16_t c
     switch(hci_event_packet_get_type(packet)){
         case GATT_EVENT_CHARACTERISTIC_VALUE_QUERY_RESULT:
             connection_id = gatt_event_characteristic_value_query_result_get_connection_id(packet);
-            connection = (txps_client_connection_t *)gatt_service_client_get_connection_for_cid(&txps_client, connection_id);
+            connection = txps_client_get_connection_for_cid(connection_id);
             btstack_assert(connection != NULL);                
 
             txps_client_emit_read_event(connection, connection->characteristic_index, ATT_ERROR_SUCCESS, 
@@ -270,7 +271,7 @@ static void txps_client_handle_gatt_client_event(uint8_t packet_type, uint16_t c
 
         case GATT_EVENT_QUERY_COMPLETE:
             connection_id = gatt_event_query_complete_get_connection_id(packet);
-            connection = (txps_client_connection_t *)gatt_service_client_get_connection_for_cid(&txps_client, connection_id);
+            connection = txps_client_get_connection_for_cid(connection_id);
             btstack_assert(connection != NULL);
 
             connection->state = TX_POWER_SERVICE_CLIENT_STATE_READY;
@@ -283,7 +284,7 @@ static void txps_client_handle_gatt_client_event(uint8_t packet_type, uint16_t c
 
 static void txps_client_run_for_connection(void * context){
     uint16_t connection_id = (hci_con_handle_t)(uintptr_t)context;
-    txps_client_connection_t * connection = (txps_client_connection_t *)gatt_service_client_get_connection_for_cid(&txps_client, connection_id);
+    txps_client_connection_t * connection = txps_client_get_connection_for_cid(connection_id);
 
     btstack_assert(connection != NULL);
 
