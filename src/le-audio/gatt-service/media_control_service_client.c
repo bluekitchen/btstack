@@ -61,6 +61,7 @@
 
 // MSC Client
 static gatt_service_client_t mcs_client;
+static btstack_linked_list_t mcs_connections;
 static btstack_context_callback_registration_t mcs_client_handle_can_send_now;
 
 static void mcs_client_packet_handler_internal(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
@@ -145,6 +146,38 @@ static char * mcs_client_characteristic_name[] = {
     "RFU"
 };
 #endif
+
+static mcs_client_connection_t * mcs_client_get_connection_for_cid(uint16_t connection_cid){
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it,  &mcs_connections);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        mcs_client_connection_t * connection = (mcs_client_connection_t *)btstack_linked_list_iterator_next(&it);
+        if (gatt_service_client_get_connection_id(&connection->basic_connection) == connection_cid) {
+            return connection;
+        }
+    }
+    return NULL;
+}
+
+static mcs_client_connection_t * mcs_client_get_connection_for_ots_cid(uint16_t ots_cid){
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it,  &mcs_connections);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        mcs_client_connection_t * connection = (mcs_client_connection_t *)btstack_linked_list_iterator_next(&it);
+        if (gatt_service_client_get_connection_id(&connection->ots_connection.basic_connection) == ots_cid) {
+            return connection;
+        }
+    }
+    return NULL;
+}
+
+static void mcs_client_add_connection(mcs_client_connection_t * connection){
+    btstack_linked_list_add(&mcs_connections, (btstack_linked_item_t*) connection);
+}
+
+static void mcs_client_finalize_connection(mcs_client_connection_t * connection){
+    btstack_linked_list_remove(&mcs_connections, (btstack_linked_item_t*) connection);
+}
 
 static void mcs_client_replace_subevent_id_and_emit(btstack_packet_handler_t callback, uint8_t * packet, uint16_t size, uint8_t subevent_id){
     UNUSED(size);
@@ -283,14 +316,6 @@ static void mcs_client_emit_connection_established(const gatt_service_client_con
     event[pos++] = num_included_clients; // num included services
     event[pos++] = status;
     (*connection_helper->event_callback)(HCI_EVENT_PACKET, 0, event, pos);
-}
-
-static void mcs_client_finalize_connection(mcs_client_connection_t * connection){
-    // already finalized by GATT CLIENT HELPER
-    if (connection == NULL){
-        return;
-    }
-    gatt_service_client_finalize_connection(&mcs_client, &connection->basic_connection);
 }
 
 static void mcs_client_connected(mcs_client_connection_t *connection, uint8_t status) {
@@ -745,11 +770,17 @@ uint8_t media_control_service_client_connect_generic_player(hci_con_handle_t con
     btstack_assert(mcs_client.characteristics_desc16_num > 0);
     
     connection->state = MEDIA_CONTROL_SERVICE_CLIENT_STATE_W4_CONNECTION;
-    return gatt_service_client_connect_primary_service(con_handle,
+    uint8_t status = gatt_service_client_connect_primary_service(con_handle,
                                                        &mcs_client, &connection->basic_connection,
                                                        ORG_BLUETOOTH_SERVICE_GENERIC_MEDIA_CONTROL_SERVICE, 0,
                                                        characteristics, characteristics_num, packet_handler,
                                                        mcs_cid);
+
+    if (status == ERROR_CODE_SUCCESS){
+        mcs_client_add_connection(connection);
+    }
+
+    return status;
 }
 
 uint8_t media_control_service_client_connect_media_player(hci_con_handle_t con_handle,
@@ -761,11 +792,17 @@ uint8_t media_control_service_client_connect_media_player(hci_con_handle_t con_h
     btstack_assert(mcs_client.characteristics_desc16_num > 0);
     
     connection->state = MEDIA_CONTROL_SERVICE_CLIENT_STATE_W4_CONNECTION;
-    return gatt_service_client_connect_primary_service(con_handle,
+    uint8_t status = gatt_service_client_connect_primary_service(con_handle,
                                                        &mcs_client, &connection->basic_connection,
                                                        ORG_BLUETOOTH_SERVICE_MEDIA_CONTROL_SERVICE, service_index,
                                                        characteristics, characteristics_num, packet_handler,
                                                        mcs_cid);
+
+    if (status == ERROR_CODE_SUCCESS){
+        mcs_client_add_connection(connection);
+    }
+
+    return status;
 }
 
 static uint8_t mcs_client_can_query_characteristic(mcs_client_connection_t * connection, mcs_client_characteristic_index_t characteristic_index){
