@@ -64,10 +64,33 @@
 #include "btstack_event.h"
 
 static gatt_service_client_t tbs_client;
+static btstack_linked_list_t tbs_connections;
 
 static void tbs_client_packet_handler_internal(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static void tbs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static void tbs_client_run_for_connection(void * context);
+
+
+static tbs_client_connection_t * tbs_client_get_connection_for_cid(uint16_t connection_cid){
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it,  &tbs_connections);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        tbs_client_connection_t * connection = (tbs_client_connection_t *)btstack_linked_list_iterator_next(&it);
+        if (gatt_service_client_get_connection_id(&connection->basic_connection) == connection_cid) {
+            return connection;
+        }
+    }
+    return NULL;
+}
+
+static void tbs_client_add_connection(tbs_client_connection_t * connection){
+    btstack_linked_list_add(&tbs_connections, (btstack_linked_item_t*) connection);
+}
+
+static void tbs_client_finalize_connection(tbs_client_connection_t * connection){
+    btstack_linked_list_remove(&tbs_connections, (btstack_linked_item_t*) connection);
+}
+
 
 static uint16_t tbs_client_value_handle_for_index(tbs_client_connection_t * connection){
     return connection->basic_connection.characteristics[connection->characteristic_index].value_handle;
@@ -89,14 +112,6 @@ static void tbs_client_emit_connection_established(gatt_service_client_connectio
     event[pos++] = 0; // num included services
     event[pos++] = status;
     (*connection_helper->event_callback)(HCI_EVENT_PACKET, 0, event, pos);
-}
-
-static void tbs_client_finalize_connection(tbs_client_connection_t * connection){
-    // already finalized by GATT CLIENT HELPER
-    if (connection == NULL){
-        return;
-    }
-    gatt_service_client_finalize_connection(&tbs_client, &connection->basic_connection);
 }
 
 static void tbs_client_connected(tbs_client_connection_t * connection, uint8_t status) {
@@ -624,11 +639,16 @@ uint8_t telephone_bearer_service_client_connect(
     connection->gatt_query_can_send_now.context = (void *)connection;
 
     connection->state = TELEPHONE_BEARER_SERVICE_CLIENT_STATE_W4_CONNECTED;
-    return gatt_service_client_connect_primary_service(con_handle,
+    uint8_t status = gatt_service_client_connect_primary_service(con_handle,
                                                        &tbs_client, &connection->basic_connection,
                                                        ORG_BLUETOOTH_SERVICE_TELEPHONE_BEARER_SERVICE, service_index,
                                                        connection->characteristics_storage, TBS_CHARACTERISTICS_NUM,
                                                        packet_handler, tbs_cid);
+    if (status == ERROR_CODE_SUCCESS){
+        tbs_client_add_connection(connection);
+    }
+
+    return status;
 }
 
 uint8_t telephone_generic_bearer_service_client_connect(
@@ -645,12 +665,17 @@ uint8_t telephone_generic_bearer_service_client_connect(
     connection->gatt_query_can_send_now.context = (void *)connection;
 
     connection->state = TELEPHONE_BEARER_SERVICE_CLIENT_STATE_W4_CONNECTED;
-    return gatt_service_client_connect_primary_service(con_handle,
+    uint8_t status =  gatt_service_client_connect_primary_service(con_handle,
                                                        &tbs_client, &connection->basic_connection,
                                                        ORG_BLUETOOTH_SERVICE_GENERIC_TELEPHONE_BEARER_SERVICE,
                                                        service_index,
                                                        connection->characteristics_storage, TBS_CHARACTERISTICS_NUM,
                                                        packet_handler, tbs_cid);
+    if (status == ERROR_CODE_SUCCESS){
+        tbs_client_add_connection(connection);
+    }
+
+    return status;
 }
 
 

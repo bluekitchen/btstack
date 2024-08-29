@@ -69,6 +69,8 @@ typedef enum {
 #define TBS_CLIENT_SERIALISATION_BUFFER_SIZE 255
 
 typedef struct {
+    btstack_linked_item_t item;
+
     gatt_service_client_connection_t basic_connection;
     telephone_bearer_service_client_state_t state;
     
