@@ -98,6 +98,10 @@ typedef enum {
     SRM_ENABLED_WAIT,
 } srm_state_t;
 
+struct {
+    bool PUT_continue_as_put;
+} tweaks;
+
 static  btstack_packet_handler_t map_server_user_packet_handler;
 
 typedef struct {
@@ -778,15 +782,21 @@ static void map_server_handle_get_or_put_request(map_server_t* mas) {
     }
 #endif
 
-    case MAP_OBJECT_TYPE_PUT_MESSAGE_CONTINUE:
-        mas->state = MAS_STATE_SEND_RESPONSE_CONTINUE;
-        RUN_AND_LOG_ACTION(mas->response.code = OBEX_RESP_CONTINUE;)
-        goep_server_request_can_send_now(mas->goep_cid);
-        return;
-
     case MAP_OBJECT_TYPE_GET_MSG_LISTING:
         folder = map_server_get_folder_by_path(mas->request.name);
         break;
+
+    case MAP_OBJECT_TYPE_PUT_MESSAGE_CONTINUE:
+#ifndef MAP_PTS_BUG_TC_MAP_OLD_MAP_MSE_GOEP_SRM_BV_04_PASS
+            mas->state = MAS_STATE_SEND_RESPONSE_CONTINUE;
+            RUN_AND_LOG_ACTION(mas->response.code = OBEX_RESP_CONTINUE;)
+            goep_server_request_can_send_now(mas->goep_cid);
+            return;
+#else
+            mas->request.object_type = MAP_OBJECT_TYPE_PUT_MESSAGE;
+            // fall trough to MAP_OBJECT_TYPE_PUT_MESSAGE
+#endif
+
 
     case MAP_OBJECT_TYPE_GET_MESSAGE:
     case MAP_OBJECT_TYPE_GET_FOLDER_LISTING:
