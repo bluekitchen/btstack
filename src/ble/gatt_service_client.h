@@ -191,6 +191,38 @@ uint8_t gatt_service_client_connect_secondary_service(
 uint8_t gatt_service_client_can_query_characteristic(gatt_service_client_connection_t * connection, uint8_t characteristic_index);
 
 /**
+ * @brief Get connection id
+ * @param client
+ * @param connection
+ * @returns connection_id
+ */
+uint16_t gatt_service_client_get_connection_id(const gatt_service_client_connection_t * connection);
+
+/**
+ * @brief Get connection handle
+ * @param client
+ * @param connection
+ * @returns con_handle
+ */
+hci_con_handle_t gatt_service_client_get_con_handle(const gatt_service_client_connection_t * connection);
+
+/**
+ * @brief Get service index provided in connect call
+ * @param client
+ * @param connection
+ * @returns connection_id
+ */
+uint8_t gatt_service_client_get_service_index(const gatt_service_client_connection_t * connection);
+
+/**
+ * @brief Get packet handler provided in connect call
+ * @param client
+ * @param connection
+ * @returns connection_id
+ */
+btstack_packet_handler_t gatt_service_client_get_packet_handler(const gatt_service_client_connection_t * connection);
+
+/**
  * @brief Get remote MTU
  * @param client
  * @param connection

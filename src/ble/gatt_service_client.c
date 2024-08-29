@@ -116,6 +116,23 @@ uint16_t gatt_service_client_get_mtu(const gatt_service_client_t * client, const
     return mtu;
 }
 
+uint16_t gatt_service_client_get_connection_id(const gatt_service_client_connection_t * connection){
+    return connection->cid;
+
+}
+
+hci_con_handle_t gatt_service_client_get_con_handle(const gatt_service_client_connection_t * connection){
+    return connection->con_handle;
+}
+
+uint8_t gatt_service_client_get_service_index(const gatt_service_client_connection_t * connection){
+    return connection->service_index;
+}
+
+btstack_packet_handler_t gatt_service_client_get_packet_handler(const gatt_service_client_connection_t * connection){
+    return connection->event_callback;
+}
+
 uint16_t gatt_service_client_characteristic_uuid16_for_index(const gatt_service_client_t * client, uint8_t index){
     return client->characteristics_desc16[index];
 }
