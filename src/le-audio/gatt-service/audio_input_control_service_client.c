@@ -284,16 +284,16 @@ static void aics_client_emit_read_event(gatt_service_client_connection_t * conne
     }
 }
 
-static void aics_client_emit_notify_event(gatt_service_client_connection_t * connection_helper, uint16_t value_handle, const uint8_t * data, uint16_t data_size){
+static void aics_client_emit_notify_event(aics_client_connection_t * connection, uint16_t value_handle, const uint8_t * data, uint16_t data_size){
     uint8_t subevent_id;
     uint16_t expected_data_size;
     uint8_t null_data[4];
     memset(null_data, 0, sizeof(null_data));
 
-    uint16_t characteristic_uuid16 = gatt_service_client_characteristic_value_handle2uuid16((aics_client_connection_t *)connection_helper, value_handle);
+    uint16_t characteristic_uuid16 = gatt_service_client_characteristic_value_handle2uuid16((aics_client_connection_t *) &connection->basic_connection, value_handle);
     switch (characteristic_uuid16){
         case ORG_BLUETOOTH_CHARACTERISTIC_AUDIO_INPUT_DESCRIPTION:
-            aics_client_emit_string_value(connection_helper, LEAUDIO_SUBEVENT_AICS_CLIENT_AUDIO_DESCRIPTION, NULL,
+            aics_client_emit_string_value(&connection->basic_connection, LEAUDIO_SUBEVENT_AICS_CLIENT_AUDIO_DESCRIPTION, NULL,
                                           ATT_ERROR_SUCCESS);
             return;
 
@@ -302,7 +302,7 @@ static void aics_client_emit_notify_event(gatt_service_client_connection_t * con
             expected_data_size = 4;
             // UPDATE change_counter
             if (data_size == expected_data_size){
-                ((aics_client_connection_t *)connection_helper)->change_counter = data[3];
+                connection->change_counter = data[3];
             }
             break;
 
@@ -317,9 +317,9 @@ static void aics_client_emit_notify_event(gatt_service_client_connection_t * con
     }
 
     if (data_size != expected_data_size){
-        aics_client_emit_uint8_array(connection_helper,subevent_id, null_data, 0, ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH);
+        aics_client_emit_uint8_array(&connection->basic_connection, subevent_id, null_data, 0, ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH);
     } else {
-        aics_client_emit_uint8_array(connection_helper,subevent_id, data, expected_data_size, ERROR_CODE_SUCCESS);
+        aics_client_emit_uint8_array(&connection->basic_connection, subevent_id, data, expected_data_size, ERROR_CODE_SUCCESS);
     }
 }
 
@@ -487,7 +487,7 @@ static void aics_client_packet_handler_internal(uint8_t packet_type, uint16_t ch
             connection = aics_client_get_connection_for_cid(connection_id);
             btstack_assert(connection != NULL);
             value_handle = gatt_event_notification_get_value_handle(packet);
-            aics_client_emit_notify_event(&connection->basic_connection, value_handle, gatt_event_notification_get_value(packet),gatt_event_notification_get_value_length(packet));
+            aics_client_emit_notify_event(connection, value_handle, gatt_event_notification_get_value(packet),gatt_event_notification_get_value_length(packet));
             break;
         default:
             break;
