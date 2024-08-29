@@ -278,14 +278,6 @@ uint8_t gatt_service_client_characteristic_index_for_value_handle(gatt_service_c
 uint8_t gatt_service_client_disconnect(gatt_service_client_t * client, uint16_t connection_cid);
 
 /**
- * @brief Remove connection from connection list
- *
- * @param client
- * @param connection
- */
-void gatt_service_client_finalize_connection(gatt_service_client_t * client, gatt_service_client_connection_t * connection);
-
-/**
  * @brief De-Init
  * @param client
  */
