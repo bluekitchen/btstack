@@ -421,22 +421,20 @@ static uint16_t ots_client_serialize_characteristic_value_for_write(ots_client_c
     return value_length;
 }
 
-static void ots_client_emit_read_event(gatt_service_client_connection_t * connection_helper, uint8_t characteristic_index, uint8_t att_status, const uint8_t * data, uint16_t data_size){
+static void ots_client_emit_read_event(ots_client_connection_t * connection, uint8_t characteristic_index, uint8_t att_status, const uint8_t * data, uint16_t data_size){
     uint8_t expected_data_size = 0;
     uint8_t  emit_bytes[16];
-
     switch (characteristic_index){
         case OTS_CLIENT_CHARACTERISTIC_INDEX_OTS_FEATURE:
             if (data_size == 8){
-                ots_client_connection_t * connection = (ots_client_connection_t *)connection_helper;
                 connection->oacp_features = little_endian_read_32(data, 0);
                 connection->olcp_features = little_endian_read_32(data, 4);
             }
-            ots_client_emit_features_event(connection_helper, att_status);
+            ots_client_emit_features_event(&connection->basic_connection, att_status);
             return;
 
         case OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_NAME:
-            ots_client_emit_string_value(connection_helper, LEAUDIO_SUBEVENT_OTS_CLIENT_OBJECT_NAME, data, data_size, att_status);
+            ots_client_emit_string_value(&connection->basic_connection, LEAUDIO_SUBEVENT_OTS_CLIENT_OBJECT_NAME, data, data_size, att_status);
             return;
 
         case OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_TYPE:
@@ -448,7 +446,7 @@ static void ots_client_emit_read_event(gatt_service_client_connection_t * connec
             if (data_size == expected_data_size){
                 reverse_bytes(data, emit_bytes, data_size);
             }
-            ots_client_emit_variable_uint8_array(connection_helper, LEAUDIO_SUBEVENT_OTS_CLIENT_OBJECT_TYPE, emit_bytes, expected_data_size, att_status);
+            ots_client_emit_variable_uint8_array(&connection->basic_connection, LEAUDIO_SUBEVENT_OTS_CLIENT_OBJECT_TYPE, emit_bytes, expected_data_size, att_status);
             return;
 
         case OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_SIZE:
@@ -456,7 +454,7 @@ static void ots_client_emit_read_event(gatt_service_client_connection_t * connec
                 // current_size(4) + allocated_size(4)
                 expected_data_size = 8;
             }
-            ots_client_emit_uint8_array(connection_helper, LEAUDIO_SUBEVENT_OTS_CLIENT_OBJECT_SIZE, data, expected_data_size, att_status);
+            ots_client_emit_uint8_array(&connection->basic_connection, LEAUDIO_SUBEVENT_OTS_CLIENT_OBJECT_SIZE, data, expected_data_size, att_status);
             return;
 
         case OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_FIRST_CREATED:
@@ -465,7 +463,7 @@ static void ots_client_emit_read_event(gatt_service_client_connection_t * connec
                 reverse_bytes(data, emit_bytes, 2);
                 memcpy(emit_bytes + 2, data + 2, 5);
             }
-            ots_client_emit_uint8_array(connection_helper, LEAUDIO_SUBEVENT_OTS_CLIENT_OBJECT_FIRST_CREATED, emit_bytes, expected_data_size, att_status);
+            ots_client_emit_uint8_array(&connection->basic_connection, LEAUDIO_SUBEVENT_OTS_CLIENT_OBJECT_FIRST_CREATED, emit_bytes, expected_data_size, att_status);
             break;
 
         case OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_LAST_MODIFIED:
@@ -474,7 +472,7 @@ static void ots_client_emit_read_event(gatt_service_client_connection_t * connec
                 reverse_bytes(data, emit_bytes, 2);
                 memcpy(emit_bytes + 2, data + 2, 5);
             }
-            ots_client_emit_uint8_array(connection_helper, LEAUDIO_SUBEVENT_OTS_CLIENT_OBJECT_LAST_MODIFIED, emit_bytes, expected_data_size, att_status);
+            ots_client_emit_uint8_array(&connection->basic_connection, LEAUDIO_SUBEVENT_OTS_CLIENT_OBJECT_LAST_MODIFIED, emit_bytes, expected_data_size, att_status);
             break;
 
         case OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_ID:
@@ -482,44 +480,44 @@ static void ots_client_emit_read_event(gatt_service_client_connection_t * connec
                 expected_data_size = OTS_OBJECT_ID_LEN;
                 reverse_bytes(data, emit_bytes, OTS_OBJECT_ID_LEN);
             }
-            ots_client_emit_variable_uint8_array(connection_helper, LEAUDIO_SUBEVENT_OTS_CLIENT_OBJECT_ID, emit_bytes, expected_data_size, att_status);
+            ots_client_emit_variable_uint8_array(&connection->basic_connection, LEAUDIO_SUBEVENT_OTS_CLIENT_OBJECT_ID, emit_bytes, expected_data_size, att_status);
             break;
 
         case OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_PROPERTIES:
             if (data_size == 4){
                 expected_data_size = 4;
             }
-            ots_client_emit_uint8_array(connection_helper, LEAUDIO_SUBEVENT_OTS_CLIENT_OBJECT_PROPERTIES, data, expected_data_size, att_status);
+            ots_client_emit_uint8_array(&connection->basic_connection, LEAUDIO_SUBEVENT_OTS_CLIENT_OBJECT_PROPERTIES, data, expected_data_size, att_status);
             break;
 
         case OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_LIST_FILTER_1:
             if (data_size >= 1){
                 uint8_t pos = 0;
                 ots_filter_type_t type = (ots_filter_type_t)data[pos++];
-                ots_client_emit_filter_value(connection_helper, 1, type, &data[pos], data_size - pos, att_status);
+                ots_client_emit_filter_value(&connection->basic_connection, 1, type, &data[pos], data_size - pos, att_status);
                 break;
             }
-            ots_client_emit_filter_value(connection_helper, 1, OTS_FILTER_TYPE_RFU, data, 0, att_status);
+            ots_client_emit_filter_value(&connection->basic_connection, 1, OTS_FILTER_TYPE_RFU, data, 0, att_status);
             break;
 
         case OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_LIST_FILTER_2:
             if (data_size >= 1){
                 uint8_t pos = 0;
                 ots_filter_type_t type = (ots_filter_type_t)data[pos++];
-                ots_client_emit_filter_value(connection_helper, 2, type, &data[pos], data_size - pos, att_status);
+                ots_client_emit_filter_value(&connection->basic_connection, 2, type, &data[pos], data_size - pos, att_status);
                 break;
             }
-            ots_client_emit_filter_value(connection_helper, 2, OTS_FILTER_TYPE_RFU, data, 0, att_status);
+            ots_client_emit_filter_value(&connection->basic_connection, 2, OTS_FILTER_TYPE_RFU, data, 0, att_status);
             break;
 
         case OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_LIST_FILTER_3:
             if (data_size >= 1){
                 uint8_t pos = 0;
                 ots_filter_type_t type = (ots_filter_type_t)data[pos++];
-                ots_client_emit_filter_value(connection_helper, 3, type, &data[pos], data_size - pos, att_status);
+                ots_client_emit_filter_value(&connection->basic_connection, 3, type, &data[pos], data_size - pos, att_status);
                 break;
             }
-            ots_client_emit_filter_value(connection_helper, 3, OTS_FILTER_TYPE_RFU, data, 0, att_status);
+            ots_client_emit_filter_value(&connection->basic_connection, 3, OTS_FILTER_TYPE_RFU, data, 0, att_status);
             break;
 
         default:
@@ -823,7 +821,7 @@ static void ots_client_handle_gatt_client_event(uint8_t packet_type, uint16_t ch
                     btstack_assert(false);
                     break;
             }
-            ots_client_emit_read_event(connection_helper, connection->characteristic_index, ATT_ERROR_SUCCESS,
+            ots_client_emit_read_event(connection, connection->characteristic_index, ATT_ERROR_SUCCESS,
                                 gatt_event_characteristic_value_query_result_get_value(packet),
                                 gatt_event_characteristic_value_query_result_get_value_length(packet));
                     
@@ -851,7 +849,7 @@ static void ots_client_handle_gatt_client_event(uint8_t packet_type, uint16_t ch
                     break;
 
                 case OBJECT_TRANSFER_SERVICE_CLIENT_STATE_W4_READ_LONG_CHARACTERISTIC_VALUE_RESULT:
-                    ots_client_emit_read_event(connection_helper, connection->characteristic_index, ATT_ERROR_SUCCESS,
+                    ots_client_emit_read_event(connection, connection->characteristic_index, ATT_ERROR_SUCCESS,
                                                connection->long_value_buffer, connection->long_value_buffer_length);
                     connection->state = OBJECT_TRANSFER_SERVICE_CLIENT_STATE_READY;
                     break;
