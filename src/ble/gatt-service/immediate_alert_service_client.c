@@ -152,7 +152,7 @@ static void ias_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
     UNUSED(size);
 
     if (packet_type != HCI_EVENT_PACKET) return;
-    gatt_service_client_connection_t * connection_helper;
+    ias_client_connection_t * connection;
     uint16_t cid;
     uint8_t status;
 
@@ -161,29 +161,30 @@ static void ias_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
             switch (hci_event_gattservice_meta_get_subevent_code(packet)) {
                 case GATTSERVICE_SUBEVENT_CLIENT_CONNECTED:
                     cid = gattservice_subevent_client_connected_get_cid(packet);
-                    connection_helper = gatt_service_client_get_connection_for_cid(&ias_client, cid);
-                    btstack_assert(connection_helper != NULL);
+                    connection = ias_client_get_connection_for_cid(cid);
+                    btstack_assert(connection != NULL);
 
 #ifdef ENABLE_TESTING_SUPPORT
                     {
                         uint8_t i;
                         for (i = IAS_CLIENT_CHARACTERISTIC_INDEX_ALERT_LEVEL;
                              i < IAS_CLIENT_CHARACTERISTIC_INDEX_RFU; i++) {
-                            printf("0x%04X %s\n", connection_helper->characteristics[i].value_handle,
+                            printf("0x%04X %s\n", connection->basic_connection.characteristics[i].value_handle,
                                    ias_client_characteristic_name[i]);
                         }
                     };
 #endif
                     status = gattservice_subevent_client_connected_get_status(packet);
-                    ias_client_connected((ias_client_connection_t *) connection_helper, status, packet, size);
+                    ias_client_connected(connection, status, packet, size);
                     break;
 
                 case GATTSERVICE_SUBEVENT_CLIENT_DISCONNECTED:
-                    // TODO reset client
                     cid = gattservice_subevent_client_disconnected_get_cid(packet);
-                    connection_helper = gatt_service_client_get_connection_for_cid(&ias_client, cid);
-                    btstack_assert(connection_helper != NULL);
-                    ias_client_replace_subevent_id_and_emit(connection_helper->event_callback, packet, size,
+                    connection = ias_client_get_connection_for_cid(cid);
+                    btstack_assert(connection != NULL);
+                    ias_client_finalize_connection(connection);
+                    ias_client_replace_subevent_id_and_emit(gatt_service_client_get_packet_handler(&connection->basic_connection),
+                                                            packet, size,
                                                             GATTSERVICE_SUBEVENT_IAS_CLIENT_DISCONNECTED);
                     break;
 
@@ -214,7 +215,7 @@ static uint16_t ias_client_serialize_characteristic_value_for_write(ias_client_c
 
 static void ias_client_run_for_connection(void * context){
     uint16_t connection_id = (uint16_t)(uintptr_t)context;
-    ias_client_connection_t * connection = (ias_client_connection_t *)gatt_service_client_get_connection_for_cid(&ias_client, connection_id);
+    ias_client_connection_t * connection = ias_client_get_connection_for_cid(connection_id);
 
     btstack_assert(connection != NULL);
     uint16_t value_length;
@@ -226,7 +227,8 @@ static void ias_client_run_for_connection(void * context){
 
             value_length = ias_client_serialize_characteristic_value_for_write(connection, &value);
             gatt_client_write_value_of_characteristic_without_response(
-                     connection->basic_connection.con_handle,ias_client_value_handle_for_index(connection),
+                    gatt_service_client_get_con_handle(&connection->basic_connection),
+                    ias_client_value_handle_for_index(connection),
                      value_length, value);
             
             break;
@@ -271,7 +273,7 @@ uint8_t immediate_alert_service_client_connect(hci_con_handle_t con_handle,
 }
 
 uint8_t immediate_alert_service_client_write_alert_level(uint16_t ias_cid, ias_alert_level_t alert_level){
-    ias_client_connection_t * connection = (ias_client_connection_t *) gatt_service_client_get_connection_for_cid(&ias_client, ias_cid);
+    ias_client_connection_t * connection = ias_client_get_connection_for_cid(ias_cid);
     if (connection == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
