@@ -55,6 +55,7 @@
 #include "btstack_event.h"
 
 static gatt_service_client_t aics_client;
+static btstack_linked_list_t aics_connections;
 
 static void aics_client_packet_handler_internal(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static void aics_client_handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
@@ -91,6 +92,26 @@ static char * aics_client_characteristic_name[] = {
     "RFU"
 };
 #endif
+
+static aics_client_connection_t * aics_client_get_connection_for_cid(uint16_t connection_cid){
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it,  &aics_connections);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        aics_client_connection_t * connection = (aics_client_connection_t *)btstack_linked_list_iterator_next(&it);
+        if (gatt_service_client_get_connection_id(&connection->basic_connection) == connection_cid) {
+            return connection;
+        }
+    }
+    return NULL;
+}
+
+static void aics_client_add_connection(aics_client_connection_t * connection){
+    btstack_linked_list_add(&aics_connections, (btstack_linked_item_t*) connection);
+}
+
+static void aics_client_finalize_connection(aics_client_connection_t * connection){
+    btstack_linked_list_remove(&aics_connections, (btstack_linked_item_t*) connection);
+}
 
 static void aics_client_replace_subevent_id_and_emit(btstack_packet_handler_t callback, uint8_t * packet, uint16_t size, uint8_t subevent_id){
     UNUSED(size);
@@ -153,14 +174,6 @@ static void aics_client_emit_connection_established(gatt_service_client_connecti
     event[pos++] = 0; // num included services
     event[pos++] = status;
     (*connection_helper->event_callback)(HCI_EVENT_PACKET, 0, event, pos);
-}
-
-static void aics_client_finalize_connection(aics_client_connection_t * connection){
-    // already finalized by GATT CLIENT HELPER
-    if (connection == NULL){
-        return;
-    }
-    gatt_service_client_finalize_connection(&aics_client, &connection->basic_connection);
 }
 
 static void aics_client_connected(aics_client_connection_t * connection, uint8_t status) {
@@ -656,10 +669,16 @@ uint8_t audio_input_control_service_client_connect(
     connection->change_counter = 0;
     connection->state = AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_W4_CONNECTED;
 
-    return gatt_service_client_connect_secondary_service(con_handle,
+    uint8_t status =gatt_service_client_connect_secondary_service(con_handle,
         &aics_client, &connection->basic_connection,
         ORG_BLUETOOTH_SERVICE_AUDIO_INPUT_CONTROL, service_start_handle, service_end_handle, service_index,
         connection->characteristics_storage, AUDIO_INPUT_CONTROL_SERVICE_NUM_CHARACTERISTICS, packet_handler);
+
+    if (status == ERROR_CODE_SUCCESS){
+        aics_client_add_connection(connection);
+    }
+
+    return status;
 }
 
 uint8_t audio_input_control_service_client_disconnect(aics_client_connection_t * connection){

@@ -74,6 +74,8 @@ typedef enum {
 } audio_input_service_client_state_t;
 
 typedef struct {
+    btstack_linked_item_t item;
+
     gatt_service_client_connection_t basic_connection;
     audio_input_service_client_state_t state;
 
