@@ -169,7 +169,7 @@ static void ots_client_emit_timeout(gatt_service_client_connection_t * connectio
 
 static void ots_client_operations_timer_timeout_handler(btstack_timer_source_t * timer){
     uint16_t connection_id = (uint16_t)(uintptr_t) btstack_run_loop_get_timer_context(timer);
-    ots_client_connection_t * connection = (ots_client_connection_t *)gatt_service_client_get_connection_for_cid(&ots_client, connection_id);
+    ots_client_connection_t * connection = ots_client_get_connection_for_cid(connection_id);
 
     if (connection == NULL){
         return;
@@ -696,7 +696,6 @@ static void ots_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
     UNUSED(size);
 
     if (packet_type != HCI_EVENT_PACKET) return;
-    gatt_service_client_connection_t * connection_helper;
     ots_client_connection_t * connection;
     uint16_t connection_id;
     uint8_t status;
@@ -705,9 +704,8 @@ static void ots_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
         case HCI_EVENT_GATTSERVICE_META:
             switch (hci_event_gattservice_meta_get_subevent_code(packet)){
                 case GATTSERVICE_SUBEVENT_CLIENT_CONNECTED:
-                    connection_helper = gatt_service_client_get_connection_for_cid(&ots_client, gattservice_subevent_client_connected_get_cid(packet));
-                    btstack_assert(connection_helper != NULL);
-                    connection = (ots_client_connection_t *) connection_helper;
+                    connection = ots_client_get_connection_for_cid(gattservice_subevent_client_connected_get_cid(packet));
+                    btstack_assert(connection != NULL);
 
                     status = gattservice_subevent_client_connected_get_status(packet);
                     if (status != ERROR_CODE_SUCCESS){
@@ -728,10 +726,16 @@ static void ots_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
                     break;
 
                 case GATTSERVICE_SUBEVENT_CLIENT_DISCONNECTED:
-                    connection_helper = gatt_service_client_get_connection_for_cid(&ots_client, gattservice_subevent_client_disconnected_get_cid(packet));
-                    btstack_assert(connection_helper != NULL);
-                    ots_client_replace_subevent_id_and_emit(connection_helper->event_callback, packet, size, LEAUDIO_SUBEVENT_OTS_CLIENT_DISCONNECTED);
-                    connection_helper->con_handle = HCI_CON_HANDLE_INVALID;
+                    connection = ots_client_get_connection_for_cid(gattservice_subevent_client_connected_get_cid(packet));
+                    btstack_assert(connection != NULL);
+                    // close l2cap
+                    if (connection->le_cbm_connection.cid != 0){
+                        uint16_t l2cap_cid = connection->le_cbm_connection.cid;
+                        connection->le_cbm_connection.cid = 0;
+                        l2cap_disconnect(l2cap_cid);
+                    }
+                    ots_client_finalize_connection(connection);
+                    ots_client_replace_subevent_id_and_emit(gatt_service_client_get_packet_handler(&connection->basic_connection), packet, size, LEAUDIO_SUBEVENT_OTS_CLIENT_DISCONNECTED);
                     break;
 
                 default:
@@ -741,19 +745,19 @@ static void ots_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
 
         case GATT_EVENT_NOTIFICATION:
             connection_id = gatt_event_notification_get_connection_id(packet);
-            connection_helper = gatt_service_client_get_connection_for_cid(&ots_client, connection_id);
-            btstack_assert(connection_helper != NULL);
+            connection = ots_client_get_connection_for_cid(connection_id);
+            btstack_assert(connection != NULL);
 
-            ots_client_emit_notify_event(connection_helper, gatt_event_notification_get_value_handle(packet), ATT_ERROR_SUCCESS,
+            ots_client_emit_notify_event(&connection->basic_connection, gatt_event_notification_get_value_handle(packet), ATT_ERROR_SUCCESS,
                                          gatt_event_notification_get_value(packet), gatt_event_notification_get_value_length(packet));
             break;
 
         case GATT_EVENT_INDICATION:
             connection_id = gatt_event_indication_get_connection_id(packet);
-            connection_helper = gatt_service_client_get_connection_for_cid(&ots_client, connection_id);
-            btstack_assert(connection_helper != NULL);
+            connection = ots_client_get_connection_for_cid(connection_id);
+            btstack_assert(connection != NULL);
 
-            ots_client_emit_notify_event(connection_helper, gatt_event_indication_get_value_handle(packet), ATT_ERROR_SUCCESS,
+            ots_client_emit_notify_event(&connection->basic_connection, gatt_event_indication_get_value_handle(packet), ATT_ERROR_SUCCESS,
                                          gatt_event_indication_get_value(packet), gatt_event_indication_get_value_length(packet));
             break;
 
@@ -776,9 +780,8 @@ static void ots_client_handle_gatt_client_event(uint8_t packet_type, uint16_t ch
     switch(hci_event_packet_get_type(packet)){
         case GATT_EVENT_LONG_CHARACTERISTIC_VALUE_QUERY_RESULT:
             connection_id = gatt_event_long_characteristic_value_query_result_get_connection_id(packet);
-            connection_helper = gatt_service_client_get_connection_for_cid(&ots_client, connection_id);
-            btstack_assert(connection_helper != NULL);
-            connection = (ots_client_connection_t *)connection_helper;
+            connection = ots_client_get_connection_for_cid(connection_id);
+            btstack_assert(connection != NULL);
             switch (connection->state) {
                 case OBJECT_TRANSFER_SERVICE_CLIENT_STATE_W4_READ_LONG_CHARACTERISTIC_VALUE_RESULT:
                     offset = gatt_event_long_characteristic_value_query_result_get_value_offset(packet);
@@ -802,9 +805,8 @@ static void ots_client_handle_gatt_client_event(uint8_t packet_type, uint16_t ch
 
         case GATT_EVENT_CHARACTERISTIC_VALUE_QUERY_RESULT:
             connection_id = gatt_event_long_characteristic_value_query_result_get_connection_id(packet);
-            connection_helper = gatt_service_client_get_connection_for_cid(&ots_client, connection_id);
-            btstack_assert(connection_helper != NULL);
-            connection = (ots_client_connection_t *)connection_helper;
+            connection = ots_client_get_connection_for_cid(connection_id);
+            btstack_assert(connection != NULL);
 
             switch (connection->state){
                 case OBJECT_TRANSFER_SERVICE_CLIENT_STATE_W4_READ_CHARACTERISTIC_VALUE_RESULT:
@@ -830,12 +832,11 @@ static void ots_client_handle_gatt_client_event(uint8_t packet_type, uint16_t ch
 
         case GATT_EVENT_QUERY_COMPLETE:
             connection_id = gatt_event_query_complete_get_connection_id(packet);
-            connection_helper = gatt_service_client_get_connection_for_cid(&ots_client, connection_id);
-            btstack_assert(connection_helper != NULL);
+            connection = ots_client_get_connection_for_cid(connection_id);
+            btstack_assert(connection != NULL);
 
             status = gatt_event_query_complete_get_att_status(packet);
                     
-            connection = (ots_client_connection_t *)connection_helper;
             switch (connection->state){
                 case OBJECT_TRANSFER_SERVICE_CLIENT_STATE_W4_WRITE_CHARACTERISTIC_VALUE_RESULT:
                     ots_client_emit_done_event(connection_helper, connection->characteristic_index, status);
@@ -868,7 +869,7 @@ static void ots_client_handle_gatt_client_event(uint8_t packet_type, uint16_t ch
 
 static void ots_client_run_for_connection(void * context){
     uint16_t connection_id = (uint16_t)(uintptr_t)context;
-    ots_client_connection_t * connection = (ots_client_connection_t *)gatt_service_client_get_connection_for_cid(&ots_client, connection_id);
+    ots_client_connection_t * connection = ots_client_get_connection_for_cid(connection_id);
 
     btstack_assert(connection != NULL);
     uint16_t value_length;
@@ -1353,7 +1354,8 @@ static void ots_client_l2cap_cbm_packet_handler(uint8_t packet_type, uint16_t ch
 
         case L2CAP_EVENT_CHANNEL_CLOSED:
             cid = l2cap_event_channel_closed_get_local_cid(packet);
-            connection = (ots_client_connection_t *)gatt_service_client_get_connection_for_cid(&ots_client, cid);
+            connection = ots_client_get_connection_for_cid(cid);
+            btstack_assert(connection != NULL);
             if (connection != NULL){
                 log_info("L2CAP: Channel closed 0x%02x", cid);
                 connection->le_cbm_connection.cid = 0;
@@ -1390,7 +1392,7 @@ uint8_t object_transfer_service_client_open_object_channel(ots_client_connection
 
 uint8_t object_transfer_service_client_close_object_channel(ots_client_connection_t * connection){
     btstack_assert(connection != NULL);
-    return l2cap_le_disconnect(connection->le_cbm_connection.cid);
+    return l2cap_disconnect(connection->le_cbm_connection.cid);
 }
 
 
