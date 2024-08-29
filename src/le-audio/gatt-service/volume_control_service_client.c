@@ -285,8 +285,8 @@ static uint8_t vcs_client_request_send_gatt_query(vcs_client_connection_t * conn
     return status;
 }
 
-static uint8_t vcs_client_request_read_characteristic(uint16_t aics_cid, vcs_client_characteristic_index_t characteristic_index){
-    vcs_client_connection_t * connection = (vcs_client_connection_t *) gatt_service_client_get_connection_for_cid(&vcs_client, aics_cid);
+static uint8_t vcs_client_request_read_characteristic(uint16_t vcs_id, vcs_client_characteristic_index_t characteristic_index){
+    vcs_client_connection_t * connection = vcs_client_get_connection_for_cid(vcs_id);
     if (connection == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
@@ -309,7 +309,6 @@ static void vcs_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
     UNUSED(size);
 
     if (packet_type != HCI_EVENT_PACKET) return;
-    gatt_service_client_connection_t * connection_helper;
     vcs_client_connection_t * connection;
     uint16_t connection_id;
     uint16_t cid;
@@ -320,9 +319,8 @@ static void vcs_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
             switch (hci_event_gattservice_meta_get_subevent_code(packet)){
                 case GATTSERVICE_SUBEVENT_CLIENT_CONNECTED:
                     cid = gattservice_subevent_client_connected_get_cid(packet);
-                    connection_helper = gatt_service_client_get_connection_for_cid(&vcs_client, cid);
-                    btstack_assert(connection_helper != NULL);
-                    connection = (vcs_client_connection_t *)connection_helper;
+                    connection = vcs_client_get_connection_for_cid(cid);
+                    btstack_assert(connection != NULL);
 
                     status = gattservice_subevent_client_connected_get_status(packet);
                     if (status != ERROR_CODE_SUCCESS){
@@ -350,11 +348,11 @@ static void vcs_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
                     break;
 
                 case GATTSERVICE_SUBEVENT_CLIENT_DISCONNECTED:
-                    // TODO reset client
                     cid = gattservice_subevent_client_disconnected_get_cid(packet);
-                    connection_helper = gatt_service_client_get_connection_for_cid(&vcs_client, cid);
-                    btstack_assert(connection_helper != NULL);
-                    vcs_client_replace_subevent_id_and_emit(connection_helper->event_callback, packet, size, LEAUDIO_SUBEVENT_VCS_CLIENT_DISCONNECTED);
+                    connection = vcs_client_get_connection_for_cid(cid);
+                    btstack_assert(connection != NULL);
+                    vcs_client_finalize_connection(connection);
+                    vcs_client_replace_subevent_id_and_emit(gatt_service_client_get_packet_handler(&connection->basic_connection), packet, size, LEAUDIO_SUBEVENT_VCS_CLIENT_DISCONNECTED);
                     break;
 
                 default:
@@ -364,10 +362,9 @@ static void vcs_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
 
         case GATT_EVENT_NOTIFICATION:
             connection_id = gatt_event_notification_get_connection_id(packet);
-            connection_helper = gatt_service_client_get_connection_for_cid(&vcs_client, connection_id);
-            btstack_assert(connection_helper != NULL);
-
-            vcs_client_emit_notify_event(connection_helper, gatt_event_notification_get_value_handle(packet), ATT_ERROR_SUCCESS,
+            connection = vcs_client_get_connection_for_cid(cid);
+            btstack_assert(connection != NULL);
+            vcs_client_emit_notify_event(&connection->basic_connection, gatt_event_notification_get_value_handle(packet), ATT_ERROR_SUCCESS,
                                          gatt_event_notification_get_value(packet),
                                          gatt_event_notification_get_value_length(packet));
             break;
@@ -377,51 +374,50 @@ static void vcs_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
                 
                 case LEAUDIO_SUBEVENT_AICS_CLIENT_AUDIO_INPUT_STATE:
                     cid = leaudio_subevent_aics_client_audio_input_state_get_aics_cid(packet);
-                    connection_helper = gatt_service_client_get_connection_for_cid(&vcs_client, cid);
-                    btstack_assert(connection_helper != NULL);
-                    vcs_client_replace_subevent_id_and_emit(connection_helper->event_callback, packet, size, LEAUDIO_SUBEVENT_VCS_CLIENT_AUDIO_INPUT_STATE);
+                    connection = vcs_client_get_connection_for_cid(cid);
+                    btstack_assert(connection != NULL);
+                    vcs_client_replace_subevent_id_and_emit(gatt_service_client_get_packet_handler(&connection->basic_connection), packet, size, LEAUDIO_SUBEVENT_VCS_CLIENT_AUDIO_INPUT_STATE);
                     break;
 
                 case LEAUDIO_SUBEVENT_AICS_CLIENT_GAIN_SETTINGS_PROPERTIES:
                     cid = leaudio_subevent_aics_client_gain_settings_properties_get_aics_cid(packet);
-                    connection_helper = gatt_service_client_get_connection_for_cid(&vcs_client, cid);
-                    btstack_assert(connection_helper != NULL);
-                    vcs_client_replace_subevent_id_and_emit(connection_helper->event_callback, packet, size, LEAUDIO_SUBEVENT_VCS_CLIENT_GAIN_SETTINGS_PROPERTIES);
+                    connection = vcs_client_get_connection_for_cid(cid);
+                    btstack_assert(connection != NULL);
+                    vcs_client_replace_subevent_id_and_emit(gatt_service_client_get_packet_handler(&connection->basic_connection), packet, size, LEAUDIO_SUBEVENT_VCS_CLIENT_GAIN_SETTINGS_PROPERTIES);
                     break;
 
                 case LEAUDIO_SUBEVENT_AICS_CLIENT_AUDIO_INPUT_TYPE:
                     cid = leaudio_subevent_aics_client_audio_input_type_get_aics_cid(packet);
-                    connection_helper = gatt_service_client_get_connection_for_cid(&vcs_client, cid);
-                    btstack_assert(connection_helper != NULL);
-                    vcs_client_replace_subevent_id_and_emit(connection_helper->event_callback, packet, size, LEAUDIO_SUBEVENT_VCS_CLIENT_AUDIO_INPUT_TYPE);
+                    connection = vcs_client_get_connection_for_cid(cid);
+                    btstack_assert(connection != NULL);
+                    vcs_client_replace_subevent_id_and_emit(gatt_service_client_get_packet_handler(&connection->basic_connection), packet, size, LEAUDIO_SUBEVENT_VCS_CLIENT_AUDIO_INPUT_TYPE);
                     break;
 
                 case LEAUDIO_SUBEVENT_AICS_CLIENT_AUDIO_INPUT_STATUS:
                     cid = leaudio_subevent_aics_client_audio_input_status_get_aics_cid(packet);
-                    connection_helper = gatt_service_client_get_connection_for_cid(&vcs_client, cid);
-                    btstack_assert(connection_helper != NULL);
-                    vcs_client_replace_subevent_id_and_emit(connection_helper->event_callback, packet, size, LEAUDIO_SUBEVENT_VCS_CLIENT_AUDIO_INPUT_STATUS);
+                    connection = vcs_client_get_connection_for_cid(cid);
+                    btstack_assert(connection != NULL);
+                    vcs_client_replace_subevent_id_and_emit(gatt_service_client_get_packet_handler(&connection->basic_connection), packet, size, LEAUDIO_SUBEVENT_VCS_CLIENT_AUDIO_INPUT_STATUS);
                     break;
 
                 case LEAUDIO_SUBEVENT_AICS_CLIENT_AUDIO_DESCRIPTION:
                     cid = leaudio_subevent_aics_client_audio_description_get_aics_cid(packet);
-                    connection_helper = gatt_service_client_get_connection_for_cid(&vcs_client, cid);
-                    btstack_assert(connection_helper != NULL);
-                    vcs_client_replace_subevent_id_and_emit(connection_helper->event_callback, packet, size, LEAUDIO_SUBEVENT_VCS_CLIENT_AUDIO_DESCRIPTION);
+                    connection = vcs_client_get_connection_for_cid(cid);
+                    btstack_assert(connection != NULL);
+                    vcs_client_replace_subevent_id_and_emit(gatt_service_client_get_packet_handler(&connection->basic_connection), packet, size, LEAUDIO_SUBEVENT_VCS_CLIENT_AUDIO_DESCRIPTION);
                     break;
 
                 case LEAUDIO_SUBEVENT_AICS_CLIENT_WRITE_DONE:
                     cid = leaudio_subevent_aics_client_write_done_get_aics_cid(packet);
-                    connection_helper = gatt_service_client_get_connection_for_cid(&vcs_client, cid);
-                    btstack_assert(connection_helper != NULL);
-                    vcs_client_replace_subevent_id_and_emit(connection_helper->event_callback, packet, size, LEAUDIO_SUBEVENT_VCS_CLIENT_WRITE_DONE);
+                    connection = vcs_client_get_connection_for_cid(cid);
+                    btstack_assert(connection != NULL);
+                    vcs_client_replace_subevent_id_and_emit(gatt_service_client_get_packet_handler(&connection->basic_connection), packet, size, LEAUDIO_SUBEVENT_VCS_CLIENT_WRITE_DONE);
                     break;
 
                 case LEAUDIO_SUBEVENT_AICS_CLIENT_CONNECTED:
                     cid = leaudio_subevent_aics_client_connected_get_aics_cid(packet);
-                    connection_helper = gatt_service_client_get_connection_for_cid(&vcs_client, cid);
-                    btstack_assert(connection_helper != NULL);
-                    connection = (vcs_client_connection_t *)connection_helper;
+                    connection = vcs_client_get_connection_for_cid(cid);
+                    btstack_assert(connection != NULL);
 
                     if (leaudio_subevent_aics_client_connected_get_att_status(packet) == ERROR_CODE_SUCCESS) {
                         connection->aics_connections_connected++;
@@ -464,9 +460,8 @@ static void vcs_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
 
                 case LEAUDIO_SUBEVENT_VOCS_CLIENT_CONNECTED:
                     cid = leaudio_subevent_vocs_client_connected_get_vocs_cid(packet);
-                    connection_helper = gatt_service_client_get_connection_for_cid(&vcs_client, cid);
-                    btstack_assert(connection_helper != NULL);
-                    connection = (vcs_client_connection_t *)connection_helper;
+                    connection = vcs_client_get_connection_for_cid(cid);
+                    btstack_assert(connection != NULL);
 
                     if (leaudio_subevent_vocs_client_connected_get_att_status(packet) == ERROR_CODE_SUCCESS) {
                         connection->vocs_connections_connected++;
@@ -507,7 +502,6 @@ static void vcs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t ch
     UNUSED(channel);
     UNUSED(size);
 
-    gatt_service_client_connection_t * connection_helper;
     vcs_client_connection_t * connection = NULL;
     uint16_t connection_id;
     gatt_client_service_t service;
@@ -516,11 +510,10 @@ static void vcs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t ch
     switch(hci_event_packet_get_type(packet)){
         case GATT_EVENT_CHARACTERISTIC_VALUE_QUERY_RESULT:
             connection_id = gatt_event_characteristic_value_query_result_get_connection_id(packet);
-            connection_helper = gatt_service_client_get_connection_for_cid(&vcs_client, connection_id);
-            btstack_assert(connection_helper != NULL);
-            connection = (vcs_client_connection_t *)connection_helper;
+            connection = vcs_client_get_connection_for_cid(connection_id);
+            btstack_assert(connection != NULL);
 
-            vcs_client_emit_read_event(connection_helper, connection->characteristic_index, ATT_ERROR_SUCCESS,
+            vcs_client_emit_read_event(&connection->basic_connection, connection->characteristic_index, ATT_ERROR_SUCCESS,
                                        gatt_event_characteristic_value_query_result_get_value(packet),
                                        gatt_event_characteristic_value_query_result_get_value_length(packet));
 
@@ -540,7 +533,7 @@ static void vcs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t ch
 
         case GATT_EVENT_INCLUDED_SERVICE_QUERY_RESULT:
             connection_id = gatt_event_included_service_query_result_get_connection_id(packet);
-            connection = (vcs_client_connection_t *)gatt_service_client_get_connection_for_cid(&vcs_client, connection_id);
+            connection = vcs_client_get_connection_for_cid(connection_id);
             btstack_assert(connection != NULL);
 
             gatt_event_included_service_query_result_get_service(packet, &service);
@@ -581,7 +574,7 @@ static void vcs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t ch
 
         case GATT_EVENT_QUERY_COMPLETE:
             connection_id = gatt_event_query_complete_get_connection_id(packet);
-            connection = (vcs_client_connection_t *)gatt_service_client_get_connection_for_cid(&vcs_client, connection_id);
+            connection = vcs_client_get_connection_for_cid(connection_id);
             btstack_assert(connection != NULL);
 
             status = gatt_event_query_complete_get_att_status(packet);
@@ -700,8 +693,7 @@ static uint16_t vcs_client_serialize_characteristic_value_for_write(vcs_client_c
 
 static void vcs_client_run_for_connection(void * context){
     uint16_t connection_id = (uint16_t)(uintptr_t)context;
-    gatt_service_client_connection_t * connection_helper = gatt_service_client_get_connection_for_cid(&vcs_client, connection_id);
-    vcs_client_connection_t * connection = (vcs_client_connection_t *)connection_helper;
+    vcs_client_connection_t * connection = vcs_client_get_connection_for_cid(connection_id);
 
     btstack_assert(connection != NULL);
     uint16_t value_length;
@@ -713,7 +705,7 @@ static void vcs_client_run_for_connection(void * context){
             connection->state = VOLUME_CONTROL_SERVICE_CLIENT_STATE_W4_CHANGE_COUNTER_RESULT;
             (void) gatt_client_read_value_of_characteristic_using_value_handle(
                     &vcs_client_handle_gatt_client_event, connection->basic_connection.con_handle,
-                    gatt_service_client_characteristic_value_handle_for_index(connection_helper,
+                    gatt_service_client_characteristic_value_handle_for_index(&connection->basic_connection,
                                                                               connection->characteristic_index));
             break;
 
@@ -735,7 +727,7 @@ static void vcs_client_run_for_connection(void * context){
 
             (void) gatt_client_read_value_of_characteristic_using_value_handle(
                     &vcs_client_handle_gatt_client_event, connection->basic_connection.con_handle,
-                    gatt_service_client_characteristic_value_handle_for_index(connection_helper,
+                    gatt_service_client_characteristic_value_handle_for_index(&connection->basic_connection,
                                                                               connection->characteristic_index));
             break;
 
@@ -745,7 +737,7 @@ static void vcs_client_run_for_connection(void * context){
             value_length = vcs_client_serialize_characteristic_value_for_write(connection, &value);
             (void) gatt_client_write_value_of_characteristic(
                     &vcs_client_handle_gatt_client_event, connection->basic_connection.con_handle,
-                    gatt_service_client_characteristic_value_handle_for_index(connection_helper,
+                    gatt_service_client_characteristic_value_handle_for_index(&connection->basic_connection,
                                                                               connection->characteristic_index),
                     value_length, value);
             
@@ -823,7 +815,7 @@ uint8_t volume_control_service_client_read_volume_flags(uint16_t vcs_cid){
 }
 
 static uint8_t vcs_control_point_procedure_request(uint16_t vcs_cid, vcs_opcode_t opcode){
-    vcs_client_connection_t * connection = (vcs_client_connection_t *) gatt_service_client_get_connection_for_cid(&vcs_client, vcs_cid);
+    vcs_client_connection_t * connection = vcs_client_get_connection_for_cid(vcs_cid);
     if (connection == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
@@ -862,7 +854,7 @@ uint8_t volume_control_service_client_unmute_relative_volume_down(uint16_t vcs_c
 }
 
 uint8_t volume_control_service_client_set_absolute_volume(uint16_t vcs_cid, uint8_t abs_volume){
-    vcs_client_connection_t * connection = (vcs_client_connection_t *) gatt_service_client_get_connection_for_cid(&vcs_client, vcs_cid);
+    vcs_client_connection_t * connection = vcs_client_get_connection_for_cid(vcs_cid);
     if (connection == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
@@ -883,7 +875,7 @@ uint8_t volume_control_service_client_set_absolute_volume(uint16_t vcs_cid, uint
 
 
 uint8_t volume_control_service_client_write_unmute(uint16_t vcs_cid, uint8_t aics_index){
-    vcs_client_connection_t * connection = (vcs_client_connection_t *) gatt_service_client_get_connection_for_cid(&vcs_client, vcs_cid);
+    vcs_client_connection_t * connection = vcs_client_get_connection_for_cid(vcs_cid);
     if (connection == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
@@ -894,7 +886,7 @@ uint8_t volume_control_service_client_write_unmute(uint16_t vcs_cid, uint8_t aic
 }
 
 uint8_t volume_control_service_client_write_mute(uint16_t vcs_cid, uint8_t aics_index){
-    vcs_client_connection_t * connection = (vcs_client_connection_t *) gatt_service_client_get_connection_for_cid(&vcs_client, vcs_cid);
+    vcs_client_connection_t * connection = vcs_client_get_connection_for_cid(vcs_cid);
     if (connection == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
@@ -905,7 +897,7 @@ uint8_t volume_control_service_client_write_mute(uint16_t vcs_cid, uint8_t aics_
 }
 
 uint8_t volume_control_service_client_write_gain_setting(uint16_t vcs_cid, uint8_t aics_index, int8_t gain_setting){
-    vcs_client_connection_t * connection = (vcs_client_connection_t *) gatt_service_client_get_connection_for_cid(&vcs_client, vcs_cid);
+    vcs_client_connection_t * connection = vcs_client_get_connection_for_cid(vcs_cid);
     if (connection == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
@@ -917,7 +909,7 @@ uint8_t volume_control_service_client_write_gain_setting(uint16_t vcs_cid, uint8
 }
 
 uint8_t volume_control_service_client_write_manual_gain_mode(uint16_t vcs_cid, uint8_t aics_index){
-    vcs_client_connection_t * connection = (vcs_client_connection_t *) gatt_service_client_get_connection_for_cid(&vcs_client, vcs_cid);
+    vcs_client_connection_t * connection = vcs_client_get_connection_for_cid(vcs_cid);
     if (connection == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
@@ -928,7 +920,7 @@ uint8_t volume_control_service_client_write_manual_gain_mode(uint16_t vcs_cid, u
 }
 
 uint8_t volume_control_service_client_write_automatic_gain_mode(uint16_t vcs_cid, uint8_t aics_index){
-    vcs_client_connection_t * connection = (vcs_client_connection_t *) gatt_service_client_get_connection_for_cid(&vcs_client, vcs_cid);
+    vcs_client_connection_t * connection = vcs_client_get_connection_for_cid(vcs_cid);
     if (connection == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
@@ -939,7 +931,7 @@ uint8_t volume_control_service_client_write_automatic_gain_mode(uint16_t vcs_cid
 }
 
 uint8_t volume_control_service_client_write_input_description(uint16_t vcs_cid, uint8_t aics_index, const char * audio_input_description){
-    vcs_client_connection_t * connection = (vcs_client_connection_t *) gatt_service_client_get_connection_for_cid(&vcs_client, vcs_cid);
+    vcs_client_connection_t * connection = vcs_client_get_connection_for_cid(vcs_cid);
     if (connection == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
@@ -950,7 +942,7 @@ uint8_t volume_control_service_client_write_input_description(uint16_t vcs_cid, 
 }
 
 uint8_t volume_control_service_client_read_input_description(uint16_t vcs_cid, uint8_t aics_index){
-    vcs_client_connection_t * connection = (vcs_client_connection_t *) gatt_service_client_get_connection_for_cid(&vcs_client, vcs_cid);
+    vcs_client_connection_t * connection = vcs_client_get_connection_for_cid(vcs_cid);
     if (connection == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
@@ -961,7 +953,7 @@ uint8_t volume_control_service_client_read_input_description(uint16_t vcs_cid, u
 }
 
 uint8_t volume_control_service_client_read_input_state(uint16_t vcs_cid, uint8_t aics_index){
-    vcs_client_connection_t * connection = (vcs_client_connection_t *) gatt_service_client_get_connection_for_cid(&vcs_client, vcs_cid);
+    vcs_client_connection_t * connection = vcs_client_get_connection_for_cid(vcs_cid);
     if (connection == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
@@ -972,7 +964,7 @@ uint8_t volume_control_service_client_read_input_state(uint16_t vcs_cid, uint8_t
 }
 
 uint8_t volume_control_service_client_read_gain_setting_properties(uint16_t vcs_cid, uint8_t aics_index){
-    vcs_client_connection_t * connection = (vcs_client_connection_t *) gatt_service_client_get_connection_for_cid(&vcs_client, vcs_cid);
+    vcs_client_connection_t * connection = vcs_client_get_connection_for_cid(vcs_cid);
     if (connection == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
@@ -983,7 +975,7 @@ uint8_t volume_control_service_client_read_gain_setting_properties(uint16_t vcs_
 }
 
 uint8_t volume_control_service_client_read_input_type(uint16_t vcs_cid, uint8_t aics_index){
-    vcs_client_connection_t * connection = (vcs_client_connection_t *) gatt_service_client_get_connection_for_cid(&vcs_client, vcs_cid);
+    vcs_client_connection_t * connection = vcs_client_get_connection_for_cid(vcs_cid);
     if (connection == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
@@ -994,7 +986,7 @@ uint8_t volume_control_service_client_read_input_type(uint16_t vcs_cid, uint8_t 
 }
 
 uint8_t volume_control_service_client_read_input_status(uint16_t vcs_cid, uint8_t aics_index){
-    vcs_client_connection_t * connection = (vcs_client_connection_t *) gatt_service_client_get_connection_for_cid(&vcs_client, vcs_cid);
+    vcs_client_connection_t * connection = vcs_client_get_connection_for_cid(vcs_cid);
     if (connection == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
@@ -1005,7 +997,7 @@ uint8_t volume_control_service_client_read_input_status(uint16_t vcs_cid, uint8_
 }
 
 uint8_t volume_control_service_client_write_volume_offset(uint16_t vcs_cid, uint8_t vocs_index, int16_t volume_offset){
-    vcs_client_connection_t * connection = (vcs_client_connection_t *) gatt_service_client_get_connection_for_cid(&vcs_client, vcs_cid);
+    vcs_client_connection_t * connection = vcs_client_get_connection_for_cid(vcs_cid);
     if (connection == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
@@ -1016,7 +1008,7 @@ uint8_t volume_control_service_client_write_volume_offset(uint16_t vcs_cid, uint
 }
 
 uint8_t volume_control_service_client_write_audio_location(uint16_t vcs_cid, uint8_t vocs_index, uint32_t audio_location){
-    vcs_client_connection_t * connection = (vcs_client_connection_t *) gatt_service_client_get_connection_for_cid(&vcs_client, vcs_cid);
+    vcs_client_connection_t * connection = vcs_client_get_connection_for_cid(vcs_cid);
     if (connection == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
@@ -1027,7 +1019,7 @@ uint8_t volume_control_service_client_write_audio_location(uint16_t vcs_cid, uin
 }
 
 uint8_t volume_control_service_client_read_offset_state(uint16_t vcs_cid, uint8_t vocs_index){
-    vcs_client_connection_t * connection = (vcs_client_connection_t *) gatt_service_client_get_connection_for_cid(&vcs_client, vcs_cid);
+    vcs_client_connection_t * connection = vcs_client_get_connection_for_cid(vcs_cid);
     if (connection == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
@@ -1038,7 +1030,7 @@ uint8_t volume_control_service_client_read_offset_state(uint16_t vcs_cid, uint8_
 }
 
 uint8_t volume_control_service_client_read_audio_location(uint16_t vcs_cid, uint8_t vocs_index){
-    vcs_client_connection_t * connection = (vcs_client_connection_t *) gatt_service_client_get_connection_for_cid(&vcs_client, vcs_cid);
+    vcs_client_connection_t * connection = vcs_client_get_connection_for_cid(vcs_cid);
     if (connection == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
@@ -1049,7 +1041,7 @@ uint8_t volume_control_service_client_read_audio_location(uint16_t vcs_cid, uint
 }
 
 uint8_t volume_control_service_client_read_audio_output_description(uint16_t vcs_cid, uint8_t vocs_index){
-    vcs_client_connection_t * connection = (vcs_client_connection_t *) gatt_service_client_get_connection_for_cid(&vcs_client, vcs_cid);
+    vcs_client_connection_t * connection = vcs_client_get_connection_for_cid(vcs_cid);
     if (connection == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
@@ -1061,7 +1053,7 @@ uint8_t volume_control_service_client_read_audio_output_description(uint16_t vcs
 
 
 uint8_t volume_control_service_client_disconnect(uint16_t vcs_cid){
-    vcs_client_connection_t * connection = (vcs_client_connection_t *) gatt_service_client_get_connection_for_cid(&vcs_client, vcs_cid);
+    vcs_client_connection_t * connection = vcs_client_get_connection_for_cid(vcs_cid);
     if (connection == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
