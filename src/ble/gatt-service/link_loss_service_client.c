@@ -203,8 +203,8 @@ static uint8_t lls_client_request_send_gatt_query(lls_client_connection_t * conn
     return status;
 }
 
-static uint8_t lls_client_request_read_characteristic(uint16_t aics_cid, lls_client_characteristic_index_t characteristic_index){
-    lls_client_connection_t * connection = (lls_client_connection_t *) gatt_service_client_get_connection_for_cid(&lls_client, aics_cid);
+static uint8_t lls_client_request_read_characteristic(uint16_t lls_cid, lls_client_characteristic_index_t characteristic_index){
+    lls_client_connection_t * connection = lls_client_get_connection_for_cid(lls_cid);
     if (connection == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
@@ -227,7 +227,7 @@ static void lls_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
     UNUSED(size);
 
     if (packet_type != HCI_EVENT_PACKET) return;
-    gatt_service_client_connection_t * connection_helper;
+    lls_client_connection_t * connection;
     uint16_t cid;
     uint8_t status;
 
@@ -236,28 +236,29 @@ static void lls_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
             switch (hci_event_gattservice_meta_get_subevent_code(packet)) {
                 case GATTSERVICE_SUBEVENT_CLIENT_CONNECTED:
                     cid = gattservice_subevent_client_connected_get_cid(packet);
-                    connection_helper = gatt_service_client_get_connection_for_cid(&lls_client, cid);
-                    btstack_assert(connection_helper != NULL);
+                    connection = lls_client_get_connection_for_cid(cid);
+                    btstack_assert(connection != NULL);
 
 #ifdef ENABLE_TESTING_SUPPORT
                     {
                         uint8_t i;
                         for (i = LLS_CLIENT_CHARACTERISTIC_INDEX_ALERT_LEVEL;
                              i < LLS_CLIENT_CHARACTERISTIC_INDEX_RFU; i++) {
-                            printf("0x%04X %s\n", connection_helper->characteristics[i].value_handle,
+                            printf("0x%04X %s\n", connection->basic_connection.characteristics[i].value_handle,
                                    lls_client_characteristic_name[i]);
                         }
                     };
 #endif
                     status = gattservice_subevent_client_connected_get_status(packet);
-                    lls_client_connected((lls_client_connection_t *) connection_helper, status, packet, size);
+                    lls_client_connected(connection, status, packet, size);
                     break;
 
                 case GATTSERVICE_SUBEVENT_CLIENT_DISCONNECTED:
                     cid = gattservice_subevent_client_disconnected_get_cid(packet);
-                    connection_helper = gatt_service_client_get_connection_for_cid(&lls_client, cid);
-                    btstack_assert(connection_helper != NULL);
-                    lls_client_replace_subevent_id_and_emit(connection_helper->event_callback, packet, size,
+                    connection = lls_client_get_connection_for_cid(cid);
+                    btstack_assert(connection != NULL);
+                    lls_client_finalize_connection(connection);
+                    lls_client_replace_subevent_id_and_emit(gatt_service_client_get_packet_handler(&connection->basic_connection), packet, size,
                                                             GATTSERVICE_SUBEVENT_LLS_CLIENT_DISCONNECTED);
                     break;
 
@@ -282,8 +283,8 @@ static void lls_client_handle_gatt_client_event(uint8_t packet_type, uint16_t ch
     switch(hci_event_packet_get_type(packet)){
         case GATT_EVENT_CHARACTERISTIC_VALUE_QUERY_RESULT:
             connection_id = gatt_event_characteristic_value_query_result_get_connection_id(packet);
-            connection = (lls_client_connection_t *)gatt_service_client_get_connection_for_cid(&lls_client, connection_id);
-            btstack_assert(connection != NULL);                
+            connection = lls_client_get_connection_for_cid(connection_id);
+            btstack_assert(connection != NULL);
 
             lls_client_emit_read_event(connection, connection->characteristic_index, ATT_ERROR_SUCCESS, 
                 gatt_event_characteristic_value_query_result_get_value(packet), 
@@ -294,7 +295,7 @@ static void lls_client_handle_gatt_client_event(uint8_t packet_type, uint16_t ch
 
         case GATT_EVENT_QUERY_COMPLETE:
             connection_id = gatt_event_query_complete_get_connection_id(packet);
-            connection = (lls_client_connection_t *)gatt_service_client_get_connection_for_cid(&lls_client, connection_id);
+            connection = lls_client_get_connection_for_cid(connection_id);
             btstack_assert(connection != NULL);
 
             connection->state = LINK_LOSS_SERVICE_CLIENT_STATE_READY;
@@ -323,7 +324,7 @@ static uint16_t lls_client_serialize_characteristic_value_for_write(lls_client_c
 
 static void lls_client_run_for_connection(void * context){
     uint16_t connection_id = (uint16_t)(uintptr_t)context;
-    lls_client_connection_t * connection = (lls_client_connection_t *)gatt_service_client_get_connection_for_cid(&lls_client, connection_id);
+    lls_client_connection_t * connection = lls_client_get_connection_for_cid(connection_id);
 
     btstack_assert(connection != NULL);
     uint16_t value_length;
@@ -393,7 +394,7 @@ uint8_t link_loss_service_client_read_alert_level(uint16_t lls_cid){
 }
 
 uint8_t link_loss_service_client_write_alert_level(uint16_t lls_cid, lls_alert_level_t alert_level){
-    lls_client_connection_t * connection = (lls_client_connection_t *) gatt_service_client_get_connection_for_cid(&lls_client, lls_cid);
+    lls_client_connection_t * connection = lls_client_get_connection_for_cid(lls_cid);
     if (connection == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
