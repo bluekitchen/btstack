@@ -231,14 +231,6 @@ btstack_packet_handler_t gatt_service_client_get_packet_handler(const gatt_servi
 uint16_t gatt_service_client_get_mtu(const gatt_service_client_t * client, const gatt_service_client_connection_t * connection);
 
 /**
- * @brief Get connection object provided by gatt_service_client_connect_primary_service or gatt_service_client_connect_secondary_service by connection id
- * @param client
- * @param connection_cid
- * @return
- */
-gatt_service_client_connection_t * gatt_service_client_get_connection_for_cid(const gatt_service_client_t * client, uint16_t connection_cid);
-
-/**
  * @brief Get Characteristic UUID16 for value handle
  *
  * Used to handle incoming characteristic indications/notifications
