@@ -192,16 +192,6 @@ static uint16_t mcs_client_value_handle_for_index(mcs_client_connection_t * conn
     return connection->basic_connection.characteristics[connection->characteristic_index].value_handle;
 }
 
-static uint16_t gatt_service_client_characteristic_value_handle2uuid16(mcs_client_connection_t * connection, uint16_t value_handle) {
-    int i;
-    for (i = 0; i < connection->basic_connection.characteristics_num; i++){
-        if (connection->basic_connection.characteristics[i].value_handle == value_handle) {
-            return gatt_service_client_characteristic_uuid16_for_index(&mcs_client, i);
-        }
-    }
-    return 0;
-}
-
 static uint16_t mcs_client_serialize_characteristic_value_for_write(mcs_client_connection_t * connection, uint8_t ** out_value){
     uint16_t characteristic_uuid16 = gatt_service_client_characteristic_uuid16_for_index(&mcs_client,
                                                                                          connection->characteristic_index);
@@ -518,7 +508,8 @@ static void mcs_client_emit_notify_event(mcs_client_connection_t * connection, u
     btstack_assert(event_callback != NULL);
 
     uint16_t cid = connection->basic_connection.cid;
-    uint16_t characteristic_uuid16 = gatt_service_client_characteristic_value_handle2uuid16(connection, value_handle);
+    uint16_t characteristic_index = gatt_service_client_characteristic_index_for_value_handle(&connection->basic_connection, value_handle);
+    uint16_t characteristic_uuid16 = gatt_service_client_characteristic_uuid16_for_index(&mcs_client, characteristic_index);
 
     switch (characteristic_uuid16){
         case ORG_BLUETOOTH_CHARACTERISTIC_MEDIA_PLAYER_NAME:
