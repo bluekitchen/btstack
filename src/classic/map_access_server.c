@@ -357,12 +357,12 @@ static map_object_type_t map_server_parse_object_type(map_server_t* mas, const c
     if (strcmp("x-bt/ownerStatus", type_string) == 0) {
         RUN_AND_LOG_ACTION(return MAP_OBJECT_TYPE_PUT_OWNER_STATUS;)
     }
-
+#ifdef MAP_PTS_BUG_TC_MAP_OLD_MAP_MSE_GOEP_SRM_BV_04
     if (mas->OBEX_opcode == (OBEX_OPCODE_PUT | OBEX_OPCODE_FINAL_BIT_MASK)) {
         RUN_AND_LOG_ACTION(return MAP_OBJECT_TYPE_PUT_EMPTY;)
     }
-
-    return MAP_OBJECT_TYPE_UNKNOWN;
+#endif
+    RUN_AND_LOG_ACTION(return MAP_OBJECT_TYPE_UNKNOWN;)
 }
 
 static void map_server_obex_srm_init(obex_srm_t* obex_srm) {
@@ -452,6 +452,7 @@ static void map_server_handle_can_send_now(map_server_t* mas) {
         log_debug("MAS_STATE_SEND_INTERNAL_RESPONSE");
         // prepare response
         goep_server_response_create_general(mas->goep_cid);
+        map_server_add_srm_headers(mas);
         // next state
         map_server_operation_complete(mas);
         // send packet
@@ -754,18 +755,28 @@ static void map_server_handle_get_or_put_request(map_server_t* mas) {
     mas_folder_t folder = mas->map_server_dir;
     //uint16_t name_len = (uint16_t)strlen(mas->request.name);
     switch (mas->request.object_type) {
+
+    default:
     case MAP_OBJECT_TYPE_UNKNOWN:
     case MAP_OBJECT_TYPE_INVALID:
         mas->state = MAS_STATE_SEND_INTERNAL_RESPONSE;
         RUN_AND_LOG_ACTION(mas->response.code = OBEX_RESP_BAD_REQUEST;)
         goep_server_request_can_send_now(mas->goep_cid);
         return;
-
+#ifdef MAP_PTS_BUG_TC_MAP_OLD_MAP_MSE_GOEP_SRM_BV_04
     case MAP_OBJECT_TYPE_PUT_EMPTY:
+    {
+        static uint8_t respcode[] = { 0xA0, 0xC0, 0xC1, 0xC3, 0xC4, 0xC6, 0xCF };
+        static idx = 0;
+
         mas->state = MAS_STATE_SEND_INTERNAL_RESPONSE;
-        RUN_AND_LOG_ACTION(mas->response.code = OBEX_RESP_NOT_FOUND;)
+        RUN_AND_LOG_ACTION(mas->response.code = respcode[idx++];)
+        if (idx >= ARRAYSIZE(respcode))
+            idx = 0;
         goep_server_request_can_send_now(mas->goep_cid);
         return;
+    }
+#endif
 
     case MAP_OBJECT_TYPE_PUT_MESSAGE_CONTINUE:
         mas->state = MAS_STATE_SEND_RESPONSE_CONTINUE;
@@ -787,10 +798,6 @@ static void map_server_handle_get_or_put_request(map_server_t* mas) {
     case MAP_OBJECT_TYPE_PUT_NOTIFICATION_REGISTRATION:
     case MAP_OBJECT_TYPE_PUT_SET_NOTIFICATION_FILTER:
     case MAP_OBJECT_TYPE_PUT_OWNER_STATUS:
-        break;
-
-    default:
-        btstack_unreachable();
         break;
     }
 
