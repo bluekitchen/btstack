@@ -69,6 +69,7 @@
 #include "le-audio/le_audio_util.h"
 
 static gatt_service_client_t ots_client;
+static btstack_linked_list_t ots_connections;
 
 static void ots_client_packet_handler_internal(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static void ots_client_handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
@@ -129,6 +130,28 @@ static char * ots_client_characteristic_name[] = {
     "RFU"
 };
 #endif
+
+
+static ots_client_connection_t * ots_client_get_connection_for_cid(uint16_t connection_cid){
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it,  &ots_connections);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        ots_client_connection_t * connection = (ots_client_connection_t *)btstack_linked_list_iterator_next(&it);
+        if (gatt_service_client_get_connection_id(&connection->basic_connection) == connection_cid) {
+            return connection;
+        }
+    }
+    return NULL;
+}
+
+static void ots_client_add_connection(ots_client_connection_t * connection){
+    btstack_linked_list_add(&ots_connections, (btstack_linked_item_t*) connection);
+}
+
+static void ots_client_finalize_connection(ots_client_connection_t * connection){
+    btstack_linked_list_remove(&ots_connections, (btstack_linked_item_t*) connection);
+}
+
 
 static void ots_client_emit_timeout(gatt_service_client_connection_t * connection_helper, uint16_t characteristic_uuid){
     btstack_assert(connection_helper != NULL);
@@ -210,14 +233,6 @@ static void ots_client_emit_connection_established(ots_client_connection_t * con
     pos += 4;
     event[pos++] = status;
     (*connection_helper->event_callback)(HCI_EVENT_PACKET, 0, event, pos);
-}
-
-static void ots_client_finalize_connection(ots_client_connection_t * connection){
-    // already finalized by GATT CLIENT HELPER
-    if (connection == NULL){
-        return;
-    }
-    gatt_service_client_finalize_connection(&ots_client, &connection->basic_connection);
 }
 
 static void ots_client_connected(ots_client_connection_t * connection, uint8_t status) {
@@ -944,12 +959,17 @@ uint8_t object_transfer_service_client_connect(
 
     connection->state = OBJECT_TRANSFER_SERVICE_CLIENT_STATE_W4_CONNECTED;
     memset(connection->characteristics_storage, 0, OBJECT_TRANSFER_SERVICE_NUM_CHARACTERISTICS * sizeof(gatt_service_client_characteristic_t));
-    return gatt_service_client_connect_primary_service(con_handle,
+    uint8_t status = gatt_service_client_connect_primary_service(con_handle,
                                                        &ots_client, &connection->basic_connection,
                                                        ORG_BLUETOOTH_SERVICE_OBJECT_TRANSFER, service_index,
                                                        connection->characteristics_storage,
                                                        OBJECT_TRANSFER_SERVICE_NUM_CHARACTERISTICS,
                                                        packet_handler, ots_cid);
+    if (status == ERROR_CODE_SUCCESS){
+        ots_client_add_connection(connection);
+    }
+
+    return status;
 }
 
 
@@ -969,10 +989,16 @@ uint8_t object_transfer_service_client_connect_secondary_service(
     connection->state = OBJECT_TRANSFER_SERVICE_CLIENT_STATE_W4_CONNECTED;
     memset(connection->characteristics_storage, 0, OBJECT_TRANSFER_SERVICE_NUM_CHARACTERISTICS * sizeof(gatt_service_client_characteristic_t));
 
-    return gatt_service_client_connect_secondary_service(con_handle,
+    uint8_t status = gatt_service_client_connect_secondary_service(con_handle,
         &ots_client, &connection->basic_connection,
         ORG_BLUETOOTH_SERVICE_OBJECT_TRANSFER, service_start_handle, service_end_handle, service_index,
         connection->characteristics_storage, OBJECT_TRANSFER_SERVICE_NUM_CHARACTERISTICS, packet_handler);
+
+    if (status == ERROR_CODE_SUCCESS){
+        ots_client_add_connection(connection);
+    }
+
+    return status;
 }
 
 uint8_t object_transfer_service_client_read_ots_feature(ots_client_connection_t * connection){
