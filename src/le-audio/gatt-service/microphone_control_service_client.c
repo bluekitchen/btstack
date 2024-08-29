@@ -139,20 +139,6 @@ static void mics_client_connected(mics_client_connection_t *connection, uint8_t 
     }
 }
 
-static uint16_t mics_client_value_handle_for_index(mics_client_connection_t * connection){
-    return connection->basic_connection.characteristics[connection->characteristic_index].value_handle;
-}
-
-static uint16_t gatt_service_client_characteristic_value_handle2uuid16(mics_client_connection_t * connection, uint16_t value_handle) {
-    int i;
-    for (i = 0; i < connection->basic_connection.characteristics_num; i++){
-        if (connection->basic_connection.characteristics[i].value_handle == value_handle) {
-            return gatt_service_client_characteristic_uuid16_for_index(&mics_client, i);
-        }
-    }
-    return 0;
-}
-
 static void mics_client_emit_number(uint16_t cid, btstack_packet_handler_t event_callback, uint8_t subevent, const uint8_t * data, uint8_t data_size, uint8_t expected_data_size, uint8_t status){
     UNUSED(data_size);
     btstack_assert(event_callback != NULL);
@@ -229,7 +215,8 @@ static void mics_client_emit_notify_event(mics_client_connection_t * connection,
     btstack_assert(event_callback != NULL);
 
     uint16_t cid = connection->basic_connection.cid;
-    uint16_t characteristic_uuid16 = gatt_service_client_characteristic_value_handle2uuid16(connection, value_handle);
+    uint16_t characteristic_index = gatt_service_client_characteristic_index_for_value_handle(&connection->basic_connection, value_handle);
+    uint16_t characteristic_uuid16 = gatt_service_client_characteristic_uuid16_for_index(&mics_client, characteristic_index);
 
     switch (characteristic_uuid16){
         case ORG_BLUETOOTH_CHARACTERISTIC_MUTE:
@@ -568,7 +555,8 @@ static void mics_client_run_for_connection(void * context){
 
             (void) gatt_client_read_value_of_characteristic_using_value_handle_with_context(
                 &mics_client_handle_gatt_client_event, connection->basic_connection.con_handle,
-                mics_client_value_handle_for_index(connection), mics_client.service_id, connection->basic_connection.cid);
+                gatt_service_client_characteristic_value_handle_for_index(&connection->basic_connection, connection->characteristic_index),
+                          mics_client.service_id, connection->basic_connection.cid);
             break;
 
         case MICROPHONE_CONTROL_SERVICE_CLIENT_STATE_W2_WRITE_CHARACTERISTIC_VALUE:
@@ -577,7 +565,7 @@ static void mics_client_run_for_connection(void * context){
             value_length = mics_client_serialize_characteristic_value_for_write(connection, &value);
             (void) gatt_client_write_value_of_characteristic_with_context(
                     &mics_client_handle_gatt_client_event, connection->basic_connection.con_handle,
-                mics_client_value_handle_for_index(connection),
+                    gatt_service_client_characteristic_value_handle_for_index(&connection->basic_connection, connection->characteristic_index),
                 value_length, value, mics_client.service_id, connection->basic_connection.cid);
             
             break;
