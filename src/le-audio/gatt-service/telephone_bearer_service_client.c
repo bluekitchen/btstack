@@ -96,31 +96,30 @@ static uint16_t tbs_client_value_handle_for_index(tbs_client_connection_t * conn
     return connection->basic_connection.characteristics[connection->characteristic_index].value_handle;
 }
 
-static void tbs_client_emit_connection_established(gatt_service_client_connection_t * connection_helper, uint8_t status){
-    btstack_assert(connection_helper != NULL);
-    btstack_assert(connection_helper->event_callback != NULL);
+static void tbs_client_emit_connection_established(tbs_client_connection_t * connection, uint8_t status){
+    btstack_assert(connection != NULL);
 
     uint8_t event[9];
     int pos = 0;
     event[pos++] = HCI_EVENT_LEAUDIO_META;
     event[pos++] = sizeof(event) - 2;
     event[pos++] = LEAUDIO_SUBEVENT_TBS_CLIENT_CONNECTED;
-    little_endian_store_16(event, pos, connection_helper->con_handle);
+    little_endian_store_16(event, pos, connection->basic_connection.con_handle);
     pos += 2;
-    little_endian_store_16(event, pos, connection_helper->cid);
+    little_endian_store_16(event, pos, connection->basic_connection.cid);
     pos += 2;
     event[pos++] = 0; // num included services
     event[pos++] = status;
-    (*connection_helper->event_callback)(HCI_EVENT_PACKET, 0, event, pos);
+    (*connection->basic_connection.event_callback)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
 static void tbs_client_connected(tbs_client_connection_t * connection, uint8_t status) {
     if (status == ERROR_CODE_SUCCESS){
         connection->state = TELEPHONE_BEARER_SERVICE_CLIENT_STATE_READY;
-        tbs_client_emit_connection_established(&connection->basic_connection, status);
+        tbs_client_emit_connection_established(connection, status);
     } else {
         connection->state = TELEPHONE_BEARER_SERVICE_CLIENT_STATE_IDLE;
-        tbs_client_emit_connection_established(&connection->basic_connection, status);
+        tbs_client_emit_connection_established(connection, status);
         tbs_client_finalize_connection(connection);
     }
 }
@@ -133,9 +132,8 @@ static void tbs_client_replace_subevent_id_and_emit(btstack_packet_handler_t cal
     (*callback)(HCI_EVENT_PACKET, 0, packet, size);
 }
 
-static void tbs_client_emit_done_event(gatt_service_client_connection_t * connection_helper, uint8_t index, uint8_t att_status){
-    btstack_assert(connection_helper != NULL);
-    btstack_assert(connection_helper->event_callback != NULL);
+static void tbs_client_emit_done_event(tbs_client_connection_t * connection, uint8_t index, uint8_t att_status){
+    btstack_assert(connection != NULL);
 
     uint16_t characteristic_uuid16 = gatt_service_client_characteristic_uuid16_for_index(&tbs_client, index);
 
@@ -145,13 +143,13 @@ static void tbs_client_emit_done_event(gatt_service_client_connection_t * connec
     event[pos++] = sizeof(event) - 2;
     event[pos++] = LEAUDIO_SUBEVENT_TBS_CLIENT_WRITE_DONE;
 
-    little_endian_store_16(event, pos, connection_helper->cid);
+    little_endian_store_16(event, pos, connection->basic_connection.cid);
     pos+= 2;
-    event[pos++] = connection_helper->service_index;
+    event[pos++] = connection->basic_connection.service_index;
     little_endian_store_16(event, pos, characteristic_uuid16);
     pos+= 2;
     event[pos++] = att_status;
-    (*connection_helper->event_callback)(HCI_EVENT_PACKET, 0, event, pos);
+    (*connection->basic_connection.event_callback)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
 typedef struct {
@@ -200,12 +198,12 @@ static void tbs_client_emit_nbytes( const emitter_t * emit ) {
     event_callback(HCI_EVENT_PACKET, 0, event, 5 + data_length);
 }
 
-static void tbs_client_emit_read_event(gatt_service_client_connection_t * connection_helper, uint8_t characteristic_index, uint8_t att_status, const uint8_t * data, uint16_t data_size){
+static void tbs_client_emit_read_event(tbs_client_connection_t * connection, uint8_t characteristic_index, uint8_t att_status, const uint8_t * data, uint16_t data_size){
     UNUSED(att_status);
 
     emitter_t emitter = {
-            .callback = connection_helper->event_callback,
-            .cid = connection_helper->cid,
+            .callback = connection->basic_connection.event_callback,
+            .cid = connection->basic_connection.cid,
             .data = data,
             .data_size = data_size,
             .subevent = tbs_characteristic_index_to_subevent(characteristic_index),
@@ -247,9 +245,9 @@ static tbs_characteristic_index_t gatt_service_client_characteristic_value_handl
     return 0;
 }
 
-static void tbs_client_emit_notify_event(gatt_service_client_connection_t * connection_helper, uint16_t value_handle, uint8_t att_status, const uint8_t * data, uint16_t data_size){
-    tbs_characteristic_index_t index = gatt_service_client_characteristic_value_handle_to_index( (tbs_client_connection_t *)connection_helper, value_handle );
-    tbs_client_emit_read_event( connection_helper, index, att_status, data, data_size );
+static void tbs_client_emit_notify_event(tbs_client_connection_t * connection, uint16_t value_handle, uint8_t att_status, const uint8_t * data, uint16_t data_size){
+    tbs_characteristic_index_t index = gatt_service_client_characteristic_value_handle_to_index( connection, value_handle );
+    tbs_client_emit_read_event( connection, index, att_status, data, data_size );
 }
 
 static uint8_t tbs_client_request_send_gatt_query(tbs_client_connection_t * connection, tbs_characteristic_index_t characteristic_index){
@@ -507,7 +505,7 @@ static void tbs_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
                     connection = tbs_client_get_connection_for_cid(connection_id);
                     btstack_assert(connection != NULL);
                     tbs_client_finalize_connection(connection);
-                    tbs_client_replace_subevent_id_and_emit(gatt_service_client_get_packet_handler(&connection->basic_connection), packet, size, LEAUDIO_SUBEVENT_TBS_CLIENT_DISCONNECTED);
+                    tbs_client_replace_subevent_id_and_emit(connection->packet_handler, packet, size, LEAUDIO_SUBEVENT_TBS_CLIENT_DISCONNECTED);
                     break;
 
                 default:
@@ -520,7 +518,7 @@ static void tbs_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
             connection = tbs_client_get_connection_for_cid(connection_id);
             btstack_assert(connection != NULL);
 
-            tbs_client_emit_notify_event(&connection->basic_connection, gatt_event_notification_get_value_handle(packet), ATT_ERROR_SUCCESS,
+            tbs_client_emit_notify_event(connection, gatt_event_notification_get_value_handle(packet), ATT_ERROR_SUCCESS,
                                          gatt_event_notification_get_value(packet), gatt_event_notification_get_value_length(packet));
             break;
         default:
@@ -534,7 +532,6 @@ static void tbs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t ch
     UNUSED(size);
 
     uint16_t connection_id;
-    gatt_service_client_connection_t * connection_helper = NULL;
     tbs_client_connection_t * connection = NULL;
 
     switch(hci_event_packet_get_type(packet)){
@@ -545,7 +542,7 @@ static void tbs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t ch
             switch (connection->state){
                 case TELEPHONE_BEARER_SERVICE_CLIENT_STATE_W4_READ_CHARACTERISTIC_VALUE_RESULT:
                     connection->state = TELEPHONE_BEARER_SERVICE_CLIENT_STATE_READY;
-                    tbs_client_emit_read_event(connection_helper, connection->characteristic_index, ATT_ERROR_SUCCESS,
+                    tbs_client_emit_read_event(connection, connection->characteristic_index, ATT_ERROR_SUCCESS,
                                                 gatt_event_characteristic_value_query_result_get_value(packet),
                                                 gatt_event_characteristic_value_query_result_get_value_length(packet));
                     break;
@@ -563,7 +560,7 @@ static void tbs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t ch
 
             switch (connection->state){
                 case TELEPHONE_BEARER_SERVICE_CLIENT_STATE_W4_WRITE_CHARACTERISTIC_VALUE_RESULT:
-                    tbs_client_emit_done_event(connection_helper, connection->characteristic_index, gatt_event_query_complete_get_att_status(packet));
+                    tbs_client_emit_done_event(connection, connection->characteristic_index, gatt_event_query_complete_get_att_status(packet));
                     connection->state = TELEPHONE_BEARER_SERVICE_CLIENT_STATE_READY;
                     break;
 
