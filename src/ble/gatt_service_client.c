@@ -131,8 +131,8 @@ btstack_packet_handler_t gatt_service_client_get_packet_handler(const gatt_servi
     return connection->event_callback;
 }
 
-uint16_t gatt_service_client_characteristic_uuid16_for_index(const gatt_service_client_t * client, uint8_t index){
-    return client->characteristics_desc16[index];
+uint16_t gatt_service_client_characteristic_uuid16_for_index(const gatt_service_client_t * client, uint8_t characteristic_index){
+    return client->characteristics_desc16[characteristic_index];
 }
 
 uint16_t gatt_service_client_characteristic_value_handle_for_index(const gatt_service_client_connection_t *connection, uint8_t characteristic_index){
@@ -600,9 +600,11 @@ static void gatt_service_client_hci_event_handler(uint8_t packet_type, uint16_t 
 /* API */
 
 void gatt_service_client_init(void){
-    gatt_service_client_hci_callback_registration.callback = gatt_service_client_hci_event_handler;
-    hci_add_event_handler(&gatt_service_client_hci_callback_registration);
-    gatt_service_client_intitialized = true;
+    if (false == gatt_service_client_intitialized){
+        gatt_service_client_hci_callback_registration.callback = gatt_service_client_hci_event_handler;
+        hci_add_event_handler(&gatt_service_client_hci_callback_registration);
+        gatt_service_client_intitialized = true;
+    }
 }
 
 void gatt_service_client_register_client(gatt_service_client_t *client, btstack_packet_handler_t packet_handler) {

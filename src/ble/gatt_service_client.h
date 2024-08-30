@@ -234,10 +234,10 @@ uint16_t gatt_service_client_get_mtu(const gatt_service_client_t * client, const
  * @brief Get Characteristic UUID16 for given Characteristic index
  *
  * @param client
- * @param index
+ * @param characteristic_index
  * @return
  */
-uint16_t gatt_service_client_characteristic_uuid16_for_index(const gatt_service_client_t * client, uint8_t index);
+uint16_t gatt_service_client_characteristic_uuid16_for_index(const gatt_service_client_t * client, uint8_t characteristic_index);
 
 /**
  * @brief Get Characteristic Value Handle for given Characteristic index
