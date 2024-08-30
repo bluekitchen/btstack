@@ -89,7 +89,7 @@ static struct {
 } mnc = {0};
 
 // we asume our own MAS ConnectionIDs are in the range of 1..HIGHEST_MAS_CONNECTION_ID_VALUE
-STATIC_ASSERT(sizeof(mnc.active_notifications)*CHAR_BIT >= HIGHEST_MAS_CONNECTION_ID_VALUE, active_notifications_bit_mask_too_small);
+STATIC_ASSERT(sizeof(mnc.active_notifications)*8 >= HIGHEST_MAS_CONNECTION_ID_VALUE, active_notifications_bit_mask_too_small);
 
 #ifdef ENABLE_GOEP_L2CAP
 // singleton instance
