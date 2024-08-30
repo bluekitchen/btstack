@@ -52,6 +52,7 @@
 
 #include "btstack_event.h"
 #include "btstack_debug.h"
+#include "btstack_util.h"
 #include "yxml.h"
 #include "classic/goep_client.h"
 #include "classic/goep_server.h"
@@ -154,11 +155,14 @@ static mas_uint128hex_t ConversationID = { 0 };
 
 static void increase_version_counter_by_1(char* name, mas_uint128hex_t counter) {
     counter[BT_UINT128_HEX_LEN_BYTES - 1]++;
-    log_debug("%s:", name)
-        log_debug_hexdump(counter, BT_UINT128_HEX_LEN_BYTES);
+    log_debug("%s:", name);
+    log_debug_hexdump(counter, BT_UINT128_HEX_LEN_BYTES);
 }
 
-
+// temp min3
+uint32_t btstack_min3(uint32_t a, uint32_t b, uint32_t c){
+    return btstack_min(btstack_min(a,b), c);
+}
 /*
 * Call-backs which update/change the state or behaviour of a test case, e.g. add one more message after each GetMessageListing
 */
@@ -179,7 +183,7 @@ static void MAP_MSE_MMB_BV_25_inc_ConvListCnt(void) {
 static void MAP_MSE_MMD_BV_05_PutMsg(void) {
     mac_select_tc_MAP_MSE_MMD_BV_0x(0);
     char* body = create_next_mnc_event_report_body_object();
-    map_notification_client_send_event(mnc.cid, 0, body, strlen(body));
+    map_notification_client_send_event(mnc.cid, 0, (uint8_t *) body, strlen(body));
     MAP_PRINTF("map_notification_client_send_event mnc.cid:%04x [%s]", mnc.cid, body);
     log_debug("run mac_select_tc_MAP_MSE_MMD_BV_0x to sent a RemovedMessage notification");
 }
@@ -188,7 +192,7 @@ static void MAP_MSE_MMB_BV_43_getConvoListng(void) {
     mac_select_tc_MAP_MSE_MMD_BV_0x(1);
     increase_version_counter_by_1("ConversationListingVersionCounter", ConversationListingVersionCounter);
     char* body = create_next_mnc_event_report_body_object();
-    map_notification_client_send_event(mnc.cid, 0, body, strlen(body));
+    map_notification_client_send_event(mnc.cid, 0, (uint8_t *) body, strlen(body));
     MAP_PRINTF("map_notification_client_send_event mnc.cid:%04x [%s]", mnc.cid, body);
     log_debug("run MAP_MSE_MMB_BV_43_getMsgListng to sent a RemovedMessage notification");
 }
@@ -343,7 +347,7 @@ struct test_set_config* test_set = &mas_test_set;
 
 // declaration of config struct in mnc.mnc.c
 struct test_set_config mac_test_set;
-static select_test_set(char c) {
+static void select_test_set(char c) {
     if (c == 'S') {
         test_set = &mas_test_set;
     }
@@ -496,13 +500,13 @@ static size_t create_obex_body(struct objconfig_s* type, uint16_t first, uint16_
     OBEX_body_object[0] = 0;
     
     // header
-    len = snprintf(&OBEX_body_object[pos], size, type->header);
+    len = snprintf((char *) &OBEX_body_object[pos], size, "%s", type->header);
     pos += len; size -= len;
     
     while ((size > 0) && (first < last)){        
         log_debug("2 first:%d last:%d pos:%d size:%d <%s>", first, last, pos, size, OBEX_body_object);
         // add entry
-        len = type->fbody(&OBEX_body_object[pos], first, size);
+        len = type->fbody((char*) &OBEX_body_object[pos], first, size);
         pos += len; size -= len;
         first++;
     }
@@ -510,7 +514,8 @@ static size_t create_obex_body(struct objconfig_s* type, uint16_t first, uint16_
     log_debug("4 first:%d last:%d pos:%d size:%d <%s>", first, last, pos, size, OBEX_body_object);
 
     // footer
-    len = snprintf(&OBEX_body_object[pos], size, type->footer);
+    len = snprintf((char*) &OBEX_body_object[pos], size, "%s",type->footer);
+
     pos += len; size -= len;
 
     log_debug("5 first:%d last:%d pos:%d size:%d <%s>", first, last, pos, size, OBEX_body_object);
@@ -539,7 +544,7 @@ static void send_obex_object(enum body_object obj, uint16_t map_cid, uint16_t st
     }
 
     if (continuation == 0) {
-        end_index = min(end_index, mas_cfg->obj_count + one_object_more_or_less);
+        end_index = btstack_min(end_index, mas_cfg->obj_count + one_object_more_or_less);
         object_size = create_obex_body(type, start_index, end_index);
 
         log_debug("obj_count:%u start_index:%u end_index:%u one_object_more_or_less:%u\n", 
@@ -548,7 +553,7 @@ static void send_obex_object(enum body_object obj, uint16_t map_cid, uint16_t st
 
     // copy first part of OBEX body object into upload_buffer, limit len to space, buf size and packet size
     len = object_size - continuation; log_debug("len:%d", len);
-    len = min3(len, body_size, sizeof(upload_buffer));
+    len = btstack_min3(len, body_size, sizeof(upload_buffer));
     continuation += (uint32_t)len;
     log_debug("len:%d pos:%d upload_buffer [%.*s]", len, continuation, len, &OBEX_body_object[start]);
 
@@ -684,7 +689,7 @@ static void stdin_process(char c){
 
         case 'e': {
             char* body = create_next_mnc_event_report_body_object();
-            map_notification_client_send_event(mnc.cid, 0, body, strlen(body));
+            map_notification_client_send_event(mnc.cid, 0, (uint8_t*) body, strlen(body));
             MAP_PRINTF("map_notification_client_send_event mnc.cid:%04x [%s]", mnc.cid, body);
             break;
         }
