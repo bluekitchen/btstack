@@ -1121,7 +1121,7 @@ uint8_t object_transfer_service_client_write_object_name(ots_client_connection_t
     connection->data_length = strlen(name);
 
     // select long write based on remote MTU - which might not be available yet
-    uint16_t mtu = gatt_service_client_get_mtu(&ots_client, &connection->basic_connection);
+    uint16_t mtu = gatt_service_client_get_mtu(&connection->basic_connection);
     if (mtu >= connection->data_length + 3){
         return ots_client_request_write_characteristic(connection, OTS_CLIENT_CHARACTERISTIC_INDEX_OBJECT_NAME);
     } else {
@@ -1179,7 +1179,7 @@ uint8_t ots_client_write_filter(ots_client_connection_t * connection, ots_client
     connection->data_length = 1 + data_length;
 
     // select long write based on remote MTU - which might not be available yet
-    uint16_t mtu = gatt_service_client_get_mtu(&ots_client, &connection->basic_connection);
+    uint16_t mtu = gatt_service_client_get_mtu(&connection->basic_connection);
     if (mtu >= connection->data_length + 3){
         return ots_client_request_write_characteristic(connection, characteristic_index);
     } else {

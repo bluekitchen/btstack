@@ -219,7 +219,7 @@ uint8_t gatt_service_client_get_service_index(const gatt_service_client_connecti
  * @param connection
  * @returns MTU or 0 in case of error
  */
-uint16_t gatt_service_client_get_mtu(const gatt_service_client_t * client, const gatt_service_client_connection_t * connection);
+uint16_t gatt_service_client_get_mtu(const gatt_service_client_connection_t *connection);
 
 /**
  * @brief Get Characteristic UUID16 for given Characteristic index

@@ -107,8 +107,7 @@ static gatt_service_client_connection_t * gatt_service_client_get_connection_for
     return NULL;
 }
 
-uint16_t gatt_service_client_get_mtu(const gatt_service_client_t * client, const gatt_service_client_connection_t * connection){
-    UNUSED(client);
+uint16_t gatt_service_client_get_mtu(const gatt_service_client_connection_t *connection) {
     uint16_t mtu = 0;
     gatt_client_get_mtu(connection->con_handle, &mtu);
     return mtu;
