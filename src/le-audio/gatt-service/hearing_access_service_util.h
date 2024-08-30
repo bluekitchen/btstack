@@ -132,9 +132,6 @@ typedef struct {
     char    name[HAS_PRESET_RECORD_NAME_MAX_LENGTH];
     bool    active;
 
-    // used to buffer the position or record index, until all clients are notified of preset record change
-    uint8_t calculated_position;
-
     // current preset change task, used in queue
     uint8_t scheduled_task;
 

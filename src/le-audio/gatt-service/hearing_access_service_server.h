@@ -51,13 +51,6 @@
 extern "C" {
 #endif
 
-    typedef enum {
-        HAS_SERVER_CONNECTION_STATE_READY = 0,
-        HAS_SERVER_CONNECTION_STATE_PENDING_ATT_RESPONSE,
-        HAS_SERVER_CONNECTION_STATE_PENDING_ATT_INDICATION,
-        HAS_SERVER_CONNECTION_STATE_PENDING_ATT_INDICATION_OF_ALL_CHANGES,
-    } has_server_connection_state_t;
-
 typedef struct {
     hci_con_handle_t con_handle;
 
@@ -65,12 +58,12 @@ typedef struct {
     bool scheduled_preset_record_change_notification;
     uint8_t scheduled_control_point_notification_tasks;
 
-    has_server_connection_state_t state;
     // used for read presets
     uint8_t start_index;
-    uint8_t preset_position;
-    uint8_t preset_index;
+    uint8_t current_index;
     uint8_t num_presets_to_read;
+    uint8_t num_presets_already_read;
+
     uint8_t param_size;
 
 } has_server_connection_t;
@@ -100,17 +93,13 @@ void hearing_access_service_server_init(uint8_t hearing_aid_features, uint8_t pr
  */
 void hearing_access_service_server_register_packet_handler(btstack_packet_handler_t packet_handler);
 
-uint8_t hearing_access_service_server_add_preset(uint8_t index, uint8_t properties, char * name);
+uint8_t hearing_access_service_server_add_preset(uint8_t properties, char * name);
 uint8_t hearing_access_service_server_delete_preset(uint8_t index);
 
 uint8_t hearing_access_service_server_preset_record_set_active(uint8_t index);
 uint8_t hearing_access_service_server_preset_record_set_available(uint8_t index);
 uint8_t hearing_access_service_server_preset_record_set_unavailable(uint8_t index);
 uint8_t hearing_access_service_server_preset_record_set_name(uint8_t index, const char * name);
-
-#ifdef ENABLE_TESTING_SUPPORT
-void hearing_access_service_server_execute(void);
-#endif
 
 /* API_END */
 
