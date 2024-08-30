@@ -619,11 +619,13 @@ void gatt_service_client_register_client(gatt_service_client_t *client, btstack_
     btstack_linked_list_add(&gatt_service_clients, &client->item);
 }
 
-uint8_t gatt_service_client_connect_primary_service(
-        hci_con_handle_t con_handle, gatt_service_client_t * client,
-        gatt_service_client_connection_t * connection,
-        uint16_t service_uuid16, uint8_t service_index, gatt_service_client_characteristic_t * characteristics,
-        uint8_t characteristics_num, btstack_packet_handler_t packet_handler, uint16_t * connection_cid){
+uint8_t
+gatt_service_client_connect_primary_service_with_uuid16(hci_con_handle_t con_handle, gatt_service_client_t *client,
+                                                        gatt_service_client_connection_t *connection,
+                                                        uint16_t service_uuid16, uint8_t service_index,
+                                                        gatt_service_client_characteristic_t *characteristics,
+                                                        uint8_t characteristics_num,
+                                                        btstack_packet_handler_t packet_handler) {
     
     btstack_assert(client          != NULL);
     btstack_assert(connection      != NULL);
@@ -639,13 +641,8 @@ uint8_t gatt_service_client_connect_primary_service(
         return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
     }
 
-    uint16_t cid = gatt_service_client_get_next_cid(client);
-    if (connection_cid != NULL) {
-        *connection_cid = cid;
-    }
-    
     connection->state = GATT_SERVICE_CLIENT_STATE_W2_QUERY_PRIMARY_SERVICE;
-    connection->cid                 = *connection_cid;
+    connection->cid                 = gatt_service_client_get_next_cid(client);
     connection->con_handle          = con_handle;
     connection->service_uuid16      = service_uuid16;
     connection->service_index       = service_index;
@@ -658,12 +655,14 @@ uint8_t gatt_service_client_connect_primary_service(
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t gatt_service_client_connect_secondary_service(
-        hci_con_handle_t con_handle,
-        gatt_service_client_t * client, gatt_service_client_connection_t * connection,
-        uint16_t service_uuid16, uint16_t service_start_handle, uint16_t service_end_handle, uint8_t service_index,
-        gatt_service_client_characteristic_t * characteristics, uint8_t characteristics_num,
-        btstack_packet_handler_t packet_handler){
+uint8_t
+gatt_service_client_connect_secondary_service_with_uuid16(hci_con_handle_t con_handle, gatt_service_client_t *client,
+                                                          gatt_service_client_connection_t *connection,
+                                                          uint16_t service_uuid16, uint8_t service_index,
+                                                          uint16_t service_start_handle, uint16_t service_end_handle,
+                                                          gatt_service_client_characteristic_t *characteristics,
+                                                          uint8_t characteristics_num,
+                                                          btstack_packet_handler_t packet_handler) {
 
     btstack_assert(client != NULL);
     btstack_assert(connection != NULL);

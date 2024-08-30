@@ -957,12 +957,13 @@ uint8_t object_transfer_service_client_connect(
 
     connection->state = OBJECT_TRANSFER_SERVICE_CLIENT_STATE_W4_CONNECTED;
     memset(connection->characteristics_storage, 0, OBJECT_TRANSFER_SERVICE_NUM_CHARACTERISTICS * sizeof(gatt_service_client_characteristic_t));
-    uint8_t status = gatt_service_client_connect_primary_service(con_handle,
-                                                       &ots_client, &connection->basic_connection,
-                                                       ORG_BLUETOOTH_SERVICE_OBJECT_TRANSFER, service_index,
-                                                       connection->characteristics_storage,
-                                                       OBJECT_TRANSFER_SERVICE_NUM_CHARACTERISTICS,
-                                                       packet_handler, ots_cid);
+    uint8_t status = gatt_service_client_connect_primary_service_with_uuid16(con_handle,
+                                                                             &ots_client, &connection->basic_connection,
+                                                                             ORG_BLUETOOTH_SERVICE_OBJECT_TRANSFER,
+                                                                             service_index,
+                                                                             connection->characteristics_storage,
+                                                                             OBJECT_TRANSFER_SERVICE_NUM_CHARACTERISTICS,
+                                                                             packet_handler);
     if (status == ERROR_CODE_SUCCESS){
         ots_client_add_connection(connection);
     }
@@ -987,10 +988,15 @@ uint8_t object_transfer_service_client_connect_secondary_service(
     connection->state = OBJECT_TRANSFER_SERVICE_CLIENT_STATE_W4_CONNECTED;
     memset(connection->characteristics_storage, 0, OBJECT_TRANSFER_SERVICE_NUM_CHARACTERISTICS * sizeof(gatt_service_client_characteristic_t));
 
-    uint8_t status = gatt_service_client_connect_secondary_service(con_handle,
-        &ots_client, &connection->basic_connection,
-        ORG_BLUETOOTH_SERVICE_OBJECT_TRANSFER, service_start_handle, service_end_handle, service_index,
-        connection->characteristics_storage, OBJECT_TRANSFER_SERVICE_NUM_CHARACTERISTICS, packet_handler);
+    uint8_t status = gatt_service_client_connect_secondary_service_with_uuid16(con_handle,
+                                                                               &ots_client,
+                                                                               &connection->basic_connection,
+                                                                               ORG_BLUETOOTH_SERVICE_OBJECT_TRANSFER,
+                                                                               service_index,
+                                                                               service_start_handle, service_end_handle,
+                                                                               connection->characteristics_storage,
+                                                                               OBJECT_TRANSFER_SERVICE_NUM_CHARACTERISTICS,
+                                                                               packet_handler);
 
     if (status == ERROR_CODE_SUCCESS){
         ots_client_add_connection(connection);

@@ -637,11 +637,13 @@ uint8_t telephone_bearer_service_client_connect(
     connection->gatt_query_can_send_now.context = (void *)connection;
 
     connection->state = TELEPHONE_BEARER_SERVICE_CLIENT_STATE_W4_CONNECTED;
-    uint8_t status = gatt_service_client_connect_primary_service(con_handle,
-                                                       &tbs_client, &connection->basic_connection,
-                                                       ORG_BLUETOOTH_SERVICE_TELEPHONE_BEARER_SERVICE, service_index,
-                                                       connection->characteristics_storage, TBS_CHARACTERISTICS_NUM,
-                                                       packet_handler, tbs_cid);
+    uint8_t status = gatt_service_client_connect_primary_service_with_uuid16(con_handle,
+                                                                             &tbs_client, &connection->basic_connection,
+                                                                             ORG_BLUETOOTH_SERVICE_TELEPHONE_BEARER_SERVICE,
+                                                                             service_index,
+                                                                             connection->characteristics_storage,
+                                                                             TBS_CHARACTERISTICS_NUM,
+                                                                             packet_handler);
     if (status == ERROR_CODE_SUCCESS){
         tbs_client_add_connection(connection);
     }
@@ -663,12 +665,13 @@ uint8_t telephone_generic_bearer_service_client_connect(
     connection->gatt_query_can_send_now.context = (void *)connection;
 
     connection->state = TELEPHONE_BEARER_SERVICE_CLIENT_STATE_W4_CONNECTED;
-    uint8_t status =  gatt_service_client_connect_primary_service(con_handle,
-                                                       &tbs_client, &connection->basic_connection,
-                                                       ORG_BLUETOOTH_SERVICE_GENERIC_TELEPHONE_BEARER_SERVICE,
-                                                       service_index,
-                                                       connection->characteristics_storage, TBS_CHARACTERISTICS_NUM,
-                                                       packet_handler, tbs_cid);
+    uint8_t status = gatt_service_client_connect_primary_service_with_uuid16(con_handle,
+                                                                             &tbs_client, &connection->basic_connection,
+                                                                             ORG_BLUETOOTH_SERVICE_GENERIC_TELEPHONE_BEARER_SERVICE,
+                                                                             service_index,
+                                                                             connection->characteristics_storage,
+                                                                             TBS_CHARACTERISTICS_NUM,
+                                                                             packet_handler);
     if (status == ERROR_CODE_SUCCESS){
         tbs_client_add_connection(connection);
     }

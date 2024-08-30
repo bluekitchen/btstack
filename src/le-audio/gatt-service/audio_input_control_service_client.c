@@ -656,10 +656,15 @@ uint8_t audio_input_control_service_client_connect(
     connection->change_counter = 0;
     connection->state = AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_W4_CONNECTED;
 
-    uint8_t status =gatt_service_client_connect_secondary_service(con_handle,
-        &aics_client, &connection->basic_connection,
-        ORG_BLUETOOTH_SERVICE_AUDIO_INPUT_CONTROL, service_start_handle, service_end_handle, service_index,
-        connection->characteristics_storage, AUDIO_INPUT_CONTROL_SERVICE_NUM_CHARACTERISTICS, packet_handler);
+    uint8_t status = gatt_service_client_connect_secondary_service_with_uuid16(con_handle,
+                                                                               &aics_client,
+                                                                               &connection->basic_connection,
+                                                                               ORG_BLUETOOTH_SERVICE_AUDIO_INPUT_CONTROL,
+                                                                               service_index,
+                                                                               service_start_handle, service_end_handle,
+                                                                               connection->characteristics_storage,
+                                                                               AUDIO_INPUT_CONTROL_SERVICE_NUM_CHARACTERISTICS,
+                                                                               packet_handler);
 
     if (status == ERROR_CODE_SUCCESS){
         aics_client_add_connection(connection);

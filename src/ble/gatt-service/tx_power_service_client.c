@@ -323,11 +323,13 @@ uint8_t tx_power_service_client_connect(hci_con_handle_t con_handle,
     btstack_assert(txps_characteristics_num == TX_POWER_SERVICE_CLIENT_NUM_CHARACTERISTICS);
 
     txps_connection->state = TX_POWER_SERVICE_CLIENT_STATE_W4_CONNECTION;
-    uint8_t status = gatt_service_client_connect_primary_service(con_handle,
-                                                       &txps_client, &txps_connection->basic_connection,
-                                                       ORG_BLUETOOTH_SERVICE_TX_POWER, 0,
-                                                       txps_storage_for_characteristics, txps_characteristics_num,
-                                                       packet_handler, txps_cid);
+    uint8_t status = gatt_service_client_connect_primary_service_with_uuid16(con_handle,
+                                                                             &txps_client,
+                                                                             &txps_connection->basic_connection,
+                                                                             ORG_BLUETOOTH_SERVICE_TX_POWER, 0,
+                                                                             txps_storage_for_characteristics,
+                                                                             txps_characteristics_num,
+                                                                             packet_handler);
     if (status == ERROR_CODE_SUCCESS){
         txps_client_add_connection(txps_connection);
     }

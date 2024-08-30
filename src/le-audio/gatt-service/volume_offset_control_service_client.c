@@ -619,10 +619,15 @@ uint8_t volume_offset_control_service_client_connect(
     connection->gatt_query_can_send_now.callback = &vocs_client_run_for_connection;
     connection->change_counter = 0;
     connection->state = VOLUME_OFFSET_CONTROL_SERVICE_CLIENT_STATE_W4_CONNECTED;
-    uint8_t status = gatt_service_client_connect_secondary_service(con_handle,
-        &vocs_client, &connection->basic_connection,
-        ORG_BLUETOOTH_SERVICE_VOLUME_OFFSET_CONTROL, service_start_handle, service_end_handle, service_index,
-         connection->characteristics_storage, VOLUME_OFFSET_CONTROL_SERVICE_NUM_CHARACTERISTICS, packet_handler);
+    uint8_t status = gatt_service_client_connect_secondary_service_with_uuid16(con_handle,
+                                                                               &vocs_client,
+                                                                               &connection->basic_connection,
+                                                                               ORG_BLUETOOTH_SERVICE_VOLUME_OFFSET_CONTROL,
+                                                                               service_index,
+                                                                               service_start_handle, service_end_handle,
+                                                                               connection->characteristics_storage,
+                                                                               VOLUME_OFFSET_CONTROL_SERVICE_NUM_CHARACTERISTICS,
+                                                                               packet_handler);
 
     if (status == ERROR_CODE_SUCCESS){
         vocs_client_add_connection(connection);
