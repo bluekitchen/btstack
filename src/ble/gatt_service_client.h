@@ -143,7 +143,6 @@ void gatt_service_client_unregister_client(gatt_service_client_t * client);
  * @param service_index
  * @param characteristics
  * @param characteristics_num
- * @param packet_handler
  * @return
  */
 uint8_t
@@ -151,8 +150,7 @@ gatt_service_client_connect_primary_service_with_uuid16(hci_con_handle_t con_han
                                                         gatt_service_client_connection_t *connection,
                                                         uint16_t service_uuid16, uint8_t service_index,
                                                         gatt_service_client_characteristic_t *characteristics,
-                                                        uint8_t characteristics_num,
-                                                        btstack_packet_handler_t packet_handler);
+                                                        uint8_t characteristics_num);
 
 
 /**
@@ -169,7 +167,6 @@ gatt_service_client_connect_primary_service_with_uuid16(hci_con_handle_t con_han
  * @param service_index
  * @param characteristics
  * @param characteristics_num
- * @param packet_handler
  * @return
  */
 uint8_t
@@ -178,8 +175,7 @@ gatt_service_client_connect_secondary_service_with_uuid16(hci_con_handle_t con_h
                                                           uint16_t service_uuid16, uint8_t service_index,
                                                           uint16_t service_start_handle, uint16_t service_end_handle,
                                                           gatt_service_client_characteristic_t *characteristics,
-                                                          uint8_t characteristics_num,
-                                                          btstack_packet_handler_t packet_handler);
+                                                          uint8_t characteristics_num);
 
 /**
  * @brief Disconnect service client

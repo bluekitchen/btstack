@@ -765,8 +765,7 @@ uint8_t media_control_service_client_connect_generic_player(hci_con_handle_t con
                                                                              &mcs_client, &connection->basic_connection,
                                                                              ORG_BLUETOOTH_SERVICE_GENERIC_MEDIA_CONTROL_SERVICE,
                                                                              0,
-                                                                             characteristics, characteristics_num,
-                                                                             packet_handler);
+                                                                             characteristics, characteristics_num);
 
     if (status == ERROR_CODE_SUCCESS){
         mcs_client_add_connection(connection);
@@ -790,8 +789,7 @@ uint8_t media_control_service_client_connect_media_player(hci_con_handle_t con_h
                                                                              &mcs_client, &connection->basic_connection,
                                                                              ORG_BLUETOOTH_SERVICE_MEDIA_CONTROL_SERVICE,
                                                                              service_index,
-                                                                             characteristics, characteristics_num,
-                                                                             packet_handler);
+                                                                             characteristics, characteristics_num);
 
     if (status == ERROR_CODE_SUCCESS){
         mcs_client_add_connection(connection);

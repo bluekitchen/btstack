@@ -266,8 +266,7 @@ uint8_t immediate_alert_service_client_connect(hci_con_handle_t con_handle,
                                                                              &ias_connection->basic_connection,
                                                                              ORG_BLUETOOTH_SERVICE_IMMEDIATE_ALERT, 0,
                                                                              ias_storage_for_characteristics,
-                                                                             ias_characteristics_num,
-                                                                             packet_handler);
+                                                                             ias_characteristics_num);
 
     if (status == ERROR_CODE_SUCCESS){
         ias_client_add_connection(ias_connection);

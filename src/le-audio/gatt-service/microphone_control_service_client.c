@@ -618,8 +618,7 @@ uint8_t microphone_control_service_client_connect(hci_con_handle_t con_handle,
                                                                              ORG_BLUETOOTH_SERVICE_MICROPHONE_CONTROL,
                                                                              0,
                                                                              mics_storage_for_characteristics,
-                                                                             mics_characteristics_num,
-                                                                             packet_handler);
+                                                                             mics_characteristics_num);
     if (status == ERROR_CODE_SUCCESS){
         mics_client_add_connection(mics_connection);
     }

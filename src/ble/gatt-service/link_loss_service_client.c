@@ -382,8 +382,7 @@ uint8_t link_loss_service_client_connect(hci_con_handle_t con_handle,
                                                                              &lls_connection->basic_connection,
                                                                              ORG_BLUETOOTH_SERVICE_LINK_LOSS, 0,
                                                                              lls_storage_for_characteristics,
-                                                                             lls_characteristics_num,
-                                                                             packet_handler);
+                                                                             lls_characteristics_num);
 
     if (status == ERROR_CODE_SUCCESS){
         lls_client_add_connection(lls_connection);

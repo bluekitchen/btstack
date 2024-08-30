@@ -639,8 +639,7 @@ uint8_t telephone_bearer_service_client_connect(
                                                                              ORG_BLUETOOTH_SERVICE_TELEPHONE_BEARER_SERVICE,
                                                                              service_index,
                                                                              connection->characteristics_storage,
-                                                                             TBS_CHARACTERISTICS_NUM,
-                                                                             packet_handler);
+                                                                             TBS_CHARACTERISTICS_NUM);
     if (status == ERROR_CODE_SUCCESS){
         tbs_client_add_connection(connection);
     }
@@ -668,8 +667,7 @@ uint8_t telephone_generic_bearer_service_client_connect(
                                                                              ORG_BLUETOOTH_SERVICE_GENERIC_TELEPHONE_BEARER_SERVICE,
                                                                              service_index,
                                                                              connection->characteristics_storage,
-                                                                             TBS_CHARACTERISTICS_NUM,
-                                                                             packet_handler);
+                                                                             TBS_CHARACTERISTICS_NUM);
     if (status == ERROR_CODE_SUCCESS){
         tbs_client_add_connection(connection);
     }

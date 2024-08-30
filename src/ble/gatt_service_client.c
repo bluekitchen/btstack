@@ -619,12 +619,10 @@ gatt_service_client_connect_primary_service_with_uuid16(hci_con_handle_t con_han
                                                         gatt_service_client_connection_t *connection,
                                                         uint16_t service_uuid16, uint8_t service_index,
                                                         gatt_service_client_characteristic_t *characteristics,
-                                                        uint8_t characteristics_num,
-                                                        btstack_packet_handler_t packet_handler) {
+                                                        uint8_t characteristics_num) {
     
     btstack_assert(client          != NULL);
     btstack_assert(connection      != NULL);
-    btstack_assert(packet_handler  != NULL);
     btstack_assert(characteristics != NULL);
     
     if (gatt_service_client_get_connection_for_con_handle_and_service_index(client, con_handle, service_index) != NULL){
@@ -655,12 +653,10 @@ gatt_service_client_connect_secondary_service_with_uuid16(hci_con_handle_t con_h
                                                           uint16_t service_uuid16, uint8_t service_index,
                                                           uint16_t service_start_handle, uint16_t service_end_handle,
                                                           gatt_service_client_characteristic_t *characteristics,
-                                                          uint8_t characteristics_num,
-                                                          btstack_packet_handler_t packet_handler) {
+                                                          uint8_t characteristics_num) {
 
     btstack_assert(client != NULL);
     btstack_assert(connection != NULL);
-    btstack_assert(packet_handler != NULL);
     btstack_assert(characteristics != NULL);
     btstack_assert(characteristics_num >= client->characteristics_desc16_num);
 

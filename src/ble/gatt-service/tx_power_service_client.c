@@ -330,8 +330,7 @@ uint8_t tx_power_service_client_connect(hci_con_handle_t con_handle,
                                                                              &txps_connection->basic_connection,
                                                                              ORG_BLUETOOTH_SERVICE_TX_POWER, 0,
                                                                              txps_storage_for_characteristics,
-                                                                             txps_characteristics_num,
-                                                                             packet_handler);
+                                                                             txps_characteristics_num);
     if (status == ERROR_CODE_SUCCESS){
         txps_client_add_connection(txps_connection);
     }

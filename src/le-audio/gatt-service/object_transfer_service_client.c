@@ -947,8 +947,7 @@ uint8_t object_transfer_service_client_connect(
                                                                              ORG_BLUETOOTH_SERVICE_OBJECT_TRANSFER,
                                                                              service_index,
                                                                              connection->characteristics_storage,
-                                                                             OBJECT_TRANSFER_SERVICE_NUM_CHARACTERISTICS,
-                                                                             packet_handler);
+                                                                             OBJECT_TRANSFER_SERVICE_NUM_CHARACTERISTICS);
     if (status == ERROR_CODE_SUCCESS){
         ots_client_add_connection(connection);
     }
@@ -981,8 +980,7 @@ uint8_t object_transfer_service_client_connect_secondary_service(
                                                                                service_index,
                                                                                service_start_handle, service_end_handle,
                                                                                connection->characteristics_storage,
-                                                                               OBJECT_TRANSFER_SERVICE_NUM_CHARACTERISTICS,
-                                                                               packet_handler);
+                                                                               OBJECT_TRANSFER_SERVICE_NUM_CHARACTERISTICS);
 
     if (status == ERROR_CODE_SUCCESS){
         ots_client_add_connection(connection);

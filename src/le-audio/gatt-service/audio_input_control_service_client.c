@@ -660,8 +660,7 @@ uint8_t audio_input_control_service_client_connect(
                                                                                service_index,
                                                                                service_start_handle, service_end_handle,
                                                                                connection->characteristics_storage,
-                                                                               AUDIO_INPUT_CONTROL_SERVICE_NUM_CHARACTERISTICS,
-                                                                               packet_handler);
+                                                                               AUDIO_INPUT_CONTROL_SERVICE_NUM_CHARACTERISTICS);
 
     if (status == ERROR_CODE_SUCCESS){
         aics_client_add_connection(connection);

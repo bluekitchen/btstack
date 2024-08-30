@@ -789,8 +789,7 @@ uint8_t volume_control_service_client_connect(hci_con_handle_t con_handle,
                                                                              &vcs_connection->basic_connection,
                                                                              ORG_BLUETOOTH_SERVICE_VOLUME_CONTROL, 0,
                                                                              vcs_connection->characteristics_storage,
-                                                                             VOLUME_CONTROL_SERVICE_NUM_CHARACTERISTICS,
-                                                                             packet_handler);
+                                                                             VOLUME_CONTROL_SERVICE_NUM_CHARACTERISTICS);
 
     if (status == ERROR_CODE_SUCCESS){
         vcs_client_add_connection(vcs_connection);

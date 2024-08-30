@@ -624,8 +624,7 @@ uint8_t volume_offset_control_service_client_connect(
                                                                                service_index,
                                                                                service_start_handle, service_end_handle,
                                                                                connection->characteristics_storage,
-                                                                               VOLUME_OFFSET_CONTROL_SERVICE_NUM_CHARACTERISTICS,
-                                                                               packet_handler);
+                                                                               VOLUME_OFFSET_CONTROL_SERVICE_NUM_CHARACTERISTICS);
 
     if (status == ERROR_CODE_SUCCESS){
         vocs_client_add_connection(connection);
