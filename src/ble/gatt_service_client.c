@@ -127,10 +127,6 @@ uint8_t gatt_service_client_get_service_index(const gatt_service_client_connecti
     return connection->service_index;
 }
 
-btstack_packet_handler_t gatt_service_client_get_packet_handler(const gatt_service_client_connection_t * connection){
-    return connection->event_callback;
-}
-
 uint16_t gatt_service_client_characteristic_uuid16_for_index(const gatt_service_client_t * client, uint8_t characteristic_index){
     return client->characteristics_desc16[characteristic_index];
 }
@@ -648,7 +644,6 @@ gatt_service_client_connect_primary_service_with_uuid16(hci_con_handle_t con_han
     connection->service_index       = service_index;
     connection->characteristics_num = 0;
     connection->characteristics     = characteristics;
-    connection->event_callback = packet_handler;
     btstack_linked_list_add(&client->connections, (btstack_linked_item_t *) connection);
 
     gatt_service_client_run_for_client(client, connection);
@@ -685,7 +680,6 @@ gatt_service_client_connect_secondary_service_with_uuid16(hci_con_handle_t con_h
     connection->end_handle          = service_end_handle;
     connection->characteristics_num = 0;
     connection->characteristics     = characteristics;
-    connection->event_callback = packet_handler;
     btstack_linked_list_add(&client->connections, (btstack_linked_item_t *) connection);
 
     gatt_service_client_run_for_client(client, connection);

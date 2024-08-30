@@ -76,6 +76,8 @@ typedef struct {
     btstack_linked_item_t item;
 
     gatt_service_client_connection_t basic_connection;
+    btstack_packet_handler_t packet_handler;
+
     volume_offset_service_client_state_t state;
 
     // Used for read characteristic queries

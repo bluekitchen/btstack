@@ -143,7 +143,7 @@ static void vocs_client_emit_string_value(vocs_client_connection_t * connection,
     event[pos++] = att_status;
 
     event[1] = pos - 2;         // store subevent size
-    (*connection->basic_connection.event_callback)(HCI_EVENT_PACKET, 0, event, pos);
+    (*connection->packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
 static void vocs_client_emit_connection_established(vocs_client_connection_t * connection, uint8_t status){
@@ -160,7 +160,7 @@ static void vocs_client_emit_connection_established(vocs_client_connection_t * c
     pos += 2;
     event[pos++] = 0; // num included services
     event[pos++] = status;
-    (*connection->basic_connection.event_callback)(HCI_EVENT_PACKET, 0, event, pos);
+    (*connection->packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
 static void vocs_client_connected(vocs_client_connection_t * connection, uint8_t status) {
@@ -189,7 +189,7 @@ static void vocs_client_emit_uint8_array(vocs_client_connection_t * connection, 
     memcpy(&event[pos], data, data_size);
     pos += data_size;
     event[pos++] = att_status;
-    (*connection->basic_connection.event_callback)(HCI_EVENT_PACKET, 0, event, pos);
+    (*connection->packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
 static void vocs_client_emit_done_event(vocs_client_connection_t * connection, uint8_t index, uint8_t att_status){
@@ -209,7 +209,7 @@ static void vocs_client_emit_done_event(vocs_client_connection_t * connection, u
     little_endian_store_16(event, pos, characteristic_uuid16);
     pos+= 2;
     event[pos++] = att_status;
-    (*connection->basic_connection.event_callback)(HCI_EVENT_PACKET, 0, event, pos);
+    (*connection->packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
 static void vocs_client_emit_read_event(vocs_client_connection_t * connection, uint8_t characteristic_index, uint8_t att_status, const uint8_t * data, uint16_t data_size){
@@ -615,6 +615,8 @@ uint8_t volume_offset_control_service_client_connect(
     connection->gatt_query_can_send_now.callback = &vocs_client_run_for_connection;
     connection->change_counter = 0;
     connection->state = VOLUME_OFFSET_CONTROL_SERVICE_CLIENT_STATE_W4_CONNECTED;
+    connection->packet_handler = packet_handler;
+
     uint8_t status = gatt_service_client_connect_secondary_service_with_uuid16(con_handle,
                                                                                &vocs_client,
                                                                                &connection->basic_connection,

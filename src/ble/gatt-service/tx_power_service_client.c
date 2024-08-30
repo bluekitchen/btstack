@@ -117,7 +117,7 @@ static void txps_client_connected(txps_client_connection_t * connection, uint8_t
     } else {
         connection->state = TX_POWER_SERVICE_CLIENT_STATE_IDLE;
     }
-    txps_client_replace_subevent_id_and_emit(connection->basic_connection.event_callback, packet, size,
+    txps_client_replace_subevent_id_and_emit(connection->packet_handler, packet, size,
                                              GATTSERVICE_SUBEVENT_TXPS_CLIENT_CONNECTED);
 }
 
@@ -156,7 +156,7 @@ static void txps_client_emit_read_event(txps_client_connection_t * connection, u
     uint16_t characteristic_uuid16 = gatt_service_client_characteristic_uuid16_for_index(&txps_client, index);
     switch (characteristic_uuid16){
         case ORG_BLUETOOTH_CHARACTERISTIC_TX_POWER_LEVEL:
-           txps_client_emit_uint8(connection->basic_connection.cid,  connection->basic_connection.event_callback, GATTSERVICE_SUBEVENT_TXPS_CLIENT_TX_POWER_LEVEL, data, data_size);
+           txps_client_emit_uint8(connection->basic_connection.cid,  connection->packet_handler, GATTSERVICE_SUBEVENT_TXPS_CLIENT_TX_POWER_LEVEL, data, data_size);
            break;
         default:
             btstack_assert(false);
@@ -234,7 +234,7 @@ static void txps_client_packet_handler_internal(uint8_t packet_type, uint16_t ch
                     connection = txps_client_get_connection_for_cid(cid);
                     btstack_assert(connection != NULL);
                     txps_client_finalize_connection(connection);
-                    txps_client_replace_subevent_id_and_emit(gatt_service_client_get_packet_handler(&connection->basic_connection), packet, size,
+                    txps_client_replace_subevent_id_and_emit(connection->packet_handler, packet, size,
                                                             GATTSERVICE_SUBEVENT_TXPS_CLIENT_DISCONNECTED);
                     break;
 
@@ -323,6 +323,8 @@ uint8_t tx_power_service_client_connect(hci_con_handle_t con_handle,
     btstack_assert(txps_characteristics_num == TX_POWER_SERVICE_CLIENT_NUM_CHARACTERISTICS);
 
     txps_connection->state = TX_POWER_SERVICE_CLIENT_STATE_W4_CONNECTION;
+    txps_connection->packet_handler = packet_handler;
+
     uint8_t status = gatt_service_client_connect_primary_service_with_uuid16(con_handle,
                                                                              &txps_client,
                                                                              &txps_connection->basic_connection,

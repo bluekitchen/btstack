@@ -78,7 +78,8 @@ typedef struct {
     btstack_linked_item_t item;
 
     gatt_service_client_connection_t basic_connection;
-    
+    btstack_packet_handler_t packet_handler;
+
     media_service_client_state_t state;
     ots_client_connection_t ots_connection;
     uint8_t ots_connections_num;

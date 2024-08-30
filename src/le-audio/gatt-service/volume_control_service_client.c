@@ -134,7 +134,7 @@ static void vcs_client_emit_connection_established(vcs_client_connection_t * con
     event[pos++] = num_aics_clients; // num included services
     event[pos++] = num_vocs_clients; // num included services
     event[pos++] = status;
-    (*connection->basic_connection.event_callback)(HCI_EVENT_PACKET, 0, event, pos);
+    (*connection->packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
 static void vcs_client_connected(vcs_client_connection_t * connection, uint8_t status) {
@@ -163,13 +163,10 @@ static void vcs_client_emit_uint8_array(vcs_client_connection_t * connection, ui
     memcpy(&event[pos], data, data_size);
     pos += data_size;
     event[pos++] = att_status;
-    (*connection->basic_connection.event_callback)(HCI_EVENT_PACKET, 0, event, pos);
+    (*connection->packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
 static void vcs_client_emit_done_event(vcs_client_connection_t * connection, uint8_t index, uint8_t status){
-    btstack_packet_handler_t event_callback = connection->basic_connection.event_callback;
-    btstack_assert(event_callback != NULL);
-
     uint16_t cid = connection->basic_connection.cid;
     uint16_t characteristic_uuid16 = gatt_service_client_characteristic_uuid16_for_index(&vcs_client, index);
 
@@ -186,7 +183,7 @@ static void vcs_client_emit_done_event(vcs_client_connection_t * connection, uin
     little_endian_store_16(event, pos, characteristic_uuid16);
     pos+= 2;
     event[pos++] = status;
-    (*event_callback)(HCI_EVENT_PACKET, 0, event, pos);
+    (*connection->packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
 
@@ -347,7 +344,7 @@ static void vcs_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
                     connection = vcs_client_get_connection_for_cid(cid);
                     btstack_assert(connection != NULL);
                     vcs_client_finalize_connection(connection);
-                    vcs_client_replace_subevent_id_and_emit(gatt_service_client_get_packet_handler(&connection->basic_connection), packet, size, LEAUDIO_SUBEVENT_VCS_CLIENT_DISCONNECTED);
+                    vcs_client_replace_subevent_id_and_emit(connection->packet_handler, packet, size, LEAUDIO_SUBEVENT_VCS_CLIENT_DISCONNECTED);
                     break;
 
                 default:
@@ -371,42 +368,42 @@ static void vcs_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
                     cid = leaudio_subevent_aics_client_audio_input_state_get_aics_cid(packet);
                     connection = vcs_client_get_connection_for_cid(cid);
                     btstack_assert(connection != NULL);
-                    vcs_client_replace_subevent_id_and_emit(gatt_service_client_get_packet_handler(&connection->basic_connection), packet, size, LEAUDIO_SUBEVENT_VCS_CLIENT_AUDIO_INPUT_STATE);
+                    vcs_client_replace_subevent_id_and_emit(connection->packet_handler, packet, size, LEAUDIO_SUBEVENT_VCS_CLIENT_AUDIO_INPUT_STATE);
                     break;
 
                 case LEAUDIO_SUBEVENT_AICS_CLIENT_GAIN_SETTINGS_PROPERTIES:
                     cid = leaudio_subevent_aics_client_gain_settings_properties_get_aics_cid(packet);
                     connection = vcs_client_get_connection_for_cid(cid);
                     btstack_assert(connection != NULL);
-                    vcs_client_replace_subevent_id_and_emit(gatt_service_client_get_packet_handler(&connection->basic_connection), packet, size, LEAUDIO_SUBEVENT_VCS_CLIENT_GAIN_SETTINGS_PROPERTIES);
+                    vcs_client_replace_subevent_id_and_emit(connection->packet_handler, packet, size, LEAUDIO_SUBEVENT_VCS_CLIENT_GAIN_SETTINGS_PROPERTIES);
                     break;
 
                 case LEAUDIO_SUBEVENT_AICS_CLIENT_AUDIO_INPUT_TYPE:
                     cid = leaudio_subevent_aics_client_audio_input_type_get_aics_cid(packet);
                     connection = vcs_client_get_connection_for_cid(cid);
                     btstack_assert(connection != NULL);
-                    vcs_client_replace_subevent_id_and_emit(gatt_service_client_get_packet_handler(&connection->basic_connection), packet, size, LEAUDIO_SUBEVENT_VCS_CLIENT_AUDIO_INPUT_TYPE);
+                    vcs_client_replace_subevent_id_and_emit(connection->packet_handler, packet, size, LEAUDIO_SUBEVENT_VCS_CLIENT_AUDIO_INPUT_TYPE);
                     break;
 
                 case LEAUDIO_SUBEVENT_AICS_CLIENT_AUDIO_INPUT_STATUS:
                     cid = leaudio_subevent_aics_client_audio_input_status_get_aics_cid(packet);
                     connection = vcs_client_get_connection_for_cid(cid);
                     btstack_assert(connection != NULL);
-                    vcs_client_replace_subevent_id_and_emit(gatt_service_client_get_packet_handler(&connection->basic_connection), packet, size, LEAUDIO_SUBEVENT_VCS_CLIENT_AUDIO_INPUT_STATUS);
+                    vcs_client_replace_subevent_id_and_emit(connection->packet_handler, packet, size, LEAUDIO_SUBEVENT_VCS_CLIENT_AUDIO_INPUT_STATUS);
                     break;
 
                 case LEAUDIO_SUBEVENT_AICS_CLIENT_AUDIO_DESCRIPTION:
                     cid = leaudio_subevent_aics_client_audio_description_get_aics_cid(packet);
                     connection = vcs_client_get_connection_for_cid(cid);
                     btstack_assert(connection != NULL);
-                    vcs_client_replace_subevent_id_and_emit(gatt_service_client_get_packet_handler(&connection->basic_connection), packet, size, LEAUDIO_SUBEVENT_VCS_CLIENT_AUDIO_DESCRIPTION);
+                    vcs_client_replace_subevent_id_and_emit(connection->packet_handler, packet, size, LEAUDIO_SUBEVENT_VCS_CLIENT_AUDIO_DESCRIPTION);
                     break;
 
                 case LEAUDIO_SUBEVENT_AICS_CLIENT_WRITE_DONE:
                     cid = leaudio_subevent_aics_client_write_done_get_aics_cid(packet);
                     connection = vcs_client_get_connection_for_cid(cid);
                     btstack_assert(connection != NULL);
-                    vcs_client_replace_subevent_id_and_emit(gatt_service_client_get_packet_handler(&connection->basic_connection), packet, size, LEAUDIO_SUBEVENT_VCS_CLIENT_WRITE_DONE);
+                    vcs_client_replace_subevent_id_and_emit(connection->packet_handler, packet, size, LEAUDIO_SUBEVENT_VCS_CLIENT_WRITE_DONE);
                     break;
 
                 case LEAUDIO_SUBEVENT_AICS_CLIENT_CONNECTED:
@@ -763,7 +760,7 @@ uint8_t volume_control_service_client_connect(hci_con_handle_t con_handle,
     btstack_assert(packet_handler != NULL);
     btstack_assert(vcs_connection != NULL);
 
-    vcs_connection->events_packet_handler = packet_handler;
+    vcs_connection->packet_handler = packet_handler;
 
     vcs_connection->aics_connections_max_num = 0;
     vcs_connection->aics_connections_storage = NULL;

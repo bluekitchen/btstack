@@ -114,7 +114,7 @@ static void ias_client_connected(ias_client_connection_t * connection, uint8_t s
     } else {
         connection->state = IMMEDIATE_ALERT_SERVICE_CLIENT_STATE_IDLE;
     }
-    ias_client_replace_subevent_id_and_emit(connection->basic_connection.event_callback, packet, size,
+    ias_client_replace_subevent_id_and_emit(connection->packet_handler, packet, size,
                                             GATTSERVICE_SUBEVENT_LLS_CLIENT_CONNECTED);
 }
 
@@ -183,7 +183,7 @@ static void ias_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
                     connection = ias_client_get_connection_for_cid(cid);
                     btstack_assert(connection != NULL);
                     ias_client_finalize_connection(connection);
-                    ias_client_replace_subevent_id_and_emit(gatt_service_client_get_packet_handler(&connection->basic_connection),
+                    ias_client_replace_subevent_id_and_emit(connection->packet_handler,
                                                             packet, size,
                                                             GATTSERVICE_SUBEVENT_IAS_CLIENT_DISCONNECTED);
                     break;
@@ -259,6 +259,8 @@ uint8_t immediate_alert_service_client_connect(hci_con_handle_t con_handle,
     btstack_assert(ias_characteristics_num == IMMEDIATE_ALERT_SERVICE_CLIENT_NUM_CHARACTERISTICS);
 
     ias_connection->state = IMMEDIATE_ALERT_SERVICE_CLIENT_STATE_W4_CONNECTION;
+    ias_connection->packet_handler = packet_handler;
+
     uint8_t status = gatt_service_client_connect_primary_service_with_uuid16(con_handle,
                                                                              &ias_client,
                                                                              &ias_connection->basic_connection,

@@ -78,10 +78,9 @@ typedef struct {
     btstack_linked_item_t item;
 
     gatt_service_client_connection_t basic_connection;
-    microphone_service_client_state_t state;
+    btstack_packet_handler_t packet_handler;
 
-    // btstack_packet_handler_t client_handler;
-    // gatt_client_notification_t notification_listener;
+    microphone_service_client_state_t state;
 
     // Used for read characteristic queries
     uint8_t characteristic_index;
@@ -104,9 +103,6 @@ typedef struct {
     uint8_t aics_characteristics_max_num;
 
     btstack_context_callback_registration_t gatt_query_can_send_now_request;
-
-    // Application packet handler
-    btstack_packet_handler_t aics_events_packet_handler;
 
 } mics_client_connection_t;
 

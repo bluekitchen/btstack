@@ -89,6 +89,8 @@ typedef struct {
     btstack_linked_item_t item;
 
     gatt_service_client_connection_t basic_connection;
+    btstack_packet_handler_t packet_handler;
+
     object_transfer_service_client_state_t state;
 
     otp_le_cbm_connection_t le_cbm_connection;

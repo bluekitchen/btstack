@@ -305,7 +305,7 @@ static void mcs_client_emit_connection_established(const mcs_client_connection_t
     pos += 2;
     event[pos++] = num_included_clients; // num included services
     event[pos++] = status;
-    (*gatt_service_client_get_packet_handler(&connection->basic_connection))(HCI_EVENT_PACKET, 0, event, pos);
+    (*connection->packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
 static void mcs_client_connected(mcs_client_connection_t *connection, uint8_t status) {
@@ -362,8 +362,7 @@ static void mcs_client_emit_number(uint16_t cid, btstack_packet_handler_t event_
 }
 
 static void mcs_client_emit_done_event(mcs_client_connection_t * connection, uint8_t index, uint8_t status){
-    btstack_packet_handler_t event_callback = connection->basic_connection.event_callback;
-    btstack_assert(event_callback != NULL);
+    btstack_assert(connection->packet_handler != NULL);
 
     uint16_t cid = connection->basic_connection.cid;
     uint16_t characteristic_uuid16 = gatt_service_client_characteristic_uuid16_for_index(&mcs_client, index);
@@ -379,7 +378,7 @@ static void mcs_client_emit_done_event(mcs_client_connection_t * connection, uin
     little_endian_store_16(event, pos, characteristic_uuid16);
     pos+= 2;
     event[pos++] = status;
-    (*event_callback)(HCI_EVENT_PACKET, 0, event, pos);
+    (*connection->packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
 static void mcs_client_emit_media_control_point_notification_result_event(uint16_t cid, btstack_packet_handler_t event_callback, const uint8_t * data, uint8_t data_size){
@@ -428,7 +427,7 @@ static void mcs_client_emit_read_event(mcs_client_connection_t * connection, uin
         return;
     }
 
-    btstack_packet_handler_t event_callback = connection->basic_connection.event_callback; 
+    btstack_packet_handler_t event_callback = connection->packet_handler;
     btstack_assert(event_callback != NULL);
 
     uint16_t cid = connection->basic_connection.cid;
@@ -504,7 +503,7 @@ static void mcs_client_emit_notify_event(mcs_client_connection_t * connection, u
         return;
     }
 
-    btstack_packet_handler_t event_callback = connection->basic_connection.event_callback;
+    btstack_packet_handler_t event_callback = connection->packet_handler;
     btstack_assert(event_callback != NULL);
 
     uint16_t cid = connection->basic_connection.cid;
@@ -619,7 +618,7 @@ static void mcs_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
                     connection = mcs_client_get_connection_for_cid(gattservice_subevent_client_disconnected_get_cid(packet));
                     btstack_assert(connection != NULL);
                     mcs_client_finalize_connection(connection);
-                    mcs_client_replace_subevent_id_and_emit(gatt_service_client_get_packet_handler(&connection->basic_connection), packet, size, LEAUDIO_SUBEVENT_MCS_CLIENT_DISCONNECTED);
+                    mcs_client_replace_subevent_id_and_emit(connection->packet_handler, packet, size, LEAUDIO_SUBEVENT_MCS_CLIENT_DISCONNECTED);
                     break;
 
                 default:
@@ -760,6 +759,8 @@ uint8_t media_control_service_client_connect_generic_player(hci_con_handle_t con
     btstack_assert(mcs_client.characteristics_desc16_num > 0);
     
     connection->state = MEDIA_CONTROL_SERVICE_CLIENT_STATE_W4_CONNECTION;
+    connection->packet_handler = packet_handler;
+
     uint8_t status = gatt_service_client_connect_primary_service_with_uuid16(con_handle,
                                                                              &mcs_client, &connection->basic_connection,
                                                                              ORG_BLUETOOTH_SERVICE_GENERIC_MEDIA_CONTROL_SERVICE,
@@ -783,6 +784,8 @@ uint8_t media_control_service_client_connect_media_player(hci_con_handle_t con_h
     btstack_assert(mcs_client.characteristics_desc16_num > 0);
     
     connection->state = MEDIA_CONTROL_SERVICE_CLIENT_STATE_W4_CONNECTION;
+    connection->packet_handler = packet_handler;
+
     uint8_t status = gatt_service_client_connect_primary_service_with_uuid16(con_handle,
                                                                              &mcs_client, &connection->basic_connection,
                                                                              ORG_BLUETOOTH_SERVICE_MEDIA_CONTROL_SERVICE,

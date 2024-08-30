@@ -115,7 +115,7 @@ static void lls_client_connected(lls_client_connection_t * connection, uint8_t s
     } else {
         connection->state = LINK_LOSS_SERVICE_CLIENT_STATE_IDLE;
     }
-    lls_client_replace_subevent_id_and_emit(connection->basic_connection.event_callback, packet, size,
+    lls_client_replace_subevent_id_and_emit(connection->packet_handler, packet, size,
                                             GATTSERVICE_SUBEVENT_LLS_CLIENT_CONNECTED);
 }
 
@@ -145,8 +145,7 @@ static uint16_t lls_client_value_handle_for_index(lls_client_connection_t * conn
 }
 
 static void lls_client_emit_done_event(lls_client_connection_t * connection, uint8_t index, uint8_t status){
-    btstack_packet_handler_t event_callback = connection->basic_connection.event_callback;
-    btstack_assert(event_callback != NULL);
+    btstack_assert(connection->packet_handler != NULL);
 
     uint16_t cid = connection->basic_connection.cid;
     uint16_t characteristic_uuid16 = gatt_service_client_characteristic_uuid16_for_index(&lls_client, index);
@@ -162,7 +161,7 @@ static void lls_client_emit_done_event(lls_client_connection_t * connection, uin
     little_endian_store_16(event, pos, characteristic_uuid16);
     pos+= 2;
     event[pos++] = status;
-    (*event_callback)(HCI_EVENT_PACKET, 0, event, pos);
+    (*connection->packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
 
@@ -176,7 +175,7 @@ static void lls_client_emit_read_event(lls_client_connection_t * connection, uin
     uint16_t characteristic_uuid16 = gatt_service_client_characteristic_uuid16_for_index(&lls_client, index);
     switch (characteristic_uuid16){
         case ORG_BLUETOOTH_CHARACTERISTIC_ALERT_LEVEL:
-            lls_client_emit_uint8(connection->basic_connection.cid, connection->basic_connection.event_callback, GATTSERVICE_SUBEVENT_LLS_CLIENT_ALERT_LEVEL, data, data_size);
+            lls_client_emit_uint8(connection->basic_connection.cid, connection->packet_handler, GATTSERVICE_SUBEVENT_LLS_CLIENT_ALERT_LEVEL, data, data_size);
             break;
         default:
             btstack_assert(false);
@@ -258,7 +257,7 @@ static void lls_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
                     connection = lls_client_get_connection_for_cid(cid);
                     btstack_assert(connection != NULL);
                     lls_client_finalize_connection(connection);
-                    lls_client_replace_subevent_id_and_emit(gatt_service_client_get_packet_handler(&connection->basic_connection), packet, size,
+                    lls_client_replace_subevent_id_and_emit(connection->packet_handler, packet, size,
                                                             GATTSERVICE_SUBEVENT_LLS_CLIENT_DISCONNECTED);
                     break;
 
@@ -376,6 +375,8 @@ uint8_t link_loss_service_client_connect(hci_con_handle_t con_handle,
     btstack_assert(lls_characteristics_num == LINK_LOSS_SERVICE_CLIENT_NUM_CHARACTERISTICS);
 
     lls_connection->state = LINK_LOSS_SERVICE_CLIENT_STATE_W4_CONNECTION;
+    lls_connection->packet_handler = packet_handler;
+
     uint8_t status = gatt_service_client_connect_primary_service_with_uuid16(con_handle,
                                                                              &lls_client,
                                                                              &lls_connection->basic_connection,

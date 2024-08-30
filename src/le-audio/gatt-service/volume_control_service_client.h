@@ -82,6 +82,8 @@ typedef struct {
     btstack_linked_item_t item;
 
     gatt_service_client_connection_t basic_connection;
+    btstack_packet_handler_t packet_handler;
+
     volume_control_service_client_state_t state;
 
     // btstack_packet_handler_t client_handler;
@@ -115,8 +117,6 @@ typedef struct {
     uint8_t vocs_connections_connected;
     uint8_t vocs_connections_index;
 
-    // Application packet handler
-    btstack_packet_handler_t events_packet_handler;
 } vcs_client_connection_t;
 
 /* API_START */

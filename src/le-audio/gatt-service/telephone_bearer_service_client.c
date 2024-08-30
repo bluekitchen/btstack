@@ -110,7 +110,7 @@ static void tbs_client_emit_connection_established(tbs_client_connection_t * con
     pos += 2;
     event[pos++] = 0; // num included services
     event[pos++] = status;
-    (*connection->basic_connection.event_callback)(HCI_EVENT_PACKET, 0, event, pos);
+    (*connection->packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
 static void tbs_client_connected(tbs_client_connection_t * connection, uint8_t status) {
@@ -149,7 +149,7 @@ static void tbs_client_emit_done_event(tbs_client_connection_t * connection, uin
     little_endian_store_16(event, pos, characteristic_uuid16);
     pos+= 2;
     event[pos++] = att_status;
-    (*connection->basic_connection.event_callback)(HCI_EVENT_PACKET, 0, event, pos);
+    (*connection->packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
 typedef struct {
@@ -202,7 +202,7 @@ static void tbs_client_emit_read_event(tbs_client_connection_t * connection, uin
     UNUSED(att_status);
 
     emitter_t emitter = {
-            .callback = connection->basic_connection.event_callback,
+            .callback = connection->packet_handler,
             .cid = connection->basic_connection.cid,
             .data = data,
             .data_size = data_size,
@@ -660,6 +660,7 @@ uint8_t telephone_generic_bearer_service_client_connect(
 
     connection->gatt_query_can_send_now.callback = &tbs_client_run_for_connection;
     connection->gatt_query_can_send_now.context = (void *)connection;
+    connection->packet_handler = packet_handler;
 
     connection->state = TELEPHONE_BEARER_SERVICE_CLIENT_STATE_W4_CONNECTED;
     uint8_t status = gatt_service_client_connect_primary_service_with_uuid16(con_handle,

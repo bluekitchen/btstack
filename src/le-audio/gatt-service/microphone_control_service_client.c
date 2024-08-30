@@ -124,7 +124,7 @@ static void mics_client_emit_connection_established(const mics_client_connection
     pos += 2;
     event[pos++] = num_included_clients; // num included services
     event[pos++] = status;
-    (*connection->basic_connection.event_callback)(HCI_EVENT_PACKET, 0, event, pos);
+    (*connection->packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
 static void mics_client_connected(mics_client_connection_t *connection, uint8_t status) {
@@ -160,7 +160,7 @@ static void mics_client_emit_number(uint16_t cid, btstack_packet_handler_t event
 }
 
 static void mics_client_emit_done_event(mics_client_connection_t * connection, uint8_t index, uint8_t status){
-    btstack_packet_handler_t event_callback = connection->basic_connection.event_callback;
+    btstack_packet_handler_t event_callback = connection->packet_handler;
     btstack_assert(event_callback != NULL);
 
     uint16_t cid = connection->basic_connection.cid;
@@ -187,7 +187,7 @@ static void mics_client_emit_read_event(mics_client_connection_t * connection, u
         return;
     }
 
-    btstack_packet_handler_t event_callback = connection->basic_connection.event_callback; 
+    btstack_packet_handler_t event_callback = connection->packet_handler;
     btstack_assert(event_callback != NULL);
 
     uint16_t cid = connection->basic_connection.cid;
@@ -210,7 +210,7 @@ static void mics_client_emit_notify_event(mics_client_connection_t * connection,
         return;
     }
 
-    btstack_packet_handler_t event_callback = connection->basic_connection.event_callback;
+    btstack_packet_handler_t event_callback = connection->packet_handler;
     btstack_assert(event_callback != NULL);
 
     uint16_t cid = connection->basic_connection.cid;
@@ -320,7 +320,7 @@ static void mics_client_packet_handler_internal(uint8_t packet_type, uint16_t ch
                     connection = mics_client_get_connection_for_cid(cid);
                     btstack_assert(connection != NULL);
                     mics_client_finalize_connection(connection);
-                    mics_client_replace_subevent_id_and_emit(gatt_service_client_get_packet_handler(&connection->basic_connection), packet, size, LEAUDIO_SUBEVENT_MICS_CLIENT_DISCONNECTED);
+                    mics_client_replace_subevent_id_and_emit(connection->packet_handler, packet, size, LEAUDIO_SUBEVENT_MICS_CLIENT_DISCONNECTED);
                     break;
 
                 default:
@@ -335,42 +335,42 @@ static void mics_client_packet_handler_internal(uint8_t packet_type, uint16_t ch
                     cid = leaudio_subevent_aics_client_audio_input_state_get_aics_cid(packet);
                     connection = mics_client_get_connection_for_cid(cid);
                     btstack_assert(connection != NULL);
-                    mics_client_replace_subevent_id_and_emit(gatt_service_client_get_packet_handler(&connection->basic_connection), packet, size, LEAUDIO_SUBEVENT_MICS_CLIENT_AUDIO_INPUT_STATE);
+                    mics_client_replace_subevent_id_and_emit(connection->packet_handler, packet, size, LEAUDIO_SUBEVENT_MICS_CLIENT_AUDIO_INPUT_STATE);
                     break;
 
                 case LEAUDIO_SUBEVENT_AICS_CLIENT_GAIN_SETTINGS_PROPERTIES:
                     cid = leaudio_subevent_aics_client_gain_settings_properties_get_aics_cid(packet);
                     connection = mics_client_get_connection_for_cid(cid);
                     btstack_assert(connection != NULL);
-                    mics_client_replace_subevent_id_and_emit(gatt_service_client_get_packet_handler(&connection->basic_connection), packet, size, LEAUDIO_SUBEVENT_MICS_CLIENT_GAIN_SETTINGS_PROPERTIES);
+                    mics_client_replace_subevent_id_and_emit(connection->packet_handler, packet, size, LEAUDIO_SUBEVENT_MICS_CLIENT_GAIN_SETTINGS_PROPERTIES);
                     break;
 
                 case LEAUDIO_SUBEVENT_AICS_CLIENT_AUDIO_INPUT_TYPE:
                     cid = leaudio_subevent_aics_client_audio_input_type_get_aics_cid(packet);
                     connection = mics_client_get_connection_for_cid(cid);
                     btstack_assert(connection != NULL);
-                    mics_client_replace_subevent_id_and_emit(gatt_service_client_get_packet_handler(&connection->basic_connection), packet, size, LEAUDIO_SUBEVENT_MICS_CLIENT_AUDIO_INPUT_TYPE);
+                    mics_client_replace_subevent_id_and_emit(connection->packet_handler, packet, size, LEAUDIO_SUBEVENT_MICS_CLIENT_AUDIO_INPUT_TYPE);
                     break;
 
                 case LEAUDIO_SUBEVENT_AICS_CLIENT_AUDIO_INPUT_STATUS:
                     cid = leaudio_subevent_aics_client_audio_input_status_get_aics_cid(packet);
                     connection = mics_client_get_connection_for_cid(cid);
                     btstack_assert(connection != NULL);
-                    mics_client_replace_subevent_id_and_emit(gatt_service_client_get_packet_handler(&connection->basic_connection), packet, size, LEAUDIO_SUBEVENT_MICS_CLIENT_AUDIO_INPUT_STATUS);
+                    mics_client_replace_subevent_id_and_emit(connection->packet_handler, packet, size, LEAUDIO_SUBEVENT_MICS_CLIENT_AUDIO_INPUT_STATUS);
                     break;
 
                 case LEAUDIO_SUBEVENT_AICS_CLIENT_AUDIO_DESCRIPTION:
                     cid = leaudio_subevent_aics_client_audio_description_get_aics_cid(packet);
                     connection = mics_client_get_connection_for_cid(cid);
                     btstack_assert(connection != NULL);
-                    mics_client_replace_subevent_id_and_emit(gatt_service_client_get_packet_handler(&connection->basic_connection), packet, size, LEAUDIO_SUBEVENT_MICS_CLIENT_AUDIO_DESCRIPTION);
+                    mics_client_replace_subevent_id_and_emit(connection->packet_handler, packet, size, LEAUDIO_SUBEVENT_MICS_CLIENT_AUDIO_DESCRIPTION);
                     break;
 
                 case LEAUDIO_SUBEVENT_AICS_CLIENT_WRITE_DONE:
                     cid = leaudio_subevent_aics_client_write_done_get_aics_cid(packet);
                     connection = mics_client_get_connection_for_cid(cid);
                     btstack_assert(connection != NULL);
-                    mics_client_replace_subevent_id_and_emit(gatt_service_client_get_packet_handler(&connection->basic_connection), packet, size, LEAUDIO_SUBEVENT_MICS_CLIENT_WRITE_DONE);
+                    mics_client_replace_subevent_id_and_emit(connection->packet_handler, packet, size, LEAUDIO_SUBEVENT_MICS_CLIENT_WRITE_DONE);
                     break;
 
                 case LEAUDIO_SUBEVENT_AICS_CLIENT_CONNECTED:
@@ -611,7 +611,7 @@ uint8_t microphone_control_service_client_connect(hci_con_handle_t con_handle,
         mics_connection->aics_characteristics_max_num = aics_characteristics_num;
     }
     mics_connection->state = MICROPHONE_CONTROL_SERVICE_CLIENT_STATE_W4_CONNECTION;
-    mics_connection->aics_events_packet_handler = packet_handler;
+    mics_connection->packet_handler = packet_handler;
     uint8_t status = gatt_service_client_connect_primary_service_with_uuid16(con_handle,
                                                                              &mics_client,
                                                                              &mics_connection->basic_connection,

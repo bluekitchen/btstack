@@ -86,7 +86,6 @@ typedef struct {
     gatt_service_client_state_t  state;
 
     // service
-    // used to restrict the number of found primary services to 1
     uint16_t service_uuid16;
     uint8_t  service_index;
     uint16_t service_instances_num;
@@ -98,8 +97,6 @@ typedef struct {
     gatt_service_client_characteristic_t * characteristics;
 
     gatt_client_service_notification_t notification_listener;
-
-    btstack_packet_handler_t event_callback;
 } gatt_service_client_connection_t;
 
 typedef struct {
@@ -215,14 +212,6 @@ hci_con_handle_t gatt_service_client_get_con_handle(const gatt_service_client_co
  * @returns connection_id
  */
 uint8_t gatt_service_client_get_service_index(const gatt_service_client_connection_t * connection);
-
-/**
- * @brief Get packet handler provided in connect call
- * @param client
- * @param connection
- * @returns connection_id
- */
-btstack_packet_handler_t gatt_service_client_get_packet_handler(const gatt_service_client_connection_t * connection);
 
 /**
  * @brief Get remote MTU

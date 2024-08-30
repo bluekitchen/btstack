@@ -163,7 +163,7 @@ static void ots_client_emit_timeout(ots_client_connection_t * connection, uint16
     event[pos++] = LEAUDIO_SUBEVENT_OTS_CLIENT_TIMEOUT;
     little_endian_store_16(event, pos, characteristic_uuid);
     pos += 2;
-    (*connection->basic_connection.event_callback)(HCI_EVENT_PACKET, 0, event, pos);
+    (*connection->packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
 static void ots_client_operations_timer_timeout_handler(btstack_timer_source_t * timer){
@@ -211,18 +211,15 @@ static uint16_t ots_client_value_handle_for_index(ots_client_connection_t * conn
 
 static void ots_client_emit_connection_established(ots_client_connection_t * connection, uint8_t status){
     btstack_assert(connection != NULL);
-    gatt_service_client_connection_t * connection_helper = &connection->basic_connection;
-    btstack_assert(connection_helper != NULL);
-    btstack_assert(connection_helper->event_callback != NULL);
 
     uint8_t event[17];
     int pos = 0;
     event[pos++] = HCI_EVENT_LEAUDIO_META;
     event[pos++] = sizeof(event) - 2;
     event[pos++] = LEAUDIO_SUBEVENT_OTS_CLIENT_CONNECTED;
-    little_endian_store_16(event, pos, connection_helper->con_handle);
+    little_endian_store_16(event, pos, connection->basic_connection.con_handle);
     pos += 2;
-    little_endian_store_16(event, pos, connection_helper->cid);
+    little_endian_store_16(event, pos, connection->basic_connection.cid);
     pos += 2;
     event[pos++] = 0; // num included services
     little_endian_store_32(event, pos, connection->oacp_features);
@@ -230,7 +227,7 @@ static void ots_client_emit_connection_established(ots_client_connection_t * con
     little_endian_store_32(event, pos, connection->olcp_features);
     pos += 4;
     event[pos++] = status;
-    (*connection_helper->event_callback)(HCI_EVENT_PACKET, 0, event, pos);
+    (*connection->packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
 static void ots_client_connected(ots_client_connection_t * connection, uint8_t status) {
@@ -261,7 +258,7 @@ static void ots_client_emit_done_event(ots_client_connection_t * connection, uin
     little_endian_store_16(event, pos, characteristic_uuid16);
     pos+= 2;
     event[pos++] = att_status;
-    (*connection->basic_connection.event_callback)(HCI_EVENT_PACKET, 0, event, pos);
+    (*connection->packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
 static void ots_client_emit_features_event(ots_client_connection_t * connection, uint8_t att_status){
@@ -280,7 +277,7 @@ static void ots_client_emit_features_event(ots_client_connection_t * connection,
     little_endian_store_32(event, pos, connection->olcp_features);
     pos += 4;
     event[pos++] = att_status;
-    (*connection->basic_connection.event_callback)(HCI_EVENT_PACKET, 0, event, pos);
+    (*connection->packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
 static void ots_client_emit_string_value(ots_client_connection_t * connection, uint8_t subevent, const uint8_t * data, uint16_t data_size, uint8_t att_status){
@@ -303,7 +300,7 @@ static void ots_client_emit_string_value(ots_client_connection_t * connection, u
     event[pos++] = att_status;
 
     event[1] = pos - 2;         // store subevent size
-    (*connection->basic_connection.event_callback)(HCI_EVENT_PACKET, 0, event, pos);
+    (*connection->packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
 static void ots_client_emit_filter_value(ots_client_connection_t * connection, uint8_t filter_index, ots_filter_type_t filter_type, const uint8_t * data, uint8_t data_size, uint8_t att_status){
@@ -322,7 +319,7 @@ static void ots_client_emit_filter_value(ots_client_connection_t * connection, u
     memcpy(&event[pos], data, data_size);
     pos += data_size;
     event[pos++] = att_status;
-    (*connection->basic_connection.event_callback)(HCI_EVENT_PACKET, 0, event, pos);
+    (*connection->packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
 static void ots_client_emit_variable_uint8_array(ots_client_connection_t * connection, uint8_t subevent, const uint8_t * data, uint8_t data_size, uint8_t att_status){
@@ -340,7 +337,7 @@ static void ots_client_emit_variable_uint8_array(ots_client_connection_t * conne
     memcpy(&event[pos], data, data_size);
     pos += data_size;
     event[pos++] = att_status;
-    (*connection->basic_connection.event_callback)(HCI_EVENT_PACKET, 0, event, pos);
+    (*connection->packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
 static void ots_client_emit_uint8_array(ots_client_connection_t * connection, uint8_t subevent, const uint8_t * data, uint8_t data_size, uint8_t att_status){
@@ -357,7 +354,7 @@ static void ots_client_emit_uint8_array(ots_client_connection_t * connection, ui
     memcpy(&event[pos], data, data_size);
     pos += data_size;
     event[pos++] = att_status;
-    (*connection->basic_connection.event_callback)(HCI_EVENT_PACKET, 0, event, pos);
+    (*connection->packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
 
@@ -378,7 +375,7 @@ static void ots_client_emit_data_chunk(ots_client_connection_t * connection, uin
     pos += 4;
     little_endian_store_32(event, pos, connection->cbm_data_chunk_bytes_transferred);
     pos += 4;
-    (*connection->basic_connection.event_callback)(HCI_EVENT_PACKET, 0, event, pos);
+    (*connection->packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
 static uint16_t ots_client_serialize_characteristic_value_for_write(ots_client_connection_t * connection, uint8_t ** out_value){
