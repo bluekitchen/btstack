@@ -110,31 +110,30 @@ static void mics_client_replace_subevent_id_and_emit(btstack_packet_handler_t ca
     (*callback)(HCI_EVENT_PACKET, 0, packet, size);
 }
 
-static void mics_client_emit_connection_established(const gatt_service_client_connection_t *connection_helper, uint8_t num_included_clients, uint8_t status) {
-    btstack_assert(connection_helper != NULL);
-    btstack_assert(connection_helper->event_callback != NULL);
+static void mics_client_emit_connection_established(const mics_client_connection_t *connection, uint8_t num_included_clients, uint8_t status) {
+    btstack_assert(connection != NULL);
 
     uint8_t event[9];
     int pos = 0;
     event[pos++] = HCI_EVENT_LEAUDIO_META;
     event[pos++] = sizeof(event) - 2;
     event[pos++] = LEAUDIO_SUBEVENT_MICS_CLIENT_CONNECTED;
-    little_endian_store_16(event, pos, connection_helper->con_handle);
+    little_endian_store_16(event, pos, connection->basic_connection.con_handle);
     pos += 2;
-    little_endian_store_16(event, pos, connection_helper->cid);
+    little_endian_store_16(event, pos, connection->basic_connection.cid);
     pos += 2;
     event[pos++] = num_included_clients; // num included services
     event[pos++] = status;
-    (*connection_helper->event_callback)(HCI_EVENT_PACKET, 0, event, pos);
+    (*connection->basic_connection.event_callback)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
 static void mics_client_connected(mics_client_connection_t *connection, uint8_t status) {
     if (status == ERROR_CODE_SUCCESS){
         connection->state = MICROPHONE_CONTROL_SERVICE_CLIENT_STATE_READY;
-        mics_client_emit_connection_established(&connection->basic_connection, connection->aics_connections_num, status);
+        mics_client_emit_connection_established(connection, connection->aics_connections_num, status);
     } else {
         connection->state = MICROPHONE_CONTROL_SERVICE_CLIENT_STATE_IDLE;
-        mics_client_emit_connection_established(&connection->basic_connection, 0, status);
+        mics_client_emit_connection_established(connection, 0, status);
         mics_client_finalize_connection(connection);
     }
 }
