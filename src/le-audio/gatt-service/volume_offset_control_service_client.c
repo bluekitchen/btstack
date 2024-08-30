@@ -123,18 +123,17 @@ static uint16_t vocs_client_value_handle_for_index(vocs_client_connection_t * co
     return connection->basic_connection.characteristics[connection->characteristic_index].value_handle;
 }
 
-static void vocs_client_emit_string_value(gatt_service_client_connection_t * connection_helper, uint8_t subevent, const uint8_t * data, uint16_t data_size, uint8_t att_status){
+static void vocs_client_emit_string_value(vocs_client_connection_t * connection, uint8_t subevent, const uint8_t * data, uint16_t data_size, uint8_t att_status){
     UNUSED( data_size );
 
-    btstack_assert(connection_helper != NULL);
-    btstack_assert(connection_helper->event_callback != NULL);
-    
+    btstack_assert(connection != NULL);
+
     uint8_t event[VOCS_MAX_AUDIO_OUTPUT_DESCRIPTION_LENGTH + 7];
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_LEAUDIO_META;
     pos++;                      // reserve event[1] for subevent size 
     event[pos++] = subevent;
-    little_endian_store_16(event, pos, connection_helper->cid);
+    little_endian_store_16(event, pos, connection->basic_connection.cid);
     pos+= 2;
 
     pos++;                      // reserve event[5] for value size
@@ -144,41 +143,39 @@ static void vocs_client_emit_string_value(gatt_service_client_connection_t * con
     event[pos++] = att_status;
 
     event[1] = pos - 2;         // store subevent size
-    (*connection_helper->event_callback)(HCI_EVENT_PACKET, 0, event, pos);
+    (*connection->basic_connection.event_callback)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
-static void vocs_client_emit_connection_established(gatt_service_client_connection_t * connection_helper, uint8_t status){
-    btstack_assert(connection_helper != NULL);
-    btstack_assert(connection_helper->event_callback != NULL);
+static void vocs_client_emit_connection_established(vocs_client_connection_t * connection, uint8_t status){
+    btstack_assert(connection != NULL);
 
     uint8_t event[9];
     int pos = 0;
     event[pos++] = HCI_EVENT_LEAUDIO_META;
     event[pos++] = sizeof(event) - 2;
     event[pos++] = LEAUDIO_SUBEVENT_VOCS_CLIENT_CONNECTED;
-    little_endian_store_16(event, pos, connection_helper->con_handle);
+    little_endian_store_16(event, pos, connection->basic_connection.con_handle);
     pos += 2;
-    little_endian_store_16(event, pos, connection_helper->cid);
+    little_endian_store_16(event, pos, connection->basic_connection.cid);
     pos += 2;
     event[pos++] = 0; // num included services
     event[pos++] = status;
-    (*connection_helper->event_callback)(HCI_EVENT_PACKET, 0, event, pos);
+    (*connection->basic_connection.event_callback)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
 static void vocs_client_connected(vocs_client_connection_t * connection, uint8_t status) {
     if (status == ERROR_CODE_SUCCESS){
         connection->state = VOLUME_OFFSET_CONTROL_SERVICE_CLIENT_STATE_READY;
-        vocs_client_emit_connection_established(&connection->basic_connection, status);
+        vocs_client_emit_connection_established(connection, status);
     } else {
         connection->state = VOLUME_OFFSET_CONTROL_SERVICE_CLIENT_STATE_IDLE;
-        vocs_client_emit_connection_established(&connection->basic_connection, status);
+        vocs_client_emit_connection_established(connection, status);
         vocs_client_finalize_connection(connection);
     }
 }
 
-static void vocs_client_emit_uint8_array(gatt_service_client_connection_t * connection_helper, uint8_t subevent, const uint8_t * data, uint8_t data_size, uint8_t att_status){
-    btstack_assert(connection_helper != NULL);
-    btstack_assert(connection_helper->event_callback != NULL);
+static void vocs_client_emit_uint8_array(vocs_client_connection_t * connection, uint8_t subevent, const uint8_t * data, uint8_t data_size, uint8_t att_status){
+    btstack_assert(connection != NULL);
     btstack_assert(data_size <= 4);
 
     uint8_t event[11];
@@ -186,18 +183,17 @@ static void vocs_client_emit_uint8_array(gatt_service_client_connection_t * conn
     event[pos++] = HCI_EVENT_LEAUDIO_META;
     event[pos++] = 3 + data_size;
     event[pos++] = subevent;
-    little_endian_store_16(event, pos, connection_helper->cid);
+    little_endian_store_16(event, pos, connection->basic_connection.cid);
     pos+= 2;
-    event[pos++] = connection_helper->service_index;
+    event[pos++] = connection->basic_connection.service_index;
     memcpy(&event[pos], data, data_size);
     pos += data_size;
     event[pos++] = att_status;
-    (*connection_helper->event_callback)(HCI_EVENT_PACKET, 0, event, pos);
+    (*connection->basic_connection.event_callback)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
-static void vocs_client_emit_done_event(gatt_service_client_connection_t * connection_helper, uint8_t index, uint8_t att_status){
-    btstack_assert(connection_helper != NULL);
-    btstack_assert(connection_helper->event_callback != NULL);
+static void vocs_client_emit_done_event(vocs_client_connection_t * connection, uint8_t index, uint8_t att_status){
+    btstack_assert(connection != NULL);
 
     uint16_t characteristic_uuid16 = gatt_service_client_characteristic_uuid16_for_index(&vocs_client, index);
 
@@ -207,16 +203,16 @@ static void vocs_client_emit_done_event(gatt_service_client_connection_t * conne
     event[pos++] = sizeof(event) - 2;
     event[pos++] = LEAUDIO_SUBEVENT_VCS_CLIENT_WRITE_DONE;
 
-    little_endian_store_16(event, pos, connection_helper->cid);
+    little_endian_store_16(event, pos, connection->basic_connection.cid);
     pos+= 2;
-    event[pos++] = connection_helper->service_index;
+    event[pos++] = connection->basic_connection.service_index;
     little_endian_store_16(event, pos, characteristic_uuid16);
     pos+= 2;
     event[pos++] = att_status;
-    (*connection_helper->event_callback)(HCI_EVENT_PACKET, 0, event, pos);
+    (*connection->basic_connection.event_callback)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
-static void vocs_client_emit_read_event(gatt_service_client_connection_t * connection_helper, uint8_t characteristic_index, uint8_t att_status, const uint8_t * data, uint16_t data_size){
+static void vocs_client_emit_read_event(vocs_client_connection_t * connection, uint8_t characteristic_index, uint8_t att_status, const uint8_t * data, uint16_t data_size){
     uint8_t subevent_id;
     uint16_t expected_data_size;
     uint8_t null_data[4];
@@ -228,7 +224,7 @@ static void vocs_client_emit_read_event(gatt_service_client_connection_t * conne
             expected_data_size = 3;
             // UPDATE change_counter
             if (data_size == expected_data_size){
-                ((vocs_client_connection_t *)connection_helper)->change_counter = data[2];
+                connection->change_counter = data[2];
             }
             break;
         
@@ -240,7 +236,7 @@ static void vocs_client_emit_read_event(gatt_service_client_connection_t * conne
         case VOCS_CLIENT_CHARACTERISTIC_INDEX_AUDIO_OUTPUT_DESCRIPTION:
             subevent_id = LEAUDIO_SUBEVENT_VOCS_CLIENT_AUDIO_OUTPUT_DESCRIPTION;
             if (att_status == ATT_ERROR_SUCCESS){
-                vocs_client_emit_string_value(connection_helper, subevent_id, data, data_size, att_status);
+                vocs_client_emit_string_value(connection, subevent_id, data, data_size, att_status);
                 return;
             }
             break;
@@ -251,13 +247,13 @@ static void vocs_client_emit_read_event(gatt_service_client_connection_t * conne
     }
 
     if (att_status != ATT_ERROR_SUCCESS){
-        vocs_client_emit_uint8_array(connection_helper, subevent_id, null_data, 0, att_status);
+        vocs_client_emit_uint8_array(connection, subevent_id, null_data, 0, att_status);
         return;
     }
     if (data_size != expected_data_size){
-        vocs_client_emit_uint8_array(connection_helper, subevent_id, null_data, 0, ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH);
+        vocs_client_emit_uint8_array(connection, subevent_id, null_data, 0, ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH);
     } else {
-        vocs_client_emit_uint8_array(connection_helper, subevent_id, data, expected_data_size, ERROR_CODE_SUCCESS);
+        vocs_client_emit_uint8_array(connection, subevent_id, data, expected_data_size, ERROR_CODE_SUCCESS);
     }
 }
 
@@ -288,7 +284,7 @@ static void vocs_client_emit_notify_event(vocs_client_connection_t * connection,
         case ORG_BLUETOOTH_CHARACTERISTIC_AUDIO_OUTPUT_DESCRIPTION:
             subevent_id = LEAUDIO_SUBEVENT_VOCS_CLIENT_AUDIO_OUTPUT_DESCRIPTION;
             if (att_status == ATT_ERROR_SUCCESS){
-                vocs_client_emit_string_value(&connection->basic_connection, subevent_id, data, data_size, att_status);
+                vocs_client_emit_string_value(connection, subevent_id, data, data_size, att_status);
                 return;
             }
             break;
@@ -299,13 +295,13 @@ static void vocs_client_emit_notify_event(vocs_client_connection_t * connection,
     }
 
     if (att_status != ATT_ERROR_SUCCESS){
-        vocs_client_emit_uint8_array(&connection->basic_connection, subevent_id, null_data, 0, att_status);
+        vocs_client_emit_uint8_array(connection, subevent_id, null_data, 0, att_status);
         return;
     }
     if (data_size != expected_data_size){
-        vocs_client_emit_uint8_array(&connection->basic_connection, subevent_id, null_data, 0, ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH);
+        vocs_client_emit_uint8_array(connection, subevent_id, null_data, 0, ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH);
     } else {
-        vocs_client_emit_uint8_array(&connection->basic_connection, subevent_id, data, expected_data_size, ERROR_CODE_SUCCESS);
+        vocs_client_emit_uint8_array(connection, subevent_id, data, expected_data_size, ERROR_CODE_SUCCESS);
     }
 }
 
@@ -426,7 +422,7 @@ static void vocs_client_packet_handler_internal(uint8_t packet_type, uint16_t ch
                     connection = vocs_client_get_connection_for_cid(connection_id);
                     btstack_assert(connection != NULL);
                     vocs_client_finalize_connection(connection);
-                    vocs_client_replace_subevent_id_and_emit(gatt_service_client_get_packet_handler(&connection->basic_connection), packet, size, LEAUDIO_SUBEVENT_VOCS_CLIENT_DISCONNECTED);
+                    vocs_client_replace_subevent_id_and_emit(connection->packet_handler, packet, size, LEAUDIO_SUBEVENT_VOCS_CLIENT_DISCONNECTED);
                     break;
 
                 default:
@@ -476,7 +472,7 @@ static void vocs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t c
 
                 case VOLUME_OFFSET_CONTROL_SERVICE_CLIENT_STATE_W4_READ_CHARACTERISTIC_VALUE_RESULT:
                     connection->state = VOLUME_OFFSET_CONTROL_SERVICE_CLIENT_STATE_READY;
-                    vocs_client_emit_read_event(&connection->basic_connection, connection->characteristic_index, ATT_ERROR_SUCCESS,
+                    vocs_client_emit_read_event(connection, connection->characteristic_index, ATT_ERROR_SUCCESS,
                                                 gatt_event_characteristic_value_query_result_get_value(packet),
                                                 gatt_event_characteristic_value_query_result_get_value_length(packet));
                     break;
@@ -497,7 +493,7 @@ static void vocs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t c
 
             switch (connection->state){
                 case VOLUME_OFFSET_CONTROL_SERVICE_CLIENT_STATE_W4_WRITE_CHARACTERISTIC_VALUE_RESULT:
-                    vocs_client_emit_done_event(&connection->basic_connection, connection->characteristic_index, status);
+                    vocs_client_emit_done_event(connection, connection->characteristic_index, status);
                     break;
 
                 case VOLUME_OFFSET_CONTROL_SERVICE_CLIENT_STATE_CHANGE_COUNTER_RESULT_READ_FAILED:
