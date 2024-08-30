@@ -56,26 +56,27 @@
 #include "le-audio/gatt-service/hearing_access_service_util.h"
 #include "le-audio/gatt-service/hearing_access_service_server.h"
 
+// notification that should be sent to all connected clients
 #define HAS_NOTIFICATION_TASK_PRESET_RECORD_ADDED                                      0x00000001
 #define HAS_NOTIFICATION_TASK_PRESET_RECORD_DELETED                                    0x00000002
 #define HAS_NOTIFICATION_TASK_PRESET_RECORD_ACTIVE                                     0x00000004
-
 #define HAS_NOTIFICATION_TASK_PRESET_RECORD_AVAILABLE                                  0x00000008
 #define HAS_NOTIFICATION_TASK_PRESET_RECORD_UNAVAILABLE                                0x00000010
 #define HAS_NOTIFICATION_TASK_PRESET_RECORD_UPDATE_NAME                                0x00000020
 
-#define HAS_NOTIFICATION_TASK_CONTROL_POINT_OPERATION                                  0x00000040
+// notifications that should be sent to a specific client
+#define HAS_CONNECTION_TASK_READ_PRESETS                                               0x00000001
+#define HAS_CONNECTION_TASK_SEND_CHANGED_PRESETS_ON_RECONNECT                          0x00000002
 
-#define HAS_CP_NOTIFICATION_TASK_READ_ALL_PRESETS                                      0x00000001
-#define HAS_CP_NOTIFICATION_TASK_READ_PRESETS                                          0x00000002
-#define HAS_CP_NOTIFICATION_TASK_WRITE_PRESET                                          0x00000004
-#define HAS_CP_NOTIFICATION_TASK_SET_ACTIVE                                            0x00000008
-#define HAS_CP_NOTIFICATION_TASK_NEXT_PRESET                                           0x00000010
 
-#define HAS_EMPTY_PRESET_RECORD_INDEX                                                  0x00
-#define HAS_INVALID_PRESET_RECORD_POSITION                                             0xFF
+// Index in an preset record array is identical to the preset record id:
+// with an exception that the preset record id of 0 is reserved
+#define HAS_PRESET_RECORD_RESERVED_INDEX                                                0x00
 
-#define HAS_START_INDEX_POSITION                                                        1
+// 1 is the smallest preset id that can be assigned.
+#define HAS_PRESET_RECORD_START_INDEX                                                   0x01
+// invalid index is used to signal that the max storage capacity has been exceeded.
+#define HAS_PRESET_RECORD_INVALID_INDEX                                                 0xFF
 
 static att_service_handler_t hearing_access_service;
 
@@ -109,14 +110,17 @@ static uint16_t   has_active_preset_index_client_configuration;
 static bool has_server_schedule_preset_record_task(void);
 static void has_server_can_send_now(void * context);
 
+static uint8_t has_server_last_possible_record_index(void){
+    return HAS_PRESET_RECORD_START_INDEX + has_preset_records_max_num - 1;
+}
 
 static void dump_preset_records(char * msg){
 #ifdef ENABLE_TESTING_SUPPORT
     printf("%s: regular %d\n", msg, has_preset_records_num);
     uint8_t i;
-    for (i = HAS_START_INDEX_POSITION; i < HAS_START_INDEX_POSITION + has_preset_records_max_num; i++){
+    for (i = HAS_PRESET_RECORD_START_INDEX; i < has_server_last_possible_record_index(); i++){
         has_preset_record_t * preset = &has_preset_records[i];
-        if (preset->index != HAS_EMPTY_PRESET_RECORD_INDEX) {
+        if (preset->index != HAS_PRESET_RECORD_RESERVED_INDEX) {
             printf("N[%02d] - index %02d, Writable %d, Available %d, Active %d, scheduled_task = %d, Name %s\n", i,
                    preset->index,
                    (preset->properties & HEARING_AID_PRESET_PROPERTIES_MASK_WRITABLE) > 0 ? 1u : 0u,
@@ -132,7 +136,7 @@ static void dump_preset_records(char * msg){
 }
 
 static void has_clear_preset_record(uint8_t record_pos) {// clear the last element (optional, for cleanliness)
-    has_preset_records[record_pos].index = HAS_EMPTY_PRESET_RECORD_INDEX;
+    has_preset_records[record_pos].index = HAS_PRESET_RECORD_RESERVED_INDEX;
     has_preset_records[record_pos].properties = 0;
     has_preset_records[record_pos].name[0] = '\0';
     has_preset_records[record_pos].active = false;
@@ -157,17 +161,17 @@ static void has_server_reset_client(has_server_connection_t * connection){
 
 static has_preset_record_t * has_server_preset_iterator_get_next(has_server_connection_t * connection, bool * is_last_preset){
     // check if it is initial value
-    if (connection->current_index == HAS_INVALID_PRESET_RECORD_POSITION) {
+    if (connection->current_index == HAS_PRESET_RECORD_INVALID_INDEX) {
         // find first index equal to or greater than start_index
         connection->current_index = connection->start_index - 1;
     }
 
     bool preset_found = false;
-    while (!preset_found && (connection->current_index < (HAS_START_INDEX_POSITION + has_preset_records_max_num - 1))){
+    while (!preset_found && (connection->current_index < (HAS_PRESET_RECORD_START_INDEX + has_preset_records_max_num - 1))){
         connection->current_index++;
         has_preset_record_t *preset = &has_preset_records[connection->current_index];
 
-        if (preset->index != HAS_EMPTY_PRESET_RECORD_INDEX) {
+        if (preset->index != HAS_PRESET_RECORD_RESERVED_INDEX) {
             preset_found = true;
             connection->num_presets_already_read++;
             *is_last_preset = (connection->num_presets_to_read == connection->num_presets_already_read) || (has_preset_records_num == connection->num_presets_already_read);
@@ -180,11 +184,11 @@ static has_preset_record_t * has_server_preset_iterator_get_next(has_server_conn
 
 static has_preset_record_t * has_read_presets_operation_get_next_changed_preset_record(has_server_connection_t * connection, bool * is_last_preset, uint8_t * prev_index){
     uint8_t num_presets_already_read = 0;
-    *prev_index = HAS_EMPTY_PRESET_RECORD_INDEX;
+    *prev_index = HAS_PRESET_RECORD_RESERVED_INDEX;
     uint8_t i;
-    for (i = HAS_START_INDEX_POSITION; i < HAS_START_INDEX_POSITION + has_preset_records_max_num; i++){
+    for (i = HAS_PRESET_RECORD_START_INDEX; i < has_server_last_possible_record_index(); i++){
         has_preset_record_t *preset = &has_preset_records[i];
-        if (preset->index != HAS_EMPTY_PRESET_RECORD_INDEX) {
+        if (preset->index != HAS_PRESET_RECORD_RESERVED_INDEX) {
             num_presets_already_read++;
 
             if (preset->scheduled_task > 0u) {
@@ -295,7 +299,7 @@ static uint8_t is_read_operation_valid(has_server_connection_t * connection, uin
     }
 
     if ((has_preset_records_num == 0) ||
-        (index > has_preset_records[HAS_START_INDEX_POSITION + has_preset_records_num - 1].index) ){
+        (index > has_preset_records[HAS_PRESET_RECORD_START_INDEX + has_preset_records_num - 1].index) ){
         return ATT_ERROR_OUT_OF_RANGE;
     }
 
@@ -312,42 +316,38 @@ static uint8_t is_read_operation_valid(has_server_connection_t * connection, uin
 static void has_server_preset_iterator_init(has_server_connection_t * connection, uint8_t start_index, uint8_t num_presets){
     connection->start_index = start_index;
     connection->num_presets_to_read = num_presets;
-    connection->current_index = HAS_INVALID_PRESET_RECORD_POSITION;
+    connection->current_index = HAS_PRESET_RECORD_INVALID_INDEX;
     connection->num_presets_already_read = 0;
-}
-
-static uint8_t has_server_last_possible_record_index(void){
-    return HAS_START_INDEX_POSITION + has_preset_records_max_num - 1;
 }
 
 static uint8_t has_server_get_next_index(void){
     if ( has_preset_records_num >= has_preset_records_max_num ){
-        return HAS_INVALID_PRESET_RECORD_POSITION;
+        return HAS_PRESET_RECORD_INVALID_INDEX;
     }
 
     uint8_t i;
     // reusing old
-    for (i = HAS_START_INDEX_POSITION; i < has_server_last_possible_record_index(); i++){
-        if (has_preset_records[i].index == HAS_EMPTY_PRESET_RECORD_INDEX){
+    for (i = HAS_PRESET_RECORD_START_INDEX; i < has_server_last_possible_record_index(); i++){
+        if (has_preset_records[i].index == HAS_PRESET_RECORD_RESERVED_INDEX){
             return i;
         }
     }
-    return HAS_INVALID_PRESET_RECORD_POSITION;
+    return HAS_PRESET_RECORD_INVALID_INDEX;
 }
 
 static bool has_server_index_available(uint8_t index){
-    return (has_preset_records[index].index != HAS_EMPTY_PRESET_RECORD_INDEX) && ( (has_preset_records[index].properties & HEARING_AID_PRESET_PROPERTIES_MASK_AVAILABLE) > 0u);
+    return (has_preset_records[index].index != HAS_PRESET_RECORD_RESERVED_INDEX) && ((has_preset_records[index].properties & HEARING_AID_PRESET_PROPERTIES_MASK_AVAILABLE) > 0u);
 }
 
 static uint8_t has_server_get_previous_available_index_relative_to_active_index(void){
     if (has_preset_records_num < 1u ){
         // there is only one or none records
-        return HAS_INVALID_PRESET_RECORD_POSITION;
+        return HAS_PRESET_RECORD_INVALID_INDEX;
     }
 
     uint8_t i;
-    // search backward from current active index to the HAS_START_INDEX_POSITION
-    for (i = has_active_preset_index - 1; i >= HAS_START_INDEX_POSITION; i--){
+    // search backward from current active index to the HAS_PRESET_RECORD_START_INDEX
+    for (i = has_active_preset_index - 1; i >= HAS_PRESET_RECORD_START_INDEX; i--){
         if (has_server_index_available(i)){
             return i;
         }
@@ -366,7 +366,7 @@ static uint8_t has_server_get_previous_available_index_relative_to_active_index(
 static uint8_t has_server_get_next_index_relative_to_active_index(void){
     if (has_preset_records_num < 1u ){
         // there is only one or none records
-        return HAS_INVALID_PRESET_RECORD_POSITION;
+        return HAS_PRESET_RECORD_INVALID_INDEX;
     }
 
     uint8_t i;
@@ -377,8 +377,8 @@ static uint8_t has_server_get_next_index_relative_to_active_index(void){
         }
     }
 
-    // search forward from HAS_START_INDEX_POSITION to the current active
-    for (i = HAS_START_INDEX_POSITION; i <= has_active_preset_index - 1; i++){
+    // search forward from HAS_PRESET_RECORD_START_INDEX to the current active
+    for (i = HAS_PRESET_RECORD_START_INDEX; i <= has_active_preset_index - 1; i++){
         if (has_server_index_available(i)){
             return i;
         }
@@ -461,7 +461,7 @@ static int has_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
                 }
 
                 has_server_preset_iterator_init(connection, index, num_presets);
-                has_server_schedule_control_point_task(connection, HAS_CP_NOTIFICATION_TASK_READ_PRESETS);
+                has_server_schedule_control_point_task(connection, HAS_CONNECTION_TASK_READ_PRESETS);
                 break;
 
             case HAS_OPCODE_WRITE_PRESET_NAME: {
@@ -504,7 +504,7 @@ static int has_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
 
             case HAS_OPCODE_SET_NEXT_PRESET:
                 index = has_server_get_next_index_relative_to_active_index();
-                if (index == HAS_INVALID_PRESET_RECORD_POSITION){
+                if (index == HAS_PRESET_RECORD_INVALID_INDEX){
                     return HAS_CONTROL_POINT_ATT_ERROR_RESPONSE_PRESET_OPERATION_NOT_POSSIBLE;
                 }
                 hearing_access_service_server_preset_record_set_active(index);
@@ -512,7 +512,7 @@ static int has_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
 
             case HAS_OPCODE_SET_PREVIOUS_PRESET:
                 index = has_server_get_previous_available_index_relative_to_active_index();
-                if (index == HAS_INVALID_PRESET_RECORD_POSITION){
+                if (index == HAS_PRESET_RECORD_INVALID_INDEX){
                     return HAS_CONTROL_POINT_ATT_ERROR_RESPONSE_PRESET_OPERATION_NOT_POSSIBLE;
                 }
                 hearing_access_service_server_preset_record_set_active(index);
@@ -542,7 +542,7 @@ static int has_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
                     return HAS_CONTROL_POINT_ATT_ERROR_RESPONSE_PRESET_SYNCHRONIZATION_NOT_SUPPORTED;
                 }
                 index = has_server_get_next_index_relative_to_active_index();
-                if (index == HAS_INVALID_PRESET_RECORD_POSITION){
+                if (index == HAS_PRESET_RECORD_INVALID_INDEX){
                     return HAS_CONTROL_POINT_ATT_ERROR_RESPONSE_PRESET_OPERATION_NOT_POSSIBLE;
                 }
                 hearing_access_service_server_preset_record_set_active(index);
@@ -553,7 +553,7 @@ static int has_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
                     return HAS_CONTROL_POINT_ATT_ERROR_RESPONSE_PRESET_SYNCHRONIZATION_NOT_SUPPORTED;
                 }
                 index = has_server_get_previous_available_index_relative_to_active_index();
-                if (index == HAS_INVALID_PRESET_RECORD_POSITION){
+                if (index == HAS_PRESET_RECORD_INVALID_INDEX){
                     return HAS_CONTROL_POINT_ATT_ERROR_RESPONSE_PRESET_OPERATION_NOT_POSSIBLE;
                 }
                 hearing_access_service_server_preset_record_set_active(index);
@@ -573,7 +573,7 @@ static int has_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
 //        }
 //
 //        if (has_control_point_client_configuration > 0){
-//            has_server_preset_iterator_init(connection, HAS_START_INDEX_POSITION, has_preset_records_num);
+//            has_server_preset_iterator_init(connection, HAS_PRESET_RECORD_START_INDEX, has_preset_records_num);
 //            has_server_schedule_control_point_task(connection, HAS_CP_NOTIFICATION_TASK_READ_ALL_PRESETS);
 //        }
         return 0;
@@ -634,7 +634,7 @@ void hearing_access_service_server_init(uint8_t hearing_aid_features, uint8_t pr
     UNUSED(service_found);
 
     has_hearing_aid_features = hearing_aid_features;
-    has_active_preset_index  = HAS_EMPTY_PRESET_RECORD_INDEX;
+    has_active_preset_index  = HAS_PRESET_RECORD_RESERVED_INDEX;
     // get characteristic value handle and client configuration handle
     
     has_hearing_aid_features_value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_HEARING_AID_FEATURES);
@@ -656,10 +656,11 @@ void hearing_access_service_server_init(uint8_t hearing_aid_features, uint8_t pr
         has_clients[i].con_handle = HCI_CON_HANDLE_INVALID;
     }
 
-    has_preset_records_max_num = preset_records_num - 1;
+    // 0x00 and 0xFF are reserved indexes
+    has_preset_records_max_num = btstack_min(preset_records_num - 1, 0xFD);
     has_preset_records_num = 0;
     has_preset_records = preset_records;
-    has_active_preset_index = HAS_EMPTY_PRESET_RECORD_INDEX;
+    has_active_preset_index = HAS_PRESET_RECORD_RESERVED_INDEX;
 
 #ifdef ENABLE_TESTING_SUPPORT
     printf("HAS 0x%02x - 0x%02x \n", start_handle, end_handle);
@@ -715,7 +716,7 @@ static void has_server_can_send_now(void * context) {
     uint8_t prev_index;
     has_preset_record_t *preset;
 
-    if ((connection->scheduled_control_point_notification_tasks & HAS_CP_NOTIFICATION_TASK_READ_ALL_PRESETS) > 0u) {
+    if ((connection->scheduled_control_point_notification_tasks & HAS_CONNECTION_TASK_SEND_CHANGED_PRESETS_ON_RECONNECT) > 0u) {
         preset = has_server_preset_iterator_get_next(connection, &is_last_preset_record);
         uint8_t value[6 + HAS_PRESET_RECORD_NAME_MAX_LENGTH];
         uint8_t pos = 0;
@@ -757,7 +758,7 @@ static void has_server_can_send_now(void * context) {
         }
         return;
 
-    } else if ((connection->scheduled_control_point_notification_tasks & HAS_CP_NOTIFICATION_TASK_READ_PRESETS) > 0u) {
+    } else if ((connection->scheduled_control_point_notification_tasks & HAS_CONNECTION_TASK_READ_PRESETS) > 0u) {
         preset = has_server_preset_iterator_get_next(connection, &is_last_preset_record);
         if (!preset){
             return;
@@ -926,7 +927,7 @@ static bool has_server_schedule_preset_record_task(void){
         att_server_request_to_send_indication(&connection->scheduled_tasks_callback, connection->con_handle);
         return true;
     }
-    
+
     return false;
 }
 
@@ -936,7 +937,7 @@ static uint8_t has_server_preset_record_status(uint8_t index){
         return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
     }
 
-    if (has_preset_records[index].index == HAS_EMPTY_PRESET_RECORD_INDEX){
+    if (has_preset_records[index].index == HAS_PRESET_RECORD_RESERVED_INDEX){
         return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
     }
 
@@ -948,7 +949,7 @@ static uint8_t has_server_preset_record_status(uint8_t index){
 
 uint8_t hearing_access_service_server_add_preset(uint8_t properties, char * name){
     uint8_t index = has_server_get_next_index();
-    if (index == HAS_INVALID_PRESET_RECORD_POSITION){
+    if (index == HAS_PRESET_RECORD_INVALID_INDEX){
         return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
     }
 
