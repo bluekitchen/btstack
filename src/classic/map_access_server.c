@@ -43,12 +43,12 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "hci_cmd.h"
-#include "btstack_run_loop.h"
-#include "btstack_debug.h"
-#include "l2cap.h"
 #include "bluetooth_sdp.h"
 #include "btstack_event.h"
+#include "btstack_run_loop.h"
+#include "btstack_debug.h"
+#include "hci_event_builder.h"
+#include "l2cap.h"
 
 #include "classic/obex.h"
 #include "classic/obex_parser.h"
@@ -448,9 +448,9 @@ static void map_server_operation_complete(map_server_t* mas) {
 static void map_server_handle_can_send_now(map_server_t* mas) {
 	// save mas->response.code before its reset by map_server_operation_complete()
     uint8_t response_code = mas->response.code;
-    uint8_t event[10];
+    uint8_t event[30];
     uint16_t pos = 0;
-
+    hci_event_builder_context_t context;
     switch (mas->state) {
     case MAS_STATE_SEND_INTERNAL_RESPONSE:
         log_debug("MAS_STATE_SEND_INTERNAL_RESPONSE");
@@ -522,14 +522,15 @@ static void map_server_handle_can_send_now(map_server_t* mas) {
         map_server_operation_complete(mas);
         // send packet
         goep_server_execute(mas->goep_cid, OBEX_RESP_SUCCESS);
-        
+
         // emit event
-        APP_WRITE_08(event, &pos, HCI_EVENT_MAP_META);
-        APP_WRITE_08(event, &pos, 0);
-        APP_WRITE_08(event, &pos, MAP_SUBEVENT_CONNECTION_CLOSED);
-        APP_WRITE_16(event, &pos, mas->goep_cid);
-        APP_WRITE_LEN(event, pos);
-        (*map_server_user_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
+        hci_event_builder_init(&context, event, sizeof(event), HCI_EVENT_MAP_META, MAP_SUBEVENT_CONNECTION_OPENED);
+        hci_event_builder_add_16(&context, mas->goep_cid);
+        hci_event_builder_add_08(&context, ERROR_CODE_SUCCESS);
+        hci_event_builder_add_bd_addr(&context, mas->bd_addr);
+        hci_event_builder_add_con_handle(&context, mas->con_handle);
+        hci_event_builder_add_08(&context, 1);
+        (*map_server_user_packet_handler)(HCI_EVENT_PACKET, 0, event, hci_event_builder_get_length(&context));
         break;
 
     case MAS_STATE_SEND_DISCONNECT_RESPONSE:
