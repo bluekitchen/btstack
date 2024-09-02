@@ -162,8 +162,6 @@ static void dump_preset_records(char * msg){
     }
 #else
     UNUSED(msg);
-    UNUSED(pos);
-    UNUSED(index);
 #endif
 }
 
@@ -207,7 +205,6 @@ static has_preset_record_t * has_server_preset_iterator_get_next(has_server_conn
             preset_found = true;
             connection->num_presets_already_read++;
             *is_last_preset = (connection->num_presets_to_read == connection->num_presets_already_read) || (has_preset_records_num == connection->num_presets_already_read);
-            printf("Preset found R[%02d] [%d: %d], last %d\n", connection->current_position, connection->num_presets_to_read, connection->num_presets_already_read, *is_last_preset);
             return &has_preset_records[connection->current_position];
         }
     }
@@ -792,7 +789,6 @@ static void has_server_can_send_now(void * context) {
         }
 
         if (is_last_preset_record) {
-            printf("can send now: Read all, HAS_SERVER_CONNECTION_STATE_READY\n");
             connection->scheduled_control_point_notification_tasks = 0u;
         } else {
             has_server_schedule_preset_record_task();
@@ -821,7 +817,6 @@ static void has_server_can_send_now(void * context) {
         (void) att_server_indicate(connection->con_handle, has_control_point_value_handle, &value[0], pos);
 
         if (is_last_preset_record) {
-            printf("can send now: Read, HAS_SERVER_CONNECTION_STATE_READY\n");
             connection->scheduled_control_point_notification_tasks = 0u;
         } else {
             has_server_schedule_preset_record_task();
@@ -922,7 +917,6 @@ static void has_server_can_send_now(void * context) {
     }
 
     if (has_setup_next_connection_for_preset_changed_notification()){
-        printf("can send now: has_setup_next_connection_for_preset_changed_notification\n");
         return;
     }
 
