@@ -47,7 +47,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "ble/gatt-service/gatt_service_client_helper.h"
+#include "ble/gatt_service_client.h"
 #include "le-audio/gatt-service/hearing_access_service_client.h"
 
 #include "bluetooth_gatt.h"
@@ -55,7 +55,7 @@
 #include "btstack_event.h"
 
 // VCS Client
-static gatt_service_client_helper_t has_client;
+static gatt_service_client_t has_client;
 
 static btstack_context_callback_registration_t has_client_handle_can_send_now;
 
@@ -95,7 +95,7 @@ static void has_client_replace_subevent_id_and_emit(btstack_packet_handler_t cal
     (*callback)(HCI_EVENT_PACKET, 0, packet, size);
 }
 
-static void has_client_emit_connection_established(const gatt_service_client_connection_helper_t *connection_helper, uint8_t status) {
+static void has_client_emit_connection_established(const gatt_service_client_connection_t *connection_helper, uint8_t status) {
     btstack_assert(connection_helper != NULL);
     btstack_assert(connection_helper->event_callback != NULL);
 
@@ -131,7 +131,7 @@ static void has_client_connected(has_client_connection_t * connection, uint8_t s
     }
 }
 
-static void has_client_emit_uint8_value(gatt_service_client_connection_helper_t * connection_helper, uint8_t subevent, uint8_t data, uint8_t att_status){
+static void has_client_emit_uint8_value(gatt_service_client_connection_t * connection_helper, uint8_t subevent, uint8_t data, uint8_t att_status){
     btstack_assert(connection_helper != NULL);
     btstack_assert(connection_helper->event_callback != NULL);
     
@@ -147,7 +147,7 @@ static void has_client_emit_uint8_value(gatt_service_client_connection_helper_t 
     (*connection_helper->event_callback)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
-static void has_client_emit_generic_update(gatt_service_client_connection_helper_t * connection_helper, const uint8_t * data, uint8_t data_size){
+static void has_client_emit_generic_update(gatt_service_client_connection_t * connection_helper, const uint8_t * data, uint8_t data_size){
     btstack_assert(connection_helper != NULL);
     btstack_assert(connection_helper->event_callback != NULL);
     
@@ -180,7 +180,7 @@ static void has_client_emit_generic_update(gatt_service_client_connection_helper
     (*connection_helper->event_callback)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
-static void has_client_emit_preset_record_changed(gatt_service_client_connection_helper_t * connection_helper, uint8_t subevent_id, const uint8_t * data, uint8_t data_size){
+static void has_client_emit_preset_record_changed(gatt_service_client_connection_t * connection_helper, uint8_t subevent_id, const uint8_t * data, uint8_t data_size){
     btstack_assert(connection_helper != NULL);
     btstack_assert(connection_helper->event_callback != NULL);
     
@@ -198,15 +198,15 @@ static void has_client_emit_preset_record_changed(gatt_service_client_connection
     (*connection_helper->event_callback)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
-static void has_client_emit_preset_record_deleted(gatt_service_client_connection_helper_t * connection_helper, const uint8_t * data, uint8_t data_size){
+static void has_client_emit_preset_record_deleted(gatt_service_client_connection_t * connection_helper, const uint8_t * data, uint8_t data_size){
     has_client_emit_preset_record_changed(connection_helper, LEAUDIO_SUBEVENT_HAS_CLIENT_PRESET_RECORD_DELETED, data, data_size);
 }
 
-static void has_client_emit_preset_record_available(gatt_service_client_connection_helper_t * connection_helper, const uint8_t * data, uint8_t data_size){
+static void has_client_emit_preset_record_available(gatt_service_client_connection_t * connection_helper, const uint8_t * data, uint8_t data_size){
     has_client_emit_preset_record_changed(connection_helper, LEAUDIO_SUBEVENT_HAS_CLIENT_PRESET_RECORD_AVAILABLE, data, data_size);
 }
 
-static void has_client_emit_preset_record_unavailable(gatt_service_client_connection_helper_t * connection_helper, const uint8_t * data, uint8_t data_size){
+static void has_client_emit_preset_record_unavailable(gatt_service_client_connection_t * connection_helper, const uint8_t * data, uint8_t data_size){
     has_client_emit_preset_record_changed(connection_helper, LEAUDIO_SUBEVENT_HAS_CLIENT_PRESET_RECORD_UNAVAILABLE, data, data_size);
 }
 //
@@ -241,10 +241,10 @@ static void has_client_emit_preset_record_unavailable(gatt_service_client_connec
 //}
 
 
-static void has_client_emit_read_event(gatt_service_client_connection_helper_t * connection_helper, uint16_t value_handle, uint8_t att_status, const uint8_t * data, uint16_t data_size){
+static void has_client_emit_read_event(gatt_service_client_connection_t * connection_helper, uint16_t value_handle, uint8_t att_status, const uint8_t * data, uint16_t data_size){
     uint16_t expected_data_size;
     uint8_t  subevent_id;
-    uint16_t characteristic_uuid16 = gatt_service_client_helper_characteristic_uuid16_for_value_handle(&has_client, connection_helper, value_handle);
+    uint16_t characteristic_uuid16 = gatt_service_client_characteristic_uuid16_for_value_handle(&has_client, connection_helper, value_handle);
 
     switch (characteristic_uuid16){
         case ORG_BLUETOOTH_CHARACTERISTIC_HEARING_AID_FEATURES:
@@ -274,8 +274,8 @@ static void has_client_emit_read_event(gatt_service_client_connection_helper_t *
 }
 
 
-static void has_client_emit_indicate_event(gatt_service_client_connection_helper_t * connection_helper, uint16_t value_handle, const uint8_t * data, uint16_t data_size){
-    uint16_t characteristic_uuid16 = gatt_service_client_helper_characteristic_uuid16_for_value_handle(&has_client, connection_helper, value_handle);
+static void has_client_emit_indicate_event(gatt_service_client_connection_t * connection_helper, uint16_t value_handle, const uint8_t * data, uint16_t data_size){
+    uint16_t characteristic_uuid16 = gatt_service_client_characteristic_uuid16_for_value_handle(&has_client, connection_helper, value_handle);
 
     if (characteristic_uuid16 != ORG_BLUETOOTH_CHARACTERISTIC_HEARING_AID_PRESET_CONTROL_POINT){
         return;
@@ -319,8 +319,8 @@ static void has_client_emit_indicate_event(gatt_service_client_connection_helper
     }
 }
 
-static void has_client_emit_notify_event(gatt_service_client_connection_helper_t * connection_helper, uint16_t value_handle, const uint8_t * data, uint16_t data_size){
-    uint16_t characteristic_uuid16 = gatt_service_client_helper_characteristic_uuid16_for_value_handle(&has_client, connection_helper, value_handle);
+static void has_client_emit_notify_event(gatt_service_client_connection_t * connection_helper, uint16_t value_handle, const uint8_t * data, uint16_t data_size){
+    uint16_t characteristic_uuid16 = gatt_service_client_characteristic_uuid16_for_value_handle(&has_client, connection_helper, value_handle);
     has_client_emit_read_event(connection_helper,  characteristic_uuid16,  ERROR_CODE_SUCCESS, data, data_size);
 }
 
@@ -367,7 +367,7 @@ static void has_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
     UNUSED(size);
 
     if (packet_type != HCI_EVENT_PACKET) return;
-    gatt_service_client_connection_helper_t * connection_helper;
+    gatt_service_client_connection_t * connection_helper;
     has_client_connection_t * connection;
     hci_con_handle_t con_handle;
     uint16_t cid;
@@ -452,7 +452,7 @@ static void has_client_handle_gatt_client_event(uint8_t packet_type, uint16_t ch
     UNUSED(channel);
     UNUSED(size);
 
-    gatt_service_client_connection_helper_t * connection_helper;
+    gatt_service_client_connection_t * connection_helper;
     has_client_connection_t * connection = NULL;
     hci_con_handle_t con_handle;
 
@@ -512,7 +512,7 @@ static uint16_t has_client_serialize_characteristic_value_for_write(has_client_c
 
 static void has_client_run_for_connection(void * context){
     hci_con_handle_t con_handle = (hci_con_handle_t)(uintptr_t)context;
-    gatt_service_client_connection_helper_t * connection_helper = gatt_service_client_get_connection_for_con_handle(&has_client, con_handle);
+    gatt_service_client_connection_t * connection_helper = gatt_service_client_get_connection_for_con_handle(&has_client, con_handle);
     has_client_connection_t * connection = (has_client_connection_t *)connection_helper;
 
     btstack_assert(connection != NULL);
@@ -525,7 +525,7 @@ static void has_client_run_for_connection(void * context){
 
             (void) gatt_client_read_value_of_characteristic_using_value_handle(
                 &has_client_handle_gatt_client_event, con_handle,
-                gatt_service_client_helper_value_handle_for_index(connection_helper, connection->characteristic_index));
+                gatt_service_client_characteristic_value_handle_for_index(connection_helper, connection->characteristic_index));
             break;
 
         case HEARING_ACCESS_SERVICE_CLIENT_STATE_W2_WRITE_CHARACTERISTIC_VALUE:
@@ -534,7 +534,7 @@ static void has_client_run_for_connection(void * context){
             value_length = has_client_serialize_characteristic_value_for_write(connection, &value);
             (void) gatt_client_write_value_of_characteristic(
                     &has_client_handle_gatt_client_event, con_handle,
-                    gatt_service_client_helper_value_handle_for_index(connection_helper, connection->characteristic_index),
+                    gatt_service_client_characteristic_value_handle_for_index(connection_helper, connection->characteristic_index),
                 value_length, value);
             
             break;
@@ -545,12 +545,11 @@ static void has_client_run_for_connection(void * context){
 }
 
 static void has_client_packet_handler_trampoline(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    gatt_service_client_hci_event_handler(&has_client, packet_type, channel, packet, size);
+    gatt_service_client_trampoline_packet_handler(&has_client, packet_type, channel, packet, size);
 }
 
 void hearing_access_service_client_init(void){
-    gatt_service_client_init(&has_client, &has_client_packet_handler_trampoline);
-    gatt_service_client_register_packet_handler(&has_client, &has_client_packet_handler_internal);
+    gatt_service_client_register_client(&has_client, &has_client_packet_handler_internal, &has_client_packet_handler_trampoline);
 
     has_client.characteristics_desc16_num = sizeof(has_uuid16s)/sizeof(uint16_t);
     has_client.characteristics_desc16 = has_uuid16s;
@@ -570,7 +569,7 @@ uint8_t hearing_access_service_client_connect(hci_con_handle_t con_handle,
     has_connection->events_packet_handler = packet_handler;
     has_connection->state = HEARING_ACCESS_SERVICE_CLIENT_STATE_W4_CONNECTION;
 
-    return gatt_service_client_connect(con_handle,
+    return gatt_service_client_connect_primary_service(con_handle,
                                        &has_client, &has_connection->basic_connection,
                                        ORG_BLUETOOTH_SERVICE_HEARING_ACCESS, 0,
                                        has_connection->characteristics_storage, HEARING_ACCESS_SERVICE_NUM_CHARACTERISTICS,
@@ -700,6 +699,5 @@ uint8_t hearing_access_service_client_disconnect(uint16_t has_cid){
 }
 
 void hearing_access_service_client_deinit(void){
-    gatt_service_client_deinit(&has_client);
 }
 

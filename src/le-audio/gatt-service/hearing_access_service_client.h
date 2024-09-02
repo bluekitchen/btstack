@@ -48,7 +48,7 @@
 #include "bluetooth.h"
 #include "btstack_linked_list.h"
 #include "ble/gatt_client.h"
-#include "ble/gatt-service/gatt_service_client_helper.h"
+#include "ble/gatt_service_client.h"
 #include "le-audio/gatt-service/hearing_access_service_util.h"
 
 #if defined __cplusplus
@@ -70,7 +70,9 @@ typedef enum {
 
 
 typedef struct {
-    gatt_service_client_connection_helper_t basic_connection;
+    btstack_linked_item_t item;
+
+    gatt_service_client_connection_t basic_connection;
     hearing_access_service_client_state_t state;
 
     // btstack_packet_handler_t client_handler;
