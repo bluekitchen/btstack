@@ -188,7 +188,7 @@ static has_server_connection_t * has_server_find_connection_for_con_handle(hci_c
 static void has_server_reset_client(has_server_connection_t * connection){
     connection->con_handle = HCI_CON_HANDLE_INVALID;
     connection->scheduled_preset_record_change_notification = false;
-    connection->scheduled_control_point_notification_tasks = false;
+    connection->scheduled_control_point_notification_tasks = 0u;
 }
 
 static has_preset_record_t * has_server_preset_iterator_get_next(has_server_connection_t * connection, bool * is_last_preset){
@@ -979,6 +979,16 @@ static uint8_t has_server_preset_record_status(has_preset_record_t * preset){
 
     if (preset->index == HAS_PRESET_RECORD_INVALID_INDEX){
         return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
+
+    uint8_t i;
+    for (i = 0; i < has_clients_max_num; i++){
+        if (has_clients[i].con_handle == HCI_CON_HANDLE_INVALID){
+            continue;
+        }
+        if (has_clients[i].scheduled_control_point_notification_tasks != 0u){
+            return ERROR_CODE_CONTROLLER_BUSY;
+        }
     }
 
     if (preset->scheduled_task > 0u){
