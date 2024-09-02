@@ -63,12 +63,12 @@ static l2cap_ertm_config_t ertm_config = {
     2000,
     12000,
     (GOEP_SERVER_ERTM_BUFFER / 2),    // l2cap ertm mtu
-    2,
-    2,
+    4,
+    4,
     1,      // 16-bit FCS
 };
 
-static uint8_t goep_server_l2cap_packet_buffer[1000];
+static uint8_t goep_server_l2cap_packet_buffer[GOEP_SERVER_ERTM_BUFFER];
 
 #endif
 

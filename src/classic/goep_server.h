@@ -47,7 +47,7 @@ extern "C" {
 
 #ifdef ENABLE_GOEP_L2CAP
 #ifndef GOEP_SERVER_ERTM_BUFFER
-#define GOEP_SERVER_ERTM_BUFFER 1000
+#define GOEP_SERVER_ERTM_BUFFER 2000
 #endif
 #endif
 
