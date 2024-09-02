@@ -811,13 +811,13 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             break;
 
                         case MAP_SUBEVENT_CONNECTION_OPENED:
-                            APP_READ_16(packet, &pos, &current_map_cid);
-                            MAP_PRINTF("[+] Connected current_map_cid 0x%04x\n", current_map_cid);
+                            current_map_cid = map_subevent_connection_opened_get_map_cid(packet);
                             map_subevent_connection_opened_get_bd_addr(packet, remote_addr);
+                            MAP_PRINTF("[+] Connected %s current_map_cid 0x%04x\n", bd_addr_to_str(remote_addr), current_map_cid);
                             break;
 
                         case MAP_SUBEVENT_CONNECTION_CLOSED:
-                            APP_READ_16(packet, &pos, &current_map_cid);
+                            current_map_cid = map_subevent_connection_opened_get_map_cid(packet);
                             status = disconnect_map_notification_client(current_map_cid);
                             MAP_PRINTF("[+] Connection closed current_map_cid:0x%04x client disconnect status %u, %s\n", current_map_cid, status, mas_cfg->fdiscon?"disconnect handler":"re-init test case states");
                             if (mas_cfg->fdiscon != NULL)
