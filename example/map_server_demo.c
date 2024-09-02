@@ -553,7 +553,7 @@ static void send_obex_object(enum body_object obj, uint16_t map_cid, uint16_t st
 
     // copy first part of OBEX body object into upload_buffer, limit len to space, buf size and packet size
     len = object_size - continuation; log_debug("len:%d", len);
-    len = btstack_min3(len, body_size, sizeof(upload_buffer));
+    len = btstack_min3((uint32_t)len, (uint32_t)body_size, (uint32_t) sizeof(upload_buffer));
     continuation += (uint32_t)len;
     log_debug("len:%d pos:%d upload_buffer [%.*s]", len, continuation, len, &OBEX_body_object[start]);
 
