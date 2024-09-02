@@ -146,6 +146,7 @@ noreturn void btstack_assert_failed(const char * file, uint16_t line_nr);
 #define HCI_DUMP_LOG_PRINTF(log_level, format, ...) hci_dump_log_P(log_level, PSTR("%S.%u: " format), PSTR(BTSTACK_FILE__), __LINE__, ## __VA_ARGS__)
 #define HCI_DUMP_LOG_PUTS(log_level, format)        hci_dump_log_P(log_level, PSTR("%S.%u: " format), PSTR(BTSTACK_FILE__), __LINE__)
 #else
+#define HCI_DUMP_LOG(prefix, log_level, format, ...) hci_dump_log(log_level, LOG_PREFIX(prefix) "%s.%u" FUNC_FMT ": " format, BTSTACK_FILE__, __LINE__, ___FUNCTION___,## __VA_ARGS__); HCI_CONSOLE_PRINTF(LOG_PREFIX(prefix) "%s.%u: " format "\n", BTSTACK_FILE__, __LINE__, ## __VA_ARGS__)
 #define HCI_DUMP_LOG_PRINTF(log_level, format, ...) hci_dump_log(log_level, "%s.%u: " format, BTSTACK_FILE__, __LINE__, ## __VA_ARGS__)
 #define HCI_DUMP_LOG_PUTS(log_level, format)        hci_dump_log(log_level, "%s.%u: " format, BTSTACK_FILE__, __LINE__);
 #endif
