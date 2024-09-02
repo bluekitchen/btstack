@@ -60,7 +60,7 @@ typedef struct {
 
     // used for read presets
     uint8_t start_index;
-    uint8_t current_index;
+    uint8_t current_position;
     uint8_t num_presets_to_read;
     uint8_t num_presets_already_read;
 
