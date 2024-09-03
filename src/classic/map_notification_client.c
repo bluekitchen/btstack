@@ -71,6 +71,8 @@
 #include "classic/goep_client.h"
 #include "map_notification_client.h"
 
+#define MNC_SET_STATE(new_state) do {mnc->state = new_state; log_info("mnc->state = %s", #new_state);} while (0)
+
 // MAP 1.4.2, 6.3 - OBEX Header: map notification service bb582b41-420c-11db-b0de-0800200c9a66
 static const uint8_t map_notification_client_service_uuid[] = { 0xbb, 0x58, 0x2b, 0x41, 0x42, 0xc, 0x11, 0xdb, 0xb0, 0xde, 0x8, 0x0, 0x20, 0xc, 0x9a, 0x66 };
 
@@ -207,7 +209,7 @@ static void map_notification_client_handle_can_send_now(uint16_t goep_cid) {
             goep_client_header_add_target(mnc->goep_client.cid, map_notification_client_service_uuid, 16);
 
             // }
-            mnc->state = MNC_STATE_W4_CONNECT_RESPONSE;
+            MNC_SET_STATE(MNC_STATE_W4_CONNECT_RESPONSE);
             // prepare response
             map_notification_client_prepare_operation(mnc, OBEX_OPCODE_CONNECT);
             mnc->obex_parser_waiting_for_response = true;
@@ -217,7 +219,7 @@ static void map_notification_client_handle_can_send_now(uint16_t goep_cid) {
 
         case MNC_STATE_W2_SEND_DISCONNECT_REQUEST:
             goep_client_request_create_disconnect(mnc->goep_client.cid);
-            mnc->state = MNC_STATE_W4_DISCONNECT_RESPONSE;
+            MNC_SET_STATE(MNC_STATE_W4_DISCONNECT_RESPONSE);
             // prepare response
             map_notification_client_prepare_operation(mnc, OBEX_OPCODE_DISCONNECT);
             // send packet
@@ -235,7 +237,7 @@ static void map_notification_client_handle_can_send_now(uint16_t goep_cid) {
             goep_client_body_add_static(mnc->goep_client.cid, mnc->body_buf, (uint32_t)mnc->body_buf_len);
 
             //goep_client_body_add_static(mnc->goep_client.cid, (uint8_t *) "0", 1);
-            mnc->state = MNC_STATE_W4_PUT_SEND_EVENT;
+            MNC_SET_STATE(MNC_STATE_W4_PUT_SEND_EVENT);
             map_notification_client_prepare_operation(mnc, OBEX_OPCODE_PUT);
             mnc->request_number++;
             goep_client_execute(mnc->goep_client.cid);
@@ -302,13 +304,13 @@ static void map_notification_client_packet_handler_hci(uint8_t* packet, uint16_t
                     goep_subevent_connection_opened_get_bd_addr(packet, mnc->bd_addr);
                     if (status) {
                         log_info("map: connection failed %u", status);
-                        mnc->state = MNC_STATE_INIT;
+                        MNC_SET_STATE(MNC_STATE_INIT);
                         map_notification_client_emit_connected_event(mnc, status);
                     }
                     else {
                         mnc->goep_client.cid = goep_subevent_connection_opened_get_goep_cid(packet);
                         log_info("map: connection established mnc->goep_client.cid:%u(0x%x)", mnc->goep_client.cid, mnc->goep_client.cid);
-                        mnc->state = MNC_STATE_W2_SEND_CONNECT_REQUEST;
+                        MNC_SET_STATE(MNC_STATE_W2_SEND_CONNECT_REQUEST);
                         goep_client_request_can_send_now(mnc->goep_client.cid);
                     }
                     break;
@@ -319,7 +321,7 @@ static void map_notification_client_packet_handler_hci(uint8_t* packet, uint16_t
                     if (mnc->state != MNC_STATE_CONNECTED) {
                         map_notification_client_emit_operation_complete_event(mnc, OBEX_DISCONNECTED);
                     }
-                    mnc->state = MNC_STATE_INIT;
+                    MNC_SET_STATE(MNC_STATE_INIT);
                     btstack_linked_list_remove(&map_notification_clients, (btstack_linked_item_t*)mnc);
                     map_notification_client_emit_connection_closed_event(mnc);
                     break;
@@ -356,18 +358,18 @@ map_notification_client_packet_handler_goep(uint16_t goep_cid, uint8_t* packet, 
         case MNC_STATE_W4_CONNECT_RESPONSE:
             switch (op_info.response_code) {
                 case OBEX_RESP_SUCCESS:
-                    mnc->state = MNC_STATE_CONNECTED;
+                    MNC_SET_STATE(MNC_STATE_CONNECTED);
                     map_notification_client_emit_connected_event(mnc, ERROR_CODE_SUCCESS);
                     break;
                 default:
                     log_info("map: obex connect failed, result 0x%02x", packet[0]);
-                    mnc->state = MNC_STATE_INIT;
+                    MNC_SET_STATE(MNC_STATE_INIT);
                     map_notification_client_emit_connected_event(mnc, OBEX_CONNECT_FAILED);
                     break;
             }
             break;
         case MNC_STATE_W4_DISCONNECT_RESPONSE:
-            mnc->state = MNC_STATE_INIT;
+            MNC_SET_STATE(MNC_STATE_INIT);
             goep_client_disconnect(mnc->goep_client.cid);
             break;
 
@@ -379,19 +381,19 @@ map_notification_client_packet_handler_goep(uint16_t goep_cid, uint8_t* packet, 
                         map_notification_client_prepare_operation(mnc, OBEX_OPCODE_GET);
                         break;
                     }
-                    mnc->state = MNC_STATE_W2_PUT_SEND_EVENT;
+                    MNC_SET_STATE(MNC_STATE_W2_PUT_SEND_EVENT);
                     goep_client_request_can_send_now(mnc->goep_client.cid);
                     break;
                 case OBEX_RESP_SUCCESS:
-                    mnc->state = MNC_STATE_CONNECTED;
+                    MNC_SET_STATE(MNC_STATE_CONNECTED);
                     map_notification_client_emit_operation_complete_event(mnc, ERROR_CODE_SUCCESS);
                     break;
                 case OBEX_RESP_NOT_IMPLEMENTED:
-                    mnc->state = MNC_STATE_CONNECTED;
+                    MNC_SET_STATE(MNC_STATE_CONNECTED);
                     map_notification_client_emit_operation_complete_event(mnc, OBEX_UNKNOWN_ERROR);
                     break;
                 case OBEX_RESP_NOT_FOUND:
-                    mnc->state = MNC_STATE_CONNECTED;
+                    MNC_SET_STATE(MNC_STATE_CONNECTED);
                     map_notification_client_emit_operation_complete_event(mnc, OBEX_NOT_FOUND);
                     break;
                 case OBEX_RESP_UNAUTHORIZED:
@@ -399,12 +401,12 @@ map_notification_client_packet_handler_goep(uint16_t goep_cid, uint8_t* packet, 
                 case OBEX_RESP_NOT_ACCEPTABLE:
                 case OBEX_RESP_UNSUPPORTED_MEDIA_TYPE:
                 case OBEX_RESP_ENTITY_TOO_LARGE:
-                    mnc->state = MNC_STATE_CONNECTED;
+                    MNC_SET_STATE(MNC_STATE_CONNECTED);
                     map_notification_client_emit_operation_complete_event(mnc, OBEX_NOT_ACCEPTABLE);
                     break;
                 default:
                     log_info("unexpected obex response 0x%02x", op_info.response_code);
-                    mnc->state = MNC_STATE_CONNECTED;
+                    MNC_SET_STATE(MNC_STATE_CONNECTED);
                     map_notification_client_emit_operation_complete_event(mnc, OBEX_UNKNOWN_ERROR);
                     break;
             }
@@ -448,7 +450,7 @@ uint8_t map_notification_client_send_event(uint16_t mnc_cid, uint8_t MASInstance
     mnc->app_params[pos++] = MASInstanceID; 
     mnc->app_params_len = pos;
 
-    mnc->state = MNC_STATE_W2_PUT_SEND_EVENT;
+    MNC_SET_STATE(MNC_STATE_W2_PUT_SEND_EVENT);
     mnc->request_number = 0;
     mnc->body_buf = body_buf;
     mnc->body_buf_len = body_buf_len;
@@ -467,7 +469,7 @@ uint8_t map_notification_client_connect(map_notification_client_t* mnc, l2cap_er
                                         uint16_t* out_cid) {
 
     memset(mnc, 0, sizeof(map_notification_client_t));
-    mnc->state = MNC_STATE_W4_GOEP_CONNECTION;
+    MNC_SET_STATE(MNC_STATE_W4_GOEP_CONNECTION);
     mnc->client_handler = handler;
     uint8_t status = goep_client_connect((goep_client_t*)mnc, l2cap_ertm_config,
                                          l2cap_ertm_buffer, l2cap_ertm_buffer_size, &map_notification_client_packet_handler,
@@ -490,7 +492,7 @@ uint8_t map_notification_client_disconnect(uint16_t mnc_cid) {
         return BTSTACK_BUSY;
     }
 
-    mnc->state = MNC_STATE_W2_SEND_DISCONNECT_REQUEST;
+    MNC_SET_STATE(MNC_STATE_W2_SEND_DISCONNECT_REQUEST);
     goep_client_request_can_send_now(mnc->goep_client.cid);
     log_debug("mnc->goep_client.cid:0x%x", mnc->goep_client.cid);
     return 0;
