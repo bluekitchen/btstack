@@ -181,20 +181,20 @@ static void MAP_MSE_MMB_BV_25_inc_ConvListCnt(void) {
     increase_version_counter_by_1("FolderVersionCounter", ConversationListingVersionCounter);
 }
 
+static void emit_report(void) {
+    //select_event_report_n(9);
+    char* body = create_next_mnc_event_report_body_object();
+    map_notification_client_send_event(mnc.cid, 0, (uint8_t*)body, strlen(body));
+    MAP_PRINTF("map_notification_client_send_event mnc.cid:%04x [%s]", mnc.cid, body);
+    log_debug("sent the EventReport");
+}
+
 static void MAP_MSE_MMD_BV_05_PutMsg(void) {
     select_event_report_n(0);
     char* body = create_next_mnc_event_report_body_object();
     map_notification_client_send_event(mnc.cid, 0, (uint8_t *) body, strlen(body));
     MAP_PRINTF("map_notification_client_send_event mnc.cid:%04x [%s]", mnc.cid, body);
     log_debug("sent a RemovedMessage notification");
-}
-
-static void MAP_MAP_MSE_MMN_BV_02_ClientConnect(void) {
-    select_event_report_n(9);
-    char* body = create_next_mnc_event_report_body_object();
-    map_notification_client_send_event(mnc.cid, 0, (uint8_t*)body, strlen(body));
-    MAP_PRINTF("map_notification_client_send_event mnc.cid:%04x [%s]", mnc.cid, body);
-    log_debug("sent the EventReport");
 }
 
 static void MAP_MSE_MMB_BV_43_getConvoListng(void) {
@@ -330,6 +330,7 @@ static struct test_config_s
     struct objconfig_s* type;
     void (*fdiscon)(void); // optional handler for OBEX disconnect
     void (*fClConn)(void); // optional handler for MAP Notification Server Client Connect OK
+    void (*fClOpCompl)(void); // optional handler for MAP Notification Client Operation Complete
     void (*fGetMsgListng)(void); // optional handler for OBEX getMessageListing
     void (*fGetConvoListng)(void); // optional handler for OBEX getConvoListing
     void (*fPutMsg)(void); // optional handler for OBEX PutMessage
@@ -344,23 +345,23 @@ static struct test_config_s
 {TC_NORM( .descr = "MAP/MSE/MMB/BV-23"                                    ,.obj_count = 1, .objects = { "EMAIL","EMAIL"                            }, .fGetMsgListng   = MAP_MSE_MMB_BV_23_inc_VersCnt    ,.helpstr = "PTS wants wants to see an updated Folder version counter on the 2nd GET message listing"                                       },)
 {TC_NORM( .descr = "MAP/MSE/MMB/BV-24"                                    ,.obj_count = 0, .objects = { "",""                                      }, .fGetConvoListng = MAP_MSE_MMB_BV_24_inc_ConvCnt    ,                                                                                                                                           },)
 {TC_NORM( .descr = "MAP/MSE/MMB/BV-25"                                    ,.obj_count = 0, .objects = { "",""                                      }, .fGetConvoListng = MAP_MSE_MMB_BV_25_inc_ConvListCnt,                                                                                                                                           },)
-{TC_NORM( .descr = "MAP/MSE/MMB/BV-43"                                    ,.obj_count = 0, .objects = { "",""                                      }, .fGetConvoListng = MAP_MSE_MMB_BV_43_getConvoListng,                                                                                                                                            },)                                                                                                                     
-{TC_NORM( .descr = "MAP/MSE/MMD/BV-05"                                    ,.obj_count = 1, .objects = { "IM"                                       }, .fPutMsg       = MAP_MSE_MMD_BV_05_PutMsg           ,                                                                                                                                           },)
-{TC_RFCOM( .descr = "MAP/MSE/MMU/BV-02"                                   ,.obj_count = 0, .objects = { "", "EMAIL", "MMS" , "EMAIL", "EMAIL"      }, .fPutMsg = MAP_MSE_MMU_BV_02_I_PutMsg               ,.helpstr = "WIP: PTS 8.6.1 MAP_NEW L2CAP bug: claims to send a PUT but doesnt. could be consolidated into tc #0 otherwise"                 },)
+{TC_NORM( .descr = "MAP/MSE/MMB/BV-43"                                    ,.obj_count = 0, .objects = { "",""                                      }, .fGetConvoListng = MAP_MSE_MMB_BV_43_getConvoListng ,                                                                                                                                            },)                                                                                                                     
+{TC_NORM( .descr = "MAP/MSE/MMD/BV-05"                                    ,.obj_count = 1, .objects = { "IM"                                       }, .fPutMsg         = MAP_MSE_MMD_BV_05_PutMsg         ,                                                                                                                                           },)
+{TC_RFCOM( .descr = "MAP/MSE/MMU/BV-02"                                   ,.obj_count = 0, .objects = { "", "EMAIL", "MMS" , "EMAIL", "EMAIL"      }, .fPutMsg         = MAP_MSE_MMU_BV_02_I_PutMsg       ,.helpstr = "WIP: PTS 8.6.1 MAP_NEW L2CAP bug: claims to send a PUT but doesnt. could be consolidated into tc #0 otherwise"                 },)
 {TC_RFCOM( .descr = "MAP/MSE/MMU/BV-03"                                   ,.obj_count = 1, .objects = { "EMAIL",                                   }                                                      ,.helpstr = "WIP: PTS 8.6.1 MAP_NEW L2CAP bug: claims to send a PUT but doesnt. could be consolidated into tc #0 otherwise"                 },)                                                                                                                   
 {TC_NORM( .descr = "MAP/MSE/SGSIT/ATTR/BV-01"                             ,.obj_count = 1, .objects = { "EMAIL"                                    }                                                      ,                                                                                                                                           },)
 {TC_RFCOM(.descr = "MAP/MSE/MFMH/BV-01..05"                               ,.obj_count = 1, .objects = { "EMAIL"                                    }                                                      ,                                                                                                                                           },)
 {TC_NORM( .descr = "MAP/MSE/MFB/BV-02 05 07"                              ,.obj_count = 0, .objects = { ""                                         }                                                      ,                                                                                                                                           },)
 {TC_L2CAP(.descr = "MAP/MSE/GOEP/SRM/BI-02..08 MAP_OLD"                   ,.obj_count = 5, .objects = { "EMAIL","SMS_GSM","SMS_CDMA", "MMS", "IM"  }                                                      ,.helpstr = "WIP: MAP_OLD only. PTS 8.6.1 MAP_NEW & L2CAP bug: claims to send a PUT but doesnt. could be consolidated into tc #0 otherwise" },)
 {TC_L2CAP(.descr = "MAP/MSE/GOEP/SRMP/BI-02-C"                            ,.obj_count = 9, .objects = { "IM"                                       }                                                      ,                                                                                                                                           },)
-{TC_NORM( .descr = "MAP/MSE/MMN/BV-02-C   Press <e>" , .type = &nm_v1_0   ,.obj_count = 1, .objects = { "EMAIL", "SMS_GSM", "SMS_CDMA", "MMS", "IM"}, .fClConn = MAP_MAP_MSE_MMN_BV_02_ClientConnect      ,.helpstr = "Generate the requested event reports by pressing <e> when PTS asks for"                                                       },)
+{TC_NORM( .descr = "MAP/MSE/MMN/BV-02-C   Press <e>" , .type = &nm_v1_0   ,.obj_count = 1, .objects = { "EMAIL", "SMS_GSM", "SMS_CDMA", "MMS", "IM"}/*, .fClConn = emit_report, .fClOpCompl = emit_report */  ,.helpstr = "Generate the requested event reports by pressing <e> when PTS asks for" },)
 {TC_NORM( .descr = "MAP/MSE/MMN/BV-04..06 Press <e>" , .type = &nm_v1_1   ,.obj_count = 1, .objects = { "EMAIL", "SMS_GSM", "SMS_CDMA", "MMS", "IM"}                                                      ,                                                                                                                                           },)
-{TC_NORM( .descr = "MAP/MSE/MMN/BV-07     Press <e>" , .type = &nm_v1_2   ,.obj_count = 1, .objects = { "EMAIL"                                    }                                                      ,                                                                                                                                           },)
-{TC_NORM( .descr = "MAP/MSE/MMN/BV-08..09 Press <e>" , .type = &ed_v1_2   ,.obj_count = 1, .objects = { "IM"                                       }                                                      ,                                                                                                                                           },)
-{TC_NORM( .descr = "MAP/MSE/MMN/BV-10, 15 Press <e>" , .type = &pp_v1_2   ,.obj_count = 1, .objects = { ""                                         }                                                      ,                                                                                                                                           },)
-{TC_NORM( .descr = "MAP/MSE/MMN/BV-11, 16 Press <e>" , .type = &pc_v1_2   ,.obj_count = 1, .objects = { ""                                         }                                                      ,                                                                                                                                           },)
-{TC_NORM( .descr = "MAP/MSE/MMN/BV-12..13 Press <e>" , .type = &cc_v1_2   ,.obj_count = 1, .objects = { ""                                         }                                                      ,                                                                                                                                           },)
-{TC_NORM( .descr = "MAP/MSE/MMN/BV-14     Press <e>" , .type = &mr_v1_2   ,.obj_count = 1, .objects = { ""                                         }                                                      ,                                                                                                                                           },)
+{TC_NORM( .descr = "MAP/MSE/MMN/BV-07     Press <e>" , .type = &nm_v1_2   ,.obj_count = 1, .objects = { "EMAIL"                                    }, .fClConn = emit_report                              ,                                                                                                                                           },)
+{TC_NORM( .descr = "MAP/MSE/MMN/BV-08..09 Press <e>" , .type = &ed_v1_2   ,.obj_count = 1, .objects = { "IM"                                       }, .fClConn = emit_report                              ,                                                                                                                                           },)
+{TC_NORM( .descr = "MAP/MSE/MMN/BV-10, 15 Press <e>" , .type = &pp_v1_2   ,.obj_count = 1, .objects = { ""                                         }, .fClConn = emit_report                              ,                                                                                                                                           },)
+{TC_NORM( .descr = "MAP/MSE/MMN/BV-11, 16 Press <e>" , .type = &pc_v1_2   ,.obj_count = 1, .objects = { ""                                         }, .fClConn = emit_report                              ,                                                                                                                                           },)
+{TC_NORM( .descr = "MAP/MSE/MMN/BV-12..13 Press <e>" , .type = &cc_v1_2   ,.obj_count = 1, .objects = { ""                                         }, .fClConn = emit_report                              ,                                                                                                                                           },)
+{TC_NORM( .descr = "MAP/MSE/MMN/BV-14     Press <e>" , .type = &mr_v1_2   ,.obj_count = 1, .objects = { ""                                         }, .fClConn = emit_report                              ,                                                                                                                                           },)
 {TC_HIDE( .descr = "MAP/MSE/MMB/BV-43 AUTO"          , .type = &cc_v1_2   ,.obj_count = 1, .objects = { "IM"                                       }                                                      ,                                                                                                                                           },)
 {TC_HIDE( .descr = "MAP/MSE/MMD/BV-05 AUTO"          , .type = &mr_v1_2_A0,.obj_count = 1, .objects = { "IM"                                       }                                                      ,                                                                                                                                           },)  
 };
