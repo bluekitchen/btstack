@@ -466,7 +466,7 @@ static void scan_parameters_service_gatt_client_event_handler(uint8_t packet_typ
     switch (hci_event_gattservice_meta_get_subevent_code(packet)){
 
         case GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_PNP_ID:
-            status = gattservice_subevent_scan_parameters_service_connected_get_att_status(packet);
+            status = gattservice_subevent_device_information_pnp_id_get_att_status(packet);
             switch (status){
                 case ERROR_CODE_SUCCESS:
                     app_state = READY;
