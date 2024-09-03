@@ -189,6 +189,14 @@ static void MAP_MSE_MMD_BV_05_PutMsg(void) {
     log_debug("sent a RemovedMessage notification");
 }
 
+static void MAP_MAP_MSE_MMN_BV_02_ClientConnect(void) {
+    select_event_report_n(9);
+    char* body = create_next_mnc_event_report_body_object();
+    map_notification_client_send_event(mnc.cid, 0, (uint8_t*)body, strlen(body));
+    MAP_PRINTF("map_notification_client_send_event mnc.cid:%04x [%s]", mnc.cid, body);
+    log_debug("sent the EventReport");
+}
+
 static void MAP_MSE_MMB_BV_43_getConvoListng(void) {
     select_event_report_n(1);
     increase_version_counter_by_1("ConversationListingVersionCounter", ConversationListingVersionCounter);
@@ -321,6 +329,7 @@ static struct test_config_s
     bool hide;     // test case is not printed in the menu - for automatic reports
     struct objconfig_s* type;
     void (*fdiscon)(void); // optional handler for OBEX disconnect
+    void (*fClConn)(void); // optional handler for MAP Notification Server Client Connect OK
     void (*fGetMsgListng)(void); // optional handler for OBEX getMessageListing
     void (*fGetConvoListng)(void); // optional handler for OBEX getConvoListing
     void (*fPutMsg)(void); // optional handler for OBEX PutMessage
@@ -344,7 +353,7 @@ static struct test_config_s
 {TC_NORM( .descr = "MAP/MSE/MFB/BV-02 05 07"                              ,.obj_count = 0, .objects = { ""                                         }                                                      ,                                                                                                                                           },)
 {TC_L2CAP(.descr = "MAP/MSE/GOEP/SRM/BI-02..08 MAP_OLD"                   ,.obj_count = 5, .objects = { "EMAIL","SMS_GSM","SMS_CDMA", "MMS", "IM"  }                                                      ,.helpstr = "WIP: MAP_OLD only. PTS 8.6.1 MAP_NEW & L2CAP bug: claims to send a PUT but doesnt. could be consolidated into tc #0 otherwise" },)
 {TC_L2CAP(.descr = "MAP/MSE/GOEP/SRMP/BI-02-C"                            ,.obj_count = 9, .objects = { "IM"                                       }                                                      ,                                                                                                                                           },)
-{TC_NORM( .descr = "MAP/MSE/MMN/BV-02-C   Press <e>" , .type = &nm_v1_0   ,.obj_count = 1, .objects = { "EMAIL", "SMS_GSM", "SMS_CDMA", "MMS", "IM"}                                                      ,.helpstr = "Generate the requested event reports by pressing <e> when PTS asks for"                                                       },)
+{TC_NORM( .descr = "MAP/MSE/MMN/BV-02-C   Press <e>" , .type = &nm_v1_0   ,.obj_count = 1, .objects = { "EMAIL", "SMS_GSM", "SMS_CDMA", "MMS", "IM"}, .fClConn = MAP_MAP_MSE_MMN_BV_02_ClientConnect      ,.helpstr = "Generate the requested event reports by pressing <e> when PTS asks for"                                                       },)
 {TC_NORM( .descr = "MAP/MSE/MMN/BV-04..06 Press <e>" , .type = &nm_v1_1   ,.obj_count = 1, .objects = { "EMAIL", "SMS_GSM", "SMS_CDMA", "MMS", "IM"}                                                      ,                                                                                                                                           },)
 {TC_NORM( .descr = "MAP/MSE/MMN/BV-07     Press <e>" , .type = &nm_v1_2   ,.obj_count = 1, .objects = { "EMAIL"                                    }                                                      ,                                                                                                                                           },)
 {TC_NORM( .descr = "MAP/MSE/MMN/BV-08..09 Press <e>" , .type = &ed_v1_2   ,.obj_count = 1, .objects = { "IM"                                       }                                                      ,                                                                                                                                           },)
@@ -1160,7 +1169,9 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
 
                             break;
                         }
-                        case MAP_SUBEVENT_GET_MAS_INSTANCE_INFORMATION: {
+                        case MAP_SUBEVENT_GET_MAS_INSTANCE_INFORMATION: {                            // some PTS tests require strange behaviour so we need a handler to modify default behaviour for GetConvoListing
+                            if (mas_cfg->fGetConvoListng != NULL)
+                                mas_cfg->fGetConvoListng();
                             uint8_t MASInstanceID;
                             const char MAS_INSTANCE_INFORMATION[] = "BTstack MAS INSTANCE";
                             APP_READ_32(packet, &pos, &continuation);
@@ -1234,6 +1245,11 @@ static void mns_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                                 mnc.cid = map_subevent_connection_opened_get_map_cid(packet);
                                 MAP_PRINTF("[+] Connected mnc.cid 0x%04x\n",
                                            mnc.cid);
+                                // call test setup sepcific client connect handler
+                                if (mas_cfg->fClConn != NULL) {
+                                    log_info("run mas_cfg->fClConn:%p");
+                                    mas_cfg->fClConn();
+                                }
                             }
                             break;
                         case MAP_SUBEVENT_CONNECTION_CLOSED:
