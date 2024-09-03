@@ -385,6 +385,7 @@ void map_server_init(btstack_packet_handler_t packet_handler, uint8_t rfcomm_cha
 struct test_set_config {
     void (*fp_init_test_cases)(struct test_set_config* cfg);
     void (*fp_next_test_case)(struct test_set_config* cfg);
+    void (*fp_previous_test_case)(struct test_set_config* cfg);
     void (*fp_select_test_case_n)(struct test_set_config* cfg, uint8_t n);
     void (*fp_print_test_config)(struct test_set_config* cfg);
     void (*fp_print_test_cases)(struct test_set_config* cfg);

@@ -304,11 +304,11 @@ struct objconfig_s mr_v1_2_A0 = {
 
 #define TC_NORM(data, ...)  data,  ## __VA_ARGS__
 #ifdef ENABLE_GOEP_L2CAP
-#define TC_RFCOM(...)       .descr = " Please disable ENABLE_GOEP_L2CAP", .disabled = true },
+#define TC_RFCOM(...)       .descr = "ENABLE_GOEP_L2CAP is set", .disabled = true },
 #define TC_L2CAP            TC_NORM
 #else
 #define TC_RFCOM            TC_NORM
-#define TC_L2CAP(...)       .descr = " Please enable ENABLE_GOEP_L2CAP", .disabled = true },
+#define TC_L2CAP(...)       .descr = "ENABLE_GOEP_L2CAP is disabled", .disabled = true },
 #endif
 #define TC_HIDE(data, ...)  .hide = true, data,  ## __VA_ARGS__
 
@@ -335,26 +335,23 @@ static struct test_config_s
 {TC_NORM( .descr = "MAP/MSE/MMB/BV-23"                                    ,.obj_count = 1, .objects = { "EMAIL","EMAIL"                            }, .fGetMsgListng   = MAP_MSE_MMB_BV_23_inc_VersCnt    ,.helpstr = "PTS wants wants to see an updated Folder version counter on the 2nd GET message listing"                                       },)
 {TC_NORM( .descr = "MAP/MSE/MMB/BV-24"                                    ,.obj_count = 0, .objects = { "",""                                      }, .fGetConvoListng = MAP_MSE_MMB_BV_24_inc_ConvCnt    ,                                                                                                                                           },)
 {TC_NORM( .descr = "MAP/MSE/MMB/BV-25"                                    ,.obj_count = 0, .objects = { "",""                                      }, .fGetConvoListng = MAP_MSE_MMB_BV_25_inc_ConvListCnt,                                                                                                                                           },)
-{TC_NORM( .descr = "MAP/MSE/MMB/BV-43"                                    ,.obj_count = 0, .objects = { "",""                                      }, .fGetConvoListng = MAP_MSE_MMB_BV_43_getConvoListng,                                                                                                                                            },)
-                                                                                                                                                   
+{TC_NORM( .descr = "MAP/MSE/MMB/BV-43"                                    ,.obj_count = 0, .objects = { "",""                                      }, .fGetConvoListng = MAP_MSE_MMB_BV_43_getConvoListng,                                                                                                                                            },)                                                                                                                     
 {TC_NORM( .descr = "MAP/MSE/MMD/BV-05"                                    ,.obj_count = 1, .objects = { "IM"                                       }, .fPutMsg       = MAP_MSE_MMD_BV_05_PutMsg           ,                                                                                                                                           },)
-                                                                                                                                                   
 {TC_RFCOM( .descr = "MAP/MSE/MMU/BV-02"                                   ,.obj_count = 0, .objects = { "", "EMAIL", "MMS" , "EMAIL", "EMAIL"      }, .fPutMsg = MAP_MSE_MMU_BV_02_I_PutMsg               ,.helpstr = "WIP: PTS 8.6.1 MAP_NEW L2CAP bug: claims to send a PUT but doesnt. could be consolidated into tc #0 otherwise"                 },)
-{TC_RFCOM( .descr = "MAP/MSE/MMU/BV-03"                                   ,.obj_count = 1, .objects = { "EMAIL",                                   }                                                      ,.helpstr = "WIP: PTS 8.6.1 MAP_NEW L2CAP bug: claims to send a PUT but doesnt. could be consolidated into tc #0 otherwise"                 },)
-                                                                                                                                                   
+{TC_RFCOM( .descr = "MAP/MSE/MMU/BV-03"                                   ,.obj_count = 1, .objects = { "EMAIL",                                   }                                                      ,.helpstr = "WIP: PTS 8.6.1 MAP_NEW L2CAP bug: claims to send a PUT but doesnt. could be consolidated into tc #0 otherwise"                 },)                                                                                                                   
 {TC_NORM( .descr = "MAP/MSE/SGSIT/ATTR/BV-01"                             ,.obj_count = 1, .objects = { "EMAIL"                                    }                                                      ,                                                                                                                                           },)
 {TC_RFCOM(.descr = "MAP/MSE/MFMH/BV-01..05"                               ,.obj_count = 1, .objects = { "EMAIL"                                    }                                                      ,                                                                                                                                           },)
 {TC_NORM( .descr = "MAP/MSE/MFB/BV-02 05 07"                              ,.obj_count = 0, .objects = { ""                                         }                                                      ,                                                                                                                                           },)
 {TC_L2CAP(.descr = "MAP/MSE/GOEP/SRM/BI-02..08 MAP_OLD"                   ,.obj_count = 5, .objects = { "EMAIL","SMS_GSM","SMS_CDMA", "MMS", "IM"  }                                                      ,.helpstr = "WIP: MAP_OLD only. PTS 8.6.1 MAP_NEW & L2CAP bug: claims to send a PUT but doesnt. could be consolidated into tc #0 otherwise" },)
 {TC_L2CAP(.descr = "MAP/MSE/GOEP/SRMP/BI-02-C"                            ,.obj_count = 9, .objects = { "IM"                                       }                                                      ,                                                                                                                                           },)
-{TC_NORM( .descr = "MAP/MSE/MMN/BV-02-C <e><e><e>.." , .type = &nm_v1_0   ,.obj_count = 1, .objects = { "EMAIL", "SMS_GSM", "SMS_CDMA", "MMS", "IM"}                                                      ,.helpstr = "Generate the requested event reports by pressing <e> when PTS asks for"                                                       },)
-{TC_NORM( .descr = "MAP/MSE/MMN/BV-04..06"           , .type = &nm_v1_1   ,.obj_count = 1, .objects = { "EMAIL", "SMS_GSM", "SMS_CDMA", "MMS", "IM"}                                                      ,                                                                                                                                           },)
-{TC_NORM( .descr = "MAP/MSE/MMN/BV-07"               , .type = &nm_v1_2   ,.obj_count = 1, .objects = { "EMAIL"                                    }                                                      ,                                                                                                                                           },)
-{TC_NORM( .descr = "MAP/MSE/MMN/BV-08..09"           , .type = &ed_v1_2   ,.obj_count = 1, .objects = { "IM"                                       }                                                      ,                                                                                                                                           },)
-{TC_NORM( .descr = "MAP/MSE/MMN/BV-10, 15"           , .type = &pp_v1_2   ,.obj_count = 1, .objects = { ""                                         }                                                      ,                                                                                                                                           },)
-{TC_NORM( .descr = "MAP/MSE/MMN/BV-11, 16"           , .type = &pc_v1_2   ,.obj_count = 1, .objects = { ""                                         }                                                      ,                                                                                                                                           },)
-{TC_NORM( .descr = "MAP/MSE/MMN/BV-12..13"           , .type = &cc_v1_2   ,.obj_count = 1, .objects = { ""                                         }                                                      ,                                                                                                                                           },)
-{TC_NORM( .descr = "MAP/MSE/MMN/BV-14"               , .type = &mr_v1_2   ,.obj_count = 1, .objects = { ""                                         }                                                      ,                                                                                                                                           },)
+{TC_NORM( .descr = "MAP/MSE/MMN/BV-02-C   Press <e>" , .type = &nm_v1_0   ,.obj_count = 1, .objects = { "EMAIL", "SMS_GSM", "SMS_CDMA", "MMS", "IM"}                                                      ,.helpstr = "Generate the requested event reports by pressing <e> when PTS asks for"                                                       },)
+{TC_NORM( .descr = "MAP/MSE/MMN/BV-04..06 Press <e>" , .type = &nm_v1_1   ,.obj_count = 1, .objects = { "EMAIL", "SMS_GSM", "SMS_CDMA", "MMS", "IM"}                                                      ,                                                                                                                                           },)
+{TC_NORM( .descr = "MAP/MSE/MMN/BV-07     Press <e>" , .type = &nm_v1_2   ,.obj_count = 1, .objects = { "EMAIL"                                    }                                                      ,                                                                                                                                           },)
+{TC_NORM( .descr = "MAP/MSE/MMN/BV-08..09 Press <e>" , .type = &ed_v1_2   ,.obj_count = 1, .objects = { "IM"                                       }                                                      ,                                                                                                                                           },)
+{TC_NORM( .descr = "MAP/MSE/MMN/BV-10, 15 Press <e>" , .type = &pp_v1_2   ,.obj_count = 1, .objects = { ""                                         }                                                      ,                                                                                                                                           },)
+{TC_NORM( .descr = "MAP/MSE/MMN/BV-11, 16 Press <e>" , .type = &pc_v1_2   ,.obj_count = 1, .objects = { ""                                         }                                                      ,                                                                                                                                           },)
+{TC_NORM( .descr = "MAP/MSE/MMN/BV-12..13 Press <e>" , .type = &cc_v1_2   ,.obj_count = 1, .objects = { ""                                         }                                                      ,                                                                                                                                           },)
+{TC_NORM( .descr = "MAP/MSE/MMN/BV-14     Press <e>" , .type = &mr_v1_2   ,.obj_count = 1, .objects = { ""                                         }                                                      ,                                                                                                                                           },)
 {TC_HIDE( .descr = "MAP/MSE/MMB/BV-43 AUTO"          , .type = &cc_v1_2   ,.obj_count = 1, .objects = { "IM"                                       }                                                      ,                                                                                                                                           },)
 {TC_HIDE( .descr = "MAP/MSE/MMD/BV-05 AUTO"          , .type = &mr_v1_2_A0,.obj_count = 1, .objects = { "IM"                                       }                                                      ,                                                                                                                                           },)  
 };
@@ -384,7 +381,7 @@ static void mas_init_test_cases(struct test_set_config* cfg) {
 
     ListingSize = mas_cfg->obj_count + one_object_more_or_less;
     cfg_MAP_MSE_MMD_BV_02_I_getMsgListng_counter = 0;
-    cfg->fp_print_test_config(cfg);
+//    cfg->fp_print_test_config(cfg);
 }
 
 static void mas_next_test_case(struct test_set_config* cfg) {
@@ -395,6 +392,18 @@ static void mas_next_test_case(struct test_set_config* cfg) {
     evt_cfg = mas_cfg;
     // init MAP Access Server test cases
     cfg->fp_init_test_cases(cfg);
+    cfg->fp_print_test_config(cfg);
+}
+
+static void mas_previous_test_case(struct test_set_config* cfg) {
+    // cycle throug all test cases
+    if (--mas_cfg < &test_configs[0]) {
+        mas_cfg = &test_configs[ARRAYSIZE(test_configs)-1];
+    }
+    evt_cfg = mas_cfg;
+    // init MAP Access Server test cases
+    cfg->fp_init_test_cases(cfg);
+    cfg->fp_print_test_config(cfg);
 }
 
 static void mas_select_test_case_n(struct test_set_config* cfg, uint8_t n) {
@@ -404,17 +413,18 @@ static void mas_select_test_case_n(struct test_set_config* cfg, uint8_t n) {
         evt_cfg = mas_cfg;
         // init MAP Access Server test cases
         cfg->fp_init_test_cases(cfg);
+        cfg->fp_print_test_config(cfg);
     }
     else
         MAP_PRINTF("Error: coulnd't set mas_cfg <%d>", n);
 }
 
 static void mas_print_test_config(struct test_set_config* cfg) {
-    MAP_PRINTF("mas_cfg #%d:%s obj_count:%d %s\n", mas_cfg->nr, mas_cfg->descr, mas_cfg->obj_count, mas_cfg->helpstr ? mas_cfg->helpstr : "");
+    MAP_PRINTF("[%2u]:%s obj_count:%d %s\n", mas_cfg->nr, mas_cfg->descr, mas_cfg->obj_count, mas_cfg->helpstr ? mas_cfg->helpstr : "");
 }
 
 static void mas_print_test_case_help(struct test_set_config* cfg) {
-    MAP_PRINTF("[%d] <%s> help/hint:%s\n", mas_cfg->nr, mas_cfg->descr, mas_cfg->helpstr? mas_cfg->helpstr:"no help/hint available");
+    MAP_PRINTF("[%2u] <%s> help/hint:%s\n", mas_cfg->nr, mas_cfg->descr, mas_cfg->helpstr? mas_cfg->helpstr:"no help/hint available");
 }
 
 static void mas_print_test_cases(struct test_set_config* cfg)
@@ -422,7 +432,8 @@ static void mas_print_test_cases(struct test_set_config* cfg)
     struct test_config_s* tc = &test_configs[0];
     do {
         if (!tc->hide) {
-            MAP_PRINTF("[%d]%s <%s>\n", tc->nr, tc->helpstr ? "<h>" : "", tc->descr);
+            bool selected = tc == mas_cfg;
+            MAP_PRINTF("%c%2u%c <%s>\n", selected ? '[' : ' ',  tc->nr, selected ? ']' : ' ', tc->descr);
         }
     } while (++tc < &test_configs[ARRAYSIZE(test_configs)]);
 }
@@ -431,6 +442,7 @@ struct test_set_config mas_test_set =
 {
     .fp_init_test_cases      = mas_init_test_cases,
     .fp_next_test_case       = mas_next_test_case,
+    .fp_previous_test_case   = mas_previous_test_case,
     .fp_select_test_case_n   = mas_select_test_case_n,
     .fp_print_test_config    = mas_print_test_config,
     .fp_print_test_cases     = mas_print_test_cases,
@@ -728,31 +740,35 @@ static uint8_t disconnect_map_notification_client(int connection_id) {
 #ifdef HAVE_BTSTACK_STDIN
 // Testing User Interface
 static void show_usage(void){
-    bd_addr_t iut_address;
-    gap_local_bd_addr(iut_address);
-    
-    MAP_PRINTF("\n--- Bluetooth MAP Client Test Console %s ---\n", bd_addr_to_str(iut_address));
-
+    MAP_PRINTF("\nBTstack Demo MAP_Access_Server to support semi-automated testing using BT SIG PTS.EXE\n");
+    MAP_PRINTF("Usage: Select the correct test setup, for most PTS tests [0] should work.\n");
+    MAP_PRINTF("       mostly you can just start the next PTS test after the current has PASSed.\n");
+    MAP_PRINTF("       If the next test is failing, try resetting the setup pressing <r> or restart this app.\n");
+    MAP_PRINTF("<RTRN> Show the full list of test setups.\n");
+    MAP_PRINTF("<0..9> select test setups nummber 0..9\n");
+    MAP_PRINTF("<n>    switch to next test setup (e.g. to got to numbers from 10 up)\n");
+    MAP_PRINTF("<p>    switch to previous test setup\n");
+    MAP_PRINTF("<h>    show help/hint for the current test case\n");
+    MAP_PRINTF("<r>    reset current test setup\n");
+    MAP_PRINTF("<e>    send Event report PUT Notification to MCE Server\n\n");
+    //debug tools
+    //MAP_PRINTF("<f> FolderVersionCounter++\n");
+    //MAP_PRINTF("<c> ConversationListingVersionCounter++\n");
+    //MAP_PRINTF("<i> ConversationID++\n");
+    //MAP_PRINTF("<a> add one object\n");
+    //MAP_PRINTF("<d> delete one object\n");
     test_set->fp_print_test_cases(test_set);
     test_set->fp_print_test_config(test_set);
-    MAP_PRINTF("<S> switch to Map Server test cases\n");
-    MAP_PRINTF("<C> switch to Map Client test cases\n");
-    MAP_PRINTF("<n> switch to next test mas_cfg\n");
-    MAP_PRINTF("<h> show help/hint for the current test case\n");
-    MAP_PRINTF("<0..9> select # 0..9\n");
-    MAP_PRINTF("<f> FolderVersionCounter++\n");
-    MAP_PRINTF("<c> ConversationListingVersionCounter++\n");
-    MAP_PRINTF("<i> ConversationID++\n");
-    MAP_PRINTF("<a> add one object\n");
-    MAP_PRINTF("<d> delete one object\n");
-    MAP_PRINTF("<r> reset current test case\n");
-    MAP_PRINTF("<e> send Event report PUT Notification to MCE Server\n");
 }
 
 static void stdin_process(char c){
     switch (c){
         case 'n':
             test_set->fp_next_test_case(test_set);
+            break;
+
+        case 'p':
+            test_set->fp_previous_test_case(test_set);
             break;
 
         case '0': case '1': case '2': case '3': case '4':
@@ -1288,9 +1304,6 @@ int btstack_main(int argc, const char * argv[]){
 
     sscanf_bd_addr(remote_addr_string, remote_addr);
 
-    // init test setups    
-    test_set->fp_init_test_cases(test_set);
-
     memset(map_message_access_service_buffer, 0, sizeof(map_message_access_service_buffer));
     
     register_map_access_server(0); // First MASInstanceID should be 0 (BT SIG MAS SPEC, hard coded expactation in PTS MAP/MSE/MMN/BV-02-C)
@@ -1300,6 +1313,9 @@ int btstack_main(int argc, const char * argv[]){
 
     // setup MAP Notfication Client
     map_notification_client_init();
+
+    // init test setups    
+    test_set->fp_init_test_cases(test_set);
 
 
 #ifdef HAVE_BTSTACK_STDIN
