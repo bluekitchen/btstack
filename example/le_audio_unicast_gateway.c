@@ -184,6 +184,8 @@ typedef struct {
     // pacs
     pacs_client_connection_t pacs_connection;
     uint16_t pacs_cid;
+    uint16_t pacs_available_contexts_sink;
+    uint16_t pacs_available_contexts_source;
 
     // ascs
     ascs_client_connection_t ascs_connection;
@@ -1219,9 +1221,11 @@ static void pacs_client_event_handler(uint8_t packet_type, uint16_t channel, uin
         case LEAUDIO_SUBEVENT_PACS_CLIENT_AVAILABLE_AUDIO_CONTEXTS:
             server = server_for_pacs_cid((leaudio_subevent_pacs_client_available_audio_contexts_get_pacs_cid(packet)));
             if (server != NULL){
+                server->pacs_available_contexts_sink = leaudio_subevent_pacs_client_available_audio_contexts_get_sink_mask(packet);
+                server->pacs_available_contexts_source = leaudio_subevent_pacs_client_available_audio_contexts_get_source_mask(packet);
                 printf("PACS Client %u: Available Audio Contexts:\n", server->server_id);
-                printf("      Sink   0x%02x\n", leaudio_subevent_pacs_client_available_audio_contexts_get_sink_mask(packet));
-                printf("      Source 0x%02x\n", leaudio_subevent_pacs_client_available_audio_contexts_get_source_mask(packet));
+                printf("      Sink   0x%02x\n", server->pacs_available_contexts_sink );
+                printf("      Source 0x%02x\n", server->pacs_available_contexts_source );
             }
             break;
 
