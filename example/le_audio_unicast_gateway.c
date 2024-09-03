@@ -143,6 +143,8 @@ typedef enum {
     SERVER_W4_ALL_MEMBERS,
     SERVER_PACS_W2_CONNECT,
     SERVER_PACS_W4_CONNECTED,
+    SERVER_PACS_W4_SUPPORTED_CONTEXTS,
+    SERVER_PACS_W4_AVAILABLE_CONTEXTS
     SERVER_PACS_W4_SINK_PACS,
     SERVER_PACS_W4_SOURCE_PACS,
     SERVER_ASCS_W2_CONNECT,
@@ -1151,10 +1153,10 @@ static void pacs_client_event_handler(uint8_t packet_type, uint16_t channel, uin
                 }
                 printf("PACS client %u: connected\n", server->server_id);
 
-                // next: get sink pacs
-                printf("PACS Client %u: Get sink pacs\n", server->server_id);
-                server->server_state = SERVER_PACS_W4_SINK_PACS;
-                status = published_audio_capabilities_service_client_get_sink_pacs(server->pacs_cid);
+                // next: get audio contexts
+                printf("PACS Client %u: Get Supported Audio Contexts\n", server->server_id);
+                server->server_state = SERVER_PACS_W4_SUPPORTED_CONTEXTS;
+                status = published_audio_capabilities_service_client_get_supported_audio_contexts(server->pacs_cid);
                 UNUSED(status);
             }
             break;
@@ -1178,6 +1180,17 @@ static void pacs_client_event_handler(uint8_t packet_type, uint16_t channel, uin
                 }
             }
             switch (server->server_state){
+                case SERVER_PACS_W4_SUPPORTED_CONTEXTS:
+                    printf("PACS Client %u: Get Available Audio Contexts\n", server->server_id);
+                    server->server_state = SERVER_PACS_W4_AVAILABLE_CONTEXTS;
+                    status = published_audio_capabilities_service_client_get_available_audio_contexts(server->pacs_cid);
+                    UNUSED(status);
+                case SERVER_PACS_W4_AVAILABLE_CONTEXTS:
+                    printf("PACS Client %u: Get sink pacs\n", server->server_id);
+                    server->server_state = SERVER_PACS_W4_SINK_PACS;
+                    status = published_audio_capabilities_service_client_get_sink_pacs(server->pacs_cid);
+                    UNUSED(status);
+                    break;
                 case SERVER_PACS_W4_SINK_PACS:
                     printf("PACS Client %u: Get source pacs\n", server->server_id);
                     server->server_state = SERVER_PACS_W4_SOURCE_PACS;
@@ -1206,7 +1219,7 @@ static void pacs_client_event_handler(uint8_t packet_type, uint16_t channel, uin
         case LEAUDIO_SUBEVENT_PACS_CLIENT_AVAILABLE_AUDIO_CONTEXTS:
             server = server_for_pacs_cid((leaudio_subevent_pacs_client_available_audio_contexts_get_pacs_cid(packet)));
             if (server != NULL){
-                printf("PACS Client: Available Audio Contexts:\n");
+                printf("PACS Client %u: Available Audio Contexts:\n", server->server_id);
                 printf("      Sink   0x%02x\n", leaudio_subevent_pacs_client_available_audio_contexts_get_sink_mask(packet));
                 printf("      Source 0x%02x\n", leaudio_subevent_pacs_client_available_audio_contexts_get_source_mask(packet));
             }
@@ -1215,7 +1228,7 @@ static void pacs_client_event_handler(uint8_t packet_type, uint16_t channel, uin
         case LEAUDIO_SUBEVENT_PACS_CLIENT_SUPPORTED_AUDIO_CONTEXTS:
             server = server_for_pacs_cid((leaudio_subevent_pacs_client_supported_audio_contexts_get_pacs_cid(packet)));
             if (server != NULL){
-                printf("PACS Client: Supported Audio Contexts:\n");
+                printf("PACS Client %u: Supported Audio Contexts:\n", server->server_id);
                 printf("      Sink   0x%02x\n", leaudio_subevent_pacs_client_supported_audio_contexts_get_sink_mask(packet));
                 printf("      Source 0x%02x\n", leaudio_subevent_pacs_client_supported_audio_contexts_get_source_mask(packet));
             }
