@@ -1253,7 +1253,15 @@ static void mns_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             }
                             break;
                         case MAP_SUBEVENT_CONNECTION_CLOSED:
-                        MAP_PRINTF("[+] Notification Connection closed\n");
+                            MAP_PRINTF("[+] Notification Connection closed\n");
+                            break;
+                        case MAP_SUBEVENT_OPERATION_COMPLETED:
+                            MAP_PRINTF("[+] Notification Operation Completed\n");
+                            // call test setup sepcific client connect handler
+                            if (mas_cfg->fClOpCompl != NULL) {
+                                log_info("run mas_cfg->fClOpCompl:%p");
+                                mas_cfg->fClConn();
+                            }
                             break;
                         default:
                         log_debug ("unknown MAP subevent of type %d\n", packet_type);
