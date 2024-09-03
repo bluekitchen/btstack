@@ -347,7 +347,7 @@ static struct test_config_s
 {TC_NORM( .descr = "MAP/MSE/MFB/BV-02 05 07"                              ,.obj_count = 0, .objects = { ""                                         }                                                      ,                                                                                                                                           },)
 {TC_L2CAP(.descr = "MAP/MSE/GOEP/SRM/BI-02..08 MAP_OLD"                   ,.obj_count = 5, .objects = { "EMAIL","SMS_GSM","SMS_CDMA", "MMS", "IM"  }                                                      ,.helpstr = "WIP: MAP_OLD only. PTS 8.6.1 MAP_NEW & L2CAP bug: claims to send a PUT but doesnt. could be consolidated into tc #0 otherwise" },)
 {TC_L2CAP(.descr = "MAP/MSE/GOEP/SRMP/BI-02-C"                            ,.obj_count = 9, .objects = { "IM"                                       }                                                      ,                                                                                                                                           },)
-{TC_NORM( .descr = "MAP/MSE/MMN/BV-02-C <e><e><e>.." , .type = &nm_v1_0   ,.obj_count = 1, .objects = { "EMAIL", "SMS_GSM", "SMS_CDMA", "MMS", "IM"}                                                      , .helpstr = "Generate the requested event reports by pressing <e> when PTS asks for"                                                       },)
+{TC_NORM( .descr = "MAP/MSE/MMN/BV-02-C <e><e><e>.." , .type = &nm_v1_0   ,.obj_count = 1, .objects = { "EMAIL", "SMS_GSM", "SMS_CDMA", "MMS", "IM"}                                                      ,.helpstr = "Generate the requested event reports by pressing <e> when PTS asks for"                                                       },)
 {TC_NORM( .descr = "MAP/MSE/MMN/BV-04..06"           , .type = &nm_v1_1   ,.obj_count = 1, .objects = { "EMAIL", "SMS_GSM", "SMS_CDMA", "MMS", "IM"}                                                      ,                                                                                                                                           },)
 {TC_NORM( .descr = "MAP/MSE/MMN/BV-07"               , .type = &nm_v1_2   ,.obj_count = 1, .objects = { "EMAIL"                                    }                                                      ,                                                                                                                                           },)
 {TC_NORM( .descr = "MAP/MSE/MMN/BV-08..09"           , .type = &ed_v1_2   ,.obj_count = 1, .objects = { "IM"                                       }                                                      ,                                                                                                                                           },)
@@ -389,8 +389,10 @@ static void mas_init_test_cases(struct test_set_config* cfg) {
 
 static void mas_next_test_case(struct test_set_config* cfg) {
     // cycle throug all test cases
-    if (++mas_cfg >= &test_configs[ARRAYSIZE(test_configs)])
+    if (++mas_cfg >= &test_configs[ARRAYSIZE(test_configs)]) {
         mas_cfg = &test_configs[0];
+    }
+    evt_cfg = mas_cfg;
     // init MAP Access Server test cases
     cfg->fp_init_test_cases(cfg);
 }
