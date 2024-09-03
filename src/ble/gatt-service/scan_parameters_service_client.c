@@ -56,6 +56,7 @@
 #include "btstack_event.h"
 #include "btstack_run_loop.h"
 #include "gap.h"
+#include "ble/gatt_service_client.h"
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
@@ -254,7 +255,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
     scan_parameters_service_client_t * client = NULL;
     gatt_client_service_t service;
     gatt_client_characteristic_t characteristic;
-    uint8_t att_status;
+    uint8_t status;
 
 #ifdef ENABLE_TESTING_SUPPORT
     gatt_client_characteristic_descriptor_t characteristic_descriptor;
@@ -339,12 +340,12 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
             client = scan_parameters_service_get_client_for_con_handle(gatt_event_query_complete_get_handle(packet));
             btstack_assert(client != NULL);
             
-            att_status = gatt_event_query_complete_get_att_status(packet);
+            status = gatt_service_client_att_status_to_error_code(gatt_event_query_complete_get_att_status(packet));
             
             switch (client->state){
                 case SCAN_PARAMETERS_SERVICE_CLIENT_STATE_W4_SERVICE_RESULT:
-                    if (att_status != ATT_ERROR_SUCCESS){
-                        scan_parameters_service_emit_connection_established(client, att_status);  
+                    if (status != ERROR_CODE_SUCCESS){
+                        scan_parameters_service_emit_connection_established(client, status);
                         scan_parameters_service_finalize_client(client);      
                         return;  
                     }
@@ -359,8 +360,8 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                     return;
 
                 case SCAN_PARAMETERS_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_RESULT:
-                    if (att_status != ATT_ERROR_SUCCESS){
-                        scan_parameters_service_emit_connection_established(client, att_status);  
+                    if (status != ERROR_CODE_SUCCESS){
+                        scan_parameters_service_emit_connection_established(client, status);
                         scan_parameters_service_finalize_client(client);      
                         break;  
                     }
