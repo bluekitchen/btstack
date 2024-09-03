@@ -142,7 +142,6 @@ noreturn void btstack_assert_failed(const char * file, uint16_t line_nr);
 #endif
 
 #ifdef __AVR__
-#define HCI_DUMP_LOG(prefix, log_level, format, ...) hci_dump_log_P(log_level, PSTR(LOG_PREFIX(prefix) "%S.%u" FUNC_FMT ": " format), PSTR(BTSTACK_FILE__), __LINE__, ___FUNCTION___, ## __VA_ARGS__)
 #define HCI_DUMP_LOG_PRINTF(log_level, format, ...) hci_dump_log_P(log_level, PSTR("%S.%u: " format), PSTR(BTSTACK_FILE__), __LINE__, ## __VA_ARGS__)
 #define HCI_DUMP_LOG_PUTS(log_level, format)        hci_dump_log_P(log_level, PSTR("%S.%u: " format), PSTR(BTSTACK_FILE__), __LINE__)
 #else
@@ -151,7 +150,7 @@ noreturn void btstack_assert_failed(const char * file, uint16_t line_nr);
 #endif
 
 #ifdef _MSC_VER
-
+#define HCI_DUMP_LOG(prefix, log_level, format, ...) hci_dump_log(log_level, LOG_PREFIX(prefix) "%s.%u" FUNC_FMT ": " format, BTSTACK_FILE__, __LINE__, ___FUNCTION___,## __VA_ARGS__); HCI_CONSOLE_PRINTF(LOG_PREFIX(prefix) "%s.%u: " format "\n", BTSTACK_FILE__, __LINE__, ## __VA_ARGS__)
 // original version that requires GNU Macro extensions, but works with Visual Studio 2022
 
 //#define HCI_DUMP_LOG HCI_DUMP_LOG_PRINTF
