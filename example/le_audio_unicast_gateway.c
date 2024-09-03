@@ -144,7 +144,7 @@ typedef enum {
     SERVER_PACS_W2_CONNECT,
     SERVER_PACS_W4_CONNECTED,
     SERVER_PACS_W4_SUPPORTED_CONTEXTS,
-    SERVER_PACS_W4_AVAILABLE_CONTEXTS
+    SERVER_PACS_W4_AVAILABLE_CONTEXTS,
     SERVER_PACS_W4_SINK_PACS,
     SERVER_PACS_W4_SOURCE_PACS,
     SERVER_ASCS_W2_CONNECT,
@@ -430,6 +430,7 @@ static void configure_audio_stream(void) {
 static void run_for_server(server_t * server){
     uint8_t status;
     uint8_t ase_id;
+    uint16_t audio_contexts_mask;
     switch (server->server_state){
         case SERVER_READY:
             server->server_state = SERVER_W4_CONNECTED;
@@ -513,9 +514,18 @@ static void run_for_server(server_t * server){
             server->server_state = SERVER_ASCS_W4_ENABLING;
             // for each ASE
             ase_id = server->ascs_ase_ids[server->ascs_operation_ase_index];
-            // streaming audio context = live
+            // pick available audio context
+            if (server->ascs_ase_roles[server->ascs_operation_ase_index] == LE_AUDIO_ROLE_SOURCE){
+                audio_contexts_mask = server->pacs_available_contexts_source;
+            } else {
+                audio_contexts_mask = server->pacs_available_contexts_sink;
+            }
+            // - ignore unspecified context
+            audio_contexts_mask &= ~LE_AUDIO_CONTEXT_MASK_UNSPECIFIED;
+            // - select context with lowest bit (x-1 clears lowest set bit in x, so drop all others)
+            ascs_metadata.streaming_audio_contexts_mask = audio_contexts_mask & ~(audio_contexts_mask - 1);
             ascs_metadata.metadata_mask |= 1 << LE_AUDIO_METADATA_TYPE_STREAMING_AUDIO_CONTEXTS;
-            ascs_metadata.streaming_audio_contexts_mask = LE_AUDIO_CONTEXT_MASK_LIVE;
+            printf("ASCS Client %u: ENABLE - ase_id %u, streaming audio context 0x%04x\n", server->server_id, ase_id, ascs_metadata.streaming_audio_contexts_mask);
             status = audio_stream_control_service_client_streamendpoint_enable(server->ascs_cid, ase_id, &ascs_metadata);
             btstack_assert(status == ERROR_CODE_SUCCESS);
             break;
