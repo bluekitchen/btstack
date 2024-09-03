@@ -234,7 +234,7 @@ static mcs_media_player_t generic_media_player;
 
 // ascs client
 static ascs_client_codec_configuration_request_t ascs_codec_configuration_request;
-static le_audio_metadata_t test_ascs_metadata;
+static le_audio_metadata_t ascs_metadata;
 static ascs_codec_configuration_t codec_configuration;
 
 static le_audio_cig_t        cig;
@@ -512,9 +512,9 @@ static void run_for_server(server_t * server){
             // for each ASE
             ase_id = server->ascs_ase_ids[server->ascs_operation_ase_index];
             // streaming audio context = live
-            test_ascs_metadata.metadata_mask |= 1 << LE_AUDIO_METADATA_TYPE_STREAMING_AUDIO_CONTEXTS;
-            test_ascs_metadata.streaming_audio_contexts_mask = LE_AUDIO_CONTEXT_MASK_LIVE;
-            status = audio_stream_control_service_client_streamendpoint_enable(server->ascs_cid, ase_id, &test_ascs_metadata);
+            ascs_metadata.metadata_mask |= 1 << LE_AUDIO_METADATA_TYPE_STREAMING_AUDIO_CONTEXTS;
+            ascs_metadata.streaming_audio_contexts_mask = LE_AUDIO_CONTEXT_MASK_LIVE;
+            status = audio_stream_control_service_client_streamendpoint_enable(server->ascs_cid, ase_id, &ascs_metadata);
             btstack_assert(status == ERROR_CODE_SUCCESS);
             break;
 
