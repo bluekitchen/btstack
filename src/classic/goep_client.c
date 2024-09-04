@@ -218,19 +218,23 @@ static void goep_client_packet_handler(uint8_t packet_type, uint16_t channel, ui
 
 static void goep_client_handle_sdp_query_end_of_record(goep_client_t * goep_client){
     if (goep_client->uuid == BLUETOOTH_SERVICE_CLASS_MESSAGE_ACCESS_SERVER){
+        // use matching SDP record with highest MAP version as there might be additional records for backwards compatibility
         if (goep_client->mas_info.instance_id == goep_client->map_mas_instance_id){
-            // Requested MAS Instance found, accept info
-            goep_client->rfcomm_port = goep_client->mas_info.rfcomm_port;
-            goep_client->profile_supported_features = goep_client->mas_info.supported_features;
-            goep_client->map_supported_message_types = goep_client->mas_info.supported_message_types;
+            if (goep_client->mas_info.version > goep_client->map_version){
+                // Requested MAS Instance found, accept info
+                goep_client->rfcomm_port = goep_client->mas_info.rfcomm_port;
+                goep_client->profile_supported_features = goep_client->mas_info.supported_features;
+                goep_client->map_supported_message_types = goep_client->mas_info.supported_message_types;
 #ifdef ENABLE_GOEP_L2CAP
-            goep_client->l2cap_psm = goep_client->mas_info.l2cap_psm;
-            log_info("MAS Instance #%u found, rfcomm #%u, l2cap 0x%04x", goep_client->map_mas_instance_id,
-                     goep_client->rfcomm_port, goep_client->l2cap_psm);
+                goep_client->l2cap_psm = goep_client->mas_info.l2cap_psm;
+                goep_client->map_version = goep_client->mas_info.version;
+                log_info("MAS Instance #%u found, version %u.%u: rfcomm #%u, l2cap 0x%04x ", goep_client->map_mas_instance_id,
+                         goep_client->map_version, goep_client->map_version, goep_client->rfcomm_port, goep_client->l2cap_psm);
 #else
-            log_info("MAS Instance #%u found, rfcomm #%u", goep_client->map_mas_instance_id,
+                log_info("MAS Instance #%u found, rfcomm #%u", goep_client->map_mas_instance_id,
                      goep_client->rfcomm_port);
 #endif
+            }
         }
     }
 }
@@ -279,6 +283,7 @@ static void goep_client_handle_sdp_query_event(uint8_t packet_type, uint16_t cha
                 case BLUETOOTH_ATTRIBUTE_MAS_INSTANCE_ID:
                 case BLUETOOTH_ATTRIBUTE_SUPPORTED_MESSAGE_TYPES:
 #ifdef ENABLE_GOEP_L2CAP
+                case BLUETOOTH_ATTRIBUTE_BLUETOOTH_PROFILE_DESCRIPTOR_LIST:
                 case BLUETOOTH_ATTRIBUTE_GOEP_L2CAP_PSM:
 #endif
                     break;
@@ -331,6 +336,33 @@ static void goep_client_handle_sdp_query_event(uint8_t packet_type, uint16_t cha
                     }
                     break;
 #ifdef ENABLE_GOEP_L2CAP
+
+                case BLUETOOTH_ATTRIBUTE_BLUETOOTH_PROFILE_DESCRIPTOR_LIST:
+                    for (des_iterator_init(&des_list_it, goep_client_sdp_query_attribute_value); des_iterator_has_more(&des_list_it); des_iterator_next(&des_list_it)) {
+                        uint8_t       *des_element;
+                        uint8_t       *element;
+                        uint32_t       uuid;
+
+                        if (des_iterator_get_type(&des_list_it) != DE_DES) continue;
+
+                        des_element = des_iterator_get_element(&des_list_it);
+                        des_iterator_init(&prot_it, des_element);
+                        element = des_iterator_get_element(&prot_it);
+
+                        if (de_get_element_type(element) != DE_UUID) continue;
+
+                        uuid = de_get_uuid32(element);
+                        des_iterator_next(&prot_it);
+                        switch (uuid){
+                            case BLUETOOTH_SERVICE_CLASS_MESSAGE_ACCESS_PROFILE:
+                                if (!des_iterator_has_more(&prot_it)) continue;
+                                de_element_get_uint16(des_iterator_get_element(&prot_it), &goep_client->mas_info.version);
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+                    break;
                 case BLUETOOTH_ATTRIBUTE_GOEP_L2CAP_PSM:
                     if (goep_client->uuid == BLUETOOTH_SERVICE_CLASS_MESSAGE_ACCESS_SERVER){
                         de_element_get_uint16(goep_client_sdp_query_attribute_value, &goep_client->mas_info.l2cap_psm);
