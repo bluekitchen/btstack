@@ -59,7 +59,6 @@
 #include "classic/map.h"
 #include "classic/map_access_server.h"
 #include "classic/map_notification_client.h"
-#include "map_notification_client_helper.h"
 #include "classic/map_util.h"
 #include "classic/obex.h"
 #include "classic/rfcomm.h"
@@ -74,6 +73,8 @@
 
 static void hci_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static void mns_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+
+static char* create_next_mnc_event_report_body_object(void);
 
 static uint8_t upload_buffer[1000];
 // we create the full obex body object and send it in chunks via continuations
