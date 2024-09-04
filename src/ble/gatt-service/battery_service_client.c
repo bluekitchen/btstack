@@ -208,7 +208,7 @@ static void battery_service_start_polling(battery_service_client_t * client){
     battery_service_poll_timer_start(client);
 }
 
-static void battery_service_run_for_client(void * context){
+static void battery_service_send_next_query(void * context){
     uint16_t cid = (uint16_t)(uintptr_t)context;
     battery_service_client_t * client = battery_service_get_client_for_cid(cid);
 
@@ -689,7 +689,7 @@ uint8_t battery_service_client_read_battery_level(uint16_t battery_service_cid, 
 void battery_service_client_init(void){
     hci_event_callback_registration.callback = &handle_hci_event;
     hci_add_event_handler(&hci_event_callback_registration);
-    battery_service_handle_can_send_now.callback = &battery_service_run_for_client;
+    battery_service_handle_can_send_now.callback = &battery_service_send_next_query;
 }
 
 void battery_service_client_deinit(void){
