@@ -74,8 +74,9 @@
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
-// singleton instance
-static map_access_client_t map_access_client;
+// map access clients
+static map_access_client_t map_access_client_mas_0;
+static map_access_client_t map_access_client_mas_1;
 
 #ifdef ENABLE_GOEP_L2CAP
 // singleton instance
@@ -95,14 +96,7 @@ static l2cap_ertm_config_t map_access_client_ertm_config = {
 
 
 static bd_addr_t    remote_addr;
-static uint16_t rfcomm_channel_id;
-// MBP2016 "F4-0F-24-3B-1B-E1"
-// Nexus 7 "30-85-A9-54-2E-78"
-// iPhone SE "BC:EC:5D:E6:15:03"
-// PTS "001BDC080AA5"
-// iPhone 5 static  char * remote_addr_string = "6C:72:E7:10:22:EE";
-// Android
-static const char * remote_addr_string = "001BDC08E272";
+static const char * remote_addr_string = "001BDC08E25C";
 
 static const char * folder_name = "inbox";
 static map_message_handle_t message_handle = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
@@ -112,10 +106,15 @@ static map_conversation_id_t conv_id = { 0x00, };
 static const char * path = "telecom/msg";
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
-static uint16_t map_cid;
+
 static uint16_t map_mas_0_cid;
 static uint16_t map_mas_1_cid;
 static uint8_t notification_filter = 0;
+
+// UI
+static uint8_t map_mas_instance_id = 0;
+static uint16_t map_cid;
+
 
 #ifdef HAVE_BTSTACK_STDIN
 // Testing User Interface
@@ -124,17 +123,28 @@ static void show_usage(void){
     gap_local_bd_addr(iut_address);
 
     printf("\n--- Bluetooth MAP Client Test Console %s ---\n", bd_addr_to_str(iut_address));
+    if (map_cid != 0){
+        printf("MAP instance ID #%u, map cid %u\n", map_mas_instance_id, map_cid);
+    }
     printf("\n");
-    printf("a - establish connection to MAS ID #0 - %s\n", bd_addr_to_str(remote_addr));
-    printf("A - disconnect from MAS ID 0 - %s\n", bd_addr_to_str(remote_addr));
-    printf("b - establish connection to MAS ID #1 - %s\n", bd_addr_to_str(remote_addr));
-    printf("B - disconnect from MAS ID 1 - %s\n", bd_addr_to_str(remote_addr));
+    if (map_mas_0_cid == 0){
+        printf("a - establish connection to MAS ID #0 - %s\n", bd_addr_to_str(remote_addr));
+    } else {
+        printf("a - select MAS ID #0 - %s\n", bd_addr_to_str(remote_addr));
+        printf("A - disconnect from MAS ID 0 - %s\n", bd_addr_to_str(remote_addr));
+    }
+    if (map_mas_1_cid == 0){
+        printf("b - establish connection to MAS ID #1 - %s\n", bd_addr_to_str(remote_addr));
+    } else {
+        printf("b - select MAS ID #1 - %s\n", bd_addr_to_str(remote_addr));
+        printf("B - disconnect from MAS ID 1 - %s\n", bd_addr_to_str(remote_addr));
+    }
     printf("U - request an update on the inbox\n");
     printf("p - set path \'%s\'\n", path);
     printf("f - get folder listing\n");
     printf("F - get message listing for folder \'%s\'\n", folder_name);
     printf("C - get conversation listing\n");
-    printf("0 - Select last listed \"unknown\" message\n");
+    printf("6 - Select last listed \"unknown\" message\n");
     printf("1 - Select last listed \"email\" message\n");
     printf("2 - Select last listed \"sms_gsm\" message\n");
     printf("3 - Select last listed \"sms_cdma\" message\n");
@@ -152,35 +162,51 @@ static void show_usage(void){
 }
 
 static void stdin_process(char c){
+    uint8_t status = ERROR_CODE_SUCCESS;
     switch (c){
         case 'a':
-            printf("[+] Connecting to MAS ID #0 of %s...\n", bd_addr_to_str(remote_addr));
+            if (map_mas_0_cid == 0){
+                printf("[+] Connecting to MAS ID #0 of %s...\n", bd_addr_to_str(remote_addr));
 #ifdef ENABLE_GOEP_L2CAP
-            map_access_client_connect(&map_access_client, &map_access_client_ertm_config,
-                                      sizeof(map_access_client_ertm_buffer_mas_0),
-                                      map_access_client_ertm_buffer_mas_0, &packet_handler, remote_addr, 0, &map_mas_0_cid);
+                map_access_client_connect(&map_access_client_mas_0, &map_access_client_ertm_config,
+                                          sizeof(map_access_client_ertm_buffer_mas_0),
+                                          map_access_client_ertm_buffer_mas_0, &packet_handler, remote_addr, 0, &map_mas_0_cid);
 #else
-            map_access_client_connect(&map_access_client, NULL, 0, NULL, &packet_handler, remote_addr, 0, &map_cid);
+                map_access_client_connect(&map_access_client_mas_0, NULL, 0, NULL, &packet_handler, remote_addr, 0, &map_mas_0_cid);
 #endif
+            } else {
+                printf("[+] Switching to MAP ID #0, map_cid %u\n", map_mas_0_cid);
+            }
+            map_mas_instance_id = 0;
+            map_cid = map_mas_0_cid;
             break;
         case 'A':
-            printf("[+] Disconnect from %s...\n", bd_addr_to_str(remote_addr));
-            map_access_client_disconnect(map_cid);
+            printf("[+] Disconnect MAP ID #0 from %s...\n", bd_addr_to_str(remote_addr));
+            map_access_client_disconnect(map_mas_0_cid);
+            map_mas_0_cid = 0;
             break;
 
         case 'b':
-            printf("[+] Connecting to MAS ID #1 of %s...\n", bd_addr_to_str(remote_addr));
+            if (map_mas_1_cid == 0) {
+                printf("[+] Connecting to MAS ID #1 of %s...\n", bd_addr_to_str(remote_addr));
 #ifdef ENABLE_GOEP_L2CAP
-            map_access_client_connect(&map_access_client, &map_access_client_ertm_config,
-                                      sizeof(map_access_client_ertm_buffer_mas_1),
-                                      map_access_client_ertm_buffer_mas_1, &packet_handler, remote_addr, 1, &map_mas_1_cid);
+                map_access_client_connect(&map_access_client_mas_1, &map_access_client_ertm_config,
+                                          sizeof(map_access_client_ertm_buffer_mas_1),
+                                          map_access_client_ertm_buffer_mas_1, &packet_handler, remote_addr, 1,
+                                          &map_mas_1_cid);
 #else
-            map_access_client_connect(&map_access_client, NULL, 0, NULL, &packet_handler, remote_addr, 0, &map_cid);
+                map_access_client_connect(&map_access_client_mas_1, NULL, 0, NULL, &packet_handler, remote_addr, 1, &map_mas_1_cid);
 #endif
+            } else {
+                printf("[+] Switching to MAP ID #1, map_cid %u\n", map_mas_1_cid);
+            }
+            map_mas_instance_id = 1;
+            map_cid = map_mas_1_cid;
             break;
         case 'B':
-            printf("[+] Disconnect from %s...\n", bd_addr_to_str(remote_addr));
-            map_access_client_disconnect(map_cid);
+            printf("[+] Disconnect MAP ID #1 from %s...\n", bd_addr_to_str(remote_addr));
+            map_access_client_disconnect(map_mas_1_cid);
+            map_mas_1_cid = 0;
             break;
 
         case 'U':
@@ -245,11 +271,11 @@ static void stdin_process(char c){
             map_access_client_set_message_status(map_cid, message_handle, 0);
             break;
         case 'n':
-            printf("[+] Enable notifications\n");
-            map_access_client_enable_notifications(map_cid);
+            printf("[+] Enable notifications map_cid %u\n", map_cid);
+            status = map_access_client_enable_notifications(map_cid);
             break;
         case 'N':
-            printf("[+] Disable notifications\n");
+            printf("[+] Disable notifications map_cid %u\n", map_cid);
             map_access_client_disable_notifications(map_cid);
             break;
         case 'm':
@@ -261,6 +287,9 @@ static void stdin_process(char c){
             show_usage();
             break;
     }
+    if (status != ERROR_CODE_SUCCESS){
+        printf("ERROR CODE 0x%02x!\n", status);
+    }
 }
 
 // packet handler for interactive console
@@ -271,6 +300,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
     uint8_t status;
     map_message_type_t msg_type;
     map_message_status_t msg_status;
+    uint16_t cid;
 
     int value_len;
     char value[MAP_MAX_VALUE_LEN];
@@ -294,11 +324,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     gap_pin_code_response(event_addr, "0000");
                     break;
 
-                case RFCOMM_EVENT_CHANNEL_CLOSED:
-                    printf("RFCOMM channel closed\n");
-                    rfcomm_channel_id = 0;
-                    break;
-
                 case HCI_EVENT_MAP_META:
                     switch (hci_event_map_meta_get_subevent_code(packet)){
                         case MAP_SUBEVENT_CONNECTION_OPENED:
@@ -306,12 +331,19 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             if (status){
                                 printf("[!] Connection failed, status 0x%02x\n", status);
                             } else {
-                                printf("[+] Connected\n");
-                                map_cid = map_subevent_connection_opened_get_map_cid(packet);
+                                printf("[+] Connected map_cid %u\n", map_subevent_connection_opened_get_map_cid(packet));
                             }
                             break;
                         case MAP_SUBEVENT_CONNECTION_CLOSED:
-                            printf("[+] Connection closed\n");
+                            cid = map_subevent_connection_closed_get_map_cid(packet);
+                            if (cid == map_mas_0_cid){
+                                printf("[+] Connection MAS #0 closed\n");
+                                map_mas_0_cid = 0;
+                            }
+                            if (cid == map_mas_1_cid){
+                                printf("[+] Connection MAS #1 closed\n");
+                                map_mas_1_cid = 0;
+                            }
                             break;
                         case MAP_SUBEVENT_OPERATION_COMPLETED:
                             printf("\n");
@@ -432,12 +464,12 @@ int btstack_main(int argc, const char * argv[]){
 
     sscanf_bd_addr(remote_addr_string, remote_addr);
 
+    // setup MAP Notification Server
+
     // init MAP Access Client
     map_access_client_init();
-
-    // setup MAP Notification Server
     map_message_type_t supported_message_types = MAP_MESSAGE_TYPE_SMS_GSM;
-    uint32_t supported_features = 0x1F;
+    uint32_t supported_features = 0x7FFFFF;
     memset(map_message_notification_service_buffer, 0, sizeof(map_message_notification_service_buffer));
     map_util_create_notification_service_sdp_record(map_message_notification_service_buffer,
                                                     sdp_create_service_record_handle(),
