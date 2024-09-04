@@ -62,8 +62,8 @@ MAP/MSE/MMD/BV-02-C: ??? Regression between PTS 8.6.1 and 8.7.0
 MAP/MSE/MMD/BV-05-C: PASS - config [5]
 
 ## MAP/MSE/MMU:
-MAP/MSE/MMU/BV-02-I: FAIL
-MAP/MSE/MMU/BV-03-I: FAIL
+MAP/MSE/MMU/BV-02-C: FAIL (PTS 8.6.1 & RFCOM: PASS with all types 1/2/4/8/16, PTS 8.7.0 passes types 1/2/8/16 and fails with type 4)
+MAP/MSE/MMU/BV-03-C: FAIL
 
 ## MAP/MSE/MMN:
 MAP/MSE/MMN/BV-02-C: PASS C, 2, e, ..., e
