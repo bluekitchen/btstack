@@ -116,7 +116,7 @@ static void map_create_sdp_record(uint8_t * service, uint32_t service_record_han
         uint8_t *profile = de_push_sequence(attribute);
         {
             de_add_number(profile,  DE_UUID, DE_SIZE_16, BLUETOOTH_SERVICE_CLASS_MESSAGE_ACCESS_PROFILE);
-            de_add_number(profile,  DE_UINT, DE_SIZE_16, 0x0103); // Verision 1.7
+            de_add_number(profile,  DE_UINT, DE_SIZE_16, 0x0104); // Version 1.4.x
         }
         de_pop_sequence(attribute, profile);
     }
