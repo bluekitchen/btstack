@@ -35,7 +35,7 @@
  *
  */
 
-#define BTSTACK_FILE__ "map_server_demo.c"
+#define BTSTACK_FILE__ "map_mse_demo.c"
 
 // *****************************************************************************
 /* EXAMPLE_START(map_server_demo): Provide MAP Messaging Server Equipment (MSE)
