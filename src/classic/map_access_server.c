@@ -195,13 +195,15 @@ static map_server_t map_server_connections[MAS_MAX_CONNECTIONS] = {
 
 static struct {
     char* name;
-    mas_folder_t parent_dir;
+    char* msglistingdir;
+    mas_folder_t dir;
     char* path;
 } map_server_folders[] = {
-    {"msg",     MAS_FOLDER_TELECOM_MSG, "telecom/msg.vcf"},
-    {"inbox",   MAS_FOLDER_TELECOM_MSG_INBOX, "telecom/msg/inbox.vcf"},
-    {"outbox",  MAS_FOLDER_TELECOM_MSG_OUTBOX, "telecom/msg/outbox.vcf"},
-    {"draft",   MAS_FOLDER_TELECOM_MSG_DRAFT, "telecom/msg/draft.vcf"},
+    {"msg",    "incomming"    , MAS_FOLDER_TELECOM_MSG,        "telecom/msg.vcf"},
+    {"inbox",  "incomming"    , MAS_FOLDER_TELECOM_MSG_INBOX,  "telecom/msg/inbox.vcf"},
+    {"outbox", "outgoing"     , MAS_FOLDER_TELECOM_MSG_OUTBOX, "telecom/msg/outbox.vcf"},
+    {"draft",  "outgoingdraft", MAS_FOLDER_TELECOM_MSG_DRAFT,  "telecom/msg/draft.vcf"},
+    {"sent",   "outgoing"     , MAS_FOLDER_TELECOM_MSG_SENT,   "telecom/msg/sent.vcf"},
 };
 
 static const uint8_t map_uuid[] = { 0xbb, 0x58, 0x2b, 0x40, 0x42, 0xc, 0x11, 0xdb, 0xb0, 0xde, 0x8, 0x0, 0x20, 0xc, 0x9a, 0x66 };
@@ -231,10 +233,26 @@ static void map_server_finalize_connection(map_server_t* mas) {
     mas->state = MAS_STATE_W4_OPEN;
 }
 
-static mas_folder_t map_server_get_folder_by_path(const char* path) {
-    return MAS_FOLDER_TELECOM_MSG;
+static int get_index_for_path(const char* path) {
+    int idx = ARRAYSIZE(map_server_folders) - 1;
+    while (idx >= 0 && 0 != strcasecmp(path, map_server_folders[idx].name)) {
+        idx--;
+    }
+    log_debug("path:%s idx:%u msglistingdir:%s", path, idx, map_server_folders[idx].msglistingdir);
+    return idx;
 }
 
+static mas_folder_t map_server_get_folder_by_path(char* path) {
+    int idx = get_index_for_path(path);
+    log_debug("path:%s idx:%u dir:%u", path, idx, map_server_folders[idx].dir);
+    return map_server_folders[idx].dir;
+}
+
+const char* map_server_get_folder_msglistingdir(char* path) {
+    int idx = get_index_for_path(path);
+    log_debug("path:%s idx:%u msglistingdir:%u", path, idx, map_server_folders[idx].msglistingdir);
+    return map_server_folders[idx].msglistingdir;
+}
 
 static void map_server_handle_set_path_request(map_server_t* mas, uint8_t flags, const char* name) {
     uint16_t name_len = (uint16_t)strlen(name);
@@ -244,64 +262,64 @@ static void map_server_handle_set_path_request(map_server_t* mas, uint8_t flags,
         if IS_BIT_SET(flags, OBEX_SP_BIT0_DIR_UP) {
             switch (mas->map_server_dir) {
             case MAS_FOLDER_TELECOM:
-                mas->map_server_dir = MAS_FOLDER_ROOT;
+                RUN_AND_LOG_ACTION(mas->map_server_dir = MAS_FOLDER_ROOT;)
                 break;
             case MAS_FOLDER_TELECOM_MSG:
-                mas->map_server_dir = MAS_FOLDER_TELECOM;
+                RUN_AND_LOG_ACTION(mas->map_server_dir = MAS_FOLDER_TELECOM;)
                 break;
             case MAS_FOLDER_TELECOM_MSG_INBOX:
             case MAS_FOLDER_TELECOM_MSG_OUTBOX:
             case MAS_FOLDER_TELECOM_MSG_DRAFT:
             case MAS_FOLDER_TELECOM_MSG_SENT:            
-                mas->map_server_dir = MAS_FOLDER_TELECOM_MSG;
+                RUN_AND_LOG_ACTION(mas->map_server_dir = MAS_FOLDER_TELECOM_MSG;)
                 break;
             default:
-                obex_result = OBEX_RESP_NOT_FOUND;
+                RUN_AND_LOG_ACTION(obex_result = OBEX_RESP_NOT_FOUND;)
                 break;
             }
         }
         else {
-            mas->map_server_dir = MAS_FOLDER_ROOT;
+            RUN_AND_LOG_ACTION(mas->map_server_dir = MAS_FOLDER_ROOT;)
         };
     }
     else {
         switch (mas->map_server_dir) {
         case MAS_FOLDER_ROOT:
             if (strcasecmp("telecom", name) == 0) {
-                mas->map_server_dir = MAS_FOLDER_TELECOM;
+                RUN_AND_LOG_ACTION(mas->map_server_dir = MAS_FOLDER_TELECOM;)
             }
             else {
-                obex_result = OBEX_RESP_NOT_FOUND;
+                RUN_AND_LOG_ACTION(obex_result = OBEX_RESP_NOT_FOUND;)
             }
             break;
         case MAS_FOLDER_TELECOM:
             if (strcasecmp("msg", name) == 0) {
-                mas->map_server_dir = MAS_FOLDER_TELECOM_MSG;
+                RUN_AND_LOG_ACTION(mas->map_server_dir = MAS_FOLDER_TELECOM_MSG;)
             }
             else {
-                obex_result = OBEX_RESP_NOT_FOUND;
+                RUN_AND_LOG_ACTION(obex_result = OBEX_RESP_NOT_FOUND;)
             }
             break;
         case MAS_FOLDER_TELECOM_MSG:
             if      (strcasecmp("inbox", name) == 0) {
-                mas->map_server_dir = MAS_FOLDER_TELECOM_MSG_INBOX;
+                RUN_AND_LOG_ACTION(mas->map_server_dir = MAS_FOLDER_TELECOM_MSG_INBOX;)
             } 
             else if (strcasecmp("outbox", name) == 0) {
-                mas->map_server_dir = MAS_FOLDER_TELECOM_MSG_OUTBOX;
+                RUN_AND_LOG_ACTION(mas->map_server_dir = MAS_FOLDER_TELECOM_MSG_OUTBOX;)
             }
             else if (strcasecmp("draft", name) == 0) {
-                mas->map_server_dir = MAS_FOLDER_TELECOM_MSG_DRAFT;
+                RUN_AND_LOG_ACTION(mas->map_server_dir = MAS_FOLDER_TELECOM_MSG_DRAFT;)
             }
             else if (strcasecmp("sent", name) == 0) {
-                mas->map_server_dir = MAS_FOLDER_TELECOM_MSG_SENT;
+                RUN_AND_LOG_ACTION(mas->map_server_dir = MAS_FOLDER_TELECOM_MSG_SENT;)
             }
             else {
-                obex_result = OBEX_RESP_NOT_FOUND;
+                RUN_AND_LOG_ACTION(obex_result = OBEX_RESP_NOT_FOUND;)
             }
             break;
 
         default:
-            obex_result = OBEX_RESP_NOT_FOUND;
+            RUN_AND_LOG_ACTION(obex_result = OBEX_RESP_NOT_FOUND;)
             break;
         }
     }
@@ -1250,14 +1268,5 @@ uint16_t map_server_send_response(uint16_t map_cid, uint8_t response_code, uint3
 #pragma warning( disable : 33011 )
 #endif
 
-const char* map_server_get_folder_path(mas_folder_t folder) {
-    btstack_assert(folder > MAS_FOLDER_MAX);
-    btstack_assert(folder < MAS_FOLDER_MAX);
-    return map_server_folders[(uint16_t)folder].path;
-}
 
-const char* map_server_get_folder_name(mas_folder_t folder) {
-    btstack_assert(folder > MAS_FOLDER_MAX);
-    btstack_assert(folder < MAS_FOLDER_MAX);
-    return map_server_folders[(uint16_t)folder].name;
-}
+
