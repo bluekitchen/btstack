@@ -196,14 +196,15 @@ static map_server_t map_server_connections[MAS_MAX_CONNECTIONS] = {
 static struct {
     char* name;
     char* msglistingdir;
+    char* msglistingsent;
     mas_folder_t dir;
     char* path;
 } map_server_folders[] = {
-    {"msg",    "incomming"    , MAS_FOLDER_TELECOM_MSG,        "telecom/msg.vcf"},
-    {"inbox",  "incomming"    , MAS_FOLDER_TELECOM_MSG_INBOX,  "telecom/msg/inbox.vcf"},
-    {"outbox", "outgoing"     , MAS_FOLDER_TELECOM_MSG_OUTBOX, "telecom/msg/outbox.vcf"},
-    {"draft",  "outgoingdraft", MAS_FOLDER_TELECOM_MSG_DRAFT,  "telecom/msg/draft.vcf"},
-    {"sent",   "outgoing"     , MAS_FOLDER_TELECOM_MSG_SENT,   "telecom/msg/sent.vcf"},
+    {"msg",    "incomming"    , "no",  MAS_FOLDER_TELECOM_MSG,        "telecom/msg.vcf"},
+    {"inbox",  "incomming"    , "no",  MAS_FOLDER_TELECOM_MSG_INBOX,  "telecom/msg/inbox.vcf"},
+    {"outbox", "outgoing"     , "no",  MAS_FOLDER_TELECOM_MSG_OUTBOX, "telecom/msg/outbox.vcf"},
+    {"draft",  "outgoingdraft", "no",  MAS_FOLDER_TELECOM_MSG_DRAFT,  "telecom/msg/draft.vcf"},
+    {"sent",   "outgoing"     , "yes", MAS_FOLDER_TELECOM_MSG_SENT,   "telecom/msg/sent.vcf"},
 };
 
 static const uint8_t map_uuid[] = { 0xbb, 0x58, 0x2b, 0x40, 0x42, 0xc, 0x11, 0xdb, 0xb0, 0xde, 0x8, 0x0, 0x20, 0xc, 0x9a, 0x66 };
@@ -248,11 +249,18 @@ static mas_folder_t map_server_get_folder_by_path(char* path) {
     return map_server_folders[idx].dir;
 }
 
-const char* map_server_get_folder_msglistingdir(char* path) {
+const char* map_server_get_folder_MsgListingDir(char* path) {
     int idx = get_index_for_path(path);
     log_debug("path:%s idx:%u msglistingdir:%u", path, idx, map_server_folders[idx].msglistingdir);
     return map_server_folders[idx].msglistingdir;
 }
+
+const char* map_server_get_folder_MsgListingSent(char* path) {
+    int idx = get_index_for_path(path);
+    log_debug("path:%s idx:%u MsgListingSent:%u", path, idx, map_server_folders[idx].msglistingdir);
+    return map_server_folders[idx].msglistingsent;
+}
+
 
 static void map_server_handle_set_path_request(map_server_t* mas, uint8_t flags, const char* name) {
     uint16_t name_len = (uint16_t)strlen(name);

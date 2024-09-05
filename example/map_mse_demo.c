@@ -583,12 +583,12 @@ static size_t body_msg(char* msg_buffer, uint16_t index, size_t maxsize) {
             " type=\"%s\""
             " read=\"%s\""
             " direction=\"%s\""
+            " sent=\"%s\""
             " subject=\"Sbjct\""
             " datetime=\"20140705T092200+0100\" sender_name=\"Jonas\""
             " sender_addressing=\"1@bla.net\" recipient_addressing=\"\""
             " size=\"512\" attachment_size=\"123\" priority=\"no\""
-
-            " sent=\"no\" protected=\"no\""
+            " protected=\"no\""
             " conversation_id=\"E1E2E3E4\"" // "E1" is to short for PTS but happy with "E1E2E3E4\"
 
             //" attachment_mime_types=\"video/mpeg\"" // PTS wants this in MAP/MSE/MMD/BV-02, otherwise "no EMAIL message in message listing"
@@ -597,10 +597,42 @@ static size_t body_msg(char* msg_buffer, uint16_t index, size_t maxsize) {
             index,
             mas_cfg->objects[index],
             mas_cfg->msg_stati[index] ? "yes" : "no",
-            map_server_get_folder_msglistingdir(request_path)
+            map_server_get_folder_MsgListingDir(request_path),
+            map_server_get_folder_MsgListingSent(request_path)
         );
     return size;
 }
+
+// PTS 8.7.0 MAP/MSE/MMD/BV-03-C fails after receiving the response to GET MAP-message-listing in folder "sent"
+//static size_t body_msg(char* msg_buffer, uint16_t index, size_t maxsize) {
+//    index = index % ARRAYSIZE(mas_cfg->objects);
+//    int size = 0;
+//    if (!mas_cfg->msg_deleted[index] || folder_msg_deleted)
+//        size = snprintf(msg_buffer, maxsize,
+//            "<msg handle=\"A%X\""
+//            " type=\"%s\""
+//            " read=\"%s\""
+//            " direction=\"%s\""
+//            " folder =\"TELECOM/MSG/SENT\"" // just a try; actually is not part of a message object but an event report
+//            " subject=\"PTS testing\""
+//            " datetime=\"20140705T092200+0100\" sender_name=\"PTS\""
+//            " sender_addressing=\"PTS@bluetooth.com\" recipient_addressing=\"IUT@bluetooth.com\""
+//            " size=\"4975\""
+//            //" attachment_size=\"123\" priority=\"no\""
+//
+//            " sent=\"yes\" protected=\"no\""
+//            " conversation_id=\"E1E2E3E4\"" // "E1" is to short for PTS but happy with "E1E2E3E4\"
+//
+//            //" attachment_mime_types=\"video/mpeg\"" // PTS wants this in MAP/MSE/MMD/BV-02, otherwise "no EMAIL message in message listing"
+//            "/>"
+//            ,
+//            index,
+//            mas_cfg->objects[index],
+//            mas_cfg->msg_stati[index] ? "yes" : "yes",
+//            map_server_get_folder_MsgListingDir(request_path)
+//        );
+//    return size;
+//}
 
 // PTS 8.7.0 MAP/MSE/MMD/BV-02-C fails after receiving the response to GET MAP-message-listing 
 // from the example in spec MAP_v1.4.2.pdf page 38 bottom:

@@ -394,7 +394,8 @@ struct test_set_config {
 
 enum msg_status_read { no, yes };
 
-const char* map_server_get_folder_msglistingdir(char* path);
+const char* map_server_get_folder_MsgListingDir(char* path);
+const char* map_server_get_folder_MsgListingSent(char* path);
 
 
 #if defined __cplusplus
