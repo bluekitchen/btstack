@@ -524,6 +524,10 @@ static void run_for_server(server_t * server){
             audio_contexts_mask &= ~LE_AUDIO_CONTEXT_MASK_UNSPECIFIED;
             // - select context with lowest bit (x-1 clears lowest set bit in x, so drop all others)
             ascs_metadata.streaming_audio_contexts_mask = audio_contexts_mask & ~(audio_contexts_mask - 1);
+            // - fall back to unspecified if no other bits are set
+            if (ascs_metadata.streaming_audio_contexts_mask == 0){
+                ascs_metadata.streaming_audio_contexts_mask = LE_AUDIO_CONTEXT_MASK_UNSPECIFIED;
+            }
             ascs_metadata.metadata_mask |= 1 << LE_AUDIO_METADATA_TYPE_STREAMING_AUDIO_CONTEXTS;
             printf("ASCS Client %u: ENABLE - ase_id %u, streaming audio context 0x%04x\n", server->server_id, ase_id, ascs_metadata.streaming_audio_contexts_mask);
             status = audio_stream_control_service_client_streamendpoint_enable(server->ascs_cid, ase_id, &ascs_metadata);
