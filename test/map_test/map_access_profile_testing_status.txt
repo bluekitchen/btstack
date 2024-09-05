@@ -188,9 +188,13 @@ MAP/MSE/MNR/BV-04-C: RE-PASS (2024-09-03) PTS 8.6.1 & L2CAP & MAP_NEW, INFO: re-
 MAP/MSE/MMN/BV-02-C: RE-PASS (2024-09-03) PTS 8.6.1 & L2CAP & MAP_NEW, INFO: fixed and re-tested after consolidation of map_notification_client_helper.c into map_server_demo
 MAP/MSE/MMD/BV-05-C: RE-PASS (2024-09-03) PTS 8.6.1 & L2CAP & MAP_NEW, INFO: re-tested after consolidation of map_notification_client_helper.c into map_server_demo
 MAP/MSE/MMU/BV-02-C: RE-TEST (2024-09-04) PTS 8.6.1 & RFCOM: PASS with all types 1/2/4/8/16, WARNING: PTS 8.7.0 passes types 1/2/8/16 and fails with type 4)
+MAP/MSE/MMU/BV-02-C: FAIL (2024-09-04) PTS 8.7.0 INFO: passes types 1/2/8/16/4, finally checks the GET message-listing content and fails with "Failed to respond to SetPath"
+MAP/MSE/MMU/BV-03-C: FAIL (2024-09-04) PTS 8.7.0 INFO: passes types 1/2, finally checks the GET message-listing content and fails with "Failed to respond to SetPath"
+
 
 TODO:
-MAP/MSE/MMU/BV-02-C: RE-TEST (2024-09-04) PTS 8.6.1 & RFCOM: PASS with all types 1/2/4/8/16, WARNING: PTS 8.7.0 passes types 1/2/8/16 and fails with type 4)
+MAP/MSE/MMU/BV-02-C: FAIL PTS 8.7.0 INFO: passes types 1/2/8/16/4, finally checks the GET message-listing content and fails with "Failed to respond to SetPath"
+MAP/MSE/MMU/BV-03-C: FAIL PTS 8.7.0 INFO: passes types 1/2, finally checks the GET message-listing content and fails with "Failed to respond to SetPath"
 TODO - TIMER MAP/MSE/MMN/BV-02-C wants 4 successive reports  implemented automatic event report generation for all PTS MMN test cases which only expect 1 single event report, 
 BUG PTS: MAP_OLD MAP/MSE/GOEP/SRM/BV-04-C: (2024-08-29) Handle different Put_continue behaviour in the Demo App: PTS passes if we fake-answer with OK_FINAL instead of the correct CONTINUE to their PUT_CONTINUE Push Message request. PTS cannot push the full message but Final-PASSes happily
 MAP/MSE/GOEP/SRMP/BV-02-C: WIP PTS MAP_OLD: - MTC INCONC: GET RSP must contain an SRM ENABLED header.
