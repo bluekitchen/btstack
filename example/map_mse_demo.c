@@ -377,7 +377,7 @@ TC_NORM( .descr = "MAP/MSE/MMB/BV-23"                                    ,.obj_c
 TC_NORM( .descr = "MAP/MSE/MMB/BV-24"                                    ,.obj_count = 0, .objects = { "",""                                      }, .fGetConvoListng = MAP_MSE_MMB_BV_24_inc_ConvCnt    ,                                                                                                                                           )
 TC_NORM( .descr = "MAP/MSE/MMB/BV-25"                                    ,.obj_count = 0, .objects = { "",""                                      }, .fGetConvoListng = MAP_MSE_MMB_BV_25_inc_ConvListCnt,                                                                                                                                           )
 TC_NORM( .descr = "MAP/MSE/MMB/BV-43"                                    ,.obj_count = 0, .objects = { "",""                                      }, .fGetConvoListng = MAP_MSE_MMB_BV_43_getConvoListng ,                                                                                                                                           )                                                                                                                     
-TC_NORM( .descr = "MAP/MSE/MMD/BV-05"                                    ,.obj_count = 1, .objects = { "IM"                                       }, .fPutMsg         = MAP_MSE_MMD_BV_05_PutMsg         ,                                                                                                                                           )
+TC_NORM( .descr = "MAP/MSE/MMD/BV-02,05"                                 ,.obj_count = 1, .objects = { "IM"                                       }, .fPutMsg         = MAP_MSE_MMD_BV_05_PutMsg         ,                                                                                                                                           )
 TC_RFCOM(.descr = "MAP/MSE/MMU/BV-02"                                    ,.obj_count = 1, .objects = { "SMS_CDMA", "EMAIL", "SMS_GSM", "MMS", "IM"}, .fPutMsg         = MAP_MSE_MMU_BV_02_I_PutMsg       ,.helpstr = "WIP: PTS 8.6.1 MAP_NEW L2CAP bug: claims to send a PUT but doesnt. could be consolidated into tc #0 otherwise"                 )
 TC_DISA( .descr = "MAP/MSE/MMU/BV-02 test"         , .type = &msgshrt    ,.obj_count = 0, .objects = { "", "", "", "" , ""                        }, .fPutMsg         = MAP_MSE_MMU_BV_02_I_PutMsg       ,.helpstr = "WIP: finding out what PTS 8.7.0 expects"                                                                                       )
 TC_RFCOM(.descr = "MAP/MSE/MMU/BV-03"                                    ,.obj_count = 0, .objects = { "EMAIL",                                   }, .fPutMsg         = MAP_MSE_MMU_BV_02_I_PutMsg       ,.helpstr = "WIP: PTS 8.6.1 MAP_NEW L2CAP bug: claims to send a PUT but doesnt. could be consolidated into tc #0 otherwise"                 )                                                                                                                   
@@ -602,6 +602,24 @@ static size_t body_msg(char* msg_buffer, uint16_t index, size_t maxsize) {
     return size;
 }
 
+// PTS 8.7.0 MAP/MSE/MMD/BV-02-C fails after receiving the response to GET MAP-message-listing 
+// from the example in spec MAP_v1.4.2.pdf page 38 bottom:
+// - Round 0 Message Type 1
+// -IUT accepted MAS Obex connection.
+// - No handle found.
+//static size_t body_msg(char* msg_buffer, uint16_t index, size_t maxsize) {
+//    index = index % ARRAYSIZE(mas_cfg->objects);
+//    int size = 0;
+//    if (!mas_cfg->msg_deleted[index] || folder_msg_deleted)
+//        size = snprintf(msg_buffer, maxsize,
+//            "<msg handle = \"20000100001\" subject = \"Welcome Clara Nicole” datetime=\"20140706T095000 - 0400\" "
+//            "sender_name=\"Max\" sender_addressing=\"4924689753@s.whateverapp.net\" "
+//            "recipient_addressing=\"\" type=\"IM\" size=\"256\" attachment_size=\"0\" priority=\"no\" read=\"no\" sent=\"no\" "
+//            "protected=\"no\" conversation_id=\"E1E2E3E4F1F2F3F4A1A2A3A4B1B2B3B4\" direction=\"incoming\" "
+//            "/> "
+//        );
+//    return size;
+//}
 
 // TODO: PTS MAP/MSE/MMU/BV-02 fails to handle multi-segment chunked responses so we had to send 2 message in a single rfcom/goep/obex response packet.
 static size_t body_msg_short(char* msg_buffer, uint16_t index, size_t maxsize) {
