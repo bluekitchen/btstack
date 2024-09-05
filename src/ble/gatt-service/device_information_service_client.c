@@ -114,10 +114,9 @@ static const struct device_information_characteristic {
 };
 
 static uint8_t device_informatiom_client_request_send_gatt_query(device_information_service_client_t * client){
-    device_information_service_handle_can_send_now.context = (void *) client; // (uintptr_t)client->con_handle;
     uint8_t status = gatt_client_request_to_send_gatt_query(&device_information_service_handle_can_send_now, client->con_handle);
     if (status != ERROR_CODE_SUCCESS){
-        if (client->state == DEVICE_INFORMATION_SERVICE_CLIENT_STATE_W2_QUERY_SERVICE){
+        if (client->state >= DEVICE_INFORMATION_SERVICE_CLIENT_STATE_W2_QUERY_SERVICE){
             client->state = DEVICE_INFORMATION_SERVICE_CLIENT_STATE_IDLE;
         }
         
@@ -298,7 +297,7 @@ static void device_information_service_emit_pnp_id(device_information_service_cl
 }
 
 
-static void device_information_service_run_for_client(void * context){
+static void device_information_service_send_next_query(void * context){
     UNUSED(context);
     device_information_service_client_t * client = device_information_service_client_get_client();
 
@@ -493,7 +492,7 @@ uint8_t device_information_service_client_query(hci_con_handle_t con_handle, bts
 void device_information_service_client_init(void){
     device_information_service_client_t * client = device_information_service_client_get_client();
     device_information_service_finalize_client(client);
-    device_information_service_handle_can_send_now.callback = &device_information_service_run_for_client;
+    device_information_service_handle_can_send_now.callback = &device_information_service_send_next_query;
 }
 
 void device_information_service_client_deinit(void){}
