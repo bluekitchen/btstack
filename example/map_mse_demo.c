@@ -129,6 +129,7 @@ struct objconfig_s {
 };
 
 static size_t body_msg(char* msg_buffer, uint16_t index, size_t maxsize);
+static size_t body_msg_short(char* msg_buffer, uint16_t index, size_t maxsize);
 static size_t body_msg_email_1_1(char* msg_buffer, uint16_t index, size_t maxsize);
 //static size_t body_msg_email_1_1_del(char* msg_buffer, uint16_t index, size_t maxsize);
 static size_t body_convo(char* msg_buffer, uint16_t index, size_t maxsize);
@@ -141,6 +142,7 @@ static int cfg_MAP_MSE_MMD_BV_02_I_getMsgListng_counter = 0;
 static int one_object_more_or_less = 0;
 static uint16_t ListingSize = 0;
 static bool folder_msg_deleted = false;
+static char* request_path = "msg";
 
 static mas_uint128hex_t DatabaseIdentifier = { 0 };
 // BT SIG Test Suite PTS is not acepting what BT SIG MAP spec describes as valid counters:
@@ -209,7 +211,10 @@ static void MAP_MSE_MMB_BV_43_getConvoListng(void) {
 
 static void MAP_MSE_MMU_BV_02_I_PutMsg(void) {
     one_object_more_or_less++;
-    log_debug("one_object_more_or_less:%d", one_object_more_or_less);
+    //if (one_object_more_or_less > 1) {
+    //    cfg_start_index++;
+    //}
+    log_debug("one_object_more_or_less:%d ", one_object_more_or_less);
 }
 
 #define MSG_LISTING_HEADER   "<MAP-msg-listing version=\"1.1\">"
@@ -222,6 +227,12 @@ struct objconfig_s msg = {
     .header = MSG_LISTING_HEADER,
     .footer = MSG_LISTING_FOOTER,
     .fbody = body_msg
+};
+
+struct objconfig_s msgshrt = {
+    .header = MSG_LISTING_HEADER,
+    .footer = MSG_LISTING_FOOTER,
+    .fbody = body_msg_short
 };
 
 struct objconfig_s msg1_1 = {
@@ -311,15 +322,16 @@ struct objconfig_s mr_v1_2_A0 = {
     .body = "<event type = \"MessageRemoved\" handle=\"A0\" folder=\"TELECOM/MSG/INBOX\"  msg_type=\"IM\"/>"
 };
 
-#define TC_NORM(data, ...)  data,  ## __VA_ARGS__
+#define TC_NORM(data, ...)  {data,  ## __VA_ARGS__},
 #ifdef ENABLE_GOEP_L2CAP
-#define TC_RFCOM(...)       .descr = "ENABLE_GOEP_L2CAP is set", .disabled = true },
+#define TC_RFCOM(...)       {.descr = "ENABLE_GOEP_L2CAP is set", .disabled = true },
 #define TC_L2CAP            TC_NORM
 #else
 #define TC_RFCOM            TC_NORM
-#define TC_L2CAP(...)       .descr = "ENABLE_GOEP_L2CAP is disabled", .disabled = true },
+#define TC_L2CAP(...)       {.descr = "ENABLE_GOEP_L2CAP is disabled", .disabled = true },
 #endif
-#define TC_HIDE(data, ...)  .hide = true, data,  ## __VA_ARGS__
+#define TC_HIDE(data, ...)  {.hide = true, data,  ## __VA_ARGS__},
+#define TC_DISA(...) 
 
 #define MAX_TC_OBJECTS 10
 static struct test_config_s
@@ -342,29 +354,30 @@ static struct test_config_s
     char* helpstr; // additional help for setup, environment etc.
 } test_configs[] =
 {
-{TC_NORM( .descr = "MAP/MSE/MSM/,MNR/,MMB/,MFB/,MMI/,GEOP/BC,ROB,CON"     ,.obj_count = 5, .objects = { "EMAIL","SMS_GSM","SMS_CDMA", "MMS", "IM"  }                                                      ,.helpstr = "PTS IXIT set 'TSPX_secure_simple_pairing_pass_key_confirmation' to 'true'"                                                     },)
-{TC_NORM( .descr = "MAP/MSE/MMB/BV-23"                                    ,.obj_count = 1, .objects = { "EMAIL","EMAIL"                            }, .fGetMsgListng   = MAP_MSE_MMB_BV_23_inc_VersCnt    ,.helpstr = "PTS wants wants to see an updated Folder version counter on the 2nd GET message listing"                                       },)
-{TC_NORM( .descr = "MAP/MSE/MMB/BV-24"                                    ,.obj_count = 0, .objects = { "",""                                      }, .fGetConvoListng = MAP_MSE_MMB_BV_24_inc_ConvCnt    ,                                                                                                                                           },)
-{TC_NORM( .descr = "MAP/MSE/MMB/BV-25"                                    ,.obj_count = 0, .objects = { "",""                                      }, .fGetConvoListng = MAP_MSE_MMB_BV_25_inc_ConvListCnt,                                                                                                                                           },)
-{TC_NORM( .descr = "MAP/MSE/MMB/BV-43"                                    ,.obj_count = 0, .objects = { "",""                                      }, .fGetConvoListng = MAP_MSE_MMB_BV_43_getConvoListng ,                                                                                                                                            },)                                                                                                                     
-{TC_NORM( .descr = "MAP/MSE/MMD/BV-05"                                    ,.obj_count = 1, .objects = { "IM"                                       }, .fPutMsg         = MAP_MSE_MMD_BV_05_PutMsg         ,                                                                                                                                           },)
-{TC_RFCOM( .descr = "MAP/MSE/MMU/BV-02"                                   ,.obj_count = 0, .objects = { "", "EMAIL", "MMS" , "EMAIL", "EMAIL"      }, .fPutMsg         = MAP_MSE_MMU_BV_02_I_PutMsg       ,.helpstr = "WIP: PTS 8.6.1 MAP_NEW L2CAP bug: claims to send a PUT but doesnt. could be consolidated into tc #0 otherwise"                 },)
-{TC_RFCOM( .descr = "MAP/MSE/MMU/BV-03"                                   ,.obj_count = 1, .objects = { "EMAIL",                                   }                                                      ,.helpstr = "WIP: PTS 8.6.1 MAP_NEW L2CAP bug: claims to send a PUT but doesnt. could be consolidated into tc #0 otherwise"                 },)                                                                                                                   
-{TC_NORM( .descr = "MAP/MSE/SGSIT/ATTR/BV-01"                             ,.obj_count = 1, .objects = { "EMAIL"                                    }                                                      ,                                                                                                                                           },)
-{TC_RFCOM(.descr = "MAP/MSE/MFMH/BV-01..05"                               ,.obj_count = 1, .objects = { "EMAIL"                                    }                                                      ,                                                                                                                                           },)
-{TC_NORM( .descr = "MAP/MSE/MFB/BV-02 05 07"                              ,.obj_count = 0, .objects = { ""                                         }                                                      ,                                                                                                                                           },)
-{TC_L2CAP(.descr = "MAP/MSE/GOEP/SRM/BI-02..08 MAP_OLD"                   ,.obj_count = 5, .objects = { "EMAIL","SMS_GSM","SMS_CDMA", "MMS", "IM"  }                                                      ,.helpstr = "WIP: MAP_OLD only. PTS 8.6.1 MAP_NEW & L2CAP bug: claims to send a PUT but doesnt. could be consolidated into tc #0 otherwise" },)
-{TC_L2CAP(.descr = "MAP/MSE/GOEP/SRMP/BI-02-C"                            ,.obj_count = 9, .objects = { "IM"                                       }                                                      ,                                                                                                                                           },)
-{TC_NORM( .descr = "MAP/MSE/MMN/BV-02-C   Press <e>" , .type = &nm_v1_0   ,.obj_count = 1, .objects = { "EMAIL", "SMS_GSM", "SMS_CDMA", "MMS", "IM"}/*, .fClConn = emit_report, .fClOpCompl = emit_report */  ,.helpstr = "Generate the requested event reports by pressing <e> when PTS asks for" },)
-{TC_NORM( .descr = "MAP/MSE/MMN/BV-04..06 Press <e>" , .type = &nm_v1_1   ,.obj_count = 1, .objects = { "EMAIL", "SMS_GSM", "SMS_CDMA", "MMS", "IM"}                                                      ,                                                                                                                                           },)
-{TC_NORM( .descr = "MAP/MSE/MMN/BV-07     Press <e>" , .type = &nm_v1_2   ,.obj_count = 1, .objects = { "EMAIL"                                    }, .fClConn = emit_report                              ,                                                                                                                                           },)
-{TC_NORM( .descr = "MAP/MSE/MMN/BV-08..09 Press <e>" , .type = &ed_v1_2   ,.obj_count = 1, .objects = { "IM"                                       }, .fClConn = emit_report                              ,                                                                                                                                           },)
-{TC_NORM( .descr = "MAP/MSE/MMN/BV-10, 15 Press <e>" , .type = &pp_v1_2   ,.obj_count = 1, .objects = { ""                                         }, .fClConn = emit_report                              ,                                                                                                                                           },)
-{TC_NORM( .descr = "MAP/MSE/MMN/BV-11, 16 Press <e>" , .type = &pc_v1_2   ,.obj_count = 1, .objects = { ""                                         }, .fClConn = emit_report                              ,                                                                                                                                           },)
-{TC_NORM( .descr = "MAP/MSE/MMN/BV-12..13 Press <e>" , .type = &cc_v1_2   ,.obj_count = 1, .objects = { ""                                         }, .fClConn = emit_report                              ,                                                                                                                                           },)
-{TC_NORM( .descr = "MAP/MSE/MMN/BV-14     Press <e>" , .type = &mr_v1_2   ,.obj_count = 1, .objects = { ""                                         }, .fClConn = emit_report                              ,                                                                                                                                           },)
-{TC_HIDE( .descr = "MAP/MSE/MMB/BV-43 AUTO"          , .type = &cc_v1_2   ,.obj_count = 1, .objects = { "IM"                                       }                                                      ,                                                                                                                                           },)
-{TC_HIDE( .descr = "MAP/MSE/MMD/BV-05 AUTO"          , .type = &mr_v1_2_A0,.obj_count = 1, .objects = { "IM"                                       }                                                      ,                                                                                                                                           },)  
+TC_NORM( .descr = "MAP/MSE/MSM/,MNR/,MMB/,MFB/,MMI/,GEOP/BC,ROB,CON"     ,.obj_count = 5, .objects = { "EMAIL","SMS_GSM","SMS_CDMA", "MMS", "IM"  }                                                      ,.helpstr = "PTS IXIT set 'TSPX_secure_simple_pairing_pass_key_confirmation' to 'true'"                                                     )
+TC_NORM( .descr = "MAP/MSE/MMB/BV-23"                                    ,.obj_count = 1, .objects = { "EMAIL","EMAIL"                            }, .fGetMsgListng   = MAP_MSE_MMB_BV_23_inc_VersCnt    ,.helpstr = "PTS wants wants to see an updated Folder version counter on the 2nd GET message listing"                                       )
+TC_NORM( .descr = "MAP/MSE/MMB/BV-24"                                    ,.obj_count = 0, .objects = { "",""                                      }, .fGetConvoListng = MAP_MSE_MMB_BV_24_inc_ConvCnt    ,                                                                                                                                           )
+TC_NORM( .descr = "MAP/MSE/MMB/BV-25"                                    ,.obj_count = 0, .objects = { "",""                                      }, .fGetConvoListng = MAP_MSE_MMB_BV_25_inc_ConvListCnt,                                                                                                                                           )
+TC_NORM( .descr = "MAP/MSE/MMB/BV-43"                                    ,.obj_count = 0, .objects = { "",""                                      }, .fGetConvoListng = MAP_MSE_MMB_BV_43_getConvoListng ,                                                                                                                                           )                                                                                                                     
+TC_NORM( .descr = "MAP/MSE/MMD/BV-05"                                    ,.obj_count = 1, .objects = { "IM"                                       }, .fPutMsg         = MAP_MSE_MMD_BV_05_PutMsg         ,                                                                                                                                           )
+TC_RFCOM(.descr = "MAP/MSE/MMU/BV-02"                                    ,.obj_count = 1, .objects = { "SMS_CDMA", "EMAIL", "SMS_GSM", "MMS", "IM"}, .fPutMsg         = MAP_MSE_MMU_BV_02_I_PutMsg       ,.helpstr = "WIP: PTS 8.6.1 MAP_NEW L2CAP bug: claims to send a PUT but doesnt. could be consolidated into tc #0 otherwise"                 )
+TC_DISA( .descr = "MAP/MSE/MMU/BV-02 test"         , .type = &msgshrt    ,.obj_count = 0, .objects = { "", "", "", "" , ""                        }, .fPutMsg         = MAP_MSE_MMU_BV_02_I_PutMsg       ,.helpstr = "WIP: finding out what PTS 8.7.0 expects"                                                                                       )
+TC_RFCOM(.descr = "MAP/MSE/MMU/BV-03"                                    ,.obj_count = 0, .objects = { "EMAIL",                                   }, .fPutMsg         = MAP_MSE_MMU_BV_02_I_PutMsg       ,.helpstr = "WIP: PTS 8.6.1 MAP_NEW L2CAP bug: claims to send a PUT but doesnt. could be consolidated into tc #0 otherwise"                 )                                                                                                                   
+TC_NORM( .descr = "MAP/MSE/SGSIT/ATTR/BV-01"                             ,.obj_count = 1, .objects = { "EMAIL"                                    }                                                      ,                                                                                                                                           )
+TC_RFCOM(.descr = "MAP/MSE/MFMH/BV-01..05"                               ,.obj_count = 1, .objects = { "EMAIL"                                    }                                                      ,                                                                                                                                           )
+TC_NORM( .descr = "MAP/MSE/MFB/BV-02 05 07"                              ,.obj_count = 0, .objects = { ""                                         }                                                      ,                                                                                                                                           )
+TC_L2CAP(.descr = "MAP/MSE/GOEP/SRM/BI-02..08 MAP_OLD"                   ,.obj_count = 5, .objects = { "EMAIL","SMS_GSM","SMS_CDMA", "MMS", ""    }                                                      ,.helpstr = "WIP: MAP_OLD only. PTS 8.6.1 MAP_NEW & L2CAP bug: claims to send a PUT but doesnt. could be consolidated into tc #0 otherwise" )
+TC_L2CAP(.descr = "MAP/MSE/GOEP/SRMP/BI-02-C"                            ,.obj_count = 9, .objects = { "IM"                                       }                                                      ,                                                                                                                                           )
+TC_NORM( .descr = "MAP/MSE/MMN/BV-02-C   Press <e>" , .type = &nm_v1_0   ,.obj_count = 1, .objects = { "EMAIL", "SMS_GSM", "SMS_CDMA", "MMS", "IM"}/*,.fClConn = emit_report, .fClOpCompl= emit_report */,.helpstr = "Generate the requested event reports by pressing <e> when PTS asks for"                                                        )
+TC_NORM( .descr = "MAP/MSE/MMN/BV-04..06 Press <e>" , .type = &nm_v1_1   ,.obj_count = 1, .objects = { "EMAIL", "SMS_GSM", "SMS_CDMA", "MMS", "IM"}                                                      ,                                                                                                                                           )
+TC_NORM( .descr = "MAP/MSE/MMN/BV-07     Press <e>" , .type = &nm_v1_2   ,.obj_count = 1, .objects = { "EMAIL"                                    }, .fClConn = emit_report                              ,                                                                                                                                           )
+TC_NORM( .descr = "MAP/MSE/MMN/BV-08..09 Press <e>" , .type = &ed_v1_2   ,.obj_count = 1, .objects = { "IM"                                       }, .fClConn = emit_report                              ,                                                                                                                                           )
+TC_NORM( .descr = "MAP/MSE/MMN/BV-10, 15 Press <e>" , .type = &pp_v1_2   ,.obj_count = 1, .objects = { ""                                         }, .fClConn = emit_report                              ,                                                                                                                                           )
+TC_NORM( .descr = "MAP/MSE/MMN/BV-11, 16 Press <e>" , .type = &pc_v1_2   ,.obj_count = 1, .objects = { ""                                         }, .fClConn = emit_report                              ,                                                                                                                                           )
+TC_NORM( .descr = "MAP/MSE/MMN/BV-12..13 Press <e>" , .type = &cc_v1_2   ,.obj_count = 1, .objects = { ""                                         }, .fClConn = emit_report                              ,                                                                                                                                           )
+TC_NORM( .descr = "MAP/MSE/MMN/BV-14     Press <e>" , .type = &mr_v1_2   ,.obj_count = 1, .objects = { ""                                         }, .fClConn = emit_report                              ,                                                                                                                                           )
+TC_HIDE( .descr = "MAP/MSE/MMB/BV-43 AUTO"          , .type = &cc_v1_2   ,.obj_count = 1, .objects = { "IM"                                       }                                                      ,                                                                                                                                           )
+TC_HIDE( .descr = "MAP/MSE/MMD/BV-05 AUTO"          , .type = &mr_v1_2_A0,.obj_count = 1, .objects = { "IM"                                       }                                                      ,                                                                                                                                           )  
 };
 static struct test_config_s* mas_cfg = &test_configs[0];
 static char event_report_body_object[300];
@@ -390,7 +403,6 @@ static void mas_init_test_cases(struct test_set_config* cfg) {
     cfg_start_index = 0;
     one_object_more_or_less = 0;
 
-    ListingSize = mas_cfg->obj_count + one_object_more_or_less;
     cfg_MAP_MSE_MMD_BV_02_I_getMsgListng_counter = 0;
 //    cfg->fp_print_test_config(cfg);
 }
@@ -544,19 +556,22 @@ static size_t body_msg(char* msg_buffer, uint16_t index, size_t maxsize) {
             "<msg handle=\"A%X\""
             " type=\"%s\""
             " read=\"%s\""
+            " direction=\"%s\""
             " subject=\"Sbjct\""
             " datetime=\"20140705T092200+0100\" sender_name=\"Jonas\""
             " sender_addressing=\"1@bla.net\" recipient_addressing=\"\""
             " size=\"512\" attachment_size=\"123\" priority=\"no\""
-            
-            " sent=\"yes\" protected=\"no\""
+
+            " sent=\"no\" protected=\"no\""
             " conversation_id=\"E1E2E3E4\"" // "E1" is to short for PTS but happy with "E1E2E3E4\"
-            " direction=\"outgoingdraft\""
-            " attachment_mime_types=\"video/mpeg\"/>" // PTS wants this in MAP/MSE/MMD/BV-02, otherwise "no EMAIL message in message listing"
+
+            //" attachment_mime_types=\"video/mpeg\"" // PTS wants this in MAP/MSE/MMD/BV-02, otherwise "no EMAIL message in message listing"
+            "/>"
             ,
             index,
             mas_cfg->objects[index],
-            mas_cfg->msg_stati[index] ? "yes" : "no"
+            mas_cfg->msg_stati[index] ? "yes" : "no",
+            map_server_get_folder_msglistingdir(request_path)
         );
     return size;
 }
@@ -578,7 +593,8 @@ static size_t body_msg_short(char* msg_buffer, uint16_t index, size_t maxsize) {
             //" sent=\"yes\" protected=\"no\""
             //" conversation_id=\"E1E2E3E4\"" // "E1" is to short for PTS but happy with "E1E2E3E4\"
             //" direction=\"incoming\""
-            //" attachment_mime_types=\"video/mpeg\"/>" // PTS wants this in MAP/MSE/MMD/BV-02, otherwise "no EMAIL message in message listing"
+            //" attachment_mime_types=\"video/mpeg\"" // PTS wants this in MAP/MSE/MMD/BV-02, otherwise "no EMAIL message in message listing"
+            "/>"
             ,
             index,
             mas_cfg->objects[index],
@@ -973,6 +989,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             APP_READ_16(packet, &pos, &current_map_cid);
                             APP_READ_16(packet, &pos, &max_list_count);
                             APP_READ_16(packet, &pos, &start_index);
+                            ListingSize = mas_cfg->obj_count + one_object_more_or_less;
                             map_server_set_response_app_param(current_map_cid, MAP_APP_PARAM_ListingSize, &ListingSize);
                             map_server_set_response_type_and_name(current_map_cid, "", "x-obex/folder-listing");
                             MAP_PRINTF("[+] Get Folder listing\n");
@@ -985,17 +1002,22 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             APP_READ_16(packet, &pos, &max_list_count);
                             APP_READ_16(packet, &pos, &start_index);
                             APP_READ_STR(packet, &pos, sizeof(request_name), request_name);
+
+                            request_path = request_name;
                             folder_msg_deleted = (0 == strcmp(request_name, "deleted"))?true:false;
                             uint8_t tmp_NewMessage = 0;
                             char MSETime[] = "20140612T105430+0100";
-                            map_server_set_response_app_param(current_map_cid, MAP_APP_PARAM_NewMessage, &tmp_NewMessage);
-                            // needs ro be present for MAP/MSE/MMB/BV-35
-                            map_server_set_response_app_param(current_map_cid, MAP_APP_PARAM_MSETime, &MSETime[0]);
-                            map_server_set_response_app_param(current_map_cid, MAP_APP_PARAM_ListingSize, &ListingSize);
-                            map_server_set_response_app_param(current_map_cid, MAP_APP_PARAM_DatabaseIdentifier, DatabaseIdentifier);
-                            map_server_set_response_app_param(current_map_cid, MAP_APP_PARAM_FolderVersionCounter, FolderVersionCounter);
+                            if (continuation == 0) {
+                                ListingSize = mas_cfg->obj_count + one_object_more_or_less;
+                                map_server_set_response_app_param(current_map_cid, MAP_APP_PARAM_NewMessage, &tmp_NewMessage);
+                                // needs ro be present for MAP/MSE/MMB/BV-35
+                                map_server_set_response_app_param(current_map_cid, MAP_APP_PARAM_MSETime, &MSETime[0]);
+                                map_server_set_response_app_param(current_map_cid, MAP_APP_PARAM_ListingSize, &ListingSize);
+                                map_server_set_response_app_param(current_map_cid, MAP_APP_PARAM_DatabaseIdentifier, DatabaseIdentifier);
+                                map_server_set_response_app_param(current_map_cid, MAP_APP_PARAM_FolderVersionCounter, FolderVersionCounter);
+                            }
                             map_server_set_response_type_and_name(current_map_cid, "", "x-bt/MAP-msg-listing");
-
+                            
                             if (cfg_start_index != 0) {
                                 start_index = cfg_start_index;
                             }
@@ -1073,6 +1095,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             uint8_t Charset;
                             uint8_t ModifyText;
                             mas_uint64hex_t MessageHandle;
+                            char new_handle[3]; // A0\0
                             APP_READ_16(packet, &pos, &current_map_cid);
                             APP_READ_08(packet, &pos, &OBEX_opcode);
                             APP_READ_08(packet, &pos, &Charset);
@@ -1082,7 +1105,8 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             APP_READ_STR(packet, &pos, sizeof(request_name), request_name);
 
                             MAP_PRINTF("[+] Put Message Charset:%u Attachment:%u MessageHandle:%s\n", Charset, Attachment, MessageHandle);
-                            map_server_set_response_type_and_name(current_map_cid, "A0", NULL);
+                            snprintf(new_handle, sizeof(new_handle), "A%u", mas_cfg->obj_count + one_object_more_or_less - cfg_start_index);
+                            map_server_set_response_type_and_name(current_map_cid, new_handle, NULL);
                             map_server_send_response(current_map_cid, OBEX_RESP_SUCCESS, 0, 0, NULL);
 
                             if (mas_cfg->fPutMsg != NULL)
@@ -1153,6 +1177,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             APP_READ_STR(packet, &pos, sizeof(EndFilterPeriodEnd), (char*)EndFilterPeriodEnd);
                             APP_READ_STR(packet, &pos, sizeof(EndFilterPeriodEnd), (char*)FilterRecipient);
                             APP_READ_STR(packet, &pos, sizeof(ConversationID), (char *) ConversationID);
+                            ListingSize = mas_cfg->obj_count + one_object_more_or_less;
                             map_server_set_response_app_param(current_map_cid, MAP_APP_PARAM_DatabaseIdentifier, DatabaseIdentifier);
                             map_server_set_response_app_param(current_map_cid, MAP_APP_PARAM_ListingSize, &ListingSize);
                             if (max_list_count == 0) {
