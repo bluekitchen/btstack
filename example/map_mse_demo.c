@@ -128,6 +128,7 @@ struct objconfig_s {
 
 };
 
+// forward declared functions
 static size_t body_msg(char* msg_buffer, uint16_t index, size_t maxsize);
 static size_t body_msg_short(char* msg_buffer, uint16_t index, size_t maxsize);
 static size_t body_msg_email_1_1(char* msg_buffer, uint16_t index, size_t maxsize);
@@ -135,6 +136,7 @@ static size_t body_msg_email_1_1(char* msg_buffer, uint16_t index, size_t maxsiz
 static size_t body_convo(char* msg_buffer, uint16_t index, size_t maxsize);
 static size_t PRINT_bmessage(char* msg_buffer, uint16_t index, size_t maxsize);
 static void select_event_report_n(int er);
+static void MSE_MMU_BV_02_ClConn_Timer(void);
 
 
 static int cfg_start_index = 0;
@@ -190,6 +192,22 @@ static void emit_report(void) {
     map_notification_client_send_event(mnc.cid, 0, (uint8_t*)body, strlen(body));
     MAP_PRINTF("map_notification_client_send_event mnc.cid:%04x [%s]", mnc.cid, body);
     log_debug("sent the EventReport");
+}
+
+static btstack_timer_source_t event_report_timer;
+static int count;
+static void gen_event_report_timer_handler(btstack_timer_source_t* ts) {
+    log_debug("Timer count:%d", count);
+    if (count-- > 0) {
+        // Re-Arm Timer
+        btstack_run_loop_set_timer(ts, 1000);
+        btstack_run_loop_add_timer(ts);
+        emit_report();
+    }
+    else {
+        btstack_run_loop_remove_timer(ts);
+        log_debug("Timer removed");
+    }
 }
 
 static void MAP_MSE_MMD_BV_05_PutMsg(void) {
@@ -368,8 +386,8 @@ TC_RFCOM(.descr = "MAP/MSE/MFMH/BV-01..05"                               ,.obj_c
 TC_NORM( .descr = "MAP/MSE/MFB/BV-02 05 07"                              ,.obj_count = 0, .objects = { ""                                         }                                                      ,                                                                                                                                           )
 TC_L2CAP(.descr = "MAP/MSE/GOEP/SRM/BI-02..08 MAP_OLD"                   ,.obj_count = 5, .objects = { "EMAIL","SMS_GSM","SMS_CDMA", "MMS", ""    }                                                      ,.helpstr = "WIP: MAP_OLD only. PTS 8.6.1 MAP_NEW & L2CAP bug: claims to send a PUT but doesnt. could be consolidated into tc #0 otherwise" )
 TC_L2CAP(.descr = "MAP/MSE/GOEP/SRMP/BI-02-C"                            ,.obj_count = 9, .objects = { "IM"                                       }                                                      ,                                                                                                                                           )
-TC_NORM( .descr = "MAP/MSE/MMN/BV-02-C   Press <e>" , .type = &nm_v1_0   ,.obj_count = 1, .objects = { "EMAIL", "SMS_GSM", "SMS_CDMA", "MMS", "IM"}/*,.fClConn = emit_report, .fClOpCompl= emit_report */,.helpstr = "Generate the requested event reports by pressing <e> when PTS asks for"                                                        )
-TC_NORM( .descr = "MAP/MSE/MMN/BV-04..06 Press <e>" , .type = &nm_v1_1   ,.obj_count = 1, .objects = { "EMAIL", "SMS_GSM", "SMS_CDMA", "MMS", "IM"}                                                      ,                                                                                                                                           )
+TC_NORM( .descr = "MAP/MSE/MMN/BV-02-C   Press <e>" , .type = &nm_v1_0   ,.obj_count = 5, .objects = { "EMAIL", "SMS_GSM", "MMS", "IM", "SMS_CDMA"}, .fClConn = MSE_MMU_BV_02_ClConn_Timer               ,.helpstr = "Generate the requested event reports by pressing <e> when PTS asks for")
+TC_NORM( .descr = "MAP/MSE/MMN/BV-04..06 Press <e>" , .type = &nm_v1_1   ,.obj_count = 5, .objects = { "EMAIL", "SMS_GSM", "MMS", "IM", "SMS_CDMA"}, .fClConn = MSE_MMU_BV_02_ClConn_Timer               ,                                                                                                                                           )
 TC_NORM( .descr = "MAP/MSE/MMN/BV-07     Press <e>" , .type = &nm_v1_2   ,.obj_count = 1, .objects = { "EMAIL"                                    }, .fClConn = emit_report                              ,                                                                                                                                           )
 TC_NORM( .descr = "MAP/MSE/MMN/BV-08..09 Press <e>" , .type = &ed_v1_2   ,.obj_count = 1, .objects = { "IM"                                       }, .fClConn = emit_report                              ,                                                                                                                                           )
 TC_NORM( .descr = "MAP/MSE/MMN/BV-10, 15 Press <e>" , .type = &pp_v1_2   ,.obj_count = 1, .objects = { ""                                         }, .fClConn = emit_report                              ,                                                                                                                                           )
@@ -384,6 +402,14 @@ static char event_report_body_object[300];
 static struct test_config_s* evt_cfg = &test_configs[0];
 static int evtcfg_start_index = 0;
 static int curent_event_type = 0;
+
+static void MSE_MMU_BV_02_ClConn_Timer(void) {
+    count = evt_cfg->obj_count;
+    btstack_run_loop_set_timer_handler(&event_report_timer, gen_event_report_timer_handler);
+    btstack_run_loop_set_timer(&event_report_timer, 1000);
+    btstack_run_loop_add_timer(&event_report_timer);
+    log_debug("Timer set count:%d times", count);
+}
 
 static void mas_init_event_report(void) {
 
