@@ -170,9 +170,9 @@ static pacs_record_t sink_pac_records[] = {
             // all metadata set
             .metadata_mask = 0x0FFE,
             // (2) preferred_audio_contexts_mask
-            .preferred_audio_contexts_mask = LE_AUDIO_CONTEXT_MASK_UNSPECIFIED,
+            .preferred_audio_contexts_mask = LE_AUDIO_CONTEXT_MASK_UNSPECIFIED | LE_AUDIO_CONTEXT_MASK_CONVERSATIONAL | LE_AUDIO_CONTEXT_MASK_MEDIA,
             // (2) streaming_audio_contexts_mask
-            .streaming_audio_contexts_mask = LE_AUDIO_CONTEXT_MASK_UNSPECIFIED,
+            .streaming_audio_contexts_mask = LE_AUDIO_CONTEXT_MASK_UNSPECIFIED | LE_AUDIO_CONTEXT_MASK_CONVERSATIONAL | LE_AUDIO_CONTEXT_MASK_MEDIA,
         }
     }
 };
@@ -204,9 +204,9 @@ static pacs_record_t source_pac_records[] = {
             // all metadata set
             .metadata_mask = 0x0FFE,
             // (2) preferred_audio_contexts_mask
-            .preferred_audio_contexts_mask = LE_AUDIO_CONTEXT_MASK_UNSPECIFIED,
+            .preferred_audio_contexts_mask = LE_AUDIO_CONTEXT_MASK_UNSPECIFIED | LE_AUDIO_CONTEXT_MASK_CONVERSATIONAL | LE_AUDIO_CONTEXT_MASK_MEDIA,
             // (2) streaming_audio_contexts_mask
-            .streaming_audio_contexts_mask = LE_AUDIO_CONTEXT_MASK_UNSPECIFIED,
+            .streaming_audio_contexts_mask = LE_AUDIO_CONTEXT_MASK_UNSPECIFIED | LE_AUDIO_CONTEXT_MASK_CONVERSATIONAL | LE_AUDIO_CONTEXT_MASK_MEDIA,
         }
     }
 };
@@ -342,12 +342,13 @@ static void start_advertising(void) {
 
 void setup_pacs(uint8_t audio_location_mask) {
     // PACS Server
+    uint16_t audio_contexts = LE_AUDIO_CONTEXT_MASK_UNSPECIFIED | LE_AUDIO_CONTEXT_MASK_CONVERSATIONAL | LE_AUDIO_CONTEXT_MASK_MEDIA;
     // - sinks
     sink_node.records_num = 1;
     sink_node.records = &sink_pac_records[0];
     sink_node.audio_locations_mask = audio_location_mask;
-    sink_node.available_audio_contexts_mask = LE_AUDIO_CONTEXT_MASK_UNSPECIFIED;
-    sink_node.supported_audio_contexts_mask = LE_AUDIO_CONTEXT_MASK_UNSPECIFIED;
+    sink_node.available_audio_contexts_mask = audio_contexts;
+    sink_node.supported_audio_contexts_mask = audio_contexts;
     uint8_t channel_count_mask = LE_AUDIO_CODEC_AUDIO_CHANNEL_COUNT_MASK_1;
     if (audio_location_mask == (LE_AUDIO_LOCATION_MASK_FRONT_LEFT | LE_AUDIO_LOCATION_MASK_FRONT_RIGHT)){
         channel_count_mask = LE_AUDIO_CODEC_AUDIO_CHANNEL_COUNT_MASK_2;
@@ -360,8 +361,8 @@ void setup_pacs(uint8_t audio_location_mask) {
     source_node.records_num = 1;
     source_node.records = &source_pac_records[0];
     source_node.audio_locations_mask = 1;
-    source_node.available_audio_contexts_mask = LE_AUDIO_CONTEXT_MASK_UNSPECIFIED;
-    source_node.supported_audio_contexts_mask = LE_AUDIO_CONTEXT_MASK_UNSPECIFIED;
+    source_node.available_audio_contexts_mask = audio_contexts;
+    source_node.supported_audio_contexts_mask = audio_contexts;
 #endif
 
     published_audio_capabilities_service_server_init(&sink_node, sources);
