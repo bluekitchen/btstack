@@ -321,8 +321,9 @@ static void pacs_client_emit_pac(pacs_client_connection_t * connection, le_audio
         return;
     }
 
-    uint8_t event[6 + 5 + 10 + 6 * 2 + 5 + 4];
-    uint8_t event_size = sizeof(event);
+    // TODO: avoid out-of-bounds write. calculate size for serialized meta data, check remaining space before serialize
+    uint8_t event[257];
+    uint16_t event_size = sizeof(event);
 
     event[0] = HCI_EVENT_LEAUDIO_META;
     event[1] = sizeof(event) - 2;
