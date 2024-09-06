@@ -908,4 +908,6 @@ void hci_transport_h5_enable_bcsp_mode(void){
     hci_transport_bcsp_mode = 1;
 }
 
+#else
+typedef int _fix_empty_translation_unit_warnig;
 #endif
