@@ -773,5 +773,6 @@ uint8_t coordinated_set_identification_service_server_simulate_member_connected(
     return ERROR_CODE_SUCCESS;
 }
 
+#else
+typedef int _fix_empty_translation_unit_wanrning;
 #endif
-
