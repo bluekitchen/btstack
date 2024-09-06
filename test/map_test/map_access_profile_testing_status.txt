@@ -194,6 +194,7 @@ MAP/MSE/MMN/BV-02-C: RE-PASS (2024-09-05) PTS 8.7.0 INFO: added timer to generat
 MAP/MSE/MMN/BV-03-C: RE-PASS (2024-09-05) PTS 8.7.0 INFO: added timer to generate the 5 event reports fully automatically every second
 MAP/MSE/MMD/BV-02-C: FAIL - Regression/New Bug in PTS 8.7.0, PASS in 8.6.1, MAP/MSE/MMD/BV-05-C is passing with the same code and data (fails after receiving the response to GET MAP-message-listing from the example in spec MAP_v1.4.2.pdf page 38 bottom "- No handle found.")
 MAP/MSE/MMN/BV-xx: RE-PASS (2024-09-05) PTS 8.7.0, no manual intervention required anymore
+MAP/MSE/GOEP/SRMP/BV-02-C: PASS (2024-09-06) PTS 8.7.0
 
 TODO:
 rename map_server_ to map_access_server_
