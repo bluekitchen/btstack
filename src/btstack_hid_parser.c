@@ -211,7 +211,7 @@ bool btstack_hid_descriptor_iterator_has_more(btstack_hid_descriptor_iterator_t 
     return iterator->item_ready;
 }
 
-const hid_descriptor_item_t * const btstack_hid_descriptor_iterator_get_item(btstack_hid_descriptor_iterator_t * iterator){
+const hid_descriptor_item_t * btstack_hid_descriptor_iterator_get_item(btstack_hid_descriptor_iterator_t * iterator){
     iterator->descriptor_pos += iterator->descriptor_item.item_size;
     iterator->item_ready = false;
     return &iterator->descriptor_item;
