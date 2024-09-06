@@ -190,11 +190,13 @@ MAP/MSE/MMD/BV-05-C: RE-PASS (2024-09-03) PTS 8.6.1 & L2CAP & MAP_NEW, INFO: re-
 MAP/MSE/MMU/BV-02-C: RE-TEST (2024-09-04) PTS 8.6.1 & RFCOM: PASS with all types 1/2/4/8/16, WARNING: PTS 8.7.0 passes types 1/2/8/16 and fails with type 4)
 MAP/MSE/MMU/BV-02-C: FAIL (2024-09-04) PTS 8.7.0 INFO: passes types 1/2/8/16/4, finally checks the GET message-listing content and fails with "Failed to respond to SetPath"
 MAP/MSE/MMU/BV-03-C: FAIL (2024-09-04) PTS 8.7.0 INFO: passes types 1/2, finally checks the GET message-listing content and fails with "Failed to respond to SetPath"
-MAP/MSE/MMN/BV-02-C: RE_PASS (2024-09-05) PTS 8.7.0 INFO: added timer to generate the 5 event reports fully automatically every second
-MAP/MSE/MMN/BV-03-C: RE_PASS (2024-09-05) PTS 8.7.0 INFO: added timer to generate the 5 event reports fully automatically every second
+MAP/MSE/MMN/BV-02-C: RE-PASS (2024-09-05) PTS 8.7.0 INFO: added timer to generate the 5 event reports fully automatically every second
+MAP/MSE/MMN/BV-03-C: RE-PASS (2024-09-05) PTS 8.7.0 INFO: added timer to generate the 5 event reports fully automatically every second
 MAP/MSE/MMD/BV-02-C: FAIL - Regression/New Bug in PTS 8.7.0, PASS in 8.6.1, MAP/MSE/MMD/BV-05-C is passing with the same code and data (fails after receiving the response to GET MAP-message-listing from the example in spec MAP_v1.4.2.pdf page 38 bottom "- No handle found.")
+MAP/MSE/MMN/BV-xx: RE-PASS (2024-09-05) PTS 8.7.0, no manual intervention required anymore
 
 TODO:
+rename map_server_ to map_access_server_
 MAP/MSE/MMD/BV-02-C: FAIL - Regression/New Bug in PTS 8.7.0, PASS in 8.6.1, MAP/MSE/MMD/BV-05-C is passing with the same code and data (fails after receiving the response to GET MAP-message-listing from the example in spec MAP_v1.4.2.pdf page 38 bottom "- No handle found.")
 MAP/MSE/MMU/BV-02-C: FAIL PTS 8.7.0 INFO: passes types 1/2/8/16/4, finally checks the GET message-listing content and fails with "Failed to respond to SetPath"
 MAP/MSE/MMU/BV-03-C: FAIL PTS 8.7.0 INFO: passes types 1/2, finally checks the GET message-listing content and fails with "Failed to respond to SetPath"
