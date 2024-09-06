@@ -76,7 +76,8 @@ extern "C" {
 #endif /* btstack_assert */
 #else /* HAVE_ASSERT */
 #ifdef ENABLE_BTSTACK_ASSERT
-void btstack_assert_failed(const char * file, uint16_t line_nr);
+#include <stdnoreturn.h>
+noreturn void btstack_assert_failed(const char * file, uint16_t line_nr);
 #ifndef btstack_assert
 // use btstack macro that calls btstack_assert_failed() - provided by port
 #define btstack_assert(condition)         if (condition) {} else { btstack_assert_failed(BTSTACK_FILE__, __LINE__);  }
