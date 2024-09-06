@@ -2412,6 +2412,10 @@ void hfp_log_rfcomm_message(const char * tag, uint8_t * packet, uint16_t size){
     }
     printable[i] = 0;
     log_info("%s: '%s'", tag, printable);
+#else
+    UNUSED(tag);
+    UNUSED(packet);
+    UNUSED(size);
 #endif
 }
 
