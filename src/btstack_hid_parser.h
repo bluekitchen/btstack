@@ -209,7 +209,7 @@ bool btstack_hid_descriptor_iterator_has_more(btstack_hid_descriptor_iterator_t 
  * @param iterator
  * @return
  */
-const hid_descriptor_item_t * const btstack_hid_descriptor_iterator_get_item(btstack_hid_descriptor_iterator_t * iterator);
+const hid_descriptor_item_t * btstack_hid_descriptor_iterator_get_item(btstack_hid_descriptor_iterator_t * iterator);
 
 /**
  * @brief Returns if HID Descriptor was well formed
