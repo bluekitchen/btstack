@@ -49,7 +49,7 @@
 
 // UNUSED macro
 #ifndef UNUSED
-#define UNUSED(x) (void)(sizeof(x))
+#define UNUSED(x) (void)(x)
 #endif
 
 // TYPES
