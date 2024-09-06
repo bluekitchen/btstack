@@ -67,6 +67,7 @@ static const link_key_entry_t link_key_db[] = {
 		// Add new link keys here..
 };
 
+#ifdef ENABLE_LOG_INFO
 static char link_key_to_str_buffer[LINK_KEY_STR_LEN+1];  // 11223344556677889900112233445566\0
 static char *link_key_to_str(link_key_t link_key){
     char * p = link_key_to_str_buffer;
@@ -78,6 +79,7 @@ static char *link_key_to_str(link_key_t link_key){
     *p = 0;
     return (char *) link_key_to_str_buffer;
 }
+#endif
 
 static int sscanf_link_key(const char * link_key_string, link_key_t link_key){
     uint16_t pos;
@@ -118,6 +120,9 @@ static void link_key_db_delete_link_key(bd_addr_t bd_addr){
 
 
 static void link_key_db_put_link_key(bd_addr_t bd_addr, link_key_t link_key, link_key_type_t link_key_type){
+    UNUSED(bd_addr);
+    UNUSED(link_key);
+    UNUSED(link_key_type);
 	log_info("Please add the following line to btstack_link_key_db.c");
 	log_info("{ \"%s\", \"%s\", %u },\n", bd_addr_to_str(bd_addr), link_key_to_str(link_key), (int) link_key_type);
 }
