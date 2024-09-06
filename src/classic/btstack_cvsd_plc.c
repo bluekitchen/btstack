@@ -504,6 +504,7 @@ void btstack_cvsd_plc_process_data(btstack_cvsd_plc_state_t * plc_state, bool is
 }
 
 void btstack_cvsd_dump_statistics(btstack_cvsd_plc_state_t * state){
+    UNUSED(state);
     log_info("Good frames: %d\n", state->good_frames_nr);
     log_info("Bad frames: %d\n", state->bad_frames_nr);
     log_info("Zero frames: %d\n", state->zero_frames_nr);
