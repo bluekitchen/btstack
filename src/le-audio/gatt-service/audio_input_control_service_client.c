@@ -258,7 +258,7 @@ static void aics_client_emit_read_event(gatt_service_client_connection_t * conne
 
         default:
             btstack_assert(false);
-            break;
+            return;
     }
 
     if (att_status != ATT_ERROR_SUCCESS){
