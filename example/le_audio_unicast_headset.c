@@ -993,8 +993,9 @@ int btstack_main(int argc, const char * argv[]){
     // setup ATT server
     att_server_init(profile_data, NULL, NULL);
 
-    // gatt client
+    // GATT Client and GATT Service Client
     gatt_client_init();
+    gatt_service_client_init();
 
     // register for HCI events
     hci_event_callback_registration.callback = &packet_handler;
