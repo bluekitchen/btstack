@@ -72,6 +72,7 @@
 #include "mods/mod.h"
 #include "ble/att_db_util.h"
 #include "ble/att_server.h"
+#include "ble/gatt_service_client.h"
 #include "le_audio_demo_util_source.h"
 
 #include "le_audio_unicast_gateway.h"
@@ -1933,7 +1934,9 @@ int btstack_main(int argc, const char * argv[]){
     le_device_db_init();
     sm_init();
 
+    // setup GATT Client and GATT Service Client used by MCS Client
     gatt_client_init();
+    gatt_service_client_init();
 
     // SM
     sm_set_authentication_requirements(SM_AUTHREQ_SECURE_CONNECTION | SM_AUTHREQ_BONDING);
@@ -1945,7 +1948,6 @@ int btstack_main(int argc, const char * argv[]){
 
     // setup MCS
     media_control_service_server_init();
-
     media_control_service_server_register_generic_player(&generic_media_player.media_server,
                                                          &mcs_server_packet_handler, 0x1FFFFF,
                                                          &generic_media_player.id);
