@@ -109,14 +109,14 @@ void hearing_access_service_client_init(void);
  *
  * @param con_handle
  * @param packet_handler
- * @param has_connection
+ * @param connection
  * @param out_has_cid
  * @return status ERROR_CODE_SUCCESS on success, otherwise ERROR_CODE_COMMAND_DISALLOWED if there is already a client associated with con_handle, or BTSTACK_MEMORY_ALLOC_FAILED
  */
 uint8_t hearing_access_service_client_connect(
          hci_con_handle_t con_handle,
          btstack_packet_handler_t packet_handler,
-         has_client_connection_t * has_connection,
+         has_client_connection_t * connection,
          uint16_t * out_has_cid
 );
 
