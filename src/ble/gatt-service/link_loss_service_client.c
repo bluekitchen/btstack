@@ -374,6 +374,8 @@ uint8_t link_loss_service_client_connect(hci_con_handle_t con_handle,
     btstack_assert(lls_connection != NULL);
     btstack_assert(lls_characteristics_num == LINK_LOSS_SERVICE_CLIENT_NUM_CHARACTERISTICS);
 
+    *lls_cid = 0;
+
     lls_connection->state = LINK_LOSS_SERVICE_CLIENT_STATE_W4_CONNECTION;
     lls_connection->packet_handler = packet_handler;
 
@@ -386,6 +388,7 @@ uint8_t link_loss_service_client_connect(hci_con_handle_t con_handle,
 
     if (status == ERROR_CODE_SUCCESS){
         lls_client_add_connection(lls_connection);
+        *lls_cid = lls_connection->basic_connection.cid;
     }
 
     return status;

@@ -757,7 +757,9 @@ uint8_t media_control_service_client_connect_generic_player(hci_con_handle_t con
     uint16_t * mcs_cid){
 
     btstack_assert(mcs_client.characteristics_desc16_num > 0);
-    
+
+    *mcs_cid = 0;
+
     connection->state = MEDIA_CONTROL_SERVICE_CLIENT_STATE_W4_CONNECTION;
     connection->packet_handler = packet_handler;
 
@@ -769,6 +771,7 @@ uint8_t media_control_service_client_connect_generic_player(hci_con_handle_t con
 
     if (status == ERROR_CODE_SUCCESS){
         mcs_client_add_connection(connection);
+        *mcs_cid = connection->basic_connection.cid;
     }
 
     return status;
@@ -781,7 +784,9 @@ uint8_t media_control_service_client_connect_media_player(hci_con_handle_t con_h
     uint16_t * mcs_cid){
 
     btstack_assert(mcs_client.characteristics_desc16_num > 0);
-    
+
+    *mcs_cid = 0;
+
     connection->state = MEDIA_CONTROL_SERVICE_CLIENT_STATE_W4_CONNECTION;
     connection->packet_handler = packet_handler;
 
@@ -793,6 +798,7 @@ uint8_t media_control_service_client_connect_media_player(hci_con_handle_t con_h
 
     if (status == ERROR_CODE_SUCCESS){
         mcs_client_add_connection(connection);
+        *mcs_cid = connection->basic_connection.cid;
     }
 
     return status;

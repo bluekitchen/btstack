@@ -599,6 +599,7 @@ uint8_t microphone_control_service_client_connect(hci_con_handle_t con_handle,
     mics_connection->aics_connections_storage = NULL;
     mics_connection->aics_characteristics_storage = NULL;
     mics_connection->gatt_query_can_send_now_request.callback = &mics_client_run_for_connection;
+    *mics_cid = 0;
 
     if (aics_connections_num > 0){
         btstack_assert(aics_storage_for_characteristics != NULL);
@@ -621,6 +622,7 @@ uint8_t microphone_control_service_client_connect(hci_con_handle_t con_handle,
                                                                              mics_characteristics_num);
     if (status == ERROR_CODE_SUCCESS){
         mics_client_add_connection(mics_connection);
+        *mics_cid = mics_connection->basic_connection.cid;
     }
 
     return status;

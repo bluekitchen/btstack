@@ -935,6 +935,8 @@ uint8_t object_transfer_service_client_connect(
     btstack_assert(packet_handler != NULL);
     btstack_assert(connection != NULL);
 
+    *ots_cid = 0;
+
     connection->gatt_query_can_send_now.callback = &ots_client_run_for_connection;
     connection->le_cbm_connection.connection_handle = HCI_CON_HANDLE_INVALID;
     connection->le_cbm_connection.cid = 0;
@@ -950,6 +952,7 @@ uint8_t object_transfer_service_client_connect(
                                                                              OBJECT_TRANSFER_SERVICE_NUM_CHARACTERISTICS);
     if (status == ERROR_CODE_SUCCESS){
         ots_client_add_connection(connection);
+        *ots_cid = connection->basic_connection.cid;
     }
 
     return status;

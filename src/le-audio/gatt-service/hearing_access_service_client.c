@@ -568,6 +568,8 @@ uint8_t hearing_access_service_client_connect(hci_con_handle_t con_handle,
     btstack_assert(packet_handler != NULL);
     btstack_assert(connection != NULL);
 
+    *out_has_cid = 0;
+
     connection->events_packet_handler = packet_handler;
     connection->state = HEARING_ACCESS_SERVICE_CLIENT_STATE_W4_CONNECTION;
 
@@ -577,6 +579,7 @@ uint8_t hearing_access_service_client_connect(hci_con_handle_t con_handle,
                                                                              connection->characteristics_storage, HEARING_ACCESS_SERVICE_NUM_CHARACTERISTICS);
     if (status == ERROR_CODE_SUCCESS){
         has_client_add_connection(connection);
+        *out_has_cid = connection->basic_connection.cid;
     }
 
     return status;

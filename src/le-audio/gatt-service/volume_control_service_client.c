@@ -760,6 +760,8 @@ uint8_t volume_control_service_client_connect(hci_con_handle_t con_handle,
     btstack_assert(packet_handler != NULL);
     btstack_assert(vcs_connection != NULL);
 
+    *out_vcs_cid = 0;
+
     vcs_connection->packet_handler = packet_handler;
 
     vcs_connection->aics_connections_max_num = 0;
@@ -793,6 +795,7 @@ uint8_t volume_control_service_client_connect(hci_con_handle_t con_handle,
 
     if (status == ERROR_CODE_SUCCESS){
         vcs_client_add_connection(vcs_connection);
+        *out_vcs_cid = vcs_connection->basic_connection.cid;
     }
 
     return status;}

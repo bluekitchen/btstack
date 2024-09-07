@@ -258,6 +258,8 @@ uint8_t immediate_alert_service_client_connect(hci_con_handle_t con_handle,
     btstack_assert(ias_connection != NULL);
     btstack_assert(ias_characteristics_num == IMMEDIATE_ALERT_SERVICE_CLIENT_NUM_CHARACTERISTICS);
 
+    *ias_cid = 0;
+
     ias_connection->state = IMMEDIATE_ALERT_SERVICE_CLIENT_STATE_W4_CONNECTION;
     ias_connection->packet_handler = packet_handler;
 
@@ -270,6 +272,7 @@ uint8_t immediate_alert_service_client_connect(hci_con_handle_t con_handle,
 
     if (status == ERROR_CODE_SUCCESS){
         ias_client_add_connection(ias_connection);
+        *ias_cid = ias_connection->basic_connection.cid;
     }
 
     return status;

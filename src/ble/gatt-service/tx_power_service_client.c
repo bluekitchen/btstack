@@ -322,6 +322,8 @@ uint8_t tx_power_service_client_connect(hci_con_handle_t con_handle,
     btstack_assert(txps_connection != NULL);
     btstack_assert(txps_characteristics_num == TX_POWER_SERVICE_CLIENT_NUM_CHARACTERISTICS);
 
+    *txps_cid = 0;
+
     txps_connection->state = TX_POWER_SERVICE_CLIENT_STATE_W4_CONNECTION;
     txps_connection->packet_handler = packet_handler;
 
@@ -333,6 +335,7 @@ uint8_t tx_power_service_client_connect(hci_con_handle_t con_handle,
                                                                              txps_characteristics_num);
     if (status == ERROR_CODE_SUCCESS){
         txps_client_add_connection(txps_connection);
+        *txps_cid = txps_connection->basic_connection.cid;
     }
 
     return status;
