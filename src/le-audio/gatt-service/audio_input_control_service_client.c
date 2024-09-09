@@ -591,7 +591,8 @@ static void aics_client_run_for_connection(void * context){
 
     btstack_assert(connection != NULL);
     uint16_t value_length;
-    uint8_t * value;
+    // init value to NULL to avoid warning. it is set by aics_client_serialize_characteristic_value_for_write
+    uint8_t * value = NULL;
 
     switch (connection->state){
         case AUDIO_INPUT_CONTROL_SERVICE_CLIENT_STATE_W2_QUERY_CHANGE_COUNTER:
