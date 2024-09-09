@@ -430,7 +430,10 @@ uint8_t goep_server_register_service(btstack_packet_handler_t callback, uint8_t 
         if (service != NULL) {
             return L2CAP_SERVICE_ALREADY_REGISTERED;
         }
-    } 
+    }
+#else
+    UNUSED(l2cap_mtu);
+    UNUSED(l2cap_psm);
 #endif
 
     // alloc structure
