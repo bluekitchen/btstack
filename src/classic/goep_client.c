@@ -505,6 +505,10 @@ goep_client_connect(goep_client_t *goep_client, l2cap_ertm_config_t *l2cap_ertm_
     }
     goep_client->ertm_buffer_size = l2cap_ertm_buffer_size;
     goep_client->ertm_buffer = l2cap_ertm_buffer;
+#else
+    UNUSED(l2cap_ertm_buffer);
+    UNUSED(l2cap_ertm_config);
+    UNUSED(l2cap_ertm_buffer_size);
 #endif
     btstack_linked_list_add(&goep_clients, (btstack_linked_item_t *) goep_client);
 
@@ -788,7 +792,7 @@ uint16_t goep_client_body_get_outgoing_buffer_len(uint16_t goep_cid) {
         return 0;
     }
     return goep_client_get_outgoing_buffer_len(goep_client);
-};
+}
 
 void goep_client_body_fillup_static(uint16_t goep_cid, const uint8_t * data, uint32_t length, uint32_t * ret_length){
     goep_client_t * goep_client = goep_client_for_cid(goep_cid);
