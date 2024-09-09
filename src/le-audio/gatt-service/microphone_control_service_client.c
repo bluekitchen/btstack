@@ -74,7 +74,7 @@ typedef enum {
 } mics_client_characteristic_index_t;
 
 #ifdef ENABLE_TESTING_SUPPORT
-static char * mics_client_characteristic_name[] = {
+static const char * mics_characteristic_names[] = {
     "MUTE",
     "RFU"
 };
@@ -291,12 +291,7 @@ static void mics_client_packet_handler_internal(uint8_t packet_type, uint16_t ch
                     }
 
 #ifdef ENABLE_TESTING_SUPPORT
-                    {
-                        uint8_t i;
-                        for (i = MICS_CLIENT_CHARACTERISTIC_INDEX_MUTE; i < MICS_CLIENT_CHARACTERISTIC_INDEX_RFU; i++){
-                            printf("0x%04X %s\n", connection->basic_connection.characteristics[i].value_handle, mics_client_characteristic_name[i]);
-                        }
-                    };
+                    gatt_service_client_dump_characteristic_value_handles(&mics_client, &connection->basic_connection, mics_characteristic_names);
                     printf("\nMICS Client: Query AICS included services\n");
 #endif
                     // only look for included services if we can use them

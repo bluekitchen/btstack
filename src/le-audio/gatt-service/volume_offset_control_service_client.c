@@ -80,7 +80,7 @@ typedef enum {
 } vocs_client_characteristic_index_t;
 
 #ifdef ENABLE_TESTING_SUPPORT
-static char * vocs_client_characteristic_name[] = {
+static const char * vocs_characteristic_names[] = {
     "OFFSET_STATE",
     "AUDIO_LOCATION",
     "VOLUME_OFFSET_CONTROL_POINT",
@@ -397,13 +397,7 @@ static void vocs_client_packet_handler_internal(uint8_t packet_type, uint16_t ch
                     }
 
 #ifdef ENABLE_TESTING_SUPPORT
-                    {
-                        uint8_t i;
-                        for (i = VOCS_CLIENT_CHARACTERISTIC_INDEX_OFFSET_STATE; i < VOCS_CLIENT_CHARACTERISTIC_INDEX_RFU; i++){
-                            printf("    0x%04X %s\n", connection->basic_connection.characteristics[i].value_handle, vocs_client_characteristic_name[i]);
-
-                        }
-                    };
+                    gatt_service_client_dump_characteristic_value_handles(&vocs_client, &connection->basic_connection, vocs_characteristic_names);
                     printf("VOCS Client: Query input state to retrieve and cache change counter\n");
 #endif
                     

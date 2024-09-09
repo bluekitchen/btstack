@@ -129,6 +129,7 @@ typedef enum {
 
 extern const uint16_t tbs_characteristic_uuids[TBS_CHARACTERISTICS_NUM];
 
+#ifdef ENABLE_TESTING_SUPPORT
 /**
  * Converts a characteristic specified by a given index into a readable name
  *
@@ -136,6 +137,14 @@ extern const uint16_t tbs_characteristic_uuids[TBS_CHARACTERISTICS_NUM];
  * @return name of given characteristic index
  */
 const char *tbs_characteristic_index_to_name( tbs_characteristic_index_t index );
+
+/**
+ * Return list of characteristics names
+ *
+ * @return names of all characteristics
+ */
+const char ** tbs_get_characteristic_names(void);
+#endif
 
 /**
  * Given a characteristic by index returns the corresponding UUID

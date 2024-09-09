@@ -80,7 +80,7 @@ typedef enum {
 } has_client_characteristic_index_t;
 
 #ifdef ENABLE_TESTING_SUPPORT
-static char * has_client_characteristic_name[] = {
+static const char * has_characteristic_names[] = {
     "HEARING_AID_FEATURES",
     "HEARING_AID_PRESET_CONTROL_POINT",
     "ACTIVE_PRESET_INDEX",
@@ -400,12 +400,7 @@ static void has_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
                     }
 
 #ifdef ENABLE_TESTING_SUPPORT
-                    {
-                        uint8_t i;
-                        for (i = HAS_CLIENT_CHARACTERISTIC_INDEX_START_GROUP; i < HAS_CLIENT_CHARACTERISTIC_INDEX_RFU; i++){
-                            printf("0x%04X %s\n", connection->basic_connection.characteristics[i].value_handle, has_client_characteristic_name[i]);
-                        }
-                    };
+                    gatt_service_client_dump_characteristic_value_handles(&has_client, &connection->basic_connection, has_characteristic_names);
 #endif
 
                     if (connection->basic_connection.characteristics[HAS_CLIENT_CHARACTERISTIC_INDEX_HEARING_AID_FEATURES].value_handle == 0){

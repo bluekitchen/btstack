@@ -81,7 +81,7 @@ typedef enum {
 } vcs_client_characteristic_index_t;
 
 #ifdef ENABLE_TESTING_SUPPORT
-static char * vcs_client_characteristic_name[] = {
+static const char * vcs_characteristic_names[] = {
     "VOLUME_STATE",
     "VOLUME_CONTROL_POINT",
     "VOLUME_FLAGS",
@@ -321,12 +321,7 @@ static void vcs_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
                     }
 
 #ifdef ENABLE_TESTING_SUPPORT
-                    {
-                        uint8_t i;
-                        for (i = VCS_CLIENT_CHARACTERISTIC_INDEX_START_GROUP; i < VCS_CLIENT_CHARACTERISTIC_INDEX_RFU; i++){
-                            printf("0x%04X %s\n", connection->basic_connection.characteristics[i].value_handle, vcs_client_characteristic_name[i]);
-                        }
-                    };
+                    gatt_service_client_dump_characteristic_value_handles(&vcs_client, &connection->basic_connection, vcs_characteristic_names);
 #endif
 
                     if (connection->basic_connection.characteristics[VCS_CLIENT_CHARACTERISTIC_INDEX_VOLUME_STATE].value_handle == 0){

@@ -75,7 +75,7 @@ typedef enum {
 } txps_client_characteristic_index_t;
 
 #ifdef ENABLE_TESTING_SUPPORT
-static char * txps_client_characteristic_name[] = {
+static const char * txps_characteristic_names[] = {
     "TX_POWER_LEVEL",
     "RFU"
 };
@@ -215,14 +215,7 @@ static void txps_client_packet_handler_internal(uint8_t packet_type, uint16_t ch
                     btstack_assert(connection != NULL);
 
 #ifdef ENABLE_TESTING_SUPPORT
-                    {
-                        uint8_t i;
-                        for (i = TXPS_CLIENT_CHARACTERISTIC_INDEX_TX_POWER_LEVEL;
-                             i < TXPS_CLIENT_CHARACTERISTIC_INDEX_RFU; i++) {
-                            printf("0x%04X %s\n", connection->basic_connection.characteristics[i].value_handle,
-                                   txps_client_characteristic_name[i]);
-                        }
-                    };
+                    gatt_service_client_dump_characteristic_value_handles(&txps_client, &connection->basic_connection, txps_characteristic_names);
 #endif
                     status = gattservice_subevent_client_connected_get_status(packet);
                     txps_client_connected(connection, status, packet, size);

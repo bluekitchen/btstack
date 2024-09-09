@@ -111,6 +111,10 @@ static const char * tbs_characteristic_names[TBS_CHARACTERISTICS_NUM] = {
 //    "RFU"
 };
 
+const char ** tbs_get_characteristic_names(void){
+    return tbs_characteristic_names;
+}
+
 const char *tbs_characteristic_index_to_name( tbs_characteristic_index_t index ) {
     btstack_assert( index < TBS_CHARACTERISTICS_NUM );
     return tbs_characteristic_names[index];

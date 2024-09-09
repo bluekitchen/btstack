@@ -120,7 +120,7 @@ typedef enum {
 } mcs_client_characteristic_index_t;
 
 #ifdef ENABLE_TESTING_SUPPORT
-static char * mcs_client_characteristic_name[] = {
+static const char * mcs_characteristic_names[] = {
     "MEDIA_PLAYER_NAME",
     "MEDIA_PLAYER_ICON_OBJECT_ID",
     "MEDIA_PLAYER_ICON_URI",
@@ -593,17 +593,7 @@ static void mcs_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
                     }
                     
 #ifdef ENABLE_TESTING_SUPPORT
-                    {
-                        uint8_t i;
-                        for (i = MCS_CLIENT_CHARACTERISTIC_INDEX_MEDIA_PLAYER_NAME; i < MCS_CLIENT_CHARACTERISTIC_INDEX_RFU; i++){
-                            printf("0x%04X %s\n", connection->basic_connection.characteristics[i].value_handle, mcs_client_characteristic_name[i]);
-
-                        }
-                    };
-#endif
-                    
-
-#ifdef ENABLE_TESTING_SUPPORT
+                    gatt_service_client_dump_characteristic_value_handles(&mcs_client, &connection->basic_connection, mcs_characteristic_names);
                     printf("\nMCS Client: Query OTS included service\n");
 #endif
                     connection->state = MEDIA_CONTROL_SERVICE_CLIENT_STATE_W2_QUERY_INCLUDED_SERVICES;

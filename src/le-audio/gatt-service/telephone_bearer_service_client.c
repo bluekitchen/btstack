@@ -489,12 +489,8 @@ static void tbs_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
                     }
                     
 #ifdef ENABLE_TESTING_SUPPORT
-                    {
-                        for (int i = 0; i < TBS_CHARACTERISTICS_NUM; i++){
-                            printf("    %#06x %s\n", connection->basic_connection.characteristics[i].value_handle, tbs_characteristic_index_to_name(i));
-
-                        }
-                    };
+                    gatt_service_client_dump_characteristic_value_handles(&tbs_client, &connection->basic_connection,
+                                                                          tbs_get_characteristic_names());
                     printf("TBS Client: connected\n");
 #endif                   
                     tbs_client_connected(connection, ERROR_CODE_SUCCESS);

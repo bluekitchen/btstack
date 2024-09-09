@@ -82,7 +82,7 @@ typedef enum {
 } aics_client_characteristic_index_t;
 
 #ifdef ENABLE_TESTING_SUPPORT
-static char * aics_client_characteristic_name[] = {
+static const char * aics_characteristic_names[] = {
     "AUDIO_INPUT_STATE",
     "GAIN_SETTINGS_ATTRIBUTE",
     "AUDIO_INPUT_TYPE",
@@ -438,13 +438,7 @@ static void aics_client_packet_handler_internal(uint8_t packet_type, uint16_t ch
                     }
 
 #ifdef ENABLE_TESTING_SUPPORT
-                    {
-                        uint8_t i;
-                        for (i = AICS_CLIENT_CHARACTERISTIC_INDEX_AUDIO_INPUT_STATE; i < AICS_CLIENT_CHARACTERISTIC_INDEX_RFU; i++){
-                            printf("    0x%04X %s\n", connection->basic_connection.characteristics[i].value_handle, aics_client_characteristic_name[i]);
-
-                        }
-                    };
+                    gatt_service_client_dump_characteristic_value_handles(&aics_client, &connection->basic_connection, aics_characteristic_names);
                     printf("AICS Client: Query input state to retrieve and cache change counter\n");
 #endif
                     if (connection->basic_connection.characteristics[AICS_CLIENT_CHARACTERISTIC_INDEX_AUDIO_INPUT_STATE].value_handle == 0){
