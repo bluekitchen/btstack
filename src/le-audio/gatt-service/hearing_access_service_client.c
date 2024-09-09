@@ -403,7 +403,7 @@ static void has_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
                     {
                         uint8_t i;
                         for (i = HAS_CLIENT_CHARACTERISTIC_INDEX_START_GROUP; i < HAS_CLIENT_CHARACTERISTIC_INDEX_RFU; i++){
-                            printf("0x%04X %s\n", connection_helper->characteristics[i].value_handle, has_client_characteristic_name[i]);
+                            printf("0x%04X %s\n", connection->basic_connection.characteristics[i].value_handle, has_client_characteristic_name[i]);
                         }
                     };
 #endif

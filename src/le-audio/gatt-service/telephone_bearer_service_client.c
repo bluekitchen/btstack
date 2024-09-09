@@ -491,7 +491,7 @@ static void tbs_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
 #ifdef ENABLE_TESTING_SUPPORT
                     {
                         for (int i = 0; i < TBS_CHARACTERISTICS_NUM; i++){
-                            printf("    %#06x %s\n", connection_helper->characteristics[i].value_handle, tbs_characteristic_index_to_name(i));
+                            printf("    %#06x %s\n", connection->basic_connection.characteristics[i].value_handle, tbs_characteristic_index_to_name(i));
 
                         }
                     };
