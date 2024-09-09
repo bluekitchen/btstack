@@ -755,44 +755,7 @@ static void has_server_can_send_now(void * context) {
     has_preset_record_t *preset;
 
     if ((connection->scheduled_control_point_notification_tasks & HAS_CONNECTION_TASK_SEND_CHANGED_PRESETS_ON_RECONNECT) > 0u) {
-        preset = has_server_preset_iterator_get_next(connection, &is_last_preset_record);
-        uint8_t value[6 + HAS_PRESET_RECORD_NAME_MAX_LENGTH];
-        uint8_t pos = 0;
-        value[pos++] = (uint8_t) HAS_OPCODE_PRESET_CHANGED;
-
-        switch (preset->index) {
-            case 8:
-                is_last_preset_record = true;
-                value[0] = preset->index;
-                att_server_notify(connection->con_handle, has_active_preset_index_value_handle, &value[0], pos);
-                break;
-            case 3:
-            case 6:
-            case 7:
-                break;
-            default:
-                value[pos++] = (uint8_t) HAS_CHANGEID_GENERIC_UPDATE;
-                value[pos++] = is_last_preset_record ? 1u : 0u;
-                value[pos++] = prev_index;
-
-                value[pos++] = preset->index;
-                value[pos++] = preset->properties;
-
-                uint16_t mtu = att_server_get_mtu(connection->con_handle);
-                btstack_assert(mtu > (pos + 3));
-                uint16_t available_payload_size = mtu - 3 - pos;
-                uint16_t name_len = btstack_min(available_payload_size, strlen(preset->name) + 1);
-                btstack_strcpy((char *) &value[pos], name_len, preset->name);
-                pos += name_len;
-                (void) att_server_indicate(connection->con_handle, has_control_point_value_handle, &value[0], pos);
-                break;
-        }
-
-        if (is_last_preset_record) {
-            connection->scheduled_control_point_notification_tasks = 0u;
-        } else {
-            has_server_schedule_preset_record_task();
-        }
+        connection->scheduled_control_point_notification_tasks = 0u;
         return;
 
     } else if ((connection->scheduled_control_point_notification_tasks & HAS_CONNECTION_TASK_READ_PRESETS) > 0u) {
@@ -824,6 +787,8 @@ static void has_server_can_send_now(void * context) {
         return;
 
     } else {
+        // avoid uninitialized warning
+        prev_index = 0;
         preset = has_read_presets_operation_get_changed_preset_record(connection, &is_last_preset_record, &prev_index);
         if (!preset){
             return;
