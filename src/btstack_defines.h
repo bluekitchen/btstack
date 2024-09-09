@@ -4491,6 +4491,18 @@ typedef uint8_t sm_key_t[16];
  */
 #define GATTSERVICE_SUBEVENT_IAS_SERVER_STOP_ALERTING                                     0x2Cu
 
+/**
+ * @format 1H1TTTT
+ * @param subevent_code
+ * @param con_handle
+ * @param att_status
+ * @param label
+ * @param device_id
+ * @param issuer
+ * @param authority
+ */
+#define GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_UDI_FOR_MEDICAL_DEVICES   0x01u
+
 // LE Audio
 
 /**
