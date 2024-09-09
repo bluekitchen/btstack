@@ -1360,7 +1360,7 @@ void gatt_client_listen_for_service_characteristic_value_updates(gatt_client_ser
     notification->service_id = 0;
     notification->connection_id = 0;
     btstack_linked_list_add(&gatt_client_value_listeners, (btstack_linked_item_t*) notification);
-};
+}
 
 /**
  * @brief Stop listening to characteristic value updates for registered service with
