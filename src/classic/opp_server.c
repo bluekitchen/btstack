@@ -206,6 +206,8 @@ void opp_server_create_sdp_record(uint8_t *service, uint32_t service_record_hand
     // 0x0200 "GOEP L2CAP PSM"
     de_add_number(service, DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_GOEP_L2CAP_PSM);
     de_add_number(service, DE_UINT, DE_SIZE_16, l2cap_psm);
+#else
+    UNUSED(l2cap_psm);
 #endif
 
     // 0x0314 "Supported Formats List" - DES of Uint8
