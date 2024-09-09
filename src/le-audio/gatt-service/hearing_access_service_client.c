@@ -271,7 +271,7 @@ static void has_client_emit_read_event(has_client_connection_t * connection, uin
         
         default:
             btstack_assert(false);
-            break;
+            return;
     }
 
     if (att_status != ATT_ERROR_SUCCESS){
