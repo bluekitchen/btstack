@@ -312,6 +312,7 @@ static void map_access_client_handle_can_send_now(uint16_t goep_cid) {
 
             // status
             log_info("Path element '%s', done %u", path_element, done);
+            UNUSED(done);
 
             goep_client_request_create_set_path(map_access_client->goep_client.cid, 1 << 1); // Don’t create directory
             goep_client_header_add_name(map_access_client->goep_client.cid, (const char *) path_element); // next element
