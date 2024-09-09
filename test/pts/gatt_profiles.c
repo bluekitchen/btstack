@@ -468,6 +468,7 @@ int btstack_main(void)
     // setup device information service
     device_information_service_server_init();
     device_information_service_server_set_pnp_id(1, BLUETOOTH_COMPANY_ID_BLUEKITCHEN_GMBH, 0x0001, 0x001);
+    device_information_service_server_set_udi_for_medical_devices("label", "device_id", "issuer", "authority");
     
     tx_power_service_server_init(20);
 
