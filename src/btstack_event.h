@@ -14149,6 +14149,34 @@ static inline uint8_t gattservice_subevent_ias_server_stop_alerting_get_timeout(
 }
 
 /**
+ * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_UDI_FOR_MEDICAL_DEVICES
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t gattservice_subevent_device_information_udi_for_medical_devices_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field att_status from event GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_UDI_FOR_MEDICAL_DEVICES
+ * @param event packet
+ * @return att_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_device_information_udi_for_medical_devices_get_att_status(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field label from event GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_UDI_FOR_MEDICAL_DEVICES
+ * @param event packet
+ * @return label
+ * @note: btstack_type T
+ */
+static inline const char * gattservice_subevent_device_information_udi_for_medical_devices_get_label(const uint8_t * event){
+    return (const char *) &event[6];
+}
+
+/**
  * @brief Get field con_handle from event LEAUDIO_SUBEVENT_BASS_SERVER_CONNECTED
  * @param event packet
  * @return con_handle
