@@ -63,6 +63,7 @@ extern "C" {
  * - system ID        
  * - IEEE regulatory certification
  * - PNP ID  
+ * - UDI for medical devices
  */
 
 /* API_START */
@@ -83,7 +84,8 @@ void device_information_service_client_init(void);
  * - GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_SOFTWARE_REVISION
  * - GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_SYSTEM_ID        
  * - GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_IEEE_REGULATORY_CERTIFICATION
- * - GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_PNP_ID  
+ * - GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_PNP_ID 
+ * - GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_UDI_FOR_MEDICAL_DEVICES  
  *
  * Event GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_DONE is received when all queries are done, of if service was not found.
  * The status field of this event indicated ATT errors (see bluetooth.h). 

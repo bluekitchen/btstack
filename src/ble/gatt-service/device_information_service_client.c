@@ -94,6 +94,7 @@ static void device_information_service_emit_string_value(device_information_serv
 static void device_information_service_emit_system_id(device_information_service_client_t * client, uint8_t subevent, uint8_t att_status, const uint8_t * value, uint16_t value_len);
 static void device_information_service_emit_certification_data_list(device_information_service_client_t * client, uint8_t subevent, uint8_t att_status, const uint8_t * value, uint16_t value_len);
 static void device_information_service_emit_pnp_id(device_information_service_client_t * client, uint8_t subevent, uint8_t att_status, const uint8_t * value, uint16_t value_len);
+static void device_information_service_emit_udi_for_medical_devices(device_information_service_client_t * client, uint8_t subevent, uint8_t att_status, const uint8_t * value, uint16_t value_len);
 
 // list of uuids and how they are reported as events
 static const struct device_information_characteristic {
@@ -110,7 +111,8 @@ static const struct device_information_characteristic {
 
     {ORG_BLUETOOTH_CHARACTERISTIC_SYSTEM_ID, GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_SYSTEM_ID, device_information_service_emit_system_id},
     {ORG_BLUETOOTH_CHARACTERISTIC_IEEE_11073_20601_REGULATORY_CERTIFICATION_DATA_LIST, GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_IEEE_REGULATORY_CERTIFICATION, device_information_service_emit_certification_data_list},
-    {ORG_BLUETOOTH_CHARACTERISTIC_PNP_ID, GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_PNP_ID, device_information_service_emit_pnp_id}
+    {ORG_BLUETOOTH_CHARACTERISTIC_PNP_ID, GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_PNP_ID, device_information_service_emit_pnp_id},
+    {ORG_BLUETOOTH_CHARACTERISTIC_UDI_FOR_MEDICAL_DEVICES, GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_UDI_FOR_MEDICAL_DEVICES, device_information_service_emit_udi_for_medical_devices}
 };
 
 static uint8_t device_informatiom_client_request_send_gatt_query(device_information_service_client_t * client){
@@ -183,6 +185,10 @@ static char * device_information_characteristic_name(uint16_t uuid){
         
         case ORG_BLUETOOTH_CHARACTERISTIC_PNP_ID:
             return "PNP_ID";
+        
+        case ORG_BLUETOOTH_CHARACTERISTIC_UDI_FOR_MEDICAL_DEVICES:
+            return "ORG_BLUETOOTH_CHARACTERISTIC_UDI_FOR_MEDICAL_DEVICES";
+
         default:
             return "UKNOWN";
     }
@@ -292,6 +298,25 @@ static void device_information_service_emit_pnp_id(device_information_service_cl
     event[pos++] = att_status;
     memcpy(event + pos, value, 7);
     pos += 7;
+
+    (*client->client_handler)(HCI_EVENT_PACKET, 0, event, pos);
+}
+
+static void device_information_service_emit_udi_for_medical_devices(device_information_service_client_t * client, uint8_t subevent, uint8_t att_status, const uint8_t * value, uint16_t value_len){
+    uint16_t max_udi_length = 1 + 4 * DEVICE_INFORMATION_MAX_STRING_LEN;
+
+    if (value_len > max_udi_length) return;
+
+    uint8_t event[6 + 1 + 4 * DEVICE_INFORMATION_MAX_STRING_LEN];
+    uint16_t pos = 0;
+    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = subevent;
+    little_endian_store_16(event, pos, client->con_handle);
+    pos += 2;
+    event[pos++] = att_status;
+    memcpy(event + pos, value, value_len);
+    pos += value_len;
 
     (*client->client_handler)(HCI_EVENT_PACKET, 0, event, pos);
 }
