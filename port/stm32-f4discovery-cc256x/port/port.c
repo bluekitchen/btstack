@@ -97,8 +97,9 @@ static void (*rx_done_handler)(void) = &dummy_handler;
 static void (*tx_done_handler)(void) = &dummy_handler;
 static void (*cts_irq_handler)(void) = &dummy_handler;
 
-static void dummy_handler(void){};
 static int hal_uart_needed_during_sleep;
+
+static void dummy_handler(void){}
 
 void hal_uart_dma_set_sleep(uint8_t sleep){
 
