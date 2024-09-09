@@ -37,11 +37,8 @@
 
 #define BTSTACK_FILE__ "gatt_service_client_helper.c"
 
-#include "btstack_config.h"
-
 #ifdef ENABLE_TESTING_SUPPORT
 #include <stdio.h>
-#include <unistd.h>
 #endif
 
 #include <stdint.h>
@@ -49,14 +46,9 @@
 
 #include "ble/gatt_service_client.h"
 
-#include "btstack_memory.h"
-#include "ble/core.h"
-#include "ble/gatt_client.h"
 #include "bluetooth_gatt.h"
 #include "btstack_debug.h"
 #include "btstack_event.h"
-#include "btstack_run_loop.h"
-#include "gap.h"
 
 static void gatt_service_client_gatt_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
@@ -721,6 +713,19 @@ void gatt_service_client_unregister_client(gatt_service_client_t * client){
     }
 
     btstack_linked_list_remove(&gatt_service_clients, &client->item);
+}
+
+void gatt_service_client_dump_characteristic_value_handles(const gatt_service_client_t * client, const gatt_service_client_connection_t *connection, const char ** characteristic_names){
+#ifdef ENABLE_TESTING_SUPPORT
+    uint8_t i;
+    for (i = 0; i < client->characteristics_desc16_num; i++) {
+        printf("0x%04X %s\n", connection->characteristics[i].value_handle, characteristic_names[i]);
+    }
+#else
+    UNUSED(client);
+    UNUSED(connection);
+    UNUSED(characteristic_names);
+#endif
 }
 
 void gatt_service_client_deinit(void){

@@ -267,6 +267,14 @@ void gatt_service_client_deinit(void);
  */
 uint8_t gatt_service_client_att_status_to_error_code(uint8_t att_error_code);
 
+/**
+ * @brief Dump characteristic value handles
+ * @param client
+ * @param connection
+ * @param characteristic_names
+ */
+void gatt_service_client_dump_characteristic_value_handles(const gatt_service_client_t * client, const gatt_service_client_connection_t *connection, const char ** characteristic_names);
+
 /* API_END */
 
 #if defined __cplusplus
