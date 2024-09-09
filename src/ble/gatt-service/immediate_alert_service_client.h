@@ -71,6 +71,8 @@ typedef struct {
     gatt_service_client_connection_t basic_connection;
     btstack_packet_handler_t packet_handler;
 
+    gatt_service_client_characteristic_t characteristics_storage[IMMEDIATE_ALERT_SERVICE_CLIENT_NUM_CHARACTERISTICS];
+
     immediate_alert_service_client_state_t state;
 
     // Used for read characteristic queries
@@ -108,7 +110,6 @@ uint8_t immediate_alert_service_client_connect(
          hci_con_handle_t con_handle,
          btstack_packet_handler_t packet_handler,
          ias_client_connection_t * iac_connection,
-         gatt_service_client_characteristic_t * iac_characteristics_storage, uint8_t iac_characteristics_num,
          uint16_t * ias_cid
 );
 

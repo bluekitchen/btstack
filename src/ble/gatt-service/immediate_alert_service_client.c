@@ -250,13 +250,11 @@ void immediate_alert_service_client_init(void){
 uint8_t immediate_alert_service_client_connect(hci_con_handle_t con_handle,
     btstack_packet_handler_t packet_handler,
     ias_client_connection_t * ias_connection,
-    gatt_service_client_characteristic_t * ias_storage_for_characteristics, uint8_t ias_characteristics_num,
     uint16_t * ias_cid
 ){
 
     btstack_assert(packet_handler != NULL);
     btstack_assert(ias_connection != NULL);
-    btstack_assert(ias_characteristics_num == IMMEDIATE_ALERT_SERVICE_CLIENT_NUM_CHARACTERISTICS);
 
     *ias_cid = 0;
 
@@ -267,8 +265,8 @@ uint8_t immediate_alert_service_client_connect(hci_con_handle_t con_handle,
                                                                              &ias_client,
                                                                              &ias_connection->basic_connection,
                                                                              ORG_BLUETOOTH_SERVICE_IMMEDIATE_ALERT, 0,
-                                                                             ias_storage_for_characteristics,
-                                                                             ias_characteristics_num);
+                                                                             ias_connection->characteristics_storage,
+                                                                             IMMEDIATE_ALERT_SERVICE_CLIENT_NUM_CHARACTERISTICS);
 
     if (status == ERROR_CODE_SUCCESS){
         ias_client_add_connection(ias_connection);
