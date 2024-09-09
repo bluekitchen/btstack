@@ -454,7 +454,7 @@
 #define ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_TIME_STATUS                                                              0x2BEE // Battery Time Status
 #define ORG_BLUETOOTH_CHARACTERISTIC_ESTIMATED_SERVICE_DATE                                                           0x2BEF // Estimated Service Date
 #define ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_ENERGY_STATUS                                                            0x2BF0 // Battery Energy Status
-
+#define ORG_BLUETOOTH_CHARACTERISTIC_UDI_FOR_MEDICAL_DEVICES                                                          0x2BFF // UDI for Medical Devices
 /**
  * Assigned numbers from www.bluetooth.com/specifications/gatt/descriptors
  */

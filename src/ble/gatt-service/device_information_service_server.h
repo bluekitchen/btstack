@@ -123,9 +123,18 @@ void device_information_service_server_set_ieee_regulatory_certification(uint16_
  * @param vendor_source_id
  * @param vendor_id
  * @param product_id
- * @Param product_versoin
+ * @param product_version
  */
 void device_information_service_server_set_pnp_id(uint8_t vendor_source_id, uint16_t vendor_id, uint16_t product_id, uint16_t product_version);
+
+/**
+ * @brief Set UDI for medical devices
+ * @param label
+ * @param device_id
+ * @param issuer
+ * @param authority
+ */
+void device_information_service_server_set_udi_for_medical_devices(const char * label, const char * device_id, const char * issuer, const char * authority);
 
 /* API_END */
 
