@@ -1,0 +1,16 @@
+diff --git a/port/stm32-f4discovery-nrf5340/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_uart.c b/port/stm32-f4discovery-nrf5340/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_uart.c
+index 33a5f002c..e88e47750 100644
+--- a/port/stm32-f4discovery-nrf5340/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_uart.c
++++ b/port/stm32-f4discovery-nrf5340/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_uart.c
+@@ -3294,8 +3294,11 @@ HAL_StatusTypeDef UART_Start_Receive_DMA(UART_HandleTypeDef *huart, uint8_t *pDa
+   tmp = (uint32_t *)&pData;
+   HAL_DMA_Start_IT(huart->hdmarx, (uint32_t)&huart->Instance->DR, *(uint32_t *)tmp, Size);
+ 
++  /*  BK: __HAL_UART_CLEAR_OREFLAG (also) reads Data Register -> loosing an already received byte */
++#if 0
+   /* Clear the Overrun flag just before enabling the DMA Rx request: can be mandatory for the second transfer */
+   __HAL_UART_CLEAR_OREFLAG(huart);
++#endif
+ 
+   if (huart->Init.Parity != UART_PARITY_NONE)
+   {

@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>Release Notes for STM32F429 Discovery Board Drivers</title>
+  <style type="text/css">
+      code{white-space: pre-wrap;}
+      span.smallcaps{font-variant: small-caps;}
+      span.underline{text-decoration: underline;}
+      div.column{display: inline-block; vertical-align: top; width: 50%;}
+  </style>
+  <link rel="stylesheet" href="_htmresc/mini-st_2020.css" />
+  <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+  <![endif]-->
+  <link rel="icon" type="image/x-icon" href="_htmresc/favicon.png" />
+</head>
+<body>
+<div class="row">
+<div class="col-sm-12 col-lg-4">
+<center>
+<h1 id="release-notes-for">Release Notes for</h1>
+<h1 id="stm32f429-discovery-board-drivers"><mark>STM32F429 Discovery Board Drivers</mark></h1>
+<p>Copyright © 2017 STMicroelectronics<br />
+</p>
+<a href="https://www.st.com" class="logo"><img src="_htmresc/st_logo_2020.png" alt="ST logo" /></a>
+</center>
+<h1 id="purpose">Purpose</h1>
+<p>This directory contains the board drivers to demonstrate the capabilities of the STM32F429 Discovery Board Drivers.</p>
+</div>
+<div class="col-sm-12 col-lg-8">
+<h1 id="update-history">Update History</h1>
+<div class="collapse">
+<input type="checkbox" id="collapse-section14" checked aria-hidden="true"> <label for="collapse-section14" aria-hidden="true">V2.1.8 / 22-September-2023</label>
+<div>
+<h2 id="main-changes">Main Changes</h2>
+<ul>
+<li>Update Release_Notes.html to support new format</li>
+<li>Update touch calibration to fix inverted touch panel on STM32F429I-DISCOVERY</li>
+</ul>
+</div>
+</div>
+<div class="collapse">
+<input type="checkbox" id="collapse-section13" aria-hidden="true"> <label for="collapse-section13" aria-hidden="true">V2.1.7 / 11-Fabruary-2022</label>
+<div>
+<h2 id="main-changes-1">Main Changes</h2>
+<ul>
+<li>Update to support the I3G4250D gyroscope component</li>
+<li>All source files: update disclaimer to add reference to the new license agreement</li>
+</ul>
+</div>
+</div>
+<div class="collapse">
+<input type="checkbox" id="collapse-section12" aria-hidden="true"> <label for="collapse-section12" aria-hidden="true">V2.1.6 / 06-October-2017</label>
+<div>
+<h2 id="main-changes-2">Main Changes</h2>
+<ul>
+<li>Remove Date &amp; Version</li>
+<li>stm32f429i_discovery_lcd.c/.h
+<ul>
+<li>Update BSP_LCD_DrawBitmap() API to fix functional misbehaviour with SW4STM32 Toolchain</li>
+</ul></li>
+</ul>
+</div>
+</div>
+<div class="collapse">
+<input type="checkbox" id="collapse-section11" aria-hidden="true"> <label for="collapse-section11" aria-hidden="true">V2.1.5 / 27-January-2017</label>
+<div>
+<h2 id="main-changes-3">Main Changes</h2>
+<ul>
+<li>Replace __PPP_CLK_ENABLE/DISABLE with __HAL_RCC_PPP_ENABLE/DISABLE</li>
+<li>Set NVIC priority to 0x0F</li>
+<li>stm32f429i_discovery_lcd.c/.h
+<ul>
+<li>Update BSP_LCD_ReadPixel implementation for ARGB8888 and RGB888 formats</li>
+</ul></li>
+</ul>
+</div>
+</div>
+<div class="collapse">
+<input type="checkbox" id="collapse-section10" aria-hidden="true"> <label for="collapse-section10" aria-hidden="true">V2.1.4 / 06-May-2016</label>
+<div>
+<h2 id="main-changes-4">Main Changes</h2>
+<ul>
+<li>stm32f429i_discovery_lcd.c/.h
+<ul>
+<li>Provide BSP full coverage for the LTDC reload HW capabilities (Immediate reload , Vertical Blanking Reload , No reload)
+<ul>
+<li>BSP_LCD_Relaod() to disable the color keying without reloading</li>
+<li>BSP_LCD_SetLayerVisible_NoReload() to set an LCD Layer visible without reloading</li>
+<li>BSP_LCD_SetTransparency_NoReload() to configure the transparency without reloading</li>
+<li>BSP_LCD_SetLayerAddress_NoReload() to set an LCD layer frame buffer address without reloading</li>
+<li>BSP_LCD_SetLayerWindow_NoReload() to set display window without reloading</li>
+<li>BSP_LCD_SetColorKeying_NoReload() to configure and sets the color keying without reloading</li>
+<li>BSP_LCD_ResetColorKeying_NoReload() to disables the color keying without reloading</li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+</div>
+<div class="collapse">
+<input type="checkbox" id="collapse-section9" aria-hidden="true"> <label for="collapse-section9" aria-hidden="true">V2.1.3 / 13-January-2016</label>
+<div>
+<h2 id="main-changes-5">Main Changes</h2>
+<ul>
+<li>General updates to fix doxygen errors</li>
+<li>Add STM32429I_EVAL_BSP_User_Manual.chm file</li>
+</ul>
+</div>
+</div>
+<div class="collapse">
+<input type="checkbox" id="collapse-section8" aria-hidden="true"> <label for="collapse-section8" aria-hidden="true">V2.1.2 / 02-March-2015</label>
+<div>
+<h2 id="main-changes-6">Main Changes</h2>
+<ul>
+<li>stm32f429i_discovery.c/.h
+<ul>
+<li>Align to STM32F4xx HAL Driver V1.3.0 for __HAL_RCC_PPP_CLK_ENABLE() .</li>
+</ul></li>
+</ul>
+</div>
+</div>
+<div class="collapse">
+<input type="checkbox" id="collapse-section7" aria-hidden="true"> <label for="collapse-section7" aria-hidden="true">V2.1.1 / 10-December-2014</label>
+<div>
+<h2 id="main-changes-7">Main Changes</h2>
+<ul>
+<li>stm32f429i_discovery.c/.h
+<ul>
+<li>Change I2C_SPEED used define by BSP_I2C_SPEED</li>
+</ul></li>
+<li>stm32f429i_discovery_sdram.c
+<ul>
+<li>BSP_SDRAM_Initialization_sequence(): Fix wrong configuration of the burst length</li>
+</ul></li>
+<li>stm32f429i_discovery_gyroscope.h, stm32f429i_discovery_io.h,stm32f429i_discovery_lcd.c/.h and stm32f429i_discovery_ts.h:
+<ul>
+<li>Change “" by”/" in the include path to fix compilation issue under Linux</li>
+</ul></li>
+<li>Miscellaneous comments update</li>
+</ul>
+</div>
+</div>
+<div class="collapse">
+<input type="checkbox" id="collapse-section6" aria-hidden="true"> <label for="collapse-section6" aria-hidden="true">V2.1.0 / 19-June-2014</label>
+<div>
+<h2 id="main-changes-8">Main Changes</h2>
+<ul>
+<li>stm32f429i_discovery.c/.h
+<ul>
+<li>Add protection for double initialization of IO_Init within LCD_IO_Init()</li>
+<li>Enhance BSP_PB_Init() function by removing the call of __SYSCFG_CLK_ENABLE() already enabled in the HAL_GPIO_Init()</li>
+</ul></li>
+<li>stm32f429i_discovery_gyroscope.c/.h
+<ul>
+<li>Update BSP_GYRO_Init() to support new L3GD20 device ID (I_AM_L3GD20_TR)</li>
+</ul></li>
+<li>stm32f429i_discovery_ts.c/.h
+<ul>
+<li>Correct wrong TS configuration BSP_TS_ITConfig() and TS IT implementation, BSP_TS_ITClear() related to the use of IO expander STMPE1600 device not available on stm32f429i discovery board</li>
+<li>Comments clean up and typo corrections</li>
+</ul></li>
+<li>stm32f429i_discovery_eeprom.c/.h
+<ul>
+<li>Update usage of BSP_EEPROM_TIMEOUT_UserCallback() function</li>
+</ul></li>
+</ul>
+</div>
+</div>
+<div class="collapse">
+<input type="checkbox" id="collapse-section5" aria-hidden="true"> <label for="collapse-section5" aria-hidden="true">V2.0.1 / 26-Fabruary-2014</label>
+<div>
+<h2 id="main-changes-9">Main Changes</h2>
+<ul>
+<li>stm32f429i_discovery_eeprom.c/.h
+<ul>
+<li>Update usage of BSP_EEPROM_TIMEOUT_UserCallback() function</li>
+</ul></li>
+</ul>
+</div>
+</div>
+<div class="collapse">
+<input type="checkbox" id="collapse-section4" aria-hidden="true"> <label for="collapse-section4" aria-hidden="true">V2.0.0 / 18-Fabruary-2014</label>
+<div>
+<h2 id="main-changes-10">Main Changes</h2>
+<ul>
+<li>Major update based on STM32Cube specification: drivers architecture and APIs modified vs. V1.0.2, and thus the 2 versions are not compatible.</li>
+<li>This version has to be used only with STM32CubeF4 based development</li>
+</ul>
+</div>
+</div>
+<div class="collapse">
+<input type="checkbox" id="collapse-section3" aria-hidden="true"> <label for="collapse-section3" aria-hidden="true">V1.0.2 / 06-December-2013</label>
+<div>
+<h2 id="main-changes-11">Main Changes</h2>
+<ul>
+<li>Update IO expander interrupt line on stm32f429i_discovery_ioe.h file.</li>
+</ul>
+</div>
+</div>
+<div class="collapse">
+<input type="checkbox" id="collapse-section2" aria-hidden="true"> <label for="collapse-section2" aria-hidden="true">V1.0.1 / 28-October-2013</label>
+<div>
+<h2 id="main-changes-12">Main Changes</h2>
+<ul>
+<li>stm32f429i_discovery_l3gd20.c, stm32f429i_discovery_lcd.c
+<ul>
+<li>Set SPI baudrate to 5.625 MHz to fit LCD and Gyroscope timing characteristics
+<ul>
+<li>ILI9341 LCD SPI interface max baud rate is 10MHz for write and 6.66MHz for read</li>
+<li>Gyroscope l3gd20 SPI interface max baud rate is 10MHz for write/read</li>
+</ul></li>
+</ul></li>
+<li>stm32f429i_discovery_lcd.c
+<ul>
+<li>Improve SPI low level write routines (add check on BSY flag before to deselect the LCD)</li>
+<li>Remove the __IO attribute from these function’s parameters: LCD_SetLayer(), LCD_SetColors(), LCD_GetColors(), LCD_SetTextColor() and LCD_SetBackColor()</li>
+</ul></li>
+<li>stm32f429i_discovery_i2c_ee.c, stm32f429i_discovery_i2c_ ioe.c
+<ul>
+<li>Add a test in Init() function; if the I2C is already configured, then there is no need to reconfigure it again</li>
+<li>I2C_SPEED define moved to stm32f429i_discovery.h file</li>
+</ul></li>
+<li>stm32f429i_discovery_sdram.c
+<ul>
+<li>Update device refresh counter value to fit with SDRAM timing characteristics</li>
+</ul></li>
+<li>Miscellaneous robustness improvement</li>
+<li>Miscellaneous comments update</li>
+</ul>
+</div>
+</div>
+<div class="collapse">
+<input type="checkbox" id="collapse-section1" aria-hidden="true"> <label for="collapse-section1" aria-hidden="true">V1.0.0 / 20-September-2013</label>
+<div>
+<h2 id="main-changes-13">Main Changes</h2>
+<ul>
+<li>First official version of the STM32F429 Discovery Board Drivers</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<footer class="sticky">
+For complete documentation on <mark>STM32 Microcontrollers</mark> , visit: <a href="http://www.st.com/STM32">http://www.st.com/STM32</a>
+</footer>
+</body>
+</html>

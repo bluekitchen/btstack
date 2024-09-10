@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>Release Notes for STM324xG_EVAL Evaluation Board Drivers</title>
+  <style type="text/css">
+      code{white-space: pre-wrap;}
+      span.smallcaps{font-variant: small-caps;}
+      span.underline{text-decoration: underline;}
+      div.column{display: inline-block; vertical-align: top; width: 50%;}
+  </style>
+  <link rel="stylesheet" href="_htmresc/mini-st_2020.css" />
+  <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+  <![endif]-->
+  <link rel="icon" type="image/x-icon" href="_htmresc/favicon.png" />
+</head>
+<body>
+<div class="row">
+<div class="col-sm-12 col-lg-4">
+<center>
+<h1 id="release-notes-for">Release Notes for</h1>
+<h1 id="stm324xg_eval-evaluation-board-drivers"><mark>STM324xG_EVAL Evaluation Board Drivers</mark></h1>
+<p>Copyright © 2017 STMicroelectronics<br />
+</p>
+<a href="https://www.st.com" class="logo"><img src="_htmresc/st_logo_2020.png" alt="ST logo" /></a>
+</center>
+<h1 id="purpose">Purpose</h1>
+<p>This directory contains the board drivers to demonstrate the capabilities of the STM324xG_EVAL Evaluation Board Drivers.</p>
+</div>
+<div class="col-sm-12 col-lg-8">
+<h1 id="update-history">Update History</h1>
+<div class="collapse">
+<input type="checkbox" id="collapse-section20" checked aria-hidden="true"> <label for="collapse-section20" aria-hidden="true">V3.0.4 / 05-October-2023</label>
+<div>
+<h2 id="main-changes">Main Changes</h2>
+<ul>
+<li>Update Release_Notes.html to support new format</li>
+</ul>
+</div>
+</div>
+<div class="collapse">
+<input type="checkbox" id="collapse-section19" aria-hidden="true"> <label for="collapse-section19" aria-hidden="true">V3.0.3 / 11-Fabruary-2022</label>
+<div>
+<h2 id="main-changes-1">Main Changes</h2>
+<ul>
+<li>All source files: update disclaimer to add reference to the new license agreement</li>
+</ul>
+</div>
+</div>
+<div class="collapse">
+<input type="checkbox" id="collapse-section18" aria-hidden="true"> <label for="collapse-section18" aria-hidden="true">V3.0.2 / 06-October-2017</label>
+<div>
+<h2 id="main-changes-2">Main Changes</h2>
+<ul>
+<li>Fix compilation errors with SW4STM32 toolchain</li>
+</ul>
+</div>
+</div>
+<div class="collapse">
+<input type="checkbox" id="collapse-section17" aria-hidden="true"> <label for="collapse-section17" aria-hidden="true">V3.0.1 / 25-September-2017</label>
+<div>
+<h2 id="main-changes-3">Main Changes</h2>
+<ul>
+<li>Add general description of BSP drivers</li>
+<li>Remove date &amp; version</li>
+<li>stm324xg_eval_lcd.c:
+<ul>
+<li>Update BSP_LCD_DrawBitmap() API to fix functional misbehaviour with SW4STM32 Toolchain</li>
+</ul></li>
+</ul>
+</div>
+</div>
+<div class="collapse">
+<input type="checkbox" id="collapse-section16" aria-hidden="true"> <label for="collapse-section16" aria-hidden="true">V3.0.0 / 27-January-2017</label>
+<div>
+<h2 id="main-changes-4">Main Changes</h2>
+<ul>
+<li>stm324xg_eval_sd.c/.h:
+<ul>
+<li>Update BSP SD APIs following new HAL SD drivers implementation</li>
+<li>Fix BlockSize to 512 bytes</li>
+</ul></li>
+<li>stm324xg_eval_audio.c/.h:
+<ul>
+<li>Add BSP_AUDIO_OUT_MspInit, BSP_AUDIO_OUT_MspDeInit and BSP_AUDIO_OUT_ClockConfig APIs as weak</li>
+<li>Remove CODEC_Reset API</li>
+</ul></li>
+<li>stm324xg_eval_sram.c/.h:
+<ul>
+<li>Add BSP_SRAM_MspInit API as weak</li>
+</ul></li>
+<li>stm324xg_eval_camera.c/.h:
+<ul>
+<li>Add BSP_CAMERA_MspInit API as weak</li>
+</ul></li>
+</ul>
+<h2 id="notes">Notes:</h2>
+<ul>
+<li>These BSP drivers break the compatibility with previous versions.</li>
+<li>If FatFs is required, “FatFS R0.11 ST modified 20161223” must be used with this version of BSP drivers.</li>
+</ul>
+</div>
+</div>
+<div class="collapse">
+<input type="checkbox" id="collapse-section15" aria-hidden="true"> <label for="collapse-section15" aria-hidden="true">V2.2.2 / 22-April-2016</label>
+<div>
+<h2 id="main-changes-5">Main Changes</h2>
+<ul>
+<li>stm324xg_eval_camera.h update BSP Camera driver to use the new HAL DCMI API’s:
+<ul>
+<li>Update BSP_CAMERA_Suspend() API to call HAL_DCMI_Suspend() API</li>
+<li>Update BSP_CAMERA_Resume to call HAL_DCMI_Resume() API</li>
+</ul></li>
+</ul>
+</div>
+</div>
+<div class="collapse">
+<input type="checkbox" id="collapse-section14" aria-hidden="true"> <label for="collapse-section14" aria-hidden="true">V2.2.1 / 15-January-2016</label>
+<div>
+<h2 id="main-changes-6">Main Changes</h2>
+<ul>
+<li>General updates to fix doxygen errors</li>
+<li>Add STM324xG_EVAL_BSP_User_Manual.chm file</li>
+<li>stm324xg_eval.c
+<ul>
+<li>Update to initialize the SRAM PageSize parameter to avoid issue with GCC compiler</li>
+</ul></li>
+</ul>
+</div>
+</div>
+<div class="collapse">
+<input type="checkbox" id="collapse-section13" aria-hidden="true"> <label for="collapse-section13" aria-hidden="true">V2.2.0 / 05-January-2016</label>
+<div>
+<h2 id="main-changes-7">Main Changes</h2>
+<ul>
+<li>stm324xg_eval.c/.h
+<ul>
+<li>Update to support the new LCD component (ili9325) version V1.2.2
+<ul>
+<li>Add new API: LCD_IO_WriteMultipleData()</li>
+<li>Update LCD_IO_ReadData() API prototype: add “RegValue” parameter</li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+</div>
+<div class="collapse">
+<input type="checkbox" id="collapse-section12" aria-hidden="true"> <label for="collapse-section12" aria-hidden="true">V2.1.0 / 14-August-2015</label>
+<div>
+<h2 id="main-changes-8">Main Changes</h2>
+<ul>
+<li>stm324xg_eval.c
+<ul>
+<li>Add AUDIO_IO_DeInit function to align with latest audio codecs V2.0.2</li>
+</ul></li>
+</ul>
+</div>
+</div>
+<div class="collapse">
+<input type="checkbox" id="collapse-section11" aria-hidden="true"> <label for="collapse-section11" aria-hidden="true">V2.0.5 / 02-March-2015</label>
+<div>
+<h2 id="main-changes-9">Main Changes</h2>
+<ul>
+<li>stm324xg_eval.c/.h
+<ul>
+<li>Align to STM32F4xx HAL Driver V1.3.0 for __HAL_RCC_PPP_CLK_ENABLE() macros implementation.</li>
+</ul></li>
+</ul>
+</div>
+</div>
+<div class="collapse">
+<input type="checkbox" id="collapse-section10" aria-hidden="true"> <label for="collapse-section10" aria-hidden="true">V2.0.4 / 10-December-2014</label>
+<div>
+<h2 id="main-changes-10">Main Changes</h2>
+<ul>
+<li>stm324xg_eval.c/.h
+<ul>
+<li>Change I2C_SPEED used define by BSP_I2C_SPEED</li>
+</ul></li>
+<li>stm324xg_eval_eeprom.c/.h
+<ul>
+<li>Change BSP_EEPROM_WaitEepromStandbyState() and BSP_EEPROM_WritePage() to be declared as static APIs</li>
+</ul></li>
+<li>stm324xg_eval_camera.h, stm324xg_eval_audio.h, stm324xg_eval_io.h, stm324xg_eval_ts.h and stm324xg_eval_lcd.c/.h
+<ul>
+<li>Change “" by”/" in the include path to fix compilation issue under Linux</li>
+</ul></li>
+<li>Miscellaneous comments update</li>
+</ul>
+</div>
+</div>
+<div class="collapse">
+<input type="checkbox" id="collapse-section9" aria-hidden="true"> <label for="collapse-section9" aria-hidden="true">V2.0.3 / 26-June-2014</label>
+<div>
+<h2 id="main-changes-11">Main Changes</h2>
+<ul>
+<li>stm324xg_eval_audio.c/.h
+<ul>
+<li>BSP_AUDIO_OUT_Play(): uses the buffer size in byte instead of half-word</li>
+</ul></li>
+</ul>
+</div>
+</div>
+<div class="collapse">
+<input type="checkbox" id="collapse-section8" aria-hidden="true"> <label for="collapse-section8" aria-hidden="true">V2.0.2 / 19-June-2014</label>
+<div>
+<h2 id="main-changes-12">Main Changes</h2>
+<ul>
+<li>stm324xg_eval.c/.h
+<ul>
+<li>Add protection for double initialization of IO_Init within LCD_IO_Init()</li>
+<li>Enhance BSP_PB_Init() function by removing the call of __SYSCFG_CLK_ENABLE() already enabled in the HAL_GPIO_Init()</li>
+</ul></li>
+<li>stm324xg_eval_audio.c/.h
+<ul>
+<li>Add note that only the audio stereo format is supported</li>
+</ul></li>
+<li>stm324xg_eval_sd.c/.h
+<ul>
+<li>Ensure compatibility with the updated version of FatFs sd_diskio driver (i.e. FatFs R0.10 ST modified 20140422) supporting SDIO/SPI to interface uSD</li>
+<li>Comments clean up and typo corrections</li>
+</ul></li>
+</ul>
+</div>
+</div>
+<div class="collapse">
+<input type="checkbox" id="collapse-section7" aria-hidden="true"> <label for="collapse-section7" aria-hidden="true">V2.0.1 / 26-Fabruary-2014</label>
+<div>
+<h2 id="main-changes-13">Main Changes</h2>
+<ul>
+<li>stm324xg_eval_sd.c/.h
+<ul>
+<li>Update SD_DATATIMEOUT value</li>
+</ul></li>
+<li>stm324xg_eval_eeprom.c/.h
+<ul>
+<li>Update usage of BSP_EEPROM_TIMEOUT_UserCallback() function</li>
+</ul></li>
+</ul>
+</div>
+</div>
+<div class="collapse">
+<input type="checkbox" id="collapse-section6" aria-hidden="true"> <label for="collapse-section6" aria-hidden="true">V2.0.0 / 18-Fabruary-2014</label>
+<div>
+<h2 id="main-changes-14">Main Changes</h2>
+<ul>
+<li>Major update based on STM32Cube specification: drivers architecture and APIs modified vs. V1.1.1, and thus the 2 versions are not compatible.</li>
+<li>This version has to be used only with STM32CubeF4 based development</li>
+</ul>
+</div>
+</div>
+<div class="collapse">
+<input type="checkbox" id="collapse-section5" aria-hidden="true"> <label for="collapse-section5" aria-hidden="true">V1.1.1 / 11-January-2013</label>
+<div>
+<h2 id="main-changes-15">Main Changes</h2>
+<ul>
+<li>stm324xg_eval_ioe.c
+<ul>
+<li>Update the MEMS pins configuration in IOE_Config() function.</li>
+<li>Update I2C communication sequence in I2C_ReadDataBuffer() function to ensure efficient and robust I2C transfer.</li>
+</ul></li>
+<li>stm324xg_eval_lcd.c
+<ul>
+<li>Replace STM324xG_LCD_Init() function by LCD_Init() function and add a legacy for old LCD Initialization function name for compatibility purpose.</li>
+</ul></li>
+</ul>
+</div>
+</div>
+<div class="collapse">
+<input type="checkbox" id="collapse-section4" aria-hidden="true"> <label for="collapse-section4" aria-hidden="true">V1.1.0 / 21-December-2012</label>
+<div>
+<h2 id="main-changes-16">Main Changes</h2>
+<ul>
+<li>stm3224xg_eval_sdio_sd.h/.c
+<ul>
+<li>Support SDHC memory cards with capacity greater than 4 GB</li>
+<li>Transmit and receive functions: swap the order of state machine and DMA configuration, to fix marginal limitation where the card sent data to the SDIO interface while the DMA is not ready to transfer them</li>
+<li>Support SDHS (High Speed) memory cards, add new function SD_HighSpeed()</li>
+</ul></li>
+<li>stm324xg_eval_ioe.c
+<ul>
+<li>Configuration clean up and corrections</li>
+<li>Touch screen (TSC) Interrupt mode enhancement</li>
+<li>Update Read/Write low layer functions to ensure efficient and robust I2C transfer
+<ul>
+<li>Update legacy functions I2C_WriteDeviceRegister(), I2C_ReadDeviceRegister() and I2C_ReadDataBuffer() to use polling mode instead of DMA</li>
+<li>Add three new functions I2C_DMA_WriteDeviceRegister(), I2C_DMA_ReadDeviceRegister() and I2C_DMA_ReadDataBuffer(), for DMA based I2C transfer</li>
+</ul></li>
+</ul></li>
+<li>stm324xg_eval.c
+<ul>
+<li>SD_LowLevel_Init(): Set the GPIO clock to 50MHz to support High Speed mode</li>
+</ul></li>
+<li>stm324xg_eval_i2c_ee.c
+<ul>
+<li>Enable I2C DMA request only after the enable of the DMA stream, to avoid DMA FIFO error generation</li>
+</ul></li>
+<li>stm324xg_eval_fsmc_sram.c
+<ul>
+<li>Change memory type to SRAM instead of PSRAM (PSRAM is available only on STM324xG-EVAL RevA) and update timing values</li>
+</ul></li>
+</ul>
+</div>
+</div>
+<div class="collapse">
+<input type="checkbox" id="collapse-section3" aria-hidden="true"> <label for="collapse-section3" aria-hidden="true">V1.0.2 / 09-March-2012</label>
+<div>
+<h2 id="main-changes-17">Main Changes</h2>
+<ul>
+<li>All source files: license disclaimer text update and add link to the License file on ST Internet.</li>
+<li>stm324xg_eval_lcd.c
+<ul>
+<li>Enhance Gamma Curve settings for ILI9320 controller</li>
+</ul></li>
+<li>stm324xg_eval.c and stm324xg_eval_ioe.c
+<ul>
+<li>Swap the order of I2C IOs and alternate function (AF) configuration: AF configuration should be done before to configure the IOs.</li>
+</ul></li>
+<li>stm324xg_eval_sdio_sd.c
+<ul>
+<li>In SD_WaitWriteOperation() and SD_WaitReadOperation() functions: reset StopCondition flag after sending CMD12</li>
+</ul></li>
+</ul>
+</div>
+</div>
+<div class="collapse">
+<input type="checkbox" id="collapse-section2" aria-hidden="true"> <label for="collapse-section2" aria-hidden="true">V1.0.1 / 28-October-2011</label>
+<div>
+<h2 id="main-changes-18">Main Changes</h2>
+<ul>
+<li>All source files: update disclaimer to add reference to the new license agreement</li>
+<li>stm324xg_eval_lcd.c
+<ul>
+<li>Remove “static” from TextColor and BackColor variables declaration (need to be changed from other application modules)</li>
+</ul></li>
+<li>stm324xg_eval_ioe.h
+<ul>
+<li>Add conditional compilation on the default DMA stream(s) used for I2C1 Tx and Rx transfers, to allow user to change them from application level.</li>
+</ul></li>
+<li>stm322xg_eval_sdio_sd.h
+<ul>
+<li>SD_CardInfo structure, define CardCapacity variable as 64-bit long (instead of 32-bit) to support SDHC memory cards with capacity greater than 4 GB.</li>
+</ul></li>
+<li>stm324xg_eval_fsmc_sram.c
+<ul>
+<li>Add IOs config of missing FSMC address lines (FSMC_A21, FSMC_A22 and FSMC_A23).</li>
+</ul></li>
+</ul>
+</div>
+</div>
+<div class="collapse">
+<input type="checkbox" id="collapse-section1" aria-hidden="true"> <label for="collapse-section1" aria-hidden="true">V1.0.0 / 30-September-2011</label>
+<div>
+<h2 id="main-changes-19">Main Changes</h2>
+<ul>
+<li>First official release for STM3240_41_G_EVAL board RevB drivers</li>
+<li>stm322xg_eval_lcd.c: increase FSMC AddressSetupTime value from 4 to 5 to be compliant with some LCD access timing</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<footer class="sticky">
+For complete documentation on <mark>STM32 Microcontrollers</mark> , visit: <a href="http://www.st.com/STM32">http://www.st.com/STM32</a>
+</footer>
+</body>
+</html>
