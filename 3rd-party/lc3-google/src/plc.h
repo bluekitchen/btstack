@@ -16,13 +16,6 @@
  *
  ******************************************************************************/
 
-/**
- * LC3 - Packet Loss Concealment
- *
- * Reference : Low Complexity Communication Codec (LC3)
- *             Bluetooth Specification v1.0
- */
-
 #ifndef __LC3_PLC_H
 #define __LC3_PLC_H
 

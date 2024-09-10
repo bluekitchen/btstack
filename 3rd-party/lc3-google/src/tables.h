@@ -24,6 +24,72 @@
 
 
 /**
+ * Characteristics
+ *
+ *   ns   Number of temporal samples / frequency coefficients within a frame
+ *
+ *   ne   Number of encoded frequency coefficients
+ *
+ *   nd   Number of MDCT delayed samples, sum of half a frame and an ovelap
+ *        of future by 1.25 ms (2.5ms, 5ms and 10ms frame durations),
+ *        or 2 ms (7.5ms frame duration).
+ *
+ *   nh   Number of 18 ms samples of the history buffer, aligned on a frame
+ *
+ *   nt   Number of 1.25 ms previous samples
+ */
+
+extern const int lc3_ns_2m5[LC3_NUM_SRATE];
+extern const int lc3_ne_2m5[LC3_NUM_SRATE];
+extern const int lc3_ns_4m [LC3_NUM_SRATE];
+
+static inline int lc3_ns(enum lc3_dt dt, enum lc3_srate sr) {
+    return lc3_ns_2m5[sr] * (1 + dt);
+}
+
+static inline int lc3_ne(enum lc3_dt dt, enum lc3_srate sr) {
+    return lc3_ne_2m5[sr] * (1 + dt);
+}
+
+static inline int lc3_nd(enum lc3_dt dt, enum lc3_srate sr) {
+    return ( lc3_ns(dt, sr) +
+        (dt == LC3_DT_7M5 ? lc3_ns_4m[sr] : lc3_ns_2m5[sr]) ) >> 1;
+}
+
+static inline int lc3_nh(enum lc3_dt dt, enum lc3_srate sr) {
+    return sr > LC3_SRATE_48K_HR ? 0 :
+        (8 + (dt == LC3_DT_7M5)) * lc3_ns_2m5[sr];
+}
+
+static inline int lc3_nt(enum lc3_srate sr) {
+    return lc3_ns_2m5[sr] >> 1;
+}
+
+#define LC3_MAX_SRATE_HZ  ( LC3_PLUS_HR ? 96000 : 48000 )
+
+#define LC3_MAX_NS  ( LC3_NS(10000, LC3_MAX_SRATE_HZ) )
+#define LC3_MAX_NE  ( LC3_PLUS_HR ? LC3_MAX_NS : LC3_NS(10000, 40000) )
+
+
+/**
+ * Limits on size of frame
+ */
+
+extern const int lc3_frame_bytes_hr_lim
+        [LC3_NUM_DT][LC3_NUM_SRATE - LC3_SRATE_48K_HR][2];
+
+static inline int lc3_min_frame_bytes(enum lc3_dt dt, enum lc3_srate sr) {
+    return !lc3_hr(sr) ? LC3_MIN_FRAME_BYTES :
+        lc3_frame_bytes_hr_lim[dt][sr - LC3_SRATE_48K_HR][0];
+}
+
+static inline int lc3_max_frame_bytes(enum lc3_dt dt, enum lc3_srate sr) {
+    return !lc3_hr(sr) ? LC3_MAX_FRAME_BYTES :
+        lc3_frame_bytes_hr_lim[dt][sr - LC3_SRATE_48K_HR][1];
+}
+
+
+/**
  * MDCT Twiddles and window coefficients
  */
 
@@ -42,9 +108,10 @@ extern const float *lc3_mdct_win[LC3_NUM_DT][LC3_NUM_SRATE];
  * Limits of bands
  */
 
-#define LC3_NUM_BANDS  64
+#define LC3_MAX_BANDS  64
 
-extern const int lc3_band_lim[LC3_NUM_DT][LC3_NUM_SRATE][LC3_NUM_BANDS+1];
+extern const int lc3_num_bands[LC3_NUM_DT][LC3_NUM_SRATE];
+extern const int *lc3_band_lim[LC3_NUM_DT][LC3_NUM_SRATE];
 
 
 /**

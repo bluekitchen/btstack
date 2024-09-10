@@ -25,18 +25,17 @@
 
 static PyObject *mdct_forward_py(PyObject *m, PyObject *args)
 {
+    unsigned dt, sr;
     PyObject *x_obj, *xd_obj, *y_obj, *d_obj;
-    enum lc3_dt dt;
-    enum lc3_srate sr;
     float *x, *xd, *y, *d;
 
-    if (!PyArg_ParseTuple(args, "iiOO", &dt, &sr, &x_obj, &xd_obj))
+    if (!PyArg_ParseTuple(args, "IIOO", &dt, &sr, &x_obj, &xd_obj))
         return NULL;
 
-    CTYPES_CHECK("dt", (unsigned)dt < LC3_NUM_DT);
-    CTYPES_CHECK("sr", (unsigned)sr < LC3_NUM_SRATE);
+    CTYPES_CHECK("dt", dt < LC3_NUM_DT);
+    CTYPES_CHECK("sr", sr < LC3_NUM_SRATE);
 
-    int ns = LC3_NS(dt, sr), nd = LC3_ND(dt, sr);
+    int ns = lc3_ns(dt, sr), nd = lc3_nd(dt, sr);
 
     CTYPES_CHECK("x", to_1d_ptr(x_obj, NPY_FLOAT, ns, &x));
     CTYPES_CHECK("xd", to_1d_ptr(xd_obj, NPY_FLOAT, nd, &xd));
@@ -52,18 +51,17 @@ static PyObject *mdct_forward_py(PyObject *m, PyObject *args)
 
 static PyObject *mdct_inverse_py(PyObject *m, PyObject *args)
 {
+    unsigned dt, sr;
     PyObject *x_obj, *xd_obj, *d_obj, *y_obj;
-    enum lc3_dt dt;
-    enum lc3_srate sr;
     float *x, *xd, *d, *y;
 
-    if (!PyArg_ParseTuple(args, "iiOO", &dt, &sr, &x_obj, &xd_obj))
+    if (!PyArg_ParseTuple(args, "IIOO", &dt, &sr, &x_obj, &xd_obj))
         return NULL;
 
-    CTYPES_CHECK("dt", (unsigned)dt < LC3_NUM_DT);
-    CTYPES_CHECK("sr", (unsigned)sr < LC3_NUM_SRATE);
+    CTYPES_CHECK("dt", dt < LC3_NUM_DT);
+    CTYPES_CHECK("sr", sr < LC3_NUM_SRATE);
 
-    int ns = LC3_NS(dt, sr), nd = LC3_ND(dt, sr);
+    int ns = lc3_ns(dt, sr), nd = lc3_nd(dt, sr);
 
     CTYPES_CHECK("x", to_1d_ptr(x_obj, NPY_FLOAT, ns, &x));
     CTYPES_CHECK("xd", to_1d_ptr(xd_obj, NPY_FLOAT, nd, &xd));

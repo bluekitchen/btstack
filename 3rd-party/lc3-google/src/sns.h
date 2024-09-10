@@ -16,13 +16,6 @@
  *
  ******************************************************************************/
 
-/**
- * LC3 - Spectral Noise Shaping
- *
- * Reference : Low Complexity Communication Codec (LC3)
- *             Bluetooth Specification v1.0
- */
-
 #ifndef __LC3_SNS_H
 #define __LC3_SNS_H
 
@@ -49,6 +42,7 @@ typedef struct lc3_sns_data {
 /**
  * SNS analysis
  * dt, sr          Duration and samplerate of the frame
+ * nbytes          Size in bytes of the frame
  * eb              Energy estimation per bands, and count of bands
  * att             1: Attack detected  0: Otherwise
  * data            Return bitstream data
@@ -57,7 +51,8 @@ typedef struct lc3_sns_data {
  *
  * `x` and `y` can be the same buffer
  */
-void lc3_sns_analyze(enum lc3_dt dt, enum lc3_srate sr,
+void lc3_sns_analyze(
+    enum lc3_dt dt, enum lc3_srate sr, int nbytes,
     const float *eb, bool att, lc3_sns_data_t *data,
     const float *x, float *y);
 

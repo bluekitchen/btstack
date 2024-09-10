@@ -701,9 +701,9 @@ static PyObject *from_encoder(PyObject *obj, const struct lc3_encoder *enc)
 {
     unsigned dt = enc->dt, sr = enc->sr;
     unsigned sr_pcm = enc->sr_pcm;
-    int ns = LC3_NS(dt, sr);
-    int nd = LC3_ND(dt, sr);
-    int nt = LC3_NT(sr);
+    int ns = lc3_ns(dt, sr);
+    int nd = lc3_nd(dt, sr);
+    int nt = lc3_nt(sr);
 
     if (!obj) obj = PyDict_New();
 
@@ -726,13 +726,14 @@ static PyObject *from_encoder(PyObject *obj, const struct lc3_encoder *enc)
         from_spec_analysis(NULL, &enc->spec));
 
     PyDict_SetItemString(obj, "xt",
-        new_1d_copy(NPY_INT16, nt+ns, enc->xt-nt));
+        new_1d_copy(NPY_INT16, nt+ns,
+            (int16_t *)enc->x + enc->xt_off - nt));
 
     PyDict_SetItemString(obj, "xs",
-        new_1d_copy(NPY_FLOAT, ns, enc->xs));
+        new_1d_copy(NPY_FLOAT, ns, enc->x + enc->xs_off));
 
     PyDict_SetItemString(obj, "xd",
-        new_1d_copy(NPY_FLOAT, nd, enc->xd));
+        new_1d_copy(NPY_FLOAT, nd, enc->x + enc->xd_off));
 
     return obj;
 }
@@ -758,9 +759,9 @@ static PyObject *to_encoder(PyObject *obj, struct lc3_encoder *enc)
     CTYPES_CHECK("encoder.s_pcmr",
         (unsigned)(enc->sr_pcm = sr_pcm) < LC3_NUM_SRATE);
 
-    int ns = LC3_NS(dt, sr);
-    int nd = LC3_ND(dt, sr);
-    int nt = LC3_NT(sr);
+    int ns = lc3_ns(dt, sr);
+    int nd = lc3_nd(dt, sr);
+    int nt = lc3_nt(sr);
 
     CTYPES_CHECK(NULL, to_attdet_analysis(
         PyDict_GetItemString(obj, "attdet"), &enc->attdet));
@@ -772,15 +773,18 @@ static PyObject *to_encoder(PyObject *obj, struct lc3_encoder *enc)
         PyDict_GetItemString(obj, "quant"), &enc->spec));
 
     CTYPES_CHECK("encoder.xt", xt_obj = to_1d_copy(
-        PyDict_GetItemString(obj, "xt"), NPY_INT16, enc->xt-nt, ns+nt));
+        PyDict_GetItemString(obj, "xt"), NPY_INT16,
+            (int16_t *)enc->x + enc->xt_off - nt, ns+nt));
     PyDict_SetItemString(obj, "xt", xt_obj);
 
     CTYPES_CHECK("encoder.xs", xs_obj = to_1d_copy(
-        PyDict_GetItemString(obj, "xs"), NPY_FLOAT, enc->xs, ns));
+        PyDict_GetItemString(obj, "xs"), NPY_FLOAT,
+            enc->x + enc->xs_off, ns));
     PyDict_SetItemString(obj, "xs", xs_obj);
 
     CTYPES_CHECK("encoder.xd", xd_obj = to_1d_copy(
-        PyDict_GetItemString(obj, "xd"), NPY_FLOAT, enc->xd, nd));
+        PyDict_GetItemString(obj, "xd"), NPY_FLOAT,
+            enc->x + enc->xd_off, nd));
     PyDict_SetItemString(obj, "xd", xd_obj);
 
     return obj;
@@ -791,10 +795,10 @@ static PyObject *from_decoder(PyObject *obj, const struct lc3_decoder *dec)
 {
     unsigned dt = dec->dt, sr = dec->sr;
     unsigned sr_pcm = dec->sr_pcm;
-    unsigned xs_pos = dec->xs - dec->xh;
-    int nh = LC3_NH(dt, sr);
-    int ns = LC3_NS(dt, sr);
-    int nd = LC3_ND(dt, sr);
+    unsigned xs_pos = dec->xs_off - dec->xh_off;
+    int nh = lc3_nh(dt, sr);
+    int ns = lc3_ns(dt, sr);
+    int nd = lc3_nd(dt, sr);
 
     if (!obj) obj = PyDict_New();
 
@@ -814,16 +818,16 @@ static PyObject *from_decoder(PyObject *obj, const struct lc3_decoder *dec)
         new_plc_state(&dec->plc));
 
     PyDict_SetItemString(obj, "xh",
-        new_1d_copy(NPY_FLOAT, nh, dec->xh));
+        new_1d_copy(NPY_FLOAT, nh + ns, dec->x + dec->xh_off));
 
     PyDict_SetItemString(obj, "xs_pos",
         new_scalar(NPY_INT, &xs_pos));
 
     PyDict_SetItemString(obj, "xd",
-        new_1d_copy(NPY_FLOAT, nd, dec->xd));
+        new_1d_copy(NPY_FLOAT, nd, dec->x + dec->xd_off));
 
     PyDict_SetItemString(obj, "xg",
-        new_1d_copy(NPY_FLOAT, ns, dec->xg));
+        new_1d_copy(NPY_FLOAT, ns, dec->x + dec->xg_off));
 
     return obj;
 }
@@ -849,9 +853,9 @@ static PyObject *to_decoder(PyObject *obj, struct lc3_decoder *dec)
     CTYPES_CHECK("decoder.sr_pcm",
         (unsigned)(dec->sr_pcm = sr_pcm) < LC3_NUM_SRATE);
 
-    int nh = LC3_NH(dt, sr);
-    int ns = LC3_NS(dt, sr);
-    int nd = LC3_ND(dt, sr);
+    int nh = lc3_nh(dt, sr);
+    int ns = lc3_ns(dt, sr);
+    int nd = lc3_nd(dt, sr);
 
     CTYPES_CHECK(NULL, to_ltpf_synthesis(
         PyDict_GetItemString(obj, "ltpf"), &dec->ltpf));
@@ -860,19 +864,22 @@ static PyObject *to_decoder(PyObject *obj, struct lc3_decoder *dec)
         PyDict_GetItemString(obj, "plc"), &dec->plc));
 
     CTYPES_CHECK("decoder.xh", xh_obj = to_1d_copy(
-        PyDict_GetItemString(obj, "xh"), NPY_FLOAT, dec->xh, nh));
+        PyDict_GetItemString(obj, "xh"), NPY_FLOAT,
+            dec->x + dec->xh_off, nh + ns));
     PyDict_SetItemString(obj, "xh", xh_obj);
 
     CTYPES_CHECK("decoder.xs", to_scalar(
         PyDict_GetItemString(obj, "xs_pos"), NPY_INT, &xs_pos));
-    dec->xs = dec->xh + xs_pos;
+    dec->xs_off = dec->xh_off + xs_pos;
 
     CTYPES_CHECK("decoder.xd", xd_obj = to_1d_copy(
-        PyDict_GetItemString(obj, "xd"), NPY_FLOAT, dec->xd, nd));
+        PyDict_GetItemString(obj, "xd"), NPY_FLOAT,
+            dec->x + dec->xd_off, nd));
     PyDict_SetItemString(obj, "xd", xd_obj);
 
     CTYPES_CHECK("decoder.xg", xg_obj = to_1d_copy(
-        PyDict_GetItemString(obj, "xg"), NPY_FLOAT, dec->xg, ns));
+        PyDict_GetItemString(obj, "xg"), NPY_FLOAT,
+            dec->x + dec->xg_off, ns));
     PyDict_SetItemString(obj, "xg", xg_obj);
 
     return obj;

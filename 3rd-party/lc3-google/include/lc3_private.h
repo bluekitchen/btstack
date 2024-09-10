@@ -24,39 +24,50 @@
 
 
 /**
- * Return number of samples, delayed samples and
- * encoded spectrum coefficients within a frame
- * - For encoding, keep 1.25 ms of temporal winodw
- * - For decoding, keep 18 ms of history, aligned on frames, and a frame
+ * Characteristics
+ *
+ * - The number of samples within a frame
+ *
+ * - The number of MDCT delayed samples, sum of half a frame and
+ *   an ovelap of future by 1.25 ms (2.5ms, 5ms and 10ms frame durations)
+ *   or 2 ms (7.5ms frame duration).
+ *
+ * - For decoding, keep 18 ms of history, aligned on a frame
+ *
+ * - For encoding, keep 1.25 ms of temporal previous samples
  */
 
-#define __LC3_NS(dt_us, sr_hz) \
-    ( (dt_us * sr_hz) / 1000 / 1000 )
+#define LC3_NS(dt_us, sr_hz) \
+    ( (dt_us) * (sr_hz) / 1000 / 1000 )
 
-#define __LC3_ND(dt_us, sr_hz) \
-    ( (dt_us) == 7500 ? 23 * __LC3_NS(dt_us, sr_hz) / 30 \
-                      :  5 * __LC3_NS(dt_us, sr_hz) /  8 )
+#define LC3_ND(dt_us, sr_hz) \
+    ( LC3_NS(dt_us, sr_hz) / 2 + \
+      LC3_NS((dt_us) == 7500 ? 2000 : 1250, sr_hz) )
 
-#define __LC3_NT(sr_hz) \
-    ( (5 * sr_hz) / 4000 )
+#define LC3_NH(dt_us, sr_hz) \
+    ( (sr_hz) > 48000 ? 0 : ( LC3_NS(18000, sr_hz) + \
+      LC3_NS(dt_us, sr_hz) - (LC3_NS(18000, sr_hz) % LC3_NS(dt_us, sr_hz)) ) )
 
-#define __LC3_NH(dt_us, sr_hz) \
-    ( ((3 - ((dt_us) >= 10000)) + 1) * __LC3_NS(dt_us, sr_hz) )
+#define LC3_NT(sr_hz) \
+    ( LC3_NS(1250, sr_hz) )
 
 
 /**
- * Frame duration 7.5ms or 10ms
+ * Frame duration
  */
 
 enum lc3_dt {
-    LC3_DT_7M5,
-    LC3_DT_10M,
+    LC3_DT_2M5 = 0,
+    LC3_DT_5M  = 1,
+    LC3_DT_7M5 = 2,
+    LC3_DT_10M = 3,
 
     LC3_NUM_DT
 };
 
+
 /**
- * Sampling frequency
+ * Sampling frequency and high-resolution mode
  */
 
 enum lc3_srate {
@@ -65,8 +76,10 @@ enum lc3_srate {
     LC3_SRATE_24K,
     LC3_SRATE_32K,
     LC3_SRATE_48K,
+    LC3_SRATE_48K_HR,
+    LC3_SRATE_96K_HR,
 
-    LC3_NUM_SRATE,
+    LC3_NUM_SRATE
 };
 
 
@@ -107,18 +120,18 @@ struct lc3_encoder {
     lc3_ltpf_analysis_t ltpf;
     lc3_spec_analysis_t spec;
 
-    int16_t *xt;
-    float *xs, *xd, s[1];
+    int xt_off, xs_off, xd_off;
+    float x[1];
 };
 
 #define LC3_ENCODER_BUFFER_COUNT(dt_us, sr_hz) \
-    ( ( __LC3_NS(dt_us, sr_hz) + __LC3_NT(sr_hz) ) / 2 + \
-        __LC3_NS(dt_us, sr_hz) + __LC3_ND(dt_us, sr_hz) )
+    ( ( LC3_NS(dt_us, sr_hz) + LC3_NT(sr_hz) ) / 2 + \
+        LC3_NS(dt_us, sr_hz) + LC3_ND(dt_us, sr_hz) )
 
 #define LC3_ENCODER_MEM_T(dt_us, sr_hz) \
     struct { \
         struct lc3_encoder __e; \
-        float __s[LC3_ENCODER_BUFFER_COUNT(dt_us, sr_hz)-1]; \
+        float __x[LC3_ENCODER_BUFFER_COUNT(dt_us, sr_hz)-1]; \
     }
 
 
@@ -145,18 +158,30 @@ struct lc3_decoder {
     lc3_ltpf_synthesis_t ltpf;
     lc3_plc_state_t plc;
 
-    float *xh, *xs, *xd, *xg, s[1];
+    int xh_off, xs_off, xd_off, xg_off;
+    float x[1];
 };
 
 #define LC3_DECODER_BUFFER_COUNT(dt_us, sr_hz) \
-    ( __LC3_NH(dt_us, sr_hz) + __LC3_ND(dt_us, sr_hz) + \
-      __LC3_NS(dt_us, sr_hz) )
+    ( LC3_NH(dt_us, sr_hz) + LC3_NS(dt_us, sr_hz) + \
+      LC3_ND(dt_us, sr_hz) + LC3_NS(dt_us, sr_hz)   )
 
 #define LC3_DECODER_MEM_T(dt_us, sr_hz) \
     struct { \
         struct lc3_decoder __d; \
-        float __s[LC3_DECODER_BUFFER_COUNT(dt_us, sr_hz)-1]; \
+        float __x[LC3_DECODER_BUFFER_COUNT(dt_us, sr_hz)-1]; \
     }
+
+
+/**
+ * Change the visibility of interface functions
+ */
+
+#ifdef _WIN32
+#define LC3_EXPORT __declspec(dllexport)
+#else
+#define LC3_EXPORT __attribute__((visibility ("default")))
+#endif
 
 
 #endif /* __LC3_PRIVATE_H */

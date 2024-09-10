@@ -33,7 +33,7 @@ struct lc3bin_header {
     uint16_t bitrate_100bps;
     uint16_t channels;
     uint16_t frame_10us;
-    uint16_t rfu;
+    uint16_t epmode;
     uint16_t nsamples_low;
     uint16_t nsamples_high;
 };
@@ -43,20 +43,31 @@ struct lc3bin_header {
  * Read LC3 binary header
  */
 int lc3bin_read_header(FILE *fp,
-    int *frame_us, int *srate_hz, int *nchannels, int *nsamples)
+    int *frame_us, int *srate_hz, bool *hrmode, int *nchannels, int *nsamples)
 {
     struct lc3bin_header hdr;
+    uint16_t hdr_hrmode = 0;
 
     if (fread(&hdr, sizeof(hdr), 1, fp) != 1
-            || hdr.file_id != LC3_FILE_ID)
+            || hdr.file_id != LC3_FILE_ID
+            || hdr.header_size < sizeof(hdr))
         return -1;
+
+    int num_extended_params = (hdr.header_size - sizeof(hdr)) / sizeof(uint16_t);
+    if (num_extended_params >= 1 &&
+        fread(&hdr_hrmode, sizeof(hdr_hrmode), 1, fp) != 1)
+      return -1;
 
     *nchannels = hdr.channels;
     *frame_us = hdr.frame_10us * 10;
     *srate_hz = hdr.srate_100hz * 100;
     *nsamples = hdr.nsamples_low | (hdr.nsamples_high << 16);
+    *hrmode = hdr_hrmode != 0;
 
-    fseek(fp, SEEK_SET, hdr.header_size);
+    if (hdr.epmode)
+      return -1;
+
+    fseek(fp, hdr.header_size, SEEK_SET);
 
     return 0;
 }
@@ -69,23 +80,26 @@ int lc3bin_read_data(FILE *fp, int nchannels, void *buffer)
     uint16_t nbytes;
 
     if (fread(&nbytes, sizeof(nbytes), 1, fp) < 1
-            || nbytes > nchannels * LC3_MAX_FRAME_BYTES
-            || nbytes % nchannels
+            || nbytes > nchannels * LC3_HR_MAX_FRAME_BYTES
             || fread(buffer, nbytes, 1, fp) < 1)
         return -1;
 
-    return nbytes / nchannels;
+    return nbytes;
 }
 
 /**
  * Write LC3 binary header
  */
 void lc3bin_write_header(FILE *fp,
-    int frame_us, int srate_hz, int bitrate, int nchannels, int nsamples)
+    int frame_us, int srate_hz, bool hrmode,
+    int bitrate, int nchannels, int nsamples)
 {
+    uint16_t hdr_hrmode = (hrmode != 0);
+
     struct lc3bin_header hdr = {
         .file_id = LC3_FILE_ID,
-        .header_size = sizeof(struct lc3bin_header),
+        .header_size = sizeof(struct lc3bin_header) +
+            (hrmode ? sizeof(hdr_hrmode) : 0),
         .srate_100hz = srate_hz / 100,
         .bitrate_100bps = bitrate / 100,
         .channels = nchannels,
@@ -95,16 +109,18 @@ void lc3bin_write_header(FILE *fp,
     };
 
     fwrite(&hdr, sizeof(hdr), 1, fp);
+
+    if (hrmode)
+        fwrite(&hdr_hrmode, sizeof(hdr_hrmode), 1, fp);
 }
 
 /**
  * Write LC3 block of data
  */
-void lc3bin_write_data(FILE *fp,
-    const void *data, int nchannels, int frame_bytes)
+void lc3bin_write_data(FILE *fp, const void *data, int nbytes)
 {
-    uint16_t nbytes = nchannels * frame_bytes;
-    fwrite(&nbytes, sizeof(nbytes), 1, fp);
+    uint16_t hdr_nbytes = nbytes;
+    fwrite(&hdr_nbytes, sizeof(hdr_nbytes), 1, fp);
 
     fwrite(data, 1, nbytes, fp);
 }

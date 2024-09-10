@@ -33,10 +33,10 @@ class EnergyBand:
         e = [ np.mean(np.square(x[self.I[i]:self.I[i+1]]))
                for i in range(len(self.I)-1) ]
 
-        e_lo = np.sum(e[:len(e) - [4, 2][self.dt]])
-        e_hi = np.sum(e[len(e) - [4, 2][self.dt]:])
+        e_lo = np.sum(e[:len(e) - [2, 3, 4, 2][self.dt]])
+        e_hi = np.sum(e[len(e) - [2, 3, 4, 2][self.dt]:])
 
-        return np.append(e, np.zeros(64-len(e))), (e_hi > 30*e_lo)
+        return e, (e_hi > 30*e_lo)
 
 ### ------------------------------------------------------------------------ ###
 
@@ -63,14 +63,16 @@ def check_unit(rng, dt, sr):
 
 def check_appendix_c(dt):
 
+    i0 = dt - T.DT_7M5
     sr = T.SRATE_16K
+
     ok = True
 
-    e  = lc3.energy_compute(dt, sr, C.X[dt][0])[0]
-    ok = ok and np.amax(np.abs(1 - e/C.E_B[dt][0])) < 1e-6
+    e  = lc3.energy_compute(dt, sr, C.X[i0][0])[0]
+    ok = ok and np.amax(np.abs(1 - e/C.E_B[i0][0])) < 1e-6
 
-    e  = lc3.energy_compute(dt, sr, C.X[dt][1])[0]
-    ok = ok and np.amax(np.abs(1 - e/C.E_B[dt][1])) < 1e-6
+    e  = lc3.energy_compute(dt, sr, C.X[i0][1])[0]
+    ok = ok and np.amax(np.abs(1 - e/C.E_B[i0][1])) < 1e-6
 
     return ok
 
@@ -81,10 +83,14 @@ def check():
     ok = True
 
     for dt in range(T.NUM_DT):
-        for sr in range(T.NUM_SRATE):
+        for sr in range(T.SRATE_8K, T.SRATE_48K + 1):
             ok = ok and check_unit(rng, dt, sr)
 
-    for dt in range(T.NUM_DT):
+    for dt in ( T.DT_2M5, T.DT_5M, T.DT_10M ):
+        for sr in ( T.SRATE_48K_HR, T.SRATE_96K_HR ):
+            ok = ok and check_unit(rng, dt, sr)
+
+    for dt in ( T.DT_7M5, T.DT_10M ):
         ok = ok and check_appendix_c(dt)
 
     return ok

@@ -31,6 +31,8 @@
 #include "lc3bin.h"
 #include "wave.h"
 
+#define MAX_CHANNELS 2
+
 #ifndef MIN
 #define MIN(a, b)  ( (a) < (b) ? (a) : (b) )
 #endif
@@ -73,7 +75,7 @@ struct parameters {
 static struct parameters parse_args(int argc, char *argv[])
 {
     static const char *usage =
-        "Usage: %s [in_file] [wav_file]\n"
+        "Usage: %s [wav_file] [out_file]\n"
         "\n"
         "wav_file\t"  "Input wave file, stdin if omitted\n"
         "out_file\t"  "Output bitstream file, stdout if omitted\n"
@@ -94,7 +96,7 @@ static struct parameters parse_args(int argc, char *argv[])
                 error(EINVAL, "Option %s", arg);
 
             char opt = arg[1];
-            const char *optarg;
+            const char *optarg = NULL;
 
             switch (opt) {
                 case 'b': case 'r':
@@ -153,27 +155,30 @@ int main(int argc, char *argv[])
     if (p.fname_out && (fp_out = fopen(p.fname_out, "wb")) == NULL)
         error(errno, "%s", p.fname_out);
 
-    if (p.srate_hz && !LC3_CHECK_SR_HZ(p.srate_hz))
-        error(EINVAL, "Samplerate %d Hz", p.srate_hz);
-
     if (p.bitdepth && p.bitdepth != 16 && p.bitdepth != 24)
         error(EINVAL, "Bitdepth %d", p.bitdepth);
 
     /* --- Check parameters --- */
 
-    int frame_us, srate_hz, nch, nsamples;
+    int frame_us, srate_hz, nchannels, nsamples;
+    bool hrmode;
 
-    if (lc3bin_read_header(fp_in, &frame_us, &srate_hz, &nch, &nsamples) < 0)
+    if (lc3bin_read_header(fp_in,
+            &frame_us, &srate_hz, &hrmode, &nchannels, &nsamples) < 0)
         error(EINVAL, "LC3 binary input file");
 
-    if (nch  < 1 || nch  > 2)
-        error(EINVAL, "Number of channels %d", nch);
+    if (nchannels < 1 || nchannels > MAX_CHANNELS)
+        error(EINVAL, "Number of channels %d", nchannels);
 
     if (!LC3_CHECK_DT_US(frame_us))
         error(EINVAL, "Frame duration");
 
-    if (!LC3_CHECK_SR_HZ(srate_hz) || (p.srate_hz && p.srate_hz < srate_hz))
+    if (!LC3_HR_CHECK_SR_HZ(hrmode, srate_hz))
          error(EINVAL, "Samplerate %d Hz", srate_hz);
+
+    if (p.srate_hz && (!LC3_HR_CHECK_SR_HZ(hrmode, p.srate_hz) ||
+                       p.srate_hz < srate_hz                     ))
+         error(EINVAL, "Output samplerate %d Hz", p.srate_hz);
 
     int pcm_sbits = p.bitdepth;
     int pcm_sbytes = pcm_sbits / 8;
@@ -183,34 +188,40 @@ int main(int argc, char *argv[])
         ((int64_t)nsamples * pcm_srate_hz) / srate_hz;
 
     wave_write_header(fp_out,
-          pcm_sbits, pcm_sbytes, pcm_srate_hz, nch, pcm_samples);
+          pcm_sbits, pcm_sbytes, pcm_srate_hz, nchannels, pcm_samples);
 
     /* --- Setup decoding --- */
 
-    int frame_samples = lc3_frame_samples(frame_us, pcm_srate_hz);
-    int encode_samples = pcm_samples +
-        lc3_delay_samples(frame_us, pcm_srate_hz);
+    uint8_t in[2 * LC3_HR_MAX_FRAME_BYTES];
+    int8_t alignas(int32_t) pcm[2 * LC3_HR_MAX_FRAME_SAMPLES*4];
+    lc3_decoder_t dec[2];
 
-    lc3_decoder_t dec[nch];
-    uint8_t in[nch * LC3_MAX_FRAME_BYTES];
-    int8_t alignas(int32_t) pcm[nch * frame_samples * pcm_sbytes];
+    int frame_samples = lc3_hr_frame_samples(hrmode, frame_us, pcm_srate_hz);
+    int encode_samples = pcm_samples +
+        lc3_hr_delay_samples(hrmode, frame_us, pcm_srate_hz);
     enum lc3_pcm_format pcm_fmt =
         pcm_sbits == 24 ? LC3_PCM_FORMAT_S24_3LE : LC3_PCM_FORMAT_S16;
 
-    for (int ich = 0; ich < nch; ich++)
-        dec[ich] = lc3_setup_decoder(frame_us, srate_hz, p.srate_hz,
-            malloc(lc3_decoder_size(frame_us, pcm_srate_hz)));
+    for (int ich = 0; ich < nchannels; ich++) {
+        dec[ich] = lc3_hr_setup_decoder(
+            hrmode, frame_us, srate_hz, p.srate_hz,
+            malloc(lc3_hr_decoder_size(hrmode, frame_us, pcm_srate_hz)));
+
+        if (!dec[ich])
+            error(EINVAL, "Decoder initialization failed");
+    }
 
     /* --- Decoding loop --- */
 
     static const char *dash_line = "========================================";
 
     int nsec = 0;
+    int nerr = 0;
     unsigned t0 = clock_us();
 
     for (int i = 0; i * frame_samples < encode_samples; i++) {
 
-        int frame_bytes = lc3bin_read_data(fp_in, nch, in);
+        int block_bytes = lc3bin_read_data(fp_in, nchannels, in);
 
         if (floorf(i * frame_us * 1e-6) > nsec) {
 
@@ -223,19 +234,28 @@ int main(int argc, char *argv[])
             nsec = rint(i * frame_us * 1e-6);
         }
 
-        if (frame_bytes <= 0)
-            memset(pcm, 0, nch * frame_samples * pcm_sbytes);
-        else
-            for (int ich = 0; ich < nch; ich++)
-                lc3_decode(dec[ich],
-                    in + ich * frame_bytes, frame_bytes,
-                    pcm_fmt, pcm + ich * pcm_sbytes, nch);
+        if (block_bytes <= 0)
+            memset(pcm, 0, nchannels * frame_samples * pcm_sbytes);
+        else {
+            const uint8_t *in_ptr = in;
+            for (int ich = 0; ich < nchannels; ich++) {
+                int frame_bytes = block_bytes / nchannels
+                    + (ich < block_bytes % nchannels);
+
+                int res = lc3_decode(dec[ich], in_ptr, frame_bytes,
+                    pcm_fmt, pcm + ich * pcm_sbytes, nchannels);
+
+                nerr += (res != 0);
+                in_ptr += frame_bytes;
+            }
+        }
 
         int pcm_offset = i > 0 ? 0 : encode_samples - pcm_samples;
         int pcm_nwrite = MIN(frame_samples - pcm_offset,
             encode_samples - i*frame_samples);
 
-        wave_write_pcm(fp_out, pcm_sbytes, pcm, nch, pcm_offset, pcm_nwrite);
+        wave_write_pcm(fp_out,
+            pcm_sbytes, pcm, nchannels, pcm_offset, pcm_nwrite);
     }
 
     unsigned t = (clock_us() - t0) / 1000;
@@ -244,9 +264,12 @@ int main(int argc, char *argv[])
     fprintf(stderr, "%02d:%02d Decoded in %d.%03d seconds %20s\n",
         nsec / 60, nsec % 60, t / 1000, t % 1000, "");
 
+    if (nerr)
+        fprintf(stderr, "Warning: Decoding of %d frames failed!\n", nerr);
+
     /* --- Cleanup --- */
 
-    for (int ich = 0; ich < nch; ich++)
+    for (int ich = 0; ich < nchannels; ich++)
         free(dec[ich]);
 
     if (fp_in != stdin)

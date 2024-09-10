@@ -16,13 +16,6 @@
  *
  ******************************************************************************/
 
-/**
- * LC3 - Compute LD-MDCT (Low Delay Modified Discret Cosinus Transform)
- *
- * Reference : Low Complexity Communication Codec (LC3)
- *             Bluetooth Specification v1.0
- */
-
 #ifndef __LC3_MDCT_H
 #define __LC3_MDCT_H
 
@@ -38,8 +31,9 @@
  *
  * `x` and `y` can be the same buffer
  */
-void lc3_mdct_forward(enum lc3_dt dt, enum lc3_srate sr,
-    enum lc3_srate sr_dst, const float *x, float *d, float *y);
+void lc3_mdct_forward(
+    enum lc3_dt dt, enum lc3_srate sr, enum lc3_srate sr_dst,
+    const float *x, float *d, float *y);
 
 /**
  * Inverse MDCT transformation
@@ -50,8 +44,9 @@ void lc3_mdct_forward(enum lc3_dt dt, enum lc3_srate sr,
  *
  * `x` and `y` can be the same buffer
  */
-void lc3_mdct_inverse(enum lc3_dt dt, enum lc3_srate sr,
-    enum lc3_srate sr_src, const float *x, float *d, float *y);
+void lc3_mdct_inverse(
+    enum lc3_dt dt, enum lc3_srate sr, enum lc3_srate sr_src,
+    const float *x, float *d, float *y);
 
 
 #endif /* __LC3_MDCT_H */

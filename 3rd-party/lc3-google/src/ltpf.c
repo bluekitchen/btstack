@@ -144,6 +144,36 @@ static const int16_t h_48k_12k8_q15[4*60] = {
 };
 #endif /* resample_48k_12k8 */
 
+#ifndef resample_96k_12k8
+static const int16_t h_96k_12k8_q15[2*120] = {
+       -3,    -7,   -10,   -13,   -13,   -10,    -4,     5,    15,    26,
+       33,    36,    31,    19,     0,   -23,   -47,   -66,   -76,   -73,
+      -54,   -21,    23,    70,   111,   139,   143,   121,    72,     0,
+      -84,  -165,  -227,  -256,  -240,  -175,   -67,    72,   219,   349,
+      433,   448,   379,   225,     0,  -268,  -536,  -755,  -874,  -848,
+     -648,  -260,   301,  1000,  1780,  2569,  3290,  3869,  4243,  4372,
+     4243,  3869,  3290,  2569,  1780,  1000,   301,  -260,  -648,  -848,
+     -874,  -755,  -536,  -268,     0,   225,   379,   448,   433,   349,
+      219,    72,   -67,  -175,  -240,  -256,  -227,  -165,   -84,     0,
+       72,   121,   143,   139,   111,    70,    23,   -21,   -54,   -73,
+      -76,   -66,   -47,   -23,     0,    19,    31,    36,    33,    26,
+       15,     5,    -4,   -10,   -13,   -13,   -10,    -7,    -3,     0,
+
+       -1,    -5,    -8,   -12,   -13,   -12,    -8,     0,    10,    21,
+       30,    35,    34,    26,    10,   -11,   -35,   -58,   -73,   -76,
+      -65,   -39,     0,    46,    92,   127,   144,   136,   100,    38,
+      -41,  -125,  -199,  -246,  -254,  -214,  -126,     0,   146,   288,
+      398,   450,   424,   312,   120,  -131,  -405,  -655,  -830,  -881,
+     -771,  -477,     0,   636,  1384,  2178,  2943,  3601,  4084,  4340,
+     4340,  4084,  3601,  2943,  2178,  1384,   636,     0,  -477,  -771,
+     -881,  -830,  -655,  -405,  -131,   120,   312,   424,   450,   398,
+      288,   146,     0,  -126,  -214,  -254,  -246,  -199,  -125,   -41,
+       38,   100,   136,   144,   127,    92,    46,     0,   -39,   -65,
+      -76,   -73,   -58,   -35,   -11,    10,    26,    34,    35,    30,
+       21,    10,     0,    -8,   -12,   -13,   -12,    -8,    -5,    -1,
+};
+#endif /* resample_96k_12k8 */
+
 
 /**
  * High-pass 50Hz filtering, at 12.8 KHz samplerate
@@ -223,7 +253,8 @@ LC3_HOT static inline void resample_x64k_12k8(const int p, const int16_t *h,
  * The number of previous samples `d` accessed on `x` is :
  *   d: { 30, 60 } - 1 for resampling factors 8 and 4.
  */
-#if !defined(resample_24k_12k8) || !defined(resample_48k_12k8)
+#if !defined(resample_24k_12k8) || !defined(resample_48k_12k8) \
+    || !defined(resample_96k_12k8)
 LC3_HOT static inline void resample_x192k_12k8(const int p, const int16_t *h,
     struct lc3_ltpf_hp50_state *hp50, const int16_t *x, int16_t *y, int n)
 {
@@ -341,6 +372,22 @@ LC3_HOT static void resample_48k_12k8(
 #endif /* resample_48k_12k8 */
 
 /**
+ * Resample from 96 Khz to 12.8 KHz
+ * hp50            High-Pass biquad filter state
+ * x               [-120..-1] Previous, [0..ns-1] Current samples, in fixed Q15
+ * y, n            [0..n-1] Output `n` processed samples, in fixed Q14
+ *
+* The `x` vector is aligned on 32 bits
+*/
+#ifndef resample_96k_12k8
+LC3_HOT static void resample_96k_12k8(
+    struct lc3_ltpf_hp50_state *hp50, const int16_t *x, int16_t *y, int n)
+{
+    resample_x192k_12k8(2, h_96k_12k8_q15, hp50, x, y, n);
+}
+#endif /* resample_96k_12k8 */
+
+/**
 * Resample to 6.4 KHz
 * x               [-3..-1] Previous, [0..n-1] Current samples
 * y, n            [0..n-1] Output `n` processed samples
@@ -366,11 +413,13 @@ LC3_HOT static void resample_6k4(const int16_t *x, int16_t *y, int n)
 static void (* const resample_12k8[])
     (struct lc3_ltpf_hp50_state *, const int16_t *, int16_t *, int ) =
 {
-    [LC3_SRATE_8K ] = resample_8k_12k8,
-    [LC3_SRATE_16K] = resample_16k_12k8,
-    [LC3_SRATE_24K] = resample_24k_12k8,
-    [LC3_SRATE_32K] = resample_32k_12k8,
-    [LC3_SRATE_48K] = resample_48k_12k8,
+    [LC3_SRATE_8K    ] = resample_8k_12k8,
+    [LC3_SRATE_16K   ] = resample_16k_12k8,
+    [LC3_SRATE_24K   ] = resample_24k_12k8,
+    [LC3_SRATE_32K   ] = resample_32k_12k8,
+    [LC3_SRATE_48K   ] = resample_48k_12k8,
+    [LC3_SRATE_48K_HR] = resample_48k_12k8,
+    [LC3_SRATE_96K_HR] = resample_96k_12k8,
 };
 
 
@@ -457,7 +506,7 @@ LC3_HOT static int argmax_weighted(
 }
 
 /**
- * Interpolate from pitch detected value (3.3.9.8)
+ * Interpolate from pitch detected value
  * x, n            [-2..-1] Previous, [0..n] Current input
  * d               The phase of interpolation (0 to 3)
  * return          The interpolated vector
@@ -492,7 +541,7 @@ LC3_HOT static void interpolate(const int16_t *x, int n, int d, int16_t *y)
 }
 
 /**
- * Interpolate autocorrelation (3.3.9.7)
+ * Interpolate autocorrelation
  * x               [-4..-1] Previous, [0..4] Current input
  * d               The phase of interpolation (-3 to 3)
  * return          The interpolated value
@@ -522,7 +571,7 @@ LC3_HOT static float interpolate_corr(const float *x, int d)
 }
 
 /**
- * Pitch detection algorithm (3.3.9.5-6)
+ * Pitch detection algorithm
  * ltpf            Context of analysis
  * x, n            [-114..-17] Previous, [0..n-1] Current 6.4KHz samples
  * tc              Return the pitch-lag estimation
@@ -530,8 +579,8 @@ LC3_HOT static float interpolate_corr(const float *x, int d)
  *
  * The `x` vector is aligned on 32 bits
  */
-static bool detect_pitch(
-    struct lc3_ltpf_analysis *ltpf, const int16_t *x, int n, int *tc)
+static bool detect_pitch(struct lc3_ltpf_analysis *ltpf,
+    const int16_t *x, int n, int *tc)
 {
     float rm1, rm2;
     float r[98];
@@ -562,7 +611,7 @@ static bool detect_pitch(
 }
 
 /**
- * Pitch-lag parameter (3.3.9.7)
+ * Pitch-lag parameter
  * x, n            [-232..-28] Previous, [0..n-1] Current 12.8KHz samples, Q14
  * tc              Pitch-lag estimation
  * pitch           The pitch value, in fixed .4
@@ -615,7 +664,7 @@ bool lc3_ltpf_analyse(
     /* --- Resampling to 12.8 KHz --- */
 
     int z_12k8 = sizeof(ltpf->x_12k8) / sizeof(*ltpf->x_12k8);
-    int n_12k8 = dt == LC3_DT_7M5 ? 96 : 128;
+    int n_12k8 = (1 + dt) * 32;
 
     memmove(ltpf->x_12k8, ltpf->x_12k8 + n_12k8,
         (z_12k8 - n_12k8) * sizeof(*ltpf->x_12k8));
@@ -624,7 +673,7 @@ bool lc3_ltpf_analyse(
 
     resample_12k8[sr](&ltpf->hp50, x, x_12k8, n_12k8);
 
-    x_12k8 -= (dt == LC3_DT_7M5 ? 44 :  24);
+    x_12k8 -= (dt == LC3_DT_7M5 ? 44 : 24);
 
     /* --- Resampling to 6.4 KHz --- */
 
@@ -638,6 +687,13 @@ bool lc3_ltpf_analyse(
 
     resample_6k4(x_12k8, x_6k4, n_6k4);
 
+    /* --- Enlarge for small frame size --- */
+
+    if (dt == LC3_DT_2M5) {
+        x_12k8 -= n_12k8, x_6k4 -= n_6k4;
+        n_12k8 += n_12k8; n_6k4 += n_6k4;
+    }
+
     /* --- Pitch detection --- */
 
     int tc, pitch = 0;
@@ -646,7 +702,7 @@ bool lc3_ltpf_analyse(
     bool pitch_present = detect_pitch(ltpf, x_6k4, n_6k4, &tc);
 
     if (pitch_present) {
-        int16_t u[n_12k8], v[n_12k8];
+        int16_t u[128], v[128];
 
         data->pitch_index = refine_pitch(x_12k8, n_12k8, tc, &pitch);
 
@@ -663,11 +719,11 @@ bool lc3_ltpf_analyse(
             LC3_MAX(pitch, ltpf->pitch) - LC3_MIN(pitch, ltpf->pitch);
         float nc_diff = nc - ltpf->nc[0];
 
-        data->active = pitch_present &&
+        data->active = !lc3_hr(sr) && pitch_present &&
             ((nc > 0.9f) || (nc > 0.84f && pitch_diff < 8 && nc_diff > -0.1f));
 
      } else {
-         data->active = pitch_present &&
+         data->active = !lc3_hr(sr) && pitch_present &&
             ( (dt == LC3_DT_10M || ltpf->nc[1] > 0.94f) &&
               (ltpf->nc[0] > 0.94f && nc > 0.94f) );
      }
@@ -686,6 +742,14 @@ bool lc3_ltpf_analyse(
  * -------------------------------------------------------------------------- */
 
 /**
+ * Width of synthesis filter
+ */
+
+#define MAX_FILTER_WIDTH \
+    (LC3_MAX_SRATE_HZ / 4000)
+
+
+/**
  * Synthesis filter template
  * xh, nh          History ring buffer of filtered samples
  * lag             Lag parameter in the ring buffer
@@ -701,7 +765,7 @@ LC3_HOT static inline void synthesize_template(
 {
     float g = (float)(fade <= 0);
     float g_incr = (float)((fade > 0) - (fade < 0)) / n;
-    float u[w];
+    float u[MAX_FILTER_WIDTH];
 
     /* --- Load previous samples --- */
 
@@ -749,6 +813,7 @@ LC3_HOT static inline void synthesize_template(
  * Synthesis filter for each samplerates (width of filter)
  */
 
+
 LC3_HOT static void synthesize_4(const float *xh, int nh, int lag,
     const float *x0, float *x, int n, const float *c, int fade)
 {
@@ -791,8 +856,7 @@ void lc3_ltpf_synthesize(enum lc3_dt dt, enum lc3_srate sr, int nbytes,
     lc3_ltpf_synthesis_t *ltpf, const lc3_ltpf_data_t *data,
     const float *xh, float *x)
 {
-    int nh = LC3_NH(dt, sr);
-    int dt_us = LC3_DT_US(dt);
+    int nh = lc3_ns(dt, sr) + lc3_nh(dt, sr);
 
     /* --- Filter parameters --- */
 
@@ -802,14 +866,19 @@ void lc3_ltpf_synthesize(enum lc3_dt dt, enum lc3_srate sr, int nbytes,
         p_idx >= 380 ? (((p_idx >> 1) -  63) << 2) + (((p_idx & 1)) << 1) :
                        (((p_idx >> 2) +  32) << 2) + (((p_idx & 3)) << 0)  ;
 
-    pitch = (pitch * LC3_SRATE_KHZ(sr) * 10 + 64) / 128;
+    pitch = (pitch * lc3_ns(LC3_DT_10M, sr) + 64) / 128;
 
-    int nbits = (nbytes*8 * 10000 + (dt_us/2)) / dt_us;
-    int g_idx = LC3_MAX(nbits / 80, 3 + (int)sr) - (3 + sr);
+    int nbits = (nbytes*8 * (1 + LC3_DT_10M)) / (1 + dt);
+    if (dt == LC3_DT_2M5)
+      nbits = (6 * nbits + 5) / 10;
+    if (dt == LC3_DT_5M)
+      nbits -= 160;
+
+    int g_idx = LC3_MAX(nbits / 80, (int)(3 + sr)) - (3 + sr);
     bool active = data && data->active && g_idx < 4;
 
-    int w = LC3_MAX(4, LC3_SRATE_KHZ(sr) / 4);
-    float c[2*w];
+    int w = LC3_MAX(4, lc3_ns_4m[sr] >> 4);
+    float c[2 * MAX_FILTER_WIDTH];
 
     for (int i = 0; i < w; i++) {
         float g = active ? 0.4f - 0.05f * g_idx : 0;
@@ -819,31 +888,32 @@ void lc3_ltpf_synthesize(enum lc3_dt dt, enum lc3_srate sr, int nbytes,
 
     /* --- Transition handling --- */
 
-    int ns = LC3_NS(dt, sr);
-    int nt = ns / (3 + dt);
-    float x0[w];
+    int ns = lc3_ns(dt, sr);
+    int nt = ns / (1 + dt);
+    float x0[2][MAX_FILTER_WIDTH];
+
+    memcpy(x0[0], ltpf->x, (w-1) * sizeof(float));
+    memcpy(ltpf->x, x + ns - (w-1), (w-1) * sizeof(float));
 
     if (active)
-        memcpy(x0, x + nt-(w-1), (w-1) * sizeof(float));
+        memcpy(x0[1], x + nt-(w-1), (w-1) * sizeof(float));
 
     if (!ltpf->active && active)
-        synthesize[sr](xh, nh, pitch/4, ltpf->x, x, nt, c, 1);
+        synthesize[sr](xh, nh, pitch/4, x0[0], x, nt, c, 1);
     else if (ltpf->active && !active)
-        synthesize[sr](xh, nh, ltpf->pitch/4, ltpf->x, x, nt, ltpf->c, -1);
+        synthesize[sr](xh, nh, ltpf->pitch/4, x0[0], x, nt, ltpf->c, -1);
     else if (ltpf->active && active && ltpf->pitch == pitch)
-        synthesize[sr](xh, nh, pitch/4, ltpf->x, x, nt, c, 0);
+        synthesize[sr](xh, nh, pitch/4, x0[0], x, nt, c, 0);
     else if (ltpf->active && active) {
-        synthesize[sr](xh, nh, ltpf->pitch/4, ltpf->x, x, nt, ltpf->c, -1);
+        synthesize[sr](xh, nh, ltpf->pitch/4, x0[0], x, nt, ltpf->c, -1);
         synthesize[sr](xh, nh, pitch/4,
             (x <= xh ? x + nh : x) - (w-1), x, nt, c, 1);
     }
 
     /* --- Remainder --- */
 
-    memcpy(ltpf->x, x + ns - (w-1), (w-1) * sizeof(float));
-
-    if (active)
-        synthesize[sr](xh, nh, pitch/4, x0, x + nt, ns-nt, c, 0);
+    if (active && ns > nt)
+        synthesize[sr](xh, nh, pitch/4, x0[1], x + nt, ns-nt, c, 0);
 
     /* --- Update state --- */
 
@@ -886,7 +956,8 @@ void lc3_ltpf_put_data(lc3_bits_t *bits,
 /**
  * Get bitstream data
  */
-void lc3_ltpf_get_data(lc3_bits_t *bits, struct lc3_ltpf_data *data)
+void lc3_ltpf_get_data(lc3_bits_t *bits,
+    struct lc3_ltpf_data *data)
 {
     data->active = lc3_get_bit(bits);
     data->pitch_index = lc3_get_bits(bits, 9);

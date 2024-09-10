@@ -26,30 +26,17 @@
 bool lc3_energy_compute(
     enum lc3_dt dt, enum lc3_srate sr, const float *x, float *e)
 {
-    static const int n1_table[LC3_NUM_DT][LC3_NUM_SRATE] = {
-        [LC3_DT_7M5] = { 56, 34, 27, 24, 22 },
-        [LC3_DT_10M] = { 49, 28, 23, 20, 18 },
-    };
-
-    /* First bands are 1 coefficient width */
-
-    int n1 = n1_table[dt][sr];
-    float e_sum[2] = { 0, 0 };
-    int iband;
-
-    for (iband = 0; iband < n1; iband++) {
-        *e = x[iband] * x[iband];
-        e_sum[0] += *(e++);
-    }
-
-    /* Mean the square of coefficients within each band,
-     * note that 7.5ms 8KHz frame has more bands than samples */
-
-    int nb = LC3_MIN(LC3_NUM_BANDS, LC3_NS(dt, sr));
-    int iband_h = nb - 2*(2 - dt);
+    int nb = lc3_num_bands[dt][sr];
     const int *lim = lc3_band_lim[dt][sr];
 
-    for (int i = lim[iband]; iband < nb; iband++) {
+    /* Mean the square of coefficients within each band */
+
+    float e_sum[2] = { 0, 0 };
+    int iband_h = nb - (const int []){
+        [LC3_DT_2M5] = 2, [LC3_DT_5M ] = 3,
+        [LC3_DT_7M5] = 4, [LC3_DT_10M] = 2 }[dt];
+
+    for (int iband = 0, i = lim[iband]; iband < nb; iband++) {
         int ie = lim[iband+1];
         int n = ie - i;
 
@@ -60,9 +47,6 @@ bool lc3_energy_compute(
         *e = sx2 / n;
         e_sum[iband >= iband_h] += *(e++);
     }
-
-    for (; iband < LC3_NUM_BANDS; iband++)
-        *(e++) = 0;
 
     /* Return the near nyquist flag */
 

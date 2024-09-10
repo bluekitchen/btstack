@@ -35,25 +35,28 @@ class SpectrumQuantization:
 
     def get_gain_offset(self, nbytes):
 
-        g_off = (nbytes * 8) // (10 * (1 + self.sr))
-        g_off = -min(115, g_off) - (105 + 5*(1 + self.sr))
+        sr_ind = self.sr if self.sr < T.SRATE_48K_HR \
+            else 4 + (self.sr - T.SRATE_48K_HR)
+
+        g_off = (nbytes * 8) // (10 * (1 + sr_ind))
+        g_off = -min(115, g_off) - (105 + 5*(1 + sr_ind))
+        if self.sr >= T.SRATE_48K_HR:
+            g_off = max(g_off, -181)
 
         return g_off
 
     def get_noise_indices(self, bw, xq, lastnz):
 
-        nf_start = [ 18, 24 ][self.dt]
-        nf_width = [  2,  3 ][self.dt]
+        nf_start = [  6, 12, 18, 24 ][self.dt]
+        nf_width = [  1,  1,  2,  3 ][self.dt]
 
-        bw_stop = int([ 80, 160, 240, 320, 400 ][bw] * (T.DT_MS[self.dt] / 10))
+        bw_stop = T.I[self.dt][min(bw, T.SRATE_48K)][-1]
 
         xq = np.append(xq[:lastnz], np.zeros(len(xq) - lastnz))
+        xq[:nf_start-nf_width] = 1
 
-        i_nf = [ np.all(xq[k-nf_width:min(bw_stop, k+nf_width+1)] == 0)
-                    for k in range(nf_start, bw_stop) ]
-
-        return (i_nf, nf_start, bw_stop)
-
+        return [ np.all(xq[max(k-nf_width, 0):min(k+nf_width+1, bw_stop)] == 0)
+                    for k in range(bw_stop) ]
 
 class SpectrumAnalysis(SpectrumQuantization):
 
@@ -70,14 +73,36 @@ class SpectrumAnalysis(SpectrumQuantization):
                 self.nbits_residual_max, self.xg) = \
             (None, None, None, None, None, None)
 
-    def estimate_gain(self, x, nbits_spec, nbits_off, g_off):
+    def estimate_gain(self, x, nbytes, nbits_spec, nbits_off, g_off):
 
         nbits = int(nbits_spec + nbits_off + 0.5)
 
         ### Energy (dB) by 4 MDCT coefficients
 
+        hr = (self.sr >= T.SRATE_48K_HR)
+        nf = 0
+
+        if hr:
+            dt = self.dt
+            sr = self.sr
+
+            dt_ms = T.DT_MS[dt]
+            bitrate = (8 * nbytes / (dt_ms * 1e-3)).astype(int)
+
+            C = [ [ -6, 0, None, 2 ], [ -6, 0, None, 5 ] ]
+
+            reg_bits = np.clip(
+                bitrate // 12500 + C[sr - T.SRATE_48K_HR][dt], 6, 23)
+
+            M0 = np.sum(np.abs(x)) + 1e-5
+            M1 = np.sum(np.arange(len(x)) * np.abs(x)) + 1e-5
+
+            low_bits = (4 / dt_ms) * (2*dt_ms - min(M0/M1, 2*dt_ms))
+
+            nf = np.max(np.abs(x)) * np.exp2(-reg_bits - low_bits)
+
         e = [ np.sum(x[4*k:4*(k+1)] ** 2) for k in range(len(x) // 4) ]
-        e = 10 * np.log10(2**-31 + np.array(e))
+        e = 10 * np.log10(2**-31 + np.array(e) + nf)
 
         ### Compute gain index
 
@@ -108,7 +133,8 @@ class SpectrumAnalysis(SpectrumQuantization):
 
         x_max = np.amax(np.abs(x))
         if x_max > 0:
-            g_min = 28 * np.log10(x_max / (32768 - 0.375))
+            x_lim = [ 2**15 - 0.375,  2**23 ][hr]
+            g_min = 28 * np.log10(x_max / x_lim)
             g_min = np.ceil(g_min).astype(int) - g_off
             reset_off = g_idx < g_min
         else:
@@ -118,15 +144,20 @@ class SpectrumAnalysis(SpectrumQuantization):
         if reset_off:
             g_idx = g_min
 
-        return (g_idx + g_off, reset_off)
+        return (g_min, g_idx + g_off, reset_off)
 
     def quantize(self, g_int, x):
 
         xg = x / 10 ** (g_int / 28)
 
-        xq = np.where(xg < 0, np.ceil(xg - 0.375), np.floor(xg + 0.375))
-        xq = xq.astype(int)
-        xq = np.fmin(np.fmax(xq, -32768), 32767)
+        hr = (self.sr >= T.SRATE_48K_HR)
+        offset = [ 0.375, 0.5 ][hr]
+        xq_min = [ -(2**15)  , -(2**23)   ][hr]
+        xq_max = [  (2**15)-1,  (2**23)-1 ][hr]
+
+        xq = np.where(xg < 0, np.ceil(xg - offset), np.floor(xg + offset))
+        xq = xq.astype(np.int32)
+        xq = np.fmin(np.fmax(xq, xq_min), xq_max)
 
         nz_pairs = np.any([ xq[::2] != 0, xq[1::2] != 0 ], axis=0)
         lastnz = len(xq) - 2 * np.argmax(nz_pairs[-1::-1])
@@ -137,8 +168,10 @@ class SpectrumAnalysis(SpectrumQuantization):
 
     def compute_nbits(self, nbytes, x, lastnz, nbits_spec):
 
-        mode =   1 if nbytes >= 20 * (3 + self.sr) else 0
-        rate = 512 if nbytes >  20 * (1 + self.sr) else 0
+        mode = [ 0,   1 ][int(self.sr < T.SRATE_96K_HR and \
+                              nbytes >= 20 * (3 + min(self.sr, T.SRATE_48K)))]
+        rate = [ 0, 512 ][int(self.sr < T.SRATE_96K_HR and \
+                              nbytes >  20 * (1 + min(self.sr, T.SRATE_48K)))]
 
         nbits_est = 0
         nbits_trunc = 0
@@ -196,10 +229,11 @@ class SpectrumAnalysis(SpectrumQuantization):
 
     def adjust_gain(self, g_idx, nbits, nbits_spec):
 
-        T1 = [  80,  230,  380,  530,  680 ]
-        T2 = [ 500, 1025, 1550, 2075, 2600 ]
-        T3 = [ 850, 1700, 2550, 3400, 4250 ]
+        T1 = [  80,  230,  380,  530,  680,  680,  830 ]
+        T2 = [ 500, 1025, 1550, 2075, 2600, 2600, 3125 ]
+        T3 = [ 850, 1700, 2550, 3400, 4250, 4250, 5100 ]
 
+        dt = self.dt
         sr = self.sr
 
         if nbits < T1[sr]:
@@ -218,11 +252,19 @@ class SpectrumAnalysis(SpectrumQuantization):
 
         delta = np.fix(delta + 0.5).astype(int)
 
-        if (g_idx < 255 and nbits > nbits_spec) or \
-           (g_idx >   0 and nbits < nbits_spec - (delta + 2)):
+        if self.sr >= T.SRATE_48K_HR and \
+            (g_idx < 255 and nbits > nbits_spec):
+
+            factor = [ 3 + (nbits >= 520), 2, 0, 1 ][dt]
+            g_incr = int(factor * (1 + (nbits - nbits_spec) / delta))
+            return min(g_idx + g_incr, 255) - g_idx;
+
+        elif self.sr < T.SRATE_48K_HR and \
+            ( (g_idx < 255 and nbits > nbits_spec) or \
+              (g_idx >   0 and nbits < nbits_spec - (delta + 2)) ):
 
             if nbits < nbits_spec - (delta + 2):
-                return - 1
+                return -1
 
             if g_idx == 254 or nbits < nbits_spec + delta:
                 return 1
@@ -234,25 +276,25 @@ class SpectrumAnalysis(SpectrumQuantization):
 
     def estimate_noise(self, bw, xq, lastnz, x):
 
-        (i_nf, nf_start, nf_stop) = self.get_noise_indices(bw, xq, lastnz)
+        i_nf = self.get_noise_indices(bw, xq, lastnz)
+        l_nf = sum(abs(x[:len(i_nf)] * i_nf)) / sum(i_nf) \
+            if sum(i_nf) > 0 else 0
 
-        nf = 8 - 16 * sum(abs(x[nf_start:nf_stop] * i_nf)) / sum(i_nf) \
-                if sum(i_nf) > 0 else 0
+        return min(max(np.rint(8 - 16 * l_nf).astype(int), 0), 7)
 
-        return min(max(np.rint(nf).astype(int), 0), 7)
-
-    def run(self,
-        bw, nbytes, nbits_bw, nbits_ltpf, nbits_sns, nbits_tns, x):
+    def run(self, bw, nbytes, nbits_bw, nbits_ltpf, nbits_sns, nbits_tns, x):
 
         sr = self.sr
 
         ### Bit budget
 
+        hr = self.sr >= T.SRATE_48K_HR
+
         nbits_gain = 8
         nbits_nf   = 3
 
         nbits_ari  = np.ceil(np.log2(len(x) / 2)).astype(int)
-        nbits_ari += 3 + min((8*nbytes - 1) // 1280, 2)
+        nbits_ari += 3 + int(hr) + min((8*nbytes - 1) // 1280, 2)
 
         nbits_spec = 8*nbytes - \
             nbits_bw - nbits_ltpf - nbits_sns - nbits_tns - \
@@ -268,8 +310,8 @@ class SpectrumAnalysis(SpectrumQuantization):
 
         g_off = self.get_gain_offset(nbytes)
 
-        (g_int, self.reset_off) = \
-            self.estimate_gain(x, nbits_spec, nbits_off, g_off)
+        (g_min, g_int, self.reset_off) = \
+            self.estimate_gain(x, nbytes, nbits_spec, nbits_off, g_off)
         self.nbits_off = nbits_off
         self.nbits_spec = nbits_spec
 
@@ -285,6 +327,7 @@ class SpectrumAnalysis(SpectrumQuantization):
         ### Adjust gain and requantize
 
         g_adj = self.adjust_gain(g_int - g_off, nbits_est, nbits_spec)
+        g_adj = max(g_int + g_adj, g_min + g_off) - g_int
 
         (xg, xq, lastnz) = self.quantize(g_adj, xg)
 
@@ -306,7 +349,7 @@ class SpectrumAnalysis(SpectrumQuantization):
 
     def store(self, b):
 
-        ne = T.NE[self.dt][self.sr]
+        ne = T.I[self.dt][self.sr][-1]
         nbits_lastnz = np.ceil(np.log2(ne/2)).astype(int)
 
         b.write_uint((self.lastnz >> 1) - 1, nbits_lastnz)
@@ -410,9 +453,9 @@ class SpectrumSynthesis(SpectrumQuantization):
 
     def fill_noise(self, bw, x, lastnz, f_nf, nf_seed):
 
-        (i_nf, nf_start, nf_stop) = self.get_noise_indices(bw, x, lastnz)
+        i_nf = self.get_noise_indices(bw, x, lastnz)
 
-        k_nf = nf_start +  np.argwhere(i_nf)
+        k_nf = np.argwhere(i_nf)
         l_nf = (8 - f_nf)/16
 
         for k in k_nf:
@@ -423,7 +466,7 @@ class SpectrumSynthesis(SpectrumQuantization):
 
     def load(self, b):
 
-        ne = T.NE[self.dt][self.sr]
+        ne = T.I[self.dt][self.sr][-1]
         nbits_lastnz = np.ceil(np.log2(ne/2)).astype(int)
 
         self.lastnz = (b.read_uint(nbits_lastnz) + 1) << 1
@@ -441,10 +484,12 @@ class SpectrumSynthesis(SpectrumQuantization):
 
         ### Quantized data
 
-        x = np.zeros(T.NE[self.dt][self.sr])
-        rate = 512 if nbytes >  20 * (1 + self.sr) else 0
+        ne = T.I[self.dt][self.sr][-1]
+        x  = np.zeros(ne)
+        rate = [ 0, 512 ][int(self.sr < T.SRATE_96K_HR and \
+                              nbytes >  20 * (1 + min(self.sr, T.SRATE_48K)))]
 
-        levs = np.zeros(len(x), dtype=np.int)
+        levs = np.zeros(len(x), dtype=np.intc)
         c = 0
 
         for n in range(0, self.lastnz, 2):
@@ -540,7 +585,7 @@ class SpectrumSynthesis(SpectrumQuantization):
 
         ### Set residual and noise
 
-        nf_seed = sum(abs(x.astype(np.int)) * range(len(x)))
+        nf_seed = sum(abs(x.astype(np.intc)) * range(len(x)))
 
         zero_frame = (self.lastnz <= 2 and x[0] == 0 and x[1] == 0
                       and self.g_idx <= 0 and f_nf >= 7)
@@ -573,54 +618,56 @@ def initial_state():
 
 def check_estimate_gain(rng, dt, sr):
 
-    ne = T.I[dt][sr][-1]
     ok = True
 
     analysis = SpectrumAnalysis(dt, sr)
 
+    mismatch_count = 0
     for i in range(10):
-        x = rng.random(ne) * i * 1e2
+        ne = T.I[dt][sr][-1]
+        x  = rng.random(ne) * i * 1e2
 
         nbytes = 20 + int(rng.random() * 100)
         nbits_budget = 8 * nbytes - int(rng.random() * 100)
         nbits_off = rng.random() * 10
         g_off = 10 - int(rng.random() * 20)
 
-        (g_int, reset_off) = \
-            analysis.estimate_gain(x, nbits_budget, nbits_off, g_off)
+        (_, g_int, reset_off) = \
+            analysis.estimate_gain(x, nbytes, nbits_budget, nbits_off, g_off)
 
-        (g_int_c, reset_off_c) = lc3.spec_estimate_gain(
-            dt, sr, x, nbits_budget, nbits_off, -g_off)
+        (g_int_c, reset_off_c, _) = lc3.spec_estimate_gain(
+            dt, sr, x, nbytes, nbits_budget, nbits_off, -g_off)
 
-        ok = ok and g_int_c == g_int
-        ok = ok and reset_off_c == reset_off
+        if g_int_c != g_int:
+            mismatch_count += 1
+
+        ok = ok and (g_int_c == g_int or mismatch_count <= 1)
+        ok = ok and (reset_off_c == reset_off or mismatch_count <= 1)
 
     return ok
 
 def check_quantization(rng, dt, sr):
 
-    ne = T.I[dt][sr][-1]
     ok = True
 
     analysis = SpectrumAnalysis(dt, sr)
 
     for g_int in range(-128, 128):
 
-        x = rng.random(ne) *  1e2
+        ne = T.I[dt][sr][-1]
+        x  = rng.random(ne) * 1e2
         nbytes = 20 + int(rng.random() * 30)
 
         (xg, xq, nq) = analysis.quantize(g_int, x)
-        (xg_c, xq_c, nq_c) = lc3.spec_quantize(dt, sr, g_int, x)
+        (xg_c, nq_c) = lc3.spec_quantize(dt, sr, g_int, x)
 
         ok = ok and np.amax(np.abs(1 - xg_c/xg)) < 1e-6
-        ok = ok and np.any(abs(xq_c - xq) < 1)
         ok = ok and nq_c == nq
 
     return ok
 
 def check_compute_nbits(rng, dt, sr):
 
-    ne = T.I[dt][sr][-1]
     ok = True
 
     analysis = SpectrumAnalysis(dt, sr)
@@ -628,6 +675,7 @@ def check_compute_nbits(rng, dt, sr):
     for nbytes in range(20, 150):
 
         nbits_budget = nbytes * 8 - int(rng.random() * 100)
+        ne = T.I[dt][sr][-1]
         xq = (rng.random(ne) * 8).astype(int)
         nq = ne // 2 + int(rng.random() * ne // 2)
 
@@ -653,7 +701,6 @@ def check_compute_nbits(rng, dt, sr):
 
 def check_adjust_gain(rng, dt, sr):
 
-    ne = T.I[dt][sr][-1]
     ok = True
 
     analysis = SpectrumAnalysis(dt, sr)
@@ -664,7 +711,8 @@ def check_adjust_gain(rng, dt, sr):
 
             g_adj = analysis.adjust_gain(g_idx, nbits, nbits_budget)
 
-            g_adj_c = lc3.spec_adjust_gain(sr, g_idx, nbits, nbits_budget)
+            g_adj_c = lc3.spec_adjust_gain(
+                dt, sr, g_idx, nbits, nbits_budget, 0)
 
             ok = ok and g_adj_c == g_adj
 
@@ -672,8 +720,6 @@ def check_adjust_gain(rng, dt, sr):
 
 def check_unit(rng, dt, sr):
 
-    ns = T.NS[dt][sr]
-    ne = T.I[dt][sr][-1]
     ok = True
 
     state_c = initial_state()
@@ -687,42 +733,47 @@ def check_unit(rng, dt, sr):
     nbytes = 100
 
     for i in range(10):
+        ns = T.NS[dt][sr]
+        ne = T.I[dt][sr][-1]
 
         x = rng.random(ns) * 1e4
         e = rng.random(min(len(x), 64)) * 1e10
 
-        bwdet.run(e)
+        if sr < T.SRATE_48K_HR:
+            bwdet.run(e)
         pitch_present = ltpf.run(x)
         tns.run(x[:ne], sr, False, nbytes)
-        sns.run(e, False, x)
+        sns.run(e, False, 0, x)
 
-        (xq, nq, _) = analysis.run(sr, nbytes, bwdet.get_nbits(),
+        (xq, nq, xg) = analysis.run(sr, nbytes,
+            0 if sr >= T.SRATE_48K_HR else bwdet.get_nbits(),
             ltpf.get_nbits(), sns.get_nbits(), tns.get_nbits(), x[:ne])
 
-        (_, xq_c, side_c) = lc3.spec_analyze(
-            dt, sr, nbytes, pitch_present, tns.get_data(), state_c, x[:ne])
+        (xg_c, side_c) = lc3.spec_analyze(dt, sr,
+            nbytes, pitch_present, tns.get_data(), state_c, x[:ne])
 
         ok = ok and side_c['g_idx'] == analysis.g_idx
         ok = ok and side_c['nq'] == nq
-        ok = ok and np.any(abs(xq_c - xq) < 1)
+        ok = ok and np.amax(np.abs(1 - xg_c/xg)) < 1e-6
 
     return ok
 
-def check_noise(rng, dt, bw):
+def check_noise(rng, dt, bw, hrmode = False):
 
-    ne = T.NE[dt][bw]
     ok = True
 
     analysis = SpectrumAnalysis(dt, bw)
 
-    for i in range(10):
+    xq_off = [ 0.375, 0.5 ][hrmode]
 
+    for i in range(10):
+        ne = T.I[dt][bw][-1]
         xq = ((rng.random(ne) - 0.5) * 10 ** (0.5)).astype(int)
         nq = ne - int(rng.random() * 5)
-        x  = rng.random(ne) * i * 1e-1
+        x  = xq - np.select([xq < 0, xq > 0], np.array([ xq_off, -xq_off ]))
 
         nf = analysis.estimate_noise(bw, xq, nq, x)
-        nf_c = lc3.spec_estimate_noise(dt, bw, xq, nq, x)
+        nf_c = lc3.spec_estimate_noise(dt, bw, hrmode, x, nq)
 
         ok = ok and nf_c == nf
 
@@ -730,69 +781,76 @@ def check_noise(rng, dt, bw):
 
 def check_appendix_c(dt):
 
+    i0 = dt - T.DT_7M5
     sr = T.SRATE_16K
-    ne = T.NE[dt][sr]
+
     ok = True
 
     state_c = initial_state()
 
-    for i in range(len(C.X_F[dt])):
+    for i in range(len(C.X_F[i0])):
 
-        g_int = lc3.spec_estimate_gain(dt, sr, C.X_F[dt][i],
-            C.NBITS_SPEC[dt][i], C.NBITS_OFFSET[dt][i], -C.GG_OFF[dt][i])[0]
-        ok = ok and g_int == C.GG_IND[dt][i] + C.GG_OFF[dt][i]
+        ne = T.I[dt][sr][-1]
 
-        (_, xq, nq) = lc3.spec_quantize(dt, sr,
-            C.GG_IND[dt][i] + C.GG_OFF[dt][i], C.X_F[dt][i])
-        ok = ok and np.any((xq - C.X_Q[dt][i]) == 0)
-        ok = ok and nq == C.LASTNZ[dt][i]
+        g_int = lc3.spec_estimate_gain(dt, sr, C.X_F[i0][i],
+            0, C.NBITS_SPEC[i0][i], C.NBITS_OFFSET[i0][i], -C.GG_OFF[i0][i])[0]
+        ok = ok and g_int == C.GG_IND[i0][i] + C.GG_OFF[i0][i]
 
+        (x, nq) = lc3.spec_quantize(dt, sr,
+            C.GG_IND[i0][i] + C.GG_OFF[i0][i], C.X_F[i0][i])
+        x += np.select([x < 0, x > 0], np.array([ 0.375, -0.375 ]))
+        ok = ok and np.any((np.trunc(x) - C.X_Q[i0][i]) == 0)
+        ok = ok and nq == C.LASTNZ[i0][i]
         nbits = lc3.spec_compute_nbits(dt, sr,
-            C.NBYTES[dt], C.X_Q[dt][i], C.LASTNZ[dt][i], 0)[0]
-        ok = ok and nbits == C.NBITS_EST[dt][i]
+            C.NBYTES[i0], C.X_Q[i0][i], C.LASTNZ[i0][i], 0)[0]
+        ok = ok and nbits == C.NBITS_EST[i0][i]
 
-        g_adj = lc3.spec_adjust_gain(sr,
-            C.GG_IND[dt][i], C.NBITS_EST[dt][i], C.NBITS_SPEC[dt][i])
-        ok = ok and g_adj == C.GG_IND_ADJ[dt][i] - C.GG_IND[dt][i]
+        g_adj = lc3.spec_adjust_gain(dt, sr,
+            C.GG_IND[i0][i], C.NBITS_EST[i0][i], C.NBITS_SPEC[i0][i], 0)
+        ok = ok and g_adj == C.GG_IND_ADJ[i0][i] - C.GG_IND[i0][i]
 
-        if C.GG_IND_ADJ[dt][i] != C.GG_IND[dt][i]:
+        if C.GG_IND_ADJ[i0][i] != C.GG_IND[i0][i]:
 
-            (_, xq, nq) = lc3.spec_quantize(dt, sr,
-                C.GG_IND_ADJ[dt][i] + C.GG_OFF[dt][i], C.X_F[dt][i])
-            lastnz = C.LASTNZ_REQ[dt][i]
-            ok = ok and np.any(((xq - C.X_Q_REQ[dt][i])[:lastnz]) == 0)
+            (x, nq) = lc3.spec_quantize(dt, sr,
+                C.GG_IND_ADJ[i0][i] + C.GG_OFF[i0][i], C.X_F[i0][i])
+            lastnz = C.LASTNZ_REQ[i0][i]
+            x += np.select([x < 0, x > 0], np.array([ 0.375, -0.375 ]))
+            ok = ok and np.any(((np.trunc(x) - C.X_Q_REQ[i0][i])[:lastnz]) == 0)
 
         tns_data = {
-            'nfilters' : C.NUM_TNS_FILTERS[dt][i],
+            'nfilters' : C.NUM_TNS_FILTERS[i0][i],
             'lpc_weighting' : [ True, True ],
-            'rc_order' : [ C.RC_ORDER[dt][i][0], 0 ],
-            'rc' : [ C.RC_I_1[dt][i] - 8, np.zeros(8, dtype = np.int) ]
+            'rc_order' : [ C.RC_ORDER[i0][i][0], 0 ],
+            'rc' : [ C.RC_I_1[i0][i] - 8, np.zeros(8, dtype = np.intc) ]
         }
 
-        (x, xq, side) = lc3.spec_analyze(dt, sr, C.NBYTES[dt],
-            C.PITCH_PRESENT[dt][i], tns_data, state_c, C.X_F[dt][i])
+        (x, side) = lc3.spec_analyze(dt, sr, C.NBYTES[i0],
+            C.PITCH_PRESENT[i0][i], tns_data, state_c, C.X_F[i0][i])
 
-        ok = ok and np.abs(state_c['nbits_off'] - C.NBITS_OFFSET[dt][i]) < 1e-5
-        if C.GG_IND_ADJ[dt][i] != C.GG_IND[dt][i]:
-            xq = C.X_Q_REQ[dt][i]
-            nq = C.LASTNZ_REQ[dt][i]
-            ok = ok and side['g_idx'] == C.GG_IND_ADJ[dt][i]
+        xq = x + np.select([x < 0, x > 0], np.array([ 0.375, -0.375 ]))
+        xq = np.trunc(xq)
+
+        ok = ok and np.abs(state_c['nbits_off'] - C.NBITS_OFFSET[i0][i]) < 1e-5
+        if C.GG_IND_ADJ[i0][i] != C.GG_IND[i0][i]:
+            xq = C.X_Q_REQ[i0][i]
+            nq = C.LASTNZ_REQ[i0][i]
+            ok = ok and side['g_idx'] == C.GG_IND_ADJ[i0][i]
             ok = ok and side['nq'] == nq
             ok = ok and np.any(((xq[:nq] - xq[:nq])) == 0)
         else:
-            xq = C.X_Q[dt][i]
-            nq = C.LASTNZ[dt][i]
-            ok = ok and side['g_idx'] == C.GG_IND[dt][i]
+            xq = C.X_Q[i0][i]
+            nq = C.LASTNZ[i0][i]
+            ok = ok and side['g_idx'] == C.GG_IND[i0][i]
             ok = ok and side['nq'] == nq
-            ok = ok and np.any((xq[:nq] - C.X_Q[dt][i][:nq]) == 0)
-        ok = ok and side['lsb_mode'] == C.LSB_MODE[dt][i]
+            ok = ok and np.any((xq[:nq] - C.X_Q[i0][i][:nq]) == 0)
+        ok = ok and side['lsb_mode'] == C.LSB_MODE[i0][i]
 
-        gg = C.GG[dt][i] if C.GG_IND_ADJ[dt][i] == C.GG_IND[dt][i] \
-                else C.GG_ADJ[dt][i]
+        gg = C.GG[i0][i] if C.GG_IND_ADJ[i0][i] == C.GG_IND[i0][i] \
+                else C.GG_ADJ[i0][i]
 
-        nf = lc3.spec_estimate_noise(dt, C.P_BW[dt][i],
-                xq, nq, C.X_F[dt][i] / gg)
-        ok = ok and nf == C.F_NF[dt][i]
+        nf = lc3.spec_estimate_noise(
+                dt, C.P_BW[i0][i], False, C.X_F[i0][i] / gg, nq)
+        ok = ok and nf == C.F_NF[i0][i]
 
     return ok
 
@@ -802,7 +860,7 @@ def check():
     ok = True
 
     for dt in range(T.NUM_DT):
-        for sr in range(T.NUM_SRATE):
+        for sr in range(T.SRATE_8K, T.SRATE_48K + 1):
             ok = ok and check_estimate_gain(rng, dt, sr)
             ok = ok and check_quantization(rng, dt, sr)
             ok = ok and check_compute_nbits(rng, dt, sr)
@@ -810,7 +868,16 @@ def check():
             ok = ok and check_unit(rng, dt, sr)
             ok = ok and check_noise(rng, dt, sr)
 
-    for dt in range(T.NUM_DT):
+    for dt in ( T.DT_2M5, T.DT_5M, T.DT_10M ):
+        for sr in ( T.SRATE_48K_HR, T.SRATE_96K_HR ):
+            ok = ok and check_estimate_gain(rng, dt, sr)
+            ok = ok and check_quantization(rng, dt, sr)
+            ok = ok and check_compute_nbits(rng, dt, sr)
+            ok = ok and check_adjust_gain(rng, dt, sr)
+            ok = ok and check_unit(rng, dt, sr)
+            ok = ok and check_noise(rng, dt, sr, True)
+
+    for dt in ( T.DT_7M5, T.DT_10M ):
         ok = ok and check_appendix_c(dt)
 
     return ok

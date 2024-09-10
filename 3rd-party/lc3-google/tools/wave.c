@@ -49,7 +49,7 @@ struct wave_file {
  * Audio format statement
  * | id          WAVE_FORMAT_ID
  * | size        Size of the block - 8 bytes (= 16 bytes)
- * | format      WAVE_FORMAT_PCM
+ * | format      WAVE_FORMAT_PCM or WAVE_FORMAT_EXT
  * | channels    Number of channels
  * | samplerate  Sampling rate
  * | byterate    Bytes per secondes = `samplerate * framesize`
@@ -58,7 +58,8 @@ struct wave_file {
  */
 
 #define WAVE_FORMAT_ID   __WAVE_ID("fmt ")
-#define WAVE_FORMAT_PCM  1
+#define WAVE_FORMAT_PCM  0x0001
+#define WAVE_FORMAT_EXT  0xfffe
 
 struct wave_format {
     uint32_t id;
@@ -103,7 +104,8 @@ int wave_read_header(FILE *fp, int *bitdepth, int *samplesize,
 
     if (fread(&format, sizeof(format), 1, fp) != 1
             || format.id         != WAVE_FORMAT_ID
-            || format.fmt        != WAVE_FORMAT_PCM
+            || ( format.fmt      != WAVE_FORMAT_PCM &&
+                 format.fmt      != WAVE_FORMAT_EXT   )
             || format.channels   <= 0
             || format.samplerate <= 0
             || format.framesize  <= 0
@@ -112,9 +114,11 @@ int wave_read_header(FILE *fp, int *bitdepth, int *samplesize,
 
     fseek(fp, sizeof(format) - (8 + format.size), SEEK_CUR);
 
-    if (fread(&data, sizeof(data), 1, fp) != 1
-            || data.id != WAVE_DATA_ID)
-        return -1;
+    for ( ; fread(&data, sizeof(data), 1, fp) == 1 && data.id != WAVE_DATA_ID
+          ; fseek(fp, data.size, SEEK_CUR) );
+
+    if (feof(fp))
+      return -1;
 
     *bitdepth = format.bitdepth;
     *samplesize = format.framesize / format.channels;
