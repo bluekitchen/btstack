@@ -24,8 +24,17 @@ import tables as T, appendix_c as C
 
 class Mdct:
 
-    W = [ [ T.W_7M5_60, T.W_7M5_120, T.W_7M5_180, T.W_7M5_240, T.W_7M5_360 ],
-          [ T.W_10M_80, T.W_10M_160, T.W_10M_240, T.W_10M_320, T.W_10M_480 ] ]
+    W = [ [ T.W_2M5_8K , T.W_2M5_16K, T.W_2M5_24K,
+            T.W_2M5_32K, T.W_2M5_48K, T.W_2M5_48K_HR, T.W_2M5_96K_HR ],
+
+          [ T.W_5M_8K  , T.W_5M_16K , T.W_5M_24K ,
+            T.W_5M_32K , T.W_5M_48K , T.W_5M_48K_HR , T.W_5M_96K_HR  ],
+
+          [ T.W_7M5_8K , T.W_7M5_16K, T.W_7M5_24K,
+            T.W_7M5_32K, T.W_7M5_48K, None, None ],
+
+          [ T.W_10M_8K , T.W_10M_16K, T.W_10M_24K,
+            T.W_10M_32K, T.W_10M_48K, T.W_10M_48K_HR, T.W_10M_96K_HR ] ]
 
     def __init__(self, dt, sr):
 
@@ -117,16 +126,19 @@ def check_forward_unit(rng, dt, sr):
 
 def check_forward_appendix_c(dt):
 
+    i0 = dt - T.DT_7M5
     sr = T.SRATE_16K
-    ns = T.NS[dt][sr]
-    nd = T.ND[dt][sr]
+
     ok = True
 
-    (y, d) = lc3.mdct_forward(dt, sr, C.X_PCM[dt][0], np.zeros(nd))
-    ok = ok and np.amax(np.abs(y - C.X[dt][0])) < 1e-1
+    ns = T.NS[dt][sr]
+    nd = T.ND[dt][sr]
 
-    (y, d) = lc3.mdct_forward(dt, sr, C.X_PCM[dt][1], d)
-    ok = ok and np.amax(np.abs(y - C.X[dt][1])) < 1e-1
+    (y, d) = lc3.mdct_forward(dt, sr, C.X_PCM[i0][0], np.zeros(nd))
+    ok = ok and np.amax(np.abs(y - C.X[i0][0])) < 1e-1
+
+    (y, d) = lc3.mdct_forward(dt, sr, C.X_PCM[i0][1], d)
+    ok = ok and np.amax(np.abs(y - C.X[i0][1])) < 1e-1
 
     return ok
 
@@ -134,7 +146,7 @@ def check_forward_appendix_c(dt):
 def check_inverse_unit(rng, dt, sr):
 
     ns = T.NS[dt][sr]
-    nd = [ (23 * ns) // 30, (5 * ns) // 8 ][dt]
+    nd = T.ND[dt][sr]
     ok = True
 
     x  = (2 * rng.random(ns)) - 1
@@ -157,22 +169,25 @@ def check_inverse_unit(rng, dt, sr):
 
 def check_inverse_appendix_c(dt):
 
+    i0 = dt - T.DT_7M5
     sr = T.SRATE_16K
-    ns = T.NS[dt][sr]
-    nd = [ (23 * ns) // 30, (5 * ns) // 8 ][dt]
+
     ok = True
 
-    (y, d0) = lc3.mdct_inverse(dt, sr, C.X_HAT_SNS[dt][0], np.zeros(nd))
-    yr = C.T_HAT_MDCT[dt][0][ns-nd:2*ns-nd]
-    dr = C.T_HAT_MDCT[dt][0][2*ns-nd:]
+    ns = T.NS[dt][sr]
+    nd = T.ND[dt][sr]
+
+    (y, d0) = lc3.mdct_inverse(dt, sr, C.X_HAT_SNS[i0][0], np.zeros(nd))
+    yr = C.T_HAT_MDCT[i0][0][ns-nd:2*ns-nd]
+    dr = C.T_HAT_MDCT[i0][0][2*ns-nd:]
 
     ok = ok and np.amax(np.abs(yr - y )) < 1e-1
     ok = ok and np.amax(np.abs(dr - d0)) < 1e-1
 
-    (y, d1) = lc3.mdct_inverse(dt, sr, C.X_HAT_SNS[dt][1], d0)
-    yr[  :nd] = C.T_HAT_MDCT[dt][1][ns-nd:ns] + d0
-    yr[nd:ns] = C.T_HAT_MDCT[dt][1][ns:2*ns-nd]
-    dr        = C.T_HAT_MDCT[dt][1][2*ns-nd:]
+    (y, d1) = lc3.mdct_inverse(dt, sr, C.X_HAT_SNS[i0][1], d0)
+    yr[  :nd] = C.T_HAT_MDCT[i0][1][ns-nd:ns] + d0
+    yr[nd:ns] = C.T_HAT_MDCT[i0][1][ns:2*ns-nd]
+    dr        = C.T_HAT_MDCT[i0][1][2*ns-nd:]
 
     ok = ok and np.amax(np.abs(yr - y )) < 1e-1
     ok = ok and np.amax(np.abs(dr - d1)) < 1e-1
@@ -187,11 +202,16 @@ def check():
     ok  = True
 
     for dt in range(T.NUM_DT):
-        for sr in range(T.NUM_SRATE):
+        for sr in range(T.SRATE_8K, T.SRATE_48K + 1):
             ok = ok and check_forward_unit(rng, dt, sr)
             ok = ok and check_inverse_unit(rng, dt, sr)
 
-    for dt in range(T.NUM_DT):
+    for dt in ( T.DT_2M5, T.DT_5M, T.DT_10M ):
+        for sr in ( T.SRATE_48K_HR, T.SRATE_96K_HR ):
+            ok = ok and check_forward_unit(rng, dt, sr)
+            ok = ok and check_inverse_unit(rng, dt, sr)
+
+    for dt in ( T.DT_7M5, T.DT_10M ):
         ok = ok and check_forward_appendix_c(dt)
         ok = ok and check_inverse_appendix_c(dt)
 

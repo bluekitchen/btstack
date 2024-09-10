@@ -28,6 +28,7 @@ class Sns:
 
         self.dt = dt
         self.sr = sr
+        self.I = T.I[dt][sr]
 
         (self.ind_lf, self.ind_hf, self.shape, self.gain) = \
             (None, None, None, None)
@@ -52,7 +53,7 @@ class Sns:
 
     def spectral_shaping(self, scf, inv, x):
 
-        ## 3.3.7.4 Scale factors interpolation
+        ## Scale factors interpolation
 
         scf_i = np.empty(4*len(scf))
         scf_i[0     ] = scf[0]
@@ -64,20 +65,35 @@ class Sns:
         scf_i[62    ] = scf[15 ] + 1/8 * (scf[15] - scf[14 ])
         scf_i[63    ] = scf[15 ] + 3/8 * (scf[15] - scf[14 ])
 
-        n2 = 64 - min(len(x), 64)
+        nb = len(self.I) - 1
 
-        for i in range(n2):
-            scf_i[i] = 0.5 * (scf_i[2*i] + scf_i[2*i+1])
-        scf_i = np.append(scf_i[:n2], scf_i[2*n2:])
+        if nb < 32:
+            n4 = round(abs(1-32/nb)*nb)
+            n2 = nb - n4
+
+            for i in range(n4):
+                scf_i[i] = np.mean(scf_i[4*i:4*i+4])
+
+            for i in range(n4, n4+n2):
+                scf_i[i] = np.mean(scf_i[2*n4+2*i:2*n4+2*i+2])
+
+            scf_i = scf_i[:n4+n2]
+
+        elif nb < 64:
+            n2 = 64 - nb
+
+            for i in range(n2):
+                scf_i[i] = np.mean(scf_i[2*i:2*i+2])
+            scf_i = np.append(scf_i[:n2], scf_i[2*n2:])
 
         g_sns = np.power(2, [ -scf_i, scf_i ][inv])
 
-        ## 3.3.7.4 Spectral shaping
+        ## Spectral shaping
 
         y = np.empty(len(x))
-        I = T.I[self.dt][self.sr]
+        I = self.I
 
-        for b in range(len(g_sns)):
+        for b in range(nb):
             y[I[b]:I[b+1]] = x[I[b]:I[b+1]] * g_sns[b]
 
         return y
@@ -89,40 +105,55 @@ class SnsAnalysis(Sns):
 
         super().__init__(dt, sr)
 
-    def compute_scale_factors(self, e, att):
+    def compute_scale_factors(self, e, att, nbytes):
 
         dt = self.dt
+        sr = self.sr
+        hr = self.sr >= T.SRATE_48K_HR
 
-        ## 3.3.7.2.1 Padding
+        ## Padding
 
-        n2 = 64 - len(e)
+        if len(e) < 32:
+            n4 = round(abs(1-32/len(e))*len(e))
+            n2 = len(e) - n4
 
-        e = np.append(np.empty(n2), e)
-        for i in range(n2):
-            e[2*i+0] = e[2*i+1] = e[n2+i]
+            e = np.append(np.zeros(3*n4+n2), e)
+            for i in range(n4):
+                e[4*i+0] = e[4*i+1] = \
+                e[4*i+2] = e[4*i+3] = e[3*n4+n2+i]
 
-        ## 3.3.7.2.2 Smoothing
+            for i in range(2*n4, 2*n4+n2):
+                e[2*i+0] = e[2*i+1] = e[2*n4+n2+i]
+
+        elif len(e) < 64:
+            n2 = 64 - len(e)
+
+            e = np.append(np.empty(n2), e)
+            for i in range(n2):
+                e[2*i+0] = e[2*i+1] = e[n2+i]
+
+        ## Smoothing
 
         e_s = np.zeros(len(e))
         e_s[0   ] = 0.75 * e[0   ] + 0.25 * e[1   ]
         e_s[1:63] = 0.25 * e[0:62] + 0.5  * e[1:63] + 0.25 * e[2:64]
         e_s[  63] = 0.25 * e[  62] + 0.75 * e[  63]
 
-        ## 3.3.7.2.3 Pre-emphasis
+        ## Pre-emphasis
 
-        g_tilt = [ 14, 18, 22, 26, 30 ][self.sr]
+        g_tilt = [ 14, 18, 22, 26, 30, 30, 34 ][self.sr]
         e_p = e_s * (10 ** ((np.arange(64) * g_tilt) / 630))
 
-        ## 3.3.7.2.4 Noise floor
+        ## Noise floor
 
         noise_floor = max(np.average(e_p) * (10 ** (-40/10)), 2 ** -32)
         e_p = np.fmax(e_p, noise_floor * np.ones(len(e)))
 
-        ## 3.3.7.2.5 Logarithm
+        ## Logarithm
 
         e_l = np.log2(10 ** -31 + e_p) / 2
 
-        ## 3.3.7.2.6 Band energy grouping
+        ## Band energy grouping
 
         w = [ 1/12, 2/12, 3/12, 3/12, 2/12, 1/12 ]
 
@@ -131,18 +162,22 @@ class SnsAnalysis(Sns):
         e_4[1:15] = [ np.sum(w * e_l[4*i-1:4*i+5]) for i in range(1, 15) ]
         e_4[  15] = np.sum(w[:5] * e_l[59:64]) + w[5] * e_l[63]
 
-        ## 3.3.7.2.7 Mean removal and scaling, attack handling
+        ## Mean removal and scaling, attack handling
 
-        scf = 0.85 * (e_4 - np.average(e_4))
+        cf = [ 0.85, 0.6 ][hr]
+        if hr and nbytes * 8 > [ 1150, 2300, 0, 4400 ][self.dt]:
+            cf *= [ 0.25, 0.35 ][ self.dt == T.DT_10M ]
+
+        scf = cf * (e_4 - np.average(e_4))
 
         scf_a = np.zeros(len(scf))
-        scf_a[0   ] = np.average(scf[:3])
-        scf_a[1   ] = np.average(scf[:4])
-        scf_a[2:14] = [ np.average(scf[i:i+5]) for i in range(12) ]
-        scf_a[  14] = np.average(scf[12:])
-        scf_a[  15] = np.average(scf[13:])
+        scf_a[0   ] = np.mean(scf[:3])
+        scf_a[1   ] = np.mean(scf[:4])
+        scf_a[2:14] = [ np.mean(scf[i:i+5]) for i in range(12) ]
+        scf_a[  14] = np.mean(scf[12:])
+        scf_a[  15] = np.mean(scf[13:])
 
-        scf_a = (0.5 if self.dt == T.DT_10M else 0.3) * \
+        scf_a = (0.5 if self.dt != T.DT_7M5 else 0.3) * \
                 (scf_a - np.average(scf_a))
 
         return scf_a if att else scf
@@ -167,7 +202,7 @@ class SnsAnalysis(Sns):
 
     def quantize(self, scf):
 
-        ## 3.3.7.3.2 Stage 1
+        ## Stage 1
 
         dmse_lf = [ np.sum((scf[:8] - T.SNS_LFCB[i]) ** 2) for i in range(32) ]
         dmse_hf = [ np.sum((scf[8:] - T.SNS_HFCB[i]) ** 2) for i in range(32) ]
@@ -178,19 +213,19 @@ class SnsAnalysis(Sns):
         st1 = np.append(T.SNS_LFCB[self.ind_lf], T.SNS_HFCB[self.ind_hf])
         r1 = scf - st1
 
-        ## 3.3.7.3.3 Stage 2
+        ## Stage 2
 
         t2_rot = fftpack.dct(r1, norm = 'ortho')
         x = np.abs(t2_rot)
 
-        ## 3.3.7.3.3 Stage 2 Shape search, step 1
+        ## Stage 2 Shape search, step 1
 
         K = 6
 
         proj_fac = (K - 1) / sum(np.abs(t2_rot))
         y3 = np.floor(x * proj_fac).astype(int)
 
-        ## 3.3.7.3.3 Stage 2 Shape search, step 2
+        ## Stage 2 Shape search, step 2
 
         corr_xy = np.sum(y3 * x)
         energy_y = np.sum(y3 * y3)
@@ -204,7 +239,7 @@ class SnsAnalysis(Sns):
             energy_y += 2*y3[n_best] + 1
             y3[n_best] += 1
 
-        ## 3.3.7.3.3 Stage 2 Shape search, step 3
+        ## Stage 2 Shape search, step 3
 
         K = 8
 
@@ -219,16 +254,16 @@ class SnsAnalysis(Sns):
             y2[n_best] += 1
 
 
-        ## 3.3.7.3.3 Stage 2 Shape search, step 4
+        ## Stage 2 Shape search, step 4
 
         y1 = np.append(y2[:10], [0] * 6)
 
-        ## 3.3.7.3.3 Stage 2 Shape search, step 5
+        ## Stage 2 Shape search, step 5
 
         corr_xy -= sum(y2[10:] * x[10:])
         energy_y -= sum(y2[10:] * y2[10:])
 
-        ## 3.3.7.3.3 Stage 2 Shape search, step 6
+        ## Stage 2 Shape search, step 6
 
         K = 10
 
@@ -240,7 +275,7 @@ class SnsAnalysis(Sns):
             energy_y += 2*y1[n_best] + 1
             y1[n_best] += 1
 
-        ## 3.3.7.3.3 Stage 2 Shape search, step 7
+        ## Stage 2 Shape search, step 7
 
         y0 = np.append(y1[:10], [ 0 ] * 6)
 
@@ -249,18 +284,18 @@ class SnsAnalysis(Sns):
 
         y0[n_best] += 1
 
-        ## 3.3.7.3.3 Stage 2 Shape search, step 8
+        ## Stage 2 Shape search, step 8
 
         y0 *= np.sign(t2_rot).astype(int)
         y1 *= np.sign(t2_rot).astype(int)
         y2 *= np.sign(t2_rot).astype(int)
         y3 *= np.sign(t2_rot).astype(int)
 
-        ## 3.3.7.3.3 Stage 2 Shape search, step 9
+        ## Stage 2 Shape search, step 9
 
         xq = [ y / np.sqrt(sum(y ** 2)) for y in (y0, y1, y2, y3) ]
 
-        ## 3.3.7.3.3 Shape and gain combination determination
+        ## Shape and gain combination determination
 
         G = [ T.SNS_VQ_REG_ADJ_GAINS, T.SNS_VQ_REG_LF_ADJ_GAINS,
               T.SNS_VQ_NEAR_ADJ_GAINS, T.SNS_VQ_FAR_ADJ_GAINS ]
@@ -273,7 +308,7 @@ class SnsAnalysis(Sns):
 
         gain = G[self.shape][self.gain]
 
-        ## 3.3.7.3.3 Enumeration of the selected PVQ pulse configurations
+        ## Enumeration of the selected PVQ pulse configurations
 
         if self.shape == 0:
             (self.idx_a, self.ls_a) = self.enum_mpvq(y0[:10])
@@ -288,15 +323,15 @@ class SnsAnalysis(Sns):
             (self.idx_a, self.ls_a) = self.enum_mpvq(y3)
             (self.idx_b, self.ls_b) = (None, None)
 
-        ## 3.3.7.3.4 Synthesis of the Quantized scale factor
+        ## Synthesis of the Quantized scale factor
 
         scf_q = st1 + gain * fftpack.idct(xq[self.shape], norm = 'ortho')
 
         return scf_q
 
-    def run(self, eb, att, x):
+    def run(self, eb, att, nbytes, x):
 
-        scf = self.compute_scale_factors(eb, att)
+        scf = self.compute_scale_factors(eb, att, nbytes)
         scf_q = self.quantize(scf)
         y = self.spectral_shaping(scf_q, False, x)
 
@@ -345,7 +380,7 @@ class SnsSynthesis(Sns):
 
     def deenum_mpvq(self, index, ls, npulses, n):
 
-        y = np.zeros(n, dtype=np.int)
+        y = np.zeros(n, dtype=np.intc)
         pos = 0
 
         for i in range(len(y)-1, -1, -1):
@@ -372,26 +407,26 @@ class SnsSynthesis(Sns):
 
     def unquantize(self):
 
-        ## 3.7.4.2.1-2  SNS VQ Decoding
+        ## SNS VQ Decoding
 
-        y = np.empty(16, dtype=np.int)
+        y = np.empty(16, dtype=np.intc)
 
         if self.shape == 0:
             y[:10] = self.deenum_mpvq(self.idx_a, self.ls_a, 10, 10)
             y[10:] = self.deenum_mpvq(self.idx_b, self.ls_b,  1,  6)
         elif self.shape == 1:
             y[:10] = self.deenum_mpvq(self.idx_a, self.ls_a, 10, 10)
-            y[10:] = np.zeros(6, dtype=np.int)
+            y[10:] = np.zeros(6, dtype=np.intc)
         elif self.shape == 2:
             y = self.deenum_mpvq(self.idx_a, self.ls_a, 8, 16)
         elif self.shape == 3:
             y = self.deenum_mpvq(self.idx_a, self.ls_a, 6, 16)
 
-        ## 3.7.4.2.3  Unit energy normalization
+        ## Unit energy normalization
 
         y = y / np.sqrt(sum(y ** 2))
 
-        ## 3.7.4.2.4  Reconstruction of the quantized scale factors
+        ## Reconstruction of the quantized scale factors
 
         G = [ T.SNS_VQ_REG_ADJ_GAINS, T.SNS_VQ_REG_LF_ADJ_GAINS,
               T.SNS_VQ_NEAR_ADJ_GAINS, T.SNS_VQ_FAR_ADJ_GAINS ]
@@ -464,20 +499,36 @@ def check_analysis(rng, dt, sr):
     analysis = SnsAnalysis(dt, sr)
 
     for i in range(10):
-        x = rng.random(T.NE[dt][sr]) * 1e4
-        e = rng.random(min(len(x), 64)) * 1e10
+        ne = T.I[dt][sr][-1]
+        x  = rng.random(ne) * 1e4
+        e  = rng.random(len(T.I[dt][sr]) - 1) * 1e10
 
-        for att in (0, 1):
-            y = analysis.run(e, att, x)
-            data = analysis.get_data()
+        if sr >= T.SRATE_48K_HR:
+            for nbits in (1144, 1152, 2296, 2304, 4400, 4408):
+                y = analysis.run(e, False, nbits // 8, x)
+                data = analysis.get_data()
 
-            (y_c, data_c) = lc3.sns_analyze(dt, sr, e, att, x)
+                (y_c, data_c) = lc3.sns_analyze(
+                    dt, sr, nbits // 8, e, False, x)
 
-            for k in data.keys():
-                ok = ok and data_c[k] == data[k]
+                for k in data.keys():
+                    ok = ok and data_c[k] == data[k]
 
-            ok = ok and lc3.sns_get_nbits() == analysis.get_nbits()
-            ok = ok and np.amax(np.abs(y - y_c)) < 1e-1
+                ok = ok and lc3.sns_get_nbits() == analysis.get_nbits()
+                ok = ok and np.amax(np.abs(y - y_c)) < 1e-1
+
+        else:
+            for att in (0, 1):
+                y = analysis.run(e, att, 0, x)
+                data = analysis.get_data()
+
+                (y_c, data_c) = lc3.sns_analyze(dt, sr, 0, e, att, x)
+
+                for k in data.keys():
+                    ok = ok and data_c[k] == data[k]
+
+                ok = ok and lc3.sns_get_nbits() == analysis.get_nbits()
+                ok = ok and np.amax(np.abs(y - y_c)) < 1e-1
 
     return ok
 
@@ -502,76 +553,81 @@ def check_synthesis(rng, dt, sr):
         synthesis.idx_b = rng.integers(0, sz_shape_b, endpoint=True)
         synthesis.ls_b = bool(rng.integers(0, 1, endpoint=True))
 
-        x = rng.random(T.NE[dt][sr]) * 1e4
+        ne = T.I[dt][sr][-1]
+        x  = rng.random(ne) * 1e4
 
         y = synthesis.run(x)
         y_c = lc3.sns_synthesize(dt, sr, synthesis.get_data(), x)
-        ok = ok and np.amax(np.abs(y - y_c)) < 2e0
+        ok = ok and np.amax(np.abs(1 - y/y_c)) < 1e-5
 
     return ok
 
 def check_analysis_appendix_c(dt):
 
+    i0 = dt - T.DT_7M5
     sr = T.SRATE_16K
+
     ok = True
 
-    for i in range(len(C.E_B[dt])):
+    for i in range(len(C.E_B[i0])):
 
-        scf = lc3.sns_compute_scale_factors(dt, sr, C.E_B[dt][i], False)
-        ok = ok and np.amax(np.abs(scf - C.SCF[dt][i])) < 1e-4
+        scf = lc3.sns_compute_scale_factors(dt, sr, 0, C.E_B[i0][i], False)
+        ok = ok and np.amax(np.abs(scf - C.SCF[i0][i])) < 1e-4
 
         (lf, hf) = lc3.sns_resolve_codebooks(scf)
-        ok = ok and lf == C.IND_LF[dt][i] and hf == C.IND_HF[dt][i]
+        ok = ok and lf == C.IND_LF[i0][i] and hf == C.IND_HF[i0][i]
 
         (y, yn, shape, gain) = lc3.sns_quantize(scf, lf, hf)
-        ok = ok and np.any(y[0][:16] - C.SNS_Y0[dt][i] == 0)
-        ok = ok and np.any(y[1][:10] - C.SNS_Y1[dt][i] == 0)
-        ok = ok and np.any(y[2][:16] - C.SNS_Y2[dt][i] == 0)
-        ok = ok and np.any(y[3][:16] - C.SNS_Y3[dt][i] == 0)
-        ok = ok and shape == 2*C.SUBMODE_MSB[dt][i] + C.SUBMODE_LSB[dt][i]
-        ok = ok and gain == C.G_IND[dt][i]
+        ok = ok and np.any(y[0][:16] - C.SNS_Y0[i0][i] == 0)
+        ok = ok and np.any(y[1][:10] - C.SNS_Y1[i0][i] == 0)
+        ok = ok and np.any(y[2][:16] - C.SNS_Y2[i0][i] == 0)
+        ok = ok and np.any(y[3][:16] - C.SNS_Y3[i0][i] == 0)
+        ok = ok and shape == 2*C.SUBMODE_MSB[i0][i] + C.SUBMODE_LSB[i0][i]
+        ok = ok and gain == C.G_IND[i0][i]
 
         scf_q = lc3.sns_unquantize(lf, hf, yn[shape], shape, gain)
-        ok = ok and np.amax(np.abs(scf_q - C.SCF_Q[dt][i])) < 1e-5
+        ok = ok and np.amax(np.abs(scf_q - C.SCF_Q[i0][i])) < 1e-5
 
-        x = lc3.sns_spectral_shaping(dt, sr, C.SCF_Q[dt][i], False, C.X[dt][i])
-        ok = ok and np.amax(np.abs(1 - x/C.X_S[dt][i])) < 1e-5
+        x = lc3.sns_spectral_shaping(dt, sr, C.SCF_Q[i0][i], False, C.X[i0][i])
+        ok = ok and np.amax(np.abs(1 - x/C.X_S[i0][i])) < 1e-5
 
-        (x, data) = lc3.sns_analyze(dt, sr, C.E_B[dt][i], False, C.X[dt][i])
-        ok = ok and data['lfcb'] == C.IND_LF[dt][i]
-        ok = ok and data['hfcb'] == C.IND_HF[dt][i]
-        ok = ok and data['shape'] == \
-            2*C.SUBMODE_MSB[dt][i] + C.SUBMODE_LSB[dt][i]
-        ok = ok and data['gain'] == C.G_IND[dt][i]
-        ok = ok and data['idx_a'] == C.IDX_A[dt][i]
-        ok = ok and data['ls_a'] == C.LS_IND_A[dt][i]
-        ok = ok and (C.IDX_B[dt][i] is None or
-            data['idx_b'] == C.IDX_B[dt][i])
-        ok = ok and (C.LS_IND_B[dt][i] is None or
-            data['ls_b'] == C.LS_IND_B[dt][i])
-        ok = ok and np.amax(np.abs(1 - x/C.X_S[dt][i])) < 1e-5
+        (x, data) = lc3.sns_analyze(dt, sr, 0, C.E_B[i0][i], False, C.X[i0][i])
+        ok = ok and data['lfcb'] == C.IND_LF[i0][i]
+        ok = ok and data['hfcb'] == C.IND_HF[i0][i]
+        ok = ok and data['shape'] == 2*C.SUBMODE_MSB[i0][i] + \
+                                       C.SUBMODE_LSB[i0][i]
+        ok = ok and data['gain'] == C.G_IND[i0][i]
+        ok = ok and data['idx_a'] == C.IDX_A[i0][i]
+        ok = ok and data['ls_a'] == C.LS_IND_A[i0][i]
+        ok = ok and (C.IDX_B[i0][i] is None or
+            data['idx_b'] == C.IDX_B[i0][i])
+        ok = ok and (C.LS_IND_B[i0][i] is None or
+            data['ls_b'] == C.LS_IND_B[i0][i])
+        ok = ok and np.amax(np.abs(1 - x/C.X_S[i0][i])) < 1e-5
 
     return ok
 
 def check_synthesis_appendix_c(dt):
 
+    i0 = dt - T.DT_7M5
     sr = T.SRATE_16K
+
     ok = True
 
-    for i in range(len(C.X_HAT_TNS[dt])):
+    for i in range(len(C.X_HAT_TNS[i0])):
 
         data = {
-            'lfcb'  : C.IND_LF[dt][i], 'hfcb' : C.IND_HF[dt][i],
-            'shape' : 2*C.SUBMODE_MSB[dt][i] + C.SUBMODE_LSB[dt][i],
-            'gain'  : C.G_IND[dt][i],
-            'idx_a' : C.IDX_A[dt][i],
-            'ls_a'  : C.LS_IND_A[dt][i],
-            'idx_b' : C.IDX_B[dt][i] if C.IDX_B[dt][i] is not None else 0,
-            'ls_b'  : C.LS_IND_B[dt][i] if C.LS_IND_B[dt][i] is not None else 0,
+            'lfcb'  : C.IND_LF[i0][i], 'hfcb' : C.IND_HF[i0][i],
+            'shape' : 2*C.SUBMODE_MSB[i0][i] + C.SUBMODE_LSB[i0][i],
+            'gain'  : C.G_IND[i0][i],
+            'idx_a' : C.IDX_A[i0][i],
+            'ls_a'  : C.LS_IND_A[i0][i],
+            'idx_b' : C.IDX_B[i0][i] if C.IDX_B[i0][i] is not None else 0,
+            'ls_b'  : C.LS_IND_B[i0][i] if C.LS_IND_B[i0][i] is not None else 0,
         }
 
-        x = lc3.sns_synthesize(dt, sr, data, C.X_HAT_TNS[dt][i])
-        ok = ok and np.amax(np.abs(x - C.X_HAT_SNS[dt][i])) < 1e0
+        x = lc3.sns_synthesize(dt, sr, data, C.X_HAT_TNS[i0][i])
+        ok = ok and np.amax(np.abs(x - C.X_HAT_SNS[i0][i])) < 1e0
 
     return ok
 
@@ -581,13 +637,18 @@ def check():
     ok = True
 
     for dt in range(T.NUM_DT):
-        for sr in range(T.NUM_SRATE):
+        for sr in range(T.SRATE_8K, T.SRATE_48K + 1):
             ok = ok and check_analysis(rng, dt, sr)
             ok = ok and check_synthesis(rng, dt, sr)
 
-    for dt in range(T.NUM_DT):
-        ok = ok and check_analysis_appendix_c(dt)
-        ok = ok and check_synthesis_appendix_c(dt)
+    for dt in ( T.DT_2M5, T.DT_5M, T.DT_10M ):
+        for sr in ( T.SRATE_48K_HR, T.SRATE_96K_HR ):
+            ok = ok and check_analysis(rng, dt, sr)
+            ok = ok and check_synthesis(rng, dt, sr)
+
+    for dt in ( T.DT_7M5, T.DT_10M ):
+        check_analysis_appendix_c(dt)
+        check_synthesis_appendix_c(dt)
 
     return ok
 

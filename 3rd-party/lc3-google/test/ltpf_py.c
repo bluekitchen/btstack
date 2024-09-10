@@ -36,9 +36,9 @@ static PyObject *resample_py(PyObject *m, PyObject *args)
     CTYPES_CHECK("sr", (unsigned)sr < LC3_NUM_SRATE);
     CTYPES_CHECK(NULL, hp50_obj = to_ltpf_hp50_state(hp50_obj, &hp50));
 
-    int ns = LC3_NS(dt, sr), nt = LC3_NT(dt);
+    int ns = lc3_ns(dt, sr), nt = lc3_nt(sr);
     int ny = sizeof((struct lc3_ltpf_analysis){ }.x_12k8) / sizeof(int16_t);
-    int n  = dt == LC3_DT_7M5 ? 96 : 128;
+    int n  = (1 + dt) * 32;
 
     CTYPES_CHECK("x", x_obj = to_1d_ptr(x_obj, NPY_INT16, ns+nt, &x));
     CTYPES_CHECK("y", y_obj = to_1d_ptr(y_obj, NPY_INT16, ny, &y));
@@ -64,7 +64,7 @@ static PyObject *analyse_py(PyObject *m, PyObject *args)
     CTYPES_CHECK("sr", sr < LC3_NUM_SRATE);
     CTYPES_CHECK(NULL, ltpf_obj = to_ltpf_analysis(ltpf_obj, &ltpf));
 
-    int ns = LC3_NS(dt, sr), nt = LC3_NT(sr);
+    int ns = lc3_ns(dt, sr), nt = lc3_nt(sr);
 
     CTYPES_CHECK("x", x_obj = to_1d_ptr(x_obj, NPY_INT16, ns+nt, &x));
 
@@ -97,7 +97,7 @@ static PyObject *synthesize_py(PyObject *m, PyObject *args)
     if ((pitch_present = (data_obj != Py_None)))
         CTYPES_CHECK(NULL, data_obj = to_ltpf_data(data_obj, &data));
 
-    int ns = LC3_NS(dt,sr), nd = 18 * LC3_SRATE_KHZ(sr);
+    int ns = lc3_ns(dt,sr), nd = 18 * (lc3_ns_4m[sr] / 4);
 
     CTYPES_CHECK("x", x_obj = to_1d_ptr(x_obj, NPY_FLOAT, nd+ns, &x));
 

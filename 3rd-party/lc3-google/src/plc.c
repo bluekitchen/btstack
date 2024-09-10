@@ -17,6 +17,7 @@
  ******************************************************************************/
 
 #include "plc.h"
+#include "tables.h"
 
 
 /**
@@ -45,7 +46,7 @@ void lc3_plc_synthesize(enum lc3_dt dt, enum lc3_srate sr,
 {
     uint16_t seed = plc->seed;
     float alpha = plc->alpha;
-    int ne = LC3_NE(dt, sr);
+    int ne = lc3_ne(dt, sr);
 
     alpha *= (plc->count < 4 ? 1.0f :
               plc->count < 8 ? 0.9f : 0.85f);

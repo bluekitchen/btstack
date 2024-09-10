@@ -26,22 +26,22 @@
 static PyObject *compute_scale_factors_py(PyObject *m, PyObject *args)
 {
     unsigned dt, sr;
+    int nbytes, att;
     PyObject *eb_obj, *scf_obj;
     float *eb, *scf;
-    int att;
 
-    if (!PyArg_ParseTuple(args, "IIOp", &dt, &sr, &eb_obj, &att))
+    if (!PyArg_ParseTuple(args, "IIiOp", &dt, &sr, &nbytes, &eb_obj, &att))
         return NULL;
 
-    CTYPES_CHECK("dt", (unsigned)dt < LC3_NUM_DT);
-    CTYPES_CHECK("sr", (unsigned)sr < LC3_NUM_SRATE);
+    CTYPES_CHECK("dt", dt < LC3_NUM_DT);
+    CTYPES_CHECK("sr", sr < LC3_NUM_SRATE);
 
-    int nb = LC3_MIN(lc3_band_lim[dt][sr][LC3_NUM_BANDS], LC3_NUM_BANDS);
+    int nb = lc3_num_bands[dt][sr];
 
     CTYPES_CHECK("eb", to_1d_ptr(eb_obj, NPY_FLOAT, nb, &eb));
     scf_obj = new_1d_ptr(NPY_FLOAT, 16, &scf);
 
-    compute_scale_factors(dt, sr, eb, att, scf);
+    compute_scale_factors(dt, sr, nbytes, eb, att, scf);
 
     return Py_BuildValue("N", scf_obj);
 }
@@ -66,6 +66,7 @@ static PyObject *quantize_py(PyObject *m, PyObject *args)
 {
     PyObject *scf_obj, *y_obj, *yn_obj;
     float *scf;
+
     int lfcb_idx, hfcb_idx;
     int shape_idx, gain_idx;
     float (*yn)[16];
@@ -122,10 +123,10 @@ static PyObject *spectral_shaping_py(PyObject *m, PyObject *args)
     if (!PyArg_ParseTuple(args, "IIOpO", &dt, &sr, &scf_q_obj, &inv, &x_obj))
         return NULL;
 
-    CTYPES_CHECK("dt", (unsigned)dt < LC3_NUM_DT);
-    CTYPES_CHECK("sr", (unsigned)sr < LC3_NUM_SRATE);
+    CTYPES_CHECK("dt", dt < LC3_NUM_DT);
+    CTYPES_CHECK("sr", sr < LC3_NUM_SRATE);
 
-    int ne = LC3_NE(dt, sr);
+    int ne = lc3_ne(dt, sr);
 
     CTYPES_CHECK("scf_q", to_1d_ptr(scf_q_obj, NPY_FLOAT, 16, &scf_q));
     CTYPES_CHECK("x", x_obj = to_1d_ptr(x_obj, NPY_FLOAT, ne, &x));
@@ -140,22 +141,23 @@ static PyObject *analyze_py(PyObject *m, PyObject *args)
     PyObject *eb_obj, *x_obj;
     struct lc3_sns_data data = { 0 };
     unsigned dt, sr;
+    int nbytes, att;
     float *eb, *x;
-    int att;
 
-    if (!PyArg_ParseTuple(args, "IIOpO", &dt, &sr, &eb_obj, &att, &x_obj))
+    if (!PyArg_ParseTuple(args, "IIiOpO",
+            &dt, &sr, &nbytes, &eb_obj, &att, &x_obj))
         return NULL;
 
-    CTYPES_CHECK("dt", (unsigned)dt < LC3_NUM_DT);
-    CTYPES_CHECK("sr", (unsigned)sr < LC3_NUM_SRATE);
+    CTYPES_CHECK("dt", dt < LC3_NUM_DT);
+    CTYPES_CHECK("sr", sr < LC3_NUM_SRATE);
 
-    int ne = LC3_NE(dt, sr);
-    int nb = LC3_MIN(ne, LC3_NUM_BANDS);
+    int ne = lc3_ne(dt, sr);
+    int nb = lc3_num_bands[dt][sr];
 
     CTYPES_CHECK("eb", to_1d_ptr(eb_obj, NPY_FLOAT, nb, &eb));
     CTYPES_CHECK("x", x_obj = to_1d_ptr(x_obj, NPY_FLOAT, ne, &x));
 
-    lc3_sns_analyze(dt, sr, eb, att, &data, x, x);
+    lc3_sns_analyze(dt, sr, nbytes, eb, att, &data, x, x);
 
     return Py_BuildValue("ON", x_obj, new_sns_data(&data));
 }
@@ -170,11 +172,11 @@ static PyObject *synthesize_py(PyObject *m, PyObject *args)
     if (!PyArg_ParseTuple(args, "IIOO", &dt, &sr, &data_obj, &x_obj))
         return NULL;
 
-    CTYPES_CHECK("dt", (unsigned)dt < LC3_NUM_DT);
-    CTYPES_CHECK("sr", (unsigned)sr < LC3_NUM_SRATE);
+    CTYPES_CHECK("dt", dt < LC3_NUM_DT);
+    CTYPES_CHECK("sr", sr < LC3_NUM_SRATE);
     CTYPES_CHECK(NULL, data_obj = to_sns_data(data_obj, &data));
 
-    int ne = LC3_NE(dt, sr);
+    int ne = lc3_ne(dt, sr);
 
     CTYPES_CHECK("x", x_obj = to_1d_ptr(x_obj, NPY_FLOAT, ne, &x));
 

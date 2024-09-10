@@ -21,11 +21,15 @@ import tables as T, appendix_c as C
 
 
 BW_START = [
+    [ [], [ 24 ], [ 24, 35 ], [ 24, 33, 39 ], [ 22, 31, 37, 41 ] ],
+    [ [], [ 39 ], [ 35, 47 ], [ 34, 44, 50 ], [ 32, 42, 48, 52 ] ],
     [ [], [ 51 ], [ 45, 58 ], [ 42, 53, 60 ], [ 40, 51, 57, 61 ] ],
     [ [], [ 53 ], [ 47, 59 ], [ 44, 54, 60 ], [ 41, 51, 57, 61 ] ]
 ]
 
 BW_STOP = [
+    [ [], [ 34 ], [ 32, 39 ], [ 31, 38, 42 ], [ 29, 35, 40, 43 ] ],
+    [ [], [ 49 ], [ 44, 51 ], [ 42, 49, 53 ], [ 40, 46, 51, 54 ] ],
     [ [], [ 63 ], [ 55, 63 ], [ 51, 58, 63 ], [ 48, 55, 60, 63 ] ],
     [ [], [ 63 ], [ 56, 63 ], [ 52, 59, 63 ], [ 49, 55, 60, 63 ] ]
 ]
@@ -33,8 +37,8 @@ BW_STOP = [
 TQ = [ 20, 10, 10, 10 ]
 
 TC = [ 15, 23, 20, 20 ]
-L  = [ [ 4, 4, 3, 2 ], [ 4, 4, 3, 1 ] ]
-
+L  = [ [ 4, 4, 3, 1 ], [ 4, 4, 3, 1 ],
+       [ 4, 4, 3, 2 ], [ 4, 4, 3, 1 ] ]
 
 ### ------------------------------------------------------------------------ ###
 
@@ -131,11 +135,13 @@ def check_unit(rng, dt, sr):
 
 def check_appendix_c(dt):
 
+    i0 = dt - T.DT_7M5
     sr = T.SRATE_16K
+
     ok = True
 
-    E_B  = C.E_B[dt]
-    P_BW = C.P_BW[dt]
+    E_B  = C.E_B[i0]
+    P_BW = C.P_BW[i0]
 
     bw = lc3.bwdet_run(dt, sr, E_B[0])
     ok = ok and bw == P_BW[0]
@@ -151,10 +157,10 @@ def check():
 
     ok = True
     for dt in range(T.NUM_DT):
-        for sr in range(T.NUM_SRATE):
+        for sr in range(T.SRATE_8K, T.SRATE_48K + 1):
             ok = ok and check_unit(rng, dt, sr)
 
-    for dt in range(T.NUM_DT):
+    for dt in ( T.DT_7M5, T.DT_10M ):
         ok = ok and check_appendix_c(dt)
 
     return ok

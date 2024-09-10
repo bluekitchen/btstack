@@ -16,22 +16,43 @@
  *
  ******************************************************************************/
 
-/**
- * LC3 - Common constants and types
- */
-
 #ifndef __LC3_COMMON_H
 #define __LC3_COMMON_H
 
 #include <lc3.h>
 #include "fastmath.h"
 
-#include <stdalign.h>
 #include <limits.h>
+#include <stdalign.h>
 #include <string.h>
 
 #ifdef __ARM_ARCH
 #include <arm_acle.h>
+#endif
+
+
+/**
+ * Acivation flags for LC3-Plus and LC3-Plus HR features
+ */
+
+#ifndef LC3_PLUS
+#define LC3_PLUS 1
+#endif
+
+#ifndef LC3_PLUS_HR
+#define LC3_PLUS_HR 1
+#endif
+
+#if LC3_PLUS
+#define LC3_IF_PLUS(a, b) (a)
+#else
+#define LC3_IF_PLUS(a, b) (b)
+#endif
+
+#if LC3_PLUS_HR
+#define LC3_IF_PLUS_HR(a, b) (a)
+#else
+#define LC3_IF_PLUS_HR(a, b) (b)
 #endif
 
 
@@ -83,41 +104,11 @@
 
 
 /**
- * Convert `dt` in us and `sr` in KHz
+ * Return `true` when high-resolution mode
  */
-
-#define LC3_DT_US(dt) \
-    ( (3 + (dt)) * 2500 )
-
-#define LC3_SRATE_KHZ(sr) \
-    ( (1 + (sr) + ((sr) == LC3_SRATE_48K)) * 8 )
-
-
-/**
- * Return number of samples, delayed samples and
- * encoded spectrum coefficients within a frame
- * - For encoding, keep 1.25 ms for temporal window
- * - For decoding, keep 18 ms of history, aligned on frames, and a frame
- */
-
-#define LC3_NS(dt, sr) \
-    ( 20 * (3 + (dt)) * (1 + (sr) + ((sr) == LC3_SRATE_48K)) )
-
-#define LC3_ND(dt, sr) \
-    ( (dt) == LC3_DT_7M5 ? 23 * LC3_NS(dt, sr) / 30 \
-                         :  5 * LC3_NS(dt, sr) /  8 )
-
-#define LC3_NE(dt, sr) \
-    ( 20 * (3 + (dt)) * (1 + (sr)) )
-
-#define LC3_MAX_NE \
-    LC3_NE(LC3_DT_10M, LC3_SRATE_48K)
-
-#define LC3_NT(sr_hz) \
-    ( (5 * LC3_SRATE_KHZ(sr)) / 4 )
-
-#define LC3_NH(dt, sr) \
-    ( ((3 - dt) + 1) * LC3_NS(dt, sr) )
+static inline bool lc3_hr(enum lc3_srate sr) {
+    return LC3_PLUS_HR && (sr >= LC3_SRATE_48K_HR);
+}
 
 
 /**
@@ -130,6 +121,9 @@ enum lc3_bandwidth {
     LC3_BANDWIDTH_SSWB = LC3_SRATE_24K,
     LC3_BANDWIDTH_SWB = LC3_SRATE_32K,
     LC3_BANDWIDTH_FB = LC3_SRATE_48K,
+
+    LC3_BANDWIDTH_FB_HR = LC3_SRATE_48K_HR,
+    LC3_BANDWIDTH_UB_HR = LC3_SRATE_96K_HR,
 
     LC3_NUM_BANDWIDTH,
 };

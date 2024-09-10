@@ -1,0 +1,19 @@
+[build-system]
+requires = ["meson-python"]
+build-backend = "mesonpy"
+
+[project]
+name = "lc3"
+version = "0.0.1"
+license = { text="Apache-2.0" }
+authors = [
+  { name="Antoine Soulier", email="asoulier@google.com" },
+]
+description = "LC3 Codec library wrapper"
+requires-python = ">=3.10"
+
+[project.urls]
+Homepage = "https://github.com/google/liblc3"
+
+[tool.meson-python.args]
+setup = ['-Dpython=true']

@@ -29,19 +29,21 @@
  * fp              Opened file, moved after header on return
  * frame_us        Return frame duration, in us
  * srate_hz        Return samplerate, in Hz
+ * hrmode          Return true when high-resolution mode enabled
  * nchannels       Return number of channels
  * nsamples        Return count of source samples by channels
  * return          0: Ok  -1: Bad LC3 File
  */
 int lc3bin_read_header(FILE *fp,
-    int *frame_us, int *srate_hz, int *nchannels, int *nsamples);
+    int *frame_us, int *srate_hz, bool *hrmode,
+    int *nchannels, int *nsamples);
 
 /**
  * Read LC3 block of data
  * fp              Opened file
  * nchannels       Number of channels
- * buffer          Output buffer of `nchannels * LC3_MAX_FRAME_BYTES`
- * return          Size of each 'nchannels` frames, -1 on error
+ * buffer          Output buffer of `nchannels * LC3_HR_MAX_FRAME_BYTES`
+ * return          Size of the frames block, -1 on error
  */
 int lc3bin_read_data(FILE *fp, int nchannels, void *buffer);
 
@@ -50,22 +52,22 @@ int lc3bin_read_data(FILE *fp, int nchannels, void *buffer);
  * fp              Opened file, moved after header on return
  * frame_us        Frame duration, in us
  * srate_hz        Samplerate, in Hz
+ * hrmode          True when high-resolution mode enabled
  * bitrate         Bitrate indication of the stream, in bps
  * nchannels       Number of channels
  * nsamples        Count of source samples by channels
  */
 void lc3bin_write_header(FILE *fp,
-    int frame_us, int srate_hz, int bitrate, int nchannels, int nsamples);
+    int frame_us, int srate_hz, bool hrmode,
+    int bitrate, int nchannels, int nsamples);
 
 /**
  * Write LC3 block of data
  * fp              Opened file
  * data            The frames data
- * nchannels       Number of channels
- * frame_bytes     Size of each `nchannels` frames
+ * nbytes          Size of the frames block
  */
-void lc3bin_write_data(FILE *fp,
-    const void *data, int nchannels, int frame_bytes);
+void lc3bin_write_data(FILE *fp, const void *data, int nbytes);
 
 
 #endif /* __LC3BIN_H */

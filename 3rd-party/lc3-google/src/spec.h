@@ -16,13 +16,6 @@
  *
  ******************************************************************************/
 
-/**
- * LC3 - Spectral coefficients encoding/decoding
- *
- * Reference : Low Complexity Communication Codec (LC3)
- *             Bluetooth Specification v1.0
- */
-
 #ifndef __LC3_SPEC_H
 #define __LC3_SPEC_H
 
@@ -53,15 +46,12 @@ typedef struct lc3_spec_side {
  * pitch, tns      Pitch present indication and TNS bistream data
  * spec            Context of analysis
  * x               Spectral coefficients, scaled as output
- * xq, side        Return quantization data
- *
- * The spectral coefficients `xq` storage is :
- *   b0       0:positive or zero  1:negative
- *   b15..b1  Absolute value
+ * side            Return quantization data
  */
-void lc3_spec_analyze(enum lc3_dt dt, enum lc3_srate sr,
-    int nbytes, bool pitch, const lc3_tns_data_t *tns,
-    lc3_spec_analysis_t *spec, float *x, uint16_t *xq, lc3_spec_side_t *side);
+void lc3_spec_analyze(
+    enum lc3_dt dt, enum lc3_srate sr, int nbytes,
+    bool pitch, const lc3_tns_data_t *tns, lc3_spec_analysis_t *spec,
+    float *x, lc3_spec_side_t *side);
 
 /**
  * Put spectral quantization side data
@@ -77,16 +67,11 @@ void lc3_spec_put_side(lc3_bits_t *bits,
  * bits            Bitstream context
  * dt, sr, bw      Duration, samplerate, bandwidth
  * nbytes          and size of the frame
- * xq, side        Quantization data
- * x               Scaled spectral coefficients
- *
- * The spectral coefficients `xq` storage is :
- *   b0       0:positive or zero  1:negative
- *   b15..b1  Absolute value
+ * side, x         Quantization data, and scaled coefficients
  */
 void lc3_spec_encode(lc3_bits_t *bits,
-    enum lc3_dt dt, enum lc3_srate sr, enum lc3_bandwidth bw, int nbytes,
-    const uint16_t *xq, const lc3_spec_side_t *side, const float *x);
+    enum lc3_dt dt, enum lc3_srate sr, enum lc3_bandwidth bw,
+    int nbytes, const lc3_spec_side_t *side, float *x);
 
 
 /* ----------------------------------------------------------------------------
@@ -112,8 +97,9 @@ int lc3_spec_get_side(lc3_bits_t *bits,
  * x               Spectral coefficients
  * return          0: Ok  -1: Invalid bitstream data
  */
-int lc3_spec_decode(lc3_bits_t *bits, enum lc3_dt dt, enum lc3_srate sr,
-    enum lc3_bandwidth bw, int nbytes, const lc3_spec_side_t *side, float *x);
+int lc3_spec_decode(lc3_bits_t *bits,
+    enum lc3_dt dt, enum lc3_srate sr, enum lc3_bandwidth bw,
+    int nbytes, const lc3_spec_side_t *side, float *x);
 
 
 #endif /* __LC3_SPEC_H */

@@ -16,46 +16,107 @@
  *
  ******************************************************************************/
 
-/**
- * LC3 - Mathematics function approximation
- */
-
 #ifndef __LC3_FASTMATH_H
 #define __LC3_FASTMATH_H
 
 #include <stdint.h>
+#include <float.h>
 #include <math.h>
 
 
 /**
- * Fast 2^n approximation
- * x               Operand, range -8 to 8
- * return          2^x approximation (max relative error ~ 7e-6)
+ * IEEE 754 Floating point representation
  */
-static inline float fast_exp2f(float x)
+
+#define LC3_IEEE754_SIGN_SHL   (31)
+#define LC3_IEEE754_SIGN_MASK  (1 << LC3_IEEE754_SIGN_SHL)
+
+#define LC3_IEEE754_EXP_SHL    (23)
+#define LC3_IEEE754_EXP_MASK   (0xff << LC3_IEEE754_EXP_SHL)
+#define LC3_IEEE754_EXP_BIAS   (127)
+
+
+/**
+ * Fast multiply floating-point number by integral power of 2
+ * x               Operand, finite number
+ * exp             Exponent such that 2^x is finite
+ * return          2^exp
+ */
+static inline float lc3_ldexpf(float _x, int exp) {
+    union { float f; int32_t s; } x = { .f = _x };
+
+    if (x.s & LC3_IEEE754_EXP_MASK)
+        x.s += exp << LC3_IEEE754_EXP_SHL;
+
+    return x.f;
+}
+
+/**
+ * Fast convert floating-point number to fractional and integral components
+ * x               Operand, finite number
+ * exp             Return the exponent part
+ * return          The normalized fraction in [0.5:1[
+ */
+static inline float lc3_frexpf(float _x, int *exp) {
+    union { float f; uint32_t u; } x = { .f = _x };
+
+    int e = (x.u & LC3_IEEE754_EXP_MASK) >> LC3_IEEE754_EXP_SHL;
+    *exp = e - (LC3_IEEE754_EXP_BIAS - 1);
+
+    x.u = (x.u & ~LC3_IEEE754_EXP_MASK) |
+        ((LC3_IEEE754_EXP_BIAS - 1) << LC3_IEEE754_EXP_SHL);
+
+    return x.f;
+}
+
+/**
+ * Fast 2^n approximation
+ * x               Operand, range -100 to 100
+ * return          2^x approximation (max relative error ~ 4e-7)
+ */
+static inline float lc3_exp2f(float x)
 {
-    float y;
+    /* --- 2^(i/8) for i from 0 to 7 --- */
 
-    /* --- Polynomial approx in range -0.5 to 0.5 --- */
+    static const float e[] = {
+        1.00000000e+00, 1.09050773e+00, 1.18920712e+00, 1.29683955e+00,
+        1.41421356e+00, 1.54221083e+00, 1.68179283e+00, 1.83400809e+00 };
 
-    static const float c[] = { 1.27191277e-09, 1.47415221e-07,
-        1.35510312e-05, 9.38375815e-04, 4.33216946e-02 };
+    /* --- Polynomial approx in range 0 to 1/8 --- */
 
-    y = (    c[0]) * x;
-    y = (y + c[1]) * x;
-    y = (y + c[2]) * x;
-    y = (y + c[3]) * x;
-    y = (y + c[4]) * x;
-    y = (y + 1.f);
+    static const float p[] = {
+        1.00448128e-02, 5.54563260e-02, 2.40228756e-01, 6.93147140e-01 };
 
-    /* --- Raise to the power of 16  --- */
+    /* --- Split the operand ---
+     *
+     * Such as x = k/8 + y, with k an integer, and |y| < 0.5/8
+     *
+     * Note that `fast-math` compiler option leads to rounding error,
+     * disable optimisation with `volatile`. */
 
-    y = y*y;
-    y = y*y;
-    y = y*y;
-    y = y*y;
+    volatile union { float f; int32_t s; } v;
 
-    return y;
+    v.f = x + 0x1.8p20f;
+    int k = v.s;
+    x -= v.f - 0x1.8p20f;
+
+    /* --- Compute 2^x, with |x| < 1 ---
+     * Perform polynomial approximation in range -0.5/8 to 0.5/8,
+     * and muplity by precomputed value of 2^(i/8), i in [0:7] */
+
+    union { float f; int32_t s; } y;
+
+    y.f = (      p[0]) * x;
+    y.f = (y.f + p[1]) * x;
+    y.f = (y.f + p[2]) * x;
+    y.f = (y.f + p[3]) * x;
+    y.f = (y.f +  1.f) * e[k & 7];
+
+    /* --- Add the exponent --- */
+
+    y.s += (k >> 3) << LC3_IEEE754_EXP_SHL;
+
+    return y.f;
 }
 
 /**
@@ -63,7 +124,7 @@ static inline float fast_exp2f(float x)
  * x               Operand, greater than 0
  * return          log2(x) approximation (max absolute error ~ 1e-4)
  */
-static inline float fast_log2f(float x)
+static inline float lc3_log2f(float x)
 {
     float y;
     int e;
@@ -73,7 +134,7 @@ static inline float fast_log2f(float x)
     static const float c[] = {
         -1.29479677, 5.11769018, -8.42295281, 8.10557963, -3.50567360 };
 
-    x = frexpf(x, &e);
+    x = lc3_frexpf(x, &e);
 
     y = (    c[0]) * x;
     y = (y + c[1]) * x;
@@ -91,9 +152,9 @@ static inline float fast_log2f(float x)
  * x               Operand, greater than 0
  * return          log10(x) approximation (max absolute error ~ 1e-4)
  */
-static inline float fast_log10f(float x)
+static inline float lc3_log10f(float x)
 {
-    return log10f(2) * fast_log2f(x);
+    return log10f(2) * lc3_log2f(x);
 }
 
 /**
@@ -104,7 +165,7 @@ static inline float fast_log10f(float x)
  * - The 0 value is accepted and return the minimum value ~ -191dB
  * - This function assumed that float 32 bits is coded IEEE 754
  */
-static inline int32_t fast_db_q16(float x)
+static inline int32_t lc3_db_q16(float x)
 {
     /* --- Table in Q15 --- */
 

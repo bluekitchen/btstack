@@ -31,7 +31,7 @@ class Resampler_12k8:
         self.w = 240 // self.p
 
         self.n = ((T.DT_MS[dt] * 128) / 10).astype(int)
-        self.d = [ 44, 24 ][dt]
+        self.d = [ 24, 44 ][dt == T.DT_7M5]
 
         self.x = np.zeros(self.w + T.NS[dt][sr])
         self.u = np.zeros(self.n + 2)
@@ -59,7 +59,7 @@ class Resampler_12k8:
         x = self.x
         u = self.u
 
-        ### 3.3.9.3 Resampling
+        ### Resampling
 
         h = np.zeros(240 + p)
         h[-119:] = T.LTPF_H12K8[:119]
@@ -74,7 +74,7 @@ class Resampler_12k8:
         if self.sr == T.SRATE_8K:
             u = 0.5 * u
 
-        ### 3.3.9.4 High-pass filtering
+        ### High-pass filtering
 
         b = [ 0.9827947082978771, -1.9655894165957540, 0.9827947082978771 ]
         a = [ 1                 , -1.9652933726226904, 0.9658854605688177 ]
@@ -110,7 +110,7 @@ class Resampler_6k4:
         if len(self.y) > n:
             self.y[-n:] = self.y[:n]
 
-        ### 3.3.9.5 Downsampling to 6.4 KHz
+        ### Downsampling to 6.4 KHz
 
         h = [ 0.1236796411180537, 0.2353512128364889, 0.2819382920909148,
               0.2353512128364889, 0.1236796411180537 ]
@@ -140,11 +140,11 @@ class LtpfAnalysis(Ltpf):
 
         super().__init__(dt, sr)
 
-        self.resampler_12k8 = Resampler_12k8(
-                dt, sr, history = 232)
+        self.resampler_12k8 = Resampler_12k8(dt, sr,
+            history = 232 + (32 if dt == T.DT_2M5 else 0))
 
-        self.resampler_6k4 = Resampler_6k4(
-                self.resampler_12k8.n, history = 114)
+        self.resampler_6k4 = Resampler_6k4(self.resampler_12k8.n,
+            history = 114 + (16 if dt == T.DT_2M5 else 0))
 
         self.active = False
         self.tc = 0
@@ -160,30 +160,32 @@ class LtpfAnalysis(Ltpf):
 
         return 1 + 10 * int(self.pitch_present)
 
-    def correlate(self, x, n, k0, k1):
+    def correlate(self, x, i0, n, k0, k1):
 
-        return [ np.dot(x[:n], np.take(x, np.arange(n) - k)) \
-                    for k in range(k0, 1+k1) ]
+        return np.array([ np.dot(
+            np.take(x, np.arange(i0, n)),
+            np.take(x, np.arange(i0, n) - k)) for k in range(k0, 1+k1) ])
 
-    def norm_corr(self, x, n, k):
+    def norm_corr(self, x, i0, n, k):
 
-        u  = x[:n]
-        v  = np.take(x, np.arange(n) - k)
+        u  = np.take(x, np.arange(i0, n))
+        v  = np.take(x, np.arange(i0, n) - k)
         uv = np.dot(u, v)
         return uv / np.sqrt(np.dot(u, u) * np.dot(v, v)) if uv > 0 else 0
 
     def run(self, x):
 
-        ### 3.3.9.3-4 Resampling
+        ### Resampling
 
         x_12k8 = self.resampler_12k8.resample(x)
 
-        ### 3.3.9.5-6 Pitch detection algorithm
+        ### Pitch detection algorithm
 
-        x = self.resampler_6k4.resample(x_12k8)
-        n = self.resampler_6k4.n
+        x  = self.resampler_6k4.resample(x_12k8)
+        i0 = [-16, 0][self.dt > T.DT_2M5]
+        n  = self.resampler_6k4.n
 
-        r  = self.correlate(x, n, 17, 114)
+        r  = self.correlate(x, i0, n, 17, 114)
         rw = r * (1 - 0.5 * np.arange(len(r)) / (len(r) - 1))
 
         tc = self.tc
@@ -191,23 +193,24 @@ class LtpfAnalysis(Ltpf):
         k1 = min(len(r)-1, tc+4)
         t  = [ 17 + np.argmax(rw), 17 + k0 + np.argmax(r[k0:1+k1]) ]
 
-        nc = [ self.norm_corr(x, n, t[i]) for i in range(2) ]
+        nc = [ self.norm_corr(x, i0, n, t[i]) for i in range(2) ]
         ti = int(nc[1] > 0.85 * nc[0])
         self.tc = t[ti] - 17
 
         self.pitch_present = bool(nc[ti] > 0.6)
 
-        ### 3.3.9.7 Pitch-lag parameter
+        ### Pitch-lag parameter
 
         if self.pitch_present:
             tc = self.tc + 17
 
-            x = x_12k8
-            n = self.resampler_12k8.n
+            x  = x_12k8
+            i0 = [-32, 0][self.dt > T.DT_2M5]
+            n  = self.resampler_12k8.n
 
             k0 = max( 32, 2*tc-4)
             k1 = min(228, 2*tc+4)
-            r  = self.correlate(x, n, k0-4, k1+4)
+            r  = self.correlate(x, i0, n, k0-4, k1+4)
             e  = k0 + np.argmax(r[4:-4])
 
             h = np.zeros(42)
@@ -232,17 +235,21 @@ class LtpfAnalysis(Ltpf):
             e = f = 0
             self.pitch_index = 0
 
-        ### 3.3.9.8 Activation bit
+        ### Activation bit
 
         h = np.zeros(24)
         h[-7:] = T.LTPF_HI[:7]
         h[ :8] = T.LTPF_HI[7:]
 
+        x  = x_12k8
+        i0 = [-32, 0][self.dt > T.DT_2M5]
+        n  = self.resampler_12k8.n
+
         k = np.arange(-2, 3)
         u = [ np.dot( np.take(x, i-k), np.take(h, 4*k) ) \
-                  for i in range(n) ]
+                  for i in range(i0, n) ]
         v = [ np.dot( np.take(x, i-k), np.take(h, 4*k-f) ) \
-                  for i in range(-e, n-e) ]
+                  for i in range(i0-e, n-e) ]
 
         nc = max(0, np.dot(u, v)) / np.sqrt(np.dot(u, u) * np.dot(v, v)) \
                 if self.pitch_present else 0
@@ -327,7 +334,7 @@ class LtpfSynthesis(Ltpf):
         sr = self.sr
         dt = self.dt
 
-        ### 3.4.9.4 Filter parameters
+        ### Filter parameters
 
         pitch_index = self.pitch_index
 
@@ -346,7 +353,12 @@ class LtpfSynthesis(Ltpf):
         self.p_e[0] = int(p * 4 + 0.5) // 4
         self.p_f[0] = int(p * 4 + 0.5) - 4*self.p_e[0]
 
-        nbits = round(nbytes*80 / T.DT_MS[dt])
+        nbits = round(nbytes*8 * 10 / T.DT_MS[dt])
+        if dt == T.DT_2M5:
+            nbits = int(nbits * (1 - 0.4))
+        elif dt == T.DT_5M:
+            nbits = nbits - 160
+
         g_idx = max(nbits // 80, 3+sr) - (3+sr)
 
         g = [ 0.4, 0.35, 0.3, 0.25 ][g_idx] if g_idx < 4 else 0
@@ -355,7 +367,7 @@ class LtpfSynthesis(Ltpf):
         self.c_n[0] = 0.85 * g * LtpfSynthesis.C_N[sr][g_idx]
         self.c_d[0] = g * LtpfSynthesis.C_D[sr][self.p_f[0]]
 
-        ### 3.4.9.2 Transition handling
+        ### Transition handling
 
         n0 = (T.SRATE_KHZ[sr] * 1000) // 400
         ns = T.NS[dt][sr]
@@ -402,8 +414,7 @@ class LtpfSynthesis(Ltpf):
                     np.dot(c_d[0], np.take(y , k - d[0] - np.arange(l_d)))
                 y[k] = yc[k] - (k/n0) * u
 
-
-        ### 3.4.9.3 Remainder of the frame
+        ### Remainder of the frame
 
         for k in range(n0, ns):
 
@@ -466,28 +477,30 @@ def check_resampler(rng, dt, sr):
 
 def check_resampler_appendix_c(dt):
 
+    i0 = dt - T.DT_7M5
     sr = T.SRATE_16K
+
     ok = True
 
     nt = (5 * T.SRATE_KHZ[sr]) // 4
-    n  = [ 96, 128 ][dt]
-    k  = [ 44,  24 ][dt] + n
+    n  = [ 96, 128 ][i0]
+    k  = [ 44,  24 ][i0] + n
 
     state = initial_hp50_state()
 
-    x = np.append(np.zeros(nt), C.X_PCM[dt][0])
+    x = np.append(np.zeros(nt), C.X_PCM[i0][0])
     y = np.zeros(384)
     y = lc3.ltpf_resample(dt, sr, state, x, y)
-    u = y[-k:len(C.X_TILDE_12K8D[dt][0])-k]
+    u = y[-k:len(C.X_TILDE_12K8D[i0][0])-k]
 
-    ok = ok and np.amax(np.abs(u - C.X_TILDE_12K8D[dt][0]/2)) < 2
+    ok = ok and np.amax(np.abs(u - C.X_TILDE_12K8D[i0][0]/2)) < 2
 
-    x = np.append(x[-nt:], C.X_PCM[dt][1])
+    x = np.append(x[-nt:], C.X_PCM[i0][1])
     y[:-n] = y[n:]
     y = lc3.ltpf_resample(dt, sr, state, x, y)
-    u = y[-k:len(C.X_TILDE_12K8D[dt][1])-k]
+    u = y[-k:len(C.X_TILDE_12K8D[i0][1])-k]
 
-    ok = ok and np.amax(np.abs(u - C.X_TILDE_12K8D[dt][1]/2)) < 2
+    ok = ok and np.amax(np.abs(u - C.X_TILDE_12K8D[i0][1]/2)) < 2
 
     return ok
 
@@ -503,7 +516,7 @@ def check_analysis(rng, dt, sr):
     ltpf = LtpfAnalysis(dt, sr)
 
     t = np.arange(100 * ns) / (T.SRATE_KHZ[sr] * 1000)
-    s = signal.chirp(t, f0=10, f1=3e3, t1=t[-1], method='logarithmic')
+    s = signal.chirp(t, f0=10, f1=2500, t1=t[-1], method='logarithmic')
 
     for i in range(20):
 
@@ -516,7 +529,7 @@ def check_analysis(rng, dt, sr):
         (pitch_present_c, data_c) = lc3.ltpf_analyse(dt, sr, state_c, x_c)
 
         ok = ok and (not pitch_present or state_c['tc'] == ltpf.tc)
-        ok = ok and np.amax(np.abs(state_c['nc'][0] - ltpf.nc[0])) < 1e-2
+        ok = ok and np.amax(np.abs(state_c['nc'][0] - ltpf.nc[0])) < 1e-1
         ok = ok and pitch_present_c == pitch_present
         ok = ok and data_c['active'] == data['active']
         ok = ok and data_c['pitch_index'] == data['pitch_index']
@@ -537,6 +550,7 @@ def check_synthesis(rng, dt, sr):
     x_c = np.zeros(nd+ns)
 
     for i in range(50):
+
         pitch_present = bool(rng.integers(0, 10) >= 1)
         if not pitch_present:
             synthesis.disable()
@@ -563,37 +577,40 @@ def check_synthesis(rng, dt, sr):
 
 def check_analysis_appendix_c(dt):
 
+    i0 = dt - T.DT_7M5
     sr = T.SRATE_16K
-    nt = (5 * T.SRATE_KHZ[sr]) // 4
+
     ok = True
+
+    nt = (5 * T.SRATE_KHZ[sr]) // 4
 
     state = initial_state()
 
-    x = np.append(np.zeros(nt), C.X_PCM[dt][0])
+    x = np.append(np.zeros(nt), C.X_PCM[i0][0])
     (pitch_present, data) = lc3.ltpf_analyse(dt, sr, state, x)
 
-    ok = ok and C.T_CURR[dt][0] - state['tc'] == 17
-    ok = ok and np.amax(np.abs(state['nc'][0] - C.NC_LTPF[dt][0])) < 1e-5
-    ok = ok and pitch_present == C.PITCH_PRESENT[dt][0]
-    ok = ok and data['pitch_index'] == C.PITCH_INDEX[dt][0]
-    ok = ok and data['active'] == C.LTPF_ACTIVE[dt][0]
+    ok = ok and C.T_CURR[i0][0] - state['tc'] == 17
+    ok = ok and np.amax(np.abs(state['nc'][0] - C.NC_LTPF[i0][0])) < 1e-5
+    ok = ok and pitch_present == C.PITCH_PRESENT[i0][0]
+    ok = ok and data['pitch_index'] == C.PITCH_INDEX[i0][0]
+    ok = ok and data['active'] == C.LTPF_ACTIVE[i0][0]
 
-    x = np.append(x[-nt:], C.X_PCM[dt][1])
+    x = np.append(x[-nt:], C.X_PCM[i0][1])
     (pitch_present, data) = lc3.ltpf_analyse(dt, sr, state, x)
 
-    ok = ok and C.T_CURR[dt][1] - state['tc'] == 17
-    ok = ok and np.amax(np.abs(state['nc'][0] - C.NC_LTPF[dt][1])) < 1e-5
-    ok = ok and pitch_present == C.PITCH_PRESENT[dt][1]
-    ok = ok and data['pitch_index'] == C.PITCH_INDEX[dt][1]
-    ok = ok and data['active'] == C.LTPF_ACTIVE[dt][1]
+    ok = ok and C.T_CURR[i0][1] - state['tc'] == 17
+    ok = ok and np.amax(np.abs(state['nc'][0] - C.NC_LTPF[i0][1])) < 1e-5
+    ok = ok and pitch_present == C.PITCH_PRESENT[i0][1]
+    ok = ok and data['pitch_index'] == C.PITCH_INDEX[i0][1]
+    ok = ok and data['active'] == C.LTPF_ACTIVE[i0][1]
 
     return ok
 
 def check_synthesis_appendix_c(dt):
 
     sr = T.SRATE_16K
-    ok = True
 
+    ok = True
     if dt != T.DT_10M:
         return ok
 
@@ -645,12 +662,12 @@ def check():
     ok = True
 
     for dt in range(T.NUM_DT):
-        for sr in range(T.NUM_SRATE):
+        for sr in range(T.SRATE_8K, T.SRATE_48K + 1):
             ok = ok and check_resampler(rng, dt, sr)
             ok = ok and check_analysis(rng, dt, sr)
             ok = ok and check_synthesis(rng, dt, sr)
 
-    for dt in range(T.NUM_DT):
+    for dt in ( T.DT_7M5, T.DT_10M ):
         ok = ok and check_resampler_appendix_c(dt)
         ok = ok and check_analysis_appendix_c(dt)
         ok = ok and check_synthesis_appendix_c(dt)
