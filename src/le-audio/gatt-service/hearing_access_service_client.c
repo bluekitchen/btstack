@@ -535,7 +535,7 @@ static void has_client_run_for_connection(void * context){
         case HEARING_ACCESS_SERVICE_CLIENT_STATE_W2_WRITE_CHARACTERISTIC_VALUE:
             connection->state = HEARING_ACCESS_SERVICE_CLIENT_STATE_W4_WRITE_CHARACTERISTIC_VALUE_RESULT;
             characteristic_handle = gatt_service_client_characteristic_value_handle_for_index(&connection->basic_connection, connection->characteristic_index);
-
+            value = NULL;
             value_length = has_client_serialize_characteristic_value_for_write(connection, &value);
             (void) gatt_client_write_value_of_characteristic_with_context(
                     &has_client_handle_gatt_client_event,
