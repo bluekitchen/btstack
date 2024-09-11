@@ -309,6 +309,7 @@ static bool has_valid_opcode_parameters_length(has_opcode_t opcode, uint16_t par
         
         default:
             btstack_unreachable();
+            return false;
     }
 }
 
@@ -376,7 +377,7 @@ static uint8_t has_server_get_previous_available_index_relative_to_active_index(
 
     uint8_t active_preset_position = has_server_active_preset_position();
 
-    uint8_t pos;
+    int16_t pos;
     // search backward from current active index to the HAS_PRESET_RECORD_START_INDEX
     for (pos = active_preset_position - 1; pos >= 0; pos--){
         if (has_server_preset_record_available(pos)){
