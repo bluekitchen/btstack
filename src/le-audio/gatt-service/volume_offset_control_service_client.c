@@ -239,11 +239,11 @@ static void vocs_client_emit_read_event(vocs_client_connection_t * connection, u
                 vocs_client_emit_string_value(connection, subevent_id, data, data_size, att_status);
                 return;
             }
-            break;
+            return;
 
         default:
             btstack_assert(false);
-            break;
+            return;
     }
 
     if (att_status != ATT_ERROR_SUCCESS){
@@ -285,13 +285,12 @@ static void vocs_client_emit_notify_event(vocs_client_connection_t * connection,
             subevent_id = LEAUDIO_SUBEVENT_VOCS_CLIENT_AUDIO_OUTPUT_DESCRIPTION;
             if (att_status == ATT_ERROR_SUCCESS){
                 vocs_client_emit_string_value(connection, subevent_id, data, data_size, att_status);
-                return;
             }
-            break;
+            return;
 
         default:
             btstack_assert(false);
-            break;
+            return;
     }
 
     if (att_status != ATT_ERROR_SUCCESS){
