@@ -873,6 +873,8 @@ static void app_configure(uint8_t option) {
             break;
         default:
             btstack_unreachable();
+            set_rank = 0;
+            audio_location_mask = LE_AUDIO_LOCATION_MASK_NOT_ALLOWED;
             break;
     }
     setup_pacs(audio_location_mask);
