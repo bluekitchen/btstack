@@ -452,6 +452,12 @@ uint8_t gatt_client_read_characteristic_descriptor_using_descriptor_handle(btsta
 void gatt_client_stop_listening_for_characteristic_value_updates(gatt_client_notification_t * notification){
 }
 
+uint8_t gatt_client_request_to_send_gatt_query(btstack_context_callback_registration_t * callback_registration, hci_con_handle_t con_handle){
+    // immediate callback, we don't have btstack runloop in most tests
+    (*callback_registration->callback)(callback_registration->context);
+    return ERROR_CODE_SUCCESS;
+}
+
 uint8_t gatt_client_write_value_of_characteristic(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle, uint16_t value_length, uint8_t * value){
     mock_gatt_client_characteristic_t * mock_characteristic  = mock_gatt_client_get_characteristic_for_value_handle(value_handle);
     btstack_assert(mock_characteristic != NULL);
