@@ -30,4 +30,13 @@ logfiles
 .vscode
 enc_temp_folder
 MAP_CLIENT_user.xml
-
+SIGDatabase
+implicit_send_log.txt
+le_security_info.txt
+.vs
+MAP_NEW
+MAP_OLD
+link_key.txt
+PTS_Error.log
+Backup
+enc_temp_folder
