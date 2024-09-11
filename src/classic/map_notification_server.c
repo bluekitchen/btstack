@@ -68,7 +68,6 @@ typedef enum {
 
 
 typedef struct {
-    uint16_t  mns_cid;
     uint16_t  goep_cid;
     bd_addr_t bd_addr;
     hci_con_handle_t con_handle;
@@ -206,7 +205,7 @@ static void map_notification_server_handle_put_request (map_notification_server_
         event[pos++] = HCI_EVENT_MAP_META;
         event[pos++] = 0;
         event[pos++] = MAP_SUBEVENT_NOTIFICATION_EVENT;
-        little_endian_store_16 (event, pos, mns->mns_cid);
+        little_endian_store_16 (event, pos, mns->goep_cid);
         pos += 2;
         event[pos++] = 0;  /* MASInstanceID */
         little_endian_store_32 (event, pos, mns->request.length);
@@ -384,7 +383,7 @@ static void map_notification_server_packet_handler_goep(map_notification_server_
                         mns->request.abort_response = 0;
                         map_notification_server_handle_put_request(mns, op_info.opcode, false);
                         if (mns->request.abort_response == 0) {
-                            (*map_notification_server_user_packet_handler)(MAP_DATA_PACKET, mns->mns_cid, (uint8_t *) mns->request.payload_data, mns->request.payload_len);
+                            (*map_notification_server_user_packet_handler)(MAP_DATA_PACKET, mns->goep_cid, (uint8_t *) mns->request.payload_data, mns->request.payload_len);
                         }
                         if ((op_info.opcode & OBEX_OPCODE_FINAL_BIT_MASK) != 0){
                             // reset SRM state upon operation complete
