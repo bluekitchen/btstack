@@ -108,6 +108,39 @@ static map_notification_server_t * map_notification_server_for_goep_cid(uint16_t
     return &map_notification_server_singleton;
 }
 
+
+static void map_notification_server_emit_connected_event(map_notification_server_t * context, uint8_t status){
+    uint8_t event[15];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_MAP_META;
+    pos++;  // skip len
+    event[pos++] = MAP_SUBEVENT_CONNECTION_OPENED;
+    little_endian_store_16(event,pos,context->goep_cid);
+    pos+=2;
+    event[pos++] = status;
+    memcpy(&event[pos], context->bd_addr, 6);
+    pos += 6;
+    little_endian_store_16(event,pos,context->con_handle);
+    pos += 2;
+    event[pos++] = 1;
+    event[1] = pos - 2;
+    btstack_assert(pos <= sizeof(event));
+    (*map_notification_server_user_packet_handler)(HCI_EVENT_PACKET, context->goep_cid, event, pos);
+}
+
+static void map_access_client_emit_connection_closed_event(map_notification_server_t * context){
+    uint8_t event[5];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_MAP_META;
+    pos++;  // skip len
+    event[pos++] = MAP_SUBEVENT_CONNECTION_CLOSED;
+    little_endian_store_16(event,pos,context->goep_cid);
+    pos+=2;
+    event[1] = pos - 2;
+    btstack_assert(pos <= sizeof(event));
+    (*map_notification_server_user_packet_handler)(HCI_EVENT_PACKET, context->goep_cid, event, pos);
+}
+
 static void map_notification_send_connect_response(uint16_t goep_cid){
     goep_server_response_create_connect(goep_cid, OBEX_VERSION, 0, maximum_obex_packet_length);
     goep_server_header_add_who(goep_cid, map_client_notification_service_uuid);
@@ -232,6 +265,7 @@ static void map_notification_server_handle_can_send_now (map_notification_server
             if (mns->response_code == OBEX_RESP_SUCCESS){
                 ENTER_STATE (mns, MAP_CONNECTED);
                 map_notification_send_connect_response(mns->goep_cid);
+                map_notification_server_emit_connected_event(mns, ERROR_CODE_SUCCESS);
             } else {
                 ENTER_STATE (mns, MAP_INIT);
                 map_notification_send_general_response(mns->goep_cid, mns->response_code);
@@ -276,12 +310,8 @@ static void map_notification_server_packet_handler_hci(uint8_t *packet, uint16_t
                         goep_subevent_connection_opened_get_bd_addr(packet, mns->bd_addr);
                         mns->con_handle = goep_subevent_connection_opened_get_con_handle(packet);
                         ENTER_STATE (mns, MAP_INIT);
-                        // TODO: emit connection success event
-                        // map_emit_connected_event(mns, status);
                     } else {
                         log_info("MAP notification server: connection failed %u", status);
-                        // TODO: emit connection failed event
-                        // map_emit_connected_event(&map_server.connection, status);
                     }
                     break;
                 case GOEP_SUBEVENT_CONNECTION_CLOSED:
@@ -290,8 +320,7 @@ static void map_notification_server_packet_handler_hci(uint8_t *packet, uint16_t
                     btstack_assert(mns != NULL);
                     log_info("MNS: connection closed");
                     ENTER_STATE (mns, MAP_INIT);
-                    // TODO: emit connection closed event
-                    // map_emit_connection_closed_event(&map_server.connection);
+                    map_access_client_emit_connection_closed_event(mns);
                     break;
                 case GOEP_SUBEVENT_CAN_SEND_NOW:
                     goep_cid = goep_subevent_can_send_now_get_goep_cid(packet);
