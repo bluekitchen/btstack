@@ -730,11 +730,34 @@ uint8_t goep_server_execute(uint16_t goep_cid, uint8_t response_code){
 #endif
         case GOEP_CONNECTION_RFCOMM:
             return rfcomm_send_prepared(connection->bearer_cid, pos);
-            break;
         default:
             btstack_unreachable();
             return ERROR_CODE_SUCCESS;
     }
+}
+
+uint8_t goep_server_disconnect(uint16_t goep_cid){
+    goep_server_connection_t * connection = goep_server_get_connection_for_goep_cid(goep_cid);
+    if (connection == NULL) {
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+
+    if (connection->state < GOEP_SERVER_CONNECTED){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+
+    switch (connection->type) {
+#ifdef ENABLE_GOEP_L2CAP
+        case GOEP_CONNECTION_L2CAP:
+            return l2cap_disconnect(connection->bearer_cid);
+#endif
+        case GOEP_CONNECTION_RFCOMM:
+            return rfcomm_disconnect(connection->bearer_cid);
+        default:
+            btstack_unreachable();
+            break;
+    }
+    return ERROR_CODE_SUCCESS;
 }
 
 void goep_server_deinit(void){

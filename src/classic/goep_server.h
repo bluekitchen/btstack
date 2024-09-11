@@ -232,6 +232,13 @@ uint8_t goep_server_header_add_application_parameters(uint16_t goep_cid, const u
 uint8_t goep_server_execute(uint16_t goep_cid, uint8_t response_code);
 
 /**
+ * @brief Disconnect client
+ * @param goep_cid
+ * @return status
+ */
+uint8_t goep_server_disconnect(uint16_t goep_cid);
+
+/**
  * De-Init
  */
 void geop_server_deinit(void);
