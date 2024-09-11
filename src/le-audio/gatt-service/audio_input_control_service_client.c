@@ -226,9 +226,8 @@ static void aics_client_emit_read_event(aics_client_connection_t  * connection, 
             subevent_id = LEAUDIO_SUBEVENT_AICS_CLIENT_AUDIO_DESCRIPTION;
             if (att_status == ATT_ERROR_SUCCESS){
                 aics_client_emit_string_value(connection, subevent_id, data, ATT_ERROR_SUCCESS);
-                return;
             }
-            break;
+            return;
 
         case ORG_BLUETOOTH_CHARACTERISTIC_AUDIO_INPUT_STATE:
             subevent_id = LEAUDIO_SUBEVENT_AICS_CLIENT_AUDIO_INPUT_STATE;
@@ -301,7 +300,7 @@ static void aics_client_emit_notify_event(aics_client_connection_t * connection,
 
         default:
             btstack_assert(false);
-            break;
+            return;
     }
 
     if (data_size != expected_data_size){
