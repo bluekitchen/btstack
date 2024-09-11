@@ -211,7 +211,8 @@ static has_preset_record_t * has_server_preset_iterator_get_next(has_server_conn
     return NULL;
 }
 
-static has_preset_record_t * has_read_presets_operation_get_changed_preset_record(has_server_connection_t * connection, bool * is_last_preset, uint8_t * prev_index){
+static has_preset_record_t *
+has_read_presets_operation_get_changed_preset_record(bool *is_last_preset, uint8_t *prev_index) {
     uint8_t num_presets_already_read = 0;
     *prev_index = HAS_PRESET_RECORD_RESERVED_INDEX;
     uint8_t i;
@@ -322,7 +323,7 @@ static has_preset_record_t * find_regular_preset_record_with_index(uint8_t index
     return NULL;
 }
 
-static uint8_t is_read_operation_valid(has_server_connection_t * connection, uint8_t index, uint8_t num_presets){
+static uint8_t is_read_operation_valid(uint8_t index, uint8_t num_presets) {
     if ((index == HAS_PRESET_RECORD_INVALID_INDEX) || (num_presets == 0)){
         return ATT_ERROR_OUT_OF_RANGE;
     }
@@ -490,7 +491,7 @@ static int has_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
                 index = buffer[pos++];
                 num_presets = buffer[pos];
 
-                att_error_code = is_read_operation_valid(connection, index, num_presets);
+                att_error_code = is_read_operation_valid(index, num_presets);
                 if (att_error_code != ATT_ERROR_SUCCESS) {
                     return att_error_code;
                 }
@@ -789,7 +790,7 @@ static void has_server_can_send_now(void * context) {
     } else {
         // avoid uninitialized warning
         prev_index = 0;
-        preset = has_read_presets_operation_get_changed_preset_record(connection, &is_last_preset_record, &prev_index);
+        preset = has_read_presets_operation_get_changed_preset_record(&is_last_preset_record, &prev_index);
         if (!preset){
             return;
         }
