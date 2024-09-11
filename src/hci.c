@@ -4407,17 +4407,18 @@ static void event_handler(uint8_t *packet, uint16_t size){
                     break;
                 case HCI_SUBEVENT_LE_ADVERTISING_SET_TERMINATED:
                     advertising_handle = hci_subevent_le_advertising_set_terminated_get_advertising_handle(packet);
-                    btstack_linked_list_iterator_init(&it, &hci_stack->le_advertising_sets);
-                    while (btstack_linked_list_iterator_has_next(&it)) {
-                        le_advertising_set_t *advertising_set = (le_advertising_set_t *) btstack_linked_list_iterator_next(&it);
-                        if (advertising_set->advertising_handle == advertising_handle){
-                            advertising_set->state &= ~(LE_ADVERTISEMENT_STATE_ACTIVE | LE_ADVERTISEMENT_STATE_ENABLED);
-                        }
-                    }
-                    // support legacy advertisements
                     if (advertising_handle == LE_EXTENDED_ADVERTISING_LEGACY_HANDLE){
+                        // legacy advertisements
                         hci_stack->le_advertisements_state &= ~LE_ADVERTISEMENT_STATE_ACTIVE;
                         hci_update_advertisements_enabled_for_current_roles();
+                    } else {
+                        btstack_linked_list_iterator_init(&it, &hci_stack->le_advertising_sets);
+                        while (btstack_linked_list_iterator_has_next(&it)) {
+                            le_advertising_set_t *advertising_set = (le_advertising_set_t *) btstack_linked_list_iterator_next(&it);
+                            if (advertising_set->advertising_handle == advertising_handle){
+                                advertising_set->state &= ~(LE_ADVERTISEMENT_STATE_ACTIVE | LE_ADVERTISEMENT_STATE_ENABLED);
+                            }
+                        }
                     }
                     // event may come before le connection complete and announces new connection
                     if (hci_subevent_le_advertising_set_terminated_get_status(packet) == ERROR_CODE_SUCCESS){
