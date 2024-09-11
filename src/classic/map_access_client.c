@@ -57,6 +57,7 @@
 #include "classic/sdp_client_rfcomm.h"
 #include "classic/sdp_util.h"
 #include "classic/map_access_client.h"
+#include "hci_event_builder.h"
 
 #define MAP_MAX_NUM_ENTRIES 1024
 
@@ -66,50 +67,39 @@ static uint32_t map_access_client_supported_features = 0x1F;
 
 static btstack_linked_list_t map_access_clients;
 
+static void emit_event_new(btstack_packet_handler_t callback, uint8_t* packet, uint16_t size) {
+    if (!callback) return;
+    hci_dump_btstack_event(packet, size);
+    (*callback)(HCI_EVENT_PACKET, 0, packet, size);
+}
+
 static void map_access_client_emit_connected_event(map_access_client_t * context, uint8_t status){
-    uint8_t event[15];
-    int pos = 0;
-    event[pos++] = HCI_EVENT_MAP_META;
-    pos++;  // skip len
-    event[pos++] = MAP_SUBEVENT_CONNECTION_OPENED;
-    little_endian_store_16(event,pos,context->goep_client.cid);
-    pos+=2;
-    event[pos++] = status;
-    memcpy(&event[pos], context->bd_addr, 6);
-    pos += 6;
-    little_endian_store_16(event,pos,context->con_handle);
-    pos += 2;
-    event[pos++] = context->incoming;
-    event[1] = pos - 2;
-    if (pos != sizeof(event)) log_error("map_access_client_emit_connected_event size %u", pos);
-    context->client_handler(HCI_EVENT_PACKET, context->goep_client.cid, &event[0], pos);
+    uint8_t packet[15];
+    hci_event_builder_context_t evb;
+    hci_event_builder_init(&evb, packet, sizeof(packet), HCI_EVENT_MAP_META, MAP_SUBEVENT_CONNECTION_OPENED);
+    hci_event_builder_add_16(&evb,context->goep_client.cid);
+	hci_event_builder_add_08(&evb,status);
+    hci_event_builder_add_bd_addr(&evb, context->bd_addr);
+    hci_event_builder_add_con_handle(&evb,context->con_handle);
+    hci_event_builder_add_08(&evb, context->incoming);
+    emit_event_new(context->client_handler, packet, hci_event_builder_get_length(&evb));
 }
 
 static void map_access_client_emit_connection_closed_event(map_access_client_t * context){
-    uint8_t event[5];
-    int pos = 0;
-    event[pos++] = HCI_EVENT_MAP_META;
-    pos++;  // skip len
-    event[pos++] = MAP_SUBEVENT_CONNECTION_CLOSED;
-    little_endian_store_16(event,pos,context->goep_client.cid);
-    pos+=2;
-    event[1] = pos - 2;
-    if (pos != sizeof(event)) log_error("map_access_client_emit_connection_closed_event size %u", pos);
-    context->client_handler(HCI_EVENT_PACKET, context->goep_client.cid, &event[0], pos);
+    uint8_t packet[5];
+    hci_event_builder_context_t evb;
+    hci_event_builder_init(&evb, packet, sizeof(packet), HCI_EVENT_MAP_META, MAP_SUBEVENT_CONNECTION_CLOSED);
+    hci_event_builder_add_16(&evb, context->goep_client.cid);
+    emit_event_new(context->client_handler, packet, hci_event_builder_get_length(&evb));
 }
 
 static void map_access_client_emit_operation_complete_event(map_access_client_t * context, uint8_t status){
-    uint8_t event[6];
-    int pos = 0;
-    event[pos++] = HCI_EVENT_MAP_META;
-    pos++;  // skip len
-    event[pos++] = MAP_SUBEVENT_OPERATION_COMPLETED;
-    little_endian_store_16(event,pos,context->goep_client.cid);
-    pos+=2;
-    event[pos++]= status;
-    event[1] = pos - 2;
-    if (pos != sizeof(event)) log_error("map_client_emit_can_send_now_event size %u", pos);
-    context->client_handler(HCI_EVENT_PACKET, context->goep_client.cid, &event[0], pos);
+    uint8_t packet[6];
+    hci_event_builder_context_t evb;
+    hci_event_builder_init(&evb, packet, sizeof(packet), HCI_EVENT_MAP_META, MAP_SUBEVENT_OPERATION_COMPLETED);
+    hci_event_builder_add_16(&evb, context->goep_client.cid);
+    hci_event_builder_add_08(&evb, status);
+    emit_event_new(context->client_handler, packet, hci_event_builder_get_length(&evb));
 }
 
 // we re-use the goep cid as map cid, so both refer to the same object
