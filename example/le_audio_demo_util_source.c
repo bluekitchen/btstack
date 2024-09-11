@@ -138,13 +138,15 @@ static bool le_audio_demo_util_source_recording_start(void){
         int init_ok = le_audio_demo_audio_source->init(le_audio_demo_source_num_channels, le_audio_demo_source_sampling_frequency_hz,
                                          &le_audio_util_source_recording_callback);
         log_info("recording initialized, ok %u", init_ok);
-        btstack_ring_buffer_init(&le_audio_demo_source_recording_buffer, recording_storage, sizeof(recording_storage));
-        le_audio_demo_source_recording_prebuffer_samples = le_audio_demo_source_num_channels * le_audio_demo_source_sampling_frequency_hz * RECORDING_PREBUFFER__MS / 1000;
-        le_audio_demo_source_recording_streaming = false;
-        le_audio_demo_source_recording_stored_samples = 0;
-        le_audio_demo_audio_source->start_stream();
-        log_info("recording start, %u prebuffer samples per channel", le_audio_demo_source_recording_prebuffer_samples / le_audio_demo_source_num_channels);
-        ok = true;
+        if (init_ok){
+            btstack_ring_buffer_init(&le_audio_demo_source_recording_buffer, recording_storage, sizeof(recording_storage));
+            le_audio_demo_source_recording_prebuffer_samples = le_audio_demo_source_num_channels * le_audio_demo_source_sampling_frequency_hz * RECORDING_PREBUFFER__MS / 1000;
+            le_audio_demo_source_recording_streaming = false;
+            le_audio_demo_source_recording_stored_samples = 0;
+            le_audio_demo_audio_source->start_stream();
+            log_info("recording start, %u prebuffer samples per channel", le_audio_demo_source_recording_prebuffer_samples / le_audio_demo_source_num_channels);
+            ok = true;
+        }
     }
     return ok;
 }
