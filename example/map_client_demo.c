@@ -67,6 +67,8 @@
 
 #ifdef HAVE_BTSTACK_STDIN
 #include "btstack_stdin.h"
+#include "btstack_debug.h"
+
 #endif
 
 #define MNS_SERVER_RFCOMM_CHANNEL_NR 1
@@ -94,6 +96,8 @@ static l2cap_ertm_config_t map_access_client_ertm_config = {
 };
 #endif
 
+// msn client connection
+static uint16_t mns_cid;
 
 static bd_addr_t    remote_addr;
 static const char * remote_addr_string = "001BDC08E25C";
@@ -111,10 +115,18 @@ static uint16_t map_mas_0_cid;
 static uint16_t map_mas_1_cid;
 static uint8_t notification_filter = 0;
 
+// MNS SDP Record
+static uint8_t  map_message_notification_service_buffer[150];
+const char * name = "MAP Service";
+
 // UI
 static uint8_t map_mas_instance_id = 0;
 static uint16_t map_cid;
-
+static enum {
+    MCE_DEMO_IDLE,
+    MCE_DEMO_NOTIFICATION_ENABLE,
+    MCE_DEMO_NOTIFICATION_DISABLE,
+} map_mce_state = MCE_DEMO_IDLE;
 
 #ifdef HAVE_BTSTACK_STDIN
 // Testing User Interface
@@ -152,15 +164,30 @@ static void show_usage(void){
     printf("5 - Select last listed \"im\" message\n");
     printf("g - Get selected message "); printf_hexdump(message_handle, sizeof(message_handle));
     printf("r - Mark selected messages as read\n");
-    printf("u - Mark selected messagee as unread\n");
-    printf("n - enable notifications\n");
-    printf("N - disable notifications\n");
+    printf("u - Mark selected message as unread\n");
+    printf("n - enable notifications for all MAS\n");
+    printf("N - disable notifications for all MAS\n");
     printf("m - toggle notification filter for new messages\n");
     printf("i - get MAS Instance Information\n");
-
+    printf("t - disconnect MNS Client\n");
     printf("\n");
 }
 
+static void mce_demo_select_mas_instance(uint8_t instance){
+    switch (instance){
+        case 0:
+            map_mas_instance_id = 0;
+            map_cid = map_mas_0_cid;
+            break;
+        case 1:
+            map_mas_instance_id = 1;
+            map_cid = map_mas_1_cid;
+            break;
+        default:
+            btstack_unreachable();
+            break;
+    }
+}
 static void stdin_process(char c){
     uint8_t status = ERROR_CODE_SUCCESS;
     switch (c){
@@ -177,8 +204,7 @@ static void stdin_process(char c){
             } else {
                 printf("[+] Switching to MAP ID #0, map_cid %u\n", map_mas_0_cid);
             }
-            map_mas_instance_id = 0;
-            map_cid = map_mas_0_cid;
+            mce_demo_select_mas_instance(0);
             break;
         case 'A':
             printf("[+] Disconnect MAP ID #0 from %s...\n", bd_addr_to_str(remote_addr));
@@ -200,8 +226,7 @@ static void stdin_process(char c){
             } else {
                 printf("[+] Switching to MAP ID #1, map_cid %u\n", map_mas_1_cid);
             }
-            map_mas_instance_id = 1;
-            map_cid = map_mas_1_cid;
+            mce_demo_select_mas_instance(1);
             break;
         case 'B':
             printf("[+] Disconnect MAP ID #1 from %s...\n", bd_addr_to_str(remote_addr));
@@ -271,10 +296,16 @@ static void stdin_process(char c){
             map_access_client_set_message_status(map_cid, message_handle, 0);
             break;
         case 'n':
+            // enable notifications for all/both mas instances
+            mce_demo_select_mas_instance(0);
+            map_mce_state = MCE_DEMO_NOTIFICATION_ENABLE;
             printf("[+] Enable notifications map_cid %u\n", map_cid);
             status = map_access_client_enable_notifications(map_cid);
             break;
         case 'N':
+            // disable notifications for all/both mas instances
+            mce_demo_select_mas_instance(0);
+            map_mce_state = MCE_DEMO_NOTIFICATION_DISABLE;
             printf("[+] Disable notifications map_cid %u\n", map_cid);
             map_access_client_disable_notifications(map_cid);
             break;
@@ -282,6 +313,10 @@ static void stdin_process(char c){
             notification_filter = !notification_filter;
             printf("[+] Notification filter for new messages %s\n", notification_filter ? "enabled" : "disabled");
             map_access_client_set_notification_filter(map_cid, notification_filter ? 0x01 : 0xffffffff);
+            break;
+        case 't':
+            printf("[+] Disconnect MNS Client\n");
+            map_notification_server_disconnect(mns_cid);
             break;
         default:
             show_usage();
@@ -347,7 +382,32 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             break;
                         case MAP_SUBEVENT_OPERATION_COMPLETED:
                             printf("\n");
-                            printf("[+] Operation complete\n");
+                            printf("[+] Operation complete, mas_cid %u\n", map_subevent_operation_completed_get_map_cid(packet));
+                            // enable/disable notification for all/both MAS
+                            switch (map_mas_instance_id){
+                                case 0:
+                                    switch (map_mce_state){
+                                        case MCE_DEMO_NOTIFICATION_ENABLE:
+                                            mce_demo_select_mas_instance(1);
+                                            status = map_access_client_enable_notifications(map_cid);
+                                            printf("[+] Enable notifications map_cid %u, status 0x%02x\n", map_cid, status);
+                                            break;
+                                        case MCE_DEMO_NOTIFICATION_DISABLE:
+                                            mce_demo_select_mas_instance(1);
+                                            status = map_access_client_disable_notifications(map_cid);
+                                            printf("[+] Disable notifications map_cid %u, status 0x%02x\n", map_cid, status);
+                                            break;
+                                        default:
+                                            break;
+                                    }
+                                    break;
+                                case 1:
+                                    map_mce_state = MCE_DEMO_IDLE;
+                                    break;
+                                default:
+                                    btstack_unreachable();
+                                    break;
+                            }
                             break;
                         case MAP_SUBEVENT_FOLDER_LISTING_ITEM:
                             value_len = btstack_min(map_subevent_folder_listing_item_get_name_len(packet), MAP_MAX_VALUE_LEN);
@@ -406,18 +466,23 @@ static void mns_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
             switch (hci_event_packet_get_type(packet)) {
                 case HCI_EVENT_MAP_META:
                     switch (hci_event_map_meta_get_subevent_code(packet)){
+                        case MAP_SUBEVENT_CONNECTION_OPENED:
+                            mns_cid = map_subevent_connection_opened_get_map_cid(packet);
+                            printf("MNS Client connected, mns_cid 0x04%x\n", mns_cid);
+                            break;
+                        case MAP_SUBEVENT_CONNECTION_CLOSED:
+                            printf("MNS Client disconnected, mns_cid 0x04%x\n", mns_cid);
+                            mns_cid = 0;
+                            break;
                         case MAP_SUBEVENT_NOTIFICATION_EVENT:
                             printf("Notification!\n");
                             break;
                         default:
-                            printf ("unknown map meta event %d\n",
-                                    hci_event_map_meta_get_subevent_code(packet));
+                            printf ("unknown map meta event %d\n", hci_event_map_meta_get_subevent_code(packet));
                             break;
                     }
                     break;
                 default:
-                    printf ("unknown HCI event %d\n",
-                            hci_event_packet_get_type(packet));
                     break;
             }
             break;
@@ -433,9 +498,6 @@ static void mns_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
             break;
     }
 }
-
-static uint8_t  map_message_notification_service_buffer[150];
-const char * name = "MAP Service";
 
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
