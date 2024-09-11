@@ -50,10 +50,17 @@ extern "C" {
 /* API_START */
 
 /**
- * @brief Init MAP Server
+ * @brief Init MAP Notification Server
  * @param maximum_obex_packet_length
  */
 void map_notification_server_init(btstack_packet_handler_t packet_handler, uint8_t rfcomm_channel_nr, uint16_t l2cap_psm, uint16_t maximum_obex_packet_length);
+
+/**
+ * @brief Close MAP Notification Server Connection
+ * @param mns_cid
+ * @return status
+ */
+uint8_t map_notification_server_disconnect(uint16_t mns_cid);
 
 /* API_END */
 

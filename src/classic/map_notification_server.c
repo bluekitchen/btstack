@@ -466,3 +466,14 @@ void map_notification_server_init(btstack_packet_handler_t packet_handler, uint8
     map_notification_server_user_packet_handler = packet_handler;
 }
 
+uint8_t map_notification_server_disconnect(uint16_t mns_cid){
+    map_notification_server_t * map_notification_server = map_notification_server_for_goep_cid(mns_cid);
+    if (map_notification_server == NULL) {
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if (map_notification_server->state != MAP_CONNECTED){
+        return BTSTACK_BUSY;
+    }
+
+    return goep_server_disconnect(mns_cid);
+}
