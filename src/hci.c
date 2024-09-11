@@ -4425,7 +4425,10 @@ static void event_handler(uint8_t *packet, uint16_t size){
                         handle = hci_subevent_le_advertising_set_terminated_get_connection_handle(packet);
                         conn = hci_connection_for_handle(handle);
                         if (conn == NULL){
-                            conn = create_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_LE_PUBLIC, HCI_ROLE_SLAVE);
+                            // use placeholder address for peer, will be overwritten in hci_handle_le_connection_complete_event()
+                            bd_addr_t addr;
+                            memset(addr, 0, 6);
+                            conn = create_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_UNKNOWN, HCI_ROLE_SLAVE);
                             if (conn != NULL){
                                 conn->state = ANNOUNCED;
                                 conn->con_handle = handle;
