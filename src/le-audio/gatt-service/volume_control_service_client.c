@@ -207,7 +207,7 @@ static void vcs_client_emit_read_event(vcs_client_connection_t * connection, uin
             break;
         default:
             btstack_assert(false);
-            break;
+            return;
     }
 
     if (att_status != ATT_ERROR_SUCCESS){
@@ -244,7 +244,7 @@ static void vcs_client_emit_notify_event(vcs_client_connection_t * connection, u
             break;
         default:
             btstack_assert(false);
-            break;
+            return;
     }
 
     if (att_status != ATT_ERROR_SUCCESS){
