@@ -100,7 +100,7 @@ static l2cap_ertm_config_t map_access_client_ertm_config = {
 static uint16_t mns_cid;
 
 static bd_addr_t    remote_addr;
-static const char * remote_addr_string = "001BDC08E25C";
+static const char * remote_addr_string = "001BDC0732EF";
 
 static const char * folder_name = "inbox";
 static map_message_handle_t message_handle = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
