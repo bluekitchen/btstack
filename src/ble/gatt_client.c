@@ -1357,8 +1357,8 @@ void gatt_client_listen_for_service_characteristic_value_updates(gatt_client_ser
     notification->con_handle = con_handle;
     notification->start_group_handle = service->start_group_handle;
     notification->end_group_handle = service->end_group_handle;
-    notification->service_id = 0;
-    notification->connection_id = 0;
+    notification->service_id = service_id;
+    notification->connection_id = connection_id;
     btstack_linked_list_add(&gatt_client_value_listeners, (btstack_linked_item_t*) notification);
 }
 
