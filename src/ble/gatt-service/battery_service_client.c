@@ -352,7 +352,7 @@ static void battery_service_client_validate_service(battery_service_client_t * c
 }
 
 // @return true if client valid / run function should be called
-static bool battery_service_client_handle_query_complete(battery_service_client_t * client, uint8_t status){
+static bool battery_service_client_handle_query_complete_for_connection_setup(battery_service_client_t * client, uint8_t status){
     switch (client->state){
         case BATTERY_SERVICE_CLIENT_STATE_W4_SERVICE_RESULT:
             if (status != ATT_ERROR_SUCCESS){
@@ -449,6 +449,16 @@ static bool battery_service_client_handle_query_complete(battery_service_client_
             }
             break;
 
+        default:
+            return false;
+
+    }
+    return true;
+}
+
+static bool battery_service_client_handle_query_complete(battery_service_client_t * client, uint8_t status){
+    switch (client->state){
+
         case BATTERY_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_VALUE_READ:
             if (client->polled_service_index != BATTERY_SERVICE_INVALID_INDEX){
                 if (status != ATT_ERROR_SUCCESS){
@@ -460,10 +470,10 @@ static bool battery_service_client_handle_query_complete(battery_service_client_
             return (client->need_poll_bitmap != 0u);
 
         default:
-            return false;
+            break;
 
     }
-    return true;
+    return false;
 }
 
 static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -577,14 +587,17 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
             btstack_assert(client != NULL);
 
             // 1. handle service establishment/notification subscription query results (client->state < BATTERY_SERVICE_CLIENT_STATE_CONNECTED)
-            // 2. handle battery value query result (in BATTERY_SERVICE_CLIENT_STATE_CONNECTED state)
+            if (client->state < BATTERY_SERVICE_CLIENT_STATE_CONNECTED){
+                send_next_gatt_query = battery_service_client_handle_query_complete_for_connection_setup(client, gatt_event_query_complete_get_att_status(packet));
+                break;
+            }
+
+            // 2. handle battery value query result when devices is connected
             send_next_gatt_query = battery_service_client_handle_query_complete(client, gatt_event_query_complete_get_att_status(packet));
             if (!send_next_gatt_query){
                 // if there are no further queries, and we're connected, trigger next polling read
-                if (client->state == BATTERY_SERVICE_CLIENT_STATE_CONNECTED){
-                    if (battery_service_is_polling_needed(client)){
-                        battery_service_poll_timer_start(client);
-                    }
+                if (battery_service_is_polling_needed(client)){
+                    battery_service_poll_timer_start(client);
                 }
             }
             break;
