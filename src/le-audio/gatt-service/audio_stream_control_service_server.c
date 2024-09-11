@@ -466,7 +466,8 @@ static void ascs_server_can_send_now(void * context){
         value[pos++] = connection->response_opcode;
         value[pos++] = connection->response_ases_num;
 
-        if (connection->response_ases_num != 0xFF){
+        // note: response_ases_num < ASCS_STREAMENDPOINTS_MAX_NUM => response_ases_num != 0xff
+        if (connection->response_ases_num <= ASCS_STREAMENDPOINTS_MAX_NUM){
             uint8_t i;
             for (i = 0; i < connection->response_ases_num; i++){
                 ascs_control_point_operation_response_t response = connection->response[i];
