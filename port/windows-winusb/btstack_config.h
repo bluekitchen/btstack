@@ -71,7 +71,7 @@
 // Enable PTS BUG Test Case(s)
 //#define MAP_PTS_BUG_TC_MAP_OLD_MAP_MSE_GOEP_SRM_BV_04
 //#define MAP_PTS_BUG_TC_MAP_OLD_MAP_MSE_GOEP_SRM_BV_04_PASS
-
+#define MAP_HANDLE_PUT_CONTINUE_BY_APP
 // allow for one NetKey update
 #define MAX_NR_MESH_NETWORK_KEYS      (MAX_NR_MESH_SUBNETS+1)
 

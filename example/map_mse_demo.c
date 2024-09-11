@@ -1068,8 +1068,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             ListingSize = mas_cfg->obj_count + one_object_more_or_less;
                             map_server_set_response_app_param(current_map_cid, MAP_APP_PARAM_ListingSize, &ListingSize);
                             map_server_set_response_type_and_name(current_map_cid, "", "x-obex/folder-listing");
-                            MAP_PRINTF("[+] Get Folder listing\n");
-                            send_obex_object(o_msg, current_map_cid, 0, mas_cfg->obj_count - 1 + one_object_more_or_less, continuation);
+                            MAP_PRINTF("[+] Get Folder listing\n");                            send_obex_object(o_msg, current_map_cid, 0, mas_cfg->obj_count - 1 + one_object_more_or_less, continuation);
                             break;
 							
                         case MAP_SUBEVENT_GET_MESSAGE_LISTING:
@@ -1137,6 +1136,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                         case MAP_SUBEVENT_PUT_MESSAGE_STATUS: {
                             uint8_t StatusIndicator;
                             uint8_t StatusValue;
+                            APP_READ_32(packet, &pos, &continuation);
                             APP_READ_16(packet, &pos, &current_map_cid);
                             APP_READ_08(packet, &pos, &StatusIndicator);
                             APP_READ_08(packet, &pos, &StatusValue);
@@ -1172,6 +1172,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             uint8_t ModifyText;
                             mas_uint64hex_t MessageHandle;
                             char new_handle[3]; // A0\0
+                            APP_READ_32(packet, &pos, &continuation);
                             APP_READ_16(packet, &pos, &current_map_cid);
                             APP_READ_08(packet, &pos, &OBEX_opcode);
                             APP_READ_08(packet, &pos, &Charset);
@@ -1183,7 +1184,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             MAP_PRINTF("[+] Put Message Charset:%u Attachment:%u MessageHandle:%s\n", Charset, Attachment, MessageHandle);
                             snprintf(new_handle, sizeof(new_handle), "A%u", mas_cfg->obj_count + one_object_more_or_less - cfg_start_index);
                             map_server_set_response_type_and_name(current_map_cid, new_handle, NULL);
-                            map_server_send_response(current_map_cid, OBEX_RESP_SUCCESS, 0, 0, NULL);
+                            map_server_send_response(current_map_cid, OBEX_opcode & OBEX_OPCODE_FINAL_BIT_MASK ? OBEX_RESP_SUCCESS : OBEX_RESP_CONTINUE , 0, 0, NULL);
 
                             if (mas_cfg->fPutMsg != NULL)
                                 mas_cfg->fPutMsg();

@@ -77,6 +77,7 @@ typedef enum {
     MAS_STATE_W4_REQUEST,
     MAS_STATE_W4_USER_DATA,
     MAS_STATE_W4_GET_OPCODE,
+    MAS_STATE_W4_PUT_OPCODE,
     MAS_STATE_W4_GET_REQUEST,
     MAS_STATE_SEND_INTERNAL_RESPONSE,
     MAS_STATE_SEND_RESPONSE_CONTINUE,
@@ -461,6 +462,7 @@ static void map_server_default_headers(map_server_t* mas) {
     log_debug("set default headers for request");
 }
 static void map_server_reset_response(map_server_t* mas) {
+    log_debug("reset .response*");
     (void)memset(&mas->response, 0, sizeof(mas->response));
 }
 
@@ -524,7 +526,7 @@ static void map_server_handle_can_send_now(map_server_t* mas) {
         // send packet
         goep_server_execute(mas->goep_cid, response_code);
         // trigger next user response in SRM
-        if (mas->srm_state == SRM_ENABLED) {
+        if (mas->srm_state == SRM_ENABLED) { // should only be called for GET, shouldnt it?
             map_server_handle_get_or_put_request(mas);
         }
         break;
@@ -773,13 +775,17 @@ static void map_server_parser_callback_get(void* user_data, uint8_t header_id, u
 static void map_server_handle_get_or_put_request(map_server_t* mas) {
     map_server_handle_srm_headers(mas);
 
-    if (mas->srm_state == SRM_SEND_CONFIRM_WAIT) {
-        RUN_AND_LOG_ACTION(mas->state = MAS_STATE_SEND_RESPONSE_CONTINUE;)
-        RUN_AND_LOG_ACTION(mas->response.code = OBEX_RESP_CONTINUE;)
-        RUN_AND_LOG_ACTION(mas->obex_srm.srm_value = OBEX_SRM_ENABLE;)
-        RUN_AND_LOG_ACTION(mas->srm_state = SRM_SEND_CONFIRM_WAIT;)
-        goep_server_request_can_send_now(mas->goep_cid);
-        return;
+    /* GET Continue */
+    if (mas->OBEX_opcode & OBEX_OPCODE_GET) {
+        if (mas->srm_state == SRM_SEND_CONFIRM_WAIT) {
+            RUN_AND_LOG_ACTION(mas->state = MAS_STATE_SEND_RESPONSE_CONTINUE;)
+            RUN_AND_LOG_ACTION(mas->response.code = OBEX_RESP_CONTINUE;)
+            RUN_AND_LOG_ACTION(mas->obex_srm.srm_value = OBEX_SRM_ENABLE;)
+            RUN_AND_LOG_ACTION(mas->srm_state = SRM_SEND_CONFIRM_WAIT;)
+            goep_server_request_can_send_now(mas->goep_cid);
+            return;
+        }
+    /* PUT */
     }
 
     mas->request.object_type = map_server_parse_object_type(mas, mas->request.type);
@@ -814,6 +820,7 @@ static void map_server_handle_get_or_put_request(map_server_t* mas) {
         break;
 
     case MAP_OBJECT_TYPE_PUT_MESSAGE_CONTINUE:
+#ifndef MAP_HANDLE_PUT_CONTINUE_BY_APP
 #ifndef MAP_PTS_BUG_TC_MAP_OLD_MAP_MSE_GOEP_SRM_BV_04_PASS
             mas->state = MAS_STATE_SEND_RESPONSE_CONTINUE;
             RUN_AND_LOG_ACTION(mas->response.code = OBEX_RESP_CONTINUE;)
@@ -823,6 +830,7 @@ static void map_server_handle_get_or_put_request(map_server_t* mas) {
             mas->request.object_type = MAP_OBJECT_TYPE_PUT_MESSAGE;
             // fall trough to MAP_OBJECT_TYPE_PUT_MESSAGE
 #endif
+#endif // MAP_HANDLE_PUT_CONTINUE_BY_APP
 
 
     case MAP_OBJECT_TYPE_GET_MESSAGE:
@@ -907,9 +915,12 @@ static void map_server_handle_get_or_put_request(map_server_t* mas) {
         APP_WRITE_STR(event, &pos, sizeof(event) - pos, mas->request.name);
         APP_WRITE_LEN(event, pos);
         break;
-
+#ifdef MAP_HANDLE_PUT_CONTINUE_BY_APP
+    case MAP_OBJECT_TYPE_PUT_MESSAGE_CONTINUE:
+#endif
     case MAP_OBJECT_TYPE_PUT_MESSAGE:
         APP_WRITE_08(event, &pos, MAP_SUBEVENT_PUT_MESSAGE);
+        APP_WRITE_32(event, &pos, mas->request.continuation);
         APP_WRITE_16(event, &pos, mas->goep_cid);
         APP_WRITE_08(event, &pos, mas->OBEX_opcode);
         APP_WRITE_08(event, &pos, mas->request.app_params.Charset);
@@ -1004,9 +1015,13 @@ static void map_server_packet_handler_goep(map_server_t* mas, uint8_t* packet, u
         switch (opcode) {
         case OBEX_OPCODE_GET:
         case (OBEX_OPCODE_GET | OBEX_OPCODE_FINAL_BIT_MASK):
+            log_debug("MAS_STATE_W4_REQUEST: OBEX_OPCODE_GET opcode:0x%02X", opcode);
+            mas->state = MAS_STATE_W4_REQUEST;
+            obex_parser_init_for_request(&mas->obex_parser, &map_server_parser_callback_get, (void*)mas);
+            break;
         case OBEX_OPCODE_PUT:
         case (OBEX_OPCODE_PUT | OBEX_OPCODE_FINAL_BIT_MASK):
-            log_debug("MAS_STATE_W4_REQUEST: OBEX_OPCODE_GET/PUT opcode:0x%02X", opcode);
+            log_debug("MAS_STATE_W4_REQUEST: OBEX_OPCODE_PUT opcode:0x%02X", opcode);
             mas->state = MAS_STATE_W4_REQUEST;
             obex_parser_init_for_request(&mas->obex_parser, &map_server_parser_callback_get, (void*)mas);
             break;
@@ -1209,7 +1224,7 @@ static void map_server_build_response(map_server_t* mas) {
 uint16_t map_server_get_max_body_size(uint16_t map_cid) {
     map_server_t* mas = map_server_for_goep_cid(map_cid);
 
-    btstack_assert(mas->request.object_type != MAP_OBJECT_TYPE_INVALID);
+    //btstack_assert(mas->request.object_type != MAP_OBJECT_TYPE_INVALID);
     btstack_assert(mas->response.hdr_finalized);
 
     if (mas == NULL) {
