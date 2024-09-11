@@ -167,9 +167,8 @@ static pacs_record_t sink_pac_records[] = {
         45,
         // metadata
         {
-            // all metadata set
-            .metadata_mask = 0x0FFE,
-            // (2) preferred_audio_contexts_mask
+            .metadata_mask = (1 << LE_AUDIO_METADATA_TYPE_PREFERRED_AUDIO_CONTEXTS) | (1 << LE_AUDIO_METADATA_TYPE_STREAMING_AUDIO_CONTEXTS),
+            // (1) preferred_audio_contexts_mask
             .preferred_audio_contexts_mask = LE_AUDIO_CONTEXT_MASK_UNSPECIFIED | LE_AUDIO_CONTEXT_MASK_CONVERSATIONAL | LE_AUDIO_CONTEXT_MASK_MEDIA,
             // (2) streaming_audio_contexts_mask
             .streaming_audio_contexts_mask = LE_AUDIO_CONTEXT_MASK_UNSPECIFIED | LE_AUDIO_CONTEXT_MASK_CONVERSATIONAL | LE_AUDIO_CONTEXT_MASK_MEDIA,
@@ -201,9 +200,8 @@ static pacs_record_t source_pac_records[] = {
         45,
         // metadata
         {
-            // all metadata set
-            .metadata_mask = 0x0FFE,
-            // (2) preferred_audio_contexts_mask
+            .metadata_mask = (1 << LE_AUDIO_METADATA_TYPE_PREFERRED_AUDIO_CONTEXTS) | (1 << LE_AUDIO_METADATA_TYPE_STREAMING_AUDIO_CONTEXTS),
+            // (1) preferred_audio_contexts_mask
             .preferred_audio_contexts_mask = LE_AUDIO_CONTEXT_MASK_UNSPECIFIED | LE_AUDIO_CONTEXT_MASK_CONVERSATIONAL | LE_AUDIO_CONTEXT_MASK_MEDIA,
             // (2) streaming_audio_contexts_mask
             .streaming_audio_contexts_mask = LE_AUDIO_CONTEXT_MASK_UNSPECIFIED | LE_AUDIO_CONTEXT_MASK_CONVERSATIONAL | LE_AUDIO_CONTEXT_MASK_MEDIA,
