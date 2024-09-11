@@ -4415,7 +4415,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
                         }
                     }
                     // support legacy advertisements
-                    if (advertising_handle == 0){
+                    if (advertising_handle == LE_EXTENDED_ADVERTISING_LEGACY_HANDLE){
                         hci_stack->le_advertisements_state &= ~LE_ADVERTISEMENT_STATE_ACTIVE;
                         hci_update_advertisements_enabled_for_current_roles();
                     }
@@ -8812,9 +8812,9 @@ uint8_t gap_extended_advertising_set_resolvable_private_address_update(uint16_t 
 }
 
 uint8_t gap_extended_advertising_setup(le_advertising_set_t * storage, const le_extended_advertising_parameters_t * advertising_parameters, uint8_t * out_advertising_handle){
-    // find free advertisement handle
+    // find free advertisement handle. we use LE_EXTENDED_ADVERTISING_LEGACY_HANDLE for non-extended advertising
     uint8_t advertisement_handle;
-    for (advertisement_handle = 1; advertisement_handle <= LE_EXTENDED_ADVERTISING_MAX_HANDLE; advertisement_handle++){
+    for (advertisement_handle = LE_EXTENDED_ADVERTISING_LEGACY_HANDLE + 1; advertisement_handle <= LE_EXTENDED_ADVERTISING_MAX_HANDLE; advertisement_handle++){
         if (hci_advertising_set_for_handle(advertisement_handle) == NULL) break;
     }
     if (advertisement_handle > LE_EXTENDED_ADVERTISING_MAX_HANDLE) return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
