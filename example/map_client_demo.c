@@ -107,7 +107,36 @@ static map_message_handle_t message_handle = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 static map_message_handle_t message_handles[MAP_MESSAGE_TYPE_IM+1] = { 0, };
 static map_conversation_id_t conv_id = { 0x00, };
 
+//static const char* paths[] = { "telecom/msg", "telecom/msg/draf";
 static const char * path = "telecom/msg";
+
+static const char bmsg_email[] =
+"BEGIN:BMSG\r\n"
+"VERSION : 1.0\r\n"
+"STATUS : UNREAD\r\n"
+"TYPE : EMAIL\r\n"
+"FOLDER : TELECOM / MSG / INBOX\r\n"
+"BEGIN : VCARD\r\n"
+"VERSION : 2.1\r\n"
+"N : IUT\r\n"
+"EMAIL : member@iut.com\r\n"
+"END : VCARD\r\n"
+"BEGIN:BENV\r\n"
+"BEGIN : BBODY\r\n"
+"ENCODING : 8BIT\r\n"
+"LENGTH : 4975\r\n"
+"BEGIN : MSG\r\n"
+"Date : 20 Jun 96\r\n"
+"Subject : BTStack testing\r\n"
+"From : PTS@bluetooth.com\r\n"
+"To : IUT@bluetooth.com\r\n"
+"\r\n"
+"Hello World!\r\n"
+"END:MSG\r\n"
+"END : BBODY\r\n"
+"END : BENV\r\n"
+"END : BMSG\r\n";
+
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
@@ -232,13 +261,16 @@ static void stdin_process(char c){
             map_access_client_disconnect(map_mas_1_cid);
             map_mas_1_cid = 0;
             break;
-
         case 'U':
             printf("[+] Requesting inbox update\n");
             map_access_client_update_inbox(map_cid);
             break;
-
         case 'p':
+            printf("[+] Set path \'%s\'\n", path);
+            map_access_client_set_path(map_cid, path);
+            break;
+        case 'P':
+            
             printf("[+] Set path \'%s\'\n", path);
             map_access_client_set_path(map_cid, path);
             break;
