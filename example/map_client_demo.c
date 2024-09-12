@@ -128,6 +128,30 @@ static enum {
     MCE_DEMO_NOTIFICATION_DISABLE,
 } map_mce_state = MCE_DEMO_IDLE;
 
+void client_connect(int mas_id)
+{
+    uint16_t* pmap_mas_x_cid = mas_id == 0 ? &map_mas_0_cid : &map_mas_1_cid;
+    map_access_client_t* pmap_access_client_mas_x = mas_id == 0 ? &map_access_client_mas_0 : &map_access_client_mas_1;
+#ifdef ENABLE_GOEP_L2CAP
+    uint8_t* pmap_access_client_ertm_buffer_mas_x = mas_id == 0 ? map_access_client_ertm_buffer_mas_0 : map_access_client_ertm_buffer_mas_1;
+#endif
+    if (*pmap_mas_x_cid == 0) {
+        printf("[+] Connecting to MAS ID #%u of %s...\n", mas_id, bd_addr_to_str(remote_addr));
+#ifdef ENABLE_GOEP_L2CAP
+        map_access_client_connect(pmap_access_client_mas_x, &map_access_client_ertm_config,
+            sizeof(map_access_client_ertm_buffer_mas_0),
+            pmap_access_client_ertm_buffer_mas_x, &packet_handler, remote_addr, 0, pmap_mas_x_cid);
+#else
+        map_access_client_connect(pmap_access_client_mas_x, NULL, 0, NULL, &packet_handler, remote_addr, 0, pmap_mas_x_cid);
+#endif
+    }
+    else {
+        printf("[+] Switching to MAP ID #0, map_cid %u\n", *pmap_mas_x_cid);
+    }
+    map_mas_instance_id = mas_id;
+    map_cid = *pmap_mas_x_cid;
+}
+
 #ifdef HAVE_BTSTACK_STDIN
 // Testing User Interface
 static void show_usage(void){
@@ -192,43 +216,17 @@ static void mce_demo_select_mas_instance(uint8_t instance){
 static void stdin_process(char c){
     uint8_t status = ERROR_CODE_SUCCESS;
     switch (c){
-        case 'a':
-            if (map_mas_0_cid == 0){
-                printf("[+] Connecting to MAS ID #0 of %s...\n", bd_addr_to_str(remote_addr));
-#ifdef ENABLE_GOEP_L2CAP
-                map_access_client_connect(&map_access_client_mas_0, &map_access_client_ertm_config,
-                                          sizeof(map_access_client_ertm_buffer_mas_0),
-                                          map_access_client_ertm_buffer_mas_0, &packet_handler, remote_addr, 0, &map_mas_0_cid);
-#else
-                map_access_client_connect(&map_access_client_mas_0, NULL, 0, NULL, &packet_handler, remote_addr, 0, &map_mas_0_cid);
-#endif
-            } else {
-                printf("[+] Switching to MAP ID #0, map_cid %u\n", map_mas_0_cid);
-            }
-            mce_demo_select_mas_instance(0);
+        case 'a':            
+            client_connect(0);
             break;
         case 'A':
             printf("[+] Disconnect MAP ID #0 from %s...\n", bd_addr_to_str(remote_addr));
             map_access_client_disconnect(map_mas_0_cid);
             map_mas_0_cid = 0;
             break;
-
         case 'b':
-            if (map_mas_1_cid == 0) {
-                printf("[+] Connecting to MAS ID #1 of %s...\n", bd_addr_to_str(remote_addr));
-#ifdef ENABLE_GOEP_L2CAP
-                map_access_client_connect(&map_access_client_mas_1, &map_access_client_ertm_config,
-                                          sizeof(map_access_client_ertm_buffer_mas_1),
-                                          map_access_client_ertm_buffer_mas_1, &packet_handler, remote_addr, 1,
-                                          &map_mas_1_cid);
-#else
-                map_access_client_connect(&map_access_client_mas_1, NULL, 0, NULL, &packet_handler, remote_addr, 1, &map_mas_1_cid);
-#endif
-            } else {
-                printf("[+] Switching to MAP ID #1, map_cid %u\n", map_mas_1_cid);
-            }
-            mce_demo_select_mas_instance(1);
-            break;
+            client_connect(1);
+            mce_demo_select_mas_instance(1);            break;
         case 'B':
             printf("[+] Disconnect MAP ID #1 from %s...\n", bd_addr_to_str(remote_addr));
             map_access_client_disconnect(map_mas_1_cid);
