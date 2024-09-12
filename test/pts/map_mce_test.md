@@ -33,6 +33,10 @@ MAP/MCE/MMB/BV-06-I: a, 2, g
 MAP/MCE/MMB/BV-08-I: a, U, F, A, ok
 MAP/MCE/MMB/BV-08-I: a, C
 
+WIP MAP/MCE/MMD/BV-01-C: a, p, F, 1, d, 2, d, 3, d, 4, d, 5, d
+WIP MAP/MCE/MMD/BV-03-C: a, p, C, 5, d
+
+
 MAP/MCE/MMN/BV-05-C: a, n, m
 MAP/MCE/MMN/BV-01-C: a, n
 MAP/MCE/MMN/BV-05-C: a, n, m

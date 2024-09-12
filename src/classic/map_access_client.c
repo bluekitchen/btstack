@@ -405,14 +405,15 @@ static void map_access_client_handle_can_send_now(uint16_t goep_cid) {
             map_access_client_message_handle_to_str(map_message_handle_to_str_buffer, map_access_client->message_handle);
             goep_client_header_add_name(map_access_client->goep_client.cid, map_message_handle_to_str_buffer);
 
-            if (map_access_client->read_status >= 0 && map_access_client->read_status <= 1) {
+            if (   map_access_client->stat_val >= no && map_access_client->stat_val <= yes
+                && map_access_client->stat_ind >= readStatus && map_access_client->stat_ind <= setExtendedData) {
                 application_parameters[pos++] = 0x17;  // StatusIndicator
                 application_parameters[pos++] = 1;
-                application_parameters[pos++] = 0;     // readStatus
+                application_parameters[pos++] = map_access_client->stat_ind;     // readStatus/deletestatus/extended
 
                 application_parameters[pos++] = 0x18; // StatusValue
                 application_parameters[pos++] = 1;
-                application_parameters[pos++] = map_access_client->read_status;
+                application_parameters[pos++] = map_access_client->stat_val;
                 goep_client_header_add_application_parameters(map_access_client->goep_client.cid, &application_parameters[0], pos);
             } else {
                 obex_srm_client_init(&map_access_client->obex_srm);
@@ -800,7 +801,7 @@ uint8_t map_access_client_get_message_with_handle(uint16_t map_cid, const map_me
     return 0;
 }
 
-uint8_t map_access_client_set_message_status(uint16_t map_cid, const map_message_handle_t map_message_handle, int read_status){
+uint8_t map_access_client_set_message_status(uint16_t map_cid, const map_message_handle_t map_message_handle, enum status_indicator stat_ind, enum status_value stat_val){
     map_access_client_t * map_access_client = map_access_client_for_map_cid(map_cid);
     if (map_access_client == NULL) {
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
@@ -810,7 +811,8 @@ uint8_t map_access_client_set_message_status(uint16_t map_cid, const map_message
     }
     map_access_client->state = MAP_W2_SEND_SET_MESSAGE_STATUS;
     map_access_client->request_number = 0;
-    map_access_client->read_status = read_status;
+    map_access_client->stat_ind = stat_ind;
+    map_access_client->stat_val = stat_val;
     memcpy(map_access_client->message_handle, map_message_handle, MAP_MESSAGE_HANDLE_SIZE);
     goep_client_request_can_send_now(map_access_client->goep_client.cid);
     return 0;

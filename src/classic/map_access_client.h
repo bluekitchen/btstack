@@ -93,6 +93,8 @@ typedef enum {
     MAP_W4_DISCONNECT_RESPONSE,
 } map_access_client_state_t;
 
+enum status_indicator { readStatus = 0, deletedStatus = 1, setExtendedData = 2 };
+enum status_value { no = 0, yes = 1 };
 typedef struct {
     // map access client linked list
     btstack_linked_item_t item;
@@ -126,7 +128,8 @@ typedef struct {
 
     map_message_handle_t message_handle;
     uint8_t get_message_attachment;
-    int read_status;   /* for set_message_status */
+    enum status_indicator stat_ind; /* for set_message_status read/delete/extended */
+    enum status_value stat_val; /* no / yes */
 
     map_util_xml_parser mu_parser;
 } map_access_client_t;
@@ -181,7 +184,7 @@ uint8_t map_access_client_get_folder_listing(uint16_t map_cid);
  * @param read_status
  * @return status
  */
-uint8_t map_access_client_set_message_status(uint16_t map_cid, const map_message_handle_t map_message_handle, int read_status);
+uint8_t map_access_client_set_message_status(uint16_t map_cid, const map_message_handle_t map_message_handle, enum status_indicator stat_ind, enum status_value stat_val);
 
 
 /** 
