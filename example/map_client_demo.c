@@ -188,7 +188,7 @@ static void show_usage(void){
     printf("5 - Select last listed \"im\" message\n");
     printf("g - Get selected message "); printf_hexdump(message_handle, sizeof(message_handle));
     printf("r - Mark selected messages as read\n");
-    printf("N - disable notifications\n");
+    printf("R - Mark selected messagee as unread\n");
     printf("d - Mark selected messagee as deleted\n");
     printf("n - enable notifications for all MAS\n");
     printf("N - disable notifications for all MAS\n");
@@ -286,11 +286,15 @@ static void stdin_process(char c){
             printf("[+] Get selected message\n");
             map_access_client_get_message_with_handle(map_cid, message_handle, 1);
             break;
+        case 'u':
+            printf("[+] Upload (PUT/PUSH) message\n");
+            map_access_client_push_message(map_cid, message_handle);
+            break;
         case 'r':
             printf("[+] Mark selected messages as read\n");
             map_access_client_set_message_status(map_cid, message_handle, readStatus, yes);
             break;
-        case 'u':
+        case 'R':
             printf("[+] Mark selected message as unread\n");
             map_access_client_set_message_status(map_cid, message_handle, readStatus, no);
             break;

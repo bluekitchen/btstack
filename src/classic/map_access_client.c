@@ -155,6 +155,7 @@ static void map_access_client_parser_callback_get_operation(void * user_data, ui
         case OBEX_HEADER_SINGLE_RESPONSE_MODE_PARAMETER:
             obex_parser_header_store(&map_access_client->obex_srm.srmp_value, 1, total_len, data_offset, data_buffer, data_len);
             break;
+        case OBEX_HEADER_NAME:
         case OBEX_HEADER_BODY:
         case OBEX_HEADER_END_OF_BODY:
             switch(map_access_client->state){
@@ -170,6 +171,9 @@ static void map_access_client_parser_callback_get_operation(void * user_data, ui
                     break;
                 case MAP_W4_SET_MESSAGE_STATUS:
                     break;
+                case MAP_W4_PUSH_MESSAGE_HANDLE:
+#pragma warning("debug this")
+                    btstack_assert(false);
                 case MAP_W4_MESSAGE:
                 case MAP_W4_MAS_INSTANCE_INFO:
                     map_access_client->client_handler(MAP_DATA_PACKET, map_access_client->goep_client.cid, (uint8_t *) data_buffer, data_len);
@@ -356,7 +360,7 @@ static void map_access_client_handle_can_send_now(uint16_t goep_cid) {
 
                 application_parameters[pos++] = 0x0A; // attachment
                 application_parameters[pos++] = 1;
-                application_parameters[pos++] = map_access_client->get_message_attachment;
+                application_parameters[pos++] = map_access_client->message_attachment;
 
                 application_parameters[pos++] = 0x14; // Charset
                 application_parameters[pos++] = 1;
@@ -365,6 +369,33 @@ static void map_access_client_handle_can_send_now(uint16_t goep_cid) {
             }
 
             map_access_client->state = MAP_W4_MESSAGE;
+            map_access_client_prepare_operation(map_access_client, OBEX_OPCODE_GET);
+            map_access_client->request_number++;
+            goep_client_execute(map_access_client->goep_client.cid);
+            break;
+
+        case MAP_W2_SEND_PUSH_MESSAGE:
+            goep_client_request_create_put(map_access_client->goep_client.cid);
+
+            if (map_access_client->request_number == 0) {
+                obex_srm_client_init(&map_access_client->obex_srm);
+                map_access_client_prepare_srm_header(map_access_client);
+
+                goep_client_header_add_name(map_access_client->goep_client.cid, "draft");
+
+                goep_client_header_add_type(map_access_client->goep_client.cid, "x-bt/message");
+
+                //application_parameters[pos++] = 0x0A; // attachment
+                //application_parameters[pos++] = 1;
+                //application_parameters[pos++] = map_access_client->message_attachment;
+
+                application_parameters[pos++] = 0x14; // Charset
+                application_parameters[pos++] = 1;
+                application_parameters[pos++] = 1;    // UTF-8
+                goep_client_header_add_application_parameters(map_access_client->goep_client.cid, &application_parameters[0], pos);
+            }
+
+            map_access_client->state = MAP_W4_PUSH_MESSAGE_HANDLE;
             map_access_client_prepare_operation(map_access_client, OBEX_OPCODE_GET);
             map_access_client->request_number++;
             goep_client_execute(map_access_client->goep_client.cid);
@@ -601,6 +632,7 @@ map_access_client_packet_handler_goep(uint16_t goep_cid, uint8_t *packet, uint16
         case MAP_W4_UPDATE_INBOX:
         case MAP_W4_MESSAGES_IN_FOLDER:
         case MAP_W4_MESSAGE:
+        case MAP_W4_PUSH_MESSAGE_HANDLE:
         case MAP_W4_CONVERSATION_LISTING:
         case MAP_W4_SET_MESSAGE_STATUS:
         case MAP_W4_SET_NOTIFICATION:
@@ -610,7 +642,7 @@ map_access_client_packet_handler_goep(uint16_t goep_cid, uint8_t *packet, uint16
                 case OBEX_RESP_CONTINUE:
                     obex_srm_client_handle_headers(&map_access_client->obex_srm);
                     if (obex_srm_client_is_srm_active(&map_access_client->obex_srm)) {
-                        map_access_client_prepare_operation(map_access_client, OBEX_OPCODE_GET);
+                        map_access_client_prepare_operation(map_access_client, map_access_client->state == MAP_W4_PUSH_MESSAGE_HANDLE ? OBEX_OPCODE_PUT:OBEX_OPCODE_GET);
                         break;
                     }
                     map_access_client->state =
@@ -796,7 +828,23 @@ uint8_t map_access_client_get_message_with_handle(uint16_t map_cid, const map_me
     map_access_client->state = MAP_W2_SEND_GET_MESSAGE_WITH_HANDLE;
     map_access_client->request_number = 0;
     memcpy(map_access_client->message_handle, map_message_handle, MAP_MESSAGE_HANDLE_SIZE);
-    map_access_client->get_message_attachment = with_attachment;
+    map_access_client->message_attachment = with_attachment;
+    goep_client_request_can_send_now(map_access_client->goep_client.cid);
+    return 0;
+}
+
+uint8_t map_access_client_push_message(uint16_t map_cid, const map_message_handle_t map_message_handle) {
+    map_access_client_t* map_access_client = map_access_client_for_map_cid(map_cid);
+    if (map_access_client == NULL) {
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if (map_access_client->state != MAP_CONNECTED) {
+        return BTSTACK_BUSY;
+    }
+
+    map_access_client->state = MAP_W2_SEND_PUSH_MESSAGE;
+    map_access_client->request_number = 0;
+    memcpy(map_access_client->message_handle, map_message_handle, MAP_MESSAGE_HANDLE_SIZE);
     goep_client_request_can_send_now(map_access_client->goep_client.cid);
     return 0;
 }

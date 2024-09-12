@@ -74,6 +74,8 @@ typedef enum {
     MAP_W4_MESSAGES_IN_FOLDER,
     MAP_W2_SEND_GET_MESSAGE_WITH_HANDLE,
     MAP_W4_MESSAGE,
+    MAP_W2_SEND_PUSH_MESSAGE,
+    MAP_W4_PUSH_MESSAGE_HANDLE,
     MAP_W2_SEND_GET_CONVERSATION_LISTING,
     MAP_W4_CONVERSATION_LISTING,
     MAP_W2_SEND_SET_MESSAGE_STATUS,
@@ -127,7 +129,7 @@ typedef struct {
     int list_start_offset;
 
     map_message_handle_t message_handle;
-    uint8_t get_message_attachment;
+    uint8_t message_attachment;
     enum status_indicator stat_ind; /* for set_message_status read/delete/extended */
     enum status_value stat_val; /* no / yes */
 
