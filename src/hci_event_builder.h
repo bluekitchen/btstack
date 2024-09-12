@@ -45,6 +45,7 @@
 #include <stdint.h>
 
 #include "bluetooth.h"
+#include "btstack_defines.h"
 
 #if defined __cplusplus
 extern "C" {
@@ -153,6 +154,13 @@ void hci_event_builder_add_string(hci_event_builder_context_t * context, const c
  * @param value
  */
 void hci_event_builder_add_bytes(hci_event_builder_context_t * context, const uint8_t * data, uint16_t length);
+
+/**
+ * @bbrief emit HCI event
+ * @param context
+ * @param value
+ */
+void hci_event_builder_emit_event(hci_event_builder_context_t* context, btstack_packet_handler_t callback);
 
 /* API_END */
 

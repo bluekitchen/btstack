@@ -49,6 +49,7 @@
 #include "map.h"
 #include "yxml.h"
 #include "map_util.h"
+#include "hci_event_builder.h"
 
 #include <stdint.h>
 #include <stdio.h>
@@ -225,23 +226,14 @@ static void map_client_emit_folder_listing_item_event(btstack_packet_handler_t c
 }  
 
 static void map_client_emit_message_listing_item_event(btstack_packet_handler_t callback, uint16_t cid, map_message_handle_t message_handle, map_message_type_t msg_type, map_message_status_t msg_status){
-    uint8_t event[7 + MAP_MESSAGE_HANDLE_SIZE];
-    uint16_t pos = 0;
-    event[pos++] = HCI_EVENT_MAP_META;
-    pos++;  // skip len
-    event[pos++] = MAP_SUBEVENT_GET_MESSAGE_LISTING;
-    little_endian_store_16(event,pos,cid);
-    pos+=2;
-    
-    memcpy(event+pos, message_handle, MAP_MESSAGE_HANDLE_SIZE);
-    pos += MAP_MESSAGE_HANDLE_SIZE;
-    
-    event[pos++] = msg_type;
-    event[pos++] = msg_status;
-
-    event[1] = pos - 2;
-    if (pos > sizeof(event)) log_error("map_client_emit_message_listing_item_event size %u", pos);
-    (*callback)(HCI_EVENT_PACKET, cid, &event[0], pos);
+    uint8_t packet[7 + MAP_MESSAGE_HANDLE_SIZE];
+    hci_event_builder_context_t evb;
+    hci_event_builder_init(&evb, packet, sizeof(packet), HCI_EVENT_MAP_META, MAP_SUBEVENT_MESSAGE_LISTING_ITEM);
+    hci_event_builder_add_16(&evb,cid);
+    hci_event_builder_add_bytes(&evb, message_handle, MAP_MESSAGE_HANDLE_SIZE);
+    hci_event_builder_add_08(&evb, msg_type);
+    hci_event_builder_add_08(&evb, msg_status);
+    hci_event_builder_emit_event(&evb, callback);
 } 
 
 static void map_client_emit_conversation_listing_item_event(btstack_packet_handler_t callback, uint16_t cid, map_conversation_id_t conv_id){

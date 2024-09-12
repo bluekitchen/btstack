@@ -67,12 +67,6 @@ static uint32_t map_access_client_supported_features = 0x1F;
 
 static btstack_linked_list_t map_access_clients;
 
-static void emit_event_new(btstack_packet_handler_t callback, uint8_t* packet, uint16_t size) {
-    if (!callback) return;
-    hci_dump_btstack_event(packet, size);
-    (*callback)(HCI_EVENT_PACKET, 0, packet, size);
-}
-
 static void map_access_client_emit_connected_event(map_access_client_t * context, uint8_t status){
     uint8_t packet[15];
     hci_event_builder_context_t evb;
@@ -82,7 +76,7 @@ static void map_access_client_emit_connected_event(map_access_client_t * context
     hci_event_builder_add_bd_addr(&evb, context->bd_addr);
     hci_event_builder_add_con_handle(&evb,context->con_handle);
     hci_event_builder_add_08(&evb, context->incoming);
-    emit_event_new(context->client_handler, packet, hci_event_builder_get_length(&evb));
+    hci_event_builder_emit_event(&evb, context->client_handler);
 }
 
 static void map_access_client_emit_connection_closed_event(map_access_client_t * context){
@@ -90,7 +84,7 @@ static void map_access_client_emit_connection_closed_event(map_access_client_t *
     hci_event_builder_context_t evb;
     hci_event_builder_init(&evb, packet, sizeof(packet), HCI_EVENT_MAP_META, MAP_SUBEVENT_CONNECTION_CLOSED);
     hci_event_builder_add_16(&evb, context->goep_client.cid);
-    emit_event_new(context->client_handler, packet, hci_event_builder_get_length(&evb));
+    hci_event_builder_emit_event(&evb, context->client_handler);
 }
 
 static void map_access_client_emit_operation_complete_event(map_access_client_t * context, uint8_t status){
@@ -99,7 +93,7 @@ static void map_access_client_emit_operation_complete_event(map_access_client_t 
     hci_event_builder_init(&evb, packet, sizeof(packet), HCI_EVENT_MAP_META, MAP_SUBEVENT_OPERATION_COMPLETED);
     hci_event_builder_add_16(&evb, context->goep_client.cid);
     hci_event_builder_add_08(&evb, status);
-    emit_event_new(context->client_handler, packet, hci_event_builder_get_length(&evb));
+    hci_event_builder_emit_event(&evb, context->client_handler);
 }
 
 // we re-use the goep cid as map cid, so both refer to the same object

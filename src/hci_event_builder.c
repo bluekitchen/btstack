@@ -131,3 +131,9 @@ void hci_event_builder_add_bytes(hci_event_builder_context_t * context, const ui
     hci_event_builder_increment_pos(context, length);
     memcpy(&context->buffer[pos], data, length);
 }
+
+void hci_event_builder_emit_event(hci_event_builder_context_t * context, btstack_packet_handler_t callback) {
+    if (!callback) return;
+    hci_dump_btstack_event(context->buffer, context->size);
+    (*callback)(HCI_EVENT_PACKET, 0, context->buffer, context->pos);
+}
