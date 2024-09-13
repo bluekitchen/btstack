@@ -102,12 +102,12 @@ static uint16_t mns_cid;
 static bd_addr_t    remote_addr;
 static const char * remote_addr_string = "001BDC0732EF";
 
-static const char * folder_name = "inbox";
+static const char* folders[] = { "inbox", "draft", "delete", NULL };
+static const char * *folder_name = folders;
 static map_message_handle_t message_handle = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 static map_message_handle_t message_handles[MAP_MESSAGE_TYPE_IM+1] = { 0, };
 static map_conversation_id_t conv_id = { 0x00, };
 
-//static const char* paths[] = { "telecom/msg", "telecom/msg/draf";
 static const char * path = "telecom/msg";
 
 static const char bmsg_email[] =
@@ -207,7 +207,7 @@ static void show_usage(void){
     printf("U - request an update on the inbox\n");
     printf("p - set path \'%s\'\n", path);
     printf("f - get folder listing\n");
-    printf("F - get message listing for folder \'%s\'\n", folder_name);
+    printf("F - get message listing for folder \'%s\'\n", *folder_name);
     printf("C - get conversation listing\n");
     printf("6 - Select last listed \"unknown\" message\n");
     printf("1 - Select last listed \"email\" message\n");
@@ -270,17 +270,17 @@ static void stdin_process(char c){
             map_access_client_set_path(map_cid, path);
             break;
         case 'P':
-            
-            printf("[+] Set path \'%s\'\n", path);
-            map_access_client_set_path(map_cid, path);
+            if (*(++folder_name) == NULL)
+                folder_name = folders;
+            printf("[+] Set folder_name to \'%s\'\n", *folder_name);
             break;
         case 'f':
             printf("[+] Get folder listing\n");
             map_access_client_get_folder_listing(map_cid);
             break;
         case 'F':
-            printf("[+] Get message listing for folder \'%s\'\n", folder_name);
-            map_access_client_get_message_listing_for_folder(map_cid, folder_name);
+            printf("[+] Get message listing for folder \'%s\'\n", *folder_name);
+            map_access_client_get_message_listing_for_folder(map_cid, *folder_name);
             break;
         case 'C':
             printf("[+] Get conversation listing\n");
