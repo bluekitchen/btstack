@@ -6,14 +6,12 @@
   ******************************************************************************
   * @attention
   *
-  * <h2><center>&copy; Copyright (c) 2017 STMicroelectronics.
-  * All rights reserved.</center></h2>
+  * Copyright (c) 2017 STMicroelectronics.
+  * All rights reserved.
   *
-  * This software component is licensed by ST under BSD 3-Clause license,
-  * the "License"; You may not use this file except in compliance with the
-  * License. You may obtain a copy of the License at:
-  *                        opensource.org/licenses/BSD-3-Clause
-  *
+  * This software is licensed under terms that can be found in the LICENSE file in
+  * the root directory of this software component.
+  * If no LICENSE file comes with this software, it is provided AS-IS.
   ******************************************************************************
   */ 
 
@@ -116,6 +114,8 @@ typedef struct
   */
 #define PWR_SLEEPENTRY_WFI              ((uint8_t)0x01)
 #define PWR_SLEEPENTRY_WFE              ((uint8_t)0x02)
+#define PWR_SLEEPENTRY_WFE_NO_EVT_CLEAR ((uint8_t)0x03)
+
 /**
   * @}
   */
@@ -125,6 +125,7 @@ typedef struct
   */
 #define PWR_STOPENTRY_WFI               ((uint8_t)0x01)
 #define PWR_STOPENTRY_WFE               ((uint8_t)0x02)
+#define PWR_STOPENTRY_WFE_NO_EVT_CLEAR  ((uint8_t)0x03)
 /**
   * @}
   */
@@ -403,8 +404,14 @@ void HAL_PWR_DisableSEVOnPend(void);
                               ((MODE) == PWR_PVD_MODE_NORMAL))
 #define IS_PWR_REGULATOR(REGULATOR) (((REGULATOR) == PWR_MAINREGULATOR_ON) || \
                                      ((REGULATOR) == PWR_LOWPOWERREGULATOR_ON))
-#define IS_PWR_SLEEP_ENTRY(ENTRY) (((ENTRY) == PWR_SLEEPENTRY_WFI) || ((ENTRY) == PWR_SLEEPENTRY_WFE))
-#define IS_PWR_STOP_ENTRY(ENTRY) (((ENTRY) == PWR_STOPENTRY_WFI) || ((ENTRY) == PWR_STOPENTRY_WFE))
+
+#define IS_PWR_SLEEP_ENTRY(ENTRY) (((ENTRY) == PWR_SLEEPENTRY_WFI) || \
+                                   ((ENTRY) == PWR_SLEEPENTRY_WFE) || \
+                                   ((ENTRY) == PWR_SLEEPENTRY_WFE_NO_EVT_CLEAR))
+
+#define IS_PWR_STOP_ENTRY(ENTRY) (((ENTRY) == PWR_STOPENTRY_WFI) || \
+                                  ((ENTRY) == PWR_STOPENTRY_WFE) || \
+                                  ((ENTRY) == PWR_STOPENTRY_WFE_NO_EVT_CLEAR))
 /**
   * @}
   */
@@ -427,5 +434,3 @@ void HAL_PWR_DisableSEVOnPend(void);
 
 
 #endif /* __STM32F4xx_HAL_PWR_H */
-
-/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
