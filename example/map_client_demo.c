@@ -247,6 +247,7 @@ static void stdin_process(char c){
     switch (c){
         case 'a':            
             client_connect(0);
+            mce_demo_select_mas_instance(0);
             break;
         case 'A':
             printf("[+] Disconnect MAP ID #0 from %s...\n", bd_addr_to_str(remote_addr));
