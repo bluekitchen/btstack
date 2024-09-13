@@ -18,6 +18,8 @@ MAP/MCE/MSM-BV-03-I: a, n, N, A
 MAP/MCE/MSM-BV-04-I: a, A
 MAP/MCE/MSM-BV-13-I: a, b, n, wait
 - note: test spec allows any order, but PTS requires all connects first
+MAP/MCE/MSM-BV-14-I: a, b, n, N, wait
+- note: test spec allows any order, but PTS requires all connects first
 
 MAP/MCE/MNR-BV-01-I: a, n, N
 MAP/MCE/MNR-BV-02-I: a, n
