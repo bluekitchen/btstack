@@ -67,6 +67,6 @@ MAP/MCE/GOEP/SRMP/BI-01-C: a, f
 
 
 Status:
-
-
+TODO:
+//ENABLE_GOEP_L2CAP: OBX connection fails
 
