@@ -169,7 +169,7 @@ void client_connect(int mas_id)
 #ifdef ENABLE_GOEP_L2CAP
         map_access_client_connect(pmap_access_client_mas_x, &map_access_client_ertm_config,
             sizeof(map_access_client_ertm_buffer_mas_0),
-            pmap_access_client_ertm_buffer_mas_x, &packet_handler, remote_addr, 0, pmap_mas_x_cid);
+            pmap_access_client_ertm_buffer_mas_x, &packet_handler, remote_addr, mas_id, pmap_mas_x_cid);
 #else
         map_access_client_connect(pmap_access_client_mas_x, NULL, 0, NULL, &packet_handler, remote_addr, 0, pmap_mas_x_cid);
 #endif

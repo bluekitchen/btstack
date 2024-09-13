@@ -33,7 +33,7 @@ MAP/MCE/MMB/BV-06-I: a, 2, g
 MAP/MCE/MMB/BV-08-I: a, U, F, A, ok
 MAP/MCE/MMB/BV-08-I: a, C
 
-WIP - OBEX disconnect INCONC MAP/MCE/MMD/BV-01-C: a, p, F, 1, d, 2, d, 4, d, A
+MAP/MCE/MMD/BV-01-C: PASS a, p, F, 1, d, 2, d, 4, d, 5, d, A, b, 3, d, B
 MAP/MCE/MMD/BV-03-C: PASS a, n, p, F, 5, d
 
 WIP MAP/MCE/MMU/BV-01-C: a, p, 
