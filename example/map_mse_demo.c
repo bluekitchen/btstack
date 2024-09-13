@@ -412,9 +412,8 @@ static void MSE_MMU_BV_02_ClConn_Timer(void) {
 }
 
 static void mas_init_event_report(void) {
-
-    static int evtcfg_start_index = 0;
-    static int curent_event_type = 0;
+    evtcfg_start_index = 0;
+    curent_event_type = 0;
 }
 
 static void mas_init_test_cases(struct test_set_config* cfg) {
@@ -644,7 +643,7 @@ static size_t body_msg(char* msg_buffer, uint16_t index, size_t maxsize) {
 //    int size = 0;
 //    if (!mas_cfg->msg_deleted[index] || folder_msg_deleted)
 //        size = snprintf(msg_buffer, maxsize,
-//            "<msg handle = \"20000100001\" subject = \"Welcome Clara Nicole” datetime=\"20140706T095000 - 0400\" "
+//            "<msg handle = \"20000100001\" subject = \"Welcome Clara Nicole\" datetime=\"20140706T095000 - 0400\" "
 //            "sender_name=\"Max\" sender_addressing=\"4924689753@s.whateverapp.net\" "
 //            "recipient_addressing=\"\" type=\"IM\" size=\"256\" attachment_size=\"0\" priority=\"no\" read=\"no\" sent=\"no\" "
 //            "protected=\"no\" conversation_id=\"E1E2E3E4F1F2F3F4A1A2A3A4B1B2B3B4\" direction=\"incoming\" "
@@ -1351,7 +1350,7 @@ static void mns_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                                            mnc.cid);
                                 // call test setup sepcific client connect handler
                                 if (mas_cfg->fClConn != NULL) {
-                                    log_info("run mas_cfg->fClConn:%p");
+                                    log_info("run mas_cfg->fClConn:%p", mas_cfg->fClConn);
                                     mas_cfg->fClConn();
                                 }
                             }
@@ -1363,7 +1362,7 @@ static void mns_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             MAP_PRINTF("[+] Notification Operation Completed\n");
                             // call test setup sepcific client connect handler
                             if (mas_cfg->fClOpCompl != NULL) {
-                                log_info("run mas_cfg->fClOpCompl:%p");
+                                log_info("run mas_cfg->fClOpCompl:%p", mas_cfg->fClOpCompl);
                                 mas_cfg->fClConn();
                             }
                             break;
