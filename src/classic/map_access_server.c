@@ -1286,10 +1286,3 @@ uint16_t map_server_send_response(uint16_t map_cid, uint8_t response_code, uint3
     RUN_AND_LOG_ACTION(return goep_server_request_can_send_now(mas->goep_cid);)
 }
 
-// suppress MSVC C4244: unchecked upper bound for enum folder used as index
-#ifdef _MSC_VER
-#pragma warning( disable : 33011 )
-#endif
-
-
-
