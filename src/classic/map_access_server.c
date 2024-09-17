@@ -1254,7 +1254,7 @@ void map_server_set_response_type_and_name(uint16_t map_cid, char* hdr_name, cha
     mas->response.hdr_finalized = true;
 }
 
-uint16_t map_server_send_response(uint16_t map_cid, uint8_t response_code, uint32_t continuation, size_t body_len, const uint8_t* body) {
+uint16_t map_server_send_response_with_body(uint16_t map_cid, uint8_t response_code, uint32_t continuation, size_t body_len, const uint8_t* body) {
     map_server_t* mas = map_server_for_goep_cid(map_cid);
 
     if (mas == NULL) {
@@ -1286,3 +1286,6 @@ uint16_t map_server_send_response(uint16_t map_cid, uint8_t response_code, uint3
     RUN_AND_LOG_ACTION(return goep_server_request_can_send_now(mas->goep_cid);)
 }
 
+uint16_t map_server_send_response(uint16_t map_cid, uint8_t response_code) {
+    return map_server_send_response_with_body(map_cid, response_code, 0, 0, NULL);
+}

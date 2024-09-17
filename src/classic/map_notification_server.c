@@ -134,11 +134,11 @@ static void map_notification_server_app_param_callback (void * user_data, uint8_
     UNUSED(total_len);
     UNUSED(data_offset);
     UNUSED(data_len);
-    map_notification_server_t *mns = (map_notification_server_t *) user_data;
+    //map_notification_server_t *mns = (map_notification_server_t *) user_data;
 
     switch (tag_id) {
         default:
-            log_info ("unhandled application parameter %02x\n", tag_id);
+            //log_info ("unhandled application parameter %02x\n", tag_id);
             break;
     }
 }
