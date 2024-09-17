@@ -19,7 +19,7 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 # Set the project name
-set(CMAKE_PROJECT_NAME stm32f4-discovery-nrf5340)
+set(CMAKE_PROJECT_NAME stm32f4-discovery-cc256x)
 
 # Include toolchain file
 include("cmake/gcc-arm-none-eabi.cmake")
