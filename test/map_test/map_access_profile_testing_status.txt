@@ -196,28 +196,9 @@ MAP/MSE/MMD/BV-02-C: FAIL - Regression/New Bug in PTS 8.7.0, PASS in 8.6.1, MAP/
 MAP/MSE/MMN/BV-xx: RE-PASS (2024-09-05) PTS 8.7.0, no manual intervention required anymore
 MAP/MSE/GOEP/SRMP/BV-02-C: PASS (2024-09-06) PTS 8.7.0
 MAP/MSE/GOEP/SRMP/BI-02-C: PASS (2024-09-06) PTS 8.7.0
-MAP/MSE/GOEP/SRMP/BI-03-C: WIP (2024-09-11) PTS 8.7.0 - SRM not enable or SRM not set to wait
+MAP/MSE/GOEP/SRMP/BV-03-C: PASS (2024-09-17) PTS 8.7.0
+MAP/MSE/GOEP/SRMP/BI-02-C: RE-PASS (2024-09-17) PTS 8.7.0
+MAP/MSE/GOEP/SRMP/BV-02-C: RE-PASS (2024-09-17) PTS 8.7.0
 
 TODO:
 rename map_server_ to map_access_server_
-MAP/MSE/GOEP/SRMP/BI-03-C: WIP (2024-09-11) PTS 8.7.0 - SRM not enable or SRM not set to wait
-MAP/MSE/MMU/BV-03-C: FAIL PTS 8.7.0 INFO: passes types 1/2, finally checks the GET message-listing content and fails with "Failed to respond to SetPath"
-TODO - TIMER MAP/MSE/MMN/BV-02-C wants 4 successive reports  implemented automatic event report generation for all PTS MMN test cases which only expect 1 single event report, 
-BUG PTS: MAP_OLD MAP/MSE/GOEP/SRM/BV-04-C: (2024-08-29) Handle different Put_continue behaviour in the Demo App: PTS passes if we fake-answer with OK_FINAL instead of the correct CONTINUE to their PUT_CONTINUE Push Message request. PTS cannot push the full message but Final-PASSes happily
-MAP/MSE/GOEP/SRMP/BV-02-C: WIP PTS MAP_OLD: - MTC INCONC: GET RSP must contain an SRM ENABLED header.
-BUG PTS: MAP/MSE/GOEP/SRM/BI-02-C: PTS 8.6.1 & L2CAP & MAP_NEW PTS 8.6.1 MAP_NEW L2CAP bug: claims to send a PUT but doesnt, hangs till the test case timeouts
-TODO: MAP_OLD MAP/MSE/GOEP/SRMP/BV-02-C we send a connect instead of a continue/ok after receiving a GET with SRMP wait set, PTS 8.6.1 & RFCOM & MAP_NEW hangs before sending the PUT request, then time outs and fails 
-TODO: WIP MAP/MSE/MMU/BV-03: multi-packet PUT upload, see opp_server.c, see branch develop-map-server-PUT-continue (2024-08-20) PTS 8.6.1 & RFCOM & MAP_NEW fails with many PUT not final upload messages, L2CAP fails without PTS sending anything
-	PTS 8.6.1 MAP_NEW L2CAP bug: claims to send a PUT but doesnt, with RFCOM PTS sends a PUT_continue x-bt/mesage, we send an OK, the 21x{next PUT_continue (no x-bt/message) and we send "Bad request"}, the PTS says the test failed
-TODO: automated response with msg or convo listing according to the GET request
-MAP/MSE/MMB/BV-43-C PUT missing, move TC to Client Connection Verify that the MSE correctly updates the Conversation-Listing version counter when a new conversation is being created.
-	PTS: User Action Required:    Please create a new conversation, then click OK.  Otherwise click Cancel.
-	PTS: User Action Required:    Send Set Event Report for adding a conversation
-TODO: MAP/MSE/MMN/BV-02-C RFCOM only, we dont yet support chunking of client PUT messages
-MAP/MSE/MNR/BV-03-C: PASS on the first run, no client_connection from the 2nd run. Same with other tests using multiple connections
-MAP/MSE/MSM/BV-10-I - Transmission of OBEX_CONNECT_REQ failed unexpectedly.
-MAP/MSE/GOEP/SRMP/BI-02-C "The GET operation ended before the test case purpose could be verified.  Please increase the size of the file being requested by the GET operationr ((gt) 50 KB should be sufficient)." TODO MW: add final PUT/GET bit e.g. for MAP/MSE/GOEP/SRMP/BI-02-C
-MAP/MSE/GOEP/SRMP/BV-02-C Verify that the Server keeps waiting for GET requests until the remote device stops sending SRMP wait headers.- MTC INCONC: Unexepected GET_RSP for this testcase.
-MAP/MSE/GOEP/SRMP/BV-03-C Verify that the Server does not issue a PUT response containing a SRMP header with some value other than 0x01.
-we send SRM_ENABLED and SRMP_WAIT headers with OBEX_RESP_CONTINUE as response to PTS Sending PushMessage(PUT, Continue) but after the second iteration we send a "bad requ"
-MAP/MSE/MSM/BV-09-C: Fails (2024-07-08 with L2CAP disabled on the second connect) Verify that the MSE can properly respond to multiple MAP session establishment requests.

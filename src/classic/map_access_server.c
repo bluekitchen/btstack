@@ -182,6 +182,7 @@ typedef struct {
         char *hdr_type; // pointer to a type string for the response header provided by the application or NULL
         uint8_t header_data[MAP_SERVER_MAX_APP_PARAMS_LEN];
         uint16_t header_pos;
+        bool SRMP_wait;
         bool hdr_finalized; // all header data set?
         uint16_t body_len;
         const uint8_t* body_data;
@@ -401,6 +402,7 @@ static void map_server_obex_srm_init(obex_srm_t* obex_srm) {
     obex_srm->srmp_value = OBEX_SRMP_NEXT;
 }
 
+// handles incomming OBEX SRM headers and sets the corresponding respond header
 static void map_server_handle_srm_headers(map_server_t* mas) {
     const obex_srm_t* obex_srm = &mas->obex_srm;
     // Update SRM state based on SRM headers
@@ -425,9 +427,16 @@ static void map_server_handle_srm_headers(map_server_t* mas) {
     }
 }
 
+// sets outgoing OBEX SRM headers
 static void map_server_add_srm_headers(map_server_t* mas) {
+    // has app requested a SRMP_wait?
+    if (mas->response.SRMP_wait) {
+        RUN_AND_LOG_ACTION(mas->srm_state = SRM_SEND_CONFIRM_WAIT;)
+    }
+    
     switch (mas->srm_state) {
     case SRM_SEND_CONFIRM:
+        
         goep_server_header_add_srm_enable(mas->goep_cid);
         RUN_AND_LOG_ACTION(mas->srm_state = SRM_ENABLED;)
         break;
@@ -1243,12 +1252,13 @@ uint16_t map_server_get_max_body_size(uint16_t map_cid) {
     return goep_max_message_size - 3 - 2 - 3 - 3 - mas->response.header_pos - hdr_name_len - hdr_type_len;
 }
 
-void map_server_set_response_type_and_name(uint16_t map_cid, char* hdr_name, char* type_name) {
+void map_server_set_response_type_and_name(uint16_t map_cid, char* hdr_name, char* type_name, bool SRMP_wait) {
     map_server_t* mas = map_server_for_goep_cid(map_cid);
     if (mas == NULL) {
         RUN_AND_LOG_ACTION(return;)
     }
 
+    mas->response.SRMP_wait = SRMP_wait;
     mas->response.hdr_name = hdr_name;
     mas->response.hdr_type = type_name;
     mas->response.hdr_finalized = true;
