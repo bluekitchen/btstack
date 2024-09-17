@@ -40,3 +40,4 @@ enc_temp_folder
 /test/map_test/PTS_MAP/Backup
 /test/map_test/PTS_MAP/logfiles
 /test/map_test/PTS_MAP/Map_server_demo_user.xml
+MAP_CLIENT
