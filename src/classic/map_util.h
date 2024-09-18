@@ -50,8 +50,10 @@ extern "C" {
 
 #ifdef ENABLE_PRINTF_TO_PKTLOG
 #define MAP_PRINTF(format, ...)  do { printf(format, __VA_ARGS__); HCI_DUMP_LOG("PRT", HCI_DUMP_LOG_LEVEL_INFO,  format, ## __VA_ARGS__);} while (0)
+#define btprintf MAP_PRINTF
 #else
 #define MAP_PRINTF printf
+#define btprintf printf
 #endif
 
 /* API_START */
