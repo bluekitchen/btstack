@@ -73,5 +73,8 @@
 // allow for one NetKey update
 #define MAX_NR_MESH_NETWORK_KEYS      (MAX_NR_MESH_SUBNETS+1)
 
+// MAP MSE Testing
+#define MAP_HANDLE_PUT_CONTINUE_BY_APP
+
 #endif
 
