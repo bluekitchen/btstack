@@ -225,6 +225,7 @@ static void map_access_client_handle_can_send_now(uint16_t goep_cid) {
 
     switch (map_access_client->state){
         case MAP_W2_SEND_CONNECT_REQUEST:
+            log_debug("MAP_W2_SEND_CONNECT_REQUEST");
             goep_client_request_create_connect(map_access_client->goep_client.cid, OBEX_VERSION, 0, OBEX_MAX_PACKETLEN_DEFAULT);
             goep_client_header_add_target(map_access_client->goep_client.cid, map_access_client_service_uuid, 16);
             // Mandatory if the PSE advertises a PbapSupportedFeatures attribute in its SDP record, else excluded.
@@ -245,6 +246,7 @@ static void map_access_client_handle_can_send_now(uint16_t goep_cid) {
             break;
 
         case MAP_W2_SEND_DISCONNECT_REQUEST:
+            log_debug("MAP_W2_SEND_DISCONNECT_REQUEST");
             goep_client_request_create_disconnect(map_access_client->goep_client.cid);
             map_access_client->state = MAP_W4_DISCONNECT_RESPONSE;
             // prepare response
@@ -255,6 +257,7 @@ static void map_access_client_handle_can_send_now(uint16_t goep_cid) {
             break;
 
         case MAP_W2_SEND_UPDATE_INBOX:
+            log_debug("MAP_W2_SEND_UPDATE_INBOX");
             goep_client_request_create_put(map_access_client->goep_client.cid);
             goep_client_header_add_type(map_access_client->goep_client.cid, "x-bt/MAP-messageUpdate");
 
@@ -269,6 +272,7 @@ static void map_access_client_handle_can_send_now(uint16_t goep_cid) {
             break;
 
         case MAP_W2_SET_PATH_ROOT:
+            log_debug("MAP_W2_SET_PATH_ROOT");
             goep_client_request_create_set_path(map_access_client->goep_client.cid, 1 << 1); // Don’t create directory
             goep_client_header_add_name(map_access_client->goep_client.cid, "");
             // state
@@ -280,6 +284,7 @@ static void map_access_client_handle_can_send_now(uint16_t goep_cid) {
             goep_client_execute(map_access_client->goep_client.cid);
             break;
         case MAP_W2_SET_PATH_ELEMENT:
+            log_debug("MAP_W2_SET_PATH_ELEMENT");
             // find '/' or '\0'
             path_element_start = map_access_client->set_path_offset;
             while (map_access_client->current_folder[map_access_client->set_path_offset] != '\0' &&
@@ -314,6 +319,7 @@ static void map_access_client_handle_can_send_now(uint16_t goep_cid) {
             break;
 
         case MAP_W2_SEND_GET_FOLDERS:
+            log_debug("MAP_W2_SEND_GET_FOLDERS");
             goep_client_request_create_get(map_access_client->goep_client.cid);
             if (map_access_client->request_number == 0){
                 obex_srm_client_init(&map_access_client->obex_srm);
@@ -327,6 +333,7 @@ static void map_access_client_handle_can_send_now(uint16_t goep_cid) {
             break;
 
         case MAP_W2_SEND_GET_MESSAGES_FOR_FOLDER:
+            log_debug("MAP_W2_SEND_GET_MESSAGES_FOR_FOLDER");
             goep_client_request_create_get(map_access_client->goep_client.cid);
             if (map_access_client->request_number == 0){
                 obex_srm_client_init(&map_access_client->obex_srm);
@@ -341,6 +348,7 @@ static void map_access_client_handle_can_send_now(uint16_t goep_cid) {
             break;
 
         case MAP_W2_SEND_GET_MESSAGE_WITH_HANDLE:
+            log_debug("MAP_W2_SEND_GET_MESSAGE_WITH_HANDLE");
             goep_client_request_create_get(map_access_client->goep_client.cid);
 
             if (map_access_client->request_number == 0){
@@ -369,6 +377,7 @@ static void map_access_client_handle_can_send_now(uint16_t goep_cid) {
             break;
 
         case MAP_W2_SEND_PUSH_MESSAGE:
+            log_debug("MAP_W2_SEND_PUSH_MESSAGE");
             goep_client_request_create_put(map_access_client->goep_client.cid);
 
             if (map_access_client->request_number == 0) {
@@ -397,6 +406,7 @@ static void map_access_client_handle_can_send_now(uint16_t goep_cid) {
             break;
 
         case MAP_W2_SEND_GET_CONVERSATION_LISTING:
+            log_debug("MAP_W2_SEND_GET_CONVERSATION_LISTING");
             goep_client_request_create_get(map_access_client->goep_client.cid);
 
             if (map_access_client->request_number == 0){
@@ -425,6 +435,7 @@ static void map_access_client_handle_can_send_now(uint16_t goep_cid) {
             break;
 
         case MAP_W2_SEND_SET_MESSAGE_STATUS:
+            log_debug("MAP_W2_SEND_SET_MESSAGE_STATUS");
             goep_client_request_create_put(map_access_client->goep_client.cid);
             goep_client_header_add_type(map_access_client->goep_client.cid, "x-bt/messageStatus");
 
@@ -454,6 +465,7 @@ static void map_access_client_handle_can_send_now(uint16_t goep_cid) {
             break;
 
         case MAP_W2_SET_NOTIFICATION:
+            log_debug("MAP_W2_SET_NOTIFICATION");
             goep_client_request_create_put(map_access_client->goep_client.cid);
             goep_client_header_add_type(map_access_client->goep_client.cid, "x-bt/MAP-NotificationRegistration");
 
@@ -471,6 +483,7 @@ static void map_access_client_handle_can_send_now(uint16_t goep_cid) {
             break;
 
         case MAP_W2_SET_NOTIFICATION_FILTER:
+            log_debug("MAP_W2_SET_NOTIFICATION_FILTER");
             goep_client_request_create_put(map_access_client->goep_client.cid);
             goep_client_header_add_type(map_access_client->goep_client.cid, "x-bt/MAP-notification-filter");
 
@@ -491,6 +504,7 @@ static void map_access_client_handle_can_send_now(uint16_t goep_cid) {
             break;
 
         case MAP_W2_SEND_GET_MAS_INSTANCE_INFO:
+            log_debug("MAP_W2_SEND_GET_MAS_INSTANCE_INFO");
             goep_client_request_create_get(map_access_client->goep_client.cid);
 
             if (map_access_client->request_number == 0){
@@ -513,6 +527,7 @@ static void map_access_client_handle_can_send_now(uint16_t goep_cid) {
             break;
 
         default:
+            log_debug("default");
             break;
     }
 }
