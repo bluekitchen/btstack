@@ -102,20 +102,48 @@ static uint16_t mns_cid;
 static bd_addr_t    remote_addr;
 static const char * remote_addr_string = "001BDC0732EF";
 
-static const char* folders[] = { "inbox", "draft", "delete", NULL };
+static const char* folders[] = { "", "inbox", "outbox", "draft", "delete", NULL};
 static const char * *folder_name = folders;
 static map_message_handle_t message_handle = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 static map_message_handle_t message_handles[MAP_MESSAGE_TYPE_IM+1] = { 0, };
 static map_conversation_id_t conv_id = { 0x00, };
 
-//static const char * path = "telecom/msg/draft";
-static const char* path = "telecom/msg";
+static const char * path = "telecom/msg/draft";
+//static const char* path = "telecom/msg";
 
 static const char bmsg_email[] =
 "BEGIN:BMSG\r\n"
 "VERSION:1.0\r\n"
 "STATUS:UNREAD\r\n"
 "TYPE:EMAIL\r\n"
+"FOLDER:\r\n"
+"BEGIN:VCARD\r\n"
+"VERSION:2.1\r\n"
+"N:IUT\r\n"
+"EMAIL:member@iut.com\r\n"
+"END:VCARD\r\n"
+"BEGIN:BENV\r\n"
+"BEGIN:BBODY\r\n"
+"ENCODING:UTF-8\r\n"
+"LENGTH:4975\r\n"
+"BEGIN:MSG\r\n"
+"Date:20 Jun 96\r\n"
+"Subject:BTStack testing\r\n"
+"From:PTS@bluetooth.com\r\n"
+"To:IUT@bluetooth.com\r\n"
+"\r\n"
+"Hello World!\r\n"
+"\r\n"
+"END:MSG\r\n"
+"END:BBODY\r\n"
+"END:BENV\r\n"
+"END:BMSG\r\n";
+
+static const char bmsg_IM[] =
+"BEGIN:BMSG\r\n"
+"VERSION:1.0\r\n"
+"STATUS:UNREAD\r\n"
+"TYPE:IM\r\n"
 "FOLDER:TELECOM/MSG/DRAFT\r\n"
 "BEGIN:VCARD\r\n"
 "VERSION:2.1\r\n"
@@ -133,12 +161,12 @@ static const char bmsg_email[] =
 "To:IUT@bluetooth.com\r\n"
 "\r\n"
 "Hello World!\r\n"
+"\r\n"
 "END:MSG\r\n"
 "END:BBODY\r\n"
 "END:BENV\r\n"
 "END:BMSG\r\n";
-
-
+;
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
@@ -324,7 +352,7 @@ static void stdin_process(char c){
             break;
         case 'u':
             btprintf("[+] Upload (PUT/PUSH) message\n");
-            map_access_client_push_message(map_cid, bmsg_email, strlen(bmsg_email));
+            map_access_client_push_message(map_cid, *folder_name, bmsg_email, strlen(bmsg_email));
             break;
         case 'r':
             btprintf("[+] Mark selected messages as read\n");

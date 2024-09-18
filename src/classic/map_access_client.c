@@ -384,7 +384,7 @@ static void map_access_client_handle_can_send_now(uint16_t goep_cid) {
                 obex_srm_client_init(&map_access_client->obex_srm);
                 map_access_client_prepare_srm_header(map_access_client);
 
-                goep_client_header_add_name(map_access_client->goep_client.cid, "draft");
+                goep_client_header_add_name(map_access_client->goep_client.cid, map_access_client->name_header);
 
                 goep_client_header_add_type(map_access_client->goep_client.cid, "x-bt/message");
 
@@ -843,7 +843,7 @@ uint8_t map_access_client_get_message_with_handle(uint16_t map_cid, const map_me
     return 0;
 }
 
-uint8_t map_access_client_push_message(uint16_t map_cid, const uint8_t *msg_body, const uint16_t msg_body_size) {
+uint8_t map_access_client_push_message(uint16_t map_cid, const uint8_t* name_header, const uint8_t *msg_body, const uint16_t msg_body_size) {
     map_access_client_t* map_access_client = map_access_client_for_map_cid(map_cid);
     if (map_access_client == NULL) {
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
@@ -854,6 +854,7 @@ uint8_t map_access_client_push_message(uint16_t map_cid, const uint8_t *msg_body
 
     map_access_client->state = MAP_W2_SEND_PUSH_MESSAGE;
     map_access_client->request_number = 0;
+    map_access_client->name_header = name_header;
     map_access_client->msg_body = msg_body;
     map_access_client->msg_body_size = msg_body_size;
     goep_client_request_can_send_now(map_access_client->goep_client.cid);
