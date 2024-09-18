@@ -108,7 +108,8 @@ static map_message_handle_t message_handle = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 static map_message_handle_t message_handles[MAP_MESSAGE_TYPE_IM+1] = { 0, };
 static map_conversation_id_t conv_id = { 0x00, };
 
-static const char * path = "telecom/msg";
+//static const char * path = "telecom/msg/draft";
+static const char* path = "telecom/msg";
 
 static const char bmsg_email[] =
 "BEGIN:BMSG\r\n"
@@ -136,6 +137,7 @@ static const char bmsg_email[] =
 "END:BBODY\r\n"
 "END:BENV\r\n"
 "END:BMSG\r\n";
+
 
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;

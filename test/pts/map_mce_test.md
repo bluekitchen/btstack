@@ -49,6 +49,8 @@ MAP/MCE/MFB/BV-03: a
 MAP/MCE/MFB/BV-04: a, n
 MAP/MCE/MFB/BV-06: a
 
+MAP/MCE/MMU/BV-01-C: TIMEOUT a, p, u - PTS receives our PUSH message (log) but ignores it and waits endless
+
 MAP/MCE/GOEP/BC/BV-02-C: a, n
 MAP/MCE/GOEP/BC/BV-04-C: a, f
 
