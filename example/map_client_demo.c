@@ -112,30 +112,30 @@ static const char * path = "telecom/msg";
 
 static const char bmsg_email[] =
 "BEGIN:BMSG\r\n"
-"VERSION : 1.0\r\n"
-"STATUS : UNREAD\r\n"
-"TYPE : EMAIL\r\n"
-"FOLDER : TELECOM / MSG / INBOX\r\n"
-"BEGIN : VCARD\r\n"
-"VERSION : 2.1\r\n"
-"N : IUT\r\n"
-"EMAIL : member@iut.com\r\n"
-"END : VCARD\r\n"
+"VERSION:1.0\r\n"
+"STATUS:UNREAD\r\n"
+"TYPE:EMAIL\r\n"
+"FOLDER:TELECOM/MSG/DRAFT\r\n"
+"BEGIN:VCARD\r\n"
+"VERSION:2.1\r\n"
+"N:IUT\r\n"
+"EMAIL:member@iut.com\r\n"
+"END:VCARD\r\n"
 "BEGIN:BENV\r\n"
-"BEGIN : BBODY\r\n"
-"ENCODING : 8BIT\r\n"
-"LENGTH : 4975\r\n"
-"BEGIN : MSG\r\n"
-"Date : 20 Jun 96\r\n"
-"Subject : BTStack testing\r\n"
-"From : PTS@bluetooth.com\r\n"
-"To : IUT@bluetooth.com\r\n"
+"BEGIN:BBODY\r\n"
+"ENCODING:8BIT\r\n"
+"LENGTH:4975\r\n"
+"BEGIN:MSG\r\n"
+"Date:20 Jun 96\r\n"
+"Subject:BTStack testing\r\n"
+"From:PTS@bluetooth.com\r\n"
+"To:IUT@bluetooth.com\r\n"
 "\r\n"
 "Hello World!\r\n"
 "END:MSG\r\n"
-"END : BBODY\r\n"
-"END : BENV\r\n"
-"END : BMSG\r\n";
+"END:BBODY\r\n"
+"END:BENV\r\n"
+"END:BMSG\r\n";
 
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
@@ -321,7 +321,7 @@ static void stdin_process(char c){
             break;
         case 'u':
             printf("[+] Upload (PUT/PUSH) message\n");
-            map_access_client_push_message(map_cid, message_handle);
+            map_access_client_push_message(map_cid, bmsg_email, strlen(bmsg_email));
             break;
         case 'r':
             printf("[+] Mark selected messages as read\n");

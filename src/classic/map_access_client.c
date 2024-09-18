@@ -379,14 +379,15 @@ static void map_access_client_handle_can_send_now(uint16_t goep_cid) {
 
                 goep_client_header_add_type(map_access_client->goep_client.cid, "x-bt/message");
 
-                //application_parameters[pos++] = 0x0A; // attachment
-                //application_parameters[pos++] = 1;
-                //application_parameters[pos++] = map_access_client->message_attachment;
+                application_parameters[pos++] = 0x0A; // attachment
+                application_parameters[pos++] = 1;
+                application_parameters[pos++] = map_access_client->message_attachment;
 
                 application_parameters[pos++] = 0x14; // Charset
                 application_parameters[pos++] = 1;
                 application_parameters[pos++] = 1;    // UTF-8
                 goep_client_header_add_application_parameters(map_access_client->goep_client.cid, &application_parameters[0], pos);
+                goep_client_body_add_static(map_access_client->goep_client.cid, map_access_client->msg_body, map_access_client->msg_body_size);
             }
 
             map_access_client->state = MAP_W4_PUSH_MESSAGE_HANDLE;
@@ -827,7 +828,7 @@ uint8_t map_access_client_get_message_with_handle(uint16_t map_cid, const map_me
     return 0;
 }
 
-uint8_t map_access_client_push_message(uint16_t map_cid, const map_message_handle_t map_message_handle) {
+uint8_t map_access_client_push_message(uint16_t map_cid, const uint8_t *msg_body, const uint16_t msg_body_size) {
     map_access_client_t* map_access_client = map_access_client_for_map_cid(map_cid);
     if (map_access_client == NULL) {
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
@@ -838,7 +839,8 @@ uint8_t map_access_client_push_message(uint16_t map_cid, const map_message_handl
 
     map_access_client->state = MAP_W2_SEND_PUSH_MESSAGE;
     map_access_client->request_number = 0;
-    memcpy(map_access_client->message_handle, map_message_handle, MAP_MESSAGE_HANDLE_SIZE);
+    map_access_client->msg_body = msg_body;
+    map_access_client->msg_body_size = msg_body_size;
     goep_client_request_can_send_now(map_access_client->goep_client.cid);
     return 0;
 }

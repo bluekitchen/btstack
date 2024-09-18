@@ -130,6 +130,8 @@ typedef struct {
 
     map_message_handle_t message_handle;
     uint8_t message_attachment;
+    uint8_t *msg_body;
+    uint16_t msg_body_size;
     enum status_indicator stat_ind; /* for set_message_status read/delete/extended */
     enum status_value stat_val; /* no / yes */
 
@@ -221,6 +223,16 @@ uint8_t map_access_client_get_conversation_listing(uint16_t map_cid, int max_lis
  * @return status
  */
 uint8_t map_access_client_get_message_with_handle(uint16_t map_cid, const map_message_handle_t map_message_handle, uint8_t with_attachment);
+
+/**
+ * @brief Push message to server.
+ * @param map_cid
+ * @param map_message_handle
+ * @param msg_body
+ * @param msg_body_size
+ * @return status
+ */
+uint8_t map_access_client_push_message(uint16_t map_cid, const uint8_t* msg_body, const uint16_t msg_body_size);
 
 /** 
  * @brief Enable notifications.
