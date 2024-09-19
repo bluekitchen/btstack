@@ -392,7 +392,7 @@ static void stdin_process(char c){
             break;
         case 'u':
             btprintf("[+] Upload (PUT/PUSH) message\n");
-            map_access_client_push_message(map_cid, *folder_name, bmsg_email, strlen(bmsg_email));
+            map_access_client_push_message(map_cid, *folder_name, bmsg_email, (uint16_t)strlen(bmsg_email));
             break;
         case 'r':
             btprintf("[+] Mark selected messages as read\n");

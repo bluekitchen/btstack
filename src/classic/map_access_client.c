@@ -166,8 +166,6 @@ static void map_access_client_parser_callback_get_operation(void * user_data, ui
                 case MAP_W4_SET_MESSAGE_STATUS:
                     break;
                 case MAP_W4_PUSH_MESSAGE_HANDLE:
-#pragma warning("debug this")
-//                    btstack_assert(false);
                 case MAP_W4_MESSAGE:
                 case MAP_W4_MAS_INSTANCE_INFO:
                     map_access_client->client_handler(MAP_DATA_PACKET, map_access_client->goep_client.cid, (uint8_t *) data_buffer, data_len);

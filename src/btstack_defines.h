@@ -6827,7 +6827,17 @@ typedef uint8_t sm_key_t[16];
 
 #define MAP_SUBEVENT_PUT_OWNER_STATUS                       0x10u                 
 
-#define MAP_SUBEVENT_GET_MAS_INSTANCE_INFORMATION           0x11u               
+#define MAP_SUBEVENT_GET_MAS_INSTANCE_INFORMATION           0x11u       
+
+/**
+ * @format 12D11
+ * @param subevent_code
+ * @param map_cid
+ * @param handle
+ * @param type map_message_type_t
+ * @param read map_message_status_t
+ */
+#define MAP_SUBEVENT_MESSAGE_LISTING_ITEM                   0x12u    
 
 // MESH Meta Event Group
 

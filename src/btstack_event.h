@@ -13825,6 +13825,34 @@ static inline uint16_t gattservice_subevent_device_information_pnp_id_get_produc
 }
 
 /**
+ * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_UDI_FOR_MEDICAL_DEVICES
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t gattservice_subevent_device_information_udi_for_medical_devices_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field att_status from event GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_UDI_FOR_MEDICAL_DEVICES
+ * @param event packet
+ * @return att_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_device_information_udi_for_medical_devices_get_att_status(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field label from event GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_UDI_FOR_MEDICAL_DEVICES
+ * @param event packet
+ * @return label
+ * @note: btstack_type T
+ */
+static inline const char * gattservice_subevent_device_information_udi_for_medical_devices_get_label(const uint8_t * event){
+    return (const char *) &event[6];
+}
+
+/**
  * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_SCAN_PARAMETERS_SERVICE_CONNECTED
  * @param event packet
  * @return con_handle
@@ -14521,34 +14549,6 @@ static inline uint8_t gattservice_subevent_ias_server_stop_alerting_get_alert_le
  */
 static inline uint8_t gattservice_subevent_ias_server_stop_alerting_get_timeout(const uint8_t * event){
     return event[4];
-}
-
-/**
- * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_UDI_FOR_MEDICAL_DEVICES
- * @param event packet
- * @return con_handle
- * @note: btstack_type H
- */
-static inline hci_con_handle_t gattservice_subevent_device_information_udi_for_medical_devices_get_con_handle(const uint8_t * event){
-    return little_endian_read_16(event, 3);
-}
-/**
- * @brief Get field att_status from event GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_UDI_FOR_MEDICAL_DEVICES
- * @param event packet
- * @return att_status
- * @note: btstack_type 1
- */
-static inline uint8_t gattservice_subevent_device_information_udi_for_medical_devices_get_att_status(const uint8_t * event){
-    return event[5];
-}
-/**
- * @brief Get field label from event GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_UDI_FOR_MEDICAL_DEVICES
- * @param event packet
- * @return label
- * @note: btstack_type T
- */
-static inline const char * gattservice_subevent_device_information_udi_for_medical_devices_get_label(const uint8_t * event){
-    return (const char *) &event[6];
 }
 
 /**
@@ -23072,6 +23072,43 @@ static inline uint8_t map_subevent_put_message_status_get_type(const uint8_t * e
  * @note: btstack_type 1
  */
 static inline uint8_t map_subevent_put_message_status_get_read(const uint8_t * event){
+    return event[14];
+}
+
+/**
+ * @brief Get field map_cid from event MAP_SUBEVENT_MESSAGE_LISTING_ITEM
+ * @param event packet
+ * @return map_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t map_subevent_message_listing_item_get_map_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field handle from event MAP_SUBEVENT_MESSAGE_LISTING_ITEM
+ * @param event packet
+ * @return handle
+ * @note: btstack_type D
+ */
+static inline const uint8_t * map_subevent_message_listing_item_get_handle(const uint8_t * event){
+    return (const uint8_t *) &event[5];
+}
+/**
+ * @brief Get field type from event MAP_SUBEVENT_MESSAGE_LISTING_ITEM
+ * @param event packet
+ * @return type
+ * @note: btstack_type 1
+ */
+static inline uint8_t map_subevent_message_listing_item_get_type(const uint8_t * event){
+    return event[13];
+}
+/**
+ * @brief Get field read from event MAP_SUBEVENT_MESSAGE_LISTING_ITEM
+ * @param event packet
+ * @return read
+ * @note: btstack_type 1
+ */
+static inline uint8_t map_subevent_message_listing_item_get_read(const uint8_t * event){
     return event[14];
 }
 
