@@ -104,14 +104,14 @@ static uint16_t mns_cid;
 static bd_addr_t    remote_addr;
 static const char * remote_addr_string = "001BDC0732EF";
 
-static const char* folders[] = { "", "inbox", "outbox", "draft", "delete", NULL};
+static const char* folders[] = { "inbox", "outbox", "draft", "delete", "", NULL};
 static const char * *folder_name = folders;
 static map_message_handle_t message_handle = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 static map_message_handle_t message_handles[MAP_MESSAGE_TYPE_IM+1] = { 0, };
 static map_conversation_id_t conv_id = { 0x00, };
 
-static const char * path = "telecom/msg/draft";
-//static const char* path = "telecom/msg";
+//static const char * path = "telecom/msg/draft";
+static const char* path = "telecom/msg";
 
 static const char bmsg_email[] =
 "BEGIN:BMSG\r\n"
@@ -253,7 +253,7 @@ static void keypress_timer_cb(btstack_timer_source_t* ts) {
     } else {
         // Re-Arm Timer
         log_debug("Timer re-armed");
-        btstack_run_loop_set_timer(ts, 1000);
+        btstack_run_loop_set_timer(ts, 3000);
         btstack_run_loop_add_timer(ts);
     }
 }
@@ -589,7 +589,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             memcpy(value, map_subevent_folder_listing_item_get_name(packet), value_len);
                             btprintf("Folder \'%s\'\n", value);
                             break;
-                        case MAP_SUBEVENT_GET_MESSAGE_LISTING:
+                        case MAP_SUBEVENT_MESSAGE_LISTING_ITEM:
                             msg_type = map_subevent_message_listing_item_get_type (packet);
                             msg_status = map_subevent_message_listing_item_get_read (packet);
                             memcpy((uint8_t *) message_handle, map_subevent_message_listing_item_get_handle(packet), MAP_MESSAGE_HANDLE_SIZE);
