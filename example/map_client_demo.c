@@ -253,7 +253,7 @@ static void keypress_timer_cb(btstack_timer_source_t* ts) {
     } else {
         // Re-Arm Timer
         log_debug("Timer re-armed");
-        btstack_run_loop_set_timer(ts, 3000);
+        btstack_run_loop_set_timer(ts, 1000);
         btstack_run_loop_add_timer(ts);
     }
 }
