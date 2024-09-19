@@ -569,12 +569,12 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                                 case 0:
                                     switch (map_mce_state){
                                         case MCE_DEMO_NOTIFICATION_ENABLE:
-                                            mce_demo_select_mas_instance(1);
+                                            //mce_demo_select_mas_instance(0); // this enabled kills our active OBEX map_cid, disabled we send endless PUT requests for notification
                                             status = map_access_client_enable_notifications(map_cid);
                                             btprintf("[+] Enable notifications map_cid %u, status 0x%02x\n", map_cid, status);
                                             break;
                                         case MCE_DEMO_NOTIFICATION_DISABLE:
-                                            mce_demo_select_mas_instance(1);
+                                            //mce_demo_select_mas_instance(0); // this enabled kills our active OBEX map_cid, disabled we send endless PUT requests for notification
                                             status = map_access_client_disable_notifications(map_cid);
                                             btprintf("[+] Disable notifications map_cid %u, status 0x%02x\n", map_cid, status);
                                             break;
