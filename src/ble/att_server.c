@@ -1639,7 +1639,7 @@ static void att_server_eatt_handler(uint8_t packet_type, uint16_t channel, uint8
 
                 case L2CAP_EVENT_CHANNEL_CLOSED:
                     eatt_bearer = att_server_eatt_bearer_for_cid(l2cap_event_channel_closed_get_local_cid(packet));
-                    btstack_assert(eatt_bearers != NULL);
+                    btstack_assert(eatt_bearer != NULL);
 
                     // TODO: finalize - abort queued writes
 
@@ -1684,7 +1684,7 @@ uint8_t att_server_eatt_init(uint8_t num_eatt_bearers, uint8_t * storage_buffer,
         eatt_bearer++;
     }
     // TODO: define minimum EATT MTU
-    l2cap_ecbm_register_service(att_server_eatt_handler, BLUETOOTH_PSM_EATT, 64, 0, false);
+    l2cap_ecbm_register_service(att_server_eatt_handler, BLUETOOTH_PSM_EATT, 64, LEVEL_2, false);
 
     return 0;
 }
