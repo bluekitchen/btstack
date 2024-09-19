@@ -243,8 +243,8 @@ int keysequ_idx = 0;
 static btstack_timer_source_t keypress_timer;
 static void keypress_timer_cb(btstack_timer_source_t* ts) {
     char key = ptc->keysequ[keysequ_idx];
-    // we wait 1s after each keypress. 3s for a connect attempt
-    uint32_t timeout_ms = (key == 'a' || key == 'b') ? 3000 : 1000;
+    // we wait 1s after each keypress. 3s for a connect attempts
+    uint32_t timeout_ms = (key == 'a' || key == 'b' || key == 'n') ? 3000 : 1000;
 
     log_debug("Timer keypress <%c> %u ms", key, timeout_ms);
     stdin_process(key);
@@ -384,7 +384,7 @@ static void stdin_process(char c){
         break;
     case 'X':
         init_keypress_timer();
-        show_usage();
+        btprintf("[+] eXecute keypress sequence <%s>\n", ptc->keysequ);
         break;
     case 'a':            
         client_connect(0);
