@@ -242,24 +242,29 @@ int keysequ_idx = 0;
 
 static btstack_timer_source_t keypress_timer;
 static void keypress_timer_cb(btstack_timer_source_t* ts) {
-    log_debug("Timer keypress: %c", ptc->keysequ[keysequ_idx]);
-    stdin_process(ptc->keysequ[keysequ_idx]);
-    keysequ_idx;
+    char key = ptc->keysequ[keysequ_idx];
+    // we wait 1s after each keypress. 3s for a connect attempt
+    uint32_t timeout_ms = (key == 'a' || key == 'b') ? 3000 : 1000;
 
+    log_debug("Timer keypress <%c> %u ms", key, timeout_ms);
+    stdin_process(key);
+    
+    // last key in sequence?
     if (ptc->keysequ[++keysequ_idx] == '\0') {
         keysequ_idx = 0;
         btstack_run_loop_remove_timer(ts);
         log_debug("Timer removed");
+    // progress with next key in sequence
     } else {
         // Re-Arm Timer
         log_debug("Timer re-armed");
-        btstack_run_loop_set_timer(ts, 1000);
+        btstack_run_loop_set_timer(ts, timeout_ms);
         btstack_run_loop_add_timer(ts);
     }
 }
 static init_keypress_timer(void) {
     btstack_run_loop_set_timer_handler(&keypress_timer, keypress_timer_cb);
-    btstack_run_loop_set_timer(&keypress_timer, 1000);
+    btstack_run_loop_set_timer(&keypress_timer, 10);
     btstack_run_loop_add_timer(&keypress_timer);
     log_debug("Timer set");
 }
@@ -382,121 +387,121 @@ static void stdin_process(char c){
         show_usage();
         break;
     case 'a':            
-            client_connect(0);
-            mce_demo_select_mas_instance(0);
-            break;
-        case 'A':
-            btprintf("[+] Disconnect MAP ID #0 from %s...\n", bd_addr_to_str(remote_addr));
-            map_access_client_disconnect(map_mas_0_cid);
-            map_mas_0_cid = 0;
-            break;
-        case 'b':
-            client_connect(1);
-            mce_demo_select_mas_instance(1);            break;
-        case 'B':
-            btprintf("[+] Disconnect MAP ID #1 from %s...\n", bd_addr_to_str(remote_addr));
-            map_access_client_disconnect(map_mas_1_cid);
-            map_mas_1_cid = 0;
-            break;
-        case 'U':
-            btprintf("[+] Requesting inbox update\n");
-            map_access_client_update_inbox(map_cid);
-            break;
-        case 'p':
-            btprintf("[+] Set path \'%s\'\n", path);
-            map_access_client_set_path(map_cid, path);
-            break;
-        case 'P':
-            if (*(++folder_name) == NULL)
-                folder_name = folders;
-            btprintf("[+] Set folder_name to \'%s\'\n", *folder_name);
-            break;
-        case 'f':
-            btprintf("[+] Get folder listing\n");
-            map_access_client_get_folder_listing(map_cid);
-            break;
-        case 'F':
-            btprintf("[+] Get message listing for folder \'%s\'\n", *folder_name);
-            map_access_client_get_message_listing_for_folder(map_cid, *folder_name);
-            break;
-        case 'C':
-            btprintf("[+] Get conversation listing\n");
-            map_access_client_get_conversation_listing(map_cid, 10, 0);
-            break;
-        case 'i':
-            btprintf("[+] Get MAS instance info for default instance\n");
-            map_access_client_get_mas_instance_info(map_cid, 0);
-            break;
-        case '0':
-            btprintf("[+] Select last listed \"unknown\" message\n");
-            memcpy((uint8_t *) message_handle, message_handles[MAP_MESSAGE_TYPE_UNKNOWN], MAP_MESSAGE_HANDLE_SIZE);
-            break;
-        case '1':
-            btprintf("[+] Select last listed \"email\" message\n");
-            memcpy((uint8_t *) message_handle, message_handles[MAP_MESSAGE_TYPE_EMAIL], MAP_MESSAGE_HANDLE_SIZE);
-            break;
-        case '2':
-            btprintf("[+] Select last listed \"sms_gsm\" message\n");
-            memcpy((uint8_t *) message_handle, message_handles[MAP_MESSAGE_TYPE_SMS_GSM], MAP_MESSAGE_HANDLE_SIZE);
-            break;
-        case '3':
-            btprintf("[+] Select last listed \"sms_cmda\" message\n");
-            memcpy((uint8_t *) message_handle, message_handles[MAP_MESSAGE_TYPE_SMS_CDMA], MAP_MESSAGE_HANDLE_SIZE);
-            break;
-        case '4':
-            btprintf("[+] Select last listed \"mms\" message\n");
-            memcpy((uint8_t *) message_handle, message_handles[MAP_MESSAGE_TYPE_MMS], MAP_MESSAGE_HANDLE_SIZE);
-            break;
-        case '5':
-            btprintf("[+] Select last listed \"im\" message\n");
-            memcpy((uint8_t *) message_handle, message_handles[MAP_MESSAGE_TYPE_IM], MAP_MESSAGE_HANDLE_SIZE);
-            break;
-        case 'g':
-            btprintf("[+] Get selected message\n");
-            map_access_client_get_message_with_handle(map_cid, message_handle, 1);
-            break;
-        case 'u':
-            btprintf("[+] Upload (PUT/PUSH) message\n");
-            map_access_client_push_message(map_cid, *folder_name, bmsg_email, (uint16_t)strlen(bmsg_email));
-            break;
-        case 'r':
-            btprintf("[+] Mark selected messages as read\n");
-            map_access_client_set_message_status(map_cid, message_handle, readStatus, yes);
-            break;
-        case 'R':
-            btprintf("[+] Mark selected message as unread\n");
-            map_access_client_set_message_status(map_cid, message_handle, readStatus, no);
-            break;
-        case 'd':
-            btprintf("[+] Mark selected message as deleted\n");
-            map_access_client_set_message_status(map_cid, message_handle, deletedStatus, yes);
-            break;
-        case 'n':
-            // enable notifications for all/both mas instances
-            mce_demo_select_mas_instance(0);
-            map_mce_state = MCE_DEMO_NOTIFICATION_ENABLE;
-            btprintf("[+] Enable notifications map_cid %u\n", map_cid);
-            status = map_access_client_enable_notifications(map_cid);
-            break;
-        case 'N':
-            // disable notifications for all/both mas instances
-            mce_demo_select_mas_instance(0);
-            map_mce_state = MCE_DEMO_NOTIFICATION_DISABLE;
-            btprintf("[+] Disable notifications map_cid %u\n", map_cid);
-            map_access_client_disable_notifications(map_cid);
-            break;
-        case 'm':
-            notification_filter = !notification_filter;
-            btprintf("[+] Notification filter for new messages %s\n", notification_filter ? "enabled" : "disabled");
-            map_access_client_set_notification_filter(map_cid, notification_filter ? 0x01 : 0xffffffff);
-            break;
-        case 't':
-            btprintf("[+] Disconnect MNS Client\n");
-            map_notification_server_disconnect(mns_cid);
-            break;
-        default:
-            show_usage();
-            break;
+        client_connect(0);
+        mce_demo_select_mas_instance(0);
+        break;
+    case 'A':
+        btprintf("[+] Disconnect MAP ID #0 from %s...\n", bd_addr_to_str(remote_addr));
+        map_access_client_disconnect(map_mas_0_cid);
+        map_mas_0_cid = 0;
+        break;
+    case 'b':
+        client_connect(1);
+        mce_demo_select_mas_instance(1);            break;
+    case 'B':
+        btprintf("[+] Disconnect MAP ID #1 from %s...\n", bd_addr_to_str(remote_addr));
+        map_access_client_disconnect(map_mas_1_cid);
+        map_mas_1_cid = 0;
+        break;
+    case 'U':
+        btprintf("[+] Requesting inbox update\n");
+        map_access_client_update_inbox(map_cid);
+        break;
+    case 'p':
+        btprintf("[+] Set path \'%s\'\n", path);
+        map_access_client_set_path(map_cid, path);
+        break;
+    case 'P':
+        if (*(++folder_name) == NULL)
+            folder_name = folders;
+        btprintf("[+] Set folder_name to \'%s\'\n", *folder_name);
+        break;
+    case 'f':
+        btprintf("[+] Get folder listing\n");
+        map_access_client_get_folder_listing(map_cid);
+        break;
+    case 'F':
+        btprintf("[+] Get message listing for folder \'%s\'\n", *folder_name);
+        map_access_client_get_message_listing_for_folder(map_cid, *folder_name);
+        break;
+    case 'C':
+        btprintf("[+] Get conversation listing\n");
+        map_access_client_get_conversation_listing(map_cid, 10, 0);
+        break;
+    case 'i':
+        btprintf("[+] Get MAS instance info for default instance\n");
+        map_access_client_get_mas_instance_info(map_cid, 0);
+        break;
+    case '0':
+        btprintf("[+] Select last listed \"unknown\" message\n");
+        memcpy((uint8_t *) message_handle, message_handles[MAP_MESSAGE_TYPE_UNKNOWN], MAP_MESSAGE_HANDLE_SIZE);
+        break;
+    case '1':
+        btprintf("[+] Select last listed \"email\" message\n");
+        memcpy((uint8_t *) message_handle, message_handles[MAP_MESSAGE_TYPE_EMAIL], MAP_MESSAGE_HANDLE_SIZE);
+        break;
+    case '2':
+        btprintf("[+] Select last listed \"sms_gsm\" message\n");
+        memcpy((uint8_t *) message_handle, message_handles[MAP_MESSAGE_TYPE_SMS_GSM], MAP_MESSAGE_HANDLE_SIZE);
+        break;
+    case '3':
+        btprintf("[+] Select last listed \"sms_cmda\" message\n");
+        memcpy((uint8_t *) message_handle, message_handles[MAP_MESSAGE_TYPE_SMS_CDMA], MAP_MESSAGE_HANDLE_SIZE);
+        break;
+    case '4':
+        btprintf("[+] Select last listed \"mms\" message\n");
+        memcpy((uint8_t *) message_handle, message_handles[MAP_MESSAGE_TYPE_MMS], MAP_MESSAGE_HANDLE_SIZE);
+        break;
+    case '5':
+        btprintf("[+] Select last listed \"im\" message\n");
+        memcpy((uint8_t *) message_handle, message_handles[MAP_MESSAGE_TYPE_IM], MAP_MESSAGE_HANDLE_SIZE);
+        break;
+    case 'g':
+        btprintf("[+] Get selected message\n");
+        map_access_client_get_message_with_handle(map_cid, message_handle, 1);
+        break;
+    case 'u':
+        btprintf("[+] Upload (PUT/PUSH) message\n");
+        map_access_client_push_message(map_cid, *folder_name, bmsg_email, (uint16_t)strlen(bmsg_email));
+        break;
+    case 'r':
+        btprintf("[+] Mark selected messages as read\n");
+        map_access_client_set_message_status(map_cid, message_handle, readStatus, yes);
+        break;
+    case 'R':
+        btprintf("[+] Mark selected message as unread\n");
+        map_access_client_set_message_status(map_cid, message_handle, readStatus, no);
+        break;
+    case 'd':
+        btprintf("[+] Mark selected message as deleted\n");
+        map_access_client_set_message_status(map_cid, message_handle, deletedStatus, yes);
+        break;
+    case 'n':
+        // enable notifications for all/both mas instances
+        mce_demo_select_mas_instance(0);
+        map_mce_state = MCE_DEMO_NOTIFICATION_ENABLE;
+        btprintf("[+] Enable notifications map_cid %u\n", map_cid);
+        status = map_access_client_enable_notifications(map_cid);
+        break;
+    case 'N':
+        // disable notifications for all/both mas instances
+        mce_demo_select_mas_instance(0);
+        map_mce_state = MCE_DEMO_NOTIFICATION_DISABLE;
+        btprintf("[+] Disable notifications map_cid %u\n", map_cid);
+        map_access_client_disable_notifications(map_cid);
+        break;
+    case 'm':
+        notification_filter = !notification_filter;
+        btprintf("[+] Notification filter for new messages %s\n", notification_filter ? "enabled" : "disabled");
+        map_access_client_set_notification_filter(map_cid, notification_filter ? 0x01 : 0xffffffff);
+        break;
+    case 't':
+        btprintf("[+] Disconnect MNS Client\n");
+        map_notification_server_disconnect(mns_cid);
+        break;
+    default:
+        show_usage();
+        break;
     }
     if (status != ERROR_CODE_SUCCESS){
         btprintf("ERROR CODE 0x%02x!\n", status);
