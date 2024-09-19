@@ -74,7 +74,9 @@
 #define MNS_SERVER_RFCOMM_CHANNEL_NR 1
 #define MNS_SERVER_GOEP_PSM 0x1001
 
+// forward declarations
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+void stdin_process(char c);
 
 // map access clients
 static map_access_client_t map_access_client_mas_0;
@@ -227,6 +229,59 @@ static enum {
     MCE_DEMO_NOTIFICATION_DISABLE,
 } map_mce_state = MCE_DEMO_IDLE;
 
+ static struct test_case_s {
+    int nr;
+    const char *descr;
+    const char *keysequ;
+ } test_cases[] = {
+    {.nr = 1, .descr = "MAP/MCE/MMD/BV-01-C", .keysequ = "apF1d2d4d5dAb3dB"},
+    {.nr = 2, .descr = "MAP/MCE/MMU/BV-01-C", .keysequ = "apuA"},
+};
+static struct test_case_s *ptc = test_cases;
+int keysequ_idx = 0;
+
+static btstack_timer_source_t keypress_timer;
+static void keypress_timer_cb(btstack_timer_source_t* ts) {
+    log_debug("Timer keypress: %c", ptc->keysequ[keysequ_idx]);
+    stdin_process(ptc->keysequ[keysequ_idx]);
+    keysequ_idx;
+
+    if (ptc->keysequ[++keysequ_idx] == '\0') {
+        keysequ_idx = 0;
+        btstack_run_loop_remove_timer(ts);
+        log_debug("Timer removed");
+    } else {
+        // Re-Arm Timer
+        log_debug("Timer re-armed");
+        btstack_run_loop_set_timer(ts, 1000);
+        btstack_run_loop_add_timer(ts);
+    }
+}
+static init_keypress_timer(void) {
+    btstack_run_loop_set_timer_handler(&keypress_timer, keypress_timer_cb);
+    btstack_run_loop_set_timer(&keypress_timer, 1000);
+    btstack_run_loop_add_timer(&keypress_timer);
+    log_debug("Timer set");
+}
+
+static void next_test_case(void) {
+    // cycle throug all test cases
+    if (++ptc >= &test_cases[ARRAYSIZE(test_cases)]) {
+        ptc = &test_cases[0];
+    }
+    // init test cases
+    keysequ_idx = 0;
+}
+
+static void previous_test_case(void) {
+    // cycle throug all test cases
+    if (--ptc < &test_cases[0]) {
+        ptc = &test_cases[ARRAYSIZE(test_cases) - 1];
+    }
+    // init test cases
+    keysequ_idx = 0;
+}
+
 void client_connect(int mas_id)
 {
     uint16_t* pmap_mas_x_cid = mas_id == 0 ? &map_mas_0_cid : &map_mas_1_cid;
@@ -274,6 +329,8 @@ static void show_usage(void){
         btprintf("b - select MAS ID #1 - %s\n", bd_addr_to_str(remote_addr));
         btprintf("B - disconnect from MAS ID 1 - %s\n", bd_addr_to_str(remote_addr));
     }
+    btprintf("X - eXecute current test case key sequence (%d:%s %s)\n", ptc->nr, ptc->descr, ptc->keysequ);
+    btprintf("x - cycle through test cases\n");
     btprintf("U - request an update on the inbox\n");
     btprintf("p - set path \'%s\'\n", path);
     btprintf("f - get folder listing\n");
@@ -316,7 +373,15 @@ static void mce_demo_select_mas_instance(uint8_t instance){
 static void stdin_process(char c){
     uint8_t status = ERROR_CODE_SUCCESS;
     switch (c){
-        case 'a':            
+    case 'x':
+        next_test_case();
+        show_usage();
+        break;
+    case 'X':
+        init_keypress_timer();
+        show_usage();
+        break;
+    case 'a':            
             client_connect(0);
             mce_demo_select_mas_instance(0);
             break;
