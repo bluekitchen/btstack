@@ -235,7 +235,8 @@ static enum {
     const char *keysequ;
  } test_cases[] = {
     {.nr = 1, .descr = "MAP/MCE/MMD/BV-01-C", .keysequ = "apF1d2d4d5dAb3dB"},
-    {.nr = 2, .descr = "MAP/MCE/MMU/BV-01-C", .keysequ = "apuA"},
+    {.nr = 2, .descr = "MAP/MCE/MMD/BV-03-C", .keysequ = "anpF5d"},
+    {.nr = 3, .descr = "MAP/MCE/MMU/BV-01-C", .keysequ = "apuA"},
 };
 static struct test_case_s *ptc = test_cases;
 int keysequ_idx = 0;
