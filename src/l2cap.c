@@ -2975,6 +2975,9 @@ static void l2cap_handle_disconnection_complete(hci_con_handle_t handle){
                         // emit reconfigure failure - result = 0xffff
                         l2cap_ecbm_emit_reconfigure_complete(channel, 0xffff);
                         break;
+                    case L2CAP_STATE_WAIT_INCOMING_SECURITY_LEVEL_UPDATE:
+                        // no incoming event has been sent to higher layer, no need to follow up
+                        break;
                     default:
                         l2cap_emit_simple_event_with_cid(channel, L2CAP_EVENT_CHANNEL_CLOSED);
                         break;
