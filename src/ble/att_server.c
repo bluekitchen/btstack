@@ -60,7 +60,6 @@
 #include "btstack_memory.h"
 #include "btstack_run_loop.h"
 #include "gap.h"
-#include "hci.h"
 #include "hci_dump.h"
 #include "l2cap.h"
 #include "btstack_tlv.h"
@@ -118,13 +117,6 @@ static hci_con_handle_t att_server_last_can_send_now = HCI_CON_HANDLE_INVALID;
 static uint8_t att_server_flags;
 
 #ifdef ENABLE_GATT_OVER_EATT
-typedef struct {
-    btstack_linked_item_t item;
-    att_server_t     att_server;
-    att_connection_t att_connection;
-    uint8_t * receive_buffer;
-    uint8_t * send_buffer;
-} att_server_eatt_bearer_t;
 static att_server_eatt_bearer_t * att_server_eatt_bearer_for_con_handle(hci_con_handle_t con_handle);
 static btstack_linked_list_t att_server_eatt_bearer_pool;
 static btstack_linked_list_t att_server_eatt_bearer_active;
@@ -1684,8 +1676,6 @@ uint8_t att_server_eatt_init(uint8_t num_eatt_bearers, uint8_t * storage_buffer,
         eatt_bearer++;
     }
     // TODO: define minimum EATT MTU
-    l2cap_ecbm_register_service(att_server_eatt_handler, BLUETOOTH_PSM_EATT, 64, LEVEL_2, false);
-
-    return 0;
+    return l2cap_ecbm_register_service(att_server_eatt_handler, BLUETOOTH_PSM_EATT, 64, LEVEL_2, false);
 }
 #endif
