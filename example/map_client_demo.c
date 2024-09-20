@@ -233,10 +233,61 @@ static enum {
     int nr;
     const char *descr;
     const char *keysequ;
- } test_cases[] = {
-    {.nr = 1, .descr = "MAP/MCE/MMD/BV-01-C", .keysequ = "apF1d2d4d5dAb3dB"},
-    {.nr = 2, .descr = "MAP/MCE/MMD/BV-03-C", .keysequ = "anpF5d"},
-    {.nr = 3, .descr = "MAP/MCE/MMU/BV-01-C", .keysequ = "apuA"},
+ } test_cases[] = {            
+    {.nr =  1, .descr = "MAP/MCE/SGSIT/SERR/BV-02-I", .keysequ = "a"},
+    {.nr =  2, .descr = "MAP/MCE/SGSIT/ATTR/BV-08-I", .keysequ = "a"},
+    {.nr =  3, .descr = "MAP/MCE/SGSIT/ATTR/BV-09-I", .keysequ = "a"},
+    {.nr =  4, .descr = "MAP/MCE/SGSIT/ATTR/BV-10-I", .keysequ = "a"},
+    {.nr =  5, .descr = "MAP/MCE/SGSIT/ATTR/BV-11-I", .keysequ = "a"},
+    {.nr =  6, .descr = "MAP/MCE/SGSIT/ATTR/BV-12-I", .keysequ = "a"},
+    {.nr =  7, .descr = "MAP/MCE/SGSIT/OFFS/BV-02-I", .keysequ = "a"},
+            
+    {.nr =  8, .descr = "MAP/MCE/CGSIT/SFC/BV-01-I" , .keysequ = "a"},
+
+    {.nr =  9, .descr = "MAP/MCE/MSM-BV-01-I"       , .keysequ = "a"},
+    {.nr = 10, .descr = "MAP/MCE/MSM-BV-02-I"       , .keysequ = "an"},
+    {.nr = 11, .descr = "MAP/MCE/MSM-BV-03-I"       , .keysequ = "anNA"},
+    {.nr = 12, .descr = "MAP/MCE/MSM-BV-04-I"       , .keysequ = "aA"},
+    {.nr = 13, .descr = "MAP/MCE/MSM-BV-13-I"       , .keysequ = "abn"},
+    {.nr = 15, .descr = "MAP/MCE/MSM-BV-14-I"       , .keysequ = "abnN"},
+    {.nr = 17, .descr = "MAP/MCE/MNR-BV-01-I"       , .keysequ = "anN"},
+    {.nr = 18, .descr = "MAP/MCE/MNR-BV-02-I"       , .keysequ = "an"},
+    {.nr = 19, .descr = "MAP/MCE/MMB/BV-01-I"       , .keysequ = "aFf"},
+    {.nr = 20, .descr = "MAP/MCE/MMB/BV-02-I"       , .keysequ = "ap"},
+    {.nr = 21, .descr = "MAP/MCE/MMB/BV-03-I"       , .keysequ = "aF"},
+    {.nr = 22, .descr = "MAP/MCE/MMB/BV-04-I"       , .keysequ = "a1g"},
+    {.nr = 23, .descr = "MAP/MCE/MMB/BV-17-I"       , .keysequ = "a4g"},
+    {.nr = 24, .descr = "MAP/MCE/MMB/BV-06-I"       , .keysequ = "a2g"},
+    {.nr = 25, .descr = "MAP/MCE/MMB/BV-08-I"       , .keysequ = "aUFAok"},
+    {.nr = 26, .descr = "MAP/MCE/MMB/BV-08-I"       , .keysequ = "aC"},
+
+    {.nr = 27, .descr = "MAP/MCE/MMD/BV-01-C"       , .keysequ = "apF1d2d4d5dAb3dB"},
+    {.nr = 28, .descr = "MAP/MCE/MMD/BV-03-C"       , .keysequ = "anpF5d"},
+
+    {.nr = 29, .descr = "WIP MAP/MCE/MMU/BV-01-C"   , .keysequ = "ap"},
+
+    {.nr = 30, .descr = "MAP/MCE/MMN/BV-05-C"       , .keysequ = "anm"},
+    {.nr = 31, .descr = "MAP/MCE/MMN/BV-01-C"       , .keysequ = "an"},
+    {.nr = 32, .descr = "MAP/MCE/MMN/BV-05-C"       , .keysequ = "anm"},
+    {.nr = 33, .descr = "MAP/MCE/MMI/BV-01-C"       , .keysequ = "ai"},
+    {.nr = 34, .descr = "MAP/MCE/MFB/BV-01"         , .keysequ = ""},
+    {.nr = 35, .descr = "MAP/MCE/MFB/BV-03"         , .keysequ = "a"},
+    {.nr = 36, .descr = "MAP/MCE/MFB/BV-04"         , .keysequ = "an"},
+    {.nr = 37, .descr = "MAP/MCE/MFB/BV-06"         , .keysequ = "a"},
+    {.nr = 38, .descr = "MAP/MCE/MMU/BV-01-C"       , .keysequ = "apu"},
+
+    {.nr = 39, .descr = "MAP/MCE/GOEP/BC/BV-02-C"   , .keysequ = "an"},
+    {.nr = 40, .descr = "MAP/MCE/GOEP/BC/BV-04-C"   , .keysequ = "af"},
+    {.nr = 41, .descr = "MAP/MCE/GOEP/ROB/BV-01-C"  , .keysequ = "an"},
+    {.nr = 42, .descr = "MAP/MCE/GOEP/ROB/BV-02-C"  , .keysequ = "an"},
+    {.nr = 43, .descr = "MAP/MCE/GOEP/ROB/BV-01-C"  , .keysequ = "an"},
+    {.nr = 44, .descr = "MAP/MCE/GOEP/BC/BV-01-C"   , .keysequ = "a"},
+    {.nr = 45, .descr = "MAP/MCE/GOEP/SRM/BV-03-C"  , .keysequ = "an"},
+    {.nr = 46, .descr = "MAP/MCE/GOEP/SRM/BV-07-C"  , .keysequ = "af"},
+    {.nr = 47, .descr = "MAP/MCE/GOEP/SRMP/BV-01-C" , .keysequ = "an"},
+    {.nr = 48, .descr = "MAP/MCE/GOEP/SRMP/BV-06-C" , .keysequ = "af"},
+    {.nr = 49, .descr = "MAP/MCE/GOEP/SRMP/BI-01-C" , .keysequ = "af"},
+
 };
 static struct test_case_s *ptc = test_cases;
 int keysequ_idx = 0;
