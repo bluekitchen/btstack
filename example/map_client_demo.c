@@ -398,7 +398,8 @@ static void stdin_process(char c){
         break;
     case 'b':
         client_connect(1);
-        mce_demo_select_mas_instance(1);            break;
+        mce_demo_select_mas_instance(1);
+        break;
     case 'B':
         btprintf("[+] Disconnect MAP ID #1 from %s...\n", bd_addr_to_str(remote_addr));
         map_access_client_disconnect(map_mas_1_cid);
