@@ -737,10 +737,10 @@ uint8_t map_access_client_connect(map_access_client_t *map_access_client, l2cap_
 uint8_t map_access_client_disconnect(uint16_t map_cid){
     map_access_client_t * map_access_client = map_access_client_for_map_cid(map_cid);
     if (map_access_client == NULL) {
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+        RUN_AND_LOG_ACTION(return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;)
     }
     if (map_access_client->state != MAP_CONNECTED){
-        return BTSTACK_BUSY;
+        RUN_AND_LOG_ACTION(return BTSTACK_BUSY;)
     }
 
     map_access_client->state = MAP_W2_SEND_DISCONNECT_REQUEST;
@@ -752,10 +752,10 @@ uint8_t map_access_client_disconnect(uint16_t map_cid){
 uint8_t map_access_client_update_inbox(uint16_t map_cid){
     map_access_client_t * map_access_client = map_access_client_for_map_cid(map_cid);
     if (map_access_client == NULL) {
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+        RUN_AND_LOG_ACTION(return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;)
     }
     if (map_access_client->state != MAP_CONNECTED){
-        return BTSTACK_BUSY;
+        RUN_AND_LOG_ACTION(return BTSTACK_BUSY;)
     }
 
     map_access_client->state = MAP_W2_SEND_UPDATE_INBOX;
@@ -767,10 +767,10 @@ uint8_t map_access_client_update_inbox(uint16_t map_cid){
 uint8_t map_access_client_get_folder_listing(uint16_t map_cid){
     map_access_client_t * map_access_client = map_access_client_for_map_cid(map_cid);
     if (map_access_client == NULL) {
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+        RUN_AND_LOG_ACTION(return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;)
     }
     if (map_access_client->state != MAP_CONNECTED){
-        return BTSTACK_BUSY;
+        RUN_AND_LOG_ACTION(return BTSTACK_BUSY;)
     }
 
     map_access_client->state = MAP_W2_SEND_GET_FOLDERS;
@@ -786,10 +786,10 @@ uint8_t map_access_client_get_folder_listing(uint16_t map_cid){
 uint8_t map_access_client_get_message_listing_for_folder(uint16_t map_cid, const char * folder_name){
     map_access_client_t * map_access_client = map_access_client_for_map_cid(map_cid);
     if (map_access_client == NULL) {
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+        RUN_AND_LOG_ACTION(return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;)
     }
     if (map_access_client->state != MAP_CONNECTED){
-        return BTSTACK_BUSY;
+        RUN_AND_LOG_ACTION(return BTSTACK_BUSY;)
     }
 
     map_access_client->state = MAP_W2_SEND_GET_MESSAGES_FOR_FOLDER;
@@ -806,10 +806,10 @@ uint8_t map_access_client_get_message_listing_for_folder(uint16_t map_cid, const
 uint8_t map_access_client_get_conversation_listing(uint16_t map_cid, int max_list_count, int list_start_offset){
     map_access_client_t * map_access_client = map_access_client_for_map_cid(map_cid);
     if (map_access_client == NULL) {
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+        RUN_AND_LOG_ACTION(return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;)
     }
     if (map_access_client->state != MAP_CONNECTED){
-        return BTSTACK_BUSY;
+        RUN_AND_LOG_ACTION(return BTSTACK_BUSY;)
     }
 
     map_access_client->state = MAP_W2_SEND_GET_CONVERSATION_LISTING;
@@ -827,10 +827,10 @@ uint8_t map_access_client_get_conversation_listing(uint16_t map_cid, int max_lis
 uint8_t map_access_client_get_message_with_handle(uint16_t map_cid, const map_message_handle_t map_message_handle, uint8_t with_attachment){
     map_access_client_t * map_access_client = map_access_client_for_map_cid(map_cid);
     if (map_access_client == NULL) {
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+        RUN_AND_LOG_ACTION(return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;)
     }
     if (map_access_client->state != MAP_CONNECTED){
-        return BTSTACK_BUSY;
+        RUN_AND_LOG_ACTION(return BTSTACK_BUSY;)
     }
 
     map_access_client->state = MAP_W2_SEND_GET_MESSAGE_WITH_HANDLE;
@@ -844,10 +844,10 @@ uint8_t map_access_client_get_message_with_handle(uint16_t map_cid, const map_me
 uint8_t map_access_client_push_message(uint16_t map_cid, const uint8_t* name_header, const uint8_t *msg_body, const uint16_t msg_body_size) {
     map_access_client_t* map_access_client = map_access_client_for_map_cid(map_cid);
     if (map_access_client == NULL) {
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+        RUN_AND_LOG_ACTION(return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;)
     }
     if (map_access_client->state != MAP_CONNECTED) {
-        return BTSTACK_BUSY;
+        RUN_AND_LOG_ACTION(return BTSTACK_BUSY;)
     }
 
     map_access_client->state = MAP_W2_SEND_PUSH_MESSAGE;
@@ -862,10 +862,10 @@ uint8_t map_access_client_push_message(uint16_t map_cid, const uint8_t* name_hea
 uint8_t map_access_client_set_message_status(uint16_t map_cid, const map_message_handle_t map_message_handle, enum status_indicator stat_ind, enum status_value stat_val){
     map_access_client_t * map_access_client = map_access_client_for_map_cid(map_cid);
     if (map_access_client == NULL) {
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+        RUN_AND_LOG_ACTION(return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;)
     }
     if (map_access_client->state != MAP_CONNECTED){
-        return BTSTACK_BUSY;
+        RUN_AND_LOG_ACTION(return BTSTACK_BUSY;)
     }
     map_access_client->state = MAP_W2_SEND_SET_MESSAGE_STATUS;
     map_access_client->request_number = 0;
@@ -879,10 +879,10 @@ uint8_t map_access_client_set_message_status(uint16_t map_cid, const map_message
 uint8_t map_access_client_set_path(uint16_t map_cid, const char * path){
     map_access_client_t * map_access_client = map_access_client_for_map_cid(map_cid);
     if (map_access_client == NULL) {
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+        RUN_AND_LOG_ACTION(return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;)
     }
     if (map_access_client->state != MAP_CONNECTED){
-        return BTSTACK_BUSY;
+        RUN_AND_LOG_ACTION(return BTSTACK_BUSY;)
     }
 
     map_access_client->state = MAP_W2_SET_PATH_ROOT;
@@ -896,10 +896,10 @@ uint8_t map_access_client_set_path(uint16_t map_cid, const char * path){
 uint8_t map_access_client_enable_notifications(uint16_t map_cid){
     map_access_client_t * map_access_client = map_access_client_for_map_cid(map_cid);
     if (map_access_client == NULL) {
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+        RUN_AND_LOG_ACTION(return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;)
     }
     if (map_access_client->state != MAP_CONNECTED){
-        return BTSTACK_BUSY;
+        RUN_AND_LOG_ACTION(return BTSTACK_BUSY;)
     }
 
     map_access_client->state = MAP_W2_SET_NOTIFICATION;
@@ -912,10 +912,10 @@ uint8_t map_access_client_enable_notifications(uint16_t map_cid){
 uint8_t map_access_client_disable_notifications(uint16_t map_cid){
     map_access_client_t * map_access_client = map_access_client_for_map_cid(map_cid);
     if (map_access_client == NULL) {
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+        RUN_AND_LOG_ACTION(return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;)
     }
     if (map_access_client->state != MAP_CONNECTED){
-        return BTSTACK_BUSY;
+        RUN_AND_LOG_ACTION(return BTSTACK_BUSY;)
     }
 
     map_access_client->state = MAP_W2_SET_NOTIFICATION;
@@ -928,10 +928,10 @@ uint8_t map_access_client_disable_notifications(uint16_t map_cid){
 uint8_t map_access_client_set_notification_filter(uint16_t map_cid, uint32_t filter_mask){
     map_access_client_t * map_access_client = map_access_client_for_map_cid(map_cid);
     if (map_access_client == NULL) {
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+        RUN_AND_LOG_ACTION(return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;)
     }
     if (map_access_client->state != MAP_CONNECTED){
-        return BTSTACK_BUSY;
+        RUN_AND_LOG_ACTION(return BTSTACK_BUSY;)
     }
 
     map_access_client->state = MAP_W2_SET_NOTIFICATION_FILTER;
@@ -944,10 +944,10 @@ uint8_t map_access_client_set_notification_filter(uint16_t map_cid, uint32_t fil
 uint8_t map_access_client_get_mas_instance_info(uint16_t map_cid, uint8_t mas_instance_id){
     map_access_client_t * map_access_client = map_access_client_for_map_cid(map_cid);
     if (map_access_client == NULL) {
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+        RUN_AND_LOG_ACTION(return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;)
     }
     if (map_access_client->state != MAP_CONNECTED){
-        return BTSTACK_BUSY;
+        RUN_AND_LOG_ACTION(return BTSTACK_BUSY;)
     }
 
     map_access_client->state = MAP_W2_SEND_GET_MAS_INSTANCE_INFO;
