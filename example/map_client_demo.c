@@ -264,17 +264,18 @@ static enum {
     {.nr = 27, .descr = "MAP/MCE/MMD/BV-01-C"       , .keysequ = "apF1d2d4d5dAb3dB"},
     {.nr = 28, .descr = "MAP/MCE/MMD/BV-03-C"       , .keysequ = "anpF5d"},
 
-    {.nr = 29, .descr = "WIP MAP/MCE/MMU/BV-01-C"   , .keysequ = "ap"},
+    {.nr = 29, .descr = "MAP/MCE/MMN/BV-05-C"       , .keysequ = "anm"},
+    {.nr = 30, .descr = "MAP/MCE/MMN/BV-01-C"       , .keysequ = "an"},
+    {.nr = 31, .descr = "MAP/MCE/MMN/BV-05-C"       , .keysequ = "anm"},
 
-    {.nr = 30, .descr = "MAP/MCE/MMN/BV-05-C"       , .keysequ = "anm"},
-    {.nr = 31, .descr = "MAP/MCE/MMN/BV-01-C"       , .keysequ = "an"},
-    {.nr = 32, .descr = "MAP/MCE/MMN/BV-05-C"       , .keysequ = "anm"},
-    {.nr = 33, .descr = "MAP/MCE/MMI/BV-01-C"       , .keysequ = "ai"},
-    {.nr = 34, .descr = "MAP/MCE/MFB/BV-01"         , .keysequ = ""},
-    {.nr = 35, .descr = "MAP/MCE/MFB/BV-03"         , .keysequ = "a"},
-    {.nr = 36, .descr = "MAP/MCE/MFB/BV-04"         , .keysequ = "an"},
-    {.nr = 37, .descr = "MAP/MCE/MFB/BV-06"         , .keysequ = "a"},
-    {.nr = 38, .descr = "MAP/MCE/MMU/BV-01-C"       , .keysequ = "apu"},
+    {.nr = 32, .descr = "MAP/MCE/MMI/BV-01-C"       , .keysequ = "ai"},
+
+    {.nr = 33, .descr = "MAP/MCE/MFB/BV-01"         , .keysequ = ""},
+    {.nr = 34, .descr = "MAP/MCE/MFB/BV-03"         , .keysequ = "a"},
+    {.nr = 35, .descr = "MAP/MCE/MFB/BV-04"         , .keysequ = "an"},
+    {.nr = 36, .descr = "MAP/MCE/MFB/BV-06"         , .keysequ = "a"},
+
+    {.nr = 37, .descr = "MAP/MCE/MMU/BV-01-C"       , .keysequ = "apu"},
 
     {.nr = 39, .descr = "MAP/MCE/GOEP/BC/BV-02-C"   , .keysequ = "an"},
     {.nr = 40, .descr = "MAP/MCE/GOEP/BC/BV-04-C"   , .keysequ = "af"},
