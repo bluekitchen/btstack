@@ -56,10 +56,34 @@
 #include "classic/sdp_client.h"
 #include "classic/sdp_client_rfcomm.h"
 #include "classic/sdp_util.h"
+
 #include "classic/map_access_client.h"
 #include "hci_event_builder.h"
 
 #define MAP_MAX_NUM_ENTRIES 1024
+
+#include "classic/map_access_app_params.h"
+enum MAP_APP_PARAMS
+{
+    // the following X-Macro (https://en.wikipedia.org/wiki/X_macro)
+    // below defines enum MAP_APP_PARAMS members MAP_APP_PARAM_xyz = tag with BT SPECs tag values
+#define PARAM_REQUST(name, tag, type, opts, descr) MAP_APP_PARAM_ ## name = tag,
+#define PARAM_RESPON PARAM_REQUST
+#define PARAM_REQRSP PARAM_REQUST
+#define PARAM_UNUSED PARAM_REQUST
+#define ENUM(...)
+#define DSCR(...)
+
+    APP_PARAMS
+#undef PARAM_REQUST
+#undef PARAM_RESPON
+#undef PARAM_REQRSP
+#undef PARAM_UNUSED
+#undef ENUM
+#undef DSCR
+
+};
+
 
 // map access service bb582b40-420c-11db-b0de-0800200c9a66
 static const uint8_t map_access_client_service_uuid[] = {0xbb, 0x58, 0x2b, 0x40, 0x42, 0xc, 0x11, 0xdb, 0xb0, 0xde, 0x8, 0x0, 0x20, 0xc, 0x9a, 0x66};
@@ -442,11 +466,11 @@ static void map_access_client_handle_can_send_now(uint16_t goep_cid) {
 
             if (   map_access_client->stat_val >= no && map_access_client->stat_val <= yes
                 && map_access_client->stat_ind >= readStatus && map_access_client->stat_ind <= setExtendedData) {
-                application_parameters[pos++] = 0x17;  // StatusIndicator
+                application_parameters[pos++] = 
                 application_parameters[pos++] = 1;
                 application_parameters[pos++] = map_access_client->stat_ind;     // readStatus/deletestatus/extended
 
-                application_parameters[pos++] = 0x18; // StatusValue
+                application_parameters[pos++] = MAP_APP_PARAM_StatusValue;
                 application_parameters[pos++] = 1;
                 application_parameters[pos++] = map_access_client->stat_val;
                 goep_client_header_add_application_parameters(map_access_client->goep_client.cid, &application_parameters[0], pos);

@@ -145,8 +145,8 @@ typedef struct {
     srm_state_t srm_state;
     // request
     struct {
-        char name[MAP_SERVER_MAX_NAME_LEN];
-        char type[MAP_SERVER_MAX_TYPE_LEN];
+        char name[MAP_ACCESS_MAX_TYPE_LEN];
+        char type[MAP_ACCESS_MAX_TYPE_LEN];
         map_object_type_t object_type; // parsed from type string
         struct {
             uint32_t ConnectionID;
@@ -763,7 +763,7 @@ static void map_server_parser_callback(void* user_data, uint8_t header_id, uint1
         break;
     case OBEX_HEADER_NAME:
         // name is stored in big endian unicode-16
-        if (total_len < (MAP_SERVER_MAX_NAME_LEN * 2)) {
+        if (total_len < (MAP_ACCESS_MAX_TYPE_LEN * 2)) {
             uint16_t i;
             for (i = 0; i < data_len; i++) {
                 if (((data_offset + i) & 1) == 1) {
@@ -775,12 +775,12 @@ static void map_server_parser_callback(void* user_data, uint8_t header_id, uint1
         }
         break;
     case OBEX_HEADER_TYPE:
-        if (total_len < MAP_SERVER_MAX_TYPE_LEN) {
+        if (total_len < MAP_ACCESS_MAX_TYPE_LEN) {
             memcpy(&mas->request.type[data_offset], data_buffer, data_len);
             mas->request.type[total_len] = 0;
         }
         else
-            log_error("(total_len < MAP_SERVER_MAX_TYPE_LEN) failed: <%s>", data_buffer);
+            log_error("(total_len < MAP_ACCESS_MAX_TYPE_LEN) failed: <%s>", data_buffer);
         break;
     case OBEX_HEADER_APPLICATION_PARAMETERS:
         if (data_offset == 0) {
@@ -885,7 +885,7 @@ static void map_server_handle_get_or_put_request(map_server_t *mas, bool first_r
     }
 
     // emit get ( folder, msg_listing, msg)
-    uint8_t event[2 + 20 + MAP_SERVER_MAX_NAME_LEN + MAP_SERVER_MAX_SEARCH_VALUE_LEN];
+    uint8_t event[2 + 20 + MAP_ACCESS_MAX_TYPE_LEN + MAP_SERVER_MAX_SEARCH_VALUE_LEN];
     uint16_t pos = 0;
     APP_WRITE_08(event, &pos, HCI_EVENT_MAP_META);
     pos = 2; // skip size header, its written at the end

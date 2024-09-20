@@ -47,6 +47,7 @@ extern "C" {
 #include "btstack_defines.h"
 #include "classic/map.h"
 #include "classic/map_util.h"
+#include "classic/map_access_app_params.h"
 #include "classic/obex_parser.h"
 #include "classic/obex_srm_client.h"
 
@@ -137,6 +138,10 @@ typedef struct {
     uint16_t msg_body_size;
     enum status_indicator stat_ind; /* for set_message_status read/delete/extended */
     enum status_value stat_val; /* no / yes */
+    uint8_t PresenceAvailability;
+    uint8_t ChatState;
+    map_UTCstmpoffstr_t LastActivity;
+
 
     map_util_xml_parser mu_parser;
 } map_access_client_t;
@@ -192,6 +197,17 @@ uint8_t map_access_client_get_folder_listing(uint16_t map_cid);
  * @return status
  */
 uint8_t map_access_client_set_message_status(uint16_t map_cid, const map_message_handle_t map_message_handle, enum status_indicator stat_ind, enum status_value stat_val);
+
+/** 
+ * @brief Set message status
+ * @param map_cid
+ * @param map_message_handle
+ * @param PresenceAvailability
+ * @param ChatState
+ * @return status
+ */
+uint8_t map_access_client_set_owner_status(uint16_t map_cid, const map_message_handle_t map_message_handle, uint8_t PresenceAvailability, uint8_t ChatState, map_UTCstmpoffstr_t LastActivity);
+
 
 
 /** 

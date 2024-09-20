@@ -57,6 +57,7 @@
 #include "classic/goep_client.h"
 #include "classic/goep_server.h"
 #include "classic/map.h"
+#include "classic/map_access_app_params.h"
 #include "classic/map_access_server.h"
 #include "classic/map_notification_client.h"
 #include "classic/map_util.h"
@@ -146,7 +147,7 @@ static uint16_t ListingSize = 0;
 static bool folder_msg_deleted = false;
 static char* request_path = "msg";
 
-static mas_uint128hex_t DatabaseIdentifier = { 0 };
+static map_uint128hex_t DatabaseIdentifier = { 0 };
 // BT SIG Test Suite PTS is not acepting what BT SIG MAP spec describes as valid counters:
 // "variable length (max. 32 bytes), 128 - bit value in hex string format":
 // "00112233445566778899AABBCCDDEEFF"
@@ -155,11 +156,11 @@ static mas_uint128hex_t DatabaseIdentifier = { 0 };
 // "00000000"
 // "00000001"
 // { 0 } works
-static mas_uint128hex_t FolderVersionCounter = { 0 };
-static mas_uint128hex_t ConversationListingVersionCounter = { 0 };
-static mas_uint128hex_t ConversationID = { 0 };
+static map_uint128hex_t FolderVersionCounter = { 0 };
+static map_uint128hex_t ConversationListingVersionCounter = { 0 };
+static map_uint128hex_t ConversationID = { 0 };
 
-static void increase_version_counter_by_1(char* name, mas_uint128hex_t counter) {
+static void increase_version_counter_by_1(char* name, map_uint128hex_t counter) {
     counter[BT_UINT128_HEX_LEN_BYTES - 1]++;
     log_debug("%s:", name);
     log_debug_hexdump(counter, BT_UINT128_HEX_LEN_BYTES);
@@ -1120,7 +1121,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             uint8_t Attachment;
                             uint8_t Charset;
                             uint8_t ModifyText;
-                            mas_uint64hex_t MessageHandle;
+                            map_uint64hex_t MessageHandle;
                             char new_handle[3]; // A0\0
                             APP_READ_32(packet, &pos, &continuation);
                             APP_READ_16(packet, &pos, &current_map_cid);
@@ -1177,7 +1178,7 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             break;
 
                         case MAP_SUBEVENT_PUT_OWNER_STATUS: {
-                            mas_UTCstmpoffstr_t LastActivity;
+                            map_UTCstmpoffstr_t LastActivity;
                             APP_READ_16(packet, &pos, &current_map_cid);
                             APP_READ_STR(packet, &pos, sizeof(LastActivity), (char*)LastActivity);
                             APP_READ_08(packet, &pos, &ChatState);
@@ -1194,9 +1195,9 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                         }
 
                         case MAP_SUBEVENT_GET_CONVO_LISTING: {
-                            mas_UTCstmpoffstr_t FilterPeriodBegin;
-                            mas_UTCstmpoffstr_t EndFilterPeriodEnd;
-                            mas_string_t FilterRecipient;
+                            map_UTCstmpoffstr_t FilterPeriodBegin;
+                            map_UTCstmpoffstr_t EndFilterPeriodEnd;
+                            map_string_t FilterRecipient;
                             APP_READ_32(packet, &pos, &continuation);
                             APP_READ_16(packet, &pos, &current_map_cid);
                             APP_READ_16(packet, &pos, &max_list_count);
