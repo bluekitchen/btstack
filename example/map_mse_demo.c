@@ -604,56 +604,6 @@ static size_t body_msg(char* msg_buffer, uint16_t index, size_t maxsize) {
     return size;
 }
 
-// PTS 8.7.0 MAP/MSE/MMD/BV-03-C fails after receiving the response to GET MAP-message-listing in folder "sent"
-//static size_t body_msg(char* msg_buffer, uint16_t index, size_t maxsize) {
-//    index = index % ARRAYSIZE(mas_cfg->objects);
-//    int size = 0;
-//    if (!mas_cfg->msg_deleted[index] || folder_msg_deleted)
-//        size = snprintf(msg_buffer, maxsize,
-//            "<msg handle=\"A%X\""
-//            " type=\"%s\""
-//            " read=\"%s\""
-//            " direction=\"%s\""
-//            " folder =\"TELECOM/MSG/SENT\"" // just a try; actually is not part of a message object but an event report
-//            " subject=\"PTS testing\""
-//            " datetime=\"20140705T092200+0100\" sender_name=\"PTS\""
-//            " sender_addressing=\"PTS@bluetooth.com\" recipient_addressing=\"IUT@bluetooth.com\""
-//            " size=\"4975\""
-//            //" attachment_size=\"123\" priority=\"no\""
-//
-//            " sent=\"yes\" protected=\"no\""
-//            " conversation_id=\"E1E2E3E4\"" // "E1" is to short for PTS but happy with "E1E2E3E4\"
-//
-//            //" attachment_mime_types=\"video/mpeg\"" // PTS wants this in MAP/MSE/MMD/BV-02, otherwise "no EMAIL message in message listing"
-//            "/>"
-//            ,
-//            index,
-//            mas_cfg->objects[index],
-//            mas_cfg->msg_stati[index] ? "yes" : "yes",
-//            map_server_get_folder_MsgListingDir(request_path)
-//        );
-//    return size;
-//}
-
-// PTS 8.7.0 MAP/MSE/MMD/BV-02-C fails after receiving the response to GET MAP-message-listing 
-// from the example in spec MAP_v1.4.2.pdf page 38 bottom:
-// - Round 0 Message Type 1
-// -IUT accepted MAS Obex connection.
-// - No handle found.
-//static size_t body_msg(char* msg_buffer, uint16_t index, size_t maxsize) {
-//    index = index % ARRAYSIZE(mas_cfg->objects);
-//    int size = 0;
-//    if (!mas_cfg->msg_deleted[index] || folder_msg_deleted)
-//        size = snprintf(msg_buffer, maxsize,
-//            "<msg handle = \"20000100001\" subject = \"Welcome Clara Nicole\" datetime=\"20140706T095000 - 0400\" "
-//            "sender_name=\"Max\" sender_addressing=\"4924689753@s.whateverapp.net\" "
-//            "recipient_addressing=\"\" type=\"IM\" size=\"256\" attachment_size=\"0\" priority=\"no\" read=\"no\" sent=\"no\" "
-//            "protected=\"no\" conversation_id=\"E1E2E3E4F1F2F3F4A1A2A3A4B1B2B3B4\" direction=\"incoming\" "
-//            "/> "
-//        );
-//    return size;
-//}
-
 // TODO: PTS MAP/MSE/MMU/BV-02 fails to handle multi-segment chunked responses so we had to send 2 message in a single rfcom/goep/obex response packet.
 static size_t body_msg_short(char* msg_buffer, uint16_t index, size_t maxsize) {
     index = index % ARRAYSIZE(mas_cfg->objects);
