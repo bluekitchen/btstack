@@ -276,6 +276,7 @@ static enum {
     {.nr = 36, .descr = "MAP/MCE/MFB/BV-06"         , .keysequ = "a"},
 
     {.nr = 37, .descr = "MAP/MCE/MMU/BV-01-C"       , .keysequ = "apu"},
+    {.nr = 38, .descr = "MAP/MCE/MMU/BV-05-C"       , .keysequ = "apF5o"},
 
     {.nr = 39, .descr = "MAP/MCE/GOEP/BC/BV-02-C"   , .keysequ = "an"},
     {.nr = 40, .descr = "MAP/MCE/GOEP/BC/BV-04-C"   , .keysequ = "af"},
@@ -529,6 +530,10 @@ static void stdin_process(char c){
     case 'd':
         btprintf("[+] Mark selected message as deleted\n");
         map_access_client_set_message_status(map_cid, message_handle, deletedStatus, yes);
+        break;
+    case 'o':
+        btprintf("[+] Change owner status of selected message\n");
+        map_access_client_set_owner_status(map_cid, message_handle, 0x12, 0x34, "20140612T105430+0100");
         break;
     case 'n':
         // enable notifications for all/both mas instances
