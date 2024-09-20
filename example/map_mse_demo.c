@@ -190,7 +190,7 @@ static void emit_report(void) {
     //select_event_report_n(9);
     char* body = create_next_mnc_event_report_body_object();
     map_notification_client_send_event(mnc.cid, 0, (uint8_t*)body, strlen(body));
-    MAP_PRINTF("map_notification_client_send_event mnc.cid:%04x [%s]", mnc.cid, body);
+    MAP_PRINTF("map_notification_client_send_event mnc.cid:%04x [%s]\n", mnc.cid, body);
     log_debug("sent the EventReport");
 }
 
@@ -214,7 +214,7 @@ static void MAP_MSE_MMD_BV_05_PutMsg(void) {
     select_event_report_n(0);
     char* body = create_next_mnc_event_report_body_object();
     map_notification_client_send_event(mnc.cid, 0, (uint8_t *) body, strlen(body));
-    MAP_PRINTF("map_notification_client_send_event mnc.cid:%04x [%s]", mnc.cid, body);
+    MAP_PRINTF("map_notification_client_send_event mnc.cid:%04x [%s]\n", mnc.cid, body);
     log_debug("sent a RemovedMessage notification");
 }
 
@@ -223,7 +223,7 @@ static void MAP_MSE_MMB_BV_43_getConvoListng(void) {
     increase_version_counter_by_1("ConversationListingVersionCounter", ConversationListingVersionCounter);
     char* body = create_next_mnc_event_report_body_object();
     map_notification_client_send_event(mnc.cid, 0, (uint8_t *) body, strlen(body));
-    MAP_PRINTF("map_notification_client_send_event mnc.cid:%04x [%s]", mnc.cid, body);
+    MAP_PRINTF("map_notification_client_send_event mnc.cid:%04x [%s]\n", mnc.cid, body);
     log_debug("sent a ConversationChanged notification");
 }
 
@@ -920,7 +920,7 @@ static void stdin_process(char c){
         case 'e': {
             char* body = create_next_mnc_event_report_body_object();
             map_notification_client_send_event(mnc.cid, 0, (uint8_t*) body, strlen(body));
-            MAP_PRINTF("map_notification_client_send_event mnc.cid:%04x [%s]", mnc.cid, body);
+            MAP_PRINTF("map_notification_client_send_event mnc.cid:%04x [%s]\n", mnc.cid, body);
             break;
         }
         default:
