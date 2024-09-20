@@ -462,6 +462,37 @@ static void map_access_client_handle_can_send_now(uint16_t goep_cid) {
             goep_client_execute(map_access_client->goep_client.cid);
             break;
 
+        case MAP_W2_SEND_SET_OWNER_STATUS:
+            log_debug("MAP_W2_SEND_SET_MESSAGE_STATUS (PTS: request to change the presence, chat state and last activity datetime of the owner.)");
+            goep_client_request_create_put(map_access_client->goep_client.cid);
+            goep_client_header_add_type(map_access_client->goep_client.cid, "x-bt/ownerStatus");
+
+            map_access_client_message_handle_to_str(map_message_handle_to_str_buffer, map_access_client->message_handle);
+            goep_client_header_add_name(map_access_client->goep_client.cid, map_message_handle_to_str_buffer);
+
+            if (map_access_client->stat_val >= no && map_access_client->stat_val <= yes
+                && map_access_client->stat_ind >= readStatus && map_access_client->stat_ind <= setExtendedData) {
+                application_parameters[pos++] = 0x17;  // StatusIndicator
+                application_parameters[pos++] = 1;
+                application_parameters[pos++] = map_access_client->stat_ind;     // readStatus/deletestatus/extended
+
+                application_parameters[pos++] = 0x18; // StatusValue
+                application_parameters[pos++] = 1;
+                application_parameters[pos++] = map_access_client->stat_val;
+                goep_client_header_add_application_parameters(map_access_client->goep_client.cid, &application_parameters[0], pos);
+            }
+            else {
+                obex_srm_client_init(&map_access_client->obex_srm);
+            }
+
+            goep_client_body_add_static(map_access_client->goep_client.cid, (uint8_t*)"0", 1);
+
+            map_access_client->state = MAP_W4_SET_MESSAGE_STATUS;
+            map_access_client_prepare_operation(map_access_client, OBEX_OPCODE_PUT);
+            map_access_client->request_number++;
+            goep_client_execute(map_access_client->goep_client.cid);
+            break;
+
         case MAP_W2_SET_NOTIFICATION:
             log_debug("MAP_W2_SET_NOTIFICATION");
             goep_client_request_create_put(map_access_client->goep_client.cid);
