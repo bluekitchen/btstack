@@ -187,11 +187,13 @@ static void map_access_client_parser_callback_get_operation(void * user_data, ui
                         map_util_xml_parser_parse (&map_access_client->mu_parser,
                                                    NULL, 0);
                     break;
+                case MAP_W4_SET_OWNER_STATUS_OK:
                 case MAP_W4_SET_MESSAGE_STATUS:
                     break;
                 case MAP_W4_PUSH_MESSAGE_HANDLE:
                 case MAP_W4_MESSAGE:
                 case MAP_W4_MAS_INSTANCE_INFO:
+                case MAP_W4_GET_OWNER_STATUS:
                     map_access_client->client_handler(MAP_DATA_PACKET, map_access_client->goep_client.cid, (uint8_t *) data_buffer, data_len);
                     break;
 
@@ -510,9 +512,31 @@ static void map_access_client_handle_can_send_now(uint16_t goep_cid) {
                 pos += sizeof(map_access_client->LastActivity);
                 goep_client_header_add_application_parameters(map_access_client->goep_client.cid, &application_parameters[0], pos);
 
+
             goep_client_body_add_static(map_access_client->goep_client.cid, (uint8_t*)"0", 1);
 
-            map_access_client->state = MAP_W4_SET_MESSAGE_STATUS;
+            map_access_client->state = MAP_W4_SET_OWNER_STATUS_OK;
+            map_access_client_prepare_operation(map_access_client, OBEX_OPCODE_PUT);
+            map_access_client->request_number++;
+            goep_client_execute(map_access_client->goep_client.cid);
+            break;
+
+
+        case MAP_W2_SEND_GET_OWNER_STATUS:
+            log_debug("MAP_W2_SEND_GET_OWNER_STATUS");
+            goep_client_request_create_put(map_access_client->goep_client.cid);
+            goep_client_header_add_type(map_access_client->goep_client.cid, "x-bt/ownerStatus");
+
+            map_access_client_message_handle_to_str(map_message_handle_to_str_buffer, map_access_client->message_handle);
+
+            application_parameters[pos++] = MAP_APP_PARAM_ConversationID;
+            application_parameters[pos++] = sizeof(map_access_client->ConversationID);
+            memcpy(&application_parameters[pos], map_access_client->ConversationID, sizeof(map_access_client->ConversationID));
+            pos += sizeof(map_access_client->ConversationID);
+
+            goep_client_header_add_application_parameters(map_access_client->goep_client.cid, &application_parameters[0], pos);
+
+            map_access_client->state = MAP_W4_GET_OWNER_STATUS;
             map_access_client_prepare_operation(map_access_client, OBEX_OPCODE_PUT);
             map_access_client->request_number++;
             goep_client_execute(map_access_client->goep_client.cid);
@@ -702,6 +726,7 @@ map_access_client_packet_handler_goep(uint16_t goep_cid, uint8_t *packet, uint16
         case MAP_W4_SET_NOTIFICATION:
         case MAP_W4_SET_NOTIFICATION_FILTER:
         case MAP_W4_MAS_INSTANCE_INFO:
+        case MAP_W4_GET_OWNER_STATUS:
             switch (op_info.response_code) {
                 case OBEX_RESP_CONTINUE:
                     obex_srm_client_handle_headers(&map_access_client->obex_srm);
@@ -944,6 +969,21 @@ uint8_t map_access_client_set_owner_status(uint16_t map_cid, const map_message_h
     map_access_client->request_number = 0;
     map_access_client->PresenceAvailability = PresenceAvailability;
     map_access_client->ChatState            = ChatState;
+    memcpy(map_access_client->message_handle, map_message_handle, MAP_MESSAGE_HANDLE_SIZE);
+    goep_client_request_can_send_now(map_access_client->goep_client.cid);
+    return 0;
+}
+
+uint8_t map_access_client_get_owner_status(uint16_t map_cid, const map_message_handle_t map_message_handle) {
+    map_access_client_t* map_access_client = map_access_client_for_map_cid(map_cid);
+    if (map_access_client == NULL) {
+        RUN_AND_LOG_ACTION(return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;)
+    }
+    if (map_access_client->state != MAP_CONNECTED) {
+        RUN_AND_LOG_ACTION(return BTSTACK_BUSY;)
+    }
+    map_access_client->state = MAP_W2_SEND_GET_OWNER_STATUS;
+    map_access_client->request_number = 0;
     memcpy(map_access_client->message_handle, map_message_handle, MAP_MESSAGE_HANDLE_SIZE);
     goep_client_request_can_send_now(map_access_client->goep_client.cid);
     return 0;

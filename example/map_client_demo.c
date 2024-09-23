@@ -233,6 +233,7 @@ static enum {
     int nr;
     const char *descr;
     const char *keysequ;
+    const char *info;
  } test_cases[] = {            
     {.nr =  1, .descr = "MAP/MCE/SGSIT/SERR/BV-02-I", .keysequ = "a"},
     {.nr =  2, .descr = "MAP/MCE/SGSIT/ATTR/BV-08-I", .keysequ = "a"},
@@ -258,7 +259,7 @@ static enum {
     {.nr = 22, .descr = "MAP/MCE/MMB/BV-04-I"       , .keysequ = "a1g"},
     {.nr = 23, .descr = "MAP/MCE/MMB/BV-17-I"       , .keysequ = "a4g"},
     {.nr = 24, .descr = "MAP/MCE/MMB/BV-06-I"       , .keysequ = "a2g"},
-    {.nr = 25, .descr = "MAP/MCE/MMB/BV-08-I"       , .keysequ = "aUFAok"},
+    {.nr = 25, .descr = "MAP/MCE/MMB/BV-08-I"       , .keysequ = "aUFA"},
     {.nr = 26, .descr = "MAP/MCE/MMB/BV-08-I"       , .keysequ = "aC"},
 
     {.nr = 27, .descr = "MAP/MCE/MMD/BV-01-C"       , .keysequ = "apF1d2d4d5dAb3dB"},
@@ -276,7 +277,8 @@ static enum {
     {.nr = 36, .descr = "MAP/MCE/MFB/BV-06"         , .keysequ = "a"},
 
     {.nr = 37, .descr = "MAP/MCE/MMU/BV-01-C"       , .keysequ = "apu"},
-    {.nr = 38, .descr = "MAP/MCE/MMU/BV-05-C"       , .keysequ = "apF5o"},
+    {.nr = 38, .descr = "MAP/MCE/MMU/BV-05-C"       , .keysequ = "apF5c"},
+    {.nr = 38, .descr = "MAP/MCE/MMU/BV-06-C"       , .keysequ = "apF5c", .info = "Verify that the MCE sends a correctly formatted request to get the presence, chat state and last activity datetime of the owner." },
 
     {.nr = 39, .descr = "MAP/MCE/GOEP/BC/BV-02-C"   , .keysequ = "an"},
     {.nr = 40, .descr = "MAP/MCE/GOEP/BC/BV-04-C"   , .keysequ = "af"},
@@ -531,9 +533,13 @@ static void stdin_process(char c){
         btprintf("[+] Mark selected message as deleted\n");
         map_access_client_set_message_status(map_cid, message_handle, deletedStatus, yes);
         break;
-    case 'o':
+    case 'c':
         btprintf("[+] Change owner status of selected message\n");
         map_access_client_set_owner_status(map_cid, message_handle, 0x12, 0x34, "20140612T105430+0100");
+        break;
+    case 'o':
+        btprintf("[+] Get owner status of selected message\n");
+        map_access_client_get_owner_status(map_cid, message_handle);
         break;
     case 'n':
         // enable notifications for all/both mas instances

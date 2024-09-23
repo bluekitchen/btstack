@@ -83,6 +83,8 @@ typedef enum {
     MAP_W4_SET_MESSAGE_STATUS,
     MAP_W2_SEND_SET_OWNER_STATUS,
     MAP_W4_SET_OWNER_STATUS_OK,
+    MAP_W2_SEND_GET_OWNER_STATUS,
+    MAP_W4_GET_OWNER_STATUS,
     MAP_W2_SET_NOTIFICATION,
     MAP_W4_SET_NOTIFICATION,
     MAP_W2_SET_NOTIFICATION_FILTER,
@@ -141,7 +143,7 @@ typedef struct {
     uint8_t PresenceAvailability;
     uint8_t ChatState;
     map_UTCstmpoffstr_t LastActivity;
-
+    map_uint128hex_t ConversationID;
 
     map_util_xml_parser mu_parser;
 } map_access_client_t;
@@ -208,6 +210,13 @@ uint8_t map_access_client_set_message_status(uint16_t map_cid, const map_message
  */
 uint8_t map_access_client_set_owner_status(uint16_t map_cid, const map_message_handle_t map_message_handle, uint8_t PresenceAvailability, uint8_t ChatState, map_UTCstmpoffstr_t LastActivity);
 
+/** 
+ * @brief Set message status
+ * @param map_cid
+ * @param map_message_handle
+ * @return status
+ */
+uint8_t map_access_client_get_owner_status(uint16_t map_cid, const map_message_handle_t map_message_handle);
 
 
 /** 
