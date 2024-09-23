@@ -437,12 +437,12 @@ static void map_access_client_handle_can_send_now(uint16_t goep_cid) {
 
                 goep_client_header_add_type(map_access_client->goep_client.cid, "x-bt/MAP-convo-listing");
 
-                application_parameters[pos++] = 0x01; // MaxListCount
+                application_parameters[pos++] = MAP_APP_PARAM_MaxListCount;
                 application_parameters[pos++] = 2;
                 big_endian_store_16(application_parameters,pos,map_access_client->max_list_count);
                 pos += 2;
 
-                application_parameters[pos++] = 0x02; // ListStartOffset
+                application_parameters[pos++] = MAP_APP_PARAM_ListStartOffset;
                 application_parameters[pos++] = 2;
                 big_endian_store_16(application_parameters,pos,map_access_client->list_start_offset);
                 pos += 2;
