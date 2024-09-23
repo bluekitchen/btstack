@@ -78,7 +78,7 @@ static char* create_next_mnc_event_report_body_object(void);
 
 static uint8_t upload_buffer[1000];
 // we create the full obex body object and send it in chunks via continuations
-static uint8_t OBEX_body_object[4000];
+static uint8_t OBEX_body_object[40000];
 
 // MAP Notification Client - MAP allows only 1 client connection
 // which can be used from multiple map access server connections by using the MASInstanceID
