@@ -136,7 +136,8 @@ static void hci_dump_posix_posix_stdout_log_packet(uint8_t packet_type, uint8_t 
 
 static void hci_dump_posix_stdout_log_message(int log_level, const char * format, va_list argptr){
     UNUSED(log_level);
-    int len = vsnprintf(log_message_buffer, sizeof(log_message_buffer), format, argptr);
+    int full_string_len = vsnprintf(log_message_buffer, sizeof(log_message_buffer), format, argptr);
+    int len = btstack_min(sizeof(log_message_buffer), full_string_len);
     hci_dump_posix_posix_stdout_log_packet(LOG_MESSAGE_PACKET, 0, (uint8_t*) log_message_buffer, len);
 }
 
