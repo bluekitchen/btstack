@@ -77,8 +77,9 @@ typedef enum {
     MAS_STATE_W4_REQUEST,
     MAS_STATE_W4_USER_DATA,
     MAS_STATE_W4_GET_OPCODE,
-    MAS_STATE_W4_PUT_OPCODE,
     MAS_STATE_W4_GET_REQUEST,
+    MAS_STATE_W4_PUT_OPCODE,
+    MAS_STATE_W4_PUT_REQUEST,
     MAS_STATE_SEND_INTERNAL_RESPONSE,
     MAS_STATE_SEND_RESPONSE_CONTINUE,
     MAS_STATE_SEND_USER_RESPONSE,
@@ -536,7 +537,7 @@ static void map_server_handle_can_send_now(map_server_t* mas) {
                     }
                     break;
                 case OBEX_OPCODE_PUT:
-                    RUN_AND_LOG_ACTION(mas->state = MAS_STATE_W4_GET_OPCODE;)
+                    RUN_AND_LOG_ACTION(mas->state = MAS_STATE_W4_PUT_OPCODE;)
                     break;
                 default:
                     btstack_unreachable();
@@ -1118,9 +1119,6 @@ static void map_server_packet_handler_goep(map_server_t* mas, uint8_t* packet, u
             obex_parser_get_operation_info(&mas->obex_parser, &op_info);
             switch ((op_info.opcode & 0x7f)) {
             case OBEX_OPCODE_GET:
-            case OBEX_OPCODE_PUT:
-                map_server_handle_get_or_put_request(mas, false);
-                break;
             case (OBEX_OPCODE_ABORT & 0x7f):
                 mas->response.code = OBEX_RESP_SUCCESS;
                 mas->state = MAS_STATE_SEND_INTERNAL_RESPONSE;
@@ -1135,6 +1133,39 @@ static void map_server_packet_handler_goep(map_server_t* mas, uint8_t* packet, u
             }
         }
         break;
+
+
+        case MAS_STATE_W4_PUT_OPCODE:
+            mas->state = MAS_STATE_W4_PUT_REQUEST;
+            obex_parser_init_for_request(&mas->obex_parser, &map_server_parser_callback, (void*)mas);
+
+            /* fall through */
+
+        case MAS_STATE_W4_PUT_REQUEST:
+            map_server_obex_srm_init(&mas->obex_srm);
+            parser_state = obex_parser_process_data(&mas->obex_parser, packet, size);
+            if (parser_state == OBEX_PARSER_OBJECT_STATE_COMPLETE) {
+                obex_parser_operation_info_t op_info;
+                obex_parser_get_operation_info(&mas->obex_parser, &op_info);
+                switch ((op_info.opcode & 0x7f)) {
+                    case OBEX_OPCODE_PUT:
+                        map_server_handle_get_or_put_request(mas, false);
+                        break;
+                    case (OBEX_OPCODE_ABORT & 0x7f):
+                        mas->response.code = OBEX_RESP_SUCCESS;
+                        mas->state = MAS_STATE_SEND_INTERNAL_RESPONSE;
+                        goep_server_request_can_send_now(mas->goep_cid);
+                        break;
+                    default:
+                        // send bad request response
+                        mas->state = MAS_STATE_SEND_INTERNAL_RESPONSE;
+                        RUN_AND_LOG_ACTION(mas->response.code = OBEX_RESP_BAD_REQUEST;)
+                        goep_server_request_can_send_now(mas->goep_cid);
+                        break;
+                }
+            }
+            break;
+
     default:
         break;
     }
