@@ -327,6 +327,11 @@ void bd_addr_copy(bd_addr_t dest, const bd_addr_t src);
 void printf_hexdump(const void * data, int size);
 
 /**
+ * @brief Use printf to write hexdump as single line of data, no new line at the end
+ */
+void printf_hexdump_no_nl(const void* data, int size);
+
+/**
  * @brief Create human readable representation for UUID128
  * @note uses fixed global buffer
  * @return pointer to UUID128 string

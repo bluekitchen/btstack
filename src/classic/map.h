@@ -59,6 +59,7 @@ typedef uint8_t map_message_handle_t[MAP_MESSAGE_HANDLE_SIZE];
  * @brief MAP Message handle
  */
 typedef uint8_t map_conversation_id_t[MAP_CONVERSATION_ID_SIZE];
+typedef uint8_t map_conversation_id_hex_t[MAP_CONVERSATION_ID_SIZE*2];
 
 typedef enum {
     MAP_MESSAGE_TYPE_UNKNOWN = 0,
@@ -66,7 +67,8 @@ typedef enum {
     MAP_MESSAGE_TYPE_SMS_GSM,
     MAP_MESSAGE_TYPE_SMS_CDMA,
     MAP_MESSAGE_TYPE_MMS,
-    MAP_MESSAGE_TYPE_IM
+    MAP_MESSAGE_TYPE_IM,
+    MAP_MESSAGE_TYPE_MAX
 } map_message_type_t;
 
 typedef enum {

@@ -275,7 +275,7 @@ int nibble_for_char(char c){
 }
 
 #ifdef ENABLE_PRINTF_HEXDUMP
-void printf_hexdump(const void * data, int size){
+void printf_hexdump_no_nl(const void * data, int size){
     char buffer[4];
     buffer[2] = ' ';
     buffer[3] =  0;
@@ -287,6 +287,9 @@ void printf_hexdump(const void * data, int size){
         printf("%s", buffer);
         size--;
     }
+}
+void printf_hexdump(const void* data, int size) {
+    printf_hexdump_no_nl(data, size);
     printf("\n");
 }
 #endif

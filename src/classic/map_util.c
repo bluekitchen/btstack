@@ -207,6 +207,16 @@ void map_message_handle_to_str(char * p, const map_message_handle_t msg_handle){
     *p = 0;
 }
 
+void map_conversation_id_to_str(char* p, const map_conversation_id_t conversation_id) {
+    int i;
+    for (i = 0; i < MAP_CONVERSATION_ID_SIZE; i++) {
+        uint8_t byte = conversation_id[i];
+        *p++ = char_for_nibble(byte >> 4);
+        *p++ = char_for_nibble(byte & 0x0F);
+    }
+    *p = 0;
+}
+
 static void map_client_emit_folder_listing_item_event(btstack_packet_handler_t callback, uint16_t cid, uint8_t * folder_name, uint16_t folder_name_len){
     uint8_t event[7 + MAP_MAX_VALUE_LEN];
     uint16_t pos = 0;
@@ -225,12 +235,15 @@ static void map_client_emit_folder_listing_item_event(btstack_packet_handler_t c
     (*callback)(HCI_EVENT_PACKET, cid, &event[0], pos);
 }  
 
-static void map_client_emit_message_listing_item_event(btstack_packet_handler_t callback, uint16_t cid, map_message_handle_t message_handle, map_message_type_t msg_type, map_message_status_t msg_status){
-    uint8_t packet[7 + MAP_MESSAGE_HANDLE_SIZE];
+static void map_client_emit_message_listing_item_event(btstack_packet_handler_t callback, uint16_t cid, map_message_handle_t message_handle, map_conversation_id_t conversation_id, map_message_type_t msg_type, map_message_status_t msg_status){
+    uint8_t* p = &conversation_id[sizeof(conversation_id)-1];
+    log_debug("conversation_id:%02x %02x %02x %02x %02x %02x %02x %02x %02x %02x", *p--, *p--, *p--, *p--, *p--, *p--, *p--, *p--, *p--, *p--);
+    uint8_t packet[7 + MAP_MESSAGE_HANDLE_SIZE + MAP_CONVERSATION_ID_SIZE];
     hci_event_builder_context_t evb;
     hci_event_builder_init(&evb, packet, sizeof(packet), HCI_EVENT_MAP_META, MAP_SUBEVENT_MESSAGE_LISTING_ITEM);
     hci_event_builder_add_16(&evb,cid);
     hci_event_builder_add_bytes(&evb, message_handle, MAP_MESSAGE_HANDLE_SIZE);
+    hci_event_builder_add_bytes(&evb, conversation_id, MAP_CONVERSATION_ID_SIZE);
     hci_event_builder_add_08(&evb, msg_type);
     hci_event_builder_add_08(&evb, msg_status);
     hci_event_builder_emit_event(&evb, callback);
@@ -308,6 +321,7 @@ static void map_client_parse_folder_listing(map_util_xml_parser *mu_parser, cons
 enum {
     MAP_ATTR_INVALID = 0,
     MAP_MSG_ATTR_HANDLE,
+    MAP_MSG_ATTR_CONV_ID,
     MAP_MSG_ATTR_TYPE,
     MAP_MSG_ATTR_READ,
     MAP_CONV_ATTR_ID,
@@ -326,15 +340,17 @@ void map_client_parse_message_listing(map_util_xml_parser *mu_parser, const uint
             case YXML_ELEMEND:
                 if (mu_parser->msg_listing.message_found == 0) break;
                 mu_parser->msg_listing.message_found = 0;
-                map_client_emit_message_listing_item_event(mu_parser->callback, mu_parser->cid, mu_parser->msg_listing.msg_handle,
+                map_client_emit_message_listing_item_event(mu_parser->callback, mu_parser->cid, mu_parser->msg_listing.msg_handle, mu_parser->msg_listing.conv_id,
                                                            mu_parser->msg_listing.msg_type, mu_parser->msg_listing.msg_status);
                 break;
             case YXML_ATTRSTART:
                 mu_parser->cur_attr = MAP_ATTR_INVALID;
                 if (mu_parser->msg_listing.message_found == 0) break;
 
-                if (strcmp("handle", mu_parser->xml_parser.attr) == 0){
+                if (strcmp("handle", mu_parser->xml_parser.attr) == 0) {
                     mu_parser->cur_attr = MAP_MSG_ATTR_HANDLE;
+                } else if (strcmp("conversation_id", mu_parser->xml_parser.attr) == 0) {
+                    mu_parser->cur_attr = MAP_MSG_ATTR_CONV_ID;
                 } else if (strcmp("type", mu_parser->xml_parser.attr) == 0){
                     mu_parser->cur_attr = MAP_MSG_ATTR_TYPE;
                 } else if (strcmp("read", mu_parser->xml_parser.attr) == 0){
@@ -358,6 +374,15 @@ void map_client_parse_message_listing(map_util_xml_parser *mu_parser, const uint
                             break;
                         }
                         map_message_str_to_handle(mu_parser->attr_val, mu_parser->msg_listing.msg_handle);
+                        break;
+                    case MAP_MSG_ATTR_CONV_ID:
+                        if (strlen(mu_parser->attr_val) > MAP_CONVERSATION_ID_SIZE * 2) {
+                            log_info("conversation_id string length %u > %u", (unsigned int)strlen(mu_parser->attr_val), MAP_MESSAGE_HANDLE_SIZE * 2);
+                            /* discard message */
+                            mu_parser->msg_listing.message_found = 0;
+                            break;
+                        }
+                        map_conversation_str_to_id(mu_parser->attr_val, mu_parser->msg_listing.conv_id);
                         break;
                     case MAP_MSG_ATTR_TYPE:
                         if (strcmp (mu_parser->attr_val, "EMAIL") == 0) {

@@ -41,11 +41,13 @@
 #define BT_UINT128_LEN_BYTES 16
 // should be 32 - but - BT SIG PTS Test tool expects the version as a 16-bytes binary representation like BT SIG PBAP
 // but doesnt accept the BT SIG MAP Spec's up to 32 bytes human-readable hex string
-#define BT_UINT128_HEX_LEN_BYTES 16
+#define BT_UINT128_LEN_BYTES 16
+#define BT_UINT128hex_LEN_BYTES 32
 
 typedef uint8_t map_string_t[MAP_ACCESS_MAX_TYPE_LEN];
 typedef uint8_t map_utf8_t[MAP_ACCESS_MAX_TYPE_LEN];
-typedef uint8_t map_uint128hex_t[BT_UINT128_HEX_LEN_BYTES];
+typedef uint8_t map_uint128_t[BT_UINT128_LEN_BYTES];
+typedef uint8_t map_uint128hex_t[BT_UINT128hex_LEN_BYTES];
 typedef uint8_t map_uint64_t[8];
 typedef uint8_t map_uint64hex_t[16 + 1]; // \0 terminated?
 typedef uint8_t map_UTCstmpoffstr_t[20];
@@ -59,6 +61,7 @@ typedef uint8_t map_UTCstmpoffstr_t[20];
 #define app_param_read_map_UTCstmpoffstr_t  BT_APP_PARAM_READ_ARR
 #define app_param_read_map_uint64_t         BT_APP_PARAM_READ_ARR
 #define app_param_read_map_uint64hex_t      BT_APP_PARAM_READ_ARR
+#define app_param_read_map_uint128_t        BT_APP_PARAM_READ_ARR
 #define app_param_read_map_uint128hex_t     BT_APP_PARAM_READ_ARR
 
 #define app_param_write_uint8_t             BT_APP_PARAM_WRITE_08
@@ -69,6 +72,7 @@ typedef uint8_t map_UTCstmpoffstr_t[20];
 #define app_param_write_map_utf8_t          BT_APP_PARAM_WRITE_ARR 
 #define app_param_write_map_uint64_t        BT_APP_PARAM_WRITE_ARR 
 #define app_param_write_map_uint64hex_t     BT_APP_PARAM_WRITE_ARR 
+#define app_param_write_map_uint128_t       BT_APP_PARAM_WRITE_ARR 
 #define app_param_write_map_uint128hex_t    BT_APP_PARAM_WRITE_ARR 
 
 
@@ -136,16 +140,16 @@ typedef uint8_t map_UTCstmpoffstr_t[20];
  PARAM_REQUST( StatusValue                       , 0x18, uint8_t            , NO_OPTS   , DSCR( 1 = "yes"                                                                         \
                                                                                                 0 = "no"                                                                        ))\
  PARAM_RESPON( MSETime                           , 0x19, map_UTCstmpoffstr_t, NO_OPTS   , DSCR( with current time basis and UTC - offset of the MSE.See Section 5.5.4           ))\
- PARAM_RESPON( DatabaseIdentifier                , 0x1A, map_uint128hex_t   , NO_OPTS   , DSCR( (max 3uint16_t)    ;   128 - bit value in hex string format                     ))\
- PARAM_RESPON( ConversationListingVersionCounter , 0x1B, map_uint128hex_t   , NO_OPTS   , DSCR( (max 3uint16_t)    ;   128 - bit value in hex string format                     ))\
+ PARAM_RESPON( DatabaseIdentifier                , 0x1A, map_uint128_t   , NO_OPTS   , DSCR( (max 3uint16_t)    ;   128 - bit value in hex string format                     ))\
+ PARAM_RESPON( ConversationListingVersionCounter , 0x1B, map_uint128_t   , NO_OPTS   , DSCR( (max 3uint16_t)    ;   128 - bit value in hex string format                     ))\
  PARAM_UNUSED( PresenceAvailability              , 0x1C, uint8_t            , NO_OPTS   , DSCR( 0 to 255                                                                        ))\
  PARAM_UNUSED( PresenceText                      , 0x1D, map_utf8_t         , NO_OPTS   , DSCR( Text UTF - 8                                                                    ))\
  PARAM_REQUST( LastActivity                      , 0x1E, map_UTCstmpoffstr_t, NO_OPTS   , DSCR( Text UTF - 8                                                                    ))\
  PARAM_UNUSED( FilterLastActivityBegin           , 0x1F, map_utf8_t         , NO_OPTS   , DSCR( Text UTF - 8                                                                    ))\
  PARAM_UNUSED( FilterLastActivityEnd             , 0x20, map_utf8_t         , NO_OPTS   , DSCR( Text UTF - 8                                                                    ))\
  PARAM_REQUST( ChatState                         , 0x21, uint8_t            , NO_OPTS   , DSCR( 0 to 255                                                                        ))\
- PARAM_REQRSP( ConversationID                    , 0x22, map_uint128hex_t   , NO_OPTS   , DSCR( (max 3uint16_t)    ;   128 - bit value in hex string format                     ))\
- PARAM_RESPON( FolderVersionCounter              , 0x23, map_uint128hex_t   , NO_OPTS   , DSCR( (max 3uint16_t);   128 - bit value in hex string format                         ))\
+ PARAM_REQRSP( ConversationID                    , 0x22, map_uint128_t   , NO_OPTS   , DSCR( (max 3uint16_t)    ;   128 - bit value in hex string format                     ))\
+ PARAM_RESPON( FolderVersionCounter              , 0x23, map_uint128_t   , NO_OPTS   , DSCR( (max 3uint16_t);   128 - bit value in hex string format                         ))\
  PARAM_UNUSED( FilterMessageHandle               , 0x24, map_uint64_t       , NO_OPTS   , DSCR( 64 - bit value in hex string format                                             ))\
  PARAM_REQUST( NotificationFilterMask            , 0x25, uint32_t           , NO_OPTS   , DSCR( Bit mask settings; see Section 5.14.3.1 )                                         \
                                                                                           ENUM(      1 << 0  , NewMessage                   )                                     \

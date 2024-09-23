@@ -23094,13 +23094,22 @@ static inline const uint8_t * map_subevent_message_listing_item_get_handle(const
     return (const uint8_t *) &event[5];
 }
 /**
+ * @brief Get field conversation_id from event MAP_SUBEVENT_MESSAGE_LISTING_ITEM
+ * @param event packet
+ * @param Pointer to storage for conversation_id
+ * @note: btstack_type K
+ */
+static inline void map_subevent_message_listing_item_get_conversation_id(const uint8_t * event, uint8_t * conversation_id){
+    reverse_bytes(&event[13], conversation_id, 16);
+}
+/**
  * @brief Get field type from event MAP_SUBEVENT_MESSAGE_LISTING_ITEM
  * @param event packet
  * @return type
  * @note: btstack_type 1
  */
 static inline uint8_t map_subevent_message_listing_item_get_type(const uint8_t * event){
-    return event[13];
+    return event[29];
 }
 /**
  * @brief Get field read from event MAP_SUBEVENT_MESSAGE_LISTING_ITEM
@@ -23109,7 +23118,7 @@ static inline uint8_t map_subevent_message_listing_item_get_type(const uint8_t *
  * @note: btstack_type 1
  */
 static inline uint8_t map_subevent_message_listing_item_get_read(const uint8_t * event){
-    return event[14];
+    return event[30];
 }
 
 

@@ -115,6 +115,7 @@ typedef struct {
             map_message_type_t   msg_type;
             map_message_status_t msg_status;
             map_message_handle_t msg_handle;
+            map_conversation_id_t conv_id;
         } msg_listing;
         struct {
             int conv_found;
@@ -143,6 +144,7 @@ void map_util_xml_parser_parse (map_util_xml_parser *mu_parser,
 void map_message_str_to_handle(const char * value, map_message_handle_t msg_handle);
 void map_message_handle_to_str(char * p, const map_message_handle_t msg_handle);
 void map_conversation_str_to_id(const char * value, map_conversation_id_t conv_id);
+void map_conversation_id_to_str(char* p, const map_conversation_id_t conversation_id);
 
 #if defined __cplusplus
 }

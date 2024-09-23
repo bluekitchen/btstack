@@ -6830,10 +6830,11 @@ typedef uint8_t sm_key_t[16];
 #define MAP_SUBEVENT_GET_MAS_INSTANCE_INFORMATION           0x11u       
 
 /**
- * @format 12D11
+ * @format 12DK11
  * @param subevent_code
  * @param map_cid
  * @param handle
+ * @param conversation_id
  * @param type map_message_type_t
  * @param read map_message_status_t
  */

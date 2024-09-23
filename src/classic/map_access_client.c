@@ -57,12 +57,14 @@
 #include "classic/sdp_client_rfcomm.h"
 #include "classic/sdp_util.h"
 
+#include "classic/map_access_app_params.h"
 #include "classic/map_access_client.h"
+#include "classic/map_util.h"
 #include "hci_event_builder.h"
 
 #define MAP_MAX_NUM_ENTRIES 1024
 
-#include "classic/map_access_app_params.h"
+
 enum MAP_APP_PARAMS
 {
     // the following X-Macro (https://en.wikipedia.org/wiki/X_macro)
@@ -141,15 +143,15 @@ static map_access_client_t * map_access_client_for_goep_cid(uint16_t goep_cid){
     return map_access_client_for_cid(goep_cid);
 }
 
-static void map_access_client_message_handle_to_str(char * p, const map_message_handle_t msg_handle){
-    int i;
-    for (i = 0; i < MAP_MESSAGE_HANDLE_SIZE ; i++) {
-        uint8_t byte = msg_handle[i];
-        *p++ = char_for_nibble(byte >> 4);
-        *p++ = char_for_nibble(byte & 0x0F);
-    }
-    *p = 0;
-}
+//static void map_access_client_message_handle_to_str(char * p, const map_message_handle_t msg_handle){
+//    int i;
+//    for (i = 0; i < MAP_MESSAGE_HANDLE_SIZE ; i++) {
+//        uint8_t byte = msg_handle[i];
+//        *p++ = char_for_nibble(byte >> 4);
+//        *p++ = char_for_nibble(byte & 0x0F);
+//    }
+//    *p = 0;
+//}
 
 static void map_access_client_parser_callback_connect(void * user_data, uint8_t header_id, uint16_t total_len, uint16_t data_offset, const uint8_t * data_buffer, uint16_t data_len){
     map_access_client_t * client = (map_access_client_t *) user_data;
@@ -238,7 +240,7 @@ static void map_access_client_prepare_operation(map_access_client_t * client, ui
 static void map_access_client_handle_can_send_now(uint16_t goep_cid) {
     uint8_t application_parameters[100];
     int pos = 0;
-    char map_message_handle_to_str_buffer[MAP_MESSAGE_HANDLE_SIZE * 2 + 1];
+    char handle_or_id_to_str_buffer[MAP_CONVERSATION_ID_SIZE * 2 + 1];
     uint8_t  path_element[20];
     uint16_t path_element_start;
     uint16_t path_element_len;
@@ -379,16 +381,16 @@ static void map_access_client_handle_can_send_now(uint16_t goep_cid) {
                 obex_srm_client_init(&map_access_client->obex_srm);
                 map_access_client_prepare_srm_header(map_access_client);
 
-                map_access_client_message_handle_to_str(map_message_handle_to_str_buffer, map_access_client->message_handle);
-                goep_client_header_add_name(map_access_client->goep_client.cid, map_message_handle_to_str_buffer);
+                map_message_handle_to_str(handle_or_id_to_str_buffer, map_access_client->message_handle);
+                goep_client_header_add_name(map_access_client->goep_client.cid, handle_or_id_to_str_buffer);
 
                 goep_client_header_add_type(map_access_client->goep_client.cid, "x-bt/message");
 
-                application_parameters[pos++] = 0x0A; // attachment
+                application_parameters[pos++] = MAP_APP_PARAM_Attachment;
                 application_parameters[pos++] = 1;
                 application_parameters[pos++] = map_access_client->message_attachment;
 
-                application_parameters[pos++] = 0x14; // Charset
+                application_parameters[pos++] = MAP_APP_PARAM_Charset;
                 application_parameters[pos++] = 1;
                 application_parameters[pos++] = 1;    // UTF-8
                 goep_client_header_add_application_parameters(map_access_client->goep_client.cid, &application_parameters[0], pos);
@@ -412,13 +414,19 @@ static void map_access_client_handle_can_send_now(uint16_t goep_cid) {
 
                 goep_client_header_add_type(map_access_client->goep_client.cid, "x-bt/message");
 
-                application_parameters[pos++] = 0x0A; // attachment
+                application_parameters[pos++] = MAP_APP_PARAM_Attachment;
                 application_parameters[pos++] = 1;
                 application_parameters[pos++] = map_access_client->message_attachment;
 
-                application_parameters[pos++] = 0x14; // Charset
+                application_parameters[pos++] = MAP_APP_PARAM_Charset;
                 application_parameters[pos++] = 1;
                 application_parameters[pos++] = 1;    // UTF-8
+
+                application_parameters[pos++] = MAP_APP_PARAM_ConversationID;
+                application_parameters[pos++] = 10;// sizeof(map_access_client->ConversationID);
+                memcpy(&application_parameters[pos], "3909231965", 10);// sizeof(map_access_client->ConversationID));
+                pos += 10;// sizeof(map_access_client->ConversationID);
+
                 goep_client_header_add_application_parameters(map_access_client->goep_client.cid, &application_parameters[0], pos);
                 goep_client_body_add_static(map_access_client->goep_client.cid, map_access_client->msg_body, map_access_client->msg_body_size);
             }
@@ -463,8 +471,8 @@ static void map_access_client_handle_can_send_now(uint16_t goep_cid) {
             goep_client_request_create_put(map_access_client->goep_client.cid);
             goep_client_header_add_type(map_access_client->goep_client.cid, "x-bt/messageStatus");
 
-            map_access_client_message_handle_to_str(map_message_handle_to_str_buffer, map_access_client->message_handle);
-            goep_client_header_add_name(map_access_client->goep_client.cid, map_message_handle_to_str_buffer);
+            map_message_handle_to_str(handle_or_id_to_str_buffer, map_access_client->message_handle);
+            goep_client_header_add_name(map_access_client->goep_client.cid, handle_or_id_to_str_buffer);
 
             if (   map_access_client->stat_val >= no && map_access_client->stat_val <= yes
                 && map_access_client->stat_ind >= readStatus && map_access_client->stat_ind <= setExtendedData) {
@@ -493,8 +501,8 @@ static void map_access_client_handle_can_send_now(uint16_t goep_cid) {
             goep_client_request_create_put(map_access_client->goep_client.cid);
             goep_client_header_add_type(map_access_client->goep_client.cid, "x-bt/ownerStatus");
 
-            map_access_client_message_handle_to_str(map_message_handle_to_str_buffer, map_access_client->message_handle);
-            goep_client_header_add_name(map_access_client->goep_client.cid, map_message_handle_to_str_buffer);
+            map_message_handle_to_str(handle_or_id_to_str_buffer, map_access_client->message_handle);
+            goep_client_header_add_name(map_access_client->goep_client.cid, handle_or_id_to_str_buffer);
 
             // LastActivity[] = "20140612T105430+0100";
             application_parameters[pos++] = MAP_APP_PARAM_PresenceAvailability;
@@ -530,12 +538,12 @@ static void map_access_client_handle_can_send_now(uint16_t goep_cid) {
                 goep_client_request_create_get(map_access_client->goep_client.cid);
                 goep_client_header_add_type(map_access_client->goep_client.cid, "x-bt/ownerStatus");
 
-                map_access_client_message_handle_to_str(map_message_handle_to_str_buffer, map_access_client->message_handle);
+                map_conversation_id_to_str(handle_or_id_to_str_buffer, map_access_client->message_handle);
 
                 application_parameters[pos++] = MAP_APP_PARAM_ConversationID;
-                application_parameters[pos++] = sizeof(map_access_client->ConversationID);
-                memcpy(&application_parameters[pos], map_access_client->ConversationID, sizeof(map_access_client->ConversationID));
-                pos += sizeof(map_access_client->ConversationID);
+                application_parameters[pos++] = sizeof(map_access_client->conversation_id);
+                memcpy(&application_parameters[pos], map_access_client->conversation_id, sizeof(map_access_client->conversation_id));
+                pos += sizeof(map_access_client->conversation_id);
 
                 goep_client_header_add_application_parameters(map_access_client->goep_client.cid, &application_parameters[0], pos);
             }
@@ -926,7 +934,7 @@ uint8_t map_access_client_get_message_with_handle(uint16_t map_cid, const map_me
     return 0;
 }
 
-uint8_t map_access_client_push_message(uint16_t map_cid, const uint8_t* name_header, const uint8_t *msg_body, const uint16_t msg_body_size) {
+uint8_t map_access_client_push_message(uint16_t map_cid, const uint8_t* name_header, const uint8_t *msg_body, const uint16_t msg_body_size, map_conversation_id_t conv_id) {
     map_access_client_t* map_access_client = map_access_client_for_map_cid(map_cid);
     if (map_access_client == NULL) {
         RUN_AND_LOG_ACTION(return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;)
@@ -940,6 +948,7 @@ uint8_t map_access_client_push_message(uint16_t map_cid, const uint8_t* name_hea
     map_access_client->name_header = name_header;
     map_access_client->msg_body = msg_body;
     map_access_client->msg_body_size = msg_body_size;
+    map_access_client->conversation_id;
     goep_client_request_can_send_now(map_access_client->goep_client.cid);
     return 0;
 }
@@ -978,7 +987,7 @@ uint8_t map_access_client_set_owner_status(uint16_t map_cid, const map_message_h
     return 0;
 }
 
-uint8_t map_access_client_get_owner_status(uint16_t map_cid, const map_uint128hex_t ConversationID) {
+uint8_t map_access_client_get_owner_status(uint16_t map_cid, const map_uint128_t ConversationID) {
     map_access_client_t* map_access_client = map_access_client_for_map_cid(map_cid);
     if (map_access_client == NULL) {
         RUN_AND_LOG_ACTION(return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;)
@@ -988,7 +997,7 @@ uint8_t map_access_client_get_owner_status(uint16_t map_cid, const map_uint128he
     }
     map_access_client->state = MAP_W2_SEND_GET_OWNER_STATUS;
     map_access_client->request_number = 0;
-    memcpy(map_access_client->ConversationID, ConversationID, sizeof(map_uint128hex_t));
+    memcpy(map_access_client->conversation_id, ConversationID, sizeof(map_conversation_id_t));
     goep_client_request_can_send_now(map_access_client->goep_client.cid);
     return 0;
 }

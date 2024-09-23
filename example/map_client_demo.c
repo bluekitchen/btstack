@@ -107,7 +107,8 @@ static const char * remote_addr_string = "001BDC0732EF";
 static const char* folders[] = { "inbox", "outbox", "draft", "delete", "", NULL};
 static const char * *folder_name = folders;
 static map_message_handle_t message_handle = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-static map_message_handle_t message_handles[MAP_MESSAGE_TYPE_IM+1] = { 0, };
+static map_message_handle_t message_handles[MAP_MESSAGE_TYPE_MAX] = { 0, };
+static map_message_handle_t conv_ids[MAP_MESSAGE_TYPE_MAX] = { 0, };
 static map_conversation_id_t conv_id = { 0x00, };
 
 //static const char * path = "telecom/msg/draft";
@@ -182,33 +183,39 @@ static const char bmsg_email[] =
 //"END:BMSG\r\n";
 
 static const char bmsg_IM[] =
-"BEGIN:BMSG\r\n"
-"VERSION:1.0\r\n"
-"STATUS:UNREAD\r\n"
-"TYPE:IM\r\n"
-"FOLDER:TELECOM/MSG/DRAFT\r\n"
-"BEGIN:VCARD\r\n"
-"VERSION:2.1\r\n"
-"N:IUT\r\n"
-"EMAIL:member@iut.com\r\n"
-"END:VCARD\r\n"
-"BEGIN:BENV\r\n"
-"BEGIN:BBODY\r\n"
-"ENCODING:8BIT\r\n"
-"LENGTH:4975\r\n"
-"BEGIN:MSG\r\n"
-"Date:20 Jun 96\r\n"
-"Subject:BTStack testing\r\n"
-"From:PTS@bluetooth.com\r\n"
-"To:IUT@bluetooth.com\r\n"
-"\r\n"
-"Hello World!\r\n"
-"\r\n"
-"END:MSG\r\n"
-"END:BBODY\r\n"
-"END:BENV\r\n"
-"END:BMSG\r\n";
+    "BEGIN:BMSG\r\n"
+    "VERSION:1.1\r\n"
+    "STATUS:UNREAD\r\n"
+    "TYPE:IM\r\n"
+    "FOLDER:TELECOM/MSG/INBOX\r\n"
+    "EXTENDEDDATA:0:3;\r\n"
+    "BEGIN:VCARD\r\n"
+    "VERSION:2.1\r\n"
+    "N:L;Marry\r\n"
+    "X-BT-UCI:whateverapp:497654321@s.whateverapp.net\r\n"
+    "END:VCARD\r\n"
+    "BEGIN:BENV\r\n"
+    "BEGIN:VCARD\r\n"
+    "VERSION:2.1\r\n"
+    "N:S.;Alois\r\n"
+    "X-BT-UCI:whateverapp:4912345@s.whateverapp.net\r\n"
+    "END:VCARD\r\n"
+    "BEGIN:BBODY\r\n"
+    "ENCODING:8BIT\r\n"
+    "LENGTH:\r\n"
+    "BEGIN:MSG\r\n"
+    "Date: Fri, 1 Aug 2014 01:29:12 +01:00\r\n"
+    "From: whateverapp:497654321@s.whateverapp.net\r\n"
+    "To: whateverapp:4912345@s.whateverapp.net\r\n"
+    "Content-Type: text/plain;\r\n"
+    "\r\n"
+    "Happy birthday\r\n"
+    "END:MSG\r\n"
+    "END:BBODY\r\n"
+    "END:BENV\r\n"
+    "END:BMSG\r\n"
 ;
+
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
@@ -512,7 +519,6 @@ static void stdin_process(char c){
     case '5':
         btprintf("[+] Select last listed \"im\" message\n");
         memcpy((uint8_t *) message_handle, message_handles[MAP_MESSAGE_TYPE_IM], MAP_MESSAGE_HANDLE_SIZE);
-
         break;
     case 'g':
         btprintf("[+] Get selected message\n");
@@ -520,7 +526,7 @@ static void stdin_process(char c){
         break;
     case 'u':
         btprintf("[+] Upload (PUT/PUSH) message\n");
-        map_access_client_push_message(map_cid, *folder_name, bmsg_email, (uint16_t)strlen(bmsg_email));
+        map_access_client_push_message(map_cid, *folder_name, bmsg_IM, (uint16_t)strlen(bmsg_IM), conv_id);
         break;
     case 'r':
         btprintf("[+] Mark selected messages as read\n");
@@ -665,6 +671,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             msg_status = map_subevent_message_listing_item_get_read (packet);
                             memcpy((uint8_t *) message_handle, map_subevent_message_listing_item_get_handle(packet), MAP_MESSAGE_HANDLE_SIZE);
                             memcpy((uint8_t *) message_handles[msg_type], message_handle, MAP_MESSAGE_HANDLE_SIZE);
+                            map_subevent_message_listing_item_get_conversation_id(packet, conv_id);
+                            memcpy((uint8_t*)conv_ids[msg_type], conv_id, MAP_CONVERSATION_ID_SIZE);
                             btprintf("Message (%s / %s) handle: ",
                                    msg_type == MAP_MESSAGE_TYPE_EMAIL    ? "email   " :
                                    msg_type == MAP_MESSAGE_TYPE_SMS_GSM  ? "sms_gsm " :
@@ -675,7 +683,9 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                                    msg_status == MAP_MESSAGE_STATUS_UNREAD ? "unread" :
                                    msg_status == MAP_MESSAGE_STATUS_READ   ? "read  " :
                                    "unknown status");
-                            printf_hexdump((uint8_t *) message_handle, MAP_MESSAGE_HANDLE_SIZE);
+                            printf_hexdump_no_nl((uint8_t *) message_handle, MAP_MESSAGE_HANDLE_SIZE);
+                            btprintf("conversation_id: ");
+                            printf_hexdump((uint8_t*)conv_id, MAP_CONVERSATION_ID_SIZE);
                             break;
                         case MAP_SUBEVENT_CONVERSATION_LISTING_ITEM:
                             memcpy((uint8_t *) conv_id, map_subevent_conversation_listing_item_get_id(packet), MAP_CONVERSATION_ID_SIZE);
