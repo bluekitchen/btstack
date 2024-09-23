@@ -496,22 +496,21 @@ static void map_access_client_handle_can_send_now(uint16_t goep_cid) {
             map_access_client_message_handle_to_str(map_message_handle_to_str_buffer, map_access_client->message_handle);
             goep_client_header_add_name(map_access_client->goep_client.cid, map_message_handle_to_str_buffer);
 
-                // LastActivity[] = "20140612T105430+0100";
-                application_parameters[pos++] = MAP_APP_PARAM_PresenceAvailability;
-                application_parameters[pos++] = 1;
-                application_parameters[pos++] = map_access_client->PresenceAvailability;
+            // LastActivity[] = "20140612T105430+0100";
+            application_parameters[pos++] = MAP_APP_PARAM_PresenceAvailability;
+            application_parameters[pos++] = 1;
+            application_parameters[pos++] = map_access_client->PresenceAvailability;
 
-                application_parameters[pos++] = MAP_APP_PARAM_ChatState;
-                application_parameters[pos++] = 1;
-                application_parameters[pos++] = map_access_client->ChatState;
-                goep_client_header_add_application_parameters(map_access_client->goep_client.cid, &application_parameters[0], pos);
+            application_parameters[pos++] = MAP_APP_PARAM_ChatState;
+            application_parameters[pos++] = 1;
+            application_parameters[pos++] = map_access_client->ChatState;
+            goep_client_header_add_application_parameters(map_access_client->goep_client.cid, &application_parameters[0], pos);
 
-                application_parameters[pos++] = MAP_APP_PARAM_LastActivity;
-                application_parameters[pos++] = sizeof(map_access_client->LastActivity);
-                memcpy(&application_parameters[pos], map_access_client->LastActivity, sizeof(map_access_client->LastActivity));
-                pos += sizeof(map_access_client->LastActivity);
-                goep_client_header_add_application_parameters(map_access_client->goep_client.cid, &application_parameters[0], pos);
-
+            application_parameters[pos++] = MAP_APP_PARAM_LastActivity;
+            application_parameters[pos++] = sizeof(map_access_client->LastActivity);
+            memcpy(&application_parameters[pos], map_access_client->LastActivity, sizeof(map_access_client->LastActivity));
+            pos += sizeof(map_access_client->LastActivity);
+            goep_client_header_add_application_parameters(map_access_client->goep_client.cid, &application_parameters[0], pos);
 
             goep_client_body_add_static(map_access_client->goep_client.cid, (uint8_t*)"0", 1);
 
@@ -524,17 +523,22 @@ static void map_access_client_handle_can_send_now(uint16_t goep_cid) {
 
         case MAP_W2_SEND_GET_OWNER_STATUS:
             log_debug("MAP_W2_SEND_GET_OWNER_STATUS");
-            goep_client_request_create_put(map_access_client->goep_client.cid);
-            goep_client_header_add_type(map_access_client->goep_client.cid, "x-bt/ownerStatus");
 
-            map_access_client_message_handle_to_str(map_message_handle_to_str_buffer, map_access_client->message_handle);
+            if (map_access_client->request_number == 0) {
+                obex_srm_client_init(&map_access_client->obex_srm);
+                map_access_client_prepare_srm_header(map_access_client);
+                goep_client_request_create_get(map_access_client->goep_client.cid);
+                goep_client_header_add_type(map_access_client->goep_client.cid, "x-bt/ownerStatus");
 
-            application_parameters[pos++] = MAP_APP_PARAM_ConversationID;
-            application_parameters[pos++] = sizeof(map_access_client->ConversationID);
-            memcpy(&application_parameters[pos], map_access_client->ConversationID, sizeof(map_access_client->ConversationID));
-            pos += sizeof(map_access_client->ConversationID);
+                map_access_client_message_handle_to_str(map_message_handle_to_str_buffer, map_access_client->message_handle);
 
-            goep_client_header_add_application_parameters(map_access_client->goep_client.cid, &application_parameters[0], pos);
+                application_parameters[pos++] = MAP_APP_PARAM_ConversationID;
+                application_parameters[pos++] = sizeof(map_access_client->ConversationID);
+                memcpy(&application_parameters[pos], map_access_client->ConversationID, sizeof(map_access_client->ConversationID));
+                pos += sizeof(map_access_client->ConversationID);
+
+                goep_client_header_add_application_parameters(map_access_client->goep_client.cid, &application_parameters[0], pos);
+            }
 
             map_access_client->state = MAP_W4_GET_OWNER_STATUS;
             map_access_client_prepare_operation(map_access_client, OBEX_OPCODE_PUT);
@@ -974,7 +978,7 @@ uint8_t map_access_client_set_owner_status(uint16_t map_cid, const map_message_h
     return 0;
 }
 
-uint8_t map_access_client_get_owner_status(uint16_t map_cid, const map_message_handle_t map_message_handle) {
+uint8_t map_access_client_get_owner_status(uint16_t map_cid, const map_uint128hex_t ConversationID) {
     map_access_client_t* map_access_client = map_access_client_for_map_cid(map_cid);
     if (map_access_client == NULL) {
         RUN_AND_LOG_ACTION(return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;)
@@ -984,7 +988,7 @@ uint8_t map_access_client_get_owner_status(uint16_t map_cid, const map_message_h
     }
     map_access_client->state = MAP_W2_SEND_GET_OWNER_STATUS;
     map_access_client->request_number = 0;
-    memcpy(map_access_client->message_handle, map_message_handle, MAP_MESSAGE_HANDLE_SIZE);
+    memcpy(map_access_client->ConversationID, ConversationID, sizeof(map_uint128hex_t));
     goep_client_request_can_send_now(map_access_client->goep_client.cid);
     return 0;
 }

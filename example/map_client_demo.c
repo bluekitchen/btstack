@@ -267,7 +267,7 @@ static enum {
 
     {.nr = 29, .descr = "MAP/MCE/MMN/BV-05-C"       , .keysequ = "anm"},
     {.nr = 30, .descr = "MAP/MCE/MMN/BV-01-C"       , .keysequ = "an"},
-    {.nr = 31, .descr = "MAP/MCE/MMN/BV-05-C"       , .keysequ = "anm"},
+    {.nr = 31, .descr = "MAP/MCE/MMN/BV-05-C"       , .keysequ = "ao"},
 
     {.nr = 32, .descr = "MAP/MCE/MMI/BV-01-C"       , .keysequ = "ai"},
 
@@ -512,6 +512,7 @@ static void stdin_process(char c){
     case '5':
         btprintf("[+] Select last listed \"im\" message\n");
         memcpy((uint8_t *) message_handle, message_handles[MAP_MESSAGE_TYPE_IM], MAP_MESSAGE_HANDLE_SIZE);
+
         break;
     case 'g':
         btprintf("[+] Get selected message\n");
@@ -539,7 +540,7 @@ static void stdin_process(char c){
         break;
     case 'o':
         btprintf("[+] Get owner status of selected message\n");
-        map_access_client_get_owner_status(map_cid, message_handle);
+        map_access_client_get_owner_status(map_cid, "12345678"); // PTS 8.7.0 doesnt check the contents so its random
         break;
     case 'n':
         // enable notifications for all/both mas instances

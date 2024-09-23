@@ -36,7 +36,10 @@ MAP/MCE/MMB/BV-08-I: a, C
 MAP/MCE/MMD/BV-01-C: PASS a, p, F, 1, d, 2, d, 4, d, 5, d, A, b, 3, d, B
 MAP/MCE/MMD/BV-03-C: PASS a, n, p, F, 5, d
 
+
 WIP MAP/MCE/MMU/BV-01-C: a, p, 
+MAP/MCE/MMU/BV-05-C: PASS a, p, F, 5, c
+MAP/MCE/MMU/BV-06-C: PASS a, o
 
 MAP/MCE/MMN/BV-05-C: a, n, m
 MAP/MCE/MMN/BV-01-C: a, n
