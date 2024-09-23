@@ -212,7 +212,7 @@ static struct {
 static const uint8_t map_uuid[] = { 0xbb, 0x58, 0x2b, 0x40, 0x42, 0xc, 0x11, 0xdb, 0xb0, 0xde, 0x8, 0x0, 0x20, 0xc, 0x9a, 0x66 };
 
 // Prototypes
-static void map_server_handle_get_or_put_request(map_server_t* mas);
+static void map_server_handle_get_or_put_request(map_server_t *mas, bool first_request);
 static void map_server_build_response(map_server_t* mas);
 
 static map_server_t* map_server_for_goep_cid(uint16_t goep_cid) {
@@ -488,6 +488,8 @@ static void map_server_handle_can_send_now(map_server_t* mas) {
     uint8_t event[30];
     uint16_t pos = 0;
     hci_event_builder_context_t context;
+    bool trigger_next_get_operation = false;
+
     switch (mas->state) {
     case MAS_STATE_SEND_INTERNAL_RESPONSE:
         log_debug("MAS_STATE_SEND_INTERNAL_RESPONSE");
@@ -521,12 +523,24 @@ static void map_server_handle_can_send_now(map_server_t* mas) {
         // next state
         if (response_code == OBEX_RESP_CONTINUE) {
             map_server_reset_response(mas);
-            // next state
-            if (mas->srm_state == SRM_ENABLED) {
-                RUN_AND_LOG_ACTION(mas->state = MAS_STATE_ABOUT_TO_SEND;)
-            }
-            else {
-                RUN_AND_LOG_ACTION(mas->state = MAS_STATE_W4_GET_OPCODE;)
+            obex_parser_operation_info_t op_info;
+            obex_parser_get_operation_info(&mas->obex_parser, &op_info);
+            switch ((op_info.opcode & 0x7f)) {
+                case OBEX_OPCODE_GET:
+                    if (mas->srm_state == SRM_ENABLED) {
+                        RUN_AND_LOG_ACTION(mas->state = MAS_STATE_ABOUT_TO_SEND;)
+                        trigger_next_get_operation = true;
+                    }
+                    else {
+                        RUN_AND_LOG_ACTION(mas->state = MAS_STATE_W4_GET_OPCODE;)
+                    }
+                    break;
+                case OBEX_OPCODE_PUT:
+                    RUN_AND_LOG_ACTION(mas->state = MAS_STATE_W4_GET_OPCODE;)
+                    break;
+                default:
+                    btstack_unreachable();
+                    break;
             }
         }
         else {
@@ -535,8 +549,8 @@ static void map_server_handle_can_send_now(map_server_t* mas) {
         // send packet
         goep_server_execute(mas->goep_cid, response_code);
         // trigger next user response in SRM
-        if (mas->srm_state == SRM_ENABLED) { // should only be called for GET, shouldnt it?
-            map_server_handle_get_or_put_request(mas);
+        if (trigger_next_get_operation){
+            map_server_handle_get_or_put_request(mas, true);
         }
         break;
     case MAS_STATE_SEND_CONNECT_RESPONSE_ERROR:
@@ -781,7 +795,7 @@ static void map_server_parser_callback_get(void* user_data, uint8_t header_id, u
 
 
 // sends MAP_SUBEVENT_xyz messages to the application using serialized stack-internal app-parameters
-static void map_server_handle_get_or_put_request(map_server_t* mas) {
+static void map_server_handle_get_or_put_request(map_server_t *mas, bool first_request) {
     map_server_handle_srm_headers(mas);
 
     /* GET Continue */
@@ -797,7 +811,10 @@ static void map_server_handle_get_or_put_request(map_server_t* mas) {
     /* PUT */
     }
 
-    mas->request.object_type = map_server_parse_object_type(mas, mas->request.type);
+    if (first_request){
+        // use object type from first request
+        mas->request.object_type = map_server_parse_object_type(mas, mas->request.type);
+    }
     mas_folder_t folder = mas->map_server_dir;
     //uint16_t name_len = (uint16_t)strlen(mas->request.name);
     switch (mas->request.object_type) {
@@ -1065,7 +1082,7 @@ static void map_server_packet_handler_goep(map_server_t* mas, uint8_t* packet, u
             case (OBEX_OPCODE_GET | OBEX_OPCODE_FINAL_BIT_MASK):
             case OBEX_OPCODE_PUT:
             case (OBEX_OPCODE_PUT | OBEX_OPCODE_FINAL_BIT_MASK):
-                map_server_handle_get_or_put_request(mas);
+                map_server_handle_get_or_put_request(mas, true);
                 break;
             case OBEX_OPCODE_SETPATH:
                 map_server_handle_set_path_request(mas, op_info.flags, &mas->request.name[0]);
@@ -1101,7 +1118,8 @@ static void map_server_packet_handler_goep(map_server_t* mas, uint8_t* packet, u
             obex_parser_get_operation_info(&mas->obex_parser, &op_info);
             switch ((op_info.opcode & 0x7f)) {
             case OBEX_OPCODE_GET:
-                map_server_handle_get_or_put_request(mas);
+            case OBEX_OPCODE_PUT:
+                map_server_handle_get_or_put_request(mas, false);
                 break;
             case (OBEX_OPCODE_ABORT & 0x7f):
                 mas->response.code = OBEX_RESP_SUCCESS;
