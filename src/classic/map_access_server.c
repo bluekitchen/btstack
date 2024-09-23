@@ -1117,6 +1117,7 @@ static void map_server_packet_handler_goep(map_server_t* mas, uint8_t* packet, u
         if (parser_state == OBEX_PARSER_OBJECT_STATE_COMPLETE) {
             obex_parser_operation_info_t op_info;
             obex_parser_get_operation_info(&mas->obex_parser, &op_info);
+            mas->OBEX_opcode = op_info.opcode;
             switch ((op_info.opcode & 0x7f)) {
             case OBEX_OPCODE_GET:
             case (OBEX_OPCODE_ABORT & 0x7f):
@@ -1147,6 +1148,7 @@ static void map_server_packet_handler_goep(map_server_t* mas, uint8_t* packet, u
             if (parser_state == OBEX_PARSER_OBJECT_STATE_COMPLETE) {
                 obex_parser_operation_info_t op_info;
                 obex_parser_get_operation_info(&mas->obex_parser, &op_info);
+                mas->OBEX_opcode = op_info.opcode;
                 switch ((op_info.opcode & 0x7f)) {
                     case OBEX_OPCODE_PUT:
                         map_server_handle_get_or_put_request(mas, false);
