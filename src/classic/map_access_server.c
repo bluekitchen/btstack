@@ -742,7 +742,7 @@ static void map_server_app_param_callback_get(void* user_data, uint8_t tag_id, u
     }
 }
 
-static void map_server_parser_callback_get(void* user_data, uint8_t header_id, uint16_t total_len, uint16_t data_offset, const uint8_t* data_buffer, uint16_t data_len) {
+static void map_server_parser_callback(void* user_data, uint8_t header_id, uint16_t total_len, uint16_t data_offset, const uint8_t* data_buffer, uint16_t data_len) {
     map_server_t* mas = (map_server_t*)user_data;
 
     switch (header_id) {
@@ -1043,18 +1043,18 @@ static void map_server_packet_handler_goep(map_server_t* mas, uint8_t* packet, u
         case (OBEX_OPCODE_GET | OBEX_OPCODE_FINAL_BIT_MASK):
             log_debug("MAS_STATE_W4_REQUEST: OBEX_OPCODE_GET opcode:0x%02X", opcode);
             mas->state = MAS_STATE_W4_REQUEST;
-            obex_parser_init_for_request(&mas->obex_parser, &map_server_parser_callback_get, (void*)mas);
+            obex_parser_init_for_request(&mas->obex_parser, &map_server_parser_callback, (void*)mas);
             break;
         case OBEX_OPCODE_PUT:
         case (OBEX_OPCODE_PUT | OBEX_OPCODE_FINAL_BIT_MASK):
             log_debug("MAS_STATE_W4_REQUEST: OBEX_OPCODE_PUT opcode:0x%02X", opcode);
             mas->state = MAS_STATE_W4_REQUEST;
-            obex_parser_init_for_request(&mas->obex_parser, &map_server_parser_callback_get, (void*)mas);
+            obex_parser_init_for_request(&mas->obex_parser, &map_server_parser_callback, (void*)mas);
             break;
         case OBEX_OPCODE_SETPATH:
             log_debug("MAS_STATE_W4_REQUEST: OBEX_OPCODE_SETPATH opcode:0x%02X", opcode);
             mas->state = MAS_STATE_W4_REQUEST;
-            obex_parser_init_for_request(&mas->obex_parser, &map_server_parser_callback_get, (void*)mas);
+            obex_parser_init_for_request(&mas->obex_parser, &map_server_parser_callback, (void*)mas);
             break;
         case OBEX_OPCODE_DISCONNECT:
             log_debug("MAS_STATE_W4_REQUEST: OBEX_OPCODE_DISCONNECT opcode:0x%02X", opcode);
@@ -1106,7 +1106,7 @@ static void map_server_packet_handler_goep(map_server_t* mas, uint8_t* packet, u
 
     case MAS_STATE_W4_GET_OPCODE:
         mas->state = MAS_STATE_W4_GET_REQUEST;
-        obex_parser_init_for_request(&mas->obex_parser, &map_server_parser_callback_get, (void*)mas);
+        obex_parser_init_for_request(&mas->obex_parser, &map_server_parser_callback, (void*)mas);
 
         /* fall through */
 
