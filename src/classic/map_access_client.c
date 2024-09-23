@@ -494,9 +494,7 @@ static void map_access_client_handle_can_send_now(uint16_t goep_cid) {
             map_access_client_message_handle_to_str(map_message_handle_to_str_buffer, map_access_client->message_handle);
             goep_client_header_add_name(map_access_client->goep_client.cid, map_message_handle_to_str_buffer);
 
-            //if (map_access_client->stat_val >= no && map_access_client->stat_val <= yes
-            //    && map_access_client->stat_ind >= readStatus && map_access_client->stat_ind <= setExtendedData) {
-                //map_UTCstmpoffstr_t LastActivity[] = "20140612T105430+0100";
+                // LastActivity[] = "20140612T105430+0100";
                 application_parameters[pos++] = MAP_APP_PARAM_PresenceAvailability;
                 application_parameters[pos++] = 1;
                 application_parameters[pos++] = map_access_client->PresenceAvailability;
@@ -511,10 +509,6 @@ static void map_access_client_handle_can_send_now(uint16_t goep_cid) {
                 memcpy(&application_parameters[pos], map_access_client->LastActivity, sizeof(map_access_client->LastActivity));
                 pos += sizeof(map_access_client->LastActivity);
                 goep_client_header_add_application_parameters(map_access_client->goep_client.cid, &application_parameters[0], pos);
-            //}
-            //else {
-            //    obex_srm_client_init(&map_access_client->obex_srm);
-            //}
 
             goep_client_body_add_static(map_access_client->goep_client.cid, (uint8_t*)"0", 1);
 
