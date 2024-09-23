@@ -142,7 +142,6 @@ typedef struct {
     mas_folder_t  map_folder;
     // SRM
     obex_srm_t  obex_srm;
-    uint8_t OBEX_opcode;
     srm_state_t srm_state;
     // request
     struct {
@@ -340,7 +339,9 @@ static void map_server_handle_set_path_request(map_server_t* mas, uint8_t flags,
 }
 
 static map_object_type_t map_server_parse_object_type(map_server_t* mas, const char* type_string) {
-    
+    obex_parser_operation_info_t op_info;
+    obex_parser_get_operation_info(&mas->obex_parser, &op_info);
+
     if (strcmp("x-obex/folder-listing", type_string) == 0) {
         RUN_AND_LOG_ACTION(return MAP_OBJECT_TYPE_GET_FOLDER_LISTING;)
     }
@@ -366,11 +367,11 @@ static map_object_type_t map_server_parse_object_type(map_server_t* mas, const c
     }
 
     if (strcmp("x-bt/message", type_string) == 0) {
-        if ((mas->OBEX_opcode & OBEX_OPCODE_GET) == OBEX_OPCODE_GET) {
+        if ((op_info.opcode & OBEX_OPCODE_GET) == OBEX_OPCODE_GET) {
             RUN_AND_LOG_ACTION(return MAP_OBJECT_TYPE_GET_MESSAGE;)
         }
         else {
-            if (mas->OBEX_opcode & OBEX_OPCODE_FINAL_BIT_MASK) {
+            if (op_info.opcode & OBEX_OPCODE_FINAL_BIT_MASK) {
                 RUN_AND_LOG_ACTION(return MAP_OBJECT_TYPE_PUT_MESSAGE;)
             }
             else {
@@ -799,8 +800,11 @@ static void map_server_parser_callback(void* user_data, uint8_t header_id, uint1
 static void map_server_handle_get_or_put_request(map_server_t *mas, bool first_request) {
     map_server_handle_srm_headers(mas);
 
+    obex_parser_operation_info_t op_info;
+    obex_parser_get_operation_info(&mas->obex_parser, &op_info);
+
     /* GET Continue */
-    if (mas->OBEX_opcode & OBEX_OPCODE_GET) {
+    if (op_info.opcode & OBEX_OPCODE_GET) {
         if (mas->srm_state == SRM_SEND_CONFIRM_WAIT) {
             RUN_AND_LOG_ACTION(mas->state = MAS_STATE_SEND_RESPONSE_CONTINUE;)
             RUN_AND_LOG_ACTION(mas->response.code = OBEX_RESP_CONTINUE;)
@@ -949,7 +953,7 @@ static void map_server_handle_get_or_put_request(map_server_t *mas, bool first_r
         APP_WRITE_08(event, &pos, MAP_SUBEVENT_PUT_MESSAGE);
         APP_WRITE_32(event, &pos, mas->request.continuation);
         APP_WRITE_16(event, &pos, mas->goep_cid);
-        APP_WRITE_08(event, &pos, mas->OBEX_opcode);
+        APP_WRITE_08(event, &pos, op_info.opcode);
         APP_WRITE_08(event, &pos, mas->request.app_params.Charset);
         APP_WRITE_08(event, &pos, mas->request.app_params.Attachment);
         APP_WRITE_08(event, &pos, mas->request.app_params.ModifyText);
@@ -1036,7 +1040,6 @@ static void map_server_packet_handler_goep(map_server_t* mas, uint8_t* packet, u
         break;
     case MAS_STATE_CONNECTED:
         opcode = packet[0];
-        mas->OBEX_opcode = opcode;
 
         // default headers
         switch (opcode) {
@@ -1117,7 +1120,6 @@ static void map_server_packet_handler_goep(map_server_t* mas, uint8_t* packet, u
         if (parser_state == OBEX_PARSER_OBJECT_STATE_COMPLETE) {
             obex_parser_operation_info_t op_info;
             obex_parser_get_operation_info(&mas->obex_parser, &op_info);
-            mas->OBEX_opcode = op_info.opcode;
             switch ((op_info.opcode & 0x7f)) {
             case OBEX_OPCODE_GET:
             case (OBEX_OPCODE_ABORT & 0x7f):
@@ -1148,7 +1150,6 @@ static void map_server_packet_handler_goep(map_server_t* mas, uint8_t* packet, u
             if (parser_state == OBEX_PARSER_OBJECT_STATE_COMPLETE) {
                 obex_parser_operation_info_t op_info;
                 obex_parser_get_operation_info(&mas->obex_parser, &op_info);
-                mas->OBEX_opcode = op_info.opcode;
                 switch ((op_info.opcode & 0x7f)) {
                     case OBEX_OPCODE_PUT:
                         map_server_handle_get_or_put_request(mas, false);
