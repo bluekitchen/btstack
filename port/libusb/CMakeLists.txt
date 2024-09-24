@@ -20,6 +20,10 @@ elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "MSVC")
 	# using Visual Studio C++
 endif()
 
+# Enable ASAN
+add_compile_options( -g -fsanitize=address)
+add_link_options(       -fsanitize=address)
+
 # to generate .h from .gatt files
 find_package (Python REQUIRED COMPONENTS Interpreter)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
