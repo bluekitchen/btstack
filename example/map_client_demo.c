@@ -271,14 +271,15 @@ static enum {
     {.nr = 15, .descr = "MAP/MCE/MSM-BV-14-I"       , .keysequ = "abnN"},
     {.nr = 17, .descr = "MAP/MCE/MNR-BV-01-I"       , .keysequ = "anN"},
     {.nr = 18, .descr = "MAP/MCE/MNR-BV-02-I"       , .keysequ = "an"},
-    {.nr = 19, .descr = "MAP/MCE/MMB/BV-01-I"       , .keysequ = "aFf"},
+
+    {.nr = 19, .descr = "MAP/MCE/MMB/BV-01-I"       , .keysequ = "af"},
     {.nr = 20, .descr = "MAP/MCE/MMB/BV-02-I"       , .keysequ = "ap"},
     {.nr = 21, .descr = "MAP/MCE/MMB/BV-03-I"       , .keysequ = "aF"},
-    {.nr = 22, .descr = "MAP/MCE/MMB/BV-04-I"       , .keysequ = "a1g"},
-    {.nr = 23, .descr = "MAP/MCE/MMB/BV-17-I"       , .keysequ = "a4g"},
-    {.nr = 24, .descr = "MAP/MCE/MMB/BV-06-I"       , .keysequ = "a2g"},
-    {.nr = 25, .descr = "MAP/MCE/MMB/BV-08-I"       , .keysequ = "aIFA"},
-    {.nr = 26, .descr = "MAP/MCE/MMB/BV-08-I"       , .keysequ = "aC"},
+    {.nr = 22, .descr = "MAP/MCE/MMB/BV-04-I"       , .keysequ = "apF1g"},
+    {.nr = 23, .descr = "MAP/MCE/MMB/BV-17-I"       , .keysequ = "apF4g"},
+    {.nr = 24, .descr = "MAP/MCE/MMB/BV-06-I"       , .keysequ = "apF2g"},
+    {.nr = 26, .descr = "MAP/MCE/MMB/BV-08-I"       , .keysequ = "aPIFA"},
+    
 
     {.nr = 27, .descr = "MAP/MCE/MMD/BV-01-C"       , .keysequ = "apF1d2d4d5dAb3dB"},
     {.nr = 28, .descr = "MAP/MCE/MMD/BV-03-C"       , .keysequ = "anpF5d"},
@@ -318,7 +319,7 @@ static btstack_timer_source_t keypress_timer;
 static void keypress_timer_cb(btstack_timer_source_t* ts) {
     char key = ptc->keysequ[keysequ_idx];
     // we wait 1s after each keypress. 3s for a connect attempts
-    uint32_t timeout_ms = (key == 'a' || key == 'b' || key == 'n') ? 3000 : 1000;
+    uint32_t timeout_ms = (key == 'a' || key == 'b' || key == 'n' || key == 'F') ? 3000 : 1000;
 
     log_debug("Timer keypress <%c> %u ms", key, timeout_ms);
     stdin_process(key);
