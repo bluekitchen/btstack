@@ -378,6 +378,50 @@ uint16_t btstack_strcpy(char * dst, uint16_t dst_size, const char * src);
 void btstack_strcat(char * dst, uint16_t dst_size, const char * src);
 
 /**
+ * @brief Calculated the number of characters that would get printed
+ * @note same as calling snprintf without a buffer
+ * @param format
+ * @param argsq
+ * @return number of characters, or negative value on error
+ */
+int btstack_printf_strlen(const char * format, ...)
+#ifdef __GNUC__
+__attribute__ ((format (__printf__, 1, 2)))
+#endif
+;
+
+
+/**
+ * @brief Format string into buffer with '\0' and assert it is large enough
+ * @note same as calling snprintf and assert that the string was not truncated
+ * @param buffer
+ * @param size of buffer
+ * @param format
+ * @param argsq
+ * @return number of characters
+ */
+uint16_t btstack_snprintf_assert_complete(char * buffer, size_t size, const char * format, ...)
+#ifdef __GNUC__
+__attribute__ ((format (__printf__, 3, 4)))
+#endif
+;
+
+/**
+ * @brief Format string into buffer, truncated if necessary. Output string is '\0' terminated
+ * @note similar to calling snprintf but returns the length of the output string
+ * @param buffer
+ * @param size of buffer
+ * @param format
+ * @param argsq
+ * @return number of characters
+ */
+uint16_t btstack_snprintf_best_effort(char * buffer, size_t size, const char * format, ...)
+#ifdef __GNUC__
+__attribute__ ((format (__printf__, 3, 4)))
+#endif
+;
+
+/**
  * Returns the number of leading 0-bits in x, starting at the most significant bit position.
  * If x is 0, the result is undefined.
  * @note maps to __builtin_clz for gcc and clang

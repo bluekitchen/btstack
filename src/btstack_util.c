@@ -45,16 +45,14 @@
 #include "btstack_debug.h"
 #include "btstack_util.h"
 
+#include <stdio.h>  // vsnprintf
+#include <string.h> // memcpy
+
 #ifdef _MSC_VER
 #include <intrin.h>
 #include <windows.h>
 #endif
 
-#ifdef ENABLE_PRINTF_HEXDUMP
-#include <stdio.h>
-#endif
-
-#include <string.h>
 
 /**
  * @brief Compare two Bluetooth addresses
@@ -639,6 +637,42 @@ void btstack_strcat(char * dst, uint16_t dst_size, const char * src){
     uint16_t bytes_to_copy = btstack_min( src_len, dst_size - dst_len - 1);
     (void) memcpy( &dst[dst_len], src, bytes_to_copy);
     dst[dst_len + bytes_to_copy] = 0;
+}
+
+int btstack_printf_strlen(const char * format, ...){
+    va_list argptr;
+    va_start(argptr, format);
+    char dummy_buffer[1];
+    int len = vsnprintf(dummy_buffer, sizeof(dummy_buffer), format, argptr);
+    va_end(argptr);
+    return len;
+}
+
+uint16_t btstack_snprintf_assert_complete(char * buffer, size_t size, const char * format, ...){
+    va_list argptr;
+    va_start(argptr, format);
+    int len = vsnprintf(buffer, size, format, argptr);
+    va_end(argptr);
+
+    // check for no error and no truncation
+    btstack_assert(len >= 0);
+    btstack_assert(len < size);
+    return (uint16_t) len;
+}
+
+uint16_t btstack_snprintf_best_effort(char * buffer, size_t size, const char * format, ...){
+    btstack_assert(size > 0);
+    va_list argptr;
+    va_start(argptr, format);
+    int len = vsnprintf(buffer, size, format, argptr);
+    va_end(argptr);
+    if (len < 0) {
+        // error -> len = 0
+        return 0;
+    } else {
+        // min of total string len and buffer size
+        return (uint16_t) btstack_min((uint32_t) len, (uint32_t) size - 1);
+    }
 }
 
 uint16_t btstack_virtual_memcpy(
