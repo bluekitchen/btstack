@@ -409,12 +409,12 @@ static void show_usage(void){
     btprintf("f - get folder listing\n");
     btprintf("F - get message listing for folder \'%s\'\n", *folder_name);
     btprintf("C - get conversation listing\n");
-    btprintf("6 - Select last listed \"unknown\" message\n");
     btprintf("1 - Select last listed \"email\" message\n");
     btprintf("2 - Select last listed \"sms_gsm\" message\n");
     btprintf("3 - Select last listed \"sms_cdma\" message\n");
     btprintf("4 - Select last listed \"mms\" message\n");
     btprintf("5 - Select last listed \"im\" message\n");
+    btprintf("6 - Select last listed \"unknown\" message\n");
     btprintf("g - Get selected message "); printf_hexdump(message_handle, sizeof(message_handle));
     btprintf("u - Upload (Push) message <%.20s>\n", push_bmsg->type);
     btprintf("U - cycle through Push message types <%.20s>\n", push_bmsg->type);
@@ -449,7 +449,7 @@ static void stdin_process(char c){
     switch (c){
     case 'x':
         next_test_case();
-        show_usage();
+        btprintf("[+] selected key sequence %d:%s %s\n", ptc->nr, ptc->descr, ptc->keysequ);
         break;
     case 'X':
         init_keypress_timer();
