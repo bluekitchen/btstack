@@ -278,6 +278,7 @@ static enum {
     {.nr = 22, .descr = "MAP/MCE/MMB/BV-04-I"       , .keysequ = "apF1g"},
     {.nr = 23, .descr = "MAP/MCE/MMB/BV-17-I"       , .keysequ = "apF4g"},
     {.nr = 24, .descr = "MAP/MCE/MMB/BV-06-I"       , .keysequ = "apF2g"},
+    {.nr = 25, .descr = "MAP/MCE/MMB/BV-07-I"       , .keysequ = "apF1r2r4r5rAb3rB"},
     {.nr = 26, .descr = "MAP/MCE/MMB/BV-08-I"       , .keysequ = "aPIFA"},
     
 
