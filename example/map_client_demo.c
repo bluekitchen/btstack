@@ -114,7 +114,14 @@ static map_conversation_id_t conv_id = { 0x00, };
 //static const char * path = "telecom/msg/draft";
 static const char* path = "telecom/msg";
 
-static const char bmsg_email[] =
+enum bmsg_type {email, IM, email2};
+
+static struct push_bmsg_s {
+    const char* type;
+    const char* bmsg;
+} push_bmsgs[] = {
+   {.type = "email",
+   .bmsg =
 "BEGIN:BMSG\r\n"
 "VERSION:1.0\r\n"
 "STATUS:UNREAD\r\n"
@@ -153,36 +160,10 @@ static const char bmsg_email[] =
 "END:BBODY\r\n"
 "END:BENV\r\n"
 "END:BENV\r\n"
-"END:BMSG\r\n";
-
-//"BEGIN:BMSG\r\n"
-//"VERSION:1.0\r\n"
-//"STATUS:UNREAD\r\n"
-//"TYPE:EMAIL\r\n"
-//"FOLDER:\r\n"
-//"BEGIN:VCARD\r\n"
-//"VERSION:2.1\r\n"
-//"N:IUT\r\n"
-//"EMAIL:member@iut.com\r\n"
-//"END:VCARD\r\n"
-//"BEGIN:BENV\r\n"
-//"BEGIN:BBODY\r\n"
-//"ENCODING:UTF-8\r\n"
-//"LENGTH:4975\r\n"
-//"BEGIN:MSG\r\n"
-//"Date:20 Jun 96\r\n"
-//"Subject:BTStack testing\r\n"
-//"From:PTS@bluetooth.com\r\n"
-//"To:IUT@bluetooth.com\r\n"
-//"\r\n"
-//"Hello World!\r\n"
-//"\r\n"
-//"END:MSG\r\n"
-//"END:BBODY\r\n"
-//"END:BENV\r\n"
-//"END:BMSG\r\n";
-
-static const char bmsg_IM[] =
+"END:BMSG\r\n" },
+   {
+.type = "IM",
+.bmsg =
     "BEGIN:BMSG\r\n"
     "VERSION:1.1\r\n"
     "STATUS:UNREAD\r\n"
@@ -214,8 +195,38 @@ static const char bmsg_IM[] =
     "END:BBODY\r\n"
     "END:BENV\r\n"
     "END:BMSG\r\n"
-;
+    },
+   {.type = "email2",
+   .bmsg =
+    "BEGIN:BMSG\r\n"
+    "VERSION:1.0\r\n"
+    "STATUS:UNREAD\r\n"
+    "TYPE:EMAIL\r\n"
+    "FOLDER:\r\n"
+    "BEGIN:VCARD\r\n"
+    "VERSION:2.1\r\n"
+    "N:IUT\r\n"
+    "EMAIL:member@iut.com\r\n"
+    "END:VCARD\r\n"
+    "BEGIN:BENV\r\n"
+    "BEGIN:BBODY\r\n"
+    "ENCODING:UTF-8\r\n"
+    "LENGTH:4975\r\n"
+    "BEGIN:MSG\r\n"
+    "Date:20 Jun 96\r\n"
+    "Subject:BTStack testing\r\n"
+    "From:PTS@bluetooth.com\r\n"
+    "To:IUT@bluetooth.com\r\n"
+    "\r\n"
+    "Hello World!\r\n"
+    "\r\n"
+    "END:MSG\r\n"
+    "END:BBODY\r\n"
+    "END:BENV\r\n"
+    "END:BMSG\r\n"}
+};
 
+static struct push_bmsg_s *push_bmsg = push_bmsgs;
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
@@ -266,7 +277,7 @@ static enum {
     {.nr = 22, .descr = "MAP/MCE/MMB/BV-04-I"       , .keysequ = "a1g"},
     {.nr = 23, .descr = "MAP/MCE/MMB/BV-17-I"       , .keysequ = "a4g"},
     {.nr = 24, .descr = "MAP/MCE/MMB/BV-06-I"       , .keysequ = "a2g"},
-    {.nr = 25, .descr = "MAP/MCE/MMB/BV-08-I"       , .keysequ = "aUFA"},
+    {.nr = 25, .descr = "MAP/MCE/MMB/BV-08-I"       , .keysequ = "aIFA"},
     {.nr = 26, .descr = "MAP/MCE/MMB/BV-08-I"       , .keysequ = "aC"},
 
     {.nr = 27, .descr = "MAP/MCE/MMD/BV-01-C"       , .keysequ = "apF1d2d4d5dAb3dB"},
@@ -332,20 +343,14 @@ static init_keypress_timer(void) {
     log_debug("Timer set");
 }
 
-static void next_test_case(void) {
-    // cycle throug all test cases
-    if (++ptc >= &test_cases[ARRAYSIZE(test_cases)]) {
-        ptc = &test_cases[0];
-    }
-    // init test cases
-    keysequ_idx = 0;
+static void next_push_bmsg(void) {
+    // cycle throug all push bmsgs
+    NEXT_ARR_ENTRY(push_bmsg, push_bmsgs);
 }
 
-static void previous_test_case(void) {
+static void next_test_case(void) {
     // cycle throug all test cases
-    if (--ptc < &test_cases[0]) {
-        ptc = &test_cases[ARRAYSIZE(test_cases) - 1];
-    }
+    NEXT_ARR_ENTRY(ptc, test_cases);
     // init test cases
     keysequ_idx = 0;
 }
@@ -399,7 +404,7 @@ static void show_usage(void){
     }
     btprintf("X - eXecute current test case key sequence (%d:%s %s)\n", ptc->nr, ptc->descr, ptc->keysequ);
     btprintf("x - cycle through test cases\n");
-    btprintf("U - request an update on the inbox\n");
+    btprintf("I - request an update on the Inbox\n");
     btprintf("p - set path \'%s\'\n", path);
     btprintf("f - get folder listing\n");
     btprintf("F - get message listing for folder \'%s\'\n", *folder_name);
@@ -411,7 +416,8 @@ static void show_usage(void){
     btprintf("4 - Select last listed \"mms\" message\n");
     btprintf("5 - Select last listed \"im\" message\n");
     btprintf("g - Get selected message "); printf_hexdump(message_handle, sizeof(message_handle));
-    btprintf("u - Upload (Push) message <%.20s>\n", bmsg_email);
+    btprintf("u - Upload (Push) message <%.20s>\n", push_bmsg->type);
+    btprintf("U - cycle through Push message types <%.20s>\n", push_bmsg->type);
     btprintf("r - Mark selected messages as read\n");
     btprintf("R - Mark selected messagee as unread\n");
     btprintf("d - Mark selected messagee as deleted\n");
@@ -467,8 +473,8 @@ static void stdin_process(char c){
         map_access_client_disconnect(map_mas_1_cid);
         map_mas_1_cid = 0;
         break;
-    case 'U':
-        btprintf("[+] Requesting inbox update\n");
+    case 'I':
+        btprintf("[+] Requesting Inbox update\n");
         map_access_client_update_inbox(map_cid);
         break;
     case 'p':
@@ -525,8 +531,12 @@ static void stdin_process(char c){
         map_access_client_get_message_with_handle(map_cid, message_handle, 1);
         break;
     case 'u':
-        btprintf("[+] Upload (PUT/PUSH) message\n");
-        map_access_client_push_message(map_cid, *folder_name, bmsg_IM, (uint16_t)strlen(bmsg_IM), conv_id);
+        btprintf("[+] Upload (PUT/PUSH) bmsg (%s)\n", push_bmsg->type);
+        map_access_client_push_message(map_cid, *folder_name, push_bmsg->bmsg, (uint16_t)strlen(push_bmsg->bmsg), conv_id);
+        break;
+    case 'U':
+        next_push_bmsg();
+        btprintf("[+] Switched to next push bmsg (%s)\n", push_bmsg->type);
         break;
     case 'r':
         btprintf("[+] Mark selected messages as read\n");
