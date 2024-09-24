@@ -714,7 +714,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             break;
 
         case MAP_DATA_PACKET:
-            char buf[100]; int i;
+            char buf[1000]; int i;
             for (i = 0; i < size; i++) {
                 snprintf(&buf[3 * i], 4, "%02x ", packet[i]);
             }
