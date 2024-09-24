@@ -143,16 +143,6 @@ static map_access_client_t * map_access_client_for_goep_cid(uint16_t goep_cid){
     return map_access_client_for_cid(goep_cid);
 }
 
-//static void map_access_client_message_handle_to_str(char * p, const map_message_handle_t msg_handle){
-//    int i;
-//    for (i = 0; i < MAP_MESSAGE_HANDLE_SIZE ; i++) {
-//        uint8_t byte = msg_handle[i];
-//        *p++ = char_for_nibble(byte >> 4);
-//        *p++ = char_for_nibble(byte & 0x0F);
-//    }
-//    *p = 0;
-//}
-
 static void map_access_client_parser_callback_connect(void * user_data, uint8_t header_id, uint16_t total_len, uint16_t data_offset, const uint8_t * data_buffer, uint16_t data_len){
     map_access_client_t * client = (map_access_client_t *) user_data;
     switch (header_id){
