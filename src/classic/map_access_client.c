@@ -907,7 +907,7 @@ uint8_t map_access_client_get_message_with_handle(uint16_t map_cid, const map_me
     return 0;
 }
 
-uint8_t map_access_client_push_message(uint16_t map_cid, const uint8_t* name_header, const uint8_t *msg_body, const uint16_t msg_body_size, map_conversation_id_t conv_id) {
+uint8_t map_access_client_push_message(uint16_t map_cid, const uint8_t* name_header, const uint8_t *msg_body, const uint16_t msg_body_size, map_conversation_id_t *conv_id) {
     map_access_client_t* map_access_client = map_access_client_for_map_cid(map_cid);
     if (map_access_client == NULL) {
         RUN_AND_LOG_ACTION(return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;)

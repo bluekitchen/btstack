@@ -534,7 +534,7 @@ static void stdin_process(char c){
         break;
     case 'u':
         btprintf("[+] Upload (PUT/PUSH) bmsg (%s)\n", push_bmsg->type);
-        map_access_client_push_message(map_cid, *folder_name, push_bmsg->bmsg, (uint16_t)strlen(push_bmsg->bmsg), conv_id);
+        map_access_client_push_message(map_cid, "A0", push_bmsg->bmsg, (uint16_t)strlen(push_bmsg->bmsg), &conv_id);
         break;
     case 'U':
         next_push_bmsg();

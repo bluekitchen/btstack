@@ -142,7 +142,7 @@ typedef struct {
     uint8_t PresenceAvailability;
     uint8_t ChatState;
     map_UTCstmpoffstr_t LastActivity;
-    map_conversation_id_t conversation_id;
+    map_conversation_id_t *conversation_id;
 
     map_util_xml_parser mu_parser;
 } map_access_client_t;
@@ -259,7 +259,7 @@ uint8_t map_access_client_get_message_with_handle(uint16_t map_cid, const map_me
  * @param msg_body_size
  * @return status
  */
-uint8_t map_access_client_push_message(uint16_t map_cid, const uint8_t* name_header, const uint8_t* msg_body, const uint16_t msg_body_size, map_conversation_id_t conv_id);
+uint8_t map_access_client_push_message(uint16_t map_cid, const uint8_t* name_header, const uint8_t* msg_body, const uint16_t msg_body_size, map_conversation_id_t* conv_id);
 
 /** 
  * @brief Enable notifications.
