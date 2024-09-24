@@ -183,6 +183,7 @@ static void map_access_client_parser_callback_get_operation(void * user_data, ui
                 case MAP_W4_SET_MESSAGE_STATUS:
                     break;
                 case MAP_W4_PUSH_MESSAGE_HANDLE:
+                    break;
                 case MAP_W4_MESSAGE:
                 case MAP_W4_MAS_INSTANCE_INFO:
                 case MAP_W4_GET_OWNER_STATUS:
@@ -413,9 +414,14 @@ static void map_access_client_handle_can_send_now(uint16_t goep_cid) {
                 application_parameters[pos++] = 1;    // UTF-8
 
                 application_parameters[pos++] = MAP_APP_PARAM_ConversationID;
-                application_parameters[pos++] = 10;// sizeof(map_access_client->ConversationID);
-                memcpy(&application_parameters[pos], "3909231965", 10);// sizeof(map_access_client->ConversationID));
-                pos += 10;// sizeof(map_access_client->ConversationID);
+                application_parameters[pos++] = 5;// sizeof(map_access_client->ConversationID);
+                memcpy(&application_parameters[pos], "\x39\x09\x23\x19\x65", 5);// sizeof(map_access_client->ConversationID));
+                pos += 5;// sizeof(map_access_client->ConversationID);
+
+                application_parameters[pos++] = MAP_APP_PARAM_MessageHandle;
+                application_parameters[pos++] = 2;// sizeof(map_access_client->ConversationID);
+                memcpy(&application_parameters[pos], "A0", 2);// sizeof(map_access_client->ConversationID));
+                pos += 2;// sizeof(map_access_client->ConversationID);
 
                 goep_client_header_add_application_parameters(map_access_client->goep_client.cid, &application_parameters[0], pos);
                 goep_client_body_add_static(map_access_client->goep_client.cid, map_access_client->msg_body, map_access_client->msg_body_size);
