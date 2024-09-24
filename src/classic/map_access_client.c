@@ -472,7 +472,7 @@ static void map_access_client_handle_can_send_now(uint16_t goep_cid) {
 
             if (   map_access_client->stat_val >= no && map_access_client->stat_val <= yes
                 && map_access_client->stat_ind >= readStatus && map_access_client->stat_ind <= setExtendedData) {
-                application_parameters[pos++] = 
+                application_parameters[pos++] = MAP_APP_PARAM_StatusIndicator;
                 application_parameters[pos++] = 1;
                 application_parameters[pos++] = map_access_client->stat_ind;     // readStatus/deletestatus/extended
 
