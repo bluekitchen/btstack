@@ -104,15 +104,12 @@ static uint16_t mns_cid;
 static bd_addr_t    remote_addr;
 static const char * remote_addr_string = "001BDC0732EF";
 
-static const char* folders[] = { "inbox", "outbox", "draft", "delete", "", NULL};
+static const char* folders[] = { "telecom/msg/inbox", "telecom/msg/outbox", "telecom/msg/draft", "telecom/msg/delete", "", NULL};
 static const char * *folder_name = folders;
 static map_message_handle_t message_handle = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 static map_message_handle_t message_handles[MAP_MESSAGE_TYPE_MAX] = { 0, };
 static map_message_handle_t conv_ids[MAP_MESSAGE_TYPE_MAX] = { 0, };
 static map_conversation_id_t conv_id = { 0x00, };
-
-//static const char * path = "telecom/msg/draft";
-static const char* path = "telecom/msg";
 
 enum bmsg_type {email, IM, email2};
 
@@ -407,9 +404,10 @@ static void show_usage(void){
     btprintf("X - eXecute current test case key sequence (%d:%s %s)\n", ptc->nr, ptc->descr, ptc->keysequ);
     btprintf("x - cycle through test cases\n");
     btprintf("I - request an update on the Inbox\n");
-    btprintf("p - set path \'%s\'\n", path);
+    btprintf("p - set path '%s'\n", *folder_name);
+    btprintf("P - selected Path '%s'\n", *folder_name);
     btprintf("f - get folder listing\n");
-    btprintf("F - get message listing for folder \'%s\'\n", *folder_name);
+    btprintf("F - get message listing for current folder\n");
     btprintf("C - get conversation listing\n");
     btprintf("1 - Select last listed \"email\" message\n");
     btprintf("2 - Select last listed \"sms_gsm\" message\n");
@@ -480,8 +478,8 @@ static void stdin_process(char c){
         map_access_client_update_inbox(map_cid);
         break;
     case 'p':
-        btprintf("[+] Set path \'%s\'\n", path);
-        map_access_client_set_path(map_cid, path);
+        btprintf("[+] Set *folder_name \'%s\'\n", *folder_name);
+        map_access_client_set_path(map_cid, *folder_name);
         break;
     case 'P':
         if (*(++folder_name) == NULL)
@@ -493,8 +491,8 @@ static void stdin_process(char c){
         map_access_client_get_folder_listing(map_cid);
         break;
     case 'F':
-        btprintf("[+] Get message listing for folder \'%s\'\n", *folder_name);
-        map_access_client_get_message_listing_for_folder(map_cid, *folder_name);
+        btprintf("[+] Get message listing for folder \'%s\'\n", "");
+        map_access_client_get_message_listing_for_folder(map_cid, "");
         break;
     case 'C':
         btprintf("[+] Get conversation listing\n");
