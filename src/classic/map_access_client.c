@@ -360,7 +360,7 @@ static void map_access_client_handle_can_send_now(uint16_t goep_cid) {
 
                 application_parameters[pos++] = MAP_APP_PARAM_Charset;
                 application_parameters[pos++] = 1;
-                application_parameters[pos++] = 1;    // UTF-8
+                application_parameters[pos++] = MAP_APP_PARAM_SUB_UTF_8;
                 goep_client_header_add_application_parameters(map_access_client->goep_client.cid, &application_parameters[0], pos);
             }
 
@@ -378,7 +378,7 @@ static void map_access_client_handle_can_send_now(uint16_t goep_cid) {
                 obex_srm_client_init(&map_access_client->obex_srm);
                 map_access_client_prepare_srm_header(map_access_client);
 
-                goep_client_header_add_name(map_access_client->goep_client.cid, map_access_client->name_header);
+                goep_client_header_add_name(map_access_client->goep_client.cid, "");
 
                 goep_client_header_add_type(map_access_client->goep_client.cid, "x-bt/message");
 
@@ -388,17 +388,19 @@ static void map_access_client_handle_can_send_now(uint16_t goep_cid) {
 
                 application_parameters[pos++] = MAP_APP_PARAM_Charset;
                 application_parameters[pos++] = 1;
-                application_parameters[pos++] = 1;    // UTF-8
+                application_parameters[pos++] = MAP_APP_PARAM_SUB_UTF_8;
 
-                application_parameters[pos++] = MAP_APP_PARAM_ConversationID;
-                application_parameters[pos++] = 5;// sizeof(map_access_client->ConversationID);
-                memcpy(&application_parameters[pos], "\x39\x09\x23\x19\x65", 5);// sizeof(map_access_client->ConversationID));
-                pos += 5;// sizeof(map_access_client->ConversationID);
+                if (map_access_client->conversation_id) {
+                    application_parameters[pos++] = MAP_APP_PARAM_ConversationID;
+                    application_parameters[pos++] = sizeof(*map_access_client->conversation_id);
+                    memcpy(&application_parameters[pos], map_access_client->conversation_id, sizeof(*map_access_client->conversation_id));
+                    pos += sizeof(*map_access_client->conversation_id);
+                }
 
                 application_parameters[pos++] = MAP_APP_PARAM_MessageHandle;
-                application_parameters[pos++] = 2;// sizeof(map_access_client->ConversationID);
-                memcpy(&application_parameters[pos], "A0", 2);// sizeof(map_access_client->ConversationID));
-                pos += 2;// sizeof(map_access_client->ConversationID);
+                application_parameters[pos++] = 2;// sizeof(map_access_client->conversation_id);
+                memcpy(&application_parameters[pos], "A0", 2);// sizeof(map_access_client->conversation_id));
+                pos += 2;// sizeof(map_access_client->conversation_id);
 
                 goep_client_header_add_application_parameters(map_access_client->goep_client.cid, &application_parameters[0], pos);
                 goep_client_body_add_static(map_access_client->goep_client.cid, map_access_client->msg_body, map_access_client->msg_body_size);
