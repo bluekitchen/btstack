@@ -47,10 +47,9 @@ extern "C" {
 #include "btstack_defines.h"
 #include "classic/map.h"
 #include "classic/map_util.h"
-#include "classic/map_access_app_params.h"
 #include "classic/obex_parser.h"
 #include "classic/obex_srm_client.h"
-
+#include "classic/map_access_app_params.h"
 #include <stdint.h>
 
 /* API_START */

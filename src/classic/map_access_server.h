@@ -70,68 +70,6 @@ extern "C" {
     /* API_START */
 #include "classic/map_access_app_params.h"
 
-    enum MAP_APP_PARAMS
-    {
-        // the following X-Macro (https://en.wikipedia.org/wiki/X_macro)
-        // below defines enum MAP_APP_PARAMS members MAP_APP_PARAM_xyz = tag with BT SPECs tag values
-#define PARAM_REQUST(name, tag, type, opts, descr) MAP_APP_PARAM_ ## name = tag,
-#define PARAM_RESPON PARAM_REQUST
-#define PARAM_REQRSP PARAM_REQUST
-#define PARAM_UNUSED PARAM_REQUST
-#define ENUM(...)
-#define DSCR(...)
-
-        APP_PARAMS
-#undef PARAM_REQUST
-#undef PARAM_RESPON
-#undef PARAM_REQRSP
-#undef PARAM_UNUSED
-#undef ENUM
-#undef DSCR
-
-    };
-
-    enum MAP_APP_PARAMS_OPTIONS
-    {
-    // the following X-Macro (https://en.wikipedia.org/wiki/X_macro)
-    // below defines enum MAP_APP_PARAMS members MAP_APP_PARAM_xyz = tag with BT SPECs tag values
-#define ENUM(...)
-#define DSCR(...)
-#define PARAM_REQUST(name, tag, type, opts, descr) MAP_APP_PARAMS_OPTIONS_ ## name = opts,
-#define PARAM_RESPON PARAM_REQUST
-#define PARAM_REQRSP PARAM_REQUST
-#define PARAM_UNUSED PARAM_REQUST
-    APP_PARAMS
-
-#undef PARAM_REQUST
-#undef PARAM_RESPON
-#undef PARAM_REQRSP
-#undef PARAM_UNUSED
-#undef ENUM
-#undef DSCR
-    };
-
-
-        // the following X-Macro (https://en.wikipedia.org/wiki/X_macro)
-        // below defines enum MAP_APP_PARAMS members MAP_APP_PARAM_xyz = tag with BT SPECs tag values
-#define ENUM(value, enumname) MAP_APP_PARAM_SUB_ ## enumname = value,
-#define DSCR(...)
-
-#define PARAM_REQUST(name, tag, type, opts, descr) enum MAP_APP_PARAM_SUB_ ## name { MAP_APP_PARAM_SUB_ ## name ## _min = 0, descr };
-#define PARAM_RESPON PARAM_REQUST
-#define PARAM_REQRSP PARAM_REQUST
-#define PARAM_UNUSED PARAM_REQUST
-        APP_PARAMS
-
-#undef PARAM_REQUST
-#undef PARAM_RESPON
-#undef PARAM_REQRSP
-#undef PARAM_UNUSED
-#undef ENUM
-#undef DSCR
-
-
-
 // MAP Supported Features
 #define MAP_SUPPORTED_FEATURES_NOTIFICATION_REGISTRATION                    (1 <<  0) // Notification Registration                 
 #define MAP_SUPPORTED_FEATURES_NOTIFICATION                                 (1 <<  1) // Notification                              

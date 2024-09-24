@@ -57,34 +57,11 @@
 #include "classic/sdp_client_rfcomm.h"
 #include "classic/sdp_util.h"
 
-#include "classic/map_access_app_params.h"
 #include "classic/map_access_client.h"
 #include "classic/map_util.h"
 #include "hci_event_builder.h"
 
 #define MAP_MAX_NUM_ENTRIES 1024
-
-
-enum MAP_APP_PARAMS
-{
-    // the following X-Macro (https://en.wikipedia.org/wiki/X_macro)
-    // below defines enum MAP_APP_PARAMS members MAP_APP_PARAM_xyz = tag with BT SPECs tag values
-#define PARAM_REQUST(name, tag, type, opts, descr) MAP_APP_PARAM_ ## name = tag,
-#define PARAM_RESPON PARAM_REQUST
-#define PARAM_REQRSP PARAM_REQUST
-#define PARAM_UNUSED PARAM_REQUST
-#define ENUM(...)
-#define DSCR(...)
-
-    APP_PARAMS
-#undef PARAM_REQUST
-#undef PARAM_RESPON
-#undef PARAM_REQRSP
-#undef PARAM_UNUSED
-#undef ENUM
-#undef DSCR
-
-};
 
 
 // map access service bb582b40-420c-11db-b0de-0800200c9a66
