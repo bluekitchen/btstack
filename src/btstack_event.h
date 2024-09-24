@@ -3069,13 +3069,22 @@ static inline uint8_t gatt_event_connected_get_status(const uint8_t * event){
     return event[2];
 }
 /**
+ * @brief Get field address_type from event GATT_EVENT_CONNECTED
+ * @param event packet
+ * @return address_type
+ * @note: btstack_type 1
+ */
+static inline uint8_t gatt_event_connected_get_address_type(const uint8_t * event){
+    return event[3];
+}
+/**
  * @brief Get field address from event GATT_EVENT_CONNECTED
  * @param event packet
  * @param Pointer to storage for address
  * @note: btstack_type B
  */
 static inline void gatt_event_connected_get_address(const uint8_t * event, bd_addr_t address){
-    reverse_bytes(&event[3], address, 6);
+    reverse_bytes(&event[4], address, 6);
 }
 /**
  * @brief Get field handle from event GATT_EVENT_CONNECTED
@@ -3084,7 +3093,7 @@ static inline void gatt_event_connected_get_address(const uint8_t * event, bd_ad
  * @note: btstack_type H
  */
 static inline hci_con_handle_t gatt_event_connected_get_handle(const uint8_t * event){
-    return little_endian_read_16(event, 9);
+    return little_endian_read_16(event, 10);
 }
 #endif
 

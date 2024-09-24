@@ -207,6 +207,7 @@ typedef struct gatt_client{
 #if defined(ENABLE_GATT_OVER_CLASSIC) || defined(ENABLE_GATT_OVER_EATT)
     uint16_t  l2cap_cid;
     bd_addr_t addr;
+    bd_addr_type_t  addr_type;
 #endif
 
 #ifdef ENABLE_GATT_OVER_CLASSIC

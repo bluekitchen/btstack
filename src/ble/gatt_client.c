@@ -3112,15 +3112,16 @@ void gatt_client_remove_service_changed_handler(btstack_packet_callback_registra
 #include "hci_event.h"
 
 static const hci_event_t gatt_client_connected = {
-        GATT_EVENT_CONNECTED, 0, "1BH"
+        GATT_EVENT_CONNECTED, 0, "11BH"
 };
 
 static const hci_event_t gatt_client_disconnected = {
         GATT_EVENT_DISCONNECTED, 0, "H"
 };
 
-static void gatt_client_emit_connected(btstack_packet_handler_t callback, uint8_t status, bd_addr_t addr,
-                                       hci_con_handle_t con_handle) {
+static void
+gatt_client_emit_connected(btstack_packet_handler_t callback, uint8_t status, bd_addr_type_t addr_type, bd_addr_t addr,
+                           hci_con_handle_t con_handle) {
     uint8_t buffer[20];
     uint16_t len = hci_event_create_from_template_and_arguments(buffer, sizeof(buffer), &gatt_client_connected, status, addr, con_handle);
     (*callback)(HCI_EVENT_PACKET, 0, buffer, len);
@@ -3162,16 +3163,21 @@ static gatt_client_t * gatt_client_get_context_for_l2cap_cid(uint16_t l2cap_cid)
 }
 
 static void gatt_client_classic_handle_connected(gatt_client_t * gatt_client, uint8_t status){
+    // cache peer information
     bd_addr_t addr;
     // cppcheck-suppress uninitvar ; addr is reported as uninitialized although it's the destination of the memcpy
     memcpy(addr, gatt_client->addr, 6);
+    bd_addr_type_t addr_type = gatt_client->addr_type;
+    gatt_client->addr_type = BD_ADDR_TYPE_ACL;
     hci_con_handle_t con_handle = gatt_client->con_handle;
     btstack_packet_handler_t callback = gatt_client->callback;
+
     if (status != ERROR_CODE_SUCCESS){
         btstack_linked_list_remove(&gatt_client_connections, (btstack_linked_item_t *) gatt_client);
         btstack_memory_gatt_client_free(gatt_client);
     }
-    gatt_client_emit_connected(callback, status, addr, con_handle);
+
+    gatt_client_emit_connected(callback, status, addr_type, addr, con_handle);
 }
 
 static void gatt_client_classic_retry(btstack_timer_source_t * ts){
@@ -3285,9 +3291,7 @@ static void gatt_client_classic_sdp_start(void * context){
 static void gatt_client_classic_emit_connected(void * context){
     gatt_client_t * gatt_client = (gatt_client_t *) context;
     gatt_client->state = P_READY;
-    hci_connection_t * hci_connection = hci_connection_for_handle(gatt_client->con_handle);
-    btstack_assert(hci_connection != NULL);
-    gatt_client_emit_connected(gatt_client->callback, ERROR_CODE_SUCCESS, hci_connection->address, gatt_client->con_handle);
+    gatt_client_emit_connected(gatt_client->callback, ERROR_CODE_SUCCESS, gatt_client->addr_type, gatt_client->addr, gatt_client->con_handle);
 }
 
 uint8_t gatt_client_classic_connect(btstack_packet_handler_t callback, bd_addr_t addr){
@@ -3303,6 +3307,7 @@ uint8_t gatt_client_classic_connect(btstack_packet_handler_t callback, bd_addr_t
     gatt_client->bearer_type = ATT_BEARER_UNENHANCED_CLASSIC;
     gatt_client->con_handle = HCI_CON_HANDLE_INVALID;
     memcpy(gatt_client->addr, addr, 6);
+    gatt_client->addr_type = BD_ADDR_TYPE_ACL;
     gatt_client->mtu = ATT_DEFAULT_MTU;
     gatt_client->security_level = LEVEL_0;
     gatt_client->mtu_state = MTU_AUTO_EXCHANGE_DISABLED;
@@ -3412,7 +3417,7 @@ static void gatt_client_le_enhanced_handle_connected(gatt_client_t * gatt_client
         gatt_client->eatt_state = GATT_CLIENT_EATT_IDLE;
     }
 
-    gatt_client_emit_connected(gatt_client->callback, status,  gatt_client->addr, gatt_client->con_handle);
+    gatt_client_emit_connected(gatt_client->callback, status, gatt_client->addr_type, gatt_client->addr, gatt_client->con_handle);
 }
 
 // single channel disconnected
