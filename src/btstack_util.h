@@ -218,7 +218,7 @@ void big_endian_store_32(uint8_t * buffer, uint16_t position, uint32_t value);
 static inline void store_arr(uint8_t* buffer, uint16_t position, uint8_t* arr, size_t size) { memcpy(&buffer[position], arr, size); }
 
 /**
- * @brief Bluetooth SIG Central<>Peripheral APP-PARAMETER messaging (Big Endian)1
+ * @brief Bluetooth SIG Central<>Peripheral APP-PARAMETER messaging (Big Endian)
  */
 #define BT_APP_PARAM_WRITE_08( buffer, ppos, value,  size)	{ big_endian_store_08(buffer, (uint16_t)*ppos, value); log_app_messaging("BT_APP_PARAM_STORE_08: pos:%u %s:%u (0x%04X)"         ,*ppos, #value, (unsigned int)value, (unsigned int)value);      *ppos += 1; }
 #define BT_APP_PARAM_WRITE_16( buffer, ppos, value,  size)	{ big_endian_store_16(buffer, (uint16_t)*ppos, value); log_app_messaging("BT_APP_PARAM_STORE_16: pos:%u %s:%u (0x%04X)"         ,*ppos, #value, (unsigned int)value, (unsigned int)value);      *ppos += 2; }
@@ -231,6 +231,14 @@ static inline void store_arr(uint8_t* buffer, uint16_t position, uint8_t* arr, s
 #define BT_APP_PARAM_READ_24( buffer, ppos, pvalue, size)	{ uint16_t tpos = *ppos; *pvalue = big_endian_read_24(buffer, tpos);              log_app_messaging("BT_APP_PARAM_READ_24: pos:%u %s:%u (0x%04X)"          ,tpos, #pvalue, (unsigned int)*pvalue, (unsigned int)*pvalue); *ppos += 3; }
 #define BT_APP_PARAM_READ_32( buffer, ppos, pvalue, size)	{ uint16_t tpos = *ppos; *pvalue = big_endian_read_32(buffer, tpos);              log_app_messaging("BT_APP_PARAM_READ_32: pos:%u %s:%u (0x%04X)"          ,tpos, #pvalue, (unsigned int)*pvalue, (unsigned int)*pvalue); *ppos += 4; }
 #define BT_APP_PARAM_READ_ARR(buffer, ppos, pvalue, size)   { uint16_t tpos = *ppos;          read_arr(buffer, tpos, (uint8_t*)pvalue, size); log_app_messaging("BT_APP_PARAM_READ_ARR: pos:%u %s:<%s>"                ,tpos, #pvalue, pvalue);                                       *ppos += size; } 
+
+/**
+ * @brief cycle a pointer to an array element throug all array elements one after each other
+ */
+#define NEXT_ARR_ENTRY(ptr, arr)        \
+if (++ptr >= &arr[ARRAYSIZE(arr)]) {    \
+    ptr = &arr[0];                      \
+}
 
 /**
  * @brief Swap bytes in 16 bit integer
