@@ -90,6 +90,10 @@ typedef enum {
 #define BATTERY_LEVEL_STATUS_BITMASK_ADDITIONAL_STATUS_PRESENT                     0x04
 #define BATTERY_LEVEL_STATUS_BITMASK_RFU                                           0x08
 
+#define BATTERY_LEVEL_ADDITIONAL_STATUS_BITMASK_SERVICE_REQUIRED                   0x01       // 0 = No, 1 = Yes, 2 = Unknown, 3 = RFU
+#define BATTERY_LEVEL_ADDITIONAL_STATUS_BITMASK_BATTERY_FAULT                      0x02       // 0 = No or Unknown, 1 = Yes
+#define BATTERY_LEVEL_ADDITIONAL_STATUS_BITMASK_RFU                                0x04
+
 #define BATTERY_LEVEL_POWER_STATE_BITMASK_EXTERNAL_BATTERY_PRESENT                 0x0001    // 0 = No, 1 = Yes      
 #define BATTERY_LEVEL_POWER_STATE_BITMASK_WIRED_EXTERNAL_POWER_SOURCE_CONNECTED    0x0004    // 0 = No, 1 = Yes, 2 = Unknown, 3 = RFU
 #define BATTERY_LEVEL_POWER_STATE_BITMASK_WIRELESS_EXTERNAL_POWER_SOURCE_CONNECTED 0x0010    // 0 = No, 1 = Yes, 2 = Unknown, 3 = RFU
@@ -98,10 +102,6 @@ typedef enum {
 #define BATTERY_LEVEL_POWER_STATE_BITMASK_CHARGING_TYPE                            0x0400    // 0 = Unknown or Not Charging 1 = Constant Current, 2 = Constant Voltage, 3 = Trickle, 4 = Float, 5–7 = RFU              
 #define BATTERY_LEVEL_POWER_STATE_BITMASK_CHARGING_FAULT_REASON                    0x2000    // Bit 12: Battery, Bit 13: External Power source, Bit 14: Other
 #define BATTERY_LEVEL_POWER_STATE_BITMASK_RFU                                      0x4000
-
-#define BATTERY_LEVEL_ADDITIONAL_STATUS_BITMASK_SERVICE_REQUIRED                   0x01       // 0 = No, 1 = Yes, 2 = Unknown, 3 = RFU
-#define BATTERY_LEVEL_ADDITIONAL_STATUS_BITMASK_BATTERY_FAULT                      0x02       // 0 = No or Unknown, 1 = Yes
-#define BATTERY_LEVEL_ADDITIONAL_STATUS_BITMASK_RFU                                0x04
 
 #define BATTERY_CRITCAL_STATUS_BITMASK_CRITICAL_POWER_STATE                        0x01
 #define BATTERY_CRITCAL_STATUS_BITMASK_IMMEDIATE_SERVICE_REQUIRED                  0x02
@@ -138,22 +138,10 @@ typedef enum {
 struct battery_service_v1;
 
 typedef struct {
-    uint16_t year;
-    uint8_t  month;
-    uint8_t  day;
-} btstack_utc_date_t;
-
-typedef struct {
-    uint8_t  hours;
-    uint8_t  minutes;
-    uint8_t  seconds;
-} btstack_utc_time_t;
-
-typedef struct {
     hci_con_handle_t con_handle;
 
     btstack_context_callback_registration_t  scheduled_tasks_callback;
-    uint8_t scheduled_tasks;
+    uint16_t scheduled_tasks;
     uint16_t configurations[BAS_CHARACTERISTIC_INDEX_NUM];
 
     struct battery_service_v1 * service;
