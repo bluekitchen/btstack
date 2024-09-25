@@ -480,14 +480,15 @@ static void battery_service_set_callback(battery_service_v1_server_connection_t 
     }
 }
 
-
-void battery_service_v1_server_set_battery_value(battery_service_v1_t * service, uint8_t value){
+uint8_t battery_service_v1_server_set_battery_value(battery_service_v1_t * service, uint8_t battery_value){
     btstack_assert(service != NULL);
-    if (service->battery_value == value){
-        return;
+    if (service->battery_value == battery_value){
+        return ERROR_CODE_REPEATED_ATTEMPTS;
     }
-
-    service->battery_value = value;
+    if (battery_value > 100){
+        return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+    }
+    service->battery_value = battery_value;
 
     uint8_t i;
     for (i = 0; i < service->connections_max_num; i++){
@@ -496,6 +497,7 @@ void battery_service_v1_server_set_battery_value(battery_service_v1_t * service,
             battery_service_set_callback(connection, BAS_NOTIFICATION_TASK_BATTERY_VALUE_CHANGED);
         }
     }
+    return ERROR_CODE_SUCCESS;
 }
 
 void battery_service_v1_server_deregister(battery_service_v1_t *service){

@@ -286,15 +286,21 @@ typedef struct battery_service_v1 {
  */
 void battery_service_v1_server_init(void);
 
-void battery_service_v1_server_register(battery_service_v1_t *service, battery_service_v1_server_connection_t *connections, uint8_t connection_max_num);
+void battery_service_v1_server_register(battery_service_v1_t * service, battery_service_v1_server_connection_t * connections, uint8_t connection_max_num);
 
-void battery_service_v1_server_deregister(battery_service_v1_t *service);
+void battery_service_v1_server_deregister(battery_service_v1_t * service);
+
 /**
  * @brief Update battery value
  * @note triggers notifications if subscribed
+ * @param service
  * @param battery_value in range 0-100
+ * @return ERROR_CODE_SUCCESS if value differs from old one, otherwise:
+ *              - ERROR_CODE_REPEATED_ATTEMPTS, or
+ *              - ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE
  */
-void battery_service_v1_server_set_battery_value(battery_service_v1_t * service, uint8_t value);
+uint8_t battery_service_v1_server_set_battery_value(battery_service_v1_t * service, uint8_t battery_value);
+
 
 void battery_service_v1_server_deinit(void);
 
