@@ -228,7 +228,7 @@ typedef struct battery_service_v1 {
     bas_characteristic_t  characteristics[BAS_CHARACTERISTIC_INDEX_NUM];
     
     // ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_LEVEL
-    uint8_t  battery_value;
+    uint8_t  battery_level;
 
     // ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_LEVEL_STATUS       
     const battery_level_status_t * level_status;
@@ -279,15 +279,22 @@ void battery_service_v1_server_register(battery_service_v1_t * service, battery_
 void battery_service_v1_server_deregister(battery_service_v1_t * service);
 
 /**
- * @brief Update battery value
- * @note triggers notifications if subscribed
+ * @brief Update battery level
+ * @note Triggers notification if subscribed
  * @param service
- * @param battery_value in range 0-100
- * @return ERROR_CODE_SUCCESS if value differs from old one, otherwise:
- *              - ERROR_CODE_REPEATED_ATTEMPTS, or
- *              - ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE
+ * @param battery_level in range 0-100
+ * @return ERROR_CODE_SUCCESS if value is valid, otherwise ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE
  */
-uint8_t battery_service_v1_server_set_battery_value(battery_service_v1_t * service, uint8_t battery_value);
+uint8_t battery_service_v1_server_set_battery_level(battery_service_v1_t * service, uint8_t battery_level);
+
+/**
+ * @brief Update battery level status
+ * @note Triggers notification or indication if subscribed
+ * @param service
+ * @param battery_level_status in range 0-100
+ * @return ERROR_CODE_SUCCESS if value is valid, otherwise ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE
+ */
+uint8_t battery_service_v1_server_set_battery_level_status(battery_service_v1_t * service, const battery_level_status_t * battery_level_status);
 
 
 void battery_service_v1_server_deinit(void);

@@ -51,26 +51,66 @@
 
 #include "ble/gatt-service/battery_service_v1_server.h"
 
-#define BAS_NOTIFICATION_TASK_BATTERY_VALUE_CHANGED                          0x0001
+#define BAS_TASK_BATTERY_LEVEL_CHANGED                                  0x0001
+#define BAS_TASK_BATTERY_LEVEL_STATUS_CHANGED                           0x0002
+#define BAS_TASK_ESTIMATED_SERVICE_DATE_CHANGED                         0x0004
+#define BAS_TASK_BATTERY_CRITCAL_STATUS_CHANGED                         0x0008
+#define BAS_TASK_BATTERY_ENERGY_STATUS_CHANGED                          0x0010
+#define BAS_TASK_BATTERY_TIME_STATUS_CHANGED                            0x0020
+#define BAS_TASK_BATTERY_HEALTH_STATUS_CHANGED                          0x0040
+#define BAS_TASK_BATTERY_HEALTH_INFORMATION_CHANGED                     0x0080
+#define BAS_TASK_BATTERY_INFORMATION_CHANGED                            0x0100
+#define BAS_TASK_MANUFACTURER_NAME_STRING_CHANGED                       0x0200
+#define BAS_TASK_MODEL_NUMBER_STRING_CHANGED                            0x0400
+#define BAS_TASK_SERIAL_NUMBER_STRING_CHANGED                           0x0800
 
 // list of uuids
 static const uint16_t bas_uuid16s[BAS_CHARACTERISTIC_INDEX_NUM] = {
-        ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_LEVEL,
-        ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_LEVEL_STATUS,
-        ORG_BLUETOOTH_CHARACTERISTIC_ESTIMATED_SERVICE_DATE,
-        ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_CRITCAL_STATUS,
-        ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_ENERGY_STATUS,
-        ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_TIME_STATUS,
-        ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_HEALTH_STATUS,
-        ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_HEALTH_INFORMATION,
-        ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_INFORMATION,
-        ORG_BLUETOOTH_CHARACTERISTIC_MANUFACTURER_NAME_STRING,
-        ORG_BLUETOOTH_CHARACTERISTIC_MODEL_NUMBER_STRING,
-        ORG_BLUETOOTH_CHARACTERISTIC_SERIAL_NUMBER_STRING,
+    ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_LEVEL,
+    ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_LEVEL_STATUS,
+    ORG_BLUETOOTH_CHARACTERISTIC_ESTIMATED_SERVICE_DATE,
+    ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_CRITCAL_STATUS,
+    ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_ENERGY_STATUS,
+    ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_TIME_STATUS,
+    ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_HEALTH_STATUS,
+    ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_HEALTH_INFORMATION,
+    ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_INFORMATION,
+    ORG_BLUETOOTH_CHARACTERISTIC_MANUFACTURER_NAME_STRING,
+    ORG_BLUETOOTH_CHARACTERISTIC_MODEL_NUMBER_STRING,
+    ORG_BLUETOOTH_CHARACTERISTIC_SERIAL_NUMBER_STRING,
 };
-
 static btstack_linked_list_t battery_services;
 
+static uint16_t bas_server_get_task_for_characteristic_index(bas_characteristic_index_t index){
+    switch (index){
+        case BAS_CHARACTERISTIC_INDEX_BATTERY_LEVEL:
+            return BAS_TASK_BATTERY_LEVEL_CHANGED;             
+        case BAS_CHARACTERISTIC_INDEX_BATTERY_LEVEL_STATUS:
+            return BAS_TASK_BATTERY_LEVEL_STATUS_CHANGED;      
+        case BAS_CHARACTERISTIC_INDEX_ESTIMATED_SERVICE_DATE:
+            return BAS_TASK_ESTIMATED_SERVICE_DATE_CHANGED;    
+        case BAS_CHARACTERISTIC_INDEX_BATTERY_CRITCAL_STATUS:
+            return BAS_TASK_BATTERY_CRITCAL_STATUS_CHANGED;    
+        case BAS_CHARACTERISTIC_INDEX_BATTERY_ENERGY_STATUS:
+            return BAS_TASK_BATTERY_ENERGY_STATUS_CHANGED;     
+        case BAS_CHARACTERISTIC_INDEX_BATTERY_TIME_STATUS:
+            return BAS_TASK_BATTERY_TIME_STATUS_CHANGED;       
+        case BAS_CHARACTERISTIC_INDEX_BATTERY_HEALTH_STATUS:
+            return BAS_TASK_BATTERY_HEALTH_STATUS_CHANGED;     
+        case BAS_CHARACTERISTIC_INDEX_BATTERY_HEALTH_INFORMATION:
+            return BAS_TASK_BATTERY_HEALTH_INFORMATION_CHANGED;
+        case BAS_CHARACTERISTIC_INDEX_BATTERY_INFORMATION:
+            return BAS_TASK_BATTERY_INFORMATION_CHANGED;       
+        case BAS_CHARACTERISTIC_INDEX_MANUFACTURER_NAME_STRING:
+            return BAS_TASK_MANUFACTURER_NAME_STRING_CHANGED;  
+        case BAS_CHARACTERISTIC_INDEX_MODEL_NUMBER_STRING:
+            return BAS_TASK_MODEL_NUMBER_STRING_CHANGED;       
+        case BAS_CHARACTERISTIC_INDEX_SERIAL_NUMBER_STRING:
+            return BAS_TASK_SERIAL_NUMBER_STRING_CHANGED;
+        default:
+            btstack_assert(false);
+    }   
+}
 
 static battery_service_v1_server_connection_t * battery_service_server_connection_for_con_handle(battery_service_v1_t * service, hci_con_handle_t con_handle){
     if (service == NULL){
@@ -135,7 +175,7 @@ static uint8_t bas_serialize_characteristic(battery_service_v1_t * service, bas_
     uint8_t pos = 0;
     switch ((bas_characteristic_index_t) index){
         case BAS_CHARACTERISTIC_INDEX_BATTERY_LEVEL:
-            event[pos++] = service->battery_value;
+            event[pos++] = service->battery_level;
             break;
 
         case BAS_CHARACTERISTIC_INDEX_BATTERY_LEVEL_STATUS:
@@ -392,6 +432,14 @@ static int battery_service_write_callback(hci_con_handle_t con_handle, uint16_t 
     return 0;
 }
 
+
+static bool bas_characteristic_notify_configured(battery_service_v1_server_connection_t * connection, bas_characteristic_index_t index){
+    return (connection->configurations[index] & GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION) != 0u;
+}
+static bool bas_characteristic_indicate_configured(battery_service_v1_server_connection_t * connection, bas_characteristic_index_t index){
+    return (connection->configurations[index] & GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_INDICATION) != 0u;
+}
+
 static void battery_service_can_send_now(void * context){
     battery_service_v1_server_connection_t * connection = (battery_service_v1_server_connection_t *) context;
     if (connection == NULL){
@@ -402,9 +450,64 @@ static void battery_service_can_send_now(void * context){
         return;
     }
 
-    if ( (connection->scheduled_tasks & BAS_NOTIFICATION_TASK_BATTERY_VALUE_CHANGED) > 0u){
-        connection->scheduled_tasks &= ~BAS_NOTIFICATION_TASK_BATTERY_VALUE_CHANGED;
-        att_server_notify(connection->con_handle, service->characteristics[BAS_CHARACTERISTIC_INDEX_BATTERY_LEVEL].value_handle, &service->battery_value, 1);
+    bas_characteristic_index_t index;
+    uint8_t event[18];
+    uint8_t pos = 0;
+    bool task_valid = true;
+
+
+    if ((connection->scheduled_tasks & BAS_TASK_BATTERY_LEVEL_CHANGED) > 0u){
+        connection->scheduled_tasks &= ~BAS_TASK_BATTERY_LEVEL_CHANGED;
+        index = BAS_CHARACTERISTIC_INDEX_BATTERY_LEVEL;
+    
+    } else if ((connection->scheduled_tasks & BAS_TASK_BATTERY_LEVEL_STATUS_CHANGED) > 0u){
+        connection->scheduled_tasks &= ~BAS_TASK_BATTERY_LEVEL_STATUS_CHANGED;
+        index = BAS_CHARACTERISTIC_INDEX_BATTERY_LEVEL_STATUS;
+    
+    } else if ((connection->scheduled_tasks & BAS_TASK_ESTIMATED_SERVICE_DATE_CHANGED) > 0u){
+        connection->scheduled_tasks &= ~BAS_TASK_ESTIMATED_SERVICE_DATE_CHANGED;
+        index = BAS_CHARACTERISTIC_INDEX_ESTIMATED_SERVICE_DATE;
+    
+    } else if ((connection->scheduled_tasks & BAS_TASK_BATTERY_CRITCAL_STATUS_CHANGED) > 0u){
+        connection->scheduled_tasks &= ~BAS_TASK_BATTERY_CRITCAL_STATUS_CHANGED;
+        index = BAS_CHARACTERISTIC_INDEX_BATTERY_CRITCAL_STATUS;
+    
+    } else if ((connection->scheduled_tasks & BAS_TASK_BATTERY_ENERGY_STATUS_CHANGED) > 0u){
+        connection->scheduled_tasks &= ~BAS_TASK_BATTERY_ENERGY_STATUS_CHANGED;
+        index = BAS_CHARACTERISTIC_INDEX_BATTERY_ENERGY_STATUS;
+    
+    } else if ((connection->scheduled_tasks & BAS_TASK_BATTERY_TIME_STATUS_CHANGED) > 0u){
+        connection->scheduled_tasks &= ~BAS_TASK_BATTERY_TIME_STATUS_CHANGED;
+        index = BAS_CHARACTERISTIC_INDEX_BATTERY_TIME_STATUS;
+
+    } else if ((connection->scheduled_tasks & BAS_TASK_BATTERY_HEALTH_STATUS_CHANGED) > 0u){
+        connection->scheduled_tasks &= ~BAS_TASK_BATTERY_HEALTH_STATUS_CHANGED;
+        index = BAS_CHARACTERISTIC_INDEX_BATTERY_HEALTH_STATUS;
+
+    } else if ((connection->scheduled_tasks & BAS_TASK_BATTERY_HEALTH_INFORMATION_CHANGED) > 0u){
+        connection->scheduled_tasks &= ~BAS_TASK_BATTERY_HEALTH_INFORMATION_CHANGED;
+        index = BAS_CHARACTERISTIC_INDEX_BATTERY_HEALTH_STATUS;
+
+    } else if ((connection->scheduled_tasks & BAS_TASK_BATTERY_INFORMATION_CHANGED) > 0u){
+        connection->scheduled_tasks &= ~BAS_TASK_BATTERY_INFORMATION_CHANGED;
+        index = BAS_CHARACTERISTIC_INDEX_BATTERY_INFORMATION;
+
+    } else {
+        // TODO  BAS_TASK_MANUFACTURER_NAME_STRING_CHANGED 
+        // TODO  BAS_TASK_MODEL_NUMBER_STRING_CHANGED
+        // TODO  BAS_TASK_SERIAL_NUMBER_STRING_CHANGED
+
+        task_valid = false;
+    }
+
+    if (task_valid){
+        pos = bas_serialize_characteristic(service, index, event, sizeof(event));
+            
+        if (bas_characteristic_notify_configured(connection, index)){
+            att_server_notify(connection->con_handle, service->characteristics[index].value_handle, event, pos);
+        } else if (bas_characteristic_indicate_configured(connection, index)){
+            att_server_notify(connection->con_handle, service->characteristics[index].value_handle, event, pos);
+        }
     }
 
     if (connection->scheduled_tasks > 0u){
@@ -465,12 +568,12 @@ void battery_service_v1_server_register(battery_service_v1_t *service, battery_s
 }
 
 
-static void battery_service_set_callback(battery_service_v1_server_connection_t * connection, uint8_t task){
+static void bas_server_set_callback_for_connection(battery_service_v1_server_connection_t * connection, bas_characteristic_index_t index, uint8_t task){
     if (connection->con_handle == HCI_CON_HANDLE_INVALID){
         connection->scheduled_tasks = 0;
         return;
     }
-
+    
     uint8_t scheduled_tasks = connection->scheduled_tasks;
     connection->scheduled_tasks |= task;
     if (scheduled_tasks == 0){
@@ -480,25 +583,48 @@ static void battery_service_set_callback(battery_service_v1_server_connection_t 
     }
 }
 
-uint8_t battery_service_v1_server_set_battery_value(battery_service_v1_t * service, uint8_t battery_value){
-    btstack_assert(service != NULL);
-    if (service->battery_value == battery_value){
-        return ERROR_CODE_REPEATED_ATTEMPTS;
-    }
-    if (battery_value > 100){
-        return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
-    }
-    service->battery_value = battery_value;
-
+static void bas_server_set_callback(battery_service_v1_t * service, bas_characteristic_index_t index){
+    uint8_t task = bas_server_get_task_for_characteristic_index(index);
     uint8_t i;
     for (i = 0; i < service->connections_max_num; i++){
-        battery_service_v1_server_connection_t * connection = &service->connections[i];
-        if (connection->configurations[BAS_CHARACTERISTIC_INDEX_BATTERY_LEVEL] != 0){
-            battery_service_set_callback(connection, BAS_NOTIFICATION_TASK_BATTERY_VALUE_CHANGED);
+        if (service->connections[i].configurations[index] > 0u){
+            bas_server_set_callback_for_connection(&service->connections[i], index, task);
         }
+    }
+}
+
+uint8_t battery_service_v1_server_set_battery_level(battery_service_v1_t * service, uint8_t battery_level){
+    btstack_assert(service != NULL);
+    if (battery_level > 100){
+        return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+    }
+
+    if (service->battery_level != battery_level){
+        service->battery_level = battery_level;
+        bas_server_set_callback(service, BAS_CHARACTERISTIC_INDEX_BATTERY_LEVEL);
     }
     return ERROR_CODE_SUCCESS;
 }
+
+uint8_t battery_service_v1_server_set_battery_level_status(battery_service_v1_t * service, const battery_level_status_t * battery_level_status){
+    btstack_assert(service != NULL);
+    btstack_assert(battery_level_status != NULL);
+    
+    if (battery_level_status->flags >= BATTERY_LEVEL_STATUS_BITMASK_RFU){
+        return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+    }
+    
+    if ( (battery_level_status->flags & BATTERY_LEVEL_STATUS_BITMASK_ADDITIONAL_STATUS_PRESENT) > 0u){
+        if (battery_level_status->additional_status_flags >= BATTERY_LEVEL_ADDITIONAL_STATUS_BITMASK_RFU){
+            return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+        }
+    }
+
+    service->level_status = battery_level_status;
+    bas_server_set_callback(service, BAS_CHARACTERISTIC_INDEX_BATTERY_LEVEL_STATUS);
+    return ERROR_CODE_SUCCESS;
+}
+
 
 void battery_service_v1_server_deregister(battery_service_v1_t *service){
     btstack_linked_list_remove(&battery_services, (btstack_linked_item_t * )service);
