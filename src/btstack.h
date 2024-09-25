@@ -149,6 +149,7 @@
 #include "le-audio/le_audio_util.h"
 #include "le-audio/gatt-service/broadcast_audio_scan_service_client.h"
 #include "le-audio/gatt-service/broadcast_audio_scan_service_server.h"
+#include "le-audio/gatt-service/broadcast_audio_scan_service_util.h"
 
 #ifdef ENABLE_MESH
 #include "mesh/adv_bearer.h"
