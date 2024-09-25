@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 - GATT Client: gatt_client_add_service_changed_handler to receive Service Changed and Database Hash events
+- GATT Client: various _with_context functions that provide a service + connection id to GATT query events
 - L2CAP: provide access to number of available credits in CBM/ECBM
 - HFP HF: support Apple Accessory information with:
   - hfp_hf_apple_set_identification
@@ -90,8 +91,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - A2DP: support SDP record without service name and/or provider
 - AVRCP: support SDP record without service name and/or provider
 - HFP: hfp_hf_create_sdp_record_with_codecs and hfp_hf_create_sdp_record_with_codecs
-- HFP: support SDP record without service name
 - HFP: support for LC3-SWB
+- HFP: support SDP record without service name
+- PABP Server: support SDP record without service name
 - SPP Server: support SDP record without service name
 - HOG Device: emit HIDS_SUBEVENT_SET_REPORT
 - HOG Device: provide report for GET REPORT operation via callback
@@ -210,6 +212,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - hci_dump_stdout: allow to truncate ACL, SCO and ISO packets with HCI_DUMP_STDOUT_MAX_SIZE_*
 - GATT Service: Broadcast Audio Scan Service Server and Client (BASS 1.0)
 - example/a2dp_source_demo: add command to scan and connect to Bluetooth speaker by class of device
+- OPP Server profile and OPP Server demo
 
 ### Fixed
 - GAP: reload LE Resolving List after power-cycle 
@@ -244,6 +247,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - GAP: support BIG with gap_big_create and gap_big_terminate
 - GAP: support BIG Sync gap_big_sync_create and gap_big_sync_terminate
 - GAP: support Periodic Advertisement Sync Transfer
+- PBAP Server profile and PBAP Server demo
+- OPP Client profile and OPP Client demo
 - port: CMake build files in all windows-* ports allow to use Visual Studio 2022
 - embedded audio: mono audio is played on both channels if HAVE_HAL_AUDIO_SINK_STEREO_ONLY is defined
 - Support for ESP32-C3 and ESP32-S3
@@ -269,6 +274,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - HFP HF: emit HFP_SUBEVENT_TRANSMIT_DTMF_CODES after sending DTMF command
 - GOEP Server
 - Chipset: support for firmware download and configuration of Realtek Controllers
+- PBAP Server and pbap_server_demo
 
 ### Fixed
 - GAP: fix gap_connect_cancel for gap_connect_with_whitelist
@@ -302,6 +308,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - ATT DB: provide gatt_server_get_handle_range_for_service_with_uuid16 to find included service within handle range
 - GATT Service: Audio Input Control Service Server (AICS 1.0)
 - GATT Service: Microphone Control Service Server (MCS 1.0)
+- GATT Service: Published Audio Capabilities Service Server (PACS 1.0)
 - GATT Service: Volume Control Service Server (VCS 1.0)
 - GATT Service: Volume Offset Control Service Server (VOCS 1.0)
 
