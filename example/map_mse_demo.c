@@ -137,6 +137,8 @@ static size_t body_convo(char* msg_buffer, uint16_t index, size_t maxsize);
 static size_t PRINT_bmessage(char* msg_buffer, uint16_t index, size_t maxsize);
 static void select_event_report_n(int er);
 static void MSE_MMU_BV_02_ClConn_Timer(void);
+static void PUT_IN_APP(void);
+static void PUT_IN_STACK(void);
 
 
 static int cfg_start_index = 0;
@@ -360,6 +362,7 @@ static struct test_config_s
     bool hide;     // test case is not printed in the menu - for automatic reports
     bool SRMP_wait; // Test case wants us to send the SRMP header to pass
     struct objconfig_s* type;
+    void (*fcon)(void); // optional handler for OBEX connect
     void (*fdiscon)(void); // optional handler for OBEX disconnect
     void (*fClConn)(void); // optional handler for MAP Notification Server Client Connect OK
     void (*fClOpCompl)(void); // optional handler for MAP Notification Client Operation Complete
@@ -383,12 +386,12 @@ TC_NORM(.descr = "-MAP/MSE/MMU/BV-02"                                    ,.obj_c
 TC_DISA( .descr = "MAP/MSE/MMU/BV-02 test"         , .type = &msgshrt    ,.obj_count = 0, .objects = { "", "", "", "" , ""                        }, .fPutMsg         = MAP_MSE_MMU_BV_02_I_PutMsg       ,.helpstr = "WIP: finding out what PTS 8.7.0 expects"                                                                                       )
 TC_NORM(.descr = "MAP/MSE/MMU/BV-03"                                     ,.obj_count = 0, .objects = { "EMAIL",                                   }, .fPutMsg         = MAP_MSE_MMU_BV_02_I_PutMsg       ,.helpstr = "WIP: PTS 8.6.1 MAP_NEW L2CAP bug: claims to send a PUT but doesnt. could be consolidated into tc #0 otherwise"                 )
 TC_NORM( .descr = "MAP/MSE/SGSIT/ATTR/BV-01"                             ,.obj_count = 1, .objects = { "EMAIL"                                    }                                                      ,                                                                                                                                           )
-TC_NORM(.descr = "-MAP/MSE/MFMH/BV-01..05"                               ,.obj_count = 1, .objects = { "EMAIL"                                    }                                                      ,                                                                                                                                           )
+TC_NORM(.descr = "-MAP/MSE/MFMH/BV-01..05"                               ,.obj_count = 1, .objects = { "EMAIL"                                    }, .fcon = PUT_IN_APP, .fdiscon = PUT_IN_STACK         ,                                                                                                                                           )
 TC_NORM( .descr = "MAP/MSE/MFB/BV-02 05 07"                              ,.obj_count = 0, .objects = { ""                                         }                                                      ,                                                                                                                                           )
 TC_L2CAP(.descr = "MAP/MSE/GOEP/SRM/BI-02..08"                           ,.obj_count = 5, .objects = { "EMAIL","SMS_GSM","SMS_CDMA", "MMS", ""    }                                                      ,.helpstr = "WIP: MAP_OLD only. PTS 8.6.1 MAP_NEW & L2CAP bug: claims to send a PUT but doesnt. could be consolidated into tc #0 otherwise" )
 TC_L2CAP(.descr = "MAP/MSE/GOEP/SRMP/BV-02,BI-02"                        ,.obj_count = 9, .objects = { "IM"                                       }                                                      ,                                                                                                                                           )
-TC_L2CAP(.descr = "MAP/MSE/GOEP/SRMP/BV-03"         , .SRMP_wait = true  ,.obj_count = 9, .objects = { "IM"                                       }                                                      ,)
-TC_NORM( .descr = "MAP/MSE/MMN/BV-02"               , .type = &nm_v1_0   ,.obj_count = 5, .objects = { "EMAIL", "SMS_GSM", "MMS", "IM", "SMS_CDMA"}, .fClConn = MSE_MMU_BV_02_ClConn_Timer               ,.helpstr = "Generate the requested event reports by pressing <e> when PTS asks for")
+TC_L2CAP(.descr = "MAP/MSE/GOEP/SRMP/BV-03"         , .SRMP_wait = true  ,.obj_count = 9, .objects = { "IM"                                       }, .fcon = PUT_IN_APP, .fdiscon = PUT_IN_STACK         ,                                                                                                                                           )
+TC_NORM( .descr = "MAP/MSE/MMN/BV-02"               , .type = &nm_v1_0   ,.obj_count = 5, .objects = { "EMAIL", "SMS_GSM", "MMS", "IM", "SMS_CDMA"}, .fClConn = MSE_MMU_BV_02_ClConn_Timer               ,.helpstr = "Generate the requested event reports by pressing <e> when PTS asks for"                                                        )
 TC_NORM( .descr = "MAP/MSE/MMN/BV-04,06"            , .type = &nm_v1_1   ,.obj_count = 5, .objects = { "EMAIL", "SMS_GSM", "MMS", "IM", "SMS_CDMA"}, .fClConn = MSE_MMU_BV_02_ClConn_Timer               ,                                                                                                                                           )
 TC_NORM( .descr = "MAP/MSE/MMN/BV-07"               , .type = &nm_v1_2   ,.obj_count = 1, .objects = { "EMAIL"                                    }, .fClConn = emit_report                              ,                                                                                                                                           )
 TC_NORM( .descr = "MAP/MSE/MMN/BV-08..09"           , .type = &ed_v1_2   ,.obj_count = 1, .objects = { "IM"                                       }, .fClConn = emit_report                              ,                                                                                                                                           )
@@ -404,6 +407,16 @@ static char event_report_body_object[300];
 static struct test_config_s* evt_cfg = &test_configs[0];
 static int evtcfg_start_index = 0;
 static int curent_event_type = 0;
+
+static void PUT_IN_APP(void) {
+    map_server_handle_PUT_in_APP(true);
+    log_debug("now PUT is handled by APP");
+}
+
+static void PUT_IN_STACK(void) {
+    map_server_handle_PUT_in_APP(false);
+    log_debug("now PUT is handled by the stack");
+}
 
 static void MSE_MMU_BV_02_ClConn_Timer(void) {
     count = evt_cfg->obj_count;
@@ -994,16 +1007,21 @@ static void mas_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                             current_map_cid = map_subevent_connection_opened_get_map_cid(packet);
                             map_subevent_connection_opened_get_bd_addr(packet, remote_addr);
                             MAP_PRINTF("[+] Connected %s current_map_cid 0x%04x\n", bd_addr_to_str(remote_addr), current_map_cid);
+                            if (mas_cfg->fcon != NULL) {
+                               RUN_AND_LOG_ACTION(mas_cfg->fcon();)
+                            }
                             break;
 
                         case MAP_SUBEVENT_CONNECTION_CLOSED:
                             current_map_cid = map_subevent_connection_opened_get_map_cid(packet);
                             status = disconnect_map_notification_client(current_map_cid);
                             MAP_PRINTF("[+] Connection closed current_map_cid:0x%04x client disconnect status %u, %s\n", current_map_cid, status, mas_cfg->fdiscon?"disconnect handler":"re-init test case states");
-                            if (mas_cfg->fdiscon != NULL)
-                                mas_cfg->fdiscon();
-                            else
-                                test_set->fp_init_test_cases(test_set);
+                            if (mas_cfg->fdiscon != NULL) {
+                                RUN_AND_LOG_ACTION(mas_cfg->fdiscon();)
+                            }
+                            else {
+                                RUN_AND_LOG_ACTION(test_set->fp_init_test_cases(test_set);)
+                            }
                             break;
 
                         case MAP_SUBEVENT_OPERATION_COMPLETED:

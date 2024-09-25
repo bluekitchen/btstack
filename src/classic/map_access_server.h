@@ -153,6 +153,7 @@ int map_server_set_response_app_param(uint16_t map_cid, enum MAP_APP_PARAMS app_
 uint16_t map_server_send_response_with_body(uint16_t map_cid, uint8_t response_code, uint32_t continuation, size_t body_len, const uint8_t* body);
 uint16_t map_server_send_response(uint16_t map_cid, uint8_t response_code);
 uint16_t map_server_get_max_body_size(uint16_t map_cid);
+void map_server_handle_PUT_in_APP(bool app);
 void map_server_set_response_type_and_name(uint16_t map_cid, char* hdr_name, char* type_name, bool SRMP_wait);
 int map_server_set_response_app_param(uint16_t map_cid, enum MAP_APP_PARAMS app_param, void* param);
 void map_server_init(btstack_packet_handler_t packet_handler, uint8_t rfcomm_channel_nr, uint16_t l2cap_psm, uint16_t mtu);

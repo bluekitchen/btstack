@@ -209,6 +209,9 @@ static struct {
     {"sent",   "outgoing"     , "yes", MAS_FOLDER_TELECOM_MSG_SENT,   "telecom/msg/sent.vcf"},
 };
 
+/* shall we handle PUT continue or shall we forward it to the app? */
+static bool handle_put_in_app = false;
+
 static const uint8_t map_uuid[] = { 0xbb, 0x58, 0x2b, 0x40, 0x42, 0xc, 0x11, 0xdb, 0xb0, 0xde, 0x8, 0x0, 0x20, 0xc, 0x9a, 0x66 };
 
 // Prototypes
@@ -371,7 +374,7 @@ static map_object_type_t map_server_parse_object_type(map_server_t* mas, const c
             RUN_AND_LOG_ACTION(return MAP_OBJECT_TYPE_GET_MESSAGE;)
         }
         else {
-            if (op_info.opcode & OBEX_OPCODE_FINAL_BIT_MASK) {
+            if (op_info.opcode & OBEX_OPCODE_FINAL_BIT_MASK || handle_put_in_app) {
                 RUN_AND_LOG_ACTION(return MAP_OBJECT_TYPE_PUT_MESSAGE;)
             }
             else {
@@ -851,7 +854,7 @@ static void map_server_handle_get_or_put_request(map_server_t *mas, bool first_r
         break;
 
     case MAP_OBJECT_TYPE_PUT_MESSAGE_CONTINUE:
-#ifndef MAP_HANDLE_PUT_CONTINUE_BY_APP
+        if (!handle_put_in_app) {
 #ifndef MAP_PTS_BUG_TC_MAP_OLD_MAP_MSE_GOEP_SRM_BV_04_PASS
             mas->state = MAS_STATE_SEND_RESPONSE_CONTINUE;
             RUN_AND_LOG_ACTION(mas->response.code = OBEX_RESP_CONTINUE;)
@@ -861,9 +864,7 @@ static void map_server_handle_get_or_put_request(map_server_t *mas, bool first_r
             mas->request.object_type = MAP_OBJECT_TYPE_PUT_MESSAGE;
             // fall trough to MAP_OBJECT_TYPE_PUT_MESSAGE
 #endif
-#endif // MAP_HANDLE_PUT_CONTINUE_BY_APP
-
-
+        }
     case MAP_OBJECT_TYPE_GET_MESSAGE:
     case MAP_OBJECT_TYPE_GET_FOLDER_LISTING:
     case MAP_OBJECT_TYPE_GET_CONVO_LISTING:
@@ -1302,6 +1303,10 @@ uint16_t map_server_get_max_body_size(uint16_t map_cid) {
     log_debug("goep_max_message_size:%u response.header_pos:%u hdr_name:%u, hdr_type:%u", goep_max_message_size, mas->response.header_pos, hdr_name_len, hdr_type_len);
     // calc max body size without reserving outgoing buffer: packet size - OBEX Header (3) - SRM Header (2) - Body Header (3) - Unknown additional 3 bytes???
     return goep_max_message_size - 3 - 2 - 3 - 3 - mas->response.header_pos - hdr_name_len - hdr_type_len;
+}
+
+void map_server_handle_PUT_in_APP(bool app) {
+    handle_put_in_app = app;
 }
 
 void map_server_set_response_type_and_name(uint16_t map_cid, char* hdr_name, char* type_name, bool SRMP_wait) {
