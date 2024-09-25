@@ -48,6 +48,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - GOEP Client: remove goep_client_create_connection. Use goep_client_connect instead.
 - HID Parser: cleanup of function names and signatures
 - HIDS Client: use error code instead of att status in conencted event
+- Device Information Service Server: update for v1.2
+- Device Information Service Client: update for v1.2
 
 ## Release v1.6.1
 
