@@ -102,6 +102,7 @@
 #include "ble/gatt-service/link_loss_service_util.h"
 #include "ble/gatt-service/scan_parameters_service_client.h"
 #include "ble/gatt-service/scan_parameters_service_server.h"
+#include "ble/gatt-service/tx_power_service_client.h"
 #include "ble/gatt-service/tx_power_service_server.h"
 #include "ble/gatt_client.h"
 #include "ble/le_device_db.h"

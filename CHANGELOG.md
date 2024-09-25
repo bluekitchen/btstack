@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - HCI Dump: support ISO packets in PacketLogger format
 - Immediate Alert Service Server and Client: added
 - Link Loss Service Server and Client: added
+- TX Power Service Client: added
 - btstack_util: safe wrappers for snprintf
 
 ### Fixed
