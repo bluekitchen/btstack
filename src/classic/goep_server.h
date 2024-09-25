@@ -47,7 +47,7 @@ extern "C" {
 
 #ifdef ENABLE_GOEP_L2CAP
 #ifndef GOEP_SERVER_ERTM_BUFFER
-#define GOEP_SERVER_ERTM_BUFFER 1000
+#define GOEP_SERVER_ERTM_BUFFER 2000
 #endif
 #endif
 
@@ -207,6 +207,13 @@ uint8_t goep_server_header_add_application_parameters(uint16_t goep_cid, const u
  * @return status
  */
 uint8_t goep_server_execute(uint16_t goep_cid, uint8_t response_code);
+
+/**
+ * @brief Disconnect client
+ * @param goep_cid
+ * @return status
+ */
+uint8_t goep_server_disconnect(uint16_t goep_cid);
 
 /**
  * De-Init
