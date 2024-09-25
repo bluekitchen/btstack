@@ -1048,7 +1048,7 @@ setup_characteristic_value_packet(const gatt_client_t *gatt_client, uint8_t type
 
 // L2CAP Header (4) + ACL Header (4) => 8 bytes
 #if !defined(HCI_INCOMING_PRE_BUFFER_SIZE) || ((HCI_INCOMING_PRE_BUFFER_SIZE < LONG_CHARACTERISTIC_VALUE_EVENT_HEADER_SIZE - 8))
-#error "Long Characteristic reads requires HCI_INCOMING_PRE_BUFFER_SIZE >= 2"
+#error "Long Characteristic reads requires HCI_INCOMING_PRE_BUFFER_SIZE >= 6"
 #endif
 
 static uint8_t *
