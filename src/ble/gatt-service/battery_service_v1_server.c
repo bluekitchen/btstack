@@ -131,6 +131,170 @@ static battery_service_v1_t * battery_service_service_for_con_handle(hci_con_han
     return NULL;
 }
 
+static uint8_t bas_serialize_characteristic(battery_service_v1_t * service, bas_characteristic_index_t index, uint8_t * event, uint8_t event_size){
+    uint8_t pos = 0;
+    switch ((bas_characteristic_index_t) index){
+        case BAS_CHARACTERISTIC_INDEX_BATTERY_LEVEL:
+            event[pos++] = service->battery_value;
+            break;
+
+        case BAS_CHARACTERISTIC_INDEX_BATTERY_LEVEL_STATUS:
+            if (service->level_status == NULL){
+                return 0;
+            }
+            event[pos++] = service->level_status->flags;
+            little_endian_store_16(event, pos, service->level_status->power_state_flags);
+            pos += 2;
+            if ((service->level_status->flags & BATTERY_LEVEL_STATUS_BITMASK_IDENTIFIER_PRESENT) > 0u){
+                little_endian_store_16(event, pos, service->level_status->identifier);
+                pos += 2;
+            }
+            if ((service->level_status->flags & BATTERY_LEVEL_STATUS_BITMASK_BATTERY_LEVEL_PRESENT) > 0u){
+                event[pos++] = service->level_status->battery_level;
+            }
+            if ((service->level_status->flags & BATTERY_LEVEL_STATUS_BITMASK_ADDITIONAL_STATUS_PRESENT) > 0u){
+                event[pos++] = service->level_status->additional_status_flags;
+            }
+            break;
+
+        case BAS_CHARACTERISTIC_INDEX_ESTIMATED_SERVICE_DATE:
+            little_endian_store_24(event, pos, service->estimated_service_date_days);
+            pos += 3;
+            break;
+
+        case BAS_CHARACTERISTIC_INDEX_BATTERY_CRITCAL_STATUS:
+            event[pos++] = service->battery_critcal_status_flags;
+            break;
+
+        case BAS_CHARACTERISTIC_INDEX_BATTERY_ENERGY_STATUS:
+            if (service->energy_status == NULL){
+                return 0;
+            }
+            event[pos++] = service->energy_status->flags;
+            if ((service->energy_status->flags & BATTERY_ENERGY_STATUS_BITMASK_EXTERNAL_SOURCE_POWER_PRESENT) > 0u){
+                little_endian_store_16(event, pos, service->energy_status->external_source_power_medfloat16);
+                pos += 2;
+            }
+            if ((service->energy_status->flags & BATTERY_ENERGY_STATUS_BITMASK_PRESENT_VOLTAGE_PRESENT) > 0u){
+                little_endian_store_16(event, pos, service->energy_status->present_voltage_medfloat16);
+                pos += 2;
+            }
+            if ((service->energy_status->flags & BATTERY_ENERGY_STATUS_BITMASK_AVAILABLE_ENERGY_PRESENT) > 0u){
+                little_endian_store_16(event, pos, service->energy_status->available_energy_medfloat16);
+                pos += 2;
+            }
+            if ((service->energy_status->flags & BATTERY_ENERGY_STATUS_BITMASK_AVAILABLE_BATTERY_CAPACITY_PRESENT) > 0u){
+                little_endian_store_16(event, pos, service->energy_status->available_battery_capacity_medfloat16);
+                pos += 2;
+            }
+            if ((service->energy_status->flags & BATTERY_ENERGY_STATUS_BITMASK_CHARGE_RATE_PRESENT) > 0u){
+                little_endian_store_16(event, pos, service->energy_status->charge_rate_medfloat16);
+                pos += 2;
+            }
+            if ((service->energy_status->flags & BATTERY_ENERGY_STATUS_BITMASK_AVAILABLE_ENERGY_AT_LAST_CHARGE_PRESENT) > 0u){
+                little_endian_store_16(event, pos, service->energy_status->available_energy_at_last_charge_medfloat16);
+                pos += 2;
+            }
+            break;
+
+        case BAS_CHARACTERISTIC_INDEX_BATTERY_TIME_STATUS:
+            if (service->time_status == NULL){
+                return 0;
+            }
+            event[pos++] = service->time_status->flags;
+            little_endian_store_24(event, pos, service->time_status->time_until_discharged_minutes);
+            pos += 3;
+            if ((service->time_status->flags & BATTERY_TIME_STATUS_BITMASK_TIME_UNTIL_DISCHARGED_ON_STANDBY_PRESENT) > 0u){
+                little_endian_store_24(event, pos, service->time_status->time_until_discharged_on_standby_minutes);
+                pos += 3;
+            }
+            if ((service->time_status->flags & BATTERY_TIME_STATUS_BITMASK_TIME_UNTIL_RECHARGED_PRESENT) > 0u){
+                little_endian_store_24(event, pos, service->time_status->time_until_recharged_minutes);
+                pos += 3;
+            }
+            break;
+
+        case BAS_CHARACTERISTIC_INDEX_BATTERY_HEALTH_STATUS:
+            if (service->health_status == NULL){
+                return 0;
+            }
+            event[pos++] = service->health_status->flags;
+            if ((service->health_status->flags & BATTERY_HEALTH_STATUS_BITMASK_HEALTH_SUMMARY_PRESENT) > 0u){
+                event[pos++] = service->health_status->summary;
+            }
+            if ((service->health_status->flags & BATTERY_HEALTH_STATUS_BITMASK_CYCLE_COUNT_PRESENT) > 0u){
+                little_endian_store_16(event, pos, service->health_status->cycle_count);
+                pos += 2;
+            }
+            if ((service->health_status->flags & BATTERY_HEALTH_STATUS_BITMASK_CURRENT_TEMPERATURE_PRESENT) > 0u){
+                event[pos++] = service->health_status->current_temperature_degree_celsius;
+            }
+            if ((service->health_status->flags & BATTERY_HEALTH_STATUS_BITMASK_DEEP_DISCHARGE_COUNT_PRESENT) > 0u){
+                little_endian_store_16(event, pos, service->health_status->deep_discharge_count);
+                pos += 2;
+            }
+            break;
+
+        case BAS_CHARACTERISTIC_INDEX_BATTERY_HEALTH_INFORMATION:
+            if (service->health_information == NULL){
+                return 0;
+            }
+            event[pos++] = service->health_information->flags;
+            if ((service->health_information->flags & BATTERY_HEALTH_INFORMATION_BITMASK_CYCLE_COUNT_DESIGNED_LIFETIME_PRESENT) > 0u){
+                little_endian_store_16(event, pos, service->health_information->cycle_count_designed_lifetime);
+                pos += 2;
+            }
+            if ((service->health_information->flags & BATTERY_HEALTH_INFORMATION_BITMASK_DESIGNED_OPERATING_TEMPERATURE_PRESENT) > 0u){
+                event[pos++] = service->health_information->min_designed_operating_temperature_degree_celsius;
+            }
+            if ((service->health_information->flags & BATTERY_HEALTH_INFORMATION_BITMASK_DESIGNED_OPERATING_TEMPERATURE_PRESENT) > 0u){
+                event[pos++] = service->health_information->max_designed_operating_temperature_degree_celsius;
+            }
+            break;
+
+        case BAS_CHARACTERISTIC_INDEX_BATTERY_INFORMATION:
+            if (service->information == NULL){
+                return 0;
+            }
+            little_endian_store_16(event, pos, service->information->flags);
+            pos += 2;
+            event[pos++] = service->information->features;
+            if ((service->information->flags & BATTERY_INFORMATION_BITMASK_MANUFACTURE_DATE_PRESENT) > 0u){
+                little_endian_store_24(event, pos, service->information->manufacture_date_days);
+                pos += 3;
+            }
+            if ((service->information->flags & BATTERY_INFORMATION_BITMASK_EXPIRATION_DATE_PRESENT) > 0u){
+                little_endian_store_24(event, pos, service->information->expiration_date_days);
+                pos += 3;
+            }
+            if ((service->information->flags & BATTERY_INFORMATION_BITMASK_DESIGNED_CAPACITY_PRESENT) > 0u){
+                little_endian_store_16(event, pos, service->information->designed_capacity_kWh_medfloat16);
+                pos += 2;
+            }
+            if ((service->information->flags & BATTERY_INFORMATION_BITMASK_LOW_ENERGY_PRESENT) > 0u){
+                little_endian_store_16(event, pos, service->information->low_energy_kWh_medfloat16);
+                pos += 2;
+            }
+            if ((service->information->flags & BATTERY_INFORMATION_BITMASK_CRITICAL_ENERGY_PRESENT) > 0u){
+                little_endian_store_16(event, pos, service->information->critical_energy_kWh_medfloat16);
+                pos += 2;
+            }
+            if ((service->information->flags & BATTERY_INFORMATION_BITMASK_CHEMISTRY_PRESENT) > 0u){
+                event[pos++] = service->information->chemistry;
+            }
+            if ((service->information->flags & BATTERY_INFORMATION_BITMASK_NOMINAL_VOLTAGE_PRESENT) > 0u){
+                little_endian_store_16(event, pos, service->information->nominal_voltage_medfloat16);
+                pos += 2;
+            }
+            if ((service->information->flags & BATTERY_INFORMATION_BITMASK_AGGREGATION_GROUP_PRESENT) > 0u){
+                event[pos++] = service->information->aggregation_group;
+            }
+            break;
+        default:
+            break;
+    }
+    return pos;
+}
 
 static uint16_t battery_service_read_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
     UNUSED(con_handle);
@@ -157,155 +321,33 @@ static uint16_t battery_service_read_callback(hci_con_handle_t con_handle, uint1
             continue;
         }
 
-
         switch ((bas_characteristic_index_t) index){
-            case BAS_CHARACTERISTIC_INDEX_BATTERY_LEVEL:             
-                return att_read_callback_handle_byte(service->battery_value, offset, buffer, buffer_size);
+            case BAS_CHARACTERISTIC_INDEX_MANUFACTURER_NAME_STRING:
+                if (service->manufacturer_name == NULL){
+                    return 0;
+                }
+                return att_read_callback_handle_blob((uint8_t *)service->manufacturer_name, strlen(service->manufacturer_name), offset, buffer, buffer_size);
     
-            case BAS_CHARACTERISTIC_INDEX_BATTERY_LEVEL_STATUS: 
-                event[pos++] = service->battery_level.flags;
-                little_endian_store_16(event, pos, service->battery_level.power_state_flags);
-                pos += 2;
-                if ((service->battery_level.flags & BATTERY_LEVEL_STATUS_BITMASK_IDENTIFIER_PRESENT) > 0u){
-                    little_endian_store_16(event, pos, service->battery_level.identifier);
-                    pos += 2;
+            case BAS_CHARACTERISTIC_INDEX_MODEL_NUMBER_STRING:
+                if (service->model_number == NULL){
+                    return 0;
                 }
-                if ((service->battery_level.flags & BATTERY_LEVEL_STATUS_BITMASK_BATTERY_LEVEL_PRESENT) > 0u){
-                    event[pos++] = service->battery_level.battery_level;
-                }
-                if ((service->battery_level.flags & BATTERY_LEVEL_STATUS_BITMASK_ADDITIONAL_STATUS_PRESENT) > 0u){
-                    event[pos++] = service->battery_level.additional_status_flags;
-                }
-                return att_read_callback_handle_blob(event, pos, offset, buffer, buffer_size);
+                return att_read_callback_handle_blob((uint8_t *)service->model_number, strlen(service->model_number), offset, buffer, buffer_size);
     
-            case BAS_CHARACTERISTIC_INDEX_ESTIMATED_SERVICE_DATE:   
-                little_endian_store_24(event, pos, service->estimated_service_date_days);
-                pos += 3;
-                return att_read_callback_handle_blob(event, pos, offset, buffer, buffer_size);
-    
-            case BAS_CHARACTERISTIC_INDEX_BATTERY_CRITCAL_STATUS: 
-                return att_read_callback_handle_byte(service->battery_critcal_status_flags, offset, buffer, buffer_size);
-    
-            case BAS_CHARACTERISTIC_INDEX_BATTERY_ENERGY_STATUS:  
-                event[pos++] = service->energy_status.flags;   
-                if ((service->energy_status.flags & BATTERY_ENERGY_STATUS_BITMASK_EXTERNAL_SOURCE_POWER_PRESENT) > 0u){
-                    little_endian_store_16(event, pos, service->energy_status.external_source_power_medfloat16);
-                    pos += 2;
+            case BAS_CHARACTERISTIC_INDEX_SERIAL_NUMBER_STRING:
+                if (service->serial_number == NULL){
+                    return 0;
                 }
-                if ((service->energy_status.flags & BATTERY_ENERGY_STATUS_BITMASK_PRESENT_VOLTAGE_PRESENT) > 0u){
-                    little_endian_store_16(event, pos, service->energy_status.present_voltage_medfloat16);
-                    pos += 2;
-                }
-                if ((service->energy_status.flags & BATTERY_ENERGY_STATUS_BITMASK_AVAILABLE_ENERGY_PRESENT) > 0u){
-                    little_endian_store_16(event, pos, service->energy_status.available_energy_medfloat16);
-                    pos += 2;
-                }
-                if ((service->energy_status.flags & BATTERY_ENERGY_STATUS_BITMASK_AVAILABLE_BATTERY_CAPACITY_PRESENT) > 0u){
-                    little_endian_store_16(event, pos, service->energy_status.available_battery_capacity_medfloat16);
-                    pos += 2;
-                }
-                if ((service->energy_status.flags & BATTERY_ENERGY_STATUS_BITMASK_CHARGE_RATE_PRESENT) > 0u){
-                    little_endian_store_16(event, pos, service->energy_status.charge_rate_medfloat16);
-                    pos += 2;
-                }
-                if ((service->energy_status.flags & BATTERY_ENERGY_STATUS_BITMASK_AVAILABLE_ENERGY_AT_LAST_CHARGE_PRESENT) > 0u){
-                    little_endian_store_16(event, pos, service->energy_status.available_energy_at_last_charge_medfloat16);
-                    pos += 2;
-                }   
-                return att_read_callback_handle_blob(event, pos, offset, buffer, buffer_size);
-    
-            case BAS_CHARACTERISTIC_INDEX_BATTERY_TIME_STATUS:  
-                event[pos++] = service->time_status.flags;  
-                little_endian_store_24(event, pos, service->time_status.time_until_discharged_minutes);
-                pos += 3;
-                if ((service->time_status.flags & BATTERY_TIME_STATUS_BITMASK_TIME_UNTIL_DISCHARGED_ON_STANDBY_PRESENT) > 0u){
-                    little_endian_store_24(event, pos, service->time_status.time_until_discharged_on_standby_minutes);
-                    pos += 3;
-                } 
-                if ((service->time_status.flags & BATTERY_TIME_STATUS_BITMASK_TIME_UNTIL_RECHARGED_PRESENT) > 0u){
-                    little_endian_store_24(event, pos, service->time_status.time_until_recharged_minutes);
-                    pos += 3;
-                }  
-                return att_read_callback_handle_blob(event, pos, offset, buffer, buffer_size);
-    
-            case BAS_CHARACTERISTIC_INDEX_BATTERY_HEALTH_STATUS:  
-                event[pos++] = service->health_status.flags; 
-                if ((service->health_status.flags & BATTERY_HEALTH_STATUS_BITMASK_HEALTH_SUMMARY_PRESENT) > 0u){
-                    event[pos++] = service->health_status.summary;
-                }
-                if ((service->health_status.flags & BATTERY_HEALTH_STATUS_BITMASK_CYCLE_COUNT_PRESENT) > 0u){
-                    little_endian_store_16(event, pos, service->health_status.cycle_count);
-                    pos += 2;
-                }
-                if ((service->health_status.flags & BATTERY_HEALTH_STATUS_BITMASK_CURRENT_TEMPERATURE_PRESENT) > 0u){
-                    event[pos++] = service->health_status.current_temperature_degree_celsius;
-                }
-                if ((service->health_status.flags & BATTERY_HEALTH_STATUS_BITMASK_DEEP_DISCHARGE_COUNT_PRESENT) > 0u){
-                    little_endian_store_16(event, pos, service->health_status.deep_discharge_count);
-                    pos += 2;
-                }
-                return att_read_callback_handle_blob(event, pos, offset, buffer, buffer_size);
-    
-            case BAS_CHARACTERISTIC_INDEX_BATTERY_HEALTH_INFORMATION:
-                event[pos++] = service->health_information.flags;
-                if ((service->health_information.flags & BATTERY_HEALTH_INFORMATION_BITMASK_CYCLE_COUNT_DESIGNED_LIFETIME_PRESENT) > 0u){
-                    little_endian_store_16(event, pos, service->health_information.cycle_count_designed_lifetime);
-                    pos += 2;
-                }
-                if ((service->health_information.flags & BATTERY_HEALTH_INFORMATION_BITMASK_DESIGNED_OPERATING_TEMPERATURE_PRESENT) > 0u){
-                    event[pos++] = service->health_information.min_designed_operating_temperature_degree_celsius;
-                }
-                if ((service->health_information.flags & BATTERY_HEALTH_INFORMATION_BITMASK_DESIGNED_OPERATING_TEMPERATURE_PRESENT) > 0u){
-                    event[pos++] = service->health_information.max_designed_operating_temperature_degree_celsius;
-                }
-                return att_read_callback_handle_blob(event, pos, offset, buffer, buffer_size);
-    
-            case BAS_CHARACTERISTIC_INDEX_BATTERY_INFORMATION:
-                little_endian_store_16(event, pos, service->information.flags);
-                pos += 2;
-                event[pos++] = service->information.features;
-                if ((service->information.flags & BATTERY_INFORMATION_BITMASK_MANUFACTURE_DATE_PRESENT) > 0u){
-                    little_endian_store_24(event, pos, service->information.manufacture_date_days);
-                    pos += 3;
-                } 
-                if ((service->information.flags & BATTERY_INFORMATION_BITMASK_EXPIRATION_DATE_PRESENT) > 0u){
-                    little_endian_store_24(event, pos, service->information.expiration_date_days);
-                    pos += 3;
-                }  
-                if ((service->information.flags & BATTERY_INFORMATION_BITMASK_DESIGNED_CAPACITY_PRESENT) > 0u){
-                    little_endian_store_16(event, pos, service->information.designed_capacity_kWh_medfloat16);
-                    pos += 2;
-                }
-                if ((service->information.flags & BATTERY_INFORMATION_BITMASK_LOW_ENERGY_PRESENT) > 0u){
-                    little_endian_store_16(event, pos, service->information.low_energy_kWh_medfloat16);
-                    pos += 2;
-                }
-                if ((service->information.flags & BATTERY_INFORMATION_BITMASK_CRITICAL_ENERGY_PRESENT) > 0u){
-                    little_endian_store_16(event, pos, service->information.critical_energy_kWh_medfloat16);
-                    pos += 2;
-                }
-                if ((service->information.flags & BATTERY_INFORMATION_BITMASK_CHEMISTRY_PRESENT) > 0u){
-                    event[pos++] = service->information.chemistry;
-                }
-                if ((service->information.flags & BATTERY_INFORMATION_BITMASK_NOMINAL_VOLTAGE_PRESENT) > 0u){
-                    little_endian_store_16(event, pos, service->information.nominal_voltage_medfloat16);
-                    pos += 2;
-                }
-                if ((service->information.flags & BATTERY_INFORMATION_BITMASK_AGGREGATION_GROUP_PRESENT) > 0u){
-                    event[pos++] = service->information.aggregation_group;
-                }
-                return att_read_callback_handle_blob(event, pos, offset, buffer, buffer_size);
-    
-            case BAS_CHARACTERISTIC_INDEX_MANUFACTURER_NAME_STRING: 
-                return att_read_callback_handle_blob(service->manufacturer_name, service->manufacturer_name_len, offset, buffer, buffer_size);
-    
-            case BAS_CHARACTERISTIC_INDEX_MODEL_NUMBER_STRING:       
-                return att_read_callback_handle_blob(service->model_number, service->model_number_len, offset, buffer, buffer_size);
-    
-            case BAS_CHARACTERISTIC_INDEX_SERIAL_NUMBER_STRING:      
-                return att_read_callback_handle_blob(service->serial_number, service->serial_number_len, offset, buffer, buffer_size);
+                return att_read_callback_handle_blob((uint8_t *)service->serial_number, strlen(service->serial_number), offset, buffer, buffer_size);
     
             default:
+                pos = bas_serialize_characteristic(service, index, event, sizeof(event));
+                if (pos == 1u){
+                    return att_read_callback_handle_byte(event[0], offset, buffer, buffer_size);
+                }
+                if (pos > 1u){
+                    return att_read_callback_handle_blob(event, pos, offset, buffer, buffer_size);
+                }
                 return 0;
         }
     }

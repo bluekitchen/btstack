@@ -59,7 +59,6 @@ extern "C" {
  * If the battery level changes, you can call *battery_service_server_set_battery_value(value)*. 
  * The service supports sending Notifications if the client enables them.
  */
-#define BATTERY_SERVICE_MAX_STRING_LEN 32
 
 typedef enum {
     BAS_CHARACTERISTIC_INDEX_BATTERY_LEVEL = 0,             
@@ -165,6 +164,68 @@ typedef struct {
     uint16_t client_configuration_handle;
 } bas_characteristic_t;
 
+typedef struct {
+    uint8_t  flags;
+    uint16_t power_state_flags;
+
+    uint16_t identifier;
+    uint8_t  battery_level;
+    uint8_t  additional_status_flags;
+} battery_level_status_t;
+
+typedef struct {
+    uint8_t  flags;
+    uint16_t external_source_power_medfloat16;
+    uint16_t present_voltage_medfloat16;
+    uint16_t available_energy_medfloat16;
+    uint16_t available_battery_capacity_medfloat16;
+    uint16_t charge_rate_medfloat16;
+    uint16_t available_energy_at_last_charge_medfloat16;
+} battery_energy_status_t;
+
+typedef struct {
+    uint8_t flags;
+
+    // A value of 0xFFFFFF represents: Unknown
+    // A value of 0xFFFFFE represents: Greater than 0xFFFFFD
+    uint32_t time_until_discharged_minutes;
+    uint32_t time_until_discharged_on_standby_minutes;
+    uint32_t time_until_recharged_minutes;
+} battery_time_status_t;
+
+typedef struct {
+    uint8_t  flags;
+
+    uint8_t  summary;                 // Allowed range is 0 to 100.
+    uint16_t cycle_count;
+    int8_t   current_temperature_degree_celsius;
+    uint16_t deep_discharge_count;
+} battery_health_status_t;
+
+typedef struct {
+    uint8_t  flags;
+    uint16_t cycle_count_designed_lifetime;
+
+    // A raw value of 0x7F represents: Greater than 126. 
+    // A raw value of 0x80 represents: Less than -127.
+    int8_t   min_designed_operating_temperature_degree_celsius;
+    int8_t   max_designed_operating_temperature_degree_celsius;
+} battery_health_information_t;
+
+typedef struct {
+    uint16_t flags;
+    uint8_t  features;
+
+    uint32_t manufacture_date_days;
+    uint32_t expiration_date_days;
+
+    uint16_t designed_capacity_kWh_medfloat16;
+    uint16_t low_energy_kWh_medfloat16;
+    uint16_t critical_energy_kWh_medfloat16;
+    uint8_t  chemistry;
+    uint16_t nominal_voltage_medfloat16;
+    uint8_t  aggregation_group; // 0: not in group, 255: RFU
+} battery_information_t;
 
 typedef struct battery_service_v1 {
     btstack_linked_item_t item;
@@ -182,14 +243,7 @@ typedef struct battery_service_v1 {
     uint8_t  battery_value;
 
     // ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_LEVEL_STATUS       
-    struct {
-        uint8_t  flags;
-        uint16_t power_state_flags;
-
-        uint16_t identifier;
-        uint8_t  battery_level;
-        uint8_t  additional_status_flags;
-    } battery_level;
+    const battery_level_status_t * level_status;
     
     // ORG_BLUETOOTH_CHARACTERISTIC_ESTIMATED_SERVICE_DATE 
     uint32_t estimated_service_date_days;
@@ -198,74 +252,28 @@ typedef struct battery_service_v1 {
     uint8_t battery_critcal_status_flags;
 
     // ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_ENERGY_STATUS
-    struct {
-        uint8_t  flags;
-        uint16_t external_source_power_medfloat16;
-        uint16_t present_voltage_medfloat16;
-        uint16_t available_energy_medfloat16;
-        uint16_t available_battery_capacity_medfloat16;
-        uint16_t charge_rate_medfloat16;
-        uint16_t available_energy_at_last_charge_medfloat16;
-    } energy_status;
+    const battery_energy_status_t * energy_status;
 
     // ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_TIME_STATUS        
-    struct {
-        uint8_t flags;
-
-        // A value of 0xFFFFFF represents: Unknown
-        // A value of 0xFFFFFE represents: Greater than 0xFFFFFD
-        uint32_t time_until_discharged_minutes;
-        uint32_t time_until_discharged_on_standby_minutes;
-        uint32_t time_until_recharged_minutes;
-    } time_status;
+    const battery_time_status_t * time_status;
 
     // ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_HEALTH_STATUS
-    struct {
-        uint8_t  flags;
-        uint8_t  summary;                 // Allowed range is 0 to 100.
-        uint16_t cycle_count;
-        int8_t   current_temperature_degree_celsius;
-        uint16_t deep_discharge_count;
-    } health_status;
+    const battery_health_status_t * health_status;
 
     // ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_HEALTH_INFORMATION
-    struct {
-        uint8_t  flags;
-        uint16_t cycle_count_designed_lifetime;
-
-        // A raw value of 0x7F represents: Greater than 126. 
-        // A raw value of 0x80 represents: Less than -127.
-        int8_t   min_designed_operating_temperature_degree_celsius;
-        int8_t   max_designed_operating_temperature_degree_celsius;
-    } health_information;
+    const battery_health_information_t * health_information;
 
     // ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_INFORMATION
-    struct {
-        uint16_t flags;
-        uint8_t  features;
-    
-        uint32_t manufacture_date_days;
-        uint32_t expiration_date_days;
-
-        uint16_t designed_capacity_kWh_medfloat16;
-        uint16_t low_energy_kWh_medfloat16;
-        uint16_t critical_energy_kWh_medfloat16;
-        uint8_t  chemistry;
-        uint16_t nominal_voltage_medfloat16;
-        uint8_t  aggregation_group; // 0: not in group, 255: RFU
-    } information;
+    const battery_information_t * information;
 
     // ORG_BLUETOOTH_CHARACTERISTIC_MANUFACTURER_NAME_STRING   
-    uint8_t manufacturer_name[BATTERY_SERVICE_MAX_STRING_LEN];
-    uint8_t manufacturer_name_len;
+    const char * manufacturer_name;
 
     // ORG_BLUETOOTH_CHARACTERISTIC_MODEL_NUMBER_STRING        
-    uint8_t model_number[BATTERY_SERVICE_MAX_STRING_LEN];
-    uint8_t model_number_len;
+    const char * model_number;
 
     // ORG_BLUETOOTH_CHARACTERISTIC_SERIAL_NUMBER_STRING       
-    uint8_t serial_number[BATTERY_SERVICE_MAX_STRING_LEN];
-    uint8_t serial_number_len;
+    const char *  serial_number;
 
     uint8_t connections_max_num;
     battery_service_v1_server_connection_t * connections;
