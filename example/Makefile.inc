@@ -87,6 +87,7 @@ GATT_SERVER += \
 
 GATT_CLIENT += \
 	gatt_client.c        	    			\
+	gatt_servce_client.c   	    			\
 	battery_service_client.c 				\
 	device_information_service_client.c 	\
 	scan_parameters_service_client.c 	    \
