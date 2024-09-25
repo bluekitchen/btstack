@@ -104,7 +104,8 @@ extern "C" {
 #define LE_AUDIO_CONTEXT_MASK_NOTIFICATIONS             0x0100 // Notification and reminder sounds; attention-seeking audio, for example, in beeps signaling the arrival of a message
 #define LE_AUDIO_CONTEXT_MASK_RINGTONE                  0x0200 // Alerts the user to an incoming call, for example, an incoming telephony or video call, including traditional cellular as well as VoIP and Push-to-Talk
 #define LE_AUDIO_CONTEXT_MASK_ALERTS                    0x0400 // Alarms and timers; immediate alerts, for example, in a critical battery alarm, timer expiry or alarm clock, toaster, cooker, kettle, microwave, etc.
-#define LE_AUDIO_CONTEXT_MASK_EMERGENCY_ALARM           0x0800 //Emergency alarm Emergency sounds, for example, fire alarms or other urgent alerts
+#define LE_AUDIO_CONTEXT_MASK_EMERGENCY_ALARM           0x0800 // Emergency alarm Emergency sounds, for example, fire alarms or other urgent alerts
+#define LE_AUDIO_CONTEXT_MASK_ANY                       0x0FFF // Combination of all above
 #define LE_AUDIO_CONTEXT_MASK_RFU                       0xF000
 
 #define LE_AUDIO_OTC_MIN_OBJECT_ID_VALUE                0x000000000100 
@@ -321,6 +322,9 @@ typedef struct {
     uint16_t vendor_specific_company_id;
     uint8_t  vendor_specific_metadata_length;                              
     uint8_t  vendor_specific_metadata[LE_AUDIO_VENDOR_SPECIFIC_METADATA_MAX_LENGTH];
+
+    uint8_t unsupported_type;
+
 } le_audio_metadata_t;
 
 typedef struct {
