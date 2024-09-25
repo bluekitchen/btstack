@@ -29,5 +29,7 @@ clean:
 	@echo "Cleaning build directory..."
 	@rm -rf $(BUILD_DIR)
 
+coverage:
+	@echo "No coverage tests in btstack_util"
 
-.PHONY: all configure build clean test
+.PHONY: all configure build clean test coverage
