@@ -203,7 +203,7 @@ static uint8_t bas_serialize_characteristic(battery_service_v1_t * service, bas_
             break;
 
         case BAS_CHARACTERISTIC_INDEX_BATTERY_CRITCAL_STATUS:
-            event[pos++] = service->battery_critcal_status_flags;
+            event[pos++] = service->critcal_status_flags;
             break;
 
         case BAS_CHARACTERISTIC_INDEX_BATTERY_ENERGY_STATUS:
@@ -614,17 +614,104 @@ uint8_t battery_service_v1_server_set_battery_level_status(battery_service_v1_t 
         return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
     }
     
-    if ( (battery_level_status->flags & BATTERY_LEVEL_STATUS_BITMASK_ADDITIONAL_STATUS_PRESENT) > 0u){
+    if ((battery_level_status->flags & BATTERY_LEVEL_STATUS_BITMASK_ADDITIONAL_STATUS_PRESENT) > 0u){
         if (battery_level_status->additional_status_flags >= BATTERY_LEVEL_ADDITIONAL_STATUS_BITMASK_RFU){
             return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
         }
     }
-
+    
     service->level_status = battery_level_status;
     bas_server_set_callback(service, BAS_CHARACTERISTIC_INDEX_BATTERY_LEVEL_STATUS);
     return ERROR_CODE_SUCCESS;
 }
 
+uint8_t battery_service_v1_server_set_estimated_service_date_days(battery_service_v1_t * service, uint32_t estimated_service_date_days){
+    btstack_assert(service != NULL);
+        
+    service->estimated_service_date_days = estimated_service_date_days;
+    bas_server_set_callback(service, BAS_CHARACTERISTIC_INDEX_ESTIMATED_SERVICE_DATE);
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t battery_service_v1_server_set_critcal_status_flags(battery_service_v1_t * service, uint8_t critcal_status_flags){
+    btstack_assert(service != NULL);
+    
+    service->critcal_status_flags = critcal_status_flags;
+    bas_server_set_callback(service, BAS_CHARACTERISTIC_INDEX_BATTERY_CRITCAL_STATUS);
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t battery_service_v1_server_set_energy_status(battery_service_v1_t * service, const battery_energy_status_t * energy_status){
+    btstack_assert(service != NULL);
+    btstack_assert(energy_status != NULL);
+    
+    service->energy_status = energy_status;
+    bas_server_set_callback(service, BAS_CHARACTERISTIC_INDEX_BATTERY_ENERGY_STATUS);
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t battery_service_v1_server_set_time_status(battery_service_v1_t * service, const battery_time_status_t * time_status){
+    btstack_assert(service != NULL);
+    btstack_assert(time_status != NULL);
+    
+    service->time_status = time_status;
+    bas_server_set_callback(service, BAS_CHARACTERISTIC_INDEX_BATTERY_TIME_STATUS);
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t battery_service_v1_server_set_health_status(battery_service_v1_t * service, const battery_health_status_t * health_status){
+    btstack_assert(service != NULL);
+    btstack_assert(health_status != NULL);
+    
+    service->health_status = health_status;
+    bas_server_set_callback(service, BAS_CHARACTERISTIC_INDEX_BATTERY_HEALTH_STATUS);
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t battery_service_v1_server_set_health_information(battery_service_v1_t * service, const battery_health_information_t * health_information){
+    btstack_assert(service != NULL);
+    btstack_assert(health_information != NULL);
+    
+    service->health_information = health_information;
+    bas_server_set_callback(service, BAS_CHARACTERISTIC_INDEX_BATTERY_HEALTH_INFORMATION);
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t battery_service_v1_server_set_information(battery_service_v1_t * service, const battery_information_t * information){
+    btstack_assert(service != NULL);
+    btstack_assert(information != NULL);
+    
+    service->information = information;
+    bas_server_set_callback(service, BAS_CHARACTERISTIC_INDEX_BATTERY_INFORMATION);
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t battery_service_v1_server_set_manufacturer_name(battery_service_v1_t * service, const char * manufacturer_name){
+    btstack_assert(service != NULL);
+    btstack_assert(manufacturer_name != NULL);
+    
+    service->manufacturer_name = manufacturer_name;
+    bas_server_set_callback(service, BAS_CHARACTERISTIC_INDEX_MANUFACTURER_NAME_STRING);
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t battery_service_v1_server_set_model_number(battery_service_v1_t * service, const char * model_number){
+    btstack_assert(service != NULL);
+    btstack_assert(model_number != NULL);
+    
+    service->model_number = model_number;
+    bas_server_set_callback(service, BAS_CHARACTERISTIC_INDEX_MODEL_NUMBER_STRING);
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t battery_service_v1_server_set_serial_number(battery_service_v1_t * service, const char * serial_number){
+    btstack_assert(service != NULL);
+    btstack_assert(serial_number != NULL);
+    
+    service->serial_number = serial_number;
+    bas_server_set_callback(service, BAS_CHARACTERISTIC_INDEX_SERIAL_NUMBER_STRING);
+    return ERROR_CODE_SUCCESS;
+}
 
 void battery_service_v1_server_deregister(battery_service_v1_t *service){
     btstack_linked_list_remove(&battery_services, (btstack_linked_item_t * )service);
