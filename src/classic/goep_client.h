@@ -88,6 +88,7 @@ typedef struct {
     uint32_t         profile_supported_features;
     uint8_t          map_mas_instance_id;
     uint8_t          map_supported_message_types;
+    uint16_t         map_version;
 
     // needed to select one of multiple MAS Instances
     struct {
@@ -95,6 +96,7 @@ typedef struct {
         uint8_t  instance_id;
         uint8_t  supported_message_types;
         uint8_t  rfcomm_port;
+        uint16_t version;
 #ifdef ENABLE_GOEP_L2CAP
         uint16_t l2cap_psm;
 #endif
