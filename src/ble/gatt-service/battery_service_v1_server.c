@@ -51,7 +51,7 @@
 
 #include "ble/gatt-service/battery_service_v1_server.h"
 
-#define BATTERY_SERVICE_TASK_BATTERY_VALUE_CHANGED                          0x0001
+#define BAS_NOTIFICATION_TASK_BATTERY_VALUE_CHANGED                          0x0001
 
 // list of uuids
 static const uint16_t bas_uuid16s[BAS_CHARACTERISTIC_INDEX_NUM] = {
@@ -402,8 +402,8 @@ static void battery_service_can_send_now(void * context){
         return;
     }
 
-    if ( (connection->scheduled_tasks & BATTERY_SERVICE_TASK_BATTERY_VALUE_CHANGED) > 0u){
-        connection->scheduled_tasks &= ~BATTERY_SERVICE_TASK_BATTERY_VALUE_CHANGED;
+    if ( (connection->scheduled_tasks & BAS_NOTIFICATION_TASK_BATTERY_VALUE_CHANGED) > 0u){
+        connection->scheduled_tasks &= ~BAS_NOTIFICATION_TASK_BATTERY_VALUE_CHANGED;
         att_server_notify(connection->con_handle, service->characteristics[BAS_CHARACTERISTIC_INDEX_BATTERY_LEVEL].value_handle, &service->battery_value, 1);
     }
 
@@ -493,7 +493,7 @@ void battery_service_v1_server_set_battery_value(battery_service_v1_t * service,
     for (i = 0; i < service->connections_max_num; i++){
         battery_service_v1_server_connection_t * connection = &service->connections[i];
         if (connection->configurations[BAS_CHARACTERISTIC_INDEX_BATTERY_LEVEL] != 0){
-            battery_service_set_callback(connection, BATTERY_SERVICE_TASK_BATTERY_VALUE_CHANGED);
+            battery_service_set_callback(connection, BAS_NOTIFICATION_TASK_BATTERY_VALUE_CHANGED);
         }
     }
 }
