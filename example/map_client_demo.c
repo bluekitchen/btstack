@@ -533,7 +533,8 @@ static void stdin_process(char c){
         break;
     case 'u':
         btprintf("[+] Upload (PUT/PUSH) bmsg (%s)\n", push_bmsg->type);
-        map_access_client_push_message(map_cid, "A0", push_bmsg->bmsg, (uint16_t)strlen(push_bmsg->bmsg), &conv_id);
+        static map_message_handle_t msghdl = { 0x12, 0x12, 0x12, 0x12, 0x12, 0x12, 0x12, 0x12};
+        map_access_client_push_message(map_cid, "", push_bmsg->bmsg, (uint16_t)strlen(push_bmsg->bmsg), &msghdl, NULL);
         break;
     case 'U':
         next_push_bmsg();
