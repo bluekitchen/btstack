@@ -56,6 +56,7 @@
 #include "btstack_event.h"
 #include "btstack_run_loop.h"
 #include "gap.h"
+#include "ble/gatt_service_client.h"
 
 #define HID_REPORT_MODE_REPORT_ID               3
 #define HID_REPORT_MODE_REPORT_MAP_ID           4
@@ -961,7 +962,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
     UNUSED(size);
 
     hids_client_t * client = NULL;
-    uint8_t att_status;
+    uint8_t status;
     gatt_client_service_t service;
     gatt_client_characteristic_t characteristic;
     gatt_client_characteristic_descriptor_t characteristic_descriptor;
@@ -1212,12 +1213,12 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
             client = hids_get_client_for_con_handle(gatt_event_query_complete_get_handle(packet));
             if (client == NULL) break;
             
-            att_status = gatt_event_query_complete_get_att_status(packet);
+            status = gatt_service_client_att_status_to_error_code(gatt_event_query_complete_get_att_status(packet));
             
             switch (client->state){
                 case HIDS_CLIENT_STATE_W4_SERVICE_RESULT:
-                    if (att_status != ATT_ERROR_SUCCESS){
-                        hids_emit_connection_established(client, att_status);  
+                    if (status != ERROR_CODE_SUCCESS){
+                        hids_emit_connection_established(client, status);
                         hids_finalize_client(client);
                         return;  
                     }
@@ -1233,8 +1234,8 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                     break;
                 
                 case HIDS_CLIENT_STATE_W4_CHARACTERISTIC_RESULT:
-                    if (att_status != ATT_ERROR_SUCCESS){
-                        hids_emit_connection_established(client, att_status);  
+                    if (status != ERROR_CODE_SUCCESS){
+                        hids_emit_connection_established(client, status);
                         hids_finalize_client(client);
                         return;  
                     }
@@ -1273,8 +1274,8 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
 
                 // HID descriptor found
                 case HIDS_CLIENT_STATE_W4_REPORT_MAP_HID_DESCRIPTOR:
-                    if (att_status != ATT_ERROR_SUCCESS){
-                        hids_emit_connection_established(client, att_status);  
+                    if (status != ERROR_CODE_SUCCESS){
+                        hids_emit_connection_established(client, status);
                         hids_finalize_client(client);
                         return;  
                     }
