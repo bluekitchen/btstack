@@ -70,6 +70,7 @@
 #define ORG_BLUETOOTH_SERVICE_BINARY_SENSOR                                                                           0x183B // Binary Sensor 
 #define ORG_BLUETOOTH_SERVICE_BROADCAST_AUDIO_ANNOUNCEMENT_SERVICE                                                    0x1852 // Broadcast Audio Announcement Service
 #define ORG_BLUETOOTH_SERVICE_BROADCAST_AUDIO_SCAN_SERVICE                                                            0x184F // Broadcast Audio Scan Service
+#define ORG_BLUETOOTH_SERVICE_COMMON_AUDIO_SERVICE                                                                    0x1853 // Commmon Audio Service
 #define ORG_BLUETOOTH_SERVICE_CONSTANT_TONE_EXTENSION                                                                 0x184A // Constant Tone Extension
 #define ORG_BLUETOOTH_SERVICE_COORDINATED_SET_IDENTIFICATION_SERVICE                                                  0x1846 // Coordinated Set Identification Service
 #define ORG_BLUETOOTH_SERVICE_DEVICE_TIME                                                                             0x1847 // Device Time
@@ -442,7 +443,9 @@
 #define ORG_BLUETOOTH_CHARACTERISTIC_SOURCE_AUDIO_LOCATIONS                                                           0x2BCC // Source Audio Locations
 #define ORG_BLUETOOTH_CHARACTERISTIC_AVAILABLE_AUDIO_CONTEXTS                                                         0x2BCD // Available Audio Contexts
 #define ORG_BLUETOOTH_CHARACTERISTIC_SUPPORTED_AUDIO_CONTEXTS                                                         0x2BCE // Supported Audio Contexts
-
+#define ORG_BLUETOOTH_CHARACTERISTIC_HEARING_AID_FEATURES                                                             0x2BDA // Hearing Aid Features
+#define ORG_BLUETOOTH_CHARACTERISTIC_HEARING_AID_PRESET_CONTROL_POINT                                                 0x2BDB // Hearing Aid Preset Control Point
+#define ORG_BLUETOOTH_CHARACTERISTIC_ACTIVE_PRESET_INDEX                                                              0x2BDC // Active Preset Index
 #define ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_CRITCAL_STATUS                                                           0x2BE9 // Battery Critical Status
 #define ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_HEALTH_STATUS                                                            0x2BEA // Battery Health Status
 #define ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_HEALTH_INFORMATION                                                       0x2BEB // Battery Health Information
@@ -451,7 +454,7 @@
 #define ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_TIME_STATUS                                                              0x2BEE // Battery Time Status
 #define ORG_BLUETOOTH_CHARACTERISTIC_ESTIMATED_SERVICE_DATE                                                           0x2BEF // Estimated Service Date
 #define ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_ENERGY_STATUS                                                            0x2BF0 // Battery Energy Status
-
+#define ORG_BLUETOOTH_CHARACTERISTIC_UDI_FOR_MEDICAL_DEVICES                                                          0x2BFF // UDI for Medical Devices
 /**
  * Assigned numbers from www.bluetooth.com/specifications/gatt/descriptors
  */
