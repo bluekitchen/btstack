@@ -57,7 +57,6 @@
 #include "classic/goep_client.h"
 #include "classic/goep_server.h"
 #include "classic/map.h"
-#include "classic/map_access_app_params.h"
 #include "classic/map_access_server.h"
 #include "classic/map_notification_client.h"
 #include "classic/map_util.h"
