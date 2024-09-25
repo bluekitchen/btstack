@@ -4171,7 +4171,7 @@ typedef uint8_t sm_key_t[16];
  * @format 1H1
  * @param subevent_code
  * @param con_handle
- * @param att_status
+ * @param status
  */
 #define GATTSERVICE_SUBEVENT_SCAN_PARAMETERS_SERVICE_CONNECTED            0x11u
 
