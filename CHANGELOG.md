@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - HID Parser: introduce HID Descriptor and HID Descriptor Usage iterators
 - HCI Dump Dispatch: allow to use multiple HCI Dump implementations
 - HCI Dump: support ISO packets in PacketLogger format
+- Immediate Alert Service Server and Client: added
 - btstack_util: safe wrappers for snprintf
 
 ### Fixed
