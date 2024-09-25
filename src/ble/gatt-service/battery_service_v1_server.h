@@ -83,16 +83,16 @@ typedef enum {
 #define BATTERY_ENERGY_STATUS_BITMASK_AVAILABLE_BATTERY_CAPACITY_PRESENT           0x08                
 #define BATTERY_ENERGY_STATUS_BITMASK_CHARGE_RATE_PRESENT                          0x10
 #define BATTERY_ENERGY_STATUS_BITMASK_AVAILABLE_ENERGY_AT_LAST_CHARGE_PRESENT      0x20                    
-#define BATTERY_ENERGY_STATUS_BITMASK_RFU                                          0x40
+#define BATTERY_ENERGY_STATUS_BITMASK_RFU                                          0xC0
 
 #define BATTERY_LEVEL_STATUS_BITMASK_IDENTIFIER_PRESENT                            0x01  
 #define BATTERY_LEVEL_STATUS_BITMASK_BATTERY_LEVEL_PRESENT                         0x02
 #define BATTERY_LEVEL_STATUS_BITMASK_ADDITIONAL_STATUS_PRESENT                     0x04
-#define BATTERY_LEVEL_STATUS_BITMASK_RFU                                           0x08
+#define BATTERY_LEVEL_STATUS_BITMASK_RFU                                           0xF8
 
 #define BATTERY_LEVEL_ADDITIONAL_STATUS_BITMASK_SERVICE_REQUIRED                   0x01       // 0 = No, 1 = Yes, 2 = Unknown, 3 = RFU
 #define BATTERY_LEVEL_ADDITIONAL_STATUS_BITMASK_BATTERY_FAULT                      0x02       // 0 = No or Unknown, 1 = Yes
-#define BATTERY_LEVEL_ADDITIONAL_STATUS_BITMASK_RFU                                0x04
+#define BATTERY_LEVEL_ADDITIONAL_STATUS_BITMASK_RFU                                0xFC
 
 #define BATTERY_LEVEL_POWER_STATE_BITMASK_EXTERNAL_BATTERY_PRESENT                 0x0001    // 0 = No, 1 = Yes      
 #define BATTERY_LEVEL_POWER_STATE_BITMASK_WIRED_EXTERNAL_POWER_SOURCE_CONNECTED    0x0004    // 0 = No, 1 = Yes, 2 = Unknown, 3 = RFU
@@ -101,25 +101,25 @@ typedef enum {
 #define BATTERY_LEVEL_POWER_STATE_BITMASK_BATTERY_CHARGE_LEVEL                     0x0100    // 0 = Unknown, 1 = Good, 2 = Low, 3 = Critical    
 #define BATTERY_LEVEL_POWER_STATE_BITMASK_CHARGING_TYPE                            0x0400    // 0 = Unknown or Not Charging 1 = Constant Current, 2 = Constant Voltage, 3 = Trickle, 4 = Float, 5–7 = RFU              
 #define BATTERY_LEVEL_POWER_STATE_BITMASK_CHARGING_FAULT_REASON                    0x2000    // Bit 12: Battery, Bit 13: External Power source, Bit 14: Other
-#define BATTERY_LEVEL_POWER_STATE_BITMASK_RFU                                      0x4000
+#define BATTERY_LEVEL_POWER_STATE_BITMASK_RFU                                      0xC000
 
 #define BATTERY_CRITCAL_STATUS_BITMASK_CRITICAL_POWER_STATE                        0x01
 #define BATTERY_CRITCAL_STATUS_BITMASK_IMMEDIATE_SERVICE_REQUIRED                  0x02
-#define BATTERY_CRITCAL_STATUS_BITMASK_RFU                                         0x04
+#define BATTERY_CRITCAL_STATUS_BITMASK_RFU                                         0xFC
 
 #define BATTERY_TIME_STATUS_BITMASK_TIME_UNTIL_DISCHARGED_ON_STANDBY_PRESENT       0x01
 #define BATTERY_TIME_STATUS_BITMASK_TIME_UNTIL_RECHARGED_PRESENT                   0x02
-#define BATTERY_TIME_STATUS_BITMASK_RFU                                            0x04
+#define BATTERY_TIME_STATUS_BITMASK_RFU                                            0xFC
 
 #define BATTERY_HEALTH_STATUS_BITMASK_HEALTH_SUMMARY_PRESENT                       0x01
 #define BATTERY_HEALTH_STATUS_BITMASK_CYCLE_COUNT_PRESENT                          0x02
 #define BATTERY_HEALTH_STATUS_BITMASK_CURRENT_TEMPERATURE_PRESENT                  0x04
 #define BATTERY_HEALTH_STATUS_BITMASK_DEEP_DISCHARGE_COUNT_PRESENT                 0x08
-#define BATTERY_HEALTH_STATUS_BITMASK_RFU                                          0x10
+#define BATTERY_HEALTH_STATUS_BITMASK_RFU                                          0xF0
 
 #define BATTERY_HEALTH_INFORMATION_BITMASK_CYCLE_COUNT_DESIGNED_LIFETIME_PRESENT   0x01
 #define BATTERY_HEALTH_INFORMATION_BITMASK_DESIGNED_OPERATING_TEMPERATURE_PRESENT  0x02
-#define BATTERY_HEALTH_INFORMATION_BITMASK_RFU                                     0x04
+#define BATTERY_HEALTH_INFORMATION_BITMASK_RFU                                     0xFC
 
 #define BATTERY_INFORMATION_BITMASK_MANUFACTURE_DATE_PRESENT                       0x0001    
 #define BATTERY_INFORMATION_BITMASK_EXPIRATION_DATE_PRESENT                        0x0002    
@@ -129,11 +129,11 @@ typedef enum {
 #define BATTERY_INFORMATION_BITMASK_CHEMISTRY_PRESENT                              0x0020    
 #define BATTERY_INFORMATION_BITMASK_NOMINAL_VOLTAGE_PRESENT                        0x0040
 #define BATTERY_INFORMATION_BITMASK_AGGREGATION_GROUP_PRESENT                      0x0080
-#define BATTERY_INFORMATION_BITMASK_RFU                                            0x0100
+#define BATTERY_INFORMATION_BITMASK_RFU                                            0xFF00
 
 #define BATTERY_INFROMATION_FEATURE_BITMASK_REPLACEABLE                             0x01
 #define BATTERY_INFROMATION_FEATURE_BITMASK_RECHARGEABLE                            0x02
-#define BATTERY_INFROMATION_FEATURE_BITMASK_RFU                                     0x04
+#define BATTERY_INFROMATION_FEATURE_BITMASK_RFU                                     0xFC
 
 struct battery_service_v1;
 
@@ -200,6 +200,26 @@ typedef struct {
     int8_t   max_designed_operating_temperature_degree_celsius;
 } battery_health_information_t;
 
+typedef enum {
+    BATTERY_CHEMISTRY_UNKNOWN = 0,
+    BATTERY_CHEMISTRY_ALKALINE,                     // (ZINC–MANGANESE DIOXIDE)
+    BATTERY_CHEMISTRY_LEAD_ACID,
+    BATTERY_CHEMISTRY_LITHIUM_LIFES2,               // (LITHIUM-IRON DISULFIDE)
+    BATTERY_CHEMISTRY_LITHIUM_LIMNO2,               // (LITHIUM-MANGANESE DIOXIDE)
+    BATTERY_CHEMISTRY_LITHIUM_ION_LI,
+    BATTERY_CHEMISTRY_LITHIUM_POLYMER,
+    BATTERY_CHEMISTRY_NICKEL_OXYHYDROXIDE_NIOX,     // (ZINC-MANGANESE DIOXIDE/OXY NICKEL HYDROXIDE)
+    BATTERY_CHEMISTRY_NICKEL_CADMIUM_NICD,
+    BATTERY_CHEMISTRY_NICKEL_METAL_HYDRIDE_NIMH,
+    BATTERY_CHEMISTRY_SILVER_OXIDE_AGZN,            // (SILVER-ZINC)
+    BATTERY_CHEMISTRY_ZINC_CHLORIDE,
+    BATTERY_CHEMISTRY_ZINC_AIR,
+    BATTERY_CHEMISTRY_ZINC_CARBON,
+    BATTERY_CHEMISTRY_RFU_START = 14,
+    BATTERY_CHEMISTRY_RFU_END = 254,
+    BATTERY_CHEMISTRY_OTHER = 255
+} battery_chemistry_t;
+
 typedef struct {
     uint16_t flags;
     uint8_t  features;
@@ -210,7 +230,7 @@ typedef struct {
     uint16_t designed_capacity_kWh_medfloat16;
     uint16_t low_energy_kWh_medfloat16;
     uint16_t critical_energy_kWh_medfloat16;
-    uint8_t  chemistry;
+    battery_chemistry_t  chemistry;
     uint16_t nominal_voltage_medfloat16;
     uint8_t  aggregation_group; // 0: not in group, 255: RFU
 } battery_information_t;
@@ -297,7 +317,7 @@ uint8_t battery_service_v1_server_set_battery_level(battery_service_v1_t * servi
 uint8_t battery_service_v1_server_set_battery_level_status(battery_service_v1_t * service, const battery_level_status_t * battery_level_status);
 
 /**
- * @brief Update battery estimated service date
+ * @brief Update battery estimated service date as days elapsed since the Epoch (Jan 1, 1970)
  * @note Triggers notification or indication if subscribed
  * @param service
  * @param estimated_service_date_days 

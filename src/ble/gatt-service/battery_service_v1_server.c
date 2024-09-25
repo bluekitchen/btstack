@@ -598,7 +598,6 @@ uint8_t battery_service_v1_server_set_battery_level(battery_service_v1_t * servi
     if (battery_level > 100){
         return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
     }
-
     if (service->battery_level != battery_level){
         service->battery_level = battery_level;
         bas_server_set_callback(service, BAS_CHARACTERISTIC_INDEX_BATTERY_LEVEL);
@@ -610,12 +609,11 @@ uint8_t battery_service_v1_server_set_battery_level_status(battery_service_v1_t 
     btstack_assert(service != NULL);
     btstack_assert(battery_level_status != NULL);
     
-    if (battery_level_status->flags >= BATTERY_LEVEL_STATUS_BITMASK_RFU){
+    if ((battery_level_status->flags & BATTERY_LEVEL_STATUS_BITMASK_RFU) != 0u){
         return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
     }
-    
     if ((battery_level_status->flags & BATTERY_LEVEL_STATUS_BITMASK_ADDITIONAL_STATUS_PRESENT) > 0u){
-        if (battery_level_status->additional_status_flags >= BATTERY_LEVEL_ADDITIONAL_STATUS_BITMASK_RFU){
+       if ((battery_level_status->additional_status_flags & BATTERY_LEVEL_ADDITIONAL_STATUS_BITMASK_RFU) != 0u){
             return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
         }
     }
@@ -627,7 +625,11 @@ uint8_t battery_service_v1_server_set_battery_level_status(battery_service_v1_t 
 
 uint8_t battery_service_v1_server_set_estimated_service_date_days(battery_service_v1_t * service, uint32_t estimated_service_date_days){
     btstack_assert(service != NULL);
-        
+    
+    if (estimated_service_date_days > 0xFFFFFF){
+        return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+    }
+
     service->estimated_service_date_days = estimated_service_date_days;
     bas_server_set_callback(service, BAS_CHARACTERISTIC_INDEX_ESTIMATED_SERVICE_DATE);
     return ERROR_CODE_SUCCESS;
@@ -636,6 +638,10 @@ uint8_t battery_service_v1_server_set_estimated_service_date_days(battery_servic
 uint8_t battery_service_v1_server_set_critcal_status_flags(battery_service_v1_t * service, uint8_t critcal_status_flags){
     btstack_assert(service != NULL);
     
+    if ((critcal_status_flags & BATTERY_CRITCAL_STATUS_BITMASK_RFU) != 0u){
+        return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+    }
+
     service->critcal_status_flags = critcal_status_flags;
     bas_server_set_callback(service, BAS_CHARACTERISTIC_INDEX_BATTERY_CRITCAL_STATUS);
     return ERROR_CODE_SUCCESS;
@@ -645,6 +651,10 @@ uint8_t battery_service_v1_server_set_energy_status(battery_service_v1_t * servi
     btstack_assert(service != NULL);
     btstack_assert(energy_status != NULL);
     
+    if ((energy_status->flags & BATTERY_ENERGY_STATUS_BITMASK_RFU) != 0u){
+        return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+    }
+
     service->energy_status = energy_status;
     bas_server_set_callback(service, BAS_CHARACTERISTIC_INDEX_BATTERY_ENERGY_STATUS);
     return ERROR_CODE_SUCCESS;
@@ -654,6 +664,23 @@ uint8_t battery_service_v1_server_set_time_status(battery_service_v1_t * service
     btstack_assert(service != NULL);
     btstack_assert(time_status != NULL);
     
+    if ((time_status->flags & BATTERY_TIME_STATUS_BITMASK_RFU) != 0u){
+        return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+    }
+    if (time_status->time_until_discharged_minutes > 0xFFFFFF){
+        return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+    }
+    if ((time_status->flags & BATTERY_TIME_STATUS_BITMASK_TIME_UNTIL_DISCHARGED_ON_STANDBY_PRESENT) > 0u){
+        if (time_status->time_until_discharged_on_standby_minutes > 0xFFFFFF){
+            return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+        }
+    }
+    if ((time_status->flags & BATTERY_TIME_STATUS_BITMASK_TIME_UNTIL_RECHARGED_PRESENT) > 0u){
+        if (time_status->time_until_recharged_minutes > 0xFFFFFF){
+            return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+        }
+    }
+
     service->time_status = time_status;
     bas_server_set_callback(service, BAS_CHARACTERISTIC_INDEX_BATTERY_TIME_STATUS);
     return ERROR_CODE_SUCCESS;
@@ -663,6 +690,15 @@ uint8_t battery_service_v1_server_set_health_status(battery_service_v1_t * servi
     btstack_assert(service != NULL);
     btstack_assert(health_status != NULL);
     
+    if ((health_status->flags & BATTERY_HEALTH_STATUS_BITMASK_RFU) != 0u){
+        return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+    }
+    if ((health_status->flags & BATTERY_HEALTH_STATUS_BITMASK_HEALTH_SUMMARY_PRESENT) > 0u){
+        if (health_status->summary > 100){
+            return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+        }
+    }
+
     service->health_status = health_status;
     bas_server_set_callback(service, BAS_CHARACTERISTIC_INDEX_BATTERY_HEALTH_STATUS);
     return ERROR_CODE_SUCCESS;
@@ -672,6 +708,10 @@ uint8_t battery_service_v1_server_set_health_information(battery_service_v1_t * 
     btstack_assert(service != NULL);
     btstack_assert(health_information != NULL);
     
+    if ((health_information->flags & BATTERY_HEALTH_INFORMATION_BITMASK_RFU) != 0u){
+        return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+    }
+
     service->health_information = health_information;
     bas_server_set_callback(service, BAS_CHARACTERISTIC_INDEX_BATTERY_HEALTH_INFORMATION);
     return ERROR_CODE_SUCCESS;
@@ -681,6 +721,30 @@ uint8_t battery_service_v1_server_set_information(battery_service_v1_t * service
     btstack_assert(service != NULL);
     btstack_assert(information != NULL);
     
+    if ((information->flags & BATTERY_HEALTH_INFORMATION_BITMASK_RFU) != 0u){
+        return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+    }
+    if ((information->flags & BATTERY_INFORMATION_BITMASK_MANUFACTURE_DATE_PRESENT) > 0u){
+        if (information->manufacture_date_days > 0xFFFFFF){
+            return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+        }
+    }
+    if ((information->flags & BATTERY_INFORMATION_BITMASK_EXPIRATION_DATE_PRESENT) > 0u){
+        if (information->expiration_date_days > 0xFFFFFF){
+            return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+        }
+    }
+    if ((information->flags & BATTERY_INFORMATION_BITMASK_CHEMISTRY_PRESENT) > 0u){
+        if (information->chemistry >= BATTERY_CHEMISTRY_RFU_START || information->chemistry <= BATTERY_CHEMISTRY_RFU_END){
+            return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+        }
+    }
+    if ((information->flags & BATTERY_INFORMATION_BITMASK_AGGREGATION_GROUP_PRESENT) > 0u){
+        if (information->aggregation_group == 0xFF){
+            return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+        }
+    }
+
     service->information = information;
     bas_server_set_callback(service, BAS_CHARACTERISTIC_INDEX_BATTERY_INFORMATION);
     return ERROR_CODE_SUCCESS;
