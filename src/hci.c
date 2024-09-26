@@ -2785,7 +2785,7 @@ static void hci_store_local_supported_commands(const uint8_t * packet){
     for (i = 0 ; i < SUPPORTED_HCI_COMMANDS_COUNT ; i++){
         if ((commands_map[supported_hci_commands_map[i].byte_offset] & (1 << supported_hci_commands_map[i].bit_position)) != 0){
 #ifdef ENABLE_LOG_DEBUG
-            log_info("Command %s (%u) supported %u/%u", command_names[i], i, supported_hci_commands_map[i].byte_offset, supported_hci_commands_map[i].bit_position);
+            log_debug("Command %s (%u) supported %u/%u", command_names[i], i, supported_hci_commands_map[i].byte_offset, supported_hci_commands_map[i].bit_position);
 #else
             log_info("Command 0x%02x supported %u/%u", i, supported_hci_commands_map[i].byte_offset, supported_hci_commands_map[i].bit_position);
 #endif
