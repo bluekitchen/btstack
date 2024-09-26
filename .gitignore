@@ -25,3 +25,4 @@ cmake-build-*
 build
 build-asan
 build-coverage
+.idea
