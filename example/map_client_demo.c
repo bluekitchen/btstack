@@ -123,7 +123,7 @@ static struct push_bmsg_s {
 "VERSION:1.0\r\n"
 "STATUS:UNREAD\r\n"
 "TYPE:EMAIL\r\n"
-"FOLDER:TELECOM/MSG/draft\r\n"
+"FOLDER:TELECOM/MSG/OUTBOX\r\n"
 "BEGIN:VCARD\r\n"
 "VERSION:2.1\r\n"
 "N:IUT\r\n"
@@ -533,8 +533,8 @@ static void stdin_process(char c){
         break;
     case 'u':
         btprintf("[+] Upload (PUT/PUSH) bmsg (%s)\n", push_bmsg->type);
-        static map_message_handle_t msghdl = { 0x12, 0x12, 0x12, 0x12, 0x12, 0x12, 0x12, 0x12};
-        map_access_client_push_message(map_cid, "", push_bmsg->bmsg, (uint16_t)strlen(push_bmsg->bmsg), &msghdl, NULL);
+        static uint8_t msghdl[16]  = "\x12\x12\x12\x12\x12\x12\x12\x12\x12\x12\x12\x12\x12\x12\x12\x12";
+        map_access_client_push_message(map_cid, "", push_bmsg->bmsg, (uint16_t)strlen(push_bmsg->bmsg), (map_message_handle_t*) & msghdl, NULL);
         break;
     case 'U':
         next_push_bmsg();

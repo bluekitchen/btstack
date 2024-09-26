@@ -401,9 +401,9 @@ static void map_access_client_handle_can_send_now(uint16_t goep_cid) {
 
                 if (map_access_client->mesage_handle) {
                     application_parameters[pos++] = MAP_APP_PARAM_MessageHandle;
-                    application_parameters[pos++] = sizeof(*map_access_client->mesage_handle);
-                    memcpy(&application_parameters[pos], map_access_client->mesage_handle, sizeof(*map_access_client->mesage_handle));
-                    pos += sizeof(*map_access_client->mesage_handle);
+                    application_parameters[pos++] = 16;// sizeof(*map_access_client->mesage_handle);
+                    memcpy(&application_parameters[pos], map_access_client->mesage_handle, 16);// sizeof(*map_access_client->mesage_handle));
+                    pos += 16;// sizeof(*map_access_client->mesage_handle);
                 }
 
                 goep_client_header_add_application_parameters(map_access_client->goep_client.cid, &application_parameters[0], pos);
