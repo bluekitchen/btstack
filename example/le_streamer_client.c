@@ -454,7 +454,7 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
                 case HCI_SUBEVENT_LE_PHY_UPDATE_COMPLETE:
                     con_handle = hci_subevent_le_phy_update_complete_get_connection_handle(packet);
                     printf("- LE Connection 0x%04x: PHY update - using LE %s PHY now\n", con_handle,
-                           phy_names[hci_subevent_le_phy_update_complete_get_tx_phy(packet)]);
+                           phy_names[hci_subevent_le_phy_update_complete_get_tx_phy(packet) - 1]);
                     break;
                 default:
                     break;
