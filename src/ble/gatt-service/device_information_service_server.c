@@ -236,30 +236,37 @@ void device_information_service_server_set_pnp_id(uint8_t vendor_source_id, uint
 
 
 void device_information_service_server_set_udi_for_medical_devices(const char * label, const char * device_id, const char * issuer, const char * authority){
-	uint8_t * data = &device_information_fields[UDI_FOR_MEDICAL_DEVICES].data[0];
+
+    // suppress CppCheck warnings below. Buffer has size 1 + 4 * DEVICE_INFORMATION_MAX_STRING_LEN
+	uint8_t * data = device_information_fields[UDI_FOR_MEDICAL_DEVICES].data;
 
 	uint16_t bytes_copied;
 	uint16_t pos = 0;
 	data[pos++] = 0; // reserved for flags
 
+
+    // cppcheck-suppress objectIndex
 	bytes_copied = btstack_strcpy((char *) &data[pos], DEVICE_INFORMATION_MAX_STRING_LEN, label);
 	pos += bytes_copied;
 	if (bytes_copied > 0){
 		data[0] |= (1 << UDI_FOR_MEDICAL_DEVICES_BITMASK_LABEL);
 	}
 
+    // cppcheck-suppress objectIndex
 	bytes_copied = btstack_strcpy((char *) &data[pos], DEVICE_INFORMATION_MAX_STRING_LEN, device_id);
 	pos += bytes_copied;
 	if (bytes_copied > 0){
 		data[0] |= (1 << UDI_FOR_MEDICAL_DEVICES_BITMASK_DEVICE_ID);
 	}
 
+    // cppcheck-suppress objectIndex
 	bytes_copied = btstack_strcpy((char *) &data[pos], DEVICE_INFORMATION_MAX_STRING_LEN, issuer);
 	pos += bytes_copied;
 	if (bytes_copied > 0){
 		data[0] |= (1 << UDI_FOR_MEDICAL_DEVICES_BITMASK_ISSUER);
 	}
 
+    // cppcheck-suppress objectIndex
 	bytes_copied = btstack_strcpy((char *) &data[pos], DEVICE_INFORMATION_MAX_STRING_LEN, authority);
 	pos += bytes_copied;
 	if (bytes_copied > 0){
