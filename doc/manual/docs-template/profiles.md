@@ -20,7 +20,7 @@ The AVRCP profile defines how audio playback on a remote device (e.g. a music ap
 
 The GAP profile defines how devices find each other and establish a
 secure connection for other profiles. As mentioned before, the GAP
-functionality is split between and . Please check both.
+functionality is split between and `hci.h` and `gap.h`. Please check both.
 
 ### Become discoverable
 
@@ -550,9 +550,9 @@ To save on both code space and memory, BTstack does not provide a GATT
 Server implementation. Instead, a textual description of the GATT
 profile is directly converted into a compact internal ATT Attribute
 database by a GATT profile compiler. The ATT protocol server -
-implemented by and - answers incoming ATT requests based on information
-provided in the compiled database and provides read- and write-callbacks
-for dynamic attributes.
+provided by `att_db.h` and `att_server.h` - answers incoming ATT
+requests based on information provided in the compiled database and 
+provides read- and write-callbacks for dynamic attributes.
 
 GATT profiles are defined by a simple textual comma separated value
 (.csv) representation. While the description is easy to read and edit,
