@@ -71,7 +71,7 @@ static btstack_linked_list_t goep_clients;
 static goep_client_t *    goep_client_sdp_active;
 static uint8_t            goep_client_sdp_query_attribute_value[30];
 static const unsigned int goep_client_sdp_query_attribute_value_buffer_size = sizeof(goep_client_sdp_query_attribute_value);
-static uint8_t goep_packet_buffer[150];
+static uint8_t goep_packet_buffer[500];
 
 static inline void goep_client_emit_connected_event(goep_client_t * goep_client, uint8_t status){
     uint8_t event[15];
@@ -241,7 +241,7 @@ static void goep_client_handle_sdp_query_end_of_record(goep_client_t * goep_clie
 static uint8_t goep_client_start_connect(goep_client_t * goep_client){
 #ifdef ENABLE_GOEP_L2CAP
     if (goep_client->l2cap_psm && (goep_client->ertm_buffer != NULL)){
-        log_info("Remote GOEP L2CAP PSM: %u", goep_client->l2cap_psm);
+        log_info("Remote GOEP L2CAP PSM: 0x%x", goep_client->l2cap_psm);
         return l2cap_ertm_create_channel(&goep_client_packet_handler, goep_client->bd_addr, goep_client->l2cap_psm,
         &goep_client->ertm_config, goep_client->ertm_buffer,
         goep_client->ertm_buffer_size, &goep_client->bearer_cid);
@@ -440,7 +440,7 @@ static uint8_t * goep_client_get_outgoing_buffer(goep_client_t * goep_client){
 
 static uint16_t goep_client_get_outgoing_buffer_len(goep_client_t * goep_client){
     if (goep_client->l2cap_psm){
-        return sizeof(goep_packet_buffer);
+        return btstack_min((uint32_t)sizeof(goep_packet_buffer), goep_client->bearer_mtu);
     } else {
         return rfcomm_get_max_frame_size(goep_client->bearer_cid);
     }
