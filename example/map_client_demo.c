@@ -103,6 +103,7 @@ static uint16_t mns_cid;
 
 static bd_addr_t    remote_addr;
 static const char * remote_addr_string = "001BDC0732EF";
+// MBP2016/PTS: 001BDC08E25C
 
 static const char* folders[] = { "telecom/msg/inbox", "telecom/msg/outbox", "telecom/msg/draft", "telecom/msg/delete", "", NULL};
 static const char * *folder_name = folders;
