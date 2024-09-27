@@ -1,6 +1,6 @@
 # MAP Message Client Equipment (MCE) Test
 
-tooL: example/map_client_demo.c
+tooL: example/map_client_demo.c (use <x> and <X> on the console to select and auto-run a test case sequences)
 
 MAP/MCE/SGSIT/SERR/BV-02-I: a
 MAP/MCE/SGSIT/ATTR/BV-08-I: a
@@ -41,6 +41,7 @@ MAP/MCE/MMB/BV-17-I: PASS a, p, F, 4, g,
 MAP/MCE/MMB/BV-06-I: PASS a, p, F, 2, g, 
 MAP/MCE/MMB/BV-07-I: PASS a, p, F, 1, r, 2, r, 4, r, 5, r, A, b, 3, r, B, 
 MAP/MCE/MMB/BV-08-I: PASS a, P, I, F, A, 
+MAP/MCE/MMB/BV-21-C: PASS a, p, F, 5, g
 
 MAP/MCE/MMD/BV-01-C: PASS a, p, F, 1, d, 2, d, 4, d, 5, d, A, b, 3, d, B
 MAP/MCE/MMD/BV-03-C: PASS a, n, p, F, 5, d
