@@ -26,3 +26,6 @@ build
 build-asan
 build-coverage
 .idea
+.vs
+.vscode
+ninja
