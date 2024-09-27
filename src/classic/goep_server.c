@@ -153,7 +153,7 @@ static inline void goep_server_emit_incoming_connection(btstack_packet_handler_t
     event[pos++] = GOEP_SUBEVENT_INCOMING_CONNECTION;
     little_endian_store_16(event, pos, goep_cid);
     pos+=2;
-    memcpy(&event[pos], bd_addr, 6);
+    reverse_bd_addr(bd_addr, &event[pos]);
     pos += 6;
     little_endian_store_16(event, pos, con_handle);
     pos += 2;
@@ -170,7 +170,7 @@ static inline void goep_server_emit_connection_opened(btstack_packet_handler_t c
     little_endian_store_16(event, pos, goep_cid);
     pos+=2;
     event[pos++] = status;
-    memcpy(&event[pos], bd_addr, 6);
+    reverse_bd_addr(bd_addr, &event[pos]);
     pos += 6;
     little_endian_store_16(event, pos, con_handle);
     pos += 2;
