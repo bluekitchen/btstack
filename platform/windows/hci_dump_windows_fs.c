@@ -66,7 +66,10 @@
 
 static HANDLE dump_file = INVALID_HANDLE_VALUE;
 static int  dump_format;
-static char log_message_buffer[256];
+#ifndef HCI_LOG_MESSAGE_BUFFER_WINUSB
+#define HCI_LOG_MESSAGE_BUFFER_WINUSB 256
+#endif
+static char log_message_buffer[HCI_LOG_MESSAGE_BUFFER_WINUSB];
 
 static void hci_dump_windows_fs_reset(void){
     btstack_assert(dump_file != INVALID_HANDLE_VALUE);
