@@ -388,6 +388,7 @@ static void show_usage(void){
     if (map_cid != 0){
         btprintf("MAP instance ID #%u, map cid %u\n", map_mas_instance_id, map_cid);
     }
+    btprintf("Selected Path: '%s'\n", *folder_name);
     btprintf("\n");
     if (map_mas_0_cid == 0){
         btprintf("a - establish connection to MAS ID #0 - %s\n", bd_addr_to_str(remote_addr));
@@ -405,7 +406,7 @@ static void show_usage(void){
     btprintf("x - cycle through test cases\n");
     btprintf("I - request an update on the Inbox\n");
     btprintf("p - set path '%s'\n", *folder_name);
-    btprintf("P - selected Path '%s'\n", *folder_name);
+    btprintf("P - select next path'\n");
     btprintf("f - get folder listing\n");
     btprintf("F - get message listing for current folder\n");
     btprintf("C - get conversation listing\n");
