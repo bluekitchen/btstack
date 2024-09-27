@@ -282,8 +282,8 @@ static void goep_client_handle_sdp_query_event(uint8_t packet_type, uint16_t cha
                 case BLUETOOTH_ATTRIBUTE_PBAP_SUPPORTED_FEATURES:
                 case BLUETOOTH_ATTRIBUTE_MAS_INSTANCE_ID:
                 case BLUETOOTH_ATTRIBUTE_SUPPORTED_MESSAGE_TYPES:
-#ifdef ENABLE_GOEP_L2CAP
                 case BLUETOOTH_ATTRIBUTE_BLUETOOTH_PROFILE_DESCRIPTOR_LIST:
+#ifdef ENABLE_GOEP_L2CAP
                 case BLUETOOTH_ATTRIBUTE_GOEP_L2CAP_PSM:
 #endif
                     break;
@@ -335,7 +335,6 @@ static void goep_client_handle_sdp_query_event(uint8_t packet_type, uint16_t cha
                         }
                     }
                     break;
-#ifdef ENABLE_GOEP_L2CAP
 
                 case BLUETOOTH_ATTRIBUTE_BLUETOOTH_PROFILE_DESCRIPTOR_LIST:
                     for (des_iterator_init(&des_list_it, goep_client_sdp_query_attribute_value); des_iterator_has_more(&des_list_it); des_iterator_next(&des_list_it)) {
@@ -363,6 +362,8 @@ static void goep_client_handle_sdp_query_event(uint8_t packet_type, uint16_t cha
                         }
                     }
                     break;
+
+#ifdef ENABLE_GOEP_L2CAP
                 case BLUETOOTH_ATTRIBUTE_GOEP_L2CAP_PSM:
                     if (goep_client->uuid == BLUETOOTH_SERVICE_CLASS_MESSAGE_ACCESS_SERVER){
                         de_element_get_uint16(goep_client_sdp_query_attribute_value, &goep_client->mas_info.l2cap_psm);
@@ -371,6 +372,7 @@ static void goep_client_handle_sdp_query_event(uint8_t packet_type, uint16_t cha
                     }
                     break;
 #endif
+
                 // BLUETOOTH_ATTRIBUTE_PBAP_SUPPORTED_FEATURES == BLUETOOTH_ATTRIBUTE_MAP_SUPPORTED_FEATURES == 0x0317
                 case BLUETOOTH_ATTRIBUTE_PBAP_SUPPORTED_FEATURES:
                     if (de_get_element_type(goep_client_sdp_query_attribute_value) != DE_UINT) break;
