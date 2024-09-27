@@ -236,8 +236,9 @@ static void map_client_emit_folder_listing_item_event(btstack_packet_handler_t c
 }  
 
 static void map_client_emit_message_listing_item_event(btstack_packet_handler_t callback, uint16_t cid, map_message_handle_t message_handle, map_conversation_id_t conversation_id, map_message_type_t msg_type, map_message_status_t msg_status){
-    uint8_t* p = &conversation_id[sizeof(conversation_id)-1];
+    uint8_t* p = &conversation_id[sizeof(map_conversation_id_t)-1];
     log_debug("conversation_id:%02x %02x %02x %02x %02x %02x %02x %02x %02x %02x", *p--, *p--, *p--, *p--, *p--, *p--, *p--, *p--, *p--, *p--);
+    UNUSED(p);
     uint8_t packet[7 + MAP_MESSAGE_HANDLE_SIZE + MAP_CONVERSATION_ID_SIZE];
     hci_event_builder_context_t evb;
     hci_event_builder_init(&evb, packet, sizeof(packet), HCI_EVENT_MAP_META, MAP_SUBEVENT_MESSAGE_LISTING_ITEM);

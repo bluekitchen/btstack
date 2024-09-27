@@ -521,7 +521,7 @@ static void map_access_client_handle_can_send_now(uint16_t goep_cid) {
 
                 application_parameters[pos++] = MAP_APP_PARAM_ConversationID;
                 application_parameters[pos++] = sizeof(map_access_client->conversation_id);
-                memcpy(&application_parameters[pos], map_access_client->conversation_id, sizeof(map_access_client->conversation_id));
+                memcpy(&application_parameters[pos], map_access_client->conversation_id, sizeof(map_conversation_id_t));
                 pos += sizeof(map_access_client->conversation_id);
 
                 goep_client_header_add_application_parameters(map_access_client->goep_client.cid, &application_parameters[0], pos);
