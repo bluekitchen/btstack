@@ -208,7 +208,7 @@ uint8_t map_access_client_set_message_status(uint16_t map_cid, const map_message
  * @param ChatState
  * @return status
  */
-uint8_t map_access_client_set_owner_status(uint16_t map_cid, const map_message_handle_t map_message_handle, uint8_t PresenceAvailability, uint8_t ChatState, map_UTCstmpoffstr_t LastActivity);
+uint8_t map_access_client_set_owner_status(uint16_t map_cid, const map_message_handle_t map_message_handle, uint8_t PresenceAvailability, uint8_t ChatState, const map_UTCstmpoffstr_t LastActivity);
 
 /** 
  * @brief Set message status

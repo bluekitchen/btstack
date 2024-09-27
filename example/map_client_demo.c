@@ -553,7 +553,7 @@ static void stdin_process(char c){
         break;
     case 'c':
         btprintf("[+] Change owner status of selected message\n");
-        map_access_client_set_owner_status(map_cid, message_handle, 0x12, 0x34, "20140612T105430+0100");
+        map_access_client_set_owner_status(map_cid, message_handle, 0x12, 0x34, (const uint8_t*) "20140612T105430+0100");
         break;
     case 'o':
         btprintf("[+] Get owner status of selected message\n");
