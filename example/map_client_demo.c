@@ -76,7 +76,7 @@
 
 // forward declarations
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
-void stdin_process(char c);
+static void stdin_process(char c);
 
 // map access clients
 static map_access_client_t map_access_client_mas_0;
@@ -335,7 +335,7 @@ static void keypress_timer_cb(btstack_timer_source_t* ts) {
         btstack_run_loop_add_timer(ts);
     }
 }
-static init_keypress_timer(void) {
+static void init_keypress_timer(void) {
     btstack_run_loop_set_timer_handler(&keypress_timer, keypress_timer_cb);
     btstack_run_loop_set_timer(&keypress_timer, 10);
     btstack_run_loop_add_timer(&keypress_timer);
@@ -533,7 +533,7 @@ static void stdin_process(char c){
     case 'u':
         btprintf("[+] Upload (PUT/PUSH) bmsg (%s)\n", push_bmsg->type);
         static uint8_t msghdl[16]  = "\x12\x12\x12\x12\x12\x12\x12\x12\x12\x12\x12\x12\x12\x12\x12\x12";
-        map_access_client_push_message(map_cid, "", push_bmsg->bmsg, (uint16_t)strlen(push_bmsg->bmsg), (map_message_handle_t*) & msghdl, NULL);
+        map_access_client_push_message(map_cid, "", (const uint8_t*) push_bmsg->bmsg, (uint16_t)strlen(push_bmsg->bmsg), (map_message_handle_t*) & msghdl, NULL);
         break;
     case 'U':
         next_push_bmsg();
@@ -557,7 +557,12 @@ static void stdin_process(char c){
         break;
     case 'o':
         btprintf("[+] Get owner status of selected message\n");
-        map_access_client_get_owner_status(map_cid, "12345678"); // PTS 8.7.0 doesnt check the contents so its random
+        {
+            // PTS 8.7.0 doesnt check the contents so its random
+            map_uint128_t conversation_id;
+            memset(conversation_id, '0', sizeof(map_uint128_t));
+            map_access_client_get_owner_status(map_cid, conversation_id);
+        }
         break;
     case 'n':
         // enable notifications for all/both mas instances
@@ -715,12 +720,14 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             break;
 
         case MAP_DATA_PACKET:
+        {
             char buf[1000]; int i;
             for (i = 0; i < size; i++) {
                 snprintf(&buf[3 * i], 4, "%02x ", packet[i]);
             }
             log_debug("MAP_DATA_PACKET (%u bytes): %s", size, buf);
             break;
+        }
         default:
             break;
     }
@@ -756,13 +763,14 @@ static void mns_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
             break;
 
         case MAP_DATA_PACKET:
+        {
             char buf[100]; int i;
             for (i = 0; i < size; i++) {
                 snprintf(&buf[3 * i], 4, "%02x ", packet[i]);
             }
             log_debug("MAP_DATA_PACKET (%u bytes): %s", size, buf);
-
             break;
+        }
         default:
             btprintf ("unknown event of type %d\n", packet_type);
             break;
