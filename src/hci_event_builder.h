@@ -141,7 +141,7 @@ void hci_event_builder_add_bd_addr(hci_event_builder_context_t * context, bd_add
 void hci_event_builder_add_con_handle(hci_event_builder_context_t * context, hci_con_handle_t con_handle);
 
 /**
- * @bbrief Add string to event
+ * @bbrief Add string to event using JV format: len, string, trailing zero
  * @param context
  * @param value
  */
