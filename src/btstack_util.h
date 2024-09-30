@@ -105,41 +105,46 @@ int32_t btstack_time_delta(uint32_t time_a, uint32_t time_b);
 int16_t btstack_time16_delta(uint16_t time_a, uint16_t time_b);
 
 /** 
- * @brief Read 16/24/32 bit little endian value from buffer
+ * @brief Read 08/16/24/32 bit little endian value from buffer
  * @param buffer
  * @param position in buffer
  * @return value
  */
+uint8_t  little_endian_read_08(const uint8_t * buffer, int position);
 uint16_t little_endian_read_16(const uint8_t * buffer, int position);
 uint32_t little_endian_read_24(const uint8_t * buffer, int position);
 uint32_t little_endian_read_32(const uint8_t * buffer, int position);
 
+
 /** 
- * @brief Write 16/32 bit little endian value into buffer
+ * @brief Write 08/16/32 bit little endian value into buffer
  * @param buffer
  * @param position in buffer
  * @param value
  */
+void little_endian_store_08(uint8_t * buffer, uint16_t position, uint8_t value);
 void little_endian_store_16(uint8_t * buffer, uint16_t position, uint16_t value);
 void little_endian_store_24(uint8_t * buffer, uint16_t position, uint32_t value);
 void little_endian_store_32(uint8_t * buffer, uint16_t position, uint32_t value);
 
 /** 
- * @brief Read 16/24/32 bit big endian value from buffer
+ * @brief Read 08/16/24/32 bit big endian value from buffer
  * @param buffer
  * @param position in buffer
  * @return value
  */
+uint32_t big_endian_read_08(const uint8_t* buffer, int position);
 uint32_t big_endian_read_16(const uint8_t * buffer, int position);
 uint32_t big_endian_read_24(const uint8_t * buffer, int position);
 uint32_t big_endian_read_32(const uint8_t * buffer, int position);
 
 /** 
- * @brief Write 16/32 bit big endian value into buffer
+ * @brief Write 08/16/32 bit big endian value into buffer
  * @param buffer
  * @param position in buffer
  * @param value
  */
+void big_endian_store_08(uint8_t * buffer, uint16_t position, uint8_t value);
 void big_endian_store_16(uint8_t * buffer, uint16_t position, uint16_t value);
 void big_endian_store_24(uint8_t * buffer, uint16_t position, uint32_t value);
 void big_endian_store_32(uint8_t * buffer, uint16_t position, uint32_t value);

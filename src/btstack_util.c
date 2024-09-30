@@ -74,6 +74,9 @@ void bd_addr_copy(bd_addr_t dest, const bd_addr_t src){
     (void)memcpy(dest, src, BD_ADDR_LEN);
 }
 
+uint8_t little_endian_read_08(const uint8_t* buffer, int position) {
+    return (uint8_t)buffer[position];
+}
 uint16_t little_endian_read_16(const uint8_t * buffer, int position){
     return (uint16_t)(((uint16_t) buffer[position]) | (((uint16_t)buffer[position+1]) << 8));
 }
@@ -82,6 +85,11 @@ uint32_t little_endian_read_24(const uint8_t * buffer, int position){
 }
 uint32_t little_endian_read_32(const uint8_t * buffer, int position){
     return ((uint32_t) buffer[position]) | (((uint32_t)buffer[position+1]) << 8) | (((uint32_t)buffer[position+2]) << 16) | (((uint32_t) buffer[position+3]) << 24);
+}
+
+void little_endian_store_08(uint8_t* buffer, uint16_t position, uint8_t value) {
+    uint16_t pos = position;
+    buffer[pos] = value;
 }
 
 void little_endian_store_16(uint8_t * buffer, uint16_t position, uint16_t value){
@@ -105,6 +113,10 @@ void little_endian_store_32(uint8_t * buffer, uint16_t position, uint32_t value)
     buffer[pos++] = (uint8_t)(value >> 24);
 }
 
+uint32_t big_endian_read_08(const uint8_t* buffer, int position) {
+    return buffer[position];
+}
+
 uint32_t big_endian_read_16(const uint8_t * buffer, int position) {
     return (uint16_t)(((uint16_t) buffer[position+1]) | (((uint16_t)buffer[position]) << 8));
 }
@@ -115,6 +127,11 @@ uint32_t big_endian_read_24(const uint8_t * buffer, int position) {
 
 uint32_t big_endian_read_32(const uint8_t * buffer, int position) {
     return ((uint32_t) buffer[position+3]) | (((uint32_t)buffer[position+2]) << 8) | (((uint32_t)buffer[position+1]) << 16) | (((uint32_t) buffer[position]) << 24);
+}
+
+void big_endian_store_08(uint8_t* buffer, uint16_t position, uint8_t value) {
+    uint16_t pos = position;
+    buffer[pos++] = (uint8_t)(value);
 }
 
 void big_endian_store_16(uint8_t * buffer, uint16_t position, uint16_t value){
