@@ -52,6 +52,12 @@
 #define UNUSED(x) (void)(x)
 #endif
 
+
+// Get the number of entries in an array ('x' must NOT be a pointer!)
+#ifndef ARRAYSIZE
+#define ARRAYSIZE(x) (sizeof(x)/sizeof((x)[0]))
+#endif
+
 // TYPES
 
 // packet handler
