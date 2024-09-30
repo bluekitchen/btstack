@@ -90,18 +90,20 @@ typedef enum {
 #define BATTERY_LEVEL_STATUS_BITMASK_ADDITIONAL_STATUS_PRESENT                     0x04
 #define BATTERY_LEVEL_STATUS_BITMASK_RFU                                           0xF8
 
-#define BATTERY_LEVEL_ADDITIONAL_STATUS_BITMASK_SERVICE_REQUIRED                   0x01       // 0 = No, 1 = Yes, 2 = Unknown, 3 = RFU
-#define BATTERY_LEVEL_ADDITIONAL_STATUS_BITMASK_BATTERY_FAULT                      0x02       // 0 = No or Unknown, 1 = Yes
-#define BATTERY_LEVEL_ADDITIONAL_STATUS_BITMASK_RFU                                0xFC
+#define BATTERY_LEVEL_ADDITIONAL_STATUS_BITMASK_SERVICE_REQUIRED                   0x03       // 0 = No, 1 = Yes, 2 = Unknown, 3 = RFU
+#define BATTERY_LEVEL_ADDITIONAL_STATUS_BITMASK_BATTERY_FAULT                      0x04       // 0 = No or Unknown, 1 = Yes
+#define BATTERY_LEVEL_ADDITIONAL_STATUS_BITMASK_RFU                                0xF8
 
-#define BATTERY_LEVEL_POWER_STATE_BITMASK_EXTERNAL_BATTERY_PRESENT                 0x0001    // 0 = No, 1 = Yes      
-#define BATTERY_LEVEL_POWER_STATE_BITMASK_WIRED_EXTERNAL_POWER_SOURCE_CONNECTED    0x0004    // 0 = No, 1 = Yes, 2 = Unknown, 3 = RFU
-#define BATTERY_LEVEL_POWER_STATE_BITMASK_WIRELESS_EXTERNAL_POWER_SOURCE_CONNECTED 0x0010    // 0 = No, 1 = Yes, 2 = Unknown, 3 = RFU
-#define BATTERY_LEVEL_POWER_STATE_BITMASK_BATTERY_CHARGE_STATE                     0x0040    // 0 = Unknown, 1 = Charging, 2 = Discharging: Active 3 = Discharging: Inactive 
-#define BATTERY_LEVEL_POWER_STATE_BITMASK_BATTERY_CHARGE_LEVEL                     0x0100    // 0 = Unknown, 1 = Good, 2 = Low, 3 = Critical    
-#define BATTERY_LEVEL_POWER_STATE_BITMASK_CHARGING_TYPE                            0x0400    // 0 = Unknown or Not Charging 1 = Constant Current, 2 = Constant Voltage, 3 = Trickle, 4 = Float, 5–7 = RFU              
-#define BATTERY_LEVEL_POWER_STATE_BITMASK_CHARGING_FAULT_REASON                    0x2000    // Bit 12: Battery, Bit 13: External Power source, Bit 14: Other
-#define BATTERY_LEVEL_POWER_STATE_BITMASK_RFU                                      0xC000
+#define BATTERY_LEVEL_POWER_STATE_BITMASK_EXTERNAL_BATTERY_PRESENT                 0x0001    // (Bit 0)    0 = No, 1 = Yes      
+#define BATTERY_LEVEL_POWER_STATE_BITMASK_WIRED_EXTERNAL_POWER_SOURCE_CONNECTED    0x0006    // (Bit 1-2)  0 = No, 1 = Yes, 2 = Unknown, 3 = RFU
+#define BATTERY_LEVEL_POWER_STATE_BITMASK_WIRELESS_EXTERNAL_POWER_SOURCE_CONNECTED 0x0018    // (Bit 3-4)  0 = No, 1 = Yes, 2 = Unknown, 3 = RFU
+#define BATTERY_LEVEL_POWER_STATE_BITMASK_BATTERY_CHARGE_STATE                     0x0060    // (Bit 5-6)  0 = Unknown, 1 = Charging, 2 = Discharging: Active 3 = Discharging: Inactive 
+#define BATTERY_LEVEL_POWER_STATE_BITMASK_BATTERY_CHARGE_LEVEL                     0x0180    // (Bit 7-8)  0 = Unknown, 1 = Good, 2 = Low, 3 = Critical    
+#define BATTERY_LEVEL_POWER_STATE_BITMASK_CHARGING_TYPE                            0x0E00    // (Bit 9-11) 0 = Unknown or Not Charging 1 = Constant Current, 2 = Constant Voltage, 3 = Trickle, 4 = Float, 5–7 = RFU              
+#define BATTERY_LEVEL_POWER_STATE_BITMASK_CHARGING_FAULT_REASON_BATTERY            0x1000    // (Bit 12)
+#define BATTERY_LEVEL_POWER_STATE_BITMASK_CHARGING_FAULT_REASON_EXTERNAL_POWER     0x2000    // (Bit 13)
+#define BATTERY_LEVEL_POWER_STATE_BITMASK_CHARGING_FAULT_REASON_OTHER              0x4000    // (Bit 14)
+#define BATTERY_LEVEL_POWER_STATE_BITMASK_RFU                                      0x8000
 
 #define BATTERY_CRITCAL_STATUS_BITMASK_CRITICAL_POWER_STATE                        0x01
 #define BATTERY_CRITCAL_STATUS_BITMASK_IMMEDIATE_SERVICE_REQUIRED                  0x02
@@ -239,14 +241,13 @@ typedef struct battery_service_v1 {
     btstack_linked_item_t item;
 
     // service
-    uint16_t start_handle;
-    uint16_t end_handle;
-    uint8_t index;
 
     att_service_handler_t    service_handler;
 
     bas_characteristic_t  characteristics[BAS_CHARACTERISTIC_INDEX_NUM];
-    
+    uint16_t battery_level_status_broadcast_configuration_handle;
+    uint16_t battery_level_status_broadcast_configuration;
+
     // ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_LEVEL
     uint8_t  battery_level;
 

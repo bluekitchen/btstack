@@ -41,7 +41,7 @@
  * Implementation of the GATT Battery Service Server 
  * To use with your application, add `#import <battery_service.gatt>` to your .gatt file
  */
-
+#include <stdio.h>
 #include "btstack_defines.h"
 #include "ble/att_db.h"
 #include "ble/att_server.h"
@@ -79,7 +79,42 @@ static const uint16_t bas_uuid16s[BAS_CHARACTERISTIC_INDEX_NUM] = {
     ORG_BLUETOOTH_CHARACTERISTIC_MODEL_NUMBER_STRING,
     ORG_BLUETOOTH_CHARACTERISTIC_SERIAL_NUMBER_STRING,
 };
+
+static const char * bas_uuid16_name[BAS_CHARACTERISTIC_INDEX_NUM] = {
+    "BATTERY_LEVEL",
+    "BATTERY_LEVEL_STATUS",
+    "ESTIMATED_SERVICE_DATE",
+    "BATTERY_CRITCAL_STATUS",
+    "BATTERY_ENERGY_STATUS",
+    "BATTERY_TIME_STATUS",
+    "BATTERY_HEALTH_STATUS",
+    "BATTERY_HEALTH_INFORMATION",
+    "BATTERY_INFORMATION",
+    "MANUFACTURER_NAME_STRING",
+    "MODEL_NUMBER_STRING",
+    "SERIAL_NUMBER_STRING",
+};
+
 static btstack_linked_list_t battery_services;
+
+#define MEDFLOAT16_POSITIVE_INFINITY            0x07FE
+#define MEDFLOAT16_NOT_A_NUMBER                 0x07FF
+#define MEDFLOAT16_NOT_AT_THIS_RESOLUTION       0x0800
+#define MEDFLOAT16_RFU                          0x0801 
+#define MEDFLOAT16_NEGATIVE_INFINITY            0x0802
+
+static bool bas_server_medfloat16_is_real_number(uint16_t value_medfloat16){
+    switch (value_medfloat16){
+        case MEDFLOAT16_POSITIVE_INFINITY:
+        case MEDFLOAT16_NOT_A_NUMBER:
+        case MEDFLOAT16_NOT_AT_THIS_RESOLUTION:
+        case MEDFLOAT16_RFU: 
+        case MEDFLOAT16_NEGATIVE_INFINITY:
+            return false;
+        default:
+            return true;
+    }
+}
 
 static uint16_t bas_server_get_task_for_characteristic_index(bas_characteristic_index_t index){
     switch (index){
@@ -109,6 +144,7 @@ static uint16_t bas_server_get_task_for_characteristic_index(bas_characteristic_
             return BAS_TASK_SERIAL_NUMBER_STRING_CHANGED;
         default:
             btstack_assert(false);
+            return 0;
     }   
 }
 
@@ -148,8 +184,8 @@ static battery_service_v1_t * battery_service_service_for_attribute_handle(uint1
     btstack_linked_list_iterator_init(&it, &battery_services);
     while (btstack_linked_list_iterator_has_next(&it)){
         battery_service_v1_t * item = (battery_service_v1_t*) btstack_linked_list_iterator_next(&it);
-        if (attribute_handle < item->start_handle) continue;
-        if (attribute_handle > item->end_handle)   continue;
+        if (attribute_handle < item->service_handler.start_handle) continue;
+        if (attribute_handle > item->service_handler.end_handle)   continue;
         return item;
     }
     return NULL;
@@ -353,7 +389,7 @@ static uint16_t battery_service_read_callback(hci_con_handle_t con_handle, uint1
     }
 
     uint8_t index;
-    uint8_t event[18];
+    uint8_t event[19];
     uint8_t pos = 0;
 
     for (index = 0; index < (uint8_t) BAS_CHARACTERISTIC_INDEX_NUM; index++){
@@ -392,6 +428,10 @@ static uint16_t battery_service_read_callback(hci_con_handle_t con_handle, uint1
         }
     }
 
+    if (attribute_handle == service->battery_level_status_broadcast_configuration_handle){
+        return att_read_callback_handle_little_endian_16(service->battery_level_status_broadcast_configuration, offset, buffer, buffer_size);
+    }
+
     for (index = 0; index < (uint8_t) BAS_CHARACTERISTIC_INDEX_NUM; index++){
         if (attribute_handle != service->characteristics[index].client_configuration_handle){
             continue;
@@ -422,12 +462,18 @@ static int battery_service_write_callback(hci_con_handle_t con_handle, uint16_t 
         }
     }
 
+    if (attribute_handle == service->battery_level_status_broadcast_configuration_handle){
+        service->battery_level_status_broadcast_configuration = little_endian_read_16(buffer, 0);
+        return 0;
+    }
+
     uint8_t index;
     for (index = 0; index < (uint8_t) BAS_CHARACTERISTIC_INDEX_NUM; index++){
         if (attribute_handle != service->characteristics[index].client_configuration_handle){
             continue;
         }
         connection->configurations[index] = little_endian_read_16(buffer, 0);
+        return 0;
     }
     return 0;
 }
@@ -450,8 +496,13 @@ static void battery_service_can_send_now(void * context){
         return;
     }
 
+    // if battery is removed, no indications or notification should be sent
+//    if ( (service->level_status->flags & BATTERY_LEVEL_STATUS_BITMASK_BATTERY_LEVEL_PRESENT) == 0u){
+//        return;
+//    }
+
     bas_characteristic_index_t index;
-    uint8_t event[18];
+    uint8_t event[19];
     uint8_t pos = 0;
     bool task_valid = true;
 
@@ -532,8 +583,8 @@ void battery_service_v1_server_register(battery_service_v1_t *service, battery_s
     btstack_linked_list_iterator_init(&it, &battery_services);
     while (btstack_linked_list_iterator_has_next(&it)){
         battery_service_v1_t * service = (battery_service_v1_t*) btstack_linked_list_iterator_next(&it);
-        if (service->end_handle > start_handle){
-            start_handle = service->end_handle + 1;
+        if (service->service_handler.end_handle > start_handle){
+            start_handle = service->service_handler.end_handle + 1;
         }
     }
 
@@ -541,23 +592,28 @@ void battery_service_v1_server_register(battery_service_v1_t *service, battery_s
     btstack_assert(service_found != 0);
     UNUSED(service_found);
 
-    service->start_handle = start_handle;
-    service->end_handle   = end_handle;
-
+    service->service_handler.start_handle = start_handle;
+    service->service_handler.end_handle = end_handle;
+    printf("start handle 0x%04X, end0x%04X\n", service->service_handler.start_handle , service->service_handler.end_handle);
     uint8_t i;
     for (i = 0; i < (uint8_t) BAS_CHARACTERISTIC_INDEX_NUM; i++){
         // get characteristic value handle and client configuration handle
         service->characteristics[i].value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(start_handle, end_handle, bas_uuid16s[i]);
         service->characteristics[i].client_configuration_handle = gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(start_handle, end_handle, bas_uuid16s[i]);
+        printf("%30s: 0x%04X, CCC 0x%04X\n", bas_uuid16_name[i], service->characteristics[i].value_handle , service->characteristics[i].client_configuration_handle );
     }
     
+    service->battery_level_status_broadcast_configuration_handle = gatt_server_get_server_configuration_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_LEVEL_STATUS);
+
     memset(connections, 0, sizeof(battery_service_v1_server_connection_t) * connection_max_num);
     for (i = 0; i < connection_max_num; i++){
         connections[i].con_handle = HCI_CON_HANDLE_INVALID;
     }
     service->connections_max_num = connection_max_num;
     service->connections = connections;
-    
+
+    service->service_handler.start_handle = start_handle;
+    service->service_handler.end_handle = end_handle;
     service->service_handler.read_callback  = &battery_service_read_callback;
     service->service_handler.write_callback = &battery_service_write_callback;
     att_server_register_service_handler(&service->service_handler);
@@ -584,6 +640,14 @@ static void bas_server_set_callback_for_connection(battery_service_v1_server_con
 }
 
 static void bas_server_set_callback(battery_service_v1_t * service, bas_characteristic_index_t index){
+    // if battery is removed, no indications or notification should be sent
+
+    if (service->level_status == NULL){
+        return;
+    }
+    if ((index != BAS_CHARACTERISTIC_INDEX_BATTERY_LEVEL_STATUS) && (service->level_status->flags & BATTERY_LEVEL_STATUS_BITMASK_BATTERY_LEVEL_PRESENT) == 0u){
+        return;
+    }
     uint8_t task = bas_server_get_task_for_characteristic_index(index);
     uint8_t i;
     for (i = 0; i < service->connections_max_num; i++){
@@ -721,7 +785,7 @@ uint8_t battery_service_v1_server_set_information(battery_service_v1_t * service
     btstack_assert(service != NULL);
     btstack_assert(information != NULL);
     
-    if ((information->flags & BATTERY_HEALTH_INFORMATION_BITMASK_RFU) != 0u){
+    if ((information->flags & BATTERY_INFORMATION_BITMASK_RFU) != 0u){
         return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
     }
     if ((information->flags & BATTERY_INFORMATION_BITMASK_MANUFACTURE_DATE_PRESENT) > 0u){
@@ -735,7 +799,7 @@ uint8_t battery_service_v1_server_set_information(battery_service_v1_t * service
         }
     }
     if ((information->flags & BATTERY_INFORMATION_BITMASK_CHEMISTRY_PRESENT) > 0u){
-        if (information->chemistry >= BATTERY_CHEMISTRY_RFU_START || information->chemistry <= BATTERY_CHEMISTRY_RFU_END){
+        if (information->chemistry >= BATTERY_CHEMISTRY_RFU_START && information->chemistry <= BATTERY_CHEMISTRY_RFU_END){
             return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
         }
     }
@@ -744,7 +808,26 @@ uint8_t battery_service_v1_server_set_information(battery_service_v1_t * service
             return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
         }
     }
-
+    if ((information->flags & BATTERY_INFORMATION_BITMASK_DESIGNED_CAPACITY_PRESENT) > 0u){
+        if (!bas_server_medfloat16_is_real_number(information->designed_capacity_kWh_medfloat16)){
+            return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+        }
+    }
+    if ((information->flags & BATTERY_INFORMATION_BITMASK_LOW_ENERGY_PRESENT) > 0u){
+        if (!bas_server_medfloat16_is_real_number(information->low_energy_kWh_medfloat16)){
+            return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+        }
+    }
+    if ((information->flags & BATTERY_INFORMATION_BITMASK_CRITICAL_ENERGY_PRESENT) > 0u){
+        if (!bas_server_medfloat16_is_real_number(information->critical_energy_kWh_medfloat16)){
+            return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+        }
+    }
+    if ((information->flags & BATTERY_INFORMATION_BITMASK_NOMINAL_VOLTAGE_PRESENT) > 0u){
+        if (!bas_server_medfloat16_is_real_number(information->nominal_voltage_medfloat16)){
+            return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+        }
+    }
     service->information = information;
     bas_server_set_callback(service, BAS_CHARACTERISTIC_INDEX_BATTERY_INFORMATION);
     return ERROR_CODE_SUCCESS;
