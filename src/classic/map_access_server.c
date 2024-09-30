@@ -917,8 +917,8 @@ static void map_server_handle_get_or_put_request(map_server_t *mas, bool first_r
         APP_WRITE_16(event, &pos, mas->goep_cid);
         APP_WRITE_16(event, &pos, mas->request.app_params.MaxListCount);
         APP_WRITE_STR(event, &pos, sizeof(mas->request.app_params.FilterPeriodBegin), (char*)mas->request.app_params.FilterPeriodBegin);
-        APP_WRITE_STR(event, &pos, sizeof(mas->request.app_params.EndFilterPeriodEnd), (char*)mas->request.app_params.EndFilterPeriodEnd);
-        APP_WRITE_STR(event, &pos, sizeof(mas->request.app_params.EndFilterPeriodEnd), (char*)mas->request.app_params.FilterRecipient);
+        APP_WRITE_STR(event, &pos, sizeof(mas->request.app_params.FilterPeriodEnd), (char*)mas->request.app_params.FilterPeriodEnd);
+        APP_WRITE_STR(event, &pos, sizeof(mas->request.app_params.FilterRecipient), (char*)mas->request.app_params.FilterRecipient);
         APP_WRITE_STR(event, &pos, sizeof(mas->request.app_params.ConversationID),(char*)mas->request.app_params.ConversationID);
         APP_WRITE_LEN(event, pos);
         break;
