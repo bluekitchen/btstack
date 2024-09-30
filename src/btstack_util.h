@@ -63,6 +63,11 @@ extern "C" {
 // will be moved to daemon/btstack_device_name_db.h
 
 
+ /**
+  * @brief returns a value with number of lowest bits set to <1>
+  */
+#define N_BITS(value) ((1<<value) - 1)
+ 
 /**
  * @brief The device name type
  */
