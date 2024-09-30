@@ -291,13 +291,13 @@ static void log_hexdump(int level, const void * data, int size){
 
         if (j >= (BYTES_PER_BYTE * ITEMS_PER_LINE) ){
             buffer[j] = 0;
-            HCI_DUMP_LOG(level, "%s", buffer);
+            hci_dump_log(level, "%s", buffer);
             j = 0;
         }
     }
     if (j != 0){
         buffer[j] = 0;
-        HCI_DUMP_LOG(level, "%s", buffer);
+        hci_dump_log(level, "%s", buffer);
     }
 }
 #endif
