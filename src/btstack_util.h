@@ -60,7 +60,11 @@ extern "C" {
 #undef reverse_64
 #endif
 
-// will be moved to daemon/btstack_device_name_db.h
+// use replacement in Visual Studio
+#ifdef _MSC_VER
+#define strncasecmp _strnicmp
+#define strcasecmp _stricmp
+#endif
 
 
  /**
