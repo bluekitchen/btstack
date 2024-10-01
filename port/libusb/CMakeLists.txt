@@ -10,7 +10,7 @@ SET(BTSTACK_ROOT ${CMAKE_SOURCE_DIR}/../..)
 # extra compiler warnings
 if ("${CMAKE_C_COMPILER_ID}" MATCHES ".*Clang.*")
 	# using Clang
-	SET(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -Wunused-variable -Wswitch-default -Werror")
+	SET(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -Wunused-variable -Wswitch-default -Werror -Werror=uninitialized")
 elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
 	# using GCC
 	SET(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -Wunused-but-set-variable -Wunused-variable -Wswitch-default -Werror")
