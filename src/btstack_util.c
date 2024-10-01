@@ -674,7 +674,7 @@ uint16_t btstack_snprintf_assert_complete(char * buffer, size_t size, const char
 
     // check for no error and no truncation
     btstack_assert(len >= 0);
-    btstack_assert(len < size);
+    btstack_assert((unsigned int) len < size);
     return (uint16_t) len;
 }
 
