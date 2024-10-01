@@ -607,6 +607,8 @@ void gatt_service_client_register_client(gatt_service_client_t *client, btstack_
     client->cid_counter = 0;
     client->characteristics_desc16_num = 0;
     client->packet_handler = packet_handler;
+    client->characteristics_desc16 = characteristic_uuid16s;
+    client->characteristics_desc16_num = characteristic_uuid16s_num;
     btstack_linked_list_add(&gatt_service_clients, &client->item);
 }
 
