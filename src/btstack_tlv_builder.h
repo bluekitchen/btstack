@@ -65,7 +65,7 @@ typedef struct {
  * @param buffer
  * @param size
  */
-void btstack_ltv_builder_init(btstack_tlv_builder_context_t * context, uint8_t * buffer, uint16_t size);
+void btstack_tlv_builder_init(btstack_tlv_builder_context_t * context, uint8_t * buffer, uint16_t size);
 
 /**
  * @brief Query remaining space in buffer
@@ -73,63 +73,63 @@ void btstack_ltv_builder_init(btstack_tlv_builder_context_t * context, uint8_t *
  * @param context
  * @return number of bytes that can be added
  */
-uint16_t btstack_ltv_builder_remaining_space(btstack_tlv_builder_context_t * context);
+uint16_t btstack_tlv_builder_remaining_space(btstack_tlv_builder_context_t * context);
 
 /**
  * @brief Get constructed event length
  * @param context
  * @return number of bytes in event
  */
-uint16_t btstack_ltv_builder_get_length(btstack_tlv_builder_context_t * context);
+uint16_t btstack_tlv_builder_get_length(btstack_tlv_builder_context_t * context);
 
 /**
  * @brief Add tag
  * @param context
  * @return number of bytes in event
  */
-void btstack_ltv_builder_add_tag(btstack_tlv_builder_context_t * context, uint8_t tag);
+void btstack_tlv_builder_add_tag(btstack_tlv_builder_context_t * context, uint8_t tag);
 
 /**
  * @bbrief Add uint8_t to current tag
  * @param context
  * @param value
  */
-void btstack_ltv_builder_add_08(btstack_tlv_builder_context_t * context, uint8_t value);
+void btstack_tlv_builder_add_08(btstack_tlv_builder_context_t * context, uint8_t value);
 
 /**
  * @bbrief Add uint16_t value to current tag
  * @param context
  * @param value
  */
-void btstack_ltv_builder_add_bige_endian_16(btstack_tlv_builder_context_t * context, uint16_t value);
+void btstack_tlv_builder_add_big_endian_16(btstack_tlv_builder_context_t * context, uint16_t value);
 
 /**
  * @bbrief Add 24 bit from uint32_t byte to current tag
  * @param context
  * @param value
  */
-void btstack_ltv_builder_add_bige_endian_24(btstack_tlv_builder_context_t * context, uint32_t value);
+void btstack_tlv_builder_add_big_endian_24(btstack_tlv_builder_context_t * context, uint32_t value);
 
 /**
  * @bbrief Add uint32_t to current tag
  * @param context
  * @param value
  */
-void btstack_ltv_builder_add_bige_endian_32(btstack_tlv_builder_context_t * context, uint32_t value);
+void btstack_tlv_builder_add_big_endian_32(btstack_tlv_builder_context_t * context, uint32_t value);
 
 /**
  * @bbrief Add byte sequence to current tag
  * @param context
  * @param value
  */
-void btstack_ltv_builder_add_bytes(btstack_tlv_builder_context_t * context, const uint8_t * data, uint16_t length);
+void btstack_tlv_builder_add_bytes(btstack_tlv_builder_context_t * context, const uint8_t * data, uint16_t length);
 
 /**
  * @bbrief Add string to current tag
  * @param context
  * @param value
  */
-void btstack_ltv_builder_add_string(btstack_tlv_builder_context_t * context, const char * text);
+void btstack_tlv_builder_add_string(btstack_tlv_builder_context_t * context, const char * text);
 
 #if defined __cplusplus
 }
