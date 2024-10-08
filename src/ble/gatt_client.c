@@ -1564,7 +1564,7 @@ static bool gatt_client_run_for_gatt_client(gatt_client_t * gatt_client){
 #ifdef ENABLE_GATT_FIND_INFORMATION_FOR_CCC_DISCOVERY
         case P_W2_SEND_FIND_CLIENT_CHARACTERISTIC_CONFIGURATION_QUERY:    
             // use Find Information
-            gatt_client->gatt_client_state = P_W4_FIND_CLIENT_CHARACTERISTIC_CONFIGURATION_QUERY_RESULT;
+            gatt_client->state = P_W4_FIND_CLIENT_CHARACTERISTIC_CONFIGURATION_QUERY_RESULT;
             send_gatt_characteristic_descriptor_request(gatt_client);
 #else
         case P_W2_SEND_READ_CLIENT_CHARACTERISTIC_CONFIGURATION_QUERY:
@@ -2123,15 +2123,15 @@ static void gatt_client_handle_att_response(gatt_client_t * gatt_client, uint8_t
             uint16_t last_descriptor_handle = little_endian_read_16(packet, size - pair_size);
 
 #ifdef ENABLE_GATT_FIND_INFORMATION_FOR_CCC_DISCOVERY
-            log_info("ENABLE_GATT_FIND_INFORMATION_FOR_CCC_DISCOVERY, state %x", gatt_client->gatt_client_state);
-            if (gatt_client->gatt_client_state == P_W4_FIND_CLIENT_CHARACTERISTIC_CONFIGURATION_QUERY_RESULT){
+            log_info("ENABLE_GATT_FIND_INFORMATION_FOR_CCC_DISCOVERY, state %x", gatt_client->state);
+            if (gatt_client->state == P_W4_FIND_CLIENT_CHARACTERISTIC_CONFIGURATION_QUERY_RESULT){
                 // iterate over descriptors looking for CCC
                 if (pair_size == 4){
                     while ((offset + 4) <= size){
                         uint16_t uuid16 = little_endian_read_16(packet, offset + 2);
                         if (uuid16 == GATT_CLIENT_CHARACTERISTICS_CONFIGURATION){
                             gatt_client->client_characteristic_configuration_handle = little_endian_read_16(packet, offset);
-                            gatt_client->gatt_client_state = P_W2_WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION;
+                            gatt_client->state = P_W2_WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION;
                             log_info("CCC found %x", gatt_client->client_characteristic_configuration_handle);
                             break;
                         }
@@ -2143,7 +2143,7 @@ static void gatt_client_handle_att_response(gatt_client_t * gatt_client, uint8_t
                 } else {
                     // next
                     gatt_client->start_group_handle = last_descriptor_handle + 1;
-                    gatt_client->gatt_client_state = P_W2_SEND_FIND_CLIENT_CHARACTERISTIC_CONFIGURATION_QUERY;
+                    gatt_client->state = P_W2_SEND_FIND_CLIENT_CHARACTERISTIC_CONFIGURATION_QUERY;
                 }
                 break;
             }
@@ -2989,7 +2989,7 @@ uint8_t gatt_client_write_client_characteristic_configuration_with_context(btsta
     little_endian_store_16(gatt_client->client_characteristic_configuration_value, 0, configuration);
     
 #ifdef ENABLE_GATT_FIND_INFORMATION_FOR_CCC_DISCOVERY
-    gatt_client->gatt_client_state = P_W2_SEND_FIND_CLIENT_CHARACTERISTIC_CONFIGURATION_QUERY;
+    gatt_client->state = P_W2_SEND_FIND_CLIENT_CHARACTERISTIC_CONFIGURATION_QUERY;
 #else
     gatt_client->state = P_W2_SEND_READ_CLIENT_CHARACTERISTIC_CONFIGURATION_QUERY;
 #endif
