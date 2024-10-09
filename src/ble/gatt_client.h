@@ -1268,6 +1268,12 @@ uint8_t gatt_client_request_to_write_without_response(btstack_context_callback_r
  */
 uint8_t gatt_client_request_can_write_without_response_event(btstack_packet_handler_t callback, hci_con_handle_t con_handle);
 
+/**
+ * @brief Map ATT Error Code to (extended) Error Codes
+ * @param att_error_code
+ * @return
+ */
+uint8_t gatt_client_att_status_to_error_code(uint8_t att_error_code);
 
 /* API_END */
 

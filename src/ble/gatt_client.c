@@ -3242,6 +3242,18 @@ uint8_t gatt_client_request_can_write_without_response_event(btstack_packet_hand
     return ERROR_CODE_SUCCESS;
 }
 
+uint8_t gatt_client_att_status_to_error_code(uint8_t att_error_code){
+    switch (att_error_code){
+        case ATT_ERROR_SUCCESS:
+            return ERROR_CODE_SUCCESS;
+        case ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH:
+            return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+        default:
+            log_info("ATT ERROR 0x%02x mapped to ERROR_CODE_UNSPECIFIED_ERROR", att_error_code);
+            return ERROR_CODE_UNSPECIFIED_ERROR;
+    }
+}
+
 #ifdef ENABLE_GATT_CLIENT_SERVICE_CHANGED
 void gatt_client_add_service_changed_handler(btstack_packet_callback_registration_t * callback) {
     btstack_linked_list_add_tail(&gatt_client_service_changed_handler, (btstack_linked_item_t*) callback);
