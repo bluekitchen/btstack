@@ -142,16 +142,7 @@ uint8_t gatt_service_client_characteristic_index_for_value_handle(const gatt_ser
 }
 
 uint8_t gatt_service_client_att_status_to_error_code(uint8_t att_error_code){
-    switch (att_error_code){
-        case ATT_ERROR_SUCCESS:
-            return ERROR_CODE_SUCCESS;
-        case ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH:
-            return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
-            
-        default:
-            log_info("ATT ERROR 0x%02x mapped to ERROR_CODE_UNSPECIFIED_ERROR", att_error_code);
-            return ERROR_CODE_UNSPECIFIED_ERROR;
-    }
+    return gatt_client_att_status_to_error_code(att_error_code);
 }
 
 static void gatt_service_client_emit_connected(btstack_packet_handler_t event_callback, hci_con_handle_t con_handle, uint16_t cid, uint8_t status){
@@ -338,7 +329,7 @@ static void gatt_service_client_run_for_client(gatt_service_client_t * client, g
     }
 
     if (status != ATT_ERROR_SUCCESS){
-        gatt_service_client_emit_connected(client->packet_handler, connection->con_handle, connection->cid, gatt_service_client_att_status_to_error_code(status));
+        gatt_service_client_emit_connected(client->packet_handler, connection->con_handle, connection->cid, gatt_client_att_status_to_error_code(status));
         gatt_service_client_finalize_connection(client, connection);
     }
 }
@@ -356,7 +347,7 @@ static bool gatt_service_client_handle_query_complete(gatt_service_client_t *cli
             case GATT_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_RESULT:
             case GATT_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_DESCRIPTORS_RESULT:
             case GATT_SERVICE_CLIENT_STATE_W4_NOTIFICATION_REGISTERED:
-                gatt_service_client_emit_connected(client->packet_handler, connection->con_handle, connection->cid, gatt_service_client_att_status_to_error_code(status));
+                gatt_service_client_emit_connected(client->packet_handler, connection->con_handle, connection->cid, gatt_client_att_status_to_error_code(status));
                 gatt_service_client_finalize_connection(client, connection);
                 return false;
             case GATT_SERVICE_CLIENT_STATE_CONNECTED:
