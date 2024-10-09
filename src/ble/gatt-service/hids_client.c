@@ -1213,7 +1213,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
             client = hids_get_client_for_con_handle(gatt_event_query_complete_get_handle(packet));
             if (client == NULL) break;
             
-            status = gatt_service_client_att_status_to_error_code(gatt_event_query_complete_get_att_status(packet));
+            status = gatt_client_att_status_to_error_code(gatt_event_query_complete_get_att_status(packet));
             
             switch (client->state){
                 case HIDS_CLIENT_STATE_W4_SERVICE_RESULT:
