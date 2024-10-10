@@ -494,6 +494,39 @@ static uint16_t pbap_client_application_params_add_list_start_offset(const pbap_
     return pos;
 }
 
+static uint16_t pbap_client_application_params_add_order(const pbap_client_t * client, uint8_t * application_parameters, uint8_t order){
+    uint16_t pos = 0;
+    if (client->order != 0){
+        application_parameters[pos++] = PBAP_APPLICATION_PARAMETER_ORDER;
+        application_parameters[pos++] = 1;
+        application_parameters[pos++] = order;
+    }
+    return pos;
+}
+
+static uint16_t pbap_client_application_params_add_search_property(const pbap_client_t * client, uint8_t * application_parameters, uint8_t search_property){
+    uint16_t pos = 0;
+    if (client->search_property != 0){
+        application_parameters[pos++] = PBAP_APPLICATION_PARAMETER_SEARCH_PROPERTY;
+        application_parameters[pos++] = 1;
+        application_parameters[pos++] = search_property;
+    }
+    return pos;
+}
+
+static uint16_t pbap_client_application_params_add_search_value(const pbap_client_t * client, uint8_t * application_parameters, const char* search_value){
+    uint16_t pos = 0;
+    if (client->search_value != 0){
+        uint32_t length;
+        length = strlen (client->search_value);
+        application_parameters[pos++] = PBAP_APPLICATION_PARAMETER_SEARCH_VALUE;
+        application_parameters[pos++] = length;
+        memcpy (&application_parameters[pos], client->search_value, length);
+        pos += length;
+    }
+    return pos;
+}
+
 // max size: PBAP_MAX_PHONE_NUMBER_LEN + 5
 static uint16_t pbap_client_application_params_add_phone_number(const pbap_client_t * client, uint8_t * application_parameters){
     uint16_t pos = 0;
@@ -713,6 +746,21 @@ static void pbap_handle_can_send_now(pbap_client_t *pbap_client) {
                 pos = 0;
                 pos += pbap_client_application_params_add_vcard_selector(pbap_client, &application_parameters[pos]);
                 pos += pbap_client_application_params_add_phone_number(pbap_client, &application_parameters[pos]);
+                if (pbap_client->search_value != NULL){
+                    pos += pbap_client_application_params_add_search_value(pbap_client, &application_parameters[pos], pbap_client->search_value);
+                }
+                if (pbap_client->search_property){
+                    pos += pbap_client_application_params_add_search_property(pbap_client, &application_parameters[pos], pbap_client->search_property);
+                }
+                if (pbap_client->order){
+                    pos += pbap_client_application_params_add_order(pbap_client, &application_parameters[pos], pbap_client->order);
+                }
+                if (pbap_client->max_list_count){
+                    pos += pbap_client_application_params_add_max_list_count(pbap_client, &application_parameters[pos], pbap_client->max_list_count);
+                }
+                if (pbap_client->list_start_offset){
+                    pos += pbap_client_application_params_add_list_start_offset (pbap_client, &application_parameters[pos], pbap_client->list_start_offset);
+                }
                 pbap_client_add_application_parameters(pbap_client, application_parameters, pos);
             }
             // state
@@ -1324,5 +1372,41 @@ uint8_t pbap_set_list_start_offset(uint16_t pbap_cid, uint16_t list_start_offset
         return BTSTACK_BUSY;
     }
     pbap_client->list_start_offset = list_start_offset;
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t pbap_set_order(uint16_t pbap_cid, uint8_t order){
+    pbap_client_t * pbap_client = pbap_client_for_cid(pbap_cid);
+    if (pbap_client == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if (pbap_client->state != PBAP_CLIENT_CONNECTED){
+        return BTSTACK_BUSY;
+    }
+    pbap_client->order = order;
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t pbap_set_search_property(uint16_t pbap_cid, uint8_t search_property){
+    pbap_client_t * pbap_client = pbap_client_for_cid(pbap_cid);
+    if (pbap_client == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if (pbap_client->state != PBAP_CLIENT_CONNECTED){
+        return BTSTACK_BUSY;
+    }
+    pbap_client->search_property = search_property;
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t pbap_set_search_value(uint16_t pbap_cid, const char * search_value){
+    pbap_client_t * pbap_client = pbap_client_for_cid(pbap_cid);
+    if (pbap_client == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if (pbap_client->state != PBAP_CLIENT_CONNECTED){
+        return BTSTACK_BUSY;
+    }
+    pbap_client->search_value = search_value;
     return ERROR_CODE_SUCCESS;
 }

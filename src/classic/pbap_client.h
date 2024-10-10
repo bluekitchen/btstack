@@ -152,9 +152,12 @@ typedef struct pbap_client {
     uint8_t  vcard_selector_operator;
     uint8_t  vcard_selector_supported;
     /* property selector */
-    uint32_t property_selector;
-    uint16_t list_start_offset;
-    uint16_t max_list_count;
+    uint32_t     property_selector;
+    uint16_t     list_start_offset;
+    uint16_t     max_list_count;
+    uint8_t      order;
+    uint8_t      search_property;
+    const char * search_value;
     /* abort */
     uint8_t  abort_operation;
     /* obex parser */
@@ -299,6 +302,30 @@ uint8_t pbap_set_max_list_count(uint16_t pbap_cid, uint16_t max_list_count);
  * @return
  */
 uint8_t pbap_set_list_start_offset(uint16_t pbap_cid, uint16_t list_start_offset);
+
+/**
+ * @bbrief Set order for pbap_pull_vcard_listing
+ * @param pbap_cid
+ * @param order
+ * @return
+ */
+uint8_t pbap_set_order(uint16_t pbap_cid, uint8_t order);
+
+/**
+ * @bbrief Set search property for pbap_pull_vcard_listing
+ * @param pbap_cid
+ * @param search_property
+ * @return
+ */
+uint8_t pbap_set_search_property(uint16_t pbap_cid, uint8_t search_property);
+
+/**
+ * @bbrief Set search property for pbap_pull_vcard_listing
+ * @param pbap_cid
+ * @param search_value
+ * @return
+ */
+uint8_t pbap_set_search_value(uint16_t pbap_cid, const char * search_value);
 
 /**
  * @brief Get size of phone book from PSE. The result is reported via PBAP_SUBEVENT_PHONEBOOK_SIZE event. 
