@@ -101,10 +101,10 @@ static uint16_t hci_dump_iso_summary(uint8_t in,  uint8_t *packet, uint16_t len)
         pos += 2;
         uint16_t iso_sdu_len = little_endian_read_16(packet, pos);
         uint8_t packet_status_flag = packet[pos+1] >> 6;
-        return snprintf(log_message_buffer,sizeof(log_message_buffer), "ISO %s, handle %04x, pb %u, ts 0x%08x, size %u, sequence 0x%04x, packet status %u, iso pdu len %u",
+        return btstack_snprintf_assert_complete(log_message_buffer,sizeof(log_message_buffer), "ISO %s, handle %04x, pb %u, ts 0x%08x, size %u, sequence 0x%04x, packet status %u, iso pdu len %u",
                         in ? "IN" : "OUT", conn_handle, pb, time_stamp, len, packet_sequence, packet_status_flag, iso_sdu_len);
     } else {
-        return snprintf(log_message_buffer,sizeof(log_message_buffer), "ISO %s, handle %04x, pb %u, ts 0x%08x, size %u",
+        return btstack_snprintf_assert_complete(log_message_buffer,sizeof(log_message_buffer), "ISO %s, handle %04x, pb %u, ts 0x%08x, size %u",
                         in ? "IN" : "OUT", conn_handle, pb, time_stamp, len);
     }
 }
