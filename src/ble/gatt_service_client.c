@@ -141,9 +141,6 @@ uint8_t gatt_service_client_characteristic_index_for_value_handle(const gatt_ser
     return GATT_SERVICE_CLIENT_INVALID_INDEX;
 }
 
-uint8_t gatt_service_client_att_status_to_error_code(uint8_t att_error_code){
-    return gatt_client_att_status_to_error_code(att_error_code);
-}
 
 static void gatt_service_client_emit_connected(btstack_packet_handler_t event_callback, hci_con_handle_t con_handle, uint16_t cid, uint8_t status){
     btstack_assert(event_callback != NULL);
