@@ -212,24 +212,21 @@ static int has_hf_indicators_feature(hfp_connection_t * hfp_connection){
 
 static int hfp_ag_send_change_in_band_ring_tone_setting_cmd(hfp_connection_t * hfp_connection){
     char buffer[40];
-    snprintf(buffer, sizeof(buffer), "\r\n%s: %d\r\n",
+    btstack_snprintf_assert_complete(buffer, sizeof(buffer), "\r\n%s: %d\r\n",
              HFP_CHANGE_IN_BAND_RING_TONE_SETTING, use_in_band_tone(hfp_connection));
-    buffer[sizeof(buffer) - 1] = 0;
     return send_str_over_rfcomm(hfp_connection->rfcomm_cid, buffer);
 }
 
 static int hfp_ag_exchange_supported_features_cmd(uint16_t cid){
     char buffer[40];
-    snprintf(buffer, sizeof(buffer), "\r\n%s:%d\r\n\r\nOK\r\n",
+    btstack_snprintf_assert_complete(buffer, sizeof(buffer), "\r\n%s:%d\r\n\r\nOK\r\n",
              HFP_SUPPORTED_FEATURES, hfp_ag_supported_features);
-    buffer[sizeof(buffer) - 1] = 0;
     return send_str_over_rfcomm(cid, buffer);
 }
 
 static int hfp_ag_send_ok(uint16_t cid){
     char buffer[10];
-    snprintf(buffer, sizeof(buffer), "\r\nOK\r\n");
-    buffer[sizeof(buffer) - 1] = 0;
+    btstack_snprintf_assert_complete(buffer, sizeof(buffer), "\r\nOK\r\n");
     return send_str_over_rfcomm(cid, buffer);
 }
 
@@ -238,65 +235,55 @@ static int hfp_ag_send_ring(uint16_t cid){
 }
 
 static int hfp_ag_send_no_carrier(uint16_t cid){
-    char buffer[15];
-    snprintf(buffer, sizeof(buffer), "\r\nNO CARRIER\r\n");
-    buffer[sizeof(buffer) - 1] = 0;
-    return send_str_over_rfcomm(cid, buffer);
+    return send_str_over_rfcomm(cid, "\r\nNO CARRIER\r\n");
 }
 
 static int hfp_ag_send_clip(uint16_t cid){
     char buffer[50];
-    snprintf(buffer, sizeof(buffer), "\r\n%s: \"%s\",%u\r\n", HFP_ENABLE_CLIP,
+    btstack_snprintf_best_effort(buffer, sizeof(buffer), "\r\n%s: \"%s\",%u\r\n", HFP_ENABLE_CLIP,
              hfp_gsm_clip_number(), hfp_gsm_clip_type());
-    buffer[sizeof(buffer) - 1] = 0;
     return send_str_over_rfcomm(cid, buffer);
 }
 
 static int hfp_send_subscriber_number_cmd(uint16_t cid, uint8_t type, const char * number){
     char buffer[50];
-    snprintf(buffer, sizeof(buffer), "\r\n%s: ,\"%s\",%u, , \r\n",
+    btstack_snprintf_best_effort(buffer, sizeof(buffer), "\r\n%s: ,\"%s\",%u, , \r\n",
              HFP_SUBSCRIBER_NUMBER_INFORMATION, number, type);
-    buffer[sizeof(buffer) - 1] = 0;
     return send_str_over_rfcomm(cid, buffer);
 }
         
 static int hfp_ag_send_phone_number_for_voice_tag_cmd(uint16_t cid){
     char buffer[50];
-    snprintf(buffer, sizeof(buffer), "\r\n%s: %s\r\n",
+    btstack_snprintf_assert_complete(buffer, sizeof(buffer), "\r\n%s: %s\r\n",
              HFP_PHONE_NUMBER_FOR_VOICE_TAG, hfp_gsm_clip_number());
-    buffer[sizeof(buffer) - 1] = 0;
     return send_str_over_rfcomm(cid, buffer);
 }
 
 static int hfp_ag_send_call_waiting_notification(uint16_t cid){
     char buffer[50];
-    snprintf(buffer, sizeof(buffer), "\r\n%s: \"%s\",%u\r\n",
+    btstack_snprintf_assert_complete(buffer, sizeof(buffer), "\r\n%s: \"%s\",%u\r\n",
              HFP_ENABLE_CALL_WAITING_NOTIFICATION, hfp_gsm_clip_number(),
              hfp_gsm_clip_type());
-    buffer[sizeof(buffer) - 1] = 0;
     return send_str_over_rfcomm(cid, buffer);
 }
 
 static int hfp_ag_send_error(uint16_t cid){
     char buffer[10];
-    snprintf(buffer, sizeof(buffer), "\r\nERROR\r\n");
-    buffer[sizeof(buffer) - 1] = 0;
+    btstack_snprintf_assert_complete(buffer, sizeof(buffer), "\r\nERROR\r\n");
     return send_str_over_rfcomm(cid, buffer);
 }
 
 static int hfp_ag_send_report_extended_audio_gateway_error(uint16_t cid, uint8_t error){
     char buffer[20];
-    snprintf(buffer, sizeof(buffer), "\r\n%s=%d\r\n",
+    btstack_snprintf_assert_complete(buffer, sizeof(buffer), "\r\n%s=%d\r\n",
              HFP_EXTENDED_AUDIO_GATEWAY_ERROR, error);
-    buffer[sizeof(buffer) - 1] = 0;
     return send_str_over_rfcomm(cid, buffer);
 }
 
 static int hfp_ag_send_apple_information(uint16_t cid){
     char buffer[50];
-    snprintf(buffer, sizeof(buffer), "\r\n%s:%s,%d\r\n",
+    btstack_snprintf_assert_complete(buffer, sizeof(buffer), "\r\n%s:%s,%d\r\n",
              HFP_APPLE_ACCESSORY_INFORMATION, hfp_ag_apple_device, hfp_ag_apple_features);
-    buffer[sizeof(buffer) - 1] = 0;
     return send_str_over_rfcomm(cid, buffer);
 }
 
@@ -310,11 +297,10 @@ static int hfp_ag_indicators_string_size(hfp_connection_t * hfp_connection, int 
 
 // store indicator
 static void hfp_ag_indicators_string_store(hfp_connection_t * hfp_connection, int i, uint8_t * buffer, uint16_t buffer_size){
-    snprintf((char *)buffer, buffer_size, "(\"%s\",(%d,%d)),",
+    btstack_snprintf_assert_complete((char *)buffer, buffer_size, "(\"%s\",(%d,%d))",
              hfp_ag_get_ag_indicators(hfp_connection)[i].name,
              hfp_ag_get_ag_indicators(hfp_connection)[i].min_range,
              hfp_ag_get_ag_indicators(hfp_connection)[i].max_range);
-    ((char *)buffer)[buffer_size - 1] = 0;
 }
 
 // structure: header [indicator [comma indicator]] footer
@@ -370,10 +356,10 @@ static int hfp_ag_generic_indicators_join(char * buffer, int buffer_size){
     int i;
     int offset = 0;
     for (i = 0; i < (hfp_ag_generic_status_indicators_nr - 1); i++) {
-        offset += snprintf(buffer+offset, buffer_size-offset, "%d,", hfp_ag_generic_status_indicators[i].uuid);
+        offset += btstack_snprintf_assert_complete(buffer+offset, buffer_size-offset, "%d,", hfp_ag_generic_status_indicators[i].uuid);
     }
     if (i < hfp_ag_generic_status_indicators_nr){
-        offset += snprintf(buffer+offset, buffer_size-offset, "%d", hfp_ag_generic_status_indicators[i].uuid);
+        offset += btstack_snprintf_assert_complete(buffer+offset, buffer_size-offset, "%d", hfp_ag_generic_status_indicators[i].uuid);
     }
     return offset;
 }
@@ -383,7 +369,7 @@ static int hfp_ag_generic_indicators_initial_status_join(char * buffer, int buff
     int i;
     int offset = 0;
     for (i = 0; i < hfp_ag_generic_status_indicators_nr; i++) {
-        offset += snprintf(buffer+offset, buffer_size-offset, "\r\n%s:%d,%d\r\n", HFP_GENERIC_STATUS_INDICATOR, hfp_ag_generic_status_indicators[i].uuid, hfp_ag_generic_status_indicators[i].state);
+        offset += btstack_snprintf_assert_complete(buffer+offset, buffer_size-offset, "\r\n%s:%d,%d\r\n", HFP_GENERIC_STATUS_INDICATOR, hfp_ag_generic_status_indicators[i].uuid, hfp_ag_generic_status_indicators[i].state);
     }
     return offset;
 }
@@ -393,10 +379,10 @@ static int hfp_ag_indicators_status_join(char * buffer, int buffer_size){
     int i;
     int offset = 0;
     for (i = 0; i < (hfp_ag_indicators_nr-1); i++) {
-        offset += snprintf(buffer+offset, buffer_size-offset, "%d,", hfp_ag_indicators[i].status); 
+        offset += btstack_snprintf_assert_complete(buffer+offset, buffer_size-offset, "%d,", hfp_ag_indicators[i].status);
     }
     if (i<hfp_ag_indicators_nr){
-        offset += snprintf(buffer+offset, buffer_size-offset, "%d", hfp_ag_indicators[i].status);
+        offset += btstack_snprintf_assert_complete(buffer+offset, buffer_size-offset, "%d", hfp_ag_indicators[i].status);
     }
     return offset;
 }
@@ -404,12 +390,12 @@ static int hfp_ag_indicators_status_join(char * buffer, int buffer_size){
 static int hfp_ag_call_services_join(char * buffer, int buffer_size){
     if (buffer_size < (hfp_ag_call_hold_services_nr * 3)) return 0;
     int i;
-    int offset = snprintf(buffer, buffer_size, "("); 
+    int offset = btstack_snprintf_assert_complete(buffer, buffer_size, "(");
     for (i = 0; i < (hfp_ag_call_hold_services_nr-1); i++) {
-        offset += snprintf(buffer+offset, buffer_size-offset, "%s,", hfp_ag_call_hold_services[i]); 
+        offset += btstack_snprintf_assert_complete(buffer+offset, buffer_size-offset, "%s,", hfp_ag_call_hold_services[i]);
     }
     if (i<hfp_ag_call_hold_services_nr){
-        offset += snprintf(buffer+offset, buffer_size-offset, "%s)", hfp_ag_call_hold_services[i]);
+        offset += btstack_snprintf_assert_complete(buffer+offset, buffer_size-offset, "%s)", hfp_ag_call_hold_services[i]);
     }
     return offset;
 }
@@ -453,18 +439,18 @@ static int hfp_ag_send_retrieve_indicators_cmd_via_generator(uint16_t cid, hfp_c
 static int hfp_ag_send_retrieve_indicators_status_cmd(uint16_t cid){
     char buffer[40];
     const int size = sizeof(buffer);
-    int offset = snprintf(buffer, size, "\r\n%s:", HFP_INDICATOR);
+    int offset = btstack_snprintf_assert_complete(buffer, size, "\r\n%s:", HFP_INDICATOR);
     offset += hfp_ag_indicators_status_join(buffer+offset, size-offset-9);
-    offset += snprintf(buffer+offset, size-offset, "\r\n\r\nOK\r\n");
+    offset += btstack_snprintf_assert_complete(buffer+offset, size-offset, "\r\n\r\nOK\r\n");
     return send_str_over_rfcomm(cid, buffer);
 }
 
 static int hfp_ag_send_retrieve_can_hold_call_cmd(uint16_t cid){
     char buffer[40];
     const int size = sizeof(buffer);
-    int offset = snprintf(buffer, size, "\r\n%s:", HFP_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES);
+    int offset = btstack_snprintf_assert_complete(buffer, size, "\r\n%s:", HFP_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES);
     offset += hfp_ag_call_services_join(buffer+offset, size-offset-9);
-    offset += snprintf(buffer+offset, size-offset, "\r\n\r\nOK\r\n");
+    offset += btstack_snprintf_assert_complete(buffer+offset, size-offset, "\r\n\r\nOK\r\n");
     return send_str_over_rfcomm(cid, buffer);
 }
 
@@ -476,50 +462,49 @@ static int hfp_ag_send_list_supported_generic_status_indicators_cmd(uint16_t cid
 static int hfp_ag_send_retrieve_supported_generic_status_indicators_cmd(uint16_t cid){
     char buffer[40];
     const int size = sizeof(buffer);
-    int offset = snprintf(buffer, size, "\r\n%s:(", HFP_GENERIC_STATUS_INDICATOR);
+    int offset = btstack_snprintf_assert_complete(buffer, size, "\r\n%s:(", HFP_GENERIC_STATUS_INDICATOR);
     offset += hfp_ag_generic_indicators_join(buffer + offset, size - offset - 10);
-    offset += snprintf(buffer+offset, size-offset, ")\r\n\r\nOK\r\n");
+    offset += btstack_snprintf_assert_complete(buffer+offset, size-offset, ")\r\n\r\nOK\r\n");
     return send_str_over_rfcomm(cid, buffer);
 }
 
 static int hfp_ag_send_retrieve_initital_supported_generic_status_indicators_cmd(uint16_t cid){
     char buffer[40];
     int offset = hfp_ag_generic_indicators_initial_status_join(buffer, sizeof(buffer) - 7);
-    snprintf(buffer+offset, sizeof(buffer)-offset, "\r\nOK\r\n");
+    btstack_snprintf_assert_complete(buffer+offset, sizeof(buffer)-offset, "\r\nOK\r\n");
     return send_str_over_rfcomm(cid, buffer);
 }
 
 static int hfp_ag_send_transfer_ag_indicators_status_cmd(uint16_t cid, hfp_ag_indicator_t * indicator){
     char buffer[20];
-    snprintf(buffer, sizeof(buffer), "\r\n%s:%d,%d\r\n",
+    btstack_snprintf_assert_complete(buffer, sizeof(buffer), "\r\n%s:%d,%d\r\n",
              HFP_TRANSFER_AG_INDICATOR_STATUS, indicator->index,
              indicator->status);
-    buffer[sizeof(buffer) - 1] = 0;
     return send_str_over_rfcomm(cid, buffer);
 }
 
 static int hfp_ag_send_report_network_operator_name_cmd(uint16_t cid, hfp_network_opearator_t op){
     char buffer[41];
     if (strlen(op.name) == 0){
-        snprintf(buffer, sizeof(buffer), "\r\n%s:%d,,\r\n\r\nOK\r\n", HFP_QUERY_OPERATOR_SELECTION, op.mode);
+        btstack_snprintf_best_effort(buffer, sizeof(buffer), "\r\n%s:%d,,\r\n\r\nOK\r\n", HFP_QUERY_OPERATOR_SELECTION, op.mode);
     } else {
-        int offset = snprintf(buffer,  sizeof(buffer), "\r\n%s:%d,%d,", HFP_QUERY_OPERATOR_SELECTION, op.mode, op.format);
-        offset += snprintf(buffer+offset, 16, "%s", op.name);
-        snprintf(buffer+offset, sizeof(buffer)-offset, "\r\n\r\nOK\r\n");
+        int offset = btstack_snprintf_best_effort(buffer,  sizeof(buffer), "\r\n%s:%d,%d,", HFP_QUERY_OPERATOR_SELECTION, op.mode, op.format);
+        offset += btstack_snprintf_best_effort(buffer+offset, 16, "%s", op.name);
+        btstack_snprintf_best_effort(buffer+offset, sizeof(buffer)-offset, "\r\n\r\nOK\r\n");
     }
     return send_str_over_rfcomm(cid, buffer);
 }
 
 static inline int hfp_ag_send_cmd_with_space_and_int(uint16_t cid, const char * cmd, uint8_t value){
     char buffer[30];
-    snprintf(buffer, sizeof(buffer), "\r\n%s: %d\r\n", cmd, value);
+    btstack_snprintf_assert_complete(buffer, sizeof(buffer), "\r\n%s: %d\r\n", cmd, value);
     return send_str_over_rfcomm(cid, buffer);
 }
 
 
 static inline int hfp_ag_send_cmd_with_int(uint16_t cid, const char * cmd, uint8_t value){
     char buffer[30];
-    snprintf(buffer, sizeof(buffer), "\r\n%s:%d\r\n", cmd, value);
+    btstack_snprintf_assert_complete(buffer, sizeof(buffer), "\r\n%s:%d\r\n", cmd, value);
     return send_str_over_rfcomm(cid, buffer);
 }
 
@@ -542,23 +527,23 @@ static int hfp_ag_send_set_response_and_hold(uint16_t cid, int state){
 static int hfp_ag_send_enhanced_voice_recognition_state_cmd(hfp_connection_t * hfp_connection){
     char buffer[30];
     uint8_t evra_enabled = hfp_connection->enhanced_voice_recognition_enabled ? 1 : 0;
-    snprintf(buffer, sizeof(buffer), "\r\n%s: %d,%d\r\n", HFP_ACTIVATE_VOICE_RECOGNITION, evra_enabled, hfp_connection->ag_vra_state);
+    btstack_snprintf_assert_complete(buffer, sizeof(buffer), "\r\n%s: %d,%d\r\n", HFP_ACTIVATE_VOICE_RECOGNITION, evra_enabled, hfp_connection->ag_vra_state);
     return send_str_over_rfcomm(hfp_connection->rfcomm_cid, buffer);
 }
 
 static int hfp_ag_send_voice_recognition_cmd(hfp_connection_t * hfp_connection, uint8_t activate_voice_recognition){
     char buffer[30];
     if (hfp_connection->enhanced_voice_recognition_enabled){
-        snprintf(buffer, sizeof(buffer), "\r\n%s: %d,%d\r\n", HFP_ACTIVATE_VOICE_RECOGNITION, activate_voice_recognition, hfp_connection->ag_vra_state);
+        btstack_snprintf_assert_complete(buffer, sizeof(buffer), "\r\n%s: %d,%d\r\n", HFP_ACTIVATE_VOICE_RECOGNITION, activate_voice_recognition, hfp_connection->ag_vra_state);
     } else {
-        snprintf(buffer, sizeof(buffer), "\r\n%s: %d\r\n", HFP_ACTIVATE_VOICE_RECOGNITION, activate_voice_recognition);
+        btstack_snprintf_assert_complete(buffer, sizeof(buffer), "\r\n%s: %d\r\n", HFP_ACTIVATE_VOICE_RECOGNITION, activate_voice_recognition);
     }
     return send_str_over_rfcomm(hfp_connection->rfcomm_cid, buffer);
 }
 
 static int hfp_ag_send_enhanced_voice_recognition_msg_cmd(hfp_connection_t * hfp_connection){
     char buffer[HFP_VR_TEXT_HEADER_SIZE + HFP_MAX_VR_TEXT_SIZE];
-    snprintf(buffer, sizeof(buffer), "\r\n%s: 1,%d,%X,%d,%d,\"%s\"\r\n", HFP_ACTIVATE_VOICE_RECOGNITION, 
+    btstack_snprintf_assert_complete(buffer, sizeof(buffer), "\r\n%s: 1,%d,%X,%d,%d,\"%s\"\r\n", HFP_ACTIVATE_VOICE_RECOGNITION,
         hfp_connection->ag_vra_state, 
         hfp_connection->ag_msg.text_id,
         hfp_connection->ag_msg.text_type,
@@ -2114,11 +2099,11 @@ static void hfp_ag_send_call_status(hfp_connection_t * hfp_connection, int call_
 
     char buffer[100];
     // TODO: check length of a buffer, to fit the MTU
-    int offset = snprintf(buffer, sizeof(buffer), "\r\n%s: %d,%d,%d,%d,%d", HFP_LIST_CURRENT_CALLS, idx, dir, status, mode, mpty);
+    int offset = btstack_snprintf_best_effort(buffer, sizeof(buffer), "\r\n%s: %d,%d,%d,%d,%d", HFP_LIST_CURRENT_CALLS, idx, dir, status, mode, mpty);
     if (number){
-        offset += snprintf(buffer+offset, sizeof(buffer)-offset-3, ", \"%s\",%u", number, type);
-    } 
-    snprintf(buffer+offset, sizeof(buffer)-offset, "\r\n");
+        offset += btstack_snprintf_best_effort(buffer+offset, sizeof(buffer)-offset-3, ", \"%s\",%u", number, type);
+    }
+    btstack_snprintf_best_effort(buffer+offset, sizeof(buffer)-offset, "\r\n");
     log_info("hfp_ag_send_current_call_status 000 index %d, dir %d, status %d, mode %d, mpty %d, type %d, number %s", idx, dir, status,
        mode, mpty, type, number);
     send_str_over_rfcomm(hfp_connection->rfcomm_cid, buffer);

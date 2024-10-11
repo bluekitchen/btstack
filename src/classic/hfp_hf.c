@@ -296,76 +296,76 @@ static void hfp_hf_emit_custom_command_event(hfp_connection_t * hfp_connection){
 
 static inline int hfp_hf_send_cmd(uint16_t cid, const char * cmd){
     char buffer[20];
-    snprintf(buffer, sizeof(buffer), "AT%s\r", cmd);
+    btstack_snprintf_assert_complete(buffer, sizeof(buffer), "AT%s\r", cmd);
     return send_str_over_rfcomm(cid, buffer);
 }
 
 static inline int hfp_hf_send_cmd_with_mark(uint16_t cid, const char * cmd, const char * mark){
     char buffer[20];
-    snprintf(buffer, sizeof(buffer), "AT%s%s\r", cmd, mark);
+    btstack_snprintf_assert_complete(buffer, sizeof(buffer), "AT%s%s\r", cmd, mark);
     return send_str_over_rfcomm(cid, buffer);
 }
 
 static inline int hfp_hf_send_cmd_with_int(uint16_t cid, const char * cmd, uint16_t value){
     char buffer[40];
-    snprintf(buffer, sizeof(buffer), "AT%s=%d\r", cmd, value);
+    btstack_snprintf_assert_complete(buffer, sizeof(buffer), "AT%s=%d\r", cmd, value);
     return send_str_over_rfcomm(cid, buffer);
 }
 
 static int hfp_hf_cmd_notify_on_codecs(uint16_t cid){
     char buffer[30];
     const int size = sizeof(buffer);
-    int offset = snprintf(buffer, size, "AT%s=", HFP_AVAILABLE_CODECS);
+    int offset = btstack_snprintf_assert_complete(buffer, size, "AT%s=", HFP_AVAILABLE_CODECS);
     offset += join(buffer+offset, size-offset, hfp_hf_codecs, hfp_hf_codecs_nr);
-    offset += snprintf(buffer+offset, size-offset, "\r");
+    offset += btstack_snprintf_assert_complete(buffer+offset, size-offset, "\r");
     return send_str_over_rfcomm(cid, buffer);
 }
 
 static int hfp_hf_cmd_activate_status_update_for_ag_indicator(uint16_t cid, uint32_t indicators_status, int indicators_nr){
     char buffer[50];
     const int size = sizeof(buffer);
-    int offset = snprintf(buffer, size, "AT%s=", HFP_UPDATE_ENABLE_STATUS_FOR_INDIVIDUAL_AG_INDICATORS);
+    int offset = btstack_snprintf_assert_complete(buffer, size, "AT%s=", HFP_UPDATE_ENABLE_STATUS_FOR_INDIVIDUAL_AG_INDICATORS);
     offset += join_bitmap(buffer+offset, size-offset, indicators_status, indicators_nr);
-    offset += snprintf(buffer+offset, size-offset, "\r");
+    offset += btstack_snprintf_assert_complete(buffer+offset, size-offset, "\r");
     return send_str_over_rfcomm(cid, buffer);
 }
 
 static int hfp_hf_cmd_list_supported_generic_status_indicators(uint16_t cid){
     char buffer[30];
     const int size = sizeof(buffer);
-    int offset = snprintf(buffer, size, "AT%s=", HFP_GENERIC_STATUS_INDICATOR);
+    int offset = btstack_snprintf_assert_complete(buffer, size, "AT%s=", HFP_GENERIC_STATUS_INDICATOR);
     offset += join(buffer+offset, size-offset, hfp_hf_indicators, hfp_hf_indicators_nr);
-    offset += snprintf(buffer+offset, size-offset, "\r");
+    offset += btstack_snprintf_assert_complete(buffer+offset, size-offset, "\r");
     return send_str_over_rfcomm(cid, buffer);
 }
 
 static int hfp_hf_cmd_activate_status_update_for_all_ag_indicators(uint16_t cid, uint8_t activate){
     char buffer[20];
-    snprintf(buffer, sizeof(buffer), "AT%s=3,0,0,%d\r", HFP_ENABLE_STATUS_UPDATE_FOR_AG_INDICATORS, activate);
+    btstack_snprintf_assert_complete(buffer, sizeof(buffer), "AT%s=3,0,0,%d\r", HFP_ENABLE_STATUS_UPDATE_FOR_AG_INDICATORS, activate);
     return send_str_over_rfcomm(cid, buffer);
 }
 
 static int hfp_hf_initiate_outgoing_call_cmd(uint16_t cid){
     char buffer[40];
-    snprintf(buffer, sizeof(buffer), "%s%s;\r", HFP_CALL_PHONE_NUMBER, hfp_hf_phone_number);
+    btstack_snprintf_assert_complete(buffer, sizeof(buffer), "%s%s;\r", HFP_CALL_PHONE_NUMBER, hfp_hf_phone_number);
     return send_str_over_rfcomm(cid, buffer);
 }
 
 static int hfp_hf_send_memory_dial_cmd(uint16_t cid, int memory_id){
     char buffer[40];
-    snprintf(buffer, sizeof(buffer), "%s>%d;\r", HFP_CALL_PHONE_NUMBER, memory_id);
+    btstack_snprintf_assert_complete(buffer, sizeof(buffer), "%s>%d;\r", HFP_CALL_PHONE_NUMBER, memory_id);
     return send_str_over_rfcomm(cid, buffer);
 }
 
 static int hfp_hf_send_chld(uint16_t cid, unsigned int number){
     char buffer[40];
-    snprintf(buffer, sizeof(buffer), "AT%s=%u\r", HFP_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES, number);
+    btstack_snprintf_assert_complete(buffer, sizeof(buffer), "AT%s=%u\r", HFP_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES, number);
     return send_str_over_rfcomm(cid, buffer);
 }
 
 static int hfp_hf_send_dtmf(uint16_t cid, char code){
     char buffer[20];
-    snprintf(buffer, sizeof(buffer), "AT%s=%c\r", HFP_TRANSMIT_DTMF_CODES, code);
+    btstack_snprintf_assert_complete(buffer, sizeof(buffer), "AT%s=%c\r", HFP_TRANSMIT_DTMF_CODES, code);
     return send_str_over_rfcomm(cid, buffer);
 }
 
@@ -1015,7 +1015,7 @@ static void hfp_hf_run_for_context(hfp_connection_t * hfp_connection){
         char buffer[20];
         switch (hfp_connection->hf_send_rrh_command){
             case '?':
-                snprintf(buffer, sizeof(buffer), "AT%s?\r",
+                btstack_snprintf_assert_complete(buffer, sizeof(buffer), "AT%s?\r",
                          HFP_RESPONSE_AND_HOLD);
                 buffer[sizeof(buffer) - 1] = 0;
                 send_str_over_rfcomm(hfp_connection->rfcomm_cid, buffer);
@@ -1023,7 +1023,7 @@ static void hfp_hf_run_for_context(hfp_connection_t * hfp_connection){
             case '0':
             case '1':
             case '2':
-                snprintf(buffer, sizeof(buffer), "AT%s=%c\r",
+                btstack_snprintf_assert_complete(buffer, sizeof(buffer), "AT%s=%c\r",
                          HFP_RESPONSE_AND_HOLD,
                          hfp_connection->hf_send_rrh_command);
                 buffer[sizeof(buffer) - 1] = 0;
@@ -1038,7 +1038,7 @@ static void hfp_hf_run_for_context(hfp_connection_t * hfp_connection){
     if (hfp_connection->hf_send_cnum){
         hfp_connection->hf_send_cnum = 0;
         char buffer[20];
-        snprintf(buffer, sizeof(buffer), "AT%s\r",
+        btstack_snprintf_assert_complete(buffer, sizeof(buffer), "AT%s\r",
                  HFP_SUBSCRIBER_NUMBER_INFORMATION);
         buffer[sizeof(buffer) - 1] = 0;
         send_str_over_rfcomm(hfp_connection->rfcomm_cid, buffer);
@@ -1054,7 +1054,7 @@ static void hfp_hf_run_for_context(hfp_connection_t * hfp_connection){
                 if (hfp_connection->generic_status_indicators[i].state){
                     hfp_connection->ok_pending = 1;
                     char buffer[30];
-                    snprintf(buffer, sizeof(buffer), "AT%s=%u,%u\r",
+                    btstack_snprintf_assert_complete(buffer, sizeof(buffer), "AT%s=%u,%u\r",
                              HFP_TRANSFER_HF_INDICATOR_STATUS,
                              hfp_hf_indicators[i],
                              (unsigned int)hfp_hf_indicators_value[i]);
@@ -1073,7 +1073,7 @@ static void hfp_hf_run_for_context(hfp_connection_t * hfp_connection){
         hfp_connection->ok_pending = 1;
         hfp_connection->response_pending_for_command = HFP_CMD_APPLE_ACCESSORY_INFORMATION;
         char buffer[40];
-        snprintf(buffer, sizeof(buffer), "AT%s=%04x-%04x-%s,%u\r", HFP_APPLE_ACCESSORY_INFORMATION,
+        btstack_snprintf_assert_complete(buffer, sizeof(buffer), "AT%s=%04x-%04x-%s,%u\r", HFP_APPLE_ACCESSORY_INFORMATION,
                  hfp_hf_apple_vendor_id, hfp_hf_apple_product_id, hfp_hf_apple_version, hfp_hf_apple_features);
         (void) send_str_over_rfcomm(hfp_connection->rfcomm_cid, buffer);
         return;
@@ -1097,11 +1097,11 @@ static void hfp_hf_run_for_context(hfp_connection_t * hfp_connection){
             char buffer[40];
             switch (num_apple_values){
                 case 1:
-                    snprintf(buffer, sizeof(buffer), "AT%s=1,%u,%u\r", HFP_APPLE_ACCESSORY_STATE,
+                    btstack_snprintf_assert_complete(buffer, sizeof(buffer), "AT%s=1,%u,%u\r", HFP_APPLE_ACCESSORY_STATE,
                              first_key, first_value);
                     break;
                 case 2:
-                    snprintf(buffer, sizeof(buffer), "AT%s=2,1,%u,2,%u\r", HFP_APPLE_ACCESSORY_STATE,
+                    btstack_snprintf_assert_complete(buffer, sizeof(buffer), "AT%s=2,1,%u,2,%u\r", HFP_APPLE_ACCESSORY_STATE,
                              hfp_connection->apple_accessory_battery_level, hfp_connection->apple_accessory_docked);
                     break;
                 default:
@@ -1967,7 +1967,7 @@ uint8_t hfp_hf_dial_number(hci_con_handle_t acl_handle, char * number){
     }
     
     hfp_connection->hf_initiate_outgoing_call = 1;
-    snprintf(hfp_hf_phone_number, sizeof(hfp_hf_phone_number), "%s", number);
+    btstack_snprintf_assert_complete(hfp_hf_phone_number, sizeof(hfp_hf_phone_number), "%s", number);
     hfp_hf_run_for_context(hfp_connection);
     return ERROR_CODE_SUCCESS;
 }
