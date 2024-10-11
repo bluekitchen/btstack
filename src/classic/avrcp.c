@@ -131,7 +131,7 @@ const char * avrcp_operation2str(uint8_t operation_id){
     } 
     if (name == NULL){
         static char buffer[13];
-        snprintf(buffer, sizeof(buffer), "Unknown 0x%02x", operation_id);
+        btstack_snprintf_assert_complete(buffer, sizeof(buffer), "Unknown 0x%02x", operation_id);
         buffer[sizeof(buffer)-1] = 0;
         return buffer;
     } else {

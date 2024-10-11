@@ -145,13 +145,13 @@ static uint16_t avrcp_now_playing_info_attr_id_value_len(avrcp_connection_t * co
         case AVRCP_MEDIA_ATTR_NONE:
             return 0;
         case AVRCP_MEDIA_ATTR_TRACK:
-            str_len = snprintf(buffer, sizeof(buffer), "%" PRIu32, connection->target_track_nr);
+            str_len = btstack_snprintf_assert_complete(buffer, sizeof(buffer), "%" PRIu32, connection->target_track_nr);
             break;
         case AVRCP_MEDIA_ATTR_TOTAL_NUM_ITEMS:
-            str_len = snprintf(buffer, sizeof(buffer), "%" PRIu32, connection->target_total_tracks);
+            str_len = btstack_snprintf_assert_complete(buffer, sizeof(buffer), "%" PRIu32, connection->target_total_tracks);
             break;
         case AVRCP_MEDIA_ATTR_SONG_LENGTH_MS:
-            str_len = snprintf(buffer, sizeof(buffer), "%" PRIu32, connection->target_song_length_ms);
+            str_len = btstack_snprintf_assert_complete(buffer, sizeof(buffer), "%" PRIu32, connection->target_song_length_ms);
             break;
         default:
             str_len = connection->target_now_playing_info[(uint16_t)attr_id - 1].len;
@@ -191,7 +191,7 @@ static uint8_t * avrcp_get_attribute_value_from_u32(avrcp_connection_t * connect
 
     if (connection->attribute_value_len == 0){
 		// "4294967296" = 10 chars + \0
-        connection->attribute_value_len = snprintf((char *)connection->attribute_value, 11, "%" PRIu32, value);
+        connection->attribute_value_len = btstack_snprintf_assert_complete((char *)connection->attribute_value, 11, "%" PRIu32, value);
         connection->attribute_value_offset = 0;
     }
     *num_bytes_to_copy = connection->attribute_value_len - connection->attribute_value_offset;
