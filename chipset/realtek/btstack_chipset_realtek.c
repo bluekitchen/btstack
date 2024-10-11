@@ -462,8 +462,8 @@ static void chipset_init(const void *config) {
             state = STATE_PHASE_2_DONE;
             return;
         }
-        snprintf(firmware_file, sizeof(firmware_file), "%s/%s", firmware_folder_path, patch->patch_name);
-        snprintf(config_file, sizeof(config_file), "%s/%s", config_folder_path, patch->config_name);
+        btstack_snprintf_assert_complete(firmware_file, sizeof(firmware_file), "%s/%s", firmware_folder_path, patch->patch_name);
+        btstack_snprintf_assert_complete(config_file, sizeof(config_file), "%s/%s", config_folder_path, patch->config_name);
         firmware_file_path = &firmware_file[0];
         config_file_path   = &config_file[0];
         //lmp_subversion     = patch->lmp_sub;
