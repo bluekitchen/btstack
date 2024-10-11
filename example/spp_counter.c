@@ -120,7 +120,7 @@ static void  heartbeat_handler(struct btstack_timer_source *ts){
     static int counter = 0;
 
     if (rfcomm_channel_id){
-        snprintf(lineBuffer, sizeof(lineBuffer), "BTstack counter %04u\n", ++counter);
+        btstack_snprintf_assert_complete(lineBuffer, sizeof(lineBuffer), "BTstack counter %04u\n", ++counter);
         printf("%s", lineBuffer);
 
         rfcomm_request_can_send_now_event(rfcomm_channel_id);
