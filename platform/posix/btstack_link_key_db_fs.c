@@ -85,7 +85,7 @@ static char *link_key_to_str(link_key_t link_key){
 
 static char link_key_type_to_str_buffer[2];
 static char *link_key_type_to_str(link_key_type_t link_key){
-    snprintf(link_key_type_to_str_buffer, sizeof(link_key_type_to_str_buffer), "%d", link_key);
+    btstack_snprintf_assert_complete(link_key_type_to_str_buffer, sizeof(link_key_type_to_str_buffer), "%d", link_key);
     return (char *) link_key_type_to_str_buffer;
 }
 
