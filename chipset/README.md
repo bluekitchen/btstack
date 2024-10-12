@@ -85,6 +85,8 @@ CSR, which has been acquired by Qualcomm, provides all relevant information on t
 | NXP IW416                            | Dual mode        | H4             | Yes          | No               | Yes        | Yes                   | No                | Yes                | nxp            | Requires initial firmware                        |
 | NXP IW61x                            | Dual mode        | H4             | Yes          | Partially(2)     | Yes        | Yes                   | No                | Yes                | nxp            | Requires initial firmware                        |
 | STM STLC2500D                        | Classic          | H4             | No           | Don't know       | n.a        | n.a.                  | No                | n.a.               | stlc2500d      | Custom deep sleep management not supported       |
+| STM32WB                              | LE               | VHCI           | Yes          | n.a.             | Yes        | Yes                   | n.a.              | Yes                |                | See port/stm32wb55x-nucleo-freertos              |
+| STM32WB0                             | LE               | VHCI, H4       | Yes          | n.a.             | Yes        | Yes                   | n.a.              | Yes                |                | HCI Firmware part of STM32WB0 Cube Package       |
 | Renesas RX23W                        | LE               | H4             | No           | n.a.             | Yes        | Yes                   | n.a .             | Don't know         |                | HCI Firmware part of BTTS                        |
 | Realtek RTL8822CS                    | Dual mode + Wifi | H5             | Yes          | Yes              | Don't know | Don't know            | Don't know        | Don't know         |                | Requires initial firmware + config               |
 | Realtek USB Dongles                  | Dual mode + Wifi | USB            | Yes          | Yes              | Don't know | Don't know            | Don't know        | Don't know         | realtek        | Requires initial firmware + config               |
@@ -308,7 +310,7 @@ They commonly require to download a patch and a configuration file. Patch and co
 
 ## Renesas Electronics
 
-Please see Dialog Semiconducator for DA14xxx Bluetooth SoCs above.
+Please see Dialog Semiconductor for DA14xxx Bluetooth SoCs above.
 
 Renesas currently has 3 LE-only SoCs: the older 16-bit RL78 and the newer RX23W and the RA4W1. 
 For the newer SoCs, Renesas provides a pre-compiled HCI firmware as well as an HCI project for their e2 Studio IDE.
@@ -352,9 +354,29 @@ It offers the Bluetooth V2.1 + EDR chipset STLC2500D that supports SPI and UART 
 
 The BlueNRG series is an LE-only SoC which can be used with an HCI Firmware over a custom SPI interface. 
 
-### STM32-WB5x
+### STM32-WB
 
-The new STM32-WB5x series microcontroller is an SoC with a multi-protocol 2.4 Ghz radio co-processor. It provides a virtual HCI interface.
+The STM32-WB5x series microcontroller is an SoC with a multi-protocol 2.4 Ghz radio co-processor. It provides a virtual HCI interface.
+
+### STM32-WB0
+
+The STM32-WB50 series microcontroller is an SoC with a multi-protocol 2.4 Ghz radio co-processor. 
+The [STM32Cube MCU Package for STM32WB0 series](https://www.st.com/en/embedded-software/stm32cubewb0.html) provides the HCI firmware.
+
+To flash this firmware, you can:
+- [Download and Install STM32CubeIDE](https://www.st.com/en/development-tools/stm32cubeide.html)
+- [Download and Unzip the STM32WB0 MCU Package](https://www.st.com/en/embedded-software/stm32cubewb0.html)
+- Open STM32CubeIDE
+- Import projects`Projects/{Your DevKit}/Applications/BLE/BLE_TransparentMode/STM32CubeIDE` and make sure the option 'copy into workspace' is unchecked
+- In `ble_conf.h`, add the line:
+  - `#define BLESTACK_CONTROLLER_ONLY 1` 
+- Replace the controller+stack library with the controller only library:
+  - Go to Properties->C/C++ Build->Settings->Tool Settings->MCU GCC Linker->Libraries in STM32CubeIDE
+  - Replace `:stm32wb0x_ble_stack.a` with `:stm32wb0x_ble_stack_controller_only.a`
+- Connect your Nucleo board and press the "Run" button
+
+The HCI firmware is configured for 921600 baud and no hardware flow control. You can modify these settings in `MX_USART1_UART_Init()` in `main.c`.
+Use `UART_HWCONTROL_RTS_CTS` to enable hardware flowcontrol.
 
 
 ## Texas Instruments CC256x series

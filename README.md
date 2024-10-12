@@ -109,7 +109,8 @@ For information on Apple's MFi/iAP2 and Find My profiles, please <a href="mailto
 | Realtek USB Dongles                  | Dual mode + Wifi | USB            | Yes              | realtek        | Requires initial firmware and config           |
 | Renesas RX23W                        | LE               | H4             | n.a.             |                | HCI Firmware part of BTTS                      |
 | STM STLC2500D                        | Classic          | H4             | No (didn't try)  | stlc2500d      | Custom deep sleep management not supported     |
-| STM32-WB5x                           | LE               | VHCI           | n.a.             |                | SoC with multi-protocol Radio co-processor     |
+| STM32-WB                             | LE               | VHCI           | n.a.             |                | SoC with multi-protocol Radio co-processor     |
+| STM32-WB0                            | LE               | H4             | n.a.             |                | HCI Firmware part of STM32WB0 Cube Package     |
 | Toshiba TC35661                      | Dual mode        | H4             | No               | tc3566         |                                                |
 | TI CC256x, WL183x                    | Dual mode        | H4, H5, eHCILL | Yes              | cc256x         | Also WL185x, WL187x, and WL189x                |
 
