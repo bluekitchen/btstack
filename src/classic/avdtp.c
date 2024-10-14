@@ -861,9 +861,7 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
             }
             
             stream_endpoint = avdtp_get_stream_endpoint_for_l2cap_cid(channel);
-            if (!stream_endpoint){
-                if (!connection) break;
-                handle_l2cap_data_packet_for_signaling_connection(connection, packet, size);
+            if (stream_endpoint == NULL){
                 break;
             }
             
