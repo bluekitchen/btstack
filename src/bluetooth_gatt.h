@@ -115,6 +115,8 @@
 #define ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_LEVEL                                                                    0x2A19 // Battery Level
 #define ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_LEVEL_STATE                                                              0x2A1B // Battery Level State
 #define ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_POWER_STATE                                                              0x2A1A // Battery Power State
+#define ORG_BLUETOOTH_CHARACTERISTIC_BGS_FEATURES                                                                     0x2C03
+#define ORG_BLUETOOTH_CHARACTERISTIC_BGR_FEATURES                                                                     0x2C04
 #define ORG_BLUETOOTH_CHARACTERISTIC_BLOOD_PRESSURE_FEATURE                                                           0x2A49 // Blood Pressure Feature
 #define ORG_BLUETOOTH_CHARACTERISTIC_BLOOD_PRESSURE_MEASUREMENT                                                       0x2A35 // Blood Pressure Measurement
 #define ORG_BLUETOOTH_CHARACTERISTIC_BODY_COMPOSITION_FEATURE                                                         0x2A9B // Body Composition Feature
@@ -175,6 +177,7 @@
 #define ORG_BLUETOOTH_CHARACTERISTIC_GLUCOSE_FEATURE                                                                  0x2A51 // Glucose Feature
 #define ORG_BLUETOOTH_CHARACTERISTIC_GLUCOSE_MEASUREMENT                                                              0x2A18 // Glucose Measurement
 #define ORG_BLUETOOTH_CHARACTERISTIC_GLUCOSE_MEASUREMENT_CONTEXT                                                      0x2A34 // Glucose Measurement Context
+#define ORG_BLUETOOTH_CHARACTERISTIC_GMAP_ROLE                                                                        0x2C00
 #define ORG_BLUETOOTH_CHARACTERISTIC_GUST_FACTOR                                                                      0x2A74 // Gust Factor
 #define ORG_BLUETOOTH_CHARACTERISTIC_HARDWARE_REVISION_STRING                                                         0x2A27 // Hardware Revision String
 #define ORG_BLUETOOTH_CHARACTERISTIC_HEART_RATE_CONTROL_POINT                                                         0x2A39 // Heart Rate Control Point
@@ -308,6 +311,8 @@
 #define ORG_BLUETOOTH_CHARACTERISTIC_TRUE_WIND_SPEED                                                                  0x2A70 // True Wind Speed
 #define ORG_BLUETOOTH_CHARACTERISTIC_TWO_ZONE_HEART_RATE_LIMIT                                                        0x2A95 // Two Zone Heart Rate Limit
 #define ORG_BLUETOOTH_CHARACTERISTIC_TX_POWER_LEVEL                                                                   0x2A07 // Tx Power Level
+#define ORG_BLUETOOTH_CHARACTERISTIC_UGG_FEATURES                                                                     0x2C01
+#define ORG_BLUETOOTH_CHARACTERISTIC_UGT_FEATURES                                                                     0x2C02
 #define ORG_BLUETOOTH_CHARACTERISTIC_UNCERTAINTY                                                                      0x2AB4 // Uncertainty
 #define ORG_BLUETOOTH_CHARACTERISTIC_UNREAD_ALERT_STATUS                                                              0x2A45 // Unread Alert Status
 #define ORG_BLUETOOTH_CHARACTERISTIC_URI                                                                              0x2AB6 // URI
