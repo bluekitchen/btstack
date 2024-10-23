@@ -582,6 +582,7 @@ typedef struct {
     uint8_t remote_supported_features[1];
 
     // IO Capabilities Response
+    uint8_t io_cap_request_auth_req;
     uint8_t io_cap_response_auth_req;
     uint8_t io_cap_response_io;
 #ifdef ENABLE_CLASSIC_PAIRING_OOB
