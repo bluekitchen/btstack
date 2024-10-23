@@ -4017,6 +4017,11 @@ static void event_handler(uint8_t *packet, uint16_t size){
             // only store link key:
             // - if bondable enabled
             if (hci_stack->bondable == false) break;
+            // - if at least one side requests bonding during the IO Capabilities exchange.
+            // Note: we drop bonding flag in acceptor role if remote doesn't request it
+            bool bonding_local  = conn->io_cap_request_auth_req  >= SSP_IO_AUTHREQ_MITM_PROTECTION_NOT_REQUIRED_DEDICATED_BONDING;
+            bool bonding_remote = conn->io_cap_response_auth_req >= SSP_IO_AUTHREQ_MITM_PROTECTION_NOT_REQUIRED_DEDICATED_BONDING;
+            if ((bonding_local == false) && (bonding_remote == false)) break;
             // - if security level sufficient
             if (gap_security_level_for_link_key_type(link_key_type) < conn->requested_security_level) break;
             gap_store_link_key_for_bd_addr(addr, &packet[8], conn->link_key_type);
