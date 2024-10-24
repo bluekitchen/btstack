@@ -2451,6 +2451,37 @@ const hci_cmd_t hci_le_transmitter_test_v4 = {
     HCI_OPCODE_HCI_LE_TRANSMITTER_TEST_V4, "111111a[1]1"
 };
 
+/**
+ * @param advertising_handle
+ * @param change_reason
+ */
+const hci_cmd_t hci_le_set_data_related_address_change = {
+    HCI_OPCODE_HCI_LE_SET_DATA_RELATED_ADDRESS_CHANGES, "11"
+};
+
+/**
+ * @param subrate_min
+ * @param subrate_max
+ * @param max_latency
+ * @param continuation_number
+ * @param supervision_timeout
+ */
+const hci_cmd_t hci_le_set_default_subrate = {
+        HCI_OPCODE_HCI_LE_SET_DEFAULT_SUBRATE, "22222"
+};
+
+/**
+ * @param connection_handle
+ * @param subrate_min
+ * @param subrate_max
+ * @param max_latency
+ * @param continuation_number
+ * @param supervision_timeout
+ */
+const hci_cmd_t hci_le_subrate_request = {
+        HCI_OPCODE_HCI_LE_SUBRATE_REQUEST, "H22222"
+};
+
 #endif
 
 // Broadcom / Cypress specific HCI commands
