@@ -408,14 +408,15 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                 default:
                     break;
             }
+            if (client != NULL){
+                scan_parameters_client_request_send_gatt_query(client);
+            }
             break;
         default:
             break;
     }
 
-    if (client != NULL){
-        scan_parameters_client_request_send_gatt_query(client);
-    }
+
 }
 
 static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
