@@ -7602,6 +7602,13 @@ static bool hci_run_general_pending_commands(void){
             hci_send_cmd(&hci_le_set_phy, connection->con_handle, all_phys, connection->le_phy_update_tx_phys, connection->le_phy_update_rx_phys, connection->le_phy_update_phy_options);
             return true;
         }
+        if (connection->le_subrate_min > 0){
+            uint16_t subrate_min = connection->le_subrate_min;
+            connection->le_subrate_min = 0;
+            hci_send_cmd(&hci_le_subrate_request, connection->con_handle, subrate_min, connection->le_subrate_max, connection->le_subrate_max_latency,
+                             connection->le_subrate_continuation_number, connection->le_supervision_timeout);
+            return true;
+        }
 #ifdef ENABLE_LE_PERIODIC_ADVERTISING
         if (connection->le_past_sync_handle != HCI_CON_HANDLE_INVALID){
             hci_con_handle_t sync_handle = connection->le_past_sync_handle;
@@ -8721,6 +8728,20 @@ int gap_request_connection_parameter_update(hci_con_handle_t con_handle, uint16_
     uint8_t l2cap_trigger_run_event[2] = { L2CAP_EVENT_TRIGGER_RUN, 0};
     hci_emit_btstack_event(l2cap_trigger_run_event, sizeof(l2cap_trigger_run_event), 0);
     return 0;
+}
+
+uint8_t gap_request_connection_subrating(hci_con_handle_t con_handle, uint16_t subrate_min, uint16_t subrate_max,
+                                         uint16_t max_latency, uint16_t continuation_number, uint16_t supervision_timeout){
+    hci_connection_t * connection = hci_connection_for_handle(con_handle);
+    if (!connection) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+
+    connection->le_subrate_min = subrate_min;
+    connection->le_subrate_max = subrate_max;
+    connection->le_subrate_max_latency = max_latency;
+    connection->le_subrate_continuation_number = continuation_number;
+    connection->le_supervision_timeout = supervision_timeout;
+    hci_run();
+    return ERROR_CODE_SUCCESS;
 }
 
 #ifdef ENABLE_LE_PERIPHERAL
