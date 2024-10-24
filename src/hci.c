@@ -2369,6 +2369,15 @@ static void hci_initializing_run(void){
             }
 #endif
 
+#ifdef ENABLE_BLE
+            /* fall through */
+        case HCI_INIT_LE_SET_HOST_FEATURE_CONNECTION_SUBRATING:
+            if (hci_le_supported()) {
+                hci_stack->substate = HCI_INIT_W4_LE_SET_HOST_FEATURE_CONNECTION_SUBRATING;
+                hci_send_cmd(&hci_le_set_host_feature, 38, 1);
+                break;
+            }
+#endif
             /* fall through */
 
         case HCI_INIT_DONE:
