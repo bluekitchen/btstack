@@ -118,7 +118,7 @@ void hci_dump_log_P(int log_level, PGM_P format, ...){
 
 void hci_dump_btstack_event(const uint8_t *packet, uint16_t len){
 #ifdef ENABLE_LOG_BTSTACK_EVENTS
-    hci_dump_packet(HCI_EVENT_PACKET, 1, packet, size);
+    hci_dump_packet(HCI_EVENT_PACKET, 1, packet, len);
 #else
     UNUSED(packet);
     UNUSED(len);
