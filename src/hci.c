@@ -1253,7 +1253,7 @@ static void acl_handler(uint8_t *packet, uint16_t size){
             // compare fragment size to L2CAP packet size
             if (acl_length >= (l2cap_length + 4u)){
                 // forward fragment as L2CAP packet
-                hci_emit_acl_packet(packet, acl_length + 4u);
+                hci_emit_acl_packet(packet, l2cap_length + 8u);
             } else {
 
                 if (acl_length > HCI_ACL_BUFFER_SIZE){
