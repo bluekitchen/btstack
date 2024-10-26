@@ -1639,6 +1639,9 @@ static uint32_t l2cap_extended_features_mask(void){
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
     features |= 0x0028;
 #endif
+#ifdef ENABLE_L2CAP_ENHANCED_CREDIT_BASED_FLOW_CONTROL_MODE
+    features |= 0x0400;
+#endif
     return features;
 }
 #endif
@@ -1922,13 +1925,13 @@ static void l2cap_run_signaling_response(void) {
             case INFORMATION_REQUEST:
                 switch (info_type){
                     case L2CAP_INFO_TYPE_CONNECTIONLESS_MTU: {
-                            uint16_t connectionless_mtu = hci_max_acl_data_packet_length();
+                        uint16_t connectionless_mtu = hci_max_acl_data_packet_length();
                         l2cap_send_classic_signaling_packet(handle, INFORMATION_RESPONSE, sig_id, info_type, 0,
                                                             sizeof(connectionless_mtu), &connectionless_mtu);
                         }
                         break;
                     case L2CAP_INFO_TYPE_EXTENDED_FEATURES_SUPPORTED: {
-                            uint32_t features = l2cap_extended_features_mask();
+                        uint32_t features = l2cap_extended_features_mask();
                         l2cap_send_classic_signaling_packet(handle, INFORMATION_RESPONSE, sig_id, info_type, 0,
                                                             sizeof(features), &features);
                         }
