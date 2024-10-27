@@ -178,7 +178,7 @@ static uint8_t l2cap_classic_send(l2cap_channel_t * channel, const uint8_t *data
 static void l2cap_cbm_emit_channel_opened(l2cap_channel_t *channel, uint8_t status);
 static void l2cap_cbm_emit_incoming_connection(l2cap_channel_t *channel);
 static void l2cap_credit_based_notify_channel_can_send(l2cap_channel_t *channel);
-static void l2cap_cbm_finialize_channel_close(l2cap_channel_t *channel);
+static void l2cap_cbm_finalize_channel_close(l2cap_channel_t *channel);
 static inline l2cap_service_t * l2cap_cbm_get_service(uint16_t le_psm);
 #endif
 #ifdef L2CAP_USES_CREDIT_BASED_CHANNELS
@@ -2081,7 +2081,7 @@ static bool l2cap_cbm_run_channel(l2cap_channel_t * channel) {
         case L2CAP_STATE_WILL_SEND_DISCONNECT_RESPONSE:
             channel->state = L2CAP_STATE_INVALID;
             l2cap_send_le_signaling_packet( channel->con_handle, DISCONNECTION_RESPONSE, channel->remote_sig_id, channel->local_cid, channel->remote_cid);
-            l2cap_cbm_finialize_channel_close(channel);  // -- remove from list
+            l2cap_cbm_finalize_channel_close(channel);  // -- remove from list
             break;
         default:
             break;
@@ -2245,7 +2245,7 @@ static void l2cap_ecbm_run_channels(void) {
                     l2cap_send_general_signaling_packet(channel->con_handle, signaling_cid, DISCONNECTION_RESPONSE,
                                                         channel->remote_sig_id, channel->local_cid,
                                                         channel->remote_cid);
-                    l2cap_cbm_finialize_channel_close(channel);  // -- remove from list
+                    l2cap_cbm_finalize_channel_close(channel);  // -- remove from list
                     continue;
                 default:
                     continue;
@@ -5308,7 +5308,7 @@ static void l2cap_cbm_emit_channel_opened(l2cap_channel_t *channel, uint8_t stat
 }
 
 // finalize closed channel - l2cap_handle_disconnect_request & DISCONNECTION_RESPONSE
-void l2cap_cbm_finialize_channel_close(l2cap_channel_t * channel){
+static void l2cap_cbm_finalize_channel_close(l2cap_channel_t * channel){
     channel->state = L2CAP_STATE_CLOSED;
     l2cap_emit_simple_event_with_cid(channel, L2CAP_EVENT_CHANNEL_CLOSED);
     // discard channel
