@@ -4444,17 +4444,12 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
                     if (a_channel->remote_cid != source_cid) continue;
                     l2cap_register_signaling_response(handle, LE_CREDIT_BASED_CONNECTION_REQUEST, sig_id, source_cid, L2CAP_CBM_CONNECTION_RESULT_SOURCE_CID_ALREADY_ALLOCATED);
                     return 1;
-                }                    
+                }
 
-                // security: check encryption
-                if (service->required_security_level >= LEVEL_2){
-                    if (gap_encryption_key_size(handle) == 0){
-                        l2cap_register_signaling_response(handle, LE_CREDIT_BASED_CONNECTION_REQUEST, sig_id, source_cid, L2CAP_CBM_CONNECTION_RESULT_INSUFFICIENT_ENCRYPTION);
-                        return 1;
-                    }
-                    // anything less than 16 byte key size is insufficient
-                    if (gap_encryption_key_size(handle) < 16){
-                        l2cap_register_signaling_response(handle, LE_CREDIT_BASED_CONNECTION_REQUEST, sig_id, source_cid, L2CAP_CBM_CONNECTION_RESULT_ENCYRPTION_KEY_SIZE_TOO_SHORT);
+                // security: check authorization
+                if (service->required_security_level >= LEVEL_4){
+                    if (gap_authorization_state(handle) != AUTHORIZATION_GRANTED){
+                        l2cap_register_signaling_response(handle, LE_CREDIT_BASED_CONNECTION_REQUEST, sig_id, source_cid, L2CAP_CBM_CONNECTION_RESULT_INSUFFICIENT_AUTHORIZATION);
                         return 1;
                     }
                 }
@@ -4467,10 +4462,15 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
                     }
                 }
 
-                // security: check authorization
-                if (service->required_security_level >= LEVEL_4){
-                    if (gap_authorization_state(handle) != AUTHORIZATION_GRANTED){
-                        l2cap_register_signaling_response(handle, LE_CREDIT_BASED_CONNECTION_REQUEST, sig_id, source_cid, L2CAP_CBM_CONNECTION_RESULT_INSUFFICIENT_AUTHORIZATION);
+                // security: check encryption
+                if (service->required_security_level >= LEVEL_2){
+                    if (gap_encryption_key_size(handle) == 0){
+                        l2cap_register_signaling_response(handle, LE_CREDIT_BASED_CONNECTION_REQUEST, sig_id, source_cid, L2CAP_CBM_CONNECTION_RESULT_INSUFFICIENT_ENCRYPTION);
+                        return 1;
+                    }
+                    // anything less than 16 byte key size is insufficient
+                    if (gap_encryption_key_size(handle) < 16){
+                        l2cap_register_signaling_response(handle, LE_CREDIT_BASED_CONNECTION_REQUEST, sig_id, source_cid, L2CAP_CBM_CONNECTION_RESULT_ENCYRPTION_KEY_SIZE_TOO_SHORT);
                         return 1;
                     }
                 }
