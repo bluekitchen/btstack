@@ -560,12 +560,10 @@ static uint16_t l2cap_setup_options_ertm_response(l2cap_channel_t * channel, uin
     config_options[pos++] = 2;     // length
     little_endian_store_16(config_options, pos, channel->remote_mtu);
     pos += 2;
-#if 0
     //
     config_options[pos++] = L2CAP_CONFIG_OPTION_TYPE_FRAME_CHECK_SEQUENCE;
     config_options[pos++] = 1;     // length
     config_options[pos++] = channel->fcs_option;
-#endif
     return pos; // 11+4=15
 }
 
