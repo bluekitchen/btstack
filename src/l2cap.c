@@ -422,7 +422,7 @@ static int l2cap_ertm_send_information_frame(l2cap_channel_t * channel, int inde
     log_info("I-Frame: control 0x%04x", control);
     little_endian_store_16(acl_buffer, 8, control);
     (void)memcpy(&acl_buffer[8 + 2],
-                 &channel->tx_packets_data[index * channel->local_mps],
+                 &channel->tx_packets_data[index * channel->remote_mps],
                  tx_state->len);
     // (re-)start retransmission timer on 
     l2cap_ertm_start_retransmission_timer(channel);
@@ -439,7 +439,7 @@ static void l2cap_ertm_store_fragment(l2cap_channel_t * channel, l2cap_segmentat
     tx_state->sar = sar;
     tx_state->retry_count = 0;
 
-    uint8_t * tx_packet = &channel->tx_packets_data[index * channel->local_mps];
+    uint8_t * tx_packet = &channel->tx_packets_data[index * channel->remote_mps];
     log_debug("index %u, local mps %u, remote mps %u, packet tx %p, len %u", index, channel->local_mps, channel->remote_mps, tx_packet, len);
     int pos = 0;
     if (sar == L2CAP_SEGMENTATION_AND_REASSEMBLY_START_OF_L2CAP_SDU){
