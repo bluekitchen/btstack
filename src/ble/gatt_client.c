@@ -2854,14 +2854,6 @@ static uint8_t gatt_client_read_multiple_characteristic_values_with_state(btstac
         return status;
     }
 
-#ifdef ENABLE_GATT_OVER_EATT
-    if (state == P_W2_SEND_READ_MULTIPLE_VARIABLE_REQUEST){
-        if (gatt_client->bearer_type != ATT_BEARER_ENHANCED_LE){
-            return ERROR_CODE_COMMAND_DISALLOWED;
-        }
-    }
-#endif
-
     gatt_client->callback = callback;
     gatt_client->read_multiple_handle_count = num_value_handles;
     gatt_client->read_multiple_handles = value_handles;
