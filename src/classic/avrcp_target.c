@@ -920,7 +920,7 @@ static bool avcrp_operation_id_is_valid(avrcp_operation_id_t operation_id){
     
     if (operation_id < AVRCP_OPERATION_ID_F1) return false;
     if (operation_id < AVRCP_OPERATION_ID_RESERVED_6) return true;
-    
+    if (operation_id < AVRCP_OPERATION_ID_RESERVED_7) return true;
     return false;
 }
 
