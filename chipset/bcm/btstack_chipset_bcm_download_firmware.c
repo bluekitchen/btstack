@@ -63,9 +63,7 @@ unsigned int sleep(unsigned int seconds){
 #include "btstack_debug.h"
 #include "btstack_chipset.h"
 
-static void bcm_send_hci_baudrate(void);
 static void bcm_send_next_init_script_command(void);
-static void bcm_set_local_baudrate(void);
 static void bcm_w4_command_complete(void);
 
 static const btstack_uart_block_t * uart_driver;
@@ -184,6 +182,13 @@ static void bcm_send_hci_reset(void){
 
 // Other
 
+#if 0
+static void bcm_set_local_baudrate(void){
+    bcm_hci_dump_event();
+    uart_driver->set_baudrate(baudrate);
+    uart_driver->set_block_received(&bcm_w4_command_complete);
+    bcm_send_next_init_script_command();
+}
 static void bcm_send_hci_baudrate(void){
     bcm_hci_dump_event();
     chipset->set_baudrate_command(baudrate, &command_buffer[1]);
@@ -192,13 +197,7 @@ static void bcm_send_hci_baudrate(void){
     log_info("bcm: send baud rate command - %u", baudrate);
     bcm_send_prepared_command();
 }
-
-static void bcm_set_local_baudrate(void){
-    bcm_hci_dump_event();
-    uart_driver->set_baudrate(baudrate);
-    uart_driver->set_block_received(&bcm_w4_command_complete);
-    bcm_send_next_init_script_command();
-}
+#endif
 
 static void bcm_w4_command_complete(void){
     bcm_hci_dump_event();

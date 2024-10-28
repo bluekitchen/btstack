@@ -191,7 +191,7 @@ void btstack_chipset_bcm_set_device_name(const char * device_name){
     }
 
     // find in folder
-    tinydir_dir dir = { 0 };
+    tinydir_dir dir = {};
     int res = tinydir_open(&dir, hcd_folder_path);
     if (res < 0){
         log_error("chipset-bcm: could not get directory for %s", hcd_folder_path);
