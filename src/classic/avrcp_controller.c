@@ -618,7 +618,6 @@ static void avrcp_send_cmd_with_avctp_fragmentation(avrcp_connection_t * connect
                     pos += 2;
                     break;
                 case AVRCP_CMD_OPCODE_UNIT_INFO:
-                    break;
                 case AVRCP_CMD_OPCODE_SUBUNIT_INFO:
                     break;
                 default:
