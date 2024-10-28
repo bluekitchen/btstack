@@ -220,6 +220,20 @@ uint8_t avrcp_controller_press_and_hold_volume_down(uint16_t avrcp_cid);
 uint8_t avrcp_controller_mute(uint16_t avrcp_cid);
 uint8_t avrcp_controller_press_and_hold_mute(uint16_t avrcp_cid);
 
+// Basic Group Navigation
+/**
+ * @brief Move to the first song in the next group.
+ * @param avrcp_cid
+ */
+uint8_t avrcp_controller_next_group(uint16_t avrcp_cid);
+
+/**
+ * @brief Move to the first song in the previous group.
+ * @param avrcp_cid
+ */
+uint8_t avrcp_controller_previous_group(uint16_t avrcp_cid);
+
+
 /**
  * @brief Get play status. Returns event of type AVRCP_SUBEVENT_PLAY_STATUS (length, position, play_status).
  * If TG does not support SongLength And SongPosition on TG, then TG shall return 0xFFFFFFFF.

@@ -615,7 +615,9 @@ static void avrcp_send_cmd_with_avctp_fragmentation(avrcp_connection_t * connect
                 case AVRCP_CMD_OPCODE_PASS_THROUGH:
                     packet[pos++] = connection->operation_id;
                     packet[pos++] = (uint8_t)connection->data_len;     // parameter length
-                    pos += 2;
+                    if ((connection->operation_id & 0x7F) != AVRCP_OPERATION_ID_VENDOR_UNIQUE){
+                        pos += 2;
+                    }
                     break;
                 case AVRCP_CMD_OPCODE_UNIT_INFO:
                 case AVRCP_CMD_OPCODE_SUBUNIT_INFO:
@@ -1461,6 +1463,37 @@ uint8_t avrcp_controller_press_and_hold_volume_down(uint16_t avrcp_cid){
 uint8_t avrcp_controller_press_and_hold_mute(uint16_t avrcp_cid){
     return request_continuous_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_MUTE, 0);
 }
+
+static uint8_t avrcp_controller_request_group_pass_through_press_control_cmd(uint16_t avrcp_cid, avrcp_group_operation_id_t opid){
+    log_info("Send group command %d", opid);
+    avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
+    if (!connection){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+
+    if (connection->state != AVCTP_CONNECTION_OPENED){
+        log_error("Connection in wrong state %d, expected %d. avrcp cid 0x%02x", connection->state, AVCTP_CONNECTION_OPENED, avrcp_cid);
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+    connection->state = AVCTP_W2_SEND_PRESS_COMMAND;
+    avrcp_controller_pass_through_command_data_init(connection, AVRCP_OPERATION_ID_VENDOR_UNIQUE);
+    connection->company_id = BT_SIG_COMPANY_ID;
+    connection->data_len = 5;
+    big_endian_store_24(connection->data, 0, BT_SIG_COMPANY_ID);
+    big_endian_store_16(connection->data, 3, opid);
+
+    avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t avrcp_controller_next_group(uint16_t avrcp_cid){
+    return avrcp_controller_request_group_pass_through_press_control_cmd(avrcp_cid, AVRCP_GROUP_OPERATION_ID_GOTO_NEXT);
+}
+
+uint8_t avrcp_controller_previous_group(uint16_t avrcp_cid){
+    return avrcp_controller_request_group_pass_through_press_control_cmd(avrcp_cid, AVRCP_GROUP_OPERATION_ID_GOTO_PREVIOUS);
+}
+
 
 /* stop continuous cmds */
 uint8_t avrcp_controller_release_press_and_hold_cmd(uint16_t avrcp_cid){
