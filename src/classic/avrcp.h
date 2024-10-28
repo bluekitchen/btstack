@@ -251,10 +251,16 @@ typedef enum {
 } avrcp_command_opcode_t;
 
 // See "AVC-Panel Subunit.pdf", Chapter 9.4 "PASS THROUGH control command"
-// Using subset defined in "AVRCP_v1.5.pdf", Chapter 4.6.1 "Support Level in TG"
+// Using subset defined in "AVRCP_v1.6.3.pdf", Chapter 4.6.1 "Support Level in TG"
+
 typedef enum {
-    AVRCP_OPERATION_ID_SELECT = 0x00,
-    AVRCP_OPERATION_ID_UP = 0x01,
+    AVRCP_GROUP_OPERATION_ID_GOTO_NEXT     = 0x00,
+    AVRCP_GROUP_OPERATION_ID_GOTO_PREVIOUS = 0x01
+} avrcp_group_operation_id_t;
+
+typedef enum {
+    AVRCP_OPERATION_ID_SELECT = 0x00, // Next Group
+    AVRCP_OPERATION_ID_UP = 0x01,     // Previous Group
     AVRCP_OPERATION_ID_DOWN = 0x02,
     AVRCP_OPERATION_ID_LEFT = 0x03,
     AVRCP_OPERATION_ID_RIGHT = 0x04,
@@ -321,7 +327,10 @@ typedef enum {
     AVRCP_OPERATION_ID_F3 = 0x73,
     AVRCP_OPERATION_ID_F4 = 0x74,
     AVRCP_OPERATION_ID_F5 = 0x75,
-    AVRCP_OPERATION_ID_RESERVED_6 = 0x76
+    AVRCP_OPERATION_ID_RESERVED_6 = 0x76,
+
+    AVRCP_OPERATION_ID_VENDOR_UNIQUE = 0x7E,
+    AVRCP_OPERATION_ID_RESERVED_7 = 0x7F
 } avrcp_operation_id_t;
 
 typedef enum{
