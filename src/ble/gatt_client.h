@@ -1288,6 +1288,9 @@ void gatt_client_att_packet_handler_fuzz(uint8_t packet_type, uint16_t handle, u
 uint8_t gatt_client_get_client(hci_con_handle_t con_handle, gatt_client_t ** gatt_client);
 #endif
 
+// used for testing, default is ON
+void gatt_client_le_enhanced_enable(bool enable);
+
 #if defined __cplusplus
 }
 #endif

@@ -100,6 +100,7 @@ static void gatt_client_classic_retry(btstack_timer_source_t * ts);
 #endif
 
 #ifdef ENABLE_GATT_OVER_EATT
+static bool gatt_client_eatt_enabled;
 static bool gatt_client_le_enhanced_handle_can_send_query(gatt_client_t * gatt_client);
 static void gatt_client_le_enhanced_retry(btstack_timer_source_t * ts);
 #endif
@@ -125,6 +126,10 @@ void gatt_client_init(void){
 
     // and ATT Client PDUs
     att_dispatch_register_client(gatt_client_att_packet_handler);
+
+#ifdef ENABLE_GATT_OVER_EATT
+    gatt_client_eatt_enabled = true;
+#endif
 }
 
 void gatt_client_set_required_security_level(gap_security_level_t level){
@@ -246,7 +251,7 @@ static uint8_t gatt_client_provide_context_for_request(hci_con_handle_t con_hand
     }
 
 #ifdef ENABLE_GATT_OVER_EATT
-    if (gatt_client->eatt_state == GATT_CLIENT_EATT_READY){
+    if ((gatt_client->eatt_state == GATT_CLIENT_EATT_READY) && gatt_client_eatt_enabled){
         btstack_linked_list_iterator_t it;
         gatt_client_t * eatt_client = NULL;
         // find free eatt client
@@ -3891,6 +3896,11 @@ uint8_t gatt_client_le_enhanced_connect(btstack_packet_handler_t callback, hci_c
 
     return ERROR_CODE_SUCCESS;
 }
+
+void gatt_client_le_enhanced_enable(bool enable){
+    gatt_client_eatt_enabled = enable;
+}
+
 
 #endif
 
