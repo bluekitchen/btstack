@@ -3280,7 +3280,7 @@ static void
 gatt_client_emit_connected(btstack_packet_handler_t callback, uint8_t status, bd_addr_type_t addr_type, bd_addr_t addr,
                            hci_con_handle_t con_handle) {
     uint8_t buffer[20];
-    uint16_t len = hci_event_create_from_template_and_arguments(buffer, sizeof(buffer), &gatt_client_connected, status, addr, con_handle);
+    uint16_t len = hci_event_create_from_template_and_arguments(buffer, sizeof(buffer), &gatt_client_connected, status, addr_type, addr, con_handle);
     (*callback)(HCI_EVENT_PACKET, 0, buffer, len);
 }
 
