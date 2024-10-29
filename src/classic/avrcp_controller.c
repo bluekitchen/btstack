@@ -615,9 +615,6 @@ static void avrcp_send_cmd_with_avctp_fragmentation(avrcp_connection_t * connect
                 case AVRCP_CMD_OPCODE_PASS_THROUGH:
                     packet[pos++] = connection->operation_id;
                     packet[pos++] = (uint8_t)connection->data_len;     // parameter length
-                    if ((connection->operation_id & 0x7F) != AVRCP_OPERATION_ID_VENDOR_UNIQUE){
-                        pos += 2;
-                    }
                     break;
                 case AVRCP_CMD_OPCODE_UNIT_INFO:
                 case AVRCP_CMD_OPCODE_SUBUNIT_INFO:
