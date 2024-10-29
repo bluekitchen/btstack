@@ -263,6 +263,23 @@ uint8_t avrcp_controller_F3(uint16_t avrcp_cid);
 uint8_t avrcp_controller_F4(uint16_t avrcp_cid);
 uint8_t avrcp_controller_F5(uint16_t avrcp_cid);
 
+// Category 4
+uint8_t avrcp_controller_select(uint16_t avrcp_cid);
+uint8_t avrcp_controller_up(uint16_t avrcp_cid);
+uint8_t avrcp_controller_down(uint16_t avrcp_cid);
+uint8_t avrcp_controller_left(uint16_t avrcp_cid);
+uint8_t avrcp_controller_right(uint16_t avrcp_cid);
+uint8_t avrcp_controller_right_up(uint16_t avrcp_cid);
+uint8_t avrcp_controller_right_down(uint16_t avrcp_cid);
+uint8_t avrcp_controller_left_up(uint16_t avrcp_cid);
+uint8_t avrcp_controller_left_down(uint16_t avrcp_cid);
+uint8_t avrcp_controller_root_menu(uint16_t avrcp_cid);
+uint8_t avrcp_controller_setup_menu(uint16_t avrcp_cid);
+uint8_t avrcp_controller_contents_menu(uint16_t avrcp_cid);
+uint8_t avrcp_controller_favorite_menu(uint16_t avrcp_cid);
+uint8_t avrcp_controller_exit(uint16_t avrcp_cid);
+uint8_t avrcp_controller_page_up(uint16_t avrcp_cid);
+uint8_t avrcp_controller_page_down(uint16_t avrcp_cid);
 /**
  * @brief Get play status. Returns event of type AVRCP_SUBEVENT_PLAY_STATUS (length, position, play_status).
  * If TG does not support SongLength And SongPosition on TG, then TG shall return 0xFFFFFFFF.

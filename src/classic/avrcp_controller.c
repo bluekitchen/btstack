@@ -1546,6 +1546,55 @@ uint8_t avrcp_controller_F5(uint16_t avrcp_cid){
     return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_F5, 0);
 }
 
+uint8_t avrcp_controller_select(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_SELECT, 0);
+}
+uint8_t avrcp_controller_up(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_UP, 0);
+}
+uint8_t avrcp_controller_down(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_DOWN, 0);
+}
+uint8_t avrcp_controller_left(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_LEFT, 0);
+}
+uint8_t avrcp_controller_right(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_RIGHT, 0);
+}
+uint8_t avrcp_controller_right_up(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_RIGHT_UP, 0);
+}
+uint8_t avrcp_controller_right_down(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_RIGHT_DOWN, 0);
+}
+uint8_t avrcp_controller_left_up(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_LEFT_UP, 0);
+}
+uint8_t avrcp_controller_left_down(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_LEFT_DOWN, 0);
+}
+uint8_t avrcp_controller_root_menu(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_ROOT_MENU, 0);
+}
+uint8_t avrcp_controller_setup_menu(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_SETUP_MENU, 0);
+}
+uint8_t avrcp_controller_contents_menu(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_CONTENTS_MENU, 0);
+}
+uint8_t avrcp_controller_favorite_menu(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_FAVORITE_MENU, 0);
+}
+uint8_t avrcp_controller_exit(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_EXIT, 0);
+}
+uint8_t avrcp_controller_page_up(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_PAGE_UP, 0);
+}
+uint8_t avrcp_controller_page_down(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_PAGE_DOWN, 0);
+}
+
 static uint8_t avrcp_controller_request_group_pass_through_press_control_cmd(uint16_t avrcp_cid, avrcp_group_operation_id_t opid){
     log_info("Send group command %d", opid);
     avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
