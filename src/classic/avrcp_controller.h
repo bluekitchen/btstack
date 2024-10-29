@@ -233,6 +233,35 @@ uint8_t avrcp_controller_next_group(uint16_t avrcp_cid);
  */
 uint8_t avrcp_controller_previous_group(uint16_t avrcp_cid);
 
+// Category 3
+uint8_t avrcp_controller_0(uint16_t avrcp_cid);
+uint8_t avrcp_controller_1(uint16_t avrcp_cid);
+uint8_t avrcp_controller_2(uint16_t avrcp_cid);
+uint8_t avrcp_controller_3(uint16_t avrcp_cid);
+uint8_t avrcp_controller_4(uint16_t avrcp_cid);
+uint8_t avrcp_controller_5(uint16_t avrcp_cid);
+uint8_t avrcp_controller_6(uint16_t avrcp_cid);
+uint8_t avrcp_controller_7(uint16_t avrcp_cid);
+uint8_t avrcp_controller_8(uint16_t avrcp_cid);
+uint8_t avrcp_controller_9(uint16_t avrcp_cid);
+uint8_t avrcp_controller_dot(uint16_t avrcp_cid);
+uint8_t avrcp_controller_enter(uint16_t avrcp_cid);
+uint8_t avrcp_controller_clear(uint16_t avrcp_cid);
+uint8_t avrcp_controller_channel_up(uint16_t avrcp_cid);
+uint8_t avrcp_controller_channel_down(uint16_t avrcp_cid);
+uint8_t avrcp_controller_previous_channel(uint16_t avrcp_cid);
+uint8_t avrcp_controller_sound_select(uint16_t avrcp_cid);
+uint8_t avrcp_controller_input_select(uint16_t avrcp_cid);
+uint8_t avrcp_controller_display_information(uint16_t avrcp_cid);
+uint8_t avrcp_controller_help(uint16_t avrcp_cid);
+uint8_t avrcp_controller_power(uint16_t avrcp_cid);
+uint8_t avrcp_controller_angle(uint16_t avrcp_cid);
+uint8_t avrcp_controller_subpicture(uint16_t avrcp_cid);
+uint8_t avrcp_controller_F1(uint16_t avrcp_cid);
+uint8_t avrcp_controller_F2(uint16_t avrcp_cid);
+uint8_t avrcp_controller_F3(uint16_t avrcp_cid);
+uint8_t avrcp_controller_F4(uint16_t avrcp_cid);
+uint8_t avrcp_controller_F5(uint16_t avrcp_cid);
 
 /**
  * @brief Get play status. Returns event of type AVRCP_SUBEVENT_PLAY_STATUS (length, position, play_status).

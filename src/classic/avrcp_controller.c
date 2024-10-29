@@ -1461,6 +1461,91 @@ uint8_t avrcp_controller_press_and_hold_mute(uint16_t avrcp_cid){
     return request_continuous_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_MUTE, 0);
 }
 
+uint8_t avrcp_controller_0(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_0, 0);
+}
+uint8_t avrcp_controller_1(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_1, 0);
+}
+uint8_t avrcp_controller_2(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_2, 0);
+}
+uint8_t avrcp_controller_3(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_3, 0);
+}
+uint8_t avrcp_controller_4(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_4, 0);
+}
+uint8_t avrcp_controller_5(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_5, 0);
+}
+uint8_t avrcp_controller_6(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_6, 0);
+}
+uint8_t avrcp_controller_7(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_7, 0);
+}
+uint8_t avrcp_controller_8(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_8, 0);
+}
+uint8_t avrcp_controller_9(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_9, 0);
+}
+uint8_t avrcp_controller_dot(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_DOT, 0);
+}
+uint8_t avrcp_controller_enter(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_ENTER, 0);
+}
+uint8_t avrcp_controller_clear(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_CLEAR, 0);
+}
+uint8_t avrcp_controller_channel_up(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_CHANNEL_UP, 0);
+}
+uint8_t avrcp_controller_channel_down(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_CHANNEL_DOWN, 0);
+}
+uint8_t avrcp_controller_previous_channel(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_PREVIOUS_CHANNEL, 0);
+}
+uint8_t avrcp_controller_sound_select(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_SOUND_SELECT, 0);
+}
+uint8_t avrcp_controller_input_select(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_INPUT_SELECT, 0);
+}
+uint8_t avrcp_controller_display_information(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_DISPLAY_INFORMATION, 0);
+}
+uint8_t avrcp_controller_help(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_HELP, 0);
+}
+uint8_t avrcp_controller_power(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_POWER, 0);
+}
+uint8_t avrcp_controller_angle(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_ANGLE, 0);
+}
+uint8_t avrcp_controller_subpicture(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_SUBPICTURE, 0);
+}
+uint8_t avrcp_controller_F1(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_F1, 0);
+}
+uint8_t avrcp_controller_F2(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_F2, 0);
+}
+uint8_t avrcp_controller_F3(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_F3, 0);
+}
+uint8_t avrcp_controller_F4(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_F4, 0);
+}
+uint8_t avrcp_controller_F5(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_F5, 0);
+}
+
 static uint8_t avrcp_controller_request_group_pass_through_press_control_cmd(uint16_t avrcp_cid, avrcp_group_operation_id_t opid){
     log_info("Send group command %d", opid);
     avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
