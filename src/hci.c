@@ -7337,9 +7337,9 @@ static bool hci_run_general_pending_commands(void){
             // set authentication requirements:
             // - MITM = ssp_authentication_requirement (USER) | requested_security_level (dynamic)
             // - BONDING MODE: dedicated if requested, bondable otherwise. Drop bondable if not set for remote
-            connection->io_cap_response_auth_req = hci_stack->ssp_authentication_requirement & 1;
+            connection->io_cap_request_auth_req = hci_stack->ssp_authentication_requirement & 1;
             if (gap_mitm_protection_required_for_security_level(connection->requested_security_level)){
-                connection->io_cap_response_auth_req |= 1;
+                connection->io_cap_request_auth_req |= 1;
             }
             bool bonding = hci_stack->bondable;
             if (connection->authentication_flags & AUTH_FLAG_RECV_IO_CAPABILITIES_RESPONSE){
@@ -7352,9 +7352,9 @@ static bool hci_run_general_pending_commands(void){
             }
             if (bonding){
                 if (connection->bonding_flags & BONDING_DEDICATED){
-                    connection->io_cap_response_auth_req |= SSP_IO_AUTHREQ_MITM_PROTECTION_NOT_REQUIRED_DEDICATED_BONDING;
+                    connection->io_cap_request_auth_req |= SSP_IO_AUTHREQ_MITM_PROTECTION_NOT_REQUIRED_DEDICATED_BONDING;
                 } else {
-                    connection->io_cap_response_auth_req |= SSP_IO_AUTHREQ_MITM_PROTECTION_NOT_REQUIRED_GENERAL_BONDING;
+                    connection->io_cap_request_auth_req |= SSP_IO_AUTHREQ_MITM_PROTECTION_NOT_REQUIRED_GENERAL_BONDING;
                 }
             }
             uint8_t have_oob_data = 0;
@@ -7366,7 +7366,7 @@ static bool hci_run_general_pending_commands(void){
                 have_oob_data |= 2;
             }
 #endif
-            hci_send_cmd(&hci_io_capability_request_reply, &connection->address, hci_stack->ssp_io_capability, have_oob_data, connection->io_cap_response_auth_req);
+            hci_send_cmd(&hci_io_capability_request_reply, &connection->address, hci_stack->ssp_io_capability, have_oob_data, connection->io_cap_request_auth_req);
             return true;
         }
 
