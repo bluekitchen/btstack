@@ -1634,6 +1634,7 @@ static inline void sm_pdu_received_in_wrong_state(sm_connection_t * sm_conn){
 static void sm_sc_prepare_dhkey_check(sm_connection_t * sm_conn);
 static bool sm_passkey_used(stk_generation_method_t method);
 static bool sm_just_works_or_numeric_comparison(stk_generation_method_t method);
+static void sm_sc_generate_nx_for_send_random(sm_connection_t * sm_conn);
 
 static void sm_sc_start_calculating_local_confirm(sm_connection_t * sm_conn){
     if (setup->sm_stk_generation_method == OOB){
@@ -1647,9 +1648,7 @@ static void sm_sc_state_after_receiving_random(sm_connection_t * sm_conn){
     if (IS_RESPONDER(sm_conn->sm_role)){
         // Responder
         if (setup->sm_stk_generation_method == OOB){
-            // generate Nb
-            log_info("Generate Nb");
-            btstack_crypto_random_generate(&sm_crypto_random_request, setup->sm_local_nonce, 16, &sm_handle_random_result_sc_next_send_pairing_random, (void *)(uintptr_t) sm_conn->sm_handle);
+            sm_sc_generate_nx_for_send_random(sm_conn);
         } else {
             sm_conn->sm_engine_state = SM_SC_SEND_PAIRING_RANDOM;
         }
@@ -1709,7 +1708,12 @@ static void sm_sc_cmac_done(uint8_t * hash){
                 sm_pairing_error(sm_conn, SM_REASON_CONFIRM_VALUE_FAILED);
                 break;
             }
-            sm_sc_state_after_receiving_random(sm_conn);
+            // for OOB, C is verified before generating and sending random Nonce
+            if (setup->sm_stk_generation_method == OOB){
+                sm_sc_generate_nx_for_send_random(sm_conn);
+            } else {
+                sm_sc_state_after_receiving_random(sm_conn);
+            }
             break;
         case SM_SC_W4_CALCULATE_G2: {
             uint32_t vab = big_endian_read_32(hash, 12) % 1000000;
@@ -2044,6 +2048,12 @@ static void sm_sc_calculate_f6_to_verify_dhkey_check(sm_connection_t * sm_conn){
         f6_setup(setup->sm_peer_nonce, setup->sm_local_nonce, setup->sm_ra, iocap_b, bd_addr_slave, bd_addr_master);
         f6_engine(sm_conn, setup->sm_mackey);
     }
+}
+
+static void sm_sc_generate_nx_for_send_random(sm_connection_t * sm_conn){
+    // generate Nx
+    log_info("Generate N%c", IS_RESPONDER(sm_conn->sm_role) ? 'b' : 'a');
+    btstack_crypto_random_generate(&sm_crypto_random_request, setup->sm_local_nonce, 16, &sm_handle_random_result_sc_next_send_pairing_random, (void*)(uintptr_t) sm_conn->sm_handle);
 }
 
 #ifdef ENABLE_CROSS_TRANSPORT_KEY_DERIVATION
@@ -4614,9 +4624,13 @@ static void sm_pdu_handler(sm_connection_t *sm_conn, uint8_t sm_pdu_code, const 
                         sm_sc_start_calculating_local_confirm(sm_conn);
                         break;
                     case OOB:
-                        // generate Nx
-                        log_info("Generate Na");
-                        btstack_crypto_random_generate(&sm_crypto_random_request, setup->sm_local_nonce, 16, &sm_handle_random_result_sc_next_send_pairing_random, (void*)(uintptr_t) sm_conn->sm_handle);
+                        if (setup->sm_have_oob_data){
+                            // if we have received rb & cb, verify Cb = f4(PKb, PKb, rb, 0)
+                            sm_conn->sm_engine_state = SM_SC_W2_CMAC_FOR_CHECK_CONFIRMATION;
+                        } else {
+                            // otherwise, generate our nonce
+                            sm_sc_generate_nx_for_send_random(sm_conn);
+                        }
                         break;
                     default:
                         btstack_assert(false);
@@ -4684,16 +4698,16 @@ static void sm_pdu_handler(sm_connection_t *sm_conn, uint8_t sm_pdu_code, const 
 
                 // setup local random, set to zero if remote did not receive our data
                 log_info("Received nonce, setup local random ra/rb for dhkey check");
-                if (IS_RESPONDER(sm_conn->sm_role)){
-                    if (sm_pairing_packet_get_oob_data_flag(setup->sm_m_preq) == 0u){
+                if (IS_RESPONDER(sm_conn->sm_role)) {
+                    if (sm_pairing_packet_get_oob_data_flag(setup->sm_m_preq) == 0u) {
                         log_info("Reset rb as A does not have OOB data");
                         memset(setup->sm_rb, 0, 16);
                     } else {
-                        (void)memcpy(setup->sm_rb, sm_sc_oob_random, 16);
+                        (void) memcpy(setup->sm_rb, sm_sc_oob_random, 16);
                         log_info("Use stored rb");
                         log_info_hexdump(setup->sm_rb, 16);
                     }
-                }  else {
+                } else {
                     if (sm_pairing_packet_get_oob_data_flag(setup->sm_s_pres) == 0u){
                         log_info("Reset ra as B does not have OOB data");
                         memset(setup->sm_ra, 0, 16);
@@ -4704,11 +4718,20 @@ static void sm_pdu_handler(sm_connection_t *sm_conn, uint8_t sm_pdu_code, const 
                     }
                 }
 
-                // validate confirm value if Cb = f4(PKb, Pkb, rb, 0) for OOB if data received
-                if (setup->sm_have_oob_data){
-                     sm_conn->sm_engine_state = SM_SC_W2_CMAC_FOR_CHECK_CONFIRMATION;
-                     break;
+                if (IS_RESPONDER(sm_conn->sm_role)){
+                    if (setup->sm_have_oob_data){
+                        // if we have received ra & ca, verify Ca = f4(PKa, PKa, ra, 0)
+                        sm_conn->sm_engine_state = SM_SC_W2_CMAC_FOR_CHECK_CONFIRMATION;
+                    } else {
+                        // otherwise, generate our nonce
+                        sm_sc_generate_nx_for_send_random(sm_conn);
+                    }
+                } else {
+                    // Confirm value already validated if received before,
+                    // move on to DHKey check
+                    sm_sc_prepare_dhkey_check(sm_conn);
                 }
+                break;
             }
 
             // TODO: we only get here for Responder role with JW/NC
