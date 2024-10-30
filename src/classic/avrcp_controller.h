@@ -341,6 +341,15 @@ uint8_t avrcp_controller_set_absolute_volume(uint16_t avrcp_cid, uint8_t volume)
  */
 uint8_t avrcp_controller_skip(uint16_t avrcp_cid);
 
+uint8_t avrcp_controller_query_player_application_setting_attributes(uint16_t avrcp_cid);
+uint8_t avrcp_controller_query_player_application_setting_values(uint16_t avrcp_cid, avrcp_player_application_setting_attribute_id_t attribute_id);
+
+uint8_t avrcp_controller_query_player_application_setting_attribute_text(uint16_t avrcp_cid);
+uint8_t avrcp_controller_query_player_application_setting_value_text(uint16_t avrcp_cid);
+
+uint8_t avrcp_controller_inform_displayable_characterset(uint16_t avrcp_cid, uint8_t character_set_num, uint16_t * character_set);
+uint8_t avrcp_controller_inform_battery_status(uint16_t avrcp_cid, avrcp_battery_status_t battery_status);
+
 /**
  * @brief Query repeat and shuffle mode. Response via AVRCP_SUBEVENT_SHUFFLE_AND_REPEAT_MODE.
  * @param avrcp_cid
