@@ -21,6 +21,7 @@ COMMON += \
 	hci.c			            \
 	ad_parser.c                 \
 	hci_cmd.c		            \
+	hci_event_builder.c         \
 	hci_dump.c		            \
 	hci_dump_posix_fs.c         \
 	l2cap.c			            \
