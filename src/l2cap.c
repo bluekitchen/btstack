@@ -2155,7 +2155,7 @@ static void l2cap_ecbm_emit_channel_opened(l2cap_channel_t *channel, uint8_t sta
     little_endian_store_16(event, 17, channel->remote_cid);
     little_endian_store_16(event, 19, channel->local_mtu);
     little_endian_store_16(event, 21, channel->remote_mtu);
-    hci_dump_packet(HCI_EVENT_PACKET, 1, event, sizeof(event));
+    hci_dump_btstack_event(event, sizeof(event));
     l2cap_dispatch_to_channel(channel, HCI_EVENT_PACKET, event, sizeof(event));
 }
 
@@ -3892,7 +3892,7 @@ l2cap_ecbm_emit_incoming_connection(l2cap_channel_t *channel, uint8_t num_channe
     little_endian_store_16(event, 11, channel->psm);
     event[13] = num_channels;
     little_endian_store_16(event, 14, channel->local_cid);
-    hci_dump_packet(HCI_EVENT_PACKET, 1, event, sizeof(event));
+    hci_dump_btstack_event(event, sizeof(event));
     (*channel->packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
