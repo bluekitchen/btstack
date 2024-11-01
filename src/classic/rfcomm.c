@@ -2417,39 +2417,38 @@ uint8_t rfcomm_query_port_configuration(uint16_t rfcomm_cid){
 
 
 static uint8_t rfcomm_channel_create_internal(btstack_packet_handler_t packet_handler, bd_addr_t addr, uint8_t server_channel, uint8_t incoming_flow_control, uint8_t initial_credits, uint16_t * out_rfcomm_cid){
-    log_info("create addr %s channel #%u init credits %u",  bd_addr_to_str(addr), server_channel, initial_credits);
+    log_info("create for addr %s channel #%u init credits %u",  bd_addr_to_str(addr), server_channel, initial_credits);
     
-    // create new multiplexer if necessary
+    // create new multiplexer if necessary (initial state is closed)
     uint8_t status = 0;
-    uint8_t dlci = 0;
-    int new_multiplexer = 0;
     rfcomm_channel_t * channel = NULL;
     rfcomm_multiplexer_t * multiplexer = rfcomm_multiplexer_for_addr(addr);
-    if (!multiplexer) {
+    if (multiplexer == NULL) {
         multiplexer = rfcomm_multiplexer_create_for_addr(addr);
-        if (!multiplexer) return BTSTACK_MEMORY_ALLOC_FAILED;
-
+        if (multiplexer == NULL) {
+            return BTSTACK_MEMORY_ALLOC_FAILED;
+        }
         multiplexer->outgoing = 1;
-        multiplexer->state = RFCOMM_MULTIPLEXER_W4_CONNECT;
-        new_multiplexer = 1;
     }
     
-    // check if channel for this remote service already exists
-    dlci = (server_channel << 1) | (multiplexer->outgoing ^ 1);
+    // abort if channel for this remote service already exists
+    uint8_t dlci = (server_channel << 1) | (multiplexer->outgoing ^ 1);
     channel = rfcomm_channel_for_multiplexer_and_dlci(multiplexer, dlci);
-    if (channel){
-        if (new_multiplexer) btstack_memory_rfcomm_multiplexer_free(multiplexer);
+    if (channel != NULL){
         return RFCOMM_CHANNEL_ALREADY_REGISTERED;
     }
 
     // prepare channel
     channel = rfcomm_channel_create(multiplexer, NULL, server_channel);
-    if (!channel){
-        if (new_multiplexer) btstack_memory_rfcomm_multiplexer_free(multiplexer);
+    if (channel == NULL){
+        if (multiplexer->state == RFCOMM_MULTIPLEXER_CLOSED) {
+            // free newly created multiplexer
+            btstack_memory_rfcomm_multiplexer_free(multiplexer);
+        }
         return BTSTACK_MEMORY_ALLOC_FAILED;
     }
 
-    // rfcomm_cid is already assigned by rfcomm_channel_create
+    // rfcomm_cid was assigned by rfcomm_channel_create
     channel->incoming_flow_control = incoming_flow_control;
     channel->new_credits_incoming  = initial_credits;
     channel->packet_handler = packet_handler;
@@ -2459,42 +2458,61 @@ static uint8_t rfcomm_channel_create_internal(btstack_packet_handler_t packet_ha
         *out_rfcomm_cid = channel->rfcomm_cid;
     }
 
-    // start multiplexer setup
-    if (multiplexer->state != RFCOMM_MULTIPLEXER_OPEN) {
-        channel->state = RFCOMM_CHANNEL_W4_MULTIPLEXER;
-        uint16_t l2cap_cid = 0;
+    // check multiplexer
+    log_info("multiplexer state %u", multiplexer->state);
+    switch (multiplexer->state){
+        case RFCOMM_MULTIPLEXER_CLOSED:
+            // multiplexer just created -> start new multiplexer
+            channel->state = RFCOMM_CHANNEL_W4_MULTIPLEXER;
+            multiplexer->state = RFCOMM_MULTIPLEXER_W4_CONNECT;
 #ifdef RFCOMM_USE_ERTM
-        // request 
-        rfcomm_ertm_request_t request;
-        memset(&request, 0, sizeof(rfcomm_ertm_request_t));
-        (void)memcpy(request.addr, addr, 6);
-        request.ertm_id = rfcomm_next_ertm_id();
-        if (rfcomm_ertm_request_callback){
-            (*rfcomm_ertm_request_callback)(&request);
-        }
-        if (request.ertm_config && request.ertm_buffer && request.ertm_buffer_size){
-            multiplexer->ertm_id = request.ertm_id;
-            status = l2cap_ertm_create_channel(rfcomm_packet_handler, addr, BLUETOOTH_PROTOCOL_RFCOMM,
-                        request.ertm_config, request.ertm_buffer, request.ertm_buffer_size, &l2cap_cid);
-        }
-        else
+            // request
+            rfcomm_ertm_request_t request;
+            memset(&request, 0, sizeof(rfcomm_ertm_request_t));
+            (void)memcpy(request.addr, addr, 6);
+            request.ertm_id = rfcomm_next_ertm_id();
+            if (rfcomm_ertm_request_callback){
+                (*rfcomm_ertm_request_callback)(&request);
+            }
+            if (request.ertm_config && request.ertm_buffer && request.ertm_buffer_size){
+                multiplexer->ertm_id = request.ertm_id;
+                status = l2cap_ertm_create_channel(rfcomm_packet_handler, addr, BLUETOOTH_PROTOCOL_RFCOMM,
+                        request.ertm_config, request.ertm_buffer, request.ertm_buffer_size, &multiplexer->l2cap_cid);
+            }
+            else
 #endif
-        {
-            status = l2cap_create_channel(rfcomm_packet_handler, addr, BLUETOOTH_PROTOCOL_RFCOMM, l2cap_max_mtu(), &l2cap_cid);
-        }
-        if (status) {
-            if (new_multiplexer) btstack_memory_rfcomm_multiplexer_free(multiplexer);
-            btstack_memory_rfcomm_channel_free(channel);
-            return status;
-        }
-        multiplexer->l2cap_cid = l2cap_cid;
-        return ERROR_CODE_SUCCESS;
+            {
+                status = l2cap_create_channel(rfcomm_packet_handler, addr, BLUETOOTH_PROTOCOL_RFCOMM, l2cap_max_mtu(), &multiplexer->l2cap_cid);
+            }
+            if (status) {
+                btstack_memory_rfcomm_multiplexer_free(multiplexer);
+                btstack_memory_rfcomm_channel_free(channel);
+                return status;
+            }
+            break;
+        case RFCOMM_MULTIPLEXER_W4_CONNECT:
+        case RFCOMM_MULTIPLEXER_SEND_SABM_0:
+        case RFCOMM_MULTIPLEXER_W4_UA_0:
+        case RFCOMM_MULTIPLEXER_W4_SABM_0:
+        case RFCOMM_MULTIPLEXER_SEND_UA_0:
+            // multiplexer setup has been triggered before
+            channel->state = RFCOMM_CHANNEL_W4_MULTIPLEXER;
+            break;
+        case RFCOMM_MULTIPLEXER_SEND_UA_0_AND_DISC:
+            // was about to shut multiplexer down, but it's required again. set back to open and start connecting
+            multiplexer->state = RFCOMM_MULTIPLEXER_OPEN;
+
+            /* fall through */
+
+        case RFCOMM_MULTIPLEXER_OPEN:
+            // multiplexer up and running -> start connecting
+            channel->state = RFCOMM_CHANNEL_SEND_UIH_PN;
+            l2cap_request_can_send_now_event(multiplexer->l2cap_cid);
+            break;
+        default:
+            btstack_unreachable();
+            break;
     }
-    
-    channel->state = RFCOMM_CHANNEL_SEND_UIH_PN;
-    
-    // start connecting, if multiplexer is already up and running
-    l2cap_request_can_send_now_event(multiplexer->l2cap_cid);
     return ERROR_CODE_SUCCESS;
 }
 
