@@ -432,10 +432,10 @@ static void pbap_client_parser_callback_get_operation(void * user_data, uint8_t 
             switch(client->state){
                 case PBAP_CLIENT_W4_PHONEBOOK:
                 case PBAP_CLIENT_W4_GET_CARD_ENTRY_COMPLETE:
-                    client->client_handler(PBAP_DATA_PACKET, client->goep_cid, (uint8_t *) data_buffer, data_len);
                     if (data_offset + data_len == total_len){
                         client->flow_wait_for_user = true;
                     }
+                    client->client_handler(PBAP_DATA_PACKET, client->goep_cid, (uint8_t *) data_buffer, data_len);
                     break;
                 case PBAP_CLIENT_W4_GET_CARD_LIST_COMPLETE:
                     pbap_client_process_vcard_list_body(client, data_buffer, data_len);
@@ -588,9 +588,8 @@ static void pbap_client_add_application_parameters(const pbap_client_t * client,
 }
 
 static void pbap_client_prepare_srm_header(pbap_client_t * client){
-    if (client->flow_control_enabled == false){
-        obex_srm_client_prepare_header(&client->obex_srm, client->goep_cid);
-    }
+    obex_srm_client_set_waiting(&client->obex_srm, client->flow_control_enabled);
+    obex_srm_client_prepare_header(&client->obex_srm, client->goep_cid);
 }
 
 static void pbap_client_prepare_get_operation(pbap_client_t * client){
@@ -723,11 +722,13 @@ static void pbap_handle_can_send_now(pbap_client_t *pbap_client) {
                 pos += pbap_client_application_params_add_list_start_offset (pbap_client, &application_parameters[pos], pbap_client->list_start_offset);
                 pos += pbap_client_application_params_add_vcard_selector(pbap_client, &application_parameters[pos]);
                 pbap_client_add_application_parameters(pbap_client, application_parameters, pos);
+            } else {
+                pbap_client_prepare_srm_header(pbap_client);
             }
             // state
             pbap_client->state = PBAP_CLIENT_W4_PHONEBOOK;
             pbap_client->flow_next_triggered = 0;
-            pbap_client->flow_wait_for_user = 0;
+            pbap_client->flow_wait_for_user = false;
             // prepare response
             pbap_client_prepare_get_operation(pbap_client);
             // send packet
@@ -762,6 +763,8 @@ static void pbap_handle_can_send_now(pbap_client_t *pbap_client) {
                     pos += pbap_client_application_params_add_list_start_offset (pbap_client, &application_parameters[pos], pbap_client->list_start_offset);
                 }
                 pbap_client_add_application_parameters(pbap_client, application_parameters, pos);
+            } else {
+                pbap_client_prepare_srm_header(pbap_client);
             }
             // state
             pbap_client->state = PBAP_CLIENT_W4_GET_CARD_LIST_COMPLETE;
@@ -783,6 +786,8 @@ static void pbap_handle_can_send_now(pbap_client_t *pbap_client) {
                 pos = 0;
                 pos += pbap_client_application_params_add_property_selector(pbap_client, &application_parameters[pos]);
                 pbap_client_add_application_parameters(pbap_client, application_parameters, pos);
+            } else {
+                pbap_client_prepare_srm_header(pbap_client);
             }
             // state
             pbap_client->state = PBAP_CLIENT_W4_GET_CARD_ENTRY_COMPLETE;
@@ -1287,7 +1292,7 @@ uint8_t pbap_next_packet(uint16_t pbap_cid){
     if (pbap_client == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    if (!pbap_client->flow_control_enabled){
+    if (pbap_client->flow_wait_for_user == false){
         return ERROR_CODE_SUCCESS;
     }
     switch (pbap_client->state){
@@ -1308,11 +1313,14 @@ uint8_t pbap_set_flow_control_mode(uint16_t pbap_cid, int enable){
     if (pbap_client == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    if (pbap_client->state != PBAP_CLIENT_CONNECTED){
-        return BTSTACK_BUSY;
+    switch (pbap_client->state){
+        case PBAP_CLIENT_CONNECTED:
+        case PBAP_CLIENT_W4_PHONEBOOK:
+            pbap_client->flow_control_enabled = enable;
+            return ERROR_CODE_SUCCESS;
+        default:
+            return BTSTACK_BUSY;
     }
-    pbap_client->flow_control_enabled = enable;
-    return ERROR_CODE_SUCCESS;
 }
 
 uint8_t pbap_set_vcard_selector(uint16_t pbap_cid, uint32_t vcard_selector){
