@@ -59,6 +59,7 @@
 #include "classic/goep_client.h"
 #include "classic/pbap.h"
 #include "classic/pbap_client.h"
+#include "sdp_util.h"
 
 // 796135f0-f0c5-11d8-0966- 0800200c9a66
 static const uint8_t pbap_uuid[] = { 0x79, 0x61, 0x35, 0xf0, 0xf0, 0xc5, 0x11, 0xd8, 0x09, 0x66, 0x08, 0x00, 0x20, 0x0c, 0x9a, 0x66};
@@ -1417,4 +1418,38 @@ uint8_t pbap_set_search_value(uint16_t pbap_cid, const char * search_value){
     }
     pbap_client->search_value = search_value;
     return ERROR_CODE_SUCCESS;
+}
+
+void pbap_client_create_sdp_record(uint8_t *service, uint32_t service_record_handle, const char *service_name) {
+    uint8_t* attribute;
+    de_create_sequence(service);
+
+    // 0x0000 "Service Record Handle"
+    de_add_number(service, DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_SERVICE_RECORD_HANDLE);
+    de_add_number(service, DE_UINT, DE_SIZE_32, service_record_handle);
+
+    // 0x0001 "Service Class ID List"
+    de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_SERVICE_CLASS_ID_LIST);
+    attribute = de_push_sequence(service);
+    {
+        de_add_number(attribute, DE_UUID, DE_SIZE_16, BLUETOOTH_SERVICE_CLASS_PHONEBOOK_ACCESS_PCE);
+    }
+    de_pop_sequence(service, attribute);
+
+    // 0x0009 "Bluetooth Profile Descriptor List"
+    de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_BLUETOOTH_PROFILE_DESCRIPTOR_LIST);
+    attribute = de_push_sequence(service);
+    {
+        uint8_t *pbapServerProfile = de_push_sequence(attribute);
+        {
+            de_add_number(pbapServerProfile,  DE_UUID, DE_SIZE_16, BLUETOOTH_SERVICE_CLASS_PHONEBOOK_ACCESS);
+            de_add_number(pbapServerProfile,  DE_UINT, DE_SIZE_16, 0x0102); // Verision 1.2
+        }
+        de_pop_sequence(attribute, pbapServerProfile);
+    }
+    de_pop_sequence(service, attribute);
+
+    // 0x0100 "Service Name"
+    de_add_number(service,  DE_UINT, DE_SIZE_16, 0x0100);
+    de_add_data(service,  DE_STRING, (uint16_t) strlen(service_name), (uint8_t *) service_name);
 }

@@ -234,6 +234,14 @@ uint8_t pbap_client_connect(pbap_client_t * client, l2cap_ertm_config_t *l2cap_e
 uint8_t pbap_connect(btstack_packet_handler_t handler, bd_addr_t addr, uint16_t * out_cid);
 
 /**
+ * Create SDP Record for Phonebook Access Client
+ * @param service
+ * @param service_record_handle
+ * @param service_name
+ */
+void pbap_client_create_sdp_record(uint8_t *service, uint32_t service_record_handle, const char *service_name);
+
+/**
  * @brief Provide password for OBEX Authentication after receiving PBAP_SUBEVENT_AUTHENTICATION_REQUEST.
  * The status of PBAP connection establishment is reported via PBAP_SUBEVENT_CONNECTION_OPENED event, 
  * i.e. on success status field is set to ERROR_CODE_SUCCESS.
