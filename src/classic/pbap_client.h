@@ -52,6 +52,7 @@ extern "C" {
 #include "btstack_config.h"
 #include "yxml.h"
 #include "classic/obex_srm_client.h"
+#include "classic/obex_parser.h"
 
 // max len of phone number used for lookup in pbap_lookup_by_number
 #define PBAP_MAX_PHONE_NUMBER_LEN 32
