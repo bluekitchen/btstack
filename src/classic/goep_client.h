@@ -270,6 +270,12 @@ uint16_t goep_client_request_get_max_body_size(uint16_t goep_cid);
 void goep_client_header_add_srm_enable(uint16_t goep_cid);
 
 /**
+ * @brief Add SRMP Waiting
+ * @param goep_cid
+ */
+void goep_client_header_add_srmp_waiting(uint16_t goep_cid);
+
+/**
  * @brief Add header with single byte value (8 bit)
  * @param goep_cid
  * @param header_type

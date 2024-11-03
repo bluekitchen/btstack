@@ -746,6 +746,16 @@ void goep_client_header_add_srm_enable(uint16_t goep_cid){
     obex_message_builder_header_add_srm_enable(buffer, buffer_len);
 }
 
+void goep_client_header_add_srmp_waiting(uint16_t goep_cid){
+    goep_client_t * goep_client = goep_client_for_cid(goep_cid);
+    if (goep_client == NULL){
+        return;
+    }
+    uint8_t * buffer = goep_client_get_outgoing_buffer(goep_client);
+    uint16_t buffer_len = goep_client_get_outgoing_buffer_len(goep_client);
+    obex_message_builder_header_add_srmp_wait(buffer, buffer_len);
+}
+
 void goep_client_header_add_target(uint16_t goep_cid, const uint8_t * target, uint16_t length){
     goep_client_t * goep_client = goep_client_for_cid(goep_cid);
     if (goep_client == NULL){
