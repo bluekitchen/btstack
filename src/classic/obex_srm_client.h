@@ -55,6 +55,8 @@ typedef enum {
 typedef struct {
     obex_srm_client_state_t srm_state;
 
+    bool srmp_waiting;
+
     uint8_t srm_value;
     uint8_t srmp_value;
 } obex_srm_client_t;
@@ -65,6 +67,14 @@ typedef struct {
  * @param obex_srm
  */
 void obex_srm_client_init(obex_srm_client_t * obex_srm);
+
+/**
+ * Control SRMP stata
+ * While waiting, SRMP header is added, effectively disabling SRM
+ * @param obex_srm
+ * @param waiting
+ */
+void obex_srm_client_set_waiting(obex_srm_client_t * obex_srm, bool waiting);
 
 /**
  * Reset SRM/SRMP fields

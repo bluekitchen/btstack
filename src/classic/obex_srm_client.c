@@ -35,7 +35,7 @@
  *
  */
 
-#define BTSTACK_FILE__ "opp_srm_client.c"
+#define BTSTACK_FILE__ "obex_srm_client.c"
 
 #include "btstack_debug.h"
 
@@ -45,7 +45,13 @@
 
 void obex_srm_client_init(obex_srm_client_t * obex_srm){
     obex_srm->srm_state = OBEX_SRM_CLIENT_STATE_DISABLED;
+    obex_srm->srmp_waiting = false;
     obex_srm_client_reset_fields(obex_srm);
+}
+
+void obex_srm_client_set_waiting(obex_srm_client_t * obex_srm, bool waiting){
+    log_info("Set SRMP Waiting: %u", (int) waiting);
+    obex_srm->srmp_waiting = waiting;
 }
 
 void obex_srm_client_reset_fields(obex_srm_client_t * obex_srm){
@@ -76,7 +82,7 @@ void obex_srm_client_handle_headers(obex_srm_client_t *obex_srm) {
         case OBEX_SRM_CLIENT_STATE_ENABLED_BUT_WAITING:
             switch (obex_srm->srmp_value){
                 case OBEX_SRMP_WAIT:
-                    obex_srm->srm_state =OBEX_SRM_CLIENT_STATE_ENABLED_BUT_WAITING;
+                    obex_srm->srm_state = OBEX_SRM_CLIENT_STATE_ENABLED_BUT_WAITING;
                     break;
                 default:
                     obex_srm->srm_state = OBEX_SRM_CLIENT_STATE_ENABLED;
@@ -86,16 +92,25 @@ void obex_srm_client_handle_headers(obex_srm_client_t *obex_srm) {
         default:
             break;
     }
-    log_info("SRM state %u", obex_srm->srm_state);
+    log_info("Handle SRM %u, SRMP %u -> new SRM state %u", obex_srm->srm_value, obex_srm->srmp_value,obex_srm->srm_state);
 }
 
 void obex_srm_client_prepare_header(obex_srm_client_t *obex_srm, uint16_t goep_cid){
     if (goep_client_version_20_or_higher(goep_cid)){
-        goep_client_header_add_srm_enable(goep_cid);
-        obex_srm->srm_state = OBEX_SRM_CLIENT_STATE_W4_CONFIRM;
+        // add SRM Enable Header if not enabled yet
+        if (obex_srm->srm_state == OBEX_SRM_CLIENT_STATE_DISABLED){
+            obex_srm->srm_state = OBEX_SRM_CLIENT_STATE_W4_CONFIRM;
+            log_info("Prepare: add SRM Enable");
+            goep_client_header_add_srm_enable(goep_cid);
+        }
+        // add SRMP Waiting header if waiting is active
+        if (obex_srm->srmp_waiting){
+            log_info("Prepare: add SRMP Waiting");
+            goep_client_header_add_srmp_waiting(goep_cid);
+        }
     }
 }
 
 bool obex_srm_client_is_srm_active(obex_srm_client_t *obex_srm){
-    return obex_srm->srm_state == OBEX_SRM_CLIENT_STATE_ENABLED;
+    return (obex_srm->srm_state == OBEX_SRM_CLIENT_STATE_ENABLED) && (obex_srm->srmp_waiting == false);
 }
