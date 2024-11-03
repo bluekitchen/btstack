@@ -526,11 +526,12 @@ static uint16_t l2cap_setup_options_ertm_request(l2cap_channel_t * channel, uint
     little_endian_store_16(config_options, pos, channel->local_mtu);
     pos += 2;
 
-    // Issue: iOS (e.g. 10.2) uses "No FCS" as default while Core 5.0 specifies "FCS" as default
-    // Workaround: try to actively negotiate FCS option
-    config_options[pos++] = L2CAP_CONFIG_OPTION_TYPE_FRAME_CHECK_SEQUENCE;
-    config_options[pos++] = 1;     // length
-    config_options[pos++] = channel->fcs_option;
+    // fcs_option = 2 <=> OMIT FCS Omit
+    if (channel->fcs_option < 2){
+        config_options[pos++] = L2CAP_CONFIG_OPTION_TYPE_FRAME_CHECK_SEQUENCE;
+        config_options[pos++] = 1;     // length
+        config_options[pos++] = channel->fcs_option;
+    }
     return pos; // 11+4+3=18
 }
 
@@ -1507,7 +1508,7 @@ uint8_t l2cap_send_prepared(uint16_t local_cid, uint16_t len){
     int fcs_size = 0;
 
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
-    if (channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION && channel->fcs_option){
+    if (channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION && channel->fcs_active){
         fcs_size = 2;
     }
 #endif
@@ -1518,7 +1519,7 @@ uint8_t l2cap_send_prepared(uint16_t local_cid, uint16_t len){
     l2cap_setup_header(acl_buffer, channel->con_handle, packet_boundary_flag, channel->remote_cid, len + fcs_size);
 
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
-    if (fcs_size){
+    if (fcs_size > 0){
         // calculate FCS over l2cap data
         uint16_t fcs = crc16_calc(acl_buffer + 4, 4 + len);
         log_info("I-Frame: fcs 0x%04x", fcs);
@@ -3340,7 +3341,7 @@ static void l2cap_signaling_handle_configure_request(l2cap_channel_t *channel, u
         // "FCS" has precedence over "No FCS"
         uint8_t update = channel->fcs_option || use_fcs;
         log_info("local fcs: %u, remote fcs: %u -> %u", channel->fcs_option, use_fcs, update);
-        channel->fcs_option = update;
+        channel->fcs_active = update;
         // If ERTM mandatory, but remote didn't send Retransmission and Flowcontrol options -> disconnect
         if (((channel->state_var & L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_ERTM) == 0) & (channel->ertm_mandatory)){
             channel->state = L2CAP_STATE_WILL_SEND_DISCONNECT_REQUEST;
@@ -4605,12 +4606,12 @@ static void l2cap_acl_classic_handler_for_channel(l2cap_channel_t * l2cap_channe
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
     if (l2cap_channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION){
 
-        int fcs_size = l2cap_channel->fcs_option ? 2 : 0;
+        int fcs_size = l2cap_channel->fcs_active ? 2 : 0;
 
         // assert control + FCS fields are inside
         if (size < COMPLETE_L2CAP_HEADER+2+fcs_size) return;
 
-        if (l2cap_channel->fcs_option){
+        if (fcs_size > 0){
             // verify FCS (required if one side requested it)
             uint16_t fcs_calculated = crc16_calc(&packet[4], size - (4+2));
             uint16_t fcs_packet     = little_endian_read_16(packet, size-2);
