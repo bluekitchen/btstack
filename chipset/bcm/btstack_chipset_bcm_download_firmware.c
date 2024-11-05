@@ -106,6 +106,10 @@ static void bcm_detect_controller(uint16_t manufacturer,
                     // CYW5557x
                     device_name = "CYW55560A1";
                     break;
+                case 0x2220:
+                    // CYW5551x
+                    device_name = "CYW55500A1";
+                    break;
                 default:
                     break;
             }
