@@ -235,12 +235,14 @@ void le_handle_advertisement_report(uint8_t *packet, uint16_t size);
 static uint8_t hci_whitelist_remove(bd_addr_type_t address_type, const bd_addr_t address);
 static hci_connection_t * gap_get_outgoing_le_connection(void);
 static void hci_le_scan_stop(void);
+#ifdef ENABLE_LE_EXTENDED_ADVERTISING
+static void le_handle_extended_advertisement_report(uint8_t *packet, uint16_t size);
+#endif
 #endif
 #ifdef ENABLE_LE_PERIPHERAL
 #ifdef ENABLE_LE_EXTENDED_ADVERTISING
 static le_advertising_set_t * hci_advertising_set_for_handle(uint8_t advertising_handle);
 static uint8_t hci_le_extended_advertising_operation_for_chunk(uint16_t pos, uint16_t len);
-static void le_handle_extended_advertisement_report(uint8_t *packet, uint16_t size);
 #endif /* ENABLE_LE_EXTENDED_ADVERTISING */
 #endif /* ENABLE_LE_PERIPHERAL */
 #ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
@@ -6051,6 +6053,7 @@ static bool hci_run_general_gap_classic(void){
 #endif
 
 #ifdef ENABLE_BLE
+#ifdef ENABLE_LE_CENTRAL
 
 #ifdef ENABLE_LE_EXTENDED_ADVERTISING
 static uint8_t hci_le_num_phys(uint8_t phys){
@@ -6060,7 +6063,6 @@ static uint8_t hci_le_num_phys(uint8_t phys){
 }
 #endif
 
-#ifdef ENABLE_LE_CENTRAL
 static void hci_le_scan_stop(void){
 #ifdef ENABLE_LE_EXTENDED_ADVERTISING
     if (hci_le_extended_advertising_supported()) {
