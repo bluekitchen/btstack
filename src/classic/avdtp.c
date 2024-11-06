@@ -272,15 +272,38 @@ static uint8_t avdtp_get_next_local_seid(void){
     return avdtp_stream_endpoints_id_counter;
 }
 
-static void avdtp_handle_start_sdp_client_query(void * context){
-    UNUSED(context);
-
-    uint16_t uuid;
-    btstack_linked_list_iterator_t it;    
+static avdtp_connection_t * avdtp_get_next_connection_ready_for_sdp_query(void){
+    btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, &avdtp_connections);
     while (btstack_linked_list_iterator_has_next(&it)){
         avdtp_connection_t * connection = (avdtp_connection_t *)btstack_linked_list_iterator_next(&it);
-        
+        switch (connection->state){
+            case AVDTP_SIGNALING_W2_SEND_SDP_QUERY_FOR_REMOTE_SOURCE:
+            case AVDTP_SIGNALING_W2_SEND_SDP_QUERY_FOR_REMOTE_SINK:
+                return connection;
+            case AVDTP_SIGNALING_CONNECTION_OPENED:
+                switch (connection->initiator_connection_state ){
+                    case AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_SEND_SDP_QUERY_THEN_GET_ALL_CAPABILITIES_FROM_REMOTE_SOURCE:
+                    case AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_SEND_SDP_QUERY_THEN_GET_ALL_CAPABILITIES_FROM_REMOTE_SINK:
+                        return connection;
+                    default:
+                        break;
+                }
+                break;
+            default:
+                break;
+        }
+    }
+    return NULL;
+}
+
+static void avdtp_handle_start_sdp_client_query(void * context){
+    UNUSED(context);
+    avdtp_connection_t * connection = avdtp_get_next_connection_ready_for_sdp_query();
+    if (connection != NULL){
+
+        // Get UUID to Query
+        uint16_t uuid;
         switch (connection->state){
             case AVDTP_SIGNALING_W2_SEND_SDP_QUERY_FOR_REMOTE_SOURCE:
                 uuid = BLUETOOTH_SERVICE_CLASS_AUDIO_SOURCE;
@@ -301,12 +324,16 @@ static void avdtp_handle_start_sdp_client_query(void * context){
                         connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_W4_SDP_QUERY_COMPLETE_THEN_GET_ALL_CAPABILITIES;
                         break;
                     default:
-                        continue;
+                        btstack_unreachable();
+                        break;
                 }
                 break;
             default:
-                continue;
+                btstack_unreachable();
+                break;
         }
+
+        // Start & track query
         avdtp_sdp_query_context_avdtp_cid = connection->avdtp_cid;
         avdtp_record_id = -1;
         sdp_client_query_uuid16(&avdtp_handle_sdp_client_query_result, (uint8_t *) connection->remote_addr, uuid);
