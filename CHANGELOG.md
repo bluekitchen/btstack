@@ -48,6 +48,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - GAP: return command disallowed if disconnect already requested
 - GAP: improve handling of incorrectly resolved addresses in HCI_SUBEVENT_LE_CONNECTION_COMPLETE
 - GAP: only store link key if at least one side requests bonding during the IO Capabilities exchange.
+- SDP Client: trigger next SDP query callback, if registered callback does not start SDP query
 - GOEP Client: remove goep_client_create_connection. Use goep_client_connect instead.
 - HID Parser: cleanup of function names and signatures
 - HIDS Client: use error code instead of att status in conencted event

@@ -348,14 +348,14 @@ void sdp_parser_handle_service_search(uint8_t * data, uint16_t total_count, uint
 #endif
 
 static void sdp_client_notify_callbacks(void){
-    if (sdp_client_ready() == false) {
-        return;
+    while (sdp_client_ready()) {
+        btstack_context_callback_registration_t *callback = (btstack_context_callback_registration_t *) btstack_linked_list_pop(&sdp_client_query_requests);
+        if (callback != NULL) {
+            (*callback->callback)(callback->context);
+        } else {
+            return;
+        }
     }
-    btstack_context_callback_registration_t * callback = (btstack_context_callback_registration_t*) btstack_linked_list_pop(&sdp_client_query_requests);
-    if (callback == NULL) {
-        return;
-    }
-    (*callback->callback)(callback->context);
 }
 
 void sdp_parser_handle_done(uint8_t status){
