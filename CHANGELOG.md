@@ -35,6 +35,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - SM: fix CTKD key distribution over BR/EDR
 - SM: fix CTKD after BR/EDR Role Change
 - A2DP: emit stream established if peer set-up configuration
+- AVDTP: fix SDP Client registration bug that could block other SDP queries
 - HIOS Client: emit disconnected event on HCI disconnect and free connection struct
 - Scan Parameter Service Client: emit disconnected event on HCI disconnect and free connection struct
 - PBAP Client: fix PBAP_SUBEVENT_OPERATION_COMPLETED with OBEX_DISCONNECTED for pbap_disconnect
