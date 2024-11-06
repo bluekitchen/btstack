@@ -2624,6 +2624,7 @@ static void hci_initializing_event_handler(const uint8_t * packet, uint16_t size
     hci_initializing_next_state();
 }
 
+#if defined(ENABLE_CLASSIC) || defined(ENABLE_LE_CENTRAL)
 static void hci_handle_connection_failed(hci_connection_t * conn, uint8_t status){
     // CC2564C might emit Connection Complete for rejected incoming SCO connection
     // To prevent accidentally freeing the HCI connection for the ACL connection,
@@ -2665,6 +2666,8 @@ static void hci_handle_connection_failed(hci_connection_t * conn, uint8_t status
     UNUSED(status);
 #endif
 }
+#endif
+
 
 #ifdef ENABLE_CLASSIC
 static void hci_handle_remote_features_page_0(hci_connection_t * conn, const uint8_t * features){
