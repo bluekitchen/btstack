@@ -185,10 +185,19 @@ static void avrcp_browsing_target_packet_handler(uint8_t packet_type, uint16_t c
                         }
                         case AVRCP_PDU_ID_SET_BROWSED_PLAYER:
                             // param length (2), player_id (2)
+                            if ( (pos + 2) > size ){
+                                avrcp_browsing_target_response_general_reject(browsing_connection, AVRCP_STATUS_INVALID_COMMAND);
+                                break;
+                            }
                             if (big_endian_read_16(packet, pos) != 2){
                                 avrcp_browsing_target_response_general_reject(browsing_connection, AVRCP_STATUS_INVALID_COMMAND);
                                 break;
                             }
+                            if ( (pos + 4) > size ){
+                                avrcp_browsing_target_response_general_reject(browsing_connection, AVRCP_STATUS_INVALID_PLAYER_ID);
+                                break;
+                            }
+
                             avrcp_browsing_target_emit_set_browsed_player(avrcp_target_context.browsing_avrcp_callback, channel, big_endian_read_16(packet, pos+2));
                             break;
                         default:
