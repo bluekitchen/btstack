@@ -346,6 +346,7 @@ uint8_t avrcp_browsing_target_send_reject_set_browsed_player(uint16_t avrcp_brow
     int pos = 0;
     connection->cmd_operands[pos++] = AVRCP_PDU_ID_SET_BROWSED_PLAYER;
     big_endian_store_16(connection->cmd_operands, pos, 1);
+    pos += 2;
     connection->cmd_operands[pos++] = status;
     connection->cmd_operands_length = pos;    
 
