@@ -353,7 +353,6 @@ uint8_t avdtp_connect(bd_addr_t remote, avdtp_role_t role, uint16_t * avdtp_cid)
             return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
-    avdtp_handle_sdp_client_query_request.callback = &avdtp_handle_start_sdp_client_query;
     // ignore ERROR_CODE_COMMAND_DISALLOWED because in that case, we already have requested an SDP callback
     (void) sdp_client_register_query_callback(&avdtp_handle_sdp_client_query_request);
     return ERROR_CODE_SUCCESS;
@@ -1395,7 +1394,6 @@ uint8_t avdtp_get_all_capabilities(uint16_t avdtp_cid, uint8_t remote_seid, avdt
                 btstack_unreachable();
                 break;
         }
-        avdtp_handle_sdp_client_query_request.callback = &avdtp_handle_start_sdp_client_query;
         // ignore ERROR_CODE_COMMAND_DISALLOWED because in that case, we already have requested an SDP callback
         (void) sdp_client_register_query_callback(&avdtp_handle_sdp_client_query_request);
         return ERROR_CODE_SUCCESS;
@@ -1651,6 +1649,7 @@ uint8_t is_avdtp_remote_seid_registered(avdtp_stream_endpoint_t * stream_endpoin
 
 void avdtp_init(void){
     if (!avdtp_l2cap_registered){
+        avdtp_handle_sdp_client_query_request.callback = &avdtp_handle_start_sdp_client_query;
         avdtp_l2cap_registered = true;
         l2cap_register_service(&avdtp_packet_handler, BLUETOOTH_PSM_AVDTP, AVDTP_L2CAP_MTU, gap_get_security_level());
     }
