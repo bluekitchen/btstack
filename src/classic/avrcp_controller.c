@@ -975,8 +975,11 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
             }
             // Company ID (3)
             pos += 3;
+            // PDU ID (1)
             pdu_id = packet[pos++];
+            // Packet Type (1)
             vendor_dependent_avrcp_packet_type = (avrcp_packet_type_t)(packet[pos++] & 0x03);
+            // Param Length (2)
             param_length = big_endian_read_16(packet, pos);
             pos += 2;
 
