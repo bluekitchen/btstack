@@ -897,7 +897,7 @@ static void rfcomm_multiplexer_finalize(rfcomm_multiplexer_t * multiplexer){
         }
     }
     
-    // remove mutliplexer
+    // remove multiplexer
     rfcomm_multiplexer_free(multiplexer);
 }
 
@@ -1561,6 +1561,14 @@ static void rfcomm_channel_packet_handler(rfcomm_multiplexer_t * multiplexer,  u
             event.type = CH_EVT_RCVD_UA;
             log_info("Received UA #%u",frame_dlci);
             rfcomm_channel_state_machine_with_dlci(multiplexer, frame_dlci, &event);
+
+            // If this was UA for a disconnect of the last connected channel, multiplexer should get finalized
+            if (multiplexer->state == RFCOMM_MULTIPLEXER_SHUTTING_DOWN){
+                uint16_t l2cap_cid = multiplexer->l2cap_cid;
+                rfcomm_multiplexer_finalize(multiplexer);
+                l2cap_disconnect(l2cap_cid);
+                return;
+            }
             break;
             
         case BT_RFCOMM_DISC:
@@ -2155,9 +2163,7 @@ static void rfcomm_channel_state_machine_with_channel(rfcomm_channel_t *channel,
                     // multiplexer by closing the corresponding L2CAP channel.
                     if (rfcomm_multiplexer_has_channels(multiplexer) == false){
                         log_info("Closed last DLC, shut-down multiplexer");
-                        uint16_t l2cap_cid = multiplexer->l2cap_cid;
-                        rfcomm_multiplexer_finalize(multiplexer);
-                        l2cap_disconnect(l2cap_cid);
+                        multiplexer->state = RFCOMM_MULTIPLEXER_SHUTTING_DOWN;
                     }
                     *out_channel_valid = 0;
                     break;
