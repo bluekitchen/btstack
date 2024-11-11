@@ -145,6 +145,7 @@ bool      sdp_record_matches_service_search_pattern(uint8_t *record, uint8_t *se
 uint16_t  sdp_get_filtered_size(uint8_t *record, uint8_t *attributeIDList);
 bool      sdp_filter_attributes_in_attributeIDList(uint8_t *record, uint8_t *attributeIDList, uint16_t startOffset, uint16_t maxBytes, uint16_t *usedBytes, uint8_t *buffer);
 bool      sdp_attribute_list_contains_id(uint8_t *attributeIDList, uint16_t attributeID);
+bool      sdp_attribute_list_valid(uint8_t *attributeIDList);
 
 /*
  * @brief Returns service search pattern for given UUID-16
