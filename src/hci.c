@@ -2540,6 +2540,23 @@ static void hci_initializing_event_handler(const uint8_t * packet, uint16_t size
             return;
 
 #ifndef HAVE_HOST_CONTROLLER_API
+        case HCI_INIT_W4_SEND_READ_LOCAL_VERSION_INFORMATION:
+            if (hci_event_packet_get_type(packet) == HCI_EVENT_COMMAND_COMPLETE){
+                uint16_t lmp_subversion = little_endian_read_16(packet, 12);
+                if (hci_stack->manufacturer == BLUETOOTH_COMPANY_ID_BROADCOM_CORPORATION &&
+                        lmp_subversion == 0x2257){
+                    // Workaround for CYW55573.
+                    // CYW55573(on my Murata TYPE 2EA) doesn't respond to READ_LOCAL_NAME or BAUD_CHANGE after HCI_RESET,
+                    // Go to HCI_INIT_CUSTOM_INIT when received LOCAL_VERSION_INFORMATION.
+                    //
+                    // NOTE:
+                    // hci_stack->manufacturer and manufacturer in the response packet were modified to BLUETOOTH_COMPANY_ID_BROADCOM_CORPORATION before.
+                    // Refer to function hci.c/handle_command_complete_event.
+                    hci_stack->substate = HCI_INIT_CUSTOM_INIT;
+                    return;
+                }
+            }
+            break;
         case HCI_INIT_W4_SEND_BAUD_CHANGE:
             // for STLC2500D, baud rate change already happened.
             // for others, baud rate gets changed now
