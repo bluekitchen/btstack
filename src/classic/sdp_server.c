@@ -282,6 +282,9 @@ int sdp_handle_service_attribute_request(uint8_t * packet, uint16_t remote_mtu){
     param_len -= 6;
     uint8_t * attributeIDList = &packet[11];
     uint16_t  attributeIDListLen = de_get_len_safe(attributeIDList, param_len);
+    if (!sdp_attribute_list_valid(attributeIDList) == false){
+        return sdp_create_error_response(transaction_id, 0x0003); /// invalid request syntax
+    }
     // assert attributeIDList are in param_len
     if (!attributeIDListLen) return 0;
     param_len -= attributeIDListLen;
@@ -383,6 +386,9 @@ int sdp_handle_service_search_attribute_request(uint8_t * packet, uint16_t remot
     param_len -= 2;
     uint8_t * attributeIDList = &packet[5+serviceSearchPatternLen+2];
     uint16_t  attributeIDListLen = de_get_len_safe(attributeIDList, param_len);
+    if (!sdp_attribute_list_valid(attributeIDList) == false){
+        return sdp_create_error_response(transaction_id, 0x0003); /// invalid request syntax
+    }
     // assert attributeIDList is contained in param_len
     if (!attributeIDListLen) return 0;
     // assert continuation state len is contained in param_len
