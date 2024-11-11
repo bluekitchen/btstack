@@ -443,8 +443,13 @@ uint32_t btstack_atoi(const char * str){
     uint32_t val = 0;
     while (true){
         char chr = *the_string++;
-        if (!chr || (chr < '0') || (chr > '9'))
+        // skip whitespace
+        if (((chr >= 0x09) && (chr <= 0x0d)) || (chr == ' ')) {
+            continue;
+        }
+        if (!chr || (chr < '0') || (chr > '9')){
             return val;
+        }
         val = (val * 10u) + (uint8_t)(chr - '0');
     }
 }

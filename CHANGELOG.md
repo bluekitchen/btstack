@@ -42,6 +42,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - HFP HF: send HF Indicator update only if enabled by AG
 - HID Host: omit Report ID in Set/Get Report and send report for report id == HID_REPORT_ID_UNDEFINED
 - POSIX: clear run loop exit flag
+- btstack_util: skip whitespace in btstack_atoi
  
 ### Changed
 - GAP: return command disallowed if disconnect already requested
