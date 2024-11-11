@@ -1185,6 +1185,10 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     switch (event_id){
                         case AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED:
                             if (connection->target_track_selected){
+                                if (connection->target_total_tracks > 0){
+                                    avrcp_target_response_vendor_dependent_interim(connection, pdu_id, event_id, connection->target_track_id, 8);
+                                    break;
+                                }
                                 avrcp_target_response_vendor_dependent_interim(connection, pdu_id, event_id, AVRCP_NOTIFICATION_TRACK_SELECTED, 8);
                             } else {
                                 avrcp_target_response_vendor_dependent_interim(connection, pdu_id, event_id, AVRCP_NOTIFICATION_TRACK_NOT_SELECTED, 8);
