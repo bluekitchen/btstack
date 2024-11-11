@@ -3618,10 +3618,12 @@ typedef uint8_t sm_key_t[16];
 #define AVRCP_SUBEVENT_BROWSING_DONE                                          0x33u
 
 /**
- * @format 1214
+ * @format 121444
  * @param subevent_code
  * @param browsing_cid
  * @param scope
+ * @param start_item
+ * @param end_item
  * @param attr_bitmap
  */
 #define AVRCP_SUBEVENT_BROWSING_GET_FOLDER_ITEMS                              0x34u

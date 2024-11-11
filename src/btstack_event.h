@@ -11995,13 +11995,31 @@ static inline uint8_t avrcp_subevent_browsing_get_folder_items_get_scope(const u
     return event[5];
 }
 /**
+ * @brief Get field start_item from event AVRCP_SUBEVENT_BROWSING_GET_FOLDER_ITEMS
+ * @param event packet
+ * @return start_item
+ * @note: btstack_type 4
+ */
+static inline uint32_t avrcp_subevent_browsing_get_folder_items_get_start_item(const uint8_t * event){
+    return little_endian_read_32(event, 6);
+}
+/**
+ * @brief Get field end_item from event AVRCP_SUBEVENT_BROWSING_GET_FOLDER_ITEMS
+ * @param event packet
+ * @return end_item
+ * @note: btstack_type 4
+ */
+static inline uint32_t avrcp_subevent_browsing_get_folder_items_get_end_item(const uint8_t * event){
+    return little_endian_read_32(event, 10);
+}
+/**
  * @brief Get field attr_bitmap from event AVRCP_SUBEVENT_BROWSING_GET_FOLDER_ITEMS
  * @param event packet
  * @return attr_bitmap
  * @note: btstack_type 4
  */
 static inline uint32_t avrcp_subevent_browsing_get_folder_items_get_attr_bitmap(const uint8_t * event){
-    return little_endian_read_32(event, 6);
+    return little_endian_read_32(event, 14);
 }
 
 /**
