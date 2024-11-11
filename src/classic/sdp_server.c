@@ -194,6 +194,9 @@ int sdp_handle_service_search_request(uint8_t * packet, uint16_t remote_mtu){
     uint16_t  param_len = big_endian_read_16(packet, 3);
     uint8_t * serviceSearchPattern = &packet[5];
     uint16_t  serviceSearchPatternLen = de_get_len_safe(serviceSearchPattern, param_len);
+    if (sdp_valid_service_search_pattern(serviceSearchPattern) == false){
+        return sdp_create_error_response(transaction_id, 0x0003); /// invalid request syntax
+    }
     // assert service search pattern is contained
     if (!serviceSearchPatternLen) return 0;
     param_len -= serviceSearchPatternLen;
@@ -386,6 +389,9 @@ int sdp_handle_service_search_attribute_request(uint8_t * packet, uint16_t remot
     uint16_t  param_len = big_endian_read_16(packet, 3);
     uint8_t * serviceSearchPattern = &packet[5];
     uint16_t  serviceSearchPatternLen = de_get_len_safe(serviceSearchPattern, param_len);
+    if (sdp_valid_service_search_pattern(serviceSearchPattern) == false){
+        return sdp_create_error_response(transaction_id, 0x0003); /// invalid request syntax
+    }
     // assert serviceSearchPattern header is contained in param_len
     if (!serviceSearchPatternLen) return 0;
     param_len -= serviceSearchPatternLen;
