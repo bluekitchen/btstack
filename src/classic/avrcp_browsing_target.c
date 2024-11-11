@@ -92,7 +92,7 @@ static uint8_t avrcp_browsing_target_response_general_reject(avrcp_browsing_conn
 static void avrcp_browsing_target_emit_get_folder_items(btstack_packet_handler_t callback, uint16_t browsing_cid, avrcp_browsing_connection_t * connection){
     btstack_assert(callback != NULL);
 
-    uint8_t event[10];
+    uint8_t event[18];
     int pos = 0;
     event[pos++] = HCI_EVENT_AVRCP_META;
     event[pos++] = sizeof(event) - 2;
@@ -100,6 +100,10 @@ static void avrcp_browsing_target_emit_get_folder_items(btstack_packet_handler_t
     little_endian_store_16(event, pos, browsing_cid);
     pos += 2;
     event[pos++] = connection->scope;
+    big_endian_store_32(event, pos, connection->start_item);
+    pos += 4;
+    big_endian_store_32(event, pos, connection->end_item);
+    pos += 4;
     big_endian_store_32(event, pos, connection->attr_bitmap);
     pos += 4;
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
@@ -159,15 +163,23 @@ static void avrcp_browsing_target_packet_handler(uint8_t packet_type, uint16_t c
                         browsing_connection->num_packets = packet[pos++];
                     } 
                     browsing_connection->pdu_id = packet[pos++];
-                   
+                    uint16_t parameter_length = big_endian_read_16(packet, pos);
+                    pos += 2;
+
                     switch(browsing_connection->pdu_id){
                         case AVRCP_PDU_ID_GET_FOLDER_ITEMS:
+                            if (parameter_length < 10){
+                                avrcp_browsing_target_response_general_reject(browsing_connection, AVRCP_STATUS_INVALID_COMMAND);
+                                break;
+                            }
+
                             browsing_connection->scope = packet[pos++];
                             browsing_connection->start_item = big_endian_read_32(packet, pos);
                             pos += 4;
                             browsing_connection->end_item = big_endian_read_32(packet, pos);
                             pos += 4;
                             uint8_t attr_count = packet[pos++];
+                            browsing_connection->attr_bitmap = 0;
 
                             while (attr_count){
                                 uint32_t attr_id = big_endian_read_32(packet, pos);
@@ -179,6 +191,11 @@ static void avrcp_browsing_target_packet_handler(uint8_t packet_type, uint16_t c
                             break;
                         case AVRCP_PDU_ID_GET_TOTAL_NUMBER_OF_ITEMS:{
                             // send total num items
+                            if (parameter_length != 1){
+                                avrcp_browsing_target_response_general_reject(browsing_connection, AVRCP_STATUS_INVALID_SCOPE);
+                                break;
+                            }
+
                             browsing_connection->scope = packet[pos++];
                             avrcp_browsing_target_emit_get_total_num_items(avrcp_target_context.browsing_avrcp_callback, channel, browsing_connection);
                             break;
