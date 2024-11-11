@@ -84,6 +84,10 @@ static uint16_t sdp_server_response_size;
 static uint16_t sdp_server_l2cap_waiting_list_cids[SDP_WAITING_LIST_MAX_COUNT];
 static int      sdp_server_l2cap_waiting_list_count;
 
+#ifdef ENABLE_TESTING_SUPPORT
+static bool sdp_server_testing_single_record_reponse = false;
+#endif
+
 void sdp_init(void){
     sdp_server_next_service_record_handle = ((uint32_t) MAX_RESERVED_SERVICE_RECORD_HANDLE) + 2;
     // register with l2cap psm sevices - max MTU
@@ -205,7 +209,12 @@ int sdp_handle_service_search_request(uint8_t * packet, uint16_t remote_mtu){
 
     // calc maximumServiceRecordCount based on remote MTU
     uint16_t maxNrServiceRecordsPerResponse = (remote_mtu - (9+3))/4;
-    
+#ifdef ENABLE_TESTING_SUPPORT
+    if (sdp_server_testing_single_record_reponse){
+        maxNrServiceRecordsPerResponse = 1;
+    }
+#endif
+
     // continuation state contains index of next service record to examine
     int      continuation = 0;
     uint16_t continuation_index = 0;
@@ -299,7 +308,7 @@ int sdp_handle_service_attribute_request(uint8_t * packet, uint16_t remote_mtu){
     if (maximumAttributeByteCount2 < maximumAttributeByteCount) {
         maximumAttributeByteCount = maximumAttributeByteCount2;
     }
-    
+
     // continuation state contains the offset into the complete response
     uint16_t continuation_offset = 0;
     if (continuationState[0] == 2){
@@ -632,3 +641,8 @@ static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
 	}
 }
 
+#ifdef ENABLE_TESTING_SUPPORT
+void sdp_server_set_single_record_response(bool enable){
+    sdp_server_testing_single_record_reponse = enable;
+}
+#endif
