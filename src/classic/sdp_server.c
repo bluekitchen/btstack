@@ -560,7 +560,7 @@ static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                     break;
                     
                 default:
-                    sdp_server_response_size = sdp_create_error_response(transaction_id, 0x0003); // invalid syntax
+                    sdp_server_response_size = sdp_create_error_response(transaction_id, 0x0004); // invalid PDU size
                     break;
             }
             if (!sdp_server_response_size) break;
