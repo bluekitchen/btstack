@@ -2808,20 +2808,31 @@ static uint8_t hfp_ag_setup_audio_connection(hfp_connection_t * hfp_connection){
         
     hfp_connection->establish_audio_connection = 1;
     hfp_connection->sco_for_msbc_failed = 0;
-    if (!has_codec_negotiation_feature(hfp_connection)){
-        log_info("hfp_ag_establish_audio_connection - no codec negotiation feature, using CVSD");
-        hfp_connection->negotiated_codec = HFP_CODEC_CVSD;
-        hfp_connection->codecs_state = HFP_CODECS_EXCHANGED;
+
+    btstack_assert(hfp_connection->codecs_state != HFP_CODECS_IDLE);
+
+    // Codecs list is available, but no codec negotiation happened yet
+    if (hfp_connection->codecs_state == HFP_CODECS_RECEIVED_LIST){
+        if (has_codec_negotiation_feature(hfp_connection)) {
+            // Start Codec Negotiation
+            hfp_connection->ag_send_common_codec = true;
+            return ERROR_CODE_SUCCESS;
+        } else {
+            // No Codec Negotiation -> done, ready to connect
+            log_info("hfp_ag_establish_audio_connection - no codec negotiation feature, using CVSD");
+            hfp_connection->negotiated_codec = HFP_CODEC_CVSD;
+            hfp_connection->codecs_state = HFP_CODECS_EXCHANGED;
+        }
+    }
+
+    // Codec has been negotiated before, start SCO setup
+    if (hfp_connection->codecs_state == HFP_CODECS_EXCHANGED){
         // now, pick link settings
         hfp_init_link_settings(hfp_connection, hfp_ag_esco_s4_supported(hfp_connection));
-#ifdef ENABLE_CC256X_ASSISTED_HFP
-        hfp_cc256x_prepare_for_sco(hfp_connection);
-#endif
-        return ERROR_CODE_SUCCESS;
-    } 
+        // configure SBC coded if needed
+        hfp_prepare_for_sco(hfp_connection);
+    }
 
-    hfp_connection->ag_send_common_codec = true;
-    hfp_connection->codecs_state = HFP_CODECS_IDLE;
     return ERROR_CODE_SUCCESS;
 }
 
