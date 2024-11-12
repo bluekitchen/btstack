@@ -441,6 +441,11 @@ typedef enum {
     AVRCP_BROWSING_NOW_PLAYING
 } avrcp_browsing_scope_t;
 
+typedef enum {
+    AVRCP_BROWSING_DIRECTION_FOLDER_UP = 0x00,
+    AVRCP_BROWSING_DIRECTION_FOLDER_DOWN,
+    AVRCP_BROWSING_DIRECTION_FOLDER_RFU
+} avrcp_browsing_direction_t;
 
 typedef enum {
     AVRCP_REMOTE_CAPABILITIES_NONE = 0,

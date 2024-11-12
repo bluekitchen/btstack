@@ -98,6 +98,8 @@ uint8_t avrcp_browsing_target_send_get_folder_items_response(uint16_t browsing_c
  */
 uint8_t avrcp_browsing_target_send_get_total_num_items_response(uint16_t browsing_cid, uint16_t uid_counter, uint32_t total_num_items);
 
+uint8_t avrcp_browsing_target_send_change_path_response(uint16_t avrcp_browsing_cid, uint16_t uid_counter, avrcp_status_code_t status, uint32_t num_items);
+
 /**
  * @brief De-Init AVRCP Browsing Controller
  */
