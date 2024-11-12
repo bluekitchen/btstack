@@ -185,8 +185,6 @@ static void avrcp_browsing_target_packet_handler(uint8_t packet_type, uint16_t c
     UNUSED(size);
     avrcp_browsing_connection_t * browsing_connection;
     avrcp_browsing_direction_t direction;
-    uint16_t uid_counter;
-    uint8_t * item_id;
 
     switch (packet_type) {
         case L2CAP_DATA_PACKET:{
@@ -265,16 +263,16 @@ static void avrcp_browsing_target_packet_handler(uint8_t packet_type, uint16_t c
                                 avrcp_browsing_target_response_general_reject(browsing_connection, AVRCP_STATUS_INVALID_COMMAND);
                                 break;
                             }
-                            uid_counter = big_endian_read_16(packet, pos);
+                            browsing_connection->uid_counter = big_endian_read_16(packet, pos);
                             pos += 2;
-                            direction = (avrcp_browsing_direction_t)packet[pos++];
+                            browsing_connection->direction = (avrcp_browsing_direction_t)packet[pos++];
 
-                            if (direction > AVRCP_BROWSING_DIRECTION_FOLDER_RFU){
+                            if (browsing_connection->direction > AVRCP_BROWSING_DIRECTION_FOLDER_RFU){
                                 avrcp_browsing_target_response_general_reject(browsing_connection, AVRCP_STATUS_INVALID_DIRECTION);
                                 break;
                             }
-                            item_id = &packet[pos];
-                            avrcp_browsing_target_emit_change_path(avrcp_target_context.browsing_avrcp_callback, channel, uid_counter, direction, item_id);
+                            memcpy(browsing_connection->item_uid, &packet[pos], 8);
+                            avrcp_browsing_target_emit_change_path(avrcp_target_context.browsing_avrcp_callback, channel, browsing_connection->uid_counter, browsing_connection->direction, browsing_connection->item_uid);
                             break;
 
                         case AVRCP_PDU_ID_GET_ITEM_ATTRIBUTES:{
@@ -283,15 +281,16 @@ static void avrcp_browsing_target_packet_handler(uint8_t packet_type, uint16_t c
                                 break;
                             }
 
-                            uint8_t scope = packet[pos++];
-                            item_id = &packet[pos];
+                            browsing_connection->scope = packet[pos++];
+                            memcpy(browsing_connection->item_uid, &packet[pos], 8);
                             pos += 8;
-                            uid_counter = big_endian_read_16(packet, pos);
+                            browsing_connection->uid_counter = big_endian_read_16(packet, pos);
                             pos += 2;
-                            uint8_t attr_num = packet[pos++];
-
-                            uint8_t * attr_list = &packet[pos];
-                            avrcp_browsing_target_emit_get_item_attributes(avrcp_target_context.browsing_avrcp_callback, channel, uid_counter, scope, item_id, attr_num, attr_list);
+                            browsing_connection->attr_list_size = packet[pos++];
+                            browsing_connection->attr_list = &packet[pos];
+                            
+                            avrcp_browsing_target_emit_get_item_attributes(avrcp_target_context.browsing_avrcp_callback, channel, browsing_connection->uid_counter,
+                                                                           browsing_connection->scope, browsing_connection->item_uid, browsing_connection->attr_list_size, browsing_connection->attr_list);
                             break;
                         }
 
