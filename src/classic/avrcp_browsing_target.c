@@ -156,6 +156,30 @@ static void avrcp_browsing_target_emit_change_path(btstack_packet_handler_t call
     (*callback)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
+static void avrcp_browsing_target_emit_get_item_attributes(btstack_packet_handler_t callback, uint16_t browsing_cid, uint16_t uid_counter, uint8_t scope, uint8_t * item_id, uint8_t attr_num, uint8_t * attr_list){
+    btstack_assert(callback != NULL);
+    btstack_assert(attr_num <= AVRCP_MEDIA_ATTR_NUM);
+
+    uint8_t event[19 + 4 * AVRCP_MEDIA_ATTR_NUM];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_AVRCP_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = AVRCP_SUBEVENT_BROWSING_GET_ITEM_ATTRIBUTES;
+    little_endian_store_16(event, pos, browsing_cid);
+    pos += 2;
+    little_endian_store_16(event, pos, uid_counter);
+    pos += 2;
+    event[pos++] = scope;
+    memcpy(&event[pos], item_id, 8);
+    pos += 8;
+    uint16_t attr_len = attr_num * 4;
+    little_endian_store_16(event, pos, attr_len);
+    pos += 2;
+
+    memcpy(&event[pos], attr_list, attr_len);
+    pos += attr_len;
+    (*callback)(HCI_EVENT_PACKET, 0, event, pos);
+}
 
 static void avrcp_browsing_target_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(size);
@@ -252,6 +276,24 @@ static void avrcp_browsing_target_packet_handler(uint8_t packet_type, uint16_t c
                             item_id = &packet[pos];
                             avrcp_browsing_target_emit_change_path(avrcp_target_context.browsing_avrcp_callback, channel, uid_counter, direction, item_id);
                             break;
+
+                        case AVRCP_PDU_ID_GET_ITEM_ATTRIBUTES:{
+                            if (parameter_length < 12){
+                                avrcp_browsing_target_response_general_reject(browsing_connection, AVRCP_STATUS_INVALID_COMMAND);
+                                break;
+                            }
+
+                            uint8_t scope = packet[pos++];
+                            item_id = &packet[pos];
+                            pos += 8;
+                            uid_counter = big_endian_read_16(packet, pos);
+                            pos += 2;
+                            uint8_t attr_num = packet[pos++];
+
+                            uint8_t * attr_list = &packet[pos];
+                            avrcp_browsing_target_emit_get_item_attributes(avrcp_target_context.browsing_avrcp_callback, channel, uid_counter, scope, item_id, attr_num, attr_list);
+                            break;
+                        }
 
                         default:
                             avrcp_browsing_target_response_general_reject(browsing_connection, AVRCP_STATUS_INVALID_COMMAND);
@@ -395,7 +437,59 @@ uint8_t avrcp_browsing_target_send_change_path_response(uint16_t avrcp_browsing_
     pos += 2;
     connection->cmd_operands[pos++] = status;
     big_endian_store_32(connection->cmd_operands, pos, num_items);
+    pos += 4;
 
+    connection->cmd_operands_length = pos;
+    connection->state = AVCTP_W2_SEND_RESPONSE;
+    avrcp_browsing_request_can_send_now(connection, connection->l2cap_browsing_cid);
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t avrcp_browsing_target_send_get_item_attributes_response(uint16_t avrcp_browsing_cid, avrcp_status_code_t status, uint8_t * attr_list, uint16_t attr_list_size, uint8_t num_items){
+    avrcp_connection_t * avrcp_connection = avrcp_get_connection_for_browsing_cid_for_role(AVRCP_TARGET, avrcp_browsing_cid);
+    if (!avrcp_connection){
+        log_error("Could not find an AVRCP Target connection for browsing_cid 0x%02x.", avrcp_browsing_cid);
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+
+    avrcp_browsing_connection_t * connection = avrcp_connection->browsing_connection;
+    if (!connection){
+        log_info("Could not find a browsing connection.");
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if (connection->state != AVCTP_CONNECTION_OPENED){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+
+    // TODO: fragmentation
+    if (attr_list_size >  (sizeof(connection->cmd_operands) - 5)){
+        connection->attr_list = attr_list;
+        connection->attr_list_size = attr_list_size;
+        log_info(" todo: list too big, invoke fragmentation");
+        return 1;
+    }
+
+    uint16_t pos = 0;
+    connection->cmd_operands[pos++] = AVRCP_PDU_ID_GET_ITEM_ATTRIBUTES;
+
+    uint8_t param_length_pos = pos;
+    big_endian_store_16(connection->cmd_operands, pos, 1);
+    pos += 2;
+    connection->cmd_operands[pos++] = status;
+
+    if (status != AVRCP_STATUS_SUCCESS){
+        connection->cmd_operands_length = pos;
+        connection->state = AVCTP_W2_SEND_RESPONSE;
+        avrcp_browsing_request_can_send_now(connection, connection->l2cap_browsing_cid);
+        return ERROR_CODE_SUCCESS;
+    }
+
+    connection->cmd_operands[pos++] = num_items;
+    (void)memcpy(&connection->cmd_operands[pos], attr_list, attr_list_size);
+    pos += attr_list_size;
+
+    big_endian_store_16(connection->cmd_operands, param_length_pos, pos - 3);
+    connection->cmd_operands_length = pos;
     connection->state = AVCTP_W2_SEND_RESPONSE;
     avrcp_browsing_request_can_send_now(connection, connection->l2cap_browsing_cid);
     return ERROR_CODE_SUCCESS;
