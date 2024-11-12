@@ -58,7 +58,7 @@ extern "C" {
 
 #define AVRCP_BROWSING_ITEM_HEADER_LEN 3
 #define AVRCP_BROWSING_MAX_NUM_ATTR_IDS 8
-#define AVRCP_DISPLAYABLE_NAME_MAX_LENGTH 15
+#define AVRCP_DISPLAYABLE_NAME_MAX_LENGTH  20
 #define AVRCP_ATTRIBUTES_MAX_NUM           10
 
 #define AVRCP_MAX_AV_C_MESSAGE_FRAME_SIZE 512
@@ -569,7 +569,7 @@ typedef struct {
     uint16_t browsed_player_id;
 
     avrcp_browsing_scope_t  scope;
-    uint8_t  folder_uid[8]; // or media element
+    uint8_t  item_uid[8]; // or media element
     uint16_t uid_counter;
 
     // get folder item
