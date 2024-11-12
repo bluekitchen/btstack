@@ -12127,6 +12127,43 @@ static inline uint16_t avrcp_subevent_cover_art_connection_released_get_cover_ar
 }
 
 /**
+ * @brief Get field browsing_cid from event AVRCP_SUBEVENT_BROWSING_CHANGE_PATH
+ * @param event packet
+ * @return browsing_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t avrcp_subevent_browsing_change_path_get_browsing_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field uid_counter from event AVRCP_SUBEVENT_BROWSING_CHANGE_PATH
+ * @param event packet
+ * @return uid_counter
+ * @note: btstack_type 2
+ */
+static inline uint16_t avrcp_subevent_browsing_change_path_get_uid_counter(const uint8_t * event){
+    return little_endian_read_16(event, 5);
+}
+/**
+ * @brief Get field direction from event AVRCP_SUBEVENT_BROWSING_CHANGE_PATH
+ * @param event packet
+ * @return direction
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_browsing_change_path_get_direction(const uint8_t * event){
+    return event[7];
+}
+/**
+ * @brief Get field folder_id from event AVRCP_SUBEVENT_BROWSING_CHANGE_PATH
+ * @param event packet
+ * @return folder_id
+ * @note: btstack_type D
+ */
+static inline const uint8_t * avrcp_subevent_browsing_change_path_get_folder_id(const uint8_t * event){
+    return (const uint8_t *) &event[8];
+}
+
+/**
  * @brief Get field goep_cid from event GOEP_SUBEVENT_INCOMING_CONNECTION
  * @param event packet
  * @return goep_cid

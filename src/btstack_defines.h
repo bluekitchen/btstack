@@ -3670,6 +3670,16 @@ typedef uint8_t sm_key_t[16];
 #define AVRCP_SUBEVENT_COVER_ART_CONNECTION_RELEASED                          0x39u
 
 /**
+ * @format 1221D
+ * @param subevent_code
+ * @param browsing_cid
+ * @param uid_counter
+ * @param direction
+ * @param folder_id
+ */
+#define AVRCP_SUBEVENT_BROWSING_CHANGE_PATH                                   0x40u
+
+/**
  * @format 12BH
  * @param subevent_code
  * @param goep_cid
