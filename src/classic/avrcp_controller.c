@@ -1322,7 +1322,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
 
 static void avrcp_controller_handle_can_send_now(avrcp_connection_t * connection){
     // identifier (9) + num attributes (1) + attributes (4 * num attributes)
-    uint8_t get_element_attributes_command[9+8*((AVRCP_MEDIA_ATTR_RESERVED-AVRCP_MEDIA_ATTR_TITLE) + 1)];
+    uint8_t get_element_attributes_command[9+8*((AVRCP_MEDIA_ATTR_NUM-AVRCP_MEDIA_ATTR_TITLE) + 1)];
     uint16_t pos;
     uint16_t num_attributes_index;
     uint8_t i;
@@ -1359,7 +1359,7 @@ static void avrcp_controller_handle_can_send_now(avrcp_connection_t * connection
             // and the AttributeID field is omitted
             connection->data[num_attributes_index] = 0;
             pos++;
-            for (i = 0; i < (uint8_t)AVRCP_MEDIA_ATTR_RESERVED - (uint8_t)AVRCP_MEDIA_ATTR_TITLE; i++){
+            for (i = 0; i < (uint8_t)AVRCP_MEDIA_ATTR_NUM - (uint8_t)AVRCP_MEDIA_ATTR_TITLE; i++){
                 if ((connection->controller_element_attributes & (1<<i)) != 0){
                     // every attribute is 4 bytes long
                     big_endian_store_32(connection->data, pos, AVRCP_MEDIA_ATTR_TITLE + i);
@@ -1863,7 +1863,7 @@ uint8_t avrcp_controller_get_element_attributes(uint16_t avrcp_cid, uint8_t num_
 
     if (connection->state != AVCTP_CONNECTION_OPENED) return ERROR_CODE_COMMAND_DISALLOWED;
 
-    if (num_attributes >= AVRCP_MEDIA_ATTR_RESERVED) {
+    if (num_attributes >= AVRCP_MEDIA_ATTR_NUM) {
         return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
     }
 
@@ -1875,7 +1875,7 @@ uint8_t avrcp_controller_get_element_attributes(uint16_t avrcp_cid, uint8_t num_
     uint16_t attributes_set = 0;
     for (i = 0; i < num_attributes; i++){
         // ignore invalid attribute ID and "get all attributes"
-        if (AVRCP_MEDIA_ATTR_ALL < attributes[i] && attributes[i] < AVRCP_MEDIA_ATTR_RESERVED){
+        if (AVRCP_MEDIA_ATTR_ALL < attributes[i] && attributes[i] < AVRCP_MEDIA_ATTR_NUM){
             attributes_set |= 1 << (attributes[i] - AVRCP_MEDIA_ATTR_TITLE);
         }
     }

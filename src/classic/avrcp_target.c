@@ -129,7 +129,7 @@ static void avrcp_target_emit_respond_vendor_dependent_query(btstack_packet_hand
 // returns number of bytes stored
 static uint16_t avrcp_target_pack_single_element_header(uint8_t * buffer, avrcp_media_attribute_id_t attr_id, uint16_t attr_value_size){
     btstack_assert(attr_id > AVRCP_MEDIA_ATTR_ALL);
-    btstack_assert(attr_id < AVRCP_MEDIA_ATTR_RESERVED);
+    btstack_assert(attr_id < AVRCP_MEDIA_ATTR_NUM);
     uint16_t pos = 0;
     big_endian_store_32(buffer, pos, attr_id);
     big_endian_store_16(buffer, pos + 4, RFC2978_CHARSET_MIB_UTF8);
@@ -164,7 +164,7 @@ static uint16_t avrcp_now_playing_info_value_len_with_headers(avrcp_connection_t
     uint16_t playing_info_len = 0;
     
     uint8_t i;
-    for ( i = (uint8_t)AVRCP_MEDIA_ATTR_ALL + 1; i < (uint8_t) AVRCP_MEDIA_ATTR_RESERVED; i++){
+    for ( i = (uint8_t)AVRCP_MEDIA_ATTR_ALL + 1; i < (uint8_t) AVRCP_MEDIA_ATTR_NUM; i++){
         avrcp_media_attribute_id_t attr_id = (avrcp_media_attribute_id_t) i;
 
         if ((connection->target_now_playing_info_attr_bitmap & (1 << attr_id)) == 0) {
