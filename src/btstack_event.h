@@ -13295,12 +13295,12 @@ static inline uint16_t gattservice_subevent_battery_service_level_get_hids_cid(c
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field sevice_index from event GATTSERVICE_SUBEVENT_BATTERY_SERVICE_LEVEL
+ * @brief Get field service_index from event GATTSERVICE_SUBEVENT_BATTERY_SERVICE_LEVEL
  * @param event packet
- * @return sevice_index
+ * @return service_index
  * @note: btstack_type 1
  */
-static inline uint8_t gattservice_subevent_battery_service_level_get_sevice_index(const uint8_t * event){
+static inline uint8_t gattservice_subevent_battery_service_level_get_service_index(const uint8_t * event){
     return event[5];
 }
 /**
@@ -13320,6 +13320,26 @@ static inline uint8_t gattservice_subevent_battery_service_level_get_att_status(
  */
 static inline uint8_t gattservice_subevent_battery_service_level_get_level(const uint8_t * event){
     return event[7];
+}
+
+/**
+ * @brief Get field service_id from event GATTSERVICE_SUBEVENT_BATTERY_SERVICE_LEVEL_BROADCAST_START
+ * @param event packet
+ * @return service_id
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_battery_service_level_broadcast_start_get_service_id(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+
+/**
+ * @brief Get field service_id from event GATTSERVICE_SUBEVENT_BATTERY_SERVICE_LEVEL_BROADCAST_STOP
+ * @param event packet
+ * @return service_id
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_battery_service_level_broadcast_stop_get_service_id(const uint8_t * event){
+    return little_endian_read_16(event, 3);
 }
 
 /**
@@ -13648,6 +13668,34 @@ static inline uint16_t gattservice_subevent_device_information_pnp_id_get_produc
 }
 
 /**
+ * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_UDI_FOR_MEDICAL_DEVICES
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t gattservice_subevent_device_information_udi_for_medical_devices_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field att_status from event GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_UDI_FOR_MEDICAL_DEVICES
+ * @param event packet
+ * @return att_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_device_information_udi_for_medical_devices_get_att_status(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field label from event GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_UDI_FOR_MEDICAL_DEVICES
+ * @param event packet
+ * @return label
+ * @note: btstack_type T
+ */
+static inline const char * gattservice_subevent_device_information_udi_for_medical_devices_get_label(const uint8_t * event){
+    return (const char *) &event[6];
+}
+
+/**
  * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_SCAN_PARAMETERS_SERVICE_CONNECTED
  * @param event packet
  * @return con_handle
@@ -13657,12 +13705,12 @@ static inline hci_con_handle_t gattservice_subevent_scan_parameters_service_conn
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field att_status from event GATTSERVICE_SUBEVENT_SCAN_PARAMETERS_SERVICE_CONNECTED
+ * @brief Get field status from event GATTSERVICE_SUBEVENT_SCAN_PARAMETERS_SERVICE_CONNECTED
  * @param event packet
- * @return att_status
+ * @return status
  * @note: btstack_type 1
  */
-static inline uint8_t gattservice_subevent_scan_parameters_service_connected_get_att_status(const uint8_t * event){
+static inline uint8_t gattservice_subevent_scan_parameters_service_connected_get_status(const uint8_t * event){
     return event[5];
 }
 
@@ -14344,34 +14392,6 @@ static inline uint8_t gattservice_subevent_ias_server_stop_alerting_get_alert_le
  */
 static inline uint8_t gattservice_subevent_ias_server_stop_alerting_get_timeout(const uint8_t * event){
     return event[4];
-}
-
-/**
- * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_UDI_FOR_MEDICAL_DEVICES
- * @param event packet
- * @return con_handle
- * @note: btstack_type H
- */
-static inline hci_con_handle_t gattservice_subevent_device_information_udi_for_medical_devices_get_con_handle(const uint8_t * event){
-    return little_endian_read_16(event, 3);
-}
-/**
- * @brief Get field att_status from event GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_UDI_FOR_MEDICAL_DEVICES
- * @param event packet
- * @return att_status
- * @note: btstack_type 1
- */
-static inline uint8_t gattservice_subevent_device_information_udi_for_medical_devices_get_att_status(const uint8_t * event){
-    return event[5];
-}
-/**
- * @brief Get field label from event GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_UDI_FOR_MEDICAL_DEVICES
- * @param event packet
- * @return label
- * @note: btstack_type T
- */
-static inline const char * gattservice_subevent_device_information_udi_for_medical_devices_get_label(const uint8_t * event){
-    return (const char *) &event[6];
 }
 
 /**
