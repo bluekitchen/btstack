@@ -57,7 +57,7 @@ static int avrcp_browsing_target_handle_can_send_now(avrcp_browsing_connection_t
     
     // l2cap_reserve_packet_buffer();
     // uint8_t * packet = l2cap_get_outgoing_buffer();
-    uint8_t packet[300];
+    uint8_t packet[400];
     connection->packet_type = AVRCP_SINGLE_PACKET;
 
     packet[pos++] = (connection->transaction_label << 4) | (connection->packet_type << 2) | (AVRCP_RESPONSE_FRAME << 1) | 0;
@@ -259,7 +259,7 @@ void avrcp_browsing_target_register_packet_handler(btstack_packet_handler_t call
     avrcp_target_context.browsing_avrcp_callback = callback;
 }
 
-uint8_t avrcp_browsing_target_send_get_folder_items_response(uint16_t avrcp_browsing_cid, uint16_t uid_counter, uint8_t * attr_list, uint16_t attr_list_size){
+uint8_t avrcp_browsing_target_send_get_folder_items_response(uint16_t avrcp_browsing_cid, uint16_t uid_counter, uint8_t * attr_list, uint16_t attr_list_size, uint16_t num_items){
     avrcp_connection_t * avrcp_connection = avrcp_get_connection_for_browsing_cid_for_role(AVRCP_TARGET, avrcp_browsing_cid);
     if (!avrcp_connection){
         log_error("Could not find an AVRCP Target connection for browsing_cid 0x%02x.", avrcp_browsing_cid);
@@ -271,16 +271,22 @@ uint8_t avrcp_browsing_target_send_get_folder_items_response(uint16_t avrcp_brow
         log_info("Could not find a browsing connection.");
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    if (connection->state != AVCTP_CONNECTION_OPENED) return ERROR_CODE_COMMAND_DISALLOWED;
+    if (connection->state != AVCTP_CONNECTION_OPENED){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
 
     // TODO: handle response to SetAddressedPlayer
 
     uint16_t pos = 0;
     connection->cmd_operands[pos++] = AVRCP_PDU_ID_GET_FOLDER_ITEMS;
-    big_endian_store_16(connection->cmd_operands, pos, attr_list_size);
+    uint8_t param_length = 5;
+    uint8_t param_length_pos = pos;
     pos += 2;
-    
-    connection->cmd_operands[pos++] = AVRCP_STATUS_SUCCESS;
+
+    avrcp_status_code_t status = AVRCP_STATUS_SUCCESS;
+    uint8_t status_pos = pos;
+    pos++;
+
     big_endian_store_16(connection->cmd_operands, pos, uid_counter);
     pos += 2;
     
@@ -291,10 +297,35 @@ uint8_t avrcp_browsing_target_send_get_folder_items_response(uint16_t avrcp_brow
         log_info(" todo: list too big, invoke fragmentation");
         return 1;
     }
-    (void)memcpy(&connection->cmd_operands[pos], attr_list, attr_list_size);
-    pos += attr_list_size;
-	btstack_assert(pos <= 255);
-    connection->cmd_operands_length = (uint8_t) pos;
+
+    uint16_t items_byte_len = 0;
+    if (connection->start_item < num_items) {
+        if (connection->end_item < num_items) {
+            items_byte_len =  connection->end_item - connection->start_item + 1;
+        } else {
+            items_byte_len = num_items - connection->start_item;
+        }
+
+    } else {
+        big_endian_store_16(connection->cmd_operands, pos, 0);
+        pos += 2;
+    }
+    big_endian_store_16(connection->cmd_operands, pos, items_byte_len);
+    pos += 2;
+    param_length += items_byte_len;
+
+    if (items_byte_len > 0){
+        (void)memcpy(&connection->cmd_operands[pos], attr_list, attr_list_size);
+        pos += attr_list_size;
+    } else {
+        status = AVRCP_STATUS_RANGE_OUT_OF_BOUNDS;
+    }
+
+    big_endian_store_16(connection->cmd_operands, param_length_pos, param_length);
+    connection->cmd_operands[status_pos] = status;
+
+    btstack_assert(pos <= 400);
+    connection->cmd_operands_length = pos;
 
     connection->state = AVCTP_W2_SEND_RESPONSE;
     avrcp_browsing_request_can_send_now(connection, connection->l2cap_browsing_cid);
