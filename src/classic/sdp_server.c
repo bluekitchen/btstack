@@ -373,15 +373,18 @@ static uint16_t sdp_get_size_for_service_search_attribute_response(uint8_t * ser
         
         if (!sdp_record_matches_service_search_pattern(item->service_record, serviceSearchPattern)) continue;
         
-        // for all service records that match
-        total_response_size += 3 + sdp_get_filtered_size(item->service_record, attributeIDList);
+        // for all service records that match, ignoring empty attribute lists
+        uint16_t filtered_size = sdp_get_filtered_size(item->service_record, attributeIDList);
+        if (filtered_size > 0){
+            total_response_size += 3 + filtered_size;
+        }
     }
     return total_response_size;
 }
 
 int sdp_handle_service_search_attribute_request(uint8_t * packet, uint16_t remote_mtu){
     
-    // SDP header before attribute sevice list: 7
+    // SDP header before attribute service list: 7
     // Continuation, worst case: 5
     
     // get request details
@@ -456,7 +459,10 @@ int sdp_handle_service_search_attribute_request(uint8_t * packet, uint16_t remot
             
             // get size of this record
             uint16_t filtered_attributes_size = sdp_get_filtered_size(item->service_record, attributeIDList);
-            
+
+            // ignore empty lists
+            if (filtered_attributes_size == 0) continue;
+
             // stop if complete record doesn't fits into response but we already have a partial response
             if (((filtered_attributes_size + 3) > maximumAttributeByteCount) && !first_answer) {
                 continuation = 1;
