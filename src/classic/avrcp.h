@@ -735,9 +735,11 @@ typedef struct {
     const uint32_t * target_supported_companies;
     uint8_t          target_supported_companies_num;
 
+
     bool     target_addressed_player_changed;
     uint16_t target_addressed_player_id;
     uint16_t target_uid_counter;
+    bool     target_uids_changed;
 
     bool     target_accept_response;
 

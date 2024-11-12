@@ -841,6 +841,21 @@ uint8_t avrcp_target_addressed_player_changed(uint16_t avrcp_cid, uint16_t playe
     return ERROR_CODE_SUCCESS;
 }
 
+uint8_t avrcp_target_uids_changed(uint16_t avrcp_cid, uint16_t uid_counter){
+    avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
+    if (!connection){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+
+    connection->target_uid_counter = uid_counter;
+
+    if (connection->notifications_enabled & (1 << AVRCP_NOTIFICATION_EVENT_UIDS_CHANGED)) {
+        connection->target_uids_changed = true;
+        avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
+    }
+    return ERROR_CODE_SUCCESS;
+}
+
 uint8_t avrcp_target_battery_status_changed(uint16_t avrcp_cid, avrcp_battery_status_t battery_status){
     avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
     if (!connection){
@@ -1167,7 +1182,6 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     switch (event_id){
                         case AVRCP_NOTIFICATION_EVENT_AVAILABLE_PLAYERS_CHANGED:
                         case AVRCP_NOTIFICATION_EVENT_PLAYER_APPLICATION_SETTING_CHANGED:
-                        case AVRCP_NOTIFICATION_EVENT_UIDS_CHANGED:
                         case AVRCP_NOTIFICATION_EVENT_TRACK_REACHED_END:
                         case AVRCP_NOTIFICATION_EVENT_TRACK_REACHED_START:
                         case AVRCP_NOTIFICATION_EVENT_PLAYBACK_POS_CHANGED:
@@ -1183,6 +1197,16 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     connection->notifications_enabled |= event_mask;
                             
                     switch (event_id){
+                        case AVRCP_NOTIFICATION_EVENT_UIDS_CHANGED:{
+                            if (connection->target_uid_counter == 0){
+                                connection->target_uid_counter = 1;
+                            }
+                            uint8_t value[2];
+                            big_endian_store_16(value, 0, connection->target_uid_counter);
+                            avrcp_target_response_vendor_dependent_interim(connection, pdu_id, event_id, value, 2);
+                            break;
+                        }
+
                         case AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED:
                             if (connection->target_track_selected){
                                 if (connection->target_total_tracks > 0){
@@ -1395,6 +1419,14 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
                 break;
             }
 
+            if (connection->target_uids_changed){
+                connection->target_uids_changed = false;
+                notification_id = AVRCP_NOTIFICATION_EVENT_UIDS_CHANGED;
+                uint8_t value[2];
+                big_endian_store_16(value, 0, connection->target_uid_counter);
+                avrcp_target_notification_init(connection, notification_id, value, 2);
+                break;
+            }
             // nothing to send, exit
             return;
 
