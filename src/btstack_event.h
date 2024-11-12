@@ -12164,6 +12164,61 @@ static inline const uint8_t * avrcp_subevent_browsing_change_path_get_folder_id(
 }
 
 /**
+ * @brief Get field browsing_cid from event AVRCP_SUBEVENT_BROWSING_GET_ITEM_ATTRIBUTES
+ * @param event packet
+ * @return browsing_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t avrcp_subevent_browsing_get_item_attributes_get_browsing_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field uid_counter from event AVRCP_SUBEVENT_BROWSING_GET_ITEM_ATTRIBUTES
+ * @param event packet
+ * @return uid_counter
+ * @note: btstack_type 2
+ */
+static inline uint16_t avrcp_subevent_browsing_get_item_attributes_get_uid_counter(const uint8_t * event){
+    return little_endian_read_16(event, 5);
+}
+/**
+ * @brief Get field scope from event AVRCP_SUBEVENT_BROWSING_GET_ITEM_ATTRIBUTES
+ * @param event packet
+ * @return scope
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_browsing_get_item_attributes_get_scope(const uint8_t * event){
+    return event[7];
+}
+/**
+ * @brief Get field item_id from event AVRCP_SUBEVENT_BROWSING_GET_ITEM_ATTRIBUTES
+ * @param event packet
+ * @return item_id
+ * @note: btstack_type D
+ */
+static inline const uint8_t * avrcp_subevent_browsing_get_item_attributes_get_item_id(const uint8_t * event){
+    return (const uint8_t *) &event[8];
+}
+/**
+ * @brief Get field attributes_len from event AVRCP_SUBEVENT_BROWSING_GET_ITEM_ATTRIBUTES
+ * @param event packet
+ * @return attributes_len
+ * @note: btstack_type J
+ */
+static inline uint8_t avrcp_subevent_browsing_get_item_attributes_get_attributes_len(const uint8_t * event){
+    return event[16];
+}
+/**
+ * @brief Get field attributes from event AVRCP_SUBEVENT_BROWSING_GET_ITEM_ATTRIBUTES
+ * @param event packet
+ * @return attributes
+ * @note: btstack_type V
+ */
+static inline const uint8_t * avrcp_subevent_browsing_get_item_attributes_get_attributes(const uint8_t * event){
+    return &event[17];
+}
+
+/**
  * @brief Get field goep_cid from event GOEP_SUBEVENT_INCOMING_CONNECTION
  * @param event packet
  * @return goep_cid

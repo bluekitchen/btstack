@@ -3680,6 +3680,18 @@ typedef uint8_t sm_key_t[16];
 #define AVRCP_SUBEVENT_BROWSING_CHANGE_PATH                                   0x40u
 
 /**
+ * @format 1221DJV
+ * @param subevent_code
+ * @param browsing_cid
+ * @param uid_counter
+ * @param scope
+ * @param item_id
+ * @param attributes_len
+ * @param attributes
+ */
+#define AVRCP_SUBEVENT_BROWSING_GET_ITEM_ATTRIBUTES                                   0x41u
+
+/**
  * @format 12BH
  * @param subevent_code
  * @param goep_cid
