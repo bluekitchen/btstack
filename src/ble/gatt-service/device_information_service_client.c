@@ -139,7 +139,8 @@ static struct device_information_characteristic_handles{
     {ORG_BLUETOOTH_CHARACTERISTIC_SOFTWARE_REVISION_STRING, 0},
     {ORG_BLUETOOTH_CHARACTERISTIC_SYSTEM_ID, 0},
     {ORG_BLUETOOTH_CHARACTERISTIC_IEEE_11073_20601_REGULATORY_CERTIFICATION_DATA_LIST, 0},
-    {ORG_BLUETOOTH_CHARACTERISTIC_PNP_ID, 0}
+    {ORG_BLUETOOTH_CHARACTERISTIC_PNP_ID, 0},
+    {ORG_BLUETOOTH_CHARACTERISTIC_UDI_FOR_MEDICAL_DEVICES, 0}
 };
 
 static void device_information_service_update_handle_for_uuid(uint16_t uuid, uint16_t value_handle){
@@ -380,7 +381,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
     uint8_t att_status;
     device_information_service_client_t * client = NULL;
     gatt_client_service_t service;
-
+    bool trigger_next_query = false;
 #ifdef ENABLE_TESTING_SUPPORT
     gatt_client_characteristic_t characteristic;
 #endif
@@ -453,6 +454,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
 #else 
                     client->state = DEVICE_INFORMATION_SERVICE_CLIENT_STATE_W2_READ_VALUE_OF_CHARACTERISTIC;
 #endif
+                    trigger_next_query = true;
                     break;
  
 #ifdef ENABLE_TESTING_SUPPORT   
@@ -461,10 +463,12 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                         if ((client->characteristic_index + 1) < num_information_fields){
                             client->characteristic_index++;
                             client->state = DEVICE_INFORMATION_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTICS;
+                            trigger_next_query = true;
                             break;
                         } 
                         client->characteristic_index = 0;
                         client->state = DEVICE_INFORMATION_SERVICE_CLIENT_STATE_W2_READ_VALUE_OF_CHARACTERISTIC;
+                        trigger_next_query = true;
                         break;
 #endif                
                 case DEVICE_INFORMATION_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_VALUE:
@@ -472,6 +476,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                     if ((client->characteristic_index + 1) < num_information_fields){
                         client->characteristic_index++;
                         client->state = DEVICE_INFORMATION_SERVICE_CLIENT_STATE_W2_READ_VALUE_OF_CHARACTERISTIC;
+                        trigger_next_query = true;
                         break;
                     } 
                     // we are done with quering all characteristics
@@ -486,7 +491,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
             break;
     }
 
-    if (client && client->state != DEVICE_INFORMATION_SERVICE_CLIENT_STATE_IDLE){
+    if (trigger_next_query){
         device_informatiom_client_request_send_gatt_query(client);
     }
 }
