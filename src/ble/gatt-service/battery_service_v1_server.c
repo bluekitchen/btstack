@@ -50,6 +50,7 @@
 #include "btstack_debug.h"
 
 #include "ble/gatt-service/battery_service_v1_server.h"
+#include "hci_event_builder.h"
 
 #define BAS_TASK_BATTERY_LEVEL_CHANGED                                  0x0001
 #define BAS_TASK_BATTERY_LEVEL_STATUS_CHANGED                           0x0002
@@ -97,6 +98,7 @@ static const char * bas_uuid16_name[BAS_CHARACTERISTIC_INDEX_NUM] = {
 
 static uint16_t bas_service_id_counter = 0;
 static btstack_linked_list_t battery_services;
+static btstack_packet_handler_t battery_service_app_callback;
 
 #define MEDFLOAT16_POSITIVE_INFINITY            0x07FE
 #define MEDFLOAT16_NOT_A_NUMBER                 0x07FF
@@ -464,7 +466,21 @@ static int battery_service_write_callback(hci_con_handle_t con_handle, uint16_t 
     }
 
     if (attribute_handle == service->battery_level_status_broadcast_configuration_handle){
-        service->battery_level_status_broadcast_configuration = little_endian_read_16(buffer, 0);
+        uint8_t new_value = little_endian_read_16(buffer, 0);
+        bool broadcast_old = (service->battery_level_status_broadcast_configuration & 1) != 0;
+        bool broadcast_new = (new_value & 1) != 0;
+        if (broadcast_old != broadcast_new){
+            // emit broadcast start/stop based on value of broadcast_new
+            uint8_t event[5];
+            hci_event_builder_context_t context;
+            uint8_t subevent_type = broadcast_new ? GATTSERVICE_SUBEVENT_BATTERY_SERVICE_LEVEL_BROADCAST_START : GATTSERVICE_SUBEVENT_BATTERY_SERVICE_LEVEL_BROADCAST_STOP;
+            hci_event_builder_init(&context, event, sizeof(buffer), HCI_EVENT_GATTSERVICE_META, subevent_type);
+            hci_event_builder_add_16(&context, service->service_id);
+            if (battery_service_app_callback != NULL){
+                (*battery_service_app_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+            }
+        }
+        service->battery_level_status_broadcast_configuration = new_value;
         return 0;
     }
 
@@ -866,6 +882,11 @@ uint8_t battery_service_v1_server_set_serial_number(battery_service_v1_t * servi
     service->serial_number = serial_number;
     bas_server_set_callback(service, BAS_CHARACTERISTIC_INDEX_SERIAL_NUMBER_STRING);
     return ERROR_CODE_SUCCESS;
+}
+
+void battery_service_v1_server_set_packet_handler(btstack_packet_handler_t callback){
+    btstack_assert(callback != NULL);
+    battery_service_app_callback = callback;
 }
 
 void battery_service_v1_server_deregister(battery_service_v1_t *service){

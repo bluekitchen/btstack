@@ -313,6 +313,12 @@ void battery_service_v1_server_register(battery_service_v1_t * service, battery_
 void battery_service_v1_server_deregister(battery_service_v1_t * service);
 
 /**
+ * @brief Set callback for broadcast updates.
+ * @param callback
+ */
+void battery_service_v1_server_set_packet_handler(btstack_packet_handler_t callback);
+
+/**
  * @brief Update battery level
  * @note Triggers notification if subscribed
  * @param service
