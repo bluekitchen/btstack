@@ -297,8 +297,19 @@ typedef struct battery_service_v1 {
  */
 void battery_service_v1_server_init(void);
 
-void battery_service_v1_server_register(battery_service_v1_t * service, battery_service_v1_server_connection_t * connections, uint8_t connection_max_num);
+/**
+ * @brief Register Battery Service
+ * @param service
+ * @param connections array of battery_service_v1_server_connection_t for storage
+ * @param connection_max_num
+ * @param out_service_id
+ */
+void battery_service_v1_server_register(battery_service_v1_t * service, battery_service_v1_server_connection_t * connections, uint8_t connection_max_num,  uint16_t * out_service_id);
 
+/**
+ * @brief Deregister Battery Service Server
+ * @param service
+ */
 void battery_service_v1_server_deregister(battery_service_v1_t * service);
 
 /**

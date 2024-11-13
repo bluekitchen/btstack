@@ -95,7 +95,7 @@ static const char * bas_uuid16_name[BAS_CHARACTERISTIC_INDEX_NUM] = {
     "SERIAL_NUMBER_STRING",
 };
 
-static uint16_t bas_id_counter = 0;
+static uint16_t bas_service_id_counter = 0;
 static btstack_linked_list_t battery_services;
 
 #define MEDFLOAT16_POSITIVE_INFINITY            0x07FE
@@ -571,7 +571,7 @@ void battery_service_v1_server_init(void){
 
 }
 
-void battery_service_v1_server_register(battery_service_v1_t *service, battery_service_v1_server_connection_t *connections, uint8_t connection_max_num){
+void battery_service_v1_server_register(battery_service_v1_t *service, battery_service_v1_server_connection_t *connections, uint8_t connection_max_num, uint16_t * out_service_id){
     btstack_assert(service != NULL);
     btstack_assert(connections != NULL);
     btstack_assert(connection_max_num > 0u);
@@ -594,8 +594,11 @@ void battery_service_v1_server_register(battery_service_v1_t *service, battery_s
     UNUSED(service_found);
 
     // get next service id
-    bas_id_counter = btstack_next_cid_ignoring_zero(bas_id_counter);
-    service->service_id = bas_id_counter;
+    bas_service_id_counter = btstack_next_cid_ignoring_zero(bas_service_id_counter);
+    service->service_id = bas_service_id_counter;
+    if (out_service_id != NULL) {
+        *out_service_id = bas_service_id_counter;
+    }
 
     service->service_handler.start_handle = start_handle;
     service->service_handler.end_handle = end_handle;
