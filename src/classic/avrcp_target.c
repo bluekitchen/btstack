@@ -1497,7 +1497,21 @@ void avrcp_target_register_set_addressed_player_handler(bool (*callback)(uint16_
 }
 
 
-uint8_t avrcp_send_response_to_play_item(uint16_t avrcp_cid, avrcp_status_code_t status){
+uint8_t avrcp_target_send_response_for_play_item_cmd(uint16_t avrcp_cid, avrcp_status_code_t status){
+    avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(avrcp_cid, AVRCP_TARGET);
+    if (connection == NULL){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+    if (connection->state != AVCTP_W2_CHECK_DATABASE){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+    if (status != AVRCP_STATUS_SUCCESS){
+        return avrcp_target_response_vendor_dependent_reject(connection, AVRCP_PDU_ID_PLAY_ITEM, status);
+    }
+    return avrcp_target_vendor_dependent_response_accept(connection, AVRCP_PDU_ID_PLAY_ITEM, status);
+}
+
+uint8_t avrcp_target_send_response_for_add_to_now_playing_cmd(uint16_t avrcp_cid, avrcp_status_code_t status){
     avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(avrcp_cid, AVRCP_TARGET);
     if (connection == NULL){
         return ERROR_CODE_COMMAND_DISALLOWED;
