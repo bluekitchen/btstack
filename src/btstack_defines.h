@@ -3692,6 +3692,16 @@ typedef uint8_t sm_key_t[16];
 #define AVRCP_SUBEVENT_BROWSING_GET_ITEM_ATTRIBUTES                                   0x41u
 
 /**
+ * @format 1221D
+ * @param subevent_code
+ * @param avrcp_cid
+ * @param uid_counter
+ * @param scope
+ * @param item_id
+ */
+#define AVRCP_SUBEVENT_PLAY_ITEM                                                       0x42u
+
+/**
  * @format 12BH
  * @param subevent_code
  * @param goep_cid

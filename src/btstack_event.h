@@ -12219,6 +12219,43 @@ static inline const uint8_t * avrcp_subevent_browsing_get_item_attributes_get_at
 }
 
 /**
+ * @brief Get field avrcp_cid from event AVRCP_SUBEVENT_PLAY_ITEM
+ * @param event packet
+ * @return avrcp_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t avrcp_subevent_play_item_get_avrcp_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field uid_counter from event AVRCP_SUBEVENT_PLAY_ITEM
+ * @param event packet
+ * @return uid_counter
+ * @note: btstack_type 2
+ */
+static inline uint16_t avrcp_subevent_play_item_get_uid_counter(const uint8_t * event){
+    return little_endian_read_16(event, 5);
+}
+/**
+ * @brief Get field scope from event AVRCP_SUBEVENT_PLAY_ITEM
+ * @param event packet
+ * @return scope
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_play_item_get_scope(const uint8_t * event){
+    return event[7];
+}
+/**
+ * @brief Get field item_id from event AVRCP_SUBEVENT_PLAY_ITEM
+ * @param event packet
+ * @return item_id
+ * @note: btstack_type D
+ */
+static inline const uint8_t * avrcp_subevent_play_item_get_item_id(const uint8_t * event){
+    return (const uint8_t *) &event[8];
+}
+
+/**
  * @brief Get field goep_cid from event GOEP_SUBEVENT_INCOMING_CONNECTION
  * @param event packet
  * @return goep_cid
