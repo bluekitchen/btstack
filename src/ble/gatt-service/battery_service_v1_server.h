@@ -244,6 +244,8 @@ typedef struct battery_service_v1 {
 
     att_service_handler_t    service_handler;
 
+    uint16_t service_id;
+
     bas_characteristic_t  characteristics[BAS_CHARACTERISTIC_INDEX_NUM];
     uint16_t battery_level_status_broadcast_configuration_handle;
     uint16_t battery_level_status_broadcast_configuration;

@@ -95,6 +95,7 @@ static const char * bas_uuid16_name[BAS_CHARACTERISTIC_INDEX_NUM] = {
     "SERIAL_NUMBER_STRING",
 };
 
+static uint16_t bas_id_counter = 0;
 static btstack_linked_list_t battery_services;
 
 #define MEDFLOAT16_POSITIVE_INFINITY            0x07FE
@@ -591,6 +592,10 @@ void battery_service_v1_server_register(battery_service_v1_t *service, battery_s
     int service_found = gatt_server_get_handle_range_for_service_with_uuid16(ORG_BLUETOOTH_SERVICE_BATTERY_SERVICE, &start_handle, &end_handle);
     btstack_assert(service_found != 0);
     UNUSED(service_found);
+
+    // get next service id
+    bas_id_counter = btstack_next_cid_ignoring_zero(bas_id_counter);
+    service->service_id = bas_id_counter;
 
     service->service_handler.start_handle = start_handle;
     service->service_handler.end_handle = end_handle;
