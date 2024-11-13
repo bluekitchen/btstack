@@ -393,6 +393,7 @@ typedef enum {
     AVCTP_W4_STOP,
     AVCTP_W2_SEND_COMMAND,
     AVCTP_W2_SEND_RESPONSE,
+    AVCTP_W2_CHECK_DATABASE,
     AVCTP_W2_RECEIVE_PRESS_RESPONSE,
     AVCTP_W2_RECEIVE_RESPONSE,
     AVCTP_W2_SEND_GET_ELEMENT_ATTRIBUTES_REQUEST,
@@ -438,7 +439,8 @@ typedef enum {
     AVRCP_BROWSING_MEDIA_PLAYER_LIST = 0x00,
     AVRCP_BROWSING_MEDIA_PLAYER_VIRTUAL_FILESYSTEM,
     AVRCP_BROWSING_SEARCH,
-    AVRCP_BROWSING_NOW_PLAYING
+    AVRCP_BROWSING_NOW_PLAYING,
+    AVRCP_BROWSING_RFU
 } avrcp_browsing_scope_t;
 
 typedef enum {
@@ -740,6 +742,7 @@ typedef struct {
     uint16_t target_addressed_player_id;
     uint16_t target_uid_counter;
     bool     target_uids_changed;
+    avrcp_browsing_scope_t target_scope;
 
     bool     target_accept_response;
 

@@ -126,6 +126,25 @@ static void avrcp_target_emit_respond_vendor_dependent_query(btstack_packet_hand
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
+static void avrcp_target_emit_respond_play_item(btstack_packet_handler_t callback, uint16_t avrcp_cid, uint16_t uid_counter, avrcp_browsing_scope_t scope, uint8_t * uid){
+    btstack_assert(callback != NULL);
+
+    uint8_t event[16];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_AVRCP_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = AVRCP_SUBEVENT_PLAY_ITEM;
+    little_endian_store_16(event, pos, avrcp_cid);
+    pos += 2;
+    little_endian_store_16(event, pos, uid_counter);
+    pos += 2;
+    event[pos++] = (uint8_t) scope;
+    memcpy(&event[pos], uid, 8);
+    pos += 8;
+
+    (*callback)(HCI_EVENT_PACKET, 0, event, pos);
+}
+
 // returns number of bytes stored
 static uint16_t avrcp_target_pack_single_element_header(uint8_t * buffer, avrcp_media_attribute_id_t attr_id, uint16_t attr_value_size){
     btstack_assert(attr_id > AVRCP_MEDIA_ATTR_ALL);
@@ -1087,6 +1106,24 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
             pos += 2;
             // pos = 13
             switch (pdu_id){
+                case AVRCP_PDU_ID_PLAY_ITEM:
+                    if ( (pos + 11) > size){
+                        avrcp_target_vendor_dependent_response_accept(connection, pdu_id, AVRCP_STATUS_INVALID_COMMAND);
+                        return;
+                    }
+
+                    connection->target_scope = packet[pos++];
+                    if (connection->target_scope >= AVRCP_BROWSING_RFU){
+                        avrcp_target_vendor_dependent_response_accept(connection, pdu_id, AVRCP_STATUS_INVALID_PARAMETER);
+                        return;
+                    }
+                    memcpy(connection->target_track_id, &packet[pos], 8);
+                    pos += 8;
+                    connection->target_uid_counter = big_endian_read_16(packet,pos);
+                    connection->state = AVCTP_W2_CHECK_DATABASE;
+                    avrcp_target_emit_respond_play_item(avrcp_target_context.avrcp_callback, connection->avrcp_cid, connection->target_uid_counter, connection->target_scope,connection->target_track_id);
+                    break;
+
                 case AVRCP_PDU_ID_SET_ADDRESSED_PLAYER:{
                     if ((pos + 2) > size) return;
                     bool ok = length == 4;
@@ -1460,3 +1497,16 @@ void avrcp_target_register_set_addressed_player_handler(bool (*callback)(uint16_
 }
 
 
+uint8_t avrcp_send_response_to_play_item(uint16_t avrcp_cid, avrcp_status_code_t status){
+    avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(avrcp_cid, AVRCP_TARGET);
+    if (connection == NULL){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+    if (connection->state != AVCTP_W2_CHECK_DATABASE){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+    if (status != AVRCP_STATUS_SUCCESS){
+        return avrcp_target_response_vendor_dependent_reject(connection, AVRCP_PDU_ID_PLAY_ITEM, status);
+    }
+    return avrcp_target_vendor_dependent_response_accept(connection, AVRCP_PDU_ID_PLAY_ITEM, status);
+}
