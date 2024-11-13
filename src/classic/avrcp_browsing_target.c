@@ -100,11 +100,11 @@ static void avrcp_browsing_target_emit_get_folder_items(btstack_packet_handler_t
     little_endian_store_16(event, pos, browsing_cid);
     pos += 2;
     event[pos++] = connection->scope;
-    big_endian_store_32(event, pos, connection->start_item);
+    little_endian_store_32(event, pos, connection->start_item);
     pos += 4;
-    big_endian_store_32(event, pos, connection->end_item);
+    little_endian_store_32(event, pos, connection->end_item);
     pos += 4;
-    big_endian_store_32(event, pos, connection->attr_bitmap);
+    little_endian_store_32(event, pos, connection->attr_bitmap);
     pos += 4;
     (*callback)(HCI_EVENT_PACKET, 0, event, pos);
 }
