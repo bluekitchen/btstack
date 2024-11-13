@@ -260,7 +260,7 @@ typedef struct battery_service_v1 {
     uint32_t estimated_service_date_days;
 
     // ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_CRITCAL_STATUS
-    uint8_t critcal_status_flags;
+    uint8_t critical_status_flags;
 
     // ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_ENERGY_STATUS
     const battery_energy_status_t * energy_status;
@@ -425,6 +425,24 @@ uint8_t battery_service_v1_server_set_model_number(battery_service_v1_t * servic
  * @return ERROR_CODE_SUCCESS if value is valid, otherwise ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE
  */
 uint8_t battery_service_v1_server_set_serial_number(battery_service_v1_t * service, const char * serial_number);
+
+/**
+ * @brief Get Advertisement Data for all active Characteristic Broadcasts
+ * @param adv_interval
+ * @param adv_buffer
+ * @param adv_size
+ * @return
+ */
+uint16_t battery_service_v1_server_get_broadcast_advertisement(uint16_t adv_interval, uint8_t * adv_buffer, uint16_t adv_size);
+
+/**
+ * @brief Get Advertisement Data for single active Characteristic Broadcast
+ * @param adv_interval
+ * @param adv_buffer
+ * @param adv_size
+ * @return
+ */
+uint16_t battery_service_v1_server_get_broadcast_advertisement_single(battery_service_v1_t * service, uint16_t adv_interval, uint8_t * adv_buffer, uint16_t adv_size);
 
 void battery_service_v1_server_deinit(void);
 

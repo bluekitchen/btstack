@@ -51,6 +51,7 @@
 
 #include "ble/gatt-service/battery_service_v1_server.h"
 #include "hci_event_builder.h"
+#include "bluetooth_data_types.h"
 
 #define BAS_TASK_BATTERY_LEVEL_CHANGED                                  0x0001
 #define BAS_TASK_BATTERY_LEVEL_STATUS_CHANGED                           0x0002
@@ -210,68 +211,68 @@ static battery_service_v1_t * battery_service_service_for_con_handle(hci_con_han
     return NULL;
 }
 
-static uint8_t bas_serialize_characteristic(battery_service_v1_t * service, bas_characteristic_index_t index, uint8_t * event, uint8_t event_size){
+static uint8_t bas_serialize_characteristic(battery_service_v1_t * service, bas_characteristic_index_t index, uint8_t * buffer, uint8_t buffer_size){
     uint8_t pos = 0;
     switch ((bas_characteristic_index_t) index){
         case BAS_CHARACTERISTIC_INDEX_BATTERY_LEVEL:
-            event[pos++] = service->battery_level;
+            buffer[pos++] = service->battery_level;
             break;
 
         case BAS_CHARACTERISTIC_INDEX_BATTERY_LEVEL_STATUS:
             if (service->level_status == NULL){
                 return 0;
             }
-            event[pos++] = service->level_status->flags;
-            little_endian_store_16(event, pos, service->level_status->power_state_flags);
+            buffer[pos++] = service->level_status->flags;
+            little_endian_store_16(buffer, pos, service->level_status->power_state_flags);
             pos += 2;
             if ((service->level_status->flags & BATTERY_LEVEL_STATUS_BITMASK_IDENTIFIER_PRESENT) > 0u){
-                little_endian_store_16(event, pos, service->level_status->identifier);
+                little_endian_store_16(buffer, pos, service->level_status->identifier);
                 pos += 2;
             }
             if ((service->level_status->flags & BATTERY_LEVEL_STATUS_BITMASK_BATTERY_LEVEL_PRESENT) > 0u){
-                event[pos++] = service->level_status->battery_level;
+                buffer[pos++] = service->level_status->battery_level;
             }
             if ((service->level_status->flags & BATTERY_LEVEL_STATUS_BITMASK_ADDITIONAL_STATUS_PRESENT) > 0u){
-                event[pos++] = service->level_status->additional_status_flags;
+                buffer[pos++] = service->level_status->additional_status_flags;
             }
             break;
 
         case BAS_CHARACTERISTIC_INDEX_ESTIMATED_SERVICE_DATE:
-            little_endian_store_24(event, pos, service->estimated_service_date_days);
+            little_endian_store_24(buffer, pos, service->estimated_service_date_days);
             pos += 3;
             break;
 
         case BAS_CHARACTERISTIC_INDEX_BATTERY_CRITCAL_STATUS:
-            event[pos++] = service->critcal_status_flags;
+            buffer[pos++] = service->critical_status_flags;
             break;
 
         case BAS_CHARACTERISTIC_INDEX_BATTERY_ENERGY_STATUS:
             if (service->energy_status == NULL){
                 return 0;
             }
-            event[pos++] = service->energy_status->flags;
+            buffer[pos++] = service->energy_status->flags;
             if ((service->energy_status->flags & BATTERY_ENERGY_STATUS_BITMASK_EXTERNAL_SOURCE_POWER_PRESENT) > 0u){
-                little_endian_store_16(event, pos, service->energy_status->external_source_power_medfloat16);
+                little_endian_store_16(buffer, pos, service->energy_status->external_source_power_medfloat16);
                 pos += 2;
             }
             if ((service->energy_status->flags & BATTERY_ENERGY_STATUS_BITMASK_PRESENT_VOLTAGE_PRESENT) > 0u){
-                little_endian_store_16(event, pos, service->energy_status->present_voltage_medfloat16);
+                little_endian_store_16(buffer, pos, service->energy_status->present_voltage_medfloat16);
                 pos += 2;
             }
             if ((service->energy_status->flags & BATTERY_ENERGY_STATUS_BITMASK_AVAILABLE_ENERGY_PRESENT) > 0u){
-                little_endian_store_16(event, pos, service->energy_status->available_energy_medfloat16);
+                little_endian_store_16(buffer, pos, service->energy_status->available_energy_medfloat16);
                 pos += 2;
             }
             if ((service->energy_status->flags & BATTERY_ENERGY_STATUS_BITMASK_AVAILABLE_BATTERY_CAPACITY_PRESENT) > 0u){
-                little_endian_store_16(event, pos, service->energy_status->available_battery_capacity_medfloat16);
+                little_endian_store_16(buffer, pos, service->energy_status->available_battery_capacity_medfloat16);
                 pos += 2;
             }
             if ((service->energy_status->flags & BATTERY_ENERGY_STATUS_BITMASK_CHARGE_RATE_PRESENT) > 0u){
-                little_endian_store_16(event, pos, service->energy_status->charge_rate_medfloat16);
+                little_endian_store_16(buffer, pos, service->energy_status->charge_rate_medfloat16);
                 pos += 2;
             }
             if ((service->energy_status->flags & BATTERY_ENERGY_STATUS_BITMASK_AVAILABLE_ENERGY_AT_LAST_CHARGE_PRESENT) > 0u){
-                little_endian_store_16(event, pos, service->energy_status->available_energy_at_last_charge_medfloat16);
+                little_endian_store_16(buffer, pos, service->energy_status->available_energy_at_last_charge_medfloat16);
                 pos += 2;
             }
             break;
@@ -280,15 +281,15 @@ static uint8_t bas_serialize_characteristic(battery_service_v1_t * service, bas_
             if (service->time_status == NULL){
                 return 0;
             }
-            event[pos++] = service->time_status->flags;
-            little_endian_store_24(event, pos, service->time_status->time_until_discharged_minutes);
+            buffer[pos++] = service->time_status->flags;
+            little_endian_store_24(buffer, pos, service->time_status->time_until_discharged_minutes);
             pos += 3;
             if ((service->time_status->flags & BATTERY_TIME_STATUS_BITMASK_TIME_UNTIL_DISCHARGED_ON_STANDBY_PRESENT) > 0u){
-                little_endian_store_24(event, pos, service->time_status->time_until_discharged_on_standby_minutes);
+                little_endian_store_24(buffer, pos, service->time_status->time_until_discharged_on_standby_minutes);
                 pos += 3;
             }
             if ((service->time_status->flags & BATTERY_TIME_STATUS_BITMASK_TIME_UNTIL_RECHARGED_PRESENT) > 0u){
-                little_endian_store_24(event, pos, service->time_status->time_until_recharged_minutes);
+                little_endian_store_24(buffer, pos, service->time_status->time_until_recharged_minutes);
                 pos += 3;
             }
             break;
@@ -297,19 +298,19 @@ static uint8_t bas_serialize_characteristic(battery_service_v1_t * service, bas_
             if (service->health_status == NULL){
                 return 0;
             }
-            event[pos++] = service->health_status->flags;
+            buffer[pos++] = service->health_status->flags;
             if ((service->health_status->flags & BATTERY_HEALTH_STATUS_BITMASK_HEALTH_SUMMARY_PRESENT) > 0u){
-                event[pos++] = service->health_status->summary;
+                buffer[pos++] = service->health_status->summary;
             }
             if ((service->health_status->flags & BATTERY_HEALTH_STATUS_BITMASK_CYCLE_COUNT_PRESENT) > 0u){
-                little_endian_store_16(event, pos, service->health_status->cycle_count);
+                little_endian_store_16(buffer, pos, service->health_status->cycle_count);
                 pos += 2;
             }
             if ((service->health_status->flags & BATTERY_HEALTH_STATUS_BITMASK_CURRENT_TEMPERATURE_PRESENT) > 0u){
-                event[pos++] = service->health_status->current_temperature_degree_celsius;
+                buffer[pos++] = service->health_status->current_temperature_degree_celsius;
             }
             if ((service->health_status->flags & BATTERY_HEALTH_STATUS_BITMASK_DEEP_DISCHARGE_COUNT_PRESENT) > 0u){
-                little_endian_store_16(event, pos, service->health_status->deep_discharge_count);
+                little_endian_store_16(buffer, pos, service->health_status->deep_discharge_count);
                 pos += 2;
             }
             break;
@@ -318,16 +319,16 @@ static uint8_t bas_serialize_characteristic(battery_service_v1_t * service, bas_
             if (service->health_information == NULL){
                 return 0;
             }
-            event[pos++] = service->health_information->flags;
+            buffer[pos++] = service->health_information->flags;
             if ((service->health_information->flags & BATTERY_HEALTH_INFORMATION_BITMASK_CYCLE_COUNT_DESIGNED_LIFETIME_PRESENT) > 0u){
-                little_endian_store_16(event, pos, service->health_information->cycle_count_designed_lifetime);
+                little_endian_store_16(buffer, pos, service->health_information->cycle_count_designed_lifetime);
                 pos += 2;
             }
             if ((service->health_information->flags & BATTERY_HEALTH_INFORMATION_BITMASK_DESIGNED_OPERATING_TEMPERATURE_PRESENT) > 0u){
-                event[pos++] = service->health_information->min_designed_operating_temperature_degree_celsius;
+                buffer[pos++] = service->health_information->min_designed_operating_temperature_degree_celsius;
             }
             if ((service->health_information->flags & BATTERY_HEALTH_INFORMATION_BITMASK_DESIGNED_OPERATING_TEMPERATURE_PRESENT) > 0u){
-                event[pos++] = service->health_information->max_designed_operating_temperature_degree_celsius;
+                buffer[pos++] = service->health_information->max_designed_operating_temperature_degree_celsius;
             }
             break;
 
@@ -335,38 +336,38 @@ static uint8_t bas_serialize_characteristic(battery_service_v1_t * service, bas_
             if (service->information == NULL){
                 return 0;
             }
-            little_endian_store_16(event, pos, service->information->flags);
+            little_endian_store_16(buffer, pos, service->information->flags);
             pos += 2;
-            event[pos++] = service->information->features;
+            buffer[pos++] = service->information->features;
             if ((service->information->flags & BATTERY_INFORMATION_BITMASK_MANUFACTURE_DATE_PRESENT) > 0u){
-                little_endian_store_24(event, pos, service->information->manufacture_date_days);
+                little_endian_store_24(buffer, pos, service->information->manufacture_date_days);
                 pos += 3;
             }
             if ((service->information->flags & BATTERY_INFORMATION_BITMASK_EXPIRATION_DATE_PRESENT) > 0u){
-                little_endian_store_24(event, pos, service->information->expiration_date_days);
+                little_endian_store_24(buffer, pos, service->information->expiration_date_days);
                 pos += 3;
             }
             if ((service->information->flags & BATTERY_INFORMATION_BITMASK_DESIGNED_CAPACITY_PRESENT) > 0u){
-                little_endian_store_16(event, pos, service->information->designed_capacity_kWh_medfloat16);
+                little_endian_store_16(buffer, pos, service->information->designed_capacity_kWh_medfloat16);
                 pos += 2;
             }
             if ((service->information->flags & BATTERY_INFORMATION_BITMASK_LOW_ENERGY_PRESENT) > 0u){
-                little_endian_store_16(event, pos, service->information->low_energy_kWh_medfloat16);
+                little_endian_store_16(buffer, pos, service->information->low_energy_kWh_medfloat16);
                 pos += 2;
             }
             if ((service->information->flags & BATTERY_INFORMATION_BITMASK_CRITICAL_ENERGY_PRESENT) > 0u){
-                little_endian_store_16(event, pos, service->information->critical_energy_kWh_medfloat16);
+                little_endian_store_16(buffer, pos, service->information->critical_energy_kWh_medfloat16);
                 pos += 2;
             }
             if ((service->information->flags & BATTERY_INFORMATION_BITMASK_CHEMISTRY_PRESENT) > 0u){
-                event[pos++] = service->information->chemistry;
+                buffer[pos++] = service->information->chemistry;
             }
             if ((service->information->flags & BATTERY_INFORMATION_BITMASK_NOMINAL_VOLTAGE_PRESENT) > 0u){
-                little_endian_store_16(event, pos, service->information->nominal_voltage_medfloat16);
+                little_endian_store_16(buffer, pos, service->information->nominal_voltage_medfloat16);
                 pos += 2;
             }
             if ((service->information->flags & BATTERY_INFORMATION_BITMASK_AGGREGATION_GROUP_PRESENT) > 0u){
-                event[pos++] = service->information->aggregation_group;
+                buffer[pos++] = service->information->aggregation_group;
             }
             break;
         default:
@@ -469,6 +470,7 @@ static int battery_service_write_callback(hci_con_handle_t con_handle, uint16_t 
         uint8_t new_value = little_endian_read_16(buffer, 0);
         bool broadcast_old = (service->battery_level_status_broadcast_configuration & 1) != 0;
         bool broadcast_new = (new_value & 1) != 0;
+        service->battery_level_status_broadcast_configuration = new_value;
         if (broadcast_old != broadcast_new){
             // emit broadcast start/stop based on value of broadcast_new
             uint8_t event[5];
@@ -480,7 +482,6 @@ static int battery_service_write_callback(hci_con_handle_t con_handle, uint16_t 
                 (*battery_service_app_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
             }
         }
-        service->battery_level_status_broadcast_configuration = new_value;
         return 0;
     }
 
@@ -644,7 +645,7 @@ void battery_service_v1_server_register(battery_service_v1_t *service, battery_s
 
     log_info("Found Battery Service 0x%02x-0x%02x", start_handle, end_handle);
 
-    btstack_linked_list_add(&battery_services, (btstack_linked_item_t *) service);
+    btstack_linked_list_add_tail(&battery_services, (btstack_linked_item_t *) service);
 }
 
 
@@ -730,7 +731,7 @@ uint8_t battery_service_v1_server_set_critcal_status_flags(battery_service_v1_t 
         return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
     }
 
-    service->critcal_status_flags = critcal_status_flags;
+    service->critical_status_flags = critcal_status_flags;
     bas_server_set_callback(service, BAS_CHARACTERISTIC_INDEX_BATTERY_CRITCAL_STATUS);
     return ERROR_CODE_SUCCESS;
 }
@@ -904,3 +905,100 @@ void battery_service_v1_server_deinit(void){
         battery_service_v1_server_deregister(service);       
     }
 }
+
+uint16_t battery_service_v1_server_get_broadcast_advertisement(uint16_t adv_interval, uint8_t * adv_buffer, uint16_t adv_size){
+
+    if (adv_size < 7) return 0u;
+
+    uint16_t pos = 0;
+    // adv flags
+    adv_buffer[pos++] = 2;
+    adv_buffer[pos++] = BLUETOOTH_DATA_TYPE_FLAGS;
+    adv_buffer[pos++] = 0x04;
+
+    // adv interval
+    adv_buffer[pos++] = 3;
+    adv_buffer[pos++] = BLUETOOTH_DATA_TYPE_ADVERTISING_INTERVAL;
+    little_endian_store_16(adv_buffer, pos, adv_interval);
+    pos += 2;
+
+    uint16_t pos_without_data = pos;
+
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &battery_services);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        battery_service_v1_t * service = (battery_service_v1_t*) btstack_linked_list_iterator_next(&it);
+        if ((service->battery_level_status_broadcast_configuration & 1) != 0) {
+            uint8_t value_buffer[10];
+            uint16_t value_len = bas_serialize_characteristic(service, BAS_CHARACTERISTIC_INDEX_BATTERY_LEVEL_STATUS, value_buffer, sizeof(value_buffer));
+            if ((pos + 4 + value_len) <= adv_size) {
+                adv_buffer[pos++] = 3 + value_len;
+                adv_buffer[pos++] = BLUETOOTH_DATA_TYPE_SERVICE_DATA_16_BIT_UUID;
+                little_endian_store_16(adv_buffer, pos, ORG_BLUETOOTH_SERVICE_BATTERY_SERVICE);
+                pos += 2;
+                memcpy(&adv_buffer[pos], value_buffer, value_len);
+                pos += value_len;
+            } else {
+                break;
+            }
+        }
+    }
+
+    // indicate nothing to broadcast
+    if (pos == pos_without_data) {
+        pos = 0;
+    }
+
+    return pos;
+}
+
+uint16_t battery_service_v1_server_get_broadcast_advertisement_single(battery_service_v1_t * service_single, uint16_t adv_interval, uint8_t * adv_buffer, uint16_t adv_size){
+
+    if (adv_size < 7) return 0u;
+
+    uint16_t pos = 0;
+    // adv flags
+    adv_buffer[pos++] = 2;
+    adv_buffer[pos++] = BLUETOOTH_DATA_TYPE_FLAGS;
+    adv_buffer[pos++] = 0x04;
+
+    // adv interval
+    adv_buffer[pos++] = 3;
+    adv_buffer[pos++] = BLUETOOTH_DATA_TYPE_ADVERTISING_INTERVAL;
+    little_endian_store_16(adv_buffer, pos, adv_interval);
+    pos += 2;
+
+    uint16_t pos_without_data = pos;
+
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &battery_services);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        battery_service_v1_t * service = (battery_service_v1_t*) btstack_linked_list_iterator_next(&it);
+        if (service == service_single) {
+            if ((service->battery_level_status_broadcast_configuration & 1) != 0) {
+                uint8_t value_buffer[10];
+                uint16_t value_len = bas_serialize_characteristic(service,
+                                                                  BAS_CHARACTERISTIC_INDEX_BATTERY_LEVEL_STATUS,
+                                                                  value_buffer, sizeof(value_buffer));
+                if ((pos + 4 + value_len) <= adv_size) {
+                    adv_buffer[pos++] = 3 + value_len;
+                    adv_buffer[pos++] = BLUETOOTH_DATA_TYPE_SERVICE_DATA_16_BIT_UUID;
+                    little_endian_store_16(adv_buffer, pos, ORG_BLUETOOTH_SERVICE_BATTERY_SERVICE);
+                    pos += 2;
+                    memcpy(&adv_buffer[pos], value_buffer, value_len);
+                    pos += value_len;
+                } else {
+                    break;
+                }
+            }
+        }
+    }
+
+    // indicate nothing to broadcast
+    if (pos == pos_without_data) {
+        pos = 0;
+    }
+
+    return pos;
+}
+
