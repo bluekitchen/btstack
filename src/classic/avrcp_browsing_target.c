@@ -398,15 +398,18 @@ uint8_t avrcp_browsing_target_send_get_folder_items_response(uint16_t avrcp_brow
     if (items_byte_len > 0){
         (void)memcpy(&connection->cmd_operands[pos], attr_list, attr_list_size);
         pos += attr_list_size;
+        connection->cmd_operands_length = pos;
     } else {
         status = AVRCP_STATUS_RANGE_OUT_OF_BOUNDS;
+        param_length = 1;
+        connection->cmd_operands_length = status_pos + 1;
     }
 
     big_endian_store_16(connection->cmd_operands, param_length_pos, param_length);
     connection->cmd_operands[status_pos] = status;
 
     btstack_assert(pos <= 400);
-    connection->cmd_operands_length = pos;
+
 
     connection->state = AVCTP_W2_SEND_RESPONSE;
     avrcp_browsing_request_can_send_now(connection, connection->l2cap_browsing_cid);
