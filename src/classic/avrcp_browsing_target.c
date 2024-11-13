@@ -433,13 +433,18 @@ uint8_t avrcp_browsing_target_send_change_path_response(uint16_t avrcp_browsing_
     }
 
     uint16_t pos = 0;
+    uint16_t param_length = (status == AVRCP_STATUS_SUCCESS) ? 5 : 1;
     connection->cmd_operands[pos++] = AVRCP_PDU_ID_CHANGE_PATH;
+
     // Param length
-    big_endian_store_16(connection->cmd_operands, pos, 5);
+    big_endian_store_16(connection->cmd_operands, pos, param_length);
     pos += 2;
     connection->cmd_operands[pos++] = status;
-    big_endian_store_32(connection->cmd_operands, pos, num_items);
-    pos += 4;
+
+    if (status == AVRCP_STATUS_SUCCESS){
+        big_endian_store_32(connection->cmd_operands, pos, num_items);
+        pos += 4;
+    }
 
     connection->cmd_operands_length = pos;
     connection->state = AVCTP_W2_SEND_RESPONSE;
