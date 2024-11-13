@@ -137,7 +137,7 @@ void a2dp_create_sdp_record(uint8_t * service,  uint32_t service_record_handle, 
         uint8_t *a2dProfile = de_push_sequence(attribute);
         {
             de_add_number(a2dProfile,  DE_UUID, DE_SIZE_16, BLUETOOTH_SERVICE_CLASS_ADVANCED_AUDIO_DISTRIBUTION);
-            de_add_number(a2dProfile,  DE_UINT, DE_SIZE_16, 0x0103);
+            de_add_number(a2dProfile,  DE_UINT, DE_SIZE_16, 0x0104);
         }
         de_pop_sequence(attribute, a2dProfile);
     }
