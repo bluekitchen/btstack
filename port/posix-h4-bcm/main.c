@@ -69,6 +69,7 @@
 #include "hci_transport_h4.h"
 #include "hci_dump_posix_fs.h"
 #include "hci_dump_posix_stdout.h"
+#include "btstack_audio.h"
 
 
 int btstack_main(int argc, const char * argv[]);
@@ -217,6 +218,11 @@ static void phase2(int status){
     }
 
     printf("Phase 2: Main app\n");
+
+#ifdef HAVE_PORTAUDIO
+    btstack_audio_sink_set_instance(btstack_audio_portaudio_sink_get_instance());
+    btstack_audio_source_set_instance(btstack_audio_portaudio_source_get_instance());
+#endif
 
     // setup app
     btstack_main(main_argc, main_argv);
