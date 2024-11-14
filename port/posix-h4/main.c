@@ -200,6 +200,7 @@ static void trigger_shutdown(void){
     log_info("sigint_handler: shutting down");
     shutdown_triggered = true;
     hci_power_control(HCI_POWER_OFF);
+    btstack_stdin_reset();
 }
 
 static int led_state = 0;
@@ -399,5 +400,6 @@ int main(int argc, const char * argv[]){
     // go
     btstack_run_loop_execute();    
 
+    btstack_stdin_reset();
     return 0;
 }
