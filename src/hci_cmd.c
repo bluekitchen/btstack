@@ -198,7 +198,12 @@ uint16_t hci_cmd_create_from_template(uint8_t *hci_cmd_buffer, const hci_cmd_t *
             case 'V':
                 btstack_assert(var_len != INVALID_VAR_LEN);
                 ptr = va_arg(argptr, uint8_t *); // LCOV_EXCL_BR_LINE
-                (void)memcpy(&hci_cmd_buffer[pos], ptr, var_len);
+                // avoid calling  memcpy with NULL and size = 0 <- undefined behaviour
+                if (ptr == NULL){
+                    btstack_assert(var_len == 0);
+                } else {
+                    (void)memcpy(&hci_cmd_buffer[pos], ptr, var_len);
+                }
                 pos += var_len;
                 var_len = INVALID_VAR_LEN;
                 break;
