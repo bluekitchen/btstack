@@ -12219,6 +12219,43 @@ static inline const uint8_t * avrcp_subevent_browsing_get_item_attributes_get_at
 }
 
 /**
+ * @brief Get field browsing_cid from event AVRCP_SUBEVENT_BROWSING_SEARCH
+ * @param event packet
+ * @return browsing_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t avrcp_subevent_browsing_search_get_browsing_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field characterset from event AVRCP_SUBEVENT_BROWSING_SEARCH
+ * @param event packet
+ * @return characterset
+ * @note: btstack_type 2
+ */
+static inline uint16_t avrcp_subevent_browsing_search_get_characterset(const uint8_t * event){
+    return little_endian_read_16(event, 5);
+}
+/**
+ * @brief Get field value_length from event AVRCP_SUBEVENT_BROWSING_SEARCH
+ * @param event packet
+ * @return value_length
+ * @note: btstack_type J
+ */
+static inline uint8_t avrcp_subevent_browsing_search_get_value_length(const uint8_t * event){
+    return event[7];
+}
+/**
+ * @brief Get field value from event AVRCP_SUBEVENT_BROWSING_SEARCH
+ * @param event packet
+ * @return value
+ * @note: btstack_type V
+ */
+static inline const uint8_t * avrcp_subevent_browsing_search_get_value(const uint8_t * event){
+    return &event[8];
+}
+
+/**
  * @brief Get field avrcp_cid from event AVRCP_SUBEVENT_PLAY_ITEM
  * @param event packet
  * @return avrcp_cid
