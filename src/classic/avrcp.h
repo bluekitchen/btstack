@@ -60,6 +60,7 @@ extern "C" {
 #define AVRCP_BROWSING_MAX_NUM_ATTR_IDS 8
 #define AVRCP_DISPLAYABLE_NAME_MAX_LENGTH  20
 #define AVRCP_ATTRIBUTES_MAX_NUM           10
+#define AVRCP_SEARCH_STRING_MAX_LENGTH     20
 
 #define AVRCP_MAX_AV_C_MESSAGE_FRAME_SIZE 512
 
@@ -591,7 +592,12 @@ typedef struct {
     uint16_t search_str_len;
     uint8_t  search_str[20];
     uint8_t  search;
-    
+
+    // search str
+    uint16_t target_search_str_len;
+    char *  target_search_str;
+    uint16_t target_search_characterset;
+
     // get_item_attributes
     uint8_t  get_total_nr_items;
     avrcp_browsing_scope_t get_total_nr_items_scope;
