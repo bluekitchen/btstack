@@ -209,7 +209,6 @@ static void avrcp_browsing_target_emit_get_item_attributes(btstack_packet_handle
 static void avrcp_browsing_target_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(size);
     avrcp_browsing_connection_t * browsing_connection;
-    avrcp_browsing_direction_t direction;
 
     switch (packet_type) {
         case L2CAP_DATA_PACKET:{
