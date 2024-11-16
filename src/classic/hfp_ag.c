@@ -2809,7 +2809,11 @@ static uint8_t hfp_ag_setup_audio_connection(hfp_connection_t * hfp_connection){
     hfp_connection->establish_audio_connection = 1;
     hfp_connection->sco_for_msbc_failed = 0;
 
-    btstack_assert(hfp_connection->codecs_state != HFP_CODECS_IDLE);
+    // Codec Negotiation is not supported by both sides, or HF forgot to exchange codecs
+    if (hfp_connection->codecs_state == HFP_CODECS_IDLE){
+        hfp_connection->negotiated_codec = HFP_CODEC_CVSD;
+        hfp_connection->codecs_state = HFP_CODECS_EXCHANGED;
+    }
 
     // Codecs list is available, but no codec negotiation happened yet
     if (hfp_connection->codecs_state == HFP_CODECS_RECEIVED_LIST){
