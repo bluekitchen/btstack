@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   - hfp_hf_apple_set_battery_level
   - hfp_hf_apple_set_docked_state
 - HFP AG: report Apple Accessory information, battery level and docked state
+- AVRCP: Support browsing in Target role
 - PBAP Client: allow to set start offset and max list count for pull phonebook operation
 - PBAP Client: support multiple parallel connections
 - HID Parser: introduce HID Descriptor and HID Descriptor Usage iterators
@@ -27,8 +28,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Link Loss Service Server and Client: added
 - TX Power Service Client: added
 - btstack_util: safe wrappers for snprintf
+- Battery Service v1.1 Server
 
 ### Fixed
+- L2CAP: Fix ERTM Tx buffer reconfiguration
 - RFCOMM: shut down multiplexer after closing last channel instead of multiplexer idle timer
 - RFCOMM: fix multiple outgoing channel setup
 - SDP Server: skip empty attribute lists in Service Search Attribute Response
