@@ -421,6 +421,8 @@ bool sdp_attribute_list_valid(uint8_t *attributeIDList){
 }
 
 static int sdp_traversal_valid_uuid(uint8_t * element, de_type_t type, de_size_t size, void *my_context) {
+    UNUSED(element);
+    UNUSED(size);
     if (type == DE_UUID) {
         return 0;
     } else {
