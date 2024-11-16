@@ -42,6 +42,8 @@ set(SOURCES
 )
 list(SORT SOURCES)
 
+add_compile_options( -g -DHAVE_ASSERT)
+
 # create static lib
 add_library(btstack STATIC ${SOURCES})
 
