@@ -1055,6 +1055,9 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                         pos += value_len;
 
                         log_info("TODO send event: attribute_id %d, value_len %d, value %s", attribute_id, value_len, value);
+                        UNUSED(character_set_id);
+                        UNUSED(repeat_mode);
+                        UNUSED(shuffle_mode);
                         switch (attribute_id){
                             case AVRCP_PLAYER_APPLICATION_SETTING_ATTRIBUTE_ID_REPEAT_MODE_STATUS:
                                 break;
