@@ -3162,6 +3162,7 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
                                 }
                                 break;
                             case HCI_ISO_STREAM_STATE_W4_ISO_SETUP_OUTPUT:
+                                iso_stream->state = HCI_ISO_STREAM_STATE_ACTIVE;
                                 emit_cis_created = true;
                                 break;
                             default:
