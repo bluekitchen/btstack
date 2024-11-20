@@ -196,21 +196,6 @@ static battery_service_v1_t * battery_service_service_for_attribute_handle(uint1
 }
 
 
-static battery_service_v1_t * battery_service_service_for_con_handle(hci_con_handle_t con_handle){
-    btstack_linked_list_iterator_t it;    
-    btstack_linked_list_iterator_init(&it, &battery_services);
-    while (btstack_linked_list_iterator_has_next(&it)){
-        battery_service_v1_t * service = (battery_service_v1_t*) btstack_linked_list_iterator_next(&it);
-        uint8_t i;
-        for (i = 0; i < service->connections_max_num; i++){
-            if (service->connections[i].con_handle == con_handle){
-                return service;
-            }
-        }
-    }
-    return NULL;
-}
-
 static uint8_t bas_serialize_characteristic(battery_service_v1_t * service, bas_characteristic_index_t index, uint8_t * buffer, uint8_t buffer_size){
     uint8_t pos = 0;
     switch ((bas_characteristic_index_t) index){
