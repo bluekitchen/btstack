@@ -170,6 +170,7 @@ typedef enum {
     AVDTP_CODEC_SBC             = 0x00,
     AVDTP_CODEC_MPEG_1_2_AUDIO  = 0x01, 
     AVDTP_CODEC_MPEG_2_4_AAC    = 0x02,
+    AVDTP_CODEC_MPEG_D_USAC     = 0x03,
     AVDTP_CODEC_ATRAC_FAMILY    = 0x04,
     AVDTP_CODEC_NON_A2DP        = 0xFF
 } avdtp_media_codec_type_t;
@@ -294,7 +295,10 @@ typedef enum {
     AVDTP_AAC_MPEG2_LC = 1,
     AVDTP_AAC_MPEG4_LC,
     AVDTP_AAC_MPEG4_LTP,
-    AVDTP_AAC_MPEG4_SCALABLE
+    AVDTP_AAC_MPEG4_SCALABLE,
+    AVDTP_AAC_MPEG4_HE_AAC,
+    AVDTP_AAC_MPEG4_HE_AACv2,
+    AVDTP_AAC_MPEG4_HE_AAC_ELDv2
 } avdtp_aac_object_type_t;
 
 typedef enum {
@@ -337,6 +341,7 @@ typedef struct {
     uint8_t                 channels;
     uint32_t                bit_rate;
     uint8_t                 vbr;
+    bool                    drc;
 } avdtp_configuration_mpeg_aac_t;
 
 typedef struct {
