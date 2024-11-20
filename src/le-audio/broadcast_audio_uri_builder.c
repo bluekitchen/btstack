@@ -160,6 +160,7 @@ bool broadcast_audio_uri_builder_append_vendor_specific(broadcast_audio_uri_buil
         uint8_t vendor_id_big_endian_id[2];
         big_endian_store_16(vendor_id_big_endian_id, 0, vendor_id);
         uint8_t vendor_id_hex[4];
+        memset(vendor_id_hex, 0, sizeof(vendor_id_hex));
         broadcast_audio_uri_builder_string_hexdump(vendor_id_hex, vendor_id_hex, 2);
         // TODO: base64(vendor_id_hex + data)
         ok = broadcast_audio_uri_builder_append_string(builder, ";");
