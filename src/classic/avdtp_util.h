@@ -57,6 +57,8 @@ extern "C" {
 #define AVDTP_MEDIA_CONFIG_MPEG_AUDIO_EVENT_LEN 18
 #define AVDTP_MEDIA_CONFIG_MPEG_AAC_EVENT_LEN 18
 #define AVDTP_MEDIA_CONFIG_ATRAC_EVENT_LEN 18
+#define AVDTP_MEDIA_CONFIG_MPEG_D_USAC_EVENT_LEN 18
+
 #define AVDTP_MEDIA_CONFIG_OTHER_EVENT_LEN (13 + AVDTP_MAX_MEDIA_CODEC_INFORMATION_LENGTH)
 
 static inline uint8_t avdtp_header(uint8_t tr_label, avdtp_packet_type_t packet_type, avdtp_message_type_t msg_type){
@@ -133,6 +135,8 @@ void avdtp_config_mpeg_aac_set_sampling_frequency(uint8_t * config, uint16_t sam
 void avdtp_config_mpeg_aac_store(uint8_t * config, const avdtp_configuration_mpeg_aac_t * configuration);
 void avdtp_config_atrac_set_sampling_frequency(uint8_t * config, uint16_t sampling_frequency_hz);
 void avdtp_config_atrac_store(uint8_t * config, const avdtp_configuration_atrac_t * configuration);
+void avdtp_config_mpegd_usac_set_sampling_frequency(uint8_t * config, uint16_t sampling_frequency_hz);
+void avdtp_config_mpegd_usac_store(uint8_t * config, const avdtp_configuration_mpegd_usac_t * configuration);
 
 #if defined __cplusplus
 }

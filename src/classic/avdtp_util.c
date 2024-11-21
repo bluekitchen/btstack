@@ -725,6 +725,41 @@ static void avdtp_signaling_emit_media_codec_atrac_capability(uint16_t avdtp_cid
     avdtp_emit_sink_and_source(event, pos);
 }
 
+static void avdtp_signaling_emit_media_codec_mpeg_d_usac_capability(uint16_t avdtp_cid, uint8_t remote_seid, adtvp_media_codec_capabilities_t media_codec) {
+    const uint8_t * media_codec_information = media_codec.media_codec_information;
+    uint8_t event[18];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_AVDTP_META;
+    pos++; // set later
+    event[pos++] = AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_D_USAC_CAPABILITY;
+    little_endian_store_16(event, pos, avdtp_cid);
+    pos += 2;
+    event[pos++] = remote_seid;
+    event[pos++] = media_codec.media_type;
+
+    uint32_t sampling_frequency_bitmap = ((media_codec_information[0] & 0x3F) << 20) |
+                                          (media_codec_information[1] << 12) |
+                                          (media_codec_information[2] << 4) |
+                                          (media_codec_information[3] >> 4);
+
+    uint8_t  channels_bitmap            = (media_codec_information[3] >> 2) & 0x03;
+    uint8_t  vbr                        = (media_codec_information[4] >> 7) & 0x01;
+
+    uint16_t bit_rate_index_bitmap     = ((media_codec_information[4]) & 0xEF) << 16 | (media_codec_information[5] << 8) | media_codec_information[6];
+
+    event[pos++] = media_codec_information[0] >> 6;
+    little_endian_store_32(event, pos, sampling_frequency_bitmap);
+    pos += 4;
+    event[pos++] = channels_bitmap;
+    event[pos++] = sampling_frequency_bitmap;
+    event[pos++] = vbr;
+    little_endian_store_24(event, pos, bit_rate_index_bitmap);
+    pos += 3;
+    event[1] = pos - 2;
+    avdtp_emit_sink_and_source(event, pos);
+}
+
+
 static void avdtp_signaling_emit_media_codec_other_capability(uint16_t avdtp_cid, uint8_t remote_seid, adtvp_media_codec_capabilities_t media_codec) {
     uint8_t event[AVDTP_MAX_MEDIA_CODEC_INFORMATION_LENGTH + 11];
     int pos = 0;
@@ -872,6 +907,9 @@ static void avdtp_signaling_emit_media_codec_capability(uint16_t avdtp_cid, uint
             break;
         case AVDTP_CODEC_ATRAC_FAMILY:
             avdtp_signaling_emit_media_codec_atrac_capability(avdtp_cid, remote_seid, media_codec);
+            break;
+        case AVDTP_CODEC_MPEG_D_USAC:
+            avdtp_signaling_emit_media_codec_mpeg_d_usac_capability(avdtp_cid, remote_seid, media_codec);
             break;
         default:
             avdtp_signaling_emit_media_codec_other_capability(avdtp_cid, remote_seid, media_codec);
@@ -1103,7 +1141,7 @@ avdtp_signaling_setup_media_codec_mpec_aac_config_event(uint8_t *event, uint16_t
                                                         uint16_t avdtp_cid, uint8_t reconfigure,
                                                         const uint8_t *media_codec_information) {
 
-    btstack_assert(size >= AVDTP_MEDIA_CONFIG_MPEG_AUDIO_EVENT_LEN);
+    btstack_assert(size >= AVDTP_MEDIA_CONFIG_MPEG_AAC_EVENT_LEN);
 
     uint8_t local_seid = avdtp_local_seid(stream_endpoint);
     uint8_t remote_seid = avdtp_remote_seid(stream_endpoint);
@@ -1164,6 +1202,82 @@ avdtp_signaling_setup_media_codec_mpec_aac_config_event(uint8_t *event, uint16_t
     event[pos++] = vbr;
 
     btstack_assert(AVDTP_MEDIA_CONFIG_MPEG_AAC_EVENT_LEN == pos);
+
+    return pos;
+}
+
+static uint16_t
+avdtp_signaling_setup_media_codec_mpegd_config_event(uint8_t *event, uint16_t size,
+                                                        const avdtp_stream_endpoint_t *stream_endpoint,
+                                                        uint16_t avdtp_cid, uint8_t reconfigure,
+                                                        const uint8_t *media_codec_information) {
+
+    btstack_assert(size >= AVDTP_MEDIA_CONFIG_MPEG_D_USAC_EVENT_LEN);
+
+    uint8_t local_seid = avdtp_local_seid(stream_endpoint);
+    uint8_t remote_seid = avdtp_remote_seid(stream_endpoint);
+
+    uint16_t pos = 0;
+    event[pos++] = HCI_EVENT_AVDTP_META;
+    event[pos++] = AVDTP_MEDIA_CONFIG_MPEG_D_USAC_EVENT_LEN - 2;
+
+    event[pos++] = AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_D_USAC_CONFIGURATION;
+
+    little_endian_store_16(event, pos, avdtp_cid);
+    pos += 2;
+    event[pos++] = local_seid;
+    event[pos++] = remote_seid;
+    event[pos++] = reconfigure;
+    event[pos++] = AVDTP_CODEC_MPEG_D_USAC;
+
+    uint8_t  object_type_bitmap        =   media_codec_information[0] >> 6;
+    uint32_t sampling_frequency_bitmap = ((media_codec_information[0] & 0x3F) << 20) |
+                                         (media_codec_information[1] << 12) |
+                                         (media_codec_information[2] << 4) |
+                                         (media_codec_information[3] >> 4);
+
+    uint8_t  channels_bitmap            = (media_codec_information[3] >> 2) & 0x03;
+    uint8_t  vbr                        = (media_codec_information[4] >> 7) & 0x01;
+
+    uint32_t bit_rate                  = ((media_codec_information[3] & 0x7f) << 16) | (media_codec_information[4] << 8) | media_codec_information[5];
+
+    uint8_t object_type = 0;
+    if (object_type_bitmap & 0x10){
+        object_type = AVDTP_USAC_OBJECT_TYPE_MPEG_D_DRC;
+    } else {
+        object_type = AVDTP_USAC_OBJECT_TYPE_RFU;
+    }
+
+    uint32_t sampling_frequency = 0;
+    uint8_t i;
+    const uint32_t usac_sampling_frequency_table[] = {
+            96000, 88200, 76800, 70560,
+            64000, 58800, 48000, 44100, 38400, 35280, 32000, 29400,
+            24000, 22050, 19200, 17640, 16000, 14700, 12800, 12000,
+            11760, 11025,  9600,  8820,  8000,  7350
+    };
+    for (i=0;i<26;i++){
+        if (sampling_frequency_bitmap & (1U << i)) {
+            sampling_frequency = usac_sampling_frequency_table[i];
+        }
+    }
+
+    uint8_t num_channels = 0;
+    if (channels_bitmap & 0x02){
+        num_channels = 1;
+    } else if (channels_bitmap & 0x01){
+        num_channels = 2;
+    }
+
+    event[pos++] = object_type;
+    little_endian_store_24(event, pos, sampling_frequency);
+    pos += 3;
+    event[pos++] = num_channels;
+    event[pos++] = vbr;
+    little_endian_store_24(event, pos, bit_rate);
+    pos += 3;
+
+    btstack_assert(AVDTP_MEDIA_CONFIG_MPEG_D_USAC_EVENT_LEN == pos);
 
     return pos;
 }
@@ -1301,6 +1415,9 @@ uint16_t avdtp_setup_media_codec_config_event(uint8_t *event, uint16_t size, con
                                                                            media_codec->media_codec_information);
         case AVDTP_CODEC_ATRAC_FAMILY:
             return avdtp_signaling_setup_media_codec_atrac_config_event(event, size, stream_endpoint, avdtp_cid, reconfigure,
+                                                                        media_codec->media_codec_information);
+        case AVDTP_CODEC_MPEG_D_USAC:
+            return avdtp_signaling_setup_media_codec_mpegd_config_event(event, size, stream_endpoint, avdtp_cid, reconfigure,
                                                                         media_codec->media_codec_information);
         default:
             return avdtp_signaling_setup_media_codec_other_config_event(event, size, stream_endpoint, avdtp_cid, reconfigure,
@@ -1559,4 +1676,46 @@ void avdtp_config_atrac_store(uint8_t * config, const avdtp_configuration_atrac_
     config[5] = configuration->maximum_sul & 0xff;
     config[6] = 0;
     avdtp_config_atrac_set_sampling_frequency(config, configuration->sampling_frequency);
+}
+
+void avdtp_config_mpegd_usac_set_sampling_frequency(uint8_t * config, uint16_t sampling_frequency_hz) {
+    uint16_t sampling_frequency_bitmap = 0;
+    uint8_t i;
+    const uint32_t usac_sampling_frequency_table[] = {
+            96000, 88200, 76800, 70560,
+            64000, 58800, 48000, 44100, 38400, 35280, 32000, 29400,
+            24000, 22050, 19200, 17640, 16000, 14700, 12800, 12000,
+            11760, 11025,  9600,  8820,  8000,  7350
+    };
+    for (i=0;i<26;i++){
+        if (sampling_frequency_hz == usac_sampling_frequency_table[i]){
+            sampling_frequency_bitmap = 1 << i;
+            break;
+        }
+    }
+    config[0] = (config[0] & 0xC0) | sampling_frequency_bitmap >> 20;
+    config[1] = sampling_frequency_bitmap >> 12;
+    config[2] = sampling_frequency_bitmap >> 4;
+    config[3] = (sampling_frequency_bitmap & 0x0f) << 4;
+}
+
+void avdtp_config_mpegd_usac_store(uint8_t * config, const avdtp_configuration_mpegd_usac_t * configuration) {
+    config[0] = 1 << (7 -(configuration->object_type - AVDTP_USAC_OBJECT_TYPE_MPEG_D_DRC)) & 0xC0;
+    avdtp_config_mpegd_usac_set_sampling_frequency(config, configuration->sampling_frequency);
+
+    uint8_t channels_bitmap = 0;
+    switch (configuration->channels){
+        case 1:
+            channels_bitmap = 0x08;
+            break;
+        case 2:
+            channels_bitmap = 0x04;
+            break;
+        default:
+            break;
+    }
+    config[3] = config[3] | channels_bitmap;
+    config[4] = ((configuration->vbr & 0x01) << 7) | ((configuration->bit_rate >> 16) & 0x7f);
+    config[5] = (configuration->bit_rate >> 8) & 0xff;
+    config[6] =  configuration->bit_rate & 0xff;
 }

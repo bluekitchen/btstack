@@ -176,6 +176,11 @@ typedef enum {
 } avdtp_media_codec_type_t;
 
 typedef enum {
+    AVDTP_USAC_OBJECT_TYPE_MPEG_D_DRC = 0x00,
+    AVDTP_USAC_OBJECT_TYPE_RFU
+} avdtp_usac_object_type_t;
+
+typedef enum {
     AVDTP_CONTENT_PROTECTION_DTCP = 0x0001,
     AVDTP_CONTENT_PROTECTION_SCMS_T = 0x0002
 } avdtp_content_protection_type_t;
@@ -343,6 +348,14 @@ typedef struct {
     uint8_t                 vbr;
     bool                    drc;
 } avdtp_configuration_mpeg_aac_t;
+
+typedef struct {
+    avdtp_usac_object_type_t object_type;
+    uint32_t                sampling_frequency;
+    uint8_t                 channels;
+    uint32_t                bit_rate;
+    uint8_t                 vbr;
+} avdtp_configuration_mpegd_usac_t;
 
 typedef struct {
     avdtp_atrac_version_t   version;
