@@ -1495,19 +1495,25 @@ void avdtp_config_mpeg_aac_set_sampling_frequency(uint8_t * config, uint16_t sam
 }
 
 void avdtp_config_mpeg_aac_store(uint8_t * config, const avdtp_configuration_mpeg_aac_t * configuration) {
-    config[0] = 1 << (7 -(configuration->object_type - AVDTP_AAC_MPEG2_LC));
+    config[0] = (1 << (7 -(configuration->object_type - AVDTP_AAC_MPEG2_LC))) | (configuration->drc?1u:0u);
     uint8_t channels_bitmap = 0;
     switch (configuration->channels){
         case 1:
-            channels_bitmap = 0x02;
+            channels_bitmap = 0x08;
             break;
         case 2:
+            channels_bitmap = 0x04;
+            break;
+        case 6:
+            channels_bitmap = 0x02;
+            break;
+        case 8:
             channels_bitmap = 0x01;
             break;
         default:
             break;
     }
-    config[2] = channels_bitmap << 2;
+    config[2] = channels_bitmap;
     config[3] = ((configuration->vbr & 0x01) << 7) | ((configuration->bit_rate >> 16) & 0x7f);
     config[4] = (configuration->bit_rate >> 8) & 0xff;
     config[5] =  configuration->bit_rate & 0xff;
