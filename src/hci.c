@@ -3064,19 +3064,23 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
             // lookup CIG
             cig = hci_cig_for_id(hci_stack->iso_active_operation_group_id);
             if (cig != NULL){
-                uint8_t i = 0;
                 if (status == ERROR_CODE_SUCCESS){
-                    // assign CIS handles to pre-allocated CIS
-                    btstack_linked_list_iterator_t it;
-                    btstack_linked_list_iterator_init(&it, &hci_stack->iso_streams);
-                    while (btstack_linked_list_iterator_has_next(&it) && (i < cig->num_cis)) {
-                        hci_iso_stream_t *iso_stream = (hci_iso_stream_t *) btstack_linked_list_iterator_next(&it);
-                        if ((iso_stream->group_id == hci_stack->iso_active_operation_group_id) &&
-                            (iso_stream->iso_type == HCI_ISO_TYPE_CIS)){
-                            hci_con_handle_t cis_handle = little_endian_read_16(packet, OFFSET_OF_DATA_IN_COMMAND_COMPLETE+3+(2*i));
-                            iso_stream->cis_handle  = cis_handle;
-                            cig->cis_con_handles[i] = cis_handle;
-                            i++;
+                    uint8_t i;
+                    for (i=0;i<cig->num_cis;i++) {
+                        // assign CIS handles to pre-allocated CIS
+                        uint8_t cis_id = cig->params->cis_params[i].cis_id;
+                        btstack_linked_list_iterator_t it;
+                        btstack_linked_list_iterator_init(&it, &hci_stack->iso_streams);
+                        while (btstack_linked_list_iterator_has_next(&it) && (i < cig->num_cis)) {
+                            hci_iso_stream_t *iso_stream = (hci_iso_stream_t *) btstack_linked_list_iterator_next(&it);
+                            if ((iso_stream->group_id == hci_stack->iso_active_operation_group_id) &&
+                                (iso_stream->iso_type == HCI_ISO_TYPE_CIS) &&
+                                (iso_stream->stream_id == cis_id)){
+                                hci_con_handle_t cis_handle = little_endian_read_16(packet, OFFSET_OF_DATA_IN_COMMAND_COMPLETE+3+(2*i));
+                                iso_stream->cis_handle  = cis_handle;
+                                cig->cis_con_handles[i] = cis_handle;
+                                break;
+                            }
                         }
                     }
                     cig->state = LE_AUDIO_CIG_STATE_W4_CIS_REQUEST;
@@ -3180,6 +3184,7 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
                         // assume we are central
                         uint8_t cis_index     = cig->state_vars.next_cis >> 1;
                         uint8_t cis_direction = cig->state_vars.next_cis & 1;
+                        uint8_t cis_id        = cig->params->cis_params[cis_index].cis_id;
                         bool outgoing_needed  = cig->params->cis_params[cis_index].max_sdu_p_to_c > 0;
                         // if outgoing has been setup, or incoming was setup but outgoing not required
                         if ((cis_direction == 1) || (outgoing_needed == false)){
@@ -3187,7 +3192,7 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
                             btstack_linked_list_iterator_init(&it, &hci_stack->iso_streams);
                             while (btstack_linked_list_iterator_has_next(&it)) {
                                 hci_iso_stream_t *iso_stream = (hci_iso_stream_t *) btstack_linked_list_iterator_next(&it);
-                                if ((iso_stream->group_id == cig->cig_id) && (iso_stream->stream_id == cis_index)){
+                                if ((iso_stream->group_id == cig->cig_id) && (iso_stream->stream_id == cis_id)){
                                     hci_cis_handle_created(iso_stream, status);
                                 }
                             }
