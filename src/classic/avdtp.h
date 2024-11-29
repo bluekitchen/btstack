@@ -709,7 +709,7 @@ uint8_t avdtp_validate_media_configuration(const avdtp_stream_endpoint_t *stream
 // frequency will be used by avdtp_choose_sbc_sampling_frequency (if supported by both endpoints)
 void    avdtp_set_preferred_sampling_frequency(avdtp_stream_endpoint_t * stream_endpoint, uint32_t sampling_frequency);
 
-// channel_mode will be used by avdtp_choose_sbc_channel_mode (if supported by both endpoints)
+// channels_num will be used by avdtp_choose_sbc_channel_mode (if supported by both endpoints)
 void    avdtp_set_preferred_channel_mode(avdtp_stream_endpoint_t * stream_endpoint, uint8_t channel_mode);
 
 void    avdtp_set_preferred_sbc_channel_mode(avdtp_stream_endpoint_t * stream_endpoint, uint32_t sampling_frequency);
