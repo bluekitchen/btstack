@@ -197,6 +197,7 @@ static battery_service_v1_t * battery_service_service_for_attribute_handle(uint1
 
 
 static uint8_t bas_serialize_characteristic(battery_service_v1_t * service, bas_characteristic_index_t index, uint8_t * buffer, uint8_t buffer_size){
+    UNUSED(buffer_size);
     uint8_t pos = 0;
     switch ((bas_characteristic_index_t) index){
         case BAS_CHARACTERISTIC_INDEX_BATTERY_LEVEL:
@@ -635,6 +636,7 @@ void battery_service_v1_server_register(battery_service_v1_t *service, battery_s
 
 
 static void bas_server_set_callback_for_connection(battery_service_v1_server_connection_t * connection, bas_characteristic_index_t index, uint8_t task){
+    UNUSED(index);
     if (connection->con_handle == HCI_CON_HANDLE_INVALID){
         connection->scheduled_tasks = 0;
         return;
