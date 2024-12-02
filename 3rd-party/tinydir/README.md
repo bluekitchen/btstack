@@ -1,6 +1,6 @@
 TinyDir
 =======
-[![Build Status](https://travis-ci.org/cxong/tinydir.svg?branch=master)](https://travis-ci.org/cxong/tinydir)
+[![CMake](https://github.com/cxong/tinydir/actions/workflows/cmake.yml/badge.svg)](https://github.com/cxong/tinydir/actions/workflows/cmake.yml)
 [![Release](http://img.shields.io/github/release/cxong/tinydir.svg)](https://github.com/cxong/tinydir/releases/latest)
 
 Lightweight, portable and easy to integrate C directory and file reader. TinyDir wraps dirent for POSIX and FindFirstFile for Windows.
@@ -77,3 +77,4 @@ Known Limitations
 
 - Limited path and filename sizes
 - [Possible race condition bug if folder being read has changing content](https://github.com/cxong/tinydir/issues/13)
+- Does not support extended-length path lengths in Windows - paths are limited to 260 characters. See <https://learn.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation?tabs=registry>
