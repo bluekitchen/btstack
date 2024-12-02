@@ -1,0 +1,17 @@
+.swp
+.*.sw[op]
+*~
+*.o
+*.a
+*.xml
+*.d
+*.map
+*.elf
+build/
+GPATH
+GRTAGS
+GTAGS
+tags
+*.txt
+*.log
+core
