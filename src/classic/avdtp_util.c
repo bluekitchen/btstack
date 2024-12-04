@@ -98,10 +98,61 @@ static const char * avdtp_si_name[] = {
     "AVDTP_SI_GET_ALL_CAPABILITIES", 
     "AVDTP_SI_DELAY_REPORT" 
 };
+
 const char * avdtp_si2str(uint16_t index){
     if ((index <= 0) || (index >= sizeof(avdtp_si_name)/sizeof(avdtp_si_name[0]) )) return avdtp_si_name[0];
     return avdtp_si_name[index];
 }
+
+
+static const uint32_t usac_sampling_frequency_table[] = {
+        96000, 88200, 76800, 70560,
+        64000, 58800, 48000, 44100, 38400, 35280, 32000, 29400,
+        24000, 22050, 19200, 17640, 16000, 14700, 12800, 12000,
+        11760, 11025,  9600,  8820,  8000,  7350
+};
+static const uint8_t usac_sampling_frequency_table_size = sizeof(usac_sampling_frequency_table)/sizeof(uint32_t);
+
+static const uint32_t mpeg_sampling_frequency_table[] = {
+        48000, 44100, 32000, 24000, 22040, 16000
+};
+static const uint8_t mpeg_sampling_frequency_table_size = sizeof(mpeg_sampling_frequency_table)/sizeof(uint32_t);
+
+static const uint32_t sbc_sampling_frequency_table[] = {
+        48000, 44100, 32000, 16000
+};
+static const uint8_t sbc_sampling_frequency_table_size = sizeof(sbc_sampling_frequency_table)/sizeof(uint32_t);
+
+static const uint32_t atrac_sampling_frequency_table[] = {
+        48000, 44100
+};
+static const uint8_t atrac_sampling_frequency_table_size = sizeof(atrac_sampling_frequency_table)/sizeof(uint32_t);
+
+static const uint32_t aac_sampling_frequency_table[] = {
+        96000, 88200, 64000, 48000, 44100, 32000, 24000, 22050, 16000, 12000, 11025, 8000
+};
+static const uint8_t aac_sampling_frequency_table_size = sizeof(aac_sampling_frequency_table)/sizeof(uint32_t);
+
+static uint32_t avdtp_config_get_sampling_frequency_bitmap_from_table(uint16_t sampling_frequency_hz, const uint32_t * table, uint8_t table_size) {
+    uint8_t i;
+    for (i = 0; i < table_size; i++){
+        if (sampling_frequency_hz == table[i]){
+            return 1 << i;
+        }
+    }
+    return 0;
+}
+
+static uint32_t avdtp_config_get_sampling_frequency_from_table(uint16_t sampling_frequency_bitmap, const uint32_t * table, uint8_t table_size) {
+    uint8_t i;
+    for (i = 0; i < table_size; i++){
+        if (sampling_frequency_bitmap & (1U << i)) {
+            return table[i];
+        }
+    }
+    return 0;
+}
+
 
 void avdtp_reset_stream_endpoint(avdtp_stream_endpoint_t * stream_endpoint){
     stream_endpoint->media_con_handle = 0;
@@ -1184,16 +1235,7 @@ avdtp_signaling_setup_media_codec_mpec_aac_config_event(uint8_t *event, uint16_t
         object_type = AVDTP_AAC_MPEG2_LC;
     }
 
-    uint32_t sampling_frequency = 0;
-    uint8_t i;
-    const uint32_t aac_sampling_frequency_table[] = {
-        96000, 88200, 64000, 48000, 44100, 32000, 24000, 22050, 16000, 12000, 11025, 8000
-    };
-    for (i=0;i<12;i++){
-        if (sampling_frequency_bitmap & (1U << i)) {
-            sampling_frequency = aac_sampling_frequency_table[i];
-        }
-    }
+    uint32_t sampling_frequency = avdtp_config_get_sampling_frequency_from_table(sampling_frequency_bitmap, aac_sampling_frequency_table, aac_sampling_frequency_table_size);
 
     uint8_t num_channels = 0;
     if (channels_bitmap & 0x08){
@@ -1262,19 +1304,7 @@ avdtp_signaling_setup_media_codec_mpegd_config_event(uint8_t *event, uint16_t si
         object_type = AVDTP_USAC_OBJECT_TYPE_RFU;
     }
 
-    uint32_t sampling_frequency = 0;
-    uint8_t i;
-    const uint32_t usac_sampling_frequency_table[] = {
-            96000, 88200, 76800, 70560,
-            64000, 58800, 48000, 44100, 38400, 35280, 32000, 29400,
-            24000, 22050, 19200, 17640, 16000, 14700, 12800, 12000,
-            11760, 11025,  9600,  8820,  8000,  7350
-    };
-    for (i=0;i<26;i++){
-        if (sampling_frequency_bitmap & (1U << i)) {
-            sampling_frequency = usac_sampling_frequency_table[i];
-        }
-    }
+    uint32_t sampling_frequency = avdtp_config_get_sampling_frequency_from_table(sampling_frequency_bitmap, usac_sampling_frequency_table, usac_sampling_frequency_table_size );
 
     uint8_t num_channels = 0;
     if (channels_bitmap & 0x02){
@@ -1529,19 +1559,8 @@ uint8_t avdtp_remote_seid(const avdtp_stream_endpoint_t * stream_endpoint){
 
 // helper to set/get configuration
 uint8_t avdtp_config_sbc_set_sampling_frequency(uint8_t * config, uint16_t sampling_frequency_hz){
-    uint8_t sampling_frequency_bitmap = 0;
-    const uint16_t sbc_sampling_frequency_table[] = {
-            48000, 44100, 32000, 16000
-    };
-
-    uint8_t i;
-    for (i=0;i<4;i++){
-        if (sampling_frequency_hz == sbc_sampling_frequency_table[i]){
-            sampling_frequency_bitmap = 1 << i;
-            break;
-        }
-    }
-    if (sampling_frequency_bitmap == 0){
+    uint8_t sampling_frequency_bitmap = (uint8_t)avdtp_config_get_sampling_frequency_bitmap_from_table(sampling_frequency_hz, sbc_sampling_frequency_table, sbc_sampling_frequency_table_size);
+     if (sampling_frequency_bitmap == 0){
         return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
     }
     config[0] = (config[0] & 0x0f) | (uint8_t)(sampling_frequency_bitmap << 4);
@@ -1585,18 +1604,7 @@ uint8_t avdtp_config_sbc_store(uint8_t * config, const avdtp_configuration_sbc_t
 }
 
 uint8_t avdtp_config_mpeg_audio_set_sampling_frequency(uint8_t * config, uint16_t sampling_frequency_hz) {
-    uint8_t sampling_frequency_bitmap = 0;
-    const uint16_t mpeg_sampling_frequency_table[] = {
-            48000, 44100, 32000, 24000, 22040, 16000
-    };
-
-    uint8_t i;
-    for (i=0;i<6;i++){
-        if (sampling_frequency_hz == mpeg_sampling_frequency_table[i]){
-            sampling_frequency_bitmap = 1 << i;
-            break;
-        }
-    }
+    uint8_t sampling_frequency_bitmap = (uint8_t)avdtp_config_get_sampling_frequency_bitmap_from_table(sampling_frequency_hz, mpeg_sampling_frequency_table, mpeg_sampling_frequency_table_size);
     if (sampling_frequency_bitmap == 0){
         return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
     }
@@ -1624,17 +1632,7 @@ uint8_t avdtp_config_mpeg_audio_store(uint8_t * config, const avdtp_configuratio
 }
 
 uint8_t avdtp_config_mpeg_aac_set_sampling_frequency(uint8_t * config, uint16_t sampling_frequency_hz) {
-    uint16_t sampling_frequency_bitmap = 0;
-    uint8_t i;
-    const uint32_t aac_sampling_frequency_table[] = {
-            96000, 88200, 64000, 48000, 44100, 32000, 24000, 22050, 16000, 12000, 11025, 8000
-    };
-    for (i=0;i<12;i++){
-        if (sampling_frequency_hz == aac_sampling_frequency_table[i]){
-            sampling_frequency_bitmap = 1 << i;
-            break;
-        }
-    }
+    uint16_t sampling_frequency_bitmap = (uint16_t)avdtp_config_get_sampling_frequency_bitmap_from_table(sampling_frequency_hz, aac_sampling_frequency_table, aac_sampling_frequency_table_size);
     if (sampling_frequency_bitmap == 0){
         return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
     }
@@ -1671,17 +1669,7 @@ uint8_t avdtp_config_mpeg_aac_store(uint8_t * config, const avdtp_configuration_
 }
 
 uint8_t avdtp_config_atrac_set_sampling_frequency(uint8_t * config, uint16_t sampling_frequency_hz) {
-    uint8_t sampling_frequency_bitmap = 0;
-    uint8_t i;
-    const uint32_t atrac_sampling_frequency_table[] = {
-            48000, 44100
-    };
-    for (i=0;i<2;i++){
-        if (sampling_frequency_hz == atrac_sampling_frequency_table[i]){
-            sampling_frequency_bitmap = 1 << i;
-            break;
-        }
-    }
+    uint8_t sampling_frequency_bitmap = (uint8_t)avdtp_config_get_sampling_frequency_bitmap_from_table(sampling_frequency_hz, atrac_sampling_frequency_table, atrac_sampling_frequency_table_size);
     if (sampling_frequency_bitmap == 0){
         return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
     }
@@ -1717,20 +1705,7 @@ uint8_t avdtp_config_atrac_store(uint8_t * config, const avdtp_configuration_atr
 }
 
 uint8_t avdtp_config_mpegd_usac_set_sampling_frequency(uint8_t * config, uint16_t sampling_frequency_hz) {
-    uint32_t sampling_frequency_bitmap = 0;
-    uint8_t i;
-    const uint32_t usac_sampling_frequency_table[] = {
-            96000, 88200, 76800, 70560,
-            64000, 58800, 48000, 44100, 38400, 35280, 32000, 29400,
-            24000, 22050, 19200, 17640, 16000, 14700, 12800, 12000,
-            11760, 11025,  9600,  8820,  8000,  7350
-    };
-    for (i=0;i<26;i++){
-        if (sampling_frequency_hz == usac_sampling_frequency_table[i]){
-            sampling_frequency_bitmap = 1 << i;
-            break;
-        }
-    }
+    uint32_t sampling_frequency_bitmap = avdtp_config_get_sampling_frequency_bitmap_from_table(sampling_frequency_hz, usac_sampling_frequency_table, usac_sampling_frequency_table_size);
     if (sampling_frequency_bitmap == 0){
         return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
     }
