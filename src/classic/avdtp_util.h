@@ -127,16 +127,16 @@ uint8_t  avdtp_remote_seid(const avdtp_stream_endpoint_t * stream_endpoint);
 const char * avdtp_si2str(uint16_t index);
 
 // helper to set/get configuration
-void avdtp_config_sbc_set_sampling_frequency(uint8_t * config, uint16_t sampling_frequency_hz);
-void avdtp_config_sbc_store(uint8_t * config, const avdtp_configuration_sbc_t * configuration);
-void avdtp_config_mpeg_audio_set_sampling_frequency(uint8_t * config, uint16_t sampling_frequency_hz);
-void avdtp_config_mpeg_audio_store(uint8_t * config,  const avdtp_configuration_mpeg_audio_t * configuration);
-void avdtp_config_mpeg_aac_set_sampling_frequency(uint8_t * config, uint16_t sampling_frequency_hz);
+uint8_t avdtp_config_sbc_set_sampling_frequency(uint8_t * config, uint16_t sampling_frequency_hz);
+uint8_t avdtp_config_sbc_store(uint8_t * config, const avdtp_configuration_sbc_t * configuration);
+uint8_t avdtp_config_mpeg_audio_set_sampling_frequency(uint8_t * config, uint16_t sampling_frequency_hz);
+uint8_t avdtp_config_mpeg_audio_store(uint8_t * config,  const avdtp_configuration_mpeg_audio_t * configuration);
+uint8_t avdtp_config_mpeg_aac_set_sampling_frequency(uint8_t * config, uint16_t sampling_frequency_hz);
 uint8_t avdtp_config_mpeg_aac_store(uint8_t * config, const avdtp_configuration_mpeg_aac_t * configuration);
-void avdtp_config_atrac_set_sampling_frequency(uint8_t * config, uint16_t sampling_frequency_hz);
-void avdtp_config_atrac_store(uint8_t * config, const avdtp_configuration_atrac_t * configuration);
-void avdtp_config_mpegd_usac_set_sampling_frequency(uint8_t * config, uint16_t sampling_frequency_hz);
-void avdtp_config_mpegd_usac_store(uint8_t * config, const avdtp_configuration_mpegd_usac_t * configuration);
+uint8_t avdtp_config_atrac_set_sampling_frequency(uint8_t * config, uint16_t sampling_frequency_hz);
+uint8_t avdtp_config_atrac_store(uint8_t * config, const avdtp_configuration_atrac_t * configuration);
+uint8_t avdtp_config_mpegd_usac_set_sampling_frequency(uint8_t * config, uint16_t sampling_frequency_hz);
+uint8_t avdtp_config_mpegd_usac_store(uint8_t * config, const avdtp_configuration_mpegd_usac_t * configuration);
 
 #if defined __cplusplus
 }

@@ -255,31 +255,34 @@ uint8_t a2dp_source_reconfigure_stream_sampling_frequency(uint16_t avdtp_cid, ui
 
     avdtp_media_codec_type_t codec_type = connection->a2dp_source_config_process.local_stream_endpoint->sep.capabilities.media_codec.media_codec_type;
     uint8_t codec_info_len;
+    uint8_t status;
     switch (codec_type){
         case AVDTP_CODEC_SBC:
             codec_info_len = 4;
             (void)memcpy(connection->a2dp_source_config_process.local_stream_endpoint->media_codec_info, connection->a2dp_source_config_process.local_stream_endpoint->remote_sep.configuration.media_codec.media_codec_information, codec_info_len);
-            avdtp_config_sbc_set_sampling_frequency(connection->a2dp_source_config_process.local_stream_endpoint->media_codec_info, sampling_frequency);
+            status = avdtp_config_sbc_set_sampling_frequency(connection->a2dp_source_config_process.local_stream_endpoint->media_codec_info, sampling_frequency);
             break;
         case AVDTP_CODEC_MPEG_1_2_AUDIO:
             codec_info_len = 4;
             (void)memcpy(connection->a2dp_source_config_process.local_stream_endpoint->media_codec_info, connection->a2dp_source_config_process.local_stream_endpoint->remote_sep.configuration.media_codec.media_codec_information, codec_info_len);
-            avdtp_config_mpeg_audio_set_sampling_frequency(connection->a2dp_source_config_process.local_stream_endpoint->media_codec_info, sampling_frequency);
+            status = avdtp_config_mpeg_audio_set_sampling_frequency(connection->a2dp_source_config_process.local_stream_endpoint->media_codec_info, sampling_frequency);
             break;
         case AVDTP_CODEC_MPEG_2_4_AAC:
             codec_info_len = 6;
             (void)memcpy(connection->a2dp_source_config_process.local_stream_endpoint->media_codec_info, connection->a2dp_source_config_process.local_stream_endpoint->remote_sep.configuration.media_codec.media_codec_information, codec_info_len);
-            avdtp_config_mpeg_aac_set_sampling_frequency(connection->a2dp_source_config_process.local_stream_endpoint->media_codec_info, sampling_frequency);
+            status = avdtp_config_mpeg_aac_set_sampling_frequency(connection->a2dp_source_config_process.local_stream_endpoint->media_codec_info, sampling_frequency);
             break;
         case AVDTP_CODEC_ATRAC_FAMILY:
             codec_info_len = 7;
             (void)memcpy(connection->a2dp_source_config_process.local_stream_endpoint->media_codec_info, connection->a2dp_source_config_process.local_stream_endpoint->remote_sep.configuration.media_codec.media_codec_information, codec_info_len);
-            avdtp_config_atrac_set_sampling_frequency(connection->a2dp_source_config_process.local_stream_endpoint->media_codec_info, sampling_frequency);
+            status = avdtp_config_atrac_set_sampling_frequency(connection->a2dp_source_config_process.local_stream_endpoint->media_codec_info, sampling_frequency);
             break;
         default:
             return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
     }
-
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
+    }
     avdtp_capabilities_t new_configuration;
     new_configuration.media_codec.media_type = AVDTP_AUDIO;
     new_configuration.media_codec.media_codec_type = codec_type;

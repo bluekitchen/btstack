@@ -44,7 +44,6 @@
 #include "classic/avdtp_util.h"
 
 #include "btstack_debug.h"
-#include "btstack_util.h"
 #include "l2cap.h"
 
 /*
@@ -1529,87 +1528,102 @@ uint8_t avdtp_remote_seid(const avdtp_stream_endpoint_t * stream_endpoint){
 }
 
 // helper to set/get configuration
-void avdtp_config_sbc_set_sampling_frequency(uint8_t * config, uint16_t sampling_frequency_hz){
-    avdtp_sbc_sampling_frequency_t sampling_frequency;
-    switch (sampling_frequency_hz){
-        case 16000:
-            sampling_frequency = AVDTP_SBC_16000;
+uint8_t avdtp_config_sbc_set_sampling_frequency(uint8_t * config, uint16_t sampling_frequency_hz){
+    uint8_t sampling_frequency_bitmap = 0;
+    const uint16_t sbc_sampling_frequency_table[] = {
+            48000, 44100, 32000, 16000
+    };
+
+    uint8_t i;
+    for (i=0;i<4;i++){
+        if (sampling_frequency_hz == sbc_sampling_frequency_table[i]){
+            sampling_frequency_bitmap = 1 << i;
             break;
-        case 32000:
-            sampling_frequency = AVDTP_SBC_32000;
-            break;
-        case 48000:
-            sampling_frequency = AVDTP_SBC_48000;
-            break;
-        default:
-            sampling_frequency = AVDTP_SBC_44100;
-            break;
+        }
     }
-    config[0] = (((uint8_t) sampling_frequency) << 4) | (config[0] & 0x0f);
+    if (sampling_frequency_bitmap == 0){
+        return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+    }
+    config[0] = (config[0] & 0x0f) | (uint8_t)(sampling_frequency_bitmap << 4);
+    return ERROR_CODE_SUCCESS;
 }
 
-void avdtp_config_sbc_store(uint8_t * config, const avdtp_configuration_sbc_t * configuration){
-    avdtp_sbc_channel_mode_t sbc_channel_mode;
-    switch (configuration->channel_mode){
-        case AVDTP_CHANNEL_MODE_MONO:
-            sbc_channel_mode = AVDTP_SBC_MONO;
-            break;
-        case AVDTP_CHANNEL_MODE_DUAL_CHANNEL:
-            sbc_channel_mode = AVDTP_SBC_DUAL_CHANNEL;
-            break;
-        case AVDTP_CHANNEL_MODE_STEREO:
-            sbc_channel_mode = AVDTP_SBC_STEREO;
+uint8_t avdtp_config_sbc_store(uint8_t * config, const avdtp_configuration_sbc_t * configuration){
+    if (configuration->channel_mode > AVDTP_CHANNEL_MODE_JOINT_STEREO){
+       return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+    }
+    if (configuration->allocation_method > AVDTP_SBC_ALLOCATION_METHOD_SNR){
+        return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+    }
+    switch (configuration->block_length){
+        case 4:
+        case 8:
+        case 12:
+        case 16:
             break;
         default:
-            sbc_channel_mode = AVDTP_SBC_JOINT_STEREO;
-            break;
+            return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
     }
-    config[0] = (uint8_t) sbc_channel_mode;
+    switch (configuration->subbands){
+        case 4:
+        case 8:
+            break;
+        default:
+            return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+    }
+    if ((configuration->min_bitpool_value < 2) || (configuration->min_bitpool_value > 250) || (configuration->min_bitpool_value > configuration->max_bitpool_value)){
+        return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+    }
+    if ((configuration->max_bitpool_value < 2) || (configuration->max_bitpool_value > 250)){
+        return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+    }
+    config[0] = 1 << (3 - (configuration->channel_mode - AVDTP_CHANNEL_MODE_MONO));
     config[1] = (configuration->block_length << 4) | (configuration->subbands << 2) | configuration->allocation_method;
-    config[2] = configuration-> min_bitpool_value;
+    config[2] = configuration->min_bitpool_value;
     config[3] = configuration->max_bitpool_value;
-    avdtp_config_sbc_set_sampling_frequency(config, configuration->sampling_frequency);
+    return avdtp_config_sbc_set_sampling_frequency(config, configuration->sampling_frequency);
 }
 
-void avdtp_config_mpeg_audio_set_sampling_frequency(uint8_t * config, uint16_t sampling_frequency_hz) {
-    uint8_t sampling_frequency_index = 0;
-    switch (sampling_frequency_hz){
-        case 16000:
-            sampling_frequency_index = 5;
+uint8_t avdtp_config_mpeg_audio_set_sampling_frequency(uint8_t * config, uint16_t sampling_frequency_hz) {
+    uint8_t sampling_frequency_bitmap = 0;
+    const uint16_t mpeg_sampling_frequency_table[] = {
+            48000, 44100, 32000, 24000, 22040, 16000
+    };
+
+    uint8_t i;
+    for (i=0;i<6;i++){
+        if (sampling_frequency_hz == mpeg_sampling_frequency_table[i]){
+            sampling_frequency_bitmap = 1 << i;
             break;
-        case 22040:
-            sampling_frequency_index = 4;
-            break;
-        case 24000:
-            sampling_frequency_index = 3;
-            break;
-        case 32000:
-            sampling_frequency_index = 2;
-            break;
-        case 44100:
-            sampling_frequency_index = 1;
-            break;
-        case 48000:
-            sampling_frequency_index = 0;
-            break;
-        default:
-            btstack_assert(false);
-            break;
+        }
     }
-    config[1] = (config[1] & 0xC0) | (1 << sampling_frequency_index);
+    if (sampling_frequency_bitmap == 0){
+        return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+    }
+    config[1] = (config[1] & 0xE0) | sampling_frequency_bitmap;
+    return ERROR_CODE_SUCCESS;
 }
 
-void avdtp_config_mpeg_audio_store(uint8_t * config, const avdtp_configuration_mpeg_audio_t * configuration){
+uint8_t avdtp_config_mpeg_audio_store(uint8_t * config, const avdtp_configuration_mpeg_audio_t * configuration){
+    if (configuration->layer > AVDTP_MPEG_LAYER_3){
+        return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+    }
+    if (configuration->channel_mode > AVDTP_CHANNEL_MODE_JOINT_STEREO){
+        return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+    }
+    uint16_t bit_rate_mask = 1 << configuration->bit_rate_index;
+    if (bit_rate_mask == 0){
+        return  ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+    }
+
     config[0] = (1 << (7 - (configuration->layer - AVDTP_MPEG_LAYER_1))) | ((configuration->crc & 0x01) << 4) | (1 << (configuration->channel_mode - AVDTP_CHANNEL_MODE_MONO));
     config[1] = ((configuration->media_payload_format & 0x01) << 6) ;
-    uint16_t bit_rate_mask = 1 << configuration->bit_rate_index;
     config[2] = ((configuration->vbr & 0x01) << 7) | ((bit_rate_mask >> 7) & 0x3f);
     config[3] = bit_rate_mask & 0xff;
-    avdtp_config_mpeg_audio_set_sampling_frequency(config, configuration->sampling_frequency);
+    return avdtp_config_mpeg_audio_set_sampling_frequency(config, configuration->sampling_frequency);
 }
 
-
-void avdtp_config_mpeg_aac_set_sampling_frequency(uint8_t * config, uint16_t sampling_frequency_hz) {
+uint8_t avdtp_config_mpeg_aac_set_sampling_frequency(uint8_t * config, uint16_t sampling_frequency_hz) {
     uint16_t sampling_frequency_bitmap = 0;
     uint8_t i;
     const uint32_t aac_sampling_frequency_table[] = {
@@ -1621,8 +1635,13 @@ void avdtp_config_mpeg_aac_set_sampling_frequency(uint8_t * config, uint16_t sam
             break;
         }
     }
+    if (sampling_frequency_bitmap == 0){
+        return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+    }
+
     config[1] = sampling_frequency_bitmap >> 4;
     config[2] = ((sampling_frequency_bitmap & 0x0f) << 4) | (config[2] & 0x0f);
+    return ERROR_CODE_SUCCESS;
 }
 
 uint8_t avdtp_config_mpeg_aac_store(uint8_t * config, const avdtp_configuration_mpeg_aac_t * configuration) {
@@ -1648,26 +1667,30 @@ uint8_t avdtp_config_mpeg_aac_store(uint8_t * config, const avdtp_configuration_
     config[3] = ((configuration->vbr & 0x01) << 7) | ((configuration->bit_rate >> 16) & 0x7f);
     config[4] = (configuration->bit_rate >> 8) & 0xff;
     config[5] =  configuration->bit_rate & 0xff;
-    avdtp_config_mpeg_aac_set_sampling_frequency(config, configuration->sampling_frequency);
+    return avdtp_config_mpeg_aac_set_sampling_frequency(config, configuration->sampling_frequency);
+}
+
+uint8_t avdtp_config_atrac_set_sampling_frequency(uint8_t * config, uint16_t sampling_frequency_hz) {
+    uint8_t sampling_frequency_bitmap = 0;
+    uint8_t i;
+    const uint32_t atrac_sampling_frequency_table[] = {
+            48000, 44100
+    };
+    for (i=0;i<2;i++){
+        if (sampling_frequency_hz == atrac_sampling_frequency_table[i]){
+            sampling_frequency_bitmap = 1 << i;
+            break;
+        }
+    }
+    if (sampling_frequency_bitmap == 0){
+        return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+    }
+
+    config[1] = (config[1] & 0xCF) | (uint8_t)(sampling_frequency_bitmap << 4);
     return ERROR_CODE_SUCCESS;
 }
 
-void avdtp_config_atrac_set_sampling_frequency(uint8_t * config, uint16_t sampling_frequency_hz) {
-    uint8_t fs_bitmap = 0;
-    switch (sampling_frequency_hz){
-        case 44100:
-            fs_bitmap = 2;
-            break;
-        case 48000:
-            fs_bitmap = 1;
-            break;
-        default:
-            break;
-    }
-    config[1] = (fs_bitmap << 4) | (config[1] & 0x0F);
-}
-
-void avdtp_config_atrac_store(uint8_t * config, const avdtp_configuration_atrac_t * configuration){
+uint8_t avdtp_config_atrac_store(uint8_t * config, const avdtp_configuration_atrac_t * configuration){
     uint8_t channel_mode_bitmap = 0;
     switch (configuration->channel_mode){
         case AVDTP_CHANNEL_MODE_MONO:
@@ -1680,7 +1703,7 @@ void avdtp_config_atrac_store(uint8_t * config, const avdtp_configuration_atrac_
             channel_mode_bitmap = 1;
             break;
         default:
-            break;
+            return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
     }
     config[0] = ((configuration->version - AVDTP_ATRAC_VERSION_1 + 1) << 5) | (channel_mode_bitmap << 2);
     uint32_t bit_rate_bitmap = 1 << (0x18 - configuration->bit_rate_index);
@@ -1690,11 +1713,11 @@ void avdtp_config_atrac_store(uint8_t * config, const avdtp_configuration_atrac_
     config[4] = configuration->maximum_sul >> 8;
     config[5] = configuration->maximum_sul & 0xff;
     config[6] = 0;
-    avdtp_config_atrac_set_sampling_frequency(config, configuration->sampling_frequency);
+    return avdtp_config_atrac_set_sampling_frequency(config, configuration->sampling_frequency);
 }
 
-void avdtp_config_mpegd_usac_set_sampling_frequency(uint8_t * config, uint16_t sampling_frequency_hz) {
-    uint16_t sampling_frequency_bitmap = 0;
+uint8_t avdtp_config_mpegd_usac_set_sampling_frequency(uint8_t * config, uint16_t sampling_frequency_hz) {
+    uint32_t sampling_frequency_bitmap = 0;
     uint8_t i;
     const uint32_t usac_sampling_frequency_table[] = {
             96000, 88200, 76800, 70560,
@@ -1708,15 +1731,21 @@ void avdtp_config_mpegd_usac_set_sampling_frequency(uint8_t * config, uint16_t s
             break;
         }
     }
-    config[0] = (config[0] & 0xC0) | sampling_frequency_bitmap >> 20;
-    config[1] = sampling_frequency_bitmap >> 12;
-    config[2] = sampling_frequency_bitmap >> 4;
+    if (sampling_frequency_bitmap == 0){
+        return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+    }
+    config[0] = (config[0] & 0xC0) | (uint8_t)(sampling_frequency_bitmap >> 20);
+    config[1] = (uint8_t) (sampling_frequency_bitmap >> 12);
+    config[2] = (uint8_t) (sampling_frequency_bitmap >> 4);
     config[3] = (sampling_frequency_bitmap & 0x0f) << 4;
+    return ERROR_CODE_SUCCESS;
 }
 
-void avdtp_config_mpegd_usac_store(uint8_t * config, const avdtp_configuration_mpegd_usac_t * configuration) {
-    config[0] = 1 << (7 -(configuration->object_type - AVDTP_USAC_OBJECT_TYPE_MPEG_D_DRC)) & 0xC0;
-    avdtp_config_mpegd_usac_set_sampling_frequency(config, configuration->sampling_frequency);
+uint8_t avdtp_config_mpegd_usac_store(uint8_t * config, const avdtp_configuration_mpegd_usac_t * configuration) {
+    if (configuration->object_type != AVDTP_USAC_OBJECT_TYPE_MPEG_D_DRC){
+        return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+    }
+    config[0] = 0x80;
 
     uint8_t channels_bitmap = 0;
     switch (configuration->channels){
@@ -1727,10 +1756,11 @@ void avdtp_config_mpegd_usac_store(uint8_t * config, const avdtp_configuration_m
             channels_bitmap = 0x04;
             break;
         default:
-            break;
+            return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
     }
     config[3] = config[3] | channels_bitmap;
     config[4] = ((configuration->vbr & 0x01) << 7) | ((configuration->bit_rate >> 16) & 0x7f);
     config[5] = (configuration->bit_rate >> 8) & 0xff;
     config[6] =  configuration->bit_rate & 0xff;
+    return avdtp_config_mpegd_usac_set_sampling_frequency(config, configuration->sampling_frequency);
 }
