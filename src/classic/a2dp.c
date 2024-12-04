@@ -987,13 +987,16 @@ uint8_t a2dp_config_process_set_mpeg_aac(avdtp_role_t role, uint16_t a2dp_cid,  
     a2dp_config_process_t * config_process = a2dp_config_process_for_role(role, connection);
 
     uint8_t status = a2dp_config_process_config_init(role, connection, local_seid, remote_seid, AVDTP_CODEC_MPEG_2_4_AAC);
-    if (status != 0) {
+    if (status != ERROR_CODE_SUCCESS) {
         return status;
     }
     config_process->local_stream_endpoint->remote_configuration.media_codec.media_codec_information = (uint8_t *) config_process->local_stream_endpoint->media_codec_info;
     config_process->local_stream_endpoint->remote_configuration.media_codec.media_codec_information_len = 6;
-    avdtp_config_mpeg_aac_store(config_process->local_stream_endpoint->remote_configuration.media_codec.media_codec_information, configuration);
+    status = avdtp_config_mpeg_aac_store(config_process->local_stream_endpoint->remote_configuration.media_codec.media_codec_information, configuration);
 
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
+    }
 #ifdef ENABLE_A2DP_EXPLICIT_CONFIG
     a2dp_config_process_set_config(role, connection);
 #endif

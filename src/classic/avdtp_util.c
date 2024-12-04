@@ -1625,7 +1625,7 @@ void avdtp_config_mpeg_aac_set_sampling_frequency(uint8_t * config, uint16_t sam
     config[2] = ((sampling_frequency_bitmap & 0x0f) << 4) | (config[2] & 0x0f);
 }
 
-void avdtp_config_mpeg_aac_store(uint8_t * config, const avdtp_configuration_mpeg_aac_t * configuration) {
+uint8_t avdtp_config_mpeg_aac_store(uint8_t * config, const avdtp_configuration_mpeg_aac_t * configuration) {
     config[0] = (1 << (7 -(configuration->object_type - AVDTP_AAC_MPEG2_LC))) | (configuration->drc?1u:0u);
     uint8_t channels_bitmap = 0;
     switch (configuration->channels){
@@ -1642,13 +1642,14 @@ void avdtp_config_mpeg_aac_store(uint8_t * config, const avdtp_configuration_mpe
             channels_bitmap = 0x01;
             break;
         default:
-            break;
+           return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
     }
-    config[2] = channels_bitmap & 0x0F;
+    config[2] = channels_bitmap;
     config[3] = ((configuration->vbr & 0x01) << 7) | ((configuration->bit_rate >> 16) & 0x7f);
     config[4] = (configuration->bit_rate >> 8) & 0xff;
     config[5] =  configuration->bit_rate & 0xff;
     avdtp_config_mpeg_aac_set_sampling_frequency(config, configuration->sampling_frequency);
+    return ERROR_CODE_SUCCESS;
 }
 
 void avdtp_config_atrac_set_sampling_frequency(uint8_t * config, uint16_t sampling_frequency_hz) {
