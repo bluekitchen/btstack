@@ -518,11 +518,10 @@ static uint16_t pbap_client_application_params_add_search_property(const pbap_cl
 static uint16_t pbap_client_application_params_add_search_value(const pbap_client_t * client, uint8_t * application_parameters, const char* search_value){
     uint16_t pos = 0;
     if (client->search_value != 0){
-        uint32_t length;
-        length = strlen (client->search_value);
+        uint32_t length = (uint32_t) strlen(search_value);
         application_parameters[pos++] = PBAP_APPLICATION_PARAMETER_SEARCH_VALUE;
         application_parameters[pos++] = length;
-        memcpy (&application_parameters[pos], client->search_value, length);
+        memcpy (&application_parameters[pos], search_value, length);
         pos += length;
     }
     return pos;
