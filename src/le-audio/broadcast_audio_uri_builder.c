@@ -85,6 +85,7 @@ bool broadcast_audio_uri_builder_append_string(broadcast_audio_uri_builder_t * b
 }
 
 bool broadcast_audio_uri_builder_append_broadcast_name(broadcast_audio_uri_builder_t * builder, const char * broadcast_name){
+    UNUSED(broadcast_name);
     // TODO: base64
     return broadcast_audio_uri_builder_append_string(builder, "BN:QnJvYWRjYXN0IE5hbWU=;");
 }
@@ -139,6 +140,7 @@ bool broadcast_audio_uri_builder_append_broadcast_id(broadcast_audio_uri_builder
 }
 
 bool broadcast_audio_uri_builder_append_broadcast_code(broadcast_audio_uri_builder_t * builder, const uint8_t * broadcast_code){
+    UNUSED(broadcast_code);
     uint16_t len = builder->len;
     bool ok = broadcast_audio_uri_builder_append_string(builder,"BC:");
     if (ok){
@@ -154,6 +156,8 @@ bool broadcast_audio_uri_builder_append_broadcast_code(broadcast_audio_uri_build
 }
 
 bool broadcast_audio_uri_builder_append_vendor_specific(broadcast_audio_uri_builder_t * builder, uint16_t vendor_id, const uint8_t * data, uint16_t data_len){
+    UNUSED(data);
+    UNUSED(data_len);
     uint16_t len = builder->len;
     bool ok = broadcast_audio_uri_builder_append_string(builder, "VS:");
     if (ok){
