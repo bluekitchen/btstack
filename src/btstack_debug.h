@@ -72,7 +72,11 @@ extern "C" {
 // allow to override btstack_assert in btstack_config.h
 #ifndef btstack_assert
 // map to libc assert
+#ifdef NDEBUG
+#define btstack_assert(condition)  {(void)(condition);}
+#else
 #define btstack_assert(condition)  assert(condition)
+#endif
 #endif /* btstack_assert */
 #else /* HAVE_ASSERT */
 #ifdef ENABLE_BTSTACK_ASSERT
