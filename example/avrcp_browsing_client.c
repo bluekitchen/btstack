@@ -593,6 +593,7 @@ static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16
                         const uint8_t * attr_value  = avrcp_media_item_iterator_get_attr_value(&media_item_context);
                         printf("    - attr ID 0x%08" PRIx32 ", charset 0x%02x, actual len %d, name %s\n", attr_id, attr_charset, attr_value_length, attr_value);
                     }
+                    break;
                 }
                 default:
                     printf("AVRCP browsing: unknown browsable item type 0%02x\n", data_type);
