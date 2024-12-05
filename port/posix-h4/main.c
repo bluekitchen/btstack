@@ -287,7 +287,7 @@ static void local_version_information_handler(uint8_t * packet){
     }
 }
 
-static char short_options[] = "hu:l:rb:";
+static char short_options[] = "+hu:l:rb:";
 
 static struct option long_options[] = {
         {"help",        no_argument,        NULL,   'h'},
@@ -329,7 +329,8 @@ int main(int argc, const char * argv[]){
 
     // set default device path
     config.device_name = "/dev/tty.usbmodemEF437DF524C51";
-
+    int oldopterr = opterr;
+    opterr = 0;
     // parse command line parameters
     while(true){
         int c = getopt_long( argc, (char* const *)argv, short_options, long_options, NULL );
@@ -337,7 +338,7 @@ int main(int argc, const char * argv[]){
             break;
         }
         if (c == '?'){
-            break;
+            continue;
         }
         switch (c) {
             case 'u':
@@ -355,9 +356,13 @@ int main(int argc, const char * argv[]){
             case 'h':
             default:
                 usage(argv[0]);
-                return EXIT_FAILURE;
+                break;
         }
     }
+    // reset getopt parsing, so it works as intended from btstack_main
+    optind = 1;
+    opterr = oldopterr;
+
     /// GET STARTED with BTstack ///
 	btstack_memory_init();
     btstack_run_loop_init(btstack_run_loop_posix_get_instance());
