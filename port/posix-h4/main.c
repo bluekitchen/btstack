@@ -99,16 +99,16 @@ int btstack_main(int argc, const char * argv[]);
 static void local_version_information_handler(uint8_t * packet);
 
 static hci_transport_config_uart_t config = {
-    HCI_TRANSPORT_CONFIG_UART,
-    115200,
-    0,  // main baudrate
-    1,  // flow control
-    NULL,
+    .type = HCI_TRANSPORT_CONFIG_UART,
+    .baudrate_init = 115200,
+    .baudrate_main = 0,
+    .flowcontrol = 1,
 };
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
     static bd_addr_t local_addr;
     const uint8_t *params;
     if (packet_type != HCI_EVENT_PACKET) return;
