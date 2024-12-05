@@ -2312,9 +2312,13 @@ uint8_t hfp_hf_set_hf_indicator(hci_con_handle_t acl_handle, int assigned_number
                     hfp_connection->generic_status_update_bitmap |= (1 << i);
                     // send update
                     hfp_hf_run_for_context(hfp_connection);
+                    break;
                 }
             }
         }
+    }
+    if  (i == hfp_hf_indicators_nr){
+        return ERROR_CODE_COMMAND_DISALLOWED;
     }
     return ERROR_CODE_SUCCESS;
 }
