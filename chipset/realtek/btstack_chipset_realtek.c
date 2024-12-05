@@ -653,6 +653,7 @@ static uint8_t *rtb_get_patch_header(uint32_t *len,
                                      btstack_linked_list_t * patch_list, uint8_t * epatch_buf,
                                      uint8_t key_id)
 {
+    UNUSED(key_id);
     uint16_t i, j;
     struct rtb_new_patch_hdr *new_patch;
     uint8_t sec_flag = 0;
@@ -781,7 +782,7 @@ static uint8_t update_firmware(const char *firmware, const char *config, uint8_t
     // read firmware and config
     if (patch_buf == NULL) {
         uint16_t patch_length = 0;
-        uint32_t offset;
+        uint32_t offset = 0;
         FILE *   fw = NULL;
         uint32_t fw_size;
         uint8_t *fw_buf = NULL;
@@ -794,7 +795,7 @@ static uint8_t update_firmware(const char *firmware, const char *config, uint8_t
         uint16_t fw_num_patches;
 
         struct patch_node *tmp;
-        int max_patch_size = 0;
+        unsigned max_patch_size = 0;
 
         if (firmware == NULL || config == NULL) {
             log_info("Please specify realtek firmware and config file paths");
@@ -835,7 +836,7 @@ static uint8_t update_firmware(const char *firmware, const char *config, uint8_t
         if (have_new_firmware_signature){
             printf("Realtek: Using new signature\n");
             uint8_t key_id = g_key_id;
-            if (key_id < 0) {
+            if (key_id == 0) {
                 log_info("Wrong key id. Quit!");
                 finalize_file_and_buffer(&fw, &fw_buf);
                 finalize_file_and_buffer(&conf, &conf_buf);
