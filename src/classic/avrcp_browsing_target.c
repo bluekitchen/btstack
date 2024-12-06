@@ -464,7 +464,7 @@ uint8_t avrcp_browsing_target_send_get_folder_items_response(uint16_t avrcp_brow
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t avrcp_browsing_target_send_change_path_response(uint16_t avrcp_browsing_cid, uint16_t uid_counter, avrcp_status_code_t status, uint32_t num_items){
+uint8_t avrcp_browsing_target_send_change_path_response(uint16_t avrcp_browsing_cid, avrcp_status_code_t status, uint32_t num_items){
     avrcp_connection_t * avrcp_connection = avrcp_get_connection_for_browsing_cid_for_role(AVRCP_TARGET, avrcp_browsing_cid);
     if (!avrcp_connection){
         log_error("Could not find an AVRCP Target connection for browsing_cid 0x%02x.", avrcp_browsing_cid);
