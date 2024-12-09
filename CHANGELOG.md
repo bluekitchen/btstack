@@ -54,6 +54,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - GAP: only store link key if at least one side requests bonding during the IO Capabilities exchange.
 - GATT Client: use Find by Information Request to lookup CCCD for Notifications/Indications
 - SDP Client: trigger next SDP query callback, if registered callback does not start SDP query
+- BNEP Client: provide setup connection response in BNEP_EVENT_CHANNEL_OPENED
 - GOEP Client: remove goep_client_create_connection. Use goep_client_connect instead.
 - HID Parser: cleanup of function names and signatures
 - HIDS Client: use error code instead of ATT status in connected event

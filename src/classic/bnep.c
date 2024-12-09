@@ -111,12 +111,13 @@ static void bnep_channel_finalize(bnep_channel_t *channel);
 static void bnep_channel_start_timer(bnep_channel_t *channel, int timeout);
 inline static void bnep_channel_state_add(bnep_channel_t *channel, BNEP_CHANNEL_STATE_VAR event);
 static void bnep_handle_can_send_now(uint16_t cid);
-static void bnep_emit_open_channel_complete(bnep_channel_t *channel, uint8_t status) 
+
+static void bnep_emit_open_channel_complete(bnep_channel_t *channel, uint8_t status, uint8_t setup_connection_response)
 {
     log_info("BNEP_EVENT_CHANNEL_OPENED status 0x%02x bd_addr: %s, handler %p", status, bd_addr_to_str(channel->remote_addr), channel->packet_handler);
     if (!channel->packet_handler) return;
 
-    uint8_t event[3 + sizeof(bd_addr_t) + 4 * sizeof(uint16_t) + 2];
+    uint8_t event[3 + sizeof(bd_addr_t) + 4 * sizeof(uint16_t) + 3];
     event[0] = BNEP_EVENT_CHANNEL_OPENED;
     event[1] = sizeof(event) - 2;
     event[2] = status;
@@ -126,6 +127,7 @@ static void bnep_emit_open_channel_complete(bnep_channel_t *channel, uint8_t sta
     little_endian_store_16(event, 9, channel->max_frame_size);
     reverse_bd_addr(channel->remote_addr, &event[11]);
     little_endian_store_16(event, 17, channel->con_handle);
+    event[19] = setup_connection_response;
     hci_dump_btstack_event( event, sizeof(event));
 	(*channel->packet_handler)(HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
 }
@@ -917,7 +919,6 @@ static int bnep_handle_connection_request(bnep_channel_t *channel, uint8_t *pack
 
 static int bnep_handle_connection_response(bnep_channel_t *channel, uint8_t *packet, uint16_t size)
 {
-    uint16_t response_code;
 
     /* Sanity check packet size */
     if (size < (1 + 2)) {
@@ -930,16 +931,17 @@ static int bnep_handle_connection_response(bnep_channel_t *channel, uint8_t *pac
         return 1 + 2;
     }
 
-    response_code = big_endian_read_16(packet, 1);
+    uint16_t response_code = big_endian_read_16(packet, 1);
 
     if (response_code == BNEP_RESP_SETUP_SUCCESS) {
         log_info("BNEP_CONNECTION_RESPONSE: Channel established to %s", bd_addr_to_str(channel->remote_addr));
         channel->state = BNEP_CHANNEL_STATE_CONNECTED;
         /* Stop timeout timer! */
         bnep_channel_stop_timer(channel);
-        bnep_emit_open_channel_complete(channel, 0);
+        bnep_emit_open_channel_complete(channel, ERROR_CODE_SUCCESS, response_code);
     } else {
         log_error("BNEP_CONNECTION_RESPONSE: Connection to %s failed. Err: %d", bd_addr_to_str(channel->remote_addr), response_code);
+        bnep_emit_open_channel_complete(channel, BNEP_SETUP_CONNECTION_ERROR, response_code);
         bnep_channel_finalize(channel);
     }
     return 1 + 2;
@@ -1306,7 +1308,7 @@ static int bnep_hci_event_handler(uint8_t *packet, uint16_t size)
             /* On L2CAP open error discard everything */
             if (status) {
                 /* Emit bnep_open_channel_complete with status and free channel */
-                bnep_emit_open_channel_complete(channel, status);
+                bnep_emit_open_channel_complete(channel, status, 0);
 
                 /* Free BNEP channel mempory */
                 bnep_channel_free(channel);
@@ -1549,7 +1551,7 @@ static void bnep_channel_state_machine(bnep_channel_t* channel, bnep_channel_eve
             bnep_channel_state_remove(channel, BNEP_CHANNEL_STATE_VAR_SND_CONNECTION_RESPONSE);
             bnep_send_connection_response(channel, channel->response_code);
             if (emit_connected){
-                bnep_emit_open_channel_complete(channel, 0);
+                bnep_emit_open_channel_complete(channel, ERROR_CODE_SUCCESS, 0);
             }
             return;
         }
