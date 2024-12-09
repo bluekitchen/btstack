@@ -336,6 +336,7 @@ typedef enum {
 #define BNEP_SERVICE_ALREADY_REGISTERED                    0xA0
 #define BNEP_CHANNEL_NOT_CONNECTED                         0xA1
 #define BNEP_DATA_LEN_EXCEEDS_MTU                          0xA2
+#define BNEP_SETUP_CONNECTION_ERROR                        0xA3
 
 // OBEX ERRORS
 #define OBEX_UNKNOWN_ERROR                                 0xB0
