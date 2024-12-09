@@ -431,6 +431,10 @@ static void memclear( void * dest, unsigned char value, unsigned long size )
 
 static int getnote( modcontext * mod, unsigned short period )
 {
+// BK4BSTACK_CHANGE START
+	(void) mod;
+// BK4BSTACK_CHANGE END
+
 	int i;
 	const short * ptr;
 
@@ -474,6 +478,10 @@ static void doFunk(channel * cptr)
 
 static void worknote( note * nptr, channel * cptr,char t,modcontext * mod )
 {
+	// BK4BSTACK_CHANGE START
+	(void) t;
+	// BK4BSTACK_CHANGE END
+
 	muint sample, period, effect, operiod;
 	muint curnote, arpnote;
 	muchar effect_op;
@@ -1141,6 +1149,10 @@ static void worknote( note * nptr, channel * cptr,char t,modcontext * mod )
 
 static void workeffect( modcontext * modctx, note * nptr, channel * cptr )
 {
+	// BK4BSTACK_CHANGE START
+	(void) nptr;
+	// BK4BSTACK_CHANGE END
+
 	doFunk(cptr);
 
 	switch(cptr->effect)
