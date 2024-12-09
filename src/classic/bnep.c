@@ -84,13 +84,6 @@
 /* BNEP extension header types */
 #define BNEP_EXT_HEADER_TYPE_EXTENSION_CONTROL          0x00
 
-/* BNEP setup response codes */
-#define BNEP_RESP_SETUP_SUCCESS                         0x0000
-#define BNEP_RESP_SETUP_INVALID_DEST_UUID               0x0001
-#define BNEP_RESP_SETUP_INVALID_SOURCE_UUID             0x0002
-#define BNEP_RESP_SETUP_INVALID_SERVICE_UUID_SIZE       0x0003
-#define BNEP_RESP_SETUP_CONNECTION_NOT_ALLOWED          0x0004
-
 /* BNEP filter response codes */
 #define BNEP_RESP_FILTER_SUCCESS                        0x0000
 #define BNEP_RESP_FILTER_UNSUPPORTED_REQUEST            0x0001
@@ -824,7 +817,7 @@ static int bnep_handle_connection_request(bnep_channel_t *channel, uint8_t *pack
     uint16_t uuid_size;
     uint16_t uuid_offset = 0; // avoid "may be unitialized when used" in clang
     uuid_size = packet[1];
-    uint16_t response_code = BNEP_RESP_SETUP_SUCCESS;
+    uint16_t response_code = BNEP_SETUP_CONNECTION_RESPONSE_SUCCESS;
     bnep_service_t * service;
 
     /* Sanity check packet size */
@@ -850,7 +843,7 @@ static int bnep_handle_connection_request(bnep_channel_t *channel, uint8_t *pack
             break;
         default:
             log_error("BNEP_CONNECTION_REQUEST: Invalid UUID size %d, l2cap_cid: %d!", channel->state, channel->l2cap_cid);
-            response_code = BNEP_RESP_SETUP_INVALID_SERVICE_UUID_SIZE;
+            response_code = BNEP_SETUP_CONNECTION_RESPONSE_INVALID_SERVICE_UUID_SIZE;
             break;
     }
 
@@ -858,26 +851,26 @@ static int bnep_handle_connection_request(bnep_channel_t *channel, uint8_t *pack
     if (uuid_size > 2){
         uint16_t dest_prefix = big_endian_read_16(packet, 2);
         if (dest_prefix != 0){
-            response_code = BNEP_RESP_SETUP_INVALID_DEST_UUID;
+            response_code = BNEP_SETUP_CONNECTION_RESPONSE_INVALID_DEST_UUID;
         }
         uint16_t src_prefix = big_endian_read_16(packet, 2 + uuid_size);
         if (src_prefix != 0){
-            response_code = BNEP_RESP_SETUP_INVALID_SOURCE_UUID;
+            response_code = BNEP_SETUP_CONNECTION_RESPONSE_INVALID_SOURCE_UUID;
         }
     }
 
     /* check bits 32-127 of UUID */
     if (uuid_size == 16){
         if (uuid_has_bluetooth_prefix(&packet[2]) == false){
-            response_code = BNEP_RESP_SETUP_INVALID_DEST_UUID;
+            response_code = BNEP_SETUP_CONNECTION_RESPONSE_INVALID_DEST_UUID;
         }
         if (uuid_has_bluetooth_prefix(&packet[2+16]) == false){
-            response_code = BNEP_RESP_SETUP_INVALID_SOURCE_UUID;
+            response_code = BNEP_SETUP_CONNECTION_RESPONSE_INVALID_SOURCE_UUID;
         }
     }
 
     /* Check source and destination UUIDs for valid combinations */
-    if (response_code == BNEP_RESP_SETUP_SUCCESS) {
+    if (response_code == BNEP_SETUP_CONNECTION_RESPONSE_SUCCESS) {
         channel->uuid_dest = big_endian_read_16(packet, 2 + uuid_offset);
         channel->uuid_source = big_endian_read_16(packet, 2 + uuid_offset + uuid_size);
 
@@ -897,13 +890,13 @@ static int bnep_handle_connection_request(bnep_channel_t *channel, uint8_t *pack
         /* Check if we have registered a service for the requested destination UUID */
         service = bnep_service_for_uuid(channel->uuid_dest);
         if (service == NULL) {
-            response_code = BNEP_RESP_SETUP_INVALID_DEST_UUID;
+            response_code = BNEP_SETUP_CONNECTION_RESPONSE_INVALID_DEST_UUID;
         } else {
             // use packet handler for service
             channel->packet_handler = service->packet_handler;
 
             if ((channel->uuid_source != BLUETOOTH_SERVICE_CLASS_PANU) && (channel->uuid_dest != BLUETOOTH_SERVICE_CLASS_PANU)) {
-                response_code = BNEP_RESP_SETUP_INVALID_SOURCE_UUID;
+                response_code = BNEP_SETUP_CONNECTION_RESPONSE_INVALID_SOURCE_UUID;
             }
         } 
     }
@@ -933,7 +926,7 @@ static int bnep_handle_connection_response(bnep_channel_t *channel, uint8_t *pac
 
     uint16_t response_code = big_endian_read_16(packet, 1);
 
-    if (response_code == BNEP_RESP_SETUP_SUCCESS) {
+    if (response_code == BNEP_SETUP_CONNECTION_RESPONSE_SUCCESS) {
         log_info("BNEP_CONNECTION_RESPONSE: Channel established to %s", bd_addr_to_str(channel->remote_addr));
         channel->state = BNEP_CHANNEL_STATE_CONNECTED;
         /* Stop timeout timer! */
