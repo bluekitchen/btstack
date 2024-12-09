@@ -13661,12 +13661,12 @@ static inline uint16_t gattservice_subevent_cycling_power_broadcast_stop_get_con
 }
 
 /**
- * @brief Get field hids_cid from event GATTSERVICE_SUBEVENT_BATTERY_SERVICE_CONNECTED
+ * @brief Get field bas_cid from event GATTSERVICE_SUBEVENT_BATTERY_SERVICE_CONNECTED
  * @param event packet
- * @return hids_cid
+ * @return bas_cid
  * @note: btstack_type 2
  */
-static inline uint16_t gattservice_subevent_battery_service_connected_get_hids_cid(const uint8_t * event){
+static inline uint16_t gattservice_subevent_battery_service_connected_get_bas_cid(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
@@ -13698,12 +13698,12 @@ static inline uint8_t gattservice_subevent_battery_service_connected_get_poll_bi
 }
 
 /**
- * @brief Get field hids_cid from event GATTSERVICE_SUBEVENT_BATTERY_SERVICE_LEVEL
+ * @brief Get field bas_cid from event GATTSERVICE_SUBEVENT_BATTERY_SERVICE_LEVEL
  * @param event packet
- * @return hids_cid
+ * @return bas_cid
  * @note: btstack_type 2
  */
-static inline uint16_t gattservice_subevent_battery_service_level_get_hids_cid(const uint8_t * event){
+static inline uint16_t gattservice_subevent_battery_service_level_get_bas_cid(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**

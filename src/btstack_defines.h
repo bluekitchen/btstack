@@ -4136,7 +4136,7 @@ typedef uint8_t sm_key_t[16];
 /**
  * @format 12111
  * @param subevent_code
- * @param hids_cid
+ * @param bas_cid
  * @param status
  * @param num_instances
  * @param poll_bitmap
@@ -4146,7 +4146,7 @@ typedef uint8_t sm_key_t[16];
 /**
  * @format 12111
  * @param subevent_code
- * @param hids_cid
+ * @param bas_cid
  * @param service_index
  * @param att_status  see ATT errors in bluetooth.h
  * @param level
