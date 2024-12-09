@@ -174,7 +174,7 @@ static void le_audio_demo_source_setup_mod_player(void){
         btstack_assert(le_audio_demo_source_hxcmod_initialized != 0);
     }
     hxcmod_unload(&le_audio_demo_source_hxcmod_context);
-    hxcmod_setcfg(&le_audio_demo_source_hxcmod_context, le_audio_demo_source_sampling_frequency_hz, 16, 1, 1, 1);
+    hxcmod_setcfg(&le_audio_demo_source_hxcmod_context, le_audio_demo_source_sampling_frequency_hz, 1, 1);
     hxcmod_load(&le_audio_demo_source_hxcmod_context, (void *) &mod_data, mod_len);
 }
 
@@ -260,7 +260,7 @@ void le_audio_demo_util_source_generate_iso_frame(le_audio_demo_source_generator
             break;
         case AUDIO_SOURCE_MODPLAYER:
             // mod player configured for stereo
-            hxcmod_fillbuffer(&le_audio_demo_source_hxcmod_context, (unsigned short *) le_audio_demo_source_pcm, le_audio_demo_source_num_samples_per_frame, &le_audio_demo_source_hxcmod_trkbuf);
+            hxcmod_fillbuffer(&le_audio_demo_source_hxcmod_context, le_audio_demo_source_pcm, le_audio_demo_source_num_samples_per_frame, &le_audio_demo_source_hxcmod_trkbuf);
             // stereo -> mono
             if (le_audio_demo_source_num_channels == 1) {
                 uint16_t i;

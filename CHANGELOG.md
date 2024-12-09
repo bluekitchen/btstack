@@ -47,6 +47,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - HID Host: omit Report ID in Set/Get Report and send report for report id == HID_REPORT_ID_UNDEFINED
 - POSIX: clear run loop exit flag
 - btstack_util: skip whitespace in btstack_atoi
+- hxcmod-player: update to fix GCC 11 warnings
 - esp32: use synchronous VHCI API with newer ESP32 variants (esp32, -c3, and -s3 use asynchronous API)
 
 ### Changed
