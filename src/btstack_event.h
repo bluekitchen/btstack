@@ -3505,6 +3505,15 @@ static inline void bnep_event_channel_opened_get_remote_address(const uint8_t * 
 static inline hci_con_handle_t bnep_event_channel_opened_get_con_handle(const uint8_t * event){
     return little_endian_read_16(event, 17);
 }
+/**
+ * @brief Get field setup_connection_response from event BNEP_EVENT_CHANNEL_OPENED
+ * @param event packet
+ * @return setup_connection_response
+ * @note: btstack_type 1
+ */
+static inline uint8_t bnep_event_channel_opened_get_setup_connection_response(const uint8_t * event){
+    return event[19];
+}
 
 /**
  * @brief Get field bnep_cid from event BNEP_EVENT_CHANNEL_CLOSED

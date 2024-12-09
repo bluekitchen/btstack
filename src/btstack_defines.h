@@ -1623,7 +1623,7 @@ typedef uint8_t sm_key_t[16];
  #define BNEP_EVENT_SERVICE_REGISTERED                           0xC0u
 
 /**
- * @format 12222BH
+ * @format 12222BH1
  * @param status
  * @param bnep_cid
  * @param source_uuid
@@ -1631,6 +1631,7 @@ typedef uint8_t sm_key_t[16];
  * @param mtu
  * @param remote_address
  * @param con_handle
+ * @param setup_connection_response for outgoing connections
  */
  #define BNEP_EVENT_CHANNEL_OPENED                               0xC1u
 
