@@ -107,7 +107,9 @@ static uint8_t panu_sdp_record[220];
 
 /* LISTING_START(PanuSetup): Panu setup */
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+#ifdef ENABLE_PANU_CLIENT
 static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+#endif
 static void network_send_packet_callback(const uint8_t * packet, uint16_t size);
 
 static void panu_setup(void){
