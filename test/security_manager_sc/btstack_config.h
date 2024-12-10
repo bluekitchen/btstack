@@ -26,6 +26,9 @@
 #define ENABLE_SOFTWARE_AES128
 #define ENABLE_BTSTACK_STDIN_LOGGING
 
+// use legacy GATT Client behaviour for replay
+#define ENABLE_GATT_LEGACY_CCC_DISCOVERY
+
 // BTstack configuration. buffers, sizes, ...
 #define HCI_ACL_PAYLOAD_SIZE (1691 + 4)
 #define HCI_INCOMING_PRE_BUFFER_SIZE 14 // sizeof BNEP header, avoid memcpy
