@@ -177,6 +177,7 @@
     X( SUPPORTED_HCI_COMMAND_LE_SET_DEFAULT_PHY                    , 35, 5) \
     X( SUPPORTED_HCI_COMMAND_LE_SET_EXTENDED_ADVERTISING_ENABLE    , 36, 5) \
     X( SUPPORTED_HCI_COMMAND_LE_READ_BUFFER_SIZE_V2                , 41, 5) \
+    X( SUPPORTED_HCI_COMMAND_LE_SET_HOST_FEATURE_V1                , 44, 1) \
     X( SUPPORTED_HCI_COMMAND_SET_MIN_ENCRYPTION_KEY_SIZE           , 45, 7) \
 
 // enumerate supported commands
@@ -2364,7 +2365,7 @@ static void hci_initializing_run(void){
             /* fall through */
 
         case HCI_INIT_LE_SET_HOST_FEATURE_CONNECTED_ISO_STREAMS:
-            if (hci_le_supported()) {
+            if (hci_le_supported() && hci_command_supported(SUPPORTED_HCI_COMMAND_LE_SET_HOST_FEATURE_V1)) {
                 hci_stack->substate = HCI_INIT_W4_LE_SET_HOST_FEATURE_CONNECTED_ISO_STREAMS;
                 hci_send_cmd(&hci_le_set_host_feature, 32, 1);
                 break;
@@ -2374,7 +2375,7 @@ static void hci_initializing_run(void){
 #ifdef ENABLE_BLE
             /* fall through */
         case HCI_INIT_LE_SET_HOST_FEATURE_CONNECTION_SUBRATING:
-            if (hci_le_supported()) {
+            if (hci_le_supported() && hci_command_supported(SUPPORTED_HCI_COMMAND_LE_SET_HOST_FEATURE_V1)) {
                 hci_stack->substate = HCI_INIT_W4_LE_SET_HOST_FEATURE_CONNECTION_SUBRATING;
                 hci_send_cmd(&hci_le_set_host_feature, 38, 1);
                 break;
