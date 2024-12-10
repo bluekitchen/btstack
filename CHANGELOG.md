@@ -61,6 +61,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - HIDS Client: use error code instead of ATT status in connected event
 - Device Information Service Server: update for v1.2
 - Device Information Service Client: update for v1.2
+- esp32: enable audio driver by default on esp32, esp32c3 and esp32c6
 
 ## Release v1.6.1
 
