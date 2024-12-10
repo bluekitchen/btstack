@@ -639,6 +639,14 @@ static void send_gatt_cancel_prepared_write_request(gatt_client_t * gatt_client)
     att_execute_write_request(gatt_client, ATT_EXECUTE_WRITE_REQUEST, 0);
 }
 
+#ifndef ENABLE_GATT_FIND_INFORMATION_FOR_CCC_DISCOVERY
+static void send_gatt_read_client_characteristic_configuration_request(gatt_client_t * gatt_client){
+    att_read_by_type_or_group_request_for_uuid16(gatt_client, ATT_READ_BY_TYPE_REQUEST,
+                                                 GATT_CLIENT_CHARACTERISTICS_CONFIGURATION,
+                                                 gatt_client->start_group_handle, gatt_client->end_group_handle);
+}
+#endif
+
 static void send_gatt_read_characteristic_descriptor_request(gatt_client_t * gatt_client){
     att_read_request(gatt_client, ATT_READ_REQUEST, gatt_client->attribute_handle);
 }
@@ -1558,10 +1566,17 @@ static bool gatt_client_run_for_gatt_client(gatt_client_t * gatt_client){
             send_gatt_cancel_prepared_write_request(gatt_client);
             break;
 
-        case P_W2_SEND_FIND_CLIENT_CHARACTERISTIC_CONFIGURATION_QUERY:
+#ifdef ENABLE_GATT_FIND_INFORMATION_FOR_CCC_DISCOVERY
+        case P_W2_SEND_FIND_CLIENT_CHARACTERISTIC_CONFIGURATION_QUERY:    
             // use Find Information
             gatt_client->state = P_W4_FIND_CLIENT_CHARACTERISTIC_CONFIGURATION_QUERY_RESULT;
             send_gatt_characteristic_descriptor_request(gatt_client);
+#else
+        case P_W2_SEND_READ_CLIENT_CHARACTERISTIC_CONFIGURATION_QUERY:
+            // Use Read By Type
+            gatt_client->state = P_W4_READ_CLIENT_CHARACTERISTIC_CONFIGURATION_QUERY_RESULT;
+            send_gatt_read_client_characteristic_configuration_request(gatt_client);
+#endif
             break;
 
         case P_W2_SEND_READ_CHARACTERISTIC_DESCRIPTOR_QUERY:
@@ -1963,6 +1978,12 @@ static void gatt_client_handle_att_read_by_type_response(gatt_client_t *gatt_cli
             // GATT_EVENT_QUERY_COMPLETE is emitted by trigger_next_xxx when done
             break;
         }
+#ifndef ENABLE_GATT_FIND_INFORMATION_FOR_CCC_DISCOVERY
+        case P_W4_READ_CLIENT_CHARACTERISTIC_CONFIGURATION_QUERY_RESULT:
+            gatt_client->client_characteristic_configuration_handle = little_endian_read_16(packet, 2);
+            gatt_client->state = P_W2_WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION;
+            break;
+#endif
         case P_W4_READ_BY_TYPE_RESPONSE: {
             uint16_t pair_size = packet[1];
             // set last result handle to last valid handle, only used if pair_size invalid
@@ -2106,6 +2127,7 @@ static void gatt_client_handle_att_response(gatt_client_t * gatt_client, uint8_t
             if (size < (pair_size + offset)) break;
             uint16_t last_descriptor_handle = little_endian_read_16(packet, size - pair_size);
 
+#ifdef ENABLE_GATT_FIND_INFORMATION_FOR_CCC_DISCOVERY
             log_info("ENABLE_GATT_FIND_INFORMATION_FOR_CCC_DISCOVERY, state %x", gatt_client->state);
             if (gatt_client->state == P_W4_FIND_CLIENT_CHARACTERISTIC_CONFIGURATION_QUERY_RESULT){
                 // iterate over descriptors looking for CCC
@@ -2130,6 +2152,7 @@ static void gatt_client_handle_att_response(gatt_client_t * gatt_client, uint8_t
                 }
                 break;
             }
+#endif
             report_gatt_all_characteristic_descriptors(gatt_client, &packet[2], size - 2u, pair_size);
             trigger_next_characteristic_descriptor_query(gatt_client, last_descriptor_handle);
             // GATT_EVENT_QUERY_COMPLETE is emitted by trigger_next_xxx when done
@@ -2962,7 +2985,11 @@ uint8_t gatt_client_write_client_characteristic_configuration_with_context(btsta
     gatt_client->end_group_handle = characteristic->end_handle;
     little_endian_store_16(gatt_client->client_characteristic_configuration_value, 0, configuration);
     
+#ifdef ENABLE_GATT_FIND_INFORMATION_FOR_CCC_DISCOVERY
     gatt_client->state = P_W2_SEND_FIND_CLIENT_CHARACTERISTIC_CONFIGURATION_QUERY;
+#else
+    gatt_client->state = P_W2_SEND_READ_CLIENT_CHARACTERISTIC_CONFIGURATION_QUERY;
+#endif
     gatt_client_run();
     return ERROR_CODE_SUCCESS;
 }
