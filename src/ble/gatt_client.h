@@ -51,6 +51,11 @@
 extern "C" {
 #endif
 
+// Use Find Information for CCC Discovery by default
+#if !defined(ENABLE_GATT_FIND_INFORMATION_FOR_CCC_DISCOVERY) && !defined(ENABLE_GATT_LEGACY_CCC_DISCOVERY)
+#define ENABLE_GATT_FIND_INFORMATION_FOR_CCC_DISCOVERY
+#endif
+
 typedef enum {
     P_READY,
     P_W2_EMIT_QUERY_COMPLETE_EVENT,
