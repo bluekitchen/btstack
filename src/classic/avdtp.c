@@ -1561,12 +1561,13 @@ uint8_t avdtp_stream_endpoint_seid(avdtp_stream_endpoint_t * stream_endpoint){
     if (!stream_endpoint) return 0;
     return stream_endpoint->sep.seid;
 }
-uint8_t avdtp_choose_sbc_subbands(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_subbands_bitmap){
+
+avdtp_sbc_subbands_t avdtp_choose_sbc_subbands(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_subbands_bitmap){
     if (!stream_endpoint) return 0;
     uint8_t * media_codec = stream_endpoint->sep.capabilities.media_codec.media_codec_information;
     uint8_t subbands_bitmap = ((media_codec[1] >> 2) & 0x03) & remote_subbands_bitmap;
-    
-    uint8_t subbands = AVDTP_SBC_SUBBANDS_8;
+
+    avdtp_sbc_subbands_t subbands = AVDTP_SBC_SUBBANDS_8;
     if (subbands_bitmap & AVDTP_SBC_SUBBANDS_8){
         subbands = AVDTP_SBC_SUBBANDS_8;
     } else if (subbands_bitmap & AVDTP_SBC_SUBBANDS_4){
@@ -1575,12 +1576,12 @@ uint8_t avdtp_choose_sbc_subbands(avdtp_stream_endpoint_t * stream_endpoint, uin
     return subbands;
 }
 
-uint8_t avdtp_choose_sbc_block_length(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_block_length_bitmap){
+avdtp_sbc_block_length_t avdtp_choose_sbc_block_length(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_block_length_bitmap){
     if (!stream_endpoint) return 0;
     uint8_t * media_codec = stream_endpoint->sep.capabilities.media_codec.media_codec_information;
     uint8_t block_length_bitmap = (media_codec[1] >> 4) & remote_block_length_bitmap;
-    
-    uint8_t block_length = AVDTP_SBC_BLOCK_LENGTH_16;
+
+    avdtp_sbc_block_length_t block_length = AVDTP_SBC_BLOCK_LENGTH_16;
     if (block_length_bitmap & AVDTP_SBC_BLOCK_LENGTH_16){
         block_length = AVDTP_SBC_BLOCK_LENGTH_16;
     } else if (block_length_bitmap & AVDTP_SBC_BLOCK_LENGTH_12){

@@ -323,8 +323,8 @@ typedef enum {
 typedef struct {
     uint16_t                        sampling_frequency;
     avdtp_channel_mode_t            channel_mode;
-    uint8_t                         block_length;
-    uint8_t                         subbands;
+    avdtp_sbc_block_length_t        block_length;
+    avdtp_sbc_subbands_t            subbands;
     avdtp_sbc_allocation_method_t   allocation_method;
     uint8_t                         min_bitpool_value;
     uint8_t                         max_bitpool_value;
@@ -365,8 +365,6 @@ typedef struct {
     uint8_t                 bit_rate_index;
     uint16_t                maximum_sul;
 } avdtp_configuration_atrac_t;
-
-
 
 typedef struct {
     uint8_t version;
@@ -452,7 +450,6 @@ typedef struct {
     uint16_t configured_service_categories;
     avdtp_capabilities_t configuration;
 } avdtp_sep_t;
-
 
 typedef enum {
     AVDTP_SIGNALING_CONNECTION_IDLE = 0,
@@ -601,7 +598,6 @@ typedef struct {
 
 } avdtp_connection_t;
 
-
 typedef struct avdtp_stream_endpoint {
     btstack_linked_item_t    item;
     
@@ -724,8 +720,8 @@ uint16_t avdtp_get_highest_sampling_frequency(uint8_t sampling_frequency_bitmap)
 avdtp_channel_mode_t avdtp_choose_sbc_channel_mode(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_channel_mode_bitmap);
 avdtp_sbc_allocation_method_t avdtp_choose_sbc_allocation_method(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_allocation_method_bitmap);
 uint16_t avdtp_choose_sbc_sampling_frequency(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_sampling_frequency_bitmap);
-uint8_t avdtp_choose_sbc_subbands(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_subbands_bitmap);
-uint8_t avdtp_choose_sbc_block_length(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_block_length_bitmap);
+avdtp_sbc_subbands_t avdtp_choose_sbc_subbands(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_subbands_bitmap);
+avdtp_sbc_block_length_t avdtp_choose_sbc_block_length(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_block_length_bitmap);
 uint8_t avdtp_choose_sbc_max_bitpool_value(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_max_bitpool_value);
 uint8_t avdtp_choose_sbc_min_bitpool_value(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_min_bitpool_value);
 
