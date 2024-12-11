@@ -1574,18 +1574,19 @@ uint8_t avdtp_config_sbc_store(uint8_t * config, const avdtp_configuration_sbc_t
     if (configuration->allocation_method > AVDTP_SBC_ALLOCATION_METHOD_SNR){
         return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
     }
-    switch (configuration->block_length){
-        case 4:
-        case 8:
-        case 12:
-        case 16:
+
+    switch ((avdtp_sbc_block_length_t)configuration->block_length){
+        case AVDTP_SBC_BLOCK_LENGTH_4:
+        case AVDTP_SBC_BLOCK_LENGTH_8:
+        case AVDTP_SBC_BLOCK_LENGTH_12:
+        case AVDTP_SBC_BLOCK_LENGTH_16:
             break;
         default:
             return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
     }
-    switch (configuration->subbands){
-        case 4:
-        case 8:
+    switch ((avdtp_sbc_subbands_t)configuration->subbands){
+        case AVDTP_SBC_SUBBANDS_4:
+        case AVDTP_SBC_SUBBANDS_8:
             break;
         default:
             return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
