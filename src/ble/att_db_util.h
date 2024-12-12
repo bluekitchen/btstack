@@ -62,6 +62,13 @@ extern "C" {
 void att_db_util_init(void);
 
 /**
+ * @brief Set handle value for next table entry
+ * @param handle
+ * @note new handle must be >= previous to avoid reusing assigned handles
+ */
+void att_db_util_set_next_handle(uint16_t handle);
+
+/**
  * @brief Add primary service for 16-bit UUID
  * @param uuid16
  * @return attribute handle for the new service definition
