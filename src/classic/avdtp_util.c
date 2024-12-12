@@ -736,14 +736,13 @@ static void avdtp_signaling_emit_media_codec_mpeg_aac_capability(uint16_t avdtp_
     uint8_t  vbr                       =   media_codec_information[3] >> 7;
 
     event[pos++] =  object_type_bitmap;
-    event[pos++] =  drc;
-
     little_endian_store_16(event, pos, sampling_frequency_bitmap);
     pos += 2;
     event[pos++] = channels_bitmap;
     little_endian_store_24(event, pos, bit_rate_bitmap);
     pos += 3;
     event[pos++] = vbr;
+    event[pos++] =  drc;
     avdtp_emit_sink_and_source(event, pos);
 }
 
@@ -1249,14 +1248,14 @@ avdtp_signaling_setup_media_codec_mpec_aac_config_event(uint8_t *event, uint16_t
     }
 
     event[pos++] = object_type;
-    event[pos++] = drc;
     little_endian_store_24(event, pos, sampling_frequency);
     pos += 3;
     event[pos++] = num_channels;
     little_endian_store_24(event, pos, bit_rate);
     pos += 3;
     event[pos++] = vbr;
-
+    event[pos++] = drc;
+    
     btstack_assert(AVDTP_MEDIA_CONFIG_MPEG_AAC_EVENT_LEN == pos);
 
     return pos;

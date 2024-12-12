@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - TX Power Service Client: added
 - btstack_util: safe wrappers for snprintf
 - Battery Service v1.1 Server
+- AVDTP, A2DP: MPEG AAC capability and configuration events are extended with the drc field
 
 ### Fixed
 - L2CAP: Fix ERTM Tx buffer reconfiguration
