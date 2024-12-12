@@ -8406,22 +8406,13 @@ static inline uint8_t avdtp_subevent_signaling_media_codec_mpeg_aac_capability_g
     return event[7];
 }
 /**
- * @brief Get field drc from event AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AAC_CAPABILITY
- * @param event packet
- * @return drc
- * @note: btstack_type 1
- */
-static inline uint8_t avdtp_subevent_signaling_media_codec_mpeg_aac_capability_get_drc(const uint8_t * event){
-    return event[8];
-}
-/**
  * @brief Get field sampling_frequency_bitmap from event AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AAC_CAPABILITY
  * @param event packet
  * @return sampling_frequency_bitmap
  * @note: btstack_type 2
  */
 static inline uint16_t avdtp_subevent_signaling_media_codec_mpeg_aac_capability_get_sampling_frequency_bitmap(const uint8_t * event){
-    return little_endian_read_16(event, 9);
+    return little_endian_read_16(event, 8);
 }
 /**
  * @brief Get field channels_bitmap from event AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AAC_CAPABILITY
@@ -8430,7 +8421,7 @@ static inline uint16_t avdtp_subevent_signaling_media_codec_mpeg_aac_capability_
  * @note: btstack_type 1
  */
 static inline uint8_t avdtp_subevent_signaling_media_codec_mpeg_aac_capability_get_channels_bitmap(const uint8_t * event){
-    return event[11];
+    return event[10];
 }
 /**
  * @brief Get field bit_rate from event AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AAC_CAPABILITY
@@ -8439,7 +8430,7 @@ static inline uint8_t avdtp_subevent_signaling_media_codec_mpeg_aac_capability_g
  * @note: btstack_type 3
  */
 static inline uint32_t avdtp_subevent_signaling_media_codec_mpeg_aac_capability_get_bit_rate(const uint8_t * event){
-    return little_endian_read_24(event, 12);
+    return little_endian_read_24(event, 11);
 }
 /**
  * @brief Get field vbr from event AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AAC_CAPABILITY
@@ -8448,6 +8439,15 @@ static inline uint32_t avdtp_subevent_signaling_media_codec_mpeg_aac_capability_
  * @note: btstack_type 1
  */
 static inline uint8_t avdtp_subevent_signaling_media_codec_mpeg_aac_capability_get_vbr(const uint8_t * event){
+    return event[14];
+}
+/**
+ * @brief Get field drc from event AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AAC_CAPABILITY
+ * @param event packet
+ * @return drc
+ * @note: btstack_type 1
+ */
+static inline uint8_t avdtp_subevent_signaling_media_codec_mpeg_aac_capability_get_drc(const uint8_t * event){
     return event[15];
 }
 
@@ -9184,22 +9184,13 @@ static inline uint8_t avdtp_subevent_signaling_media_codec_mpeg_aac_configuratio
     return event[9];
 }
 /**
- * @brief Get field drc from event AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AAC_CONFIGURATION
- * @param event packet
- * @return drc
- * @note: btstack_type 1
- */
-static inline uint8_t avdtp_subevent_signaling_media_codec_mpeg_aac_configuration_get_drc(const uint8_t * event){
-    return event[10];
-}
-/**
  * @brief Get field sampling_frequency from event AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AAC_CONFIGURATION
  * @param event packet
  * @return sampling_frequency
  * @note: btstack_type 3
  */
 static inline uint32_t avdtp_subevent_signaling_media_codec_mpeg_aac_configuration_get_sampling_frequency(const uint8_t * event){
-    return little_endian_read_24(event, 11);
+    return little_endian_read_24(event, 10);
 }
 /**
  * @brief Get field num_channels from event AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AAC_CONFIGURATION
@@ -9208,7 +9199,7 @@ static inline uint32_t avdtp_subevent_signaling_media_codec_mpeg_aac_configurati
  * @note: btstack_type 1
  */
 static inline uint8_t avdtp_subevent_signaling_media_codec_mpeg_aac_configuration_get_num_channels(const uint8_t * event){
-    return event[14];
+    return event[13];
 }
 /**
  * @brief Get field bit_rate from event AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AAC_CONFIGURATION
@@ -9217,7 +9208,7 @@ static inline uint8_t avdtp_subevent_signaling_media_codec_mpeg_aac_configuratio
  * @note: btstack_type 3
  */
 static inline uint32_t avdtp_subevent_signaling_media_codec_mpeg_aac_configuration_get_bit_rate(const uint8_t * event){
-    return little_endian_read_24(event, 15);
+    return little_endian_read_24(event, 14);
 }
 /**
  * @brief Get field vbr from event AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AAC_CONFIGURATION
@@ -9226,6 +9217,15 @@ static inline uint32_t avdtp_subevent_signaling_media_codec_mpeg_aac_configurati
  * @note: btstack_type 1
  */
 static inline uint8_t avdtp_subevent_signaling_media_codec_mpeg_aac_configuration_get_vbr(const uint8_t * event){
+    return event[17];
+}
+/**
+ * @brief Get field drc from event AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AAC_CONFIGURATION
+ * @param event packet
+ * @return drc
+ * @note: btstack_type 1
+ */
+static inline uint8_t avdtp_subevent_signaling_media_codec_mpeg_aac_configuration_get_drc(const uint8_t * event){
     return event[18];
 }
 
@@ -10051,6 +10051,15 @@ static inline uint32_t a2dp_subevent_signaling_media_codec_mpeg_aac_configuratio
 static inline uint8_t a2dp_subevent_signaling_media_codec_mpeg_aac_configuration_get_vbr(const uint8_t * event){
     return event[17];
 }
+/**
+ * @brief Get field drc from event A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AAC_CONFIGURATION
+ * @param event packet
+ * @return drc
+ * @note: btstack_type 1
+ */
+static inline uint8_t a2dp_subevent_signaling_media_codec_mpeg_aac_configuration_get_drc(const uint8_t * event){
+    return event[18];
+}
 
 /**
  * @brief Get field a2dp_cid from event A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_ATRAC_CONFIGURATION
@@ -10768,6 +10777,15 @@ static inline uint32_t a2dp_subevent_signaling_media_codec_mpeg_aac_capability_g
  */
 static inline uint8_t a2dp_subevent_signaling_media_codec_mpeg_aac_capability_get_vbr(const uint8_t * event){
     return event[14];
+}
+/**
+ * @brief Get field drc from event A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AAC_CAPABILITY
+ * @param event packet
+ * @return drc
+ * @note: btstack_type 1
+ */
+static inline uint8_t a2dp_subevent_signaling_media_codec_mpeg_aac_capability_get_drc(const uint8_t * event){
+    return event[15];
 }
 
 /**
