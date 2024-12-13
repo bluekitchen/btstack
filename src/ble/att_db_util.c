@@ -89,6 +89,11 @@ void att_db_util_init(void){
 	att_db_util_set_end_tag();
 }
 
+void att_db_util_set_next_handle(uint16_t handle){
+   btstack_assert(handle >= att_db_next_handle); // do not reuse assigned handles
+   att_db_next_handle = handle;
+}
+
 static bool att_db_util_hash_include_with_value(uint16_t uuid16){
     /* «Primary Service», «Secondary Service», «Included Service», «Characteristic», or «Characteristic Extended Properties» */
     switch (uuid16){
