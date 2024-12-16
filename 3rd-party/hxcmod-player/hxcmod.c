@@ -480,16 +480,17 @@ static void worknote( note * nptr, channel * cptr,char t,modcontext * mod )
 {
 	// BK4BSTACK_CHANGE START
 	(void) t;
+	// we rename sample into a_sample to avoid shadowing typedef struct { .. } sample; from hxcmod.h
 	// BK4BSTACK_CHANGE END
 
-	muint sample, period, effect, operiod;
+	muint a_sample, period, effect, operiod;
 	muint curnote, arpnote;
 	muchar effect_op;
 	muchar effect_param,effect_param_l,effect_param_h;
 	muint enable_nxt_smp;
 	const short * period_table_ptr;
 
-	sample = (nptr->sampperiod & 0xF0) | (nptr->sampeffect >> 4);
+	a_sample = (nptr->sampperiod & 0xF0) | (nptr->sampeffect >> 4);
 	period = ((nptr->sampperiod & 0xF) << 8) | nptr->period;
 	effect = ((nptr->sampeffect & 0xF) << 8) | nptr->effect;
 	effect_op = nptr->sampeffect & 0xF;
@@ -501,14 +502,14 @@ static void worknote( note * nptr, channel * cptr,char t,modcontext * mod )
 
 	operiod = cptr->period;
 
-	if ( period || sample )
+	if ( period || a_sample )
 	{
-		if( sample && ( sample < 32 ) )
+		if( a_sample && ( a_sample < 32 ) )
 		{
-			cptr->sampnum = sample - 1;
+			cptr->sampnum = a_sample - 1;
 		}
 
-		if( period || sample )
+		if( period || a_sample )
 		{
 			if( period )
 			{
@@ -572,7 +573,7 @@ static void worknote( note * nptr, channel * cptr,char t,modcontext * mod )
 			}
 		}
 
-		if( (sample != 0) && ( effect_op != EFFECT_VOLSLIDE_TONEPORTA ) )
+		if( (a_sample != 0) && ( effect_op != EFFECT_VOLSLIDE_TONEPORTA ) )
 		{
 			cptr->volume = mod->song.samples[cptr->sampnum].volume;
 			cptr->volumeslide = 0;
