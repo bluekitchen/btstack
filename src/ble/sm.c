@@ -4468,9 +4468,10 @@ static void sm_pdu_handler_pairing_public_key(sm_connection_t * sm_conn, const u
 static void sm_pdu_handler(sm_connection_t *sm_conn, uint8_t sm_pdu_code, const uint8_t *packet) {
     log_debug("sm_pdu_handler: state %u, pdu 0x%02x", sm_conn->sm_engine_state, sm_pdu_code);
 
+#ifdef ENABLE_LE_CENTRAL
     int err;
+#endif
     uint8_t max_encryption_key_size;
-    UNUSED(err);
 
     switch (sm_conn->sm_engine_state){
 
