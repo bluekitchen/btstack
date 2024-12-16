@@ -78,8 +78,7 @@ def metric_measure(metric_name, function_name, actual):
         metric_sum(metric_name + '_SUM', actual)
         if actual > targets[metric_name]:
             metric_sum(metric_name + '_DEVIATIONS', 1)
-            # metric_list(metric_name + '_LIST', function_name + '(%u)' % actual)
-            metric_list(metric_name + '_LIST', function_name)
+            metric_list(metric_name + '_LIST', function_name + ' - %u' % actual)
 
 
 def analyze_folders(btstack_root, folders, metrics_file):
