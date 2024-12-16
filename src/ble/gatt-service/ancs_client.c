@@ -257,6 +257,24 @@ static void ancs_client_send_next_query(void * context){
     }
 }
 
+static void ancs_client_handle_gatt_client_event_in_w4_service_result(uint8_t* packet) {
+    switch(hci_event_packet_get_type(packet)){
+        case GATT_EVENT_SERVICE_QUERY_RESULT:
+            gatt_event_service_query_result_get_service(packet, &ancs_service);
+            ancs_service_found = 1;
+            break;
+        case GATT_EVENT_QUERY_COMPLETE:
+            if (!ancs_service_found){
+                log_info("ANCS Service not found");
+                tc_state = TC_IDLE;
+                break;
+            }
+            tc_state = TC_W2_QUERY_CARACTERISTIC;
+            break;
+        default:
+            break;
+    }
+}
 
 static void ancs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 
@@ -271,22 +289,7 @@ static void ancs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t c
 
     switch(tc_state){
         case TC_W4_SERVICE_RESULT:
-            switch(hci_event_packet_get_type(packet)){
-                case GATT_EVENT_SERVICE_QUERY_RESULT:
-                    gatt_event_service_query_result_get_service(packet, &ancs_service);
-                    ancs_service_found = 1;
-                    break;
-                case GATT_EVENT_QUERY_COMPLETE:
-                    if (!ancs_service_found){
-                        log_info("ANCS Service not found");
-                        tc_state = TC_IDLE;
-                        break;
-                    }
-                    tc_state = TC_W2_QUERY_CARACTERISTIC;
-                    break;
-                default:
-                    break;
-            }
+            ancs_client_handle_gatt_client_event_in_w4_service_result(packet);
             break;
 
         case TC_W4_CHARACTERISTIC_RESULT:
