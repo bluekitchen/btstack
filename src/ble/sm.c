@@ -2408,8 +2408,6 @@ static void sm_run_activate_connection(void){
         sm_connection_t  * sm_connection = &hci_connection->sm_connection;
         // - if no connection locked and we're ready/waiting for setup context, fetch it and start
         bool done = true;
-        int err;
-        UNUSED(err);
 
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
         // assert ec key is ready
@@ -2870,7 +2868,8 @@ static void sm_run(void){
         }
 #endif
 
-        int key_distribution_flags;
+        // initialize to avoid 'maybe used uninitialized' error
+        int key_distribution_flags = 0;
         UNUSED(key_distribution_flags);
 #ifdef ENABLE_LE_PERIPHERAL
         int err;
