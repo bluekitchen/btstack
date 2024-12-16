@@ -246,33 +246,32 @@ void device_information_service_server_set_udi_for_medical_devices(const char * 
 
 
     // cppcheck-suppress objectIndex
-	bytes_copied = btstack_strcpy((char *) &data[pos], DEVICE_INFORMATION_MAX_STRING_LEN, label);
-	pos += bytes_copied;
-	if (bytes_copied > 0){
-		data[0] |= (1 << UDI_FOR_MEDICAL_DEVICES_BITMASK_LABEL);
-	}
+    if (label != NULL){
+        bytes_copied = btstack_strcpy((char *) &data[pos], DEVICE_INFORMATION_MAX_STRING_LEN, label);
+        pos += bytes_copied;
+        data[0] |= (1 << UDI_FOR_MEDICAL_DEVICES_BITMASK_LABEL);
+    }
 
-    // cppcheck-suppress objectIndex
-	bytes_copied = btstack_strcpy((char *) &data[pos], DEVICE_INFORMATION_MAX_STRING_LEN, device_id);
-	pos += bytes_copied;
-	if (bytes_copied > 0){
-		data[0] |= (1 << UDI_FOR_MEDICAL_DEVICES_BITMASK_DEVICE_ID);
-	}
+    if (device_id != NULL){
+        // cppcheck-suppress objectIndex
+        bytes_copied = btstack_strcpy((char *) &data[pos], DEVICE_INFORMATION_MAX_STRING_LEN, device_id);
+        pos += bytes_copied;
+        data[0] |= (1 << UDI_FOR_MEDICAL_DEVICES_BITMASK_DEVICE_ID);
+    }
 
-    // cppcheck-suppress objectIndex
-	bytes_copied = btstack_strcpy((char *) &data[pos], DEVICE_INFORMATION_MAX_STRING_LEN, issuer);
-	pos += bytes_copied;
-	if (bytes_copied > 0){
-		data[0] |= (1 << UDI_FOR_MEDICAL_DEVICES_BITMASK_ISSUER);
-	}
+    if (issuer != NULL) {
+        // cppcheck-suppress objectIndex
+        bytes_copied = btstack_strcpy((char *) &data[pos], DEVICE_INFORMATION_MAX_STRING_LEN, issuer);
+        pos += bytes_copied;
+        data[0] |= (1 << UDI_FOR_MEDICAL_DEVICES_BITMASK_ISSUER);
+    }
 
-    // cppcheck-suppress objectIndex
-	bytes_copied = btstack_strcpy((char *) &data[pos], DEVICE_INFORMATION_MAX_STRING_LEN, authority);
-	pos += bytes_copied;
-	if (bytes_copied > 0){
-		data[0] |= (1 << UDI_FOR_MEDICAL_DEVICES_BITMASK_AUTHORITY);
-	}
-
+    if (authority != NULL){
+        // cppcheck-suppress objectIndex
+        bytes_copied = btstack_strcpy((char *) &data[pos], DEVICE_INFORMATION_MAX_STRING_LEN, authority);
+        pos += bytes_copied;
+        data[0] |= (1 << UDI_FOR_MEDICAL_DEVICES_BITMASK_AUTHORITY);
+    }
 	device_information_fields[UDI_FOR_MEDICAL_DEVICES].len = pos;
 }
 
