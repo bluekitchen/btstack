@@ -1232,7 +1232,7 @@ static uint16_t handle_execute_write_request(att_connection_t * att_connection, 
         return setup_error_write_not_permitted(response_buffer, request_type, 0);
     }
 
-    if (request_buffer[1] != 0) {
+    if (request_buffer[1] != 0u) {
         // validate queued write
         if (att_prepare_write_error_code == 0){
             att_prepare_write_error_code = (*att_write_callback)(att_connection->con_handle, 0, ATT_TRANSACTION_MODE_VALIDATE, 0, NULL, 0);
@@ -1327,13 +1327,13 @@ uint16_t att_prepare_handle_value_multiple_notification(att_connection_t * att_c
     uint16_t response_buffer_size = att_connection->mtu - 3u;
     for (i = 0; i < num_attributes; i++) {
         uint16_t value_len = values_len[i];
-        if ((offset + 4 + value_len) > response_buffer_size){
+        if ((offset + 4u + value_len) > response_buffer_size){
             break;
         }
         little_endian_store_16(response_buffer, offset, attribute_handles[i]);
-        offset += 2;
+        offset += 2u;
         little_endian_store_16(response_buffer, offset, value_len);
-        offset += 2;
+        offset += 2u;
         (void) memcpy(&response_buffer[offset], values_data[i], value_len);
         offset += value_len;
     }
@@ -1421,7 +1421,7 @@ bool gatt_server_get_handle_range_for_service_with_uuid16(uint16_t uuid16, uint1
     uint16_t service_start = 0;
 
     uint8_t attribute_value[2];
-    int attribute_len = sizeof(attribute_value);
+    const uint16_t attribute_len = sizeof(attribute_value);
     little_endian_store_16(attribute_value, 0, uuid16);
 
     att_iterator_t it;
@@ -1632,7 +1632,7 @@ bool gatt_server_get_included_service_with_uuid16(uint16_t start_handle, uint16_
         if (it.handle == 0u){
             break;
         }
-        if ((it.value_len == 6) && (att_iterator_match_uuid16(&it, GATT_INCLUDE_SERVICE_UUID))){
+        if ((it.value_len == 6u) && (att_iterator_match_uuid16(&it, GATT_INCLUDE_SERVICE_UUID))){
             if (little_endian_read_16(it.value, 4) == uuid16){
                 *out_included_service_handle = it.handle;
                 *out_included_service_start_handle = little_endian_read_16(it.value, 0);
