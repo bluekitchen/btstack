@@ -718,7 +718,7 @@ static void avdtp_signaling_emit_media_codec_mpeg_audio_capability(uint16_t avdt
 
 static void avdtp_signaling_emit_media_codec_mpeg_aac_capability(uint16_t avdtp_cid, uint8_t remote_seid, adtvp_media_codec_capabilities_t media_codec) {
     const uint8_t * media_codec_information = media_codec.media_codec_information;
-    uint8_t event[15];
+    uint8_t event[16];
     int pos = 0;
     event[pos++] = HCI_EVENT_AVDTP_META;
     event[pos++] = sizeof(event) - 2;
