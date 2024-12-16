@@ -50,6 +50,7 @@ typedef enum {
     AUDIO_SOURCE_SINE,
     AUDIO_SOURCE_MODPLAYER,
     AUDIO_SOURCE_RECORDING,
+    AUDIO_SOURCE_LOOPBACK,
 } le_audio_demo_source_generator;
 
 /**
