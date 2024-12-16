@@ -451,7 +451,7 @@ static int getnote( modcontext * mod, unsigned short period )
 	return MAXNOTES;
 }
 
-static void doFunk(channel * cptr)
+static void doFunk(hxcmod_channel_t * cptr)
 {
 	if(cptr->funkspeed)
 	{
@@ -476,7 +476,7 @@ static void doFunk(channel * cptr)
 	}
 }
 
-static void worknote( note * nptr, channel * cptr,char t,modcontext * mod )
+static void worknote( note * nptr, hxcmod_channel_t * cptr,char t,modcontext * mod )
 {
 	// BK4BSTACK_CHANGE START
 	(void) t;
@@ -1148,7 +1148,7 @@ static void worknote( note * nptr, channel * cptr,char t,modcontext * mod )
 
 }
 
-static void workeffect( modcontext * modctx, note * nptr, channel * cptr )
+static void workeffect( modcontext * modctx, note * nptr, hxcmod_channel_t * cptr )
 {
 	// BK4BSTACK_CHANGE START
 	(void) nptr;
@@ -1624,7 +1624,7 @@ void hxcmod_fillbuffer(modcontext * modctx, msample * outbuffer, mssize nbsample
 
 	short finalperiod;
 	note	*nptr;
-	channel *cptr;
+	hxcmod_channel_t *cptr;
 
 	if( modctx && outbuffer )
 	{
@@ -1671,7 +1671,7 @@ void hxcmod_fillbuffer(modcontext * modctx, msample * outbuffer, mssize nbsample
 
 						for(c=0;c<modctx->number_of_channels;c++)
 						{
-							worknote((note*)(nptr), (channel*)(cptr),(char)(c+1),modctx);
+							worknote((note*)(nptr), (hxcmod_channel_t*)(cptr),(char)(c+1),modctx);
 
 							if (cptr->period != 0)
 							{
