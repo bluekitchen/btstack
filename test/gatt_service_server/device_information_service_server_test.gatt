@@ -1,2 +1,2 @@
 // add Battery Service
-#import <device_information_service.gatt>
+#import <device_information_service_v1.gatt>
