@@ -87,6 +87,19 @@ static gatt_service_client_connection_t * gatt_service_client_get_connection_for
     return NULL;
 }
 
+static gatt_service_client_connection_t * gatt_service_client_get_connection_for_con_handle_and_attribute_handle(const gatt_service_client_t * client, hci_con_handle_t con_handle, uint16_t attribute_handle){
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, (btstack_linked_list_t *) &client->connections);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        gatt_service_client_connection_t * connection = (gatt_service_client_connection_t *)btstack_linked_list_iterator_next(&it);
+        if (connection->con_handle != con_handle) continue;
+        if (attribute_handle < connection->start_handle) continue;
+        if (attribute_handle > connection->end_handle) continue;
+        return connection;
+    }
+    return NULL;
+}
+
 static gatt_service_client_connection_t * gatt_service_client_get_connection_for_cid(
         const gatt_service_client_t *client, uint16_t connection_cid){
     btstack_linked_list_iterator_t it;    
@@ -646,7 +659,10 @@ gatt_service_client_connect_secondary_service_with_uuid16(hci_con_handle_t con_h
     btstack_assert(characteristics != NULL);
     btstack_assert(characteristics_num >= client->characteristics_desc16_num);
 
-    if (gatt_service_client_get_connection_for_con_handle_and_service_index(client, con_handle, service_index) != NULL){
+    if (gatt_service_client_get_connection_for_con_handle_and_attribute_handle(client, con_handle, service_start_handle) != NULL){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+    if (gatt_service_client_get_connection_for_con_handle_and_attribute_handle(client, con_handle, service_end_handle) != NULL){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
