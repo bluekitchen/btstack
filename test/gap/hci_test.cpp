@@ -28,7 +28,7 @@ typedef struct {
 #define MAX_HCI_PACKETS 10
 static uint16_t transport_count_packets;
 static hci_packet_t transport_packets[MAX_HCI_PACKETS];
-
+static int can_send_now = 1;
 static  void (*packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size);
 
 static const uint8_t packet_sent_event[] = { HCI_EVENT_TRANSPORT_PACKET_SENT, 0};
@@ -38,7 +38,7 @@ static int hci_transport_test_set_baudrate(uint32_t baudrate){
 }
 
 static int hci_transport_test_can_send_now(uint8_t packet_type){
-    return 1;
+    return can_send_now;
 }
 
 static int hci_transport_test_send_packet(uint8_t packet_type, uint8_t * packet, int size){
@@ -97,6 +97,7 @@ void CHECK_HCI_COMMAND(const hci_cmd_t * expected_hci_command){
 TEST_GROUP(HCI){
         void setup(void){
             transport_count_packets = 0;
+            can_send_now = 1;
             next_hci_packet = 0;
             hci_init(&hci_transport_test, NULL);
             hci_simulate_working_fuzz();
@@ -165,6 +166,10 @@ TEST(HCI, gap_whitelist_add_remove){
 TEST(HCI, gap_connect_with_whitelist){
     uint8_t status = gap_connect_with_whitelist();
     CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
+
+    bd_addr_type_t addr_type = BD_ADDR_TYPE_LE_PUBLIC;
+    bd_addr_t addr = { 0 };
+    gap_auto_connection_start(addr_type, addr);
 
     status = gap_connect_with_whitelist();
     CHECK_EQUAL(ERROR_CODE_COMMAND_DISALLOWED, status);
@@ -329,6 +334,14 @@ TEST(HCI, SetDuplicateFilter){
 }
 
 TEST(HCI, ConnectCancel){
+    uint8_t status;
+    status = gap_connect_with_whitelist();
+    CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
+    gap_connect_cancel();
+
+    bd_addr_type_t addr_type = BD_ADDR_TYPE_LE_PUBLIC;
+    bd_addr_t addr = { 0 };
+    gap_connect(addr, addr_type);
     gap_connect_cancel();
 }
 
@@ -373,6 +386,93 @@ TEST(HCI, Disconnect){
 TEST(HCI, GetRole){
     gap_get_role(HCI_CON_HANDLE_INVALID);
     gap_get_role(5);
+}
+TEST(HCI, hci_is_le_identity_address_type_other){
+    hci_is_le_identity_address_type(BD_ADDR_TYPE_LE_PUBLIC_IDENTITY);
+    hci_is_le_identity_address_type(BD_ADDR_TYPE_LE_RANDOM);
+}
+
+TEST(HCI, hci_can_send_command_packet_now){
+    can_send_now = 0;
+    hci_can_send_command_packet_now();
+    can_send_now = 1;
+    hci_can_send_command_packet_now();
+}
+
+TEST(HCI, hci_can_send_prepared_acl_packet_now){
+    can_send_now = 0;
+    hci_can_send_prepared_acl_packet_now(0);
+    can_send_now = 1;
+    hci_can_send_prepared_acl_packet_now(0);
+}
+
+TEST(HCI, hci_can_send_acl_le_packet_now) {
+    can_send_now = 0;
+    hci_can_send_acl_le_packet_now();
+    can_send_now = 1;
+    hci_can_send_acl_le_packet_now();
+}
+
+TEST(HCI, hci_close) {
+    hci_close();
+}
+
+TEST(HCI, gap_connect) {
+    bd_addr_type_t addr_type = BD_ADDR_TYPE_LE_PUBLIC;
+    bd_addr_t addr = { 0 };
+
+    uint8_t status;
+    status = gap_connect(addr, addr_type);
+    CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
+    status = gap_connect(addr, addr_type);
+    CHECK_EQUAL(ERROR_CODE_COMMAND_DISALLOWED, status);
+}
+
+TEST(HCI, hci_emit_state) {
+    hci_emit_state();
+}
+
+TEST(HCI, gap_request_connection_subrating) {
+    int status = gap_request_connection_subrating(HCI_CON_HANDLE_INVALID, 0, 0, 0, 0, 0);
+    CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
+    status = gap_request_connection_subrating(0x01, 0, 0, 0, 0, 0);
+    CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
+}
+
+
+TEST(HCI, hci_set_hardware_error_callback) {
+    hci_set_hardware_error_callback(NULL);
+}
+
+TEST(HCI, hci_disconnect_all) {
+    hci_disconnect_all();
+}
+
+TEST(HCI, hci_get_manufacturer) {
+    hci_get_manufacturer();
+}
+TEST(HCI, gap_authorization_state) {
+    gap_authorization_state(HCI_CON_HANDLE_INVALID);
+}
+#ifdef ENABLE_LE_PRIVACY_ADDRESS_RESOLUTION
+TEST(HCI, hci_load_le_device_db_entry_into_resolving_list) {
+    hci_load_le_device_db_entry_into_resolving_list(0);
+}
+
+TEST(HCI, hci_remove_le_device_db_entry_from_resolving_list) {
+    hci_remove_le_device_db_entry_from_resolving_list(0);
+}
+
+TEST(HCI, gap_load_resolving_list_from_le_device_db) {
+    gap_load_resolving_list_from_le_device_db();
+}
+#endif
+
+TEST(HCI, gap_privacy_client) {
+    gap_privacy_client_t client;
+    gap_privacy_client_register(&client);
+    gap_privacy_client_ready(&client);
+    gap_privacy_client_unregister(&client);
 }
 
 int main (int argc, const char * argv[]){
