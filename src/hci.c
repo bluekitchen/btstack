@@ -7293,8 +7293,8 @@ static bool hci_run_general_pending_commands(void){
                         log_info("sending hci_le_create_connection");
                         hci_stack->le_connection_own_addr_type =  hci_stack->le_own_addr_type;
                         hci_get_own_address_for_addr_type(hci_stack->le_connection_own_addr_type, hci_stack->le_connection_own_address);
-                        hci_send_le_create_connection(0, connection->address_type, connection->address);
                         connection->state = SENT_CREATE_CONNECTION;
+                        hci_send_le_create_connection(0, connection->address_type, connection->address);
 #endif
 #endif
                         break;
