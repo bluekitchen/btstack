@@ -95,11 +95,14 @@ void CHECK_HCI_COMMAND(const hci_cmd_t * expected_hci_command){
 }
 
 TEST_GROUP(HCI){
-        void setup(void){
+        hci_stack_t * hci_stack;
+
+    void setup(void){
             transport_count_packets = 0;
             can_send_now = 1;
             next_hci_packet = 0;
             hci_init(&hci_transport_test, NULL);
+            hci_stack = hci_get_stack();
             hci_simulate_working_fuzz();
             hci_setup_test_connections_fuzz();
             // register for HCI events
@@ -243,10 +246,23 @@ TEST(HCI, hci_number_free_acl_slots_for_handle){
     CHECK_EQUAL(0, free_acl_slots_num);
 }
 
+TEST(HCI, hci_send_acl_packet_buffer_no_connection){
+    hci_reserve_packet_buffer();
+    uint8_t status = hci_send_acl_packet_buffer(16);
+    CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
+}
+
 TEST(HCI, hci_send_acl_packet_buffer){
     hci_reserve_packet_buffer();
-    uint8_t status = hci_send_acl_packet_buffer(HCI_CON_HANDLE_INVALID);
-    CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
+    uint8_t * packet = hci_get_outgoing_packet_buffer();
+    uint8_t flags = 0x02;
+    // LE Packet
+    uint16_t acl_len = 50;
+    hci_stack->le_data_packets_length = acl_len - 10;;
+    little_endian_store_16(packet, 0, 0x05 | (flags << 12));
+    uint8_t status = hci_send_acl_packet_buffer(acl_len);
+    CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
+    hci_stack->le_data_packets_length = 0;
 }
 
 TEST(HCI, hci_send_cmd_packet){
@@ -412,10 +428,19 @@ TEST(HCI, hci_can_send_acl_le_packet_now) {
     can_send_now = 1;
     hci_can_send_acl_le_packet_now();
 }
-
-TEST(HCI, hci_close) {
-    hci_close();
+TEST(HCI, hci_number_free_acl_slots_for_connection_type) {
+    CHECK_EQUAL(0, hci_number_free_acl_slots_for_connection_type(BD_ADDR_TYPE_UNKNOWN));
+    CHECK_EQUAL(255, hci_number_free_acl_slots_for_connection_type(BD_ADDR_TYPE_ACL));
+    CHECK_EQUAL(255, hci_number_free_acl_slots_for_connection_type(BD_ADDR_TYPE_LE_PUBLIC));
+    // tweak stack
+    hci_stack_t * hci_stack = hci_get_stack();
+    hci_stack->le_acl_packets_total_num = 1;
+    CHECK_EQUAL(1, hci_number_free_acl_slots_for_connection_type(BD_ADDR_TYPE_LE_PUBLIC));
 }
+
+// TEST(HCI, hci_close) {
+//     hci_close();
+// }
 
 TEST(HCI, gap_connect) {
     bd_addr_type_t addr_type = BD_ADDR_TYPE_LE_PUBLIC;
@@ -473,6 +498,102 @@ TEST(HCI, gap_privacy_client) {
     gap_privacy_client_register(&client);
     gap_privacy_client_ready(&client);
     gap_privacy_client_unregister(&client);
+}
+
+TEST(HCI, acl_handling) {
+    uint16_t con_handle = 1;
+    uint8_t flags = 0;
+
+    uint8_t packet[16];
+    // no connection for invalid handle
+    memset(packet, 0xff, sizeof(packet));
+    packet_handler(HCI_ACL_DATA_PACKET, packet, sizeof(packet));
+    // invalid length
+    little_endian_store_16(packet, 0, con_handle | (flags << 12));
+    packet_handler(HCI_ACL_DATA_PACKET, packet, sizeof(packet));
+    // fix length
+    little_endian_store_16(packet, 2, 12);
+    little_endian_store_16(packet, 6, 8);
+
+    // unexpected acl continuation
+    flags = 0x01;
+    little_endian_store_16(packet, 0, con_handle | (flags << 12));
+    packet_handler(HCI_ACL_DATA_PACKET, packet, sizeof(packet));
+    // invalid packet boundary flags
+    flags = 0x03;
+    little_endian_store_16(packet, 0, con_handle | (flags << 12));
+    packet_handler(HCI_ACL_DATA_PACKET, packet, sizeof(packet));
+    // oversized first fragment
+    flags = 0x02;
+    little_endian_store_16(packet, 0, con_handle | (flags << 12));
+    little_endian_store_16(packet, 2, 1996);
+    packet_handler(HCI_ACL_DATA_PACKET, packet, 2000);
+
+    // 1a store first flushable fragment
+    flags = 0x02;
+    little_endian_store_16(packet, 0, con_handle | (flags << 12));
+    little_endian_store_16(packet, 2, 12);
+    little_endian_store_16(packet, 4, 20);
+    packet_handler(HCI_ACL_DATA_PACKET, packet, sizeof(packet));
+
+    // 1b another first non-flushable
+    flags = 0x06;
+    little_endian_store_16(packet, 0, con_handle | (flags << 12));
+    packet_handler(HCI_ACL_DATA_PACKET, packet, sizeof(packet));
+
+    // 1c another first
+    packet_handler(HCI_ACL_DATA_PACKET, packet, sizeof(packet));
+
+    // oversized continuation fragment
+    flags = 0x01;
+    little_endian_store_16(packet, 0, con_handle | (flags << 12));
+    little_endian_store_16(packet, 2, 1996);
+    packet_handler(HCI_ACL_DATA_PACKET, packet, 2000);
+}
+TEST(HCI, gap_le_get_own_address) {
+    uint8_t  addr_type;
+    bd_addr_t addr;
+    hci_stack->le_own_addr_type = BD_ADDR_TYPE_LE_PUBLIC;
+    gap_le_get_own_address(&addr_type, addr);
+    hci_stack->le_own_addr_type = BD_ADDR_TYPE_LE_RANDOM;
+    gap_le_get_own_address(&addr_type, addr);
+}
+
+static void simulate_hci_command_complete(uint16_t opcode, uint8_t status) {
+    uint8_t packet[30];
+    packet[0] = HCI_EVENT_COMMAND_COMPLETE;
+    packet[1] = sizeof(packet)-2;
+    packet[2] = 1;
+    little_endian_store_16(packet, 3, opcode);
+    packet[5] = status;
+    packet_handler(HCI_EVENT_PACKET, packet, sizeof(packet));
+}
+
+TEST(HCI, handle_command_complete_event) {
+    struct {
+        uint16_t opcode;
+        uint8_t status;
+    } variations[] = {
+        {HCI_OPCODE_HCI_READ_LOCAL_NAME, ERROR_CODE_SUCCESS},
+        {HCI_OPCODE_HCI_READ_LOCAL_NAME, ERROR_CODE_UNKNOWN_HCI_COMMAND },
+        {HCI_OPCODE_HCI_READ_BUFFER_SIZE, ERROR_CODE_SUCCESS},
+        {HCI_OPCODE_HCI_READ_RSSI, ERROR_CODE_SUCCESS},
+        {HCI_OPCODE_HCI_READ_RSSI, ERROR_CODE_UNKNOWN_HCI_COMMAND},
+    };
+    for (uint8_t i = 0; i < sizeof(variations) / sizeof(variations[0]); i++) {
+        // extras
+        uint16_t opcode = variations[i].opcode;
+        uint8_t status = variations[i].status;
+        switch (opcode) {
+            default:
+                break;
+        }
+        simulate_hci_command_complete(opcode, status);
+        switch (opcode) {
+            default:
+                break;
+        }
+    }
 }
 
 int main (int argc, const char * argv[]){
