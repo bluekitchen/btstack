@@ -10948,4 +10948,10 @@ void hci_simulate_working_fuzz(void){
     hci_init_done();
     hci_stack->num_cmd_packets = 255;
 }
+
+// get hci struct
+hci_stack_t * hci_get_stack() {
+    return hci_stack;
+}
+
 #endif

@@ -1881,6 +1881,7 @@ uint8_t hci_dedicated_bonding_defer_disconnect(hci_con_handle_t con_handle, bool
 // Disable automatic L2CAP disconnect if no L2CAP connection is established
 void hci_disable_l2cap_timeout_check(void);
 
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
 // setup test connections, used for fuzzing
 void hci_setup_test_connections_fuzz(void);
 
@@ -1890,6 +1891,10 @@ void hci_free_connections_fuzz(void);
 // simulate stack bootup
 void hci_simulate_working_fuzz(void);
 
+// get hci struct
+hci_stack_t * hci_get_stack();
+
+#endif
 
 #if defined __cplusplus
 }
