@@ -653,8 +653,8 @@ static int nr_hci_connections(void){
 
 uint16_t hci_number_free_acl_slots_for_connection_type(bd_addr_type_t address_type){
     
-    unsigned int num_packets_sent_classic = 0;
-    unsigned int num_packets_sent_le = 0;
+    int num_packets_sent_classic = 0;
+    int num_packets_sent_le = 0;
 
     btstack_linked_item_t *it;
     for (it = (btstack_linked_item_t *) hci_stack->connections; it != NULL; it = it->next){
