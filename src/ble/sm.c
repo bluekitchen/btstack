@@ -2806,17 +2806,24 @@ static bool sm_run_non_connection_logic(void){
     return done;
 }
 
-static void sm_run(void){
-
-    // assert that stack has already bootet
-    if (hci_get_state() != HCI_STATE_WORKING) return;
+static bool sm_run_ready(void) {
+    // assert that stack has already booted
+    if (hci_get_state() != HCI_STATE_WORKING) return false;
 
     // assert that we can send at least commands
-    if (!hci_can_send_command_packet_now()) return;
+    if (!hci_can_send_command_packet_now()) return false;
 
     // pause until IR/ER are ready
-    if (sm_persistent_keys_random_active) return;
+    if (sm_persistent_keys_random_active) return false;
 
+    return true;
+}
+
+static void sm_run(void){
+
+    // ready
+    if (sm_run_ready() == false) return;
+    
     // non-connection related behaviour
     bool done = sm_run_non_connection_logic();
     if (done) return;
