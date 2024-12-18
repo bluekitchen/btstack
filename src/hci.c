@@ -666,29 +666,18 @@ uint16_t hci_number_free_acl_slots_for_connection_type(bd_addr_type_t address_ty
             num_packets_sent_classic += connection->num_packets_sent;
         }
     }
-    log_debug("ACL classic buffers: %u used of %u", num_packets_sent_classic, hci_stack->acl_packets_total_num);
+    btstack_assert(hci_stack->acl_packets_total_num  >= num_packets_sent_classic);
     int free_slots_classic = hci_stack->acl_packets_total_num - num_packets_sent_classic;
     int free_slots_le = 0;
 
-    if (free_slots_classic < 0){
-        log_error("hci_number_free_acl_slots: outgoing classic packets (%u) > total classic packets (%u)", num_packets_sent_classic, hci_stack->acl_packets_total_num);
-        return 0;
-    }
-
     if (hci_stack->le_acl_packets_total_num){
         // if we have LE slots, they are used
+        btstack_assert( hci_stack->le_acl_packets_total_num >= num_packets_sent_le);
         free_slots_le = hci_stack->le_acl_packets_total_num - num_packets_sent_le;
-        if (free_slots_le < 0){
-            log_error("hci_number_free_acl_slots: outgoing le packets (%u) > total le packets (%u)", num_packets_sent_le, hci_stack->le_acl_packets_total_num);
-            return 0;
-        }
     } else {
         // otherwise, classic slots are used for LE, too
         free_slots_classic -= num_packets_sent_le;
-        if (free_slots_classic < 0){
-            log_error("hci_number_free_acl_slots: outgoing classic + le packets (%u + %u) > total packets (%u)", num_packets_sent_classic, num_packets_sent_le, hci_stack->acl_packets_total_num);
-            return 0;
-        }
+        btstack_assert(free_slots_classic >= num_packets_sent_le);
     }
 
     switch (address_type){
