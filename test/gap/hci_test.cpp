@@ -11,6 +11,9 @@
 
 #include "btstack_memory.h"
 #include "hci.h"
+
+#include <bluetooth_company_id.h>
+
 #include "ble/gatt_client.h"
 #include "btstack_event.h"
 #include "hci_dump.h"
@@ -576,13 +579,33 @@ TEST(HCI, gap_le_get_own_address) {
     gap_le_get_own_address(&addr_type, addr);
 }
 
-static void simulate_hci_command_complete(uint16_t opcode, uint8_t status) {
+static void simulate_hci_command_complete(uint16_t opcode, uint8_t status, uint8_t variant) {
     uint8_t packet[2 + 255];
     packet[0] = HCI_EVENT_COMMAND_COMPLETE;
     packet[1] = sizeof(packet) - 2;
     packet[2] = 1;
     little_endian_store_16(packet, 3, opcode);
     packet[5] = status;
+    switch (opcode) {
+        case HCI_OPCODE_HCI_LE_READ_BUFFER_SIZE:
+            little_endian_store_16(packet, 6, 2000);
+            break;
+        case HCI_OPCODE_HCI_READ_LOCAL_VERSION_INFORMATION:
+            switch (variant) {
+                case 0:
+                    little_endian_store_16(packet, 10, BLUETOOTH_COMPANY_ID_BROADCOM_CORPORATION);
+                    break;
+                case 1:
+                    little_endian_store_16(packet, 10, BLUETOOTH_COMPANY_ID_INFINEON_TECHNOLOGIES_AG);
+                    break;
+                case 2:
+                    little_endian_store_16(packet, 10, BLUETOOTH_COMPANY_ID_CYPRESS_SEMICONDUCTOR);
+                    break;
+            }
+            break;
+        default:
+            break;
+    }
     packet_handler(HCI_EVENT_PACKET, packet, sizeof(packet));
 }
 
@@ -590,25 +613,83 @@ TEST(HCI, handle_command_complete_event) {
     struct {
         uint16_t opcode;
         uint8_t status;
+        uint8_t variants;
     } variations[] = {
-        {HCI_OPCODE_HCI_READ_LOCAL_NAME, ERROR_CODE_SUCCESS},
-        {HCI_OPCODE_HCI_READ_LOCAL_NAME, ERROR_CODE_UNKNOWN_HCI_COMMAND },
-        {HCI_OPCODE_HCI_READ_BUFFER_SIZE, ERROR_CODE_SUCCESS},
-        {HCI_OPCODE_HCI_READ_RSSI, ERROR_CODE_SUCCESS},
-        {HCI_OPCODE_HCI_READ_RSSI, ERROR_CODE_UNKNOWN_HCI_COMMAND},
+        {.opcode = HCI_OPCODE_HCI_READ_LOCAL_NAME,  .status = ERROR_CODE_SUCCESS},
+        {.opcode = HCI_OPCODE_HCI_READ_LOCAL_NAME, .status = ERROR_CODE_UNKNOWN_HCI_COMMAND },
+        {.opcode = HCI_OPCODE_HCI_READ_BUFFER_SIZE, .status = ERROR_CODE_SUCCESS},
+        {.opcode = HCI_OPCODE_HCI_READ_RSSI, .status =  ERROR_CODE_SUCCESS},
+        {.opcode = HCI_OPCODE_HCI_READ_RSSI, .status =  ERROR_CODE_UNKNOWN_HCI_COMMAND},
+        {.opcode = HCI_OPCODE_HCI_LE_READ_BUFFER_SIZE },
+        {.opcode = HCI_OPCODE_HCI_LE_READ_BUFFER_SIZE_V2 },
+        {.opcode = HCI_OPCODE_HCI_LE_READ_MAXIMUM_DATA_LENGTH },
+        {.opcode = HCI_OPCODE_HCI_READ_LOCAL_VERSION_INFORMATION, .variants = 3},
     };
     for (uint8_t i = 0; i < sizeof(variations) / sizeof(variations[0]); i++) {
         // extras
         uint16_t opcode = variations[i].opcode;
         uint8_t status = variations[i].status;
+        uint8_t variants = btstack_max(1, variations[i].variants);
         switch (opcode) {
             default:
                 break;
         }
-        simulate_hci_command_complete(opcode, status);
+        for (uint8_t j=0; j < variants; j++) {
+            simulate_hci_command_complete(opcode, status, j);
+        }
         switch (opcode) {
             default:
                 break;
+        }
+    }
+}
+
+static void simulate_hci_command_status(uint16_t opcode, uint8_t status, uint8_t variant) {
+    uint8_t packet[2 + 255];
+    packet[0] = HCI_EVENT_COMMAND_STATUS;
+    packet[1] = sizeof(packet) - 2;
+    packet[2] = status;
+    packet[3] = 1;
+    little_endian_store_16(packet, 4, opcode);
+    switch (opcode) {
+        default:
+            break;
+    }
+    packet_handler(HCI_EVENT_PACKET, packet, sizeof(packet));
+}
+
+TEST(HCI, handle_command_status_event) {
+    struct {
+        uint16_t opcode;
+        uint8_t status;
+        uint8_t variants;
+    } variations[] = {
+        {.opcode = HCI_OPCODE_HCI_LE_CREATE_CONNECTION, .status = ERROR_CODE_COMMAND_DISALLOWED, .variants = 2},
+    };
+
+    // default address: 66:55:44:33:00:01
+    bd_addr_t addr = { 0x66, 0x55, 0x44, 0x33, 0x00, 0x00};
+
+    for (uint8_t i = 0; i < sizeof(variations) / sizeof(variations[0]); i++) {
+        // extras
+        uint16_t opcode = variations[i].opcode;
+        uint8_t status = variations[i].status;
+        uint8_t variants = btstack_max(1, variations[i].variants);
+        for (uint8_t j=0; j < variants; j++) {
+            switch (opcode) {
+                case HCI_OPCODE_HCI_LE_CREATE_CONNECTION:
+                    hci_stack->outgoing_addr_type = BD_ADDR_TYPE_LE_PUBLIC;
+                    addr[5] = 0x05 + j;
+                    memcpy(hci_stack->outgoing_addr, &addr, sizeof(addr));
+                    break;
+                default:
+                    break;
+            }
+            simulate_hci_command_status(opcode, status, j);
+            switch (opcode) {
+                default:
+                    break;
+            }
         }
     }
 }

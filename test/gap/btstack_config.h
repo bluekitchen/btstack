@@ -20,6 +20,7 @@
 #define ENABLE_LOG_INFO
 #define ENABLE_PRINTF_HEXDUMP
 #define ENABLE_SOFTWARE_AES128
+#define ENABLE_LE_DATA_LENGTH_EXTENSION
 
 // BTstack configuration. buffers, sizes, ...
 #define HCI_ACL_PAYLOAD_SIZE 1024
