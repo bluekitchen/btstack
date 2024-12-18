@@ -3285,10 +3285,8 @@ static void handle_command_status_event(uint8_t * packet, uint16_t size) {
             // on error
             if (status != ERROR_CODE_SUCCESS){
 #ifdef ENABLE_LE_CENTRAL
-                if (hci_is_le_connection_type(addr_type)){
-                    hci_stack->le_connecting_state = LE_CONNECTING_IDLE;
-                    hci_stack->le_connecting_request = LE_CONNECTING_IDLE;
-                }
+                hci_stack->le_connecting_state = LE_CONNECTING_IDLE;
+                hci_stack->le_connecting_request = LE_CONNECTING_IDLE;
 #endif
                 // error => outgoing connection failed
                 hci_connection_t * conn = hci_connection_for_bd_addr_and_type(addr, addr_type);
