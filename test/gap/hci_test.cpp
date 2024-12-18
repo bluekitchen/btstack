@@ -31,14 +31,33 @@ static hci_packet_t transport_packets[MAX_HCI_PACKETS];
 static int can_send_now = 1;
 static  void (*packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size);
 
+#if 0
+static btstack_timer_source_t packet_sent_timer;
+
 static const uint8_t packet_sent_event[] = { HCI_EVENT_TRANSPORT_PACKET_SENT, 0};
 
-static int hci_transport_test_set_baudrate(uint32_t baudrate){
-    return 0;
+// sm_trigger_run allows to schedule callback from main run loop // reduces stack depth
+static void hci_transport_emit_packet_sent(btstack_timer_source_t * ts){
+    UNUSED(ts);
+    // notify upper stack that it can send again
+    can_send_now = 1;
+    packet_handler(HCI_EVENT_PACKET, (uint8_t *) &packet_sent_event[0], sizeof(packet_sent_event));
+}
+
+static void hci_transport_trigger_packet_sent(void) {
+    btstack_run_loop_remove_timer(&packet_sent_timer);
+    btstack_run_loop_set_timer_handler(&packet_sent_timer, &hci_transport_emit_packet_sent);
+    btstack_run_loop_set_timer(&packet_sent_timer, 0);
+    btstack_run_loop_add_timer(&packet_sent_timer);
 }
 
 static int hci_transport_test_can_send_now(uint8_t packet_type){
     return can_send_now;
+}
+#endif
+
+static int hci_transport_test_set_baudrate(uint32_t baudrate){
+    return 0;
 }
 
 static int hci_transport_test_send_packet(uint8_t packet_type, uint8_t * packet, int size){
@@ -47,8 +66,6 @@ static int hci_transport_test_send_packet(uint8_t packet_type, uint8_t * packet,
     transport_packets[transport_count_packets].type = packet_type;
     transport_packets[transport_count_packets].size = size;
     transport_count_packets++;
-    // notify upper stack that it can send again
-    packet_handler(HCI_EVENT_PACKET, (uint8_t *) &packet_sent_event[0], sizeof(packet_sent_event));
     return 0;
 }
 
@@ -73,7 +90,7 @@ static const hci_transport_t hci_transport_test = {
         /* int    (*open)(void); */                                     &hci_transport_test_open,
         /* int    (*close)(void); */                                    &hci_transport_test_close,
         /* void   (*register_packet_handler)(void (*handler)(...); */   &hci_transport_test_register_packet_handler,
-        /* int    (*can_send_packet_now)(uint8_t packet_type); */       &hci_transport_test_can_send_now,
+        /* int    (*can_send_packet_now)(uint8_t packet_type); */       NULL,
         /* int    (*send_packet)(...); */                               &hci_transport_test_send_packet,
         /* int    (*set_baudrate)(uint32_t baudrate); */                &hci_transport_test_set_baudrate,
         /* void   (*reset_link)(void); */                               NULL,
@@ -82,7 +99,7 @@ static const hci_transport_t hci_transport_test = {
 
 static uint16_t next_hci_packet;
 
-void CHECK_EQUAL_ARRAY(const uint8_t * expected, uint8_t * actual, int size){
+void CHECK_EQUAL_ARRAY(const uint8_t * expected, const uint8_t * actual, int size){
     for (int i=0; i<size; i++){
         BYTES_EQUAL(expected[i], actual[i]);
     }
@@ -560,9 +577,9 @@ TEST(HCI, gap_le_get_own_address) {
 }
 
 static void simulate_hci_command_complete(uint16_t opcode, uint8_t status) {
-    uint8_t packet[30];
+    uint8_t packet[2 + 255];
     packet[0] = HCI_EVENT_COMMAND_COMPLETE;
-    packet[1] = sizeof(packet)-2;
+    packet[1] = sizeof(packet) - 2;
     packet[2] = 1;
     little_endian_store_16(packet, 3, opcode);
     packet[5] = status;
