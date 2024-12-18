@@ -44,6 +44,7 @@
 #ifndef BTSTACK_DEFINES_H
 #define BTSTACK_DEFINES_H
 #include <stdint.h>
+#include "btstack_version.h"
 
 #include "btstack_linked_list.h" 
 

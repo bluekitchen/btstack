@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## Unreleased
 
 ### Added
+- btstack_version: provides BTstack major, minor, patch versions
 - GATT Client: gatt_client_add_service_changed_handler to receive Service Changed and Database Hash events
 - GATT Client: various _with_context functions that provide a service + connection id to GATT query events
 - GATT Service Client: generic client discovers characteristics and enabled notifications/indications
