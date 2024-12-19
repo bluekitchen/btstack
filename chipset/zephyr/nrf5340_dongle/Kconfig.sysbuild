@@ -1,0 +1,10 @@
+#
+# Copyright (c) 2024 Nordic Semiconductor
+#
+# SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
+#
+
+config NRF_DEFAULT_IPC_RADIO
+	default y
+
+source "${ZEPHYR_BASE}/share/sysbuild/Kconfig"

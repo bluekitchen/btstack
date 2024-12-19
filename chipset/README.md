@@ -255,24 +255,8 @@ Both nRF5 series, the nRF51 and the nRF52, can be used with an HCI firmware. The
 
 **BTstack integration**: Support for a nRF5 chipset with the Zephyr Controller is provided by *btstack_chipset_zephyr.c*. It queries the static random address during init.
 
-To use these chipsets with BTstack, you need to install an arm-none-eabi gcc toolchain and the nRF5x Command Line Tools incl. the J-Link drivers, checkout the Zephyr project, apply a minimal patch to help with using a random static address, and flash it onto the chipset:
-
-  * Install [J-Link Software and documentation pack](https://www.segger.com/jlink-software.html).
-  * Get nrfjprog as part of the [nRFx-Command-Line-Tools](http://www.nordicsemi.com/eng/Products/Bluetooth-low-energy/nRF52-DK). Click on Downloads tab on the top and look for your OS.
-  * [Checkout Zephyr and install toolchain](https://www.zephyrproject.org/doc/getting_started/getting_started.html). We recommend using the [arm-non-eabi gcc binaries](https://launchpad.net/gcc-arm-embedded) instead of compiling it yourself. At least on OS X, this failed for us.
-
-  * In *samples/bluetooth/hci_uart* compile the firmware for nRF52 Dev Kit
-
-<!-- -->
-
-      $ make BOARD=nrf52_pca10040
-
-   * Upload the firmware
-
-      $ ./flash_nrf52_pca10040.sh
-
-   * For the nRF51 Dev Kit, use `make BOARD=nrf51_pca10028` and `./flash_nrf51_10028.sh` with the nRF51 kit.
-   * The nRF5 dev kit acts as an LE HCI Controller with H4 interface.
+To use these chipsets with BTstack, you need to flash the HCI UART example from NCS or Zephyr onto the chipset.
+Please see the instructions in chipset/zephyr/nrf5340_dongle for nRF5340 DK and ADK.
 
 
 ## NXP Semiconductors
