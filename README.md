@@ -25,22 +25,32 @@ BTstack is free for non-commercial use. However, for commercial use, <a href="ma
 
 ### Supported Protocols and Profiles
 
-**Protocols:** L2CAP (incl. Enhanced Retransmission Mode and LE Data Channels), RFCOMM, SDP, BNEP, AVDTP, AVCTP, ATT, SM (incl. LE Secure Connections and Cross-transport key derivation).
+**Protocols:** L2CAP (incl. Enhanced Retransmission Mode, LE Credit-Based Flow-Control Mode and LE Enhanced Credit-Based Flow-Control Mode), RFCOMM, SDP, BNEP, AVDTP, AVCTP, ATT, SM (incl. LE Secure Connections and Cross-Transport Key Derivation).
 
-**Profiles:** A2DP, AVRCP incl. Browsing (CT+TG) and Cover Art (CT), GAP, GATT, HFP, HID, HSP, IOP, OPP, SPP, PAN, PBAP.
+**Profiles:** A2DP, AVRCP incl. Browsing (CT+TG) and Cover Art (CT), GAP, GATT, HFP, HID, HSP, IOP, MAP, OPP, SPP, PAN, PBAP.
 
-**GATT Service Servers:** Battery (BAS), Bond Management (BMS), Cycling Power (CPS), Cycling Speed and Cadence (CSCS), Device Information (DID), Heart Rate (HRS), HID over GATT (HIDS) Device , Mesh Provisioning, Mesh Proxy, Nordic SPP, Scan Parameters (SCPS), TX Power (TPS), u-Blox SPP. 
+**GATT Service Servers:** Battery (BAS), Bond Management (BMS), Cycling Power (CPS), Cycling Speed and Cadence (CSCS), Device Information (DID), Heart Rate (HRS), HID over GATT (HIDS) Device, Immediate Alert, Link Loss (LLS),
+Mesh Provisioning, Mesh Proxy, Nordic SPP, Scan Parameters (SCPS), TX Power (TPS), u-Blox SPP. 
 
-**GATT Service Clients:**: ANCS, Battery (BAS), Device Information (DID), HID-over-GATT (HOGP) Host, Scan Parameters (SCPP).
+**GATT Service Clients:**: ANCS, Battery (BAS), Device Information (DID), HID-over-GATT (HOGP) Host, Immediate Alert, Link Loss, Scan Parameters (SCPP), TX Power (TXS).
+
+**LE Audio Profiles**: Object Transfer Profile (OTP), Volume Control Profile (VCP), Microphone Control Profile (MICP), Media Control Profile (MCP), Call Control Profile (CCP),
+Coordinated Set Identification Profile (CSIP), Basic Audio Profile (BAP), Common Audio Profile (CAP), Hearing Access Profile (HAP), Telephony and Media Audio Profile (TMAP),
+Public Broadcast Profile (PBP), Gaming Audio Profile (GMAP)
+
+**LE Audio Services**: Audio Input Control Service (AICS), Volume Offset Control Service (VOCS), Volume Control Service (VCS), Microphone Control Service (MICS),
+Media Control Service (MCS), Generic Media Control Service (GMCS), Telephony Bearer Service (TBS), Coordinated Set Identification Service (CSIS), 
+Published Audio Capabilities Service (PACS), Audio Stream Control Service (ASCS), Broadcast Audio Scan Service (BASS), Common Audio Service (CAS), and Hearing Access Service (HAS).
 
 GATT Services are in general easy to implement and require short development time. For more GATT Services please contact us, or follow the [implementation guidelines](https://bluekitchen-gmbh.com/btstack/profiles/#gatt-generic-attribute-profile).  
 
-**In Development:** LE Audio and more.
+**Qualification**: BTstack been qualified with the Bluetooth SIG (DN Q331293) for ATT, GAP, GATT, IOP, L2CAP, SDP, SM of the Bluetooth Core 6.0 specification as well as 
+A2DP 1.4, AICS 1.0, ASCS 1.0.1, AVCTP 1.4, AVDTP 1.3, AVRCP 1.6.3, BAP 1.0.2, BAS 1.1, BASS 1.0, BAU 1.0, BNEP 1.0, CAP 1.0, CAS 1.0, CCP 1.0, CPP 1.1, CPS 1.1, 
+CSCP 1.0, CSCS 1.0, CSIP 1.0.1, CSIS 1.0.1, DID 1.3, DIS 1.1, GAVDP 1.3, GMAP 1.0, GMCS 1.0.1, HAP 1.0, HAS 1.0, HFP 1.9, HID 1.1.1, HIDS 1.0, HOGP 1.0, HRP 1.0,
+HRS 1.0, HSP 1.2, IAS 1.0, LC3 1.0.1, LLS 1.0, MAP 1.4.2, MCP 1.0, MCS 1.0.1, MICP 1.0, MICS 1.0, OPP 1.2.1, OTP 1.0, OTS 1.0, PACS 1.0.1, PANP 1.0, PBAP 1.2.3,
+PBP 1.0, RFCOMM 1.2, SPP 1.2, SPS 1.0, TBS 1.0, TMAP 1.0, TxPS 1.0, VCP 1.0, VCS 1.0, VOCS 1.0.
 
-It has been qualified with the Bluetooth SIG (QDID 166433) for A2DP 1.3.2, AVCTP 1.4, AVDTP 1.3, AVRCP 1.6.2, DID 1.3, GAVDP 1.3, HFP 1.8, HSP 1.2, PAN 1.0, PBAP Client 1.2, RFCOMM 1.2, SPP 1.2 BR/EDR protocol/profiles, 
-BAS 1.0, CPP 1.1, CPS 1.1, CSCP 1.0, CSCS 1.0, DIS 1.1, HIDS 1.0, HOGP 1.0, HRP 1.0, HRS 1.0, SCPP 1.0, SCPS 1.0 GATT profiles as well as and ATT, GAP, GATT, IOP, L2CAP, SDP, SM of the Bluetooth Core 5.2 specification. 
-
-For information on Apple's MFi/iAP2 and Find My profiles, please <a href="mailto:contact@bluekitchen-gmbh.com">contact us directly</a>.
+For information on Apple's MFi/iAP2 and Find My profiles or access to LE Audio, MAP, PBAP Server, please <a href="mailto:contact@bluekitchen-gmbh.com">contact us directly</a>.
 
 ## Evaluation Platforms
 
@@ -100,7 +110,7 @@ For information on Apple's MFi/iAP2 and Find My profiles, please <a href="mailto
 | Dialog Semiconductor DA145xx         | LE               | H4, SPI        | n.a.             | da14581        | Official HCI firmware used                     |
 | Dialog Semiconductor DA1469x         | LE               | H4, SPI        | n.a              |                | HCI Firmware part of DA1469x SDK               |
 | Espressif ESP32                      | Dual mode + Wifi | VHCI, H4       | Yes              |                | SoC with Bluetooth and Wifi                    |
-| Espressif ESP32-S3, ESP32-C3         | LE + Wifi        | VHCI, H4       | Yes              |                | SoC with Bluetooth and Wifi                    |
+| Espressif ESP32-S3, -C3, -C6, -H2    | LE + Wifi        | VHCI, H4       | Yes              |                | SoC with Bluetooth and Wifi                    |
 | EM 9301, 9304, 9305                  | LE               | SPI            | n.a.             | em9301         | Custom HCI SPI implementation                  |
 | Intel Dual Wireless 3165, 8260, 8265 | Dual mode        | USB            | Probably         | intel          | Firmware size: 400 kB                          |
 | Nordic nRF                           | LE               | H4             | n.a.             |                | Requires custom HCI firmware                   |
