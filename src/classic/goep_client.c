@@ -71,25 +71,7 @@ static btstack_linked_list_t goep_clients;
 static goep_client_t *    goep_client_sdp_active;
 static uint8_t            goep_client_sdp_query_attribute_value[30];
 static const unsigned int goep_client_sdp_query_attribute_value_buffer_size = sizeof(goep_client_sdp_query_attribute_value);
-static uint8_t goep_packet_buffer[150];
-
-// singleton instance
-static goep_client_t   goep_client_singleton;
-
-#ifdef ENABLE_GOEP_L2CAP
-// singleton instance
-static uint8_t goep_client_singleton_ertm_buffer[1000];
-static l2cap_ertm_config_t goep_client_singleton_ertm_config = {
-    1,  // ertm mandatory
-    2,  // max transmit, some tests require > 1
-    2000,
-    12000,
-    512,    // l2cap ertm mtu
-    2,
-    2,
-    1,      // 16-bit FCS
-};
-#endif
+static uint8_t goep_packet_buffer[500];
 
 static inline void goep_client_emit_connected_event(goep_client_t * goep_client, uint8_t status){
     uint8_t event[15];
@@ -139,6 +121,7 @@ static inline void goep_client_emit_can_send_now_event(goep_client_t * goep_clie
 static void goep_client_handle_connection_opened(goep_client_t * goep_client, uint8_t status, uint16_t mtu){
     if (status) {
         goep_client->state = GOEP_CLIENT_INIT;
+        btstack_linked_list_remove(&goep_clients, (btstack_linked_item_t *) goep_client);
         log_info("goep_client: open failed, status %u", status);
     } else {
         goep_client->bearer_mtu = mtu;
@@ -235,26 +218,30 @@ static void goep_client_packet_handler(uint8_t packet_type, uint16_t channel, ui
 
 static void goep_client_handle_sdp_query_end_of_record(goep_client_t * goep_client){
     if (goep_client->uuid == BLUETOOTH_SERVICE_CLASS_MESSAGE_ACCESS_SERVER){
+        // use matching SDP record with highest MAP version as there might be additional records for backwards compatibility
         if (goep_client->mas_info.instance_id == goep_client->map_mas_instance_id){
-            // Requested MAS Instance found, accept info
-            goep_client->rfcomm_port = goep_client->mas_info.rfcomm_port;
-            goep_client->profile_supported_features = goep_client->mas_info.supported_features;
-            goep_client->map_supported_message_types = goep_client->mas_info.supported_message_types;
+            if (goep_client->mas_info.version > goep_client->map_version){
+                // Requested MAS Instance found, accept info
+                goep_client->rfcomm_port = goep_client->mas_info.rfcomm_port;
+                goep_client->profile_supported_features = goep_client->mas_info.supported_features;
+                goep_client->map_supported_message_types = goep_client->mas_info.supported_message_types;
 #ifdef ENABLE_GOEP_L2CAP
-            goep_client->l2cap_psm = goep_client->mas_info.l2cap_psm;
-            log_info("MAS Instance #%u found, rfcomm #%u, l2cap 0x%04x", goep_client->map_mas_instance_id,
-                     goep_client->rfcomm_port, goep_client->l2cap_psm);
+                goep_client->l2cap_psm = goep_client->mas_info.l2cap_psm;
+                goep_client->map_version = goep_client->mas_info.version;
+                log_info("MAS Instance #%u found, version %u.%u: rfcomm #%u, l2cap 0x%04x ", goep_client->map_mas_instance_id,
+                         goep_client->map_version, goep_client->map_version, goep_client->rfcomm_port, goep_client->l2cap_psm);
 #else
-            log_info("MAS Instance #%u found, rfcomm #%u", goep_client->map_mas_instance_id,
+                log_info("MAS Instance #%u found, rfcomm #%u", goep_client->map_mas_instance_id,
                      goep_client->rfcomm_port);
 #endif
+            }
         }
     }
 }
 static uint8_t goep_client_start_connect(goep_client_t * goep_client){
 #ifdef ENABLE_GOEP_L2CAP
     if (goep_client->l2cap_psm && (goep_client->ertm_buffer != NULL)){
-        log_info("Remote GOEP L2CAP PSM: %u", goep_client->l2cap_psm);
+        log_info("Remote GOEP L2CAP PSM: 0x%x", goep_client->l2cap_psm);
         return l2cap_ertm_create_channel(&goep_client_packet_handler, goep_client->bd_addr, goep_client->l2cap_psm,
         &goep_client->ertm_config, goep_client->ertm_buffer,
         goep_client->ertm_buffer_size, &goep_client->bearer_cid);
@@ -295,6 +282,7 @@ static void goep_client_handle_sdp_query_event(uint8_t packet_type, uint16_t cha
                 case BLUETOOTH_ATTRIBUTE_PBAP_SUPPORTED_FEATURES:
                 case BLUETOOTH_ATTRIBUTE_MAS_INSTANCE_ID:
                 case BLUETOOTH_ATTRIBUTE_SUPPORTED_MESSAGE_TYPES:
+                case BLUETOOTH_ATTRIBUTE_BLUETOOTH_PROFILE_DESCRIPTOR_LIST:
 #ifdef ENABLE_GOEP_L2CAP
                 case BLUETOOTH_ATTRIBUTE_GOEP_L2CAP_PSM:
 #endif
@@ -347,6 +335,34 @@ static void goep_client_handle_sdp_query_event(uint8_t packet_type, uint16_t cha
                         }
                     }
                     break;
+
+                case BLUETOOTH_ATTRIBUTE_BLUETOOTH_PROFILE_DESCRIPTOR_LIST:
+                    for (des_iterator_init(&des_list_it, goep_client_sdp_query_attribute_value); des_iterator_has_more(&des_list_it); des_iterator_next(&des_list_it)) {
+                        uint8_t       *des_element;
+                        uint8_t       *element;
+                        uint32_t       uuid;
+
+                        if (des_iterator_get_type(&des_list_it) != DE_DES) continue;
+
+                        des_element = des_iterator_get_element(&des_list_it);
+                        des_iterator_init(&prot_it, des_element);
+                        element = des_iterator_get_element(&prot_it);
+
+                        if (de_get_element_type(element) != DE_UUID) continue;
+
+                        uuid = de_get_uuid32(element);
+                        des_iterator_next(&prot_it);
+                        switch (uuid){
+                            case BLUETOOTH_SERVICE_CLASS_MESSAGE_ACCESS_PROFILE:
+                                if (!des_iterator_has_more(&prot_it)) continue;
+                                de_element_get_uint16(des_iterator_get_element(&prot_it), &goep_client->mas_info.version);
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+                    break;
+
 #ifdef ENABLE_GOEP_L2CAP
                 case BLUETOOTH_ATTRIBUTE_GOEP_L2CAP_PSM:
                     if (goep_client->uuid == BLUETOOTH_SERVICE_CLASS_MESSAGE_ACCESS_SERVER){
@@ -356,6 +372,7 @@ static void goep_client_handle_sdp_query_event(uint8_t packet_type, uint16_t cha
                     }
                     break;
 #endif
+
                 // BLUETOOTH_ATTRIBUTE_PBAP_SUPPORTED_FEATURES == BLUETOOTH_ATTRIBUTE_MAP_SUPPORTED_FEATURES == 0x0317
                 case BLUETOOTH_ATTRIBUTE_PBAP_SUPPORTED_FEATURES:
                     if (de_get_element_type(goep_client_sdp_query_attribute_value) != DE_UINT) break;
@@ -390,8 +407,7 @@ static void goep_client_handle_sdp_query_event(uint8_t packet_type, uint16_t cha
             status = sdp_event_query_complete_get_status(packet);
             if (status != ERROR_CODE_SUCCESS){
                 log_info("GOEP client, SDP query failed 0x%02x", status);
-                goep_client->state = GOEP_CLIENT_INIT;
-                goep_client_emit_connected_event(goep_client, status);
+                goep_client_handle_connection_opened(goep_client, status, 0);
                 break;
             }
             goep_server_found = false;
@@ -405,8 +421,7 @@ static void goep_client_handle_sdp_query_event(uint8_t packet_type, uint16_t cha
 #endif
             if (goep_server_found == false){
                 log_info("No GOEP RFCOMM or L2CAP server found");
-                goep_client->state = GOEP_CLIENT_INIT;
-                goep_client_emit_connected_event(goep_client, SDP_SERVICE_NOT_FOUND);
+                goep_client_handle_connection_opened(goep_client, SDP_SERVICE_NOT_FOUND, 0);
                 break;
             }
             (void) goep_client_start_connect(goep_client);
@@ -427,7 +442,7 @@ static uint8_t * goep_client_get_outgoing_buffer(goep_client_t * goep_client){
 
 static uint16_t goep_client_get_outgoing_buffer_len(goep_client_t * goep_client){
     if (goep_client->l2cap_psm){
-        return sizeof(goep_packet_buffer);
+        return btstack_min((uint32_t)sizeof(goep_packet_buffer), goep_client->bearer_mtu);
     } else {
         return rfcomm_get_max_frame_size(goep_client->bearer_cid);
     }
@@ -443,13 +458,11 @@ static void goep_client_packet_init(goep_client_t *goep_client, uint8_t opcode) 
 }
 
 void goep_client_init(void){
-    goep_client_singleton.state = GOEP_CLIENT_INIT;
 }
 
 void goep_client_deinit(void){
     goep_clients = NULL;
     goep_client_cid = 0;
-    memset(&goep_client_singleton, 0, sizeof(goep_client_t));
     memset(goep_client_sdp_query_attribute_value, 0, sizeof(goep_client_sdp_query_attribute_value));
     memset(goep_packet_buffer, 0, sizeof(goep_packet_buffer));
 }
@@ -494,6 +507,10 @@ goep_client_connect(goep_client_t *goep_client, l2cap_ertm_config_t *l2cap_ertm_
     }
     goep_client->ertm_buffer_size = l2cap_ertm_buffer_size;
     goep_client->ertm_buffer = l2cap_ertm_buffer;
+#else
+    UNUSED(l2cap_ertm_buffer);
+    UNUSED(l2cap_ertm_config);
+    UNUSED(l2cap_ertm_buffer_size);
 #endif
     btstack_linked_list_add(&goep_clients, (btstack_linked_item_t *) goep_client);
 
@@ -538,19 +555,6 @@ uint8_t goep_client_connect_l2cap(goep_client_t *goep_client, l2cap_ertm_config_
     return goep_client_start_connect(goep_client);
 }
 #endif
-
-uint8_t goep_client_create_connection(btstack_packet_handler_t handler, bd_addr_t addr, uint16_t uuid, uint16_t * out_cid){
-    goep_client_t * goep_client = &goep_client_singleton;
-    if (goep_client->state != GOEP_CLIENT_INIT) {
-        return BTSTACK_MEMORY_ALLOC_FAILED;
-    }
-#ifdef ENABLE_GOEP_L2CAP
-    return goep_client_connect(goep_client, &goep_client_singleton_ertm_config, goep_client_singleton_ertm_buffer,
-                               sizeof(goep_client_singleton_ertm_buffer), handler, addr, uuid, 0, out_cid);
-#else
-    return goep_client_connect(goep_client,NULL, NULL, 0, handler, addr, uuid, 0, out_cid);
-#endif
-}
 
 uint32_t goep_client_get_pbap_supported_features(uint16_t goep_cid){
     goep_client_t * goep_client = goep_client_for_cid(goep_cid);
@@ -744,6 +748,16 @@ void goep_client_header_add_srm_enable(uint16_t goep_cid){
     obex_message_builder_header_add_srm_enable(buffer, buffer_len);
 }
 
+void goep_client_header_add_srmp_waiting(uint16_t goep_cid){
+    goep_client_t * goep_client = goep_client_for_cid(goep_cid);
+    if (goep_client == NULL){
+        return;
+    }
+    uint8_t * buffer = goep_client_get_outgoing_buffer(goep_client);
+    uint16_t buffer_len = goep_client_get_outgoing_buffer_len(goep_client);
+    obex_message_builder_header_add_srmp_wait(buffer, buffer_len);
+}
+
 void goep_client_header_add_target(uint16_t goep_cid, const uint8_t * target, uint16_t length){
     goep_client_t * goep_client = goep_client_for_cid(goep_cid);
     if (goep_client == NULL){
@@ -790,7 +804,7 @@ uint16_t goep_client_body_get_outgoing_buffer_len(uint16_t goep_cid) {
         return 0;
     }
     return goep_client_get_outgoing_buffer_len(goep_client);
-};
+}
 
 void goep_client_body_fillup_static(uint16_t goep_cid, const uint8_t * data, uint32_t length, uint32_t * ret_length){
     goep_client_t * goep_client = goep_client_for_cid(goep_cid);

@@ -63,12 +63,12 @@ static l2cap_ertm_config_t ertm_config = {
     2000,
     12000,
     (GOEP_SERVER_ERTM_BUFFER / 2),    // l2cap ertm mtu
-    2,
-    2,
+    4,
+    4,
     1,      // 16-bit FCS
 };
 
-static uint8_t goep_server_l2cap_packet_buffer[1000];
+static uint8_t goep_server_l2cap_packet_buffer[GOEP_SERVER_ERTM_BUFFER];
 
 #endif
 
@@ -153,7 +153,7 @@ static inline void goep_server_emit_incoming_connection(btstack_packet_handler_t
     event[pos++] = GOEP_SUBEVENT_INCOMING_CONNECTION;
     little_endian_store_16(event, pos, goep_cid);
     pos+=2;
-    memcpy(&event[pos], bd_addr, 6);
+    reverse_bd_addr(bd_addr, &event[pos]);
     pos += 6;
     little_endian_store_16(event, pos, con_handle);
     pos += 2;
@@ -170,7 +170,7 @@ static inline void goep_server_emit_connection_opened(btstack_packet_handler_t c
     little_endian_store_16(event, pos, goep_cid);
     pos+=2;
     event[pos++] = status;
-    memcpy(&event[pos], bd_addr, 6);
+    reverse_bd_addr(bd_addr, &event[pos]);
     pos += 6;
     little_endian_store_16(event, pos, con_handle);
     pos += 2;
@@ -430,7 +430,11 @@ uint8_t goep_server_register_service(btstack_packet_handler_t callback, uint8_t 
         if (service != NULL) {
             return L2CAP_SERVICE_ALREADY_REGISTERED;
         }
-    } 
+    }
+#else
+    UNUSED(l2cap_mtu);
+    UNUSED(l2cap_psm);
+    UNUSED(security_level);
 #endif
 
     // alloc structure
@@ -647,6 +651,50 @@ uint8_t goep_server_header_add_srm_enable(uint16_t goep_cid){
     return obex_message_builder_header_add_srm_enable(buffer, buffer_len);
 }
 
+uint8_t goep_server_header_add_srm_enable_wait(uint16_t goep_cid) {
+    goep_server_connection_t* connection = goep_server_get_connection_for_goep_cid(goep_cid);
+    if (connection == NULL) {
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+
+    uint8_t* buffer = goep_server_get_outgoing_buffer(connection);
+    uint16_t buffer_len = goep_server_get_outgoing_buffer_len(connection);
+    return obex_message_builder_header_add_srm_enable(buffer, buffer_len)
+        || obex_message_builder_header_add_srmp_wait(buffer, buffer_len);
+}
+
+uint8_t goep_server_header_add_name(uint16_t goep_cid, const char* name) {
+
+    if (name == NULL) {
+        return OBEX_UNKNOWN_ERROR;
+    }
+
+    goep_server_connection_t* connection = goep_server_get_connection_for_goep_cid(goep_cid);
+    if (connection == NULL) {
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+
+    uint8_t* buffer = goep_server_get_outgoing_buffer(connection);
+    uint16_t buffer_len = goep_server_get_outgoing_buffer_len(connection);
+    return obex_message_builder_header_add_name(buffer, buffer_len, name);
+}
+
+uint8_t goep_server_header_add_type(uint16_t goep_cid, const char* type) {
+
+    if (type == NULL) {
+        return OBEX_UNKNOWN_ERROR;
+    }
+
+    goep_server_connection_t* connection = goep_server_get_connection_for_goep_cid(goep_cid);
+    if (connection == NULL) {
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+
+    uint8_t* buffer = goep_server_get_outgoing_buffer(connection);
+    uint16_t buffer_len = goep_server_get_outgoing_buffer_len(connection);
+    return obex_message_builder_header_add_type(buffer, buffer_len, type);
+}
+
 uint8_t goep_server_header_add_application_parameters(uint16_t goep_cid, const uint8_t * data, uint16_t length){
     goep_server_connection_t * connection = goep_server_get_connection_for_goep_cid(goep_cid);
     if (connection == NULL) {
@@ -680,11 +728,34 @@ uint8_t goep_server_execute(uint16_t goep_cid, uint8_t response_code){
 #endif
         case GOEP_CONNECTION_RFCOMM:
             return rfcomm_send_prepared(connection->bearer_cid, pos);
-            break;
         default:
             btstack_unreachable();
             return ERROR_CODE_SUCCESS;
     }
+}
+
+uint8_t goep_server_disconnect(uint16_t goep_cid){
+    goep_server_connection_t * connection = goep_server_get_connection_for_goep_cid(goep_cid);
+    if (connection == NULL) {
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+
+    if (connection->state < GOEP_SERVER_CONNECTED){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+
+    switch (connection->type) {
+#ifdef ENABLE_GOEP_L2CAP
+        case GOEP_CONNECTION_L2CAP:
+            return l2cap_disconnect(connection->bearer_cid);
+#endif
+        case GOEP_CONNECTION_RFCOMM:
+            return rfcomm_disconnect(connection->bearer_cid);
+        default:
+            btstack_unreachable();
+            break;
+    }
+    return ERROR_CODE_SUCCESS;
 }
 
 void goep_server_deinit(void){

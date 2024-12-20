@@ -96,8 +96,9 @@ void hids_device_register_get_report_callback(void (*callback)(hci_con_handle_t 
  * @brief Request can send now event to send HID Report
  * Generates an HIDS_SUBEVENT_CAN_SEND_NOW subevent
  * @param hid_cid
+ * @return ERROR_CODE_SUCCESS if ok, ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if handle unknown, and ERROR_CODE_COMMAND_DISALLOWED if callback already registered
  */
-void hids_device_request_can_send_now_event(hci_con_handle_t con_handle);
+uint8_t hids_device_request_can_send_now_event(hci_con_handle_t con_handle);
 
 /**
  * @brief Send HID Input Report for Report ID

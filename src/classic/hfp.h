@@ -158,6 +158,13 @@ extern "C" {
 #define HFP_LIST_CURRENT_CALLS "+CLCC"
 #define HFP_RESPONSE_AND_HOLD "+BTRH"
 
+// Apple Extensions
+#define HFP_APPLE_ACCESSORY_INFORMATION "+XAPL"
+#define HFP_APPLE_ACCESSORY_STATE "+IPHONEACCEV"
+#define HFP_APPLE_SIRI_STATE "+APLSIRI"
+#define HFP_APPLE_SIRI_EYES_FREE_MODE "+APLEFM"
+#define HFP_APPLE_ACCESSORY_VERSION_LEN  16
+
 #define HFP_OK "OK"
 #define HFP_ERROR "ERROR"
 #define HFP_RING "RING"
@@ -224,6 +231,9 @@ typedef enum {
     HFP_CMD_RESPONSE_AND_HOLD_COMMAND,
     HFP_CMD_RESPONSE_AND_HOLD_STATUS,
     HFP_CMD_HF_INDICATOR_STATUS,
+    HFP_CMD_APPLE_ACCESSORY_INFORMATION,
+    HFP_CMD_APPLE_ACCESSORY_STATE,
+    HFP_CMD_APPLE_DEVICE_INFORMATION,
     HFP_CMD_CUSTOM_MESSAGE
 } hfp_command_t;
  
@@ -638,6 +648,18 @@ typedef struct hfp_connection {
     uint8_t send_ag_indicators_segment;
     uint8_t send_response_and_hold_status;  // 0 - don't send. BRTH:0 == 1, ..
 
+    // Apple Accessory Support
+    bool send_apple_information;
+    bool apple_accessory_commands_supported;
+    // - HF to send
+    int8_t apple_accessory_battery_level;
+    int8_t apple_accessory_docked;
+    // - AG Parser
+    uint16_t apple_accessory_product_id;
+    uint16_t apple_accessory_vendor_id;
+    uint8_t  apple_accessory_features;
+    uint8_t  apple_accessory_key;
+    char     apple_accessory_version[HFP_APPLE_ACCESSORY_VERSION_LEN];
     // HF: AT Command, AG: Unsolicited Result Code
     const char * send_custom_message;
 
@@ -706,6 +728,10 @@ typedef struct hfp_connection {
     uint8_t hf_activate_calling_line_notification;
     uint8_t hf_deactivate_calling_line_notification;
     uint8_t hf_deactivate_echo_canceling_and_noise_reduction;
+
+    hfp_call_status_t      hf_call_status;
+    hfp_callsetup_status_t hf_callsetup_status;
+    hfp_callheld_status_t  hf_callheld_status;
 
     hfp_voice_recognition_activation_status_t vra_state;
     hfp_voice_recognition_activation_status_t vra_state_requested;

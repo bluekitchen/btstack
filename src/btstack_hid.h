@@ -53,6 +53,9 @@ extern "C" {
 #define HID_BOOT_MODE_KEYBOARD_ID 1
 #define HID_BOOT_MODE_MOUSE_ID    2
 
+// used to indicate that no 8-bit Report ID has been set / is used
+#define HID_REPORT_ID_UNDEFINED 0xffff
+
 typedef enum {
     HID_MESSAGE_TYPE_HANDSHAKE = 0,
     HID_MESSAGE_TYPE_HID_CONTROL,
@@ -110,6 +113,59 @@ typedef enum {
     HID_REPORT_ID_VALID,
     HID_REPORT_ID_INVALID
 } hid_report_id_status_t;
+
+// HID Usage Pages
+#define HID_USAGE_PAGE_DESKTOP                   0x01
+#define HID_USAGE_PAGE_SIMULATE                  0x02
+#define HID_USAGE_PAGE_VIRTUAL_REALITY           0x03
+#define HID_USAGE_PAGE_SPORT                     0x04
+#define HID_USAGE_PAGE_GAME                      0x05
+#define HID_USAGE_PAGE_GENERIC_DEVICE            0x06
+#define HID_USAGE_PAGE_KEYBOARD                  0x07
+#define HID_USAGE_PAGE_LED                       0x08
+#define HID_USAGE_PAGE_BUTTON                    0x09
+#define HID_USAGE_PAGE_ORDINAL                   0x0a
+#define HID_USAGE_PAGE_TELEPHONY                 0x0b
+#define HID_USAGE_PAGE_CONSUMER                  0x0c
+#define HID_USAGE_PAGE_DIGITIZER                 0x0d
+#define HID_USAGE_PAGE_PID                       0x0f
+#define HID_USAGE_PAGE_UNICODE                   0x10
+#define HID_USAGE_PAGE_ALPHA_DISPLAY             0x14
+#define HID_USAGE_PAGE_MEDICAL                   0x40
+#define HID_USAGE_PAGE_LIGHTING_AND_ILLUMINATION 0x59
+#define HID_USAGE_PAGE_MONITOR                   0x80    // 0x80 - 0x83
+#define HID_USAGE_PAGE_POWER                     0x84    // 0x084 - 0x87
+#define HID_USAGE_PAGE_BARCODE_SCANNER           0x8c
+#define HID_USAGE_PAGE_SCALE                     0x8d
+#define HID_USAGE_PAGE_MSR                       0x8e
+#define HID_USAGE_PAGE_CAMERA                    0x90
+#define HID_USAGE_PAGE_ARCADE                    0x91
+#define HID_USAGE_PAGE_FIDO                      0xF1D0  // FIDO alliance
+#define HID_USAGE_PAGE_VENDOR                    0xFF00  // 0xFF00 - 0xFFFF
+
+// HID Usage Keyboard (partial) 0x0007
+#define HID_USAGE_KEY_RESERVED                   0x00
+#define HID_USAGE_KEY_KEYBOARD_CAPS_LOCK         0x39
+#define HID_USAGE_KEY_KEYBOARD_SCROLL_LOCK       0x47
+#define HID_USAGE_KEY_KEYPAD_NUM_LOCK_AND_CLEAR  0x53
+#define HID_USAGE_KEY_KEYBOARD_LEFTCONTROL       0xE0
+#define HID_USAGE_KEY_KEYBOARD_LEFTSHIFT         0xE1
+#define HID_USAGE_KEY_KEYBOARD_LEFTALT           0xE2
+#define HID_USAGE_KEY_KEYBOARD_LEFT_GUI          0xE3
+#define HID_USAGE_KEY_KEYBOARD_RIGHTCONTROL      0xE4
+#define HID_USAGE_KEY_KEYBOARD_RIGHTSHIFT        0xE5
+#define HID_USAGE_KEY_KEYBOARD_RIGHTALT          0xE6
+#define HID_USAGE_KEY_KEYBOARD_RIGHT_GUI         0xE7
+
+// HID Usage LED (partial) 0x0008
+#define HID_USAGE_LED_NUM_LOCK                   0x01
+#define HID_USAGE_LED_CAPS_LOCK                  0x02
+#define HID_USAGE_LED_SCROLL_LOCK                0x03
+#define HID_USAGE_LED_COMPOSE                    0x04
+#define HID_USAGE_LED_KANA                       0x05
+#define HID_USAGE_LED_POWER                      0x06
+#define HID_USAGE_LED_SHIFT                      0x07
+
 
 /* API_START */
 

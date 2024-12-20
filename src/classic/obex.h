@@ -38,6 +38,8 @@
 #ifndef OBEX_H
 #define OBEX_H
 
+#include <stdint.h>
+
 // From IR OBEX V1.5 - some opcodes have high bit always set
 #define OBEX_OPCODE_CONNECT                0x80
 #define OBEX_OPCODE_DISCONNECT             0x81
@@ -61,6 +63,10 @@
 #define OBEX_RESP_ENTITY_TOO_LARGE         0xCD
 #define OBEX_RESP_NOT_IMPLEMENTED          0xD1
 
+#define OBEX_HEADER_TYPE_16BIT_LENGTH_0       0		// 16-bit length info prefixed
+#define OBEX_HEADER_TYPE_16BIT_LENGTH_1       1		// 16-bit length info prefixed
+#define OBEX_HEADER_TYPE_8BIT_VALUE_2         2		// 8-bit Value
+#define OBEX_HEADER_TYPE_32BIT_VALUE_3       32		// 32-bit Value
 #define OBEX_HEADER_NAME                           0x01
 #define OBEX_HEADER_DESCRIPTION                    0x05
 // user defined 0x30..0x3f: unicode string
@@ -101,11 +107,21 @@
 #define OBEX_SRM_ENABLE                             0x01
 #define OBEX_SRM_INDICATE                           0x02
 
-/* SRMP header values */
-#define OBEX_SRMP_NEXT                              0x00
-#define OBEX_SRMP_WAIT                              0x01
-#define OBEX_SRMP_NEXT_WAIT                         0x02
+/** SRMP header values 
+* BLUETOOTH SPECIFICATION Generic Object Exchange Profile (GOEP) v1.1.1 page 16
+* 4.6.1 MP Use Cases 
+* The SRMP header shall support the following two use cases. Both cases utilize the 
+* SRMP “wait” option (0x01). At this time no valid use cases exist for the SRMP 
+* “additional request” (0x00) and “additional request + wait” (0x02) options, therefore they 
+* shall not be used. 
+*/
+#define OBEX_SRMP_NEXT                              0x00 // should not be sent 
+#define OBEX_SRMP_WAIT                              0x01 // only viable option to be sent
+#define OBEX_SRMP_NEXT_WAIT                         0x02 // should not be sent
 
+/* SETPATH header Values */
+#define OBEX_SP_BIT0_DIR_UP							0x01
+#define OBEX_SP_BIT1_DONT_CREATE_DIR	     		0x02
 
 /**
  * PBAP
@@ -145,5 +161,19 @@
 #define PBAP_APPLICATION_PARAMETER_RESET_NEW_MISSED_CALLS 0x0F
 // PbapSupportedFeatures - 0x10 - 4 bytes
 #define PBAP_APPLICATION_PARAMETER_PBAP_SUPPORTED_FEATURES 0x10
+
+/**
+ * MAP
+ */
+
+// MAP Application Parameters Tag IDs
+//#define MAP_APPLICATION_PARAMETER_MAX_LIST_COUNT			0x01
+//#define MAP_APPLICATION_PARAMETER_ATTACHEMENT				0x0A
+//#define MAP_APPLICATION_PARAMETER_PARAMETER_MASK			0x10
+//#define MAP_APPLICATION_PARAMETER_CHARSET					0x14
+//#define MAP_APPLICATION_PARAMETER_STATUS_INDICATOR			0x17
+//#define MAP_APPLICATION_PARAMETER_STATUS_VALUE				0x18
+//#define MAP_APPLICATION_PARAMETER_MAP_SUPPORTED_FEATURES	0x29
+
 
 #endif

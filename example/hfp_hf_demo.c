@@ -692,6 +692,10 @@ static void hfp_hf_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t
                             status = hfp_subevent_echo_canceling_and_noise_reduction_deactivate_get_status(event);
                             report_status(status, "Echo Canceling and Noise Reduction Deactivate");
                             break;
+                        case HFP_SUBEVENT_APPLE_EXTENSION_SUPPORTED:
+                            printf("Apple Extension supported: %s\n",
+                                   hfp_subevent_apple_extension_supported_get_supported(event) ? "yes" : "no");
+                            break;
                         default:
                             break;
                     }
@@ -751,7 +755,10 @@ int btstack_main(int argc, const char * argv[]){
     hfp_hf_init_hf_indicators(sizeof(indicators)/sizeof(uint16_t), indicators);
     hfp_hf_init_codecs(sizeof(codecs), codecs);
     hfp_hf_register_packet_handler(hfp_hf_packet_handler);
-
+    // Set Apple Accessory Information: features = battery reporting & docked/powered, battery=9, docked=1
+    hfp_hf_apple_set_identification(BLUETOOTH_COMPANY_ID_BLUEKITCHEN_GMBH, 0x0001, "0001", 3);
+    hfp_hf_apple_set_battery_level(9);
+    hfp_hf_apple_set_docked_state(1);
 
     // Configure SDP
 

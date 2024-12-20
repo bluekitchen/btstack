@@ -233,7 +233,7 @@ STRUCT_NAME_t * btstack_memory_STRUCT_NAME_get(void){
 }
 void btstack_memory_STRUCT_NAME_free(STRUCT_NAME_t *STRUCT_NAME){
     UNUSED(STRUCT_NAME);
-};
+}
 #endif
 #elif defined(HAVE_MALLOC)
 

@@ -18,6 +18,9 @@ CFLAGS += -I$(BTSTACK_ROOT)/platform/posix
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/include
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/include
 CFLAGS += -I$(BTSTACK_ROOT)/3rd-party/md5
+CFLAGS += -I$(BTSTACK_ROOT)/3rd-party/micro-ecc
+CFLAGS += -I$(BTSTACK_ROOT)/3rd-party/rijndael
+CFLAGS += -I$(BTSTACK_ROOT)/3rd-party/yxml
 CFLAGS += -I.
 
 VPATH += $(BTSTACK_ROOT)/src
@@ -37,6 +40,7 @@ libBTstack_OBJS  = 		           \
     btstack_tlv.o                  \
 	btstack_util.o 	               \
 	hci_cmd.o                      \
+	hci_event_builder.o            \
 	daemon_cmds.o                  \
 	hci_dump.o                     \
 	hci_dump_posix_fs.o            \

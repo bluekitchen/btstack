@@ -47,8 +47,6 @@
 #include "bluetooth_sdp.h"
 #include "btstack_debug.h"
 #include "btstack_event.h"
-#include "btstack_util.h"
-#include "l2cap.h"
 
 static const char * avrcp_default_controller_service_name = "AVRCP Controller";
 static const char * avrcp_default_controller_service_provider_name = "BlueKitchen";
@@ -209,7 +207,7 @@ static void avrcp_controller_emit_notification_for_event_id(uint16_t avrcp_cid, 
             event[offset++] = ctype;
             little_endian_store_32(event, offset, song_position);
             offset += 4;
-            (*avrcp_controller_context.avrcp_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+            (*avrcp_controller_context.avrcp_callback)(HCI_EVENT_PACKET, 0, event, offset);
             break;
         }
         case AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED:{
@@ -223,7 +221,7 @@ static void avrcp_controller_emit_notification_for_event_id(uint16_t avrcp_cid, 
             offset += 2;
             event[offset++] = ctype;
             event[offset++] = payload[0];
-            (*avrcp_controller_context.avrcp_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+            (*avrcp_controller_context.avrcp_callback)(HCI_EVENT_PACKET, 0, event, offset);
             break;
         }
         case AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED:{
@@ -235,7 +233,7 @@ static void avrcp_controller_emit_notification_for_event_id(uint16_t avrcp_cid, 
             little_endian_store_16(event, offset, avrcp_cid);
             offset += 2;
             event[offset++] = ctype;
-            (*avrcp_controller_context.avrcp_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+            (*avrcp_controller_context.avrcp_callback)(HCI_EVENT_PACKET, 0, event, offset);
             break;
         }
         case AVRCP_NOTIFICATION_EVENT_NOW_PLAYING_CONTENT_CHANGED:{
@@ -247,7 +245,7 @@ static void avrcp_controller_emit_notification_for_event_id(uint16_t avrcp_cid, 
             little_endian_store_16(event, offset, avrcp_cid);
             offset += 2;
             event[offset++] = ctype;
-            (*avrcp_controller_context.avrcp_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+            (*avrcp_controller_context.avrcp_callback)(HCI_EVENT_PACKET, 0, event, offset);
             break;
         }
         case AVRCP_NOTIFICATION_EVENT_AVAILABLE_PLAYERS_CHANGED:{
@@ -259,7 +257,7 @@ static void avrcp_controller_emit_notification_for_event_id(uint16_t avrcp_cid, 
             little_endian_store_16(event, offset, avrcp_cid);
             offset += 2;
             event[offset++] = ctype;
-            (*avrcp_controller_context.avrcp_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+            (*avrcp_controller_context.avrcp_callback)(HCI_EVENT_PACKET, 0, event, offset);
             break;
         }
         case AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED:{
@@ -273,7 +271,7 @@ static void avrcp_controller_emit_notification_for_event_id(uint16_t avrcp_cid, 
             offset += 2;
             event[offset++] = ctype;
             event[offset++] = payload[0] & 0x7F;
-            (*avrcp_controller_context.avrcp_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+            (*avrcp_controller_context.avrcp_callback)(HCI_EVENT_PACKET, 0, event, offset);
             break;
         }
         case AVRCP_NOTIFICATION_EVENT_UIDS_CHANGED:{
@@ -289,7 +287,7 @@ static void avrcp_controller_emit_notification_for_event_id(uint16_t avrcp_cid, 
             event[offset++] = ctype;
             little_endian_store_16(event, offset, uuid);
             offset += 2;
-            (*avrcp_controller_context.avrcp_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+            (*avrcp_controller_context.avrcp_callback)(HCI_EVENT_PACKET, 0, event, offset);
             break;
         }
 
@@ -302,7 +300,7 @@ static void avrcp_controller_emit_notification_for_event_id(uint16_t avrcp_cid, 
             little_endian_store_16(event, offset, avrcp_cid);
             offset += 2;
             event[offset++] = ctype;
-            (*avrcp_controller_context.avrcp_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+            (*avrcp_controller_context.avrcp_callback)(HCI_EVENT_PACKET, 0, event, offset);
             break;
         }
         case AVRCP_NOTIFICATION_EVENT_TRACK_REACHED_START:{
@@ -314,7 +312,7 @@ static void avrcp_controller_emit_notification_for_event_id(uint16_t avrcp_cid, 
             little_endian_store_16(event, offset, avrcp_cid);
             offset += 2;
             event[offset++] = ctype;
-            (*avrcp_controller_context.avrcp_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+            (*avrcp_controller_context.avrcp_callback)(HCI_EVENT_PACKET, 0, event, offset);
             break;
         }
         case AVRCP_NOTIFICATION_EVENT_BATT_STATUS_CHANGED:{
@@ -328,7 +326,7 @@ static void avrcp_controller_emit_notification_for_event_id(uint16_t avrcp_cid, 
             offset += 2;
             event[offset++] = ctype;
             event[offset++] = payload[0];
-            (*avrcp_controller_context.avrcp_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+            (*avrcp_controller_context.avrcp_callback)(HCI_EVENT_PACKET, 0, event, offset);
             break;
         }
 
@@ -343,7 +341,7 @@ static void avrcp_controller_emit_notification_for_event_id(uint16_t avrcp_cid, 
             offset += 2;
             event[offset++] = ctype;
             event[offset++] = payload[0];
-            (*avrcp_controller_context.avrcp_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+            (*avrcp_controller_context.avrcp_callback)(HCI_EVENT_PACKET, 0, event, offset);
             break;
         }
 
@@ -593,6 +591,7 @@ static void avrcp_send_cmd_with_avctp_fragmentation(avrcp_connection_t * connect
     switch (connection->avctp_packet_type){
         case AVCTP_SINGLE_PACKET:
         case AVCTP_START_PACKET:
+            connection->data_offset = 0;
             // Profile IDentifier (PID)
             packet[pos++] = BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL >> 8;
             packet[pos++] = BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL & 0x00FF;
@@ -616,10 +615,8 @@ static void avrcp_send_cmd_with_avctp_fragmentation(avrcp_connection_t * connect
                 case AVRCP_CMD_OPCODE_PASS_THROUGH:
                     packet[pos++] = connection->operation_id;
                     packet[pos++] = (uint8_t)connection->data_len;     // parameter length
-                    pos += 2;
                     break;
                 case AVRCP_CMD_OPCODE_UNIT_INFO:
-                    break;
                 case AVRCP_CMD_OPCODE_SUBUNIT_INFO:
                     break;
                 default:
@@ -978,8 +975,11 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
             }
             // Company ID (3)
             pos += 3;
+            // PDU ID (1)
             pdu_id = packet[pos++];
+            // Packet Type (1)
             vendor_dependent_avrcp_packet_type = (avrcp_packet_type_t)(packet[pos++] & 0x03);
+            // Param Length (2)
             param_length = big_endian_read_16(packet, pos);
             pos += 2;
 
@@ -1003,13 +1003,13 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     avrcp_repeat_mode_t  repeat_mode =  AVRCP_REPEAT_MODE_INVALID;
                     avrcp_shuffle_mode_t shuffle_mode = AVRCP_SHUFFLE_MODE_INVALID;
                     for (i = 0; i < num_attributes; i++){
-                        uint8_t attribute_id    = packet[pos++];
+                        avrcp_player_application_setting_attribute_id_t attribute_id = (avrcp_player_application_setting_attribute_id_t)packet[pos++];
                         uint8_t value = packet[pos++];
                         switch (attribute_id){
-                            case 0x02:
+                            case AVRCP_PLAYER_APPLICATION_SETTING_ATTRIBUTE_ID_REPEAT_MODE_STATUS:
                                 repeat_mode = (avrcp_repeat_mode_t) value;
                                 break;
-                            case 0x03:
+                            case AVRCP_PLAYER_APPLICATION_SETTING_ATTRIBUTE_ID_SHUFFLE_STATUS:
                                 shuffle_mode = (avrcp_shuffle_mode_t) value;
                                 break;
                             default:
@@ -1020,6 +1020,70 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     break;
                 }
                 
+                case AVRCP_PDU_ID_LIST_PLAYER_APPLICATION_SETTING_ATTRIBUTES:{
+                    uint8_t num_attributes = packet[pos++];
+                    int i;
+                    for (i = 0; i < num_attributes; i++){
+                        avrcp_player_application_setting_attribute_id_t attribute_id = (avrcp_player_application_setting_attribute_id_t)packet[pos++];
+                        log_info("TODO send event: attribute_id %d", attribute_id);
+                    }
+                    break;
+                }
+
+                case AVRCP_PDU_ID_LIST_PLAYER_APPLICATION_SETTING_VALUES:{
+                    uint8_t num_setting_values = packet[pos++];
+                    int i;
+                    for (i = 0; i < num_setting_values; i++){
+                        uint8_t value = packet[pos++];
+                        log_info("TODO send event: value %d", value);
+                    }
+                    break;
+                }
+
+                case AVRCP_PDU_ID_GET_PLAYER_APPLICATION_SETTING_ATTRIBUTE_TEXT:{
+                    uint8_t num_attributes = packet[pos++];
+
+                    int i;
+                    avrcp_repeat_mode_t  repeat_mode =  AVRCP_REPEAT_MODE_INVALID;
+                    avrcp_shuffle_mode_t shuffle_mode = AVRCP_SHUFFLE_MODE_INVALID;
+                    for (i = 0; i < num_attributes; i++){
+                        avrcp_player_application_setting_attribute_id_t attribute_id = (avrcp_player_application_setting_attribute_id_t)packet[pos++];
+                        uint8_t character_set_id = little_endian_read_16(packet, pos);
+                        pos += 2;
+                        uint8_t value_len = packet[pos++];
+                        char * value = (char *)&packet[pos];
+                        pos += value_len;
+
+                        log_info("TODO send event: attribute_id %d, value_len %d, value %s", attribute_id, value_len, value);
+                        UNUSED(character_set_id);
+                        UNUSED(repeat_mode);
+                        UNUSED(shuffle_mode);
+                        switch (attribute_id){
+                            case AVRCP_PLAYER_APPLICATION_SETTING_ATTRIBUTE_ID_REPEAT_MODE_STATUS:
+                                break;
+                            case AVRCP_PLAYER_APPLICATION_SETTING_ATTRIBUTE_ID_SHUFFLE_STATUS:
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+                    break;
+                }
+
+                case AVRCP_PDU_ID_GET_PLAYER_APPLICATION_SETTING_VALUE_TEXT:{
+                    uint8_t num_setting_values = packet[pos++];
+                    int i;
+                    for (i = 0; i < num_setting_values; i++){
+                        uint8_t value = packet[pos++];
+                        log_info("TODO send event: value %d", value);
+                    }
+                    break;
+                }
+
+                case AVRCP_PDU_ID_INFORM_DISPLAYABLE_CHARACTERSET:
+                case AVRCP_PDU_ID_INFORM_BATTERY_STATUS_OF_CT:
+                    break;
+
                 case AVRCP_PDU_ID_SET_PLAYER_APPLICATION_SETTING_VALUE:{
                     uint16_t offset = 0;
                     uint8_t event[6];
@@ -1054,7 +1118,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                         capability_count = packet[pos++];
                     }
                     uint16_t i;
-                    uint16_t offset = 0;
+                    uint16_t offset;
                     uint8_t event[10];
 
                     switch (capability_id){
@@ -1213,6 +1277,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
         case AVRCP_CMD_OPCODE_PASS_THROUGH:{
             if ((size - pos) < 1) return;
             uint8_t operation_id = packet[pos++];
+            UNUSED(pos);
             switch (connection->state){
                 case AVCTP_W2_RECEIVE_PRESS_RESPONSE:
                     // trigger release for simple command:
@@ -1260,7 +1325,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
 
 static void avrcp_controller_handle_can_send_now(avrcp_connection_t * connection){
     // identifier (9) + num attributes (1) + attributes (4 * num attributes)
-    uint8_t get_element_attributes_command[9+8*((AVRCP_MEDIA_ATTR_RESERVED-AVRCP_MEDIA_ATTR_TITLE) + 1)];
+    uint8_t get_element_attributes_command[9+8*((AVRCP_MEDIA_ATTR_NUM-AVRCP_MEDIA_ATTR_TITLE) + 1)];
     uint16_t pos;
     uint16_t num_attributes_index;
     uint8_t i;
@@ -1297,7 +1362,7 @@ static void avrcp_controller_handle_can_send_now(avrcp_connection_t * connection
             // and the AttributeID field is omitted
             connection->data[num_attributes_index] = 0;
             pos++;
-            for (i = 0; i < AVRCP_MEDIA_ATTR_RESERVED-AVRCP_MEDIA_ATTR_TITLE; i++){
+            for (i = 0; i < (uint8_t)AVRCP_MEDIA_ATTR_NUM - (uint8_t)AVRCP_MEDIA_ATTR_TITLE; i++){
                 if ((connection->controller_element_attributes & (1<<i)) != 0){
                     // every attribute is 4 bytes long
                     big_endian_store_32(connection->data, pos, AVRCP_MEDIA_ATTR_TITLE + i);
@@ -1462,6 +1527,171 @@ uint8_t avrcp_controller_press_and_hold_volume_down(uint16_t avrcp_cid){
 uint8_t avrcp_controller_press_and_hold_mute(uint16_t avrcp_cid){
     return request_continuous_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_MUTE, 0);
 }
+
+uint8_t avrcp_controller_0(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_0, 0);
+}
+uint8_t avrcp_controller_1(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_1, 0);
+}
+uint8_t avrcp_controller_2(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_2, 0);
+}
+uint8_t avrcp_controller_3(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_3, 0);
+}
+uint8_t avrcp_controller_4(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_4, 0);
+}
+uint8_t avrcp_controller_5(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_5, 0);
+}
+uint8_t avrcp_controller_6(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_6, 0);
+}
+uint8_t avrcp_controller_7(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_7, 0);
+}
+uint8_t avrcp_controller_8(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_8, 0);
+}
+uint8_t avrcp_controller_9(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_9, 0);
+}
+uint8_t avrcp_controller_dot(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_DOT, 0);
+}
+uint8_t avrcp_controller_enter(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_ENTER, 0);
+}
+uint8_t avrcp_controller_clear(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_CLEAR, 0);
+}
+uint8_t avrcp_controller_channel_up(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_CHANNEL_UP, 0);
+}
+uint8_t avrcp_controller_channel_down(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_CHANNEL_DOWN, 0);
+}
+uint8_t avrcp_controller_previous_channel(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_PREVIOUS_CHANNEL, 0);
+}
+uint8_t avrcp_controller_sound_select(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_SOUND_SELECT, 0);
+}
+uint8_t avrcp_controller_input_select(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_INPUT_SELECT, 0);
+}
+uint8_t avrcp_controller_display_information(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_DISPLAY_INFORMATION, 0);
+}
+uint8_t avrcp_controller_help(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_HELP, 0);
+}
+uint8_t avrcp_controller_power(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_POWER, 0);
+}
+uint8_t avrcp_controller_angle(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_ANGLE, 0);
+}
+uint8_t avrcp_controller_subpicture(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_SUBPICTURE, 0);
+}
+uint8_t avrcp_controller_F1(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_F1, 0);
+}
+uint8_t avrcp_controller_F2(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_F2, 0);
+}
+uint8_t avrcp_controller_F3(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_F3, 0);
+}
+uint8_t avrcp_controller_F4(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_F4, 0);
+}
+uint8_t avrcp_controller_F5(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_F5, 0);
+}
+
+uint8_t avrcp_controller_select(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_SELECT, 0);
+}
+uint8_t avrcp_controller_up(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_UP, 0);
+}
+uint8_t avrcp_controller_down(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_DOWN, 0);
+}
+uint8_t avrcp_controller_left(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_LEFT, 0);
+}
+uint8_t avrcp_controller_right(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_RIGHT, 0);
+}
+uint8_t avrcp_controller_right_up(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_RIGHT_UP, 0);
+}
+uint8_t avrcp_controller_right_down(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_RIGHT_DOWN, 0);
+}
+uint8_t avrcp_controller_left_up(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_LEFT_UP, 0);
+}
+uint8_t avrcp_controller_left_down(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_LEFT_DOWN, 0);
+}
+uint8_t avrcp_controller_root_menu(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_ROOT_MENU, 0);
+}
+uint8_t avrcp_controller_setup_menu(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_SETUP_MENU, 0);
+}
+uint8_t avrcp_controller_contents_menu(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_CONTENTS_MENU, 0);
+}
+uint8_t avrcp_controller_favorite_menu(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_FAVORITE_MENU, 0);
+}
+uint8_t avrcp_controller_exit(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_EXIT, 0);
+}
+uint8_t avrcp_controller_page_up(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_PAGE_UP, 0);
+}
+uint8_t avrcp_controller_page_down(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_PAGE_DOWN, 0);
+}
+
+static uint8_t avrcp_controller_request_group_pass_through_press_control_cmd(uint16_t avrcp_cid, avrcp_group_operation_id_t opid){
+    log_info("Send group command %d", opid);
+    avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
+    if (!connection){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+
+    if (connection->state != AVCTP_CONNECTION_OPENED){
+        log_error("Connection in wrong state %d, expected %d. avrcp cid 0x%02x", connection->state, AVCTP_CONNECTION_OPENED, avrcp_cid);
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+    connection->state = AVCTP_W2_SEND_PRESS_COMMAND;
+    avrcp_controller_pass_through_command_data_init(connection, AVRCP_OPERATION_ID_VENDOR_UNIQUE);
+    connection->company_id = BT_SIG_COMPANY_ID;
+    connection->data_len = 5;
+    big_endian_store_24(connection->data, 0, BT_SIG_COMPANY_ID);
+    big_endian_store_16(connection->data, 3, opid);
+
+    avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t avrcp_controller_next_group(uint16_t avrcp_cid){
+    return avrcp_controller_request_group_pass_through_press_control_cmd(avrcp_cid, AVRCP_GROUP_OPERATION_ID_GOTO_NEXT);
+}
+
+uint8_t avrcp_controller_previous_group(uint16_t avrcp_cid){
+    return avrcp_controller_request_group_pass_through_press_control_cmd(avrcp_cid, AVRCP_GROUP_OPERATION_ID_GOTO_PREVIOUS);
+}
+
 
 /* stop continuous cmds */
 uint8_t avrcp_controller_release_press_and_hold_cmd(uint16_t avrcp_cid){
@@ -1636,7 +1866,7 @@ uint8_t avrcp_controller_get_element_attributes(uint16_t avrcp_cid, uint8_t num_
 
     if (connection->state != AVCTP_CONNECTION_OPENED) return ERROR_CODE_COMMAND_DISALLOWED;
 
-    if (num_attributes >= AVRCP_MEDIA_ATTR_RESERVED) {
+    if (num_attributes >= AVRCP_MEDIA_ATTR_NUM) {
         return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
     }
 
@@ -1648,7 +1878,7 @@ uint8_t avrcp_controller_get_element_attributes(uint16_t avrcp_cid, uint8_t num_
     uint16_t attributes_set = 0;
     for (i = 0; i < num_attributes; i++){
         // ignore invalid attribute ID and "get all attributes"
-        if (AVRCP_MEDIA_ATTR_ALL < attributes[i] && attributes[i] < AVRCP_MEDIA_ATTR_RESERVED){
+        if (AVRCP_MEDIA_ATTR_ALL < attributes[i] && attributes[i] < AVRCP_MEDIA_ATTR_NUM){
             attributes_set |= 1 << (attributes[i] - AVRCP_MEDIA_ATTR_TITLE);
         }
     }
@@ -1712,6 +1942,39 @@ uint8_t avrcp_controller_set_absolute_volume(uint16_t avrcp_cid, uint8_t volume)
     return ERROR_CODE_SUCCESS;
 }
 
+uint8_t avrcp_controller_query_player_application_setting_attributes(uint16_t avrcp_cid){
+    avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
+    if (!connection){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if (connection->state != AVCTP_CONNECTION_OPENED) return ERROR_CODE_COMMAND_DISALLOWED;
+    
+    connection->state = AVCTP_W2_SEND_COMMAND;
+    avrcp_controller_vendor_dependent_command_data_init(connection, AVRCP_CTYPE_STATUS, AVRCP_PDU_ID_LIST_PLAYER_APPLICATION_SETTING_ATTRIBUTES, true);
+
+    connection->data_len = 0;
+
+    avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t avrcp_controller_query_player_application_setting_values(uint16_t avrcp_cid, avrcp_player_application_setting_attribute_id_t attribute_id){
+    avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
+    if (!connection){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if (connection->state != AVCTP_CONNECTION_OPENED) return ERROR_CODE_COMMAND_DISALLOWED;
+    
+    connection->state = AVCTP_W2_SEND_COMMAND;
+    avrcp_controller_vendor_dependent_command_data_init(connection, AVRCP_CTYPE_STATUS, AVRCP_PDU_ID_LIST_PLAYER_APPLICATION_SETTING_VALUES, true);
+
+    connection->data_len = 1;
+    connection->data[0] = attribute_id;
+    
+    avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
+    return ERROR_CODE_SUCCESS;
+}
+
 uint8_t avrcp_controller_query_shuffle_and_repeat_modes(uint16_t avrcp_cid){
     avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
     if (!connection){
@@ -1749,6 +2012,95 @@ static uint8_t avrcp_controller_set_current_player_application_setting_value(uin
     connection->data[0]  = 2;
     connection->data[1]  = attr_id;
     connection->data[2]  = attr_value;
+
+    avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t avrcp_controller_query_player_application_setting_attribute_text(uint16_t avrcp_cid){
+    avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
+    if (!connection){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if (connection->state != AVCTP_CONNECTION_OPENED) return ERROR_CODE_COMMAND_DISALLOWED;
+    
+    connection->state = AVCTP_W2_SEND_COMMAND;
+    avrcp_controller_vendor_dependent_command_data_init(connection, AVRCP_CTYPE_STATUS, AVRCP_PDU_ID_GET_PLAYER_APPLICATION_SETTING_ATTRIBUTE_TEXT, true);
+
+    connection->data_len = 5;
+    connection->data[0] = 4;                     // NumPlayerApplicationSettingAttributeID
+    // PlayerApplicationSettingAttributeID1 AVRCP Spec, Appendix F, 133
+    connection->data[1] = 0x01;   // equalizer  (1-OFF, 2-ON)
+    connection->data[2] = 0x02;   // repeat     (1-off, 2-single track, 3-all tracks, 4-group repeat)
+    connection->data[3] = 0x03;   // shuffle    (1-off, 2-all tracks, 3-group shuffle)
+    connection->data[4] = 0x04;   // scan       (1-off, 2-all tracks, 3-group scan)
+
+    avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t avrcp_controller_query_player_application_setting_value_text(uint16_t avrcp_cid){
+    avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
+    if (!connection){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if (connection->state != AVCTP_CONNECTION_OPENED) return ERROR_CODE_COMMAND_DISALLOWED;
+    
+    connection->state = AVCTP_W2_SEND_COMMAND;
+    avrcp_controller_vendor_dependent_command_data_init(connection, AVRCP_CTYPE_STATUS, AVRCP_PDU_ID_GET_PLAYER_APPLICATION_SETTING_VALUE_TEXT, true);
+
+    connection->data_len = 5;
+    connection->data[0] = 4;                     // NumPlayerApplicationSettingAttributeID
+    // PlayerApplicationSettingAttributeID1 AVRCP Spec, Appendix F, 133
+    connection->data[1] = 0x01;   // equalizer  (1-OFF, 2-ON)
+    connection->data[2] = 0x02;   // repeat     (1-off, 2-single track, 3-all tracks, 4-group repeat)
+    connection->data[3] = 0x03;   // shuffle    (1-off, 2-all tracks, 3-group shuffle)
+    connection->data[4] = 0x04;   // scan       (1-off, 2-all tracks, 3-group scan)
+
+    avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t avrcp_controller_inform_displayable_characterset(uint16_t avrcp_cid, uint8_t character_set_num, uint16_t * character_set){
+    btstack_assert(character_set_num > 4);
+
+    avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
+    if (!connection){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if (connection->state != AVCTP_CONNECTION_OPENED) return ERROR_CODE_COMMAND_DISALLOWED;
+    
+    connection->state = AVCTP_W2_SEND_COMMAND;
+    avrcp_controller_vendor_dependent_command_data_init(connection, AVRCP_CTYPE_CONTROL, AVRCP_PDU_ID_INFORM_DISPLAYABLE_CHARACTERSET, true);
+
+    // Parameter Length
+    connection->data_len = character_set_num * 2;
+    uint8_t pos = 0;
+
+    connection->data[pos++] = character_set_num;
+    uint8_t i;
+    for (i = 0; i < character_set_num; i++){
+        little_endian_store_16(connection->data, pos, character_set[i]);
+        pos += i * 2;
+    }
+
+    avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t avrcp_controller_inform_battery_status(uint16_t avrcp_cid, avrcp_battery_status_t battery_status){
+    avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
+    if (!connection){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if (connection->state != AVCTP_CONNECTION_OPENED) return ERROR_CODE_COMMAND_DISALLOWED;
+    
+    connection->state = AVCTP_W2_SEND_COMMAND;
+    avrcp_controller_vendor_dependent_command_data_init(connection, AVRCP_CTYPE_CONTROL, AVRCP_PDU_ID_INFORM_BATTERY_STATUS_OF_CT, true);
+
+    // Parameter Length
+    connection->data_len = 1;
+    connection->data[0]  = battery_status;
 
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
     return ERROR_CODE_SUCCESS;

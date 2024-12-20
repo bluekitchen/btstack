@@ -101,36 +101,39 @@
 #define RTL8822EU	0x79
 #define RTL8851BU	0x7A
 
+#pragma pack(push, 1)
 struct rtk_epatch_entry {
     uint16_t chipID;
     uint16_t patch_length;
     uint32_t start_offset;
-} __attribute__ ((packed));
+};
 
 struct rtk_epatch {
     uint8_t signature[8];
     uint32_t fw_version;
     uint16_t number_of_total_patch;
     struct rtk_epatch_entry entry[0];
-} __attribute__ ((packed));
+};
 
 struct rtk_extension_entry {
     uint8_t opcode;
     uint8_t length;
     uint8_t *data;
-} __attribute__ ((packed));
+};
 
 struct rtb_section_hdr {
     uint32_t opcode;
     uint32_t section_len;
     uint32_t soffset;
-} __attribute__ ((packed));
+};
 
 struct rtb_new_patch_hdr {
     uint8_t signature[8];
     uint8_t fw_version[8];
     uint32_t number_of_section;
-} __attribute__ ((packed));
+};
+#pragma pack(pop)
+
 
 enum {
     // Pre-Init: runs before HCI Reset
@@ -459,8 +462,8 @@ static void chipset_init(const void *config) {
             state = STATE_PHASE_2_DONE;
             return;
         }
-        snprintf(firmware_file, sizeof(firmware_file), "%s/%s", firmware_folder_path, patch->patch_name);
-        snprintf(config_file, sizeof(config_file), "%s/%s", config_folder_path, patch->config_name);
+        btstack_snprintf_assert_complete(firmware_file, sizeof(firmware_file), "%s/%s", firmware_folder_path, patch->patch_name);
+        btstack_snprintf_assert_complete(config_file, sizeof(config_file), "%s/%s", config_folder_path, patch->config_name);
         firmware_file_path = &firmware_file[0];
         config_file_path   = &config_file[0];
         //lmp_subversion     = patch->lmp_sub;
@@ -650,6 +653,7 @@ static uint8_t *rtb_get_patch_header(uint32_t *len,
                                      btstack_linked_list_t * patch_list, uint8_t * epatch_buf,
                                      uint8_t key_id)
 {
+    UNUSED(key_id);
     uint16_t i, j;
     struct rtb_new_patch_hdr *new_patch;
     uint8_t sec_flag = 0;
@@ -778,7 +782,7 @@ static uint8_t update_firmware(const char *firmware, const char *config, uint8_t
     // read firmware and config
     if (patch_buf == NULL) {
         uint16_t patch_length = 0;
-        uint32_t offset;
+        uint32_t offset = 0;
         FILE *   fw = NULL;
         uint32_t fw_size;
         uint8_t *fw_buf = NULL;
@@ -791,7 +795,7 @@ static uint8_t update_firmware(const char *firmware, const char *config, uint8_t
         uint16_t fw_num_patches;
 
         struct patch_node *tmp;
-        int max_patch_size = 0;
+        unsigned max_patch_size = 0;
 
         if (firmware == NULL || config == NULL) {
             log_info("Please specify realtek firmware and config file paths");
@@ -832,7 +836,7 @@ static uint8_t update_firmware(const char *firmware, const char *config, uint8_t
         if (have_new_firmware_signature){
             printf("Realtek: Using new signature\n");
             uint8_t key_id = g_key_id;
-            if (key_id < 0) {
+            if (key_id == 0) {
                 log_info("Wrong key id. Quit!");
                 finalize_file_and_buffer(&fw, &fw_buf);
                 finalize_file_and_buffer(&conf, &conf_buf);

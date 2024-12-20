@@ -433,7 +433,7 @@ Listing [below](#lst:RFCOMMremoteService).
 ~~~~ 
 
 The RFCOMM channel will stay open until either side closes it with rfcomm_disconnect.
-BTstack will close the multiplexer after 60 seconds without an active RFCOMM channel.
+The RFCOMM multiplexer will be closed by the peer that closes the last RFCOMM channel.
 
 ### Provide an RFCOMM service {#sec:rfcommServiceProtocols}
 

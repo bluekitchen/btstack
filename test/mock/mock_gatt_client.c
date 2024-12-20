@@ -5,6 +5,7 @@
 #include "btstack_debug.h"
 #include "bluetooth_gatt.h"
 #include "mock_gatt_client.h"
+#include "hci_event_builder.h"
 
 //#include "CppUTest/TestHarness.h"
 //#include "CppUTestExt/MockSupport.h"
@@ -155,72 +156,79 @@ void gatt_client_deserialize_characteristic_descriptor(const uint8_t * packet, i
     }
 }
 
-static void emit_event(btstack_packet_handler_t callback, uint8_t * packet, uint16_t size){
+static void emit_event_new(btstack_packet_handler_t callback, uint8_t * packet, uint16_t size){
     if (!callback) return;
     (*callback)(HCI_EVENT_PACKET, 0, packet, size);
 }
 
 static void emit_gatt_complete_event(gatt_client_t * gatt_client, uint8_t att_status){
-    // @format H1
-    uint8_t packet[5];
-    packet[0] = GATT_EVENT_QUERY_COMPLETE;
-    packet[1] = 3;
-    little_endian_store_16(packet, 2, gatt_client->con_handle);
-    packet[4] = att_status;
-    emit_event(gatt_client->callback, packet, sizeof(packet));
+    // @format H122
+    uint8_t packet[9];
+    hci_event_builder_context_t context;
+    hci_event_builder_init(&context, packet, sizeof(packet), GATT_EVENT_QUERY_COMPLETE, 0);
+    hci_event_builder_add_con_handle(&context, gatt_client->con_handle);
+    hci_event_builder_add_16(&context, gatt_client->service_id);
+    hci_event_builder_add_16(&context, gatt_client->connection_id);
+    hci_event_builder_add_08(&context, att_status);
+    emit_event_new(gatt_client->callback, packet, hci_event_builder_get_length(&context));
 }
 
 static void emit_gatt_service_query_result_event(gatt_client_t * gatt_client, uint16_t start_group_handle, uint16_t end_group_handle, const uint8_t * uuid128){
-    // @format HX
-    uint8_t packet[24];
-    packet[0] = GATT_EVENT_SERVICE_QUERY_RESULT;
-    packet[1] = sizeof(packet) - 2u;
-    little_endian_store_16(packet, 2, gatt_client->con_handle);
-    ///
-    little_endian_store_16(packet, 4, start_group_handle);
-    little_endian_store_16(packet, 6, end_group_handle);
-    reverse_128(uuid128, &packet[8]);
-    emit_event(gatt_client->callback, packet, sizeof(packet));
+    // @format H22X
+    uint8_t packet[28];
+    hci_event_builder_context_t context;
+    hci_event_builder_init(&context, packet, sizeof(packet), GATT_EVENT_SERVICE_QUERY_RESULT, 0);
+    hci_event_builder_add_con_handle(&context, gatt_client->con_handle);
+    hci_event_builder_add_16(&context, gatt_client->service_id);
+    hci_event_builder_add_16(&context, gatt_client->connection_id);
+    hci_event_builder_add_16(&context, start_group_handle);
+    hci_event_builder_add_16(&context, end_group_handle);
+    hci_event_builder_add_128(&context, uuid128);
+    emit_event_new(gatt_client->callback, packet, hci_event_builder_get_length(&context));
 }
 
 static void emit_gatt_characteristic_query_result_event(gatt_client_t * gatt_client, uint16_t start_handle, uint16_t value_handle, uint16_t end_handle,
                                                         uint16_t properties, const uint8_t * uuid128){
-    // @format HY
-    uint8_t packet[28];
-    packet[0] = GATT_EVENT_CHARACTERISTIC_QUERY_RESULT;
-    packet[1] = sizeof(packet) - 2u;
-    little_endian_store_16(packet, 2, gatt_client->con_handle);
-    ///
-    little_endian_store_16(packet, 4,  start_handle);
-    little_endian_store_16(packet, 6,  value_handle);
-    little_endian_store_16(packet, 8,  end_handle);
-    little_endian_store_16(packet, 10, properties);
-    reverse_128(uuid128, &packet[12]);
-    emit_event(gatt_client->callback, packet, sizeof(packet));
+    // @format H22Y
+    uint8_t packet[32];
+    hci_event_builder_context_t context;
+    hci_event_builder_init(&context, packet, sizeof(packet), GATT_EVENT_CHARACTERISTIC_QUERY_RESULT, 0);
+    hci_event_builder_add_con_handle(&context, gatt_client->con_handle);
+    hci_event_builder_add_16(&context, gatt_client->service_id);
+    hci_event_builder_add_16(&context, gatt_client->connection_id);
+    hci_event_builder_add_16(&context, start_handle);
+    hci_event_builder_add_16(&context, value_handle);
+    hci_event_builder_add_16(&context, end_handle);
+    hci_event_builder_add_16(&context, properties);
+    hci_event_builder_add_128(&context, uuid128);
+    emit_event_new(gatt_client->callback, packet, hci_event_builder_get_length(&context));
 }
 
 static void emit_gatt_all_characteristic_descriptors_result_event(
         gatt_client_t * gatt_client, uint16_t descriptor_handle, const uint8_t * uuid128){
     // @format HZ
     uint8_t packet[22];
-    packet[0] = GATT_EVENT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT;
-    packet[1] = sizeof(packet) - 2u;
-    little_endian_store_16(packet, 2, gatt_client->con_handle);
-    ///
-    little_endian_store_16(packet, 4,  descriptor_handle);
-    reverse_128(uuid128, &packet[6]);
-    emit_event(gatt_client->callback, packet, sizeof(packet));
+    hci_event_builder_context_t context;
+    hci_event_builder_init(&context, packet, sizeof(packet), GATT_EVENT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT, 0);
+    hci_event_builder_add_con_handle(&context, gatt_client->con_handle);
+    hci_event_builder_add_16(&context, gatt_client->service_id);
+    hci_event_builder_add_16(&context, gatt_client->connection_id);
+    hci_event_builder_add_16(&context, descriptor_handle);
+    hci_event_builder_add_128(&context, uuid128);
+    emit_event_new(gatt_client->callback, packet, hci_event_builder_get_length(&context));
 }
 
 static uint8_t event_packet[255];
 static uint8_t * setup_characteristic_value_packet(uint8_t type, hci_con_handle_t con_handle, uint16_t attribute_handle, uint8_t * value, uint16_t length){
     // before the value inside the ATT PDU
     event_packet[0] = type;
-    event_packet[1] = 6 + length;
+    event_packet[1] = 10 + length;
     little_endian_store_16(event_packet, 2, con_handle);
-    little_endian_store_16(event_packet, 4, attribute_handle);
-    little_endian_store_16(event_packet, 6, length);
-    memcpy(&event_packet[8], value, length);
+    little_endian_store_16(event_packet, 4, 0);
+    little_endian_store_16(event_packet, 6, 0);
+    little_endian_store_16(event_packet, 8, attribute_handle);
+    little_endian_store_16(event_packet, 10, length);
+    memcpy(&event_packet[12], value, length);
     return &event_packet[0];
 }
 
@@ -229,7 +237,7 @@ void mock_gatt_client_send_notification_with_handle(mock_gatt_client_characteris
     btstack_assert(characteristic->notification != NULL);
     btstack_assert(characteristic->notification->callback != NULL);
     uint8_t * packet = setup_characteristic_value_packet(GATT_EVENT_NOTIFICATION, gatt_client.con_handle, value_handle, (uint8_t *) value_buffer, value_len);
-    emit_event(characteristic->notification->callback, packet, 2 + packet[1]);
+    emit_event_new(characteristic->notification->callback, packet, 2 + packet[1]);
 }
 
 void mock_gatt_client_send_notification(mock_gatt_client_characteristic_t * characteristic, const uint8_t * value_buffer, uint16_t value_len){
@@ -241,7 +249,7 @@ void mock_gatt_client_send_indication_with_handle(mock_gatt_client_characteristi
     btstack_assert(characteristic->notification != NULL);
     btstack_assert(characteristic->notification->callback != NULL);
     uint8_t * packet = setup_characteristic_value_packet(GATT_EVENT_INDICATION, gatt_client.con_handle, value_handle, (uint8_t *) value_buffer, value_len);
-    emit_event(characteristic->notification->callback, packet, 2 + packet[1]);
+    emit_event_new(characteristic->notification->callback, packet, 2 + packet[1]);
 }
 
 void mock_gatt_client_send_indication(mock_gatt_client_characteristic_t * characteristic, const uint8_t * value_buffer, uint16_t value_len){
@@ -250,7 +258,7 @@ void mock_gatt_client_send_indication(mock_gatt_client_characteristic_t * charac
 
 static void mock_gatt_client_send_characteristic_value(gatt_client_t * gatt_client, mock_gatt_client_characteristic_t * characteristic){
     uint8_t * packet = setup_characteristic_value_packet(GATT_EVENT_CHARACTERISTIC_VALUE_QUERY_RESULT, gatt_client->con_handle, characteristic->value_handle, characteristic->value_buffer, characteristic->value_len);
-    emit_event(gatt_client->callback, packet, 2 + packet[1]);
+    emit_event_new(gatt_client->callback, packet, 2 + packet[1]);
 }
 
 /**
@@ -444,6 +452,12 @@ uint8_t gatt_client_read_characteristic_descriptor_using_descriptor_handle(btsta
 void gatt_client_stop_listening_for_characteristic_value_updates(gatt_client_notification_t * notification){
 }
 
+uint8_t gatt_client_request_to_send_gatt_query(btstack_context_callback_registration_t * callback_registration, hci_con_handle_t con_handle){
+    // immediate callback, we don't have btstack runloop in most tests
+    (*callback_registration->callback)(callback_registration->context);
+    return ERROR_CODE_SUCCESS;
+}
+
 uint8_t gatt_client_write_value_of_characteristic(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle, uint16_t value_length, uint8_t * value){
     mock_gatt_client_characteristic_t * mock_characteristic  = mock_gatt_client_get_characteristic_for_value_handle(value_handle);
     btstack_assert(mock_characteristic != NULL);
@@ -585,7 +599,7 @@ void mock_gatt_client_emit_dummy_event(void){
     uint8_t packet[2];
     packet[0] = 0;
     packet[1] = 0;
-    emit_event(gatt_client.callback, packet, sizeof(packet));
+    emit_event_new(gatt_client.callback, packet, sizeof(packet));
 }
 
 static void mock_gatt_client_reset_errors(void){

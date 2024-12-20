@@ -96,17 +96,20 @@ typedef struct {
 
 typedef struct {
     // assigned by client via control point
-    bd_addr_type_t address_type; 
+    bd_addr_type_t address_type;
     bd_addr_t address;
     uint8_t   adv_sid;
     uint32_t  broadcast_id;
-    le_audio_pa_sync_t       pa_sync;       // written by client into control point
-    le_audio_pa_sync_state_t pa_sync_state; // state send to client by server
+    le_audio_pa_sync_t pa_sync;
     uint16_t  pa_interval;
-    
+
     uint8_t  subgroups_num;
-    // Shall not exist if num_subgroups = 0
     bass_subgroup_t subgroups[BASS_SUBGROUPS_MAX_NUM];
+
+    // state send to client by server
+    le_audio_pa_sync_state_t  pa_sync_state;
+    le_audio_big_encryption_t big_encryption;
+    uint8_t                  bad_code[16];
 } bass_source_data_t;
 
 // offset gives position into fully serialized BASS record

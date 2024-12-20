@@ -44,10 +44,14 @@ set(src_dirs
     "${IDF_PATH}/components/lwip/lwip/src/apps/http"
     ".")
 
-if("${IDF_VERSION_MAJOR}.${IDF_VERSION_MINOR}" VERSION_GREATER_EQUAL "5.0")
-    set(exclude_srcs "btstack_audio_esp32_v4.c")
+if(${CONFIG_BTSTACK_AUDIO})
+    if("${IDF_VERSION_MAJOR}.${IDF_VERSION_MINOR}" VERSION_GREATER_EQUAL "5.0")
+        set(exclude_srcs "btstack_audio_esp32_v4.c")
+    else()
+        set(exclude_srcs "btstack_audio_esp32_v5.c")
+    endif()
 else()
-    set(exclude_srcs "btstack_audio_esp32_v5.c")
+    set(exclude_srcs "btstack_audio_esp32_v4.c" "btstack_audio_esp32_v5.c")
 endif()
 
 if(CONFIG_IDF_TARGET_ESP32)

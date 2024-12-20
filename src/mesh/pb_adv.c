@@ -70,10 +70,12 @@ static void pb_adv_run(void);
 
 #define MESH_GENERIC_PROVISIONING_TRANSACTION_TIMEOUT_MS 30000
 
-#define MESH_PB_ADV_MAX_PDU_SIZE  100
+// TODO: how large are prov messages? => how many segments are required?
 #define MESH_PB_ADV_MAX_SEGMENTS    8
 #define MESH_PB_ADV_START_PAYLOAD  20
 #define MESH_PB_ADV_CONT_PAYLOAD   23
+#define MESH_PB_ADV_MAX_PDU_SIZE  (MESH_PB_ADV_START_PAYLOAD + (MESH_PB_ADV_MAX_SEGMENTS-2) * MESH_PB_ADV_CONT_PAYLOAD)
+
 
 typedef enum mesh_gpcf_format {
     MESH_GPCF_TRANSACTION_START = 0,
@@ -96,7 +98,7 @@ static const uint8_t * pb_adv_peer_device_uuid;
 static uint8_t pb_adv_provisioner_open_countdown;
 #endif
 
-static uint8_t  pb_adv_msg_in_buffer[MESH_PB_ADV_MAX_PDU_SIZE];   // TODO: how large are prov messages?
+static uint8_t  pb_adv_msg_in_buffer[MESH_PB_ADV_MAX_PDU_SIZE];
 
 // single adv link, roles: provisioner = 1, device = 0
 static uint16_t pb_adv_cid = 1;

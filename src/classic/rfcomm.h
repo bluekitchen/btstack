@@ -92,7 +92,6 @@ typedef enum {
     RFCOMM_CHANNEL_SEND_DISC,
     RFCOMM_CHANNEL_W4_UA_AFTER_DISC,
     RFCOMM_CHANNEL_SEND_DM,
-    RFCOMM_CHANNEL_EMIT_OPEN_FAILED_AND_DISCARD,
 } RFCOMM_CHANNEL_STATE;
 
 
@@ -154,10 +153,7 @@ typedef struct {
     // linked list - assert: first field
     btstack_linked_item_t    item;
     
-    btstack_timer_source_t   timer;
-    int              timer_active;
-    
-	RFCOMM_MULTIPLEXER_STATE state;	
+	RFCOMM_MULTIPLEXER_STATE state;
     
     uint16_t  l2cap_cid;
     

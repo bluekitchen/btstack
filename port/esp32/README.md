@@ -64,10 +64,12 @@ There are different issues in the Bluetooth Controller of the ESP32 that is prov
 
 ### Audio playback
 
-Audio playback is implemented by `btstack_audio_esp32.c` and supports generic I2S codecs as well as the ES8388 on the 
+Audio playback is implemented by `btstack_audio_esp32_v4.c` resp. `btstack_audio_esp32_v5.c` and supports generic I2S codecs as well as the ES8388 on the 
 [ESP32 LyraT v4.3](https://docs.espressif.com/projects/esp-adf/en/latest/design-guide/board-esp32-lyrat-v4.3.html) devkit.
 
-It uses the first I2S interface with the following pin out:
+Due to the various ESP32 variants, please double check the I2S Configuration in the mentioned audio file and verify that the correct menuconfig options are set.
+
+For a generic ESP32, the first I2S interface is used with with the following pin out:
 
 ESP32 pin | I2S Pin
 ----------|---------
@@ -80,7 +82,8 @@ GPIO35    | DIN
 If support for the LyraT v4.3 is enabled via menuconfig - Example Board Configuration --> ESP32 board --> ESP32-LyraT V4.3, CONFIG_ESP_LYRAT_V4_3_BOARD gets defined and the ES8388 will be configured as well.
 
 We've also used the MAX98357A on the [Adafruit breakout board](https://www.adafruit.com/product/3006). 
-The simplest audio example is the mod_player, which plays back an 8 kB sound file and the a2dp_sink_demo that implements a basic Bluetooth loudspeaker.
+The simplest audio example is the `mod_player`, which plays back an 8 kB sound file and the a2dp_sink_demo that implements a basic Bluetooth loudspeaker.
+You can test the audio input with the `audio_duplex` example.
 
 ## ESP32 printf/log
 

@@ -14,6 +14,9 @@ hci_cmds_c_path = 'src/hci_cmd.c'
 hci_cmds_h_path = 'src/hci_cmd.h'
 hci_h_path = 'src/hci.h'
 
+open_bracket = '['
+closing_bracket = ']'
+
 btstack_root = os.path.abspath(os.path.dirname(sys.argv[0]) + '/..')
 print ("BTstack root %s" % btstack_root)
 
@@ -46,10 +49,10 @@ def read_defines(infile):
     defines = dict()
     with open (infile, 'rt') as fin:
         for line in fin:
-            parts = re.match('#define\s+(\w+)\s+(\w*)[u]',line)
+            parts = re.match(r'#define\s+(\w+)\s+(\w*)[u]',line)
             if parts and len(parts.groups()) == 2:
                 (key, value) = parts.groups()
-                defines[key] = value
+                defines[key] = value.lower()
     return defines
 
 def parse_defines():
@@ -69,14 +72,14 @@ def my_parse_events(path):
     format = None
     with open (path, 'rt') as fin:
         for line in fin:
-            parts = re.match('.*@format\s*(\w*)\s*', line)
+            parts = re.match(r'.*@format\s*([a-zA-Z0-9_' + re.escape(open_bracket) + re.escape(closing_bracket) + r']*)\s*', line)
             if parts and len(parts.groups()) == 1:
                 format = parts.groups()[0]
-            parts = re.match('.*@param\s*(\w*)\s*', line)
+            parts = re.match(r'.*@param\s*(\w*)\s*', line)
             if parts and len(parts.groups()) == 1:
                 param = parts.groups()[0]
                 params.append(param)
-            parts = re.match('\s*#define\s+(\w+)\s+(\w*)[u]',line)
+            parts = re.match(r'\s*#define\s+(\w+)\s+(\w*)[u]',line)
             if parts and len(parts.groups()) == 2:
                 (key, value) = parts.groups()
                 if format != None:
@@ -107,12 +110,12 @@ def my_parse_opcodes(infile, convert_to_camel_case):
     opcodes = {}
     with open (infile, 'rt') as fin:
         for line in fin:
-            definition = re.match('\s*(DAEMON_OPCODE_\w+)\s*=\s*DAEMON_OPCODE\s*\(\s*(\w+)\s*\).*', line)
+            definition = re.match(r'\s*(DAEMON_OPCODE_\w+)\s*=\s*DAEMON_OPCODE\s*\(\s*(\w+)\s*\).*', line)
             if definition:
                 (opcode, daemon_ocf) = definition.groups()
                 # opcodes.append((opcode, 'OGF_BTSTACK', daemon_ocf))
                 opcodes[opcode] = ('OGF_BTSTACK', daemon_ocf)
-            definition = re.match('\s*(HCI_OPCODE_\w+)\s*=\s*HCI_OPCODE\s*\(\s*(\w+)\s*,\s*(\w+)\s*\).*', line)
+            definition = re.match(r'\s*(HCI_OPCODE_\w+)\s*=\s*HCI_OPCODE\s*\(\s*(\w+)\s*,\s*(\w+)\s*\).*', line)
             if definition:
                 (opcode, ogf, ocf) = definition.groups()
                 # opcodes.append((opcode, ogf, ocf))
@@ -133,7 +136,7 @@ def my_parse_commands(infile, opcodes, convert_to_camel_case):
         params = []
         for line in fin:
 
-            parts = re.match('.*@param\s*(\w*)\s*', line)
+            parts = re.match(r'.*@param\s*(\w*)\s*', line)
             if parts and len(parts.groups()) == 1:
                 param = parts.groups()[0]
                 if convert_to_camel_case:
@@ -143,7 +146,7 @@ def my_parse_commands(infile, opcodes, convert_to_camel_case):
                 params.append(param)
                 continue
 
-            declaration = re.match('const\s+hci_cmd_t\s+(\w+)[\s=]+', line)
+            declaration = re.match(r'const\s+hci_cmd_t\s+(\w+)[\s=]+', line)
             if declaration:
                 command_name = declaration.groups()[0]
                 # drop _cmd suffix for daemon commands
@@ -156,7 +159,7 @@ def my_parse_commands(infile, opcodes, convert_to_camel_case):
                 continue
 
             # HCI_OPCODE or DAEMON_OPCODE definition
-            definition = re.match('\s*(HCI_OPCODE_\w+|DAEMON_OPCODE_\w+)\s*,\s\\"(\w*)\\".*', line)
+            definition = re.match(r'\s*(HCI_OPCODE_\w+|DAEMON_OPCODE_\w+)\s*,\s\"(\w*)\".*', line)
             if definition:
                 (opcode, format) = definition.groups()
                 if len(params) != len(format):
@@ -190,7 +193,7 @@ def parse_daemon_commands(camel_case=True):
 def print_opcode_enum(commands):
     print("typedef enum {")
     for command in commands:
-        (name, opcode, format, params) = command
+        (name, ogf, ocf, format, params) = command
         print("    DAEMON_OPCODE_%s = HCI_OPCODE (%s, %s)," % (name.upper(), ogf, ocf))
     print("} daemon_opcode_t;")
 

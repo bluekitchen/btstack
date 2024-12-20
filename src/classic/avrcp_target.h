@@ -237,6 +237,10 @@ uint8_t avrcp_target_operation_accepted(uint16_t avrcp_cid, avrcp_operation_id_t
  */
 uint8_t avrcp_target_operation_not_implemented(uint16_t avrcp_cid, avrcp_operation_id_t opid, uint8_t operands_length, uint8_t operand);
 
+uint8_t avrcp_target_uids_changed(uint16_t avrcp_cid, uint16_t uid_counter);
+uint8_t avrcp_target_send_response_for_play_item_cmd(uint16_t avrcp_cid, avrcp_status_code_t status);
+uint8_t avrcp_target_send_response_for_add_to_now_playing_cmd(uint16_t avrcp_cid, avrcp_status_code_t status);
+
 /**
  * @brief De-Init AVRCP Browsing Target
  */

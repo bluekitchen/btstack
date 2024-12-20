@@ -25,29 +25,52 @@
 enum lc3_bandwidth lc3_bwdet_run(
     enum lc3_dt dt, enum lc3_srate sr, const float *e)
 {
-    /* Bandwidth regions (Table 3.6)  */
+    /* Bandwidth regions */
 
     struct region { int is : 8; int ie : 8; };
 
-    static const struct region bws_table[LC3_NUM_DT]
-            [LC3_NUM_BANDWIDTH-1][LC3_NUM_BANDWIDTH-1] = {
+#if LC3_PLUS
 
-        [LC3_DT_7M5] = {
-            { { 51, 63+1 } },
-            { { 45, 55+1 }, { 58, 63+1 } },
-            { { 42, 51+1 }, { 53, 58+1 }, { 60, 63+1 } },
-            { { 40, 48+1 }, { 51, 55+1 }, { 57, 60+1 }, { 61, 63+1 } },
-        },
-
-        [LC3_DT_10M] = {
-            { { 53, 63+1 } },
-            { { 47, 56+1 }, { 59, 63+1 } },
-            { { 44, 52+1 }, { 54, 59+1 }, { 60, 63+1 } },
-            { { 41, 49+1 }, { 51, 55+1 }, { 57, 60+1 }, { 61, 63+1 } },
-        },
+    static const struct region bws_table_2m5[][LC3_BANDWIDTH_SWB+1] = {
+        { { 24, 34+1 } },
+        { { 24, 32+1 }, { 35, 39+1 } },
+        { { 24, 31+1 }, { 33, 38+1 }, { 39, 42+1 } },
+        { { 22, 29+1 }, { 31, 35+1 }, { 37, 40+1 }, { 41, 43+1 } },
     };
 
-    static const int l_table[LC3_NUM_DT][LC3_NUM_BANDWIDTH-1] = {
+    static const struct region bws_table_5m[][LC3_BANDWIDTH_SWB+1] = {
+        { { 39, 49+1 } },
+        { { 35, 44+1 }, { 47, 51+1 } },
+        { { 34, 42+1 }, { 44, 49+1 }, { 50, 53+1 } },
+        { { 32, 40+1 }, { 42, 46+1 }, { 48, 51+1 }, { 52, 54+1 } },
+    };
+
+#endif /* LC3_PLUS */
+
+    static const struct region bws_table_7m5[][LC3_BANDWIDTH_SWB+1] = {
+        { { 51, 63+1 } },
+        { { 45, 55+1 }, { 58, 63+1 } },
+        { { 42, 51+1 }, { 53, 58+1 }, { 60, 63+1 } },
+        { { 40, 48+1 }, { 51, 55+1 }, { 57, 60+1 }, { 61, 63+1 } },
+    };
+
+    static const struct region bws_table_10m[][LC3_BANDWIDTH_SWB+1] = {
+        { { 53, 63+1 } },
+        { { 47, 56+1 }, { 59, 63+1 } },
+        { { 44, 52+1 }, { 54, 59+1 }, { 60, 63+1 } },
+        { { 41, 49+1 }, { 51, 55+1 }, { 57, 60+1 }, { 61, 63+1 } },
+    };
+
+    static const struct region (*bws_table[])[LC3_BANDWIDTH_SWB+1] = {
+        [LC3_DT_2M5] = LC3_IF_PLUS(bws_table_2m5,  NULL),
+        [LC3_DT_5M ] = LC3_IF_PLUS(bws_table_5m ,  NULL),
+        [LC3_DT_7M5] = bws_table_7m5,
+        [LC3_DT_10M] = bws_table_10m,
+    };
+
+    static const int l_table[LC3_NUM_DT][LC3_BANDWIDTH_SWB+1] = {
+        [LC3_DT_2M5] = { 4, 4, 3, 1 },
+        [LC3_DT_5M ] = { 4, 4, 3, 1 },
         [LC3_DT_7M5] = { 4, 4, 3, 2 },
         [LC3_DT_10M] = { 4, 4, 3, 1 },
     };
@@ -58,7 +81,7 @@ enum lc3_bandwidth lc3_bwdet_run(
     enum lc3_bandwidth bw0 = LC3_BANDWIDTH_NB;
     enum lc3_bandwidth bwn = (enum lc3_bandwidth)sr;
 
-    if (bwn <= bw0)
+    if (bwn <= bw0 || lc3_hr(sr))
         return bwn;
 
     const struct region *bwr = bws_table[dt][bwn-1];
@@ -101,7 +124,7 @@ enum lc3_bandwidth lc3_bwdet_run(
  */
 int lc3_bwdet_get_nbits(enum lc3_srate sr)
 {
-    return (sr > 0) + (sr > 1) + (sr > 3);
+    return lc3_hr(sr) ? 0 : (sr > 0) + (sr > 1) + (sr > 3);
 }
 
 /**
@@ -124,6 +147,8 @@ int lc3_bwdet_get_bw(lc3_bits_t *bits,
     enum lc3_bandwidth max_bw = (enum lc3_bandwidth)sr;
     int nbits_bw = lc3_bwdet_get_nbits(sr);
 
-    *bw = nbits_bw > 0 ? lc3_get_bits(bits, nbits_bw) : LC3_BANDWIDTH_NB;
+    *bw = nbits_bw <= 0 ? max_bw :
+        (enum lc3_bandwidth)lc3_get_bits(bits, nbits_bw);
+
     return *bw > max_bw ? (*bw = max_bw), -1 : 0;
 }

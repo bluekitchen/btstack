@@ -111,6 +111,10 @@ void sdp_deinit(void);
 
 /* API_END */
 
+#ifdef ENABLE_TESTING_SUPPORT
+void sdp_server_set_single_record_response(bool enabled);
+#endif
+
 
 #if defined __cplusplus
 }

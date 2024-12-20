@@ -102,6 +102,28 @@ extern "C" {
 // Internal Error Codes
 #define AVDTP_INVALID_SEP_SEID                      0xFF
 
+typedef enum {
+    CODEC_SPECIFIC_ERROR_CODE_ACCEPT                             = 0x00,
+    CODEC_SPECIFIC_ERROR_CODE_INVALID_CODEC_TYPE                 = 0xC1,
+    CODEC_SPECIFIC_ERROR_CODE_NOT_SUPPORTED_CODEC_TYPE           = 0xC2,
+    CODEC_SPECIFIC_ERROR_CODE_INVALID_SAMPLING_FREQUENCY         = 0xC3,
+    CODEC_SPECIFIC_ERROR_CODE_NOT_SUPPORTED_SAMPLING_FREQUENCY   = 0xC4,
+    CODEC_SPECIFIC_ERROR_CODE_INVALID_CHANNEL_MODE               = 0xC5,
+    CODEC_SPECIFIC_ERROR_CODE_NOT_SUPPORTED_CHANNEL_MODE         = 0xC6,
+    CODEC_SPECIFIC_ERROR_CODE_INVALID_SUBBANDS                   = 0xC7,
+    CODEC_SPECIFIC_ERROR_CODE_NOT_SUPPORTED_SUBBANDS             = 0xC8,
+    CODEC_SPECIFIC_ERROR_CODE_INVALID_ALLOCATION_METHOD          = 0xC9,
+    CODEC_SPECIFIC_ERROR_CODE_NOT_SUPPORTED_ALLOCATION_METHOD    = 0xCA,
+    CODEC_SPECIFIC_ERROR_CODE_INVALID_MINIMUM_BITPOOL_VALUE      = 0xCB,
+    CODEC_SPECIFIC_ERROR_CODE_INVALID_MAXIMUM_BITPOOL_VALUE      = 0xCD,
+    CODEC_SPECIFIC_ERROR_CODE_NOT_SUPPORTED_VBR                  = 0xD3,
+    CODEC_SPECIFIC_ERROR_CODE_INVALID_OBJECT_TYPE                = 0xD6,
+    CODEC_SPECIFIC_ERROR_CODE_NOT_SUPPORTED_OBJECT_TYPE          = 0xD7,
+    CODEC_SPECIFIC_ERROR_CODE_INVALID_CHANNELS                   = 0xD8,
+    CODEC_SPECIFIC_ERROR_CODE_NOT_SUPPORTED_CHANNELS             = 0xD9,
+    CODEC_SPECIFIC_ERROR_CODE_INVALID_BLOCK_LENGTH               = 0xDD,
+    CODEC_SPECIFIC_ERROR_CODE_INVALID_DRC                        = 0xE4,
+} codec_specific_error_code_t;
 
 // Signal Identifier fields
 typedef enum {
@@ -148,9 +170,15 @@ typedef enum {
     AVDTP_CODEC_SBC             = 0x00,
     AVDTP_CODEC_MPEG_1_2_AUDIO  = 0x01, 
     AVDTP_CODEC_MPEG_2_4_AAC    = 0x02,
+    AVDTP_CODEC_MPEG_D_USAC     = 0x03,
     AVDTP_CODEC_ATRAC_FAMILY    = 0x04,
     AVDTP_CODEC_NON_A2DP        = 0xFF
 } avdtp_media_codec_type_t;
+
+typedef enum {
+    AVDTP_USAC_OBJECT_TYPE_MPEG_D_DRC = 0x00,
+    AVDTP_USAC_OBJECT_TYPE_RFU
+} avdtp_usac_object_type_t;
 
 typedef enum {
     AVDTP_CONTENT_PROTECTION_DTCP = 0x0001,
@@ -272,7 +300,10 @@ typedef enum {
     AVDTP_AAC_MPEG2_LC = 1,
     AVDTP_AAC_MPEG4_LC,
     AVDTP_AAC_MPEG4_LTP,
-    AVDTP_AAC_MPEG4_SCALABLE
+    AVDTP_AAC_MPEG4_SCALABLE,
+    AVDTP_AAC_MPEG4_HE_AAC,
+    AVDTP_AAC_MPEG4_HE_AACv2,
+    AVDTP_AAC_MPEG4_HE_AAC_ELDv2
 } avdtp_aac_object_type_t;
 
 typedef enum {
@@ -292,8 +323,8 @@ typedef enum {
 typedef struct {
     uint16_t                        sampling_frequency;
     avdtp_channel_mode_t            channel_mode;
-    uint8_t                         block_length;
-    uint8_t                         subbands;
+    avdtp_sbc_block_length_t        block_length;
+    avdtp_sbc_subbands_t            subbands;
     avdtp_sbc_allocation_method_t   allocation_method;
     uint8_t                         min_bitpool_value;
     uint8_t                         max_bitpool_value;
@@ -315,7 +346,16 @@ typedef struct {
     uint8_t                 channels;
     uint32_t                bit_rate;
     uint8_t                 vbr;
+    bool                    drc;
 } avdtp_configuration_mpeg_aac_t;
+
+typedef struct {
+    avdtp_usac_object_type_t object_type;
+    uint32_t                sampling_frequency;
+    uint8_t                 channels;
+    uint32_t                bit_rate;
+    uint8_t                 vbr;
+} avdtp_configuration_mpegd_usac_t;
 
 typedef struct {
     avdtp_atrac_version_t   version;
@@ -325,8 +365,6 @@ typedef struct {
     uint8_t                 bit_rate_index;
     uint16_t                maximum_sul;
 } avdtp_configuration_atrac_t;
-
-
 
 typedef struct {
     uint8_t version;
@@ -412,7 +450,6 @@ typedef struct {
     uint16_t configured_service_categories;
     avdtp_capabilities_t configuration;
 } avdtp_sep_t;
-
 
 typedef enum {
     AVDTP_SIGNALING_CONNECTION_IDLE = 0,
@@ -561,7 +598,6 @@ typedef struct {
 
 } avdtp_connection_t;
 
-
 typedef struct avdtp_stream_endpoint {
     btstack_linked_item_t    item;
     
@@ -669,7 +705,7 @@ uint8_t avdtp_validate_media_configuration(const avdtp_stream_endpoint_t *stream
 // frequency will be used by avdtp_choose_sbc_sampling_frequency (if supported by both endpoints)
 void    avdtp_set_preferred_sampling_frequency(avdtp_stream_endpoint_t * stream_endpoint, uint32_t sampling_frequency);
 
-// channel_mode will be used by avdtp_choose_sbc_channel_mode (if supported by both endpoints)
+// channels_num will be used by avdtp_choose_sbc_channel_mode (if supported by both endpoints)
 void    avdtp_set_preferred_channel_mode(avdtp_stream_endpoint_t * stream_endpoint, uint8_t channel_mode);
 
 void    avdtp_set_preferred_sbc_channel_mode(avdtp_stream_endpoint_t * stream_endpoint, uint32_t sampling_frequency);
@@ -684,8 +720,8 @@ uint16_t avdtp_get_highest_sampling_frequency(uint8_t sampling_frequency_bitmap)
 avdtp_channel_mode_t avdtp_choose_sbc_channel_mode(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_channel_mode_bitmap);
 avdtp_sbc_allocation_method_t avdtp_choose_sbc_allocation_method(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_allocation_method_bitmap);
 uint16_t avdtp_choose_sbc_sampling_frequency(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_sampling_frequency_bitmap);
-uint8_t avdtp_choose_sbc_subbands(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_subbands_bitmap);
-uint8_t avdtp_choose_sbc_block_length(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_block_length_bitmap);
+avdtp_sbc_subbands_t avdtp_choose_sbc_subbands(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_subbands_bitmap);
+avdtp_sbc_block_length_t avdtp_choose_sbc_block_length(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_block_length_bitmap);
 uint8_t avdtp_choose_sbc_max_bitpool_value(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_max_bitpool_value);
 uint8_t avdtp_choose_sbc_min_bitpool_value(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_min_bitpool_value);
 

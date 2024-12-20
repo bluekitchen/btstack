@@ -674,6 +674,11 @@ static void hid_host_handle_sdp_client_query_result(uint8_t packet_type, uint16_
                     // report mode possible
                     break;
 
+                // SDP query incomplete (e.g. disconnect)
+                case SDP_QUERY_INCOMPLETE:
+                    finalize_connection = true;
+                    break;
+
                 // SDP connection failed or remote does not have SDP server
                 default:
                     if (connection->requested_protocol_mode == HID_PROTOCOL_MODE_REPORT_WITH_FALLBACK_TO_BOOT){
@@ -875,7 +880,7 @@ static void hid_host_packet_handler(uint8_t packet_type, uint16_t channel, uint8
 
             if (channel == connection->interrupt_cid){
                 uint8_t * in_place_event = packet - 7;
-                hid_setup_report_event(connection, in_place_event, size-1);
+                hid_setup_report_event(connection, in_place_event, size);
                 hid_host_callback(HCI_EVENT_PACKET, connection->hid_cid, in_place_event, size + 7);
                 break;
             }
@@ -1113,10 +1118,15 @@ static void hid_host_packet_handler(uint8_t packet_type, uint16_t channel, uint8
 
                             case HID_HOST_W2_SEND_GET_REPORT:{
                                 uint8_t header = (HID_MESSAGE_TYPE_GET_REPORT << 4) | connection->report_type;
-                                uint8_t report[] = {header, connection->report_id};
+                                uint8_t report[2];
+                                uint16_t pos = 0;
+                                report[pos++] = header;
+                                if (connection->report_id != HID_REPORT_ID_UNDEFINED){
+                                    report[pos++] = (uint8_t) connection->report_id;
+                                }
                                 
                                 connection->state = HID_HOST_W4_GET_REPORT_RESPONSE;
-                                l2cap_send(connection->control_cid, (uint8_t*) report, sizeof(report));
+                                l2cap_send(connection->control_cid, (uint8_t*) report, pos);
                                 break;
                             }
 
@@ -1126,10 +1136,14 @@ static void hid_host_packet_handler(uint8_t packet_type, uint16_t channel, uint8
 
                                 l2cap_reserve_packet_buffer();
                                 uint8_t * out_buffer = l2cap_get_outgoing_buffer();
-                                out_buffer[0] = header;
-                                out_buffer[1] = connection->report_id;
-                                (void)memcpy(out_buffer + 2, connection->report, connection->report_len);
-                                l2cap_send_prepared(connection->control_cid, connection->report_len + 2);
+                                uint16_t pos = 0;
+                                out_buffer[pos++] = header;
+                                if (connection->report_id != HID_REPORT_ID_UNDEFINED){
+                                    out_buffer[pos++] = (uint8_t) connection->report_id;
+                                }
+                                (void)memcpy(&out_buffer[pos], connection->report, connection->report_len);
+                                pos += connection->report_len;
+                                l2cap_send_prepared(connection->control_cid, pos);
                                 break;
                             }
 
@@ -1153,10 +1167,14 @@ static void hid_host_packet_handler(uint8_t packet_type, uint16_t channel, uint8
 
                         l2cap_reserve_packet_buffer();
                         uint8_t * out_buffer = l2cap_get_outgoing_buffer();
-                        out_buffer[0] = header;
-                        out_buffer[1] = connection->report_id;
-                        (void)memcpy(out_buffer + 2, connection->report, connection->report_len);
-                        l2cap_send_prepared(connection->interrupt_cid, connection->report_len + 2);
+                        uint16_t pos = 0;
+                        out_buffer[pos++] = header;
+                        if (connection->report_id != HID_REPORT_ID_UNDEFINED){
+                            out_buffer[pos++] = (uint8_t) connection->report_id;
+                        }
+                        (void)memcpy(&out_buffer[pos], connection->report, connection->report_len);
+                        pos += connection->report_len;
+                        l2cap_send_prepared(connection->interrupt_cid, pos);
                         break;
                     }
 
@@ -1339,7 +1357,7 @@ uint8_t hid_host_send_virtual_cable_unplug(uint16_t hid_cid){
     return hid_host_send_control_message(hid_cid, CONTROL_MESSAGE_BITMASK_VIRTUAL_CABLE_UNPLUG);
 }
 
-uint8_t hid_host_send_get_report(uint16_t hid_cid,  hid_report_type_t report_type, uint8_t report_id){
+uint8_t hid_host_send_get_report(uint16_t hid_cid,  hid_report_type_t report_type, uint16_t report_id){
     hid_host_connection_t * connection = hid_host_get_connection_for_hid_cid(hid_cid);
 
     if (!connection || !connection->control_cid){
@@ -1357,7 +1375,7 @@ uint8_t hid_host_send_get_report(uint16_t hid_cid,  hid_report_type_t report_typ
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t hid_host_send_set_report(uint16_t hid_cid, hid_report_type_t report_type, uint8_t report_id, const uint8_t * report, uint8_t report_len){
+uint8_t hid_host_send_set_report(uint16_t hid_cid, hid_report_type_t report_type, uint16_t report_id, const uint8_t * report, uint8_t report_len){
     hid_host_connection_t * connection = hid_host_get_connection_for_hid_cid(hid_cid);
 
     if (!connection || !connection->control_cid){
@@ -1413,7 +1431,7 @@ uint8_t hid_host_send_set_protocol_mode(uint16_t hid_cid, hid_protocol_mode_t pr
 }
 
 
-uint8_t hid_host_send_report(uint16_t hid_cid, uint8_t report_id, const uint8_t * report, uint8_t report_len){
+uint8_t hid_host_send_report(uint16_t hid_cid, uint16_t report_id, const uint8_t * report, uint8_t report_len){
     hid_host_connection_t * connection = hid_host_get_connection_for_hid_cid(hid_cid);
     if (!connection || !connection->control_cid || !connection->interrupt_cid) {
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;

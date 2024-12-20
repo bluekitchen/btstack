@@ -453,6 +453,7 @@ void btstack_sbc_plc_good_frame(btstack_sbc_plc_state_t *plc_state, SAMPLE_FORMA
 }
 
 void btstack_sbc_dump_statistics(btstack_sbc_plc_state_t * state){
+    UNUSED(state);
     log_info("Good frames: %d\n", state->good_frames_nr);
     log_info("Bad frames: %d\n", state->bad_frames_nr);
     log_info("Max Consecutive bad frames: %d\n", state->max_consecutive_bad_frames_nr);

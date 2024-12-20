@@ -112,6 +112,13 @@ void hfp_ag_init_hf_indicators(int hf_indicators_nr, const hfp_generic_status_in
  */
 void hfp_ag_init_call_hold_services(int call_hold_services_nr, const char * call_hold_services[]);
 
+/**
+ * @brief Provide Apple Device information upon AT+XAPL
+ * @param device
+ * @param features
+ */
+void hfp_ag_init_apple_identification(const char * device, uint8_t features);
+
 
 /**
  * @brief Register callback for the HFP Audio Gateway (AG) client. 

@@ -47,7 +47,7 @@
  *  - stdout hexdump
  *
  */
-
+#include <windows.h>
 #include "btstack_config.h"
 
 #include "hci_dump_windows_fs.h"
@@ -57,7 +57,7 @@
 #include "hci_cmd.h"
 
 #include <stdio.h>
-#include <windows.h>
+#include <share.h>
 
 /**
  * number of seconds from 1 Jan. 1601 00:00 to 1 Jan 1970 00:00 UTC
@@ -66,7 +66,10 @@
 
 static HANDLE dump_file = INVALID_HANDLE_VALUE;
 static int  dump_format;
-static char log_message_buffer[256];
+#ifndef HCI_LOG_MESSAGE_BUFFER_WINUSB
+#define HCI_LOG_MESSAGE_BUFFER_WINUSB 256
+#endif
+static char log_message_buffer[HCI_LOG_MESSAGE_BUFFER_WINUSB];
 
 static void hci_dump_windows_fs_reset(void){
     btstack_assert(dump_file != INVALID_HANDLE_VALUE);
@@ -130,12 +133,6 @@ static void hci_dump_windows_fs_log_packet(uint8_t packet_type, uint8_t in, uint
             header_len = HCI_DUMP_HEADER_SIZE_BLUEZ;
             break;
         case HCI_DUMP_PACKETLOGGER:
-            // ISO packets not supported
-            if (packet_type == HCI_ISO_DATA_PACKET){
-                len = hci_dump_iso_summary(in, packet, len);
-                packet_type = LOG_MESSAGE_PACKET;
-                packet = (uint8_t*) log_message_buffer;
-            }
             hci_dump_setup_header_packetlogger(header.header_packetlogger, tv_sec, tv_us, packet_type, in, len);
             header_len = HCI_DUMP_HEADER_SIZE_PACKETLOGGER;
             break;
@@ -186,7 +183,7 @@ int hci_dump_windows_fs_open(const char *filename, hci_dump_format_t format){
 
 	dump_file = CreateFile(filename,	// name of the write
 				GENERIC_WRITE,          // open for writing
-				0,                      // do not share
+                FILE_SHARE_READ,        // readable while still writing
 				NULL,                   // default security
 				CREATE_ALWAYS,          // create new file always
 				FILE_ATTRIBUTE_NORMAL,  // normal file

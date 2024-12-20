@@ -160,6 +160,14 @@ typedef struct {
 
 void bnep_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
+
+/* BNEP Setup Connection Response codes */
+#define BNEP_SETUP_CONNECTION_RESPONSE_SUCCESS                      0x0000
+#define BNEP_SETUP_CONNECTION_RESPONSE_INVALID_DEST_UUID            0x0001
+#define BNEP_SETUP_CONNECTION_RESPONSE_INVALID_SOURCE_UUID          0x0002
+#define BNEP_SETUP_CONNECTION_RESPONSE_INVALID_SERVICE_UUID_SIZE    0x0003
+#define BNEP_SETUP_CONNECTION_RESPONSE_CONNECTION_NOT_ALLOWED       0x0004
+
 /* API_START */
 
 /**

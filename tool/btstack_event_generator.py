@@ -20,6 +20,7 @@ meta_events = [
     'HIDS',
     'HSP',
     'LE',
+    'LEAUDIO',
     'MAP',
     'MESH',
     'PBAP',
@@ -37,8 +38,12 @@ supported_event_groups = meta_events + [
     'L2CAP',
     'RFCOMM',
     'SDP',
-    'SM'
+    'SM',
+    'DAEMON',
 ]
+
+open_bracket = parser.open_bracket
+closing_bracket = parser.closing_bracket
 
 program_info = '''
 BTstack Event Getter Generator for BTstack
@@ -117,6 +122,8 @@ static inline uint8_t hci_event_packet_get_type(const uint8_t * event){
     return event[0];
 }
 
+typedef uint8_t* btstack_event_iterator_t;
+
 """
 
 hfile_header_end = """
@@ -136,9 +143,60 @@ c_prototoype_simple_return = '''/**
  * @return {result_name}
  * @note: btstack_type {format}
  */
-static inline {result_type} {fn_name}(const uint8_t * event){{
+static inline {result_type} {event}_get_{field}(const uint8_t * event){{
     {code}
 }}
+'''
+
+c_prototype_iterator_return = '''/**
+ * @brief {description}
+ * @param event packet
+ * @return {result_name}
+ * @note: btstack_type {format}
+ */
+static inline {result_type} {event}_get_{scope}_item_{field}(btstack_event_iterator_t * iter){{
+    {code}
+}}
+'''
+
+c_prototype_iterator_init = '''/**
+ * @brief Initialize iterator for list {scope} of {event}
+ * @param iterator
+ * @param event packet
+ * @note: btstack_type {format}
+ */
+static inline void {event}_{field}_init(btstack_event_iterator_t * iter, const uint8_t * event){{
+    *iter = (btstack_event_iterator_t)&event[{list_field}];
+}}
+
+'''
+
+c_prototype_iterator_has_next = '''/**
+ * @brief Returns true if iterator of list {scope} of {event} has more elements, false otherwise.
+ * @param iterator
+ * @param event packet
+ * @return
+ * @note: btstack_type {format}
+ */
+static inline bool {event}_{field}_has_next(btstack_event_iterator_t * iter, const uint8_t * event){{
+    uint8_t length = event[{length_field}];
+    const uint8_t *begin = &event[{list_field}];
+    const uint8_t *end = begin+length;
+    return *iter<end;
+}}
+
+'''
+
+c_prototype_iterator_next = '''/**
+ * @brief Advances the iterator to the next element
+ * @param event packet
+ * @note: btstack_type {format}
+ */
+static inline void {event}_{scope}_next(btstack_event_iterator_t * iter){{
+    uint8_t length = {code}
+    *iter = *iter+length;
+}}
+
 '''
 
 c_prototoype_array_getter = '''/**
@@ -148,7 +206,7 @@ c_prototoype_array_getter = '''/**
  * @return {result_name}
  * @note: btstack_type {format}
  */
-static inline {result_type} {fn_name}(const uint8_t * event, uint8_t index){{
+static inline {result_type} {event}_get_{field}(const uint8_t * event, uint8_t index){{
     {code}
 }}
 '''
@@ -159,7 +217,7 @@ c_prototoype_struct_return = '''/**
  * @param Pointer to storage for {result_name}
  * @note: btstack_type {format}
  */
-static inline void {fn_name}(const uint8_t * event, {result_type} {result_name}){{
+static inline void {event}_get_{field}(const uint8_t * event, {result_type} {result_name}){{
     {code}
 }}
 '''
@@ -170,7 +228,7 @@ c_prototoype_unsupported = '''/**
  * @return {result_name}
  * @note: btstack_type {format}
  */
-//  static inline {result_type} {fn_name}(const uint8_t * event){{
+//  static inline {result_type} {event}_get_{field}(const uint8_t * event){{
 //      not implemented yet
 //  }}
 '''
@@ -184,6 +242,7 @@ static inline uint8_t hci_event_{meta_event}_meta_get_subevent_code(const uint8_
     return event[2];
 }}
 '''
+
 
 # global variables/defines
 defines = dict()
@@ -210,8 +269,33 @@ param_read = {
     'Y' : 'gatt_client_deserialize_characteristic(event, {offset}, {result_name});',
     'Z' : 'gatt_client_deserialize_characteristic_descriptor(event, {offset}, {result_name});',
     'V' : 'return &event[{offset}];',
-    'C' : 'return little_endian_read_16(event, {offset} + (2 * (int) index));'
+    'C' : 'return little_endian_read_16(event, {offset} + (2 * (int) index));',
+    open_bracket    : 'dummy',
+    closing_bracket : 'dummy',
 }
+
+param_iterator_read = {
+    '1' : 'return (*iter)[{offset}];',
+    '2' : 'return little_endian_read_16(*iter, {offset});',
+    'J' : 'return (*iter)[{offset}] + 1;',
+    'V' : 'return &((*iter)[{offset}]);',
+    open_bracket    : '*iter = &event[{offset}];',
+    closing_bracket : ''
+}
+
+listScope = list()
+
+def read_template_for_type(type):
+    if listScope:
+        return param_iterator_read[type]
+    return param_read[type]
+
+def description_for_type(type):
+    if type == 'C':
+        return 'Get element of array field {0} from event {1}'
+    if listScope:
+        return 'Get element of list field {0} from event {1}'
+    return 'Get field {0} from event {1}'
 
 def c_type_for_btstack_type(type):
     param_types = { '1' : 'uint8_t', '2' : 'uint16_t', '3' : 'uint32_t', '4' : 'uint32_t', 'H' : 'hci_con_handle_t', 'B' : 'bd_addr_t',
@@ -220,12 +304,14 @@ def c_type_for_btstack_type(type):
                     'J' : 'uint8_t', 'L' : 'uint16_t', 'V' : 'const uint8_t *', 'U' : 'BT_UUID',
                     'Q' : 'uint8_t *', 'K' : 'uint8_t *',
                     'X' : 'gatt_client_service_t *', 'Y' : 'gatt_client_characteristic_t *', 'Z' : 'gatt_client_characteristic_descriptor_t *',
-                    'T' : 'const char *', 'C' : 'uint16_t' }
+                    'T' : 'const char *', 'C' : 'uint16_t',
+                    open_bracket : 'void', closing_bracket : ''}
     return param_types[type]
 
 def size_for_type(type):
     param_sizes = { '1' : 1, '2' : 2, '3' : 3, '4' : 4, 'H' : 2, 'B' : 6, 'D' : 8, 'E' : 240, 'N' : 248, 'P' : 16, 'Q':32, 'K':16,
-                    'A' : 31, 'S' : -1, 'V': -1, 'J' : 1, 'L' : 2, 'U' : 16, 'X' : 20, 'Y' : 24, 'Z' : 18, 'T':-1, 'C':-1 }
+                    'A' : 31, 'S' : -1, 'V': -1, 'J' : 1, 'L' : 2, 'U' : 16, 'X' : 20, 'Y' : 24, 'Z' : 18, 'T':-1, 'C':-1,
+                   open_bracket : 0, closing_bracket : 0 }
     return param_sizes[type]
 
 def format_function_name(event_name):
@@ -240,11 +326,14 @@ def template_for_type(field_type):
     global c_prototoype_array_getter
     if field_type == 'C':
         return c_prototoype_array_getter
+#    if field_type == open_bracket:
+#        return c_prototype_iterator_init
     types_with_struct_return = "BKQXYZ"
     if field_type in types_with_struct_return:
         return c_prototoype_struct_return
-    else:
-        return c_prototoype_simple_return
+    if listScope:
+        return c_prototype_iterator_return;
+    return c_prototoype_simple_return
 
 def all_fields_supported(format):
     global param_read
@@ -253,30 +342,70 @@ def all_fields_supported(format):
             return False
     return True
 
-def create_getter(event_name, field_name, field_type, offset, offset_is_number, supported):
+def create_iterator( event_name, field_name, field_type, offset, offset_is_number, last_length_field_offset, supported):
+    if field_type == open_bracket:
+        # list field name, list field start, length field of list ( in bytes ), list elemet size if static
+        listScope.append( (field_name, offset, last_length_field_offset, 0) )
+    list_name_scope = ''
+    list_base = 0
+    if listScope:
+        list_name_scope = listScope[-1][0]
+        list_base = listScope[-1][1]
+        list_length_field_offset = listScope[-1][2]
+        list_static_size = listScope[-1][3]
+
+    generated = ''
+    if field_type == open_bracket:
+        generated_init = c_prototype_iterator_init.format( list_field=offset, scope=list_name_scope,
+                                                          event=event_name, field=field_name, format=field_type)
+        generated_has_next = c_prototype_iterator_has_next.format( list_field=offset, length_field=last_length_field_offset,
+                                                                  format=field_type, scope=list_name_scope, event=event_name,
+                                                                  field=field_name )
+        generated = generated_init + generated_has_next;
+    else:
+        # the item length is either determiend statically, format "12"
+        # or dynamically by an list element, format "J"
+        code = ''
+        if list_length_field_offset < last_length_field_offset:
+            #dynamic element size
+            code = '*iter[{0}] + 1;'.format( last_length_field_offset-list_base )
+        else:
+            code = '{0};'.format( list_static_size )
+        generated = c_prototype_iterator_next.format( event=event_name, scope=list_name_scope, format=field_type, code=code );
+
+    if field_type == closing_bracket:
+        listScope.pop()
+    return generated
+
+def create_getter(event_name, field_name, field_type, offset, offset_is_number, last_length_field_offset, supported):
     global c_prototoype_unsupported
     global param_read
 
-    if field_type == 'C':
-        description_template = 'Get element of array field %s from event %s'
-    else:
-        description_template = "Get field %s from event %s"
-    description = description_template % (field_name, event_name.upper())
+    description_template = description_for_type(field_type)
+    list_name_scope = ''
+    if listScope:
+        list_name_scope = listScope[-1][0]
+        list_base = listScope[-1][1]
+        list_length_field_offset = listScope[-1][2]
+        list_static_size = listScope[-1][3]
+        if offset_is_number:
+            offset = offset - list_base;
+        listScope[-1] = (list_name_scope, list_base, list_length_field_offset, list_static_size+size_for_type(field_type))
+    description = description_template.format(field_name, event_name.upper())
     result_name = field_name
-    fn_name     = "%s_get_%s" % (event_name, field_name)
     result_type = c_type_for_btstack_type(field_type)
     template = c_prototoype_unsupported
     code = ''
     if supported and field_type in param_read:
         template = template_for_type(field_type)
-        read_code = param_read[field_type]
+        read_code = read_template_for_type(field_type)
         requires_signed = 'little_endian' in read_code or 'gatt_client_deserialize' in read_code
         code = ''
         if requires_signed and not offset_is_number:
             code += 'uint8_t offset = %s;\n    ' % offset
             offset = '(int)(int8_t) offset'
         code += read_code.format(offset=offset, result_name=result_name)
-    return template.format(description=description, fn_name=fn_name, result_name=result_name, result_type=result_type, code=code, format=field_type)
+    return template.format(description=description, scope=list_name_scope, event=event_name, field=field_name, result_name=result_name, result_type=result_type, code=code, format=field_type)
 
 def is_le_event(event_group):
     return event_group in ['GATT', 'ANCS', 'SM']
@@ -309,6 +438,7 @@ def create_events(events):
             offset_unknown = 0
             supported = all_fields_supported(format)
             last_variable_length_field_pos = ""
+            last_length_field_offset = 0
             if is_le_event(event_group):
                 fout.write("#ifdef ENABLE_BLE\n")
             if len(format) != len(args):
@@ -323,13 +453,17 @@ def create_events(events):
                 if offset_unknown:
                     print("Param after variable length field without preceding 'J' length field")
                     break
-                field_type = f 
-                text = create_getter(base_name, field_name, field_type, offset, offset_is_number, supported)
+                field_type = f
+                if field_type in open_bracket + closing_bracket:
+                    text = create_iterator( base_name, field_name, field_type, offset, offset_is_number, last_length_field_offset, supported )
+                else:
+                    text = create_getter(base_name, field_name, field_type, offset, offset_is_number, last_length_field_offset, supported)
                 fout.write(text)
                 if field_type in 'RT':
                     break
                 if field_type in 'J':
                     if offset_is_number:
+                        last_length_field_offset = offset
                         last_variable_length_field_pos = '%u' % offset
                     else:
                         last_variable_length_field_pos = offset
@@ -360,7 +494,6 @@ print(program_info)
 
 # parse events
 (events, le_events, event_types) = parser.parse_events()
-
 # create event field accesors
 create_events(events + le_events)
 

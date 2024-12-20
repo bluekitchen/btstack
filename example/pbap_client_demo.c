@@ -118,6 +118,7 @@ static void show_usage(void){
     printf("Phonebook path   '%s'\n", phonebook_path);
     printf("\n");
     printf("a - establish PBAP connection to %s\n", bd_addr_to_str(remote_addr));
+    printf("A - disconnect PBAP connection to %s\n", bd_addr_to_str(remote_addr));
     printf("b - select SIM1\n");
     printf("r - set path to '/telecom'\n");
     printf("R - set path to '/SIM1/telecom'\n");
@@ -138,7 +139,7 @@ static void show_usage(void){
     printf("h - pull vCard listing '%s'\n",         phonebook_name);
     printf("l - get owner vCard 0.vcf\n");
     printf("j - Lookup contact with number '%s'\n", phone_number);
-    printf("t - disconnect\n");
+    printf("t - disconnect HCI\n");
     printf("p - authenticate using password '0000'\n");
     printf("r - set path to 'telecom'\n");
     printf("x - abort operation\n");
@@ -153,6 +154,10 @@ static void stdin_process(char c){
         case 'a':
             printf("[+] Connecting to %s...\n", bd_addr_to_str(remote_addr));
             pbap_connect(&packet_handler, remote_addr, &pbap_cid);
+            break;
+        case 'A':
+            printf("[+] Disconnect PBAP from %s...\n", bd_addr_to_str(remote_addr));
+            pbap_disconnect(pbap_cid);
             break;
         case 'b':
             printf("[+] SIM1 selected'\n");

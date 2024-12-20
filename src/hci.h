@@ -158,12 +158,13 @@ extern "C" {
     #endif
 #endif
 
-// BNEP may uncompress the IP Header by 16 bytes, GATT Client requires two additional bytes for long characteristic reads
+// BNEP may uncompress the IP Header by 16 bytes, GATT Client requires six additional bytes for long characteristic reads
+// wih service_id + connection_id
 #ifndef HCI_INCOMING_PRE_BUFFER_SIZE
 #ifdef ENABLE_CLASSIC
 #define HCI_INCOMING_PRE_BUFFER_SIZE (16 - HCI_ACL_HEADER_SIZE - 4)
 #else
-#define HCI_INCOMING_PRE_BUFFER_SIZE 2
+#define HCI_INCOMING_PRE_BUFFER_SIZE 6
 #endif
 #endif
 
@@ -199,7 +200,7 @@ typedef enum {
     CON_PARAMETER_UPDATE_SEND_RESPONSE,
     CON_PARAMETER_UPDATE_CHANGE_HCI_CON_PARAMETERS,
     CON_PARAMETER_UPDATE_DENY,
-    // HCI - in respnose to HCI_SUBEVENT_LE_REMOTE_CONNECTION_PARAMETER_REQUEST
+    // HCI - in response to HCI_SUBEVENT_LE_REMOTE_CONNECTION_PARAMETER_REQUEST
     CON_PARAMETER_UPDATE_REPLY,
     CON_PARAMETER_UPDATE_NEGATIVE_REPLY,
 } le_con_parameter_update_state_t;
@@ -248,7 +249,8 @@ typedef enum {
     OPEN,
     SEND_DISCONNECT,
     SENT_DISCONNECT,
-    RECEIVED_DISCONNECTION_COMPLETE
+    RECEIVED_DISCONNECTION_COMPLETE,
+    ANNOUNCED // connection handle announced in advertisement set terminated event
 } CONNECTION_STATE;
 
 // bonding flags
@@ -580,6 +582,7 @@ typedef struct {
     uint8_t remote_supported_features[1];
 
     // IO Capabilities Response
+    uint8_t io_cap_request_auth_req;
     uint8_t io_cap_response_auth_req;
     uint8_t io_cap_response_io;
 #ifdef ENABLE_CLASSIC_PAIRING_OOB
@@ -665,6 +668,13 @@ typedef struct {
     uint8_t le_phy_update_rx_phys;
     int8_t  le_phy_update_phy_options;
 
+    // LE Subrating
+    uint16_t le_subrate_min;
+    uint16_t le_subrate_max;
+    uint16_t le_subrate_max_latency;
+    uint16_t le_subrate_continuation_number;
+    uint16_t le_subrate_supervision_timeout;
+
     // LE Security Manager
     sm_connection_t sm_connection;
 
@@ -721,6 +731,7 @@ typedef enum{
     HCI_ISO_STREAM_STATE_W4_ISO_SETUP_INPUT,
     HCI_ISO_STREAM_STATE_W2_SETUP_ISO_OUTPUT,
     HCI_ISO_STREAM_STATE_W4_ISO_SETUP_OUTPUT,
+    HCI_ISO_STREAM_STATE_ACTIVE,
     HCI_ISO_STREAM_STATE_W2_CLOSE,
     HCI_ISO_STREAM_STATE_W4_DISCONNECTED,
 } hci_iso_stream_state_t;
@@ -896,9 +907,15 @@ typedef enum hci_init_state{
     HCI_INIT_W4_LE_READ_MAX_ADV_DATA_LEN,
 #endif
 #endif
+
 #ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
     HCI_INIT_LE_SET_HOST_FEATURE_CONNECTED_ISO_STREAMS,
     HCI_INIT_W4_LE_SET_HOST_FEATURE_CONNECTED_ISO_STREAMS,
+#endif
+
+#ifdef ENABLE_BLE
+    HCI_INIT_LE_SET_HOST_FEATURE_CONNECTION_SUBRATING,
+    HCI_INIT_W4_LE_SET_HOST_FEATURE_CONNECTION_SUBRATING,
 #endif
 
     HCI_INIT_DONE,
@@ -1864,6 +1881,7 @@ uint8_t hci_dedicated_bonding_defer_disconnect(hci_con_handle_t con_handle, bool
 // Disable automatic L2CAP disconnect if no L2CAP connection is established
 void hci_disable_l2cap_timeout_check(void);
 
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
 // setup test connections, used for fuzzing
 void hci_setup_test_connections_fuzz(void);
 
@@ -1873,6 +1891,10 @@ void hci_free_connections_fuzz(void);
 // simulate stack bootup
 void hci_simulate_working_fuzz(void);
 
+// get hci struct
+hci_stack_t * hci_get_stack();
+
+#endif
 
 #if defined __cplusplus
 }

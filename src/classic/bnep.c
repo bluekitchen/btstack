@@ -84,13 +84,6 @@
 /* BNEP extension header types */
 #define BNEP_EXT_HEADER_TYPE_EXTENSION_CONTROL          0x00
 
-/* BNEP setup response codes */
-#define BNEP_RESP_SETUP_SUCCESS                         0x0000
-#define BNEP_RESP_SETUP_INVALID_DEST_UUID               0x0001
-#define BNEP_RESP_SETUP_INVALID_SOURCE_UUID             0x0002
-#define BNEP_RESP_SETUP_INVALID_SERVICE_UUID_SIZE       0x0003
-#define BNEP_RESP_SETUP_CONNECTION_NOT_ALLOWED          0x0004
-
 /* BNEP filter response codes */
 #define BNEP_RESP_FILTER_SUCCESS                        0x0000
 #define BNEP_RESP_FILTER_UNSUPPORTED_REQUEST            0x0001
@@ -111,12 +104,13 @@ static void bnep_channel_finalize(bnep_channel_t *channel);
 static void bnep_channel_start_timer(bnep_channel_t *channel, int timeout);
 inline static void bnep_channel_state_add(bnep_channel_t *channel, BNEP_CHANNEL_STATE_VAR event);
 static void bnep_handle_can_send_now(uint16_t cid);
-static void bnep_emit_open_channel_complete(bnep_channel_t *channel, uint8_t status) 
+
+static void bnep_emit_open_channel_complete(bnep_channel_t *channel, uint8_t status, uint8_t setup_connection_response)
 {
     log_info("BNEP_EVENT_CHANNEL_OPENED status 0x%02x bd_addr: %s, handler %p", status, bd_addr_to_str(channel->remote_addr), channel->packet_handler);
     if (!channel->packet_handler) return;
 
-    uint8_t event[3 + sizeof(bd_addr_t) + 4 * sizeof(uint16_t) + 2];
+    uint8_t event[3 + sizeof(bd_addr_t) + 4 * sizeof(uint16_t) + 3];
     event[0] = BNEP_EVENT_CHANNEL_OPENED;
     event[1] = sizeof(event) - 2;
     event[2] = status;
@@ -126,6 +120,7 @@ static void bnep_emit_open_channel_complete(bnep_channel_t *channel, uint8_t sta
     little_endian_store_16(event, 9, channel->max_frame_size);
     reverse_bd_addr(channel->remote_addr, &event[11]);
     little_endian_store_16(event, 17, channel->con_handle);
+    event[19] = setup_connection_response;
     hci_dump_btstack_event( event, sizeof(event));
 	(*channel->packet_handler)(HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
 }
@@ -822,7 +817,7 @@ static int bnep_handle_connection_request(bnep_channel_t *channel, uint8_t *pack
     uint16_t uuid_size;
     uint16_t uuid_offset = 0; // avoid "may be unitialized when used" in clang
     uuid_size = packet[1];
-    uint16_t response_code = BNEP_RESP_SETUP_SUCCESS;
+    uint16_t response_code = BNEP_SETUP_CONNECTION_RESPONSE_SUCCESS;
     bnep_service_t * service;
 
     /* Sanity check packet size */
@@ -848,7 +843,7 @@ static int bnep_handle_connection_request(bnep_channel_t *channel, uint8_t *pack
             break;
         default:
             log_error("BNEP_CONNECTION_REQUEST: Invalid UUID size %d, l2cap_cid: %d!", channel->state, channel->l2cap_cid);
-            response_code = BNEP_RESP_SETUP_INVALID_SERVICE_UUID_SIZE;
+            response_code = BNEP_SETUP_CONNECTION_RESPONSE_INVALID_SERVICE_UUID_SIZE;
             break;
     }
 
@@ -856,26 +851,26 @@ static int bnep_handle_connection_request(bnep_channel_t *channel, uint8_t *pack
     if (uuid_size > 2){
         uint16_t dest_prefix = big_endian_read_16(packet, 2);
         if (dest_prefix != 0){
-            response_code = BNEP_RESP_SETUP_INVALID_DEST_UUID;
+            response_code = BNEP_SETUP_CONNECTION_RESPONSE_INVALID_DEST_UUID;
         }
         uint16_t src_prefix = big_endian_read_16(packet, 2 + uuid_size);
         if (src_prefix != 0){
-            response_code = BNEP_RESP_SETUP_INVALID_SOURCE_UUID;
+            response_code = BNEP_SETUP_CONNECTION_RESPONSE_INVALID_SOURCE_UUID;
         }
     }
 
     /* check bits 32-127 of UUID */
     if (uuid_size == 16){
         if (uuid_has_bluetooth_prefix(&packet[2]) == false){
-            response_code = BNEP_RESP_SETUP_INVALID_DEST_UUID;
+            response_code = BNEP_SETUP_CONNECTION_RESPONSE_INVALID_DEST_UUID;
         }
         if (uuid_has_bluetooth_prefix(&packet[2+16]) == false){
-            response_code = BNEP_RESP_SETUP_INVALID_SOURCE_UUID;
+            response_code = BNEP_SETUP_CONNECTION_RESPONSE_INVALID_SOURCE_UUID;
         }
     }
 
     /* Check source and destination UUIDs for valid combinations */
-    if (response_code == BNEP_RESP_SETUP_SUCCESS) {
+    if (response_code == BNEP_SETUP_CONNECTION_RESPONSE_SUCCESS) {
         channel->uuid_dest = big_endian_read_16(packet, 2 + uuid_offset);
         channel->uuid_source = big_endian_read_16(packet, 2 + uuid_offset + uuid_size);
 
@@ -895,13 +890,13 @@ static int bnep_handle_connection_request(bnep_channel_t *channel, uint8_t *pack
         /* Check if we have registered a service for the requested destination UUID */
         service = bnep_service_for_uuid(channel->uuid_dest);
         if (service == NULL) {
-            response_code = BNEP_RESP_SETUP_INVALID_DEST_UUID;
+            response_code = BNEP_SETUP_CONNECTION_RESPONSE_INVALID_DEST_UUID;
         } else {
             // use packet handler for service
             channel->packet_handler = service->packet_handler;
 
             if ((channel->uuid_source != BLUETOOTH_SERVICE_CLASS_PANU) && (channel->uuid_dest != BLUETOOTH_SERVICE_CLASS_PANU)) {
-                response_code = BNEP_RESP_SETUP_INVALID_SOURCE_UUID;
+                response_code = BNEP_SETUP_CONNECTION_RESPONSE_INVALID_SOURCE_UUID;
             }
         } 
     }
@@ -917,7 +912,6 @@ static int bnep_handle_connection_request(bnep_channel_t *channel, uint8_t *pack
 
 static int bnep_handle_connection_response(bnep_channel_t *channel, uint8_t *packet, uint16_t size)
 {
-    uint16_t response_code;
 
     /* Sanity check packet size */
     if (size < (1 + 2)) {
@@ -930,16 +924,17 @@ static int bnep_handle_connection_response(bnep_channel_t *channel, uint8_t *pac
         return 1 + 2;
     }
 
-    response_code = big_endian_read_16(packet, 1);
+    uint16_t response_code = big_endian_read_16(packet, 1);
 
-    if (response_code == BNEP_RESP_SETUP_SUCCESS) {
+    if (response_code == BNEP_SETUP_CONNECTION_RESPONSE_SUCCESS) {
         log_info("BNEP_CONNECTION_RESPONSE: Channel established to %s", bd_addr_to_str(channel->remote_addr));
         channel->state = BNEP_CHANNEL_STATE_CONNECTED;
         /* Stop timeout timer! */
         bnep_channel_stop_timer(channel);
-        bnep_emit_open_channel_complete(channel, 0);
+        bnep_emit_open_channel_complete(channel, ERROR_CODE_SUCCESS, response_code);
     } else {
         log_error("BNEP_CONNECTION_RESPONSE: Connection to %s failed. Err: %d", bd_addr_to_str(channel->remote_addr), response_code);
+        bnep_emit_open_channel_complete(channel, BNEP_SETUP_CONNECTION_ERROR, response_code);
         bnep_channel_finalize(channel);
     }
     return 1 + 2;
@@ -1306,7 +1301,7 @@ static int bnep_hci_event_handler(uint8_t *packet, uint16_t size)
             /* On L2CAP open error discard everything */
             if (status) {
                 /* Emit bnep_open_channel_complete with status and free channel */
-                bnep_emit_open_channel_complete(channel, status);
+                bnep_emit_open_channel_complete(channel, status, 0);
 
                 /* Free BNEP channel mempory */
                 bnep_channel_free(channel);
@@ -1549,7 +1544,7 @@ static void bnep_channel_state_machine(bnep_channel_t* channel, bnep_channel_eve
             bnep_channel_state_remove(channel, BNEP_CHANNEL_STATE_VAR_SND_CONNECTION_RESPONSE);
             bnep_send_connection_response(channel, channel->response_code);
             if (emit_connected){
-                bnep_emit_open_channel_complete(channel, 0);
+                bnep_emit_open_channel_complete(channel, ERROR_CODE_SUCCESS, 0);
             }
             return;
         }

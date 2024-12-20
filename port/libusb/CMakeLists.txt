@@ -10,10 +10,10 @@ SET(BTSTACK_ROOT ${CMAKE_SOURCE_DIR}/../..)
 # extra compiler warnings
 if ("${CMAKE_C_COMPILER_ID}" MATCHES ".*Clang.*")
 	# using Clang
-	SET(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -Wunused-variable -Wswitch-default -Werror")
+	SET(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -Wunused-variable -Wswitch-default -Wall -Wextra -Werror -Werror=uninitialized")
 elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
 	# using GCC
-	SET(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -Wunused-but-set-variable -Wunused-variable -Wswitch-default -Werror")
+	SET(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -Wunused-but-set-variable -Wunused-variable -Wswitch-default -Wall -Wextra -Werror")
 elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "Intel")
 	# using Intel C++
 elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "MSVC")
@@ -174,6 +174,9 @@ list(REMOVE_ITEM EXAMPLES_C ${EXAMPLES_OFF})
 # workaround: add lwip sources only to lwip_examples
 set (LWIP_EXAMPLES pan_lwip_http_server)
 
+# .gatt files in src
+file(GLOB GATT_FILES "../../src/*/gatt-service/*.gatt")
+
 # create targets
 foreach(EXAMPLE_FILE ${EXAMPLES_C})
 	get_filename_component(EXAMPLE ${EXAMPLE_FILE} NAME_WE)
@@ -191,7 +194,7 @@ foreach(EXAMPLE_FILE ${EXAMPLES_C})
 		message("example ${EXAMPLE} -- with GATT DB")
 		add_custom_command(
 		    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
-			DEPENDS ${BTSTACK_ROOT}/example/${EXAMPLE}.gatt
+			DEPENDS ${BTSTACK_ROOT}/example/${EXAMPLE}.gatt ${GATT_FILES}
 			COMMAND ${Python_EXECUTABLE}
 			ARGS ${BTSTACK_ROOT}/tool/compile_gatt.py ${BTSTACK_ROOT}/example/${EXAMPLE}.gatt ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
 		)

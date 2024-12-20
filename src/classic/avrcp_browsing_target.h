@@ -88,7 +88,7 @@ uint8_t avrcp_browsing_target_send_reject_set_browsed_player(uint16_t browsing_c
  * @param attr_list
  * @param attr_list_size
  */
-uint8_t avrcp_browsing_target_send_get_folder_items_response(uint16_t browsing_cid, uint16_t uid_counter, uint8_t * attr_list, uint16_t attr_list_size);
+uint8_t avrcp_browsing_target_send_get_folder_items_response(uint16_t browsing_cid, uint16_t uid_counter, uint8_t * attr_list, uint16_t attr_list_size, uint16_t num_items);
 
 /**
  * @brief Send answer to get total number of items query on event AVRCP_SUBEVENT_BROWSING_GET_TOTAL_NUM_ITEMS. The first byte of this event defines the scope of the query, see avrcp_browsing_scope_t.
@@ -97,6 +97,10 @@ uint8_t avrcp_browsing_target_send_get_folder_items_response(uint16_t browsing_c
  * @param total_num_items
  */
 uint8_t avrcp_browsing_target_send_get_total_num_items_response(uint16_t browsing_cid, uint16_t uid_counter, uint32_t total_num_items);
+
+uint8_t avrcp_browsing_target_send_change_path_response(uint16_t avrcp_browsing_cid, avrcp_status_code_t status, uint32_t num_items);
+uint8_t avrcp_browsing_target_send_get_item_attributes_response(uint16_t avrcp_browsing_cid, avrcp_status_code_t status, uint8_t * attr_list, uint16_t attr_list_size, uint8_t num_items);
+uint8_t avrcp_browsing_target_send_search_response(uint16_t avrcp_browsing_cid, avrcp_status_code_t status, uint16_t uid_counter, uint32_t num_items);
 
 /**
  * @brief De-Init AVRCP Browsing Controller

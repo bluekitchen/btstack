@@ -70,7 +70,7 @@ const uint8_t    rfcomm_channel_nr = 1;
 const char hfp_ag_service_name[] = "HFP AG Demo";
 
 static bd_addr_t device_addr;
-static const char * device_addr_string = "00:1A:7D:DA:71:13";
+static const char * device_addr_string = "00:1A:7D:DA:71:03";
 
 static uint8_t codecs[] = {
         HFP_CODEC_CVSD,
@@ -678,6 +678,13 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                             break;
                     }
                     break;
+                case HFP_SUBEVENT_APPLE_ACCESSORY_INFORMATION:
+                    printf("Apple Accessory support: Vendor ID %04x, Product ID %04x, Version: %s, Features %u\n",
+                           hfp_subevent_apple_accessory_information_get_vendor_id(event),
+                           hfp_subevent_apple_accessory_information_get_product_id(event),
+                           hfp_subevent_apple_accessory_information_get_version(event),
+                           hfp_subevent_apple_accessory_information_get_features(event));
+                    break;
                 default:
                     break;
             }
@@ -750,6 +757,7 @@ int btstack_main(int argc, const char * argv[]){
     hfp_ag_init_ag_indicators(ag_indicators_nr, ag_indicators);
     hfp_ag_init_hf_indicators(hf_indicators_nr, hf_indicators); 
     hfp_ag_init_call_hold_services(call_hold_services_nr, call_hold_services);
+    hfp_ag_init_apple_identification("BTstack", 0);
     hfp_ag_set_subcriber_number_information(&subscriber_number, 1);
 
     // SDP Server

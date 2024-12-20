@@ -57,6 +57,12 @@
 #  endif
 #endif /* __STDC__ */
 
+// Detecting C99 in Visual Studio requires to disable Microsoft Extensions (/Za) which causes other issues
+// Workaround: if MSC, assume stdbool.h exists, which is true for Visual Studio 2022
+#ifdef _MSC_VER
+#define PREDEF_STANDARD_C_1999
+#endif
+
 // define boolean type - required for MISRA-C 2012 Essential Type System
 #ifdef PREDEF_STANDARD_C_1999
 

@@ -62,8 +62,14 @@
 
 #include "driver/uart.h"
 
-#include "esp_vfs_dev.h"
+#include "esp_idf_version.h"
 #include "esp_log.h"
+
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 3, 0)
+#include "driver/uart_vfs.h"
+#else
+#include "esp_vfs_dev.h"
+#endif
 
 static const char *TAG = "btstack_stdio";
 
@@ -192,7 +198,11 @@ void btstack_stdio_init(void) {
             0));
 
     /* Tell VFS to use UART driver */
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 3, 0)
+    uart_vfs_dev_use_driver(CONFIG_ESP_CONSOLE_UART_NUM);
+#else
     esp_vfs_dev_uart_use_driver(CONFIG_ESP_CONSOLE_UART_NUM);
+#endif
 
     //Create a task to block on UART RX
     xTaskCreate(btstack_stdio_task, "btstack_stdio", 2048, NULL, 12, NULL);

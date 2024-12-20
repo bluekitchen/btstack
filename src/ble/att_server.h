@@ -44,12 +44,23 @@
 #define ATT_SERVER_H
 
 #include <stdint.h>
+#include "hci.h"
 #include "ble/att_db.h"
 #include "btstack_defines.h"
 #include "btstack_config.h"
 
 #if defined __cplusplus
 extern "C" {
+#endif
+
+#ifdef ENABLE_GATT_OVER_EATT
+typedef struct {
+    btstack_linked_item_t item;
+    att_server_t     att_server;
+    att_connection_t att_connection;
+    uint8_t * receive_buffer;
+    uint8_t * send_buffer;
+} att_server_eatt_bearer_t;
 #endif
 
 /* API_START */
@@ -66,8 +77,10 @@ void att_server_init(uint8_t const * db, att_read_callback_t read_callback, att_
  * @note Requires ENABLE_GATT_OVER_EATT
  * @param num_eatt_bearers
  * @param storage_buffer
- * @param storage_size
- * @return
+ * @param storage_size must be >= num_eatt_bearers * sizeof(att_server_eatt_bearer_t)
+ * @return status   ERROR_CODE_SUCCESS
+ *                  ERROR_CODE_MEMORY_CAPACITY_EXCEEDED if buffer too small or no entry in l2cap service pool
+ *                  L2CAP_SERVICE_ALREADY_REGISTERED if called twice
  */
 uint8_t att_server_eatt_init(uint8_t num_eatt_bearers, uint8_t * storage_buffer, uint16_t storage_size);
 

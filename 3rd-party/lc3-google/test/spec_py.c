@@ -25,166 +25,149 @@
 
 static PyObject *estimate_gain_py(PyObject *m, PyObject *args)
 {
-    PyObject *x_obj;
     unsigned dt, sr;
-    float *x;
-    int nbits_budget;
+    int nbytes, nbits_budget, g_off;
     float nbits_off;
-    int g_off;
-    bool reset_off;
+    PyObject *x_obj;
+    float *x;
 
-    if (!PyArg_ParseTuple(args, "IIOifi", &dt, &sr,
-                &x_obj, &nbits_budget, &nbits_off, &g_off))
+    if (!PyArg_ParseTuple(args, "IIOiifi", &dt, &sr,
+                &x_obj, &nbytes, &nbits_budget, &nbits_off, &g_off))
         return NULL;
 
-    CTYPES_CHECK("dt", (unsigned)dt < LC3_NUM_DT);
-    CTYPES_CHECK("sr", (unsigned)sr < LC3_NUM_SRATE);
+    CTYPES_CHECK("dt", dt < LC3_NUM_DT);
+    CTYPES_CHECK("sr", sr < LC3_NUM_SRATE);
 
-    int ne = LC3_NE(dt, sr);
+    int ne = lc3_ne(dt, sr);
 
     CTYPES_CHECK("x", x_obj = to_1d_ptr(x_obj, NPY_FLOAT, ne, &x));
 
-    int g_int = estimate_gain(dt, sr,
-        x, nbits_budget, nbits_off, g_off, &reset_off);
+    int g_min;
+    bool reset_off;
 
-    return Py_BuildValue("ii", g_int, reset_off);
+    int g_int = estimate_gain(dt, sr,
+        x, nbytes, nbits_budget, nbits_off, g_off, &reset_off, &g_min);
+
+    return Py_BuildValue("iii", g_int, reset_off, g_min);
 }
 
 static PyObject *adjust_gain_py(PyObject *m, PyObject *args)
 {
-    unsigned sr;
-    int g_idx, nbits, nbits_budget;
+    unsigned dt, sr;
+    int g_idx, nbits, nbits_budget, g_idx_min;
 
-    if (!PyArg_ParseTuple(args, "Iiii", &sr, &g_idx, &nbits, &nbits_budget))
+    if (!PyArg_ParseTuple(args, "IIiiii", &dt, &sr,
+                &g_idx, &nbits, &nbits_budget, &g_idx_min))
         return NULL;
 
-    CTYPES_CHECK("sr", (unsigned)sr < LC3_NUM_SRATE);
+    CTYPES_CHECK("dt", dt < LC3_NUM_DT);
+    CTYPES_CHECK("sr", sr < LC3_NUM_SRATE);
     CTYPES_CHECK("g_idx", g_idx >= 0 && g_idx <= 255);
 
-    g_idx = adjust_gain(sr, g_idx, nbits, nbits_budget);
+    g_idx = adjust_gain(dt, sr, g_idx, nbits, nbits_budget, g_idx_min);
 
     return Py_BuildValue("i", g_idx);
 }
 
 static PyObject *quantize_py(PyObject *m, PyObject *args)
 {
-    PyObject *x_obj, *xq_obj;
     unsigned dt, sr;
+    int g_int;
+    PyObject *x_obj;
     float *x;
-    int16_t *xq;
-    int g_int, nq;
+    int nq;
 
     if (!PyArg_ParseTuple(args, "IIiO", &dt, &sr, &g_int, &x_obj))
         return NULL;
 
-    CTYPES_CHECK("dt", (unsigned)dt < LC3_NUM_DT);
-    CTYPES_CHECK("sr", (unsigned)sr < LC3_NUM_SRATE);
+    CTYPES_CHECK("dt", dt < LC3_NUM_DT);
+    CTYPES_CHECK("sr", sr < LC3_NUM_SRATE);
     CTYPES_CHECK("g_int", g_int >= -255 && g_int <= 255);
 
-    int ne = LC3_NE(dt, sr);
+    int ne = lc3_ne(dt, sr);
 
     CTYPES_CHECK("x", x_obj = to_1d_ptr(x_obj, NPY_FLOAT, ne, &x));
 
-    xq_obj = new_1d_ptr(NPY_INT16, ne, &xq);
-    uint16_t __xq[ne];
+    quantize(dt, sr, g_int, x, &nq);
 
-    quantize(dt, sr, g_int, x, __xq, &nq);
-
-    for (int i = 0; i < nq; i++)
-        xq[i] = __xq[i] & 1 ? -(__xq[i] >> 1) : (__xq[i] >> 1);
-
-    return Py_BuildValue("ONi", x_obj, xq_obj, nq);
+    return Py_BuildValue("Oi", x_obj, nq);
 }
 
 static PyObject *compute_nbits_py(PyObject *m, PyObject *args)
 {
-    PyObject *xq_obj;
-    unsigned dt, sr, nbytes;
-    int16_t *xq;
-    int nq, nbits_budget;
-    bool lsb_mode;
+    unsigned dt, sr;
+    int nbytes, nq, nbits_budget;
+    PyObject *x_obj;
+    float *x;
 
-    if (!PyArg_ParseTuple(args, "IIIOii", &dt, &sr,
-                &nbytes, &xq_obj, &nq, &nbits_budget))
+    if (!PyArg_ParseTuple(args, "IIiOii", &dt, &sr,
+                &nbytes, &x_obj, &nq, &nbits_budget))
         return NULL;
 
-    CTYPES_CHECK("dt", (unsigned)dt < LC3_NUM_DT);
-    CTYPES_CHECK("sr", (unsigned)sr < LC3_NUM_SRATE);
+    CTYPES_CHECK("dt", dt < LC3_NUM_DT);
+    CTYPES_CHECK("sr", sr < LC3_NUM_SRATE);
 
-    int ne = LC3_NE(dt, sr);
+    int ne = lc3_ne(dt, sr);
 
-    CTYPES_CHECK("xq", xq_obj = to_1d_ptr(xq_obj, NPY_INT16, ne, &xq));
+    CTYPES_CHECK("x", x_obj = to_1d_ptr(x_obj, NPY_FLOAT, ne, &x));
 
-    uint16_t __xq[ne];
-    for (int i = 0; i < ne; i++)
-        __xq[i] = xq[i] < 0 ? (-xq[i] << 1) + 1 : (xq[i] << 1);
+    bool lsb_mode;
 
     int nbits = compute_nbits(
-        dt, sr, nbytes, __xq, &nq, nbits_budget, &lsb_mode);
+        dt, sr, nbytes, x, &nq, nbits_budget, &lsb_mode);
 
     return Py_BuildValue("iii", nbits, nq, lsb_mode);
 }
 
 static PyObject *analyze_py(PyObject *m, PyObject *args)
 {
-    PyObject *tns_obj, *spec_obj, *x_obj, *xq_obj;
+    unsigned dt, sr;
+    int nbytes, pitch;
+
+    PyObject *tns_obj, *spec_obj, *x_obj;
     struct lc3_tns_data tns = { 0 };
     struct lc3_spec_analysis spec = { 0 };
     struct lc3_spec_side side = { 0 };
-    unsigned dt, sr, nbytes;
-    int pitch;
     float *x;
-    int16_t *xq;
 
-    if (!PyArg_ParseTuple(args, "IIIpOOO", &dt, &sr, &nbytes,
-                &pitch, &tns_obj, &spec_obj, &x_obj))
+    if (!PyArg_ParseTuple(args, "IIipOOO", &dt, &sr,
+                &nbytes, &pitch, &tns_obj, &spec_obj, &x_obj))
         return NULL;
 
-    CTYPES_CHECK("dt", (unsigned)dt < LC3_NUM_DT);
-    CTYPES_CHECK("sr", (unsigned)sr < LC3_NUM_SRATE);
+    CTYPES_CHECK("dt", dt < LC3_NUM_DT);
+    CTYPES_CHECK("sr", sr < LC3_NUM_SRATE);
 
-    int ne = LC3_NE(dt, sr);
+    int ne = lc3_ne(dt, sr);
 
     CTYPES_CHECK(NULL, tns_obj = to_tns_data(tns_obj, &tns));
     CTYPES_CHECK(NULL, spec_obj = to_spec_analysis(spec_obj, &spec));
     CTYPES_CHECK("x", x_obj = to_1d_ptr(x_obj, NPY_FLOAT, ne, &x));
 
-    xq_obj = new_1d_ptr(NPY_INT16, ne, &xq);
-    uint16_t __xq[ne];
-
-    lc3_spec_analyze(dt, sr, nbytes, pitch, &tns, &spec, x, __xq, &side);
-
-    for (int i = 0; i < ne; i++)
-        xq[i] = __xq[i] & 1 ? -(__xq[i] >> 1) : (__xq[i] >> 1);
+    lc3_spec_analyze(dt, sr, nbytes, pitch, &tns, &spec, x, &side);
 
     from_spec_analysis(spec_obj, &spec);
-    return Py_BuildValue("ONN", x_obj, xq_obj, new_spec_side(&side));
+    return Py_BuildValue("ON", x_obj, new_spec_side(&side));
 }
 
 static PyObject *estimate_noise_py(PyObject *m, PyObject *args)
 {
-    PyObject *x_obj, *xq_obj;
     unsigned dt, bw;
-    int16_t *xq;
+    PyObject *x_obj;
     float *x;
-    int nq;
+    int hrmode, n;
 
-    if (!PyArg_ParseTuple(args, "IIOIO", &dt, &bw, &xq_obj, &nq, &x_obj))
+    if (!PyArg_ParseTuple(args, "IIpOI",
+                &dt, &bw, &hrmode, &x_obj, &n))
         return NULL;
 
-    CTYPES_CHECK("dt", (unsigned)dt < LC3_NUM_DT);
-    CTYPES_CHECK("bw", (unsigned)bw < LC3_NUM_BANDWIDTH);
+    CTYPES_CHECK("dt", dt < LC3_NUM_DT);
+    CTYPES_CHECK("bw", bw < LC3_NUM_BANDWIDTH);
 
-    int ne = LC3_NE(dt, bw);
+    int ne = lc3_ne(dt, bw);
 
-    CTYPES_CHECK("xq", xq_obj = to_1d_ptr(xq_obj, NPY_INT16, ne, &xq));
     CTYPES_CHECK("x" , x_obj = to_1d_ptr(x_obj, NPY_FLOAT, ne, &x ));
 
-    uint16_t __xq[nq];
-    for (int i = 0; i < nq; i++)
-        __xq[i] = xq[i] < 0 ? (-xq[i] << 1) + 1 : (xq[i] << 1);
-
-    int noise_factor = estimate_noise(dt, bw, __xq, nq, x);
+    int noise_factor = estimate_noise(dt, bw, hrmode, x, n);
 
     return Py_BuildValue("i", noise_factor);
 }

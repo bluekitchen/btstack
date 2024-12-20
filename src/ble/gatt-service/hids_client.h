@@ -226,6 +226,9 @@ void hids_client_init(uint8_t * hid_descriptor_storage, uint16_t hid_descriptor_
  * ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE if no service or report map or report are found.
  * It also contains the number of individual HIDS Services. 
  *
+ * Connection state is stored in hids_client_t objects provided via memory pool
+ * Max number of connections is limited by MAX_NR_HIDS_CLIENTS unless HAVE_MALLOC is used
+ *
  * @param con_handle
  * @param packet_handler
  * @param protocol_mode see hid_protocol_mode_t in btstack_hid.h

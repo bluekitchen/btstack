@@ -47,6 +47,7 @@
 #include "btstack_debug.h"
 
 #include "ble/gatt-service/cycling_speed_and_cadence_service_server.h"
+#include "btstack_event.h"
 
 typedef enum {
 	CSC_RESPONSE_VALUE_SUCCESS = 1,
@@ -90,10 +91,27 @@ typedef struct {
 
 	csc_opcode_t request_opcode;
 	csc_response_value_t response_value;
+    bool wawiting_for_indication;
 } cycling_speed_and_cadence_t;
 
 static att_service_handler_t cycling_speed_and_cadence_service;
 static cycling_speed_and_cadence_t cycling_speed_and_cadence;
+
+static void cycling_speed_and_cadence_service_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+    UNUSED(size);
+    cycling_speed_and_cadence_t * instance = &cycling_speed_and_cadence;
+
+    if (packet_type != HCI_EVENT_PACKET)     return;
+
+    switch (hci_event_packet_get_type(packet)){
+        case ATT_EVENT_HANDLE_VALUE_INDICATION_COMPLETE:
+            instance->wawiting_for_indication = false;
+            break;
+        default:
+            break;
+    }
+}
 
 static uint16_t cycling_speed_and_cadence_service_read_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
 	UNUSED(con_handle);
@@ -236,6 +254,7 @@ static int cycling_speed_and_cadence_service_write_callback(hci_con_handle_t con
 	if (attribute_handle == instance->control_point_value_handle){
 		if (instance->control_point_client_configuration_descriptor_indicate == 0u) return CYCLING_SPEED_AND_CADENCE_ERROR_CODE_CCC_DESCRIPTOR_IMPROPERLY_CONFIGURED;
 		if (instance->request_opcode != CSC_OPCODE_IDLE) return CYCLING_SPEED_AND_CADENCE_ERROR_CODE_PROCEDURE_ALREADY_IN_PROGRESS;
+        if (instance->wawiting_for_indication) return CYCLING_SPEED_AND_CADENCE_ERROR_CODE_PROCEDURE_ALREADY_IN_PROGRESS;
 
 		instance->request_opcode = (csc_opcode_t) buffer[0];
 		instance->response_value = CSC_RESPONSE_VALUE_SUCCESS;
@@ -272,7 +291,8 @@ static int cycling_speed_and_cadence_service_write_callback(hci_con_handle_t con
 		if (instance->control_point_client_configuration_descriptor_indicate){
 			instance->control_point_callback.callback = &cycling_speed_and_cadence_service_response_can_send_now;
 			instance->control_point_callback.context  = (void*) instance;
-			att_server_register_can_send_now_callback(&instance->control_point_callback, instance->con_handle);
+            instance->wawiting_for_indication = true;
+            att_server_request_to_send_indication(&instance->control_point_callback, instance->con_handle);
 		}
 		return 0;
 	}
@@ -322,7 +342,8 @@ void cycling_speed_and_cadence_service_server_init(uint32_t supported_sensor_loc
 	cycling_speed_and_cadence_service.end_handle     = end_handle;
 	cycling_speed_and_cadence_service.read_callback  = &cycling_speed_and_cadence_service_read_callback;
 	cycling_speed_and_cadence_service.write_callback = &cycling_speed_and_cadence_service_write_callback;
-	
+    cycling_speed_and_cadence_service.packet_handler = &cycling_speed_and_cadence_service_packet_handler;
+
 	att_server_register_service_handler(&cycling_speed_and_cadence_service);
 }
 

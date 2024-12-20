@@ -73,7 +73,7 @@ static int avrcp_browsing_controller_send_get_folder_items_cmd(uint16_t cid, avr
             attribute_count = AVRCP_MEDIA_ATTR_ALL;  // 0
             break;
         default:
-            attribute_count    = count_set_bits_uint32(connection->attr_bitmap & ((1 << AVRCP_MEDIA_ATTR_RESERVED)-1));
+            attribute_count    = count_set_bits_uint32(connection->attr_bitmap & ((1 << AVRCP_MEDIA_ATTR_NUM)-1));
             attributes_to_copy = attribute_count;
             break;
     }
@@ -120,7 +120,7 @@ static int avrcp_browsing_controller_send_get_item_attributes_cmd(uint16_t cid, 
             attribute_count = 0;
             break;
         default:
-            attribute_count    = count_set_bits_uint32(connection->attr_bitmap & ((1 << AVRCP_MEDIA_ATTR_RESERVED)-1));
+            attribute_count    = count_set_bits_uint32(connection->attr_bitmap & ((1 << AVRCP_MEDIA_ATTR_NUM)-1));
             attributes_to_copy = attribute_count;
             break;
     }
@@ -129,7 +129,7 @@ static int avrcp_browsing_controller_send_get_item_attributes_cmd(uint16_t cid, 
     pos += 2;
 
     command[pos++] = connection->scope;
-    (void)memcpy(command + pos, connection->folder_uid, 8);
+    (void)memcpy(command + pos, connection->item_uid, 8);
     pos += 8;
     big_endian_store_16(command, pos, connection->uid_counter);
     pos += 2;
@@ -164,7 +164,7 @@ static int avrcp_browsing_controller_send_change_path_cmd(uint16_t cid, avrcp_br
     pos += 2;
     pos += 2;
     command[pos++] = connection->direction;
-    (void)memcpy(command + pos, connection->folder_uid, 8);
+    (void)memcpy(command + pos, connection->item_uid, 8);
     pos += 8;
     return l2cap_send(cid, command, pos);
 }
@@ -542,7 +542,7 @@ uint8_t avrcp_browsing_controller_get_item_attributes_for_scope(uint16_t avrcp_b
 
     connection->get_item_attributes = 1;
     connection->scope = scope;
-    (void)memcpy(connection->folder_uid, uid, 8);
+    (void)memcpy(connection->item_uid, uid, 8);
     connection->uid_counter = uid_counter;
     connection->attr_bitmap = attr_bitmap;
 
@@ -643,9 +643,9 @@ uint8_t avrcp_browsing_controller_change_path(uint16_t avrcp_browsing_cid, uint8
     }
     connection->change_path = 1;
     connection->direction = direction;
-    memset(connection->folder_uid, 0, 8);
+    memset(connection->item_uid, 0, 8);
     if (folder_uid){
-        (void)memcpy(connection->folder_uid, folder_uid, 8);
+        (void)memcpy(connection->item_uid, folder_uid, 8);
     }
     
     avrcp_browsing_request_can_send_now(connection, connection->l2cap_browsing_cid);

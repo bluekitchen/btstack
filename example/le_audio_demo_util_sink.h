@@ -45,6 +45,12 @@
 extern "C" {
 #endif
 
+enum btstack_codec_ids_e {
+    BTSTACK_CODEC_ID_NONE = 0,
+    BTSTACK_CODEC_ID_COUNTER,
+    BTSTACK_CODEC_ID_LOOPBACK,
+};
+
 /**
  * @brief Init sink functionality
  * @param filename_wav

@@ -192,7 +192,8 @@ int wav_reader_open(const char * filepath){
     }
 
     uint8_t buf[40];
-    fread(buf, 1, sizeof(buf), wav_reader_file);
+    size_t ret = fread(buf, 1, sizeof(buf), wav_reader_file);
+    btstack_assert( ret == sizeof(buf) );
 
     wav_reader_state.num_channels  = (uint8_t) little_endian_read_16(buf, 22);
     if ((wav_reader_state.num_channels < 1) || (wav_reader_state.num_channels > 2)) {

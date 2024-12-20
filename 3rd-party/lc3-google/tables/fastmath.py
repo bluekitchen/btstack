@@ -19,25 +19,33 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def fast_exp2(x, p):
+def fast_exp2(x, t, p):
 
     p = p.astype(np.float32)
     x = x.astype(np.float32)
 
-    y = (((((p[0]*x) + p[1])*x + p[2])*x + p[3])*x + p[4])*x + 1
+    m = ((x + 0.5/8) % (1/8)) - (0.5/8)
+    e = int((x - m) * 8)
 
-    return np.power(y.astype(np.float32), 16)
+    y = ((((p[0]*m) + p[1])*m + p[2])*m + p[3])*m + p[4]
+    y = y * 2**(e // 8) * t[e % 8]
+
+    return y.astype(np.float32)
 
 def approx_exp2():
 
-    x = np.arange(-8, 8, step=1e-3)
+    x = np.arange(0, 1/8, step=1e-6)
+    p = np.polyfit(x, 2 ** x, 4)
+    t = [ 2**(i/8) for i in range(8) ]
 
-    p = np.polyfit(x, ((2 ** (x/16)) - 1) / x, 4)
-    y = [ fast_exp2(x[i], p) for i in range(len(x)) ]
+    x =  np.arange(-10, 10, step=1e-3)
+    y = [ fast_exp2(x[i], t, p) for i in range(len(x)) ]
+
     e = np.abs(y - 2**x) / (2 ** x)
 
-    print('{{ {:14.8e}, {:14.8e}, {:14.8e}, {:14.8e}, {:14.8e} }}'
-                .format(p[0], p[1], p[2], p[3], p[4]))
+    print('{{ {:14.8e}, {:14.8e}, {:14.8e}, {:14.8e}, \n'
+           '  {:14.8e}, {:14.8e}, {:14.8e}, {:14.8e}, '.format(*t))
+    print('{{ {:14.8e}, {:14.8e}, {:14.8e}, {:14.8e}, {:14.8e} }}'.format(*p))
     print('Max relative error: ', np.max(e))
     print('Max RMS error: ', np.sqrt(np.mean(e ** 2)))
 

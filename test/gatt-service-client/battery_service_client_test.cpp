@@ -131,11 +131,10 @@ static void gatt_client_event_handler(uint8_t packet_type, uint16_t channel, uin
             if (att_status != ATT_ERROR_SUCCESS){
                 // printf("Battery level read failed, ATT Error 0x%02x\n", att_status);
                 break;
-            } 
-            
+            }
             // printf("Battery level 0x%02x\n", gattservice_subevent_battery_service_level_get_level(packet));
             CHECK_EQUAL(battery_level[0], gattservice_subevent_battery_service_level_get_level(packet));
-            CHECK_EQUAL(0, gattservice_subevent_battery_service_level_get_sevice_index(packet));
+            CHECK_EQUAL(0, gattservice_subevent_battery_service_level_get_service_index(packet));
             break;
 
         default:

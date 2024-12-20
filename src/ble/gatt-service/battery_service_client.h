@@ -83,6 +83,7 @@ typedef enum {
     BATTERY_SERVICE_CLIENT_STATE_W2_REGISTER_NOTIFICATION,
     BATTERY_SERVICE_CLIENT_STATE_W4_NOTIFICATION_REGISTERED,
     BATTERY_SERVICE_CLIENT_STATE_CONNECTED,
+    BATTERY_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_VALUE_READ,
 
 #ifdef ENABLE_TESTING_SUPPORT
     BATTERY_SERVICE_CLIENT_W2_READ_CHARACTERISTIC_CONFIGURATION,
@@ -142,7 +143,7 @@ void battery_service_client_init(void);
  * If notifications are not supported by remote Battery Service, the client will poll battery level
  * If poll_interval_ms is 0, polling is disabled, and only notifications will be received.
  * In either case, the battery level is received via GATTSERVICE_SUBEVENT_BATTERY_SERVICE_LEVEL event.
- * The battery level is reported as percentage, i.e. 100 = full and it is valid if the ATTT status is equal to ATT_ERROR_SUCCESS, 
+ * The battery level is reported as percentage, i.e. 100 = full and it is valid if the ATT status is equal to ATT_ERROR_SUCCESS,
  * see ATT errors (see bluetooth.h) for other values.
  *   
  * For manual polling, see battery_service_client_read_battery_level below.

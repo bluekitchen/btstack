@@ -339,6 +339,9 @@ typedef enum {
     HCI_OPCODE_HCI_LE_SET_PATH_LOSS_REPORTING_ENABLE = HCI_OPCODE (OGF_LE_CONTROLLER, 0x79),
     HCI_OPCODE_HCI_LE_SET_TRANSMIT_POWER_REPORTING_ENABLE = HCI_OPCODE (OGF_LE_CONTROLLER, 0x7a),
     HCI_OPCODE_HCI_LE_TRANSMITTER_TEST_V4 = HCI_OPCODE (OGF_LE_CONTROLLER, 0x7B),
+    HCI_OPCODE_HCI_LE_SET_DATA_RELATED_ADDRESS_CHANGES = HCI_OPCODE (OGF_LE_CONTROLLER, 0x7C),
+    HCI_OPCODE_HCI_LE_SET_DEFAULT_SUBRATE= HCI_OPCODE (OGF_LE_CONTROLLER, 0x7D),
+    HCI_OPCODE_HCI_LE_SUBRATE_REQUEST = HCI_OPCODE (OGF_LE_CONTROLLER, 0x7E),
 
     // Broadcom/Cypress/Infineon/Synaptics
     HCI_OPCODE_HCI_BCM_WRITE_SCO_PCM_INT = HCI_OPCODE (0x3f, 0x1c),
@@ -573,8 +576,10 @@ extern const hci_cmd_t hci_le_set_connectionless_cte_transmit_enable;
 extern const hci_cmd_t hci_le_set_connectionless_cte_transmit_parameters;
 extern const hci_cmd_t hci_le_set_connectionless_iq_sampling_enable;
 extern const hci_cmd_t hci_le_set_data_length;
+extern const hci_cmd_t hci_le_set_data_related_address_changes;
 extern const hci_cmd_t hci_le_set_default_periodic_advertising_sync_transfer_parameters;
 extern const hci_cmd_t hci_le_set_default_phy;
+extern const hci_cmd_t hci_le_set_default_subrate;
 extern const hci_cmd_t hci_le_set_event_mask;
 extern const hci_cmd_t hci_le_set_extended_advertising_data;
 extern const hci_cmd_t hci_le_set_extended_advertising_enable;
@@ -601,6 +606,7 @@ extern const hci_cmd_t hci_le_set_scan_response_data;
 extern const hci_cmd_t hci_le_set_transmit_power_reporting_enable;
 extern const hci_cmd_t hci_le_setup_iso_data_path;
 extern const hci_cmd_t hci_le_start_encryption;
+extern const hci_cmd_t hci_le_subrate_request;
 extern const hci_cmd_t hci_le_terminate_big;
 extern const hci_cmd_t hci_le_test_end;
 extern const hci_cmd_t hci_le_transmitter_test;

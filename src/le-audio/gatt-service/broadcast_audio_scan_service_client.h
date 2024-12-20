@@ -57,7 +57,7 @@ extern "C" {
 /* API_START */
 
 typedef enum {
-    BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_STATE_IDLE,
+    BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_STATE_IDLE = 0,
     BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_STATE_W2_QUERY_SERVICE,
     BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_STATE_W4_SERVICE_RESULT,
     BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTICS,
@@ -68,7 +68,7 @@ typedef enum {
 
     BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_STATE_W2_REGISTER_NOTIFICATION,
     BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_STATE_W4_NOTIFICATION_REGISTERED,
-    BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_STATE_CONNECTED,
+    BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_STATE_READY,
 
     BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_W2_READ_CHARACTERISTIC_CONFIGURATION,
     BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_W4_CHARACTERISTIC_CONFIGURATION_RESULT,
@@ -151,18 +151,18 @@ typedef struct {
 
 /**
  * @brief Init Broadcast Audio Scan Service Client. Register packet handler to receive events:
- * - GATTSERVICE_SUBEVENT_BASS_CLIENT_CONNECTED
- * - GATTSERVICE_SUBEVENT_BASS_CLIENT_DISCONNECTED
- * - GATTSERVICE_SUBEVENT_BASS_CLIENT_SCAN_OPERATION_COMPLETE
- * - GATTSERVICE_SUBEVENT_BASS_CLIENT_SOURCE_OPERATION_COMPLETE
- * - GATTSERVICE_SUBEVENT_BASS_CLIENT_NOTIFICATION_COMPLETE
+ * - LEAUDIO_SUBEVENT_BASS_CLIENT_CONNECTED
+ * - LEAUDIO_SUBEVENT_BASS_CLIENT_DISCONNECTED
+ * - LEAUDIO_SUBEVENT_BASS_CLIENT_SCAN_OPERATION_COMPLETE
+ * - LEAUDIO_SUBEVENT_BASS_CLIENT_SOURCE_OPERATION_COMPLETE
+ * - LEAUDIO_SUBEVENT_BASS_CLIENT_NOTIFICATION_COMPLETE
  * @param packet_handler for events
  */
 void broadcast_audio_scan_service_client_init(btstack_packet_handler_t packet_handler);
 
 /**
  * @brief Connect to BASS Service on remote device
- * @note GATTSERVICE_SUBEVENT_BASS_CLIENT_CONNECTED will be emitted
+ * @note LEAUDIO_SUBEVENT_BASS_CLIENT_CONNECTED will be emitted
  * @param connection struct provided by user, needs to stay valid until disconnect event is received
  * @param sources buffer to store information on Broadcast Sources on the service
  * @param num_sources
@@ -181,7 +181,7 @@ uint8_t broadcast_audio_scan_service_client_scanning_started(uint16_t bass_cid);
 
 /**
  * @brief Notify BASS Service that scanning has stopped
- * @note emits GATTSERVICE_SUBEVENT_BASS_CLIENT_SOURCE_OPERATION_COMPLETE
+ * @note emits LEAUDIO_SUBEVENT_BASS_CLIENT_SOURCE_OPERATION_COMPLETE
  * @param bass_cid
  * @return status
  */
@@ -189,9 +189,9 @@ uint8_t broadcast_audio_scan_service_client_scanning_stopped(uint16_t bass_cid);
 
 /**
  * @brief Add Broadcast Source on service
- * @note GATTSERVICE_SUBEVENT_BASS_NOTIFICATION_COMPLETE will contain source_id for other functions
+ * @note LEAUDIO_SUBEVENT_BASS_NOTIFICATION_COMPLETE will contain source_id for other functions
  * @param bass_cid
- * @param add_source_data data to add, needs to stay valid until GATTSERVICE_SUBEVENT_BASS_CLIENT_SOURCE_OPERATION_COMPLETE
+ * @param add_source_data data to add, needs to stay valid until LEAUDIO_SUBEVENT_BASS_CLIENT_SOURCE_OPERATION_COMPLETE
  * @return status
  */
 uint8_t broadcast_audio_scan_service_client_add_source(uint16_t bass_cid, const bass_source_data_t * add_source_data);
@@ -200,7 +200,7 @@ uint8_t broadcast_audio_scan_service_client_add_source(uint16_t bass_cid, const 
  * @brief Modify information about Broadcast Source on service
  * @param bass_cid
  * @param source_id
- * @param modify_source_data data to modify, needs to stay valid until GATTSERVICE_SUBEVENT_BASS_CLIENT_SOURCE_OPERATION_COMPLETE
+ * @param modify_source_data data to modify, needs to stay valid until LEAUDIO_SUBEVENT_BASS_CLIENT_SOURCE_OPERATION_COMPLETE
  * @return status
  */
 uint8_t broadcast_audio_scan_service_client_modify_source(uint16_t bass_cid, uint8_t source_id, const bass_source_data_t * modify_source_data);

@@ -41,20 +41,19 @@
  *  General utility functions
  */
 
+#ifdef _MSC_VER
+#include <Windows.h>
+#include <intrin.h>
+#endif
+
 #include "btstack_config.h"
 #include "btstack_debug.h"
 #include "btstack_util.h"
 
-#ifdef _MSC_VER
-#include <intrin.h>
-#include <windows.h>
-#endif
+#include <stdio.h>  // vsnprintf
+#include <string.h> // memcpy
 
-#ifdef ENABLE_PRINTF_HEXDUMP
-#include <stdio.h>
-#endif
 
-#include <string.h>
 
 /**
  * @brief Compare two Bluetooth addresses
@@ -75,6 +74,9 @@ void bd_addr_copy(bd_addr_t dest, const bd_addr_t src){
     (void)memcpy(dest, src, BD_ADDR_LEN);
 }
 
+uint8_t little_endian_read_08(const uint8_t* buffer, int position) {
+    return (uint8_t)buffer[position];
+}
 uint16_t little_endian_read_16(const uint8_t * buffer, int position){
     return (uint16_t)(((uint16_t) buffer[position]) | (((uint16_t)buffer[position+1]) << 8));
 }
@@ -83,6 +85,11 @@ uint32_t little_endian_read_24(const uint8_t * buffer, int position){
 }
 uint32_t little_endian_read_32(const uint8_t * buffer, int position){
     return ((uint32_t) buffer[position]) | (((uint32_t)buffer[position+1]) << 8) | (((uint32_t)buffer[position+2]) << 16) | (((uint32_t) buffer[position+3]) << 24);
+}
+
+void little_endian_store_08(uint8_t* buffer, uint16_t position, uint8_t value) {
+    uint16_t pos = position;
+    buffer[pos] = value;
 }
 
 void little_endian_store_16(uint8_t * buffer, uint16_t position, uint16_t value){
@@ -106,6 +113,10 @@ void little_endian_store_32(uint8_t * buffer, uint16_t position, uint32_t value)
     buffer[pos++] = (uint8_t)(value >> 24);
 }
 
+uint32_t big_endian_read_08(const uint8_t* buffer, int position) {
+    return buffer[position];
+}
+
 uint32_t big_endian_read_16(const uint8_t * buffer, int position) {
     return (uint16_t)(((uint16_t) buffer[position+1]) | (((uint16_t)buffer[position]) << 8));
 }
@@ -116,6 +127,11 @@ uint32_t big_endian_read_24(const uint8_t * buffer, int position) {
 
 uint32_t big_endian_read_32(const uint8_t * buffer, int position) {
     return ((uint32_t) buffer[position+3]) | (((uint32_t)buffer[position+2]) << 8) | (((uint32_t)buffer[position+1]) << 16) | (((uint32_t) buffer[position]) << 24);
+}
+
+void big_endian_store_08(uint8_t* buffer, uint16_t position, uint8_t value) {
+    uint16_t pos = position;
+    buffer[pos++] = (uint8_t)(value);
 }
 
 void big_endian_store_16(uint8_t * buffer, uint16_t position, uint16_t value){
@@ -275,13 +291,13 @@ static void log_hexdump(int level, const void * data, int size){
 
         if (j >= (BYTES_PER_BYTE * ITEMS_PER_LINE) ){
             buffer[j] = 0;
-            HCI_DUMP_LOG(level, "%s", buffer);
+            hci_dump_log(level, "%s", buffer);
             j = 0;
         }
     }
     if (j != 0){
         buffer[j] = 0;
-        HCI_DUMP_LOG(level, "%s", buffer);
+        hci_dump_log(level, "%s", buffer);
     }
 }
 #endif
@@ -427,8 +443,13 @@ uint32_t btstack_atoi(const char * str){
     uint32_t val = 0;
     while (true){
         char chr = *the_string++;
-        if (!chr || (chr < '0') || (chr > '9'))
+        // skip whitespace
+        if (((chr >= 0x09) && (chr <= 0x0d)) || (chr == ' ')) {
+            continue;
+        }
+        if (!chr || (chr < '0') || (chr > '9')){
             return val;
+        }
         val = (val * 10u) + (uint8_t)(chr - '0');
     }
 }
@@ -464,7 +485,7 @@ uint8_t btstack_clz(uint32_t value) {
 #elif defined(_MSC_VER)
     // use MSVC intrinsic
     DWORD leading_zero = 0;
-    _BitScanReverse( &leading_zero, value )
+    _BitScanReverse( &leading_zero, value );
 	return (uint8_t)(31 - leading_zero);
 #else
     // divide-and-conquer implementation for 32-bit integers
@@ -639,6 +660,42 @@ void btstack_strcat(char * dst, uint16_t dst_size, const char * src){
     uint16_t bytes_to_copy = btstack_min( src_len, dst_size - dst_len - 1);
     (void) memcpy( &dst[dst_len], src, bytes_to_copy);
     dst[dst_len + bytes_to_copy] = 0;
+}
+
+int btstack_printf_strlen(const char * format, ...){
+    va_list argptr;
+    va_start(argptr, format);
+    char dummy_buffer[1];
+    int len = vsnprintf(dummy_buffer, sizeof(dummy_buffer), format, argptr);
+    va_end(argptr);
+    return len;
+}
+
+uint16_t btstack_snprintf_assert_complete(char * buffer, size_t size, const char * format, ...){
+    va_list argptr;
+    va_start(argptr, format);
+    int len = vsnprintf(buffer, size, format, argptr);
+    va_end(argptr);
+
+    // check for no error and no truncation
+    btstack_assert(len >= 0);
+    btstack_assert((unsigned int) len < size);
+    return (uint16_t) len;
+}
+
+uint16_t btstack_snprintf_best_effort(char * buffer, size_t size, const char * format, ...){
+    btstack_assert(size > 0);
+    va_list argptr;
+    va_start(argptr, format);
+    int len = vsnprintf(buffer, size, format, argptr);
+    va_end(argptr);
+    if (len < 0) {
+        // error -> len = 0
+        return 0;
+    } else {
+        // min of total string len and buffer size
+        return (uint16_t) btstack_min((uint32_t) len, (uint32_t) size - 1);
+    }
 }
 
 uint16_t btstack_virtual_memcpy(

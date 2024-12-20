@@ -334,10 +334,10 @@ int join(char * buffer, int buffer_size, uint8_t * values, int values_nr){
     int i;
     int offset = 0;
     for (i = 0; i < (values_nr-1); i++) {
-      offset += snprintf(buffer+offset, buffer_size-offset, "%d,", values[i]); // puts string into buffer
+      offset += btstack_snprintf_assert_complete(buffer+offset, buffer_size-offset, "%d,", values[i]); // puts string into buffer
     }
     if (i<values_nr){
-        offset += snprintf(buffer+offset, buffer_size-offset, "%d", values[i]);
+        offset += btstack_snprintf_assert_complete(buffer+offset, buffer_size-offset, "%d", values[i]);
     }
     return offset;
 }
@@ -348,11 +348,11 @@ int join_bitmap(char * buffer, int buffer_size, uint32_t values, int values_nr){
     int i;
     int offset = 0;
     for (i = 0; i < (values_nr-1); i++) {
-      offset += snprintf(buffer+offset, buffer_size-offset, "%d,", get_bit(values,i)); // puts string into buffer
+      offset += btstack_snprintf_assert_complete(buffer+offset, buffer_size-offset, "%d,", get_bit(values,i)); // puts string into buffer
     }
     
     if (i<values_nr){
-        offset += snprintf(buffer+offset, buffer_size-offset, "%d", get_bit(values,i));
+        offset += btstack_snprintf_assert_complete(buffer+offset, buffer_size-offset, "%d", get_bit(values,i));
     }
     return offset;
 }
@@ -641,6 +641,11 @@ static hfp_connection_t * create_hfp_connection_context(void){
 
     hfp_connection->acl_handle = HCI_CON_HANDLE_INVALID;
     hfp_connection->sco_handle = HCI_CON_HANDLE_INVALID;
+
+    // HF only
+    hfp_connection->hf_call_status      = HFP_CALL_STATUS_NO_HELD_OR_ACTIVE_CALLS;
+    hfp_connection->hf_callsetup_status = HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS;
+    hfp_connection->hf_callheld_status  = HFP_CALLHELD_STATUS_NO_CALLS_HELD;
 
     hfp_reset_context_flags(hfp_connection);
 
@@ -1111,6 +1116,15 @@ void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
             bd_addr_copy(hfp_connection->remote_addr, event_addr);
             hfp_connection->state = HFP_EXCHANGE_SUPPORTED_FEATURES;
             
+            if (local_role == HFP_ROLE_HF) {
+                // setup HF Indicators
+                uint8_t i;
+                for (i=0; i < hfp_hf_indicators_nr; i++){
+                    hfp_connection->generic_status_indicators[i].uuid = hfp_hf_indicators[i];
+                    hfp_connection->generic_status_indicators[i].state = 0;
+                }
+            }
+
             rfcomm_request_can_send_now_event(hfp_connection->rfcomm_cid);
             break;
 
@@ -1181,10 +1195,12 @@ static hfp_command_entry_t hfp_ag_command_table[] = {
     { "AT+CNUM",   HFP_CMD_GET_SUBSCRIBER_NUMBER_INFORMATION },
     { "AT+COPS=",  HFP_CMD_QUERY_OPERATOR_SELECTION_NAME_FORMAT },
     { "AT+COPS?",  HFP_CMD_QUERY_OPERATOR_SELECTION_NAME },
+    { "AT+IPHONEACCEV=", HFP_CMD_APPLE_ACCESSORY_STATE },
     { "AT+NREC=",  HFP_CMD_TURN_OFF_EC_AND_NR, },
     { "AT+VGM=",   HFP_CMD_SET_MICROPHONE_GAIN },
     { "AT+VGS=",   HFP_CMD_SET_SPEAKER_GAIN },
     { "AT+VTS=",   HFP_CMD_TRANSMIT_DTMF_CODES },
+    { "AT+XAPL=",  HFP_CMD_APPLE_ACCESSORY_INFORMATION },
     { "ATA",       HFP_CMD_CALL_ANSWERED },
 };
 
@@ -1209,6 +1225,7 @@ static hfp_command_entry_t hfp_hf_command_table[] = {
     { "+VGM=",  HFP_CMD_SET_MICROPHONE_GAIN },
     { "+VGS:",  HFP_CMD_SET_SPEAKER_GAIN},
     { "+VGS=",  HFP_CMD_SET_SPEAKER_GAIN},
+    { "+XAPL=",  HFP_CMD_APPLE_DEVICE_INFORMATION },
     { "ERROR",  HFP_CMD_ERROR},
     { "NOP",    HFP_CMD_NONE}, // dummy command used by unit tests
     { "OK",     HFP_CMD_OK },
@@ -1257,7 +1274,7 @@ static hfp_command_t parse_command(const char * line_buffer, int isHandsFree){
         int match = strcmp(line_buffer, entry->command);
         if (match < 0){
             // search term is lower than middle element
-            if (right == 0) break;
+            if (middle == 0) break;
             right = middle - 1;
         } else if (match == 0){
             return entry->command_id;
@@ -1843,6 +1860,52 @@ static void parse_sequence(hfp_connection_t * hfp_connection){
             }
             hfp_connection->parser_item_index++;
             break;
+        case HFP_CMD_APPLE_ACCESSORY_INFORMATION:
+            switch (hfp_connection->parser_item_index){
+                case 0:
+                    hfp_connection->apple_accessory_vendor_id = 0;
+                    for (i = 0 ; i < 4; i++){
+                        hfp_connection->apple_accessory_vendor_id = (hfp_connection->apple_accessory_vendor_id << 4) | nibble_for_char(hfp_connection->line_buffer[i]);
+                    }
+                    break;
+                case 1:
+                    hfp_connection->apple_accessory_product_id = 0;
+                    for (i = 0 ; i < 4; i++){
+                        hfp_connection->apple_accessory_product_id = (hfp_connection->apple_accessory_product_id << 4) | nibble_for_char(hfp_connection->line_buffer[i]);
+                    }
+                    break;
+                case 2:
+                    btstack_strcpy(hfp_connection->apple_accessory_version, sizeof(hfp_connection->apple_accessory_version), (const char *) hfp_connection->line_buffer);
+                    break;
+                case 3:
+                    hfp_connection->apple_accessory_features = btstack_atoi((char *)hfp_connection->line_buffer);
+                    break;
+                default:
+                    break;
+            }
+            hfp_connection->parser_item_index++;
+            break;
+        case HFP_CMD_APPLE_ACCESSORY_STATE:
+            // ignore K/V count
+            if (hfp_connection->parser_item_index > 0){
+                if ((hfp_connection->parser_item_index & 1) == 1){
+                    hfp_connection->apple_accessory_key = btstack_atoi((char *)hfp_connection->line_buffer);
+                } else {
+                    switch (hfp_connection->apple_accessory_key){
+                        case 1:
+                            hfp_connection->apple_accessory_battery_level = btstack_atoi((char *)hfp_connection->line_buffer);
+                            break;
+                        case 2:
+                            hfp_connection->apple_accessory_docked = btstack_atoi((char *)hfp_connection->line_buffer);
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+            hfp_connection->parser_item_index++;
+            break;
+
         default:
             break;
     }  
@@ -1887,15 +1950,6 @@ uint8_t hfp_establish_service_level_connection(bd_addr_t bd_addr, uint16_t servi
     
     bd_addr_copy(connection->remote_addr, bd_addr);
     connection->service_uuid = service_uuid;
-
-    if (local_role == HFP_ROLE_HF) {
-        // setup HF Indicators
-        uint8_t i;
-        for (i=0; i < hfp_hf_indicators_nr; i++){
-            connection->generic_status_indicators[i].uuid = hfp_hf_indicators[i];
-            connection->generic_status_indicators[i].state = 0;
-        }
-    }
 
     hfp_sdp_query_request.callback = &hfp_handle_start_sdp_client_query;
     // ignore ERROR_CODE_COMMAND_DISALLOWED because in that case, we already have requested an SDP callback
@@ -2358,6 +2412,10 @@ void hfp_log_rfcomm_message(const char * tag, uint8_t * packet, uint16_t size){
     }
     printable[i] = 0;
     log_info("%s: '%s'", tag, printable);
+#else
+    UNUSED(tag);
+    UNUSED(packet);
+    UNUSED(size);
 #endif
 }
 

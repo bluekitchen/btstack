@@ -57,13 +57,18 @@
 #include "btstack_run_loop.h"
 #include "gap.h"
 
+#include "ble/gatt_service_client.h"
+
+static btstack_packet_callback_registration_t hci_event_callback_registration;
+
 static btstack_linked_list_t clients;
 static uint16_t scan_parameters_service_cid_counter = 0;
 static uint16_t scan_parameters_service_scan_window = 0;
 static uint16_t scan_parameters_service_scan_interval = 0;
 
 static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
-static void scan_parameters_service_run_for_client(scan_parameters_service_client_t * client);
+static void scan_parameters_service_send_next_query(void * context);
+static btstack_context_callback_registration_t scan_parameters_service_handle_can_send_now;
 
 static uint16_t scan_parameters_service_get_next_cid(void){
     if (scan_parameters_service_cid_counter == 0xffff) {
@@ -72,6 +77,17 @@ static uint16_t scan_parameters_service_get_next_cid(void){
         scan_parameters_service_cid_counter++;
     }
     return scan_parameters_service_cid_counter;
+}
+
+static uint8_t scan_parameters_client_request_send_gatt_query(scan_parameters_service_client_t * client){
+    scan_parameters_service_handle_can_send_now.context = (void *) (uintptr_t)client->cid;
+    uint8_t status = gatt_client_request_to_send_gatt_query(&scan_parameters_service_handle_can_send_now, client->con_handle);
+    if (status != ERROR_CODE_SUCCESS){
+        if (client->state >= SCAN_PARAMETERS_SERVICE_CLIENT_STATE_W2_QUERY_SERVICE){
+            client->state = SCAN_PARAMETERS_SERVICE_CLIENT_STATE_IDLE;
+        }
+    }
+    return status;
 }
 
 static scan_parameters_service_client_t * scan_parameters_service_create_client(hci_con_handle_t con_handle, uint16_t cid){
@@ -134,6 +150,18 @@ static void scan_parameters_service_emit_connection_established(scan_parameters_
     (*client->client_handler)(HCI_EVENT_GATTSERVICE_META, 0, event, sizeof(event));
 }
 
+static void scan_parameters_service_emit_disconnected(btstack_packet_handler_t packet_handler, uint16_t cid){
+    uint8_t event[5];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = GATTSERVICE_SUBEVENT_SCAN_PARAMETERS_SERVICE_DISCONNECTED;
+    little_endian_store_16(event, pos, cid);
+    pos += 2;
+    btstack_assert(pos == sizeof(event));
+    (*packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
 static void handle_notification_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) {
     UNUSED(packet_type);
     UNUSED(channel);
@@ -144,10 +172,16 @@ static void handle_notification_event(uint8_t packet_type, uint16_t channel, uin
     scan_parameters_service_client_t * client = scan_parameters_service_get_client_for_con_handle(gatt_event_notification_get_handle(packet));
     btstack_assert(client != NULL);
     client->scan_interval_window_value_update = true;
-    scan_parameters_service_run_for_client(client);
+    scan_parameters_client_request_send_gatt_query(client);
 }
 
-static void scan_parameters_service_run_for_client(scan_parameters_service_client_t * client){
+static void scan_parameters_service_send_next_query(void * context){
+    uint16_t cid = (uint16_t)(uintptr_t)context;
+    scan_parameters_service_client_t * client = scan_parameters_service_get_client_for_cid(cid);
+    if (client == NULL){
+        return;
+    }
+
     uint8_t att_status;
     gatt_client_service_t service;
 
@@ -240,7 +274,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
     scan_parameters_service_client_t * client = NULL;
     gatt_client_service_t service;
     gatt_client_characteristic_t characteristic;
-    uint8_t att_status;
+    uint8_t status;
 
 #ifdef ENABLE_TESTING_SUPPORT
     gatt_client_characteristic_descriptor_t characteristic_descriptor;
@@ -325,12 +359,12 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
             client = scan_parameters_service_get_client_for_con_handle(gatt_event_query_complete_get_handle(packet));
             btstack_assert(client != NULL);
             
-            att_status = gatt_event_query_complete_get_att_status(packet);
+            status = gatt_client_att_status_to_error_code(gatt_event_query_complete_get_att_status(packet));
             
             switch (client->state){
                 case SCAN_PARAMETERS_SERVICE_CLIENT_STATE_W4_SERVICE_RESULT:
-                    if (att_status != ATT_ERROR_SUCCESS){
-                        scan_parameters_service_emit_connection_established(client, att_status);  
+                    if (status != ERROR_CODE_SUCCESS){
+                        scan_parameters_service_emit_connection_established(client, status);
                         scan_parameters_service_finalize_client(client);      
                         return;  
                     }
@@ -345,8 +379,8 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                     return;
 
                 case SCAN_PARAMETERS_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_RESULT:
-                    if (att_status != ATT_ERROR_SUCCESS){
-                        scan_parameters_service_emit_connection_established(client, att_status);  
+                    if (status != ERROR_CODE_SUCCESS){
+                        scan_parameters_service_emit_connection_established(client, status);
                         scan_parameters_service_finalize_client(client);      
                         break;  
                     }
@@ -374,13 +408,40 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                 default:
                     break;
             }
+            if (client != NULL){
+                scan_parameters_client_request_send_gatt_query(client);
+            }
             break;
         default:
             break;
     }
 
-    if (client != NULL){
-        scan_parameters_service_run_for_client(client);
+
+}
+
+static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(packet_type); // ok: only hci events
+    UNUSED(channel);     // ok: there is no channel
+    UNUSED(size);        // ok: fixed format events read from HCI buffer
+
+    hci_con_handle_t con_handle;
+    scan_parameters_service_client_t * client;
+
+    switch (hci_event_packet_get_type(packet)) {
+        case HCI_EVENT_DISCONNECTION_COMPLETE:
+            con_handle = hci_event_disconnection_complete_get_connection_handle(packet);
+            client = scan_parameters_service_get_client_for_con_handle(con_handle);
+            if (client != NULL){
+                // emit disconnected
+                btstack_packet_handler_t packet_handler = client->client_handler;
+                uint16_t cid = client->cid;
+                scan_parameters_service_emit_disconnected(packet_handler, cid);
+                // finalize
+                scan_parameters_service_finalize_client(client);
+            }
+            break;
+        default:
+            break;
     }
 }
 
@@ -393,7 +454,7 @@ void scan_parameters_service_client_set(uint16_t scan_interval, uint16_t scan_wi
     while (btstack_linked_list_iterator_has_next(&it)){
         scan_parameters_service_client_t * client = (scan_parameters_service_client_t*) btstack_linked_list_iterator_next(&it);
         client->scan_interval_window_value_update = true;
-        scan_parameters_service_run_for_client(client);
+        scan_parameters_client_request_send_gatt_query(client);
     }
 }
 
@@ -409,8 +470,7 @@ uint8_t scan_parameters_service_client_enable_notifications(uint16_t scan_parame
     }
 
     client->state = SCAN_PARAMETERS_SERVICE_CLIENT_STATE_W2_CONFIGURE_NOTIFICATIONS;
-    scan_parameters_service_run_for_client(client);
-    return ERROR_CODE_SUCCESS;
+    return scan_parameters_client_request_send_gatt_query(client);
 }
 
 uint8_t scan_parameters_service_client_connect(hci_con_handle_t con_handle, btstack_packet_handler_t packet_handler, uint16_t * scan_parameters_service_cid){
@@ -433,8 +493,7 @@ uint8_t scan_parameters_service_client_connect(hci_con_handle_t con_handle, btst
 
     client->client_handler = packet_handler; 
     client->state = SCAN_PARAMETERS_SERVICE_CLIENT_STATE_W2_QUERY_SERVICE;
-    scan_parameters_service_run_for_client(client);
-    return ERROR_CODE_SUCCESS;
+    return scan_parameters_client_request_send_gatt_query(client);
 }
 
 uint8_t scan_parameters_service_client_disconnect(uint16_t scan_parameters_service_cid){
@@ -447,7 +506,12 @@ uint8_t scan_parameters_service_client_disconnect(uint16_t scan_parameters_servi
     return ERROR_CODE_SUCCESS;
 }
 
-void scan_parameters_service_client_init(void){}
+void scan_parameters_service_client_init(void){
+    hci_event_callback_registration.callback = &handle_hci_event;
+    hci_add_event_handler(&hci_event_callback_registration);
+    scan_parameters_service_handle_can_send_now.callback = &scan_parameters_service_send_next_query;
+}
 
-void scan_parameters_service_client_deinit(void){}
+void scan_parameters_service_client_deinit(void){
+}
 

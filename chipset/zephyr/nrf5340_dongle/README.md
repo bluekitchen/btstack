@@ -3,9 +3,10 @@
 This will turn the Nordic nRF5340 DK and Audio DK boards into an USB CDC HCI dongle that uses Nordic's SoftDevice Controller.
 
 ## Preconditions
-- [Install Nordic's nRF Connect SDK, v2.6 or higher](https://developer.nordicsemi.com/nRF_Connect_SDK/doc/latest/nrf/installation.html) into ${NCS_ROOT}
+- [Install Nordic's nRF Connect SDK, v2.8 or higher](https://developer.nordicsemi.com/nRF_Connect_SDK/doc/latest/nrf/installation.html) into ${NCS_ROOT}
 - Copy the included files and folders to '${NCS_ROOT}/zephyr/samples/bluetooth/hci_uart/'
-    - `child_image/hci_ipc.conf`
+    - `sysbuild`
+    - `Kconfig.sysbuild`
     - `overlay-usb.conf`
     - `usb.overlay`
 
@@ -17,7 +18,7 @@ For nRF5340 DK:
 
 ```sh
 cd  ${NCS_ROOT}/zephyr/samples/bluetooth/hci_uart/
-west build --pristine -b nrf5340dk_nrf5340_cpuapp -- -DDTC_OVERLAY_FILE=usb.overlay -DOVERLAY_CONFIG=overlay-usb.conf
+west build --pristine -b nrf5340dk/nrf5340/cpuapp -- -DDTC_OVERLAY_FILE=usb.overlay -DOVERLAY_CONFIG=overlay-usb.conf
 west flash
 ```
 
@@ -25,7 +26,7 @@ For nRF5340 Audio DK (ADK)
 
 ```sh
 cd  ${NCS_ROOT}/zephyr/samples/bluetooth/hci_uart/
-west build --pristine -b nrf5340dk_nrf5340_cpuapp -- -DDTC_OVERLAY_FILE=usb.overlay -DOVERLAY_CONFIG=overlay-usb.conf
+west build --pristine -b nrf5340dk/nrf5340/cpuapp -- -DDTC_OVERLAY_FILE=usb.overlay -DOVERLAY_CONFIG=overlay-usb.conf
 west flash
 ```
 

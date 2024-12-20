@@ -39,7 +39,10 @@
 
 #define DEBUG
 
+#include <stdio.h>
 #include <string.h>
+#include <unistd.h>
+#include <signal.h>
 
 // to get cpu intrinsics, .e.g __dissble_irq(), before BTstack includes to avoid re-defining UNUSED
 #include "stm32l4xx.h"
@@ -64,6 +67,43 @@
 #else
 #include "hci_dump_embedded_stdout.h"
 #endif
+
+ssize_t _read(int fd, void * buf, size_t count){
+    UNUSED(fd);
+    UNUSED(buf);
+    UNUSED(count);
+    return -1;
+}
+
+int _close(int file){
+    UNUSED(file);
+    return -1;
+}
+
+int _isatty(int file){
+    UNUSED(file);
+    return -1;
+}
+
+int _lseek(int file){
+    UNUSED(file);
+    return -1;
+}
+
+int _fstat(int file){
+    UNUSED(file);
+    return -1;
+}
+
+int _kill (pid_t pid, int sig) {
+    UNUSED(pid);
+    UNUSED(sig);
+    return -1;
+}
+
+pid_t _getpid (void) {
+    return 0;
+}
 
 void btstack_assert_failed(const char * file, uint16_t line_nr){
     printf("Assert: file %s, line %u\n", file, line_nr);

@@ -57,6 +57,13 @@
 
 #include "ble/gatt-service/device_information_service_server.h"
 
+#define DEVICE_INFORMATION_MAX_STRING_LEN 32
+
+#define UDI_FOR_MEDICAL_DEVICES_BITMASK_LABEL 			1
+#define UDI_FOR_MEDICAL_DEVICES_BITMASK_DEVICE_ID		2
+#define UDI_FOR_MEDICAL_DEVICES_BITMASK_ISSUER			4
+#define UDI_FOR_MEDICAL_DEVICES_BITMASK_AUTHORITY		8
+
 typedef enum {
 	MANUFACTURER_NAME = 0,
 	MODEL_NUMBER,
@@ -67,6 +74,7 @@ typedef enum {
 	SYSTEM_ID,
 	IEEE_REGULATORY_CERTIFICATION,
 	PNP_ID,
+	UDI_FOR_MEDICAL_DEVICES,
 	NUM_INFORMATION_FIELDS
 } device_information_field_id_t;
 
@@ -81,8 +89,10 @@ static device_information_field_t device_information_fields[NUM_INFORMATION_FIEL
 static uint8_t device_information_system_id[8];
 static uint8_t device_information_ieee_regulatory_certification[4];
 static uint8_t device_information_pnp_id[7];
+static uint8_t device_information_udi_for_medical_devices[1 + 4 * DEVICE_INFORMATION_MAX_STRING_LEN];
 
 static att_service_handler_t       device_information_service;
+
 static void set_string(device_information_field_id_t field_id, const char * text){
 	device_information_fields[field_id].data = (uint8_t*) text;
 	device_information_fields[field_id].len  = text != NULL ? (uint8_t) strlen(text) : 0;
@@ -91,7 +101,7 @@ static void set_string(device_information_field_id_t field_id, const char * text
 static uint16_t device_information_service_read_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
 	UNUSED(con_handle);	// ok: info same for all devices
 	unsigned int i;
-	for (i=0;i<NUM_INFORMATION_FIELDS;i++){
+	for (i=0; i < NUM_INFORMATION_FIELDS; i++){
 		if ((device_information_fields[i].value_handle == attribute_handle) && (device_information_fields[i].data != NULL)){
 			return att_read_callback_handle_blob(device_information_fields[i].data, device_information_fields[i].len, offset, buffer, buffer_size);
 		};
@@ -110,7 +120,8 @@ void device_information_service_server_init(void){
             ORG_BLUETOOTH_CHARACTERISTIC_SOFTWARE_REVISION_STRING,
             ORG_BLUETOOTH_CHARACTERISTIC_SYSTEM_ID,
             ORG_BLUETOOTH_CHARACTERISTIC_IEEE_11073_20601_REGULATORY_CERTIFICATION_DATA_LIST,
-            ORG_BLUETOOTH_CHARACTERISTIC_PNP_ID
+            ORG_BLUETOOTH_CHARACTERISTIC_PNP_ID,
+            ORG_BLUETOOTH_CHARACTERISTIC_UDI_FOR_MEDICAL_DEVICES
     };
 
 
@@ -123,15 +134,18 @@ void device_information_service_server_init(void){
 
 	// set length for fixed size characateristics
 	device_information_fields[SYSTEM_ID].data = device_information_system_id;
-	device_information_fields[SYSTEM_ID].len = 8;
+	device_information_fields[SYSTEM_ID].len = sizeof(device_information_system_id);
 	device_information_fields[IEEE_REGULATORY_CERTIFICATION].data = device_information_ieee_regulatory_certification;
-	device_information_fields[IEEE_REGULATORY_CERTIFICATION].len = 4;
+	device_information_fields[IEEE_REGULATORY_CERTIFICATION].len = sizeof(device_information_ieee_regulatory_certification);
 	device_information_fields[PNP_ID].data = device_information_pnp_id;
-	device_information_fields[PNP_ID].len = 7;
+	device_information_fields[PNP_ID].len = sizeof(device_information_pnp_id);
+	// reserve max space for UDI
+	device_information_fields[UDI_FOR_MEDICAL_DEVICES].data = device_information_udi_for_medical_devices;
+	device_information_fields[UDI_FOR_MEDICAL_DEVICES].len = 0;
 
 	// get characteristic value handles
 	int i;
-	for (i=0;i<NUM_INFORMATION_FIELDS;i++){
+	for (i=0; i < NUM_INFORMATION_FIELDS; i++){
 		device_information_fields[i].value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(start_handle, end_handle, device_information_characteristic_uuids[i]);
 	}
 
@@ -213,15 +227,51 @@ void device_information_service_server_set_ieee_regulatory_certification(uint16_
 	little_endian_store_16(device_information_ieee_regulatory_certification, 2, value_b);
 }
 
-/**
- * @brief Set PNP ID
- * @param vendor_source_id
- * @param vendor_id
- * @param product_id
- */
 void device_information_service_server_set_pnp_id(uint8_t vendor_source_id, uint16_t vendor_id, uint16_t product_id, uint16_t product_version){
 	device_information_pnp_id[0] = vendor_source_id;
 	little_endian_store_16(device_information_pnp_id, 1, vendor_id);
 	little_endian_store_16(device_information_pnp_id, 3, product_id);
 	little_endian_store_16(device_information_pnp_id, 5, product_version);
 }
+
+
+void device_information_service_server_set_udi_for_medical_devices(const char * label, const char * device_id, const char * issuer, const char * authority){
+
+    // suppress CppCheck warnings below. Buffer has size 1 + 4 * DEVICE_INFORMATION_MAX_STRING_LEN
+	uint8_t * data = device_information_fields[UDI_FOR_MEDICAL_DEVICES].data;
+
+	uint16_t bytes_copied;
+	uint16_t pos = 0;
+	data[pos++] = 0; // reserved for flags
+
+
+    // cppcheck-suppress objectIndex
+    if (label != NULL){
+        bytes_copied = btstack_strcpy((char *) &data[pos], DEVICE_INFORMATION_MAX_STRING_LEN, label);
+        pos += bytes_copied;
+        data[0] |= (1 << UDI_FOR_MEDICAL_DEVICES_BITMASK_LABEL);
+    }
+
+    if (device_id != NULL){
+        // cppcheck-suppress objectIndex
+        bytes_copied = btstack_strcpy((char *) &data[pos], DEVICE_INFORMATION_MAX_STRING_LEN, device_id);
+        pos += bytes_copied;
+        data[0] |= (1 << UDI_FOR_MEDICAL_DEVICES_BITMASK_DEVICE_ID);
+    }
+
+    if (issuer != NULL) {
+        // cppcheck-suppress objectIndex
+        bytes_copied = btstack_strcpy((char *) &data[pos], DEVICE_INFORMATION_MAX_STRING_LEN, issuer);
+        pos += bytes_copied;
+        data[0] |= (1 << UDI_FOR_MEDICAL_DEVICES_BITMASK_ISSUER);
+    }
+
+    if (authority != NULL){
+        // cppcheck-suppress objectIndex
+        bytes_copied = btstack_strcpy((char *) &data[pos], DEVICE_INFORMATION_MAX_STRING_LEN, authority);
+        pos += bytes_copied;
+        data[0] |= (1 << UDI_FOR_MEDICAL_DEVICES_BITMASK_AUTHORITY);
+    }
+	device_information_fields[UDI_FOR_MEDICAL_DEVICES].len = pos;
+}
+

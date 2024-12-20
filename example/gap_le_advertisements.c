@@ -156,14 +156,13 @@ static void dump_advertisement_data(const uint8_t * adv_data, uint8_t adv_size){
                     if (data[0] & (1<<i)){
                         printf("%s; ", flags[i]);
                     }
-
                 }
                 break;
             case BLUETOOTH_DATA_TYPE_INCOMPLETE_LIST_OF_16_BIT_SERVICE_CLASS_UUIDS:
             case BLUETOOTH_DATA_TYPE_COMPLETE_LIST_OF_16_BIT_SERVICE_CLASS_UUIDS:
             case BLUETOOTH_DATA_TYPE_LIST_OF_16_BIT_SERVICE_SOLICITATION_UUIDS:
                 for (i=0; i<size;i+=2){
-                    printf("%02X ", little_endian_read_16(data, i));
+                    printf("%04X ", little_endian_read_16(data, i));
                 }
                 break;
             case BLUETOOTH_DATA_TYPE_INCOMPLETE_LIST_OF_32_BIT_SERVICE_CLASS_UUIDS:
@@ -192,7 +191,9 @@ static void dump_advertisement_data(const uint8_t * adv_data, uint8_t adv_size){
                 printf("Connection Interval Min = %u ms, Max = %u ms", little_endian_read_16(data, 0) * 5/4, little_endian_read_16(data, 2) * 5/4);
                 break;
             case BLUETOOTH_DATA_TYPE_SERVICE_DATA:
-                printf_hexdump(data, size);
+                for (i=0; i<size;i+=2){
+                    printf("%02X ", data[i]);
+                }
                 break;
             case BLUETOOTH_DATA_TYPE_PUBLIC_TARGET_ADDRESS:
             case BLUETOOTH_DATA_TYPE_RANDOM_TARGET_ADDRESS:
@@ -207,17 +208,18 @@ static void dump_advertisement_data(const uint8_t * adv_data, uint8_t adv_size){
                 printf("%u ms", little_endian_read_16(data, 0) * 5/8 );
                 break;
             case BLUETOOTH_DATA_TYPE_3D_INFORMATION_DATA:
-                printf_hexdump(data, size);
+                for (i=0; i<size;i+=2){
+                    printf("%02X ", data[i]);
+                }
                 break;
             case BLUETOOTH_DATA_TYPE_MANUFACTURER_SPECIFIC_DATA: // Manufacturer Specific Data 
-                break;
             case BLUETOOTH_DATA_TYPE_CLASS_OF_DEVICE:
             case BLUETOOTH_DATA_TYPE_SIMPLE_PAIRING_HASH_C:
             case BLUETOOTH_DATA_TYPE_SIMPLE_PAIRING_RANDOMIZER_R:
             case BLUETOOTH_DATA_TYPE_DEVICE_ID: 
             case BLUETOOTH_DATA_TYPE_SECURITY_MANAGER_OUT_OF_BAND_FLAGS:
             default:
-                printf("Advertising Data Type 0x%2x not handled yet", data_type); 
+                printf("    Advertising Data Type 0x%2x not handled yet", data_type);
                 break;
         }        
         printf("\n");

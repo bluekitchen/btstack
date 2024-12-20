@@ -24,6 +24,7 @@ COMMON = \
 	btstack_util.c              \
 	gatt_client.c               \
 	hci_cmd.c                   \
+	hci_event_builder.c         \
 	hci_dump.c                  \
 	le_device_db_memory.c       \
 	mock.c                      \

@@ -177,7 +177,7 @@ static void chipset_set_bd_addr_command(bd_addr_t addr, uint8_t *hci_cmd_buffer)
 
 static void chipset_set_baudrate_command(uint32_t baudrate, uint8_t *hci_cmd_buffer){
 	// lookup baudrates
-	int i;
+	unsigned i;
 	int found = 0;
 	for (i=0 ; i < sizeof(baudrates)/sizeof(uint32_t) ; i++){
 		if (baudrates[i] == baudrate){

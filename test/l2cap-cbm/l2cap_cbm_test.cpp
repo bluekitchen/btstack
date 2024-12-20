@@ -78,6 +78,14 @@ static uint16_t l2cap_cid;
 static bool l2cap_channel_opened;
 static btstack_packet_callback_registration_t l2cap_event_callback_registration;
 
+// l2cap fuzz api
+extern "C" void l2cap_setup_test_channels_fuzz(void);
+extern "C" void l2cap_free_channels_fuzz(void);
+extern "C" l2cap_channel_t * l2cap_get_dynamic_channel_fuzz(void);
+
+// l2cap random public function
+extern "C"  void l2cap_finalize_channel_close(l2cap_channel_t * channel);
+
 const uint8_t le_data_channel_conn_request_1[] = {
         0x05, 0x20, 0x12, 0x00, 0x0e, 0x00, 0x05, 0x00, 0x14, 0x01, 0x0a, 0x00, 0x01, 0x10, 0x41, 0x00,
         0x64, 0x00, 0x30, 0x00, 0xff, 0xff
@@ -198,6 +206,7 @@ TEST(L2CAP_CHANNELS, some_functions){
     l2cap_cbm_unregister_service(TEST_PSM);
     l2cap_cbm_accept_connection(0X01, NULL, 0, 0);
     l2cap_cbm_decline_connection(0x01, L2CAP_CBM_CONNECTION_RESULT_NO_RESOURCES_AVAILABLE);
+    l2cap_cbm_available_credits(0x01);
     l2cap_disconnect(0x01);
 
     uint16_t credits = 10;
@@ -290,6 +299,12 @@ TEST(L2CAP_CHANNELS, incoming_decline){
     // fix_boundary_flags(mock_hci_transport_outgoing_packet_buffer, mock_hci_transport_outgoing_packet_size);
     // print_acl("le_data_channel_conn_response_1", mock_hci_transport_outgoing_packet_buffer, mock_hci_transport_outgoing_packet_size);
     // TODO: verify data
+}
+TEST(L2CAP_CHANNELS, fuzz) {
+    l2cap_setup_test_channels_fuzz();
+    l2cap_channel_t * channel = l2cap_get_dynamic_channel_fuzz();
+    l2cap_free_channels_fuzz();
+    l2cap_get_dynamic_channel_fuzz();
 }
 
 int main (int argc, const char * argv[]){

@@ -62,6 +62,9 @@
 #ifdef _MSC_VER
 // ignore deprecated warning for fopen
 #pragma warning(disable : 4996)
+
+// map strncasecmp
+#define strncasecmp _strnicmp
 #endif
 
 // assert outgoing and incoming hci packet buffers can hold max hci command resp. event packet
@@ -110,6 +113,7 @@ static char matched_file[1000];
 
 
 static void chipset_init(const void * config){
+    UNUSED(config);
     if (hcd_file_path){
         log_info("chipset-bcm: init file %s", hcd_file_path);
     } else {
@@ -156,7 +160,7 @@ static btstack_chipset_result_t chipset_next_command(uint8_t * hci_cmd_buffer){
         init_script_offset += 3;
 
         // read parameters
-        int param_len = hci_cmd_buffer[2];
+        size_t param_len = hci_cmd_buffer[2];
         if (param_len){
             bytes_read = fread(&hci_cmd_buffer[3], 1, param_len, hcd_file);
         }
@@ -188,7 +192,7 @@ void btstack_chipset_bcm_set_device_name(const char * device_name){
     }
 
     // find in folder
-    tinydir_dir dir = { 0 };
+    tinydir_dir dir = {};
     int res = tinydir_open(&dir, hcd_folder_path);
     if (res < 0){
         log_error("chipset-bcm: could not get directory for %s", hcd_folder_path);
@@ -226,6 +230,7 @@ void btstack_chipset_bcm_set_device_name(const char * device_name){
 #else
 
 static void chipset_init(const void * config){
+    UNUSED(config);
     log_info("chipset-bcm: init script %s, len %u", brcm_patch_version, brcm_patch_ram_length);
     init_script_offset = 0;
     send_download_command = 1;

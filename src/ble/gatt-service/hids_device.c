@@ -497,7 +497,7 @@ void hids_device_init_with_storage(uint8_t hid_country_code, const uint8_t * hid
         report->client_configuration_value = 0;
         report->id   = report_id;
         report->type = report_type;
-        report->size = btstack_hid_get_report_size_for_id(report_id, report_type, hid_descriptor_size, hid_descriptor);
+        report->size = btstack_hid_get_report_size_for_id(report_id, report_type, hid_descriptor, hid_descriptor_size);
 
         switch (report->type){
             case HID_REPORT_TYPE_INPUT:
@@ -555,16 +555,16 @@ void hids_device_register_get_report_callback(void (*callback)(hci_con_handle_t 
  * Generates an HIDS_SUBEVENT_CAN_SEND_NOW subevent
  * @param hid_cid
  */
-void hids_device_request_can_send_now_event(hci_con_handle_t con_handle){
+uint8_t hids_device_request_can_send_now_event(hci_con_handle_t con_handle){
     hids_device_t * instance = hids_device_get_instance_for_con_handle(con_handle);
     if (!instance){
         log_error("no instance for handle 0x%02x", con_handle);
-        return;
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
 
     instance->can_send_now_callback.callback = &hids_device_can_send_now;
     instance->can_send_now_callback.context  = (void*) (uintptr_t) con_handle;
-    att_server_register_can_send_now_callback(&instance->can_send_now_callback, con_handle);
+    return att_server_register_can_send_now_callback(&instance->can_send_now_callback, con_handle);
 }
 
 uint8_t hids_device_send_input_report_for_id(hci_con_handle_t con_handle, uint16_t report_id, const uint8_t * report, uint16_t report_len){

@@ -88,6 +88,7 @@ typedef struct {
     uint32_t         profile_supported_features;
     uint8_t          map_mas_instance_id;
     uint8_t          map_supported_message_types;
+    uint16_t         map_version;
 
     // needed to select one of multiple MAS Instances
     struct {
@@ -95,6 +96,7 @@ typedef struct {
         uint8_t  instance_id;
         uint8_t  supported_message_types;
         uint8_t  rfcomm_port;
+        uint16_t version;
 #ifdef ENABLE_GOEP_L2CAP
         uint16_t l2cap_psm;
 #endif
@@ -158,18 +160,6 @@ uint8_t
 goep_client_connect_l2cap(goep_client_t *goep_client, l2cap_ertm_config_t *l2cap_ertm_config, uint8_t *l2cap_ertm_buffer,
                     uint16_t l2cap_ertm_buffer_size, btstack_packet_handler_t handler, bd_addr_t addr, uint16_t l2cap_psm,
                     uint16_t *out_cid);
-
-/*
- * @brief Connect to a GEOP server with specified UUID on a remote device.
- * @note This functions uses a single goep_client_t instance and only allows for a single goep connection
- *       Please use goep_client_connect instead
- * @param handler 
- * @param addr
- * @param uuid
- * @param out_cid to use for further commands
- * @result status
-*/
-uint8_t goep_client_create_connection(btstack_packet_handler_t handler, bd_addr_t addr, uint16_t uuid, uint16_t * out_cid);
 
 /** 
  * @brief Disconnects GOEP connection with given identifier.
@@ -278,6 +268,12 @@ uint16_t goep_client_request_get_max_body_size(uint16_t goep_cid);
  * @param goep_cid
  */
 void goep_client_header_add_srm_enable(uint16_t goep_cid);
+
+/**
+ * @brief Add SRMP Waiting
+ * @param goep_cid
+ */
+void goep_client_header_add_srmp_waiting(uint16_t goep_cid);
 
 /**
  * @brief Add header with single byte value (8 bit)

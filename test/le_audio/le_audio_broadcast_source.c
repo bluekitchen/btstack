@@ -65,12 +65,6 @@
 // Interoperability with Nordic LE Audio demo
 //#define NRF5340_BROADCAST_MODE
 
-// PTS mode
-// #define PTS_MODE
-
-// Count mode - send packet count as test data for manual analysis
-// #define COUNT_MODE
-
 // max config
 #define MAX_NUM_BIS 2
 #define MAX_SAMPLES_PER_FRAME 480
@@ -107,13 +101,7 @@ static const uint8_t extended_adv_data[] = {
         (BROADCAST_ID >> 8) & 0xff,
         BROADCAST_ID & 0xff,
         // name
-#ifdef PTS_MODE
-         7, BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME, 'P', 'T', 'S', '-', 'x', 'x',
-         7, BLUETOOTH_DATA_TYPE_BROADCAST_NAME ,     'P', 'T', 'S', '-', 'x', 'x',
-#elif defined(COUNT_MODE)
-         6, BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME, 'C', 'O', 'U', 'N', 'T',
-         6, BLUETOOTH_DATA_TYPE_BROADCAST_NAME,      'C', 'O', 'U', 'N', 'T',
-#elif defined(NRF5340_BROADCAST_MODE)
+#if defined(NRF5340_BROADCAST_MODE)
         20, BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME, 'N','R','F','5','3','4','0','_','B','R','O','A','D','C','A','S','T','E','R',
         20, BLUETOOTH_DATA_TYPE_BROADCAST_NAME,      'N','R','F','5','3','4','0','_','B','R','O','A','D','C','A','S','T','E','R',
 #else
@@ -128,22 +116,12 @@ static const le_periodic_advertising_parameters_t periodic_params = {
         .periodic_advertising_properties = 0
 };
 
-static bd_addr_t remote;
-static const char * remote_addr_string = "00:1B:DC:08:E2:72";
-
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static uint8_t period_adv_data[255];
 static uint16_t period_adv_data_len;
 
 static uint8_t adv_handle = 0;
-static unsigned int     next_bis_index;
 static hci_con_handle_t bis_con_handles[MAX_NUM_BIS];
-static uint16_t packet_sequence_numbers[MAX_NUM_BIS];
-static uint8_t framed_pdus;
-static bool bis_can_send[MAX_NUM_BIS];
-static bool bis_has_data[MAX_NUM_BIS];
-static uint8_t iso_frame_counter;
-static uint16_t frame_duration_us;
 
 static le_audio_big_t big_storage;
 static le_audio_big_params_t big_params;
@@ -245,13 +223,15 @@ static struct {
 static void show_usage(void);
 
 static void print_config(void) {
+    static const char * generator[] = { "Sine", "Modplayer", "Recording"};
     printf("Config '%s_%u': %u, %s ms, %u octets - %s%s\n",
            codec_configurations[menu_sampling_frequency].variants[menu_variant].name,
            num_bis,
            codec_configurations[menu_sampling_frequency].samplingrate_hz,
            codec_configurations[menu_sampling_frequency].variants[menu_variant].frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US ? "7.5" : "10",
            codec_configurations[menu_sampling_frequency].variants[menu_variant].octets_per_frame,
-           audio_source == AUDIO_SOURCE_SINE ? "Sine" : "Modplayer", encryption ? " (encrypted)" : "");
+           generator[audio_source - AUDIO_SOURCE_SINE],
+           encryption ? " (encrypted)" : "");
 }
 
 static void setup_advertising() {
@@ -423,7 +403,7 @@ static void show_usage(void){
     printf("e - toggle encryption\n");
     printf("f - next sampling frequency\n");
     printf("v - next codec variant\n");
-    printf("t - toggle sine / modplayer\n");
+    printf("x - toggle sine / modplayer / recording\n");
     printf("s - start broadcast\n");
     printf("---\n");
 }
@@ -477,12 +457,15 @@ static void stdin_process(char c){
             }
             start_broadcast();
             break;
-        case 't':
+        case 'x':
             switch (audio_source){
                 case AUDIO_SOURCE_MODPLAYER:
                     audio_source = AUDIO_SOURCE_SINE;
                     break;
                 case AUDIO_SOURCE_SINE:
+                    audio_source = AUDIO_SOURCE_RECORDING;
+                    break;
+                case AUDIO_SOURCE_RECORDING:
                     audio_source = AUDIO_SOURCE_MODPLAYER;
                     break;
                 default:

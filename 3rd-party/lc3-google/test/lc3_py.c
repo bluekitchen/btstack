@@ -61,7 +61,7 @@ static PyObject *encode_py(PyObject *m, PyObject *args)
 
     CTYPES_CHECK(NULL, encoder_obj = to_encoder(encoder_obj, encoder));
 
-    int ns = LC3_NS(encoder->dt, encoder->sr);
+    int ns = lc3_ns(encoder->dt, encoder->sr);
 
     CTYPES_CHECK("x", pcm_obj = to_1d_ptr(pcm_obj, NPY_INT16, ns, &pcm));
     CTYPES_CHECK("nbytes", nbytes >= 20 && nbytes <= 400);
@@ -114,7 +114,7 @@ static PyObject *decode_py(PyObject *m, PyObject *args)
 
     CTYPES_CHECK(NULL, decoder_obj = to_decoder(decoder_obj, decoder));
 
-    int ns = LC3_NS(decoder->dt, decoder->sr);
+    int ns = lc3_ns(decoder->dt, decoder->sr);
     pcm_obj = new_1d_ptr(NPY_INT16, ns, &pcm);
 
     lc3_decode(decoder, in, nbytes, LC3_PCM_FORMAT_S16, pcm, 1);

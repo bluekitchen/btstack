@@ -41,13 +41,12 @@
  *  btstack_run_loop_windows.c
  */
 
+#include <Windows.h>
 #include "btstack_run_loop.h"
 #include "btstack_run_loop_windows.h"
 #include "btstack_linked_list.h"
 #include "btstack_debug.h"
 #include "btstack_util.h"
-
-#include <Windows.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -86,7 +85,10 @@ static void btstack_run_loop_windows_execute(void) {
 
     btstack_linked_list_iterator_t it;
 
-    while (true) {
+    // clear exit flag
+    run_loop_exit_requested = false;
+
+    while (run_loop_exit_requested == false) {
 
         // process timers
         uint32_t now_ms = btstack_run_loop_windows_get_time_ms();

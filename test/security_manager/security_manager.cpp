@@ -453,7 +453,9 @@ TEST(SecurityManager, AddressResolutionLookup){
     bd_addr_t address = {0,0,0,0,0,0};
 
     status = sm_address_resolution_lookup((uint8_t) BD_ADDR_TYPE_LE_PUBLIC, address);
-    CHECK_EQUAL(status, 0);
+    CHECK_EQUAL(status, ERROR_CODE_SUCCESS);
+    status = sm_address_resolution_lookup((uint8_t) BD_ADDR_TYPE_LE_PUBLIC, address);
+    CHECK_EQUAL(status, BTSTACK_BUSY);
 }
 
 int main (int argc, const char * argv[]){

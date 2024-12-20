@@ -9,6 +9,7 @@ SUBDIRS =  \
 	base64 \
 	ble_client \
 	btstack_link_key_db \
+	btstack_util \
 	btstack_memory \
 	classic-oob-pairing \
 	crypto \
@@ -49,6 +50,7 @@ SUBDIRS_BLE = \
 	att_db \
 	ble_client \
 	btstack_memory \
+	btstack_util \
 	crypto \
 	embedded \
 	gap \

@@ -13,6 +13,11 @@ include_directories(${CPPUTEST_INCLUDE_DIRS})
 link_directories(${CPPUTEST_LIBRARY_DIRS})
 link_libraries(${CPPUTEST_LIBRARIES})
 
+# ASAN
+add_compile_options( -DHAVE_ASSERT)
+add_compile_options( -g -fsanitize=address)
+add_link_options(       -fsanitize=address)
+
 include_directories(.)
 include_directories(../../src)
 include_directories(../../platform/posix)

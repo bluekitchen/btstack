@@ -44,10 +44,9 @@
 
 #include <string.h>
 
+#include "bluetooth.h"
 #include "btstack_ring_buffer.h"
 #include "btstack_util.h"
-
-#define ERROR_CODE_MEMORY_CAPACITY_EXCEEDED 0x07
 
 
 // init ring buffer

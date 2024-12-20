@@ -98,7 +98,7 @@ def print_table(t, m=4):
 
 def mdct_fft_twiddles():
 
-    for n in (10, 20, 30, 40, 60, 80, 90, 120, 160, 180, 240):
+    for n in (10, 20, 30, 40, 60, 80, 90, 120, 160, 180, 240, 480):
 
         print('\n--- fft bf2 twiddles {:3d} ---'.format(n))
 
@@ -120,22 +120,16 @@ def mdct_fft_twiddles():
 
 def mdct_rot_twiddles():
 
-    for n in (120, 160, 240, 320, 360, 480, 640, 720, 960):
+    for n in (40, 80, 120, 160, 240, 320, 360, 480, 640, 720, 960, 1920):
 
         print('\n--- mdct rot twiddles {:3d} ---'.format(n))
 
         kv = 2 * np.pi * (np.arange(n // 4) + 1/8) / n
+        scale = np.sqrt( np.sqrt( 4 / n ) )
         for (i, k) in enumerate(kv):
-            print('{{ {:14.7e}, {:14.7e} }},'.format(np.cos(k), np.sin(k)),
+            print('{{ {:14.7e}, {:14.7e} }},'.format(
+                np.cos(k) * scale, np.sin(k) * scale),
                   end = '\n' if i%2 == 1 else ' ')
-
-
-def mdct_scaling():
-
-    print('\n--- mdct scaling ---')
-    ns = np.array([ [ 60, 120, 180, 240, 360], [ 80, 160, 240, 320, 480] ])
-    print_table(np.sqrt(2 / ns[0]))
-    print_table(np.sqrt(2 / ns[1]))
 
 
 def tns_lag_window():
@@ -147,9 +141,19 @@ def tns_lag_window():
 def tns_quantization_table():
 
     print('\n--- tns quantization table ---')
-    print_table(np.sin((np.arange(8) + 0.5) * (np.pi / 17)))
-    print_table(np.sin((np.arange(8)) * (np.pi / 17)))
 
+    xe = np.sin((np.arange(8) + 0.5) * (np.pi / 17))
+    xe = np.rint(xe * 2**15).astype(np.int16)
+
+    xd = np.sin(np.arange(9) * (np.pi / 17))
+    xd = np.rint(xd * 2**15).astype(np.int16)
+
+    for x in (xe, xd):
+        print()
+        for (i, xi) in enumerate(x):
+            print('0x{:04x}p-15,'.format(xi), end = '\n' if i%4 == 4-1 else ' ')
+        if len(x) % 4:
+            print()
 
 def quant_iq_table():
 
@@ -159,7 +163,7 @@ def quant_iq_table():
 
 def sns_ge_table():
 
-    g_tilt_table = [ 14, 18, 22, 26, 30 ]
+    g_tilt_table = [ 14, 18, 22, 26, 30, 34 ]
 
     for (sr, g_tilt) in enumerate(g_tilt_table):
         print('\n--- sns ge table, sr:{} ---'.format(sr))
@@ -173,7 +177,7 @@ def inv_table():
 
 def ltpf_resampler_table():
 
-    for sr in [ 8, 16, 32, 24, 48 ]:
+    for sr in [ 8, 16, 32, 24, 48, 96 ]:
 
         r = 192 // sr
         k = 64 if r & (r-1) else 192
@@ -215,7 +219,6 @@ if __name__ == '__main__':
 
     mdct_fft_twiddles()
     mdct_rot_twiddles()
-    mdct_scaling()
 
     inv_table()
     sns_ge_table()

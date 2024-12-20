@@ -12,32 +12,63 @@
 // File : hxcmod.h
 // Contains: a tiny mod player
 //
-// Written by: Jean François DEL NERO
+// Written by: Jean Francois DEL NERO
 //
 // Change History (most recent first):
 ///////////////////////////////////////////////////////////////////////////////////
-
-#ifndef __HXCMOD_H
-#define __HXCMOD_H
-
-#if defined __cplusplus
-extern "C" {
-#endif
-
-
 #ifndef MODPLAY_DEF
 #define MODPLAY_DEF
 
-// Basic type
-typedef unsigned char	muchar;
-typedef signed   char   mchar;
-typedef unsigned short	muint;
-typedef          short	mint;
-typedef unsigned long	mulong;
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-#define NUMMAXCHANNELS 32
+#ifndef HXCMOD_SLOW_TARGET
+	#define HXCMOD_STATE_REPORT_SUPPORT 1
+	#define HXCMOD_OUTPUT_FILTER 1
+	#define HXCMOD_OUTPUT_STEREO_MIX 1
+	#define HXCMOD_CLIPPING_CHECK 1
+#endif
+
+// Warning : The following option
+// required 32KB of additional RAM :
+// #define HXCMOD_USE_PRECALC_VOLUME_TABLE 1
+
+// Basic type
+typedef unsigned char   muchar;
+typedef signed   char   mchar;
+typedef unsigned short  muint;
+typedef          short  mint;
+typedef unsigned long   mulong;
+
+#ifdef HXCMOD_16BITS_TARGET
+	typedef unsigned short  mssize;
+#else
+	typedef unsigned long   mssize;
+#endif
+
+#ifdef HXCMOD_8BITS_OUTPUT
+	#ifdef HXCMOD_UNSIGNED_OUTPUT
+	typedef unsigned char  msample;
+	#else
+	typedef signed char    msample;
+	#endif
+#else
+	#ifdef HXCMOD_UNSIGNED_OUTPUT
+	typedef unsigned short msample;
+	#else
+	typedef signed short   msample;
+	#endif
+#endif
+
+#ifdef HXCMOD_MAXCHANNELS
+	#define NUMMAXCHANNELS HXCMOD_MAXCHANNELS
+#else
+	#define NUMMAXCHANNELS 32
+#endif
+
 #define MAXNOTES 12*12
-#define SAMPLE_RATE 44100
+
 //
 // MOD file structures
 //
@@ -77,18 +108,47 @@ typedef struct {
 //
 typedef struct {
 	mchar * sampdata;
-	muint   sampnum;
 	muint   length;
 	muint   reppnt;
 	muint   replen;
+	muchar  sampnum;
+
+	mchar * nxt_sampdata;
+	muint   nxt_length;
+	muint   nxt_reppnt;
+	muint   nxt_replen;
+	muchar  update_nxt_repeat;
+
+	mchar * dly_sampdata;
+	muint   dly_length;
+	muint   dly_reppnt;
+	muint   dly_replen;
+	muchar  note_delay;
+
+	mchar * lst_sampdata;
+	muint   lst_length;
+	muint   lst_reppnt;
+	muint   lst_replen;
+	muchar  retrig_cnt;
+	muchar  retrig_param;
+
+	muint   funkoffset;
+	mint    funkspeed;
+
+	mint    glissando;
+
 	mulong  samppos;
+	mulong  sampinc;
 	muint   period;
 	muchar  volume;
-	mulong  ticks;
+#ifdef HXCMOD_USE_PRECALC_VOLUME_TABLE
+	mint  * volume_table;
+#endif
 	muchar  effect;
 	muchar  parameffect;
 	muint   effect_code;
 
+	mulong  last_set_offset;
 
 	mint    decalperiod;
 	mint    portaspeed;
@@ -97,7 +157,6 @@ typedef struct {
 	mint    Arpperiods[3];
 	muchar  ArpIndex;
 
-	mint    oldk;
 	muchar  volumeslide;
 
 	muchar  vibraparam;
@@ -109,31 +168,44 @@ typedef struct {
 
 	muint   patternloopcnt;
 	muint   patternloopstartpoint;
-} hxcmod_channel;
+} hxcmod_channel_t;
 
 typedef struct {
 	module  song;
 	mchar * sampledata[31];
 	note *  patterndata[128];
 
+#ifdef HXCMOD_16BITS_TARGET
+	muint   playrate;
+#else
 	mulong  playrate;
+#endif
+
 	muint   tablepos;
 	muint   patternpos;
 	muint   patterndelay;
-	muint   jump_loop_effect;
+	muchar  jump_loop_effect;
 	muchar  bpm;
+
+#ifdef HXCMOD_16BITS_TARGET
+	muint   patternticks;
+	muint   patterntickse;
+	muint   patternticksaim;
+	muint   patternticksem;
+	muint   tick_cnt;
+#else
 	mulong  patternticks;
 	mulong  patterntickse;
 	mulong  patternticksaim;
+	mulong  patternticksem;
+	mulong  tick_cnt;
+#endif
+
 	mulong  sampleticksconst;
 
-	mulong  samplenb;
-
-	hxcmod_channel channels[NUMMAXCHANNELS];
+	hxcmod_channel_t channels[NUMMAXCHANNELS];
 
 	muint   number_of_channels;
-
-	muint   fullperiod[MAXNOTES * 8];
 
 	muint   mod_loaded;
 
@@ -144,6 +216,15 @@ typedef struct {
 	mint    stereo_separation;
 	mint    bits;
 	mint    filter;
+
+#ifdef EFFECTS_USAGE_STATE
+	int effects_event_counts[32];
+#endif
+
+#ifdef HXCMOD_USE_PRECALC_VOLUME_TABLE
+	mint    precalc_volume_array[65*256];
+	mint  * volume_selection_table[65];
+#endif
 
 } modcontext;
 
@@ -168,7 +249,7 @@ typedef struct tracker_state_
 	int cur_pattern_pos;
 	int cur_pattern_table_pos;
 	unsigned int buf_index;
-	track_state tracks[32];
+	track_state tracks[NUMMAXCHANNELS];
 }tracker_state;
 
 typedef struct tracker_state_instrument_
@@ -201,7 +282,7 @@ typedef struct tracker_buffer_state_
 // - "Load" a MOD from memory (from "mod_data" with size "mod_data_size").
 //   Return 1 if success. 0 in case of error.
 // -------------------------------------------
-// void hxcmod_fillbuffer( modcontext * modctx, unsigned short * outbuffer, unsigned long nbsample, tracker_buffer_state * trkbuf )
+// void hxcmod_fillbuffer( modcontext * modctx, unsigned short * outbuffer, mssize nbsample, tracker_buffer_state * trkbuf )
 //
 // - Generate and return the next samples chunk to outbuffer.
 //   nbsample specify the number of stereo 16bits samples you want.
@@ -210,21 +291,19 @@ typedef struct tracker_buffer_state_
 //   The optional trkbuf parameter can be used to get detailed status of the player. Put NULL/0 is unused.
 // -------------------------------------------
 // void hxcmod_unload( modcontext * modctx )
+//
 // - "Unload" / clear the player status.
 // -------------------------------------------
 ///////////////////////////////////////////////////////////////////////////////////
 
 int  hxcmod_init( modcontext * modctx );
-int  hxcmod_setcfg( modcontext * modctx, int samplerate, int bits, int stereo, int stereo_separation, int filter);
+int  hxcmod_setcfg( modcontext * modctx, int samplerate, int stereo_separation, int filter );
 int  hxcmod_load( modcontext * modctx, void * mod_data, int mod_data_size );
-void hxcmod_fillbuffer( modcontext * modctx, unsigned short * outbuffer, unsigned long nbsample, tracker_buffer_state * trkbuf );
+void hxcmod_fillbuffer( modcontext * modctx, msample * outbuffer, mssize nbsample, tracker_buffer_state * trkbuf );
 void hxcmod_unload( modcontext * modctx );
 
-#endif
-
-
-#if defined __cplusplus
+#ifdef __cplusplus
 }
 #endif
 
-#endif // __HXCMOD_H
+#endif /* MODPLAY_DEF */

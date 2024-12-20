@@ -178,7 +178,7 @@ static uint8_t l2cap_classic_send(l2cap_channel_t * channel, const uint8_t *data
 static void l2cap_cbm_emit_channel_opened(l2cap_channel_t *channel, uint8_t status);
 static void l2cap_cbm_emit_incoming_connection(l2cap_channel_t *channel);
 static void l2cap_credit_based_notify_channel_can_send(l2cap_channel_t *channel);
-static void l2cap_cbm_finialize_channel_close(l2cap_channel_t *channel);
+static void l2cap_cbm_finalize_channel_close(l2cap_channel_t *channel);
 static inline l2cap_service_t * l2cap_cbm_get_service(uint16_t le_psm);
 #endif
 #ifdef L2CAP_USES_CREDIT_BASED_CHANNELS
@@ -422,7 +422,7 @@ static int l2cap_ertm_send_information_frame(l2cap_channel_t * channel, int inde
     log_info("I-Frame: control 0x%04x", control);
     little_endian_store_16(acl_buffer, 8, control);
     (void)memcpy(&acl_buffer[8 + 2],
-                 &channel->tx_packets_data[index * channel->local_mps],
+                 &channel->tx_packets_data[index * channel->remote_mps],
                  tx_state->len);
     // (re-)start retransmission timer on 
     l2cap_ertm_start_retransmission_timer(channel);
@@ -439,7 +439,7 @@ static void l2cap_ertm_store_fragment(l2cap_channel_t * channel, l2cap_segmentat
     tx_state->sar = sar;
     tx_state->retry_count = 0;
 
-    uint8_t * tx_packet = &channel->tx_packets_data[index * channel->local_mps];
+    uint8_t * tx_packet = &channel->tx_packets_data[index * channel->remote_mps];
     log_debug("index %u, local mps %u, remote mps %u, packet tx %p, len %u", index, channel->local_mps, channel->remote_mps, tx_packet, len);
     int pos = 0;
     if (sar == L2CAP_SEGMENTATION_AND_REASSEMBLY_START_OF_L2CAP_SDU){
@@ -526,11 +526,12 @@ static uint16_t l2cap_setup_options_ertm_request(l2cap_channel_t * channel, uint
     little_endian_store_16(config_options, pos, channel->local_mtu);
     pos += 2;
 
-    // Issue: iOS (e.g. 10.2) uses "No FCS" as default while Core 5.0 specifies "FCS" as default
-    // Workaround: try to actively negotiate FCS option
-    config_options[pos++] = L2CAP_CONFIG_OPTION_TYPE_FRAME_CHECK_SEQUENCE;
-    config_options[pos++] = 1;     // length
-    config_options[pos++] = channel->fcs_option;
+    // fcs_option = 2 <=> OMIT FCS Omit
+    if (channel->fcs_option < 2){
+        config_options[pos++] = L2CAP_CONFIG_OPTION_TYPE_FRAME_CHECK_SEQUENCE;
+        config_options[pos++] = 1;     // length
+        config_options[pos++] = channel->fcs_option;
+    }
     return pos; // 11+4+3=18
 }
 
@@ -560,12 +561,10 @@ static uint16_t l2cap_setup_options_ertm_response(l2cap_channel_t * channel, uin
     config_options[pos++] = 2;     // length
     little_endian_store_16(config_options, pos, channel->remote_mtu);
     pos += 2;
-#if 0
     //
     config_options[pos++] = L2CAP_CONFIG_OPTION_TYPE_FRAME_CHECK_SEQUENCE;
     config_options[pos++] = 1;     // length
     config_options[pos++] = channel->fcs_option;
-#endif
     return pos; // 11+4=15
 }
 
@@ -1509,7 +1508,7 @@ uint8_t l2cap_send_prepared(uint16_t local_cid, uint16_t len){
     int fcs_size = 0;
 
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
-    if (channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION && channel->fcs_option){
+    if (channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION && channel->fcs_active){
         fcs_size = 2;
     }
 #endif
@@ -1520,7 +1519,7 @@ uint8_t l2cap_send_prepared(uint16_t local_cid, uint16_t len){
     l2cap_setup_header(acl_buffer, channel->con_handle, packet_boundary_flag, channel->remote_cid, len + fcs_size);
 
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
-    if (fcs_size){
+    if (fcs_size > 0){
         // calculate FCS over l2cap data
         uint16_t fcs = crc16_calc(acl_buffer + 4, 4 + len);
         log_info("I-Frame: fcs 0x%04x", fcs);
@@ -1638,6 +1637,9 @@ static uint32_t l2cap_extended_features_mask(void){
     uint32_t features = 0x280;
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
     features |= 0x0028;
+#endif
+#ifdef ENABLE_L2CAP_ENHANCED_CREDIT_BASED_FLOW_CONTROL_MODE
+    features |= 0x0400;
 #endif
     return features;
 }
@@ -1922,13 +1924,13 @@ static void l2cap_run_signaling_response(void) {
             case INFORMATION_REQUEST:
                 switch (info_type){
                     case L2CAP_INFO_TYPE_CONNECTIONLESS_MTU: {
-                            uint16_t connectionless_mtu = hci_max_acl_data_packet_length();
+                        uint16_t connectionless_mtu = hci_max_acl_data_packet_length();
                         l2cap_send_classic_signaling_packet(handle, INFORMATION_RESPONSE, sig_id, info_type, 0,
                                                             sizeof(connectionless_mtu), &connectionless_mtu);
                         }
                         break;
                     case L2CAP_INFO_TYPE_EXTENDED_FEATURES_SUPPORTED: {
-                            uint32_t features = l2cap_extended_features_mask();
+                        uint32_t features = l2cap_extended_features_mask();
                         l2cap_send_classic_signaling_packet(handle, INFORMATION_RESPONSE, sig_id, info_type, 0,
                                                             sizeof(features), &features);
                         }
@@ -2078,7 +2080,7 @@ static bool l2cap_cbm_run_channel(l2cap_channel_t * channel) {
         case L2CAP_STATE_WILL_SEND_DISCONNECT_RESPONSE:
             channel->state = L2CAP_STATE_INVALID;
             l2cap_send_le_signaling_packet( channel->con_handle, DISCONNECTION_RESPONSE, channel->remote_sig_id, channel->local_cid, channel->remote_cid);
-            l2cap_cbm_finialize_channel_close(channel);  // -- remove from list
+            l2cap_cbm_finalize_channel_close(channel);  // -- remove from list
             break;
         default:
             break;
@@ -2154,7 +2156,7 @@ static void l2cap_ecbm_emit_channel_opened(l2cap_channel_t *channel, uint8_t sta
     little_endian_store_16(event, 17, channel->remote_cid);
     little_endian_store_16(event, 19, channel->local_mtu);
     little_endian_store_16(event, 21, channel->remote_mtu);
-    hci_dump_packet(HCI_EVENT_PACKET, 1, event, sizeof(event));
+    hci_dump_btstack_event(event, sizeof(event));
     l2cap_dispatch_to_channel(channel, HCI_EVENT_PACKET, event, sizeof(event));
 }
 
@@ -2242,7 +2244,7 @@ static void l2cap_ecbm_run_channels(void) {
                     l2cap_send_general_signaling_packet(channel->con_handle, signaling_cid, DISCONNECTION_RESPONSE,
                                                         channel->remote_sig_id, channel->local_cid,
                                                         channel->remote_cid);
-                    l2cap_cbm_finialize_channel_close(channel);  // -- remove from list
+                    l2cap_cbm_finalize_channel_close(channel);  // -- remove from list
                     continue;
                 default:
                     continue;
@@ -2506,13 +2508,13 @@ static l2cap_channel_t * l2cap_create_channel_entry(btstack_packet_handler_t pac
     channel->remote_sig_id = L2CAP_SIG_ID_INVALID;
     channel->local_sig_id = L2CAP_SIG_ID_INVALID;
 
-    log_info("create channel %p, local_cid 0x%04x", channel, channel->local_cid);
+    log_info("create channel %p, local_cid 0x%04x", (void*)channel, channel->local_cid);
 
     return channel;
 }
 
 static void l2cap_free_channel_entry(l2cap_channel_t * channel){
-    log_info("free channel %p, local_cid 0x%04x", channel, channel->local_cid);
+    log_info("free channel %p, local_cid 0x%04x", (void*)channel, channel->local_cid);
     // assert all timers are stopped
     l2cap_stop_rtx(channel);
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
@@ -2975,6 +2977,9 @@ static void l2cap_handle_disconnection_complete(hci_con_handle_t handle){
                         // emit reconfigure failure - result = 0xffff
                         l2cap_ecbm_emit_reconfigure_complete(channel, 0xffff);
                         break;
+                    case L2CAP_STATE_WAIT_INCOMING_SECURITY_LEVEL_UPDATE:
+                        // no incoming event has been sent to higher layer, no need to follow up
+                        break;
                     default:
                         l2cap_emit_simple_event_with_cid(channel, L2CAP_EVENT_CHANNEL_CLOSED);
                         break;
@@ -3336,7 +3341,7 @@ static void l2cap_signaling_handle_configure_request(l2cap_channel_t *channel, u
         // "FCS" has precedence over "No FCS"
         uint8_t update = channel->fcs_option || use_fcs;
         log_info("local fcs: %u, remote fcs: %u -> %u", channel->fcs_option, use_fcs, update);
-        channel->fcs_option = update;
+        channel->fcs_active = update;
         // If ERTM mandatory, but remote didn't send Retransmission and Flowcontrol options -> disconnect
         if (((channel->state_var & L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_ERTM) == 0) & (channel->ertm_mandatory)){
             channel->state = L2CAP_STATE_WILL_SEND_DISCONNECT_REQUEST;
@@ -3888,7 +3893,7 @@ l2cap_ecbm_emit_incoming_connection(l2cap_channel_t *channel, uint8_t num_channe
     little_endian_store_16(event, 11, channel->psm);
     event[13] = num_channels;
     little_endian_store_16(event, 14, channel->local_cid);
-    hci_dump_packet(HCI_EVENT_PACKET, 1, event, sizeof(event));
+    hci_dump_btstack_event(event, sizeof(event));
     (*channel->packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
@@ -4440,17 +4445,12 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
                     if (a_channel->remote_cid != source_cid) continue;
                     l2cap_register_signaling_response(handle, LE_CREDIT_BASED_CONNECTION_REQUEST, sig_id, source_cid, L2CAP_CBM_CONNECTION_RESULT_SOURCE_CID_ALREADY_ALLOCATED);
                     return 1;
-                }                    
+                }
 
-                // security: check encryption
-                if (service->required_security_level >= LEVEL_2){
-                    if (gap_encryption_key_size(handle) == 0){
-                        l2cap_register_signaling_response(handle, LE_CREDIT_BASED_CONNECTION_REQUEST, sig_id, source_cid, L2CAP_CBM_CONNECTION_RESULT_INSUFFICIENT_ENCRYPTION);
-                        return 1;
-                    }
-                    // anything less than 16 byte key size is insufficient
-                    if (gap_encryption_key_size(handle) < 16){
-                        l2cap_register_signaling_response(handle, LE_CREDIT_BASED_CONNECTION_REQUEST, sig_id, source_cid, L2CAP_CBM_CONNECTION_RESULT_ENCYRPTION_KEY_SIZE_TOO_SHORT);
+                // security: check authorization
+                if (service->required_security_level >= LEVEL_4){
+                    if (gap_authorization_state(handle) != AUTHORIZATION_GRANTED){
+                        l2cap_register_signaling_response(handle, LE_CREDIT_BASED_CONNECTION_REQUEST, sig_id, source_cid, L2CAP_CBM_CONNECTION_RESULT_INSUFFICIENT_AUTHORIZATION);
                         return 1;
                     }
                 }
@@ -4463,10 +4463,15 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
                     }
                 }
 
-                // security: check authorization
-                if (service->required_security_level >= LEVEL_4){
-                    if (gap_authorization_state(handle) != AUTHORIZATION_GRANTED){
-                        l2cap_register_signaling_response(handle, LE_CREDIT_BASED_CONNECTION_REQUEST, sig_id, source_cid, L2CAP_CBM_CONNECTION_RESULT_INSUFFICIENT_AUTHORIZATION);
+                // security: check encryption
+                if (service->required_security_level >= LEVEL_2){
+                    if (gap_encryption_key_size(handle) == 0){
+                        l2cap_register_signaling_response(handle, LE_CREDIT_BASED_CONNECTION_REQUEST, sig_id, source_cid, L2CAP_CBM_CONNECTION_RESULT_INSUFFICIENT_ENCRYPTION);
+                        return 1;
+                    }
+                    // anything less than 16 byte key size is insufficient
+                    if (gap_encryption_key_size(handle) < 16){
+                        l2cap_register_signaling_response(handle, LE_CREDIT_BASED_CONNECTION_REQUEST, sig_id, source_cid, L2CAP_CBM_CONNECTION_RESULT_ENCYRPTION_KEY_SIZE_TOO_SHORT);
                         return 1;
                     }
                 }
@@ -4601,12 +4606,12 @@ static void l2cap_acl_classic_handler_for_channel(l2cap_channel_t * l2cap_channe
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
     if (l2cap_channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION){
 
-        int fcs_size = l2cap_channel->fcs_option ? 2 : 0;
+        int fcs_size = l2cap_channel->fcs_active ? 2 : 0;
 
         // assert control + FCS fields are inside
         if (size < COMPLETE_L2CAP_HEADER+2+fcs_size) return;
 
-        if (l2cap_channel->fcs_option){
+        if (fcs_size > 0){
             // verify FCS (required if one side requested it)
             uint16_t fcs_calculated = crc16_calc(&packet[4], size - (4+2));
             uint16_t fcs_packet     = little_endian_read_16(packet, size-2);
@@ -5250,6 +5255,15 @@ static void l2cap_credit_based_notify_channel_can_send(l2cap_channel_t *channel)
     log_debug("le can send now, local_cid 0x%x", channel->local_cid);
     l2cap_emit_simple_event_with_cid(channel, L2CAP_EVENT_CAN_SEND_NOW);
 }
+
+static uint16_t l2cap_credit_based_available_credits(uint16_t local_cid){
+    l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
+    if (channel != NULL) {
+        return channel->credits_outgoing;
+    }
+    return 0;
+}
+
 #endif
 
 #ifdef ENABLE_L2CAP_LE_CREDIT_BASED_FLOW_CONTROL_MODE
@@ -5293,7 +5307,7 @@ static void l2cap_cbm_emit_channel_opened(l2cap_channel_t *channel, uint8_t stat
 }
 
 // finalize closed channel - l2cap_handle_disconnect_request & DISCONNECTION_RESPONSE
-void l2cap_cbm_finialize_channel_close(l2cap_channel_t * channel){
+static void l2cap_cbm_finalize_channel_close(l2cap_channel_t * channel){
     channel->state = L2CAP_STATE_CLOSED;
     l2cap_emit_simple_event_with_cid(channel, L2CAP_EVENT_CHANNEL_CLOSED);
     // discard channel
@@ -5445,7 +5459,7 @@ uint8_t l2cap_cbm_create_channel(btstack_packet_handler_t packet_handler, hci_co
     if (!channel) {
         return BTSTACK_MEMORY_ALLOC_FAILED;
     }
-    log_info("created %p", channel);
+    log_info("created %p", (void*)channel);
 
     // store local_cid
     if (out_local_cid){
@@ -5484,6 +5498,10 @@ uint8_t l2cap_cbm_create_channel(btstack_packet_handler_t packet_handler, hci_co
 
 uint8_t l2cap_cbm_provide_credits(uint16_t local_cid, uint16_t credits){
     return l2cap_credit_based_provide_credits(local_cid, credits);
+}
+
+uint16_t l2cap_cbm_available_credits(uint16_t local_cid){
+    return l2cap_credit_based_available_credits(local_cid);
 }
 #endif
 
@@ -5719,6 +5737,10 @@ uint8_t l2cap_ecbm_reconfigure_channels(uint8_t num_cids, uint16_t * local_cids,
 uint8_t l2cap_ecbm_provide_credits(uint16_t local_cid, uint16_t credits){
     return l2cap_credit_based_provide_credits(local_cid, credits);
 }
+
+uint16_t l2cap_ecbm_available_credits(uint16_t local_cid){
+    return l2cap_credit_based_available_credits(local_cid);
+}
 #endif
 
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
@@ -5843,5 +5865,22 @@ void l2cap_free_channels_fuzz(void){
             btstack_memory_l2cap_channel_free(channel);
         }
     }
+}
+
+l2cap_channel_t * l2cap_get_dynamic_channel_fuzz(void){
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &l2cap_channels);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        l2cap_channel_t * channel = (l2cap_channel_t*) btstack_linked_list_iterator_next(&it);
+        switch (channel->channel_type) {
+            case L2CAP_CHANNEL_TYPE_CLASSIC:
+            case L2CAP_CHANNEL_TYPE_CHANNEL_CBM:
+            case L2CAP_CHANNEL_TYPE_CHANNEL_ECBM:
+                return channel;
+            default:
+                break;
+        }
+    }
+    return NULL;
 }
 #endif

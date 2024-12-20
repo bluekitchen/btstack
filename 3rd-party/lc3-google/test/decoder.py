@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 #
 # Copyright 2022 Google LLC
 #
@@ -26,8 +25,6 @@ import tables as T, appendix_c as C
 
 import mdct, energy, bwdet, sns, tns, spec, ltpf
 import bitstream
-
-### ------------------------------------------------------------------------ ###
 
 class Decoder:
 
@@ -84,7 +81,7 @@ class Decoder:
         x = np.append(x, np.zeros(self.ns - self.ne))
         x = self.mdct.run(x)
 
-        x = self.ltpf.run(x, len(data))
+        x = self.ltpf.run(x)
 
         return x
 
@@ -96,18 +93,17 @@ class Decoder:
 
         return x
 
-### ------------------------------------------------------------------------ ###
-
 def check_appendix_c(dt):
 
-    ok = True
+    i0 = dt - T.DT_7M5
 
     dec_c = lc3.setup_decoder(int(T.DT_MS[dt] * 1000), 16000)
+    ok = True
 
-    for i in range(len(C.BYTES_AC[dt])):
+    for i in range(len(C.BYTES_AC[i0])):
 
-        pcm = lc3.decode(dec_c, bytes(C.BYTES_AC[dt][i]))
-        ok = ok and np.max(np.abs(pcm - C.X_HAT_CLIP[dt][i])) < 1
+        pcm = lc3.decode(dec_c, bytes(C.BYTES_AC[i0][i]))
+        ok = ok and np.max(np.abs(pcm - C.X_HAT_CLIP[i0][i])) < 1
 
     return ok
 
@@ -115,83 +111,7 @@ def check():
 
     ok = True
 
-    for dt in range(T.NUM_DT):
+    for dt in range(T.DT_7M5, T.NUM_DT):
         ok = ok and check_appendix_c(dt)
 
     return ok
-
-### ------------------------------------------------------------------------ ###
-
-if __name__ == "__main__":
-
-    parser = argparse.ArgumentParser(description='LC3 Decoder Test Framework')
-    parser.add_argument('lc3_file',
-        help='Input bitstream file', type=argparse.FileType('r'))
-    parser.add_argument('--pyout',
-        help='Python output file', type=argparse.FileType('w'))
-    parser.add_argument('--cout',
-        help='C output file', type=argparse.FileType('w'))
-    args = parser.parse_args()
-
-    ### File Header ###
-
-    f_lc3 = open(args.lc3_file.name, 'rb')
-
-    header = struct.unpack('=HHHHHHHI', f_lc3.read(18))
-
-    if header[0] != 0xcc1c:
-        raise ValueError('Invalid bitstream file')
-
-    if header[4] != 1:
-        raise ValueError('Unsupported number of channels')
-
-    sr_hz = header[2] * 100
-    bitrate = header[3] * 100
-    nchannels = header[4]
-    dt_ms = header[5] / 100
-
-    f_lc3.seek(header[1])
-
-    ### Setup ###
-
-    dec = Decoder(dt_ms, sr_hz)
-    dec_c = lc3.setup_decoder(int(dt_ms * 1000), sr_hz)
-
-    pcm_c  = np.empty(0).astype(np.int16)
-    pcm_py = np.empty(0).astype(np.int16)
-
-    ### Decoding loop ###
-
-    nframes = 0
-
-    while True:
-
-        data = f_lc3.read(2)
-        if len(data) != 2:
-            break
-
-        (frame_nbytes,) = struct.unpack('=H', data)
-
-        print('Decoding frame %d' % nframes, end='\r')
-
-        data = f_lc3.read(frame_nbytes)
-
-        x = dec.run(data)
-        pcm_py = np.append(pcm_py,
-            np.clip(np.round(x), -32768, 32767).astype(np.int16))
-
-        x_c = lc3.decode(dec_c, data)
-        pcm_c = np.append(pcm_c, x_c)
-
-        nframes += 1
-
-    print('done ! %16s' % '')
-
-    ### Terminate ###
-
-    if args.pyout:
-        wavfile.write(args.pyout.name, sr_hz, pcm_py)
-    if args.cout:
-        wavfile.write(args.cout.name, sr_hz, pcm_c)
-
-### ------------------------------------------------------------------------ ###

@@ -89,6 +89,13 @@ uint8_t att_server_request_to_send_notification(btstack_context_callback_registr
     return ERROR_CODE_SUCCESS;
 }
 
+uint8_t att_server_request_to_send_indication(btstack_context_callback_registration_t * callback_registration, hci_con_handle_t con_handle){
+    UNUSED(callback_registration);
+    UNUSED(con_handle);
+    mock().actualCall("att_server_request_to_send_indication");
+    return ERROR_CODE_SUCCESS;
+}
+
 void hci_add_event_handler(btstack_packet_callback_registration_t * callback_handler){
     UNUSED(callback_handler);
 }

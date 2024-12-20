@@ -42,8 +42,15 @@ with others browsers supporting the Web Audio API support.
 
 You can test it at this address : http://hxc2001.free.fr/hxcmod/
 
-A video demo of the native Mod player can be seen on youtube :
+The native Mod player demonstration video is available on youtube :
 https://www.youtube.com/watch?v=MEU9FGZzjac
+
+Another video showing the player working on a STM32F105 microcontroller based device :
+https://www.youtube.com/watch?v=kiOT8-zWVkA
+
+Another case, this time with an STM32 microcontroller without DAC hardware. 
+The firmware implements a 1 bit delta sigma / PDM stream generator :
+https://www.youtube.com/watch?v=AQ--IiXPUGA
 
 --------------------------------------------------------------------------------------
  HxCMOD Core API
@@ -54,12 +61,10 @@ int  hxcmod_init( modcontext * modctx )
 - Initialize the modcontext buffer. Must be called before doing anything else.
   Return 1 if success. 0 in case of error.
 
-int  hxcmod_setcfg( modcontext * modctx, int samplerate, int bits, int stereo, int stereo_separation, int filter);
+int  hxcmod_setcfg( modcontext * modctx, int samplerate, int stereo_separation, int filter);
 
 - Configure the player :
   samplerate specify the sample rate. (44100 by default).
-  bits specify the number of bits (16 bits only for the moment).
-  stereo - if non null, the stereo mode is selected (default)
   stereo_separation - Left/Right channel separation.
   filter - if non null, the filter is applied (default)
 
@@ -73,15 +78,29 @@ void hxcmod_fillbuffer( modcontext * modctx, unsigned short * outbuffer, unsigne
 
 - Generate and return the next samples chunk to outbuffer.
   nbsample specify the number of stereo 16bits samples you want.
-  The output format is signed 44100Hz 16-bit Stereo PCM samples.
-  The output buffer size in byte must be equal to ( nbsample * 2 * 2 ).
+  The default output format is signed 44100Hz 16-bit Stereo PCM samples.
+  The output format can be changed with the C flags HXCMOD_MONO_OUTPUT, HXCMOD_8BITS_OUTPUT and HXCMOD_UNSIGNED_OUTPUT.
+  The output buffer size in byte must be equal to ( nbsample * sample_size * (mono=1 or stereo=2) ).
   The optional trkbuf parameter can be used to get detailed status of the player. Put NULL/0 if unused.
 
 
 void hxcmod_unload( modcontext * modctx )
 - "Unload" / clear the player status.
 
+Compile-time C defines options :
 
+HXCMOD_MONO_OUTPUT       : Turn the output format in mono mode.
+HXCMOD_8BITS_OUTPUT      : Set the output wave format in 8bits.
+HXCMOD_UNSIGNED_OUTPUT   : Set the output wave format unsigned.
+HXCMOD_MAXCHANNELS       : Set the maximum supported channels (default : 32).
+                           Reduce it to gain some RAM space.
+                           Increase it if you want to support some specials mods
+                           (up to 999).
+HXCMOD_BIGENDIAN_MACHINE : The target machine is big endian.
+HXCMOD_SLOW_TARGET       : For slow targets : Disable stereo mixing and output filter.
+HXCMOD_USE_PRECALC_VOLUME_TABLE : Use precalculated volume table for the mixing.
+                                  suppress the multiply operations for slow targets.
+                                  The table need 32KB of RAM.
 --------------------------------------------------------------------------------------
  Files on the repository
 --------------------------------------------------------------------------------------
@@ -100,6 +119,9 @@ The Windows test software.
 
 - js_emscripten/
 The Web browser/JavaScript version. (Build with Emscripten)
+
+- STM32/
+STM32 microcontroller / "Gotek" demo.
 
 - packer/
 Data compression utility. Used to embed one mod and some graphical stuff into the executable.

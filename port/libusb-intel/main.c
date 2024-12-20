@@ -162,13 +162,18 @@ static void intel_firmware_done(int result){
 
     printf("Done %x\n", result);
 
+    if (result != 0){
+        exit(result);
+    }
+
     intel_firmware_loaded = 1;
 
     // init HCI
     hci_init(transport, NULL);
 
 #ifdef HAVE_PORTAUDIO
-    btstack_audio_set_instance(btstack_audio_portaudio_get_instance());
+    btstack_audio_sink_set_instance(btstack_audio_portaudio_sink_get_instance());
+    btstack_audio_source_set_instance(btstack_audio_portaudio_source_get_instance());
 #endif
 
     // inform about BTstack state

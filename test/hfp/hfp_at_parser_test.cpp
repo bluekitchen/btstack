@@ -651,6 +651,89 @@ TEST(HFPParser, custom_command_hf_with_assignment){
     hfp_at_parser_test_dump_line_buffer();
 }
 
+TEST(HFPParser, HFP_GABRBAGE_AND_ANSWER_CALL){
+    parse_ag("\r\nAT+ABCDEF\r\n");
+    CHECK_EQUAL(HFP_CMD_UNKNOWN, context.command);
+    snprintf(packet, sizeof(packet), "\r\n%s\r\n", HFP_ANSWER_CALL);
+    parse_ag(packet);
+    CHECK_EQUAL(HFP_CMD_CALL_ANSWERED, context.command);
+}
+
+TEST(HFPParser, AG_SENDS_RANDOM){
+    parse_hf("\r\n+$PATH:511\r\n");
+    CHECK_EQUAL(HFP_CMD_UNKNOWN, context.command);
+}
+
+TEST(HFPParser, long_command){
+    char command[300];
+    uint16_t offset = 0;
+    const char * header = "+CIEV";
+    uint16_t header_len = strlen(header);
+    memcpy(&command[offset], header, header_len);
+    offset += header_len;
+    command[offset++] = 0x02;
+    command[offset++] = 0x32;
+    uint16_t num_2c = 250;
+    memset(&command[offset], 0x2c, num_2c);
+    offset += num_2c;
+    command[offset++] = 0x31;
+    command[offset++] = '\r';
+    command[offset++] = '\n';
+    command[offset++] = 0x00;
+    parse_hf(command);
+}
+
+TEST(HFPParser, apple_accessory_information){
+    parse_ag("\n\rAT+XAPL=ABCD-1234-0100,10\r\n");
+    CHECK_EQUAL(HFP_CMD_APPLE_ACCESSORY_INFORMATION, context.command);
+    CHECK_EQUAL(0xABCD, context.apple_accessory_vendor_id);
+    CHECK_EQUAL(0x1234, context.apple_accessory_product_id);
+    STRCMP_EQUAL("0100",context.apple_accessory_version);
+    CHECK_EQUAL(10, context.apple_accessory_features);
+}
+
+TEST(HFPParser, apple_accessory_state_battery){
+    context.apple_accessory_battery_level = -1;
+    context.apple_accessory_docked = -1;
+    parse_ag("\n\rAT+IPHONEACCEV=1,1,3\r\n");
+    CHECK_EQUAL(HFP_CMD_APPLE_ACCESSORY_STATE, context.command);
+    CHECK_EQUAL(3, context.apple_accessory_battery_level);
+    CHECK_EQUAL(-1, context.apple_accessory_docked);
+}
+
+TEST(HFPParser, apple_accessory_state_docked){
+    context.apple_accessory_battery_level = -1;
+    context.apple_accessory_docked = -1;
+    parse_ag("\n\rAT+IPHONEACCEV=1,2,1\r\n");
+    CHECK_EQUAL(HFP_CMD_APPLE_ACCESSORY_STATE, context.command);
+    CHECK_EQUAL(-1, context.apple_accessory_battery_level);
+    CHECK_EQUAL(1, context.apple_accessory_docked);
+}
+
+TEST(HFPParser, apple_accessory_state_both){
+    context.apple_accessory_battery_level = -1;
+    context.apple_accessory_docked = -1;
+    parse_ag("\n\rAT+IPHONEACCEV=1,1,3,2,1\r\n");
+    CHECK_EQUAL(HFP_CMD_APPLE_ACCESSORY_STATE, context.command);
+    CHECK_EQUAL(3, context.apple_accessory_battery_level);
+    CHECK_EQUAL(1, context.apple_accessory_docked);
+}
+
+TEST(HFPParser,dummy){
+    unsigned char data[] = {
+        0x99, 0x08, 0x0a
+    };
+    unsigned int data_len = sizeof(data);
+    int is_handsfree = data[0] & 1;
+    hfp_connection_t hfp_connection;
+    memset(&hfp_connection, 0, sizeof(hfp_connection_t));
+    uint32_t i;
+    for (i = 1; i < data_len; i++){
+        hfp_parse(&hfp_connection, data[i], is_handsfree);
+    }
+
+}
+
 int main (int argc, const char * argv[]){
     return CommandLineTestRunner::RunAllTests(argc, argv);
 }

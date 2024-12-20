@@ -434,6 +434,8 @@ static bool sm_passkey_entry(stk_generation_method_t method);
 static void sm_pairing_complete(sm_connection_t * sm_conn, uint8_t status, uint8_t reason);
 
 static void log_info_hex16(const char * name, uint16_t value){
+    UNUSED(name);
+    UNUSED(value);
     log_info("%-6s 0x%04x", name, value);
 }
 
@@ -1584,6 +1586,8 @@ static void sm_remove_le_device_db_entry(uint16_t i) {
 }
 
 static uint8_t sm_key_distribution_validate_received(sm_connection_t * sm_conn){
+    UNUSED(sm_conn);
+
     // if identity is provided, abort if we have bonding with same address but different irk
     if ((setup->sm_key_distribution_received_set & SM_KEYDIST_FLAG_IDENTITY_INFORMATION) != 0u){
         int index = sm_le_device_db_index_lookup(BD_ADDR_TYPE_LE_PUBLIC, setup->sm_peer_address);
@@ -1630,6 +1634,7 @@ static inline void sm_pdu_received_in_wrong_state(sm_connection_t * sm_conn){
 static void sm_sc_prepare_dhkey_check(sm_connection_t * sm_conn);
 static bool sm_passkey_used(stk_generation_method_t method);
 static bool sm_just_works_or_numeric_comparison(stk_generation_method_t method);
+static void sm_sc_generate_nx_for_send_random(sm_connection_t * sm_conn);
 
 static void sm_sc_start_calculating_local_confirm(sm_connection_t * sm_conn){
     if (setup->sm_stk_generation_method == OOB){
@@ -1643,9 +1648,7 @@ static void sm_sc_state_after_receiving_random(sm_connection_t * sm_conn){
     if (IS_RESPONDER(sm_conn->sm_role)){
         // Responder
         if (setup->sm_stk_generation_method == OOB){
-            // generate Nb
-            log_info("Generate Nb");
-            btstack_crypto_random_generate(&sm_crypto_random_request, setup->sm_local_nonce, 16, &sm_handle_random_result_sc_next_send_pairing_random, (void *)(uintptr_t) sm_conn->sm_handle);
+            sm_sc_generate_nx_for_send_random(sm_conn);
         } else {
             sm_conn->sm_engine_state = SM_SC_SEND_PAIRING_RANDOM;
         }
@@ -1705,7 +1708,12 @@ static void sm_sc_cmac_done(uint8_t * hash){
                 sm_pairing_error(sm_conn, SM_REASON_CONFIRM_VALUE_FAILED);
                 break;
             }
-            sm_sc_state_after_receiving_random(sm_conn);
+            // for OOB, C is verified before generating and sending random Nonce
+            if (setup->sm_stk_generation_method == OOB){
+                sm_sc_generate_nx_for_send_random(sm_conn);
+            } else {
+                sm_sc_state_after_receiving_random(sm_conn);
+            }
             break;
         case SM_SC_W4_CALCULATE_G2: {
             uint32_t vab = big_endian_read_32(hash, 12) % 1000000;
@@ -2040,6 +2048,12 @@ static void sm_sc_calculate_f6_to_verify_dhkey_check(sm_connection_t * sm_conn){
         f6_setup(setup->sm_peer_nonce, setup->sm_local_nonce, setup->sm_ra, iocap_b, bd_addr_slave, bd_addr_master);
         f6_engine(sm_conn, setup->sm_mackey);
     }
+}
+
+static void sm_sc_generate_nx_for_send_random(sm_connection_t * sm_conn){
+    // generate Nx
+    log_info("Generate N%c", IS_RESPONDER(sm_conn->sm_role) ? 'b' : 'a');
+    btstack_crypto_random_generate(&sm_crypto_random_request, setup->sm_local_nonce, 16, &sm_handle_random_result_sc_next_send_pairing_random, (void*)(uintptr_t) sm_conn->sm_handle);
 }
 
 #ifdef ENABLE_CROSS_TRANSPORT_KEY_DERIVATION
@@ -2394,8 +2408,6 @@ static void sm_run_activate_connection(void){
         sm_connection_t  * sm_connection = &hci_connection->sm_connection;
         // - if no connection locked and we're ready/waiting for setup context, fetch it and start
         bool done = true;
-        int err;
-        UNUSED(err);
 
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
         // assert ec key is ready
@@ -2794,17 +2806,24 @@ static bool sm_run_non_connection_logic(void){
     return done;
 }
 
-static void sm_run(void){
-
-    // assert that stack has already bootet
-    if (hci_get_state() != HCI_STATE_WORKING) return;
+static bool sm_run_ready(void) {
+    // assert that stack has already booted
+    if (hci_get_state() != HCI_STATE_WORKING) return false;
 
     // assert that we can send at least commands
-    if (!hci_can_send_command_packet_now()) return;
+    if (!hci_can_send_command_packet_now()) return false;
 
     // pause until IR/ER are ready
-    if (sm_persistent_keys_random_active) return;
+    if (sm_persistent_keys_random_active) return false;
 
+    return true;
+}
+
+static void sm_run(void){
+
+    // ready
+    if (sm_run_ready() == false) return;
+    
     // non-connection related behaviour
     bool done = sm_run_non_connection_logic();
     if (done) return;
@@ -2856,7 +2875,8 @@ static void sm_run(void){
         }
 #endif
 
-        int key_distribution_flags;
+        // initialize to avoid 'maybe used uninitialized' error
+        int key_distribution_flags = 0;
         UNUSED(key_distribution_flags);
 #ifdef ENABLE_LE_PERIPHERAL
         int err;
@@ -3319,10 +3339,16 @@ static void sm_run(void){
                 sm_send_connectionless(connection, (uint8_t *) &setup->sm_s_pres, sizeof(sm_pairing_packet_t));
                 break;
             case SM_BR_EDR_DISTRIBUTE_KEYS:
+                // send next key
                 if (setup->sm_key_distribution_send_set != 0) {
                     sm_run_distribute_keys(connection);
+                }
+
+                // more to send?
+                if (setup->sm_key_distribution_send_set != 0){
                     return;
                 }
+
                 // keys are sent
                 if (IS_RESPONDER(connection->sm_role)) {
                     // responder -> receive master keys if there are any
@@ -3790,6 +3816,7 @@ static void sm_event_handle_classic_encryption_event(sm_connection_t * sm_conn, 
     if (sm_conn->sm_connection_encrypted != 2) return;
     // prepare for pairing request
     if (IS_RESPONDER(sm_conn->sm_role)){
+        log_info("CTKD: SM_BR_EDR_RESPONDER_W4_PAIRING_REQUEST");
         sm_conn->sm_engine_state = SM_BR_EDR_RESPONDER_W4_PAIRING_REQUEST;
     } else if (sm_conn->sm_pairing_requested){
         // check if remote supports fixed channels
@@ -3908,9 +3935,17 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                     sm_conn->sm_cid = L2CAP_CID_BR_EDR_SECURITY_MANAGER;
                     sm_conn->sm_engine_state = SM_BR_EDR_W4_ENCRYPTION_COMPLETE;
 			        break;
+
 #endif
 
 #ifdef ENABLE_CROSS_TRANSPORT_KEY_DERIVATION
+                case HCI_EVENT_ROLE_CHANGE:
+                    hci_event_role_change_get_bd_addr(packet, addr);
+                    sm_conn = sm_get_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
+                    if (sm_conn == NULL) break;
+                    sm_conn->sm_role = hci_event_role_change_get_role(packet);
+                    break;
+
 			    case HCI_EVENT_SIMPLE_PAIRING_COMPLETE:
 			        if (hci_event_simple_pairing_complete_get_status(packet) != ERROR_CODE_SUCCESS) break;
                     hci_event_simple_pairing_complete_get_bd_addr(packet, addr);
@@ -3984,6 +4019,8 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                                 uint8_t advertising_handle = hci_subevent_le_advertising_set_terminated_get_advertising_handle(packet);
                                 con_handle = hci_subevent_le_advertising_set_terminated_get_connection_handle(packet);
                                 sm_conn = sm_get_connection_for_handle(con_handle);
+                                if (!sm_conn) break;
+
                                 gap_le_get_own_advertising_set_address(&sm_conn->sm_own_addr_type, sm_conn->sm_own_address, advertising_handle);
                                 log_info("Adv set %u terminated -> use addr type %u, addr %s for con handle 0x%04x", advertising_handle, sm_conn->sm_own_addr_type,
                                          bd_addr_to_str(sm_conn->sm_own_address), con_handle);
@@ -4368,12 +4405,80 @@ static uint8_t sm_pdu_validate_and_get_opcode(uint8_t packet_type, const uint8_t
     return sm_pdu_code;
 }
 
+
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
+static void sm_pdu_handler_pairing_public_key(sm_connection_t * sm_conn, const uint8_t * packet) {
+    // store public key for DH Key calculation
+    reverse_256(&packet[01], &setup->sm_peer_q[0]);
+    reverse_256(&packet[33], &setup->sm_peer_q[32]);
+
+    // CVE-2020-26558: abort pairing if remote uses the same public key
+    if (memcmp(&setup->sm_peer_q, ec_q, 64) == 0){
+        log_info("Remote PK matches ours");
+        sm_pairing_error(sm_conn, SM_REASON_DHKEY_CHECK_FAILED);
+        return;
+    }
+
+    // validate public key
+    int err = btstack_crypto_ecc_p256_validate_public_key(setup->sm_peer_q);
+    if (err != 0){
+        log_info("sm: peer public key invalid %x", err);
+        sm_pairing_error(sm_conn, SM_REASON_DHKEY_CHECK_FAILED);
+        return;
+    }
+
+    // start calculating dhkey
+    btstack_crypto_ecc_p256_calculate_dhkey(&sm_crypto_ecc_p256_request, setup->sm_peer_q, setup->sm_dhkey, sm_sc_dhkey_calculated, (void*)(uintptr_t) sm_conn->sm_handle);
+
+    log_info("public key received, generation method %u", setup->sm_stk_generation_method);
+    if (IS_RESPONDER(sm_conn->sm_role)){
+        // responder
+        sm_conn->sm_engine_state = SM_SC_SEND_PUBLIC_KEY_COMMAND;
+    } else {
+        // initiator
+        // stk generation method
+        // passkey entry: notify app to show passkey or to request passkey
+        switch (setup->sm_stk_generation_method){
+            case JUST_WORKS:
+            case NUMERIC_COMPARISON:
+                sm_conn->sm_engine_state = SM_SC_W4_CONFIRMATION;
+                break;
+            case PK_RESP_INPUT:
+                sm_sc_start_calculating_local_confirm(sm_conn);
+                break;
+            case PK_INIT_INPUT:
+            case PK_BOTH_INPUT:
+                if (setup->sm_user_response != SM_USER_RESPONSE_PASSKEY){
+                    sm_conn->sm_engine_state = SM_SC_W4_USER_RESPONSE;
+                    break;
+                }
+                sm_sc_start_calculating_local_confirm(sm_conn);
+                break;
+            case OOB:
+                if (setup->sm_have_oob_data){
+                    // if we have received rb & cb, verify Cb = f4(PKb, PKb, rb, 0)
+                    sm_conn->sm_engine_state = SM_SC_W2_CMAC_FOR_CHECK_CONFIRMATION;
+                } else {
+                    // otherwise, generate our nonce
+                    sm_sc_generate_nx_for_send_random(sm_conn);
+                }
+                break;
+            default:
+                btstack_assert(false);
+                break;
+        }
+    }
+}
+#endif
+
+
 static void sm_pdu_handler(sm_connection_t *sm_conn, uint8_t sm_pdu_code, const uint8_t *packet) {
     log_debug("sm_pdu_handler: state %u, pdu 0x%02x", sm_conn->sm_engine_state, sm_pdu_code);
 
+#ifdef ENABLE_LE_CENTRAL
     int err;
+#endif
     uint8_t max_encryption_key_size;
-    UNUSED(err);
 
     switch (sm_conn->sm_engine_state){
 
@@ -4544,64 +4649,7 @@ static void sm_pdu_handler(sm_connection_t *sm_conn, uint8_t sm_pdu_code, const 
                 sm_pdu_received_in_wrong_state(sm_conn);
                 break;
             }
-
-            // store public key for DH Key calculation
-            reverse_256(&packet[01], &setup->sm_peer_q[0]);
-            reverse_256(&packet[33], &setup->sm_peer_q[32]);
-
-            // CVE-2020-26558: abort pairing if remote uses the same public key
-            if (memcmp(&setup->sm_peer_q, ec_q, 64) == 0){
-                log_info("Remote PK matches ours");
-                sm_pairing_error(sm_conn, SM_REASON_DHKEY_CHECK_FAILED);
-                break;
-            }
-
-            // validate public key
-            err = btstack_crypto_ecc_p256_validate_public_key(setup->sm_peer_q);
-            if (err != 0){
-                log_info("sm: peer public key invalid %x", err);
-                sm_pairing_error(sm_conn, SM_REASON_DHKEY_CHECK_FAILED);
-                break;
-            }
-
-            // start calculating dhkey
-            btstack_crypto_ecc_p256_calculate_dhkey(&sm_crypto_ecc_p256_request, setup->sm_peer_q, setup->sm_dhkey, sm_sc_dhkey_calculated, (void*)(uintptr_t) sm_conn->sm_handle);
-
-
-            log_info("public key received, generation method %u", setup->sm_stk_generation_method);
-            if (IS_RESPONDER(sm_conn->sm_role)){
-                // responder
-                sm_conn->sm_engine_state = SM_SC_SEND_PUBLIC_KEY_COMMAND;
-            } else {
-                // initiator
-                // stk generation method
-                // passkey entry: notify app to show passkey or to request passkey
-                switch (setup->sm_stk_generation_method){
-                    case JUST_WORKS:
-                    case NUMERIC_COMPARISON:
-                        sm_conn->sm_engine_state = SM_SC_W4_CONFIRMATION;
-                        break;
-                    case PK_RESP_INPUT:
-                        sm_sc_start_calculating_local_confirm(sm_conn);
-                        break;
-                    case PK_INIT_INPUT:
-                    case PK_BOTH_INPUT:
-                        if (setup->sm_user_response != SM_USER_RESPONSE_PASSKEY){
-                            sm_conn->sm_engine_state = SM_SC_W4_USER_RESPONSE;
-                            break;
-                        }
-                        sm_sc_start_calculating_local_confirm(sm_conn);
-                        break;
-                    case OOB:
-                        // generate Nx
-                        log_info("Generate Na");
-                        btstack_crypto_random_generate(&sm_crypto_random_request, setup->sm_local_nonce, 16, &sm_handle_random_result_sc_next_send_pairing_random, (void*)(uintptr_t) sm_conn->sm_handle);
-                        break;
-                    default:
-                        btstack_assert(false);
-                        break;
-                }
-            }
+            sm_pdu_handler_pairing_public_key(sm_conn, packet);
             break;
 
         case SM_SC_W4_CONFIRMATION:
@@ -4663,16 +4711,16 @@ static void sm_pdu_handler(sm_connection_t *sm_conn, uint8_t sm_pdu_code, const 
 
                 // setup local random, set to zero if remote did not receive our data
                 log_info("Received nonce, setup local random ra/rb for dhkey check");
-                if (IS_RESPONDER(sm_conn->sm_role)){
-                    if (sm_pairing_packet_get_oob_data_flag(setup->sm_m_preq) == 0u){
+                if (IS_RESPONDER(sm_conn->sm_role)) {
+                    if (sm_pairing_packet_get_oob_data_flag(setup->sm_m_preq) == 0u) {
                         log_info("Reset rb as A does not have OOB data");
                         memset(setup->sm_rb, 0, 16);
                     } else {
-                        (void)memcpy(setup->sm_rb, sm_sc_oob_random, 16);
+                        (void) memcpy(setup->sm_rb, sm_sc_oob_random, 16);
                         log_info("Use stored rb");
                         log_info_hexdump(setup->sm_rb, 16);
                     }
-                }  else {
+                } else {
                     if (sm_pairing_packet_get_oob_data_flag(setup->sm_s_pres) == 0u){
                         log_info("Reset ra as B does not have OOB data");
                         memset(setup->sm_ra, 0, 16);
@@ -4683,11 +4731,20 @@ static void sm_pdu_handler(sm_connection_t *sm_conn, uint8_t sm_pdu_code, const 
                     }
                 }
 
-                // validate confirm value if Cb = f4(PKb, Pkb, rb, 0) for OOB if data received
-                if (setup->sm_have_oob_data){
-                     sm_conn->sm_engine_state = SM_SC_W2_CMAC_FOR_CHECK_CONFIRMATION;
-                     break;
+                if (IS_RESPONDER(sm_conn->sm_role)){
+                    if (setup->sm_have_oob_data){
+                        // if we have received ra & ca, verify Ca = f4(PKa, PKa, ra, 0)
+                        sm_conn->sm_engine_state = SM_SC_W2_CMAC_FOR_CHECK_CONFIRMATION;
+                    } else {
+                        // otherwise, generate our nonce
+                        sm_sc_generate_nx_for_send_random(sm_conn);
+                    }
+                } else {
+                    // Confirm value already validated if received before,
+                    // move on to DHKey check
+                    sm_sc_prepare_dhkey_check(sm_conn);
                 }
+                break;
             }
 
             // TODO: we only get here for Responder role with JW/NC

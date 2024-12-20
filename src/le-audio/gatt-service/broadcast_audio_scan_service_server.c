@@ -174,9 +174,9 @@ static void bass_server_source_emit_scan_stoped(hci_con_handle_t con_handle){
     
     uint8_t event[5];
     uint8_t pos = 0;
-    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = HCI_EVENT_LEAUDIO_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_BASS_SERVER_SCAN_STOPPED;
+    event[pos++] = LEAUDIO_SUBEVENT_BASS_SERVER_SCAN_STOPPED;
     little_endian_store_16(event, pos, con_handle);
     pos += 2;
     (*bass_server_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
@@ -187,9 +187,9 @@ static void bass_server_source_emit_scan_started(hci_con_handle_t con_handle){
     
     uint8_t event[5];
     uint8_t pos = 0;
-    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = HCI_EVENT_LEAUDIO_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_BASS_SERVER_SCAN_STARTED;
+    event[pos++] = LEAUDIO_SUBEVENT_BASS_SERVER_SCAN_STARTED;
     little_endian_store_16(event, pos, con_handle);
     pos += 2;
     (*bass_server_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
@@ -201,7 +201,7 @@ static void bass_server_source_emit_source_state_changed(uint8_t subevent_id, hc
     
     uint8_t event[7];
     uint8_t pos = 0;
-    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = HCI_EVENT_LEAUDIO_META;
     event[pos++] = sizeof(event) - 2;
     event[pos++] = subevent_id;
     little_endian_store_16(event, pos, con_handle);
@@ -212,15 +212,15 @@ static void bass_server_source_emit_source_state_changed(uint8_t subevent_id, hc
 }
 
 static void bass_server_source_emit_source_added(hci_con_handle_t con_handle, bass_server_source_t * source){
-    bass_server_source_emit_source_state_changed(GATTSERVICE_SUBEVENT_BASS_SERVER_SOURCE_ADDED, con_handle, source->source_id, source->data.pa_sync);
+    bass_server_source_emit_source_state_changed(LEAUDIO_SUBEVENT_BASS_SERVER_SOURCE_ADDED, con_handle, source->source_id, source->data.pa_sync);
 }
 
 static void bass_server_source_emit_source_modified(hci_con_handle_t con_handle, bass_server_source_t * source){
-    bass_server_source_emit_source_state_changed(GATTSERVICE_SUBEVENT_BASS_SERVER_SOURCE_MODIFIED, con_handle, source->source_id, source->data.pa_sync);
+    bass_server_source_emit_source_state_changed(LEAUDIO_SUBEVENT_BASS_SERVER_SOURCE_MODIFIED, con_handle, source->source_id, source->data.pa_sync);
 }
 
 static void bass_server_source_emit_source_deleted(hci_con_handle_t con_handle, bass_server_source_t * source){
-    bass_server_source_emit_source_state_changed(GATTSERVICE_SUBEVENT_BASS_SERVER_SOURCE_DELETED, con_handle, source->source_id, LE_AUDIO_PA_SYNC_DO_NOT_SYNCHRONIZE_TO_PA);
+    bass_server_source_emit_source_state_changed(LEAUDIO_SUBEVENT_BASS_SERVER_SOURCE_DELETED, con_handle, source->source_id, LE_AUDIO_PA_SYNC_DO_NOT_SYNCHRONIZE_TO_PA);
 }
 
 static void bass_server_source_emit_broadcast_code(hci_con_handle_t con_handle, uint8_t source_id, const uint8_t * broadcast_code){
@@ -228,9 +228,9 @@ static void bass_server_source_emit_broadcast_code(hci_con_handle_t con_handle, 
     
     uint8_t event[22];
     uint8_t pos = 0;
-    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = HCI_EVENT_LEAUDIO_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_BASS_SERVER_BROADCAST_CODE;
+    event[pos++] = LEAUDIO_SUBEVENT_BASS_SERVER_BROADCAST_CODE;
     little_endian_store_16(event, pos, con_handle);
     pos += 2;
     event[pos++] = source_id;

@@ -39,8 +39,6 @@
 
 #include <stdint.h>
 #include <string.h>
-// snprintf
-#include <stdio.h>
 
 #include "bluetooth_psm.h"
 #include "bluetooth_sdp.h"
@@ -131,7 +129,7 @@ const char * avrcp_operation2str(uint8_t operation_id){
     } 
     if (name == NULL){
         static char buffer[13];
-        snprintf(buffer, sizeof(buffer), "Unknown 0x%02x", operation_id);
+        btstack_snprintf_assert_complete(buffer, sizeof(buffer), "ID 0x%02x", operation_id);
         buffer[sizeof(buffer)-1] = 0;
         return buffer;
     } else {
@@ -531,7 +529,7 @@ avrcp_browsing_connection_t * avrcp_get_browsing_connection_for_l2cap_cid_for_ro
 
 void avrcp_request_can_send_now(avrcp_connection_t * connection, uint16_t l2cap_cid){
     connection->wait_to_send = true;
-    l2cap_request_can_send_now_event(l2cap_cid);
+    (void)l2cap_request_can_send_now_event(l2cap_cid);
 }
 
 uint16_t avrcp_get_next_cid(avrcp_role_t role){

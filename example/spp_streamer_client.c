@@ -230,7 +230,7 @@ static void handle_start_sdp_client_query(void * context){
     UNUSED(context);
     if (state != W2_SEND_SDP_QUERY) return;
     state = W4_RFCOMM_CHANNEL;
-    sdp_client_query_rfcomm_channel_and_name_for_uuid(&handle_query_rfcomm_event, peer_addr, BLUETOOTH_ATTRIBUTE_PUBLIC_BROWSE_ROOT);               
+    sdp_client_query_rfcomm_channel_and_name_for_uuid(&handle_query_rfcomm_event, peer_addr, BLUETOOTH_SERVICE_CLASS_SERIAL_PORT);
 }
 
 

@@ -118,7 +118,7 @@ void hci_dump_log_P(int log_level, PGM_P format, ...){
 
 void hci_dump_btstack_event(const uint8_t *packet, uint16_t len){
 #ifdef ENABLE_LOG_BTSTACK_EVENTS
-    hci_dump_packet(HCI_EVENT_PACKET, 1, packet, size);
+    hci_dump_packet(HCI_EVENT_PACKET, 1, packet, len);
 #else
     UNUSED(packet);
     UNUSED(len);
@@ -145,6 +145,9 @@ void hci_dump_setup_header_packetlogger(uint8_t * buffer, uint32_t tv_sec, uint3
             break;
         case HCI_SCO_DATA_PACKET:
             packet_logger_type = in ? 0x09 : 0x08;
+            break;
+        case HCI_ISO_DATA_PACKET:
+            packet_logger_type = in ? 0x0d : 0x0c;
             break;
         case HCI_EVENT_PACKET:
             packet_logger_type = 0x01;

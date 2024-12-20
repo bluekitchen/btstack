@@ -20,7 +20,7 @@ or using CMake + Ninja:
 
     mkdir build
     cd build
-    cmake -G Ninja
+    cmake -G Ninja ..
     ninja
 
 ## Environment Setup

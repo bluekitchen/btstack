@@ -37,7 +37,7 @@ static PyObject *attdet_run_py(PyObject *m, PyObject *args)
     CTYPES_CHECK("sr", (unsigned)sr < LC3_NUM_SRATE);
     CTYPES_CHECK(NULL, attdet_obj = to_attdet_analysis(attdet_obj, &attdet));
 
-    int ns = LC3_NS(dt, sr);
+    int ns = lc3_ns(dt, sr);
 
     CTYPES_CHECK("x", x_obj = to_1d_ptr(x_obj, NPY_INT16, ns+6, &x));
 

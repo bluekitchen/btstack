@@ -220,6 +220,66 @@ uint8_t avrcp_controller_press_and_hold_volume_down(uint16_t avrcp_cid);
 uint8_t avrcp_controller_mute(uint16_t avrcp_cid);
 uint8_t avrcp_controller_press_and_hold_mute(uint16_t avrcp_cid);
 
+// Basic Group Navigation
+/**
+ * @brief Move to the first song in the next group.
+ * @param avrcp_cid
+ */
+uint8_t avrcp_controller_next_group(uint16_t avrcp_cid);
+
+/**
+ * @brief Move to the first song in the previous group.
+ * @param avrcp_cid
+ */
+uint8_t avrcp_controller_previous_group(uint16_t avrcp_cid);
+
+// Category 3
+uint8_t avrcp_controller_0(uint16_t avrcp_cid);
+uint8_t avrcp_controller_1(uint16_t avrcp_cid);
+uint8_t avrcp_controller_2(uint16_t avrcp_cid);
+uint8_t avrcp_controller_3(uint16_t avrcp_cid);
+uint8_t avrcp_controller_4(uint16_t avrcp_cid);
+uint8_t avrcp_controller_5(uint16_t avrcp_cid);
+uint8_t avrcp_controller_6(uint16_t avrcp_cid);
+uint8_t avrcp_controller_7(uint16_t avrcp_cid);
+uint8_t avrcp_controller_8(uint16_t avrcp_cid);
+uint8_t avrcp_controller_9(uint16_t avrcp_cid);
+uint8_t avrcp_controller_dot(uint16_t avrcp_cid);
+uint8_t avrcp_controller_enter(uint16_t avrcp_cid);
+uint8_t avrcp_controller_clear(uint16_t avrcp_cid);
+uint8_t avrcp_controller_channel_up(uint16_t avrcp_cid);
+uint8_t avrcp_controller_channel_down(uint16_t avrcp_cid);
+uint8_t avrcp_controller_previous_channel(uint16_t avrcp_cid);
+uint8_t avrcp_controller_sound_select(uint16_t avrcp_cid);
+uint8_t avrcp_controller_input_select(uint16_t avrcp_cid);
+uint8_t avrcp_controller_display_information(uint16_t avrcp_cid);
+uint8_t avrcp_controller_help(uint16_t avrcp_cid);
+uint8_t avrcp_controller_power(uint16_t avrcp_cid);
+uint8_t avrcp_controller_angle(uint16_t avrcp_cid);
+uint8_t avrcp_controller_subpicture(uint16_t avrcp_cid);
+uint8_t avrcp_controller_F1(uint16_t avrcp_cid);
+uint8_t avrcp_controller_F2(uint16_t avrcp_cid);
+uint8_t avrcp_controller_F3(uint16_t avrcp_cid);
+uint8_t avrcp_controller_F4(uint16_t avrcp_cid);
+uint8_t avrcp_controller_F5(uint16_t avrcp_cid);
+
+// Category 4
+uint8_t avrcp_controller_select(uint16_t avrcp_cid);
+uint8_t avrcp_controller_up(uint16_t avrcp_cid);
+uint8_t avrcp_controller_down(uint16_t avrcp_cid);
+uint8_t avrcp_controller_left(uint16_t avrcp_cid);
+uint8_t avrcp_controller_right(uint16_t avrcp_cid);
+uint8_t avrcp_controller_right_up(uint16_t avrcp_cid);
+uint8_t avrcp_controller_right_down(uint16_t avrcp_cid);
+uint8_t avrcp_controller_left_up(uint16_t avrcp_cid);
+uint8_t avrcp_controller_left_down(uint16_t avrcp_cid);
+uint8_t avrcp_controller_root_menu(uint16_t avrcp_cid);
+uint8_t avrcp_controller_setup_menu(uint16_t avrcp_cid);
+uint8_t avrcp_controller_contents_menu(uint16_t avrcp_cid);
+uint8_t avrcp_controller_favorite_menu(uint16_t avrcp_cid);
+uint8_t avrcp_controller_exit(uint16_t avrcp_cid);
+uint8_t avrcp_controller_page_up(uint16_t avrcp_cid);
+uint8_t avrcp_controller_page_down(uint16_t avrcp_cid);
 /**
  * @brief Get play status. Returns event of type AVRCP_SUBEVENT_PLAY_STATUS (length, position, play_status).
  * If TG does not support SongLength And SongPosition on TG, then TG shall return 0xFFFFFFFF.
@@ -280,6 +340,15 @@ uint8_t avrcp_controller_set_absolute_volume(uint16_t avrcp_cid, uint8_t volume)
  * @return status
  */
 uint8_t avrcp_controller_skip(uint16_t avrcp_cid);
+
+uint8_t avrcp_controller_query_player_application_setting_attributes(uint16_t avrcp_cid);
+uint8_t avrcp_controller_query_player_application_setting_values(uint16_t avrcp_cid, avrcp_player_application_setting_attribute_id_t attribute_id);
+
+uint8_t avrcp_controller_query_player_application_setting_attribute_text(uint16_t avrcp_cid);
+uint8_t avrcp_controller_query_player_application_setting_value_text(uint16_t avrcp_cid);
+
+uint8_t avrcp_controller_inform_displayable_characterset(uint16_t avrcp_cid, uint8_t character_set_num, uint16_t * character_set);
+uint8_t avrcp_controller_inform_battery_status(uint16_t avrcp_cid, avrcp_battery_status_t battery_status);
 
 /**
  * @brief Query repeat and shuffle mode. Response via AVRCP_SUBEVENT_SHUFFLE_AND_REPEAT_MODE.

@@ -77,6 +77,15 @@ uint32_t hal_time_ms(void) {
 
 #ifdef CONFIG_BT_ENABLED
 
+// ESP32 and next generation ESP32-C3 + ESP32-S3 provide an asynchronous VHCI interface with
+// a callback when the packet was accepted by the Controller. 
+// Newer Controller only rely on the regular Host to Controller Flow Control and can be 
+// considered synchronous
+
+#if defined(CONFIG_IDF_TARGET_ESP32) || defined (CONFIG_IDF_TARGET_ESP32C3) || defined (CONFIG_IDF_TARGET_ESP32S3)
+#define ENABLE_ESP32_VHCI_ASYNCHRONOUS
+#endif
+
 // assert pre-buffer for packet type is available
 #if !defined(HCI_OUTGOING_PRE_BUFFER_SIZE) || (HCI_OUTGOING_PRE_BUFFER_SIZE < 1)
 #error HCI_OUTGOING_PRE_BUFFER_SIZE not defined or smaller than 1. Please update hci.h
@@ -211,7 +220,11 @@ static int bt_controller_initialized;
 static int transport_open(void){
     esp_err_t ret;
 
-    log_info("transport_open");
+#ifdef ENABLE_ESP32_VHCI_ASYNCHRONOUS
+    log_info("transport_open: using asynchronous VHCI");
+#else
+    log_info("transport_open: using synchronous VHCI");
+#endif
 
     btstack_ring_buffer_init(&hci_ringbuffer, hci_ringbuffer_storage, sizeof(hci_ringbuffer_storage));
 
@@ -284,9 +297,11 @@ static void transport_register_packet_handler(void (*handler)(uint8_t packet_typ
     transport_packet_handler = handler;
 }
 
+#ifdef ENABLE_ESP32_VHCI_ASYNCHRONOUS
 static int transport_can_send_packet_now(uint8_t packet_type) {
     return esp_vhci_host_check_send_available();
 }
+#endif
 
 static int transport_send_packet(uint8_t packet_type, uint8_t *packet, int size){
     // store packet type before actual data and increase size
@@ -300,16 +315,18 @@ static int transport_send_packet(uint8_t packet_type, uint8_t *packet, int size)
 }
 
 static const hci_transport_t transport = {
-    "esp32-vhci",
-    &transport_init,
-    &transport_open,
-    &transport_close,
-    &transport_register_packet_handler,
-    &transport_can_send_packet_now,
-    &transport_send_packet,
-    NULL, // set baud rate
-    NULL, // reset link
-    NULL, // set SCO config
+    .name  = "esp32-vhci",
+    .init  = &transport_init,
+    .open  = &transport_open,
+    .close = &transport_close,
+    .register_packet_handler = &transport_register_packet_handler,
+#ifdef ENABLE_ESP32_VHCI_ASYNCHRONOUS
+    // asynchronous
+    .can_send_packet_now = &transport_can_send_packet_now,
+#else
+    // synchronous <=> can_send_packet_now == NULL
+#endif
+    .send_packet = &transport_send_packet,
 };
 
 #else
@@ -327,16 +344,8 @@ static void transport_init(const void *transport_config){
 }
 
 static const hci_transport_t transport = {
-    "none",
-    &transport_init,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL, // set baud rate
-    NULL, // reset link
-    NULL, // set SCO config
+    .name = "none",
+    .init = &transport_init,
 };
 #endif
 

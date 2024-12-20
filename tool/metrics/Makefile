@@ -48,17 +48,19 @@ SRCS = \
 all: metrics.md metrics.html metrics.txt
 
 metrics.tsv: ${SRCS}
-	ccsm --disable-file --disable-global --exclude-std-headers --exclude-file=.h$$ --output-format=tsv --output-metrics=HIS_.* $^ -- -DuECC_NO_DEFAULT_RNG -isystem ${C_HEADERS}/c90 -isystem ${C_HEADERS}/c99 ${INCLUDES} > $@
+	ccsm --disable-file --disable-global --exclude-std-headers --exclude-file=.h$$ --output-format=tsv --output-metrics=HIS_.* $^ -- -DuECC_NO_DEFAULT_RNG -isystem ${C_HEADERS}/c90 -isystem ${C_HEADERS}/c99 ${INCLUDES} > metrics_raw.tsv
+	echo "# file\tfunction\tGOTO\tRETURN\t_\tSTMT \t_\tCCN\tPATH\tCALLS\tPARAM\tLEVEL\t_\t_\t_" > metrics_header.tsv
+	cat metrics_header.tsv metrics_raw.tsv > $@
+	rm metrics_header.tsv metrics_raw.tsv
 
-metrics.md: metrics.tsv metrics-ccsm.py
-	./metrics-ccsm.py > metrics.md
+metrics.md: metrics.tsv metrics_ccsm.py
+	./metrics_ccsm.py > metrics.md
 
 metrics.html: metrics.md
 	pandoc --from markdown --to html -o metrics.html metrics.md
 
 metrics.txt: metrics.tsv
-	echo "file\tfunction\tGOTO\tRETURN\t_\tSTMT \t_\tCCN\tPATH\tCALLS\tPARAM\tLEVEL\t_\t_\t_" > metrics_header.tsv
-	cat metrics_header.tsv metrics.tsv | expand -t 70,160,170,180,190,210,220,230,240,250,260,270,280,290,300 > metrics.txt
+	expand -t 70,160,170,180,190,210,220,230,240,250,260,270,280,290,300 metrics.tsv > metrics.txt
 
 clean:
-	rm -f metrics.tsv metrics.md metrics.txt metrics.html metrics_header.tsv
+	rm -f metrics.tsv metrics.md metrics.txt metrics.html metrics_header.tsv metrics_raw.tsv

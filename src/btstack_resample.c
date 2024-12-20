@@ -42,10 +42,14 @@
 #include "btstack_resample.h"
 
 void btstack_resample_init(btstack_resample_t * context, int num_channels){
+    btstack_assert(num_channels <= BTSTACK_RESAMPLE_MAX_CHANNELS);
+
     context->src_pos = 0;
     context->src_step = 0x10000;  // default resampling 1.0
-    context->last_sample[0] = 0;
-    context->last_sample[1] = 0;
+    int i;
+    for (i = 0; i < num_channels; i++){
+        context->last_sample[i] = 0;
+    }
     context->num_channels   = num_channels;
 }
 
@@ -79,6 +83,7 @@ uint16_t btstack_resample_block(btstack_resample_t * context, const int16_t * in
         int i;
         if (src_pos >= (num_frames - 1u)){
             // store last sample
+            index = (num_frames-1u) * context->num_channels;
             for (i=0;i<context->num_channels;i++){
                 context->last_sample[i] = input_buffer[index++];
             }

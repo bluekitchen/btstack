@@ -17,6 +17,7 @@
 #include "hci_cmd.h"
 
 #include "btstack_memory.h"
+#include "btstack_event.h"
 #include "hci.h"
 #include "hci_dump.h"
 #include "ble/gatt_client.h"
@@ -25,9 +26,11 @@
 #include "expected_results.h"
 
 extern "C" void hci_setup_le_connection(uint16_t con_handle);
+extern "C" void l2cap_set_can_send_fixed_channel_packet_now(bool value);
 
 static uint16_t gatt_client_handle = 0x40;
 static int gatt_query_complete = 0;
+
 
 typedef enum {
 	IDLE,
@@ -138,7 +141,6 @@ static void verify_charasteristics(void){
 
 static void verify_blob(uint16_t value_length, uint16_t value_offset, uint8_t * value){
 	uint8_t * expected_value = (uint8_t*)&long_value[value_offset];
-    CHECK(value_length);
 	CHECK_EQUAL_ARRAY(expected_value, value, value_length);
     if (value_offset + value_length != sizeof(long_value)) return;
     result_counter++;
@@ -152,66 +154,43 @@ static void handle_ble_client_event(uint8_t packet_type, uint16_t channel, uint8
 	gatt_client_characteristic_descriptor_t descriptor;
 	switch (packet[0]){
 		case GATT_EVENT_QUERY_COMPLETE:
-			status = packet[4];
+			status = gatt_event_query_complete_get_att_status(packet);
             gatt_query_complete = 1;
             if (status){
                 gatt_query_complete = 0;
-                printf("GATT_EVENT_QUERY_COMPLETE failed with status 0x%02X\n", status);
             }
             break;
 		case GATT_EVENT_SERVICE_QUERY_RESULT:
-			service.start_group_handle = little_endian_read_16(packet, 4);
-			service.end_group_handle   = little_endian_read_16(packet, 6);
-			service.uuid16 = 0;
-			reverse_128(&packet[8], service.uuid128);
-			if (uuid_has_bluetooth_prefix(service.uuid128)){
-				service.uuid16 = big_endian_read_32(service.uuid128, 0);
-			}
+            gatt_event_service_query_result_get_service(packet, &service);
 			services[result_index++] = service;
 			result_counter++;
             break;
         case GATT_EVENT_INCLUDED_SERVICE_QUERY_RESULT:
-			service.start_group_handle = little_endian_read_16(packet, 6);
-			service.end_group_handle   = little_endian_read_16(packet, 8);
-			service.uuid16 = 0;
-			reverse_128(&packet[10], service.uuid128);
-			if (uuid_has_bluetooth_prefix(service.uuid128)){
-				service.uuid16 = big_endian_read_32(service.uuid128, 0);
-			}
+            gatt_event_included_service_query_result_get_service(packet, &service);
             included_services[result_index++] = service;
             result_counter++;
             break;
         case GATT_EVENT_CHARACTERISTIC_QUERY_RESULT:
-        	characteristic.start_handle = little_endian_read_16(packet, 4);
-        	characteristic.value_handle = little_endian_read_16(packet, 6);
-        	characteristic.end_handle =   little_endian_read_16(packet, 8);
-        	characteristic.properties =   little_endian_read_16(packet, 10);
-			characteristic.uuid16 = 0;
-			reverse_128(&packet[12], characteristic.uuid128);
-			if (uuid_has_bluetooth_prefix(characteristic.uuid128)){
-				characteristic.uuid16 = big_endian_read_32(characteristic.uuid128, 0);
-			}
+            gatt_event_characteristic_query_result_get_characteristic(packet, &characteristic);
         	characteristics[result_index++] = characteristic;
         	result_counter++;
             break;
         case GATT_EVENT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT:
-        	descriptor.handle = little_endian_read_16(packet, 4);
-			reverse_128(&packet[6], descriptor.uuid128);
-			if (uuid_has_bluetooth_prefix(descriptor.uuid128)){
-				descriptor.uuid16 = big_endian_read_32(descriptor.uuid128, 0);
-			}
+            gatt_event_all_characteristic_descriptors_query_result_get_characteristic_descriptor(packet, &descriptor);
         	descriptors[result_index++] = descriptor;
         	result_counter++;
         	break;
         case GATT_EVENT_CHARACTERISTIC_VALUE_QUERY_RESULT:
         case GATT_EVENT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT:
-        	CHECK_EQUAL(short_value_length, little_endian_read_16(packet, 6));
-        	CHECK_EQUAL_ARRAY((uint8_t*)short_value, &packet[8], short_value_length);
+        	CHECK_EQUAL(short_value_length, gatt_event_characteristic_value_query_result_get_value_length(packet));
+        	CHECK_EQUAL_ARRAY((uint8_t*)short_value, (uint8_t *)gatt_event_characteristic_value_query_result_get_value(packet), short_value_length);
         	result_counter++;
         	break;
         case GATT_EVENT_LONG_CHARACTERISTIC_VALUE_QUERY_RESULT:
         case GATT_EVENT_LONG_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT:
-        	verify_blob(little_endian_read_16(packet, 8), little_endian_read_16(packet, 6), &packet[10]);
+        	verify_blob(gatt_event_long_characteristic_value_query_result_get_value_length(packet),
+                        gatt_event_long_characteristic_value_query_result_get_value_offset(packet),
+                        (uint8_t *) gatt_event_long_characteristic_value_query_result_get_value(packet));
         	result_counter++;
         	break;
 	}
@@ -302,6 +281,9 @@ TEST_GROUP(GATTClient){
 		result_index = 0;
 		test = IDLE;
 		hci_setup_le_connection(gatt_client_handle);
+        memset(characteristics, 0, sizeof(characteristics));
+        memset(descriptors, 0, sizeof(descriptors));
+        l2cap_set_can_send_fixed_channel_packet_now(true);
 	}
 
 	gatt_client_t * get_gatt_client(hci_con_handle_t con_handle){
@@ -311,7 +293,7 @@ TEST_GROUP(GATTClient){
 	}
 
 	void reset_query_state(void){
-		gatt_client_t * gatt_client = get_gatt_client(gatt_client_handle);
+        gatt_client_t * gatt_client = get_gatt_client(gatt_client_handle);
 		gatt_client->state = P_READY;
 		
 		gatt_client_set_required_security_level(LEVEL_0);
@@ -320,6 +302,7 @@ TEST_GROUP(GATTClient){
 		gatt_query_complete = 0;
 		result_counter = 0;
 		result_index = 0;
+        l2cap_set_can_send_fixed_channel_packet_now(true);
 	}
 
 	void set_wrong_gatt_client_state(void){
@@ -698,6 +681,30 @@ TEST(GATTClient, gatt_client_read_value_of_characteristic_using_value_handle){
 	reset_query_state();
 }
 
+TEST(GATTClient, gatt_client_read_long_value_of_characteristic_using_value_handle_with_context){
+	test = WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION;
+	reset_query_state();
+	status = gatt_client_discover_primary_services_by_uuid16(handle_ble_client_event, gatt_client_handle, service_uuid16);
+	CHECK_EQUAL(0, status);
+	CHECK_EQUAL(1, gatt_query_complete);
+	CHECK_EQUAL(1, result_counter);
+
+	reset_query_state();
+	status = gatt_client_discover_characteristics_for_service_by_uuid16(handle_ble_client_event, gatt_client_handle, &services[0], 0xF100);
+	CHECK_EQUAL(0, status);
+	CHECK_EQUAL(1, gatt_query_complete);
+	CHECK_EQUAL(1, result_counter);
+
+	// invalid con handle
+    status = gatt_client_read_long_value_of_characteristic_using_value_handle_with_context(handle_ble_client_event, HCI_CON_HANDLE_INVALID, characteristics[0].value_handle, 0xF100, 0);
+ 	CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
+
+    set_wrong_gatt_client_state();
+    status = gatt_client_read_long_value_of_characteristic_using_value_handle_with_context(handle_ble_client_event, gatt_client_handle, characteristics[0].value_handle, 0xF100, 0);
+ 	CHECK_EQUAL(GATT_CLIENT_IN_WRONG_STATE, status);
+	reset_query_state();
+}
+
 TEST(GATTClient, gatt_client_read_long_value_of_characteristic_using_value_handle_with_offset){
 	test = WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION;
 	reset_query_state();
@@ -967,7 +974,7 @@ TEST(GATTClient, TestReadLongCharacteristicValue){
 	status = gatt_client_read_long_value_of_characteristic(handle_ble_client_event, gatt_client_handle, &characteristics[0]);
 	CHECK_EQUAL(0, status);
 	CHECK_EQUAL(1, gatt_query_complete);
-	CHECK_EQUAL(4, result_counter);
+	CHECK_EQUAL(7, result_counter);
 }
 
 TEST(GATTClient, TestReadLongCharacteristicDescriptor){
@@ -995,7 +1002,7 @@ TEST(GATTClient, TestReadLongCharacteristicDescriptor){
 	status = gatt_client_read_long_characteristic_descriptor(handle_ble_client_event, gatt_client_handle, &descriptors[0]);
 	CHECK_EQUAL(0, status);
 	CHECK_EQUAL(1, gatt_query_complete);
-	CHECK_EQUAL(4, result_counter);
+	CHECK_EQUAL(7, result_counter);
 }
 
 
@@ -1024,6 +1031,10 @@ TEST(GATTClient, TestWriteLongCharacteristicDescriptor){
 	CHECK_EQUAL(0, status);
 	CHECK_EQUAL(1, gatt_query_complete);
 	CHECK_EQUAL(1, result_counter);
+
+	result_counter = 0;
+	status = gatt_client_write_long_characteristic_descriptor_using_descriptor_handle_with_offset(handle_ble_client_event, HCI_CON_HANDLE_INVALID, descriptors[0].handle, 0, sizeof(long_value), (uint8_t *)long_value);
+	CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
 }
 
 TEST(GATTClient, TestWriteLongCharacteristicValue){
@@ -1066,11 +1077,20 @@ TEST(GATTClient, TestWriteReliableLongCharacteristicValue){
     CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
 
     set_wrong_gatt_client_state();
-	status = gatt_client_reliable_write_long_value_of_characteristic(handle_ble_client_event, gatt_client_handle, characteristics[0].value_handle, long_value_length, (uint8_t*)long_value);
+    status = gatt_client_reliable_write_long_value_of_characteristic(handle_ble_client_event, gatt_client_handle, characteristics[0].value_handle, long_value_length, (uint8_t*)long_value);
+    CHECK_EQUAL(GATT_CLIENT_IN_WRONG_STATE, status);
+
+    reset_query_state();
+    status = gatt_client_reliable_write_long_value_of_characteristic(handle_ble_client_event, gatt_client_handle, characteristics[0].value_handle, long_value_length, (uint8_t*)long_value);
+    CHECK_EQUAL(0, status);
+    CHECK_EQUAL(1, gatt_query_complete);
+
+    set_wrong_gatt_client_state();
+	status = gatt_client_write_long_value_of_characteristic_with_context(handle_ble_client_event, gatt_client_handle, characteristics[0].value_handle, long_value_length, (uint8_t*)long_value, 0xF100, 0);
     CHECK_EQUAL(GATT_CLIENT_IN_WRONG_STATE, status);
 
 	reset_query_state();
-	status = gatt_client_reliable_write_long_value_of_characteristic(handle_ble_client_event, gatt_client_handle, characteristics[0].value_handle, long_value_length, (uint8_t*)long_value);
+	status = gatt_client_write_long_value_of_characteristic_with_context(handle_ble_client_event, gatt_client_handle, characteristics[0].value_handle, long_value_length, (uint8_t*)long_value, 0xF100, 0);
 	CHECK_EQUAL(0, status);
 	CHECK_EQUAL(1, gatt_query_complete);
 }
@@ -1101,6 +1121,16 @@ TEST(GATTClient, gatt_client_write_long_value_of_characteristic_with_offset){
     set_wrong_gatt_client_state();
 	status = gatt_client_write_long_value_of_characteristic_with_offset(handle_ble_client_event, gatt_client_handle, characteristics[0].value_handle, 0, long_value_length, (uint8_t*)long_value);
     CHECK_EQUAL(GATT_CLIENT_IN_WRONG_STATE, status);
+
+    	reset_query_state();
+	// invalid con handle
+	status = gatt_client_write_long_value_of_characteristic_with_context(handle_ble_client_event, HCI_CON_HANDLE_INVALID, characteristics[0].value_handle, long_value_length, (uint8_t*)long_value, 0, 0);
+    CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
+
+    reset_query_state();
+    set_wrong_gatt_client_state();
+	status = gatt_client_write_long_value_of_characteristic_with_context(handle_ble_client_event, gatt_client_handle, characteristics[0].value_handle, long_value_length, (uint8_t*)long_value, 0, 0);
+    CHECK_EQUAL(GATT_CLIENT_IN_WRONG_STATE, status);
 }
 
 TEST(GATTClient, gatt_client_read_long_characteristic_descriptor_using_descriptor_handle_with_offset){
@@ -1110,11 +1140,17 @@ TEST(GATTClient, gatt_client_read_long_characteristic_descriptor_using_descripto
 	CHECK_EQUAL(1, gatt_query_complete);
 	CHECK_EQUAL(1, result_counter);
 
+    reset_query_state();
+    status = gatt_client_discover_characteristics_for_service(handle_ble_client_event, gatt_client_handle, &services[0]);
+    CHECK_EQUAL(0, status);
+    CHECK_EQUAL(1, gatt_query_complete);
+    verify_charasteristics();
+
 	reset_query_state();
 	status = gatt_client_discover_characteristic_descriptors(handle_ble_client_event, gatt_client_handle, &characteristics[0]);
 	CHECK_EQUAL(0, status);
 	CHECK_EQUAL(1, gatt_query_complete);
-	CHECK(result_counter);
+	CHECK(result_counter != 0);
 	CHECK_EQUAL(3, result_index);
 	CHECK_EQUAL(0x2902, descriptors[0].uuid16);
 	CHECK_EQUAL(0x2900, descriptors[1].uuid16);
@@ -1188,6 +1224,10 @@ TEST(GATTClient, gatt_client_write_value_of_characteristic_without_response){
 	status = gatt_client_write_value_of_characteristic_without_response(gatt_client_handle, characteristics[0].value_handle, long_value_length, (uint8_t*)long_value);
     CHECK_EQUAL(GATT_CLIENT_VALUE_TOO_LONG, status);
 
+    l2cap_set_can_send_fixed_channel_packet_now(false);
+    status = gatt_client_write_value_of_characteristic_without_response(gatt_client_handle, characteristics[0].value_handle, 19, (uint8_t*)long_value);
+    CHECK_EQUAL(GATT_CLIENT_BUSY, status);
+
 	reset_query_state();
 
 	status = gatt_client_write_value_of_characteristic_without_response(gatt_client_handle, characteristics[0].value_handle, 19, (uint8_t*)long_value);
@@ -1223,6 +1263,10 @@ TEST(GATTClient, register_for_notification){
 
 	gatt_client_listen_for_characteristic_value_updates(&notification, handle_ble_client_event, gatt_client_handle, NULL);
 	gatt_client_stop_listening_for_characteristic_value_updates(&notification);
+
+    gatt_client_service_notification_t service_notification;
+    gatt_client_listen_for_service_characteristic_value_updates(&service_notification, handle_ble_client_event, gatt_client_handle, &services[0], 0xF100, 0);
+    gatt_client_stop_listening_for_service_characteristic_value_updates(&service_notification);
 }
 
 TEST(GATTClient, gatt_client_signed_write_without_response){
@@ -1451,6 +1495,44 @@ TEST(GATTClient, gatt_client_deserialize_characteristic){
 	CHECK_EQUAL(characteristic.properties  , expected_properties);
 	CHECK_EQUAL(characteristic.uuid16, 0);
 	MEMCMP_EQUAL(uuid128, characteristic.uuid128, sizeof(uuid128));
+}
+
+TEST(GATTClient, gatt_client_remove_gatt_query) {
+    btstack_context_callback_registration_t callback_registration = { 0 };
+
+    uint8_t status = gatt_client_remove_gatt_query(&callback_registration, HCI_CON_HANDLE_INVALID);
+    CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
+
+    status = gatt_client_remove_gatt_query(&callback_registration, gatt_client_handle);
+    CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
+}
+
+TEST(GATTClient, gatt_client_att_status_to_error_code) {
+    uint8_t status = gatt_client_att_status_to_error_code(ATT_ERROR_SUCCESS);
+    CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
+
+    status = gatt_client_att_status_to_error_code(ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH);
+    CHECK_EQUAL(ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE, status);
+
+    status = gatt_client_att_status_to_error_code(ATT_ERROR_UNLIKELY_ERROR);
+    CHECK_EQUAL(ERROR_CODE_UNSPECIFIED_ERROR, status);
+}
+
+TEST(GATTClient, gatt_client_att_packet_handler) {
+    gatt_client_att_packet_handler_fuzz(0, 0, NULL, 0);
+
+    gatt_client_att_packet_handler_fuzz(HCI_EVENT_PACKET, 0, NULL, 0);
+    gatt_client_att_packet_handler_fuzz(ATT_DATA_PACKET, 0, NULL, 0);
+    gatt_client_att_packet_handler_fuzz(L2CAP_DATA_PACKET, 0, NULL, 0);
+    gatt_client_att_packet_handler_fuzz(10, 0, NULL, 0);
+
+    uint8_t packet[10];
+    little_endian_store_16(packet, 0, ATT_EVENT_MTU_EXCHANGE_COMPLETE);
+    gatt_client_att_packet_handler_fuzz(HCI_EVENT_PACKET, HCI_CON_HANDLE_INVALID, packet, 2);
+    gatt_client_att_packet_handler_fuzz(HCI_EVENT_PACKET, HCI_CON_HANDLE_INVALID, packet, 10);
+    little_endian_store_16(packet, 0, ATT_EVENT_MTU_EXCHANGE_COMPLETE + 2);
+    gatt_client_att_packet_handler_fuzz(HCI_EVENT_PACKET, HCI_CON_HANDLE_INVALID, packet, 10);
+
 }
 
 int main (int argc, const char * argv[]){

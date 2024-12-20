@@ -531,9 +531,8 @@ static void hsp_run(void){
                 int gain = hsp_ag_microphone_gain;
                 hsp_ag_microphone_gain = -1;
                 char buffer[12];
-                snprintf(buffer, sizeof(buffer), "\r\n%s=%d\r\n",
+                btstack_snprintf_assert_complete(buffer, sizeof(buffer), "\r\n%s=%d\r\n",
                          HSP_MICROPHONE_GAIN, gain);
-                buffer[sizeof(buffer) - 1] = 0;
                 hsp_ag_send_str_over_rfcomm(hsp_ag_rfcomm_cid, buffer);
                 break;
             }
@@ -546,9 +545,8 @@ static void hsp_run(void){
                 int gain = hsp_ag_speaker_gain;
                 hsp_ag_speaker_gain = -1;
                 char buffer[12];
-                snprintf(buffer, sizeof(buffer), "\r\n%s=%d\r\n",
+                btstack_snprintf_assert_complete(buffer, sizeof(buffer), "\r\n%s=%d\r\n",
                          HSP_SPEAKER_GAIN, gain);
-                buffer[sizeof(buffer) - 1] = 0;
                 hsp_ag_send_str_over_rfcomm(hsp_ag_rfcomm_cid, buffer);
                 break;
             }

@@ -125,9 +125,9 @@ static void bass_client_emit_connection_established(bass_client_connection_t * c
 
     uint8_t event[8];
     uint16_t pos = 0;
-    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = HCI_EVENT_LEAUDIO_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_BASS_CLIENT_CONNECTED;
+    event[pos++] = LEAUDIO_SUBEVENT_BASS_CLIENT_CONNECTED;
     little_endian_store_16(event, pos, connection->con_handle);
     pos += 2;
     little_endian_store_16(event, pos, connection->cid);
@@ -136,13 +136,24 @@ static void bass_client_emit_connection_established(bass_client_connection_t * c
     (*bass_client_event_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
+static void bass_client_connected(bass_client_connection_t *connection, uint8_t status) {
+    if (status == ERROR_CODE_SUCCESS){
+        connection->state = BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_STATE_READY;
+        bass_client_emit_connection_established(connection, status);
+    } else {
+        connection->state = BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_STATE_IDLE;
+        bass_client_emit_connection_established(connection, status);
+        bass_client_finalize_connection(connection);
+    }
+}
+
 static void bass_client_emit_scan_operation_complete(bass_client_connection_t * connection, uint8_t status, bass_opcode_t opcode){
     btstack_assert(bass_client_event_callback != NULL);
     uint8_t event[7];
     uint16_t pos = 0;
-    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = HCI_EVENT_LEAUDIO_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_BASS_CLIENT_SCAN_OPERATION_COMPLETE;
+    event[pos++] = LEAUDIO_SUBEVENT_BASS_CLIENT_SCAN_OPERATION_COMPLETE;
     little_endian_store_16(event, pos, connection->cid);
     pos += 2;
     event[pos++] = status;
@@ -154,9 +165,9 @@ static void bass_client_emit_source_operation_complete(bass_client_connection_t 
     btstack_assert(bass_client_event_callback != NULL);
     uint8_t event[8];
     uint16_t pos = 0;
-    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = HCI_EVENT_LEAUDIO_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_BASS_CLIENT_SOURCE_OPERATION_COMPLETE;
+    event[pos++] = LEAUDIO_SUBEVENT_BASS_CLIENT_SOURCE_OPERATION_COMPLETE;
     little_endian_store_16(event, pos, connection->cid);
     pos += 2;
     event[pos++] = status;
@@ -169,9 +180,9 @@ static void bass_client_emit_receive_state(bass_client_connection_t * connection
     btstack_assert(bass_client_event_callback != NULL);
     uint8_t pos = 0;
     uint8_t event[7];
-    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = HCI_EVENT_LEAUDIO_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_BASS_CLIENT_NOTIFICATION_COMPLETE;
+    event[pos++] = LEAUDIO_SUBEVENT_BASS_CLIENT_NOTIFICATION_COMPLETE;
     little_endian_store_16(event, pos, connection->cid);
     pos += 2;
     event[pos++] = source_id;
@@ -415,7 +426,7 @@ static void bass_client_run_for_connection(bass_client_connection_t * connection
     uint16_t stored_bytes;
 
     switch (connection->state){
-        case BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_STATE_CONNECTED:
+        case BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_STATE_READY:
             break;
         
         case BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_W2_WRITE_CONTROL_POINT_START_SCAN:
@@ -457,8 +468,9 @@ static void bass_client_run_for_connection(bass_client_connection_t * connection
             stored_bytes = bass_client_prepare_add_source_buffer(connection);
             connection->buffer_offset += stored_bytes;
 
-            gatt_client_write_long_value_of_characteristic(&bass_client_handle_gatt_client_event, connection->con_handle,
+            status = gatt_client_write_long_value_of_characteristic(&bass_client_handle_gatt_client_event, connection->con_handle,
                                                            connection->control_point_value_handle, stored_bytes, connection->buffer);
+            UNUSED(status);
             break;
 
         case BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_W2_WRITE_CONTROL_POINT_MODIFY_SOURCE:
@@ -469,9 +481,9 @@ static void bass_client_run_for_connection(bass_client_connection_t * connection
             stored_bytes = bass_client_prepare_modify_source_buffer(connection);
             connection->buffer_offset += stored_bytes;
 
-            gatt_client_write_long_value_of_characteristic(&bass_client_handle_gatt_client_event, connection->con_handle,
+            status = gatt_client_write_long_value_of_characteristic(&bass_client_handle_gatt_client_event, connection->con_handle,
                                                            connection->control_point_value_handle, stored_bytes, connection->buffer);
-            
+            UNUSED(status);
             break;
         
         case BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_W2_WRITE_CONTROL_POINT_REMOVE_SOURCE:
@@ -516,11 +528,11 @@ static void bass_client_run_for_connection(bass_client_connection_t * connection
             service.end_group_handle = connection->end_handle;
             service.uuid16 = ORG_BLUETOOTH_SERVICE_BROADCAST_AUDIO_SCAN_SERVICE;
 
-            gatt_client_discover_characteristics_for_service(
+            status = gatt_client_discover_characteristics_for_service(
                     &bass_client_handle_gatt_client_event,
                 connection->con_handle, 
                 &service);
-
+            UNUSED(status);
             break;
 
         case BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTIC_DESCRIPTORS:
@@ -563,8 +575,7 @@ static void bass_client_run_for_connection(bass_client_connection_t * connection
                 break;
             }
             
-            connection->state = BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_STATE_CONNECTED;
-            bass_client_emit_connection_established(connection, ERROR_CODE_SUCCESS);
+            bass_client_connected(connection, ERROR_CODE_SUCCESS);
             break;
         default:
             break;
@@ -574,15 +585,19 @@ static void bass_client_run_for_connection(bass_client_connection_t * connection
 static bool bass_client_handle_query_complete(bass_client_connection_t * connection, uint8_t status){
     switch (connection->state){
         case BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_STATE_W4_SERVICE_RESULT:
-            if (status != ATT_ERROR_SUCCESS){
-                bass_client_emit_connection_established(connection, status);
-                bass_client_finalize_connection(connection);
-                return false;
+            switch (status){
+                case ATT_ERROR_SUCCESS:
+                    break;
+                case ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH:
+                    bass_client_connected(connection, ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE);
+                    return false;
+                default:
+                    bass_client_connected(connection, ERROR_CODE_UNSPECIFIED_ERROR);
+                    return false;
             }
 
             if (connection->service_instances_num == 0){
-                bass_client_emit_connection_established(connection, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE);
-                bass_client_finalize_connection(connection);
+                bass_client_connected(connection, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE);
                 return false;
             }
             connection->receive_states_index = 0;
@@ -592,8 +607,7 @@ static bool bass_client_handle_query_complete(bass_client_connection_t * connect
 
         case BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_RESULT:
             if (status != ATT_ERROR_SUCCESS){
-                bass_client_emit_connection_established(connection, status);
-                bass_client_finalize_connection(connection);
+                bass_client_connected(connection, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE);
                 return false;
             }
 
@@ -618,52 +632,46 @@ static bool bass_client_handle_query_complete(bass_client_connection_t * connect
                 break;
             }
 
-            connection->state = BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_STATE_CONNECTED;
-            bass_client_emit_connection_established(connection, ERROR_CODE_SUCCESS);
+            bass_client_connected(connection, ERROR_CODE_SUCCESS);
             break;
 
         case BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_W4_CHARACTERISTIC_CONFIGURATION_RESULT:
-            connection->state = BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_STATE_CONNECTED;
-            bass_client_emit_connection_established(connection, ERROR_CODE_SUCCESS);
+            bass_client_connected(connection, ERROR_CODE_SUCCESS);
             break;
 
         case BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_W4_WRITE_CONTROL_POINT_START_SCAN:
-            connection->state = BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_STATE_CONNECTED;
+            connection->state = BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_STATE_READY;
             bass_client_emit_scan_operation_complete(connection, status, BASS_OPCODE_REMOTE_SCAN_STARTED);
             break;
 
         case BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_W4_WRITE_CONTROL_POINT_STOP_SCAN:
-            connection->state = BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_STATE_CONNECTED;
+            connection->state = BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_STATE_READY;
             bass_client_emit_scan_operation_complete(connection, status, BASS_OPCODE_REMOTE_SCAN_STOPPED);
             break;
         
         case BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_W4_WRITE_CONTROL_POINT_ADD_SOURCE:
-            connection->state = BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_STATE_CONNECTED;
+            connection->state = BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_STATE_READY;
             bass_client_emit_source_operation_complete(connection, status, BASS_OPCODE_ADD_SOURCE, BASS_INVALID_SOURCE_INDEX);
             break;
         
         case BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_W4_WRITE_CONTROL_POINT_MODIFY_SOURCE:
-            connection->state = BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_STATE_CONNECTED;
+            connection->state = BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_STATE_READY;
             bass_client_emit_source_operation_complete(connection, status, BASS_OPCODE_MODIFY_SOURCE, connection->control_point_operation_source_id);
             break;
 
         case BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_W4_WRITE_CONTROL_POINT_REMOVE_SOURCE:
-            connection->state = BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_STATE_CONNECTED;
+            connection->state = BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_STATE_READY;
             bass_client_reset_source(
                     bass_client_get_source_for_source_id(connection, connection->control_point_operation_source_id));
             bass_client_emit_source_operation_complete(connection, status, BASS_OPCODE_REMOVE_SOURCE, connection->control_point_operation_source_id);
             break;
 
         case BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_W4_WRITE_CONTROL_POINT_SET_BROADCAST_CODE:
-            connection->state = BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_STATE_CONNECTED;
+            connection->state = BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_STATE_READY;
             bass_client_emit_source_operation_complete(connection, status, BASS_OPCODE_SET_BROADCAST_CODE, connection->control_point_operation_source_id);
             break;
 
-        case BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_STATE_CONNECTED:
-            if (status != ATT_ERROR_SUCCESS){ 
-                break;
-            }
-
+        case BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_STATE_READY:
             break;
 
         default:
@@ -851,7 +859,7 @@ uint8_t broadcast_audio_scan_service_client_scanning_started(uint16_t bass_cid){
     if (connection == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    if (connection->state != BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_STATE_CONNECTED){
+    if (connection->state != BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_STATE_READY){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
     connection->state = BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_W2_WRITE_CONTROL_POINT_START_SCAN;
@@ -864,7 +872,7 @@ uint8_t broadcast_audio_scan_service_client_scanning_stopped(uint16_t bass_cid){
     if (connection == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    if (connection->state != BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_STATE_CONNECTED){
+    if (connection->state != BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_STATE_READY){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
     connection->state = BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_W2_WRITE_CONTROL_POINT_STOP_SCAN;
@@ -877,7 +885,7 @@ uint8_t broadcast_audio_scan_service_client_add_source(uint16_t bass_cid, const 
     if (connection == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    if (connection->state != BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_STATE_CONNECTED){
+    if (connection->state != BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_STATE_READY){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
@@ -895,7 +903,7 @@ uint8_t broadcast_audio_scan_service_client_modify_source(uint16_t bass_cid, uin
     if (connection == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    if (connection->state != BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_STATE_CONNECTED){
+    if (connection->state != BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_STATE_READY){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
@@ -914,7 +922,7 @@ uint8_t broadcast_audio_scan_service_client_remove_source(uint16_t bass_cid, uin
     if (connection == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    if (connection->state != BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_STATE_CONNECTED){
+    if (connection->state != BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_STATE_READY){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
@@ -930,7 +938,7 @@ uint8_t broadcast_audio_scan_service_client_set_broadcast_code(uint16_t bass_cid
     if (connection == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    if (connection->state != BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_STATE_CONNECTED){
+    if (connection->state != BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_STATE_READY){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
@@ -947,7 +955,7 @@ const bass_source_data_t * broadcast_audio_scan_service_client_get_source_data(u
     if (connection == NULL){
         return NULL;
     }
-    if (connection->state != BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_STATE_CONNECTED){
+    if (connection->state != BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_STATE_READY){
         return NULL;
     }
     return (const bass_source_data_t *) &bass_client_get_source_for_source_id(connection, source_id)->data;
@@ -962,7 +970,7 @@ uint8_t broadcast_audio_scan_service_client_get_encryption_state(uint16_t bass_c
     if (connection == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    if (connection->state != BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_STATE_CONNECTED){
+    if (connection->state != BROADCAST_AUDIO_SCAN_SERVICE_CLIENT_STATE_READY){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
     bass_client_source_t * source = bass_client_get_source_for_source_id(connection, source_id);

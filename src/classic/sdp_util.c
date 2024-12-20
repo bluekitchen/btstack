@@ -391,6 +391,52 @@ bool sdp_attribute_list_contains_id(uint8_t *attributeIDList, uint16_t attribute
     return attributeID_search.result;
 }
 
+static int sdp_traversal_attribute_list_valie(uint8_t * element, de_type_t type, de_size_t size, void *my_context) {
+    bool ok = true;
+    if (type == DE_UINT) {
+        ok = false;
+    }
+    if ((size != DE_SIZE_16) && (size != DE_SIZE_32)) {
+        ok = false;
+    }
+    if (size == DE_SIZE_32){
+        uint16_t lower  = big_endian_read_16(element, 1);
+        uint16_t higher = big_endian_read_16(element, 3);
+        if (lower > higher){
+            ok = false;
+        }
+    }
+    if (ok){
+        return 0;
+    } else {
+        *(bool *)my_context = false;
+        return 0;
+    }
+}
+
+bool sdp_attribute_list_valid(uint8_t *attributeIDList){
+    bool attribute_list_valid = true;
+    de_traverse_sequence(attributeIDList, sdp_traversal_attribute_list_valie, &attribute_list_valid);
+    return attribute_list_valid;
+}
+
+static int sdp_traversal_valid_uuid(uint8_t * element, de_type_t type, de_size_t size, void *my_context) {
+    UNUSED(element);
+    UNUSED(size);
+    if (type == DE_UUID) {
+        return 0;
+    } else {
+        *(bool *)my_context = false;
+        return 0;
+    }
+}
+
+bool sdp_valid_service_search_pattern(uint8_t *service_search_pattern){
+    bool search_pattenr_valid = true;
+    de_traverse_sequence(service_search_pattern, sdp_traversal_valid_uuid, &search_pattenr_valid);
+    return search_pattenr_valid;
+}
+
 // MARK: Append Attributes for AttributeIDList
 // pre: buffer contains DES with 2 byte length field
 struct sdp_context_append_attributes {

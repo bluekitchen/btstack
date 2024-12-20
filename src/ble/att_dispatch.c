@@ -158,8 +158,6 @@ static void att_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
     hci_con_handle_t con_handle;
     bool outgoing_active;
     uint8_t index;
-#endif
-#if defined(ENABLE_GATT_OVER_CLASSIC) || defined(ENABLE_GATT_OVER_EATT)
     bd_addr_t address;
     uint16_t l2cap_cid;
     uint8_t  status;

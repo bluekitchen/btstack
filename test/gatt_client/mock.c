@@ -167,8 +167,14 @@ void hci_add_event_handler(btstack_packet_callback_registration_t * callback_han
 
 void l2cap_reserve_packet_buffer(void){}
 
+static bool _l2cap_can_send_fixed_channel_packet_now = true;
+
+void l2cap_set_can_send_fixed_channel_packet_now(bool value){
+    _l2cap_can_send_fixed_channel_packet_now = value;
+}
+
 bool l2cap_can_send_fixed_channel_packet_now(uint16_t handle, uint16_t channel_id){
-	return true;
+	return _l2cap_can_send_fixed_channel_packet_now;
 }
 
 void l2cap_request_can_send_fix_channel_now_event(uint16_t handle, uint16_t channel_id){

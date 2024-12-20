@@ -37,6 +37,7 @@
 
 #define BTSTACK_FILE__ "btstack_hid_parser.c"
 
+#include <inttypes.h>
 #include <string.h>
 
 #include "btstack_hid_parser.h"
@@ -45,10 +46,7 @@
 
 // Not implemented:
 // - Support for Push/Pop
-// - Optional Pretty Print of HID Descripor
-// - Support to query descriptort for contained usages, e.g. to detect keyboard or mouse
-
-// #define HID_PARSER_PRETTY_PRINT
+// - Optional Pretty Print of HID Descriptor
 
 /*
  *  btstack_hid_parser.c
@@ -118,36 +116,10 @@ static const char * local_tags[] = {
 };
 #endif
 
-static void hid_pretty_print_item(btstack_hid_parser_t * parser, hid_descriptor_item_t * item){
-#ifdef HID_PARSER_PRETTY_PRINT
-    const char ** item_tag_table;
-    switch ((TagType)item->item_type){
-        case Main:
-            item_tag_table = main_tags;
-            break;
-        case Global:
-            item_tag_table = global_tags;
-            break;
-        case Local:
-            item_tag_table = local_tags;
-            break;
-        default:
-            item_tag_table = NULL;
-            break;
-    } 
-    const char * item_tag_name = "Invalid";
-    if (item_tag_table){
-        item_tag_name = item_tag_table[item->item_tag];
-    }
-    log_info("%-15s (%-6s) // %02x 0x%0008x", item_tag_name, type_names[item->item_type], parser->descriptor[parser->descriptor_pos], item->item_value);
-#else
-    UNUSED(parser);
-    UNUSED(item);
-#endif
-}
+// HID Descriptor Iterator
 
 // parse descriptor item and read up to 32-bit bit value
-bool btstack_hid_parse_descriptor_item(hid_descriptor_item_t * item, const uint8_t * hid_descriptor, uint16_t hid_descriptor_len){
+static bool btstack_hid_descriptor_parse_item(hid_descriptor_item_t * item, const uint8_t * hid_descriptor, uint16_t hid_descriptor_len){
 
     const int hid_item_sizes[] = { 0, 1, 2, 4 };
 
@@ -187,28 +159,102 @@ bool btstack_hid_parse_descriptor_item(hid_descriptor_item_t * item, const uint8
     return true;
 }
 
-static void btstack_hid_handle_global_item(btstack_hid_parser_t * parser, hid_descriptor_item_t * item){
+static void btstack_hid_descriptor_iterator_pretty_print_item(btstack_hid_descriptor_iterator_t * iterator, hid_descriptor_item_t * item){
+#ifdef HID_PARSER_PRETTY_PRINT
+    const char ** item_tag_table;
+    switch ((TagType)item->item_type){
+        case Main:
+            item_tag_table = main_tags;
+            break;
+        case Global:
+            item_tag_table = global_tags;
+            break;
+        case Local:
+            item_tag_table = local_tags;
+            break;
+        default:
+            item_tag_table = NULL;
+            break;
+    }
+    const char * item_tag_name = "Invalid";
+    if (item_tag_table){
+        item_tag_name = item_tag_table[item->item_tag];
+    }
+    log_info("%-15s (%-6s) // %02x 0x%0008x", item_tag_name, type_names[item->item_type], iterator->descriptor[iterator->descriptor_pos], item->item_value);
+    printf("%-15s (%-6s) // %02x 0x%0008x\n", item_tag_name, type_names[item->item_type], iterator->descriptor[iterator->descriptor_pos], item->item_value);
+#else
+    UNUSED(iterator);
+    UNUSED(item);
+#endif
+}
+
+void btstack_hid_descriptor_iterator_init(btstack_hid_descriptor_iterator_t * iterator, const uint8_t * hid_descriptor, uint16_t hid_descriptor_len){
+    iterator->descriptor = hid_descriptor;
+    iterator->descriptor_pos = 0;
+    iterator->descriptor_len = hid_descriptor_len;
+    iterator->item_ready = false;
+    iterator->valid = true;
+}
+
+bool btstack_hid_descriptor_iterator_has_more(btstack_hid_descriptor_iterator_t * iterator){
+    if ((iterator->item_ready == false) && (iterator->descriptor_len > iterator->descriptor_pos)){
+        uint16_t  item_len = iterator->descriptor_len - iterator->descriptor_pos;
+        const uint8_t *item_data = &iterator->descriptor[iterator->descriptor_pos];
+        bool ok = btstack_hid_descriptor_parse_item(&iterator->descriptor_item, item_data, item_len);
+        btstack_hid_descriptor_iterator_pretty_print_item(iterator, &iterator->descriptor_item);
+        if (ok){
+            iterator->item_ready = true;
+        } else {
+            iterator->valid = false;
+        }
+    }
+    return iterator->item_ready;
+}
+
+const hid_descriptor_item_t * btstack_hid_descriptor_iterator_get_item(btstack_hid_descriptor_iterator_t * iterator){
+    iterator->descriptor_pos += iterator->descriptor_item.item_size;
+    iterator->item_ready = false;
+    return &iterator->descriptor_item;
+}
+
+bool btstack_hid_descriptor_iterator_valid(btstack_hid_descriptor_iterator_t * iterator){
+    return iterator->valid;
+}
+
+// HID Descriptor Usage Iterator
+
+static bool btstack_hid_usage_iterator_main_item_tag_matches_report_type(MainItemTag tag, hid_report_type_t report_type){
+    switch (tag){
+        case Input:
+            return report_type == HID_REPORT_TYPE_INPUT;
+        case Output:
+            return report_type == HID_REPORT_TYPE_OUTPUT;
+        case Feature:
+            return report_type == HID_REPORT_TYPE_FEATURE;
+        default:
+            return false;
+    }
+}
+
+static void btstack_hid_usage_iterator_handle_global_item(btstack_hid_usage_iterator_t * iterator, hid_descriptor_item_t * item){
     switch((GlobalItemTag)item->item_tag){
         case UsagePage:
-            parser->global_usage_page = item->item_value;
+            iterator->global_usage_page = item->item_value;
             break;
         case LogicalMinimum:
-            parser->global_logical_minimum = item->item_value;
+            iterator->global_logical_minimum = item->item_value;
             break;
         case LogicalMaximum:
-            parser->global_logical_maximum = item->item_value;
+            iterator->global_logical_maximum = item->item_value;
             break;
         case ReportSize:
-            parser->global_report_size = item->item_value;
+            iterator->global_report_size = item->item_value;
             break;
         case ReportID:
-            if (parser->active_record && (parser->global_report_id != item->item_value)){
-                parser->active_record = 0;
-            }
-            parser->global_report_id = item->item_value;
+            iterator->global_report_id = item->item_value;
             break;
         case ReportCount:
-            parser->global_report_count = item->item_value;
+            iterator->global_report_count = item->item_value;
             break;
 
         // TODO handle tags
@@ -226,71 +272,62 @@ static void btstack_hid_handle_global_item(btstack_hid_parser_t * parser, hid_de
     }
 }
 
-static void hid_find_next_usage(btstack_hid_parser_t * parser){
+static void btstack_usage_iterator_hid_find_next_usage(btstack_hid_usage_iterator_t * main_iterator){
     bool have_usage_min = false;
     bool have_usage_max = false;
-    parser->usage_range = false;
-    while ((parser->available_usages == 0u) && (parser->usage_pos < parser->descriptor_pos)){
-        hid_descriptor_item_t usage_item;
-        // parser->usage_pos < parser->descriptor_pos < parser->descriptor_len
-        bool ok = btstack_hid_parse_descriptor_item(&usage_item, &parser->descriptor[parser->usage_pos], parser->descriptor_len - parser->usage_pos);
-        if (ok == false){
-            break;
-        }
+    main_iterator->usage_range = false;
+    btstack_hid_descriptor_iterator_t iterator;
+    btstack_hid_descriptor_iterator_init(&iterator, &main_iterator->descriptor[main_iterator->usage_pos], main_iterator->descriptor_len - main_iterator->usage_pos);
+    while ((main_iterator->available_usages == 0u) && btstack_hid_descriptor_iterator_has_more(&iterator) ){
+        hid_descriptor_item_t usage_item = *btstack_hid_descriptor_iterator_get_item(&iterator);
         if ((usage_item.item_type == Global) && (usage_item.item_tag == UsagePage)){
-            parser->usage_page = usage_item.item_value;
+            main_iterator->usage_page = usage_item.item_value;
         }
         if (usage_item.item_type == Local){
-            uint32_t usage_value = (usage_item.data_size > 2u) ? usage_item.item_value : ((parser->usage_page << 16u) | usage_item.item_value);
+            uint32_t usage_value = (usage_item.data_size > 2u) ? usage_item.item_value : ((main_iterator->usage_page << 16u) | usage_item.item_value);
             switch (usage_item.item_tag){
                 case Usage:
-                    parser->available_usages = 1;
-                    parser->usage_minimum = usage_value;
+                    main_iterator->available_usages = 1;
+                    main_iterator->usage_minimum = usage_value;
                     break;
                 case UsageMinimum:
-                    parser->usage_minimum = usage_value;
+                    main_iterator->usage_minimum = usage_value;
                     have_usage_min = true;
                     break;
                 case UsageMaximum:
-                    parser->usage_maximum = usage_value;
+                    main_iterator->usage_maximum = usage_value;
                     have_usage_max = true;
                     break;
                 default:
                     break;
             }
             if (have_usage_min && have_usage_max){
-                parser->available_usages = parser->usage_maximum - parser->usage_minimum + 1u;
-                parser->usage_range = true;
-                if (parser->available_usages < parser->required_usages){
-                    log_debug("Usage Min - Usage Max [%04x..%04x] < Report Count %u", parser->usage_minimum & 0xffff, parser->usage_maximum & 0xffff, parser->required_usages);
+                main_iterator->available_usages = main_iterator->usage_maximum - main_iterator->usage_minimum + 1u;
+                main_iterator->usage_range = true;
+                if (main_iterator->available_usages < main_iterator->required_usages){
+                    log_debug("Usage Min - Usage Max [%04"PRIx32"..%04"PRIx32"] < Report Count %u", main_iterator->usage_minimum & 0xffff, main_iterator->usage_maximum & 0xffff, main_iterator->required_usages);
                 }
             }
         }
-        parser->usage_pos += usage_item.item_size;
     }
+    main_iterator->usage_pos += iterator.descriptor_pos;
 }
 
-static void hid_process_item(btstack_hid_parser_t * parser, hid_descriptor_item_t * item){
-    hid_pretty_print_item(parser, item);
+static void btstack_parser_usage_iterator_process_item(btstack_hid_usage_iterator_t * iterator, hid_descriptor_item_t * item){
     int valid_field = 0;
+    uint16_t report_id_before;
     switch ((TagType)item->item_type){
         case Main:
-            switch ((MainItemTag)item->item_tag){
-                case Input:
-                    valid_field = parser->report_type == HID_REPORT_TYPE_INPUT;
-                    break;
-                case Output:
-                    valid_field = parser->report_type == HID_REPORT_TYPE_OUTPUT;
-                    break;
-                case Feature:
-                    valid_field = parser->report_type == HID_REPORT_TYPE_FEATURE;
-                    break;
-                default:
-                    break;
-            }
+            valid_field = btstack_hid_usage_iterator_main_item_tag_matches_report_type((MainItemTag) item->item_tag,
+                                                                                       iterator->report_type);
             break;
         case Global:
-            btstack_hid_handle_global_item(parser, item);
+            report_id_before = iterator->global_report_id;
+            btstack_hid_usage_iterator_handle_global_item(iterator, item);
+            // track record id for report handling, reset report position
+            if (report_id_before != iterator->global_report_id){
+                iterator->report_pos_in_bit = 0u;
+            }
             break;
         case Local:
         case Reserved:
@@ -301,107 +338,181 @@ static void hid_process_item(btstack_hid_parser_t * parser, hid_descriptor_item_
     }
     if (!valid_field) return;
 
-    // verify record id
-    if (parser->global_report_id && !parser->active_record){
-        if (parser->report[0] != parser->global_report_id){
-            return;
-        }
-        parser->report_pos_in_bit += 8u;
-    }
-    parser->active_record = 1;
     // handle constant fields used for padding
     if (item->item_value & 1){
-        int item_bits = parser->global_report_size * parser->global_report_count;
+        int item_bits = iterator->global_report_size * iterator->global_report_count;
 #ifdef HID_PARSER_PRETTY_PRINT
         log_info("- Skip %u constant bits", item_bits);
 #endif
-        parser->report_pos_in_bit += item_bits;
+        iterator->report_pos_in_bit += item_bits;
         return;
     }
     // Empty Item
-    if (parser->global_report_count == 0u) return;
+    if (iterator->global_report_count == 0u) return;
     // let's start
-    parser->required_usages = parser->global_report_count;
+    iterator->required_usages = iterator->global_report_count;
 }
 
-static void hid_post_process_item(btstack_hid_parser_t * parser, hid_descriptor_item_t * item){
-    if ((TagType)item->item_type == Main){
-        // reset usage
-        parser->usage_pos  = parser->descriptor_pos;
-        parser->usage_page = parser->global_usage_page;
-    }
-    parser->descriptor_pos += item->item_size;
-}
+static void btstack_hid_usage_iterator_find_next_usage(btstack_hid_usage_iterator_t * iterator) {
+    while (btstack_hid_descriptor_iterator_has_more(&iterator->descriptor_iterator)){
+        iterator->descriptor_item = * btstack_hid_descriptor_iterator_get_item(&iterator->descriptor_iterator);
 
-static void btstack_hid_parser_find_next_usage(btstack_hid_parser_t * parser){
-    while (parser->state == BTSTACK_HID_PARSER_SCAN_FOR_REPORT_ITEM){
-        if (parser->descriptor_pos >= parser->descriptor_len){
-            // end of descriptor
-            parser->state = BTSTACK_HID_PARSER_COMPLETE;
-            break;
-        }
-        bool ok = btstack_hid_parse_descriptor_item(&parser->descriptor_item, &parser->descriptor[parser->descriptor_pos], parser->descriptor_len - parser->descriptor_pos);
-        if (ok == false){
-            // abort parsing
-            parser->state = BTSTACK_HID_PARSER_COMPLETE;
-            break;
-        }
-        hid_process_item(parser, &parser->descriptor_item);
-        if (parser->required_usages){
-            hid_find_next_usage(parser);
-            if (parser->available_usages) {
-                parser->state = BTSTACK_HID_PARSER_USAGES_AVAILABLE;
+        btstack_parser_usage_iterator_process_item(iterator, &iterator->descriptor_item);
+
+        if (iterator->required_usages){
+            btstack_usage_iterator_hid_find_next_usage(iterator);
+            if (iterator->available_usages) {
+                iterator->state = BTSTACK_HID_USAGE_ITERATOR_USAGES_AVAILABLE;
+                return;
             } else {
                 log_debug("no usages found");
-                parser->state = BTSTACK_HID_PARSER_COMPLETE;
+                iterator->state = BTSTACK_HID_USAGE_ITERATOR_PARSER_COMPLETE;
+                return;
             }
         } else {
-            hid_post_process_item(parser, &parser->descriptor_item);
+            if ((TagType) (&iterator->descriptor_item)->item_type == Main) {
+                // reset usage
+                iterator->usage_pos = iterator->descriptor_iterator.descriptor_pos;
+                iterator->usage_page = iterator->global_usage_page;
+            }
+        }
+    }
+    // end of descriptor
+    iterator->state = BTSTACK_HID_USAGE_ITERATOR_PARSER_COMPLETE;
+}
+
+void btstack_hid_usage_iterator_init(btstack_hid_usage_iterator_t * iterator, const uint8_t * hid_descriptor, uint16_t hid_descriptor_len, hid_report_type_t hid_report_type){
+    memset(iterator, 0, sizeof(btstack_hid_usage_iterator_t));
+
+    iterator->descriptor     = hid_descriptor;
+    iterator->descriptor_len = hid_descriptor_len;
+    iterator->report_type    = hid_report_type;
+    iterator->state          = BTSTACK_HID_USAGE_ITERATOR_STATE_SCAN_FOR_REPORT_ITEM;
+    iterator->global_report_id = HID_REPORT_ID_UNDEFINED;
+    btstack_hid_descriptor_iterator_init(&iterator->descriptor_iterator, hid_descriptor, hid_descriptor_len);
+}
+
+bool btstack_hid_usage_iterator_has_more(btstack_hid_usage_iterator_t * iterator){
+    while (iterator->state == BTSTACK_HID_USAGE_ITERATOR_STATE_SCAN_FOR_REPORT_ITEM){
+        btstack_hid_usage_iterator_find_next_usage(iterator);
+    }
+    return iterator->state == BTSTACK_HID_USAGE_ITERATOR_USAGES_AVAILABLE;
+}
+
+void btstack_hid_usage_iterator_get_item(btstack_hid_usage_iterator_t * iterator, btstack_hid_usage_item_t * item){
+    // cache current values
+    memset(item, 0, sizeof(btstack_hid_usage_item_t));
+    item->size = iterator->global_report_size;
+    item->report_id = iterator->global_report_id;
+    item->usage_page = iterator->usage_minimum >> 16;
+    item->bit_pos = iterator->report_pos_in_bit;
+
+    bool is_variable  = (iterator->descriptor_item.item_value & 2) != 0;
+    if (is_variable){
+        item->usage = iterator->usage_minimum & 0xffffu;
+    }
+    iterator->required_usages--;
+    iterator->report_pos_in_bit += iterator->global_report_size;
+
+    // cache descriptor item and
+    item->descriptor_item = iterator->descriptor_item;
+    item->global_logical_minimum = iterator->global_logical_minimum;
+
+    // next usage
+    if (is_variable){
+        iterator->usage_minimum++;
+        iterator->available_usages--;
+        if (iterator->usage_range && (iterator->usage_minimum > iterator->usage_maximum)){
+            // usage min - max range smaller than report count, ignore remaining bit in report
+            log_debug("Ignoring %u items without Usage", iterator->required_usages);
+            iterator->report_pos_in_bit += iterator->global_report_size * iterator->required_usages;
+            iterator->required_usages = 0;
+        }
+    } else {
+        if (iterator->required_usages == 0u){
+            iterator->available_usages = 0;
+        }
+    }
+
+    if (iterator->available_usages) {
+        return;
+    }
+    if (iterator->required_usages == 0u){
+        iterator->state = BTSTACK_HID_USAGE_ITERATOR_STATE_SCAN_FOR_REPORT_ITEM;
+    } else {
+        btstack_usage_iterator_hid_find_next_usage(iterator);
+        if (iterator->available_usages == 0u) {
+            iterator->state = BTSTACK_HID_USAGE_ITERATOR_PARSER_COMPLETE;
         }
     }
 }
 
-// PUBLIC API
+
+// HID Report Parser
 
 void btstack_hid_parser_init(btstack_hid_parser_t * parser, const uint8_t * hid_descriptor, uint16_t hid_descriptor_len, hid_report_type_t hid_report_type, const uint8_t * hid_report, uint16_t hid_report_len){
-
-    memset(parser, 0, sizeof(btstack_hid_parser_t));
-
-    parser->descriptor     = hid_descriptor;
-    parser->descriptor_len = hid_descriptor_len;
-    parser->report_type    = hid_report_type;
-    parser->report         = hid_report;
-    parser->report_len     = hid_report_len;
-    parser->state          = BTSTACK_HID_PARSER_SCAN_FOR_REPORT_ITEM;
-
-    btstack_hid_parser_find_next_usage(parser);
+    btstack_hid_usage_iterator_init(&parser->usage_iterator, hid_descriptor, hid_descriptor_len, hid_report_type);
+    parser->report = hid_report;
+    parser->report_len = hid_report_len;
+    parser->have_report_usage_ready = false;
 }
 
+/**
+ * @brief Checks if more fields are available
+ * @param parser
+ */
 bool btstack_hid_parser_has_more(btstack_hid_parser_t * parser){
-    return parser->state == BTSTACK_HID_PARSER_USAGES_AVAILABLE;
+    while ((parser->have_report_usage_ready == false) && btstack_hid_usage_iterator_has_more(&parser->usage_iterator)){
+        btstack_hid_usage_iterator_get_item(&parser->usage_iterator, &parser->descriptor_usage_item);
+        // ignore usages for other report ids
+        if (parser->descriptor_usage_item.report_id != HID_REPORT_ID_UNDEFINED){
+            if (parser->descriptor_usage_item.report_id != parser->report[0]){
+                continue;
+            }
+        }
+        parser->have_report_usage_ready = true;
+    }
+    return parser->have_report_usage_ready;
 }
+
+/**
+ * @brief Get next field
+ * @param parser
+ * @param usage_page
+ * @param usage
+ * @param value provided in HID report
+ */
 
 void btstack_hid_parser_get_field(btstack_hid_parser_t * parser, uint16_t * usage_page, uint16_t * usage, int32_t * value){
 
-    *usage_page = parser->usage_minimum >> 16;
+    // fetch data from descriptor usage item
+    uint16_t bit_pos = parser->descriptor_usage_item.bit_pos;
+    uint16_t size    = parser->descriptor_usage_item.size;
+    *usage_page      = parser->descriptor_usage_item.usage_page;
+    *usage           = parser->descriptor_usage_item.usage;
+
+    // skip optional Report ID
+    if (parser->descriptor_usage_item.report_id != HID_REPORT_ID_UNDEFINED){
+        bit_pos += 8;
+    }
 
     // read field (up to 32 bit unsigned, up to 31 bit signed - 32 bit signed behaviour is undefined) - check report len
-    bool is_variable   = (parser->descriptor_item.item_value & 2) != 0;
-    bool is_signed     = parser->global_logical_minimum < 0;
-    int pos_start     = btstack_min(  parser->report_pos_in_bit >> 3, parser->report_len);
-    int pos_end       = btstack_min( (parser->report_pos_in_bit + parser->global_report_size - 1u) >> 3u, parser->report_len);
+    bool is_variable   = (parser->descriptor_usage_item.descriptor_item.item_value & 2) != 0;
+    bool is_signed     = parser->descriptor_usage_item.global_logical_minimum < 0;
+    int pos_start     = btstack_min(  bit_pos >> 3, parser->report_len);
+    int pos_end       = btstack_min( (bit_pos + size - 1u) >> 3u, parser->report_len);
     int bytes_to_read = pos_end - pos_start + 1;
+
     int i;
     uint32_t multi_byte_value = 0;
     for (i=0;i < bytes_to_read;i++){
         multi_byte_value |= parser->report[pos_start+i] << (i*8);
     }
-    uint32_t unsigned_value = (multi_byte_value >> (parser->report_pos_in_bit & 0x07u)) & ((1u<<parser->global_report_size)-1u);
+    uint32_t unsigned_value = (multi_byte_value >> (bit_pos & 0x07u)) & ((1u<<size)-1u);
     // log_debug("bit pos %2u, report size %u, start %u, end %u, len %u;; unsigned value %08x", parser->report_pos_in_bit, parser->global_report_size, pos_start, pos_end, parser->report_len, unsigned_value);
     if (is_variable){
-        *usage      = parser->usage_minimum & 0xffffu;
-        if (is_signed && (unsigned_value & (1u<<(parser->global_report_size-1u)))){
-            *value = unsigned_value - (1u<<parser->global_report_size);
+        if (is_signed && (unsigned_value & (1u<<(size-1u)))){
+            *value = unsigned_value - (1u<<size);
         } else {
             *value = unsigned_value;
         }
@@ -409,71 +520,44 @@ void btstack_hid_parser_get_field(btstack_hid_parser_t * parser, uint16_t * usag
         *usage  = unsigned_value;
         *value  = 1;
     }
-    parser->required_usages--;
-    parser->report_pos_in_bit += parser->global_report_size;
 
-    // next usage
-    if (is_variable){
-        parser->usage_minimum++;
-        parser->available_usages--;
-        if (parser->usage_range && (parser->usage_minimum > parser->usage_maximum)){
-            // usage min - max range smaller than report count, ignore remaining bit in report
-            log_debug("Ignoring %u items without Usage", parser->required_usages);
-            parser->report_pos_in_bit += parser->global_report_size * parser->required_usages;
-            parser->required_usages = 0;
-        }
-    } else {
-        if (parser->required_usages == 0u){
-            parser->available_usages = 0;
-        }
-    }
-    if (parser->available_usages) {
-        return;
-    }
-    if (parser->required_usages == 0u){
-        hid_post_process_item(parser, &parser->descriptor_item);
-        parser->state = BTSTACK_HID_PARSER_SCAN_FOR_REPORT_ITEM;
-        btstack_hid_parser_find_next_usage(parser);
-    } else {
-        hid_find_next_usage(parser);
-        if (parser->available_usages == 0u) {
-            parser->state = BTSTACK_HID_PARSER_COMPLETE;
-        }
-    }
+    parser->have_report_usage_ready = false;
 }
 
-int btstack_hid_get_report_size_for_id(int report_id, hid_report_type_t report_type, uint16_t hid_descriptor_len, const uint8_t * hid_descriptor){
+
+// Utility functions
+
+int btstack_hid_get_report_size_for_id(uint16_t report_id, hid_report_type_t report_type, const uint8_t *hid_descriptor,
+                                       uint16_t hid_descriptor_len) {
     int total_report_size = 0;
     int report_size = 0;
     int report_count = 0;
-    int current_report_id = 0;
-    
-    while (hid_descriptor_len){
+    int current_report_id = HID_REPORT_ID_UNDEFINED;
+
+    btstack_hid_descriptor_iterator_t iterator;
+    btstack_hid_descriptor_iterator_init(&iterator, hid_descriptor, hid_descriptor_len);
+    while (btstack_hid_descriptor_iterator_has_more(&iterator)) {
+        const hid_descriptor_item_t *const item = btstack_hid_descriptor_iterator_get_item(&iterator);
         int valid_report_type = 0;
-        hid_descriptor_item_t item;
-        bool ok = btstack_hid_parse_descriptor_item(&item, hid_descriptor, hid_descriptor_len);
-        if (ok == false) {
-            return 0;
-        }
-        switch (item.item_type){
+        switch (item->item_type) {
             case Global:
-                switch ((GlobalItemTag)item.item_tag){
+                switch ((GlobalItemTag) item->item_tag) {
                     case ReportID:
-                        current_report_id = item.item_value;
+                        current_report_id = item->item_value;
                         break;
                     case ReportCount:
-                        report_count = item.item_value;
+                        report_count = item->item_value;
                         break;
                     case ReportSize:
-                        report_size = item.item_value;
+                        report_size = item->item_value;
                         break;
                     default:
                         break;
                 }
                 break;
-            case Main:  
+            case Main:
                 if (current_report_id != report_id) break;
-                switch ((MainItemTag)item.item_tag){
+                switch ((MainItemTag) item->item_tag) {
                     case Input:
                         if (report_type != HID_REPORT_TYPE_INPUT) break;
                         valid_report_type = 1;
@@ -495,28 +579,31 @@ int btstack_hid_get_report_size_for_id(int report_id, hid_report_type_t report_t
             default:
                 break;
         }
-		if (total_report_size > 0 && current_report_id != report_id) break;
-        hid_descriptor_len -= item.item_size;
-        hid_descriptor += item.item_size;
+        if (total_report_size > 0 && current_report_id != report_id) break;
     }
-    return (total_report_size + 7)/8;
+
+    if (btstack_hid_descriptor_iterator_valid(&iterator)){
+        return (total_report_size + 7) / 8;
+    } else {
+        return 0;
+    }
 }
 
-hid_report_id_status_t btstack_hid_id_valid(int report_id, uint16_t hid_descriptor_len, const uint8_t * hid_descriptor){
-    int current_report_id = 0;
-    while (hid_descriptor_len){
-        hid_descriptor_item_t item;
-        bool ok = btstack_hid_parse_descriptor_item(&item, hid_descriptor, hid_descriptor_len);
-        if (ok == false){
-            return HID_REPORT_ID_INVALID;
-        }
-        switch (item.item_type){
+hid_report_id_status_t btstack_hid_report_id_valid(uint16_t report_id, const uint8_t * hid_descriptor, uint16_t hid_descriptor_len){
+    uint16_t current_report_id = HID_REPORT_ID_UNDEFINED;
+    btstack_hid_descriptor_iterator_t iterator;
+    btstack_hid_descriptor_iterator_init(&iterator, hid_descriptor, hid_descriptor_len);
+    bool report_id_found = false;
+    while (btstack_hid_descriptor_iterator_has_more(&iterator)) {
+        const hid_descriptor_item_t *const item = btstack_hid_descriptor_iterator_get_item(&iterator);
+        switch (item->item_type){
             case Global:
-                switch ((GlobalItemTag)item.item_tag){
+                switch ((GlobalItemTag)item->item_tag){
                     case ReportID:
-                        current_report_id = item.item_value;
-                        if (current_report_id != report_id) break;
-                        return HID_REPORT_ID_VALID;
+                        current_report_id = item->item_value;
+                        if (current_report_id == report_id) {
+                            report_id_found = true;
+                        }
                     default:
                         break;
                 }
@@ -524,23 +611,29 @@ hid_report_id_status_t btstack_hid_id_valid(int report_id, uint16_t hid_descript
             default:
                 break;
         }
-        hid_descriptor_len -= item.item_size;
-        hid_descriptor += item.item_size;
     }
-    if (current_report_id != 0) return HID_REPORT_ID_INVALID;
-    return HID_REPORT_ID_UNDECLARED;
+
+    if (btstack_hid_descriptor_iterator_valid(&iterator)) {
+        if (report_id_found){
+            return HID_REPORT_ID_VALID;
+        }
+        if ((report_id  == HID_REPORT_ID_UNDEFINED) && (current_report_id == HID_REPORT_ID_UNDEFINED)) {
+            return HID_REPORT_ID_VALID;
+        }
+        return HID_REPORT_ID_UNDECLARED;
+    } else {
+        return HID_REPORT_ID_INVALID;
+    }
 }
 
-bool btstack_hid_report_id_declared(uint16_t hid_descriptor_len, const uint8_t * hid_descriptor){
-    while (hid_descriptor_len){
-        hid_descriptor_item_t item;
-        bool ok = btstack_hid_parse_descriptor_item(&item, hid_descriptor, hid_descriptor_len);
-        if (ok == false){
-            break;
-        }
-        switch (item.item_type){
+bool btstack_hid_report_id_declared(const uint8_t *hid_descriptor, uint16_t hid_descriptor_len) {
+    btstack_hid_descriptor_iterator_t iterator;
+    btstack_hid_descriptor_iterator_init(&iterator, hid_descriptor, hid_descriptor_len);
+    while (btstack_hid_descriptor_iterator_has_more(&iterator)) {
+        const hid_descriptor_item_t *const item = btstack_hid_descriptor_iterator_get_item(&iterator);
+        switch (item->item_type){
             case Global:
-                switch ((GlobalItemTag)item.item_tag){
+                switch ((GlobalItemTag)item->item_tag){
                     case ReportID:
                         return true;
                     default:
@@ -550,8 +643,6 @@ bool btstack_hid_report_id_declared(uint16_t hid_descriptor_len, const uint8_t *
             default:
                 break;
         }
-        hid_descriptor_len -= item.item_size;
-        hid_descriptor += item.item_size;
     }
     return false;
 }

@@ -198,7 +198,7 @@ int btstack_main(int argc, const char * argv[]){
     }
     if (!remote_addr_found){
         usage(argv[0]);
-        exit(1);    
+        return 1;
     }
 #else
     (void)argc;
