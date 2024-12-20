@@ -656,11 +656,20 @@ static void handle_report_event(uint8_t packet_type, uint16_t channel, uint8_t *
     if (report_index == HIDS_CLIENT_INVALID_REPORT_INDEX){
         return;
     }
-    
-    uint8_t * in_place_event = &packet[-2];
+
+    // GATT_EVENT_CHARACTERISTIC_VALUE_QUERY_RESULT has HID report data at offset 12
+    // - see gatt_event_characteristic_value_query_result_get_value()
+    //
+    // GATTSERVICE_SUBEVENT_HID_REPORT has HID report data at offset 10
+    // - see gattservice_subevent_hid_report_get_report() and add 1 for the inserted Report ID
+    //
+    // => use existing packet from offset 2 = 12 - 10 to setup event
+    const int16_t offset = 2;
+
+    uint8_t * in_place_event = &packet[offset];
     hids_client_setup_report_event_with_report_id(client, report_index, in_place_event,
                                                   gatt_event_characteristic_value_query_result_get_value_length(packet));
-    (*client->client_handler)(HCI_EVENT_GATTSERVICE_META, client->cid, in_place_event, size + 2);
+    (*client->client_handler)(HCI_EVENT_GATTSERVICE_META, client->cid, in_place_event, size - offset);
 }
 
 static void hids_run_for_client(hids_client_t * client){
