@@ -110,7 +110,7 @@ For information on Apple's MFi/iAP2 and Find My profiles or access to LE Audio, 
 | Dialog Semiconductor DA145xx         | LE               | H4, SPI        | n.a.             | da14581        | Official HCI firmware used                     |
 | Dialog Semiconductor DA1469x         | LE               | H4, SPI        | n.a              |                | HCI Firmware part of DA1469x SDK               |
 | Espressif ESP32                      | Dual mode + Wifi | VHCI, H4       | Yes              |                | SoC with Bluetooth and Wifi                    |
-| Espressif ESP32-S3, -C3, -C6, -H2    | LE + Wifi        | VHCI, H4       | Yes              |                | SoC with Bluetooth and Wifi                    |
+| Espressif ESP32-S3,C2,C3,C5,C6,H2    | LE + Wifi        | VHCI, H4       | Yes              |                | SoC with Bluetooth and Wifi                    |
 | EM 9301, 9304, 9305                  | LE               | SPI            | n.a.             | em9301         | Custom HCI SPI implementation                  |
 | Intel Dual Wireless 3165, 8260, 8265 | Dual mode        | USB            | Probably         | intel          | Firmware size: 400 kB                          |
 | Nordic nRF                           | LE               | H4             | n.a.             |                | Requires custom HCI firmware                   |
