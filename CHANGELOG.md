@@ -7,32 +7,42 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ---
 
 ## Unreleased
+### Added
+### Fixed
+### Changed
+
+
+## Release v1.6.2
 
 ### Added
+- btstack_util: safe wrappers for snprintf
 - btstack_version: provides BTstack major, minor, patch versions
+- HCI Dump: support ISO packets in PacketLogger format
+- HCI Dump Dispatch: allow to chain multiple HCI Dump implementations
+- GAP: support LE Connection Subrating with gap_request_connection_subrating
 - GATT Client: gatt_client_add_service_changed_handler to receive Service Changed and Database Hash events
 - GATT Client: various _with_context functions that provide a service + connection id to GATT query events
-- GATT Service Client: generic client discovers characteristics and enabled notifications/indications
+- GATT Service Client: generic client discovers characteristics and enables notifications/indications
 - L2CAP: provide access to number of available credits in CBM/ECBM
+- AVDTP, A2DP: MPEG AAC capability and configuration events provide DRC field
+- AVRCP: support Browsing in Target role
 - HFP HF: support Apple Accessory information with:
   - hfp_hf_apple_set_identification
   - hfp_hf_apple_set_battery_level
   - hfp_hf_apple_set_docked_state
 - HFP AG: report Apple Accessory information, battery level and docked state
-- AVRCP: Support browsing in Target role
-- PBAP Client: allow to set start offset and max list count for pull phonebook operation
-- PBAP Client: support multiple parallel connections
 - HID Parser: introduce HID Descriptor and HID Descriptor Usage iterators
-- HCI Dump Dispatch: allow to use multiple HCI Dump implementations
-- HCI Dump: support ISO packets in PacketLogger format
+- PBAP Client: allow to set start offset and max list count for pull phonebook operation
+- PBAP Client: create SDP record with pbap_client_create_sdp_record
+- PBAP Client: support multiple parallel connections
+- Battery Service v1.1 Server
 - Immediate Alert Service Server and Client: added
 - Link Loss Service Server and Client: added
 - TX Power Service Client: added
-- btstack_util: safe wrappers for snprintf
-- Battery Service v1.1 Server
-- AVDTP, A2DP: MPEG AAC capability and configuration events are extended with the drc field
-
+- Chipset: support PatchRAM download on CYW5551x and CYW5557x
+ 
 ### Fixed
+- btstack_util: skip whitespace in btstack_atoi
 - L2CAP: Fix ERTM Tx buffer reconfiguration
 - RFCOMM: shut down multiplexer after closing last channel instead of multiplexer idle timer
 - RFCOMM: fix multiple outgoing channel setup
@@ -42,17 +52,17 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - SM: fix CTKD after BR/EDR Role Change
 - A2DP: emit stream established if peer set-up configuration
 - AVDTP: fix SDP Client registration bug that could block other SDP queries
-- HIOS Client: emit disconnected event on HCI disconnect and free connection struct
-- Scan Parameter Service Client: emit disconnected event on HCI disconnect and free connection struct
-- PBAP Client: fix PBAP_SUBEVENT_OPERATION_COMPLETED with OBEX_DISCONNECTED for pbap_disconnect
 - HFP HF: send HF Indicator update only if enabled by AG
 - HID Host: omit Report ID in Set/Get Report and send report for report id == HID_REPORT_ID_UNDEFINED
+- PBAP Client: fix PBAP_SUBEVENT_OPERATION_COMPLETED with OBEX_DISCONNECTED for pbap_disconnect
+- HIDS Client: emit disconnected event on HCI disconnect and free connection struct
+- Scan Parameter Service Client: emit disconnected event on HCI disconnect and free connection struct
 - POSIX: clear run loop exit flag
-- btstack_util: skip whitespace in btstack_atoi
-- hxcmod-player: update to fix GCC 11 warnings
 - esp32: use synchronous VHCI API with newer ESP32 variants (esp32, -c3, and -s3 use asynchronous API)
+- 3rd-party: update hxcmod-player to fix GCC 11 warnings
 
 ### Changed
+- HCI Dump: only log internal BTstack events if ENABLE_LOG_BTSTACK_EVENTS is defined
 - GAP: return command disallowed if disconnect already requested
 - GAP: improve handling of incorrectly resolved addresses in HCI_SUBEVENT_LE_CONNECTION_COMPLETE
 - GAP: only store link key if at least one side requests bonding during the IO Capabilities exchange.
@@ -65,6 +75,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Device Information Service Server: update for v1.2
 - Device Information Service Client: update for v1.2
 - esp32: enable audio driver by default on esp32, esp32c3 and esp32c6
+- test: removed auto-pts support
+
 
 ## Release v1.6.1
 
