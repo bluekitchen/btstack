@@ -283,6 +283,7 @@ static void hid_host_handle_interrupt_report(const uint8_t * report, uint16_t re
             continue;
         }
         printf("%c", key);
+        fflush(stdout);
     }
     memcpy(last_keys, new_keys, NUM_KEYS);
 }
