@@ -224,6 +224,7 @@ static void hid_handle_input_report(uint8_t service_index, const uint8_t * repor
             continue;
         }
         printf("%c", key);
+        fflush(stdout);
     }
     memcpy(last_keys, new_keys, NUM_KEYS);
 }
