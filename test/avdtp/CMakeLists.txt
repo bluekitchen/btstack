@@ -77,9 +77,6 @@ list(SORT SOURCES)
 
 set_source_files_properties(../../src/classic/hfp_ag.c PROPERTIES LANGUAGE CXX )
 
-# create static lib
-add_library(btstack STATIC ${SOURCES})
-
 # portaudio
 pkg_check_modules(PORTAUDIO portaudio-2.0)
 if(PORTAUDIO_FOUND)
@@ -89,6 +86,9 @@ if(PORTAUDIO_FOUND)
 	link_libraries(${PORTAUDIO_LIBRARIES})
 	add_compile_definitions(HAVE_PORTAUDIO)
 endif()
+
+# create static lib
+add_library(btstack STATIC ${SOURCES})
 
 # create targets for all examples
 file(GLOB EXAMPLES_C    "*.c")

@@ -83,9 +83,6 @@ set(SOURCES
 )
 list(SORT SOURCES)
 
-# create static lib
-add_library(btstack STATIC ${SOURCES})
-
 # pkgconfig
 find_package(PkgConfig QUIET)
 
@@ -100,6 +97,9 @@ if (PkgConfig_FOUND)
 		add_compile_definitions(HAVE_PORTAUDIO)
 	endif()
 endif()
+
+# create static lib
+add_library(btstack STATIC ${SOURCES})
 
 # get list of examples, skipping mesh_node_demo
 include(../../example/CMakeLists.txt)
