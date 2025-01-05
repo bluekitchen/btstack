@@ -188,7 +188,7 @@ static void hid_handle_input_report(uint8_t service_index, const uint8_t * repor
         if (usage_page != 0x07) continue;   
         switch (usage){
             case 0xe1:
-            case 0xe6:
+            case 0xe5:
                 if (value){
                     shift = 1;
                 }
