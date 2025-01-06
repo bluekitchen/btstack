@@ -185,10 +185,10 @@ static void hid_handle_input_report(uint8_t service_index, const uint8_t * repor
         uint16_t usage;
         int32_t  value;
         btstack_hid_parser_get_field(&parser, &usage_page, &usage, &value);
-        if (usage_page != 0x07) continue;   
+        if (usage_page != HID_USAGE_PAGE_KEYBOARD) continue;
         switch (usage){
-            case 0xe1:
-            case 0xe6:
+            case HID_USAGE_KEY_KEYBOARD_LEFTSHIFT:
+            case HID_USAGE_KEY_KEYBOARD_RIGHTSHIFT:
                 if (value){
                     shift = 1;
                 }
