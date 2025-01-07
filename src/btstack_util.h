@@ -474,6 +474,22 @@ uint16_t btstack_virtual_memcpy(
     const uint8_t * field_data, uint16_t field_len, uint16_t field_offset, 
     uint8_t * buffer, uint16_t buffer_size, uint16_t buffer_offset);
 
+/**
+ * Convert bytes to hex string
+ * @param dst buffer for hex string, needs to be twice as large as src_size + 1
+ * @param src_data
+ * @param src_size
+ */
+void btstack_bytes_to_hex(char * dst, const uint8_t * src_data, uint16_t src_size);
+
+/**
+ * Convert hex string to bytes
+ * @param dst
+ * @param dst_size
+ * @param src
+ * @return true if conversion was successful
+ */
+bool btstack_hex_to_bytes(uint8_t * dst, uint16_t dst_size, const char * src);
 
 /* API_END */
 

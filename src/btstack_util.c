@@ -467,6 +467,31 @@ int string_len_for_uint32(uint32_t i){
     return 10;
 }
 
+void btstack_bytes_to_hex(char * dst, const uint8_t * src_data, uint16_t src_size){
+    int i;
+    for (i = 0; i < src_size; i++) {
+        uint8_t byte = src_data[i];
+        *dst++ = char_for_nibble(byte >> 4);
+        *dst++ = char_for_nibble(byte & 0x0F);
+    }
+    *dst = 0;
+}
+
+bool btstack_hex_to_bytes(uint8_t * dst, uint16_t dst_size, const char * src_data){
+    uint16_t src_size = (uint16_t) strlen(src_data);
+    memset (dst, 0, dst_size);
+    while ((src_size > 1) && (dst_size > 0)){
+        src_size -= 2;
+        dst_size--;
+        int hex_byte = scan_hex_byte(&src_data[src_size]);
+        if (hex_byte < 0) {
+            return false;
+        }
+        dst[dst_size] = hex_byte;
+    }
+    return src_size == 0;
+}
+
 int count_set_bits_uint32(uint32_t x){
     uint32_t v = x;
     v = (v & 0x55555555) + ((v >> 1)  & 0x55555555U);
@@ -732,3 +757,6 @@ uint16_t btstack_virtual_memcpy(
     memcpy(&buffer[(field_offset + skip_at_start) - buffer_offset], &field_data[skip_at_start], bytes_to_copy);
     return bytes_to_copy;
 }
+
+
+
