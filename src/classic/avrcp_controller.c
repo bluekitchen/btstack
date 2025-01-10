@@ -1031,6 +1031,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     for (i = 0; i < num_attributes; i++){
                         avrcp_player_application_setting_attribute_id_t attribute_id = (avrcp_player_application_setting_attribute_id_t)packet[pos++];
                         log_info("TODO send event: attribute_id %d", attribute_id);
+                        UNUSED(attribute_id);
                     }
                     break;
                 }
@@ -1041,6 +1042,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     for (i = 0; i < num_setting_values; i++){
                         uint8_t value = packet[pos++];
                         log_info("TODO send event: value %d", value);
+                        UNUSED(value);
                     }
                     break;
                 }
@@ -1060,6 +1062,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                         pos += value_len;
 
                         log_info("TODO send event: attribute_id %d, value_len %d, value %s", attribute_id, value_len, value);
+                        UNUSED(value);
                         UNUSED(character_set_id);
                         UNUSED(repeat_mode);
                         UNUSED(shuffle_mode);
@@ -1080,6 +1083,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     int i;
                     for (i = 0; i < num_setting_values; i++){
                         uint8_t value = packet[pos++];
+                        UNUSED(value);
                         log_info("TODO send event: value %d", value);
                     }
                     break;
