@@ -325,12 +325,12 @@ static void avdtp_handle_start_sdp_client_query(void * context){
                         break;
                     default:
                         btstack_unreachable();
-                        break;
+                        return;
                 }
                 break;
             default:
                 btstack_unreachable();
-                break;
+                return;
         }
 
         // Start & track query
