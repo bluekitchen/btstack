@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 - GAP: simulate HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE if HCI Remote Name Request fails 
 ### Fixed
+- GAP: store link key for standard/non-SSP pairing
 ### Changed
 
 
