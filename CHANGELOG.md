@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## Unreleased
 ### Added
+- GAP: simulate HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE if HCI Remote Name Request fails 
 ### Fixed
 ### Changed
 

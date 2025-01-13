@@ -3304,6 +3304,21 @@ static void handle_command_status_event(uint8_t * packet, uint16_t size) {
                 hci_stack->inquiry_state = GAP_INQUIRY_STATE_IDLE;
             }
             break;
+        case HCI_OPCODE_HCI_REMOTE_NAME_REQUEST:
+            if (hci_stack->remote_name_state != GAP_REMOTE_NAME_STATE_IDLE) {
+                if (status != ERROR_CODE_SUCCESS) {
+                    // remote name request failed, reset status and simulate event
+                    hci_stack->remote_name_state = GAP_REMOTE_NAME_STATE_IDLE;
+                    uint8_t event[3+1+6+248];
+                    memset(event, 0, sizeof(event));
+                    event[0] = HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE;
+                    event[1] = 1 + 6 + 248;
+                    event[2] = status;
+                    reverse_bd_addr(hci_stack->remote_name_addr, &event[3]);
+                    hci_emit_event(event, sizeof(event), 1);
+                }
+            }
+            break;
 #endif
 #ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
         case HCI_OPCODE_HCI_LE_CREATE_CIS:
