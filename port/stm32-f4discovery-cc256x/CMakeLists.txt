@@ -27,11 +27,11 @@ include("cmake/gcc-arm-none-eabi.cmake")
 # Enable compile command to ease indexing with e.g. clangd
 set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
 
-# Enable CMake support for ASM and C languages
-enable_language(C ASM)
-
 # Core project settings
 project(${CMAKE_PROJECT_NAME})
+
+# Enable CMake support for ASM and C languages
+enable_language(C ASM)
 
 # Add STM32CubeMX generated sources
 add_subdirectory(cmake/stm32cubemx)
@@ -75,6 +75,15 @@ file(GLOB GATT_FILES "../../src/*/gatt-service/*.gatt")
 # on Mac 10.14, adding lwip to libstack results in a yet not understood link error
 # workaround: add lwip sources only to lwip_examples
 set (LWIP_EXAMPLES pan_lwip_http_server)
+
+# Create Ozone .jdebug files
+function(CreateOzoneProject exampleName)
+    set(INPUT_FILE "ozone.jdebug")
+    set(OUTPUT_FILE ${CMAKE_CURRENT_BINARY_DIR}/${exampleName}.jdebug)
+    file(READ ${INPUT_FILE} FILE_CONTENTS)
+    string(REPLACE "EXAMPLE" ${exampleName} MODIFIED_CONTENTS ${FILE_CONTENTS})
+    file(WRITE ${OUTPUT_FILE} "${MODIFIED_CONTENTS}")
+endfunction()
 
 # Create targets
 foreach(EXAMPLE_FILE ${EXAMPLES_C})
@@ -140,4 +149,8 @@ foreach(EXAMPLE_FILE ${EXAMPLES_C})
         port/port.c
         ${SOURCES_EXAMPLE}
     )
+
+    # Create Ozone Project
+    CreateOzoneProject(${EXAMPLE})
+
 endforeach()
