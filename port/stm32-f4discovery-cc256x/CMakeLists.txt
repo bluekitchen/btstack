@@ -32,7 +32,6 @@ enable_language(C ASM)
 
 # Core project settings
 project(${CMAKE_PROJECT_NAME})
-message("Build type: " ${CMAKE_BUILD_TYPE})
 
 # Create an executable object type
 add_executable(${CMAKE_PROJECT_NAME})
@@ -53,6 +52,10 @@ set( EXAMPLES "a2dp_sink_demo" )
 if( DEFINED ENV{EXAMPLES} )
     set(EXAMPLES $ENV{EXAMPLES})
 endif()
+
+# Build information
+message("Build:   ${CMAKE_BUILD_TYPE}")
+message("Example: ${EXAMPLES}\n")
 
 # Include BTStack
 include (cmake/btstack.cmake)
