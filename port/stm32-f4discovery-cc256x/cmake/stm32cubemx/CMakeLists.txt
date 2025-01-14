@@ -12,6 +12,9 @@ target_compile_definitions(stm32cubemx INTERFACE
     $<$<CONFIG:Debug>:DEBUG>
 )
 
+# Ignore warnings in STM32CubeMX code
+target_compile_options(stm32cubemx INTERFACE -Wno-unused-parameter)
+
 target_include_directories(stm32cubemx INTERFACE
     ../../Inc
     ../../Drivers/STM32F4xx_HAL_Driver/Inc
