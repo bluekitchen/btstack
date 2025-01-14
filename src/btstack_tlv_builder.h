@@ -73,14 +73,14 @@ void btstack_tlv_builder_init(btstack_tlv_builder_context_t * context, uint8_t *
  * @param context
  * @return number of bytes that can be added
  */
-uint16_t btstack_tlv_builder_remaining_space(btstack_tlv_builder_context_t * context);
+uint16_t btstack_tlv_builder_remaining_space(const btstack_tlv_builder_context_t* context);
 
 /**
  * @brief Get constructed event length
  * @param context
  * @return number of bytes in event
  */
-uint16_t btstack_tlv_builder_get_length(btstack_tlv_builder_context_t * context);
+uint16_t btstack_tlv_builder_get_length(const btstack_tlv_builder_context_t* context);
 
 /**
  * @brief Add tag
