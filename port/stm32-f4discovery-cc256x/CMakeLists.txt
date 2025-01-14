@@ -76,15 +76,6 @@ file(GLOB GATT_FILES "../../src/*/gatt-service/*.gatt")
 # workaround: add lwip sources only to lwip_examples
 set (LWIP_EXAMPLES pan_lwip_http_server)
 
-# Create Ozone .jdebug files
-function(CreateOzoneProject exampleName)
-    set(INPUT_FILE "ozone.jdebug")
-    set(OUTPUT_FILE ${CMAKE_CURRENT_BINARY_DIR}/${exampleName}.jdebug)
-    file(READ ${INPUT_FILE} FILE_CONTENTS)
-    string(REPLACE "EXAMPLE" ${exampleName} MODIFIED_CONTENTS ${FILE_CONTENTS})
-    file(WRITE ${OUTPUT_FILE} "${MODIFIED_CONTENTS}")
-endfunction()
-
 # Create targets
 foreach(EXAMPLE_FILE ${EXAMPLES_C})
     # Extract the base name of the file (e.g., a2dp_sink_demo.c -> a2dp_sink_demo)
@@ -107,15 +98,25 @@ foreach(EXAMPLE_FILE ${EXAMPLES_C})
     if ( "${EXAMPLES_GATT}" MATCHES ${EXAMPLE} )
         message("example ${EXAMPLE} -- with GATT DB")
         add_custom_command(
-                OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
-                DEPENDS ${BTSTACK_ROOT}/example/${EXAMPLE}.gatt ${GATT_FILES}
-                COMMAND ${Python_EXECUTABLE}
-                ARGS ${BTSTACK_ROOT}/tool/compile_gatt.py ${BTSTACK_ROOT}/example/${EXAMPLE}.gatt ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
+            OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
+            DEPENDS ${BTSTACK_ROOT}/example/${EXAMPLE}.gatt ${GATT_FILES}
+            COMMAND ${Python_EXECUTABLE}
+            ARGS ${BTSTACK_ROOT}/tool/compile_gatt.py ${BTSTACK_ROOT}/example/${EXAMPLE}.gatt ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
         )
         list(APPEND SOURCES_EXAMPLE ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h)
     else()
         message("example ${EXAMPLE}")
     endif()
+
+    # Create Ozone Project
+    set(OZONE_PROJECT_FILE ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.jdebug)
+    add_custom_command(
+            OUTPUT ${OZONE_PROJECT_FILE}
+            DEPENDS ozone.jdebug ${CMAKE_SOURCE_DIR}/CMakelists.txt
+            COMMAND ${Python_EXECUTABLE}
+            ARGS ${BTSTACK_ROOT}/tool/replace_string.py ${CMAKE_SOURCE_DIR}/ozone.jdebug ${OZONE_PROJECT_FILE} "EXAMPLE" ${EXAMPLE}
+    )
+    list(APPEND SOURCES_EXAMPLE ${OZONE_PROJECT_FILE})
 
     # Create an executable target for the example
     add_executable(${EXAMPLE} ${SOURCES_EXAMPLE} )
@@ -149,8 +150,5 @@ foreach(EXAMPLE_FILE ${EXAMPLES_C})
         port/port.c
         ${SOURCES_EXAMPLE}
     )
-
-    # Create Ozone Project
-    CreateOzoneProject(${EXAMPLE})
 
 endforeach()
