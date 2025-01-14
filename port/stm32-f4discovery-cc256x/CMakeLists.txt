@@ -33,9 +33,6 @@ enable_language(C ASM)
 # Core project settings
 project(${CMAKE_PROJECT_NAME})
 
-# Create an executable object type
-add_executable(${CMAKE_PROJECT_NAME})
-
 # Add STM32CubeMX generated sources
 add_subdirectory(cmake/stm32cubemx)
 
@@ -46,53 +43,101 @@ set(BSP_COMPONENTS cs43l22 lis302dl lis3dsh)
 # Include BSP
 include(cmake/bsp.cmake)
 
-set( EXAMPLES "a2dp_sink_demo" )
-
-# ovewrite from environment if given
-if( DEFINED ENV{EXAMPLES} )
-    set(EXAMPLES $ENV{EXAMPLES})
-endif()
-
 # Build information
-message("Build:   ${CMAKE_BUILD_TYPE}")
-message("Example: ${EXAMPLES}\n")
+message("Build: ${CMAKE_BUILD_TYPE}\n")
 
 # Include BTStack
-include (cmake/btstack.cmake)
+include(cmake/btstack.cmake)
 
 # Add CC256x Support and specify init script
 set(CC256X_INIT_SCRIPT bluetooth_init_cc2564C_1.5.c)
 include(${BTSTACK_ROOT}/chipset/cc256x/cc256x.cmake)
 
-# Link directories setup
-target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
-    # Add user defined library search paths
-)
+# create targets for all examples
+file(GLOB EXAMPLES_C    "../../example/*.c")
+list(SORT EXAMPLES_C)
+file(GLOB EXAMPLES_GATT "../../example/*.gatt")
 
-# Add sources to executable
-target_sources(${CMAKE_PROJECT_NAME} PRIVATE
-    # Add user sources here
-    port/hal_audio_f4discovery.c
-    port/hal_flash_bank_stm32.c
-    port/port.c
-    ${SOURCES_EXAMPLE}
+# remove some
+file(GLOB EXAMPLES_OFF
+        "../../example/*demo_util*.c"
+        "../../example/ant_test.c"
+        "../../example/avrcp_browsing_client.c"
+        "../../example/mesh_node_demo.c"
+        "../../example/le_audio*"
+        "../../example/panu_demo.c"
 )
+list(REMOVE_ITEM EXAMPLES_C ${EXAMPLES_OFF})
 
-# Add include paths
-target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
-    # Add user defined include paths
-    port
-)
+# .gatt files in src
+file(GLOB GATT_FILES "../../src/*/gatt-service/*.gatt")
 
-# Add project symbols (macros)
-target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
-    # Add user defined symbols
-)
+# on Mac 10.14, adding lwip to libstack results in a yet not understood link error
+# workaround: add lwip sources only to lwip_examples
+set (LWIP_EXAMPLES pan_lwip_http_server)
 
-# Add linked libraries
-target_link_libraries(${CMAKE_PROJECT_NAME}
-    stm32cubemx
-    # Add user defined libraries
-    bsp
-    btstack
-)
+# Create targets
+foreach(EXAMPLE_FILE ${EXAMPLES_C})
+    # Extract the base name of the file (e.g., a2dp_sink_demo.c -> a2dp_sink_demo)
+    get_filename_component(EXAMPLE ${EXAMPLE_FILE} NAME_WE)
+
+    # get c file
+    set (SOURCES_EXAMPLE ${BTSTACK_ROOT}/example/${EXAMPLE}.c)
+
+    # add SCO Demo util
+    if ("hfp_ag_demo hfp_hf_demo hsp_hs_demo hsp_ag_demo" MATCHES ${EXAMPLE})
+        list(APPEND SOURCES_EXAMPLE ${BTSTACK_ROOT}/example/sco_demo_util.c)
+    endif()
+
+    # add lwip sources for lwip examples
+    if ( "${LWIP_EXAMPLES}" MATCHES ${EXAMPLE} )
+        list(APPEND SOURCES_EXAMPLE ${SOURCES_LWIP})
+    endif()
+
+    # add GATT DB creation
+    if ( "${EXAMPLES_GATT}" MATCHES ${EXAMPLE} )
+        message("example ${EXAMPLE} -- with GATT DB")
+        add_custom_command(
+                OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
+                DEPENDS ${BTSTACK_ROOT}/example/${EXAMPLE}.gatt ${GATT_FILES}
+                COMMAND ${Python_EXECUTABLE}
+                ARGS ${BTSTACK_ROOT}/tool/compile_gatt.py ${BTSTACK_ROOT}/example/${EXAMPLE}.gatt ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
+        )
+        list(APPEND SOURCES_EXAMPLE ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h)
+    else()
+        message("example ${EXAMPLE}")
+    endif()
+
+    # Create an executable target for the example
+    add_executable(${EXAMPLE} ${SOURCES_EXAMPLE} )
+
+    # Add project symbols (macros)
+    target_compile_definitions(${EXAMPLE} PRIVATE
+            # Add user-defined symbols
+    )
+
+    # Add include paths
+    target_include_directories(${EXAMPLE} PRIVATE
+        # Add user defined include paths
+        port
+    )
+
+    # Link directories and libraries
+    target_link_directories(${EXAMPLE} PRIVATE
+        # Add user-defined library search paths
+    )
+    target_link_libraries(${EXAMPLE}
+        stm32cubemx
+        bsp
+        btstack
+    )
+
+    # Add sources to the example
+    target_sources(${EXAMPLE} PRIVATE
+        # Add user sources here
+        port/hal_audio_f4discovery.c
+        port/hal_flash_bank_stm32.c
+        port/port.c
+        ${SOURCES_EXAMPLE}
+    )
+endforeach()

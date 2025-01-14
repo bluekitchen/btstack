@@ -43,7 +43,7 @@ list(APPEND INCLUDES_PATH . )
 list(APPEND INCLUDES_PATH port )
 include_directories( ${INCLUDES_PATH} )
 
-file(GLOB SOURCES_SRC            "${BTSTACK_ROOT}/src/*.c" ) #"${BTSTACK_ROOT}/example/sco_demo_util.c")
+file(GLOB SOURCES_SRC            "${BTSTACK_ROOT}/src/*.c" )
 
 file(GLOB SOURCES_BLE            "${BTSTACK_ROOT}/src/ble/*.c")
 file(GLOB SOURCES_GATT           "${BTSTACK_ROOT}/src/ble/gatt-service/*.c")
