@@ -158,7 +158,7 @@ static int btstack_audio_embedded_sink_init(
 }
 
 static uint32_t btstack_audio_embedded_sink_get_samplerate() {
-    return BSP_AUDIO_OUT_GetFrequency();
+    return hal_audio_sink_get_frequency();
 }
 
 static uint32_t source_samplerate = 0;
