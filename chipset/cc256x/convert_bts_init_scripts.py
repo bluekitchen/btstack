@@ -312,7 +312,7 @@ if 'cc256x_bt_service_pack_2.8_ant_1.16' in name_lower:
     aka = "6.6.15"
 
 # use AKA from .bts file that it
-name_parts = re.match('.*TIInit_(\d*\.\d*\.\d*).*.bts', main_bts)
+name_parts = re.match(r'.*TIInit_(\d*\.\d*\.\d*).*.bts', main_bts)
 if name_parts:
     aka = name_parts.group(1)
 
