@@ -536,7 +536,9 @@ uint8_t hfp_hf_query_subscriber_number(hci_con_handle_t acl_handle);
  * @param acl_handle
  * @param assigned_number
  * @param value
- * @return status ERROR_CODE_SUCCESS if successful, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection does not exist
+ * @return status ERROR_CODE_SUCCESS if successful, otherwise:
+ *              - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection does not exist, or
+ *              - ERROR_CODE_COMMAND_DISALLOWED if indicator is either not found or not enabled
  */
 uint8_t hfp_hf_set_hf_indicator(hci_con_handle_t acl_handle, int assigned_number, int value);
 

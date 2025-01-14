@@ -2313,6 +2313,9 @@ uint8_t hfp_hf_set_hf_indicator(hci_con_handle_t acl_handle, int assigned_number
                     // send update
                     hfp_hf_run_for_context(hfp_connection);
                     break;
+                } else {
+                    // return command disallowed as indicator disabled
+                    return ERROR_CODE_COMMAND_DISALLOWED;
                 }
             }
         }
