@@ -725,8 +725,13 @@ static uint8_t avrcp_controller_request_pass_through_press_control_cmd(uint16_t 
     return ERROR_CODE_SUCCESS;
 }
 
+
 static uint8_t request_single_pass_through_press_control_cmd(uint16_t avrcp_cid, avrcp_operation_id_t opid, uint16_t playback_speed){
     return avrcp_controller_request_pass_through_press_control_cmd(avrcp_cid, opid, playback_speed, false);
+}
+
+uint8_t avrcp_controller_send_pass_through_cmd(uint16_t avrcp_cid, avrcp_operation_id_t opid){
+    return avrcp_controller_request_pass_through_press_control_cmd(avrcp_cid, opid, 0, false);
 }
 
 static uint8_t request_continuous_pass_through_press_control_cmd(uint16_t avrcp_cid, avrcp_operation_id_t opid, uint16_t playback_speed){

@@ -141,6 +141,14 @@ uint8_t avrcp_controller_start_press_and_hold_cmd(uint16_t avrcp_cid, avrcp_oper
 uint8_t avrcp_controller_release_press_and_hold_cmd(uint16_t avrcp_cid);
 
 /**
+ * Send PASS THROUGH command. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
+ * @param avrcp_cid
+ * @param operation_id
+ * @return
+ */
+uint8_t avrcp_controller_send_pass_through_cmd(uint16_t avrcp_cid, avrcp_operation_id_t operation_id);
+
+/**
  * @brief Play. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
  * @param avrcp_cid
  * @return status
