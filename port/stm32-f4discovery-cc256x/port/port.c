@@ -250,11 +250,8 @@ ssize_t _read(int fd, void * buf, size_t count){
     return -1;
 }
 
-// TODO: control LED instead of printing its state
 void hal_led_toggle(void){
-    static bool led_state = false;
-    led_state = !led_state;
-    printf("LED State %u\n", led_state);
+    HAL_GPIO_TogglePin( LD3_GPIO_Port, LD3_Pin);
 }
 
 // main.c
