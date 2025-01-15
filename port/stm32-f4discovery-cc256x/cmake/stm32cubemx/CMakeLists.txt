@@ -33,6 +33,7 @@ target_sources(stm32cubemx INTERFACE
     ../../Src/i2s.c
     ../../Src/pdm2pcm.c
     ../../Src/spi.c
+    ../../Src/tim.c
     ../../Src/usart.c
     ../../Src/usb_otg.c
     ../../Src/stm32f4xx_it.c
