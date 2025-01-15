@@ -112,7 +112,7 @@ foreach(EXAMPLE_FILE ${EXAMPLES_C})
     set(OZONE_PROJECT_FILE ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.jdebug)
     add_custom_command(
             OUTPUT ${OZONE_PROJECT_FILE}
-            DEPENDS ozone.jdebug ${CMAKE_SOURCE_DIR}/CMakelists.txt
+            DEPENDS ozone.jdebug
             COMMAND ${Python_EXECUTABLE}
             ARGS ${BTSTACK_ROOT}/tool/replace_string.py ${CMAKE_SOURCE_DIR}/ozone.jdebug ${OZONE_PROJECT_FILE} "EXAMPLE" ${EXAMPLE}
     )
