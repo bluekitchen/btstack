@@ -1272,7 +1272,10 @@ uint8_t gatt_client_cancel_write(btstack_packet_handler_t callback, hci_con_hand
  * @note callback might happen during call to this function
  * @param callback_registration to point to callback function and context information
  * @param con_handle
- * @return ERROR_CODE_SUCCESS if ok, ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if handle unknown, and ERROR_CODE_COMMAND_DISALLOWED if callback already registered
+ * @return ERROR_CODE_SUCCESS if ok, otherwise:
+ *       - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection handle unknown,
+ *       - ERROR_CODE_MEMORY_CAPACITY_EXCEEDED if GATT client memory exceeded, or
+ *       - ERROR_CODE_COMMAND_DISALLOWED if GATT client already registered callback
  */
 uint8_t gatt_client_request_to_send_gatt_query(btstack_context_callback_registration_t * callback_registration, hci_con_handle_t con_handle);
 
@@ -1289,7 +1292,7 @@ uint8_t gatt_client_remove_gatt_query(btstack_context_callback_registration_t * 
  * @note callback might happen during call to this function
  * @param callback_registration to point to callback function and context information
  * @param con_handle
- * @return ERROR_CODE_SUCCESS if ok, ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if handle unknown, and ERROR_CODE_COMMAND_DISALLOWED if callback already registered
+ * @return ERROR_CODE_SUCCESS if ok, ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection handle unknown, and ERROR_CODE_COMMAND_DISALLOWED if callback already registered
  */
 uint8_t gatt_client_request_to_write_without_response(btstack_context_callback_registration_t * callback_registration, hci_con_handle_t con_handle);
 
