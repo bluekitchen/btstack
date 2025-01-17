@@ -159,6 +159,7 @@ NVIC.PendSV_IRQn=true\:0\:0\:false\:false\:true\:true\:false\:false
 NVIC.PriorityGroup=NVIC_PRIORITYGROUP_4
 NVIC.SVCall_IRQn=true\:0\:0\:false\:false\:true\:true\:false\:false
 NVIC.SysTick_IRQn=true\:0\:0\:false\:false\:true\:true\:true\:false
+NVIC.TIM2_IRQn=true\:0\:0\:false\:false\:true\:true\:true\:true
 NVIC.USART2_IRQn=true\:15\:0\:true\:false\:true\:true\:true\:true
 NVIC.USART3_IRQn=true\:1\:0\:true\:false\:true\:true\:true\:true
 NVIC.UsageFault_IRQn=true\:0\:0\:false\:false\:false\:true\:false\:false
