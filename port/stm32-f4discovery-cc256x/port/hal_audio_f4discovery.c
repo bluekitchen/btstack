@@ -37,6 +37,8 @@
 
 #define BTSTACK_FILE__ "hal_audio_f4_discovery.c"
 
+#include <stdio.h>
+
 #include "hal_audio.h"
 #include "btstack_debug.h"
 #include "stm32f4_discovery_audio.h"
@@ -78,7 +80,13 @@ static int source_pdm_bytes_per_ms;
 static int source_pcm_samples_per_irq;
 static int source_pdm_samples_total;
 
+extern TIM_HandleTypeDef htim2;
+extern TIM_HandleTypeDef htim3;
+
 void  BSP_AUDIO_OUT_HalfTransfer_CallBack(void){
+
+#include "main.h"
+#include <inttypes.h>
 
 #ifdef MEASURE_SAMPLE_RATE
 	if (stream_start_ms == 0){
@@ -87,6 +95,12 @@ void  BSP_AUDIO_OUT_HalfTransfer_CallBack(void){
 		stream_samples++;
 	}
 #endif
+
+	HAL_GPIO_TogglePin(Test1_GPIO_Port, Test1_Pin);
+	uint32_t time_read_us = __HAL_TIM_GET_COUNTER(&htim2);
+	uint32_t time_capture = __HAL_TIM_GET_COMPARE(&htim2, TIM_CHANNEL_1);
+	int32_t delta = (int32_t)(time_capture - time_read_us);
+	printf("0: %" PRIu32 " - %" PRIu32 " => delta %" PRIi32 "\n", time_read_us, time_capture, delta);
 
 	(*audio_played_handler)(0);
 }
@@ -103,6 +117,12 @@ void BSP_AUDIO_OUT_TransferComplete_CallBack(void){
 	}
 	stream_samples++;
 #endif
+
+	HAL_GPIO_TogglePin(Test1_GPIO_Port, Test1_Pin);
+	uint32_t time_read_us = __HAL_TIM_GET_COUNTER(&htim2);
+	uint32_t time_capture = __HAL_TIM_GET_COMPARE(&htim2, TIM_CHANNEL_1);
+	int32_t delta = (int32_t)(time_capture - time_read_us);
+	printf("1: %" PRIu32 " - %" PRIu32 " => delta %" PRIi32 "\n", time_read_us, time_capture, delta);
 
 	(*audio_played_handler)(1);
 }
@@ -166,6 +186,11 @@ int16_t * hal_audio_sink_get_output_buffer(uint8_t buffer_index){
  */
 void hal_audio_sink_start(void){
 	playback_started = 1;
+
+	// configure I2S Bit Clock counter to overrun on next tick
+	uint16_t num_ticks_per_block = OUTPUT_BUFFER_NUM_SAMPLES * 16;
+	__HAL_TIM_SET_COUNTER(&htim3, num_ticks_per_block-1);
+	__HAL_TIM_SET_AUTORELOAD(&htim3, num_ticks_per_block-1);
 
 	BSP_AUDIO_OUT_Init(OUTPUT_DEVICE_BOTH, 80, sink_sample_rate);
 
