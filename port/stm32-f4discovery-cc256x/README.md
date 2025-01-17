@@ -57,3 +57,9 @@ In BTstack, the GATT Database is defined via the .gatt file in the example folde
 
 The Audio BSP is from the STM32F4Cube V1.16 firmware and not generated from STM32CubeMX. To update the HAL, run 'generate code' in CubeMX. After that, make sure to re-apply the patches to the UART and check if the hal config was changed.
 
+## High Accuracy Audio Timing
+We use TIM3 to count I2S Bit Clock ticks and use TIM2 as 1 Mhz clock with TIM2 Channel 1 Input Capture to get microsecond timestamps of the audio frames.
+
+Hardware setup: connect the following pins:
+- PC10 with PD2 (I2S3_CK to ETR 2 of TIM3)
+- PC6 with PA15 (Channel1 Output Compare of TIM3 to TIM2 Channel 1 Input Capture)
