@@ -53,48 +53,48 @@ def read_little_endian_16(f):
 def append_power_vector_gfsk(additions, str_list, data_indent):
     additions.append("- added HCI_VS_SET_POWER_VECTOR(GFSK) template")
     str_list.append(data_indent)
-    str_list.append('// BTstack: added HCI_VS_SET_POWER_VECTOR(GFSK) 0xFD82 template\n');
+    str_list.append('// BTstack: added HCI_VS_SET_POWER_VECTOR(GFSK) 0xFD82 template\n')
     str_list.append(data_indent)
-    str_list.append("0x01, 0x82, 0xfd, 0x14, 0x00, 0x9c, 0x18, 0xd2, 0xd2, 0xd2, 0xd2, 0xd2, 0xd2, 0xd2, 0xdc,\n");
+    str_list.append("0x01, 0x82, 0xfd, 0x14, 0x00, 0x9c, 0x18, 0xd2, 0xd2, 0xd2, 0xd2, 0xd2, 0xd2, 0xd2, 0xdc,\n")
     str_list.append(data_indent)
-    str_list.append("0xe6, 0xf0, 0xfa, 0x04, 0x0e, 0x18, 0xff, 0x00, 0x00,\n\n");
+    str_list.append("0xe6, 0xf0, 0xfa, 0x04, 0x0e, 0x18, 0xff, 0x00, 0x00,\n\n")
     return 24
 
 def append_power_vector_edr2(additions, str_list, data_indent):
     additions.append("- added HCI_VS_SET_POWER_VECTOR(EDR2) template")
     str_list.append(data_indent)
-    str_list.append('// BTstack: added HCI_VS_SET_POWER_VECTOR(EDR2) 0xFD82 template\n');
+    str_list.append('// BTstack: added HCI_VS_SET_POWER_VECTOR(EDR2) 0xFD82 template\n')
     str_list.append(data_indent)
-    str_list.append("0x01, 0x82, 0xfd, 0x14, 0x01, 0x9c, 0xce, 0xce, 0xce, 0xce, 0xce, 0xce, 0xce, 0xce, 0xd8, \n");
+    str_list.append("0x01, 0x82, 0xfd, 0x14, 0x01, 0x9c, 0xce, 0xce, 0xce, 0xce, 0xce, 0xce, 0xce, 0xce, 0xd8, \n")
     str_list.append(data_indent)
-    str_list.append("0xe2, 0xec, 0xf6, 0x00, 0x0a, 0x14, 0xff, 0x00, 0x00,\n\n");
+    str_list.append("0xe2, 0xec, 0xf6, 0x00, 0x0a, 0x14, 0xff, 0x00, 0x00,\n\n")
     return 24
 
 def append_power_vector_edr3(additions, str_list, data_indent):
     additions.append("- added HCI_VS_SET_POWER_VECTOR(EDR3) template")
     str_list.append(data_indent)
-    str_list.append('// BTstack: added HCI_VS_SET_POWER_VECTOR(EDR3) 0xFD82 for EDR3 template\n');
+    str_list.append('// BTstack: added HCI_VS_SET_POWER_VECTOR(EDR3) 0xFD82 for EDR3 template\n')
     str_list.append(data_indent)
-    str_list.append("0x01, 0x82, 0xfd, 0x14, 0x02, 0x9c, 0xce, 0xce, 0xce, 0xce, 0xce, 0xce, 0xce, 0xce, 0xd8,\n");
+    str_list.append("0x01, 0x82, 0xfd, 0x14, 0x02, 0x9c, 0xce, 0xce, 0xce, 0xce, 0xce, 0xce, 0xce, 0xce, 0xd8,\n")
     str_list.append(data_indent)
-    str_list.append("0xe2, 0xec, 0xf6, 0x00, 0x0a, 0x14, 0xff, 0x00, 0x00,\n\n");
+    str_list.append("0xe2, 0xec, 0xf6, 0x00, 0x0a, 0x14, 0xff, 0x00, 0x00,\n\n")
     return 24
 
 def append_class2_single_power(additions, str_list, data_indent):
     additions.append("- added HCI_VS_SET_CLASS2_SINGLE_POWER template")
     str_list.append(data_indent)
-    str_list.append('// BTstack: added HCI_VS_SET_CLASS2_SINGLE_POWER 0xFD87 template\n');
+    str_list.append('// BTstack: added HCI_VS_SET_CLASS2_SINGLE_POWER 0xFD87 template\n')
     str_list.append(data_indent)
-    str_list.append("0x01, 0x87, 0xfd, 0x03, 0x0d, 0x0d, 0x0d,\n\n");
+    str_list.append("0x01, 0x87, 0xfd, 0x03, 0x0d, 0x0d, 0x0d,\n\n")
     return 7
 
 def append_ehcill(additions, str_list, data_indent):
     additions.append("- added eHCILL template")
     str_list.append('\n')
     str_list.append(data_indent)
-    str_list.append('// BTstack: added HCI_VS_Sleep_Mode_Configurations 0xFD0C template for eHCILL\n');
+    str_list.append('// BTstack: added HCI_VS_Sleep_Mode_Configurations 0xFD0C template for eHCILL\n')
     str_list.append(data_indent)
-    str_list.append('0x01, 0x0c, 0xfd, 9 , 1, 0, 0,  0xff, 0xff, 0xff, 0xff, 100, 0,\n\n');
+    str_list.append('0x01, 0x0c, 0xfd, 9 , 1, 0, 0,  0xff, 0xff, 0xff, 0xff, 100, 0,\n\n')
     return 13
 
 def append_calibration_sequence(additions, str_list, data_indent):
@@ -119,10 +119,10 @@ def convert_bts(output_file, main_bts_file, bts_add_on, aka, lmp_subversion):
     
         # assert script contains templates for configuration by BTstack
         have_eHCILL = False
-        have_power_vector_gfsk = False;
-        have_power_vector_edr2 = False;
-        have_power_vector_edr3 = False;
-        have_class2_single_power = False;
+        have_power_vector_gfsk = False
+        have_power_vector_edr2 = False
+        have_power_vector_edr3 = False
+        have_class2_single_power = False
 
         print("Creating {0}".format(output_file))
 
@@ -170,16 +170,16 @@ def convert_bts(output_file, main_bts_file, bts_add_on, aka, lmp_subversion):
                             # add missing power command templates
                             if not have_power_vector_gfsk:
                                 part_size += append_power_vector_gfsk(additions, str_list, data_indent)
-                                have_power_vector_gfsk = True; 
+                                have_power_vector_gfsk = True
                             if not have_power_vector_edr2:
                                 part_size += append_power_vector_edr2(additions, str_list, data_indent)
-                                have_power_vector_edr2 = True;                            
+                                have_power_vector_edr2 = True
                             if not have_power_vector_edr3:
                                 part_size += append_power_vector_edr3(additions, str_list, data_indent)
-                                have_power_vector_edr3 = True;                            
+                                have_power_vector_edr3 = True
                             if not have_class2_single_power:
                                 part_size += append_class2_single_power(additions, str_list, data_indent)
-                                have_class2_single_power = True;                            
+                                have_class2_single_power = True
 
                         counter = 0
                         str_list.append(data_indent)
@@ -212,7 +212,7 @@ def convert_bts(output_file, main_bts_file, bts_add_on, aka, lmp_subversion):
                         str_list.append("// " + action_data + "\n")
                         
                     if (action_type < 0):   # EOF
-                        break;
+                        break
                     
 
         if not have_eHCILL:
@@ -281,7 +281,7 @@ def convert_bts(output_file, main_bts_file, bts_add_on, aka, lmp_subversion):
         
         fout.write('};\n\n')
 
-        fout.write('const uint32_t {0}_init_script_size = sizeof({0}_init_script); // size = {1} bytes\n\n'.format(array_name,size));
+        fout.write('const uint32_t {0}_init_script_size = sizeof({0}_init_script); // size = {1} bytes\n\n'.format(array_name,size))
 
 # check usage: 2-3 param
 if len(sys.argv) < 3 or len(sys.argv) > 4:

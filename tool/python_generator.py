@@ -196,10 +196,10 @@ def create_command_python(fout, name, ogf, ocf, format, params):
         if param_type in ['L', 'J']:
             length_name = arg_name
         if param_type == 'V':
-            store_params += ind + 'Util.storeBytes(command, offset, %s, %s);' % (arg_name, length_name) + '\n';
+            store_params += ind + 'Util.storeBytes(command, offset, %s, %s);' % (arg_name, length_name) + '\n'
             length_name = ''
         else:
-            store_params += ind + (param_store[param_type] % arg_name) + '\n';
+            store_params += ind + (param_store[param_type] % arg_name) + '\n'
             size = arg_size
 
     fout.write( command_builder_command.format(name=name, args=args_string, ogf=ogf, ocf=ocf, args_builder=store_params))
@@ -231,7 +231,7 @@ def create_command_builder(commands):
 
         for command in commands:
                 (command_name, ogf, ocf, format, params) = command
-                create_command_python(fout, command_name, ogf, ocf, format, params);
+                create_command_python(fout, command_name, ogf, ocf, format, params)
                 mark_define_as_used(ogf)
                 mark_define_as_used(ocf)
 

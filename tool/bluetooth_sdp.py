@@ -105,7 +105,7 @@ def scrape_page(fout, url):
 
     # test: fetch from local file 'service-discovery.html'
     # f = codecs.open("service-discovery.html", "r", "utf-8")
-    # content = f.read();
+    # content = f.read()
 
     tree = html.fromstring(content)
 
@@ -166,7 +166,7 @@ def scrape_page(fout, url):
         process_rows(fout, rows, '#define BLUETOOTH_ATTRIBUTE_%-54s %s // %s\n')
         # scrape_attributes(fout, tree, table_name)
     # see above
-    fout.write('#define BLUETOOTH_ATTRIBUTE_GNSS_SUPPORTED_FEATURES                                0x0200\n');
+    fout.write('#define BLUETOOTH_ATTRIBUTE_GNSS_SUPPORTED_FEATURES                                0x0200\n')
     
 
 

@@ -213,14 +213,14 @@ def create_command_java(fout, name, ogf, ocf, format, params):
         if param_type in ['L', 'J']:
             length_name = arg_name
         if param_type == 'V':
-            store_params += ind + 'Util.storeBytes(command, offset, %s, %s);' % (arg_name, length_name) + '\n';
-            store_params += ind + 'offset += %s;\n' % length_name;
+            store_params += ind + 'Util.storeBytes(command, offset, %s, %s);' % (arg_name, length_name) + '\n'
+            store_params += ind + 'offset += %s;\n' % length_name
             length_name = ''
         else:
-            store_params += ind + (param_store[param_type] % arg_name) + '\n';
+            store_params += ind + (param_store[param_type] % arg_name) + '\n'
             size = arg_size
             if size > 0:
-                store_params += ind + 'offset += %u;\n' % arg_size;
+                store_params += ind + 'offset += %u;\n' % arg_size
             else:
                 store_params += ind + 'offset += %s.length;\n' % arg_name
 
@@ -253,7 +253,7 @@ def create_btstack_java(commands):
 
         for command in commands:
                 (command_name, ogf, ocf, format, params) = command
-                create_command_java(fout, command_name, ogf, ocf, format, params);
+                create_command_java(fout, command_name, ogf, ocf, format, params)
                 mark_define_as_used(ogf)
                 mark_define_as_used(ocf)
 

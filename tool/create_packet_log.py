@@ -51,7 +51,7 @@ def generateTimestamp(t):
 		if len(parts) == 1:
 			# only time, prepend fixed date
 			have_date = False
-			t = "2000-01-01 " + t;
+			t = "2000-01-01 " + t
 
 		# handle ms
 		try: 

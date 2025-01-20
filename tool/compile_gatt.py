@@ -439,7 +439,7 @@ def parseService(fout, parts, service_type):
 
     serviceDefinitionComplete(fout)
 
-    read_only_anybody_flags = property_flags['READ'];
+    read_only_anybody_flags = property_flags['READ']
     
     write_indent(fout)
     fout.write('// 0x%04x %s\n' % (handle, '-'.join(parts)))
@@ -479,7 +479,7 @@ def parseIncludeService(fout, parts):
     global handle
     global total_size
     
-    read_only_anybody_flags = property_flags['READ'];
+    read_only_anybody_flags = property_flags['READ']
 
     uuid = parseUUID(parts[1])
     uuid_size = len(uuid)
@@ -529,10 +529,10 @@ def parseCharacteristic(fout, parts):
     global current_characteristic_uuid_string
     global characteristic_indices
 
-    read_only_anybody_flags = property_flags['READ'];
+    read_only_anybody_flags = property_flags['READ']
 
     # enumerate characteristics with same UUID, using optional name tag if available
-    current_characteristic_uuid_string = c_string_for_uuid(parts[1]);
+    current_characteristic_uuid_string = c_string_for_uuid(parts[1])
     index = 1
     if current_characteristic_uuid_string in characteristic_indices:
         index = characteristic_indices[current_characteristic_uuid_string] + 1
@@ -591,7 +591,7 @@ def parseCharacteristic(fout, parts):
 
     # add UUID128 flag for value handle
     if uuid_size == 16:
-        value_flags = value_flags | property_flags['LONG_UUID'];
+        value_flags = value_flags | property_flags['LONG_UUID']
 
     write_indent(fout)
     properties_string = prettyPrintProperties(parts[2])
@@ -737,7 +737,7 @@ def parseCharacteristicFormat(fout, parts):
     global handle
     global total_size
 
-    read_only_anybody_flags = property_flags['READ'];
+    read_only_anybody_flags = property_flags['READ']
 
     identifier = parts[1]
     presentation_formats[identifier] = handle
@@ -775,7 +775,7 @@ def parseCharacteristicAggregateFormat(fout, parts):
     global handle
     global total_size
 
-    read_only_anybody_flags = property_flags['READ'];
+    read_only_anybody_flags = property_flags['READ']
     size = 2 + 2 + 2 + 2 + (len(parts)-1) * 2
 
     write_indent(fout)
@@ -803,7 +803,7 @@ def parseExternalReportReference(fout, parts):
     global handle
     global total_size
 
-    read_only_anybody_flags = property_flags['READ'];
+    read_only_anybody_flags = property_flags['READ']
     size = 2 + 2 + 2 + 2 + 2
     
     report_uuid = int(parts[2], 16)
@@ -823,7 +823,7 @@ def parseReportReference(fout, parts):
     global handle
     global total_size
 
-    read_only_anybody_flags = property_flags['READ'];
+    read_only_anybody_flags = property_flags['READ']
     size = 2 + 2 + 2 + 2 + 1 + 1
     
     report_id = parts[2]
@@ -845,7 +845,7 @@ def parseNumberOfDigitals(fout, parts):
     global handle
     global total_size
 
-    read_only_anybody_flags = property_flags['READ'];
+    read_only_anybody_flags = property_flags['READ']
     size = 2 + 2 + 2 + 2 + 1
 
     no_of_digitals = parts[1]
@@ -865,7 +865,7 @@ def parseLines(fname_in, fin, fout):
     global handle
     global total_size
 
-    line_count = 0;
+    line_count = 0
     for line in fin:
         line = line.strip("\n\r ")
         line_count += 1
@@ -1017,13 +1017,13 @@ def parse(fname_in, fin, fname_out, tool_path, fout):
 
     serviceDefinitionComplete(fout)
     write_indent(fout)
-    fout.write("// END\n");
+    fout.write("// END\n")
     write_indent(fout)
     write_16(fout,0)
     fout.write("\n")
     total_size = total_size + 2
     
-    fout.write("}; // total size %u bytes \n" % total_size);
+    fout.write("}; // total size %u bytes \n" % total_size)
 
 def listHandles(fout):
     fout.write('\n\n')

@@ -24,7 +24,7 @@ def list_category_table():
     print( row % ('', 'Hit', 'Total', 'Coverage'))
     print("------------|------------|------------|------------")
 
-    categories = [ 'Line', 'Function', 'Branch'];
+    categories = [ 'Line', 'Function', 'Branch']
     for category in categories:
         hit   = summary[category + "_hit"]
         total = summary[category + "_total"]

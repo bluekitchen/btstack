@@ -62,10 +62,10 @@ def convert_emp(basename):
 
 		# don't write .h file as we would need to store its name in btstack_chipset_em9301.c, too
 		# with open(basename + '.h', 'w') as fout:
-		# 	fout.write(header.replace('BASENAME',basename));
+		# 	fout.write(header.replace('BASENAME',basename))
 
 		with open(basename + '.c', 'w') as fout:
-			fout.write(code_start.replace('BASENAME',basename).replace('SIZE',str(size)));
+			fout.write(code_start.replace('BASENAME',basename).replace('SIZE',str(size)))
 			fout.write('    ')
 			for i in range(0,size):
 				if i % 1000 == 0:
@@ -74,7 +74,7 @@ def convert_emp(basename):
 				fout.write("0x{0:02x}, ".format(byte))
 				if (i & 0x0f) == 0x0f:
 					fout.write('\n    ')
-			fout.write(code_end);
+			fout.write(code_end)
 			print ('Done\n') 
 
 # check usage: 1 param
