@@ -38,8 +38,8 @@ defines = []
 
 # Convert CamelCase to snake_case from http://stackoverflow.com/a/1176023
 def camel_to_underscore(name):
-    s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
-    return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).upper()
+    s1 = re.sub(r'(.)([A-Z][a-z]+)', r'\1_\2', name)
+    return re.sub(r'([a-z0-9])([A-Z])', r'\1_\2', s1).upper()
 
 def create_pretty_define(name):
     name = name.lstrip()

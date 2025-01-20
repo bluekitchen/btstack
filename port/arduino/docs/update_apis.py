@@ -40,7 +40,7 @@ def writeAPI(fout, infile_name):
     with open(infile_name, 'r') as fin:
         for line in fin:
             if state == State.SearchStartAPI:
-                parts = re.match('\s*(/\*).*API_START.*(\*/)',line)
+                parts = re.match(r'\s*(/\*).*API_START.*(\*/)',line)
                 if parts:
                     state = State.RemoveEmptyLinesAfterAPIStart
                     continue
@@ -51,7 +51,7 @@ def writeAPI(fout, infile_name):
                 state = State.SearchEndAPI
 
             if state == State.SearchEndAPI:
-                parts = re.match('\s*(/\*).*API_END.*(\*/)',line)
+                parts = re.match(r'\s*(/\*).*API_END.*(\*/)',line)
                 if parts:
                     state = State.DoneAPI
                     return

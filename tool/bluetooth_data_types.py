@@ -73,7 +73,7 @@ def scrape_page(fout, url):
         # drop dashes otherwise
         tag = tag.replace('-',' ')
         # collect multiple spaces
-        tag = re.sub('\s+', ' ', tag).strip()
+        tag = re.sub(r'\s+', ' ', tag).strip()
         # replace space with under score
         tag =tag.replace(' ', '_')
         fout.write("#define BLUETOOTH_DATA_TYPE_%-50s %s // %s\n" %  (tag, data_type_value, data_type_name))

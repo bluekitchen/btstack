@@ -3,8 +3,8 @@ import os
 import re
 import sys
 
-copyrightTitle = ".*(Copyright).*(BlueKitchen GmbH)"
-copyrightEndString = "Please inquire about"
+copyrightTitle = r".*(Copyright).*(BlueKitchen GmbH)"
+copyrightEndString = r"Please inquire about"
 
 findAndReplace = {
 	"MATTHIAS" : "BLUEKITCHEN",
@@ -42,7 +42,7 @@ def updateCopyright(dir_name, file_name):
 					
 				if state == State.SearchEndCopyright:
 					# search end of Copyright
-					parts = re.match('\s*(\*\/)\s*',line)
+					parts = re.match(r'\s*(\*\/)\s*',line)
 					if parts:
 						state = State.CopyrightEnd
 					else:

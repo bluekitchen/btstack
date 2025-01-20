@@ -37,7 +37,7 @@ def read_and_update_configuration(full_path, line_ending, root):
         for unstripped_line in fin:
             line = unstripped_line.strip()
 
-            parts = re.match('(//\s*btstack_config.h\s)(\w*)', line)
+            parts = re.match(r'(//\s*btstack_config.h\s)(\w*)', line)
             if parts and len(parts.groups()) == 2:
                 configuration += config_header_template.replace("PORT_NAME", port_name).replace("\r\n", line_ending)
             else:
