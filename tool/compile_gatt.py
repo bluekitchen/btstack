@@ -168,7 +168,7 @@ def read_defines(infile):
     defines = dict()
     with open (infile, 'rt') as fin:
         for line in fin:
-            parts = re.match('#define\\s+(\\w+)\\s+(\\w+)',line)
+            parts = re.match(r'#define\s+(\w+)\s+(\w+)',line)
             if parts and len(parts.groups()) == 2:
                 (key, value) = parts.groups()
                 defines[key] = int(value, 16)
@@ -187,12 +187,12 @@ def twoByteLEFor(value):
     return [ (value & 0xff), (value >> 8)]
 
 def is_128bit_uuid(text):
-    if re.match("[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}", text):
+    if re.match(r"[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}", text):
         return True
     return False
 
 def parseUUID128(uuid):
-    parts = re.match("([0-9A-Fa-f]{4})([0-9A-Fa-f]{4})-([0-9A-Fa-f]{4})-([0-9A-Fa-f]{4})-([0-9A-Fa-f]{4})-([0-9A-Fa-f]{4})([0-9A-Fa-f]{4})([0-9A-Fa-f]{4})", uuid)
+    parts = re.match(r"([0-9A-Fa-f]{4})([0-9A-Fa-f]{4})-([0-9A-Fa-f]{4})-([0-9A-Fa-f]{4})-([0-9A-Fa-f]{4})-([0-9A-Fa-f]{4})([0-9A-Fa-f]{4})([0-9A-Fa-f]{4})", uuid)
     uuid_bytes = []
     for i in range(8, 0, -1):
         uuid_bytes = uuid_bytes + twoByteLEFor(int(parts.group(i),16))
@@ -876,10 +876,10 @@ def parseLines(fname_in, fin, fout):
 
         if line.startswith("#import"):
             imported_file = ''
-            parts = re.match('#import\\s+<(.*)>\\w*',line)
+            parts = re.match(r'#import\s+<(.*)>\w*',line)
             if parts and len(parts.groups()) == 1:
                 imported_file = parts.groups()[0]
-            parts = re.match('#import\\s+"(.*)"\\w*',line)
+            parts = re.match(r'#import\s+"(.*)"\w*',line)
             if parts and len(parts.groups()) == 1:
                 imported_file = parts.groups()[0]
             if len(imported_file) == 0:

@@ -50,7 +50,7 @@ with open(cstat_file, 'rt') as fin:
         if len(chunks) != 4: continue
         (msg, rule, severity, location) = chunks
         if not rule.startswith('MISRAC2012-Rule-12.1'): continue
-        parts = re.match(".*Suggest parentheses.*`(.*)'", msg)
+        parts = re.match(r".*Suggest parentheses.*`(.*)'", msg)
         total += 1
         expression = parts.groups()[0]
         expression = remove_whitespace(expression)

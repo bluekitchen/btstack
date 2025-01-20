@@ -654,19 +654,19 @@ with open (infile, 'rb') as fin:
         elif type == 0xfc:
             # LOG
             log = packet.decode("utf-8")
-            parts = re.match('mesh-iv-index: (.*)', log)
+            parts = re.match(r'mesh-iv-index: (.*)', log)
             if parts and len(parts.groups()) == 1:
                 mesh_set_iv_index(int(parts.groups()[0], 16))
                 continue
-            parts = re.match('mesh-devkey: (.*)', log)
+            parts = re.match(r'mesh-devkey: (.*)', log)
             if parts and len(parts.groups()) == 1:
                 mesh_set_device_key(bytes.fromhex(parts.groups()[0]))
                 continue
-            parts = re.match('mesh-appkey-(.*): (.*)', log)
+            parts = re.match(r'mesh-appkey-(.*): (.*)', log)
             if parts and len(parts.groups()) == 2:
                 mesh_add_application_key(int(parts.groups()[0], 16), bytes.fromhex(parts.groups()[1]))
                 continue
-            parts = re.match('mesh-netkey-(.*): (.*)', log)
+            parts = re.match(r'mesh-netkey-(.*): (.*)', log)
             if parts and len(parts.groups()) == 2:
                 mesh_add_netkey(int(parts.groups()[0], 16), bytes.fromhex(parts.groups()[1]))
                 continue
