@@ -430,7 +430,7 @@ def sbc_bit_allocation_mono_dual(frame):
         
         for sb in range(frame.nr_subbands):
             if bitneed[ch][sb] < bitslice+2 :
-               bits[ch][sb]=0;
+               bits[ch][sb]=0
             else:
                 bits[ch][sb] = min(bitneed[ch][sb]-bitslice,16)
 

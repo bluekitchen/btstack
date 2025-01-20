@@ -10,7 +10,7 @@ import shutil
 import create_examples
 
 if not 'IDF_PATH' in os.environ:
-	print('Error: IDF_PATH not defined. Please set IDF_PATH as described here:\nhttp://esp-idf.readthedocs.io/en/latest/get-started/index.html#get-started-get-esp-idf');
+	print('Error: IDF_PATH not defined. Please set IDF_PATH as described here:\nhttp://esp-idf.readthedocs.io/en/latest/get-started/index.html#get-started-get-esp-idf')
 	sys.exit(10)
 
 IDF_PATH=os.environ['IDF_PATH']

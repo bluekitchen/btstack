@@ -38,7 +38,7 @@ def read_header(f):
 
 
 def handle_at_offset(data, offset):
-	return struct.unpack_from("<H", data, offset)[0];
+	return struct.unpack_from("<H", data, offset)[0]
 
 
 def bd_addr_at_offset(data, offset):
@@ -50,7 +50,7 @@ class hci_connection:
 
 	def __init__(self, bd_addr, con_handle):
 		self.bd_addr = bd_addr
-		self.con_handle = con_handle;
+		self.con_handle = con_handle
 
 
 def connection_for_handle(con_handle):
@@ -61,7 +61,7 @@ def connection_for_handle(con_handle):
 
 
 def handle_cmd(packet):
-	opcode = struct.unpack_from("<H", packet, 0)[0];
+	opcode = struct.unpack_from("<H", packet, 0)[0]
 	if opcode == 0x201a:
 		# LE Long Term Key Request Reply
 		con_handle = handle_at_offset(packet, 3)
@@ -90,7 +90,7 @@ def handle_evt(event):
 	elif event[0] == 0x3e:
 		if event[2] == 0x01:
 			# LE Connection Complete
-			con_handle = handle_at_offset(event, 4);
+			con_handle = handle_at_offset(event, 4)
 			peer_addr = bd_addr_at_offset(event, 8)
 			connection = hci_connection(peer_addr, con_handle)
 			connections[con_handle] = connection

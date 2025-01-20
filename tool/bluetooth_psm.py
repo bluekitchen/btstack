@@ -68,7 +68,7 @@ def scrape_page(fout, url):
 
     # test: fetch from local file 'index.html'
     # f = codecs.open("index.html", "r", "utf-8")
-    # content = f.read();
+    # content = f.read()
 
     tree = html.fromstring(content)
     rows = tree.xpath('//table/tbody/tr')

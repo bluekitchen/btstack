@@ -341,7 +341,7 @@ writeln(f, copyright)
 writeln(f, hfile_header_begin)
 add_structs(f, header_template)
 writeln(f, hfile_header_end)
-f.close();
+f.close()
 
 
 f = open(file_name+".c", "w")
@@ -352,7 +352,7 @@ add_structs(f, code_template)
 f.write(init_header)
 add_structs(f, init_template)
 writeln(f, "}")
-f.close();
+f.close()
     
 # also generate test code
 test_header = """

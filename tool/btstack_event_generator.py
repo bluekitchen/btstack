@@ -317,7 +317,7 @@ def size_for_type(type):
 def format_function_name(event_name):
     event_name = event_name.lower()
     if 'event' in event_name:
-        return event_name;
+        return event_name
     return event_name+'_event'
 
 def template_for_type(field_type):
@@ -332,7 +332,7 @@ def template_for_type(field_type):
     if field_type in types_with_struct_return:
         return c_prototoype_struct_return
     if listScope:
-        return c_prototype_iterator_return;
+        return c_prototype_iterator_return
     return c_prototoype_simple_return
 
 def all_fields_supported(format):
@@ -361,7 +361,7 @@ def create_iterator( event_name, field_name, field_type, offset, offset_is_numbe
         generated_has_next = c_prototype_iterator_has_next.format( list_field=offset, length_field=last_length_field_offset,
                                                                   format=field_type, scope=list_name_scope, event=event_name,
                                                                   field=field_name )
-        generated = generated_init + generated_has_next;
+        generated = generated_init + generated_has_next
     else:
         # the item length is either determiend statically, format "12"
         # or dynamically by an list element, format "J"
@@ -371,7 +371,7 @@ def create_iterator( event_name, field_name, field_type, offset, offset_is_numbe
             code = '*iter[{0}] + 1;'.format( last_length_field_offset-list_base )
         else:
             code = '{0};'.format( list_static_size )
-        generated = c_prototype_iterator_next.format( event=event_name, scope=list_name_scope, format=field_type, code=code );
+        generated = c_prototype_iterator_next.format( event=event_name, scope=list_name_scope, format=field_type, code=code )
 
     if field_type == closing_bracket:
         listScope.pop()
@@ -389,7 +389,7 @@ def create_getter(event_name, field_name, field_type, offset, offset_is_number, 
         list_length_field_offset = listScope[-1][2]
         list_static_size = listScope[-1][3]
         if offset_is_number:
-            offset = offset - list_base;
+            offset = offset - list_base
         listScope[-1] = (list_name_scope, list_base, list_length_field_offset, list_static_size+size_for_type(field_type))
     description = description_template.format(field_name, event_name.upper())
     result_name = field_name

@@ -89,7 +89,7 @@ def process_pklg(exp_name, sensor_name, scanning_type, pklg_file_name):
             reset_timestamp(packet_type, packet, time_sec)
             read_scan(packet_type, packet, time_sec)
             
-    f.close();
+    f.close()
     
     prefix = '../data/processed/'
     for k in devices.keys():

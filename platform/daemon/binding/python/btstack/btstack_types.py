@@ -2,7 +2,7 @@
 
 import struct
 
-BLUETOOTH_BASE_UUID = bytes ([ 0x00, 0x00, 0x00, 0x00,   0x00, 0x00,  0x10, 0x00,   0x80, 0x00,  0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB ]);
+BLUETOOTH_BASE_UUID = bytes ([ 0x00, 0x00, 0x00, 0x00,   0x00, 0x00,  0x10, 0x00,   0x80, 0x00,  0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB ])
 
 def hex_string(bytes):
     return " ".join([('%02x' % a) for a in bytes])
@@ -67,7 +67,7 @@ class BT_UUID(object):
     def __repr__(self):
         return "%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x" % (
                 self.uuid[0], self.uuid[1], self.uuid[2], self.uuid[3],   self.uuid[4],  self.uuid[5],  self.uuid[6],  self.uuid[7],
-                self.uuid[8], self.uuid[9], self.uuid[10], self.uuid[11], self.uuid[12], self.uuid[13], self.uuid[14], self.uuid[15]);
+                self.uuid[8], self.uuid[9], self.uuid[10], self.uuid[11], self.uuid[12], self.uuid[13], self.uuid[14], self.uuid[15])
 
 
 class GATTCharacteristic(object):
@@ -162,10 +162,10 @@ class GATTService(object):
 
 class Packet(object):
 
-    HCI_COMMAND_PACKET = 1;
-    HCI_EVENT_PACKET   = 4;
-    L2CAP_DATA_PACKET  = 6;
-    RFCOMM_DATA_PACKET = 7;
+    HCI_COMMAND_PACKET = 1
+    HCI_EVENT_PACKET   = 4
+    L2CAP_DATA_PACKET  = 6
+    RFCOMM_DATA_PACKET = 7
 
     def __init__(self, packet_type, channel, payload):
         self.packet_type = packet_type

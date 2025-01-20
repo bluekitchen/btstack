@@ -46,7 +46,7 @@ with open (infile, 'rb') as fin:
 			(len, ts_sec, ts_usec, type) = read_header(fin)
 			if len < 0:
 				break
-			packet_len = len - 9;
+			packet_len = len - 9
 			if (packet_len > 66000):
 				print ("Error parsing pklg at offset %u (%x)." % (pos, pos))
 				break

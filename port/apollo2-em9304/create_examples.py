@@ -26,7 +26,7 @@ try:
 except:
     pass
 if len(am_version_txt) == 0:
-    print("Cannot find AmbiqSuite root. Make sure BTstack is checked out as AmbiqSuite/third/btstack");
+    print("Cannot find AmbiqSuite root. Make sure BTstack is checked out as AmbiqSuite/third/btstack")
     sys.exit(1)
 
 # show WICED version
@@ -54,7 +54,7 @@ for example in LE_EXAMPLES:
         os.makedirs(apps_folder)
 
     # copy project makefile
-    shutil.copyfile(example_template + "Makefile", apps_folder + "Makefile");
+    shutil.copyfile(example_template + "Makefile", apps_folder + "Makefile")
 
     # create GCC folder
     gcc_folder = apps_folder + "/gcc/"
@@ -82,7 +82,7 @@ for example in LE_EXAMPLES:
 
     # copy other files
     for file in ['startup_gcc.c', 'btstack_template.ld']:
-        shutil.copyfile(example_template + "gcc/" + file, apps_folder + "/gcc/" + file);
+        shutil.copyfile(example_template + "gcc/" + file, apps_folder + "/gcc/" + file)
 
 
     print("- %s" % example)

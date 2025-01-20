@@ -348,7 +348,7 @@ def write_wrappers_for_file(fout, file, header_name, need_lock):
                 type_and_name = function.group(1)
                 arg_string    = function.group(2)
                 create_wrapper(fout, type_and_name, arg_string, need_lock)
-                inline_function = 'inline' in line;
+                inline_function = 'inline' in line
                 continue
 
             # multi-line function declaration

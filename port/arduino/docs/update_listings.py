@@ -229,7 +229,7 @@ def writeListings(aout, infile_name, ref_prefix):
             if state == State.SearchListingEnd:
                 parts_end = re.match(r'.*(LISTING_END).*',line)
                 parts_pause = re.match(r'.*(LISTING_PAUSE).*',line)
-                end_comment_parts = re.match(r'.*(\*/)\s*\n', line);
+                end_comment_parts = re.match(r'.*(\*/)\s*\n', line)
                 
                 if parts_end:
                     aout.write(code_in_listing)
@@ -280,7 +280,7 @@ def processExamples(intro_file, examples_folder, examples_ofile):
                 example.append(example_title)
                     
         aout.write(examples_header)
-        aout.write("\n\n");
+        aout.write("\n\n")
 
         for group_title in list_of_groups:
             if not group_title in list_of_examples.keys(): continue
@@ -291,7 +291,7 @@ def processExamples(intro_file, examples_folder, examples_ofile):
                 group_title = group_title + "s"
             group_title = group_title + ":"
 
-            aout.write("- " + group_title + "\n");
+            aout.write("- " + group_title + "\n")
             for example in examples:
                 ref_prefix = example[0].replace("_", "")
                 title = latexText(example[0], ref_prefix)

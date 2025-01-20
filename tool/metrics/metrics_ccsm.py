@@ -164,7 +164,7 @@ def list_metrics_table():
     print( row % ('Name', 'Target', 'Deviations', 'Max value'))
     print("------------|------------|------------|------------")
 
-    ordered_metrics = [ 'PATH', 'GOTO', 'CCN', 'CALLS', 'PARAM', 'STMT', 'LEVEL', 'RETURN', 'FUNC'];
+    ordered_metrics = [ 'PATH', 'GOTO', 'CCN', 'CALLS', 'PARAM', 'STMT', 'LEVEL', 'RETURN', 'FUNC']
     for metric_name in ordered_metrics:
         if metric_name in targets:
             target = targets[metric_name]

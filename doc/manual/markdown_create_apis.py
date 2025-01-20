@@ -172,10 +172,10 @@ def createIndex(fin, filename, api_filepath, api_title, api_label, githuburl):
 
         one_line_function_definition = re.match(r'(.*?)\s*\(.*\(*.*;\n', line)
         if one_line_function_definition:
-            parts = one_line_function_definition.group(1).split(" ");
+            parts = one_line_function_definition.group(1).split(" ")
             name = parts[len(parts)-1]
             if len(name) == 0:
-                print(parts);
+                print(parts)
                 sys.exit(10)
             # ignore typedef for callbacks
             if parts[0] == 'typedef':
@@ -185,11 +185,11 @@ def createIndex(fin, filename, api_filepath, api_title, api_label, githuburl):
 
         multi_line_function_definition = re.match(r'.(.*?)\s*\(.*\(*.*', line)
         if multi_line_function_definition:
-            parts = multi_line_function_definition.group(1).split(" ");
+            parts = multi_line_function_definition.group(1).split(" ")
 
             name = parts[len(parts)-1]
             if len(name) == 0:
-                print(parts);
+                print(parts)
                 sys.exit(10)
             multiline_function_def = 1
             functions[name] = codeReference(name, githuburl, filename, api_filepath, linenr)
