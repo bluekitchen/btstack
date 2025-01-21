@@ -4241,6 +4241,17 @@ static void event_handler(uint8_t *packet, uint16_t size){
             break;
 
 #ifdef ENABLE_CLASSIC
+
+        case HCI_EVENT_ENCRYPTION_KEY_REFRESH_COMPLETE:
+            handle = hci_event_encryption_key_refresh_complete_get_handle(packet);
+            conn = hci_connection_for_handle(handle);
+            if (!conn) break;
+            if (hci_event_encryption_key_refresh_complete_get_status(packet) == ERROR_CODE_SUCCESS) {
+                // Encryption has been updated with link key stored in connection, track link key type
+                conn->encryption_key_type = conn->link_key_type;
+            }
+            break;
+
         case HCI_EVENT_AUTHENTICATION_COMPLETE_EVENT:
             handle = hci_event_authentication_complete_get_connection_handle(packet);
             conn = hci_connection_for_handle(handle);
