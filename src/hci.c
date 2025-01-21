@@ -288,6 +288,7 @@ static void hci_connection_init(hci_connection_t * conn){
     conn->bonding_flags = 0;
     conn->requested_security_level = LEVEL_0;
     conn->link_key_type = INVALID_LINK_KEY;
+    conn->encryption_key_type = INVALID_LINK_KEY;
 #ifdef ENABLE_CLASSIC
     conn->request_role = HCI_ROLE_INVALID;
     conn->sniff_subrating_max_latency = 0xffff;
@@ -4162,8 +4163,11 @@ static void event_handler(uint8_t *packet, uint16_t size){
 #ifdef ENABLE_CLASSIC
                     else {
 
+                        // Encryption has been enabled with link key stored in connection, track link key type
+                        conn->encryption_key_type = conn->link_key_type;
+
                         // Detect Secure Connection -> Legacy Connection Downgrade Attack (BIAS)
-                        bool sc_used_during_pairing = gap_secure_connection_for_link_key_type(conn->link_key_type);
+                        bool sc_used_during_pairing = gap_secure_connection_for_link_key_type(conn->encryption_key_type);
                         bool connected_uses_aes_ccm = encryption_enabled == 2;
                         if (hci_stack->secure_connections_active && sc_used_during_pairing && !connected_uses_aes_ccm){
 #ifdef ENABLE_TESTING_SUPPORT
@@ -4222,6 +4226,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
 #ifdef ENABLE_CLASSIC
                 if (!hci_is_le_connection(conn)){
                     uint8_t status = hci_event_encryption_change_get_status(packet);
+                    conn->encryption_key_type = INVALID_LINK_KEY;
                     if ((conn->bonding_flags & BONDING_DEDICATED) != 0){
                         conn->bonding_flags &= ~BONDING_DEDICATED;
                         conn->bonding_flags |= BONDING_DISCONNECT_DEDICATED_DONE;
@@ -8292,7 +8297,7 @@ static gap_security_level_t gap_security_level_for_connection(hci_connection_t *
     // BIAS: we only consider Authenticated if the connection is already encrypted, which requires that both sides have link key
     if ((connection->authentication_flags & AUTH_FLAG_CONNECTION_AUTHENTICATED) == 0) return LEVEL_0;
     if (connection->encryption_key_size < hci_stack->gap_required_encyrption_key_size) return LEVEL_0;
-    gap_security_level_t security_level = gap_security_level_for_link_key_type(connection->link_key_type);
+    gap_security_level_t security_level = gap_security_level_for_link_key_type(connection->encryption_key_type);
     // LEVEL 4 always requires 128 bit encryption key size
     if ((security_level == LEVEL_4) && (connection->encryption_key_size < 16)){
         security_level = LEVEL_3;
@@ -9826,7 +9831,7 @@ bool gap_authenticated(hci_con_handle_t con_handle){
 #ifdef ENABLE_CLASSIC
         case BD_ADDR_TYPE_SCO:
         case BD_ADDR_TYPE_ACL:
-            return gap_authenticated_for_link_key_type(hci_connection->link_key_type);
+            return gap_authenticated_for_link_key_type(hci_connection->encryption_key_type);
 #endif
         default:
             return false;
@@ -9849,7 +9854,7 @@ bool gap_secure_connection(hci_con_handle_t con_handle){
 #ifdef ENABLE_CLASSIC
         case BD_ADDR_TYPE_SCO:
         case BD_ADDR_TYPE_ACL:
-            return gap_secure_connection_for_link_key_type(hci_connection->link_key_type);
+            return gap_secure_connection_for_link_key_type(hci_connection->encryption_key_type);
 #endif
         default:
             return false;

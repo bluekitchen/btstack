@@ -561,13 +561,17 @@ typedef struct {
     uint32_t bonding_flags;
     uint8_t  bonding_status;
 
+    // link key type for currently active encryption
+    link_key_type_t encryption_key_type;
+
     // encryption key size (in octets)
     uint8_t encryption_key_size;
 
     // requested security level
     gap_security_level_t requested_security_level;
     
-    // link key and its type for Classic connections
+    // latest link key and type for Classic connection
+    // - from link key db or link key notification event
     // LTK and LTK valid flag for LE connections
     link_key_t      link_key;
     link_key_type_t link_key_type;
