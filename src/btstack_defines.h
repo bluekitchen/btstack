@@ -86,6 +86,11 @@ typedef uint8_t sm_key_t[16];
  * @brief 128 bit UUID
  */
 typedef uint8_t uuid128_t[16];
+/**
+ * @brief 32-bit microsecond timestamp used for audio api
+ * @note time wraps around every 71.6 minutes
+ */
+typedef uint32_t btstack_time_us_t;
 
 // provide ssize_t on windows
 #ifdef _MSC_VER
