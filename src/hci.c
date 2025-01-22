@@ -3859,15 +3859,20 @@ static void event_handler(uint8_t *packet, uint16_t size){
             if (conn) {
                 switch (conn->state){
                     // expected states
-                    case ACCEPTED_CONNECTION_REQUEST:
                     case SENT_CREATE_CONNECTION:
                         break;
-                    // unexpected state -> ignore
+                    // Page Timeout after incoming connection indicates connection collision => ignore event
+                    case RECEIVED_CONNECTION_REQUEST:
+                    case ACCEPTED_CONNECTION_REQUEST:
+                        if (hci_event_connection_complete_get_status(packet) == ERROR_CODE_PAGE_TIMEOUT) {
+                            return;
+                        }
+                        break;
+                    // unexpected state -> ignore and don't forward event to app
                     default:
-                        // don't forward event to app
                         return;
                 }
-                if (!packet[2]){
+                if (hci_event_connection_complete_get_status(packet) == ERROR_CODE_SUCCESS){
                     conn->state = OPEN;
                     conn->con_handle = little_endian_read_16(packet, 3);
 
