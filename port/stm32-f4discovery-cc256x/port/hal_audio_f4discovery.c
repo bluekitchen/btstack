@@ -64,6 +64,9 @@ static volatile uint32_t sink_playback_time_us[NUM_OUTPUT_BUFFERS];
 static volatile uint8_t  sink_playback_last_buffer;
 static uint32_t			 sink_playback_buffer_duration_us;
 
+// record the time of the external trigger
+static uint32_t external_trigger_us;
+
 #ifdef MEASURE_SAMPLE_RATE
 static uint32_t stream_start_ms;
 static uint32_t stream_samples;
@@ -95,13 +98,27 @@ extern TIM_HandleTypeDef htim3;
 
 
 void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim) {
-	uint32_t time_capture_us = __HAL_TIM_GET_COMPARE(&htim2, TIM_CHANNEL_1);
-	// update buffer time
-	if (sink_playback_time_us[sink_playback_last_buffer] != 0) {
-		sink_playback_buffer_duration_us = time_capture_us - sink_playback_time_us[sink_playback_last_buffer];
+	uint32_t time_capture_us;
+
+	// not really documented: HAL_TIM_IRQHandler sets htim->Channel to channel that caused the interupt
+	// trying to read the SR with __HAL_TIM_GET_FLAG didn't work (strange things happened)
+
+	switch (HAL_TIM_GetActiveChannel(&htim2)) {
+		case HAL_TIM_ACTIVE_CHANNEL_1:
+			time_capture_us = __HAL_TIM_GET_COMPARE(&htim2, TIM_CHANNEL_1);
+			// update buffer time
+			if (sink_playback_time_us[sink_playback_last_buffer] != 0) {
+				sink_playback_buffer_duration_us = time_capture_us - sink_playback_time_us[sink_playback_last_buffer];
+			}
+			sink_playback_time_us[sink_playback_last_buffer] = time_capture_us;
+			sink_playback_last_buffer = 1 - sink_playback_last_buffer;
+			break;
+		case HAL_TIM_ACTIVE_CHANNEL_2:
+			external_trigger_us = __HAL_TIM_GET_COMPARE(&htim2, TIM_CHANNEL_2);
+			break;
+		default:
+			break;
 	}
-	sink_playback_time_us[sink_playback_last_buffer] = time_capture_us;
-	sink_playback_last_buffer = 1 - sink_playback_last_buffer;
 }
 
 void  BSP_AUDIO_OUT_HalfTransfer_CallBack(void){
@@ -139,10 +156,6 @@ void BSP_AUDIO_OUT_TransferComplete_CallBack(void){
 #endif
 
 	HAL_GPIO_TogglePin(Test1_GPIO_Port, Test1_Pin);
-	// uint32_t time_read_us = __HAL_TIM_GET_COUNTER(&htim2);
-	// uint32_t time_capture = __HAL_TIM_GET_COMPARE(&htim2, TIM_CHANNEL_1);
-	// int32_t delta = (int32_t)(time_capture - time_read_us);
-	// printf("1: %" PRIu32 " - %" PRIu32 " => delta %" PRIi32 "\n", time_read_us, time_capture, delta);
 
 	if (sink_playback_buffer_duration_us != 0) {
 		(*audio_played_handler)(1);
@@ -157,6 +170,7 @@ static void hal_audio_timer_init(void){
   		// start 1 Mhz timer and input capture in interrupt mode
   		HAL_TIM_Base_Start(&htim2);
   		HAL_TIM_IC_Start_IT(&htim2, TIM_CHANNEL_1);
+  		HAL_TIM_IC_Start_IT(&htim2, TIM_CHANNEL_2);
 
   		// start I2S Bitclock counter and output capture
   		HAL_TIM_Base_Start(&htim3);
@@ -429,4 +443,12 @@ void hal_audio_source_close(void){
 	if (recording_started) {
 		hal_audio_source_stop();
 	}
+}
+
+void hal_audio_external_trigger_init(void) {
+	hal_audio_timer_init();
+}
+
+uint32_t hal_audio_external_trigger_get_time_us(void) {
+	return external_trigger_us;
 }
