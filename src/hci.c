@@ -4254,6 +4254,16 @@ static void event_handler(uint8_t *packet, uint16_t size){
             if (hci_event_encryption_key_refresh_complete_get_status(packet) == ERROR_CODE_SUCCESS) {
                 // Encryption has been updated with link key stored in connection, track link key type
                 conn->encryption_key_type = conn->link_key_type;
+                // For Classic, we need to validate encryption key size first, if possible (== supported by Controller)
+                if (hci_is_le_connection(conn) == false) {
+                    if (hci_command_supported(SUPPORTED_HCI_COMMAND_READ_ENCRYPTION_KEY_SIZE)) {
+                       // validate encryption key size
+                        conn->bonding_flags |= BONDING_SEND_READ_ENCRYPTION_KEY_SIZE;
+                    } else {
+                        // if not, pretend everything is perfect
+                        hci_handle_read_encryption_key_size_complete(conn, 16);
+                    }
+                }
             }
             break;
 
