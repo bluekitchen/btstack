@@ -149,6 +149,21 @@ void BSP_AUDIO_OUT_TransferComplete_CallBack(void){
 	}
 }
 
+static void hal_audio_timer_init(void){
+ 	static bool initialized = false;
+  	if (initialized == false){
+   		initialized = true;
+
+  		// start 1 Mhz timer and input capture in interrupt mode
+  		HAL_TIM_Base_Start(&htim2);
+  		HAL_TIM_IC_Start_IT(&htim2, TIM_CHANNEL_1);
+
+  		// start I2S Bitclock counter and output capture
+  		HAL_TIM_Base_Start(&htim3);
+  		HAL_TIM_OC_Start(&htim3, TIM_CHANNEL_1);
+    }
+}
+
 /**
  * @brief Setup audio codec for specified samplerate and number channels
  * @param Channels
@@ -159,6 +174,8 @@ void BSP_AUDIO_OUT_TransferComplete_CallBack(void){
 void hal_audio_sink_init(uint8_t channels, 
                     uint32_t sample_rate,
                     void (*buffer_played_callback)  (uint8_t buffer_index)){
+
+	hal_audio_timer_init();
 
 	// F4 Discovery Audio BSP only supports stereo playback
 	if (channels == 1){
@@ -346,6 +363,8 @@ void BSP_AUDIO_IN_TransferComplete_CallBack(void){
 void hal_audio_source_init(uint8_t channels, 
                            uint32_t sample_rate,
                            void (*buffer_recorded_callback)(const int16_t * buffer, uint16_t num_samples)){
+
+	hal_audio_timer_init();
 
 	source_sample_rate = sample_rate;
 
