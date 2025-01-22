@@ -4168,9 +4168,6 @@ static void event_handler(uint8_t *packet, uint16_t size){
 #ifdef ENABLE_CLASSIC
                     else {
 
-                        // Encryption has been enabled with link key stored in connection, track link key type
-                        conn->encryption_key_type = conn->link_key_type;
-
                         // Detect Secure Connection -> Legacy Connection Downgrade Attack (BIAS)
                         bool sc_used_during_pairing = gap_secure_connection_for_link_key_type(conn->encryption_key_type);
                         bool connected_uses_aes_ccm = encryption_enabled == 2;
@@ -4196,6 +4193,9 @@ static void event_handler(uint8_t *packet, uint16_t size){
                             break;
 #endif
                         }
+
+                        // Encryption has been enabled with link key stored in connection, track link key type
+                        conn->encryption_key_type = conn->link_key_type;
 
 #ifdef ENABLE_MUTUAL_AUTHENTICATION_FOR_LEGACY_SECURE_CONNECTIONS
                         // if AES-CCM is used, authentication used SC -> authentication was mutual and we can skip explicit authentication
