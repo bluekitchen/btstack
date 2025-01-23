@@ -59,7 +59,9 @@ The Audio BSP is from the STM32F4Cube V1.16 firmware and not generated from STM3
 
 ## High Accuracy Audio Timing
 We use TIM3 to count I2S Bit Clock ticks and use TIM2 as 1 Mhz clock with TIM2 Channel 1 Input Capture to get microsecond timestamps of the audio frames.
+In addition, TIM2 Channel 2 is used to get microsecond timestamps of an external event, e.g. for Bluetooth ISO Time synchronization.
 
 Hardware setup: connect the following pins:
 - PC10 with PD2 (I2S3_CK to ETR 2 of TIM3)
 - PC6 with PA15 (Channel1 Output Compare of TIM3 to TIM2 Channel 1 Input Capture)
+- PA1 to the extern Bluetotoh ISO Time synchronization signal
