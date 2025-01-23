@@ -47,6 +47,7 @@
 #ifndef BTSTACK_AUDIO_H
 #define BTSTACK_AUDIO_H
 
+#include <btstack_defines.h>
 #include <stdint.h>
 
 #if defined __cplusplus
@@ -56,17 +57,23 @@ extern "C" {
 /* API_START */
 
 typedef struct {
+    btstack_time_us_t timestamp;
+} btstack_audio_context_t;
+
+typedef struct {
 
     /**
      * @brief Setup audio codec for specified samplerate and number of channels
      * @param Channels (1=mono, 2=stereo)
      * @param Sample rate
-     * @param Playback callback
+     * @param Playback callback with sample buffer, number of samples, and, if available playback time of first sample
      * @return 1 on success
      */
     int (*init)(uint8_t channels,
                 uint32_t samplerate, 
-                void (*playback) (int16_t * buffer, uint16_t num_samples));
+                void (*playback) (int16_t *  buffer,
+                                  uint16_t num_samples,
+                                  const btstack_audio_context_t * timeinfo));
 
     /**
      * @brief Get the current playback sample rate, may differ from the
@@ -104,12 +111,14 @@ typedef struct {
      * @brief Setup audio codec for specified samplerate and number of channels
      * @param Channels (1=mono, 2=stereo)
      * @param Sample rate
-     * @param Recording callback
+     * @param Recording callback with sample buffer, number of samples, and, if available recording time of first sample
      * @return 1 on success
      */
     int (*init)(uint8_t channels,
                 uint32_t samplerate, 
-                void (*recording)(const int16_t * buffer, uint16_t num_samples));
+                void (*recording)(const int16_t * buffer,
+                                  uint16_t num_samples,
+                                  const btstack_audio_context_t * timeinfo));
 
     /**
      * @brief Get the current recording sample rate, may differ from the

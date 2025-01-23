@@ -82,8 +82,8 @@ static PaStream * stream_source;
 static PaStream * stream_sink;
 
 // client
-static void (*playback_callback)(int16_t * buffer, uint16_t num_samples);
-static void (*recording_callback)(const int16_t * buffer, uint16_t num_samples);
+static void (*playback_callback)(int16_t * buffer, uint16_t num_samples, const btstack_audio_context_t * context);
+static void (*recording_callback)(const int16_t * buffer, uint16_t num_samples, const btstack_audio_context_t * context);
 
 // output buffer
 static int16_t               output_buffer_storage[NUM_OUTPUT_BUFFERS * NUM_FRAMES_PER_PA_BUFFER * MAX_NR_AUDIO_CHANNELS];
@@ -172,7 +172,7 @@ static void driver_timer_handler_sink(btstack_timer_source_t * ts){
 
     // playback buffer ready to fill
     while (output_buffer_to_play != output_buffer_to_fill){
-        (*playback_callback)(output_buffers[output_buffer_to_fill], NUM_FRAMES_PER_PA_BUFFER);
+        (*playback_callback)(output_buffers[output_buffer_to_fill], NUM_FRAMES_PER_PA_BUFFER, 0);
 
         // next
         output_buffer_to_fill = (output_buffer_to_fill + 1 ) % NUM_OUTPUT_BUFFERS;
@@ -188,7 +188,7 @@ static void driver_timer_handler_source(btstack_timer_source_t * ts){
     // recording buffer ready to process
     if (input_buffer_to_record != input_buffer_to_fill){
 
-        (*recording_callback)(input_buffers[input_buffer_to_record], NUM_FRAMES_PER_PA_BUFFER);
+        (*recording_callback)(input_buffers[input_buffer_to_record], NUM_FRAMES_PER_PA_BUFFER, 0);
 
         // next
         input_buffer_to_record = (input_buffer_to_record + 1 ) % NUM_INPUT_BUFFERS;
@@ -202,7 +202,7 @@ static void driver_timer_handler_source(btstack_timer_source_t * ts){
 static int btstack_audio_portaudio_sink_init(
     uint8_t channels,
     uint32_t samplerate, 
-    void (*playback)(int16_t * buffer, uint16_t num_samples)
+    void (*playback)(int16_t * buffer, uint16_t num_samples, const btstack_audio_context_t * context)
 ){
     PaError err;
 
@@ -293,7 +293,7 @@ static int btstack_audio_portaudio_sink_init(
 static int btstack_audio_portaudio_source_init(
     uint8_t channels,
     uint32_t samplerate, 
-    void (*recording)(const int16_t * buffer, uint16_t num_samples)
+    void (*recording)(const int16_t * buffer, uint16_t num_samples, const btstack_audio_context_t * context)
 ){
     PaError err;
 
@@ -406,7 +406,7 @@ static void btstack_audio_portaudio_sink_start_stream(void){
     // fill buffers once
     uint8_t i;
     for (i=0;i<NUM_OUTPUT_BUFFERS-1;i++){
-        (*playback_callback)(&output_buffer_storage[i * NUM_FRAMES_PER_PA_BUFFER * MAX_NR_AUDIO_CHANNELS], NUM_FRAMES_PER_PA_BUFFER);
+        (*playback_callback)(&output_buffer_storage[i * NUM_FRAMES_PER_PA_BUFFER * MAX_NR_AUDIO_CHANNELS], NUM_FRAMES_PER_PA_BUFFER, 0);
     }
     output_buffer_to_play = 0;
     output_buffer_to_fill = NUM_OUTPUT_BUFFERS-1;

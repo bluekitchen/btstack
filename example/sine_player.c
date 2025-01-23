@@ -65,7 +65,8 @@ static const int16_t sine_int16[] = {
 -19260,  -17557,  -15786,  -13952,  -12062,  -10126,   -8149,   -6140,   -4107,   -2057,
 };
 
-static void audio_playback(int16_t * pcm_buffer, uint16_t num_samples_to_write){
+static void audio_playback(int16_t * pcm_buffer, uint16_t num_samples_to_write, const btstack_audio_context_t * context){
+    UNUSED(context);
     int count;
     for (count = 0; count < num_samples_to_write ; count++){
         unsigned int channel;

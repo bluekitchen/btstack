@@ -59,8 +59,8 @@
 #define DRIVER_POLL_INTERVAL_MS          5
 
 // client
-static void (*playback_callback)(int16_t * buffer, uint16_t num_samples);
-static void (*recording_callback)(const int16_t * buffer, uint16_t num_samples);
+static void (*playback_callback)(int16_t * buffer, uint16_t num_samples, const btstack_audio_context_t * context);
+static void (*recording_callback)(const int16_t * buffer, uint16_t num_samples, const btstack_audio_context_t * context);
 
 // timer to fill output ring buffer
 static btstack_timer_source_t  driver_timer_sink;
@@ -98,7 +98,7 @@ static void driver_timer_handler_sink(btstack_timer_source_t * ts){
     // playback buffer ready to fill
     if (output_buffer_to_play != output_buffer_to_fill){
         int16_t * buffer = hal_audio_sink_get_output_buffer(output_buffer_to_fill);
-        (*playback_callback)(buffer, output_buffer_samples);
+        (*playback_callback)(buffer, output_buffer_samples, 0);
 
 #ifdef HAVE_HAL_AUDIO_SINK_STEREO_ONLY
         if (output_duplicate_samples){
@@ -124,7 +124,7 @@ static void driver_timer_handler_sink(btstack_timer_source_t * ts){
 static void driver_timer_handler_source(btstack_timer_source_t * ts){
     // deliver samples if ready
     if (input_buffer_ready){
-        (*recording_callback)((const int16_t *)input_buffer_samples, input_buffer_num_samples);
+        (*recording_callback)((const int16_t *)input_buffer_samples, input_buffer_num_samples, 0);
         input_buffer_ready = 0;
     }
 
@@ -139,7 +139,7 @@ static uint32_t sink_samplerate = 0;
 static int btstack_audio_embedded_sink_init(
     uint8_t channels,
     uint32_t samplerate,
-    void (*playback)(int16_t * buffer, uint16_t num_samples)
+    void (*playback)(int16_t * buffer, uint16_t num_samples, const btstack_audio_context_t * context)
 ){
     btstack_assert(playback != NULL);
     btstack_assert(channels != 0);
@@ -150,7 +150,7 @@ static int btstack_audio_embedded_sink_init(
     channels = 2;
 #endif
 
-    playback_callback  = playback;
+    playback_callback = playback;
     sink_samplerate = samplerate;
     hal_audio_sink_init(channels, samplerate, &btstack_audio_audio_played);
 
@@ -166,14 +166,14 @@ static uint32_t source_samplerate = 0;
 static int btstack_audio_embedded_source_init(
     uint8_t channels,
     uint32_t samplerate,
-    void (*recording)(const int16_t * buffer, uint16_t num_samples)
+    void (*recording)(const int16_t * buffer, uint16_t num_samples, const btstack_audio_context_t * context)
 ){
     if (!recording){
         log_error("No recording callback");
         return 1;
     }
 
-    recording_callback  = recording;
+    recording_callback = recording;
     source_samplerate = samplerate;
     hal_audio_source_init(channels, samplerate, &btstack_audio_audio_recorded);
 
@@ -202,7 +202,7 @@ static void btstack_audio_embedded_sink_start_stream(void){
     uint16_t i;
     for (i=0;i<output_buffer_count;i++){
         int16_t * buffer = hal_audio_sink_get_output_buffer(i);
-        (*playback_callback)(buffer, output_buffer_samples);
+        (*playback_callback)(buffer, output_buffer_samples, 0);
     }
 
     output_buffer_to_play = 0;

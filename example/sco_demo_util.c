@@ -234,7 +234,8 @@ static void sco_demo_modplayer(uint16_t num_samples, int16_t * data){
 
 // Audio Playback / Recording
 
-static void audio_playback_callback(int16_t * buffer, uint16_t num_samples){
+static void audio_playback_callback(int16_t * buffer, uint16_t num_samples, const btstack_audio_context_t * context){
+    UNUSED(context);
 
     // fill with silence while paused
     if (audio_output_paused){
@@ -261,7 +262,8 @@ static void audio_playback_callback(int16_t * buffer, uint16_t num_samples){
 }
 
 #ifdef USE_AUDIO_INPUT
-static void audio_recording_callback(const int16_t * buffer, uint16_t num_samples){
+static void audio_recording_callback(const int16_t * buffer, uint16_t num_samples, const btstack_audio_context_t * context){
+    UNUSED(context);
     btstack_ring_buffer_write(&audio_input_ring_buffer, (uint8_t *)buffer, num_samples * 2);
 }
 #endif

@@ -48,7 +48,8 @@
 
 static modcontext mod_context;
 
-static void audio_playback(int16_t * buffer, uint16_t num_samples){
+static void audio_playback(int16_t * buffer, uint16_t num_samples, const btstack_audio_context_t * context){
+    UNUSED(context);
 	hxcmod_fillbuffer(&mod_context, buffer, num_samples, NULL);
 }
 

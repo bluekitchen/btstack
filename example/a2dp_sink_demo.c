@@ -376,7 +376,8 @@ static int setup_demo(void){
 /* LISTING_END */
 
 
-static void playback_handler(int16_t * buffer, uint16_t num_audio_frames){
+static void playback_handler(int16_t * buffer, uint16_t num_audio_frames, const btstack_audio_context_t * context){
+    UNUSED(context);
 
 #ifdef STORE_TO_WAV_FILE
     int       wav_samples = num_audio_frames * NUM_CHANNELS;
