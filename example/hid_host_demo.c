@@ -194,7 +194,7 @@ static void hid_host_set_leds(void){
     if (hid_host_caps_lock){
         output_report[caps_lock_report_offset] = 1 << (hid_host_led_caps_lock_bit & 0x07);
     }
-    hid_host_send_set_report(hid_host_cid, HID_REPORT_TYPE_OUTPUT, hid_host_led_report_id, output_report, hid_host_led_report_len);
+    hid_host_send_report(hid_host_cid, hid_host_led_report_id, output_report, hid_host_led_report_len);
 }
 
 static void hid_host_demo_lookup_caps_lock_led(void){
