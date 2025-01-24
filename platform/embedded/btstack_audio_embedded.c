@@ -56,8 +56,6 @@
 
 #include <stddef.h>
 
-#define DRIVER_POLL_INTERVAL_MS          5
-
 // client
 static void (*playback_callback)(int16_t * buffer, uint16_t num_samples, const btstack_audio_context_t * context);
 static void (*recording_callback)(const int16_t * buffer, uint16_t num_samples, const btstack_audio_context_t * context);
@@ -75,6 +73,9 @@ static volatile int       input_buffer_ready;
 static volatile const int16_t * input_buffer_samples;
 static volatile uint16_t  input_buffer_num_samples;
 
+static btstack_data_source_t btstack_audio_embedded_sink_data_source;
+static btstack_data_source_t btstack_audio_embedded_source_data_source;
+
 static int source_active;
 static int sink_active;
 
@@ -85,52 +86,59 @@ static bool output_duplicate_samples;
 
 static void btstack_audio_audio_played(uint8_t buffer_index){
     output_buffer_to_play = (buffer_index + 1) % output_buffer_count;
+    btstack_run_loop_poll_data_sources_from_irq();
 }
 
 static void btstack_audio_audio_recorded(const int16_t * samples, uint16_t num_samples){
     input_buffer_samples     = samples;
     input_buffer_num_samples = num_samples;
     input_buffer_ready       = 1;
+    btstack_run_loop_poll_data_sources_from_irq();
 }
 
-static void driver_timer_handler_sink(btstack_timer_source_t * ts){
-
-    // playback buffer ready to fill
-    if (output_buffer_to_play != output_buffer_to_fill){
-        int16_t * buffer = hal_audio_sink_get_output_buffer(output_buffer_to_fill);
-        (*playback_callback)(buffer, output_buffer_samples, 0);
+static void btstack_audio_embedded_sink_handler(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type){
+    UNUSED(ds);
+    switch (callback_type) {
+        case DATA_SOURCE_CALLBACK_POLL:
+            // playback buffer ready to fill
+            if (output_buffer_to_play != output_buffer_to_fill){
+                int16_t * buffer = hal_audio_sink_get_output_buffer(output_buffer_to_fill);
+                (*playback_callback)(buffer, output_buffer_samples, 0);
 
 #ifdef HAVE_HAL_AUDIO_SINK_STEREO_ONLY
-        if (output_duplicate_samples){
-            unsigned int i = output_buffer_samples;
-            do {
-                i--;
-                int16_t sample = buffer[i];
-                buffer[2*i + 0] = sample;
-                buffer[2*i + 1] = sample;
-            } while ( i > 0 );
-        }
+                if (output_duplicate_samples){
+                    unsigned int i = output_buffer_samples;
+                    do {
+                        i--;
+                        int16_t sample = buffer[i];
+                        buffer[2*i + 0] = sample;
+                        buffer[2*i + 1] = sample;
+                    } while ( i > 0 );
+                }
 #endif
 
-        // next
-        output_buffer_to_fill = (output_buffer_to_fill + 1 ) % output_buffer_count;
+                // next
+                output_buffer_to_fill = (output_buffer_to_fill + 1 ) % output_buffer_count;
+            }
+    break;
+        default:
+            break;
     }
-
-    // re-set timer
-    btstack_run_loop_set_timer(ts, DRIVER_POLL_INTERVAL_MS);
-    btstack_run_loop_add_timer(ts);
 }
 
-static void driver_timer_handler_source(btstack_timer_source_t * ts){
-    // deliver samples if ready
-    if (input_buffer_ready){
-        (*recording_callback)((const int16_t *)input_buffer_samples, input_buffer_num_samples, 0);
-        input_buffer_ready = 0;
+static void btstack_audio_embedded_source_handler(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type){
+    UNUSED(ds);
+    switch (callback_type) {
+        case DATA_SOURCE_CALLBACK_POLL:
+            // deliver samples if ready
+            if (input_buffer_ready){
+                (*recording_callback)((const int16_t *)input_buffer_samples, input_buffer_num_samples, 0);
+                input_buffer_ready = 0;
+            }
+            break;
+        default:
+            break;
     }
-
-    // re-set timer
-    btstack_run_loop_set_timer(ts, DRIVER_POLL_INTERVAL_MS);
-    btstack_run_loop_add_timer(ts);
 }
 
 
@@ -208,13 +216,13 @@ static void btstack_audio_embedded_sink_start_stream(void){
     output_buffer_to_play = 0;
     output_buffer_to_fill = 0;
 
+    // set up polling data_source
+    btstack_run_loop_set_data_source_handler(&btstack_audio_embedded_sink_data_source, &btstack_audio_embedded_sink_handler);
+    btstack_run_loop_enable_data_source_callbacks(&btstack_audio_embedded_sink_data_source, DATA_SOURCE_CALLBACK_POLL);
+    btstack_run_loop_add_data_source(&btstack_audio_embedded_sink_data_source);
+
     // start playback
     hal_audio_sink_start();
-
-    // start timer
-    btstack_run_loop_set_timer_handler(&driver_timer_sink, &driver_timer_handler_sink);
-    btstack_run_loop_set_timer(&driver_timer_sink, DRIVER_POLL_INTERVAL_MS);
-    btstack_run_loop_add_timer(&driver_timer_sink);
 
     // state
     sink_active = 1;
@@ -224,13 +232,13 @@ static void btstack_audio_embedded_source_start_stream(void){
     // just started, no data ready
     input_buffer_ready = 0;
 
+    // set up polling data_source
+    btstack_run_loop_set_data_source_handler(&btstack_audio_embedded_source_data_source, &btstack_audio_embedded_source_handler);
+    btstack_run_loop_enable_data_source_callbacks(&btstack_audio_embedded_source_data_source, DATA_SOURCE_CALLBACK_POLL);
+    btstack_run_loop_add_data_source(&btstack_audio_embedded_source_data_source);
+
     // start recording
     hal_audio_source_start();
-
-    // start timer
-    btstack_run_loop_set_timer_handler(&driver_timer_source, &driver_timer_handler_source);
-    btstack_run_loop_set_timer(&driver_timer_source, DRIVER_POLL_INTERVAL_MS);
-    btstack_run_loop_add_timer(&driver_timer_source);
 
     // state
     source_active = 1;
