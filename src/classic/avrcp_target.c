@@ -789,7 +789,6 @@ static uint8_t avrcp_target_store_media_attr(avrcp_connection_t * connection, av
     int index = attr_id - 1;
     if (!value) return AVRCP_STATUS_INVALID_PARAMETER;
 	uint16_t value_len = (uint16_t)strlen(value);
-	btstack_assert(value_len <= 255);
 	connection->target_now_playing_info[index].value = (uint8_t*)value;
     connection->target_now_playing_info[index].len   = value_len;
     return ERROR_CODE_SUCCESS;
