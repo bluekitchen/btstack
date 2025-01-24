@@ -1084,7 +1084,6 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
     uint8_t operand;
     uint16_t event_mask;
     avrcp_operation_id_t operation_id;
-    uint16_t uid_counter;
 
     switch (opcode){
         case AVRCP_CMD_OPCODE_UNIT_INFO:
