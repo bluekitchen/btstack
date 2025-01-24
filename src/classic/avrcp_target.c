@@ -1300,7 +1300,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                 }
 
                 case AVRCP_PDU_ID_REGISTER_NOTIFICATION:{
-                    if (length != 1){
+                    if (length < 1){
                         avrcp_target_response_vendor_dependent_reject(connection, pdu_id, AVRCP_STATUS_PARAMETER_CONTENT_ERROR);
                         return;
                     }
