@@ -40,6 +40,7 @@
 
 #include <stdint.h>
 #include "btstack_defines.h"
+#include "btstack_audio.h"
 
 #if defined __cplusplus
 extern "C" {
@@ -141,6 +142,23 @@ void hal_audio_source_close(void);
  * We assume that the local audio clock runs with a resolution of 1 us and that we can
  * trigger a GPIO toggle by the Bluetooth Controller which is captured on both sides.
  */
+
+#ifdef HAVE_HAL_AUDIO_SINK_BUFFER_CONTEXT
+/**
+ * @brief Get Audio Context for the given buffer index, especially the expected playback time for the first sample
+ * @param buffer_index
+ */
+const btstack_audio_context_t * hal_audio_sink_get_buffer_context(uint8_t buffer_index);
+#endif
+
+
+#ifdef HAVE_HAL_AUDIO_SOURCE_BUFFER_CONTEXT
+/**
+ * @brief Get Audio Context for the given buffer index, especially the recording time for the first sample
+ * @param buffer_index
+ */
+const btstack_audio_context_t * hal_audio_source_get_buffer_context(uint8_t buffer_index);
+#endif
 
 /**
  * @brief Init Timer Capture for external input trigger
