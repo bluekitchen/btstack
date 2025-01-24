@@ -1162,11 +1162,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
 
                     memcpy(connection->target_track_id, &packet[pos], 8);
                     pos += 8;
-                    uid_counter = big_endian_read_16(packet,pos);
-                    if (connection->target_uid_counter != uid_counter){
-                        avrcp_target_response_vendor_dependent_reject(connection, pdu_id, AVRCP_STATUS_PARAMETER_CONTENT_ERROR);
-                        return;
-                    }
+                    connection->target_uid_counter = big_endian_read_16(packet,pos);
 
                     connection->state = AVCTP_W2_CHECK_DATABASE;
                     avrcp_target_emit_add_to_now_playing_item(avrcp_target_context.avrcp_callback, connection->avrcp_cid, connection->target_uid_counter, connection->target_scope,connection->target_track_id);
@@ -1186,11 +1182,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
 
                     memcpy(connection->target_track_id, &packet[pos], 8);
                     pos += 8;
-                    uid_counter = big_endian_read_16(packet,pos);
-                    if (connection->target_uid_counter != uid_counter){
-                        avrcp_target_response_vendor_dependent_reject(connection, pdu_id, AVRCP_STATUS_PARAMETER_CONTENT_ERROR);
-                        return;
-                    }
+                    connection->target_uid_counter = big_endian_read_16(packet,pos);
 
                     connection->state = AVCTP_W2_CHECK_DATABASE;
                     avrcp_target_emit_respond_play_item(avrcp_target_context.avrcp_callback, connection->avrcp_cid, connection->target_uid_counter, connection->target_scope,connection->target_track_id);
