@@ -586,9 +586,9 @@ void battery_service_v1_server_register(battery_service_v1_t *service, battery_s
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, &battery_services);
     while (btstack_linked_list_iterator_has_next(&it)){
-        battery_service_v1_t * service = (battery_service_v1_t*) btstack_linked_list_iterator_next(&it);
-        if (service->service_handler.end_handle > start_handle){
-            start_handle = service->service_handler.end_handle + 1;
+        battery_service_v1_t * registered_service = (battery_service_v1_t*) btstack_linked_list_iterator_next(&it);
+        if (registered_service->service_handler.end_handle > start_handle){
+            start_handle = registered_service->service_handler.end_handle + 1;
         }
     }
 
