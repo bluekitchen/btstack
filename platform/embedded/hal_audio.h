@@ -39,6 +39,7 @@
 #define HAL_AUDIO_H
 
 #include <stdint.h>
+#include "btstack_defines.h"
 
 #if defined __cplusplus
 extern "C" {
@@ -133,6 +134,24 @@ void hal_audio_source_stop(void);
  * @brief Close audio codec
  */
 void hal_audio_source_close(void);
+
+/**
+ * Additional API for high-accuracy audio playback, e.g. LE Audio True Wireless Stereo
+ * For this, the local audio clock needs to get synchronized with the Bluetooth clock
+ * We assume that the local audio clock runs with a resolution of 1 us and that we can
+ * trigger a GPIO toggle by the Bluetooth Controller which is captured on both sides.
+ */
+
+/**
+ * @brief Init Timer Capture for external input trigger
+ */
+void hal_audio_external_trigger_init(void);
+
+/**
+ * @brief Get last external trigger event
+ * @Returns the time in us of the last external trigger event
+ */
+btstack_time_us_t hal_audio_external_trigger_get_time_us(void);
 
 #if defined __cplusplus
 }
