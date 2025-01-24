@@ -1187,6 +1187,10 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     break;
 
                 case AVRCP_PDU_ID_SET_ADDRESSED_PLAYER:{
+                    if (length != 2){
+                        avrcp_target_response_vendor_dependent_reject(connection, pdu_id, AVRCP_STATUS_PARAMETER_CONTENT_ERROR);
+                        return;
+                    }
                     bool ok = length == 4;
                     if (avrcp_target_context.set_addressed_player_callback != NULL){
                         uint16_t player_id = big_endian_read_16(packet, pos);
@@ -1235,7 +1239,10 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     break;
 
                 case AVRCP_PDU_ID_REQUEST_CONTINUING_RESPONSE:
-                    if ((pos + 1) > size) return;
+                    if (length != 1){
+                        avrcp_target_response_vendor_dependent_reject(connection, pdu_id, AVRCP_STATUS_PARAMETER_CONTENT_ERROR);
+                        return;
+                    }
                     if (packet[pos] != AVRCP_PDU_ID_GET_ELEMENT_ATTRIBUTES){
                         avrcp_target_response_vendor_dependent_reject(connection, pdu_id, AVRCP_STATUS_INVALID_COMMAND);
                         return;
@@ -1247,13 +1254,13 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     break;
 
                 case AVRCP_PDU_ID_GET_ELEMENT_ATTRIBUTES:{
-                    if ((pos + 9) > size) return;
-                    uint8_t play_identifier[8];
-                    memset(play_identifier, 0, 8);
-                    if (memcmp(&packet[pos], play_identifier, 8) != 0) {
-                        avrcp_target_response_vendor_dependent_reject(connection, pdu_id, AVRCP_STATUS_INVALID_PARAMETER);
+                    if (length != 9){
+                        avrcp_target_response_vendor_dependent_reject(connection, pdu_id, AVRCP_STATUS_PARAMETER_CONTENT_ERROR);
                         return;
                     }
+
+                    uint8_t play_identifier[8];
+                    memcmp(&packet[pos], play_identifier, 8);
                     pos += 8;
                     uint8_t attribute_count = packet[pos++];
                     connection->next_attr_id = AVRCP_MEDIA_ATTR_NONE;
@@ -1261,10 +1268,14 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                         connection->next_attr_id = AVRCP_MEDIA_ATTR_TITLE;
                         connection->target_now_playing_info_attr_bitmap = 0xFE;
                     } else {
-                        int i;
                         connection->next_attr_id = AVRCP_MEDIA_ATTR_TITLE;
                         connection->target_now_playing_info_attr_bitmap = 0;
-                        if ((pos + attribute_count * 4) > size) return;
+                        if ((pos + attribute_count * 4) > size){
+                            avrcp_target_response_vendor_dependent_reject(connection, pdu_id, AVRCP_STATUS_PARAMETER_CONTENT_ERROR);
+                            return;
+                        }
+
+                        uint8_t i;
                         for (i=0; i < attribute_count; i++){
                             uint32_t attr_id = big_endian_read_32(packet, pos);
                             connection->target_now_playing_info_attr_bitmap |= (1 << attr_id);
@@ -1279,7 +1290,10 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                 }
 
                 case AVRCP_PDU_ID_REGISTER_NOTIFICATION:{
-                    if ((pos + 1) > size) return;
+                    if (length != 1){
+                        avrcp_target_response_vendor_dependent_reject(connection, pdu_id, AVRCP_STATUS_PARAMETER_CONTENT_ERROR);
+                        return;
+                    }
                     avrcp_notification_event_id_t event_id = (avrcp_notification_event_id_t) packet[pos];
 
                     avrcp_target_set_transaction_label_for_notification(connection, event_id, connection->transaction_id);
