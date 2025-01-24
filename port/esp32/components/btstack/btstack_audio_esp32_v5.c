@@ -140,8 +140,8 @@ static uint32_t btstack_audio_esp32_source_samplerate;
 static btstack_audio_esp32_state_t btstack_audio_esp32_sink_state;
 static btstack_audio_esp32_state_t btstack_audio_esp32_source_state;
 // client
-static void (*btstack_audio_esp32_sink_playback_callback)(int16_t * buffer, uint16_t num_samples);
-static void (*btstack_audio_esp32_source_recording_callback)(const int16_t * buffer, uint16_t num_samples);
+static void (*btstack_audio_esp32_sink_playback_callback)(int16_t * buffer, uint16_t num_samples, const btstack_audio_context_t * context);
+static void (*btstack_audio_esp32_source_recording_callback)(const int16_t * buffer, uint16_t num_samples, const btstack_audio_context_t * contex);
 
 #ifdef CONFIG_ESP_LYRAT_V4_3_BOARD
 
@@ -238,7 +238,7 @@ static void i2s_data_process(btstack_data_source_t *ds, btstack_data_source_call
         case DATA_SOURCE_CALLBACK_POLL: {
             uint16_t num_samples = write_block_size/BYTES_PER_SAMPLE_STEREO;
             if( num_samples > 0 ) {
-                (*btstack_audio_esp32_sink_playback_callback)((int16_t *) btstack_audio_esp32_buffer, num_samples);
+                (*btstack_audio_esp32_sink_playback_callback)((int16_t *) btstack_audio_esp32_buffer, num_samples, NULL);
                 // duplicate samples for mono
                 if (btstack_audio_esp32_sink_num_channels == 1){
                     int16_t *buffer16 = (int16_t *) btstack_audio_esp32_buffer;
@@ -271,7 +271,7 @@ static void i2s_data_process(btstack_data_source_t *ds, btstack_data_source_call
                         buffer16[i] = buffer16[2*i];
                     }
                 }
-                (*btstack_audio_esp32_source_recording_callback)((int16_t *) btstack_audio_esp32_buffer, num_samples);
+                (*btstack_audio_esp32_source_recording_callback)((int16_t *) btstack_audio_esp32_buffer, num_samples, NULL);
                 atomic_fetch_sub_explicit(&isr_bytes_read, read_block_size, memory_order_relaxed);
             }
             break;
@@ -388,7 +388,7 @@ static void btstack_audio_esp32_deinit(void){
 static int btstack_audio_esp32_sink_init(
     uint8_t channels,
     uint32_t samplerate,
-    void (*playback)(int16_t * buffer, uint16_t num_samples)){
+    void (*playback)(int16_t * buffer, uint16_t num_samples, const btstack_audio_context_t * context)){
 
     btstack_assert(playback != NULL);
     btstack_assert((1 <= channels) && (channels <= 2));
@@ -478,7 +478,7 @@ const btstack_audio_sink_t * btstack_audio_esp32_sink_get_instance(void){
 static int btstack_audio_esp32_source_init(
     uint8_t channels,
     uint32_t samplerate, 
-    void (*recording)(const int16_t * buffer, uint16_t num_samples)
+    void (*recording)(const int16_t * buffer, uint16_t num_samples, const btstack_audio_context_t * context)
 ){
     btstack_assert(recording != NULL);
 
