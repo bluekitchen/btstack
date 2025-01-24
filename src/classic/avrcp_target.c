@@ -379,13 +379,20 @@ static void avrcp_send_response_with_avctp_fragmentation(avrcp_connection_t * co
                     switch (connection->pdu_id) {
                         // message is small enough to fit the single packet, no need for extra check
                         case AVRCP_PDU_ID_GET_CAPABILITIES:
+                            // we indicate an error by a param_len of 1 (valid requests cause larger responses)
+                            if (param_len == 1){
+                                // error code
+                                packet[pos++] = connection->data[0];
+                                l2cap_send_prepared(connection->l2cap_signaling_cid, pos);
+                                return;
+                            }
                             // capability ID
                             packet[pos++] = connection->data[0];
-                            // num_capabilities 
-                            packet[pos++] = connection->data[1];
 
                             switch ((avrcp_capability_id_t) connection->data[0]) {
                                 case AVRCP_CAPABILITY_ID_EVENT:
+                                    // store capability count
+                                    packet[pos++] = connection->data[1];
                                     for (i = (uint8_t) AVRCP_NOTIFICATION_EVENT_FIRST_INDEX;
                                          i < (uint8_t) AVRCP_NOTIFICATION_EVENT_LAST_INDEX; i++) {
                                         if ((connection->notifications_supported_by_target & (1 << i)) == 0) {
@@ -395,6 +402,8 @@ static void avrcp_send_response_with_avctp_fragmentation(avrcp_connection_t * co
                                     }
                                     break;
                                 case AVRCP_CAPABILITY_ID_COMPANY:
+                                    // store capability count
+                                    packet[pos++] = connection->data[1];
                                     // use Bluetooth SIG as default company
                                     for (i = 0; i < connection->data[1]; i++) {
                                         little_endian_store_24(packet, pos,
@@ -404,6 +413,7 @@ static void avrcp_send_response_with_avctp_fragmentation(avrcp_connection_t * co
                                     break;
                                 default:
                                     // error response
+                                    // no capability count
                                     break;
                             }
                             l2cap_send_prepared(connection->l2cap_signaling_cid, pos);
