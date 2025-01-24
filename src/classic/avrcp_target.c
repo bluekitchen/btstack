@@ -1375,23 +1375,16 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     break;
                 }
 
-                case AVRCP_PDU_ID_SET_ABSOLUTE_VOLUME: {
+                case AVRCP_PDU_ID_SET_ABSOLUTE_VOLUME:
                     if (length != 1){
                         avrcp_target_response_vendor_dependent_reject(connection, pdu_id, AVRCP_STATUS_PARAMETER_CONTENT_ERROR);
                         break;
                     }
 
-                    uint8_t absolute_volume = packet[pos];
-                    if (absolute_volume >= 0x80) {
-                        avrcp_target_response_vendor_dependent_reject(connection, pdu_id, AVRCP_STATUS_PARAMETER_CONTENT_ERROR);
-                        break;
-                    }
-                    connection->target_absolute_volume = absolute_volume;
-
+                    connection->target_absolute_volume = packet[pos] & 0x7F;
                     avrcp_target_emit_volume_changed(avrcp_target_context.avrcp_callback, connection->avrcp_cid, connection->target_absolute_volume);
                     avrcp_target_vendor_dependent_response_accept(connection, pdu_id, connection->target_absolute_volume);
                     break;
-                }
 
                 default:
                     log_info("AVRCP target: unhandled pdu id 0x%02x", pdu_id);
