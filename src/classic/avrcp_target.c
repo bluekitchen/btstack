@@ -1075,6 +1075,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
     uint8_t operand;
     uint16_t event_mask;
     avrcp_operation_id_t operation_id;
+    uint16_t uid_counter;
 
     switch (opcode){
         case AVRCP_CMD_OPCODE_UNIT_INFO:
@@ -1139,13 +1140,24 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     }
 
                     connection->target_scope = packet[pos++];
+
                     if (connection->target_scope >= AVRCP_BROWSING_RFU){
-                        avrcp_target_vendor_dependent_response_accept(connection, pdu_id, AVRCP_STATUS_INVALID_PARAMETER);
+                        avrcp_target_response_vendor_dependent_reject(connection, pdu_id, AVRCP_STATUS_INVALID_PARAMETER);
                         return;
                     }
+                    // The CT shall not send an AddToNowPlaying command with the scope set to Media Player List
+                    if (connection->target_scope == AVRCP_BROWSING_MEDIA_PLAYER_LIST){
+                        avrcp_target_response_vendor_dependent_reject(connection, pdu_id, AVRCP_STATUS_INVALID_SCOPE);
+                        return;
+                    }
+
                     memcpy(connection->target_track_id, &packet[pos], 8);
                     pos += 8;
-                    connection->target_uid_counter = big_endian_read_16(packet,pos);
+                    uid_counter = big_endian_read_16(packet,pos);
+                    if (connection->target_uid_counter != uid_counter){
+                        avrcp_target_response_vendor_dependent_reject(connection, pdu_id, AVRCP_STATUS_PARAMETER_CONTENT_ERROR);
+                        return;
+                    }
                     connection->state = AVCTP_W2_CHECK_DATABASE;
                     avrcp_target_emit_add_to_now_playing_item(avrcp_target_context.avrcp_callback, connection->avrcp_cid, connection->target_uid_counter, connection->target_scope,connection->target_track_id);
                     break;
