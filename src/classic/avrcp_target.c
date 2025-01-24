@@ -1351,7 +1351,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
 
                     uint8_t absolute_volume = packet[pos];
                     if (absolute_volume >= 0x80) {
-                        avrcp_target_response_vendor_dependent_reject(connection, pdu_id, AVRCP_STATUS_SPECIFIED_PARAMETER_NOT_FOUND);
+                        avrcp_target_response_vendor_dependent_reject(connection, pdu_id, AVRCP_STATUS_PARAMETER_CONTENT_ERROR);
                         break;
                     }
                     connection->target_absolute_volume = absolute_volume;
