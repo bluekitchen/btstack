@@ -333,7 +333,7 @@ const uint8_t * gatt_server_get_const_value_for_handle(uint16_t attribute_handle
 // experimental GATT Server API
 
 /**
- * @brief Get handle range for primary service.
+ * @brief Get handle range for primary or secondary service.
  * @param uuid16
  * @param start_handle
  * @param end_handle
