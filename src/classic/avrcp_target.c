@@ -1126,10 +1126,15 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
             length = big_endian_read_16(packet, pos);
             pos += 2;
             // pos = 13
+            if ((pos + length) != size){
+                avrcp_target_response_vendor_dependent_reject(connection, pdu_id, AVRCP_STATUS_PARAMETER_CONTENT_ERROR);
+                return;
+            }
+
             switch (pdu_id){
                 case AVRCP_PDU_ID_ADD_TO_NOW_PLAYING:
-                    if ( (pos + 11) > size){
-                        avrcp_target_vendor_dependent_response_accept(connection, pdu_id, AVRCP_STATUS_INVALID_COMMAND);
+                    if (length != 11){
+                        avrcp_target_response_vendor_dependent_reject(connection, pdu_id, AVRCP_STATUS_PARAMETER_CONTENT_ERROR);
                         return;
                     }
 
@@ -1146,8 +1151,8 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     break;
 
                 case AVRCP_PDU_ID_PLAY_ITEM:
-                    if ( (pos + 11) > size){
-                        avrcp_target_vendor_dependent_response_accept(connection, pdu_id, AVRCP_STATUS_INVALID_COMMAND);
+                    if (length != 11){
+                        avrcp_target_response_vendor_dependent_reject(connection, pdu_id, AVRCP_STATUS_PARAMETER_CONTENT_ERROR);
                         return;
                     }
 
@@ -1164,7 +1169,6 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     break;
 
                 case AVRCP_PDU_ID_SET_ADDRESSED_PLAYER:{
-                    if ((pos + 2) > size) return;
                     bool ok = length == 4;
                     if (avrcp_target_context.set_addressed_player_callback != NULL){
                         uint16_t player_id = big_endian_read_16(packet, pos);
@@ -1178,6 +1182,10 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     break;
                 }
                 case AVRCP_PDU_ID_GET_CAPABILITIES:{
+                    if (length != 1){
+                        avrcp_target_response_vendor_dependent_reject(connection, pdu_id, AVRCP_STATUS_PARAMETER_CONTENT_ERROR);
+                        return;
+                    }
                     avrcp_capability_id_t capability_id = (avrcp_capability_id_t) packet[pos];
                     switch (capability_id){
                         case AVRCP_CAPABILITY_ID_EVENT:
@@ -1196,8 +1204,12 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     avrcp_target_emit_respond_vendor_dependent_query(avrcp_target_context.avrcp_callback, connection->avrcp_cid, AVRCP_SUBEVENT_PLAY_STATUS_QUERY);
                     break;
                 case AVRCP_PDU_ID_REQUEST_ABORT_CONTINUING_RESPONSE:
-                    if ((pos + 1) > size) return;
-                    connection->target_abort_continue_response = true;
+                    if (length != 1){
+                        avrcp_target_response_vendor_dependent_reject(connection, pdu_id, AVRCP_STATUS_PARAMETER_CONTENT_ERROR);
+                        return;
+                    }
+                    connection->target_abort_continue_response = false;
+
                     connection->state = AVCTP_W2_SEND_RESPONSE;
                     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
                     break;
@@ -1316,13 +1328,8 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     break;
                 }
                 case AVRCP_PDU_ID_SET_ABSOLUTE_VOLUME: {
-                    if ((pos + 1) > size ){
-                        avrcp_target_response_vendor_dependent_reject(connection, pdu_id, AVRCP_STATUS_INVALID_COMMAND);
-                        break;
-                    }
-
                     if (length != 1){
-                        avrcp_target_response_vendor_dependent_reject(connection, pdu_id, AVRCP_STATUS_SPECIFIED_PARAMETER_NOT_FOUND);
+                        avrcp_target_response_vendor_dependent_reject(connection, pdu_id, AVRCP_STATUS_PARAMETER_CONTENT_ERROR);
                         break;
                     }
 
