@@ -1234,7 +1234,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                         avrcp_target_response_vendor_dependent_reject(connection, pdu_id, AVRCP_STATUS_PARAMETER_CONTENT_ERROR);
                         return;
                     }
-                    connection->target_abort_continue_response = false;
+                    connection->target_abort_continue_response = true;
 
                     connection->state = AVCTP_W2_SEND_RESPONSE;
                     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
