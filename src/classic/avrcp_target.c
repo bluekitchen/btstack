@@ -1260,7 +1260,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     }
 
                     uint8_t play_identifier[8];
-                    memcpy(&packet[pos], play_identifier, 8);
+                    memcpy(play_identifier, &packet[pos], 8);
                     pos += 8;
                     uint8_t attribute_count = packet[pos++];
                     connection->next_attr_id = AVRCP_MEDIA_ATTR_NONE;
