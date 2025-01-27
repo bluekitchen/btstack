@@ -47,12 +47,14 @@ System properties:
 
 Embedded platform properties:
 
-| \#define                        | Description                          |
-|---------------------------------|--------------------------------------|
-| HAVE_EMBEDDED_TIME_MS           | System provides time in milliseconds |
-| HAVE_EMBEDDED_TICK              | System provides tick interrupt       |
-| HAVE_HAL_AUDIO                  | Audio HAL is available               |
-| HAVE_HAL_AUDIO_SINK_<br>STEREO_ONLY | Duplicate samples for mono playback  |
+| \#define                                 | Description                                      |
+|------------------------------------------|--------------------------------------------------|
+| HAVE_EMBEDDED_TIME_MS                    | System provides time in milliseconds             |
+| HAVE_EMBEDDED_TICK                       | System provides tick interrupt                   |
+| HAVE_HAL_AUDIO                           | Audio HAL is available                           |
+| HAVE_HAL_AUDIO_SINK_<br>BUFFER_CONTEXT   | Audio Sink provides playback time information    |
+| HAVE_HAL_AUDIO_SINK_<br>STEREO_ONLY      | Duplicate samples for mono playback              |
+| HAVE_HAL_AUDIO_SOURCE_<br>BUFFER_CONTEXT | Audio Source provides recording time information |
 
 FreeRTOS platform properties:
 
