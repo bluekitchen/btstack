@@ -162,7 +162,7 @@ void BSP_AUDIO_OUT_TransferComplete_CallBack(void){
 }
 
 
-const btstack_audio_context_t * hal_audio_sink_get_audio_context(uint8_t buffer_index) {
+const btstack_audio_context_t * hal_audio_sink_get_buffer_context(uint8_t buffer_index) {
 	btstack_assert(buffer_index < NUM_OUTPUT_BUFFERS);
 	sink_playback_audio_contexts[buffer_index].timestamp = sink_playback_time_us[buffer_index] + sink_playback_buffer_duration_us;
 	return &sink_playback_audio_contexts[buffer_index];
@@ -379,7 +379,7 @@ void BSP_AUDIO_IN_TransferComplete_CallBack(void){
 #endif
 }
 
-const btstack_audio_context_t * hal_audio_source_get_audio_context(uint8_t buffer_index) {
+const btstack_audio_context_t * hal_audio_source_get_buffer_context(uint8_t buffer_index) {
 	UNUSED(buffer_index);
 	return NULL;
 }
