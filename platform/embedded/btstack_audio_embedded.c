@@ -201,11 +201,20 @@ static uint32_t btstack_audio_embedded_source_get_samplerate() {
 }
 
 static void btstack_audio_embedded_sink_set_volume(uint8_t volume){
+#ifdef HAVE_HAL_AUDIO_SINK_VOLUME_CONTROL
+    hal_audio_sink_set_volume(volume);
+#else
     UNUSED(volume);
+#endif
 }
 
 static void btstack_audio_embedded_source_set_gain(uint8_t gain){
     UNUSED(gain);
+#ifdef HAVE_HAL_AUDIO_SOURCE_GAIN_CONTROL
+    hal_audio_source_set_gain(gain);
+#else
+    UNUSED(gain);
+#endif
 }
 
 static void btstack_audio_embedded_sink_start_stream(void){
