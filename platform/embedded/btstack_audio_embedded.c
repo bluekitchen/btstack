@@ -103,7 +103,11 @@ static void btstack_audio_embedded_sink_handler(btstack_data_source_t *ds, btsta
             // playback buffer ready to fill
             if (output_buffer_to_play != output_buffer_to_fill){
                 int16_t * buffer = hal_audio_sink_get_output_buffer(output_buffer_to_fill);
-                (*playback_callback)(buffer, output_buffer_samples, 0);
+                const btstack_audio_context_t * context = NULL;
+#ifdef HAVE_HAL_AUDIO_SINK_BUFFER_CONTEXT
+                context = hal_audio_sink_get_buffer_context(output_buffer_to_fill);
+#endif
+                (*playback_callback)(buffer, output_buffer_samples, context);
 
 #ifdef HAVE_HAL_AUDIO_SINK_STEREO_ONLY
                 if (output_duplicate_samples){
@@ -132,7 +136,11 @@ static void btstack_audio_embedded_source_handler(btstack_data_source_t *ds, bts
         case DATA_SOURCE_CALLBACK_POLL:
             // deliver samples if ready
             if (input_buffer_ready){
-                (*recording_callback)((const int16_t *)input_buffer_samples, input_buffer_num_samples, 0);
+                const btstack_audio_context_t * context = NULL;
+#ifdef HAVE_HAL_AUDIO_SOURCE_BUFFER_CONTEXT
+                context = hal_audio_source_get_audio_context(output_buffer_to_fill);
+#endif
+                (*recording_callback)((const int16_t *)input_buffer_samples, input_buffer_num_samples, context);
                 input_buffer_ready = 0;
             }
             break;
