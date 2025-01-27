@@ -50,6 +50,7 @@
 static void (*audio_played_handler)(uint8_t buffer_index);
 static int playback_started;
 static uint32_t sink_sample_rate;
+static uint8_t  sink_volume;
 
 // our storage
 static int16_t output_buffer[NUM_OUTPUT_BUFFERS * OUTPUT_BUFFER_NUM_SAMPLES * 2];   // stereo
@@ -64,6 +65,7 @@ static uint32_t stream_samples;
 
 static int recording_started;
 static int32_t recording_sample_rate;
+static uint8_t  source_gain;
 
 static void (*audio_recorded_callback)(const int16_t * buffer, uint16_t num_samples);
 
@@ -122,6 +124,8 @@ void hal_audio_sink_init(uint8_t channels,
 		return;
 	}
 
+	sink_volume = 100;
+
 	audio_played_handler = buffer_played_callback;
 	sink_sample_rate = sample_rate;
 }
@@ -165,6 +169,8 @@ void hal_audio_sink_start(void){
 
 	BSP_AUDIO_OUT_Init(OUTPUT_DEVICE_BOTH, 80, sink_sample_rate);
 
+	BSP_AUDIO_OUT_SetVolume(sink_volume);
+
 	// BSP_AUDIO_OUT_Play gets number bytes -> 1 frame - 16 bit/stereo = 4 bytes
 	BSP_AUDIO_OUT_Play( (uint16_t*) output_buffer, NUM_OUTPUT_BUFFERS * OUTPUT_BUFFER_NUM_SAMPLES * 4);
 }
@@ -175,6 +181,18 @@ void hal_audio_sink_start(void){
 void hal_audio_sink_stop(void){
 	playback_started = 0;
 	BSP_AUDIO_OUT_Stop(CODEC_PDWN_HW);
+}
+
+void hal_audio_sink_set_volume(uint8_t volume){
+	// 0..127 -> 0..100
+	uint8_t codec_volume = volume * 100 / 127;
+
+	// BSP_AUDIO_OUT_SetVolume can only be called after BSP_AUDIO_OUT_Init in playback started
+	if (playback_started) {
+		BSP_AUDIO_OUT_SetVolume(codec_volume);
+	} else {
+		sink_volume = codec_volume;
+	}
 }
 
 /**
@@ -291,6 +309,8 @@ void hal_audio_source_init(uint8_t channels,
 
 	int decimation = 64;
 
+	source_gain = 100;
+
 	// size of input & output of PDM filter depend on output frequency and decimation
 	source_pcm_samples_per_irq = sample_rate / 1000 * 16;	// 256@16 kHz, 128@8 kHz
 
@@ -310,6 +330,7 @@ void hal_audio_source_init(uint8_t channels,
  */
 void hal_audio_source_start(void){
     BSP_AUDIO_IN_Init(source_sample_rate, 16, 1);
+	BSP_AUDIO_IN_SetVolume(source_gain);
     BSP_AUDIO_IN_Record(pdm_buffer, source_pdm_samples_total);
     recording_started = 1;
 }
@@ -321,6 +342,17 @@ void hal_audio_source_stop(void){
 	if (!recording_started) return;
 	BSP_AUDIO_IN_Stop();
     recording_started = 0;
+}
+
+void hal_audio_source_set_gain(uint8_t gain){
+	// 0..127 -> 0..100
+	uint8_t codec_gain = gain * 100 / 127;
+	// BSP_AUDIO_IN_SetVolume can only be called after BSP_AUDIO_IN_Init in recording started
+	if (recording_started) {
+		BSP_AUDIO_IN_SetVolume(codec_gain);
+	} else {
+		source_gain = codec_gain;
+	}
 }
 
 /**
