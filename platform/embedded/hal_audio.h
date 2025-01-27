@@ -105,6 +105,14 @@ void hal_audio_sink_start(void);
  */
 void hal_audio_sink_stop(void);
 
+#ifdef HAVE_HAL_AUDIO_SINK_VOLUME_CONTROL
+/**
+ * @brief Set volume
+ * @param volume 0..127
+ */
+void hal_audio_sink_set_volume(uint8_t volume);
+#endif
+
 /**
  * @brief Close audio codec
  */
@@ -130,6 +138,14 @@ void hal_audio_source_start(void);
  * @brief Stop stream
  */
 void hal_audio_source_stop(void);
+    
+#ifdef HAVE_HAL_AUDIO_SOURCE_GAIN_CONTROL
+    /**
+     * @brief Set gain
+     * @param gain 0..127
+     */
+    void hal_audio_source_set_gain(uint8_t gain);
+#endif
 
 /**
  * @brief Close audio codec
