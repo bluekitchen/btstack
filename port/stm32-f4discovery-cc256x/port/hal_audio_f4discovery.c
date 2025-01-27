@@ -38,6 +38,7 @@
 #define BTSTACK_FILE__ "hal_audio_f4_discovery.c"
 
 #include <stdio.h>
+#include <string.h>
 #include <time.h>
 
 #include "hal_audio.h"
@@ -63,6 +64,9 @@ static int16_t output_buffer[NUM_OUTPUT_BUFFERS * OUTPUT_BUFFER_NUM_SAMPLES * NU
 static volatile uint32_t sink_playback_time_us[NUM_OUTPUT_BUFFERS];
 static volatile uint8_t  sink_playback_last_buffer;
 static uint32_t			 sink_playback_buffer_duration_us;
+
+// context array
+static btstack_audio_context_t sink_playback_audio_contexts[NUM_OUTPUT_BUFFERS];
 
 // record the time of the external trigger
 static uint32_t external_trigger_us;
@@ -132,11 +136,6 @@ void  BSP_AUDIO_OUT_HalfTransfer_CallBack(void){
 #endif
 
 	HAL_GPIO_TogglePin(Test1_GPIO_Port, Test1_Pin);
-	// uint32_t time_read_us = __HAL_TIM_GET_COUNTER(&htim2);
-	// uint32_t time_capture = __HAL_TIM_GET_COMPARE(&htim2, TIM_CHANNEL_1);
-	// int32_t delta = (int32_t)(time_capture - time_read_us);
-	// printf("0: %" PRIu32 " - %" PRIu32 " => delta %" PRIi32 "\n", time_read_us, time_capture, delta);
-
 	if (sink_playback_buffer_duration_us != 0) {
 		(*audio_played_handler)(0);
 	}
@@ -161,6 +160,14 @@ void BSP_AUDIO_OUT_TransferComplete_CallBack(void){
 		(*audio_played_handler)(1);
 	}
 }
+
+
+const btstack_audio_context_t * hal_audio_sink_get_audio_context(uint8_t buffer_index) {
+	btstack_assert(buffer_index < NUM_OUTPUT_BUFFERS);
+	sink_playback_audio_contexts[buffer_index].timestamp = sink_playback_time_us[buffer_index] + sink_playback_buffer_duration_us;
+	return &sink_playback_audio_contexts[buffer_index];
+}
+
 
 static void hal_audio_timer_init(void){
  	static bool initialized = false;
@@ -239,6 +246,10 @@ int16_t * hal_audio_sink_get_output_buffer(uint8_t buffer_index){
  */
 void hal_audio_sink_start(void){
 	playback_started = 1;
+
+	// reset input buffers - we notify user after the buffer has been
+	// played once and we have measured the playback time
+	memset(output_buffer, 0, sizeof(output_buffer));
 
 	// configure I2S Bit Clock counter to overrun on next tick
 	uint16_t num_ticks_per_block = OUTPUT_BUFFER_NUM_SAMPLES * 16;
@@ -366,6 +377,11 @@ void BSP_AUDIO_IN_TransferComplete_CallBack(void){
 #else
 	process_pdm(&pdm_buffer[source_pdm_samples_total/2]);
 #endif
+}
+
+const btstack_audio_context_t * hal_audio_source_get_audio_context(uint8_t buffer_index) {
+	UNUSED(buffer_index);
+	return NULL;
 }
 
 /**
