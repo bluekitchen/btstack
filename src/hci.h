@@ -791,6 +791,11 @@ typedef struct {
     // ready to send
     bool emit_ready_to_send;
 
+#ifdef ENABLE_LE_AUDIO_CODEC_OFFLOAD
+    // 0: input (Host to Controller)
+    // 1: output (Controller to Host)
+    const le_audio_offload_config_t * offload_config[2];
+#endif
 } hci_iso_stream_t;
 
 

@@ -7424,7 +7424,24 @@ static bool hci_run_iso_tasks(void){
                 hci_stack->iso_active_operation_group_id = HCI_ISO_GROUP_ID_SINGLE_CIS;
                 hci_stack->iso_active_operation_type = HCI_ISO_TYPE_CIS;
                 iso_stream->state = HCI_ISO_STREAM_STATE_W4_ISO_SETUP_OUTPUT;
-                hci_send_cmd(&hci_le_setup_iso_data_path, iso_stream->cis_handle, 1, 0, HCI_AUDIO_CODING_FORMAT_TRANSPARENT, 0, 0, 0, 0, NULL);
+#ifdef ENABLE_LE_AUDIO_CODEC_OFFLOAD
+                const le_audio_offload_config_t * config = iso_stream->offload_config[1];
+                if (config != 0) {
+                    hci_send_cmd(&hci_le_setup_iso_data_path,
+                        iso_stream->cis_handle,
+                        1,
+                        config->data_path_id,
+                        config->coding_format,
+                        config->company_id,
+                        config->vendor_specific_codec_id,
+                        config->delay_us,
+                        config->config_len,
+                        config->config_data);
+                } else
+#endif
+                {
+                    hci_send_cmd(&hci_le_setup_iso_data_path, iso_stream->cis_handle, 1, 0, HCI_AUDIO_CODING_FORMAT_TRANSPARENT, 0, 0, 0, 0, NULL);
+                }
                 return true;
             case HCI_ISO_STREAM_STATE_W2_CLOSE:
                 iso_stream->state = HCI_ISO_STREAM_STATE_W4_DISCONNECTED;
@@ -11056,6 +11073,19 @@ uint8_t gap_cis_accept(hci_con_handle_t cis_con_handle){
 uint8_t gap_cis_reject(hci_con_handle_t cis_con_handle){
     return hci_cis_accept_or_reject(cis_con_handle, HCI_ISO_STREAM_W2_REJECT);
 }
+
+#ifdef ENABLE_LE_AUDIO_CODEC_OFFLOAD
+uint8_t gap_cis_set_codec_configuration(hci_con_handle_t cis_handle, uint8_t data_direction,
+                                        const le_audio_offload_config_t* offload_config) {
+    hci_iso_stream_t * iso_stream = hci_iso_stream_for_con_handle(cis_handle);
+    if (iso_stream == NULL){
+        return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
+    }
+    btstack_assert(data_direction < 2);
+    iso_stream->offload_config[data_direction] = offload_config;
+    return ERROR_CODE_SUCCESS;
+}
+#endif
 
 #endif /* ENABLE_LE_ISOCHRONOUS_STREAMS */
 

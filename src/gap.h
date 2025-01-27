@@ -54,6 +54,11 @@ extern "C" {
 #include "classic/btstack_link_key_db.h"
 #endif
 
+// LC3 Offloading
+#ifdef ENABLE_LC3_OFFLOAD_AIROC
+#define ENABLE_LE_AUDIO_CODEC_OFFLOAD
+#endif
+
 // BIG has up to 2 BIS (stereo)
 #ifndef MAX_NR_BIS
 #define MAX_NR_BIS 2
@@ -325,6 +330,20 @@ typedef struct {
     // request to send
     bool can_send_now_requested;
 } le_audio_cig_t;
+
+// LC3 Offload Configuration = Codec on Controller
+#define LE_AUDIO_OFFLOAD_CONFIG_LEN 20
+typedef struct {
+    uint16_t delay_us;
+    uint8_t  data_path_id;
+
+    hci_audio_coding_format_t coding_format;
+    uint16_t company_id;
+    uint16_t vendor_specific_codec_id;
+
+    uint8_t  config_len;
+    uint8_t  config_data[LE_AUDIO_OFFLOAD_CONFIG_LEN];
+} le_audio_offload_config_t;
 
 typedef enum {
     GAP_PRIVACY_CLIENT_STATE_IDLE,
@@ -924,6 +943,17 @@ uint8_t gap_cis_create(uint8_t cig_id, hci_con_handle_t cis_con_handles [], hci_
  * @events GAP_SUBEVENT_CIS_CREATED
  */
 uint8_t gap_cis_accept(hci_con_handle_t cis_con_handle);
+
+#ifdef ENABLE_LE_AUDIO_CODEC_OFFLOAD
+/**
+ * @brief Set codec configuration send to Controller for LC3 Offloading
+ * @param cis_handle
+ * @param data_direction
+ * @param offload_config
+ */
+uint8_t gap_cis_set_codec_configuration(hci_con_handle_t cis_handle, uint8_t data_direction,
+                                        const le_audio_offload_config_t* offload_config);
+#endif
 
 /**
  * @brief Reject Connected Isochronous Stream (CIS)
