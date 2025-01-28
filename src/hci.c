@@ -8510,6 +8510,7 @@ void gap_request_security_level(hci_con_handle_t con_handle, gap_security_level_
 
         // start to authenticate connection
         connection->bonding_flags |= BONDING_SEND_AUTHENTICATE_REQUEST;
+        connectionClearAuthenticationFlags(connection, AUTH_FLAG_RECV_IO_CAPABILITIES_RESPONSE);
 
         // request remote features if not already active, also trigger hci_run
         hci_remote_features_query(con_handle);
