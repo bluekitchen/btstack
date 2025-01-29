@@ -1230,33 +1230,31 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                             connection->list_size = param_length;
                             // num_attributes
                             pos++;
-
-                            avrcp_controller_parse_and_emit_element_attrs(packet+pos, size-pos, connection, ctype);
-                            if (vendor_dependent_avrcp_packet_type == AVRCP_START_PACKET){
-                                avrcp_controller_request_continue_response(connection);
-                                return;
-                            }
                             break;
+
                         case AVRCP_CONTINUE_PACKET:
                         case AVRCP_END_PACKET:
-                            connection->controller_num_received_fragments++;
-                            
-                            if (connection->controller_num_received_fragments < connection->controller_max_num_fragments){
-                                avrcp_controller_parse_and_emit_element_attrs(packet+pos, size-pos, connection, ctype);
+                            break;
+                        default:
+                            btstack_unreachable();
+                            break;
+                    }
 
-                                if (vendor_dependent_avrcp_packet_type == AVRCP_CONTINUE_PACKET){
-                                    avrcp_controller_request_continue_response(connection);
-                                    return;
-                                } 
+                    connection->controller_num_received_fragments++;
+                    avrcp_controller_parse_and_emit_element_attrs(packet + pos, size - pos, connection, ctype);
+
+                    switch (vendor_dependent_avrcp_packet_type) {
+                        case AVRCP_START_PACKET:
+                        case AVRCP_CONTINUE_PACKET:
+                            if (connection->controller_num_received_fragments < connection->controller_max_num_fragments) {
+                                avrcp_controller_request_continue_response(connection);
                             } else {
-                                avrcp_controller_emit_now_playing_info_event_done(avrcp_controller_context.avrcp_callback, connection->avrcp_cid, ctype, 1);
-                                avrcp_parser_reset(connection);
                                 avrcp_controller_request_abort_continuation(connection);
-                                return;
+                                avrcp_parser_reset(connection);
                             }
                             break;
                         default:
-                            btstack_assert(false);
+                            // non-fragmented packet or END packet
                             break;
                     }
                     break;
