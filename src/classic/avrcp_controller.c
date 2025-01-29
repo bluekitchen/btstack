@@ -781,9 +781,8 @@ static uint8_t avrcp_controller_request_continuation(avrcp_connection_t * connec
     avrcp_controller_vendor_dependent_command_data_init(connection, AVRCP_CTYPE_CONTROL, pdu_id, false);
 
     // Parameter Length
-    connection->data_len = 3;
-    big_endian_store_16(connection->data, 0, 1);
-    connection->data[2] = AVRCP_PDU_ID_GET_ELEMENT_ATTRIBUTES;
+    connection->data_len = 1;
+    connection->data[0] = AVRCP_PDU_ID_GET_ELEMENT_ATTRIBUTES;
 
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
     return ERROR_CODE_SUCCESS;
