@@ -500,7 +500,7 @@ static void avrcp_target_custom_command_data_init(avrcp_connection_t * connectio
     connection->command_type = command_type;
     connection->subunit_type = subunit_type;
     connection->subunit_id = subunit_id;
-    connection->company_id = company_id << 16;
+    connection->company_id = company_id;
     connection->pdu_id = pdu_id;
     connection->data = NULL;
     connection->data_offset = 0;
@@ -662,7 +662,7 @@ static uint8_t avrcp_target_unit_info(avrcp_connection_t * connection){
     connection->data = connection->message_body;
     connection->data_len = 5;
     connection->data[0] = 0x07;
-    connection->data[1] = (connection->target_unit_type << 4) | unit;
+    connection->data[1] = (connection->target_unit_type << 3) | unit;
     // company id is 3 bytes long
     big_endian_store_24(connection->data, 2, connection->company_id);
 
