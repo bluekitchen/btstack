@@ -2429,6 +2429,19 @@ static void hci_initializing_run(void){
                 hci_send_cmd(&hci_le_set_host_feature, 32, 1);
                 break;
             }
+#ifdef ENABLE_LC3_OFFLOAD_AIROC
+#define IFX_DATA_PATH_ID 0xA0   // TDM1 - second TDM unit
+        // TODO: data path ids should be configurable
+        // TODO: the commands should be sent by chipset driver
+        case HCI_INIT_LC3_OFFLOAD_IFX_CONFIGURE_DATA_PATH_0:
+            hci_stack->substate = HCI_INIT_W4_LC3_OFFLOAD_IFX_CONFIGURE_DATA_PATH_0;
+            hci_send_cmd(&hci_configure_data_path, 1, IFX_DATA_PATH_ID | 0, 0, NULL);
+            break;
+        case HCI_INIT_LC3_OFFLOAD_IFX_CONFIGURE_DATA_PATH_1:
+            hci_stack->substate = HCI_INIT_W4_LC3_OFFLOAD_IFX_CONFIGURE_DATA_PATH_1;
+            hci_send_cmd(&hci_configure_data_path, 1, IFX_DATA_PATH_ID | 1, 0, NULL);
+            break;
+#endif
 #endif
 
 #ifdef ENABLE_BLE
