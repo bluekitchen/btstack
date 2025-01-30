@@ -59,7 +59,10 @@ extern "C" {
 void avrcp_browsing_controller_init(void);
 
 /**
- * @brief Register callback for the AVRCP Browsing Controller client. 
+ * @brief Register callback for the AVRCP Browsing Controller client to receive:
+ * - event AVRCP_SUBEVENT_BROWSING_DONE marking the end of operation. If the browsing status field of this field is equal to AVRCP_BROWSING_ERROR_CODE_SUCCESS, operation was successful.
+ * - data packet marked by AVRCP_BROWSING_DATA_PACKET subpacket type containg the response load.
+ * 
  * @param callback
  */
 void avrcp_browsing_controller_register_packet_handler(btstack_packet_handler_t callback);
@@ -70,7 +73,10 @@ void avrcp_browsing_controller_register_packet_handler(btstack_packet_handler_t 
  * @param start_item
  * @param end_item
  * @param attr_bitmap Use AVRCP_MEDIA_ATTR_ALL for all, and AVRCP_MEDIA_ATTR_NONE for none. Otherwise, see avrcp_media_attribute_id_t for the bitmap position of attrs. 
- **/
+ * @return ERROR_CODE_SUCCESS if successful, otherwise:
+ *       - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if unknown connection cid,
+ *       - ERROR_CODE_COMMAND_DISALLOWED if client is not done with previous query.
+ */
 uint8_t avrcp_browsing_controller_get_media_players(uint16_t avrcp_browsing_cid, uint32_t start_item, uint32_t end_item, uint32_t attr_bitmap);
 
 /**
@@ -79,7 +85,10 @@ uint8_t avrcp_browsing_controller_get_media_players(uint16_t avrcp_browsing_cid,
  * @param start_item
  * @param end_item
  * @param attr_bitmap Use AVRCP_MEDIA_ATTR_ALL for all, and AVRCP_MEDIA_ATTR_NONE for none. Otherwise, see avrcp_media_attribute_id_t for the bitmap position of attrs. 
- **/
+ * @return ERROR_CODE_SUCCESS if successful, otherwise:
+ *       - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if unknown connection cid,
+ *       - ERROR_CODE_COMMAND_DISALLOWED if client is not done with previous query.
+ */
 uint8_t avrcp_browsing_controller_browse_file_system(uint16_t avrcp_browsing_cid, uint32_t start_item, uint32_t end_item, uint32_t attr_bitmap);
 
 /**
@@ -88,7 +97,10 @@ uint8_t avrcp_browsing_controller_browse_file_system(uint16_t avrcp_browsing_cid
  * @param start_item
  * @param end_item
  * @param attr_bitmap Use AVRCP_MEDIA_ATTR_ALL for all, and AVRCP_MEDIA_ATTR_NONE for none. Otherwise, see avrcp_media_attribute_id_t for the bitmap position of attrs. 
- **/
+ * @return ERROR_CODE_SUCCESS if successful, otherwise:
+ *       - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if unknown connection cid,
+ *       - ERROR_CODE_COMMAND_DISALLOWED if client is not done with previous query.
+ */
 uint8_t avrcp_browsing_controller_browse_media(uint16_t avrcp_browsing_cid, uint32_t start_item, uint32_t end_item, uint32_t attr_bitmap);
 
 /**
@@ -97,13 +109,19 @@ uint8_t avrcp_browsing_controller_browse_media(uint16_t avrcp_browsing_cid, uint
  * @param start_item
  * @param end_item
  * @param attr_bitmap Use AVRCP_MEDIA_ATTR_ALL for all, and AVRCP_MEDIA_ATTR_NONE for none. Otherwise, see avrcp_media_attribute_id_t for the bitmap position of attrs. 
- **/
+ * @return ERROR_CODE_SUCCESS if successful, otherwise:
+ *       - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if unknown connection cid,
+ *       - ERROR_CODE_COMMAND_DISALLOWED if client is not done with previous query.
+ */
 uint8_t avrcp_browsing_controller_browse_now_playing_list(uint16_t avrcp_browsing_cid, uint32_t start_item, uint32_t end_item, uint32_t attr_bitmap);
 
 /** 
  * @brief Set browsed player. Calling this command is required prior to browsing the player's file system. Some players may support browsing only when set as the Addressed Player.
  * @param avrcp_browsing_cid
  * @param browsed_player_id
+ * @return ERROR_CODE_SUCCESS if successful, otherwise:
+ *       - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if unknown connection cid,
+ *       - ERROR_CODE_COMMAND_DISALLOWED if client is not done with previous query.
  */
 uint8_t avrcp_browsing_controller_set_browsed_player(uint16_t avrcp_browsing_cid, uint16_t browsed_player_id);
 
@@ -119,7 +137,10 @@ uint8_t avrcp_browsing_controller_get_total_nr_items_for_scope(uint16_t avrcp_br
  * @param avrcp_browsing_cid
  * @param direction     0-folder up, 1-folder down    
  * @param folder_uid    8 bytes long
- **/
+ * @return ERROR_CODE_SUCCESS if successful, otherwise:
+ *       - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if unknown connection cid,
+ *       - ERROR_CODE_COMMAND_DISALLOWED if client is not done with previous query. 
+ */
 uint8_t avrcp_browsing_controller_change_path(uint16_t avrcp_browsing_cid, uint8_t direction, uint8_t * folder_uid);
 uint8_t avrcp_browsing_controller_go_up_one_level(uint16_t avrcp_browsing_cid);
 uint8_t avrcp_browsing_controller_go_down_one_level(uint16_t avrcp_browsing_cid, uint8_t * folder_uid);
@@ -132,7 +153,10 @@ uint8_t avrcp_browsing_controller_go_down_one_level(uint16_t avrcp_browsing_cid,
  * @param uid_counter    Used to detect change to the media database on target device. A TG device that supports the UID Counter shall update the value of the counter on each change to the media database.
  * @param attr_bitmap    0x00000000 - retrieve all, chek avrcp_media_attribute_id_t in avrcp.h for detailed bit position description.
  * @param scope          check avrcp_browsing_scope_t in avrcp.h
- **/
+ * @return ERROR_CODE_SUCCESS if successful, otherwise:
+ *       - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if unknown connection cid,
+ *       - ERROR_CODE_COMMAND_DISALLOWED if client is not done with previous query. 
+ */
 uint8_t avrcp_browsing_controller_get_item_attributes_for_scope(uint16_t avrcp_browsing_cid, uint8_t * uid, uint16_t uid_counter, uint32_t attr_bitmap, avrcp_browsing_scope_t scope);
 
 /**
@@ -140,8 +164,11 @@ uint8_t avrcp_browsing_controller_get_item_attributes_for_scope(uint16_t avrcp_b
  * @param avrcp_browsing_cid
  * @param search_str_len
  * @param search_str
- * @return status 
- **/
+ * @return ERROR_CODE_SUCCESS if successful, otherwise:
+ *       - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if unknown connection cid,
+ *       - ERROR_CODE_COMMAND_DISALLOWED if client is not done with previous query,
+ *       - ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE if search string is NULL. 
+ */
 uint8_t avrcp_browsing_controller_search(uint16_t avrcp_browsing_cid, uint16_t search_str_len, char * search_str);
 
 /**
