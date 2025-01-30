@@ -48,13 +48,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
+#include <unistd.h>
 
 #include "btstack_config.h"
 
 #include "bluetooth_company_id.h"
 #include "ble/le_device_db_tlv.h"
 #include "btstack_chipset_bcm.h"
-#include "btstack_chipset_bcm_download_firmware.h"
 #include "btstack_debug.h"
 #include "btstack_event.h"
 #include "btstack_memory.h"
@@ -68,7 +68,6 @@
 #include "hci_dump.h"
 #include "hci_transport_h4.h"
 #include "hci_dump_posix_fs.h"
-#include "hci_dump_posix_stdout.h"
 #include "btstack_audio.h"
 
 
@@ -80,20 +79,15 @@ static char tlv_db_path[100];
 static const btstack_tlv_t * tlv_impl;
 static btstack_tlv_posix_t   tlv_context;
 
-static const uint32_t baudrate_firmware_download = 921600;
-
 static hci_transport_config_uart_t transport_config = {
     HCI_TRANSPORT_CONFIG_UART,
-    115200,
+    921600,
     921600,  // main baudrate
-    1,       // flow control
+    1,  // flow control
     NULL,
     BTSTACK_UART_PARITY_OFF, // parity
 };
 static btstack_uart_config_t uart_config;
-
-static int main_argc;
-static const char ** main_argv;
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
@@ -119,10 +113,48 @@ void hal_led_toggle(void){
     printf("LED State %u\n", led_state);
 }
 
+static void local_version_information_handler(uint8_t * packet){
+    printf("Local version information:\n");
+    uint16_t hci_version    = packet[6];
+    uint16_t hci_revision   = little_endian_read_16(packet, 7);
+    uint16_t lmp_version    = packet[9];
+    uint16_t manufacturer   = little_endian_read_16(packet, 10);
+    uint16_t lmp_subversion = little_endian_read_16(packet, 12);
+    printf("- HCI Version    0x%04x\n", hci_version);
+    printf("- HCI Revision   0x%04x\n", hci_revision);
+    printf("- LMP Version    0x%04x\n", lmp_version);
+    printf("- LMP Subversion 0x%04x\n", lmp_subversion);
+    printf("- Manufacturer 0x%04x\n", manufacturer);
+    const char * device_name = NULL;
+    switch (manufacturer){
+        case BLUETOOTH_COMPANY_ID_BROADCOM_CORPORATION:
+            device_name = btstack_chipset_bcm_identify_controller(lmp_subversion);
+            if (device_name == NULL){
+                printf("Unknown device, please update btstack_chipset_bcm_identify_controller(...)\n");
+                printf("in btstack/chipset/bcm/btstack_chipset_bcm.c\n");
+            } else {
+                printf("Controller: %s\n", device_name);
+                btstack_chipset_bcm_set_device_name(device_name);
+            }
+            break;
+        default:
+            printf("Manufacturer is not Broadcom, Cypress Semiconductor or Infineon.\n");
+            printf("Please try port/posix-h4 instead.\n");
+            break;
+    }
+}
+
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     bd_addr_t addr;
     if (packet_type != HCI_EVENT_PACKET) return;
     switch (hci_event_packet_get_type(packet)){
+        case HCI_EVENT_COMMAND_COMPLETE:
+            switch (hci_event_command_complete_get_command_opcode(packet)) {
+                case HCI_OPCODE_HCI_READ_LOCAL_VERSION_INFORMATION:
+                    local_version_information_handler(packet);
+                break;
+            }
+            break;
         case BTSTACK_EVENT_STATE:
             if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) break;
             gap_local_bd_addr(addr);
@@ -145,7 +177,24 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     }
 }
 
-static void phase2(int status);
+static void enter_download_mode(const btstack_uart_t * the_uart_driver){
+    btstack_chipset_bcm_enable_init_script(1);
+    int res = the_uart_driver->open();
+    if (res) {
+        log_error("uart_block init failed %u", res);
+        return;
+    }
+
+    // Reset with CTS asserted (low)
+    printf("Please reset Bluetooth Controller, e.g. via RESET button. Firmware download starts in:\n");
+    uint8_t i;
+    for (i = 3; i > 0; i--){
+        printf("%u\n", i);
+        sleep(1);
+    }
+    printf("Firmware download started\n");
+}
+
 int main(int argc, const char * argv[]){
 
     /// GET STARTED with BTstack ///
@@ -167,8 +216,9 @@ int main(int argc, const char * argv[]){
     btstack_run_loop_init(btstack_run_loop_posix_get_instance());
         
     // pick serial port and configure uart driver
-    transport_config.device_name = "/dev/tty.usbserial-FT1XBGIM"; // murata m.2 adapter
-    printf("tty: %s", transport_config.device_name);
+    transport_config.device_name = "/dev/tty.usbserial-FT1XBIL9"; // murata m.2 adapter
+    printf("tty: %s\n", transport_config.device_name);
+
     // get BCM chipset driver
     const btstack_chipset_t * chipset = btstack_chipset_bcm_instance();
     chipset->init(&transport_config);
@@ -177,17 +227,21 @@ int main(int argc, const char * argv[]){
     const btstack_uart_t * uart_driver = (const btstack_uart_t *) btstack_uart_posix_instance();
 
     // extract UART config from transport config
-    uart_config.baudrate    = baudrate_firmware_download;
+    uart_config.baudrate    = transport_config.baudrate_init;
     uart_config.flowcontrol = transport_config.flowcontrol;
     uart_config.device_name = transport_config.device_name;
     uart_driver->init(&uart_config);
-
 
     // setup HCI (to be able to use bcm chipset driver)
     // init HCI
     const hci_transport_t * transport = hci_transport_h4_instance(uart_driver);
     hci_init(transport, (void*) &transport_config);
     hci_set_chipset(btstack_chipset_bcm_instance());
+
+#ifdef HAVE_PORTAUDIO
+    btstack_audio_sink_set_instance(btstack_audio_portaudio_sink_get_instance());
+    btstack_audio_source_set_instance(btstack_audio_portaudio_source_get_instance());
+#endif
 
     // inform about BTstack state
     hci_event_callback_registration.callback = &packet_handler;
@@ -196,35 +250,13 @@ int main(int argc, const char * argv[]){
     // handle CTRL-c
     signal(SIGINT, sigint_handler);
 
-    main_argc = argc;
-    main_argv = argv;
+    // show countdown to start firmware download
+    enter_download_mode(uart_driver);
 
-    // phase #1 download firmware
-    printf("Phase 1: Download firmware\n");
-
-    // phase #2 start main app
-    btstack_chipset_bcm_download_firmware_with_uart(uart_driver, 0, &phase2);
+    // setup app
+    btstack_main(argc, argv);
 
     // go
     btstack_run_loop_execute();    
     return 0;
 }
-
-static void phase2(int status){
-
-    if (status){
-        printf("Download firmware failed\n");
-        return;
-    }
-
-    printf("Phase 2: Main app\n");
-
-#ifdef HAVE_PORTAUDIO
-    btstack_audio_sink_set_instance(btstack_audio_portaudio_sink_get_instance());
-    btstack_audio_source_set_instance(btstack_audio_portaudio_source_get_instance());
-#endif
-
-    // setup app
-    btstack_main(main_argc, main_argv);
-}
-
