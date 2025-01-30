@@ -95,10 +95,6 @@ typedef enum {
 typedef enum {
     HID_PROTOCOL_MODE_BOOT = 0,   
     HID_PROTOCOL_MODE_REPORT,
-
-    // the following item is only used for API calls in hid_host.h: hid_host_connect, hid_host_accept_connection
-    // in contrast to previous two enum items that will enforce given mode, this one enables fallback from report to boot mode
-    HID_PROTOCOL_MODE_REPORT_WITH_FALLBACK_TO_BOOT
 } hid_protocol_mode_t;
 
 typedef enum {

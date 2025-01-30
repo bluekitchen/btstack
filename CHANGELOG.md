@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Fixed
 - GAP: store link key for standard/non-SSP pairing
 ### Changed
+- BTstack HID: remove HID_PROTOCOL_MODE_REPORT_WITH_FALLBACK_TO_BOOT
 
 
 ## Release v1.6.2
