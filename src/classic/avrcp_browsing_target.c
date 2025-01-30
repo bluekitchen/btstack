@@ -516,7 +516,7 @@ uint8_t avrcp_browsing_target_send_get_item_attributes_response(uint16_t avrcp_b
     connection->cmd_operands[pos++] = AVRCP_PDU_ID_GET_ITEM_ATTRIBUTES;
 
     uint8_t param_length_pos = pos;
-    big_endian_store_16(connection->cmd_operands, pos, 1);
+    big_endian_store_16(connection->cmd_operands, param_length_pos, 1);
     pos += 2;
     connection->cmd_operands[pos++] = status;
 
@@ -651,21 +651,25 @@ uint8_t avrcp_browsing_target_send_search_response(uint16_t avrcp_browsing_cid, 
     uint16_t pos = 0;
     connection->cmd_operands[pos++] = AVRCP_PDU_ID_SEARCH;
     // param len
-    big_endian_store_16(connection->cmd_operands, pos, 7);
+    uint8_t param_length_pos = pos;
+    big_endian_store_16(connection->cmd_operands, param_length_pos, 1);
     pos += 2;
     connection->cmd_operands[pos++] = status;
+
+    if (status != AVRCP_STATUS_SUCCESS){
+        connection->cmd_operands_length = pos;
+        connection->state = AVCTP_W2_SEND_RESPONSE;
+        avrcp_browsing_request_can_send_now(connection, connection->l2cap_browsing_cid);
+        return ERROR_CODE_SUCCESS;
+    }
+
     big_endian_store_16(connection->cmd_operands, pos, uid_counter);
     pos += 2;
-
-//    if (status != AVRCP_STATUS_SUCCESS){
-//        connection->cmd_operands_length = pos;
-//        connection->state = AVCTP_W2_SEND_RESPONSE;
-//        avrcp_browsing_request_can_send_now(connection, connection->l2cap_browsing_cid);
-//        return ERROR_CODE_SUCCESS;
-//    }
-
     big_endian_store_32(connection->cmd_operands, pos, num_items);
     pos += 4;
+    // update param length
+    big_endian_store_16(connection->cmd_operands, param_length_pos, 7);
+
     connection->cmd_operands_length = pos;
     connection->state = AVCTP_W2_SEND_RESPONSE;
     avrcp_browsing_request_can_send_now(connection, connection->l2cap_browsing_cid);
