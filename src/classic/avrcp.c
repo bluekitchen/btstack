@@ -497,6 +497,7 @@ avrcp_connection_t * avrcp_get_connection_for_browsing_cid_for_role(avrcp_role_t
     while (btstack_linked_list_iterator_has_next(&it)){
         avrcp_connection_t * connection = (avrcp_connection_t *)btstack_linked_list_iterator_next(&it);
         if (connection->role != role) continue;
+        if (connection->browsing_connection == NULL) continue;
         if (connection->avrcp_browsing_cid != browsing_cid) continue;
         return connection;
     }
