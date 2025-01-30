@@ -132,7 +132,12 @@ typedef struct {
 /* API_START */
 
 /**
- * @brief Set up HID Host 
+ * @brief Set up HID Host and provide storage for HID Descriptors
+ * If storage for HID Descriptors is provided, the HID Host will fetch and store the HID Descriptors
+ * for each connection and inform the application via HID_SUBEVENT_DESCRIPTOR_AVAILABLE event.
+ * The app can then access the HID descriptor for a particular connection with
+ * hid_descriptor_storage_get_descriptor_data and hid_descriptor_storage_get_descriptor_len.
+ * @note if hid_descriptor_storage is NULL, the HID Host will not store the HID Descriptor
  * @param hid_descriptor_storage
  * @param hid_descriptor_storage_len
  */

@@ -559,8 +559,11 @@ static void hid_host_handle_sdp_client_query_result(uint8_t packet_type, uint16_
                     process_data = true;
                     break;
                 case BLUETOOTH_ATTRIBUTE_HID_DESCRIPTOR_LIST:
-                    // directly process BLUETOOTH_ATTRIBUTE_HID_DESCRIPTOR_LIST with state machine
-                    hid_host_handle_sdp_hid_descriptor_list(connection, attribute_offset, attribute_data);
+                    // directly process BLUETOOTH_ATTRIBUTE_HID_DESCRIPTOR_LIST with state machine if hid_descriptor_storage is available
+                    if (hid_host_descriptor_storage != NULL){
+                        hid_host_handle_sdp_hid_descriptor_list(connection, attribute_offset, attribute_data);
+                        break;
+                    }
                     break;
                 default:
                     break;
@@ -1162,6 +1165,7 @@ static void hid_host_packet_handler(uint8_t packet_type, uint16_t channel, uint8
 
 
 void hid_host_init(uint8_t * hid_descriptor_storage, uint16_t hid_descriptor_storage_len){
+    btstack_assert((hid_descriptor_storage_len == 0) || (hid_descriptor_storage != NULL));
     hid_host_descriptor_storage = hid_descriptor_storage;
     hid_host_descriptor_storage_len = hid_descriptor_storage_len;
 
