@@ -565,9 +565,15 @@ bool hci_authentication_active_for_handle(hci_con_handle_t handle){
 }
 
 void gap_drop_link_key_for_bd_addr(bd_addr_t addr){
-    if (!hci_stack->link_key_db) return;
     log_info("gap_drop_link_key_for_bd_addr: %s", bd_addr_to_str(addr));
-    hci_stack->link_key_db->delete_link_key(addr);
+    hci_connection_t * conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
+    if (conn) {
+        // reset link key stored in connection
+        conn->link_key_type = INVALID_LINK_KEY;
+    }
+    if (!hci_stack->link_key_db) {
+        hci_stack->link_key_db->delete_link_key(addr);
+    }
 }
 
 void gap_store_link_key_for_bd_addr(bd_addr_t addr, link_key_t link_key, link_key_type_t type){
