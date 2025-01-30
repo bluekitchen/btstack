@@ -396,10 +396,6 @@ uint8_t avrcp_browsing_target_send_get_folder_items_response(uint16_t avrcp_brow
     }
     
     avrcp_browsing_connection_t * connection = avrcp_connection->browsing_connection;
-    if (!connection){
-        log_info("Could not find a browsing connection.");
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    }
     if (connection->state != AVCTP_CONNECTION_OPENED){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
@@ -472,10 +468,6 @@ uint8_t avrcp_browsing_target_send_change_path_response(uint16_t avrcp_browsing_
     }
 
     avrcp_browsing_connection_t * connection = avrcp_connection->browsing_connection;
-    if (!connection){
-        log_info("Could not find a browsing connection.");
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    }
     if (connection->state != AVCTP_CONNECTION_OPENED){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
@@ -508,10 +500,6 @@ uint8_t avrcp_browsing_target_send_get_item_attributes_response(uint16_t avrcp_b
     }
 
     avrcp_browsing_connection_t * connection = avrcp_connection->browsing_connection;
-    if (!connection){
-        log_info("Could not find a browsing connection.");
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    }
     if (connection->state != AVCTP_CONNECTION_OPENED){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
@@ -558,11 +546,6 @@ uint8_t avrcp_browsing_target_send_accept_set_browsed_player(uint16_t avrcp_brow
     }
     
     avrcp_browsing_connection_t * connection = avrcp_connection->browsing_connection;
-    if (!connection){
-        log_info("Could not find a browsing connection.");
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    }
-    
     if (connection->state != AVCTP_CONNECTION_OPENED) {
         log_info("Browsing connection wrong state.");
         return ERROR_CODE_COMMAND_DISALLOWED;
@@ -605,11 +588,6 @@ uint8_t avrcp_browsing_target_send_reject_set_browsed_player(uint16_t avrcp_brow
     }
     
     avrcp_browsing_connection_t * connection = avrcp_connection->browsing_connection;
-    if (!connection){
-        log_info("Could not find a browsing connection.");
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    }
-    
     if (connection->state != AVCTP_CONNECTION_OPENED) {
         log_info("Browsing connection wrong state.");
         return ERROR_CODE_COMMAND_DISALLOWED;
@@ -617,6 +595,8 @@ uint8_t avrcp_browsing_target_send_reject_set_browsed_player(uint16_t avrcp_brow
     
     int pos = 0;
     connection->cmd_operands[pos++] = AVRCP_PDU_ID_SET_BROWSED_PLAYER;
+    
+    // When not accepted, status is the only field present in the response. AVRCP 6.9.3
     big_endian_store_16(connection->cmd_operands, pos, 1);
     pos += 2;
     connection->cmd_operands[pos++] = status;
@@ -635,11 +615,6 @@ uint8_t avrcp_browsing_target_send_get_total_num_items_response(uint16_t avrcp_b
     }
     
     avrcp_browsing_connection_t * connection = avrcp_connection->browsing_connection;
-    if (!connection){
-        log_info("Could not find a browsing connection.");
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    }
-    
     if (connection->state != AVCTP_CONNECTION_OPENED) {
         log_info("Browsing connection wrong state.");
         return ERROR_CODE_COMMAND_DISALLOWED;
@@ -669,10 +644,6 @@ uint8_t avrcp_browsing_target_send_search_response(uint16_t avrcp_browsing_cid, 
     }
 
     avrcp_browsing_connection_t * connection = avrcp_connection->browsing_connection;
-    if (!connection){
-        log_info("Could not find a browsing connection.");
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    }
     if (connection->state != AVCTP_CONNECTION_OPENED){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }

@@ -536,8 +536,6 @@ uint8_t avrcp_browsing_controller_get_item_attributes_for_scope(uint16_t avrcp_b
     }
 
     avrcp_browsing_connection_t * connection = avrcp_connection->browsing_connection;
-    btstack_assert(connection != NULL);
-
     if (connection->state != AVCTP_CONNECTION_OPENED){
         log_error("avrcp_browsing_controller_get_item_attributes: connection in wrong state %d, expected %d.", connection->state, AVCTP_CONNECTION_OPENED);
         return ERROR_CODE_COMMAND_DISALLOWED;
@@ -634,8 +632,6 @@ uint8_t avrcp_browsing_controller_change_path(uint16_t avrcp_browsing_cid, uint8
     }
     
     avrcp_browsing_connection_t * connection = avrcp_connection->browsing_connection;
-    btstack_assert(connection != NULL);
-
     if (connection->state != AVCTP_CONNECTION_OPENED){
         log_error("avrcp_browsing_controller_change_path: connection in wrong state.");
         return ERROR_CODE_COMMAND_DISALLOWED;
@@ -668,8 +664,6 @@ uint8_t avrcp_browsing_controller_search(uint16_t avrcp_browsing_cid, uint16_t s
     }
     
     avrcp_browsing_connection_t * connection = avrcp_connection->browsing_connection;
-    btstack_assert(connection != NULL);
-
     if (connection->state != AVCTP_CONNECTION_OPENED){
         log_error("avrcp_browsing_controller_change_path: connection in wrong state.");
         return ERROR_CODE_COMMAND_DISALLOWED;
