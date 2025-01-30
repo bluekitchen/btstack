@@ -528,7 +528,6 @@ static void hid_host_handle_sdp_client_query_result(uint8_t packet_type, uint16_
     uint8_t       *element;
     uint32_t       uuid;
     uint8_t        status = ERROR_CODE_SUCCESS;
-    bool try_fallback_to_boot;
     bool finalize_connection;
 
     
@@ -655,7 +654,6 @@ static void hid_host_handle_sdp_client_query_result(uint8_t packet_type, uint16_
             
         case SDP_EVENT_QUERY_COMPLETE:
             status = sdp_event_query_complete_get_status(packet);
-            try_fallback_to_boot = false;
             finalize_connection = false;
 
             switch (status){
@@ -664,11 +662,7 @@ static void hid_host_handle_sdp_client_query_result(uint8_t packet_type, uint16_
                     //  but no HID record
                     if (!connection->control_psm || !connection->interrupt_psm) {
                         status = ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
-                        if (connection->requested_protocol_mode == HID_PROTOCOL_MODE_REPORT_WITH_FALLBACK_TO_BOOT){
-                            try_fallback_to_boot = true;
-                        } else {
-                            finalize_connection = true;
-                        }
+                        finalize_connection = true;
                         break;
                     }
                     // report mode possible
@@ -681,11 +675,7 @@ static void hid_host_handle_sdp_client_query_result(uint8_t packet_type, uint16_
 
                 // SDP connection failed or remote does not have SDP server
                 default:
-                    if (connection->requested_protocol_mode == HID_PROTOCOL_MODE_REPORT_WITH_FALLBACK_TO_BOOT){
-                        try_fallback_to_boot = true;
-                    } else {
-                        finalize_connection = true;
-                    }
+                    finalize_connection = true;
                     break;
             }
             
@@ -697,25 +687,6 @@ static void hid_host_handle_sdp_client_query_result(uint8_t packet_type, uint16_
             }
 
             hid_emit_sniff_params_event(connection);
-                
-            if (try_fallback_to_boot){
-                if (connection->incoming){
-                    connection->set_protocol = true;
-                    connection->state = HID_HOST_CONNECTION_ESTABLISHED;
-                    connection->requested_protocol_mode = HID_PROTOCOL_MODE_BOOT;
-                    hid_emit_descriptor_available_event(connection);
-                    l2cap_request_can_send_now_event(connection->control_cid);
-                } else {
-                    connection->state = HID_HOST_W4_CONTROL_CONNECTION_ESTABLISHED;
-                    status = l2cap_create_channel(hid_host_packet_handler, connection->remote_addr, BLUETOOTH_PSM_HID_CONTROL, 0xffff, &connection->control_cid);
-                    if (status != ERROR_CODE_SUCCESS){
-                        hid_host_sdp_context_control_cid = 0;
-                        hid_emit_connected_event(connection, status);
-                        hid_host_finalize_connection(connection);
-                    }
-                }
-                break;
-            }
 
             // report mode possible
             if (connection->incoming) {
@@ -1008,7 +979,6 @@ static void hid_host_packet_handler(uint8_t packet_type, uint16_t channel, uint8
                             
                             switch (connection->requested_protocol_mode){
                                 case HID_PROTOCOL_MODE_BOOT:
-                                case HID_PROTOCOL_MODE_REPORT_WITH_FALLBACK_TO_BOOT:
                                     connection->set_protocol = true;
                                     connection->interrupt_psm = BLUETOOTH_PSM_HID_INTERRUPT;
                                     l2cap_request_can_send_now_event(connection->control_cid);
