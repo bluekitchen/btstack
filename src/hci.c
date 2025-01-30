@@ -1881,7 +1881,7 @@ static void hci_initializing_run(void){
 
     if (!hci_can_send_command_packet_now()) return;
 
-#ifndef HAVE_HOST_CONTROLLER_API
+#if !defined(HAVE_HOST_CONTROLLER_API) && !defined(ENABLE_AIROC_DOWNLOAD_MODE)
     bool need_baud_change = hci_stack->config
             && hci_stack->chipset
             && hci_stack->chipset->set_baudrate_command
@@ -1940,7 +1940,7 @@ static void hci_initializing_run(void){
             hci_send_prepared_cmd_packet();
             break;
         case HCI_INIT_SEND_READ_LOCAL_NAME:
-#ifdef ENABLE_CLASSIC
+#if defined(ENABLE_CLASSIC) && !defined(ENABLE_AIROC_DOWNLOAD_MODE)
             hci_send_cmd(&hci_read_local_name);
             hci_stack->substate = HCI_INIT_W4_SEND_READ_LOCAL_NAME;
             break;
@@ -1948,6 +1948,7 @@ static void hci_initializing_run(void){
             /* fall through */
 
         case HCI_INIT_SEND_BAUD_CHANGE:
+#ifndef ENABLE_AIROC_DOWNLOAD_MODE
             if (need_baud_change) {
                 hci_reserve_packet_buffer();
                 uint32_t baud_rate = hci_transport_uart_get_main_baud_rate();
@@ -1962,8 +1963,8 @@ static void hci_initializing_run(void){
                }
                break;
             }
+#endif
             hci_stack->substate = HCI_INIT_CUSTOM_INIT;
-
             /* fall through */
 
         case HCI_INIT_CUSTOM_INIT:
@@ -2031,12 +2032,15 @@ static void hci_initializing_run(void){
                 ||    (hci_stack->manufacturer == BLUETOOTH_COMPANY_ID_EM_MICROELECTRONIC_MARIN_SA)) ){
 
                     // - baud rate to reset, restore UART baud rate if needed
+#ifdef ENABLE_AIROC_DOWNLOAD_MODE
+                    hci_stack->hci_transport->set_baudrate(115200);
+#else
                     if (need_baud_change) {
                         uint32_t baud_rate = ((hci_transport_config_uart_t *)hci_stack->config)->baudrate_init;
                         log_info("Local baud rate change to %" PRIu32 " after init script (bcm)", baud_rate);
                         hci_stack->hci_transport->set_baudrate(baud_rate);
                     }
-
+#endif
                     uint16_t bcm_delay_ms = 300;
                     // - UART may or may not be disabled during update and Controller RTS may or may not be high during this time
                     //   -> Work around: wait here.
