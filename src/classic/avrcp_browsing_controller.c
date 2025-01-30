@@ -706,10 +706,6 @@ uint8_t avrcp_browsing_controller_get_total_nr_items_for_scope(uint16_t avrcp_br
         return ERROR_CODE_COMMAND_DISALLOWED;
     } 
 
-    if (!connection->browsed_player_id){
-        log_error("avrcp_browsing_controller_change_path: no browsed player set.");
-        return ERROR_CODE_COMMAND_DISALLOWED;
-    }
     connection->get_total_nr_items = 1;
     connection->get_total_nr_items_scope = scope;
     avrcp_browsing_request_can_send_now(connection, connection->l2cap_browsing_cid);
