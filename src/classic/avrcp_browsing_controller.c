@@ -534,7 +534,10 @@ uint8_t avrcp_browsing_controller_get_item_attributes_for_scope(uint16_t avrcp_b
         log_error("avrcp_browsing_controller_get_item_attributes: could not find a connection.");
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
+
     avrcp_browsing_connection_t * connection = avrcp_connection->browsing_connection;
+    btstack_assert(connection != NULL);
+
     if (connection->state != AVCTP_CONNECTION_OPENED){
         log_error("avrcp_browsing_controller_get_item_attributes: connection in wrong state %d, expected %d.", connection->state, AVCTP_CONNECTION_OPENED);
         return ERROR_CODE_COMMAND_DISALLOWED;
@@ -631,16 +634,13 @@ uint8_t avrcp_browsing_controller_change_path(uint16_t avrcp_browsing_cid, uint8
     }
     
     avrcp_browsing_connection_t * connection = avrcp_connection->browsing_connection;
-    
-    if ((connection == NULL) || (connection->state != AVCTP_CONNECTION_OPENED)){
+    btstack_assert(connection != NULL);
+
+    if (connection->state != AVCTP_CONNECTION_OPENED){
         log_error("avrcp_browsing_controller_change_path: connection in wrong state.");
         return ERROR_CODE_COMMAND_DISALLOWED;
     } 
 
-    if (!connection->browsed_player_id){
-        log_error("avrcp_browsing_controller_change_path: no browsed player set.");
-        return ERROR_CODE_COMMAND_DISALLOWED;
-    }
     connection->change_path = 1;
     connection->direction = direction;
     memset(connection->item_uid, 0, 8);
@@ -668,18 +668,15 @@ uint8_t avrcp_browsing_controller_search(uint16_t avrcp_browsing_cid, uint16_t s
     }
     
     avrcp_browsing_connection_t * connection = avrcp_connection->browsing_connection;
-    
-    if ((connection == NULL) || (connection->state != AVCTP_CONNECTION_OPENED)){
+    btstack_assert(connection != NULL);
+
+    if (connection->state != AVCTP_CONNECTION_OPENED){
         log_error("avrcp_browsing_controller_change_path: connection in wrong state.");
         return ERROR_CODE_COMMAND_DISALLOWED;
     } 
 
-    if (!connection->browsed_player_id){
-        log_error("avrcp_browsing_controller_change_path: no browsed player set.");
-        return ERROR_CODE_COMMAND_DISALLOWED;
-    }
     if (!search_str || (search_str_len == 0)){
-        return AVRCP_BROWSING_ERROR_CODE_INVALID_COMMAND;
+        return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
     }
 
     connection->search = 1;
