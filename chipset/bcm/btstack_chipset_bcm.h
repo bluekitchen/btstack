@@ -47,6 +47,7 @@
 extern "C" {
 #endif
 
+#include <btstack_lc3.h>
 #include <stdint.h>
 #include "btstack_chipset.h"
 
@@ -95,6 +96,23 @@ void btstack_chipset_bcm_enable_init_script(int enabled);
  * @returns device name if identified, otherwise NULL
  */
 const char * btstack_chipset_bcm_identify_controller(uint16_t lmp_subversion);
+
+/**
+ * @brief Setup Codec Config for LC3 Offloading
+ * Asserts if size is smaller than 11
+ * @param buffer
+ * @param size of buffer
+ * @param sampling_frequency_hz
+ * @param frame_duration
+ * @param octets_per_frame
+ * @return size of config
+ */
+uint8_t btstack_chipset_bcm_create_lc3_offloading_config(
+    uint8_t * buffer,
+    uint8_t size,
+    uint16_t sampling_frequency_hz,
+    btstack_lc3_frame_duration_t frame_duration,
+    uint16_t octets_per_frame);
 
 #if defined __cplusplus
 }

@@ -52,6 +52,9 @@
 #include "btstack_control.h"
 #include "btstack_debug.h"
 #include "btstack_chipset_bcm.h"
+
+#include <btstack_ltv_builder.h>
+
 #include "hci.h"
 
 #ifdef HAVE_POSIX_FILE_IO
@@ -306,4 +309,26 @@ const char * btstack_chipset_bcm_identify_controller(uint16_t lmp_subversion) {
             break;
     }
     return device_name;
+}
+
+uint8_t btstack_chipset_bcm_create_lc3_offloading_config(
+    uint8_t * buffer,
+    uint8_t size,
+    uint16_t sampling_frequency_hz,
+    btstack_lc3_frame_duration_t frame_duration,
+    uint16_t octets_per_frame) {
+
+    btstack_ltv_builder_context_t context;
+    btstack_ltv_builder_init(&context, buffer, size);
+    // sampling frequency
+    btstack_ltv_builder_add_tag(&context, 0x01);
+    btstack_ltv_builder_add_08(&context, 1 << ((sampling_frequency_hz / 8000) - 1));
+    // frame duration
+    btstack_ltv_builder_add_tag(&context, 0x02);
+    btstack_ltv_builder_add_08(&context, (frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US) ? 0x01 : 0x02);
+    // set codec frame length
+    btstack_ltv_builder_add_tag(&context, 0x04);
+    btstack_ltv_builder_add_little_endian_16(&context, octets_per_frame);
+
+    return btstack_ltv_builder_get_length(&context);
 }
