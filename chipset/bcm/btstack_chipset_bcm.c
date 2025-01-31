@@ -285,3 +285,27 @@ void btstack_chipset_bcm_enable_init_script(int enabled){
         btstack_chipset_bcm.next_command = NULL;
     }
 }
+
+// Other lmp_subversion values:
+// 0x220c - CYW20819
+// 0x420e - CYW20719
+const char * btstack_chipset_bcm_identify_controller(uint16_t lmp_subversion) {
+    const char * device_name = NULL;
+    switch (lmp_subversion){
+        case 0x220b:
+            // CYW20706
+            device_name = "BCM20703A2";
+            break;
+        case 0x2220:
+            // CYW5551x
+            device_name = "CYW55500A1";
+        break;
+        case 0x2257:
+            // CYW5557x
+            device_name = "CYW55560A1";
+            break;
+        default:
+            break;
+    }
+    return device_name;
+}
