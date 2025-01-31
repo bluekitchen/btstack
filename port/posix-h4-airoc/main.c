@@ -43,6 +43,8 @@
 //
 // *****************************************************************************
 
+#include <btstack_signal.h>
+#include <getopt.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -52,8 +54,9 @@
 
 #include "btstack_config.h"
 
-#include "bluetooth_company_id.h"
 #include "ble/le_device_db_tlv.h"
+#include "bluetooth_company_id.h"
+#include "btstack_audio.h"
 #include "btstack_chipset_bcm.h"
 #include "btstack_debug.h"
 #include "btstack_event.h"
@@ -61,14 +64,13 @@
 #include "btstack_run_loop.h"
 #include "btstack_run_loop_posix.h"
 #include "btstack_stdin.h"
-#include "btstack_uart.h"
 #include "btstack_tlv_posix.h"
+#include "btstack_uart.h"
 #include "classic/btstack_link_key_db_tlv.h"
 #include "hci.h"
 #include "hci_dump.h"
-#include "hci_transport_h4.h"
 #include "hci_dump_posix_fs.h"
-#include "btstack_audio.h"
+#include "hci_transport_h4.h"
 
 
 int btstack_main(int argc, const char * argv[]);
@@ -78,6 +80,9 @@ int btstack_main(int argc, const char * argv[]);
 static char tlv_db_path[100];
 static const btstack_tlv_t * tlv_impl;
 static btstack_tlv_posix_t   tlv_context;
+static bool tlv_reset;
+static bd_addr_t custom_address;
+static bool custom_address_set;
 
 static hci_transport_config_uart_t transport_config = {
     HCI_TRANSPORT_CONFIG_UART,
@@ -91,10 +96,8 @@ static btstack_uart_config_t uart_config;
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
-static void sigint_handler(int param){
-    UNUSED(param);
-
-    printf("CTRL-C - SIGINT received, shutting down..\n");   
+static void sigint_handler(void){
+    printf("CTRL-C - SIGINT received, shutting down..\n");
     log_info("sigint_handler: shutting down");
 
     // reset anyway
@@ -159,10 +162,21 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) break;
             gap_local_bd_addr(addr);
             printf("BTstack up and running at %s\n",  bd_addr_to_str(addr));
+
             // setup TLV
             btstack_strcpy(tlv_db_path, sizeof(tlv_db_path), TLV_DB_PATH_PREFIX);
             btstack_strcat(tlv_db_path, sizeof(tlv_db_path), bd_addr_to_str(addr));
             btstack_strcat(tlv_db_path, sizeof(tlv_db_path), TLV_DB_PATH_POSTFIX);
+            printf("TLV path: %s", tlv_db_path);
+            if (tlv_reset){
+                int rc = unlink(tlv_db_path);
+                if (rc == 0) {
+                    printf(", reset ok");
+                } else {
+                    printf(", reset failed with result = %d", rc);
+                }
+            }
+            printf("\n");
             tlv_impl = btstack_tlv_posix_init_instance(&tlv_context, tlv_db_path);
             btstack_tlv_set_instance(tlv_impl, &tlv_context);
 #ifdef ENABLE_CLASSIC
@@ -195,28 +209,97 @@ static void enter_download_mode(const btstack_uart_t * the_uart_driver){
     printf("Firmware download started\n");
 }
 
+static char short_options[] = "+hu:l:rb:";
+
+static struct option long_options[] = {
+    {"help",        no_argument,        NULL,   'h'},
+    {"logfile",    required_argument,  NULL,   'l'},
+    {"reset-tlv",    no_argument,       NULL,   'r'},
+    {"tty",    required_argument,  NULL,   'u'},
+    {"bd-addr", required_argument, NULL, 'b'},
+    {0, 0, 0, 0}
+};
+
+static char *help_options[] = {
+    "print (this) help.",
+    "set file to store debug output and HCI trace.",
+    "reset bonding information stored in TLV.",
+    "set path to Bluetooth Controller.",
+    "set Bluetooth address.",
+};
+
+static char *option_arg_name[] = {
+    "",
+    "LOGFILE",
+    "",
+    "TTY",
+    "BD_ADDR",
+};
+
+static void usage(const char *name){
+    unsigned int i;
+    printf( "usage:\n\t%s [options]\n", name );
+    printf("valid options:\n");
+    for( i=0; long_options[i].name != 0; i++) {
+        printf("--%-10s| -%c  %-10s\t\t%s\n", long_options[i].name, long_options[i].val, option_arg_name[i], help_options[i] );
+    }
+}
+
 int main(int argc, const char * argv[]){
+
+    const char * log_file_path = NULL;
+
+    // set default device path
+    transport_config.device_name = "/dev/tty.usbserial-FT1XBIL9"; // murata m.2 adapter
+
+    int oldopterr = opterr;
+    opterr = 0;
+    // parse command line parameters
+    while(true){
+        int c = getopt_long( argc, (char* const *)argv, short_options, long_options, NULL );
+        if (c < 0) {
+            break;
+        }
+        if (c == '?'){
+            continue;
+        }
+        switch (c) {
+            case 'u':
+                transport_config.device_name = optarg;
+                break;
+            case 'l':
+                log_file_path = optarg;
+                break;
+            case 'r':
+                tlv_reset = true;
+                break;
+            case 'b':
+                sscanf_bd_addr(optarg, custom_address);
+                custom_address_set = true;
+                break;
+            case 'h':
+            default:
+                usage(argv[0]);
+                return 0;
+        }
+    }
+    // reset getopt parsing, so it works as intended from btstack_main
+    optind = 1;
+    opterr = oldopterr;
 
     /// GET STARTED with BTstack ///
     btstack_memory_init();
-
-#if 1
-    // log into file using HCI_DUMP_PACKETLOGGER format
-    const char * pklg_path = "/tmp/hci_dump.pklg";
-    hci_dump_posix_fs_open(pklg_path, HCI_DUMP_PACKETLOGGER);
-    const hci_dump_t * hci_dump_impl = hci_dump_posix_fs_get_instance();
-    printf("Packet Log: %s\n", pklg_path);
-#else
-    // log to stdout for debugging/development
-    const hci_dump_t * hci_dump_impl = hci_dump_posix_stdout_get_instance();
-#endif
-    hci_dump_init(hci_dump_impl);
-
-    // setup run loop
     btstack_run_loop_init(btstack_run_loop_posix_get_instance());
-        
-    // pick serial port and configure uart driver
-    transport_config.device_name = "/dev/tty.usbserial-FT1XBIL9"; // murata m.2 adapter
+
+    // log into file using HCI_DUMP_PACKETLOGGER format
+    if (log_file_path == NULL){
+        log_file_path = "/tmp/hci_dump.pklg";
+    }
+    hci_dump_posix_fs_open(log_file_path, HCI_DUMP_PACKETLOGGER);
+    const hci_dump_t * hci_dump_impl = hci_dump_posix_fs_get_instance();
+    hci_dump_init(hci_dump_impl);
+    printf("Packet Log: %s\n", log_file_path);
+
     printf("tty: %s\n", transport_config.device_name);
 
     // get BCM chipset driver
@@ -238,6 +321,10 @@ int main(int argc, const char * argv[]){
     hci_init(transport, (void*) &transport_config);
     hci_set_chipset(btstack_chipset_bcm_instance());
 
+    if (custom_address_set) {
+        hci_set_bd_addr(custom_address);
+    }
+
 #ifdef HAVE_PORTAUDIO
     btstack_audio_sink_set_instance(btstack_audio_portaudio_sink_get_instance());
     btstack_audio_source_set_instance(btstack_audio_portaudio_source_get_instance());
@@ -247,8 +334,8 @@ int main(int argc, const char * argv[]){
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
 
-    // handle CTRL-c
-    signal(SIGINT, sigint_handler);
+    // register callback for CTRL-c
+    btstack_signal_register_callback(SIGINT, sigint_handler);
 
     // show countdown to start firmware download
     enter_download_mode(uart_driver);
