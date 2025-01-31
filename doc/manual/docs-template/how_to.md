@@ -84,6 +84,7 @@ BTstack properties:
 
 | \#define                                                              | Description                                                                                                                 |
 |-----------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------|
+| ENABLE_AIROC_DOWNLOAD_MODE                                            | Enable AIROC (newer Infineon) Controller PatchRAM download mode                                                             |
 | ENABLE_CLASSIC                                                        | Enable Classic related code in HCI and L2CAP                                                                                |
 | ENABLE_BLE                                                            | Enable BLE related code in HCI and L2CAP                                                                                    |
 | ENABLE_EHCILL                                                         | Enable eHCILL low power mode on TI CC256x/WL18xx chipsets                                                                   |
