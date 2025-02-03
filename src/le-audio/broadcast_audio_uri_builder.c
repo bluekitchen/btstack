@@ -183,7 +183,7 @@ bool broadcast_audio_uri_builder_append_advertising_sid(broadcast_audio_uri_buil
 
 bool broadcast_audio_uri_builder_append_pa_interval(broadcast_audio_uri_builder_t * builder, uint16_t pa_interval){
     char buffer[10];
-    btstack_snprintf_assert_complete(buffer, sizeof(buffer), "PI:%04" PRIX32 ";", pa_interval);
+    btstack_snprintf_assert_complete(buffer, sizeof(buffer), "PI:%04" PRIX16 ";", pa_interval);
     return broadcast_audio_uri_builder_append_string(builder, buffer);
 }
 
