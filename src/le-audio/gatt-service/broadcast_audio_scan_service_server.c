@@ -43,9 +43,7 @@
 #include "ble/att_server.h"
 #include "bluetooth_gatt.h"
 #include "btstack_debug.h"
-#include "btstack_defines.h"
 #include "btstack_event.h"
-#include "btstack_util.h"
 
 #include "le-audio/gatt-service/broadcast_audio_scan_service_server.h"
 #include "le-audio/le_audio_util.h"
@@ -548,9 +546,6 @@ void broadcast_audio_scan_service_server_init(const uint8_t sources_num, bass_se
     bass_logic_time = 0;
     bass_sources = sources;
 
-#ifdef ENABLE_TESTING_SUPPORT
-    printf("BASS 0x%02x - 0x%02x \n", start_handle, end_handle);
-#endif
     uint16_t start_chr_handle = start_handle;
     while ( (start_chr_handle < end_handle) && (bass_sources_num < sources_num )) {
         uint16_t chr_value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(start_chr_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_BROADCAST_RECEIVE_STATE);
@@ -569,24 +564,30 @@ void broadcast_audio_scan_service_server_init(const uint8_t sources_num, bass_se
         source->bass_receive_state_handle = chr_value_handle;
         source->bass_receive_state_client_configuration_handle = chr_client_configuration_handle;
 
-#ifdef ENABLE_TESTING_SUPPORT
-    printf("    bass_receive_state_%d                 0x%02x \n", bass_sources_num, source->bass_receive_state_handle);
-    printf("    bass_receive_state_%d CCC             0x%02x \n", bass_sources_num, source->bass_receive_state_client_configuration_handle);
-#endif
-
         start_chr_handle = chr_client_configuration_handle + 1;
         bass_sources_num++;
     }
 
+    uint8_t i;
+
+    log_info("BASS 0x%04X-0x%04X (num sources %d)", start_handle, end_handle, bass_sources_num);
+
+#ifdef ENABLE_TESTING_SUPPORT
+    printf("BASS 0x%04X-0x%04X (%d-%d), (num sources %d)\n", start_handle, end_handle, start_handle, end_handle, bass_sources_num);
+    for (i = 0; i < bass_sources_num; i++){
+        bass_server_source_t * source = &bass_sources[i];
+        printf("    - (%d) 0x%04X  v-handle BROADCAST_RECEIVE_STATE_%d\n", source->bass_receive_state_handle, source->bass_receive_state_handle, i);
+        printf("    - (%d) 0x%04X cc-handle BROADCAST_RECEIVE_STATE_%d\n", source->bass_receive_state_client_configuration_handle, source->bass_receive_state_client_configuration_handle, i);
+    }
+#endif
+
     bass_clients_num = clients_num;
     bass_clients = clients;
     memset(bass_clients, 0, sizeof(bass_server_connection_t) * bass_clients_num);
-    uint8_t i;
+
     for (i = 0; i < bass_clients_num; i++){
         bass_clients[i].con_handle = HCI_CON_HANDLE_INVALID;
     }
-
-    log_info("Found BASS service 0x%02x-0x%02x (num sources %d)", start_handle, end_handle, bass_sources_num);
 
     // register service with ATT Server
     broadcast_audio_scan_service.start_handle   = start_handle;
