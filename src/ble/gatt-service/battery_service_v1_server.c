@@ -49,7 +49,6 @@
 #include "btstack_defines.h"
 #include "ble/att_db.h"
 #include "ble/att_server.h"
-#include "btstack_util.h"
 #include "bluetooth_gatt.h"
 #include "btstack_debug.h"
 
@@ -86,6 +85,7 @@ static const uint16_t bas_uuid16s[BAS_CHARACTERISTIC_INDEX_NUM] = {
     ORG_BLUETOOTH_CHARACTERISTIC_SERIAL_NUMBER_STRING,
 };
 
+#ifdef ENABLE_TESTING_SUPPORT
 static const char * bas_uuid16_name[BAS_CHARACTERISTIC_INDEX_NUM] = {
     "BATTERY_LEVEL",
     "BATTERY_LEVEL_STATUS",
@@ -100,6 +100,7 @@ static const char * bas_uuid16_name[BAS_CHARACTERISTIC_INDEX_NUM] = {
     "MODEL_NUMBER_STRING",
     "SERIAL_NUMBER_STRING",
 };
+#endif
 
 static uint16_t bas_service_id_counter = 0;
 static btstack_linked_list_t battery_services;
@@ -608,26 +609,27 @@ void battery_service_v1_server_register(battery_service_v1_t *service, battery_s
     service->service_handler.start_handle = start_handle;
     service->service_handler.end_handle = end_handle;
 
-#ifdef ENABLE_TESTING_SUPPORT
-    printf("BAS 0x%04X-0x%04X\n", service->service_handler.start_handle , service->service_handler.end_handle);
-#endif
-    log_info("BAS 0x%04X-0x%04X", service->service_handler.start_handle , service->service_handler.end_handle);
 
     uint8_t i;
     for (i = 0; i < (uint8_t) BAS_CHARACTERISTIC_INDEX_NUM; i++){
         // get characteristic value handle and client configuration handle
         service->characteristics[i].value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(start_handle, end_handle, bas_uuid16s[i]);
         service->characteristics[i].client_configuration_handle = gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(start_handle, end_handle, bas_uuid16s[i]);
-#ifdef ENABLE_TESTING_SUPPORT
-        if (service->characteristics[i].value_handle != 0){
-            printf("    - %s value handle 0x%04X\n", bas_uuid16_name[i], service->characteristics[i].value_handle);
-        }
-        if (service->characteristics[i].client_configuration_handle != 0){
-            printf("    - %s client config handle 0x%04X\n", bas_uuid16_name[i], service->characteristics[i].client_configuration_handle);
-        }
-#endif
     }
-    
+
+    log_info("BAS 0x%04X-0x%04X", service->service_handler.start_handle , service->service_handler.end_handle);
+#ifdef ENABLE_TESTING_SUPPORT
+    printf("BAS 0x%04X-0x%04X (%d-%d)\n", service->service_handler.start_handle , service->service_handler.end_handle, service->service_handler.start_handle , service->service_handler.end_handle);
+    for (i = 0; i < (uint8_t) BAS_CHARACTERISTIC_INDEX_NUM; i++) {
+        if (service->characteristics[i].value_handle != 0) {
+            printf("    - (%d) 0x%04X  v-handle %s\n", service->characteristics[i].value_handle, service->characteristics[i].value_handle, bas_uuid16_name[i]);
+        }
+        if (service->characteristics[i].client_configuration_handle != 0) {
+            printf("    - (%d) 0x%04X cc-handle %s\n", service->characteristics[i].client_configuration_handle, service->characteristics[i].client_configuration_handle, bas_uuid16_name[i]);
+        }
+    }
+#endif
+
     service->battery_level_status_broadcast_configuration_handle = gatt_server_get_server_configuration_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_LEVEL_STATUS);
 
     memset(connections, 0, sizeof(battery_service_v1_server_connection_t) * connection_max_num);
