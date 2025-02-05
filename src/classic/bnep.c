@@ -1352,7 +1352,12 @@ static int bnep_hci_event_handler(uint8_t *packet, uint16_t size)
             switch (channel->state) {
                 case BNEP_CHANNEL_STATE_WAIT_FOR_CONNECTION_REQUEST:
                 case BNEP_CHANNEL_STATE_WAIT_FOR_CONNECTION_RESPONSE:
+                    // emit channel open failed
+                    bnep_emit_open_channel_complete(channel, ERROR_CODE_REMOTE_USER_TERMINATED_CONNECTION, 0);
+                    bnep_channel_finalize(channel);
+                    return 1;
                 case BNEP_CHANNEL_STATE_CONNECTED:
+                    // emit channel closed
                     bnep_channel_finalize(channel);
                     return 1;
                 default:

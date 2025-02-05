@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 - GAP: store link key for standard/non-SSP pairing
+- BENP: emit channel opened with ERROR_CODE_REMOTE_USER_TERMINATED_CONNECTION if connection cannot be set up
 ### Changed
 - BTstack HID: remove HID_PROTOCOL_MODE_REPORT_WITH_FALLBACK_TO_BOOT
 
