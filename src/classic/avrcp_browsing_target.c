@@ -234,7 +234,7 @@ static void avrcp_browsing_target_packet_handler(uint8_t packet_type, uint16_t c
                     pos += 2;
 
                     switch(browsing_connection->pdu_id){
-                        case AVRCP_PDU_ID_SEARCH:{
+                        case AVRCP_PDU_ID_SEARCH:
                             if (parameter_length < 4){
                                 avrcp_browsing_target_response_general_reject(browsing_connection, AVRCP_STATUS_INVALID_COMMAND);
                                 break;
@@ -250,14 +250,13 @@ static void avrcp_browsing_target_packet_handler(uint8_t packet_type, uint16_t c
                                 break;
                             }
 
-                            uint16_t string_len = strlen(browsing_connection->target_search_str);
-                            if ((browsing_connection->target_search_str_len != string_len) || (browsing_connection->target_search_str_len > (size-pos))){
+                            if (browsing_connection->target_search_str_len > (size-pos)){
                                 avrcp_browsing_target_response_general_reject(browsing_connection, AVRCP_STATUS_INVALID_PARAMETER);
                                 break;
                             }
                             avrcp_browsing_target_emit_search(avrcp_target_context.browsing_avrcp_callback, channel, browsing_connection);
                             break;
-                        }
+
                         case AVRCP_PDU_ID_GET_FOLDER_ITEMS:
                             if (parameter_length < 10){
                                 avrcp_browsing_target_response_general_reject(browsing_connection, AVRCP_STATUS_INVALID_COMMAND);
@@ -323,7 +322,7 @@ static void avrcp_browsing_target_packet_handler(uint8_t packet_type, uint16_t c
                             avrcp_browsing_target_emit_change_path(avrcp_target_context.browsing_avrcp_callback, channel, browsing_connection->uid_counter, browsing_connection->direction, browsing_connection->item_uid);
                             break;
 
-                        case AVRCP_PDU_ID_GET_ITEM_ATTRIBUTES:{
+                        case AVRCP_PDU_ID_GET_ITEM_ATTRIBUTES:
                             if (parameter_length < 12){
                                 avrcp_browsing_target_response_general_reject(browsing_connection, AVRCP_STATUS_INVALID_COMMAND);
                                 break;
@@ -340,7 +339,6 @@ static void avrcp_browsing_target_packet_handler(uint8_t packet_type, uint16_t c
                             avrcp_browsing_target_emit_get_item_attributes(avrcp_target_context.browsing_avrcp_callback, channel, browsing_connection->uid_counter,
                                                                            browsing_connection->scope, browsing_connection->item_uid, browsing_connection->attr_list_size, browsing_connection->attr_list);
                             break;
-                        }
 
                         default:
                             avrcp_browsing_target_response_general_reject(browsing_connection, AVRCP_STATUS_INVALID_COMMAND);
