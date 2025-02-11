@@ -421,8 +421,6 @@ static void avrcp_send_response_with_avctp_fragmentation(avrcp_connection_t * co
                             max_payload_size--;
 
                             bytes_stored = avrcp_store_avctp_now_playing_info_fragment(connection, max_payload_size, packet + pos);
-
-                            connection->avrcp_frame_bytes_sent += bytes_stored + pos;
                             l2cap_send_prepared(connection->l2cap_signaling_cid, pos + bytes_stored);
                             return;
 
@@ -449,8 +447,6 @@ static void avrcp_send_response_with_avctp_fragmentation(avrcp_connection_t * co
             switch (connection->pdu_id) {
                 case AVRCP_PDU_ID_GET_ELEMENT_ATTRIBUTES:
                     bytes_stored = avrcp_store_avctp_now_playing_info_fragment(connection, max_payload_size, packet + pos);
-
-                    connection->avrcp_frame_bytes_sent += bytes_stored + pos;
                     l2cap_send_prepared(connection->l2cap_signaling_cid, pos + bytes_stored);
                     return;
 
@@ -469,7 +465,6 @@ static void avrcp_send_response_with_avctp_fragmentation(avrcp_connection_t * co
     (void)memcpy(packet + pos, &connection->data[connection->data_offset], bytes_to_copy);
     pos += bytes_to_copy;
     connection->data_offset += bytes_to_copy;
-    connection->avrcp_frame_bytes_sent += pos;
 
     l2cap_send_prepared(connection->l2cap_signaling_cid, pos);
 }
@@ -499,7 +494,6 @@ static void avrcp_target_custom_command_data_init(avrcp_connection_t * connectio
     connection->data = NULL;
     connection->data_offset = 0;
     connection->data_len = 0;
-    connection->avrcp_frame_bytes_sent = 0;
 }
 
 static void avrcp_target_vendor_dependent_response_data_init(avrcp_connection_t * connection, avrcp_command_type_t command_type, avrcp_pdu_id_t pdu_id){
@@ -513,7 +507,6 @@ static void avrcp_target_vendor_dependent_response_data_init(avrcp_connection_t 
     connection->data = connection->message_body;
     connection->data_offset = 0;
     connection->data_len = 0;
-    connection->avrcp_frame_bytes_sent = 0;
 }
 
 static void avrcp_target_pass_through_command_data_init(avrcp_connection_t * connection, avrcp_command_type_t command_type, avrcp_operation_id_t opid){
@@ -529,7 +522,6 @@ static void avrcp_target_pass_through_command_data_init(avrcp_connection_t * con
     connection->data = connection->message_body;
     connection->data_offset = 0;
     connection->data_len = 0;
-    connection->avrcp_frame_bytes_sent = 0;
 }
 
 

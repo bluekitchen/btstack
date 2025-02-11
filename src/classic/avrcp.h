@@ -670,7 +670,6 @@ typedef struct {
     avctp_packet_type_t    avctp_packet_type;
     // AVRCP header
     avrcp_packet_type_t    avrcp_packet_type;
-    uint16_t               avrcp_frame_bytes_sent;
     avrcp_subunit_type_t   subunit_type;
     avrcp_subunit_id_t     subunit_id;
     uint32_t               company_id;
