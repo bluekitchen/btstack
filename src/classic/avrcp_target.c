@@ -328,12 +328,11 @@ static void avrcp_send_response_with_avctp_fragmentation(avrcp_connection_t * co
     connection->avctp_packet_type = avctp_get_packet_type(connection, &max_payload_size);
     connection->avrcp_packet_type = avrcp_get_packet_type(connection);
 
+    uint16_t param_len = connection->data_len;
     // AVCTP header
     // transport header : transaction label | Packet_type | C/R | IPID (1 == invalid profile identifier)
     uint16_t pos = 0;
     packet[pos++] = (connection->transaction_id << 4) | (connection->avctp_packet_type << 2) | (AVRCP_RESPONSE_FRAME << 1) | 0;
-
-    uint16_t param_len = connection->data_len;
 
     if (connection->avctp_packet_type == AVCTP_START_PACKET){
         uint16_t max_frame_size = btstack_min(connection->l2cap_mtu, AVRCP_MAX_AV_C_MESSAGE_FRAME_SIZE);
@@ -352,6 +351,7 @@ static void avrcp_send_response_with_avctp_fragmentation(avrcp_connection_t * co
     switch (connection->avctp_packet_type) {
         case AVCTP_SINGLE_PACKET:
         case AVCTP_START_PACKET:
+            connection->data_offset = 0;
             // Profile IDentifier (PID)
             packet[pos++] = BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL >> 8;
             packet[pos++] = BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL & 0x00FF;
@@ -369,10 +369,7 @@ static void avrcp_send_response_with_avctp_fragmentation(avrcp_connection_t * co
                     big_endian_store_24(packet, pos, connection->company_id);
                     pos += 3;
                     packet[pos++] = connection->pdu_id;
-                    // AVRCP packet type
-
                     packet[pos++] = (uint8_t)connection->avrcp_packet_type;
-                    // parameter length
                     big_endian_store_16(packet, pos, param_len);
                     pos += 2;
 
@@ -437,12 +434,9 @@ static void avrcp_send_response_with_avctp_fragmentation(avrcp_connection_t * co
 
                 case AVRCP_CMD_OPCODE_PASS_THROUGH:
                     packet[pos++] = connection->operation_id;
-                    // parameter length
                     packet[pos++] = (uint8_t) connection->data_len;
-                    pos += 2;
                     break;
                 case AVRCP_CMD_OPCODE_UNIT_INFO:
-                    break;
                 case AVRCP_CMD_OPCODE_SUBUNIT_INFO:
                     break;
                 default:
