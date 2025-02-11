@@ -571,7 +571,7 @@ void gap_drop_link_key_for_bd_addr(bd_addr_t addr){
         // reset link key stored in connection
         conn->link_key_type = INVALID_LINK_KEY;
     }
-    if (!hci_stack->link_key_db) {
+    if (hci_stack->link_key_db != NULL) {
         hci_stack->link_key_db->delete_link_key(addr);
     }
 }
