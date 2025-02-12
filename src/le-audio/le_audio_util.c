@@ -40,8 +40,6 @@
 #include "btstack_util.h"
 #include "btstack_debug.h"
 #include "le-audio/le_audio_util.h"
-#include "btstack_event.h"
-
 
 static const le_audio_codec_configuration_t codec_specific_config_settings[] = {
     {"8_1",  LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_8000_HZ,  LE_AUDIO_CODEC_FRAME_DURATION_INDEX_7500US,   26},
@@ -158,7 +156,7 @@ uint16_t le_audio_util_metadata_virtual_memcpy(const le_audio_metadata_t * metad
 
     for (metadata_type = (uint16_t)LE_AUDIO_METADATA_TYPE_PREFERRED_AUDIO_CONTEXTS; metadata_type < (uint16_t) LE_AUDIO_METADATA_TYPE_RFU; metadata_type++){
         if ((metadata->metadata_mask & (1 << metadata_type) ) != 0 ){
-            // reserve field_data[0] for num butes to store
+            // reserve field_data[0] for num bytes to store
             field_data[0] = 1;
             field_data[1] = metadata_type;
 
@@ -579,138 +577,6 @@ le_audio_codec_sampling_frequency_index_t le_audio_get_sampling_frequency_index(
             return LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_384000_HZ;
         default:
             return LE_AUDIO_CODEC_SAMPLING_FREQUENCY_INDEX_RFU;
-    }
-}
-
-void le_audio_util_metadata_using_mask_from_metadata_event(const uint8_t * packet, uint16_t packet_size, le_audio_metadata_t * metadata_out){
-    UNUSED(packet_size);
-    btstack_assert(metadata_out != NULL);
-    if (packet_size == 0){
-        return;
-    }
-
-    memset(metadata_out, 0, sizeof(le_audio_metadata_t));
-    metadata_out->metadata_mask = leaudio_subevent_ascs_server_metadata_get_metadata_mask(packet);
-
-    uint16_t metadata_type;
-    for (metadata_type = (uint16_t)LE_AUDIO_METADATA_TYPE_PREFERRED_AUDIO_CONTEXTS; metadata_type < (uint16_t) LE_AUDIO_METADATA_TYPE_RFU; metadata_type++){
-        if ((metadata_out->metadata_mask & (1 << metadata_type) ) != 0 ){
-
-            switch ((le_audio_metadata_type_t)metadata_type){
-                case LE_AUDIO_METADATA_TYPE_PREFERRED_AUDIO_CONTEXTS:
-                    metadata_out->preferred_audio_contexts_mask = leaudio_subevent_ascs_server_metadata_get_preferred_audio_contexts_mask(packet);
-                    break;
-
-                case LE_AUDIO_METADATA_TYPE_STREAMING_AUDIO_CONTEXTS:
-                    metadata_out->streaming_audio_contexts_mask = leaudio_subevent_ascs_server_metadata_get_streaming_audio_contexts_mask(packet);
-                    break;
-
-                case LE_AUDIO_METADATA_TYPE_PROGRAM_INFO:
-                    metadata_out->program_info_length = leaudio_subevent_ascs_server_metadata_get_program_info_length(packet);
-                    memcpy(metadata_out->program_info, leaudio_subevent_ascs_server_metadata_get_program_info(packet), metadata_out->program_info_length);
-                    break;
-
-                case LE_AUDIO_METADATA_TYPE_LANGUAGE:
-                    metadata_out->language_code = leaudio_subevent_ascs_server_metadata_get_language_code(packet);
-                    break;
-
-                case LE_AUDIO_METADATA_TYPE_CCID_LIST:
-                    metadata_out->ccids_num = leaudio_subevent_ascs_server_metadata_get_ccids_num(packet);
-                    memcpy(metadata_out->ccids, leaudio_subevent_ascs_server_metadata_get_ccids(packet), metadata_out->ccids_num);
-                    break;
-
-                case LE_AUDIO_METADATA_TYPE_PARENTAL_RATING:
-                    metadata_out->parental_rating = (le_audio_parental_rating_t)leaudio_subevent_ascs_server_metadata_get_parental_rating(packet);
-                    break;
-
-                case LE_AUDIO_METADATA_TYPE_PROGRAM_INFO_URI:
-                    metadata_out->program_info_uri_length = leaudio_subevent_ascs_server_metadata_get_program_info_uri_length(packet);
-                    memcpy(metadata_out->program_info_uri, leaudio_subevent_ascs_server_metadata_get_program_info_uri(packet), metadata_out->program_info_uri_length);
-                    break;
-
-                case LE_AUDIO_METADATA_TYPE_MAPPED_EXTENDED_METADATA_BIT_POSITION:
-                    metadata_out->extended_metadata_type = leaudio_subevent_ascs_server_metadata_get_extended_metadata_type(packet);
-                    metadata_out->extended_metadata_length = leaudio_subevent_ascs_server_metadata_get_extended_metadata_value_length(packet);
-                    memcpy(metadata_out->extended_metadata, leaudio_subevent_ascs_server_metadata_get_extended_metadata_value(packet), metadata_out->extended_metadata_length);
-                    break;
-
-                case LE_AUDIO_METADATA_TYPE_MAPPED_VENDOR_SPECIFIC_METADATA_BIT_POSITION:
-                    metadata_out->vendor_specific_company_id = leaudio_subevent_ascs_server_metadata_get_vendor_specific_metadata_type(packet);
-                    metadata_out->vendor_specific_metadata_length = leaudio_subevent_ascs_server_metadata_get_vendor_specific_metadata_value_length(packet);
-                    memcpy(metadata_out->vendor_specific_metadata, leaudio_subevent_ascs_server_metadata_get_vendor_specific_metadata_value(packet), metadata_out->vendor_specific_metadata_length);
-                    break;
-
-                default:
-                    btstack_assert(false);
-                    break;
-            }
-        }
-    }
-}
-
-void le_audio_util_metadata_using_mask_from_enable_event(const uint8_t * packet, uint16_t packet_size, le_audio_metadata_t * metadata_out){
-    UNUSED(packet_size);
-    btstack_assert(metadata_out != NULL);
-    if (packet_size == 0){
-        return;
-    }
-
-    memset(metadata_out, 0, sizeof(le_audio_metadata_t));
-    metadata_out->metadata_mask = leaudio_subevent_ascs_server_metadata_get_metadata_mask(packet);
-
-    uint16_t metadata_type;
-    for (metadata_type = (uint16_t)LE_AUDIO_METADATA_TYPE_PREFERRED_AUDIO_CONTEXTS; metadata_type < (uint16_t) LE_AUDIO_METADATA_TYPE_RFU; metadata_type++){
-        if ((metadata_out->metadata_mask & (1 << metadata_type) ) != 0 ){
-
-            switch ((le_audio_metadata_type_t)metadata_type){
-                case LE_AUDIO_METADATA_TYPE_PREFERRED_AUDIO_CONTEXTS:
-                    metadata_out->preferred_audio_contexts_mask = leaudio_subevent_ascs_server_enable_get_preferred_audio_contexts_mask(packet);
-                    break;
-
-                case LE_AUDIO_METADATA_TYPE_STREAMING_AUDIO_CONTEXTS:
-                    metadata_out->streaming_audio_contexts_mask = leaudio_subevent_ascs_server_enable_get_streaming_audio_contexts_mask(packet);
-                    break;
-
-                case LE_AUDIO_METADATA_TYPE_PROGRAM_INFO:
-                    metadata_out->program_info_length = leaudio_subevent_ascs_server_enable_get_program_info_length(packet);
-                    memcpy(metadata_out->program_info, leaudio_subevent_ascs_server_enable_get_program_info(packet), metadata_out->program_info_length);
-                    break;
-
-                case LE_AUDIO_METADATA_TYPE_LANGUAGE:
-                    metadata_out->language_code = leaudio_subevent_ascs_server_enable_get_language_code(packet);
-                    break;
-
-                case LE_AUDIO_METADATA_TYPE_CCID_LIST:
-                    metadata_out->ccids_num = leaudio_subevent_ascs_server_enable_get_ccids_num(packet);
-                    memcpy(metadata_out->ccids, leaudio_subevent_ascs_server_enable_get_ccids(packet), metadata_out->ccids_num);
-                    break;
-
-                case LE_AUDIO_METADATA_TYPE_PARENTAL_RATING:
-                    metadata_out->parental_rating = (le_audio_parental_rating_t)leaudio_subevent_ascs_server_enable_get_parental_rating(packet);
-                    break;
-
-                case LE_AUDIO_METADATA_TYPE_PROGRAM_INFO_URI:
-                    metadata_out->program_info_uri_length = leaudio_subevent_ascs_server_enable_get_program_info_uri_length(packet);
-                    memcpy(metadata_out->program_info_uri, leaudio_subevent_ascs_server_enable_get_program_info_uri(packet), metadata_out->program_info_uri_length);
-                    break;
-
-                case LE_AUDIO_METADATA_TYPE_MAPPED_EXTENDED_METADATA_BIT_POSITION:
-                    metadata_out->extended_metadata_type = leaudio_subevent_ascs_server_enable_get_extended_metadata_type(packet);
-                    metadata_out->extended_metadata_length = leaudio_subevent_ascs_server_enable_get_extended_metadata_value_length(packet);
-                    memcpy(metadata_out->extended_metadata, leaudio_subevent_ascs_server_enable_get_extended_metadata_value(packet), metadata_out->extended_metadata_length);
-                    break;
-
-                case LE_AUDIO_METADATA_TYPE_MAPPED_VENDOR_SPECIFIC_METADATA_BIT_POSITION:
-                    metadata_out->vendor_specific_company_id = leaudio_subevent_ascs_server_enable_get_vendor_specific_metadata_type(packet);
-                    metadata_out->vendor_specific_metadata_length = leaudio_subevent_ascs_server_enable_get_vendor_specific_metadata_value_length(packet);
-                    memcpy(metadata_out->vendor_specific_metadata, leaudio_subevent_ascs_server_enable_get_vendor_specific_metadata_value(packet), metadata_out->vendor_specific_metadata_length);
-                    break;
-
-                default:
-                    btstack_assert(false);
-                    break;
-            }
-        }
     }
 }
 
