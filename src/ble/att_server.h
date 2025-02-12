@@ -64,6 +64,13 @@ typedef struct {
 #endif
 
 /* API_START */
+
+/**
+ * @title ATT Server
+ *
+ * @TLV 'BTC' x
+ */
+
 /*
  * @brief setup ATT server
  * @param db attribute database created by compile-gatt.py
