@@ -42,8 +42,6 @@
  * @TLV 'SMIR'
  */
 
- */
-
 #ifndef SM_H
 #define SM_H
 
