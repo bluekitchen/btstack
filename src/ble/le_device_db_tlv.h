@@ -38,6 +38,7 @@
 /**
  * @title Device Database TLV
  * 
+ * @TLV 'BTD' x
  */
 
 #ifndef LE_DEVICE_DB_TLV_H
