@@ -3745,7 +3745,7 @@ typedef uint8_t sm_key_t[16];
  * @param scope
  * @param item_id
  */
-#define AVRCP_SUBEVENT_PLAY_ITEM                                                       0x42u
+#define AVRCP_SUBEVENT_PLAY_ITEM                                                       0x43u
 
 /**
  * @format 1221D
@@ -3755,7 +3755,7 @@ typedef uint8_t sm_key_t[16];
  * @param scope
  * @param item_id
  */
-#define AVRCP_SUBEVENT_ADD_TO_NOW_PLAYING                                              0x43u
+#define AVRCP_SUBEVENT_ADD_TO_NOW_PLAYING                                              0x44u
 
 /**
  * @format 12BH
