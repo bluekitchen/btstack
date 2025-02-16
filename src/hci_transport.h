@@ -114,7 +114,8 @@ typedef struct {
 
 typedef enum {
     HCI_TRANSPORT_CONFIG_UART,
-    HCI_TRANSPORT_CONFIG_USB
+    HCI_TRANSPORT_CONFIG_USB,
+    HCI_TRANSPORT_CONFIG_LINUX,
 } hci_transport_config_type_t;
 
 typedef struct {
@@ -123,12 +124,17 @@ typedef struct {
 
 typedef struct {
     hci_transport_config_type_t type; // == HCI_TRANSPORT_CONFIG_UART
-    uint32_t   baudrate_init; // initial baud rate
-    uint32_t   baudrate_main; // = 0: same as initial baudrate
-    int        flowcontrol;   // 
+    uint32_t   baudrate_init;         // initial baud rate
+    uint32_t   baudrate_main;         // = 0: same as initial baudrate
+    int        flowcontrol;           //
     const char *device_name;
-    int        parity;        // see btstack_uart.h BTSTACK_UART_PARITY
+    int        parity;                // see btstack_uart.h BTSTACK_UART_PARITY
 } hci_transport_config_uart_t;
+
+typedef struct {
+    hci_transport_config_type_t type; // == HCI_TRANSPORT_CONFIG_LINUX
+    int device_id;                    // e.g. 0 for HCI0
+} hci_transport_config_linux_t;
 
 /* API_END */
     
