@@ -499,6 +499,15 @@ void avdtp_source_register_media_config_validator(uint8_t (*callback)(const avdt
 
 uint8_t avdtp_validate_media_configuration(const avdtp_stream_endpoint_t *stream_endpoint, uint16_t avdtp_cid,
                                            uint8_t reconfigure, const adtvp_media_codec_capabilities_t *media_codec) {
+
+    uint8_t event[AVDTP_MEDIA_CONFIG_OTHER_EVENT_LEN];
+    uint16_t size = 0;
+    codec_specific_error_code_t codec_specific_error_code = avdtp_setup_media_codec_config_event(event, sizeof(event), stream_endpoint, avdtp_cid, reconfigure, media_codec, &size);
+
+    if (codec_specific_error_code != CODEC_SPECIFIC_ERROR_CODE_ACCEPT){
+        return (uint8_t) codec_specific_error_code;
+    }
+
     uint8_t (*callback)(const avdtp_stream_endpoint_t * stream_endpoint, const uint8_t * event, uint16_t size);
     if (stream_endpoint->sep.type == AVDTP_SOURCE){
         callback = avdtp_source_media_config_validator;
@@ -508,13 +517,6 @@ uint8_t avdtp_validate_media_configuration(const avdtp_stream_endpoint_t *stream
     if (callback == NULL) {
         // config valid
         return 0;
-    }
-    uint8_t event[AVDTP_MEDIA_CONFIG_OTHER_EVENT_LEN];
-
-    uint16_t size = 0;
-    uint8_t status = avdtp_setup_media_codec_config_event(event, sizeof(event), stream_endpoint, avdtp_cid, reconfigure, media_codec, &size);
-    if (status != ERROR_CODE_SUCCESS){
-        return status;
     }
     return (*callback)(stream_endpoint, event, size);
 }
