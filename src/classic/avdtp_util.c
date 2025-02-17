@@ -1007,7 +1007,8 @@ static uint16_t
 avdtp_signaling_setup_media_codec_sbc_config_event(uint8_t *event, uint16_t size,
                                                    const avdtp_stream_endpoint_t *stream_endpoint,
                                                    uint16_t avdtp_cid, uint8_t reconfigure,
-                                                   const uint8_t *media_codec_information) {
+                                                   const uint8_t *media_codec_information,
+                                                   uint16_t *out_size) {
 
     btstack_assert(size >= AVDTP_MEDIA_CONFIG_SBC_EVENT_LEN);
 
@@ -1089,7 +1090,7 @@ avdtp_signaling_setup_media_codec_sbc_config_event(uint8_t *event, uint16_t size
     event[pos++] = media_codec_information[3];
 
     btstack_assert(pos == AVDTP_MEDIA_CONFIG_SBC_EVENT_LEN);
-
+    *out_size = pos;
     return pos;
 }
 
@@ -1097,7 +1098,8 @@ static uint16_t
 avdtp_signaling_setup_media_codec_mpeg_audio_config_event(uint8_t *event, uint16_t size,
                                                           const avdtp_stream_endpoint_t *stream_endpoint,
                                                           uint16_t avdtp_cid, uint8_t reconfigure,
-                                                          const uint8_t *media_codec_information) {
+                                                          const uint8_t *media_codec_information,
+                                                          uint16_t *out_size) {
 
     btstack_assert(size >= AVDTP_MEDIA_CONFIG_MPEG_AUDIO_EVENT_LEN);
 
@@ -1183,7 +1185,7 @@ avdtp_signaling_setup_media_codec_mpeg_audio_config_event(uint8_t *event, uint16
     event[pos++] = bitrate_index;
 
     btstack_assert(pos == AVDTP_MEDIA_CONFIG_MPEG_AUDIO_EVENT_LEN);
-
+    *out_size = pos;
     return pos;
 }
 
@@ -1191,7 +1193,8 @@ static uint16_t
 avdtp_signaling_setup_media_codec_mpec_aac_config_event(uint8_t *event, uint16_t size,
                                                         const avdtp_stream_endpoint_t *stream_endpoint,
                                                         uint16_t avdtp_cid, uint8_t reconfigure,
-                                                        const uint8_t *media_codec_information) {
+                                                        const uint8_t *media_codec_information,
+                                                        uint16_t *out_size) {
 
     btstack_assert(size >= AVDTP_MEDIA_CONFIG_MPEG_AAC_EVENT_LEN);
 
@@ -1257,15 +1260,16 @@ avdtp_signaling_setup_media_codec_mpec_aac_config_event(uint8_t *event, uint16_t
     event[pos++] = drc;
     
     btstack_assert(AVDTP_MEDIA_CONFIG_MPEG_AAC_EVENT_LEN == pos);
-
+    *out_size = pos;
     return pos;
 }
 
 static uint16_t
 avdtp_signaling_setup_media_codec_mpegd_config_event(uint8_t *event, uint16_t size,
-                                                        const avdtp_stream_endpoint_t *stream_endpoint,
-                                                        uint16_t avdtp_cid, uint8_t reconfigure,
-                                                        const uint8_t *media_codec_information) {
+                                                     const avdtp_stream_endpoint_t *stream_endpoint,
+                                                     uint16_t avdtp_cid, uint8_t reconfigure,
+                                                     const uint8_t *media_codec_information,
+                                                     uint16_t *out_size) {
 
     btstack_assert(size >= AVDTP_MEDIA_CONFIG_MPEG_D_USAC_EVENT_LEN);
 
@@ -1321,14 +1325,15 @@ avdtp_signaling_setup_media_codec_mpegd_config_event(uint8_t *event, uint16_t si
     pos += 3;
 
     btstack_assert(AVDTP_MEDIA_CONFIG_MPEG_D_USAC_EVENT_LEN == pos);
-
+    *out_size = pos;
     return pos;
 }
 
 static uint16_t avdtp_signaling_setup_media_codec_atrac_config_event(uint8_t *event, uint16_t size,
                                                                      const avdtp_stream_endpoint_t *stream_endpoint,
                                                                      uint16_t avdtp_cid, uint8_t reconfigure,
-                                                                     const uint8_t *media_codec_information) {
+                                                                     const uint8_t *media_codec_information,
+                                                                     uint16_t *out_size) {
     btstack_assert(size >= AVDTP_MEDIA_CONFIG_ATRAC_EVENT_LEN);
 
     uint8_t local_seid = avdtp_local_seid(stream_endpoint);
@@ -1393,13 +1398,15 @@ static uint16_t avdtp_signaling_setup_media_codec_atrac_config_event(uint8_t *ev
     pos += 2;
 
     btstack_assert(pos == AVDTP_MEDIA_CONFIG_ATRAC_EVENT_LEN);
+    *out_size = pos;
     return pos;
 }
 
 static uint16_t avdtp_signaling_setup_media_codec_other_config_event(uint8_t *event, uint16_t size,
                                                                      const avdtp_stream_endpoint_t *stream_endpoint,
                                                                      uint16_t avdtp_cid, uint8_t reconfigure,
-                                                                     const adtvp_media_codec_capabilities_t *media_codec) {
+                                                                     const adtvp_media_codec_capabilities_t *media_codec,
+                                                                     uint16_t *out_size) {
     btstack_assert(size >= AVDTP_MEDIA_CONFIG_OTHER_EVENT_LEN);
 
     uint8_t local_seid = avdtp_local_seid(stream_endpoint);
@@ -1426,6 +1433,7 @@ static uint16_t avdtp_signaling_setup_media_codec_other_config_event(uint8_t *ev
     (void)memcpy(event + pos, media_codec->media_codec_information, media_codec_len);
     pos += media_codec_len;
     event[1] = pos - 2;
+    *out_size = pos;
     return pos;
 }
 
@@ -1447,33 +1455,33 @@ uint16_t avdtp_setup_media_codec_config_event(uint8_t *event, uint16_t size, con
                                      uint16_t avdtp_cid, uint8_t reconfigure, const adtvp_media_codec_capabilities_t *media_codec, uint16_t *out_size) {
     switch (media_codec->media_codec_type){
         case AVDTP_CODEC_SBC:
-            *out_size = avdtp_signaling_setup_media_codec_sbc_config_event(event, size, stream_endpoint, avdtp_cid, reconfigure,
-                                                                           media_codec->media_codec_information);
+            avdtp_signaling_setup_media_codec_sbc_config_event(event, size, stream_endpoint, avdtp_cid, reconfigure,
+                                                                            media_codec->media_codec_information, out_size);
             break;
 
         case AVDTP_CODEC_MPEG_1_2_AUDIO:
-            *out_size = avdtp_signaling_setup_media_codec_mpeg_audio_config_event(event, size, stream_endpoint, avdtp_cid, reconfigure,
-                                                                             media_codec->media_codec_information);
+            avdtp_signaling_setup_media_codec_mpeg_audio_config_event(event, size, stream_endpoint, avdtp_cid, reconfigure,
+                                                                             media_codec->media_codec_information, out_size);
             break;
 
         case AVDTP_CODEC_MPEG_2_4_AAC:
-            *out_size = avdtp_signaling_setup_media_codec_mpec_aac_config_event(event, size, stream_endpoint, avdtp_cid, reconfigure,
-                                                                           media_codec->media_codec_information);
+            avdtp_signaling_setup_media_codec_mpec_aac_config_event(event, size, stream_endpoint, avdtp_cid, reconfigure,
+                                                                             media_codec->media_codec_information, out_size);
             break;
 
         case AVDTP_CODEC_ATRAC_FAMILY:
-            *out_size = avdtp_signaling_setup_media_codec_atrac_config_event(event, size, stream_endpoint, avdtp_cid, reconfigure,
-                                                                        media_codec->media_codec_information);
+            avdtp_signaling_setup_media_codec_atrac_config_event(event, size, stream_endpoint, avdtp_cid, reconfigure,
+                                                                             media_codec->media_codec_information, out_size);
             break;
 
         case AVDTP_CODEC_MPEG_D_USAC:
-            *out_size = avdtp_signaling_setup_media_codec_mpegd_config_event(event, size, stream_endpoint, avdtp_cid, reconfigure,
-                                                                        media_codec->media_codec_information);
+            avdtp_signaling_setup_media_codec_mpegd_config_event(event, size, stream_endpoint, avdtp_cid, reconfigure,
+                                                                             media_codec->media_codec_information, out_size);
             break;
 
         default:
-            *out_size = avdtp_signaling_setup_media_codec_other_config_event(event, size, stream_endpoint, avdtp_cid, reconfigure,
-                                                                        media_codec);
+            avdtp_signaling_setup_media_codec_other_config_event(event, size, stream_endpoint, avdtp_cid, reconfigure,
+                                                                             media_codec, out_size);
             break;
     }
 
