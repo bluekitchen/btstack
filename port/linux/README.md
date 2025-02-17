@@ -29,12 +29,22 @@ Also make sure that the chosen device (here, hci0) is down
 
 	sudo hciconfig hci0 down
 
+To check
+
+    hciconfig hci0
+
+    hci0:	Type: Primary  Bus: USB
+	        BD Address: 00:1A:7D:DA:71:13  ACL MTU: 1021:8  SCO MTU: 64:1
+	        DOWN 
+	        RX bytes:566359 acl:0 sco:0 events:40 errors:0
+	        TX bytes:2174059 acl:2694 sco:0 commands:329 errors:0
+
+
 To access the Bluetooth Controller, you can either run the examples as root, or, set the necessary permissions for a compiled example, e.g.
 
 	sudo setcap 'cap_net_raw,cap_net_admin+eip' gatt_counter
 
-
-Now, you can run any of the examples
+Now, you can run this example as a regular user
 
 	$ ./gatt_counter
 	Packet Log: /tmp/hci_dump.pklg
