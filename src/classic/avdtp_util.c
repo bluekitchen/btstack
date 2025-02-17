@@ -1451,41 +1451,42 @@ void avdtp_signaling_emit_delay(uint16_t avdtp_cid, uint8_t local_seid, uint16_t
     avdtp_emit_source(event, pos);
 }
 
-uint16_t avdtp_setup_media_codec_config_event(uint8_t *event, uint16_t size, const avdtp_stream_endpoint_t *stream_endpoint,
-                                     uint16_t avdtp_cid, uint8_t reconfigure, const adtvp_media_codec_capabilities_t *media_codec, uint16_t *out_size) {
+uint8_t avdtp_setup_media_codec_config_event(uint8_t *event, uint16_t size, const avdtp_stream_endpoint_t *stream_endpoint,
+                                             uint16_t avdtp_cid, uint8_t reconfigure, const adtvp_media_codec_capabilities_t *media_codec, uint16_t *out_size) {
+    uint8_t status;
     switch (media_codec->media_codec_type){
         case AVDTP_CODEC_SBC:
-            avdtp_signaling_setup_media_codec_sbc_config_event(event, size, stream_endpoint, avdtp_cid, reconfigure,
+            status = avdtp_signaling_setup_media_codec_sbc_config_event(event, size, stream_endpoint, avdtp_cid, reconfigure,
                                                                             media_codec->media_codec_information, out_size);
             break;
 
         case AVDTP_CODEC_MPEG_1_2_AUDIO:
-            avdtp_signaling_setup_media_codec_mpeg_audio_config_event(event, size, stream_endpoint, avdtp_cid, reconfigure,
+            status = avdtp_signaling_setup_media_codec_mpeg_audio_config_event(event, size, stream_endpoint, avdtp_cid, reconfigure,
                                                                              media_codec->media_codec_information, out_size);
             break;
 
         case AVDTP_CODEC_MPEG_2_4_AAC:
-            avdtp_signaling_setup_media_codec_mpec_aac_config_event(event, size, stream_endpoint, avdtp_cid, reconfigure,
+            status = avdtp_signaling_setup_media_codec_mpec_aac_config_event(event, size, stream_endpoint, avdtp_cid, reconfigure,
                                                                              media_codec->media_codec_information, out_size);
             break;
 
         case AVDTP_CODEC_ATRAC_FAMILY:
-            avdtp_signaling_setup_media_codec_atrac_config_event(event, size, stream_endpoint, avdtp_cid, reconfigure,
+            status = avdtp_signaling_setup_media_codec_atrac_config_event(event, size, stream_endpoint, avdtp_cid, reconfigure,
                                                                              media_codec->media_codec_information, out_size);
             break;
 
         case AVDTP_CODEC_MPEG_D_USAC:
-            avdtp_signaling_setup_media_codec_mpegd_config_event(event, size, stream_endpoint, avdtp_cid, reconfigure,
+            status = avdtp_signaling_setup_media_codec_mpegd_config_event(event, size, stream_endpoint, avdtp_cid, reconfigure,
                                                                              media_codec->media_codec_information, out_size);
             break;
 
         default:
-            avdtp_signaling_setup_media_codec_other_config_event(event, size, stream_endpoint, avdtp_cid, reconfigure,
+            status = avdtp_signaling_setup_media_codec_other_config_event(event, size, stream_endpoint, avdtp_cid, reconfigure,
                                                                              media_codec, out_size);
             break;
     }
 
-    return *out_size;
+    return status;
 }
 
 void avdtp_signaling_emit_configuration(avdtp_stream_endpoint_t *stream_endpoint, uint16_t avdtp_cid, uint8_t reconfigure,
