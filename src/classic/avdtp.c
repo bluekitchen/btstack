@@ -510,7 +510,8 @@ uint8_t avdtp_validate_media_configuration(const avdtp_stream_endpoint_t *stream
         return 0;
     }
     uint8_t event[AVDTP_MEDIA_CONFIG_OTHER_EVENT_LEN];
-    uint16_t size = avdtp_setup_media_codec_config_event(event, sizeof(event), stream_endpoint, avdtp_cid, reconfigure, media_codec);
+    uint16_t size = 0;
+    avdtp_setup_media_codec_config_event(event, sizeof(event), stream_endpoint, avdtp_cid, reconfigure, media_codec, &size);
     return (*callback)(stream_endpoint, event, size);
 }
 
