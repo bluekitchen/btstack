@@ -1032,6 +1032,19 @@ avdtp_signaling_setup_media_codec_sbc_config_event(uint8_t *event, uint16_t size
     uint8_t block_length_bitmap = media_codec_information[1] >> 4;
     uint8_t subbands_bitmap = (media_codec_information[1] & 0x0F) >> 2;
 
+    if (count_set_bits_uint32(sampling_frequency_bitmap) != 1){
+        return CODEC_SPECIFIC_ERROR_CODE_INVALID_SAMPLING_FREQUENCY;
+    }
+    if (count_set_bits_uint32(channel_mode_bitmap) != 1){
+        return CODEC_SPECIFIC_ERROR_CODE_INVALID_CHANNEL_MODE;
+    }
+    if (count_set_bits_uint32(block_length_bitmap) != 1) {
+        return CODEC_SPECIFIC_ERROR_CODE_INVALID_BLOCK_LENGTH;
+    }
+    if (count_set_bits_uint32(subbands_bitmap) != 1) {
+        return CODEC_SPECIFIC_ERROR_CODE_INVALID_SUBBANDS;
+    }
+
     uint8_t num_channels = 0;
     avdtp_channel_mode_t channel_mode;
 
@@ -1125,6 +1138,13 @@ avdtp_signaling_setup_media_codec_mpeg_audio_config_event(uint8_t *event, uint16
     uint8_t sampling_frequency_bitmap =  (media_codec_information[1] & 0x3F);
     uint8_t vbr                       =  (media_codec_information[2] >> 7) & 0x01;
     uint16_t bit_rate_index_bitmap    = ((media_codec_information[2] & 0x3f) << 8) | media_codec_information[3];
+
+    if (count_set_bits_uint32(sampling_frequency_bitmap) != 1){
+        return CODEC_SPECIFIC_ERROR_CODE_INVALID_SAMPLING_FREQUENCY;
+    }
+    if (count_set_bits_uint32(channel_mode_bitmap) != 1){
+        return CODEC_SPECIFIC_ERROR_CODE_INVALID_CHANNEL_MODE;
+    }
 
     uint8_t layer = 0;
     if (layer_bitmap & 0x04){
@@ -1220,6 +1240,16 @@ avdtp_signaling_setup_media_codec_mpec_aac_config_event(uint8_t *event, uint16_t
     uint8_t  vbr                       =   media_codec_information[3] >> 7;
     uint32_t bit_rate                  = ((media_codec_information[3] & 0x7f) << 16) | (media_codec_information[4] << 8) | media_codec_information[5];
 
+    if (count_set_bits_uint32(object_type_bitmap) != 1) {
+        return CODEC_SPECIFIC_ERROR_CODE_INVALID_OBJECT_TYPE;
+    }
+    if (count_set_bits_uint32(sampling_frequency_bitmap) != 1){
+        return CODEC_SPECIFIC_ERROR_CODE_INVALID_SAMPLING_FREQUENCY;
+    }
+    if (count_set_bits_uint32(channels_bitmap) != 1){
+        return CODEC_SPECIFIC_ERROR_CODE_INVALID_CHANNELS;
+    }
+
     uint8_t object_type = 0;
     if (object_type_bitmap & 0x01){
         object_type = AVDTP_AAC_MPEG4_HE_AAC_ELDv2;
@@ -1300,6 +1330,16 @@ avdtp_signaling_setup_media_codec_mpegd_config_event(uint8_t *event, uint16_t si
 
     uint32_t bit_rate                  = ((media_codec_information[3] & 0x7f) << 16) | (media_codec_information[4] << 8) | media_codec_information[5];
 
+    if (count_set_bits_uint32(object_type_bitmap) != 1) {
+        return CODEC_SPECIFIC_ERROR_CODE_INVALID_OBJECT_TYPE;
+    }
+    if (count_set_bits_uint32(sampling_frequency_bitmap) != 1){
+        return CODEC_SPECIFIC_ERROR_CODE_INVALID_SAMPLING_FREQUENCY;
+    }
+    if (count_set_bits_uint32(channels_bitmap) != 1){
+        return CODEC_SPECIFIC_ERROR_CODE_INVALID_CHANNELS;
+    }
+
     uint8_t object_type = 0;
     if (object_type_bitmap & 0x10){
         object_type = AVDTP_USAC_OBJECT_TYPE_MPEG_D_DRC;
@@ -1357,6 +1397,13 @@ static codec_specific_error_code_t avdtp_signaling_setup_media_codec_atrac_confi
     uint8_t  vbr                       = (media_codec_information[1] >> 3) & 0x01;
     uint16_t bit_rate_index_bitmap     = ((media_codec_information[1]) & 0x07) << 16 | (media_codec_information[2] << 8) | media_codec_information[3];
     uint16_t maximum_sul               = (media_codec_information[4] << 8) | media_codec_information[5];
+
+    if (count_set_bits_uint32(channel_mode_bitmap) != 1) {
+        return CODEC_SPECIFIC_ERROR_CODE_INVALID_CHANNEL_MODE;
+    }
+    if (count_set_bits_uint32(sampling_frequency_bitmap) != 1){
+        return CODEC_SPECIFIC_ERROR_CODE_INVALID_SAMPLING_FREQUENCY;
+    }
 
     uint8_t num_channels = 0;
     avdtp_channel_mode_t channel_mode = AVDTP_CHANNEL_MODE_JOINT_STEREO;
