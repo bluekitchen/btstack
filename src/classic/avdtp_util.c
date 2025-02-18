@@ -1243,14 +1243,35 @@ avdtp_signaling_setup_media_codec_mpec_aac_config_event(uint8_t *event, uint16_t
     if (count_set_bits_uint32(object_type_bitmap) != 1) {
         return CODEC_SPECIFIC_ERROR_CODE_INVALID_OBJECT_TYPE;
     }
-    if ( (object_type_bitmap & 0x40) && (drc != 0u)){
+
+    uint8_t * codec_capabilities = &stream_endpoint->sep.capabilities.media_codec.media_codec_information[0];
+
+    uint8_t object_type_capabilities_bitmap = codec_capabilities[0] >> 1;
+    if ( (object_type_capabilities_bitmap & object_type_bitmap) == 0u){
+        return CODEC_SPECIFIC_ERROR_CODE_NOT_SUPPORTED_OBJECT_TYPE;
+    }
+    if ((object_type_bitmap & 0x40) && (drc != 0u)){
         return CODEC_SPECIFIC_ERROR_CODE_INVALID_DRC;
     }
+
     if (count_set_bits_uint32(sampling_frequency_bitmap) != 1){
         return CODEC_SPECIFIC_ERROR_CODE_INVALID_SAMPLING_FREQUENCY;
     }
+    uint16_t sampling_frequency_capabilities_bitmap = (codec_capabilities[1] << 4) | (codec_capabilities[2] >> 4);
+    if ((sampling_frequency_capabilities_bitmap & sampling_frequency_bitmap) == 0u){
+        return CODEC_SPECIFIC_ERROR_CODE_NOT_SUPPORTED_SAMPLING_FREQUENCY;
+    }
+
     if (count_set_bits_uint32(channels_bitmap) != 1){
         return CODEC_SPECIFIC_ERROR_CODE_INVALID_CHANNELS;
+    }
+    uint8_t channels_capabilities_bitmap = codec_capabilities[2] & 0x0F;
+    if ((channels_capabilities_bitmap & channels_bitmap) == 0u){
+        return CODEC_SPECIFIC_ERROR_CODE_NOT_SUPPORTED_CHANNELS;
+    }
+    uint8_t vbr_capability = codec_capabilities[3] >> 7;
+    if ( (vbr_capability == 0u) && (vbr != 0u)){
+        return CODEC_SPECIFIC_ERROR_CODE_NOT_SUPPORTED_VBR;
     }
 
     uint8_t object_type = 0;
