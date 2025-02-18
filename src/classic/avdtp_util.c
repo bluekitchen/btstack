@@ -1627,6 +1627,14 @@ void avdtp_signaling_emit_delay(uint16_t avdtp_cid, uint8_t local_seid, uint16_t
 codec_specific_error_code_t avdtp_setup_media_codec_config_event(uint8_t *event, uint16_t size, const avdtp_stream_endpoint_t *stream_endpoint,
                                                                  uint16_t avdtp_cid, uint8_t reconfigure, const adtvp_media_codec_capabilities_t *media_codec, uint16_t *out_size) {
     codec_specific_error_code_t status;
+    if (stream_endpoint->sep.capabilities.media_codec.media_codec_type != media_codec->media_codec_type){
+        if ((media_codec->media_codec_type >= AVDTP_CODEC_START_RFU) && (media_codec->media_codec_type < AVDTP_CODEC_NON_A2DP)){
+            return CODEC_SPECIFIC_ERROR_CODE_INVALID_CODEC_TYPE;
+        } else {
+            return CODEC_SPECIFIC_ERROR_CODE_NOT_SUPPORTED_CODEC_TYPE;
+        }
+    }
+
     switch (media_codec->media_codec_type){
         case AVDTP_CODEC_SBC:
             status = avdtp_signaling_setup_media_codec_sbc_config_event(event, size, stream_endpoint, avdtp_cid, reconfigure,
