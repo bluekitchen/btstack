@@ -516,7 +516,7 @@ uint8_t avdtp_validate_media_configuration(const avdtp_stream_endpoint_t *stream
     }
     if (callback == NULL) {
         // config valid
-        return 0;
+        return ERROR_CODE_SUCCESS;
     }
     return (*callback)(stream_endpoint, event, size);
 }
