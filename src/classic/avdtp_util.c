@@ -1243,6 +1243,9 @@ avdtp_signaling_setup_media_codec_mpec_aac_config_event(uint8_t *event, uint16_t
     if (count_set_bits_uint32(object_type_bitmap) != 1) {
         return CODEC_SPECIFIC_ERROR_CODE_INVALID_OBJECT_TYPE;
     }
+    if ( (object_type_bitmap & 0x40) && (drc != 0u)){
+        return CODEC_SPECIFIC_ERROR_CODE_INVALID_DRC;
+    }
     if (count_set_bits_uint32(sampling_frequency_bitmap) != 1){
         return CODEC_SPECIFIC_ERROR_CODE_INVALID_SAMPLING_FREQUENCY;
     }
