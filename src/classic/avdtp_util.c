@@ -1519,16 +1519,55 @@ static codec_specific_error_code_t avdtp_signaling_setup_media_codec_atrac_confi
 
     avdtp_atrac_version_t  version     = (avdtp_atrac_version_t) (media_codec_information[0] >> 5);
     uint8_t  channel_mode_bitmap       = (media_codec_information[0] >> 2) & 0x07;
-    uint16_t sampling_frequency_bitmap = (media_codec_information[1] >> 4) & 0x03;
+    uint8_t  sampling_frequency_bitmap = (media_codec_information[1] >> 4) & 0x03;
     uint8_t  vbr                       = (media_codec_information[1] >> 3) & 0x01;
     uint16_t bit_rate_index_bitmap     = ((media_codec_information[1]) & 0x07) << 16 | (media_codec_information[2] << 8) | media_codec_information[3];
     uint16_t maximum_sul               = (media_codec_information[4] << 8) | media_codec_information[5];
 
+    uint8_t * codec_capabilities = &stream_endpoint->sep.capabilities.media_codec.media_codec_information[0];
+
+    if (version >= AVDTP_ATRAC_VERSION_RFU){
+        return CODEC_SPECIFIC_ERROR_CODE_INVALID_VERSION;
+    }
+    uint8_t version_capability = (avdtp_atrac_version_t) (codec_capabilities[0] >> 5);
+    if (version_capability != version){
+        return CODEC_SPECIFIC_ERROR_CODE_NOT_SUPPORTED_VERSION;
+    }
+
     if (count_set_bits_uint32(channel_mode_bitmap) != 1) {
         return CODEC_SPECIFIC_ERROR_CODE_INVALID_CHANNEL_MODE;
     }
+    uint8_t channel_mode_capabilities_bitmap = (codec_capabilities[0] >> 2) & 0x07;
+    if ((channel_mode_capabilities_bitmap & channel_mode_bitmap) == 0u){
+        return CODEC_SPECIFIC_ERROR_CODE_NOT_SUPPORTED_CHANNEL_MODE;
+    }
+
     if (count_set_bits_uint32(sampling_frequency_bitmap) != 1){
         return CODEC_SPECIFIC_ERROR_CODE_INVALID_SAMPLING_FREQUENCY;
+    }
+    uint8_t sampling_frequency_capabilities_bitmap = (codec_capabilities[1] >> 4) & 0x03;
+    if ((sampling_frequency_capabilities_bitmap & sampling_frequency_bitmap) == 0u){
+        return CODEC_SPECIFIC_ERROR_CODE_NOT_SUPPORTED_SAMPLING_FREQUENCY;
+    }
+
+    uint8_t vbr_capability = (codec_capabilities[1] >> 3) & 0x01;
+    if ( (vbr_capability == 0u) && (vbr != 0u)){
+        return CODEC_SPECIFIC_ERROR_CODE_NOT_SUPPORTED_VBR;
+    }
+
+    if (vbr == 0u){
+        if (count_set_bits_uint32(bit_rate_index_bitmap) != 1) {
+            return CODEC_SPECIFIC_ERROR_CODE_INVALID_BITRATE;
+        }
+        uint8_t bit_rate_index_capabilities_bitmap = ((codec_capabilities[1]) & 0x07) << 16 | (codec_capabilities[2] << 8) | codec_capabilities[3];
+        if ((bit_rate_index_capabilities_bitmap & bit_rate_index_bitmap) == 0u){
+            return CODEC_SPECIFIC_ERROR_CODE_NOT_SUPPORTED_BITRATE;
+        }
+    }
+
+    uint16_t maximum_sul_capability = (codec_capabilities[4] << 8) | codec_capabilities[5];
+    if ( maximum_sul_capability < maximum_sul){
+        return CODEC_SPECIFIC_ERROR_CODE_NOT_SUPPORTED_MAXIMUM_SUL;
     }
 
     uint8_t num_channels = 0;
