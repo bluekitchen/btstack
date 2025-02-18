@@ -1139,11 +1139,54 @@ avdtp_signaling_setup_media_codec_mpeg_audio_config_event(uint8_t *event, uint16
     uint8_t vbr                       =  (media_codec_information[2] >> 7) & 0x01;
     uint16_t bit_rate_index_bitmap    = ((media_codec_information[2] & 0x3f) << 8) | media_codec_information[3];
 
+    if (count_set_bits_uint32(layer_bitmap) != 1){
+        return CODEC_SPECIFIC_ERROR_CODE_INVALID_LAYER;
+    }
+    uint8_t * codec_capabilities = &stream_endpoint->sep.capabilities.media_codec.media_codec_information[0];
+    uint8_t layer_capabilities_bitmap = codec_capabilities[0] >> 5;
+    if ((layer_capabilities_bitmap & layer_bitmap) == 0u){
+        return CODEC_SPECIFIC_ERROR_CODE_NOT_SUPPORTED_LAYER;
+    }
+    uint8_t crc_capability = (codec_capabilities[0] >> 4) & 0x01;
+    if ((crc_capability == 0u) && (crc != 0u)){
+        return CODEC_SPECIFIC_ERROR_CODE_NOT_SUPPORTED_CRC;
+    }
+
+    if (count_set_bits_uint32(channel_mode_bitmap) != 1){
+        return CODEC_SPECIFIC_ERROR_CODE_INVALID_CHANNEL_MODE;
+    }
+    uint8_t channel_mode_capability_bitmap = codec_capabilities[0] & 0x07;
+    if ((channel_mode_capability_bitmap & channel_mode_bitmap) == 0u){
+        return CODEC_SPECIFIC_ERROR_CODE_NOT_SUPPORTED_CHANNEL_MODE;
+    }
+
+    uint8_t mpf_capability = (codec_capabilities[1] >> 6) & 0x01;
+    if ((mpf_capability == 0u) && (mpf != 0u)){
+        return CODEC_SPECIFIC_ERROR_CODE_NOT_SUPPORTED_MPF;
+    }
+
     if (count_set_bits_uint32(sampling_frequency_bitmap) != 1){
         return CODEC_SPECIFIC_ERROR_CODE_INVALID_SAMPLING_FREQUENCY;
     }
-    if (count_set_bits_uint32(channel_mode_bitmap) != 1){
-        return CODEC_SPECIFIC_ERROR_CODE_INVALID_CHANNEL_MODE;
+    uint8_t sampling_frequency_capability_bitmap = (codec_capabilities[1] & 0x3F);
+    if ((sampling_frequency_capability_bitmap & sampling_frequency_bitmap) == 0u){
+        return CODEC_SPECIFIC_ERROR_CODE_NOT_SUPPORTED_SAMPLING_FREQUENCY;
+    }
+
+    uint8_t vbr_capability = (codec_capabilities[2] >> 7) & 0x01;
+    if ( (vbr_capability == 0u) && (vbr != 0u)){
+        return CODEC_SPECIFIC_ERROR_CODE_NOT_SUPPORTED_VBR;
+    }
+
+    if (count_set_bits_uint32(bit_rate_index_bitmap) != 1){
+        return CODEC_SPECIFIC_ERROR_CODE_INVALID_BITRATE;
+    }
+    if ( (bit_rate_index_bitmap & (1 << 15)) != 0u){
+        return CODEC_SPECIFIC_ERROR_CODE_INVALID_BITRATE;
+    }
+    uint8_t bit_rate_capability_bitmap = ((codec_capabilities[2] & 0x3f) << 8) | codec_capabilities[3];
+    if ((bit_rate_capability_bitmap & bit_rate_index_bitmap) == 0u){
+        return CODEC_SPECIFIC_ERROR_CODE_NOT_SUPPORTED_BITRATE;
     }
 
     uint8_t layer = 0;
