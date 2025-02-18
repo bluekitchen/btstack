@@ -1031,18 +1031,53 @@ avdtp_signaling_setup_media_codec_sbc_config_event(uint8_t *event, uint16_t size
     uint8_t channel_mode_bitmap = media_codec_information[0] & 0x0F;
     uint8_t block_length_bitmap = media_codec_information[1] >> 4;
     uint8_t subbands_bitmap = (media_codec_information[1] & 0x0F) >> 2;
+    uint8_t allocation_method_bitmap = media_codec_information[1] & 0x03;
+    uint8_t minimum_bitpool_value = media_codec_information[2];
+    uint8_t maximum_bitpool_value = media_codec_information[3];
 
     if (count_set_bits_uint32(sampling_frequency_bitmap) != 1){
         return CODEC_SPECIFIC_ERROR_CODE_INVALID_SAMPLING_FREQUENCY;
     }
+
+    uint8_t * codec_capabilities = &stream_endpoint->sep.capabilities.media_codec.media_codec_information[0];
+    uint8_t sampling_frequency_capabilities_bitmap = codec_capabilities[0] >> 4;
+    if ((sampling_frequency_capabilities_bitmap & sampling_frequency_bitmap) == 0u){
+        return CODEC_SPECIFIC_ERROR_CODE_NOT_SUPPORTED_SAMPLING_FREQUENCY;
+    }
+
     if (count_set_bits_uint32(channel_mode_bitmap) != 1){
         return CODEC_SPECIFIC_ERROR_CODE_INVALID_CHANNEL_MODE;
     }
+    uint8_t channel_mode_capabilities_bitmap = codec_capabilities[0] & 0x0F;
+    if ((channel_mode_capabilities_bitmap & channel_mode_bitmap) == 0u){
+        return CODEC_SPECIFIC_ERROR_CODE_NOT_SUPPORTED_CHANNEL_MODE;
+    }
+
     if (count_set_bits_uint32(block_length_bitmap) != 1) {
         return CODEC_SPECIFIC_ERROR_CODE_INVALID_BLOCK_LENGTH;
     }
+
     if (count_set_bits_uint32(subbands_bitmap) != 1) {
         return CODEC_SPECIFIC_ERROR_CODE_INVALID_SUBBANDS;
+    }
+    uint8_t subbands_capabilities_bitmap = (codec_capabilities[1] & 0x0F) >> 2;
+    if ((subbands_capabilities_bitmap & subbands_bitmap) == 0u){
+        return CODEC_SPECIFIC_ERROR_CODE_NOT_SUPPORTED_SUBBANDS;
+    }
+
+    if (count_set_bits_uint32(allocation_method_bitmap) != 1) {
+        return CODEC_SPECIFIC_ERROR_CODE_INVALID_ALLOCATION_METHOD;
+    }
+    uint8_t allocation_method_capabilities_bitmap = codec_capabilities[1] & 0x03;
+    if ((allocation_method_capabilities_bitmap & allocation_method_bitmap) == 0u){
+        return CODEC_SPECIFIC_ERROR_CODE_NOT_SUPPORTED_ALLOCATION_METHOD;
+    }
+
+    if (maximum_bitpool_value > 250){
+        return CODEC_SPECIFIC_ERROR_CODE_INVALID_MAXIMUM_BITPOOL_VALUE;
+    }
+    if ((minimum_bitpool_value < 2) || (minimum_bitpool_value > maximum_bitpool_value)){
+        return CODEC_SPECIFIC_ERROR_CODE_INVALID_MINIMUM_BITPOOL_VALUE;
     }
 
     uint8_t num_channels = 0;
@@ -1098,9 +1133,9 @@ avdtp_signaling_setup_media_codec_sbc_config_event(uint8_t *event, uint16_t size
     event[pos++] = num_channels;
     event[pos++] = block_length;
     event[pos++] = subbands;
-    event[pos++] = media_codec_information[1] & 0x03;
-    event[pos++] = media_codec_information[2];
-    event[pos++] = media_codec_information[3];
+    event[pos++] = allocation_method_bitmap;
+    event[pos++] = minimum_bitpool_value;
+    event[pos++] = maximum_bitpool_value;
 
     btstack_assert(pos == AVDTP_MEDIA_CONFIG_SBC_EVENT_LEN);
     *out_size = pos;
