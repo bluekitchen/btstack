@@ -188,7 +188,8 @@ typedef enum {
     AVDTP_CODEC_MPEG_2_4_AAC    = 0x02,
     AVDTP_CODEC_MPEG_D_USAC     = 0x03,
     AVDTP_CODEC_ATRAC_FAMILY    = 0x04,
-    AVDTP_CODEC_NON_A2DP        = 0xFF
+    AVDTP_CODEC_START_RFU       = 0x05,
+    AVDTP_CODEC_NON_A2DP        = 0xFF,
 } avdtp_media_codec_type_t;
 
 typedef enum {
