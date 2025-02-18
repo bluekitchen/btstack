@@ -326,7 +326,8 @@ typedef enum {
 typedef enum {
     AVDTP_ATRAC_VERSION_1 = 1,
     AVDTP_ATRAC_VERSION_2,
-    AVDTP_ATRAC_VERSION_3
+    AVDTP_ATRAC_VERSION_3,
+    AVDTP_ATRAC_VERSION_RFU
 } avdtp_atrac_version_t;
 
 // used for MPEG1/2 Audio, ATRAC (no stereo mode)
