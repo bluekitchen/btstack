@@ -579,8 +579,10 @@ void gap_set_page_timeout(uint16_t page_timeout);
  * @param scan_interval range 0x0004..0x4000, unit 0.625 ms
  * @param scan_window range 0x0004..0x4000, unit 0.625 ms
  * @param scanning_filter_policy 0 = all devices, 1 = all from whitelist
+ * @return status
  */
-void gap_set_scan_params(uint8_t scan_type, uint16_t scan_interval, uint16_t scan_window, uint8_t scanning_filter_policy);
+uint8_t gap_set_scan_params(uint8_t scan_type, uint16_t scan_interval, uint16_t scan_window,
+                            uint8_t scanning_filter_policy);
 
 /**
  * @brief Set parameters for LE Scan

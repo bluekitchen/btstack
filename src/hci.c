@@ -8596,13 +8596,21 @@ void gap_stop_scan(void){
     hci_run();
 }
 
-void gap_set_scan_params(uint8_t scan_type, uint16_t scan_interval, uint16_t scan_window, uint8_t scanning_filter_policy){
+uint8_t gap_set_scan_params(uint8_t scan_type, uint16_t scan_interval, uint16_t scan_window,
+                            uint8_t scanning_filter_policy){
+    if ((scan_type > 1)
+        || (scan_interval < 0x0004) || (scan_interval > 0x400)
+        || (scan_window   < 0x0004) || (scan_window   > 0x400)
+        || (scanning_filter_policy > 2)){
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
     hci_stack->le_scan_type          = scan_type;
     hci_stack->le_scan_filter_policy = scanning_filter_policy;
     hci_stack->le_scan_interval      = scan_interval;
     hci_stack->le_scan_window        = scan_window;
     hci_stack->le_scanning_param_update = true;
     hci_run();
+    return ERROR_CODE_SUCCESS;
 }
 
 void gap_set_scan_parameters(uint8_t scan_type, uint16_t scan_interval, uint16_t scan_window){
