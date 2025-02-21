@@ -10470,12 +10470,15 @@ static void hci_emit_bis_can_send_now(const le_audio_big_t *big, uint8_t bis_ind
     hci_emit_btstack_event(&event[0], sizeof(event), 0);  // don't dump
 }
 
-static void hci_emit_cis_can_send_now(hci_con_handle_t cis_con_handle) {
+static void hci_emit_cis_can_send_now(const hci_iso_stream_t* iso_stream, uint8_t stream_index, bool group_complete) {
+    UNUSED(stream_index);
+    UNUSED(group_complete);
+
     uint8_t event[4];
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_CIS_CAN_SEND_NOW;
     event[pos++] = sizeof(event) - 2;
-    little_endian_store_16(event, pos, cis_con_handle);
+    little_endian_store_16(event, pos, iso_stream->cis_handle);
     hci_emit_btstack_event(&event[0], sizeof(event), 0);  // don't dump
 }
 
@@ -10612,7 +10615,8 @@ static void hci_iso_notify_can_send_now(void){
             if ((iso_stream->can_send_now_requested) &&
                 (iso_stream->num_packets_sent < hci_stack->iso_packets_to_queue)){
                 iso_stream->can_send_now_requested = false;
-                hci_emit_cis_can_send_now(iso_stream->cis_handle);
+                bool group_complete = cig->highest_outgoing_cis_index == i;
+                hci_emit_cis_can_send_now(iso_stream, i, group_complete);
                 if (hci_stack->hci_packet_buffer_reserved) return;
             }
         }
@@ -10626,7 +10630,7 @@ static void hci_iso_notify_can_send_now(void){
             (iso_stream->role == HCI_ROLE_SLAVE) &&
             (iso_stream->num_packets_sent < hci_stack->iso_packets_to_queue)){
             iso_stream->can_send_now_requested = false;
-            hci_emit_cis_can_send_now(iso_stream->cis_handle);
+            hci_emit_cis_can_send_now(iso_stream, 0, true);
             if (hci_stack->hci_packet_buffer_reserved) return;
         }
     }
