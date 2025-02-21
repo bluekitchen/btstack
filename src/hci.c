@@ -10855,8 +10855,9 @@ uint8_t gap_cis_create(uint8_t cig_id, hci_con_handle_t cis_con_handles [], hci_
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
-    // store ACL Connection Handles
+    // store ACL Connection Handles and set highest outgoing cis index
     uint8_t i;
+    cig->highest_outgoing_cis_index = 0;
     for (i=0;i<cig->num_cis;i++){
         // check that all con handles exist and store
         hci_con_handle_t cis_handle = cis_con_handles[i];
@@ -10872,6 +10873,9 @@ uint8_t gap_cis_create(uint8_t cig_id, hci_con_handle_t cis_con_handles [], hci_
                 btstack_assert(iso_stream != NULL);
                 iso_stream->acl_handle = acl_con_handles[j];
                 found = true;
+                if (iso_stream->max_sdu_c_to_p > 0) {
+                    cig->highest_outgoing_cis_index = i;
+                }
                 break;
             }
         }

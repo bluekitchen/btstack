@@ -320,6 +320,7 @@ typedef struct {
     hci_con_handle_t acl_con_handles[MAX_NR_CIS];
     bool cis_setup_active[MAX_NR_CIS];
     bool cis_established[MAX_NR_CIS];
+    uint8_t highest_outgoing_cis_index;
     // request to send
     bool can_send_now_requested;
 } le_audio_cig_t;
