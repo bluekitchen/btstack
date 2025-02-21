@@ -1153,8 +1153,12 @@ typedef uint8_t sm_key_t[16];
 #define HCI_EVENT_BIS_CAN_SEND_NOW                         0x6Bu
 
 /**
- * @format H
+ * @format 11H11
+ * @param cig_id
+ * @param cis_id
  * @param cis_con_handle
+ * @param stream_index
+ * @param group_complete
  */
 #define HCI_EVENT_CIS_CAN_SEND_NOW                         0x6Cu
 

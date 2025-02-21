@@ -10474,12 +10474,17 @@ static void hci_emit_cis_can_send_now(const hci_iso_stream_t* iso_stream, uint8_
     UNUSED(stream_index);
     UNUSED(group_complete);
 
-    uint8_t event[4];
+    uint8_t event[8];
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_CIS_CAN_SEND_NOW;
     event[pos++] = sizeof(event) - 2;
+    event[pos++] = iso_stream->group_id;
+    event[pos++] = iso_stream->stream_id;
     little_endian_store_16(event, pos, iso_stream->cis_handle);
-    hci_emit_btstack_event(&event[0], sizeof(event), 0);  // don't dump
+    pos += 2;
+    event[pos++] = stream_index;
+    event[pos++] = group_complete;
+    hci_emit_btstack_event(&event[0], pos, 0);  // don't dump
 }
 
 static le_audio_big_t * hci_big_for_handle(uint8_t big_handle){

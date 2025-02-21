@@ -1713,13 +1713,49 @@ static inline hci_con_handle_t hci_event_bis_can_send_now_get_con_handle(const u
 }
 
 /**
+ * @brief Get field cig_id from event HCI_EVENT_CIS_CAN_SEND_NOW
+ * @param event packet
+ * @return cig_id
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_cis_can_send_now_get_cig_id(const uint8_t * event){
+    return event[2];
+}
+/**
+ * @brief Get field cis_id from event HCI_EVENT_CIS_CAN_SEND_NOW
+ * @param event packet
+ * @return cis_id
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_cis_can_send_now_get_cis_id(const uint8_t * event){
+    return event[3];
+}
+/**
  * @brief Get field cis_con_handle from event HCI_EVENT_CIS_CAN_SEND_NOW
  * @param event packet
  * @return cis_con_handle
  * @note: btstack_type H
  */
 static inline hci_con_handle_t hci_event_cis_can_send_now_get_cis_con_handle(const uint8_t * event){
-    return little_endian_read_16(event, 2);
+    return little_endian_read_16(event, 4);
+}
+/**
+ * @brief Get field stream_index from event HCI_EVENT_CIS_CAN_SEND_NOW
+ * @param event packet
+ * @return stream_index
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_cis_can_send_now_get_stream_index(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field group_complete from event HCI_EVENT_CIS_CAN_SEND_NOW
+ * @param event packet
+ * @return group_complete
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_cis_can_send_now_get_group_complete(const uint8_t * event){
+    return event[7];
 }
 
 
