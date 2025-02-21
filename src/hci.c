@@ -10601,12 +10601,29 @@ static void hci_iso_notify_can_send_now(void){
         }
     }
 
+    // CIG
 
-    // CIS
+    // Central: iterate over all CIG and in each CIG over all CIS
+    btstack_linked_list_iterator_init(&it, &hci_stack->le_audio_bigs);
+    while (btstack_linked_list_iterator_has_next(&it)) {
+        le_audio_cig_t * cig = (le_audio_cig_t *) btstack_linked_list_iterator_next(&it);
+        for (uint8_t i=0;i<cig->num_cis;i++){
+            hci_iso_stream_t * iso_stream = hci_iso_stream_for_con_handle(cig->cis_con_handles[i]);
+            if ((iso_stream->can_send_now_requested) &&
+                (iso_stream->num_packets_sent < hci_stack->iso_packets_to_queue)){
+                iso_stream->can_send_now_requested = false;
+                hci_emit_cis_can_send_now(iso_stream->cis_handle);
+                if (hci_stack->hci_packet_buffer_reserved) return;
+            }
+        }
+    }
+
+    // Peripheral: iterate over all CIS
     btstack_linked_list_iterator_init(&it, &hci_stack->iso_streams);
     while (btstack_linked_list_iterator_has_next(&it)) {
-        hci_iso_stream_t *iso_stream = (hci_iso_stream_t *) btstack_linked_list_iterator_next(&it);
+        hci_iso_stream_t * iso_stream = (hci_iso_stream_t *) btstack_linked_list_iterator_next(&it);
         if ((iso_stream->can_send_now_requested) &&
+            (iso_stream->role == HCI_ROLE_SLAVE) &&
             (iso_stream->num_packets_sent < hci_stack->iso_packets_to_queue)){
             iso_stream->can_send_now_requested = false;
             hci_emit_cis_can_send_now(iso_stream->cis_handle);
