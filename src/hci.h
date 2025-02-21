@@ -1542,10 +1542,15 @@ uint8_t hci_send_sco_packet_buffer(int size);
 uint8_t hci_request_bis_can_send_now_events(uint8_t big_handle);
 
 /**
- * @brief Request emission of HCI_EVENT_CIS_CAN_SEND_NOW for CIS as soon as possible
- * @param cis_con_handle
+ * @brief Request emission of HCI_EVENT_CIS_CAN_SEND_NOW for all outgoing CIS of referenced CIG
+ *
+ * @note As CIG_IDs are only unique for Central, a CIS Connection Handle is used to identify the CIG.
+ *       The group_complete field in HCI_EVENT_CIS_CAN_SEND_NOW can be used to request again.
+ *
  * @note HCI_EVENT_CIS_CAN_SEND_NOW might be emitted during call to this function
  *       so packet handler should be ready to handle it
+ *
+ * @param cis_con_handle
  */
 uint8_t hci_request_cis_can_send_now_events(hci_con_handle_t cis_con_handle);
 

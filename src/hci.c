@@ -10474,6 +10474,9 @@ static void hci_emit_cis_can_send_now(const hci_iso_stream_t* iso_stream, uint8_
     UNUSED(stream_index);
     UNUSED(group_complete);
 
+    log_info("Emit CIS CAN Send now for group_id %u, stream_id %u, cis_handle 0x%04x, stream_index %u, group_complete %u",
+             iso_stream->group_id, iso_stream->stream_id, iso_stream->cis_handle, stream_index, group_complete);
+
     uint8_t event[8];
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_CIS_CAN_SEND_NOW;
@@ -10612,17 +10615,21 @@ static void hci_iso_notify_can_send_now(void){
     // CIG
 
     // Central: iterate over all CIG and in each CIG over all CIS
-    btstack_linked_list_iterator_init(&it, &hci_stack->le_audio_bigs);
+    btstack_linked_list_iterator_init(&it, &hci_stack->le_audio_cigs);
     while (btstack_linked_list_iterator_has_next(&it)) {
         le_audio_cig_t * cig = (le_audio_cig_t *) btstack_linked_list_iterator_next(&it);
         for (uint8_t i=0;i<cig->num_cis;i++){
             hci_iso_stream_t * iso_stream = hci_iso_stream_for_con_handle(cig->cis_con_handles[i]);
-            if ((iso_stream->can_send_now_requested) &&
-                (iso_stream->num_packets_sent < hci_stack->iso_packets_to_queue)){
-                iso_stream->can_send_now_requested = false;
-                bool group_complete = cig->highest_outgoing_cis_index == i;
-                hci_emit_cis_can_send_now(iso_stream, i, group_complete);
-                if (hci_stack->hci_packet_buffer_reserved) return;
+            if (iso_stream->can_send_now_requested) {
+                if ((iso_stream->num_packets_sent < hci_stack->iso_packets_to_queue)) {
+                    iso_stream->can_send_now_requested = false;
+                    bool group_complete = cig->highest_outgoing_cis_index == i;
+                    hci_emit_cis_can_send_now(iso_stream, i, group_complete);
+                    if (hci_stack->hci_packet_buffer_reserved) return;
+                } else {
+                    // wait for next round
+                    break;
+                }
             }
         }
     }
@@ -10782,7 +10789,21 @@ uint8_t hci_request_cis_can_send_now_events(hci_con_handle_t cis_con_handle){
     if ((iso_stream->iso_type != HCI_ISO_TYPE_CIS) && (iso_stream->state != HCI_ISO_STREAM_STATE_ESTABLISHED)) {
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
-    iso_stream->can_send_now_requested = true;
+    // get CIG
+    le_audio_cig_t * cig = hci_cig_for_id(iso_stream->group_id);
+    if (cig == NULL) {
+        log_info("No CIG, only set flag for single CIS 0x%04x", cis_con_handle);
+        iso_stream->can_send_now_requested = true;
+    } else {
+        log_info("Have CIG #%04x", cig->cig_id);
+        for (uint8_t i = 0; i<cig->num_cis;i++) {
+            if (cig->params->cis_params[i].max_sdu_c_to_p > 0) {
+                hci_iso_stream_t * cis = hci_iso_stream_for_con_handle(cig->cis_con_handles[i]);
+                log_info("- CIS index %u, max_sdu_c_to_p %u", i, cig->params->cis_params[i].max_sdu_c_to_p);
+                cis->can_send_now_requested = true;
+            }
+        }
+    }
     hci_iso_notify_can_send_now();
     return ERROR_CODE_SUCCESS;
 }
@@ -10873,6 +10894,9 @@ uint8_t gap_cis_create(uint8_t cig_id, hci_con_handle_t cis_con_handles [], hci_
         if (cis_handle == HCI_CON_HANDLE_INVALID){
             return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
         }
+        if (cig->params->cis_params[i].max_sdu_c_to_p > 0) {
+            cig->highest_outgoing_cis_index = i;
+        }
         uint8_t j;
         bool found = false;
         for (j=0;j<cig->num_cis;j++){
@@ -10882,9 +10906,6 @@ uint8_t gap_cis_create(uint8_t cig_id, hci_con_handle_t cis_con_handles [], hci_
                 btstack_assert(iso_stream != NULL);
                 iso_stream->acl_handle = acl_con_handles[j];
                 found = true;
-                if (iso_stream->max_sdu_c_to_p > 0) {
-                    cig->highest_outgoing_cis_index = i;
-                }
                 break;
             }
         }
@@ -10892,6 +10913,8 @@ uint8_t gap_cis_create(uint8_t cig_id, hci_con_handle_t cis_con_handles [], hci_
             return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
         }
     }
+
+    log_info("CIS Create; highest outgoing cis index %u", cig->highest_outgoing_cis_index);
 
     cig->state = LE_AUDIO_CIG_STATE_CREATE_CIS;
     hci_run();
