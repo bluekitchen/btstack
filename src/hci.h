@@ -761,6 +761,7 @@ typedef struct {
     hci_con_handle_t acl_handle;
 
     // connection info
+    hci_role_t role;
     uint8_t  number_of_subevents;
     uint8_t  burst_number_c_to_p;
     uint8_t  burst_number_p_to_c;

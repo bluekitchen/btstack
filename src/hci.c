@@ -247,7 +247,7 @@ static uint8_t hci_le_extended_advertising_operation_for_chunk(uint16_t pos, uin
 #endif /* ENABLE_LE_EXTENDED_ADVERTISING */
 #endif /* ENABLE_LE_PERIPHERAL */
 #ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
-static hci_iso_stream_t * hci_iso_stream_create(hci_iso_type_t iso_type, hci_iso_stream_state_t state, uint8_t group_id, uint8_t stream_id);
+static hci_iso_stream_t * hci_iso_stream_create(hci_iso_type_t iso_type, hci_role_t role, hci_iso_stream_state_t state, uint8_t group_id, uint8_t stream_id);
 static void hci_iso_stream_finalize(hci_iso_stream_t * iso_stream);
 static void hci_iso_stream_finalize_by_type_and_group_id(hci_iso_type_t iso_type, uint8_t group_id);
 static hci_iso_stream_t * hci_iso_stream_for_con_handle(hci_con_handle_t con_handle);
@@ -4561,9 +4561,9 @@ static void event_handler(uint8_t *packet, uint16_t size){
 #ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
                 case HCI_SUBEVENT_LE_CIS_REQUEST:
                     // incoming CIS request, allocate iso stream object and cache metadata
-                    iso_stream = hci_iso_stream_create(HCI_ISO_TYPE_CIS, HCI_ISO_STREAM_W4_USER,
-                                                       hci_subevent_le_cis_request_get_cig_id(packet),
-                                                       hci_subevent_le_cis_request_get_cis_id(packet));
+                    iso_stream = hci_iso_stream_create(HCI_ISO_TYPE_CIS, HCI_ROLE_SLAVE,
+                                                       HCI_ISO_STREAM_W4_USER,
+                                                       hci_subevent_le_cis_request_get_cig_id(packet), hci_subevent_le_cis_request_get_cis_id(packet));
                     // if there's no memory, gap_cis_accept/gap_cis_reject will fail
                     if (iso_stream != NULL){
                         iso_stream->cis_handle = hci_subevent_le_cis_request_get_cis_connection_handle(packet);
@@ -10207,10 +10207,11 @@ uint8_t gap_periodic_advertising_terminate_sync(uint16_t sync_handle){
 #endif
 #ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
 static hci_iso_stream_t *
-hci_iso_stream_create(hci_iso_type_t iso_type, hci_iso_stream_state_t state, uint8_t group_id, uint8_t stream_id) {
+hci_iso_stream_create(hci_iso_type_t iso_type, hci_role_t role, hci_iso_stream_state_t state, uint8_t group_id, uint8_t stream_id) {
     hci_iso_stream_t * iso_stream = btstack_memory_hci_iso_stream_get();
     if (iso_stream != NULL){
         iso_stream->iso_type = iso_type;
+        iso_stream->role = role;
         iso_stream->state = state;
         iso_stream->group_id = group_id;
         iso_stream->stream_id = stream_id;
@@ -10633,7 +10634,7 @@ static uint8_t gap_big_setup_iso_streams(uint8_t num_bis, uint8_t big_handle){
     uint8_t i;
     uint8_t status = ERROR_CODE_SUCCESS;
     for (i=0;i<num_bis;i++){
-        hci_iso_stream_t * iso_stream = hci_iso_stream_create(HCI_ISO_TYPE_BIS, HCI_ISO_STREAM_STATE_REQUESTED, big_handle, i);
+        hci_iso_stream_t * iso_stream = hci_iso_stream_create(HCI_ISO_TYPE_BIS, HCI_ROLE_MASTER, HCI_ISO_STREAM_STATE_REQUESTED, big_handle, i);
         if (iso_stream == NULL) {
             status = ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
             break;
@@ -10775,7 +10776,7 @@ uint8_t gap_cig_create(le_audio_cig_t * storage, le_audio_cig_params_t * cig_par
     uint8_t i;
     uint8_t status = ERROR_CODE_SUCCESS;
     for (i=0;i<cig_params->num_cis;i++){
-        hci_iso_stream_t * iso_stream = hci_iso_stream_create(HCI_ISO_TYPE_CIS,HCI_ISO_STREAM_STATE_REQUESTED, cig_params->cig_id, i);
+        hci_iso_stream_t * iso_stream = hci_iso_stream_create(HCI_ISO_TYPE_CIS,HCI_ROLE_MASTER, HCI_ISO_STREAM_STATE_REQUESTED, cig_params->cig_id, i);
         if (iso_stream == NULL) {
             status = ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
             break;
