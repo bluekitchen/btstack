@@ -1163,7 +1163,6 @@ uint8_t hci_send_iso_packet_buffer(uint16_t size){
     }
 
     // track outgoing packet sent
-    log_info("Outgoing ISO packet for con handle 0x%04x", con_handle);
     iso_stream->num_packets_sent++;
 
     // setup data
@@ -3766,8 +3765,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
                                 big->num_completed_timestamp_current_ms = btstack_run_loop_get_time_ms();
                             }
                         }
-                        log_info("hci_number_completed_packet %u processed for handle %u, outstanding %u",
-                                 num_packets, handle, iso_stream->num_packets_sent);
+                        //  log_info("hci_number_completed_packet %u processed for handle %04x, outstanding %u", num_packets, handle, iso_stream->num_packets_sent);
                         notify_iso = true;
                     }
                 }
@@ -10471,12 +10469,6 @@ static void hci_emit_bis_can_send_now(const le_audio_big_t *big, uint8_t bis_ind
 }
 
 static void hci_emit_cis_can_send_now(const hci_iso_stream_t* iso_stream, uint8_t stream_index, bool group_complete) {
-    UNUSED(stream_index);
-    UNUSED(group_complete);
-
-    log_info("Emit CIS CAN Send now for group_id %u, stream_id %u, cis_handle 0x%04x, stream_index %u, group_complete %u",
-             iso_stream->group_id, iso_stream->stream_id, iso_stream->cis_handle, stream_index, group_complete);
-
     uint8_t event[8];
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_CIS_CAN_SEND_NOW;
@@ -10792,14 +10784,11 @@ uint8_t hci_request_cis_can_send_now_events(hci_con_handle_t cis_con_handle){
     // get CIG
     le_audio_cig_t * cig = hci_cig_for_id(iso_stream->group_id);
     if (cig == NULL) {
-        log_info("No CIG, only set flag for single CIS 0x%04x", cis_con_handle);
         iso_stream->can_send_now_requested = true;
     } else {
-        log_info("Have CIG #%04x", cig->cig_id);
         for (uint8_t i = 0; i<cig->num_cis;i++) {
             if (cig->params->cis_params[i].max_sdu_c_to_p > 0) {
                 hci_iso_stream_t * cis = hci_iso_stream_for_con_handle(cig->cis_con_handles[i]);
-                log_info("- CIS index %u, max_sdu_c_to_p %u", i, cig->params->cis_params[i].max_sdu_c_to_p);
                 cis->can_send_now_requested = true;
             }
         }
