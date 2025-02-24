@@ -272,21 +272,21 @@ static void hid_emit_set_protocol_response_event(hid_host_connection_t * connect
     hid_host_callback(HCI_EVENT_PACKET, connection->hid_cid, &event[0], pos);
 }
 
-static void hid_emit_incoming_connection_event(hid_host_connection_t * connection){
+static void hid_emit_incoming_connection_event(uint16_t hid_cid, bd_addr_t remote_addr, hci_con_handle_t con_handle, uint8_t status){
     uint8_t event[14];
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_HID_META;
     pos++;  // skip len
     event[pos++] = HID_SUBEVENT_INCOMING_CONNECTION;
-    little_endian_store_16(event, pos, connection->hid_cid);
+    little_endian_store_16(event, pos, hid_cid);
     pos += 2;
-    reverse_bd_addr(connection->remote_addr, &event[pos]);
+    reverse_bd_addr(remote_addr, &event[pos]);
     pos += 6;
-    little_endian_store_16(event,pos,connection->con_handle);
+    little_endian_store_16(event,pos,con_handle);
     pos += 2;
-    event[pos++] = ERROR_CODE_SUCCESS;
+    event[pos++] = status;
     event[1] = pos - 2;
-    hid_host_callback(HCI_EVENT_PACKET, connection->hid_cid, &event[0], pos);
+    hid_host_callback(HCI_EVENT_PACKET, hid_cid, &event[0], pos);
 }   
 
 // setup get report response event - potentially in-place of original l2cap packet
@@ -846,6 +846,7 @@ static void hid_host_packet_handler(uint8_t packet_type, uint16_t channel, uint8
     uint8_t   status;
     uint16_t  l2cap_cid;
     hid_host_connection_t * connection;
+    hci_con_handle_t con_handle;
 
     switch (packet_type) {
 
@@ -870,7 +871,8 @@ static void hid_host_packet_handler(uint8_t packet_type, uint16_t channel, uint8
             event = hci_event_packet_get_type(packet);
             switch (event) {            
                 case L2CAP_EVENT_INCOMING_CONNECTION:
-                    l2cap_event_incoming_connection_get_address(packet, address); 
+                    l2cap_event_incoming_connection_get_address(packet, address);
+                    con_handle = l2cap_event_incoming_connection_get_handle(packet);
                     // connection should exist if psm == PSM_HID_INTERRUPT
                     connection = hid_host_get_connection_for_bd_addr(address);
 
@@ -890,13 +892,13 @@ static void hid_host_packet_handler(uint8_t packet_type, uint16_t channel, uint8
 
                             connection->state = HID_HOST_W4_CONTROL_CONNECTION_ESTABLISHED;
                             connection->hid_descriptor_status = ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
-                            connection->con_handle = l2cap_event_incoming_connection_get_handle(packet);
+                            connection->con_handle = con_handle;
                             connection->control_cid = l2cap_event_incoming_connection_get_local_cid(packet);
                             connection->incoming = true;
                             
                             // emit connection request
                             // user calls either hid_host_accept_connection or hid_host_decline_connection
-                            hid_emit_incoming_connection_event(connection);
+                            hid_emit_incoming_connection_event(connection->hid_cid, address, con_handle, ERROR_CODE_SUCCESS);
                             break;
                             
                         case PSM_HID_INTERRUPT:
