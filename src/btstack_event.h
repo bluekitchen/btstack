@@ -8984,9 +8984,9 @@ static inline uint16_t avdtp_subevent_signaling_media_codec_sbc_configuration_ge
     return little_endian_read_16(event, 9);
 }
 /**
- * @brief Get field channels_num from event AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION
+ * @brief Get field channel_mode from event AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION
  * @param event packet
- * @return channels_num
+ * @return channel_mode
  * @note: btstack_type 1
  */
 static inline uint8_t avdtp_subevent_signaling_media_codec_sbc_configuration_get_channel_mode(const uint8_t * event){
@@ -9111,9 +9111,9 @@ static inline uint8_t avdtp_subevent_signaling_media_codec_mpeg_audio_configurat
     return event[10];
 }
 /**
- * @brief Get field channels_num from event AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AUDIO_CONFIGURATION
+ * @brief Get field channel_mode from event AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AUDIO_CONFIGURATION
  * @param event packet
- * @return channels_num
+ * @return channel_mode
  * @note: btstack_type 1
  */
 static inline uint8_t avdtp_subevent_signaling_media_codec_mpeg_audio_configuration_get_channel_mode(const uint8_t * event){
@@ -9320,9 +9320,9 @@ static inline uint8_t avdtp_subevent_signaling_media_codec_atrac_configuration_g
     return event[9];
 }
 /**
- * @brief Get field channels_num from event AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_ATRAC_CONFIGURATION
+ * @brief Get field channel_mode from event AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_ATRAC_CONFIGURATION
  * @param event packet
- * @return channels_num
+ * @return channel_mode
  * @note: btstack_type 1
  */
 static inline uint8_t avdtp_subevent_signaling_media_codec_atrac_configuration_get_channel_mode(const uint8_t * event){
@@ -9816,9 +9816,9 @@ static inline uint16_t a2dp_subevent_signaling_media_codec_sbc_configuration_get
     return little_endian_read_16(event, 9);
 }
 /**
- * @brief Get field channels_num from event A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION
+ * @brief Get field channel_mode from event A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION
  * @param event packet
- * @return channels_num
+ * @return channel_mode
  * @note: btstack_type 1
  */
 static inline uint8_t a2dp_subevent_signaling_media_codec_sbc_configuration_get_channel_mode(const uint8_t * event){
@@ -9943,9 +9943,9 @@ static inline uint8_t a2dp_subevent_signaling_media_codec_mpeg_audio_configurati
     return event[10];
 }
 /**
- * @brief Get field channels_num from event A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AUDIO_CONFIGURATION
+ * @brief Get field channel_mode from event A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AUDIO_CONFIGURATION
  * @param event packet
- * @return channels_num
+ * @return channel_mode
  * @note: btstack_type 1
  */
 static inline uint8_t a2dp_subevent_signaling_media_codec_mpeg_audio_configuration_get_channel_mode(const uint8_t * event){
@@ -10152,9 +10152,9 @@ static inline uint8_t a2dp_subevent_signaling_media_codec_atrac_configuration_ge
     return event[9];
 }
 /**
- * @brief Get field channels_num from event A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_ATRAC_CONFIGURATION
+ * @brief Get field channel_mode from event A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_ATRAC_CONFIGURATION
  * @param event packet
- * @return channels_num
+ * @return channel_mode
  * @note: btstack_type 1
  */
 static inline uint8_t a2dp_subevent_signaling_media_codec_atrac_configuration_get_channel_mode(const uint8_t * event){
@@ -13164,6 +13164,15 @@ static inline void hid_subevent_incoming_connection_get_address(const uint8_t * 
  */
 static inline hci_con_handle_t hid_subevent_incoming_connection_get_handle(const uint8_t * event){
     return little_endian_read_16(event, 11);
+}
+/**
+ * @brief Get field status from event HID_SUBEVENT_INCOMING_CONNECTION
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t hid_subevent_incoming_connection_get_status(const uint8_t * event){
+    return event[13];
 }
 
 /**

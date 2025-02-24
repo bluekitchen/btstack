@@ -273,7 +273,7 @@ static void hid_emit_set_protocol_response_event(hid_host_connection_t * connect
 }
 
 static void hid_emit_incoming_connection_event(hid_host_connection_t * connection){
-    uint8_t event[13];
+    uint8_t event[14];
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_HID_META;
     pos++;  // skip len
@@ -284,6 +284,7 @@ static void hid_emit_incoming_connection_event(hid_host_connection_t * connectio
     pos += 6;
     little_endian_store_16(event,pos,connection->con_handle);
     pos += 2;
+    event[pos++] = ERROR_CODE_SUCCESS;
     event[1] = pos - 2;
     hid_host_callback(HCI_EVENT_PACKET, connection->hid_cid, &event[0], pos);
 }   

@@ -3916,11 +3916,12 @@ typedef uint8_t sm_key_t[16];
 // HID Meta Event Group
 
 /**
- * @format 12BH
+ * @format 12BH1
  * @param subevent_code
  * @param hid_cid
  * @param address
  * @param handle
+ * @param status
  */
 #define HID_SUBEVENT_INCOMING_CONNECTION                                   0x01u
 
