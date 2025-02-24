@@ -882,23 +882,22 @@ static void hid_host_packet_handler(uint8_t packet_type, uint16_t channel, uint8
                                 l2cap_decline_connection(channel);
                                 break; 
                             }
-                        
                             connection = hid_host_create_connection(address);
-                            if (!connection){
+                            if (connection == NULL) {
                                 log_error("Cannot create connection for %s", bd_addr_to_str(address));
                                 l2cap_decline_connection(channel);
-                                break;
+                                // inform user about failed incoming connection due to memory
+                                hid_emit_incoming_connection_event(connection->hid_cid, address, con_handle, ERROR_CODE_MEMORY_CAPACITY_EXCEEDED);
+                            } else {
+                                connection->state = HID_HOST_W4_CONTROL_CONNECTION_ESTABLISHED;
+                                connection->hid_descriptor_status = ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
+                                connection->con_handle = con_handle;
+                                connection->control_cid = l2cap_event_incoming_connection_get_local_cid(packet);
+                                connection->incoming = true;
+                                // emit connection request
+                                // user calls either hid_host_accept_connection or hid_host_decline_connection
+                                hid_emit_incoming_connection_event(connection->hid_cid, address, con_handle, ERROR_CODE_SUCCESS);
                             }
-
-                            connection->state = HID_HOST_W4_CONTROL_CONNECTION_ESTABLISHED;
-                            connection->hid_descriptor_status = ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
-                            connection->con_handle = con_handle;
-                            connection->control_cid = l2cap_event_incoming_connection_get_local_cid(packet);
-                            connection->incoming = true;
-                            
-                            // emit connection request
-                            // user calls either hid_host_accept_connection or hid_host_decline_connection
-                            hid_emit_incoming_connection_event(connection->hid_cid, address, con_handle, ERROR_CODE_SUCCESS);
                             break;
                             
                         case PSM_HID_INTERRUPT:
