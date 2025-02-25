@@ -155,7 +155,9 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             switch (hci_event_command_complete_get_command_opcode(packet)) {
                 case HCI_OPCODE_HCI_READ_LOCAL_VERSION_INFORMATION:
                     local_version_information_handler(packet);
-                break;
+                    break;
+                default:
+                    break;
             }
             break;
         case BTSTACK_EVENT_STATE:
