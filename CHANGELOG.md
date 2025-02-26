@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
  
 ### Changed
 - HCI: hci_request_cis_can_send_now_events for CIG in Central role will emit can send now events for all streams in group
+- HCI: improve sco send without sco flow control for smaller packets
 - GAP: validate params in gap_set_scan_params
 - HID Host: emit HID_SUBEVENT_INCOMING_CONNECTION if memory allocation fails
 - BTstack HID: remove HID_PROTOCOL_MODE_REPORT_WITH_FALLBACK_TO_BOOT
