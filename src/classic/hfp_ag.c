@@ -400,40 +400,43 @@ static int hfp_ag_call_services_join(char * buffer, int buffer_size){
     return offset;
 }
 
-static int hfp_ag_send_cmd_via_generator(uint16_t cid, hfp_connection_t * hfp_connection,
-    int start_segment, int num_segments,
-    int (*get_segment_len)(hfp_connection_t * hfp_connection, int segment),
-    void (*store_segment) (hfp_connection_t * hfp_connection, int segment, uint8_t * buffer, uint16_t buffer_size)){
+static int hfp_ag_send_cmd_via_generator(uint16_t cid,
+                                         hfp_connection_t * hfp_connection,
+                                         uint8_t * inout_segment,
+                                         int num_segments,
+                                         int (*get_segment_len)(hfp_connection_t * hfp_connection, int segment), void (*store_segment) (hfp_connection_t * hfp_connection, int segment, uint8_t * buffer, uint16_t buffer_size)){
 
     // assumes: can send now == true
     // assumes: num segments > 0
     // assumes: individual segments are smaller than MTU
+
+    // note: we directly update inout_segment, as the rfcomm_send_prepared will cause a recursion into this function with synchronous transport
+
     rfcomm_reserve_packet_buffer();
     int mtu = rfcomm_get_max_frame_size(cid);
     uint8_t * data = rfcomm_get_outgoing_buffer();
     int offset = 0;
-    int segment = start_segment;
-    while (segment < num_segments){
-        int segment_len = get_segment_len(hfp_connection, segment);
+    while (*inout_segment < num_segments){
+        int segment_len = get_segment_len(hfp_connection, *inout_segment);
         if ((offset + segment_len + 1) > mtu) break;
         // append segment. As it appends a '\0', we provide a buffer one byte larger
-        store_segment(hfp_connection, segment, data+offset, segment_len + 1);
+        store_segment(hfp_connection, *inout_segment, data+offset, segment_len + 1);
         offset += segment_len;
-        segment++;
+        (*inout_segment)++;
     }
     rfcomm_send_prepared(cid, offset);
 #ifdef ENABLE_HFP_AT_MESSAGES
     hfp_emit_string_event(hfp_connection, HFP_SUBEVENT_AT_MESSAGE_SENT, (char *) data);
 #endif
-    return segment;
+    return *inout_segment;
 }
 
 // returns next segment to store
-static int hfp_ag_send_retrieve_indicators_cmd_via_generator(uint16_t cid, hfp_connection_t * hfp_connection, int start_segment){
+static void hfp_ag_send_retrieve_indicators_cmd_via_generator(uint16_t cid, hfp_connection_t * hfp_connection, uint8_t* inout_segment){
     int num_segments = hfp_ag_indicators_cmd_generator_num_segments(hfp_connection);
-    return hfp_ag_send_cmd_via_generator(cid, hfp_connection, start_segment, num_segments,
-                                         hfp_ag_indicators_cmd_generator_get_segment_len,
-                                         hfp_ag_indicators_cmd_generator_store_segment);
+    hfp_ag_send_cmd_via_generator(cid, hfp_connection, inout_segment, num_segments,
+                                  hfp_ag_indicators_cmd_generator_get_segment_len,
+                                  hfp_ag_indicators_cmd_generator_store_segment);
 }
 
 static int hfp_ag_send_retrieve_indicators_status_cmd(uint16_t cid){
@@ -742,6 +745,8 @@ static int hfp_ag_run_for_context_service_level_connection(hfp_connection_t * hf
                 hfp_connection->state = HFP_W4_LIST_GENERIC_STATUS_INDICATORS;
                 hfp_ag_send_ok(hfp_connection->rfcomm_cid);
             } else {
+                // prevent recursion for synchronous transport
+                hfp_connection->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
                 hfp_ag_send_ok(hfp_connection->rfcomm_cid);
                 hfp_ag_slc_established(hfp_connection);
             }
@@ -781,13 +786,9 @@ static int hfp_ag_run_for_context_service_level_connection(hfp_connection_t * hf
 
     switch (hfp_connection->state){
         case HFP_RETRIEVE_INDICATORS: {
-            int next_segment = hfp_ag_send_retrieve_indicators_cmd_via_generator(hfp_connection->rfcomm_cid, hfp_connection, hfp_connection->send_ag_indicators_segment);
             int num_segments = hfp_ag_indicators_cmd_generator_num_segments(hfp_connection);
-            log_info("HFP_CMD_RETRIEVE_AG_INDICATORS next segment %u, num_segments %u", next_segment, num_segments);
-            if (next_segment < num_segments){
-                // prepare sending of next segment
-                hfp_connection->send_ag_indicators_segment = next_segment;
-                log_info("HFP_CMD_RETRIEVE_AG_INDICATORS more. command %u, next seg %u", hfp_connection->command, next_segment);
+            if ( hfp_connection->send_ag_indicators_segment < num_segments) {
+                hfp_ag_send_retrieve_indicators_cmd_via_generator(hfp_connection->rfcomm_cid, hfp_connection, &hfp_connection->send_ag_indicators_segment);
             } else {
                 // done, go to next state
                 hfp_connection->send_ag_indicators_segment = 0;
@@ -1115,7 +1116,10 @@ static int hfp_ag_run_for_context_service_level_connection_queries(hfp_connectio
         }
     }
 
-    switch(hfp_connection->command){
+    // reset hfp_connection->command to avoid recursion on synchronous trasnport
+    hfp_command_t command = hfp_connection->command;
+    hfp_connection->command = HFP_CMD_NONE;
+    switch(command){
         case HFP_CMD_QUERY_OPERATOR_SELECTION_NAME:
             hfp_ag_send_report_network_operator_name_cmd(hfp_connection->rfcomm_cid, hfp_connection->network_operator);
             return 1;

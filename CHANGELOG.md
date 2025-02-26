@@ -18,7 +18,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Fixed
 - GAP: store link key for standard/non-SSP pairing
 - BENP: emit channel opened with ERROR_CODE_REMOTE_USER_TERMINATED_CONNECTION if connection cannot be set up
-
+- HFP AG: avoid recursion with synchronous HCI transport 
+ 
 ### Changed
 - HCI: hci_request_cis_can_send_now_events for CIG in Central role will emit can send now events for all streams in group
 - GAP: validate params in gap_set_scan_params
