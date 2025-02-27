@@ -2566,16 +2566,16 @@ static void hci_initializing_event_handler(const uint8_t * packet, uint16_t size
             // repeat custom init
             hci_stack->substate = HCI_INIT_CUSTOM_INIT;
             return;
+        case HCI_INIT_W4_CUSTOM_INIT_BCM_RESET:
+            // skip read local version and name after PatchRAM was uploaded
+            hci_stack->substate = HCI_INIT_READ_LOCAL_SUPPORTED_COMMANDS;
+            return;
         case HCI_INIT_W4_CUSTOM_PRE_INIT:
             // repeat custom init
             hci_stack->substate = HCI_INIT_CUSTOM_PRE_INIT;
             return;
 #endif
 
-        case HCI_INIT_W4_CUSTOM_INIT_BCM_RESET:
-            // skip read local version and name after PatchRAM was uploaded
-            hci_stack->substate = HCI_INIT_READ_LOCAL_SUPPORTED_COMMANDS;
-            return;
         case HCI_INIT_W4_READ_LOCAL_SUPPORTED_COMMANDS:
             if (need_baud_change && (hci_stack->chipset_result != BTSTACK_CHIPSET_NO_INIT_SCRIPT) &&
               ((hci_stack->manufacturer == BLUETOOTH_COMPANY_ID_BROADCOM_CORPORATION) || 
