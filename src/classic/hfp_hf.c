@@ -1168,8 +1168,11 @@ static void hfp_hf_slc_established(hfp_connection_t * hfp_connection){
         hfp_connection->ag_indicators[i].status_changed = 0;
         hfp_emit_ag_indicator_status_event(hfp_connection, &hfp_connection->ag_indicators[i]);
     }
-    
+
+    // reset apple information, set current dock & battery level
     hfp_connection->apple_accessory_commands_supported = false;
+    hfp_connection->apple_accessory_battery_level = hfp_hf_apple_battery_level;
+    hfp_connection->apple_accessory_docked = hfp_hf_apple_docked;
     hfp_connection->send_apple_information = hfp_hf_apple_vendor_id != 0;
 
     // restore volume settings
