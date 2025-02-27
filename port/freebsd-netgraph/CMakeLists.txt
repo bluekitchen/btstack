@@ -1,6 +1,6 @@
 cmake_minimum_required (VERSION 3.18)
 
-project(BTstack-posix-h4)
+project(BTstack-FreeBSD-Netgraph)
 
 SET(BTSTACK_ROOT ${CMAKE_SOURCE_DIR}/../..)
 
@@ -159,16 +159,16 @@ if (PkgConfig_FOUND)
 	pkg_check_modules(PORTAUDIO portaudio-2.0)
 	if(PORTAUDIO_FOUND)
 		message("HAVE_PORTAUDIO")
-		include_directories(${PORTAUDIO_INCLUDE_DIRS})
-		link_directories(${PORTAUDIO_LIBRARY_DIRS})
-		link_libraries(${PORTAUDIO_LIBRARIES})
+		target_include_directories(btstack PUBLIC ${PORTAUDIO_INCLUDE_DIRS})
+		target_link_directories(btstack PUBLIC ${PORTAUDIO_LIBRARY_DIRS})
+		target_link_libraries(btstack ${PORTAUDIO_LIBRARIES})
 		add_compile_definitions(HAVE_PORTAUDIO)
 	endif()
 endif()
 
 # pthread
 find_package(Threads)
-link_libraries(${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(btstack ${CMAKE_THREAD_LIBS_INIT})
 
 # Add CC256x Support and specify init script
 # set (CC256X_INIT_SCRIPT bluetooth_init_cc2564C_1.5.c)

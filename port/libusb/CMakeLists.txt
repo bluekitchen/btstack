@@ -143,23 +143,23 @@ find_package(PkgConfig REQUIRED)
 
 # libusb
 pkg_check_modules(LIBUSB REQUIRED libusb-1.0)
-include_directories(${LIBUSB_INCLUDE_DIRS})
-link_directories(${LIBUSB_LIBRARY_DIRS})
-link_libraries(${LIBUSB_LIBRARIES})
+target_include_directories(btstack PUBLIC ${LIBUSB_INCLUDE_DIRS})
+target_link_directories(btstack PUBLIC ${LIBUSB_LIBRARY_DIRS})
+target_link_libraries(btstack ${LIBUSB_LIBRARIES})
 
 # portaudio
 pkg_check_modules(PORTAUDIO portaudio-2.0)
 if(PORTAUDIO_FOUND)
 	message("HAVE_PORTAUDIO")
-	include_directories(${PORTAUDIO_INCLUDE_DIRS})
-	link_directories(${PORTAUDIO_LIBRARY_DIRS})
-	link_libraries(${PORTAUDIO_LIBRARIES})
+	target_include_directories(btstack PUBLIC ${PORTAUDIO_INCLUDE_DIRS})
+	target_link_directories(btstack PUBLIC ${PORTAUDIO_LIBRARY_DIRS})
+	target_link_libraries(btstack ${PORTAUDIO_LIBRARIES})
 	add_compile_definitions(HAVE_PORTAUDIO)
 endif()
 
 # pthread
 find_package(Threads)
-link_libraries(${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(btstack ${CMAKE_THREAD_LIBS_INIT})
 
 # create targets for all examples
 file(GLOB EXAMPLES_C    "../../example/*.c")

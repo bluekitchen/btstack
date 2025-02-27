@@ -140,9 +140,6 @@ list(SORT SOURCES)
 # create static lib
 add_library(btstack STATIC ${SOURCES})
 
-# Collect libraries for executables
-set (BTSTACK_LIBRARIES btstack)
-
 # pkgconfig
 find_package(PkgConfig)
 
@@ -151,16 +148,16 @@ if (PkgConfig_FOUND)
 	pkg_check_modules(PORTAUDIO portaudio-2.0)
 	if(PORTAUDIO_FOUND)
 		message("HAVE_PORTAUDIO")
-		include_directories(${PORTAUDIO_INCLUDE_DIRS})
-		set(BTSTACK_LIBRARIES ${BTSTACK_LIBRARIES} ${PORTAUDIO_LIBRARIES})
-		link_directories(${PORTAUDIO_LIBRARY_DIRS})
+		target_include_directories(btstack PUBLIC ${PORTAUDIO_INCLUDE_DIRS})
+		target_link_directories(btstack PUBLIC ${PORTAUDIO_LIBRARY_DIRS})
+		target_link_libraries(btstack ${PORTAUDIO_LIBRARIES})
 		add_compile_definitions(HAVE_PORTAUDIO)
 	endif()
 endif()
 
 # pthread
 find_package(Threads)
-set(BTSTACK_LIBRARIES ${BTSTACK_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} pthread m bluetooth)
+target_link_libraries(btstack ${CMAKE_THREAD_LIBS_INIT})
 
 # get list of examples, skipping mesh_node_demo
 include(../../example/CMakeLists.txt)
@@ -187,5 +184,5 @@ foreach(EXAMPLE ${EXAMPLES})
 		message("example ${EXAMPLE}")
 	endif()
 	add_executable(${EXAMPLE} ${SOURCES_EXAMPLE})
-	target_link_libraries(${EXAMPLE} ${BTSTACK_LIBRARIES})
+	target_link_libraries(${EXAMPLE} btstack)
 endforeach(EXAMPLE)
