@@ -13,6 +13,10 @@ On macOS/Linux [libusb-1.0](http://libusb.info) or higher is required, too.
 When everything is ready, you can open the provided CMakelists.txt project in Qt Creator and run any of the provided examples.
 See Qt documentation on how to compile on the command line or with other IDEs
 
+You can also compile the project in a shell if you provide the path to the cmake folder of your Qt installation, e.g. on macOS with brew providing QT 5.15.16
+	
+	cmake -DCMAKE_PREFIX_PATH=/opt/homebrew/Cellar/qt@5/5.15.16/lib/cmake/Qt5 ..
+
 ## Environment Setup
 
 ## Windows
@@ -74,7 +78,7 @@ BTstack's HCI USB transport will try to find a suitable Bluetooth module and use
 
 On start, BTstack will try to find a suitable Bluetooth module. It will also print the path to the packet log as well as the USB path.
 
-	$ ./le_counter
+	$ ./gatt_counter
 	Packet Log: /tmp/hci_dump.pklg
 	BTstack counter 0001
 	USB Path: 06
@@ -84,7 +88,7 @@ If you want to run multiple examples at the same time, it helps to fix the path 
 
 Example running le_streamer and le_streamer_client in two processes, using Bluetooth dongles at USB path 6 and 4:
 
-	./le_streamer -u 6
+	./gatt_streamer_server -u 6
 	Specified USB Path: 06
 	Packet Log: /tmp/hci_dump_6.pklg
 	USB Path: 06
