@@ -14,7 +14,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - HID Host: storage for HID Descriptors is now optional
 - HCI: support newer AIROC Controller that require Download Mode with ENABLE_AIROC_DOWNLOAD_MODE
 - Zephyr: provide hal_flash_bank implementation for native flash driver
- 
+- POSIX: support error condition for file descriptors in btstack_run_loop
+
 ### Fixed
 - GAP: store link key for standard/non-SSP pairing
 - BENP: emit channel opened with ERROR_CODE_REMOTE_USER_TERMINATED_CONNECTION if connection cannot be set up

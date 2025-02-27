@@ -160,7 +160,8 @@ static uint32_t btstack_run_loop_posix_get_time_ms(void){
 static void btstack_run_loop_posix_execute(void) {
     fd_set descriptors_read;
     fd_set descriptors_write;
-    
+    fd_set descriptors_error;
+
     btstack_linked_list_iterator_t it;
     struct timeval * timeout;
     struct timeval tv;
@@ -179,6 +180,7 @@ static void btstack_run_loop_posix_execute(void) {
         // collect FDs
         FD_ZERO(&descriptors_read);
         FD_ZERO(&descriptors_write);
+        FD_ZERO(&descriptors_error);
         int highest_fd = -1;
         btstack_linked_list_iterator_init(&it, &btstack_run_loop_base_data_sources);
         while (btstack_linked_list_iterator_has_next(&it)){
@@ -197,6 +199,13 @@ static void btstack_run_loop_posix_execute(void) {
                     highest_fd = ds->source.fd;
                 }
                 log_debug("btstack_run_loop_execute adding fd %u for write", ds->source.fd);
+            }
+            if (ds->flags & DATA_SOURCE_CALLBACK_ERROR){
+                FD_SET(ds->source.fd, &descriptors_error);
+                if (ds->source.fd > highest_fd) {
+                    highest_fd = ds->source.fd;
+                }
+                log_debug("btstack_run_loop_execute adding fd %u for error", ds->source.fd);
             }
         }
 
@@ -230,6 +239,11 @@ static void btstack_run_loop_posix_execute(void) {
                 if (FD_ISSET(ds->source.fd, &descriptors_write)) {
                     log_debug("btstack_run_loop_posix_execute: process write ds %p with fd %u\n", ds, ds->source.fd);
                     ds->process(ds, DATA_SOURCE_CALLBACK_WRITE);
+                }
+                if (btstack_run_loop_posix_data_sources_modified) break;
+                if (FD_ISSET(ds->source.fd, &descriptors_error)) {
+                    log_debug("btstack_run_loop_posix_execute: process error ds %p with fd %u\n", ds, ds->source.fd);
+                    ds->process(ds, DATA_SOURCE_CALLBACK_ERROR);
                 }
             }
         }

@@ -75,6 +75,7 @@ typedef enum {
     DATA_SOURCE_CALLBACK_POLL  = 1 << 0,
     DATA_SOURCE_CALLBACK_READ  = 1 << 1,
     DATA_SOURCE_CALLBACK_WRITE = 1 << 2,
+    DATA_SOURCE_CALLBACK_ERROR = 1 << 3,
 } btstack_data_source_callback_type_t;
 
 typedef struct btstack_data_source {
