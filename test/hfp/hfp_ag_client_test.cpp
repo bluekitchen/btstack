@@ -468,6 +468,13 @@ TEST(HFPClient, PTSSLCTests){
     }
 }
 
+TEST(HFPClient, IssueTests){
+    for (int i = 0; i < hfp_pts_ag_issues_tests_size(); i++){
+        setup();
+        simulate_test_sequence(&hfp_pts_ag_issues_tests()[i]);
+        teardown();
+    }
+}
 
 int main (int argc, const char * argv[]){
     hfp_ag_register_packet_handler(packet_handler);
