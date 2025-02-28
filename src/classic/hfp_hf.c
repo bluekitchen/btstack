@@ -611,13 +611,17 @@ static bool hfp_hf_voice_recognition_state_machine(hfp_connection_t * hfp_connec
         case HFP_VRA_W4_VOICE_RECOGNITION_OFF:
             hfp_connection->vra_state = HFP_VRA_VOICE_RECOGNITION_OFF;
             hfp_connection->vra_state_requested = hfp_connection->vra_state;
-            hfp_connection->emit_vra_enabled_after_audio_established = false;
             hfp_connection->deactivate_voice_recognition = false;
+
+            if (hfp_connection->emit_vra_enabled_after_audio_established){
+                hfp_connection->emit_vra_enabled_after_audio_established = false;
+                hfp_emit_voice_recognition_enabled(hfp_connection, ERROR_CODE_UNSPECIFIED_ERROR);
+            } else {
+                hfp_emit_voice_recognition_disabled(hfp_connection, ERROR_CODE_SUCCESS);
+            }
             if (hfp_connection->activate_voice_recognition){
                 hfp_connection->enhanced_voice_recognition_enabled = hfp_hf_enhanced_vra_flag_supported(hfp_connection);
                 hfp_hf_activate_voice_recognition(hfp_connection->acl_handle);
-            } else {
-                hfp_emit_voice_recognition_disabled(hfp_connection, ERROR_CODE_SUCCESS);
             }
             break;
 
@@ -625,16 +629,17 @@ static bool hfp_hf_voice_recognition_state_machine(hfp_connection_t * hfp_connec
             hfp_connection->vra_state = HFP_VRA_VOICE_RECOGNITION_ACTIVATED;
             hfp_connection->vra_state_requested = hfp_connection->vra_state;
             hfp_connection->activate_voice_recognition = false;
+
+            hfp_connection->enhanced_voice_recognition_enabled = hfp_hf_enhanced_vra_flag_supported(hfp_connection);
+            if (hfp_connection->state == HFP_AUDIO_CONNECTION_ESTABLISHED){
+                hfp_emit_voice_recognition_enabled(hfp_connection, ERROR_CODE_SUCCESS);
+            } else {
+                // postpone VRA event to simplify application logic
+                hfp_connection->emit_vra_enabled_after_audio_established = true;
+            }
+
             if (hfp_connection->deactivate_voice_recognition){
                 hfp_hf_deactivate_voice_recognition(hfp_connection->acl_handle);
-            } else {
-                hfp_connection->enhanced_voice_recognition_enabled = hfp_hf_enhanced_vra_flag_supported(hfp_connection);
-                if (hfp_connection->state == HFP_AUDIO_CONNECTION_ESTABLISHED){
-                    hfp_emit_voice_recognition_enabled(hfp_connection, ERROR_CODE_SUCCESS);
-                } else {
-                    // postpone VRA event to simplify application logic
-                    hfp_connection->emit_vra_enabled_after_audio_established = true;
-                }
             }
             break;
 
