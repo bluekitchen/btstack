@@ -171,6 +171,8 @@ void btstack_audio_source_set_instance(const btstack_audio_source_t * audio_sour
 const btstack_audio_sink_t *   btstack_audio_portaudio_sink_get_instance(void);
 const btstack_audio_source_t * btstack_audio_portaudio_source_get_instance(void);
 
+const btstack_audio_sink_t *   btstack_audio_alsa_sink_get_instance(void);
+
 const btstack_audio_sink_t *   btstack_audio_embedded_sink_get_instance(void);
 const btstack_audio_source_t * btstack_audio_embedded_source_get_instance(void);
 

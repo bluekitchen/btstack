@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - HCI: support newer AIROC Controller that require Download Mode with ENABLE_AIROC_DOWNLOAD_MODE
 - Zephyr: provide hal_flash_bank implementation for native flash driver
 - POSIX: support error condition for file descriptors in btstack_run_loop
+- Linux: HCI Transport for Linux HCI Kernel Socket
+- Linux: Audio sink implementation for Linux ALSA
 
 ### Fixed
 - GAP: store link key for standard/non-SSP pairing

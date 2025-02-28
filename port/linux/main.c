@@ -268,9 +268,11 @@ int main(int argc, const char * argv[]){
 	const hci_transport_t * transport = hci_transport_linux_instance();
 	hci_init(transport, (void*) &transport_config);
 
-#ifdef HAVE_PORTAUDIO
+#if HAVE_PORTAUDIO
     btstack_audio_sink_set_instance(btstack_audio_portaudio_sink_get_instance());
     btstack_audio_source_set_instance(btstack_audio_portaudio_source_get_instance());
+#elif HAVE_ALSA
+    btstack_audio_sink_set_instance(btstack_audio_alsa_sink_get_instance());
 #endif
 
     // inform about BTstack state
