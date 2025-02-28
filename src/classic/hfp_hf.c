@@ -611,7 +611,8 @@ static bool hfp_hf_voice_recognition_state_machine(hfp_connection_t * hfp_connec
         case HFP_VRA_W4_VOICE_RECOGNITION_OFF:
             hfp_connection->vra_state = HFP_VRA_VOICE_RECOGNITION_OFF;
             hfp_connection->vra_state_requested = hfp_connection->vra_state;
-            hfp_connection->activate_voice_recognition = false; 
+            hfp_connection->emit_vra_enabled_after_audio_established = false;
+            hfp_connection->deactivate_voice_recognition = false;
             if (hfp_connection->activate_voice_recognition){
                 hfp_connection->enhanced_voice_recognition_enabled = hfp_hf_enhanced_vra_flag_supported(hfp_connection);
                 hfp_hf_activate_voice_recognition(hfp_connection->acl_handle);
