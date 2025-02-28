@@ -89,7 +89,6 @@
 #define hci_le_clear_white_list linux_hci_le_clear_white_list
 #define hci_le_clear_resolving_list linux_hci_le_clear_resolving_list
 #define hci_le_read_resolving_list_size linux_hci_le_read_resolving_list_size
-#include <bluetooth/hci_lib.h>
 
 // assert pre-buffer for packet type is available
 #if !defined(HCI_OUTGOING_PRE_BUFFER_SIZE) || (HCI_OUTGOING_PRE_BUFFER_SIZE == 0)

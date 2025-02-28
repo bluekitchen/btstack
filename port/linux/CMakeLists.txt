@@ -44,6 +44,7 @@ include_directories(${BTSTACK_ROOT}/platform/embedded)
 include_directories(${BTSTACK_ROOT}/platform/lwip)
 include_directories(${BTSTACK_ROOT}/platform/lwip/port)
 include_directories(${BTSTACK_ROOT}/platform/posix)
+include_directories(${BTSTACK_ROOT}/platform/linux)
 
 file(GLOB SOURCES_SRC       "${BTSTACK_ROOT}/src/*.c" "${BTSTACK_ROOT}/example/*demo_util*.c")
 file(GLOB SOURCES_BLE       "${BTSTACK_ROOT}/src/ble/*.c")
@@ -58,6 +59,7 @@ file(GLOB SOURCES_MD5       "${BTSTACK_ROOT}/3rd-party/md5/md5.c")
 file(GLOB SOURCES_RIJNDAEL  "${BTSTACK_ROOT}/3rd-party/rijndael/rijndael.c")
 file(GLOB SOURCES_YXML      "${BTSTACK_ROOT}/3rd-party/yxml/yxml.c")
 file(GLOB SOURCES_POSIX     "${BTSTACK_ROOT}/platform/posix/*.c")
+file(GLOB SOURCES_LINUX     "${BTSTACK_ROOT}/platform/linux/*.c")
 file(GLOB SOURCES_LC3_GOOGLE "${BTSTACK_ROOT}/3rd-party/lc3-google/src/*.c")
 file(GLOB SOURCES_PORT      "*.c")
 
@@ -98,7 +100,7 @@ set (LWIP_DHCPD
 		)
 set (LWIP_PORT
 		${BTSTACK_ROOT}/platform/lwip/port/sys_arch.c
-		${BTSTACK_ROOT}//platform/lwip/bnep_lwip.c
+		${BTSTACK_ROOT}/platform/lwip/bnep_lwip.c
 		)
 set (SOURCES_LWIP ${LWIP_CORE_SRC} ${LWIP_IPV4_SRC} ${LWIP_NETIF_SRC} ${LWIP_HTTPD} ${LWIP_DHCPD} ${LWIP_PORT})
 
@@ -132,6 +134,7 @@ set(SOURCES
 		${SOURCES_TC2566X}
 		${SOURCES_UECC}
 		${SOURCES_POSIX}
+        ${SOURCES_LINUX}
 		${SOURCES_YXML}
 		${SOURCES_ZEPHYR}
 )
