@@ -439,11 +439,11 @@ uint8_t hfp_ag_set_signal_strength(int signal_strength);
 uint8_t hfp_ag_set_roaming_status(int roaming_status);
 
 /**
- * @brief Set subcriber number information, e.g. the phone number 
+ * @brief Set subscriber number information, e.g. the phone number
  * @param numbers
  * @param numbers_count
  */
-void hfp_ag_set_subcriber_number_information(hfp_phone_number_t * numbers, int numbers_count);
+void hfp_ag_set_subscriber_number_information(hfp_phone_number_t * numbers, int numbers_count);
 
 /**
  * @brief Called by cellular unit after a DTMF code was transmitted, so that the next one can be emitted.
@@ -523,7 +523,7 @@ void hfp_ag_deinit(void);
  * @param rfcomm_channel_nr
  * @param name
  * @param ability_to_reject_call
- * @param suported_features 32-bit bitmap, see HFP_AGSF_* values in hfp.h
+ * @param supported_features 32-bit bitmap, see HFP_AGSF_* values in hfp.h
  * @param wide_band_speech supported
  */
 void hfp_ag_create_sdp_record(uint8_t * service, uint32_t service_record_handle, int rfcomm_channel_nr, const char * name, uint8_t ability_to_reject_call, uint16_t supported_features, int wide_band_speech);

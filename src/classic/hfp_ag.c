@@ -471,7 +471,7 @@ static int hfp_ag_send_retrieve_supported_generic_status_indicators_cmd(uint16_t
     return send_str_over_rfcomm(cid, buffer);
 }
 
-static int hfp_ag_send_retrieve_initital_supported_generic_status_indicators_cmd(uint16_t cid){
+static int hfp_ag_send_retrieve_initial_supported_generic_status_indicators_cmd(uint16_t cid){
     char buffer[40];
     int offset = hfp_ag_generic_indicators_initial_status_join(buffer, sizeof(buffer) - 7);
     btstack_snprintf_assert_complete(buffer+offset, sizeof(buffer)-offset, "\r\nOK\r\n");
@@ -777,7 +777,7 @@ static int hfp_ag_run_for_context_service_level_connection(hfp_connection_t * hf
 
         case HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS_STATE:
             if (hfp_connection->state != HFP_W4_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS) break;
-            hfp_ag_send_retrieve_initital_supported_generic_status_indicators_cmd(hfp_connection->rfcomm_cid);
+            hfp_ag_send_retrieve_initial_supported_generic_status_indicators_cmd(hfp_connection->rfcomm_cid);
             hfp_ag_slc_established(hfp_connection);
             return 1;
         default:
@@ -1062,7 +1062,7 @@ static int hfp_ag_voice_recognition_state_machine(hfp_connection_t * hfp_connect
     if (hfp_connection->ag_vra_requested_by_hf){
         hfp_connection->ag_vra_requested_by_hf = false;
 
-        // HF initiatied voice recognition, parser extracted activation value
+        // HF initiated voice recognition, parser extracted activation value
         switch (hfp_connection->ag_activate_voice_recognition_value){
             case 0:
                 if (hfp_ag_voice_recognition_session_active(hfp_connection)){
@@ -1116,7 +1116,7 @@ static int hfp_ag_run_for_context_service_level_connection_queries(hfp_connectio
         }
     }
 
-    // reset hfp_connection->command to avoid recursion on synchronous trasnport
+    // reset hfp_connection->command to avoid recursion on synchronous transport
     hfp_command_t command = hfp_connection->command;
     hfp_connection->command = HFP_CMD_NONE;
     switch(command){
@@ -2987,7 +2987,7 @@ uint8_t hfp_ag_set_registration_status(int registration_status){
 
     if ( (registration_status == 0) && (hfp_gsm_call_status() == HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT)){
 
-        // if network goes away wihle a call is active:
+        // if network goes away while a call is active:
         // - the  call gets dropped
         // - we send NO CARRIER
         // NOTE: the CALL=0 has to be sent before NO CARRIER
@@ -3276,7 +3276,7 @@ uint8_t hfp_ag_send_command_result_code(hci_con_handle_t acl_handle, bool ok){
     return ERROR_CODE_SUCCESS;
 }
 
-void hfp_ag_set_subcriber_number_information(hfp_phone_number_t * numbers, int numbers_count){
+void hfp_ag_set_subscriber_number_information(hfp_phone_number_t * numbers, int numbers_count){
     hfp_ag_subscriber_numbers = numbers;
     hfp_ag_subscriber_numbers_count = numbers_count;
 }
