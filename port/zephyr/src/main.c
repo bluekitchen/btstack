@@ -191,11 +191,11 @@ static void btstack_run_loop_zephyr_execute(void) {
         k_timeout_t timeout;
         timeout.ticks = btstack_run_loop_base_get_time_until_timeout(now);
         if (timeout.ticks < 0){
-            timeout.ticks = K_TICKS_FOREVER;
+            timeout = K_FOREVER;
         }
 
         // process RX fifo only
-        struct net_buf *buf = net_buf_get(&rx_queue, timeout);
+        struct net_buf *buf = k_fifo_get(&rx_queue, timeout);
         if (buf){
             transport_deliver_controller_packet(buf);
         }
