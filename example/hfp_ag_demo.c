@@ -758,7 +758,7 @@ int btstack_main(int argc, const char * argv[]){
     hfp_ag_init_hf_indicators(hf_indicators_nr, hf_indicators); 
     hfp_ag_init_call_hold_services(call_hold_services_nr, call_hold_services);
     hfp_ag_init_apple_identification("BTstack", 0);
-    hfp_ag_set_subcriber_number_information(&subscriber_number, 1);
+    hfp_ag_set_subscriber_number_information(&subscriber_number, 1);
 
     // SDP Server
     sdp_init();
