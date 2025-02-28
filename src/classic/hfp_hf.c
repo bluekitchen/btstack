@@ -46,24 +46,14 @@
 #include "btstack_config.h"
 
 #include <stdint.h>
-#include <stdio.h>
 #include <string.h>
 
 #include "bluetooth_sdp.h"
 #include "btstack_debug.h"
 #include "btstack_event.h"
 #include "btstack_memory.h"
-#include "btstack_run_loop.h"
-#include "classic/core.h"
-#include "classic/hfp.h"
 #include "classic/hfp_hf.h"
-#include "classic/sdp_client_rfcomm.h"
-#include "classic/sdp_server.h"
 #include "classic/sdp_util.h"
-#include "hci.h"
-#include "hci_cmd.h"
-#include "hci_dump.h"
-#include "l2cap.h"
 
 // const
 static const char hfp_hf_default_service_name[] = "Hands-Free unit";
@@ -393,7 +383,7 @@ static int hfp_hf_cmd_retrieve_supported_generic_status_indicators(uint16_t cid)
     return hfp_hf_send_cmd_with_mark(cid, HFP_GENERIC_STATUS_INDICATOR, "=?");
 }
 
-static int hfp_hf_cmd_list_initital_supported_generic_status_indicators(uint16_t cid){
+static int hfp_hf_cmd_list_initial_supported_generic_status_indicators(uint16_t cid){
     return hfp_hf_send_cmd_with_mark(cid, HFP_GENERIC_STATUS_INDICATOR, "?");
 }
 
@@ -496,7 +486,7 @@ static bool hfp_hf_run_for_context_service_level_connection(hfp_connection_t * h
             break;
         case HFP_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS:
             hfp_connection->state = HFP_W4_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS;
-            hfp_hf_cmd_list_initital_supported_generic_status_indicators(hfp_connection->rfcomm_cid);
+            hfp_hf_cmd_list_initial_supported_generic_status_indicators(hfp_connection->rfcomm_cid);
             break;
         default:
             return false;
@@ -842,7 +832,7 @@ static void hfp_hf_run_for_context(hfp_connection_t * hfp_connection){
         return;
     }
 
-    // we can send at least an RFCOMM packet or a HCI Command now
+    // we can send at least an RFCOMM packet or an HCI Command now
 
     bool done = hfp_hf_run_for_context_service_level_connection(hfp_connection);
     if (!done){
@@ -1210,8 +1200,7 @@ static void hfp_hf_apple_extension_supported(hfp_connection_t * hfp_connection, 
 }
 
 static bool hfp_hf_switch_on_ok_pending(hfp_connection_t *hfp_connection, uint8_t status){
-    bool event_emited = true;
-
+    bool event_emitted = true;
     // cache state and reset
     hfp_command_t response_pending_for_command = hfp_connection->response_pending_for_command;
     hfp_connection->response_pending_for_command = HFP_CMD_NONE;
@@ -1229,7 +1218,7 @@ static bool hfp_hf_switch_on_ok_pending(hfp_connection_t *hfp_connection, uint8_
             hfp_hf_apple_extension_supported(hfp_connection, true);
             break;
         default:
-            event_emited = false;
+            event_emitted = false;
     
             switch (hfp_connection->state){
                 case HFP_W4_EXCHANGE_SUPPORTED_FEATURES:
@@ -1334,7 +1323,7 @@ static bool hfp_hf_switch_on_ok_pending(hfp_connection_t *hfp_connection, uint8_
             break;
     }
 
-    return event_emited;
+    return event_emitted;
 }   
 
 static bool hfp_is_ringing(hfp_callsetup_status_t callsetup_status){
@@ -2060,7 +2049,7 @@ uint8_t hfp_hf_deactivate_echo_canceling_and_noise_reduction(hci_con_handle_t ac
 }
 
 uint8_t hfp_hf_activate_voice_recognition(hci_con_handle_t acl_handle){
-     hfp_connection_t * hfp_connection = get_hfp_hf_connection_context_for_acl_handle(acl_handle);
+    hfp_connection_t * hfp_connection = get_hfp_hf_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection) {
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
