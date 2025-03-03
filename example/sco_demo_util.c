@@ -485,6 +485,7 @@ static const codec_support_t codec_msbc = {
 #define LC3_SWB_OCTETS_PER_FRAME   58
 
 static bool sco_demo_lc3swb_frame_callback(bool bad_frame, const uint8_t * frame_data, uint16_t frame_len){
+    UNUSED(frame_len);
 
     // skip H2 header for good frames
     if (bad_frame == false){
