@@ -594,6 +594,7 @@ static int codecs_exchange_state_machine(hfp_connection_t * hfp_connection){
     switch (hfp_connection->codecs_state){
         case HFP_CODECS_EXCHANGED:
             if (hfp_connection->command == HFP_CMD_AVAILABLE_CODECS){
+                hfp_connection->command = HFP_CMD_NONE;
                 hfp_ag_send_ok(hfp_connection->rfcomm_cid);
                 return 1;
             }
@@ -617,6 +618,7 @@ static int codecs_exchange_state_machine(hfp_connection_t * hfp_connection){
 
     switch (hfp_connection->command){
         case HFP_CMD_AVAILABLE_CODECS:
+            hfp_connection->command = HFP_CMD_NONE;
             if (hfp_connection->state < HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED){
                 hfp_connection->codecs_state = HFP_CODECS_RECEIVED_LIST;
                 hfp_ag_send_ok(hfp_connection->rfcomm_cid);
@@ -634,6 +636,7 @@ static int codecs_exchange_state_machine(hfp_connection_t * hfp_connection){
             return 1;
         
         case HFP_CMD_TRIGGER_CODEC_CONNECTION_SETUP:
+            hfp_connection->command = HFP_CMD_NONE;
             hfp_connection->codecs_state = HFP_CODECS_RECEIVED_TRIGGER_CODEC_EXCHANGE;
             hfp_connection->establish_audio_connection = 1;
             hfp_connection->sco_for_msbc_failed = 0;
@@ -641,6 +644,7 @@ static int codecs_exchange_state_machine(hfp_connection_t * hfp_connection){
             return 1;
         
         case HFP_CMD_HF_CONFIRMED_CODEC:
+            hfp_connection->command = HFP_CMD_NONE;
             if (hfp_connection->codec_confirmed != hfp_connection->suggested_codec){
                 hfp_connection->codecs_state = HFP_CODECS_ERROR;
                 hfp_ag_send_error(hfp_connection->rfcomm_cid);
@@ -708,6 +712,7 @@ static int hfp_ag_run_for_context_service_level_connection(hfp_connection_t * hf
                     } else {
                         hfp_connection->state = HFP_W4_RETRIEVE_INDICATORS;
                     }
+                    hfp_connection->command = HFP_CMD_NONE;
                     hfp_ag_exchange_supported_features_cmd(hfp_connection->rfcomm_cid);
                     return 1;
                 default:
@@ -733,11 +738,13 @@ static int hfp_ag_run_for_context_service_level_connection(hfp_connection_t * hf
         case HFP_CMD_RETRIEVE_AG_INDICATORS_STATUS:
             if (hfp_connection->state != HFP_W4_RETRIEVE_INDICATORS_STATUS) break;
             hfp_connection->state = HFP_W4_ENABLE_INDICATORS_STATUS_UPDATE;
+            hfp_connection->command = HFP_CMD_NONE;
             hfp_ag_send_retrieve_indicators_status_cmd(hfp_connection->rfcomm_cid);
             return 1;
 
         case HFP_CMD_ENABLE_INDICATOR_STATUS_UPDATE:
             if (hfp_connection->state != HFP_W4_ENABLE_INDICATORS_STATUS_UPDATE) break;
+            hfp_connection->command = HFP_CMD_NONE;
             if (has_call_waiting_and_3way_calling_feature(hfp_connection)){
                 hfp_connection->state = HFP_W4_RETRIEVE_CAN_HOLD_CALL;
                 hfp_ag_send_ok(hfp_connection->rfcomm_cid);
@@ -745,8 +752,6 @@ static int hfp_ag_run_for_context_service_level_connection(hfp_connection_t * hf
                 hfp_connection->state = HFP_W4_LIST_GENERIC_STATUS_INDICATORS;
                 hfp_ag_send_ok(hfp_connection->rfcomm_cid);
             } else {
-                // prevent recursion for synchronous transport
-                hfp_connection->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
                 hfp_ag_send_ok(hfp_connection->rfcomm_cid);
                 hfp_ag_slc_established(hfp_connection);
             }
@@ -757,6 +762,7 @@ static int hfp_ag_run_for_context_service_level_connection(hfp_connection_t * hf
             if (has_hf_indicators_feature(hfp_connection)){
                 hfp_connection->state = HFP_W4_LIST_GENERIC_STATUS_INDICATORS;
             }
+            hfp_connection->command = HFP_CMD_NONE;
             hfp_ag_send_retrieve_can_hold_call_cmd(hfp_connection->rfcomm_cid);
             if (!has_hf_indicators_feature(hfp_connection)){
                 hfp_ag_slc_established(hfp_connection);
@@ -766,17 +772,20 @@ static int hfp_ag_run_for_context_service_level_connection(hfp_connection_t * hf
         case HFP_CMD_LIST_GENERIC_STATUS_INDICATORS:
             if (hfp_connection->state != HFP_W4_LIST_GENERIC_STATUS_INDICATORS) break;
             hfp_connection->state = HFP_W4_RETRIEVE_GENERIC_STATUS_INDICATORS;
+            hfp_connection->command = HFP_CMD_NONE;
             hfp_ag_send_list_supported_generic_status_indicators_cmd(hfp_connection->rfcomm_cid);
             return 1;
 
         case HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS:
             if (hfp_connection->state != HFP_W4_RETRIEVE_GENERIC_STATUS_INDICATORS) break;
             hfp_connection->state = HFP_W4_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS; 
+            hfp_connection->command = HFP_CMD_NONE;
             hfp_ag_send_retrieve_supported_generic_status_indicators_cmd(hfp_connection->rfcomm_cid);
             return 1;
 
         case HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS_STATE:
             if (hfp_connection->state != HFP_W4_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS) break;
+            hfp_connection->command = HFP_CMD_NONE;
             hfp_ag_send_retrieve_initial_supported_generic_status_indicators_cmd(hfp_connection->rfcomm_cid);
             hfp_ag_slc_established(hfp_connection);
             return 1;
