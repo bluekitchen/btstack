@@ -38,6 +38,7 @@ list(APPEND INCLUDES_PATH 3rd-party/tinydir)
 list(APPEND INCLUDES_PATH src)
 list(APPEND INCLUDES_PATH chipset/zephyr)
 list(APPEND INCLUDES_PATH platform/embedded)
+list(APPEND INCLUDES_PATH platform/zephyr)
 list(APPEND INCLUDES_PATH platform/lwip)
 list(APPEND INCLUDES_PATH platform/lwip/port)
 list(TRANSFORM INCLUDES_PATH PREPEND ${BTSTACK_ROOT}/)
@@ -57,7 +58,7 @@ file(GLOB SOURCES_UECC           "${BTSTACK_ROOT}/3rd-party/micro-ecc/uECC.c")
 file(GLOB SOURCES_YXML           "${BTSTACK_ROOT}/3rd-party/yxml/yxml.c")
 file(GLOB SOURCES_HXCMOD         "${BTSTACK_ROOT}/3rd-party/hxcmod-player/*.c"  "${BTSTACK_ROOT}/3rd-party/hxcmod-player/mods/*.c")
 file(GLOB SOURCES_RIJNDAEL       "${BTSTACK_ROOT}/3rd-party/rijndael/rijndael.c")
-file(GLOB SOURCES_EMBEDDED       "${BTSTACK_ROOT}/platform/embedded/*.c")
+file(GLOB SOURCES_ZEPHYR         "${BTSTACK_ROOT}/platform/zephyr/*.c")
 file(GLOB SOURCES_CHIPSET_ZEPHYR "${BTSTACK_ROOT}/chipset/zephyr/*.c")
 file(GLOB SOURCES_LC3_GOOGLE     "${BTSTACK_ROOT}/3rd-party/lc3-google/src/*.c")
 
@@ -124,12 +125,13 @@ set(SOURCES
     ${SOURCES_UECC}
     ${SOURCES_HXCMOD}
     ${SOURCES_CHIPSET_ZEPHYR}
+    ${SOURCES_ZEPHYR}
 )
 list(SORT SOURCES)
 
 # create static lib
 add_library(btstack STATIC ${SOURCES})
-
+add_dependencies(btstack zephyr_interface)
 # extra compiler warnings
 target_compile_options(btstack PRIVATE
      $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>>:
@@ -180,6 +182,7 @@ foreach(EXAMPLE ${EXAMPLES})
         set (SOURCES_EXAMPLE ${EXAMPLE}.c)
     endif()
     list(APPEND SOURCES_EXAMPLE "${CMAKE_SOURCE_DIR}/src/main.c")
+
     message("${BTSTACK_ROOT}")
     message("${SOURCES_EXAMPLE}")
     # add lwip sources for lwip examples
