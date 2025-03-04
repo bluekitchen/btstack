@@ -154,7 +154,7 @@ int main(void)
     nrfx_clock_divider_set(NRF_CLOCK_DOMAIN_HFCLK, NRF_CLOCK_HFCLK_DIV_1);
 #endif
 
-    printf("BTstack booting up..\n");
+    printf("BTstack booting up...\n");
 
     // start with BTstack init - especially configure HCI Transport
     btstack_memory_init();
@@ -166,7 +166,7 @@ int main(void)
     hci_dump_segger_rtt_binary_open( HCI_DUMP_PACKETLOGGER );
     hci_dump_init(hci_dump_segger_rtt_binary_get_instance());
 #else
-     hci_dump_init(hci_dump_embedded_stdout_get_instance());
+    hci_dump_init(hci_dump_embedded_stdout_get_instance());
 #endif
 #endif
 

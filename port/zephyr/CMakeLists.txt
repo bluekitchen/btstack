@@ -58,6 +58,7 @@ file(GLOB SOURCES_UECC           "${BTSTACK_ROOT}/3rd-party/micro-ecc/uECC.c")
 file(GLOB SOURCES_YXML           "${BTSTACK_ROOT}/3rd-party/yxml/yxml.c")
 file(GLOB SOURCES_HXCMOD         "${BTSTACK_ROOT}/3rd-party/hxcmod-player/*.c"  "${BTSTACK_ROOT}/3rd-party/hxcmod-player/mods/*.c")
 file(GLOB SOURCES_RIJNDAEL       "${BTSTACK_ROOT}/3rd-party/rijndael/rijndael.c")
+file(GLOB SOURCES_EMBEDDED       "${BTSTACK_ROOT}/platform/embedded/*.c")
 file(GLOB SOURCES_ZEPHYR         "${BTSTACK_ROOT}/platform/zephyr/*.c")
 file(GLOB SOURCES_CHIPSET_ZEPHYR "${BTSTACK_ROOT}/chipset/zephyr/*.c")
 file(GLOB SOURCES_LC3_GOOGLE     "${BTSTACK_ROOT}/3rd-party/lc3-google/src/*.c")
@@ -125,6 +126,7 @@ set(SOURCES
     ${SOURCES_UECC}
     ${SOURCES_HXCMOD}
     ${SOURCES_CHIPSET_ZEPHYR}
+    ${SOURCES_EMBEDDED}
     ${SOURCES_ZEPHYR}
 )
 list(SORT SOURCES)
