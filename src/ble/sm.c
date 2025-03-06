@@ -3986,10 +3986,13 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
 			                    // responder - use own address from advertisements
 #ifdef ENABLE_LE_EXTENDED_ADVERTISING
                                 if (hci_le_extended_advertising_supported()){
-                                    // cache local resolvable address
-                                    // note: will be overwritten if random or private address was used in adv set by HCI_SUBEVENT_LE_ADVERTISING_SET_TERMINATED
-                                    sm_conn->sm_own_addr_type = BD_ADDR_TYPE_LE_RANDOM;
-                                    gap_subevent_le_connection_complete_get_local_resolvable_private_address(packet,sm_conn->sm_own_address);
+                                    // store resolved address if received set terminated and used identity address
+                                    // cache resolved address if we haven't received set terminated yet and don't what address types was used
+                                    if ((sm_conn->sm_advertising_set_terminated_received == false) || hci_is_le_identity_address_type(sm_conn->sm_own_addr_type)){
+                                        sm_conn->sm_own_addr_type = BD_ADDR_TYPE_LE_RANDOM;
+                                        gap_subevent_le_connection_complete_get_local_resolvable_private_address(packet,sm_conn->sm_own_address);
+                                        log_info("Cache local resolvable private address %s", bd_addr_to_str(sm_conn->sm_own_address));
+                                    }
                                 } else
 #endif
                                 {
@@ -4020,8 +4023,12 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                                 con_handle = hci_subevent_le_advertising_set_terminated_get_connection_handle(packet);
                                 sm_conn = sm_get_connection_for_handle(con_handle);
                                 if (!sm_conn) break;
-
-                                gap_le_get_own_advertising_set_address(&sm_conn->sm_own_addr_type, sm_conn->sm_own_address, advertising_handle);
+                                sm_conn->sm_advertising_set_terminated_received = true;
+                                uint8_t addr_type = BD_ADDR_TYPE_UNKNOWN;
+                                gap_le_get_own_advertising_set_address(&addr_type, sm_conn->sm_own_address, advertising_handle);
+                                if (hci_is_le_identity_address_type(addr_type) == false) {
+                                    sm_conn->sm_own_addr_type = addr_type;
+                                }
                                 log_info("Adv set %u terminated -> use addr type %u, addr %s for con handle 0x%04x", advertising_handle, sm_conn->sm_own_addr_type,
                                          bd_addr_to_str(sm_conn->sm_own_address), con_handle);
                             }

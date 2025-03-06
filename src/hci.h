@@ -469,6 +469,7 @@ typedef struct sm_connection {
     int                      sm_le_db_index;
     bool                     sm_pairing_active;
     bool                     sm_reencryption_active;
+    bool                     sm_advertising_set_terminated_received;
 } sm_connection_t;
 
 //
