@@ -1244,7 +1244,7 @@ static void report_gatt_characteristic_descriptor(gatt_client_t * gatt_client, u
     uint8_t * packet = setup_characteristic_value_packet(gatt_client, GATT_EVENT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT,
                                                          descriptor_handle, value,
                                                          value_length, gatt_client->service_id, gatt_client->connection_id);
-    emit_event_new(gatt_client->callback, packet, value_length + 8u);
+    emit_event_new(gatt_client->callback, packet, value_length + CHARACTERISTIC_VALUE_EVENT_HEADER_SIZE);
 }
 
 static void report_gatt_long_characteristic_descriptor(gatt_client_t * gatt_client, uint16_t descriptor_handle, uint8_t *blob, uint16_t blob_length, uint16_t value_offset){
