@@ -613,6 +613,7 @@ typedef struct hfp_connection {
     uint8_t ok_pending;
     uint8_t send_error;
 
+    // parser
     bool found_equal_sign;
     uint8_t ignore_value;
 

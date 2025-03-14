@@ -608,8 +608,6 @@ void hfp_reset_context_flags(hfp_connection_t * hfp_connection){
     hfp_connection->ok_pending = 0;
     hfp_connection->send_error = 0;
 
-    hfp_connection->found_equal_sign = false;
-
     hfp_connection->change_status_update_for_individual_ag_indicators = 0; 
     hfp_connection->operator_name_changed = 0;      
 
@@ -641,6 +639,9 @@ static hfp_connection_t * create_hfp_connection_context(void){
 
     hfp_connection->acl_handle = HCI_CON_HANDLE_INVALID;
     hfp_connection->sco_handle = HCI_CON_HANDLE_INVALID;
+
+    // parser
+    hfp_connection->found_equal_sign = false;
 
     // HF only
     hfp_connection->hf_call_status      = HFP_CALL_STATUS_NO_HELD_OR_ACTIVE_CALLS;
