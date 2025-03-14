@@ -583,18 +583,20 @@ hfp_connection_t * get_hfp_connection_context_for_acl_handle(uint16_t handle, hf
     return NULL;
 }
 
-
-static void hfp_reset_voice_recognition(hfp_connection_t * hfp_connection){
-    btstack_assert(hfp_connection != NULL);
+static void hfp_vra_handle_disconnect(hfp_connection_t * hfp_connection) {
     hfp_voice_recognition_activation_status_t current_vra_state = hfp_connection->vra_state;
     hfp_connection->vra_state = HFP_VRA_VOICE_RECOGNITION_OFF;
-
     if (current_vra_state != HFP_VRA_VOICE_RECOGNITION_OFF){
         hfp_emit_voice_recognition_disabled(hfp_connection, ERROR_CODE_SUCCESS);
     } else if (hfp_connection->vra_state_requested != HFP_VRA_VOICE_RECOGNITION_OFF){
         hfp_emit_voice_recognition_disabled(hfp_connection, ERROR_CODE_SUCCESS);
     }
-    
+}
+
+static void hfp_reset_voice_recognition(hfp_connection_t * hfp_connection){
+
+    hfp_vra_handle_disconnect(hfp_connection);
+
     hfp_connection->vra_state_requested = HFP_VRA_VOICE_RECOGNITION_OFF;
     hfp_connection->activate_voice_recognition = false;
     hfp_connection->deactivate_voice_recognition = false;
