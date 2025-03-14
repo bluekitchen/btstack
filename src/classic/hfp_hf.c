@@ -1383,7 +1383,6 @@ static void hfp_hf_handle_transfer_ag_indicator_status(hfp_connection_t * hfp_co
                 }
                 hfp_connection->hf_call_status = new_hf_call_status;
             }
-            break;
         }
     }
 
