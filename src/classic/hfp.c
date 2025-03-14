@@ -396,6 +396,16 @@ void hfp_emit_event(hfp_connection_t * hfp_connection, uint8_t event_subtype, ui
     hfp_emit_event_for_context(hfp_connection, event, sizeof(event));
 }
 
+static void hfp_emit_slc_released(hci_con_handle_t acl_handle, hfp_role_t role){
+    uint8_t event[6];
+    event[0] = HCI_EVENT_HFP_META;
+    event[1] = sizeof(event) - 2;
+    event[2] = HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED;
+    little_endian_store_16(event, 3, acl_handle);
+    event[5] = ERROR_CODE_SUCCESS; // status 0 == OK
+    hfp_emit_event_for_role(role, event, sizeof(event));
+}
+
 void hfp_emit_voice_recognition_enabled(hfp_connection_t * hfp_connection, uint8_t status){
     btstack_assert(hfp_connection != NULL);
 
@@ -1029,8 +1039,11 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
 
                 if (hfp_connection->acl_handle == HCI_CON_HANDLE_INVALID){
                     hfp_vra_handle_disconnect(hfp_connection);
-                    hfp_emit_event(hfp_connection, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED, 0);
+                    // cache acl handle and role for event
+                    hci_con_handle_t acl_handle = hfp_connection->acl_handle;
+                    hfp_role_t role = hfp_connection->local_role;
                     hfp_finalize_connection_context(hfp_connection);
+                    hfp_emit_slc_released(acl_handle, role);
                     break;
                 } else if (hfp_connection->release_slc_connection == 1){
                     hfp_connection->release_slc_connection = 0;
@@ -1143,12 +1156,15 @@ void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
                     gap_disconnect(hfp_connection->sco_handle);
                     break;
                 
-                default:
+                default: {
                     // regular case
                     hfp_vra_handle_disconnect(hfp_connection);
-                    hfp_emit_event(hfp_connection, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED, 0);
+                    hci_con_handle_t acl_handle = hfp_connection->acl_handle;
+                    hfp_role_t role = hfp_connection->local_role;
                     hfp_finalize_connection_context(hfp_connection);
+                    hfp_emit_slc_released(acl_handle, role);
                     break;
+                }
             }
             break;
 
