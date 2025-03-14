@@ -614,7 +614,8 @@ typedef struct hfp_connection {
     uint8_t send_error;
 
     // parser
-    bool found_equal_sign;
+    bool    found_equal_sign;
+    bool    clip_have_alpha;
     uint8_t ignore_value;
 
     uint8_t change_status_update_for_individual_ag_indicators; 
@@ -756,7 +757,6 @@ typedef struct hfp_connection {
     // also used for CLCC, CCWA, CLIP if set
     uint8_t bnip_type;       // 0 == not set
     char    bnip_number[HFP_BNEP_NUM_MAX_SIZE]; //
-    bool    clip_have_alpha;
 
 #ifdef ENABLE_CC256X_ASSISTED_HFP
     bool cc256x_send_write_codec_config;

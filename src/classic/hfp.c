@@ -623,7 +623,6 @@ void hfp_reset_context_flags(hfp_connection_t * hfp_connection){
     hfp_connection->call_waiting_notification_enabled = 0;
     hfp_connection->command = HFP_CMD_NONE;
     hfp_connection->enable_status_update_for_ag_indicators = 0xFF;
-    hfp_connection->clip_have_alpha = false;
     hfp_reset_voice_recognition(hfp_connection);
 }
 
