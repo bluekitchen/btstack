@@ -612,7 +612,6 @@ void hfp_reset_context_flags(hfp_connection_t * hfp_connection){
     hfp_connection->codec_confirmed = 0;
 
     hfp_connection->establish_audio_connection = 0; 
-    hfp_connection->call_waiting_notification_enabled = 0;
     hfp_connection->enable_status_update_for_ag_indicators = 0xFF;
     hfp_reset_voice_recognition(hfp_connection);
 }
@@ -646,6 +645,7 @@ static hfp_connection_t * create_hfp_connection_context(void){
     // AG only
     hfp_connection->send_error = 0;
     hfp_connection->extended_audio_gateway_error = 0;
+    hfp_connection->call_waiting_notification_enabled = 0;
 
     hfp_reset_context_flags(hfp_connection);
 
