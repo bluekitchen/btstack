@@ -1342,6 +1342,15 @@ static bool hfp_is_ringing(hfp_callsetup_status_t callsetup_status){
    }
 }
 
+static void hfp_hf_emit_pending_ag_indicator_status_updates(hfp_connection_t * hfp_connection) {
+    for (uint16_t i = 0; i < hfp_connection->ag_indicators_nr; i++) {
+        if (hfp_connection->ag_indicators[i].status_changed != 0) {
+            hfp_connection->ag_indicators[i].status_changed = 0;
+            hfp_emit_ag_indicator_status_event(hfp_connection, &hfp_connection->ag_indicators[i], 1);
+        }
+    }
+}
+
 static void hfp_hf_handle_transfer_ag_indicator_status(hfp_connection_t * hfp_connection) {
     uint16_t i;
 
@@ -1374,11 +1383,11 @@ static void hfp_hf_handle_transfer_ag_indicator_status(hfp_connection_t * hfp_co
                 }
                 hfp_connection->hf_call_status = new_hf_call_status;
             }
-            hfp_connection->ag_indicators[i].status_changed = 0;
-            hfp_emit_ag_indicator_status_event(hfp_connection, &hfp_connection->ag_indicators[i], 1);
             break;
         }
     }
+
+    hfp_hf_emit_pending_ag_indicator_status_updates(hfp_connection);
 }
 
 static void hfp_hf_handle_rfcomm_command(hfp_connection_t * hfp_connection){
