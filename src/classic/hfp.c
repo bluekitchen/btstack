@@ -604,8 +604,6 @@ static void hfp_reset_voice_recognition(hfp_connection_t * hfp_connection){
 }
 
 void hfp_reset_context_flags(hfp_connection_t * hfp_connection){
-    hfp_connection->enable_extended_audio_gateway_error_report = 0;
-
     // establish codecs hfp_connection
     hfp_connection->suggested_codec = 0;
     hfp_connection->negotiated_codec = 0;
@@ -632,6 +630,8 @@ static hfp_connection_t * create_hfp_connection_context(void){
     hfp_connection->ok_pending = 0;
     hfp_connection->command = HFP_CMD_NONE;
 
+    hfp_connection->extended_audio_gateway_error = 0;
+
     // parser
     hfp_connection->found_equal_sign = false;
 
@@ -644,7 +644,7 @@ static hfp_connection_t * create_hfp_connection_context(void){
 
     // AG only
     hfp_connection->send_error = 0;
-    hfp_connection->extended_audio_gateway_error = 0;
+    hfp_connection->enable_extended_audio_gateway_error_report = 0;
     hfp_connection->call_waiting_notification_enabled = 0;
 
     hfp_reset_context_flags(hfp_connection);
