@@ -607,9 +607,9 @@ void hfp_reset_context_flags(hfp_connection_t * hfp_connection){
     if (!hfp_connection) return;
     hfp_connection->ok_pending = 0;
     hfp_connection->send_error = 0;
+    hfp_connection->command = HFP_CMD_NONE;
 
     hfp_connection->change_status_update_for_individual_ag_indicators = 0; 
-    hfp_connection->operator_name_changed = 0;      
 
     hfp_connection->enable_extended_audio_gateway_error_report = 0;
     hfp_connection->extended_audio_gateway_error = 0;
@@ -621,7 +621,6 @@ void hfp_reset_context_flags(hfp_connection_t * hfp_connection){
 
     hfp_connection->establish_audio_connection = 0; 
     hfp_connection->call_waiting_notification_enabled = 0;
-    hfp_connection->command = HFP_CMD_NONE;
     hfp_connection->enable_status_update_for_ag_indicators = 0xFF;
     hfp_reset_voice_recognition(hfp_connection);
 }
@@ -646,6 +645,8 @@ static hfp_connection_t * create_hfp_connection_context(void){
     hfp_connection->hf_call_status      = HFP_CALL_STATUS_NO_HELD_OR_ACTIVE_CALLS;
     hfp_connection->hf_callsetup_status = HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS;
     hfp_connection->hf_callheld_status  = HFP_CALLHELD_STATUS_NO_CALLS_HELD;
+
+    hfp_connection->operator_name_changed = 0;
 
     hfp_reset_context_flags(hfp_connection);
 
