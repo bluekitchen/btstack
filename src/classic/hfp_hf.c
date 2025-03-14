@@ -55,6 +55,9 @@
 #include "classic/hfp_hf.h"
 #include "classic/sdp_util.h"
 
+// prototypes
+static void hfp_hf_handle_transfer_ag_indicator_status(hfp_connection_t * hfp_connection);
+
 // const
 static const char hfp_hf_default_service_name[] = "Hands-Free unit";
 
@@ -1178,6 +1181,9 @@ static void hfp_hf_slc_established(hfp_connection_t * hfp_connection){
     hfp_connection->microphone_gain = hfp_hf_microphone_gain;
     hfp_connection->send_microphone_gain = 1;
     hfp_emit_event(hfp_connection, HFP_SUBEVENT_MICROPHONE_VOLUME, hfp_hf_microphone_gain);
+
+    // restore call status
+    hfp_hf_handle_transfer_ag_indicator_status(hfp_connection);
 }
 
 static void hfp_hf_handle_suggested_codec(hfp_connection_t * hfp_connection){
