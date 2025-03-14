@@ -683,8 +683,8 @@ uint16_t hci_number_free_acl_slots_for_connection_type(bd_addr_type_t address_ty
         free_slots_le = hci_stack->le_acl_packets_total_num - num_packets_sent_le;
     } else {
         // otherwise, classic slots are used for LE, too
-        free_slots_classic -= num_packets_sent_le;
         btstack_assert(free_slots_classic >= num_packets_sent_le);
+        free_slots_classic -= num_packets_sent_le;
     }
 
     switch (address_type){
