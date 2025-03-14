@@ -206,7 +206,7 @@ static void hfp_emit_ag_indicator_mapping_event(const hfp_connection_t * hfp_con
     (*hfp_hf_callback)(HCI_EVENT_PACKET, 0, event, 9 + indicator_len);
 }
 
-static void hfp_emit_ag_indicator_status_event(const hfp_connection_t * hfp_connection, const hfp_ag_indicator_t * indicator){
+static void hfp_emit_ag_indicator_status_event(const hfp_connection_t * hfp_connection, const hfp_ag_indicator_t * indicator, uint8_t status_changed){
 	if (hfp_hf_callback == NULL) return;
 	uint8_t event[12+HFP_MAX_INDICATOR_DESC_SIZE];
     uint16_t indicator_len = btstack_min((uint16_t) strlen(indicator->name), HFP_MAX_INDICATOR_DESC_SIZE-1);
@@ -220,7 +220,7 @@ static void hfp_emit_ag_indicator_status_event(const hfp_connection_t * hfp_conn
 	event[8] = indicator->max_range;
 	event[9] = indicator->mandatory;
 	event[10] = indicator->enabled;
-	event[11] = indicator->status_changed;
+	event[11] = status_changed;
 	memcpy(&event[12], indicator->name, indicator_len);
 	event[12+indicator_len] = 0;
 	(*hfp_hf_callback)(HCI_EVENT_PACKET, 0, event, 13 + indicator_len);
@@ -1162,7 +1162,7 @@ static void hfp_hf_slc_established(hfp_connection_t * hfp_connection){
 
     for (i = 0; i < hfp_connection->ag_indicators_nr; i++){
         hfp_connection->ag_indicators[i].status_changed = 0;
-        hfp_emit_ag_indicator_status_event(hfp_connection, &hfp_connection->ag_indicators[i]);
+        hfp_emit_ag_indicator_status_event(hfp_connection, &hfp_connection->ag_indicators[i], 0);
     }
 
     // reset apple information, set current dock & battery level
@@ -1375,7 +1375,7 @@ static void hfp_hf_handle_transfer_ag_indicator_status(hfp_connection_t * hfp_co
                 hfp_connection->hf_call_status = new_hf_call_status;
             }
             hfp_connection->ag_indicators[i].status_changed = 0;
-            hfp_emit_ag_indicator_status_event(hfp_connection, &hfp_connection->ag_indicators[i]);
+            hfp_emit_ag_indicator_status_event(hfp_connection, &hfp_connection->ag_indicators[i], 1);
             break;
         }
     }
