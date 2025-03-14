@@ -602,10 +602,6 @@ static void hfp_reset_voice_recognition(hfp_connection_t * hfp_connection){
     hfp_connection->ag_vra_state = HFP_VOICE_RECOGNITION_STATE_AG_READY;
 }
 
-void hfp_reset_context_flags(hfp_connection_t * hfp_connection){
-    hfp_connection->establish_audio_connection = 0;
-}
-
 static hfp_connection_t * create_hfp_connection_context(void){
     hfp_connection_t * hfp_connection = btstack_memory_hfp_connection_get();
     if (!hfp_connection) return NULL;
@@ -613,6 +609,7 @@ static hfp_connection_t * create_hfp_connection_context(void){
     hfp_connection->state = HFP_IDLE;
     hfp_connection->call_state = HFP_CALL_IDLE;
     hfp_connection->codecs_state = HFP_CODECS_IDLE;
+    hfp_connection->establish_audio_connection = 0;
 
     hfp_connection->parser_state = HFP_PARSER_CMD_HEADER;
 
@@ -646,7 +643,6 @@ static hfp_connection_t * create_hfp_connection_context(void){
     hfp_connection->codec_confirmed = 0;
 
     hfp_reset_voice_recognition(hfp_connection);
-    hfp_reset_context_flags(hfp_connection);
 
     btstack_linked_list_add_tail(&hfp_connections, (btstack_linked_item_t*)hfp_connection);
     return hfp_connection;

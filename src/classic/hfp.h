@@ -897,8 +897,6 @@ void hfp_trigger_release_service_level_connection(hfp_connection_t * hfp_connect
  */
 uint8_t hfp_trigger_release_audio_connection(hfp_connection_t * hfp_connection);
 
-void hfp_reset_context_flags(hfp_connection_t * hfp_connection);
-
 // @returns if an SCO setup is active in either role
 bool hfp_sco_setup_active(void);
 

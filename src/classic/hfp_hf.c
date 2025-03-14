@@ -1453,7 +1453,6 @@ static void hfp_hf_handle_rfcomm_command(hfp_connection_t * hfp_connection){
                 case HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED:
                     switch (hfp_connection->codecs_state){
                         case HFP_CODECS_RECEIVED_TRIGGER_CODEC_EXCHANGE:
-                            hfp_reset_context_flags(hfp_connection);
                             hfp_emit_sco_connection_established(hfp_connection, HFP_REMOTE_REJECTS_AUDIO_CONNECTION,
                                                                 hfp_connection->negotiated_codec, 0, 0);
                             return;
@@ -1485,14 +1484,12 @@ static void hfp_hf_handle_rfcomm_command(hfp_connection_t * hfp_connection){
                     }
                     hfp_connection->vra_state_requested = hfp_connection->vra_state;
                     hfp_emit_voice_recognition_enabled(hfp_connection, ERROR_CODE_UNSPECIFIED_ERROR);
-                    hfp_reset_context_flags(hfp_connection);
                     return;
             }
             event_emited = hfp_hf_switch_on_ok_pending(hfp_connection, ERROR_CODE_UNSPECIFIED_ERROR);
             if (!event_emited){
                 hfp_emit_event(hfp_connection, HFP_SUBEVENT_COMPLETE, ERROR_CODE_UNSPECIFIED_ERROR);
             }
-            hfp_reset_context_flags(hfp_connection);
             break;
 
         case HFP_CMD_OK:
