@@ -594,9 +594,6 @@ static void hfp_vra_handle_disconnect(hfp_connection_t * hfp_connection) {
 }
 
 static void hfp_reset_voice_recognition(hfp_connection_t * hfp_connection){
-
-    hfp_vra_handle_disconnect(hfp_connection);
-
     hfp_connection->vra_state_requested = HFP_VRA_VOICE_RECOGNITION_OFF;
     hfp_connection->activate_voice_recognition = false;
     hfp_connection->deactivate_voice_recognition = false;
@@ -607,7 +604,6 @@ static void hfp_reset_voice_recognition(hfp_connection_t * hfp_connection){
 
 void hfp_reset_context_flags(hfp_connection_t * hfp_connection){
     hfp_connection->establish_audio_connection = 0;
-    hfp_reset_voice_recognition(hfp_connection);
 }
 
 static hfp_connection_t * create_hfp_connection_context(void){
@@ -649,6 +645,7 @@ static hfp_connection_t * create_hfp_connection_context(void){
     hfp_connection->negotiated_codec = 0;
     hfp_connection->codec_confirmed = 0;
 
+    hfp_reset_voice_recognition(hfp_connection);
     hfp_reset_context_flags(hfp_connection);
 
     btstack_linked_list_add_tail(&hfp_connections, (btstack_linked_item_t*)hfp_connection);
@@ -1034,7 +1031,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
                 hfp_connection->ag_audio_connection_opened_before_vra = false;
 
                 if (hfp_connection->acl_handle == HCI_CON_HANDLE_INVALID){
-                    hfp_reset_voice_recognition(hfp_connection);
+                    hfp_vra_handle_disconnect(hfp_connection);
                     hfp_emit_event(hfp_connection, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED, 0);
                     hfp_finalize_connection_context(hfp_connection);
                     break;
@@ -1151,7 +1148,7 @@ void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
                 
                 default:
                     // regular case
-                    hfp_reset_voice_recognition(hfp_connection);
+                    hfp_vra_handle_disconnect(hfp_connection);
                     hfp_emit_event(hfp_connection, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED, 0);
                     hfp_finalize_connection_context(hfp_connection);
                     break;
