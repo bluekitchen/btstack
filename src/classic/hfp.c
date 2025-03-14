@@ -604,11 +604,7 @@ static void hfp_reset_voice_recognition(hfp_connection_t * hfp_connection){
 }
 
 void hfp_reset_context_flags(hfp_connection_t * hfp_connection){
-    if (!hfp_connection) return;
-    hfp_connection->ok_pending = 0;
-    hfp_connection->command = HFP_CMD_NONE;
-
-    hfp_connection->change_status_update_for_individual_ag_indicators = 0; 
+    hfp_connection->change_status_update_for_individual_ag_indicators = 0;
 
     hfp_connection->enable_extended_audio_gateway_error_report = 0;
     hfp_connection->extended_audio_gateway_error = 0;
@@ -636,6 +632,9 @@ static hfp_connection_t * create_hfp_connection_context(void){
 
     hfp_connection->acl_handle = HCI_CON_HANDLE_INVALID;
     hfp_connection->sco_handle = HCI_CON_HANDLE_INVALID;
+
+    hfp_connection->ok_pending = 0;
+    hfp_connection->command = HFP_CMD_NONE;
 
     // parser
     hfp_connection->found_equal_sign = false;

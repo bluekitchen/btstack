@@ -1447,6 +1447,8 @@ static void hfp_hf_handle_rfcomm_command(hfp_connection_t * hfp_connection){
         case HFP_CMD_AG_ACTIVATE_VOICE_RECOGNITION:
             break;
         case HFP_CMD_ERROR:
+            hfp_connection->ok_pending = 0;
+            hfp_connection->command = HFP_CMD_NONE;
             switch (hfp_connection->state){
                 case HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED:
                     switch (hfp_connection->codecs_state){
