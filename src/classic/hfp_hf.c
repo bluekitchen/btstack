@@ -1354,6 +1354,9 @@ static void hfp_hf_emit_pending_ag_indicator_status_updates(hfp_connection_t * h
 static void hfp_hf_handle_transfer_ag_indicator_status(hfp_connection_t * hfp_connection) {
     uint16_t i;
 
+    // handle indicators only after SLC was established
+    if (hfp_connection->state < HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED) return;
+
     for (i = 0; i < hfp_connection->ag_indicators_nr; i++){
         if (strcmp(hfp_connection->ag_indicators[i].name, "callsetup") == 0){
             hfp_callsetup_status_t new_hf_callsetup_status = (hfp_callsetup_status_t) hfp_connection->ag_indicators[i].status;
