@@ -77,7 +77,7 @@
 #define NVN_NUM_GATT_SERVER_CCC 20
 #endif
 
-#define ATT_SERVICE_FLAGS_DELAYED_RESPONSE      (1u<<0u)
+#define ATT_SERVER_FLAGS_DELAYED_RESPONSE       (1u<<0u)
 #define ATT_SERVER_FLAGS_VALIDATE_DATABASE_HASH (1u<<1u)
 
 static void att_run_for_context(att_server_t * att_server, att_connection_t * att_connection);
@@ -564,13 +564,13 @@ static void att_server_handle_response_pending(att_server_t *att_server, const a
         btstack_linked_list_iterator_init(&it, &service_handlers);
         while (btstack_linked_list_iterator_has_next(&it)) {
             att_service_handler_t *handler = (att_service_handler_t *) btstack_linked_list_iterator_next(&it);
-            if ((handler->flags & ATT_SERVICE_FLAGS_DELAYED_RESPONSE) != 0u){
-                handler->flags &= ~ATT_SERVICE_FLAGS_DELAYED_RESPONSE;
+            if ((handler->flags & ATT_SERVER_FLAGS_DELAYED_RESPONSE) != 0u){
+                handler->flags &= ~ATT_SERVER_FLAGS_DELAYED_RESPONSE;
                 handler->read_callback(att_connection->con_handle, ATT_READ_RESPONSE_PENDING, 0, NULL, 0);
             }
         }
         // notify main read callback if it returned response pending
-        if ((att_server_flags & ATT_SERVICE_FLAGS_DELAYED_RESPONSE) != 0u){
+        if ((att_server_flags & ATT_SERVER_FLAGS_DELAYED_RESPONSE) != 0u){
             // flag was set by read callback
             btstack_assert(att_server_client_read_callback != NULL);
             (*att_server_client_read_callback)(att_connection->con_handle, ATT_READ_RESPONSE_PENDING, 0, NULL, 0);
@@ -1242,9 +1242,9 @@ static uint16_t att_server_read_callback(hci_con_handle_t con_handle, uint16_t a
 #ifdef ENABLE_ATT_DELAYED_RESPONSE
         if (result == ATT_READ_RESPONSE_PENDING){
             if (service == NULL){
-                att_server_flags |= ATT_SERVICE_FLAGS_DELAYED_RESPONSE;
+                att_server_flags |= ATT_SERVER_FLAGS_DELAYED_RESPONSE;
             } else {
-                service->flags   |= ATT_SERVICE_FLAGS_DELAYED_RESPONSE;
+                service->flags   |= ATT_SERVER_FLAGS_DELAYED_RESPONSE;
             }
         }
 #endif
