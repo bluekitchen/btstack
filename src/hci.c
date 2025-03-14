@@ -4293,11 +4293,11 @@ static void event_handler(uint8_t *packet, uint16_t size){
                 // authenticated
                 conn->authentication_flags |= AUTH_FLAG_CONNECTION_AUTHENTICATED;
 
-                // If not already encrypted, start encryption
+                // If not already encrypted, start encryption, otherwise, wait for reencryption complete
                 if ((conn->authentication_flags & AUTH_FLAG_CONNECTION_ENCRYPTED) == 0){
                     conn->bonding_flags |= BONDING_SEND_ENCRYPTION_REQUEST;
-                    break;
                 }
+                break;
             }
 
             // emit updated security level (will be 0 if not authenticated)
