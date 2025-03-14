@@ -1385,8 +1385,6 @@ static void hfp_hf_handle_transfer_ag_indicator_status(hfp_connection_t * hfp_co
             }
         }
     }
-
-    hfp_hf_emit_pending_ag_indicator_status_updates(hfp_connection);
 }
 
 static void hfp_hf_handle_rfcomm_command(hfp_connection_t * hfp_connection){
@@ -1498,6 +1496,7 @@ static void hfp_hf_handle_rfcomm_command(hfp_connection_t * hfp_connection){
         case HFP_CMD_TRANSFER_AG_INDICATOR_STATUS:
             hfp_connection->command = HFP_CMD_NONE;
             hfp_hf_handle_transfer_ag_indicator_status(hfp_connection);
+            hfp_hf_emit_pending_ag_indicator_status_updates(hfp_connection);
             break;
         case HFP_CMD_RETRIEVE_AG_INDICATORS_STATUS:
             hfp_connection->command = HFP_CMD_NONE;
