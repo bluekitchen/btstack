@@ -77,7 +77,8 @@
 #define NVN_NUM_GATT_SERVER_CCC 20
 #endif
 
-#define ATT_SERVICE_FLAGS_DELAYED_RESPONSE (1u<<0u)
+#define ATT_SERVICE_FLAGS_DELAYED_RESPONSE      (1u<<0u)
+#define ATT_SERVER_FLAGS_VALIDATE_DATABASE_HASH (1u<<1u)
 
 static void att_run_for_context(att_server_t * att_server, att_connection_t * att_connection);
 static att_write_callback_t att_server_write_callback_for_handle(uint16_t handle);
@@ -1321,6 +1322,9 @@ void att_server_init(uint8_t const * db, att_read_callback_t read_callback, att_
     att_set_db(db);
     att_set_read_callback(att_server_read_callback);
     att_set_write_callback(att_server_write_callback);
+
+    // validate database hash on first connect
+    att_server_flags = ATT_SERVER_FLAGS_VALIDATE_DATABASE_HASH;
 }
 
 void att_server_register_packet_handler(btstack_packet_handler_t handler){
@@ -1495,7 +1499,6 @@ void att_server_deinit(void){
     att_server_client_write_callback = NULL;
     att_client_packet_handler = NULL;
     service_handlers = NULL;
-    att_server_flags = 0;
 }
 
 #ifdef ENABLE_GATT_OVER_EATT
