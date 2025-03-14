@@ -604,12 +604,7 @@ static void hfp_reset_voice_recognition(hfp_connection_t * hfp_connection){
 }
 
 void hfp_reset_context_flags(hfp_connection_t * hfp_connection){
-    // establish codecs hfp_connection
-    hfp_connection->suggested_codec = 0;
-    hfp_connection->negotiated_codec = 0;
-    hfp_connection->codec_confirmed = 0;
-
-    hfp_connection->establish_audio_connection = 0; 
+    hfp_connection->establish_audio_connection = 0;
     hfp_connection->enable_status_update_for_ag_indicators = 0xFF;
     hfp_reset_voice_recognition(hfp_connection);
 }
@@ -646,6 +641,11 @@ static hfp_connection_t * create_hfp_connection_context(void){
     hfp_connection->send_error = 0;
     hfp_connection->enable_extended_audio_gateway_error_report = 0;
     hfp_connection->call_waiting_notification_enabled = 0;
+
+    // Codec negotiation
+    hfp_connection->suggested_codec = 0;
+    hfp_connection->negotiated_codec = 0;
+    hfp_connection->codec_confirmed = 0;
 
     hfp_reset_context_flags(hfp_connection);
 
