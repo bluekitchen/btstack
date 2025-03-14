@@ -42,6 +42,7 @@
 #include "ble/att_db.h"
 #include "ble/core.h"
 #include "bluetooth.h"
+#include "bluetooth_gatt.h"
 #include "btstack_debug.h"
 #include "btstack_util.h"
 
@@ -1639,6 +1640,28 @@ bool gatt_server_get_included_service_with_uuid16(uint16_t start_handle, uint16_
                 *out_included_service_end_handle = little_endian_read_16(it.value, 2);
                 return true;
             }
+        }
+    }
+    return false;
+}
+
+bool gatt_server_get_database_hash(uint8_t * hash) {
+    att_iterator_t it;
+    att_iterator_init(&it);
+    uint16_t value_handle = 0xffff;
+    while (att_iterator_has_next(&it)){
+        att_iterator_fetch_next(&it);
+        // Find Characteristic declaration for Database Hash
+        if ((it.value_len == 5u) && (att_iterator_match_uuid16(&it, GATT_CHARACTERISTICS_UUID))){
+            uint16_t characteristic_uuid = little_endian_read_16(it.value, 3);
+            if (characteristic_uuid == ORG_BLUETOOTH_CHARACTERISTIC_DATABASE_HASH){
+                value_handle = little_endian_read_16(it.value, 1);
+            }
+        }
+        // Find Characteristic Value for Database Hash and get value
+        if ((it.handle == value_handle) && (it.value_len == 16u)){
+            att_copy_value(&it, 0, hash, 16, HCI_CON_HANDLE_INVALID);
+            return true;
         }
     }
     return false;

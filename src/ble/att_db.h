@@ -420,6 +420,14 @@ uint16_t gatt_server_get_value_handle_for_characteristic_with_uuid128(uint16_t s
  */
 uint16_t gatt_server_get_client_configuration_handle_for_characteristic_with_uuid128(uint16_t start_handle, uint16_t end_handle, const uint8_t * uuid128);
 
+/**
+ * @brief Get Database Hash provided via GATT Database Hash characteristic
+ * @note Used by att_server to discard stored CCCD values for bonded devices if hash has changed
+ * @param hash
+ * @return true if hash is available
+ */
+bool gatt_server_get_database_hash(uint8_t * hash);
+
 /* API_END */
 
 // non-user functionality for att_server
