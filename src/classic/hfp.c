@@ -606,7 +606,6 @@ static void hfp_reset_voice_recognition(hfp_connection_t * hfp_connection){
 void hfp_reset_context_flags(hfp_connection_t * hfp_connection){
     if (!hfp_connection) return;
     hfp_connection->ok_pending = 0;
-    hfp_connection->send_error = 0;
     hfp_connection->command = HFP_CMD_NONE;
 
     hfp_connection->change_status_update_for_individual_ag_indicators = 0; 
@@ -645,6 +644,9 @@ static hfp_connection_t * create_hfp_connection_context(void){
     hfp_connection->hf_call_status      = HFP_CALL_STATUS_NO_HELD_OR_ACTIVE_CALLS;
     hfp_connection->hf_callsetup_status = HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS;
     hfp_connection->hf_callheld_status  = HFP_CALLHELD_STATUS_NO_CALLS_HELD;
+
+    // AG only
+    hfp_connection->send_error = 0;
 
     hfp_connection->operator_name_changed = 0;
 
