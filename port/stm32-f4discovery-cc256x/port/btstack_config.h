@@ -55,4 +55,7 @@
 #define NVM_NUM_DEVICE_DB_ENTRIES 16
 #define NVM_NUM_LINK_KEYS 16
 
+// Max size of GATT Server Databse if dynamic database is created using att_db_util
+#define MAX_ATT_DB_SIZE 512
+
 #endif
