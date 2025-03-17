@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - POSIX: support error condition for file descriptors in btstack_run_loop
 - Linux: HCI Transport for Linux HCI Kernel Socket
 - Linux: Audio sink implementation for Linux ALSA
+- HID Keyboard Demo: Reconnect to last bonded device on startup
 
 ### Fixed
 - HCI: fix incorrect assert/regression in num completed packets handling introduced in 6ec1ca0
