@@ -71,8 +71,9 @@ bool broadcast_audio_uri_builder_init(broadcast_audio_uri_builder_t * builder, c
 
 bool broadcast_audio_uri_builder_finalize(broadcast_audio_uri_builder_t * builder){
     bool ok = broadcast_audio_uri_builder_append_string(builder, ";");
-    uint16_t remaining;
-    void *ptr;
+    // fix maybe-uninitialized with clang 17
+    uint16_t remaining = 0;
+    void *ptr = NULL;
     if(ok) {
         remaining = broadcast_audio_uri_builder_get_remaining_space(builder);
         ptr = broadcast_audio_uri_builder_get_ptr(builder);
