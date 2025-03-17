@@ -46,6 +46,7 @@ include_directories(${BTSTACK_ROOT}/3rd-party/lwip/dhcp-server)
 include_directories(${BTSTACK_ROOT}/3rd-party/rijndael)
 include_directories(${BTSTACK_ROOT}/3rd-party/yxml)
 include_directories(${BTSTACK_ROOT}/3rd-party/tinydir)
+include_directories(${BTSTACK_ROOT}/3rd-party/qr-code-generator)
 include_directories(${BTSTACK_ROOT}/src)
 include_directories(${BTSTACK_ROOT}/chipset/bcm)
 include_directories(${BTSTACK_ROOT}/chipset/csr)
@@ -71,6 +72,7 @@ file(GLOB SOURCES_HXCMOD    "${BTSTACK_ROOT}/3rd-party/hxcmod-player/*.c"  "${BT
 file(GLOB SOURCES_MD5       "${BTSTACK_ROOT}/3rd-party/md5/md5.c")
 file(GLOB SOURCES_RIJNDAEL  "${BTSTACK_ROOT}/3rd-party/rijndael/rijndael.c")
 file(GLOB SOURCES_YXML      "${BTSTACK_ROOT}/3rd-party/yxml/yxml.c")
+file(GLOB SOURCES_QRCODEGEN "${BTSTACK_ROOT}/3rd-party/qr-code-generator/qrcodegen.c")
 file(GLOB SOURCES_POSIX     "${BTSTACK_ROOT}/platform/posix/*.c")
 file(GLOB SOURCES_BCM       "${BTSTACK_ROOT}/chipset/bcm/*.c")
 file(GLOB SOURCES_CSR       "${BTSTACK_ROOT}/chipset/csr/*.c")
@@ -153,6 +155,7 @@ set(SOURCES
 		${SOURCES_POSIX}
 		${SOURCES_YXML}
 		${SOURCES_ZEPHYR}
+        ${SOURCES_QRCODEGEN}
 )
 list(SORT SOURCES)
 
@@ -203,7 +206,7 @@ foreach(EXAMPLE ${EXAMPLES})
 	# add GATT DB creation
 	if ( "${EXAMPLES_GATT_FILES}" MATCHES ${EXAMPLE} )
 		message("example ${EXAMPLE} -- with GATT DB")
-	  	add_custom_command(
+	    add_custom_command(
 		    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
 			DEPENDS ${BTSTACK_ROOT}/example/${EXAMPLE}.gatt
 			COMMAND ${Python_EXECUTABLE}
