@@ -38,7 +38,10 @@
 #define BTSTACK_FILE__ "broadcast_audio_uri_builder.c"
 
 #include "le-audio/broadcast_audio_uri_builder.h"
+#include "btstack_base64_encoder.h"
 #include "btstack_util.h"
+
+#include <stdio.h>
 #include <stdint.h>
 #include <string.h>
 #include <inttypes.h>
@@ -85,9 +88,25 @@ bool broadcast_audio_uri_builder_append_string(broadcast_audio_uri_builder_t * b
 }
 
 bool broadcast_audio_uri_builder_append_broadcast_name(broadcast_audio_uri_builder_t * builder, const char * broadcast_name){
-    UNUSED(broadcast_name);
-    // TODO: base64
-    return broadcast_audio_uri_builder_append_string(builder, "BN:QnJvYWRjYXN0IE5hbWU=;");
+    uint16_t len = builder->len;
+    bool ok = broadcast_audio_uri_builder_append_string(builder,"BN:");
+    if( !ok ) {
+        return ok;
+    }
+    uint8_t *ptr =&builder->buffer[builder->len];
+    size_t remaining = broadcast_audio_uri_builder_get_remaining_space( builder );
+    ptr = btstack_base64_encoder(broadcast_name, strlen(broadcast_name), ptr, &remaining);
+    if( ptr == NULL ) {
+        goto error_return;
+    }
+    ok = broadcast_audio_uri_builder_append_string( builder, ";" );
+    if( !ok ) {
+        goto error_return;
+    }
+    return true;
+error_return:
+    builder->len = len;
+    return false;
 }
 
 bool broadcast_audio_uri_builder_append_advertiser_address_type(broadcast_audio_uri_builder_t * builder, bd_addr_type_t advertiser_address_type){
@@ -97,9 +116,14 @@ bool broadcast_audio_uri_builder_append_advertiser_address_type(broadcast_audio_
 }
 
 bool broadcast_audio_uri_builder_append_standard_quality(broadcast_audio_uri_builder_t * builder, bool standard_quality){
-    char buffer[10];
-    btstack_snprintf_assert_complete(buffer, sizeof(buffer), "SQ:%u;", (int) standard_quality);
-    return broadcast_audio_uri_builder_append_string(builder, buffer);
+    uint8_t *ptr = &builder->buffer[builder->len];
+    uint16_t remaining = broadcast_audio_uri_builder_get_remaining_space( builder );
+    int len = snprintf((char*)ptr, remaining, "SQ:%u;", (int) standard_quality);
+    if((len>0) && (len<remaining)) {
+        builder->len += len-1;
+        return true;
+    }
+    return false;
 }
 
 bool broadcast_audio_uri_builder_append_high_quality(broadcast_audio_uri_builder_t * builder, bool high_quality){
