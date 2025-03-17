@@ -8,7 +8,7 @@ set (BTSTACK_ROOT ${CMAKE_SOURCE_DIR}/../../)
 find_package(PkgConfig REQUIRED)
 
 # CppuTest
-pkg_check_modules(CPPUTEST REQUIRED CppuTest)
+pkg_check_modules(CPPUTEST REQUIRED cpputest)
 include_directories(${CPPUTEST_INCLUDE_DIRS})
 link_directories(${CPPUTEST_LIBRARY_DIRS})
 link_libraries(${CPPUTEST_LIBRARIES})
@@ -36,6 +36,7 @@ foreach(TARGET_FILE ${TARGETS_CPP})
                 ${BTSTACK_ROOT}/src/btstack_util.c
                 ${BTSTACK_ROOT}/src/hci_dump.c
                 ${BTSTACK_ROOT}/src/le-audio/broadcast_audio_uri_builder.c
+                ${BTSTACK_ROOT}/src/btstack_base64_encoder.c
         )
 endforeach(TARGET_FILE)
 
