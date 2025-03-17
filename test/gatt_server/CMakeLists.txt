@@ -5,7 +5,7 @@ project(gatt_server)
 find_package(PkgConfig REQUIRED)
 
 # CppuTest
-pkg_check_modules(CPPUTEST REQUIRED CppuTest)
+pkg_check_modules(CPPUTEST REQUIRED cpputest)
 include_directories(${CPPUTEST_INCLUDE_DIRS})
 link_directories(${CPPUTEST_LIBRARY_DIRS})
 link_libraries(${CPPUTEST_LIBRARIES})
@@ -26,25 +26,25 @@ set(SOURCES
     ../../src/ble/att_db.c
     ../../src/ble/att_db_util.c
     ../../src/ble/att_server.c
-    ../../src/ble/gatt-service/battery_service_server.c 
-    ../../src/ble/gatt-service/cycling_power_service_server.c 
-    ../../src/ble/gatt-service/cycling_speed_and_cadence_service_server.c 
-    ../../src/ble/gatt-service/device_information_service_server.c 
-    ../../src/ble/gatt-service/heart_rate_service_server.c 
-    ../../src/ble/gatt-service/hids_device.c 
-    ../../src/ble/gatt-service/nordic_spp_service_server.c 
-    ../../src/ble/gatt-service/ublox_spp_service_server.c 
-    ../../src/ble/le_device_db_memory.c       
-    ../../src/btstack_crypto.c            
-    ../../src/btstack_linked_list.c       
-    ../../src/btstack_memory.c            
-    ../../src/btstack_memory_pool.c       
+    ../../src/ble/gatt-service/battery_service_server.c
+    ../../src/ble/gatt-service/cycling_power_service_server.c
+    ../../src/ble/gatt-service/cycling_speed_and_cadence_service_server.c
+    ../../src/ble/gatt-service/device_information_service_server.c
+    ../../src/ble/gatt-service/heart_rate_service_server.c
+    ../../src/ble/gatt-service/hids_device.c
+    ../../src/ble/gatt-service/nordic_spp_service_server.c
+    ../../src/ble/gatt-service/ublox_spp_service_server.c
+    ../../src/ble/le_device_db_memory.c
+    ../../src/btstack_crypto.c
+    ../../src/btstack_linked_list.c
+    ../../src/btstack_memory.c
+    ../../src/btstack_memory_pool.c
     ../../src/btstack_tlv.c
     ../../platform/posix/btstack_tlv_posix.c
     ../../src/btstack_util.c
-    ../../src/hci_cmd.c                   
-    ../../src/hci_dump.c                  
-    mock.c                                
+    ../../src/hci_cmd.c
+    ../../src/hci_dump.c
+    mock.c
 )
 
 # Enable ASAN

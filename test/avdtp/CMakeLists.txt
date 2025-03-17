@@ -11,7 +11,7 @@ link_directories(${LIBUSB_LIBRARY_DIRS})
 link_libraries(${LIBUSB_LIBRARIES})
 
 # CppuTest
-pkg_check_modules(CPPUTEST REQUIRED CppuTest)
+pkg_check_modules(CPPUTEST REQUIRED cpputest)
 include_directories(${CPPUTEST_INCLUDE_DIRS})
 link_directories(${CPPUTEST_LIBRARY_DIRS})
 link_libraries(${CPPUTEST_LIBRARIES})
@@ -56,7 +56,7 @@ list(REMOVE_ITEM SOURCES_BLE   ${SOURCES_BLE_OFF})
 file(GLOB SOURCES_POSIX_OFF "../../platform/posix/le_device_db_fs.c")
 list(REMOVE_ITEM SOURCES_POSIX ${SOURCES_POSIX_OFF})
 
-set(SOURCES 
+set(SOURCES
 	${SOURCES_MD5}
 	${SOURCES_YXML}
 	${SOURCES_BLUEDROID}
