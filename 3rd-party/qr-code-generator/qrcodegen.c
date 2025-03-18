@@ -205,7 +205,9 @@ bool qrcodegen_encodeSegmentsAdvanced(const struct qrcodegen_Segment segs[], siz
 		int minVersion, int maxVersion, enum qrcodegen_Mask mask, bool boostEcl, uint8_t tempBuffer[], uint8_t qrcode[]) {
 	assert(segs != NULL || len == 0);
 	assert(qrcodegen_VERSION_MIN <= minVersion && minVersion <= maxVersion && maxVersion <= qrcodegen_VERSION_MAX);
-	assert(0 <= (int)ecl && (int)ecl <= 3 && -1 <= (int)mask && (int)mask <= 7);
+    // BK: avoid clang 17 warning: comparison is always true due to limited range of data type [-Werror=type-limits]
+    // assert(0 <= (int)ecl);
+	assert((int)ecl <= 3 && -1 <= (int)mask && (int)mask <= 7);
 	
 	// Find the minimal version number to use
 	int version, dataUsedBits;
@@ -293,7 +295,9 @@ bool qrcodegen_encodeSegmentsAdvanced(const struct qrcodegen_Segment segs[], siz
 // be clobbered by this function. The final answer is stored in result[0 : rawCodewords].
 testable void addEccAndInterleave(uint8_t data[], int version, enum qrcodegen_Ecc ecl, uint8_t result[]) {
 	// Calculate parameter numbers
-	assert(0 <= (int)ecl && (int)ecl < 4 && qrcodegen_VERSION_MIN <= version && version <= qrcodegen_VERSION_MAX);
+	// BK: avoid clang 17 warning: comparison is always true due to limited range of data type [-Werror=type-limits]
+	// assert(0 <= (int)ecl);
+	assert((int)ecl < 4 && qrcodegen_VERSION_MIN <= version && version <= qrcodegen_VERSION_MAX);
 	int numBlocks = NUM_ERROR_CORRECTION_BLOCKS[(int)ecl][version];
 	int blockEccLen = ECC_CODEWORDS_PER_BLOCK  [(int)ecl][version];
 	int rawCodewords = getNumRawDataModules(version) / 8;
