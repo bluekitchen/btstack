@@ -172,7 +172,9 @@ int btstack_main_config(int argc, const char * argv[], hci_transport_config_uart
     printf("Packet Log: %s\n", log_file_path);
     printf("device    : \"%s\"\n", transport_config->device_name);
     printf("baudrate  : %d\n", transport_config->baudrate_init);
-    printf("reset tlv : %s\n", *tlv_reset?"true":"false");
+    if( tlv_reset != NULL ) {
+        printf("reset tlv : %s\n", *tlv_reset?"true":"false");
+    }
     if( address != NULL ) {
         printf("address   : %s\n", bd_addr_to_str(address));
     }
