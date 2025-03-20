@@ -56,6 +56,9 @@ extern "C" {
 #define BTSTACK_UART_PARITY_EVEN 1
 #define BTSTACK_UART_PARITY_ODD  2
 
+#define BTSTACK_UART_FLOWCONTROL_ON   1
+#define BTSTACK_UART_FLOWCONTROL_OFF  0
+
 typedef enum {
     // UART active, sleep off
     BTSTACK_UART_SLEEP_OFF = 0,
