@@ -97,6 +97,7 @@ target_link_libraries(btstack ${CMAKE_THREAD_LIBS_INIT})
 # get list of examples
 include(../../example/CMakeLists.txt)
 set (EXAMPLES ${EXAMPLES_LE_ONLY} ${EXAMPLES_GENERAL})
+list(REMOVE_ITEM EXAMPLES "mesh_node_demo")
 
 # create targets
 foreach(EXAMPLE ${EXAMPLES})

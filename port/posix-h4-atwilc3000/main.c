@@ -54,9 +54,7 @@
 #include "ble/le_device_db_tlv.h"
 #include "btstack_debug.h"
 #include "btstack_event.h"
-#include "btstack_memory.h"
-#include "btstack_run_loop.h"
-#include "btstack_run_loop_posix.h"
+#include "btstack_main_config.h"
 #include "btstack_signal.h"
 #include "btstack_stdin.h"
 #include "btstack_tlv_posix.h"
@@ -89,11 +87,12 @@ static bool shutdown_triggered;
 int btstack_main(int argc, const char * argv[]);
 
 static hci_transport_config_uart_t transport_config = {
-    HCI_TRANSPORT_CONFIG_UART,
-    921600,
-    0,       // main baudrate
-    1,       // flow control
-    NULL,
+    .type = HCI_TRANSPORT_CONFIG_UART,
+    .device_name = "/dev/ttyACM0",
+    .baudrate_init = 921600,
+    .baudrate_main = 0,
+    .flowcontrol = BTSTACK_UART_FLOWCONTROL_ON,
+    .parity = BTSTACK_UART_PARITY_OFF,
 };
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
@@ -124,7 +123,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     exit(0);
                     break;
                 default:
-                    break;                    
+                    break;
             }
             break;
         default:
@@ -158,7 +157,7 @@ static void phase2(int status){
     const hci_transport_t * transport = hci_transport_h4_instance_for_uart(uart_driver);
     hci_init(transport, (void*) &transport_config);
     hci_set_chipset(btstack_chipset_atwilc3000_instance());
-    
+
     // inform about BTstack state
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
@@ -173,24 +172,13 @@ static void phase2(int status){
 
 int main(int argc, const char * argv[]){
 
-	/// GET STARTED with BTstack ///
-	btstack_memory_init();
-    btstack_run_loop_init(btstack_run_loop_posix_get_instance());
+    btstack_main_config( argc, argv, &transport_config, NULL, NULL );
 
-    // log into file using HCI_DUMP_PACKETLOGGER format
-    const char * pklg_path = "/tmp/hci_dump.pklg";
-    hci_dump_posix_fs_open(pklg_path, HCI_DUMP_PACKETLOGGER);
-    const hci_dump_t * hci_dump_impl = hci_dump_posix_fs_get_instance();
-    hci_dump_init(hci_dump_impl);
-    printf("Packet Log: %s\n", pklg_path);
-
-    // pick serial port and configure uart block driver
-    transport_config.device_name = "/dev/tty.usbserial-A96PXBJ7";
     uart_driver = btstack_uart_posix_instance();
 
     // extract UART config from transport config, but disable flow control and use default baudrate
     uart_config.baudrate    = HCI_DEFAULT_BAUDRATE;
-    uart_config.flowcontrol = 0;
+    uart_config.flowcontrol = BTSTACK_UART_FLOWCONTROL_OFF;
     uart_config.device_name = transport_config.device_name;
     uart_driver->init(&uart_config);
 
@@ -204,6 +192,6 @@ int main(int argc, const char * argv[]){
     btstack_chipset_atwilc3000_download_firmware_with_uart(uart_driver, transport_config.baudrate_init, transport_config.flowcontrol, (const uint8_t *) firmware_ble, sizeof(firmware_ble), &phase2);
 
     // go
-    btstack_run_loop_execute();    
+    btstack_run_loop_execute();
     return 0;
 }

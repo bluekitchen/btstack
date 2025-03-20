@@ -11,6 +11,7 @@ CORE += \
 	le_device_db_tlv.c \
 	main.c \
 	btstack_stdin_posix.c \
+	btstack_main_config.c \
 	btstack_signal.c \
 	hci_531_active_uart_460800.c \
 

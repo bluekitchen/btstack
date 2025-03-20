@@ -57,8 +57,7 @@
 #include "btstack_audio.h"
 #include "btstack_debug.h"
 #include "btstack_event.h"
-#include "btstack_memory.h"
-#include "btstack_run_loop_posix.h"
+#include "btstack_main_config.h"
 #include "btstack_signal.h"
 #include "btstack_stdin.h"
 #include "btstack_tlv_posix.h"
@@ -90,11 +89,12 @@ int btstack_main(int argc, const char * argv[]);
 static void local_version_information_handler(uint8_t * packet);
 
 static hci_transport_config_uart_t transport_config = {
-    HCI_TRANSPORT_CONFIG_UART,
-    115200,
-    0,  // main baudrate
-    1,  // flow control
-    NULL,
+    .type = HCI_TRANSPORT_CONFIG_UART,
+    .device_name = "/dev/ttyACM0",
+    .baudrate_init = 115200,
+    .baudrate_main = 0,
+    .flowcontrol = BTSTACK_UART_FLOWCONTROL_ON,
+    .parity = BTSTACK_UART_PARITY_OFF,
 };
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
@@ -114,7 +114,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     btstack_tlv_set_instance(tlv_impl, &tlv_context);
 #ifdef ENABLE_CLASSIC
                     hci_set_link_key_db(btstack_link_key_db_tlv_get_instance(tlv_impl, &tlv_context));
-#endif    
+#endif
 #ifdef ENABLE_BLE
                     le_device_db_tlv_configure(tlv_impl, &tlv_context);
 #endif
@@ -128,7 +128,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     exit(0);
                     break;
                 default:
-                    break;                    
+                    break;
             }
             break;
         default:
@@ -188,28 +188,7 @@ static void nxp_phase2(uint8_t status){
 
 int main(int argc, const char * argv[]){
 
-	/// GET STARTED with BTstack ///
-	btstack_memory_init();
-    btstack_run_loop_init(btstack_run_loop_posix_get_instance());
-	    
-    // log into file using HCI_DUMP_PACKETLOGGER format
-    const char * pklg_path = "/tmp/hci_dump.pklg";
-    hci_dump_posix_fs_open(pklg_path, HCI_DUMP_PACKETLOGGER);
-    const hci_dump_t * hci_dump_impl = hci_dump_posix_fs_get_instance();
-    hci_dump_init(hci_dump_impl);
-    printf("Packet Log: %s\n", pklg_path);
-
-    // pick serial port
-    transport_config.device_name = "/dev/tty.usbserial-A506WORJ"; // DVK-ST60-2230C / 88W8997
-    // transport_config.device_name = "/dev/tty.usbserial-FT1XBGIM";  // murata m.2 adapter
-
-    // accept path from command line
-    if (argc >= 3 && strcmp(argv[1], "-u") == 0){
-        transport_config.device_name = argv[2];
-        argc -= 2;
-        memmove((void *) &argv[1], &argv[3], (argc-1) * sizeof(char *));
-    }
-    printf("H4 device: %s\n", transport_config.device_name);
+    btstack_main_config( argc, argv, &transport_config, NULL, NULL );
 
     uart_driver = btstack_uart_posix_instance();
 

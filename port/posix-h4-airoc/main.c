@@ -43,8 +43,6 @@
 //
 // *****************************************************************************
 
-#include <btstack_signal.h>
-#include <getopt.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -60,10 +58,12 @@
 #include "btstack_chipset_bcm.h"
 #include "btstack_debug.h"
 #include "btstack_event.h"
+#include "btstack_main_config.h"
 #include "btstack_memory.h"
 #include "btstack_run_loop.h"
 #include "btstack_run_loop_posix.h"
 #include "btstack_stdin.h"
+#include "btstack_signal.h"
 #include "btstack_tlv_posix.h"
 #include "btstack_uart.h"
 #include "classic/btstack_link_key_db_tlv.h"
@@ -81,16 +81,15 @@ static char tlv_db_path[100];
 static const btstack_tlv_t * tlv_impl;
 static btstack_tlv_posix_t   tlv_context;
 static bool tlv_reset;
-static bd_addr_t custom_address;
-static bool custom_address_set;
+static bd_addr_t custom_address = {0,0,0,0,0,0};
 
 static hci_transport_config_uart_t transport_config = {
-    HCI_TRANSPORT_CONFIG_UART,
-    921600,
-    921600,  // main baudrate
-    1,  // flow control
-    NULL,
-    BTSTACK_UART_PARITY_OFF, // parity
+    .type = HCI_TRANSPORT_CONFIG_UART,
+    .device_name = "/dev/ttyACM0",
+    .baudrate_init = 921600,
+    .baudrate_main = 921600,
+    .flowcontrol = BTSTACK_UART_FLOWCONTROL_ON,
+    .parity = BTSTACK_UART_PARITY_OFF,
 };
 static btstack_uart_config_t uart_config;
 
@@ -106,7 +105,7 @@ static void sigint_handler(void){
     // power down
     hci_power_control(HCI_POWER_OFF);
     hci_close();
-    log_info("Good bye, see you.\n");    
+    log_info("Good bye, see you.\n");
     exit(0);
 }
 
@@ -183,7 +182,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             btstack_tlv_set_instance(tlv_impl, &tlv_context);
 #ifdef ENABLE_CLASSIC
             hci_set_link_key_db(btstack_link_key_db_tlv_get_instance(tlv_impl, &tlv_context));
-#endif    
+#endif
 #ifdef ENABLE_BLE
             le_device_db_tlv_configure(tlv_impl, &tlv_context);
 #endif
@@ -211,98 +210,9 @@ static void enter_download_mode(const btstack_uart_t * the_uart_driver){
     printf("Firmware download started\n");
 }
 
-static char short_options[] = "+hu:l:rb:";
-
-static struct option long_options[] = {
-    {"help",        no_argument,        NULL,   'h'},
-    {"logfile",    required_argument,  NULL,   'l'},
-    {"reset-tlv",    no_argument,       NULL,   'r'},
-    {"tty",    required_argument,  NULL,   'u'},
-    {"bd-addr", required_argument, NULL, 'b'},
-    {0, 0, 0, 0}
-};
-
-static char *help_options[] = {
-    "print (this) help.",
-    "set file to store debug output and HCI trace.",
-    "reset bonding information stored in TLV.",
-    "set path to Bluetooth Controller.",
-    "set Bluetooth address.",
-};
-
-static char *option_arg_name[] = {
-    "",
-    "LOGFILE",
-    "",
-    "TTY",
-    "BD_ADDR",
-};
-
-static void usage(const char *name){
-    unsigned int i;
-    printf( "usage:\n\t%s [options]\n", name );
-    printf("valid options:\n");
-    for( i=0; long_options[i].name != 0; i++) {
-        printf("--%-10s| -%c  %-10s\t\t%s\n", long_options[i].name, long_options[i].val, option_arg_name[i], help_options[i] );
-    }
-}
-
 int main(int argc, const char * argv[]){
 
-    const char * log_file_path = NULL;
-
-    // set default device path
-    transport_config.device_name = "/dev/tty.usbserial-FT1XBIL9"; // murata m.2 adapter
-
-    int oldopterr = opterr;
-    opterr = 0;
-    // parse command line parameters
-    while(true){
-        int c = getopt_long( argc, (char* const *)argv, short_options, long_options, NULL );
-        if (c < 0) {
-            break;
-        }
-        if (c == '?'){
-            continue;
-        }
-        switch (c) {
-            case 'u':
-                transport_config.device_name = optarg;
-                break;
-            case 'l':
-                log_file_path = optarg;
-                break;
-            case 'r':
-                tlv_reset = true;
-                break;
-            case 'b':
-                sscanf_bd_addr(optarg, custom_address);
-                custom_address_set = true;
-                break;
-            case 'h':
-            default:
-                usage(argv[0]);
-                return 0;
-        }
-    }
-    // reset getopt parsing, so it works as intended from btstack_main
-    optind = 1;
-    opterr = oldopterr;
-
-    /// GET STARTED with BTstack ///
-    btstack_memory_init();
-    btstack_run_loop_init(btstack_run_loop_posix_get_instance());
-
-    // log into file using HCI_DUMP_PACKETLOGGER format
-    if (log_file_path == NULL){
-        log_file_path = "/tmp/hci_dump.pklg";
-    }
-    hci_dump_posix_fs_open(log_file_path, HCI_DUMP_PACKETLOGGER);
-    const hci_dump_t * hci_dump_impl = hci_dump_posix_fs_get_instance();
-    hci_dump_init(hci_dump_impl);
-    printf("Packet Log: %s\n", log_file_path);
-
-    printf("tty: %s\n", transport_config.device_name);
+    btstack_main_config( argc, argv, &transport_config, custom_address, &tlv_reset );
 
     // get BCM chipset driver
     const btstack_chipset_t * chipset = btstack_chipset_bcm_instance();
@@ -323,7 +233,7 @@ int main(int argc, const char * argv[]){
     hci_init(transport, (void*) &transport_config);
     hci_set_chipset(btstack_chipset_bcm_instance());
 
-    if (custom_address_set) {
+    if (!btstack_is_null_bd_addr(custom_address)) {
         hci_set_bd_addr(custom_address);
     }
 
@@ -346,6 +256,6 @@ int main(int argc, const char * argv[]){
     btstack_main(argc, argv);
 
     // go
-    btstack_run_loop_execute();    
+    btstack_run_loop_execute(); 
     return 0;
 }

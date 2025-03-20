@@ -55,7 +55,6 @@
 
 #include "ble/le_device_db_tlv.h"
 #include "bluetooth_company_id.h"
-#include "btstack_audio.h"
 #include "btstack_chipset_bcm.h"
 #include "btstack_chipset_cc256x.h"
 #include "btstack_chipset_csr.h"
@@ -65,25 +64,19 @@
 #include "btstack_chipset_zephyr.h"
 #include "btstack_debug.h"
 #include "btstack_event.h"
-#include "btstack_memory.h"
-#include "btstack_run_loop.h"
-#include "btstack_run_loop_posix.h"
+#include "btstack_main_config.h"
 #include "btstack_signal.h"
 #include "btstack_stdin.h"
 #include "btstack_tlv_posix.h"
 #include "btstack_uart.h"
 #include "classic/btstack_link_key_db_tlv.h"
-#include "hci.h"
-#include "hci_dump.h"
-#include "hci_dump_posix_fs.h"
-#include "hci_transport.h"
 #include "hci_transport_h4.h"
-
+#include "hci.h"
 
 #define TLV_DB_PATH_PREFIX "/tmp/btstack_"
 #define TLV_DB_PATH_POSTFIX ".tlv"
 static char tlv_db_path[100];
-static bool tlv_reset;
+static bool tlv_reset=false;
 static const btstack_tlv_t * tlv_impl;
 static btstack_tlv_posix_t   tlv_context;
 static bd_addr_t             static_address;
@@ -100,9 +93,11 @@ static void local_version_information_handler(uint8_t * packet);
 
 static hci_transport_config_uart_t config = {
     .type = HCI_TRANSPORT_CONFIG_UART,
+    .device_name = "/dev/ttyACM0",
     .baudrate_init = 115200,
     .baudrate_main = 0,
-    .flowcontrol = 1,
+    .flowcontrol = BTSTACK_UART_FLOWCONTROL_OFF,
+    .parity = BTSTACK_UART_PARITY_OFF,
 };
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
@@ -195,19 +190,12 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     }
 }
 
-static void trigger_shutdown(void){
-    printf("CTRL-C - SIGINT received, shutting down..\n");
-    log_info("sigint_handler: shutting down");
-    shutdown_triggered = true;
-    hci_power_control(HCI_POWER_OFF);
-    btstack_stdin_reset();
-}
-
 static int led_state = 0;
 void hal_led_toggle(void){
     led_state = 1 - led_state;
     printf("LED State %u\n", led_state);
 }
+
 static void use_fast_uart(void){
     printf("Using 921600 baud.\n");
     config.baudrate_main = 921600;
@@ -287,106 +275,25 @@ static void local_version_information_handler(uint8_t * packet){
     }
 }
 
-static char short_options[] = "+hu:l:rb:";
-
-static struct option long_options[] = {
-        {"help",        no_argument,        NULL,   'h'},
-        {"logfile",    required_argument,  NULL,   'l'},
-        {"reset-tlv",    no_argument,       NULL,   'r'},
-        {"tty",    required_argument,  NULL,   'u'},
-        {"bd-addr", required_argument, NULL, 'b'},
-        {0, 0, 0, 0}
-};
-
-static char *help_options[] = {
-        "print (this) help.",
-        "set file to store debug output and HCI trace.",
-        "reset bonding information stored in TLV.",
-        "set path to Bluetooth Controller.",
-        "set random static Bluetooth address for nRF5340 with PacketCraft Controller.",
-};
-
-static char *option_arg_name[] = {
-        "",
-        "LOGFILE",
-        "",
-        "TTY",
-        "BD_ADDR",
-};
-
-static void usage(const char *name){
-    unsigned int i;
-    printf( "usage:\n\t%s [options]\n", name );
-    printf("valid options:\n");
-    for( i=0; long_options[i].name != 0; i++) {
-        printf("--%-10s| -%c  %-10s\t\t%s\n", long_options[i].name, long_options[i].val, option_arg_name[i], help_options[i] );
-    }
+static void trigger_shutdown(void){
+    printf("CTRL-C - SIGINT received, shutting down..\n");
+    log_info("sigint_handler: shutting down");
+    shutdown_triggered = true;
+    hci_power_control(HCI_POWER_OFF);
+    btstack_stdin_reset();
 }
 
 int main(int argc, const char * argv[]){
 
-    const char * log_file_path = NULL;
+    btstack_main_config( argc, argv, &config, random_address, &tlv_reset );
 
-    // set default device path
-    config.device_name = "/dev/tty.usbmodemEF437DF524C51";
-    int oldopterr = opterr;
-    opterr = 0;
-    // parse command line parameters
-    while(true){
-        int c = getopt_long( argc, (char* const *)argv, short_options, long_options, NULL );
-        if (c < 0) {
-            break;
-        }
-        if (c == '?'){
-            continue;
-        }
-        switch (c) {
-            case 'u':
-                config.device_name = optarg;
-                break;
-            case 'l':
-                log_file_path = optarg;
-                break;
-            case 'r':
-                tlv_reset = true;
-                break;
-            case 'b':
-                sscanf_bd_addr(optarg, random_address);
-                break;
-            case 'h':
-            default:
-                usage(argv[0]);
-                break;
-        }
-    }
-    // reset getopt parsing, so it works as intended from btstack_main
-    optind = 1;
-    opterr = oldopterr;
-
-    /// GET STARTED with BTstack ///
-	btstack_memory_init();
-    btstack_run_loop_init(btstack_run_loop_posix_get_instance());
-	    
-    // log into file using HCI_DUMP_PACKETLOGGER format
-    if (log_file_path == NULL){
-        log_file_path = "/tmp/hci_dump.pklg";
-    }
-    hci_dump_posix_fs_open(log_file_path, HCI_DUMP_PACKETLOGGER);
-    const hci_dump_t * hci_dump_impl = hci_dump_posix_fs_get_instance();
-    hci_dump_init(hci_dump_impl);
-    printf("Packet Log: %s\n", log_file_path);
-
-    printf("H4 device: %s\n", config.device_name);
+    // register callback for CTRL-c
+    btstack_signal_register_callback(SIGINT, &trigger_shutdown);
 
     // init HCI
     const btstack_uart_t * uart_driver = btstack_uart_posix_instance();
 	const hci_transport_t * transport = hci_transport_h4_instance_for_uart(uart_driver);
 	hci_init(transport, (void*) &config);
-
-#ifdef HAVE_PORTAUDIO
-    btstack_audio_sink_set_instance(btstack_audio_portaudio_sink_get_instance());
-    btstack_audio_source_set_instance(btstack_audio_portaudio_source_get_instance());
-#endif
 
     // set BD_ADDR for CSR without Flash/unique address
     // bd_addr_t own_address = { 0x11, 0x22, 0x33, 0x44, 0x55, 0x66};
@@ -395,9 +302,6 @@ int main(int argc, const char * argv[]){
     // inform about BTstack state
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
-
-    // register callback for CTRL-c
-    btstack_signal_register_callback(SIGINT, &trigger_shutdown);
 
     // setup app
     btstack_main(argc, argv);
