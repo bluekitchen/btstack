@@ -56,11 +56,12 @@
 #include "hci_dump_posix_stdout.h"
 #include "hci_transport.h"
 
-static char short_options[] = "+hu:l:rb:a:";
+static char short_options[] = "+hu:l:rb:a:f:";
 
 static struct option long_options[] = {
     {"help",      no_argument,       NULL, 'h'},
     {"logfile",   required_argument, NULL, 'l'},
+    {"logformat", required_argument, NULL, 'f'},
     {"reset-tlv", no_argument,       NULL, 'r'},
     {"tty",       required_argument, NULL, 'u'},
     {"bd-addr",   required_argument, NULL, 'b'},
@@ -71,15 +72,17 @@ static struct option long_options[] = {
 static const char *help_options[] = {
     "print (this) help.",
     "set file to store debug output and HCI trace.",
+    "set file format to store debug output in.",
     "reset bonding information stored in TLV.",
     "set path to Bluetooth Controller.",
     "set random static Bluetooth address.",
-    "set initial baudrate."
+    "set initial baudrate.",
 };
 
 static const char *option_arg_name[] = {
     "",
     "LOGFILE",
+    "btsnoop|bluez|pklg",
     "",
     "TTY",
     "BD_ADDR",
@@ -95,10 +98,41 @@ static void usage(const char *name){
     }
 }
 
+static const char *hci_dump_type_to_string[] = {
+        [HCI_DUMP_INVALID]      = "invalid",
+        [HCI_DUMP_BLUEZ]        = "bluez",
+        [HCI_DUMP_PACKETLOGGER] = "pklg",
+        [HCI_DUMP_BTSNOOP]      = "btsnoop",
+};
+
+#define STR(x) #x
+#define ENUM_TO_STRING(x) [x] = STR(x)
+static const char *hci_dump_enum_to_string[] = {
+        ENUM_TO_STRING(HCI_DUMP_INVALID),
+        ENUM_TO_STRING(HCI_DUMP_BLUEZ),
+        ENUM_TO_STRING(HCI_DUMP_PACKETLOGGER),
+        ENUM_TO_STRING(HCI_DUMP_BTSNOOP),
+};
+
+static int dump_format_name_to_enum(const char *name) {
+    for( int i=HCI_DUMP_INVALID; i<=HCI_DUMP_BTSNOOP; ++i ) {
+        if( !strcmp(hci_dump_type_to_string[i], name) ) {
+            return i;
+        }
+    }
+    return HCI_DUMP_INVALID;
+}
+
+static const char *get_file_ext(const char *filename) {
+    const char *dot = strrchr(filename, '.');
+    if(!dot || dot == filename) return NULL;
+    return dot + 1;
+}
+
 int btstack_main_config(int argc, const char * argv[], hci_transport_config_uart_t *transport_config, bd_addr_t address, bool *tlv_reset ){
     btstack_assert(transport_config != NULL);
     const char * log_file_path = NULL;
-
+    hci_dump_format_t dump_format = HCI_DUMP_PACKETLOGGER;
     int oldopterr = opterr;
     opterr = 0;
     // parse command line parameters
@@ -130,6 +164,9 @@ int btstack_main_config(int argc, const char * argv[], hci_transport_config_uart
             case 'a':
                 transport_config->baudrate_init = atoi( optarg );
                 break;
+            case 'f':
+                dump_format = dump_format_name_to_enum( optarg );
+                break;
             case 'h':
             default:
                 usage(argv[0]);
@@ -144,9 +181,15 @@ int btstack_main_config(int argc, const char * argv[], hci_transport_config_uart
     btstack_memory_init();
     btstack_run_loop_init(btstack_run_loop_posix_get_instance());
 
-    char pklg_path[PATH_MAX] = "/tmp/hci_dump_";
-    // log into file using HCI_DUMP_PACKETLOGGER format
+    // determine packet log file name
     if (log_file_path == NULL){
+        char log_postfix[9] = ".";
+        if( dump_format == HCI_DUMP_INVALID ) {
+            dump_format = HCI_DUMP_PACKETLOGGER;
+        }
+        btstack_strcat( log_postfix, sizeof(log_postfix), hci_dump_type_to_string[dump_format] );
+        char pklg_path[PATH_MAX] = "/tmp/hci_dump_";
+
         char *app_name = strndup( argv[0], PATH_MAX );
         char *device_path = strndup( transport_config->device_name, PATH_MAX );
         char *base_name = basename( app_name );
@@ -160,16 +203,26 @@ int btstack_main_config(int argc, const char * argv[], hci_transport_config_uart
             }
         }
         btstack_strcat( pklg_path, sizeof(pklg_path), device );
-        btstack_strcat( pklg_path, sizeof(pklg_path), ".pklg" );
+        btstack_strcat( pklg_path, sizeof(pklg_path), log_postfix );
 
         free( app_name );
         free( device_path );
         log_file_path = pklg_path;
+    } else {
+        // try to guess type from file extension
+        const char *ext = get_file_ext(log_file_path);
+        if( ext != NULL ) {
+            dump_format = dump_format_name_to_enum( ext );
+        }
+        if( dump_format == HCI_DUMP_INVALID ) {
+            dump_format = HCI_DUMP_PACKETLOGGER;
+        }
     }
-    hci_dump_posix_fs_open(log_file_path, HCI_DUMP_PACKETLOGGER);
+    hci_dump_posix_fs_open(log_file_path, dump_format);
     const hci_dump_t * hci_dump_impl = hci_dump_posix_fs_get_instance();
     hci_dump_init(hci_dump_impl);
     printf("Packet Log: %s\n", log_file_path);
+    printf("log format: %s\n", hci_dump_enum_to_string[dump_format]);
     printf("device    : \"%s\"\n", transport_config->device_name);
     printf("baudrate  : %d\n", transport_config->baudrate_init);
     if( tlv_reset != NULL ) {
