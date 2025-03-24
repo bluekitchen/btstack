@@ -34,7 +34,7 @@
 #define ENABLE_SDP_DES_DUMP
 #define ENABLE_SOFTWARE_AES128
 
-// Warm Boot needed if connected via Wifi on Raspberry Pi 3A+ or 3B+
+// Warm Boot needed if connected via Wifi on Raspberry Pi 3A+ or 3B+, 4B
 // #define ENABLE_CONTROLLER_WARM_BOOT
 
 // BTstack configuration. buffers, sizes, ...
