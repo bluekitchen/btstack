@@ -158,6 +158,10 @@ endif()
 find_package(Threads)
 target_link_libraries(btstack ${CMAKE_THREAD_LIBS_INIT})
 
+# libm
+target_link_libraries(btstack m)
+
+
 # create targets for all examples
 file(GLOB EXAMPLES_C    "../../example/*.c")
 list(SORT EXAMPLES_C)

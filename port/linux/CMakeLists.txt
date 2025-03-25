@@ -171,6 +171,10 @@ endif()
 find_package(Threads)
 target_link_libraries(btstack ${CMAKE_THREAD_LIBS_INIT})
 
+# libm
+target_link_libraries(btstack m)
+
+
 # get list of examples, skipping mesh_node_demo
 include(../../example/CMakeLists.txt)
 set (EXAMPLES ${EXAMPLES_GENERAL} ${EXAMPLES_CLASSIC_ONLY}  ${EXAMPLES_LE_ONLY} ${EXAMPLES_DUAL_MODE})

@@ -148,6 +148,9 @@ endif()
 find_package(Threads)
 target_link_libraries(btstack ${CMAKE_THREAD_LIBS_INIT})
 
+# libm
+target_link_libraries(btstack m)
+
 
 # Add BCM Support
 include(${BTSTACK_ROOT}/chipset/bcm/bcm.cmake)

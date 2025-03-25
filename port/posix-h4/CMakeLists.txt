@@ -178,6 +178,10 @@ endif()
 find_package(Threads)
 target_link_libraries(btstack ${CMAKE_THREAD_LIBS_INIT})
 
+# libm
+target_link_libraries(btstack m)
+
+
 # Add CC256x Support and specify init script
 set (CC256X_INIT_SCRIPT bluetooth_init_cc2564C_1.5.c)
 include(${BTSTACK_ROOT}/chipset/cc256x/cc256x.cmake)

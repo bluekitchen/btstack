@@ -94,6 +94,10 @@ endif()
 find_package(Threads)
 target_link_libraries(btstack ${CMAKE_THREAD_LIBS_INIT})
 
+# libm
+target_link_libraries(btstack m)
+
+
 # get list of examples
 include(../../example/CMakeLists.txt)
 set (EXAMPLES ${EXAMPLES_LE_ONLY} ${EXAMPLES_GENERAL})
