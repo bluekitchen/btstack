@@ -459,14 +459,14 @@ static void avrcp_controller_emit_now_playing_info_event(btstack_packet_handler_
     (*callback)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
-static void avrcp_controller_emit_operation_status(btstack_packet_handler_t callback, uint8_t subevent, uint16_t avrcp_cid, uint8_t ctype, uint8_t operation_id){
+static void avrcp_controller_emit_operation_start(btstack_packet_handler_t callback, uint16_t avrcp_cid, uint8_t ctype, uint8_t operation_id){
     btstack_assert(callback != NULL);
     
     uint8_t event[7];
     int pos = 0;
     event[pos++] = HCI_EVENT_AVRCP_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = subevent;
+    event[pos++] = AVRCP_SUBEVENT_OPERATION_START;
     little_endian_store_16(event, pos, avrcp_cid);
     pos += 2;
     event[pos++] = ctype;
@@ -474,6 +474,21 @@ static void avrcp_controller_emit_operation_status(btstack_packet_handler_t call
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
+static void avrcp_controller_emit_operation_complete(btstack_packet_handler_t callback, uint16_t avrcp_cid, uint8_t ctype, uint8_t operation_id, uint8_t status){
+    btstack_assert(callback != NULL);
+
+    uint8_t event[8];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_AVRCP_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = AVRCP_SUBEVENT_OPERATION_COMPLETE;
+    little_endian_store_16(event, pos, avrcp_cid);
+    pos += 2;
+    event[pos++] = ctype;
+    event[pos++] = operation_id;
+    event[pos++] = status;
+    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
 static void avrcp_parser_reset(avrcp_connection_t * connection){
     connection->list_offset = 0;
     connection->parser_attribute_header_pos = 0;
@@ -667,7 +682,6 @@ static int avrcp_send_register_notification(avrcp_connection_t * connection, uin
 }
 
 static void avrcp_press_and_hold_timeout_handler(btstack_timer_source_t * timer){
-    UNUSED(timer);
     avrcp_connection_t * connection = (avrcp_connection_t*) btstack_run_loop_get_timer_context(timer);
     btstack_run_loop_set_timer(&connection->controller_press_and_hold_cmd_timer, 2000); // 2 seconds timeout
     btstack_run_loop_add_timer(&connection->controller_press_and_hold_cmd_timer);
@@ -698,6 +712,27 @@ static uint8_t avrcp_controller_request_pass_through_release_control_cmd(avrcp_c
     connection->transaction_id = avrcp_controller_get_next_transaction_label(connection);
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
     return ERROR_CODE_SUCCESS;
+}
+
+static void avrcp_controller_response_timeout_handler(btstack_timer_source_t * timer){
+    avrcp_connection_t * connection = (avrcp_connection_t*) btstack_run_loop_get_timer_context(timer);
+    if (connection->state == AVCTP_W2_RECEIVE_RESPONSE){
+        connection->state = AVCTP_CONNECTION_OPENED;
+        avrcp_controller_emit_operation_complete(avrcp_controller_context.avrcp_callback, connection->avrcp_cid,
+                                                 AVRCP_CTYPE_RESPONSE_INTERIM, connection->operation_id, ERROR_CODE_PAGE_TIMEOUT);
+    }
+}
+
+static void avrcp_controller_response_timer_start(avrcp_connection_t * connection){
+    btstack_run_loop_remove_timer(&connection->controller_response_cmd_timer);
+    btstack_run_loop_set_timer_handler(&connection->controller_response_cmd_timer, avrcp_controller_response_timeout_handler);
+    btstack_run_loop_set_timer_context(&connection->controller_response_cmd_timer, connection);
+    btstack_run_loop_set_timer(&connection->controller_response_cmd_timer, 200); // 200ms timeout
+    btstack_run_loop_add_timer(&connection->controller_response_cmd_timer);
+}
+
+static void avrcp_controller_response_timer_stop(avrcp_connection_t * connection){
+    btstack_run_loop_remove_timer(&connection->controller_response_cmd_timer);
 }
 
 static uint8_t avrcp_controller_request_pass_through_press_control_cmd(uint16_t avrcp_cid, avrcp_operation_id_t opid, uint16_t playback_speed, bool continuous_cmd){
@@ -942,6 +977,10 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
     
     uint8_t opcode = packet[pos++];
     uint16_t param_length;
+
+    if (connection->state == AVCTP_W2_RECEIVE_RESPONSE){
+        avrcp_controller_response_timer_stop(connection);
+    }
 
     switch (opcode){
         case AVRCP_CMD_OPCODE_SUBUNIT_INFO:{
@@ -1306,12 +1345,12 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     break;
             }
             if (connection->state == AVCTP_W4_STOP){
-                avrcp_controller_emit_operation_status(avrcp_controller_context.avrcp_callback, AVRCP_SUBEVENT_OPERATION_START, connection->avrcp_cid, ctype, operation_id);
+                avrcp_controller_emit_operation_start(avrcp_controller_context.avrcp_callback, connection->avrcp_cid, ctype, operation_id);
             }
             if (connection->state == AVCTP_CONNECTION_OPENED) {
                 // RELEASE response
                 operation_id = operation_id & 0x7F;
-                avrcp_controller_emit_operation_status(avrcp_controller_context.avrcp_callback, AVRCP_SUBEVENT_OPERATION_COMPLETE, connection->avrcp_cid, ctype, operation_id);
+                avrcp_controller_emit_operation_complete(avrcp_controller_context.avrcp_callback, connection->avrcp_cid, ctype, operation_id, ERROR_CODE_SUCCESS);
             }
             if (connection->state == AVCTP_W2_SEND_RELEASE_COMMAND){
                 // PRESS response
@@ -1343,8 +1382,10 @@ static void avrcp_controller_handle_can_send_now(avrcp_connection_t * connection
             return;
 
         case AVCTP_W2_SEND_RELEASE_COMMAND:
-            avrcp_send_cmd_with_avctp_fragmentation(connection);
+            // send data - it will fit into one packet
+            avrcp_controller_response_timer_start(connection);
             connection->state = AVCTP_W2_RECEIVE_RESPONSE;
+            avrcp_send_cmd_with_avctp_fragmentation(connection);
             return;
 
         case AVCTP_W2_SEND_COMMAND:
@@ -1354,6 +1395,7 @@ static void avrcp_controller_handle_can_send_now(avrcp_connection_t * connection
                 avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
                 return;
             }
+            avrcp_controller_response_timer_start(connection);
             connection->state = AVCTP_W2_RECEIVE_RESPONSE;
             return;
         case AVCTP_W2_SEND_GET_ELEMENT_ATTRIBUTES_REQUEST:
@@ -1383,8 +1425,9 @@ static void avrcp_controller_handle_can_send_now(avrcp_connection_t * connection
             log_info("AVCTP_W2_SEND_GET_ELEMENT_ATTRIBUTES_REQUEST, len %u", connection->data_len);
 
             // send data - assume it will fit into one packet
-            avrcp_send_cmd_with_avctp_fragmentation(connection);
+            avrcp_controller_response_timer_start(connection);
             connection->state = AVCTP_W2_RECEIVE_RESPONSE;
+            avrcp_send_cmd_with_avctp_fragmentation(connection);
             return;
         default:
             break;
