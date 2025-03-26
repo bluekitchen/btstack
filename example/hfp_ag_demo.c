@@ -699,7 +699,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
 }
 
 static hfp_phone_number_t subscriber_number = {
-    129, "225577"
+    .type = 129, .number = "225577", .service = HFP_PHONE_SERVICE_VOICE
 };
 
 /* @section Main Application Setup

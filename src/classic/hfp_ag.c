@@ -245,10 +245,10 @@ static int hfp_ag_send_clip(uint16_t cid){
     return send_str_over_rfcomm(cid, buffer);
 }
 
-static int hfp_send_subscriber_number_cmd(uint16_t cid, uint8_t type, const char * number){
+static int hfp_send_subscriber_number_cmd(uint16_t cid, uint8_t type, const char * number, hfp_phone_service_t service){
     char buffer[50];
-    btstack_snprintf_best_effort(buffer, sizeof(buffer), "\r\n%s: ,\"%s\",%u, , \r\n",
-             HFP_SUBSCRIBER_NUMBER_INFORMATION, number, type);
+    btstack_snprintf_best_effort(buffer, sizeof(buffer), "\r\n%s: ,\"%s\",%u, ,%u\r\n",
+             HFP_SUBSCRIBER_NUMBER_INFORMATION, number, type, (uint8_t)service);
     return send_str_over_rfcomm(cid, buffer);
 }
         
@@ -2209,8 +2209,8 @@ static int hfp_ag_send_commands(hfp_connection_t *hfp_connection){
 
     if (hfp_connection->send_subscriber_number){
         if (hfp_connection->next_subscriber_number_to_send < hfp_ag_subscriber_numbers_count){
-            hfp_phone_number_t phone = hfp_ag_subscriber_numbers[hfp_connection->next_subscriber_number_to_send++];
-            hfp_send_subscriber_number_cmd(hfp_connection->rfcomm_cid, phone.type, phone.number);
+            hfp_phone_number_t * phone = &hfp_ag_subscriber_numbers[hfp_connection->next_subscriber_number_to_send++];
+            hfp_send_subscriber_number_cmd(hfp_connection->rfcomm_cid, phone->type, phone->number, phone->service);
         } else {
             hfp_connection->send_subscriber_number = 0;
             hfp_connection->next_subscriber_number_to_send = 0;

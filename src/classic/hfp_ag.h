@@ -56,6 +56,7 @@ extern "C" {
 typedef struct {
     uint8_t type;
     const char * number;
+    hfp_phone_service_t service;
 } hfp_phone_number_t;
 
 /**
