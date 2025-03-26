@@ -275,6 +275,11 @@ typedef enum {
 } hfp_cme_error_t;
 
 typedef enum {
+    HFP_PHONE_SERVICE_VOICE = 4,
+    HFP_PHONE_SERVICE_FAX   = 5
+} hfp_phone_service_t;
+
+typedef enum {
     HFP_CALL_STATUS_NO_HELD_OR_ACTIVE_CALLS = 0,
     HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT
 } hfp_call_status_t;
