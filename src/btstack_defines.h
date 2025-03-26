@@ -3445,10 +3445,12 @@ typedef uint8_t sm_key_t[16];
 #define AVRCP_SUBEVENT_OPERATION_START                                    0x16u
 
 /**
- * @format 12111
+ * @format 1211111
  * @param subevent_code
  * @param avrcp_cid
  * @param command_type
+ * @param command_opcode
+ * @param pdu_id
  * @param operation_id
  * @param status
  */

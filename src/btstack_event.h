@@ -11542,13 +11542,31 @@ static inline uint8_t avrcp_subevent_operation_complete_get_command_type(const u
     return event[5];
 }
 /**
+ * @brief Get field command_opcode from event AVRCP_SUBEVENT_OPERATION_COMPLETE
+ * @param event packet
+ * @return command_opcode
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_operation_complete_get_command_opcode(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field pdu_id from event AVRCP_SUBEVENT_OPERATION_COMPLETE
+ * @param event packet
+ * @return pdu_id
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_operation_complete_get_pdu_id(const uint8_t * event){
+    return event[7];
+}
+/**
  * @brief Get field operation_id from event AVRCP_SUBEVENT_OPERATION_COMPLETE
  * @param event packet
  * @return operation_id
  * @note: btstack_type 1
  */
 static inline uint8_t avrcp_subevent_operation_complete_get_operation_id(const uint8_t * event){
-    return event[6];
+    return event[8];
 }
 /**
  * @brief Get field status from event AVRCP_SUBEVENT_OPERATION_COMPLETE
@@ -11557,7 +11575,7 @@ static inline uint8_t avrcp_subevent_operation_complete_get_operation_id(const u
  * @note: btstack_type 1
  */
 static inline uint8_t avrcp_subevent_operation_complete_get_status(const uint8_t * event){
-    return event[7];
+    return event[9];
 }
 
 /**
