@@ -11550,6 +11550,15 @@ static inline uint8_t avrcp_subevent_operation_complete_get_command_type(const u
 static inline uint8_t avrcp_subevent_operation_complete_get_operation_id(const uint8_t * event){
     return event[6];
 }
+/**
+ * @brief Get field status from event AVRCP_SUBEVENT_OPERATION_COMPLETE
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_operation_complete_get_status(const uint8_t * event){
+    return event[7];
+}
 
 /**
  * @brief Get field avrcp_cid from event AVRCP_SUBEVENT_PLAYER_APPLICATION_VALUE_RESPONSE
