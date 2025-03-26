@@ -84,6 +84,7 @@ static void avrcp_controller_custom_command_data_init(avrcp_connection_t * conne
     connection->subunit_id = subunit_id;
     connection->company_id = company_id;
     connection->pdu_id = pdu_id;
+    connection->operation_id = AVRCP_OPERATION_ID_INVALID;
     connection->data = NULL;
     connection->data_offset = 0;
     connection->data_len = 0;
@@ -93,6 +94,7 @@ static void avrcp_controller_vendor_dependent_command_data_init(avrcp_connection
     if (get_next_transaction_label){
         connection->transaction_id = avrcp_controller_get_next_transaction_label(connection);
     }
+    connection->operation_id = AVRCP_OPERATION_ID_INVALID;
     connection->command_opcode = AVRCP_CMD_OPCODE_VENDOR_DEPENDENT;
     connection->subunit_type = AVRCP_SUBUNIT_TYPE_PANEL;
     connection->subunit_id = AVRCP_SUBUNIT_ID;
@@ -474,18 +476,21 @@ static void avrcp_controller_emit_operation_start(btstack_packet_handler_t callb
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-static void avrcp_controller_emit_operation_complete(btstack_packet_handler_t callback, uint16_t avrcp_cid, uint8_t ctype, uint8_t operation_id, uint8_t status){
+static void avrcp_controller_emit_operation_complete(btstack_packet_handler_t callback, avrcp_connection_t * connection, avrcp_command_type_t ctype, avrcp_operation_id_t operation_id, uint8_t status){
     btstack_assert(callback != NULL);
+    btstack_assert(connection != NULL);
 
-    uint8_t event[8];
+    uint8_t event[10];
     int pos = 0;
     event[pos++] = HCI_EVENT_AVRCP_META;
     event[pos++] = sizeof(event) - 2;
     event[pos++] = AVRCP_SUBEVENT_OPERATION_COMPLETE;
-    little_endian_store_16(event, pos, avrcp_cid);
+    little_endian_store_16(event, pos, connection->avrcp_cid);
     pos += 2;
-    event[pos++] = ctype;
-    event[pos++] = operation_id;
+    event[pos++] = (uint8_t) ctype;
+    event[pos++] = (uint8_t) connection->command_opcode;
+    event[pos++] = (uint8_t) connection->pdu_id;
+    event[pos++] = (uint8_t) operation_id;
     event[pos++] = status;
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
@@ -718,8 +723,7 @@ static void avrcp_controller_response_timeout_handler(btstack_timer_source_t * t
     avrcp_connection_t * connection = (avrcp_connection_t*) btstack_run_loop_get_timer_context(timer);
     if (connection->state == AVCTP_W2_RECEIVE_RESPONSE){
         connection->state = AVCTP_CONNECTION_OPENED;
-        avrcp_controller_emit_operation_complete(avrcp_controller_context.avrcp_callback, connection->avrcp_cid,
-                                                 AVRCP_CTYPE_RESPONSE_INTERIM, connection->operation_id, ERROR_CODE_PAGE_TIMEOUT);
+        avrcp_controller_emit_operation_complete(avrcp_controller_context.avrcp_callback, connection, AVRCP_CTYPE_RESPONSE_INTERIM, connection->operation_id & 0x7F, ERROR_CODE_PAGE_TIMEOUT);
     }
 }
 
@@ -1350,7 +1354,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
             if (connection->state == AVCTP_CONNECTION_OPENED) {
                 // RELEASE response
                 operation_id = operation_id & 0x7F;
-                avrcp_controller_emit_operation_complete(avrcp_controller_context.avrcp_callback, connection->avrcp_cid, ctype, operation_id, ERROR_CODE_SUCCESS);
+                avrcp_controller_emit_operation_complete(avrcp_controller_context.avrcp_callback, connection, ctype, operation_id, ERROR_CODE_SUCCESS);
             }
             if (connection->state == AVCTP_W2_SEND_RELEASE_COMMAND){
                 // PRESS response
