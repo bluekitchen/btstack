@@ -40,6 +40,7 @@ TEST(BaseParserGroup, SingleSubgroupWithSingleBis) {
         uint8_t num_bis = le_audio_base_parser_subgroup_get_num_bis(&parser);
         printf("    - num bis[%u]: %u\n", i, num_bis);
         CHECK_EQUAL(1,num_bis);
+        le_audio_base_parser_subgroup_next(&parser);
     }
 }
 TEST(BaseParserGroup, TwoSubgroupWithSingleBis) {
@@ -66,6 +67,7 @@ TEST(BaseParserGroup, TwoSubgroupWithSingleBis) {
         uint8_t num_bis = le_audio_base_parser_subgroup_get_num_bis(&parser);
         printf("    - num bis[%u]: %u\n", i, num_bis);
         CHECK_EQUAL(1,num_bis);
+        le_audio_base_parser_subgroup_next(&parser);
     }
 }
 
