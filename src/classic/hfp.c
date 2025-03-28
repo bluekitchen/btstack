@@ -953,7 +953,8 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
                                                     hfp_connection->negotiated_codec, 0, 0);
                 break;
             }
-            
+
+            hci_event_synchronous_connection_complete_get_bd_addr(packet, event_addr);
             uint16_t sco_handle = hci_event_synchronous_connection_complete_get_handle(packet);
             uint8_t  link_type = hci_event_synchronous_connection_complete_get_link_type(packet);
             uint8_t  transmission_interval = hci_event_synchronous_connection_complete_get_transmission_interval(packet);  // measured in slots
