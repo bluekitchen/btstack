@@ -1151,14 +1151,17 @@ uint8_t hci_send_iso_packet_buffer(uint16_t size){
 
     // TODO: check for space on controller
 
+#ifdef ENABLE_ISO_BIG_TRANSMIT_TRACKING
     // skip iso packets if needed
     if (iso_stream->num_packets_to_skip > 0){
+        log_info("Skip packet, num_packets_to_skip %u", iso_stream->num_packets_to_skip);
         iso_stream->num_packets_to_skip--;
         // pretend it was processed and trigger next one
         hci_release_packet_buffer();
         hci_iso_notify_can_send_now();
         return ERROR_CODE_SUCCESS;
     }
+#endif
 
     // track outgoing packet sent
     iso_stream->num_packets_sent++;
@@ -3760,6 +3763,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
                             log_error("hci_number_completed_packets, more packet slots freed then sent.");
                             iso_stream->num_packets_sent = 0;
                         }
+#ifdef ENABLE_ISO_BIG_TRANSMIT_TRACKING
                         if (iso_stream->iso_type == HCI_ISO_TYPE_BIS){
                             big = hci_big_for_handle(iso_stream->group_id);
                             if (big != NULL){
@@ -3767,6 +3771,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
                                 big->num_completed_timestamp_current_ms = btstack_run_loop_get_time_ms();
                             }
                         }
+#endif
                         //  log_info("hci_number_completed_packet %u processed for handle %04x, outstanding %u", num_packets, handle, iso_stream->num_packets_sent);
                         notify_iso = true;
                     }
@@ -10549,6 +10554,8 @@ static void hci_iso_notify_can_send_now(void){
     btstack_linked_list_iterator_init(&it, &hci_stack->le_audio_bigs);
     while (btstack_linked_list_iterator_has_next(&it)){
         le_audio_big_t * big = (le_audio_big_t *) btstack_linked_list_iterator_next(&it);
+
+#ifdef ENABLE_ISO_BIG_TRANSMIT_TRACKING
         // track number completed packet timestamps
         if (big->num_completed_timestamp_current_valid){
             big->num_completed_timestamp_current_valid = false;
@@ -10571,6 +10578,7 @@ static void hci_iso_notify_can_send_now(void){
             big->num_completed_timestamp_previous_valid = true;
             big->num_completed_timestamp_previous_ms = big->num_completed_timestamp_current_ms;
         }
+#endif
 
         if (big->can_send_now_requested){
             // check if no outgoing iso packets pending and no can send now have to be emitted
