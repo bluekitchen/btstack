@@ -69,6 +69,7 @@ typedef struct {
     uint16_t        hid_supervision_timeout;
     const uint8_t * hid_descriptor;
     uint16_t        hid_descriptor_size;
+    // ServiceName, or NULL
     const char *    device_name;
 } hid_sdp_record_t;
 

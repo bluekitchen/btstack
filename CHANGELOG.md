@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - AVRCP Controller: Added send generic PASS THROUGH command
 - GATT Server: store Databse Hash in TLV and discard stored CCCs if database changes
 - HID Host: storage for HID Descriptors is now optional
+- HID Device: allow for SDP Record without Service Name attribute
 - HCI: support newer AIROC Controller that require Download Mode with ENABLE_AIROC_DOWNLOAD_MODE
 - Zephyr: provide hal_flash_bank implementation for native flash driver
 - POSIX: support error condition for file descriptors in btstack_run_loop
