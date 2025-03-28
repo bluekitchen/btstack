@@ -33,6 +33,7 @@ include_directories(${BTSTACK_ROOT}/3rd-party/hxcmod-player)
 include_directories(${BTSTACK_ROOT}/3rd-party/hxcmod-player/mod)
 include_directories(${BTSTACK_ROOT}/3rd-party/lwip/core/src/include)
 include_directories(${BTSTACK_ROOT}/3rd-party/lwip/dhcp-server)
+include_directories(${BTSTACK_ROOT}/3rd-party/qr-code-generator)
 include_directories(${BTSTACK_ROOT}/3rd-party/rijndael)
 include_directories(${BTSTACK_ROOT}/3rd-party/yxml)
 include_directories(${BTSTACK_ROOT}/3rd-party/tinydir)
@@ -52,6 +53,7 @@ file(GLOB SOURCES_GATT      "${BTSTACK_ROOT}/src/ble/gatt-service/*.c")
 file(GLOB SOURCES_UECC      "${BTSTACK_ROOT}/3rd-party/micro-ecc/uECC.c")
 file(GLOB SOURCES_HXCMOD    "${BTSTACK_ROOT}/3rd-party/hxcmod-player/*.c"  "${BTSTACK_ROOT}/3rd-party/hxcmod-player/mods/*.c")
 file(GLOB SOURCES_MD5       "${BTSTACK_ROOT}/3rd-party/md5/md5.c")
+file(GLOB SOURCES_QRCODEGEN "${BTSTACK_ROOT}/3rd-party/qr-code-generator/qrcodegen.c")
 file(GLOB SOURCES_RIJNDAEL  "${BTSTACK_ROOT}/3rd-party/rijndael/rijndael.c")
 file(GLOB SOURCES_YXML      "${BTSTACK_ROOT}/3rd-party/yxml/yxml.c")
 file(GLOB SOURCES_POSIX     "${BTSTACK_ROOT}/platform/posix/*.c")
@@ -117,6 +119,7 @@ set(SOURCES
 		${SOURCES_MESH}
 		${SOURCES_BCM}
 		${SOURCES_PORT}
+		${SOURCES_QRCODEGEN}
 		${SOURCES_RIJNDAEL}
 		${SOURCES_SRC}
 		${SOURCES_CSR}
