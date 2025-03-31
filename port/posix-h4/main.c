@@ -83,6 +83,7 @@ static bd_addr_t             static_address;
 
 // random MAC address for the device, used if nothing else is available 
 static bd_addr_t random_address = { 0xC1, 0x01, 0x01, 0x01, 0x01, 0x01 };
+static bd_addr_t custom_address = { 0 };
 
 static int is_bcm;
 // shutdown
@@ -285,7 +286,7 @@ static void trigger_shutdown(void){
 
 int main(int argc, const char * argv[]){
 
-    btstack_main_config( argc, argv, &config, random_address, &tlv_reset );
+    btstack_main_config( argc, argv, &config, custom_address, &tlv_reset );
 
     // register callback for CTRL-c
     btstack_signal_register_callback(SIGINT, &trigger_shutdown);
@@ -298,7 +299,13 @@ int main(int argc, const char * argv[]){
     // set BD_ADDR for CSR without Flash/unique address
     // bd_addr_t own_address = { 0x11, 0x22, 0x33, 0x44, 0x55, 0x66};
     // btstack_chipset_csr_set_bd_addr(own_address);
-    
+
+    // set BD_ADDR if provided by user, e.g. for BCM, and use as random address
+    if (!btstack_is_null_bd_addr(custom_address)){
+        hci_set_bd_addr(custom_address);
+        memcpy(random_address, custom_address, sizeof(bd_addr_t));
+    }
+
     // inform about BTstack state
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
