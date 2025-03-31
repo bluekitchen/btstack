@@ -46,8 +46,8 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <sys/types.h>
-
 #include "btstack_bool.h"
+#include "btstack_defines.h"    // ssize_t on Winddows
 
 #ifdef __cplusplus
 extern "C" {
