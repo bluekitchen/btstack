@@ -169,10 +169,10 @@ endif()
 
 # pthread
 find_package(Threads)
-target_link_libraries(btstack ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(btstack PUBLIC ${CMAKE_THREAD_LIBS_INIT})
 
 # libm
-target_link_libraries(btstack m)
+target_link_libraries(btstack PUBLIC m)
 
 
 # get list of examples, skipping mesh_node_demo
