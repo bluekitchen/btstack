@@ -732,7 +732,7 @@ static void avrcp_controller_response_timer_start(avrcp_connection_t * connectio
     btstack_run_loop_remove_timer(&connection->controller_response_cmd_timer);
     btstack_run_loop_set_timer_handler(&connection->controller_response_cmd_timer, avrcp_controller_response_timeout_handler);
     btstack_run_loop_set_timer_context(&connection->controller_response_cmd_timer, connection);
-    btstack_run_loop_set_timer(&connection->controller_response_cmd_timer, 200); // 200ms timeout
+    btstack_run_loop_set_timer(&connection->controller_response_cmd_timer, 250); // 200ms timeout for AVRC command + 50ms for transmission
     btstack_run_loop_add_timer(&connection->controller_response_cmd_timer);
 }
 
