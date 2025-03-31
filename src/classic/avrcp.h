@@ -716,6 +716,7 @@ typedef struct {
     bool     controller_press_and_hold_cmd_release;
 
     btstack_timer_source_t controller_response_cmd_timer;
+    uint8_t response_transaction_id;
 
     avrcp_remote_capabilities_state_t remote_capabilities_state;
     bool     controller_notifications_supported_by_target_suppress_emit_result;

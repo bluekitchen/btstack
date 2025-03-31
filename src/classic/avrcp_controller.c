@@ -94,14 +94,13 @@ static void avrcp_controller_vendor_dependent_command_data_init(avrcp_connection
     if (get_next_transaction_label){
         connection->transaction_id = avrcp_controller_get_next_transaction_label(connection);
     }
-    connection->operation_id = AVRCP_OPERATION_ID_INVALID;
     connection->command_opcode = AVRCP_CMD_OPCODE_VENDOR_DEPENDENT;
+    connection->pdu_id = pdu_id;
+    connection->operation_id = AVRCP_OPERATION_ID_INVALID;
     connection->subunit_type = AVRCP_SUBUNIT_TYPE_PANEL;
     connection->subunit_id = AVRCP_SUBUNIT_ID;
     connection->company_id = BT_SIG_COMPANY_ID;
-   
     connection->command_type = command_type;
-    connection->pdu_id = pdu_id;
     connection->data = connection->message_body;
     connection->data_offset = 0;
     connection->data_len = 0;
@@ -728,6 +727,8 @@ static void avrcp_controller_response_timeout_handler(btstack_timer_source_t * t
 }
 
 static void avrcp_controller_response_timer_start(avrcp_connection_t * connection){
+    // store expected transaction ID. It will be checked when response is received to control when to stop the timer;
+    connection->response_transaction_id = connection->transaction_id;
     btstack_run_loop_remove_timer(&connection->controller_response_cmd_timer);
     btstack_run_loop_set_timer_handler(&connection->controller_response_cmd_timer, avrcp_controller_response_timeout_handler);
     btstack_run_loop_set_timer_context(&connection->controller_response_cmd_timer, connection);
@@ -933,6 +934,16 @@ static void avctp_reassemble_message(avrcp_connection_t * connection, avctp_pack
 }
 #endif
 
+static void avrcp_check_response_timer(avrcp_connection_t * connection, avrcp_command_opcode_t opcode, avrcp_pdu_id_t pdu_id, avrcp_operation_id_t operation_id){
+    if ((connection->state == AVCTP_W2_RECEIVE_RESPONSE) &&
+        (connection->response_transaction_id == connection->transaction_id) &&
+        (connection->command_opcode == opcode) &&
+        (pdu_id == connection->pdu_id) &&
+        (operation_id == connection->operation_id)){
+            avrcp_controller_response_timer_stop(connection);
+    }
+}
+
 static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connection_t * connection, uint8_t *packet, uint16_t size){
     if (size < 6u) return;
     uint8_t  pdu_id;
@@ -982,13 +993,11 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
     uint8_t opcode = packet[pos++];
     uint16_t param_length;
 
-    if (connection->state == AVCTP_W2_RECEIVE_RESPONSE){
-        avrcp_controller_response_timer_stop(connection);
-    }
-
     switch (opcode){
         case AVRCP_CMD_OPCODE_SUBUNIT_INFO:{
             if (connection->state != AVCTP_W2_RECEIVE_RESPONSE) return;
+            avrcp_check_response_timer(connection, opcode, AVRCP_PDU_ID_UNDEFINED, AVRCP_OPERATION_ID_INVALID);
+
             connection->state = AVCTP_CONNECTION_OPENED;
 
 #ifdef ENABLE_LOG_INFO
@@ -1002,6 +1011,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
         }
         case AVRCP_CMD_OPCODE_UNIT_INFO:{
             if (connection->state != AVCTP_W2_RECEIVE_RESPONSE) return;
+            avrcp_check_response_timer(connection, opcode, AVRCP_PDU_ID_UNDEFINED, AVRCP_OPERATION_ID_INVALID);
             connection->state = AVCTP_CONNECTION_OPENED;
 
 #ifdef ENABLE_LOG_INFO
@@ -1024,6 +1034,8 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
             pos += 3;
             // PDU ID (1)
             pdu_id = packet[pos++];
+            avrcp_check_response_timer(connection, opcode, (avrcp_pdu_id_t)pdu_id, AVRCP_OPERATION_ID_INVALID);
+
             // Packet Type (1)
             vendor_dependent_avrcp_packet_type = (avrcp_packet_type_t)(packet[pos++] & 0x03);
             // Param Length (2)
@@ -1343,6 +1355,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     }
                     break;
                 case AVCTP_W2_RECEIVE_RESPONSE:
+                    avrcp_check_response_timer(connection, opcode, AVRCP_PDU_ID_UNDEFINED, (avrcp_operation_id_t) operation_id);
                     connection->state = AVCTP_CONNECTION_OPENED;
                     break;
                 default:
