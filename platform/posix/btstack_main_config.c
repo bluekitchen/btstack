@@ -182,13 +182,13 @@ int btstack_main_config(int argc, const char * argv[], hci_transport_config_uart
     btstack_run_loop_init(btstack_run_loop_posix_get_instance());
 
     // determine packet log file name
+    char pklg_path[PATH_MAX] = "/tmp/hci_dump_";
     if (log_file_path == NULL){
         char log_postfix[9] = ".";
         if( dump_format == HCI_DUMP_INVALID ) {
             dump_format = HCI_DUMP_PACKETLOGGER;
         }
         btstack_strcat( log_postfix, sizeof(log_postfix), hci_dump_type_to_string[dump_format] );
-        char pklg_path[PATH_MAX] = "/tmp/hci_dump_";
 
         char *app_name = strndup( argv[0], PATH_MAX );
         char *device_path = strndup( transport_config->device_name, PATH_MAX );
@@ -222,13 +222,13 @@ int btstack_main_config(int argc, const char * argv[], hci_transport_config_uart
     const hci_dump_t * hci_dump_impl = hci_dump_posix_fs_get_instance();
     hci_dump_init(hci_dump_impl);
     printf("Packet Log: %s\n", log_file_path);
-    printf("log format: %s\n", hci_dump_enum_to_string[dump_format]);
-    printf("device    : \"%s\"\n", transport_config->device_name);
-    printf("baudrate  : %d\n", transport_config->baudrate_init);
-    if( tlv_reset != NULL ) {
-        printf("reset tlv : %s\n", *tlv_reset?"true":"false");
+    printf("Log format: %s\n", hci_dump_enum_to_string[dump_format]);
+    printf("Device    : \"%s\"\n", transport_config->device_name);
+    printf("Baudrate  : %d\n", transport_config->baudrate_init);
+    if((tlv_reset != NULL) && *tlv_reset) {
+        printf("Reset tlv : true");
     }
-    if( address != NULL ) {
+    if((address != NULL) && !btstack_is_null_bd_addr(address)) {
         printf("address   : %s\n", bd_addr_to_str(address));
     }
 #ifdef HAVE_PORTAUDIO
