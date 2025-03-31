@@ -53,6 +53,7 @@
 #include <unistd.h>   /* UNIX standard function definitions */
 #include <string.h>
 #include <errno.h>
+#include <stdio.h>
 #include <stdlib.h>
 #ifdef __APPLE__
 #include <sys/ioctl.h>
@@ -81,13 +82,18 @@ static uint8_t * btstack_uart_block_read_bytes_data;
 static void (*block_sent)(void);
 static void (*block_received)(void);
 
+static void hci_uart_posix_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type);
+
+static void exit_with_message(const char * msg){
+    log_error("%s", msg);
+    printf("DEVICE ERROR: %s\n", msg);
+    exit(EXIT_FAILURE);
+}
 
 static int btstack_uart_posix_init(const btstack_uart_config_t * config){
     uart_config = config;
     return 0;
 }
-
-static void hci_uart_posix_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type);
 
 static void btstack_uart_block_posix_process_write(btstack_data_source_t *ds) {
 
@@ -132,6 +138,7 @@ static void btstack_uart_block_posix_process_read(btstack_data_source_t *ds) {
     if (btstack_uart_block_read_bytes_len == 0) {
         log_info("called but no read pending");
         btstack_run_loop_disable_data_source_callbacks(ds, DATA_SOURCE_CALLBACK_READ);
+        return;
     }
 
     uint32_t start = btstack_run_loop_get_time_ms();
@@ -144,12 +151,10 @@ static void btstack_uart_block_posix_process_read(btstack_data_source_t *ds) {
         log_info("read took %u ms", end - start);
     }
     if (bytes_read == 0){
-        log_error("read zero bytes\n");
-        exit(EXIT_FAILURE);
+        exit_with_message("read zero bytes\n");
     }
     if (bytes_read < 0) {
-        log_error("read returned error\n");
-        exit(EXIT_FAILURE);
+        exit_with_message("read returned error\n");
     }
 
     btstack_uart_block_read_bytes_len   -= bytes_read;
@@ -310,13 +315,11 @@ static int btstack_uart_posix_open(void){
     int flags = O_RDWR | O_NOCTTY | O_NONBLOCK;
     int fd = open(device_name, flags);
     if (fd == -1)  {
-        log_error("Unable to open port %s", device_name);
-        exit(EXIT_FAILURE);
+        exit_with_message("Unable to open port");
     }
 
     if (tcgetattr(fd, &btstack_uart_block_termios) < 0) {
-        log_error("Couldn't get term attributes");
-        exit(EXIT_FAILURE);
+        exit_with_message("Couldn't get term attributes");
     }
     cfmakeraw(&btstack_uart_block_termios);   // make raw
 
@@ -338,8 +341,7 @@ static int btstack_uart_posix_open(void){
     btstack_uart_posix_set_flowcontrol_option(&btstack_uart_block_termios, flowcontrol);
 
     if(tcsetattr(fd, TCSANOW, &btstack_uart_block_termios) < 0) {
-        log_error("Couldn't set term attributes");
-        exit(EXIT_FAILURE);
+        exit_with_message("Couldn't set term attributes");
     }
 
     // store fd in data source
@@ -347,7 +349,7 @@ static int btstack_uart_posix_open(void){
 
     // also set baudrate
     if (btstack_uart_posix_set_baudrate(baudrate) < 0){
-        exit(EXIT_FAILURE);
+        exit_with_message("Couldnt set baudrate");
     }
 
     // set up data_source
