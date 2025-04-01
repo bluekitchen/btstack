@@ -25,6 +25,9 @@ BTstack is free for non-commercial use. However, for commercial use, <a href="ma
 
 ### Supported Protocols and Profiles
 
+**Bluetooth Features:** LE 2M, LE Coded, Isochronous Channels, Extended
+Advertising, Periodic Advertising, LE Secure Connections, Classic Audio
+
 **Protocols:** L2CAP (incl. Enhanced Retransmission Mode, LE Credit-Based Flow-Control Mode and LE Enhanced Credit-Based Flow-Control Mode), RFCOMM, SDP, BNEP, AVDTP, AVCTP, ATT, SM (incl. LE Secure Connections and Cross-Transport Key Derivation).
 
 **Profiles:** A2DP, AVRCP incl. Browsing (CT+TG) and Cover Art (CT), GAP, GATT, HFP, HID, HSP, IOP, MAP, OPP, SPP, PAN, PBAP.
