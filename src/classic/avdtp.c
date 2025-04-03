@@ -691,13 +691,17 @@ static void avdtp_finalize_connection(avdtp_connection_t * connection){
     btstack_memory_avdtp_connection_free(connection);
 }
 
-static void avdtp_start_sep_query(avdtp_connection_t * connection, bool have_get_all_capabilities) {
-    if (have_get_all_capabilities){
-        connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_GET_ALL_CAPABILITIES;
+static void avdtp_start_sep_query_if_idle(avdtp_connection_t * connection, bool have_get_all_capabilities) {
+    if (connection->acceptor_connection_state == AVDTP_SIGNALING_CONNECTION_ACCEPTOR_IDLE) {
+        if (have_get_all_capabilities){
+            connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_GET_ALL_CAPABILITIES;
+        } else {
+            connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_GET_CAPABILITIES;
+        }
+        avdtp_request_can_send_now_initiator(connection);
     } else {
-        connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_GET_CAPABILITIES;
+        log_info("avdtp_start_sep_query_if_idle: sep query already active");
     }
-    avdtp_request_can_send_now_initiator(connection);
 }
 
 static void avdtp_handle_sdp_query_failed(avdtp_connection_t * connection, uint8_t status){
@@ -709,7 +713,7 @@ static void avdtp_handle_sdp_query_failed(avdtp_connection_t * connection, uint8
 
         case AVDTP_SIGNALING_CONNECTION_OPENED:
             // SDP query failed: try query that must be supported
-            avdtp_start_sep_query(connection, false);
+            avdtp_start_sep_query_if_idle(connection, false);
             return;
         
         default:
@@ -726,7 +730,7 @@ static void avdtp_handle_sdp_query_succeeded(avdtp_connection_t * connection){
     
     switch (connection->state){
         case AVDTP_SIGNALING_CONNECTION_OPENED:
-            avdtp_start_sep_query(connection, connection->avdtp_version >= 0x0103);
+            avdtp_start_sep_query_if_idle(connection, connection->avdtp_version >= 0x0103);
             break;
         default:
             connection->state = AVDTP_SIGNALING_CONNECTION_W4_L2CAP_CONNECTED;
