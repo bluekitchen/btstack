@@ -243,6 +243,7 @@ static avdtp_connection_t * avdtp_create_connection(bd_addr_t remote_addr, uint1
     }
     connection->state = AVDTP_SIGNALING_CONNECTION_IDLE;
     connection->initiator_transaction_label = avdtp_get_next_transaction_label();
+    connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE;
     connection->configuration_state = AVDTP_CONFIGURATION_STATE_IDLE;
     connection->a2dp_source_config_process.discover_seps = false;
     connection->a2dp_sink_config_process.discover_seps = false;
