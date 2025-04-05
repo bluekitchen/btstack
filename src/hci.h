@@ -712,9 +712,6 @@ typedef struct {
 
 } hci_connection_t;
 
-#ifdef ENABLE_LE_ISOCHRONOUS_STREAMS
-
-
 typedef enum {
     HCI_ISO_TYPE_INVALID = 0,
     HCI_ISO_TYPE_BIS,
@@ -789,7 +786,7 @@ typedef struct {
     bool emit_ready_to_send;
 
 } hci_iso_stream_t;
-#endif
+
 
 /**
  * HCI Initialization State Machine
