@@ -107,10 +107,11 @@ void hci_dump_enable_packet_log(bool enabled);
  */
 void hci_dump_enable_log_level(int log_level, int enable);
 
-/*
+/**
  * @brief Set max number of packets - output file might be truncated
+ * @param packets - number of packets to log, -1 for unlimited
  */
-void hci_dump_set_max_packets(int packets); // -1 for unlimited
+void hci_dump_set_max_packets(int packets);
 
 /**
  * @brief Dump Packet
