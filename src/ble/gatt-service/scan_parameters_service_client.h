@@ -148,7 +148,7 @@ uint8_t scan_parameters_service_client_enable_notifications(uint16_t scan_parame
  * @param scan_parameters_cid
  * @return status ERROR_CODE_SUCCESS on success, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if client with con_handle is not found
  */
-uint8_t scan_parameters_service_client_disconnect(uint16_t scan_parameters_cid); 
+uint8_t scan_parameters_service_client_disconnect(uint16_t scan_parameters_cid);
 
 
 /**
