@@ -161,8 +161,7 @@ void gatt_service_client_unregister_client(gatt_service_client_t * client);
  * @param characteristics_num
  * @return
  */
-uint8_t
-gatt_service_client_connect_primary_service_with_uuid16(hci_con_handle_t con_handle, gatt_service_client_t *client,
+uint8_t gatt_service_client_connect_primary_service_with_uuid16(hci_con_handle_t con_handle, gatt_service_client_t *client,
                                                         gatt_service_client_connection_t *connection,
                                                         uint16_t service_uuid16, uint8_t service_index,
                                                         gatt_service_client_characteristic_t *characteristics,
@@ -184,8 +183,7 @@ gatt_service_client_connect_primary_service_with_uuid16(hci_con_handle_t con_han
  * @param characteristics_num
  * @return
  */
-uint8_t
-gatt_service_client_connect_secondary_service_with_uuid16(hci_con_handle_t con_handle, gatt_service_client_t *client,
+uint8_t gatt_service_client_connect_secondary_service_with_uuid16(hci_con_handle_t con_handle, gatt_service_client_t *client,
                                                           gatt_service_client_connection_t *connection,
                                                           uint16_t service_uuid16, uint8_t service_index,
                                                           uint16_t service_start_handle, uint16_t service_end_handle,
@@ -207,8 +205,7 @@ uint8_t gatt_service_client_disconnect(gatt_service_client_connection_t *connect
  * @param characteristic_index
  * @return ERROR_CODE_SUCCESS if ready, ERROR_CODE_COMMAND_DISALLOWED or ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE otherwise
  */
-uint8_t
-gatt_service_client_can_query_characteristic(const gatt_service_client_connection_t *connection,
+uint8_t gatt_service_client_can_query_characteristic(const gatt_service_client_connection_t *connection,
                                              uint8_t characteristic_index);
 
 /**
