@@ -117,7 +117,7 @@ uint8_t avrcp_target_support_event(uint16_t avrcp_cid, avrcp_notification_event_
  * @param song_position_ms
  * @return status ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection is not found, otherwise ERROR_CODE_SUCCESS
  */
-uint8_t avrcp_target_play_status(uint16_t avrcp_cid, uint32_t song_length_ms, uint32_t song_position_ms, avrcp_playback_status_t status); 
+uint8_t avrcp_target_play_status(uint16_t avrcp_cid, uint32_t song_length_ms, uint32_t song_position_ms, avrcp_playback_status_t status);
 
 /**
  * @brief Set Now Playing Info that is send to Controller if notifications are enabled
