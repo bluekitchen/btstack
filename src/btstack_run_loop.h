@@ -245,7 +245,7 @@ void * btstack_run_loop_get_timer_context(btstack_timer_source_t * timer);
 /**
  * @brief Add timer source.
  */
-void btstack_run_loop_add_timer(btstack_timer_source_t * timer); 
+void btstack_run_loop_add_timer(btstack_timer_source_t * timer);
 
 /**
  * @brief Remove timer source.
