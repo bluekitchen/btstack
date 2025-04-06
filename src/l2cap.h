@@ -435,20 +435,6 @@ typedef struct l2cap_signaling_response {
     uint16_t data; // infoType for INFORMATION REQUEST, result for CONNECTION REQUEST and COMMAND UNKNOWN
 } l2cap_signaling_response_t;
 
-
-void l2cap_register_fixed_channel(btstack_packet_handler_t packet_handler, uint16_t channel_id);
-bool l2cap_can_send_fixed_channel_packet_now(hci_con_handle_t con_handle, uint16_t channel_id);
-void l2cap_request_can_send_fix_channel_now_event(hci_con_handle_t con_handle, uint16_t channel_id);
-uint8_t l2cap_send_connectionless(hci_con_handle_t con_handle, uint16_t cid, uint8_t *data, uint16_t len);
-uint8_t l2cap_send_prepared_connectionless(hci_con_handle_t con_handle, uint16_t cid, uint16_t len);
-
-// PTS Testing
-int l2cap_send_echo_request(hci_con_handle_t con_handle, uint8_t *data, uint16_t len);
-void l2cap_require_security_level_2_for_outgoing_sdp(void);
-
-// Used by RFCOMM - similar to l2cap_can-send_packet_now but does not check if outgoing buffer is reserved
-bool l2cap_can_send_prepared_packet_now(uint16_t local_cid);
-
 /* API_START */
 
 //
@@ -876,6 +862,20 @@ uint8_t l2cap_le_send_data(uint16_t local_cid, const uint8_t * data, uint16_t si
 // @deprecated - please use l2cap_disconnect
 uint8_t l2cap_le_disconnect(uint16_t local_cid);
 
+
+// used by higher layers
+void l2cap_register_fixed_channel(btstack_packet_handler_t packet_handler, uint16_t channel_id);
+bool l2cap_can_send_fixed_channel_packet_now(hci_con_handle_t con_handle, uint16_t channel_id);
+void l2cap_request_can_send_fix_channel_now_event(hci_con_handle_t con_handle, uint16_t channel_id);
+uint8_t l2cap_send_connectionless(hci_con_handle_t con_handle, uint16_t cid, uint8_t *data, uint16_t len);
+uint8_t l2cap_send_prepared_connectionless(hci_con_handle_t con_handle, uint16_t cid, uint16_t len);
+
+// PTS Testing
+int l2cap_send_echo_request(hci_con_handle_t con_handle, uint8_t *data, uint16_t len);
+void l2cap_require_security_level_2_for_outgoing_sdp(void);
+
+// Used by RFCOMM - similar to l2cap_can-send_packet_now but does not check if outgoing buffer is reserved
+bool l2cap_can_send_prepared_packet_now(uint16_t local_cid);
 
 #if defined __cplusplus
 }
