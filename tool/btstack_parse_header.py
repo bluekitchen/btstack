@@ -150,11 +150,6 @@ def parse_header(header_filepath):
                     typedef_text = ''
                 continue
 
-            # filter callback
-            callback_function_definition = re.match(r'(.*?)\s*\(\s*\*.*\(*.*;\n', line)
-            if callback_function_definition:
-                continue
-
             one_line_function_definition = re.match(r'(.*?)\s*\(.*\(*.*;\n', line)
             if one_line_function_definition:
                 parts = one_line_function_definition.group(1).split(" ")
