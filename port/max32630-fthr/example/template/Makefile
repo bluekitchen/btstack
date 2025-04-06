@@ -48,8 +48,6 @@ PROJ_CFLAGS+=-DRO_FREQ=96000000
 TARGET_UC:=$(shell echo $(TARGET) | tr a-z A-Z)
 TARGET_LC:=$(shell echo $(TARGET) | tr A-Z a-z)
 
-CC2564B = bluetooth_init_cc2564B_1.8_BT_Spec_4.1.o
-
 # Select 'GCC' or 'IAR' compiler
 COMPILER=GCC
 
@@ -232,6 +230,11 @@ LWIP_SRC = ${LWIP_CORE_SRC} ${LWIP_IPV4_SRC} ${LWIP_NETIF_SRC} ${LWIP_HTTPD} dhs
 
 ADDITION =
 
+# define target variant for chipset/cc256x/Makefile.inc
+cc256x_init_script=bluetooth_init_cc2564B_1.8_BT_Spec_4.1.c
+include ${BTSTACK_ROOT}/chipset/cc256x/Makefile.inc
+
+CC2564B_OBJ = $(cc256x_init_script:.c=.o)
 CORE_OBJ   = $(CORE:.c=.o)
 COMMON_OBJ = $(COMMON:.c=.o)
 BLE_OBJ    = $(BLE:.c=.o)
@@ -241,7 +244,7 @@ SBC_CODEC_OBJ  = $(SBC_CODEC:.c=.o)
 CVSD_PLC_OBJ = $(CVSD_PLC:.c=.o)
 HXCMOD_PLAYER_OBJ = $(HXCMOD_PLAYER:.c=.o)
 
-SRCS += $(CC2564B)
+SRCS += $(CC2564B_OBJ)
 SRCS += $(CORE_OBJ)
 SRCS += $(COMMON_OBJ)
 SRCS += $(BLE_OBJ)
@@ -286,14 +289,13 @@ include $(PERIPH_DRIVER_DIR)/periphdriver.mk
 # included before this one.
 include $(CMSIS_ROOT)/Device/Maxim/$(TARGET_UC)/Source/$(COMPILER)/$(TARGET_LC).mk
 
-# fetch and convert init scripts
-cc256x_init_script='bluetooth_init_cc2564B_1.8_BT_Spec_4.1.c'
-include ${BTSTACK_ROOT}/chipset/cc256x/Makefile.inc
+rm-cc256x_init_script:
+	$(MAKE) -f ${BTSTACK_ROOT}/chipset/cc256x/Makefile.inc BTSTACK_ROOT=${BTSTACK_ROOT} clean-scripts
 
 rm-compiled-gatt-file:
 	rm -f spp_and_le_counter.h
 
-clean: rm-compiled-gatt-file
+clean: rm-compiled-gatt-file rm-cc256x_init_script
 
 # The rule to clean out all the build products.
 distclean: clean
