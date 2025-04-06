@@ -54,10 +54,10 @@ CC2564B = bluetooth_init_cc2564B_1.8_BT_Spec_4.1.o
 COMPILER=GCC
 
 ifeq "$(MAXIM_PATH)" ""
-LIBS_DIR=/$(subst \,/,$(subst :,,$(HOME))/Maxim/Firmware/$(TARGET_UC)/Libraries)
+LIBS_DIR=$(subst \,/,$(subst :,,$(HOME))/Maxim/Firmware/$(TARGET_UC)/Libraries)
 $(warning "MAXIM_PATH need to be set. Please run setenv bash file in the Maxim Toolchain directory.")
 else
-LIBS_DIR=/$(subst \,/,$(subst :,,$(MAXIM_PATH))/Firmware/$(TARGET_UC)/Libraries)
+LIBS_DIR=$(subst \,/,$(subst :,,$(MAXIM_PATH))/Firmware/$(TARGET_UC)/Libraries)
 endif
 
 CMSIS_ROOT=$(LIBS_DIR)/CMSIS
