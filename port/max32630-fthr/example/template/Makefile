@@ -147,7 +147,6 @@ CORE = \
     l2cap.o \
     l2cap_signaling.o \
     btstack_run_loop_embedded.o \
-	$(CC2564B) \
     hci_transport_h4.o
 
 COMMON = \
@@ -242,6 +241,7 @@ SBC_CODEC_OBJ  = $(SBC_CODEC:.c=.o)
 CVSD_PLC_OBJ = $(CVSD_PLC:.c=.o)
 HXCMOD_PLAYER_OBJ = $(HXCMOD_PLAYER:.c=.o)
 
+SRCS += $(CC2564B)
 SRCS += $(CORE_OBJ)
 SRCS += $(COMMON_OBJ)
 SRCS += $(BLE_OBJ)
@@ -287,7 +287,7 @@ include $(PERIPH_DRIVER_DIR)/periphdriver.mk
 include $(CMSIS_ROOT)/Device/Maxim/$(TARGET_UC)/Source/$(COMPILER)/$(TARGET_LC).mk
 
 # fetch and convert init scripts
-# use bluetooth_init_cc2564B_1.8_BT_Spec_4.1.c
+cc256x_init_script='bluetooth_init_cc2564B_1.8_BT_Spec_4.1.c'
 include ${BTSTACK_ROOT}/chipset/cc256x/Makefile.inc
 
 rm-compiled-gatt-file:
