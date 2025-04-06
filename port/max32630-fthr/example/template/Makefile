@@ -43,8 +43,6 @@ PROJECT=spp_and_le_streamer
 # Specify the target processor
 TARGET=MAX3263x
 PROJ_CFLAGS+=-DRO_FREQ=96000000
-PROJ_CFLAGS+=-g3 -ggdb -DDEBUG
-CPPFLAGS+=-g3 -ggdb -DDEBUG
 
 # Create Target name variables
 TARGET_UC:=$(shell echo $(TARGET) | tr a-z A-Z)
