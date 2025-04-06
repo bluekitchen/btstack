@@ -168,6 +168,7 @@ COMMON = \
     btstack_crypto.o          \
     
 CLASSIC = \
+    device_id_server.o \
     btstack_link_key_db_tlv.o \
     hid_device.o              \
     hid_host.o                \
@@ -212,14 +213,15 @@ HFP_OBJ += sco_demo_util.o btstack_ring_buffer.o hfp.o hfp_gsm_model.o hfp_ag.o 
 include ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/Makefile.inc
 include ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/Makefile.inc
 
-SBC_DECODER += \
+SBC_CODEC = \
+	${SBC_DECODER} \
 	btstack_sbc_plc.c \
 	btstack_sbc_decoder_bluedroid.c \
-
-SBC_ENCODER += \
+	${SBC_ENCODER} \
 	btstack_sbc_encoder_bluedroid.c \
 	hfp_msbc.c \
-    hfp_codec.c
+	hfp_codec.c \
+	btstack_sbc_bluedroid.c
 
 HXCMOD_PLAYER = \
 	hxcmod.c 						\
@@ -238,8 +240,7 @@ COMMON_OBJ = $(COMMON:.c=.o)
 BLE_OBJ    = $(BLE:.c=.o)
 CLASSIC_OBJ = $(CLASSIC:.c=.o)
 AVDTP_OBJ   = $(AVDTP:.c=.o)
-SBC_DECODER_OBJ  = $(SBC_DECODER:.c=.o) 
-SBC_ENCODER_OBJ  = $(SBC_ENCODER:.c=.o)
+SBC_CODEC_OBJ  = $(SBC_CODEC:.c=.o)
 CVSD_PLC_OBJ = $(CVSD_PLC:.c=.o)
 HXCMOD_PLAYER_OBJ = $(HXCMOD_PLAYER:.c=.o)
 
@@ -248,8 +249,7 @@ SRCS += $(COMMON_OBJ)
 SRCS += $(BLE_OBJ)
 SRCS += $(CLASSIC_OBJ)
 SRCS += $(AVDTP_OBJ)
-SRCS += $(SBC_DECODER_OBJ)
-SRCS += $(SBC_ENCODER_OBJ)
+SRCS += $(SBC_CODEC_OBJ)
 SRCS += $(CVSD_PLC_OBJ)
 SRCS += $(HXCMOD_PLAYER_OBJ)
 SRCS += $(HFP_OBJ)
