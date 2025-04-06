@@ -1890,6 +1890,9 @@ uint8_t hci_dedicated_bonding_defer_disconnect(hci_con_handle_t con_handle, bool
 // Disable automatic L2CAP disconnect if no L2CAP connection is established
 void hci_disable_l2cap_timeout_check(void);
 
+// called from test/ble_client/advertising_data_parser.c
+void hci_le_handle_advertisement_report(uint8_t *packet, uint16_t size);
+
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
 // setup test connections, used for fuzzing
 void hci_setup_test_connections_fuzz(void);

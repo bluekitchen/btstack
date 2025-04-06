@@ -231,8 +231,6 @@ static bool hci_run_general_gap_le(void);
 static void gap_privacy_clients_handle_ready(void);
 static void gap_privacy_clients_notify(bd_addr_t new_random_address);
 #ifdef ENABLE_LE_CENTRAL
-// called from test/ble_client/advertising_data_parser.c
-void le_handle_advertisement_report(uint8_t *packet, uint16_t size);
 static uint8_t hci_whitelist_remove(bd_addr_type_t address_type, const bd_addr_t address);
 static hci_connection_t * gap_get_outgoing_le_connection(void);
 static void hci_le_scan_stop(void);
@@ -1552,7 +1550,7 @@ void gap_le_get_own_connection_address(uint8_t * addr_type, bd_addr_t addr){
     hci_get_own_address_for_addr_type(hci_stack->le_connection_own_addr_type, addr);
 }
 
-void le_handle_advertisement_report(uint8_t *packet, uint16_t size){
+void hci_le_handle_advertisement_report(uint8_t *packet, uint16_t size){
 
     uint16_t offset = 3;
     uint8_t num_reports = packet[offset];
@@ -4467,7 +4465,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
 #ifdef ENABLE_LE_CENTRAL
                 case HCI_SUBEVENT_LE_ADVERTISING_REPORT:
                     if (!hci_stack->le_scanning_enabled) break;
-                    le_handle_advertisement_report(packet, size);
+                    hci_le_handle_advertisement_report(packet, size);
                     break;
 #ifdef ENABLE_LE_EXTENDED_ADVERTISING
                 case HCI_SUBEVENT_LE_EXTENDED_ADVERTISING_REPORT:
