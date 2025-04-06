@@ -70,8 +70,8 @@ IPATH= . ../../src
 
 BOARD_DIR=$(LIBS_DIR)/Boards
 
-IPATH += ../../board/
-VPATH += ../../board/
+IPATH += ../../board
+VPATH += ../../board
 
 # Source files for this test (add path to VPATH below)
 SRCS = main.c
@@ -114,7 +114,7 @@ VPATH += ${BTSTACK_ROOT}/3rd-party/micro-ecc
 VPATH += ${BTSTACK_ROOT}/platform/embedded
 VPATH += ${BTSTACK_ROOT}/platform/lwip
 VPATH += ${BTSTACK_ROOT}/platform/lwip/port
-VPATH += ${BTSTACK_ROOT}/src/ble/gatt-service/
+VPATH += ${BTSTACK_ROOT}/src/ble/gatt-service
 
 PROJ_CFLAGS += \
     -I$(BTSTACK_ROOT)/src \
