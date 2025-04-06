@@ -75,7 +75,7 @@ extern const uart_cfg_t console_uart_cfg;
 extern const sys_cfg_uart_t console_sys_cfg;
 
 // MAX14690 PMIC
-#define MAX14690_I2CM_INST  0
+#define MAX14690_I2CM_INST  2
 #define MAX14690_I2CM       MXC_I2CM2
 extern const ioman_cfg_t max14690_io_cfg;
 extern const gpio_cfg_t max14690_int;
