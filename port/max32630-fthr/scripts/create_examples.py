@@ -65,7 +65,7 @@ examples_embedded = btstack_root + 'example/'
 projects_path = script_path + "example/"
 
 # path to template
-template_path = script_path + 'example/template/Makefile'
+template_path = script_path + 'example/template/ProjectTemplate.mk'
 
 print("Creating example projects:")
 
