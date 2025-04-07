@@ -48,7 +48,9 @@
 #if defined __cplusplus
 extern "C" {
 #endif
-	
+
+/* API_START */
+
 /**
  * Provide btstack_main_config
  */
