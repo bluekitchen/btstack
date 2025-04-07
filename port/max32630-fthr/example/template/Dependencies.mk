@@ -6,7 +6,7 @@ VPATH += $(BTSTACK_ROOT)/src
 VPATH += $(BTSTACK_ROOT)/src/ble
 VPATH += $(BTSTACK_ROOT)/src/classic
 VPATH += $(BTSTACK_ROOT)/src/mesh
-VPATH += ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/srce 
+VPATH += ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/srce
 VPATH += ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/srce
 VPATH += ${BTSTACK_ROOT}/3rd-party/hxcmod-player
 VPATH += ${BTSTACK_ROOT}/3rd-party/hxcmod-player/mods
@@ -29,7 +29,7 @@ PROJ_CFLAGS += \
     -I$(BTSTACK_ROOT)/src \
     -I$(BTSTACK_ROOT)/src/ble \
     -I$(BTSTACK_ROOT)/src/classic \
-	-I$(BTSTACK_ROOT)/src/mesh \
+    -I$(BTSTACK_ROOT)/src/mesh \
     -I$(BTSTACK_ROOT)/chipset/cc256x \
     -I$(BTSTACK_ROOT)/platform/posix \
     -I$(BTSTACK_ROOT)/platform/embedded \
@@ -39,92 +39,92 @@ PROJ_CFLAGS += \
     -I${BTSTACK_ROOT}/src/ble/gatt-service/ \
     -I${BTSTACK_ROOT}/example \
     -I${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/include \
-	-I${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/include \
+    -I${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/include \
     -I${BTSTACK_ROOT}/3rd-party/md5 \
     -I${BTSTACK_ROOT}/3rd-party/yxml \
-	-I${BTSTACK_ROOT}/3rd-party/micro-ecc \
-	-I${BTSTACK_ROOT}/3rd-party/hxcmod-player \
-	-I${BTSTACK_ROOT}/3rd-party/lwip/core/src/include \
-	-I${BTSTACK_ROOT}/3rd-party/lwip/dhcp-server \
+    -I${BTSTACK_ROOT}/3rd-party/micro-ecc \
+    -I${BTSTACK_ROOT}/3rd-party/hxcmod-player \
+    -I${BTSTACK_ROOT}/3rd-party/lwip/core/src/include \
+    -I${BTSTACK_ROOT}/3rd-party/lwip/dhcp-server \
 
 CORE = \
-    btstack_audio.c                 \
-    btstack_crypto.c                \
-    btstack_link_key_db_tlv.c       \
-    btstack_linked_list.c           \
-    btstack_memory.c                \
-    btstack_memory_pool.c           \
-    btstack_run_loop.c              \
-    btstack_run_loop_embedded.c     \
-    btstack_stdin_embedded.c        \
-    btstack_tlv.c                   \
-    btstack_tlv_flash_bank.c        \
-    btstack_uart_block_embedded.c   \
-    btstack_util.c                  \
+    btstack_audio.c \
+    btstack_crypto.c \
+    btstack_link_key_db_tlv.c \
+    btstack_linked_list.c \
+    btstack_memory.c \
+    btstack_memory_pool.c \
+    btstack_run_loop.c \
+    btstack_run_loop_embedded.c \
+    btstack_stdin_embedded.c \
+    btstack_tlv.c \
+    btstack_tlv_flash_bank.c \
+    btstack_uart_block_embedded.c \
+    btstack_util.c \
 
 COMMON = \
-    ad_parser.c                 \
-    hal_flash_bank_mxc.c        \
-    hci.c                       \
-    hci_cmd.c                   \
-    hci_dump.c                  \
-    hci_dump_embedded_stdout.c  \
-    hci_event_builder.c         \
-    hci_transport_h4.c          \
-    l2cap.c                     \
-    l2cap_signaling.c           \
-	le_device_db_tlv.c 			\
-	sm.c                      	\
-	uECC.c                    	\
+    ad_parser.c \
+    hal_flash_bank_mxc.c \
+    hci.c \
+    hci_cmd.c \
+    hci_dump.c \
+    hci_dump_embedded_stdout.c \
+    hci_event_builder.c \
+    hci_transport_h4.c \
+    l2cap.c \
+    l2cap_signaling.c \
+    le_device_db_tlv.c \
+    sm.c \
+    uECC.c \
 
 CLASSIC = \
-	sdp_util.c	                \
-	gatt_sdp.c                  \
-	spp_server.c  				\
-	rfcomm.c	                \
-	bnep.c	                    \
-	sdp_server.c			    \
-	device_id_server.c          \
+    sdp_util.c \
+    gatt_sdp.c \
+    spp_server.c \
+    rfcomm.c \
+    bnep.c \
+    sdp_server.c \
+    device_id_server.c \
 
 BLE = \
-    att_db.c                  \
-    att_server.c              \
-    le_device_db_tlv.c        \
-    att_dispatch.c            \
-    ancs_client.c             \
-    gatt_client.c             \
-    hid_device.c              \
-    battery_service_server.c  \
+    att_db.c \
+    att_server.c \
+    le_device_db_tlv.c \
+    att_dispatch.c \
+    ancs_client.c \
+    gatt_client.c \
+    hid_device.c \
+    battery_service_server.c \
 
 SDP_CLIENT_OBJ = \
-	sdp_client.o		        \
-	sdp_client_rfcomm.o		    \
+    sdp_client.o \
+    sdp_client_rfcomm.o \
 
-ATT	= \
-	att_dispatch.c       	    \
+ATT = \
+    att_dispatch.c \
 
 GATT_SERVER = \
-	att_db.c 				 	    \
-	att_server.c        	    \
+    att_db.c \
+    att_server.c \
 
 GATT_CLIENT = \
-	gatt_client.c        	    			\
-	gatt_service_client.c   	    			\
-	battery_service_client.c 				\
-	device_information_service_client.c 	\
-	scan_parameters_service_client.c 	    \
-	hids_client.c 	    					\
+    gatt_client.c \
+    gatt_service_client.c \
+    battery_service_client.c \
+    device_information_service_client.c \
+    scan_parameters_service_client.c \
+    hids_client.c \
 
 PAN = \
-	pan.c \
+    pan.c \
 
-MBEDTLS = 					\
-	bignum.c 				\
-	ecp.c 					\
-	ecp_curves.c 			\
-	sm_mbedtls_allocator.c  \
-	memory_buffer_alloc.c   \
-	platform.c 				\
+MBEDTLS = \
+    bignum.c \
+    ecp.c \
+    ecp_curves.c \
+    sm_mbedtls_allocator.c \
+    memory_buffer_alloc.c \
+    platform.c \
 
 
 LWIP_CORE_SRC  = init.c mem.c memp.c netif.c udp.c ip.c pbuf.c inet_chksum.c def.c tcp.c tcp_in.c tcp_out.c timeouts.c sys_arch.c
@@ -138,99 +138,99 @@ include ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/Makefile.inc
 include ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/Makefile.inc
 
 SBC_CODEC = \
-	${SBC_DECODER} \
-	btstack_sbc_plc.c \
-	btstack_sbc_decoder_bluedroid.c \
-	${SBC_ENCODER} \
-	btstack_sbc_encoder_bluedroid.c \
-	hfp_msbc.c \
-	hfp_codec.c \
-	btstack_sbc_bluedroid.c
+    ${SBC_DECODER} \
+    btstack_sbc_plc.c \
+    btstack_sbc_decoder_bluedroid.c \
+    ${SBC_ENCODER} \
+    btstack_sbc_encoder_bluedroid.c \
+    hfp_msbc.c \
+    hfp_codec.c \
+    btstack_sbc_bluedroid.c
 
 CVSD_PLC = \
-	btstack_cvsd_plc.c \
+    btstack_cvsd_plc.c \
 
 AVDTP = \
-	avdtp_util.c           \
-	avdtp.c                \
-	avdtp_initiator.c      \
-	avdtp_acceptor.c       \
-	avdtp_source.c 	       \
-	avdtp_sink.c           \
-	a2dp.c                 \
-	a2dp_source.c          \
-	a2dp_sink.c            \
-	btstack_ring_buffer.c  \
-	btstack_resample.c     \
+    avdtp_util.c \
+    avdtp.c \
+    avdtp_initiator.c \
+    avdtp_acceptor.c \
+    avdtp_source.c \
+    avdtp_sink.c \
+    a2dp.c \
+    a2dp_source.c \
+    a2dp_sink.c \
+    btstack_ring_buffer.c \
+    btstack_resample.c \
 
 AVRCP = \
-	avrcp.c							\
-	avrcp_controller.c				\
-	avrcp_target.c					\
-	avrcp_browsing.c				\
-	avrcp_browsing_controller.c		\
-	avrcp_browsing_target.c			\
-	avrcp_media_item_iterator.c		\
+    avrcp.c \
+    avrcp_controller.c \
+    avrcp_target.c \
+    avrcp_browsing.c \
+    avrcp_browsing_controller.c \
+    avrcp_browsing_target.c \
+    avrcp_media_item_iterator.c \
 
 HXCMOD_PLAYER = \
-	hxcmod.c                    \
-	nao-deceased_by_disease.c 	\
+    hxcmod.c \
+    nao-deceased_by_disease.c \
 
 MESH = \
-	adv_bearer.c \
-	beacon.c \
-	gatt_bearer.c \
-	mesh.c \
-	mesh_access.c \
-	mesh_configuration_client.c \
-	mesh_configuration_server.c \
-	mesh_crypto.c \
-	mesh_foundation.c \
-	mesh_generic_default_transition_time_client.c \
-	mesh_generic_default_transition_time_server.c \
-	mesh_generic_level_client.c \
-	mesh_generic_level_server.c \
-	mesh_generic_on_off_client.c \
-	mesh_generic_on_off_server.c \
-	mesh_health_server.c \
-	mesh_iv_index_seq_number.c \
-	mesh_keys.c \
-	mesh_lower_transport.c \
-	mesh_network.c \
-	mesh_node.c \
-	mesh_peer.c \
-	mesh_provisioning_service_server.c \
-	mesh_proxy.c \
-	mesh_proxy_service_server.c \
-	mesh_upper_transport.c \
-	mesh_virtual_addresses.c \
-	pb_adv.c \
-	pb_gatt.c \
-	provisioning.c \
-	provisioning_device.c \
-	provisioning_provisioner.c \
+    adv_bearer.c \
+    beacon.c \
+    gatt_bearer.c \
+    mesh.c \
+    mesh_access.c \
+    mesh_configuration_client.c \
+    mesh_configuration_server.c \
+    mesh_crypto.c \
+    mesh_foundation.c \
+    mesh_generic_default_transition_time_client.c \
+    mesh_generic_default_transition_time_server.c \
+    mesh_generic_level_client.c \
+    mesh_generic_level_server.c \
+    mesh_generic_on_off_client.c \
+    mesh_generic_on_off_server.c \
+    mesh_health_server.c \
+    mesh_iv_index_seq_number.c \
+    mesh_keys.c \
+    mesh_lower_transport.c \
+    mesh_network.c \
+    mesh_node.c \
+    mesh_peer.c \
+    mesh_provisioning_service_server.c \
+    mesh_proxy.c \
+    mesh_proxy_service_server.c \
+    mesh_upper_transport.c \
+    mesh_virtual_addresses.c \
+    pb_adv.c \
+    pb_gatt.c \
+    provisioning.c \
+    provisioning_device.c \
+    provisioning_provisioner.c \
 
 # List of GATT files used by either LE_ONLY or DUAL_MODE examples
 
-EXAMPLES_GATT_FILES =           		\
-	ancs_client_demo.gatt       		\
-	att_delayed_response.gatt   		\
-	gatt_battery_query.gatt     		\
-	gatt_browser.gatt           		\
-	gatt_counter.gatt           		\
-	gatt_device_information_query.gatt 	\
-	gatt_streamer_server.gatt   		\
-	hog_host_demo.gatt          		\
-	hog_keyboard_demo.gatt      		\
-	hog_mouse_demo.gatt         		\
-	le_credit_based_flow_control_mode_server.gatt 		\
-	nordic_spp_le_counter.gatt  		\
-	nordic_spp_le_streamer.gatt 		\
-	sm_pairing_central.gatt     		\
-	sm_pairing_peripheral.gatt  		\
-	spp_and_gatt_counter.gatt   		\
-	spp_and_gatt_streamer.gatt  		\
-	ublox_spp_le_counter.gatt  			\
+EXAMPLES_GATT_FILES = \
+    ancs_client_demo.ga\
+    att_delayed_response.ga\
+    gatt_battery_query.ga\
+    gatt_browser.ga\
+    gatt_counter.ga\
+    gatt_device_information_query.ga\
+    gatt_streamer_server.ga\
+    hog_host_demo.ga\
+    hog_keyboard_demo.ga\
+    hog_mouse_demo.ga\
+    le_credit_based_flow_control_mode_server.ga\
+    nordic_spp_le_counter.ga\
+    nordic_spp_le_streamer.ga\
+    sm_pairing_central.ga\
+    sm_pairing_peripheral.ga\
+    spp_and_gatt_counter.ga\
+    spp_and_gatt_streamer.ga\
+    ublox_spp_le_counter.ga
 
 include ../template/Categories.mk
 # define target variant for chipset/cc256x/Makefile.inc
@@ -240,8 +240,8 @@ else
     $(info $(PROJECT) not in EXAMPLES_GENERAL: $(EXAMPLES_GENERAL))
     include ${BTSTACK_ROOT}/chipset/cc256x/Makefile.inc
     CORE += btstack_chipset_cc256x.c
-	COMMON += $(cc256x_init_script)
-	PROJ_CFLAGS += -DENABLE_HCI_INIT
+    COMMON += $(cc256x_init_script)
+    PROJ_CFLAGS += -DENABLE_HCI_INIT
 endif
 
 # .o for .c
