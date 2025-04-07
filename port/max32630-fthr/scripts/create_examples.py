@@ -16,39 +16,39 @@ SUBDIRS =  \\
 include template/Categories.mk
 
 all:
-\techo Building general examples
+\t@echo Building all examples
 \tfor dir in $(SUBDIRS); do \\
 \t\t$(MAKE) -C $$dir || exit 1; \\
 \tdone
 
 general:
-\techo Building general examples
+\t@echo Building general examples
 \tfor dir in $(EXAMPLES_GENERAL); do \\
 \t\t$(MAKE) -C $$dir || exit 1; \\
 \tdone
 
 classic:
-\techo Building classic examples
+\t@echo Building classic examples
 \tfor dir in $(EXAMPLES_CLASSIC_ONLY); do \\
 \t\t$(MAKE) -C $$dir || exit 1; \\
 \tdone
 
 ble:
-\techo Building ble examples
+\t@echo Building ble examples
 \tfor dir in $(EXAMPLES_LE_ONLY); do \\
 \t\t$(MAKE) -C $$dir || exit 1; \\
 \tdone
 
 dual:
-\techo Building all examples
+\t@echo Building dual examples
 \tfor dir in $(EXAMPLES_DUAL_MODE); do \\
 \t\t$(MAKE) -C $$dir || exit 1; \\
 \tdone
 
 clean:
-\techo Cleaning all ports
+\t@echo Cleaning all examples
 \tfor dir in $(SUBDIRS); do \\
-\t$(MAKE) -C $$dir clean; \\
+\t\t$(MAKE) -C $$dir clean; \\
 \tdone
 '''
 

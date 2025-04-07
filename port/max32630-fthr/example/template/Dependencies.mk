@@ -235,9 +235,9 @@ EXAMPLES_GATT_FILES =           		\
 include ../template/Categories.mk
 # define target variant for chipset/cc256x/Makefile.inc
 ifneq ($(filter $(PROJECT),$(EXAMPLES_GENERAL)),)
-    $(info $(PROJECT) exists in EXAMPLES_GENERAL)
+    $(info $(PROJECT) in EXAMPLES_GENERAL)
 else
-    $(info $(PROJECT) does not exist in EXAMPLES_GENERAL: $(EXAMPLES_GENERAL))
+    $(info $(PROJECT) not in EXAMPLES_GENERAL: $(EXAMPLES_GENERAL))
     include ${BTSTACK_ROOT}/chipset/cc256x/Makefile.inc
     CORE += btstack_chipset_cc256x.c
 	COMMON += $(cc256x_init_script)
