@@ -6,4 +6,5 @@ examples:
 
 clean:
 	scripts/delete_examples.py
-	@rm -rf example/Makefile
+	@rm -f example/Makefile
+	@rm -fR example/bin
