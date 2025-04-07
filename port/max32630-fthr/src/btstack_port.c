@@ -382,7 +382,7 @@ void btstack_stdin_setup(void (*handler)(char c)){
 #include "btstack_link_key_db_tlv.h"
 #include "le_device_db_tlv.h"
 
-#if defined(CC256X_INIT)
+#if defined(ENABLE_HCI_INIT)
 
 static hci_transport_config_uart_t config = {
 	HCI_TRANSPORT_CONFIG_UART,
@@ -398,9 +398,10 @@ static hci_transport_config_uart_t config = {
 
 static hal_flash_bank_mxc_t hal_flash_bank_context;
 static btstack_tlv_flash_bank_t btstack_tlv_flash_bank_context;
-
+#endif
 static void _hci_init()
 {
+#if defined(ENABLE_HCI_INIT)
 	// enable packet logger
     // hci_dump_init(hci_dump_embedded_stdout_get_instance());
 
@@ -426,10 +427,9 @@ static void _hci_init()
 
     // setup LE Device DB using TLV
     le_device_db_tlv_configure(btstack_tlv_impl, &btstack_tlv_flash_bank_context);
-}
-#else
-static void _hci_init() {}
 #endif
+}
+
 
 /******************************************************************************/
 int bluetooth_main(void)

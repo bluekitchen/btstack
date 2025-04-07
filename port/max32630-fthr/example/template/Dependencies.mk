@@ -241,7 +241,7 @@ else
     include ${BTSTACK_ROOT}/chipset/cc256x/Makefile.inc
     CORE += btstack_chipset_cc256x.c
 	COMMON += $(cc256x_init_script)
-	PROJ_CFLAGS += -DCC256X_INIT
+	PROJ_CFLAGS += -DENABLE_HCI_INIT
 endif
 
 # .o for .c
@@ -268,7 +268,7 @@ audio_duplex_deps = ${CORE_OBJ} ${COMMON_OBJ} btstack_audio.o btstack_ring_buffe
 # general
 led_counter_deps = ${CORE_OBJ} ${COMMON_OBJ} led_counter.c
 # general
-mod_player_deps = ${CORE_OBJ} ${COMMON_OBJ} ${HXCMOD_PLAYER_OBJ} btstack_audio.o mod_player.C
+mod_player_deps = ${CORE_OBJ} ${COMMON_OBJ} ${HXCMOD_PLAYER_OBJ} btstack_audio.o mod_player.c
 # general
 sine_player_deps = ${CORE_OBJ} ${COMMON_OBJ} btstack_audio.o sine_player.c
 
