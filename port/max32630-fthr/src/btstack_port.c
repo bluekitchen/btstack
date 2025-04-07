@@ -285,14 +285,6 @@ int bt_comm_init() {
 	return 0;
 }
 
-static hci_transport_config_uart_t config = {
-	    HCI_TRANSPORT_CONFIG_UART,
-	    115200,
-	    4000000,
-	    1, // flow control
-	    "max32630fthr",
-	};
-
 // hal_led.h implementation
 #include "hal_led.h"
 void hal_led_off(void){
@@ -390,6 +382,16 @@ void btstack_stdin_setup(void (*handler)(char c)){
 #include "btstack_link_key_db_tlv.h"
 #include "le_device_db_tlv.h"
 
+#if defined(CC256X_INIT)
+
+static hci_transport_config_uart_t config = {
+	HCI_TRANSPORT_CONFIG_UART,
+	115200,
+	4000000,
+	1, // flow control
+	"max32630fthr",
+};
+
 #define HAL_FLASH_BANK_SIZE    0x2000
 #define HAL_FLASH_BANK_0_ADDR  0x1FC000
 #define HAL_FLASH_BANK_1_ADDR  0x1FE000
@@ -397,19 +399,8 @@ void btstack_stdin_setup(void (*handler)(char c)){
 static hal_flash_bank_mxc_t hal_flash_bank_context;
 static btstack_tlv_flash_bank_t btstack_tlv_flash_bank_context;
 
-
-/******************************************************************************/
-int bluetooth_main(void)
+static void _hci_init()
 {
-	LED_Off(LED_GREEN);
-	LED_On(LED_RED);
-	LED_Off(LED_BLUE);
-
-	bt_comm_init();
-	/* BT Stack Initialization */
-	btstack_memory_init();
-	btstack_run_loop_init(btstack_run_loop_embedded_get_instance());
-
 	// enable packet logger
     // hci_dump_init(hci_dump_embedded_stdout_get_instance());
 
@@ -435,6 +426,24 @@ int bluetooth_main(void)
 
     // setup LE Device DB using TLV
     le_device_db_tlv_configure(btstack_tlv_impl, &btstack_tlv_flash_bank_context);
+}
+#else
+static void _hci_init() {}
+#endif
+
+/******************************************************************************/
+int bluetooth_main(void)
+{
+	LED_Off(LED_GREEN);
+	LED_On(LED_RED);
+	LED_Off(LED_BLUE);
+
+	bt_comm_init();
+	/* BT Stack Initialization */
+	btstack_memory_init();
+	btstack_run_loop_init(btstack_run_loop_embedded_get_instance());
+
+	_hci_init();
 
     // go
 	btstack_main(0, (void *)NULL);

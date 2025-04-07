@@ -16,4 +16,4 @@ tags
 *.log
 core
 example/*/*
-!example/template/Makefile
+!example/template/*
