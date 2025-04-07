@@ -13,10 +13,36 @@ build_all = '''
 SUBDIRS =  \\
 %s
 
+include template/Categories.mk
+
 all:
-\techo Building all examples
+\techo Building general examples
 \tfor dir in $(SUBDIRS); do \\
-\t$(MAKE) -C $$dir || exit 1; \\
+\t\t$(MAKE) -C $$dir || exit 1; \\
+\tdone
+
+general:
+\techo Building general examples
+\tfor dir in $(EXAMPLES_GENERAL); do \\
+\t\t$(MAKE) -C $$dir || exit 1; \\
+\tdone
+
+classic:
+\techo Building classic examples
+\tfor dir in $(EXAMPLES_CLASSIC_ONLY); do \\
+\t\t$(MAKE) -C $$dir || exit 1; \\
+\tdone
+
+ble:
+\techo Building ble examples
+\tfor dir in $(EXAMPLES_LE_ONLY); do \\
+\t\t$(MAKE) -C $$dir || exit 1; \\
+\tdone
+
+dual:
+\techo Building all examples
+\tfor dir in $(EXAMPLES_DUAL_MODE); do \\
+\t\t$(MAKE) -C $$dir || exit 1; \\
 \tdone
 
 clean:
@@ -51,7 +77,7 @@ examples = []
 for file in example_files:
     if not file.endswith(".c"):
         continue
-    if file in ['panu_demo.c', 'sco_demo_util.c', 'ant_test.c']:
+    if file in ['panu_demo.c', 'sco_demo_util.c', 'ant_test.c', 'mesh_node_demo.c']:
         continue
     example = file[:-2]
     examples.append(example)
@@ -65,19 +91,25 @@ for file in example_files:
     gatt_path = examples_embedded + example + ".gatt"
     gatt_h = ""
     if os.path.exists(gatt_path):
-        gatt_h = example+'.h'
+        gatt_h = example + '.h'
 
     # create makefile
     with open(project_folder + 'Makefile', 'wt') as fout:
         with open(template_path, 'rt') as fin:
             for line in fin:
-                if 'PROJECT=spp_and_le_streamer' in line:
+                if 'PROJECT=inject_project' in line:
                     fout.write('PROJECT=%s\n' % example)
                     continue
-                if 'all: spp_and_le_streamer.h' in line:
+                if 'all: inject_gatt_h' in line:
                     if len(gatt_h):
                         fout.write("all: %s\n" % gatt_h)
                     continue
+                if 'rm-compiled-gatt-file:' in line:
+                    if len(gatt_h):
+                        fout.write(line)
+                        fout.write("\trm -f %s\n" % gatt_h)
+                        continue
+
                 fout.write(line)
 
     print("- %s" % example)
