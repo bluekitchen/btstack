@@ -138,7 +138,7 @@ all: bin
 
 # Build and copy all $(PROJECT).bin to EXAMPLE_BIN_DIR
 bin: $(BUILD_DIR)/$(PROJECT).bin
-	echo Copying $(PROJECT).bin to EXAMPLE_BIN_DIR: $(EXAMPLE_BIN_DIR)
+	$(info Copying $(PROJECT).bin to EXAMPLE_BIN_DIR: $(EXAMPLE_BIN_DIR))
 	@mkdir -p $(EXAMPLE_BIN_DIR)
 	@cp $(BUILD_DIR)/$(PROJECT).bin $(EXAMPLE_BIN_DIR)
 
