@@ -52,7 +52,7 @@
 #define ATT_CLIENT 1u
 #define ATT_MAX    2u
 
-struct {
+static struct {
     btstack_packet_handler_t packet_handler;
     bool                  waiting_for_can_send;
 } subscriptions[ATT_MAX];
