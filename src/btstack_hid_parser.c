@@ -305,7 +305,7 @@ static void btstack_usage_iterator_hid_find_next_usage(btstack_hid_usage_iterato
                 main_iterator->available_usages = main_iterator->usage_maximum - main_iterator->usage_minimum + 1u;
                 main_iterator->usage_range = true;
                 if (main_iterator->available_usages < main_iterator->required_usages){
-                    log_debug("Usage Min - Usage Max [%04"PRIx32"..%04"PRIx32"] < Report Count %u", main_iterator->usage_minimum & 0xffff, main_iterator->usage_maximum & 0xffff, main_iterator->required_usages);
+                    log_debug("Usage Min - Usage Max [%04" PRIx32 "..%04" PRIx32 "] < Report Count %u", main_iterator->usage_minimum & 0xffff, main_iterator->usage_maximum & 0xffff, main_iterator->required_usages);
                 }
             }
         }
