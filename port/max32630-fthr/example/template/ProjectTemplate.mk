@@ -95,7 +95,7 @@ IPATH += $(BOARD_DIR)/Include
 # Enable assertion checking for development
 PROJ_CFLAGS+=-DMXC_ASSERT_ENABLE
 
-include ../template/Makefile.mk 
+include ../template/Dependencies.mk
 
 PROJECT_DEPS = $($(PROJECT)_deps)
 PROJECT_OBJS = $(PROJECT_DEPS:.c=.o)
