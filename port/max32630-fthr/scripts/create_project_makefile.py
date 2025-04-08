@@ -7,7 +7,8 @@ import sys
 def createProjectMakefile(project_path, btstack_root, gatt_h = ""):
     # path to template
     template_path = os.path.join(btstack_root, 'port/max32630-fthr/' ,'example/template/ProjectTemplate.mk')
-    example = os.path.basename(project_path)
+    example = os.path.basename(project_path.strip("/"))
+    print(f"project - {example}")
     example_files = os.listdir(project_path)
     # check if .gatt file is present
     if not len(gatt_h):
@@ -16,6 +17,10 @@ def createProjectMakefile(project_path, btstack_root, gatt_h = ""):
                 continue
             gatt_h = file[:-4] + "h"
             break
+
+    if (len(gatt_h)):
+        print(".. gatt - " + gatt_h)
+
     # create makefile
     with open(os.path.join(project_path, 'Makefile'), 'wt') as fout:
         with open(template_path, 'rt') as fin:

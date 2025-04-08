@@ -95,8 +95,6 @@ for file in example_files:
 
     createProjectMakefile(project_folder, btstack_root, gatt_h)
 
-    print("- %s" % example)
-
 with open(os.path.join(projects_path, 'Makefile'), 'wt') as fout:
     fout.write(build_all % ' \\\n'.join(examples))
 
