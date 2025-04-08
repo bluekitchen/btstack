@@ -64,3 +64,5 @@ EXAMPLES_DUAL_MODE =        \
 	gatt_streamer_server    \
 	spp_and_gatt_counter    \
 	spp_and_gatt_streamer   \
+
+EXAMPLES_ALL = ${EXAMPLES_CLASSIC_ONLY} ${EXAMPLES_DUAL_MODE} ${EXAMPLES_LE_ONLY} ${EXAMPLES_GENERAL}
