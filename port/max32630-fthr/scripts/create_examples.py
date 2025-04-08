@@ -8,6 +8,8 @@ import shutil
 import subprocess
 import sys
 
+from create_project_makefile import createProjectMakefile
+
 # build all template
 build_all = '''
 SUBDIRS =  \\
@@ -53,19 +55,17 @@ clean:
 '''
 
 # get script path
-script_path = os.path.abspath(os.path.dirname(sys.argv[0])) + '/../'
-
+print(os.path.dirname(sys.argv[0]))
+script_path = os.path.abspath(os.path.join(os.path.dirname(sys.argv[0]), '..'))
+print(script_path)
 # get btstack root
-btstack_root = script_path + '../../'
-
+btstack_root = os.path.abspath(os.path.join(script_path, '../..'))
+print(btstack_root)
 # path to examples
-examples_embedded = btstack_root + 'example/'
+examples_embedded = os.path.join(btstack_root, 'example')
 
 # path to generated example projects
-projects_path = script_path + "example/"
-
-# path to template
-template_path = script_path + 'example/template/ProjectTemplate.mk'
+projects_path = os.path.join(script_path, "example")
 
 print("Creating example projects:")
 
@@ -83,38 +83,21 @@ for file in example_files:
     examples.append(example)
 
     # create folder
-    project_folder = projects_path + example + "/"
+    project_folder = os.path.join(projects_path, example)
     if not os.path.exists(project_folder):
         os.makedirs(project_folder)
 
     # check if .gatt file is present
-    gatt_path = examples_embedded + example + ".gatt"
+    gatt_path = os.path.join(examples_embedded, example + ".gatt")
     gatt_h = ""
     if os.path.exists(gatt_path):
         gatt_h = example + '.h'
 
-    # create makefile
-    with open(project_folder + 'Makefile', 'wt') as fout:
-        with open(template_path, 'rt') as fin:
-            for line in fin:
-                if 'PROJECT=inject_project' in line:
-                    fout.write('PROJECT=%s\n' % example)
-                    continue
-                if 'all: inject_gatt_h' in line:
-                    if len(gatt_h):
-                        fout.write("all: %s\n" % gatt_h)
-                    continue
-                if 'rm-compiled-gatt-file:' in line:
-                    if len(gatt_h):
-                        fout.write(line)
-                        fout.write("\trm -f %s\n" % gatt_h)
-                        continue
-
-                fout.write(line)
+    createProjectMakefile(project_folder, btstack_root, gatt_h)
 
     print("- %s" % example)
 
-with open(projects_path+'Makefile', 'wt') as fout:
+with open(os.path.join(projects_path, 'Makefile'), 'wt') as fout:
     fout.write(build_all % ' \\\n'.join(examples))
 
 print("Projects are ready for compile in example folder. See README for details.")
