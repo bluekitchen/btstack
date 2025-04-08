@@ -150,6 +150,10 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     bd_addr_t addr;
     if (packet_type != HCI_EVENT_PACKET) return;
     switch (hci_event_packet_get_type(packet)){
+        case BTSTACK_EVENT_POWERON_FAILED:
+            printf("Terminating.\n");
+            exit(EXIT_FAILURE);
+            break;
         case HCI_EVENT_COMMAND_COMPLETE:
             switch (hci_event_command_complete_get_command_opcode(packet)) {
                 case HCI_OPCODE_HCI_READ_LOCAL_VERSION_INFORMATION:

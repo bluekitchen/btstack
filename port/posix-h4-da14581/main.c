@@ -96,6 +96,10 @@ static hci_transport_config_uart_t transport_config = {
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     if (packet_type != HCI_EVENT_PACKET) return;
     switch (hci_event_packet_get_type(packet)){
+        case BTSTACK_EVENT_POWERON_FAILED:
+            printf("Terminating.\n");
+            exit(EXIT_FAILURE);
+            break;
         case BTSTACK_EVENT_STATE:
             switch(btstack_event_state_get_state(packet)){
                 case HCI_STATE_WORKING:
