@@ -42,6 +42,7 @@ PROJECT=inject_project
 
 # Specify the target processor
 TARGET=MAX3263x
+PORT_NAME=max32630-fthr
 PROJ_CFLAGS+=-DRO_FREQ=96000000
 
 # Create Target name variables
@@ -64,17 +65,18 @@ CMSIS_ROOT=$(LIBS_DIR)/CMSIS
 
 # BTstack
 BTSTACK_ROOT ?= ../../../..
+PORT_DIR = ${BTSTACK_ROOT}/port/${PORT_NAME}
 
 # Where to find source files for this test
-VPATH = . ../../src
+VPATH = . ${PORT_DIR}/src
 
 # Where to find header files for this test
-IPATH = . ../../src
+IPATH = . ${PORT_DIR}/src
 
 BOARD_DIR=$(LIBS_DIR)/Boards
 
-IPATH += ../../board
-VPATH += ../../board
+IPATH += ${PORT_DIR}/board
+VPATH += ${PORT_DIR}/board
 
 # Source files for this test (add path to VPATH below)
 SRCS = main.c
@@ -94,9 +96,13 @@ IPATH += $(BOARD_DIR)/Include
 
 # Enable assertion checking for development
 PROJ_CFLAGS+=-DMXC_ASSERT_ENABLE
+# TODO: Add some fancy way to input deps from project files
+PROJECT_FEATURES = DUAL_DEPS ATT_OBJ GATT_SERVER_OBJ
+include ${PORT_DIR}/example/template/Dependencies.mk
 
-include ../template/Dependencies.mk
-
+ifeq ($($(PROJECT)_deps),)
+  $(error $(PROJECT)_deps None)
+endif
 PROJECT_DEPS = $($(PROJECT)_deps)
 PROJECT_OBJS = $(PROJECT_DEPS:.c=.o)
 
@@ -128,7 +134,7 @@ include $(PERIPH_DRIVER_DIR)/periphdriver.mk
 # included before this one.
 include $(CMSIS_ROOT)/Device/Maxim/$(TARGET_UC)/Source/$(COMPILER)/$(TARGET_LC).mk
 
-EXAMPLE_BIN_DIR ?= $(BUILD_DIR)/../../bin
+EXAMPLE_BIN_DIR ?= ../bin
 
 # Remove if you dont need to create and copy bin
 all: bin

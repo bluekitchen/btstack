@@ -1,3 +1,4 @@
+SHELL := bash
 # BTstack
 VPATH += $(BTSTACK_ROOT)/chipset/cc256x
 VPATH += $(BTSTACK_ROOT)/example
@@ -232,7 +233,7 @@ EXAMPLES_GATT_FILES = \
     spp_and_gatt_streamer.ga\
     ublox_spp_le_counter.ga
 
-include ../template/Categories.mk
+include ${PORT_DIR}/example/template/Categories.mk
 # define target variant for chipset/cc256x/Makefile.inc
 ifneq ($(filter $(PROJECT),$(EXAMPLES_GENERAL)),)
     $(info $(PROJECT) in EXAMPLES_GENERAL)
@@ -263,114 +264,83 @@ SBC_CODEC_OBJ     = $(SBC_CODEC:.c=.o)
 
 # examples
 
-# general
-audio_duplex_deps = ${CORE_OBJ} ${COMMON_OBJ} btstack_audio.o btstack_ring_buffer.o audio_duplex.c
-# general
-led_counter_deps = ${CORE_OBJ} ${COMMON_OBJ} led_counter.c
-# general
-mod_player_deps = ${CORE_OBJ} ${COMMON_OBJ} ${HXCMOD_PLAYER_OBJ} btstack_audio.o mod_player.c
-# general
-sine_player_deps = ${CORE_OBJ} ${COMMON_OBJ} btstack_audio.o sine_player.c
+# general - no bluetooth
+GENERAL_DEPS = ${CORE_OBJ} ${COMMON_OBJ}
+audio_duplex_deps = ${GENERAL_DEPS} btstack_audio.o btstack_ring_buffer.o audio_duplex.c
+led_counter_deps = ${GENERAL_DEPS} led_counter.c
+mod_player_deps = ${GENERAL_DEPS} ${HXCMOD_PLAYER_OBJ} btstack_audio.o mod_player.c
+sine_player_deps = ${GENERAL_DEPS} btstack_audio.o sine_player.c
+# general - END
 
-# le
-ancs_client_demo_deps = ${BLE_OBJ} ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${GATT_CLIENT_OBJ} ancs_client.o ancs_client_demo.o
-# le
-att_delayed_response_deps = ${BLE_OBJ} ${CORE_OBJ} ${COMMON_OBJ} $(CLASSIC_OBJ) ${ATT_OBJ} ${GATT_SERVER_OBJ} att_delayed_response.o
-# le
-gap_le_advertisements_deps = ${BLE_OBJ} ${CORE_OBJ} ${COMMON_OBJ}  gap_le_advertisements.c
-# le
-gatt_battery_query_deps = ${BLE_OBJ} ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ${GATT_SERVER_OBJ} gatt_battery_query.o
-# le
-gatt_browser_deps = ${BLE_OBJ} ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ${GATT_SERVER_OBJ} gatt_browser.o
-# le
-gatt_device_information_query_deps = ${BLE_OBJ} ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ${GATT_SERVER_OBJ} gatt_device_information_query.o
-# le
-gatt_heart_rate_client_deps = ${BLE_OBJ} ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} gatt_heart_rate_client.c
-# le
-hog_boot_host_demo_deps = ${BLE_OBJ} ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} hog_boot_host_demo.o
-# le
-hog_host_demo_deps = ${BLE_OBJ} ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ${GATT_SERVER_OBJ} btstack_hid_parser.o btstack_hid.o hog_host_demo.o
-# le
-hog_keyboard_demo_deps = ${BLE_OBJ} ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} battery_service_server.o device_information_service_server.o btstack_hid_parser.o hids_device.o btstack_ring_buffer.o hog_keyboard_demo.o
-# le
-hog_mouse_demo_deps = ${BLE_OBJ} ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} battery_service_server.o device_information_service_server.o btstack_hid_parser.o hids_device.o hog_mouse_demo.o
-# le
-le_credit_based_flow_control_mode_client_deps = ${BLE_OBJ} ${CORE_OBJ} ${COMMON_OBJ} le_credit_based_flow_control_mode_client.c
-# le
-le_credit_based_flow_control_mode_server_deps = ${BLE_OBJ} ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} le_credit_based_flow_control_mode_server.o
-# le
-le_mitm_deps = ${BLE_OBJ} ${CORE_OBJ} ${COMMON_OBJ} le_mitm.c
-# le
-le_streamer_client_deps = ${BLE_OBJ} ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} le_streamer_client.c
-# le
-mesh_node_demo_deps = ${BLE_OBJ} ${CORE_OBJ} ${COMMON_OBJ} ${MESH_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} mesh_node_demo.o
-# le
-nordic_spp_le_counter_deps = ${BLE_OBJ} ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} nordic_spp_service_server.o nordic_spp_le_counter.o
-# le
-nordic_spp_le_streamer_deps = ${BLE_OBJ} ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} nordic_spp_service_server.o nordic_spp_le_streamer.o
-# le
-sm_pairing_central_deps = ${BLE_OBJ} ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${GATT_CLIENT_OBJ} sm_pairing_central.o
-# le
-sm_pairing_peripheral_deps = ${BLE_OBJ} ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${GATT_CLIENT_OBJ} sm_pairing_peripheral.o
-# le
-ublox_spp_le_counter_deps = ${BLE_OBJ} ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} device_information_service_server.o ublox_spp_service_server.o ublox_spp_le_counter.o
+# le - bluetooth le
+BLE_DEPS = ${BLE_OBJ} ${GENERAL_DEPS}
+ancs_client_demo_deps = ${BLE_DEPS} ${CLASSIC_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${GATT_CLIENT_OBJ} ancs_client.o ancs_client_demo.o
+att_delayed_response_deps = ${BLE_DEPS} $(CLASSIC_OBJ) ${ATT_OBJ} ${GATT_SERVER_OBJ} att_delayed_response.o
+gap_le_advertisements_deps = ${BLE_DEPS}  gap_le_advertisements.c
+gatt_battery_query_deps = ${BLE_DEPS} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ${GATT_SERVER_OBJ} gatt_battery_query.o
+gatt_browser_deps = ${BLE_DEPS} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ${GATT_SERVER_OBJ} gatt_browser.o
+gatt_device_information_query_deps = ${BLE_DEPS} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ${GATT_SERVER_OBJ} gatt_device_information_query.o
+gatt_heart_rate_client_deps = ${BLE_DEPS} ${ATT_OBJ} ${GATT_CLIENT_OBJ} gatt_heart_rate_client.c
+hog_boot_host_demo_deps = ${BLE_DEPS} ${ATT_OBJ} ${GATT_CLIENT_OBJ} hog_boot_host_demo.o
+hog_host_demo_deps = ${BLE_DEPS} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ${GATT_SERVER_OBJ} btstack_hid_parser.o btstack_hid.o hog_host_demo.o
+hog_keyboard_demo_deps = ${BLE_DEPS} ${ATT_OBJ} ${GATT_SERVER_OBJ} battery_service_server.o device_information_service_server.o btstack_hid_parser.o hids_device.o btstack_ring_buffer.o hog_keyboard_demo.o
+hog_mouse_demo_deps = ${BLE_DEPS} ${ATT_OBJ} ${GATT_SERVER_OBJ} battery_service_server.o device_information_service_server.o btstack_hid_parser.o hids_device.o hog_mouse_demo.o
+le_credit_based_flow_control_mode_client_deps = ${BLE_DEPS} le_credit_based_flow_control_mode_client.c
+le_credit_based_flow_control_mode_server_deps = ${BLE_DEPS} ${ATT_OBJ} ${GATT_SERVER_OBJ} le_credit_based_flow_control_mode_server.o
+le_mitm_deps = ${BLE_DEPS} le_mitm.c
+le_streamer_client_deps = ${BLE_DEPS} ${ATT_OBJ} ${GATT_CLIENT_OBJ} le_streamer_client.c
+mesh_node_demo_deps = ${BLE_DEPS} ${MESH_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} mesh_node_demo.o
+nordic_spp_le_counter_deps = ${BLE_DEPS} ${ATT_OBJ} ${GATT_SERVER_OBJ} nordic_spp_service_server.o nordic_spp_le_counter.o
+nordic_spp_le_streamer_deps = ${BLE_DEPS} ${ATT_OBJ} ${GATT_SERVER_OBJ} nordic_spp_service_server.o nordic_spp_le_streamer.o
+sm_pairing_central_deps = ${BLE_DEPS} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${GATT_CLIENT_OBJ} sm_pairing_central.o
+sm_pairing_peripheral_deps = ${BLE_DEPS} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${GATT_CLIENT_OBJ} sm_pairing_peripheral.o
+ublox_spp_le_counter_deps = ${BLE_DEPS} ${ATT_OBJ} ${GATT_SERVER_OBJ} device_information_service_server.o ublox_spp_service_server.o ublox_spp_le_counter.o
+# le - END
 
-# classic
-a2dp_sink_demo_deps = ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT_OBJ} ${SBC_CODEC_OBJ} ${AVDTP_OBJ} avrcp.o avrcp_controller.o avrcp_target.o avrcp_cover_art_client.o  obex_srm_client.o goep_client.o obex_parser.o obex_message_builder.o btstack_sample_rate_compensation.o a2dp_sink_demo.c
-# classic
-a2dp_source_demo_deps = ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT_OBJ} ${SBC_CODEC_OBJ} ${AVDTP_OBJ} ${HXCMOD_PLAYER_OBJ} avrcp.o avrcp_controller.o avrcp_target.o a2dp_source_demo.c
-# ! classic
-ant_test_deps = ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ant_test.c
-# classic
-avrcp_browsing_client_deps = ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT_OBJ} ${AVRCP_OBJ} ${AVDTP_OBJ} avrcp_browsing_client.c
-# classic
-dut_mode_classic_deps = ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} dut_mode_classic.c
-# classic
-gap_dedicated_bonding_deps = ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} gap_dedicated_bonding.c
-# classic
-gap_inquiry_deps = ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} gap_inquiry.c
-# classic
-gap_link_keys_deps = ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} gap_link_keys.c
-#classic
-hfp_ag_demo_deps = ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT_OBJ} ${SBC_CODEC_OBJ} ${CVSD_PLC_OBJ} wav_util.o sco_demo_util.o btstack_ring_buffer.o hfp.o hfp_gsm_model.o hfp_ag.o hfp_ag_demo.c
-#classic
-hfp_hf_demo_deps = ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT_OBJ} ${SBC_CODEC_OBJ} ${CVSD_PLC_OBJ} wav_util.o sco_demo_util.o btstack_ring_buffer.o hfp.o hfp_hf.o hfp_hf_demo.c
-#classic
-hid_host_demo_deps = ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT_OBJ} btstack_hid_parser.o hid_host.o hid_host_demo.o
-#classic
-hid_keyboard_demo_deps = ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT_OBJ} btstack_ring_buffer.o hid_device.o btstack_hid_parser.o hid_keyboard_demo.o
-#classic
-hid_mouse_demo_deps = ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT_OBJ} btstack_ring_buffer.o hid_device.o btstack_hid_parser.o hid_mouse_demo.o
-#classic
-hsp_ag_demo_deps = ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT_OBJ} ${SBC_CODEC_OBJ} ${CVSD_PLC_OBJ} wav_util.o sco_demo_util.o btstack_ring_buffer.o hsp_ag.o hsp_ag_demo.c
-#classic
-hsp_hs_demo_deps = ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT_OBJ} ${SBC_CODEC_OBJ} ${CVSD_PLC_OBJ} wav_util.o sco_demo_util.o btstack_ring_buffer.o hsp_hs.o hsp_hs_demo.c
-# !classic
-panu_demo_deps = ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT_OBJ} ${PAN_OBJ} panu_demo.c
-# classic
-pan_lwip_http_server_deps = ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT_OBJ} ${PAN_OBJ} ${LWIP_SRC} btstack_ring_buffer.o bnep_lwip.o pan_lwip_http_server.o
-#classic
-pbap_client_demo_deps = ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT_OBJ} md5.o obex_iterator.o obex_parser.o obex_message_builder.o obex_srm_client.o goep_client.o yxml.o pbap_client.o pbap_client_demo.o
-#classic
-sdp_bnep_query_deps = ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT_OBJ} sdp_bnep_query.c
-#classic
-sdp_general_query_deps = ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT_OBJ} sdp_general_query.c
-#classic
-sdp_rfcomm_query_deps = ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${PAN_OBJ} ${SDP_CLIENT_OBJ} sdp_rfcomm_query.c
-#classic
-spp_counter_deps = ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} spp_counter.c
-# classic
-spp_flowcontrol_deps = ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT_OBJ} spp_flowcontrol.c
-#classic
-spp_streamer_client_deps = ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT_OBJ} spp_streamer_client.c
-#classic
-spp_streamer_deps = ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT_OBJ} spp_streamer.c
+# classic - no le
+CLASSIC_DEPS = ${GENERAL_DEPS} ${CLASSIC_OBJ}
+a2dp_sink_demo_deps = ${CLASSIC_DEPS} ${SDP_CLIENT_OBJ} ${SBC_CODEC_OBJ} ${AVDTP_OBJ} avrcp.o avrcp_controller.o avrcp_target.o avrcp_cover_art_client.o  obex_srm_client.o goep_client.o obex_parser.o obex_message_builder.o btstack_sample_rate_compensation.o a2dp_sink_demo.c
+a2dp_source_demo_deps = ${CLASSIC_DEPS} ${SDP_CLIENT_OBJ} ${SBC_CODEC_OBJ} ${AVDTP_OBJ} ${HXCMOD_PLAYER_OBJ} avrcp.o avrcp_controller.o avrcp_target.o a2dp_source_demo.c
+ant_test_deps = ${CLASSIC_DEPS} ant_test.c
+avrcp_browsing_client_deps = ${CLASSIC_DEPS} ${SDP_CLIENT_OBJ} ${AVRCP_OBJ} ${AVDTP_OBJ} avrcp_browsing_client.c
+dut_mode_classic_deps = ${CLASSIC_DEPS} dut_mode_classic.c
+gap_dedicated_bonding_deps = ${CLASSIC_DEPS} gap_dedicated_bonding.c
+gap_inquiry_deps = ${CLASSIC_DEPS} gap_inquiry.c
+gap_link_keys_deps = ${CLASSIC_DEPS} gap_link_keys.c
+hfp_ag_demo_deps = ${CLASSIC_DEPS} ${SDP_CLIENT_OBJ} ${SBC_CODEC_OBJ} ${CVSD_PLC_OBJ} wav_util.o sco_demo_util.o btstack_ring_buffer.o hfp.o hfp_gsm_model.o hfp_ag.o hfp_ag_demo.c
+hfp_hf_demo_deps = ${CLASSIC_DEPS} ${SDP_CLIENT_OBJ} ${SBC_CODEC_OBJ} ${CVSD_PLC_OBJ} wav_util.o sco_demo_util.o btstack_ring_buffer.o hfp.o hfp_hf.o hfp_hf_demo.c
+hid_host_demo_deps = ${CLASSIC_DEPS} ${SDP_CLIENT_OBJ} btstack_hid_parser.o hid_host.o hid_host_demo.o
+hid_keyboard_demo_deps = ${CLASSIC_DEPS} ${SDP_CLIENT_OBJ} btstack_ring_buffer.o hid_device.o btstack_hid_parser.o hid_keyboard_demo.o
+hid_mouse_demo_deps = ${CLASSIC_DEPS} ${SDP_CLIENT_OBJ} btstack_ring_buffer.o hid_device.o btstack_hid_parser.o hid_mouse_demo.o
+hsp_ag_demo_deps = ${CLASSIC_DEPS} ${SDP_CLIENT_OBJ} ${SBC_CODEC_OBJ} ${CVSD_PLC_OBJ} wav_util.o sco_demo_util.o btstack_ring_buffer.o hsp_ag.o hsp_ag_demo.c
+hsp_hs_demo_deps = ${CLASSIC_DEPS} ${SDP_CLIENT_OBJ} ${SBC_CODEC_OBJ} ${CVSD_PLC_OBJ} wav_util.o sco_demo_util.o btstack_ring_buffer.o hsp_hs.o hsp_hs_demo.c
+panu_demo_deps = ${CLASSIC_DEPS} ${SDP_CLIENT_OBJ} ${PAN_OBJ} panu_demo.c
+pan_lwip_http_server_deps = ${CLASSIC_DEPS} ${SDP_CLIENT_OBJ} ${PAN_OBJ} ${LWIP_SRC} btstack_ring_buffer.o bnep_lwip.o pan_lwip_http_server.o
+pbap_client_demo_deps = ${CLASSIC_DEPS} ${SDP_CLIENT_OBJ} md5.o obex_iterator.o obex_parser.o obex_message_builder.o obex_srm_client.o goep_client.o yxml.o pbap_client.o pbap_client_demo.o
+sdp_bnep_query_deps = ${CLASSIC_DEPS} ${SDP_CLIENT_OBJ} sdp_bnep_query.c
+sdp_general_query_deps = ${CLASSIC_DEPS} ${SDP_CLIENT_OBJ} sdp_general_query.c
+sdp_rfcomm_query_deps = ${CLASSIC_DEPS} ${PAN_OBJ} ${SDP_CLIENT_OBJ} sdp_rfcomm_query.c
+spp_counter_deps = ${CLASSIC_DEPS} spp_counter.c
+spp_flowcontrol_deps = ${CLASSIC_DEPS} ${SDP_CLIENT_OBJ} spp_flowcontrol.c
+spp_streamer_client_deps = ${CLASSIC_DEPS} ${SDP_CLIENT_OBJ} spp_streamer_client.c
+spp_streamer_deps = ${CLASSIC_DEPS} ${SDP_CLIENT_OBJ} spp_streamer.c
+# classic - END
 
-# dual
-gatt_counter_deps = ${BLE_OBJ} ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${CLASSIC_OBJ} battery_service_server.o gatt_counter.o
-# dual
-gatt_streamer_server_deps = ${BLE_OBJ} ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${CLASSIC_OBJ} gatt_streamer_server.o
-# dual
-spp_and_gatt_counter_deps = ${BLE_OBJ} ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} spp_and_gatt_counter.o
-# dual
-spp_and_gatt_streamer_deps = ${BLE_OBJ} ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} spp_and_gatt_streamer.o
+# dual - classic + le
+DUAL_DEPS = ${GENERAL_DEPS} ${BLE_OBJ} ${CLASSIC_OBJ}
+gatt_counter_deps = ${DUAL_DEPS} ${ATT_OBJ} ${GATT_SERVER_OBJ} battery_service_server.o gatt_counter.o
+gatt_streamer_server_deps = ${DUAL_DEPS} ${ATT_OBJ} ${GATT_SERVER_OBJ} gatt_streamer_server.o
+spp_and_gatt_counter_deps = ${DUAL_DEPS} ${ATT_OBJ} ${GATT_SERVER_OBJ} spp_and_gatt_counter.o
+spp_and_gatt_streamer_deps = ${DUAL_DEPS} ${ATT_OBJ} ${GATT_SERVER_OBJ} spp_and_gatt_streamer.o
+# dual - END
+
+ifeq ($($(PROJECT)_deps),)
+  ifeq ($(PROJECT_FEATURES),)
+    $(warning $(PROJECT)_deps is empty)
+  else
+    # Add dependencies
+    $(foreach dep, $(PROJECT_FEATURES), $(eval $(PROJECT)_deps += $($(dep))))
+	# Add main project file to build $(PROJECT).o from $(PROJECT).c
+	$(PROJECT)_deps += $(PROJECT)
+  endif
+endif
