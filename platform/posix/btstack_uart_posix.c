@@ -84,10 +84,11 @@ static void (*block_received)(void);
 
 static void hci_uart_posix_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type);
 
-static void exit_with_message(const char * msg){
+static int fail_with_message(const char * msg){
     log_error("%s", msg);
     printf("DEVICE ERROR: %s\n", msg);
-    exit(EXIT_FAILURE);
+    btstack_run_loop_disable_data_source_callbacks(&transport_data_source, DATA_SOURCE_CALLBACK_WRITE|DATA_SOURCE_CALLBACK_READ);
+    return -1;
 }
 
 static int btstack_uart_posix_init(const btstack_uart_config_t * config){
@@ -108,13 +109,12 @@ static void btstack_uart_block_posix_process_write(btstack_data_source_t *ds) {
         log_info("write took %u ms", end - start);
     }
     if (bytes_written == 0){
-        log_error("wrote zero bytes\n");
-        exit(EXIT_FAILURE);
+        fail_with_message("wrote zero bytes\n");
+        return;
     }
     if (bytes_written < 0) {
-        log_error("write returned error\n");
-        btstack_run_loop_enable_data_source_callbacks(ds, DATA_SOURCE_CALLBACK_WRITE);
-        exit(EXIT_FAILURE);
+        fail_with_message("write returned error\n");
+        return;
     }
 
     btstack_uart_block_write_bytes_data += bytes_written;
@@ -151,10 +151,12 @@ static void btstack_uart_block_posix_process_read(btstack_data_source_t *ds) {
         log_info("read took %u ms", end - start);
     }
     if (bytes_read == 0){
-        exit_with_message("read zero bytes\n");
+        fail_with_message("read zero bytes\n");
+        return;
     }
     if (bytes_read < 0) {
-        exit_with_message("read returned error\n");
+        fail_with_message("read returned error\n");
+        return;
     }
 
     btstack_uart_block_read_bytes_len   -= bytes_read;
@@ -315,11 +317,11 @@ static int btstack_uart_posix_open(void){
     int flags = O_RDWR | O_NOCTTY | O_NONBLOCK;
     int fd = open(device_name, flags);
     if (fd == -1)  {
-        exit_with_message("Unable to open port");
+        return fail_with_message("Unable to open port");
     }
 
     if (tcgetattr(fd, &btstack_uart_block_termios) < 0) {
-        exit_with_message("Couldn't get term attributes");
+        return fail_with_message("Couldn't get term attributes");
     }
     cfmakeraw(&btstack_uart_block_termios);   // make raw
 
@@ -341,7 +343,7 @@ static int btstack_uart_posix_open(void){
     btstack_uart_posix_set_flowcontrol_option(&btstack_uart_block_termios, flowcontrol);
 
     if(tcsetattr(fd, TCSANOW, &btstack_uart_block_termios) < 0) {
-        exit_with_message("Couldn't set term attributes");
+        return fail_with_message("Couldn't set term attributes");
     }
 
     // store fd in data source
@@ -349,7 +351,7 @@ static int btstack_uart_posix_open(void){
 
     // also set baudrate
     if (btstack_uart_posix_set_baudrate(baudrate) < 0){
-        exit_with_message("Couldnt set baudrate");
+        return fail_with_message("Couldnt set baudrate");
     }
 
     // set up data_source
