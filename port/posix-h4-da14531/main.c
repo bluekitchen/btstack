@@ -87,7 +87,7 @@ static hci_transport_config_uart_t transport_config = {
     .device_name = "/dev/ttyACM0",
     .baudrate_init = 460800,
     .baudrate_main = 0,
-    .flowcontrol = BTSTACK_UART_FLOWCONTROL_OFF,
+    .flowcontrol = BTSTACK_UART_FLOWCONTROL_ON,
     .parity = BTSTACK_UART_PARITY_OFF,
 };
 
@@ -173,9 +173,9 @@ int main(int argc, const char * argv[]){
     btstack_main_config( argc, argv, &transport_config, NULL, NULL );
     uart_driver = btstack_uart_posix_instance();
 
-    // extract UART config from transport config, but overide initial uart speed
+    // extract UART config from transport config, but overide initial uart speed and disable flow control
     uart_config.baudrate    = 115200;
-    uart_config.flowcontrol = 0;
+    uart_config.flowcontrol = BTSTACK_UART_FLOWCONTROL_OFF;
     uart_config.device_name = transport_config.device_name;
     uart_driver->init(&uart_config);
 
