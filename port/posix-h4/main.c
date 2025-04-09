@@ -97,7 +97,7 @@ static hci_transport_config_uart_t config = {
     .device_name = "/dev/ttyACM0",
     .baudrate_init = 115200,
     .baudrate_main = 0,
-    .flowcontrol = BTSTACK_UART_FLOWCONTROL_OFF,
+    .flowcontrol = BTSTACK_UART_FLOWCONTROL_ON,
     .parity = BTSTACK_UART_PARITY_OFF,
 };
 
