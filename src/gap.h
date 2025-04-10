@@ -213,13 +213,13 @@ typedef struct {
 
 typedef struct {
     uint8_t  big_handle;
-    uint8_t  sync_handle;
     uint8_t  encryption;
+    uint16_t sync_handle;
     uint8_t  broadcast_code[16];
     uint8_t  mse;
     uint16_t big_sync_timeout_10ms;
     uint8_t  num_bis;
-    uint8_t bis_indices[MAX_NR_BIS];
+    uint8_t  bis_indices[MAX_NR_BIS];
 } le_audio_big_sync_params_t;
 
 typedef enum {
