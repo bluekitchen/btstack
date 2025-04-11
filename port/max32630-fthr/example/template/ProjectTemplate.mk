@@ -67,32 +67,18 @@ CMSIS_ROOT=$(LIBS_DIR)/CMSIS
 BTSTACK_ROOT ?= ../../../..
 PORT_DIR = ${BTSTACK_ROOT}/port/${PORT_NAME}
 
-# Where to find source files for this test
+# Where to find source and header files for this test
 VPATH = . ${PORT_DIR}/src
-
-# Where to find header files for this test
 IPATH = . ${PORT_DIR}/src
 
-BOARD_DIR=$(LIBS_DIR)/Boards
+# Source files for this test
+SRCS = $(wildcard $(PORT_DIR)/src/*.c)
 
-IPATH += ${PORT_DIR}/board
-VPATH += ${PORT_DIR}/board
-
-# Source files for this test (add path to VPATH below)
-SRCS = main.c
-SRCS += hal_tick.c
-SRCS += btstack_port.c
-SRCS += board.c
-SRCS += stdio.c
-SRCS += led.c
-SRCS += pb.c
-SRCS += max14690n.c
-
-# Where to find BSP source files
-VPATH += $(BOARD_DIR)/Source
-
-# Where to find BSP header files
-IPATH += $(BOARD_DIR)/Include
+# Board files for the max32630fthr board
+# are not present in $(LIBS_DIR)/Boards/
+# The port mimics the structure of EvKit_V1 in the $(LIBS_DIR)/Boards/EvKit_V1
+BOARD_DIR ?= ${PORT_DIR}/board/max32630-fthr
+include ${BOARD_DIR}/board.mk
 
 # Enable assertion checking for development
 PROJ_CFLAGS+=-DMXC_ASSERT_ENABLE
