@@ -65,7 +65,6 @@ CORE = \
 
 COMMON = \
     ad_parser.c \
-    hal_flash_bank_mxc.c \
     hci.c \
     hci_cmd.c \
     hci_dump.c \
