@@ -177,7 +177,7 @@ void (*rfcomm_ertm_released_callback)(uint16_t ertm_id);
 #endif
 
 #ifdef RFCOMM_USE_OUTGOING_BUFFER
-static uint8_t outgoing_buffer[1030];
+static uint8_t rfcomm_outgoing_buffer[1030];
 #endif
 
 static bool rfcomm_channel_can_send(rfcomm_channel_t * channel);
@@ -565,7 +565,7 @@ static int rfcomm_send_packet_for_multiplexer(rfcomm_multiplexer_t *multiplexer,
     if (!l2cap_can_send_packet_now(multiplexer->l2cap_cid)) return BTSTACK_ACL_BUFFERS_FULL;
     
 #ifdef RFCOMM_USE_OUTGOING_BUFFER
-    uint8_t * rfcomm_out_buffer = outgoing_buffer;
+    uint8_t * rfcomm_out_buffer = rfcomm_outgoing_buffer;
 #else
     l2cap_reserve_packet_buffer();
     uint8_t * rfcomm_out_buffer = l2cap_get_outgoing_buffer();
@@ -619,7 +619,7 @@ static uint8_t rfcomm_send_uih_prepared(rfcomm_multiplexer_t *multiplexer, uint8
     uint8_t control = BT_RFCOMM_UIH;
 
 #ifdef RFCOMM_USE_OUTGOING_BUFFER
-    uint8_t * rfcomm_out_buffer = outgoing_buffer;
+    uint8_t * rfcomm_out_buffer = rfcomm_outgoing_buffer;
 #else
     uint8_t * rfcomm_out_buffer = l2cap_get_outgoing_buffer();
 #endif
@@ -2239,7 +2239,7 @@ static uint8_t rfcomm_assert_send_valid(rfcomm_channel_t * channel , uint16_t le
     }
 
 #ifdef RFCOMM_USE_OUTGOING_BUFFER
-    if (len > rfcomm_max_frame_size_for_l2cap_mtu(sizeof(outgoing_buffer))){
+    if (len > rfcomm_max_frame_size_for_l2cap_mtu(sizeof(rfcomm_outgoing_buffer))){
         log_error("send cid 0x%02x, length exceeds outgoing rfcomm_out_buffer", channel->rfcomm_cid);
         return RFCOMM_DATA_LEN_EXCEEDS_MTU;
     }
@@ -2284,7 +2284,7 @@ void rfcomm_release_packet_buffer(void){
 
 uint8_t * rfcomm_get_outgoing_buffer(void){
 #ifdef RFCOMM_USE_OUTGOING_BUFFER
-    uint8_t * rfcomm_out_buffer = outgoing_buffer;
+    uint8_t * rfcomm_out_buffer = rfcomm_outgoing_buffer;
 #else
     uint8_t * rfcomm_out_buffer = l2cap_get_outgoing_buffer();
 #endif
