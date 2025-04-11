@@ -340,10 +340,16 @@ void btstack_run_loop_execute(void);
 /**
  * @brief Registers callback with run loop and mark main thread as ready
  * @note If callback is already registered, the call will be ignored.
+ *
  *       This function allows to implement, e.g., a queue-based message passing mechanism:
  *       The external thread puts an item into a queue and call this function to trigger
  *       processing by the BTstack main thread. If this happens multiple times, it is
  *       guaranteed that the callback will run at least once after the last item was added.
+ *
+ *       This is not interrupt safe. If you need to trigger the main thread from an IRQ handler,
+ *       please register a data source and enable DATA_SOURCE_CALLBACK_POLL. You can then call
+ *       btstack_run_loop_poll_data_sources_from_irq() to trigger the main thread.
+ *
  * @param callback_registration
  */
 void btstack_run_loop_execute_on_main_thread(btstack_context_callback_registration_t * callback_registration);
