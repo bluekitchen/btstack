@@ -86,6 +86,8 @@ typedef enum {
     // - pull vacard liast
     PBAP_CLIENT_W2_GET_CARD_LIST,
     PBAP_CLIENT_W4_GET_CARD_LIST_COMPLETE,
+    PBAP_CLIENT_W2_GET_CARD_LIST_SIZE,
+    PBAP_CLIENT_W4_GET_CARD_LIST_SIZE_COMPLETE,
     // - pull vcard entry
     PBAP_CLIENT_W2_GET_CARD_ENTRY,
     PBAP_CLIENT_W4_GET_CARD_ENTRY_COMPLETE,
@@ -338,7 +340,8 @@ uint8_t pbap_set_search_value(uint16_t pbap_cid, const char * search_value);
 
 /**
  * @brief Get size of phone book from PSE. The result is reported via PBAP_SUBEVENT_PHONEBOOK_SIZE event. 
- * 
+ * @note This function uses the PullPhoneBook command
+ *
  * @param pbap_cid
  * @param path - note: path is not copied, common path 'telecom/pb.vcf'
  * @return status ERROR_CODE_SUCCESS on success, otherwise BTSTACK_BUSY if in a wrong state.
@@ -354,6 +357,16 @@ uint8_t pbap_get_phonebook_size(uint16_t pbap_cid, const char * path);
  * @return status ERROR_CODE_SUCCESS on success, otherwise BTSTACK_BUSY if in a wrong state.
  */
 uint8_t pbap_pull_phonebook(uint16_t pbap_cid, const char * path);
+
+/**
+ * @brief Get size of phone book from PSE. The result is reported via PBAP_SUBEVENT_PHONEBOOK_SIZE event.
+ *
+ * @note This function uses the PullvCardListing command
+ * @param pbap_cid
+ * @param path - note: path is not copied, common path 'telecom/pb.vcf'
+ * @return status ERROR_CODE_SUCCESS on success, otherwise BTSTACK_BUSY if in a wrong state.
+ */
+uint8_t pbap_get_vcard_listing_size(uint16_t pbap_cid, const char * path);
 
 /**
  * @brief Pull vCard listing. vCard data is emitted via PBAP_SUBEVENT_CARD_RESULT event. 

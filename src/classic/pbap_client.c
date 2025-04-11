@@ -736,6 +736,7 @@ static void pbap_handle_can_send_now(pbap_client_t *pbap_client) {
             goep_client_execute(pbap_client->goep_cid);
             break;
         case PBAP_CLIENT_W2_GET_CARD_LIST:
+        case PBAP_CLIENT_W2_GET_CARD_LIST_SIZE:
             // prepare request
             goep_client_request_create_get(pbap_client->goep_cid);
             if (pbap_client->request_number == 0){
@@ -756,8 +757,15 @@ static void pbap_handle_can_send_now(pbap_client_t *pbap_client) {
                 if (pbap_client->order){
                     pos += pbap_client_application_params_add_order(pbap_client, &application_parameters[pos], pbap_client->order);
                 }
-                if (pbap_client->max_list_count){
-                    pos += pbap_client_application_params_add_max_list_count(pbap_client, &application_parameters[pos], pbap_client->max_list_count);
+                // add max_list_count if set or if we get size
+                uint16_t max_list_count = pbap_client->max_list_count;
+                bool add_max_list_count = max_list_count > 0;
+                if (pbap_client->state == PBAP_CLIENT_W2_GET_CARD_LIST_SIZE){
+                    max_list_count = 0;
+                    add_max_list_count = true;
+                }
+                if (add_max_list_count){
+                    pos += pbap_client_application_params_add_max_list_count(pbap_client, &application_parameters[pos], max_list_count);
                 }
                 if (pbap_client->list_start_offset){
                     pos += pbap_client_application_params_add_list_start_offset (pbap_client, &application_parameters[pos], pbap_client->list_start_offset);
@@ -767,7 +775,11 @@ static void pbap_handle_can_send_now(pbap_client_t *pbap_client) {
                 pbap_client_prepare_srm_header(pbap_client);
             }
             // state
-            pbap_client->state = PBAP_CLIENT_W4_GET_CARD_LIST_COMPLETE;
+            if (pbap_client->state == PBAP_CLIENT_W2_GET_CARD_LIST_SIZE) {
+                pbap_client->state = PBAP_CLIENT_W4_GET_CARD_LIST_SIZE_COMPLETE;
+            } else {
+                pbap_client->state = PBAP_CLIENT_W4_GET_CARD_LIST_COMPLETE;
+            }
             // prepare response
             pbap_client_prepare_get_operation(pbap_client);
             // send packet
@@ -974,6 +986,7 @@ static void pbap_packet_handler_goep(pbap_client_t *client, uint8_t *packet, uin
                 }
                 break;
             case PBAP_CLIENT_W4_GET_PHONEBOOK_SIZE_COMPLETE:
+            case PBAP_CLIENT_W4_GET_CARD_LIST_SIZE_COMPLETE:
                 switch (op_info.response_code) {
                     case OBEX_RESP_SUCCESS:
                         if (client->phonebook_size_parser.have_size) {
@@ -1163,7 +1176,7 @@ uint8_t pbap_disconnect(uint16_t pbap_cid){
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t pbap_get_phonebook_size(uint16_t pbap_cid, const char * path){
+static uint8_t pbap_get_phonebook_size_general(uint16_t pbap_cid, const char * path, pbap_client_state_t state){
     pbap_client_t * pbap_client = pbap_client_for_cid(pbap_cid);
     if (pbap_client == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
@@ -1171,11 +1184,19 @@ uint8_t pbap_get_phonebook_size(uint16_t pbap_cid, const char * path){
     if (pbap_client->state != PBAP_CLIENT_CONNECTED){
         return BTSTACK_BUSY;
     }
-    pbap_client->state = PBAP_CLIENT_W2_GET_PHONEBOOK_SIZE;
+    pbap_client->state = state;
     pbap_client->phonebook_path = path;
     pbap_client->request_number = 0;
     goep_client_request_can_send_now(pbap_client->goep_cid);
     return ERROR_CODE_SUCCESS;
+}
+
+uint8_t pbap_get_phonebook_size(uint16_t pbap_cid, const char * path) {
+    return pbap_get_phonebook_size_general(pbap_cid, path, PBAP_CLIENT_W2_GET_PHONEBOOK_SIZE);
+}
+
+uint8_t pbap_get_vcard_listing_size(uint16_t pbap_cid, const char * path){
+    return pbap_get_phonebook_size_general(pbap_cid, path, PBAP_CLIENT_W2_GET_CARD_LIST_SIZE);
 }
 
 uint8_t pbap_pull_phonebook(uint16_t pbap_cid, const char * path){
