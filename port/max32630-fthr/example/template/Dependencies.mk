@@ -333,6 +333,9 @@ spp_and_gatt_counter_deps = ${DUAL_DEPS} ${ATT_OBJ} ${GATT_SERVER_OBJ} spp_and_g
 spp_and_gatt_streamer_deps = ${DUAL_DEPS} ${ATT_OBJ} ${GATT_SERVER_OBJ} spp_and_gatt_streamer.o
 # dual - END
 
+# Expands PROJECT_FEATURES when $(PROJECT)_deps is empty.
+# Expected values are the XX_DEPS and XX_OBJ values defined in Dependencies.mk
+# e.g. PROJECT_FEATURES = DUAL_DEPS ATT_OBJ GATT_SERVER_OBJ
 ifeq ($($(PROJECT)_deps),)
   ifeq ($(PROJECT_FEATURES),)
     $(warning $(PROJECT)_deps is empty)
