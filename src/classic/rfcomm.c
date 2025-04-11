@@ -176,6 +176,7 @@ void (*rfcomm_ertm_request_callback)(rfcomm_ertm_request_t * request);
 void (*rfcomm_ertm_released_callback)(uint16_t ertm_id);
 #endif
 
+static bool rfcomm_outgoing_buffer_reserved;
 #ifdef RFCOMM_USE_OUTGOING_BUFFER
 static uint8_t rfcomm_outgoing_buffer[1030];
 #endif
@@ -1360,6 +1361,7 @@ static void rfcomm_channel_send_credits(rfcomm_channel_t *channel, uint8_t credi
 
 static bool rfcomm_channel_can_send(rfcomm_channel_t * channel){
     log_debug("cid 0x%04x, outgoing credits %u", channel->rfcomm_cid, channel->credits_outgoing);
+    if (rfcomm_outgoing_buffer_reserved) return false;
     if (!channel->credits_outgoing) return false;
     if ((channel->multiplexer->fcon & 1) == 0) return false;
     return l2cap_can_send_packet_now(channel->multiplexer->l2cap_cid) != 0;
@@ -2198,6 +2200,7 @@ void rfcomm_init(void){
 #ifdef RFCOMM_USE_ERTM
     rfcomm_ertm_id = 0;
 #endif
+    rfcomm_outgoing_buffer_reserved = false;
 }
 
 void rfcomm_deinit(void){
@@ -2267,22 +2270,23 @@ uint16_t rfcomm_get_max_frame_size(uint16_t rfcomm_cid){
 
 // pre: rfcomm_can_send_packet_now(rfcomm_cid) == true
 void rfcomm_reserve_packet_buffer(void){
-#ifdef RFCOMM_USE_OUTGOING_BUFFER
-    log_error("rfcomm_reserve_packet_buffer should not get called with ERTM");
-#else
+    btstack_assert(rfcomm_outgoing_buffer_reserved == false);
+    rfcomm_outgoing_buffer_reserved = true;
+#ifndef RFCOMM_USE_OUTGOING_BUFFER
     l2cap_reserve_packet_buffer();
 #endif
 }
 
 void rfcomm_release_packet_buffer(void){
-#ifdef RFCOMM_USE_OUTGOING_BUFFER
-    log_error("rfcomm_release_packet_buffer should not get called with ERTM");
-#else
+    btstack_assert(rfcomm_outgoing_buffer_reserved);
+    rfcomm_outgoing_buffer_reserved = false;
+#ifndef RFCOMM_USE_OUTGOING_BUFFER
     l2cap_release_packet_buffer();
 #endif
 }
 
 uint8_t * rfcomm_get_outgoing_buffer(void){
+    btstack_assert(rfcomm_outgoing_buffer_reserved);
 #ifdef RFCOMM_USE_OUTGOING_BUFFER
     uint8_t * rfcomm_out_buffer = rfcomm_outgoing_buffer;
 #else
@@ -2293,6 +2297,10 @@ uint8_t * rfcomm_get_outgoing_buffer(void){
 }
 
 uint8_t rfcomm_send_prepared(uint16_t rfcomm_cid, uint16_t len){
+    // clear buffer reserved flag after asserting that it was set
+    btstack_assert(rfcomm_outgoing_buffer_reserved);
+    rfcomm_outgoing_buffer_reserved = false;
+
     rfcomm_channel_t * channel = rfcomm_channel_for_rfcomm_cid(rfcomm_cid);
     if (!channel){
         log_error("cid 0x%02x doesn't exist!", rfcomm_cid);
@@ -2347,10 +2355,11 @@ uint8_t rfcomm_send(uint16_t rfcomm_cid, uint8_t *data, uint16_t len){
         return BTSTACK_ACL_BUFFERS_FULL;
     }
 
-#ifdef RFCOMM_USE_OUTGOING_BUFFER
-#else
+    if (rfcomm_outgoing_buffer_reserved) {
+        return BTSTACK_ACL_BUFFERS_FULL;
+    }
+
     rfcomm_reserve_packet_buffer();
-#endif
     uint8_t * rfcomm_payload = rfcomm_get_outgoing_buffer();
 
     (void)memcpy(rfcomm_payload, data, len);
