@@ -82,13 +82,17 @@ include ${BOARD_DIR}/board.mk
 
 # Enable assertion checking for development
 PROJ_CFLAGS+=-DMXC_ASSERT_ENABLE
-# TODO: Add some fancy way to input deps from project files
-PROJECT_FEATURES = DUAL_DEPS ATT_OBJ GATT_SERVER_OBJ
+
+# Project specific makefile (<project_dir>/xxx.mk)
+# - defines btstack deps (PROJECT_FEATURES)
+# - defines local sources (extend IPATH, VPATH, and SRCS)
+include $(wildcard *.mk)
 include ${PORT_DIR}/example/template/Dependencies.mk
 
 ifeq ($($(PROJECT)_deps),)
   $(error $(PROJECT)_deps None)
 endif
+
 PROJECT_DEPS = $($(PROJECT)_deps)
 PROJECT_OBJS = $(PROJECT_DEPS:.c=.o)
 
