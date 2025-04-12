@@ -51,20 +51,22 @@ TARGET_LC:=$(shell echo $(TARGET) | tr A-Z a-z)
 
 # Select 'GCC' or 'IAR' compiler
 COMPILER=GCC
+PYTHON=python
 
 cc256x_init_script=bluetooth_init_cc2564B_1.8_BT_Spec_4.1.c
 
 ifeq "$(MAXIM_PATH)" ""
-LIBS_DIR=$(subst \,/,$(subst :,,$(HOME))/Maxim/Firmware/$(TARGET_UC)/Libraries)
+LIBS_DIR=$(realpath /$(subst \,/,$(subst :,,$(HOME))/Maxim/Firmware/$(TARGET_UC)/Libraries))
 $(warning "MAXIM_PATH need to be set. Please run setenv bash file in the Maxim Toolchain directory.")
 else
-LIBS_DIR=$(subst \,/,$(subst :,,$(MAXIM_PATH))/Firmware/$(TARGET_UC)/Libraries)
+LIBS_DIR=$(realpath /$(subst \,/,$(subst :,,$(MAXIM_PATH))/Firmware/$(TARGET_UC)/Libraries))
 endif
 
 CMSIS_ROOT=$(LIBS_DIR)/CMSIS
 
 # BTstack
 BTSTACK_ROOT ?= ../../../..
+BTSTACK_ROOT := $(realpath /$(subst \,/,$(subst :,,$(BTSTACK_ROOT))))
 PORT_DIR = ${BTSTACK_ROOT}/port/${PORT_NAME}
 
 # Where to find source and header files for this test
@@ -130,7 +132,7 @@ EXAMPLE_BIN_DIR ?= ../bin
 all: bin
 
 %.h: %.gatt
-	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
+	$(PYTHON) ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
 
 # Build and copy all $(PROJECT).bin to EXAMPLE_BIN_DIR
 bin: $(BUILD_DIR)/$(PROJECT).bin
