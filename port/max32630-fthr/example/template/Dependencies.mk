@@ -1,4 +1,5 @@
 SHELL := bash
+PYTHON ?= python
 # BTstack
 VPATH += $(BTSTACK_ROOT)/chipset/cc256x
 VPATH += $(BTSTACK_ROOT)/example
@@ -238,6 +239,7 @@ ifneq ($(filter $(PROJECT),$(EXAMPLES_GENERAL)),)
     $(info $(PROJECT) in EXAMPLES_GENERAL)
 else
     $(info $(PROJECT) not in EXAMPLES_GENERAL: $(EXAMPLES_GENERAL))
+    override CONVERSION_SCRIPT = $(PYTHON) $(BTSTACK_ROOT)/chipset/cc256x/convert_bts_init_scripts.py
     include ${BTSTACK_ROOT}/chipset/cc256x/Makefile.inc
     CORE += btstack_chipset_cc256x.c
     COMMON += $(cc256x_init_script)
