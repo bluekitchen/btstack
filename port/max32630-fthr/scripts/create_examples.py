@@ -79,6 +79,9 @@ for file in example_files:
         continue
     if file in ['panu_demo.c', 'sco_demo_util.c', 'ant_test.c', 'mesh_node_demo.c']:
         continue
+    if file.startswith('le_audio_demo'):
+        continue
+
     example = file[:-2]
     examples.append(example)
 
