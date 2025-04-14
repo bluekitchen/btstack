@@ -594,11 +594,15 @@ hfp_connection_t * get_hfp_connection_context_for_acl_handle(uint16_t handle, hf
 }
 
 static void hfp_vra_handle_disconnect(hfp_connection_t * hfp_connection) {
-    hfp_voice_recognition_activation_status_t current_vra_state = hfp_connection->vra_state;
+    bool emit_vra_disabled = (hfp_connection->vra_state != HFP_VRA_VOICE_RECOGNITION_OFF) ||
+                             (hfp_connection->vra_state_requested != HFP_VRA_VOICE_RECOGNITION_OFF);
+
     hfp_connection->vra_state = HFP_VRA_VOICE_RECOGNITION_OFF;
-    if (current_vra_state != HFP_VRA_VOICE_RECOGNITION_OFF){
-        hfp_emit_voice_recognition_disabled(hfp_connection, ERROR_CODE_SUCCESS);
-    } else if (hfp_connection->vra_state_requested != HFP_VRA_VOICE_RECOGNITION_OFF){
+    hfp_connection->vra_state_requested = hfp_connection->vra_state;
+    // ignore subsequent ok/error response
+    hfp_connection->ok_pending = 0;
+
+    if (emit_vra_disabled){
         hfp_emit_voice_recognition_disabled(hfp_connection, ERROR_CODE_SUCCESS);
     }
 }
