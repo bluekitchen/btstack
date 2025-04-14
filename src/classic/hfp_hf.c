@@ -1216,7 +1216,6 @@ static bool hfp_hf_switch_on_ok_pending(hfp_connection_t *hfp_connection, uint8_
     // cache state and reset
     hfp_command_t response_pending_for_command = hfp_connection->response_pending_for_command;
     hfp_connection->response_pending_for_command = HFP_CMD_NONE;
-    hfp_connection->command = HFP_CMD_NONE;
     hfp_connection->ok_pending = 0;
 
     switch (response_pending_for_command){
@@ -1394,63 +1393,52 @@ static void hfp_hf_handle_transfer_ag_indicator_status(hfp_connection_t * hfp_co
     }
 }
 
-static void hfp_hf_handle_rfcomm_command(hfp_connection_t * hfp_connection){
+static void hfp_hf_handle_rfcomm_command(hfp_connection_t * hfp_connection, hfp_command_t command){
     int value;
     int i;
     bool event_emitted;
 
     // last argument is still in line_buffer
 
-    switch (hfp_connection->command){
+    switch (command){
         case HFP_CMD_GET_SUBSCRIBER_NUMBER_INFORMATION:
-            hfp_connection->command = HFP_CMD_NONE;
             hfp_hf_emit_subscriber_information(hfp_connection, 0);
             break;
         case HFP_CMD_RESPONSE_AND_HOLD_STATUS:
-            hfp_connection->command = HFP_CMD_NONE;
             hfp_emit_event(hfp_connection, HFP_SUBEVENT_RESPONSE_AND_HOLD_STATUS, btstack_atoi((char *)&hfp_connection->line_buffer[0]));
             break;
         case HFP_CMD_LIST_CURRENT_CALLS:
-            hfp_connection->command = HFP_CMD_NONE;
             hfp_hf_emit_enhanced_call_status(hfp_connection);
             break;
         case HFP_CMD_SET_SPEAKER_GAIN:
-            hfp_connection->command = HFP_CMD_NONE;
             value = btstack_atoi((char*)hfp_connection->line_buffer);
             hfp_hf_speaker_gain = value;
             hfp_emit_event(hfp_connection, HFP_SUBEVENT_SPEAKER_VOLUME, value);
             break;
         case HFP_CMD_SET_MICROPHONE_GAIN:
-            hfp_connection->command = HFP_CMD_NONE;
             value = btstack_atoi((char*)hfp_connection->line_buffer);
             hfp_hf_microphone_gain = value;
             hfp_emit_event(hfp_connection, HFP_SUBEVENT_MICROPHONE_VOLUME, value);
             break;
         case HFP_CMD_AG_SENT_PHONE_NUMBER:
-            hfp_connection->command = HFP_CMD_NONE;
             hfp_emit_string_event(hfp_connection, HFP_SUBEVENT_NUMBER_FOR_VOICE_TAG, hfp_connection->bnip_number);
             break;
         case HFP_CMD_AG_SENT_CALL_WAITING_NOTIFICATION_UPDATE:
-            hfp_connection->command = HFP_CMD_NONE;
             hfp_hf_emit_type_number_alpha(hfp_connection, HFP_SUBEVENT_CALL_WAITING_NOTIFICATION);
             break;
         case HFP_CMD_AG_SENT_CLIP_INFORMATION:
-            hfp_connection->command = HFP_CMD_NONE;
             hfp_hf_emit_type_number_alpha(hfp_connection, HFP_SUBEVENT_CALLING_LINE_IDENTIFICATION_NOTIFICATION);
             break;
         case HFP_CMD_EXTENDED_AUDIO_GATEWAY_ERROR:
-            hfp_connection->command = HFP_CMD_NONE;
             hfp_connection->ok_pending = 0;
             hfp_connection->extended_audio_gateway_error = 0;
             hfp_emit_event(hfp_connection, HFP_SUBEVENT_EXTENDED_AUDIO_GATEWAY_ERROR, hfp_connection->extended_audio_gateway_error_value);
             break;
         case HFP_CMD_AG_ACTIVATE_VOICE_RECOGNITION:
-            hfp_connection->command = HFP_CMD_NONE;
             hfp_hf_handle_activate_voice_recognition(hfp_connection);
             break;
         case HFP_CMD_ERROR:
             hfp_connection->ok_pending = 0;
-            hfp_connection->command = HFP_CMD_NONE;
             switch (hfp_connection->state){
                 case HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED:
                     switch (hfp_connection->codecs_state){
@@ -1498,16 +1486,13 @@ static void hfp_hf_handle_rfcomm_command(hfp_connection_t * hfp_connection){
             hfp_hf_switch_on_ok_pending(hfp_connection, ERROR_CODE_SUCCESS);
             break;
         case HFP_CMD_RING:
-            hfp_connection->command = HFP_CMD_NONE;
             hfp_emit_simple_event(hfp_connection, HFP_SUBEVENT_RING);
             break;
         case HFP_CMD_TRANSFER_AG_INDICATOR_STATUS:
-            hfp_connection->command = HFP_CMD_NONE;
             hfp_hf_handle_transfer_ag_indicator_status(hfp_connection);
             hfp_hf_emit_pending_ag_indicator_status_updates(hfp_connection);
             break;
         case HFP_CMD_RETRIEVE_AG_INDICATORS_STATUS:
-            hfp_connection->command = HFP_CMD_NONE;
             // report status after SLC established
             if (hfp_connection->state < HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED){
                 break;
@@ -1517,14 +1502,12 @@ static void hfp_hf_handle_rfcomm_command(hfp_connection_t * hfp_connection){
             }
             break;
     	case HFP_CMD_AG_SUGGESTED_CODEC:
-            hfp_connection->command = HFP_CMD_NONE;
     		hfp_hf_handle_suggested_codec(hfp_connection);
 			break;
         case HFP_CMD_CHANGE_IN_BAND_RING_TONE_SETTING:
             hfp_emit_event(hfp_connection, HFP_SUBEVENT_IN_BAND_RING_TONE, get_bit(hfp_connection->remote_supported_features, HFP_AGSF_IN_BAND_RING_TONE));
             break;
         case HFP_CMD_CUSTOM_MESSAGE:
-            hfp_connection->command = HFP_CMD_NONE;
             hfp_parser_reset_line_buffer(hfp_connection);
             log_info("Custom AT Command ID 0x%04x", hfp_connection->custom_at_command_id);
             hfp_hf_emit_custom_command_event(hfp_connection);
@@ -1553,7 +1536,9 @@ static void hfp_hf_handle_rfcomm_data(hfp_connection_t * hfp_connection, uint8_t
         hfp_parse(hfp_connection, packet[pos], 1);
         // parse until end of line "\r" or "\n"
         if (!hfp_parser_is_end_of_line(packet[pos])) continue;
-        hfp_hf_handle_rfcomm_command(hfp_connection);   
+        hfp_command_t command = hfp_connection->command;
+        hfp_connection->command = HFP_CMD_NONE;
+        hfp_hf_handle_rfcomm_command(hfp_connection, command);
     }
 }
 
