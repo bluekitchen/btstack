@@ -591,13 +591,7 @@ static bool hfp_hf_voice_recognition_state_machine(hfp_connection_t * hfp_connec
     if (hfp_connection->ok_pending == 1){
         return false;
     }
-
-    // voice recognition activated from AG
-    if (hfp_connection->command == HFP_CMD_AG_ACTIVATE_VOICE_RECOGNITION){
-        hfp_hf_handle_activate_voice_recognition(hfp_connection);
-        hfp_connection->command = HFP_CMD_NONE;
-    }
-
+    
     switch (hfp_connection->vra_state_requested){
         case HFP_VRA_W2_SEND_VOICE_RECOGNITION_OFF:
             hfp_connection->vra_state_requested = HFP_VRA_W4_VOICE_RECOGNITION_OFF;
@@ -1451,6 +1445,8 @@ static void hfp_hf_handle_rfcomm_command(hfp_connection_t * hfp_connection){
             hfp_emit_event(hfp_connection, HFP_SUBEVENT_EXTENDED_AUDIO_GATEWAY_ERROR, hfp_connection->extended_audio_gateway_error_value);
             break;
         case HFP_CMD_AG_ACTIVATE_VOICE_RECOGNITION:
+            hfp_connection->command = HFP_CMD_NONE;
+            hfp_hf_handle_activate_voice_recognition(hfp_connection);
             break;
         case HFP_CMD_ERROR:
             hfp_connection->ok_pending = 0;
