@@ -1522,17 +1522,13 @@ static int hfp_parser_is_end_of_line(uint8_t byte){
 }
 
 static void hfp_hf_handle_rfcomm_data(hfp_connection_t * hfp_connection, uint8_t *packet, uint16_t size){
-    // assertion: size >= 1 as rfcomm.c does not deliver empty packets
-    if (size < 1) return;
-    
     hfp_log_rfcomm_message("HFP_HF_RX", packet, size);
 #ifdef ENABLE_HFP_AT_MESSAGES
     hfp_emit_string_event(hfp_connection, HFP_SUBEVENT_AT_MESSAGE_RECEIVED, (char *) packet);
 #endif
 
     // process messages byte-wise
-    uint8_t pos;
-    for (pos = 0; pos < size; pos++){
+    for (uint16_t pos = 0; pos < size; pos++){
         hfp_parse(hfp_connection, packet[pos], 1);
         // parse until end of line "\r" or "\n"
         if (!hfp_parser_is_end_of_line(packet[pos])) continue;
