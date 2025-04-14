@@ -543,7 +543,6 @@ static bool hfp_hf_run_for_context_service_level_connection_queries(hfp_connecti
 }
 
 static void hfp_hf_handle_activate_voice_recognition(hfp_connection_t * hfp_connection){
-    hfp_hf_handle_activate_voice_recognition(hfp_connection);
     switch(hfp_connection->vra_state_requested){
         case HFP_VRA_W4_VOICE_RECOGNITION_ACTIVATED:
         case HFP_VRA_W4_VOICE_RECOGNITION_OFF:
@@ -572,12 +571,12 @@ static void hfp_hf_handle_activate_voice_recognition(hfp_connection_t * hfp_conn
                     default:
                         break;
                 }
-            break;
+                break;
             default:
                 // state messages from AG
-                    hfp_emit_enhanced_voice_recognition_state_event(hfp_connection, ERROR_CODE_SUCCESS);
-            hfp_connection->ag_vra_state = HFP_VOICE_RECOGNITION_STATE_AG_READY;
-            break;
+                hfp_emit_enhanced_voice_recognition_state_event(hfp_connection, ERROR_CODE_SUCCESS);
+                hfp_connection->ag_vra_state = HFP_VOICE_RECOGNITION_STATE_AG_READY;
+                break;
         }
         break;
     }
