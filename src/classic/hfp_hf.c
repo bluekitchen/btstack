@@ -1397,7 +1397,7 @@ static void hfp_hf_handle_transfer_ag_indicator_status(hfp_connection_t * hfp_co
 static void hfp_hf_handle_rfcomm_command(hfp_connection_t * hfp_connection){
     int value;
     int i;
-    bool event_emited;
+    bool event_emitted;
 
     // last argument is still in line_buffer
 
@@ -1486,8 +1486,8 @@ static void hfp_hf_handle_rfcomm_command(hfp_connection_t * hfp_connection){
                     hfp_emit_voice_recognition_enabled(hfp_connection, ERROR_CODE_UNSPECIFIED_ERROR);
                     return;
             }
-            event_emited = hfp_hf_switch_on_ok_pending(hfp_connection, ERROR_CODE_UNSPECIFIED_ERROR);
-            if (!event_emited){
+            event_emitted = hfp_hf_switch_on_ok_pending(hfp_connection, ERROR_CODE_UNSPECIFIED_ERROR);
+            if (!event_emitted){
                 hfp_emit_event(hfp_connection, HFP_SUBEVENT_COMPLETE, ERROR_CODE_UNSPECIFIED_ERROR);
             }
             break;
