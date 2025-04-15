@@ -434,7 +434,7 @@ typedef enum {
 
     HFP_VRA_W2_SEND_ENHANCED_VOICE_RECOGNITION_STATUS,
     HFP_VRA_W2_SEND_ENHANCED_VOICE_RECOGNITION_MSG
-} hfp_voice_recognition_activation_status_t;
+} hfp_vra_engine_state_t;
 
 typedef struct {
     uint16_t text_id;
@@ -746,8 +746,8 @@ typedef struct hfp_connection {
     hfp_callsetup_status_t hf_callsetup_status;
     hfp_callheld_status_t  hf_callheld_status;
 
-    hfp_voice_recognition_activation_status_t vra_state;
-    hfp_voice_recognition_activation_status_t vra_state_requested;
+    hfp_vra_engine_state_t vra_state;
+    hfp_vra_engine_state_t vra_engine_current_state;
     bool deactivate_voice_recognition;
     bool activate_voice_recognition;
     bool enhanced_voice_recognition_enabled;
