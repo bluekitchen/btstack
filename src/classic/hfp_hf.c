@@ -635,6 +635,10 @@ static void hfp_hf_vra_handle_ok(hfp_connection_t * hfp_connection){
     }
 }
 
+static void hfp_hf_vra_handle_error(hfp_connection_t * hfp_connection){
+    hfp_hf_vra_handle_ok(hfp_connection);
+}
+
 static bool hfp_hf_vra_handle_can_send_now(hfp_connection_t * hfp_connection){
     switch (hfp_connection->vra_engine_current_state){
         case HFP_VRA_W2_SEND_VOICE_RECOGNITION_OFF:
@@ -670,13 +674,7 @@ static bool hfp_hf_voice_recognition_state_machine(hfp_connection_t * hfp_connec
         return false;
     }
 
-    bool sent_message = hfp_hf_vra_handle_can_send_now(hfp_connection);
-    if (sent_message){
-        return true;
-    }
-    
-    hfp_hf_vra_handle_ok(hfp_connection);
-    return false;
+    return hfp_hf_vra_handle_can_send_now(hfp_connection);
 }
 
 
@@ -1339,10 +1337,19 @@ static bool hfp_hf_switch_on_ok_pending(hfp_connection_t *hfp_connection, uint8_
                         default:
                             break;
                     }
-                    hfp_hf_voice_recognition_state_machine(hfp_connection);
+
+                    if (status == ERROR_CODE_SUCCESS){
+                        hfp_hf_vra_handle_ok(hfp_connection);
+                    } else {
+                        hfp_hf_vra_handle_error(hfp_connection);
+                    }
                     break;
                 case HFP_AUDIO_CONNECTION_ESTABLISHED:
-                    hfp_hf_voice_recognition_state_machine(hfp_connection);
+                    if (status == ERROR_CODE_SUCCESS){
+                        hfp_hf_vra_handle_ok(hfp_connection);
+                    } else {
+                        hfp_hf_vra_handle_error(hfp_connection);
+                    }
                     break;
                 default:
                     break;
