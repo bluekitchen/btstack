@@ -746,7 +746,7 @@ typedef struct hfp_connection {
     hfp_callsetup_status_t hf_callsetup_status;
     hfp_callheld_status_t  hf_callheld_status;
 
-    hfp_vra_engine_state_t vra_state;
+    hfp_vra_engine_state_t vra_engine_requested_state;
     hfp_vra_engine_state_t vra_engine_current_state;
     bool deactivate_voice_recognition;
     bool activate_voice_recognition;

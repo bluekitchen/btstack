@@ -594,11 +594,11 @@ hfp_connection_t * get_hfp_connection_context_for_acl_handle(uint16_t handle, hf
 }
 
 static void hfp_vra_handle_disconnect(hfp_connection_t * hfp_connection) {
-    bool emit_vra_disabled = (hfp_connection->vra_state != HFP_VRA_VOICE_RECOGNITION_OFF) ||
+    bool emit_vra_disabled = (hfp_connection->vra_engine_requested_state != HFP_VRA_VOICE_RECOGNITION_OFF) ||
                              (hfp_connection->vra_engine_current_state != HFP_VRA_VOICE_RECOGNITION_OFF);
 
-    hfp_connection->vra_state = HFP_VRA_VOICE_RECOGNITION_OFF;
-    hfp_connection->vra_engine_current_state = hfp_connection->vra_state;
+    hfp_connection->vra_engine_requested_state = HFP_VRA_VOICE_RECOGNITION_OFF;
+    hfp_connection->vra_engine_current_state = hfp_connection->vra_engine_requested_state;
     // ignore subsequent ok/error response
     hfp_connection->ok_pending = 0;
 
@@ -608,7 +608,7 @@ static void hfp_vra_handle_disconnect(hfp_connection_t * hfp_connection) {
 }
 
 static void hfp_reset_voice_recognition(hfp_connection_t * hfp_connection){
-    hfp_connection->vra_state = HFP_VRA_VOICE_RECOGNITION_OFF;
+    hfp_connection->vra_engine_requested_state = HFP_VRA_VOICE_RECOGNITION_OFF;
     hfp_connection->vra_engine_current_state = HFP_VRA_VOICE_RECOGNITION_OFF;
     hfp_connection->activate_voice_recognition = false;
     hfp_connection->deactivate_voice_recognition = false;
@@ -999,7 +999,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
 
             hfp_connection->state = HFP_AUDIO_CONNECTION_ESTABLISHED;
             
-            switch (hfp_connection->vra_state){
+            switch (hfp_connection->vra_engine_requested_state){
                 case HFP_VRA_VOICE_RECOGNITION_ACTIVATED:
                     hfp_connection->ag_audio_connection_opened_before_vra = false;
                     break;

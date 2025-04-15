@@ -99,7 +99,7 @@ static void dump_vra_state(hfp_connection_t * connection, const char * desc){
                desc,
                connection->activate_voice_recognition,
                vra_state[connection->vra_engine_current_state],
-               vra_state[connection->vra_state],
+               vra_state[connection->vra_engine_requested_state],
                connection->emit_vra_enabled_after_audio_established, connection->ok_pending);
     } else {
         printf("%s, VRA not enabled\n", desc);
