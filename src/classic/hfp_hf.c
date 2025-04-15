@@ -55,8 +55,18 @@
 #include "classic/hfp_hf.h"
 #include "classic/sdp_util.h"
 
+typedef enum {
+    HFP_HF_VRA_EVENT_NONE,
+    HFP_HF_VRA_EVENT_HF_REQUESTED_ACTIVATE,
+    HFP_HF_VRA_EVENT_HF_REQUESTED_DEACTIVATE,
+    HFP_HF_VRA_EVENT_HF_REQUESTED_READY_FOR_AUDIO,
+
+} hfp_hf_vra_event_type_t;
+
 // prototypes
 static void hfp_hf_handle_transfer_ag_indicator_status(hfp_connection_t * hfp_connection);
+// @returns true if command was sent
+static void hfp_hf_vra_state_machine(hfp_connection_t * hfp_connection, hfp_hf_vra_event_type_t event);
 
 // const
 static const char hfp_hf_default_service_name[] = "Hands-Free unit";
@@ -540,6 +550,70 @@ static bool hfp_hf_run_for_context_service_level_connection_queries(hfp_connecti
     }
 
     return false;
+}
+
+// HFP HF VRA
+static void hfp_hf_vra_state_machine(hfp_connection_t * hfp_connection, hfp_hf_vra_event_type_t event){
+    switch (hfp_connection->vra_engine_requested_state){
+        case HFP_VRA_VOICE_RECOGNITION_OFF:
+        case HFP_VRA_W2_SEND_VOICE_RECOGNITION_OFF:
+            switch (event){
+                case HFP_HF_VRA_EVENT_HF_REQUESTED_ACTIVATE:
+                    hfp_connection->vra_engine_current_state = HFP_VRA_W2_SEND_VOICE_RECOGNITION_ACTIVATED;
+                    hfp_connection->enhanced_voice_recognition_enabled = hfp_hf_enhanced_vra_flag_supported(hfp_connection);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case HFP_VRA_W4_VOICE_RECOGNITION_OFF:
+            switch (event){
+                case HFP_HF_VRA_EVENT_HF_REQUESTED_ACTIVATE:
+                    hfp_connection->activate_voice_recognition = true;
+                    break;
+                default:
+                    break;
+            }
+            break;
+
+        case HFP_VRA_W2_SEND_VOICE_RECOGNITION_ACTIVATED:
+        case HFP_VRA_W2_SEND_ENHANCED_VOICE_RECOGNITION_READY_FOR_AUDIO:
+            switch (event){
+                case HFP_HF_VRA_EVENT_HF_REQUESTED_DEACTIVATE:
+                    hfp_connection->vra_engine_current_state = HFP_VRA_W2_SEND_VOICE_RECOGNITION_OFF;
+                    break;
+                default:
+                    break;
+            }
+            break;
+
+        case HFP_VRA_W4_VOICE_RECOGNITION_ACTIVATED:
+        case HFP_VRA_W4_ENHANCED_VOICE_RECOGNITION_READY_FOR_AUDIO:
+            switch (event){
+                case HFP_HF_VRA_EVENT_HF_REQUESTED_DEACTIVATE:
+                    hfp_connection->deactivate_voice_recognition = true;
+                    break;
+                default:
+                    break;
+            }
+            break;
+
+        case HFP_VRA_VOICE_RECOGNITION_ACTIVATED:
+        case HFP_VRA_ENHANCED_VOICE_RECOGNITION_READY_FOR_AUDIO:
+            switch (event){
+                case HFP_HF_VRA_EVENT_HF_REQUESTED_READY_FOR_AUDIO:
+                    hfp_connection->vra_engine_current_state = HFP_VRA_W2_SEND_ENHANCED_VOICE_RECOGNITION_READY_FOR_AUDIO;
+                    break;
+                case HFP_HF_VRA_EVENT_HF_REQUESTED_DEACTIVATE:
+                    hfp_connection->vra_engine_current_state = HFP_VRA_W2_SEND_VOICE_RECOGNITION_OFF;
+                    break;
+                default:
+                    break;
+            }
+            break;
+        default:
+            break;
+    }
 }
 
 static void hfp_hf_handle_activate_voice_recognition(hfp_connection_t * hfp_connection){
@@ -2087,20 +2161,15 @@ uint8_t hfp_hf_activate_voice_recognition(hci_con_handle_t acl_handle){
     if (!enhanced_vra_supported && !legacy_vra_supported){
         return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
     }
-
     switch (hfp_connection->vra_engine_requested_state){
         case HFP_VRA_VOICE_RECOGNITION_OFF:
         case HFP_VRA_W2_SEND_VOICE_RECOGNITION_OFF:
-            hfp_connection->vra_engine_current_state = HFP_VRA_W2_SEND_VOICE_RECOGNITION_ACTIVATED;
-            hfp_connection->enhanced_voice_recognition_enabled = enhanced_vra_supported;
-            break;
         case HFP_VRA_W4_VOICE_RECOGNITION_OFF:
-            hfp_connection->activate_voice_recognition = true;
             break;
         default:
             return ERROR_CODE_COMMAND_DISALLOWED;
     }
-
+    hfp_hf_vra_state_machine(hfp_connection, HFP_HF_VRA_EVENT_HF_REQUESTED_ACTIVATE);
     hfp_hf_run_for_context(hfp_connection);
     return ERROR_CODE_SUCCESS;
 }
@@ -2127,12 +2196,11 @@ uint8_t hfp_hf_enhanced_voice_recognition_report_ready_for_audio(hci_con_handle_
     switch (hfp_connection->vra_engine_requested_state){
         case HFP_VRA_VOICE_RECOGNITION_ACTIVATED:
         case HFP_VRA_ENHANCED_VOICE_RECOGNITION_READY_FOR_AUDIO:
-            hfp_connection->vra_engine_current_state = HFP_VRA_W2_SEND_ENHANCED_VOICE_RECOGNITION_READY_FOR_AUDIO;
             break;
         default:
             return ERROR_CODE_COMMAND_DISALLOWED;
     }
-
+    hfp_hf_vra_state_machine(hfp_connection, HFP_HF_VRA_EVENT_HF_REQUESTED_READY_FOR_AUDIO);
     hfp_hf_run_for_context(hfp_connection);
     return ERROR_CODE_SUCCESS;
 }
@@ -2159,27 +2227,22 @@ uint8_t hfp_hf_deactivate_voice_recognition(hci_con_handle_t acl_handle){
     if (!enhanced_vra_supported && !legacy_vra_supported){
         return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
     }
-    
     switch (hfp_connection->vra_engine_requested_state){
         case HFP_VRA_W2_SEND_VOICE_RECOGNITION_ACTIVATED:
         case HFP_VRA_VOICE_RECOGNITION_ACTIVATED:
         case HFP_VRA_W2_SEND_ENHANCED_VOICE_RECOGNITION_READY_FOR_AUDIO:
         case HFP_VRA_ENHANCED_VOICE_RECOGNITION_READY_FOR_AUDIO:
-            hfp_connection->vra_engine_current_state = HFP_VRA_W2_SEND_VOICE_RECOGNITION_OFF;
-            break;
-
         case HFP_VRA_W4_VOICE_RECOGNITION_ACTIVATED:
         case HFP_VRA_W4_ENHANCED_VOICE_RECOGNITION_READY_FOR_AUDIO:
-            hfp_connection->deactivate_voice_recognition = true;
-            break;
-        
         case HFP_VRA_VOICE_RECOGNITION_OFF:
         case HFP_VRA_W2_SEND_VOICE_RECOGNITION_OFF:
         case HFP_VRA_W4_VOICE_RECOGNITION_OFF:
+            break;
         default:
             return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
+    hfp_hf_vra_state_machine(hfp_connection, HFP_HF_VRA_EVENT_HF_REQUESTED_DEACTIVATE);
     hfp_hf_run_for_context(hfp_connection);
     return ERROR_CODE_SUCCESS;
 }
