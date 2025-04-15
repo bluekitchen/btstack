@@ -559,15 +559,15 @@ static void hfp_hf_handle_activate_voice_recognition(hfp_connection_t * hfp_conn
         switch(hfp_connection->ag_vra_state){
             case HFP_VOICE_RECOGNITION_STATE_AG_READY:
                 switch (hfp_connection->ag_vra_status){
-                    case 0:
+                    case HFP_VOICE_RECOGNITION_STATUS_DISABLED:
                         hfp_connection->vra_state_requested = HFP_VRA_W4_VOICE_RECOGNITION_OFF;
-                    break;
-                    case 1:
+                        break;
+                    case HFP_VOICE_RECOGNITION_STATUS_ENABLED:
                         hfp_connection->vra_state_requested = HFP_VRA_W4_VOICE_RECOGNITION_ACTIVATED;
-                    break;
-                    case 2:
+                        break;
+                    case HFP_VOICE_RECOGNITION_STATUS_READY_FOR_AUDIO:
                         hfp_connection->vra_state_requested = HFP_VRA_W4_ENHANCED_VOICE_RECOGNITION_READY_FOR_AUDIO;
-                    break;
+                        break;
                     default:
                         break;
                 }

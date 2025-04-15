@@ -345,6 +345,12 @@ typedef enum {
 } hfp_voice_recognition_state_t;
 
 typedef enum {
+    HFP_VOICE_RECOGNITION_STATUS_DISABLED = 0,
+    HFP_VOICE_RECOGNITION_STATUS_ENABLED = 1,
+    HFP_VOICE_RECOGNITION_STATUS_READY_FOR_AUDIO = 2,
+} hfp_voice_recognition_status_t;
+
+typedef enum {
     HFP_TEXT_TYPE_RECOGNISED_FROM_HF_AUDIO = 0,
     HFP_TEXT_TYPE_MESSAGE_FROM_AG,
     HFP_TEXT_TYPE_QUESTION_FROM_AG,
@@ -747,7 +753,7 @@ typedef struct hfp_connection {
     bool enhanced_voice_recognition_enabled;
 
     // ih HF, used by parser, in AG used for commands
-    uint8_t ag_vra_status;
+    hfp_voice_recognition_status_t ag_vra_status;
     hfp_voice_recognition_state_t ag_vra_state;
     hfp_voice_recognition_message_t ag_msg;
     uint16_t ag_vra_msg_length;

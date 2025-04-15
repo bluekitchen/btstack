@@ -613,8 +613,8 @@ static void hfp_reset_voice_recognition(hfp_connection_t * hfp_connection){
     hfp_connection->activate_voice_recognition = false;
     hfp_connection->deactivate_voice_recognition = false;
     hfp_connection->enhanced_voice_recognition_enabled = false;
-    hfp_connection->ag_vra_status = 0;
-    hfp_connection->ag_vra_state = HFP_VOICE_RECOGNITION_STATE_AG_READY;
+    hfp_connection->ag_vra_status = HFP_VOICE_RECOGNITION_STATUS_DISABLED;
+    hfp_connection->ag_vra_state  = HFP_VOICE_RECOGNITION_STATE_AG_READY;
 }
 
 static hfp_connection_t * create_hfp_connection_context(void){
@@ -1852,7 +1852,7 @@ static void parse_sequence(hfp_connection_t * hfp_connection){
         case HFP_CMD_AG_ACTIVATE_VOICE_RECOGNITION:
             switch(hfp_connection->parser_item_index){
                 case 0:
-                    hfp_connection->ag_vra_status = btstack_atoi((char *)&hfp_connection->line_buffer[0]);
+                    hfp_connection->ag_vra_status = (hfp_voice_recognition_status_t) btstack_atoi((char *)&hfp_connection->line_buffer[0]);
                     break;
                 case 1:
                     hfp_connection->ag_vra_state = (hfp_voice_recognition_state_t) btstack_atoi((char *)&hfp_connection->line_buffer[0]);
