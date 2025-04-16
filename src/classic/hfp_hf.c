@@ -2161,14 +2161,15 @@ uint8_t hfp_hf_activate_voice_recognition(hci_con_handle_t acl_handle){
     if (!enhanced_vra_supported && !legacy_vra_supported){
         return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
     }
+
     switch (hfp_connection->vra_engine_requested_state){
         case HFP_VRA_OFF:
-        case HFP_VRA_W2_SEND_OFF:
-        case HFP_VRA_W4_OFF:
             break;
         default:
             return ERROR_CODE_COMMAND_DISALLOWED;
     }
+
+    hfp_connection->vra_engine_requested_state = HFP_VRA_ACTIVE;
     hfp_hf_vra_state_machine(hfp_connection, HFP_HF_VRA_EVENT_HF_REQUESTED_ACTIVATE);
     hfp_hf_run_for_context(hfp_connection);
     return ERROR_CODE_SUCCESS;
@@ -2195,11 +2196,12 @@ uint8_t hfp_hf_enhanced_voice_recognition_report_ready_for_audio(hci_con_handle_
 
     switch (hfp_connection->vra_engine_requested_state){
         case HFP_VRA_ACTIVE:
-        case HFP_eVRA_READY_FOR_AUDIO:
             break;
         default:
             return ERROR_CODE_COMMAND_DISALLOWED;
     }
+
+    hfp_connection->vra_engine_requested_state = HFP_eVRA_READY_FOR_AUDIO;
     hfp_hf_vra_state_machine(hfp_connection, HFP_HF_VRA_EVENT_HF_REQUESTED_READY_FOR_AUDIO);
     hfp_hf_run_for_context(hfp_connection);
     return ERROR_CODE_SUCCESS;
@@ -2228,20 +2230,14 @@ uint8_t hfp_hf_deactivate_voice_recognition(hci_con_handle_t acl_handle){
         return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
     }
     switch (hfp_connection->vra_engine_requested_state){
-        case HFP_VRA_W2_SEND_ACTIVATE:
         case HFP_VRA_ACTIVE:
-        case HFP_eVRA_W2_SEND_READY_FOR_AUDIO:
         case HFP_eVRA_READY_FOR_AUDIO:
-        case HFP_VRA_W4_ACTIVE:
-        case HFP_eVRA_W4_READY_FOR_AUDIO:
-        case HFP_VRA_OFF:
-        case HFP_VRA_W2_SEND_OFF:
-        case HFP_VRA_W4_OFF:
             break;
         default:
             return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
+    hfp_connection->vra_engine_requested_state = HFP_VRA_OFF;
     hfp_hf_vra_state_machine(hfp_connection, HFP_HF_VRA_EVENT_HF_REQUESTED_DEACTIVATE);
     hfp_hf_run_for_context(hfp_connection);
     return ERROR_CODE_SUCCESS;
