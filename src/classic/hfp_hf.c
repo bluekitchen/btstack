@@ -64,8 +64,11 @@ typedef enum {
     HFP_HF_VRA_EVENT_RECEIVED_TIMEOUT,
     HFP_HF_VRA_EVENT_SCO_CONNECTED,
     HFP_HF_VRA_EVENT_SCO_DISCONNECTED,
-    HFP_HF_VRA_EVENT_AG_REQUEST_ACTIVATED,
-    HFP_HF_VRA_EVENT_AG_REQUEST_DEACTIVATED,
+    HFP_HF_VRA_EVENT_AG_REPORT_ACTIVATED,
+    HFP_HF_VRA_EVENT_AG_REPORT_DEACTIVATED,
+    HFP_HF_VRA_EVENT_AG_REPORT_READY_FOR_AUDIO,
+    HFP_HF_VRA_EVENT_AG_REPORT_STATE,
+    HFP_HF_VRA_EVENT_AG_REPORT_TEXT_MESSAGE,
     HFP_HF_VRA_EVENT_HF_REQUESTED_ACTIVATE,
     HFP_HF_VRA_EVENT_HF_REQUESTED_READY_FOR_AUDIO,
     HFP_HF_VRA_EVENT_HF_REQUESTED_DEACTIVATE,
@@ -576,7 +579,7 @@ static bool hfp_hf_vra_state_machine(hfp_connection_t * hfp_connection, hfp_hf_v
                         return true;
                     }
                     break;
-                case HFP_HF_VRA_EVENT_AG_REQUEST_ACTIVATED:
+                case HFP_HF_VRA_EVENT_AG_REPORT_ACTIVATED:
                     // AG reports VRA activated
                     hfp_connection->vra_engine_current_state   = HFP_VRA_ACTIVE;
                     break;
