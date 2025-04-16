@@ -788,11 +788,6 @@ static bool hfp_hf_voice_recognition_state_machine(hfp_connection_t * hfp_connec
     if (hfp_connection->state < HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED) {
         return false;
     }
-
-    if (hfp_connection->ok_pending == 1){
-        return false;
-    }
-
     return hfp_hf_vra_state_machine(hfp_connection, HFP_HF_VRA_EVENT_CAN_SEND_NOW);
 }
 
