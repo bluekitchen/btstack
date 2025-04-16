@@ -579,14 +579,16 @@ static bool hfp_hf_vra_state_machine(hfp_connection_t * hfp_connection, hfp_hf_v
                         return true;
                     }
                     break;
-                case HFP_HF_VRA_EVENT_AG_REPORT_ACTIVATED:
-                    // AG reports VRA activated
-                    hfp_connection->vra_engine_current_state   = HFP_VRA_ACTIVE;
-                    break;
                 case HFP_HF_VRA_EVENT_RECEIVED_OK:
                 case HFP_HF_VRA_EVENT_RECEIVED_ERROR:
                 case HFP_HF_VRA_EVENT_RECEIVED_TIMEOUT:
                     hfp_connection->ok_pending = 0u;
+                    break;
+                case HFP_HF_VRA_EVENT_AG_REPORT_ACTIVATED:
+                    // AG reports VRA activated
+                    if (hfp_connection->vra_engine_requested_state == HFP_VRA_ACTIVE) {
+                        hfp_connection->vra_engine_current_state = HFP_VRA_ACTIVE;
+                    }
                     break;
                 default:
                     break;
@@ -620,6 +622,11 @@ static bool hfp_hf_vra_state_machine(hfp_connection_t * hfp_connection, hfp_hf_v
                 case HFP_HF_VRA_EVENT_AG_REPORT_DEACTIVATED:
                     if (hfp_connection->vra_engine_requested_state == HFP_VRA_OFF){
                         hfp_connection->vra_engine_current_state = HFP_VRA_OFF;
+                    }
+                    break;
+                case HFP_HF_VRA_EVENT_AG_REPORT_READY_FOR_AUDIO:
+                    if (hfp_connection->vra_engine_requested_state == HFP_eVRA_READY_FOR_AUDIO){
+                        hfp_connection->vra_engine_current_state = HFP_eVRA_READY_FOR_AUDIO;
                     }
                     break;
                 case HFP_HF_VRA_EVENT_AG_REPORT_STATE:
