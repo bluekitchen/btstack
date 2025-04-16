@@ -638,37 +638,24 @@ static bool hfp_hf_vra_state_machine(hfp_connection_t * hfp_connection, hfp_hf_v
                     break;
             }
             break;
-        default:
-            break;
-    }
 
-    switch (hfp_connection->vra_engine_requested_state){
-        case HFP_VRA_OFF:
-        case HFP_VRA_W2_SEND_OFF:
-            switch (event){
-                case HFP_HF_VRA_EVENT_HF_REQUESTED_ACTIVATE:
-                    hfp_connection->vra_engine_current_state = HFP_VRA_W2_SEND_ACTIVATE;
-                    hfp_connection->enhanced_voice_recognition_enabled = hfp_hf_enhanced_vra_flag_supported(hfp_connection);
-                    break;
-                default:
-                    break;
-            }
-            break;
         case HFP_VRA_W4_OFF:
-            switch (event){
-                case HFP_HF_VRA_EVENT_HF_REQUESTED_ACTIVATE:
-                    hfp_connection->activate_voice_recognition = true;
+            switch (event) {
+                case HFP_HF_VRA_EVENT_RECEIVED_OK:
+                    hfp_connection->vra_engine_current_state = HFP_VRA_OFF;
+                    hfp_connection->ok_pending = 0u;
+                    // VRA TODO: can we remove this?
+                    if (hfp_connection->emit_vra_enabled_after_audio_established){
+                        hfp_connection->emit_vra_enabled_after_audio_established = false;
+                        hfp_emit_voice_recognition_enabled(hfp_connection, ERROR_CODE_UNSPECIFIED_ERROR);
+                    } else {
+                        hfp_emit_voice_recognition_disabled(hfp_connection, ERROR_CODE_SUCCESS);
+                    }
                     break;
-                default:
-                    break;
-            }
-            break;
-
-        case HFP_VRA_W2_SEND_ACTIVATE:
-        case HFP_eVRA_W2_SEND_READY_FOR_AUDIO:
-            switch (event){
-                case HFP_HF_VRA_EVENT_HF_REQUESTED_DEACTIVATE:
-                    hfp_connection->vra_engine_current_state = HFP_VRA_W2_SEND_OFF;
+                case HFP_HF_VRA_EVENT_RECEIVED_ERROR:
+                    hfp_connection->vra_engine_current_state = HFP_VRA_ACTIVE;
+                    hfp_connection->vra_engine_requested_state = HFP_VRA_ACTIVE;
+                    hfp_connection->ok_pending = 0u;
                     break;
                 default:
                     break;
@@ -676,24 +663,39 @@ static bool hfp_hf_vra_state_machine(hfp_connection_t * hfp_connection, hfp_hf_v
             break;
 
         case HFP_VRA_W4_ACTIVE:
-        case HFP_eVRA_W4_READY_FOR_AUDIO:
-            switch (event){
-                case HFP_HF_VRA_EVENT_HF_REQUESTED_DEACTIVATE:
-                    hfp_connection->deactivate_voice_recognition = true;
+            switch (event) {
+                case HFP_HF_VRA_EVENT_RECEIVED_OK:
+                    hfp_connection->vra_engine_current_state = HFP_VRA_ACTIVE;
+                    hfp_connection->ok_pending = 0u;
+
+                    if (hfp_connection->state == HFP_AUDIO_CONNECTION_ESTABLISHED){
+                        hfp_emit_voice_recognition_enabled(hfp_connection, ERROR_CODE_SUCCESS);
+                    } else {
+                        // postpone VRA event to simplify application logic
+                        hfp_connection->emit_vra_enabled_after_audio_established = true;
+                    }
+                    break;
+                case HFP_HF_VRA_EVENT_RECEIVED_ERROR:
+                    hfp_connection->vra_engine_current_state = HFP_VRA_OFF;
+                    hfp_connection->vra_engine_requested_state = HFP_VRA_OFF;
+                    hfp_connection->ok_pending = 0u;
                     break;
                 default:
                     break;
             }
             break;
 
-        case HFP_VRA_ACTIVE:
-        case HFP_eVRA_READY_FOR_AUDIO:
-            switch (event){
-                case HFP_HF_VRA_EVENT_HF_REQUESTED_READY_FOR_AUDIO:
-                    hfp_connection->vra_engine_current_state = HFP_eVRA_W2_SEND_READY_FOR_AUDIO;
+        case HFP_eVRA_W4_READY_FOR_AUDIO:
+            switch (event) {
+                case HFP_HF_VRA_EVENT_RECEIVED_OK:
+                    hfp_connection->vra_engine_current_state = HFP_eVRA_READY_FOR_AUDIO;
+                    hfp_connection->ok_pending = 0u;
+                    hfp_emit_enhanced_voice_recognition_hf_ready_for_audio_event(hfp_connection, ERROR_CODE_SUCCESS);
                     break;
-                case HFP_HF_VRA_EVENT_HF_REQUESTED_DEACTIVATE:
-                    hfp_connection->vra_engine_current_state = HFP_VRA_W2_SEND_OFF;
+                case HFP_HF_VRA_EVENT_RECEIVED_ERROR:
+                    hfp_connection->vra_engine_current_state = HFP_VRA_ACTIVE;
+                    hfp_connection->vra_engine_requested_state = HFP_VRA_ACTIVE;
+                    hfp_connection->ok_pending = 0u;
                     break;
                 default:
                     break;
@@ -745,67 +747,6 @@ static void hfp_hf_handle_activate_voice_recognition(hfp_connection_t * hfp_conn
         break;
     }
 }
-
-static void hfp_hf_vra_handle_ok(hfp_connection_t * hfp_connection){
-    hfp_hf_vra_state_machine(hfp_connection, HFP_HF_VRA_EVENT_RECEIVED_OK);
-
-    switch (hfp_connection->vra_engine_current_state){
-        case HFP_VRA_W4_OFF:
-            hfp_connection->vra_engine_requested_state = HFP_VRA_OFF;
-            hfp_connection->vra_engine_current_state = hfp_connection->vra_engine_requested_state;
-            hfp_connection->deactivate_voice_recognition = false;
-
-            if (hfp_connection->emit_vra_enabled_after_audio_established){
-                hfp_connection->emit_vra_enabled_after_audio_established = false;
-                hfp_emit_voice_recognition_enabled(hfp_connection, ERROR_CODE_UNSPECIFIED_ERROR);
-            } else {
-                hfp_emit_voice_recognition_disabled(hfp_connection, ERROR_CODE_SUCCESS);
-            }
-            if (hfp_connection->activate_voice_recognition){
-                hfp_connection->enhanced_voice_recognition_enabled = hfp_hf_enhanced_vra_flag_supported(hfp_connection);
-                hfp_hf_activate_voice_recognition(hfp_connection->acl_handle);
-            }
-            break;
-
-        case HFP_VRA_W4_ACTIVE:
-            hfp_connection->vra_engine_requested_state = HFP_VRA_ACTIVE;
-            hfp_connection->vra_engine_current_state = hfp_connection->vra_engine_requested_state;
-            hfp_connection->activate_voice_recognition = false;
-
-            hfp_connection->enhanced_voice_recognition_enabled = hfp_hf_enhanced_vra_flag_supported(hfp_connection);
-            if (hfp_connection->state == HFP_AUDIO_CONNECTION_ESTABLISHED){
-                hfp_emit_voice_recognition_enabled(hfp_connection, ERROR_CODE_SUCCESS);
-            } else {
-                // postpone VRA event to simplify application logic
-                hfp_connection->emit_vra_enabled_after_audio_established = true;
-            }
-
-            if (hfp_connection->deactivate_voice_recognition){
-                hfp_hf_deactivate_voice_recognition(hfp_connection->acl_handle);
-            }
-            break;
-
-        case HFP_eVRA_W4_READY_FOR_AUDIO:
-            hfp_connection->vra_engine_requested_state = HFP_eVRA_READY_FOR_AUDIO;
-            hfp_connection->vra_engine_current_state = hfp_connection->vra_engine_requested_state;
-            hfp_connection->activate_voice_recognition = false;
-            if (hfp_connection->deactivate_voice_recognition){
-                hfp_hf_deactivate_voice_recognition(hfp_connection->acl_handle);
-            } else {
-                hfp_emit_enhanced_voice_recognition_hf_ready_for_audio_event(hfp_connection, ERROR_CODE_SUCCESS);
-            }
-            break;
-
-        default:
-            break;
-    }
-}
-
-static void hfp_hf_vra_handle_error(hfp_connection_t * hfp_connection){
-    hfp_hf_vra_state_machine(hfp_connection, HFP_HF_VRA_EVENT_RECEIVED_ERROR);
-    hfp_hf_vra_handle_ok(hfp_connection);
-}
-
 
 static bool hfp_hf_voice_recognition_state_machine(hfp_connection_t * hfp_connection){
     if (hfp_connection->state < HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED) {
@@ -1476,16 +1417,16 @@ static bool hfp_hf_switch_on_ok_pending(hfp_connection_t *hfp_connection, uint8_
                     }
 
                     if (status == ERROR_CODE_SUCCESS){
-                        hfp_hf_vra_handle_ok(hfp_connection);
+                        hfp_hf_vra_state_machine(hfp_connection, HFP_HF_VRA_EVENT_RECEIVED_OK);
                     } else {
-                        hfp_hf_vra_handle_error(hfp_connection);
+                        hfp_hf_vra_state_machine(hfp_connection, HFP_HF_VRA_EVENT_RECEIVED_ERROR);
                     }
                     break;
                 case HFP_AUDIO_CONNECTION_ESTABLISHED:
                     if (status == ERROR_CODE_SUCCESS){
-                        hfp_hf_vra_handle_ok(hfp_connection);
+                        hfp_hf_vra_state_machine(hfp_connection, HFP_HF_VRA_EVENT_RECEIVED_OK);
                     } else {
-                        hfp_hf_vra_handle_error(hfp_connection);
+                        hfp_hf_vra_state_machine(hfp_connection, HFP_HF_VRA_EVENT_RECEIVED_ERROR);
                     }
                     break;
                 default:
