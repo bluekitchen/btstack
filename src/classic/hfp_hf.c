@@ -576,6 +576,15 @@ static bool hfp_hf_vra_state_machine(hfp_connection_t * hfp_connection, hfp_hf_v
                         return true;
                     }
                     break;
+                case HFP_HF_VRA_EVENT_AG_REQUEST_ACTIVATED:
+                    // AG reports VRA activated
+                    hfp_connection->vra_engine_current_state   = HFP_VRA_ACTIVE;
+                    break;
+                case HFP_HF_VRA_EVENT_RECEIVED_OK:
+                case HFP_HF_VRA_EVENT_RECEIVED_ERROR:
+                case HFP_HF_VRA_EVENT_RECEIVED_TIMEOUT:
+                    hfp_connection->ok_pending = 0u;
+                    break;
                 default:
                     break;
 
@@ -599,6 +608,11 @@ static bool hfp_hf_vra_state_machine(hfp_connection_t * hfp_connection, hfp_hf_v
                         return true;
                     }
                     break;
+                case HFP_HF_VRA_EVENT_RECEIVED_OK:
+                case HFP_HF_VRA_EVENT_RECEIVED_ERROR:
+                case HFP_HF_VRA_EVENT_RECEIVED_TIMEOUT:
+                    hfp_connection->ok_pending = 0u;
+                    break;
                 default:
                     break;
             }
@@ -615,13 +629,18 @@ static bool hfp_hf_vra_state_machine(hfp_connection_t * hfp_connection, hfp_hf_v
                         return true;
                     }
                     break;
+                case HFP_HF_VRA_EVENT_RECEIVED_OK:
+                case HFP_HF_VRA_EVENT_RECEIVED_ERROR:
+                case HFP_HF_VRA_EVENT_RECEIVED_TIMEOUT:
+                    hfp_connection->ok_pending = 0u;
+                    break;
                 default:
                     break;
             }
+            break;
         default:
             break;
     }
-
 
     switch (hfp_connection->vra_engine_requested_state){
         case HFP_VRA_OFF:
@@ -683,6 +702,7 @@ static bool hfp_hf_vra_state_machine(hfp_connection_t * hfp_connection, hfp_hf_v
         default:
             break;
     }
+
     return false;
 }
 
@@ -727,6 +747,8 @@ static void hfp_hf_handle_activate_voice_recognition(hfp_connection_t * hfp_conn
 }
 
 static void hfp_hf_vra_handle_ok(hfp_connection_t * hfp_connection){
+    hfp_hf_vra_state_machine(hfp_connection, HFP_HF_VRA_EVENT_RECEIVED_OK);
+
     switch (hfp_connection->vra_engine_current_state){
         case HFP_VRA_W4_OFF:
             hfp_connection->vra_engine_requested_state = HFP_VRA_OFF;
@@ -780,6 +802,7 @@ static void hfp_hf_vra_handle_ok(hfp_connection_t * hfp_connection){
 }
 
 static void hfp_hf_vra_handle_error(hfp_connection_t * hfp_connection){
+    hfp_hf_vra_state_machine(hfp_connection, HFP_HF_VRA_EVENT_RECEIVED_ERROR);
     hfp_hf_vra_handle_ok(hfp_connection);
 }
 
