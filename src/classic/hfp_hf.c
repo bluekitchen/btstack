@@ -66,7 +66,7 @@ typedef enum {
 // prototypes
 static void hfp_hf_handle_transfer_ag_indicator_status(hfp_connection_t * hfp_connection);
 // @returns true if command was sent
-static void hfp_hf_vra_state_machine(hfp_connection_t * hfp_connection, hfp_hf_vra_event_type_t event);
+static bool hfp_hf_vra_state_machine(hfp_connection_t * hfp_connection, hfp_hf_vra_event_type_t event);
 
 // const
 static const char hfp_hf_default_service_name[] = "Hands-Free unit";
@@ -553,7 +553,9 @@ static bool hfp_hf_run_for_context_service_level_connection_queries(hfp_connecti
 }
 
 // HFP HF VRA
-static void hfp_hf_vra_state_machine(hfp_connection_t * hfp_connection, hfp_hf_vra_event_type_t event){
+
+// @return true if RFCOMM cmd was sent
+static bool hfp_hf_vra_state_machine(hfp_connection_t * hfp_connection, hfp_hf_vra_event_type_t event){
     switch (hfp_connection->vra_engine_requested_state){
         case HFP_VRA_OFF:
         case HFP_VRA_W2_SEND_OFF:
@@ -614,6 +616,7 @@ static void hfp_hf_vra_state_machine(hfp_connection_t * hfp_connection, hfp_hf_v
         default:
             break;
     }
+    return false;
 }
 
 static void hfp_hf_handle_activate_voice_recognition(hfp_connection_t * hfp_connection){
