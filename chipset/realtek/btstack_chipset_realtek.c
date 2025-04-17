@@ -368,6 +368,13 @@ static const uint8_t FW_SIGNATURE[8]        = {0x52, 0x65, 0x61, 0x6C, 0x74, 0x6
 static const uint8_t FW_SIGNATURE_NEW[8]    = {0x52, 0x54, 0x42, 0x54, 0x43, 0x6F, 0x72, 0x65};
 static const uint8_t EXTENSION_SIGNATURE[4] = {0x51, 0x04, 0xFD, 0x77};
 
+typedef enum {
+    REALTEK_INTERFACE_USB,
+    REALTEK_INTERFACE_UART,
+} realtek_interface_t;
+
+static realtek_interface_t realtek_interface = REALTEK_INTERFACE_UART;
+
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static uint8_t                                state;
 static uint8_t                                rom_version;
@@ -1048,6 +1055,8 @@ void btstack_chipset_realtek_set_config_folder_path(const char *path) {
 }
 
 void btstack_chipset_realtek_set_product_id(uint16_t id) {
+    log_info("USB Product ID: 0x%04x", id);
+    realtek_interface = REALTEK_INTERFACE_USB;
     product_id = id;
 }
 
