@@ -277,6 +277,7 @@ static void local_version_information_handler(uint8_t * packet){
             break;
         case BLUETOOTH_COMPANY_ID_REALTEK_SEMICONDUCTOR_CORPORATION:
             printf("Realtek HCI Controller\n");
+            btstack_chipset_realtek_set_local_info(hci_version, hci_revision, lmp_subversion);
             hci_set_chipset(btstack_chipset_realtek_instance());
             break;
         default:
