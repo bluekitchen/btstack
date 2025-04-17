@@ -470,6 +470,7 @@ static uint8_t                                state;
 static uint16_t                               product_id;
 static uint8_t                                rom_version;
 static const patch_info_usb *                 patch_usb;
+static const struct patch_info_uart *         patch_uart;
 static uint8_t                                g_key_id = 0;
 static rtb_struct_t                           rtb_cfg;
 
@@ -1148,7 +1149,7 @@ static void chipset_init(const void *config) {
 
     // start lookup by local version info
     if (rtb_cfg.lmp_subversion != 0) {
-        const struct patch_info_uart * patch_uart = get_patch_entry(&rtb_cfg);
+        patch_uart = get_patch_entry(&rtb_cfg);
         if (patch_uart == NULL) {
             log_info("Cannot find chipset for hci/lmp info");
             state = STATE_PHASE_2_DONE;
