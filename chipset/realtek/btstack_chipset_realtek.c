@@ -451,29 +451,31 @@ static void chipset_init(const void *config) {
     lmp_subversion = 0x8822;
 
 #ifdef HAVE_POSIX_FILE_IO
-    // determine file path
-    if (firmware_file_path == NULL || config_file_path == NULL) {
-        log_info("firmware or config file path is empty. Using product id 0x%04x!", product_id);
-        patch = NULL;
-        for (uint16_t i = 0; i < sizeof(fw_patch_table_usb) / sizeof(patch_info_usb); i++) {
-            if (fw_patch_table_usb[i].prod_id == product_id) {
-                patch = &fw_patch_table_usb[i];
-                break;
+    if (product_id != 0) {
+        // determine file path
+        if (firmware_file_path == NULL || config_file_path == NULL) {
+            log_info("firmware or config file path is empty. Using product id 0x%04x!", product_id);
+            patch = NULL;
+            for (uint16_t i = 0; i < sizeof(fw_patch_table_usb) / sizeof(patch_info_usb); i++) {
+                if (fw_patch_table_usb[i].prod_id == product_id) {
+                    patch = &fw_patch_table_usb[i];
+                    break;
+                }
             }
+            if (patch == NULL) {
+                log_info("Product id 0x%04x is unknown", product_id);
+                state = STATE_PHASE_2_DONE;
+                return;
+            }
+            btstack_snprintf_assert_complete(firmware_file, sizeof(firmware_file), "%s/%s", firmware_folder_path, patch->patch_name);
+            btstack_snprintf_assert_complete(config_file, sizeof(config_file), "%s/%s", config_folder_path, patch->config_name);
+            firmware_file_path = &firmware_file[0];
+            config_file_path   = &config_file[0];
+            //lmp_subversion     = patch->lmp_sub;
         }
-        if (patch == NULL) {
-            log_info("Product id 0x%04x is unknown", product_id);
-            state = STATE_PHASE_2_DONE;
-            return;
-        }
-        btstack_snprintf_assert_complete(firmware_file, sizeof(firmware_file), "%s/%s", firmware_folder_path, patch->patch_name);
-        btstack_snprintf_assert_complete(config_file, sizeof(config_file), "%s/%s", config_folder_path, patch->config_name);
-        firmware_file_path = &firmware_file[0];
-        config_file_path   = &config_file[0];
-        //lmp_subversion     = patch->lmp_sub;
+        log_info("Using firmware '%s' and config '%s'", firmware_file_path, config_file_path);
+        printf("Realtek: Using firmware '%s' and config '%s'\n", firmware_file_path, config_file_path);
     }
-    log_info("Using firmware '%s' and config '%s'", firmware_file_path, config_file_path);
-    printf("Realtek: Using firmware '%s' and config '%s'\n", firmware_file_path, config_file_path);
 
     // activate hci callback
     hci_event_callback_registration.callback = &hci_packet_handler;
