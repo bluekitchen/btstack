@@ -779,30 +779,42 @@ static inline int get_max_patch_size(uint8_t chip_type)
     case RTLPREVIOUS:
         max_patch_size = 24 * 1024;
         break;
-    case RTL8822BU:
+    case RTL8822BU: // CHIP_8822BS
         max_patch_size = 25 * 1024;
         break;
-    case RTL8723DU:
-    case RTL8822CU:
-    case RTL8761BU:
-    case RTL8821CU:
+    case RTL8723DU: // CHIP_8723DS
+    case RTL8822CU: // CHIP_8822CS
+    case RTL8761BU: // CHIP_8761B
+    case RTL8821CU: // CHIP_8821CS
         max_patch_size = 40 * 1024;
         break;
-    case RTL8852AU:
+    case RTL8852AU: // CHIP_8852AS
         max_patch_size = 0x114D0 + 529; /* 69.2KB */
         break;
-    case RTL8723FU:
+    case RTL8723FU: // CHIP_8733BS
         max_patch_size = 0xC4Cf + 529; /* 49.2KB */
         break;
-    case RTL8852BU:
-    case RTL8851BU:
-        max_patch_size = 0x104D0 + 529;  /* 65KB */
+    case RTL8852BU: // CHIP_8852BS
+    case RTL8851BU: // CHIP_8852BP, CHIP_8851BS
+        max_patch_size = 0x104D0 + 529; /* 65KB */
         break;
-    case RTL8852CU:
+    case RTL8852CU: // CHIP_8852CS
         max_patch_size = 0x130D0 + 529; /* 76.2KB */
         break;
-    case RTL8822EU:
-        max_patch_size = 0x24620 + 529;    /* 145KB */
+    case RTL8822EU: // CHIP_8822ES
+        max_patch_size = 0x24620 + 529; /* 145KB */
+        break;
+    case CHIP_8852DS:
+        max_patch_size = 0x20D90 + 529;  /* 131KB */
+        break;
+    case CHIP_8922AS:
+        max_patch_size = 0x23810 + 529;  /* 142KB */
+        break;
+    case CHIP_8852BTS:
+        max_patch_size = 0x27E00 + 529; /* 159.5KB */
+        break;
+    case CHIP_8761CTV:
+        max_patch_size = 1024 * 1024;
         break;
     default:
         max_patch_size = 40 * 1024;
@@ -875,7 +887,9 @@ static uint8_t update_firmware(const char *firmware, const char *config, uint8_t
         if (have_new_firmware_signature){
             printf("Realtek: Using new signature\n");
             uint8_t key_id = g_key_id;
-            if (key_id == 0) {
+
+            // TODO: figure out how this should work for UART
+            if ((realtek_interface == REALTEK_INTERFACE_USB) && (key_id == 0)) {
                 log_info("Wrong key id. Quit!");
                 finalize_file_and_buffer(&fw, &fw_buf);
                 finalize_file_and_buffer(&conf, &conf_buf);
@@ -917,10 +931,10 @@ static uint8_t update_firmware(const char *firmware, const char *config, uint8_t
             fw_total_len = patch_length + conf_size;
         }
 
-        max_patch_size = get_max_patch_size(patch_usb->chip_type);
+        max_patch_size = get_max_patch_size(rtb_cfg.chip_type);
         printf("Realtek: FW/CONFIG total length is %d, max patch size id %d\n", fw_total_len, max_patch_size);
         if (fw_total_len > max_patch_size) {
-            printf("FRealtek: W/CONFIG total length larger than allowed %d\n", max_patch_size);
+            printf("Realtek: FW/CONFIG total length larger than allowed %d\n", max_patch_size);
             finalize_file_and_buffer(&fw, &fw_buf);
             finalize_file_and_buffer(&conf, &conf_buf);
             return FW_DONE;
