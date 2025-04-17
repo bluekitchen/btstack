@@ -77,7 +77,7 @@ void btstack_chipset_realtek_set_config_file_path(const char *path);
 void btstack_chipset_realtek_set_config_folder_path(const char *path);
 
 /**
- * @brief Set product id
+ * @brief Set USB Product id
  * @param id
  */
 void btstack_chipset_realtek_set_product_id(uint16_t id);
@@ -95,6 +95,11 @@ uint16_t btstack_chipset_realtek_get_num_usb_controllers(void);
  * @param out_product_id
  */
 void btstack_chipset_realtek_get_vendor_product_id(uint16_t index, uint16_t * out_vendor_id, uint16_t * out_product_id);
+
+/**
+ * @brief Set LMP Subversion for UART Controller
+ */
+void btstack_chipset_realtek_set_local_info(uint8_t hci_version, uint16_t hci_revision, uint16_t lmp_subversion);
 
 /**
  * Get chipset instance for REALTEK chipsets

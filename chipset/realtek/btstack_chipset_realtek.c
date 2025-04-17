@@ -369,18 +369,22 @@ static const uint8_t FW_SIGNATURE_NEW[8]    = {0x52, 0x54, 0x42, 0x54, 0x43, 0x6
 static const uint8_t EXTENSION_SIGNATURE[4] = {0x51, 0x04, 0xFD, 0x77};
 
 typedef enum {
+    REALTEK_INTERFACE_UNKNOWN = 0,
     REALTEK_INTERFACE_USB,
-    REALTEK_INTERFACE_UART,
+    REALTEK_INTERFACE_UART_H4,
+    REALTEK_INTERFACE_UART_H5,
 } realtek_interface_t;
 
-static realtek_interface_t realtek_interface = REALTEK_INTERFACE_UART;
+static realtek_interface_t realtek_interface = REALTEK_INTERFACE_UNKNOWN;
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static uint8_t                                state;
-static uint8_t                                rom_version;
+static uint8_t                                hci_version;
+static uint16_t                               hci_revision;
 static uint16_t                               lmp_subversion;
 static uint16_t                               product_id;
-static const patch_info_usb *                     patch;
+static uint8_t                                rom_version;
+static const patch_info_usb *                 patch;
 static uint8_t                                g_key_id = 0;
 
 #ifdef HAVE_POSIX_FILE_IO
@@ -1066,6 +1070,13 @@ void btstack_chipset_realtek_get_vendor_product_id(uint16_t index, uint16_t * ou
     btstack_assert(index < ((sizeof(fw_patch_table_usb) / sizeof(patch_info_usb)) - 1));
     *out_vendor_id = 0xbda;
     *out_product_id = fw_patch_table_usb[index].prod_id;
+}
+void btstack_chipset_realtek_set_local_info(uint8_t version, uint16_t revision, uint16_t subversion){
+    log_info("Set Local Info for UART Controller");
+    hci_version = version;
+    hci_revision = revision;
+    lmp_subversion = subversion;
+    realtek_interface = REALTEK_INTERFACE_UART_H4;
 }
 
 static const btstack_chipset_t btstack_chipset_realtek = {
