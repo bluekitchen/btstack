@@ -87,7 +87,7 @@
 #define PATCH_OTA_FLAG		0x04
 #define SECTION_HEADER_SIZE	8
 
-/* software id */
+/* software id USB */
 #define RTLPREVIOUS	0x00
 #define RTL8822BU	0x70
 #define RTL8723DU	0x71
@@ -100,6 +100,32 @@
 #define RTL8852CU	0x78
 #define RTL8822EU	0x79
 #define RTL8851BU	0x7A
+
+/* software id UARRT */
+#define CHIP_UNKNOWN	0x00
+#define CHIP_8761AT		0x1F
+#define CHIP_8761ATF	0x2F
+#define CHIP_8761BTC	0x3F
+#define CHIP_8761BH4	0x4F
+#define CHIP_8723BS	    0x5F
+#define CHIP_BEFORE	    0x6F
+#define CHIP_8822BS	    0x70
+#define CHIP_8723DS	    0x71
+#define CHIP_8821CS	    0x72
+#define CHIP_8822CS	    0x73
+#define CHIP_8761B	    0x74
+#define CHIP_8852AS	    0x75
+#define CHIP_8733BS	    0x76
+#define CHIP_8852CS	    0x77
+#define CHIP_8852BP	    0x78
+#define CHIP_8822ES	    0x79
+#define CHIP_8851BS	    0x7A
+#define CHIP_8852DS	    0x7B
+#define CHIP_8922AS	    0x7C
+#define CHIP_8852BTS	0x7D
+#define CHIP_8761CTV	0x80
+#define CHIP_8723CS		0x81
+
 
 #pragma pack(push, 1)
 struct rtk_epatch_entry {
@@ -134,6 +160,7 @@ struct rtb_new_patch_hdr {
 };
 #pragma pack(pop)
 
+// Patch Info USB
 
 typedef struct {
     uint16_t prod_id;
@@ -329,6 +356,61 @@ static const patch_info_usb fw_patch_table_usb[] = {
     {0, 0, NULL, NULL, NULL, NULL, 0, 0}
 };
 
+// Patch Info UART
+
+#define RTL_FW_MATCH_CHIP_TYPE  (1 << 0)
+#define RTL_FW_MATCH_HCI_VER    (1 << 1)
+#define RTL_FW_MATCH_HCI_REV    (1 << 2)
+struct patch_info_uart {
+    uint32_t    match_flags;
+    uint8_t     chip_type;
+    uint16_t    lmp_subver;
+    uint16_t    proj_id;
+    uint8_t     hci_ver;
+    uint16_t    hci_rev;
+    char        *patch_file;
+    char        *config_file;
+    char        *ic_name;
+};
+
+
+static struct patch_info_uart h4_patch_table[] = {
+    /* match flags, chip type, lmp subver, proj id(unused), hci_ver,
+     * hci_rev, ...
+     */
+
+    /* RTL8761AT */
+    { RTL_FW_MATCH_CHIP_TYPE, CHIP_8761AT,
+        0x8761, 0xffff, 0, 0x000a,
+        "rtl8761at_fw", "rtl8761at_config", "RTL8761AT" },
+    /* RTL8761ATF */
+    { RTL_FW_MATCH_CHIP_TYPE, CHIP_8761ATF,
+        0x8761, 0xffff, 0, 0x000a,
+        "rtl8761atf_fw", "rtl8761atf_config", "RTL8761ATF" },
+    /* RTL8761B(8763) H4 Test Chip without download
+     * FW/Config is not used.
+     */
+    { RTL_FW_MATCH_CHIP_TYPE, CHIP_8761BTC,
+        0x8763, 0xffff, 0, 0x000b,
+        "rtl8761btc_fw", "rtl8761btc_config", "RTL8761BTC" },
+    /* RTL8761B H4 Test Chip wihtout download*/
+    { RTL_FW_MATCH_CHIP_TYPE, CHIP_8761BH4,
+        0x8761, 0xffff, 0, 0x000b,
+        "rtl8761bh4_fw", "rtl8761bh4_config", "RTL8761BH4" },
+
+    /* RTL8723DS */
+    { RTL_FW_MATCH_HCI_VER | RTL_FW_MATCH_HCI_REV, CHIP_8723DS,
+        ROM_LMP_8723b, ROM_LMP_8723b, 8, 0x000d,
+        "rtl8723dsh4_fw", "rtl8723dsh4_config", "RTL8723DSH4"},
+    /* RTL8761C */
+    { RTL_FW_MATCH_HCI_REV, CHIP_8761CTV,
+        ROM_LMP_8761a, 0xffff, 0x0c, 0x000e,
+        "rtl8761c_mx_fw", "rtl8761c_mx_config", "RTL8761CTV" },
+
+    { 0, 0, 0, ROM_LMP_NONE, 0, 0, "rtl_none_fw", "rtl_none_config", "NONE"}
+};
+
+
 static uint16_t project_id[] = {
     ROM_LMP_8723a, ROM_LMP_8723b, ROM_LMP_8821a, ROM_LMP_8761a, ROM_LMP_NONE,
     ROM_LMP_NONE,  ROM_LMP_NONE,  ROM_LMP_NONE,  ROM_LMP_8822b, ROM_LMP_8723b, /* RTL8723DU */
@@ -387,7 +469,7 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 static uint8_t                                state;
 static uint16_t                               product_id;
 static uint8_t                                rom_version;
-static const patch_info_usb *                 patch;
+static const patch_info_usb *                 patch_usb;
 static uint8_t                                g_key_id = 0;
 static rtb_struct_t                           rtb_cfg;
 
@@ -400,105 +482,7 @@ static char        firmware_file[1000];
 static char        config_file[1000];
 #endif
 
-
 enum { FW_DONE, FW_MORE_TO_DO };
-
-
-static void hci_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) {
-    UNUSED(channel);
-    UNUSED(size);
-    if (packet_type != HCI_EVENT_PACKET) {
-        return;
-    }
-    if (hci_event_packet_get_type(packet) != HCI_EVENT_COMMAND_COMPLETE) {
-        return;
-    }
-
-    uint16_t opcode = hci_event_command_complete_get_command_opcode(packet);
-    const uint8_t * return_para = hci_event_command_complete_get_return_parameters(packet);
-    switch (opcode) {
-        case HCI_OPCODE_HCI_READ_LOCAL_VERSION_INFORMATION:
-            rtb_cfg.lmp_subversion = little_endian_read_16(packet, 12);
-            break;
-        case HCI_OPCODE_HCI_RTK_READ_ROM_VERSION:
-            rom_version = return_para[1];
-            log_info("Received ROM version 0x%02x", rom_version);
-            printf("Realtek: Received ROM version 0x%02x\n", rom_version);
-            if (patch->lmp_sub != rtb_cfg.lmp_subversion) {
-                printf("Realtek: Firmware already exists\n");
-                state = STATE_PHASE_2_DONE;
-            }
-            break;
-        case HCI_OPCODE_HCI_RTK_READ_CARD_INFO:
-            switch (state){
-                case STATE_PHASE_1_W4_READ_LMP_SUBVERSION:
-                    log_info("Read Card: LMP Subversion");
-                    if (little_endian_read_16(hci_event_command_complete_get_return_parameters(packet), 1) == 0x8822){
-                        state = STATE_PHASE_1_READ_HCI_REVISION;
-                    } else {
-                        state = STATE_PHASE_1_DONE;
-                    }
-                    break;
-                case STATE_PHASE_1_W4_READ_HCI_REVISION:
-                    log_info("Read Card: HCI Revision");
-                    if (little_endian_read_16(hci_event_command_complete_get_return_parameters(packet), 1) == 0x000e){
-                        state = STATE_PHASE_2_READ_ROM_VERSION;
-                    } else {
-                        state = STATE_PHASE_1_DONE;
-                    }
-                    break;
-                case STATE_PHASE_2_W4_SEC_PROJ:
-                    g_key_id = return_para[1];
-                    printf("Realtek: Received key id 0x%02x\n", g_key_id);
-                    state = STATE_PHASE_2_LOAD_FIRMWARE;
-                    break;
-                default:
-                    btstack_assert(false);
-                    break;
-            }
-            break;
-        default:
-            break;
-    }
-}
-
-static void chipset_init(const void *config) {
-    UNUSED(config);
-
-#ifdef HAVE_POSIX_FILE_IO
-    // lookup chipset by USB Product ID
-    if (product_id != 0) {
-        if (firmware_file_path == NULL || config_file_path == NULL) {
-            log_info("firmware or config file path is empty. Using product id 0x%04x!", product_id);
-            patch = NULL;
-            for (uint16_t i = 0; i < sizeof(fw_patch_table_usb) / sizeof(patch_info_usb); i++) {
-                if (fw_patch_table_usb[i].prod_id == product_id) {
-                    patch = &fw_patch_table_usb[i];
-                    break;
-                }
-            }
-            if (patch == NULL) {
-                log_info("Product id 0x%04x is unknown", product_id);
-                state = STATE_PHASE_2_DONE;
-                return;
-            }
-            // determine file path
-            btstack_snprintf_assert_complete(firmware_file, sizeof(firmware_file), "%s/%s", firmware_folder_path, patch->patch_name);
-            btstack_snprintf_assert_complete(config_file, sizeof(config_file), "%s/%s", config_folder_path, patch->config_name);
-            firmware_file_path = &firmware_file[0];
-            config_file_path   = &config_file[0];
-            rtb_cfg.lmp_subversion = patch->lmp_sub;
-        }
-        log_info("Using firmware '%s' and config '%s'", firmware_file_path, config_file_path);
-        printf("Realtek: Using firmware '%s' and config '%s'\n", firmware_file_path, config_file_path);
-    }
-
-    // activate hci callback
-    hci_event_callback_registration.callback = &hci_packet_handler;
-    hci_add_event_handler(&hci_event_callback_registration);
-    state = STATE_PHASE_1_READ_LMP_SUBVERSION;
-#endif
-}
 
 #ifdef HAVE_POSIX_FILE_IO
 
@@ -754,6 +738,38 @@ static uint8_t *rtb_get_patch_header(uint32_t *len,
     return NULL;
 }
 
+static struct patch_info_uart *get_patch_entry(struct rtb_struct *btrtl)
+{
+    struct patch_info_uart *n = NULL;
+
+    switch (realtek_interface) {
+        case REALTEK_INTERFACE_UART_H4:
+            n = h4_patch_table;
+            break;
+        default:
+            printf("Realtek: Unknown interface type %d\n", realtek_interface);
+            btstack_assert(false);
+            return NULL;
+    }
+    for (; n->lmp_subver; n++) {
+        if ((n->match_flags & RTL_FW_MATCH_CHIP_TYPE) &&
+            n->chip_type != btrtl->chip_type)
+            continue;
+        if ((n->match_flags & RTL_FW_MATCH_HCI_VER) &&
+            n->hci_ver != btrtl->hci_version)
+            continue;
+        if ((n->match_flags & RTL_FW_MATCH_HCI_REV) &&
+            n->hci_rev != btrtl->hci_revision)
+            continue;
+        if (n->lmp_subver != btrtl->lmp_subversion)
+            continue;
+
+        break;
+    }
+
+    return n;
+}
+
 static inline int get_max_patch_size(uint8_t chip_type)
 {
     int max_patch_size = 0;
@@ -900,7 +916,7 @@ static uint8_t update_firmware(const char *firmware, const char *config, uint8_t
             fw_total_len = patch_length + conf_size;
         }
 
-        max_patch_size = get_max_patch_size(patch->chip_type);
+        max_patch_size = get_max_patch_size(patch_usb->chip_type);
         printf("Realtek: FW/CONFIG total length is %d, max patch size id %d\n", fw_total_len, max_patch_size);
         if (fw_total_len > max_patch_size) {
             printf("FRealtek: W/CONFIG total length larger than allowed %d\n", max_patch_size);
@@ -1039,6 +1055,117 @@ static btstack_chipset_result_t chipset_next_command(uint8_t *hci_cmd_buffer) {
 #endif  // HAVE_POSIX_FILE_IO
 }
 
+static void hci_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) {
+    UNUSED(channel);
+    UNUSED(size);
+    if (packet_type != HCI_EVENT_PACKET) {
+        return;
+    }
+    if (hci_event_packet_get_type(packet) != HCI_EVENT_COMMAND_COMPLETE) {
+        return;
+    }
+
+    uint16_t opcode = hci_event_command_complete_get_command_opcode(packet);
+    const uint8_t * return_para = hci_event_command_complete_get_return_parameters(packet);
+    switch (opcode) {
+        case HCI_OPCODE_HCI_READ_LOCAL_VERSION_INFORMATION:
+            rtb_cfg.lmp_subversion = little_endian_read_16(packet, 12);
+            break;
+        case HCI_OPCODE_HCI_RTK_READ_ROM_VERSION:
+            rom_version = return_para[1];
+            log_info("Received ROM version 0x%02x", rom_version);
+            printf("Realtek: Received ROM version 0x%02x\n", rom_version);
+            if (patch_usb->lmp_sub != rtb_cfg.lmp_subversion) {
+                printf("Realtek: Firmware already exists\n");
+                state = STATE_PHASE_2_DONE;
+            }
+            break;
+        case HCI_OPCODE_HCI_RTK_READ_CARD_INFO:
+            switch (state){
+                case STATE_PHASE_1_W4_READ_LMP_SUBVERSION:
+                    log_info("Read Card: LMP Subversion");
+                    if (little_endian_read_16(hci_event_command_complete_get_return_parameters(packet), 1) == 0x8822){
+                        state = STATE_PHASE_1_READ_HCI_REVISION;
+                    } else {
+                        state = STATE_PHASE_1_DONE;
+                    }
+                    break;
+                case STATE_PHASE_1_W4_READ_HCI_REVISION:
+                    log_info("Read Card: HCI Revision");
+                    if (little_endian_read_16(hci_event_command_complete_get_return_parameters(packet), 1) == 0x000e){
+                        state = STATE_PHASE_2_READ_ROM_VERSION;
+                    } else {
+                        state = STATE_PHASE_1_DONE;
+                    }
+                    break;
+                case STATE_PHASE_2_W4_SEC_PROJ:
+                    g_key_id = return_para[1];
+                    printf("Realtek: Received key id 0x%02x\n", g_key_id);
+                    state = STATE_PHASE_2_LOAD_FIRMWARE;
+                    break;
+                default:
+                    btstack_assert(false);
+                    break;
+            }
+            break;
+        default:
+            break;
+    }
+}
+
+static void chipset_init(const void *config) {
+    UNUSED(config);
+
+#ifdef HAVE_POSIX_FILE_IO
+    // lookup chipset by USB Product ID
+    if (product_id != 0) {
+        if (firmware_file_path == NULL || config_file_path == NULL) {
+            log_info("firmware or config file path is empty. Using product id 0x%04x!", product_id);
+            patch_usb = NULL;
+            for (uint16_t i = 0; i < sizeof(fw_patch_table_usb) / sizeof(patch_info_usb); i++) {
+                if (fw_patch_table_usb[i].prod_id == product_id) {
+                    patch_usb = &fw_patch_table_usb[i];
+                    break;
+                }
+            }
+            if (patch_usb == NULL) {
+                log_info("Product id 0x%04x is unknown", product_id);
+                state = STATE_PHASE_2_DONE;
+                return;
+            }
+            // determine file path
+            btstack_snprintf_assert_complete(firmware_file, sizeof(firmware_file), "%s/%s", firmware_folder_path, patch_usb->patch_name);
+            btstack_snprintf_assert_complete(config_file, sizeof(config_file), "%s/%s", config_folder_path, patch_usb->config_name);
+            firmware_file_path = &firmware_file[0];
+            config_file_path   = &config_file[0];
+            rtb_cfg.lmp_subversion = patch_usb->lmp_sub;
+        }
+    }
+
+    // start lookup by local version info
+    if (rtb_cfg.lmp_subversion != 0) {
+        const struct patch_info_uart * patch_uart = get_patch_entry(&rtb_cfg);
+        if (patch_uart == NULL) {
+            log_info("Cannot find chipset for hci/lmp info");
+            state = STATE_PHASE_2_DONE;
+            return;
+        }
+        btstack_snprintf_assert_complete(firmware_file, sizeof(firmware_file), "%s/%s", firmware_folder_path, patch_uart->patch_file);
+        btstack_snprintf_assert_complete(config_file, sizeof(config_file), "%s/%s", config_folder_path, patch_uart->config_file);
+        firmware_file_path = &firmware_file[0];
+        config_file_path   = &config_file[0];
+    }
+
+    log_info("Using firmware '%s' and config '%s'", firmware_file_path, config_file_path);
+    printf("Realtek: Using firmware '%s' and config '%s'\n", firmware_file_path, config_file_path);
+
+    // activate hci callback
+    hci_event_callback_registration.callback = &hci_packet_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
+    state = STATE_PHASE_1_READ_LMP_SUBVERSION;
+#endif
+}
+
 void btstack_chipset_realtek_set_firmware_file_path(const char *path) {
 #ifdef HAVE_POSIX_FILE_IO
     firmware_file_path = path;
@@ -1078,6 +1205,7 @@ void btstack_chipset_realtek_get_vendor_product_id(uint16_t index, uint16_t * ou
     *out_vendor_id = 0xbda;
     *out_product_id = fw_patch_table_usb[index].prod_id;
 }
+
 void btstack_chipset_realtek_set_local_info(uint8_t version, uint16_t revision, uint16_t subversion){
     log_info("Set Local Info for UART Controller");
     rtb_cfg.hci_version = version;
