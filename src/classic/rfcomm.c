@@ -2365,14 +2365,11 @@ uint8_t rfcomm_send(uint16_t rfcomm_cid, uint8_t *data, uint16_t len){
     (void)memcpy(rfcomm_payload, data, len);
     status = rfcomm_send_prepared(rfcomm_cid, len);
 
-#ifdef RFCOMM_USE_OUTGOING_BUFFER
-#else
     if (status != ERROR_CODE_SUCCESS){
         rfcomm_release_packet_buffer();
     }
-#endif
 
-    return ERROR_CODE_SUCCESS;
+    return status;
 }
 
 // Sends Local Line Status, see LINE_STATUS_..
