@@ -59,6 +59,7 @@
 #include "btstack_chipset_cc256x.h"
 #include "btstack_chipset_csr.h"
 #include "btstack_chipset_em9301.h"
+#include "btstack_chipset_realtek.h"
 #include "btstack_chipset_stlc2500d.h"
 #include "btstack_chipset_tc3566x.h"
 #include "btstack_chipset_zephyr.h"
@@ -273,6 +274,10 @@ static void local_version_information_handler(uint8_t * packet){
         case BLUETOOTH_COMPANY_ID_PACKETCRAFT_INC:
             printf("PacketCraft HCI Controller\n");
             hci_set_chipset(btstack_chipset_zephyr_instance());
+            break;
+        case BLUETOOTH_COMPANY_ID_REALTEK_SEMICONDUCTOR_CORPORATION:
+            printf("Realtek HCI Controller\n");
+            hci_set_chipset(btstack_chipset_realtek_instance());
             break;
         default:
             printf("Unknown manufacturer / manufacturer not supported yet.\n");
