@@ -162,9 +162,9 @@ typedef struct {
     uint8_t *fw_cache1;
     int      fw_len1;
     uint8_t chip_type;
-} patch_info;
+} patch_info_usb;
 
-static const patch_info fw_patch_table[] = {
+static const patch_info_usb fw_patch_table_usb[] = {
 /* { pid, lmp_sub, mp_fw_name, fw_name, config_name, chip_type } */
     {0x1724, 0x1200, "mp_rtl8723a_fw", "rtl8723a_fw", "rtl8723a_config", NULL, 0, RTLPREVIOUS},	/* RTL8723A */
     {0x8723, 0x1200, "mp_rtl8723a_fw", "rtl8723a_fw", "rtl8723a_config", NULL, 0, RTLPREVIOUS},	/* 8723AE */
@@ -359,14 +359,21 @@ static uint16_t project_id[] = {
     ROM_LMP_NONE, ROM_LMP_NONE, ROM_LMP_NONE, ROM_LMP_NONE, ROM_LMP_NONE,
     ROM_LMP_NONE, ROM_LMP_NONE, ROM_LMP_8822b,                                 /* index 33 for 8822EU */
     ROM_LMP_NONE, ROM_LMP_NONE, ROM_LMP_8851b,                                 /* index 36 for 8851BU */
+    ROM_LMP_NONE, ROM_LMP_NONE, ROM_LMP_NONE, ROM_LMP_NONE, ROM_LMP_NONE,      // 37~41
+    ROM_LMP_NONE, ROM_LMP_NONE, ROM_LMP_NONE, ROM_LMP_NONE, ROM_LMP_NONE,      // 42~46
+    ROM_LMP_NONE, ROM_LMP_NONE, ROM_LMP_NONE, ROM_LMP_NONE, ROM_LMP_8761a,     // index 51 for 8761CTV
 };
+
+static const uint8_t FW_SIGNATURE[8]        = {0x52, 0x65, 0x61, 0x6C, 0x74, 0x65, 0x63, 0x68};
+static const uint8_t FW_SIGNATURE_NEW[8]    = {0x52, 0x54, 0x42, 0x54, 0x43, 0x6F, 0x72, 0x65};
+static const uint8_t EXTENSION_SIGNATURE[4] = {0x51, 0x04, 0xFD, 0x77};
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static uint8_t                                state;
 static uint8_t                                rom_version;
 static uint16_t                               lmp_subversion;
 static uint16_t                               product_id;
-static const patch_info *                     patch;
+static const patch_info_usb *                     patch;
 static uint8_t                                g_key_id = 0;
 
 #ifdef HAVE_POSIX_FILE_IO
@@ -378,9 +385,6 @@ static char        firmware_file[1000];
 static char        config_file[1000];
 #endif
 
-static const uint8_t FW_SIGNATURE[8]        = {0x52, 0x65, 0x61, 0x6C, 0x74, 0x65, 0x63, 0x68};
-static const uint8_t FW_SIGNATURE_NEW[8]    = {0x52, 0x54, 0x42, 0x54, 0x43, 0x6F, 0x72, 0x65};
-static const uint8_t EXTENSION_SIGNATURE[4] = {0x51, 0x04, 0xFD, 0x77};
 
 static void hci_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) {
     UNUSED(channel);
@@ -451,9 +455,9 @@ static void chipset_init(const void *config) {
     if (firmware_file_path == NULL || config_file_path == NULL) {
         log_info("firmware or config file path is empty. Using product id 0x%04x!", product_id);
         patch = NULL;
-        for (uint16_t i = 0; i < sizeof(fw_patch_table) / sizeof(patch_info); i++) {
-            if (fw_patch_table[i].prod_id == product_id) {
-                patch = &fw_patch_table[i];
+        for (uint16_t i = 0; i < sizeof(fw_patch_table_usb) / sizeof(patch_info_usb); i++) {
+            if (fw_patch_table_usb[i].prod_id == product_id) {
+                patch = &fw_patch_table_usb[i];
                 break;
             }
         }
@@ -1046,13 +1050,13 @@ void btstack_chipset_realtek_set_product_id(uint16_t id) {
 }
 
 uint16_t btstack_chipset_realtek_get_num_usb_controllers(void){
-    return (sizeof(fw_patch_table) / sizeof(patch_info)) - 1; // sentinel
+    return (sizeof(fw_patch_table_usb) / sizeof(patch_info_usb)) - 1; // sentinel
 }
 
 void btstack_chipset_realtek_get_vendor_product_id(uint16_t index, uint16_t * out_vendor_id, uint16_t * out_product_id){
-    btstack_assert(index < ((sizeof(fw_patch_table) / sizeof(patch_info)) - 1));
+    btstack_assert(index < ((sizeof(fw_patch_table_usb) / sizeof(patch_info_usb)) - 1));
     *out_vendor_id = 0xbda;
-    *out_product_id = fw_patch_table[index].prod_id;
+    *out_product_id = fw_patch_table_usb[index].prod_id;
 }
 
 static const btstack_chipset_t btstack_chipset_realtek = {
