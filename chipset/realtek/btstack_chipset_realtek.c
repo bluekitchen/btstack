@@ -1281,6 +1281,18 @@ static void chipset_init(const void *config) {
 #endif
 }
 
+static void chipset_set_baudrate_command(uint32_t baudrate, uint8_t *hci_cmd_buffer) {
+    btstack_assert(baudrate == vendor_speed_to_std(rtb_cfg.vendor_baud));
+    UNUSED(baudrate);
+
+    log_info("Preparing baudrate command for %" PRIu32 " baud", baudrate);
+
+    // hard-coded for RTL8761CTV at 3000000
+    static uint8_t hci_realtek_update_baudrate_32[] = {0x17, 0xfc, 0x5 };
+    memcpy (hci_cmd_buffer, hci_realtek_update_baudrate_32, sizeof(hci_realtek_update_baudrate_32));
+    little_endian_store_32(hci_cmd_buffer, 3, rtb_cfg.vendor_baud);
+}
+
 void btstack_chipset_realtek_set_firmware_file_path(const char *path) {
 #ifdef HAVE_POSIX_FILE_IO
     firmware_file_path = path;
@@ -1334,9 +1346,11 @@ uint32_t btstack_chipset_realtek_get_config_baudrate(void) {
 }
 
 static const btstack_chipset_t btstack_chipset_realtek = {
-    "REALTEK", chipset_init, chipset_next_command,
-    NULL,  // chipset_set_baudrate_command,
-    NULL,  // chipset_set_bd_addr_command not supported or implemented
+    .name = "REALTEK",
+    .init = chipset_init,
+    .next_command = chipset_next_command,
+    .set_baudrate_command = chipset_set_baudrate_command,
+    NULL,  // chipset_set_bd_addr_command not supported or implemented yet
 };
 
 const btstack_chipset_t *btstack_chipset_realtek_instance(void) { return &btstack_chipset_realtek; }
