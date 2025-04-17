@@ -45,6 +45,7 @@
 
 #include "btstack_chipset_realtek.h"
 
+#include <inttypes.h>
 #include <stddef.h> /* NULL */
 #include <stdio.h>
 #include <string.h> /* memcpy */
@@ -445,6 +446,7 @@ typedef struct rtb_struct {
     uint16_t hci_revision;
     uint16_t lmp_subversion;
     uint8_t  chip_type;
+    uint32_t vendor_baud;
 } rtb_struct_t;
 
 enum {
@@ -824,181 +826,273 @@ static inline int get_max_patch_size(uint8_t chip_type)
     return max_patch_size;
 }
 
-static uint8_t update_firmware(const char *firmware, const char *config, uint8_t *hci_cmd_buffer) {
-    static uint8_t *patch_buf = NULL;
-    static uint32_t fw_total_len;
-    static uint32_t fw_ptr;
-    static uint8_t  index;
+#define RTB_CFG_HDR_LEN		6
+static uint32_t get_vendor_baud(const uint8_t * conf_buffer, uint32_t conf_size) {
+    // check header
+    if (conf_size <= RTB_CFG_HDR_LEN) {
+        return 0;
+    }
+    uint32_t magic = little_endian_read_32(conf_buffer, 0);
+    if (magic != 0x8723ab55) {
+        return 0;
+    }
+    uint16_t cfg_len = little_endian_read_16(conf_buffer, 4);
+    if (cfg_len != (conf_size - RTB_CFG_HDR_LEN)) {
+        return 0;
+    }
+    conf_buffer += RTB_CFG_HDR_LEN;
+    conf_size -= RTB_CFG_HDR_LEN;
 
-    // read firmware and config
-    if (patch_buf == NULL) {
-        uint16_t patch_length = 0;
-        uint32_t offset = 0;
-        FILE *   fw = NULL;
-        uint32_t fw_size;
-        uint8_t *fw_buf = NULL;
-
-        FILE *   conf = NULL;
-        uint32_t conf_size;
-        uint8_t *conf_buf = NULL;
-
-        uint32_t fw_version;
-        uint16_t fw_num_patches;
-
-        struct patch_node *tmp;
-        unsigned max_patch_size = 0;
-
-        if (firmware == NULL || config == NULL) {
-            log_info("Please specify realtek firmware and config file paths");
-            return FW_DONE;
+    // iterate over config sections
+    while (conf_size > 0) {
+        uint16_t offset = little_endian_read_16(conf_buffer, 0);
+        uint8_t  len = conf_buffer[2];
+        conf_buffer += 3;
+        conf_size -= 3;
+        if (conf_size < len) {
+            return 0;
         }
-        // read config
-        conf_size = read_file(&conf, &conf_buf, config);
-        if (conf_size == 0) {
-            log_info("Config size is 0, using efuse settings!");
+        printf("%04x: ", offset);
+        printf_hexdump(conf_buffer, len);
+        switch (offset) {
+            case 0x003c:
+            case 0x0030:
+            case 0x0044:
+                printf("Realtek: BD ADDR in config file not supported yet");
+                break;
+            case 0x000c:
+                return little_endian_read_32(conf_buffer, 0);
+            default:
+                break;
         }
-        // read firmware
-        fw_size = read_file(&fw, &fw_buf, firmware);
-        if (fw_size == 0) {
-            log_info("Firmware size is 0. Quit!");
-            if (conf_size != 0){
-                finalize_file_and_buffer(&conf, &conf_buf);
-            }
-            return FW_DONE;
+        conf_buffer += len;
+        conf_size -= len;
+    }
+    return 0;
+}
+
+struct rtb_baud {
+    uint32_t rtb_speed;
+    uint32_t uart_speed;
+};
+struct rtb_baud baudrates[] = {
+#ifdef RTL_8703A_SUPPORT
+    {0x00004003, 1500000}, /* for rtl8703as */
+#endif
+    {0x0252C014, 115200},
+    {0x0252C00A, 230400},
+    {0x05F75004, 921600},
+    {0x00005004, 1000000},
+    {0x04928002, 1500000},
+    {0x01128002, 1500000},	//8761AT
+    {0x00005002, 2000000},
+    {0x0000B001, 2500000},
+    {0x04928001, 3000000},
+    {0x052A6001, 3500000},
+    {0x00005001, 4000000},
+};
+
+static uint32_t vendor_speed_to_std(uint32_t rtb_speed){
+    unsigned int i;
+    for (i = 0; i < (sizeof(baudrates)/sizeof(&baudrates[0])); i++) {
+        if (baudrates[i].rtb_speed == rtb_speed) {
+            return baudrates[i].uart_speed;
         }
-        // check signature
-        if (((memcmp(fw_buf, FW_SIGNATURE, 8) != 0) && (memcmp(fw_buf, FW_SIGNATURE_NEW, 8) != 0))
-              || memcmp(fw_buf + fw_size - 4, EXTENSION_SIGNATURE, 4) != 0) {
-            log_info("Wrong signature. Quit!");
-            finalize_file_and_buffer(&fw, &fw_buf);
+    }
+    return 0;
+}
+
+static uint8_t *patch_buffer = NULL;
+static uint32_t firmware_total_len;
+static uint32_t firmware_offset;
+static uint8_t  firmware_update_index;
+
+// returns true if successful
+static bool load_firmware_and_config(const char *firmware, const char *config) {
+    btstack_assert(patch_buffer == NULL);
+    uint16_t patch_length = 0;
+    uint32_t offset = 0;
+    FILE *   fw = NULL;
+    uint32_t fw_size;
+    uint8_t *fw_buf = NULL;
+
+    FILE *   conf = NULL;
+    uint32_t conf_size;
+    uint8_t *conf_buf = NULL;
+
+    uint32_t fw_version;
+    uint16_t fw_num_patches;
+
+    struct patch_node *tmp;
+    unsigned max_patch_size = 0;
+
+    if (firmware == NULL || config == NULL) {
+        log_info("Please specify realtek firmware and config file paths");
+        return false;
+    }
+    // read config
+    conf_size = read_file(&conf, &conf_buf, config);
+    if (conf_size == 0) {
+        log_info("Config size is 0, using efuse settings!");
+    }
+    // get vendor baud
+    if (conf_buf) {
+        rtb_cfg.vendor_baud = get_vendor_baud(conf_buf, conf_size);
+        printf("Realtek: Vendor baud from config file: %08" PRIx32 "\n", rtb_cfg.vendor_baud);
+    }
+    // read firmware
+    fw_size = read_file(&fw, &fw_buf, firmware);
+    if (fw_size == 0) {
+        log_info("Firmware size is 0. Quit!");
+        if (conf_size != 0){
             finalize_file_and_buffer(&conf, &conf_buf);
-            return FW_DONE;
         }
-        // check project id
-        if (rtb_cfg.lmp_subversion != project_id[rtk_get_fw_project_id(fw_buf + fw_size - 5)]) {
-            log_info("Wrong project id. Quit!");
-            finalize_file_and_buffer(&fw, &fw_buf);
-            finalize_file_and_buffer(&conf, &conf_buf);
-            return FW_DONE;
-        }
-        // init ordered list for new firmware signature
-        btstack_linked_list_t patch_list = NULL;
-        bool have_new_firmware_signature = memcmp(fw_buf, FW_SIGNATURE_NEW, 8) == 0;
-        if (have_new_firmware_signature){
-            printf("Realtek: Using new signature\n");
-            uint8_t key_id = g_key_id;
-
-            // TODO: figure out how this should work for UART
-            if ((realtek_interface == REALTEK_INTERFACE_USB) && (key_id == 0)) {
-                log_info("Wrong key id. Quit!");
-                finalize_file_and_buffer(&fw, &fw_buf);
-                finalize_file_and_buffer(&conf, &conf_buf);
-                return FW_DONE;
-            }
-
-            rtb_get_patch_header(&fw_total_len, &patch_list, fw_buf, key_id);
-            if (fw_total_len == 0) {
-                finalize_file_and_buffer(&fw, &fw_buf);
-                finalize_file_and_buffer(&conf, &conf_buf);
-                return FW_DONE;
-            }
-            fw_total_len += conf_size;
-        } else {
-            printf("Realtek: Using old signature\n");
-            // read firmware version
-            fw_version = little_endian_read_32(fw_buf, 8);
-            log_info("Firmware version: 0x%x", fw_version);
-
-            // read number of patches
-            fw_num_patches = little_endian_read_16(fw_buf, 12);
-            log_info("Number of patches: %d", fw_num_patches);
-
-        // find correct entry
-            for (uint16_t i = 0; i < fw_num_patches; i++) {
-                if (little_endian_read_16(fw_buf, 14 + 2 * i) == rom_version + 1) {
-                    patch_length = little_endian_read_16(fw_buf, 14 + 2 * fw_num_patches + 2 * i);
-                    offset       = little_endian_read_32(fw_buf, 14 + 4 * fw_num_patches + 4 * i);
-                    log_info("patch_length %u, offset %u", patch_length, offset);
-                    break;
-                }
-            }
-            if (patch_length == 0) {
-                log_debug("Failed to find valid patch");
-                finalize_file_and_buffer(&fw, &fw_buf);
-                finalize_file_and_buffer(&conf, &conf_buf);
-                return FW_DONE;
-            }
-            fw_total_len = patch_length + conf_size;
-        }
-
-        max_patch_size = get_max_patch_size(rtb_cfg.chip_type);
-        printf("Realtek: FW/CONFIG total length is %d, max patch size id %d\n", fw_total_len, max_patch_size);
-        if (fw_total_len > max_patch_size) {
-            printf("Realtek: FW/CONFIG total length larger than allowed %d\n", max_patch_size);
-            finalize_file_and_buffer(&fw, &fw_buf);
-            finalize_file_and_buffer(&conf, &conf_buf);
-            return FW_DONE;
-        }
-        // allocate patch buffer
-        patch_buf = malloc(fw_total_len);
-        if (patch_buf == NULL) {
-            log_debug("Failed to allocate %u bytes for patch buffer", fw_total_len);
-            finalize_file_and_buffer(&fw, &fw_buf);
-            finalize_file_and_buffer(&conf, &conf_buf);
-            return FW_DONE;
-        }
-        if (have_new_firmware_signature) {
-            int tmp_len = 0;
-            // append patches based on priority and free
-            while (patch_list) {
-                tmp = (struct patch_node *) patch_list;
-                log_info("len = 0x%x", tmp->len);
-                memcpy(patch_buf + tmp_len, tmp->payload, tmp->len);
-                tmp_len += tmp->len;
-                patch_list = patch_list->next;
-                free(tmp);
-            }
-            if (conf_size) {
-                memcpy(&patch_buf[fw_total_len - conf_size], conf_buf, conf_size);
-            }
-        } else {
-            // copy patch
-            memcpy(patch_buf, fw_buf + offset, patch_length);
-            memcpy(patch_buf + patch_length - 4, &fw_version, 4);
-            memcpy(patch_buf + patch_length, conf_buf, conf_size);
-        }
-        fw_ptr = 0;
-        index  = 0;
-
-        // close files
+        return false;
+    }
+    // check signature
+    if (((memcmp(fw_buf, FW_SIGNATURE, 8) != 0) && (memcmp(fw_buf, FW_SIGNATURE_NEW, 8) != 0))
+          || memcmp(fw_buf + fw_size - 4, EXTENSION_SIGNATURE, 4) != 0) {
+        log_info("Wrong signature. Quit!");
         finalize_file_and_buffer(&fw, &fw_buf);
         finalize_file_and_buffer(&conf, &conf_buf);
+        return FW_DONE;
+    }
+    // check project id
+    if (rtb_cfg.lmp_subversion != project_id[rtk_get_fw_project_id(fw_buf + fw_size - 5)]) {
+        log_info("Wrong project id. Quit!");
+        finalize_file_and_buffer(&fw, &fw_buf);
+        finalize_file_and_buffer(&conf, &conf_buf);
+        return false;
+    }
+    // init ordered list for new firmware signature
+    btstack_linked_list_t patch_list = NULL;
+    bool have_new_firmware_signature = memcmp(fw_buf, FW_SIGNATURE_NEW, 8) == 0;
+    if (have_new_firmware_signature){
+        printf("Realtek: Using new signature\n");
+        uint8_t key_id = g_key_id;
+
+        // TODO: figure out how this should work for UART
+        if ((realtek_interface == REALTEK_INTERFACE_USB) && (key_id == 0)) {
+            log_info("Wrong key id. Quit!");
+            finalize_file_and_buffer(&fw, &fw_buf);
+            finalize_file_and_buffer(&conf, &conf_buf);
+            return false;
+        }
+
+        rtb_get_patch_header(&firmware_total_len, &patch_list, fw_buf, key_id);
+        if (firmware_total_len == 0) {
+            finalize_file_and_buffer(&fw, &fw_buf);
+            finalize_file_and_buffer(&conf, &conf_buf);
+            return false;
+        }
+        firmware_total_len += conf_size;
+    } else {
+        printf("Realtek: Using old signature\n");
+        // read firmware version
+        fw_version = little_endian_read_32(fw_buf, 8);
+        log_info("Firmware version: 0x%x", fw_version);
+
+        // read number of patches
+        fw_num_patches = little_endian_read_16(fw_buf, 12);
+        log_info("Number of patches: %d", fw_num_patches);
+
+        // find correct entry
+        for (uint16_t i = 0; i < fw_num_patches; i++) {
+            if (little_endian_read_16(fw_buf, 14 + 2 * i) == rom_version + 1) {
+                patch_length = little_endian_read_16(fw_buf, 14 + 2 * fw_num_patches + 2 * i);
+                offset       = little_endian_read_32(fw_buf, 14 + 4 * fw_num_patches + 4 * i);
+                log_info("patch_length %u, offset %u", patch_length, offset);
+                break;
+            }
+        }
+        if (patch_length == 0) {
+            log_debug("Failed to find valid patch");
+            finalize_file_and_buffer(&fw, &fw_buf);
+            finalize_file_and_buffer(&conf, &conf_buf);
+            return false;
+        }
+        firmware_total_len = patch_length + conf_size;
+    }
+
+    max_patch_size = get_max_patch_size(rtb_cfg.chip_type);
+    printf("Realtek: FW/CONFIG total length is %d, max patch size id %d\n", firmware_total_len, max_patch_size);
+    if (firmware_total_len > max_patch_size) {
+        printf("Realtek: FW/CONFIG total length larger than allowed %d\n", max_patch_size);
+        finalize_file_and_buffer(&fw, &fw_buf);
+        finalize_file_and_buffer(&conf, &conf_buf);
+        return false;
+    }
+    // allocate patch buffer
+    patch_buffer = malloc(firmware_total_len);
+    if (patch_buffer == NULL) {
+        log_debug("Failed to allocate %u bytes for patch buffer", fw_total_len);
+        finalize_file_and_buffer(&fw, &fw_buf);
+        finalize_file_and_buffer(&conf, &conf_buf);
+        return false;
+    }
+    if (have_new_firmware_signature) {
+        int tmp_len = 0;
+        // append patches based on priority and free
+        while (patch_list) {
+            tmp = (struct patch_node *) patch_list;
+            log_info("len = 0x%x", tmp->len);
+            memcpy(patch_buffer + tmp_len, tmp->payload, tmp->len);
+            tmp_len += tmp->len;
+            patch_list = patch_list->next;
+            free(tmp);
+        }
+        if (conf_size) {
+            memcpy(&patch_buffer[firmware_total_len - conf_size], conf_buf, conf_size);
+        }
+    } else {
+        // copy patch
+        memcpy(patch_buffer, fw_buf + offset, patch_length);
+        memcpy(patch_buffer + patch_length - 4, &fw_version, 4);
+        memcpy(patch_buffer + patch_length, conf_buf, conf_size);
+    }
+    firmware_offset = 0;
+    firmware_update_index  = 0;
+
+    // close files
+    finalize_file_and_buffer(&fw, &fw_buf);
+    finalize_file_and_buffer(&conf, &conf_buf);
+    return true;
+}
+
+static uint8_t update_firmware(const char *firmware, const char *config, uint8_t *hci_cmd_buffer) {
+
+    // read firmware and config if needed
+    if (patch_buffer == NULL) {
+        bool ok = load_firmware_and_config(firmware, config);
+        if (ok == false) {
+            return FW_DONE;
+        }
     }
 
     uint8_t len;
-    if (fw_total_len - fw_ptr > 252) {
+    if (firmware_total_len - firmware_offset > 252) {
         len = 252;
     } else {
-        len = fw_total_len - fw_ptr;
-        index |= 0x80;  // end
+        len = firmware_total_len - firmware_offset;
+        firmware_update_index |= 0x80;  // end
     }
 
     if (len) {
         little_endian_store_16(hci_cmd_buffer, 0, HCI_OPCODE_HCI_RTK_DOWNLOAD_FW);
         HCI_CMD_SET_LENGTH(hci_cmd_buffer, len + 1);
-        HCI_CMD_DOWNLOAD_SET_INDEX(hci_cmd_buffer, index);
-        HCI_CMD_DOWNLOAD_COPY_FW_DATA(hci_cmd_buffer, patch_buf, fw_ptr, len);
-        index++;
-        if (index > 0x7f) {
-            index = (index & 0x7f) +1;
+        HCI_CMD_DOWNLOAD_SET_INDEX(hci_cmd_buffer, firmware_update_index);
+        HCI_CMD_DOWNLOAD_COPY_FW_DATA(hci_cmd_buffer, patch_buffer, firmware_offset, len);
+        firmware_update_index++;
+        if (firmware_update_index > 0x7f) {
+            firmware_update_index = (firmware_update_index & 0x7f) +1;
         }
-        fw_ptr += len;
+        firmware_offset += len;
         return FW_MORE_TO_DO;
     }
 
     // cleanup and return
-    free(patch_buf);
-    patch_buf = NULL;
+    free(patch_buffer);
+    patch_buffer = NULL;
     printf("Realtek: Init process finished\n");
     return FW_DONE;
 }
@@ -1175,6 +1269,7 @@ static void chipset_init(const void *config) {
         btstack_snprintf_assert_complete(config_file, sizeof(config_file), "%s/%s", config_folder_path, patch_uart->config_file);
         firmware_file_path = &firmware_file[0];
         config_file_path   = &config_file[0];
+        load_firmware_and_config(firmware_file_path, config_file_path);
     }
 
     log_info("Using firmware '%s' and config '%s'", firmware_file_path, config_file_path);
@@ -1232,6 +1327,10 @@ void btstack_chipset_realtek_set_local_info(uint8_t version, uint16_t revision, 
     rtb_cfg.hci_revision = revision;
     rtb_cfg.lmp_subversion = subversion;
     realtek_interface = REALTEK_INTERFACE_UART_H4;
+}
+
+uint32_t btstack_chipset_realtek_get_config_baudrate(void) {
+    return vendor_speed_to_std(rtb_cfg.vendor_baud);
 }
 
 static const btstack_chipset_t btstack_chipset_realtek = {

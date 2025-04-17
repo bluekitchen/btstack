@@ -101,6 +101,11 @@ void btstack_chipset_realtek_get_vendor_product_id(uint16_t index, uint16_t * ou
  */
 void btstack_chipset_realtek_set_local_info(uint8_t hci_version, uint16_t hci_revision, uint16_t lmp_subversion);
 
+ /**
+  * @brief Get Baudrate from Config File
+  */
+uint32_t btstack_chipset_realtek_get_config_baudrate(void);
+
 /**
  * Get chipset instance for REALTEK chipsets
  */
