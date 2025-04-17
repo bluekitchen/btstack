@@ -279,6 +279,8 @@ static void local_version_information_handler(uint8_t * packet){
             printf("Realtek HCI Controller\n");
             btstack_chipset_realtek_set_local_info(hci_version, hci_revision, lmp_subversion);
             hci_set_chipset(btstack_chipset_realtek_instance());
+            config.baudrate_main = btstack_chipset_realtek_get_config_baudrate();
+            printf("Main baudrate %u\n", config.baudrate_main);
             break;
         default:
             printf("Unknown manufacturer / manufacturer not supported yet.\n");
