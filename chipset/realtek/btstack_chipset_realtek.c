@@ -1117,6 +1117,9 @@ static void chipset_init(const void *config) {
     UNUSED(config);
 
 #ifdef HAVE_POSIX_FILE_IO
+    // default: load firmware and config
+    state = STATE_PHASE_2_LOAD_FIRMWARE;
+
     // lookup chipset by USB Product ID
     if (product_id != 0) {
         if (firmware_file_path == NULL || config_file_path == NULL) {
@@ -1139,6 +1142,7 @@ static void chipset_init(const void *config) {
             firmware_file_path = &firmware_file[0];
             config_file_path   = &config_file[0];
             rtb_cfg.lmp_subversion = patch_usb->lmp_sub;
+            state = STATE_PHASE_1_READ_LMP_SUBVERSION;
         }
     }
 
@@ -1150,6 +1154,8 @@ static void chipset_init(const void *config) {
             state = STATE_PHASE_2_DONE;
             return;
         }
+        rtb_cfg.chip_type = patch_uart->chip_type;
+        printf("IC: %s, chip type: 0x%02x\n", patch_uart->ic_name, patch_uart->chip_type);
         btstack_snprintf_assert_complete(firmware_file, sizeof(firmware_file), "%s/%s", firmware_folder_path, patch_uart->patch_file);
         btstack_snprintf_assert_complete(config_file, sizeof(config_file), "%s/%s", config_folder_path, patch_uart->config_file);
         firmware_file_path = &firmware_file[0];
@@ -1157,12 +1163,11 @@ static void chipset_init(const void *config) {
     }
 
     log_info("Using firmware '%s' and config '%s'", firmware_file_path, config_file_path);
-    printf("Realtek: Using firmware '%s' and config '%s'\n", firmware_file_path, config_file_path);
+    printf("Using firmware '%s' and config '%s'\n", firmware_file_path, config_file_path);
 
     // activate hci callback
     hci_event_callback_registration.callback = &hci_packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
-    state = STATE_PHASE_1_READ_LMP_SUBVERSION;
 #endif
 }
 
