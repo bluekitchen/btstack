@@ -135,23 +135,6 @@ struct rtb_new_patch_hdr {
 #pragma pack(pop)
 
 
-enum {
-    // Pre-Init: runs before HCI Reset
-    STATE_PHASE_1_READ_LMP_SUBVERSION,
-    STATE_PHASE_1_W4_READ_LMP_SUBVERSION,
-    STATE_PHASE_1_READ_HCI_REVISION,
-    STATE_PHASE_1_W4_READ_HCI_REVISION,
-    STATE_PHASE_1_DONE,
-    // Custom Init: runs after HCI Reset
-    STATE_PHASE_2_READ_ROM_VERSION,
-    STATE_PHASE_2_READ_SEC_PROJ,
-    STATE_PHASE_2_W4_SEC_PROJ,
-    STATE_PHASE_2_LOAD_FIRMWARE,
-    STATE_PHASE_2_RESET,
-    STATE_PHASE_2_DONE,
-};
-enum { FW_DONE, FW_MORE_TO_DO };
-
 typedef struct {
     uint16_t prod_id;
     uint16_t lmp_sub;
@@ -375,17 +358,38 @@ typedef enum {
     REALTEK_INTERFACE_UART_H5,
 } realtek_interface_t;
 
+typedef struct rtb_struct {
+    uint16_t hci_version;
+    uint16_t hci_revision;
+    uint16_t lmp_subversion;
+    uint8_t  chip_type;
+} rtb_struct_t;
+
+enum {
+    // Pre-Init: runs before HCI Reset
+    STATE_PHASE_1_READ_LMP_SUBVERSION,
+    STATE_PHASE_1_W4_READ_LMP_SUBVERSION,
+    STATE_PHASE_1_READ_HCI_REVISION,
+    STATE_PHASE_1_W4_READ_HCI_REVISION,
+    STATE_PHASE_1_DONE,
+    // Custom Init: runs after HCI Reset
+    STATE_PHASE_2_READ_ROM_VERSION,
+    STATE_PHASE_2_READ_SEC_PROJ,
+    STATE_PHASE_2_W4_SEC_PROJ,
+    STATE_PHASE_2_LOAD_FIRMWARE,
+    STATE_PHASE_2_RESET,
+    STATE_PHASE_2_DONE,
+};
+
 static realtek_interface_t realtek_interface = REALTEK_INTERFACE_UNKNOWN;
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static uint8_t                                state;
-static uint8_t                                hci_version;
-static uint16_t                               hci_revision;
-static uint16_t                               lmp_subversion;
 static uint16_t                               product_id;
 static uint8_t                                rom_version;
 static const patch_info_usb *                 patch;
 static uint8_t                                g_key_id = 0;
+static rtb_struct_t                           rtb_cfg;
 
 #ifdef HAVE_POSIX_FILE_IO
 static const char *firmware_folder_path = ".";
@@ -395,6 +399,9 @@ static const char *config_file_path;
 static char        firmware_file[1000];
 static char        config_file[1000];
 #endif
+
+
+enum { FW_DONE, FW_MORE_TO_DO };
 
 
 static void hci_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) {
@@ -411,13 +418,13 @@ static void hci_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
     const uint8_t * return_para = hci_event_command_complete_get_return_parameters(packet);
     switch (opcode) {
         case HCI_OPCODE_HCI_READ_LOCAL_VERSION_INFORMATION:
-            lmp_subversion = little_endian_read_16(packet, 12);
+            rtb_cfg.lmp_subversion = little_endian_read_16(packet, 12);
             break;
         case HCI_OPCODE_HCI_RTK_READ_ROM_VERSION:
             rom_version = return_para[1];
             log_info("Received ROM version 0x%02x", rom_version);
             printf("Realtek: Received ROM version 0x%02x\n", rom_version);
-            if (patch->lmp_sub != lmp_subversion) {
+            if (patch->lmp_sub != rtb_cfg.lmp_subversion) {
                 printf("Realtek: Firmware already exists\n");
                 state = STATE_PHASE_2_DONE;
             }
@@ -480,7 +487,7 @@ static void chipset_init(const void *config) {
             btstack_snprintf_assert_complete(config_file, sizeof(config_file), "%s/%s", config_folder_path, patch->config_name);
             firmware_file_path = &firmware_file[0];
             config_file_path   = &config_file[0];
-            lmp_subversion     = patch->lmp_sub;
+            rtb_cfg.lmp_subversion = patch->lmp_sub;
         }
         log_info("Using firmware '%s' and config '%s'", firmware_file_path, config_file_path);
         printf("Realtek: Using firmware '%s' and config '%s'\n", firmware_file_path, config_file_path);
@@ -839,7 +846,7 @@ static uint8_t update_firmware(const char *firmware, const char *config, uint8_t
             return FW_DONE;
         }
         // check project id
-        if (lmp_subversion != project_id[rtk_get_fw_project_id(fw_buf + fw_size - 5)]) {
+        if (rtb_cfg.lmp_subversion != project_id[rtk_get_fw_project_id(fw_buf + fw_size - 5)]) {
             log_info("Wrong project id. Quit!");
             finalize_file_and_buffer(&fw, &fw_buf);
             finalize_file_and_buffer(&conf, &conf_buf);
@@ -998,7 +1005,7 @@ static btstack_chipset_result_t chipset_next_command(uint8_t *hci_cmd_buffer) {
                 state = STATE_PHASE_2_W4_SEC_PROJ;
                 break;
             case STATE_PHASE_2_LOAD_FIRMWARE:
-                if (lmp_subversion != ROM_LMP_8723a) {
+                if (rtb_cfg.lmp_subversion != ROM_LMP_8723a) {
                     ret = update_firmware(firmware_file_path, config_file_path, hci_cmd_buffer);
                 } else {
                     log_info("Realtek firmware for old patch style not implemented");
@@ -1073,9 +1080,9 @@ void btstack_chipset_realtek_get_vendor_product_id(uint16_t index, uint16_t * ou
 }
 void btstack_chipset_realtek_set_local_info(uint8_t version, uint16_t revision, uint16_t subversion){
     log_info("Set Local Info for UART Controller");
-    hci_version = version;
-    hci_revision = revision;
-    lmp_subversion = subversion;
+    rtb_cfg.hci_version = version;
+    rtb_cfg.hci_revision = revision;
+    rtb_cfg.lmp_subversion = subversion;
     realtek_interface = REALTEK_INTERFACE_UART_H4;
 }
 
