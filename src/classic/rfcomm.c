@@ -2297,18 +2297,20 @@ uint8_t * rfcomm_get_outgoing_buffer(void){
 }
 
 uint8_t rfcomm_send_prepared(uint16_t rfcomm_cid, uint16_t len){
-    // clear buffer reserved flag after asserting that it was set
     btstack_assert(rfcomm_outgoing_buffer_reserved);
-    rfcomm_outgoing_buffer_reserved = false;
 
     rfcomm_channel_t * channel = rfcomm_channel_for_rfcomm_cid(rfcomm_cid);
     if (!channel){
         log_error("cid 0x%02x doesn't exist!", rfcomm_cid);
+        rfcomm_release_packet_buffer();
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
 
     uint8_t status = rfcomm_assert_send_valid(channel, len);
-    if (status != ERROR_CODE_SUCCESS) return status;
+    if (status != ERROR_CODE_SUCCESS) {
+        rfcomm_release_packet_buffer();
+        return status;
+    }
 
 #ifdef RFCOMM_USE_OUTGOING_BUFFER
     if (!l2cap_can_send_packet_now(channel->multiplexer->l2cap_cid)){
@@ -2318,22 +2320,27 @@ uint8_t rfcomm_send_prepared(uint16_t rfcomm_cid, uint16_t len){
 #else
     if (!l2cap_can_send_prepared_packet_now(channel->multiplexer->l2cap_cid)){
         log_error("l2cap cannot send now");
+        rfcomm_release_packet_buffer();
         return BTSTACK_ACL_BUFFERS_FULL;
     }
 #endif
 
     // send might cause l2cap to emit new credits, update counters first
-    if (len){
+    if (len > 0){
         channel->credits_outgoing--;
     } else {
         log_info("sending empty RFCOMM packet for cid %02x", rfcomm_cid);
     }
-        
+
+    // rfcomm_send_uih_prepared will release the hci packet buffer on failure
     status = rfcomm_send_uih_prepared(channel->multiplexer, channel->dlci, len);
 
-    if (status != 0) {
+    // our buffer is free again
+    rfcomm_outgoing_buffer_reserved = false;
+
+    if (status != ERROR_CODE_SUCCESS) {
         log_error("error %d", status);
-        if (len) {
+        if (len > 0) {
             channel->credits_outgoing++;
         }
     }
