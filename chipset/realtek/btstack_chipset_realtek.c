@@ -907,22 +907,27 @@ static const uint8_t hci_realtek_read_lmp_subversion[] = {0x61, 0xfc, 0x05, 0x10
 static const uint8_t hci_realtek_read_hci_revision[]   = {0x61, 0xfc, 0x05, 0x10, 0x3A, 0x04, 0x28, 0x80 };
 
 
-static uint8_t *patch_buffer = NULL;
-static uint32_t firmware_total_len;
-static uint32_t firmware_offset;
-static uint8_t  firmware_update_index;
+static uint8_t * patch_buffer = NULL;
+static uint32_t  config_size;
+static uint32_t  firmware_size;
+
+typedef struct {
+    const uint8_t * buffer;
+    uint32_t        offset;
+    uint32_t        len;
+    uint8_t         index;
+} download_blob_t;
+static download_blob_t download_blob;
 
 // returns true if successful
 static bool load_firmware_and_config(const char *firmware, const char *config) {
     btstack_assert(patch_buffer == NULL);
-    uint16_t patch_length = 0;
     uint32_t offset = 0;
     FILE *   fw = NULL;
     uint32_t fw_size;
     uint8_t *fw_buf = NULL;
 
     FILE *   conf = NULL;
-    uint32_t conf_size;
     uint8_t *conf_buf = NULL;
 
     uint32_t fw_version;
@@ -941,20 +946,20 @@ static bool load_firmware_and_config(const char *firmware, const char *config) {
         return false;
     }
     // read config
-    conf_size = read_file(&conf, &conf_buf, config);
-    if (conf_size == 0) {
+    config_size = read_file(&conf, &conf_buf, config);
+    if (config_size == 0) {
         log_info("Config size is 0, using efuse settings!");
     }
     // get vendor baud
     if (conf_buf) {
-        rtb_cfg.vendor_baud = get_vendor_baud(conf_buf, conf_size);
+        rtb_cfg.vendor_baud = get_vendor_baud(conf_buf, config_size);
         printf("Realtek: Vendor baud from config file: %08" PRIx32 "\n", rtb_cfg.vendor_baud);
     }
     // read firmware
     fw_size = read_file(&fw, &fw_buf, firmware);
     if (fw_size == 0) {
         log_info("Firmware size is 0. Quit!");
-        if (conf_size != 0){
+        if (config_size != 0){
             finalize_file_and_buffer(&conf, &conf_buf);
         }
         return false;
@@ -988,14 +993,12 @@ static bool load_firmware_and_config(const char *firmware, const char *config) {
             finalize_file_and_buffer(&conf, &conf_buf);
             return false;
         }
-
-        rtb_get_patch_header(&firmware_total_len, &patch_list, fw_buf, key_id);
-        if (firmware_total_len == 0) {
+        rtb_get_patch_header(&firmware_size, &patch_list, fw_buf, key_id);
+        if (firmware_size == 0) {
             finalize_file_and_buffer(&fw, &fw_buf);
             finalize_file_and_buffer(&conf, &conf_buf);
             return false;
         }
-        firmware_total_len += conf_size;
     } else {
         printf("Realtek: Using old signature\n");
         // read firmware version
@@ -1009,31 +1012,32 @@ static bool load_firmware_and_config(const char *firmware, const char *config) {
         // find correct entry
         for (uint16_t i = 0; i < fw_num_patches; i++) {
             if (little_endian_read_16(fw_buf, 14 + 2 * i) == rom_version + 1) {
-                patch_length = little_endian_read_16(fw_buf, 14 + 2 * fw_num_patches + 2 * i);
-                offset       = little_endian_read_32(fw_buf, 14 + 4 * fw_num_patches + 4 * i);
-                log_info("patch_length %u, offset %u", patch_length, offset);
+                firmware_size = little_endian_read_16(fw_buf, 14 + 2 * fw_num_patches + 2 * i);
+                offset        = little_endian_read_32(fw_buf, 14 + 4 * fw_num_patches + 4 * i);
+                log_info("patch_length %" PRIu32 ", offset %u", firmware_size, offset);
                 break;
             }
         }
-        if (patch_length == 0) {
+        if (firmware_size == 0) {
             log_debug("Failed to find valid patch");
             finalize_file_and_buffer(&fw, &fw_buf);
             finalize_file_and_buffer(&conf, &conf_buf);
             return false;
         }
-        firmware_total_len = patch_length + conf_size;
     }
 
+    uint32_t download_total_len = firmware_size + config_size;
+
     max_patch_size = get_max_patch_size(rtb_cfg.chip_type);
-    printf("Realtek: FW/CONFIG total length is %d, max patch size id %d\n", firmware_total_len, max_patch_size);
-    if (firmware_total_len > max_patch_size) {
+    printf("Realtek: FW/CONFIG total length is %d, max patch size id %d\n", download_total_len, max_patch_size);
+    if (download_total_len > max_patch_size) {
         printf("Realtek: FW/CONFIG total length larger than allowed %d\n", max_patch_size);
         finalize_file_and_buffer(&fw, &fw_buf);
         finalize_file_and_buffer(&conf, &conf_buf);
         return false;
     }
     // allocate patch buffer
-    patch_buffer = malloc(firmware_total_len);
+    patch_buffer = malloc(download_total_len);
     if (patch_buffer == NULL) {
         log_debug("Failed to allocate %u bytes for patch buffer", fw_total_len);
         finalize_file_and_buffer(&fw, &fw_buf);
@@ -1051,17 +1055,15 @@ static bool load_firmware_and_config(const char *firmware, const char *config) {
             patch_list = patch_list->next;
             free(tmp);
         }
-        if (conf_size) {
-            memcpy(&patch_buffer[firmware_total_len - conf_size], conf_buf, conf_size);
+        if (config_size) {
+            memcpy(&patch_buffer[download_total_len - config_size], conf_buf, config_size);
         }
     } else {
         // copy patch
-        memcpy(patch_buffer, fw_buf + offset, patch_length);
-        memcpy(patch_buffer + patch_length - 4, &fw_version, 4);
-        memcpy(patch_buffer + patch_length, conf_buf, conf_size);
+        memcpy(patch_buffer, fw_buf + offset, firmware_size);
+        memcpy(patch_buffer + firmware_size - 4, &fw_version, 4);
+        memcpy(patch_buffer + firmware_size, conf_buf, config_size);
     }
-    firmware_offset = 0;
-    firmware_update_index  = 0;
 
     // close files
     finalize_file_and_buffer(&fw, &fw_buf);
@@ -1069,26 +1071,26 @@ static bool load_firmware_and_config(const char *firmware, const char *config) {
     return true;
 }
 
-static uint8_t update_firmware(uint8_t *hci_cmd_buffer) {
+static uint8_t download_blob_next_command(uint8_t *hci_cmd_buffer, download_blob_t * download_blob) {
 
     uint8_t len;
-    if (firmware_total_len - firmware_offset > 252) {
+    if ((download_blob->len - download_blob->offset) > 252) {
         len = 252;
     } else {
-        len = firmware_total_len - firmware_offset;
-        firmware_update_index |= 0x80;  // end
+        len = download_blob->len - download_blob->offset;
+        download_blob->index |= 0x80;  // end
     }
 
     if (len) {
         little_endian_store_16(hci_cmd_buffer, 0, HCI_OPCODE_HCI_RTK_DOWNLOAD_FW);
         HCI_CMD_SET_LENGTH(hci_cmd_buffer, len + 1);
-        HCI_CMD_DOWNLOAD_SET_INDEX(hci_cmd_buffer, firmware_update_index);
-        HCI_CMD_DOWNLOAD_COPY_FW_DATA(hci_cmd_buffer, patch_buffer, firmware_offset, len);
-        firmware_update_index++;
-        if (firmware_update_index > 0x7f) {
-            firmware_update_index = (firmware_update_index & 0x7f) +1;
+        HCI_CMD_DOWNLOAD_SET_INDEX(hci_cmd_buffer, download_blob->index);
+        HCI_CMD_DOWNLOAD_COPY_FW_DATA(hci_cmd_buffer, download_blob->buffer, download_blob->offset, len);
+        download_blob->index++;
+        if (download_blob->index > 0x7f) {
+            download_blob->index = (download_blob->index & 0x7f) +1;
         }
-        firmware_offset += len;
+        download_blob->offset += len;
         return FW_MORE_TO_DO;
     }
 
@@ -1106,6 +1108,11 @@ static void chipset_prepare_download(void) {
     // read firmware and config
     bool ok = load_firmware_and_config(firmware_file_path, config_file_path);
     if (ok) {
+        // prepare download
+        download_blob.buffer = patch_buffer;
+        download_blob.offset = 0;
+        download_blob.len    = firmware_size + config_size;
+        download_blob.index  = 0;
         state = STATE_PHASE_2_LOAD_FIRMWARE;
     }
 #endif
@@ -1139,7 +1146,7 @@ static btstack_chipset_result_t chipset_next_command(uint8_t *hci_cmd_buffer) {
                 state = STATE_PHASE_2_W4_SEC_PROJ;
                 break;
             case STATE_PHASE_2_LOAD_FIRMWARE:
-                ret = update_firmware(hci_cmd_buffer);
+                ret = download_blob_next_command(hci_cmd_buffer, &download_blob);
                 if (ret != FW_DONE) {
                     break;
                 }
