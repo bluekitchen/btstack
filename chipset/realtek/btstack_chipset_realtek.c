@@ -902,6 +902,11 @@ static uint32_t vendor_speed_to_std(uint32_t rtb_speed){
     return 0;
 }
 
+static const uint8_t hci_realtek_read_sec_proj[]       = {0x61, 0xfc, 0x05, 0x10, 0xA4, 0x0D, 0x00, 0xb0 };
+static const uint8_t hci_realtek_read_lmp_subversion[] = {0x61, 0xfc, 0x05, 0x10, 0x38, 0x04, 0x28, 0x80 };
+static const uint8_t hci_realtek_read_hci_revision[]   = {0x61, 0xfc, 0x05, 0x10, 0x3A, 0x04, 0x28, 0x80 };
+
+
 static uint8_t *patch_buffer = NULL;
 static uint32_t firmware_total_len;
 static uint32_t firmware_offset;
@@ -925,6 +930,11 @@ static bool load_firmware_and_config(const char *firmware, const char *config) {
 
     struct patch_node *tmp;
     unsigned max_patch_size = 0;
+
+    if (rtb_cfg.lmp_subversion != ROM_LMP_8723a) {
+        log_info("Realtek firmware for old patch style not implemented");
+        return false;
+    }
 
     if (firmware == NULL || config == NULL) {
         log_info("Please specify realtek firmware and config file paths");
@@ -955,7 +965,7 @@ static bool load_firmware_and_config(const char *firmware, const char *config) {
         log_info("Wrong signature. Quit!");
         finalize_file_and_buffer(&fw, &fw_buf);
         finalize_file_and_buffer(&conf, &conf_buf);
-        return FW_DONE;
+        return false;
     }
     // check project id
     if (rtb_cfg.lmp_subversion != project_id[rtk_get_fw_project_id(fw_buf + fw_size - 5)]) {
@@ -1059,15 +1069,7 @@ static bool load_firmware_and_config(const char *firmware, const char *config) {
     return true;
 }
 
-static uint8_t update_firmware(const char *firmware, const char *config, uint8_t *hci_cmd_buffer) {
-
-    // read firmware and config if needed
-    if (patch_buffer == NULL) {
-        bool ok = load_firmware_and_config(firmware, config);
-        if (ok == false) {
-            return FW_DONE;
-        }
-    }
+static uint8_t update_firmware(uint8_t *hci_cmd_buffer) {
 
     uint8_t len;
     if (firmware_total_len - firmware_offset > 252) {
@@ -1099,9 +1101,16 @@ static uint8_t update_firmware(const char *firmware, const char *config, uint8_t
 
 #endif  // HAVE_POSIX_FILE_IO
 
-static const uint8_t hci_realtek_read_sec_proj[]       = {0x61, 0xfc, 0x05, 0x10, 0xA4, 0x0D, 0x00, 0xb0 };
-static const uint8_t hci_realtek_read_lmp_subversion[] = {0x61, 0xfc, 0x05, 0x10, 0x38, 0x04, 0x28, 0x80 };
-static const uint8_t hci_realtek_read_hci_revision[]   = {0x61, 0xfc, 0x05, 0x10, 0x3A, 0x04, 0x28, 0x80 };
+static void chipset_prepare_download(void) {
+#ifdef HAVE_POSIX_FILE_IO
+    // read firmware and config
+    bool ok = load_firmware_and_config(firmware_file_path, config_file_path);
+    if (ok) {
+        state = STATE_PHASE_2_LOAD_FIRMWARE;
+    }
+#endif
+    state = STATE_PHASE_2_RESET;
+}
 
 static btstack_chipset_result_t chipset_next_command(uint8_t *hci_cmd_buffer) {
 #ifdef HAVE_POSIX_FILE_IO
@@ -1130,12 +1139,7 @@ static btstack_chipset_result_t chipset_next_command(uint8_t *hci_cmd_buffer) {
                 state = STATE_PHASE_2_W4_SEC_PROJ;
                 break;
             case STATE_PHASE_2_LOAD_FIRMWARE:
-                if (rtb_cfg.lmp_subversion != ROM_LMP_8723a) {
-                    ret = update_firmware(firmware_file_path, config_file_path, hci_cmd_buffer);
-                } else {
-                    log_info("Realtek firmware for old patch style not implemented");
-                    ret = FW_DONE;
-                }
+                ret = update_firmware(hci_cmd_buffer);
                 if (ret != FW_DONE) {
                     break;
                 }
@@ -1210,7 +1214,7 @@ static void hci_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                 case STATE_PHASE_2_W4_SEC_PROJ:
                     g_key_id = return_para[1];
                     printf("Realtek: Received key id 0x%02x\n", g_key_id);
-                    state = STATE_PHASE_2_LOAD_FIRMWARE;
+                    chipset_prepare_download();
                     break;
                 default:
                     btstack_assert(false);
@@ -1253,7 +1257,7 @@ static void chipset_init(const void *config) {
             rtb_cfg.lmp_subversion = patch_usb->lmp_sub;
             state = STATE_PHASE_1_READ_LMP_SUBVERSION;
         } else {
-            state = STATE_PHASE_2_LOAD_FIRMWARE;
+            chipset_prepare_download();
         }
     }
 
@@ -1273,7 +1277,7 @@ static void chipset_init(const void *config) {
         config_file_path   = &config_file[0];
         load_firmware_and_config(firmware_file_path, config_file_path);
 
-        state = STATE_PHASE_2_LOAD_FIRMWARE;
+        chipset_prepare_download();
     }
 
     log_info("Using firmware '%s' and config '%s'", firmware_file_path, config_file_path);
