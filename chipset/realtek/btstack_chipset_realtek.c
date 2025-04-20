@@ -1226,8 +1226,8 @@ static void chipset_init(const void *config) {
     UNUSED(config);
 
 #ifdef HAVE_POSIX_FILE_IO
-    // default: load firmware and config
-    state = STATE_PHASE_2_LOAD_FIRMWARE;
+    // default: no init, just clean up
+    state = STATE_PHASE_2_DONE;
 
     // lookup chipset by USB Product ID
     if (product_id != 0) {
@@ -1252,6 +1252,8 @@ static void chipset_init(const void *config) {
             config_file_path   = &config_file[0];
             rtb_cfg.lmp_subversion = patch_usb->lmp_sub;
             state = STATE_PHASE_1_READ_LMP_SUBVERSION;
+        } else {
+            state = STATE_PHASE_2_LOAD_FIRMWARE;
         }
     }
 
@@ -1270,6 +1272,8 @@ static void chipset_init(const void *config) {
         firmware_file_path = &firmware_file[0];
         config_file_path   = &config_file[0];
         load_firmware_and_config(firmware_file_path, config_file_path);
+
+        state = STATE_PHASE_2_LOAD_FIRMWARE;
     }
 
     log_info("Using firmware '%s' and config '%s'", firmware_file_path, config_file_path);
