@@ -936,7 +936,7 @@ static bool load_firmware_and_config(const char *firmware, const char *config) {
     struct patch_node *tmp;
     unsigned max_patch_size = 0;
 
-    if (rtb_cfg.lmp_subversion != ROM_LMP_8723a) {
+    if (rtb_cfg.lmp_subversion == ROM_LMP_8723a) {
         log_info("Realtek firmware for old patch style not implemented");
         return false;
     }
