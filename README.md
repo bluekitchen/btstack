@@ -118,7 +118,7 @@ For information on Apple's MFi/iAP2 and Find My profiles or access to LE Audio, 
 | Intel Dual Wireless 3165, 8260, 8265 | Dual mode        | USB            | Probably         | intel          | Firmware size: 400 kB                          |
 | Nordic nRF                           | LE               | H4             | n.a.             |                | Requires custom HCI firmware                   |
 | NXP 88W88997, IW416, IW61x           | Dual mode + Wifi | H4             | Yes              | nxp            | Requires initial firmware                      |
-| Realtek RTL8822CS                    | Dual mode + Wifi | H5             | Yes              |                | Requires initial firmware and config           |
+| Realtek UART                         | Dual mode + Wifi | H5             | Yes              | realtek        | Requires initial firmware and config           |
 | Realtek USB Dongles                  | Dual mode + Wifi | USB            | Yes              | realtek        | Requires initial firmware and config           |
 | Renesas RX23W                        | LE               | H4             | n.a.             |                | HCI Firmware part of BTTS                      |
 | STM STLC2500D                        | Classic          | H4             | No (didn't try)  | stlc2500d      | Custom deep sleep management not supported     |

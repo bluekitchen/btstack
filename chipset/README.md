@@ -88,7 +88,7 @@ CSR, which has been acquired by Qualcomm, provides all relevant information on t
 | STM32WB                              | LE               | VHCI           | Yes          | n.a.             | Yes        | Yes                   | n.a.              | Yes                |                | See port/stm32wb55x-nucleo-freertos              |
 | STM32WB0                             | LE               | VHCI, H4       | Yes          | n.a.             | Yes        | Yes                   | n.a.              | Yes                |                | HCI Firmware part of STM32WB0 Cube Package       |
 | Renesas RX23W                        | LE               | H4             | No           | n.a.             | Yes        | Yes                   | n.a .             | Don't know         |                | HCI Firmware part of BTTS                        |
-| Realtek RTL8822CS                    | Dual mode + Wifi | H5             | Yes          | Yes              | Don't know | Don't know            | Don't know        | Don't know         |                | Requires initial firmware + config               |
+| Realtek UART                         | Dual mode + Wifi | H5             | Yes          | Yes              | Don't know | Don't know            | Don't know        | Don't know         | realtek        | Requires initial firmware + config               |
 | Realtek USB Dongles                  | Dual mode + Wifi | USB            | Yes          | Yes              | Don't know | Don't know            | Don't know        | Don't know         | realtek        | Requires initial firmware + config               |
 | Toshiba TC35661                      | Dual mode        | H4             | No           | No               | No         | No                    | No                | No                 | tc3566         | Only -007/009 models provide full HCI. See below |
 | TI CC256x, WL183x                    | Dual mode        | H4, H5, eHCILL | Yes          | Yes              | No         | Yes for CC256XC       | No                | No                 | cc256x         | Also WL185x, WL187x, and WL189x                  |
@@ -288,7 +288,7 @@ They commonly require to download a patch and a configuration file. Patch and co
 
 **Init script** is required.
 
-**BTstack integration**: H4/H5 Controller require firmware upload. 'rtk_attach' can be used for this. For USB Controllers, 
+**BTstack integration**: H4/H5 Controller require firmware upload. 'rtk_attach' can be used for this on Embedded Linux. For H4 and USB Controllers, 
 *btstack_chipset_realtek.c* implements the patch and config upload mechanism. See port/libusb for details on how to use it.
 
 
