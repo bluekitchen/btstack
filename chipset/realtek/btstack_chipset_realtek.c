@@ -72,8 +72,9 @@
 #define ROM_LMP_8852a 0x8852
 #define ROM_LMP_8851b 0x8851
 
-#define HCI_OPCODE_HCI_RTK_DOWNLOAD_FW 0xFC20
+#define HCI_OPCODE_HCI_RTK_DOWNLOAD_FW      0xFC20
 #define HCI_OPCODE_HCI_RTK_READ_ROM_VERSION 0xFC6D
+#define HCI_OPCODE_HCI_RTK_8761C_COMMON		0xFDBB
 
 #define READ_SEC_PROJ 4
 
@@ -461,6 +462,7 @@ enum {
     STATE_PHASE_2_READ_SEC_PROJ,
     STATE_PHASE_2_W4_SEC_PROJ,
     STATE_PHASE_2_LOAD_FIRMWARE,
+    STATE_PHASE_2_CHECK_UPGRADE,
     STATE_PHASE_2_RESET,
     STATE_PHASE_2_DONE,
 };
@@ -692,7 +694,7 @@ static uint8_t *rtb_get_patch_header(uint32_t *len,
         switch (section_hdr.opcode) {
         case PATCH_SNIPPETS:
             insert_patch(patch_list, section_pos, PATCH_SNIPPETS, &patch_len, NULL);
-            printf("Realtek: patch len is %d\n",patch_len);
+            log_info("Realtek: patch len is %d",patch_len);
             break;
         case PATCH_SECURITY_HEADER:
             if(!g_key_id)
@@ -852,8 +854,8 @@ static uint32_t get_vendor_baud(const uint8_t * conf_buffer, uint32_t conf_size)
         if (conf_size < len) {
             return 0;
         }
-        printf("%04x: ", offset);
-        printf_hexdump(conf_buffer, len);
+        log_info("Config %04x: ", offset);
+        log_info_hexdump(conf_buffer, len);
         switch (offset) {
             case 0x003c:
             case 0x0030:
@@ -924,25 +926,23 @@ static bool load_firmware_and_config(const char *firmware, const char *config) {
     btstack_assert(patch_buffer == NULL);
     uint32_t offset = 0;
     FILE *   fw = NULL;
-    uint32_t fw_size;
     uint8_t *fw_buf = NULL;
 
     FILE *   conf = NULL;
     uint8_t *conf_buf = NULL;
 
     uint32_t fw_version;
-    uint16_t fw_num_patches;
 
     struct patch_node *tmp;
     unsigned max_patch_size = 0;
 
     if (rtb_cfg.lmp_subversion == ROM_LMP_8723a) {
-        log_info("Realtek firmware for old patch style not implemented");
+        log_info("Realtek firmware upload for old patch style not implemented");
         return false;
     }
 
     if (firmware == NULL || config == NULL) {
-        log_info("Please specify realtek firmware and config file paths");
+        log_info("Please specify Realtek firmware and config file paths");
         return false;
     }
     // read config
@@ -953,10 +953,10 @@ static bool load_firmware_and_config(const char *firmware, const char *config) {
     // get vendor baud
     if (conf_buf) {
         rtb_cfg.vendor_baud = get_vendor_baud(conf_buf, config_size);
-        printf("Realtek: Vendor baud from config file: %08" PRIx32 "\n", rtb_cfg.vendor_baud);
+        log_info("Realtek: Vendor baud from config file: %08" PRIx32, rtb_cfg.vendor_baud);
     }
     // read firmware
-    fw_size = read_file(&fw, &fw_buf, firmware);
+    uint32_t fw_size = read_file(&fw, &fw_buf, firmware);
     if (fw_size == 0) {
         log_info("Firmware size is 0. Quit!");
         if (config_size != 0){
@@ -983,7 +983,7 @@ static bool load_firmware_and_config(const char *firmware, const char *config) {
     btstack_linked_list_t patch_list = NULL;
     bool have_new_firmware_signature = memcmp(fw_buf, FW_SIGNATURE_NEW, 8) == 0;
     if (have_new_firmware_signature){
-        printf("Realtek: Using new signature\n");
+        log_info("Realtek: Using new signature");
         uint8_t key_id = g_key_id;
 
         // TODO: figure out how this should work for UART
@@ -1000,7 +1000,8 @@ static bool load_firmware_and_config(const char *firmware, const char *config) {
             return false;
         }
     } else {
-        printf("Realtek: Using old signature\n");
+        uint16_t fw_num_patches;
+        log_info("Realtek: Using old signature");
         // read firmware version
         fw_version = little_endian_read_32(fw_buf, 8);
         log_info("Firmware version: 0x%x", fw_version);
@@ -1094,14 +1095,31 @@ static uint8_t download_blob_next_command(uint8_t *hci_cmd_buffer, download_blob
         return FW_MORE_TO_DO;
     }
 
-    // cleanup and return
-    free(patch_buffer);
-    patch_buffer = NULL;
-    printf("Realtek: Init process finished\n");
     return FW_DONE;
 }
 
 #endif  // HAVE_POSIX_FILE_IO
+
+#define UPG_DL_BLOCK_SIZE   128
+#define SUBOPCODE_CKUPG	0x01
+
+#define DUMMY_DL_PDU_LEN	16
+static uint8_t dummy_dl_pdu[DUMMY_DL_PDU_LEN] = { 0 };
+
+static void check_upgrade_command(uint8_t *hci_cmd_buffer, const download_blob_t * download_blob) {
+    const uint8_t len = (uint8_t) btstack_min(UPG_DL_BLOCK_SIZE, download_blob->len);
+    little_endian_store_16(hci_cmd_buffer, 0, HCI_OPCODE_HCI_RTK_8761C_COMMON);
+    hci_cmd_buffer[2] = len + 1;
+    hci_cmd_buffer[3] = SUBOPCODE_CKUPG;
+    memcpy(&hci_cmd_buffer[4], download_blob->buffer, len);
+}
+
+static void configure_download_blob(download_blob_t * download_blob, const uint8_t * buffer, uint32_t len) {
+    download_blob->buffer = buffer;
+    download_blob->len    = len;
+    download_blob->offset = 0;
+    download_blob->index  = 0;
+}
 
 static void chipset_prepare_download(void) {
 #ifdef HAVE_POSIX_FILE_IO
@@ -1109,13 +1127,30 @@ static void chipset_prepare_download(void) {
     bool ok = load_firmware_and_config(firmware_file_path, config_file_path);
     if (ok) {
         // prepare download
-        download_blob.buffer = patch_buffer;
-        download_blob.offset = 0;
-        download_blob.len    = firmware_size + config_size;
-        download_blob.index  = 0;
+        if (rtb_cfg.chip_type == CHIP_8761CTV) {
+            // for 8761CTV, we load the config first and use a dummy pdu if there's no config
+            if (config_size) {
+                configure_download_blob(&download_blob, &patch_buffer[firmware_size], config_size);
+            } else {
+                configure_download_blob(&download_blob, dummy_dl_pdu, DUMMY_DL_PDU_LEN);
+            }
+        } else {
+            // otherwise, we load the firmware and config as a single blob
+            configure_download_blob(&download_blob, patch_buffer, firmware_size + config_size);
+        }
         state = STATE_PHASE_2_LOAD_FIRMWARE;
-    }
+    } else
 #endif
+    {
+        state = STATE_PHASE_2_RESET;
+    }
+}
+
+static void chipset_upgrade_done(void) {
+    // cleanup
+    free(patch_buffer);
+    patch_buffer = NULL;
+
     state = STATE_PHASE_2_RESET;
 }
 
@@ -1147,11 +1182,19 @@ static btstack_chipset_result_t chipset_next_command(uint8_t *hci_cmd_buffer) {
                 break;
             case STATE_PHASE_2_LOAD_FIRMWARE:
                 ret = download_blob_next_command(hci_cmd_buffer, &download_blob);
+                // all commands sent?
                 if (ret != FW_DONE) {
                     break;
                 }
-                // we are done
-                state = STATE_PHASE_2_RESET;
+                // download blob complete
+                if ( rtb_cfg.chip_type == CHIP_8761CTV) {
+                    configure_download_blob(&download_blob, patch_buffer, firmware_size);
+                    check_upgrade_command(hci_cmd_buffer, &download_blob);
+                    state = STATE_PHASE_2_CHECK_UPGRADE;
+                    break;
+                }
+
+                chipset_upgrade_done();
 
                 /* fall through */
 
@@ -1186,13 +1229,13 @@ static void hci_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
     }
 
     uint16_t opcode = hci_event_command_complete_get_command_opcode(packet);
-    const uint8_t * return_para = hci_event_command_complete_get_return_parameters(packet);
+    const uint8_t * return_params = hci_event_command_complete_get_return_parameters(packet);
     switch (opcode) {
         case HCI_OPCODE_HCI_READ_LOCAL_VERSION_INFORMATION:
             rtb_cfg.lmp_subversion = little_endian_read_16(packet, 12);
             break;
         case HCI_OPCODE_HCI_RTK_READ_ROM_VERSION:
-            rom_version = return_para[1];
+            rom_version = return_params[1];
             log_info("Received ROM version 0x%02x", rom_version);
             printf("Realtek: Received ROM version 0x%02x\n", rom_version);
             if (patch_usb->lmp_sub != rtb_cfg.lmp_subversion) {
@@ -1219,12 +1262,30 @@ static void hci_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                     }
                     break;
                 case STATE_PHASE_2_W4_SEC_PROJ:
-                    g_key_id = return_para[1];
+                    g_key_id = return_params[1];
                     printf("Realtek: Received key id 0x%02x\n", g_key_id);
                     chipset_prepare_download();
                     break;
                 default:
                     btstack_assert(false);
+                    break;
+            }
+            break;
+        case HCI_OPCODE_HCI_RTK_8761C_COMMON:
+            switch (state) {
+                case STATE_PHASE_2_CHECK_UPGRADE:
+                    btstack_assert(return_params[0] == ERROR_CODE_SUCCESS);
+                    btstack_assert(return_params[1] == SUBOPCODE_CKUPG);
+                    if (return_params[2] == 0x00) {
+                        printf("Realtek: Upgrade in place\n");
+                        chipset_upgrade_done();
+                    } else {
+                        printf("Realtek: Need firmware upgrade\n");
+                        state = STATE_PHASE_2_LOAD_FIRMWARE;
+                    }
+                    break;
+                default:
+                    btstack_unreachable();
                     break;
             }
             break;
@@ -1277,18 +1338,16 @@ static void chipset_init(const void *config) {
             return;
         }
         rtb_cfg.chip_type = patch_uart->chip_type;
-        printf("IC: %s, chip type: 0x%02x\n", patch_uart->ic_name, patch_uart->chip_type);
+        printf("Realtek: IC: %s, chip type: 0x%02x\n", patch_uart->ic_name, patch_uart->chip_type);
         btstack_snprintf_assert_complete(firmware_file, sizeof(firmware_file), "%s/%s", firmware_folder_path, patch_uart->patch_file);
         btstack_snprintf_assert_complete(config_file, sizeof(config_file), "%s/%s", config_folder_path, patch_uart->config_file);
         firmware_file_path = &firmware_file[0];
         config_file_path   = &config_file[0];
-        load_firmware_and_config(firmware_file_path, config_file_path);
-
         chipset_prepare_download();
     }
 
     log_info("Using firmware '%s' and config '%s'", firmware_file_path, config_file_path);
-    printf("Using firmware '%s' and config '%s'\n", firmware_file_path, config_file_path);
+    printf("Realtek: Using firmware '%s' and config '%s'\n", firmware_file_path, config_file_path);
 
     // activate hci callback
     hci_event_callback_registration.callback = &hci_packet_handler;
