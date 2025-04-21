@@ -1237,7 +1237,6 @@ static void hci_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
         case HCI_OPCODE_HCI_RTK_READ_ROM_VERSION:
             rom_version = return_params[1];
             log_info("Received ROM version 0x%02x", rom_version);
-            printf("Realtek: Received ROM version 0x%02x\n", rom_version);
             if (patch_usb->lmp_sub != rtb_cfg.lmp_subversion) {
                 printf("Realtek: Firmware already exists\n");
                 state = STATE_PHASE_2_DONE;
@@ -1303,46 +1302,42 @@ static void chipset_init(const void *config) {
 
     // lookup chipset by USB Product ID
     if (product_id != 0) {
-        if (firmware_file_path == NULL || config_file_path == NULL) {
-            log_info("firmware or config file path is empty. Using product id 0x%04x!", product_id);
-            patch_usb = NULL;
-            for (uint16_t i = 0; i < sizeof(fw_patch_table_usb) / sizeof(patch_info_usb); i++) {
-                if (fw_patch_table_usb[i].prod_id == product_id) {
-                    patch_usb = &fw_patch_table_usb[i];
-                    break;
-                }
+        log_info("firmware or config file path is empty. Using product id 0x%04x!", product_id);
+        patch_usb = NULL;
+        for (uint16_t i = 0; i < sizeof(fw_patch_table_usb) / sizeof(patch_info_usb); i++) {
+            if (fw_patch_table_usb[i].prod_id == product_id) {
+                patch_usb = &fw_patch_table_usb[i];
+                break;
             }
-            if (patch_usb == NULL) {
-                log_info("Product id 0x%04x is unknown", product_id);
-                state = STATE_PHASE_2_DONE;
-                return;
-            }
-            // determine file path
-            btstack_snprintf_assert_complete(firmware_file, sizeof(firmware_file), "%s/%s", firmware_folder_path, patch_usb->patch_name);
-            btstack_snprintf_assert_complete(config_file, sizeof(config_file), "%s/%s", config_folder_path, patch_usb->config_name);
-            firmware_file_path = &firmware_file[0];
-            config_file_path   = &config_file[0];
-            rtb_cfg.lmp_subversion = patch_usb->lmp_sub;
-            state = STATE_PHASE_1_READ_LMP_SUBVERSION;
-        } else {
-            chipset_prepare_download();
         }
+        if (patch_usb == NULL) {
+            log_info("Product id 0x%04x is unknown", product_id);
+            state = STATE_PHASE_2_DONE;
+            return;
+        }
+        btstack_snprintf_assert_complete(firmware_file, sizeof(firmware_file), "%s/%s", firmware_folder_path, patch_usb->patch_name);
+        btstack_snprintf_assert_complete(config_file, sizeof(config_file), "%s/%s", config_folder_path, patch_usb->config_name);
+        firmware_file_path = &firmware_file[0];
+        config_file_path   = &config_file[0];
+        rtb_cfg.lmp_subversion = patch_usb->lmp_sub;
+        rtb_cfg.chip_type      = patch_usb->chip_type;
+        state = STATE_PHASE_1_READ_LMP_SUBVERSION;
     }
 
     // start lookup by local version info
-    if (rtb_cfg.lmp_subversion != 0) {
+    else if (rtb_cfg.lmp_subversion != 0) {
         patch_uart = get_patch_entry(&rtb_cfg);
         if (patch_uart == NULL) {
             log_info("Cannot find chipset for hci/lmp info");
             state = STATE_PHASE_2_DONE;
             return;
         }
-        rtb_cfg.chip_type = patch_uart->chip_type;
-        printf("Realtek: IC: %s, chip type: 0x%02x\n", patch_uart->ic_name, patch_uart->chip_type);
         btstack_snprintf_assert_complete(firmware_file, sizeof(firmware_file), "%s/%s", firmware_folder_path, patch_uart->patch_file);
         btstack_snprintf_assert_complete(config_file, sizeof(config_file), "%s/%s", config_folder_path, patch_uart->config_file);
         firmware_file_path = &firmware_file[0];
         config_file_path   = &config_file[0];
+        rtb_cfg.chip_type = patch_uart->chip_type;
+        printf("Realtek: IC: %s, chip type: 0x%02x\n", patch_uart->ic_name, patch_uart->chip_type);
         chipset_prepare_download();
     }
 
