@@ -1,10 +1,11 @@
 .phony: examples
+PYTHON ?= python
 all: examples
 
 examples: 
-	scripts/create_examples.py
+	$(PYTHON) scripts/create_examples.py
 
 clean:
-	scripts/delete_examples.py
+	$(PYTHON) scripts/delete_examples.py
 	@rm -f example/Makefile
 	@rm -fR example/bin

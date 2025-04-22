@@ -55,7 +55,8 @@ PYTHON=python
 
 cc256x_init_script=bluetooth_init_cc2564B_1.8_BT_Spec_4.1.c
 
-# BTstack
+# A project must provide BTSTACK_ROOT.
+# Relative works only when in port/max32630-fthr/example/some-project/Makefile
 BTSTACK_ROOT ?= ../../../..
 BTSTACK_ROOT := $(realpath /$(subst \,/,$(subst :,,$(BTSTACK_ROOT))))
 PORT_DIR = ${BTSTACK_ROOT}/port/${PORT_NAME}
