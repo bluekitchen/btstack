@@ -33,7 +33,7 @@ echo.
 echo Current PATH=%PATH%
 echo.
 
-echo Prepend path with %TOOLCHAIN_PATH%\bin;%MSYS_PATH%\bin;"
+echo Prepend path with %TOOLCHAIN_PATH%\bin;%MSYS_PATH%\bin;
 set /p var="Continue?[Y/(N)]: "
 if "%var%"== "" goto :EOF
 if %var%== Y goto prepend
