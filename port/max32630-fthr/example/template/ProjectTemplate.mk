@@ -55,19 +55,19 @@ PYTHON=python
 
 cc256x_init_script=bluetooth_init_cc2564B_1.8_BT_Spec_4.1.c
 
-ifeq "$(MAXIM_PATH)" ""
-LIBS_DIR=$(realpath /$(subst \,/,$(subst :,,$(HOME))/Maxim/Firmware/$(TARGET_UC)/Libraries))
-$(warning "MAXIM_PATH need to be set. Please run setenv bash file in the Maxim Toolchain directory.")
-else
-LIBS_DIR=$(realpath /$(subst \,/,$(subst :,,$(MAXIM_PATH))/Firmware/$(TARGET_UC)/Libraries))
-endif
-
-CMSIS_ROOT=$(LIBS_DIR)/CMSIS
-
 # BTstack
 BTSTACK_ROOT ?= ../../../..
 BTSTACK_ROOT := $(realpath /$(subst \,/,$(subst :,,$(BTSTACK_ROOT))))
 PORT_DIR = ${BTSTACK_ROOT}/port/${PORT_NAME}
+
+ifeq "$(MAXIM_PATH)" ""
+MAXIM_PATH = $(realpath /$(subst \,/,$(subst :,,$(PORT_DIR))/maxim))
+else
+MAXIM_PATH := $(realpath /$(subst \,/,$(subst :,,$(MAXIM_PATH))))
+endif
+
+LIBS_DIR=$(MAXIM_PATH)/Firmware/$(TARGET_UC)/Libraries
+CMSIS_ROOT=$(LIBS_DIR)/CMSIS
 
 # Where to find source and header files for this test
 VPATH = . ${PORT_DIR}/src
@@ -77,10 +77,9 @@ IPATH = . ${PORT_DIR}/src
 SRCS = $(wildcard $(PORT_DIR)/src/*.c)
 
 # Board files for the max32630fthr board
-# are not present in $(LIBS_DIR)/Boards/
-# The port mimics the structure of EvKit_V1 in the $(LIBS_DIR)/Boards/EvKit_V1
-BOARD_DIR ?= ${PORT_DIR}/board/max32630-fthr
-include ${BOARD_DIR}/board.mk
+BOARD_DIR = ${LIBS_DIR}/Boards
+ADAPT_BOARD_DIR = ${PORT_DIR}/board/max32630-fthr
+include $(ADAPT_BOARD_DIR)/board.mk
 
 # Enable assertion checking for development
 PROJ_CFLAGS+=-DMXC_ASSERT_ENABLE
