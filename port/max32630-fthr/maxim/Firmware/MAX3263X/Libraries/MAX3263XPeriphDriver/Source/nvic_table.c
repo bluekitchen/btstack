@@ -75,8 +75,8 @@ static void (*ramVectorTable[MXC_IRQ_COUNT])(void);
 /* ************************************************************************* */
 void NVIC_SetRAM(void)
 {
-    /* should be defined in starup_<device>.S */
-    extern uint32_t __isr_vector;
+    /* defined in startup_<device>.S */
+    extern void (* const __isr_vector[])(void);
 
     memcpy(&ramVectorTable, &__isr_vector, sizeof(ramVectorTable));
     SCB->VTOR = (uint32_t)&ramVectorTable;
