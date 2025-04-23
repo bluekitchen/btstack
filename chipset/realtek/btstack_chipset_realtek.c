@@ -54,9 +54,11 @@
 #include "btstack_debug.h"
 #include "btstack_event.h"
 #include "btstack_linked_list.h"
+#include "btstack_ltv_builder.h"
 #include "btstack_util.h"
 #include "hci.h"
 #include "hci_transport.h"
+#include "le-audio/le_audio_util.h"
 
 #ifdef _MSC_VER
 // ignore deprecated warning for fopen
@@ -1423,3 +1425,30 @@ static const btstack_chipset_t btstack_chipset_realtek = {
 };
 
 const btstack_chipset_t *btstack_chipset_realtek_instance(void) { return &btstack_chipset_realtek; }
+
+
+uint8_t btstack_chipset_realtek_create_lc3_offloading_config(
+    uint8_t * buffer,
+    uint8_t size,
+    uint16_t sampling_frequency_hz,
+    btstack_lc3_frame_duration_t frame_duration,
+    uint32_t channel_allocation,
+    uint16_t octets_per_frame) {
+
+    btstack_ltv_builder_context_t context;
+    btstack_ltv_builder_init(&context, buffer, size);
+    // sampling frequency
+    btstack_ltv_builder_add_tag(&context, 0x01);
+    btstack_ltv_builder_add_08(&context, le_audio_get_sampling_frequency_index(sampling_frequency_hz));
+    // frame duration
+    btstack_ltv_builder_add_tag(&context, 0x02);
+    btstack_ltv_builder_add_08(&context, (frame_duration == BTSTACK_LC3_FRAME_DURATION_7500US) ? 0x00 : 0x01);
+    // channel allocation
+    btstack_ltv_builder_add_tag(&context, 0x03);
+    btstack_ltv_builder_add_little_endian_32(&context, channel_allocation);
+    // set codec frame length
+    btstack_ltv_builder_add_tag(&context, 0x04);
+    btstack_ltv_builder_add_little_endian_16(&context, octets_per_frame);
+
+    return btstack_ltv_builder_get_length(&context);
+}
