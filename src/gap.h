@@ -55,7 +55,7 @@ extern "C" {
 #endif
 
 // LC3 Offloading
-#ifdef ENABLE_LC3_OFFLOAD_AIROC
+#if defined(ENABLE_LC3_OFFLOAD_AIROC) || defined(ENABLE_LC3_OFFLOAD_REALTEK)
 #define ENABLE_LE_AUDIO_CODEC_OFFLOAD
 #endif
 
