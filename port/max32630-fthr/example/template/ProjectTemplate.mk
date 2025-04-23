@@ -108,8 +108,13 @@ all: inject_gatt_h
 #TOOL_DIR=/opt/gcc-arm-none-eabi-4_8-2013q4/bin
 
 # Use these variables to add project specific tool options
-#PROJ_CFLAGS+=--specs=nano.specs
-#PROJ_LDFLAGS+=--specs=nano.specs
+
+# Opting to link agains -lc_nano to silence warnings from libnosys.
+# Another option would be to implement _getpid, _kill, etc. with no attached warnings.
+# For details see:
+# https://metebalci.com/blog/demystifying-arm-gnu-toolchain-specs-nano-and-nosys/
+PROJ_CFLAGS+=--specs=nano.specs
+PROJ_LDFLAGS+=--specs=nano.specs
 
 # Point this variable to a startup file to override the default file
 #STARTUPFILE=start.S
