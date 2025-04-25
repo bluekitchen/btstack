@@ -598,6 +598,14 @@ static void pbap_client_prepare_get_operation(pbap_client_t * client){
     client->obex_parser_waiting_for_response = true;
 }
 
+static void pbap_client_prepare_size_operation(pbap_client_t* pbap_client)
+{
+    obex_parser_init_for_response(&pbap_client->obex_parser, OBEX_OPCODE_GET, pbap_client_parser_callback_get_phonebook_size, pbap_client);
+    obex_srm_client_init(&pbap_client->obex_srm);
+    pbap_client_phonebook_size_parser_init(&pbap_client->phonebook_size_parser);
+    pbap_client->obex_parser_waiting_for_response = true;
+}
+
 static void pbap_handle_can_send_now(pbap_client_t *pbap_client) {
     uint16_t path_element_start;
     uint16_t path_element_len;
@@ -698,10 +706,7 @@ static void pbap_handle_can_send_now(pbap_client_t *pbap_client) {
             // state
             pbap_client->state = PBAP_CLIENT_W4_GET_PHONEBOOK_SIZE_COMPLETE;
             // prepare response
-            obex_parser_init_for_response(&pbap_client->obex_parser, OBEX_OPCODE_GET, pbap_client_parser_callback_get_phonebook_size, pbap_client);
-            obex_srm_client_init(&pbap_client->obex_srm);
-            pbap_client_phonebook_size_parser_init(&pbap_client->phonebook_size_parser);
-            pbap_client->obex_parser_waiting_for_response = true;
+            pbap_client_prepare_size_operation(pbap_client);
             // send packet
             goep_client_execute(pbap_client->goep_cid);
             break;
