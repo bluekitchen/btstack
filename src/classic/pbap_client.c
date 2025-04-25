@@ -779,14 +779,14 @@ static void pbap_handle_can_send_now(pbap_client_t *pbap_client) {
             } else {
                 pbap_client_prepare_srm_header(pbap_client);
             }
-            // state
+            // set state and prepare response
             if (pbap_client->state == PBAP_CLIENT_W2_GET_CARD_LIST_SIZE) {
                 pbap_client->state = PBAP_CLIENT_W4_GET_CARD_LIST_SIZE_COMPLETE;
+                pbap_client_prepare_size_operation(pbap_client);
             } else {
                 pbap_client->state = PBAP_CLIENT_W4_GET_CARD_LIST_COMPLETE;
+                pbap_client_prepare_get_operation(pbap_client);
             }
-            // prepare response
-            pbap_client_prepare_get_operation(pbap_client);
             // send packet
             pbap_client->request_number++;
             goep_client_execute(pbap_client->goep_cid);
