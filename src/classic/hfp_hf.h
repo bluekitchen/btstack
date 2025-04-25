@@ -608,6 +608,30 @@ void hfp_hf_deinit(void);
  */
 void hfp_hf_create_sdp_record(uint8_t * service, uint32_t service_record_handle, int rfcomm_channel_nr, const char * name, uint16_t supported_features, int wide_band_speech);
 
+
+typedef enum {
+    HFP_HF_VRA_EVENT_NONE,
+    HFP_HF_VRA_EVENT_SLC_ESTABLISHED,
+    HFP_HF_VRA_EVENT_CAN_SEND_NOW,
+    HFP_HF_VRA_EVENT_RECEIVED_OK,
+    HFP_HF_VRA_EVENT_RECEIVED_ERROR,
+    HFP_HF_VRA_EVENT_RECEIVED_TIMEOUT,
+    HFP_HF_VRA_EVENT_SCO_CONNECTED,
+    HFP_HF_VRA_EVENT_SCO_DISCONNECTED,
+    HFP_HF_VRA_EVENT_AG_REPORT_ACTIVATED,
+    HFP_HF_VRA_EVENT_AG_REPORT_DEACTIVATED,
+    HFP_HF_VRA_EVENT_AG_REPORT_READY_FOR_AUDIO,
+    HFP_HF_VRA_EVENT_AG_REPORT_STATE,
+    HFP_HF_VRA_EVENT_AG_REPORT_TEXT_MESSAGE,
+    HFP_HF_VRA_EVENT_HF_REQUESTED_ACTIVATE,
+    HFP_HF_VRA_EVENT_HF_REQUESTED_READY_FOR_AUDIO,
+    HFP_HF_VRA_EVENT_HF_REQUESTED_DEACTIVATE,
+} hfp_hf_vra_event_type_t;
+
+#ifdef ENABLE_TESTING_SUPPORT
+bool test_hfp_hf_vra_state_machine(hfp_connection_t * hfp_connection, hfp_hf_vra_event_type_t event);
+#endif
+
 /* API_END */
 
 #if defined __cplusplus

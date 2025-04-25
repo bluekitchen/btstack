@@ -418,6 +418,7 @@ typedef enum {
 
 
 typedef enum {
+    HFP_VRA_NONE,
     // shared between normal voice recognition and enhanced one
     HFP_VRA_OFF,
 
@@ -954,6 +955,10 @@ void hfp_set_sco_packet_types(uint16_t packet_types);
  * @return packet_types
  */
 uint16_t hfp_get_sco_packet_types(void);
+
+#ifdef ENABLE_TESTING_SUPPORT
+hfp_connection_t * test_hfp_create_connection(bd_addr_t bd_addr, hfp_role_t local_role);
+#endif
 
 #if defined __cplusplus
 }

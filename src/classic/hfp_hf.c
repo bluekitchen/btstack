@@ -55,24 +55,6 @@
 #include "classic/hfp_hf.h"
 #include "classic/sdp_util.h"
 
-typedef enum {
-    HFP_HF_VRA_EVENT_NONE,
-    HFP_HF_VRA_EVENT_SLC_ESTABLISHED,
-    HFP_HF_VRA_EVENT_CAN_SEND_NOW,
-    HFP_HF_VRA_EVENT_RECEIVED_OK,
-    HFP_HF_VRA_EVENT_RECEIVED_ERROR,
-    HFP_HF_VRA_EVENT_RECEIVED_TIMEOUT,
-    HFP_HF_VRA_EVENT_SCO_CONNECTED,
-    HFP_HF_VRA_EVENT_SCO_DISCONNECTED,
-    HFP_HF_VRA_EVENT_AG_REPORT_ACTIVATED,
-    HFP_HF_VRA_EVENT_AG_REPORT_DEACTIVATED,
-    HFP_HF_VRA_EVENT_AG_REPORT_READY_FOR_AUDIO,
-    HFP_HF_VRA_EVENT_AG_REPORT_STATE,
-    HFP_HF_VRA_EVENT_AG_REPORT_TEXT_MESSAGE,
-    HFP_HF_VRA_EVENT_HF_REQUESTED_ACTIVATE,
-    HFP_HF_VRA_EVENT_HF_REQUESTED_READY_FOR_AUDIO,
-    HFP_HF_VRA_EVENT_HF_REQUESTED_DEACTIVATE,
-} hfp_hf_vra_event_type_t;
 
 // prototypes
 static void hfp_hf_handle_transfer_ag_indicator_status(hfp_connection_t * hfp_connection);
@@ -586,9 +568,15 @@ static bool hfp_hf_vra_state_machine(hfp_connection_t * hfp_connection, hfp_hf_v
                     break;
                 case HFP_HF_VRA_EVENT_AG_REPORT_ACTIVATED:
                     // AG reports VRA activated
-                    if (hfp_connection->vra_engine_requested_state == HFP_VRA_ACTIVE) {
-                        hfp_connection->vra_engine_current_state = HFP_VRA_ACTIVE;
+                    hfp_connection->vra_engine_current_state = HFP_VRA_ACTIVE;
+                    if (hfp_connection->sco_handle != HCI_CON_HANDLE_INVALID){
+                        hfp_emit_voice_recognition_enabled(hfp_connection, ERROR_CODE_SUCCESS);
                     }
+                    break;
+
+                case HFP_HF_VRA_EVENT_HF_REQUESTED_ACTIVATE:
+                    hfp_connection->vra_engine_current_state = HFP_VRA_W4_ACTIVE;
+                    hfp_connection->vra_engine_requested_state = HFP_VRA_ACTIVE;
                     break;
                 default:
                     break;
@@ -707,13 +695,22 @@ static bool hfp_hf_vra_state_machine(hfp_connection_t * hfp_connection, hfp_hf_v
                     hfp_connection->vra_engine_current_state = HFP_VRA_OFF;
                     hfp_connection->vra_engine_requested_state = HFP_VRA_OFF;
                     hfp_connection->ok_pending = 0u;
+                    // TODO emit event?
                     break;
-                case HFP_HF_VRA_EVENT_SCO_DISCONNECTED:
+
                 case HFP_HF_VRA_EVENT_AG_REPORT_DEACTIVATED:
                     if (hfp_connection->vra_engine_requested_state == HFP_VRA_OFF){
                         hfp_connection->vra_engine_current_state = HFP_VRA_OFF;
                         hfp_connection->ok_pending = 1u;
+                        // TODO start timeout timer
+                        // HFP HF commands shell be blocked until timeout
+                        // emit event?
                     }
+                    break;
+
+                case HFP_HF_VRA_EVENT_SCO_DISCONNECTED:
+                    hfp_connection->vra_engine_current_state = HFP_VRA_OFF;
+                    // TODO emit event?
                     break;
                 default:
                     break;
@@ -733,10 +730,16 @@ static bool hfp_hf_vra_state_machine(hfp_connection_t * hfp_connection, hfp_hf_v
                     hfp_connection->ok_pending = 0u;
                     break;
                 case HFP_HF_VRA_EVENT_SCO_DISCONNECTED:
+                    hfp_connection->vra_engine_current_state = HFP_VRA_OFF;
+                    // TODO emit event?
+                    break;
                 case HFP_HF_VRA_EVENT_AG_REPORT_DEACTIVATED:
                     if (hfp_connection->vra_engine_requested_state == HFP_VRA_OFF){
                         hfp_connection->vra_engine_current_state = HFP_VRA_OFF;
                         hfp_connection->ok_pending = 1u;
+                        // HF and AG overlap TODO start timeout timer
+                        // HFP HF commands shell be blocked until timeout
+                        // emit event?
                     }
                     break;
                 default:
@@ -782,7 +785,7 @@ static void hfp_hf_handle_activate_voice_recognition(hfp_connection_t * hfp_conn
     }
 }
 
-static bool hfp_hf_voice_recognition_state_machine(hfp_connection_t * hfp_connection){
+bool hfp_hf_voice_recognition_state_machine(hfp_connection_t * hfp_connection){
     if (hfp_connection->state < HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED) {
         return false;
     }
@@ -1599,18 +1602,18 @@ static void hfp_hf_handle_rfcomm_command(hfp_connection_t * hfp_connection, hfp_
             }
 
             // handle error response for voice activation (HF initiated)
-            switch(hfp_connection->vra_engine_current_state){
-                case HFP_eVRA_W4_READY_FOR_AUDIO:
-                    hfp_emit_enhanced_voice_recognition_hf_ready_for_audio_event(hfp_connection, ERROR_CODE_UNSPECIFIED_ERROR);
-                    break;
-                default:
-                    if (hfp_connection->vra_engine_current_state == hfp_connection->vra_engine_requested_state){
-                        break;
-                    }
-                    hfp_connection->vra_engine_current_state = hfp_connection->vra_engine_requested_state;
-                    hfp_emit_voice_recognition_enabled(hfp_connection, ERROR_CODE_UNSPECIFIED_ERROR);
-                    return;
-            }
+//            switch(hfp_connection->vra_engine_current_state){
+//                case HFP_eVRA_W4_READY_FOR_AUDIO:
+//                    hfp_emit_enhanced_voice_recognition_hf_ready_for_audio_event(hfp_connection, ERROR_CODE_UNSPECIFIED_ERROR);
+//                    break;
+//                default:
+//                    if (hfp_connection->vra_engine_current_state == hfp_connection->vra_engine_requested_state){
+//                        break;
+//                    }
+//                    hfp_connection->vra_engine_current_state = hfp_connection->vra_engine_requested_state;
+//                    hfp_emit_voice_recognition_enabled(hfp_connection, ERROR_CODE_UNSPECIFIED_ERROR);
+//                    return;
+//            }
             event_emitted = hfp_hf_switch_on_ok_pending(hfp_connection, ERROR_CODE_UNSPECIFIED_ERROR);
             if (!event_emitted){
                 hfp_emit_event(hfp_connection, HFP_SUBEVENT_COMPLETE, ERROR_CODE_UNSPECIFIED_ERROR);
@@ -2557,3 +2560,13 @@ void hfp_hf_register_packet_handler(btstack_packet_handler_t callback){
 	hfp_hf_callback = callback;
 	hfp_set_hf_callback(callback);
 }
+
+#ifdef ENABLE_TESTING_SUPPORT
+hfp_connection_t * test_hfp_hf_create_slc_connection(void){
+    return NULL;
+}
+bool test_hfp_hf_vra_state_machine(hfp_connection_t * hfp_connection, hfp_hf_vra_event_type_t event){
+    return hfp_hf_vra_state_machine(hfp_connection, event);
+}
+
+#endif

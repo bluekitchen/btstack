@@ -2547,3 +2547,9 @@ void hfp_h2_sync_process(hfp_h2_sync_t *hfp_h2_sync, bool bad_frame, const uint8
         }
     }
 }
+
+#ifdef ENABLE_TESTING_SUPPORT
+hfp_connection_t * test_hfp_create_connection(bd_addr_t bd_addr, hfp_role_t local_role){
+    return hfp_create_connection(bd_addr, local_role);
+}
+#endif
