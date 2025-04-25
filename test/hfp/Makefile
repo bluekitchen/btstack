@@ -67,7 +67,7 @@ VPATH += ${BTSTACK_ROOT}/src
 VPATH += ${BTSTACK_ROOT}/src/classic
 VPATH += ${BTSTACK_ROOT}/platform/posix
 
-EXAMPLES = hfp_at_parser_test hfp_ag_client_test hfp_hf_client_test cvsd_plc_test hfp_link_settings_test
+EXAMPLES = hfp_at_parser_test hfp_ag_client_test hfp_hf_client_test hfp_hf_vra_test cvsd_plc_test hfp_link_settings_test
 
 all:  $(addprefix build-coverage/,${EXAMPLES}) $(addprefix build-asan/,${EXAMPLES}) build-asan/pklg_cvsd_test
 
@@ -102,6 +102,9 @@ build-coverage/cvsd_plc_test: ${COMMON_OBJ_COVERAGE} build-coverage/btstack_cvsd
 build-coverage/hfp_link_settings_test: ${MOCK_OBJ_COVERAGE} build-coverage/hfp_hf.o build-coverage/hfp.o build-coverage/hfp_link_settings_test.o | build-coverage
 	${CXX} $^ ${LDFLAGS_COVERAGE} -o $@
 
+build-coverage/hfp_hf_vra_test: ${MOCK_OBJ_COVERAGE} build-coverage/hfp_hf.o build-coverage/hfp.o build-coverage/hfp_hf_vra_test.o | build-coverage
+	${CXX} $^ ${LDFLAGS_COVERAGE} -o $@
+
 
 build-asan/hfp_at_parser_test: ${COMMON_OBJ_ASAN} build-asan/hfp_gsm_model.o build-asan/hfp_ag.o build-asan/hfp.o build-asan/hfp_at_parser_test.o | build-asan
 	${CXX} $^ ${LDFLAGS_ASAN} -o $@
@@ -121,11 +124,15 @@ build-asan/hfp_link_settings_test: ${MOCK_OBJ_ASAN} build-asan/hfp_hf.o build-as
 build-asan/pklg_cvsd_test: build-asan/hci_dump.o build-asan/btstack_util.o build-asan/btstack_cvsd_plc.o build-asan/wav_util.o build-asan/pklg_cvsd_test.o | build-asan
 	${CXX} $^ ${LDFLAGS_ASAN} -o $@
 
+build-asan/hfp_hf_vra_test: ${MOCK_OBJ_ASAN} build-asan/hfp_hf.o build-asan/hfp.o build-asan/hfp_hf_vra_test.o | build-asan
+	${CXX} $^ ${LDFLAGS_ASAN} -o $@
+
 test: all
 	mkdir -p results
 	build-asan/hfp_at_parser_test
 	build-asan/hfp_ag_client_test
 	build-asan/hfp_hf_client_test
+	build-asan/hfp_hf_vra_test
 	build-asan/cvsd_plc_test
 	build-asan/hfp_link_settings_test
 
@@ -134,6 +141,7 @@ coverage: all
 	build-coverage/hfp_at_parser_test
 	build-coverage/hfp_ag_client_test
 	build-coverage/hfp_hf_client_test
+	build-coverage/hfp_hf_vra_test
 	build-coverage/cvsd_plc_test
 	build-coverage/hfp_link_settings_test
 

@@ -1,0 +1,35 @@
+stateDiagram-v2
+    classDef criticalState fill:#f00,color:white,font-weight:bold,stroke-width:2px,stroke:black
+
+
+    [*] --> OFF
+    OFF --> OFF : ok | error | timeout / reset response_pending
+    
+    OFF --> W4_ACTIVE : target = ACTIVE && ready2send / send activate command
+    ACTIVE --> ACTIVE : ok | error | timeout / reset response_pending
+    READY_FOR_AUDIO --> READY_FOR_AUDIO : ok | error | timeout / reset response_pending
+    
+    ACTIVE --> W4_READY_FOR_AUDIO: target = READY_FOR_AUDIO && ready2send / send message
+    READY_FOR_AUDIO --> W4_OFF : target = OFF && ready2send / send deactivate command
+    
+    ACTIVE --> W4_OFF : target = OFF && ready2send / send deactivate command
+    READY_FOR_AUDIO --> OFF: ag_deactivate | sco_disconnect
+    ACTIVE --> OFF: ag_deactivate | sco_disconnect
+    
+    W4_ACTIVE --> ACTIVE : ok
+    W4_READY_FOR_AUDIO --> READY_FOR_AUDIO : ok
+    W4_OFF --> OFF : ok
+    
+    W4_ACTIVE --> OFF : error
+    W4_READY_FOR_AUDIO --> ACTIVE : error
+    W4_OFF --> ACTIVE : error
+
+    # overlapping HF and AG
+    W4_ACTIVE --> OFF : ag_deactivate | sco_disconnect / set response_pending, block HF cmds
+    W4_READY_FOR_AUDIO --> OFF : ag_deactivate | sco_disconnect / set response_pending, block HF cmds
+
+
+    OFF --> ACTIVE : ag_activate / if response_pending block HF cmds
+    ACTIVE --> READY_FOR_AUDIO : ag_ready4audio / if response_pending block HF cmds
+
+    class W4_ACTIVE, W4_READY_FOR_AUDIO, W4_OFF criticalState
