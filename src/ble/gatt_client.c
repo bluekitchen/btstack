@@ -2138,7 +2138,7 @@ static void gatt_client_handle_att_response(gatt_client_t * gatt_client, uint8_t
                             gatt_client->client_characteristic_configuration_handle = little_endian_read_16(packet, offset);
                             gatt_client->state = P_W2_WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION;
                             log_info("CCC found %x", gatt_client->client_characteristic_configuration_handle);
-                            break;
+                            return;
                         }
                         offset += pair_size;
                     }
