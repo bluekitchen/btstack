@@ -2022,11 +2022,10 @@ static void gatt_client_handle_att_write_response(gatt_client_t *gatt_client) {
 }
 
 static void gatt_client_handle_att_response(gatt_client_t * gatt_client, uint8_t * packet, uint16_t size) {
-    uint8_t att_status;
-    switch (packet[0]) {
-        case ATT_EXCHANGE_MTU_RESPONSE: {
-            if (size < 3u) break;
-            bool update_gatt_server_att_mtu = false;
+    // handle MTU Exchange, continue if we receive an error response
+    if (gatt_client->mtu_state == SENT_MTU_EXCHANGE){
+        bool update_gatt_server_att_mtu = false;
+        if ((packet[0] == ATT_EXCHANGE_MTU_RESPONSE) && (size >= 3)){
             uint16_t remote_rx_mtu = little_endian_read_16(packet, 1);
             uint16_t local_rx_mtu = l2cap_max_le_mtu();
             switch (gatt_client->bearer_type){
@@ -2043,21 +2042,27 @@ static void gatt_client_handle_att_response(gatt_client_t * gatt_client, uint8_t
                     break;
             }
 
-            uint16_t mtu = (remote_rx_mtu < local_rx_mtu) ? remote_rx_mtu : local_rx_mtu;
+            uint16_t mtu = (uint16_t) btstack_min(local_rx_mtu, remote_rx_mtu);
 
             // set gatt client mtu
             gatt_client->mtu = mtu;
-            gatt_client->mtu_state = MTU_EXCHANGED;
-
-            if (update_gatt_server_att_mtu){
-                // set per connection mtu state - for fixed channel
-                hci_connection_t *hci_connection = hci_connection_for_handle(gatt_client->con_handle);
-                hci_connection->att_connection.mtu = gatt_client->mtu;
-                hci_connection->att_connection.mtu_exchanged = true;
-            }
-            emit_gatt_mtu_exchanged_result_event(gatt_client, gatt_client->mtu);
-            break;
         }
+
+        gatt_client->mtu_state = MTU_EXCHANGED;
+
+        if (update_gatt_server_att_mtu){
+            // set per connection mtu state - for fixed channel
+            hci_connection_t *hci_connection = hci_connection_for_handle(gatt_client->con_handle);
+            hci_connection->att_connection.mtu = gatt_client->mtu;
+            hci_connection->att_connection.mtu_exchanged = true;
+        }
+        emit_gatt_mtu_exchanged_result_event(gatt_client, gatt_client->mtu);
+        return;
+    }
+
+    uint8_t att_status;
+    switch (packet[0]) {
+
         case ATT_READ_BY_GROUP_TYPE_RESPONSE:
             switch (gatt_client->state) {
                 case P_W4_SERVICE_QUERY_RESULT:
