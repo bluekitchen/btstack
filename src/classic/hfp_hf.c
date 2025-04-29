@@ -549,6 +549,7 @@ static bool hfp_hf_run_for_context_service_level_connection_queries(hfp_connecti
 
 static void hfp_hf_handle_emit_vra_active_event(hfp_connection_t *hfp_connection) {
     if (hfp_connection->state == HFP_AUDIO_CONNECTION_ESTABLISHED){
+        hfp_connection->emit_vra_enabled_after_audio_established = false;
         hfp_emit_voice_recognition_enabled(hfp_connection, ERROR_CODE_SUCCESS);
     } else {
         // postpone VRA event to simplify application logic
@@ -570,6 +571,43 @@ static bool hfp_hf_vra_state_machine(hfp_connection_t * hfp_connection, hfp_hf_v
                     hfp_connection->vra_engine_current_state   = HFP_VRA_W4_ACTIVE;
                     hfp_connection->vra_engine_requested_state = HFP_VRA_ACTIVE;
                     break;
+                case HFP_HF_VRA_EVENT_RECEIVED_OK:
+                case HFP_HF_VRA_EVENT_RECEIVED_ERROR:
+                case HFP_HF_VRA_EVENT_RECEIVED_TIMEOUT:
+                    hfp_connection->ok_pending = 0u;
+                    break;
+                default:
+                    break;
+            }
+            break;
+
+        case HFP_VRA_W4_ACTIVE:
+            switch (event) {
+                case HFP_HF_VRA_EVENT_CAN_SEND_NOW:
+                    // block HF commands if we are still waiting for AG response
+                    if (hfp_connection->vra_engine_requested_state == HFP_VRA_ACTIVE && (hfp_connection->ok_pending == 0u)){
+                        hfp_connection->vra_engine_current_state = HFP_VRA_W4_ACTIVE;
+                        hfp_connection->ok_pending = 1;
+                        hfp_hf_set_voice_recognition_notification_cmd(hfp_connection->rfcomm_cid, 1);
+                        // TODO start timer
+                        return true;
+                    }
+                    break;
+                case HFP_HF_VRA_EVENT_RECEIVED_OK:
+                    hfp_connection->vra_engine_current_state = HFP_VRA_ACTIVE;
+                    hfp_connection->ok_pending = 0u;
+                    hfp_hf_handle_emit_vra_active_event(hfp_connection);
+                    break;
+                case HFP_HF_VRA_EVENT_RECEIVED_ERROR:
+                case HFP_HF_VRA_EVENT_RECEIVED_TIMEOUT:
+                    hfp_connection->vra_engine_current_state = HFP_VRA_OFF;
+                    hfp_connection->ok_pending = 0u;
+                    hfp_emit_voice_recognition_enabled(hfp_connection, ERROR_CODE_UNSPECIFIED_ERROR);
+                    break;
+                case HFP_HF_VRA_EVENT_AG_REPORT_ACTIVATED:
+                    hfp_connection->vra_engine_current_state = HFP_VRA_ACTIVE;
+                    hfp_hf_handle_emit_vra_active_event(hfp_connection);
+                    break;
                 default:
                     break;
             }
@@ -577,6 +615,16 @@ static bool hfp_hf_vra_state_machine(hfp_connection_t * hfp_connection, hfp_hf_v
 
         case HFP_VRA_ACTIVE:
             switch (event) {
+                case HFP_HF_VRA_EVENT_SCO_CONNECTED:
+                    hfp_hf_handle_emit_vra_active_event(hfp_connection);
+                    break;
+
+                case HFP_HF_VRA_EVENT_RECEIVED_OK:
+                case HFP_HF_VRA_EVENT_RECEIVED_ERROR:
+                case HFP_HF_VRA_EVENT_RECEIVED_TIMEOUT:
+                    hfp_connection->ok_pending = 0u;
+                    break;
+
                 case HFP_HF_VRA_EVENT_AG_REPORT_DEACTIVATED:
                     hfp_connection->vra_engine_current_state = HFP_VRA_OFF;
                     hfp_emit_voice_recognition_disabled(hfp_connection, ERROR_CODE_SUCCESS);
@@ -602,11 +650,7 @@ static bool hfp_hf_vra_state_machine(hfp_connection_t * hfp_connection, hfp_hf_v
                         return true;
                     }
                     break;
-                case HFP_HF_VRA_EVENT_RECEIVED_OK:
-                case HFP_HF_VRA_EVENT_RECEIVED_ERROR:
-                case HFP_HF_VRA_EVENT_RECEIVED_TIMEOUT:
-                    hfp_connection->ok_pending = 0u;
-                    break;
+
                 case HFP_HF_VRA_EVENT_SCO_DISCONNECTED:
                     if (hfp_connection->vra_engine_requested_state == HFP_VRA_OFF){
                         hfp_connection->vra_engine_current_state = HFP_VRA_OFF;
@@ -674,55 +718,7 @@ static bool hfp_hf_vra_state_machine(hfp_connection_t * hfp_connection, hfp_hf_v
             }
             break;
 
-        case HFP_VRA_W4_ACTIVE:
-            switch (event) {
-                case HFP_HF_VRA_EVENT_CAN_SEND_NOW:
-                    // block HF commands if we are still waiting for AG response
-                    if (hfp_connection->vra_engine_requested_state == HFP_VRA_ACTIVE && (hfp_connection->ok_pending == 0u)){
-                        hfp_connection->vra_engine_current_state = HFP_VRA_W4_ACTIVE;
-                        hfp_connection->ok_pending = 1;
-                        hfp_hf_set_voice_recognition_notification_cmd(hfp_connection->rfcomm_cid, 1);
-                        // TODO start timer
-                        return true;
-                    }
-                    break;
 
-                case HFP_HF_VRA_EVENT_RECEIVED_OK:
-                    hfp_connection->vra_engine_current_state = HFP_VRA_ACTIVE;
-                    hfp_connection->ok_pending = 0u;
-
-                    if (hfp_connection->state == HFP_AUDIO_CONNECTION_ESTABLISHED){
-                        hfp_emit_voice_recognition_enabled(hfp_connection, ERROR_CODE_SUCCESS);
-                    } else {
-                        // postpone VRA event to simplify application logic
-                        hfp_connection->emit_vra_enabled_after_audio_established = true;
-                    }
-                    break;
-                case HFP_HF_VRA_EVENT_RECEIVED_ERROR:
-                    hfp_connection->vra_engine_current_state = HFP_VRA_OFF;
-                    hfp_connection->vra_engine_requested_state = HFP_VRA_OFF;
-                    hfp_connection->ok_pending = 0u;
-                    // TODO emit event?
-                    break;
-
-                case HFP_HF_VRA_EVENT_AG_REPORT_DEACTIVATED:
-                    if (hfp_connection->vra_engine_requested_state == HFP_VRA_OFF){
-                        hfp_connection->vra_engine_current_state = HFP_VRA_OFF;
-                        hfp_connection->ok_pending = 1u;
-                        // TODO start timeout timer
-                        // HFP HF commands shell be blocked until timeout
-                        // emit event?
-                    }
-                    break;
-
-                case HFP_HF_VRA_EVENT_SCO_DISCONNECTED:
-                    hfp_connection->vra_engine_current_state = HFP_VRA_OFF;
-                    // TODO emit event?
-                    break;
-                default:
-                    break;
-            }
-            break;
 
         case HFP_VRA_W4_ENHANCED_ACTIVE:
             switch (event) {
