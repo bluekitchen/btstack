@@ -1549,6 +1549,7 @@ static void hfp_ag_send_response_and_hold_state(hfp_response_and_hold_state_t st
         hfp_connection_t * hfp_connection = (hfp_connection_t *)btstack_linked_list_iterator_next(&it);
         if (hfp_connection->local_role != HFP_ROLE_AG) continue;
         hfp_connection->send_response_and_hold_status = state + 1;
+        hfp_ag_run_for_context(hfp_connection);
     }
 }
 
