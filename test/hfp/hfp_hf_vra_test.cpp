@@ -225,7 +225,7 @@ TEST_GROUP(HFP_HF_VRA){
  * -
  */
 
-TEST(HFP_HF_VRA, ag_activate_in_HFP_VRA_OFF_and_SCO_not_established){
+TEST(HFP_HF_VRA, HFP_VRA_OFF_ag_activate_in_and_SCO_not_established){
     // SCO not established
     hfp_connection->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
 
@@ -237,8 +237,8 @@ TEST(HFP_HF_VRA, ag_activate_in_HFP_VRA_OFF_and_SCO_not_established){
     CHECK_EQUAL(true, hfp_connection->emit_vra_enabled_after_audio_established);
 }
 
-TEST(HFP_HF_VRA, ag_activate_in_HFP_VRA_OFF_and_SCO_established){
-    // SCO not established
+TEST(HFP_HF_VRA, HFP_VRA_OFF_ag_activate_and_SCO_established){
+    // SCO established
     hfp_connection->state = HFP_AUDIO_CONNECTION_ESTABLISHED;
 
     // OFF --> ACTIVE: ag_activate
@@ -250,37 +250,7 @@ TEST(HFP_HF_VRA, ag_activate_in_HFP_VRA_OFF_and_SCO_established){
     CHECK_EQUAL(ERROR_CODE_SUCCESS, last_received_event_status);
 }
 
-TEST(HFP_HF_VRA, ag_deactivate_in_HFP_VRA_ACTIVE) {
-    // ACTIVE --> OFF : ag_deactivate  / emit event OFF
-    setup_vra_ag_report(HFP_VRA_ACTIVE, HFP_VOICE_RECOGNITION_STATUS_DISABLED);
-    test_hfp_hf_vra_state_machine(hfp_connection, HFP_HF_VRA_EVENT_AG_REPORT_DEACTIVATED);
-    CHECK_EQUAL(HFP_VRA_OFF, hfp_connection->vra_engine_current_state);
-    CHECK_EQUAL(HFP_SUBEVENT_VOICE_RECOGNITION_DEACTIVATED, last_received_event);
-    CHECK_EQUAL(ERROR_CODE_SUCCESS, last_received_event_status);
-}
-
-TEST(HFP_HF_VRA, ag_ready4audio_in_HFP_VRA_ACTIVE) {
-    // ACTIVE --> READY_FOR_AUDIO : ag_ready4audio / emit event READY_FOR_AUDIO
-    setup_vra_ag_report(HFP_VRA_ACTIVE, HFP_VOICE_RECOGNITION_STATUS_READY_FOR_AUDIO);
-    test_hfp_hf_vra_state_machine(hfp_connection, HFP_HF_VRA_EVENT_AG_REPORT_READY_FOR_AUDIO);
-    CHECK_EQUAL(HFP_VRA_ENHANCED_ACTIVE, hfp_connection->vra_engine_current_state);
-    CHECK_EQUAL(HFP_SUBEVENT_VOICE_RECOGNITION_DEACTIVATED, last_received_event);
-    CHECK_EQUAL(ERROR_CODE_SUCCESS, last_received_event_status);
-}
-
-TEST(HFP_HF_VRA, sco_established_in_HFP_VRA_ACTIVE) {
-    // ACTIVE --> ACTIVE : sco_established / [emit_activated_when_sco_established == 1] / emit event ACTIVE}, emit_activated_when_sco_established = 0
-}
-
-TEST(HFP_HF_VRA, ag_deactivate_in_READY_FOR_AUDIO) {
-    // READY_FOR_AUDIO --> OFF: ag_deactivate  / emit event OFF
-}
-
-TEST(HFP_HF_VRA, ag_activate_in_READY_FOR_AUDIO) {
-    // READY_FOR_AUDIO --> ACTIVE: ag_activate  / emit event ACTIVE
-}
-
-TEST(HFP_HF_VRA, hg_activate_with_ok_in_HFP_VRA_OFF_and_SCO_not_established){
+TEST(HFP_HF_VRA, HFP_VRA_OFF_hg_activate_with_ok_in_and_SCO_not_established){
     // SCO not established
     hfp_connection->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
 
@@ -307,7 +277,7 @@ TEST(HFP_HF_VRA, hg_activate_with_ok_in_HFP_VRA_OFF_and_SCO_not_established){
     CHECK_EQUAL(true, hfp_connection->emit_vra_enabled_after_audio_established);
 }
 
-TEST(HFP_HF_VRA, hg_activate_with_ok_in_HFP_VRA_OFF_and_sco_established){
+TEST(HFP_HF_VRA, HFP_VRA_OFF_hg_activate_with_ok_and_sco_established){
     // SCO established
     hfp_connection->state = HFP_AUDIO_CONNECTION_ESTABLISHED;
 
@@ -333,6 +303,137 @@ TEST(HFP_HF_VRA, hg_activate_with_ok_in_HFP_VRA_OFF_and_sco_established){
     CHECK_EQUAL(0u, hfp_connection->ok_pending);
     CHECK_EQUAL(HFP_SUBEVENT_VOICE_RECOGNITION_ACTIVATED, last_received_event);
     CHECK_EQUAL(ERROR_CODE_SUCCESS, last_received_event_status);
+}
+
+TEST(HFP_HF_VRA, HFP_VRA_OFF_hg_activate_with_error){
+    // SCO established
+    hfp_connection->state = HFP_AUDIO_CONNECTION_ESTABLISHED;
+
+    // OFF --> W4_ACTIVE: hf_activate
+    // requested_state = ACTIVE (wait for ready2send event to send activate command)
+    setup_vra_can_send_now(HFP_VRA_OFF, HFP_VRA_ACTIVE);
+    test_hfp_hf_vra_state_machine(hfp_connection, HFP_HF_VRA_EVENT_HF_REQUESTED_ACTIVATE);
+    CHECK_EQUAL(HFP_VRA_W4_ACTIVE, hfp_connection->vra_engine_current_state);
+    CHECK_EQUAL(0u, hfp_connection->ok_pending);
+
+    // W4_ACTIVE --> W4_ACTIVE: ready2send [ok_pending == 0]
+    // ok_pending = 1, send activate command, start timer
+    test_hfp_hf_vra_state_machine(hfp_connection, HFP_HF_VRA_EVENT_CAN_SEND_NOW);
+    check_equal_hf_commands(HFP_ACTIVATE_VOICE_RECOGNITION, 1);
+    CHECK_EQUAL(HFP_VRA_W4_ACTIVE, hfp_connection->vra_engine_current_state);
+    CHECK_EQUAL(1u, hfp_connection->ok_pending);
+
+    // W4_ACTIVE --> OFF : error
+    // emit event ACTIVE with status error
+    test_hfp_hf_vra_state_machine(hfp_connection, HFP_HF_VRA_EVENT_RECEIVED_ERROR);
+    CHECK_EQUAL(HFP_VRA_OFF, hfp_connection->vra_engine_current_state);
+    CHECK_EQUAL(0u, hfp_connection->ok_pending);
+    CHECK_EQUAL(HFP_SUBEVENT_VOICE_RECOGNITION_ACTIVATED, last_received_event);
+    CHECK_EQUAL(ERROR_CODE_UNSPECIFIED_ERROR, last_received_event_status);
+}
+
+TEST(HFP_HF_VRA, HFP_VRA_OFF_hg_activate_with_timeout){
+    // SCO established
+    hfp_connection->state = HFP_AUDIO_CONNECTION_ESTABLISHED;
+
+    // OFF --> W4_ACTIVE: hf_activate
+    // requested_state = ACTIVE (wait for ready2send event to send activate command)
+    setup_vra_can_send_now(HFP_VRA_OFF, HFP_VRA_ACTIVE);
+    test_hfp_hf_vra_state_machine(hfp_connection, HFP_HF_VRA_EVENT_HF_REQUESTED_ACTIVATE);
+    CHECK_EQUAL(HFP_VRA_W4_ACTIVE, hfp_connection->vra_engine_current_state);
+    CHECK_EQUAL(0u, hfp_connection->ok_pending);
+
+    // W4_ACTIVE --> W4_ACTIVE: ready2send [ok_pending == 0]
+    // ok_pending = 1, send activate command, start timer
+    test_hfp_hf_vra_state_machine(hfp_connection, HFP_HF_VRA_EVENT_CAN_SEND_NOW);
+    check_equal_hf_commands(HFP_ACTIVATE_VOICE_RECOGNITION, 1);
+    CHECK_EQUAL(HFP_VRA_W4_ACTIVE, hfp_connection->vra_engine_current_state);
+    CHECK_EQUAL(1u, hfp_connection->ok_pending);
+
+    // W4_ACTIVE --> OFF : error
+    // emit event ACTIVE with status error
+    test_hfp_hf_vra_state_machine(hfp_connection, HFP_HF_VRA_EVENT_RECEIVED_TIMEOUT);
+    CHECK_EQUAL(HFP_VRA_OFF, hfp_connection->vra_engine_current_state);
+    CHECK_EQUAL(0u, hfp_connection->ok_pending);
+    CHECK_EQUAL(HFP_SUBEVENT_VOICE_RECOGNITION_ACTIVATED, last_received_event);
+    CHECK_EQUAL(ERROR_CODE_UNSPECIFIED_ERROR, last_received_event_status);
+}
+
+TEST(HFP_HF_VRA, HFP_VRA_W4_ACTIVE_overlapping_hf_and_ag_cmds_and_sco_not_established){
+    // SCO not established
+    hfp_connection->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
+
+    // HF command sent, and AG status received before OK/ERROR/TIMEOUT
+    // OFF --> W4_ACTIVE: hf_activate
+    // requested_state = ACTIVE (wait for ready2send event to send activate command)
+    setup_vra_can_send_now(HFP_VRA_OFF, HFP_VRA_ACTIVE);
+    test_hfp_hf_vra_state_machine(hfp_connection, HFP_HF_VRA_EVENT_HF_REQUESTED_ACTIVATE);
+    CHECK_EQUAL(HFP_VRA_W4_ACTIVE, hfp_connection->vra_engine_current_state);
+    CHECK_EQUAL(0u, hfp_connection->ok_pending);
+
+    // W4_ACTIVE --> W4_ACTIVE: ready2send [ok_pending == 0]
+    // ok_pending = 1, send activate command, start timer
+    test_hfp_hf_vra_state_machine(hfp_connection, HFP_HF_VRA_EVENT_CAN_SEND_NOW);
+    check_equal_hf_commands(HFP_ACTIVATE_VOICE_RECOGNITION, 1);
+    CHECK_EQUAL(HFP_VRA_W4_ACTIVE, hfp_connection->vra_engine_current_state);
+    CHECK_EQUAL(HFP_VRA_ACTIVE, hfp_connection->vra_engine_requested_state);
+    CHECK_EQUAL(1u, hfp_connection->ok_pending);
+
+    // AG status received before OK/ERROR/TIMEOUT
+    // W4_ACTIVE --> ACTIVE: ag_activate
+    // current_state = ACTIVE, if (sco_established) {emit event ACTIVE} else {emit_activated_when_sco_established = 1}
+    setup_vra_ag_report(HFP_VRA_W4_ACTIVE, HFP_VOICE_RECOGNITION_STATUS_ENABLED);
+    test_hfp_hf_vra_state_machine(hfp_connection, HFP_HF_VRA_EVENT_AG_REPORT_ACTIVATED);
+    CHECK_EQUAL(HFP_VRA_ACTIVE, hfp_connection->vra_engine_current_state);
+    CHECK_EQUAL(0, last_received_event);
+
+    // delayed response to HF cmd
+    // ACTIVE --> ACTIVE             : ok | error | timeout if (ok_pending == 1){ ok_pending = 0; }
+    // emit event ACTIVE with status error
+    test_hfp_hf_vra_state_machine(hfp_connection, HFP_HF_VRA_EVENT_RECEIVED_OK);
+    CHECK_EQUAL(HFP_VRA_ACTIVE, hfp_connection->vra_engine_current_state);
+    CHECK_EQUAL(0u, hfp_connection->ok_pending);
+    CHECK_EQUAL(0, last_received_event);
+    CHECK_EQUAL(true, hfp_connection->emit_vra_enabled_after_audio_established);
+
+    // SCO established
+    hfp_connection->state = HFP_AUDIO_CONNECTION_ESTABLISHED;
+    test_hfp_hf_vra_state_machine(hfp_connection, HFP_HF_VRA_EVENT_SCO_CONNECTED);
+    CHECK_EQUAL(0u, hfp_connection->ok_pending);
+    CHECK_EQUAL(HFP_SUBEVENT_VOICE_RECOGNITION_ACTIVATED, last_received_event);
+    CHECK_EQUAL(0, last_received_event_status);
+    CHECK_EQUAL(false, hfp_connection->emit_vra_enabled_after_audio_established);
+}
+
+TEST(HFP_HF_VRA, ag_deactivate_in_HFP_VRA_ACTIVE) {
+    // ACTIVE --> OFF : ag_deactivate  / emit event OFF
+    setup_vra_ag_report(HFP_VRA_ACTIVE, HFP_VOICE_RECOGNITION_STATUS_DISABLED);
+    test_hfp_hf_vra_state_machine(hfp_connection, HFP_HF_VRA_EVENT_AG_REPORT_DEACTIVATED);
+    CHECK_EQUAL(HFP_VRA_OFF, hfp_connection->vra_engine_current_state);
+    CHECK_EQUAL(HFP_SUBEVENT_VOICE_RECOGNITION_DEACTIVATED, last_received_event);
+    CHECK_EQUAL(ERROR_CODE_SUCCESS, last_received_event_status);
+}
+
+TEST(HFP_HF_VRA, ag_ready4audio_in_HFP_VRA_ACTIVE) {
+    // ACTIVE --> READY_FOR_AUDIO : ag_ready4audio / emit event READY_FOR_AUDIO
+    setup_vra_ag_report(HFP_VRA_ACTIVE, HFP_VOICE_RECOGNITION_STATUS_READY_FOR_AUDIO);
+    test_hfp_hf_vra_state_machine(hfp_connection, HFP_HF_VRA_EVENT_AG_REPORT_READY_FOR_AUDIO);
+    CHECK_EQUAL(HFP_VRA_ENHANCED_ACTIVE, hfp_connection->vra_engine_current_state);
+    CHECK_EQUAL(HFP_SUBEVENT_VOICE_RECOGNITION_DEACTIVATED, last_received_event);
+    CHECK_EQUAL(ERROR_CODE_SUCCESS, last_received_event_status);
+}
+
+
+TEST(HFP_HF_VRA, sco_established_in_HFP_VRA_ACTIVE) {
+    // ACTIVE --> ACTIVE : sco_established / [emit_activated_when_sco_established == 1] / emit event ACTIVE}, emit_activated_when_sco_established = 0
+}
+
+TEST(HFP_HF_VRA, ag_deactivate_in_READY_FOR_AUDIO) {
+    // READY_FOR_AUDIO --> OFF: ag_deactivate  / emit event OFF
+}
+
+TEST(HFP_HF_VRA, ag_activate_in_READY_FOR_AUDIO) {
+    // READY_FOR_AUDIO --> ACTIVE: ag_activate  / emit event ACTIVE
 }
 
 /*
