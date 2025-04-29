@@ -628,7 +628,7 @@ static bool hfp_hf_vra_state_machine(hfp_connection_t * hfp_connection, hfp_hf_v
             }
             break;
 
-        case HFP_eVRA_READY_FOR_AUDIO:
+        case HFP_VRA_ENHANCED_ACTIVE:
             switch (event) {
                 case HFP_HF_VRA_EVENT_CAN_SEND_NOW:
                     // block HF commands if we are still waiting for AG response
@@ -717,10 +717,10 @@ static bool hfp_hf_vra_state_machine(hfp_connection_t * hfp_connection, hfp_hf_v
             }
             break;
 
-        case HFP_eVRA_W4_READY_FOR_AUDIO:
+        case HFP_VRA_W4_ENHANCED_ACTIVE:
             switch (event) {
                 case HFP_HF_VRA_EVENT_RECEIVED_OK:
-                    hfp_connection->vra_engine_current_state = HFP_eVRA_READY_FOR_AUDIO;
+                    hfp_connection->vra_engine_current_state = HFP_VRA_ENHANCED_ACTIVE;
                     hfp_connection->ok_pending = 0u;
                     hfp_emit_enhanced_voice_recognition_hf_ready_for_audio_event(hfp_connection, ERROR_CODE_SUCCESS);
                     break;
@@ -766,7 +766,7 @@ static void hfp_hf_handle_activate_voice_recognition(hfp_connection_t * hfp_conn
                     hfp_hf_vra_state_machine(hfp_connection, HFP_HF_VRA_EVENT_AG_REPORT_ACTIVATED);
                     break;
                 case HFP_VOICE_RECOGNITION_STATUS_READY_FOR_AUDIO:
-                    hfp_connection->vra_engine_requested_state = HFP_eVRA_READY_FOR_AUDIO;
+                    hfp_connection->vra_engine_requested_state = HFP_VRA_ENHANCED_ACTIVE;
                     hfp_hf_vra_state_machine(hfp_connection, HFP_HF_VRA_EVENT_AG_REPORT_READY_FOR_AUDIO);
                     break;
                 default:
@@ -1603,7 +1603,7 @@ static void hfp_hf_handle_rfcomm_command(hfp_connection_t * hfp_connection, hfp_
 
             // handle error response for voice activation (HF initiated)
 //            switch(hfp_connection->vra_engine_current_state){
-//                case HFP_eVRA_W4_READY_FOR_AUDIO:
+//                case HFP_VRA_W4_ENHANCED_ACTIVE:
 //                    hfp_emit_enhanced_voice_recognition_hf_ready_for_audio_event(hfp_connection, ERROR_CODE_UNSPECIFIED_ERROR);
 //                    break;
 //                default:
@@ -2244,7 +2244,7 @@ uint8_t hfp_hf_enhanced_voice_recognition_report_ready_for_audio(hci_con_handle_
 
 
     hfp_connection->enhanced_voice_recognition_enabled = enhanced_vra_supported;
-    hfp_connection->vra_engine_requested_state = HFP_eVRA_READY_FOR_AUDIO;
+    hfp_connection->vra_engine_requested_state = HFP_VRA_ENHANCED_ACTIVE;
     hfp_hf_run_for_context(hfp_connection);
     return ERROR_CODE_SUCCESS;
 }
@@ -2273,7 +2273,7 @@ uint8_t hfp_hf_deactivate_voice_recognition(hci_con_handle_t acl_handle){
     }
     switch (hfp_connection->vra_engine_requested_state){
         case HFP_VRA_ACTIVE:
-        case HFP_eVRA_READY_FOR_AUDIO:
+        case HFP_VRA_ENHANCED_ACTIVE:
             break;
         default:
             return ERROR_CODE_COMMAND_DISALLOWED;
