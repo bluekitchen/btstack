@@ -547,45 +547,46 @@ static bool hfp_hf_run_for_context_service_level_connection_queries(hfp_connecti
 
 // HFP HF VRA
 
+static void hfp_hf_handle_emit_vra_active_event(hfp_connection_t *hfp_connection) {
+    if (hfp_connection->state == HFP_AUDIO_CONNECTION_ESTABLISHED){
+        hfp_emit_voice_recognition_enabled(hfp_connection, ERROR_CODE_SUCCESS);
+    } else {
+        // postpone VRA event to simplify application logic
+        hfp_connection->emit_vra_enabled_after_audio_established = true;
+    }
+}
+
 // @return true if RFCOMM cmd was sent
 static bool hfp_hf_vra_state_machine(hfp_connection_t * hfp_connection, hfp_hf_vra_event_type_t event){
     switch (hfp_connection->vra_engine_current_state) {
         case HFP_VRA_OFF:
             switch (event) {
-                case HFP_HF_VRA_EVENT_CAN_SEND_NOW:
-                    // block HF commands if we are still waiting for AG response
-                    if (hfp_connection->vra_engine_requested_state == HFP_VRA_ACTIVE && (hfp_connection->ok_pending == 0u)){
-                        hfp_connection->vra_engine_current_state = HFP_VRA_W4_ACTIVE;
-                        hfp_connection->ok_pending = 1;
-                        hfp_hf_set_voice_recognition_notification_cmd(hfp_connection->rfcomm_cid, 1);
-                        return true;
-                    }
-                    break;
-                case HFP_HF_VRA_EVENT_RECEIVED_OK:
-                case HFP_HF_VRA_EVENT_RECEIVED_ERROR:
-                case HFP_HF_VRA_EVENT_RECEIVED_TIMEOUT:
-                    hfp_connection->ok_pending = 0u;
-                    break;
                 case HFP_HF_VRA_EVENT_AG_REPORT_ACTIVATED:
                     // AG reports VRA activated
                     hfp_connection->vra_engine_current_state = HFP_VRA_ACTIVE;
-                    if (hfp_connection->sco_handle != HCI_CON_HANDLE_INVALID){
-                        hfp_emit_voice_recognition_enabled(hfp_connection, ERROR_CODE_SUCCESS);
-                    }
+                    hfp_hf_handle_emit_vra_active_event(hfp_connection);
                     break;
-
                 case HFP_HF_VRA_EVENT_HF_REQUESTED_ACTIVATE:
-                    hfp_connection->vra_engine_current_state = HFP_VRA_W4_ACTIVE;
+                    hfp_connection->vra_engine_current_state   = HFP_VRA_W4_ACTIVE;
                     hfp_connection->vra_engine_requested_state = HFP_VRA_ACTIVE;
                     break;
                 default:
                     break;
-
             }
             break;
 
         case HFP_VRA_ACTIVE:
             switch (event) {
+                case HFP_HF_VRA_EVENT_AG_REPORT_DEACTIVATED:
+                    hfp_connection->vra_engine_current_state = HFP_VRA_OFF;
+                    hfp_emit_voice_recognition_disabled(hfp_connection, ERROR_CODE_SUCCESS);
+                    break;
+
+                case HFP_HF_VRA_EVENT_AG_REPORT_READY_FOR_AUDIO:
+                    hfp_connection->vra_engine_current_state = HFP_VRA_ENHANCED_ACTIVE;
+                    hfp_emit_voice_recognition_disabled(hfp_connection, ERROR_CODE_SUCCESS);
+                    break;
+
                 case HFP_HF_VRA_EVENT_CAN_SEND_NOW:
                     // block HF commands if we are still waiting for AG response
                     if (hfp_connection->vra_engine_requested_state == HFP_VRA_OFF && (hfp_connection->ok_pending == 0u)){
@@ -594,8 +595,8 @@ static bool hfp_hf_vra_state_machine(hfp_connection_t * hfp_connection, hfp_hf_v
                         hfp_hf_set_voice_recognition_notification_cmd(hfp_connection->rfcomm_cid, 0);
                         return true;
                     }
-                    if (hfp_connection->vra_engine_requested_state == HFP_eVRA_READY_FOR_AUDIO && (hfp_connection->ok_pending == 0u)){
-                        hfp_connection->vra_engine_current_state = HFP_eVRA_W4_READY_FOR_AUDIO;
+                    if (hfp_connection->vra_engine_requested_state == HFP_VRA_ENHANCED_ACTIVE && (hfp_connection->ok_pending == 0u)){
+                        hfp_connection->vra_engine_current_state = HFP_VRA_W4_ENHANCED_ACTIVE;
                         hfp_connection->ok_pending = 1;
                         hfp_hf_set_voice_recognition_notification_cmd(hfp_connection->rfcomm_cid, 2);
                         return true;
@@ -607,16 +608,11 @@ static bool hfp_hf_vra_state_machine(hfp_connection_t * hfp_connection, hfp_hf_v
                     hfp_connection->ok_pending = 0u;
                     break;
                 case HFP_HF_VRA_EVENT_SCO_DISCONNECTED:
-                case HFP_HF_VRA_EVENT_AG_REPORT_DEACTIVATED:
                     if (hfp_connection->vra_engine_requested_state == HFP_VRA_OFF){
                         hfp_connection->vra_engine_current_state = HFP_VRA_OFF;
                     }
                     break;
-                case HFP_HF_VRA_EVENT_AG_REPORT_READY_FOR_AUDIO:
-                    if (hfp_connection->vra_engine_requested_state == HFP_eVRA_READY_FOR_AUDIO){
-                        hfp_connection->vra_engine_current_state = HFP_eVRA_READY_FOR_AUDIO;
-                    }
-                    break;
+
                 case HFP_HF_VRA_EVENT_AG_REPORT_STATE:
                     hfp_emit_enhanced_voice_recognition_state_event(hfp_connection, ERROR_CODE_SUCCESS);
                     break;
@@ -680,6 +676,17 @@ static bool hfp_hf_vra_state_machine(hfp_connection_t * hfp_connection, hfp_hf_v
 
         case HFP_VRA_W4_ACTIVE:
             switch (event) {
+                case HFP_HF_VRA_EVENT_CAN_SEND_NOW:
+                    // block HF commands if we are still waiting for AG response
+                    if (hfp_connection->vra_engine_requested_state == HFP_VRA_ACTIVE && (hfp_connection->ok_pending == 0u)){
+                        hfp_connection->vra_engine_current_state = HFP_VRA_W4_ACTIVE;
+                        hfp_connection->ok_pending = 1;
+                        hfp_hf_set_voice_recognition_notification_cmd(hfp_connection->rfcomm_cid, 1);
+                        // TODO start timer
+                        return true;
+                    }
+                    break;
+
                 case HFP_HF_VRA_EVENT_RECEIVED_OK:
                     hfp_connection->vra_engine_current_state = HFP_VRA_ACTIVE;
                     hfp_connection->ok_pending = 0u;
