@@ -874,7 +874,7 @@ void hfp_emit_voice_recognition_enabled(hfp_connection_t * hfp_connection, uint8
  */
 void hfp_emit_voice_recognition_disabled(hfp_connection_t * hfp_connection, uint8_t status);
 
-void hfp_emit_enhanced_voice_recognition_hf_ready_for_audio_event(hfp_connection_t * hfp_connection, uint8_t status);
+void hfp_emit_enhanced_voice_recognition_activated(hfp_connection_t * hfp_connection, uint8_t status);
 void hfp_emit_enhanced_voice_recognition_state_event(hfp_connection_t * hfp_connection, uint8_t status);
 
 hfp_connection_t * get_hfp_connection_context_for_rfcomm_cid(uint16_t cid);

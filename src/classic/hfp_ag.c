@@ -964,7 +964,7 @@ static uint8_t hfp_ag_vra_state_machine_two(hfp_connection_t * hfp_connection){
             hfp_connection->enhanced_voice_recognition_enabled = true;
             hfp_connection->vra_engine_requested_state = HFP_VRA_ENHANCED_ACTIVE;
             hfp_connection->vra_engine_current_state = hfp_connection->vra_engine_requested_state;
-            hfp_emit_enhanced_voice_recognition_hf_ready_for_audio_event(hfp_connection, ERROR_CODE_SUCCESS);
+            hfp_emit_enhanced_voice_recognition_activated(hfp_connection, ERROR_CODE_SUCCESS);
             break;
 
         case HFP_VRA_W2_SEND_OFF:
