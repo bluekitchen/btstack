@@ -2440,7 +2440,7 @@ typedef SSIZE_T ssize_t;
  * @param acl_handle
  * @param status
  */
-#define HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_HF_READY_FOR_AUDIO  0x20u
+#define HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_ACTIVATED  0x20u
 
 
 /**
