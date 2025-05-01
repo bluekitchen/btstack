@@ -1775,6 +1775,13 @@ uint8_t hfp_hf_set_default_speaker_gain(uint8_t gain){
     return ERROR_CODE_SUCCESS;
 }
 
+static void hfp_hf_sco_established(hfp_connection_t * hfp_connection){
+    hfp_hf_vra_state_machine(hfp_connection, HFP_HF_VRA_EVENT_SCO_CONNECTED);
+}
+static void hfp_hf_sco_released(hfp_connection_t * hfp_connection){
+    hfp_hf_vra_state_machine(hfp_connection, HFP_HF_VRA_EVENT_SCO_DISCONNECTED);
+}
+
 uint8_t hfp_hf_init(uint8_t rfcomm_channel_nr){
     uint8_t status = rfcomm_register_service(hfp_hf_rfcomm_packet_handler, rfcomm_channel_nr, 0xffff);
     if (status != ERROR_CODE_SUCCESS){
@@ -1786,6 +1793,9 @@ uint8_t hfp_hf_init(uint8_t rfcomm_channel_nr){
 
     hfp_hf_hci_event_callback_registration.callback = &hfp_hf_hci_event_packet_handler;
     hci_add_event_handler(&hfp_hf_hci_event_callback_registration);
+
+    hfp_set_hf_sco_established(hfp_hf_sco_established);
+    hfp_set_hf_sco_released(hfp_hf_sco_released);
 
     // used to set packet handler for outgoing rfcomm connections - could be handled by emitting an event to us
     hfp_set_hf_rfcomm_packet_handler(&hfp_hf_rfcomm_packet_handler);
