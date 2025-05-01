@@ -84,6 +84,9 @@ static btstack_packet_handler_t hfp_ag_callback;
 static btstack_packet_handler_t hfp_hf_rfcomm_packet_handler;
 static btstack_packet_handler_t hfp_ag_rfcomm_packet_handler;
 
+static void (*hfp_hf_sco_established)(hfp_connection_t * hfp_connection);
+static void (*hfp_hf_sco_released)(hfp_connection_t * hfp_connection);
+
 static uint8_t  hfp_hf_indicators_nr;
 static const uint8_t * hfp_hf_indicators;
 
@@ -2547,6 +2550,14 @@ void hfp_h2_sync_process(hfp_h2_sync_t *hfp_h2_sync, bool bad_frame, const uint8
             }
         }
     }
+}
+
+void hfp_set_hf_sco_established(void (*callback)(hfp_connection_t * hfp_connection)){
+    hfp_hf_sco_established = callback;
+}
+
+void hfp_set_hf_sco_released(void (*callback)(hfp_connection_t * hfp_connection)){
+    hfp_hf_sco_released = callback;
 }
 
 #ifdef ENABLE_TESTING_SUPPORT
