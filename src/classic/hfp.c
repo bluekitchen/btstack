@@ -1002,13 +1002,23 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
             hfp_connection->establish_audio_connection = 0;
 
             hfp_connection->state = HFP_AUDIO_CONNECTION_ESTABLISHED;
-            
-            switch (hfp_connection->vra_engine_requested_state){
-                case HFP_VRA_ACTIVE:
-                    hfp_connection->ag_audio_connection_opened_before_vra = false;
+
+            switch (local_role){
+                case HFP_ROLE_AG:
+                    switch (hfp_connection->vra_engine_requested_state){
+                        case HFP_VRA_ACTIVE:
+                            hfp_connection->ag_audio_connection_opened_before_vra = false;
+                            break;
+                        default:
+                            hfp_connection->ag_audio_connection_opened_before_vra = true;
+                            break;
+                    }
+                    break;
+                case HFP_ROLE_HF:
+                    hfp_hf_sco_established(hfp_connection);
                     break;
                 default:
-                    hfp_connection->ag_audio_connection_opened_before_vra = true;
+                    btstack_unreachable();
                     break;
             }
 
@@ -1045,7 +1055,18 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
                 hfp_connection->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
                 hfp_emit_audio_connection_released(hfp_connection, handle);
 
-                hfp_connection->ag_audio_connection_opened_before_vra = false;
+                switch (local_role) {
+                    case HFP_ROLE_HF:
+                        hfp_hf_sco_released(hfp_connection);
+                        break;
+                    case HFP_ROLE_AG:
+                        hfp_connection->ag_audio_connection_opened_before_vra = false;
+                        break;
+                    default:
+                        btstack_unreachable();
+                        break;
+                }
+
 
                 if (hfp_connection->acl_handle == HCI_CON_HANDLE_INVALID){
                     hfp_vra_handle_disconnect(hfp_connection);
