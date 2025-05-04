@@ -2297,7 +2297,7 @@ uint8_t hfp_hf_deactivate_voice_recognition(hci_con_handle_t acl_handle){
     }
 
     hfp_connection->enhanced_voice_recognition_enabled = enhanced_vra_supported;
-    hfp_connection->vra_engine_requested_state = HFP_VRA_OFF;
+    hfp_hf_vra_state_machine(hfp_connection, HFP_HF_VRA_EVENT_HF_REQUESTED_DEACTIVATE);
     hfp_hf_run_for_context(hfp_connection);
     return ERROR_CODE_SUCCESS;
 }
