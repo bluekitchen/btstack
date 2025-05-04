@@ -2442,51 +2442,27 @@ typedef SSIZE_T ssize_t;
  */
 #define HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_ACTIVATED  0x20u
 
-
 /**
  * @format 1H1
  * @param subevent_code
  * @param acl_handle
  * @param status
  */
-#define HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_READY_TO_ACCEPT_AUDIO_INPUT 0x21u
+#define HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_STATE_REPORTED_STATUS     0x24u
 
 /**
- * @format 1H1
+ * @format 1H11211LV
  * @param subevent_code
  * @param acl_handle
  * @param status
- */
-#define HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_IS_STARTING_SOUND 0x22u
-
-/**
- * @format 1H1
- * @param subevent_code
- * @param acl_handle
- * @param status
- */
-#define HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_IS_PROCESSING_AUDIO_INPUT 0x23u
-
-/**
- * @format 1H1
- * @param subevent_code
- * @param acl_handle
- * @param status
- */
-#define HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_MESSAGE_SENT     0x24u
-
-
-/**
- * @format 1H211LV
- * @param subevent_code
- * @param acl_handle
+ * @param state
  * @param text_id
  * @param text_type
  * @param text_operation
  * @param text_length
  * @param text
  */
-#define HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_MESSAGE           0x25u
+#define HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_STATE            0x25u
 
 /**
  * @format 1H1

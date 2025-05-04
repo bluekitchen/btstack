@@ -7629,134 +7629,95 @@ static inline uint8_t hfp_subevent_enhanced_voice_recognition_activated_get_stat
 }
 
 /**
- * @brief Get field acl_handle from event HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_READY_TO_ACCEPT_AUDIO_INPUT
+ * @brief Get field acl_handle from event HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_STATE_REPORTED_STATUS
  * @param event packet
  * @return acl_handle
  * @note: btstack_type H
  */
-static inline hci_con_handle_t hfp_subevent_enhanced_voice_recognition_ag_ready_to_accept_audio_input_get_acl_handle(const uint8_t * event){
+static inline hci_con_handle_t hfp_subevent_enhanced_voice_recognition_ag_state_reported_status_get_acl_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field status from event HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_READY_TO_ACCEPT_AUDIO_INPUT
+ * @brief Get field status from event HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_STATE_REPORTED_STATUS
  * @param event packet
  * @return status
  * @note: btstack_type 1
  */
-static inline uint8_t hfp_subevent_enhanced_voice_recognition_ag_ready_to_accept_audio_input_get_status(const uint8_t * event){
+static inline uint8_t hfp_subevent_enhanced_voice_recognition_ag_state_reported_status_get_status(const uint8_t * event){
     return event[5];
 }
 
 /**
- * @brief Get field acl_handle from event HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_IS_STARTING_SOUND
+ * @brief Get field acl_handle from event HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_STATE
  * @param event packet
  * @return acl_handle
  * @note: btstack_type H
  */
-static inline hci_con_handle_t hfp_subevent_enhanced_voice_recognition_ag_is_starting_sound_get_acl_handle(const uint8_t * event){
+static inline hci_con_handle_t hfp_subevent_enhanced_voice_recognition_ag_state_get_acl_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field status from event HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_IS_STARTING_SOUND
+ * @brief Get field status from event HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_STATE
  * @param event packet
  * @return status
  * @note: btstack_type 1
  */
-static inline uint8_t hfp_subevent_enhanced_voice_recognition_ag_is_starting_sound_get_status(const uint8_t * event){
+static inline uint8_t hfp_subevent_enhanced_voice_recognition_ag_state_get_status(const uint8_t * event){
     return event[5];
 }
-
 /**
- * @brief Get field acl_handle from event HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_IS_PROCESSING_AUDIO_INPUT
+ * @brief Get field state from event HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_STATE
  * @param event packet
- * @return acl_handle
- * @note: btstack_type H
- */
-static inline hci_con_handle_t hfp_subevent_enhanced_voice_recognition_ag_is_processing_audio_input_get_acl_handle(const uint8_t * event){
-    return little_endian_read_16(event, 3);
-}
-/**
- * @brief Get field status from event HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_IS_PROCESSING_AUDIO_INPUT
- * @param event packet
- * @return status
+ * @return state
  * @note: btstack_type 1
  */
-static inline uint8_t hfp_subevent_enhanced_voice_recognition_ag_is_processing_audio_input_get_status(const uint8_t * event){
-    return event[5];
-}
-
-/**
- * @brief Get field acl_handle from event HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_MESSAGE_SENT
- * @param event packet
- * @return acl_handle
- * @note: btstack_type H
- */
-static inline hci_con_handle_t hfp_subevent_enhanced_voice_recognition_ag_message_sent_get_acl_handle(const uint8_t * event){
-    return little_endian_read_16(event, 3);
+static inline uint8_t hfp_subevent_enhanced_voice_recognition_ag_state_get_state(const uint8_t * event){
+    return event[6];
 }
 /**
- * @brief Get field status from event HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_MESSAGE_SENT
- * @param event packet
- * @return status
- * @note: btstack_type 1
- */
-static inline uint8_t hfp_subevent_enhanced_voice_recognition_ag_message_sent_get_status(const uint8_t * event){
-    return event[5];
-}
-
-/**
- * @brief Get field acl_handle from event HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_MESSAGE
- * @param event packet
- * @return acl_handle
- * @note: btstack_type H
- */
-static inline hci_con_handle_t hfp_subevent_enhanced_voice_recognition_ag_message_get_acl_handle(const uint8_t * event){
-    return little_endian_read_16(event, 3);
-}
-/**
- * @brief Get field text_id from event HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_MESSAGE
+ * @brief Get field text_id from event HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_STATE
  * @param event packet
  * @return text_id
  * @note: btstack_type 2
  */
-static inline uint16_t hfp_subevent_enhanced_voice_recognition_ag_message_get_text_id(const uint8_t * event){
-    return little_endian_read_16(event, 5);
+static inline uint16_t hfp_subevent_enhanced_voice_recognition_ag_state_get_text_id(const uint8_t * event){
+    return little_endian_read_16(event, 7);
 }
 /**
- * @brief Get field text_type from event HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_MESSAGE
+ * @brief Get field text_type from event HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_STATE
  * @param event packet
  * @return text_type
  * @note: btstack_type 1
  */
-static inline uint8_t hfp_subevent_enhanced_voice_recognition_ag_message_get_text_type(const uint8_t * event){
-    return event[7];
+static inline uint8_t hfp_subevent_enhanced_voice_recognition_ag_state_get_text_type(const uint8_t * event){
+    return event[9];
 }
 /**
- * @brief Get field text_operation from event HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_MESSAGE
+ * @brief Get field text_operation from event HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_STATE
  * @param event packet
  * @return text_operation
  * @note: btstack_type 1
  */
-static inline uint8_t hfp_subevent_enhanced_voice_recognition_ag_message_get_text_operation(const uint8_t * event){
-    return event[8];
+static inline uint8_t hfp_subevent_enhanced_voice_recognition_ag_state_get_text_operation(const uint8_t * event){
+    return event[10];
 }
 /**
- * @brief Get field text_length from event HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_MESSAGE
+ * @brief Get field text_length from event HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_STATE
  * @param event packet
  * @return text_length
  * @note: btstack_type L
  */
-static inline uint16_t hfp_subevent_enhanced_voice_recognition_ag_message_get_text_length(const uint8_t * event){
-    return little_endian_read_16(event, 9);
+static inline uint16_t hfp_subevent_enhanced_voice_recognition_ag_state_get_text_length(const uint8_t * event){
+    return little_endian_read_16(event, 11);
 }
 /**
- * @brief Get field text from event HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_MESSAGE
+ * @brief Get field text from event HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_STATE
  * @param event packet
  * @return text
  * @note: btstack_type V
  */
-static inline const uint8_t * hfp_subevent_enhanced_voice_recognition_ag_message_get_text(const uint8_t * event){
-    return &event[11];
+static inline const uint8_t * hfp_subevent_enhanced_voice_recognition_ag_state_get_text(const uint8_t * event){
+    return &event[13];
 }
 
 /**
