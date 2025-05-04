@@ -7629,21 +7629,21 @@ static inline uint8_t hfp_subevent_enhanced_voice_recognition_activated_get_stat
 }
 
 /**
- * @brief Get field acl_handle from event HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_STATE_REPORTED_STATUS
+ * @brief Get field acl_handle from event HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_REPORT_SENDING_STATUS
  * @param event packet
  * @return acl_handle
  * @note: btstack_type H
  */
-static inline hci_con_handle_t hfp_subevent_enhanced_voice_recognition_ag_state_reported_status_get_acl_handle(const uint8_t * event){
+static inline hci_con_handle_t hfp_subevent_enhanced_voice_recognition_ag_report_sending_status_get_acl_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field status from event HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_STATE_REPORTED_STATUS
+ * @brief Get field status from event HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_REPORT_SENDING_STATUS
  * @param event packet
  * @return status
  * @note: btstack_type 1
  */
-static inline uint8_t hfp_subevent_enhanced_voice_recognition_ag_state_reported_status_get_status(const uint8_t * event){
+static inline uint8_t hfp_subevent_enhanced_voice_recognition_ag_report_sending_status_get_status(const uint8_t * event){
     return event[5];
 }
 
