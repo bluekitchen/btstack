@@ -247,16 +247,17 @@ static void hfp_emit_network_operator_event(const hfp_connection_t * hfp_connect
 	(*hfp_hf_callback)(HCI_EVENT_PACKET, 0, event, 8 + operator_len);
 }
 
-
-static void hfp_hf_emit_enhanced_voice_recognition_text(hfp_connection_t * hfp_connection){
+static void hfp_hf_emit_enhanced_voice_recognition_state(hfp_connection_t * hfp_connection, uint8_t status){
     btstack_assert(hfp_connection != NULL);
-    uint8_t event[HFP_MAX_VR_TEXT_SIZE + 11];
+    uint8_t event[HFP_MAX_VR_TEXT_SIZE + 13];
     int pos = 0;
     event[pos++] = HCI_EVENT_HFP_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_MESSAGE;
+    event[pos++] = HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_STATE;
     little_endian_store_16(event, pos, hfp_connection->acl_handle);
     pos += 2;
+    event[pos++] = (uint8_t) status;
+    event[pos++] = (uint8_t) hfp_connection->ag_vra_state;
     little_endian_store_16(event, pos, hfp_connection->ag_msg.text_id);
     pos += 2;
     event[pos++] = hfp_connection->ag_msg.text_type;
@@ -264,7 +265,7 @@ static void hfp_hf_emit_enhanced_voice_recognition_text(hfp_connection_t * hfp_c
     
     // length, zero ending is already in message
     uint8_t * value = &hfp_connection->line_buffer[0];
-    uint16_t  value_length = hfp_connection->ag_vra_msg_length;
+    uint16_t  value_length = hfp_connection->ag_msg.length;
 
     little_endian_store_16(event, pos, value_length);
     pos += 2; 
@@ -500,7 +501,6 @@ static bool hfp_hf_run_for_context_service_level_connection(hfp_connection_t * h
     return true;
 }
 
-
 static bool hfp_hf_run_for_context_service_level_connection_queries(hfp_connection_t * hfp_connection){
     if (hfp_connection->state != HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED) return false;
     if (hfp_connection->ok_pending){
@@ -645,6 +645,7 @@ static bool hfp_hf_vra_state_machine(hfp_connection_t * hfp_connection, hfp_hf_v
 
                 case HFP_HF_VRA_EVENT_HF_REQUESTED_ACTIVATE_ENHANCED:
                     hfp_connection->vra_engine_current_state = HFP_VRA_W4_ENHANCED_ACTIVE;
+                    hfp_connection->vra_engine_requested_state = HFP_VRA_ENHANCED_ACTIVE;
                     break;
 
                 case HFP_HF_VRA_EVENT_SCO_DISCONNECTED:
@@ -673,8 +674,8 @@ static bool hfp_hf_vra_state_machine(hfp_connection_t * hfp_connection, hfp_hf_v
                     hfp_emit_voice_recognition_disabled(hfp_connection, ERROR_CODE_SUCCESS);
                     break;
 
-                case HFP_HF_VRA_EVENT_AG_REPORT_READY_FOR_AUDIO:
-                    hfp_hf_emit_enhanced_voice_recognition_state_event(hfp_connection, HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_READY_TO_ACCEPT_AUDIO_INPUT, ERROR_CODE_SUCCESS);
+                case HFP_HF_VRA_EVENT_AG_REPORT_STATE:
+                    hfp_hf_emit_enhanced_voice_recognition_state(hfp_connection, ERROR_CODE_SUCCESS);
                     break;
 
                 case HFP_HF_VRA_EVENT_HF_REQUESTED_DEACTIVATE:
@@ -688,12 +689,6 @@ static bool hfp_hf_vra_state_machine(hfp_connection_t * hfp_connection, hfp_hf_v
                     hfp_connection->ok_pending = 0u;
                     break;
 
-                case HFP_HF_VRA_EVENT_AG_REPORT_STATE:
-                    hfp_emit_enhanced_voice_recognition_state_event(hfp_connection, ERROR_CODE_SUCCESS);
-                    break;
-                case HFP_HF_VRA_EVENT_AG_REPORT_TEXT_MESSAGE:
-                    hfp_hf_emit_enhanced_voice_recognition_text(hfp_connection);
-                    break;
                 default:
                     break;
             }
