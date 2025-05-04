@@ -333,6 +333,13 @@ void btstack_run_loop_set_timer_handler(btstack_timer_source_t *ts, void (*proce
 void btstack_run_loop_set_timer(btstack_timer_source_t *a, uint32_t timeout_in_ms){
 }
 
+void btstack_run_loop_set_timer_context(btstack_timer_source_t * timer, void * context){
+    timer->context = context;
+}
+
+void * btstack_run_loop_get_timer_context(btstack_timer_source_t * timer){
+    return timer->context;
+}
 
 static void hci_emit_disconnection_complete(uint16_t handle, uint8_t reason){
     uint8_t event[6];
