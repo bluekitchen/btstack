@@ -872,7 +872,7 @@ static void hfp_ag_emit_vra_enhanced_state(hfp_connection_t * hfp_connection, ui
     uint8_t event[6];
     event[0] = HCI_EVENT_HFP_META;
     event[1] = sizeof(event) - 2;
-    event[2] = HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_STATE_REPORTED_STATUS;
+    event[2] = HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_REPORT_SENDING_STATUS;
     little_endian_store_16(event, 3, acl_handle);
     event[5] = status;
     (*hfp_ag_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
