@@ -95,9 +95,8 @@ static void dump_vra_state(hfp_connection_t * connection, const char * desc){
             "W2_SEND_ENHANCED_VOICE_RECOGNITION_MSG"
     };
     if (connection->enhanced_voice_recognition_enabled){
-        printf("%s, VRA=%d: %s -> %s, delay emit %d, ok pending %d\n",
+        printf("%s: %s -> %s, delay emit %d, ok pending %d\n",
                desc,
-               connection->activate_voice_recognition,
                vra_state[connection->vra_engine_current_state],
                vra_state[connection->vra_engine_requested_state],
                connection->emit_vra_enabled_after_audio_established, connection->ok_pending);

@@ -140,13 +140,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
         case HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_ACTIVATED:
             last_received_event_status = hfp_subevent_enhanced_voice_recognition_activated_get_status(event);
             break;
-        case HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_READY_TO_ACCEPT_AUDIO_INPUT:
-            last_received_event_status = hfp_subevent_enhanced_voice_recognition_ag_ready_to_accept_audio_input_get_status(event);
-            break;
-        case HFP_VOICE_RECOGNITION_STATE_AG_IS_STARTING_SOUND:
-            event[2] = HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_IS_STARTING_SOUND;
-            break;
-        case HFP_VOICE_RECOGNITION_STATE_AG_IS_PROCESSING_AUDIO_INPUT:
+        case HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_STATE:
+            last_received_event_status = hfp_subevent_enhanced_voice_recognition_ag_state_get_status(event);
             break;
         default:
             printf("event not handled %u\n", event[2]);
@@ -453,10 +448,10 @@ TEST(HFP_HF_VRA, HFP_VRA_ACTIVE_hf_deactivate) {
 TEST(HFP_HF_VRA, HFP_VRA_ENHANCED_ACTIVE_ag_ready4audio) {
     // ENHANCED_ACTIVE    --> ENHANCED_ACTIVE    : ag_ready4audio / emit event AG_READY_FOR_AUDIO_INPUT
     setup_vra_can_send_now(HFP_VRA_ENHANCED_ACTIVE, HFP_VRA_ENHANCED_ACTIVE);
-    test_hfp_hf_vra_state_machine(hfp_connection, HFP_HF_VRA_EVENT_AG_REPORT_READY_FOR_AUDIO);
+    test_hfp_hf_vra_state_machine(hfp_connection, HFP_HF_VRA_EVENT_AG_REPORT_STATE);
     CHECK_EQUAL(HFP_VRA_ENHANCED_ACTIVE, hfp_connection->vra_engine_current_state);
     CHECK_EQUAL(0u, hfp_connection->ok_pending);
-    CHECK_EQUAL(HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_READY_TO_ACCEPT_AUDIO_INPUT, last_received_event);
+    CHECK_EQUAL(HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_STATE, last_received_event);
     CHECK_EQUAL(ERROR_CODE_SUCCESS, last_received_event_status);
 }
 
