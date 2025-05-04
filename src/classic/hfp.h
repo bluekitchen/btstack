@@ -442,6 +442,7 @@ typedef struct {
     hfp_text_type_t text_type;
     hfp_text_operation_t text_operation;
     const char * text;
+    uint16_t length;
 } hfp_voice_recognition_message_t;
 
 typedef enum {
@@ -755,7 +756,6 @@ typedef struct hfp_connection {
     hfp_voice_recognition_status_t ag_vra_status;
     hfp_voice_recognition_state_t ag_vra_state;
     hfp_voice_recognition_message_t ag_msg;
-    uint16_t ag_vra_msg_length;
 
     uint8_t clcc_idx;
     uint8_t clcc_dir;

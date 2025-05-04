@@ -448,33 +448,6 @@ void hfp_emit_enhanced_voice_recognition_activated(hfp_connection_t * hfp_connec
     hfp_emit_event_for_context(hfp_connection, event, sizeof(event));
 }
 
-void hfp_emit_enhanced_voice_recognition_state_event(hfp_connection_t * hfp_connection, uint8_t status){
-    hci_con_handle_t acl_handle = (hfp_connection != NULL) ? hfp_connection->acl_handle : HCI_CON_HANDLE_INVALID;
-    
-    uint8_t event[6];
-    event[0] = HCI_EVENT_HFP_META;
-    event[1] = sizeof(event) - 2;
-    switch (hfp_connection->ag_vra_state){
-        case HFP_VOICE_RECOGNITION_STATE_AG_READY_TO_ACCEPT_AUDIO_INPUT:
-            event[2] = HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_READY_TO_ACCEPT_AUDIO_INPUT;
-            break;
-        case HFP_VOICE_RECOGNITION_STATE_AG_IS_STARTING_SOUND:
-            event[2] = HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_IS_STARTING_SOUND;
-            break;
-        case HFP_VOICE_RECOGNITION_STATE_AG_IS_PROCESSING_AUDIO_INPUT:
-            event[2] = HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_IS_PROCESSING_AUDIO_INPUT;
-            break;
-        default:
-            btstack_unreachable();
-            break;
-    }
-
-    little_endian_store_16(event, 3, acl_handle);
-    event[5] = status;
-    hfp_emit_event_for_context(hfp_connection, event, sizeof(event));
-}
-
-
 void hfp_emit_slc_connection_event(hfp_role_t local_role, uint8_t status, hci_con_handle_t con_handle, bd_addr_t addr){
     uint8_t event[12];
     int pos = 0;
@@ -617,6 +590,8 @@ static void hfp_reset_voice_recognition(hfp_connection_t * hfp_connection){
     hfp_connection->enhanced_voice_recognition_enabled = false;
     hfp_connection->ag_vra_status = HFP_VOICE_RECOGNITION_STATUS_DISABLED;
     hfp_connection->ag_vra_state  = HFP_VOICE_RECOGNITION_STATE_AG_IDLE;
+    hfp_connection->ag_msg.text_id = 0;
+    hfp_connection->ag_msg.length = 0;
 }
 
 static hfp_connection_t * create_hfp_connection_context(void){
@@ -1875,6 +1850,11 @@ static void parse_sequence(hfp_connection_t * hfp_connection){
         case HFP_CMD_AG_VOICE_RECOGNITION_STATE:
             switch(hfp_connection->parser_item_index){
                 case 0:
+                    // reset AG message
+                    hfp_connection->ag_vra_state = HFP_VOICE_RECOGNITION_STATE_AG_IDLE;
+                    hfp_connection->ag_msg.text_id = 0;
+                    hfp_connection->ag_msg.length = 0;
+
                     hfp_connection->ag_vra_status = (hfp_voice_recognition_status_t) btstack_atoi((char *)&hfp_connection->line_buffer[0]);
                     break;
                 case 1:
@@ -1894,7 +1874,7 @@ static void parse_sequence(hfp_connection_t * hfp_connection){
                     break;
                 case 5:
                     hfp_connection->line_buffer[hfp_connection->line_size] = 0;
-                    hfp_connection->ag_vra_msg_length = hfp_connection->line_size + 1;
+                    hfp_connection->ag_msg.length = hfp_connection->line_size + 1;
                     break;
                 default:
                     break;
