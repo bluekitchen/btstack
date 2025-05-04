@@ -985,7 +985,9 @@ static void hfp_hf_run_for_context(hfp_connection_t * hfp_connection){
         done = hfp_hf_run_for_audio_connection(hfp_connection);
     }
     if (!done){
-        done = hfp_hf_voice_recognition_state_machine(hfp_connection);
+        if (hfp_connection->state >= HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED) {
+            done = hfp_hf_vra_state_machine(hfp_connection, HFP_HF_VRA_EVENT_CAN_SEND_NOW);
+        }
     }
     if (!done){
         done = call_setup_state_machine(hfp_connection);
