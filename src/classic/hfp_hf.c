@@ -1606,7 +1606,7 @@ static void hfp_hf_handle_rfcomm_command(hfp_connection_t * hfp_connection, hfp_
             hfp_connection->extended_audio_gateway_error = 0;
             hfp_emit_event(hfp_connection, HFP_SUBEVENT_EXTENDED_AUDIO_GATEWAY_ERROR, hfp_connection->extended_audio_gateway_error_value);
             break;
-        case HFP_CMD_AG_ACTIVATE_VOICE_RECOGNITION:
+        case HFP_CMD_AG_VOICE_RECOGNITION_STATE:
             hfp_hf_handle_activate_voice_recognition(hfp_connection);
             break;
         case HFP_CMD_ERROR:

@@ -1254,7 +1254,7 @@ static hfp_command_entry_t hfp_hf_command_table[] = {
     { "+BRSF:", HFP_CMD_SUPPORTED_FEATURES },
     { "+BSIR:", HFP_CMD_CHANGE_IN_BAND_RING_TONE_SETTING },
     { "+BTRH:", HFP_CMD_RESPONSE_AND_HOLD_STATUS },
-    { "+BVRA:", HFP_CMD_AG_ACTIVATE_VOICE_RECOGNITION },
+    { "+BVRA:", HFP_CMD_AG_VOICE_RECOGNITION_STATE },
     { "+CCWA:", HFP_CMD_AG_SENT_CALL_WAITING_NOTIFICATION_UPDATE, },
     { "+CHLD:", HFP_CMD_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES },
     { "+CIEV:", HFP_CMD_TRANSFER_AG_INDICATOR_STATUS},
@@ -1500,7 +1500,7 @@ static bool hfp_parse_byte(hfp_connection_t * hfp_connection, uint8_t byte, int 
 
             // ignore empty tokens
             switch (hfp_connection->command){
-                case HFP_CMD_AG_ACTIVATE_VOICE_RECOGNITION:
+                case HFP_CMD_AG_VOICE_RECOGNITION_STATE:
                     // don't ignore empty string 
                     break;
                 default:
@@ -1874,7 +1874,7 @@ static void parse_sequence(hfp_connection_t * hfp_connection){
             value = btstack_atoi((char *)&hfp_connection->line_buffer[0]);
             hfp_connection->ag_activate_voice_recognition_value = value;
             break;
-        case HFP_CMD_AG_ACTIVATE_VOICE_RECOGNITION:
+        case HFP_CMD_AG_VOICE_RECOGNITION_STATE:
             switch(hfp_connection->parser_item_index){
                 case 0:
                     hfp_connection->ag_vra_status = (hfp_voice_recognition_status_t) btstack_atoi((char *)&hfp_connection->line_buffer[0]);
