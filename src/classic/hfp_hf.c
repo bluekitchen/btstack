@@ -782,7 +782,7 @@ static bool hfp_hf_vra_state_machine(hfp_connection_t * hfp_connection, hfp_hf_v
     return false;
 }
 
-static void hfp_hf_handle_activate_voice_recognition(hfp_connection_t * hfp_connection){
+static void hfp_hf_handle_ag_voice_recognition_state(hfp_connection_t * hfp_connection){
     switch(hfp_connection->ag_vra_state) {
         case HFP_VOICE_RECOGNITION_STATE_AG_IDLE:
             switch (hfp_connection->ag_vra_status) {
@@ -1602,7 +1602,7 @@ static void hfp_hf_handle_rfcomm_command(hfp_connection_t * hfp_connection, hfp_
             hfp_emit_event(hfp_connection, HFP_SUBEVENT_EXTENDED_AUDIO_GATEWAY_ERROR, hfp_connection->extended_audio_gateway_error_value);
             break;
         case HFP_CMD_AG_VOICE_RECOGNITION_STATE:
-            hfp_hf_handle_activate_voice_recognition(hfp_connection);
+            hfp_hf_handle_ag_voice_recognition_state(hfp_connection);
             break;
         case HFP_CMD_ERROR:
             hfp_connection->ok_pending = 0;
