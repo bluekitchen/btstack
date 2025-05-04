@@ -787,29 +787,18 @@ static void hfp_hf_handle_ag_voice_recognition_state(hfp_connection_t * hfp_conn
         case HFP_VOICE_RECOGNITION_STATE_AG_IDLE:
             switch (hfp_connection->ag_vra_status) {
                 case HFP_VOICE_RECOGNITION_STATUS_DISABLED:
-                    hfp_connection->vra_engine_requested_state = HFP_VRA_OFF;
                     hfp_hf_vra_state_machine(hfp_connection, HFP_HF_VRA_EVENT_AG_REPORT_DEACTIVATED);
                     break;
                 case HFP_VOICE_RECOGNITION_STATUS_ENABLED:
-                    hfp_connection->vra_engine_requested_state = HFP_VRA_ACTIVE;
                     hfp_hf_vra_state_machine(hfp_connection, HFP_HF_VRA_EVENT_AG_REPORT_ACTIVATED);
-                    break;
-                case HFP_VOICE_RECOGNITION_STATUS_READY_FOR_AUDIO:
-                    hfp_connection->vra_engine_requested_state = HFP_VRA_ENHANCED_ACTIVE;
-                    hfp_hf_vra_state_machine(hfp_connection, HFP_HF_VRA_EVENT_AG_REPORT_READY_FOR_AUDIO);
                     break;
                 default:
                     break;
             }
             break;
+
         default:
-            if (hfp_connection->ag_vra_status == HFP_VOICE_RECOGNITION_STATUS_ENABLED){
-                if (hfp_connection->ag_vra_msg_length > 0){
-                    hfp_hf_vra_state_machine(hfp_connection, HFP_HF_VRA_EVENT_AG_REPORT_TEXT_MESSAGE);
-                } else {
-                    hfp_hf_vra_state_machine(hfp_connection, HFP_HF_VRA_EVENT_AG_REPORT_STATE);
-                }
-            }
+            hfp_hf_vra_state_machine(hfp_connection, HFP_HF_VRA_EVENT_AG_REPORT_STATE);
             break;
     }
 }
