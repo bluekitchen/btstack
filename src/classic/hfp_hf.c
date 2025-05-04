@@ -790,14 +790,6 @@ static void hfp_hf_handle_ag_voice_recognition_state(hfp_connection_t * hfp_conn
     }
 }
 
-bool hfp_hf_voice_recognition_state_machine(hfp_connection_t * hfp_connection){
-    if (hfp_connection->state < HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED) {
-        return false;
-    }
-    return hfp_hf_vra_state_machine(hfp_connection, HFP_HF_VRA_EVENT_CAN_SEND_NOW);
-}
-
-
 static bool codecs_exchange_state_machine(hfp_connection_t * hfp_connection){
     if (hfp_connection->ok_pending) return false;
 
