@@ -749,8 +749,6 @@ typedef struct hfp_connection {
 
     hfp_vra_engine_state_t vra_engine_requested_state;
     hfp_vra_engine_state_t vra_engine_current_state;
-    bool deactivate_voice_recognition;
-    bool activate_voice_recognition;
     bool enhanced_voice_recognition_enabled;
 
     // ih HF, used by parser, in AG used for commands
