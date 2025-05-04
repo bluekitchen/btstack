@@ -872,7 +872,7 @@ static void hfp_ag_emit_enhanced_voice_recognition_msg_sent_event(hfp_connection
     uint8_t event[6];
     event[0] = HCI_EVENT_HFP_META;
     event[1] = sizeof(event) - 2;
-    event[2] = HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_MESSAGE_SENT;
+    event[2] = HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_STATE_REPORTED_STATUS;
     little_endian_store_16(event, 3, acl_handle);
     event[5] = status;
     (*hfp_ag_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
@@ -1012,7 +1012,7 @@ static uint8_t hfp_ag_vra_send_command(hfp_connection_t * hfp_connection){
     uint8_t status;
 
     switch (hfp_connection->vra_engine_current_state){
-        case HFP_VRA_W2_SEND_ENHANCED_ACTIVE_MESSAGE:
+        case HFP_VRA_W2_SEND_ENHANCED_STATUS_WITH_MESSAGE:
             done = hfp_ag_send_enhanced_voice_recognition_msg_cmd(hfp_connection);
             if (done == 0){
                 hfp_ag_emit_enhanced_voice_recognition_msg_sent_event(hfp_connection, ERROR_CODE_UNSPECIFIED_ERROR);
@@ -1022,7 +1022,7 @@ static uint8_t hfp_ag_vra_send_command(hfp_connection_t * hfp_connection){
             hfp_connection->vra_engine_current_state = hfp_connection->vra_engine_requested_state;
             return done;
 
-        case HFP_W2_SEND_ENHANCED_ACTIVE_STATUS:
+        case HFP_VRA_W2_SEND_ENHANCED_STATUS_WITHOUT_MESSAGE:
             done = hfp_ag_send_enhanced_voice_recognition_state_cmd(hfp_connection);
             if (done == 0){
                 hfp_emit_enhanced_voice_recognition_state_event(hfp_connection, ERROR_CODE_UNSPECIFIED_ERROR);
@@ -3125,7 +3125,7 @@ static uint8_t hfp_ag_enhanced_voice_recognition_send_state(hci_con_handle_t acl
 
     
     hfp_connection->ag_vra_state = state;
-    hfp_connection->vra_engine_current_state = HFP_W2_SEND_ENHANCED_ACTIVE_STATUS;
+    hfp_connection->vra_engine_current_state = HFP_VRA_W2_SEND_ENHANCED_STATUS_WITHOUT_MESSAGE;
     hfp_connection->ag_vra_send_command = true;
     hfp_ag_run_for_context(hfp_connection);
     return ERROR_CODE_SUCCESS;
@@ -3180,7 +3180,7 @@ uint8_t hfp_ag_enhanced_voice_recognition_send_message(hci_con_handle_t acl_hand
         return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
     }
 
-    hfp_connection->vra_engine_current_state = HFP_VRA_W2_SEND_ENHANCED_ACTIVE_MESSAGE;
+    hfp_connection->vra_engine_current_state = HFP_VRA_W2_SEND_ENHANCED_STATUS_WITH_MESSAGE;
     hfp_connection->ag_msg = msg;
     hfp_connection->ag_vra_state = state;
     hfp_connection->ag_vra_send_command = true;
