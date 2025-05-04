@@ -785,6 +785,7 @@ typedef struct hfp_connection {
     hci_con_handle_t nxp_start_audio_handle;
     hci_con_handle_t nxp_stop_audio_handle;
 #endif
+    btstack_timer_source_t command_timer;
 } hfp_connection_t;
 
 /**
