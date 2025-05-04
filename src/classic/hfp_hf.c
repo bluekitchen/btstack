@@ -418,7 +418,7 @@ static int hfp_hf_set_calling_line_notification_cmd(uint16_t cid, uint8_t activa
 }
 
 static int hfp_hf_set_voice_recognition_notification_cmd(uint16_t cid, uint8_t activate){
-    return hfp_hf_send_cmd_with_int(cid, HFP_ACTIVATE_VOICE_RECOGNITION, activate);
+    return hfp_hf_send_cmd_with_int(cid, HFP_VOICE_RECOGNITION_STATUS, activate);
 }
 
 static int hfp_hf_set_call_waiting_notification_cmd(uint16_t cid, uint8_t activate){

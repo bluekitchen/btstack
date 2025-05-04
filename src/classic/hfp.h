@@ -149,7 +149,7 @@ extern "C" {
 #define HFP_CALL_PHONE_NUMBER "ATD"
 #define HFP_REDIAL_LAST_NUMBER "+BLDN"
 #define HFP_TURN_OFF_EC_AND_NR "+NREC" // EC (Echo CAnceling), NR (Noise Reduction)
-#define HFP_ACTIVATE_VOICE_RECOGNITION "+BVRA" // Voice Recognition
+#define HFP_VOICE_RECOGNITION_STATUS "+BVRA" // Voice Recognition
 #define HFP_SET_MICROPHONE_GAIN  "+VGM"
 #define HFP_SET_SPEAKER_GAIN     "+VGS"
 #define HFP_PHONE_NUMBER_FOR_VOICE_TAG "+BINP"

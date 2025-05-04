@@ -530,28 +530,28 @@ static int hfp_ag_send_set_response_and_hold(uint16_t cid, int state){
 static int hfp_ag_send_enhanced_voice_recognition_state_cmd(hfp_connection_t * hfp_connection){
     char buffer[30];
     uint8_t evra_enabled = hfp_connection->enhanced_voice_recognition_enabled ? 1 : 0;
-    btstack_snprintf_assert_complete(buffer, sizeof(buffer), "\r\n%s: %d,%d\r\n", HFP_ACTIVATE_VOICE_RECOGNITION, evra_enabled, hfp_connection->ag_vra_state);
+    btstack_snprintf_assert_complete(buffer, sizeof(buffer), "\r\n%s: %d,%d\r\n", HFP_VOICE_RECOGNITION_STATUS, evra_enabled, hfp_connection->ag_vra_state);
     return send_str_over_rfcomm(hfp_connection->rfcomm_cid, buffer);
 }
 
 static int hfp_ag_send_voice_recognition_cmd(hfp_connection_t * hfp_connection, uint8_t activate_voice_recognition){
     char buffer[30];
     if (hfp_connection->enhanced_voice_recognition_enabled){
-        btstack_snprintf_assert_complete(buffer, sizeof(buffer), "\r\n%s: %d,%d\r\n", HFP_ACTIVATE_VOICE_RECOGNITION, activate_voice_recognition, hfp_connection->ag_vra_state);
+        btstack_snprintf_assert_complete(buffer, sizeof(buffer), "\r\n%s: %d,%d\r\n", HFP_VOICE_RECOGNITION_STATUS, activate_voice_recognition, hfp_connection->ag_vra_state);
     } else {
-        btstack_snprintf_assert_complete(buffer, sizeof(buffer), "\r\n%s: %d\r\n", HFP_ACTIVATE_VOICE_RECOGNITION, activate_voice_recognition);
+        btstack_snprintf_assert_complete(buffer, sizeof(buffer), "\r\n%s: %d\r\n", HFP_VOICE_RECOGNITION_STATUS, activate_voice_recognition);
     }
     return send_str_over_rfcomm(hfp_connection->rfcomm_cid, buffer);
 }
 
 static int hfp_ag_send_enhanced_voice_recognition_msg_cmd(hfp_connection_t * hfp_connection){
     char buffer[HFP_VR_TEXT_HEADER_SIZE + HFP_MAX_VR_TEXT_SIZE];
-    btstack_snprintf_assert_complete(buffer, sizeof(buffer), "\r\n%s: 1,%d,%X,%d,%d,\"%s\"\r\n", HFP_ACTIVATE_VOICE_RECOGNITION,
-        hfp_connection->ag_vra_state, 
-        hfp_connection->ag_msg.text_id,
-        hfp_connection->ag_msg.text_type,
-        hfp_connection->ag_msg.text_operation,
-        hfp_connection->ag_msg.text);
+    btstack_snprintf_assert_complete(buffer, sizeof(buffer), "\r\n%s: 1,%d,%X,%d,%d,\"%s\"\r\n", HFP_VOICE_RECOGNITION_STATUS,
+                                     hfp_connection->ag_vra_state,
+                                     hfp_connection->ag_msg.text_id,
+                                     hfp_connection->ag_msg.text_type,
+                                     hfp_connection->ag_msg.text_operation,
+                                     hfp_connection->ag_msg.text);
     return send_str_over_rfcomm(hfp_connection->rfcomm_cid, buffer);
 }
 
