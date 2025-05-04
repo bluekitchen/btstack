@@ -113,7 +113,7 @@ static hfp_generic_status_indicator_t hf_indicators[] = {
 };
 
 static hfp_voice_recognition_message_t msg = {
-    0xABCD, HFP_TEXT_TYPE_MESSAGE_FROM_AG, HFP_TEXT_OPERATION_REPLACE, "The temperature in Munich is 30 degrees."
+    0xABCD, HFP_TEXT_TYPE_MESSAGE_FROM_AG, HFP_TEXT_OPERATION_REPLACE, "The temperature in Munich is 30 degrees.", 41
 };
 
 #define INQUIRY_INTERVAL 5
@@ -464,6 +464,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
     UNUSED(channel);
     bd_addr_t addr;
     uint8_t status;
+    hfp_voice_recognition_state_t ag_vra_state;
+
     switch (packet_type){
         case HCI_EVENT_PACKET:
             switch(hci_event_packet_get_type(event)){
@@ -634,30 +636,31 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                     printf("\nVoice Recognition DEACTIVATED\n\n");
                     break;
 
-                case HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_HF_READY_FOR_AUDIO:
-                    status = hfp_subevent_enhanced_voice_recognition_hf_ready_for_audio_get_status(event);
-                    report_status(status, "Enhanced Voice recognition: READY FOR AUDIO");
+                case HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_ACTIVATED:
+                    status = hfp_subevent_enhanced_voice_recognition_activated_get_status(event);
+                    report_status(status, "ACTIVATE Enhanced Voice recognition");
                     break;
 
-                case HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_READY_TO_ACCEPT_AUDIO_INPUT:
-                    status = hfp_subevent_enhanced_voice_recognition_ag_ready_to_accept_audio_input_get_status(event);
-                    report_status(status, "Enhanced Voice recognition: AG READY TO ACCEPT AUDIO INPUT");                   
+                case HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_STATE:
+                    ag_vra_state = (hfp_voice_recognition_state_t) hfp_subevent_enhanced_voice_recognition_ag_state_get_state(event);
+                    switch (ag_vra_state) {
+                        case HFP_VOICE_RECOGNITION_STATE_AG_READY_TO_ACCEPT_AUDIO_INPUT:
+                            printf("AG_READY_TO_ACCEPT_AUDIO_INPUT\n");
+                            break;
+                        case HFP_VOICE_RECOGNITION_STATE_AG_IS_STARTING_SOUND:
+                            printf("AG_IS_STARTING_SOUND\n");
+                            break;
+                        case HFP_VOICE_RECOGNITION_STATE_AG_IS_PROCESSING_AUDIO_INPUT:
+                            printf("AG_IS_PROCESSING_AUDIO_INPUT\n");
+                            break;
+                        default:
+                            break;
+                    }
                     break;
 
-                case HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_IS_STARTING_SOUND:
-                    status = hfp_subevent_enhanced_voice_recognition_ag_is_starting_sound_get_status(event);
-                    report_status(status, "Enhanced Voice recognition: AG IS STARTING SOUND");          
-                    break;
-
-                case HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_IS_PROCESSING_AUDIO_INPUT:
-                    status = hfp_subevent_enhanced_voice_recognition_ag_is_processing_audio_input_get_status(event);
-                    report_status(status, "Enhanced Voice recognition: AG IS PROCESSING AUDIO INPUT");           
-                    break;
-
-                case HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_MESSAGE_SENT:
-                    status = hfp_subevent_enhanced_voice_recognition_ag_message_sent_get_status(event);
-                    report_status(status, "Enhanced Voice recognition: AG MESSAGE SENT");
-                    printf("Enhanced Voice recognition: \'%s\'\n\n", msg.text);   
+                case HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_REPORT_SENDING_STATUS:
+                    status = hfp_subevent_enhanced_voice_recognition_ag_report_sending_status_get_status(event);
+                    report_status(status, "Enhanced Voice recognition: AG STATUS SENT");
                     break;
 
                 case HFP_SUBEVENT_ECHO_CANCELING_AND_NOISE_REDUCTION_DEACTIVATE:
