@@ -490,6 +490,7 @@ static void hfp_hf_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t
     UNUSED(channel);
     uint8_t status;
     bd_addr_t event_addr;
+    hfp_voice_recognition_state_t ag_vra_state;
 
     switch (packet_type){
 
@@ -669,23 +670,29 @@ static void hfp_hf_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t
                             printf("\nVoice Recognition DEACTIVATED\n\n");
                             break;
 
-                        case HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_HF_READY_FOR_AUDIO:
-                            status = hfp_subevent_enhanced_voice_recognition_hf_ready_for_audio_get_status(event);
-                            report_status(status, "Enhanced Voice recognition: READY FOR AUDIO");
+                        case HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_ACTIVATED:
+                            status = hfp_subevent_enhanced_voice_recognition_activated_get_status(event);
+                            report_status(status, "ACTIVATE Enhanced Voice recognition");
                             break;
 
-                        case HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_READY_TO_ACCEPT_AUDIO_INPUT:
-                            printf("\nEnhanced Voice recognition AG status: AG READY TO ACCEPT AUDIO INPUT\n\n");                            
-                            break;
-                        case HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_IS_STARTING_SOUND:
-                            printf("\nEnhanced Voice recognition AG status: AG IS STARTING SOUND\n\n");                            
-                            break;
-                        case HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_IS_PROCESSING_AUDIO_INPUT:
-                            printf("\nEnhanced Voice recognition AG status: AG IS PROCESSING AUDIO INPUT\n\n");                            
-                            break;
-                        
-                        case HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_MESSAGE:
-                            printf("\nEnhanced Voice recognition AG message: \'%s\'\n", hfp_subevent_enhanced_voice_recognition_ag_message_get_text(event));                            
+                        case HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_STATE:
+                            ag_vra_state = (hfp_voice_recognition_state_t) hfp_subevent_enhanced_voice_recognition_ag_state_get_state(event);
+                            switch (ag_vra_state) {
+                                case HFP_VOICE_RECOGNITION_STATE_AG_READY_TO_ACCEPT_AUDIO_INPUT:
+                                    printf("AG_READY_TO_ACCEPT_AUDIO_INPUT\n");
+                                    break;
+                                case HFP_VOICE_RECOGNITION_STATE_AG_IS_STARTING_SOUND:
+                                    printf("AG_IS_STARTING_SOUND\n");
+                                    break;
+                                case HFP_VOICE_RECOGNITION_STATE_AG_IS_PROCESSING_AUDIO_INPUT:
+                                    printf("AG_IS_PROCESSING_AUDIO_INPUT\n");
+                                    break;
+                                default:
+                                    break;
+                            }
+                            if (hfp_subevent_enhanced_voice_recognition_ag_state_get_text_length(event) > 0){
+                                printf("Message: %s\n", hfp_subevent_enhanced_voice_recognition_ag_state_get_text(event));
+                            }
                             break;
 
                         case HFP_SUBEVENT_ECHO_CANCELING_AND_NOISE_REDUCTION_DEACTIVATE:
