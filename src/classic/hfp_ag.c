@@ -3065,7 +3065,7 @@ uint8_t hfp_ag_activate_voice_recognition(hci_con_handle_t acl_handle){
     hfp_connection->vra_engine_current_state = HFP_VRA_W2_SEND_ACTIVATE;
     hfp_connection->enhanced_voice_recognition_enabled = enhanced_vra_supported;
     hfp_connection->ag_audio_connection_opened_before_vra = hfp_ag_is_audio_connection_active(hfp_connection);
-    hfp_connection->ag_vra_state = HFP_VOICE_RECOGNITION_STATE_AG_READY;
+    hfp_connection->ag_vra_state = HFP_VOICE_RECOGNITION_STATE_AG_IDLE;
     hfp_connection->ag_vra_send_command = true;
     hfp_ag_run_for_context(hfp_connection);
     return ERROR_CODE_SUCCESS;
@@ -3094,7 +3094,7 @@ uint8_t hfp_ag_deactivate_voice_recognition(hci_con_handle_t acl_handle){
 
     hfp_connection->ag_activate_voice_recognition_value = 0;
     hfp_connection->vra_engine_current_state = HFP_VRA_W2_SEND_OFF;
-    hfp_connection->ag_vra_state = HFP_VOICE_RECOGNITION_STATE_AG_READY;
+    hfp_connection->ag_vra_state = HFP_VOICE_RECOGNITION_STATE_AG_IDLE;
     hfp_connection->ag_vra_send_command = true;
     hfp_ag_run_for_context(hfp_connection);
     return ERROR_CODE_SUCCESS;

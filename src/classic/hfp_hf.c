@@ -789,7 +789,7 @@ static bool hfp_hf_vra_state_machine(hfp_connection_t * hfp_connection, hfp_hf_v
 
 static void hfp_hf_handle_activate_voice_recognition(hfp_connection_t * hfp_connection){
     switch(hfp_connection->ag_vra_state) {
-        case HFP_VOICE_RECOGNITION_STATE_AG_READY:
+        case HFP_VOICE_RECOGNITION_STATE_AG_IDLE:
             switch (hfp_connection->ag_vra_status) {
                 case HFP_VOICE_RECOGNITION_STATUS_DISABLED:
                     hfp_connection->vra_engine_requested_state = HFP_VRA_OFF;

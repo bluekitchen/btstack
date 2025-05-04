@@ -618,7 +618,7 @@ static void hfp_reset_voice_recognition(hfp_connection_t * hfp_connection){
     hfp_connection->deactivate_voice_recognition = false;
     hfp_connection->enhanced_voice_recognition_enabled = false;
     hfp_connection->ag_vra_status = HFP_VOICE_RECOGNITION_STATUS_DISABLED;
-    hfp_connection->ag_vra_state  = HFP_VOICE_RECOGNITION_STATE_AG_READY;
+    hfp_connection->ag_vra_state  = HFP_VOICE_RECOGNITION_STATE_AG_IDLE;
 }
 
 static hfp_connection_t * create_hfp_connection_context(void){
