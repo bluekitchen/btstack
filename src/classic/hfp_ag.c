@@ -866,7 +866,7 @@ static bool hfp_ag_is_audio_connection_active(hfp_connection_t * hfp_connection)
     }
 }
 
-static void hfp_ag_emit_enhanced_voice_recognition_msg_sent_event(hfp_connection_t * hfp_connection, uint8_t status){
+static void hfp_ag_emit_vra_enhanced_state(hfp_connection_t * hfp_connection, uint8_t status){
     hci_con_handle_t acl_handle = (hfp_connection != NULL) ? hfp_connection->acl_handle : HCI_CON_HANDLE_INVALID;
     
     uint8_t event[6];
@@ -1015,9 +1015,9 @@ static uint8_t hfp_ag_vra_send_command(hfp_connection_t * hfp_connection){
         case HFP_VRA_W2_SEND_ENHANCED_STATUS_WITH_MESSAGE:
             done = hfp_ag_send_enhanced_voice_recognition_msg_cmd(hfp_connection);
             if (done == 0){
-                hfp_ag_emit_enhanced_voice_recognition_msg_sent_event(hfp_connection, ERROR_CODE_UNSPECIFIED_ERROR);
+                hfp_ag_emit_vra_enhanced_state(hfp_connection, ERROR_CODE_UNSPECIFIED_ERROR);
             } else {
-                hfp_ag_emit_enhanced_voice_recognition_msg_sent_event(hfp_connection, ERROR_CODE_SUCCESS);
+                hfp_ag_emit_vra_enhanced_state(hfp_connection, ERROR_CODE_SUCCESS);
             }
             hfp_connection->vra_engine_current_state = hfp_connection->vra_engine_requested_state;
             return done;
@@ -1025,9 +1025,9 @@ static uint8_t hfp_ag_vra_send_command(hfp_connection_t * hfp_connection){
         case HFP_VRA_W2_SEND_ENHANCED_STATUS_WITHOUT_MESSAGE:
             done = hfp_ag_send_enhanced_voice_recognition_state_cmd(hfp_connection);
             if (done == 0){
-                hfp_emit_enhanced_voice_recognition_state_event(hfp_connection, ERROR_CODE_UNSPECIFIED_ERROR);
+                hfp_ag_emit_vra_enhanced_state(hfp_connection, ERROR_CODE_UNSPECIFIED_ERROR);
             } else {
-                hfp_emit_enhanced_voice_recognition_state_event(hfp_connection, ERROR_CODE_SUCCESS);
+                hfp_ag_emit_vra_enhanced_state(hfp_connection, ERROR_CODE_SUCCESS);
             }
             hfp_connection->vra_engine_current_state = hfp_connection->vra_engine_requested_state;
             return done;
