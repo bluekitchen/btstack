@@ -869,12 +869,6 @@ static void hfp_hf_run_for_context(hfp_connection_t * hfp_connection){
 	// during SDP query, RFCOMM CID is not set
 	if (hfp_connection->rfcomm_cid == 0) return;
 
-    // emit postponed VRA event
-    if (hfp_connection->state == HFP_AUDIO_CONNECTION_ESTABLISHED && hfp_connection->emit_vra_enabled_after_audio_established){
-        hfp_connection->emit_vra_enabled_after_audio_established = false;
-        hfp_emit_voice_recognition_enabled(hfp_connection, ERROR_CODE_SUCCESS);
-    }
-
 	// assert command could be sent
 	if (hci_can_send_command_packet_now() == 0) return;
 
