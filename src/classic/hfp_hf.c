@@ -55,6 +55,7 @@
 #include "classic/hfp_hf.h"
 #include "classic/sdp_util.h"
 
+#define HFP_HF_COMMAND_TIMER_TIMEOUT 5000
 
 // prototypes
 static void hfp_hf_handle_transfer_ag_indicator_status(hfp_connection_t * hfp_connection);
@@ -91,6 +92,22 @@ static uint8_t  hfp_hf_apple_features;
 static int8_t hfp_hf_apple_battery_level;
 static int8_t hfp_hf_apple_docked;
 
+static void hfp_hf_command_timer_stop(hfp_connection_t * hfp_connection) {
+    btstack_run_loop_remove_timer(&hfp_connection->command_timer);
+}
+
+static void hfp_hf_command_timer_timeout_handler(btstack_timer_source_t * timer) {
+    hfp_connection_t * hfp_connection = (hfp_connection_t *) btstack_run_loop_get_timer_context(timer);
+    hfp_hf_vra_state_machine(hfp_connection, HFP_HF_VRA_EVENT_RECEIVED_TIMEOUT);
+}
+
+static void hfp_hf_command_timer_start(hfp_connection_t * hfp_connection) {
+    btstack_run_loop_set_timer_handler(&hfp_connection->command_timer, hfp_hf_command_timer_timeout_handler);
+    btstack_run_loop_set_timer_context(&hfp_connection->command_timer, (void *) hfp_connection);
+
+    btstack_run_loop_set_timer(&hfp_connection->command_timer, HFP_HF_COMMAND_TIMER_TIMEOUT);
+    btstack_run_loop_add_timer(&hfp_connection->command_timer);
+}
 
 static int has_codec_negotiation_feature(hfp_connection_t * hfp_connection){
 	int hf = get_bit(hfp_hf_supported_features, HFP_HFSF_CODEC_NEGOTIATION);
@@ -559,6 +576,16 @@ static void hfp_hf_handle_emit_vra_active_event(hfp_connection_t *hfp_connection
 
 // @return true if RFCOMM cmd was sent
 static bool hfp_hf_vra_state_machine(hfp_connection_t * hfp_connection, hfp_hf_vra_event_type_t event){
+    // stop timer on OK/ERROR command response
+    switch (event){
+        case HFP_HF_VRA_EVENT_RECEIVED_OK:
+        case HFP_HF_VRA_EVENT_RECEIVED_ERROR:
+            hfp_hf_command_timer_stop(hfp_connection);
+            break;
+        default:
+            break;
+    }
+
     switch (hfp_connection->vra_engine_current_state) {
         case HFP_VRA_OFF:
             switch (event) {
@@ -589,7 +616,7 @@ static bool hfp_hf_vra_state_machine(hfp_connection_t * hfp_connection, hfp_hf_v
                         hfp_connection->vra_engine_current_state = HFP_VRA_W4_ACTIVE;
                         hfp_connection->ok_pending = 1;
                         hfp_hf_set_voice_recognition_notification_cmd(hfp_connection->rfcomm_cid, 1);
-                        // TODO start timer
+                        hfp_hf_command_timer_start(hfp_connection);
                         return true;
                     }
                     break;
@@ -705,7 +732,7 @@ static bool hfp_hf_vra_state_machine(hfp_connection_t * hfp_connection, hfp_hf_v
                         hfp_connection->vra_engine_current_state = HFP_VRA_W4_OFF;
                         hfp_connection->ok_pending = 1;
                         hfp_hf_set_voice_recognition_notification_cmd(hfp_connection->rfcomm_cid, 0);
-                        // TODO start timer
+                        hfp_hf_command_timer_start(hfp_connection);
                         return true;
                     }
                     break;
@@ -738,7 +765,7 @@ static bool hfp_hf_vra_state_machine(hfp_connection_t * hfp_connection, hfp_hf_v
                         hfp_connection->vra_engine_current_state = HFP_VRA_W4_ENHANCED_ACTIVE;
                         hfp_connection->ok_pending = 1;
                         hfp_hf_set_voice_recognition_notification_cmd(hfp_connection->rfcomm_cid, 2);
-                        // TODO start timer
+                        hfp_hf_command_timer_start(hfp_connection);
                         return true;
                     }
                     break;
