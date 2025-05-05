@@ -1472,19 +1472,6 @@ static bool hfp_hf_switch_on_ag_response(hfp_connection_t *hfp_connection, uint8
                         default:
                             break;
                     }
-
-                    if (status == ERROR_CODE_SUCCESS){
-                        hfp_hf_vra_state_machine(hfp_connection, HFP_HF_VRA_EVENT_RECEIVED_OK);
-                    } else {
-                        hfp_hf_vra_state_machine(hfp_connection, HFP_HF_VRA_EVENT_RECEIVED_ERROR);
-                    }
-                    break;
-                case HFP_AUDIO_CONNECTION_ESTABLISHED:
-                    if (status == ERROR_CODE_SUCCESS){
-                        hfp_hf_vra_state_machine(hfp_connection, HFP_HF_VRA_EVENT_RECEIVED_OK);
-                    } else {
-                        hfp_hf_vra_state_machine(hfp_connection, HFP_HF_VRA_EVENT_RECEIVED_ERROR);
-                    }
                     break;
                 default:
                     break;
@@ -1492,6 +1479,13 @@ static bool hfp_hf_switch_on_ag_response(hfp_connection_t *hfp_connection, uint8
             break;
     }
 
+    if (hfp_connection->state >= HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED){
+        if (status == ERROR_CODE_SUCCESS){
+            hfp_hf_vra_state_machine(hfp_connection, HFP_HF_VRA_EVENT_RECEIVED_OK);
+        } else {
+            hfp_hf_vra_state_machine(hfp_connection, HFP_HF_VRA_EVENT_RECEIVED_ERROR);
+        }
+    }
     return event_emitted;
 }   
 
@@ -1621,19 +1615,6 @@ static void hfp_hf_handle_rfcomm_command(hfp_connection_t * hfp_connection, hfp_
                     break;
             }
 
-            // handle error response for voice activation (HF initiated)
-//            switch(hfp_connection->vra_engine_current_state){
-//                case HFP_VRA_W4_ENHANCED_ACTIVE:
-//                    hfp_emit_enhanced_voice_recognition_activated(hfp_connection, ERROR_CODE_UNSPECIFIED_ERROR);
-//                    break;
-//                default:
-//                    if (hfp_connection->vra_engine_current_state == hfp_connection->vra_engine_requested_state){
-//                        break;
-//                    }
-//                    hfp_connection->vra_engine_current_state = hfp_connection->vra_engine_requested_state;
-//                    hfp_emit_voice_recognition_enabled(hfp_connection, ERROR_CODE_UNSPECIFIED_ERROR);
-//                    return;
-//            }
             event_emitted = hfp_hf_switch_on_ag_response(hfp_connection, ERROR_CODE_UNSPECIFIED_ERROR);
             if (!event_emitted){
                 hfp_emit_event(hfp_connection, HFP_SUBEVENT_COMPLETE, ERROR_CODE_UNSPECIFIED_ERROR);
