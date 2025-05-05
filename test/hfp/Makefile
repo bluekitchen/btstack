@@ -47,7 +47,7 @@ CFLAGS  += -I. -I../
 CFLAGS  += -I${BTSTACK_ROOT}/src
 CFLAGS  += -I${BTSTACK_ROOT}/src/classic
 CFLAGS  += -I${BTSTACK_ROOT}/platform/posix
-# CFLAGS  += -D OCTAVE_OUTPUT
+CFLAGS  += -D ENABLE_TESTING_SUPPORT
 
 CFLAGS_COVERAGE = ${CFLAGS} -fprofile-arcs -ftest-coverage
 CFLAGS_ASAN     = ${CFLAGS} -fsanitize=address -DHAVE_ASSERT
