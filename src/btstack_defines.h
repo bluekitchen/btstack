@@ -2448,7 +2448,7 @@ typedef SSIZE_T ssize_t;
  * @param acl_handle
  * @param status
  */
-#define HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_REPORT_SENDING_STATUS     0x24u
+#define HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_MESSAGE_SENT     0x24u
 
 /**
  * @format 1H11211LV
