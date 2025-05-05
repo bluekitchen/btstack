@@ -899,8 +899,9 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
             }
 
             if (channel == stream_endpoint->l2cap_media_cid){
-                btstack_assert(avdtp_sink_handle_media_data);
-                (*avdtp_sink_handle_media_data)(avdtp_local_seid(stream_endpoint), packet, size);
+                if (avdtp_sink_handle_media_data != NULL){
+                    (*avdtp_sink_handle_media_data)(avdtp_local_seid(stream_endpoint), packet, size);
+                }
                 break;
             } 
 
