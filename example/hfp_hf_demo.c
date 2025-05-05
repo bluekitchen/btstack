@@ -644,30 +644,16 @@ static void hfp_hf_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t
                         
                         case HFP_SUBEVENT_VOICE_RECOGNITION_ACTIVATED:
                             status = hfp_subevent_voice_recognition_activated_get_status(event);
-                            if (status != ERROR_CODE_SUCCESS){
-                                printf("Voice Recognition Activate command failed, status 0x%02x\n", status);
-                                break;
-                            }
-                            
-                            switch (hfp_subevent_voice_recognition_activated_get_enhanced(event)){
-                                case 0: 
-                                    printf("\nVoice recognition ACTIVATED\n\n");
-                                    break;
-                                default:
-                                    printf("\nEnhanced voice recognition ACTIVATED.\n");
-                                    printf("Start new audio enhanced voice recognition session %s\n\n", bd_addr_to_str(device_addr));
-                                    status = hfp_hf_enhanced_voice_recognition_report_ready_for_audio(acl_handle);
-                                    break;
-                            }
+                            report_status(status, "ACTIVATE Voice Recognition");
+
+                            if (hfp_subevent_voice_recognition_activated_get_enhanced(event) > 0){
+                               printf("\nEnhanced voice recognition supported\n\n");
+                            }   
                             break;
             
                         case HFP_SUBEVENT_VOICE_RECOGNITION_DEACTIVATED:
                             status = hfp_subevent_voice_recognition_deactivated_get_status(event);
-                            if (status != ERROR_CODE_SUCCESS){
-                                printf("Voice Recognition Deactivate command failed, status 0x%02x\n", status);
-                                break;
-                            }
-                            printf("\nVoice Recognition DEACTIVATED\n\n");
+                            report_status(status, "DEACTIVATE Voice Recognition");
                             break;
 
                         case HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_ACTIVATED:
