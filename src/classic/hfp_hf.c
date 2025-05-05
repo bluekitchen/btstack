@@ -1360,7 +1360,7 @@ static void hfp_hf_apple_extension_supported(hfp_connection_t * hfp_connection, 
     hfp_emit_event(hfp_connection, HFP_SUBEVENT_APPLE_EXTENSION_SUPPORTED, hfp_hf_microphone_gain);
 }
 
-static bool hfp_hf_switch_on_ok_pending(hfp_connection_t *hfp_connection, uint8_t status){
+static bool hfp_hf_switch_on_ag_response(hfp_connection_t *hfp_connection, uint8_t status){
     bool event_emitted = true;
     // cache state and reset
     hfp_command_t response_pending_for_command = hfp_connection->response_pending_for_command;
@@ -1634,14 +1634,14 @@ static void hfp_hf_handle_rfcomm_command(hfp_connection_t * hfp_connection, hfp_
 //                    hfp_emit_voice_recognition_enabled(hfp_connection, ERROR_CODE_UNSPECIFIED_ERROR);
 //                    return;
 //            }
-            event_emitted = hfp_hf_switch_on_ok_pending(hfp_connection, ERROR_CODE_UNSPECIFIED_ERROR);
+            event_emitted = hfp_hf_switch_on_ag_response(hfp_connection, ERROR_CODE_UNSPECIFIED_ERROR);
             if (!event_emitted){
                 hfp_emit_event(hfp_connection, HFP_SUBEVENT_COMPLETE, ERROR_CODE_UNSPECIFIED_ERROR);
             }
             break;
 
         case HFP_CMD_OK:
-            hfp_hf_switch_on_ok_pending(hfp_connection, ERROR_CODE_SUCCESS);
+            hfp_hf_switch_on_ag_response(hfp_connection, ERROR_CODE_SUCCESS);
             break;
         case HFP_CMD_RING:
             hfp_emit_simple_event(hfp_connection, HFP_SUBEVENT_RING);
