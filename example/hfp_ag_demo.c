@@ -658,8 +658,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                     }
                     break;
 
-                case HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_REPORT_SENDING_STATUS:
-                    status = hfp_subevent_enhanced_voice_recognition_ag_report_sending_status_get_status(event);
+                case HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_MESSAGE_SENT:
+                    status = hfp_subevent_enhanced_voice_recognition_ag_message_sent_get_status(event);
                     report_status(status, "Enhanced Voice recognition: AG STATUS SENT");
                     break;
 
