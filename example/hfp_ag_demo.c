@@ -464,7 +464,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
     UNUSED(channel);
     bd_addr_t addr;
     uint8_t status;
-    hfp_voice_recognition_state_t ag_vra_state;
 
     switch (packet_type){
         case HCI_EVENT_PACKET:
@@ -656,7 +655,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                     printf("Apple Accessory support: Vendor ID %04x, Product ID %04x, Version: %s, Features %u\n",
                            hfp_subevent_apple_accessory_information_get_vendor_id(event),
                            hfp_subevent_apple_accessory_information_get_product_id(event),
-                           hfp_subevent_apple_accessory_information_get_version(event),
+                           (const char *) hfp_subevent_apple_accessory_information_get_version(event),
                            hfp_subevent_apple_accessory_information_get_features(event));
                     break;
                 default:
