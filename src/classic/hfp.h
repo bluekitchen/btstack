@@ -418,7 +418,7 @@ typedef enum {
 
 
 typedef enum {
-    HFP_VRA_NONE,
+    HFP_VRA_IDLE,
     // shared between normal voice recognition and enhanced one
     HFP_VRA_OFF,
 
