@@ -571,11 +571,21 @@ hfp_connection_t * get_hfp_connection_context_for_acl_handle(uint16_t handle, hf
 }
 
 static void hfp_vra_handle_disconnect(hfp_connection_t * hfp_connection) {
-    bool emit_vra_disabled = (hfp_connection->vra_engine_requested_state != HFP_VRA_OFF) ||
-                             (hfp_connection->vra_engine_current_state != HFP_VRA_OFF);
+    bool emit_vra_disabled = (hfp_connection->vra_engine_current_state != HFP_VRA_OFF);
+    switch (hfp_connection->local_role) {
+        case HFP_ROLE_HF:
+            emit_vra_disabled |= (hfp_connection->vra_engine_requested_state != HFP_VRA_IDLE);
+            hfp_connection->vra_engine_requested_state = HFP_VRA_IDLE;
+            break;
+        case HFP_ROLE_AG:
+            emit_vra_disabled |= (hfp_connection->vra_engine_ag_requested_state != HFP_VRA_OFF);
+            hfp_connection->vra_engine_ag_requested_state = HFP_VRA_OFF;
+            break;
+        default:
+            return;
+    }
 
-    hfp_connection->vra_engine_requested_state = HFP_VRA_OFF;
-    hfp_connection->vra_engine_current_state = hfp_connection->vra_engine_requested_state;
+    hfp_connection->vra_engine_current_state = HFP_VRA_OFF;
     // ignore subsequent ok/error response
     hfp_connection->ok_pending = 0;
 
@@ -585,7 +595,8 @@ static void hfp_vra_handle_disconnect(hfp_connection_t * hfp_connection) {
 }
 
 static void hfp_reset_voice_recognition(hfp_connection_t * hfp_connection){
-    hfp_connection->vra_engine_requested_state = HFP_VRA_OFF;
+    hfp_connection->vra_engine_ag_requested_state = HFP_VRA_OFF;
+    hfp_connection->vra_engine_requested_state = HFP_VRA_IDLE;
     hfp_connection->vra_engine_current_state = HFP_VRA_OFF;
     hfp_connection->enhanced_voice_recognition_enabled = false;
     hfp_connection->ag_vra_status = HFP_VOICE_RECOGNITION_STATUS_DISABLED;
@@ -979,7 +990,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
 
             switch (local_role){
                 case HFP_ROLE_AG:
-                    switch (hfp_connection->vra_engine_requested_state){
+                    switch (hfp_connection->vra_engine_ag_requested_state){
                         case HFP_VRA_ACTIVE:
                             hfp_connection->ag_audio_connection_opened_before_vra = false;
                             break;
