@@ -1109,6 +1109,12 @@ static int hfp_ag_voice_recognition_state_machine(hfp_connection_t * hfp_connect
     return 0;
 }
 
+static void hfp_ag_sco_established(hfp_connection_t * hfp_connection){
+    hfp_ag_vra_state_machine(hfp_connection, HFP_AG_VRA_EVENT_SCO_CONNECTED);
+}
+static void hfp_ag_sco_released(hfp_connection_t * hfp_connection){
+    hfp_ag_vra_state_machine(hfp_connection, HFP_AG_VRA_EVENT_SCO_DISCONNECTED);
+}
 static bool hfp_ag_vra_state_machine(hfp_connection_t * hfp_connection, hfp_ag_vra_event_type_t event){
     bool cmd_sent = false;
 
@@ -2772,6 +2778,9 @@ void hfp_ag_init(uint8_t rfcomm_channel_nr){
     hfp_set_ag_rfcomm_packet_handler(&hfp_ag_rfcomm_packet_handler);
 
     hfp_gsm_init();
+
+    hfp_set_ag_sco_established(hfp_ag_sco_established);
+    hfp_set_ag_sco_released(hfp_ag_sco_released);
 }
 
 void hfp_ag_deinit(void){
