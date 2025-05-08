@@ -1219,6 +1219,7 @@ static bool hfp_ag_vra_state_machine(hfp_connection_t * hfp_connection, hfp_ag_v
             }
             break;
 
+        case HFP_VRA_W4_ACTIVE_REMOTE:
         case HFP_VRA_W4_ACTIVE:
             switch (event) {
                 case HFP_AG_VRA_EVENT_CAN_SEND_NOW:
@@ -1230,7 +1231,6 @@ static bool hfp_ag_vra_state_machine(hfp_connection_t * hfp_connection, hfp_ag_v
                 case HFP_AG_VRA_EVENT_HF_ACTIVATE:
                 case HFP_AG_VRA_EVENT_HF_DEACTIVATE:
                 case HFP_AG_VRA_EVENT_HF_ACTIVATE_ENHANCED:
-                    hfp_connection->vra_engine_ag_current_state = HFP_VRA_W4_OFF;
                     hfp_connection->vra_ag_send_error = true;
                     break;
                 default:
@@ -1238,6 +1238,7 @@ static bool hfp_ag_vra_state_machine(hfp_connection_t * hfp_connection, hfp_ag_v
             }
             break;
 
+        case HFP_VRA_W4_OFF_REMOTE:
         case HFP_VRA_W4_OFF:
             switch (event) {
                 case HFP_AG_VRA_EVENT_CAN_SEND_NOW:
@@ -1248,13 +1249,30 @@ static bool hfp_ag_vra_state_machine(hfp_connection_t * hfp_connection, hfp_ag_v
                 case HFP_AG_VRA_EVENT_HF_ACTIVATE:
                 case HFP_AG_VRA_EVENT_HF_DEACTIVATE:
                 case HFP_AG_VRA_EVENT_HF_ACTIVATE_ENHANCED:
-                    hfp_connection->vra_engine_ag_current_state = HFP_VRA_W4_OFF;
                     hfp_connection->vra_ag_send_error = true;
                     break;
                 default:
                     break;
             }
             break;
+
+        case HFP_VRA_W4_ENHANCED_ACTIVE:
+            switch (event) {
+                case HFP_AG_VRA_EVENT_CAN_SEND_NOW:
+                    hfp_connection->vra_engine_ag_current_state = HFP_VRA_ACTIVE;
+                    hfp_ag_send_ok(hfp_connection->rfcomm_cid);
+                    hfp_emit_enhanced_voice_recognition_state_event(hfp_connection, ERROR_CODE_SUCCESS);
+                    return true;
+                case HFP_AG_VRA_EVENT_HF_ACTIVATE:
+                case HFP_AG_VRA_EVENT_HF_DEACTIVATE:
+                case HFP_AG_VRA_EVENT_HF_ACTIVATE_ENHANCED:
+                    hfp_connection->vra_ag_send_error = true;
+                    break;
+                default:
+                    break;
+            }
+            break;
+
         default:
             break;
     }
