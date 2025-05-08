@@ -1137,6 +1137,10 @@ static bool hfp_ag_vra_state_machine(hfp_connection_t * hfp_connection, hfp_ag_v
                 case HFP_AG_VRA_EVENT_AG_ACTIVATE:
                     hfp_connection->vra_engine_ag_current_state = HFP_VRA_W4_ACTIVE;
                     break;
+                case HFP_AG_VRA_EVENT_SCO_DISCONNECTED:
+                    hfp_emit_voice_recognition_disabled(hfp_connection, ERROR_CODE_SUCCESS);
+                    break;
+
                 default:
                     break;
             }
