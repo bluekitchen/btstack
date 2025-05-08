@@ -17,6 +17,7 @@ stateDiagram-v2
     ACTIVE             --> W4_ENHANCED_ACTIVE : hf_activate_enhanced  / requested_state = ENHANCED_ACTIVE (wait for ready2send event to send ready4audio command)
     ACTIVE             --> W4_OFF             : hf_deactivate         / requested_state = OFF             (wait for ready2send event to send deactivate  command)
     ENHANCED_ACTIVE    --> W4_OFF             : hf_deactivate         / requested_state = OFF             (wait for ready2send event to send deactivate  command)
+    ENHANCED_ACTIVE    --> W4_ENHANCED_ACTIVE : hf_activate_enhanced / requested_state = ENHANCED_ACTIVE (wait for ready2send event to send ready4audio command)
 
     W4_ACTIVE          --> W4_ACTIVE          : ready2send      [ok_pending == 0] / ok_pending = 1, send activate   command, start timer
     W4_ENHANCED_ACTIVE --> W4_ENHANCED_ACTIVE : ready2send      [ok_pending == 0] / ok_pending = 1, send ready4audio command, start timer
