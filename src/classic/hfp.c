@@ -282,7 +282,7 @@ const char * hfp_ag_feature(int index){
 }
 
 int send_str_over_rfcomm(uint16_t cid, const char * command){
-    if (!rfcomm_can_send_packet_now(cid)) return 1;
+    if (!rfcomm_can_send_packet_now(cid)) return BTSTACK_ACL_BUFFERS_FULL;
     log_info("HFP_TX %s", command);
     int err = rfcomm_send(cid, (uint8_t*) command, (uint16_t) strlen(command));
     if (err){
@@ -292,7 +292,7 @@ int send_str_over_rfcomm(uint16_t cid, const char * command){
     hfp_connection_t * hfp_connection = get_hfp_connection_context_for_rfcomm_cid(cid);
     hfp_emit_string_event(hfp_connection, HFP_SUBEVENT_AT_MESSAGE_SENT, command);
 #endif
-    return 1;
+    return err;
 }
 
 int hfp_supports_codec(uint8_t codec, int codecs_nr, uint8_t * codecs){
