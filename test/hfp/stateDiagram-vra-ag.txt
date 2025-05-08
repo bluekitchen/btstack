@@ -1,0 +1,56 @@
+stateDiagram-v2
+    classDef criticalState fill:#f00,color:white,font-weight:bold,stroke-width:2px,stroke:black
+
+    [*] --> OFF
+
+    # AG initiated actions
+    
+
+    OFF                --> W4_ACTIVE_AG           : ag_activate   
+    ACTIVE             --> W4_OFF_AG              : ag_deactivate 
+    
+    W4_ACTIVE_AG       --> ACTIVE                 : ready2send   / send ACTIVE, if (sco_established) {emit event ACTIVE} else {trigger audio connection setup}
+
+    W4_OFF_AG             --> OFF                 : ready2send   / send OFF, if (audio connection) { shut down audio connection } else { emit OFF }
+    
+    # SCO Established
+
+    ACTIVE             --> ACTIVE                 : sco_established / emit ACTIVE
+    
+
+    # SCO Disconnects
+
+    ENHANCED_ACTIVE    --> W4_OFF_AG              : sco_disconnect
+    ACTIVE             --> W4_OFF_AG              : sco_disconnect
+    OFF                --> OFF                    : sco_disconnect  / emit OFF
+
+    # HF initiated actions
+    OFF                --> W4_ACTIVE_HF           : hf_activate   
+    OFF                --> OFF                    : hf_deactivate / send_error = 1       
+    OFF                --> OFF                    : hf_activate_enhanced / send_error = 1
+
+    ACTIVE             --> ACTIVE                 : hf_activate  / send_error = 1       
+    ACTIVE             --> W4_OFF_HF              : hf_deactivate
+    ACTIVE             --> W4_ENHANCED_ACTIVE     : hf_activate_enhanced [sco_established] 
+    ACTIVE             --> ACTIVE                 : hf_activate_enhanced [!sco_established] / send_error = 1
+
+    ENHANCED_ACTIVE    --> ENHANCED_ACTIVE        : hf_activate   / send_error = 1
+    ENHANCED_ACTIVE    --> W4_OFF_HF              : hf_deactivate        
+    ENHANCED_ACTIVE    --> W4_ENHANCED_ACTIVE     : hf_activate_enhanced
+
+    W4_ACTIVE_HF       --> ACTIVE                 : ready2send   / send OK, if (sco_established) {emit event ACTIVE} else {trigger audio connection setup}
+    W4_OFF_HF          --> OFF                    : ready2send   / send OK, if (audio connection) { shut down audio connection } else { emit OFF }
+    W4_ENHANCED_ACTIVE --> ENHANCED_ACTIVE        : ready2send   / send OK, emit ENHANCED_ACTIVE
+
+    ---
+    Events: hf_activate, hf_deactivate, hf_activate_enhanced:
+
+    W4_OFF_AG          -->  W4_OFF_AG              : hf_activate, hf_deactivate, hf_activate_enhanced | send_error = 1
+    W4_ACTIVE_AG       -->  W4_OFF_AG              : hf_activate, hf_deactivate, hf_activate_enhanced | send_error = 1
+
+    Events: ag_activate, ag_deactivate, ag_status  : stop in API
+    W4_OFF_HF, W4_ACTIVE_HF, W4_ENHANCED_ACTIVE
+
+    *                  --> *                      : ready2send / if (send_error) { send_error = 0, send ERROR}
+
+    class W4_ACTIVE, W4_ENHANCED_ACTIVE, W4_OFF criticalState
