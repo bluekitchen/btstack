@@ -86,6 +86,8 @@ static btstack_packet_handler_t hfp_ag_rfcomm_packet_handler;
 
 static void (*hfp_hf_sco_established)(hfp_connection_t * hfp_connection);
 static void (*hfp_hf_sco_released)(hfp_connection_t * hfp_connection);
+static void (*hfp_ag_sco_established)(hfp_connection_t * hfp_connection);
+static void (*hfp_ag_sco_released)(hfp_connection_t * hfp_connection);
 
 static uint8_t  hfp_hf_indicators_nr;
 static const uint8_t * hfp_hf_indicators;
