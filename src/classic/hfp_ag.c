@@ -1115,8 +1115,19 @@ static void hfp_ag_sco_established(hfp_connection_t * hfp_connection){
 static void hfp_ag_sco_released(hfp_connection_t * hfp_connection){
     hfp_ag_vra_state_machine(hfp_connection, HFP_AG_VRA_EVENT_SCO_DISCONNECTED);
 }
+
 static bool hfp_ag_vra_state_machine(hfp_connection_t * hfp_connection, hfp_ag_vra_event_type_t event){
     bool cmd_sent = false;
+    switch (event){
+        case HFP_AG_VRA_EVENT_CAN_SEND_NOW:
+            if (hfp_connection->vra_ag_send_error){
+                hfp_connection->vra_ag_send_error = false;
+                hfp_ag_send_error(hfp_connection->rfcomm_cid);
+                return true;
+            }
+        default:
+            break;
+    }
 
     // TODO: delete call
     cmd_sent = hfp_ag_voice_recognition_state_machine(hfp_connection);
