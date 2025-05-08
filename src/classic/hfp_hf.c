@@ -614,7 +614,6 @@ static bool hfp_hf_vra_state_machine(hfp_connection_t * hfp_connection, hfp_hf_v
                 case HFP_HF_VRA_EVENT_CAN_SEND_NOW:
                     // block HF commands if we are still waiting for AG response
                     if (hfp_connection->vra_engine_requested_state == HFP_VRA_ACTIVE && (hfp_connection->ok_pending == 0u)){
-                        hfp_connection->vra_engine_current_state = HFP_VRA_W4_ACTIVE;
                         hfp_connection->ok_pending = 1;
                         hfp_hf_set_voice_recognition_notification_cmd(hfp_connection->rfcomm_cid, 1);
                         hfp_hf_command_timer_start(hfp_connection);
@@ -705,6 +704,11 @@ static bool hfp_hf_vra_state_machine(hfp_connection_t * hfp_connection, hfp_hf_v
                     hfp_connection->vra_engine_requested_state = HFP_VRA_OFF;
                     break;
 
+                case HFP_HF_VRA_EVENT_HF_REQUESTED_ACTIVATE:
+                    hfp_connection->vra_engine_current_state = HFP_VRA_W4_ENHANCED_ACTIVE;
+                    hfp_connection->vra_engine_requested_state = HFP_VRA_ENHANCED_ACTIVE;
+                    break;
+
                 case HFP_HF_VRA_EVENT_RECEIVED_OK:
                 case HFP_HF_VRA_EVENT_RECEIVED_ERROR:
                 case HFP_HF_VRA_EVENT_RECEIVED_TIMEOUT:
@@ -740,7 +744,6 @@ static bool hfp_hf_vra_state_machine(hfp_connection_t * hfp_connection, hfp_hf_v
                 case HFP_HF_VRA_EVENT_CAN_SEND_NOW:
                     // block HF commands if we are still waiting for AG response
                     if (hfp_connection->vra_engine_requested_state == HFP_VRA_OFF && (hfp_connection->ok_pending == 0u)){
-                        hfp_connection->vra_engine_current_state = HFP_VRA_W4_OFF;
                         hfp_connection->ok_pending = 1;
                         hfp_hf_set_voice_recognition_notification_cmd(hfp_connection->rfcomm_cid, 0);
                         hfp_hf_command_timer_start(hfp_connection);
@@ -776,7 +779,6 @@ static bool hfp_hf_vra_state_machine(hfp_connection_t * hfp_connection, hfp_hf_v
                 case HFP_HF_VRA_EVENT_CAN_SEND_NOW:
                     // block HF commands if we are still waiting for AG response
                     if (hfp_connection->vra_engine_requested_state == HFP_VRA_ENHANCED_ACTIVE && (hfp_connection->ok_pending == 0u)){
-                        hfp_connection->vra_engine_current_state = HFP_VRA_W4_ENHANCED_ACTIVE;
                         hfp_connection->ok_pending = 1;
                         hfp_hf_set_voice_recognition_notification_cmd(hfp_connection->rfcomm_cid, 2);
                         hfp_hf_command_timer_start(hfp_connection);
