@@ -998,6 +998,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
                             hfp_connection->ag_audio_connection_opened_before_vra = true;
                             break;
                     }
+                    hfp_ag_sco_established(hfp_connection);
                     break;
                 case HFP_ROLE_HF:
                     hfp_hf_sco_established(hfp_connection);
@@ -1046,6 +1047,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
                         break;
                     case HFP_ROLE_AG:
                         hfp_connection->ag_audio_connection_opened_before_vra = false;
+                        hfp_ag_sco_released(hfp_connection);
                         break;
                     default:
                         btstack_unreachable();
@@ -2561,6 +2563,14 @@ void hfp_set_hf_sco_established(void (*callback)(hfp_connection_t * hfp_connecti
 
 void hfp_set_hf_sco_released(void (*callback)(hfp_connection_t * hfp_connection)){
     hfp_hf_sco_released = callback;
+}
+
+void hfp_set_ag_sco_established(void (*callback)(hfp_connection_t * hfp_connection)){
+    hfp_ag_sco_established = callback;
+}
+
+void hfp_set_ag_sco_released(void (*callback)(hfp_connection_t * hfp_connection)){
+    hfp_ag_sco_released = callback;
 }
 
 #ifdef ENABLE_TESTING_SUPPORT
