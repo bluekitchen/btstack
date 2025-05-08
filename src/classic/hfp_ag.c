@@ -3442,3 +3442,12 @@ void hfp_ag_register_custom_call_sm_handler(bool (*handler)(hfp_ag_call_event_t 
 void hfp_ag_register_custom_at_command(hfp_custom_at_command_t * custom_at_command){
     hfp_register_custom_ag_command(custom_at_command);
 }
+
+#ifdef ENABLE_TESTING_SUPPORT
+hfp_connection_t * test_hfp_ag_create_slc_connection(void){
+    return NULL;
+}
+bool test_hfp_ag_vra_state_machine(hfp_connection_t * hfp_connection, hfp_ag_vra_event_type_t event){
+    return hfp_ag_vra_state_machine(hfp_connection, event);
+}
+#endif

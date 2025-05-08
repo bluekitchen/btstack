@@ -552,6 +552,10 @@ hfp_ag_indicator_t * hfp_ag_get_ag_indicators(hfp_connection_t * hfp_connection)
 // @return true to process even as normal, false to cause HFP AG to ignore event
 void hfp_ag_register_custom_call_sm_handler(bool (*handler)(hfp_ag_call_event_t event));
 
+#ifdef ENABLE_TESTING_SUPPORT
+bool test_hfp_ag_vra_state_machine(hfp_connection_t * hfp_connection, hfp_ag_vra_event_type_t event);
+#endif
+
 #if defined __cplusplus
 }
 #endif
