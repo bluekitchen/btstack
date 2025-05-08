@@ -1151,7 +1151,36 @@ static bool hfp_ag_vra_state_machine(hfp_connection_t * hfp_connection, hfp_ag_v
                     break;
             }
             break;
-        
+
+        case HFP_VRA_ACTIVE:
+            switch (event) {
+                case HFP_AG_VRA_EVENT_AG_ACTIVATE:
+                    hfp_connection->vra_engine_ag_current_state = HFP_VRA_W4_OFF;
+                    break;
+                case HFP_AG_VRA_EVENT_SCO_CONNECTED:
+                    hfp_emit_voice_recognition_enabled(hfp_connection, ERROR_CODE_SUCCESS);
+                    break;
+                case HFP_AG_VRA_EVENT_SCO_DISCONNECTED:
+                    hfp_connection->vra_engine_ag_current_state = HFP_VRA_W4_OFF;
+                    break;
+                case HFP_AG_VRA_EVENT_HF_ACTIVATE:
+                    hfp_connection->vra_ag_send_error = true;
+                    break;
+                case HFP_AG_VRA_EVENT_HF_DEACTIVATE:
+                    hfp_connection->vra_engine_ag_current_state = HFP_VRA_W4_OFF_REMOTE;
+                    break;
+                case HFP_AG_VRA_EVENT_HF_ACTIVATE_ENHANCED:
+                    if (hfp_connection->state == HFP_AUDIO_CONNECTION_ESTABLISHED) {
+                        hfp_connection->vra_engine_ag_current_state = HFP_VRA_W4_ENHANCED_ACTIVE;
+                    } else {
+                        hfp_connection->vra_ag_send_error = true;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            break;
+
         default:
             break;
     }
