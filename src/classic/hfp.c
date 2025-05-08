@@ -588,6 +588,7 @@ static void hfp_vra_handle_disconnect(hfp_connection_t * hfp_connection) {
     }
 
     hfp_connection->vra_engine_current_state = HFP_VRA_OFF;
+    hfp_connection->vra_engine_ag_current_state = HFP_VRA_OFF;
     // ignore subsequent ok/error response
     hfp_connection->ok_pending = 0;
 
@@ -598,9 +599,11 @@ static void hfp_vra_handle_disconnect(hfp_connection_t * hfp_connection) {
 
 static void hfp_reset_voice_recognition(hfp_connection_t * hfp_connection){
     hfp_connection->vra_engine_ag_requested_state = HFP_VRA_OFF;
+    hfp_connection->vra_engine_ag_current_state = HFP_VRA_OFF;
     hfp_connection->vra_engine_requested_state = HFP_VRA_IDLE;
     hfp_connection->vra_engine_current_state = HFP_VRA_OFF;
     hfp_connection->enhanced_voice_recognition_enabled = false;
+    hfp_connection->vra_ag_send_error = false;
     hfp_connection->ag_vra_status = HFP_VOICE_RECOGNITION_STATUS_DISABLED;
     hfp_connection->ag_vra_state  = HFP_VOICE_RECOGNITION_STATE_AG_IDLE;
     hfp_connection->ag_msg.text_id = 0;

@@ -752,6 +752,9 @@ typedef struct hfp_connection {
     hfp_callheld_status_t  hf_callheld_status;
 
     hfp_vra_engine_state_t vra_engine_ag_requested_state;
+    hfp_vra_engine_state_t vra_engine_ag_current_state;
+    bool vra_ag_send_error;
+
     hfp_vra_engine_state_t vra_engine_requested_state;
     hfp_vra_engine_state_t vra_engine_current_state;
     bool enhanced_voice_recognition_enabled;
