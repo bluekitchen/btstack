@@ -73,6 +73,8 @@ static void hfp_ag_hf_start_ringing_incoming(hfp_connection_t * hfp_connection);
 static void hfp_ag_hf_start_ringing_outgoing(hfp_connection_t * hfp_connection);
 static uint8_t hfp_ag_setup_audio_connection(hfp_connection_t * hfp_connection);
 
+static bool hfp_ag_vra_state_machine(hfp_connection_t * hfp_connection, hfp_ag_vra_event_type_t event);
+
 // public prototypes
 hfp_generic_status_indicator_t * get_hfp_generic_status_indicators(void);
 int get_hfp_generic_status_indicators_nr(void);
@@ -1125,6 +1127,20 @@ static bool hfp_ag_vra_state_machine(hfp_connection_t * hfp_connection, hfp_ag_v
                 hfp_ag_send_error(hfp_connection->rfcomm_cid);
                 return true;
             }
+        default:
+            break;
+    }
+
+    switch (hfp_connection->vra_engine_current_state) {
+        case HFP_VRA_OFF:
+            switch (event) {
+                case HFP_AG_VRA_EVENT_AG_ACTIVATE:
+                    hfp_connection->vra_engine_ag_current_state = HFP_VRA_W4_ACTIVE;
+                    break;
+                default:
+                    break;
+            }
+            break;
         default:
             break;
     }
