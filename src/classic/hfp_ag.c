@@ -1109,6 +1109,14 @@ static int hfp_ag_voice_recognition_state_machine(hfp_connection_t * hfp_connect
     return 0;
 }
 
+static bool hfp_ag_vra_state_machine(hfp_connection_t * hfp_connection, hfp_ag_vra_event_type_t event){
+    bool cmd_sent = false;
+
+    // TODO: delete call
+    cmd_sent = hfp_ag_voice_recognition_state_machine(hfp_connection);
+    return cmd_sent;
+}
+
 static int hfp_ag_run_for_context_service_level_connection_queries(hfp_connection_t * hfp_connection){
     if (hfp_connection->state < HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED) {
         return 0;
@@ -2401,7 +2409,9 @@ static void hfp_ag_run_for_context(hfp_connection_t *hfp_connection){
     }
 
     if (!cmd_sent){
-        cmd_sent = hfp_ag_voice_recognition_state_machine(hfp_connection);
+        if (hfp_connection->state >= HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED) {
+            cmd_sent = hfp_ag_vra_state_machine(hfp_connection, HFP_AG_VRA_EVENT_CAN_SEND_NOW);
+        }
     } 
 
     // disconnect
