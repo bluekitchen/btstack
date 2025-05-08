@@ -1121,10 +1121,19 @@ static void hfp_ag_sco_released(hfp_connection_t * hfp_connection){
 static void hfp_ag_handle_emit_vra_active_event(hfp_connection_t *hfp_connection) {
     if (hfp_connection->state == HFP_AUDIO_CONNECTION_ESTABLISHED){
         hfp_connection->emit_vra_enabled_after_audio_established = false;
+        // TODO trigger audio connection
         hfp_emit_voice_recognition_enabled(hfp_connection, ERROR_CODE_SUCCESS);
     } else {
         // postpone VRA event to simplify application logic
         hfp_connection->emit_vra_enabled_after_audio_established = true;
+    }
+}
+
+static void hfp_ag_handle_emit_vra_off_event(hfp_connection_t *hfp_connection) {
+    if (hfp_connection->state == HFP_AUDIO_CONNECTION_ESTABLISHED){
+        // TODO shut down audio connection
+    } else {
+        hfp_emit_voice_recognition_disabled(hfp_connection, ERROR_CODE_SUCCESS);
     }
 }
 
@@ -1214,7 +1223,27 @@ static bool hfp_ag_vra_state_machine(hfp_connection_t * hfp_connection, hfp_ag_v
             switch (event) {
                 case HFP_AG_VRA_EVENT_CAN_SEND_NOW:
                     hfp_connection->vra_engine_ag_current_state = HFP_VRA_ACTIVE;
+                    hfp_ag_send_ok(hfp_connection->rfcomm_cid);
                     hfp_ag_handle_emit_vra_active_event(hfp_connection);
+                    return true;
+
+                case HFP_AG_VRA_EVENT_HF_ACTIVATE:
+                case HFP_AG_VRA_EVENT_HF_DEACTIVATE:
+                case HFP_AG_VRA_EVENT_HF_ACTIVATE_ENHANCED:
+                    hfp_connection->vra_engine_ag_current_state = HFP_VRA_W4_OFF;
+                    hfp_connection->vra_ag_send_error = true;
+                    break;
+                default:
+                    break;
+            }
+            break;
+
+        case HFP_VRA_W4_OFF:
+            switch (event) {
+                case HFP_AG_VRA_EVENT_CAN_SEND_NOW:
+                    hfp_connection->vra_engine_ag_current_state = HFP_VRA_OFF;
+                    hfp_ag_send_ok(hfp_connection->rfcomm_cid);
+                    hfp_ag_handle_emit_vra_off_event(hfp_connection);
                     break;
                 case HFP_AG_VRA_EVENT_HF_ACTIVATE:
                 case HFP_AG_VRA_EVENT_HF_DEACTIVATE:
