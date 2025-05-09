@@ -1,13 +1,19 @@
 # Needed to include the lwIP's HTTP app, which is not included by default.
 set(IDF_PATH $ENV{IDF_PATH})
+set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${CMAKE_CURRENT_LIST_DIR}/cmake")
+set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" PARENT_SCOPE)
+
+include(BTstackUtils)
 
 if( NOT DEFINED BTSTACK_ROOT )
-    if( NOT DEFINED $ENV{BTSTACK_ROOT} )
+    if( NOT DEFINED ENV{BTSTACK_ROOT} )
         set(BTSTACK_ROOT ${CMAKE_SOURCE_DIR}/../..)
     else()
         set(BTSTACK_ROOT $ENV{BTSTACK_ROOT})
     endif()
+    set(BTSTACK_ROOT "${BTSTACK_ROOT}" PARENT_SCOPE)
 endif()
+message( "btstack supposed location: \"${BTSTACK_ROOT}\"" )
 
 if (CMAKE_HOST_WIN32)
     string(REPLACE "\\" "/" IDF_PATH $ENV{IDF_PATH})
@@ -91,6 +97,7 @@ set(priv_requires
         "lwip"
         "vfs"
         )
+
 idf_component_register(
     SRC_DIRS "${src_dirs}"
     EXCLUDE_SRCS "${exclude_srcs}"
