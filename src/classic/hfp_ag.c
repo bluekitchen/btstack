@@ -2689,6 +2689,14 @@ static void hfp_ag_handle_rfcomm_data(hfp_connection_t * hfp_connection, uint8_t
         // parse until end of line
         if (!hfp_parser_is_end_of_line(packet[pos])) continue;
 
+        // Reject incoming command to enforce half-duplex mode
+        if (hfp_connection->ok_pending || hfp_connection->send_error){
+            log_error("Received a command while %s pending", hfp_connection->ok_pending ? "ok":"error");
+            hfp_ag_queue_error(hfp_connection);
+            hfp_connection->command = HFP_CMD_NONE;
+            break;
+        }
+
         hfp_generic_status_indicator_t * indicator;
         switch(hfp_connection->command){
             case HFP_CMD_HF_ACTIVATE_VOICE_RECOGNITION:
