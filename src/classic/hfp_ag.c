@@ -3326,12 +3326,9 @@ uint8_t hfp_ag_activate_voice_recognition(hci_con_handle_t acl_handle){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
-    hfp_connection->ag_activate_voice_recognition_value = 1;
-    hfp_connection->vra_engine_current_state = HFP_VRA_W2_SEND_ACTIVATE;
     hfp_connection->enhanced_voice_recognition_enabled = enhanced_vra_supported;
-    hfp_connection->ag_audio_connection_opened_before_vra = hfp_ag_is_audio_connection_active(hfp_connection);
     hfp_connection->ag_vra_state = HFP_VOICE_RECOGNITION_STATE_AG_IDLE;
-    hfp_connection->ag_vra_send_command = true;
+    hfp_ag_vra_state_machine(hfp_connection, HFP_AG_VRA_EVENT_AG_ACTIVATE);
     hfp_ag_run_for_context(hfp_connection);
     return ERROR_CODE_SUCCESS;
 }
@@ -3357,10 +3354,8 @@ uint8_t hfp_ag_deactivate_voice_recognition(hci_con_handle_t acl_handle){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
-    hfp_connection->ag_activate_voice_recognition_value = 0;
-    hfp_connection->vra_engine_current_state = HFP_VRA_W2_SEND_OFF;
     hfp_connection->ag_vra_state = HFP_VOICE_RECOGNITION_STATE_AG_IDLE;
-    hfp_connection->ag_vra_send_command = true;
+    hfp_ag_vra_state_machine(hfp_connection, HFP_AG_VRA_EVENT_AG_DEACTIVATE);
     hfp_ag_run_for_context(hfp_connection);
     return ERROR_CODE_SUCCESS;
 }
@@ -3388,10 +3383,10 @@ static uint8_t hfp_ag_enhanced_voice_recognition_send_state(hci_con_handle_t acl
         return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
     }
 
-    
     hfp_connection->ag_vra_state = state;
-    hfp_connection->vra_engine_current_state = HFP_VRA_W2_SEND_ENHANCED_STATUS_WITHOUT_MESSAGE;
-    hfp_connection->ag_vra_send_command = true;
+    hfp_connection->ag_msg.length = 0;
+    hfp_connection->ag_msg.text = 0;
+    hfp_ag_vra_state_machine(hfp_connection, HFP_AG_VRA_EVENT_AG_STATE);
     hfp_ag_run_for_context(hfp_connection);
     return ERROR_CODE_SUCCESS;
 }
@@ -3436,7 +3431,6 @@ uint8_t hfp_ag_enhanced_voice_recognition_send_message(hci_con_handle_t acl_hand
     }
 
     uint16_t message_len = (uint16_t) strlen(msg.text);
-
     if (message_len > HFP_MAX_VR_TEXT_SIZE){
         return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
     }
@@ -3445,12 +3439,10 @@ uint8_t hfp_ag_enhanced_voice_recognition_send_message(hci_con_handle_t acl_hand
         return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
     }
 
-    hfp_connection->vra_engine_current_state = HFP_VRA_W2_SEND_ENHANCED_STATUS_WITH_MESSAGE;
     hfp_connection->ag_msg = msg;
     hfp_connection->ag_vra_state = state;
-    hfp_connection->ag_vra_send_command = true;
+    hfp_ag_vra_state_machine(hfp_connection, HFP_AG_VRA_EVENT_AG_STATE);
     hfp_ag_run_for_context(hfp_connection);
-
     return ERROR_CODE_SUCCESS;
 }
 
