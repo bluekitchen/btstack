@@ -2701,7 +2701,20 @@ static void hfp_ag_handle_rfcomm_data(hfp_connection_t * hfp_connection, uint8_t
         switch(hfp_connection->command){
             case HFP_CMD_HF_ACTIVATE_VOICE_RECOGNITION:
                 hfp_connection->command = HFP_CMD_NONE;
-                hfp_connection->ag_vra_requested_by_hf = true;
+                switch (hfp_connection->ag_activate_voice_recognition_value){
+                    case 0:
+                        hfp_ag_vra_state_machine(hfp_connection, HFP_AG_VRA_EVENT_HF_DEACTIVATE);
+                        break;
+                    case 1:
+                        hfp_ag_vra_state_machine(hfp_connection, HFP_AG_VRA_EVENT_HF_ACTIVATE);
+                        break;
+                    case 2:
+                        hfp_ag_vra_state_machine(hfp_connection, HFP_AG_VRA_EVENT_HF_ACTIVATE_ENHANCED);
+                        break;
+                    default:
+                        hfp_ag_queue_error(hfp_connection);
+                        break;
+                }
                 break;
             case HFP_CMD_RESPONSE_AND_HOLD_QUERY:
                 hfp_connection->command = HFP_CMD_NONE;
