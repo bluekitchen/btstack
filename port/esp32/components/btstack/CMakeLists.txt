@@ -104,5 +104,6 @@ idf_component_register(
     INCLUDE_DIRS "${include_dirs}"
     PRIV_INCLUDE_DIRS "${priv_include_dirs}"
     PRIV_REQUIRES "${priv_requires}"
+    REQUIRES btstack_config
 )
 
