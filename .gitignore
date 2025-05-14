@@ -30,3 +30,4 @@ build-coverage
 .vscode
 ninja
 __pycache__
+.DS_Store
