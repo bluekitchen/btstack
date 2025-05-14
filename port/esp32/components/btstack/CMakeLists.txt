@@ -13,7 +13,7 @@ if( NOT DEFINED BTSTACK_ROOT )
     endif()
     set(BTSTACK_ROOT "${BTSTACK_ROOT}" PARENT_SCOPE)
 endif()
-message( "btstack supposed location: \"${BTSTACK_ROOT}\"" )
+message( "BTstack root: \"${BTSTACK_ROOT}\"" )
 
 if (CMAKE_HOST_WIN32)
     string(REPLACE "\\" "/" IDF_PATH $ENV{IDF_PATH})
