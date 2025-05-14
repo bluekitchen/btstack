@@ -955,11 +955,18 @@ static bool hfp_ag_vra_state_machine(hfp_connection_t * hfp_connection, hfp_ag_v
                 hfp_ag_send_error(hfp_connection->rfcomm_cid);
                 return true;
             }
+        case HFP_AG_VRA_EVENT_SCO_CONNECTED:
+            if (hfp_connection->emit_vra_enabled_after_audio_established){
+                hfp_connection->emit_vra_enabled_after_audio_established = false;
+                hfp_emit_voice_recognition_enabled(hfp_connection, ERROR_CODE_SUCCESS);
+            }
+            break;
+
         default:
             break;
     }
 
-    switch (hfp_connection->vra_engine_current_state) {
+    switch (hfp_connection->vra_engine_ag_current_state) {
         case HFP_VRA_OFF:
             switch (event) {
                 case HFP_AG_VRA_EVENT_AG_ACTIVATE:
@@ -969,7 +976,7 @@ static bool hfp_ag_vra_state_machine(hfp_connection_t * hfp_connection, hfp_ag_v
                     hfp_emit_voice_recognition_disabled(hfp_connection, ERROR_CODE_SUCCESS);
                     break;
                 case HFP_AG_VRA_EVENT_HF_ACTIVATE:
-                    hfp_connection->vra_engine_current_state = HFP_VRA_W4_ACTIVE_REMOTE;
+                    hfp_connection->vra_engine_ag_current_state = HFP_VRA_W4_ACTIVE_REMOTE;
                     break;
                 case HFP_AG_VRA_EVENT_HF_ACTIVATE_ENHANCED:
                 case HFP_AG_VRA_EVENT_HF_DEACTIVATE:
@@ -988,6 +995,7 @@ static bool hfp_ag_vra_state_machine(hfp_connection_t * hfp_connection, hfp_ag_v
                 case HFP_AG_VRA_EVENT_SCO_CONNECTED:
                     hfp_emit_voice_recognition_enabled(hfp_connection, ERROR_CODE_SUCCESS);
                     break;
+                case HFP_AG_VRA_EVENT_AG_DEACTIVATE:
                 case HFP_AG_VRA_EVENT_SCO_DISCONNECTED:
                     hfp_connection->vra_engine_ag_current_state = HFP_VRA_W4_OFF;
                     break;
@@ -1011,6 +1019,7 @@ static bool hfp_ag_vra_state_machine(hfp_connection_t * hfp_connection, hfp_ag_v
 
         case HFP_VRA_ENHANCED_ACTIVE:
             switch (event) {
+                case HFP_AG_VRA_EVENT_AG_DEACTIVATE:
                 case HFP_AG_VRA_EVENT_SCO_DISCONNECTED:
                     hfp_connection->vra_engine_ag_current_state = HFP_VRA_W4_OFF;
                     break;
@@ -1107,15 +1116,12 @@ static bool hfp_ag_vra_state_machine(hfp_connection_t * hfp_connection, hfp_ag_v
                 case HFP_AG_VRA_EVENT_CAN_SEND_NOW:
                     hfp_connection->vra_engine_ag_current_state = HFP_VRA_OFF;
                     hfp_ag_send_voice_recognition_cmd(hfp_connection, 0);
-                    hfp_ag_handle_emit_vra_off_event(hfp_connection);
-                    if (hfp_connection->state == HFP_AUDIO_CONNECTION_ESTABLISHED && !hfp_connection->ag_audio_connection_opened_before_vra){
+                    if (hfp_connection->state == HFP_AUDIO_CONNECTION_ESTABLISHED && !hfp_connection->ag_audio_connection_opened_before_vra) {
                         // release audio connection only if it was opened after audio VR activated
                         uint8_t status = hfp_trigger_release_audio_connection(hfp_connection);
-                        if (status == ERROR_CODE_SUCCESS){
+                        if (status == ERROR_CODE_SUCCESS) {
                             // TODO
                         }
-                    } else {
-                        hfp_emit_voice_recognition_disabled(hfp_connection, ERROR_CODE_SUCCESS);
                     }
                     return true;
                 case HFP_AG_VRA_EVENT_HF_ACTIVATE:
@@ -1156,7 +1162,7 @@ static bool hfp_ag_vra_state_machine(hfp_connection_t * hfp_connection, hfp_ag_v
         case HFP_VRA_W4_ENHANCED_ACTIVE:
             switch (event) {
                 case HFP_AG_VRA_EVENT_CAN_SEND_NOW:
-                    hfp_connection->vra_engine_ag_current_state = HFP_VRA_ACTIVE;
+                    hfp_connection->vra_engine_ag_current_state = HFP_VRA_ENHANCED_ACTIVE;
                     hfp_ag_send_ok(hfp_connection->rfcomm_cid);
                     hfp_ag_emit_vra_enhanced_state(hfp_connection, sent_status);
                     return true;
