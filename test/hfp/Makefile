@@ -105,7 +105,7 @@ build-coverage/hfp_link_settings_test: ${MOCK_OBJ_COVERAGE} build-coverage/hfp_h
 build-coverage/hfp_hf_vra_test: ${MOCK_OBJ_COVERAGE} build-coverage/hfp_hf.o build-coverage/hfp.o build-coverage/hfp_hf_vra_test.o | build-coverage
 	${CXX} $^ ${LDFLAGS_COVERAGE} -o $@
 
-build-coverage/hfp_ag_vra_test: ${MOCK_OBJ_COVERAGE} build-coverage/hfp_gsm.o build-coverage/hfp_ag.o build-coverage/hfp.o build-coverage/hfp_ag_vra_test.o | build-coverage
+build-coverage/hfp_ag_vra_test: ${MOCK_OBJ_COVERAGE} build-coverage/hfp_gsm_model.o build-coverage/hfp_ag.o build-coverage/hfp.o build-coverage/hfp_ag_vra_test.o | build-coverage
 	${CXX} $^ ${LDFLAGS_COVERAGE} -o $@
 
 
@@ -130,7 +130,7 @@ build-asan/pklg_cvsd_test: build-asan/hci_dump.o build-asan/btstack_util.o build
 build-asan/hfp_hf_vra_test: ${MOCK_OBJ_ASAN} build-asan/hfp_hf.o build-asan/hfp.o build-asan/hfp_hf_vra_test.o | build-asan
 	${CXX} $^ ${LDFLAGS_ASAN} -o $@
 
-build-asan/hfp_ag_vra_test: ${MOCK_OBJ_ASAN} build-asan/hfp_gsm.o build-asan/hfp_ag.o build-asan/hfp.o build-asan/hfp_ag_vra_test.o | build-asan
+build-asan/hfp_ag_vra_test: ${MOCK_OBJ_ASAN} build-asan/hfp_gsm_model.o build-asan/hfp_ag.o build-asan/hfp.o build-asan/hfp_ag_vra_test.o | build-asan
 	${CXX} $^ ${LDFLAGS_ASAN} -o $@
 
 
