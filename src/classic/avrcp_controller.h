@@ -206,14 +206,14 @@ uint8_t avrcp_controller_backward(uint16_t avrcp_cid);
 uint8_t avrcp_controller_press_and_hold_backward(uint16_t avrcp_cid);
 
 /**
- * @brief Turns the volume to high. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
+ * @brief Turn up volume. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
  * @param avrcp_cid
  * @return status
  */
 uint8_t avrcp_controller_volume_up(uint16_t avrcp_cid);
 uint8_t avrcp_controller_press_and_hold_volume_up(uint16_t avrcp_cid);
 /**
- * @brief Turns the volume to low. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
+ * @brief Turn down volume. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
  * @param avrcp_cid
  * @return status
  */
@@ -221,12 +221,26 @@ uint8_t avrcp_controller_volume_down(uint16_t avrcp_cid);
 uint8_t avrcp_controller_press_and_hold_volume_down(uint16_t avrcp_cid);
 
 /**
- * @brief Puts the sound out. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
+ * @brief Mute sound. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
  * @param avrcp_cid
  * @return status
  */
 uint8_t avrcp_controller_mute(uint16_t avrcp_cid);
 uint8_t avrcp_controller_press_and_hold_mute(uint16_t avrcp_cid);
+
+/**
+ * @brief Record. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
+ * @param avrcp_cid
+ * @return status
+ */
+uint8_t avrcp_controller_record(uint16_t avrcp_cid);
+
+/**
+ * @brief Eject. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
+ * @param avrcp_cid
+ * @return status
+ */
+uint8_t avrcp_controller_eject(uint16_t avrcp_cid);
 
 // Basic Group Navigation
 /**

@@ -1557,6 +1557,14 @@ uint8_t avrcp_controller_rewind(uint16_t avrcp_cid){
     return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_REWIND, 0);
 }
 
+uint8_t avrcp_controller_record(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_RECORD, 0);
+}
+
+uint8_t avrcp_controller_eject(uint16_t avrcp_cid){
+    return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_EJECT, 0);
+}
+
 /* start continuous cmds */
 
 uint8_t avrcp_controller_start_press_and_hold_cmd(uint16_t avrcp_cid, avrcp_operation_id_t operation_id){
