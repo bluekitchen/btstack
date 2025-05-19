@@ -60,5 +60,5 @@ target_sources(${COMPONENT_LIB} PRIVATE ${SRCS})
 
 # custom target to list all BTstack examples
 add_custom_target(list-examples
-    COMMAND ${CMAKE_COMMAND} -D BTSTACK_ROOT=${BTSTACK_ROOT} -P ${CMAKE_SOURCE_DIR}/cmake/BTstackListExamples.cmake
+    COMMAND ${CMAKE_COMMAND} -D BTSTACK_ROOT=${BTSTACK_ROOT} -P ${BTSTACK_ROOT}/tool/cmake/BTstackListExamples.cmake
 )
