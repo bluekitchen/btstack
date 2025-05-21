@@ -3338,14 +3338,14 @@ static void l2cap_signaling_handle_configure_request(l2cap_channel_t *channel, u
     }
 
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
-        // "FCS" has precedence over "No FCS"
-        uint8_t update = channel->fcs_option || use_fcs;
-        log_info("local fcs: %u, remote fcs: %u -> %u", channel->fcs_option, use_fcs, update);
-        channel->fcs_active = update;
-        // If ERTM mandatory, but remote didn't send Retransmission and Flowcontrol options -> disconnect
-        if (((channel->state_var & L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_ERTM) == 0) & (channel->ertm_mandatory)){
-            channel->state = L2CAP_STATE_WILL_SEND_DISCONNECT_REQUEST;
-        }
+    // "FCS" has precedence over "No FCS"
+    uint8_t update = channel->fcs_option || use_fcs;
+    log_info("local fcs: %u, remote fcs: %u -> %u", channel->fcs_option, use_fcs, update);
+    channel->fcs_active = update;
+    // If ERTM mandatory, but remote didn't send Retransmission and Flowcontrol options -> disconnect
+    if (((channel->state_var & L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_ERTM) == 0) & (channel->ertm_mandatory)){
+        channel->state = L2CAP_STATE_WILL_SEND_DISCONNECT_REQUEST;
+    }
 #endif
 }
 
