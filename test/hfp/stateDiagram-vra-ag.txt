@@ -37,10 +37,13 @@ stateDiagram-v2
     ENHANCED_ACTIVE    --> ENHANCED_ACTIVE        : hf_activate   / send_error = 1
     ENHANCED_ACTIVE    --> W4_OFF_REMOTE          : hf_deactivate        
     ENHANCED_ACTIVE    --> W4_ENHANCED_ACTIVE     : hf_activate_enhanced
+    ENHANCED_ACTIVE    --> W4_ENHANCED_ACTIVE_REPORT     : ag_evra_report
+
 
     W4_ACTIVE_REMOTE       --> ACTIVE             : ready2send   / send OK, if (sco_established) {emit event ACTIVE} else {trigger audio connection setup}
     W4_OFF_REMOTE          --> OFF                : ready2send   / send OK, if (audio connection) { shut down audio connection } else { emit OFF }
     W4_ENHANCED_ACTIVE --> ENHANCED_ACTIVE        : ready2send   / send OK, emit ENHANCED_ACTIVE
+    W4_ENHANCED_ACTIVE_REPORT --> ENHANCED_ACTIVE : ready2send   / send report, emit ENHANCED_ACTIVE_MESSAGE_SENT_STATUS
 
     ---
     Events: hf_activate, hf_deactivate, hf_activate_enhanced:
