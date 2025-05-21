@@ -256,7 +256,7 @@ typedef struct {
     uint16_t   reason; // used in decline internal
 
     uint8_t   unknown_options_count; // used for ConfigResponse
-    uint8_t   unknown_options_list[MAX_NR_L2CAP_UNKNOWN_OPTIONS*2];  // used for ConfigResponse
+    uint8_t   unknown_options_list[MAX_NR_L2CAP_UNKNOWN_OPTIONS];  // used for ConfigResponse
 
     // Credit-Based Flow-Control mode
 

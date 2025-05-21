@@ -3226,17 +3226,13 @@ void l2cap_decline_connection(uint16_t local_cid){
 static void l2cap_signaling_handle_unknown_option_type(l2cap_channel_t* channel, uint8_t option_type) {
     // check if already reported
     for (int i = 0; i < channel->unknown_options_count; i++){
-        if (channel->unknown_options_list[2*i] == option_type){
-            log_info("l2cap cid %u, unknown option 0x%02x -> already cached %u", channel->local_cid, option_type, channel->unknown_options_count);
+        if (channel->unknown_options_list[i] == option_type){
             return;
         }
     }
     if (channel->unknown_options_count < MAX_NR_L2CAP_UNKNOWN_OPTIONS){
         log_info("l2cap cid %u, unknown option 0x%02x -> pos %u", channel->local_cid, option_type, channel->unknown_options_count);
-        // store option with length = 0
-        uint8_t offset = channel->unknown_options_count++ * 2;
-        channel->unknown_options_list[offset  ] = option_type;
-        channel->unknown_options_list[offset+1] = 0;
+        channel->unknown_options_list[channel->unknown_options_count++] = option_type;
     }
     channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_INVALID);
 }
