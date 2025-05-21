@@ -1731,7 +1731,7 @@ static bool l2cap_run_for_classic_channel(l2cap_channel_t * channel){
                     channelStateVarClearFlag(channel, L2CAP_CHANNEL_STATE_VAR_SENT_CONF_RSP);
                     l2cap_send_classic_signaling_packet(channel->con_handle, CONFIGURE_RESPONSE, channel->remote_sig_id,
                                                         channel->remote_cid, flags, L2CAP_CONF_RESULT_UNKNOWN_OPTIONS,
-                                                        1, &channel->unknown_option);
+                                                        channel->unknown_options_count * 2, channel->unknown_options_list);
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
                 } else if (channel->state_var & L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_REJECTED){
                     channelStateVarClearFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_REJECTED);
@@ -3223,6 +3223,24 @@ void l2cap_decline_connection(uint16_t local_cid){
     l2cap_run();
 }
 
+static void l2cap_signaling_handle_unknown_option_type(l2cap_channel_t* channel, uint8_t option_type) {
+    // check if already reported
+    for (int i = 0; i < channel->unknown_options_count; i++){
+        if (channel->unknown_options_list[2*i] == option_type){
+            log_info("l2cap cid %u, unknown option 0x%02x -> already cached %u", channel->local_cid, option_type, channel->unknown_options_count);
+            return;
+        }
+    }
+    if (channel->unknown_options_count < MAX_NR_L2CAP_UNKNOWN_OPTIONS){
+        log_info("l2cap cid %u, unknown option 0x%02x -> pos %u", channel->local_cid, option_type, channel->unknown_options_count);
+        // store option with length = 0
+        uint8_t offset = channel->unknown_options_count++ * 2;
+        channel->unknown_options_list[offset  ] = option_type;
+        channel->unknown_options_list[offset+1] = 0;
+    }
+    channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_INVALID);
+}
+
 // @pre command len is valid, see check in l2cap_signaling_handler_channel
 static void l2cap_signaling_handle_configure_request(l2cap_channel_t *channel, uint8_t *command){
 
@@ -3231,6 +3249,7 @@ static void l2cap_signaling_handle_configure_request(l2cap_channel_t *channel, u
 #endif
 
     channel->remote_sig_id = command[L2CAP_SIGNALING_COMMAND_SIGID_OFFSET];
+    channel->unknown_options_count = 0;
 
     uint16_t flags = little_endian_read_16(command, 6);
     if (flags & 1) {
@@ -3328,13 +3347,16 @@ static void l2cap_signaling_handle_configure_request(l2cap_channel_t *channel, u
             use_fcs = command[pos];
         }        
 #endif        
-        // check for unknown options
+        // handle unknown option
         if ((option_hint == 0) && ((option_type < L2CAP_CONFIG_OPTION_TYPE_MAX_TRANSMISSION_UNIT) || (option_type > L2CAP_CONFIG_OPTION_TYPE_EXTENDED_WINDOW_SIZE))){
-            log_info("l2cap cid %u, unknown option 0x%02x", channel->local_cid, option_type);
-            channel->unknown_option = option_type;
-            channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_INVALID);
+            l2cap_signaling_handle_unknown_option_type(channel, option_type);
         }
         pos += length;
+    }
+
+    if (channel->unknown_options_count > 0) {
+        log_info("Unknown options: %u\n", channel->unknown_options_count);
+        log_info_hexdump(channel->unknown_options_list, channel->unknown_options_count * 2);
     }
 
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
@@ -3352,6 +3374,7 @@ static void l2cap_signaling_handle_configure_request(l2cap_channel_t *channel, u
 // @pre command len is valid, see check in l2cap_signaling_handler_channel
 static void l2cap_signaling_handle_configure_response(l2cap_channel_t *channel, uint16_t result, uint8_t *command){
     log_info("l2cap_signaling_handle_configure_response");
+    channel->unknown_options_count = 0;
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
     uint16_t end_pos = 4 + little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_LENGTH_OFFSET);
     uint16_t pos     = 10;
@@ -3387,11 +3410,9 @@ static void l2cap_signaling_handle_configure_response(l2cap_channel_t *channel, 
             }
         }
 
-        // check for unknown options
-        if (option_hint == 0 && (option_type < L2CAP_CONFIG_OPTION_TYPE_MAX_TRANSMISSION_UNIT || option_type > L2CAP_CONFIG_OPTION_TYPE_EXTENDED_WINDOW_SIZE)){
-            log_info("l2cap cid %u, unknown option 0x%02x", channel->local_cid, option_type);
-            channel->unknown_option = option_type;
-            channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_INVALID);
+        // handle unknown option
+        if ((option_hint == 0) && ((option_type < L2CAP_CONFIG_OPTION_TYPE_MAX_TRANSMISSION_UNIT) || (option_type > L2CAP_CONFIG_OPTION_TYPE_EXTENDED_WINDOW_SIZE))){
+            l2cap_signaling_handle_unknown_option_type(channel, option_type);
         }
 
         pos += length;

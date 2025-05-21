@@ -66,6 +66,11 @@ extern "C" {
 #endif
 #endif
 
+// default for num unknown options
+#ifndef MAX_NR_L2CAP_UNKNOWN_OPTIONS
+#define MAX_NR_L2CAP_UNKNOWN_OPTIONS 3
+#endif
+
 #define L2CAP_LE_AUTOMATIC_CREDITS 0xffff
 
 // private structs
@@ -250,7 +255,8 @@ typedef struct {
 
     uint16_t   reason; // used in decline internal
 
-    uint8_t   unknown_option; // used for ConfigResponse
+    uint8_t   unknown_options_count; // used for ConfigResponse
+    uint8_t   unknown_options_list[MAX_NR_L2CAP_UNKNOWN_OPTIONS*2];  // used for ConfigResponse
 
     // Credit-Based Flow-Control mode
 

@@ -35,12 +35,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - HCI: hci_request_cis_can_send_now_events for CIG in Central role will emit can send now events for all streams in group
 - HCI: improve sco send without sco flow control for smaller packets
 - GAP: validate params in gap_set_scan_params
+- L2CAP: return list of unknown options for invalid configuration request
 - HID Host: emit HID_SUBEVENT_INCOMING_CONNECTION if memory allocation fails
 - BTstack HID: remove HID_PROTOCOL_MODE_REPORT_WITH_FALLBACK_TO_BOOT 
 - HFP HF: events HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_(READY_TO_ACCEPT_AUDIO_INPUT | IS_STARTING_SOUND | IS_PROCESSING_AUDIO_INPUT | MESSAGE) are replaced with a single HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_STATE event
 - HFP HF: introduce timeout of 5 seconds for receiving AG OK|ERROR response on VRA commands
 - esp32: rework build to avoid copy of btstack files into esp-idf components folder
-
+ 
 ## Release v1.6.2
 
 ### Added
