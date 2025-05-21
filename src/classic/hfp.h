@@ -686,7 +686,6 @@ typedef struct hfp_connection {
     uint8_t ag_echo_and_noise_reduction;
     // used by AG: HFP parser stores here the activation value issued by HF
     uint8_t ag_activate_voice_recognition_value;
-    bool    ag_audio_connection_opened_before_vra;
 
     uint8_t ag_notify_incoming_call_waiting;
     uint8_t send_subscriber_number;
@@ -696,7 +695,6 @@ typedef struct hfp_connection {
     uint8_t ag_dtmf_code;
     bool    ag_in_band_ring_tone_active;
     bool    ag_send_no_carrier;
-    bool    ag_vra_send_command;
     bool    ag_send_in_band_ring_tone_setting;
     bool    ag_send_common_codec;
 

@@ -1043,7 +1043,6 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
                         hfp_hf_sco_released(hfp_connection);
                         break;
                     case HFP_ROLE_AG:
-                        hfp_connection->ag_audio_connection_opened_before_vra = false;
                         hfp_ag_sco_released(hfp_connection);
                         break;
                     default:
