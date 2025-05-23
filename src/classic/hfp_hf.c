@@ -1213,12 +1213,12 @@ static void hfp_hf_run_for_context(hfp_connection_t * hfp_connection){
     }
 
     // update HF indicators
-    if (hfp_connection->generic_status_update_bitmap > 0u){
+    if (hfp_connection->hf_indicators_supported_by_ag_update_bitmap > 0u){
         uint8_t i;
         for (i=0; i < hfp_hf_indicators_nr; i++){
-            if (get_bit(hfp_connection->generic_status_update_bitmap, i)){
-                hfp_connection->generic_status_update_bitmap &= ~(1 << i);
-                if (hfp_connection->generic_status_indicators[i].state != 0u){
+            if (get_bit(hfp_connection->hf_indicators_supported_by_ag_update_bitmap, i)){
+                hfp_connection->hf_indicators_supported_by_ag_update_bitmap &= ~(1 << i);
+                if (hfp_connection->hf_indicators_supported_by_ag[i].state != 0u){
                     hfp_connection->ok_pending = 1;
                     char buffer[30];
                     btstack_snprintf_assert_complete(buffer, sizeof(buffer), "AT%s=%u,%u\r",
@@ -1823,7 +1823,7 @@ void hfp_hf_init_hf_indicators(int indicators_nr, const uint16_t * indicators){
         hfp_hf_indicators[i] = (uint8_t) indicators[i];
     }
 
-    // store copy in hfp to setup generic_status_indicators during SLC
+    // store copy in hfp to setup hf_indicators_supported_by_ag during SLC
     hfp_set_hf_indicators(indicators_nr, hfp_hf_indicators);
 }
 
@@ -2467,8 +2467,8 @@ uint8_t hfp_hf_set_hf_indicator(int assigned_number, int value) {
         // check if connection ready and indicator enabled
         if ((hfp_connection->local_role == HFP_ROLE_HF) &&
             (hfp_connection->state > HFP_LIST_GENERIC_STATUS_INDICATORS)) {
-            if (hfp_connection->generic_status_indicators[((uint8_t) indicator_index)].state != 0) {
-                hfp_connection->generic_status_update_bitmap |= (1 << (uint8_t) indicator_index);
+            if (hfp_connection->hf_indicators_supported_by_ag[((uint8_t) indicator_index)].state != 0) {
+                hfp_connection->hf_indicators_supported_by_ag_update_bitmap |= (1 << (uint8_t) indicator_index);
                 hfp_hf_run_for_context(hfp_connection);
             }
         }

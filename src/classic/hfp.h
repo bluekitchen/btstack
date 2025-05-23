@@ -610,8 +610,8 @@ typedef struct hfp_connection {
     
     // HF indicators supported by AG, only used by HF.
     // Retrieved during SLC establishment on AT+BIND query as +BIND response
-    uint32_t generic_status_update_bitmap;
-    hfp_generic_status_indicator_t generic_status_indicators[HFP_MAX_NUM_INDICATORS];
+    uint32_t hf_indicators_supported_by_ag_update_bitmap;
+    hfp_generic_status_indicator_t hf_indicators_supported_by_ag[HFP_MAX_NUM_INDICATORS];
 
     hfp_network_opearator_t network_operator;
     

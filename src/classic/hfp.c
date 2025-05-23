@@ -1523,7 +1523,7 @@ static bool hfp_parse_byte(hfp_connection_t * hfp_connection, uint8_t byte, int 
                 case HFP_CMD_LIST_GENERIC_STATUS_INDICATORS:
                 case HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS:
                 case HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS_STATE:
-                    hfp_connection->generic_status_indicators[hfp_connection->parser_item_index].state = (uint8_t)btstack_atoi((char*)hfp_connection->line_buffer);
+                    hfp_connection->hf_indicators_supported_by_ag[hfp_connection->parser_item_index].state = (uint8_t)btstack_atoi((char*)hfp_connection->line_buffer);
                     break;
                 case HFP_CMD_TRANSFER_AG_INDICATOR_STATUS:
                     hfp_connection->ag_indicators[hfp_connection->parser_item_index].status = (uint8_t)btstack_atoi((char*)hfp_connection->line_buffer);
@@ -1626,7 +1626,7 @@ static void parse_sequence(hfp_connection_t * hfp_connection){
                     break;
                 case 1:
                     if (hfp_connection->parser_indicator_index >= 0) {
-                        hfp_connection->generic_status_indicators[hfp_connection->parser_indicator_index].state = value;
+                        hfp_connection->hf_indicators_supported_by_ag[hfp_connection->parser_indicator_index].state = value;
                         log_info("HFP_CMD_SET_GENERIC_STATUS_INDICATOR_STATUS set indicator at index %u, to %u\n",
                                  hfp_connection->parser_item_index, value);
                     }
@@ -1767,7 +1767,7 @@ static void parse_sequence(hfp_connection_t * hfp_connection){
         case HFP_CMD_LIST_GENERIC_STATUS_INDICATORS:
         case HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS:
             log_info("Parsed Generic status indicator: %s\n", hfp_connection->line_buffer);
-            hfp_connection->generic_status_indicators[hfp_connection->parser_item_index].uuid = (uint16_t)btstack_atoi((char*)hfp_connection->line_buffer);
+            hfp_connection->hf_indicators_supported_by_ag[hfp_connection->parser_item_index].uuid = (uint16_t)btstack_atoi((char*)hfp_connection->line_buffer);
             hfp_next_indicators_index(hfp_connection);
             break;
         case HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS_STATE:
