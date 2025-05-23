@@ -40,6 +40,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - BTstack HID: remove HID_PROTOCOL_MODE_REPORT_WITH_FALLBACK_TO_BOOT 
 - HFP HF: events HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_(READY_TO_ACCEPT_AUDIO_INPUT | IS_STARTING_SOUND | IS_PROCESSING_AUDIO_INPUT | MESSAGE) are replaced with a single HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_STATE event
 - HFP HF: introduce timeout of 5 seconds for receiving AG OK|ERROR response on VRA commands
+- HFP HF: notify all connected AGs on HF indicator change in hfp_hf_set_hf_indicator
 - esp32: rework build to avoid copy of btstack files into esp-idf components folder
  
 ## Release v1.6.2

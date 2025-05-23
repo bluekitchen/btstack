@@ -334,7 +334,7 @@ static void user_command(char cmd){
             break;
         case '!':
             printf("Update HF indicator with assigned number 1 (HFI)\n");
-            hfp_hf_set_hf_indicator(acl_handle, 1, 1);
+            hfp_hf_set_hf_indicator(1, 1);
             break;
         default:
             printf("HF: undefined user command\n");

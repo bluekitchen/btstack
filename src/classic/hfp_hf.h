@@ -556,7 +556,7 @@ uint8_t hfp_hf_query_subscriber_number(hci_con_handle_t acl_handle);
  *              - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection does not exist, or
  *              - ERROR_CODE_COMMAND_DISALLOWED if indicator is either not found or not enabled
  */
-uint8_t hfp_hf_set_hf_indicator(hci_con_handle_t acl_handle, int assigned_number, int value);
+uint8_t hfp_hf_set_hf_indicator(int assigned_number, int value);
 
 /**
  * @brief Tests if in-band ringtone is active on AG (requires SLC)

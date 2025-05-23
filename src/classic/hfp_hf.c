@@ -2442,39 +2442,38 @@ uint8_t hfp_hf_query_subscriber_number(hci_con_handle_t acl_handle){
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t hfp_hf_set_hf_indicator(hci_con_handle_t acl_handle, int assigned_number, int value){
-    hfp_connection_t * hfp_connection = get_hfp_hf_connection_context_for_acl_handle(acl_handle);
-    if (!hfp_connection) {
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+uint8_t hfp_hf_set_hf_indicator(int assigned_number, int value) {
+    // find index for assigned number
+    int indicator_index = -1;
+    uint8_t i;
+    for (i = 0; i < hfp_hf_indicators_nr ; i++) {
+        if (hfp_hf_indicators[i] == assigned_number) {
+            indicator_index = i;
+            break;
+        }
     }
-    // check if connection ready and indicator enabled
-    if (hfp_connection->state <= HFP_LIST_GENERIC_STATUS_INDICATORS) {
-        // return command disallowed as indicator disabled
+
+    if (indicator_index < 0){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
-    // find index for assigned number
-    uint8_t i;
-    for (i = 0; i < hfp_hf_indicators_nr ; i++){
-        if (hfp_hf_indicators[i] == assigned_number){
-            // check if connection ready and indicator enabled
-            if (hfp_connection->generic_status_indicators[i].state != 0) {
-                // set value
-                hfp_hf_indicators_value[i] = value;
-                // mark for update
-                hfp_connection->generic_status_update_bitmap |= (1 << i);
-                // send update
+    // set value
+    hfp_hf_indicators_value[indicator_index] = value;
+
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, hfp_get_connections());
+    while (btstack_linked_list_iterator_has_next(&it)){
+        hfp_connection_t * hfp_connection = (hfp_connection_t *)btstack_linked_list_iterator_next(&it);
+        // check if connection ready and indicator enabled
+        if ((hfp_connection->local_role == HFP_ROLE_HF) &&
+            (hfp_connection->state > HFP_LIST_GENERIC_STATUS_INDICATORS)) {
+            if (hfp_connection->generic_status_indicators[((uint8_t) indicator_index)].state != 0) {
+                hfp_connection->generic_status_update_bitmap |= (1 << (uint8_t) indicator_index);
                 hfp_hf_run_for_context(hfp_connection);
-                break;
-            } else {
-                // return command disallowed as indicator disabled
-                return ERROR_CODE_COMMAND_DISALLOWED;
             }
         }
     }
-    if  (i == hfp_hf_indicators_nr){
-        return ERROR_CODE_COMMAND_DISALLOWED;
-    }
+
     return ERROR_CODE_SUCCESS;
 }
 

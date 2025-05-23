@@ -431,7 +431,7 @@ static void stdin_process(char c){
         case '!':
             log_info("USER:\'%c\'", cmd);
             printf("Update HF indicator with assigned number 1 (HFI)\n");
-            status = hfp_hf_set_hf_indicator(acl_handle, 1, 1);
+            status = hfp_hf_set_hf_indicator(2, 1);
             break;
         default:
             show_usage();
