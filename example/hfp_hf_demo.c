@@ -92,7 +92,7 @@ static uint8_t codecs[] = {
 #endif
 };
 
-static uint16_t indicators[1] = {0x01};
+static uint16_t indicators[2] = {0x01, 0x02};
 static uint8_t  negotiated_codec = HFP_CODEC_CVSD;
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static char cmd;
