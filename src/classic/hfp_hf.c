@@ -2447,24 +2447,28 @@ uint8_t hfp_hf_set_hf_indicator(hci_con_handle_t acl_handle, int assigned_number
     if (!hfp_connection) {
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
+    // check if connection ready and indicator enabled
+    if (hfp_connection->state <= HFP_LIST_GENERIC_STATUS_INDICATORS) {
+        // return command disallowed as indicator disabled
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+
     // find index for assigned number
     uint8_t i;
     for (i = 0; i < hfp_hf_indicators_nr ; i++){
         if (hfp_hf_indicators[i] == assigned_number){
             // check if connection ready and indicator enabled
-            if (hfp_connection->state > HFP_LIST_GENERIC_STATUS_INDICATORS){
-                if (hfp_connection->generic_status_indicators[i].state != 0) {
-                    // set value
-                    hfp_hf_indicators_value[i] = value;
-                    // mark for update
-                    hfp_connection->generic_status_update_bitmap |= (1 << i);
-                    // send update
-                    hfp_hf_run_for_context(hfp_connection);
-                    break;
-                } else {
-                    // return command disallowed as indicator disabled
-                    return ERROR_CODE_COMMAND_DISALLOWED;
-                }
+            if (hfp_connection->generic_status_indicators[i].state != 0) {
+                // set value
+                hfp_hf_indicators_value[i] = value;
+                // mark for update
+                hfp_connection->generic_status_update_bitmap |= (1 << i);
+                // send update
+                hfp_hf_run_for_context(hfp_connection);
+                break;
+            } else {
+                // return command disallowed as indicator disabled
+                return ERROR_CODE_COMMAND_DISALLOWED;
             }
         }
     }
