@@ -1769,7 +1769,6 @@ static void parse_sequence(hfp_connection_t * hfp_connection){
             log_info("Parsed Generic status indicator: %s\n", hfp_connection->line_buffer);
             hfp_connection->generic_status_indicators[hfp_connection->parser_item_index].uuid = (uint16_t)btstack_atoi((char*)hfp_connection->line_buffer);
             hfp_next_indicators_index(hfp_connection);
-            hfp_connection->generic_status_indicators_nr = hfp_connection->parser_item_index;
             break;
         case HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS_STATE:
             // HF parses inital AG gen. ind. state
