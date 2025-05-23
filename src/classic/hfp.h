@@ -608,8 +608,9 @@ typedef struct hfp_connection {
     uint16_t remote_call_services_index;
     hfp_call_service_t remote_call_services[HFP_MAX_NUM_CALL_SERVICES];
     
-    // TODO: use bitmap.
     uint16_t generic_status_indicators_nr;
+    // HF indicators supported by AG, only used by HF.
+    // Retrieved during SLC establishment on AT+BIND query as +BIND response
     uint32_t generic_status_update_bitmap;
     hfp_generic_status_indicator_t generic_status_indicators[HFP_MAX_NUM_INDICATORS];
 

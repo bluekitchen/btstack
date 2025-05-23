@@ -1140,16 +1140,6 @@ void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
             hfp_connection->rfcomm_mtu = rfcomm_event_channel_opened_get_max_frame_size(packet);
             bd_addr_copy(hfp_connection->remote_addr, event_addr);
             hfp_connection->state = HFP_EXCHANGE_SUPPORTED_FEATURES;
-            
-            if (local_role == HFP_ROLE_HF) {
-                // setup HF Indicators
-                uint8_t i;
-                for (i=0; i < hfp_hf_indicators_nr; i++){
-                    hfp_connection->generic_status_indicators[i].uuid = hfp_hf_indicators[i];
-                    hfp_connection->generic_status_indicators[i].state = 0;
-                }
-            }
-
             rfcomm_request_can_send_now_event(hfp_connection->rfcomm_cid);
             break;
 
@@ -1625,18 +1615,21 @@ static void parse_sequence(hfp_connection_t * hfp_connection){
             int i;
             switch (hfp_connection->parser_item_index){
                 case 0:
-                    for (i=0;i<hfp_connection->generic_status_indicators_nr;i++){
-                        if (hfp_connection->generic_status_indicators[i].uuid == value){
+                    // find indicator index
+                    hfp_connection->parser_indicator_index = -1;
+                    for (i=0;i<hfp_hf_indicators_nr;i++){
+                        if (hfp_hf_indicators[i] == value){
                             hfp_connection->parser_indicator_index = i;
                             break;
                         }
                     }
                     break;
                 case 1:
-                    if (hfp_connection->parser_indicator_index <0) break;
-                    hfp_connection->generic_status_indicators[hfp_connection->parser_indicator_index].state = value;
-                    log_info("HFP_CMD_SET_GENERIC_STATUS_INDICATOR_STATUS set indicator at index %u, to %u\n",
-                     hfp_connection->parser_item_index, value);
+                    if (hfp_connection->parser_indicator_index >= 0) {
+                        hfp_connection->generic_status_indicators[hfp_connection->parser_indicator_index].state = value;
+                        log_info("HFP_CMD_SET_GENERIC_STATUS_INDICATOR_STATUS set indicator at index %u, to %u\n",
+                                 hfp_connection->parser_item_index, value);
+                    }
                     break;
                 default:
                     break;
