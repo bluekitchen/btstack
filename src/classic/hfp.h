@@ -695,7 +695,6 @@ typedef struct hfp_connection {
     uint8_t ag_dtmf_code;
     bool    ag_in_band_ring_tone_active;
     bool    ag_send_no_carrier;
-    bool    ag_send_in_band_ring_tone_setting;
     bool    ag_send_common_codec;
 
     int send_status_of_current_calls;

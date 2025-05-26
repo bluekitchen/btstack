@@ -3012,7 +3012,6 @@ void hfp_ag_set_use_in_band_ring_tone(int use_in_band_ring_tone){
     while (btstack_linked_list_iterator_has_next(&it)){
         hfp_connection_t * hfp_connection = (hfp_connection_t *)btstack_linked_list_iterator_next(&it);
         if (hfp_connection->local_role != HFP_ROLE_AG) continue;
-        hfp_connection->ag_send_in_band_ring_tone_setting = true;
         hfp_ag_run_for_context(hfp_connection);
     }
 }
