@@ -818,14 +818,16 @@ static void l2cap_ertm_process_req_seq(l2cap_channel_t * l2cap_channel, uint8_t 
         log_info("RR seq %u => packet with tx_seq %u done", req_seq, tx_state->tx_seq);
 
         l2cap_channel->tx_read_index++;
-        if (l2cap_channel->tx_read_index >= l2cap_channel->num_rx_buffers){
+        if (l2cap_channel->tx_read_index >= l2cap_channel->num_tx_buffers){
+            log_info("TX Read Index %u >= Num TX Buffers %u => reset to zero",
+                l2cap_channel->tx_read_index, l2cap_channel->num_tx_buffers);
             l2cap_channel->tx_read_index = 0;
         }
     }
     if (num_buffers_acked){
         log_info("num_buffers_acked %u", num_buffers_acked);
-    l2cap_ertm_notify_channel_can_send(l2cap_channel);
-}     
+        l2cap_ertm_notify_channel_can_send(l2cap_channel);
+    }
 }     
 
 static l2cap_ertm_tx_packet_state_t * l2cap_ertm_get_tx_state(l2cap_channel_t * l2cap_channel, uint8_t tx_seq){
