@@ -409,6 +409,9 @@ static void l2cap_ertm_retransmission_timeout_callback(btstack_timer_source_t * 
     // start monitor timer
     l2cap_ertm_start_monitor_timer(l2cap_channel);
  
+    // XMIT-> WAIT_F as retransmission timer has fired
+    l2cap_channel->tx_wait_for_final = true;
+
     // send RR/P=1
     l2cap_channel->send_supervisor_frame_receiver_ready_poll = 1;
     l2cap_run();
@@ -778,6 +781,11 @@ uint8_t l2cap_ertm_set_ready(uint16_t local_cid){
     }
     if (channel->local_busy){
         channel->local_busy = 0;
+
+        // XMIT-> WAIT_F as local busy has cleared
+        channel->tx_wait_for_final = true;
+
+        // send RR/P=1
         channel->send_supervisor_frame_receiver_ready_poll = 1;
         l2cap_run();
     }

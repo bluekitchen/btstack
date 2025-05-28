@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 - HCI: fix incorrect assert/regression in num completed packets handling introduced in 6ec1ca0
+- L2CAP: do not sent I-Frames in ERTM WAIT_F state
 - GAP: store link key for standard/non-SSP pairing
 - SM: fix pairing as Peripheral with Extended Advertising and LE Advertisement Set Terminated after Connection Complete 
 - BNEP: emit channel opened with ERROR_CODE_REMOTE_USER_TERMINATED_CONNECTION if connection cannot be set up
