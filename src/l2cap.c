@@ -4716,12 +4716,14 @@ static void l2cap_acl_classic_handler_for_channel(l2cap_channel_t * l2cap_channe
                         // final bit set <- response to RR with poll bit set. All not acknowledged packets need to be retransmitted
                         l2cap_ertm_retransmit_unacknowleded_frames(l2cap_channel);
                     }
+                    l2cap_notify_channel_can_send();
                     break;
                 case L2CAP_SUPERVISORY_FUNCTION_REJ_REJECT:
                     log_info("L2CAP_SUPERVISORY_FUNCTION_REJ_REJECT");
                     l2cap_ertm_process_req_seq(l2cap_channel, req_seq);
-                    // restart transmittion from last unacknowledted packet (earlier packets already freed in l2cap_ertm_process_req_seq)
+                    // restart transmission from last unacknowledged packet (earlier packets already freed in l2cap_ertm_process_req_seq)
                     l2cap_ertm_retransmit_unacknowleded_frames(l2cap_channel);
+                    l2cap_notify_channel_can_send();
                     break;
                 case L2CAP_SUPERVISORY_FUNCTION_RNR_RECEIVER_NOT_READY:
                     log_error("L2CAP_SUPERVISORY_FUNCTION_RNR_RECEIVER_NOT_READY");
