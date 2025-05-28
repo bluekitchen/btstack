@@ -352,6 +352,10 @@ typedef struct {
     // sender: selective retransmission requested
     uint8_t srej_active;
 
+    // sender: WAIT_F
+    // - Local busy has been cleared or
+    // - the Retransmission timer has expired and an S-frame with P=1 has been sent
+    bool tx_wait_for_final;
 
     // receiver: max num out-of-order packets // tx_window
     uint8_t num_rx_buffers;

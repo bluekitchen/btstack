@@ -2656,6 +2656,7 @@ static bool l2cap_channel_ready_to_send(l2cap_channel_t * channel){
             // send if we have more data and remote windows isn't full yet
             if (channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION) {
                 if (channel->unacked_frames >= btstack_min(channel->num_stored_tx_frames, channel->remote_tx_window_size)) return false;
+                if (channel->tx_wait_for_final) return false;
                 return hci_can_send_acl_packet_now(channel->con_handle);
             }
 #endif
@@ -4656,6 +4657,12 @@ static void l2cap_acl_classic_handler_for_channel(l2cap_channel_t * l2cap_channe
         uint16_t control = little_endian_read_16(packet, COMPLETE_L2CAP_HEADER);
         uint8_t  req_seq = (control >> 8) & 0x3f;
         int final = (control >> 7) & 0x01;
+
+        // WAIT_F -> XMIT on receive packet with F=1
+        if (final) {
+            l2cap_channel->tx_wait_for_final = false;
+        }
+
         if (control & 1){
             // S-Frame
             int poll  = (control >> 4) & 0x01;
