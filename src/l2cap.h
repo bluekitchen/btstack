@@ -145,6 +145,12 @@ typedef enum {
     L2CAP_SEGMENTATION_AND_REASSEMBLY_CONTINUATION_OF_L2CAP_SDU
 } l2cap_segmentation_and_reassembly_t;
 
+typedef enum {
+    L2CAP_ERTM_TX_STATE_NEW = 0,
+    L2CAP_ERTM_TX_STATE_RETRANSMISSION_REQUESTED,
+    L2CAP_ERTM_TX_STATE_SENT,
+} l2cap_ertm_tx_state_t;
+
 typedef struct {
     l2cap_segmentation_and_reassembly_t sar;
     uint16_t len;
@@ -156,7 +162,7 @@ typedef struct {
     uint16_t len;
     uint8_t tx_seq;
     uint8_t retry_count;
-    uint8_t retransmission_requested;
+    l2cap_ertm_tx_state_t tx_state;
 } l2cap_ertm_tx_packet_state_t;
 
 typedef struct {

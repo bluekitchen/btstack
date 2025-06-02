@@ -418,9 +418,10 @@ static void l2cap_ertm_retransmission_timeout_callback(btstack_timer_source_t * 
 }
 
 static int l2cap_ertm_send_information_frame(l2cap_channel_t * channel, int index, int final){
-    l2cap_ertm_tx_packet_state_t * tx_state = &channel->tx_packets_state[index];
     hci_reserve_packet_buffer();
     uint8_t *acl_buffer = hci_get_outgoing_packet_buffer();
+
+    l2cap_ertm_tx_packet_state_t * tx_state = &channel->tx_packets_state[index];
     uint16_t control = l2cap_encanced_control_field_for_information_frame(tx_state->tx_seq, final, channel->req_seq, tx_state->sar);
     log_info("I-Frame: control 0x%04x", control);
     little_endian_store_16(acl_buffer, 8, control);
@@ -430,6 +431,7 @@ static int l2cap_ertm_send_information_frame(l2cap_channel_t * channel, int inde
     // (re-)start retransmission timer on 
     l2cap_ertm_start_retransmission_timer(channel);
     // send
+    tx_state->tx_state = L2CAP_ERTM_TX_STATE_SENT;
     return l2cap_send_prepared(channel->local_cid, 2 + tx_state->len);
 }
 
@@ -441,6 +443,7 @@ static void l2cap_ertm_store_fragment(l2cap_channel_t * channel, l2cap_segmentat
     tx_state->tx_seq = channel->next_tx_seq;
     tx_state->sar = sar;
     tx_state->retry_count = 0;
+    tx_state->tx_state = L2CAP_ERTM_TX_STATE_NEW;
 
     uint8_t * tx_packet = &channel->tx_packets_data[index * channel->remote_mps];
     log_debug("index %u, local mps %u, remote mps %u, packet tx %p, len %u", index, channel->local_mps, channel->remote_mps, tx_packet, len);
@@ -1863,8 +1866,7 @@ static void l2cap_run_for_classic_channel_ertm(l2cap_channel_t * channel){
         int i;
         for (i=0;i<channel->num_tx_buffers;i++){
             l2cap_ertm_tx_packet_state_t * tx_state = &channel->tx_packets_state[i];
-            if (tx_state->retransmission_requested) {
-                tx_state->retransmission_requested = 0;
+            if (tx_state->tx_state == L2CAP_ERTM_TX_STATE_RETRANSMISSION_REQUESTED) {
                 uint8_t final = channel->set_final_bit_after_packet_with_poll_bit_set;
                 channel->set_final_bit_after_packet_with_poll_bit_set = 0;
                 l2cap_ertm_send_information_frame(channel, i, final);
@@ -4740,7 +4742,7 @@ static void l2cap_acl_classic_handler_for_channel(l2cap_channel_t * l2cap_channe
                     if (tx_state){
                         log_info("Retransmission for tx_seq %u requested", req_seq);
                         l2cap_channel->set_final_bit_after_packet_with_poll_bit_set = poll;
-                        tx_state->retransmission_requested = 1;
+                        tx_state->tx_state = L2CAP_ERTM_TX_STATE_RETRANSMISSION_REQUESTED;
                         l2cap_channel->srej_active = 1;
                     }
                     break;
