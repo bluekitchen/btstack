@@ -1765,7 +1765,7 @@ static void parse_sequence(hfp_connection_t * hfp_connection){
             hfp_next_indicators_index(hfp_connection);
             break;
         case HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS_STATE:
-            // HF parses inital AG gen. ind. state
+            // HF parses initial AG gen. ind. state
             log_info("Parsed List generic status indicator %s state: ", hfp_connection->line_buffer);
             hfp_connection->parser_item_index = hfp_parse_indicator_index(hfp_connection);
             break;
