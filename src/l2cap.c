@@ -325,9 +325,17 @@ static bool l2cap_ertm_can_store_packet_now(l2cap_channel_t * channel){
 }
 
 static void l2cap_ertm_retransmit_unacknowledged_frames(l2cap_channel_t * l2cap_channel){
-    log_info("Retransmit unacknowledged frames");
-    l2cap_channel->unacked_frames = 0;;
-    l2cap_channel->tx_send_index  = l2cap_channel->tx_read_index;
+    uint8_t tx_index = l2cap_channel->tx_read_index;
+    l2cap_channel->tx_send_index = tx_index;
+    for (uint8_t unacked_frames = l2cap_channel->unacked_frames; unacked_frames > 0 ; unacked_frames--){
+        l2cap_ertm_tx_packet_state_t * tx_packet_state = &l2cap_channel->tx_packets_state[tx_index];
+        tx_packet_state->tx_state = L2CAP_ERTM_TX_STATE_RETRANSMISSION_REQUESTED;
+        log_info("Retransmit tx seq %u", tx_packet_state->tx_seq);
+        tx_index++;
+        if (tx_index >= l2cap_channel->num_tx_buffers){
+            tx_index = 0;
+        }
+    }
 }
 
 static void l2cap_ertm_next_tx_write_index(l2cap_channel_t * channel){
@@ -915,8 +923,11 @@ static void l2cap_ertm_handle_in_sequence_sdu(l2cap_channel_t * l2cap_channel, l
 }
 
 static void l2cap_ertm_channel_send_information_frame(l2cap_channel_t * channel){
-    channel->unacked_frames++;
     int index = channel->tx_send_index;
+    l2cap_ertm_tx_packet_state_t * tx_state = &channel->tx_packets_state[index];
+    if (tx_state->tx_state == L2CAP_ERTM_TX_STATE_NEW){
+        channel->unacked_frames++;
+    }
     channel->tx_send_index++;
     if (channel->tx_send_index >= channel->num_tx_buffers){
         channel->tx_send_index = 0;
@@ -2665,11 +2676,27 @@ static bool l2cap_channel_ready_to_send(l2cap_channel_t * channel){
         case L2CAP_CHANNEL_TYPE_CLASSIC:
             if (channel->state != L2CAP_STATE_OPEN) return false;
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
-            // send if we have more data and remote windows isn't full yet
+            // send new frames or retransmit unacknowledged frames
             if (channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION) {
-                if (channel->unacked_frames >= btstack_min(channel->num_stored_tx_frames, channel->remote_tx_window_size)) return false;
                 if (channel->tx_wait_for_final) return false;
-                return hci_can_send_acl_packet_now(channel->con_handle);
+                uint8_t max_tx_frames = (uint8_t) btstack_min(channel->remote_tx_window_size, channel->num_stored_tx_frames);
+                bool request_send = channel->unacked_frames < max_tx_frames;
+                uint8_t tx_index = channel->tx_read_index;
+                for (uint8_t unacked_frames = channel->unacked_frames; (request_send == false) && (unacked_frames > 0) ; unacked_frames--){
+                    const l2cap_ertm_tx_packet_state_t * tx_packet_state = &channel->tx_packets_state[tx_index];
+                    if (tx_packet_state->tx_state == L2CAP_ERTM_TX_STATE_RETRANSMISSION_REQUESTED) {
+                        channel->tx_send_index = tx_index;
+                        request_send = true;
+                    } else {
+                        tx_index++;
+                        if (tx_index >= channel->num_tx_buffers){
+                            tx_index = 0;
+                        }
+                    }
+                }
+                if (request_send) {
+                    return hci_can_send_acl_packet_now(channel->con_handle);
+                }
             }
 #endif
             if (!channel->waiting_for_can_send_now) return false;
