@@ -324,8 +324,8 @@ static bool l2cap_ertm_can_store_packet_now(l2cap_channel_t * channel){
     return num_tx_buffers_for_max_remote_mtu <= num_free_tx_buffers;
 }
 
-static void l2cap_ertm_retransmit_unacknowleded_frames(l2cap_channel_t * l2cap_channel){
-    log_info("Retransmit unacknowleged frames");
+static void l2cap_ertm_retransmit_unacknowledged_frames(l2cap_channel_t * l2cap_channel){
+    log_info("Retransmit unacknowledged frames");
     l2cap_channel->unacked_frames = 0;;
     l2cap_channel->tx_send_index  = l2cap_channel->tx_read_index;
 }
@@ -378,7 +378,7 @@ static void l2cap_ertm_monitor_timeout_callback(btstack_timer_source_t * ts){
         tx_state->retry_count++;
 
         // start retransmit
-        l2cap_ertm_retransmit_unacknowleded_frames(l2cap_channel);
+        l2cap_ertm_retransmit_unacknowledged_frames(l2cap_channel);
 
         // start monitor timer
         l2cap_ertm_start_monitor_timer(l2cap_channel);
@@ -404,7 +404,7 @@ static void l2cap_ertm_retransmission_timeout_callback(btstack_timer_source_t * 
     tx_state->retry_count = 1;
 
     // start retransmit
-    l2cap_ertm_retransmit_unacknowleded_frames(l2cap_channel);
+    l2cap_ertm_retransmit_unacknowledged_frames(l2cap_channel);
 
     // start monitor timer
     l2cap_ertm_start_monitor_timer(l2cap_channel);
@@ -4716,7 +4716,7 @@ static void l2cap_acl_classic_handler_for_channel(l2cap_channel_t * l2cap_channe
                             l2cap_ertm_start_retransmission_timer(l2cap_channel);
                         }
                         // final bit set <- response to RR with poll bit set. All not acknowledged packets need to be retransmitted
-                        l2cap_ertm_retransmit_unacknowleded_frames(l2cap_channel);
+                        l2cap_ertm_retransmit_unacknowledged_frames(l2cap_channel);
                     }
                     l2cap_notify_channel_can_send();
                     break;
@@ -4724,7 +4724,7 @@ static void l2cap_acl_classic_handler_for_channel(l2cap_channel_t * l2cap_channe
                     log_info("L2CAP_SUPERVISORY_FUNCTION_REJ_REJECT");
                     l2cap_ertm_process_req_seq(l2cap_channel, req_seq);
                     // restart transmission from last unacknowledged packet (earlier packets already freed in l2cap_ertm_process_req_seq)
-                    l2cap_ertm_retransmit_unacknowleded_frames(l2cap_channel);
+                    l2cap_ertm_retransmit_unacknowledged_frames(l2cap_channel);
                     l2cap_notify_channel_can_send();
                     break;
                 case L2CAP_SUPERVISORY_FUNCTION_RNR_RECEIVER_NOT_READY:
@@ -4758,7 +4758,7 @@ static void l2cap_acl_classic_handler_for_channel(l2cap_channel_t * l2cap_channe
             l2cap_ertm_process_req_seq(l2cap_channel, req_seq);
             if (final){
                 // final bit set <- response to RR with poll bit set. All not acknowledged packets need to be retransmitted
-                l2cap_ertm_retransmit_unacknowleded_frames(l2cap_channel);
+                l2cap_ertm_retransmit_unacknowledged_frames(l2cap_channel);
             }
 
             // get SDU
