@@ -741,7 +741,6 @@ typedef struct hfp_connection {
     hfp_callsetup_status_t hf_callsetup_status;
     hfp_callheld_status_t  hf_callheld_status;
 
-    hfp_vra_engine_state_t vra_engine_ag_requested_state;
     hfp_vra_engine_state_t vra_engine_ag_current_state;
     bool vra_ag_send_error;
 

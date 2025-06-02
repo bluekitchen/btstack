@@ -2983,7 +2983,7 @@ uint8_t hfp_ag_release_audio_connection(hci_con_handle_t acl_handle){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
 
-    if (hfp_connection->vra_engine_ag_requested_state == HFP_VRA_ACTIVE){
+    if (hfp_connection->vra_engine_ag_current_state == HFP_VRA_ACTIVE){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
@@ -3255,7 +3255,7 @@ uint8_t hfp_ag_enhanced_voice_recognition_send_message(hci_con_handle_t acl_hand
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
-    if (hfp_connection->vra_engine_ag_requested_state != HFP_VRA_ENHANCED_ACTIVE){
+    if (hfp_connection->vra_engine_ag_current_state != HFP_VRA_ENHANCED_ACTIVE){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
