@@ -835,7 +835,7 @@ static bool hfp_ag_voice_recognition_session_active(hfp_connection_t * hfp_conne
     if (hfp_connection->state < HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED || hfp_connection->state > HFP_AUDIO_CONNECTION_ESTABLISHED){
         return false;
     }
-    switch (hfp_connection->vra_engine_ag_current_state) {
+    switch (hfp_connection->vra_engine_current_state) {
         case HFP_VRA_ACTIVE:
         case HFP_VRA_ENHANCED_ACTIVE:
             return true;
@@ -849,7 +849,7 @@ static bool hfp_ag_voice_recognition_enhanced_session_active(hfp_connection_t * 
     if (hfp_connection->state != HFP_AUDIO_CONNECTION_ESTABLISHED){
         return false;
     }
-    return hfp_connection->vra_engine_ag_current_state == HFP_VRA_ENHANCED_ACTIVE;
+    return hfp_connection->vra_engine_current_state == HFP_VRA_ENHANCED_ACTIVE;
 }
 
 static void hfp_ag_emit_vra_enhanced_state_activated(hfp_connection_t * hfp_connection, uint8_t status){
@@ -965,17 +965,17 @@ static bool hfp_ag_vra_state_machine(hfp_connection_t * hfp_connection, hfp_ag_v
             break;
     }
 
-    switch (hfp_connection->vra_engine_ag_current_state) {
+    switch (hfp_connection->vra_engine_current_state) {
         case HFP_VRA_OFF:
             switch (event) {
                 case HFP_AG_VRA_EVENT_AG_ACTIVATE:
-                    hfp_connection->vra_engine_ag_current_state = HFP_VRA_W4_ACTIVE;
+                    hfp_connection->vra_engine_current_state = HFP_VRA_W4_ACTIVE;
                     break;
                 case HFP_AG_VRA_EVENT_SCO_DISCONNECTED:
                     hfp_emit_voice_recognition_disabled(hfp_connection, ERROR_CODE_SUCCESS);
                     break;
                 case HFP_AG_VRA_EVENT_HF_ACTIVATE:
-                    hfp_connection->vra_engine_ag_current_state = HFP_VRA_W4_ACTIVE_REMOTE;
+                    hfp_connection->vra_engine_current_state = HFP_VRA_W4_ACTIVE_REMOTE;
                     break;
                 case HFP_AG_VRA_EVENT_HF_ACTIVATE_ENHANCED:
                 case HFP_AG_VRA_EVENT_HF_DEACTIVATE:
@@ -989,7 +989,7 @@ static bool hfp_ag_vra_state_machine(hfp_connection_t * hfp_connection, hfp_ag_v
         case HFP_VRA_ACTIVE:
             switch (event) {
                 case HFP_AG_VRA_EVENT_AG_ACTIVATE:
-                    hfp_connection->vra_engine_ag_current_state = HFP_VRA_W4_OFF;
+                    hfp_connection->vra_engine_current_state = HFP_VRA_W4_OFF;
                     break;
                 case HFP_AG_VRA_EVENT_SCO_CONNECTED:
                     if (hfp_connection->emit_vra_enabled_after_audio_established){
@@ -999,17 +999,17 @@ static bool hfp_ag_vra_state_machine(hfp_connection_t * hfp_connection, hfp_ag_v
                     break;
                 case HFP_AG_VRA_EVENT_AG_DEACTIVATE:
                 case HFP_AG_VRA_EVENT_SCO_DISCONNECTED:
-                    hfp_connection->vra_engine_ag_current_state = HFP_VRA_W4_OFF;
+                    hfp_connection->vra_engine_current_state = HFP_VRA_W4_OFF;
                     break;
                 case HFP_AG_VRA_EVENT_HF_ACTIVATE:
                     hfp_connection->vra_ag_send_error = true;
                     break;
                 case HFP_AG_VRA_EVENT_HF_DEACTIVATE:
-                    hfp_connection->vra_engine_ag_current_state = HFP_VRA_W4_OFF_REMOTE;
+                    hfp_connection->vra_engine_current_state = HFP_VRA_W4_OFF_REMOTE;
                     break;
                 case HFP_AG_VRA_EVENT_HF_ACTIVATE_ENHANCED:
                     if (hfp_connection->state == HFP_AUDIO_CONNECTION_ESTABLISHED) {
-                        hfp_connection->vra_engine_ag_current_state = HFP_VRA_W4_ENHANCED_ACTIVE;
+                        hfp_connection->vra_engine_current_state = HFP_VRA_W4_ENHANCED_ACTIVE;
                     } else {
                         hfp_connection->vra_ag_send_error = true;
                     }
@@ -1023,19 +1023,19 @@ static bool hfp_ag_vra_state_machine(hfp_connection_t * hfp_connection, hfp_ag_v
             switch (event) {
                 case HFP_AG_VRA_EVENT_AG_DEACTIVATE:
                 case HFP_AG_VRA_EVENT_SCO_DISCONNECTED:
-                    hfp_connection->vra_engine_ag_current_state = HFP_VRA_W4_OFF;
+                    hfp_connection->vra_engine_current_state = HFP_VRA_W4_OFF;
                     break;
                 case HFP_AG_VRA_EVENT_HF_ACTIVATE:
                     hfp_connection->vra_ag_send_error = true;
                     break;
                 case HFP_AG_VRA_EVENT_HF_DEACTIVATE:
-                    hfp_connection->vra_engine_ag_current_state = HFP_VRA_W4_OFF_REMOTE;
+                    hfp_connection->vra_engine_current_state = HFP_VRA_W4_OFF_REMOTE;
                     break;
                 case HFP_AG_VRA_EVENT_HF_ACTIVATE_ENHANCED:
-                    hfp_connection->vra_engine_ag_current_state = HFP_VRA_W4_ENHANCED_ACTIVE;
+                    hfp_connection->vra_engine_current_state = HFP_VRA_W4_ENHANCED_ACTIVE;
                     break;
                 case HFP_AG_VRA_EVENT_AG_STATE:
-                    hfp_connection->vra_engine_ag_current_state = HFP_VRA_W4_ENHANCED_ACTIVE_REPORT;
+                    hfp_connection->vra_engine_current_state = HFP_VRA_W4_ENHANCED_ACTIVE_REPORT;
                     break;
                 default:
                     break;
@@ -1045,7 +1045,7 @@ static bool hfp_ag_vra_state_machine(hfp_connection_t * hfp_connection, hfp_ag_v
         case HFP_VRA_W4_ENHANCED_ACTIVE_REPORT:
             switch (event){
                 case HFP_AG_VRA_EVENT_CAN_SEND_NOW:
-                    hfp_connection->vra_engine_ag_current_state = HFP_VRA_ENHANCED_ACTIVE;
+                    hfp_connection->vra_engine_current_state = HFP_VRA_ENHANCED_ACTIVE;
                     if (hfp_connection->ag_msg.length > 0){
                         sent_status = hfp_ag_send_enhanced_voice_recognition_msg_cmd(hfp_connection);
                     } else {
@@ -1069,7 +1069,7 @@ static bool hfp_ag_vra_state_machine(hfp_connection_t * hfp_connection, hfp_ag_v
                 case HFP_AG_VRA_EVENT_CAN_SEND_NOW:
                     if (hfp_connection->state == HFP_AUDIO_CONNECTION_ESTABLISHED){
                         hfp_connection->emit_vra_enabled_after_audio_established = false;
-                        hfp_connection->vra_engine_ag_current_state = HFP_VRA_ACTIVE;
+                        hfp_connection->vra_engine_current_state = HFP_VRA_ACTIVE;
                         hfp_ag_send_voice_recognition_cmd(hfp_connection, 1);
                         hfp_emit_voice_recognition_enabled(hfp_connection, ERROR_CODE_SUCCESS);
                         return true;
@@ -1077,12 +1077,12 @@ static bool hfp_ag_vra_state_machine(hfp_connection_t * hfp_connection, hfp_ag_v
                     if (hfp_ag_setup_audio_connection(hfp_connection) == ERROR_CODE_SUCCESS) {
                         // postpone VRA event to simplify application logic
                         hfp_connection->emit_vra_enabled_after_audio_established = true;
-                        hfp_connection->vra_engine_ag_current_state = HFP_VRA_ACTIVE;
+                        hfp_connection->vra_engine_current_state = HFP_VRA_ACTIVE;
                         hfp_ag_send_voice_recognition_cmd(hfp_connection, 1);
                         return true;
                     }
 
-                    hfp_connection->vra_engine_ag_current_state = HFP_VRA_OFF;
+                    hfp_connection->vra_engine_current_state = HFP_VRA_OFF;
                     hfp_emit_voice_recognition_enabled(hfp_connection, ERROR_CODE_COMMAND_DISALLOWED);
                     return false;
 
@@ -1101,7 +1101,7 @@ static bool hfp_ag_vra_state_machine(hfp_connection_t * hfp_connection, hfp_ag_v
                 case HFP_AG_VRA_EVENT_CAN_SEND_NOW:
                     if (hfp_connection->state == HFP_AUDIO_CONNECTION_ESTABLISHED){
                         hfp_connection->emit_vra_enabled_after_audio_established = false;
-                        hfp_connection->vra_engine_ag_current_state = HFP_VRA_ACTIVE;
+                        hfp_connection->vra_engine_current_state = HFP_VRA_ACTIVE;
                         hfp_ag_send_ok(hfp_connection->rfcomm_cid);
                         hfp_emit_voice_recognition_enabled(hfp_connection, ERROR_CODE_SUCCESS);
                         return true;
@@ -1109,13 +1109,13 @@ static bool hfp_ag_vra_state_machine(hfp_connection_t * hfp_connection, hfp_ag_v
                     if (hfp_ag_setup_audio_connection(hfp_connection) == ERROR_CODE_SUCCESS) {
                         // postpone VRA event to simplify application logic
                         hfp_connection->emit_vra_enabled_after_audio_established = true;
-                        hfp_connection->vra_engine_ag_current_state = HFP_VRA_ACTIVE;
+                        hfp_connection->vra_engine_current_state = HFP_VRA_ACTIVE;
                         hfp_ag_send_ok(hfp_connection->rfcomm_cid);
                         return true;
                     }
 
                     hfp_ag_send_error(hfp_connection->rfcomm_cid);
-                    hfp_connection->vra_engine_ag_current_state = HFP_VRA_OFF;
+                    hfp_connection->vra_engine_current_state = HFP_VRA_OFF;
                     hfp_emit_voice_recognition_enabled(hfp_connection, ERROR_CODE_COMMAND_DISALLOWED);
                     return true;
 
@@ -1132,7 +1132,7 @@ static bool hfp_ag_vra_state_machine(hfp_connection_t * hfp_connection, hfp_ag_v
         case HFP_VRA_W4_OFF:
             switch (event) {
                 case HFP_AG_VRA_EVENT_CAN_SEND_NOW:
-                    hfp_connection->vra_engine_ag_current_state = HFP_VRA_OFF;
+                    hfp_connection->vra_engine_current_state = HFP_VRA_OFF;
                     hfp_ag_send_voice_recognition_cmd(hfp_connection, 0);
                     if (hfp_connection->state == HFP_AUDIO_CONNECTION_ESTABLISHED) {
                         // release audio connection only if it was opened after audio VR activated
@@ -1154,7 +1154,7 @@ static bool hfp_ag_vra_state_machine(hfp_connection_t * hfp_connection, hfp_ag_v
         case HFP_VRA_W4_OFF_REMOTE:
             switch (event) {
                 case HFP_AG_VRA_EVENT_CAN_SEND_NOW:
-                    hfp_connection->vra_engine_ag_current_state = HFP_VRA_OFF;
+                    hfp_connection->vra_engine_current_state = HFP_VRA_OFF;
                     hfp_ag_send_ok(hfp_connection->rfcomm_cid);
                     if (hfp_connection->state == HFP_AUDIO_CONNECTION_ESTABLISHED){
                         // release audio connection only if it was opened after audio VR activated
@@ -1176,7 +1176,7 @@ static bool hfp_ag_vra_state_machine(hfp_connection_t * hfp_connection, hfp_ag_v
         case HFP_VRA_W4_ENHANCED_ACTIVE:
             switch (event) {
                 case HFP_AG_VRA_EVENT_CAN_SEND_NOW:
-                    hfp_connection->vra_engine_ag_current_state = HFP_VRA_ENHANCED_ACTIVE;
+                    hfp_connection->vra_engine_current_state = HFP_VRA_ENHANCED_ACTIVE;
                     hfp_ag_send_ok(hfp_connection->rfcomm_cid);
                     hfp_ag_emit_vra_enhanced_state_activated(hfp_connection, ERROR_CODE_SUCCESS);
                     return true;
@@ -2983,7 +2983,7 @@ uint8_t hfp_ag_release_audio_connection(hci_con_handle_t acl_handle){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
 
-    if (hfp_connection->vra_engine_ag_current_state == HFP_VRA_ACTIVE){
+    if (hfp_connection->vra_engine_current_state == HFP_VRA_ACTIVE){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
@@ -3255,7 +3255,7 @@ uint8_t hfp_ag_enhanced_voice_recognition_send_message(hci_con_handle_t acl_hand
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
-    if (hfp_connection->vra_engine_ag_current_state != HFP_VRA_ENHANCED_ACTIVE){
+    if (hfp_connection->vra_engine_current_state != HFP_VRA_ENHANCED_ACTIVE){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
