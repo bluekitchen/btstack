@@ -1128,6 +1128,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
 
             switch (pdu_id){
                 case AVRCP_PDU_ID_ADD_TO_NOW_PLAYING:
+                    // Scope(1) + UUID(8) + UID Counter(2)
                     if (length != 11){
                         avrcp_target_response_vendor_dependent_reject(connection, pdu_id, AVRCP_STATUS_PARAMETER_CONTENT_ERROR);
                         return;
@@ -1153,6 +1154,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     break;
 
                 case AVRCP_PDU_ID_PLAY_ITEM:
+                    // Scope(1) + UUID(8) + UID Counter(2)
                     if (length != 11){
                         avrcp_target_response_vendor_dependent_reject(connection, pdu_id, AVRCP_STATUS_PARAMETER_CONTENT_ERROR);
                         return;
@@ -1173,6 +1175,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     break;
 
                 case AVRCP_PDU_ID_SET_ADDRESSED_PLAYER:{
+                    // Player Id (2)
                     if (length != 2){
                         avrcp_target_response_vendor_dependent_reject(connection, pdu_id, AVRCP_STATUS_PARAMETER_CONTENT_ERROR);
                         return;
@@ -1190,6 +1193,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     break;
                 }
                 case AVRCP_PDU_ID_GET_CAPABILITIES:{
+                    // CapabilityID (1)
                     if (length != 1){
                         avrcp_target_response_vendor_dependent_reject(connection, pdu_id, AVRCP_STATUS_PARAMETER_CONTENT_ERROR);
                         return;
@@ -1214,6 +1218,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     break;
 
                 case AVRCP_PDU_ID_REQUEST_ABORT_CONTINUING_RESPONSE:
+                    // PDU_ID (1)
                     if (length != 1){
                         avrcp_target_response_vendor_dependent_reject(connection, pdu_id, AVRCP_STATUS_PARAMETER_CONTENT_ERROR);
                         return;
@@ -1225,6 +1230,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     break;
 
                 case AVRCP_PDU_ID_REQUEST_CONTINUING_RESPONSE:
+                    // PDU_ID (1)
                     if (length != 1){
                         avrcp_target_response_vendor_dependent_reject(connection, pdu_id, AVRCP_STATUS_PARAMETER_CONTENT_ERROR);
                         return;
@@ -1240,7 +1246,8 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     break;
 
                 case AVRCP_PDU_ID_GET_ELEMENT_ATTRIBUTES:{
-                    if (length != 9){
+                    // Identifier(8) + NumAttributes(1)
+                    if (length < 9){
                         avrcp_target_response_vendor_dependent_reject(connection, pdu_id, AVRCP_STATUS_PARAMETER_CONTENT_ERROR);
                         return;
                     }
@@ -1252,26 +1259,39 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                         return;
                     }
                     pos += 8;
-
                     uint8_t attribute_count = packet[pos++];
+
+                    // AttributeID(4) * NumAttributes
+                    if ((pos + attribute_count * 4) != size){
+                        avrcp_target_response_vendor_dependent_reject(connection, pdu_id, AVRCP_STATUS_PARAMETER_CONTENT_ERROR);
+                        return;
+                    }
+
                     connection->next_attr_id = AVRCP_MEDIA_ATTR_NONE;
-                    if (!attribute_count){
+                    connection->target_now_playing_info_attr_bitmap = 0u;
+
+                    if (attribute_count == 0){
+                        // If attribute_count is set to zero, all attribute information shall be returned
                         connection->next_attr_id = AVRCP_MEDIA_ATTR_TITLE;
                         connection->target_now_playing_info_attr_bitmap = 0xFE;
                     } else {
-                        connection->next_attr_id = AVRCP_MEDIA_ATTR_TITLE;
-                        connection->target_now_playing_info_attr_bitmap = 0;
-                        if ((pos + attribute_count * 4) > size){
-                            avrcp_target_response_vendor_dependent_reject(connection, pdu_id, AVRCP_STATUS_PARAMETER_CONTENT_ERROR);
-                            return;
-                        }
-
+                        uint8_t now_playing_info_attr_bitmap = 0u;
                         uint8_t i;
                         for (i=0; i < attribute_count; i++){
                             uint32_t attr_id = big_endian_read_32(packet, pos);
-                            connection->target_now_playing_info_attr_bitmap |= (1 << attr_id);
+
+                            if ((attr_id < AVRCP_MEDIA_ATTR_TITLE) || (attr_id >= AVRCP_MEDIA_ATTR_SONG_LENGTH_MS)){
+                                // we do not support Cover Art in target
+                                avrcp_target_response_vendor_dependent_reject(connection, pdu_id, AVRCP_STATUS_PARAMETER_CONTENT_ERROR);
+                                return;
+                            }
+                            if (connection->next_attr_id == AVRCP_MEDIA_ATTR_NONE){
+                                connection->next_attr_id = (avrcp_media_attribute_id_t) attr_id;
+                            }
+                            now_playing_info_attr_bitmap |= (1 << attr_id);
                             pos += 4;
                         }
+                        connection->target_now_playing_info_attr_bitmap = now_playing_info_attr_bitmap;
                     }
                     log_info("target_now_playing_info_attr_bitmap 0x%02x", connection->target_now_playing_info_attr_bitmap);
                     connection->target_now_playing_info_response = true;
@@ -1281,6 +1301,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                 }
 
                 case AVRCP_PDU_ID_REGISTER_NOTIFICATION:{
+                    // EventID(1)
                     if (length < 1){
                         avrcp_target_response_vendor_dependent_reject(connection, pdu_id, AVRCP_STATUS_PARAMETER_CONTENT_ERROR);
                         return;
@@ -1357,6 +1378,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                 }
 
                 case AVRCP_PDU_ID_SET_ABSOLUTE_VOLUME:
+                    // Absolute Volume(1)
                     if (length != 1){
                         avrcp_target_response_vendor_dependent_reject(connection, pdu_id, AVRCP_STATUS_PARAMETER_CONTENT_ERROR);
                         break;
