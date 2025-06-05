@@ -124,7 +124,7 @@ For information on Apple's MFi/iAP2 and Find My profiles or access to LE Audio, 
 | Toshiba TC35661                      | Dual mode        | H4             | No               | tc3566         |                                                |
 | TI CC256x, WL183x                    | Dual mode        | H4, H5, eHCILL | Yes              | cc256x         | Also WL185x, WL187x, and WL189x                |
 
-[More infos on supported chipsets](https://bluekitchen-gmbh.com/btstack/master/chipsets/)
+[More infos on supported chipsets](https://bluekitchen-gmbh.com/btstack/#chipsets/)
 
 ## Source Tree Overview
 | Path				 | Description                                      |
