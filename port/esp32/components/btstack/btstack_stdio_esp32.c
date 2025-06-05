@@ -42,41 +42,44 @@
  *
  *  Uses blocking thread to wait for console input
  *  Busy waits until character has been processed
+ *
+ *  This file contains two implementations:
+ *  - one for real UART
+ *  - one for USB CDC over USB Serial/JTAG Controller Console on newer ESP32 variants
  */
 
 #include "sdkconfig.h"
 
-#ifdef CONFIG_ESP_CONSOLE_UART
+#if defined(CONFIG_ESP_CONSOLE_UART) || defined(CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG)
+#define HAVE_CONSOLE
+#endif
 
 #include "btstack_stdin.h"
-#include "btstack_run_loop.h"
-#include "btstack_defines.h"
+#include "esp_log.h"
+static const char *TAG = "btstack_stdio";
+
+#ifdef HAVE_CONSOLE
 #include "btstack_debug.h"
+#include "btstack_defines.h"
+#include "btstack_ring_buffer.h"
+#include "btstack_run_loop.h"
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
 #include <unistd.h>
-#include <errno.h>
 #include <reent.h>
 
-#include "driver/uart.h"
-
 #include "esp_idf_version.h"
-#include "esp_log.h"
 
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 3, 0)
 #include "driver/uart_vfs.h"
+#include <errno.h>
 #else
 #include "esp_vfs_dev.h"
 #endif
-
-static const char *TAG = "btstack_stdio";
-
-// handle esp-idf change from CONFIG_CONSOLE_UART_NUM to CONFIG_ESP_CONSOLE_UART_NUM
-#ifndef CONFIG_ESP_CONSOLE_UART_NUM
-#define CONFIG_ESP_CONSOLE_UART_NUM CONFIG_CONSOLE_UART_NUM
 #endif
+
 
 static void (*stdin_handler)(char c);
 
@@ -86,16 +89,34 @@ static void (*stdin_handler)(char c);
 // Usually the maximum baudrate for the target is preferred
 #define RX_BUF_SIZE (1024)
 #define TX_BUF_SIZE (4096)
-static QueueHandle_t uart_queue = NULL;
 
 static bool btstack_stdio_initialized;
 
 static void btstack_stdio_process(void *context);
 
 static btstack_context_callback_registration_t stdio_callback_context = {
-        .callback = btstack_stdio_process,
-        .context = NULL,
+    .callback = btstack_stdio_process,
+    .context = NULL,
 };
+
+void btstack_stdin_setup(void (*handler)(char c)){
+    if (btstack_stdio_initialized == false){
+        ESP_LOGE(TAG, "to enable support for console input, call btstack_stdio_init first");
+    }
+    // set handler
+    stdin_handler = handler;
+}
+
+#ifdef CONFIG_ESP_CONSOLE_UART
+/* UART Implementation */
+
+#include "driver/uart.h"
+static QueueHandle_t uart_queue = NULL;
+
+// handle esp-idf change from CONFIG_CONSOLE_UART_NUM to CONFIG_ESP_CONSOLE_UART_NUM
+#ifndef CONFIG_ESP_CONSOLE_UART_NUM
+#define CONFIG_ESP_CONSOLE_UART_NUM CONFIG_CONSOLE_UART_NUM
+#endif
 
 static void btstack_stdio_process(void *context){
     UNUSED(context);
@@ -210,19 +231,63 @@ void btstack_stdio_init(void) {
     btstack_stdio_initialized = true;
 }
 
-void btstack_stdin_setup(void (*handler)(char c)){
-    if (btstack_stdio_initialized == false){
-        ESP_LOGE(TAG, "to enable support for console input, call btstack_stdio_init first");
+#elif CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG
+
+/* USB JTAG/Serial Implementation */
+#include "driver/usb_serial_jtag.h"
+
+static btstack_ring_buffer_t ringbuffer;
+static uint8_t ringbuffer_data[RX_BUF_SIZE];
+
+static void btstack_stdio_process(void *context) {
+    UNUSED(context);
+    while (btstack_ring_buffer_bytes_available(&ringbuffer) > 0) {
+        uint8_t c;
+        uint32_t bytes_read = 0;
+        btstack_ring_buffer_read(&ringbuffer, &c, 1, &bytes_read);
+        btstack_assert(bytes_read == 1);
+        if (stdin_handler) {
+            (*stdin_handler)(c);
+        }
     }
-    // set handler
-    stdin_handler = handler;
+}
+
+void btstack_stdio_task(void *arg){
+    // Configure a temporary buffer for the incoming data
+    btstack_ring_buffer_init(&ringbuffer, ringbuffer_data, sizeof(ringbuffer_data));
+    uint8_t line_buffer[100];
+    while (1) {
+        int len = usb_serial_jtag_read_bytes(&line_buffer, sizeof(line_buffer)-1, portMAX_DELAY);
+        if (len) {
+            btstack_ring_buffer_write(&ringbuffer, line_buffer, len);
+            // request poll
+            btstack_run_loop_execute_on_main_thread(&stdio_callback_context);
+        }
+    }
+}
+
+void btstack_stdio_init(void) {
+    // Configure USB SERIAL JTAG
+    usb_serial_jtag_driver_config_t usb_serial_jtag_config = {
+        .rx_buffer_size = RX_BUF_SIZE,
+        .tx_buffer_size = TX_BUF_SIZE,
+    };
+
+    ESP_ERROR_CHECK(usb_serial_jtag_driver_install(&usb_serial_jtag_config));
+
+    // start task
+    xTaskCreate(btstack_stdio_task, "btstack_stdio", 2048, NULL, 12, NULL);
+
+    btstack_stdio_initialized = true;
 }
 
 #else
-// Empty functions for backwards-compatiblitity
+
+// Empty functions for backwards-compatibility
 void btstack_stdio_init(void) {}
 void btstack_stdin_setup(void (*handler)(char c)){
     (void) handler;
+    ESP_LOGE(TAG, "console input requires either CONFIG_ESP_CONSOLE_UART or CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG");
 }
 
 #endif /* CONFIG_ESP_CONSOLE_UART */

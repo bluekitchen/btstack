@@ -67,8 +67,8 @@ int app_main(void){
     // optional: enable packet logger
     // hci_dump_init(hci_dump_embedded_stdout_get_instance());
 
-#ifdef CONFIG_ESP_CONSOLE_UART
-    // Enable buffered stdout
+#if defined(CONFIG_ESP_CONSOLE_UART) || defined(CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG)
+    // Enable support for stdin
     btstack_stdio_init();
 #endif
 

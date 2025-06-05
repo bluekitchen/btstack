@@ -21,7 +21,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Linux: Audio sink implementation for Linux ALSA
 - HID Keyboard Demo: Reconnect to last bonded device on startup
 - Chipset: support for Realtek Controller with H4 transport, e.g. RTL8761CTV
-
+- esp32: support stdin over USB Serial/JTAG Console
+- 
 ### Fixed
 - HCI: fix incorrect assert/regression in num completed packets handling introduced in 6ec1ca0
 - L2CAP: do not sent I-Frames in ERTM WAIT_F state
