@@ -85,10 +85,8 @@ typedef struct {
     btstack_linked_item_t item;
 
     gatt_service_client_connection_t basic_connection;
-//    hci_con_handle_t con_handle;
-//    uint16_t cid;
     scan_parameters_service_client_state_t  state;
-    btstack_packet_handler_t client_handler;
+    btstack_packet_handler_t packet_handler;
 
     // service
     uint16_t start_handle;

@@ -148,7 +148,7 @@ static void scan_parameters_service_emit_connection_established(sps_client_conne
     little_endian_store_16(event, pos, connection->basic_connection.cid);
     pos += 2;
     event[pos++] = status;
-    (*connection->client_handler)(HCI_EVENT_GATTSERVICE_META, 0, event, sizeof(event));
+    (*connection->packet_handler)(HCI_EVENT_GATTSERVICE_META, 0, event, sizeof(event));
 }
 
 static void scan_parameters_service_emit_disconnected(btstack_packet_handler_t packet_handler, uint16_t cid){
@@ -434,7 +434,7 @@ static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
             connection = scan_parameters_service_get_connection_for_con_handle(con_handle);
             if (connection != NULL){
                 // emit disconnected
-                btstack_packet_handler_t packet_handler = connection->client_handler;
+                btstack_packet_handler_t packet_handler = connection->packet_handler;
                 uint16_t cid = connection->basic_connection.cid;
                 scan_parameters_service_emit_disconnected(packet_handler, cid);
                 // finalize
@@ -492,7 +492,7 @@ uint8_t scan_parameters_service_client_connect(hci_con_handle_t con_handle, btst
         return BTSTACK_MEMORY_ALLOC_FAILED;
     }
 
-    connection->client_handler = packet_handler; 
+    connection->packet_handler = packet_handler;
     connection->state = SCAN_PARAMETERS_SERVICE_CLIENT_STATE_W2_QUERY_SERVICE;
     return scan_parameters_client_request_send_gatt_query(connection);
 }
