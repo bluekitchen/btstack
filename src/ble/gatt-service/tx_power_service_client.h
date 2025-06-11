@@ -54,7 +54,7 @@
 extern "C" {
 #endif
 
-// number of characteristics in Immediate Alert Service
+// number of characteristics in TX Power Service
 #define TX_POWER_SERVICE_CLIENT_NUM_CHARACTERISTICS 1
 
 /** 
