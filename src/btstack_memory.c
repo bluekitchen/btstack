@@ -1329,7 +1329,7 @@ void btstack_memory_hids_client_free(hids_client_t *hids_client){
 #endif
 
 
-// MARK: scan_parameters_service_client_t
+// MARK: sps_client_connection_t
 #if !defined(HAVE_MALLOC) && !defined(MAX_NR_SCAN_PARAMETERS_SERVICE_CLIENTS)
     #if defined(MAX_NO_SCAN_PARAMETERS_SERVICE_CLIENTS)
         #error "Deprecated MAX_NO_SCAN_PARAMETERS_SERVICE_CLIENTS defined instead of MAX_NR_SCAN_PARAMETERS_SERVICE_CLIENTS. Please update your btstack_config.h to use MAX_NR_SCAN_PARAMETERS_SERVICE_CLIENTS."
@@ -1340,23 +1340,23 @@ void btstack_memory_hids_client_free(hids_client_t *hids_client){
 
 #ifdef MAX_NR_SCAN_PARAMETERS_SERVICE_CLIENTS
 #if MAX_NR_SCAN_PARAMETERS_SERVICE_CLIENTS > 0
-static scan_parameters_service_client_t scan_parameters_service_client_storage[MAX_NR_SCAN_PARAMETERS_SERVICE_CLIENTS];
+static sps_client_connection_t scan_parameters_service_client_storage[MAX_NR_SCAN_PARAMETERS_SERVICE_CLIENTS];
 static btstack_memory_pool_t scan_parameters_service_client_pool;
-scan_parameters_service_client_t * btstack_memory_scan_parameters_service_client_get(void){
+sps_client_connection_t * btstack_memory_scan_parameters_service_client_get(void){
     void * buffer = btstack_memory_pool_get(&scan_parameters_service_client_pool);
     if (buffer){
-        memset(buffer, 0, sizeof(scan_parameters_service_client_t));
+        memset(buffer, 0, sizeof(sps_client_connection_t));
     }
-    return (scan_parameters_service_client_t *) buffer;
+    return (sps_client_connection_t *) buffer;
 }
-void btstack_memory_scan_parameters_service_client_free(scan_parameters_service_client_t *scan_parameters_service_client){
+void btstack_memory_scan_parameters_service_client_free(sps_client_connection_t *scan_parameters_service_client){
     btstack_memory_pool_free(&scan_parameters_service_client_pool, scan_parameters_service_client);
 }
 #else
-scan_parameters_service_client_t * btstack_memory_scan_parameters_service_client_get(void){
+sps_client_connection_t * btstack_memory_scan_parameters_service_client_get(void){
     return NULL;
 }
-void btstack_memory_scan_parameters_service_client_free(scan_parameters_service_client_t *scan_parameters_service_client){
+void btstack_memory_scan_parameters_service_client_free(sps_client_connection_t *scan_parameters_service_client){
     UNUSED(scan_parameters_service_client);
 }
 #endif
@@ -1364,10 +1364,10 @@ void btstack_memory_scan_parameters_service_client_free(scan_parameters_service_
 
 typedef struct {
     btstack_memory_buffer_t tracking;
-    scan_parameters_service_client_t data;
+    sps_client_connection_t data;
 } btstack_memory_scan_parameters_service_client_t;
 
-scan_parameters_service_client_t * btstack_memory_scan_parameters_service_client_get(void){
+sps_client_connection_t * btstack_memory_scan_parameters_service_client_get(void){
     btstack_memory_scan_parameters_service_client_t * buffer = (btstack_memory_scan_parameters_service_client_t *) malloc(sizeof(btstack_memory_scan_parameters_service_client_t));
     if (buffer){
         memset(buffer, 0, sizeof(btstack_memory_scan_parameters_service_client_t));
@@ -1377,7 +1377,7 @@ scan_parameters_service_client_t * btstack_memory_scan_parameters_service_client
         return NULL;
     }
 }
-void btstack_memory_scan_parameters_service_client_free(scan_parameters_service_client_t *scan_parameters_service_client){
+void btstack_memory_scan_parameters_service_client_free(sps_client_connection_t *scan_parameters_service_client){
     // reconstruct buffer start
     btstack_memory_buffer_t * buffer = &((btstack_memory_buffer_t *) scan_parameters_service_client)[-1];
     btstack_memory_tracking_remove(buffer);
@@ -2108,7 +2108,7 @@ void btstack_memory_init(void){
     btstack_memory_pool_create(&hids_client_pool, hids_client_storage, MAX_NR_HIDS_CLIENTS, sizeof(hids_client_t));
 #endif
 #if MAX_NR_SCAN_PARAMETERS_SERVICE_CLIENTS > 0
-    btstack_memory_pool_create(&scan_parameters_service_client_pool, scan_parameters_service_client_storage, MAX_NR_SCAN_PARAMETERS_SERVICE_CLIENTS, sizeof(scan_parameters_service_client_t));
+    btstack_memory_pool_create(&scan_parameters_service_client_pool, scan_parameters_service_client_storage, MAX_NR_SCAN_PARAMETERS_SERVICE_CLIENTS, sizeof(sps_client_connection_t));
 #endif
 #if MAX_NR_SM_LOOKUP_ENTRIES > 0
     btstack_memory_pool_create(&sm_lookup_entry_pool, sm_lookup_entry_storage, MAX_NR_SM_LOOKUP_ENTRIES, sizeof(sm_lookup_entry_t));

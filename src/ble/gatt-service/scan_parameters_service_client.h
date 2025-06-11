@@ -60,6 +60,9 @@
 extern "C" {
 #endif
 
+// number of characteristics in Scan Parameters Service
+#define SCAN_PARAMETERS_SERVICE_CLIENT_NUM_CHARACTERISTICS 2
+
 typedef enum {
     SCAN_PARAMETERS_SERVICE_CLIENT_STATE_IDLE,
     SCAN_PARAMETERS_SERVICE_CLIENT_STATE_W2_QUERY_SERVICE,
@@ -99,7 +102,7 @@ typedef struct {
     bool     scan_interval_window_value_update;
 
     gatt_client_notification_t notification_listener;
-} scan_parameters_service_client_t;
+} sps_client_connection_t;
 
 /* API_START */
 

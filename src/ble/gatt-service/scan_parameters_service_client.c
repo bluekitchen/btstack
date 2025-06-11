@@ -79,7 +79,7 @@ static uint16_t scan_parameters_service_get_next_cid(void){
     return scan_parameters_service_cid_counter;
 }
 
-static uint8_t scan_parameters_client_request_send_gatt_query(scan_parameters_service_client_t * client){
+static uint8_t scan_parameters_client_request_send_gatt_query(sps_client_connection_t * client){
     scan_parameters_service_handle_can_send_now.context = (void *) (uintptr_t)client->cid;
     uint8_t status = gatt_client_request_to_send_gatt_query(&scan_parameters_service_handle_can_send_now, client->con_handle);
     if (status != ERROR_CODE_SUCCESS){
@@ -90,8 +90,8 @@ static uint8_t scan_parameters_client_request_send_gatt_query(scan_parameters_se
     return status;
 }
 
-static scan_parameters_service_client_t * scan_parameters_service_create_client(hci_con_handle_t con_handle, uint16_t cid){
-    scan_parameters_service_client_t * client = btstack_memory_scan_parameters_service_client_get();
+static sps_client_connection_t * scan_parameters_service_create_client(hci_con_handle_t con_handle, uint16_t cid){
+    sps_client_connection_t * client = btstack_memory_scan_parameters_service_client_get();
     if (!client){
         log_error("Not enough memory to create client");
         return NULL;
@@ -110,35 +110,35 @@ static scan_parameters_service_client_t * scan_parameters_service_create_client(
     return client;
 }
 
-static void scan_parameters_service_finalize_client(scan_parameters_service_client_t * client){
+static void scan_parameters_service_finalize_client(sps_client_connection_t * client){
     gatt_client_stop_listening_for_characteristic_value_updates(&client->notification_listener);
     btstack_linked_list_remove(&clients, (btstack_linked_item_t *) client);
     btstack_memory_scan_parameters_service_client_free(client); 
 }
 
-static scan_parameters_service_client_t * scan_parameters_service_get_client_for_con_handle(hci_con_handle_t con_handle){
+static sps_client_connection_t * scan_parameters_service_get_client_for_con_handle(hci_con_handle_t con_handle){
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, &clients);
     while (btstack_linked_list_iterator_has_next(&it)){
-        scan_parameters_service_client_t * client = (scan_parameters_service_client_t *)btstack_linked_list_iterator_next(&it);
+        sps_client_connection_t * client = (sps_client_connection_t *)btstack_linked_list_iterator_next(&it);
         if (client->con_handle != con_handle) continue;
         return client;
     }
     return NULL;
 }
 
-static scan_parameters_service_client_t * scan_parameters_service_get_client_for_cid(uint16_t scan_parameters_service_cid){
+static sps_client_connection_t * scan_parameters_service_get_client_for_cid(uint16_t scan_parameters_service_cid){
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, &clients);
     while (btstack_linked_list_iterator_has_next(&it)){
-        scan_parameters_service_client_t * client = (scan_parameters_service_client_t *)btstack_linked_list_iterator_next(&it);
+        sps_client_connection_t * client = (sps_client_connection_t *)btstack_linked_list_iterator_next(&it);
         if (client->cid != scan_parameters_service_cid) continue;
         return client;
     }
     return NULL;
 }
 
-static void scan_parameters_service_emit_connection_established(scan_parameters_service_client_t * client, uint8_t status){
+static void scan_parameters_service_emit_connection_established(sps_client_connection_t * client, uint8_t status){
     uint8_t event[6];
     int pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
@@ -169,7 +169,7 @@ static void handle_notification_event(uint8_t packet_type, uint16_t channel, uin
 
     if (hci_event_packet_get_type(packet) != GATT_EVENT_NOTIFICATION) return;
 
-    scan_parameters_service_client_t * client = scan_parameters_service_get_client_for_con_handle(gatt_event_notification_get_handle(packet));
+    sps_client_connection_t * client = scan_parameters_service_get_client_for_con_handle(gatt_event_notification_get_handle(packet));
     btstack_assert(client != NULL);
     client->scan_interval_window_value_update = true;
     scan_parameters_client_request_send_gatt_query(client);
@@ -177,7 +177,7 @@ static void handle_notification_event(uint8_t packet_type, uint16_t channel, uin
 
 static void scan_parameters_service_send_next_query(void * context){
     uint16_t cid = (uint16_t)(uintptr_t)context;
-    scan_parameters_service_client_t * client = scan_parameters_service_get_client_for_cid(cid);
+    sps_client_connection_t * client = scan_parameters_service_get_client_for_cid(cid);
     if (client == NULL){
         return;
     }
@@ -271,7 +271,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
     UNUSED(channel);     
     UNUSED(size);        
     
-    scan_parameters_service_client_t * client = NULL;
+    sps_client_connection_t * client = NULL;
     gatt_client_service_t service;
     gatt_client_characteristic_t characteristic;
     uint8_t status;
@@ -425,7 +425,7 @@ static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
     UNUSED(size);        // ok: fixed format events read from HCI buffer
 
     hci_con_handle_t con_handle;
-    scan_parameters_service_client_t * client;
+    sps_client_connection_t * client;
 
     switch (hci_event_packet_get_type(packet)) {
         case HCI_EVENT_DISCONNECTION_COMPLETE:
@@ -452,14 +452,14 @@ void scan_parameters_service_client_set(uint16_t scan_interval, uint16_t scan_wi
     btstack_linked_list_iterator_t it;  
     btstack_linked_list_iterator_init(&it, &clients);
     while (btstack_linked_list_iterator_has_next(&it)){
-        scan_parameters_service_client_t * client = (scan_parameters_service_client_t*) btstack_linked_list_iterator_next(&it);
+        sps_client_connection_t * client = (sps_client_connection_t*) btstack_linked_list_iterator_next(&it);
         client->scan_interval_window_value_update = true;
         scan_parameters_client_request_send_gatt_query(client);
     }
 }
 
 uint8_t scan_parameters_service_client_enable_notifications(uint16_t scan_parameters_service_cid){
-    scan_parameters_service_client_t * client = scan_parameters_service_get_client_for_cid(scan_parameters_service_cid);
+    sps_client_connection_t * client = scan_parameters_service_get_client_for_cid(scan_parameters_service_cid);
     
     if (client == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
@@ -476,7 +476,7 @@ uint8_t scan_parameters_service_client_enable_notifications(uint16_t scan_parame
 uint8_t scan_parameters_service_client_connect(hci_con_handle_t con_handle, btstack_packet_handler_t packet_handler, uint16_t * scan_parameters_service_cid){
     btstack_assert(packet_handler != NULL);
 
-    scan_parameters_service_client_t * client = scan_parameters_service_get_client_for_con_handle(con_handle);
+    sps_client_connection_t * client = scan_parameters_service_get_client_for_con_handle(con_handle);
     if (client != NULL){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
@@ -497,7 +497,7 @@ uint8_t scan_parameters_service_client_connect(hci_con_handle_t con_handle, btst
 }
 
 uint8_t scan_parameters_service_client_disconnect(uint16_t scan_parameters_service_cid){
-    scan_parameters_service_client_t * client = scan_parameters_service_get_client_for_cid(scan_parameters_service_cid);
+    sps_client_connection_t * client = scan_parameters_service_get_client_for_cid(scan_parameters_service_cid);
     if (client == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
