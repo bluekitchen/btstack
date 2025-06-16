@@ -1544,10 +1544,9 @@ const hci_cmd_t hci_le_transmitter_test = {
 };
 
 /**
- * @param end_test_cmd
  */
 const hci_cmd_t hci_le_test_end = {
-    HCI_OPCODE_HCI_LE_TEST_END, "1"
+    HCI_OPCODE_HCI_LE_TEST_END, ""
     // return: status, number of packets (8)
 };
 
