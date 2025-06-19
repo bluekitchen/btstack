@@ -709,8 +709,9 @@ typedef SSIZE_T ssize_t;
  #define HCI_SUBEVENT_LE_CONNECTION_UPDATE_COMPLETE         0x03u
 
 /**
- * @format 1HD
+ * @format 11HD
  * @param subevent_code
+ * @param status
  * @param connection_handle
  * @param le_features
  */

@@ -4893,13 +4893,22 @@ static inline uint16_t hci_subevent_le_connection_update_complete_get_supervisio
 }
 
 /**
+ * @brief Get field status from event HCI_SUBEVENT_LE_READ_REMOTE_FEATURES_COMPLETE
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_subevent_le_read_remote_features_complete_get_status(const uint8_t * event){
+    return event[3];
+}
+/**
  * @brief Get field connection_handle from event HCI_SUBEVENT_LE_READ_REMOTE_FEATURES_COMPLETE
  * @param event packet
  * @return connection_handle
  * @note: btstack_type H
  */
 static inline hci_con_handle_t hci_subevent_le_read_remote_features_complete_get_connection_handle(const uint8_t * event){
-    return little_endian_read_16(event, 3);
+    return little_endian_read_16(event, 4);
 }
 /**
  * @brief Get field le_features from event HCI_SUBEVENT_LE_READ_REMOTE_FEATURES_COMPLETE
@@ -4908,7 +4917,7 @@ static inline hci_con_handle_t hci_subevent_le_read_remote_features_complete_get
  * @note: btstack_type D
  */
 static inline const uint8_t * hci_subevent_le_read_remote_features_complete_get_le_features(const uint8_t * event){
-    return (const uint8_t *) &event[5];
+    return (const uint8_t *) &event[6];
 }
 
 /**
