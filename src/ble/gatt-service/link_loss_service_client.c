@@ -380,7 +380,7 @@ uint8_t link_loss_service_client_connect(hci_con_handle_t con_handle,
     uint8_t status = gatt_service_client_connect_primary_service_with_uuid16(con_handle,
                                                                              &lls_client,
                                                                              &lls_connection->basic_connection,
-                                                                             ORG_BLUETOOTH_SERVICE_LINK_LOSS, 0,
+                                                                             ORG_BLUETOOTH_SERVICE_LINK_LOSS, 
                                                                              lls_storage_for_characteristics,
                                                                              lls_characteristics_num);
 

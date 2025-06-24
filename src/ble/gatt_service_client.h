@@ -163,9 +163,27 @@ void gatt_service_client_unregister_client(gatt_service_client_t * client);
  */
 uint8_t gatt_service_client_connect_primary_service_with_uuid16(hci_con_handle_t con_handle, gatt_service_client_t *client,
                                                         gatt_service_client_connection_t *connection,
-                                                        uint16_t service_uuid16, uint8_t service_index,
+                                                        uint16_t service_uuid16,
                                                         gatt_service_client_characteristic_t *characteristics,
                                                         uint8_t characteristics_num);
+
+/**
+ * @brief Connect to the n-th instance of Primary GATT Service with UUID16
+ *
+ * @param con_handle
+ * @param client
+ * @param connection
+ * @param service_uuid16
+ * @param service_index
+ * @param characteristics
+ * @param characteristics_num
+ * @return
+ */
+uint8_t gatt_service_client_connect_primary_service_with_uuid128(hci_con_handle_t con_handle, gatt_service_client_t *client,
+                                                                gatt_service_client_connection_t *connection,
+                                                                uint8_t service_uuid128[], uint8_t service_index,
+                                                                gatt_service_client_characteristic_t *characteristics,
+                                                                uint8_t characteristics_num);
 
 /**
  * @brief Connect to the Secondary GATT Service with given handle range

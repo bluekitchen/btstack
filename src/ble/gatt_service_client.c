@@ -616,7 +616,7 @@ void gatt_service_client_register_client(gatt_service_client_t *client, btstack_
 uint8_t
 gatt_service_client_connect_primary_service_with_uuid16(hci_con_handle_t con_handle, gatt_service_client_t *client,
                                                         gatt_service_client_connection_t *connection,
-                                                        uint16_t service_uuid16, uint8_t service_index,
+                                                        uint16_t service_uuid16,
                                                         gatt_service_client_characteristic_t *characteristics,
                                                         uint8_t characteristics_num) {
     
@@ -624,7 +624,7 @@ gatt_service_client_connect_primary_service_with_uuid16(hci_con_handle_t con_han
     btstack_assert(connection      != NULL);
     btstack_assert(characteristics != NULL);
     
-    if (gatt_service_client_get_connection_for_con_handle_and_service_index(client, con_handle, service_index) != NULL){
+    if (gatt_service_client_get_connection_for_con_handle_and_service_index(client, con_handle, 0) != NULL){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
@@ -638,7 +638,7 @@ gatt_service_client_connect_primary_service_with_uuid16(hci_con_handle_t con_han
     connection->cid                 = gatt_service_client_get_next_cid(client);
     connection->con_handle          = con_handle;
     connection->service_uuid16      = service_uuid16;
-    connection->service_index       = service_index;
+    connection->service_index       = 0;
     connection->characteristics     = characteristics;
     btstack_linked_list_add(&client->connections, (btstack_linked_item_t *) connection);
 

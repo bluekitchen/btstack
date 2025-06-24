@@ -262,7 +262,7 @@ uint8_t immediate_alert_service_client_connect(hci_con_handle_t con_handle,
     uint8_t status = gatt_service_client_connect_primary_service_with_uuid16(con_handle,
                                                                              &ias_client,
                                                                              &ias_connection->basic_connection,
-                                                                             ORG_BLUETOOTH_SERVICE_IMMEDIATE_ALERT, 0,
+                                                                             ORG_BLUETOOTH_SERVICE_IMMEDIATE_ALERT,
                                                                              ias_connection->characteristics_storage,
                                                                              IMMEDIATE_ALERT_SERVICE_CLIENT_NUM_CHARACTERISTICS);
 

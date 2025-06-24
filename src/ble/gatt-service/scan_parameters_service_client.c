@@ -243,7 +243,7 @@ uint8_t scan_parameters_service_client_connect(
     uint8_t status = gatt_service_client_connect_primary_service_with_uuid16(con_handle,
                                                                              &sps_client,
                                                                              &sps_connection->basic_connection,
-                                                                             ORG_BLUETOOTH_SERVICE_SCAN_PARAMETERS, 0,
+                                                                             ORG_BLUETOOTH_SERVICE_SCAN_PARAMETERS,
                                                                              &sps_connection->characteristics_storage[0],
                                                                              SCAN_PARAMETERS_SERVICE_CLIENT_NUM_CHARACTERISTICS);
     if (status == ERROR_CODE_SUCCESS){
