@@ -91,8 +91,8 @@ typedef struct {
     gatt_service_client_state_t  state;
 
     // service
-//    uint16_t service_uuid16;
-    uint8_t  * service_uuid128;
+    uint16_t service_uuid16;
+    uuid128_t * service_uuid128;
 
     uint8_t  service_index;
     uint16_t service_instances_num;
@@ -113,8 +113,9 @@ typedef struct gatt_service_client {
     uint16_t cid_counter;
 
     // characteristics
-    uint8_t  characteristics_desc16_num;     // uuid16s_num
-    const uint16_t * characteristics_desc16; // uuid16s
+    uint8_t  characteristics_desc_num;       // uuids_num, either are all UUIDs 2-bytes, or 16-bytes
+    const uint16_t *  characteristics_desc16;  // uuid16s
+    const uuid128_t * characteristics_desc128; // uuid128s
     
     btstack_packet_handler_t packet_handler;
 } gatt_service_client_t;
@@ -158,6 +159,15 @@ void gatt_service_client_register_client_uuid128(gatt_service_client_t *client, 
 uint16_t gatt_service_client_characteristic_uuid16_for_index(const gatt_service_client_t * client, uint8_t characteristic_index);
 
 /**
+ * @brief Get Characteristic UUID128 for given Characteristic index
+ *
+ * @param client
+ * @param characteristic_index
+ * @return uuid128 or NULL if index out of range
+ */
+const uuid128_t * gatt_service_client_characteristic_uuid128_for_index(const gatt_service_client_t * client, uint8_t characteristic_index);
+
+/**
  * @bbreif Unregister GATT Service Client
  * @param client
  */
@@ -193,7 +203,7 @@ uint8_t gatt_service_client_connect_primary_service_with_uuid16(hci_con_handle_t
  */
 uint8_t gatt_service_client_connect_primary_service_with_uuid128(hci_con_handle_t con_handle, gatt_service_client_t *client,
                                                                 gatt_service_client_connection_t *connection,
-                                                                const uint8_t * service_uuid128,
+                                                                const uuid128_t * service_uuid128,
                                                                 gatt_service_client_characteristic_t *characteristics,
                                                                 uint8_t characteristics_num);
 
