@@ -201,7 +201,7 @@ USBH_StatusTypeDef USBH_Bluetooth_Process(USBH_HandleTypeDef *phost){
     switch (usbh_out_state){
         case USBH_OUT_CMD:
             // just send HCI Reset naively
-            phost->Control.setup.b.bmRequestType = USB_H2D | USB_REQ_TYPE_CLASS | USB_REQ_RECIPIENT_CLASS;
+            phost->Control.setup.b.bmRequestType = USB_H2D | USB_REQ_TYPE_CLASS | USB_REQ_RECIPIENT_DEVICE;
             phost->Control.setup.b.bRequest = 0;
             phost->Control.setup.b.wValue.w = 0;
             phost->Control.setup.b.wIndex.w = 0U;
