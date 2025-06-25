@@ -82,6 +82,11 @@ typedef struct {
  */
 typedef uint8_t sm_key_t[16];
 
+/**
+ * @brief 128 bit UUID
+ */
+typedef uint8_t uuid128_t[16];
+
 // provide ssize_t on windows
 #ifdef _MSC_VER
 #include <basetsd.h>
