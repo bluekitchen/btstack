@@ -259,12 +259,20 @@ static void gatt_service_client_run_for_client(gatt_service_client_t * client, g
     switch (connection->state){
         case GATT_SERVICE_CLIENT_STATE_W2_QUERY_PRIMARY_SERVICE:
             connection->state = GATT_SERVICE_CLIENT_STATE_W4_SERVICE_RESULT;
-            status = gatt_client_discover_primary_services_by_uuid16_with_context(
-                    &gatt_service_client_gatt_packet_handler,
-                    connection->con_handle,
-                    connection->service_uuid16,
-                    client->service_id,
-                    connection->cid);
+            if (connection->service_uuid128 != NULL){
+                status = gatt_client_discover_primary_services_by_uuid128(&gatt_service_client_gatt_packet_handler,
+                                                                          connection->con_handle,
+                                                                          connection->service_uuid128,
+                                                                          client->service_id,
+                                                                          connection->cid);
+            } else {
+                status = gatt_client_discover_primary_services_by_uuid16_with_context(
+                        &gatt_service_client_gatt_packet_handler,
+                        connection->con_handle,
+                        connection->service_uuid16,
+                        client->service_id,
+                        connection->cid);
+            }
             break;
 
         case GATT_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTICS:
@@ -638,6 +646,40 @@ gatt_service_client_connect_primary_service_with_uuid16(hci_con_handle_t con_han
     connection->cid                 = gatt_service_client_get_next_cid(client);
     connection->con_handle          = con_handle;
     connection->service_uuid16      = service_uuid16;
+    connection->service_uuid128     = NULL;
+    connection->service_index       = 0;
+    connection->characteristics     = characteristics;
+    btstack_linked_list_add(&client->connections, (btstack_linked_item_t *) connection);
+
+    gatt_service_client_run_for_client(client, connection);
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t gatt_service_client_connect_primary_service_with_uuid128(hci_con_handle_t con_handle, gatt_service_client_t *client,
+                                                                 gatt_service_client_connection_t *connection,
+                                                                 uint8_t * service_uuid128,
+                                                                 gatt_service_client_characteristic_t *characteristics,
+                                                                 uint8_t characteristics_num){
+    btstack_assert(client          != NULL);
+    btstack_assert(connection      != NULL);
+    btstack_assert(characteristics != NULL);
+    btstack_assert(service_uuid128 != NULL);
+
+    if (gatt_service_client_get_connection_for_con_handle_and_service_index(client, con_handle, 0) != NULL){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+
+    if (characteristics_num < client->characteristics_desc16_num){
+        log_info("At least %u characteristics needed", client->characteristics_desc16_num);
+        return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
+    }
+
+    connection->state = GATT_SERVICE_CLIENT_STATE_W2_QUERY_PRIMARY_SERVICE;
+    connection->client              = client;
+    connection->cid                 = gatt_service_client_get_next_cid(client);
+    connection->con_handle          = con_handle;
+    connection->service_uuid16      = 0;
+    connection->service_uuid128     = service_uuid128;
     connection->service_index       = 0;
     connection->characteristics     = characteristics;
     btstack_linked_list_add(&client->connections, (btstack_linked_item_t *) connection);

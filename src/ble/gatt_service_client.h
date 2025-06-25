@@ -91,7 +91,9 @@ typedef struct {
     gatt_service_client_state_t  state;
 
     // service
-    uint16_t service_uuid16;
+//    uint16_t service_uuid16;
+    uint8_t  * service_uuid128;
+
     uint8_t  service_index;
     uint16_t service_instances_num;
     uint16_t start_handle;
@@ -107,6 +109,7 @@ typedef struct gatt_service_client {
     btstack_linked_item_t item;
     btstack_linked_list_t connections;
     uint16_t service_id;
+    uint8_t * service_uuid128;
     uint16_t cid_counter;
 
     // characteristics
@@ -135,6 +138,17 @@ void gatt_service_client_register_client(gatt_service_client_t *client, btstack_
                                          const uint16_t *characteristic_uuid16s, uint16_t characteristic_uuid16s_num);
 
 /**
+ * @brief Register new GATT Service Client with list of Characteristic UUID16s
+ * @param client
+ * @param characteristic_uuid16s
+ * @param characteristic_uuid16s_num
+ * @param trampoline_packet_handler packet handler that calls gatt_service_client_trampoline_packet_handler with client
+ */
+
+void gatt_service_client_register_client_uuid128(gatt_service_client_t *client, btstack_packet_handler_t packet_handler,
+                                         const uuid128_t *characteristic_uuid128s, uint16_t characteristic_uuid128s_num);
+
+/**
  * @brief Get Characteristic UUID16 for given Characteristic index
  *
  * @param client
@@ -156,7 +170,6 @@ void gatt_service_client_unregister_client(gatt_service_client_t * client);
  * @param client
  * @param connection
  * @param service_uuid16
- * @param service_index
  * @param characteristics
  * @param characteristics_num
  * @return
@@ -173,15 +186,14 @@ uint8_t gatt_service_client_connect_primary_service_with_uuid16(hci_con_handle_t
  * @param con_handle
  * @param client
  * @param connection
- * @param service_uuid16
- * @param service_index
+ * @param service_uuid128
  * @param characteristics
  * @param characteristics_num
  * @return
  */
 uint8_t gatt_service_client_connect_primary_service_with_uuid128(hci_con_handle_t con_handle, gatt_service_client_t *client,
                                                                 gatt_service_client_connection_t *connection,
-                                                                uint8_t service_uuid128[], uint8_t service_index,
+                                                                const uint8_t * service_uuid128,
                                                                 gatt_service_client_characteristic_t *characteristics,
                                                                 uint8_t characteristics_num);
 
