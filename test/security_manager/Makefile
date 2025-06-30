@@ -6,7 +6,6 @@ BTSTACK_ROOT =  ../..
 CFLAGS  += ${shell pkg-config --cflags CppuTest}
 LDFLAGS += ${shell pkg-config --libs   CppuTest}
 
-CFLAGS += -D UNIT_TEST
 CFLAGS += -D HAVE_EMBEDDED_TIME_MS
 CFLAGS += -g -Wall -Wnarrowing -Wconversion-null
 CFLAGS += -I${BTSTACK_ROOT}/src

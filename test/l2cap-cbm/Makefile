@@ -6,7 +6,6 @@ BTSTACK_ROOT =  ../..
 CFLAGS  += ${shell pkg-config --cflags CppuTest}
 LDFLAGS += ${shell pkg-config --libs   CppuTest}
 
-CFLAGS += -D UNIT_TEST
 CFLAGS += -D FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
 CFLAGS += -g -Wall -Wnarrowing -Wconversion-null
 CFLAGS += -Ibuild-coverage

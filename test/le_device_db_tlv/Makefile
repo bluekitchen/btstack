@@ -6,7 +6,6 @@ BTSTACK_ROOT =  ../..
 CFLAGS  += ${shell pkg-config --cflags CppuTest}
 LDFLAGS += ${shell pkg-config --libs   CppuTest}
 
-CFLAGS += -DUNIT_TEST
 # Link Key DB and LE Device DB using TLV on top of Flash Sector interface
 CFLAGS += -D NVM_NUM_DEVICE_DB_ENTRIES=16
 

@@ -6,7 +6,6 @@ BTSTACK_ROOT =  ../..
 CFLAGS  += ${shell pkg-config --cflags CppuTest}
 LDFLAGS += ${shell pkg-config --libs   CppuTest}
 
-CFLAGS += -DUNIT_TEST
 CFLAGS += -g -Wall -Wnarrowing -Wconversion-null
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/rijndael
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/micro-ecc

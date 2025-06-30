@@ -5,6 +5,9 @@
 #ifndef BTSTACK_CONFIG_H
 #define BTSTACK_CONFIG_H
 
+// enable UNIT_TEST to convert btstack_unreachable() into NOP for unit tests
+#define UNIT_TEST
+
 // Port related features
 #define HAVE_BTSTACK_STDIN
 #define HAVE_MALLOC

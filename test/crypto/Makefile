@@ -6,7 +6,6 @@ BTSTACK_ROOT =  ../..
 CFLAGS  += ${shell pkg-config --cflags CppuTest}
 LDFLAGS += ${shell pkg-config --libs   CppuTest}
 
-CFLAGS += -DUNIT_TEST
 CFLAGS += -g
 CPPFLAGS = -Wall -Wno-unused -fno-exceptions
 CFLAGS += -I${BTSTACK_ROOT}/src
