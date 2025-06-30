@@ -6,12 +6,14 @@ BTSTACK_ROOT =  ../..
 CFLAGS  += ${shell pkg-config --cflags CppuTest}
 LDFLAGS += ${shell pkg-config --libs   CppuTest}
 
-CFLAGS += -DUNIT_TEST -g -Wall -Wnarrowing -Wconversion-null -Ibuild-coverage -I../
+CFLAGS += -DUNIT_TEST
+CFLAGS += -g -Wall -Wnarrowing -Wconversion-null
+CFLAGS += -Ibuild-coverage
 CFLAGS += -I${BTSTACK_ROOT}/src
 CFLAGS += -I${BTSTACK_ROOT}/src/ble
 CFLAGS += -I${BTSTACK_ROOT}/test/mock
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/rijndael
-# CFLAGS += -D ENABLE_TESTING_SUPPORT
+CFLAGS += -I${BTSTACK_ROOT}/test/include/coverage-ble
 
 VPATH += ${BTSTACK_ROOT}/src
 VPATH += ${BTSTACK_ROOT}/src/ble 

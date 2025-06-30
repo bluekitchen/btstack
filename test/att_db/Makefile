@@ -6,10 +6,12 @@ BTSTACK_ROOT =  ../..
 CFLAGS  += ${shell pkg-config --cflags CppuTest}
 LDFLAGS += ${shell pkg-config --libs   CppuTest}
 
-CFLAGS += -DUNIT_TEST -g -Wall -Wnarrowing -Wconversion-null
+CFLAGS += -DUNIT_TEST
+CFLAGS += -g -Wall -Wnarrowing -Wconversion-null
 CFLAGS += -I${BTSTACK_ROOT}/src
+CFLAGS += -I${BTSTACK_ROOT}/3rd-party/micro-ecc
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/rijndael
-CFLAGS += -I.
+CFLAGS += -I${BTSTACK_ROOT}/test/include/coverage-ble
 
 CFLAGS_COVERAGE = ${CFLAGS} -fprofile-arcs -ftest-coverage
 CFLAGS_ASAN     = ${CFLAGS} -fsanitize=address -DHAVE_ASSERT
@@ -18,6 +20,7 @@ LDFLAGS += -lCppUTest -lCppUTestExt
 LDFLAGS_COVERAGE = ${LDFLAGS} -fprofile-arcs -ftest-coverage
 LDFLAGS_ASAN     = ${LDFLAGS} -fsanitize=address
 
+VPATH += ${BTSTACK_ROOT}/3rd-party/micro-ecc
 VPATH += ${BTSTACK_ROOT}/3rd-party/rijndael
 VPATH += ${BTSTACK_ROOT}/src
 VPATH += ${BTSTACK_ROOT}/src/ble
@@ -30,7 +33,8 @@ COMMON = \
     btstack_crypto.c \
     btstack_linked_list.c \
     hci_cmd.c \
-    rijndael.c
+    rijndael.c \
+    uECC.c 
 	
 COMMON_OBJ_COVERAGE = $(addprefix build-coverage/,$(COMMON:.c=.o))
 COMMON_OBJ_ASAN     = $(addprefix build-asan/,    $(COMMON:.c=.o))

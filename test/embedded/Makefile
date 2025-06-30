@@ -6,10 +6,13 @@ BTSTACK_ROOT =  ../..
 CFLAGS  += ${shell pkg-config --cflags CppuTest}
 LDFLAGS += ${shell pkg-config --libs   CppuTest}
 
-CFLAGS += -DUNIT_TEST -g -Wall -Wnarrowing -Wconversion-null
+CFLAGS += -DUNIT_TEST
+CFLAGS += -g -Wall -Wnarrowing -Wconversion-null
+CFLAGS += -I${BTSTACK_ROOT}/3rd-party/micro-ecc
+CFLAGS += -I${BTSTACK_ROOT}/3rd-party/rijndael
 CFLAGS += -I${BTSTACK_ROOT}/src
 CFLAGS += -I${BTSTACK_ROOT}/platform/embedded
-CFLAGS += -I.
+CFLAGS += -I${BTSTACK_ROOT}/test/include/coverage-ble
 		  
 CFLAGS += -DHAVE_HAL_AUDIO
 
@@ -20,6 +23,8 @@ LDFLAGS += -lCppUTest -lCppUTestExt
 LDFLAGS_COVERAGE = ${LDFLAGS} -fprofile-arcs -ftest-coverage
 LDFLAGS_ASAN     = ${LDFLAGS} -fsanitize=address
 
+VPATH += ${BTSTACK_ROOT}/3rd-party/micro-ecc
+VPATH += ${BTSTACK_ROOT}/3rd-party/rijndael
 VPATH += ${BTSTACK_ROOT}/src
 VPATH += ${BTSTACK_ROOT}/src/ble
 VPATH += ${BTSTACK_ROOT}/platform/embedded

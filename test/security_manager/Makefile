@@ -6,13 +6,16 @@ BTSTACK_ROOT =  ../..
 CFLAGS  += ${shell pkg-config --cflags CppuTest}
 LDFLAGS += ${shell pkg-config --libs   CppuTest}
 
-CFLAGS += -DUNIT_TEST -g -Wall -Wnarrowing -Wconversion-null
-CFLAGS += -I. -I.. -I${BTSTACK_ROOT}/src
+CFLAGS += -D UNIT_TEST
+CFLAGS += -D HAVE_EMBEDDED_TIME_MS
+CFLAGS += -g -Wall -Wnarrowing -Wconversion-null
+CFLAGS += -I${BTSTACK_ROOT}/src
 CFLAGS += -I${BTSTACK_ROOT}/platform/embedded
 CFLAGS += -I${BTSTACK_ROOT}/platform/posix
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/mbedtls/include
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/micro-ecc
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/rijndael
+CFLAGS += -I${BTSTACK_ROOT}/test/include/coverage-ble
 LDFLAGS +=  -lCppUTest -lCppUTestExt
 
 VPATH += ${BTSTACK_ROOT}/src

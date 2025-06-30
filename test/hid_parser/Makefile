@@ -6,11 +6,11 @@ BTSTACK_ROOT =  ../..
 CFLAGS  += ${shell pkg-config --cflags CppuTest}
 LDFLAGS += ${shell pkg-config --libs   CppuTest}
 
-CFLAGS += -DUNIT_TEST -x c++ -g -Wall -Wnarrowing -Wconversion-null
-
-CFLAGS += -I.
+CFLAGS += -DUNIT_TEST
+CFLAGS += -x c++ -g -Wall -Wnarrowing -Wconversion-null
 CFLAGS += -I ${BTSTACK_ROOT}/src
 CFLAGS += -I ${BTSTACK_ROOT}/platform/posix
+CFLAGS += -I${BTSTACK_ROOT}/test/include/coverage-ble
 
 VPATH += ${BTSTACK_ROOT}/src ${BTSTACK_ROOT}/platform/posix
 

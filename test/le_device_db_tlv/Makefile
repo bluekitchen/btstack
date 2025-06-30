@@ -6,10 +6,16 @@ BTSTACK_ROOT =  ../..
 CFLAGS  += ${shell pkg-config --cflags CppuTest}
 LDFLAGS += ${shell pkg-config --libs   CppuTest}
 
-CFLAGS += -DUNIT_TEST -g -Wall -Wnarrowing -Wconversion-null -Ibuild-coverage -I./
-CFLAGS += -I.
+CFLAGS += -DUNIT_TEST
+# Link Key DB and LE Device DB using TLV on top of Flash Sector interface
+CFLAGS += -D NVM_NUM_DEVICE_DB_ENTRIES=16
+
+CFLAGS += -g -Wall -Wnarrowing -Wconversion-null
+CFLAGS += -Ibuild-coverage
 CFLAGS += -I${BTSTACK_ROOT}/src
 CFLAGS += -I${BTSTACK_ROOT}/platform/embedded
+CFLAGS += -I${BTSTACK_ROOT}/test/include/coverage-ble
+
 LDFLAGS +=  -lCppUTest -lCppUTestExt
 
 VPATH += ${BTSTACK_ROOT}/src

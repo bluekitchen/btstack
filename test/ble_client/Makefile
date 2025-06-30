@@ -6,9 +6,10 @@ BTSTACK_ROOT =  ../..
 CFLAGS  += ${shell pkg-config --cflags CppuTest}
 LDFLAGS += ${shell pkg-config --libs   CppuTest}
 
-CFLAGS += -DUNIT_TEST -g -Wall -Wnarrowing -Wconversion-null
+CFLAGS += -DUNIT_TEST
+CFLAGS += -g -Wall -Wnarrowing -Wconversion-null
 CFLAGS += -I${BTSTACK_ROOT}/src
-CFLAGS += -I.
+CFLAGS += -I${BTSTACK_ROOT}/test/include/coverage-ble
 
 CFLAGS_COVERAGE = ${CFLAGS} -fprofile-arcs -ftest-coverage
 CFLAGS_ASAN     = ${CFLAGS} -fsanitize=address -DHAVE_ASSERT

@@ -50,7 +50,6 @@ SM += \
 CFLAGS += -g -std=c99 -Wall -Wmissing-prototypes -Wstrict-prototypes -Wshadow -Wunused-parameter -Wredundant-decls -Wsign-compare
 CFLAGS += -D ENABLE_TESTING_SUPPORT
 CFLAGS += -DCOVERAGE
-CFLAGS += -I.
 CFLAGS += -Ibuild-coverage
 CFLAGS += -I${BTSTACK_ROOT}/src
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/micro-ecc
@@ -59,6 +58,7 @@ CFLAGS += -I${BTSTACK_ROOT}/3rd-party/tinydir
 CFLAGS += -I${BTSTACK_ROOT}/chipset/zephyr
 CFLAGS += -I${BTSTACK_ROOT}/platform/posix 
 CFLAGS += -I${BTSTACK_ROOT}/platform/embedded
+CFLAGS += -I${BTSTACK_ROOT}/test/include/coverage-ble
 
 VPATH += ${BTSTACK_ROOT}/src
 VPATH += ${BTSTACK_ROOT}/src/ble
