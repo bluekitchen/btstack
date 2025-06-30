@@ -133,7 +133,7 @@ static const uint16_t iso_packet_size_for_alt_setting[] = {
 
 // Outgoing SCO packet queue
 // simplified ring buffer implementation
-#define SCO_OUT_BUFFER_COUNT  (20)
+#define SCO_OUT_BUFFER_COUNT  (8)
 #define SCO_OUT_BUFFER_SIZE (SCO_OUT_BUFFER_COUNT * SCO_PACKET_SIZE)
 
 // seems to be the max depth for USB 3
