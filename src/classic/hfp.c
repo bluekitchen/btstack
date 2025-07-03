@@ -347,6 +347,19 @@ int hfp_join_uint8(char* buffer, int buffer_size, uint8_t* values, int values_nr
     return offset;
 }
 
+int hfp_join_uint16(char* buffer, int buffer_size, uint16_t* values, int values_nr){
+    if (buffer_size < (values_nr * 6)) return 0;
+    int i;
+    int offset = 0;
+    for (i = 0; i < (values_nr-1); i++) {
+        offset += btstack_snprintf_assert_complete(buffer+offset, buffer_size-offset, "%d,", values[i]); // puts string into buffer
+    }
+    if (i<values_nr){
+        offset += btstack_snprintf_assert_complete(buffer+offset, buffer_size-offset, "%d", values[i]);
+    }
+    return offset;
+}
+
 int join_bitmap(char * buffer, int buffer_size, uint32_t values, int values_nr){
     if (buffer_size < (values_nr * 3)) return 0;
 
