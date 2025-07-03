@@ -345,7 +345,7 @@ static int hfp_hf_cmd_activate_status_update_for_ag_indicator(uint16_t cid, uint
 }
 
 static int hfp_hf_cmd_list_supported_generic_status_indicators(uint16_t cid){
-    char buffer[HFP_MAX_NUM_INDICATORS*6];
+    char buffer[10 + HFP_MAX_NUM_INDICATORS*6];
     const int size = sizeof(buffer);
     int offset = btstack_snprintf_assert_complete(buffer, size, "AT%s=", HFP_GENERIC_STATUS_INDICATOR);
     offset += hfp_join_uint16(buffer+offset, size-offset, hfp_hf_indicators, hfp_hf_indicators_nr);
