@@ -92,7 +92,7 @@ TEST_GROUP(HFPParser){
     char packet[200];
     int pos;
     int offset;
-    uint8_t indicators[10];
+    uint16_t indicators[10];
 
     void setup(void){
         hfp_init();

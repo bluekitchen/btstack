@@ -796,7 +796,7 @@ typedef struct {
 int send_str_over_rfcomm(uint16_t cid, const char * command);
 
 int hfp_join_uint8(char* buffer, int buffer_size, uint8_t* values, int values_nr);
-int hfp_join_uint16(char* buffer, int buffer_size, uint8_t* values, int values_nr);
+int hfp_join_uint16(char* buffer, int buffer_size, uint16_t* values, int values_nr);
 int join_bitmap(char * buffer, int buffer_size, uint32_t values, int values_nr);
 int get_bit(uint16_t bitmap, int position);
 int store_bit(uint32_t bitmap, int position, uint8_t value);
@@ -840,7 +840,7 @@ void hfp_set_ag_rfcomm_packet_handler(btstack_packet_handler_t handler);
 
 void hfp_set_hf_callback(btstack_packet_handler_t callback);
 void hfp_set_hf_rfcomm_packet_handler(btstack_packet_handler_t handler);
-void hfp_set_hf_indicators(uint8_t indicators_nr, const uint8_t * indicators);
+void hfp_set_hf_indicators(uint8_t indicators_nr, const uint16_t* indicators);
 
 void hfp_set_hf_sco_established(void (*callback)(hfp_connection_t * hfp_connection));
 void hfp_set_hf_sco_released(void (*callback)(hfp_connection_t * hfp_connection));

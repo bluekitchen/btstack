@@ -77,7 +77,7 @@ static uint8_t  hfp_hf_codecs_nr;
 static uint8_t  hfp_hf_codecs[HFP_MAX_NUM_CODECS];
 
 static uint8_t  hfp_hf_indicators_nr;
-static uint8_t  hfp_hf_indicators[HFP_MAX_NUM_INDICATORS];
+static uint16_t hfp_hf_indicators[HFP_MAX_NUM_INDICATORS];
 static uint32_t hfp_hf_indicators_value[HFP_MAX_NUM_INDICATORS];
 
 static uint8_t  hfp_hf_speaker_gain;
@@ -345,10 +345,10 @@ static int hfp_hf_cmd_activate_status_update_for_ag_indicator(uint16_t cid, uint
 }
 
 static int hfp_hf_cmd_list_supported_generic_status_indicators(uint16_t cid){
-    char buffer[40];
+    char buffer[HFP_MAX_NUM_INDICATORS*6];
     const int size = sizeof(buffer);
     int offset = btstack_snprintf_assert_complete(buffer, size, "AT%s=", HFP_GENERIC_STATUS_INDICATOR);
-    offset += hfp_join_uint8(buffer+offset, size-offset, hfp_hf_indicators, hfp_hf_indicators_nr);
+    offset += hfp_join_uint16(buffer+offset, size-offset, hfp_hf_indicators, hfp_hf_indicators_nr);
     offset += btstack_snprintf_assert_complete(buffer+offset, size-offset, "\r");
     return send_str_over_rfcomm(cid, buffer);
 }
@@ -1815,13 +1815,9 @@ void hfp_hf_init_supported_features(uint32_t supported_features){
 
 void hfp_hf_init_hf_indicators(int indicators_nr, const uint16_t * indicators){
     btstack_assert(hfp_hf_indicators_nr < HFP_MAX_NUM_INDICATORS);
-    if (hfp_hf_indicators_nr > HFP_MAX_NUM_INDICATORS) return;
 
     hfp_hf_indicators_nr = indicators_nr;
-    int i;
-    for (i = 0; i < hfp_hf_indicators_nr ; i++){
-        hfp_hf_indicators[i] = (uint8_t) indicators[i];
-    }
+    memcpy(hfp_hf_indicators, indicators, sizeof(uint16_t) * hfp_hf_indicators_nr);
 
     // store copy in hfp to setup hf_indicators_supported_by_ag during SLC
     hfp_set_hf_indicators(indicators_nr, hfp_hf_indicators);

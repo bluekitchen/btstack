@@ -89,8 +89,8 @@ static void (*hfp_hf_sco_released)(hfp_connection_t * hfp_connection);
 static void (*hfp_ag_sco_established)(hfp_connection_t * hfp_connection);
 static void (*hfp_ag_sco_released)(hfp_connection_t * hfp_connection);
 
-static uint8_t  hfp_hf_indicators_nr;
-static const uint8_t * hfp_hf_indicators;
+static uint8_t          hfp_hf_indicators_nr;
+static const uint16_t * hfp_hf_indicators;
 
 static uint16_t hfp_allowed_sco_packet_types;
 static hfp_connection_t * hfp_sco_establishment_active;
@@ -2353,7 +2353,7 @@ void hfp_set_hf_rfcomm_packet_handler(btstack_packet_handler_t handler){
     hfp_hf_rfcomm_packet_handler = handler;
 }
 
-void hfp_set_hf_indicators(uint8_t indicators_nr, const uint8_t * indicators) {
+void hfp_set_hf_indicators(uint8_t indicators_nr, const uint16_t* indicators) {
     hfp_hf_indicators_nr = indicators_nr;
     hfp_hf_indicators = indicators;
 }
