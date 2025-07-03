@@ -330,7 +330,7 @@ static int hfp_hf_cmd_notify_on_codecs(uint16_t cid){
     char buffer[30];
     const int size = sizeof(buffer);
     int offset = btstack_snprintf_assert_complete(buffer, size, "AT%s=", HFP_AVAILABLE_CODECS);
-    offset += join(buffer+offset, size-offset, hfp_hf_codecs, hfp_hf_codecs_nr);
+    offset += hfp_join_uint8(buffer+offset, size-offset, hfp_hf_codecs, hfp_hf_codecs_nr);
     offset += btstack_snprintf_assert_complete(buffer+offset, size-offset, "\r");
     return send_str_over_rfcomm(cid, buffer);
 }
@@ -345,10 +345,10 @@ static int hfp_hf_cmd_activate_status_update_for_ag_indicator(uint16_t cid, uint
 }
 
 static int hfp_hf_cmd_list_supported_generic_status_indicators(uint16_t cid){
-    char buffer[30];
+    char buffer[40];
     const int size = sizeof(buffer);
     int offset = btstack_snprintf_assert_complete(buffer, size, "AT%s=", HFP_GENERIC_STATUS_INDICATOR);
-    offset += join(buffer+offset, size-offset, hfp_hf_indicators, hfp_hf_indicators_nr);
+    offset += hfp_join_uint8(buffer+offset, size-offset, hfp_hf_indicators, hfp_hf_indicators_nr);
     offset += btstack_snprintf_assert_complete(buffer+offset, size-offset, "\r");
     return send_str_over_rfcomm(cid, buffer);
 }

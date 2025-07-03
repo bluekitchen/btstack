@@ -334,8 +334,8 @@ int store_bit(uint32_t bitmap, int position, uint8_t value){
     return bitmap;
 }
 
-int join(char * buffer, int buffer_size, uint8_t * values, int values_nr){
-    if (buffer_size < (values_nr * 3)) return 0;
+int hfp_join_uint8(char* buffer, int buffer_size, uint8_t* values, int values_nr){
+    if (buffer_size < (values_nr * 4)) return 0;
     int i;
     int offset = 0;
     for (i = 0; i < (values_nr-1); i++) {

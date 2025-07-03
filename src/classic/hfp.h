@@ -794,7 +794,8 @@ typedef struct {
 
 // UTILS_START : TODO move to utils
 int send_str_over_rfcomm(uint16_t cid, const char * command);
-int join(char * buffer, int buffer_size, uint8_t * values, int values_nr);
+
+int hfp_join_uint8(char* buffer, int buffer_size, uint8_t* values, int values_nr);
 int join_bitmap(char * buffer, int buffer_size, uint32_t values, int values_nr);
 int get_bit(uint16_t bitmap, int position);
 int store_bit(uint32_t bitmap, int position, uint8_t value);
