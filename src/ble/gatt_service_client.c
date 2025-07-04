@@ -448,15 +448,20 @@ static uint8_t gatt_service_client_get_uninitialized_characteristic_index(
         gatt_client_characteristic_t * characteristic){
 
         uint8_t index = 0xff;
-
         uint8_t i;
 
         for (i = 0; i < client->characteristics_desc_num; i++){
-            if (((characteristic->uuid16 != 0) && (client->characteristics_desc16[i] == characteristic->uuid16)) ||
-               (memcmp(client->characteristics_desc128[i], characteristic->uuid128, 16) == 0)){
-                // allow for more then one instance of the same characteristic (as in OTS client)
-                if (connection->characteristics[i].value_handle != 0){
-                   continue;
+            bool characteristic_found = false;
+
+            if (client->characteristics_desc16 != NULL) {
+                characteristic_found = client->characteristics_desc16[i] == characteristic->uuid16;
+            } else {
+                characteristic_found = memcmp(client->characteristics_desc128[i], characteristic->uuid128, 16) == 0;
+            }
+
+            if (characteristic_found) {
+                if (connection->characteristics[i].value_handle != 0) {
+                    continue;
                 }
                 index = i;
                 break;
@@ -625,6 +630,7 @@ void gatt_service_client_register_client(gatt_service_client_t *client, btstack_
     client->packet_handler = packet_handler;
     client->characteristics_desc16 = characteristic_uuid16s;
     client->characteristics_desc_num = characteristic_uuid16s_num;
+    client->characteristics_desc128 = NULL;
     btstack_linked_list_add(&gatt_service_clients, &client->item);
 }
 
@@ -634,9 +640,10 @@ void gatt_service_client_register_client_uuid128(gatt_service_client_t *client, 
     btstack_assert(gatt_service_client_intitialized);
 
     gatt_service_client_service_cid = btstack_next_cid_ignoring_zero(gatt_service_client_service_cid);
-    client->service_id =gatt_service_client_service_cid;
+    client->service_id = gatt_service_client_service_cid;
     client->cid_counter = 0;
     client->packet_handler = packet_handler;
+    client->characteristics_desc16 = NULL;
     client->characteristics_desc128 = characteristic_uuid128s;
     client->characteristics_desc_num = characteristic_uuid128s_num;
     btstack_linked_list_add(&gatt_service_clients, &client->item);
