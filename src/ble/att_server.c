@@ -318,7 +318,7 @@ static void att_server_event_packet_handler (uint8_t packet_type, uint16_t chann
                             att_server->bearer_type = ATT_BEARER_UNENHANCED_LE;
                             att_connection->mtu = ATT_DEFAULT_MTU;
                             att_connection->max_mtu = l2cap_max_le_mtu();
-                            if (att_connection->max_mtu > ATT_REQUEST_BUFFER_SIZE){
+                            if (att_connection->max_mtu > (uint16_t) ATT_REQUEST_BUFFER_SIZE){
                                 att_connection->max_mtu = ATT_REQUEST_BUFFER_SIZE;
                             }
                             att_connection->encryption_key_size = 0u;
@@ -1203,8 +1203,8 @@ static void att_server_persistent_ccc_restore(att_server_t * att_server, att_con
     if (!tlv_impl) return;
 
     // validate database hash
-    if ((att_server_flags & ATT_SERVER_FLAGS_VALIDATE_DATABASE_HASH) != 0) {
-        att_server_flags &= ~ATT_SERVER_FLAGS_VALIDATE_DATABASE_HASH;
+    if ((att_server_flags & ((uint8_t)ATT_SERVER_FLAGS_VALIDATE_DATABASE_HASH)) != 0) {
+        att_server_flags &= ((uint8_t)~ATT_SERVER_FLAGS_VALIDATE_DATABASE_HASH);
         if (att_server_persistent_ccc_validate_database(tlv_impl, tlv_context) == false) {
             return;
         }
