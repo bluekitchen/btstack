@@ -289,7 +289,7 @@ static void hci_connection_init(hci_connection_t * conn){
     conn->encryption_key_type = INVALID_LINK_KEY;
 #ifdef ENABLE_CLASSIC
     conn->request_role = HCI_ROLE_INVALID;
-    conn->sniff_subrating_max_latency = 0xffff;
+    conn->sniff_subrating_max_latency = 0xFFFFu;
     conn->qos_service_type = HCI_SERVICE_TYPE_INVALID;
     btstack_run_loop_set_timer_handler(&conn->timeout, hci_connection_timeout_handler);
     btstack_run_loop_set_timer_context(&conn->timeout, conn);
@@ -7604,9 +7604,9 @@ static bool hci_run_general_pending_commands(void){
                 return true;
         }
 
-        if (connection->sniff_subrating_max_latency != 0xffff){
+        if (connection->sniff_subrating_max_latency != 0xFFFFu){
             uint16_t max_latency = connection->sniff_subrating_max_latency;
-            connection->sniff_subrating_max_latency = 0;
+            connection->sniff_subrating_max_latency = 0xFFFFu;
             hci_send_cmd(&hci_sniff_subrating, connection->con_handle, max_latency, connection->sniff_subrating_min_remote_timeout, connection->sniff_subrating_min_local_timeout);
             return true;
         }
