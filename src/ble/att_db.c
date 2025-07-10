@@ -1133,12 +1133,12 @@ static uint16_t handle_write_request(att_connection_t * att_connection, uint8_t 
         return setup_error_write_not_permitted(response_buffer, request_type, handle);
     }
     // check security requirements
-    int error_code = att_validate_security(att_connection, ATT_WRITE, &it);
+    uint16_t error_code = (uint16_t) att_validate_security(att_connection, ATT_WRITE, &it);
     if (error_code != 0) {
         return setup_error(response_buffer, request_type, handle, error_code);
     }
     att_persistent_ccc_cache(&it);
-    error_code = (*att_write_callback)(att_connection->con_handle, handle, ATT_TRANSACTION_MODE_NONE, 0u, request_buffer + 3u, request_len - 3u);
+    error_code = (uint16_t)(unsigned int)(*att_write_callback)(att_connection->con_handle, handle, ATT_TRANSACTION_MODE_NONE, 0u, request_buffer + 3u, request_len - 3u);
 
 #ifdef ENABLE_ATT_DELAYED_RESPONSE
     if (error_code == ATT_ERROR_WRITE_RESPONSE_PENDING){
@@ -1654,7 +1654,7 @@ bool gatt_server_get_database_hash(uint8_t * hash) {
         // Find Characteristic declaration for Database Hash
         if ((it.value_len == 5u) && (att_iterator_match_uuid16(&it, GATT_CHARACTERISTICS_UUID))){
             uint16_t characteristic_uuid = little_endian_read_16(it.value, 3);
-            if (characteristic_uuid == ORG_BLUETOOTH_CHARACTERISTIC_DATABASE_HASH){
+            if (characteristic_uuid == (uint16_t) ORG_BLUETOOTH_CHARACTERISTIC_DATABASE_HASH){
                 value_handle = little_endian_read_16(it.value, 1);
             }
         }
