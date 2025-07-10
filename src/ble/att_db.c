@@ -101,7 +101,7 @@ static void att_persistent_ccc_cache(att_iterator_t * it);
 static uint8_t const * att_database = NULL;
 static att_read_callback_t  att_read_callback  = NULL;
 static att_write_callback_t att_write_callback = NULL;
-static int      att_prepare_write_error_code   = 0;
+static uint16_t att_prepare_write_error_code   = 0;
 static uint16_t att_prepare_write_error_handle = 0x0000;
 
 // single cache for att_is_persistent_ccc - stores flags before write callback
@@ -1236,7 +1236,7 @@ static uint16_t handle_execute_write_request(att_connection_t * att_connection, 
     if (request_buffer[1] != 0u) {
         // validate queued write
         if (att_prepare_write_error_code == 0){
-            att_prepare_write_error_code = (*att_write_callback)(att_connection->con_handle, 0, ATT_TRANSACTION_MODE_VALIDATE, 0, NULL, 0);
+            att_prepare_write_error_code = (uint16_t)(unsigned int)(*att_write_callback)(att_connection->con_handle, 0, ATT_TRANSACTION_MODE_VALIDATE, 0, NULL, 0);
         }
 #ifdef ENABLE_ATT_DELAYED_RESPONSE
         if (att_prepare_write_error_code == ATT_ERROR_WRITE_RESPONSE_PENDING){
