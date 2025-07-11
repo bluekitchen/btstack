@@ -1203,7 +1203,7 @@ static void att_server_persistent_ccc_restore(att_server_t * att_server, att_con
     if (!tlv_impl) return;
 
     // validate database hash
-    if ((att_server_flags & ((uint8_t)ATT_SERVER_FLAGS_VALIDATE_DATABASE_HASH)) != 0) {
+    if ((att_server_flags & ((uint8_t)ATT_SERVER_FLAGS_VALIDATE_DATABASE_HASH)) != 0u) {
         att_server_flags &= ((uint8_t)~ATT_SERVER_FLAGS_VALIDATE_DATABASE_HASH);
         if (att_server_persistent_ccc_validate_database(tlv_impl, tlv_context) == false) {
             return;
