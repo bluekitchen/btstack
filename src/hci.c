@@ -2455,13 +2455,8 @@ static bool hci_initializing_event_handler_command_completed(const uint8_t * pac
     return command_completed;
 }
 
-static void hci_initializing_event_handler(const uint8_t * packet, uint16_t size){
-
-    UNUSED(size);   // ok: less than 6 bytes are read from our buffer
-    
-    bool command_completed =  hci_initializing_event_handler_command_completed(packet);
-
 #ifndef HAVE_HOST_CONTROLLER_API
+static void hci_initializing_event_handler_resends(const uint8_t * packet){
 
     // Late response (> 100 ms) for HCI Reset e.g. on Toshiba TC35661:
     // Command complete for HCI Reset arrives after we've resent the HCI Reset command
@@ -2475,9 +2470,8 @@ static void hci_initializing_event_handler(const uint8_t * packet, uint16_t size
     // hang...
     //
     // Fix: Command Complete for HCI Reset in HCI_INIT_W4_SEND_READ_LOCAL_VERSION_INFORMATION trigger resend
-    if (!command_completed
-            && (hci_event_packet_get_type(packet) == HCI_EVENT_COMMAND_COMPLETE)
-            && (hci_stack->substate == HCI_INIT_W4_SEND_READ_LOCAL_VERSION_INFORMATION)){
+    if ((hci_event_packet_get_type(packet) == HCI_EVENT_COMMAND_COMPLETE)
+        && (hci_stack->substate == HCI_INIT_W4_SEND_READ_LOCAL_VERSION_INFORMATION)){
 
         uint16_t opcode = little_endian_read_16(packet,3);
         if (opcode == hci_reset.opcode){
@@ -2488,15 +2482,27 @@ static void hci_initializing_event_handler(const uint8_t * packet, uint16_t size
 
     // CSR & H5
     // Fix: Command Complete for HCI Reset in HCI_INIT_W4_SEND_READ_LOCAL_VERSION_INFORMATION trigger resend
-    if (!command_completed
-            && (hci_event_packet_get_type(packet) == HCI_EVENT_COMMAND_COMPLETE)
-            && (hci_stack->substate == HCI_INIT_W4_READ_LOCAL_SUPPORTED_COMMANDS)){
+    if ((hci_event_packet_get_type(packet) == HCI_EVENT_COMMAND_COMPLETE)
+        && (hci_stack->substate == HCI_INIT_W4_READ_LOCAL_SUPPORTED_COMMANDS)){
 
         uint16_t opcode = little_endian_read_16(packet,3);
         if (opcode == hci_reset.opcode){
             hci_stack->substate = HCI_INIT_READ_LOCAL_SUPPORTED_COMMANDS;
             return;
         }
+    }
+}
+#endif
+
+static void hci_initializing_event_handler(const uint8_t * packet, uint16_t size){
+
+    UNUSED(size);   // ok: less than 6 bytes are read from our buffer
+    
+    bool command_completed =  hci_initializing_event_handler_command_completed(packet);
+
+#ifndef HAVE_HOST_CONTROLLER_API
+    if (!command_completed) {
+        hci_initializing_event_handler_resends(packet);
     }
 
     // on CSR with BCSP/H5, the reset resend timeout leads to substate == HCI_INIT_SEND_RESET or HCI_INIT_SEND_RESET_CSR_WARM_BOOT
