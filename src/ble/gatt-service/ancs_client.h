@@ -59,7 +59,7 @@ extern "C" {
 
 void ancs_client_init(void);
 void ancs_client_register_callback(btstack_packet_handler_t callback);
-const char * ancs_client_attribute_name_for_id(int id);
+const char * ancs_client_attribute_name_for_id(uint16_t id);
 
 /* API_END */
 
