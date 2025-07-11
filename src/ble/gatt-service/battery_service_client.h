@@ -60,7 +60,7 @@ extern "C" {
  */
 
 #ifndef MAX_NUM_BATTERY_SERVICES
-#define MAX_NUM_BATTERY_SERVICES 3
+#define MAX_NUM_BATTERY_SERVICES 3u
 #endif
 
 #if MAX_NUM_BATTERY_SERVICES > 8
