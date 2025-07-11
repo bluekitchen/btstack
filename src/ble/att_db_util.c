@@ -240,7 +240,7 @@ uint16_t att_db_util_add_included_service_uuid16(uint16_t start_group_handle, ui
 static void att_db_util_add_client_characteristic_configuration(uint16_t flags){
 	uint8_t buffer[2];
 	// drop permission for read (0xc00), keep write permissions (0x0091)
-	uint16_t flags_to_store = (flags & 0x1f391u) | (uint16_t)ATT_PROPERTY_READ | (uint16_t)ATT_PROPERTY_WRITE | (uint16_t)ATT_PROPERTY_DYNAMIC;
+	uint16_t flags_to_store = (flags & 0x1f391u) | ATT_PROPERTY_READ | ATT_PROPERTY_WRITE | ATT_PROPERTY_DYNAMIC;
 	little_endian_store_16(buffer, 0, 0); 
 	att_db_util_add_attribute_uuid16(GATT_CLIENT_CHARACTERISTICS_CONFIGURATION, flags_to_store, buffer, 2);
 }
@@ -292,7 +292,7 @@ uint16_t att_db_util_add_characteristic_uuid16(uint16_t uuid16, uint16_t propert
 	uint16_t flags = att_db_util_encode_permissions(properties, read_permission, write_permission);	
 	uint16_t value_handle = att_db_next_handle;
 	att_db_util_add_attribute_uuid16(uuid16, flags, data, data_len);
-	if ((properties & (uint8_t)(ATT_PROPERTY_NOTIFY | ATT_PROPERTY_INDICATE)) != 0u){
+	if ((properties & (ATT_PROPERTY_NOTIFY | ATT_PROPERTY_INDICATE)) != 0u){
 		att_db_util_add_client_characteristic_configuration(flags);
 	}
 	return value_handle;
@@ -307,7 +307,7 @@ uint16_t att_db_util_add_characteristic_uuid128(const uint8_t * uuid128, uint16_
 	uint16_t flags = att_db_util_encode_permissions(properties, read_permission, write_permission);	
 	uint16_t value_handle = att_db_next_handle;
 	att_db_util_add_attribute_uuid128(uuid128, flags, data, data_len);
-	if ((properties & (uint8_t)(ATT_PROPERTY_NOTIFY | ATT_PROPERTY_INDICATE)) != 0u){
+	if ((properties & (ATT_PROPERTY_NOTIFY | ATT_PROPERTY_INDICATE)) != 0u){
 		att_db_util_add_client_characteristic_configuration(flags);
 	}
 	return value_handle;
