@@ -7351,7 +7351,7 @@ static bool hci_run_general_pending_commands(void){
 #ifdef ENABLE_CLASSIC
                     case BD_ADDR_TYPE_ACL:
                         log_info("sending hci_create_connection");
-                        hci_send_cmd(&hci_create_connection, connection->address, hci_usable_acl_packet_types(), 0, 0, 0, hci_stack->allow_role_switch);
+                        hci_send_cmd(&hci_create_connection, connection->address, hci_usable_acl_packet_types(), 1, 0, 0, hci_stack->allow_role_switch);
                         break;
 #endif
                     default:
