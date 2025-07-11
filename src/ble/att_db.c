@@ -297,7 +297,7 @@ static void att_prepare_write_update_errors(uint8_t error_code, uint16_t handle)
         return;
     }
     // first ATT_ERROR_INVALID_OFFSET is next
-    if ((error_code == (uint8_t)ATT_ERROR_INVALID_OFFSET) && (att_prepare_write_error_code == 0)){
+    if ((error_code == (uint8_t)ATT_ERROR_INVALID_OFFSET) && (att_prepare_write_error_code == 0u)){
         att_prepare_write_error_code = error_code;
         att_prepare_write_error_handle = handle;
         return;
@@ -1134,7 +1134,7 @@ static uint16_t handle_write_request(att_connection_t * att_connection, uint8_t 
     }
     // check security requirements
     uint16_t error_code = (uint16_t) att_validate_security(att_connection, ATT_WRITE, &it);
-    if (error_code != 0) {
+    if (error_code != 0u) {
         return setup_error(response_buffer, request_type, handle, error_code);
     }
     att_persistent_ccc_cache(&it);
@@ -1146,7 +1146,7 @@ static uint16_t handle_write_request(att_connection_t * att_connection, uint8_t 
     }
 #endif
 
-    if (error_code != 0) {
+    if (error_code != 0u) {
         return setup_error(response_buffer, request_type, handle, error_code);
     }
     response_buffer[0] = (uint8_t)ATT_WRITE_RESPONSE;
@@ -1235,7 +1235,7 @@ static uint16_t handle_execute_write_request(att_connection_t * att_connection, 
 
     if (request_buffer[1] != 0u) {
         // validate queued write
-        if (att_prepare_write_error_code == 0){
+        if (att_prepare_write_error_code == 0u){
             att_prepare_write_error_code = (uint16_t)(unsigned int)(*att_write_callback)(att_connection->con_handle, 0, ATT_TRANSACTION_MODE_VALIDATE, 0, NULL, 0);
         }
 #ifdef ENABLE_ATT_DELAYED_RESPONSE
@@ -1244,7 +1244,7 @@ static uint16_t handle_execute_write_request(att_connection_t * att_connection, 
         }
 #endif
         // deliver queued errors
-        if (att_prepare_write_error_code != 0){
+        if (att_prepare_write_error_code != 0u){
             att_clear_transaction_queue(att_connection);
             uint8_t  error_code = att_prepare_write_error_code;
             uint16_t handle     = att_prepare_write_error_handle;
