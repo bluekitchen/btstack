@@ -642,7 +642,7 @@ static uint16_t handle_read_by_type_request2(att_connection_t * att_connection, 
         }
         
         // skip handles that cannot be read but remember that there has been at least one
-        if ((it.flags & (uint16_t)ATT_PROPERTY_READ) == 0u) {
+        if ((it.flags & ATT_PROPERTY_READ) == 0u) {
             if (first_matching_but_unreadable_handle == 0u) {
                 first_matching_but_unreadable_handle = it.handle;
             }
@@ -753,7 +753,7 @@ static uint16_t handle_read_request2(att_connection_t * att_connection, uint8_t 
     }
     
     // check if handle can be read
-    if ((it.flags & (uint16_t)ATT_PROPERTY_READ) == 0u) {
+    if ((it.flags & ATT_PROPERTY_READ) == 0u) {
         return setup_error_read_not_permitted(response_buffer, request_type, handle);
     }
 
@@ -811,7 +811,7 @@ static uint16_t handle_read_blob_request2(att_connection_t * att_connection, uin
     }
     
     // check if handle can be read
-    if ((it.flags & (uint16_t)ATT_PROPERTY_READ) == 0u) {
+    if ((it.flags & ATT_PROPERTY_READ) == 0u) {
         return setup_error_read_not_permitted(response_buffer, request_type, handle);
     }
 
@@ -896,7 +896,7 @@ static uint16_t handle_read_multiple_request2(att_connection_t * att_connection,
         }
 
         // check if handle can be read
-        if ((it.flags & (uint16_t)ATT_PROPERTY_READ) == 0u) {
+        if ((it.flags & ATT_PROPERTY_READ) == 0u) {
             error_code = (uint8_t)ATT_ERROR_READ_NOT_PERMITTED;
             break;
         }
@@ -1126,10 +1126,10 @@ static uint16_t handle_write_request(att_connection_t * att_connection, uint8_t 
     if (att_write_callback == NULL) {
         return setup_error_write_not_permitted(response_buffer, request_type, handle);
     }
-    if ((it.flags & (uint16_t)ATT_PROPERTY_WRITE) == 0u) {
+    if ((it.flags & ATT_PROPERTY_WRITE) == 0u) {
         return setup_error_write_not_permitted(response_buffer, request_type, handle);
     }
-    if ((it.flags & (uint16_t)ATT_PROPERTY_DYNAMIC) == 0u) {
+    if ((it.flags & ATT_PROPERTY_DYNAMIC) == 0u) {
         return setup_error_write_not_permitted(response_buffer, request_type, handle);
     }
     // check security requirements
@@ -1173,10 +1173,10 @@ static uint16_t handle_prepare_write_request(att_connection_t * att_connection, 
     if (att_find_handle(&it, handle) == false) {
         return setup_error_invalid_handle(response_buffer, request_type, handle);
     }
-    if ((it.flags & (uint16_t)ATT_PROPERTY_WRITE) == 0u) {
+    if ((it.flags & ATT_PROPERTY_WRITE) == 0u) {
         return setup_error_write_not_permitted(response_buffer, request_type, handle);
     }
-    if ((it.flags & (uint16_t)ATT_PROPERTY_DYNAMIC) == 0u) {
+    if ((it.flags & ATT_PROPERTY_DYNAMIC) == 0u) {
         return setup_error_write_not_permitted(response_buffer, request_type, handle);
     }
     // check security requirements
