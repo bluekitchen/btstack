@@ -142,7 +142,7 @@ static void ancs_chunk_parser_init(void){
     ancs_bytes_needed = 6;
 }
 
-const char * ancs_client_attribute_name_for_id(int id){
+const char * ancs_client_attribute_name_for_id(uint16_t id){
     static const char * ancs_attribute_names[] = {
             "AppIdentifier",
             "IDTitle",
@@ -197,7 +197,7 @@ static void ancs_client_handle_notification(uint16_t value_handle, const uint8_t
     log_info("ANCS Notification, value handle %u", value_handle);
 
     if (value_handle == ancs_data_source_characteristic.value_handle){
-        int i;
+        uint16_t i;
         for (i=0;i<value_length;i++) {
             ancs_chunk_parser_handle_byte(value[i]);
         }
