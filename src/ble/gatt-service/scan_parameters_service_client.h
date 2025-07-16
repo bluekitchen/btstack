@@ -122,13 +122,6 @@ uint8_t scan_parameters_service_client_connect(
         uint16_t * sps_cid);
 
 /**
- * @brief Enable notifications
- * @param scan_parameters_cid
- * @return status ERROR_CODE_SUCCESS on success, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if client with con_handle is not found
- */
-uint8_t scan_parameters_service_client_enable_notifications(uint16_t scan_parameters_cid);
-
-/**
  * @brief Disconnect from Scan Parameters Service.
  * @param scan_parameters_cid
  * @return status ERROR_CODE_SUCCESS on success, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if client with con_handle is not found

@@ -82,6 +82,14 @@ typedef enum {
     SPS_CLIENT_CHARACTERISTIC_INDEX_RFU
 } sps_client_characteristic_index_t;
 
+#ifdef ENABLE_TESTING_SUPPORT
+static char * sps_characteristic_names[] = {
+    "SCAN_INTERVAL_WINDOW",
+    "SCAN_REFRESH",
+    "RFU"
+};
+#endif
+
 static void sps_client_add_connection(sps_client_connection_t * connection){
     btstack_linked_list_add(&sps_connections, (btstack_linked_item_t*) connection);
 }
