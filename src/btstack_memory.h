@@ -76,7 +76,6 @@ extern "C" {
 #ifdef ENABLE_BLE
 #include "ble/gatt-service/battery_service_client.h"
 #include "ble/gatt-service/hids_client.h"
-#include "ble/gatt-service/scan_parameters_service_client.h"
 #include "ble/gatt_client.h"
 #include "ble/sm.h"
 #endif
@@ -160,8 +159,6 @@ gatt_client_t * btstack_memory_gatt_client_get(void);
 void   btstack_memory_gatt_client_free(gatt_client_t *gatt_client);
 hids_client_t * btstack_memory_hids_client_get(void);
 void   btstack_memory_hids_client_free(hids_client_t *hids_client);
-sps_client_connection_t * btstack_memory_scan_parameters_service_client_get(void);
-void   btstack_memory_scan_parameters_service_client_free(sps_client_connection_t *scan_parameters_service_client);
 sm_lookup_entry_t * btstack_memory_sm_lookup_entry_get(void);
 void   btstack_memory_sm_lookup_entry_free(sm_lookup_entry_t *sm_lookup_entry);
 whitelist_entry_t * btstack_memory_whitelist_entry_get(void);
