@@ -795,7 +795,7 @@ void gatt_service_client_dump_characteristic_value_handles(const gatt_service_cl
                                                            const char **characteristic_names) {
 #ifdef ENABLE_TESTING_SUPPORT
     uint8_t i;
-    for (i = 0; i < connection->client->characteristics_desc16_num; i++) {
+    for (i = 0; i < connection->client->characteristics_desc_num; i++) {
         printf("0x%04X %s\n", connection->characteristics[i].value_handle, characteristic_names[i]);
     }
 #else
