@@ -100,7 +100,7 @@ static gatt_service_client_connection_t * gatt_service_client_get_connection_for
     return NULL;
 }
 
-static gatt_service_client_connection_t * gatt_service_client_get_connection_for_cid(
+gatt_service_client_connection_t * gatt_service_client_get_connection_for_cid(
         const gatt_service_client_t *client, uint16_t connection_cid){
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, (btstack_linked_list_t *) &client->connections);

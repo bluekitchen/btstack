@@ -311,6 +311,14 @@ void gatt_service_client_dump_characteristic_value_handles(const gatt_service_cl
                                                            const char **characteristic_names);
 
 /**
+ * Return connection for given CID
+ * @param client
+ * @param connection_cid
+ * @return
+ */
+gatt_service_client_connection_t * gatt_service_client_get_connection_for_cid(const gatt_service_client_t *client, uint16_t connection_cid);
+
+/**
  * @brief De-Init
  * @param client
  */
