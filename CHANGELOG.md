@@ -41,6 +41,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - HCI: improve sco send without sco flow control for smaller packets
 - HCI: use page scan repetition mode R1 for classic connections
 - GAP: validate params in gap_set_scan_params
+- SM: derive BR/EDR Link Key from LE LTK before sending DHKey Check
 - L2CAP: return list of unknown options for invalid configuration request
 - HID Host: emit HID_SUBEVENT_INCOMING_CONNECTION if memory allocation fails
 - BTstack HID: remove HID_PROTOCOL_MODE_REPORT_WITH_FALLBACK_TO_BOOT 
