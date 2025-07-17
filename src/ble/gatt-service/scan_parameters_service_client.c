@@ -40,7 +40,6 @@
 #include "btstack_config.h"
 
 #include <stdint.h>
-#include <string.h>
 
 #ifdef ENABLE_TESTING_SUPPORT
 #include <stdio.h>
@@ -48,16 +47,9 @@
 
 #include "scan_parameters_service_client.h"
 
-#include "btstack_memory.h"
-#include "ble/core.h"
-#include "ble/gatt_client.h"
 #include "bluetooth_gatt.h"
 #include "btstack_debug.h"
 #include "btstack_event.h"
-#include "btstack_run_loop.h"
-#include "gap.h"
-
-#include "ble/gatt_service_client.h"
 
 static gatt_service_client_t sps_client;
 static btstack_linked_list_t sps_connections;
@@ -117,20 +109,9 @@ static uint8_t scan_parameters_client_request_send_gatt_query(sps_client_connect
     return status;
 }
 
-static sps_client_connection_t * sps_client_get_connection_for_cid(uint16_t scan_parameters_service_cid){
-    btstack_linked_list_iterator_t it;    
-    btstack_linked_list_iterator_init(&it, &sps_connections);
-    while (btstack_linked_list_iterator_has_next(&it)){
-        sps_client_connection_t * connection = (sps_client_connection_t *)btstack_linked_list_iterator_next(&it);
-        if (connection->basic_connection.cid != scan_parameters_service_cid) continue;
-        return connection;
-    }
-    return NULL;
-}
-
 static void sps_client_run_for_connection(void * context){
     uint16_t connection_id = (hci_con_handle_t)(uintptr_t)context;
-    sps_client_connection_t * connection = sps_client_get_connection_for_cid(connection_id);
+    sps_client_connection_t * connection = (sps_client_connection_t *) gatt_service_client_get_connection_for_cid(&sps_client, connection_id);
 
     btstack_assert(connection != NULL);
 
@@ -170,7 +151,8 @@ static void sps_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
             switch (hci_event_gattservice_meta_get_subevent_code(packet)) {
                 case GATTSERVICE_SUBEVENT_CLIENT_CONNECTED:
                     cid = gattservice_subevent_client_connected_get_cid(packet);
-                    connection = sps_client_get_connection_for_cid(cid);
+                    connection = (sps_client_connection_t *) gatt_service_client_get_connection_for_cid(&sps_client, cid);
+
                     btstack_assert(connection != NULL);
 
 #ifdef ENABLE_TESTING_SUPPORT
@@ -184,7 +166,7 @@ static void sps_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
 
                 case GATTSERVICE_SUBEVENT_CLIENT_DISCONNECTED:
                     cid = gattservice_subevent_client_disconnected_get_cid(packet);
-                    connection = sps_client_get_connection_for_cid(cid);
+                    connection = (sps_client_connection_t *) gatt_service_client_get_connection_for_cid(&sps_client, cid);
                     btstack_assert(connection != NULL);
                     btstack_linked_list_remove(&sps_connections, (btstack_linked_item_t*) connection);
                     sps_client_replace_subevent_id_and_emit(connection->packet_handler, packet, size,
@@ -198,7 +180,7 @@ static void sps_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
 
         case GATT_EVENT_NOTIFICATION:
             cid = gatt_event_notification_get_connection_id(packet);
-            connection = sps_client_get_connection_for_cid(cid);
+            connection = (sps_client_connection_t *) gatt_service_client_get_connection_for_cid(&sps_client, cid);
             btstack_assert(connection != NULL);
             value_handle = gatt_event_notification_get_value_handle(packet);
             if (gatt_service_client_characteristic_index_for_value_handle(&connection->basic_connection, value_handle) != SPS_CLIENT_CHARACTERISTIC_INDEX_SCAN_REFRESH){
@@ -255,7 +237,8 @@ uint8_t scan_parameters_service_client_connect(
 }
 
 uint8_t scan_parameters_service_client_disconnect(uint16_t scan_parameters_service_cid){
-    sps_client_connection_t * connection = sps_client_get_connection_for_cid(scan_parameters_service_cid);
+    sps_client_connection_t * connection = (sps_client_connection_t *) gatt_service_client_get_connection_for_cid(&sps_client, scan_parameters_service_cid);
+
     if (connection == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
