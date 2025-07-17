@@ -319,6 +319,15 @@ void gatt_service_client_dump_characteristic_value_handles(const gatt_service_cl
 gatt_service_client_connection_t * gatt_service_client_get_connection_for_cid(const gatt_service_client_t *client, uint16_t connection_cid);
 
 /**
+ * Substitute subevent ID with the given one, and send the event
+ * @param callback
+ * @param packet
+ * @param size
+ * @param subevent_id
+ */
+void gatt_service_client_replace_subevent_id_and_emit(btstack_packet_handler_t callback, uint8_t * packet, uint16_t size, uint8_t subevent_id);
+
+/**
  * @brief De-Init
  * @param client
  */

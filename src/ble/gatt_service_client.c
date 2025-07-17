@@ -804,6 +804,14 @@ void gatt_service_client_dump_characteristic_value_handles(const gatt_service_cl
 #endif
 }
 
+void gatt_service_client_replace_subevent_id_and_emit(btstack_packet_handler_t callback, uint8_t * packet, uint16_t size, uint8_t subevent_id){
+    UNUSED(size);
+    btstack_assert(callback != NULL);
+    // execute callback
+    packet[2] = subevent_id;
+    (*callback)(HCI_EVENT_PACKET, 0, packet, size);
+}
+
 void gatt_service_client_deinit(void){
     gatt_service_client_service_cid = 0;
     gatt_service_clients = NULL;
