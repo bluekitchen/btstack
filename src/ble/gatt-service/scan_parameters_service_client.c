@@ -90,14 +90,6 @@ static char * sps_characteristic_names[] = {
 };
 #endif
 
-static void sps_client_add_connection(sps_client_connection_t * connection){
-    btstack_linked_list_add(&sps_connections, (btstack_linked_item_t*) connection);
-}
-
-static void sps_client_finalize_connection(sps_client_connection_t * connection){
-    btstack_linked_list_remove(&sps_connections, (btstack_linked_item_t*) connection);
-}
-
 static void sps_client_replace_subevent_id_and_emit(btstack_packet_handler_t callback, uint8_t * packet, uint16_t size, uint8_t subevent_id){
     UNUSED(size);
     btstack_assert(callback != NULL);
@@ -194,7 +186,7 @@ static void sps_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
                     cid = gattservice_subevent_client_disconnected_get_cid(packet);
                     connection = sps_client_get_connection_for_cid(cid);
                     btstack_assert(connection != NULL);
-                    sps_client_finalize_connection(connection);
+                    btstack_linked_list_remove(&sps_connections, (btstack_linked_item_t*) connection);
                     sps_client_replace_subevent_id_and_emit(connection->packet_handler, packet, size,
                                                             GATTSERVICE_SUBEVENT_SCAN_PARAMETERS_SERVICE_DISCONNECTED);
                     break;
@@ -255,7 +247,7 @@ uint8_t scan_parameters_service_client_connect(
                                                                              &sps_connection->characteristics_storage[0],
                                                                              SCAN_PARAMETERS_SERVICE_CLIENT_NUM_CHARACTERISTICS);
     if (status == ERROR_CODE_SUCCESS){
-        sps_client_add_connection(sps_connection);
+        btstack_linked_list_add(&sps_connections, (btstack_linked_item_t*) sps_connection);
         *sps_cid = sps_connection->basic_connection.cid;
     }
 
@@ -267,8 +259,7 @@ uint8_t scan_parameters_service_client_disconnect(uint16_t scan_parameters_servi
     if (connection == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    // finalize connections
-    sps_client_finalize_connection(connection);
+    btstack_linked_list_remove(&sps_connections, (btstack_linked_item_t*) connection);
     return ERROR_CODE_SUCCESS;
 }
 
@@ -279,4 +270,3 @@ void scan_parameters_service_client_init(void){
 
 void scan_parameters_service_client_deinit(void){
 }
-

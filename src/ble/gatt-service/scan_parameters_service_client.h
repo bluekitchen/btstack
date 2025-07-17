@@ -71,7 +71,6 @@ typedef enum {
     SCAN_PARAMETERS_SERVICE_CLIENT_STATE_W2_WRITE_WITHOUT_RESPONSE
 } scan_parameters_service_client_state_t;
 
-
 typedef struct {
     btstack_linked_item_t item;
 
