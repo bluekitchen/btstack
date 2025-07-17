@@ -2649,12 +2649,12 @@ static bool sm_ctkd_from_classic(sm_connection_t * sm_connection){
     }
     return true;
 }
-#endif
 
 static void sm_ctkd_start_from_le(sm_connection_t* connection) {
     bool use_h7 = (sm_pairing_packet_get_auth_req(setup->sm_m_preq) & sm_pairing_packet_get_auth_req(setup->sm_s_pres) & SM_AUTHREQ_CT2) != 0;
     connection->sm_engine_state = use_h7 ? SM_SC_W2_CALCULATE_ILK_USING_H7 : SM_SC_W2_CALCULATE_ILK_USING_H6;
 }
+#endif
 
 static void sm_key_distribution_complete_responder(sm_connection_t * connection){
     connection->sm_engine_state = SM_RESPONDER_IDLE;
