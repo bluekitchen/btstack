@@ -46,7 +46,6 @@
 #endif
 
 #include "scan_parameters_service_client.h"
-
 #include "bluetooth_gatt.h"
 #include "btstack_debug.h"
 #include "btstack_event.h"
@@ -82,22 +81,13 @@ static char * sps_characteristic_names[] = {
 };
 #endif
 
-static void sps_client_replace_subevent_id_and_emit(btstack_packet_handler_t callback, uint8_t * packet, uint16_t size, uint8_t subevent_id){
-    UNUSED(size);
-    btstack_assert(callback != NULL);
-    // execute callback
-    packet[2] = subevent_id;
-    (*callback)(HCI_EVENT_PACKET, 0, packet, size);
-}
-
 static void sps_client_connected(sps_client_connection_t * connection, uint8_t status, uint8_t * packet, uint16_t size) {
     if (status == ERROR_CODE_SUCCESS){
         connection->state = SCAN_PARAMETERS_SERVICE_CLIENT_STATE_READY;
     } else {
         connection->state = SCAN_PARAMETERS_SERVICE_CLIENT_STATE_IDLE;
     }
-    sps_client_replace_subevent_id_and_emit(connection->packet_handler, packet, size,
-                                            GATTSERVICE_SUBEVENT_SCAN_PARAMETERS_SERVICE_CONNECTED);
+    gatt_service_client_replace_subevent_id_and_emit(connection->packet_handler, packet, size, GATTSERVICE_SUBEVENT_SCAN_PARAMETERS_SERVICE_CONNECTED);
 }
 
 static uint8_t scan_parameters_client_request_send_gatt_query(sps_client_connection_t * connection){
@@ -128,7 +118,6 @@ static void sps_client_run_for_connection(void * context){
                     gatt_service_client_get_con_handle(&connection->basic_connection),
                     gatt_service_client_characteristic_value_handle_for_index(&connection->basic_connection, SPS_CLIENT_CHARACTERISTIC_INDEX_SCAN_INTERVAL_WINDOW),
                     4, value);
-
             break;
 
         default:
@@ -152,7 +141,6 @@ static void sps_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
                 case GATTSERVICE_SUBEVENT_CLIENT_CONNECTED:
                     cid = gattservice_subevent_client_connected_get_cid(packet);
                     connection = (sps_client_connection_t *) gatt_service_client_get_connection_for_cid(&sps_client, cid);
-
                     btstack_assert(connection != NULL);
 
 #ifdef ENABLE_TESTING_SUPPORT
@@ -169,8 +157,7 @@ static void sps_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
                     connection = (sps_client_connection_t *) gatt_service_client_get_connection_for_cid(&sps_client, cid);
                     btstack_assert(connection != NULL);
                     btstack_linked_list_remove(&sps_connections, (btstack_linked_item_t*) connection);
-                    sps_client_replace_subevent_id_and_emit(connection->packet_handler, packet, size,
-                                                            GATTSERVICE_SUBEVENT_SCAN_PARAMETERS_SERVICE_DISCONNECTED);
+                    gatt_service_client_replace_subevent_id_and_emit(connection->packet_handler, packet, size, GATTSERVICE_SUBEVENT_SCAN_PARAMETERS_SERVICE_DISCONNECTED);
                     break;
 
                 default:
@@ -209,16 +196,12 @@ void scan_parameters_service_client_set(uint16_t scan_interval, uint16_t scan_wi
     }
 }
 
-uint8_t scan_parameters_service_client_connect(
-        hci_con_handle_t con_handle, btstack_packet_handler_t packet_handler,
-        sps_client_connection_t * sps_connection,
-        uint16_t * sps_cid){
-    
+uint8_t scan_parameters_service_client_connect(hci_con_handle_t con_handle, btstack_packet_handler_t packet_handler,
+        sps_client_connection_t * sps_connection, uint16_t * sps_cid){
     btstack_assert(packet_handler != NULL);
     btstack_assert(sps_connection != NULL);
 
     *sps_cid = 0;
-
     sps_connection->state = SCAN_PARAMETERS_SERVICE_CLIENT_STATE_W4_CONNECTION;
     sps_connection->packet_handler = packet_handler;
 
