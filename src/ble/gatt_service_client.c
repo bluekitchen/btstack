@@ -60,6 +60,7 @@ static btstack_packet_callback_registration_t gatt_service_client_hci_callback_r
 // LE Audio Service Client helper functions
 static void gatt_service_client_finalize_connection(gatt_service_client_t * client, gatt_service_client_connection_t * connection){
     btstack_assert(client != NULL);
+    gatt_client_stop_listening_for_service_characteristic_value_updates(&connection->notification_listener);
     btstack_linked_list_remove(&client->connections, (btstack_linked_item_t*) connection);
 }
 
