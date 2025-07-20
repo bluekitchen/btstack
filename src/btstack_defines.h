@@ -3460,7 +3460,7 @@ typedef SSIZE_T ssize_t;
 #define AVRCP_SUBEVENT_PLAY_STATUS_QUERY                                    0x19u
 
 /**
- * @format 121111
+ * @format 1211JV
  * @param subevent_code
  * @param avrcp_cid
  * @param operation_id

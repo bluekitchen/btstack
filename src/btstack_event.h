@@ -11608,7 +11608,7 @@ static inline uint8_t avrcp_subevent_operation_get_button_pressed(const uint8_t 
  * @brief Get field operands_length from event AVRCP_SUBEVENT_OPERATION
  * @param event packet
  * @return operands_length
- * @note: btstack_type 1
+ * @note: btstack_type J
  */
 static inline uint8_t avrcp_subevent_operation_get_operands_length(const uint8_t * event){
     return event[7];
@@ -11617,10 +11617,10 @@ static inline uint8_t avrcp_subevent_operation_get_operands_length(const uint8_t
  * @brief Get field operand from event AVRCP_SUBEVENT_OPERATION
  * @param event packet
  * @return operand
- * @note: btstack_type 1
+ * @note: btstack_type V
  */
-static inline uint8_t avrcp_subevent_operation_get_operand(const uint8_t * event){
-    return event[8];
+static inline const uint8_t * avrcp_subevent_operation_get_operand(const uint8_t * event){
+    return &event[8];
 }
 
 /**
