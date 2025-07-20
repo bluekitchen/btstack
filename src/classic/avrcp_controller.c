@@ -2124,7 +2124,7 @@ uint8_t avrcp_controller_query_player_application_setting_value_text(uint16_t av
         return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
     }
 
-    if (  ( ((uint16_t)attr_id_values_num) + 2) > sizeof(connection->message_body)){
+    if (  ( ((uint16_t)attr_id_values_num) + 2u) > sizeof(connection->message_body)){
         return ERROR_CODE_CONNECTION_REJECTED_DUE_TO_LIMITED_RESOURCES;
     }
 
