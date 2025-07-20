@@ -95,7 +95,7 @@ avrcp_target_emit_operation(btstack_packet_handler_t callback, uint16_t avrcp_ci
     event[pos++] = operation_id;
     event[pos++] = button_pressed ? 1 : 0;
     event[pos++] = operands_length; 
-    memcmp(&event[pos], operand, operands_length);
+    memcpy(&event[pos], operand, operands_length);
     pos += operands_length;
     (*callback)(HCI_EVENT_PACKET, 0, event, pos);
 }
