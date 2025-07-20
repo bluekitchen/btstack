@@ -379,7 +379,8 @@ typedef enum {
     AVRCP_PLAYER_APPLICATION_SETTING_ATTRIBUTE_ID_EQUALIZER_STATUS,     // 1 - off, 2 - on
     AVRCP_PLAYER_APPLICATION_SETTING_ATTRIBUTE_ID_REPEAT_MODE_STATUS,   // 1 - off, 2 - single track repeat, 3 - all tracks repeat, 4 - group repeat
     AVRCP_PLAYER_APPLICATION_SETTING_ATTRIBUTE_ID_SHUFFLE_STATUS,       // 1 - off, 2 - all tracks shuffle , 3 - group shuffle
-    AVRCP_PLAYER_APPLICATION_SETTING_ATTRIBUTE_ID_SCAN_STATUS           // 1 - off, 2 - all tracks scan    , 3 - group scan
+    AVRCP_PLAYER_APPLICATION_SETTING_ATTRIBUTE_ID_SCAN_STATUS,          // 1 - off, 2 - all tracks scan    , 3 - group scan
+    AVRCP_PLAYER_APPLICATION_SETTING_ATTRIBUTE_ID_RFU
 } avrcp_player_application_setting_attribute_id_t;
 
 typedef enum {
