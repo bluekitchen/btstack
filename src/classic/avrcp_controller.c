@@ -2071,7 +2071,7 @@ uint8_t avrcp_controller_query_shuffle_and_repeat_modes(uint16_t avrcp_cid){
     return ERROR_CODE_SUCCESS;
 }
 
-static uint8_t avrcp_controller_set_current_player_application_setting_value(uint16_t avrcp_cid, uint8_t attr_id, uint8_t attr_value){
+static uint8_t avrcp_controller_set_current_player_application_setting_value(uint16_t avrcp_cid, avrcp_player_application_setting_attribute_id_t attr_id, uint8_t attr_value){
     avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
     if (!connection){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
@@ -2083,9 +2083,9 @@ static uint8_t avrcp_controller_set_current_player_application_setting_value(uin
 
     // Parameter Length
     connection->data_len = 3;
-    connection->data[0]  = 1;
-    connection->data[1]  = attr_id;
-    connection->data[2]  = attr_value;
+    connection->data[0]  = 1;                       // NumPlayerApplicationSettingAttributes
+    connection->data[1]  = (uint8_t) attr_id;       // PlayerApplicationSettingAttributelD
+    connection->data[2]  = attr_value;              // PlayerApplicationSettingValue
 
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
     return ERROR_CODE_SUCCESS;
@@ -2188,12 +2188,12 @@ uint8_t avrcp_controller_inform_battery_status(uint16_t avrcp_cid, avrcp_battery
 
 uint8_t avrcp_controller_set_shuffle_mode(uint16_t avrcp_cid, avrcp_shuffle_mode_t mode){
     if ((mode < AVRCP_SHUFFLE_MODE_OFF) || (mode > AVRCP_SHUFFLE_MODE_GROUP)) return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
-    return avrcp_controller_set_current_player_application_setting_value(avrcp_cid, 0x03, mode);
+    return avrcp_controller_set_current_player_application_setting_value(avrcp_cid, AVRCP_PLAYER_APPLICATION_SETTING_ATTRIBUTE_ID_SHUFFLE_STATUS, (uint8_t) mode);
 }
 
 uint8_t avrcp_controller_set_repeat_mode(uint16_t avrcp_cid, avrcp_repeat_mode_t mode){
     if ((mode < AVRCP_REPEAT_MODE_OFF) || (mode > AVRCP_REPEAT_MODE_GROUP)) return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
-    return avrcp_controller_set_current_player_application_setting_value(avrcp_cid, 0x02, mode);
+    return avrcp_controller_set_current_player_application_setting_value(avrcp_cid, AVRCP_PLAYER_APPLICATION_SETTING_ATTRIBUTE_ID_REPEAT_MODE_STATUS, (uint8_t) mode);
 }
 
 uint8_t avrcp_controller_play_item_for_scope(uint16_t avrcp_cid, uint8_t * uid, uint16_t uid_counter, avrcp_browsing_scope_t scope){
