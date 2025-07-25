@@ -12572,6 +12572,34 @@ static inline const uint8_t * avrcp_subevent_add_to_now_playing_get_item_id(cons
 }
 
 /**
+ * @brief Get field avrcp_cid from event AVRCP_SUBEVENT_PLAYER_APPLICATION_SETTING_ATTRIBUTES_LIST
+ * @param event packet
+ * @return avrcp_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t avrcp_subevent_player_application_setting_attributes_list_get_avrcp_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field num_attributes from event AVRCP_SUBEVENT_PLAYER_APPLICATION_SETTING_ATTRIBUTES_LIST
+ * @param event packet
+ * @return num_attributes
+ * @note: btstack_type J
+ */
+static inline uint8_t avrcp_subevent_player_application_setting_attributes_list_get_num_attributes(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field attributes from event AVRCP_SUBEVENT_PLAYER_APPLICATION_SETTING_ATTRIBUTES_LIST
+ * @param event packet
+ * @return attributes
+ * @note: btstack_type V
+ */
+static inline const uint8_t * avrcp_subevent_player_application_setting_attributes_list_get_attributes(const uint8_t * event){
+    return &event[6];
+}
+
+/**
  * @brief Get field goep_cid from event GOEP_SUBEVENT_INCOMING_CONNECTION
  * @param event packet
  * @return goep_cid

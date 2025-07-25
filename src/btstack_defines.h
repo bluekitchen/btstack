@@ -3753,6 +3753,15 @@ typedef SSIZE_T ssize_t;
 #define AVRCP_SUBEVENT_ADD_TO_NOW_PLAYING                                              0x44u
 
 /**
+ * @format 12JV
+ * @param subevent_code
+ * @param avrcp_cid
+ * @param num_attributes
+ * @param attributes
+ */
+#define AVRCP_SUBEVENT_PLAYER_APPLICATION_SETTING_ATTRIBUTES_LIST            0x45u
+
+/**
  * @format 12BH
  * @param subevent_code
  * @param goep_cid
