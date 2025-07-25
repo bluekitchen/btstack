@@ -2083,7 +2083,7 @@ static uint8_t avrcp_controller_set_current_player_application_setting_value(uin
 
     // Parameter Length
     connection->data_len = 3;
-    connection->data[0]  = 2;
+    connection->data[0]  = 1;
     connection->data[1]  = attr_id;
     connection->data[2]  = attr_value;
 
