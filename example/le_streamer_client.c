@@ -379,8 +379,8 @@ static void le_streamer_client_connection_and_notification_handler(uint8_t packe
                 break;
             default:
                 break;
-            }
         }
+    }
 
     if (hci_event_packet_get_type(packet) == GATT_EVENT_NOTIFICATION) {
         uint16_t cid = gatt_event_notification_get_connection_id(packet);
