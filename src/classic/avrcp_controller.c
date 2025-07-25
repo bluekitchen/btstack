@@ -1080,13 +1080,23 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                 }
                 
                 case AVRCP_PDU_ID_LIST_PLAYER_APPLICATION_SETTING_ATTRIBUTES:{
-                    uint8_t num_attributes = packet[pos++];
-                    int i;
-                    for (i = 0; i < num_attributes; i++){
-                        avrcp_player_application_setting_attribute_id_t attribute_id = (avrcp_player_application_setting_attribute_id_t)packet[pos++];
-                        log_info("TODO send event: attribute_id %d", attribute_id);
-                        UNUSED(attribute_id);
+                    uint8_t max_num_attributes = (uint8_t)AVRCP_PLAYER_APPLICATION_SETTING_ATTRIBUTE_ID_RFU - 1u;
+                    uint8_t num_attributes = (uint8_t)btstack_min(packet[pos++], max_num_attributes);
+
+                    uint16_t offset = 0;
+                    uint8_t event[5 + 1 + (uint8_t)AVRCP_PLAYER_APPLICATION_SETTING_ATTRIBUTE_ID_RFU - 1];
+
+                    event[offset++] = HCI_EVENT_AVRCP_META;
+                    event[offset++] = sizeof(event) - 2;
+                    event[offset++] = AVRCP_SUBEVENT_PLAYER_APPLICATION_SETTING_ATTRIBUTES_LIST;
+                    little_endian_store_16(event, offset, connection->avrcp_cid);
+                    offset += 2;
+                    event[offset++] = num_attributes;
+                    if (num_attributes > 0){
+                        memcpy(&event[offset], &packet[pos], num_attributes);
+                        offset += num_attributes;
                     }
+                    (*avrcp_controller_context.avrcp_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
                     break;
                 }
 
