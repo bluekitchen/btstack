@@ -56,7 +56,7 @@ header = '''
 #if __cplusplus >= 200704L
 constexpr
 #endif
-const uint8_t profile_data[] =
+static const uint8_t profile_data[] =
 '''
 
 print('''
