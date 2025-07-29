@@ -402,9 +402,9 @@ uint8_t avrcp_browsing_target_send_get_folder_items_response(uint16_t avrcp_brow
 
     uint16_t pos = 0;
     connection->cmd_operands[pos++] = AVRCP_PDU_ID_GET_FOLDER_ITEMS;
-    uint8_t param_length = 5;
     uint8_t param_length_pos = pos;
     pos += 2;
+    uint16_t param_length = 5;
 
     avrcp_status_code_t status = AVRCP_STATUS_SUCCESS;
     uint8_t status_pos = pos;
@@ -421,25 +421,25 @@ uint8_t avrcp_browsing_target_send_get_folder_items_response(uint16_t avrcp_brow
         return 1;
     }
 
-    uint16_t items_byte_len = 0;
+    uint16_t num_items_to_send = 0;
     if (connection->start_item < num_items) {
         if (connection->end_item < num_items) {
-            items_byte_len =  connection->end_item - connection->start_item + 1;
+            num_items_to_send = connection->end_item - connection->start_item + 1;
         } else {
-            items_byte_len = num_items - connection->start_item;
+            num_items_to_send = num_items - connection->start_item;
         }
 
     } else {
         big_endian_store_16(connection->cmd_operands, pos, 0);
         pos += 2;
     }
-    big_endian_store_16(connection->cmd_operands, pos, items_byte_len);
+    big_endian_store_16(connection->cmd_operands, pos, num_items_to_send);
     pos += 2;
-    param_length += items_byte_len;
 
-    if (items_byte_len > 0){
+    if (num_items_to_send > 0){
         (void)memcpy(&connection->cmd_operands[pos], attr_list, attr_list_size);
         pos += attr_list_size;
+        param_length += attr_list_size;
         connection->cmd_operands_length = pos;
     } else {
         status = AVRCP_STATUS_RANGE_OUT_OF_BOUNDS;
@@ -451,7 +451,6 @@ uint8_t avrcp_browsing_target_send_get_folder_items_response(uint16_t avrcp_brow
     connection->cmd_operands[status_pos] = status;
 
     btstack_assert(pos <= 400);
-
 
     connection->state = AVCTP_W2_SEND_RESPONSE;
     avrcp_browsing_request_can_send_now(connection, connection->l2cap_browsing_cid);
