@@ -50,6 +50,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - HFP HF: notify all connected AGs on HF indicator change in hfp_hf_set_hf_indicator
 - esp32: rework build to avoid copy of btstack files into esp-idf components folder
 - AVRCP Controller: avrcp_controller_query_player_application_setting_value_text queries subset of attribute values
+- AVRCP Controller: avrcp_controller_query_player_application_setting_attribute_text queries subset of attribute ids
 
 ## Release v1.6.2
 

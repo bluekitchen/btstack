@@ -2110,23 +2110,23 @@ static uint8_t avrcp_controller_set_current_player_application_setting_value(uin
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t avrcp_controller_query_player_application_setting_attribute_text(uint16_t avrcp_cid){
+uint8_t avrcp_controller_query_player_application_setting_attribute_text(uint16_t avrcp_cid, uint8_t attr_ids_num, uint8_t * attr_ids){
     avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
     if (!connection){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     if (connection->state != AVCTP_CONNECTION_OPENED) return ERROR_CODE_COMMAND_DISALLOWED;
-    
+    if ((((uint16_t)attr_ids_num) + 2u) > sizeof(connection->message_body)){
+        return ERROR_CODE_CONNECTION_REJECTED_DUE_TO_LIMITED_RESOURCES;
+    }
+
     connection->state = AVCTP_W2_SEND_COMMAND;
     avrcp_controller_vendor_dependent_command_data_init(connection, AVRCP_CTYPE_STATUS, AVRCP_PDU_ID_GET_PLAYER_APPLICATION_SETTING_ATTRIBUTE_TEXT, true);
 
-    connection->data_len = 5;
-    connection->data[0] = 4;                     // NumPlayerApplicationSettingAttributeID
+    connection->data_len = 1 + attr_ids_num;
+    connection->data[0] = attr_ids_num;                     // NumPlayerApplicationSettingAttributeID
     // PlayerApplicationSettingAttributeID1 AVRCP Spec, Appendix F, 133
-    connection->data[1] = 0x01;   // equalizer  (1-OFF, 2-ON)
-    connection->data[2] = 0x02;   // repeat     (1-off, 2-single track, 3-all tracks, 4-group repeat)
-    connection->data[3] = 0x03;   // shuffle    (1-off, 2-all tracks, 3-group shuffle)
-    connection->data[4] = 0x04;   // scan       (1-off, 2-all tracks, 3-group scan)
+    memcpy(&connection->data[2], attr_ids, attr_ids_num);
 
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
     return ERROR_CODE_SUCCESS;
@@ -2143,7 +2143,7 @@ uint8_t avrcp_controller_query_player_application_setting_value_text(uint16_t av
         return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
     }
 
-    if (  ( ((uint16_t)attr_id_values_num) + 2u) > sizeof(connection->message_body)){
+    if ((((uint16_t)attr_id_values_num) + 2u) > sizeof(connection->message_body)){
         return ERROR_CODE_CONNECTION_REJECTED_DUE_TO_LIMITED_RESOURCES;
     }
 

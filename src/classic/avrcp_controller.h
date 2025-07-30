@@ -366,7 +366,7 @@ uint8_t avrcp_controller_skip(uint16_t avrcp_cid);
 uint8_t avrcp_controller_query_player_application_setting_attributes(uint16_t avrcp_cid);
 uint8_t avrcp_controller_query_player_application_setting_values(uint16_t avrcp_cid, avrcp_player_application_setting_attribute_id_t attribute_id);
 
-uint8_t avrcp_controller_query_player_application_setting_attribute_text(uint16_t avrcp_cid);
+uint8_t avrcp_controller_query_player_application_setting_attribute_text(uint16_t avrcp_cid, uint8_t attr_ids_num, uint8_t * attr_ids);
 uint8_t avrcp_controller_query_player_application_setting_value_text(uint16_t avrcp_cid, avrcp_player_application_setting_attribute_id_t attr_id, uint8_t attr_id_values_num, uint8_t * attr_id_values);
 
 uint8_t avrcp_controller_inform_displayable_characterset(uint16_t avrcp_cid, uint8_t character_set_num, uint16_t * character_set);
