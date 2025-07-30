@@ -3759,7 +3759,17 @@ typedef SSIZE_T ssize_t;
  * @param num_attributes
  * @param attributes
  */
-#define AVRCP_SUBEVENT_PLAYER_APPLICATION_SETTING_ATTRIBUTES_LIST            0x45u
+#define AVRCP_SUBEVENT_PLAYER_APPLICATION_SETTING_ATTRIBUTES_LIST                       0x45u
+
+/**
+ * @format 121JV
+ * @param subevent_code
+ * @param avrcp_cid
+ * @param attribute
+ * @param num_values
+ * @param values
+ */
+#define AVRCP_SUBEVENT_PLAYER_APPLICATION_SETTING_VALUES_LIST                           0x46u
 
 /**
  * @format 12BH
