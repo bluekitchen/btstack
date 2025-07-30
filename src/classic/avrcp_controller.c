@@ -1096,18 +1096,27 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                         memcpy(&event[offset], &packet[pos], num_attributes);
                         offset += num_attributes;
                     }
-                    (*avrcp_controller_context.avrcp_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+                    (*avrcp_controller_context.avrcp_callback)(HCI_EVENT_PACKET, 0, event, offset);
                     break;
                 }
 
                 case AVRCP_PDU_ID_LIST_PLAYER_APPLICATION_SETTING_VALUES:{
-                    uint8_t num_setting_values = packet[pos++];
-                    int i;
-                    for (i = 0; i < num_setting_values; i++){
-                        uint8_t value = packet[pos++];
-                        log_info("TODO send event: value %d", value);
-                        UNUSED(value);
+                    uint8_t num_setting_values = (uint8_t)btstack_min(packet[pos++], AVRCP_PLAYER_APPLICATION_SETTING_ATTRIBUTE_MAX_NUM_VALUES);
+                    uint16_t offset = 0;
+                    uint8_t event[5 + 2 + AVRCP_PLAYER_APPLICATION_SETTING_ATTRIBUTE_MAX_NUM_VALUES];
+
+                    event[offset++] = HCI_EVENT_AVRCP_META;
+                    event[offset++] = sizeof(event) - 2;
+                    event[offset++] = AVRCP_SUBEVENT_PLAYER_APPLICATION_SETTING_VALUES_LIST;
+                    little_endian_store_16(event, offset, connection->avrcp_cid);
+                    offset += 2;
+                    event[offset++] = connection->data[0];
+                    event[offset++] = num_setting_values;
+                    if (num_setting_values > 0){
+                        memcpy(&event[offset], &packet[pos], num_setting_values);
+                        offset += num_setting_values;
                     }
+                    (*avrcp_controller_context.avrcp_callback)(HCI_EVENT_PACKET, 0, event, offset);
                     break;
                 }
 
