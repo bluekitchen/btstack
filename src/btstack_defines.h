@@ -3790,7 +3790,7 @@ typedef SSIZE_T ssize_t;
  * @param avrcp_cid
  * @param attribute_id
  * @param num_values
- * @param values_index
+ * @param value_index
  * @param value_id
  * @param character_set_id
  * @param value_name_len

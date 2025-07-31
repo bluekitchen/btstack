@@ -12728,12 +12728,12 @@ static inline uint8_t avrcp_subevent_player_application_setting_values_names_lis
     return event[6];
 }
 /**
- * @brief Get field values_index from event AVRCP_SUBEVENT_PLAYER_APPLICATION_SETTING_VALUES_NAMES_LIST
+ * @brief Get field value_index from event AVRCP_SUBEVENT_PLAYER_APPLICATION_SETTING_VALUES_NAMES_LIST
  * @param event packet
- * @return values_index
+ * @return value_index
  * @note: btstack_type 1
  */
-static inline uint8_t avrcp_subevent_player_application_setting_values_names_list_get_values_index(const uint8_t * event){
+static inline uint8_t avrcp_subevent_player_application_setting_values_names_list_get_value_index(const uint8_t * event){
     return event[7];
 }
 /**
