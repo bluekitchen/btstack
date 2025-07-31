@@ -74,7 +74,7 @@ typedef enum {
 } sps_client_characteristic_index_t;
 
 #ifdef ENABLE_TESTING_SUPPORT
-static char * sps_characteristic_names[] = {
+static const char * sps_characteristic_names[] = {
     "SCAN_INTERVAL_WINDOW",
     "SCAN_REFRESH",
     "RFU"
@@ -144,8 +144,7 @@ static void sps_client_packet_handler_internal(uint8_t packet_type, uint16_t cha
                     btstack_assert(connection != NULL);
 
 #ifdef ENABLE_TESTING_SUPPORT
-                    gatt_service_client_dump_characteristic_value_handles(&connection->basic_connection,
-                                                                          sps_characteristic_names);
+                    gatt_service_client_dump_characteristic_value_handles(&connection->basic_connection, sps_characteristic_names);
 #endif
                     status = gattservice_subevent_client_connected_get_status(packet);
                     sps_client_connected(connection, status, packet, size);
