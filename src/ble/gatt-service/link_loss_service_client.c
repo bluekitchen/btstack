@@ -356,7 +356,7 @@ static void lls_client_run_for_connection(void * context){
 }
 
 void link_loss_service_client_init(void){
-    gatt_service_client_register_client(&lls_client, &lls_client_packet_handler_internal, lls_uuid16s, sizeof(lls_uuid16s)/sizeof(uint16_t));
+    gatt_service_client_register_client_with_uuid16s(&lls_client, &lls_client_packet_handler_internal, lls_uuid16s, sizeof(lls_uuid16s)/sizeof(uint16_t));
 
     lls_client_handle_can_send_now.callback = &lls_client_run_for_connection;
 }

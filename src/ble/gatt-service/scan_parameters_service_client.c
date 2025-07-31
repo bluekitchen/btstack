@@ -230,7 +230,7 @@ uint8_t scan_parameters_service_client_disconnect(uint16_t scan_parameters_servi
 }
 
 void scan_parameters_service_client_init(void){
-    gatt_service_client_register_client(&sps_client, &sps_client_packet_handler_internal, sps_uuid16s, sizeof(sps_uuid16s)/sizeof(uint16_t));
+    gatt_service_client_register_client_with_uuid16s(&sps_client, &sps_client_packet_handler_internal, sps_uuid16s, sizeof(sps_uuid16s)/sizeof(uint16_t));
     sps_client_handle_can_send_now.callback = &sps_client_run_for_connection;
 }
 
