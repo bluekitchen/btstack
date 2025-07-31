@@ -548,11 +548,20 @@ static void hci_pairing_complete(hci_connection_t * hci_connection, uint8_t stat
     event[10] = status;
     hci_emit_btstack_event(event, sizeof(event), 1);
 
-    // emit dedicated bonding done on failure, otherwise verify that connection can be encrypted
-    if ((status != ERROR_CODE_SUCCESS) && ((hci_connection->bonding_flags & BONDING_DEDICATED) != 0)){
+    // handle dedicated bonding done
+    if ((hci_connection->bonding_flags & BONDING_DEDICATED) != 0){
         hci_connection->bonding_flags &= ~BONDING_DEDICATED;
-        hci_connection->bonding_flags |= BONDING_DISCONNECT_DEDICATED_DONE;
         hci_connection->bonding_status = status;
+#ifdef ENABLE_EXPLICIT_DEDICATED_BONDING_DISCONNECT
+        if (status == ERROR_CODE_SUCCESS) {
+            // emit dedicated bonding complete, don't disconnect
+            hci_emit_dedicated_bonding_result(conn->address, conn->bonding_status);
+        } else {
+#endif
+        {
+            // request disconnect, event is emitted after disconnect
+            hci_connection->bonding_flags |= BONDING_DISCONNECT_DEDICATED_DONE;
+        }
     }
 }
 
@@ -2753,18 +2762,6 @@ static void hci_handle_mutual_authentication_completed(hci_connection_t * conn){
     gap_security_level_t security_level = gap_security_level_for_connection(conn);
     hci_emit_security_level(conn->con_handle, security_level);
 
-    // dedicated bonding
-    if ((conn->bonding_flags & BONDING_DEDICATED) != 0){
-        conn->bonding_flags &= ~BONDING_DEDICATED;
-        conn->bonding_status = security_level == 0 ? ERROR_CODE_INSUFFICIENT_SECURITY : ERROR_CODE_SUCCESS;
-#ifdef ENABLE_EXPLICIT_DEDICATED_BONDING_DISCONNECT
-        // emit dedicated bonding complete, don't disconnect
-        hci_emit_dedicated_bonding_result(conn->address, conn->bonding_status);
-#else
-        // request disconnect, event is emitted after disconnect
-        conn->bonding_flags |= BONDING_DISCONNECT_DEDICATED_DONE;
-#endif
-    }
 }
 
 static void hci_handle_read_encryption_key_size_complete(hci_connection_t * conn, uint8_t encryption_key_size) {
