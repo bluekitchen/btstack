@@ -61,8 +61,8 @@
 typedef struct {
     btstack_linked_item_t item;
     gatt_service_client_connection_t basic_connection;
-    btstack_packet_handler_t packet_handler;
     gatt_service_client_characteristic_t characteristics_storage[LE_STREAMER_SERVICE_CLIENT_NUM_CHARACTERISTICS];
+    btstack_context_callback_registration_t write_without_response_request;
 
     char name;
     int le_notification_enabled;
@@ -71,7 +71,6 @@ typedef struct {
     uint16_t test_data_len;
     uint32_t test_data_sent;
     uint32_t test_data_start;
-    btstack_context_callback_registration_t write_without_response_request;
 } le_streamer_client_connection_t;
 
 typedef enum {
@@ -282,35 +281,28 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
         case HCI_EVENT_META_GAP:
             switch (hci_event_gap_meta_get_subevent_code(packet)) {
                 case GAP_SUBEVENT_LE_CONNECTION_COMPLETE:
-                    switch (hci_event_gap_meta_get_subevent_code(packet)) {
-                        case GAP_SUBEVENT_LE_CONNECTION_COMPLETE:
-                            if (state != TC_W4_CONNECT) return;
-                            connection_handle = gap_subevent_le_connection_complete_get_connection_handle(packet);
-                            // print connection parameters (without using float operations)
-                            conn_interval = gap_subevent_le_connection_complete_get_conn_interval(packet);
-                            printf("Connection Interval: %u.%02u ms\n", conn_interval * 125 / 100, 25 * (conn_interval & 3));
-                            printf("Connection Latency: %u\n", gap_subevent_le_connection_complete_get_conn_latency(packet));
-                            // initialize gatt client context with handle, and add it to the list of active clients
-                            // query primary services
-                            printf("Search for LE Streamer service .\n");
-                            state = TC_W4_SERVICE_CONNECTED;
-                            le_streamer_connection_storage.basic_connection.cid = 0;
-                            le_streamer_connection_storage.packet_handler = le_streamer_client_connection_and_notification_handler;
-                            status = gatt_service_client_connect_primary_service_with_uuid128(connection_handle, &le_streamer_client, &le_streamer_connection_storage.basic_connection,
-                                                                                                      &LE_STREAMER_SERVICE_UUID, &le_streamer_connection_storage.characteristics_storage[0],
-                                                                                                      LE_STREAMER_SERVICE_CLIENT_NUM_CHARACTERISTICS);
-                            if (status != ERROR_CODE_SUCCESS){
-                                state = TC_OFF;
-                                gap_disconnect(connection_handle);
-                                printf("GATT Service Client connection failed %02x\n", status);
-                            } else {
-                                printf("GATT Service Client discovery process started\n");
-                            }
-                            break;
-                        default:
-                            break;
+                    if (state != TC_W4_CONNECT) return;
+                    connection_handle = gap_subevent_le_connection_complete_get_connection_handle(packet);
+                    // print connection parameters (without using float operations)
+                    conn_interval = gap_subevent_le_connection_complete_get_conn_interval(packet);
+                    printf("Connection Interval: %u.%02u ms\n", conn_interval * 125 / 100, 25 * (conn_interval & 3));
+                    printf("Connection Latency: %u\n", gap_subevent_le_connection_complete_get_conn_latency(packet));
+                    // initialize gatt client context with handle, and add it to the list of active clients
+                    // query primary services
+                    printf("Search for LE Streamer service .\n");
+                    state = TC_W4_SERVICE_CONNECTED;
+                    status = gatt_service_client_connect_primary_service_with_uuid128(connection_handle, &le_streamer_client, &le_streamer_connection_storage.basic_connection,
+                                                                                              &LE_STREAMER_SERVICE_UUID, &le_streamer_connection_storage.characteristics_storage[0],
+                                                                                              LE_STREAMER_SERVICE_CLIENT_NUM_CHARACTERISTICS);
+                    if (status != ERROR_CODE_SUCCESS){
+                        state = TC_OFF;
+                        gap_disconnect(connection_handle);
+                        printf("GATT Service Client connection failed %02x\n", status);
+                    } else {
+                        printf("GATT Service Client discovery process started\n");
                     }
                     break;
+
                 default:
                     break;
             }
