@@ -620,7 +620,7 @@ void gatt_service_client_init(void){
     }
 }
 
-void gatt_service_client_register_client(gatt_service_client_t *client, btstack_packet_handler_t packet_handler,
+void gatt_service_client_register_client_with_uuid16s(gatt_service_client_t *client, btstack_packet_handler_t packet_handler,
                                          const uint16_t *characteristic_uuid16s, uint16_t characteristic_uuid16s_num) {
 
     btstack_assert(gatt_service_client_intitialized);
@@ -635,7 +635,7 @@ void gatt_service_client_register_client(gatt_service_client_t *client, btstack_
     btstack_linked_list_add(&gatt_service_clients, &client->item);
 }
 
-void gatt_service_client_register_client_uuid128(gatt_service_client_t *client, btstack_packet_handler_t packet_handler,
+void gatt_service_client_register_client_with_uuid128s(gatt_service_client_t *client, btstack_packet_handler_t packet_handler,
                                                  const uuid128_t *characteristic_uuid128s, uint16_t characteristic_uuid128s_num){
 
     btstack_assert(gatt_service_client_intitialized);

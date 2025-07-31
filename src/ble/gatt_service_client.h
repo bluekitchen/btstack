@@ -131,22 +131,22 @@ void gatt_service_client_init(void);
 /**
  * @brief Register new GATT Service Client with list of Characteristic UUID16s
  * @param client
+ * @param connection_and_notification_handler packet handler that receives events: GATT_EVENT_NOTIFICATION, GATT_EVENT_IDENTIFICATION and two HCI_EVENT_GATTSERVICE_META subevents: GATTSERVICE_SUBEVENT_CLIENT_CONNECTED/DISCONNECTED
  * @param characteristic_uuid16s
  * @param characteristic_uuid16s_num
- * @param trampoline_packet_handler packet handler that calls gatt_service_client_trampoline_packet_handler with client
  */
-void gatt_service_client_register_client(gatt_service_client_t *client, btstack_packet_handler_t packet_handler,
+void gatt_service_client_register_client_with_uuid16s(gatt_service_client_t *client, btstack_packet_handler_t connection_and_notification_handler,
                                          const uint16_t *characteristic_uuid16s, uint16_t characteristic_uuid16s_num);
 
 /**
- * @brief Register new GATT Service Client with list of Characteristic UUID16s
+ * @brief Register new GATT Service Client with list of Characteristic UUID128s
  * @param client
- * @param characteristic_uuid16s
- * @param characteristic_uuid16s_num
- * @param trampoline_packet_handler packet handler that calls gatt_service_client_trampoline_packet_handler with client
+ * @param connection_and_notification_handler packet handler that receives events: GATT_EVENT_NOTIFICATION, GATT_EVENT_IDENTIFICATION and two HCI_EVENT_GATTSERVICE_META subevents: GATTSERVICE_SUBEVENT_CLIENT_CONNECTED/DISCONNECTED
+ * @param characteristic_uuid128s
+ * @param characteristic_uuid128s_num
  */
 
-void gatt_service_client_register_client_uuid128(gatt_service_client_t *client, btstack_packet_handler_t packet_handler,
+void gatt_service_client_register_client_with_uuid128s(gatt_service_client_t *client, btstack_packet_handler_t packet_handler,
                                          const uuid128_t *characteristic_uuid128s, uint16_t characteristic_uuid128s_num);
 
 /**
@@ -168,13 +168,13 @@ uint16_t gatt_service_client_characteristic_uuid16_for_index(const gatt_service_
 const uuid128_t * gatt_service_client_characteristic_uuid128_for_index(const gatt_service_client_t * client, uint8_t characteristic_index);
 
 /**
- * @bbreif Unregister GATT Service Client
+ * @brief Unregister GATT Service Client
  * @param client
  */
 void gatt_service_client_unregister_client(gatt_service_client_t * client);
 
 /**
- * @brief Connect to the n-th instance of Primary GATT Service with UUID16
+ * @brief Connect to the first instance of Primary GATT Service with UUID16
  *
  * @param con_handle
  * @param client
