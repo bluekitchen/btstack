@@ -424,7 +424,7 @@ int btstack_main(int argc, const char * argv[]){
     // sm_init needed before gatt_client_init
     gatt_client_init();
     gatt_service_client_init();
-    gatt_service_client_register_client_uuid128(&le_streamer_client, &le_streamer_client_connection_and_notification_handler, &le_streamer_uuid128s[0], LE_STREAMER_SERVICE_CLIENT_NUM_CHARACTERISTICS);
+    gatt_service_client_register_client_with_uuid128s(&le_streamer_client, &le_streamer_client_connection_and_notification_handler, &le_streamer_uuid128s[0], LE_STREAMER_SERVICE_CLIENT_NUM_CHARACTERISTICS);
 
     hci_event_callback_registration.callback = &hci_event_handler;
     hci_add_event_handler(&hci_event_callback_registration);
