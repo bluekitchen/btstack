@@ -12590,12 +12590,12 @@ static inline uint8_t avrcp_subevent_player_application_setting_attributes_list_
     return event[5];
 }
 /**
- * @brief Get field attributes from event AVRCP_SUBEVENT_PLAYER_APPLICATION_SETTING_ATTRIBUTES_LIST
+ * @brief Get field attributes_ids from event AVRCP_SUBEVENT_PLAYER_APPLICATION_SETTING_ATTRIBUTES_LIST
  * @param event packet
- * @return attributes
+ * @return attributes_ids
  * @note: btstack_type V
  */
-static inline const uint8_t * avrcp_subevent_player_application_setting_attributes_list_get_attributes(const uint8_t * event){
+static inline const uint8_t * avrcp_subevent_player_application_setting_attributes_list_get_attributes_ids(const uint8_t * event){
     return &event[6];
 }
 
@@ -12609,12 +12609,12 @@ static inline uint16_t avrcp_subevent_player_application_setting_values_list_get
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field attribute from event AVRCP_SUBEVENT_PLAYER_APPLICATION_SETTING_VALUES_LIST
+ * @brief Get field attribute_id from event AVRCP_SUBEVENT_PLAYER_APPLICATION_SETTING_VALUES_LIST
  * @param event packet
- * @return attribute
+ * @return attribute_id
  * @note: btstack_type 1
  */
-static inline uint8_t avrcp_subevent_player_application_setting_values_list_get_attribute(const uint8_t * event){
+static inline uint8_t avrcp_subevent_player_application_setting_values_list_get_attribute_id(const uint8_t * event){
     return event[5];
 }
 /**
@@ -12627,13 +12627,150 @@ static inline uint8_t avrcp_subevent_player_application_setting_values_list_get_
     return event[6];
 }
 /**
- * @brief Get field values from event AVRCP_SUBEVENT_PLAYER_APPLICATION_SETTING_VALUES_LIST
+ * @brief Get field values_ids from event AVRCP_SUBEVENT_PLAYER_APPLICATION_SETTING_VALUES_LIST
  * @param event packet
- * @return values
+ * @return values_ids
  * @note: btstack_type V
  */
-static inline const uint8_t * avrcp_subevent_player_application_setting_values_list_get_values(const uint8_t * event){
+static inline const uint8_t * avrcp_subevent_player_application_setting_values_list_get_values_ids(const uint8_t * event){
     return &event[7];
+}
+
+/**
+ * @brief Get field avrcp_cid from event AVRCP_SUBEVENT_PLAYER_APPLICATION_SETTING_ATTRIBUTES_NAMES_LIST
+ * @param event packet
+ * @return avrcp_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t avrcp_subevent_player_application_setting_attributes_names_list_get_avrcp_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field num_attributes from event AVRCP_SUBEVENT_PLAYER_APPLICATION_SETTING_ATTRIBUTES_NAMES_LIST
+ * @param event packet
+ * @return num_attributes
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_player_application_setting_attributes_names_list_get_num_attributes(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field attribute_index from event AVRCP_SUBEVENT_PLAYER_APPLICATION_SETTING_ATTRIBUTES_NAMES_LIST
+ * @param event packet
+ * @return attribute_index
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_player_application_setting_attributes_names_list_get_attribute_index(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field attribute_id from event AVRCP_SUBEVENT_PLAYER_APPLICATION_SETTING_ATTRIBUTES_NAMES_LIST
+ * @param event packet
+ * @return attribute_id
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_player_application_setting_attributes_names_list_get_attribute_id(const uint8_t * event){
+    return event[7];
+}
+/**
+ * @brief Get field character_set_id from event AVRCP_SUBEVENT_PLAYER_APPLICATION_SETTING_ATTRIBUTES_NAMES_LIST
+ * @param event packet
+ * @return character_set_id
+ * @note: btstack_type 2
+ */
+static inline uint16_t avrcp_subevent_player_application_setting_attributes_names_list_get_character_set_id(const uint8_t * event){
+    return little_endian_read_16(event, 8);
+}
+/**
+ * @brief Get field attribute_name_len from event AVRCP_SUBEVENT_PLAYER_APPLICATION_SETTING_ATTRIBUTES_NAMES_LIST
+ * @param event packet
+ * @return attribute_name_len
+ * @note: btstack_type J
+ */
+static inline uint8_t avrcp_subevent_player_application_setting_attributes_names_list_get_attribute_name_len(const uint8_t * event){
+    return event[10];
+}
+/**
+ * @brief Get field attribute_name from event AVRCP_SUBEVENT_PLAYER_APPLICATION_SETTING_ATTRIBUTES_NAMES_LIST
+ * @param event packet
+ * @return attribute_name
+ * @note: btstack_type V
+ */
+static inline const uint8_t * avrcp_subevent_player_application_setting_attributes_names_list_get_attribute_name(const uint8_t * event){
+    return &event[11];
+}
+
+/**
+ * @brief Get field avrcp_cid from event AVRCP_SUBEVENT_PLAYER_APPLICATION_SETTING_VALUES_NAMES_LIST
+ * @param event packet
+ * @return avrcp_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t avrcp_subevent_player_application_setting_values_names_list_get_avrcp_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field attribute_id from event AVRCP_SUBEVENT_PLAYER_APPLICATION_SETTING_VALUES_NAMES_LIST
+ * @param event packet
+ * @return attribute_id
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_player_application_setting_values_names_list_get_attribute_id(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field num_values from event AVRCP_SUBEVENT_PLAYER_APPLICATION_SETTING_VALUES_NAMES_LIST
+ * @param event packet
+ * @return num_values
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_player_application_setting_values_names_list_get_num_values(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field values_index from event AVRCP_SUBEVENT_PLAYER_APPLICATION_SETTING_VALUES_NAMES_LIST
+ * @param event packet
+ * @return values_index
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_player_application_setting_values_names_list_get_values_index(const uint8_t * event){
+    return event[7];
+}
+/**
+ * @brief Get field value_id from event AVRCP_SUBEVENT_PLAYER_APPLICATION_SETTING_VALUES_NAMES_LIST
+ * @param event packet
+ * @return value_id
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_player_application_setting_values_names_list_get_value_id(const uint8_t * event){
+    return event[8];
+}
+/**
+ * @brief Get field character_set_id from event AVRCP_SUBEVENT_PLAYER_APPLICATION_SETTING_VALUES_NAMES_LIST
+ * @param event packet
+ * @return character_set_id
+ * @note: btstack_type 2
+ */
+static inline uint16_t avrcp_subevent_player_application_setting_values_names_list_get_character_set_id(const uint8_t * event){
+    return little_endian_read_16(event, 9);
+}
+/**
+ * @brief Get field value_name_len from event AVRCP_SUBEVENT_PLAYER_APPLICATION_SETTING_VALUES_NAMES_LIST
+ * @param event packet
+ * @return value_name_len
+ * @note: btstack_type J
+ */
+static inline uint8_t avrcp_subevent_player_application_setting_values_names_list_get_value_name_len(const uint8_t * event){
+    return event[11];
+}
+/**
+ * @brief Get field value_name from event AVRCP_SUBEVENT_PLAYER_APPLICATION_SETTING_VALUES_NAMES_LIST
+ * @param event packet
+ * @return value_name
+ * @note: btstack_type V
+ */
+static inline const uint8_t * avrcp_subevent_player_application_setting_values_names_list_get_value_name(const uint8_t * event){
+    return &event[12];
 }
 
 /**

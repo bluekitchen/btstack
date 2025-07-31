@@ -3757,7 +3757,7 @@ typedef SSIZE_T ssize_t;
  * @param subevent_code
  * @param avrcp_cid
  * @param num_attributes
- * @param attributes
+ * @param attributes_ids
  */
 #define AVRCP_SUBEVENT_PLAYER_APPLICATION_SETTING_ATTRIBUTES_LIST                       0x45u
 
@@ -3765,11 +3765,38 @@ typedef SSIZE_T ssize_t;
  * @format 121JV
  * @param subevent_code
  * @param avrcp_cid
- * @param attribute
+ * @param attribute_id
  * @param num_values
- * @param values
+ * @param values_ids
  */
 #define AVRCP_SUBEVENT_PLAYER_APPLICATION_SETTING_VALUES_LIST                           0x46u
+
+/**
+ * @format 121112JV
+ * @param subevent_code
+ * @param avrcp_cid
+ * @param num_attributes
+ * @param attribute_index
+ * @param attribute_id
+ * @param character_set_id
+ * @param attribute_name_len
+ * @param attribute_name
+ */
+#define AVRCP_SUBEVENT_PLAYER_APPLICATION_SETTING_ATTRIBUTES_NAMES_LIST                 0x47u
+
+/**
+ * @format 1211112JV
+ * @param subevent_code
+ * @param avrcp_cid
+ * @param attribute_id
+ * @param num_values
+ * @param values_index
+ * @param value_id
+ * @param character_set_id
+ * @param value_name_len
+ * @param value_name
+ */
+#define AVRCP_SUBEVENT_PLAYER_APPLICATION_SETTING_VALUES_NAMES_LIST                     0x48u
 
 /**
  * @format 12BH
