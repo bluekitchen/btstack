@@ -2130,7 +2130,7 @@ static uint8_t avrcp_controller_set_current_player_application_setting_value(uin
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t avrcp_controller_query_player_application_setting_attribute_text(uint16_t avrcp_cid, uint8_t attr_ids_num, uint8_t * attr_ids){
+uint8_t avrcp_controller_query_player_application_setting_attribute_text(uint16_t avrcp_cid, uint8_t attr_ids_num, avrcp_player_application_setting_attribute_id_t * attr_ids){
     avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
     if (!connection){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
@@ -2146,7 +2146,7 @@ uint8_t avrcp_controller_query_player_application_setting_attribute_text(uint16_
     connection->data_len = 1 + attr_ids_num;
     connection->data[0] = attr_ids_num;                     // NumPlayerApplicationSettingAttributeID
     // PlayerApplicationSettingAttributeID1 AVRCP Spec, Appendix F, 133
-    memcpy(&connection->data[2], attr_ids, attr_ids_num);
+    memcpy(&connection->data[2], (uint8_t *) attr_ids, attr_ids_num);
 
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
     return ERROR_CODE_SUCCESS;
