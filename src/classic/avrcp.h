@@ -90,6 +90,9 @@ extern "C" {
 #define AVRCP_PLAYER_SUBTYPE_FEATURE_MASK_AUDIO_BOOK                       0x01u
 #define AVRCP_PLAYER_SUBTYPE_FEATURE_MASK_PODCAST                          0x02u
 
+#define AVRCP_PLAYER_APPLICATION_SETTING_ATTRIBUTE_MAX_NUM_VALUES      10
+#define AVRCP_PLAYER_APPLICATION_SETTING_ATTRIBUTE_MAX_STRING_SIZE     200
+    
 typedef enum {
     AVRCP_STATUS_INVALID_COMMAND = 0,           // Sent if TG received a PDU that it did not understand.
     AVRCP_STATUS_INVALID_PARAMETER,             // Sent if the TG received a PDU with a parameter ID that it did not understand, or, if there is only one parameter ID in the PDU.
@@ -374,7 +377,7 @@ typedef enum {
     AVRCP_SYSTEM_STATUS_UNPLUGGED
 } avrcp_system_status_t;
 
-#define  AVRCP_PLAYER_APPLICATION_SETTING_ATTRIBUTE_MAX_NUM_VALUES      10
+
 typedef enum {
     AVRCP_PLAYER_APPLICATION_SETTING_ATTRIBUTE_ID_ILLEGAL = 0x00,       // ValueIDs with descriptions:
     AVRCP_PLAYER_APPLICATION_SETTING_ATTRIBUTE_ID_EQUALIZER_STATUS,     // 1 - off, 2 - on
@@ -424,7 +427,8 @@ typedef enum {
     AVRCP_SHUFFLE_MODE_INVALID,
     AVRCP_SHUFFLE_MODE_OFF,
     AVRCP_SHUFFLE_MODE_ALL_TRACKS,
-    AVRCP_SHUFFLE_MODE_GROUP
+    AVRCP_SHUFFLE_MODE_GROUP,
+    AVRCP_SHUFFLE_MODE_RFU
 } avrcp_shuffle_mode_t;
 
 typedef enum {
@@ -432,8 +436,24 @@ typedef enum {
     AVRCP_REPEAT_MODE_OFF,
     AVRCP_REPEAT_MODE_SINGLE_TRACK,
     AVRCP_REPEAT_MODE_ALL_TRACKS,
-    AVRCP_REPEAT_MODE_GROUP
+    AVRCP_REPEAT_MODE_GROUP,
+    AVRCP_REPEAT_MODE_RFU
 } avrcp_repeat_mode_t;
+
+typedef enum {
+    AVRCP_EQUALIZER_MODE_INVALID,
+    AVRCP_EQUALIZER_MODE_OFF,
+    AVRCP_EQUALIZER_MODE_ON,
+    AVRCP_EQUALIZER_MODE_RFU
+} avrcp_equalizer_mode_t;
+
+typedef enum {
+    AVRCP_SCAN_MODE_INVALID,
+    AVRCP_SCAN_MODE_OFF,
+    AVRCP_SCAN_MODE_ALL_TRACKS,
+    AVRCP_SCAN_MODE_GROUP,
+    AVRCP_SCAN_MODE_RFU
+} avrcp_scan_mode_t;
 
 typedef enum {
     RFC2978_CHARSET_MIB_UTF8 = 106

@@ -1080,11 +1080,10 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                 }
                 
                 case AVRCP_PDU_ID_LIST_PLAYER_APPLICATION_SETTING_ATTRIBUTES:{
-                    uint8_t max_num_attributes = (uint8_t)AVRCP_PLAYER_APPLICATION_SETTING_ATTRIBUTE_ID_RFU - 1u;
-                    uint8_t num_attributes = (uint8_t)btstack_min(packet[pos++], max_num_attributes);
+                    uint8_t num_attributes = (uint8_t)btstack_min(packet[pos++], AVRCP_PLAYER_APPLICATION_SETTING_ATTRIBUTE_ID_RFU);
 
                     uint16_t offset = 0;
-                    uint8_t event[5 + 1 + (uint8_t)AVRCP_PLAYER_APPLICATION_SETTING_ATTRIBUTE_ID_RFU - 1];
+                    uint8_t event[5 + 1 + AVRCP_PLAYER_APPLICATION_SETTING_ATTRIBUTE_ID_RFU];
 
                     event[offset++] = HCI_EVENT_AVRCP_META;
                     event[offset++] = sizeof(event) - 2;
@@ -1110,10 +1109,10 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     event[offset++] = AVRCP_SUBEVENT_PLAYER_APPLICATION_SETTING_VALUES_LIST;
                     little_endian_store_16(event, offset, connection->avrcp_cid);
                     offset += 2;
-                    event[offset++] = connection->data[0];
+                    event[offset++] = connection->data[0];                         // attribute ID
                     event[offset++] = num_setting_values;
                     if (num_setting_values > 0){
-                        memcpy(&event[offset], &packet[pos], num_setting_values);
+                        memcpy(&event[offset], &packet[pos], num_setting_values);  // values IDs
                         offset += num_setting_values;
                     }
                     (*avrcp_controller_context.avrcp_callback)(HCI_EVENT_PACKET, 0, event, offset);
@@ -1121,43 +1120,64 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                 }
 
                 case AVRCP_PDU_ID_GET_PLAYER_APPLICATION_SETTING_ATTRIBUTE_TEXT:{
-                    uint8_t num_attributes = packet[pos++];
+                    uint8_t num_attributes = (uint8_t)btstack_min(packet[pos++], AVRCP_PLAYER_APPLICATION_SETTING_ATTRIBUTE_ID_RFU);
+                    uint16_t offset = 0;
+                    uint8_t event[6 + 5 + AVRCP_PLAYER_APPLICATION_SETTING_ATTRIBUTE_MAX_STRING_SIZE];
 
-                    int i;
-                    avrcp_repeat_mode_t  repeat_mode =  AVRCP_REPEAT_MODE_INVALID;
-                    avrcp_shuffle_mode_t shuffle_mode = AVRCP_SHUFFLE_MODE_INVALID;
+                    event[offset++] = HCI_EVENT_AVRCP_META;
+                    event[offset++] = sizeof(event) - 2;
+                    event[offset++] = AVRCP_SUBEVENT_PLAYER_APPLICATION_SETTING_ATTRIBUTES_NAMES_LIST;
+                    little_endian_store_16(event, offset, connection->avrcp_cid);
+                    offset += 2;
+                    event[offset++] = num_attributes;
+
+                    uint8_t offset_reset_value = offset;
+                    uint8_t i;
                     for (i = 0; i < num_attributes; i++){
-                        avrcp_player_application_setting_attribute_id_t attribute_id = (avrcp_player_application_setting_attribute_id_t)packet[pos++];
-                        uint8_t character_set_id = little_endian_read_16(packet, pos);
+                        offset = offset_reset_value;
+                        event[offset++] = i;                     // attribute index
+                        event[offset++] = packet[pos++];         // attribute ID
+                        memcpy(&event[offset], &packet[pos], 2); // character_set_id
                         pos += 2;
-                        uint8_t value_len = packet[pos++];
-                        char * value = (char *)&packet[pos];
+                        offset += 2;
+                        uint8_t value_len = (uint8_t) btstack_min(packet[pos++], AVRCP_PLAYER_APPLICATION_SETTING_ATTRIBUTE_MAX_STRING_SIZE);       // attribute string length
+                        event[offset++] = value_len;
+                        memcpy(&event[offset], &packet[pos], value_len);
                         pos += value_len;
-
-                        log_info("TODO send event: attribute_id %d, value_len %d, value %s", attribute_id, value_len, value);
-                        UNUSED(value);
-                        UNUSED(character_set_id);
-                        UNUSED(repeat_mode);
-                        UNUSED(shuffle_mode);
-                        switch (attribute_id){
-                            case AVRCP_PLAYER_APPLICATION_SETTING_ATTRIBUTE_ID_REPEAT_MODE_STATUS:
-                                break;
-                            case AVRCP_PLAYER_APPLICATION_SETTING_ATTRIBUTE_ID_SHUFFLE_STATUS:
-                                break;
-                            default:
-                                break;
-                        }
+                        offset += value_len;
+                        (*avrcp_controller_context.avrcp_callback)(HCI_EVENT_PACKET, 0, event, offset);
                     }
                     break;
                 }
 
                 case AVRCP_PDU_ID_GET_PLAYER_APPLICATION_SETTING_VALUE_TEXT:{
-                    uint8_t num_setting_values = packet[pos++];
-                    int i;
+                    uint8_t num_setting_values = (uint8_t)btstack_min(packet[pos++], AVRCP_PLAYER_APPLICATION_SETTING_ATTRIBUTE_MAX_NUM_VALUES);
+                    uint16_t offset = 0;
+                    uint8_t event[5 + 2 + AVRCP_PLAYER_APPLICATION_SETTING_ATTRIBUTE_MAX_NUM_VALUES + AVRCP_PLAYER_APPLICATION_SETTING_ATTRIBUTE_MAX_STRING_SIZE];
+
+                    event[offset++] = HCI_EVENT_AVRCP_META;
+                    event[offset++] = sizeof(event) - 2;
+                    event[offset++] = AVRCP_SUBEVENT_PLAYER_APPLICATION_SETTING_VALUES_NAMES_LIST;
+                    little_endian_store_16(event, offset, connection->avrcp_cid);
+                    offset += 2;
+                    event[offset++] = connection->data[0];      // attribute ID
+                    event[offset++] = num_setting_values;
+
+                    uint8_t offset_reset_value = offset;
+                    uint8_t i;
                     for (i = 0; i < num_setting_values; i++){
-                        uint8_t value = packet[pos++];
-                        UNUSED(value);
-                        log_info("TODO send event: value %d", value);
+                        offset = offset_reset_value;
+                        event[offset++] = i;                     // value index
+                        event[offset++] = packet[pos++];         // value ID
+                        memcpy(&event[offset], &packet[pos], 2); // character_set_id
+                        pos += 2;
+                        offset += 2;
+                        uint8_t value_len = (uint8_t) btstack_min(packet[pos++], AVRCP_PLAYER_APPLICATION_SETTING_ATTRIBUTE_MAX_STRING_SIZE);       // value string length
+                        event[offset++] = value_len;
+                        memcpy(&event[offset], &packet[pos], value_len);
+                        pos += value_len;
+                        offset += value_len;
+                        (*avrcp_controller_context.avrcp_callback)(HCI_EVENT_PACKET, 0, event, offset);
                     }
                     break;
                 }
