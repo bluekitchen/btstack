@@ -2614,22 +2614,17 @@ static bool sm_ctkd_from_le_could_update(const sm_connection_t * sm_connection) 
     bool derived_key_authenticated = sm_connection->sm_connection_authenticated != 0;
     return !link_key_authenticated || derived_key_authenticated;
 }
-#endif
 
 static bool sm_ctkd_from_le(void) {
-#ifdef ENABLE_CROSS_TRANSPORT_KEY_DERIVATION
     // requirements to derive link key from  LE:
     // - use secure connections
     if (setup->sm_use_secure_connections == 0) return false;
     // - bonding needs to be enabled:
     bool bonding_enabled = (sm_pairing_packet_get_auth_req(setup->sm_m_preq) & sm_pairing_packet_get_auth_req(setup->sm_s_pres) & SM_AUTHREQ_BONDING ) != 0u;
     return bonding_enabled;
-#else
-	return false;
-#endif
+    return false;
 }
 
-#ifdef ENABLE_CROSS_TRANSPORT_KEY_DERIVATION
 static bool sm_ctkd_from_classic(sm_connection_t * sm_connection){
     hci_connection_t * hci_connection = hci_connection_for_handle(sm_connection->sm_handle);
     btstack_assert(hci_connection != NULL);
