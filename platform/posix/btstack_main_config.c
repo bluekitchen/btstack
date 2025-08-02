@@ -64,8 +64,8 @@ static struct option long_options[] = {
     {"logformat", required_argument, NULL, 'f'},
     {"reset-tlv", no_argument,       NULL, 'r'},
     {"tty",       required_argument, NULL, 'u'},
-    {"bd-addr",   required_argument, NULL, 'b'},
-    {"baudrate",  required_argument, NULL, 'a'},
+    {"bd-addr",   required_argument, NULL, 'm'},
+    {"baudrate",  required_argument, NULL, 'b'},
     {0, 0, 0, 0}
 };
 
@@ -156,12 +156,12 @@ int btstack_main_config(int argc, const char * argv[], hci_transport_config_uart
                     *tlv_reset = true;
                 }
                 break;
-            case 'b':
+            case 'm':
                 if( address != NULL ) {
                     sscanf_bd_addr(optarg, address);
                 }
                 break;
-            case 'a':
+            case 'b':
                 transport_config->baudrate_init = atoi( optarg );
                 break;
             case 'f':

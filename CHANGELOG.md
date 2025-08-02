@@ -52,6 +52,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - esp32: rework build to avoid copy of btstack files into esp-idf components folder
 - AVRCP Controller: avrcp_controller_query_player_application_setting_value_text queries subset of attribute values
 - AVRCP Controller: avrcp_controller_query_player_application_setting_attribute_text queries subset of attribute ids
+- GATT Compiler: make profile_data static to allow one per source file
+- POSIX: use -b for baudrate and -m for BD_ADDR on command line
+ 
 
 ## Release v1.6.2
 
