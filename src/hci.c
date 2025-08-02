@@ -8429,6 +8429,7 @@ void hci_remote_features_query(hci_con_handle_t con_handle){
     hci_trigger_remote_features_for_connection(connection);
     hci_run();
 }
+#endif
 
 // GAP API
 /**
@@ -8446,6 +8447,7 @@ int gap_get_bondable_mode(void){
     return hci_stack->bondable;
 }
 
+#ifdef ENABLE_CLASSIC
 /**
  * @brief map link keys to security levels
  */
