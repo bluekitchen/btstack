@@ -3537,7 +3537,7 @@ static uint8_t gatt_client_le_enhanced_num_eatt_clients_in_state(gatt_client_t *
 static void gatt_client_eatt_finalize(gatt_client_t * gatt_client) {
     // free eatt clients
     btstack_linked_list_iterator_t it;
-    btstack_linked_list_iterator_init(&it, &gatt_client_connections);
+    btstack_linked_list_iterator_init(&it, &gatt_client->eatt_clients);
     while (btstack_linked_list_iterator_has_next(&it)) {
         gatt_client_t *eatt_client = (gatt_client_t *) btstack_linked_list_iterator_next(&it);
         btstack_linked_list_iterator_remove(&it);
