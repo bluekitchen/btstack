@@ -555,8 +555,8 @@ static void hci_pairing_complete(hci_connection_t * hci_connection, uint8_t stat
 #ifdef ENABLE_EXPLICIT_DEDICATED_BONDING_DISCONNECT
         if (status == ERROR_CODE_SUCCESS) {
             // emit dedicated bonding complete, don't disconnect
-            hci_emit_dedicated_bonding_result(conn->address, conn->bonding_status);
-        } else {
+            hci_emit_dedicated_bonding_result(hci_connection->address, hci_connection->bonding_status);
+        } else
 #endif
         {
             // request disconnect, event is emitted after disconnect
