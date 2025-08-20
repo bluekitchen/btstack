@@ -203,8 +203,14 @@ void hal_led_toggle(void){
 }
 
 static void use_fast_uart(void){
-    printf("Using 921600 baud.\n");
-    config.baudrate_main = 921600;
+    // only increase baudrate if started with default baudrate
+    // to avoid issues with custom default baudrates
+    if (config.baudrate_init == 115200) {
+        config.baudrate_main = 921600;
+        printf("Update to %u baud.\n", config.baudrate_main);
+    } else {
+        printf("Keep %u baud.\n", config.baudrate_init);
+    }
 }
 
 static void local_version_information_handler(uint8_t * packet){
