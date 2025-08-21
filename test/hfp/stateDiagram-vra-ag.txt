@@ -11,7 +11,7 @@ stateDiagram-v2
     
     W4_ACTIVE       --> ACTIVE                    : ready2send   / send ACTIVE, if (sco_established) {emit event ACTIVE} else {trigger audio connection setup}
 
-    W4_OFF             --> OFF                    : ready2send   / send OFF, if (audio connection) { shut down audio connection } else { emit OFF }
+    W4_OFF             --> OFF                    : ready2send   / send OFF, if (audio connection) { shut down audio connection; emit_vra_off_on_sco_disconnect = 1 } else { emit OFF }
     
     # SCO Established
 
@@ -22,7 +22,7 @@ stateDiagram-v2
 
     ENHANCED_ACTIVE    --> W4_OFF                 : sco_disconnect
     ACTIVE             --> W4_OFF                 : sco_disconnect
-    OFF                --> OFF                    : sco_disconnect  / emit OFF
+    OFF                --> OFF                    : sco_disconnect  / if (emit_vra_off_on_sco_disconnect == 1) {emit_vra_off_on_sco_disconnect = 0; emit OFF}
 
     # HF initiated actions
     OFF                --> W4_ACTIVE_REMOTE       : hf_activate   
@@ -41,7 +41,7 @@ stateDiagram-v2
 
 
     W4_ACTIVE_REMOTE       --> ACTIVE             : ready2send   / send OK, if (sco_established) {emit event ACTIVE} else {trigger audio connection setup}
-    W4_OFF_REMOTE          --> OFF                : ready2send   / send OK, if (audio connection) { shut down audio connection } else { emit OFF }
+    W4_OFF_REMOTE          --> OFF                : ready2send   / send OK, if (audio connection) { shut down audio connection; emit_vra_off_on_sco_disconnect = 1 } else { emit OFF }
     W4_ENHANCED_ACTIVE --> ENHANCED_ACTIVE        : ready2send   / send OK, emit ENHANCED_ACTIVE
     W4_ENHANCED_ACTIVE_REPORT --> ENHANCED_ACTIVE : ready2send   / send report, emit ENHANCED_ACTIVE_MESSAGE_SENT_STATUS
 

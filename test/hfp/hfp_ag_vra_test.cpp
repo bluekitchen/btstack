@@ -497,7 +497,7 @@ TEST(HFP_AG_VRA, test_sco_disconnect) {
     hfp_connection->vra_engine_current_state = HFP_VRA_OFF;
     test_hfp_ag_vra_state_machine(hfp_connection, HFP_AG_VRA_EVENT_SCO_DISCONNECTED);
     CHECK_EQUAL(HFP_VRA_OFF, hfp_connection->vra_engine_current_state);
-    CHECK_EQUAL(HFP_SUBEVENT_VOICE_RECOGNITION_DEACTIVATED, last_received_event);
+    CHECK_EQUAL(0, last_received_event);
     last_received_event = 0;
 }
 
