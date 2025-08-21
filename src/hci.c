@@ -482,21 +482,6 @@ static void hci_connection_timestamp(hci_connection_t *connection){
 #endif
 }
 
-/**
- * add authentication flags and reset timer
- * @note: assumes classic connection
- * @note: bd_addr is passed in as little endian uint8_t * as it is called from parsing packets
- */
-static void hci_add_connection_flags_for_flipped_bd_addr(uint8_t *bd_addr, hci_authentication_flags_t flags){
-    bd_addr_t addr;
-    reverse_bd_addr(bd_addr, addr);
-    hci_connection_t * conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
-    if (conn) {
-        hci_connection_set_authentication_flags(conn, flags);
-        hci_connection_timestamp(conn);
-    }
-}
-
 static bool hci_pairing_active(hci_connection_t * hci_connection){
     return (hci_connection->authentication_flags & AUTH_FLAG_PAIRING_ACTIVE_MASK) != 0;
 }
@@ -4105,7 +4090,8 @@ static void event_handler(uint8_t *packet, uint16_t size){
             conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
             if (!conn) break;
 
-            hci_add_connection_flags_for_flipped_bd_addr(&packet[2], AUTH_FLAG_RECV_IO_CAPABILITIES_RESPONSE);
+            hci_connection_set_authentication_flags(conn, AUTH_FLAG_RECV_IO_CAPABILITIES_RESPONSE);
+            hci_connection_timestamp(conn);
             hci_pairing_started(conn, true);
             conn->io_cap_response_auth_req = hci_event_io_capability_response_get_authentication_requirements(packet);
             conn->io_cap_response_io       = hci_event_io_capability_response_get_io_capability(packet);
@@ -4119,7 +4105,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
             conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
             if (!conn) break;
 
-            hci_add_connection_flags_for_flipped_bd_addr(&packet[2], AUTH_FLAG_RECV_IO_CAPABILITIES_REQUEST);
+            hci_connection_set_authentication_flags(conn, AUTH_FLAG_RECV_IO_CAPABILITIES_REQUEST);
             hci_connection_timestamp(conn);
             hci_pairing_started(conn, true);
             break;
@@ -4144,11 +4130,13 @@ static void event_handler(uint8_t *packet, uint16_t size){
             if (!conn) break;
             if (hci_ssp_security_level_possible_for_io_cap(conn->requested_security_level, hci_stack->ssp_io_capability, conn->io_cap_response_io)) {
                 if (hci_stack->ssp_auto_accept){
-                    hci_add_connection_flags_for_flipped_bd_addr(&packet[2], AUTH_FLAG_SEND_USER_CONFIRM_REPLY);
+                    hci_connection_set_authentication_flags(conn, AUTH_FLAG_SEND_USER_CONFIRM_REPLY);
+                    hci_connection_timestamp(conn);
                 };
             } else {
                 hci_pairing_complete(conn, ERROR_CODE_INSUFFICIENT_SECURITY);
-                hci_add_connection_flags_for_flipped_bd_addr(&packet[2], AUTH_FLAG_SEND_USER_CONFIRM_NEGATIVE_REPLY);
+                hci_connection_set_authentication_flags(conn, AUTH_FLAG_SEND_USER_CONFIRM_NEGATIVE_REPLY);
+                hci_connection_timestamp(conn);
                 // don't forward event to app
                 hci_run();
                 return;
@@ -4158,7 +4146,11 @@ static void event_handler(uint8_t *packet, uint16_t size){
         case HCI_EVENT_USER_PASSKEY_REQUEST:
             // Pairing using Passkey results in MITM protection. If Level 4 is required, support for SC is validated on IO Cap Request
             if (hci_stack->ssp_auto_accept){
-                hci_add_connection_flags_for_flipped_bd_addr(&packet[2], AUTH_FLAG_SEND_USER_PASSKEY_REPLY);
+                hci_event_user_passkey_request_get_bd_addr(packet, addr);
+                conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
+                if (!conn) break;
+                hci_connection_set_authentication_flags(conn, AUTH_FLAG_SEND_USER_PASSKEY_REPLY);
+                hci_connection_timestamp(conn);
             };
             break;
 
