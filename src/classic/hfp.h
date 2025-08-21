@@ -646,7 +646,8 @@ typedef struct hfp_connection {
     uint8_t accept_sco; // 1 = SCO, 2 = eSCO
 
     uint8_t establish_audio_connection;
-    uint8_t release_audio_connection; 
+    uint8_t release_audio_connection;
+    uint8_t emit_vra_off_on_sco_disconnect;
     uint8_t release_slc_connection; 
 
     uint8_t microphone_gain;

@@ -972,7 +972,10 @@ static bool hfp_ag_vra_state_machine(hfp_connection_t * hfp_connection, hfp_ag_v
                     hfp_connection->vra_engine_current_state = HFP_VRA_W4_ACTIVE;
                     break;
                 case HFP_AG_VRA_EVENT_SCO_DISCONNECTED:
-                    hfp_emit_voice_recognition_disabled(hfp_connection, ERROR_CODE_SUCCESS);
+                    if (hfp_connection->emit_vra_off_on_sco_disconnect == 1){
+                        hfp_emit_voice_recognition_disabled(hfp_connection, ERROR_CODE_SUCCESS);
+                        hfp_connection->emit_vra_off_on_sco_disconnect = 0;
+                    }
                     break;
                 case HFP_AG_VRA_EVENT_HF_ACTIVATE:
                     hfp_connection->vra_engine_current_state = HFP_VRA_W4_ACTIVE_REMOTE;
@@ -1137,6 +1140,7 @@ static bool hfp_ag_vra_state_machine(hfp_connection_t * hfp_connection, hfp_ag_v
                     if (hfp_connection->state == HFP_AUDIO_CONNECTION_ESTABLISHED) {
                         // release audio connection only if it was opened after audio VR activated
                         hfp_connection->release_audio_connection = 1;
+                        hfp_connection->emit_vra_off_on_sco_disconnect = 1;
                     } else {
                         hfp_emit_voice_recognition_disabled(hfp_connection, ERROR_CODE_SUCCESS);
                     }
@@ -1159,6 +1163,7 @@ static bool hfp_ag_vra_state_machine(hfp_connection_t * hfp_connection, hfp_ag_v
                     if (hfp_connection->state == HFP_AUDIO_CONNECTION_ESTABLISHED){
                         // release audio connection only if it was opened after audio VR activated
                         hfp_connection->release_audio_connection = 1;
+                        hfp_connection->emit_vra_off_on_sco_disconnect = 1;
                     } else {
                         hfp_emit_voice_recognition_disabled(hfp_connection, ERROR_CODE_SUCCESS);
                     }
