@@ -438,10 +438,12 @@ hci_connection_t * hci_connection_for_bd_addr_and_type(const bd_addr_t  addr, bd
 #ifdef ENABLE_CLASSIC
 
 inline static void hci_connection_clear_authentication_flags(hci_connection_t * conn, hci_authentication_flags_t flags){
+    log_info("Authentication flags clear 0x%04x for %s", flags, bd_addr_to_str(conn->address));
     conn->authentication_flags = (hci_authentication_flags_t)(conn->authentication_flags & ~flags);
 }
 
 inline static void hci_connection_set_authentication_flags(hci_connection_t * conn, hci_authentication_flags_t flags){
+    log_info("Authentication flags set   0x%04x set for %s", flags, bd_addr_to_str(conn->address));
     conn->authentication_flags = (hci_authentication_flags_t)(conn->authentication_flags | flags);
 }
 
