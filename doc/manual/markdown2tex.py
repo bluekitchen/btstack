@@ -27,7 +27,7 @@ def fix_empty_href(line):
 def fix_listing_after_section(line):
     corr = re.match(r'.*begin{lstlisting}',line)
     if corr:
-        line = "\leavevmode" + line
+        line = r"\leavevmode" + line
     return line
 
 def fix_listing_hyperref_into_ref(line):
@@ -49,7 +49,7 @@ def fix_figure_width_and_type(line):
 def fix_appendix_pagebreak(line):
     corr = re.match(r'.*section{APIs}.*',line)
     if corr:
-        line = "\leavevmode\pagebreak\n" + line
+        line = r"\leavevmode\pagebreak\n" + line
     return line
 
 def fix_tightlist(line):
