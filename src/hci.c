@@ -489,9 +489,9 @@ static bool hci_pairing_active(hci_connection_t * hci_connection){
 static void hci_pairing_started(hci_connection_t * hci_connection, bool ssp){
     if (hci_pairing_active(hci_connection)) return;
     if (ssp){
-        hci_connection->authentication_flags |= AUTH_FLAG_SSP_PAIRING_ACTIVE;
+        hci_connection_set_authentication_flags(hci_connection, AUTH_FLAG_SSP_PAIRING_ACTIVE);
     } else {
-        hci_connection->authentication_flags |= AUTH_FLAG_LEGACY_PAIRING_ACTIVE;
+        hci_connection_set_authentication_flags(hci_connection, AUTH_FLAG_LEGACY_PAIRING_ACTIVE);
     }
     // if we are initiator, we have sent an HCI Authenticate Request
     bool initiator = (hci_connection->bonding_flags & BONDING_SENT_AUTHENTICATE_REQUEST) != 0;
@@ -516,7 +516,7 @@ static void hci_pairing_started(hci_connection_t * hci_connection, bool ssp){
 static void hci_pairing_complete(hci_connection_t * hci_connection, uint8_t status){
     hci_connection->requested_security_level = LEVEL_0;
     if (!hci_pairing_active(hci_connection)) return;
-    hci_connection->authentication_flags &= ~AUTH_FLAG_PAIRING_ACTIVE_MASK;
+    hci_connection_clear_authentication_flags(hci_connection, AUTH_FLAG_PAIRING_ACTIVE_MASK);
 #ifdef ENABLE_CLASSIC_PAIRING_OOB
     hci_connection->classic_oob_c_192 = NULL;
     hci_connection->classic_oob_r_192 = NULL;
@@ -2750,7 +2750,7 @@ static void hci_handle_mutual_authentication_completed(hci_connection_t * conn){
 }
 
 static void hci_handle_read_encryption_key_size_complete(hci_connection_t * conn, uint8_t encryption_key_size) {
-    conn->authentication_flags |= AUTH_FLAG_CONNECTION_ENCRYPTED;
+    hci_connection_set_authentication_flags(conn, AUTH_FLAG_CONNECTION_ENCRYPTED);
     conn->encryption_key_size = encryption_key_size;
 
     // mutual authentication complete if authenticated and we have retrieved the encryption key size
@@ -4022,7 +4022,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
             }
 
             // response sent by hci_run()
-            conn->authentication_flags |= AUTH_FLAG_HANDLE_LINK_KEY_REQUEST;
+            hci_connection_set_authentication_flags(conn, AUTH_FLAG_HANDLE_LINK_KEY_REQUEST);
 #endif
             break;
             
@@ -4070,7 +4070,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
             hci_pairing_started(conn, false);
             // abort pairing if: non-bondable mode (pin code request is not forwarded to app)
             if (!hci_stack->bondable ){
-                conn->authentication_flags |= AUTH_FLAG_DENY_PIN_CODE_REQUEST;
+                hci_connection_set_authentication_flags(conn, AUTH_FLAG_DENY_PIN_CODE_REQUEST);
                 hci_pairing_complete(conn, ERROR_CODE_PAIRING_NOT_ALLOWED);
                 hci_run();
                 return;
@@ -4078,7 +4078,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
             // abort pairing if: LEVEL_4 required (pin code request is not forwarded to app)
             if ((hci_stack->gap_secure_connections_only_mode) || (conn->requested_security_level == LEVEL_4)){
                 log_info("Level 4 required, but SC not supported -> abort");
-                conn->authentication_flags |= AUTH_FLAG_DENY_PIN_CODE_REQUEST;
+                hci_connection_set_authentication_flags(conn, AUTH_FLAG_DENY_PIN_CODE_REQUEST);
                 hci_pairing_complete(conn, ERROR_CODE_INSUFFICIENT_SECURITY);
                 hci_run();
                 return;
@@ -4173,7 +4173,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
                 if (encryption_enabled){
                     if (hci_is_le_connection(conn)){
                         // For LE, we accept connection as encrypted
-                        conn->authentication_flags |= AUTH_FLAG_CONNECTION_ENCRYPTED;
+                        hci_connection_set_authentication_flags(conn, AUTH_FLAG_CONNECTION_ENCRYPTED);
                     }
 #ifdef ENABLE_CLASSIC
                     else {
@@ -4210,13 +4210,13 @@ static void event_handler(uint8_t *packet, uint16_t size){
 #ifdef ENABLE_MUTUAL_AUTHENTICATION_FOR_LEGACY_SECURE_CONNECTIONS
                         // if AES-CCM is used, authentication used SC -> authentication was mutual and we can skip explicit authentication
                         if (connected_uses_aes_ccm){
-                            conn->authentication_flags |= AUTH_FLAG_CONNECTION_AUTHENTICATED;
+                            hci_connection_set_authentication_flags(conn, AUTH_FLAG_CONNECTION_AUTHENTICATED);
                         }
 #else
                         // We consider even Legacy Secure Connections as authenticated as BTstack mandates encryption
                         // with encryption key size > hci_stack->gap_required_encryption_key_size
                         // for all operations that require any security. See BIAS attacks.
-                        conn->authentication_flags |= AUTH_FLAG_CONNECTION_AUTHENTICATED;
+                        hci_connection_set_authentication_flags(conn, AUTH_FLAG_CONNECTION_AUTHENTICATED);
 #endif
                         // validate encryption key size
                         if (hci_event_packet_get_type(packet) == HCI_EVENT_ENCRYPTION_CHANGE_V2) {
@@ -4235,7 +4235,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
                     }
 #endif
                 } else {
-                    conn->authentication_flags &= ~AUTH_FLAG_CONNECTION_ENCRYPTED;
+                    hci_connection_clear_authentication_flags(conn, AUTH_FLAG_CONNECTION_ENCRYPTED);
                 }
             } else {
 #ifdef ENABLE_CLASSIC
@@ -4289,7 +4289,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
             // authenticated only if auth status == 0
             if (hci_event_authentication_complete_get_status(packet) == 0){
                 // authenticated
-                conn->authentication_flags |= AUTH_FLAG_CONNECTION_AUTHENTICATED;
+                hci_connection_set_authentication_flags(conn, AUTH_FLAG_CONNECTION_AUTHENTICATED);
 
                 // If not already encrypted, start encryption, otherwise, wait for reencryption complete
                 if ((conn->authentication_flags & AUTH_FLAG_CONNECTION_ENCRYPTED) == 0){
@@ -4309,7 +4309,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
 
             // treat successfully paired connection as authenticated
             if (hci_event_simple_pairing_complete_get_status(packet) == ERROR_CODE_SUCCESS){
-                conn->authentication_flags |= AUTH_FLAG_CONNECTION_AUTHENTICATED;
+                hci_connection_set_authentication_flags(conn, AUTH_FLAG_CONNECTION_AUTHENTICATED);
             }
 
             hci_pairing_complete(conn, hci_event_simple_pairing_complete_get_status(packet));
