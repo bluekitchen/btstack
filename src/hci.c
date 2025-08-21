@@ -437,11 +437,11 @@ hci_connection_t * hci_connection_for_bd_addr_and_type(const bd_addr_t  addr, bd
 
 #ifdef ENABLE_CLASSIC
 
-inline static void connectionClearAuthenticationFlags(hci_connection_t * conn, hci_authentication_flags_t flags){
+inline static void hci_connection_clear_authentication_flags(hci_connection_t * conn, hci_authentication_flags_t flags){
     conn->authentication_flags = (hci_authentication_flags_t)(conn->authentication_flags & ~flags);
 }
 
-inline static void connectionSetAuthenticationFlags(hci_connection_t * conn, hci_authentication_flags_t flags){
+inline static void hci_connection_set_authentication_flags(hci_connection_t * conn, hci_authentication_flags_t flags){
     conn->authentication_flags = (hci_authentication_flags_t)(conn->authentication_flags | flags);
 }
 
@@ -492,7 +492,7 @@ static void hci_add_connection_flags_for_flipped_bd_addr(uint8_t *bd_addr, hci_a
     reverse_bd_addr(bd_addr, addr);
     hci_connection_t * conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
     if (conn) {
-        connectionSetAuthenticationFlags(conn, flags);
+        hci_connection_set_authentication_flags(conn, flags);
         hci_connection_timestamp(conn);
     }
 }
@@ -3594,7 +3594,7 @@ static void hci_ssp_assess_security_on_io_cap_request(hci_connection_t * conn){
         !hci_remote_sc_enabled(conn)){
         log_info("Level 4 required, but SC not supported -> abort");
         hci_pairing_complete(conn, ERROR_CODE_INSUFFICIENT_SECURITY);
-        connectionSetAuthenticationFlags(conn, AUTH_FLAG_SEND_IO_CAPABILITIES_NEGATIVE_REPLY);
+        hci_connection_set_authentication_flags(conn, AUTH_FLAG_SEND_IO_CAPABILITIES_NEGATIVE_REPLY);
         return;
     }
 
@@ -3608,7 +3608,7 @@ static void hci_ssp_assess_security_on_io_cap_request(hci_connection_t * conn){
                 if (hci_stack->bondable == false){
                     log_info("Dedicated vs. non-bondable -> abort");
                     hci_pairing_complete(conn, ERROR_CODE_INSUFFICIENT_SECURITY);
-                    connectionSetAuthenticationFlags(conn, AUTH_FLAG_SEND_IO_CAPABILITIES_NEGATIVE_REPLY);
+                    hci_connection_set_authentication_flags(conn, AUTH_FLAG_SEND_IO_CAPABILITIES_NEGATIVE_REPLY);
                     return;
                 }
             default:
@@ -3647,7 +3647,7 @@ static void hci_ssp_assess_security_on_io_cap_request(hci_connection_t * conn){
         if (security_possible == false){
             log_info("IOCap/OOB insufficient for level %u -> abort", requested_security_level);
             hci_pairing_complete(conn, ERROR_CODE_INSUFFICIENT_SECURITY);
-            connectionSetAuthenticationFlags(conn, AUTH_FLAG_SEND_IO_CAPABILITIES_NEGATIVE_REPLY);
+            hci_connection_set_authentication_flags(conn, AUTH_FLAG_SEND_IO_CAPABILITIES_NEGATIVE_REPLY);
             return;
         }
     } else {
@@ -3657,7 +3657,7 @@ static void hci_ssp_assess_security_on_io_cap_request(hci_connection_t * conn){
         if ((conn->requested_security_level >= LEVEL_3) && (hci_stack->ssp_io_capability >= SSP_IO_CAPABILITY_NO_INPUT_NO_OUTPUT)){
             log_info("Level 3+ required, but no input/output -> abort");
             hci_pairing_complete(conn, ERROR_CODE_INSUFFICIENT_SECURITY);
-            connectionSetAuthenticationFlags(conn, AUTH_FLAG_SEND_IO_CAPABILITIES_NEGATIVE_REPLY);
+            hci_connection_set_authentication_flags(conn, AUTH_FLAG_SEND_IO_CAPABILITIES_NEGATIVE_REPLY);
             return;
         }
 #endif
@@ -3666,9 +3666,9 @@ static void hci_ssp_assess_security_on_io_cap_request(hci_connection_t * conn){
 
 #ifndef ENABLE_EXPLICIT_IO_CAPABILITIES_REPLY
     if (hci_stack->ssp_io_capability != SSP_IO_CAPABILITY_UNKNOWN){
-        connectionSetAuthenticationFlags(conn, AUTH_FLAG_SEND_IO_CAPABILITIES_REPLY);
+        hci_connection_set_authentication_flags(conn, AUTH_FLAG_SEND_IO_CAPABILITIES_REPLY);
     } else {
-        connectionSetAuthenticationFlags(conn, AUTH_FLAG_SEND_IO_CAPABILITIES_NEGATIVE_REPLY);
+        hci_connection_set_authentication_flags(conn, AUTH_FLAG_SEND_IO_CAPABILITIES_NEGATIVE_REPLY);
     }
 #endif
 }
@@ -4134,7 +4134,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
 
             hci_pairing_started(conn, true);
 
-            connectionSetAuthenticationFlags(conn, AUTH_FLAG_SEND_REMOTE_OOB_DATA_REPLY);
+            hci_connection_set_authentication_flags(conn, AUTH_FLAG_SEND_REMOTE_OOB_DATA_REPLY);
             break;
 #endif
 
@@ -7398,7 +7398,7 @@ static bool hci_run_general_pending_commands(void){
         // Handling link key request requires remote supported features
         if (((connection->authentication_flags & AUTH_FLAG_HANDLE_LINK_KEY_REQUEST) != 0)){
             log_info("responding to link key request, have link key db: %u", hci_stack->link_key_db != NULL);
-            connectionClearAuthenticationFlags(connection, AUTH_FLAG_HANDLE_LINK_KEY_REQUEST);
+            hci_connection_clear_authentication_flags(connection, AUTH_FLAG_HANDLE_LINK_KEY_REQUEST);
 
             bool have_link_key = connection->link_key_type != INVALID_LINK_KEY;
             bool security_level_sufficient = have_link_key && (gap_security_level_for_link_key_type(connection->link_key_type) >= connection->requested_security_level);
@@ -7412,20 +7412,20 @@ static bool hci_run_general_pending_commands(void){
 
         if (connection->authentication_flags & AUTH_FLAG_DENY_PIN_CODE_REQUEST){
             log_info("denying to pin request");
-            connectionClearAuthenticationFlags(connection, AUTH_FLAG_DENY_PIN_CODE_REQUEST);
+            hci_connection_clear_authentication_flags(connection, AUTH_FLAG_DENY_PIN_CODE_REQUEST);
             hci_send_cmd(&hci_pin_code_request_negative_reply, connection->address);
             return true;
         }
 
         // security assessment requires remote features
         if ((connection->authentication_flags & AUTH_FLAG_RECV_IO_CAPABILITIES_REQUEST) != 0){
-            connectionClearAuthenticationFlags(connection, AUTH_FLAG_RECV_IO_CAPABILITIES_REQUEST);
+            hci_connection_clear_authentication_flags(connection, AUTH_FLAG_RECV_IO_CAPABILITIES_REQUEST);
             hci_ssp_assess_security_on_io_cap_request(connection);
             // no return here as hci_ssp_assess_security_on_io_cap_request only sets AUTH_FLAG_SEND_IO_CAPABILITIES_REPLY or AUTH_FLAG_SEND_IO_CAPABILITIES_NEGATIVE_REPLY
         }
 
         if (connection->authentication_flags & AUTH_FLAG_SEND_IO_CAPABILITIES_REPLY){
-            connectionClearAuthenticationFlags(connection, AUTH_FLAG_SEND_IO_CAPABILITIES_REPLY);
+            hci_connection_clear_authentication_flags(connection, AUTH_FLAG_SEND_IO_CAPABILITIES_REPLY);
             // set authentication requirements:
             // - MITM = ssp_authentication_requirement (USER) | requested_security_level (dynamic)
             // - BONDING MODE: dedicated if requested, bondable otherwise. Drop bondable if not set for remote
@@ -7463,14 +7463,14 @@ static bool hci_run_general_pending_commands(void){
         }
 
         if (connection->authentication_flags & AUTH_FLAG_SEND_IO_CAPABILITIES_NEGATIVE_REPLY) {
-            connectionClearAuthenticationFlags(connection, AUTH_FLAG_SEND_IO_CAPABILITIES_NEGATIVE_REPLY);
+            hci_connection_clear_authentication_flags(connection, AUTH_FLAG_SEND_IO_CAPABILITIES_NEGATIVE_REPLY);
             hci_send_cmd(&hci_io_capability_request_negative_reply, &connection->address, ERROR_CODE_PAIRING_NOT_ALLOWED);
             return true;
         }
 
 #ifdef ENABLE_CLASSIC_PAIRING_OOB
         if (connection->authentication_flags & AUTH_FLAG_SEND_REMOTE_OOB_DATA_REPLY){
-            connectionClearAuthenticationFlags(connection, AUTH_FLAG_SEND_REMOTE_OOB_DATA_REPLY);
+            hci_connection_clear_authentication_flags(connection, AUTH_FLAG_SEND_REMOTE_OOB_DATA_REPLY);
             const uint8_t zero[16] = { 0 };
             const uint8_t * r_192 = zero;
             const uint8_t * c_192 = zero;
@@ -7516,19 +7516,19 @@ static bool hci_run_general_pending_commands(void){
 #endif
 
         if (connection->authentication_flags & AUTH_FLAG_SEND_USER_CONFIRM_REPLY){
-            connectionClearAuthenticationFlags(connection, AUTH_FLAG_SEND_USER_CONFIRM_REPLY);
+            hci_connection_clear_authentication_flags(connection, AUTH_FLAG_SEND_USER_CONFIRM_REPLY);
             hci_send_cmd(&hci_user_confirmation_request_reply, &connection->address);
             return true;
         }
 
         if (connection->authentication_flags & AUTH_FLAG_SEND_USER_CONFIRM_NEGATIVE_REPLY){
-            connectionClearAuthenticationFlags(connection, AUTH_FLAG_SEND_USER_CONFIRM_NEGATIVE_REPLY);
+            hci_connection_clear_authentication_flags(connection, AUTH_FLAG_SEND_USER_CONFIRM_NEGATIVE_REPLY);
             hci_send_cmd(&hci_user_confirmation_request_negative_reply, &connection->address);
             return true;
         }
 
         if (connection->authentication_flags & AUTH_FLAG_SEND_USER_PASSKEY_REPLY){
-            connectionClearAuthenticationFlags(connection, AUTH_FLAG_SEND_USER_PASSKEY_REPLY);
+            hci_connection_clear_authentication_flags(connection, AUTH_FLAG_SEND_USER_PASSKEY_REPLY);
             hci_send_cmd(&hci_user_passkey_request_reply, &connection->address, 000000);
             return true;
         }
@@ -8547,7 +8547,7 @@ void gap_request_security_level(hci_con_handle_t con_handle, gap_security_level_
 
         // start to authenticate connection
         connection->bonding_flags |= BONDING_SEND_AUTHENTICATE_REQUEST;
-        connectionClearAuthenticationFlags(connection, AUTH_FLAG_RECV_IO_CAPABILITIES_RESPONSE);
+        hci_connection_clear_authentication_flags(connection, AUTH_FLAG_RECV_IO_CAPABILITIES_RESPONSE);
 
         // request remote features if not already active, also trigger hci_run
         hci_remote_features_query(con_handle);
@@ -9658,7 +9658,7 @@ int gap_ssp_confirmation_negative(const bd_addr_t addr){
 static uint8_t gap_set_auth_flag_and_run(const bd_addr_t addr, hci_authentication_flags_t flag){
     hci_connection_t * conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
     if (!conn) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    connectionSetAuthenticationFlags(conn, flag);
+    hci_connection_set_authentication_flags(conn, flag);
     hci_run();
     return ERROR_CODE_SUCCESS;
 }
