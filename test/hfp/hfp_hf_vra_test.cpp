@@ -232,7 +232,7 @@ TEST(HFP_HF_VRA, HFP_VRA_OFF_ag_activate_in_and_SCO_not_established){
     setup_vra_ag_report(HFP_VRA_OFF, HFP_VOICE_RECOGNITION_STATUS_ENABLED);
     test_hfp_hf_vra_state_machine(hfp_connection, HFP_HF_VRA_EVENT_AG_REPORT_ACTIVATED);
     CHECK_EQUAL(HFP_VRA_ACTIVE, hfp_connection->vra_engine_current_state);
-    CHECK_EQUAL(true, hfp_connection->emit_vra_enabled_after_audio_established);
+    CHECK_EQUAL(true, hfp_connection->emit_vra_on_after_audio_established);
 }
 
 TEST(HFP_HF_VRA, HFP_VRA_OFF_ag_activate_and_SCO_established){
@@ -273,7 +273,7 @@ TEST(HFP_HF_VRA, HFP_VRA_OFF_hg_activate_with_ok_in_and_SCO_not_established){
     test_hfp_hf_vra_state_machine(hfp_connection, HFP_HF_VRA_EVENT_RECEIVED_OK);
     CHECK_EQUAL(HFP_VRA_ACTIVE, hfp_connection->vra_engine_current_state);
     CHECK_EQUAL(0u, hfp_connection->ok_pending);
-    CHECK_EQUAL(true, hfp_connection->emit_vra_enabled_after_audio_established);
+    CHECK_EQUAL(true, hfp_connection->emit_vra_on_after_audio_established);
 }
 
 TEST(HFP_HF_VRA, HFP_VRA_OFF_hg_activate_with_ok_and_sco_established){
@@ -397,7 +397,7 @@ TEST(HFP_HF_VRA, HFP_VRA_W4_ACTIVE_overlapping_hf_and_ag_cmds_and_sco_not_establ
     CHECK_EQUAL(HFP_VRA_ACTIVE, hfp_connection->vra_engine_current_state);
     CHECK_EQUAL(0u, hfp_connection->ok_pending);
     CHECK_EQUAL(0, last_received_event);
-    CHECK_EQUAL(true, hfp_connection->emit_vra_enabled_after_audio_established);
+    CHECK_EQUAL(true, hfp_connection->emit_vra_on_after_audio_established);
 
     // SCO established
     hfp_connection->state = HFP_AUDIO_CONNECTION_ESTABLISHED;
@@ -405,7 +405,7 @@ TEST(HFP_HF_VRA, HFP_VRA_W4_ACTIVE_overlapping_hf_and_ag_cmds_and_sco_not_establ
     CHECK_EQUAL(0u, hfp_connection->ok_pending);
     CHECK_EQUAL(HFP_SUBEVENT_VOICE_RECOGNITION_ACTIVATED, last_received_event);
     CHECK_EQUAL(0, last_received_event_status);
-    CHECK_EQUAL(false, hfp_connection->emit_vra_enabled_after_audio_established);
+    CHECK_EQUAL(false, hfp_connection->emit_vra_on_after_audio_established);
 }
 
 TEST(HFP_HF_VRA, HFP_VRA_ACTIVE_ag_deactivate) {
@@ -555,7 +555,7 @@ TEST(HFP_HF_VRA, HFP_VRA_W4_ACTIVE_ok){
     test_hfp_hf_vra_state_machine(hfp_connection, HFP_HF_VRA_EVENT_RECEIVED_OK);
     CHECK_EQUAL(HFP_VRA_ACTIVE, hfp_connection->vra_engine_current_state);
     CHECK_EQUAL(0u, hfp_connection->ok_pending);
-    CHECK_EQUAL(true, hfp_connection->emit_vra_enabled_after_audio_established);
+    CHECK_EQUAL(true, hfp_connection->emit_vra_on_after_audio_established);
 }
 
 TEST(HFP_HF_VRA, HFP_VRA_W4_OFF_ready2send){
