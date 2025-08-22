@@ -972,9 +972,9 @@ static bool hfp_ag_vra_state_machine(hfp_connection_t * hfp_connection, hfp_ag_v
                     hfp_connection->vra_engine_current_state = HFP_VRA_W4_ACTIVE;
                     break;
                 case HFP_AG_VRA_EVENT_SCO_DISCONNECTED:
-                    if (hfp_connection->emit_vra_off_on_sco_disconnect == 1){
+                    if (hfp_connection->emit_vra_off_on_sco_disconnect){
+                        hfp_connection->emit_vra_off_on_sco_disconnect = false;
                         hfp_emit_voice_recognition_disabled(hfp_connection, ERROR_CODE_SUCCESS);
-                        hfp_connection->emit_vra_off_on_sco_disconnect = 0;
                     }
                     break;
                 case HFP_AG_VRA_EVENT_HF_ACTIVATE:
@@ -1072,6 +1072,7 @@ static bool hfp_ag_vra_state_machine(hfp_connection_t * hfp_connection, hfp_ag_v
                 case HFP_AG_VRA_EVENT_CAN_SEND_NOW:
                     if (hfp_connection->state == HFP_AUDIO_CONNECTION_ESTABLISHED){
                         hfp_connection->emit_vra_on_after_audio_established = false;
+                        hfp_connection->emit_vra_off_on_sco_disconnect = true;
                         hfp_connection->vra_engine_current_state = HFP_VRA_ACTIVE;
                         hfp_ag_send_voice_recognition_cmd(hfp_connection, 1);
                         hfp_emit_voice_recognition_enabled(hfp_connection, ERROR_CODE_SUCCESS);
@@ -1080,6 +1081,7 @@ static bool hfp_ag_vra_state_machine(hfp_connection_t * hfp_connection, hfp_ag_v
                     if (hfp_ag_setup_audio_connection(hfp_connection) == ERROR_CODE_SUCCESS) {
                         // postpone VRA event to simplify application logic
                         hfp_connection->emit_vra_on_after_audio_established = true;
+                        hfp_connection->emit_vra_off_on_sco_disconnect = true;
                         hfp_connection->vra_engine_current_state = HFP_VRA_ACTIVE;
                         hfp_ag_send_voice_recognition_cmd(hfp_connection, 1);
                         return true;
@@ -1104,6 +1106,7 @@ static bool hfp_ag_vra_state_machine(hfp_connection_t * hfp_connection, hfp_ag_v
                 case HFP_AG_VRA_EVENT_CAN_SEND_NOW:
                     if (hfp_connection->state == HFP_AUDIO_CONNECTION_ESTABLISHED){
                         hfp_connection->emit_vra_on_after_audio_established = false;
+                        hfp_connection->emit_vra_off_on_sco_disconnect = true;
                         hfp_connection->vra_engine_current_state = HFP_VRA_ACTIVE;
                         hfp_ag_send_ok(hfp_connection->rfcomm_cid);
                         hfp_emit_voice_recognition_enabled(hfp_connection, ERROR_CODE_SUCCESS);
@@ -1112,6 +1115,7 @@ static bool hfp_ag_vra_state_machine(hfp_connection_t * hfp_connection, hfp_ag_v
                     if (hfp_ag_setup_audio_connection(hfp_connection) == ERROR_CODE_SUCCESS) {
                         // postpone VRA event to simplify application logic
                         hfp_connection->emit_vra_on_after_audio_established = true;
+                        hfp_connection->emit_vra_off_on_sco_disconnect = true;
                         hfp_connection->vra_engine_current_state = HFP_VRA_ACTIVE;
                         hfp_ag_send_ok(hfp_connection->rfcomm_cid);
                         return true;
@@ -1140,8 +1144,8 @@ static bool hfp_ag_vra_state_machine(hfp_connection_t * hfp_connection, hfp_ag_v
                     if (hfp_connection->state == HFP_AUDIO_CONNECTION_ESTABLISHED) {
                         // release audio connection only if it was opened after audio VR activated
                         hfp_connection->release_audio_connection = 1;
-                        hfp_connection->emit_vra_off_on_sco_disconnect = 1;
                     } else {
+                        hfp_connection->emit_vra_off_on_sco_disconnect = false;
                         hfp_emit_voice_recognition_disabled(hfp_connection, ERROR_CODE_SUCCESS);
                     }
                     return true;
@@ -1163,8 +1167,8 @@ static bool hfp_ag_vra_state_machine(hfp_connection_t * hfp_connection, hfp_ag_v
                     if (hfp_connection->state == HFP_AUDIO_CONNECTION_ESTABLISHED){
                         // release audio connection only if it was opened after audio VR activated
                         hfp_connection->release_audio_connection = 1;
-                        hfp_connection->emit_vra_off_on_sco_disconnect = 1;
                     } else {
+                        hfp_connection->emit_vra_off_on_sco_disconnect = false;
                         hfp_emit_voice_recognition_disabled(hfp_connection, ERROR_CODE_SUCCESS);
                     }
                     return true;
