@@ -681,7 +681,6 @@ typedef struct hfp_connection {
     bool emit_vra_on_after_audio_established;
 
     // AG only
-    bool emit_vra_off_on_sco_disconnect;
     uint8_t change_in_band_ring_tone_setting;
     uint8_t ag_ring;
     uint8_t ag_send_clip;
