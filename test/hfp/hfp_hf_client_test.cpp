@@ -94,17 +94,13 @@ static void dump_vra_state(hfp_connection_t * connection, const char * desc){
             "W2_SEND_ENHANCED_VOICE_RECOGNITION_STATUS",
             "W2_SEND_ENHANCED_VOICE_RECOGNITION_MSG"
     };
-    if (connection->enhanced_voice_recognition_enabled){
-        printf("%s: %s -> %s, delay emit %d, ok pending %d\n",
-               desc,
-               vra_state[connection->vra_engine_current_state],
-               vra_state[connection->vra_engine_requested_state],
-               connection->emit_vra_on_after_audio_established, connection->ok_pending);
-    } else {
-        printf("%s, VRA not enabled\n", desc);
-    }
-
+    printf("%s: %s -> %s, delay emit %d, ok pending %d\n",
+           desc,
+           vra_state[connection->vra_engine_current_state],
+           vra_state[connection->vra_engine_requested_state],
+           connection->emit_vra_on_after_audio_established, connection->ok_pending);
 }
+
 // static int supported_features_with_codec_negotiation = 438;
 static int supported_features_with_codec_negotiation =
         (1<<HFP_HFSF_ESCO_S4)               |

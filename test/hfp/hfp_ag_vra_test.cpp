@@ -241,7 +241,6 @@ TEST_GROUP(HFP_AG_VRA){
         hfp_connection->acl_handle = 0x1234;
         hfp_connection->remote_supported_features |= (1<<HFP_AGSF_ENHANCED_VOICE_RECOGNITION_STATUS);
         hfp_connection->ok_pending = 0u;
-        hfp_connection->enhanced_voice_recognition_enabled = true;
         hfp_connection->release_audio_connection = 0;
         hfp_connection->emit_vra_on_after_audio_established = 0;
         last_received_event_status = 0;
