@@ -436,13 +436,13 @@ hci_connection_t * hci_connection_for_bd_addr_and_type(const bd_addr_t  addr, bd
 }
 
 inline static void hci_connection_clear_authentication_flags(hci_connection_t * conn, hci_authentication_flags_t flags){
-    log_info("Authentication flags clear 0x%04x for %s", flags, bd_addr_to_str(conn->address));
     conn->authentication_flags = (hci_authentication_flags_t)(conn->authentication_flags & ~flags);
+    log_info("Authentication flags clear 0x%04x => 0x%04x for %s", flags, conn->authentication_flags, bd_addr_to_str(conn->address));
 }
 
 inline static void hci_connection_set_authentication_flags(hci_connection_t * conn, hci_authentication_flags_t flags){
-    log_info("Authentication flags set   0x%04x set for %s", flags, bd_addr_to_str(conn->address));
     conn->authentication_flags = (hci_authentication_flags_t)(conn->authentication_flags | flags);
+    log_info("Authentication flags set   0x%04x => 0x%04x for %s", flags, conn->authentication_flags, bd_addr_to_str(conn->address));
 }
 
 #ifdef ENABLE_CLASSIC
@@ -3651,7 +3651,9 @@ static void hci_ssp_assess_security_on_io_cap_request(hci_connection_t * conn){
 #endif
     }
 
-#ifndef ENABLE_EXPLICIT_IO_CAPABILITIES_REPLY
+#ifdef ENABLE_EXPLICIT_IO_CAPABILITIES_REPLY
+    log_info("Await IO capabilities reply from application");
+#else
     if (hci_stack->ssp_io_capability != SSP_IO_CAPABILITY_UNKNOWN){
         hci_connection_set_authentication_flags(conn, AUTH_FLAG_SEND_IO_CAPABILITIES_REPLY);
     } else {
