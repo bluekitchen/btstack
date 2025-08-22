@@ -4015,7 +4015,9 @@ static void event_handler(uint8_t *packet, uint16_t size){
             break;
 
         case HCI_EVENT_LINK_KEY_REQUEST:
-#ifndef ENABLE_EXPLICIT_LINK_KEY_REPLY
+#ifdef ENABLE_EXPLICIT_LINK_KEY_REPLY
+            log_info("Await Link Key Reply from application");
+#else
             hci_event_link_key_request_get_bd_addr(packet, addr);
             conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
             if (!conn) break;
