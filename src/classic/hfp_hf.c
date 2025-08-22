@@ -568,7 +568,7 @@ static void hfp_hf_handle_emit_vra_active_event(hfp_connection_t *hfp_connection
     if (hfp_connection->state == HFP_AUDIO_CONNECTION_ESTABLISHED){
         hfp_connection->emit_vra_on_after_audio_established = false;
         hfp_connection->vra_engine_requested_state = HFP_VRA_IDLE;
-        hfp_emit_voice_recognition_enabled(hfp_connection, ERROR_CODE_SUCCESS);
+        hfp_emit_voice_recognition_enabled(hfp_connection, ERROR_CODE_SUCCESS, hfp_hf_enhanced_vra_flag_supported(hfp_connection));
     } else {
         // postpone VRA event to simplify application logic
         hfp_connection->emit_vra_on_after_audio_established = true;
@@ -631,7 +631,7 @@ static bool hfp_hf_vra_state_machine(hfp_connection_t * hfp_connection, hfp_hf_v
                     hfp_connection->vra_engine_current_state = HFP_VRA_OFF;
                     hfp_connection->vra_engine_requested_state = HFP_VRA_IDLE;
                     hfp_connection->ok_pending = 0u;
-                    hfp_emit_voice_recognition_enabled(hfp_connection, ERROR_CODE_UNSPECIFIED_ERROR);
+                    hfp_emit_voice_recognition_enabled(hfp_connection, ERROR_CODE_UNSPECIFIED_ERROR, hfp_hf_enhanced_vra_flag_supported(hfp_connection));
                     break;
                 case HFP_HF_VRA_EVENT_AG_REPORT_ACTIVATED:
                     hfp_connection->vra_engine_current_state = HFP_VRA_ACTIVE;
@@ -2236,7 +2236,6 @@ uint8_t hfp_hf_activate_voice_recognition(hci_con_handle_t acl_handle){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
     
-    hfp_connection->enhanced_voice_recognition_enabled = enhanced_vra_supported;
     hfp_hf_vra_state_machine(hfp_connection, HFP_HF_VRA_EVENT_HF_REQUESTED_ACTIVATE);
     hfp_hf_run_for_context(hfp_connection);
     return ERROR_CODE_SUCCESS;
@@ -2269,7 +2268,6 @@ uint8_t hfp_hf_enhanced_voice_recognition_report_ready_for_audio(hci_con_handle_
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
-    hfp_connection->enhanced_voice_recognition_enabled = enhanced_vra_supported;
     hfp_hf_vra_state_machine(hfp_connection, HFP_HF_VRA_EVENT_HF_REQUESTED_ACTIVATE_ENHANCED);
     hfp_hf_run_for_context(hfp_connection);
     return ERROR_CODE_SUCCESS;
@@ -2305,7 +2303,6 @@ uint8_t hfp_hf_deactivate_voice_recognition(hci_con_handle_t acl_handle){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
-    hfp_connection->enhanced_voice_recognition_enabled = enhanced_vra_supported;
     hfp_hf_vra_state_machine(hfp_connection, HFP_HF_VRA_EVENT_HF_REQUESTED_DEACTIVATE);
     hfp_hf_run_for_context(hfp_connection);
     return ERROR_CODE_SUCCESS;

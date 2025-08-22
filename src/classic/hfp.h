@@ -746,7 +746,6 @@ typedef struct hfp_connection {
 
     hfp_vra_engine_state_t vra_engine_requested_state;
     hfp_vra_engine_state_t vra_engine_current_state;
-    bool enhanced_voice_recognition_enabled;
 
     // ih HF, used by parser, in AG used for commands
     hfp_voice_recognition_status_t ag_vra_status;
@@ -866,8 +865,9 @@ void hfp_emit_slc_connection_event(hfp_role_t local_role, uint8_t status, hci_co
  * @brief Emit HFP_SUBEVENT_VOICE_RECOGNITION_ENABLED event
  * @param hfp_connection
  * @param status ERROR_CODE_SUCCESS if successful, otherwise ERROR_CODE_COMMAND_DISALLOWED
+ * @param evra_supported
  */
-void hfp_emit_voice_recognition_enabled(hfp_connection_t * hfp_connection, uint8_t status);
+void hfp_emit_voice_recognition_enabled(hfp_connection_t * hfp_connection, uint8_t status, uint8_t evra_supported);
 
 /**
  * @brief Emit HFP_SUBEVENT_VOICE_RECOGNITION_DISABLED event

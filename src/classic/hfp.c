@@ -424,7 +424,7 @@ static void hfp_emit_slc_released(hci_con_handle_t acl_handle, hfp_role_t role){
     hfp_emit_event_for_role(role, event, sizeof(event));
 }
 
-void hfp_emit_voice_recognition_enabled(hfp_connection_t * hfp_connection, uint8_t status){
+void hfp_emit_voice_recognition_enabled(hfp_connection_t * hfp_connection, uint8_t status, uint8_t evra_supported){
     btstack_assert(hfp_connection != NULL);
 
     uint8_t event[7];
@@ -434,7 +434,7 @@ void hfp_emit_voice_recognition_enabled(hfp_connection_t * hfp_connection, uint8
     
     little_endian_store_16(event, 3, hfp_connection->acl_handle);
     event[5] = status; // 0:success
-    event[6] = hfp_connection->enhanced_voice_recognition_enabled ? 1 : 0;
+    event[6] = evra_supported;
     hfp_emit_event_for_context(hfp_connection, event, sizeof(event));
 }
 
@@ -611,7 +611,6 @@ static void hfp_vra_handle_disconnect(hfp_connection_t * hfp_connection) {
 static void hfp_reset_voice_recognition(hfp_connection_t * hfp_connection){
     hfp_connection->vra_engine_requested_state = HFP_VRA_IDLE;
     hfp_connection->vra_engine_current_state = HFP_VRA_OFF;
-    hfp_connection->enhanced_voice_recognition_enabled = false;
     hfp_connection->vra_ag_send_error = false;
     hfp_connection->ag_vra_status = HFP_VOICE_RECOGNITION_STATUS_DISABLED;
     hfp_connection->ag_vra_state  = HFP_VOICE_RECOGNITION_STATE_AG_IDLE;
