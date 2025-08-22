@@ -615,6 +615,7 @@ static bool hfp_hf_vra_state_machine(hfp_connection_t * hfp_connection, hfp_hf_v
                     // block HF commands if we are still waiting for AG response
                     if (hfp_connection->vra_engine_requested_state == HFP_VRA_ACTIVE && (hfp_connection->ok_pending == 0u)){
                         hfp_connection->ok_pending = 1;
+                        hfp_connection->response_pending_for_command = HFP_CMD_HF_ACTIVATE_VOICE_RECOGNITION;
                         hfp_hf_set_voice_recognition_notification_cmd(hfp_connection->rfcomm_cid, 1);
                         hfp_hf_command_timer_start(hfp_connection);
                         return true;
@@ -745,6 +746,7 @@ static bool hfp_hf_vra_state_machine(hfp_connection_t * hfp_connection, hfp_hf_v
                     // block HF commands if we are still waiting for AG response
                     if (hfp_connection->vra_engine_requested_state == HFP_VRA_OFF && (hfp_connection->ok_pending == 0u)){
                         hfp_connection->ok_pending = 1;
+                        hfp_connection->response_pending_for_command = HFP_CMD_HF_ACTIVATE_VOICE_RECOGNITION;
                         hfp_hf_set_voice_recognition_notification_cmd(hfp_connection->rfcomm_cid, 0);
                         hfp_hf_command_timer_start(hfp_connection);
                         return true;
@@ -780,6 +782,7 @@ static bool hfp_hf_vra_state_machine(hfp_connection_t * hfp_connection, hfp_hf_v
                     // block HF commands if we are still waiting for AG response
                     if (hfp_connection->vra_engine_requested_state == HFP_VRA_ENHANCED_ACTIVE && (hfp_connection->ok_pending == 0u)){
                         hfp_connection->ok_pending = 1;
+                        hfp_connection->response_pending_for_command = HFP_CMD_HF_ACTIVATE_VOICE_RECOGNITION;
                         hfp_hf_set_voice_recognition_notification_cmd(hfp_connection->rfcomm_cid, 2);
                         hfp_hf_command_timer_start(hfp_connection);
                         return true;
@@ -1396,6 +1399,13 @@ static bool hfp_hf_switch_on_ag_response(hfp_connection_t *hfp_connection, uint8
         case HFP_CMD_APPLE_ACCESSORY_INFORMATION:
             hfp_hf_apple_extension_supported(hfp_connection, true);
             break;
+        case HFP_CMD_HF_ACTIVATE_VOICE_RECOGNITION:
+            if (status == ERROR_CODE_SUCCESS){
+                hfp_hf_vra_state_machine(hfp_connection, HFP_HF_VRA_EVENT_RECEIVED_OK);
+            } else {
+                hfp_hf_vra_state_machine(hfp_connection, HFP_HF_VRA_EVENT_RECEIVED_ERROR);
+            }
+            break;
         default:
             event_emitted = false;
     
@@ -1498,13 +1508,6 @@ static bool hfp_hf_switch_on_ag_response(hfp_connection_t *hfp_connection, uint8
             break;
     }
 
-    if (hfp_connection->state >= HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED){
-        if (status == ERROR_CODE_SUCCESS){
-            hfp_hf_vra_state_machine(hfp_connection, HFP_HF_VRA_EVENT_RECEIVED_OK);
-        } else {
-            hfp_hf_vra_state_machine(hfp_connection, HFP_HF_VRA_EVENT_RECEIVED_ERROR);
-        }
-    }
     return event_emitted;
 }   
 
