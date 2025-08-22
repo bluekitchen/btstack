@@ -679,7 +679,8 @@ typedef struct hfp_connection {
     // HF:  Unsolicited Result Code, AG:  AT Command
     uint16_t custom_at_command_id;
 
-    bool emit_vra_enabled_after_audio_established;
+    bool emit_vra_on_after_audio_established;
+
     // AG only
     uint8_t change_in_band_ring_tone_setting;
     uint8_t ag_ring;
