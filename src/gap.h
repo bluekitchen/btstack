@@ -821,8 +821,8 @@ uint8_t gap_periodic_advertising_stop(uint8_t advertising_handle);
  * @param skip The number of periodic advertising packets that can be skipped after a successful receive
  * @param sync_timeout Range: 0x000A to 0x4000, Time = N*10 ms, Time Range: 100 ms to 163.84 s
  * @param cte_type  bit 0 = Do not sync to packets with an AoA Constant Tone Extension
- *                  bit 1 = Do not sync to packets with an AoD Constant Tone Extension with 1 μs slots
- *                  bit 2 = Do not sync to packets with an AoD Constant Tone Extension with 2 μs slots
+ *                  bit 1 = Do not sync to packets with an AoD Constant Tone Extension with 1 us slots
+ *                  bit 2 = Do not sync to packets with an AoD Constant Tone Extension with 2 us slots
  *                  bit 3 = Do not sync to packets without a Constant Tone Extension
  * @return status
  */
