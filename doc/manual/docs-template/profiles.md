@@ -305,37 +305,37 @@ Similarly, the HF supported features are a combination of HFP_HFSF_xx flags and 
 
 | Define for AG Supported Feature         |  Description  |
 | --------------------------------------- |  ----------------------------  |
-| HFP_AGSF_THREE_WAY_CALLING              |  Three-way calling             |
-| HFP_AGSF_EC_NR_FUNCTION                 |  Echo Canceling and/or Noise Reduction function |
-| HFP_AGSF_VOICE_RECOGNITION_FUNCTION     |  Voice recognition function |
-| HFP_AGSF_IN_BAND_RING_TONE              |  In-band ring tone capability |
-| HFP_AGSF_ATTACH_A_NUMBER_TO_A_VOICE_TAG |  Attach a number to a voice tag |
-| HFP_AGSF_ABILITY_TO_REJECT_A_CALL       |  Ability to reject a call |
-| HFP_AGSF_ENHANCED_CALL_STATUS           |  Enhanced call status |
-| HFP_AGSF_ENHANCED_CALL_CONTROL          |  Enhanced call control |
-| HFP_AGSF_EXTENDED_ERROR_RESULT_CODES    |  Extended Error Result Codes |
-| HFP_AGSF_CODEC_NEGOTIATION              |  Codec negotiation |
-| HFP_AGSF_HF_INDICATORS                  |  HF Indicators |
-| HFP_AGSF_ESCO_S4                        |  eSCO S4 (and T2) Settings Supported |
-| HFP_AGSF_ENHANCED_VOICE_RECOGNITION_STATUS |  Enhanced voice recognition status |
-| HFP_AGSF_VOICE_RECOGNITION_TEXT         |  Voice recognition text |
+| HFP_AGSF_<br>THREE_WAY_CALLING              |  Three-way calling             |
+| HFP_AGSF_<br>EC_NR_FUNCTION                 |  Echo Canceling and/or Noise Reduction function |
+| HFP_AGSF_<br>VOICE_RECOGNITION_FUNCTION     |  Voice recognition function |
+| HFP_AGSF_<br>IN_BAND_RING_TONE              |  In-band ring tone capability |
+| HFP_AGSF_<br>ATTACH_A_NUMBER_TO_A_VOICE_TAG |  Attach a number to a voice tag |
+| HFP_AGSF_<br>ABILITY_TO_REJECT_A_CALL       |  Ability to reject a call |
+| HFP_AGSF_<br>ENHANCED_CALL_STATUS           |  Enhanced call status |
+| HFP_AGSF_<br>ENHANCED_CALL_CONTROL          |  Enhanced call control |
+| HFP_AGSF_<br>EXTENDED_ERROR_RESULT_CODES    |  Extended Error Result Codes |
+| HFP_AGSF_<br>CODEC_NEGOTIATION              |  Codec negotiation |
+| HFP_AGSF_<br>HF_INDICATORS                  |  HF Indicators |
+| HFP_AGSF_<br>ESCO_S4                        |  eSCO S4 (and T2) Settings Supported |
+| HFP_AGSF_<br>ENHANCED_VOICE_RECOGNITION_STATUS |  Enhanced voice recognition status |
+| HFP_AGSF_<br>VOICE_RECOGNITION_TEXT         |  Voice recognition text |
 
 
 | Define for HF Supported Feature         |  Description  |
 | --------------------------------------- |  ----------------------------  |
-| HFP_HFSF_THREE_WAY_CALLING              |  Three-way calling  |
-| HFP_HFSF_EC_NR_FUNCTION                 |  Echo Canceling and/or Noise Reduction function |
-| HFP_HFSF_CLI_PRESENTATION_CAPABILITY    |  CLI presentation capability |
-| HFP_HFSF_VOICE_RECOGNITION_FUNCTION     |  Voice recognition function |
-| HFP_HFSF_REMOTE_VOLUME_CONTROL          |  Remote volume control |
-| HFP_HFSF_ATTACH_A_NUMBER_TO_A_VOICE_TAG |  Attach a number to a voice tag |
-| HFP_HFSF_ENHANCED_CALL_STATUS           |  Enhanced call status |
-| HFP_HFSF_ENHANCED_CALL_CONTROL          |  Enhanced call control |
-| HFP_HFSF_CODEC_NEGOTIATION              |  Codec negotiation |
-| HFP_HFSF_HF_INDICATORS                  |  HF Indicators |
-| HFP_HFSF_ESCO_S4                        |  eSCO S4 (and T2) Settings Supported |
-| HFP_HFSF_ENHANCED_VOICE_RECOGNITION_STATUS |  Enhanced voice recognition status |
-| HFP_HFSF_VOICE_RECOGNITION_TEXT         |  Voice recognition text |
+| HFP_HFSF_<br>THREE_WAY_CALLING              |  Three-way calling  |
+| HFP_HFSF_<br>EC_NR_FUNCTION                 |  Echo Canceling and/or Noise Reduction function |
+| HFP_HFSF_<br>CLI_PRESENTATION_CAPABILITY    |  CLI presentation capability |
+| HFP_HFSF_<br>VOICE_RECOGNITION_FUNCTION     |  Voice recognition function |
+| HFP_HFSF_<br>REMOTE_VOLUME_CONTROL          |  Remote volume control |
+| HFP_HFSF_<br>ATTACH_A_NUMBER_TO_A_VOICE_TAG |  Attach a number to a voice tag |
+| HFP_HFSF_<br>ENHANCED_CALL_STATUS           |  Enhanced call status |
+| HFP_HFSF_<br>ENHANCED_CALL_CONTROL          |  Enhanced call control |
+| HFP_HFSF_<br>CODEC_NEGOTIATION              |  Codec negotiation |
+| HFP_HFSF_<br>HF_INDICATORS                  |  HF Indicators |
+| HFP_HFSF_<br>ESCO_S4                        |  eSCO S4 (and T2) Settings Supported |
+| HFP_HFSF_<br>ENHANCED_VOICE_RECOGNITION_STATUS |  Enhanced voice recognition status |
+| HFP_HFSF_<br>VOICE_RECOGNITION_TEXT         |  Voice recognition text |
 
 
 ### Audio Voice Recognition Activation {#sec:hfpAVRActivation}
@@ -360,8 +360,8 @@ On activation change, the HFP_SUBEVENT_VOICE_RECOGNITION_(DE)ACTIVATED event wil
 
 Voice recognition will stay active until either the deactivation command is called, or until the current Service Level Connection between the AG and the HF is dropped for any reason.
 
-| Use cases                                              |  Expected behavior  |
-|--------------------------------------------------------|---------------------|
+| Use cases           |  Expected behavior  |
+|---------------------|---------------------|
 | No previous audio connection, AVR activated then deactivated | Audio connection will be opened by AG upon AVR activation, and upon AVR deactivation closed|
 | AVR activated and deactivated during existing audio connection | Audio remains active upon AVR deactivation |
 | Call to close audio connection during active AVR session       | The audio connection shut down will be refused |
@@ -389,11 +389,11 @@ When eAVR and audio channel are established there are several additional command
 
 | HFP Role | eVRA API | Description |
 -----------|----------|-------------|
-|HF | hfp_hf_enhanced_voice_recognition_report_ready_for_audio| Ready to accept audio input. |
-|AG | hfp_ag_enhanced_voice_recognition_report_ready_for_audio | Voice recognition engine is ready to accept audio input. |
-|AG | hfp_ag_enhanced_voice_recognition_report_sending_audio | The voice recognition engine will play a sound, e.g. starting sound. |
-|AG | hfp_ag_enhanced_voice_recognition_report_processing_input | Voice recognition engine is processing the audio input. |
-|AG | hfp_ag_enhanced_voice_recognition_send_message | Report textual representation from the voice recognition engine. |
+|HF | hfp_hf_enhanced_voice_recognition_<br>report_ready_for_audio| Ready to accept audio input. |
+|AG | hfp_ag_enhanced_voice_recognition_<br>report_ready_for_audio | Voice recognition engine is ready to accept audio input. |
+|AG | hfp_ag_enhanced_voice_recognition_<br>report_sending_audio | The voice recognition engine will play a sound, e.g. starting sound. |
+|AG | hfp_ag_enhanced_voice_recognition_<br>report_processing_input | Voice recognition engine is processing the audio input. |
+|AG | hfp_ag_enhanced_voice_recognition_<br>send_message | Report textual representation from the voice recognition engine. |
 
 
 ## HID - Human-Interface Device Profile
@@ -828,11 +828,21 @@ Characteristic | Ref | Mandatory/Optional
 ---------------|-----|-------------------
 Battery Level  | 3.1 | M
 
-So, the Battery Service has a single mandatory Characteristic.
+So, the Battery Service has a single mandatory Characteristic "Battery Level".
 
-Characteristic | Broadcast | Read | Write without Response | Write | Notify | Indicate | Signed Write | Reliable Write | Writable Auxiliaries
----------------|-----------|------|------------------------|-------|--------|----------|--------------|----------------|---------
-Battery Level  |      x    |  M   |            x           |  x    |  O     |     x    |      x       |        x       |     x
+
+Properties | Mandatory/Optional/Excluded
+---------------|-------------------------
+Broadcast              | x    
+Read                   | M
+Write without Response | x
+Write                  | x
+Notify                 | O
+Indicate               | x
+Signed Write           | x
+Reliable Write         | x
+Writable Auxiliaries   | x
+
 
 The Battery Level Characteristic must supports Read and optionally allows for Notifications.
 
