@@ -4,7 +4,7 @@ import sys, yaml
 import os, re, getopt
 
 pandoc_cmd_template = """
-pandoc -f markdown -t latex --listings LATEX_FOLDERbtstack_generated.md -o LATEX_FOLDERbtstack_generated.tex
+pandoc -f markdown -t latex --wrap=auto --columns=34 --listings LATEX_FOLDERbtstack_generated.md -o LATEX_FOLDERbtstack_generated.tex
 
 """
 
