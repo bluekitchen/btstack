@@ -386,7 +386,11 @@ static void rfcomm_multiplexer_initialize(rfcomm_multiplexer_t *multiplexer){
     multiplexer->state = RFCOMM_MULTIPLEXER_CLOSED;
     multiplexer->fcon = 1;
     multiplexer->send_dm_for_dlci = 0;
-    multiplexer->max_frame_size = rfcomm_max_frame_size_for_l2cap_mtu(l2cap_max_mtu());
+    uint16_t max_l2cap_mtu = l2cap_max_mtu();
+#ifdef RFCOMM_USE_OUTGOING_BUFFER
+    max_l2cap_mtu = btstack_min(max_l2cap_mtu, sizeof(rfcomm_outgoing_buffer));
+#endif
+    multiplexer->max_frame_size = rfcomm_max_frame_size_for_l2cap_mtu(max_l2cap_mtu);
     multiplexer->test_data_len = 0;
     multiplexer->nsc_command = 0;
 }

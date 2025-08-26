@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - L2CAP: do not sent I-Frames in ERTM WAIT_F state
 - L2CAP: trigger retransmission for ERTM Reject and RR
 - L2CAP: fix transmission for ERTM if num rx buffers different from num tx buffers
+- RFCOMM: limit max frame size by size of outgoing buffer when ERTM enabled
 - GAP: store link key for standard/non-SSP pairing
 - GAP: fix gap_sniff_subrating_configure
 - SM: fix pairing as Peripheral with Extended Advertising and LE Advertisement Set Terminated after Connection Complete 
