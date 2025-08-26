@@ -63,7 +63,7 @@ As the following Table has too many columns, we split it in two parts.
 Part 1.
 
 | Chipset                              | Type             | HCI Transport  | BD_ADDR (1)  | SCO over HCI (2) | LE DLE     | Multiple LE Roles (3) | 
-|--------------------------------------|------------------|----------------|--------------|------------------|------------|-----------------------|-
+|--------------------------------------|------------------|----------------|--------------|------------------|------------|-----------------------|
 | Atmel ATWILC3000                     | LE               | H4             | Yes          | n.a              | No         | No                    | 
 | Broadcom UART                        | Dual mode        | H4, H5         | Rarely       | Partially (2)    | No         | Maybe (3)             | 
 | Broadcom USB Dongles                 | Dual mode        | USB            | Yes          | Yes              | No         | No                    | 
