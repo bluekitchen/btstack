@@ -271,17 +271,37 @@ static void ancs_client_handle_gatt_client_event_in_w4_service_result(uint8_t* p
     }
 }
 
-static void ancs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-
-    UNUSED(packet_type);
-    UNUSED(channel);
-    UNUSED(size);
+static void ancs_client_handle_characteristic_query_result(uint8_t* packet) {
 
     static const uint8_t ancs_notification_source_uuid[] = {0x9F,0xBF,0x12,0x0D,0x63,0x01,0x42,0xD9,0x8C,0x58,0x25,0xE6,0x99,0xA2,0x1D,0xBD};
     static const uint8_t ancs_control_point_uuid[] =       {0x69,0xD1,0xD8,0xF3,0x45,0xE1,0x49,0xA8,0x98,0x21,0x9B,0xBD,0xFD,0xAA,0xD9,0xD9};
     static const uint8_t ancs_data_source_uuid[] =         {0x22,0xEA,0xC6,0xE9,0x24,0xD6,0x4B,0xB5,0xBE,0x44,0xB3,0x6A,0xCE,0x7C,0x7B,0xFB};
 
     gatt_client_characteristic_t characteristic;
+
+    gatt_event_characteristic_query_result_get_characteristic(packet, &characteristic);
+    if (memcmp(characteristic.uuid128, ancs_notification_source_uuid, 16) == 0){
+        log_info("ANCS Notification Source found, attribute handle %u", characteristic.value_handle);
+        ancs_notification_source_characteristic = characteristic;
+        ancs_characteristcs++;
+    }
+    else if (memcmp(characteristic.uuid128, ancs_control_point_uuid, 16) == 0){
+        log_info("ANCS Control Point found, attribute handle %u", characteristic.value_handle);
+        ancs_control_point_characteristic = characteristic;
+        ancs_characteristcs++;
+    }
+    else if (memcmp(characteristic.uuid128, ancs_data_source_uuid, 16) == 0){
+        log_info("ANCS Data Source found, attribute handle %u", characteristic.value_handle);
+        ancs_data_source_characteristic = characteristic;
+        ancs_characteristcs++;
+    }
+}
+
+static void ancs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+
+    UNUSED(packet_type);
+    UNUSED(channel);
+    UNUSED(size);
 
     switch(tc_state){
         case TC_W4_SERVICE_RESULT:
@@ -291,28 +311,10 @@ static void ancs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t c
         case TC_W4_CHARACTERISTIC_RESULT:
             switch(hci_event_packet_get_type(packet)){
                 case GATT_EVENT_CHARACTERISTIC_QUERY_RESULT:
-                    gatt_event_characteristic_query_result_get_characteristic(packet, &characteristic);
-                    if (memcmp(characteristic.uuid128, ancs_notification_source_uuid, 16) == 0){
-                        log_info("ANCS Notification Source found, attribute handle %u", characteristic.value_handle);
-                        ancs_notification_source_characteristic = characteristic;
-                        ancs_characteristcs++;
-                        break;
-                    }
-                    if (memcmp(characteristic.uuid128, ancs_control_point_uuid, 16) == 0){
-                        log_info("ANCS Control Point found, attribute handle %u", characteristic.value_handle);
-                        ancs_control_point_characteristic = characteristic;
-                        ancs_characteristcs++;
-                        break;
-                    }
-                    if (memcmp(characteristic.uuid128, ancs_data_source_uuid, 16) == 0){
-                        log_info("ANCS Data Source found, attribute handle %u", characteristic.value_handle);
-                        ancs_data_source_characteristic = characteristic;
-                        ancs_characteristcs++;
-                        break;
-                    }
+                    ancs_client_handle_characteristic_query_result(packet);
                     break;
                 case GATT_EVENT_QUERY_COMPLETE:
-                    log_info("ANCS Characteristcs count %u", ancs_characteristcs);
+                    log_info("ANCS Characteristics count %u", ancs_characteristcs);
                     tc_state = TC_W2_ENABLE_NOTIFICATION;
                     break;
                 default:
@@ -325,7 +327,6 @@ static void ancs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t c
                 case GATT_EVENT_QUERY_COMPLETE:
                     log_info("ANCS Notification Source subscribed");
                     tc_state = TC_W2_SUBSCRIBE_DATA_SOURCE;
-
                     break;
                 default:
                     break;
